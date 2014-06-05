@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754703AbaFEFIb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 01:08:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43792 "EHLO
+	id S1754720AbaFEFIq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 01:08:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43785 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752338AbaFEEUV (ORCPT
+	with ESMTP id S1752325AbaFEEUU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:20:21 -0400
+	Thu, 5 Jun 2014 00:20:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Liu Hua <sdu.liu@huawei.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.4 058/214] ARM: 8012/1: kdump: Avoid overflow when converting pfn to physaddr
-Date: Wed,  4 Jun 2014 21:17:01 -0700
-Message-Id: <20140605041647.280229503@linuxfoundation.org>
+        Christoph Hellwig <hch@lst.de>, Ben Greear <greearb@candelatech.com>,
+        Chuck Lever <chuck.lever@oracle.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 3.4 057/214] posix_acl: handle NULL ACL in posix_acl_equiv_mode
+Date: Wed,  4 Jun 2014 21:17:00 -0700
+Message-Id: <20140605041647.127225470@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -27,32 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Liu Hua <sdu.liu@huawei.com>
+From: Christoph Hellwig <hch@lst.de>
 
-commit 8fad87bca7ac9737e413ba5f1656f1114a8c314d upstream.
+commit 50c6e282bdf5e8dabf8d7cf7b162545a55645fd9 upstream.
 
-When we configure CONFIG_ARM_LPAE=y, pfn << PAGE_SHIFT will
-overflow if pfn >= 0x100000 in copy_oldmem_page.
-So use __pfn_to_phys for converting.
+Various filesystems don't bother checking for a NULL ACL in
+posix_acl_equiv_mode, and thus can dereference a NULL pointer when it
+gets passed one. This usually happens from the NFS server, as the ACL tools
+never pass a NULL ACL, but instead of one representing the mode bits.
 
-Signed-off-by: Liu Hua <sdu.liu@huawei.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Instead of adding boilerplat to all filesystems put this check into one place,
+which will allow us to remove the check from other filesystems as well later
+on.
+
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Reported-by: Ben Greear <greearb@candelatech.com>
+Reported-by: Marco Munderloh <munderl@tnt.uni-hannover.de>,
+Cc: Chuck Lever <chuck.lever@oracle.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/kernel/crash_dump.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/posix_acl.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/arch/arm/kernel/crash_dump.c
-+++ b/arch/arm/kernel/crash_dump.c
-@@ -39,7 +39,7 @@ ssize_t copy_oldmem_page(unsigned long p
- 	if (!csize)
- 		return 0;
+--- a/fs/posix_acl.c
++++ b/fs/posix_acl.c
+@@ -155,6 +155,12 @@ posix_acl_equiv_mode(const struct posix_
+ 	umode_t mode = 0;
+ 	int not_equiv = 0;
  
--	vaddr = ioremap(pfn << PAGE_SHIFT, PAGE_SIZE);
-+	vaddr = ioremap(__pfn_to_phys(pfn), PAGE_SIZE);
- 	if (!vaddr)
- 		return -ENOMEM;
- 
++	/*
++	 * A null ACL can always be presented as mode bits.
++	 */
++	if (!acl)
++		return 0;
++
+ 	FOREACH_ACL_ENTRY(pa, acl, pe) {
+ 		switch (pa->e_tag) {
+ 			case ACL_USER_OBJ:
 
 
