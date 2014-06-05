@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752304AbaFEEdt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:33:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44401 "EHLO
+	id S1752427AbaFEEec (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:34:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44380 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753418AbaFEEWB (ORCPT
+	with ESMTP id S1753387AbaFEEV5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:22:01 -0400
+	Thu, 5 Jun 2014 00:21:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Carsten Emde <C.Emde@osadl.org>,
         Chris Wilson <chris@chris-wilson.co.uk>,
         Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@intel.com>,
         Ben Hutchings <ben@decadent.org.uk>,
         Weng Meiling <wengmeiling.weng@huawei.com>
-Subject: [PATCH 3.4 167/214] drm/i915; Only increment the user-pin-count after successfully pinning the bo
-Date: Wed,  4 Jun 2014 21:18:50 -0700
-Message-Id: <20140605041701.982182415@linuxfoundation.org>
+Subject: [PATCH 3.4 171/214] drm/i915: panel: invert brightness via quirk
+Date: Wed,  4 Jun 2014 21:18:54 -0700
+Message-Id: <20140605041702.537914505@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -29,45 +31,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Carsten Emde <C.Emde@osadl.org>
 
-commit 93be8788e648817d62fda33e2998eb6ca6ebf3a3 upstream.
+commit 4dca20efb1a9c2efefc28ad2867e5d6c3f5e1955 upstream.
 
-As along the error path we do not correct the user pin-count for the
-failure, we may end up with userspace believing that it has a pinned
-object at offset 0 (when interrupted by a signal for example).
+A machine may need to invert the panel backlight brightness value. This
+patch adds the infrastructure for a quirk to do so.
 
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Carsten Emde <C.Emde@osadl.org>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[bwh: Backported to 3.2: adjust context]
+Acked-by: Jani Nikula <jani.nikula@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Weng Meiling <wengmeiling.weng@huawei.com>
+[wml: Backported to 3.4:
+- Adjust context
+- one more flag QUIRK_NO_PCH_PWM_ENABLE]
+Signed-off-by: Weng Meiling <wengmeiling.weng@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/gpu/drm/i915/i915_gem.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ Documentation/kernel-parameters.txt  |   17 +++++++++++------
+ drivers/gpu/drm/i915/i915_drv.h      |    3 ++-
+ drivers/gpu/drm/i915/intel_display.c |    9 +++++++++
+ drivers/gpu/drm/i915/intel_panel.c   |   15 +++++++++++----
+ 4 files changed, 33 insertions(+), 11 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -3411,14 +3411,15 @@ i915_gem_pin_ioctl(struct drm_device *de
- 		goto out;
- 	}
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -993,14 +993,19 @@ bytes respectively. Such letter suffixes
+ 	i8k.restricted	[HW] Allow controlling fans only if SYS_ADMIN
+ 			capability is set.
  
--	obj->user_pin_count++;
--	obj->pin_filp = file;
--	if (obj->user_pin_count == 1) {
-+	if (obj->user_pin_count == 0) {
- 		ret = i915_gem_object_pin(obj, args->alignment, true);
- 		if (ret)
- 			goto out;
- 	}
+-	i915.invert_brightness
++	i915.invert_brightness=
+ 			[DRM] Invert the sense of the variable that is used to
+ 			set the brightness of the panel backlight. Normally a
+-			value of 0 indicates backlight switched off, and the
+-			maximum value sets the backlight to maximum brightness.
+-			If this parameter is specified, a value of 0 sets the
+-			backlight to maximum brightness, and the maximum value
+-			switches the backlight off.
++			brightness value of 0 indicates backlight switched off,
++			and the maximum of the brightness value sets the backlight
++			to maximum brightness. If this parameter is set to 0
++			(default) and the machine requires it, or this parameter
++			is set to 1, a brightness value of 0 sets the backlight
++			to maximum brightness, and the maximum of the brightness
++			value switches the backlight off.
++			-1 -- never invert brightness
++			 0 -- machine default
++			 1 -- force brightness inversion
  
-+	obj->user_pin_count++;
-+	obj->pin_filp = file;
+ 	icn=		[HW,ISDN]
+ 			Format: <io>[,<membase>[,<icn_id>[,<icn_id2>]]]
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -296,7 +296,8 @@ enum intel_pch {
+ 
+ #define QUIRK_PIPEA_FORCE (1<<0)
+ #define QUIRK_LVDS_SSC_DISABLE (1<<1)
+-#define QUIRK_NO_PCH_PWM_ENABLE (1<<2)
++#define QUIRK_INVERT_BRIGHTNESS (1<<2)
++#define QUIRK_NO_PCH_PWM_ENABLE (1<<3)
+ 
+ struct intel_fbdev;
+ struct intel_fbc_work;
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -9200,6 +9200,15 @@ static void quirk_no_pcm_pwm_enable(stru
+ 	DRM_INFO("applying no-PCH_PWM_ENABLE quirk\n");
+ }
+ 
++/*
++ * A machine may need to invert the panel backlight brightness value
++ */
++static void quirk_invert_brightness(struct drm_device *dev)
++{
++	struct drm_i915_private *dev_priv = dev->dev_private;
++	dev_priv->quirks |= QUIRK_INVERT_BRIGHTNESS;
++}
 +
- 	/* XXX - flush the CPU caches for pinned objects
- 	 * as the X server doesn't manage domains yet
- 	 */
+ struct intel_quirk {
+ 	int device;
+ 	int subsystem_vendor;
+--- a/drivers/gpu/drm/i915/intel_panel.c
++++ b/drivers/gpu/drm/i915/intel_panel.c
+@@ -190,15 +190,22 @@ u32 intel_panel_get_max_backlight(struct
+ 	return max;
+ }
+ 
+-static bool i915_panel_invert_brightness;
+-MODULE_PARM_DESC(invert_brightness, "Invert backlight brightness, please "
++static int i915_panel_invert_brightness;
++MODULE_PARM_DESC(invert_brightness, "Invert backlight brightness "
++	"(-1 force normal, 0 machine defaults, 1 force inversion), please "
+ 	"report PCI device ID, subsystem vendor and subsystem device ID "
+ 	"to dri-devel@lists.freedesktop.org, if your machine needs it. "
+ 	"It will then be included in an upcoming module version.");
+-module_param_named(invert_brightness, i915_panel_invert_brightness, bool, 0600);
++module_param_named(invert_brightness, i915_panel_invert_brightness, int, 0600);
+ static u32 intel_panel_compute_brightness(struct drm_device *dev, u32 val)
+ {
+-	if (i915_panel_invert_brightness)
++	struct drm_i915_private *dev_priv = dev->dev_private;
++
++	if (i915_panel_invert_brightness < 0)
++		return val;
++
++	if (i915_panel_invert_brightness > 0 ||
++	    dev_priv->quirks & QUIRK_INVERT_BRIGHTNESS)
+ 		return intel_panel_get_max_backlight(dev) - val;
+ 
+ 	return val;
 
 
