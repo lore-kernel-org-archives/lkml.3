@@ -1,57 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751530AbaFEO0V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 10:26:21 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:52684 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750921AbaFEO0T (ORCPT
+	id S1751616AbaFEO0k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 10:26:40 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:65033 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751125AbaFEO0i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 10:26:19 -0400
-Date: Thu, 5 Jun 2014 15:26:12 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Peter Griffin <peter.griffin@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        chris@printf.net, ulf.hansson@linaro.org, maxime.coquelin@st.com,
-        patrice.chotard@st.com, srinivas.kandagatla@gmail.com,
-        kernel@stlinux.com, linux-mmc@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH v3 10/10] MAINTAINERS: Add sdhci-st file to ARCH/STI
- architecture
-Message-ID: <20140605142612.GC24240@lee--X1>
-References: <1401899424-1365-1-git-send-email-peter.griffin@linaro.org>
- <1401899424-1365-11-git-send-email-peter.griffin@linaro.org>
+	Thu, 5 Jun 2014 10:26:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1401899424-1365-11-git-send-email-peter.griffin@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140605142135.GM6758@twins.programming.kicks-ass.net>
+References: <1401917658-26065-1-git-send-email-eranian@google.com>
+	<1401917658-26065-6-git-send-email-eranian@google.com>
+	<20140605140400.GM3213@twins.programming.kicks-ass.net>
+	<CABPqkBQRDpbkF73sWKXiXJOO0Jbeb9tRTWqScbjNdTG50EN3ug@mail.gmail.com>
+	<20140605142135.GM6758@twins.programming.kicks-ass.net>
+Date: Thu, 5 Jun 2014 16:26:38 +0200
+Message-ID: <CABPqkBQ9_HWN-LbwoxqDY52gHjevA_8fSoYbcv=wp04Rtp2ESg@mail.gmail.com>
+Subject: Re: [PATCH 5/9] perf/x86: implement cross-HT corruption bug workaround
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>,
+        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
-> ---
->  MAINTAINERS | 1 +
->  1 file changed, 1 insertion(+)
+On Thu, Jun 5, 2014 at 4:21 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Thu, Jun 05, 2014 at 04:15:17PM +0200, Stephane Eranian wrote:
+>> On Thu, Jun 5, 2014 at 4:04 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> > On Wed, Jun 04, 2014 at 11:34:14PM +0200, Stephane Eranian wrote:
+>> >> +
+>> >> +     /*
+>> >> +      * Modify static constraint with current dynamic
+>> >> +      * state of thread
+>> >> +      *
+>> >> +      * EXCLUSIVE: sibling counter measuring exclusive event
+>> >> +      * SHARED   : sibling counter measuring non-exclusive event
+>> >> +      * UNUSED   : sibling counter unused
+>> >> +      */
+>> >> +     for_each_set_bit(i, cx->idxmsk, X86_PMC_IDX_MAX) {
+>> >> +             /*
+>> >> +              * exclusive event in sibling counter
+>> >> +              * our corresponding counter cannot be used
+>> >> +              * regardless of our event
+>> >> +              */
+>> >> +             if (xl->state[i] == INTEL_EXCL_EXCLUSIVE)
+>> >> +                     __clear_bit(i, cx->idxmsk);
+>> >> +             /*
+>> >> +              * if measuring an exclusive event, sibling
+>> >> +              * measuring non-exclusive, then counter cannot
+>> >> +              * be used
+>> >> +              */
+>> >> +             if (is_excl && xl->state[i] == INTEL_EXCL_SHARED)
+>> >> +                     __clear_bit(i, cx->idxmsk);
+>> >> +     }
+>> >> +
+>> >> +     /*
+>> >> +      * recompute actual bit weight for scheduling algorithm
+>> >> +      */
+>> >> +     cx->weight = hweight64(cx->idxmsk64);
+>> >
+>> > So I think we talked about this a bit; what happens if CPU0 (taking your
+>> > 4 core HSW-client) is first to program its counters and takes all 4 in
+>> > exclusive mode?
+>> >
+>> > Then there's none left for CPU4.
+>> >
+>> > Did I miss where we avoid that problem, or is that an actual issue?
+>>
+>> Yes, this patch series does not address this problem yet. It will be
+>> in a second series.
+>> Don't have a good solution yet.
+>
+> We could limit each cpu to num_counters/2 exclusive slots. That'll still
+> be painful with some constrained events I imagine, but in general that
+> should 'work' I suppose.
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
+That is probably the easiest solution, just modify the dynamic constraint
+mask some more. Have not yet tried it.
 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 6dc67b1..19dc265 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -1306,6 +1306,7 @@ F:	drivers/pinctrl/pinctrl-st.c
->  F:	drivers/media/rc/st_rc.c
->  F:	drivers/i2c/busses/i2c-st.c
->  F:	drivers/tty/serial/st-asc.c
-> +F:	drivers/mmc/host/sdhci-st.c
->  
->  ARM/TECHNOLOGIC SYSTEMS TS7250 MACHINE SUPPORT
->  M:	Lennert Buytenhek <kernel@wantstofly.org>
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+The repatriation of the leaked count is not so easy either. Need to IPI
+the other HT. There may be some restrictions as to when we can
+safely do this.
