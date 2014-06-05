@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754117AbaFEE20 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:28:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44512 "EHLO
+	id S1754138AbaFEE2o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:28:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44509 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753619AbaFEEWU (ORCPT
+	with ESMTP id S1753610AbaFEEWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 5 Jun 2014 00:22:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        Stephen Warren <swarren@nvidia.com>, Wolfram Sang <wsa@the-dreams.de>,
+        Samuel Thibault <samuel.thibault@ens-lyon.org>,
         Ben Hutchings <ben@decadent.org.uk>,
         Qiang Huang <h.huangqiang@huawei.com>
-Subject: [PATCH 3.4 195/214] i2c: tegra: check the clk_prepare_enable() return value
-Date: Wed,  4 Jun 2014 21:19:18 -0700
-Message-Id: <20140605041705.634429668@linuxfoundation.org>
+Subject: [PATCH 3.4 194/214] speakup: lower default software speech rate
+Date: Wed,  4 Jun 2014 21:19:17 -0700
+Message-Id: <20140605041705.498500005@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -29,61 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Laxman Dewangan <ldewangan@nvidia.com>
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
 
-commit 132c803f7b70b17322579f6f4f3f65cf68e55135 upstream.
+commit cfd757010691eae4e17acc246f74e7622c3a2f05 upstream.
 
-NVIDIA's Tegra SoC allows read/write of controller register only
-if controller clock is enabled. System hangs if read/write happens
-to registers without enabling clock.
+Speech synthesis beginners need a low speech rate, and trained people
+want a high speech rate.  A medium speech rate is thus actually not a
+good default for neither.  Since trained people will typically know how
+to change the rate, better default for a low speech rate, which
+beginners can grasp and learn how to increase it afterwards
 
-clk_prepare_enable() can be fail due to unknown reason and hence
-adding check for return value of this function. If this function
-success then only access register otherwise return to caller with
-error.
+This was agreed with users on the speakup mailing list.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-Reviewed-by: Stephen Warren <swarren@nvidia.com>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-[bwh: Backported to 3.2:
- - Adjust context
- - Keep calling clk_enable() directly]
+Signed-off-by: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Qiang Huang <h.huangqiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/i2c/busses/i2c-tegra.c |   13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+ drivers/staging/speakup/speakup_soft.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/i2c/busses/i2c-tegra.c
-+++ b/drivers/i2c/busses/i2c-tegra.c
-@@ -341,7 +341,11 @@ static int tegra_i2c_init(struct tegra_i
- 	u32 val;
- 	int err = 0;
- 
--	clk_enable(i2c_dev->clk);
-+	err = clk_enable(i2c_dev->clk);
-+	if (err < 0) {
-+		dev_err(i2c_dev->dev, "Clock enable failed %d\n", err);
-+		return err;
-+	}
- 
- 	tegra_periph_reset_assert(i2c_dev->clk);
- 	udelay(2);
-@@ -543,7 +547,12 @@ static int tegra_i2c_xfer(struct i2c_ada
- 	if (i2c_dev->is_suspended)
- 		return -EBUSY;
- 
--	clk_enable(i2c_dev->clk);
-+	ret = clk_enable(i2c_dev->clk);
-+	if (ret < 0) {
-+		dev_err(i2c_dev->dev, "Clock enable failed %d\n", ret);
-+		return ret;
-+	}
-+
- 	for (i = 0; i < num; i++) {
- 		int stop = (i == (num - 1)) ? 1  : 0;
- 		ret = tegra_i2c_xfer_msg(i2c_dev, &msgs[i], stop);
+--- a/drivers/staging/speakup/speakup_soft.c
++++ b/drivers/staging/speakup/speakup_soft.c
+@@ -46,7 +46,7 @@ static int misc_registered;
+ static struct var_t vars[] = {
+ 	{ CAPS_START, .u.s = {"\x01+3p" } },
+ 	{ CAPS_STOP, .u.s = {"\x01-3p" } },
+-	{ RATE, .u.n = {"\x01%ds", 5, 0, 9, 0, 0, NULL } },
++	{ RATE, .u.n = {"\x01%ds", 2, 0, 9, 0, 0, NULL } },
+ 	{ PITCH, .u.n = {"\x01%dp", 5, 0, 9, 0, 0, NULL } },
+ 	{ VOL, .u.n = {"\x01%dv", 5, 0, 9, 0, 0, NULL } },
+ 	{ TONE, .u.n = {"\x01%dx", 1, 0, 2, 0, 0, NULL } },
 
 
