@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754069AbaFEEnm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:43:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44200 "EHLO
+	id S1754047AbaFEEnk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:43:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44205 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753082AbaFEEV3 (ORCPT
+	with ESMTP id S1753086AbaFEEVa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:21:29 -0400
+	Thu, 5 Jun 2014 00:21:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         "Yin, Fengwei" <fengwei.yin@intel.com>,
         Alan Cox <alan@linux.intel.com>, Ben Hutchings <ben@decadent.org.uk>,
         Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 3.4 136/214] n_gsm: avoid accessing freed memory during CMD_FCOFF condition
-Date: Wed,  4 Jun 2014 21:18:19 -0700
-Message-Id: <20140605041658.000709649@linuxfoundation.org>
+Subject: [PATCH 3.4 137/214] n_gsm: replace kfree_skb w/ appropriate dev_* versions
+Date: Wed,  4 Jun 2014 21:18:20 -0700
+Message-Id: <20140605041658.168721352@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -31,16 +31,13 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Russ Gorby <russ.gorby@intel.com>
 
-commit b4338e1efc339986cf6c0a3652906e914a86e2d3 upstream.
+commit 329e56780e514a7ab607bcb51a52ab0dc2669414 upstream.
 
-gsm_data_kick was recently modified to allow messages on the
-tx queue bound for DLCI0 to flow even during FCOFF conditions.
-Unfortunately we introduced a bug discovered by code inspection
-where subsequent list traversers can access freed memory if
-the DLCI0 messages were not all at the head of the list.
+Drivers are supposed to use the dev_* versions of the kfree_skb
+interfaces. In a couple of cases we were called with IRQs
+disabled as well which kfree_skb() does not expect.
 
-Replaced singly linked tx list w/ a list_head and used
-provided interfaces for traversing and deleting members.
+Replaced kfree_skb calls w/ dev_kfree_skb and dev_kfree_skb_any
 
 Signed-off-by: Russ Gorby <russ.gorby@intel.com>
 Tested-by: Yin, Fengwei <fengwei.yin@intel.com>
@@ -51,119 +48,46 @@ Cc: Rui Xiang <rui.xiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/n_gsm.c |   40 +++++++++++++---------------------------
- 1 file changed, 13 insertions(+), 27 deletions(-)
+ drivers/tty/n_gsm.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
 --- a/drivers/tty/n_gsm.c
 +++ b/drivers/tty/n_gsm.c
-@@ -108,7 +108,7 @@ struct gsm_mux_net {
-  */
- 
- struct gsm_msg {
--	struct gsm_msg *next;
-+	struct list_head list;
- 	u8 addr;		/* DLCI address + flags */
- 	u8 ctrl;		/* Control byte + flags */
- 	unsigned int len;	/* Length of data block (can be zero) */
-@@ -245,8 +245,7 @@ struct gsm_mux {
- 	unsigned int tx_bytes;		/* TX data outstanding */
- #define TX_THRESH_HI		8192
- #define TX_THRESH_LO		2048
--	struct gsm_msg *tx_head;	/* Pending data packets */
--	struct gsm_msg *tx_tail;
-+	struct list_head tx_list;	/* Pending data packets */
- 
- 	/* Control messages */
- 	struct timer_list t2_timer;	/* Retransmit timer for commands */
-@@ -663,7 +662,7 @@ static struct gsm_msg *gsm_data_alloc(st
- 	m->len = len;
- 	m->addr = addr;
- 	m->ctrl = ctrl;
--	m->next = NULL;
-+	INIT_LIST_HEAD(&m->list);
- 	return m;
- }
- 
-@@ -681,16 +680,13 @@ static struct gsm_msg *gsm_data_alloc(st
- 
- static void gsm_data_kick(struct gsm_mux *gsm)
- {
--	struct gsm_msg *msg = gsm->tx_head;
--	struct gsm_msg *free_msg;
-+	struct gsm_msg *msg, *nmsg;
- 	int len;
- 	int skip_sof = 0;
- 
--	while (msg) {
--		if (gsm->constipated && msg->addr) {
--			msg = msg->next;
-+	list_for_each_entry_safe(msg, nmsg, &gsm->tx_list, list) {
-+		if (gsm->constipated && msg->addr)
- 			continue;
--		}
- 		if (gsm->encoding != 0) {
- 			gsm->txframe[0] = GSM1_SOF;
- 			len = gsm_stuff_frame(msg->data,
-@@ -718,14 +714,9 @@ static void gsm_data_kick(struct gsm_mux
- 		   burst */
- 		skip_sof = 1;
- 
--		if (gsm->tx_head == msg)
--			gsm->tx_head = msg->next;
--		free_msg = msg;
--		msg = msg->next;
--		kfree(free_msg);
-+		list_del(&msg->list);
-+		kfree(msg);
+@@ -879,7 +879,7 @@ static int gsm_dlci_data_output_framed(s
+ 	if (len > gsm->mtu) {
+ 		if (dlci->adaption == 3) {
+ 			/* Over long frame, bin it */
+-			kfree_skb(dlci->skb);
++			dev_kfree_skb_any(dlci->skb);
+ 			dlci->skb = NULL;
+ 			return 0;
+ 		}
+@@ -908,7 +908,7 @@ static int gsm_dlci_data_output_framed(s
+ 	skb_pull(dlci->skb, len);
+ 	__gsm_data_queue(dlci, msg);
+ 	if (last) {
+-		kfree_skb(dlci->skb);
++		dev_kfree_skb_any(dlci->skb);
+ 		dlci->skb = NULL;
  	}
--	if (!gsm->tx_head)
--		gsm->tx_tail = NULL;
+ 	return size;
+@@ -1688,7 +1688,7 @@ static void gsm_dlci_free(struct kref *r
+ 	dlci->gsm->dlci[dlci->addr] = NULL;
+ 	kfifo_free(dlci->fifo);
+ 	while ((dlci->skb = skb_dequeue(&dlci->skb_list)))
+-		kfree_skb(dlci->skb);
++		dev_kfree_skb(dlci->skb);
+ 	kfree(dlci);
  }
  
- /**
-@@ -774,11 +765,7 @@ static void __gsm_data_queue(struct gsm_
- 	msg->data = dp;
- 
- 	/* Add to the actual output queue */
--	if (gsm->tx_tail)
--		gsm->tx_tail->next = msg;
--	else
--		gsm->tx_head = msg;
--	gsm->tx_tail = msg;
-+	list_add_tail(&msg->list, &gsm->tx_list);
- 	gsm->tx_bytes += msg->len;
- 	gsm_data_kick(gsm);
- }
-@@ -2052,7 +2039,7 @@ void gsm_cleanup_mux(struct gsm_mux *gsm
+@@ -2039,7 +2039,7 @@ void gsm_cleanup_mux(struct gsm_mux *gsm
  {
  	int i;
  	struct gsm_dlci *dlci = gsm->dlci[0];
--	struct gsm_msg *txq;
-+	struct gsm_msg *txq, *utxq;
+-	struct gsm_msg *txq, *utxq;
++	struct gsm_msg *txq, *ntxq;
  	struct gsm_control *gc;
  
  	gsm->dead = 1;
-@@ -2087,11 +2074,9 @@ void gsm_cleanup_mux(struct gsm_mux *gsm
- 		if (gsm->dlci[i])
- 			gsm_dlci_release(gsm->dlci[i]);
- 	/* Now wipe the queues */
--	for (txq = gsm->tx_head; txq != NULL; txq = gsm->tx_head) {
--		gsm->tx_head = txq->next;
-+	list_for_each_entry_safe(txq, ntxq, &gsm->tx_list, list)
- 		kfree(txq);
--	}
--	gsm->tx_tail = NULL;
-+	INIT_LIST_HEAD(&gsm->tx_list);
- }
- EXPORT_SYMBOL_GPL(gsm_cleanup_mux);
- 
-@@ -2202,6 +2187,7 @@ struct gsm_mux *gsm_alloc_mux(void)
- 	}
- 	spin_lock_init(&gsm->lock);
- 	kref_init(&gsm->ref);
-+	INIT_LIST_HEAD(&gsm->tx_list);
- 
- 	gsm->t1 = T1;
- 	gsm->t2 = T2;
 
 
