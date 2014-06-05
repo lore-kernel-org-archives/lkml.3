@@ -1,54 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753890AbaFEEXs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:23:48 -0400
-Received: from ozlabs.org ([103.22.144.67]:37395 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753881AbaFEEXq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:23:46 -0400
-Date: Thu, 5 Jun 2014 14:23:36 +1000
-From: Paul Mackerras <paulus@samba.org>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: benh@kernel.crashing.org, linux-kernel@vger.kernel.org,
-        svaidyan@in.ibm.com, srivatsa.bhat@linux.vnet.ibm.com,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH 2/6] powerpc, powernv, CPU hotplug: Put offline CPUs in
- Fast-Sleep instead of Nap
-Message-ID: <20140605042336.GA3199@drongo>
-References: <20140528043703.15676.58580.stgit@preeti.in.ibm.com>
- <20140528043856.15676.35844.stgit@preeti.in.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140528043856.15676.35844.stgit@preeti.in.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753926AbaFEEYH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:24:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44615 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753781AbaFEEWm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 00:22:42 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Wei Liu <wei.liu2@citrix.com>, Ian Campbell <ian.campbell@citrix.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Qiang Huang <h.huangqiang@huawei.com>
+Subject: [PATCH 3.4 212/214] xen-netfront: reduce gso_max_size to account for max TCP header
+Date: Wed,  4 Jun 2014 21:19:35 -0700
+Message-Id: <20140605041707.988595332@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
+References: <20140605041639.638675216@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 10:08:56AM +0530, Preeti U Murthy wrote:
-> From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> 
-> The offline cpus are put to fast sleep if the idle state is discovered in the
-> device tree. This is to gain maximum powersavings in the offline state.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-...
+------------------
 
->  	while (!generic_check_cpu_restart(cpu)) {
->  		ppc64_runlatch_off();
-> -		power7_nap();
-> +
-> +		/* If sleep is supported, go to sleep, instead of nap */
-> +		if (idle_states & IDLE_USE_SLEEP)
-> +			power7_sleep();
-> +		else
-> +			power7_nap();
-> +
->  		ppc64_runlatch_on();
->  		if (!generic_check_cpu_restart(cpu)) {
->  			DBG("CPU%d Unexpected exit while offline !\n", cpu);
+From: Wei Liu <wei.liu2@citrix.com>
 
-What is the latency for waking up from fast sleep state?  I'm concerned
-this will increase the latency for entering KVM guests.
+commit 9ecd1a75d977e2e8c48139c7d3efed183f898d94 upstream.
 
-Paul.
+The maximum packet including header that can be handled by netfront / netback
+wire format is 65535. Reduce gso_max_size accordingly.
+
+Drop skb and print warning when skb->len > 65535. This can 1) save the effort
+to send malformed packet to netback, 2) help spotting misconfiguration of
+netfront in the future.
+
+Signed-off-by: Wei Liu <wei.liu2@citrix.com>
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+[hq: Backported to 3.4: adjust context]
+Signed-off-by: Qiang Huang <h.huangqiang@huawei.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/net/xen-netfront.c       |   17 +++++++++++++++--
+ include/xen/interface/io/netif.h |    1 +
+ 2 files changed, 16 insertions(+), 2 deletions(-)
+
+--- a/drivers/net/xen-netfront.c
++++ b/drivers/net/xen-netfront.c
+@@ -36,7 +36,7 @@
+ #include <linux/skbuff.h>
+ #include <linux/ethtool.h>
+ #include <linux/if_ether.h>
+-#include <linux/tcp.h>
++#include <net/tcp.h>
+ #include <linux/udp.h>
+ #include <linux/moduleparam.h>
+ #include <linux/mm.h>
+@@ -492,6 +492,16 @@ static int xennet_start_xmit(struct sk_b
+ 	unsigned int len = skb_headlen(skb);
+ 	unsigned long flags;
+ 
++	/* If skb->len is too big for wire format, drop skb and alert
++	 * user about misconfiguration.
++	 */
++	if (unlikely(skb->len > XEN_NETIF_MAX_TX_SIZE)) {
++		net_alert_ratelimited(
++			"xennet: skb->len = %u, too big for wire format\n",
++			skb->len);
++		goto drop;
++	}
++
+ 	frags += DIV_ROUND_UP(offset + len, PAGE_SIZE);
+ 	if (unlikely(frags > MAX_SKB_FRAGS + 1)) {
+ 		printk(KERN_ALERT "xennet: skb rides the rocket: %d frags\n",
+@@ -1045,7 +1055,8 @@ err:
+ 
+ static int xennet_change_mtu(struct net_device *dev, int mtu)
+ {
+-	int max = xennet_can_sg(dev) ? 65535 - ETH_HLEN : ETH_DATA_LEN;
++	int max = xennet_can_sg(dev) ?
++		XEN_NETIF_MAX_TX_SIZE - MAX_TCP_HEADER : ETH_DATA_LEN;
+ 
+ 	if (mtu > max)
+ 		return -EINVAL;
+@@ -1349,6 +1360,8 @@ static struct net_device * __devinit xen
+ 	SET_ETHTOOL_OPS(netdev, &xennet_ethtool_ops);
+ 	SET_NETDEV_DEV(netdev, &dev->dev);
+ 
++	netif_set_gso_max_size(netdev, XEN_NETIF_MAX_TX_SIZE - MAX_TCP_HEADER);
++
+ 	np->netdev = netdev;
+ 
+ 	netif_carrier_off(netdev);
+--- a/include/xen/interface/io/netif.h
++++ b/include/xen/interface/io/netif.h
+@@ -65,6 +65,7 @@
+ #define _XEN_NETTXF_extra_info		(3)
+ #define  XEN_NETTXF_extra_info		(1U<<_XEN_NETTXF_extra_info)
+ 
++#define XEN_NETIF_MAX_TX_SIZE 0xFFFF
+ struct xen_netif_tx_request {
+     grant_ref_t gref;      /* Reference to buffer page */
+     uint16_t offset;       /* Offset within buffer page */
+
+
