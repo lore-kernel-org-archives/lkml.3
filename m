@@ -1,114 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753003AbaFEW5S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 18:57:18 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:43705 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752202AbaFEW5P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 18:57:15 -0400
-Message-ID: <5390F5C7.5070301@wwwdotorg.org>
-Date: Thu, 05 Jun 2014 16:57:11 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
+	id S1753046AbaFEW6w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 18:58:52 -0400
+Received: from mga09.intel.com ([134.134.136.24]:53337 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752119AbaFEW6v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 18:58:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,984,1392192000"; 
+   d="scan'208";a="523441759"
+Message-ID: <5390F5A8.2010202@linux.intel.com>
+Date: Thu, 05 Jun 2014 15:56:40 -0700
+From: eric ernst <eric.ernst@linux.intel.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: Linus Walleij <linus.walleij@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Andrew Bresticker <abrestic@chromium.org>, devicetree@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] of: Add NVIDIA Tegra XUSB pad controller binding
-References: <1401894990-30092-1-git-send-email-thierry.reding@gmail.com> <1401894990-30092-2-git-send-email-thierry.reding@gmail.com> <53909F31.4050603@wwwdotorg.org> <20140605220833.GA28817@ulmo>
-In-Reply-To: <20140605220833.GA28817@ulmo>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="Pkt1FkuIKMqMg0rRt6J2mfxrRb13DSu3c"
+To: Randy Dunlap <rdunlap@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: jwboyer@fedoraproject.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1 1/1] Add kernel parameter for kernel version
+References: <538CC567.2060305@linux.intel.com>	<1402006157-126864-1-git-send-email-eric.ernst@linux.intel.com> <20140605151633.7dd15e8307cbd3b519ae257b@linux-foundation.org> <5390EC1B.3000706@linux.intel.com> <5390EF50.3010100@infradead.org>
+In-Reply-To: <5390EF50.3010100@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---Pkt1FkuIKMqMg0rRt6J2mfxrRb13DSu3c
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
 
-On 06/05/2014 04:08 PM, Thierry Reding wrote:
-> On Thu, Jun 05, 2014 at 10:47:45AM -0600, Stephen Warren wrote:
->> On 06/04/2014 09:16 AM, Thierry Reding wrote:
->>> From: Thierry Reding <treding@nvidia.com>
+On 14-06-05 03:29 PM, Randy Dunlap wrote:
+> On 06/05/2014 03:15 PM, eric ernst wrote:
+>> On 14-06-05 03:16 PM, Andrew Morton wrote:
+>>> On Thu,  5 Jun 2014 15:09:17 -0700 eric.ernst@linux.intel.com wrote:
 >>>
->>> This patch adds the device tree binding documentation for the XUSB pa=
-d
->>> controller found on NVIDIA Tegra SoCs. It exposes both pinmuxing and =
-PHY
->>> capabilities.
->>
->>> diff --git a/Documentation/devicetree/bindings/pinctrl/nvidia,tegra12=
-4-xusb-padctl.txt b/Documentation/devicetree/bindings/pinctrl/nvidia,tegr=
-a124-xusb-padctl.txt
->>
->>> +- #phy-cells: Should be 1. The specifier is the index of the PHY to =
-reference.
->>> +  Possible values are:
->>> +  - 0: PCIe
->>> +  - 1: SATA
->>
->> Those values are defined in
->> include/dt-bindings/pinctrl/pinctrl-tegra-xusb.h. I personally conside=
-r
->> the <dt-bindings/> header files to be part of the binding itself, rath=
-er
->> than being derived from the binding. As such, I'd suggest the followin=
-g
->> changes:
->>
->> * Make this patch 1 not patch 2
->> * Move pinctrl-tegra-xusb.h into this patch.
->> * Remove the list of values above, and replace it with the text "See
->> <dt-bindings/pinctrl/pinctrl-tegra-xusb.h> for the set of valid values=
-".
->=20
-> I remember discussions where people explicitly said that relying on the=
+>>>> Create a kernel cmdline parameter, "version_addendum", which can be
+>>>> used to add text to the kernel version that is reported from
+>>>> /proc/version.
+>>> why?
+>> We have a need to keep a single product binary (kernel) across multiple android devices.  A subset of these platforms are looking for extra versioning information appended to it, accessible via /proc/version.  Rather than build multiple otherwise identical kernels with only this extended versioning as differentiation, we are looking to make this a command line parameter.  Understandable if there isn't enough value-add for the community in this patch, but I figured I'd give the patch a shot, as we need this functionality locally.  Thanks.
+> Please use a newline character every 70-72 characters instead of assuming
+> that all email programs will break that extra long line up into a readable
+> format.  (mine does not.)
+Ack - sorry Randy - it was a quick cp / paste from earlier in the thread.
+>
+> What software needs to know the version info?  how early does it run?
+> Could it get the version info from 'uname -r' instead of from /proc/version?
+>
+> thanks,
+This'll end up being used by a third party customer for tracking 
+particular devices, so I'm sure "much, much later" in user space. While 
+I'm sure they could use uname instead, the specific request was for 
+/proc/version.
 
-> symbolic names in the DT bindings was a mistake because it would mean
-> that everyone would need to have access to a mechanism similar to what
-> we have in the Linux kernel (and that the header files would always nee=
-d
-> to be shipped with the DT bindings).
-
-The entire point of the headers is so that the binding definitions and
-code using them can't get out of sync. In my opinion, the headers *are*
-part of the bindings, so of course anyone either reading DT bindings, or
-parsing DT, must have the headers, and hence the headers must be bundled
-with the DT files or with the bindings wherever they go.
-
-
---Pkt1FkuIKMqMg0rRt6J2mfxrRb13DSu3c
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJTkPXHAAoJEJuNpwkmVCGczZgP/1UMgpmOSc+Wc4lu7V2FBINe
-chgGWejm/sdvWSEQ1vk9Uwf4wcrwy/z1eCW14tLaRxMvwm7ZSRMp29NngXUaegb4
-AVfTih6pH2/FYmvduAFmCEFFDGgFa8s3CkWis5qxg/J1NbhmojjVU6Na3tE2ueO1
-fCHHWRzTkaNu9PL+jUlb2Zn9swKSgYlGFE74XJkYXXvK49W7S9Tjq8VS7/gAJ3AZ
-4U0JQoo7tUtTlQQ9Sd9nvsw5JsEaK5Nhsb7wTwzB9wlOkAl+9yXzo1ChaY7F/E//
-/pJrCpSxdGGHefHM0OygWLWGokTNP2hh1JBOj2Sfn/Dk+qEQtR6YfJTu0uu3b31m
-0WHZ/3LyGMzX2a96N05xSaE/vo+1ysz65FkwaicnBBFOZXjhfikWiqomOEgTbG9G
-7J/OBf8UZPm63Nt4oD0I72rrGoeuzi5ohkTWGCdFJ3Rdqdn2HqkfsosqyHOydW52
-4gev36hcxgHNjSV0Yxrh5djUjAE55tPHOlv4ZeVHWTvm1b7IuQQ9KyRvYdlxHkZS
-Syksxu8SeDv5+qyYew5a4/oxw8W8vQRJ7XFkbzAyx/gFC9+yfrn9iDidNFyTBYRc
-MdUKVf1US79VCeBUqtY775EFJ6kJYBGvb7MvY+O2YdTCYPfIdN8su4duD7NZZCOo
-f5gOFSnCOrR8/6pJO+N1
-=lXuH
------END PGP SIGNATURE-----
-
---Pkt1FkuIKMqMg0rRt6J2mfxrRb13DSu3c--
+The more I look into this patch, the more I think this is a pretty 
+specific use case that probably doesn't have a lot of community 
+value-add outside of our scenario.  Thanks for the feedback.
