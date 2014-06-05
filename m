@@ -1,234 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752119AbaFEV3l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 17:29:41 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:64126 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751409AbaFEV3h (ORCPT
+	id S1752587AbaFEVa4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 17:30:56 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:64390 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751828AbaFEVax (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 17:29:37 -0400
-From: Janne Kanniainen <janne.kanniainen@gmail.com>
-To: cooloney@gmail.com, rpurdie@rpsys.net
-Cc: linux-kernel@vger.kernel.org, linux-leds@vger.kernel.org,
-        Janne Kanniainen <janne.kanniainen@gmail.com>
-Subject: [PATCH v2] leds: USB: Add support for MSI GT683R led panels
-Date: Fri,  6 Jun 2014 00:29:06 +0300
-Message-Id: <1402003746-6354-1-git-send-email-janne.kanniainen@gmail.com>
-X-Mailer: git-send-email 1.9.2
+	Thu, 5 Jun 2014 17:30:53 -0400
+Date: Thu, 5 Jun 2014 14:30:51 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Vlastimil Babka <vbabka@suse.cz>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [RFC PATCH 4/6] mm, compaction: skip buddy pages by their order
+ in the migrate scanner
+In-Reply-To: <5390374E.5080708@suse.cz>
+Message-ID: <alpine.DEB.2.02.1406051428360.18119@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1405211954410.13243@chino.kir.corp.google.com> <1401898310-14525-1-git-send-email-vbabka@suse.cz> <1401898310-14525-4-git-send-email-vbabka@suse.cz> <alpine.DEB.2.02.1406041656400.22536@chino.kir.corp.google.com>
+ <5390374E.5080708@suse.cz>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver adds support for USB controlled led panels that exist in MSI GT683R laptop.
+On Thu, 5 Jun 2014, Vlastimil Babka wrote:
 
-Changes in v2:
-	- sorted headers to alphabetic order
-	- using devm_kzalloc
-	- using BIT(n)
-	- using usb_control_msg instead of usb_submit_urb
-	- removing unneeded code
+> > > diff --git a/mm/compaction.c b/mm/compaction.c
+> > > index ae7db5f..3dce5a7 100644
+> > > --- a/mm/compaction.c
+> > > +++ b/mm/compaction.c
+> > > @@ -640,11 +640,18 @@ isolate_migratepages_range(struct zone *zone, struct
+> > > compact_control *cc,
+> > >   		}
+> > > 
+> > >   		/*
+> > > -		 * Skip if free. page_order cannot be used without zone->lock
+> > > -		 * as nothing prevents parallel allocations or buddy merging.
+> > > +		 * Skip if free. We read page order here without zone lock
+> > > +		 * which is generally unsafe, but the race window is small and
+> > > +		 * the worst thing that can happen is that we skip some
+> > > +		 * potential isolation targets.
+> > 
+> > Should we only be doing the low_pfn adjustment based on the order for
+> > MIGRATE_ASYNC?  It seems like sync compaction, including compaction that
+> > is triggered from the command line, would prefer to scan over the
+> > following pages.
+> 
+> I thought even sync compaction would benefit from the skipped iterations. I'd
+> say the probability of this race is smaller than probability of somebody
+> allocating what compaction just freed.
+> 
 
-Signed-off-by: Janne Kanniainen <janne.kanniainen@gmail.com>
----
- drivers/leds/Kconfig       |   6 ++
- drivers/leds/Makefile      |   1 +
- drivers/leds/leds-gt683r.c | 158 +++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 165 insertions(+)
- create mode 100644 drivers/leds/leds-gt683r.c
+Ok.
 
-diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-index 6de9dfb..2cffa0c 100644
---- a/drivers/leds/Kconfig
-+++ b/drivers/leds/Kconfig
-@@ -487,6 +487,12 @@ config LEDS_BLINKM
- 	  This option enables support for the BlinkM RGB LED connected
- 	  through I2C. Say Y to enable support for the BlinkM LED.
- 
-+config LEDS_GT683R
-+       tristate "LED support for the MSI GT683R"
-+       depends on LEDS_CLASS && USB
-+       help
-+         This option enables support for the MSI GT683R LEDS
-+
- comment "LED Triggers"
- source "drivers/leds/trigger/Kconfig"
- 
-diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
-index 3cd76db..af5fb4e 100644
---- a/drivers/leds/Makefile
-+++ b/drivers/leds/Makefile
-@@ -54,6 +54,7 @@ obj-$(CONFIG_LEDS_ASIC3)		+= leds-asic3.o
- obj-$(CONFIG_LEDS_MAX8997)		+= leds-max8997.o
- obj-$(CONFIG_LEDS_LM355x)		+= leds-lm355x.o
- obj-$(CONFIG_LEDS_BLINKM)		+= leds-blinkm.o
-+obj-$(CONFIG_LEDS_GT683R)		+= leds-gt683r.o
- 
- # LED SPI Drivers
- obj-$(CONFIG_LEDS_DAC124S085)		+= leds-dac124s085.o
-diff --git a/drivers/leds/leds-gt683r.c b/drivers/leds/leds-gt683r.c
-new file mode 100644
-index 0000000..5a204ea
---- /dev/null
-+++ b/drivers/leds/leds-gt683r.c
-@@ -0,0 +1,158 @@
-+/*
-+ * MSI GT683R led driver
-+ *
-+ * Copyright (c) 2014 Janne Kanniainen <janne.kanniainen@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation; either version 2 of
-+ * the License, or (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/leds.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/usb.h>
-+
-+#define USB_DEVICE_ID_MSI_GT683R_LED_PANEL	0xff00
-+#define USB_VENDOR_ID_MSI			0x1770
-+
-+#define GT683R_LED_BACK				BIT(0)
-+#define GT683R_LED_SIDE				BIT(1)
-+#define GT683R_LED_FRONT			BIT(2)
-+#define GT683R_LED_ALL (GT683R_LED_BACK | GT683R_LED_SIDE | GT683R_LED_FRONT)
-+
-+#define GT683R_LED_OFF				0
-+#define GT683R_LED_AUDIO			2
-+#define GT683R_LED_BREATHING			3
-+#define GT683R_LED_NORMAL			5
-+
-+struct gt683r_led {
-+	struct usb_device *usb_dev;
-+	struct usb_endpoint_descriptor *ep;
-+	struct led_classdev led_dev;
-+	struct mutex lock;
-+	struct work_struct work;
-+	enum led_brightness brightness;
-+};
-+
-+static const struct usb_device_id gt683r_led_id[] = {
-+	{ USB_DEVICE(USB_VENDOR_ID_MSI, USB_DEVICE_ID_MSI_GT683R_LED_PANEL) },
-+	{ }
-+};
-+
-+static const u64 gt683r_led_select_leds = 0x300201ULL;
-+static const u64 gt683r_led_select_type = 0x100200201ULL;
-+
-+static void gt683r_brightness_set(struct led_classdev *led_cdev,
-+				  enum led_brightness brightness)
-+{
-+	struct gt683r_led *led =
-+			container_of(led_cdev, struct gt683r_led, led_dev);
-+
-+	mutex_lock(&led->lock);
-+
-+	led->brightness = brightness;
-+
-+	schedule_work(&led->work);
-+}
-+
-+static int gt683r_led_snd_msg(struct gt683r_led *led, u64 msg)
-+{
-+	int result = usb_control_msg(led->usb_dev,
-+				usb_sndctrlpipe(led->usb_dev,
-+						led->ep->bEndpointAddress),
-+				0x09, 0x22, 0x0301, 0x0000,
-+				&msg, sizeof(u64), USB_CTRL_SET_TIMEOUT);
-+	if (result)
-+		dev_err(&led->usb_dev->dev,
-+			"Failed to send control message: %i\n", result);
-+
-+	return result;
-+}
-+
-+static void gt683r_led_set(struct gt683r_led *led, char type)
-+{
-+	gt683r_led_snd_msg(led, gt683r_led_select_leds |
-+			(GT683R_LED_ALL << 24));
-+	gt683r_led_snd_msg(led, gt683r_led_select_type |
-+			(type << 24));
-+}
-+
-+static void gt683r_led_work(struct work_struct *work)
-+{
-+	struct gt683r_led *led =
-+			container_of(work, struct gt683r_led, work);
-+
-+	if (led->brightness)
-+		gt683r_led_set(led, GT683R_LED_NORMAL);
-+	else
-+		gt683r_led_set(led, GT683R_LED_OFF);
-+
-+	mutex_unlock(&led->lock);
-+}
-+
-+static struct led_classdev gt683r_led_dev = {
-+	.name = "gt683r-led",
-+	.brightness_set = gt683r_brightness_set,
-+	.max_brightness = 1,
-+	.flags = LED_CORE_SUSPENDRESUME,
-+};
-+
-+static int gt683r_led_probe(struct usb_interface *intf,
-+			    const struct usb_device_id *id)
-+{
-+	int ret = 0;
-+	struct gt683r_led *led =
-+		devm_kzalloc(&intf->dev, sizeof(struct gt683r_led), GFP_KERNEL);
-+	if (!led)
-+		return -ENOMEM;
-+
-+	led->usb_dev = interface_to_usbdev(intf);
-+	usb_set_intfdata(intf, led);
-+
-+	led->ep = &led->usb_dev->ep0.desc;
-+	if (!usb_endpoint_xfer_control(led->ep) ||
-+		usb_endpoint_maxp(led->ep) != sizeof(u64))
-+		return -EINVAL;
-+
-+	led->led_dev = gt683r_led_dev;
-+	ret = led_classdev_register(&led->usb_dev->dev, &led->led_dev);
-+	if (ret) {
-+		dev_err(&led->usb_dev->dev, "Could not register led_classdev\n");
-+		return ret;
-+	}
-+
-+	mutex_init(&led->lock);
-+	INIT_WORK(&led->work, gt683r_led_work);
-+
-+	return 0;
-+}
-+
-+static void gt683r_led_disconnect(struct usb_interface *intf)
-+{
-+	struct gt683r_led *led = usb_get_intfdata(intf);
-+
-+	led_classdev_unregister(&led->led_dev);
-+	cancel_work_sync(&led->work);
-+}
-+
-+static struct usb_driver gt683r_led_driver = {
-+	.probe = gt683r_led_probe,
-+	.disconnect = gt683r_led_disconnect,
-+	.name = "GT683R Led Driver",
-+	.id_table = gt683r_led_id,
-+};
-+
-+module_usb_driver(gt683r_led_driver);
-+
-+MODULE_AUTHOR("Janne Kanniainen");
-+MODULE_DESCRIPTION("MSI GT683R led driver");
-+MODULE_LICENSE("GPL");
--- 
-1.9.2
+> > > diff --git a/mm/internal.h b/mm/internal.h
+> > > index 1a8a0d4..6aa1f74 100644
+> > > --- a/mm/internal.h
+> > > +++ b/mm/internal.h
+> > > @@ -164,7 +164,8 @@ isolate_migratepages_range(struct zone *zone, struct
+> > > compact_control *cc,
+> > >    * general, page_zone(page)->lock must be held by the caller to prevent
+> > > the
+> > >    * page from being allocated in parallel and returning garbage as the
+> > > order.
+> > >    * If a caller does not hold page_zone(page)->lock, it must guarantee
+> > > that the
+> > > - * page cannot be allocated or merged in parallel.
+> > > + * page cannot be allocated or merged in parallel. Alternatively, it must
+> > > + * handle invalid values gracefully, and use page_order_unsafe() below.
+> > >    */
+> > >   static inline unsigned long page_order(struct page *page)
+> > >   {
+> > > @@ -172,6 +173,23 @@ static inline unsigned long page_order(struct page
+> > > *page)
+> > >   	return page_private(page);
+> > >   }
+> > > 
+> > > +/*
+> > > + * Like page_order(), but for callers who cannot afford to hold the zone
+> > > lock,
+> > > + * and handle invalid values gracefully. ACCESS_ONCE is used so that if
+> > > the
+> > > + * caller assigns the result into a local variable and e.g. tests it for
+> > > valid
+> > > + * range  before using, the compiler cannot decide to remove the variable
+> > > and
+> > > + * inline the function multiple times, potentially observing different
+> > > values
+> > > + * in the tests and the actual use of the result.
+> > > + */
+> > > +static inline unsigned long page_order_unsafe(struct page *page)
+> > > +{
+> > > +	/*
+> > > +	 * PageBuddy() should be checked by the caller to minimize race
+> > > window,
+> > > +	 * and invalid values must be handled gracefully.
+> > > +	 */
+> > > +	return ACCESS_ONCE(page_private(page));
+> > > +}
+> > > +
+> > >   /* mm/util.c */
+> > >   void __vma_link_list(struct mm_struct *mm, struct vm_area_struct *vma,
+> > >   		struct vm_area_struct *prev, struct rb_node *rb_parent);
+> > 
+> > I don't like this change at all, I don't think we should have header
+> > functions that imply the context in which the function will be called.  I
+> > think it would make much more sense to just do
+> > ACCESS_ONCE(page_order(page)) in the migration scanner with a comment.
+> 
+> But that won't compile. It would have to be converted to a #define, unless
+> there's some trick I don't know. Sure I would hope this could be done cleaner
+> somehow.
+> 
 
+Sorry, I meant ACCESS_ONCE(page_private(page)) in the migration scanner 
+with a comment about it being racy.  It also helps to understand why 
+you're testing for order < MAX_ORDER before skipping low_pfn there which 
+is a little subtle right now.
