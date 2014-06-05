@@ -1,95 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752703AbaFEWrt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 18:47:49 -0400
-Received: from g2t1383g.austin.hp.com ([15.217.136.92]:48820 "EHLO
-	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751651AbaFEWrr (ORCPT
+	id S1752737AbaFEWtd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 18:49:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58438 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751471AbaFEWta (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 18:47:47 -0400
-Message-ID: <1402007914.7963.8.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v7 07/22] Replace the XIP page fault handler with the
- DAX page fault handler
-From: Toshi Kani <toshi.kani@hp.com>
-To: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, willy@linux.intel.com
-Date: Thu, 05 Jun 2014 16:38:34 -0600
-In-Reply-To: <1400704507.18128.23.camel@misato.fc.hp.com>
-References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
-	 <c2e602f401a580c4fac54b9b8f4a6f8dd0ac1071.1395591795.git.matthew.r.wilcox@intel.com>
-	 <1400704507.18128.23.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 5 Jun 2014 18:49:30 -0400
+Date: Thu, 5 Jun 2014 15:53:11 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Paul Moore <paul@paul-moore.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        "Serge E. Hallyn" <serge@canonical.com>
+Subject: Re: Change in security maintainer for a few weeks
+Message-ID: <20140605225311.GB32470@kroah.com>
+References: <20140605183050.GA5054@kroah.com>
+ <alpine.LRH.2.00.1406052355500.2434@twin.jikos.cz>
+ <4426926.gIRHbeKnmD@sifl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4426926.gIRHbeKnmD@sifl>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-05-21 at 14:35 -0600, Toshi Kani wrote:
-> On Sun, 2014-03-23 at 15:08 -0400, Matthew Wilcox wrote:
->  :
-> > +static int do_dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
-> > +			get_block_t get_block)
-> > +{
->  :
-> > +	error = dax_get_pfn(inode, &bh, &pfn);
-> > +	if (error > 0)
-> > +		error = vm_insert_mixed(vma, vaddr, pfn);
-> > +	mutex_unlock(&mapping->i_mmap_mutex);
-> > +
-> > +	if (page) {
-> > +		delete_from_page_cache(page);
-> > +		unmap_mapping_range(mapping, vmf->pgoff << PAGE_SHIFT,
-> > +							PAGE_CACHE_SIZE, 0);
-> > +		unlock_page(page);
-> > +		page_cache_release(page);
+On Thu, Jun 05, 2014 at 06:39:09PM -0400, Paul Moore wrote:
+> On Thursday, June 05, 2014 11:59:11 PM Jiri Kosina wrote:
+> > On Thu, 5 Jun 2014, Greg KH wrote:
+> > > James has had to step back from doing kernel work for a few weeks, so
+> > > I've offered to step up and handle the security patches to get shuttled
+> > > to Linus for merging for a while.
+> > 
+> > As exactly this (working with active contributors to help co-maintain the
+> > subsystem) has been brought at the ksummit maling list, I am just curious
+> > whether noone else actively working in that area was willing to step up?
+> > 
+> > 	$ ./scripts/get_maintainer.pl --git -f security/
+> > 	James Morris <james.l.morris@oracle.com> (supporter:SECURITY SUBSYSTEM)
+> >    ...
+> > 
+> > If not, then I think this can be shown as a prime example why the problem
+> > of "non-substituability" of many maintainers is actually real.
 > 
-> Hi Matthew,
-> 
-> I am seeing a problem in this code path, where it deletes a page cache
-> page mapped to a hole. Sometimes, page->_mapcount is 0, not -1, which
-> leads __delete_from_page_cache(), called from delete_from_page_cache(),
-> to hit the following BUG_ON.
-> 
->   BUG_ON(page_mapped(page))
-> 
-> I suppose such page has a shared mapping. Does this code need to take
-> care of replacing shared mappings in such case?
+> Once several of us became aware that James was stepping away for a few weeks 
+> (I should mention this was not a planned absence and took most of us by 
+> surprise) we had a brief discussion off-list and several of us did offer to 
+> "step-up"; Serge had already created a repo and since he had pushed patches 
+> while James was away in the past it seemed a reasonable approach this time 
+> around.
 
-Hi Matthew,
+That's great, as the communication around this has not been very much
+(an non-existant on the subsystem mailing list) I was not aware of it.
 
-The following change works in my environment.  What do you think? 
+If Serge wants to do this, and as he has been the stand-in for James in
+the past, I have _no_ objection to this at all.
 
-Thanks,
--Toshi
+Serge, feel free to resend your patches to Linus if he doesn't pick them
+up in a few days, with the information that you are doing this in
+James's absence for a while.
 
----
- fs/dax.c |    3 +++
- 1 file changed, 3 insertions(+)
+So, that was easy, I don't have to do this at all, great.
 
-diff --git a/fs/dax.c b/fs/dax.c
-index 2d6b4bc..046c6d6 100644
---- a/fs/dax.c
-+++ b/fs/dax.c
-@@ -26,6 +26,7 @@
- #include <linux/sched.h>
- #include <linux/uio.h>
- #include <linux/vmstat.h>
-+#include <linux/rmap.h>
- 
- int dax_clear_blocks(struct inode *inode, sector_t block, long size)
- {
-@@ -385,6 +386,8 @@ static int do_dax_fault(struct vm_area_struct *vma,
-struct vm_fault *vmf,
- 	mutex_unlock(&mapping->i_mmap_mutex);
- 
- 	if (page) {
-+		if (page_mapped(page))
-+			try_to_unmap(page, TTU_UNMAP|TTU_IGNORE_ACCESS);
- 		delete_from_page_cache(page);
- 		unmap_mapping_range(mapping, vmf->pgoff << PAGE_SHIFT,
- 							PAGE_CACHE_SIZE, 0);
-
-
+greg k-h
