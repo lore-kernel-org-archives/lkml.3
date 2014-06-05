@@ -1,87 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752134AbaFEUXn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 16:23:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56947 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750840AbaFEUXl (ORCPT
+	id S1751939AbaFEU0F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 16:26:05 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:40017 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751175AbaFEU0C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 16:23:41 -0400
-Date: Thu, 5 Jun 2014 13:23:39 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        <linux-mm@kvack.org>, Cgroups <cgroups@vger.kernel.org>,
-        <stable@vger.kernel.org>
-Subject: Re: [PATCH] mm/mempolicy: fix sleeping function called from invalid
- context
-Message-Id: <20140605132339.ddf6df4a0cf5c14d17eb8691@linux-foundation.org>
-In-Reply-To: <53902A44.50005@cn.fujitsu.com>
-References: <53902A44.50005@cn.fujitsu.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 5 Jun 2014 16:26:02 -0400
+From: Chaitanya Hazarey <c@24.io>
+To: gregkh@linuxfoundation.org, burzalodowa@gmail.com,
+        peter.p.waskiewicz.jr@intel.com, anarey@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Chaitanya Hazarey <c@24.io>
+Subject: [PATCH 1/3] Staging: rtl8192u: r8192U_core.c Added a space after ','
+Date: Thu,  5 Jun 2014 13:25:56 -0700
+Message-Id: <1401999958-17235-1-git-send-email-c@24.io>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 Jun 2014 16:28:52 +0800 Gu Zheng <guz.fnst@cn.fujitsu.com> wrote:
+Added spaces after ',' to fix the following warning:
 
-> When running with the kernel(3.15-rc7+), the follow bug occurs:
-> [ 9969.258987] BUG: sleeping function called from invalid context at kernel/locking/mutex.c:586
-> [ 9969.359906] in_atomic(): 1, irqs_disabled(): 0, pid: 160655, name: python
-> [ 9969.441175] INFO: lockdep is turned off.
-> [ 9969.488184] CPU: 26 PID: 160655 Comm: python Tainted: G       A      3.15.0-rc7+ #85
-> [ 9969.581032] Hardware name: FUJITSU-SV PRIMEQUEST 1800E/SB, BIOS PRIMEQUEST 1000 Series BIOS Version 1.39 11/16/2012
-> [ 9969.706052]  ffffffff81a20e60 ffff8803e941fbd0 ffffffff8162f523 ffff8803e941fd18
-> [ 9969.795323]  ffff8803e941fbe0 ffffffff8109995a ffff8803e941fc58 ffffffff81633e6c
-> [ 9969.884710]  ffffffff811ba5dc ffff880405c6b480 ffff88041fdd90a0 0000000000002000
-> [ 9969.974071] Call Trace:
-> [ 9970.003403]  [<ffffffff8162f523>] dump_stack+0x4d/0x66
-> [ 9970.065074]  [<ffffffff8109995a>] __might_sleep+0xfa/0x130
-> [ 9970.130743]  [<ffffffff81633e6c>] mutex_lock_nested+0x3c/0x4f0
-> [ 9970.200638]  [<ffffffff811ba5dc>] ? kmem_cache_alloc+0x1bc/0x210
-> [ 9970.272610]  [<ffffffff81105807>] cpuset_mems_allowed+0x27/0x140
-> [ 9970.344584]  [<ffffffff811b1303>] ? __mpol_dup+0x63/0x150
-> [ 9970.409282]  [<ffffffff811b1385>] __mpol_dup+0xe5/0x150
-> [ 9970.471897]  [<ffffffff811b1303>] ? __mpol_dup+0x63/0x150
-> [ 9970.536585]  [<ffffffff81068c86>] ? copy_process.part.23+0x606/0x1d40
-> [ 9970.613763]  [<ffffffff810bf28d>] ? trace_hardirqs_on+0xd/0x10
-> [ 9970.683660]  [<ffffffff810ddddf>] ? monotonic_to_bootbased+0x2f/0x50
-> [ 9970.759795]  [<ffffffff81068cf0>] copy_process.part.23+0x670/0x1d40
-> [ 9970.834885]  [<ffffffff8106a598>] do_fork+0xd8/0x380
-> [ 9970.894375]  [<ffffffff81110e4c>] ? __audit_syscall_entry+0x9c/0xf0
-> [ 9970.969470]  [<ffffffff8106a8c6>] SyS_clone+0x16/0x20
-> [ 9971.030011]  [<ffffffff81642009>] stub_clone+0x69/0x90
-> [ 9971.091573]  [<ffffffff81641c29>] ? system_call_fastpath+0x16/0x1b
-> 
-> The cause is that cpuset_mems_allowed() try to take mutex_lock(&callback_mutex)
-> under the rcu_read_lock(which was hold in __mpol_dup()). And in cpuset_mems_allowed(),
-> the access to cpuset is under rcu_read_lock, so in __mpol_dup, we can reduce the
-> rcu_read_lock protection region to protect the access to cpuset only in
-> current_cpuset_is_being_rebound(). So that we can avoid this bug.
->
-> ...
->
-> --- a/kernel/cpuset.c
-> +++ b/kernel/cpuset.c
-> @@ -1188,7 +1188,13 @@ done:
->  
->  int current_cpuset_is_being_rebound(void)
->  {
-> -	return task_cs(current) == cpuset_being_rebound;
-> +	int ret;
-> +
-> +	rcu_read_lock();
-> +	ret = task_cs(current) == cpuset_being_rebound;
-> +	rcu_read_unlock();
-> +
-> +	return ret;
->  }
+ERROR: space required after that ',' (ctx:VxV)
 
-Looks fishy to me.  If the rcu_read_lock() stabilizes
-cpuset_being_rebound then cpuset_being_rebound can change immediately
-after rcu_read_unlock() and `ret' is now wrong.
+Signed-off-by: Chaitanya Hazarey <c@24.io>
+---
+ drivers/staging/rtl8192u/r8192U_core.c | 22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
-Anyway.  Tejun, this one is yours please ;)
+diff --git a/drivers/staging/rtl8192u/r8192U_core.c b/drivers/staging/rtl8192u/r8192U_core.c
+index 24272c5..2a9150d 100644
+--- a/drivers/staging/rtl8192u/r8192U_core.c
++++ b/drivers/staging/rtl8192u/r8192U_core.c
+@@ -166,17 +166,17 @@ typedef struct _CHANNEL_LIST {
+ } CHANNEL_LIST, *PCHANNEL_LIST;
+ 
+ static CHANNEL_LIST ChannelPlan[] = {
+-	{{1,2,3,4,5,6,7,8,9,10,11,36,40,44,48,52,56,60,64,149,153,157,161,165},24},		//FCC
+-	{{1,2,3,4,5,6,7,8,9,10,11},11},							//IC
+-	{{1,2,3,4,5,6,7,8,9,10,11,12,13,36,40,44,48,52,56,60,64},21},	//ETSI
+-	{{1,2,3,4,5,6,7,8,9,10,11,12,13},13},    //Spain. Change to ETSI.
+-	{{1,2,3,4,5,6,7,8,9,10,11,12,13},13},	//France. Change to ETSI.
+-	{{1,2,3,4,5,6,7,8,9,10,11,12,13,14,36,40,44,48,52,56,60,64},22},	//MKK					//MKK
+-	{{1,2,3,4,5,6,7,8,9,10,11,12,13,14,36,40,44,48,52,56,60,64},22},//MKK1
+-	{{1,2,3,4,5,6,7,8,9,10,11,12,13},13},	//Israel.
+-	{{1,2,3,4,5,6,7,8,9,10,11,12,13,14,36,40,44,48,52,56,60,64},22},			// For 11a , TELEC
+-	{{1,2,3,4,5,6,7,8,9,10,11,12,13,14,36,40,44,48,52,56,60,64}, 22},    //MIC
+-	{{1,2,3,4,5,6,7,8,9,10,11,12,13,14},14}					//For Global Domain. 1-11:active scan, 12-14 passive scan. //+YJ, 080626
++	{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 36, 40, 44, 48, 52, 56, 60, 64, 149, 153, 157, 161, 165}, 24},		//FCC
++	{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}, 11},							//IC
++	{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 36, 40, 44, 48, 52, 56, 60, 64}, 21},	//ETSI
++	{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13}, 13},    //Spain. Change to ETSI.
++	{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13}, 13},	//France. Change to ETSI.
++	{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 36, 40, 44, 48, 52, 56, 60, 64}, 22},	//MKK					//MKK
++	{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 36, 40, 44, 48, 52, 56, 60, 64}, 22},//MKK1
++	{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13}, 13},	//Israel.
++	{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 36, 40, 44, 48, 52, 56, 60, 64}, 22},			// For 11a , TELEC
++	{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 36, 40, 44, 48, 52, 56, 60, 64}, 22},    //MIC
++	{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14}, 14}					//For Global Domain. 1-11:active scan, 12-14 passive scan. //+YJ, 080626
+ };
+ 
+ static void rtl819x_set_channel_map(u8 channel_plan, struct r8192_priv *priv)
+-- 
+1.9.1
+
