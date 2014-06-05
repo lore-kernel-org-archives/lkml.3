@@ -1,28 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752741AbaFEOkP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 10:40:15 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48710 "EHLO
+	id S1752746AbaFEOkX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 10:40:23 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48732 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751418AbaFEOkF (ORCPT
+	with ESMTP id S1751418AbaFEOkS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 10:40:05 -0400
-Date: Thu, 5 Jun 2014 07:39:11 -0700
-From: tip-bot for Oleg Nesterov <tipbot@zytor.com>
-Message-ID: <tip-40814f6805a524130a5ec313871147f7aa9b5318@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org, acme@kernel.org,
-        hughd@google.com, dvlasenk@redhat.com, srikar@linux.vnet.ibm.com,
-        tglx@linutronix.de, oleg@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org, hughd@google.com,
-        acme@kernel.org, srikar@linux.vnet.ibm.com, dvlasenk@redhat.com,
-        oleg@redhat.com, tglx@linutronix.de
-In-Reply-To: <20140519184136.GB6750@redhat.com>
-References: <20140519184136.GB6750@redhat.com>
+	Thu, 5 Jun 2014 10:40:18 -0400
+Date: Thu, 5 Jun 2014 07:39:25 -0700
+From: tip-bot for Anshuman Khandual <tipbot@zytor.com>
+Message-ID: <tip-bac52139f0b7ab31330e98fd87fc5a2664951050@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+        mingo@kernel.org, torvalds@linux-foundation.org, peterz@infradead.org,
+        khandual@linux.vnet.ibm.com, acme@kernel.org, ak@linux.intel.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        khandual@linux.vnet.ibm.com, peterz@infradead.org, acme@kernel.org,
+        ak@linux.intel.com, tglx@linutronix.de
+In-Reply-To: <1400743210-32289-1-git-send-email-khandual@linux.vnet.ibm.com>
+References: <1400743210-32289-1-git-send-email-khandual@linux.vnet.ibm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] uprobes: Teach copy_insn() to support tmpfs
-Git-Commit-ID: 40814f6805a524130a5ec313871147f7aa9b5318
+Subject: [tip:perf/core] perf: Add new conditional branch filter '
+ PERF_SAMPLE_BRANCH_COND'
+Git-Commit-ID: bac52139f0b7ab31330e98fd87fc5a2664951050
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -35,72 +36,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  40814f6805a524130a5ec313871147f7aa9b5318
-Gitweb:     http://git.kernel.org/tip/40814f6805a524130a5ec313871147f7aa9b5318
-Author:     Oleg Nesterov <oleg@redhat.com>
-AuthorDate: Mon, 19 May 2014 20:41:36 +0200
+Commit-ID:  bac52139f0b7ab31330e98fd87fc5a2664951050
+Gitweb:     http://git.kernel.org/tip/bac52139f0b7ab31330e98fd87fc5a2664951050
+Author:     Anshuman Khandual <khandual@linux.vnet.ibm.com>
+AuthorDate: Thu, 22 May 2014 12:50:07 +0530
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 5 Jun 2014 12:30:11 +0200
+CommitDate: Thu, 5 Jun 2014 12:30:15 +0200
 
-uprobes: Teach copy_insn() to support tmpfs
+perf: Add new conditional branch filter 'PERF_SAMPLE_BRANCH_COND'
 
-tmpfs is widely used but as Denys reports shmem_aops doesn't have
-->readpage() and thus you can't probe a binary on this filesystem.
+This patch introduces new branch filter PERF_SAMPLE_BRANCH_COND which
+will extend the existing perf ABI. This will filter branches which are
+conditional. Various architectures can provide this functionality either
+with HW filtering support (if present) or with SW filtering of captured
+branch instructions.
 
-As Hugh suggested we can use shmem_read_mapping_page() in this case,
-just we need to check shmem_mapping() if ->readpage == NULL.
-
-Reported-by: Denys Vlasenko <dvlasenk@redhat.com>
-Suggested-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+Reviewed-by: Stephane Eranian <eranian@google.com>
+Reviewed-by: Andi Kleen <ak@linux.intel.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: mpe@ellerman.id.au
+Cc: benh@kernel.crashing.org
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20140519184136.GB6750@redhat.com
+Link: http://lkml.kernel.org/r/1400743210-32289-1-git-send-email-khandual@linux.vnet.ibm.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/events/uprobes.c | 15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ include/uapi/linux/perf_event.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index c56b13e..6bfb671 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -36,6 +36,7 @@
- #include "../../mm/internal.h"	/* munlock_vma_page */
- #include <linux/percpu-rwsem.h>
- #include <linux/task_work.h>
-+#include <linux/shmem_fs.h>
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index e3fc8f0..d9cd853 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -163,8 +163,9 @@ enum perf_branch_sample_type {
+ 	PERF_SAMPLE_BRANCH_ABORT_TX	= 1U << 7, /* transaction aborts */
+ 	PERF_SAMPLE_BRANCH_IN_TX	= 1U << 8, /* in transaction */
+ 	PERF_SAMPLE_BRANCH_NO_TX	= 1U << 9, /* not in transaction */
++	PERF_SAMPLE_BRANCH_COND		= 1U << 10, /* conditional branches */
  
- #include <linux/uprobes.h>
+-	PERF_SAMPLE_BRANCH_MAX		= 1U << 10, /* non-ABI */
++	PERF_SAMPLE_BRANCH_MAX		= 1U << 11, /* non-ABI */
+ };
  
-@@ -537,10 +538,14 @@ static int __copy_insn(struct address_space *mapping, struct file *filp,
- {
- 	struct page *page;
- 	/*
--	 * Ensure that the page that has the original instruction is
--	 * populated and in page-cache.
-+	 * Ensure that the page that has the original instruction is populated
-+	 * and in page-cache. If ->readpage == NULL it must be shmem_mapping(),
-+	 * see uprobe_register().
- 	 */
--	page = read_mapping_page(mapping, offset >> PAGE_CACHE_SHIFT, filp);
-+	if (mapping->a_ops->readpage)
-+		page = read_mapping_page(mapping, offset >> PAGE_CACHE_SHIFT, filp);
-+	else
-+		page = shmem_read_mapping_page(mapping, offset >> PAGE_CACHE_SHIFT);
- 	if (IS_ERR(page))
- 		return PTR_ERR(page);
- 
-@@ -876,8 +881,8 @@ int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *
- 	if (!uc->handler && !uc->ret_handler)
- 		return -EINVAL;
- 
--	/* copy_insn()->read_mapping_page() needs ->readpage() */
--	if (!inode->i_mapping->a_ops->readpage)
-+	/* copy_insn() uses read_mapping_page() or shmem_read_mapping_page() */
-+	if (!inode->i_mapping->a_ops->readpage && !shmem_mapping(inode->i_mapping))
- 		return -EIO;
- 	/* Racy, just to catch the obvious mistakes */
- 	if (offset > i_size_read(inode))
+ #define PERF_SAMPLE_BRANCH_PLM_ALL \
