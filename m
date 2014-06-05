@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753981AbaFEEZi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:25:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44585 "EHLO
+	id S1753721AbaFEEWc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:22:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44552 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753665AbaFEEWd (ORCPT
+	with ESMTP id S1753665AbaFEEWa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:22:33 -0400
+	Thu, 5 Jun 2014 00:22:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Brian Norris <computersforpeace@gmail.com>,
-        Yuhang Wang <wangyuhang2014@gmail.com>,
-        Sourav Poddar <sourav.poddar@ti.com>,
+        YanBo <dreamfly281@gmail.com>, Johannes Berg <johannes.berg@intel.com>,
         Ben Hutchings <ben@decadent.org.uk>,
         Qiang Huang <h.huangqiang@huawei.com>
-Subject: [PATCH 3.4 207/214] mtd: m25p80: fix allocation size
-Date: Wed,  4 Jun 2014 21:19:30 -0700
-Message-Id: <20140605041707.273175537@linuxfoundation.org>
+Subject: [PATCH 3.4 201/214] cfg80211: check wdev->netdev in connection work
+Date: Wed,  4 Jun 2014 21:19:24 -0700
+Message-Id: <20140605041706.467767106@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -30,84 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brian Norris <computersforpeace@gmail.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 778d226a1462572b51d6777cdb1d611543410cb4 upstream.
+commit c815797663b72e3ac1736f1886538152bc48e4af upstream.
 
-This patch fixes two memory errors:
+If a P2P-Device is present and another virtual interface triggers
+the connection work, the system crash because it tries to check
+if the P2P-Device's netdev (which doesn't exist) is up. Skip any
+wdevs that have no netdev to fix this.
 
-1. During a probe failure (in mtd_device_parse_register?) the command
-   buffer would not be freed.
-
-2. The command buffer's size is determined based on the 'fast_read'
-   boolean, but the assignment of fast_read is made after this
-   allocation. Thus, the buffer may be allocated "too small".
-
-To fix the first, just switch to the devres version of kzalloc.
-
-To fix the second, increase MAX_CMD_SIZE unconditionally. It's not worth
-saving a byte to fiddle around with the conditions here.
-
-This problem was reported by Yuhang Wang a while back.
-
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
-Reported-by: Yuhang Wang <wangyuhang2014@gmail.com>
-Reviewed-by: Sourav Poddar <sourav.poddar@ti.com>
+Reported-by: YanBo <dreamfly281@gmail.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 [bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Qiang Huang <h.huangqiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/devices/m25p80.c |   19 +++++++------------
- 1 file changed, 7 insertions(+), 12 deletions(-)
+ net/wireless/sme.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/mtd/devices/m25p80.c
-+++ b/drivers/mtd/devices/m25p80.c
-@@ -71,7 +71,7 @@
+--- a/net/wireless/sme.c
++++ b/net/wireless/sme.c
+@@ -222,6 +222,9 @@ void cfg80211_conn_work(struct work_stru
+ 	mutex_lock(&rdev->devlist_mtx);
  
- /* Define max times to check status register before we give up. */
- #define	MAX_READY_WAIT_JIFFIES	(40 * HZ)	/* M25P16 specs 40s max chip erase */
--#define	MAX_CMD_SIZE		5
-+#define	MAX_CMD_SIZE		6
- 
- #ifdef CONFIG_M25PXX_USE_FAST_READ
- #define OPCODE_READ 	OPCODE_FAST_READ
-@@ -843,14 +843,13 @@ static int __devinit m25p_probe(struct s
- 		}
- 	}
- 
--	flash = kzalloc(sizeof *flash, GFP_KERNEL);
-+	flash = devm_kzalloc(&spi->dev, sizeof(*flash), GFP_KERNEL);
- 	if (!flash)
- 		return -ENOMEM;
--	flash->command = kmalloc(MAX_CMD_SIZE + FAST_READ_DUMMY_BYTE, GFP_KERNEL);
--	if (!flash->command) {
--		kfree(flash);
+ 	list_for_each_entry(wdev, &rdev->netdev_list, list) {
++		if (!wdev->netdev)
++			continue;
 +
-+	flash->command = devm_kzalloc(&spi->dev, MAX_CMD_SIZE, GFP_KERNEL);
-+	if (!flash->command)
- 		return -ENOMEM;
--	}
- 
- 	flash->spi = spi;
- 	mutex_init(&flash->lock);
-@@ -947,14 +946,10 @@ static int __devinit m25p_probe(struct s
- static int __devexit m25p_remove(struct spi_device *spi)
- {
- 	struct m25p	*flash = dev_get_drvdata(&spi->dev);
--	int		status;
- 
- 	/* Clean up MTD stuff. */
--	status = mtd_device_unregister(&flash->mtd);
--	if (status == 0) {
--		kfree(flash->command);
--		kfree(flash);
--	}
-+	mtd_device_unregister(&flash->mtd);
-+
- 	return 0;
- }
- 
+ 		wdev_lock(wdev);
+ 		if (!netif_running(wdev->netdev)) {
+ 			wdev_unlock(wdev);
 
 
