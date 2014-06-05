@@ -1,92 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752367AbaFEQrw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 12:47:52 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:40326 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752319AbaFEQru (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 12:47:50 -0400
-Message-ID: <53909F31.4050603@wwwdotorg.org>
-Date: Thu, 05 Jun 2014 10:47:45 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751565AbaFEQyn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 12:54:43 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:56470 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750907AbaFEQym (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 12:54:42 -0400
+Date: Thu, 5 Jun 2014 18:52:13 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
+Cc: Stephane Eranian <eranian@google.com>,
+        Matt Fleming <matt@console-pimps.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: Re: [PATCH 9/9] perf/x86: add syfs entry to disable HT bug workaround
+Message-ID: <20140605165213.GI16642@pd.tnic>
+References: <CADknwL6s2ttb5E2JDr6bc_XkwpxnW5ecU-3Ns88=gvgPvLYkPg@mail.gmail.com>
+ <CABPqkBQUUb+yEvC8y3oLc0DUbF3DJPzbt3sNL7Zqzufh6EYdRw@mail.gmail.com>
+ <CADknwL71NC5wBG1tnqgJ6iiA4y+HYomGpufOn7V+MP2=m7+Mig@mail.gmail.com>
+ <CABPqkBTEafZ5MbYM4UQxX92uWcPiphPeXMoJRKTt8jnrB+5j2w@mail.gmail.com>
+ <20140605132750.GA16811@pd.tnic>
+ <CABPqkBT9ExD4unz0VZ5G1d+oGpkepiwXskgBpv5GTavs=tYAKA@mail.gmail.com>
+ <20140605140316.GB16811@pd.tnic>
+ <CAHzUATiVCHytrG3sz8AmC8anZTQcPDRHp91-kWEoeq=RU7UNiw@mail.gmail.com>
+ <20140605151734.GD16811@pd.tnic>
+ <CAHzUATioT8e=RxypbqBsHw-QkcYsdQEiKhb3e44A4S+98Ut6=Q@mail.gmail.com>
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Andrew Bresticker <abrestic@chromium.org>, devicetree@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] of: Add NVIDIA Tegra XUSB pad controller binding
-References: <1401894990-30092-1-git-send-email-thierry.reding@gmail.com> <1401894990-30092-2-git-send-email-thierry.reding@gmail.com>
-In-Reply-To: <1401894990-30092-2-git-send-email-thierry.reding@gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAHzUATioT8e=RxypbqBsHw-QkcYsdQEiKhb3e44A4S+98Ut6=Q@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2014 09:16 AM, Thierry Reding wrote:
-> From: Thierry Reding <treding@nvidia.com>
-> 
-> This patch adds the device tree binding documentation for the XUSB pad
-> controller found on NVIDIA Tegra SoCs. It exposes both pinmuxing and PHY
-> capabilities.
+On Thu, Jun 05, 2014 at 07:39:55PM +0300, Maria Dimakopoulou wrote:
+> This series aims to avoid corruption of non-corrupting events.
+> Re-integration of the counts is not related to this.
 
-> diff --git a/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-xusb-padctl.txt b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-xusb-padctl.txt
+What do you mean "not related"? Then you have a partial workaround. This
+whole thing is trying to fix a hw bug so of course it is related.
 
-> +- #phy-cells: Should be 1. The specifier is the index of the PHY to reference.
-> +  Possible values are:
-> +  - 0: PCIe
-> +  - 1: SATA
+Once you do the "full" workaround, along with the part which
+reintegrates the counts and thus completely fixes the issue (I believe),
+then you don't need to disable it at all because disabling it doesn't
+make any sense then. See what I'm saying?
 
-Those values are defined in
-include/dt-bindings/pinctrl/pinctrl-tegra-xusb.h. I personally consider
-the <dt-bindings/> header files to be part of the binding itself, rather
-than being derived from the binding. As such, I'd suggest the following
-changes:
+This is the whole point Matt and I are trying to make: if the *full*
+workaround doesn't have any noticeable disadvantages, then you don't
+need to add a disable-mechanism due to the can of worms opening if you
+do.
 
-* Make this patch 1 not patch 2
-* Move pinctrl-tegra-xusb.h into this patch.
-* Remove the list of values above, and replace it with the text "See
-<dt-bindings/pinctrl/pinctrl-tegra-xusb.h> for the set of valid values".
+How you get this upstream to ease the review is a whole another story
+and I applaud your desire to keep things clean.
 
-We'll need to make sure this patch is applied to a topic branch that can
-be merged into the pinctrl tree and the Tegra tree for 3.17, assuming
-that you'll be sending patches for 3.17 that use pinctrl-tegra-xusb.h.
+-- 
+Regards/Gruss,
+    Boris.
 
-> +Example:
-> +========
-> +
-> +SoC file extract:
-> +-----------------
-> +
-> +	padctl@0,7009f000 {
-> +		compatible = "nvidia,tegra124-xusb-padctl";
-> +		reg = <0x0 0x7009f000 0x0 0x1000>;
-> +		resets = <&tegra_car 142>;
-> +		reset-names = "padctl";
-> +
-> +		#address-cells = <0>;
-> +		#size-cells = <0>;
-
-Why are those two properties required? Yes, this node has sub-nodes, but
-those sub-nodes don't have a reg property or unit address. The main
-Tegra pinctrl nodes don't have #address/size-cells.
-
-> +Board file extract:
-> +-------------------
-
-> +	padctl: padctl@0,7009f000 {
-> +		pinmux {
-> +			pinctrl-0 = <&padctl_default>;
-> +			pinctrl-names = "default";
-
-Isn't there one extra level of nodes here. In the DT patches later in
-this series, pinctrl-0/pinctrl-names are directly inside the top-level
-padctl node.
+Sent from a fat crate under my desk. Formatting is fine.
+--
