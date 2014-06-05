@@ -1,248 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755594AbaFEACD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:02:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40401 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753521AbaFDXXB (ORCPT
+	id S1755611AbaFEACS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:02:18 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:46258 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755598AbaFEACN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:23:01 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Imre Deak <imre.deak@intel.com>, Takashi Iwai <tiwai@suse.de>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH 3.14 182/228] drm/i915: move power domain init earlier during system resume
-Date: Wed,  4 Jun 2014 16:23:31 -0700
-Message-Id: <20140604232353.879674956@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
-References: <20140604232347.966798903@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Wed, 4 Jun 2014 20:02:13 -0400
+Date: Wed, 4 Jun 2014 17:02:10 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Vlastimil Babka <vbabka@suse.cz>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [RFC PATCH 4/6] mm, compaction: skip buddy pages by their order
+ in the migrate scanner
+In-Reply-To: <1401898310-14525-4-git-send-email-vbabka@suse.cz>
+Message-ID: <alpine.DEB.2.02.1406041656400.22536@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1405211954410.13243@chino.kir.corp.google.com> <1401898310-14525-1-git-send-email-vbabka@suse.cz> <1401898310-14525-4-git-send-email-vbabka@suse.cz>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+On Wed, 4 Jun 2014, Vlastimil Babka wrote:
 
-------------------
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index ae7db5f..3dce5a7 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -640,11 +640,18 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+>  		}
+>  
+>  		/*
+> -		 * Skip if free. page_order cannot be used without zone->lock
+> -		 * as nothing prevents parallel allocations or buddy merging.
+> +		 * Skip if free. We read page order here without zone lock
+> +		 * which is generally unsafe, but the race window is small and
+> +		 * the worst thing that can happen is that we skip some
+> +		 * potential isolation targets.
 
+Should we only be doing the low_pfn adjustment based on the order for 
+MIGRATE_ASYNC?  It seems like sync compaction, including compaction that 
+is triggered from the command line, would prefer to scan over the 
+following pages.
 
-From: Imre Deak <imre.deak@intel.com>
+>  		 */
+> -		if (PageBuddy(page))
+> +		if (PageBuddy(page)) {
+> +			unsigned long freepage_order = page_order_unsafe(page);
 
-This is commit 76c4b250080fff6e4befaa36199424 upstream.
+I don't assume that we want a smp_wmb() in set_page_order() for this 
+little race and to recheck PageBuddy() here after smp_rmb().
 
-During resume the intel hda audio driver depends on the i915 driver
-reinitializing the audio power domain. Since the order of calling the
-i915 resume handler wrt. that of the audio driver is not guaranteed,
-move the power domain reinitialization step to the resume_early
-handler. This is guaranteed to run before the resume handler of any
-other driver.
+I think this is fine for MIGRATE_ASYNC.
 
-The power domain initialization in turn requires us to enable the i915
-pci device first, so move that part earlier too.
+> +
+> +			if (freepage_order > 0 && freepage_order < MAX_ORDER)
+> +				low_pfn += (1UL << freepage_order) - 1;
+>  			continue;
+> +		}
+>  
+>  		/*
+>  		 * Check may be lockless but that's ok as we recheck later.
+> @@ -733,6 +740,13 @@ next_pageblock:
+>  		low_pfn = ALIGN(low_pfn + 1, pageblock_nr_pages) - 1;
+>  	}
+>  
+> +	/*
+> +	 * The PageBuddy() check could have potentially brought us outside
+> +	 * the range to be scanned.
+> +	 */
+> +	if (unlikely(low_pfn > end_pfn))
+> +		end_pfn = low_pfn;
+> +
+>  	acct_isolated(zone, locked, cc);
+>  
+>  	if (locked)
+> diff --git a/mm/internal.h b/mm/internal.h
+> index 1a8a0d4..6aa1f74 100644
+> --- a/mm/internal.h
+> +++ b/mm/internal.h
+> @@ -164,7 +164,8 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+>   * general, page_zone(page)->lock must be held by the caller to prevent the
+>   * page from being allocated in parallel and returning garbage as the order.
+>   * If a caller does not hold page_zone(page)->lock, it must guarantee that the
+> - * page cannot be allocated or merged in parallel.
+> + * page cannot be allocated or merged in parallel. Alternatively, it must
+> + * handle invalid values gracefully, and use page_order_unsafe() below.
+>   */
+>  static inline unsigned long page_order(struct page *page)
+>  {
+> @@ -172,6 +173,23 @@ static inline unsigned long page_order(struct page *page)
+>  	return page_private(page);
+>  }
+>  
+> +/*
+> + * Like page_order(), but for callers who cannot afford to hold the zone lock,
+> + * and handle invalid values gracefully. ACCESS_ONCE is used so that if the
+> + * caller assigns the result into a local variable and e.g. tests it for valid
+> + * range  before using, the compiler cannot decide to remove the variable and
+> + * inline the function multiple times, potentially observing different values
+> + * in the tests and the actual use of the result.
+> + */
+> +static inline unsigned long page_order_unsafe(struct page *page)
+> +{
+> +	/*
+> +	 * PageBuddy() should be checked by the caller to minimize race window,
+> +	 * and invalid values must be handled gracefully.
+> +	 */
+> +	return ACCESS_ONCE(page_private(page));
+> +}
+> +
+>  /* mm/util.c */
+>  void __vma_link_list(struct mm_struct *mm, struct vm_area_struct *vma,
+>  		struct vm_area_struct *prev, struct rb_node *rb_parent);
 
-Accordingly disabling of the i915 pci device should happen after the
-audio suspend handler ran. So move the disabling later from the i915
-resume handler to the resume_late handler.
-
-v2:
-- move intel_uncore_sanitize/early_sanitize earlier too, so they don't
-  get reordered wrt. intel_power_domains_init_hw()
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=76152
-Signed-off-by: Imre Deak <imre.deak@intel.com>
-Reviewed-by: Takashi Iwai <tiwai@suse.de>
-[danvet: Add cc: stable and loud comments that this is just a hack.]
-[danvet: Fix "Should it be static?" sparse warning reported by Wu
-Fengguang's kbuilder.]
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/gpu/drm/i915/i915_drv.c |   90 +++++++++++++++++++++++++++++++++-------
- 1 file changed, 75 insertions(+), 15 deletions(-)
-
---- a/drivers/gpu/drm/i915/i915_drv.c
-+++ b/drivers/gpu/drm/i915/i915_drv.c
-@@ -614,15 +614,20 @@ static void intel_resume_hotplug(struct
- 	drm_helper_hpd_irq_event(dev);
- }
- 
-+static int i915_drm_thaw_early(struct drm_device *dev)
-+{
-+	intel_uncore_early_sanitize(dev);
-+	intel_uncore_sanitize(dev);
-+	intel_power_domains_init_hw(dev);
-+
-+	return 0;
-+}
-+
- static int __i915_drm_thaw(struct drm_device *dev, bool restore_gtt_mappings)
- {
- 	struct drm_i915_private *dev_priv = dev->dev_private;
- 	int error = 0;
- 
--	intel_uncore_early_sanitize(dev);
--
--	intel_uncore_sanitize(dev);
--
- 	if (drm_core_check_feature(dev, DRIVER_MODESET) &&
- 	    restore_gtt_mappings) {
- 		mutex_lock(&dev->struct_mutex);
-@@ -630,8 +635,6 @@ static int __i915_drm_thaw(struct drm_de
- 		mutex_unlock(&dev->struct_mutex);
- 	}
- 
--	intel_power_domains_init_hw(dev);
--
- 	i915_restore_state(dev);
- 	intel_opregion_setup(dev);
- 
-@@ -700,19 +703,33 @@ static int i915_drm_thaw(struct drm_devi
- 	return __i915_drm_thaw(dev, true);
- }
- 
--int i915_resume(struct drm_device *dev)
-+static int i915_resume_early(struct drm_device *dev)
- {
--	struct drm_i915_private *dev_priv = dev->dev_private;
--	int ret;
--
- 	if (dev->switch_power_state == DRM_SWITCH_POWER_OFF)
- 		return 0;
- 
-+	/*
-+	 * We have a resume ordering issue with the snd-hda driver also
-+	 * requiring our device to be power up. Due to the lack of a
-+	 * parent/child relationship we currently solve this with an early
-+	 * resume hook.
-+	 *
-+	 * FIXME: This should be solved with a special hdmi sink device or
-+	 * similar so that power domains can be employed.
-+	 */
- 	if (pci_enable_device(dev->pdev))
- 		return -EIO;
- 
- 	pci_set_master(dev->pdev);
- 
-+	return i915_drm_thaw_early(dev);
-+}
-+
-+int i915_resume(struct drm_device *dev)
-+{
-+	struct drm_i915_private *dev_priv = dev->dev_private;
-+	int ret;
-+
- 	/*
- 	 * Platforms with opregion should have sane BIOS, older ones (gen3 and
- 	 * earlier) need to restore the GTT mappings since the BIOS might clear
-@@ -726,6 +743,14 @@ int i915_resume(struct drm_device *dev)
- 	return 0;
- }
- 
-+static int i915_resume_legacy(struct drm_device *dev)
-+{
-+	i915_resume_early(dev);
-+	i915_resume(dev);
-+
-+	return 0;
-+}
-+
- /**
-  * i915_reset - reset chip after a hang
-  * @dev: drm device to reset
-@@ -846,7 +871,6 @@ static int i915_pm_suspend(struct device
- {
- 	struct pci_dev *pdev = to_pci_dev(dev);
- 	struct drm_device *drm_dev = pci_get_drvdata(pdev);
--	int error;
- 
- 	if (!drm_dev || !drm_dev->dev_private) {
- 		dev_err(dev, "DRM not initialized, aborting suspend.\n");
-@@ -856,9 +880,25 @@ static int i915_pm_suspend(struct device
- 	if (drm_dev->switch_power_state == DRM_SWITCH_POWER_OFF)
- 		return 0;
- 
--	error = i915_drm_freeze(drm_dev);
--	if (error)
--		return error;
-+	return i915_drm_freeze(drm_dev);
-+}
-+
-+static int i915_pm_suspend_late(struct device *dev)
-+{
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+	struct drm_device *drm_dev = pci_get_drvdata(pdev);
-+
-+	/*
-+	 * We have a suspedn ordering issue with the snd-hda driver also
-+	 * requiring our device to be power up. Due to the lack of a
-+	 * parent/child relationship we currently solve this with an late
-+	 * suspend hook.
-+	 *
-+	 * FIXME: This should be solved with a special hdmi sink device or
-+	 * similar so that power domains can be employed.
-+	 */
-+	if (drm_dev->switch_power_state == DRM_SWITCH_POWER_OFF)
-+		return 0;
- 
- 	pci_disable_device(pdev);
- 	pci_set_power_state(pdev, PCI_D3hot);
-@@ -866,6 +906,14 @@ static int i915_pm_suspend(struct device
- 	return 0;
- }
- 
-+static int i915_pm_resume_early(struct device *dev)
-+{
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+	struct drm_device *drm_dev = pci_get_drvdata(pdev);
-+
-+	return i915_resume_early(drm_dev);
-+}
-+
- static int i915_pm_resume(struct device *dev)
- {
- 	struct pci_dev *pdev = to_pci_dev(dev);
-@@ -887,6 +935,14 @@ static int i915_pm_freeze(struct device
- 	return i915_drm_freeze(drm_dev);
- }
- 
-+static int i915_pm_thaw_early(struct device *dev)
-+{
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+	struct drm_device *drm_dev = pci_get_drvdata(pdev);
-+
-+	return i915_drm_thaw_early(drm_dev);
-+}
-+
- static int i915_pm_thaw(struct device *dev)
- {
- 	struct pci_dev *pdev = to_pci_dev(dev);
-@@ -948,10 +1004,14 @@ static int i915_runtime_resume(struct de
- 
- static const struct dev_pm_ops i915_pm_ops = {
- 	.suspend = i915_pm_suspend,
-+	.suspend_late = i915_pm_suspend_late,
-+	.resume_early = i915_pm_resume_early,
- 	.resume = i915_pm_resume,
- 	.freeze = i915_pm_freeze,
-+	.thaw_early = i915_pm_thaw_early,
- 	.thaw = i915_pm_thaw,
- 	.poweroff = i915_pm_poweroff,
-+	.restore_early = i915_pm_resume_early,
- 	.restore = i915_pm_resume,
- 	.runtime_suspend = i915_runtime_suspend,
- 	.runtime_resume = i915_runtime_resume,
-@@ -994,7 +1054,7 @@ static struct drm_driver driver = {
- 
- 	/* Used in place of i915_pm_ops for non-DRIVER_MODESET */
- 	.suspend = i915_suspend,
--	.resume = i915_resume,
-+	.resume = i915_resume_legacy,
- 
- 	.device_is_agp = i915_driver_device_is_agp,
- 	.master_create = i915_master_create,
-
-
+I don't like this change at all, I don't think we should have header 
+functions that imply the context in which the function will be called.  I 
+think it would make much more sense to just do 
+ACCESS_ONCE(page_order(page)) in the migration scanner with a comment.  
+These are __attribute__((pure)) semantics for page_order().
