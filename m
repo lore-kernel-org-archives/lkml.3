@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752648AbaFEEyp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:54:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44015 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752707AbaFEEUy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752718AbaFEEUy (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 5 Jun 2014 00:20:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44000 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752672AbaFEEUu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 00:20:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>, Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 3.4 099/214] dm snapshot: avoid snapshot space leak on crash
-Date: Wed,  4 Jun 2014 21:17:42 -0700
-Message-Id: <20140605041653.013336882@linuxfoundation.org>
+        Andy Adamson <andros@netapp.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Ben Hutchings <ben@decadent.org.uk>, Rui Xiang <rui.xiang@huawei.com>
+Subject: [PATCH 3.4 087/214] NFSv4 wait on recovery for async session errors
+Date: Wed,  4 Jun 2014 21:17:30 -0700
+Message-Id: <20140605041651.293104432@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -27,195 +28,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Andy Adamson <andros@netapp.com>
 
-commit 230c83afdd9cd384348475bea1e14b80b3b6b1b8 upstream.
+commit 4a82fd7c4e78a1b7a224f9ae8bb7e1fd95f670e0 upstream.
 
-There is a possible leak of snapshot space in case of crash.
+When the state manager is processing the NFS4CLNT_DELEGRETURN flag, session
+draining is off, but DELEGRETURN can still get a session error.
+The async handler calls nfs4_schedule_session_recovery returns -EAGAIN, and
+the DELEGRETURN done then restarts the RPC task in the prepare state.
+With the state manager still processing the NFS4CLNT_DELEGRETURN flag with
+session draining off, these DELEGRETURNs will cycle with errors filling up the
+session slots.
 
-The reason for space leaking is that chunks in the snapshot device are
-allocated sequentially, but they are finished (and stored in the metadata)
-out of order, depending on the order in which copying finished.
+This prevents OPEN reclaims (from nfs_delegation_claim_opens) required by the
+NFS4CLNT_DELEGRETURN state manager processing from completing, hanging the
+state manager in the __rpc_wait_for_completion_task in nfs4_run_open_task
+as seen in this kernel thread dump:
 
-For example, supposed that the metadata contains the following records
-SUPERBLOCK
-METADATA (blocks 0 ... 250)
-DATA 0
-DATA 1
-DATA 2
-...
-DATA 250
+kernel: 4.12.32.53-ma D 0000000000000000     0  3393      2 0x00000000
+kernel: ffff88013995fb60 0000000000000046 ffff880138cc5400 ffff88013a9df140
+kernel: ffff8800000265c0 ffffffff8116eef0 ffff88013fc10080 0000000300000001
+kernel: ffff88013a4ad058 ffff88013995ffd8 000000000000fbc8 ffff88013a4ad058
+kernel: Call Trace:
+kernel: [<ffffffff8116eef0>] ? cache_alloc_refill+0x1c0/0x240
+kernel: [<ffffffffa0358110>] ? rpc_wait_bit_killable+0x0/0xa0 [sunrpc]
+kernel: [<ffffffffa0358152>] rpc_wait_bit_killable+0x42/0xa0 [sunrpc]
+kernel: [<ffffffff8152914f>] __wait_on_bit+0x5f/0x90
+kernel: [<ffffffffa0358110>] ? rpc_wait_bit_killable+0x0/0xa0 [sunrpc]
+kernel: [<ffffffff815291f8>] out_of_line_wait_on_bit+0x78/0x90
+kernel: [<ffffffff8109b520>] ? wake_bit_function+0x0/0x50
+kernel: [<ffffffffa035810d>] __rpc_wait_for_completion_task+0x2d/0x30 [sunrpc]
+kernel: [<ffffffffa040d44c>] nfs4_run_open_task+0x11c/0x160 [nfs]
+kernel: [<ffffffffa04114e7>] nfs4_open_recover_helper+0x87/0x120 [nfs]
+kernel: [<ffffffffa0411646>] nfs4_open_recover+0xc6/0x150 [nfs]
+kernel: [<ffffffffa040cc6f>] ? nfs4_open_recoverdata_alloc+0x2f/0x60 [nfs]
+kernel: [<ffffffffa0414e1a>] nfs4_open_delegation_recall+0x6a/0xa0 [nfs]
+kernel: [<ffffffffa0424020>] nfs_end_delegation_return+0x120/0x2e0 [nfs]
+kernel: [<ffffffff8109580f>] ? queue_work+0x1f/0x30
+kernel: [<ffffffffa0424347>] nfs_client_return_marked_delegations+0xd7/0x110 [nfs]
+kernel: [<ffffffffa04225d8>] nfs4_run_state_manager+0x548/0x620 [nfs]
+kernel: [<ffffffffa0422090>] ? nfs4_run_state_manager+0x0/0x620 [nfs]
+kernel: [<ffffffff8109b0f6>] kthread+0x96/0xa0
+kernel: [<ffffffff8100c20a>] child_rip+0xa/0x20
+kernel: [<ffffffff8109b060>] ? kthread+0x0/0xa0
+kernel: [<ffffffff8100c200>] ? child_rip+0x0/0x20
 
-Now suppose that you allocate 10 new data blocks 251-260. Suppose that
-copying of these blocks finish out of order (block 260 finished first
-and the block 251 finished last). Now, the snapshot device looks like
-this:
-SUPERBLOCK
-METADATA (blocks 0 ... 250, 260, 259, 258, 257, 256)
-DATA 0
-DATA 1
-DATA 2
-...
-DATA 250
-DATA 251
-DATA 252
-DATA 253
-DATA 254
-DATA 255
-METADATA (blocks 255, 254, 253, 252, 251)
-DATA 256
-DATA 257
-DATA 258
-DATA 259
-DATA 260
+The state manager can not therefore process the DELEGRETURN session errors.
+Change the async handler to wait for recovery on session errors.
 
-Now, if the machine crashes after writing the first metadata block but
-before writing the second metadata block, the space for areas DATA 250-255
-is leaked, it contains no valid data and it will never be used in the
-future.
-
-This patch makes dm-snapshot complete exceptions in the same order they
-were allocated, thus fixing this bug.
-
-Note: when backporting this patch to the stable kernel, change the version
-field in the following way:
-* if version in the stable kernel is {1, 11, 1}, change it to {1, 12, 0}
-* if version in the stable kernel is {1, 10, 0} or {1, 10, 1}, change it
-  to {1, 10, 2}
-Userspace reads the version to determine if the bug was fixed, so the
-version change is needed.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-[xr: Backported to 3.4: adjust version]
-Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
+Signed-off-by: Andy Adamson <andros@netapp.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - There's no restart_call label]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: Rui Xiang <rui.xiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/md/dm-snap.c |   71 +++++++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 64 insertions(+), 7 deletions(-)
 
---- a/drivers/md/dm-snap.c
-+++ b/drivers/md/dm-snap.c
-@@ -66,6 +66,18 @@ struct dm_snapshot {
- 
- 	atomic_t pending_exceptions_count;
- 
-+	/* Protected by "lock" */
-+	sector_t exception_start_sequence;
-+
-+	/* Protected by kcopyd single-threaded callback */
-+	sector_t exception_complete_sequence;
-+
-+	/*
-+	 * A list of pending exceptions that completed out of order.
-+	 * Protected by kcopyd single-threaded callback.
-+	 */
-+	struct list_head out_of_order_list;
-+
- 	mempool_t *pending_pool;
- 
- 	struct dm_exception_table pending;
-@@ -171,6 +183,14 @@ struct dm_snap_pending_exception {
- 	 */
- 	int started;
- 
-+	/* There was copying error. */
-+	int copy_error;
-+
-+	/* A sequence number, it is used for in-order completion. */
-+	sector_t exception_sequence;
-+
-+	struct list_head out_of_order_entry;
-+
- 	/*
- 	 * For writing a complete chunk, bypassing the copy.
- 	 */
-@@ -1090,6 +1110,9 @@ static int snapshot_ctr(struct dm_target
- 	s->valid = 1;
- 	s->active = 0;
- 	atomic_set(&s->pending_exceptions_count, 0);
-+	s->exception_start_sequence = 0;
-+	s->exception_complete_sequence = 0;
-+	INIT_LIST_HEAD(&s->out_of_order_list);
- 	init_rwsem(&s->lock);
- 	INIT_LIST_HEAD(&s->list);
- 	spin_lock_init(&s->pe_lock);
-@@ -1448,6 +1471,19 @@ static void commit_callback(void *contex
- 	pending_complete(pe, success);
- }
- 
-+static void complete_exception(struct dm_snap_pending_exception *pe)
-+{
-+	struct dm_snapshot *s = pe->snap;
-+
-+	if (unlikely(pe->copy_error))
-+		pending_complete(pe, 0);
-+
-+	else
-+		/* Update the metadata if we are persistent */
-+		s->store->type->commit_exception(s->store, &pe->e,
-+						 commit_callback, pe);
-+}
-+
- /*
-  * Called when the copy I/O has finished.  kcopyd actually runs
-  * this code so don't block.
-@@ -1457,13 +1493,32 @@ static void copy_callback(int read_err,
- 	struct dm_snap_pending_exception *pe = context;
- 	struct dm_snapshot *s = pe->snap;
- 
--	if (read_err || write_err)
--		pending_complete(pe, 0);
-+	pe->copy_error = read_err || write_err;
- 
--	else
--		/* Update the metadata if we are persistent */
--		s->store->type->commit_exception(s->store, &pe->e,
--						 commit_callback, pe);
-+	if (pe->exception_sequence == s->exception_complete_sequence) {
-+		s->exception_complete_sequence++;
-+		complete_exception(pe);
-+
-+		while (!list_empty(&s->out_of_order_list)) {
-+			pe = list_entry(s->out_of_order_list.next,
-+					struct dm_snap_pending_exception, out_of_order_entry);
-+			if (pe->exception_sequence != s->exception_complete_sequence)
-+				break;
-+			s->exception_complete_sequence++;
-+			list_del(&pe->out_of_order_entry);
-+			complete_exception(pe);
-+		}
-+	} else {
-+		struct list_head *lh;
-+		struct dm_snap_pending_exception *pe2;
-+
-+		list_for_each_prev(lh, &s->out_of_order_list) {
-+			pe2 = list_entry(lh, struct dm_snap_pending_exception, out_of_order_entry);
-+			if (pe2->exception_sequence < pe->exception_sequence)
-+				break;
-+		}
-+		list_add(&pe->out_of_order_entry, lh);
-+	}
- }
- 
- /*
-@@ -1558,6 +1613,8 @@ __find_pending_exception(struct dm_snaps
- 		return NULL;
- 	}
- 
-+	pe->exception_sequence = s->exception_start_sequence++;
-+
- 	dm_insert_exception(&s->pending, &pe->e);
- 
- 	return pe;
-@@ -2200,7 +2257,7 @@ static struct target_type origin_target
- 
- static struct target_type snapshot_target = {
- 	.name    = "snapshot",
--	.version = {1, 10, 0},
-+	.version = {1, 10, 2},
- 	.module  = THIS_MODULE,
- 	.ctr     = snapshot_ctr,
- 	.dtr     = snapshot_dtr,
+---
+ fs/nfs/nfs4proc.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -3910,8 +3910,7 @@ nfs4_async_handle_error(struct rpc_task
+ 			dprintk("%s ERROR %d, Reset session\n", __func__,
+ 				task->tk_status);
+ 			nfs4_schedule_session_recovery(clp->cl_session);
+-			task->tk_status = 0;
+-			return -EAGAIN;
++			goto wait_on_recovery;
+ #endif /* CONFIG_NFS_V4_1 */
+ 		case -NFS4ERR_DELAY:
+ 			nfs_inc_server_stats(server, NFSIOS_DELAY);
 
 
