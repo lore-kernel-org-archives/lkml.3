@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310AbaFEEVt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:21:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44307 "EHLO
+	id S1753160AbaFEEiO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:38:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44317 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753285AbaFEEVq (ORCPT
+	with ESMTP id S1753302AbaFEEVt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:21:46 -0400
+	Thu, 5 Jun 2014 00:21:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Paul Clements <Paul.Clements@steeleye.com>,
-        Alex Bligh <alex@alex.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Jani Nikula <jani.nikula@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
         Ben Hutchings <ben@decadent.org.uk>,
-        Qiang Huang <h.huangqiang@huawei.com>
-Subject: [PATCH 3.4 156/214] nbd: fsync and kill block device on shutdown
-Date: Wed,  4 Jun 2014 21:18:39 -0700
-Message-Id: <20140605041700.712194782@linuxfoundation.org>
+        Weng Meiling <wengmeiling.weng@huawei.com>
+Subject: [PATCH 3.4 158/214] drm/i915/sdvo: clean up connectors on intel_sdvo_init() failures
+Date: Wed,  4 Jun 2014 21:18:41 -0700
+Message-Id: <20140605041700.980038633@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -32,95 +30,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: Jani Nikula <jani.nikula@intel.com>
 
-commit 3a2d63f87989e01437ba994df5f297528c353d7d upstream.
+commit d0ddfbd3d1346c1f481ec2289eef350cdba64b42 upstream.
 
-There are two problems with shutdown in the NBD driver.
+Any failures in intel_sdvo_init() after the intel_sdvo_setup_output() call
+left behind ghost connectors, attached (with a dangling pointer) to the
+sdvo that has been cleaned up and freed. Properly destroy any connectors
+attached to the encoder.
 
-1: Receiving the NBD_DISCONNECT ioctl does not sync the filesystem.
-
-   This patch adds the sync operation into __nbd_ioctl()'s
-   NBD_DISCONNECT handler.  This is useful because BLKFLSBUF is restricted
-   to processes that have CAP_SYS_ADMIN, and the NBD client may not
-   possess it (fsync of the block device does not sync the filesystem,
-   either).
-
-2: Once we clear the socket we have no guarantee that later reads will
-   come from the same backing storage.
-
-   The patch adds calls to kill_bdev() in __nbd_ioctl()'s socket
-   clearing code so the page cache is cleaned, lest reads that hit on the
-   page cache will return stale data from the previously-accessible disk.
-
-Example:
-
-    # qemu-nbd -r -c/dev/nbd0 /dev/sr0
-    # file -s /dev/nbd0
-    /dev/stdin: # UDF filesystem data (version 1.5) etc.
-    # qemu-nbd -d /dev/nbd0
-    # qemu-nbd -r -c/dev/nbd0 /dev/sda
-    # file -s /dev/nbd0
-    /dev/stdin: # UDF filesystem data (version 1.5) etc.
-
-While /dev/sda has:
-
-    # file -s /dev/sda
-    /dev/sda: x86 boot sector; etc.
-
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Acked-by: Paul Clements <Paul.Clements@steeleye.com>
-Cc: Alex Bligh <alex@alex.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backported to 3.2:
- - Adjusted context
- - s/\bnbd\b/lo/
- - Incorporate export of kill_bdev() from commit ff01bb483265
-   ('fs: move code out of buffer.c')]
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=46381
+CC: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Tested-by: bjo@nord-west.org
+[danvet: added a comment to explain why we need to clean up connectors
+even when sdvo_output_setup fails.]
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-[hq: Backported to 3.4: Adjusted context]
-Signed-off-by: Qiang Huang <h.huangqiang@huawei.com>
+Cc: Weng Meiling <wengmeiling.weng@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/block/nbd.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
 
---- a/drivers/block/nbd.c
-+++ b/drivers/block/nbd.c
-@@ -584,10 +584,17 @@ static int __nbd_ioctl(struct block_devi
- 		struct request sreq;
+---
+ drivers/gpu/drm/i915/intel_sdvo.c |   22 +++++++++++++++++++---
+ 1 file changed, 19 insertions(+), 3 deletions(-)
+
+--- a/drivers/gpu/drm/i915/intel_sdvo.c
++++ b/drivers/gpu/drm/i915/intel_sdvo.c
+@@ -2265,6 +2265,18 @@ intel_sdvo_output_setup(struct intel_sdv
+ 	return true;
+ }
  
- 		dev_info(disk_to_dev(nbd->disk), "NBD_DISCONNECT\n");
-+		if (!nbd->sock)
-+			return -EINVAL;
- 
-+		mutex_unlock(&nbd->tx_lock);
-+		fsync_bdev(bdev);
-+		mutex_lock(&nbd->tx_lock);
- 		blk_rq_init(NULL, &sreq);
- 		sreq.cmd_type = REQ_TYPE_SPECIAL;
- 		nbd_cmd(&sreq) = NBD_CMD_DISC;
++static void intel_sdvo_output_cleanup(struct intel_sdvo *intel_sdvo)
++{
++	struct drm_device *dev = intel_sdvo->base.base.dev;
++	struct drm_connector *connector, *tmp;
 +
-+		/* Check again after getting mutex back.  */
- 		if (!nbd->sock)
- 			return -EINVAL;
++	list_for_each_entry_safe(connector, tmp,
++				 &dev->mode_config.connector_list, head) {
++		if (intel_attached_encoder(connector) == &intel_sdvo->base)
++			intel_sdvo_destroy(connector);
++	}
++}
++
+ static bool intel_sdvo_tv_create_property(struct intel_sdvo *intel_sdvo,
+ 					  struct intel_sdvo_connector *intel_sdvo_connector,
+ 					  int type)
+@@ -2583,7 +2595,8 @@ bool intel_sdvo_init(struct drm_device *
+ 				    intel_sdvo->caps.output_flags) != true) {
+ 		DRM_DEBUG_KMS("SDVO output failed to setup on SDVO%c\n",
+ 			      IS_SDVOB(sdvo_reg) ? 'B' : 'C');
+-		goto err;
++		/* Output_setup can leave behind connectors! */
++		goto err_output;
+ 	}
  
-@@ -606,6 +613,7 @@ static int __nbd_ioctl(struct block_devi
- 		nbd_clear_que(nbd);
- 		BUG_ON(!list_empty(&nbd->queue_head));
- 		BUG_ON(!list_empty(&nbd->waiting_queue));
-+		kill_bdev(bdev);
- 		if (file)
- 			fput(file);
- 		return 0;
-@@ -688,6 +696,7 @@ static int __nbd_ioctl(struct block_devi
- 		nbd->file = NULL;
- 		nbd_clear_que(nbd);
- 		dev_warn(disk_to_dev(nbd->disk), "queue cleared\n");
-+		kill_bdev(bdev);
- 		if (file)
- 			fput(file);
- 		nbd->bytesize = 0;
+ 	/* Only enable the hotplug irq if we need it, to work around noisy
+@@ -2596,12 +2609,12 @@ bool intel_sdvo_init(struct drm_device *
+ 
+ 	/* Set the input timing to the screen. Assume always input 0. */
+ 	if (!intel_sdvo_set_target_input(intel_sdvo))
+-		goto err;
++		goto err_output;
+ 
+ 	if (!intel_sdvo_get_input_pixel_clock_range(intel_sdvo,
+ 						    &intel_sdvo->pixel_clock_min,
+ 						    &intel_sdvo->pixel_clock_max))
+-		goto err;
++		goto err_output;
+ 
+ 	DRM_DEBUG_KMS("%s device VID/DID: %02X:%02X.%02X, "
+ 			"clock range %dMHz - %dMHz, "
+@@ -2621,6 +2634,9 @@ bool intel_sdvo_init(struct drm_device *
+ 			(SDVO_OUTPUT_TMDS1 | SDVO_OUTPUT_RGB1) ? 'Y' : 'N');
+ 	return true;
+ 
++err_output:
++	intel_sdvo_output_cleanup(intel_sdvo);
++
+ err:
+ 	drm_encoder_cleanup(&intel_encoder->base);
+ 	i2c_del_adapter(&intel_sdvo->ddc);
 
 
