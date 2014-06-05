@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123AbaFEUsp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 16:48:45 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:49153 "EHLO
+	id S1752396AbaFEUtF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 16:49:05 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:60845 "EHLO
 	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751530AbaFEUsk (ORCPT
+	with ESMTP id S1752265AbaFEUtA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 16:48:40 -0400
+	Thu, 5 Jun 2014 16:49:00 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: devel@driverdev.osuosl.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Florian Schilhabel <florian.c.schilhabel@googlemail.com>,
-        Henk de Groot <pe1dnn@amsat.org>, Jarod Wilson <jarod@wilsonet.com>,
-        Jonathan Cameron <jic23@kernel.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Luca Risolia <luca.risolia@studio.unibo.it>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>, linux-iio@vger.kernel.org,
-        linux-media@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [PATCH 0/5] randconfig build fixes for staging
-Date: Thu,  5 Jun 2014 22:48:10 +0200
-Message-Id: <1402001295-1980118-1-git-send-email-arnd@arndb.de>
+        Henk de Groot <pe1dnn@amsat.org>
+Subject: [PATCH 4/5] staging: wlags49_h2: avoid PROFILE_ALL_BRANCHES warnings
+Date: Thu,  5 Jun 2014 22:48:14 +0200
+Message-Id: <1402001295-1980118-5-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.3.2
-X-Provags-ID: V02:K0:R1AQya4hmsoWkl3KSnTfa1l5bNPBuV+2G7xQv4RwoTk
- uqsqcP3slpNeIL19pj1ACkzOQ3MrCXVbVJc0TpZ6DxUoa/RIok
- aKyjjkk4Wnpc8NSYcMbfmcuz1nlm4W/PnRL69tJscJrFXrDdvD
- AKExc1zRB5OFctLeVvYeqGEtjVTFHubN/ZMKimhTAA2A3rQlel
- o50wRpf9Pi2W9eCKHDL55//jukUiKEmr4lh0odU8LB3MoQ4G5q
- s+n4smDGNhVwnfdXZ+3DuTaVqH8IQpSnjmmehe8WJ7hMu3cxRx
- CTef6hrsh/0DmHMxsZuywgNuCz82VwX4ZLAkXHEcCMoyDPpJIY
- 205AM2MPbeb8KELpduBVOInjVnQc+AyDTFH+FVIGi
+In-Reply-To: <1402001295-1980118-1-git-send-email-arnd@arndb.de>
+References: <1402001295-1980118-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:1KQrXpaL3NbmVfyD2wJ4LfTwoPHTm3MsKzFrG4wWVgn
+ HGXmx3ZjQJE/0yvxcT55fSrhIK7Tj5eTlym9Em5Tk6li314V1J
+ 8kHC6ri+czghceZSpQ37Q4Cq8VhtsfyLCstLVOlMmGg5paDbRS
+ 5nCN9jNTA0d1KDRl/S7tXQXWbl0XSUWCoZmpa/o1g8m+MTvlFo
+ pX6izscw6NszJQHqQnKTChF0BSgAkivD9UNyskVaCVDeJvbGEq
+ iowOhWsvLaDYcTrWpA4/VdglKroykPLj4cR+PGrdnYeuOmHNNo
+ gFz0nbNV10Kx2b5RQZZRBAge40JnwyVgFi0BqIaYNw2KrBpKwQ
+ zmsXNs7XyTqIzdUXdhlzwAwow64RvWUYjoobRN8wt
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Using an 'if()' inside of an 'extern inline' function causes
+a gcc warning when CONFIG_PROFILE_ALL_BRANCHES is set every
+time the function is called, which gets very noisy:
 
-Here are a couple of simple fixes from my backlog of ARM
-randconfig bugs. Nothing urgent, they can probably all go
-into next for 3.17 after the merge window, but see for
-yourself.
+In file included from /git/arm-soc/drivers/staging/wlags49_h2/wl_wext.c:73:0:
+drivers/staging/wlags49_h2/wl_internal.h:1035:216: warning: '______f' is static but declared in inline function 'wl_act_int_off' which is not static [enabled by default]
+  if(lp->is_handling_int == WL_HANDLING_INT) {
 
-	Arnd
+Fortunately there is a trivial workaround, so we can avoid
+the problem by making the functions in question 'static inline'
+rather than 'extern inline'.
 
-Arnd Bergmann (5):
-  staging: lirc: remove sa1100 support
-  staging/iio: IIO_SIMPLE_DUMMY_BUFFER neds IIO_BUFFER
-  staging: sn9c102 depends on USB
-  staging: wlags49_h2: avoid PROFILE_ALL_BRANCHES warnings
-  staging: rtl8712, rtl8712: avoid lots of build warnings
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Henk de Groot <pe1dnn@amsat.org>
+---
+ drivers/staging/wlags49_h2/wl_internal.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
- drivers/staging/iio/Kconfig                    |   9 +-
- drivers/staging/media/lirc/lirc_sir.c          | 301 +------------------------
- drivers/staging/media/sn9c102/Kconfig          |   2 +-
- drivers/staging/rtl8192u/ieee80211/ieee80211.h |  10 +-
- drivers/staging/rtl8712/ieee80211.h            |   4 +-
- drivers/staging/wlags49_h2/wl_internal.h       |   4 +-
- 6 files changed, 17 insertions(+), 313 deletions(-)
-
+diff --git a/drivers/staging/wlags49_h2/wl_internal.h b/drivers/staging/wlags49_h2/wl_internal.h
+index 78129e9..1ecb5cb 100644
+--- a/drivers/staging/wlags49_h2/wl_internal.h
++++ b/drivers/staging/wlags49_h2/wl_internal.h
+@@ -1013,7 +1013,7 @@ static inline void wl_unlock(struct wl_private *lp,
+ /* Interrupt enable disable functions                               */
+ /********************************************************************/
+ 
+-extern inline void wl_act_int_on(struct wl_private *lp)
++static inline void wl_act_int_on(struct wl_private *lp)
+ {
+ 	/*
+ 	 * Only do something when the driver is handling
+@@ -1025,7 +1025,7 @@ extern inline void wl_act_int_on(struct wl_private *lp)
+ 	}
+ }
+ 
+-extern inline void wl_act_int_off(struct wl_private *lp)
++static inline void wl_act_int_off(struct wl_private *lp)
+ {
+ 	/*
+ 	 * Only do something when the driver is handling
 -- 
 1.8.3.2
 
-Cc: Florian Schilhabel <florian.c.schilhabel@googlemail.com>
-Cc: Henk de Groot <pe1dnn@amsat.org>
-Cc: Jarod Wilson <jarod@wilsonet.com>
-Cc: Jonathan Cameron <jic23@kernel.org>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Luca Risolia <luca.risolia@studio.unibo.it>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>
-Cc: linux-iio@vger.kernel.org
-Cc: linux-media@vger.kernel.org
-Cc: linux-usb@vger.kernel.org
