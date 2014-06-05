@@ -1,96 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752174AbaFEOc7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 10:32:59 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48167 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750907AbaFEOcv (ORCPT
+	id S1752110AbaFEOcr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 10:32:47 -0400
+Received: from mail-yk0-f176.google.com ([209.85.160.176]:49244 "EHLO
+	mail-yk0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751503AbaFEOco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 10:32:51 -0400
-Date: Thu, 5 Jun 2014 07:32:32 -0700
-From: tip-bot for Jianyu Zhan <tipbot@zytor.com>
-Message-ID: <tip-fc9cabeabf42d76854059e7bce81a02645e7e5ca@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        jolsa@kernel.org, nasa4836@gmail.com, tglx@linutronix.de,
-        namhyung@kernel.org
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        nasa4836@gmail.com, jolsa@kernel.org, tglx@linutronix.de,
-        namhyung@kernel.org
-In-Reply-To: <1401727474-19370-1-git-send-email-nasa4836@gmail.com>
-References: <1401727474-19370-1-git-send-email-nasa4836@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Fix 'make help' message error
-Git-Commit-ID: fc9cabeabf42d76854059e7bce81a02645e7e5ca
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 5 Jun 2014 10:32:44 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+X-Originating-IP: [84.49.215.185]
+In-Reply-To: <CACVXFVPWq93u5KmLhr+g23t4AiGAnLfd+hX3viajzR_KN+sMrw@mail.gmail.com>
+References: <1401896895-14262-1-git-send-email-tiwai@suse.de>
+ <CACVXFVPpmdXJV2CC-U=bsA820VD42i2-OqBfNfTPPaMergu8TQ@mail.gmail.com>
+ <CAG-2HqU=LAXr0o2e9RRCmrX1eWouhepEZHaPfBjrs64xUeb=gw@mail.gmail.com>
+ <CACVXFVP1uS7szLqvabtMbiaUgd13bWoYXv5q-Az7wBia=ogf7Q@mail.gmail.com>
+ <s5hfvjj1n90.wl%tiwai@suse.de> <CACVXFVP5CSNoyThAcsmihYg_bkq2wn1JtiFJ_7ehpxwjBSaZxQ@mail.gmail.com>
+ <s5hbnu71mf1.wl%tiwai@suse.de> <CACVXFVPWq93u5KmLhr+g23t4AiGAnLfd+hX3viajzR_KN+sMrw@mail.gmail.com>
+From: Tom Gundersen <teg@jklm.no>
+Date: Thu, 5 Jun 2014 16:32:23 +0200
+Message-ID: <CAG-2HqXiFgy5M=k55iOYAdXezxsN-ZanWRWDgH-6fuU-uLawOQ@mail.gmail.com>
+Subject: Re: [PATCH v2] firmware loader: allow disabling of udev as firmware loader
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Takashi Iwai <tiwai@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>, Stefan Roese <sr@denx.de>,
+        Arnd Bergmann <arnd@arndb.de>, Abhay Salunke <Abhay_Salunke@dell.com>,
+        Kay Sievers <kay@vrfy.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fc9cabeabf42d76854059e7bce81a02645e7e5ca
-Gitweb:     http://git.kernel.org/tip/fc9cabeabf42d76854059e7bce81a02645e7e5ca
-Author:     Jianyu Zhan <nasa4836@gmail.com>
-AuthorDate: Tue, 3 Jun 2014 00:44:34 +0800
-Committer:  Jiri Olsa <jolsa@kernel.org>
-CommitDate: Tue, 3 Jun 2014 21:35:12 +0200
+On Thu, Jun 5, 2014 at 4:24 PM, Ming Lei <ming.lei@canonical.com> wrote:
+> On Thu, Jun 5, 2014 at 10:05 PM, Takashi Iwai <tiwai@suse.de> wrote:
+>> At Thu, 5 Jun 2014 21:59:52 +0800,
+>> Ming Lei wrote:
+>>>
+>>> On Thu, Jun 5, 2014 at 9:47 PM, Takashi Iwai <tiwai@suse.de> wrote:
+>>> > At Thu, 5 Jun 2014 21:31:56 +0800,
+>>> > Ming Lei wrote:
+>>> >>
+>>> >> On Thu, Jun 5, 2014 at 8:25 PM, Tom Gundersen <teg@jklm.no> wrote:
+>>> >> >
+>>> >> > On 5 Jun 2014 14:18, "Ming Lei" <ming.lei@canonical.com> wrote:
+>>> >> >>
+>>> >> >> On Wed, Jun 4, 2014 at 11:48 PM, Takashi Iwai <tiwai@suse.de> wrote:
+>>> >> >> > [The patch was originally proposed by Tom Gundersen, and rewritten
+>>> >> >> >  afterwards by me; most of changelogs below borrowed from Tom's
+>>> >> >> >  original patch -- tiwai]
+>>> >> >> >
+>>> >> >> > Currently (at least) the dell-rbu driver selects FW_LOADER_USER_HELPER,
+>>> >> >> > which means that distros can't really stop loading firmware through
+>>> >> >> > udev without breaking other users (though some have).
+>>> >> >> >
+>>> >> >> > Ideally we would remove/disable the udev firmware helper in both the
+>>> >> >> > kernel and in udev, but if we were to disable it in udev and not the
+>>> >> >> > kernel, the result would be (seemingly) hung kernels as no one would
+>>> >> >> > be around to cancel firmware requests.
+>>> >> >> >
+>>> >> >> > This patch allows udev firmware loading to be disabled while still
+>>> >> >> > allowing non-udev firmware loading, as done by the dell-rbu driver, to
+>>> >> >> > continue working. This is achieved by only using the fallback
+>>> >> >> > mechanism when the uevent is suppressed.
+>>> >> >> >
+>>> >> >> > The patch renames the user-selectable Kconfig from FW_LOADER_USER_HELPER
+>>> >> >> > to FW_LOADER_USER_HELPER_FALLBACK, and the former is reverse-selected
+>>> >> >> > by the latter or the drivers that need userhelper like dell-rbu.
+>>> >> >> >
+>>> >> >> > Also, the "default y" is removed together with this change, since it's
+>>> >> >> > been deprecated in udev upstream, thus rather better to disable it
+>>> >> >> > nowadays.
+>>> >> >> >
+>>> >> >> > Tested with
+>>> >> >> >     FW_LOADER_USER_HELPER=n
+>>> >> >> >     LATTICE_ECP3_CONFIG=y
+>>> >> >> >     DELL_RBU=y
+>>> >> >> > and udev without the firmware loading support, but I don't have the
+>>> >> >> > hardware to test the lattice/dell drivers, so additional testing would
+>>> >> >> > be appreciated.
+>>> >> >> >
+>>> >> >> > Reviewed-by: Tom Gundersen <teg@jklm.no>
+>>> >> >> > Cc: Ming Lei <ming.lei@canonical.com>
+>>> >> >> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>>> >> >> > Cc: Abhay Salunke <Abhay_Salunke@dell.com>
+>>> >> >> > Cc: Stefan Roese <sr@denx.de>
+>>> >> >> > Cc: Arnd Bergmann <arnd@arndb.de>
+>>> >> >> > Cc: Kay Sievers <kay@vrfy.org>
+>>> >> >> > Signed-off-by: Takashi Iwai <tiwai@suse.de>
+>>> >> >> > ---
+>>> >> >> >  drivers/base/Kconfig          | 10 ++++++++--
+>>> >> >> >  drivers/base/firmware_class.c | 15 ++++++++++-----
+>>> >> >> >  include/linux/firmware.h      |  2 +-
+>>> >> >> >  3 files changed, 19 insertions(+), 8 deletions(-)
+>>> >> >> >
+>>> >> >> > diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
+>>> >> >> > index 8fa8deab6449..d0bb32e4c416 100644
+>>> >> >> > --- a/drivers/base/Kconfig
+>>> >> >> > +++ b/drivers/base/Kconfig
+>>> >> >> > @@ -144,15 +144,21 @@ config EXTRA_FIRMWARE_DIR
+>>> >> >> >           some other directory containing the firmware files.
+>>> >> >> >
+>>> >> >> >  config FW_LOADER_USER_HELPER
+>>> >> >> > +       bool
+>>> >> >> > +
+>>> >> >> > +config FW_LOADER_USER_HELPER_FALLBACK
+>>> >> >> >         bool "Fallback user-helper invocation for firmware loading"
+>>> >> >> >         depends on FW_LOADER
+>>> >> >> > -       default y
+>>> >> >> > +       select FW_LOADER_USER_HELPER
+>>> >> >> >         help
+>>> >> >> >           This option enables / disables the invocation of user-helper
+>>> >> >> >           (e.g. udev) for loading firmware files as a fallback after the
+>>> >> >> >           direct file loading in kernel fails.  The user-mode helper is
+>>> >> >> >           no longer required unless you have a special firmware file
+>>> >> >> > that
+>>> >> >> > -         resides in a non-standard path.
+>>> >> >> > +         resides in a non-standard path. Moreover, the udev support has
+>>> >> >> > +         been deprecated upstream.
+>>> >> >> > +
+>>> >> >> > +         If you are unsure about this, say N here.
+>>> >> >>
+>>> >> >> It may be safer to say Y here for fallback if not sure.
+>>> >> >
+>>> >> > Saying Y here will be actively harmful if the firmware loader is disabled in
+>>> >> > udev (which I guess most distros will do as soon as they can), so I think we
+>>> >>
+>>> >> If fallback is triggered, it means that the firmware can't be found
+>>> >> in default direct rootfs path, so it is better to continue to look for it
+>>> >> from userspace.
+>>> >>
+>>> >> Also it won't a big problem for hanging the request user context
+>>> >> for some while(60sec at default) if udev is disabled, will it?
+>>> >>
+>>> >> BTW, are you sure most distros will do that in the near future?
+>>> >>
+>>> >> > should advice people to say N unless they really know what they are doing
+>>> >> > and that their userspace can cope with it.
+>>> >>
+>>> >> That is why I suggest to say Y if someone isn't sure.
+>>> >
+>>> > For the time being, having default this Y causes more troubles.
+>>>
+>>> I am wondering why default Y may cause more troubles, as we
+>>> know, it has been default Y for long long time.
+>>
+>> More trouble = more bug reports.  At least, a handful distros suffer.
+>> I don't know the situation with Ubuntu, though.
+>
+> Looks recently not see related report, :-)
 
-perf tools: Fix 'make help' message error
+Ubuntu currently enables the firmware loader in both the kernel and in
+udev, so would not yet have a problem here at the moment. However, I
+spoke with Martin Pitt and he told me that both Debian and Ubuntu
+would like to switch this off in udev once it is possible (i.e., once
+this patch has been merged I guess). Fedora already did, and speaking
+for Arch we definitely would like to do the same. I did not check with
+other distros, but I'm pretty sure "everyone" will disable this in
+udev by the next cycle. At which point having it enabled in the kernel
+will cause real problems and bug reports.
 
-Currently 'make help' message has such hint:
+For distro kernels that's not a problem, as they know what to do, but
+I guess for random kernel users we should give them the correct
+recommendation.
 
-   use "make prefix=<path> <install target>" to install to a particular
-       path like make prefix=/usr/local install install-doc
+>>> It only falls back if the request fw is _not_ found from direct loading,
+>>> so it is reasonable to try to continue to look for it from user space.
+>
+>> Some drivers fall back to different firmware (e.g. different revision
+>> suffix) if the requested file isn't found.  So, this happens in
+>> reality.
+>
+> So do you think the fallback is better or worse? For CPU microcode
+> case, maybe it is fine, but for other devices, maybe it is better to
+> get a firmware for working at least.
 
-But this is misleading, when I specify "prefix=/usr/local", it has got no
-respect at all.
+What usecase do you have in mind here? For people using stock udev,
+enabling the fallback will not give any benefit, but it will soon
+start giving real problems...
 
-This is because that, "DESTDIR" is considered first. In this case, "DESTDIR"
-has an empty value, so "prefix" is honored. However, "prefix" is unconditionally
-assigned to $HOME, regardless of what it is set to from command line. So our
-"prefix" setting got no respect and the actual destination falls back to $HOME.
+Cheers,
 
-This patch fixes this issue and corrects the help message.
-
-Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/r/1401727474-19370-1-git-send-email-nasa4836@gmail.com
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
----
- tools/perf/Makefile.perf   | 4 ++--
- tools/perf/config/Makefile | 2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 6286e13..ae20edf 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -789,8 +789,8 @@ help:
- 	@echo ''
- 	@echo 'Perf install targets:'
- 	@echo '  NOTE: documentation build requires asciidoc, xmlto packages to be installed'
--	@echo '  HINT: use "make prefix=<path> <install target>" to install to a particular'
--	@echo '        path like make prefix=/usr/local install install-doc'
-+	@echo '  HINT: use "prefix" or "DESTDIR" to install to a particular'
-+	@echo '        path like "make prefix=/usr/local install install-doc"'
- 	@echo '  install	- install compiled binaries'
- 	@echo '  install-doc	- install *all* documentation'
- 	@echo '  install-man	- install manpage documentation'
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 319426f..4f100b5 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -600,7 +600,7 @@ endif
- 
- # Make the path relative to DESTDIR, not to prefix
- ifndef DESTDIR
--prefix = $(HOME)
-+prefix ?= $(HOME)
- endif
- bindir_relative = bin
- bindir = $(prefix)/$(bindir_relative)
+Tom
