@@ -1,49 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751791AbaFEODH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 10:03:07 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:62826 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750853AbaFEODG (ORCPT
+	id S1751867AbaFEOEN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 10:04:13 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:55532 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751085AbaFEOEM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 10:03:06 -0400
-Message-ID: <53907895.8090102@kernel.dk>
-Date: Thu, 05 Jun 2014 08:03:01 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 5 Jun 2014 10:04:12 -0400
+Date: Thu, 5 Jun 2014 16:04:00 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, ak@linux.intel.com,
+        jolsa@redhat.com, zheng.z.yan@intel.com,
+        maria.n.dimakopoulou@gmail.com
+Subject: Re: [PATCH 5/9] perf/x86: implement cross-HT corruption bug
+ workaround
+Message-ID: <20140605140400.GM3213@twins.programming.kicks-ass.net>
+References: <1401917658-26065-1-git-send-email-eranian@google.com>
+ <1401917658-26065-6-git-send-email-eranian@google.com>
 MIME-Version: 1.0
-To: Alexander Gordeev <agordeev@redhat.com>
-CC: linux-kernel@vger.kernel.org, Ming Lei <tom.leiming@gmail.com>
-Subject: Re: blk-mq: bitmap tag: performance degradation?
-References: <20140604103544.GA11350@dhcp-26-207.brq.redhat.com> <538F2AC2.1060904@kernel.dk> <20140605140127.GA22198@dhcp-26-207.brq.redhat.com>
-In-Reply-To: <20140605140127.GA22198@dhcp-26-207.brq.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Z/kiM2A+9acXa48/"
+Content-Disposition: inline
+In-Reply-To: <1401917658-26065-6-git-send-email-eranian@google.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-06-05 08:01, Alexander Gordeev wrote:
-> On Wed, Jun 04, 2014 at 08:18:42AM -0600, Jens Axboe wrote:
->> A null_blk test is the absolute best case for percpu_ida, since
->> there are enough tags and everything is localized. The above test is
->> more useful for testing blk-mq than any real world application of
->> the tagging.
->>
->> I've done considerable testing on both 2 and 4 socket (32 and 64
->> CPUs) and bitmap tagging is better in a much wider range of
->> applications. This includes even high tag depth devices like nvme,
->> and more normal ranges like mtip32xx and scsi-mq setups.
->
-> Just for the record: bitmap tags on a 48 CPU box with NVMe device
-> indeed shows almost the same performance/cache rate as the stock
-> kernel.
 
-Thanks for confirming. It's one of the dangers of null_blk, it's not 
-always a very accurate simulation of what a real device will do. I think 
-it's mostly a completion side thing, would be great with a small device 
-that supported msi-x and could be used as an irq trigger :-)
+--Z/kiM2A+9acXa48/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
--- 
-Jens Axboe
+On Wed, Jun 04, 2014 at 11:34:14PM +0200, Stephane Eranian wrote:
+> +
+> +	/*
+> +	 * Modify static constraint with current dynamic
+> +	 * state of thread
+> +	 *
+> +	 * EXCLUSIVE: sibling counter measuring exclusive event
+> +	 * SHARED   : sibling counter measuring non-exclusive event
+> +	 * UNUSED   : sibling counter unused
+> +	 */
+> +	for_each_set_bit(i, cx->idxmsk, X86_PMC_IDX_MAX) {
+> +		/*
+> +		 * exclusive event in sibling counter
+> +		 * our corresponding counter cannot be used
+> +		 * regardless of our event
+> +		 */
+> +		if (xl->state[i] == INTEL_EXCL_EXCLUSIVE)
+> +			__clear_bit(i, cx->idxmsk);
+> +		/*
+> +		 * if measuring an exclusive event, sibling
+> +		 * measuring non-exclusive, then counter cannot
+> +		 * be used
+> +		 */
+> +		if (is_excl && xl->state[i] == INTEL_EXCL_SHARED)
+> +			__clear_bit(i, cx->idxmsk);
+> +	}
+> +
+> +	/*
+> +	 * recompute actual bit weight for scheduling algorithm
+> +	 */
+> +	cx->weight = hweight64(cx->idxmsk64);
 
+So I think we talked about this a bit; what happens if CPU0 (taking your
+4 core HSW-client) is first to program its counters and takes all 4 in
+exclusive mode?
+
+Then there's none left for CPU4.
+
+Did I miss where we avoid that problem, or is that an actual issue?
+
+--Z/kiM2A+9acXa48/
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTkHjQAAoJEHZH4aRLwOS6rz4P/1/mMOSGZivDcVwKv4Tuv7Xd
+Jfpx2XWxo59tfdAuPcz7Oj8+yUUaf7jXdNlXeoz7117C3WcfOTll+lZmo5/hD31a
+WZKjWJ8CpdypLkHLBukAVmpw08YNEHymiiAswMh5CSBWGBBlh8rbmDG+H/M3NWy+
+wlTvRWSF5NewZWxMl1IXKutfuIbW/6RKAbHMOybu6+XpW65n93RsF78Vps/HFAKL
+v4cIUayQvisGZ10+W0ZC2XK5yz2zpwNbM/sAfWSofxtcO+g2Ar5HatsB3oXMOIu5
+jqn25wyFszZhPV8zqnfQ6TIyxiZDhpPQXEpbHP0Qe8RyUpiybGoNH+Arr8QkreWz
+G8NqccVmb1o7kbPsi7sNuC71lnG4kPuk4DWUksgeAG0twgjeOO0hd05XhKUChCOm
+QSXbFOoXmitpjcGzEuARiOydnP+lAWWA4+yGLjbQqWrizUX2LM2WVLytYxIJ8PHq
+vWXsDuSZZhVlTBkUIuUOF5IQqDHJO6ZfRv0Soqp94lHYMkdQ+/EwS9J5Uj5ARWUm
+s3bWh5AiTvq4Ge+YqIuJaAG+iiU0yW7F8VPXHMFJD4MthLerlUrfhKn1QbCN/JGh
++k7Desz5j65KYITwjhMTUQBFs00VY2C+pWJTMMMqfKcE/GadMCdDb1rKYkCPBST6
+MwUX00sbRzF8i56qYudL
+=7StL
+-----END PGP SIGNATURE-----
+
+--Z/kiM2A+9acXa48/--
