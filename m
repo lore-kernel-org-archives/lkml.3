@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752201AbaFESG2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 14:06:28 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:39576 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751582AbaFESG0 (ORCPT
+	id S1752514AbaFESHy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 14:07:54 -0400
+Received: from mail-wg0-f68.google.com ([74.125.82.68]:58550 "EHLO
+	mail-wg0-f68.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751973AbaFESHw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 14:06:26 -0400
-Message-ID: <5390B19F.7090008@wwwdotorg.org>
-Date: Thu, 05 Jun 2014 12:06:23 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 5 Jun 2014 14:07:52 -0400
 MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>, linux-arm-kernel@lists.infradead.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 1/5] ARM: tegra: export apb dma readl/writel
-References: <1401973754-19701-1-git-send-email-pdeschrijver@nvidia.com> <1401973754-19701-2-git-send-email-pdeschrijver@nvidia.com> <5390AF88.9050007@wwwdotorg.org>
-In-Reply-To: <5390AF88.9050007@wwwdotorg.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [90.207.204.193]
+In-Reply-To: <20140605160102.3c58481e@www.etchedpixels.co.uk>
+References: <1401974854-7716-1-git-send-email-matt@console-pimps.org>
+	<20140605160102.3c58481e@www.etchedpixels.co.uk>
+Date: Thu, 5 Jun 2014 19:07:50 +0100
+Message-ID: <CADknwL7t3phPTnr6YFUduVVJ_=qaN3uWexhQ3LWj71U5Mh-zjA@mail.gmail.com>
+Subject: Re: [PATCH] x86/efi: Only pass mapped RAM regions to free_bootmem_late()
+From: Matt Fleming <matt@console-pimps.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-efi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Dave Hansen <dave.hansen@intel.com>, Borislav Petkov <bp@suse.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2014 11:57 AM, Stephen Warren wrote:
-> On 06/05/2014 07:09 AM, Peter De Schrijver wrote:
->> Export APB DMA readl and writel. These are needed because we can't access
->> the fuses directly on Tegra20 without potentially causing a system hang.
->> Also have the APB DMA readl and writel return an error in case of a read
->> failure instead of just returning zero or ignore write failures.
-> 
->> diff --git a/include/linux/tegra-soc.h b/include/linux/tegra-soc.h
-> 
->> +int tegra_apb_readl_using_dma(unsigned long offset, u32 *value);
->> +int tegra_apb_writel_using_dma(u32 value, unsigned long offset);
-> 
-> Hmm. I wonder why we're exporting those low-level internal functions
-> rather than the higher-level tegra_apb_readl()/writel() wrappers that
-> "clients" are supposed to be using.
+On 5 June 2014 16:01, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> On Thu,  5 Jun 2014 14:27:34 +0100
+> Matt Fleming <matt@console-pimps.org> wrote:
+>
+>> From: Matt Fleming <matt.fleming@intel.com>
+>>
+>> free_bootmem_late() expects to only be passed RAM regions that the
+>> kernel can access, and that have a corresponding 'struct page'. It's
+>> possible for regions in the EFI memory map to reside in address ranges
+>> for which pfn_to_page() doesn't work, for instance when running on an
+>> i386 system with CONFIG_HIGHMEM=n.
+>>
+>> This is in fact the case for one of Alan's machines where some of the
+>> EFI boot services pages live in highmem, and running a kernel without
+>> CONFIG_HIGHMEM enabled results in the following oops,
+>>
+>>  BUG: unable to handle kernel paging request at f7f1f080
+>>  IP: [<c17fba96>] __free_pages_bootmem+0x5a/0xb8
+>>  *pdpt = 0000000001887001 *pde = 0000000001984067 *pte = 000000000 0000000
+>>  Oops: 0002 [#1] SMP
+>
+> No improvement, and the if case is never true 8(
 
-Oh, I suppose this is just for rivers/misc/fuse/tegra/fuse-tegra20.c to
-use it, not for arbitrary clients, so this is probably OK.
-
-Any reason not to move all the DMA-related fuse-reading code into
-fuse-tegra20.c instead? After this series, is there code left in
-arch/arm/mach-tegra which will still need to call into the fuse-reading
-code and hence requires tegra_apb_readl_using_dma() to exist?
+Argh, dammit. OK, back to the drawing board. Thanks for testing.
