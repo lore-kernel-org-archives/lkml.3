@@ -1,84 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751365AbaFEMlJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 08:41:09 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:51294 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751015AbaFEMlH (ORCPT
+	id S1751463AbaFEMln (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 08:41:43 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:60803 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750853AbaFEMlm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 08:41:07 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: "David E. Box" <david.e.box@linux.intel.com>
-Cc: lenb@kernel.org, Randy Wright <rwright@hp.com>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI: Fix bug when acpi reset register is implemented in system memory
-Date: Thu, 05 Jun 2014 14:58:22 +0200
-Message-ID: <7970700.XBb1Ob3tCb@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1401897359-28873-1-git-send-email-david.e.box@linux.intel.com>
-References: <1401897359-28873-1-git-send-email-david.e.box@linux.intel.com>
+	Thu, 5 Jun 2014 08:41:42 -0400
+Date: Thu, 5 Jun 2014 14:41:37 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Davidlohr Bueso <davidlohr@hp.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, "Paul E. McKenney" <paulmck@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] locking tree changes for v3.16
+Message-ID: <20140605124137.GE6758@twins.programming.kicks-ass.net>
+References: <20140603114821.GA23711@gmail.com>
+ <1401832251.8843.3.camel@buesod1.americas.hpqcorp.net>
+ <20140604103003.GE11096@twins.programming.kicks-ass.net>
+ <20140605081742.GC4926@gmail.com>
+ <20140605111110.GA26771@gmail.com>
+ <20140605122715.GD6758@twins.programming.kicks-ass.net>
+ <20140605123512.GB1392@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bi5JUZtvcfApsciF"
+Content-Disposition: inline
+In-Reply-To: <20140605123512.GB1392@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, June 04, 2014 08:55:59 AM David E. Box wrote:
-> From: Randy Wright <rwright@hp.com>
-> 
-> Use acpi_os_map_generic_address to pre-map the reset register if it is memory
-> mapped, thereby preventing https://bugzilla.kernel.org/show_bug.cgi?id=77131
-> 
-> Signed-off-by: Randy Wright <rwright@hp.com>
-> Signed-off-by: David E. Box <david.e.box@linux.intel.com>
 
-Applied with minor changes, thanks!.
+--bi5JUZtvcfApsciF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Please check the bleeding-edge branch of the linux-pm.git tree.
+On Thu, Jun 05, 2014 at 02:35:12PM +0200, Ingo Molnar wrote:
+>=20
+> * Peter Zijlstra <peterz@infradead.org> wrote:
+>=20
+> > On Thu, Jun 05, 2014 at 01:11:10PM +0200, Ingo Molnar wrote:
+> > > Unfortunately even with the latest bits from you the breakage I=20
+> > > reported weeks ago is not resolved:
+> >=20
+> > crap, its the qrwlock bits, I fixed it for the config you gave me.=20
+> > Some paravirt crap header hell thing. Happen to have another=20
+> > .config?
+>=20
+> A simple 'make defconfig' triggers the build failure for me:
+>=20
+>   kernel/locking/qrwlock.c:24:25: fatal error: asm/qrwlock.h: No such fil=
+e or directory
+>=20
+> If I apply the minimal feature-enabling patch below on top of the base=20
+> qrwlock patch.
+>=20
 
-Rafael
+Well, that second patch which you neutered below would've provided that
+asm/qrwlock.h.
 
+Lemme see if I can find it with randconfig with both patches applied.
 
-> ---
->  drivers/acpi/osl.c |   15 +++++++++++++++
->  1 file changed, 15 insertions(+)
-> 
-> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-> index 6776c59..5325844 100644
-> --- a/drivers/acpi/osl.c
-> +++ b/drivers/acpi/osl.c
-> @@ -1798,6 +1798,19 @@ acpi_status __init acpi_os_initialize(void)
->  	acpi_os_map_generic_address(&acpi_gbl_FADT.xpm1b_event_block);
->  	acpi_os_map_generic_address(&acpi_gbl_FADT.xgpe0_block);
->  	acpi_os_map_generic_address(&acpi_gbl_FADT.xgpe1_block);
-> +	if (acpi_gbl_FADT.flags & ACPI_FADT_RESET_REGISTER) {
-> +		/*
-> +		 * Use acpi_os_map_generic_address to pre-map the reset
-> +		 * register if it's in system memory, thereby preventing
-> +		 * https://bugzilla.kernel.org/show_bug.cgi?id=77131
-> +		 */
-> +		int rv;
-> +		struct acpi_generic_address *reset_reg
-> +			= &acpi_gbl_FADT.reset_register;
-> +		rv = acpi_os_map_generic_address(reset_reg);
-> +		pr_info(PREFIX
-> +			"%s: map reset_reg status %d\n", __func__, rv);
-> +	}
->  
->  	return AE_OK;
->  }
-> @@ -1826,6 +1839,8 @@ acpi_status acpi_os_terminate(void)
->  	acpi_os_unmap_generic_address(&acpi_gbl_FADT.xgpe0_block);
->  	acpi_os_unmap_generic_address(&acpi_gbl_FADT.xpm1b_event_block);
->  	acpi_os_unmap_generic_address(&acpi_gbl_FADT.xpm1a_event_block);
-> +	if (acpi_gbl_FADT.flags & ACPI_FADT_RESET_REGISTER)
-> +		acpi_os_unmap_generic_address(&acpi_gbl_FADT.reset_register);
->  
->  	destroy_workqueue(kacpid_wq);
->  	destroy_workqueue(kacpi_notify_wq);
-> 
+--bi5JUZtvcfApsciF
+Content-Type: application/pgp-signature
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTkGWAAAoJEHZH4aRLwOS61wIQAIkwbevXfGsvzpijp/PT2d/P
+jPrKmt7fA2n7PLl6pbfY9gRUsbGSa9LueJEfBjhlr2mEsNpTSGt8X59iylT9A1vG
+UsG6wCJlCdXQkumJrjsMZn+t3lEXnd0mXhOcHVIKdJ3ZZldVGi1gnqw25s0/LrN+
+t99lDWMjvl0Hy9T5zbliH81xUVeAbeWR776o89U3vrBmo/n/KxkNUIJcCZQFg7fH
+gwzW+34sgQ9xdBlXQee81v/IswC0V272pn9oC9bU0KtlfueF0U1n0CUU40gGTboo
+kBzxFAnZRafw6O4kIuvn4z+9XZ6upVMDfMealwd34zx6TPJwcHViYOuMLzW0mUGT
+ihxOVLTE/9NBNlt90KEw/lgRbFORHRc2WsO2V6BRuK9gUHqtsgYahcsT1WrWdXRy
+xVbAuD+YCovwoRvq/9CV/pe+7Ws3hBfFyBgufGGA2TbaIgx8EDRZClTBJFLKfju1
+PiusKKSftf8jUrCkaBdT7b1hgN4vraO3Hz1XCGUTey8doQDaiPMjZGFyRsSF10z1
+GdYtDZFHpQE0zSWJUSE+EH5urxIieIvtWKcBLg4ymPKixugLUVKnvoqHI8gTugxo
+57ZlYc+iDz/fUMa8jhnUSIZExzyOdX5E2YFGx74xx/u+CGCoqBOXbq/d8H2+A5Z2
+8jC9ZYKjT3IShIAWSmez
+=T42R
+-----END PGP SIGNATURE-----
+
+--bi5JUZtvcfApsciF--
