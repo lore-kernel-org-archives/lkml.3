@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751646AbaFEETr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:19:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43560 "EHLO
+	id S1751851AbaFEETu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:19:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43600 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866AbaFEETl (ORCPT
+	with ESMTP id S1751757AbaFEETt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:19:41 -0400
+	Thu, 5 Jun 2014 00:19:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Ulbricht <michael.ulbricht@systec-electronic.com>,
-        Alexander Stein <alexander.stein@systec-electronic.com>,
-        Oliver Neukum <oliver@neukum.org>
-Subject: [PATCH 3.4 003/214] USB: cdc-acm: Remove Motorola/Telit H24 serial interfaces from ACM driver
-Date: Wed,  4 Jun 2014 21:16:06 -0700
-Message-Id: <20140605041640.160516665@linuxfoundation.org>
+        Oleg Nesterov <oleg@redhat.com>,
+        Eilon Greenstein <eilong@broadcom.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.4 014/214] list: introduce list_next_entry() and list_prev_entry()
+Date: Wed,  4 Jun 2014 21:16:17 -0700
+Message-Id: <20140605041641.687399396@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -28,59 +30,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Ulbricht <michael.ulbricht@systec-electronic.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 895d240d1db0b2736d779200788e4c4aea28a0c6 upstream.
+[ Upstream commit 008208c6b26f21c2648c250a09c55e737c02c5f8 ]
 
-By specifying NO_UNION_NORMAL the ACM driver does only use the first two
-USB interfaces (modem data & control). The AT Port, Diagnostic and NMEA
-interfaces are left to the USB serial driver.
+Add two trivial helpers list_next_entry() and list_prev_entry(), they
+can have a lot of users including list.h itself.  In fact the 1st one is
+already defined in events/core.c and bnx2x_sp.c, so the patch simply
+moves the definition to list.h.
 
-Signed-off-by: Michael Ulbricht <michael.ulbricht@systec-electronic.com>
-Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
-Signed-off-by: Oliver Neukum <oliver@neukum.org>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Cc: Eilon Greenstein <eilong@broadcom.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/usb/class/cdc-acm.c |   28 +++++++++++++++++++++-------
- 1 file changed, 21 insertions(+), 7 deletions(-)
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c |    3 ---
+ include/linux/list.h                           |   16 ++++++++++++++++
+ kernel/events/core.c                           |    3 ---
+ 3 files changed, 16 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -1587,13 +1587,27 @@ static const struct usb_device_id acm_id
- 	},
- 	/* Motorola H24 HSPA module: */
- 	{ USB_DEVICE(0x22b8, 0x2d91) }, /* modem                                */
--	{ USB_DEVICE(0x22b8, 0x2d92) }, /* modem           + diagnostics        */
--	{ USB_DEVICE(0x22b8, 0x2d93) }, /* modem + AT port                      */
--	{ USB_DEVICE(0x22b8, 0x2d95) }, /* modem + AT port + diagnostics        */
--	{ USB_DEVICE(0x22b8, 0x2d96) }, /* modem                         + NMEA */
--	{ USB_DEVICE(0x22b8, 0x2d97) }, /* modem           + diagnostics + NMEA */
--	{ USB_DEVICE(0x22b8, 0x2d99) }, /* modem + AT port               + NMEA */
--	{ USB_DEVICE(0x22b8, 0x2d9a) }, /* modem + AT port + diagnostics + NMEA */
-+	{ USB_DEVICE(0x22b8, 0x2d92),   /* modem           + diagnostics        */
-+	.driver_info = NO_UNION_NORMAL, /* handle only modem interface          */
-+	},
-+	{ USB_DEVICE(0x22b8, 0x2d93),   /* modem + AT port                      */
-+	.driver_info = NO_UNION_NORMAL, /* handle only modem interface          */
-+	},
-+	{ USB_DEVICE(0x22b8, 0x2d95),   /* modem + AT port + diagnostics        */
-+	.driver_info = NO_UNION_NORMAL, /* handle only modem interface          */
-+	},
-+	{ USB_DEVICE(0x22b8, 0x2d96),   /* modem                         + NMEA */
-+	.driver_info = NO_UNION_NORMAL, /* handle only modem interface          */
-+	},
-+	{ USB_DEVICE(0x22b8, 0x2d97),   /* modem           + diagnostics + NMEA */
-+	.driver_info = NO_UNION_NORMAL, /* handle only modem interface          */
-+	},
-+	{ USB_DEVICE(0x22b8, 0x2d99),   /* modem + AT port               + NMEA */
-+	.driver_info = NO_UNION_NORMAL, /* handle only modem interface          */
-+	},
-+	{ USB_DEVICE(0x22b8, 0x2d9a),   /* modem + AT port + diagnostics + NMEA */
-+	.driver_info = NO_UNION_NORMAL, /* handle only modem interface          */
-+	},
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c
+@@ -1030,9 +1030,6 @@ static void bnx2x_set_one_vlan_mac_e1h(s
+ 				     ETH_VLAN_FILTER_CLASSIFY, config);
+ }
  
- 	{ USB_DEVICE(0x0572, 0x1329), /* Hummingbird huc56s (Conexant) */
- 	.driver_info = NO_UNION_NORMAL, /* union descriptor misplaced on
+-#define list_next_entry(pos, member) \
+-	list_entry((pos)->member.next, typeof(*(pos)), member)
+-
+ /**
+  * bnx2x_vlan_mac_restore - reconfigure next MAC/VLAN/VLAN-MAC element
+  *
+--- a/include/linux/list.h
++++ b/include/linux/list.h
+@@ -362,6 +362,22 @@ static inline void list_splice_tail_init
+ 	list_entry((ptr)->next, type, member)
+ 
+ /**
++ * list_next_entry - get the next element in list
++ * @pos:	the type * to cursor
++ * @member:	the name of the list_struct within the struct.
++ */
++#define list_next_entry(pos, member) \
++	list_entry((pos)->member.next, typeof(*(pos)), member)
++
++/**
++ * list_prev_entry - get the prev element in list
++ * @pos:	the type * to cursor
++ * @member:	the name of the list_struct within the struct.
++ */
++#define list_prev_entry(pos, member) \
++	list_entry((pos)->member.prev, typeof(*(pos)), member)
++
++/**
+  * list_for_each	-	iterate over a list
+  * @pos:	the &struct list_head to use as a loop cursor.
+  * @head:	the head for your list.
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -1973,9 +1973,6 @@ static void __perf_event_sync_stat(struc
+ 	perf_event_update_userpage(next_event);
+ }
+ 
+-#define list_next_entry(pos, member) \
+-	list_entry(pos->member.next, typeof(*pos), member)
+-
+ static void perf_event_sync_stat(struct perf_event_context *ctx,
+ 				   struct perf_event_context *next_ctx)
+ {
 
 
