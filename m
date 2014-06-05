@@ -1,83 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752890AbaFEPbN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 11:31:13 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:45054 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752128AbaFEPbI (ORCPT
+	id S1752473AbaFEPe7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 11:34:59 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36897 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751162AbaFEPe6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 11:31:08 -0400
+	Thu, 5 Jun 2014 11:34:58 -0400
+Date: Thu, 5 Jun 2014 16:33:53 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Yi Li <yi.li@linaro.org>
+Cc: "ard.biesheuvel@linaro.org" <ard.biesheuvel@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        "steve.capper@linaro.org" <steve.capper@linaro.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM64:DMI: Add smbios/dmi support on arm64
+Message-ID: <20140605153353.GC31564@leverpostej>
+References: <1401811033-16478-1-git-send-email-yi.li@linaro.org>
+ <20140604133200.GA4329@leverpostej>
+ <538F34D0.5090905@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <20140605142135.GM6758@twins.programming.kicks-ass.net>
-References: <1401917658-26065-1-git-send-email-eranian@google.com>
-	<1401917658-26065-6-git-send-email-eranian@google.com>
-	<20140605140400.GM3213@twins.programming.kicks-ass.net>
-	<CABPqkBQRDpbkF73sWKXiXJOO0Jbeb9tRTWqScbjNdTG50EN3ug@mail.gmail.com>
-	<20140605142135.GM6758@twins.programming.kicks-ass.net>
-Date: Thu, 5 Jun 2014 17:31:07 +0200
-Message-ID: <CABPqkBRbst4sgpgE5O_VXt-CSC0VD=aP2KWA0e3Uy64tw7df3A@mail.gmail.com>
-Subject: Re: [PATCH 5/9] perf/x86: implement cross-HT corruption bug workaround
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>,
-        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <538F34D0.5090905@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 5, 2014 at 4:21 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, Jun 05, 2014 at 04:15:17PM +0200, Stephane Eranian wrote:
->> On Thu, Jun 5, 2014 at 4:04 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->> > On Wed, Jun 04, 2014 at 11:34:14PM +0200, Stephane Eranian wrote:
->> >> +
->> >> +     /*
->> >> +      * Modify static constraint with current dynamic
->> >> +      * state of thread
->> >> +      *
->> >> +      * EXCLUSIVE: sibling counter measuring exclusive event
->> >> +      * SHARED   : sibling counter measuring non-exclusive event
->> >> +      * UNUSED   : sibling counter unused
->> >> +      */
->> >> +     for_each_set_bit(i, cx->idxmsk, X86_PMC_IDX_MAX) {
->> >> +             /*
->> >> +              * exclusive event in sibling counter
->> >> +              * our corresponding counter cannot be used
->> >> +              * regardless of our event
->> >> +              */
->> >> +             if (xl->state[i] == INTEL_EXCL_EXCLUSIVE)
->> >> +                     __clear_bit(i, cx->idxmsk);
->> >> +             /*
->> >> +              * if measuring an exclusive event, sibling
->> >> +              * measuring non-exclusive, then counter cannot
->> >> +              * be used
->> >> +              */
->> >> +             if (is_excl && xl->state[i] == INTEL_EXCL_SHARED)
->> >> +                     __clear_bit(i, cx->idxmsk);
->> >> +     }
->> >> +
->> >> +     /*
->> >> +      * recompute actual bit weight for scheduling algorithm
->> >> +      */
->> >> +     cx->weight = hweight64(cx->idxmsk64);
->> >
->> > So I think we talked about this a bit; what happens if CPU0 (taking your
->> > 4 core HSW-client) is first to program its counters and takes all 4 in
->> > exclusive mode?
->> >
->> > Then there's none left for CPU4.
->> >
->> > Did I miss where we avoid that problem, or is that an actual issue?
->>
->> Yes, this patch series does not address this problem yet. It will be
->> in a second series.
->> Don't have a good solution yet.
->
-> We could limit each cpu to num_counters/2 exclusive slots. That'll still
-> be painful with some constrained events I imagine, but in general that
-> should 'work' I suppose.
+On Wed, Jun 04, 2014 at 04:01:36PM +0100, Yi Li wrote:
+> Hi Mark,
+> 
+>      Please see the comments below:
+> 
+> On Wednesday, June 04, 2014 09:32 PM, Mark Rutland wrote:
+> > On Tue, Jun 03, 2014 at 04:57:13PM +0100, Yi Li wrote:
+> >> Add smbios/dmi support on arm64 system, it depends on
+> >> EFI boot.
+> > And what exactly does this provide us with?
+> >
+> > What is exposed through SMBIOS/DMI, and why would I want to enable it?
+> Yi: SMBIOS/DMI is one basic spec/feature for server product(like x86 and 
+> IA64).
+>       Many OEMs/ODMs hope to use ARM64 as server's processor.
+>       So we need to support SMBIOS on ARM64.
+> 
+>      SMBIOS mainly describes some hardware and software information for 
+> the system, like BIOS information
+>      CPU information,  Memory information ,and so on. please refer to 
+> http://www.dmtf.org/standards/smbios
 
-Ok, tried this. It avoids the problems and just requires a 3 line patch.
-So we could go with that for now. It would avoid total starvation.
+What information does it provide that is useful that we cannot get from
+elsewhere?
+
+What use case is enabled by having this support, other than being able
+to tick a box that we have a feature we might not even need?
+
+> 
+> >
+> >> Signed-off-by: Yi Li <yi.li@linaro.org>
+> >> ---
+> >>
+> >> Changes since v1:
+> >>    -Followed Ard Biesheuvel's suggestion to rebase the patch on
+> >>     Matt Fleming's arm64-efi branch.
+> >>
+> >>   arch/arm64/Kconfig           |   10 ++++++++++
+> >>   arch/arm64/include/asm/dmi.h |   28 ++++++++++++++++++++++++++++
+> >>   arch/arm64/kernel/setup.c    |    2 ++
+> >>   3 files changed, 40 insertions(+)
+> >>   create mode 100644 arch/arm64/include/asm/dmi.h
+> >>
+> >> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+> >> index 6c71f12..13ee261 100644
+> >> --- a/arch/arm64/Kconfig
+> >> +++ b/arch/arm64/Kconfig
+> >> @@ -294,6 +294,16 @@ config EFI
+> >>   	  allow the kernel to be booted as an EFI application. This
+> >>   	  is only useful on systems that have UEFI firmware.
+> >>   
+> >> +config DMI
+> >> +	bool "Enable support for SMBIOS (DMI) tables"
+> >> +	depends on EFI
+> >> +	default y
+> >> +	help
+> >> +	  This enables SMBIOS/DMI feature for systems.
+> >> +
+> >> +	  This option is only useful on systems that have UEFI firmware.
+> >> +	  However, even with this option, the resultant kernel should
+> >> +	  continue to boot on existing non-UEFI platforms.
+> >>   endmenu
+> >>   
+> >>   menu "Userspace binary formats"
+> >> diff --git a/arch/arm64/include/asm/dmi.h b/arch/arm64/include/asm/dmi.h
+> >> new file mode 100644
+> >> index 0000000..f2198bf
+> >> --- /dev/null
+> >> +++ b/arch/arm64/include/asm/dmi.h
+> >> @@ -0,0 +1,28 @@
+> >> +/*
+> >> + * arch/arm64/include/asm/dmi.h
+> >> + *
+> >> + * Copyright (C) 2013 Linaro Limited.
+> >> + * Written by: Yi Li (yi.li@linaro.org)
+> >> + *
+> >> + * based on arch/ia64/include/asm/dmi.h
+> >> + *
+> >> + * This file is subject to the terms and conditions of the GNU General Public
+> >> + * License.  See the file "COPYING" in the main directory of this archive
+> >> + * for more details.
+> >> + */
+> >> +
+> >> +
+> >> +#ifndef _ASM_DMI_H
+> >> +#define _ASM_DMI_H 1
+> >> +
+> >> +#include <linux/slab.h>
+> >> +#include <asm/io.h>
+> > Shouldn't that be linux/efi.h?
+> >
+> > Why do we need asm/io.h?
+>      Yi: porting it from IA64 , so the io.h is not needed exactly!
+>           but slab.h is must included ,not efi.h (tested by compiling)
+
+Below you refer to efi_lookup_mapped_addr, which (as far as I can tell)
+is defined in efi.h. You might be getting lucky with users of
+dmi_early_remap and dmi_remap having already incldued efi.h, but you
+shouldn't rely on it.
+
+If you make use of something, you should include the header that defines
+it.
+
+Cheers,
+Mark.
+
+> >> +
+> >> +/* Use efi mappings for DMI */
+> >> +#define dmi_early_remap(x, l)	efi_lookup_mapped_addr(x)
+> >> +#define dmi_early_unmap(x, l)
+> >> +#define dmi_remap(x, l)			efi_lookup_mapped_addr(x)
+> >> +#define dmi_unmap(x)
+> >> +#define dmi_alloc(l)			kzalloc(l, GFP_ATOMIC)
+> >> +
+> >> +#endif
+> > None of these seem to use anything from io.h directly.
+>      Yi: You are right , io.h doesn't need.
+> > Cheers,
+> > Mark.
+> 
+> 
