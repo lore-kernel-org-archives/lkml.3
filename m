@@ -1,77 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752687AbaFEV7A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 17:59:00 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47835 "EHLO radon.swed.at"
+	id S1752737AbaFEV7V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 17:59:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41387 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752623AbaFEV66 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 17:58:58 -0400
-Message-ID: <5390E819.2070709@nod.at>
-Date: Thu, 05 Jun 2014 23:58:49 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1751651AbaFEV7R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 17:59:17 -0400
+Date: Thu, 5 Jun 2014 23:59:11 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+X-X-Sender: jikos@twin.jikos.cz
+To: Greg KH <gregkh@linuxfoundation.org>
+cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: Re: Change in security maintainer for a few weeks
+In-Reply-To: <20140605183050.GA5054@kroah.com>
+Message-ID: <alpine.LRH.2.00.1406052355500.2434@twin.jikos.cz>
+References: <20140605183050.GA5054@kroah.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: hannes@cmpxchg.org, bsingharora@gmail.com, kamezawa.hiroyu@jp.fujitsu.com,
-        akpm@linux-foundation.org, vdavydov@parallels.com, tj@kernel.org,
-        handai.szj@taobao.com, rientjes@google.com, oleg@redhat.com,
-        rusty@rustcorp.com.au, kirill.shutemov@linux.intel.com,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [RFC][PATCH] oom: Be less verbose if the oom_control event fd
- has listeners
-References: <1401976841-3899-1-git-send-email-richard@nod.at> <1401976841-3899-2-git-send-email-richard@nod.at> <20140605150025.GB15939@dhcp22.suse.cz> <5390930A.8050504@nod.at> <20140605161807.GD15939@dhcp22.suse.cz>
-In-Reply-To: <20140605161807.GD15939@dhcp22.suse.cz>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 05.06.2014 18:18, schrieb Michal Hocko:
-> On Thu 05-06-14 17:55:54, Richard Weinberger wrote:
->> Am 05.06.2014 17:00, schrieb Michal Hocko:
->>> On Thu 05-06-14 16:00:41, Richard Weinberger wrote:
->>>> Don't spam the kernel logs if the oom_control event fd has listeners.
->>>> In this case there is no need to print that much lines as user space
->>>> will anyway notice that the memory cgroup has reached its limit.
->>>
->>> But how do you debug why it is reaching the limit and why a particular
->>> process has been killed?
->>
->> In my case it's always because customer's Java application gone nuts.
->> So I don't really have to debug a lot. ;-)
->> But I can understand your point.
-> 
-> If you know that handling memcg-OOM condition is easy then maybe you can
-> not only listen for the OOM notifications but also handle OOM conditions
-> and kill the offender. This would mean that kernel doesn't try to kill
-> anything and so wouldn't dump anything to the log.
+On Thu, 5 Jun 2014, Greg KH wrote:
 
-Basically I don't care what customers run in their containers.
-But almost every OOM is because their Java apps consume too much memory.
-Mostly because they don't know exactly how much memory they need or
-because of completely broken JVM heap settings.
+> James has had to step back from doing kernel work for a few weeks, so
+> I've offered to step up and handle the security patches to get shuttled
+> to Linus for merging for a while.
 
-All my OOM listener does is sending a mail a la "Your container ran out of memory, go figure...".
+As exactly this (working with active contributors to help co-maintain the 
+subsystem) has been brought at the ksummit maling list, I am just curious 
+whether noone else actively working in that area was willing to step up?
 
->>> If we are printing too much then OK, let's remove those parts which are
->>> not that useful but hiding information which tells us more about the oom
->>> decision doesn't sound right to me.
->>
->> What about adding a sysctl like "vm.oom_verbose"?
->> By default it would be 1.
->> If set to 0 the full OOM information is only printed out if nobody listens
->> to the event fd.
-> 
-> If we have a knob then I guess it should be global and shared by memcg
-> as well. I can imagine that somebody might be interested only in the
-> tasks dump, while somebody would like to see LRU states and other memory
-> counters. So it would be ideally a bitmask of things to output. I do not
-> think that a memcg specific solution is good, though.
+	$ ./scripts/get_maintainer.pl --git -f security/
+	James Morris <james.l.morris@oracle.com> (supporter:SECURITY SUBSYSTEM)
+	Mimi Zohar <zohar@linux.vnet.ibm.com> (commit_signer:51/220=23%)
+	Paul Moore <pmoore@redhat.com> (commit_signer:43/220=20%,authored:24/220=11%)
+	Eric Paris <eparis@redhat.com> (commit_signer:43/220=20%,authored:16/220=7%)
+	David Howells <dhowells@redhat.com> (commit_signer:29/220=13%,authored:24/220=11%)
+	Roberto Sassu <roberto.sassu@polito.it> (commit_signer:24/220=11%,authored:19/220=9%)
+	John Johansen <john.johansen@canonical.com> (authored:20/220=9%)
 
-I'm not sure if such a fine grained setting is really useful.
+If not, then I think this can be shown as a prime example why the problem 
+of "non-substituability" of many maintainers is actually real.
 
 Thanks,
-//richard
+
+-- 
+Jiri Kosina
+SUSE Labs
+
