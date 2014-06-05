@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751989AbaFERyh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 13:54:37 -0400
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:57043 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751418AbaFERyg (ORCPT
+	id S1752388AbaFERzR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 13:55:17 -0400
+Received: from mailout2.w2.samsung.com ([211.189.100.12]:61581 "EHLO
+	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751495AbaFERzP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 13:54:36 -0400
-Message-ID: <1401990873.13877.34.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [RFC PATCH 1/1] remove redundant compare, cmpxchg already does
- it
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andev <debiandev@gmail.com>, Pranith Kumar <pranith@gatech.edu>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 05 Jun 2014 10:54:33 -0700
-In-Reply-To: <20140605072248.GE3213@twins.programming.kicks-ass.net>
-References: <538F83DF.8090303@gatech.edu>
-	 <CAJUuVQ4VioKuVuCTXr3BcfRpYs+9+5bx9m2WLO7Swsnni0tUAw@mail.gmail.com>
-	 <20140605072248.GE3213@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 5 Jun 2014 13:55:15 -0400
+X-AuditID: cbfec37a-b7f206d000005572-7c-5390af018f40
+Message-id: <5390AEF8.6050908@samsung.com>
+Date: Thu, 05 Jun 2014 11:55:04 -0600
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.5.0
+MIME-version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux@roeck-us.net, satoru.takeuchi@gmail.com, stable@vger.kernel.org,
+        Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [PATCH 3.14 000/228] 3.14.6-stable review
+References: <20140604232347.966798903@linuxfoundation.org>
+In-reply-to: <20140604232347.966798903@linuxfoundation.org>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.34.6]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsVy+t9hP13G9ROCDX5OsrGYs34Nm0Xz4vVs
+	Fpd3zWGzeLLwDJPF1FMTWCwWbHzEaPGo7y27A7vHzll32T1OzPjN4rF/7hog93sDu8fnTXIB
+	rFFcNimpOZllqUX6dglcGZNnbGQsOMlWse9acAPjbNYuRk4OCQETic2PJzBB2GISF+6tZ+ti
+	5OIQEljGKLF0UQuU08sk0bRgAxOEs4FR4vakJnaQFl4BLYktX94ygtgsAqoSz2euBxvLJqAu
+	8fn1DrAaIQE5iaYlq5m7GDk4RAUiJB5fEIJoFZT4MfkeC4gtIhAssfbrQkaQ+cwCqxglrl9e
+	zgaSEBYwk3j35gUrxBwric1fV4E1cApYS1ya1AlWwwxU86hlHTOELS+xec1bZoh6ZYk/l09B
+	vaYg8ehqK/sERpFZSHbPQtI+C0n7AkbmVYxipcXJBcVJ6akVhnrFibnFpXnpesn5uZsYIZFU
+	tYPxzlebQ4wCHIxKPLwB/ROChVgTy4orcw8xSnAwK4nw8qwACvGmJFZWpRblxxeV5qQWH2Jk
+	4uCUamC0PqSx2PHXpulK9wuvLfttOl28sX/rrTxjb+b4mLrCWXIr33abC5kn9+Up7nHIvrHt
+	j/LZa/s6vcuFPN94pZ/78Lgm9dg0XhUrvfbAP5kPNp9gi7fm0dHqsNvObH9II3GDala3Q0wf
+	28T4zsR/lin1Ztq7nENt/ROqHwhfMbVkq6xu7SqZqcRSnJFoqMVcVJwIAGxBsoyCAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-06-05 at 09:22 +0200, Peter Zijlstra wrote:
-> On Wed, Jun 04, 2014 at 04:56:50PM -0400, Andev wrote:
-> > On Wed, Jun 4, 2014 at 4:38 PM, Pranith Kumar <pranith@gatech.edu> wrote:
-> > > remove a redundant comparision
-> > >
-> > > Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-> > > ---
-> > >  kernel/locking/rwsem-xadd.c | 3 +--
-> > >  1 file changed, 1 insertion(+), 2 deletions(-)
-> > >
-> > > diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
-> > > index 1f99664b..6f8bd3c 100644
-> > > --- a/kernel/locking/rwsem-xadd.c
-> > > +++ b/kernel/locking/rwsem-xadd.c
-> > > @@ -249,8 +249,7 @@ static inline bool rwsem_try_write_lock(long count, struct rw_semaphore *sem)
-> > >  {
-> > >      if (!(count & RWSEM_ACTIVE_MASK)) {
-> > >          /* try acquiring the write lock */
-> > > -        if (sem->count == RWSEM_WAITING_BIAS &&
-> > > -            cmpxchg(&sem->count, RWSEM_WAITING_BIAS,
-> > > +        if (cmpxchg(&sem->count, RWSEM_WAITING_BIAS,
-> > >                  RWSEM_ACTIVE_WRITE_BIAS) == RWSEM_WAITING_BIAS) {
-> > 
-> > This was mainly done to avoid the cost of a cmpxchg in case where they
-> > are not equal. Not sure if it really makes a difference though.
-> 
-> It does, a cache hot cmpxchg instruction is 24 cycles (as is pretty much
-> any other LOCKed ins, as measured on my WSM-EP), not to mention that
-> cmpxchg is a RMW so it needs to grab the cacheline in exclusive mode.
-> 
-> A read, which allows the cacheline to remain in shared, and non LOCKed
-> ops are way faster.
+On 06/04/2014 05:20 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.14.6 release.
+> There are 228 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Fri Jun  6 23:23:11 UTC 2014.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.14.6-rc1.gz
+> and the diffstat can be found below.
+>
+> thanks,
+>
+> greg k-h
+>
 
-Yep, and we also do it in mutexes. The numbers and benefits on larger
-systems speaks for themselves. It would, perhaps, be worth adding a
-comment as it does seem redundant if you're not thinking about the
-cacheline when reading the code.
+Compiled and booted on my test system with no dmesg regressions.
 
+-- Shuah
 
+-- 
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
