@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751776AbaFEUmX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 16:42:23 -0400
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:42226 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751365AbaFEUmV (ORCPT
+	id S1752013AbaFEUoQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 16:44:16 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:61280 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751368AbaFEUoN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 16:42:21 -0400
+	Thu, 5 Jun 2014 16:44:13 -0400
+Date: Thu, 5 Jun 2014 23:44:11 +0300
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, dhowells@redhat.com
+Subject: [PATCH] doc: fix important typo re memory barriers
+Message-ID: <20140605204410.GA26217@p183.telecom.by>
 MIME-Version: 1.0
-In-Reply-To: <CAD=FV=Ucn20GDib=t=OOT+8YjGuk6uoWrP1qourY=YfrLJj1WA@mail.gmail.com>
-References: <1401398496-4624-1-git-send-email-dianders@chromium.org>
-	<1401467562-5585-1-git-send-email-dianders@chromium.org>
-	<CAD=FV=W8-M5iOMDG190WGaeSySTd=qcp30k-H8DMUs_C5Pdwog@mail.gmail.com>
-	<5390C19A.9060201@gmail.com>
-	<CAD=FV=UZsEh+bOQxc8CP+yG5a5Sbp2eTyq8B_iq9u5io5G0B6A@mail.gmail.com>
-	<5390C5A9.5070900@gmail.com>
-	<CAD=FV=Ucn20GDib=t=OOT+8YjGuk6uoWrP1qourY=YfrLJj1WA@mail.gmail.com>
-Date: Thu, 5 Jun 2014 13:42:20 -0700
-X-Google-Sender-Auth: z_wvljeoiiOUJisESL8k8-ZNLHU
-Message-ID: <CAD=FV=XEqWTrRCPndLPuXnVeE_wLmDXCkgL-V95UZ0S1x4ppaA@mail.gmail.com>
-Subject: Re: [PATCH v2] clk: exynos5420: Keep aclk66_peric enabled during boot
-From: Doug Anderson <dianders@chromium.org>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: Tomasz Figa <t.figa@samsung.com>, Mike Turquette <mturquette@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Examples introducing neccesity of RMB+WMP pair reads as
 
-On Thu, Jun 5, 2014 at 1:10 PM, Doug Anderson <dianders@chromium.org> wrote:
-> Hmmm, I think I've convinced myself that your suggestion of just
-> removing this gate from the table is the right thing to do.  Patch
-> will be coming up soon.
+	A=3	READ B
+	www	rrrrrr
+	B=4	READ A
 
-It's here <https://patchwork.kernel.org/patch/4308631/>
+Note the opposite order of reads vs writes.
 
-Ironically, that patch has a much worse diffstat and also changes
-devicetree bindings (!).  ...but it does seem better.
+But the first example without barriers reads as
 
--Doug
+	A=3	READ A
+	B=4	READ B
+
+There are 4 outcomes in the first example.
+But if someone new to the concept tries to insert barriers like this:
+
+	A=3	READ A
+	www	rrrrrr
+	B=4	READ B
+
+he will still get all 4 possible outcomes, because "READ A" is first.
+
+All this can be utterly confusing because barrier pair seems to be
+superfluous. In short, fixup first example to match latter examples
+with barriers.
+
+Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
+---
+
+ Documentation/memory-barriers.txt |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/Documentation/memory-barriers.txt
++++ b/Documentation/memory-barriers.txt
+@@ -115,8 +115,8 @@ For example, consider the following sequence of events:
+ 	CPU 1		CPU 2
+ 	===============	===============
+ 	{ A == 1; B == 2 }
+-	A = 3;		x = A;
+-	B = 4;		y = B;
++	A = 3;		x = B;
++	B = 4;		y = A;
+ 
+ The set of accesses as seen by the memory system in the middle can be arranged
+ in 24 different combinations:
