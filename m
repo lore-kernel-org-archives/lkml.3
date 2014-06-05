@@ -1,49 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752051AbaFEVtz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 17:49:55 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751354AbaFEVtw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 17:49:52 -0400
-Message-ID: <5390E5FD.5030400@nod.at>
-Date: Thu, 05 Jun 2014 23:49:49 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Honggang Li <enjoymindful@gmail.com>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        user-mode-linux-user@lists.sourceforge.net
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] remove csum_partial_copy_generic_i386 to clean up exception
- table
-References: <538F275B.7000508@nod.at> <1401941724-6703-1-git-send-email-enjoymindful@gmail.com> <1401941724-6703-2-git-send-email-enjoymindful@gmail.com>
-In-Reply-To: <1401941724-6703-2-git-send-email-enjoymindful@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+	id S1752465AbaFEVvF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 17:51:05 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:51114 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751589AbaFEVvD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 17:51:03 -0400
+Date: Thu, 05 Jun 2014 14:50:59 -0700 (PDT)
+Message-Id: <20140605.145059.8146842085083371.davem@davemloft.net>
+To: linus.luessing@web.de
+Cc: netdev@vger.kernel.org, bridge@lists.linux-foundation.org,
+        stephen@networkplumber.org, herbert@gondor.apana.org.au,
+        linux-kernel@vger.kernel.org, b.a.t.m.a.n@lists.open-mesh.org
+Subject: Re: [PATCHv3 net-next 0/4] bridge: multicast snooping patches /
+ exports
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20140605212016.GE2544@Linus-Debian>
+References: <20140602184215.GA2460@Linus-Debian>
+	<20140605.004311.19890338095820543.davem@davemloft.net>
+	<20140605212016.GE2544@Linus-Debian>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 05 Jun 2014 14:51:02 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 05.06.2014 06:15, schrieb Honggang Li:
-> arch/x86/um/checksum_32.S had been copy & paste from x86. When build
-> x86 uml, csum_partial_copy_generic_i386 mess up the exception table.
-> In fact, exception table dose not work in uml kernel.
+From: Linus Lüssing <linus.luessing@web.de>
+Date: Thu, 5 Jun 2014 23:20:16 +0200
 
-Are you sure that exception tables do not work on UML?
-I said, I'm not sure. Can you please find out?
+> Oh, I'm sorry, I thought it'd only be necessary for the v1
+> patchset. Going to change that from now on. Anyways, here it is
+> (copied 'n' pasted):
 
-In arch/um/kernel/trap.c:segv() we have the mechanism for it:
-        else if (!is_user && arch_fixup(ip, regs))
-                goto out;
-
-The interesting question is, is this by design or was it just copy&pasted from x86
-many moons ago? :)
-
-> And csum_partial_copy_generic_i386 never been called. So, delete it.
-
-I like such clean ups. :-)
-
-Thanks,
-//richard
+When I ask for changes, you need to make a new fresh submission
+of your patch(s).
