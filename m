@@ -1,87 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751799AbaFEOd4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 10:33:56 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48235 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750925AbaFEOdy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 10:33:54 -0400
-Date: Thu, 5 Jun 2014 07:33:12 -0700
-From: tip-bot for Andrew Morton <tipbot@zytor.com>
-Message-ID: <tip-pn6pslaplw031lykweojsn8c@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        tim.c.chen@linux.intel.com, akpm@linux-foundation.org,
-        tglx@linutronix.de, davidlohr@hp.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        tim.c.chen@linux.intel.com, akpm@linux-foundation.org,
-        tglx@linutronix.de, davidlohr@hp.com
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:locking/core] locking/rwsem: Fix checkpatch.pl warnings
-Git-Commit-ID: 0cc3d01164aba483edd8232aa5c781136843c367
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1752201AbaFEOeN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 10:34:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7802 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752146AbaFEOeL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 10:34:11 -0400
+Date: Thu, 5 Jun 2014 16:33:07 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ingo Molnar <mingo@elte.hu>, Denys Vlasenko <dvlasenk@redhat.com>,
+        Jim Keniston <jkenisto@us.ibm.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL] uprobes: tmpfs support (Was: uprobes/x86: Rename
+	arch_uprobe->def into ->dflt, minor comment updates)
+Message-ID: <20140605143307.GA24982@redhat.com>
+References: <20140601192520.GA14539@redhat.com> <20140603182142.GA5097@gmail.com> <20140603183057.GA31382@redhat.com> <20140603183919.GC7664@gmail.com> <20140603191315.GA32736@redhat.com> <538E8FAA.7010302@hitachi.com> <20140604163945.GA26429@redhat.com> <20140605092850.GA4632@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20140605092850.GA4632@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0cc3d01164aba483edd8232aa5c781136843c367
-Gitweb:     http://git.kernel.org/tip/0cc3d01164aba483edd8232aa5c781136843c367
-Author:     Andrew Morton <akpm@linux-foundation.org>
-AuthorDate: Wed, 4 Jun 2014 20:19:48 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 5 Jun 2014 10:39:36 +0200
+On 06/05, Ingo Molnar wrote:
+>
+> * Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> > On 06/04, Masami Hiramatsu wrote:
+> > >
+> > > Hmm, how about ->defparam ? :)
+> >
+> > Fine with me ;)
+> >
+> > Ingo, will you agree with s/def/defparam/ ?
+>
+> Certainly! :)
 
-locking/rwsem: Fix checkpatch.pl warnings
+Great ;) I updated this patch in uprobes/core, please pull from
 
-WARNING: line over 80 characters
-#205: FILE: kernel/locking/rwsem-xadd.c:275:
-+		old = cmpxchg(&sem->count, count, count + RWSEM_ACTIVE_WRITE_BIAS);
+  git://git.kernel.org/pub/scm/linux/kernel/git/oleg/misc uprobes/core
 
-WARNING: line over 80 characters
-#376: FILE: kernel/locking/rwsem-xadd.c:434:
-+		 * If there were already threads queued before us and there are no
+based on tip:perf/uprobes
 
-WARNING: line over 80 characters
-#377: FILE: kernel/locking/rwsem-xadd.c:435:
-+		 * active writers, the lock must be read owned; so we try to wake
 
-total: 0 errors, 3 warnings, 417 lines checked
+Oleg Nesterov (3):
+      uprobes: Shift ->readpage check from __copy_insn() to uprobe_register()
+      uprobes: Teach copy_insn() to support tmpfs
+      uprobes/x86: Rename arch_uprobe->def to ->defparam, minor comment updates
 
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/n/tip-pn6pslaplw031lykweojsn8c@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/locking/rwsem-xadd.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/uprobes.h |    2 +-
+ arch/x86/kernel/uprobes.c      |   37 ++++++++++++++++++-------------------
+ kernel/events/uprobes.c        |   17 +++++++++++------
+ 3 files changed, 30 insertions(+), 26 deletions(-)
 
-diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
-index 4a75278..dacc321 100644
---- a/kernel/locking/rwsem-xadd.c
-+++ b/kernel/locking/rwsem-xadd.c
-@@ -433,9 +433,9 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
- 		count = ACCESS_ONCE(sem->count);
- 
- 		/*
--		 * If there were already threads queued before us and there are no
--		 * active writers, the lock must be read owned; so we try to wake
--		 * any read locks that were queued ahead of us.
-+		 * If there were already threads queued before us and there are
-+		 * no active writers, the lock must be read owned; so we try to
-+		 * wake any read locks that were queued ahead of us.
- 		 */
- 		if (count > RWSEM_WAITING_BIAS)
- 			sem = __rwsem_do_wake(sem, RWSEM_WAKE_READERS);
