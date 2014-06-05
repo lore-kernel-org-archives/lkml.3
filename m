@@ -1,200 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751800AbaFEOyh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 10:54:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58199 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751098AbaFEOyg (ORCPT
+	id S1752045AbaFEOyx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 10:54:53 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:55004 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751986AbaFEOyw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 10:54:36 -0400
+	Thu, 5 Jun 2014 10:54:52 -0400
+Date: Thu, 5 Jun 2014 16:54:47 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ingo Molnar <mingo@elte.hu>, Denys Vlasenko <dvlasenk@redhat.com>,
+        Jim Keniston <jkenisto@us.ibm.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] uprobes: tmpfs support (Was: uprobes/x86: Rename
+ arch_uprobe->def into ->dflt, minor comment updates)
+Message-ID: <20140605145447.GA19362@gmail.com>
+References: <20140601192520.GA14539@redhat.com>
+ <20140603182142.GA5097@gmail.com>
+ <20140603183057.GA31382@redhat.com>
+ <20140603183919.GC7664@gmail.com>
+ <20140603191315.GA32736@redhat.com>
+ <538E8FAA.7010302@hitachi.com>
+ <20140604163945.GA26429@redhat.com>
+ <20140605092850.GA4632@gmail.com>
+ <20140605143307.GA24982@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAG-2HqXiFgy5M=k55iOYAdXezxsN-ZanWRWDgH-6fuU-uLawOQ@mail.gmail.com>
-References: <1401896895-14262-1-git-send-email-tiwai@suse.de>
-	<CACVXFVPpmdXJV2CC-U=bsA820VD42i2-OqBfNfTPPaMergu8TQ@mail.gmail.com>
-	<CAG-2HqU=LAXr0o2e9RRCmrX1eWouhepEZHaPfBjrs64xUeb=gw@mail.gmail.com>
-	<CACVXFVP1uS7szLqvabtMbiaUgd13bWoYXv5q-Az7wBia=ogf7Q@mail.gmail.com>
-	<s5hfvjj1n90.wl%tiwai@suse.de>
-	<CACVXFVP5CSNoyThAcsmihYg_bkq2wn1JtiFJ_7ehpxwjBSaZxQ@mail.gmail.com>
-	<s5hbnu71mf1.wl%tiwai@suse.de>
-	<CACVXFVPWq93u5KmLhr+g23t4AiGAnLfd+hX3viajzR_KN+sMrw@mail.gmail.com>
-	<CAG-2HqXiFgy5M=k55iOYAdXezxsN-ZanWRWDgH-6fuU-uLawOQ@mail.gmail.com>
-Date: Thu, 5 Jun 2014 22:54:33 +0800
-Message-ID: <CACVXFVNKGPyv6AVUctotD=Sc97VRRGCXVzJ50pprjCNB7jhUxg@mail.gmail.com>
-Subject: Re: [PATCH v2] firmware loader: allow disabling of udev as firmware loader
-From: Ming Lei <ming.lei@canonical.com>
-To: Tom Gundersen <teg@jklm.no>
-Cc: Takashi Iwai <tiwai@suse.de>, LKML <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Stefan Roese <sr@denx.de>,
-        Arnd Bergmann <arnd@arndb.de>, Abhay Salunke <Abhay_Salunke@dell.com>,
-        Kay Sievers <kay@vrfy.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140605143307.GA24982@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 5, 2014 at 10:32 PM, Tom Gundersen <teg@jklm.no> wrote:
-> On Thu, Jun 5, 2014 at 4:24 PM, Ming Lei <ming.lei@canonical.com> wrote:
->> On Thu, Jun 5, 2014 at 10:05 PM, Takashi Iwai <tiwai@suse.de> wrote:
->>> At Thu, 5 Jun 2014 21:59:52 +0800,
->>> Ming Lei wrote:
->>>>
->>>> On Thu, Jun 5, 2014 at 9:47 PM, Takashi Iwai <tiwai@suse.de> wrote:
->>>> > At Thu, 5 Jun 2014 21:31:56 +0800,
->>>> > Ming Lei wrote:
->>>> >>
->>>> >> On Thu, Jun 5, 2014 at 8:25 PM, Tom Gundersen <teg@jklm.no> wrote:
->>>> >> >
->>>> >> > On 5 Jun 2014 14:18, "Ming Lei" <ming.lei@canonical.com> wrote:
->>>> >> >>
->>>> >> >> On Wed, Jun 4, 2014 at 11:48 PM, Takashi Iwai <tiwai@suse.de> wrote:
->>>> >> >> > [The patch was originally proposed by Tom Gundersen, and rewritten
->>>> >> >> >  afterwards by me; most of changelogs below borrowed from Tom's
->>>> >> >> >  original patch -- tiwai]
->>>> >> >> >
->>>> >> >> > Currently (at least) the dell-rbu driver selects FW_LOADER_USER_HELPER,
->>>> >> >> > which means that distros can't really stop loading firmware through
->>>> >> >> > udev without breaking other users (though some have).
->>>> >> >> >
->>>> >> >> > Ideally we would remove/disable the udev firmware helper in both the
->>>> >> >> > kernel and in udev, but if we were to disable it in udev and not the
->>>> >> >> > kernel, the result would be (seemingly) hung kernels as no one would
->>>> >> >> > be around to cancel firmware requests.
->>>> >> >> >
->>>> >> >> > This patch allows udev firmware loading to be disabled while still
->>>> >> >> > allowing non-udev firmware loading, as done by the dell-rbu driver, to
->>>> >> >> > continue working. This is achieved by only using the fallback
->>>> >> >> > mechanism when the uevent is suppressed.
->>>> >> >> >
->>>> >> >> > The patch renames the user-selectable Kconfig from FW_LOADER_USER_HELPER
->>>> >> >> > to FW_LOADER_USER_HELPER_FALLBACK, and the former is reverse-selected
->>>> >> >> > by the latter or the drivers that need userhelper like dell-rbu.
->>>> >> >> >
->>>> >> >> > Also, the "default y" is removed together with this change, since it's
->>>> >> >> > been deprecated in udev upstream, thus rather better to disable it
->>>> >> >> > nowadays.
->>>> >> >> >
->>>> >> >> > Tested with
->>>> >> >> >     FW_LOADER_USER_HELPER=n
->>>> >> >> >     LATTICE_ECP3_CONFIG=y
->>>> >> >> >     DELL_RBU=y
->>>> >> >> > and udev without the firmware loading support, but I don't have the
->>>> >> >> > hardware to test the lattice/dell drivers, so additional testing would
->>>> >> >> > be appreciated.
->>>> >> >> >
->>>> >> >> > Reviewed-by: Tom Gundersen <teg@jklm.no>
->>>> >> >> > Cc: Ming Lei <ming.lei@canonical.com>
->>>> >> >> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->>>> >> >> > Cc: Abhay Salunke <Abhay_Salunke@dell.com>
->>>> >> >> > Cc: Stefan Roese <sr@denx.de>
->>>> >> >> > Cc: Arnd Bergmann <arnd@arndb.de>
->>>> >> >> > Cc: Kay Sievers <kay@vrfy.org>
->>>> >> >> > Signed-off-by: Takashi Iwai <tiwai@suse.de>
->>>> >> >> > ---
->>>> >> >> >  drivers/base/Kconfig          | 10 ++++++++--
->>>> >> >> >  drivers/base/firmware_class.c | 15 ++++++++++-----
->>>> >> >> >  include/linux/firmware.h      |  2 +-
->>>> >> >> >  3 files changed, 19 insertions(+), 8 deletions(-)
->>>> >> >> >
->>>> >> >> > diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
->>>> >> >> > index 8fa8deab6449..d0bb32e4c416 100644
->>>> >> >> > --- a/drivers/base/Kconfig
->>>> >> >> > +++ b/drivers/base/Kconfig
->>>> >> >> > @@ -144,15 +144,21 @@ config EXTRA_FIRMWARE_DIR
->>>> >> >> >           some other directory containing the firmware files.
->>>> >> >> >
->>>> >> >> >  config FW_LOADER_USER_HELPER
->>>> >> >> > +       bool
->>>> >> >> > +
->>>> >> >> > +config FW_LOADER_USER_HELPER_FALLBACK
->>>> >> >> >         bool "Fallback user-helper invocation for firmware loading"
->>>> >> >> >         depends on FW_LOADER
->>>> >> >> > -       default y
->>>> >> >> > +       select FW_LOADER_USER_HELPER
->>>> >> >> >         help
->>>> >> >> >           This option enables / disables the invocation of user-helper
->>>> >> >> >           (e.g. udev) for loading firmware files as a fallback after the
->>>> >> >> >           direct file loading in kernel fails.  The user-mode helper is
->>>> >> >> >           no longer required unless you have a special firmware file
->>>> >> >> > that
->>>> >> >> > -         resides in a non-standard path.
->>>> >> >> > +         resides in a non-standard path. Moreover, the udev support has
->>>> >> >> > +         been deprecated upstream.
->>>> >> >> > +
->>>> >> >> > +         If you are unsure about this, say N here.
->>>> >> >>
->>>> >> >> It may be safer to say Y here for fallback if not sure.
->>>> >> >
->>>> >> > Saying Y here will be actively harmful if the firmware loader is disabled in
->>>> >> > udev (which I guess most distros will do as soon as they can), so I think we
->>>> >>
->>>> >> If fallback is triggered, it means that the firmware can't be found
->>>> >> in default direct rootfs path, so it is better to continue to look for it
->>>> >> from userspace.
->>>> >>
->>>> >> Also it won't a big problem for hanging the request user context
->>>> >> for some while(60sec at default) if udev is disabled, will it?
->>>> >>
->>>> >> BTW, are you sure most distros will do that in the near future?
->>>> >>
->>>> >> > should advice people to say N unless they really know what they are doing
->>>> >> > and that their userspace can cope with it.
->>>> >>
->>>> >> That is why I suggest to say Y if someone isn't sure.
->>>> >
->>>> > For the time being, having default this Y causes more troubles.
->>>>
->>>> I am wondering why default Y may cause more troubles, as we
->>>> know, it has been default Y for long long time.
->>>
->>> More trouble = more bug reports.  At least, a handful distros suffer.
->>> I don't know the situation with Ubuntu, though.
->>
->> Looks recently not see related report, :-)
->
-> Ubuntu currently enables the firmware loader in both the kernel and in
-> udev, so would not yet have a problem here at the moment. However, I
-> spoke with Martin Pitt and he told me that both Debian and Ubuntu
-> would like to switch this off in udev once it is possible (i.e., once
-> this patch has been merged I guess). Fedora already did, and speaking
-> for Arch we definitely would like to do the same. I did not check with
-> other distros, but I'm pretty sure "everyone" will disable this in
-> udev by the next cycle. At which point having it enabled in the kernel
-> will cause real problems and bug reports.
 
-That won't cover the case of old distributions with new kernel, do
-you want to break/confuse these users?
+* Oleg Nesterov <oleg@redhat.com> wrote:
 
->
-> For distro kernels that's not a problem, as they know what to do, but
-> I guess for random kernel users we should give them the correct
-> recommendation.
+> On 06/05, Ingo Molnar wrote:
+> >
+> > * Oleg Nesterov <oleg@redhat.com> wrote:
+> >
+> > > On 06/04, Masami Hiramatsu wrote:
+> > > >
+> > > > Hmm, how about ->defparam ? :)
+> > >
+> > > Fine with me ;)
+> > >
+> > > Ingo, will you agree with s/def/defparam/ ?
+> >
+> > Certainly! :)
+> 
+> Great ;) I updated this patch in uprobes/core, please pull from
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/oleg/misc uprobes/core
+> 
+> based on tip:perf/uprobes
+> 
+> 
+> Oleg Nesterov (3):
+>       uprobes: Shift ->readpage check from __copy_insn() to uprobe_register()
+>       uprobes: Teach copy_insn() to support tmpfs
+>       uprobes/x86: Rename arch_uprobe->def to ->defparam, minor comment updates
+> 
+>  arch/x86/include/asm/uprobes.h |    2 +-
+>  arch/x86/kernel/uprobes.c      |   37 ++++++++++++++++++-------------------
+>  kernel/events/uprobes.c        |   17 +++++++++++------
+>  3 files changed, 30 insertions(+), 26 deletions(-)
 
-Also I remember that android users put firmware under their
-special path.
+Pulled, thanks a lot Oleg!
 
->
->>>> It only falls back if the request fw is _not_ found from direct loading,
->>>> so it is reasonable to try to continue to look for it from user space.
->>
->>> Some drivers fall back to different firmware (e.g. different revision
->>> suffix) if the requested file isn't found.  So, this happens in
->>> reality.
->>
->> So do you think the fallback is better or worse? For CPU microcode
->> case, maybe it is fine, but for other devices, maybe it is better to
->> get a firmware for working at least.
->
-> What usecase do you have in mind here? For people using stock udev,
-> enabling the fallback will not give any benefit, but it will soon
-
-Again, we have old distributions, also it should make sense to fall back
-to userspace for non-exist firmwares under default path.
-
-> start giving real problems...
-
-If there isn't firmwares at default path for devices, the device may
-not work, and that is the real problem.
-
-Thanks,
---
-Ming Lei
+	Ingo
