@@ -1,94 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751686AbaFEIoc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 04:44:32 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:37173 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750939AbaFEIoa (ORCPT
+	id S1751980AbaFEIqH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 04:46:07 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:50044 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082AbaFEIqC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 04:44:30 -0400
-Date: Thu, 5 Jun 2014 10:44:24 +0200
+	Thu, 5 Jun 2014 04:46:02 -0400
+Date: Thu, 5 Jun 2014 10:45:56 +0200
 From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
+To: Jiri Olsa <jolsa@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Cody P Schafer <dev@codyps.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, David Binderman <dcb314@hotmail.com>,
+        Dianfang Zhang <zhangdianfang@huawei.com>,
+        Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jean Delvare <jdelvare@suse.de>, Jianyu Zhan <nasa4836@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] perf fixes for v3.15
-Message-ID: <20140605084424.GA14595@gmail.com>
+        Peter Zijlstra <peterz@infradead.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Stephane Eranian <eranian@google.com>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Subject: Re: [GIT PULL 0/9] perf/core improvements and fixes
+Message-ID: <20140605084556.GA14647@gmail.com>
+References: <1401827776-4443-1-git-send-email-jolsa@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1401827776-4443-1-git-send-email-jolsa@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
 
-Please pull the latest perf-urgent-for-linus git tree from:
+* Jiri Olsa <jolsa@kernel.org> wrote:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
+> hi Ingo,
+> please consider pulling
+> 
+> thanks,
+> jirka
+> 
+> 
+> The following changes since commit 9b261365dd73a5014b49033327ad881708e81f33:
+> 
+>   Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf into perf/core (2014-06-03 20:22:40 +0200)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git tags/perf-core-for-mingo
+> 
+> for you to fetch changes up to fc9cabeabf42d76854059e7bce81a02645e7e5ca:
+> 
+>   perf tools: Fix 'make help' message error (2014-06-03 21:35:12 +0200)
+> 
+> ----------------------------------------------------------------
+> perf/core improvements and fixes:
+> 
+> . Warn the user when trace command is not available (Arnaldo Carvalho de Melo)
+> 
+> . Add warning when disabling perl scripting support due to missing devel files (Arnaldo Carvalho de Melo)
+> 
+> . Consider header files outside perf directory in tags target (Sebastian Andrzej Siewior)
+> 
+> . Allow overriding sysfs and proc finding with env var (Cody P Schafer)
+> 
+> . Fix "==" into "=" in ui_browser__warning assignment (zhangdianfang)
+> 
+> . Factor elide bool handling in sort code (Jiri Olsa)
+> 
+> . Fix poll return value propagation (Jiri Olsa)
+> 
+> . Fix 'make help' message error (Jianyu Zhan)
+> 
+> Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+> 
+> ----------------------------------------------------------------
+> Arnaldo Carvalho de Melo (2):
+>       perf trace: Warn the user when not available
+>       perf tools: Add warning when disabling perl scripting support due to missing devel files
+> 
+> Cody P Schafer (1):
+>       perf tools: Allow overriding sysfs and proc finding with env var
+> 
+> Jianyu Zhan (1):
+>       perf tools: Fix 'make help' message error
+> 
+> Jiri Olsa (3):
+>       perf tools: Remove elide setup for SORT_MODE__MEMORY mode
+>       perf tools: Move elide bool into perf_hpp_fmt struct
+>       perf record: Fix poll return value propagation
+> 
+> Sebastian Andrzej Siewior (1):
+>       perf tools: Consider header files outside perf directory in tags target
+> 
+> zhangdianfang (1):
+>       perf tools: Fix "==" into "=" in ui_browser__warning assignment
+> 
+>  tools/lib/api/fs/fs.c          |  43 ++++++++++++++++-
+>  tools/perf/Makefile.perf       |  13 ++++--
+>  tools/perf/builtin-record.c    |   6 ++-
+>  tools/perf/config/Makefile     |   3 +-
+>  tools/perf/perf.c              |   8 +++-
+>  tools/perf/ui/browser.c        |   2 +-
+>  tools/perf/ui/browsers/hists.c |   8 ++--
+>  tools/perf/util/hist.h         |   8 +++-
+>  tools/perf/util/sort.c         | 103 ++++++++++++++++++++++-------------------
+>  tools/perf/util/sort.h         |   2 +-
+>  10 files changed, 132 insertions(+), 64 deletions(-)
 
-   # HEAD: 22c91aa23547a4363fd2a9ffddde95c899ac8aa0 Merge tag 'perf-urgent-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf into perf/urgent
-
-Two last minute tooling fixes.
-
- Thanks,
+Pulled, thanks a lot Jiri!
 
 	Ingo
-
------------------->
-Masami Hiramatsu (2):
-      perf probe: Fix a segfault if asked for variable it doesn't find
-      perf probe: Fix perf probe to find correct variable DIE
-
-
- tools/perf/util/dwarf-aux.c    | 7 +++++--
- tools/perf/util/probe-finder.c | 4 ++--
- 2 files changed, 7 insertions(+), 4 deletions(-)
-
-diff --git a/tools/perf/util/dwarf-aux.c b/tools/perf/util/dwarf-aux.c
-index 7defd77..cc66c40 100644
---- a/tools/perf/util/dwarf-aux.c
-+++ b/tools/perf/util/dwarf-aux.c
-@@ -747,14 +747,17 @@ struct __find_variable_param {
- static int __die_find_variable_cb(Dwarf_Die *die_mem, void *data)
- {
- 	struct __find_variable_param *fvp = data;
-+	Dwarf_Attribute attr;
- 	int tag;
- 
- 	tag = dwarf_tag(die_mem);
- 	if ((tag == DW_TAG_formal_parameter ||
- 	     tag == DW_TAG_variable) &&
--	    die_compare_name(die_mem, fvp->name))
-+	    die_compare_name(die_mem, fvp->name) &&
-+	/* Does the DIE have location information or external instance? */
-+	    (dwarf_attr(die_mem, DW_AT_external, &attr) ||
-+	     dwarf_attr(die_mem, DW_AT_location, &attr)))
- 		return DIE_FIND_CB_END;
--
- 	if (dwarf_haspc(die_mem, fvp->addr))
- 		return DIE_FIND_CB_CONTINUE;
- 	else
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index 5627621..9d8eb26 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -511,12 +511,12 @@ static int convert_variable(Dwarf_Die *vr_die, struct probe_finder *pf)
- 
- 	ret = convert_variable_location(vr_die, pf->addr, pf->fb_ops,
- 					&pf->sp_die, pf->tvar);
--	if (ret == -ENOENT)
-+	if (ret == -ENOENT || ret == -EINVAL)
- 		pr_err("Failed to find the location of %s at this address.\n"
- 		       " Perhaps, it has been optimized out.\n", pf->pvar->var);
- 	else if (ret == -ENOTSUP)
- 		pr_err("Sorry, we don't support this variable location yet.\n");
--	else if (pf->pvar->field) {
-+	else if (ret == 0 && pf->pvar->field) {
- 		ret = convert_variable_fields(vr_die, pf->pvar->var,
- 					      pf->pvar->field, &pf->tvar->ref,
- 					      &die_mem);
