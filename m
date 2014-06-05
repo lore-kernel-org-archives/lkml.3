@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754156AbaFEEtK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:49:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44106 "EHLO
+	id S1753828AbaFEEtI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:49:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44113 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752944AbaFEEVN (ORCPT
+	with ESMTP id S1751211AbaFEEVN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 5 Jun 2014 00:21:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexander Stein <alexander.stein@systec-electronic.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Jiri Slaby <jslaby@suse.cz>,
+        Grant Grundler <grundler@parisc-linux.org>,
+        Nobin Mathew <nobin.mathew@gmail.com>,
+        Robert Hancock <hancockr@shaw.ca>, Arnd Bergmann <arnd@arndb.de>,
+        David Altobelli <david.altobelli@hp.com>,
         Ben Hutchings <ben@decadent.org.uk>,
         Qiang Huang <h.huangqiang@huawei.com>
-Subject: [PATCH 3.4 117/214] can: c_can: Set reserved bit in IFx_MASK2 to 1 on write
-Date: Wed,  4 Jun 2014 21:18:00 -0700
-Message-Id: <20140605041655.406628034@linuxfoundation.org>
+Subject: [PATCH 3.4 111/214] MISC: hpilo, remove pci_disable_device
+Date: Wed,  4 Jun 2014 21:17:54 -0700
+Message-Id: <20140605041654.605779691@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -29,39 +32,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Stein <alexander.stein@systec-electronic.com>
+From: Jiri Slaby <jslaby@suse.cz>
 
-commit 2bd3bc4e8472424f1a6009825397639a8968920a upstream.
+commit bcdee04ea7ae0406ae69094f6df1aacb66a69a0b upstream.
 
-According to C_CAN documentation, the reserved bit in IFx_MASK2 register is
-fixed 1.
+pci_disable_device(pdev) used to be in pci remove function. But this
+PCI device has two functions with interrupt lines connected to a
+single pin. The other one is a USB host controller. So when we disable
+the PIN there e.g. by rmmod hpilo, the controller stops working. It is
+because the interrupt link is disabled in ACPI since it is not
+refcounted yet. See acpi_pci_link_free_irq called from
+acpi_pci_irq_disable.
 
-Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
-[bwh: Backported to 3.2: adjust context]
+It is not the best solution whatsoever, but as a workaround until the
+ACPI irq link refcounting is sorted out this should fix the reported
+errors.
+
+References: https://lkml.org/lkml/2008/11/4/535
+
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Grant Grundler <grundler@parisc-linux.org>
+Cc: Nobin Mathew <nobin.mathew@gmail.com>
+Cc: Robert Hancock <hancockr@shaw.ca>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: David Altobelli <david.altobelli@hp.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Qiang Huang <h.huangqiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/c_can/c_can.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/misc/hpilo.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
---- a/drivers/net/can/c_can/c_can.c
-+++ b/drivers/net/can/c_can/c_can.c
-@@ -446,8 +446,12 @@ static void c_can_setup_receive_object(s
- 
- 	priv->write_reg(priv, &priv->regs->ifregs[iface].mask1,
- 			IFX_WRITE_LOW_16BIT(mask));
-+
-+	/* According to C_CAN documentation, the reserved bit
-+	 * in IFx_MASK2 register is fixed 1
+--- a/drivers/misc/hpilo.c
++++ b/drivers/misc/hpilo.c
+@@ -735,7 +735,14 @@ static void ilo_remove(struct pci_dev *p
+ 	free_irq(pdev->irq, ilo_hw);
+ 	ilo_unmap_device(pdev, ilo_hw);
+ 	pci_release_regions(pdev);
+-	pci_disable_device(pdev);
++	/*
++	 * pci_disable_device(pdev) used to be here. But this PCI device has
++	 * two functions with interrupt lines connected to a single pin. The
++	 * other one is a USB host controller. So when we disable the PIN here
++	 * e.g. by rmmod hpilo, the controller stops working. It is because
++	 * the interrupt link is disabled in ACPI since it is not refcounted
++	 * yet. See acpi_pci_link_free_irq called from acpi_pci_irq_disable.
 +	 */
- 	priv->write_reg(priv, &priv->regs->ifregs[iface].mask2,
--			IFX_WRITE_HIGH_16BIT(mask));
-+			IFX_WRITE_HIGH_16BIT(mask) | BIT(13));
- 
- 	priv->write_reg(priv, &priv->regs->ifregs[iface].arb1,
- 			IFX_WRITE_LOW_16BIT(id));
+ 	kfree(ilo_hw);
+ 	ilo_hwdev[(minor / MAX_CCB)] = 0;
+ }
+@@ -820,7 +827,7 @@ unmap:
+ free_regions:
+ 	pci_release_regions(pdev);
+ disable:
+-	pci_disable_device(pdev);
++/*	pci_disable_device(pdev);  see comment in ilo_remove */
+ free:
+ 	kfree(ilo_hw);
+ out:
 
 
