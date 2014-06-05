@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752631AbaFEUuH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 16:50:07 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:50416 "EHLO
+	id S1752455AbaFEUxx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 16:53:53 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:58971 "EHLO
 	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752276AbaFEUtC (ORCPT
+	with ESMTP id S1751821AbaFEUxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 16:49:02 -0400
+	Thu, 5 Jun 2014 16:53:51 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org
-Subject: [PATCH 2/5] staging/iio: IIO_SIMPLE_DUMMY_BUFFER neds IIO_BUFFER
-Date: Thu,  5 Jun 2014 22:48:12 +0200
-Message-Id: <1402001295-1980118-3-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1402001295-1980118-1-git-send-email-arnd@arndb.de>
-References: <1402001295-1980118-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:Iekz5lrD8IlhFLI//NxUokYMGWDl5ZxGT5K7WRWhKiy
- pSWQcjnc1+iGJC4TvTSadnUU0gNTZu214VlghghYQOrg60HrXo
- NaLGhcA8iJIPPuBrQGwE0589avVo4+SQ295hB2v+zBq5U9zzkt
- +G3sbcjpEnXuQEMygfyN5lbeIGq3Q9xh5DDeGA2p+L43x9qzfN
- ipYVlevcGWKgEF+CXiBcevyM9FKywoB7SLROoVIAvAn51erRUR
- cubuF8SQZ0My7aBEWxtbwlrHAsC7jik6NAK9KRyhTWSza4A3By
- lzjshLXhH7GDVvJPYmbIK2PKF8o4TT2f8aq7CwDTmDcJYJWrcH
- 5Qql97pjWNVgaKFKnvNmV2CaHdfYT/SUCLTLUTaoO
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 1/2] serial: pxa: fix build with !SERIAL_PXA_CONSOLE
+Date: Thu, 05 Jun 2014 22:53:47 +0200
+Message-ID: <4618166.h1v6p4h6Yh@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:XGdIFc9vW2sfqB8L4JjwM/qQgLp6/6DPFmHhP62F/gN
+ yujGrRYZlwwrNZ5UlYldFql7MK1a93vQjz7OFhYm1hs6vuYelI
+ wLVGwl6oMzuPCfYYS2l888JIJ9Bih6egnplDINyFcs7UGy22mW
+ 6wlJDhA9ubHqwBqRcZDadqJE59k2+j/787K/HAouPwvwKIpMKV
+ 14BvOGkMM1Mb7LS82VZAE1R4b9ix5o68qMYEhyhWrHU+ioKSSA
+ M9Qqs6eii4LGGXoN4ruVs81+jq5rYOqEHiFoguEkVLc6uLumxW
+ 5dhlEprks4cJZlYntSrFDmlpjwthTK/C9kZ1K+XDU06XqKUna0
+ YnBhwEmprf+/nkZ80dKo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An obviously missing 'select' statement, without this we
-get a link error
+>From 7a1b0f67c197553f00fc493bb876b6f3237a3738 Mon Sep 17 00:00:00 2001
+From: Arnd Bergmann <arnd@arndb.de>
+Date: Tue, 18 Feb 2014 16:14:20 +0100
+Subject: [PATCH] serial: pxa: fix build with !SERIAL_PXA_CONSOLE
+
+When CONFIG_SERIAL_PXA_CONSOLE is disabled, the serial_pxa_get_poll_char
+and serial_pxa_put_poll_char functions are not defined, and we can't
+reference them.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Jonathan Cameron <jic23@kernel.org>
-Cc: linux-iio@vger.kernel.org
----
- drivers/staging/iio/Kconfig | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/iio/Kconfig b/drivers/staging/iio/Kconfig
-index b36feb0..fa38be0 100644
---- a/drivers/staging/iio/Kconfig
-+++ b/drivers/staging/iio/Kconfig
-@@ -36,10 +36,11 @@ config IIO_SIMPLE_DUMMY_EVENTS
-          Add some dummy events to the simple dummy driver.
- 
- config IIO_SIMPLE_DUMMY_BUFFER
--       boolean "Buffered capture support"
--       select IIO_KFIFO_BUF
--       help
--         Add buffered data capture to the simple dummy driver.
-+	boolean "Buffered capture support"
-+	select IIO_BUFFER
-+	select IIO_KFIFO_BUF
-+	help
-+	  Add buffered data capture to the simple dummy driver.
- 
- endif # IIO_SIMPLE_DUMMY
- 
--- 
-1.8.3.2
+diff --git a/drivers/tty/serial/pxa.c b/drivers/tty/serial/pxa.c
+index 9e7ee39..05a0323 100644
+--- a/drivers/tty/serial/pxa.c
++++ b/drivers/tty/serial/pxa.c
+@@ -778,7 +778,7 @@ static struct uart_ops serial_pxa_pops = {
+ 	.request_port	= serial_pxa_request_port,
+ 	.config_port	= serial_pxa_config_port,
+ 	.verify_port	= serial_pxa_verify_port,
+-#ifdef CONFIG_CONSOLE_POLL
++#if defined(CONFIG_CONSOLE_POLL) && defined(CONFIG_SERIAL_PXA_CONSOLE)
+ 	.poll_get_char = serial_pxa_get_poll_char,
+ 	.poll_put_char = serial_pxa_put_poll_char,
+ #endif
 
