@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754537AbaFEFAP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 01:00:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43882 "EHLO
+	id S1754516AbaFEFAN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 01:00:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43894 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752540AbaFEEUf (ORCPT
+	with ESMTP id S1752497AbaFEEUh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:20:35 -0400
+	Thu, 5 Jun 2014 00:20:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ilia Mirkin <imirkin@alum.mit.edu>, Ben Skeggs <bskeggs@redhat.com>
-Subject: [PATCH 3.4 060/214] drm/nouveau/acpi: allow non-optimus setups to load vbios from acpi
-Date: Wed,  4 Jun 2014 21:17:03 -0700
-Message-Id: <20140605041647.553726774@linuxfoundation.org>
+        Wenkai Du <wenkai.du@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Wolfram Sang <wsa@the-dreams.de>
+Subject: [PATCH 3.4 073/214] i2c: designware: Mask all interrupts during i2c controller enable
+Date: Wed,  4 Jun 2014 21:17:16 -0700
+Message-Id: <20140605041649.358346980@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -26,36 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ilia Mirkin <imirkin@alum.mit.edu>
+From: "Du, Wenkai" <wenkai.du@intel.com>
 
-commit a3d0b1218d351c6e6f3cea36abe22236a08cb246 upstream.
+commit 47bb27e78867997040a228328f2a631c3c7f2c82 upstream.
 
-There appear to be a crop of new hardware where the vbios is not
-available from PROM/PRAMIN, but there is a valid _ROM method in ACPI.
-The data read from PCIROM almost invariably contains invalid
-instructions (still has the x86 opcodes), which makes this a low-risk
-way to try to obtain a valid vbios image.
+There have been "i2c_designware 80860F41:00: controller timed out" errors
+on a number of Baytrail platforms. The issue is caused by incorrect value in
+Interrupt Mask Register (DW_IC_INTR_MASK)  when i2c core is being enabled.
+This causes call to __i2c_dw_enable() to immediately start the transfer which
+leads to timeout. There are 3 failure modes observed:
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=76475
-Signed-off-by: Ilia Mirkin <imirkin@alum.mit.edu>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+1. Failure in S0 to S3 resume path
+
+The default value after reset for DW_IC_INTR_MASK is 0x8ff. When we start
+the first transaction after resuming from system sleep, TX_EMPTY interrupt
+is already unmasked because of the hardware default.
+
+2. Failure in normal operational path
+
+This failure happens rarely and is hard to reproduce. Debug trace showed that
+DW_IC_INTR_MASK had value of 0x254 when failure occurred, which meant
+TX_EMPTY was unmasked.
+
+3. Failure in S3 to S0 suspend path
+
+This failure also happens rarely and is hard to reproduce. Adding debug trace
+that read DW_IC_INTR_MASK made this failure not reproducible. But from ISR
+call trace we could conclude TX_EMPTY was unmasked when problem occurred.
+
+The patch masks all interrupts before the controller is enabled to resolve the
+faulty DW_IC_INTR_MASK conditions.
+
+Signed-off-by: Wenkai Du <wenkai.du@intel.com>
+Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+[wsa: improved the comment and removed typo in commit msg]
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/nouveau_acpi.c |    3 ---
- 1 file changed, 3 deletions(-)
+ drivers/i2c/busses/i2c-designware-core.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/gpu/drm/nouveau/nouveau_acpi.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_acpi.c
-@@ -375,9 +375,6 @@ bool nouveau_acpi_rom_supported(struct p
- 	acpi_status status;
- 	acpi_handle dhandle, rom_handle;
+--- a/drivers/i2c/busses/i2c-designware-core.c
++++ b/drivers/i2c/busses/i2c-designware-core.c
+@@ -346,6 +346,9 @@ static void i2c_dw_xfer_init(struct dw_i
+ 		ic_con &= ~DW_IC_CON_10BITADDR_MASTER;
+ 	dw_writel(dev, ic_con, DW_IC_CON);
  
--	if (!nouveau_dsm_priv.dsm_detected && !nouveau_dsm_priv.optimus_detected)
--		return false;
--
- 	dhandle = DEVICE_ACPI_HANDLE(&pdev->dev);
- 	if (!dhandle)
- 		return false;
++	/* enforce disabled interrupts (due to HW issues) */
++	i2c_dw_disable_int(dev);
++
+ 	/* Enable the adapter */
+ 	dw_writel(dev, 1, DW_IC_ENABLE);
+ 
 
 
