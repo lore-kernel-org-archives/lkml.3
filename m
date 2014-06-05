@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754809AbaFEFNX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 01:13:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43635 "EHLO
+	id S1754791AbaFEFNV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 01:13:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43649 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752063AbaFEEUF (ORCPT
+	with ESMTP id S1752072AbaFEEUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:20:05 -0400
+	Thu, 5 Jun 2014 00:20:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Lezcano <daniel.lezcano@free.fr>,
-        Patrick McHardy <kaber@trash.net>, Andrian Nord <nightnord@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Jason Wang <jasowang@redhat.com>, Vlad Yasevich <vyasevic@redhat.com>,
+        Florian Westphal <fw@strlen.de>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 026/214] Revert "macvlan : fix checksums error when we are in bridge mode"
-Date: Wed,  4 Jun 2014 21:16:29 -0700
-Message-Id: <20140605041643.315504033@linuxfoundation.org>
+Subject: [PATCH 3.4 028/214] net: ipv4: ip_forward: fix inverted local_df test
+Date: Wed,  4 Jun 2014 21:16:31 -0700
+Message-Id: <20140605041643.592967209@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -31,59 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlad Yasevich <vyasevic@redhat.com>
+From: Florian Westphal <fw@strlen.de>
 
-[ Upstream commit f114890cdf84d753f6b41cd0cc44ba51d16313da ]
+[ Upstream commit ca6c5d4ad216d5942ae544bbf02503041bd802aa ]
 
-This reverts commit 12a2856b604476c27d85a5f9a57ae1661fc46019.
-The commit above doesn't appear to be necessary any more as the
-checksums appear to be correctly computed/validated.
+local_df means 'ignore DF bit if set', so if its set we're
+allowed to perform ip fragmentation.
 
-Additionally the above commit breaks kvm configurations where
-one VM is using a device that support checksum offload (virtio) and
-the other VM does not.
-In this case, packets leaving virtio device will have CHECKSUM_PARTIAL
-set.  The packets is forwarded to a macvtap that has offload features
-turned off.  Since we use CHECKSUM_UNNECESSARY, the host does does not
-update the checksum and thus a bad checksum is passed up to
-the guest.
+This wasn't noticed earlier because the output path also drops such skbs
+(and emits needed icmp error) and because netfilter ip defrag did not
+set local_df until couple of days ago.
 
-CC: Daniel Lezcano <daniel.lezcano@free.fr>
-CC: Patrick McHardy <kaber@trash.net>
-CC: Andrian Nord <nightnord@gmail.com>
-CC: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Michael S. Tsirkin <mst@redhat.com>
-CC: Jason Wang <jasowang@redhat.com>
-Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-Acked-by: Jason Wang <jasowang@redhat.com>
+Only difference is that DF-packets-larger-than MTU now discarded
+earlier (f.e. we avoid pointless netfilter postrouting trip).
+
+While at it, drop the repeated test ip_exceeds_mtu, checking it once
+is enough...
+
+Fixes: fe6cc55f3a9 ("net: ip, ipv6: handle gso skbs in forwarding path")
+Signed-off-by: Florian Westphal <fw@strlen.de>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/macvlan.c |    3 ---
- 1 file changed, 3 deletions(-)
+ net/ipv4/ip_forward.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -237,11 +237,9 @@ static int macvlan_queue_xmit(struct sk_
- 	const struct macvlan_dev *vlan = netdev_priv(dev);
- 	const struct macvlan_port *port = vlan->port;
- 	const struct macvlan_dev *dest;
--	__u8 ip_summed = skb->ip_summed;
- 
- 	if (vlan->mode == MACVLAN_MODE_BRIDGE) {
- 		const struct ethhdr *eth = (void *)skb->data;
--		skb->ip_summed = CHECKSUM_UNNECESSARY;
- 
- 		/* send to other bridge ports directly */
- 		if (is_multicast_ether_addr(eth->h_dest)) {
-@@ -259,7 +257,6 @@ static int macvlan_queue_xmit(struct sk_
- 	}
- 
- xmit_world:
--	skb->ip_summed = ip_summed;
- 	skb->dev = vlan->lowerdev;
- 	return dev_queue_xmit(skb);
+--- a/net/ipv4/ip_forward.c
++++ b/net/ipv4/ip_forward.c
+@@ -42,12 +42,12 @@
+ static bool ip_may_fragment(const struct sk_buff *skb)
+ {
+ 	return unlikely((ip_hdr(skb)->frag_off & htons(IP_DF)) == 0) ||
+-	       !skb->local_df;
++		skb->local_df;
  }
+ 
+ static bool ip_exceeds_mtu(const struct sk_buff *skb, unsigned int mtu)
+ {
+-	if (skb->len <= mtu || skb->local_df)
++	if (skb->len <= mtu)
+ 		return false;
+ 
+ 	if (skb_is_gso(skb) && skb_gso_network_seglen(skb) <= mtu)
 
 
