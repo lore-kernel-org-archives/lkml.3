@@ -1,79 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751814AbaFEKBb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 06:01:31 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:45889 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751732AbaFEKB3 (ORCPT
+	id S1751368AbaFEKJO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 06:09:14 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:42146 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751174AbaFEKJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 06:01:29 -0400
+	Thu, 5 Jun 2014 06:09:11 -0400
+Date: Thu, 5 Jun 2014 12:09:05 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH v2 0/6] sched: expel confusing usage of the term "power"
+Message-ID: <20140605100905.GA24275@gmail.com>
+References: <1401142779-6633-1-git-send-email-nicolas.pitre@linaro.org>
 MIME-Version: 1.0
-X-Originating-IP: [90.207.204.193]
-In-Reply-To: <CABPqkBSimH8Ob_q3dDtQiW_OwuS9nA4Gsx87H26ywNcmYd38Xw@mail.gmail.com>
-References: <1401917658-26065-1-git-send-email-eranian@google.com>
-	<1401917658-26065-10-git-send-email-eranian@google.com>
-	<CADknwL5S8QpzCAgrKHjbGTbEx7nA8L=Vu8d-UWAYCg6X25OcGw@mail.gmail.com>
-	<CABPqkBSimH8Ob_q3dDtQiW_OwuS9nA4Gsx87H26ywNcmYd38Xw@mail.gmail.com>
-Date: Thu, 5 Jun 2014 11:01:28 +0100
-Message-ID: <CADknwL6s2ttb5E2JDr6bc_XkwpxnW5ecU-3Ns88=gvgPvLYkPg@mail.gmail.com>
-Subject: Re: [PATCH 9/9] perf/x86: add syfs entry to disable HT bug workaround
-From: Matt Fleming <matt@console-pimps.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>,
-        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1401142779-6633-1-git-send-email-nicolas.pitre@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5 June 2014 10:29, Stephane Eranian <eranian@google.com> wrote:
->
-> If you know what you are doing (poweruser), then there are measurements
-> which works fine with the HT erratum.  This is why we have the option.
->
-> For instance if you only measure events 4x4 in system-wide mode
-> and you know which counters these event are going to use, you don't
-> need the workaround. For instance:
->
-> # perf stat -a -e r81d0,r01d1,r08d0,r20d1 sleep 5
->
-> Works well if you have a uniform workload across all CPUs.
-> All those events leak, but the leaks balance themselves and you
-> get the correct counts in the end. The advantage is that you don't
-> have to multiplex. With the workaround enable, this would multiplex
-> a lot.
->
-> But as I said, this is for experts only.
 
-Is it not possible to detect this in the kernel and only enable the
-workaround for the case where the leaks don't balance? It may not be
-possible (or practical) but I do think it's worth having the
-discussion.
+So I'm hijacking this thread a bit to report a bug in the following 
+patch:
 
-> Another reason is for systems with HT disabled. It turned out to be
-> very difficult to determine at kernel BOOT TIME if HT was enabled
-> or not. Note what I said: ENABLED and not SUPPORTED. The latter is
-> easy to detect. The former needs some model specific code which is
-> quite complicated. I wish the kernel had this capability abstracted
-> somehow. Consequently, the workaround is always enabled. When
-> HT is disabled, there won't be multiplexing because there will never
-> be conflict, but you pay a little price for accessing the extra data
-> state.
+Author: Daniel Lezcano <daniel.lezcano@linaro.org>
+Date:   Tue Jun 3 14:59:05 2014 +0200
 
-Does cpu_sibling_map not give you some indication of whether HT is
-enabled? I think the topology_thread_cpumask() is the topology API for
-that. But I could most definitely be wrong. Hopefully someone on the
-Cc list will know.
+    sched: Move enum CPU_[xxx_]IDLE to private sched.h
+    
+    The different enum CPU_IDLE, CPU_NOT_IDLE, CPU_NEWLY_IDLE and
+    CPU_MAX_IDLE_TYPES are only used in kernel/sched/fair.c and
+    kernel/sched/stats.c.
 
->An init script could well detect HT is off and thus disable the workaround altogether.
+on x86-64 defconfig it fails to build with:
 
-This is exactly the kind of thing I think we should try to avoid. The
-ideal is that things just work out of the box and don't require these
-magic knobs to be tweaked.
+In file included from 
+/home/mingo/tip/arch/x86/kernel/asm-offsets.c:9:0:
+/home/mingo/tip/include/linux/sched.h:939:24: error: 
+‘CPU_MAX_IDLE_TYPES’ undeclared here (not in a function)
+  unsigned int lb_count[CPU_MAX_IDLE_TYPES];
+                        ^
+make[2]: *** [arch/x86/kernel/asm-offsets.s] Error 1
+make[1]: *** [prepare0] Error 2
+make: *** [sub-make] Error 2
 
-> Those are the two main reasons for this control in sysfs.
+Find below the version that came to me.
 
-Thanks for the info!
+Thanks,
+
+	Ingo
+
+===========================>
+>From 21e0efe63f6766fc9b685ca8d5744101f9a21270 Mon Sep 17 00:00:00 2001
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+Date: Tue, 3 Jun 2014 14:59:05 +0200
+Subject: [PATCH] sched: Move enum CPU_[xxx_]IDLE to private sched.h
+
+The different enum CPU_IDLE, CPU_NOT_IDLE, CPU_NEWLY_IDLE and
+CPU_MAX_IDLE_TYPES are only used in kernel/sched/fair.c and
+kernel/sched/stats.c.
+
+Move their definitions in the private 'sched.h' file located in the
+same place than the files above.
+
+Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1401800345-29468-1-git-send-email-daniel.lezcano@linaro.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ include/linux/sched.h | 7 -------
+ kernel/sched/sched.h  | 7 +++++++
+ 2 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index ce93768..b313c2e 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -846,13 +846,6 @@ static inline int sched_info_on(void)
+ #endif
+ }
+ 
+-enum cpu_idle_type {
+-	CPU_IDLE,
+-	CPU_NOT_IDLE,
+-	CPU_NEWLY_IDLE,
+-	CPU_MAX_IDLE_TYPES
+-};
+-
+ /*
+  * Increase resolution of cpu_capacity calculations
+  */
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 956b8ca..9ab7d95 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -23,6 +23,13 @@ extern atomic_long_t calc_load_tasks;
+ extern long calc_load_fold_active(struct rq *this_rq);
+ extern void update_cpu_load_active(struct rq *this_rq);
+ 
++enum cpu_idle_type {
++	CPU_IDLE,
++	CPU_NOT_IDLE,
++	CPU_NEWLY_IDLE,
++	CPU_MAX_IDLE_TYPES
++};
++
+ /*
+  * Helpers for converting nanosecond timing to jiffy resolution
+  */
+
