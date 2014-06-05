@@ -1,87 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751876AbaFEKq2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 06:46:28 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:60940 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750967AbaFEKq1 (ORCPT
+	id S1751401AbaFEKuD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 06:50:03 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:35439 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750939AbaFEKuC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 06:46:27 -0400
-Message-ID: <53904A97.1070105@linaro.org>
-Date: Thu, 05 Jun 2014 12:46:47 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 5 Jun 2014 06:50:02 -0400
+X-IronPort-AV: E=Sophos;i="4.98,980,1392134400"; 
+   d="scan'208";a="31505593"
+Message-ID: <53904C6B.90001@cn.fujitsu.com>
+Date: Thu, 5 Jun 2014 18:54:35 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sched: Move enum CPU_[xxx_]IDLE to private sched.h
-References: <1401800345-29468-1-git-send-email-daniel.lezcano@linaro.org> <20140604080214.GJ30445@twins.programming.kicks-ass.net> <20140605101709.GA24277@gmail.com> <53904760.8000808@linaro.org> <20140605103540.GB25232@gmail.com>
-In-Reply-To: <20140605103540.GB25232@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Peter Zijlstra <peterz@infradead.org>
+CC: <jjherne@linux.vnet.ibm.com>, Sasha Levin <sasha.levin@oracle.com>,
+        Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: workqueue: WARN at at kernel/workqueue.c:2176
+References: <CACvQF52-jUMzK32uoDCb8zn0RZsiC9uzUOq+ZBRXK22esYKS0g@mail.gmail.com> <20140516162945.GZ11096@twins.programming.kicks-ass.net> <53849EB7.9090302@linux.vnet.ibm.com> <20140527142637.GB19143@laptop.programming.kicks-ass.net> <53875F09.3090607@linux.vnet.ibm.com> <538DB076.4090704@cn.fujitsu.com> <20140603141659.GO30445@twins.programming.kicks-ass.net> <538E840D.2040300@cn.fujitsu.com> <20140604064946.GF30445@twins.programming.kicks-ass.net> <538ED7EB.5050303@cn.fujitsu.com> <20140604093907.GC11096@twins.programming.kicks-ass.net>
+In-Reply-To: <20140604093907.GC11096@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2014 12:35 PM, Ingo Molnar wrote:
->
-> * Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
->
->> On 06/05/2014 12:17 PM, Ingo Molnar wrote:
->>>
->>> * Peter Zijlstra <peterz@infradead.org> wrote:
->>>
->>>> On Tue, Jun 03, 2014 at 02:59:05PM +0200, Daniel Lezcano wrote:
->>>>> The different enum CPU_IDLE, CPU_NOT_IDLE, CPU_NEWLY_IDLE and
->>>>> CPU_MAX_IDLE_TYPES are only used in kernel/sched/fair.c and
->>>>> kernel/sched/stats.c.
->>>>>
->>>>> Move their definitions in the private 'sched.h' file located in the
->>>>> same place than the files above.
->>>>>
->>>>
->>>> Thanks!
->>>
->>>
->>> So this patch breaks x86 64-bit and 32-bit defconfigs:
->>>
->>> In file included from
->>> /home/mingo/tip/arch/x86/kernel/asm-offsets.c:9:0:
->>> /home/mingo/tip/include/linux/sched.h:939:24: error:
->>> ‘CPU_MAX_IDLE_TYPES’ undeclared here (not in a function)
->>>    unsigned int lb_count[CPU_MAX_IDLE_TYPES];
->>>                          ^
->>> make[2]: *** [arch/x86/kernel/asm-offsets.s] Error 1
->>> make[1]: *** [prepare0] Error 2
->>> make: *** [sub-make] Error 2
->>
->>
->> Gah ! That deserves -10 points to my karma :(
->>
->> I did not enabled CONFIG_SCHEDSTATS.
->>
->> Sorry for the inconvenience.
->
-> No problem. sched.h is a bit of a mess when it comes to data structure
-> dependencies, due to all of 'struct task_struct' having to be defined
-> by the time random kernel code references task->.
->
-> But this is about 'struct sched_domain', and I think we might be able
-> to move that out of sched.h and into a separate header... In theory
-> only scheduler internals (arch topology definitions and cores cheduler
-> code) should know about it.
+The patch is not tested by Jason, I don't know whether the patch fix the problem.
+The changlog including the "Reported-by:" and "Tested-by:" need to be updated
+after it is proved.
 
-Ok, I will look at it.
+------------
 
-Thanks
-   -- Daniel
+Subject: [PATCH] sched: migrate the waking tasks
 
+Current code skips to migrate the waking task silently when TTWU_QUEUE is enabled.
 
+When a task is waking, it is pending on the wake_list of the rq, but
+it is not on queue (task->on_rq == 0). In this case, set_cpus_allowed_ptr()
+and __migrate_task() will not migrate it due to it is not on queue.
 
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+This behavior is incorrect, because the task had been already waken-up, it will
+be running on the wrong CPU without correct placement until the next wake-up
+or update for cpus_allowed.
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+To fix this problem, we need to make the waking tasks on-queue (transfer
+the waking tasks to running state) before migrate them.
 
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+---
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 268a45e..d05a5a1 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1474,20 +1474,24 @@ static int ttwu_remote(struct task_struct *p, int wake_flags)
+ }
+ 
+ #ifdef CONFIG_SMP
+-static void sched_ttwu_pending(void)
++static void sched_ttwu_pending_locked(struct rq *rq)
+ {
+-	struct rq *rq = this_rq();
+ 	struct llist_node *llist = llist_del_all(&rq->wake_list);
+ 	struct task_struct *p;
+ 
+-	raw_spin_lock(&rq->lock);
+-
+ 	while (llist) {
+ 		p = llist_entry(llist, struct task_struct, wake_entry);
+ 		llist = llist_next(llist);
+ 		ttwu_do_activate(rq, p, 0);
+ 	}
++}
+ 
++static void sched_ttwu_pending(void)
++{
++	struct rq *rq = this_rq();
++
++	raw_spin_lock(&rq->lock);
++	sched_ttwu_pending_locked(rq);
+ 	raw_spin_unlock(&rq->lock);
+ }
+ 
+@@ -4530,6 +4534,11 @@ int set_cpus_allowed_ptr(struct task_struct *p, const struct cpumask *new_mask)
+ 		goto out;
+ 
+ 	dest_cpu = cpumask_any_and(cpu_active_mask, new_mask);
++
++	/* Ensure it is on rq for migration if it is waking */
++	if (p->state == TASK_WAKING)
++		sched_ttwu_pending_locked(rq);
++
+ 	if (p->on_rq) {
+ 		struct migration_arg arg = { p, dest_cpu };
+ 		/* Need help from migration thread: drop lock and wait. */
+@@ -4576,6 +4585,10 @@ static int __migrate_task(struct task_struct *p, int src_cpu, int dest_cpu)
+ 	if (!cpumask_test_cpu(dest_cpu, tsk_cpus_allowed(p)))
+ 		goto fail;
+ 
++	/* Ensure it is on rq for migration if it is waking */
++	if (p->state == TASK_WAKING)
++		sched_ttwu_pending_locked(rq_src);
++
+ 	/*
+ 	 * If we're not on a rq, the next wake-up will ensure we're
+ 	 * placed properly.
