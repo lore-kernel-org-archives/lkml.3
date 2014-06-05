@@ -1,96 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752285AbaFFEaJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 00:30:09 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:41338 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750727AbaFFEaH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 00:30:07 -0400
-Date: Thu, 5 Jun 2014 21:29:59 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: guanxuetao <guanxuetao@mprc.pku.edu.cn>
-Cc: gxt@mprc.pku.edu.cn, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] UniCore32 update for v3.15-rc8
-Message-ID: <20140606042959.GA19182@roeck-us.net>
-References: <20140605053032.E84EE146058C@linuxdev-32>
+	id S1752592AbaFFEdv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 00:33:51 -0400
+Received: from mga11.intel.com ([192.55.52.93]:3908 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750727AbaFFEdt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 00:33:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,986,1392192000"; 
+   d="scan'208";a="550601750"
+Date: Fri, 6 Jun 2014 04:29:30 +0800
+From: Yuyang Du <yuyang.du@intel.com>
+To: Dirk Brandewie <dirk.brandewie@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        Dietmar Eggemann <Dietmar.Eggemann@arm.com>, len.brown@intel.com
+Subject: Re: [RFC PATCH 06/16] arm: topology: Define TC2 sched energy and
+ provide it to scheduler
+Message-ID: <20140605202930.GA15484@intel.com>
+References: <1400869003-27769-1-git-send-email-morten.rasmussen@arm.com>
+ <20140604160230.GS29593@e103034-lin>
+ <20140604172712.GJ13930@laptop.programming.kicks-ass.net>
+ <2484761.vkWavnsDx3@vostro.rjw.lan>
+ <20140605065205.GA3213@twins.programming.kicks-ass.net>
+ <539086B3.2010804@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WIyZ46R2i8wDzkSu"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140605053032.E84EE146058C@linuxdev-32>
+In-Reply-To: <539086B3.2010804@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jun 05, 2014 at 08:03:15AM -0700, Dirk Brandewie wrote:
+> 
+> You can request a P state per core but the package does coordination at
+> a package level for the P state that will be used based on all requests.
+> This is due to the fact that most SKUs have a single VR and PLL. So
+> the highest P state wins.  When a core goes idle it loses it's vote
+> for the current package P state and that cores clock it turned off.
+> 
 
---WIyZ46R2i8wDzkSu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+You need to differentiate Turbo and non-Turbo. The highest P state wins? Not
+really. Actually, silicon supports indepdent non-Turbo pstate, but just not enabled.
+For Turbo, it basically depends on power budget of both core and gfx (because
+they share) for each core to get which Turbo point.
 
-On Thu, Jun 05, 2014 at 01:30:32PM +0800, guanxuetao wrote:
-> Hi Linus,
->=20
-> This is unicore32 pull request for v3.15-rc8.
->=20
-> This pull request includes bugfixes to make unicore32 successfully build =
-under defconfig,
-> and some changes for allmodconfig (though not finished).
->=20
-> Please pull tags/for-linus with following updates. I hope it works this t=
-ime.
->=20
-> Thanks for your patience.
->=20
-> Xuetao Guan
->=20
-> The following changes since commit cae61ba37b4c2672704cbd8a626fbd85be7e67=
-d9:
->=20
->   Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net (2014-06-=
-02 18:16:41 -0700)
->=20
-> are available in the git repository at:
->=20
->=20
->   git://github.com/gxt/linux.git tags/for-linus
->=20
-> for you to fetch changes up to 8c76c188d498a85c5b1a1f10840da57129a108a0:
->=20
->   unicore32: Remove ARCH_HAS_CPUFREQ config option (2014-06-05 08:36:03 +=
-0800)
->=20
-> ----------------------------------------------------------------
-> UniCore32 bug fixes for 3.15-rc8
->=20
+> >
+> >And while APERF/MPERF allows observing what it did, its afaik, nigh on
+> >impossible to predict wtf its going to do, and therefore any such energy
+> >computation is going to be a PRNG at best.
+> >
+> >Now, given all that I'm not sure what we need that P-state driver for,
+> >so supposedly I'm missing something.
+> 
+> intel_pstate tries to keep the core P state as low as possible to satisfy
+> the given load, so when various cores go idle the package P state can be
+> as low as possible.  The big power win is a core going idle.
+> 
 
-FWIW: Compile-tested-by: Guenter Roeck <linux@roeck-us.net>
+In terms of prediction, it is definitely can't be 100% right. But the
+performance of most workloads does scale with pstate (frequency), may not be
+linearly. So it is to some point predictable FWIW. And this is all governors
+and Intel_pstate's basic assumption.
 
-Guenter
-
---WIyZ46R2i8wDzkSu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTkUPHAAoJEMsfJm/On5mBqrkP/RPZn3O5TV70bGZWWggIcM3Y
-WrXcyK1u4TJWrkWForU4D3Dupddtq56XJLOBHzYixVhM6FwTGMj0gtOeQpN03R6b
-qK0sGRPf2m37+SVi6RziY64QVb27/qHnO8qzZhR0doSUxN8yDU3sPDpP3pkx7+GL
-YNaaLaZz2piFkiB+YUeFa/NiC+TaEquyEsXV46Su8UbdGxa1nV88Q1Vzdz9OqPl+
-1+7jCo+yHWJ2rODNyyl3u9SMehTSzxlWCSWmPWHSFGOLANGulAkgB3yqRV+OLZx5
-VuOTbQUZ/5jploX3AcuSPMBNBzOZOKfru7sDbtl9xta4nswmekbMDzKdmiRV4cwy
-AWOYMCK7jYA47xJBVeINlSNSkjO7lu0wDfLxaZ+eBiPnOyQ4McesWQ98K3MlBXpb
-h+KlP4JDwXrEj2An0rHOaKAlDwv9Y35c0a1rVvniIqQXpe/ukLPCxlC2N5Z1Zfky
-QyU4ZhEFdaVvLayl+h94CM+t/bg0YckmWbmi67C65g3e7oFyYYKS8xTZ4X6NhFHH
-8x4SB/9YuHbWuKhI8mTtDyAZ0RC+ZmN6G2TDTZGEyds2rDqcNDOphTxJSpfXcd6A
-EhocxX00Jm97a2A7qCw0UYI6XeeU9/tvv1RjshdqMJp1BHJZVaPTu5eWaPQyIUv5
-V09Ty6i8v+A1qYofAnUY
-=6L/c
------END PGP SIGNATURE-----
-
---WIyZ46R2i8wDzkSu--
+Thanks,
+Yuyang
