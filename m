@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752846AbaFEWZD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 18:25:03 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:51551 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751306AbaFEWZB (ORCPT
+	id S1752770AbaFEW0u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 18:26:50 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:47918 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751884AbaFEW0s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 18:25:01 -0400
-Date: Thu, 05 Jun 2014 15:24:59 -0700 (PDT)
-Message-Id: <20140605.152459.1082790961637060914.davem@davemloft.net>
-To: Alexey.Brodkin@synopsys.com
-Cc: netdev@vger.kernel.org, hdegoede@redhat.com, peppe.cavallaro@st.com,
-        wens@csie.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Vineet.Gupta1@synopsys.com
-Subject: Re: [PATCH] stmmac: extend DMA initialization delay to 2.5 seconds
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1401973080-10085-1-git-send-email-abrodkin@synopsys.com>
-References: <1401973080-10085-1-git-send-email-abrodkin@synopsys.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Thu, 5 Jun 2014 18:26:48 -0400
+Message-ID: <5390EE97.9020702@gmail.com>
+Date: Fri, 06 Jun 2014 00:26:31 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Doug Anderson <dianders@chromium.org>, Tomasz Figa <t.figa@samsung.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+CC: olof@lixom.net, javier.martinez@collabora.co.uk, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rahul.sharma@samsung.com, shaik.ameer@samsung.com, arun.kk@samsung.com,
+        alim.akhtar@samsung.com, a.hajda@samsung.com,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH v3] clk: exynos5420: Remove aclk66_peric from the clock
+ tree description
+References: <1401467562-5585-1-git-send-email-dianders@chromium.org> <1402000514-30752-1-git-send-email-dianders@chromium.org>
+In-Reply-To: <1402000514-30752-1-git-send-email-dianders@chromium.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 05 Jun 2014 15:25:00 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
-Date: Thu,  5 Jun 2014 16:58:00 +0400
-
-> On some platforms existing 100 msecond delay is not enough for DMA block to
-> recover after reset. This is because MAC DMA waits for all PHY input clocks
-> to present and depending on the board reset bit deassertion may take much
-> longer than previously used 100 milliseconds
+On 05.06.2014 22:35, Doug Anderson wrote:
+> The "aclk66_peric" clock is a gate clock with a whole bunch of gates
+> underneath it.  This big gate isn't very useful to include in our
+> clock tree.  If any of the children need to be turned on then the big
+> gate will need to be on anyway.  ...and there are plenty of other "big
+> gates" that aren't described in our clock tree, some of which shut off
+> collections of clocks that have no relationship in the hierarchy so
+> are hard to model.
 > 
-> I have a board that requires more than 2 seconds for DMA to zero "reset" bit.
-> If for other boards it's still not long enough this value should be extended
-> once again.
+> "aclk66_peric" is causing earlyprintk problems since it gets disabled
+> as part of the boot process, so let's just remove it.
 > 
-> In the same change I convert "mdelay" to "msleep" to make CPU available for
-> other processes during DMA init delay which is especially useful in case of
-> delay for a few seconds.
+> Strangely (and for no good reason) this clock is exported as part of
+> the common clock bindings.  Remove it since there are no in-kernel
+> device trees using it and no reason anyone out of tree should refer to
+> it either.
 > 
-> Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> ---
+> Changes in v3:
+> - Now just remove aclk66_peric from the tree as suggested by Tomasz.
+> 
+> Changes in v2:
+> - Use GATE_A and clk_get().  Save the clock for putting later.
+> - Return 0 from exynos5420_clk_late_init().
+> 
+>  drivers/clk/samsung/clk-exynos5420.c   | 85 ++++++++++++++++++++++------------
+>  include/dt-bindings/clock/exynos5420.h |  1 -
+>  2 files changed, 55 insertions(+), 31 deletions(-)
+> 
 
-This will not work, you cannot sleep with spinlocks held, and this code is
-absolutely called in such a context.
+Mike, I can take this patch to my tree as a fix for 3.16-rc, or if still
+possible and you don't mind, feel free to apply it directly with my ACK:
 
-For example stmmac_resume() --> stmmac_hw_setup() -> stmmac_init_dma_engine().
+Acked-by: Tomasz Figa <t.figa@samsung.com>
 
-stmmac_resume() holds priv->lock over all of these operations, and even has
-interrupts disabled.
+Best regards,
+Tomasz
