@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753156AbaFEEVc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:21:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44180 "EHLO
+	id S1753206AbaFEEVk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:21:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44214 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753074AbaFEEVW (ORCPT
+	with ESMTP id S1753154AbaFEEVc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:21:22 -0400
+	Thu, 5 Jun 2014 00:21:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Mathias Krause <minipli@googlemail.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
         Ben Hutchings <ben@decadent.org.uk>, Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 3.4 132/214] x86/apic: Disable I/O APIC before shutdown of the local APIC
-Date: Wed,  4 Jun 2014 21:18:15 -0700
-Message-Id: <20140605041657.453096950@linuxfoundation.org>
+Subject: [PATCH 3.4 141/214] x86/Sandy Bridge: mark arrays in __init functions as __initconst
+Date: Wed,  4 Jun 2014 21:18:24 -0700
+Message-Id: <20140605041658.710449111@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -27,70 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fenghua Yu <fenghua.yu@intel.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit 522e66464467543c0d88d023336eec4df03ad40b upstream.
+commit 91c90db1aa92a50fa1d7f289502b49ddb46a90d3 upstream.
 
-In reboot and crash path, when we shut down the local APIC, the I/O APIC is
-still active. This may cause issues because external interrupts
-can still come in and disturb the local APIC during shutdown process.
+commit ab3cd8670e0b3fcde7f029e1503ed3c5138e9571 upstream.
 
-To quiet external interrupts, disable I/O APIC before shutdown local APIC.
+Mark static arrays as __initconst so they get removed when the init
+sections are flushed.
 
-Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
-Link: http://lkml.kernel.org/r/1382578212-4677-1-git-send-email-fenghua.yu@intel.com
-[ I suppose the 'issue' is a hang during shutdown. It's a fine change nevertheless. ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-[bwh: Backported to 3.2: adjust context]
+Reported-by: Mathias Krause <minipli@googlemail.com>
+Link: http://lkml.kernel.org/r/75F4BEE6-CB0E-4426-B40B-697451677738@googlemail.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Rui Xiang <rui.xiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/crash.c  |    2 +-
- arch/x86/kernel/reboot.c |   11 +++++++----
- 2 files changed, 8 insertions(+), 5 deletions(-)
+ arch/x86/kernel/setup.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kernel/crash.c
-+++ b/arch/x86/kernel/crash.c
-@@ -95,10 +95,10 @@ void native_machine_crash_shutdown(struc
- 	cpu_emergency_vmxoff();
- 	cpu_emergency_svm_disable();
- 
--	lapic_shutdown();
- #if defined(CONFIG_X86_IO_APIC)
- 	disable_IO_APIC();
- #endif
-+	lapic_shutdown();
- #ifdef CONFIG_HPET_TIMER
- 	hpet_disable();
- #endif
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -668,6 +668,13 @@ void native_machine_shutdown(void)
- 
- 	/* The boot cpu is always logical cpu 0 */
- 	int reboot_cpu_id = 0;
-+#endif
-+
-+#ifdef CONFIG_X86_IO_APIC
-+	disable_IO_APIC();
-+#endif
-+
-+#ifdef CONFIG_SMP
- 
- #ifdef CONFIG_X86_32
- 	/* See if there has been given a command line override */
-@@ -691,10 +698,6 @@ void native_machine_shutdown(void)
- 
- 	lapic_shutdown();
- 
--#ifdef CONFIG_X86_IO_APIC
--	disable_IO_APIC();
--#endif
--
- #ifdef CONFIG_HPET_TIMER
- 	hpet_disable();
- #endif
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -625,7 +625,7 @@ static bool __init snb_gfx_workaround_ne
+ #ifdef CONFIG_PCI
+ 	int i;
+ 	u16 vendor, devid;
+-	static const u16 snb_ids[] = {
++	static const __initconst u16 snb_ids[] = {
+ 		0x0102,
+ 		0x0112,
+ 		0x0122,
+@@ -658,7 +658,7 @@ static bool __init snb_gfx_workaround_ne
+  */
+ static void __init trim_snb_memory(void)
+ {
+-	static const unsigned long bad_pages[] = {
++	static const __initconst unsigned long bad_pages[] = {
+ 		0x20050000,
+ 		0x20110000,
+ 		0x20130000,
 
 
