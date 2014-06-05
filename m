@@ -1,148 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751653AbaFEJYg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 05:24:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54899 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751306AbaFEJYe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 05:24:34 -0400
-Message-ID: <5390374E.5080708@suse.cz>
-Date: Thu, 05 Jun 2014 11:24:30 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751795AbaFEJYp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 05:24:45 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:49273 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751701AbaFEJYm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 05:24:42 -0400
+Date: Thu, 5 Jun 2014 11:24:37 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Davidlohr Bueso <davidlohr@hp.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, "Paul E. McKenney" <paulmck@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] locking tree changes for v3.16
+Message-ID: <20140605092437.GA4453@gmail.com>
+References: <20140603114821.GA23711@gmail.com>
+ <1401832251.8843.3.camel@buesod1.americas.hpqcorp.net>
+ <20140604103003.GE11096@twins.programming.kicks-ass.net>
+ <20140605081742.GC4926@gmail.com>
+ <20140605092130.GC6758@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [RFC PATCH 4/6] mm, compaction: skip buddy pages by their order
- in the migrate scanner
-References: <alpine.DEB.2.02.1405211954410.13243@chino.kir.corp.google.com> <1401898310-14525-1-git-send-email-vbabka@suse.cz> <1401898310-14525-4-git-send-email-vbabka@suse.cz> <alpine.DEB.2.02.1406041656400.22536@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1406041656400.22536@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140605092130.GC6758@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2014 02:02 AM, David Rientjes wrote:
-> On Wed, 4 Jun 2014, Vlastimil Babka wrote:
->
->> diff --git a/mm/compaction.c b/mm/compaction.c
->> index ae7db5f..3dce5a7 100644
->> --- a/mm/compaction.c
->> +++ b/mm/compaction.c
->> @@ -640,11 +640,18 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->>   		}
->>
->>   		/*
->> -		 * Skip if free. page_order cannot be used without zone->lock
->> -		 * as nothing prevents parallel allocations or buddy merging.
->> +		 * Skip if free. We read page order here without zone lock
->> +		 * which is generally unsafe, but the race window is small and
->> +		 * the worst thing that can happen is that we skip some
->> +		 * potential isolation targets.
->
-> Should we only be doing the low_pfn adjustment based on the order for
-> MIGRATE_ASYNC?  It seems like sync compaction, including compaction that
-> is triggered from the command line, would prefer to scan over the
-> following pages.
 
-I thought even sync compaction would benefit from the skipped 
-iterations. I'd say the probability of this race is smaller than 
-probability of somebody allocating what compaction just freed.
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
->>   		 */
->> -		if (PageBuddy(page))
->> +		if (PageBuddy(page)) {
->> +			unsigned long freepage_order = page_order_unsafe(page);
->
-> I don't assume that we want a smp_wmb() in set_page_order() for this
-> little race and to recheck PageBuddy() here after smp_rmb().
+> On Thu, Jun 05, 2014 at 10:17:42AM +0200, Ingo Molnar wrote:
+> > 
+> > Right now I'm somewhat 'missing' because I fell ill right when the 
+> > merge window began :-/ But I merged all your pending bits shortly 
+> > before the merge window started. During the merge window itself I 
+> > try not to merge fresh patches.
+> 
+> Yeah, no problem that, it just shows we need to better arrange 
+> things for when you're not available.
+> 
+> My/our quilt workflow works really good for me when you're there, 
+> but its obviously somewhat broken without you. We just need to work 
+> out a (better) fallback case.
 
-Hm right, barriers didn't came up last time a patch like this was 
-posted. Rechecking PageBuddy() did came up but I thought the range 
-checks on the order are enough for this case.
+Agreed.
 
-> I think this is fine for MIGRATE_ASYNC.
->
->> +
->> +			if (freepage_order > 0 && freepage_order < MAX_ORDER)
->> +				low_pfn += (1UL << freepage_order) - 1;
->>   			continue;
->> +		}
->>
->>   		/*
->>   		 * Check may be lockless but that's ok as we recheck later.
->> @@ -733,6 +740,13 @@ next_pageblock:
->>   		low_pfn = ALIGN(low_pfn + 1, pageblock_nr_pages) - 1;
->>   	}
->>
->> +	/*
->> +	 * The PageBuddy() check could have potentially brought us outside
->> +	 * the range to be scanned.
->> +	 */
->> +	if (unlikely(low_pfn > end_pfn))
->> +		end_pfn = low_pfn;
->> +
->>   	acct_isolated(zone, locked, cc);
->>
->>   	if (locked)
->> diff --git a/mm/internal.h b/mm/internal.h
->> index 1a8a0d4..6aa1f74 100644
->> --- a/mm/internal.h
->> +++ b/mm/internal.h
->> @@ -164,7 +164,8 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->>    * general, page_zone(page)->lock must be held by the caller to prevent the
->>    * page from being allocated in parallel and returning garbage as the order.
->>    * If a caller does not hold page_zone(page)->lock, it must guarantee that the
->> - * page cannot be allocated or merged in parallel.
->> + * page cannot be allocated or merged in parallel. Alternatively, it must
->> + * handle invalid values gracefully, and use page_order_unsafe() below.
->>    */
->>   static inline unsigned long page_order(struct page *page)
->>   {
->> @@ -172,6 +173,23 @@ static inline unsigned long page_order(struct page *page)
->>   	return page_private(page);
->>   }
->>
->> +/*
->> + * Like page_order(), but for callers who cannot afford to hold the zone lock,
->> + * and handle invalid values gracefully. ACCESS_ONCE is used so that if the
->> + * caller assigns the result into a local variable and e.g. tests it for valid
->> + * range  before using, the compiler cannot decide to remove the variable and
->> + * inline the function multiple times, potentially observing different values
->> + * in the tests and the actual use of the result.
->> + */
->> +static inline unsigned long page_order_unsafe(struct page *page)
->> +{
->> +	/*
->> +	 * PageBuddy() should be checked by the caller to minimize race window,
->> +	 * and invalid values must be handled gracefully.
->> +	 */
->> +	return ACCESS_ONCE(page_private(page));
->> +}
->> +
->>   /* mm/util.c */
->>   void __vma_link_list(struct mm_struct *mm, struct vm_area_struct *vma,
->>   		struct vm_area_struct *prev, struct rb_node *rb_parent);
->
-> I don't like this change at all, I don't think we should have header
-> functions that imply the context in which the function will be called.  I
-> think it would make much more sense to just do
-> ACCESS_ONCE(page_order(page)) in the migration scanner with a comment.
+> The timing was just somewhat unfortunate.
 
-But that won't compile. It would have to be converted to a #define, 
-unless there's some trick I don't know. Sure I would hope this could be 
-done cleaner somehow.
+Yeah, and another part of the problem was that I reported the breakage 
+in private which really made it harder for others to see why there's a 
+delay.
 
-> These are __attribute__((pure)) semantics for page_order().
+Thanks,
 
-Not sure I understand what you mean here. Would adding that attribute 
-change anything?
-
-
+	Ingo
