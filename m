@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752862AbaFEEVG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:21:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44029 "EHLO
+	id S1752890AbaFEEVJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:21:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44032 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752658AbaFEEVE (ORCPT
+	with ESMTP id S1752830AbaFEEVE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 5 Jun 2014 00:21:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joe Thornber <ejt@redhat.com>, Alasdair G Kergon <agk@redhat.com>,
-        Ben Hutchings <ben@decadent.org.uk>, Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 3.4 101/214] dm thin: fix discard corruption
-Date: Wed,  4 Jun 2014 21:17:44 -0700
-Message-Id: <20140605041653.274237879@linuxfoundation.org>
+        Jerome Marchand <jmarchand@redhat.com>,
+        Nitin Gupta <ngupta@vflare.org>, Pekka Enberg <penberg@kernel.org>,
+        Minchan Kim <minchan@kernel.org>, Ben Hutchings <ben@decadent.org.uk>,
+        Jianguo Wu <wujianguo@huawei.com>
+Subject: [PATCH 3.4 102/214] zram: Fix deadlock bug in partial read/write
+Date: Wed,  4 Jun 2014 21:17:45 -0700
+Message-Id: <20140605041653.411654637@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -27,195 +29,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Thornber <ejt@redhat.com>
+From: Minchan Kim <minchan@kernel.org>
 
-commit f046f89a99ccfd9408b94c653374ff3065c7edb3 upstream.
+commit 7e5a5104c6af709a8d97d5f4711e7c917761d464 upstream.
 
-Fix a bug in dm_btree_remove that could leave leaf values with incorrect
-reference counts.  The effect of this was that removal of a shared block
-could result in the space maps thinking the block was no longer used.
-More concretely, if you have a thin device and a snapshot of it, sending
-a discard to a shared region of the thin could corrupt the snapshot.
+Now zram allocates new page with GFP_KERNEL in zram I/O path
+if IO is partial. Unfortunately, It may cause deadlock with
+reclaim path like below.
 
-Thinp uses a 2-level nested btree to store it's mappings.  This first
-level is indexed by thin device, and the second level by logical
-block.
+write_page from fs
+fs_lock
+allocation(GFP_KERNEL)
+reclaim
+pageout
+				write_page from fs
+				fs_lock <-- deadlock
 
-Often when we're removing an entry in this mapping tree we need to
-rebalance nodes, which can involve shadowing them, possibly creating a
-copy if the block is shared.  If we do create a copy then children of
-that node need to have their reference counts incremented.  In this
-way reference counts percolate down the tree as shared trees diverge.
+This patch fixes it by using GFP_NOIO.  In read path, we
+reorganize code flow so that kmap_atomic is called after the
+GFP_NOIO allocation.
 
-The rebalance functions were incrementing the children at the
-appropriate time, but they were always assuming the children were
-internal nodes.  This meant the leaf values (in our case packed
-block/flags entries) were not being incremented.
-
-Signed-off-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
-[bwh: Backported to 3.2: bump target version numbers from 1.0.1 to 1.0.2]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-[xr: Backported to 3.4: bump target version numbers to 1.1.1]
-Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
+Acked-by: Jerome Marchand <jmarchand@redhat.com>
+Acked-by: Nitin Gupta <ngupta@vflare.org>
+[ penberg@kernel.org: don't use GFP_ATOMIC ]
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/md/dm-thin.c                         |    4 +-
- drivers/md/persistent-data/dm-btree-remove.c |   46 ++++++++++++++-------------
- 2 files changed, 26 insertions(+), 24 deletions(-)
+[bwh: Backported to 3.2: no reordering is needed in the read path]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: Jianguo Wu <wujianguo@huawei.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
---- a/drivers/md/dm-thin.c
-+++ b/drivers/md/dm-thin.c
-@@ -2472,7 +2472,7 @@ static struct target_type pool_target =
- 	.name = "thin-pool",
- 	.features = DM_TARGET_SINGLETON | DM_TARGET_ALWAYS_WRITEABLE |
- 		    DM_TARGET_IMMUTABLE,
--	.version = {1, 1, 0},
-+	.version = {1, 1, 1},
- 	.module = THIS_MODULE,
- 	.ctr = pool_ctr,
- 	.dtr = pool_dtr,
-@@ -2752,7 +2752,7 @@ static void thin_io_hints(struct dm_targ
+---
+ drivers/staging/zram/zram_drv.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -235,7 +235,7 @@ static int zram_bvec_read(struct zram *z
  
- static struct target_type thin_target = {
- 	.name = "thin",
--	.version = {1, 1, 0},
-+	.version = {1, 1, 1},
- 	.module	= THIS_MODULE,
- 	.ctr = thin_ctr,
- 	.dtr = thin_dtr,
---- a/drivers/md/persistent-data/dm-btree-remove.c
-+++ b/drivers/md/persistent-data/dm-btree-remove.c
-@@ -139,15 +139,8 @@ struct child {
- 	struct btree_node *n;
- };
- 
--static struct dm_btree_value_type le64_type = {
--	.context = NULL,
--	.size = sizeof(__le64),
--	.inc = NULL,
--	.dec = NULL,
--	.equal = NULL
--};
--
--static int init_child(struct dm_btree_info *info, struct btree_node *parent,
-+static int init_child(struct dm_btree_info *info, struct dm_btree_value_type *vt,
-+		      struct btree_node *parent,
- 		      unsigned index, struct child *result)
- {
- 	int r, inc;
-@@ -164,7 +157,7 @@ static int init_child(struct dm_btree_in
- 	result->n = dm_block_data(result->block);
- 
- 	if (inc)
--		inc_children(info->tm, result->n, &le64_type);
-+		inc_children(info->tm, result->n, vt);
- 
- 	*((__le64 *) value_ptr(parent, index)) =
- 		cpu_to_le64(dm_block_location(result->block));
-@@ -236,7 +229,7 @@ static void __rebalance2(struct dm_btree
- }
- 
- static int rebalance2(struct shadow_spine *s, struct dm_btree_info *info,
--		      unsigned left_index)
-+		      struct dm_btree_value_type *vt, unsigned left_index)
- {
- 	int r;
- 	struct btree_node *parent;
-@@ -244,11 +237,11 @@ static int rebalance2(struct shadow_spin
- 
- 	parent = dm_block_data(shadow_current(s));
- 
--	r = init_child(info, parent, left_index, &left);
-+	r = init_child(info, vt, parent, left_index, &left);
- 	if (r)
- 		return r;
- 
--	r = init_child(info, parent, left_index + 1, &right);
-+	r = init_child(info, vt, parent, left_index + 1, &right);
- 	if (r) {
- 		exit_child(info, &left);
- 		return r;
-@@ -368,7 +361,7 @@ static void __rebalance3(struct dm_btree
- }
- 
- static int rebalance3(struct shadow_spine *s, struct dm_btree_info *info,
--		      unsigned left_index)
-+		      struct dm_btree_value_type *vt, unsigned left_index)
- {
- 	int r;
- 	struct btree_node *parent = dm_block_data(shadow_current(s));
-@@ -377,17 +370,17 @@ static int rebalance3(struct shadow_spin
- 	/*
- 	 * FIXME: fill out an array?
- 	 */
--	r = init_child(info, parent, left_index, &left);
-+	r = init_child(info, vt, parent, left_index, &left);
- 	if (r)
- 		return r;
- 
--	r = init_child(info, parent, left_index + 1, &center);
-+	r = init_child(info, vt, parent, left_index + 1, &center);
- 	if (r) {
- 		exit_child(info, &left);
- 		return r;
- 	}
- 
--	r = init_child(info, parent, left_index + 2, &right);
-+	r = init_child(info, vt, parent, left_index + 2, &right);
- 	if (r) {
- 		exit_child(info, &left);
- 		exit_child(info, &center);
-@@ -434,7 +427,8 @@ static int get_nr_entries(struct dm_tran
- }
- 
- static int rebalance_children(struct shadow_spine *s,
--			      struct dm_btree_info *info, uint64_t key)
-+			      struct dm_btree_info *info,
-+			      struct dm_btree_value_type *vt, uint64_t key)
- {
- 	int i, r, has_left_sibling, has_right_sibling;
- 	uint32_t child_entries;
-@@ -472,13 +466,13 @@ static int rebalance_children(struct sha
- 	has_right_sibling = i < (le32_to_cpu(n->header.nr_entries) - 1);
- 
- 	if (!has_left_sibling)
--		r = rebalance2(s, info, i);
-+		r = rebalance2(s, info, vt, i);
- 
- 	else if (!has_right_sibling)
--		r = rebalance2(s, info, i - 1);
-+		r = rebalance2(s, info, vt, i - 1);
- 
- 	else
--		r = rebalance3(s, info, i - 1);
-+		r = rebalance3(s, info, vt, i - 1);
- 
- 	return r;
- }
-@@ -529,7 +523,7 @@ static int remove_raw(struct shadow_spin
- 		if (le32_to_cpu(n->header.flags) & LEAF_NODE)
- 			return do_leaf(n, key, index);
- 
--		r = rebalance_children(s, info, key);
-+		r = rebalance_children(s, info, vt, key);
- 		if (r)
- 			break;
- 
-@@ -550,6 +544,14 @@ static int remove_raw(struct shadow_spin
- 	return r;
- }
- 
-+static struct dm_btree_value_type le64_type = {
-+	.context = NULL,
-+	.size = sizeof(__le64),
-+	.inc = NULL,
-+	.dec = NULL,
-+	.equal = NULL
-+};
-+
- int dm_btree_remove(struct dm_btree_info *info, dm_block_t root,
- 		    uint64_t *keys, dm_block_t *new_root)
- {
+ 	if (is_partial_io(bvec)) {
+ 		/* Use  a temporary buffer to decompress the page */
+-		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
++		uncmem = kmalloc(PAGE_SIZE, GFP_NOIO);
+ 		if (!uncmem) {
+ 			pr_info("Error allocating temp memory!\n");
+ 			return -ENOMEM;
+@@ -330,7 +330,7 @@ static int zram_bvec_write(struct zram *
+ 		 * This is a partial IO. We need to read the full page
+ 		 * before to write the changes.
+ 		 */
+-		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
++		uncmem = kmalloc(PAGE_SIZE, GFP_NOIO);
+ 		if (!uncmem) {
+ 			pr_info("Error allocating temp memory!\n");
+ 			ret = -ENOMEM;
 
 
