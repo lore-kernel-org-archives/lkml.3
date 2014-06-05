@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753000AbaFEEet (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:34:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44374 "EHLO
+	id S1752244AbaFEEfL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:35:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44364 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753329AbaFEEV4 (ORCPT
+	with ESMTP id S1753374AbaFEEVz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:21:56 -0400
+	Thu, 5 Jun 2014 00:21:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Carsten Emde <C.Emde@osadl.org>,
         Chris Wilson <chris@chris-wilson.co.uk>,
         Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@intel.com>,
         Ben Hutchings <ben@decadent.org.uk>,
         Weng Meiling <wengmeiling.weng@huawei.com>
-Subject: [PATCH 3.4 170/214] drm/i915: panel: invert brightness via parameter
-Date: Wed,  4 Jun 2014 21:18:53 -0700
-Message-Id: <20140605041702.406066231@linuxfoundation.org>
+Subject: [PATCH 3.4 168/214] drm/i915: dump UTS_RELEASE into the error_state
+Date: Wed,  4 Jun 2014 21:18:51 -0700
+Message-Id: <20140605041702.117498872@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -31,102 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Carsten Emde <C.Emde@osadl.org>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 7bd90909bbf9ce7c40e1da3d72b97b93839c188a upstream.
+commit 4518f611ba21ba165ea3714055938a8984a44ff9 upstream.
 
-Following the documentation of the Legacy Backlight Brightness (LBB)
-Register in the configuration space of some Intel PCI graphics adapters,
-setting the LBB register with the value 0x0 causes the backlight to be
-turned off, and 0xFF causes the backlight to be set to 100% intensity
-(http://download.intel.com/embedded/processors/Whitepaper/324567.pdf).
-The Acer Aspire 5734Z, however, turns the backlight off at 0xFF and sets
-it to maximum intensity at 0. In consequence, the screen of this systems
-becomes dark at an early boot stage which makes it unusable. The same
-inversion applies to the BLC_PWM_CTL I915 register. This problem was
-introduced in kernel version 2.6.38 when the PCI device of this system
-was first supported by the i915 KMS module.
+Useful for statistics or on overflowing bug reports to keep things all
+lined up.
 
-This patch adds a parameter to the i915 module to enable inversion of
-the brightness variable (i915.invert_brightness).
-
-Signed-off-by: Carsten Emde <C.Emde@osadl.org>
 Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Acked-by: Jani Nikula <jani.nikula@intel.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Weng Meiling <wengmeiling.weng@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/kernel-parameters.txt |    9 +++++++++
- drivers/gpu/drm/i915/intel_panel.c  |   17 +++++++++++++++++
- 2 files changed, 26 insertions(+)
+ drivers/gpu/drm/i915/i915_debugfs.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -993,6 +993,15 @@ bytes respectively. Such letter suffixes
- 	i8k.restricted	[HW] Allow controlling fans only if SYS_ADMIN
- 			capability is set.
- 
-+	i915.invert_brightness
-+			[DRM] Invert the sense of the variable that is used to
-+			set the brightness of the panel backlight. Normally a
-+			value of 0 indicates backlight switched off, and the
-+			maximum value sets the backlight to maximum brightness.
-+			If this parameter is specified, a value of 0 sets the
-+			backlight to maximum brightness, and the maximum value
-+			switches the backlight off.
-+
- 	icn=		[HW,ISDN]
- 			Format: <io>[,<membase>[,<icn_id>[,<icn_id2>]]]
- 
---- a/drivers/gpu/drm/i915/intel_panel.c
-+++ b/drivers/gpu/drm/i915/intel_panel.c
-@@ -28,6 +28,7 @@
-  *      Chris Wilson <chris@chris-wilson.co.uk>
-  */
- 
-+#include <linux/moduleparam.h>
+--- a/drivers/gpu/drm/i915/i915_debugfs.c
++++ b/drivers/gpu/drm/i915/i915_debugfs.c
+@@ -30,6 +30,7 @@
+ #include <linux/debugfs.h>
+ #include <linux/slab.h>
+ #include <linux/export.h>
++#include <generated/utsrelease.h>
+ #include "drmP.h"
+ #include "drm.h"
  #include "intel_drv.h"
+@@ -750,6 +751,7 @@ static int i915_error_state(struct seq_f
  
- #define PCI_LBPC 0xf4 /* legacy/combination backlight modes */
-@@ -189,6 +190,20 @@ u32 intel_panel_get_max_backlight(struct
- 	return max;
- }
- 
-+static bool i915_panel_invert_brightness;
-+MODULE_PARM_DESC(invert_brightness, "Invert backlight brightness, please "
-+	"report PCI device ID, subsystem vendor and subsystem device ID "
-+	"to dri-devel@lists.freedesktop.org, if your machine needs it. "
-+	"It will then be included in an upcoming module version.");
-+module_param_named(invert_brightness, i915_panel_invert_brightness, bool, 0600);
-+static u32 intel_panel_compute_brightness(struct drm_device *dev, u32 val)
-+{
-+	if (i915_panel_invert_brightness)
-+		return intel_panel_get_max_backlight(dev) - val;
-+
-+	return val;
-+}
-+
- u32 intel_panel_get_backlight(struct drm_device *dev)
- {
- 	struct drm_i915_private *dev_priv = dev->dev_private;
-@@ -209,6 +224,7 @@ u32 intel_panel_get_backlight(struct drm
- 		}
- 	}
- 
-+	val = intel_panel_compute_brightness(dev, val);
- 	DRM_DEBUG_DRIVER("get backlight PWM = %d\n", val);
- 	return val;
- }
-@@ -226,6 +242,7 @@ static void intel_panel_actually_set_bac
- 	u32 tmp;
- 
- 	DRM_DEBUG_DRIVER("set backlight PWM = %d\n", level);
-+	level = intel_panel_compute_brightness(dev, level);
- 
- 	if (HAS_PCH_SPLIT(dev))
- 		return intel_pch_panel_set_backlight(dev, level);
+ 	seq_printf(m, "Time: %ld s %ld us\n", error->time.tv_sec,
+ 		   error->time.tv_usec);
++	seq_printf(m, "Kernel: " UTS_RELEASE);
+ 	seq_printf(m, "PCI ID: 0x%04x\n", dev->pci_device);
+ 	seq_printf(m, "EIR: 0x%08x\n", error->eir);
+ 	seq_printf(m, "PGTBL_ER: 0x%08x\n", error->pgtbl_er);
 
 
