@@ -1,26 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753461AbaFEEnW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:43:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44214 "EHLO
+	id S1754069AbaFEEnm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:43:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44200 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753139AbaFEEVa (ORCPT
+	with ESMTP id S1753082AbaFEEV3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:21:30 -0400
+	Thu, 5 Jun 2014 00:21:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Radu Caragea <sinaelgl@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Adrian Sendroiu <molecula2788@gmail.com>, Greg KH <greg@kroah.com>,
-        Kamal Mostafa <kamal@canonical.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ben Hutchings <ben@decadent.org.uk>, Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 3.4 138/214] x86 get_unmapped_area: Access mmap_legacy_base through mm_struct member
-Date: Wed,  4 Jun 2014 21:18:21 -0700
-Message-Id: <20140605041658.310704816@linuxfoundation.org>
+        Russ Gorby <russ.gorby@intel.com>,
+        "Yin, Fengwei" <fengwei.yin@intel.com>,
+        Alan Cox <alan@linux.intel.com>, Ben Hutchings <ben@decadent.org.uk>,
+        Rui Xiang <rui.xiang@huawei.com>
+Subject: [PATCH 3.4 136/214] n_gsm: avoid accessing freed memory during CMD_FCOFF condition
+Date: Wed,  4 Jun 2014 21:18:19 -0700
+Message-Id: <20140605041658.000709649@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -33,75 +29,141 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Radu Caragea <sinaelgl@gmail.com>
+From: Russ Gorby <russ.gorby@intel.com>
 
-commit 41aacc1eea645c99edbe8fbcf78a97dc9b862adc upstream.
+commit b4338e1efc339986cf6c0a3652906e914a86e2d3 upstream.
 
-This is the updated version of df54d6fa5427 ("x86 get_unmapped_area():
-use proper mmap base for bottom-up direction") that only randomizes the
-mmap base address once.
+gsm_data_kick was recently modified to allow messages on the
+tx queue bound for DLCI0 to flow even during FCOFF conditions.
+Unfortunately we introduced a bug discovered by code inspection
+where subsequent list traversers can access freed memory if
+the DLCI0 messages were not all at the head of the list.
 
-Signed-off-by: Radu Caragea <sinaelgl@gmail.com>
-Reported-and-tested-by: Jeff Shorey <shoreyjeff@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Adrian Sendroiu <molecula2788@gmail.com>
-Cc: Greg KH <greg@kroah.com>
-Cc: Kamal Mostafa <kamal@canonical.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backported to 3.2: adjust context]
+Replaced singly linked tx list w/ a list_head and used
+provided interfaces for traversing and deleting members.
+
+Signed-off-by: Russ Gorby <russ.gorby@intel.com>
+Tested-by: Yin, Fengwei <fengwei.yin@intel.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Rui Xiang <rui.xiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/sys_x86_64.c |    2 +-
- arch/x86/mm/mmap.c           |    6 ++++--
- include/linux/mm_types.h     |    1 +
- 3 files changed, 6 insertions(+), 3 deletions(-)
+ drivers/tty/n_gsm.c |   40 +++++++++++++---------------------------
+ 1 file changed, 13 insertions(+), 27 deletions(-)
 
---- a/arch/x86/kernel/sys_x86_64.c
-+++ b/arch/x86/kernel/sys_x86_64.c
-@@ -115,7 +115,7 @@ static void find_start_end(unsigned long
- 				*begin = new_begin;
- 		}
- 	} else {
--		*begin = TASK_UNMAPPED_BASE;
-+		*begin = current->mm->mmap_legacy_base;
- 		*end = TASK_SIZE;
- 	}
- }
---- a/arch/x86/mm/mmap.c
-+++ b/arch/x86/mm/mmap.c
-@@ -112,12 +112,14 @@ static unsigned long mmap_legacy_base(vo
+--- a/drivers/tty/n_gsm.c
++++ b/drivers/tty/n_gsm.c
+@@ -108,7 +108,7 @@ struct gsm_mux_net {
   */
- void arch_pick_mmap_layout(struct mm_struct *mm)
+ 
+ struct gsm_msg {
+-	struct gsm_msg *next;
++	struct list_head list;
+ 	u8 addr;		/* DLCI address + flags */
+ 	u8 ctrl;		/* Control byte + flags */
+ 	unsigned int len;	/* Length of data block (can be zero) */
+@@ -245,8 +245,7 @@ struct gsm_mux {
+ 	unsigned int tx_bytes;		/* TX data outstanding */
+ #define TX_THRESH_HI		8192
+ #define TX_THRESH_LO		2048
+-	struct gsm_msg *tx_head;	/* Pending data packets */
+-	struct gsm_msg *tx_tail;
++	struct list_head tx_list;	/* Pending data packets */
+ 
+ 	/* Control messages */
+ 	struct timer_list t2_timer;	/* Retransmit timer for commands */
+@@ -663,7 +662,7 @@ static struct gsm_msg *gsm_data_alloc(st
+ 	m->len = len;
+ 	m->addr = addr;
+ 	m->ctrl = ctrl;
+-	m->next = NULL;
++	INIT_LIST_HEAD(&m->list);
+ 	return m;
+ }
+ 
+@@ -681,16 +680,13 @@ static struct gsm_msg *gsm_data_alloc(st
+ 
+ static void gsm_data_kick(struct gsm_mux *gsm)
  {
-+	mm->mmap_legacy_base = mmap_legacy_base();
-+	mm->mmap_base = mmap_base();
-+
- 	if (mmap_is_legacy()) {
--		mm->mmap_base = mmap_legacy_base();
-+		mm->mmap_base = mm->mmap_legacy_base;
- 		mm->get_unmapped_area = arch_get_unmapped_area;
- 		mm->unmap_area = arch_unmap_area;
- 	} else {
--		mm->mmap_base = mmap_base();
- 		mm->get_unmapped_area = arch_get_unmapped_area_topdown;
- 		mm->unmap_area = arch_unmap_area_topdown;
+-	struct gsm_msg *msg = gsm->tx_head;
+-	struct gsm_msg *free_msg;
++	struct gsm_msg *msg, *nmsg;
+ 	int len;
+ 	int skip_sof = 0;
+ 
+-	while (msg) {
+-		if (gsm->constipated && msg->addr) {
+-			msg = msg->next;
++	list_for_each_entry_safe(msg, nmsg, &gsm->tx_list, list) {
++		if (gsm->constipated && msg->addr)
+ 			continue;
+-		}
+ 		if (gsm->encoding != 0) {
+ 			gsm->txframe[0] = GSM1_SOF;
+ 			len = gsm_stuff_frame(msg->data,
+@@ -718,14 +714,9 @@ static void gsm_data_kick(struct gsm_mux
+ 		   burst */
+ 		skip_sof = 1;
+ 
+-		if (gsm->tx_head == msg)
+-			gsm->tx_head = msg->next;
+-		free_msg = msg;
+-		msg = msg->next;
+-		kfree(free_msg);
++		list_del(&msg->list);
++		kfree(msg);
  	}
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -306,6 +306,7 @@ struct mm_struct {
- 	void (*unmap_area) (struct mm_struct *mm, unsigned long addr);
- #endif
- 	unsigned long mmap_base;		/* base of mmap area */
-+	unsigned long mmap_legacy_base;         /* base of mmap area in bottom-up allocations */
- 	unsigned long task_size;		/* size of task vm space */
- 	unsigned long cached_hole_size; 	/* if non-zero, the largest hole below free_area_cache */
- 	unsigned long free_area_cache;		/* first hole of size cached_hole_size or larger */
+-	if (!gsm->tx_head)
+-		gsm->tx_tail = NULL;
+ }
+ 
+ /**
+@@ -774,11 +765,7 @@ static void __gsm_data_queue(struct gsm_
+ 	msg->data = dp;
+ 
+ 	/* Add to the actual output queue */
+-	if (gsm->tx_tail)
+-		gsm->tx_tail->next = msg;
+-	else
+-		gsm->tx_head = msg;
+-	gsm->tx_tail = msg;
++	list_add_tail(&msg->list, &gsm->tx_list);
+ 	gsm->tx_bytes += msg->len;
+ 	gsm_data_kick(gsm);
+ }
+@@ -2052,7 +2039,7 @@ void gsm_cleanup_mux(struct gsm_mux *gsm
+ {
+ 	int i;
+ 	struct gsm_dlci *dlci = gsm->dlci[0];
+-	struct gsm_msg *txq;
++	struct gsm_msg *txq, *utxq;
+ 	struct gsm_control *gc;
+ 
+ 	gsm->dead = 1;
+@@ -2087,11 +2074,9 @@ void gsm_cleanup_mux(struct gsm_mux *gsm
+ 		if (gsm->dlci[i])
+ 			gsm_dlci_release(gsm->dlci[i]);
+ 	/* Now wipe the queues */
+-	for (txq = gsm->tx_head; txq != NULL; txq = gsm->tx_head) {
+-		gsm->tx_head = txq->next;
++	list_for_each_entry_safe(txq, ntxq, &gsm->tx_list, list)
+ 		kfree(txq);
+-	}
+-	gsm->tx_tail = NULL;
++	INIT_LIST_HEAD(&gsm->tx_list);
+ }
+ EXPORT_SYMBOL_GPL(gsm_cleanup_mux);
+ 
+@@ -2202,6 +2187,7 @@ struct gsm_mux *gsm_alloc_mux(void)
+ 	}
+ 	spin_lock_init(&gsm->lock);
+ 	kref_init(&gsm->ref);
++	INIT_LIST_HEAD(&gsm->tx_list);
+ 
+ 	gsm->t1 = T1;
+ 	gsm->t2 = T2;
 
 
