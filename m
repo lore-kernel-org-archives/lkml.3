@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753997AbaFEEZj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:25:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44582 "EHLO
+	id S1753981AbaFEEZi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:25:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44585 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753722AbaFEEWd (ORCPT
+	with ESMTP id S1753665AbaFEEWd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 5 Jun 2014 00:22:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Herbert Xu <herbert@gondor.apana.org.au>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Yuhang Wang <wangyuhang2014@gmail.com>,
+        Sourav Poddar <sourav.poddar@ti.com>,
         Ben Hutchings <ben@decadent.org.uk>,
         Qiang Huang <h.huangqiang@huawei.com>
-Subject: [PATCH 3.4 206/214] crypto: s390 - Fix aes-cbc IV corruption
-Date: Wed,  4 Jun 2014 21:19:29 -0700
-Message-Id: <20140605041707.141538378@linuxfoundation.org>
+Subject: [PATCH 3.4 207/214] mtd: m25p80: fix allocation size
+Date: Wed,  4 Jun 2014 21:19:30 -0700
+Message-Id: <20140605041707.273175537@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -28,97 +30,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Herbert Xu <herbert@gondor.apana.org.au>
+From: Brian Norris <computersforpeace@gmail.com>
 
-commit f262f0f5cad0c9eca61d1d383e3b67b57dcbe5ea upstream.
+commit 778d226a1462572b51d6777cdb1d611543410cb4 upstream.
 
-The cbc-aes-s390 algorithm incorrectly places the IV in the tfm
-data structure.  As the tfm is shared between multiple threads,
-this introduces a possibility of data corruption.
+This patch fixes two memory errors:
 
-This patch fixes this by moving the parameter block containing
-the IV and key onto the stack (the block is 48 bytes long).
+1. During a probe failure (in mtd_device_parse_register?) the command
+   buffer would not be freed.
 
-The same bug exists elsewhere in the s390 crypto system and they
-will be fixed in subsequent patches.
+2. The command buffer's size is determined based on the 'fast_read'
+   boolean, but the assignment of fast_read is made after this
+   allocation. Thus, the buffer may be allocated "too small".
 
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+To fix the first, just switch to the devres version of kzalloc.
+
+To fix the second, increase MAX_CMD_SIZE unconditionally. It's not worth
+saving a byte to fiddle around with the conditions here.
+
+This problem was reported by Yuhang Wang a while back.
+
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Reported-by: Yuhang Wang <wangyuhang2014@gmail.com>
+Reviewed-by: Sourav Poddar <sourav.poddar@ti.com>
 [bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Qiang Huang <h.huangqiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/crypto/aes_s390.c |   19 ++++++++++++-------
- 1 file changed, 12 insertions(+), 7 deletions(-)
+ drivers/mtd/devices/m25p80.c |   19 +++++++------------
+ 1 file changed, 7 insertions(+), 12 deletions(-)
 
---- a/arch/s390/crypto/aes_s390.c
-+++ b/arch/s390/crypto/aes_s390.c
-@@ -35,7 +35,6 @@ static u8 *ctrblk;
- static char keylen_flag;
+--- a/drivers/mtd/devices/m25p80.c
++++ b/drivers/mtd/devices/m25p80.c
+@@ -71,7 +71,7 @@
  
- struct s390_aes_ctx {
--	u8 iv[AES_BLOCK_SIZE];
- 	u8 key[AES_MAX_KEY_SIZE];
- 	long enc;
- 	long dec;
-@@ -442,29 +441,35 @@ static int cbc_aes_set_key(struct crypto
- 	return aes_set_key(tfm, in_key, key_len);
- }
+ /* Define max times to check status register before we give up. */
+ #define	MAX_READY_WAIT_JIFFIES	(40 * HZ)	/* M25P16 specs 40s max chip erase */
+-#define	MAX_CMD_SIZE		5
++#define	MAX_CMD_SIZE		6
  
--static int cbc_aes_crypt(struct blkcipher_desc *desc, long func, void *param,
-+static int cbc_aes_crypt(struct blkcipher_desc *desc, long func,
- 			 struct blkcipher_walk *walk)
+ #ifdef CONFIG_M25PXX_USE_FAST_READ
+ #define OPCODE_READ 	OPCODE_FAST_READ
+@@ -843,14 +843,13 @@ static int __devinit m25p_probe(struct s
+ 		}
+ 	}
+ 
+-	flash = kzalloc(sizeof *flash, GFP_KERNEL);
++	flash = devm_kzalloc(&spi->dev, sizeof(*flash), GFP_KERNEL);
+ 	if (!flash)
+ 		return -ENOMEM;
+-	flash->command = kmalloc(MAX_CMD_SIZE + FAST_READ_DUMMY_BYTE, GFP_KERNEL);
+-	if (!flash->command) {
+-		kfree(flash);
++
++	flash->command = devm_kzalloc(&spi->dev, MAX_CMD_SIZE, GFP_KERNEL);
++	if (!flash->command)
+ 		return -ENOMEM;
+-	}
+ 
+ 	flash->spi = spi;
+ 	mutex_init(&flash->lock);
+@@ -947,14 +946,10 @@ static int __devinit m25p_probe(struct s
+ static int __devexit m25p_remove(struct spi_device *spi)
  {
-+	struct s390_aes_ctx *sctx = crypto_blkcipher_ctx(desc->tfm);
- 	int ret = blkcipher_walk_virt(desc, walk);
- 	unsigned int nbytes = walk->nbytes;
-+	struct {
-+		u8 iv[AES_BLOCK_SIZE];
-+		u8 key[AES_MAX_KEY_SIZE];
-+	} param;
+ 	struct m25p	*flash = dev_get_drvdata(&spi->dev);
+-	int		status;
  
- 	if (!nbytes)
- 		goto out;
- 
--	memcpy(param, walk->iv, AES_BLOCK_SIZE);
-+	memcpy(param.iv, walk->iv, AES_BLOCK_SIZE);
-+	memcpy(param.key, sctx->key, sctx->key_len);
- 	do {
- 		/* only use complete blocks */
- 		unsigned int n = nbytes & ~(AES_BLOCK_SIZE - 1);
- 		u8 *out = walk->dst.virt.addr;
- 		u8 *in = walk->src.virt.addr;
- 
--		ret = crypt_s390_kmc(func, param, out, in, n);
-+		ret = crypt_s390_kmc(func, &param, out, in, n);
- 		BUG_ON((ret < 0) || (ret != n));
- 
- 		nbytes &= AES_BLOCK_SIZE - 1;
- 		ret = blkcipher_walk_done(desc, walk, nbytes);
- 	} while ((nbytes = walk->nbytes));
--	memcpy(walk->iv, param, AES_BLOCK_SIZE);
-+	memcpy(walk->iv, param.iv, AES_BLOCK_SIZE);
- 
- out:
- 	return ret;
-@@ -481,7 +486,7 @@ static int cbc_aes_encrypt(struct blkcip
- 		return fallback_blk_enc(desc, dst, src, nbytes);
- 
- 	blkcipher_walk_init(&walk, dst, src, nbytes);
--	return cbc_aes_crypt(desc, sctx->enc, sctx->iv, &walk);
-+	return cbc_aes_crypt(desc, sctx->enc, &walk);
+ 	/* Clean up MTD stuff. */
+-	status = mtd_device_unregister(&flash->mtd);
+-	if (status == 0) {
+-		kfree(flash->command);
+-		kfree(flash);
+-	}
++	mtd_device_unregister(&flash->mtd);
++
+ 	return 0;
  }
  
- static int cbc_aes_decrypt(struct blkcipher_desc *desc,
-@@ -495,7 +500,7 @@ static int cbc_aes_decrypt(struct blkcip
- 		return fallback_blk_dec(desc, dst, src, nbytes);
- 
- 	blkcipher_walk_init(&walk, dst, src, nbytes);
--	return cbc_aes_crypt(desc, sctx->dec, sctx->iv, &walk);
-+	return cbc_aes_crypt(desc, sctx->dec, &walk);
- }
- 
- static struct crypto_alg cbc_aes_alg = {
 
 
