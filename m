@@ -1,67 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752036AbaFEPom (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 11:44:42 -0400
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:36135 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751884AbaFEPol (ORCPT
+	id S1752136AbaFEPow (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 11:44:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52895 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751884AbaFEPou (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 11:44:41 -0400
+	Thu, 5 Jun 2014 11:44:50 -0400
+Date: Thu, 5 Jun 2014 08:48:31 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Rob Clark <robdclark@gmail.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] fence: Use smp_mb__before_atomic()
+Message-ID: <20140605154831.GA23993@kroah.com>
+References: <1401287192-14701-1-git-send-email-thierry.reding@gmail.com>
+ <20140528205145.GB10468@kroah.com>
+ <20140530081504.GA16669@ulmo>
+ <20140530160831.GA11182@kroah.com>
+ <CAO_48GE_Y7DQj_nCZ=0gb_AY26_vtPsQybf9zuhsLW1nnaOuQw@mail.gmail.com>
+ <20140604132831.GC28484@ulmo>
+ <20140604174902.GC20812@kroah.com>
+ <CAF6AEGuaURm-AHHh6G=HnJYFLUWBhPOxKaBQCqn-=-9CQdKe8w@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140605090206.GA16642@pd.tnic>
-References: <tip-baa916f39b50ad91661534652110df40396acda0@git.kernel.org>
- <538F9AFA.5050806@zytor.com> <20140604224920.GB4126@pd.tnic>
- <538FB775.8070405@amacapital.net> <20140605071805.GA16647@pd.tnic>
- <CAL01qpuj6jvH4XLvhHAszbqmSPXfW=VOdv+TqMwBuDnArL=ofw@mail.gmail.com> <20140605090206.GA16642@pd.tnic>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 5 Jun 2014 08:44:20 -0700
-Message-ID: <CALCETrU2TZhxOZyCvBd1nLDiU4ceiSx_Sd2bsDUCX5arOFidBg@mail.gmail.com>
-Subject: Re: [tip:x86/efi] x86/efi: Check for unsafe dealing with FPU state in
- irq ctxt
-To: Borislav Petkov <bp@alien8.de>
-Cc: Matt Fleming <matt.fleming@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Ricardo Neri <ricardo.neri-calderon@linux.intel.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAF6AEGuaURm-AHHh6G=HnJYFLUWBhPOxKaBQCqn-=-9CQdKe8w@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 5, 2014 at 2:02 AM, Borislav Petkov <bp@alien8.de> wrote:
-> On Thu, Jun 05, 2014 at 09:49:08AM +0100, Matt Fleming wrote:
->> On 5 June 2014 08:18, Borislav Petkov <bp@alien8.de> wrote:.
->> >
->> > How are you going to detect when to save/restore state? Do it
->> > unconditionally would probably be a no-no. Even with all that optimized
->> > XSAVE* fun.
->>
->> (I'm not talking about the crypto async code because I'm not familiar with it)
->>
->> For the EFI pstore case we'd only be using this newly allocated
->> context space if we can't do the usual FPU xsave dance. e.g. we'd be
->> adding a new feature specifically for the !irq_fpu_usable() case. Only
->> then would we do an unconditional save. It would be useful to get some
->> numbers for this but I don't think it would be too bad, especially
->> given that it's in a fatal crash handler state anyway.
->>
->> I don't think it's worth going to the trouble solely for the EFI
->> pstore code, but if it can also be used for the crypto code it might
->> be worth a look.
->
-> Right, if we do this only for special, slowpath cases, then we're
-> probably fine with unconditional. It would be simpler too.
+On Thu, Jun 05, 2014 at 07:51:10AM -0400, Rob Clark wrote:
+> On Wed, Jun 4, 2014 at 1:49 PM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+> > On Wed, Jun 04, 2014 at 03:28:33PM +0200, Thierry Reding wrote:
+> >> On Wed, Jun 04, 2014 at 04:57:07PM +0530, Sumit Semwal wrote:
+> >> > Hi Greg,
+> >> >
+> >> >
+> >> > On 30 May 2014 21:38, Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+> >> > > On Fri, May 30, 2014 at 10:15:05AM +0200, Thierry Reding wrote:
+> >> > >> On Wed, May 28, 2014 at 01:51:45PM -0700, Greg Kroah-Hartman wrote:
+> >> > >> > On Wed, May 28, 2014 at 04:26:32PM +0200, Thierry Reding wrote:
+> >> > >> > > From: Thierry Reding <treding@nvidia.com>
+> >> > >> > >
+> >> > >> > > Commit febdbfe8a91c (arch: Prepare for smp_mb__{before,after}_atomic())
+> >> > >> > > deprecated the smp_mb__{before,after}_{atomic,clear}_{dec,inc,bit}*()
+> >> > >> > > functions in favour of the unified smp_mb__{before,after}_atomic().
+> >> > >> > >
+> >> > >> > > Signed-off-by: Thierry Reding <treding@nvidia.com>
+> >> > >> > > ---
+> >> > >> > >  drivers/base/fence.c | 4 ++--
+> >> > >> >
+> >> > >> > Where does this file come from?  I've not seen it before, and it's not
+> >> > >> > in my tree.
+> >> > >>
+> >> > >> I think it came in through Sumit's tree and it's only in linux-next I
+> >> > >> believe.
+> >> > >
+> >> > > Odd, linux-next is for merging things in Linus's next release.
+> >> > >
+> >> > > And as I have never seen this code that will end up being my
+> >> > > responsibility to maintain, it seems strange that it will be merged in
+> >> > > the next kernel development cycle.
+> >> > >
+> >> > > What broke down here with our review process that required something to
+> >> > > be merged without at least a cc: to me?
+> >> >
+> >> > This is a new file added by Maarten's patches [1], that got reviewed
+> >> > on dri-devel and other mailing lists. Since it was quite closely
+> >> > associated with dma-buf, I figured I should take it through the
+> >> > dma-buf tree.
+> >> >
+> >> > I am sorry I didn't notice that you weren't CC'ed on these patches -
+> >> > Sincere apologies, since I should've noticed that during the patch
+> >> > review process - I would take part of the blame here as well  :(
+> >> >
+> >> > I do realize now that atleast on my part, I should've asked you before
+> >> > taking it through the dma-buf tree - I will make sure things like this
+> >> > don't happen again through me.
+> >> >
+> >> > May I request you to help us handle this - would it help if we add
+> >> > Maarten as the maintainer for this file? Any other suggestions?
+> >>
+> >> Perhaps something like the following would help?
+> >>
+> >> diff --git a/MAINTAINERS b/MAINTAINERS
+> >> index fb39c9c3f0c1..d582f54adec8 100644
+> >> --- a/MAINTAINERS
+> >> +++ b/MAINTAINERS
+> >> @@ -2867,7 +2867,9 @@ L:        linux-media@vger.kernel.org
+> >>  L:   dri-devel@lists.freedesktop.org
+> >>  L:   linaro-mm-sig@lists.linaro.org
+> >>  F:   drivers/base/dma-buf*
+> >> +F:   drivers/base/fence.c
+> >>  F:   include/linux/dma-buf*
+> >> +F:   include/linux/fence.h
+> >>  F:   Documentation/dma-buf-sharing.txt
+> >>  T:   git git://git.linaro.org/people/sumitsemwal/linux-dma-buf.git
+> >> @@ -2936,6 +2938,8 @@ T:        git git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git
+> >>  S:   Supported
+> >>  F:   Documentation/kobject.txt
+> >>  F:   drivers/base/
+> >> +X:   drivers/base/dma-buf*
+> >> +X:   drivers/base/fence.c
+> >>  F:   fs/sysfs/
+> >>  F:   fs/debugfs/
+> >>  F:   include/linux/kobj*
+> >>
+> >> That removes Greg from the list generated by get_maintainer.pl for
+> >> anything that touches the DMA-BUF files.
+> >
+> > That doesn't really work for most people, I'll still be "responsible"
+> > for the code.
+> >
+> >> Thinking about it, perhaps moving DMA-BUF into its own subdirectory
+> >> would be an option too, to make the separation more obvious.
+> >
+> > That might be best for some of this.
+> >
+> > But again, why is the fence.c code needed at all anyway?  I'm not sold
+> > on that.
+> 
+> Fence serves as a way to synchronize between (for example) multiple
+> asynchronous gpu's.  There is definitely a need for this.  Otherwise
+> performance for optimus/prime type setups is going to suck.
 
-Are there weird contexts from which EFI calls can happen?  It looks
-like the current code isn't necessarily safe in things that aren't
-normal process context but aren't interrupts either (e.g. debug traps,
-#GP, etc).
+What's wrong with the 'sync' code in the drivers/staging/android/
+directory?  I thought that is what that codebase was supposed to be
+doing.
 
-I wonder if it would make sense at some point to maintain an explicit
-stack of kernel entries.  There doesn't seem to be a reliable way to
-answer the question of "what context am I in" from C code right now.
+> I thought we had added something under Documentation/ about it, but I
+> can't find it now (although possibly looking at the wrong trees)..
+> there is at least a bit of a description in the commit msg:
+> 
+>   https://lkml.org/lkml/2014/2/24/602
 
---Andy
+Ah, so no documenation, no discussion, and you want to just throw it in
+a directory I am responsible for?  That sounds like a major rush job...
+
+> I don't think the question about whether we need something like fence
+> to augment dma-buf is really in doubt.  Maybe it should live somewhere
+> else, I'm not sure.  But it makes sense for it to live wherever
+> dma-buf does, as they are intended to work together.
+
+Ok, then let's give it a proper review cycle, and notify everyone
+involved.  It doesn't look like this happened at all.  We don't add core
+primitives to the kernel without a lot of discussion and agreement.  And
+we sure don't add them without telling the person who owns the directory
+(again, my pet peeve, I know...)
+
+greg k-h
