@@ -1,234 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932441AbaFEAeS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:34:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39949 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752795AbaFDXVi (ORCPT
+	id S1757031AbaFEAec (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:34:32 -0400
+Received: from mx7.pku.edu.cn ([162.105.129.170]:56367 "EHLO mail.pku.edu.cn"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753715AbaFEAe3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:21:38 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.14 067/228] drm/radeon: fix runpm handling on APUs (v4)
-Date: Wed,  4 Jun 2014 16:21:36 -0700
-Message-Id: <20140604232350.204994225@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
-References: <20140604232347.966798903@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Wed, 4 Jun 2014 20:34:29 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -307.475
+Date: Thu, 5 Jun 2014 08:34:12 +0800 (CST)
+From: =?gbk?B?WHVldGFvIEd1YW4g?= <gxt@pku.edu.cn>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>, linux-kernel@vger.kernel.org,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Message-ID: <1001589690.39308.1401928452253.JavaMail.root@bj-mail03.pku.edu.cn>
+In-Reply-To: <1401820203-21556-1-git-send-email-sboyd@codeaurora.org>
+Subject: =?utf-8?Q?=E5=9B=9E=E5=A4=8D=EF=BC=9A_[PATCH]_unicore32:_Remove_?=
+ =?utf-8?Q?ARCH=5FHAS=5FCPUFREQ_config_option?=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [162.105.129.134]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+----- Stephen Boyd <sboyd@codeaurora.org> 写道：
+> This config exists entirely to hide the cpufreq menu from the
+> kernel configuration unless a platform has selected it. Nothing
+> is actually built if this config is 'Y' and it just leads to more
+> patches that add a select under a platform Kconfig so that some
+> other CPUfreq option can be chosen. Let's remove the option so
+> that we can always enable CPUfreq drivers on unicore32 platforms.
+> 
+> Cc: Viresh Kumar <viresh.kumar@linaro.org>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 
-From: Alex Deucher <alexdeucher@gmail.com>
+Thanks, I'll push it in my repo.
 
-commit 90c4cde9d5a2bb6239cb3e253bb3832ed89dc75c upstream.
+Signed-off-by: Xuetao Guan <gxt@mprc.pku.edu.cn>
 
-Don't try and runtime suspend the APU in PX systems.  We
-only want to power down the dGPU.
-
-v2: fix harder
-v3: fix stupid typo
-v4: consolidate runpm enablement to a single flag
-
-bugs:
-https://bugs.freedesktop.org/show_bug.cgi?id=75127
-https://bugzilla.kernel.org/show_bug.cgi?id=72701
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/gpu/drm/radeon/radeon.h              |    1 +
- drivers/gpu/drm/radeon/radeon_atpx_handler.c |    2 +-
- drivers/gpu/drm/radeon/radeon_device.c       |   19 ++++++++++---------
- drivers/gpu/drm/radeon/radeon_drv.c          |   24 ++++--------------------
- drivers/gpu/drm/radeon/radeon_family.h       |    1 +
- drivers/gpu/drm/radeon/radeon_kms.c          |   14 ++++++++++----
- 6 files changed, 27 insertions(+), 34 deletions(-)
-
---- a/drivers/gpu/drm/radeon/radeon.h
-+++ b/drivers/gpu/drm/radeon/radeon.h
-@@ -2242,6 +2242,7 @@ struct radeon_device {
- 	bool have_disp_power_ref;
- };
- 
-+bool radeon_is_px(struct drm_device *dev);
- int radeon_device_init(struct radeon_device *rdev,
- 		       struct drm_device *ddev,
- 		       struct pci_dev *pdev,
---- a/drivers/gpu/drm/radeon/radeon_atpx_handler.c
-+++ b/drivers/gpu/drm/radeon/radeon_atpx_handler.c
-@@ -59,7 +59,7 @@ struct atpx_mux {
- 	u16 mux;
- } __packed;
- 
--bool radeon_is_px(void) {
-+bool radeon_has_atpx(void) {
- 	return radeon_atpx_priv.atpx_detected;
- }
- 
---- a/drivers/gpu/drm/radeon/radeon_device.c
-+++ b/drivers/gpu/drm/radeon/radeon_device.c
-@@ -102,11 +102,14 @@ static const char radeon_family_name[][1
- 	"LAST",
- };
- 
--#if defined(CONFIG_VGA_SWITCHEROO)
--bool radeon_is_px(void);
--#else
--static inline bool radeon_is_px(void) { return false; }
--#endif
-+bool radeon_is_px(struct drm_device *dev)
-+{
-+	struct radeon_device *rdev = dev->dev_private;
-+
-+	if (rdev->flags & RADEON_IS_PX)
-+		return true;
-+	return false;
-+}
- 
- /**
-  * radeon_program_register_sequence - program an array of registers.
-@@ -1082,7 +1085,7 @@ static void radeon_switcheroo_set_state(
- {
- 	struct drm_device *dev = pci_get_drvdata(pdev);
- 
--	if (radeon_is_px() && state == VGA_SWITCHEROO_OFF)
-+	if (radeon_is_px(dev) && state == VGA_SWITCHEROO_OFF)
- 		return;
- 
- 	if (state == VGA_SWITCHEROO_ON) {
-@@ -1303,9 +1306,7 @@ int radeon_device_init(struct radeon_dev
- 	 * ignore it */
- 	vga_client_register(rdev->pdev, rdev, NULL, radeon_vga_set_decode);
- 
--	if (radeon_runtime_pm == 1)
--		runtime = true;
--	if ((radeon_runtime_pm == -1) && radeon_is_px())
-+	if (rdev->flags & RADEON_IS_PX)
- 		runtime = true;
- 	vga_switcheroo_register_client(rdev->pdev, &radeon_switcheroo_ops, runtime);
- 	if (runtime)
---- a/drivers/gpu/drm/radeon/radeon_drv.c
-+++ b/drivers/gpu/drm/radeon/radeon_drv.c
-@@ -113,6 +113,7 @@ extern int radeon_get_crtc_scanoutpos(st
- 				      unsigned int flags,
- 				      int *vpos, int *hpos, ktime_t *stime,
- 				      ktime_t *etime);
-+extern bool radeon_is_px(struct drm_device *dev);
- extern const struct drm_ioctl_desc radeon_ioctls_kms[];
- extern int radeon_max_kms_ioctl;
- int radeon_mmap(struct file *filp, struct vm_area_struct *vma);
-@@ -142,11 +143,9 @@ void radeon_debugfs_cleanup(struct drm_m
- #if defined(CONFIG_VGA_SWITCHEROO)
- void radeon_register_atpx_handler(void);
- void radeon_unregister_atpx_handler(void);
--bool radeon_is_px(void);
- #else
- static inline void radeon_register_atpx_handler(void) {}
- static inline void radeon_unregister_atpx_handler(void) {}
--static inline bool radeon_is_px(void) { return false; }
- #endif
- 
- int radeon_no_wb;
-@@ -403,12 +402,7 @@ static int radeon_pmops_runtime_suspend(
- 	struct drm_device *drm_dev = pci_get_drvdata(pdev);
- 	int ret;
- 
--	if (radeon_runtime_pm == 0) {
--		pm_runtime_forbid(dev);
--		return -EBUSY;
--	}
--
--	if (radeon_runtime_pm == -1 && !radeon_is_px()) {
-+	if (!radeon_is_px(drm_dev)) {
- 		pm_runtime_forbid(dev);
- 		return -EBUSY;
- 	}
-@@ -432,10 +426,7 @@ static int radeon_pmops_runtime_resume(s
- 	struct drm_device *drm_dev = pci_get_drvdata(pdev);
- 	int ret;
- 
--	if (radeon_runtime_pm == 0)
--		return -EINVAL;
--
--	if (radeon_runtime_pm == -1 && !radeon_is_px())
-+	if (!radeon_is_px(drm_dev))
- 		return -EINVAL;
- 
- 	drm_dev->switch_power_state = DRM_SWITCH_POWER_CHANGING;
-@@ -460,14 +451,7 @@ static int radeon_pmops_runtime_idle(str
- 	struct drm_device *drm_dev = pci_get_drvdata(pdev);
- 	struct drm_crtc *crtc;
- 
--	if (radeon_runtime_pm == 0) {
--		pm_runtime_forbid(dev);
--		return -EBUSY;
--	}
--
--	/* are we PX enabled? */
--	if (radeon_runtime_pm == -1 && !radeon_is_px()) {
--		DRM_DEBUG_DRIVER("failing to power off - not px\n");
-+	if (!radeon_is_px(drm_dev)) {
- 		pm_runtime_forbid(dev);
- 		return -EBUSY;
- 	}
---- a/drivers/gpu/drm/radeon/radeon_family.h
-+++ b/drivers/gpu/drm/radeon/radeon_family.h
-@@ -115,6 +115,7 @@ enum radeon_chip_flags {
- 	RADEON_NEW_MEMMAP = 0x00400000UL,
- 	RADEON_IS_PCI = 0x00800000UL,
- 	RADEON_IS_IGPGART = 0x01000000UL,
-+	RADEON_IS_PX = 0x02000000UL,
- };
- 
- #endif
---- a/drivers/gpu/drm/radeon/radeon_kms.c
-+++ b/drivers/gpu/drm/radeon/radeon_kms.c
-@@ -35,9 +35,9 @@
- #include <linux/pm_runtime.h>
- 
- #if defined(CONFIG_VGA_SWITCHEROO)
--bool radeon_is_px(void);
-+bool radeon_has_atpx(void);
- #else
--static inline bool radeon_is_px(void) { return false; }
-+static inline bool radeon_has_atpx(void) { return false; }
- #endif
- 
- /**
-@@ -107,6 +107,13 @@ int radeon_driver_load_kms(struct drm_de
- 		flags |= RADEON_IS_PCI;
- 	}
- 
-+	if (radeon_runtime_pm == 1)
-+		flags |= RADEON_IS_PX;
-+	else if ((radeon_runtime_pm == -1) &&
-+		 radeon_has_atpx() &&
-+		 ((flags & RADEON_IS_IGP) == 0))
-+		flags |= RADEON_IS_PX;
-+
- 	/* radeon_device_init should report only fatal error
- 	 * like memory allocation failure or iomapping failure,
- 	 * or memory manager initialization failure, it must
-@@ -137,8 +144,7 @@ int radeon_driver_load_kms(struct drm_de
- 				"Error during ACPI methods call\n");
- 	}
- 
--	if ((radeon_runtime_pm == 1) ||
--	    ((radeon_runtime_pm == -1) && radeon_is_px())) {
-+	if (radeon_is_px(dev)) {
- 		pm_runtime_use_autosuspend(dev->dev);
- 		pm_runtime_set_autosuspend_delay(dev->dev, 5000);
- 		pm_runtime_set_active(dev->dev);
-
+> ---
+>  arch/unicore32/Kconfig | 6 ------
+>  1 file changed, 6 deletions(-)
+> 
+> diff --git a/arch/unicore32/Kconfig b/arch/unicore32/Kconfig
+> index aafad6fa1667..928237a7b9ca 100644
+> --- a/arch/unicore32/Kconfig
+> +++ b/arch/unicore32/Kconfig
+> @@ -51,9 +51,6 @@ config ARCH_HAS_ILOG2_U32
+>  config ARCH_HAS_ILOG2_U64
+>  	bool
+>  
+> -config ARCH_HAS_CPUFREQ
+> -	bool
+> -
+>  config GENERIC_HWEIGHT
+>  	def_bool y
+>  
+> @@ -87,7 +84,6 @@ config ARCH_PUV3
+>  	select GENERIC_CLOCKEVENTS
+>  	select HAVE_CLK
+>  	select ARCH_REQUIRE_GPIOLIB
+> -	select ARCH_HAS_CPUFREQ
+>  
+>  # CONFIGs for ARCH_PUV3
+>  
+> @@ -198,9 +194,7 @@ menu "Power management options"
+>  
+>  source "kernel/power/Kconfig"
+>  
+> -if ARCH_HAS_CPUFREQ
+>  source "drivers/cpufreq/Kconfig"
+> -endif
+>  
+>  config ARCH_SUSPEND_POSSIBLE
+>  	def_bool y if !ARCH_FPGA
+> -- 
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> hosted by The Linux Foundation
+> 
 
