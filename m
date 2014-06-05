@@ -1,207 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752237AbaFEVOS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 17:14:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19813 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751321AbaFEVOQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 17:14:16 -0400
-Message-ID: <1402002841.9207.260.camel@ul30vt.home>
-Subject: Re: [RFC PATCH v6 10/20] vfio/platform: return info for device and
- its memory mapped IO regions
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Antonios Motakis <a.motakis@virtualopensystems.com>
-Cc: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
-        tech@virtualopensystems.com, a.rigo@virtualopensystems.com,
-        kvm@vger.kernel.org, christoffer.dall@linaro.org, will.deacon@arm.com,
-        kim.phillips@freescale.com, stuart.yoder@freescale.com,
-        eric.auger@linaro.org, Catalin Marinas <catalin.marinas@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Vladimir Murzin <vladimir.murzin@arm.com>,
-        open list <linux-kernel@vger.kernel.org>
-Date: Thu, 05 Jun 2014 15:14:01 -0600
-In-Reply-To: <1401987808-23596-11-git-send-email-a.motakis@virtualopensystems.com>
-References: <1401987808-23596-1-git-send-email-a.motakis@virtualopensystems.com>
-	 <1401987808-23596-11-git-send-email-a.motakis@virtualopensystems.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+	id S1752409AbaFEVOk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 17:14:40 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:65499 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752005AbaFEVOj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 17:14:39 -0400
+Message-ID: <5390DDA6.2010700@gmail.com>
+Date: Thu, 05 Jun 2014 14:14:14 -0700
+From: Frank Rowand <frowand.list@gmail.com>
+Reply-To: frowand.list@gmail.com
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Dave Chinner <david@fromorbit.com>
+CC: Steven Rostedt <rostedt@goodmis.org>, josh@joshtriplett.org,
+        Joe Perches <joe@perches.com>, paulmck@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, dhowells@redhat.com, edumazet@google.com,
+        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
+        sbw@mit.edu
+Subject: Re: [PATCH RFC 1/2] MAINTAINERS: Add "R:" designated-reviewers tag
+References: <20140602185504.GA13569@cloud> <1401735917.7323.23.camel@joe-AO725> <20140602190951.GA13648@cloud> <1401736666.7323.25.camel@joe-AO725> <20140602231949.GV14410@dastard> <20140602235915.GB14801@cloud> <20140603011125.GW14410@dastard> <20140602213045.26219ddb@gandalf.local.home> <20140603071654.GC14410@dastard> <20140603134347.6e39f946@gandalf.local.home> <20140605040107.GA4453@dastard>
+In-Reply-To: <20140605040107.GA4453@dastard>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-06-05 at 19:03 +0200, Antonios Motakis wrote:
-> A VFIO userspace driver will start by opening the VFIO device
-> that corresponds to an IOMMU group, and will use the ioctl interface
-> to get the basic device info, such as number of memory regions and
-> interrupts, and their properties.
+On 6/4/2014 9:01 PM, Dave Chinner wrote:
+> On Tue, Jun 03, 2014 at 01:43:47PM -0400, Steven Rostedt wrote:
+>> On Tue, 3 Jun 2014 17:16:54 +1000
+>> Dave Chinner <david@fromorbit.com> wrote:
+>>
+>>
+>>> If you take it to an extremes. Think about what you can test in 15
+>>> minutes. Or for larger patchsets, how long it takes you to read the
+>>> patchset?
+>>
+>> Yeah, what about that?
 > 
-> This patch enables the IOCTLs:
->  - VFIO_DEVICE_GET_INFO
->  - VFIO_DEVICE_GET_REGION_INFO
+> That testing a patch for obvious, common regressions takes no longer
+> than it does to read and review the logic. 
 > 
-> IRQ info is provided by one of the latter patches.
+>>> IMO, every reviewer has their own developement environment and they
+>>> should be at least testing that the change they are reviewing
+>>> doesn't cause problems in that environment, just like they do for
+>>> their own code before they post it for review.
+>>
+>> Let me ask you this. In the scientific community, when someone posts a
+>> research project and asks their peers to review their work. Are all
+>> those reviewers required to test out that paper?
+>> Or are they to review it, check the math, look for cases that are
+>> missed, see common errors, and other checks? I'm sure some
+>> reviewers may do various tests, but others will just check the
+>> logic. I'm having a very hard time seeing where Reviewed-by means
+>> tested-by. I see those as two completely different tags.
 > 
-> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
-> ---
->  drivers/vfio/platform/vfio_platform.c         | 79 +++++++++++++++++++++++++--
->  drivers/vfio/platform/vfio_platform_private.h | 17 ++++++
->  2 files changed, 90 insertions(+), 6 deletions(-)
+> We are not conducting a scientific research experiment here. We are
+> conduting a very large software *engineering* project here.
+
+Yes, software engineering.  Where software review is a manual process
+of *reading* and understanding code, in all of the processes I have
+been involved in at big corporations that love big process.  (Not to
+claim I know of all the processes everyone else uses...)
+
+Why can't you just let reviewed-by and tested-by mean different
+things instead of one being a super-set of the other?
+
+If you force reviewed-by to also mean tested-by then you just
+shrank your available pool of reviewers.
+
+</dead-horse beating>
+
 > 
-> diff --git a/drivers/vfio/platform/vfio_platform.c b/drivers/vfio/platform/vfio_platform.c
-> index 1df76d8..eeaebc4 100644
-> --- a/drivers/vfio/platform/vfio_platform.c
-> +++ b/drivers/vfio/platform/vfio_platform.c
-> @@ -34,17 +34,66 @@
->  #define DRIVER_AUTHOR   "Antonios Motakis <a.motakis@virtualopensystems.com>"
->  #define DRIVER_DESC     "VFIO for platform devices - User Level meta-driver"
->  
-> +static int vfio_platform_regions_init(struct vfio_platform_device *vdev)
-> +{
-> +	int cnt = 0, i;
-> +
-> +	while (platform_get_resource(vdev->pdev, IORESOURCE_MEM, cnt))
-> +		cnt++;
-> +
-> +	vdev->region = kzalloc(sizeof(struct vfio_platform_region) * cnt,
-> +				GFP_KERNEL);
-> +	if (!vdev->region)
-> +		return -ENOMEM;
-> +
-> +	for (i = 0; i < cnt;  i++) {
-> +		struct resource *res =
-> +			platform_get_resource(vdev->pdev, IORESOURCE_MEM, i);
-> +
-> +		if (!res)
-> +			goto err;
-> +
-> +		vdev->region[i].addr = res->start;
-> +		vdev->region[i].size = resource_size(res);
-> +		vdev->region[i].flags = 0;
-> +	}
-> +
-> +	vdev->num_regions = cnt;
-> +
-> +	return 0;
-> +err:
-> +	kfree(vdev->region);
-> +	return -EINVAL;
-> +}
-> +
-> +static void vfio_platform_regions_cleanup(struct vfio_platform_device *vdev)
-> +{
-> +	vdev->num_regions = 0;
-> +	kfree(vdev->region);
-> +}
-> +
->  static void vfio_platform_release(void *device_data)
->  {
-> +	struct vfio_platform_device *vdev = device_data;
-> +
-> +	vfio_platform_regions_cleanup(vdev);
-> +
->  	module_put(THIS_MODULE);
->  }
->  
->  static int vfio_platform_open(void *device_data)
->  {
-> +	struct vfio_platform_device *vdev = device_data;
-> +	int ret;
-> +
->  	if (!try_module_get(THIS_MODULE))
->  		return -ENODEV;
->  
-> -	return 0;
-> +	ret = vfio_platform_regions_init(vdev);
-> +	if (ret)
-> +		module_put(THIS_MODULE);
-> +
-> +	return ret;
+> So perhaps we should be using robust software engineering processes
+> rather than academic peer review as the model for our code review
+> process?
 
-The user can call VFIO_GROUP_GET_DEVICE_FD for a single device more than
-once, vfio_pci maintains a reference count to make sure we only allocate
-and initialize on the first open and cleanup on the last close.
+< snip >
 
->  }
->  
->  static long vfio_platform_ioctl(void *device_data,
-> @@ -65,18 +114,36 @@ static long vfio_platform_ioctl(void *device_data,
->  			return -EINVAL;
->  
->  		info.flags = VFIO_DEVICE_FLAGS_PLATFORM;
-> -		info.num_regions = 0;
-> +		info.num_regions = vdev->num_regions;
->  		info.num_irqs = 0;
->  
->  		return copy_to_user((void __user *)arg, &info, minsz);
->  
-> -	} else if (cmd == VFIO_DEVICE_GET_REGION_INFO)
-> -		return -EINVAL;
-> +	} else if (cmd == VFIO_DEVICE_GET_REGION_INFO) {
-> +		struct vfio_region_info info;
-> +
-> +		minsz = offsetofend(struct vfio_region_info, offset);
-> +
-> +		if (copy_from_user(&info, (void __user *)arg, minsz))
-> +			return -EFAULT;
-> +
-> +		if (info.argsz < minsz)
-> +			return -EINVAL;
-> +
-> +		if (info.index >= vdev->num_regions)
-> +			return -EINVAL;
-> +
-> +		/* map offset to the physical address  */
-> +		info.offset = VFIO_PLATFORM_INDEX_TO_OFFSET(info.index);
-> +		info.size = vdev->region[info.index].size;
-> +		info.flags = vdev->region[info.index].flags;
-> +
-> +		return copy_to_user((void __user *)arg, &info, minsz);
->  
-> -	else if (cmd == VFIO_DEVICE_GET_IRQ_INFO)
-> +	} else if (cmd == VFIO_DEVICE_GET_IRQ_INFO) {
->  		return -EINVAL;
->  
-> -	else if (cmd == VFIO_DEVICE_SET_IRQS)
-> +	} else if (cmd == VFIO_DEVICE_SET_IRQS)
->  		return -EINVAL;
->  
->  	else if (cmd == VFIO_DEVICE_RESET)
-> diff --git a/drivers/vfio/platform/vfio_platform_private.h b/drivers/vfio/platform/vfio_platform_private.h
-> index 4ae88f8..3448f918 100644
-> --- a/drivers/vfio/platform/vfio_platform_private.h
-> +++ b/drivers/vfio/platform/vfio_platform_private.h
-> @@ -15,8 +15,25 @@
->  #ifndef VFIO_PLATFORM_PRIVATE_H
->  #define VFIO_PLATFORM_PRIVATE_H
->  
-> +#define VFIO_PLATFORM_OFFSET_SHIFT   40
-> +#define VFIO_PLATFORM_OFFSET_MASK (((u64)(1) << VFIO_PLATFORM_OFFSET_SHIFT) - 1)
-> +
-> +#define VFIO_PLATFORM_OFFSET_TO_INDEX(off)	\
-> +	(off >> VFIO_PLATFORM_OFFSET_SHIFT)
-> +
-> +#define VFIO_PLATFORM_INDEX_TO_OFFSET(index)	\
-> +	((u64)(index) << VFIO_PLATFORM_OFFSET_SHIFT)
-> +
-> +struct vfio_platform_region {
-> +	u64			addr;
-> +	resource_size_t		size;
-> +	u32			flags;
-> +};
-> +
->  struct vfio_platform_device {
->  	struct platform_device		*pdev;
-> +	struct vfio_platform_region	*region;
+Cheers,
 
-"regions" (plural) has slightly better consistency.  Thanks,
-
-Alex
-
-> +	u32				num_regions;
->  };
->  
->  #endif /* VFIO_PLATFORM_PRIVATE_H */
-
-
+Frank
 
