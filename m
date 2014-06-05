@@ -1,50 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751966AbaFEX3v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 19:29:51 -0400
-Received: from mga11.intel.com ([192.55.52.93]:35152 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751384AbaFEX3u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 19:29:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,984,1392192000"; 
-   d="scan'208";a="550493434"
-Date: Thu, 5 Jun 2014 16:29:49 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
-Cc: Borislav Petkov <bp@alien8.de>, Stephane Eranian <eranian@google.com>,
-        Matt Fleming <matt@console-pimps.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: Re: [PATCH 9/9] perf/x86: add syfs entry to disable HT bug workaround
-Message-ID: <20140605232949.GF16855@tassilo.jf.intel.com>
-References: <CADknwL71NC5wBG1tnqgJ6iiA4y+HYomGpufOn7V+MP2=m7+Mig@mail.gmail.com>
- <CABPqkBTEafZ5MbYM4UQxX92uWcPiphPeXMoJRKTt8jnrB+5j2w@mail.gmail.com>
- <20140605132750.GA16811@pd.tnic>
- <CABPqkBT9ExD4unz0VZ5G1d+oGpkepiwXskgBpv5GTavs=tYAKA@mail.gmail.com>
- <20140605140316.GB16811@pd.tnic>
- <CAHzUATiVCHytrG3sz8AmC8anZTQcPDRHp91-kWEoeq=RU7UNiw@mail.gmail.com>
- <20140605151734.GD16811@pd.tnic>
- <CAHzUATioT8e=RxypbqBsHw-QkcYsdQEiKhb3e44A4S+98Ut6=Q@mail.gmail.com>
- <20140605165213.GI16642@pd.tnic>
- <CAHzUATiOi0_U4r+TN_okYh_5_VB-NpW+A5qgg6Vkz9kyrwqZug@mail.gmail.com>
+	id S1751912AbaFEXd0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 19:33:26 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:56151 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751222AbaFEXdY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 19:33:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHzUATiOi0_U4r+TN_okYh_5_VB-NpW+A5qgg6Vkz9kyrwqZug@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <5390A624.8020308@kernel.dk>
+References: <20140604103544.GA11350@dhcp-26-207.brq.redhat.com>
+	<538F2AC2.1060904@kernel.dk>
+	<20140605140127.GA22198@dhcp-26-207.brq.redhat.com>
+	<53907895.8090102@kernel.dk>
+	<CACVXFVMFjR5kqB9SQG-EiKMB3dC0O58_EhJZw2R2m7a9vUuH0A@mail.gmail.com>
+	<5390A624.8020308@kernel.dk>
+Date: Fri, 6 Jun 2014 07:33:23 +0800
+Message-ID: <CACVXFVO-1shNB=tSpNBp_tpx+9imx5ycxfaSwofg-VeR_4S+MA@mail.gmail.com>
+Subject: Re: blk-mq: bitmap tag: performance degradation?
+From: Ming Lei <tom.leiming@gmail.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> As Stephane pointed out, the sysfs entry is optional and the workaround
-> can be disabled only as root.
-> 
-> It is not absolutely necessary and it's not important.
-> We will drop it in V2.
+On Fri, Jun 6, 2014 at 1:17 AM, Jens Axboe <axboe@kernel.dk> wrote:
+> On 06/05/2014 08:16 AM, Ming Lei wrote:
+>> On Thu, Jun 5, 2014 at 10:03 PM, Jens Axboe <axboe@kernel.dk> wrote:
+>>> On 2014-06-05 08:01, Alexander Gordeev wrote:
+>>>>
+>>>> On Wed, Jun 04, 2014 at 08:18:42AM -0600, Jens Axboe wrote:
+>>>>>
+>>>>> A null_blk test is the absolute best case for percpu_ida, since
+>>>>> there are enough tags and everything is localized. The above test is
+>>>>> more useful for testing blk-mq than any real world application of
+>>>>> the tagging.
+>>>>>
+>>>>> I've done considerable testing on both 2 and 4 socket (32 and 64
+>>>>> CPUs) and bitmap tagging is better in a much wider range of
+>>>>> applications. This includes even high tag depth devices like nvme,
+>>>>> and more normal ranges like mtip32xx and scsi-mq setups.
+>>>>
+>>>>
+>>>> Just for the record: bitmap tags on a 48 CPU box with NVMe device
+>>>> indeed shows almost the same performance/cache rate as the stock
+>>>> kernel.
+>>>
+>>>
+>>> Thanks for confirming. It's one of the dangers of null_blk, it's not always
+>>> a very accurate simulation of what a real device will do. I think it's
+>>> mostly a completion side thing, would be great with a small device that
+>>> supported msi-x and could be used as an irq trigger :-)
+>>
+>> Maybe null_blk at IRQ_TIMER mode is more close to
+>> a real device, and I guess the result may be different with
+>> mode IRQ_NONE/IRQ_SOFTIRQ.
+>
+> It'd be closer in behavior, but the results might then be skewed by
+> hitting the timer way too hard. And it'd be a general slowdown, again
+> possibly skewing it. But I haven't tried with the timer completion, to
+> see if that yields more accurate modelling for this test, so it might
+> actually be a lot better.
 
-I would prefer to keep it. It's fairly complex and it's always good
-to have a way to disable complex things in case something goes wrong.
+My test on a 16core VM(host: 2 sockets, 16core):
 
--Andi
+1, bitmap tag allocation(3.15-rc7-next):
+- softirq mode: 759K IOPS
+- timer mode: 409K IOPS
+
+2, percpu_ida allocation(3.15-rc7)
+- softirq mode: 1116K IOPS
+- timer mode: 411K IOPS
+
+Also on real hardware, I remember there is no such big difference
+between softirq mode and timer mode.
+
+[global]
+direct=1
+size=128G
+bsrange=4k-4k
+timeout=20
+numjobs=16
+ioengine=libaio
+iodepth=64
+filename=/dev/nullb0
+group_reporting=1
+
+[f2]
+stonewall
+rw=randread
+
+
+Thanks,
+-- 
+Ming Lei
