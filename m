@@ -1,95 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751660AbaFEUjM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 16:39:12 -0400
-Received: from exprod5og116.obsmtp.com ([64.18.0.147]:57050 "HELO
-	exprod5og116.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751015AbaFEUjJ (ORCPT
+	id S1751776AbaFEUmX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 16:42:23 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:42226 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751365AbaFEUmV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 16:39:09 -0400
-X-Greylist: delayed 339 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Jun 2014 16:39:09 EDT
+	Thu, 5 Jun 2014 16:42:21 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140605134120.GA21607@htj.dyndns.org>
-References: <CACVXFVMnM6w5ZLX=S8fJHeVoEqxH2JG3Wg=GPMeoVnOpAjsvAA@mail.gmail.com>
-	<CAPcyv4icNZU9s7zLYYcrFrNA_9qk4W1je42KKG+ETWqdoQu_kg@mail.gmail.com>
-	<CACVXFVPHfP1VXujLx9sGt3c7ptdG1JvBQkw2JiJQsU1KwJ1zog@mail.gmail.com>
-	<20140605134120.GA21607@htj.dyndns.org>
-Date: Thu, 5 Jun 2014 13:33:29 -0700
-Message-ID: <CAPw-ZTk7wOOYBB-XHH3=pQZk84M2xqhj0haPPCP1XJmtyWfmMg@mail.gmail.com>
-Subject: Re: [Regression] commit 8a4aeec8d(libata/ahci: accommodate tag
- ordered controllers)
-From: Loc Ho <lho@apm.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Ming Lei <ming.lei@canonical.com>, Dan Williams <dan.j.williams@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Tuan Phan <tphan@apm.com>, Suman Tripathi <stripathi@apm.com>
+In-Reply-To: <CAD=FV=Ucn20GDib=t=OOT+8YjGuk6uoWrP1qourY=YfrLJj1WA@mail.gmail.com>
+References: <1401398496-4624-1-git-send-email-dianders@chromium.org>
+	<1401467562-5585-1-git-send-email-dianders@chromium.org>
+	<CAD=FV=W8-M5iOMDG190WGaeSySTd=qcp30k-H8DMUs_C5Pdwog@mail.gmail.com>
+	<5390C19A.9060201@gmail.com>
+	<CAD=FV=UZsEh+bOQxc8CP+yG5a5Sbp2eTyq8B_iq9u5io5G0B6A@mail.gmail.com>
+	<5390C5A9.5070900@gmail.com>
+	<CAD=FV=Ucn20GDib=t=OOT+8YjGuk6uoWrP1qourY=YfrLJj1WA@mail.gmail.com>
+Date: Thu, 5 Jun 2014 13:42:20 -0700
+X-Google-Sender-Auth: z_wvljeoiiOUJisESL8k8-ZNLHU
+Message-ID: <CAD=FV=XEqWTrRCPndLPuXnVeE_wLmDXCkgL-V95UZ0S1x4ppaA@mail.gmail.com>
+Subject: Re: [PATCH v2] clk: exynos5420: Keep aclk66_peric enabled during boot
+From: Doug Anderson <dianders@chromium.org>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: Tomasz Figa <t.figa@samsung.com>, Mike Turquette <mturquette@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+Hi,
 
->> >> Looks the commit 8a4aeec8d(libata/ahci: accommodate tag ordered
->> >> controllers) causes below sata failure[1] on APM AHCI controller.
->> >>
->> >> And the error does disappear after reverting the commit.
->> >
->> > Can you give some more details about the workload and the disk?  What
->> > is the APM AHCI?
->>
->> The commit causes the APM arm64 based system not bootable, and not
->> special workload, just when mounting rootfs or reading init files.
->>
->> APM AHCI:
->>       drivers/ata/ahci_xgene.c
->
-> Urgh... so, the controller can't handle tags allocated in round-robin
-> instead of lowest-first?  Ming, can you please test with different
-> controllers / disks / ssds and see whether the problem stays with the
-> controller?  Loc, can you guys please look into it so that at least
-> the next revision hardware can fix the issue?
->
-> Provided that the tag allocation itself isn't broken, which isn't too
-> likely given the lack of bug reports on other controllers, we'll need
-> to blacklist ahci_xgene somehow.  Either disable NCQ support on it or
-> implement an alternative lowest-first tag allocation for it.  If this
-> actually is the controller freaking out about tags allocated in a
-> different order, I'm not sure how much confidence we can put in its
-> NCQ implementation tho and it might be a better idea to simply plug
-> NCQ support on it until we understand the details of the problem.
->
-> So, something like the following?  Ming, can you please verify whether
-> the following makes the machine boot again?
->
-> Thanks.
->
-> diff --git a/drivers/ata/ahci_xgene.c b/drivers/ata/ahci_xgene.c
-> index 77c89bf..4950600 100644
-> --- a/drivers/ata/ahci_xgene.c
-> +++ b/drivers/ata/ahci_xgene.c
-> @@ -302,9 +302,16 @@ static struct ata_port_operations xgene_ahci_ops = {
->         .read_id = xgene_ahci_read_id,
->  };
->
-> +/*
-> + * The controller seems to freak out depending on the order of tag
-> + * allocation.  NCQ support is disabled until the problem is better
-> + * understood.
-> + *
-> + * http://lkml.kernel.org/g/CACVXFVMnM6w5ZLX=S8fJHeVoEqxH2JG3Wg=GPMeoVnOpAjsvAA@mail.gmail.com
-> + */
->  static const struct ata_port_info xgene_ahci_port_info = {
-> -       AHCI_HFLAGS(AHCI_HFLAG_NO_PMP | AHCI_HFLAG_YES_NCQ),
-> -       .flags = AHCI_FLAG_COMMON | ATA_FLAG_NCQ,
-> +       AHCI_HFLAGS(AHCI_HFLAG_NO_PMP),
-> +       .flags = AHCI_FLAG_COMMON,
->         .pio_mask = ATA_PIO4,
->         .udma_mask = ATA_UDMA6,
->         .port_ops = &xgene_ahci_ops,
+On Thu, Jun 5, 2014 at 1:10 PM, Doug Anderson <dianders@chromium.org> wrote:
+> Hmmm, I think I've convinced myself that your suggestion of just
+> removing this gate from the table is the right thing to do.  Patch
+> will be coming up soon.
 
-Suman is very familiar with this and he will proposal an solution.
-Please be aware that this is only an issue with previous revision of
-the chip. With the latest revision in house, this is not an issue.
+It's here <https://patchwork.kernel.org/patch/4308631/>
 
--Loc
+Ironically, that patch has a much worse diffstat and also changes
+devicetree bindings (!).  ...but it does seem better.
+
+-Doug
