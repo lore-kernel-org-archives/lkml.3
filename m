@@ -1,366 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751973AbaFENKh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 09:10:37 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:10893 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751698AbaFENJ1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 09:09:27 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 05 Jun 2014 06:01:26 -0700
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v7 2/5] ARM: tegra: move fuse exports to tegra-soc.h
-Date: Thu, 5 Jun 2014 16:09:10 +0300
-Message-ID: <1401973754-19701-3-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-In-Reply-To: <1401973754-19701-1-git-send-email-pdeschrijver@nvidia.com>
-References: <1401973754-19701-1-git-send-email-pdeschrijver@nvidia.com>
-X-NVConfidentiality: public
+	id S1752016AbaFENLg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 09:11:36 -0400
+Received: from sauhun.de ([89.238.76.85]:45181 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751085AbaFENLe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 09:11:34 -0400
+Date: Thu, 5 Jun 2014 15:11:23 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org, khali@linux-fr.org,
+        linus.walleij@linaro.org, paul.gortmaker@windriver.com,
+        jg1.han@samsung.com, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Jim Davis <jim.epost@gmail.com>
+Subject: Re: [PATCH] i2c: pca954x: Fix compilation without CONFIG_GPIOLIB
+Message-ID: <20140605131123.GA2837@katana>
+References: <CA+r1Zhi9Qd4aZ2WJ02K4Gv=zg7QvG+r=t2VpiXRKXcYRc1vt=A@mail.gmail.com>
+ <1401900992-16581-1-git-send-email-laurent.pinchart@ideasonboard.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3V7upXqbjpZ4EhLz"
+Content-Disposition: inline
+In-Reply-To: <1401900992-16581-1-git-send-email-laurent.pinchart@ideasonboard.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All fuse related functionality will move to a driver in the following patches.
-To prepare for this, export all the required functionality in a global header
-file and move all users of fuse.h to tegra-soc.h. While we're at it, remove
-tegra_bct_strapping, as its only user was removed in Commit a7cbe92cef27
-("ARM: tegra: remove tegra EMC scaling driver").
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
----
- arch/arm/mach-tegra/cpuidle.c         |    2 +-
- arch/arm/mach-tegra/flowctrl.c        |    2 +-
- arch/arm/mach-tegra/fuse.h            |   18 ------------------
- arch/arm/mach-tegra/hotplug.c         |    2 +-
- arch/arm/mach-tegra/platsmp.c         |    2 +-
- arch/arm/mach-tegra/pm.c              |    2 +-
- arch/arm/mach-tegra/pmc.c             |    2 +-
- arch/arm/mach-tegra/powergate.c       |    2 +-
- arch/arm/mach-tegra/reset-handler.S   |    2 +-
- arch/arm/mach-tegra/reset.c           |    2 +-
- arch/arm/mach-tegra/sleep-tegra30.S   |    2 +-
- arch/arm/mach-tegra/tegra.c           |    2 +-
- arch/arm/mach-tegra/tegra114_speedo.c |    1 +
- arch/arm/mach-tegra/tegra20_speedo.c  |    1 +
- arch/arm/mach-tegra/tegra30_speedo.c  |    1 +
- include/linux/tegra-soc.h             |   24 ++++++++++++++++++++++++
- 16 files changed, 38 insertions(+), 29 deletions(-)
+--3V7upXqbjpZ4EhLz
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/arch/arm/mach-tegra/cpuidle.c b/arch/arm/mach-tegra/cpuidle.c
-index 7bc5d8d..ff0a10b 100644
---- a/arch/arm/mach-tegra/cpuidle.c
-+++ b/arch/arm/mach-tegra/cpuidle.c
-@@ -23,8 +23,8 @@
- 
- #include <linux/kernel.h>
- #include <linux/module.h>
-+#include <linux/tegra-soc.h>
- 
--#include "fuse.h"
- #include "cpuidle.h"
- 
- void __init tegra_cpuidle_init(void)
-diff --git a/arch/arm/mach-tegra/flowctrl.c b/arch/arm/mach-tegra/flowctrl.c
-index ce8ab8a..4b31091 100644
---- a/arch/arm/mach-tegra/flowctrl.c
-+++ b/arch/arm/mach-tegra/flowctrl.c
-@@ -22,10 +22,10 @@
- #include <linux/kernel.h>
- #include <linux/io.h>
- #include <linux/cpumask.h>
-+#include <linux/tegra-soc.h>
- 
- #include "flowctrl.h"
- #include "iomap.h"
--#include "fuse.h"
- 
- static u8 flowctrl_offset_halt_cpu[] = {
- 	FLOW_CTRL_HALT_CPU0_EVENTS,
-diff --git a/arch/arm/mach-tegra/fuse.h b/arch/arm/mach-tegra/fuse.h
-index c01d047..b17c4ba 100644
---- a/arch/arm/mach-tegra/fuse.h
-+++ b/arch/arm/mach-tegra/fuse.h
-@@ -26,21 +26,7 @@
- #define SKU_ID_AP25E	27
- #define SKU_ID_T25E	28
- 
--#define TEGRA20		0x20
--#define TEGRA30		0x30
--#define TEGRA114	0x35
--#define TEGRA124	0x40
--
- #ifndef __ASSEMBLY__
--enum tegra_revision {
--	TEGRA_REVISION_UNKNOWN = 0,
--	TEGRA_REVISION_A01,
--	TEGRA_REVISION_A02,
--	TEGRA_REVISION_A03,
--	TEGRA_REVISION_A03p,
--	TEGRA_REVISION_A04,
--	TEGRA_REVISION_MAX,
--};
- 
- extern int tegra_sku_id;
- extern int tegra_cpu_process_id;
-@@ -48,12 +34,8 @@ extern int tegra_core_process_id;
- extern int tegra_chip_id;
- extern int tegra_cpu_speedo_id;		/* only exist in Tegra30 and later */
- extern int tegra_soc_speedo_id;
--extern enum tegra_revision tegra_revision;
--
--extern int tegra_bct_strapping;
- 
- unsigned long long tegra_chip_uid(void);
--void tegra_init_fuse(void);
- bool tegra_spare_fuse(int bit);
- u32 tegra_fuse_readl(unsigned long offset);
- 
-diff --git a/arch/arm/mach-tegra/hotplug.c b/arch/arm/mach-tegra/hotplug.c
-index ff26af2..38c5170 100644
---- a/arch/arm/mach-tegra/hotplug.c
-+++ b/arch/arm/mach-tegra/hotplug.c
-@@ -10,10 +10,10 @@
- #include <linux/kernel.h>
- #include <linux/smp.h>
- #include <linux/clk/tegra.h>
-+#include <linux/tegra-soc.h>
- 
- #include <asm/smp_plat.h>
- 
--#include "fuse.h"
- #include "sleep.h"
- 
- static void (*tegra_hotplug_shutdown)(void);
-diff --git a/arch/arm/mach-tegra/platsmp.c b/arch/arm/mach-tegra/platsmp.c
-index 929d104..d9878ac 100644
---- a/arch/arm/mach-tegra/platsmp.c
-+++ b/arch/arm/mach-tegra/platsmp.c
-@@ -19,13 +19,13 @@
- #include <linux/smp.h>
- #include <linux/io.h>
- #include <linux/clk/tegra.h>
-+#include <linux/tegra-soc.h>
- 
- #include <asm/cacheflush.h>
- #include <asm/mach-types.h>
- #include <asm/smp_scu.h>
- #include <asm/smp_plat.h>
- 
--#include "fuse.h"
- #include "flowctrl.h"
- #include "reset.h"
- #include "pmc.h"
-diff --git a/arch/arm/mach-tegra/pm.c b/arch/arm/mach-tegra/pm.c
-index f55b05a..d7e6370 100644
---- a/arch/arm/mach-tegra/pm.c
-+++ b/arch/arm/mach-tegra/pm.c
-@@ -26,6 +26,7 @@
- #include <linux/err.h>
- #include <linux/slab.h>
- #include <linux/clk/tegra.h>
-+#include <linux/tegra-soc.h>
- 
- #include <asm/smp_plat.h>
- #include <asm/cacheflush.h>
-@@ -37,7 +38,6 @@
- #include "iomap.h"
- #include "reset.h"
- #include "flowctrl.h"
--#include "fuse.h"
- #include "pm.h"
- #include "pmc.h"
- #include "sleep.h"
-diff --git a/arch/arm/mach-tegra/pmc.c b/arch/arm/mach-tegra/pmc.c
-index fb79202..d8fe587 100644
---- a/arch/arm/mach-tegra/pmc.c
-+++ b/arch/arm/mach-tegra/pmc.c
-@@ -21,9 +21,9 @@
- #include <linux/of.h>
- #include <linux/of_address.h>
- #include <linux/tegra-powergate.h>
-+#include <linux/tegra-soc.h>
- 
- #include "flowctrl.h"
--#include "fuse.h"
- #include "pm.h"
- #include "pmc.h"
- #include "sleep.h"
-diff --git a/arch/arm/mach-tegra/powergate.c b/arch/arm/mach-tegra/powergate.c
-index 4cefc5c..50a9af4 100644
---- a/arch/arm/mach-tegra/powergate.c
-+++ b/arch/arm/mach-tegra/powergate.c
-@@ -30,8 +30,8 @@
- #include <linux/spinlock.h>
- #include <linux/clk/tegra.h>
- #include <linux/tegra-powergate.h>
-+#include <linux/tegra-soc.h>
- 
--#include "fuse.h"
- #include "iomap.h"
- 
- #define DPD_SAMPLE		0x020
-diff --git a/arch/arm/mach-tegra/reset-handler.S b/arch/arm/mach-tegra/reset-handler.S
-index 8c1ba4f..0c480d69 100644
---- a/arch/arm/mach-tegra/reset-handler.S
-+++ b/arch/arm/mach-tegra/reset-handler.S
-@@ -20,9 +20,9 @@
- #include <asm/cache.h>
- #include <asm/asm-offsets.h>
- #include <asm/hardware/cache-l2x0.h>
-+#include <linux/tegra-soc.h>
- 
- #include "flowctrl.h"
--#include "fuse.h"
- #include "iomap.h"
- #include "reset.h"
- #include "sleep.h"
-diff --git a/arch/arm/mach-tegra/reset.c b/arch/arm/mach-tegra/reset.c
-index 146fe8e..203bac5 100644
---- a/arch/arm/mach-tegra/reset.c
-+++ b/arch/arm/mach-tegra/reset.c
-@@ -22,12 +22,12 @@
- #include <asm/cacheflush.h>
- #include <asm/hardware/cache-l2x0.h>
- #include <asm/firmware.h>
-+#include <linux/tegra-soc.h>
- 
- #include "iomap.h"
- #include "irammap.h"
- #include "reset.h"
- #include "sleep.h"
--#include "fuse.h"
- 
- #define TEGRA_IRAM_RESET_BASE (TEGRA_IRAM_BASE + \
- 				TEGRA_IRAM_RESET_HANDLER_OFFSET)
-diff --git a/arch/arm/mach-tegra/sleep-tegra30.S b/arch/arm/mach-tegra/sleep-tegra30.S
-index b16d4a57..f808c2c 100644
---- a/arch/arm/mach-tegra/sleep-tegra30.S
-+++ b/arch/arm/mach-tegra/sleep-tegra30.S
-@@ -15,13 +15,13 @@
-  */
- 
- #include <linux/linkage.h>
-+#include <linux/tegra-soc.h>
- 
- #include <asm/assembler.h>
- #include <asm/asm-offsets.h>
- #include <asm/cache.h>
- 
- #include "irammap.h"
--#include "fuse.h"
- #include "sleep.h"
- #include "flowctrl.h"
- 
-diff --git a/arch/arm/mach-tegra/tegra.c b/arch/arm/mach-tegra/tegra.c
-index 6191603..e48b271 100644
---- a/arch/arm/mach-tegra/tegra.c
-+++ b/arch/arm/mach-tegra/tegra.c
-@@ -34,6 +34,7 @@
- #include <linux/usb/tegra_usb_phy.h>
- #include <linux/clk/tegra.h>
- #include <linux/irqchip.h>
-+#include <linux/tegra-soc.h>
- 
- #include <asm/hardware/cache-l2x0.h>
- #include <asm/mach-types.h>
-@@ -46,7 +47,6 @@
- #include "board.h"
- #include "common.h"
- #include "cpuidle.h"
--#include "fuse.h"
- #include "iomap.h"
- #include "irq.h"
- #include "pmc.h"
-diff --git a/arch/arm/mach-tegra/tegra114_speedo.c b/arch/arm/mach-tegra/tegra114_speedo.c
-index 5218d48..7c73716 100644
---- a/arch/arm/mach-tegra/tegra114_speedo.c
-+++ b/arch/arm/mach-tegra/tegra114_speedo.c
-@@ -16,6 +16,7 @@
- 
- #include <linux/kernel.h>
- #include <linux/bug.h>
-+#include <linux/tegra-soc.h>
- 
- #include "fuse.h"
- 
-diff --git a/arch/arm/mach-tegra/tegra20_speedo.c b/arch/arm/mach-tegra/tegra20_speedo.c
-index fa6eb57..3b1bb53 100644
---- a/arch/arm/mach-tegra/tegra20_speedo.c
-+++ b/arch/arm/mach-tegra/tegra20_speedo.c
-@@ -16,6 +16,7 @@
- 
- #include <linux/kernel.h>
- #include <linux/bug.h>
-+#include <linux/tegra-soc.h>
- 
- #include "fuse.h"
- 
-diff --git a/arch/arm/mach-tegra/tegra30_speedo.c b/arch/arm/mach-tegra/tegra30_speedo.c
-index 125cb16..81a958d 100644
---- a/arch/arm/mach-tegra/tegra30_speedo.c
-+++ b/arch/arm/mach-tegra/tegra30_speedo.c
-@@ -16,6 +16,7 @@
- 
- #include <linux/kernel.h>
- #include <linux/bug.h>
-+#include <linux/tegra-soc.h>
- 
- #include "fuse.h"
- 
-diff --git a/include/linux/tegra-soc.h b/include/linux/tegra-soc.h
-index b02d73b..db93b77 100644
---- a/include/linux/tegra-soc.h
-+++ b/include/linux/tegra-soc.h
-@@ -17,8 +17,29 @@
- #ifndef __LINUX_TEGRA_SOC_H_
- #define __LINUX_TEGRA_SOC_H_
- 
-+#define TEGRA20		0x20
-+#define TEGRA30		0x30
-+#define TEGRA114	0x35
-+#define TEGRA124	0x40
-+
-+#ifndef __ASSEMBLY__
-+
-+enum tegra_revision {
-+	TEGRA_REVISION_UNKNOWN = 0,
-+	TEGRA_REVISION_A01,
-+	TEGRA_REVISION_A02,
-+	TEGRA_REVISION_A03,
-+	TEGRA_REVISION_A03p,
-+	TEGRA_REVISION_A04,
-+	TEGRA_REVISION_MAX,
-+};
-+
-+u32 tegra_read_straps(void);
- u32 tegra_read_chipid(void);
-+void tegra_init_fuse(void);
- 
-+extern int tegra_chip_id;
-+extern enum tegra_revision tegra_revision;
- 
- #if defined(CONFIG_TEGRA20_APB_DMA)
- int tegra_apb_readl_using_dma(unsigned long offset, u32 *value);
-@@ -33,4 +54,7 @@ static inline int tegra_apb_writel_using_dma(u32 value, unsigned long offset)
- 	return -EINVAL;
- }
- #endif
-+
-+#endif /* __ASSEMBLY__ */
-+
- #endif /* __LINUX_TEGRA_SOC_H_ */
--- 
-1.7.7.rc0.72.g4b5ea.dirty
+On Wed, Jun 04, 2014 at 06:56:32PM +0200, Laurent Pinchart wrote:
+> The pca954x driver recently switched to the GPIO descriptor API without
+> including the correct <linux/gpio/consumer.h> header. This breaks
+> compilation without CONFIG_GPIOLIB.
+>=20
+> drivers/i2c/muxes/i2c-mux-pca954x.c: In function =E2=80=98pca954x_probe=
+=E2=80=99:
+> drivers/i2c/muxes/i2c-mux-pca954x.c:204:2: error: implicit declaration
+> of function =E2=80=98devm_gpiod_get=E2=80=99 [-Werror=3Dimplicit-function=
+-declaration]
+>   gpio =3D devm_gpiod_get(&client->dev, "reset");
+>   ^
+> drivers/i2c/muxes/i2c-mux-pca954x.c:204:7: warning: assignment makes
+> pointer from integer without a cast [enabled by default]
+>   gpio =3D devm_gpiod_get(&client->dev, "reset");
+>        ^
+> drivers/i2c/muxes/i2c-mux-pca954x.c:206:3: error: implicit declaration
+> of function =E2=80=98gpiod_direction_output=E2=80=99
+> [-Werror=3Dimplicit-function-declaration]
+>    gpiod_direction_output(gpio, 0);
+>    ^
+> cc1: some warnings being treated as errors
+> make[3]: *** [drivers/i2c/muxes/i2c-mux-pca954x.o] Error 1
+>=20
+> Fix it by including the right header.
+>=20
+> Reported-by: Jim Davis <jim.epost@gmail.com>
+> Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
+Applied to for-next, thanks!
+
+
+--3V7upXqbjpZ4EhLz
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTkGx7AAoJEBQN5MwUoCm26ZMP/irveKFJYHwzFytMwXgURcIL
+b+ujBwBPeBwtrWKWus96Ye6lk527d0hJRLMjemyT+M1IfGaUsKTJ4ivXcOq7Hfix
+KxEeV6yv3h9Epuxe/STzOQW3FqMYH3gLi4OK/bvyyOwDNKrN9vb7cVRgWSF+egWv
+qLLK+c8Y7/xNH6XG14bBBdncyKg73WFD4SWthL3zx/whX3/XZsGYnv1TvOfKw2R8
+UVVq96gam6sEN+GbvYiqARqm5m6QScr88TmXF3fKF+qGrHQ6Xtr3fb1hqsuu1yhr
+xChacX4zIZy0TrNHpB/UjdyajrV+gHhJeCRtMe8T/W9nY5Y5jeav8NL8/PFdb2Ja
+EWCTnuE6N/jg92qEDuwFbSFEme+qHLP8Gf18s1F2zgzz2VLiv7F+PqtodBTT9/Zf
+5ad40MsYU0doHs0B369AwK+M8iG/tB0YjLSp87192ScoYCm62Sz6wlX8LkoylGJB
+o3vKxvf8TRXhPnz2rOyz27GNGb3wvBj2+xaiZ+Ueoid+6pICPXCo6w/2Jvu9vz+R
+DpbspKPrOHpohmMiCz2XeMxOMs4fslMSVwyaS3SNbdETRvA2NM33XO1u4SwMZsrd
+vHa5cXETkUUW4nCu9zcPjzRiN7ZkusIqWVk587TnL3iDzgQAmsAJslRoKTjoHyAy
+puBO6JCFDOwOyEjE1ksF
+=4lr5
+-----END PGP SIGNATURE-----
+
+--3V7upXqbjpZ4EhLz--
