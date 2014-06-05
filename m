@@ -1,39 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752059AbaFEPEo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 11:04:44 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49211 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751065AbaFEPEn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 11:04:43 -0400
-Message-ID: <539086F6.8000004@zytor.com>
-Date: Thu, 05 Jun 2014 08:04:22 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Nadav Amit <nadav.amit@gmail.com>, Paolo Bonzini <pbonzini@redhat.com>
-CC: Nadav Amit <namit@cs.technion.ac.il>, gleb@kernel.org, tglx@linutronix.de,
-        mingo@redhat.com, x86@kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 9/9] KVM: x86: smsw emulation is incorrect in 64-bit mode
-References: <1401723251-8034-1-git-send-email-namit@cs.technion.ac.il> <1401723251-8034-10-git-send-email-namit@cs.technion.ac.il> <53908467.8030100@redhat.com> <CB894343-EC15-4A5D-B461-B012FC19FC3A@gmail.com>
-In-Reply-To: <CB894343-EC15-4A5D-B461-B012FC19FC3A@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752023AbaFEPHi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 11:07:38 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:57550 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751588AbaFEPHg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 11:07:36 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: lee.jones@linaro.org, kernel@stlinux.com, ajitpal.singh@st.com,
+        edubezval@gmail.com, rui.zhang@intel.com, linux-pm@vger.kernel.org,
+        devicetree@vger.kernel.org, maxime.coquelin@st.com,
+        patrice.chotard@st.com
+Subject: [RESEND PATCH 0/6] thermal: sti: Add new Thermal driver
+Date: Thu,  5 Jun 2014 16:06:53 +0100
+Message-Id: <1401980819-19962-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2014 08:02 AM, Nadav Amit wrote:
->> I'm sorry, I'm missing the place where 64-bit mode is taken into account?
-> It is not, since on 32-bit mode the high-order 16 bits of a register destination are undefined. 
-> If I recall correctly, in this case the high-order 16-bits on native
-system actually reflect the high-order 16-bits of CR0.
+I'm re-sending this set, as one of the maintainers' email addresses
+is incorrect in the MAINTAINERS file.
 
-This sounds like something that really should be verified
-experimentally.  The above claim seems... odd.
-
-	-hpa
-
+This patchset adds full support for 2 types of Thermal Controllers
+produced by STMicroelectronics.  One is a more traditional memory
+mapped variant, the other is controlled solely by system configuration
+registers.
+  
+ Documentation/devicetree/bindings/thermal/st-thermal.txt |  42 ++++++++++++++++
+ arch/arm/boot/dts/stih416.dtsi                           |  18 +++++++
+ arch/arm/configs/multi_v7_defconfig                      |   2 +
+ drivers/thermal/Kconfig                                  |   5 ++
+ drivers/thermal/Makefile                                 |   1 +
+ drivers/thermal/st/Kconfig                               |  12 +++++
+ drivers/thermal/st/Makefile                              |   3 ++
+ drivers/thermal/st/st_thermal.c                          | 313 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++
+ drivers/thermal/st/st_thermal.h                          | 104 ++++++++++++++++++++++++++++++++++++++
+ drivers/thermal/st/st_thermal_memmap.c                   | 209 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/thermal/st/st_thermal_syscfg.c                   | 179 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 11 files changed, 888 insertions(+)
 
