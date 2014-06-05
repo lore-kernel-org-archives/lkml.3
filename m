@@ -1,29 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752136AbaFEOcw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 10:32:52 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48165 "EHLO
+	id S1752174AbaFEOc7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 10:32:59 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48167 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751503AbaFEOcr (ORCPT
+	with ESMTP id S1750907AbaFEOcv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 10:32:47 -0400
-Date: Thu, 5 Jun 2014 07:32:19 -0700
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-a515114fa3cff8f1da10cd68914d55c10879c3e0@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org, acme@redhat.com,
-        hpa@zytor.com, mingo@kernel.org, jolsa@kernel.org,
-        a.p.zijlstra@chello.nl, acme@kernel.org, namhyung@kernel.org,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, jolsa@kernel.org, a.p.zijlstra@chello.nl,
-        acme@kernel.org, namhyung@kernel.org, fweisbec@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
-In-Reply-To: <1401732126-19465-1-git-send-email-jolsa@kernel.org>
-References: <1401732126-19465-1-git-send-email-jolsa@kernel.org>
+	Thu, 5 Jun 2014 10:32:51 -0400
+Date: Thu, 5 Jun 2014 07:32:32 -0700
+From: tip-bot for Jianyu Zhan <tipbot@zytor.com>
+Message-ID: <tip-fc9cabeabf42d76854059e7bce81a02645e7e5ca@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        jolsa@kernel.org, nasa4836@gmail.com, tglx@linutronix.de,
+        namhyung@kernel.org
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        nasa4836@gmail.com, jolsa@kernel.org, tglx@linutronix.de,
+        namhyung@kernel.org
+In-Reply-To: <1401727474-19370-1-git-send-email-nasa4836@gmail.com>
+References: <1401727474-19370-1-git-send-email-nasa4836@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf record: Fix poll return value propagation
-Git-Commit-ID: a515114fa3cff8f1da10cd68914d55c10879c3e0
+Subject: [tip:perf/core] perf tools: Fix 'make help' message error
+Git-Commit-ID: fc9cabeabf42d76854059e7bce81a02645e7e5ca
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,71 +33,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a515114fa3cff8f1da10cd68914d55c10879c3e0
-Gitweb:     http://git.kernel.org/tip/a515114fa3cff8f1da10cd68914d55c10879c3e0
-Author:     Jiri Olsa <jolsa@kernel.org>
-AuthorDate: Mon, 2 Jun 2014 13:44:23 -0400
+Commit-ID:  fc9cabeabf42d76854059e7bce81a02645e7e5ca
+Gitweb:     http://git.kernel.org/tip/fc9cabeabf42d76854059e7bce81a02645e7e5ca
+Author:     Jianyu Zhan <nasa4836@gmail.com>
+AuthorDate: Tue, 3 Jun 2014 00:44:34 +0800
 Committer:  Jiri Olsa <jolsa@kernel.org>
-CommitDate: Tue, 3 Jun 2014 21:35:05 +0200
+CommitDate: Tue, 3 Jun 2014 21:35:12 +0200
 
-perf record: Fix poll return value propagation
+perf tools: Fix 'make help' message error
 
-If the perf record command is interrupted in record__mmap_read_all
-function, the 'done' is set and err has the latest poll return
-value, which is most likely positive number (= number of pollfds
-ready to read).
+Currently 'make help' message has such hint:
 
-This 'positive err' is then propagated to the exit code, resulting
-in not finishing the perf.data header properly, causing following
-error in report:
+   use "make prefix=<path> <install target>" to install to a particular
+       path like make prefix=/usr/local install install-doc
 
-  # perf record -F 50000 -a
+But this is misleading, when I specify "prefix=/usr/local", it has got no
+respect at all.
 
-  ---
-  make the system real busy, so there's more chance
-  to interrupt perf in event writing code
-  ---
+This is because that, "DESTDIR" is considered first. In this case, "DESTDIR"
+has an empty value, so "prefix" is honored. However, "prefix" is unconditionally
+assigned to $HOME, regardless of what it is set to from command line. So our
+"prefix" setting got no respect and the actual destination falls back to $HOME.
 
-  ^C[ perf record: Woken up 16 times to write data ]
-  [ perf record: Captured and wrote 30.292 MB perf.data (~1323468 samples) ]
+This patch fixes this issue and corrects the help message.
 
-  # perf report --stdio > /dev/null
-  WARNING: The perf.data file's data size field is 0 which is unexpected.
-  Was the 'perf record' command properly terminated?
-
-Fixing this by checking for positive poll return value
-and setting err to 0.
-
-Acked-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
 Acked-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1401732126-19465-1-git-send-email-jolsa@kernel.org
+Link: http://lkml.kernel.org/r/1401727474-19370-1-git-send-email-nasa4836@gmail.com
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/builtin-record.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ tools/perf/Makefile.perf   | 4 ++--
+ tools/perf/config/Makefile | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index e4c85b8..ce2cfec 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -454,7 +454,11 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
- 			if (done)
- 				break;
- 			err = poll(rec->evlist->pollfd, rec->evlist->nr_fds, -1);
--			if (err < 0 && errno == EINTR)
-+			/*
-+			 * Propagate error, only if there's any. Ignore positive
-+			 * number of returned events and interrupt error.
-+			 */
-+			if (err > 0 || (err < 0 && errno == EINTR))
- 				err = 0;
- 			waking++;
- 		}
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 6286e13..ae20edf 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -789,8 +789,8 @@ help:
+ 	@echo ''
+ 	@echo 'Perf install targets:'
+ 	@echo '  NOTE: documentation build requires asciidoc, xmlto packages to be installed'
+-	@echo '  HINT: use "make prefix=<path> <install target>" to install to a particular'
+-	@echo '        path like make prefix=/usr/local install install-doc'
++	@echo '  HINT: use "prefix" or "DESTDIR" to install to a particular'
++	@echo '        path like "make prefix=/usr/local install install-doc"'
+ 	@echo '  install	- install compiled binaries'
+ 	@echo '  install-doc	- install *all* documentation'
+ 	@echo '  install-man	- install manpage documentation'
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 319426f..4f100b5 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -600,7 +600,7 @@ endif
+ 
+ # Make the path relative to DESTDIR, not to prefix
+ ifndef DESTDIR
+-prefix = $(HOME)
++prefix ?= $(HOME)
+ endif
+ bindir_relative = bin
+ bindir = $(prefix)/$(bindir_relative)
