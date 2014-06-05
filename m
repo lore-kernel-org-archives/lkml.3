@@ -1,80 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753127AbaFESBp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 14:01:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54972 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752770AbaFESBn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752857AbaFESBn (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 5 Jun 2014 14:01:43 -0400
-Date: Thu, 5 Jun 2014 11:05:24 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>, sudeep.holla@arm.com,
-        linux@arm.linux.org.uk
-Subject: Re: [PATCH 3.10 005/103] irqchip: Gic: Support forced affinity
- setting
-Message-ID: <20140605180524.GC4121@kroah.com>
-References: <20140604232546.704156131@linuxfoundation.org>
- <20140604232547.006861681@linuxfoundation.org>
- <20140605160500.GD31564@leverpostej>
+Received: from cantor2.suse.de ([195.135.220.15]:38309 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751809AbaFESBl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 14:01:41 -0400
+Date: Thu, 5 Jun 2014 20:01:37 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Lennart Poettering <mzxreary@0pointer.de>
+Cc: Ian Campbell <Ian.Campbell@citrix.com>, luto@mit.edu,
+        Keir Fraser <keir@xen.org>, Tim Deegan <tim@xen.org>,
+        Ian Jackson <ian.jackson@eu.citrix.com>, linux-kernel@vger.kernel.org,
+        systemd-devel@lists.freedesktop.org,
+        linux-security-module@vger.kernel.org, ebiederm@xmission.com,
+        Jan Beulich <jbeulich@suse.com>, xen-devel@lists.xenproject.org,
+        morgan@kernel.org
+Subject: Re: [systemd-devel] [PATCH v5 12/14] autoconf: xen: enable
+	explicit  preference option for xenstored preference
+Message-ID: <20140605180137.GD22052@wotan.suse.de>
+References: <1400589095-3872-13-git-send-email-mcgrof@do-not-panic.com> <1400687040.7272.28.camel@kazak.uk.xensource.com> <20140521230233.GA13289@wotan.suse.de> <1400753147.14637.10.camel@kazak.uk.xensource.com> <20140523232031.GA26450@wotan.suse.de> <1401269449.24800.7.camel@kazak.uk.xensource.com> <20140529232918.GG26450@wotan.suse.de> <20140601061547.GC16257@tango.0pointer.de> <20140605003103.GB22052@wotan.suse.de> <20140605112213.GA17673@tango.0pointer.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140605160500.GD31564@leverpostej>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140605112213.GA17673@tango.0pointer.de>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 05, 2014 at 05:05:00PM +0100, Mark Rutland wrote:
-> Hi Greg,
+On Thu, Jun 05, 2014 at 01:22:13PM +0200, Lennart Poettering wrote:
+> On Thu, 05.06.14 02:31, Luis R. Rodriguez (mcgrof@suse.com) wrote:
 > 
-> On Thu, Jun 05, 2014 at 12:24:28AM +0100, Greg Kroah-Hartman wrote:
-> > 3.10-stable review patch.  If anyone has any objections, please let me know.
+> > On Sun, Jun 01, 2014 at 08:15:47AM +0200, Lennart Poettering wrote:
+> > > On Fri, 30.05.14 01:29, Luis R. Rodriguez (mcgrof@suse.com) wrote:
+> > > 
+> > > > I'm cc'ing a few security folks as I'd appreciate review on the ideas here,
+> > > > in particular that of a launcher idea on system to replace alternatives on the
+> > > > ExecStart= line of a systemd service unit file, alternative ideas are of
+> > > > course welcomed. I'm also Cc'ing systemd-devel as this subject was reviewed
+> > > > a little while ago with nothing concrete being recommended but instead a few
+> > > > options being now archived as possibilities. I'm looking for a bit wider
+> > > > review of the approaches and recomendations.
+> > > > 
+> > > > Some general background for non xen folks: old xen requires the launch of
+> > > > a daemon which implements supports of the xenstore, which is the database
+> > > > that xen uses for information about guests / dom0. There are two supported
+> > > > daemons, xenstored (C version) and oxenstored (Ocaml version) but they do the
+> > > > same thing. Right now old init lets you override which one you pick through
+> > > > an environment variable on /etc/{sysconfig,default}/xencommons, the script
+> > > > will use the appropriate on there. Systemd doesn't let you use variables on
+> > > > the ExecStart line of a service unit file so alternatives are required.
+> > > > 
+> > > > The reason I'm being very careful here this could set a precedent and at
+> > > > least for the launcher idea it'd require the usage of getenv() and execve(),
+> > > > and secure alternatives for these (secure_getenv(), execve_nosecurity())
+> > > > have either been merged or suggested before for Linux. The systemd discussion
+> > > > is only specific to Linux but if we have a launcher we could consider it for
+> > > > other supported OSes. All that said I'd like proper review of the security
+> > > > implications of *all* strategies but obviously in particular the launcher
+> > > > idea. I want to tread carefuly before setting precedents.
+> > > 
+> > > You can also just invoke a shell script from ExecStart=. I mean, we try
+> > > to deemphesize them in the boot process, but there's nothing wrong with
+> > > using shell, if you need to parse shell configuraiton fragments and just
+> > > want to execute on ot another program...
 > > 
-> > ------------------
-> > 
-> > From: Thomas Gleixner <tglx@linutronix.de>
-> > 
-> > commit ffde1de64012c406dfdda8690918248b472f24e4 upstream.
-> > 
-> > To support the affinity setting of per cpu timers in the early startup
-> > of a not yet online cpu, implement the force logic, which disables the
-> > cpu online check.
-> > 
-> > Tagged for stable to allow a simple fix of the affected SoC clock
-> > event drivers.
+> > I tried this and it didn't work given that systemd expects sd_notify()
+> > to be called from the parent process, in this case the shell script.
 > 
-> This patch alone has the possiblity of breaking CPU hotplug on arm and
-> arm64 (specifically it breaks hot unplugging CPU0 where interrupts may
-> be left targetting the offline CPU).
-> 
-> For arm64 [1] that's fixed by commit 601c942176d8 (arm64: use
-> cpu_online_mask when using forced irq_set_affinity).
+> Hmm? You should "exec" the real daemon binary at the end, not just fork
+> it off. That wait the shell script process is replaced by the daemon
+> binary, which is what you want.
 
-Thanks, I'll apply that to the 3.14-stable tree, but, it doesn't seem
-relevant at all for 3.10-stable as arch/arm64/kernel/irq.c doesn't do
-anything with cpumask or set_affinity.  If it's relevant for 3.10,
-please provide a backported version.
+I tried both just running it and also running exec foo; both presented
+the same issue given that shell exec does not really execve.
 
-> Unfortunately there is not an equivalent fix for arm - Russell objected
-> to the approach [2,3,4], and that's not yet settled.
-
-Ok, be sure to cc: stable on the patch when it goes into the tree and
-I'll pick it up then.
-
-thanks,
-
-greg k-h
+  Luis
