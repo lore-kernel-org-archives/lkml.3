@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240AbaFEEvB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:51:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44081 "EHLO
+	id S1754250AbaFEEvV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:51:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44076 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752830AbaFEEVK (ORCPT
+	with ESMTP id S1752893AbaFEEVJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:21:10 -0400
+	Thu, 5 Jun 2014 00:21:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Qiang Huang <h.huangqiang@huawei.com>
-Subject: [PATCH 3.4 112/214] i82975x_edac: Fix dimm label initialization
-Date: Wed,  4 Jun 2014 21:17:55 -0700
-Message-Id: <20140605041654.742166481@linuxfoundation.org>
+        Jiang Liu <jiang.liu@huawei.com>, Ben Hutchings <ben@decadent.org.uk>,
+        Jianguo Wu <wujianguo@huawei.com>
+Subject: [PATCH 3.4 103/214] zram: avoid invalid memory access in zram_exit()
+Date: Wed,  4 Jun 2014 21:17:46 -0700
+Message-Id: <20140605041653.554566544@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -29,83 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
+From: Jiang Liu <liuj97@gmail.com>
 
-commit 479696840239e0cc43efb3c917bdcad2174d2215 upstream.
+commit 6030ea9b35971a4200062f010341ab832e878ac9 upstream.
 
-The driver has only 4 hardcoded labels, but allows much more memory.
-Fix it by removing the hardcoded logic, using snprintf() instead.
+Memory for zram->disk object may have already been freed after returning
+from destroy_device(zram), then it's unsafe for zram_reset_device(zram)
+to access zram->disk again.
 
-[   19.833972] general protection fault: 0000 [#1] SMP
-[   19.837733] Modules linked in: i82975x_edac(+) edac_core firewire_ohci firewire_core crc_itu_t nouveau mxm_wmi wmi video i2c_algo_bit drm_kms_helper ttm drm i2c_core
-[   19.837733] CPU 0
-[   19.837733] Pid: 390, comm: udevd Not tainted 3.6.1-1.fc17.x86_64.debug #1 Dell Inc.                 Precision WorkStation 390    /0MY510
-[   19.837733] RIP: 0010:[<ffffffff813463a8>]  [<ffffffff813463a8>] strncpy+0x18/0x30
-[   19.837733] RSP: 0018:ffff880078535b68  EFLAGS: 00010202
-[   19.837733] RAX: ffff880069fa9708 RBX: ffff880078588000 RCX: ffff880069fa9708
-[   19.837733] RDX: 000000000000001f RSI: 5f706f5f63616465 RDI: ffff880069fa9708
-[   19.837733] RBP: ffff880078535b68 R08: ffff880069fa9727 R09: 000000000000fffe
-[   19.837733] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000003
-[   19.837733] R13: 0000000000000000 R14: ffff880069fa9290 R15: ffff880079624a80
-[   19.837733] FS:  00007f3de01ee840(0000) GS:ffff88007c400000(0000) knlGS:0000000000000000
-[   19.837733] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[   19.837733] CR2: 00007f3de00b9000 CR3: 0000000078dbc000 CR4: 00000000000007f0
-[   19.837733] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[   19.837733] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[   19.837733] Process udevd (pid: 390, threadinfo ffff880078534000, task ffff880079642450)
-[   19.837733] Stack:
-[   19.837733]  ffff880078535c18 ffffffffa017c6b8 00040000816d627f ffff880079624a88
-[   19.837733]  ffffc90004cd6000 ffff880079624520 ffff88007ac21148 0000000000000000
-[   19.837733]  0000000000000000 0004000000000000 feda000078535bc8 ffffffff810d696d
-[   19.837733] Call Trace:
-[   19.837733]  [<ffffffffa017c6b8>] i82975x_init_one+0x2e6/0x3e6 [i82975x_edac]
-...
+We can't solve this bug by flipping the order of destroy_device(zram)
+and zram_reset_device(zram), that will cause deadlock issues to the
+zram sysfs handler.
 
-Fix bug reported at:
-	https://bugzilla.redhat.com/show_bug.cgi?id=848149
-And, very likely:
-	https://bbs.archlinux.org/viewtopic.php?id=148033
-	https://bugzilla.kernel.org/show_bug.cgi?id=47171
+So fix it by holding an extra reference to zram->disk before calling
+destroy_device(zram).
 
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-[bwh: Backported to 3.2:
- - Adjust context
- - Use csrow->channels[chan].label not csrow->channels[chan]->dimm->label]
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Qiang Huang <h.huangqiang@huawei.com>
+Cc: Jianguo Wu <wujianguo@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/edac/i82975x_edac.c |   11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
+ drivers/staging/zram/zram_drv.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/edac/i82975x_edac.c
-+++ b/drivers/edac/i82975x_edac.c
-@@ -363,10 +363,6 @@ static enum dev_type i82975x_dram_type(v
- static void i82975x_init_csrows(struct mem_ctl_info *mci,
- 		struct pci_dev *pdev, void __iomem *mch_window)
- {
--	static const char *labels[4] = {
--							"DIMM A1", "DIMM A2",
--							"DIMM B1", "DIMM B2"
--						};
- 	struct csrow_info *csrow;
- 	unsigned long last_cumul_size;
- 	u8 value;
-@@ -407,9 +403,10 @@ static void i82975x_init_csrows(struct m
- 		 *   [0-3] for dual-channel; i.e. csrow->nr_channels = 2
- 		 */
- 		for (chan = 0; chan < csrow->nr_channels; chan++)
--			strncpy(csrow->channels[chan].label,
--					labels[(index >> 1) + (chan * 2)],
--					EDAC_MC_LABEL_LEN);
-+
-+			snprintf(csrow->channels[chan].label, EDAC_MC_LABEL_LEN, "DIMM %c%d",
-+				 (chan == 0) ? 'A' : 'B',
-+				 index);
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -841,9 +841,11 @@ static void __exit zram_exit(void)
+ 	for (i = 0; i < num_devices; i++) {
+ 		zram = &zram_devices[i];
  
- 		if (cumul_size == last_cumul_size)
- 			continue;	/* not populated */
++		get_disk(zram->disk);
+ 		destroy_device(zram);
+ 		if (zram->init_done)
+ 			zram_reset_device(zram);
++		put_disk(zram->disk);
+ 	}
+ 
+ 	unregister_blkdev(zram_major, "zram");
 
 
