@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754047AbaFEEnk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:43:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44205 "EHLO
+	id S1753559AbaFEEoO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:44:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44195 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753086AbaFEEVa (ORCPT
+	with ESMTP id S1753127AbaFEEV3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:21:30 -0400
+	Thu, 5 Jun 2014 00:21:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Russ Gorby <russ.gorby@intel.com>,
-        "Yin, Fengwei" <fengwei.yin@intel.com>,
+        "samix.lebsir" <samix.lebsir@intel.com>,
         Alan Cox <alan@linux.intel.com>, Ben Hutchings <ben@decadent.org.uk>,
         Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 3.4 137/214] n_gsm: replace kfree_skb w/ appropriate dev_* versions
-Date: Wed,  4 Jun 2014 21:18:20 -0700
-Message-Id: <20140605041658.168721352@linuxfoundation.org>
+Subject: [PATCH 3.4 135/214] char: n_gsm: remove message filtering for contipated DLCI
+Date: Wed,  4 Jun 2014 21:18:18 -0700
+Message-Id: <20140605041657.862129320@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -29,18 +28,23 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russ Gorby <russ.gorby@intel.com>
+From: "samix.lebsir" <samix.lebsir@intel.com>
 
-commit 329e56780e514a7ab607bcb51a52ab0dc2669414 upstream.
+commit 10c6c383e43565c9c6ec07ff8eb2825f8091bdf0 upstream.
 
-Drivers are supposed to use the dev_* versions of the kfree_skb
-interfaces. In a couple of cases we were called with IRQs
-disabled as well which kfree_skb() does not expect.
+The design of uplink flow control in the mux driver is
+that for constipated channels data will backup into the
+per-channel fifos, and any messages that make it to the
+outbound message queue will still go out.
+Code was added to also stop messages that were in the outbound
+queue but this requires filtering through all the messages on the
+queue for stopped dlcis and changes some of the mux logic unneccessarily.
 
-Replaced kfree_skb calls w/ dev_kfree_skb and dev_kfree_skb_any
+The message fiiltering was removed to be in line w/ the original design
+as the message filtering does not provide any solution.
+Extra debug messages used during investigation were also removed.
 
-Signed-off-by: Russ Gorby <russ.gorby@intel.com>
-Tested-by: Yin, Fengwei <fengwei.yin@intel.com>
+Signed-off-by: samix.lebsir <samix.lebsir@intel.com>
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
@@ -48,46 +52,88 @@ Cc: Rui Xiang <rui.xiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/n_gsm.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/tty/n_gsm.c |   25 +------------------------
+ 1 file changed, 1 insertion(+), 24 deletions(-)
 
 --- a/drivers/tty/n_gsm.c
 +++ b/drivers/tty/n_gsm.c
-@@ -879,7 +879,7 @@ static int gsm_dlci_data_output_framed(s
- 	if (len > gsm->mtu) {
- 		if (dlci->adaption == 3) {
- 			/* Over long frame, bin it */
--			kfree_skb(dlci->skb);
-+			dev_kfree_skb_any(dlci->skb);
- 			dlci->skb = NULL;
- 			return 0;
+@@ -691,10 +691,6 @@ static void gsm_data_kick(struct gsm_mux
+ 			msg = msg->next;
+ 			continue;
  		}
-@@ -908,7 +908,7 @@ static int gsm_dlci_data_output_framed(s
- 	skb_pull(dlci->skb, len);
- 	__gsm_data_queue(dlci, msg);
- 	if (last) {
--		kfree_skb(dlci->skb);
-+		dev_kfree_skb_any(dlci->skb);
- 		dlci->skb = NULL;
+-		if (gsm->dlci[msg->addr]->constipated) {
+-			msg = msg->next;
+-			continue;
+-		}
+ 		if (gsm->encoding != 0) {
+ 			gsm->txframe[0] = GSM1_SOF;
+ 			len = gsm_stuff_frame(msg->data,
+@@ -748,8 +744,6 @@ static void __gsm_data_queue(struct gsm_
+ 	u8 *dp = msg->data;
+ 	u8 *fcs = dp + msg->len;
+ 
+-	WARN_ONCE(dlci->constipated, "%s: queueing from a constipated DLCI",
+-		__func__);
+ 	/* Fill in the header */
+ 	if (gsm->encoding == 0) {
+ 		if (msg->len < 128)
+@@ -959,9 +953,6 @@ static void gsm_dlci_data_sweep(struct g
+ 			break;
+ 		dlci = gsm->dlci[i];
+ 		if (dlci == NULL || dlci->constipated) {
+-			if (dlci && (debug & 0x20))
+-				pr_info("%s: DLCI %d is constipated",
+-					__func__, i);
+ 			i++;
+ 			continue;
+ 		}
+@@ -991,12 +982,8 @@ static void gsm_dlci_data_kick(struct gs
+ 	unsigned long flags;
+ 	int sweep;
+ 
+-	if (dlci->constipated) {
+-		if (debug & 0x20)
+-			pr_info("%s: DLCI %d is constipated",
+-				__func__, dlci->addr);
++	if (dlci->constipated)
+ 		return;
+-	}
+ 
+ 	spin_lock_irqsave(&dlci->gsm->tx_lock, flags);
+ 	/* If we have nothing running then we need to fire up */
+@@ -1072,15 +1059,9 @@ static void gsm_process_modem(struct tty
+ 	/* Flow control/ready to communicate */
+ 	fc = (modem & MDM_FC) || !(modem & MDM_RTR);
+ 	if (fc && !dlci->constipated) {
+-		if (debug & 0x20)
+-			pr_info("%s: DLCI %d START constipated (tx_bytes=%d)",
+-				__func__, dlci->addr, dlci->gsm->tx_bytes);
+ 		/* Need to throttle our output on this device */
+ 		dlci->constipated = 1;
+ 	} else if (!fc && dlci->constipated) {
+-		if (debug & 0x20)
+-			pr_info("%s: DLCI %d END constipated (tx_bytes=%d)",
+-				__func__, dlci->addr, dlci->gsm->tx_bytes);
+ 		dlci->constipated = 0;
+ 		gsm_dlci_data_kick(dlci);
  	}
- 	return size;
-@@ -1688,7 +1688,7 @@ static void gsm_dlci_free(struct kref *r
- 	dlci->gsm->dlci[dlci->addr] = NULL;
- 	kfifo_free(dlci->fifo);
- 	while ((dlci->skb = skb_dequeue(&dlci->skb_list)))
--		kfree_skb(dlci->skb);
-+		dev_kfree_skb(dlci->skb);
- 	kfree(dlci);
- }
- 
-@@ -2039,7 +2039,7 @@ void gsm_cleanup_mux(struct gsm_mux *gsm
- {
- 	int i;
- 	struct gsm_dlci *dlci = gsm->dlci[0];
--	struct gsm_msg *txq, *utxq;
-+	struct gsm_msg *txq, *ntxq;
- 	struct gsm_control *gc;
- 
- 	gsm->dead = 1;
+@@ -1257,8 +1238,6 @@ static void gsm_control_message(struct g
+ 		break;
+ 	case CMD_FCON:
+ 		/* Modem can accept data again */
+-		if (debug & 0x20)
+-			pr_info("%s: GSM END constipation", __func__);
+ 		gsm->constipated = 0;
+ 		gsm_control_reply(gsm, CMD_FCON, NULL, 0);
+ 		/* Kick the link in case it is idling */
+@@ -1268,8 +1247,6 @@ static void gsm_control_message(struct g
+ 		break;
+ 	case CMD_FCOFF:
+ 		/* Modem wants us to STFU */
+-		if (debug & 0x20)
+-			pr_info("%s: GSM START constipation", __func__);
+ 		gsm->constipated = 1;
+ 		gsm_control_reply(gsm, CMD_FCOFF, NULL, 0);
+ 		break;
 
 
