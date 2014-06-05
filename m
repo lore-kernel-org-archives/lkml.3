@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753776AbaFEEjZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:39:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44293 "EHLO
+	id S1753259AbaFEEVo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:21:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44270 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751233AbaFEEVp (ORCPT
+	with ESMTP id S1753225AbaFEEVm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:21:45 -0400
+	Thu, 5 Jun 2014 00:21:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Josh Boyer <jwboyer@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Seiji Aguchi <seiji.aguchi@hds.com>, Tony Luck <tony.luck@intel.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Ben Hutchings <ben@decadent.org.uk>, Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 3.4 147/214] efivars: Add module parameter to disable use as a pstore backend
-Date: Wed,  4 Jun 2014 21:18:30 -0700
-Message-Id: <20140605041659.571523183@linuxfoundation.org>
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        Matt Fleming <matt.fleming@intel.com>, Tony Luck <tony.luck@intel.com>,
+        Rui Xiang <rui.xiang@huawei.com>
+Subject: [PATCH 3.4 149/214] efi_pstore: Introducing workqueue updating sysfs
+Date: Wed,  4 Jun 2014 21:18:32 -0700
+Message-Id: <20140605041659.846734439@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -30,79 +28,136 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seth Forshee <seth.forshee@canonical.com>
+From: Seiji Aguchi <seiji.aguchi@hds.com>
 
-commit ec0971ba5372a4dfa753f232449d23a8fd98490e upstream.
+commit a93bc0c6e07ed9bac44700280e65e2945d864fd4 upstream.
 
-We know that with some firmware implementations writing too much data to
-UEFI variables can lead to bricking machines. Recent changes attempt to
-address this issue, but for some it may still be prudent to avoid
-writing large amounts of data until the solution has been proven on a
-wide variety of hardware.
+[Problem]
+efi_pstore creates sysfs entries, which enable users to access to NVRAM,
+in a write callback. If a kernel panic happens in an interrupt context,
+it may fail because it could sleep due to dynamic memory allocations during
+creating sysfs entries.
 
-Crash dumps or other data from pstore can potentially be a large data
-source. Add a pstore_module parameter to efivars to allow disabling its
-use as a backend for pstore. Also add a config option,
-CONFIG_EFI_VARS_PSTORE_DEFAULT_DISABLE, to allow setting the default
-value of this paramter to true (i.e. disabled by default).
+[Patch Description]
+This patch removes sysfs operations from a write callback by introducing
+a workqueue updating sysfs entries which is scheduled after the write
+callback is called.
 
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-Cc: Josh Boyer <jwboyer@redhat.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-[bwh: Backported to 3.2: adjust context]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Rui Xiang <rui.xiang@huawei.com>
+Also, the workqueue is kicked in a just oops case.
+A system will go down in other cases such as panic, clean shutdown and emergency
+restart. And we don't need to create sysfs entries because there is no chance for
+users to access to them.
+
+efi_pstore will be robust against a kernel panic in an interrupt context with this patch.
+
+Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+Acked-by: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+[xr: Backported to 3.4:
+  - Adjust contest
+  - Remove repeated definition of helper function variable_is_present]
+Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/firmware/Kconfig   |    9 +++++++++
- drivers/firmware/efivars.c |    8 +++++++-
- 2 files changed, 16 insertions(+), 1 deletion(-)
+ drivers/firmware/efivars.c |   61 +++++++++++++++++++++++++++++++++++++++++----
+ include/linux/efi.h        |    3 +-
+ 2 files changed, 58 insertions(+), 6 deletions(-)
 
---- a/drivers/firmware/Kconfig
-+++ b/drivers/firmware/Kconfig
-@@ -62,6 +62,15 @@ config EFI_VARS_PSTORE
- 	  will allow writing console messages, crash dumps, or anything
- 	  else supported by pstore to EFI variables.
- 
-+config EFI_VARS_PSTORE_DEFAULT_DISABLE
-+	bool "Disable using efivars as a pstore backend by default"
-+	depends on EFI_VARS_PSTORE
-+	default n
-+	help
-+	  Saying Y here will disable the use of efivars as a storage
-+	  backend for pstore by default. This setting can be overridden
-+	  using the efivars module's pstore_disable parameter.
-+
- config EFI_PCDP
- 	bool "Console device selection via EFI PCDP or HCDP table"
- 	depends on ACPI && EFI && IA64
 --- a/drivers/firmware/efivars.c
 +++ b/drivers/firmware/efivars.c
-@@ -92,6 +92,11 @@ MODULE_VERSION(EFIVARS_VERSION);
+@@ -154,6 +154,13 @@ efivar_create_sysfs_entry(struct efivars
+ 			  efi_char16_t *variable_name,
+ 			  efi_guid_t *vendor_guid);
  
- #define DUMP_NAME_LEN 52
- 
-+static bool efivars_pstore_disable =
-+	IS_ENABLED(EFI_VARS_PSTORE_DEFAULT_DISABLE);
++/*
++ * Prototype for workqueue functions updating sysfs entry
++ */
 +
-+module_param_named(pstore_disable, efivars_pstore_disable, bool, 0644);
++static void efivar_update_sysfs_entries(struct work_struct *);
++static DECLARE_WORK(efivar_work, efivar_update_sysfs_entries);
++
+ /* Return the number of unicode characters in data */
+ static unsigned long
+ utf16_strnlen(efi_char16_t *s, size_t maxlength)
+@@ -839,11 +846,8 @@ static int efi_pstore_write(enum pstore_
+ 	if (found)
+ 		efivar_unregister(found);
+ 
+-	if (size)
+-		ret = efivar_create_sysfs_entry(efivars,
+-					  utf16_strsize(efi_name,
+-							DUMP_NAME_LEN * 2),
+-					  efi_name, &vendor);
++	if (reason == KMSG_DUMP_OOPS)
++		schedule_work(&efivar_work);
+ 
+ 	*id = part;
+ 	return ret;
+@@ -1044,6 +1048,53 @@ static bool variable_is_present(efi_char
+ 	return found;
+ }
+ 
++static void efivar_update_sysfs_entries(struct work_struct *work)
++{
++	struct efivars *efivars = &__efivars;
++	efi_guid_t vendor;
++	efi_char16_t *variable_name;
++	unsigned long variable_name_size = 1024;
++	efi_status_t status = EFI_NOT_FOUND;
++	bool found;
++
++	/* Add new sysfs entries */
++	while (1) {
++		variable_name = kzalloc(variable_name_size, GFP_KERNEL);
++		if (!variable_name) {
++			pr_err("efivars: Memory allocation failed.\n");
++			return;
++		}
++
++		spin_lock_irq(&efivars->lock);
++		found = false;
++		while (1) {
++			variable_name_size = 1024;
++			status = efivars->ops->get_next_variable(
++							&variable_name_size,
++							variable_name,
++							&vendor);
++			if (status != EFI_SUCCESS) {
++				break;
++			} else {
++				if (!variable_is_present(variable_name,
++				    &vendor)) {
++					found = true;
++					break;
++				}
++			}
++		}
++		spin_unlock_irq(&efivars->lock);
++
++		if (!found) {
++			kfree(variable_name);
++			break;
++		} else
++			efivar_create_sysfs_entry(efivars,
++						  variable_name_size,
++						  variable_name, &vendor);
++	}
++}
 +
  /*
-  * The maximum size of VariableName + Data = 1024
-  * Therefore, it's reasonable to save that much
-@@ -1350,7 +1355,8 @@ int register_efivars(struct efivars *efi
- 	if (error)
- 		unregister_efivars(efivars);
- 
--	efivar_pstore_register(efivars);
-+	if (!efivars_pstore_disable)
-+		efivar_pstore_register(efivars);
- 
- out:
- 	kfree(variable_name);
+  * Returns the size of variable_name, in bytes, including the
+  * terminating NULL character, or variable_name_size if no NULL
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -666,7 +666,8 @@ struct efivars {
+ 	 * 1) ->list - adds, removals, reads, writes
+ 	 * 2) ops.[gs]et_variable() calls.
+ 	 * It must not be held when creating sysfs entries or calling kmalloc.
+-	 * ops.get_next_variable() is only called from register_efivars(),
++	 * ops.get_next_variable() is only called from register_efivars()
++	 * or efivar_update_sysfs_entries(),
+ 	 * which is protected by the BKL, so that path is safe.
+ 	 */
+ 	spinlock_t lock;
 
 
