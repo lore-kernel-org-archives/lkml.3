@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752504AbaFEEUb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:20:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43781 "EHLO
+	id S1754577AbaFEFCX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 01:02:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43862 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752309AbaFEEUU (ORCPT
+	with ESMTP id S1752309AbaFEEUc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:20:20 -0400
+	Thu, 5 Jun 2014 00:20:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.4 056/214] rt2x00: fix beaconing on USB
-Date: Wed,  4 Jun 2014 21:16:59 -0700
-Message-Id: <20140605041646.992998926@linuxfoundation.org>
+        Kinglong Mee <kinglongmee@gmail.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.4 065/214] NFSD: Call ->set_acl with a NULL ACL structure if no entries
+Date: Wed,  4 Jun 2014 21:17:08 -0700
+Message-Id: <20140605041648.247568509@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -27,67 +27,140 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Kinglong Mee <kinglongmee@gmail.com>
 
-commit 8834d3608cc516f13e2e510f4057c263f3d2ce42 upstream.
+commit aa07c713ecfc0522916f3cd57ac628ea6127c0ec upstream.
 
-When disable beaconing we clear register with beacon and newer set it
-back, what make we stop send beacons infinitely.
+After setting ACL for directory, I got two problems that caused
+by the cached zero-length default posix acl.
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This patch make sure nfsd4_set_nfs4_acl calls ->set_acl
+with a NULL ACL structure if there are no entries.
+
+Thanks for Christoph Hellwig's advice.
+
+First problem:
+............ hang ...........
+
+Second problem:
+[ 1610.167668] ------------[ cut here ]------------
+[ 1610.168320] kernel BUG at /root/nfs/linux/fs/nfsd/nfs4acl.c:239!
+[ 1610.168320] invalid opcode: 0000 [#1] SMP DEBUG_PAGEALLOC
+[ 1610.168320] Modules linked in: nfsv4(OE) nfs(OE) nfsd(OE)
+rpcsec_gss_krb5 fscache ip6t_rpfilter ip6t_REJECT cfg80211 xt_conntrack
+rfkill ebtable_nat ebtable_broute bridge stp llc ebtable_filter ebtables
+ip6table_nat nf_conntrack_ipv6 nf_defrag_ipv6 nf_nat_ipv6
+ip6table_mangle ip6table_security ip6table_raw ip6table_filter
+ip6_tables iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4
+nf_nat nf_conntrack iptable_mangle iptable_security iptable_raw
+auth_rpcgss nfs_acl snd_intel8x0 ppdev lockd snd_ac97_codec ac97_bus
+snd_pcm snd_timer e1000 pcspkr parport_pc snd parport serio_raw joydev
+i2c_piix4 sunrpc(OE) microcode soundcore i2c_core ata_generic pata_acpi
+[last unloaded: nfsd]
+[ 1610.168320] CPU: 0 PID: 27397 Comm: nfsd Tainted: G           OE
+3.15.0-rc1+ #15
+[ 1610.168320] Hardware name: innotek GmbH VirtualBox/VirtualBox, BIOS
+VirtualBox 12/01/2006
+[ 1610.168320] task: ffff88005ab653d0 ti: ffff88005a944000 task.ti:
+ffff88005a944000
+[ 1610.168320] RIP: 0010:[<ffffffffa034d5ed>]  [<ffffffffa034d5ed>]
+_posix_to_nfsv4_one+0x3cd/0x3d0 [nfsd]
+[ 1610.168320] RSP: 0018:ffff88005a945b00  EFLAGS: 00010293
+[ 1610.168320] RAX: 0000000000000001 RBX: ffff88006700bac0 RCX:
+0000000000000000
+[ 1610.168320] RDX: 0000000000000000 RSI: ffff880067c83f00 RDI:
+ffff880068233300
+[ 1610.168320] RBP: ffff88005a945b48 R08: ffffffff81c64830 R09:
+0000000000000000
+[ 1610.168320] R10: ffff88004ea85be0 R11: 000000000000f475 R12:
+ffff880068233300
+[ 1610.168320] R13: 0000000000000003 R14: 0000000000000002 R15:
+ffff880068233300
+[ 1610.168320] FS:  0000000000000000(0000) GS:ffff880077800000(0000)
+knlGS:0000000000000000
+[ 1610.168320] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 1610.168320] CR2: 00007f5bcbd3b0b9 CR3: 0000000001c0f000 CR4:
+00000000000006f0
+[ 1610.168320] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+0000000000000000
+[ 1610.168320] DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7:
+0000000000000400
+[ 1610.168320] Stack:
+[ 1610.168320]  ffffffff00000000 0000000b67c83500 000000076700bac0
+0000000000000000
+[ 1610.168320]  ffff88006700bac0 ffff880068233300 ffff88005a945c08
+0000000000000002
+[ 1610.168320]  0000000000000000 ffff88005a945b88 ffffffffa034e2d5
+000000065a945b68
+[ 1610.168320] Call Trace:
+[ 1610.168320]  [<ffffffffa034e2d5>] nfsd4_get_nfs4_acl+0x95/0x150 [nfsd]
+[ 1610.168320]  [<ffffffffa03400d6>] nfsd4_encode_fattr+0x646/0x1e70 [nfsd]
+[ 1610.168320]  [<ffffffff816a6e6e>] ? kmemleak_alloc+0x4e/0xb0
+[ 1610.168320]  [<ffffffffa0327962>] ?
+nfsd_setuser_and_check_port+0x52/0x80 [nfsd]
+[ 1610.168320]  [<ffffffff812cd4bb>] ? selinux_cred_prepare+0x1b/0x30
+[ 1610.168320]  [<ffffffffa0341caa>] nfsd4_encode_getattr+0x5a/0x60 [nfsd]
+[ 1610.168320]  [<ffffffffa0341e07>] nfsd4_encode_operation+0x67/0x110
+[nfsd]
+[ 1610.168320]  [<ffffffffa033844d>] nfsd4_proc_compound+0x21d/0x810 [nfsd]
+[ 1610.168320]  [<ffffffffa0324d9b>] nfsd_dispatch+0xbb/0x200 [nfsd]
+[ 1610.168320]  [<ffffffffa00850cd>] svc_process_common+0x46d/0x6d0 [sunrpc]
+[ 1610.168320]  [<ffffffffa0085433>] svc_process+0x103/0x170 [sunrpc]
+[ 1610.168320]  [<ffffffffa032472f>] nfsd+0xbf/0x130 [nfsd]
+[ 1610.168320]  [<ffffffffa0324670>] ? nfsd_destroy+0x80/0x80 [nfsd]
+[ 1610.168320]  [<ffffffff810a5202>] kthread+0xd2/0xf0
+[ 1610.168320]  [<ffffffff810a5130>] ? insert_kthread_work+0x40/0x40
+[ 1610.168320]  [<ffffffff816c1ebc>] ret_from_fork+0x7c/0xb0
+[ 1610.168320]  [<ffffffff810a5130>] ? insert_kthread_work+0x40/0x40
+[ 1610.168320] Code: 78 02 e9 e7 fc ff ff 31 c0 31 d2 31 c9 66 89 45 ce
+41 8b 04 24 66 89 55 d0 66 89 4d d2 48 8d 04 80 49 8d 5c 84 04 e9 37 fd
+ff ff <0f> 0b 90 0f 1f 44 00 00 55 8b 56 08 c7 07 00 00 00 00 8b 46 0c
+[ 1610.168320] RIP  [<ffffffffa034d5ed>] _posix_to_nfsv4_one+0x3cd/0x3d0
+[nfsd]
+[ 1610.168320]  RSP <ffff88005a945b00>
+[ 1610.257313] ---[ end trace 838254e3e352285b ]---
+
+Signed-off-by: Kinglong Mee <kinglongmee@gmail.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rt2x00/rt2x00mac.c |   22 ++++++++++++----------
- 1 file changed, 12 insertions(+), 10 deletions(-)
+ fs/nfsd/nfs4acl.c |   17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
 
---- a/drivers/net/wireless/rt2x00/rt2x00mac.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00mac.c
-@@ -651,20 +651,18 @@ void rt2x00mac_bss_info_changed(struct i
- 				      bss_conf->bssid);
+--- a/fs/nfsd/nfs4acl.c
++++ b/fs/nfsd/nfs4acl.c
+@@ -373,8 +373,10 @@ sort_pacl(struct posix_acl *pacl)
+ 	 * by uid/gid. */
+ 	int i, j;
+ 
+-	if (pacl->a_count <= 4)
+-		return; /* no users or groups */
++	/* no users or groups */
++	if (!pacl || pacl->a_count <= 4)
++		return;
++
+ 	i = 1;
+ 	while (pacl->a_entries[i].e_tag == ACL_USER)
+ 		i++;
+@@ -498,13 +500,12 @@ posix_state_to_acl(struct posix_acl_stat
  
  	/*
--	 * Update the beacon. This is only required on USB devices. PCI
--	 * devices fetch beacons periodically.
--	 */
--	if (changes & BSS_CHANGED_BEACON && rt2x00_is_usb(rt2x00dev))
--		rt2x00queue_update_beacon(rt2x00dev, vif);
--
--	/*
- 	 * Start/stop beaconing.
+ 	 * ACLs with no ACEs are treated differently in the inheritable
+-	 * and effective cases: when there are no inheritable ACEs, we
+-	 * set a zero-length default posix acl:
++	 * and effective cases: when there are no inheritable ACEs,
++	 * calls ->set_acl with a NULL ACL structure.
  	 */
- 	if (changes & BSS_CHANGED_BEACON_ENABLED) {
- 		if (!bss_conf->enable_beacon && intf->enable_beacon) {
--			rt2x00queue_clear_beacon(rt2x00dev, vif);
- 			rt2x00dev->intf_beaconing--;
- 			intf->enable_beacon = false;
-+			/*
-+			 * Clear beacon in the H/W for this vif. This is needed
-+			 * to disable beaconing on this particular interface
-+			 * and keep it running on other interfaces.
-+			 */
-+			rt2x00queue_clear_beacon(rt2x00dev, vif);
- 
- 			if (rt2x00dev->intf_beaconing == 0) {
- 				/*
-@@ -675,11 +673,15 @@ void rt2x00mac_bss_info_changed(struct i
- 				rt2x00queue_stop_queue(rt2x00dev->bcn);
- 				mutex_unlock(&intf->beacon_skb_mutex);
- 			}
--
--
- 		} else if (bss_conf->enable_beacon && !intf->enable_beacon) {
- 			rt2x00dev->intf_beaconing++;
- 			intf->enable_beacon = true;
-+			/*
-+			 * Upload beacon to the H/W. This is only required on
-+			 * USB devices. PCI devices fetch beacons periodically.
-+			 */
-+			if (rt2x00_is_usb(rt2x00dev))
-+				rt2x00queue_update_beacon(rt2x00dev, vif);
- 
- 			if (rt2x00dev->intf_beaconing == 1) {
- 				/*
+-	if (state->empty && (flags & NFS4_ACL_TYPE_DEFAULT)) {
+-		pacl = posix_acl_alloc(0, GFP_KERNEL);
+-		return pacl ? pacl : ERR_PTR(-ENOMEM);
+-	}
++	if (state->empty && (flags & NFS4_ACL_TYPE_DEFAULT))
++		return NULL;
++
+ 	/*
+ 	 * When there are no effective ACEs, the following will end
+ 	 * up setting a 3-element effective posix ACL with all
 
 
