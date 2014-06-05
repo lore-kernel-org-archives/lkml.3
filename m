@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753807AbaFEElZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:41:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44261 "EHLO
+	id S1753935AbaFEEll (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:41:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44256 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753186AbaFEEVk (ORCPT
+	with ESMTP id S1753074AbaFEEVj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:21:40 -0400
+	Thu, 5 Jun 2014 00:21:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Josh Boyer <jwboyer@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Seiji Aguchi <seiji.aguchi@hds.com>, Tony Luck <tony.luck@intel.com>,
+        Matt Fleming <matt.fleming@intel.com>,
         Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 3.4 140/214] ptrace/x86: Partly fix set_task_blockstep()->update_debugctlmsr() logic
-Date: Wed,  4 Jun 2014 21:18:23 -0700
-Message-Id: <20140605041658.578503669@linuxfoundation.org>
+Subject: [PATCH 3.4 146/214] efivars: Allow disabling use as a pstore backend
+Date: Wed,  4 Jun 2014 21:18:29 -0700
+Message-Id: <20140605041659.436192235@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -27,81 +30,149 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Seth Forshee <seth.forshee@canonical.com>
 
-commit 95cf00fa5d5e2a200a2c044c84bde8389a237e02 upstream.
+commit ed9dc8ce7a1c8115dba9483a9b51df8b63a2e0ef upstream.
 
-Afaics the usage of update_debugctlmsr() and TIF_BLOCKSTEP in
-step.c was always very wrong.
+Add a new option, CONFIG_EFI_VARS_PSTORE, which can be set to N to
+avoid using efivars as a backend to pstore, as some users may want to
+compile out the code completely.
 
-1. update_debugctlmsr() was simply unneeded. The child sleeps
-   TASK_TRACED, __switch_to_xtra(next_p => child) should notice
-   TIF_BLOCKSTEP and set/clear DEBUGCTLMSR_BTF after resume if
-   needed.
+Set the default to Y to maintain backwards compatability, since this
+feature has always been enabled until now.
 
-2. It is wrong. The state of DEBUGCTLMSR_BTF bit in CPU register
-   should always match the state of current's TIF_BLOCKSTEP bit.
-
-3. Even get_debugctlmsr() + update_debugctlmsr() itself does not
-   look right. Irq can change other bits in MSR_IA32_DEBUGCTLMSR
-   register or the caller can be preempted in between.
-
-4. It is not safe to play with TIF_BLOCKSTEP if task != current.
-   DEBUGCTLMSR_BTF and TIF_BLOCKSTEP should always match each
-   other if the task is running. The tracee is stopped but it
-   can be SIGKILL'ed right before set/clear_tsk_thread_flag().
-
-However, now that uprobes uses user_enable_single_step(current)
-we can't simply remove update_debugctlmsr(). So this patch adds
-the additional "task == current" check and disables irqs to avoid
-the race with interrupts/preemption.
-
-Unfortunately this patch doesn't solve the last problem, we need
-another fix. Probably we should teach ptrace_stop() to set/clear
-single/block stepping after resume.
-
-And afaics there is yet another problem: perf can play with
-MSR_IA32_DEBUGCTLMSR from nmi, this obviously means that even
-__switch_to_xtra() has problems.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Rui Xiang <rui.xiang@huawei.com>
+Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+Cc: Josh Boyer <jwboyer@redhat.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+[xr: Backported to 3.4: adjust context]
+Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/step.c |   14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+ drivers/firmware/Kconfig   |    9 ++++++
+ drivers/firmware/efivars.c |   63 ++++++++++++++-------------------------------
+ 2 files changed, 29 insertions(+), 43 deletions(-)
 
---- a/arch/x86/kernel/step.c
-+++ b/arch/x86/kernel/step.c
-@@ -161,6 +161,16 @@ static void set_task_blockstep(struct ta
- {
- 	unsigned long debugctl;
+--- a/drivers/firmware/Kconfig
++++ b/drivers/firmware/Kconfig
+@@ -53,6 +53,15 @@ config EFI_VARS
+ 	  Subsequent efibootmgr releases may be found at:
+ 	  <http://linux.dell.com/efibootmgr>
  
-+	/*
-+	 * Ensure irq/preemption can't change debugctl in between.
-+	 * Note also that both TIF_BLOCKSTEP and debugctl should
-+	 * be changed atomically wrt preemption.
-+	 * FIXME: this means that set/clear TIF_BLOCKSTEP is simply
-+	 * wrong if task != current, SIGKILL can wakeup the stopped
-+	 * tracee and set/clear can play with the running task, this
-+	 * can confuse the next __switch_to_xtra().
-+	 */
-+	local_irq_disable();
- 	debugctl = get_debugctlmsr();
- 	if (on) {
- 		debugctl |= DEBUGCTLMSR_BTF;
-@@ -169,7 +179,9 @@ static void set_task_blockstep(struct ta
- 		debugctl &= ~DEBUGCTLMSR_BTF;
- 		clear_tsk_thread_flag(task, TIF_BLOCKSTEP);
- 	}
--	update_debugctlmsr(debugctl);
-+	if (task == current)
-+		update_debugctlmsr(debugctl);
-+	local_irq_enable();
++config EFI_VARS_PSTORE
++	bool "Register efivars backend for pstore"
++	depends on EFI_VARS && PSTORE
++	default y
++	help
++	  Say Y here to enable use efivars as a backend to pstore. This
++	  will allow writing console messages, crash dumps, or anything
++	  else supported by pstore to EFI variables.
++
+ config EFI_PCDP
+ 	bool "Console device selection via EFI PCDP or HCDP table"
+ 	depends on ACPI && EFI && IA64
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -662,8 +662,6 @@ static struct kobj_type efivar_ktype = {
+ 	.default_attrs = def_attrs,
+ };
+ 
+-static struct pstore_info efi_pstore_info;
+-
+ static inline void
+ efivar_unregister(struct efivar_entry *var)
+ {
+@@ -700,7 +698,7 @@ static int efi_status_to_err(efi_status_
+ 	return err;
  }
  
- /*
+-#ifdef CONFIG_PSTORE
++#ifdef CONFIG_EFI_VARS_PSTORE
+ 
+ static int efi_pstore_open(struct pstore_info *psi)
+ {
+@@ -853,37 +851,6 @@ static int efi_pstore_erase(enum pstore_
+ 
+ 	return 0;
+ }
+-#else
+-static int efi_pstore_open(struct pstore_info *psi)
+-{
+-	return 0;
+-}
+-
+-static int efi_pstore_close(struct pstore_info *psi)
+-{
+-	return 0;
+-}
+-
+-static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
+-			       struct timespec *timespec,
+-			       char **buf, struct pstore_info *psi)
+-{
+-	return -1;
+-}
+-
+-static int efi_pstore_write(enum pstore_type_id type,
+-		enum kmsg_dump_reason reason, u64 *id,
+-		unsigned int part, size_t size, struct pstore_info *psi)
+-{
+-	return 0;
+-}
+-
+-static int efi_pstore_erase(enum pstore_type_id type, u64 id,
+-			    struct pstore_info *psi)
+-{
+-	return 0;
+-}
+-#endif
+ 
+ static struct pstore_info efi_pstore_info = {
+ 	.owner		= THIS_MODULE,
+@@ -895,6 +862,24 @@ static struct pstore_info efi_pstore_inf
+ 	.erase		= efi_pstore_erase,
+ };
+ 
++static void efivar_pstore_register(struct efivars *efivars)
++{
++	efivars->efi_pstore_info = efi_pstore_info;
++	efivars->efi_pstore_info.buf = kmalloc(4096, GFP_KERNEL);
++	if (efivars->efi_pstore_info.buf) {
++		efivars->efi_pstore_info.bufsize = 1024;
++		efivars->efi_pstore_info.data = efivars;
++		spin_lock_init(&efivars->efi_pstore_info.buf_lock);
++		pstore_register(&efivars->efi_pstore_info);
++	}
++}
++#else
++static void efivar_pstore_register(struct efivars *efivars)
++{
++	return;
++}
++#endif
++
+ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
+ 			     struct bin_attribute *bin_attr,
+ 			     char *buf, loff_t pos, size_t count)
+@@ -1365,15 +1350,7 @@ int register_efivars(struct efivars *efi
+ 	if (error)
+ 		unregister_efivars(efivars);
+ 
+-	efivars->efi_pstore_info = efi_pstore_info;
+-
+-	efivars->efi_pstore_info.buf = kmalloc(4096, GFP_KERNEL);
+-	if (efivars->efi_pstore_info.buf) {
+-		efivars->efi_pstore_info.bufsize = 1024;
+-		efivars->efi_pstore_info.data = efivars;
+-		spin_lock_init(&efivars->efi_pstore_info.buf_lock);
+-		pstore_register(&efivars->efi_pstore_info);
+-	}
++	efivar_pstore_register(efivars);
+ 
+ out:
+ 	kfree(variable_name);
 
 
