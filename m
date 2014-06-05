@@ -1,94 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752038AbaFEShc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 14:37:32 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:49310 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065AbaFESha (ORCPT
+	id S1752213AbaFESiG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 14:38:06 -0400
+Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:63407 "EHLO
+	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751495AbaFESiE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 14:37:30 -0400
-Message-ID: <5390B8E6.1050600@wwwdotorg.org>
-Date: Thu, 05 Jun 2014 12:37:26 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>, linux-arm-kernel@lists.infradead.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 3/5] misc: fuse: Add efuse driver for Tegra
-References: <1401973754-19701-1-git-send-email-pdeschrijver@nvidia.com> <1401973754-19701-4-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1401973754-19701-4-git-send-email-pdeschrijver@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 5 Jun 2014 14:38:04 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AsENAPW3kFNXQDfT/2dsb2JhbABZgwesCQUBmCeBDxd0glMvI4EaN4hGAdNPhVWIfR2EKgSPTopFiyCIGYM6Ow
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] kernel/locking/lockdep_proc.c: replace seq_printf and seq_puts
+Date: Thu,  5 Jun 2014 20:36:48 +0200
+Message-Id: <1401993408-12126-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2014 07:09 AM, Peter De Schrijver wrote:
-> Implement fuse driver for Tegra20, Tegra30, Tegra114 and Tegra124.
-> 
-> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
-> ---
->  Documentation/ABI/testing/sysfs-driver-tegra-fuse |   11 +
->  drivers/misc/fuse/Makefile                        |    1 +
->  drivers/misc/fuse/tegra/Makefile                  |    7 +
->  drivers/misc/fuse/tegra/fuse-tegra.c              |  250 +++++++++++++++++
+replace seq_printf by seq_puts and seq_puts by seq_putc where possible
 
-I wonder if we shouldn't put this into drivers/soc/tegra?
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ kernel/locking/lockdep_proc.c | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
-> diff --git a/drivers/misc/fuse/tegra/fuse-tegra.c b/drivers/misc/fuse/tegra/fuse-tegra.c
+diff --git a/kernel/locking/lockdep_proc.c b/kernel/locking/lockdep_proc.c
+index ef43ac4..00c62ed 100644
+--- a/kernel/locking/lockdep_proc.c
++++ b/kernel/locking/lockdep_proc.c
+@@ -61,7 +61,7 @@ static int l_show(struct seq_file *m, void *v)
+ 	char usage[LOCK_USAGE_CHARS];
+ 
+ 	if (v == &all_lock_classes) {
+-		seq_printf(m, "all lock classes:\n");
++		seq_puts(m, "all lock classes:\n");
+ 		return 0;
+ 	}
+ 
+@@ -77,18 +77,18 @@ static int l_show(struct seq_file *m, void *v)
+ 	get_usage_chars(class, usage);
+ 	seq_printf(m, " %s", usage);
+ 
+-	seq_printf(m, ": ");
++	seq_puts(m, ": ");
+ 	print_name(m, class);
+-	seq_puts(m, "\n");
++	seq_putc(m, '\n');
+ 
+ 	list_for_each_entry(entry, &class->locks_after, entry) {
+ 		if (entry->distance == 1) {
+ 			seq_printf(m, " -> [%p] ", entry->class->key);
+ 			print_name(m, entry->class);
+-			seq_puts(m, "\n");
++			seq_putc(m, '\n');
+ 		}
+ 	}
+-	seq_puts(m, "\n");
++	seq_putc(m, '\n');
+ 
+ 	return 0;
+ }
+@@ -141,7 +141,7 @@ static int lc_show(struct seq_file *m, void *v)
+ 	int i;
+ 
+ 	if (v == SEQ_START_TOKEN) {
+-		seq_printf(m, "all lock chains:\n");
++		seq_puts(m, "all lock chains:\n");
+ 		return 0;
+ 	}
+ 
+@@ -154,9 +154,9 @@ static int lc_show(struct seq_file *m, void *v)
+ 
+ 		seq_printf(m, "[%p] ", class->key);
+ 		print_name(m, class);
+-		seq_puts(m, "\n");
++		seq_putc(m, '\n');
+ 	}
+-	seq_puts(m, "\n");
++	seq_putc(m, '\n');
+ 
+ 	return 0;
+ }
+@@ -529,7 +529,7 @@ static void seq_header(struct seq_file *m)
+ 	seq_puts(m, "lock_stat version 0.4\n");
+ 
+ 	if (unlikely(!debug_locks))
+-		seq_printf(m, "*WARNING* lock debugging disabled!! - possibly due to a lockdep warning\n");
++		seq_puts(m, "*WARNING* lock debugging disabled!! - possibly due to a lockdep warning\n");
+ 
+ 	seq_line(m, '-', 0, 40 + 1 + 12 * (14 + 1));
+ 	seq_printf(m, "%40s %14s %14s %14s %14s %14s %14s %14s %14s %14s %14s "
+@@ -548,7 +548,7 @@ static void seq_header(struct seq_file *m)
+ 			"holdtime-total",
+ 			"holdtime-avg");
+ 	seq_line(m, '-', 0, 40 + 1 + 12 * (14 + 1));
+-	seq_printf(m, "\n");
++	seq_putc(m, '\n');
+ }
+ 
+ static void *ls_start(struct seq_file *m, loff_t *pos)
+-- 
+1.8.4.5
 
-> +void __init tegra_init_fuse(void)
-> +{
-> +	struct device_node *np;
-> +	u32 id;
-> +	void __iomem *car_base;
-> +
-> +	np = of_find_matching_node(NULL, apbmisc_match);
-> +	apbmisc_base = of_iomap(np, 0);
-> +	if (!apbmisc_base) {
-> +		pr_warn("ioremap tegra apbmisc failed. using %08x instead\n",
-> +			APBMISC_BASE);
-> +		apbmisc_base = ioremap(APBMISC_BASE, APBMISC_SIZE);
-> +	}
-> +
-> +	id = tegra_read_chipid();
-> +	tegra_chip_id = (id >> 8) & 0xff;
-
-So there's a fallback using APBMIS_BASE above if the node is missing, so
-those last 2 lines always happen. However, if any of the following fail:
-
-> +	strapping_base = of_iomap(np, 0);
-...
-> +	np = of_find_matching_node(NULL, tegra_fuse_match);
-...
-> +	np = of_find_matching_node(NULL, car_match);
-
-Then this doesn't get executed:
-
-> +	tegra_get_revision(id);
-
-Isn't that important?
-
-I guess that can't run if the lookup for tegra_fuse_match isn't
-successful, since that tegra_get_revision may call
-tegra20_spare_fuse_early() which uses fuse_base which is set up in
-response to succesfully calling on of those node lookups. Isn't a
-fallback needed there too?
-
-I'm also a bit concerned that the driver probes, rather than the early
-function tegra_init_fuse(), are doing things like setting up the speedo
-data initialization, randomness addition, etc. For one, those won't
-happen any more unless the DT nodes are present, and secondly,
-triggering all those from driver probe rather than a function that's
-called from the machine descriptor makes guaranteeing the timing
-problematic.
-
-I'd prefer to see the driver probes *just* set up the sysfs, and have
-the code initialization stay unchanged relative to the code currently in
-arch/arm/mach-tegra/ if possible.
