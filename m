@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754690AbaFEFIE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 01:08:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43797 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752359AbaFEEUW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752357AbaFEEUW (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 5 Jun 2014 00:20:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43766 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751332AbaFEEUR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 00:20:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.4 059/214] rtl8192cu: Fix unbalanced irq enable in error path of rtl92cu_hw_init()
-Date: Wed,  4 Jun 2014 21:17:02 -0700
-Message-Id: <20140605041647.413083582@linuxfoundation.org>
+        Anthony Iliopoulos <anthony.iliopoulos@huawei.com>,
+        Shay Goikhman <shay.goikhman@huawei.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH 3.4 042/214] x86, mm, hugetlb: Add missing TLB page invalidation for hugetlb_cow()
+Date: Wed,  4 Jun 2014 21:16:45 -0700
+Message-Id: <20140605041645.243855252@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -27,29 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Anthony Iliopoulos <anthony.iliopoulos@huawei.com>
 
-commit 3234f5b06fc3094176a86772cc64baf3decc98fc upstream.
+commit 9844f5462392b53824e8b86726e7c33b5ecbb676 upstream.
 
-Fixes: a53268be0cb9 ('rtlwifi: rtl8192cu: Fix too long disable of IRQs')
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+The invalidation is required in order to maintain proper semantics
+under CoW conditions. In scenarios where a process clones several
+threads, a thread operating on a core whose DTLB entry for a
+particular hugepage has not been invalidated, will be reading from
+the hugepage that belongs to the forked child process, even after
+hugetlb_cow().
+
+The thread will not see the updated page as long as the stale DTLB
+entry remains cached, the thread attempts to write into the page,
+the child process exits, or the thread gets migrated to a different
+processor.
+
+Signed-off-by: Anthony Iliopoulos <anthony.iliopoulos@huawei.com>
+Link: http://lkml.kernel.org/r/20140514092948.GA17391@server-36.huawei.corp
+Suggested-by: Shay Goikhman <shay.goikhman@huawei.com>
+Acked-by: Dave Hansen <dave.hansen@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/hw.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/include/asm/hugetlb.h |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
-@@ -1001,7 +1001,7 @@ int rtl92cu_hw_init(struct ieee80211_hw
- 	err = _rtl92cu_init_mac(hw);
- 	if (err) {
- 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG, "init mac failed!\n");
--		return err;
-+		goto exit;
- 	}
- 	err = rtl92c_download_fw(hw);
- 	if (err) {
+--- a/arch/x86/include/asm/hugetlb.h
++++ b/arch/x86/include/asm/hugetlb.h
+@@ -51,6 +51,7 @@ static inline pte_t huge_ptep_get_and_cl
+ static inline void huge_ptep_clear_flush(struct vm_area_struct *vma,
+ 					 unsigned long addr, pte_t *ptep)
+ {
++	ptep_clear_flush(vma, addr, ptep);
+ }
+ 
+ static inline int huge_pte_none(pte_t pte)
 
 
