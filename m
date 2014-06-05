@@ -1,122 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751507AbaFEMpR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 08:45:17 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:43785 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866AbaFEMpP (ORCPT
+	id S1751628AbaFEMpe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 08:45:34 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:50725 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751463AbaFEMpc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 08:45:15 -0400
-Date: Thu, 5 Jun 2014 14:45:09 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        David Howells <dhowells@redhat.com>,
-        Steven Whitehouse <swhiteho@redhat.com>, dm-devel@redhat.com,
-        Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
-        Steve French <sfrench@samba.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Ingo Molnar <mingo@redhat.com>, Roland McGrath <roland@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-nfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] SCHED: remove proliferation of wait_on_bit action
- functions.
-Message-ID: <20140605124509.GA1975@gmail.com>
-References: <20140501123738.3e64b2d2@notabene.brown>
- <20140522090502.GB30094@gmail.com>
- <20140522195056.445f2dcb@notabene.brown>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140522195056.445f2dcb@notabene.brown>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 5 Jun 2014 08:45:32 -0400
+X-Nat-Received: from [202.181.97.72]:51650 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1401972328.29205
+To: rientjes@google.com, Motohiro.Kosaki@us.fujitsu.com
+Cc: david@fromorbit.com, riel@redhat.com, kosaki.motohiro@jp.fujitsu.com,
+        fengguang.wu@intel.com, kamezawa.hiroyu@jp.fujitsu.com,
+        akpm@linux-foundation.org, hch@infradead.org,
+        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: [PATCH] mm/vmscan: Do not block forever at shrink_inactive_list().
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <20140520063024.GH18954@dastard>
+	<201405202358.ADF10119.SMOFOQLFtOVHJF@I-love.SAKURA.ne.jp>
+	<6B2BA408B38BA1478B473C31C3D2074E31D59D8673@SV-EXCHANGE1.Corp.FC.LOCAL>
+	<201405262045.CDG95893.HLFFOSFMQOVOJt@I-love.SAKURA.ne.jp>
+	<alpine.DEB.2.02.1406031442170.19491@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1406031442170.19491@chino.kir.corp.google.com>
+Message-Id: <201406052145.CIB35534.OQLVMSJFOHtFOF@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Thu, 5 Jun 2014 21:45:26 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 04062014 #8144375, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* NeilBrown <neilb@suse.de> wrote:
-
-> On Thu, 22 May 2014 11:05:02 +0200 Ingo Molnar <mingo@kernel.org> wrote:
+David Rientjes wrote:
+> On Mon, 26 May 2014, Tetsuo Handa wrote:
 > 
+> > In shrink_inactive_list(), we do not insert delay at
 > > 
-> > * NeilBrown <neilb@suse.de> wrote:
+> >   if (!sc->hibernation_mode && !current_is_kswapd())
+> >     wait_iff_congested(zone, BLK_RW_ASYNC, HZ/10);
 > > 
-> > > [[ get_maintainer.pl suggested 61 email address for this patch.
-> > >    I've trimmed that list somewhat.  Hope I didn't miss anyone
-> > >    important...
-> > >    I'm hoping it will go in through the scheduler tree, but would
-> > >    particularly like an Acked-by for the fscache parts.  Other acks
-> > >    welcome.
-> > > ]]
-> > > 
-> > > The current "wait_on_bit" interface requires an 'action' function
-> > > to be provided which does the actual waiting.
-> > > There are over 20 such functions, many of them identical.
-> > > Most cases can be satisfied by one of just two functions, one
-> > > which uses io_schedule() and one which just uses schedule().
-> > > 
-> > > So:
-> > >  Rename wait_on_bit and        wait_on_bit_lock to
-> > >         wait_on_bit_action and wait_on_bit_lock_action
-> > >  to make it explicit that they need an action function.
-> > > 
-> > >  Introduce new wait_on_bit{,_lock} and wait_on_bit{,_lock}_io
-> > >  which are *not* given an action function but implicitly use
-> > >  a standard one.
-> > >  The decision to error-out if a signal is pending is now made
-> > >  based on the 'mode' argument rather than being encoded in the action
-> > >  function.
+> > if sc->hibernation_mode != 0.
+> > Follow the same reason, we should not insert delay at
 > > 
-> > this patch fails to build on x86-32 allyesconfigs.
+> >   while (unlikely(too_many_isolated(zone, file, sc))) {
+> >     congestion_wait(BLK_RW_ASYNC, HZ/10);
+> > 
+> >     /* We are about to die and free our memory. Return now. */
+> >     if (fatal_signal_pending(current))
+> >       return SWAP_CLUSTER_MAX;
+> >   }
+> > 
+> > if sc->hibernation_mode != 0.
+> > 
+> > Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> > ---
+> >  mm/vmscan.c |    3 +++
+> >  1 files changed, 3 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index 32c661d..89c42ca 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -1362,6 +1362,9 @@ static int too_many_isolated(struct zone *zone, int file,
+> >  	if (current_is_kswapd())
+> >  		return 0;
+> >  
+> > +	if (sc->hibernation_mode)
+> > +		return 0;
+> > +
+> >  	if (!global_reclaim(sc))
+> >  		return 0;
+> >  
 > 
-> Could you share the build errors?
-
-Sure, find it attached below.
-
-> > 
-> > Could we keep the old names for a while, and remove them in the next 
-> > cycle or so?
+> This isn't the only too_many_isolated() functions that do a delay, how is 
+> the too_many_isolated() in mm/compaction.c different?
 > 
-> I don't see how changing the names later rather than now will reduce the
-> chance of errors... maybe I'm missing something.
 
-Well, it would reduce build errors?
+I don't know. But today I realized that this patch is not sufficient.
 
-Thanks,
+I'm trying to find why __alloc_pages_slowpath() cannot return for many minutes
+when a certain type of memory pressure is given on a RHEL7 environment with
+4 CPU / 2GB RAM. Today I tried to use ftrace for examining the breakdown of
+time-consuming functions inside __alloc_pages_slowpath(). But on the first run,
+all processes are trapped into this too_many_isolated()/congestion_wait() loop
+while kswapd is not running; stalling forever because nobody can perform
+operations for making too_many_isolated() to return 0.
 
-	Ingo
+This means that, under rare circumstances, it is possible that all processes
+other than kswapd are trapped into too_many_isolated()/congestion_wait() loop
+while kswapd is sleeping because this loop assumes that somebody else shall
+wake up kswapd and kswapd shall perform operations for making
+too_many_isolated() to return 0. However, we cannot guarantee that kswapd is
+waken by somebody nor kswapd is not blocked by blocking operations inside
+shrinker functions (e.g. mutex_lock()).
 
-====================>
-fs/cifs/file.c: In function ‘cifs_oplock_break’:
-fs/cifs/file.c:3652:4: warning: passing argument 3 of ‘wait_on_bit’ makes integer from pointer without a cast [enabled by default]
-    cifs_pending_writers_wait, TASK_UNINTERRUPTIBLE);
-    ^
-In file included from include/linux/fs.h:6:0,
-                 from fs/cifs/file.c:24:
-include/linux/wait.h:878:1: note: expected ‘unsigned int’ but argument is of type ‘int (*)(void *)’
- wait_on_bit(void *word, int bit, unsigned mode)
- ^
-fs/cifs/file.c:3652:4: error: too many arguments to function ‘wait_on_bit’
-    cifs_pending_writers_wait, TASK_UNINTERRUPTIBLE);
-    ^
-In file included from include/linux/fs.h:6:0,
-                 from fs/cifs/file.c:24:
-include/linux/wait.h:878:1: note: declared here
- wait_on_bit(void *word, int bit, unsigned mode)
- ^
-  CC      kernel/smp.o
-  CC      kernel/trace/trace_event_perf.o
-make[2]: *** [fs/cifs/file.o] Error 1
-make[2]: *** Waiting for unfinished jobs....
-  CC      drivers/bcma/sprom.o
-  CC      fs/btrfs/locking.o
-  LD      sound/isa/ad1848/snd-ad1848.o
-  LD      sound/isa/ad1848/built-in.o
-  CC      sound/isa/cs423x/cs4231.o
-  CC      lib/fonts/fonts.o
-  CC      lib/fonts/font_sun8x16.o
-  CC      drivers/bcma/driver_chipcommon.o
-  CC      lib/fonts/font_sun12x22.o
+We need some more changes. I'm thinking memory allocation watchdog thread.
+Add an "unsigned long" field to "struct task_struct", set jiffies to the field
+upon entry of GFP_WAIT-able memory allocation attempts, and clear the field
+upon returning from GFP_WAIT-able memory allocation attempts. A kernel thread
+periodically scans task list and compares the field and jiffies, and (at least)
+print warning messages (maybe optionally trigger OOM-killer or kernel panic)
+if single memory allocation attempt is taking too long (e.g. 60 seconds).
+What do you think?
