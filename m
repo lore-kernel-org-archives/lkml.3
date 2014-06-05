@@ -1,43 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752098AbaFETUQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 15:20:16 -0400
-Received: from new1-smtp.messagingengine.com ([66.111.4.221]:60727 "EHLO
-	new1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751405AbaFETUO (ORCPT
+	id S1751654AbaFETWO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 15:22:14 -0400
+Received: from g6t1526.atlanta.hp.com ([15.193.200.69]:49668 "EHLO
+	g6t1526.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751914AbaFETWN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 15:20:14 -0400
-X-Sasl-enc: GShT3FaKTWNr69kshA/yNT1oJv3+tCS5MJXf9fWUsHV8 1401996013
-From: Andrew Ruder <andrew.ruder@elecsyscorp.com>
-To: devicetree@vger.kernel.org
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        rdunlap@infradead.org, galak@codeaurora.org,
-        ijc+devicetree@hellion.org.uk, mark.rutland@arm.com,
-        pawel.moll@arm.com, robh+dt@kernel.org,
-        Andrew Ruder <andrew.ruder@elecsyscorp.com>
-Subject: [PATCH 0/6] miscellaneous pxa dt fixes
-Date: Thu,  5 Jun 2014 14:19:44 -0500
-Message-Id: <cover.1401995177.git.andrew.ruder@elecsyscorp.com>
-X-Mailer: git-send-email 1.9.0.rc3.12.gbc97e2d
+	Thu, 5 Jun 2014 15:22:13 -0400
+Message-ID: <1401996117.6680.33.camel@j-VirtualBox>
+Subject: Re: [RFC PATCH 1/3] locking/mutex: Try to acquire mutex only if it
+ is unlocked
+From: Jason Low <jason.low2@hp.com>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
+        tglx@linutronix.de, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com,
+        tim.c.chen@linux.intel.com, peter@hurleysoftware.com, riel@redhat.com,
+        hpa@zytor.com, walken@google.com, davidlohr@hp.com, aswin@hp.com,
+        scott.norton@hp.com, chegu_vinod@hp.com
+Date: Thu, 05 Jun 2014 12:21:57 -0700
+In-Reply-To: <538FE2DE.8080800@hp.com>
+References: <1401908911-8947-1-git-send-email-jason.low2@hp.com>
+	  <1401908911-8947-2-git-send-email-jason.low2@hp.com>
+	  <20140604194322.GN13930@laptop.programming.kicks-ass.net>
+	 <1401917173.2232.14.camel@j-VirtualBox> <538FE2DE.8080800@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Ruder (6):
-  arm: pxa2xx.dtsi: compatible tags for usb, mmc
-  pxa-usb: devicetree bindings docs update
-  arm: pxa27x.dtsi: header typo - wrong file
-  arm: pxa2xx.dtsi: disable RTC by default
-  arm: pxa27x.dtsi: add pwri2c definition
-  arm: pxa{27x,3xx}.dtsi: gpio cleanups
+On Wed, 2014-06-04 at 23:24 -0400, Waiman Long wrote:
+> On 06/04/2014 05:26 PM, Jason Low wrote:
+> > On Wed, 2014-06-04 at 21:43 +0200, Peter Zijlstra wrote:
+> >> Please make them inline functions, also can we rename the SHOW_NO_WAITER
+> >> thing, because its not at all clear to me wtf it does; should it be
+> >> called: mutex_no_waiters() or somesuch?
+> > Okay, I can make them inline functions. I mainly added the macro to keep
+> > it consistent with the MUTEX_SHOW_NO_WAITER() check, but we can surely
+> > make this more clear. mutex_no_waiters() sounds fine, or perhaps
+> > something like mutex_has_no_waiters()?
+> >
+> 
+> You can remove the MUTEX_SHOW_NO_WAITER macro as all the call sites are 
+> to be replaced.
 
- Documentation/devicetree/bindings/usb/pxa-usb.txt |  5 +++--
- arch/arm/boot/dts/pxa27x.dtsi                     | 14 +++++++++++++-
- arch/arm/boot/dts/pxa2xx.dtsi                     |  9 +++++----
- arch/arm/boot/dts/pxa3xx.dtsi                     |  7 -------
- 4 files changed, 21 insertions(+), 14 deletions(-)
+Sure.
 
--- 
-1.9.0.rc3.12.gbc97e2d
+> I didn't check directly for unlocked count because of 
+> fairness concern in my original patch, but I think checking directly for 
+> unlocked count should be fine too.
+
+Can you elaborate on the "fairness concern"? In the current code, we're
+already directly checking for unlocked count in
+atomic_read(&lock->count) == 1 if that's what you're referring to.
+
+Thanks,
+Jason
 
