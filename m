@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752238AbaFEPz3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 11:55:29 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:32873 "EHLO mail.skyhub.de"
+	id S1752324AbaFEP4A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 11:56:00 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751058AbaFEPzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 11:55:25 -0400
-Date: Thu, 5 Jun 2014 17:53:08 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Matt Fleming <matt.fleming@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Ricardo Neri <ricardo.neri-calderon@linux.intel.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:x86/efi] x86/efi: Check for unsafe dealing with FPU state
- in irq ctxt
-Message-ID: <20140605155307.GD16642@pd.tnic>
-References: <tip-baa916f39b50ad91661534652110df40396acda0@git.kernel.org>
- <538F9AFA.5050806@zytor.com>
- <20140604224920.GB4126@pd.tnic>
- <538FB775.8070405@amacapital.net>
- <20140605071805.GA16647@pd.tnic>
- <CAL01qpuj6jvH4XLvhHAszbqmSPXfW=VOdv+TqMwBuDnArL=ofw@mail.gmail.com>
- <20140605090206.GA16642@pd.tnic>
- <CALCETrU2TZhxOZyCvBd1nLDiU4ceiSx_Sd2bsDUCX5arOFidBg@mail.gmail.com>
+	id S1751588AbaFEPz6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 11:55:58 -0400
+Message-ID: <5390930A.8050504@nod.at>
+Date: Thu, 05 Jun 2014 17:55:54 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CALCETrU2TZhxOZyCvBd1nLDiU4ceiSx_Sd2bsDUCX5arOFidBg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Michal Hocko <mhocko@suse.cz>
+CC: hannes@cmpxchg.org, bsingharora@gmail.com, kamezawa.hiroyu@jp.fujitsu.com,
+        akpm@linux-foundation.org, vdavydov@parallels.com, tj@kernel.org,
+        handai.szj@taobao.com, rientjes@google.com, oleg@redhat.com,
+        rusty@rustcorp.com.au, kirill.shutemov@linux.intel.com,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [RFC][PATCH] oom: Be less verbose if the oom_control event fd
+ has listeners
+References: <1401976841-3899-1-git-send-email-richard@nod.at> <1401976841-3899-2-git-send-email-richard@nod.at> <20140605150025.GB15939@dhcp22.suse.cz>
+In-Reply-To: <20140605150025.GB15939@dhcp22.suse.cz>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 05, 2014 at 08:44:20AM -0700, Andy Lutomirski wrote:
-> Are there weird contexts from which EFI calls can happen? It looks
-> like the current code isn't necessarily safe in things that aren't
-> normal process context but aren't interrupts either (e.g. debug traps,
-> #GP, etc).
+Am 05.06.2014 17:00, schrieb Michal Hocko:
+> On Thu 05-06-14 16:00:41, Richard Weinberger wrote:
+>> Don't spam the kernel logs if the oom_control event fd has listeners.
+>> In this case there is no need to print that much lines as user space
+>> will anyway notice that the memory cgroup has reached its limit.
+> 
+> But how do you debug why it is reaching the limit and why a particular
+> process has been killed?
 
-The efi-pstore thing registers as a kmsg dumper which can be run in NMI
-context and efi can be called there.
+In my case it's always because customer's Java application gone nuts.
+So I don't really have to debug a lot. ;-)
+But I can understand your point.
 
-> I wonder if it would make sense at some point to maintain an explicit
-> stack of kernel entries. There doesn't seem to be a reliable way to
-> answer the question of "what context am I in" from C code right now.
+> If we are printing too much then OK, let's remove those parts which are
+> not that useful but hiding information which tells us more about the oom
+> decision doesn't sound right to me.
 
-So that you can ask int ctxt = what_context_Im_in() and then that
-context can go and change right underneath you. :-)
+What about adding a sysctl like "vm.oom_verbose"?
+By default it would be 1.
+If set to 0 the full OOM information is only printed out if nobody listens
+to the event fd.
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Thanks,
+//richard
