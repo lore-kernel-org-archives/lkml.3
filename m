@@ -1,92 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751989AbaFEORO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 10:17:14 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:57307 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751015AbaFEORM (ORCPT
+	id S1752004AbaFEOSG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 10:18:06 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:37224 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751125AbaFEOSF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 10:17:12 -0400
+	Thu, 5 Jun 2014 10:18:05 -0400
+Message-ID: <53907C23.5060404@cogentembedded.com>
+Date: Thu, 05 Jun 2014 18:18:11 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <1401975821-3972-1-git-send-email-prarit@redhat.com>
-References: <1401975821-3972-1-git-send-email-prarit@redhat.com>
-Date: Thu, 5 Jun 2014 19:47:12 +0530
-Message-ID: <CAKohpokDZBfZdpSRN_K_QZWXRHk+jSeZ0e4-iBpoaf=hVJ8F_w@mail.gmail.com>
-Subject: Re: [PATCH] Documentation, intel_pstate: Add a description of the
- intel_pstate internal governors
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ramkumar Ramachandra <artagnon@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Marcus Nutzinger <marcus.nutzinger@theobroma-systems.com>,
+        Felipe Balbi <balbi@ti.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb: gadget: gadgetfs: correct dev state
+References: <1401973680-18413-1-git-send-email-marcus.nutzinger@theobroma-systems.com>
+In-Reply-To: <1401973680-18413-1-git-send-email-marcus.nutzinger@theobroma-systems.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5 June 2014 19:13, Prarit Bhargava <prarit@redhat.com> wrote:
-> The current documentation is incomplete wrt the intel_pstate internal
-> governors.  The confusion comes from the general use internal governors
-> which also use the names performance and powersave.  This patch
-> differentiates between the two sets of governors.
->
-> Cc: Dirk Brandewie <dirk.brandewie@gmail.com>
-> Cc: Randy Dunlap <rdunlap@infradead.org>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Jesper Nilsson <jesper.nilsson@axis.com>
-> Cc: Viresh Kumar <viresh.kumar@linaro.org>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: Ramkumar Ramachandra <artagnon@gmail.com>
-> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-> Cc: linux-doc@vger.kernel.org
->
-> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Hello.
+
+On 06/05/2014 05:08 PM, Marcus Nutzinger wrote:
+
+> Commit 1826e9b1 fixes the use after free of "dev".
+
+    Please also specify that commit's summary line in parens.
+
+> However if this is not the final call to dev_release()
+> and the state is not reset to STATE_DEV_DISABLED and
+> hence all further open() calls to the gadgetfs ep0
+> device will fail with EBUSY.
+
+> So this commit reverts 1826e9b1 and places the call
+> put_dev() after setting the state.
+
+> Signed-off-by: Marcus Nutzinger <marcus.nutzinger@theobroma-systems.com>
+> Reviewed-by: Christoph Muellner <christoph.muellner@theobroma-systems.com>
 > ---
->  Documentation/cpu-freq/governors.txt    |    2 +-
->  Documentation/cpu-freq/intel-pstate.txt |    8 ++++++++
->  2 files changed, 9 insertions(+), 1 deletion(-)
->
-> diff --git a/Documentation/cpu-freq/governors.txt b/Documentation/cpu-freq/governors.txt
-> index 77ec215..c15aa75 100644
-> --- a/Documentation/cpu-freq/governors.txt
-> +++ b/Documentation/cpu-freq/governors.txt
-> @@ -36,7 +36,7 @@ Contents:
->  1. What Is A CPUFreq Governor?
->  ==============================
->
-> -Most cpufreq drivers (in fact, all except one, longrun) or even most
-> +Most cpufreq drivers (except the intel_pstate and longrun) or even most
->  cpu frequency scaling algorithms only offer the CPU to be set to one
->  frequency. In order to offer dynamic frequency scaling, the cpufreq
->  core must be able to tell these drivers of a "target frequency". So
-> diff --git a/Documentation/cpu-freq/intel-pstate.txt b/Documentation/cpu-freq/intel-pstate.txt
-> index e742d21..ce894cc 100644
-> --- a/Documentation/cpu-freq/intel-pstate.txt
-> +++ b/Documentation/cpu-freq/intel-pstate.txt
-> @@ -9,6 +9,14 @@ assumed to implement internal governors by the cpufreq core. All the
->  logic for selecting the current P state is contained within the
->  driver; no external governor is used by the cpufreq core.
->
-> +The Intel P-state driver has two internal governors, performance and
-> +powersave.  These governors differ from the general use governors of the
+>   drivers/usb/gadget/inode.c | 7 ++++++-
+>   1 file changed, 6 insertions(+), 1 deletion(-)
 
-s/general use/generally used ??
+> diff --git a/drivers/usb/gadget/inode.c b/drivers/usb/gadget/inode.c
+> index a925d0c..6330528 100644
+> --- a/drivers/usb/gadget/inode.c
+> +++ b/drivers/usb/gadget/inode.c
+> @@ -1264,8 +1264,13 @@ dev_release (struct inode *inode, struct file *fd)
+>
+>   	kfree (dev->buf);
+>   	dev->buf = NULL;
+> -	put_dev (dev);
+>
+> +	/* other endpoints were all decoupled from this device */
+> +	spin_lock_irq(&dev->lock);
+> +	dev->state = STATE_DEV_DISABLED;
+> +	spin_unlock_irq(&dev->lock);
 
-> +same name in the kernel.  The internal performance governor sets the
-> +max_perf_pct and min_perf_pct to 100; that is, the governor selects the
-> +highest available P state to maximize the performance of the core.  The
-> +internal powersave governor, selects the appropriate P state based on the
-> +current load on the CPU.
+    Not sure I understand why you need spinlock here... isn't the assignment 
+atomic already?
+
 > +
->  Intel SandyBridge+ processors are supported.
->
->  New sysfs files for controlling P state selection have been added to
-> --
-> 1.7.9.3
->
+> +	put_dev (dev);
+>   	return 0;
+>   }
+
+WBR, Sergei
+
