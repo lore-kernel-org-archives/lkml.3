@@ -1,131 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753416AbaFEBPC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 21:15:02 -0400
-Received: from mga14.intel.com ([192.55.52.115]:58973 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752678AbaFEBO6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 21:14:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,976,1392192000"; 
-   d="scan'208";a="542655078"
-From: "Zheng, Lv" <lv.zheng@intel.com>
-To: Lee Jones <lee.jones@linaro.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "wsa@the-dreams.de" <wsa@the-dreams.de>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "devel@acpica.org" <devel@acpica.org>
-Subject: RE: [PATCH 1/7] ACPICA: Only include ACPI asm files if ACPI is
- enabled
-Thread-Topic: [PATCH 1/7] ACPICA: Only include ACPI asm files if ACPI is
- enabled
-Thread-Index: AQHPf+4KU6l0YPi7HkGxvvNa/8AWq5tgXPuAgAAEfoCAAVM9IA==
-Date: Thu, 5 Jun 2014 01:14:54 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E880262042C@SHSMSX101.ccr.corp.intel.com>
-References: <1401883796-17841-1-git-send-email-lee.jones@linaro.org>
- <1401883796-17841-2-git-send-email-lee.jones@linaro.org>
- <3061297.feg5DGUjIt@vostro.rjw.lan> <20140604125137.GA18171@lee--X1>
-In-Reply-To: <20140604125137.GA18171@lee--X1>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1753431AbaFEBQV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 21:16:21 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:64660 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751460AbaFEBQU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 21:16:20 -0400
+X-IronPort-AV: E=Sophos;i="4.98,976,1392134400"; 
+   d="scan'208";a="31473454"
+Message-ID: <538FC5F8.1020605@cn.fujitsu.com>
+Date: Thu, 5 Jun 2014 09:20:56 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Lai Jiangshan <laijs@cn.fujitsu.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] workqueue: use "pool->cpu < 0" to stand for an unbound
+ pool
+References: <1401780714-12127-1-git-send-email-laijs@cn.fujitsu.com>
+In-Reply-To: <1401780714-12127-1-git-send-email-laijs@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s551FG1d021298
 
-Hi, Lee
+Ping.
 
-> From: Lee Jones [mailto:lee.jones@linaro.org]
-> Sent: Wednesday, June 04, 2014 8:52 PM
-> To: Rafael J. Wysocki
+And would these patches be possible for 3.16?
+
+Thanks,
+Lai
+
+On 06/03/2014 03:31 PM, Lai Jiangshan wrote:
+> There is a piece of sanity checks code in the put_unbound_pool().
+> The meaning of this code is "if it is not an unbound pool, it will complain
+> and return" IIUC. But the code uses "pool->flags & POOL_DISASSOCIATED"
+> imprecisely due to a non-unbound pool may also have this flags.
 > 
-> On Wed, 04 Jun 2014, Rafael J. Wysocki wrote:
+> We should use "pool->cpu < 0" to stand for an unbound pool, so we covert the
+> code to it.
 > 
-> > On Wednesday, June 04, 2014 01:09:50 PM Lee Jones wrote:
-> > > Any drivers which support ACPI and Device Tree probing need to include
-> > > both respective header files.  Without this patch, if a driver is being
-> > > used on a platform which does not support ACPI and subsequently does not
-> > > have the config option enabled, but includes linux/acpi.h the build
-> > > breaks with:
-> > >
-> > >   In file included from ../include/acpi/platform/acenv.h:150:0,
-> > >                    from ../include/acpi/acpi.h:56,
-> > >                    from ../include/linux/match.h:2,
-> > >                    from ../drivers/i2c/i2c-core.c:43:
-> > >   ../include/acpi/platform/aclinux.h:73:23:
-> > >    fatal error: asm/acenv.h: No such file or directory
-> > >    #include <asm/acenv.h>
-> > >                        ^
-
-Note that:
-In our tree:
-<asm/acenv.h> is only included by <acpi/acpi.h>.
-And <acpi/acpi.h> is only included by
-1. <linux/acpi.h> when CONFIG_ACPI enabled
-2. <linux/sfi_acpi.h> - this is x86 specific, we'll clean it up by implementing stubs for all ACPI external interfaces.
-So there is no case we need to exclude <asm/acenv.h> when CONFIG_ACPI is not enabled.
-
-I cannot find linux/match.h here.
-If <linux/match.h> want to include ACPI features, it shouldn't include <acpi/acpi.h>, but should include <linux/acpi.h>.
-Please refer to:
-https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=8b48463f
-And stop including <acpi/acpi.h> directly in any cases.
-
-Thanks and best regards
--Lv
-
-
-> >
-> > Which kernel does this happen with?
+> There is no strictly wrong if we still keep "pool->flags & POOL_DISASSOCIATED"
+> here, but it is just a noise if we keep it:
+>   1) we focus on "unbound" here, not "[dis]association".
+>   2) "pool->cpu < 0" already implies "pool->flags & POOL_DISASSOCIATED".
 > 
-> a0a962d (tag: refs/tags/next-20140602, refs/remotes/next/master)
->   Add linux-next specific files for 20140602
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> ---
+>  kernel/workqueue.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> > > Cc: Lv Zheng <lv.zheng@intel.com>
-> > > Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > Cc: linux-acpi@vger.kernel.org
-> > > Cc: devel@acpica.org
-> > > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > > ---
-> > >  include/acpi/platform/aclinux.h | 5 +++--
-> > >  1 file changed, 3 insertions(+), 2 deletions(-)
-> > >
-> > > diff --git a/include/acpi/platform/aclinux.h b/include/acpi/platform/aclinux.h
-> > > index cd1f052..fdf7663 100644
-> > > --- a/include/acpi/platform/aclinux.h
-> > > +++ b/include/acpi/platform/aclinux.h
-> > > @@ -70,9 +70,10 @@
-> > >  #ifdef EXPORT_ACPI_INTERFACES
-> > >  #include <linux/export.h>
-> > >  #endif
-> > > -#include <asm/acenv.h>
-> > >
-> > > -#ifndef CONFIG_ACPI
-> > > +#ifdef CONFIG_ACPI
-> > > +#include <asm/acenv.h>
-> > > +#else
-> > >
-> > >  /* External globals for __KERNEL__, stubs is needed */
-> > >
-> > >
-> >
-> 
-> --
-> Lee Jones
-> Linaro STMicroelectronics Landing Team Lead
-> Linaro.org â”‚ Open source software for ARM SoCs
-> Follow Linaro: Facebook | Twitter | Blog
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> index 90a0fa5..724ae35 100644
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -3457,7 +3457,7 @@ static void put_unbound_pool(struct worker_pool *pool)
+>  		return;
+>  
+>  	/* sanity checks */
+> -	if (WARN_ON(!(pool->flags & POOL_DISASSOCIATED)) ||
+> +	if (WARN_ON(!(pool->cpu < 0)) ||
+>  	    WARN_ON(!list_empty(&pool->worklist)))
+>  		return;
+>  
+
