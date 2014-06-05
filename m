@@ -1,38 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751667AbaFEGzq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 02:55:46 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:40932 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751405AbaFEGzp (ORCPT
+	id S1751738AbaFEG4G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 02:56:06 -0400
+Received: from andre.telenet-ops.be ([195.130.132.53]:57265 "EHLO
+	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751726AbaFEG4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 02:55:45 -0400
-Date: Wed, 04 Jun 2014 23:55:41 -0700 (PDT)
-Message-Id: <20140604.235541.751933005917980567.davem@davemloft.net>
-To: dborkman@redhat.com
-Cc: chema@google.com, ast@plumgrid.com, mingo@kernel.org, rostedt@goodmis.org,
-        a.p.zijlstra@chello.nl, acme@infradead.org, jolsa@redhat.com,
-        tglx@linutronix.de, hpa@zytor.com, akpm@linux-foundation.org,
-        keescook@chromium.org, edumazet@google.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 net-next 1/4] net: flow_dissector: avoid multiple
- calls in eBPF
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <538EDE1A.8060305@redhat.com>
-References: <CAMEtUuxK5hV_eORRLaSHSiwF5X82Ae91vL6W0-6au48v8H6bAA@mail.gmail.com>
-	<CA+ZOOTPdDDeGxZVGXVRZmjkxqkGefgDLrawo_9YXbjwTQ_FLzA@mail.gmail.com>
-	<538EDE1A.8060305@redhat.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Thu, 5 Jun 2014 02:56:04 -0400
+Message-ID: <5390147F.8070803@acm.org>
+Date: Thu, 05 Jun 2014 08:55:59 +0200
+From: Bart Van Assche <bvanassche@acm.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Anil Gurumurthy <anil.gurumurthy@qlogic.com>,
+        Sudarsana Kalluru <sudarsana.kalluru@qlogic.com>
+CC: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] scsi: bfa: bfad_attr.c:  Optimization of the Code
+References: <1401905288-32642-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+In-Reply-To: <1401905288-32642-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 04 Jun 2014 23:55:44 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/04/14 20:08, Rickard Strandqvist wrote:
+> Minimized the use of snprintf()
+> And removed a variable that was only used for the temporary storage.
+> 
+> This was partly found using a static code analysis program called cppcheck.
+> 
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>  drivers/scsi/bfa/bfad_attr.c |   14 ++++++++------
+>  1 file changed, 8 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/scsi/bfa/bfad_attr.c b/drivers/scsi/bfa/bfad_attr.c
+> index 40be670..5f5917a 100644
+> --- a/drivers/scsi/bfa/bfad_attr.c
+> +++ b/drivers/scsi/bfa/bfad_attr.c
+> @@ -839,12 +839,10 @@ bfad_im_symbolic_name_show(struct device *dev, struct device_attribute *attr,
+>  			(struct bfad_im_port_s *) shost->hostdata[0];
+>  	struct bfad_s *bfad = im_port->bfad;
+>  	struct bfa_lport_attr_s port_attr;
+> -	char symname[BFA_SYMNAME_MAXLEN];
+>  
+>  	bfa_fcs_lport_get_attr(&bfad->bfa_fcs.fabric.bport, &port_attr);
+> -	strncpy(symname, port_attr.port_cfg.sym_name.symname,
+> -			BFA_SYMNAME_MAXLEN);
+> -	return snprintf(buf, PAGE_SIZE, "%s\n", symname);
+> +	return snprintf(buf, PAGE_SIZE, "%s\n",
+> +			port_attr.port_cfg.sym_name.symname);
+>  }
+>  
+>  static ssize_t
+> @@ -865,7 +863,9 @@ static ssize_t
+>  bfad_im_drv_version_show(struct device *dev, struct device_attribute *attr,
+>  				char *buf)
+>  {
+> -	return snprintf(buf, PAGE_SIZE, "%s\n", BFAD_DRIVER_VERSION);
+> +	strncpy(buf, BFAD_DRIVER_VERSION  "\n" , PAGE_SIZE);
+> +	buf[PAGE_SIZE - 1] = '\0';
+> +	return strlen(buf);
+>  }
+>  
+>  static ssize_t
+> @@ -913,7 +913,9 @@ static ssize_t
+>  bfad_im_drv_name_show(struct device *dev, struct device_attribute *attr,
+>  				char *buf)
+>  {
+> -	return snprintf(buf, PAGE_SIZE, "%s\n", BFAD_DRIVER_NAME);
+> +	strncpy(buf, BFAD_DRIVER_NAME  "\n" , PAGE_SIZE);
+> +	buf[PAGE_SIZE - 1] = '\0';
+> +	return strlen(buf);
+>  }
 
-FWIW, I'm not applying this series.
+This is ugly. Please use sprintf(buf, "%.*s\n", PAGE_SIZE - 1, str)
+instead of strncpy() + strlen().
 
-There is no real consensus and a lot more discussion and time is
-needed before anything happens here.
+Bart.
+
