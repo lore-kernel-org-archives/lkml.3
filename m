@@ -1,85 +1,468 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751725AbaFEI3p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 04:29:45 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:33817 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065AbaFEI3m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 04:29:42 -0400
-Date: Thu, 5 Jun 2014 10:29:35 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, ak@linux.intel.com,
-        jolsa@redhat.com, zheng.z.yan@intel.com,
-        maria.n.dimakopoulou@gmail.com
-Subject: Re: [PATCH 4/9] perf/x86: add cross-HT counter exclusion
- infrastructure
-Message-ID: <20140605082935.GI3213@twins.programming.kicks-ass.net>
-References: <1401917658-26065-1-git-send-email-eranian@google.com>
- <1401917658-26065-5-git-send-email-eranian@google.com>
+	id S1751917AbaFEIa6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 04:30:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41575 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751810AbaFEIaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 04:30:55 -0400
+Date: Thu, 5 Jun 2014 16:31:34 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
+        greg@kroah.com, bp@alien8.de, jkosina@suse.cz, chaowang@redhat.com,
+        bhe@redhat.com, akpm@linux-foundation.org
+Subject: Re: [RFC PATCH 00/13][V3] kexec: A new system call to allow in
+ kernel loading
+Message-ID: <20140605083134.GE3506@darkstar.nay.redhat.com>
+References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
+ <20140603131203.GA23395@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zgY/UHCnsaNnNXRx"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1401917658-26065-5-git-send-email-eranian@google.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140603131203.GA23395@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---zgY/UHCnsaNnNXRx
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Wed, Jun 04, 2014 at 11:34:13PM +0200, Stephane Eranian wrote:
-> @@ -2020,12 +2050,29 @@ static void intel_pmu_cpu_starting(int cpu)
-> =20
->  	if (x86_pmu.lbr_sel_map)
->  		cpuc->lbr_sel =3D &cpuc->shared_regs->regs[EXTRA_REG_LBR];
-> +
-> +	if (x86_pmu.flags & PMU_FL_EXCL_CNTRS) {
-> +		for_each_cpu(i, topology_thread_cpumask(cpu)) {
-> +			struct intel_excl_cntrs *c;
-> +
-> +			c =3D per_cpu(cpu_hw_events, i).excl_cntrs;
-> +			if (c && c->core_id =3D=3D core_id) {
-> +				cpuc->kfree_on_online[1] =3D cpuc->excl_cntrs;
-> +				cpuc->excl_cntrs =3D c;
-> +				cpuc->excl_thread_id =3D 1;
-> +				break;
-> +			}
-> +		}
-> +		cpuc->excl_cntrs->core_id =3D core_id;
-> +		cpuc->excl_cntrs->refcnt++;
-> +	}
+On 06/03/14 at 09:12am, Vivek Goyal wrote:
+> On Tue, Jun 03, 2014 at 09:06:49AM -0400, Vivek Goyal wrote:
+> > Hi,
+> > 
+> > This is V3 of the patchset. Previous versions were posted here.
+> > 
+> > V1: https://lkml.org/lkml/2013/11/20/540
+> > V2: https://lkml.org/lkml/2014/1/27/331
+> > 
+> > Changes since v2:
+> > 
+> > - Took care of most of the review comments from V2.
+> > - Added support for kexec/kdump on EFI systems.
+> > - Dropped support for loading ELF vmlinux.
+> > 
+> > This patch series is generated on top of 3.15.0-rc8. It also requires a
+> > two patch cleanup series which is sitting in -tip tree here.
+> 
+> I used following kexec-tools patches to test kernel changes.
+> 
+> Thanks
+> Vivek
+> 
+> 
+> kexec-tools: Provide an option to make use of new system call
+> 
+> This patch provides and option --use-kexec2-syscall, to force use of
+> new system call for kexec. Default is to continue to use old syscall.
+> 
+> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+> ---
+>  kexec/arch/x86_64/kexec-bzImage64.c |   86 +++++++++++++++++++++++++
+>  kexec/kexec-syscall.h               |   31 +++++++++
+>  kexec/kexec.c                       |  123 +++++++++++++++++++++++++++++++++++-
+>  kexec/kexec.h                       |    9 ++
+>  4 files changed, 246 insertions(+), 3 deletions(-)
+> 
+> Index: kexec-tools/kexec/kexec.c
+> ===================================================================
+> --- kexec-tools.orig/kexec/kexec.c	2014-06-02 14:34:16.719774316 -0400
+> +++ kexec-tools/kexec/kexec.c	2014-06-02 14:34:42.009036315 -0400
+> @@ -51,6 +51,7 @@
+>  unsigned long long mem_min = 0;
+>  unsigned long long mem_max = ULONG_MAX;
+>  static unsigned long kexec_flags = 0;
+> +static unsigned long kexec2_flags = 0;
+>  int kexec_debug = 0;
+>  
+>  void dbgprint_mem_range(const char *prefix, struct memory_range *mr, int nr_mr)
+> @@ -787,6 +788,19 @@ static int my_load(const char *type, int
+>  	return result;
 >  }
+>  
+> +static int kexec2_unload(unsigned long kexec2_flags)
+> +{
+> +	int ret = 0;
+> +
+> +	ret = kexec_file_load(-1, -1, NULL, 0, kexec2_flags);
+> +	if (ret != 0) {
+> +		/* The unload failed, print some debugging information */
+> +		fprintf(stderr, "kexec_file_load(unload) failed\n: %s\n",
+> +			strerror(errno));
+> +	}
+> +	return ret;
+> +}
+> +
+>  static int k_unload (unsigned long kexec_flags)
+>  {
+>  	int result;
+> @@ -925,6 +939,7 @@ void usage(void)
+>  	       "                      (0 means it's not jump back or\n"
+>  	       "                      preserve context)\n"
+>  	       "                      to original kernel.\n"
+> +	       " -s --use-kexec2-syscall Use new syscall for kexec operation\n"
+>  	       " -d, --debug           Enable debugging to help spot a failure.\n"
+>  	       "\n"
+>  	       "Supported kernel file types and options: \n");
+> @@ -1072,6 +1087,75 @@ char *concat_cmdline(const char *base, c
+>  	return cmdline;
+>  }
+>  
+> +/* New file based kexec system call related code */
+> +static int kexec2_load(int fileind, int argc, char **argv,
+> +			unsigned long flags) {
+> +
+> +	char *kernel;
+> +	int kernel_fd, i;
+> +	struct kexec_info info;
+> +	int ret = 0;
+> +	char *kernel_buf;
+> +	off_t kernel_size;
+> +
+> +	memset(&info, 0, sizeof(info));
+> +	info.segment = NULL;
+> +	info.nr_segments = 0;
+> +	info.entry = NULL;
+> +	info.backup_start = 0;
+> +	info.kexec_flags = flags;
+> +
+> +	info.file_mode = 1;
+> +	info.initrd_fd = -1;
+> +
+> +	if (argc - fileind <= 0) {
+> +		fprintf(stderr, "No kernel specified\n");
+> +		usage();
+> +		return -1;
+> +	}
+> +
+> +	kernel = argv[fileind];
+> +
+> +	kernel_fd = open(kernel, O_RDONLY);
+> +	if (kernel_fd == -1) {
+> +		fprintf(stderr, "Failed to open file %s:%s\n", kernel,
+> +				strerror(errno));
+> +		return -1;
+> +	}
+> +
+> +	/* slurp in the input kernel */
+> +	kernel_buf = slurp_decompress_file(kernel, &kernel_size);
+> +
+> +	for (i = 0; i < file_types; i++) {
+> +		if (file_type[i].probe(kernel_buf, kernel_size) >= 0)
+> +			break;
+> +	}
+> +
+> +	if (i == file_types) {
+> +		fprintf(stderr, "Cannot determine the file type " "of %s\n",
+> +				kernel);
+> +		return -1;
+> +	}
+> +
+> +	ret = file_type[i].load(argc, argv, kernel_buf, kernel_size, &info);
+> +	if (ret < 0) {
+> +		fprintf(stderr, "Cannot load %s\n", kernel);
+> +		return ret;
+> +	}
+> +
+> +	if (!is_kexec_file_load_implemented()) {
+> +		fprintf(stderr, "syscall kexec_file_load not available.\n");
+> +		return -1;
+> +	}
+> +
+> +	ret = kexec_file_load(kernel_fd, info.initrd_fd, info.command_line,
+> +			info.command_line_len, info.kexec_flags);
 
-This hard assumes theres only ever 2 threads, which is true and I
-suppose more in arch/x86 will come apart the moment Intel makes a chip
-with more, still, do we have topology_thread_id() or so to cure this?
+Vivek,
 
---zgY/UHCnsaNnNXRx
-Content-Type: application/pgp-signature
+I tried your patch on my uefi test machine, but kexec load fails like below:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+[root@localhost ~]# kexec -l /boot/vmlinuz-3.15.0-rc8+ --use-kexec2-syscall
+Could not find a free area of memory of 0xa000 bytes ...
 
-iQIcBAEBAgAGBQJTkCpvAAoJEHZH4aRLwOS6x50P/0/q9uMaGx+b57zKkc/iC4YX
-vjCkcwI1ZEDmsYIM8NogQjgovrRr3gcJ++xc6dTSM2vBYZFscI3ZxMk2lcCivlgv
-aP9x0n1JVYQ3XefuCchdfZoATxRKJaWFlXZyGhoemxGbUw+qdut03iRTsI6ibNIW
-994f8IGc+jLKKr4UptI9TBuiNIKpyhm6fdW2bbZ9ZPns/lnNGpRNe0CGL+2ZWB6F
-XIdydWt+X18S9iBOcwtpKMNGyMCACU/zKoj9OTRqa7Johfe8z9peHgsBgxNYxUHQ
-Q+QchoJdRSZfcnmtu8OfQ0k+pqFCA2hMPobCrFi5x1KhBTLiTDVX21ULk6nrbo8u
-Mq3UCxzUoVgDKF/daUfDrfz1MoGPXZvLGvsCIyauTvWjvtS3+ICieNb/Ga/Rm/kB
-9ylfUku6+MEvJg0Mh93dyURKU1sFFNJPcNSAMc51cVSK5Njliue/r/nQf+KlsQfv
-rPxIhLcSZCbR04g0r+b0Zcs4zgrI5sP2GH00Xf/p3OrnMrkfoXu7bhUZfsRAEBnG
-Q1FfBPFqzj25y2gPeg5jTrgN68Tmqo7J8C/DNd7IVRA7k0AYAWV3GKF9/OpaIw+2
-Yg1LXeYY6VwIuTr2JmTUFQkYtqMVCl3kdtfweNbsZa3Ej9ME6OlQde6mj3EgYf7M
-Erlc92XZG5G0ifgNf6a/
-=k5jy
------END PGP SIGNATURE-----
+Another issue is that the syscall should allow load kernel only without initrd and
+cmdline since kernel can mount root and embed cmdline in itself.
 
---zgY/UHCnsaNnNXRx--
+AFAIK Slackware installs huge kernels without creating initrd.
+> +	if (ret != 0)
+> +		fprintf(stderr, "kexec_file_load failed: %s\n",
+> +					strerror(errno));
+> +	return ret;
+> +}
+> +
+>  
+>  int main(int argc, char *argv[])
+>  {
+> @@ -1083,6 +1167,7 @@ int main(int argc, char *argv[])
+>  	int do_ifdown = 0;
+>  	int do_unload = 0;
+>  	int do_reuse_initrd = 0;
+> +	int do_use_kexec2_syscall = 0;
+>  	void *entry = 0;
+>  	char *type = 0;
+>  	char *endptr;
+> @@ -1095,6 +1180,23 @@ int main(int argc, char *argv[])
+>  	};
+>  	static const char short_options[] = KEXEC_ALL_OPT_STR;
+>  
+> +	/*
+> +	 * First check if --use-kexec2-syscall is set. That changes lot of
+> +	 * things
+> +	 */
+> +	while ((opt = getopt_long(argc, argv, short_options,
+> +				  options, 0)) != -1) {
+> +		switch(opt) {
+> +		case OPT_USE_KEXEC2_SYSCALL:
+> +			do_use_kexec2_syscall = 1;
+> +			break;
+> +		}
+> +	}
+> +
+> +	/* Reset getopt for the next pass. */
+> +	opterr = 1;
+> +	optind = 1;
+> +
+>  	while ((opt = getopt_long(argc, argv, short_options,
+>  				  options, 0)) != -1) {
+>  		switch(opt) {
+> @@ -1127,6 +1229,8 @@ int main(int argc, char *argv[])
+>  			do_shutdown = 0;
+>  			do_sync = 0;
+>  			do_unload = 1;
+> +			if (do_use_kexec2_syscall)
+> +				kexec2_flags |= KEXEC_FILE_UNLOAD;
+>  			break;
+>  		case OPT_EXEC:
+>  			do_load = 0;
+> @@ -1169,7 +1273,10 @@ int main(int argc, char *argv[])
+>  			do_exec = 0;
+>  			do_shutdown = 0;
+>  			do_sync = 0;
+> -			kexec_flags = KEXEC_ON_CRASH;
+> +			if (do_use_kexec2_syscall)
+> +				kexec2_flags |= KEXEC_FILE_ON_CRASH;
+> +			else
+> +				kexec_flags = KEXEC_ON_CRASH;
+>  			break;
+>  		case OPT_MEM_MIN:
+>  			mem_min = strtoul(optarg, &endptr, 0);
+> @@ -1194,6 +1301,9 @@ int main(int argc, char *argv[])
+>  		case OPT_REUSE_INITRD:
+>  			do_reuse_initrd = 1;
+>  			break;
+> +		case OPT_USE_KEXEC2_SYSCALL:
+> +			/* We already parsed it. Nothing to do. */
+> +			break;
+>  		default:
+>  			break;
+>  		}
+> @@ -1238,10 +1348,17 @@ int main(int argc, char *argv[])
+>  	}
+>  
+>  	if (do_unload) {
+> -		result = k_unload(kexec_flags);
+> +		if (do_use_kexec2_syscall)
+> +			result = kexec2_unload(kexec2_flags);
+> +		else
+> +			result = k_unload(kexec_flags);
+>  	}
+>  	if (do_load && (result == 0)) {
+> -		result = my_load(type, fileind, argc, argv, kexec_flags, entry);
+> +		if (do_use_kexec2_syscall)
+> +			result = kexec2_load(fileind, argc, argv, kexec2_flags);
+> +		else
+> +			result = my_load(type, fileind, argc, argv,
+> +						kexec_flags, entry);
+>  	}
+>  	/* Don't shutdown unless there is something to reboot to! */
+>  	if ((result == 0) && (do_shutdown || do_exec) && !kexec_loaded()) {
+> Index: kexec-tools/kexec/kexec.h
+> ===================================================================
+> --- kexec-tools.orig/kexec/kexec.h	2014-06-02 14:34:16.719774316 -0400
+> +++ kexec-tools/kexec/kexec.h	2014-06-02 14:34:42.010036325 -0400
+> @@ -156,6 +156,13 @@ struct kexec_info {
+>  	unsigned long kexec_flags;
+>  	unsigned long backup_src_start;
+>  	unsigned long backup_src_size;
+> +	/* Set to 1 if we are using kexec2 syscall */
+> +	unsigned long file_mode :1;
+> +
+> +	/* Filled by kernel image processing code */
+> +	int initrd_fd;
+> +	char *command_line;
+> +	int command_line_len;
+>  };
+>  
+>  struct arch_map_entry {
+> @@ -207,6 +214,7 @@ extern int file_types;
+>  #define OPT_UNLOAD		'u'
+>  #define OPT_TYPE		't'
+>  #define OPT_PANIC		'p'
+> +#define OPT_USE_KEXEC2_SYSCALL	's'
+>  #define OPT_MEM_MIN             256
+>  #define OPT_MEM_MAX             257
+>  #define OPT_REUSE_INITRD	258
+> @@ -230,6 +238,7 @@ extern int file_types;
+>  	{ "mem-min",		1, 0, OPT_MEM_MIN }, \
+>  	{ "mem-max",		1, 0, OPT_MEM_MAX }, \
+>  	{ "reuseinitrd",	0, 0, OPT_REUSE_INITRD }, \
+> +	{ "use-kexec2-syscall",	0, 0, OPT_USE_KEXEC2_SYSCALL }, \
+>  	{ "debug",		0, 0, OPT_DEBUG }, \
+>  
+>  #define KEXEC_OPT_STR "h?vdfxluet:p"
+> Index: kexec-tools/kexec/arch/x86_64/kexec-bzImage64.c
+> ===================================================================
+> --- kexec-tools.orig/kexec/arch/x86_64/kexec-bzImage64.c	2014-06-02 14:34:16.719774316 -0400
+> +++ kexec-tools/kexec/arch/x86_64/kexec-bzImage64.c	2014-06-02 14:34:42.011036336 -0400
+> @@ -235,6 +235,89 @@ static int do_bzImage64_load(struct kexe
+>  	return 0;
+>  }
+>  
+> +/* This assumes file is being loaded using file based kexec2 syscall */
+> +int bzImage64_load_file(int argc, char **argv, struct kexec_info *info)
+> +{
+> +	int ret = 0;
+> +	char *command_line = NULL, *tmp_cmdline = NULL;
+> +	const char *ramdisk = NULL, *append = NULL;
+> +	int entry_16bit = 0, entry_32bit = 0;
+> +	int opt;
+> +	int command_line_len;
+> +
+> +	/* See options.h -- add any more there, too. */
+> +	static const struct option options[] = {
+> +		KEXEC_ARCH_OPTIONS
+> +		{ "command-line",	1, 0, OPT_APPEND },
+> +		{ "append",		1, 0, OPT_APPEND },
+> +		{ "reuse-cmdline",	0, 0, OPT_REUSE_CMDLINE },
+> +		{ "initrd",		1, 0, OPT_RAMDISK },
+> +		{ "ramdisk",		1, 0, OPT_RAMDISK },
+> +		{ "real-mode",		0, 0, OPT_REAL_MODE },
+> +		{ "entry-32bit",	0, 0, OPT_ENTRY_32BIT },
+> +		{ 0,			0, 0, 0 },
+> +	};
+> +	static const char short_options[] = KEXEC_ARCH_OPT_STR "d";
+> +
+> +	while ((opt = getopt_long(argc, argv, short_options, options, 0)) != -1) {
+> +		switch (opt) {
+> +		default:
+> +			/* Ignore core options */
+> +			if (opt < OPT_ARCH_MAX)
+> +				break;
+> +		case OPT_APPEND:
+> +			append = optarg;
+> +			break;
+> +		case OPT_REUSE_CMDLINE:
+> +			tmp_cmdline = get_command_line();
+> +			break;
+> +		case OPT_RAMDISK:
+> +			ramdisk = optarg;
+> +			break;
+> +		case OPT_REAL_MODE:
+> +			entry_16bit = 1;
+> +			break;
+> +		case OPT_ENTRY_32BIT:
+> +			entry_32bit = 1;
+> +			break;
+> +		}
+> +	}
+> +	command_line = concat_cmdline(tmp_cmdline, append);
+> +	if (tmp_cmdline)
+> +		free(tmp_cmdline);
+> +	command_line_len = 0;
+> +	if (command_line) {
+> +		command_line_len = strlen(command_line) + 1;
+> +	} else {
+> +		command_line = strdup("\0");
+> +		command_line_len = 1;
+> +	}
+> +
+> +	if (entry_16bit || entry_32bit) {
+> +		fprintf(stderr, "Kexec2 syscall does not support 16bit"
+> +			" or 32bit entry yet\n");
+> +		ret = -1;
+> +		goto out;
+> +	}
+> +
+> +	if (ramdisk) {
+> +		info->initrd_fd = open(ramdisk, O_RDONLY);
+> +		if (info->initrd_fd == -1) {
+> +			fprintf(stderr, "Could not open initrd file %s:%s\n",
+> +					ramdisk, strerror(errno));
+> +			ret = -1;
+> +			goto out;
+> +		}
+> +	}
+> +
+> +	info->command_line = command_line;
+> +	info->command_line_len = command_line_len;
+> +	return ret;
+> +out:
+> +	free(command_line);
+> +	return ret;
+> +}
+> +
+>  int bzImage64_load(int argc, char **argv, const char *buf, off_t len,
+>  	struct kexec_info *info)
+>  {
+> @@ -247,6 +330,9 @@ int bzImage64_load(int argc, char **argv
+>  	int opt;
+>  	int result;
+>  
+> +	if (info->file_mode)
+> +		return bzImage64_load_file(argc, argv, info);
+> +
+>  	/* See options.h -- add any more there, too. */
+>  	static const struct option options[] = {
+>  		KEXEC_ARCH_OPTIONS
+> Index: kexec-tools/kexec/kexec-syscall.h
+> ===================================================================
+> --- kexec-tools.orig/kexec/kexec-syscall.h	2014-06-02 14:34:16.719774316 -0400
+> +++ kexec-tools/kexec/kexec-syscall.h	2014-06-02 14:34:42.011036336 -0400
+> @@ -53,6 +53,19 @@
+>  #endif
+>  #endif /*ifndef __NR_kexec_load*/
+>  
+> +#ifndef __NR_kexec_file_load
+> +
+> +#ifdef __x86_64__
+> +#define __NR_kexec_file_load	317
+> +#endif
+> +
+> +#ifndef __NR_kexec_file_load
+> +/* system call not available for the arch */
+> +#define __NR_kexec_file_load	0xffffffff	/* system call not available */
+> +#endif
+> +
+> +#endif /*ifndef __NR_kexec_file_load*/
+> +
+>  struct kexec_segment;
+>  
+>  static inline long kexec_load(void *entry, unsigned long nr_segments,
+> @@ -61,10 +74,28 @@ static inline long kexec_load(void *entr
+>  	return (long) syscall(__NR_kexec_load, entry, nr_segments, segments, flags);
+>  }
+>  
+> +static inline int is_kexec_file_load_implemented(void) {
+> +	if (__NR_kexec_file_load != 0xffffffff)
+> +		return 1;
+> +	return 0;
+> +}
+> +
+> +static inline long kexec_file_load(int kernel_fd, int initrd_fd,
+> +			const char *cmdline_ptr, unsigned long cmdline_len,
+> +			unsigned long flags)
+> +{
+> +	return (long) syscall(__NR_kexec_file_load, kernel_fd, initrd_fd,
+> +				cmdline_ptr, cmdline_len, flags);
+> +}
+> +
+>  #define KEXEC_ON_CRASH		0x00000001
+>  #define KEXEC_PRESERVE_CONTEXT	0x00000002
+>  #define KEXEC_ARCH_MASK		0xffff0000
+>  
+> +/* Flags for kexec file based system call */
+> +#define KEXEC_FILE_UNLOAD	0x00000001
+> +#define KEXEC_FILE_ON_CRASH	0x00000002
+> +
+>  /* These values match the ELF architecture values. 
+>   * Unless there is a good reason that should continue to be the case.
+>   */
