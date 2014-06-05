@@ -1,106 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756403AbaFEASd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:18:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40197 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753170AbaFDXWg (ORCPT
+	id S932219AbaFEATI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:19:08 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:37963 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932204AbaFEATF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:22:36 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 3.14 138/228] fix races between __d_instantiate() and checks of dentry flags
-Date: Wed,  4 Jun 2014 16:22:47 -0700
-Message-Id: <20140604232352.449628989@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
-References: <20140604232347.966798903@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Wed, 4 Jun 2014 20:19:05 -0400
+Message-ID: <538FB775.8070405@amacapital.net>
+Date: Wed, 04 Jun 2014 17:19:01 -0700
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
+To: Borislav Petkov <bp@suse.de>, "H. Peter Anvin" <hpa@zytor.com>
+CC: linux-kernel@vger.kernel.org, mingo@kernel.org,
+        ricardo.neri-calderon@linux.intel.com, tglx@linutronix.de,
+        matt.fleming@intel.com, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/efi] x86/efi: Check for unsafe dealing with FPU state
+ in irq ctxt
+References: <tip-baa916f39b50ad91661534652110df40396acda0@git.kernel.org> <538F9AFA.5050806@zytor.com> <20140604224920.GB4126@pd.tnic>
+In-Reply-To: <20140604224920.GB4126@pd.tnic>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+On 06/04/2014 03:49 PM, Borislav Petkov wrote:
+> On Wed, Jun 04, 2014 at 03:17:30PM -0700, H. Peter Anvin wrote:
+>> I seem to have lost track of this... does this actually solve
+>> anything, or does it just mean we'll explode hard?
+> 
+> Not that hard - it'll warn once only.
+> 
+> AFAIR, the discussion stalled but we were going in the direction of not
+> calling into efi from pstore in irq context.
 
-------------------
+The kernel_fpu_begin thing has annoyed me in the past.  How bad would it
+be to allocate some percpu space and just do a full save/restore when
+kernel_fpu_begin happens in a context where it currently doesn't work?
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+I don't know how large the state is these days, but there must be some
+limit to how deeply interrupts and exceptions can nest.  For each IST
+entry, there is a hard limit to how deeply they can nest (once for all
+but debug and four times for debug IIRC), plus one NMI (nested ones
+don't touch FPU).  The most non-IST entries we can have must be bounded,
+too.
 
-commit 22213318af7ae265bc6cd8aef2febbc2d69a2440 upstream.
+Let's say there are at most 16 levels of nesting.  16 * state size *
+cpus isn't that much.
 
-in non-lazy walk we need to be careful about dentry switching from
-negative to positive - both ->d_flags and ->d_inode are updated,
-and in some places we might see only one store.  The cases where
-dentry has been obtained by dcache lookup with ->i_mutex held on
-parent are safe - ->d_lock and ->i_mutex provide all the barriers
-we need.  However, there are several places where we run into
-trouble:
-	* do_last() fetches ->d_inode, then checks ->d_flags and
-assumes that inode won't be NULL unless d_is_negative() is true.
-Race with e.g. creat() - we might have fetched the old value of
-->d_inode (still NULL) and new value of ->d_flags (already not
-DCACHE_MISS_TYPE).  Lin Ming has observed and reported the resulting
-oops.
-	* a bunch of places checks ->d_inode for being non-NULL,
-then checks ->d_flags for "is it a symlink".  Race with symlink(2)
-in case if our CPU sees ->d_inode update first - we see non-NULL
-there, but ->d_flags still contains DCACHE_MISS_TYPE instead of
-DCACHE_SYMLINK_TYPE.  Result: false negative on "should we follow
-link here?", with subsequent unpleasantness.
-
-Reported-and-tested-by: Lin Ming <minggr@gmail.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/dcache.c |    3 +--
- fs/namei.c  |    6 +++---
- 2 files changed, 4 insertions(+), 5 deletions(-)
-
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -1647,8 +1647,7 @@ static void __d_instantiate(struct dentr
- 	unsigned add_flags = d_flags_for_inode(inode);
- 
- 	spin_lock(&dentry->d_lock);
--	dentry->d_flags &= ~DCACHE_ENTRY_TYPE;
--	dentry->d_flags |= add_flags;
-+	__d_set_type(dentry, add_flags);
- 	if (inode)
- 		hlist_add_head(&dentry->d_alias, &inode->i_dentry);
- 	dentry->d_inode = inode;
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -1537,7 +1537,7 @@ static inline int walk_component(struct
- 		inode = path->dentry->d_inode;
- 	}
- 	err = -ENOENT;
--	if (!inode)
-+	if (!inode || d_is_negative(path->dentry))
- 		goto out_path_put;
- 
- 	if (should_follow_link(path->dentry, follow)) {
-@@ -2240,7 +2240,7 @@ mountpoint_last(struct nameidata *nd, st
- 	mutex_unlock(&dir->d_inode->i_mutex);
- 
- done:
--	if (!dentry->d_inode) {
-+	if (!dentry->d_inode || d_is_negative(dentry)) {
- 		error = -ENOENT;
- 		dput(dentry);
- 		goto out;
-@@ -2982,7 +2982,7 @@ retry_lookup:
- finish_lookup:
- 	/* we _can_ be in RCU mode here */
- 	error = -ENOENT;
--	if (d_is_negative(path->dentry)) {
-+	if (!inode || d_is_negative(path->dentry)) {
- 		path_to_nameidata(path, nd);
- 		goto out;
- 	}
+Of course, code in interrupts that nests kernel_fpu_begin itself could
+have a problem.  But this can be solved with a little bit of trickery in
+the entry code or something.
 
 
+If we did this, then I think the x86 crypto code could get rid of all of
+its ridiculous async code.
+
+--Andy
