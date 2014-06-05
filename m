@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754617AbaFEFEM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 01:04:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43844 "EHLO
+	id S1754623AbaFEFEf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 01:04:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43841 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752471AbaFEEU2 (ORCPT
+	with ESMTP id S1752451AbaFEEU2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 5 Jun 2014 00:20:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 3.4 070/214] x86-64, modify_ldt: Make support for 16-bit segments a runtime option
-Date: Wed,  4 Jun 2014 21:17:13 -0700
-Message-Id: <20140605041648.944237027@linuxfoundation.org>
+        Josef Gajdusek <atx@atx.name>, Jean Delvare <jdelvare@suse.de>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 3.4 044/214] hwmon: (emc1403) fix inverted store_hyst()
+Date: Wed,  4 Jun 2014 21:16:47 -0700
+Message-Id: <20140605041645.523807233@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -26,86 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Josef Gajdusek <atx@atx.name>
 
-commit fa81511bb0bbb2b1aace3695ce869da9762624ff upstream.
+commit 17c048fc4bd95efea208a1920f169547d8588f1f upstream.
 
-Checkin:
+Attempts to set the hysteresis value to a temperature below the target
+limit fails with "write error: Numerical result out of range" due to
+an inverted comparison.
 
-b3b42ac2cbae x86-64, modify_ldt: Ban 16-bit segments on 64-bit kernels
-
-disabled 16-bit segments on 64-bit kernels due to an information
-leak.  However, it does seem that people are genuinely using Wine to
-run old 16-bit Windows programs on Linux.
-
-A proper fix for this ("espfix64") is coming in the upcoming merge
-window, but as a temporary fix, create a sysctl to allow the
-administrator to re-enable support for 16-bit segments.
-
-It adds a "/proc/sys/abi/ldt16" sysctl that defaults to zero (off). If
-you hit this issue and care about your old Windows program more than
-you care about a kernel stack address information leak, you can do
-
-   echo 1 > /proc/sys/abi/ldt16
-
-as root (add it to your startup scripts), and you should be ok.
-
-The sysctl table is only added if you have COMPAT support enabled on
-x86-64, but I assume anybody who runs old windows binaries very much
-does that ;)
-
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Link: http://lkml.kernel.org/r/CA%2B55aFw9BPoD10U1LfHbOMpHWZkvJTkMcfCs9s3urPr1YyWBxw@mail.gmail.com
+Signed-off-by: Josef Gajdusek <atx@atx.name>
+Reviewed-by: Jean Delvare <jdelvare@suse.de>
+[Guenter Roeck: Updated headline and description]
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/ldt.c        |    4 +++-
- arch/x86/vdso/vdso32-setup.c |    8 ++++++++
- 2 files changed, 11 insertions(+), 1 deletion(-)
+ drivers/hwmon/emc1403.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kernel/ldt.c
-+++ b/arch/x86/kernel/ldt.c
-@@ -20,6 +20,8 @@
- #include <asm/mmu_context.h>
- #include <asm/syscalls.h>
+--- a/drivers/hwmon/emc1403.c
++++ b/drivers/hwmon/emc1403.c
+@@ -161,7 +161,7 @@ static ssize_t store_hyst(struct device
+ 	if (retval < 0)
+ 		goto fail;
  
-+int sysctl_ldt16 = 0;
-+
- #ifdef CONFIG_SMP
- static void flush_ldt(void *current_mm)
- {
-@@ -234,7 +236,7 @@ static int write_ldt(void __user *ptr, u
- 	 * IRET leaking the high bits of the kernel stack address.
- 	 */
- #ifdef CONFIG_X86_64
--	if (!ldt_info.seg_32bit) {
-+	if (!ldt_info.seg_32bit && !sysctl_ldt16) {
- 		error = -EINVAL;
- 		goto out_unlock;
- 	}
---- a/arch/x86/vdso/vdso32-setup.c
-+++ b/arch/x86/vdso/vdso32-setup.c
-@@ -41,6 +41,7 @@ enum {
- #ifdef CONFIG_X86_64
- #define vdso_enabled			sysctl_vsyscall32
- #define arch_setup_additional_pages	syscall32_setup_pages
-+extern int sysctl_ldt16;
- #endif
- 
- /*
-@@ -379,6 +380,13 @@ static ctl_table abi_table2[] = {
- 		.maxlen		= sizeof(int),
- 		.mode		= 0644,
- 		.proc_handler	= proc_dointvec
-+	},
-+	{
-+		.procname	= "ldt16",
-+		.data		= &sysctl_ldt16,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec
- 	},
- 	{}
- };
+-	hyst = val - retval * 1000;
++	hyst = retval * 1000 - val;
+ 	hyst = DIV_ROUND_CLOSEST(hyst, 1000);
+ 	if (hyst < 0 || hyst > 255) {
+ 		retval = -ERANGE;
 
 
