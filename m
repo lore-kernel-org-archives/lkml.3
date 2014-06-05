@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751969AbaFENVX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 09:21:23 -0400
-Received: from casper.infradead.org ([85.118.1.10]:52285 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750864AbaFENVW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 09:21:22 -0400
-Date: Thu, 5 Jun 2014 15:21:18 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-Cc: Liu ShuoX <shuox.liu@intel.com>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Zhang Yanmin <yanmin.zhang@intel.com>
-Subject: Re: [PATCH] perf: fix kernel panic when parsing user space CS saved
- in pt_regs
-Message-ID: <20140605132118.GJ6758@twins.programming.kicks-ass.net>
-References: <20140605023610.GA12905@lskakaxi-intel>
- <20140605071919.GD3213@twins.programming.kicks-ass.net>
- <20140605073321.GA14869@lskakaxi-intel>
- <20140605075507.GA6758@twins.programming.kicks-ass.net>
- <53902398.70005@linux.intel.com>
- <20140605091517.GB6758@twins.programming.kicks-ass.net>
- <53906D78.60509@linux.intel.com>
+	id S1751671AbaFENWr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 09:22:47 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:38632 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751314AbaFENWp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 09:22:45 -0400
+Message-ID: <53906F20.50309@mev.co.uk>
+Date: Thu, 5 Jun 2014 14:22:40 +0100
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="GvznHscUikHnwW2p"
-Content-Disposition: inline
-In-Reply-To: <53906D78.60509@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Chase Southwood <chase.southwood@gmail.com>, <gregkh@linuxfoundation.org>
+CC: <hsweeten@visionengravers.com>, <devel@driverdev.osuosl.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/5] staging: comedi: addi_apci_1564: fix Change-of-State
+ interrupt functionality
+References: <1401849124-21347-1-git-send-email-chase.southwood@gmail.com>
+In-Reply-To: <1401849124-21347-1-git-send-email-chase.southwood@gmail.com>
+Content-Type: text/plain; charset="us-ascii"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ClientProxiedBy: MEVEXCHANGE.mev.local (10.0.0.4) To MEVEXCHANGE.mev.local
+ (10.0.0.4)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2014-06-04 03:32, Chase Southwood wrote:
+> This patchset introduces a new private data struct for this driver, adds
+> all of the code required to support Change-of-State interrupts for the
+> digital input subdevice, and finally fixes
+> apci1564_interrupt() to service this type of interrupt correctly.
+>
+> CHANGES FROM v1:
+> *leave the send_sig() calls in for now, until the proper replacement can
+> be implemented.
+> *removed unused static globals, removed the remaining one into the private
+> data struct.
+> *private data struct moved into addi_apci_1564.c.
+> *patches 4/6 and 5/6 from v1 have been merged into patch 4/5 here.
+> *(*cancel) for the interrupt subdevice has been reduced to just disable DI
+> interrupts rather than using the board's reset function.
+> *support for all interrupts issued by the board has been kept in
+> apci1564_interrupt(), rather than stripping everything out except for DI
+> interrupt support.  However, DI interrupt support has still been fixed.
+>
+> Chase Southwood (5):
+>    staging: comedi: addi_apci_1564: remove use of
+>      devpriv->b_OutputMemoryStatus
+>    staging: comedi: addi_apci_1564: remove unused static variables
+>    staging: comedi: addi_apci_1564: introduce apci1564_private struct
+>    staging: comedi: addi_apci_1564: add Change-of-State interrupt
+>      subdevice and required functions
+>    staging: comedi: addi_apci_1564: move apci1564_interrupt() into
+>      addi_apci_1564.c
+>
+>   .../comedi/drivers/addi-data/hwdrv_apci1564.c      | 304 +++------------
+>   drivers/staging/comedi/drivers/addi_apci_1564.c    | 433 +++++++++++++++++++--
+>   2 files changed, 454 insertions(+), 283 deletions(-)
+>
 
---GvznHscUikHnwW2p
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Looks good!
 
-On Thu, Jun 05, 2014 at 09:15:36PM +0800, Zhang, Yanmin wrote:
+Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
 
-> Sorry for misleading you. It depends on backend. Pstore can use RAM or
-> other storage, for example, EFI-provided backend. If using EFI backend,
-> pstore can keep persistent across cold reset or even power outrages.
->=20
-> If using RAM, usually pstore can keep persistent at WarmReset. Since RAM
-> access (even at non-cache mode) is fast and more flexible, in fact, we of=
-ten use
-> RAM as backend of pstore.
-
-Funny definition of persistent you end up with in that case... :-) But
-yes, that does explain.
-
---GvznHscUikHnwW2p
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTkG7OAAoJEHZH4aRLwOS6DE4P/15U1+10RW3INxa8cnwyWU+W
-BjhYVGNdJbGFVOtJod4BQk1TBAgprTQ/Z2BzJPHUEcKKR86T3mWb7hrrinFZ63cE
-7NYkxmTemyyavuTLNCYdJX+wakyfMzVNux7W6jwzsx5Mp9Ei9YTefxsfeQLZbBQs
-g2p3rpwBrKHIOdz8fKAhsUP2KgdfRzuaKAR9iBFAnY7XEYraFL/ImoAhwR1BTAoT
-hLLAGXP8mADjfjVeLGBl4+bs3kWF5IQ9fYaWsNPwFLoP5mJ/o+lXI+wMqzU3KMfJ
-8vhuWCp6tA+Ijoe+KMQD4RlpBl8JONh3DsKYkyZCDgAsL9N43jLf4Kpl5r3kx5HW
-7SqRbJr3DJjPxXZrdyVMPZKVv9VWypDui48KuzATZ1dowrwGWXvubW8v/ab7Ufol
-qwVC3Pncuoau7byPJzLkAsKPMFJOowIlBYVDWCX23VhiAbXbGvXudMT0luy9Brba
-C5lLoDq+WrlWhbqI4t7VKdBWigi26JM8MYGznwOzB+MgwcLY09F3R/D0/xrSorpi
-Xjsvb0ECjGZRMZyzdl/dqumvMIGlVZE8kwmfM+3Ywphrtf7Lxq1lBn50rDJyYWhx
-hGDLUD4IPXnLLMPzJSKJ+soctdDFBSGgRdFclJyMlLKs2reyyStOkrPWXARf8WMe
-OQoQnDXewYskzE89VFAi
-=BvLU
------END PGP SIGNATURE-----
-
---GvznHscUikHnwW2p--
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
