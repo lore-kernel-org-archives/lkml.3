@@ -1,48 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752015AbaFEOBQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 10:01:16 -0400
-Received: from mail.sigma-star.at ([95.130.255.111]:62408 "EHLO
-	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751833AbaFEOAy (ORCPT
+	id S1752059AbaFEOB2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 10:01:28 -0400
+Received: from mail-yh0-f52.google.com ([209.85.213.52]:54908 "EHLO
+	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374AbaFEOB0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 10:00:54 -0400
-From: Richard Weinberger <richard@nod.at>
-To: hannes@cmpxchg.org
-Cc: mhocko@suse.cz, bsingharora@gmail.com, kamezawa.hiroyu@jp.fujitsu.com,
-        akpm@linux-foundation.org, vdavydov@parallels.com, tj@kernel.org,
-        handai.szj@taobao.com, rientjes@google.com, oleg@redhat.com,
-        rusty@rustcorp.com.au, kirill.shutemov@linux.intel.com,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: oom: Be less verbose
-Date: Thu,  5 Jun 2014 16:00:40 +0200
-Message-Id: <1401976841-3899-1-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.8.4.2
+	Thu, 5 Jun 2014 10:01:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140605134841.GL3213@twins.programming.kicks-ass.net>
+References: <1401917658-26065-1-git-send-email-eranian@google.com>
+	<1401917658-26065-6-git-send-email-eranian@google.com>
+	<20140605134841.GL3213@twins.programming.kicks-ass.net>
+Date: Thu, 5 Jun 2014 17:01:25 +0300
+Message-ID: <CAHzUATjSd0Cio25RvwNaph0vFZYQB-pKBt=xz7C=_MhZvpFXxQ@mail.gmail.com>
+Subject: Re: [PATCH 5/9] perf/x86: implement cross-HT corruption bug workaround
+From: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, ak@linux.intel.com, jolsa@redhat.com,
+        zheng.z.yan@intel.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Processes within Linux containers very often hit their memory limits.
-This has the side effect that the kernel log gets spammed all day with
-useless OOM messages.
-If a userspace program listens to the memory cgroup event fd to
-get notified upon OOM we can avoid this spamming and be less verbose.
+Are you saying it is illegal to call kmalloc() from
+this context?
 
-With this patch applied the OOM killer will only print much details
-if nobody listens to the affected memory cgroup event fd.
-I can also think of a new sysctl like "vm.oom_verbose=1" to guarantee the old
-behavior even if we have listeners.
+kmalloc is needed because we need to allocate
+a new constraint struct since the static constraint
+cannot be modified.
 
-What do you think?
+Worst case we can statically allocate a second
+constraint struct in the event struct.
 
-Thanks,
-//richard
-
-[RFC][PATCH] oom: Be less verbose if the oom_control event fd has listeners
---
- include/linux/memcontrol.h |    6 ++++++
- mm/memcontrol.c            |   20 ++++++++++++++++++++
- mm/oom_kill.c              |    2 +-
- 3 files changed, 27 insertions(+), 1 deletion(-)
-
+On Thu, Jun 5, 2014 at 4:48 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, Jun 04, 2014 at 11:34:14PM +0200, Stephane Eranian wrote:
+>
+>> +static struct event_constraint *
+>> +intel_get_excl_constraints(struct cpu_hw_events *cpuc, struct perf_event *event,
+>> +                        struct event_constraint *c)
+>> +{
+>
+>> +     if (!(c->flags & PERF_X86_EVENT_DYNAMIC)) {
+>> +
+>> +             /*
+>> +              * in case we fail, we assume no counter
+>> +              * is supported to be on the safe side
+>> +              */
+>> +             cx = kmalloc(sizeof(*cx), GFP_KERNEL);
+>> +             if (!cx)
+>> +                     return &emptyconstraint;
+>> +
+>
+> Ok, so forgive me if I'm wrong, but the way we get here is through:
+>
+> x86_schedule_event()
+>   ->start_scheduling()
+>     spin_lock()
+>   ->get_event_constraints()
+>     intel_get_excl_constraints()
+>       kmalloc(.gfp=GFP_KERNEL)
+>
+> How can that ever work?
