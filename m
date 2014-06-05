@@ -1,118 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751222AbaFEH2e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 03:28:34 -0400
-Received: from ozlabs.org ([103.22.144.67]:33043 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750715AbaFEH2c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 03:28:32 -0400
-Date: Thu, 5 Jun 2014 17:28:24 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Eric W. Biederman" <ebiederm@xmission.com>, Chris Mason <clm@fb.com>,
-        Josef Bacik <jbacik@fb.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Sterba <dsterba@suse.cz>
-Subject: linux-next: manual merge of the userns tree with the btrfs tree
-Message-ID: <20140605172824.31ecb811@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1751541AbaFEHan (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 03:30:43 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:46171 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750925AbaFEHam (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 03:30:42 -0400
+Message-ID: <53901C42.9070100@st.com>
+Date: Thu, 5 Jun 2014 09:29:06 +0200
+From: Maxime Coquelin <maxime.coquelin@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/GgDUxb3PRtTURIbPtvWguhG"; protocol="application/pgp-signature"
+To: <fwu@marvell.com>, <linus.walleij@linaro.org>, <swarren@wwwdotorg.org>,
+        <tony@atomide.com>, <plagnioj@jcrosoft.com>, <kgene.kim@samsung.com>,
+        <heiko@sntech.de>, <t.figa@samsung.com>, <thomas.abraham@linaro.org>,
+        <srinivas.kandagatla@gmail.com>, <patrice.chotard@st.com>,
+        <thierry.reding@gmail.com>, <baohua@kernel.org>,
+        <viresh.linux@gmail.com>, <matt.porter@linaro.org>,
+        <syin@broadcom.com>, <jg1.han@samsung.com>, <Rongjun.Ying@csr.com>,
+        <Rong.Wang@csr.com>, <linux@prisktech.co.nz>,
+        <yongjun_wei@trendmicro.com.cn>, <laurent.navet@gmail.com>
+Cc: <linux-kernel@vger.kernel.org>, <swarren@nvidia.com>, <cxie4@marvell.com>,
+        <ylmao@marvell.com>, <njiang1@marvell.com>, <tianxf@marvell.com>,
+        <fswu@marvell.com>
+Subject: Re: [PATCH v5] pinctrl: to avoid duplicated calling enable_pinmux_setting
+ for a pin
+References: <1401951040-17403-1-git-send-email-fwu@marvell.com>
+In-Reply-To: <1401951040-17403-1-git-send-email-fwu@marvell.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.201.23.80]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-06-05_02:2014-06-04,2014-06-05,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/GgDUxb3PRtTURIbPtvWguhG
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hi Fan,
 
-Hi Eric,
+On 06/05/2014 08:50 AM, fwu@marvell.com wrote:
+> From: Fan Wu <fwu@marvell.com>
+>
+> What the patch did:
+> 1.To call pinmux_disable_setting ahead of pinmux_enable_setting in each time of
+>    calling pinctrl_select_state
+> 2.Remove the HW disable operation in in pinmux_disable_setting function.
+> 3.Remove the disable ops in struct pinmux_ops
+> 4.Remove all the disable ops users in current code base.
+>
+> Notes:
+> 1.Great thanks for the suggestion from Linus, Tony Lindgren and Stephen Warren.
+> 2.The patch also includes comment fixes from Stephen Warren.
+>
+> The reason why to do this is that:
+> 1.To avoid duplicated calling enable_setting operation without disabling
+>    operation which will let Pin's desc->mux_usecount keep being added.
+> 2.The HW pin disable operation is not useful for most of the vendors' platform.
+>    And this can be used to avoid the HW glitch after using the item 1#
+>    modification.
+>
+> In the following case, the issue can be reproduced:
+> 1)There is a driver need to switch Pin state dynamicly, E.g. b/t "sleep" and
+> "default" state
+> 2)The Pin setting configuration in DTS node may be like the following one:
+> component a {
+> 	pinctrl-names = "default", "sleep";
+> 	pinctrl-0 = <&a_grp_setting &c_grp_setting>;
+> 	pinctrl-1 = <&b_grp_setting &c_grp_setting>;
+> }
+> The "c_grp_setting" config node is totaly same, maybe like following one:
+> c_grp_setting: c_grp_setting {
+> 	pinctrl-single,pins = <GPIO48 AF6>;
+> 	MFP_DEFAULT;
+> }
+> 3)When switching the Pin state in the following official Pinctrl sequence:
+> 	pin = pinctrl_get();
+> 	state = pinctrl_lookup_state(wanted_state);
+> 	pinctrl_select_state(state);
+> 	pinctrl_put();
+>
+> Test Result:
+> 1)The switch is completed as expectation, that is: component's
+> Pins configuration are changed according to the description in the
+> "wanted_state" group setting
+> 2)The "desc->mux_usecount" of corresponding Pins in "c_group" is added without being
+> decreased, because the "desc" is for each physical pin while the "setting" is
+> for each setting node in the DTS.
+> Thus, if the "c_grp_setting" in pinctrl-0 is not disabled ahead of enabling
+> "c_grp_setting" in pinctrl-1, the desc->mux_usecount will be kept added without
+> any chance to be decreased.
+>
+> According to the comments in the original code, only the setting, in old state
+> but not in new state, will be "disable"(calling pinmux_disable_setting), which
+> is correct logic but not intact. We still need consider case that the setting
+> is in both old state and new state.
+> We can do this in the following two ways:
+> 1) Avoid "enable"(calling pinmux_enable_setting) the Same Pins setting repeatedly.
+> 2) "Disable"(calling pinmux_disable_setting) the "Same Pins setting", actually
+> two setting instance, ahead of enabling them.
+>
+> Analysis:
+> 1.The solution 2# is better because it can avoid too much iteration.
+> 2.If we disable all of the setting in the old state and one/ones of the setting(s) is/are
+> existed in the new state, the Pin's mux function change may happen when
+> some SoC vendors defined the "pinctrl-single,function-off" in their DTS file.
+> old_setting=>disabled_setting=>new_setting.
+> 3.In the pinmux framework, when Pin state is switched, the setting in the old state should be
+> marked as "disabled".
+>
+> Conclusion:
+> 1.To Remove the HW disabling operation to above the glitch mentioned above.
+> 2.Handle the issue mentioned above by disabling all of the settings in old
+> state and then enable the all of the settings in new state.
+>
+> Signed-off-by: Fan Wu <fwu@marvell.com>
+> ---
+>   drivers/pinctrl/core.c                |   24 +++-----------
+>   drivers/pinctrl/pinctrl-abx500.c      |   15 ---------
+>   drivers/pinctrl/pinctrl-adi2.c        |   30 -----------------
+>   drivers/pinctrl/pinctrl-at91.c        |   21 ------------
+>   drivers/pinctrl/pinctrl-bcm2835.c     |   11 -------
+>   drivers/pinctrl/pinctrl-exynos5440.c  |    8 -----
+>   drivers/pinctrl/pinctrl-msm.c         |   25 --------------
+>   drivers/pinctrl/pinctrl-nomadik.c     |   16 ---------
+>   drivers/pinctrl/pinctrl-rockchip.c    |   18 ----------
+>   drivers/pinctrl/pinctrl-samsung.c     |    8 -----
+>   drivers/pinctrl/pinctrl-single.c      |   56 -------------------------------
+>   drivers/pinctrl/pinctrl-st.c          |    6 ----
+>   drivers/pinctrl/pinctrl-tb10x.c       |   17 ----------
+>   drivers/pinctrl/pinctrl-tegra.c       |   19 -----------
+>   drivers/pinctrl/pinctrl-tz1090-pdc.c  |   28 ----------------
+>   drivers/pinctrl/pinctrl-tz1090.c      |   58 ---------------------------------
+>   drivers/pinctrl/pinctrl-u300.c        |   14 --------
+>   drivers/pinctrl/pinmux.c              |    4 ---
+>   drivers/pinctrl/sh-pfc/pinctrl.c      |   22 -------------
+>   drivers/pinctrl/sirf/pinctrl-sirf.c   |   10 ------
+>   drivers/pinctrl/spear/pinctrl-spear.c |    7 ----
+>   drivers/pinctrl/vt8500/pinctrl-wmt.c  |   12 -------
+>   include/linux/pinctrl/pinmux.h        |    2 --
+>   23 files changed, 5 insertions(+), 426 deletions(-)
+>
 
-Today's linux-next merge of the userns tree got a conflict in
-fs/btrfs/ioctl.c between commit e4e7602f3304 ("btrfs: protect snapshots
-from deleting during send") from the btrfs tree and commit 23135a9bd700
-("vfs: Make d_invalidate return void") from the userns tree.
+I would have preferred this patch to be split in multiple ones.
+Anyway, if Linus W. agrees for one patch, that's fine for me too.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).  Thanks, Chris for the resolution.
+For the pinctrl-st changes, you can add my:
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Acked-by: Maxime Coquelin <maxime.coquelin@st.com>
 
-diff --cc fs/btrfs/ioctl.c
-index 99431aa5371f,349848bd54e2..000000000000
---- a/fs/btrfs/ioctl.c
-+++ b/fs/btrfs/ioctl.c
-@@@ -2334,30 -2229,7 +2334,28 @@@ static noinline int btrfs_ioctl_snap_de
-  	}
- =20
-  	mutex_lock(&inode->i_mutex);
- +
- +	/*
- +	 * Don't allow to delete a subvolume with send in progress. This is
- +	 * inside the i_mutex so the error handling that has to drop the bit
- +	 * again is not run concurrently.
- +	 */
- +	spin_lock(&dest->root_item_lock);
- +	root_flags =3D btrfs_root_flags(&dest->root_item);
- +	if (dest->send_in_progress =3D=3D 0) {
- +		btrfs_set_root_flags(&dest->root_item,
- +				root_flags | BTRFS_ROOT_SUBVOL_DEAD);
- +		spin_unlock(&dest->root_item_lock);
- +	} else {
- +		spin_unlock(&dest->root_item_lock);
- +		btrfs_warn(root->fs_info,
- +			"Attempt to delete subvolume %llu during send",
- +			dest->root_key.objectid);
- +		err =3D -EPERM;
- +		goto out_dput;
- +	}
- +
-- 	err =3D d_invalidate(dentry);
-- 	if (err)
-- 		goto out_unlock;
-+ 	d_invalidate(dentry);
- =20
-  	down_write(&root->fs_info->subvol_sem);
- =20
-@@@ -2442,14 -2314,6 +2440,14 @@@ out_release
-  	btrfs_subvolume_release_metadata(root, &block_rsv, qgroup_reserved);
-  out_up_write:
-  	up_write(&root->fs_info->subvol_sem);
-- out_unlock:
-++
- +	if (err) {
- +		spin_lock(&dest->root_item_lock);
- +		root_flags =3D btrfs_root_flags(&dest->root_item);
- +		btrfs_set_root_flags(&dest->root_item,
- +				root_flags & ~BTRFS_ROOT_SUBVOL_DEAD);
- +		spin_unlock(&dest->root_item_lock);
- +	}
-  	mutex_unlock(&inode->i_mutex);
-  	if (!err) {
-  		shrink_dcache_sb(root->fs_info->sb);
-
---Sig_/GgDUxb3PRtTURIbPtvWguhG
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTkBwdAAoJEMDTa8Ir7ZwV5kEP/A/S4/8QvErNSIuQAz2/Jn7J
-qYpXlGLr/StTxu5MVy4P/cvFaGA5TyLRm7C8giQzN+Xk8N6VC2RiO6GJpkEtKrwh
-PZ/TCpgjWToGR2XLxjBzzirr5Du7KyIhLZ+ndGBkm0OgmWipSSrPaGMA45rG0P9d
-n1B2jjoAV0X6rIaUyvQVsybSQiVMcjhTBa13D1dWINeDvdbL7LYwu/fRVbFGXu0u
-fW201iyHwlmp66cyJbITaEOrWmQ/3GL/g9JEmQB4Ls7Pw65VIFdeZ9XEsrRTBmDq
-yyLZVj1i10zZ0N+IzPhrV93cn8ea0ys92evBYAFEMci5lnfklfaxFBaHl7Rm2kY0
-sYvAZC1kjZU6hwKRL4IWNxgL6eq2SwXDHX2U7HDLnBPMEg7yAWTsVoEgyeyBY8EQ
-FEe8OEcjp4OG7XUHoylJZAxKWddZYG5X7ysmOH21C4S1KJTktWI7xX4M3iuSH1gl
-sWjd6Ie+IBaa1faiZW+7thY52W2sEhZU2Z52SGZAmqmU86z89q4/a219ksWVPRB/
-5qzdSfTQ72Zj+WQkBtGdND3xkanXLAACTekUkDFsgvhy+a13ZNeEjaUyv5xs3Z+q
-W5PcSEpy+tQDB2z/6yqelRSsigypvmb7ejX1eYHCD3j67GHukF/9T1sQaCQDakG9
-YC9ONAyZkTGxwjCAnXRA
-=SlMQ
------END PGP SIGNATURE-----
-
---Sig_/GgDUxb3PRtTURIbPtvWguhG--
+Thanks,
+Maxime
