@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752912AbaFEEVL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:21:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44022 "EHLO
+	id S1754207AbaFEEuo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:50:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44086 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752818AbaFEEVD (ORCPT
+	with ESMTP id S1752898AbaFEEVK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:21:03 -0400
+	Thu, 5 Jun 2014 00:21:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shiva Krishna Merla <shivakrishna.merla@netapp.com>,
-        Krishnasamy Somasundaram <somasundaram.krishnasamy@netapp.com>,
-        Speagle Andy <Andy.Speagle@netapp.com>,
-        Junichi Nomura <j-nomura@ce.jp.nec.com>,
-        Mike Snitzer <snitzer@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
-        Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 3.4 100/214] dm mpath: fix race condition between multipath_dtr and pg_init_done
-Date: Wed,  4 Jun 2014 21:17:43 -0700
-Message-Id: <20140605041653.139991414@linuxfoundation.org>
+        Krzysztof Mazur <krzysiek@podlesie.net>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Qiang Huang <h.huangqiang@huawei.com>
+Subject: [PATCH 3.4 113/214] i915: ensure that VGA plane is disabled
+Date: Wed,  4 Jun 2014 21:17:56 -0700
+Message-Id: <20140605041654.874735081@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -31,110 +29,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shiva Krishna Merla <shivakrishna.merla@netapp.com>
+From: Krzysztof Mazur <krzysiek@podlesie.net>
 
-commit 954a73d5d3073df2231820c718fdd2f18b0fe4c9 upstream.
+commit 0fde901f1ddd2ce0e380a6444f1fb7ca555859e9 upstream.
 
-Whenever multipath_dtr() is happening we must prevent queueing any
-further path activation work.  Implement this by adding a new
-'pg_init_disabled' flag to the multipath structure that denotes future
-path activation work should be skipped if it is set.  By disabling
-pg_init and then re-enabling in flush_multipath_work() we also avoid the
-potential for pg_init to be initiated while suspending an mpath device.
+Some broken systems (like HP nc6120) in some cases, usually after LID
+close/open, enable VGA plane, making display unusable (black screen on LVDS,
+some strange mode on VGA output). We used to disable VGA plane only once at
+startup. Now we also check, if VGA plane is still disabled while changing
+mode, and fix that if something changed it.
 
-Without this patch a race condition exists that may result in a kernel
-panic:
-
-1) If after pg_init_done() decrements pg_init_in_progress to 0, a call
-   to wait_for_pg_init_completion() assumes there are no more pending path
-   management commands.
-2) If pg_init_required is set by pg_init_done(), due to retryable
-   mode_select errors, then process_queued_ios() will again queue the
-   path activation work.
-3) If free_multipath() completes before activate_path() work is called a
-   NULL pointer dereference like the following can be seen when
-   accessing members of the recently destructed multipath:
-
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000090
-RIP: 0010:[<ffffffffa003db1b>]  [<ffffffffa003db1b>] activate_path+0x1b/0x30 [dm_multipath]
-[<ffffffff81090ac0>] worker_thread+0x170/0x2a0
-[<ffffffff81096c80>] ? autoremove_wake_function+0x0/0x40
-
-[switch to disabling pg_init in flush_multipath_work & header edits by Mike Snitzer]
-Signed-off-by: Shiva Krishna Merla <shivakrishna.merla@netapp.com>
-Reviewed-by: Krishnasamy Somasundaram <somasundaram.krishnasamy@netapp.com>
-Tested-by: Speagle Andy <Andy.Speagle@netapp.com>
-Acked-by: Junichi Nomura <j-nomura@ce.jp.nec.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-[bwh: Backported to 3.2:
- - Adjust context
- - Bump version to 1.3.2 not 1.6.0]
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=57434
+Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+[bwh: Backported to 3.2: intel_modeset_setup_hw_state() does not
+ exist, so call i915_redisable_vga() directly from intel_lid_notify()]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-[xr: Backported to 3.4: Adjust context]
-Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
+Cc: Qiang Huang <h.huangqiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/md/dm-mpath.c |   18 +++++++++++++++---
- 1 file changed, 15 insertions(+), 3 deletions(-)
 
---- a/drivers/md/dm-mpath.c
-+++ b/drivers/md/dm-mpath.c
-@@ -84,6 +84,7 @@ struct multipath {
- 	unsigned queue_io;		/* Must we queue all I/O? */
- 	unsigned queue_if_no_path;	/* Queue I/O if last path fails? */
- 	unsigned saved_queue_if_no_path;/* Saved state during suspension */
-+	unsigned pg_init_disabled:1;	/* pg_init is not currently allowed */
- 	unsigned pg_init_retries;	/* Number of times to retry pg_init */
- 	unsigned pg_init_count;		/* Number of times pg_init called */
- 	unsigned pg_init_delay_msecs;	/* Number of msecs before pg_init retry */
-@@ -493,7 +494,8 @@ static void process_queued_ios(struct wo
- 	    (!pgpath && !m->queue_if_no_path))
- 		must_queue = 0;
+---
+ drivers/gpu/drm/i915/i915_drv.h      |    1 +
+ drivers/gpu/drm/i915/intel_display.c |   17 +++++++++++++++++
+ drivers/gpu/drm/i915/intel_lvds.c    |    1 +
+ 3 files changed, 19 insertions(+)
+
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -1397,6 +1397,7 @@ static inline void intel_unregister_dsm_
+ #endif /* CONFIG_ACPI */
  
--	if (m->pg_init_required && !m->pg_init_in_progress && pgpath)
-+	if (m->pg_init_required && !m->pg_init_in_progress && pgpath &&
-+	    !m->pg_init_disabled)
- 		__pg_init_all_paths(m);
- 
- out:
-@@ -907,10 +909,20 @@ static void multipath_wait_for_pg_init_c
- 
- static void flush_multipath_work(struct multipath *m)
- {
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&m->lock, flags);
-+	m->pg_init_disabled = 1;
-+	spin_unlock_irqrestore(&m->lock, flags);
-+
- 	flush_workqueue(kmpath_handlerd);
- 	multipath_wait_for_pg_init_completion(m);
- 	flush_workqueue(kmultipathd);
- 	flush_work_sync(&m->trigger_event);
-+
-+	spin_lock_irqsave(&m->lock, flags);
-+	m->pg_init_disabled = 0;
-+	spin_unlock_irqrestore(&m->lock, flags);
+ /* modesetting */
++extern void i915_redisable_vga(struct drm_device *dev);
+ extern void intel_modeset_init(struct drm_device *dev);
+ extern void intel_modeset_gem_init(struct drm_device *dev);
+ extern void intel_modeset_cleanup(struct drm_device *dev);
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -9254,6 +9254,23 @@ static void i915_disable_vga(struct drm_
+ 	POSTING_READ(vga_reg);
  }
  
- static void multipath_dtr(struct dm_target *ti)
-@@ -1129,7 +1141,7 @@ static int pg_init_limit_reached(struct
++void i915_redisable_vga(struct drm_device *dev)
++{
++	struct drm_i915_private *dev_priv = dev->dev_private;
++	u32 vga_reg;
++
++	if (HAS_PCH_SPLIT(dev))
++		vga_reg = CPU_VGACNTRL;
++	else
++		vga_reg = VGACNTRL;
++
++	if (I915_READ(vga_reg) != VGA_DISP_DISABLE) {
++		DRM_DEBUG_KMS("Something enabled VGA plane, disabling it\n");
++		I915_WRITE(vga_reg, VGA_DISP_DISABLE);
++		POSTING_READ(vga_reg);
++	}
++}
++
+ void intel_modeset_init(struct drm_device *dev)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+--- a/drivers/gpu/drm/i915/intel_lvds.c
++++ b/drivers/gpu/drm/i915/intel_lvds.c
+@@ -535,6 +535,7 @@ static int intel_lid_notify(struct notif
  
- 	spin_lock_irqsave(&m->lock, flags);
+ 	mutex_lock(&dev->mode_config.mutex);
+ 	drm_helper_resume_force_mode(dev);
++	i915_redisable_vga(dev);
+ 	mutex_unlock(&dev->mode_config.mutex);
  
--	if (m->pg_init_count <= m->pg_init_retries)
-+	if (m->pg_init_count <= m->pg_init_retries && !m->pg_init_disabled)
- 		m->pg_init_required = 1;
- 	else
- 		limit_reached = 1;
-@@ -1644,7 +1656,7 @@ out:
-  *---------------------------------------------------------------*/
- static struct target_type multipath_target = {
- 	.name = "multipath",
--	.version = {1, 3, 0},
-+	.version = {1, 3, 2},
- 	.module = THIS_MODULE,
- 	.ctr = multipath_ctr,
- 	.dtr = multipath_dtr,
+ 	return NOTIFY_OK;
 
 
