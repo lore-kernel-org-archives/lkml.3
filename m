@@ -1,228 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751948AbaFENtq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 09:49:46 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:31983 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751135AbaFENto convert rfc822-to-8bit (ORCPT
+	id S1751799AbaFENvO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 09:51:14 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:33310 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751286AbaFENvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 09:49:44 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-ee-539075758346
-From: Krzysztof Opasiak <k.opasiak@samsung.com>
-To: "'Michal Nazarewicz'" <mina86@mina86.com>,
-        Krzysztof Opasiak <k.opasiak@samsung.com>,
-        "'Felipe Balbi'" <balbi@ti.com>
-Cc: Krzysztof Opasiak <k.opasiak@samsung.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1401954206-8491-1-git-send-email-mina86@mina86.com>
- <1401954206-8491-2-git-send-email-mina86@mina86.com>
- <008101cf80b0$caf88dc0$60e9a940$%opasiak@samsung.com>
- <xa1tvbsfmuxj.fsf@mina86.com>
-In-reply-to: <xa1tvbsfmuxj.fsf@mina86.com>
-Subject: RE: [PATCH 2/2] tools: ffs-test: convert to new descriptor format
- fixing compilation error
-Date: Thu, 05 Jun 2014 15:49:46 +0200
-Message-id: <008301cf80c5$03cfb3d0$0b6f1b70$%opasiak@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac+AtTJlTAm6oaScQ4ie0VGWcxLgEgABYz2w
-Content-language: en-us
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrALMWRmVeSWpSXmKPExsVy+t/xK7qlpROCDXZv0Lc4eL/e4vbEaWwW
-	l3fNYbNYtKyV2WLB8RZWB1aPdX9eMXn0bVnF6HH8xnYmj8+b5AJYorhsUlJzMstSi/TtErgy
-	Fl94y1RwT79i9tqrjA2MXWpdjJwcEgImEhMWvmWFsMUkLtxbz9bFyMUhJLCUUeLp1BtQTgOT
-	xIQ/fYxdjBwcbAL6EvN2iYI0iAiUSzQ9f8kCYjMLZEhMfraQCaL+PKPExiPTmEASnAJaEucv
-	3GUHsYUFUiXeLT4LZrMIqErMOnSfBWQmr4CjxMtNuiBhXgFBiR+T70HNVJeYNG8RM4StLfHk
-	3QVWkHIJoPijv7oQJxhJnPw2jxWiRFxi0oOH7BMYhWYhmTQLyaRZSCbNQtKygJFlFaNoamly
-	QXFSeq6hXnFibnFpXrpecn7uJkZILHzZwbj4mNUhRgEORiUeXofX/cFCrIllxZW5hxglOJiV
-	RHgToyYEC/GmJFZWpRblxxeV5qQWH2Jk4uCUamA0FnjnmnvlpZftjLmlBg6CWfM4Xu81uLC0
-	V3mVx0V7n51+kyO3Pg2O/LVg79U/UZuOeCzJslnSpbX3xP67c02f67srpux5ciRWZunEnJ3H
-	XzX+NnzmuvNqx1KO5M465fqdb6ZfFBY39Nz/bBZDpei7B1ckZffXVF03vnnUosM6ryOvWah/
-	M8tbJZbijERDLeai4kQAF5cXZGMCAAA=
+	Thu, 5 Jun 2014 09:51:12 -0400
+Date: Thu, 5 Jun 2014 15:51:08 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+Cc: "'Ulf Hansson'" <ulf.hansson@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "rjw@sisk.pl" <rjw@sisk.pl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>
+Subject: Re: autosleep suspend too frquent problem
+Message-ID: <20140605135108.GA14162@amd.pavel.ucw.cz>
+References: <35FD53F367049845BC99AC72306C23D1029A27656A2D@CNBJMBX05.corpusers.net>
+ <20140603120128.GA5080@amd.pavel.ucw.cz>
+ <CAPDyKFqnC1u_Nhe7sJrAzBc8YktDUJC4KAKTPtYVK-Qk6mmk0A@mail.gmail.com>
+ <35FD53F367049845BC99AC72306C23D1029A27656A38@CNBJMBX05.corpusers.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <35FD53F367049845BC99AC72306C23D1029A27656A38@CNBJMBX05.corpusers.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu 2014-06-05 14:51:41, Wang, Yalin wrote:
+> Hi  
+> 
+> Thanks for your clarification.
+> 
+> One problem is the sd card driver itself .
+> 
+> In addition, I also think kernel's autosleep.c module
+> Have problem too.
+> It just test wake up count ,if the count is zero, then enter suspend.
+> 
+> This will result in frequent suspend / resume problems sometimes,
+> It is not acceptable, I think also need to be fixed to 
+> Avoid this special scenario .
 
+Android phones pretty much want to sleep very very often. But if you
+think there's coding bug in there, let us know..
+								Pavel
+
+> Thanks
+> 
+> 
 > -----Original Message-----
-> From: Michal Nazarewicz [mailto:mpn@google.com] On Behalf Of Michal
-> Nazarewicz
-> Sent: Thursday, June 05, 2014 1:56 PM
-> To: Krzysztof Opasiak; 'Felipe Balbi'
-> Cc: Krzysztof Opasiak; linux-usb@vger.kernel.org; linux-
-> kernel@vger.kernel.org
-> Subject: Re: [PATCH 2/2] tools: ffs-test: convert to new descriptor
-> format fixing compilation error
+> From: Ulf Hansson [mailto:ulf.hansson@linaro.org] 
+> Sent: Wednesday, June 04, 2014 5:53 AM
+> To: Pavel Machek
+> Cc: Wang, Yalin; len.brown@intel.com; rjw@sisk.pl; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org; linux-mmc
+> Subject: Re: autosleep suspend too frquent problem
 > 
-> On Thu, Jun 05 2014, Krzysztof Opasiak <k.opasiak@samsung.com>
-> wrote:
-> > I would suggest adding a suitable structure as you described in
-> > previous discussion[1]. Writing first 3 fields in each userspace
-> > program doesn't look quite good. Using:
+> On 3 June 2014 14:01, Pavel Machek <pavel@ucw.cz> wrote:
+> > Hi!
 > >
-> > #ifndef USE_LEGACY_DESC_HEAD
-> > struct {
-> > 	struct usb_functionfs_desc_head2 header;
-> > 	__le32 fs_count
-> > 	(... and rest according to flags ...)
-> > } __attribute__((packed)) header;
-> > #else ...
 > >
-> > Would be shorter, more flexible and user friendly. Moreover it
-> gives
-> > less places for mistake (writing fields in wrong order).
+> >> I found sd card sometimes are damaged/ destroyed On our devices .
+> >> And seems it is caused by kernel's frequently suspend/resume, Because 
+> >> during suspend/resume, the driver will suspend/resume sdcard Very 
+> >> frequently, this will damaged the sdcard sometimes, and the damage is 
+> >> not recoverable ..
+> >>
+> >> Sometimes kernel will enter suspend and exit suspend very frequently, 
+> >> Especially when the system is in idle, but some driver is not idle, 
+> >> And it will  wake up the system by irq frequently.
+> >> By our power test result, if system enter suspend /resume very 
+> >> frequently, Will consume more power , because it will enable /disable 
+> >> many devices During a short time .
+> >>
+> >> I make a patch to prevent the system to enter suspend/resume state 
+> >> More than one time during 2 seconds：
+> >
+> > It is good you managed to diagnose the problem, but this si not the 
+> > right solution.
+> >
+> > Either:
+> >
+> > 1) don't power down SD card during system suspend
 > 
-> For ffs-test with USE_LEGACY_DESC_HEAD support it would be longer.
-> Compare:
-
-(... snip ...)
-
+> NAK. The amount of power a card (even if there are good behaving cards as well) may utilize, in powered but idle state could be significant.
+> I have seen cases of constant power consumption of several mA here.
 > 
-> The second one uses an unreadable hack to match length of the first
-> one
-> and the third one is two lines longer.  On top of that, the second
-> and
-> third produce different structures, use more complicated
-> preprocessing
-> directives, and repeat value of fs_count and hs_count twice.
+> >
+> > or maybe even better
+> >
+> > 2) don't power _up_ SD card during system resume. Let it be powered 
+> > down until the first access.
 > 
-> Without legacy support, it would indeed be shorter (by two lines),
-
-Yes and I was talking about apps which use only new API without compatibility layer.
-
-I agree that when providing compatibility layer it is more complicated but as always this is a cost of compatibility layer. 
-
-
-> but
-> would lead to awkward structures:
+> Good news! This is "almost" supported already by the mmc subsystem.
 > 
-> ----------- >8 ----------------------------------------------------
-> -----
-> struct {
-> 	struct usb_functionfs_descs_head2 header;
-> 	/* Why aren't the two below fields inside of a header? */
-> 	__le32 fs_count;
-> 	__le32 hs_count;
-> };
+> If your mmc host has set the capability flag MMC_CAP_RUNTIME_RESUME, that means the card won't be powered up (and initialized) until the next request.
 > 
-> struct {
-> 	struct {
-> 		/* Why is there a header.header field? */
-> 		struct usb_functionfs_descs_head2 header;
-> 		__le32 fs_count;
-> 		__le32 hs_count;
-> 	};
-> };
-> ----------- >8 ----------------------------------------------------
-> -----
+> However, for removable cards (!MMC_CAP_NONREMOVABLE), during system resume phase, the mmc core will trigger a "rescan" of the card, to verify it has not been removed. Thus, unfortunate for this use case, the first request (for removable cards) will be triggered during the system resume phase.
 > 
-
-Please consider this:
-
-struct {
-	struct usb_functionfs_descs_head2 header;
-	__le32 fs_count;
-	__le32 hs_count;
-	struct {
-		(...)
-	} fs_desc;
-	struct {
-		(...) /* Other than previous */
-	} hs_desc;
-} = {
-	.header = (...),
-	.fs_count = X,
-	.fs_desc = {
-		(...)
-	},
-	.hs_count = Y,
-	.hs_desc = {
-		(...)
-	},
-}
-
-This approach looks quite reasonable for me and don't cause any confusion. Numbers of fs and hs descriptors don't go to headers because they are more connected with fs_desc and hs_desc than with header. Using this allows you to initialize them as close to fs_desc and hs_desc as possible. BTW yes I see that when we would like to have backward compatibility this will be few lines longer.
-
-> And I don't see how it would be more flexible.  If anything, it
-> would be
-> less.
-
-When I was writing about flexibility I was talking about use case described above.
-
+> I suppose we should add some extra conditions/flags which makes the mmc core to handle the above scenario. Actually I have been thinking of putting together a patch for this, but it never pops up on the top of my TODO list. :-)
 > 
-> I understand, and share, your sentiment, but I don't think adding
-> usb_functionfs_descs_head2 structure with magic, flags and length
-> would
-> improve the situation.
+> Additionally, I wonder if this bouncing up and down from suspend to resume, could have other negative impact for other subsystems? Is it just a mmc subsystem problem? I am not so sure.
 > 
-> Something I thought about shortly was:
+> Kind regards
+> Ulf Hansson
 > 
-> ----------- >8 ----------------------------------------------------
-> -----
-> #define USB_FFS_DESCS_HEAD(_flags) struct {				\
-> 		__le32 magic, length, flags;				\
-> 		__le32 data[!!(_flags & FUNCTIONFS_HAS_FS_DESC) +	\
-> 			    !!(_flags & FUNCTIONFS_HAS_HS_DESC) +	\
-> 			    !!(_flags & FUNCTIONFS_HAS_SS_DESC)];	\
-> 	} __attribute__((packed))
-> 
-> #define USB_FFS_DESCS_HEAD_INIT(_flags, length, ...) {
-> 	\
-> 		.magic = cpu_to_le32(FUNCTIONFS_DESCRIPTORS_MAGIC_V2),
-> 	\
-> 		.flags = cpu_to_le32(flags),				\
-> 		.langth = cpu_to_le32(length),				\
-> 		.data = { __VA_ARGS__ }					\
-> 	}
-> 
-> static const struct {
-> 	USB_FFS_DESCS_HEAD(FUNCTIONFS_HAS_FS_DESC |
-> FUNCTIONFS_HAS_HS_DESC),
-> 	/* … */
-> } __attribute__((packed)) descriptors = {
-> 	USB_FFS_DESCS_HEAD_INIT(FUNCTIONFS_HAS_FS_DESC |
-> FUNCTIONFS_HAS_HS_DESC,
-> 				sizeof(descriptors), 3, 3),
-> 	/* … */
-> };
-> ----------- >8 ----------------------------------------------------
-> -----
-> 
-> But whether this is nicer is arguable as well.
+> >
+> > Thanks,
+> >                                                                         
+> > Pavel
+> > --
+> > (english) http://www.livejournal.com/~pavelmachek
+> > (cesky, pictures) 
+> > http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe 
+> > linux-kernel" in the body of a message to majordomo@vger.kernel.org 
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
 
-In my opinion those macros are quite nice and should appear in functionfs.h. Maybe it would be suitable to provide ifdef __USB_FFS_USE_LEGACY_API and two versions of those macros? This will make backward compatibility to be handled by one switch before including a header instead of directly by user with ifndefs. Then the whole code with binary backward compatibility would be as simple as:
-
-#ifdef MY_USE_LEGACY_FLAG
-#define __USB_FFS_USE_LEGACY_API
-#endif
-
-#include <linux/usb/functionfs.h>
-
-#define FFS_FLAGS (FUNCTIONFS_HAS_FS_DESC | FUNCTIONFS_HAS_HS_DESC)
-
-struct {
-	USB_FFS_DESCS_HEAD(FFS_FLAGS) header;
-	struct {
-		(...) /* descriptors */
-	} fs_desc, hs_desc;
-} __attribute__((packed)) my_desc = {
-	.header = USB_FFS_DESCS_HEAD_INIT(FFS_FLAGS, sizeof(my_desc), 3, 3),
-	(...) /* rest of initialization */
-};
-
-Of course two more suitable ifndef will be required for ss_desc. Taking all into account this approach looks very good to me and needs only minimal user action to provide support for both legacy and new API. This approach have also some disadvantage because we assume that developer has new kernel headers which provide such macros and only place where such app run has old kernel. I'm also considering approach with two macros because this would allow app to detect in runtime whether current kernel has new ffs version and use legacy macro as fallback procedure. 
-
-
---
-BR's
-Krzysztof Opasiak
-Samsung R&D Institute Poland
-Samsung Electronics
-k.opasiak@samsung.com
-
-
-
-
-
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
