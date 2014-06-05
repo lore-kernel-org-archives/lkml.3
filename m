@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752484AbaFEPRX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 11:17:23 -0400
-Received: from vegas.theobroma-systems.com ([144.76.126.164]:54128 "EHLO
-	mail.theobroma-systems.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752396AbaFEPRW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 11:17:22 -0400
-From: Marcus Nutzinger <marcus.nutzinger@theobroma-systems.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Marcus Nutzinger <marcus.nutzinger@theobroma-systems.com>
-Subject: [PATCH v2] usb: gadget: gadgetfs: correct dev state
-Date: Thu,  5 Jun 2014 17:17:06 +0200
-Message-Id: <1401981426-20505-1-git-send-email-marcus.nutzinger@theobroma-systems.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1401973680-18413-1-git-send-email-marcus.nutzinger@theobroma-systems.com>
-References: <1401973680-18413-1-git-send-email-marcus.nutzinger@theobroma-systems.com>
+	id S1752559AbaFEPRb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 11:17:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19443 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752494AbaFEPR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 11:17:29 -0400
+Date: Thu, 5 Jun 2014 11:16:39 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: WANG Chao <chaowang@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
+        greg@kroah.com, bp@alien8.de, jkosina@suse.cz, dyoung@redhat.com,
+        bhe@redhat.com, akpm@linux-foundation.org
+Subject: Re: [PATCH 06/13] kexec: New syscall kexec_file_load() declaration
+Message-ID: <20140605151639.GB14083@redhat.com>
+References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
+ <1401800822-27425-7-git-send-email-vgoyal@redhat.com>
+ <20140605095603.GD3876@dhcp-17-89.nay.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140605095603.GD3876@dhcp-17-89.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit 1826e9b1 (usb: gadget: gadgetfs: use
-after free in dev_release()) and places the call to
-put_dev() after setting the state.
+On Thu, Jun 05, 2014 at 05:56:03PM +0800, WANG Chao wrote:
 
-If this is not the final call to dev_release() and the
-state is not reset to STATE_DEV_DISABLED and hence all
-further open() calls to the gadgetfs ep0 device will
-fail with EBUSY.
+[..]
+> > diff --git a/kernel/kexec.c b/kernel/kexec.c
+> > index c435c5f..a3044e6 100644
+> > --- a/kernel/kexec.c
+> > +++ b/kernel/kexec.c
+> > @@ -1098,6 +1098,13 @@ COMPAT_SYSCALL_DEFINE4(kexec_load, compat_ulong_t, entry,
+> >  }
+> >  #endif
+> >  
+> > +SYSCALL_DEFINE5(kexec_file_load, int, kernel_fd, int, initrd_fd,
+> > +		const char __user *, cmdline_ptr, unsigned long,
+> > +		cmdline_len, unsigned long, flags)
+> 
+> initrd is optional for system boot.
+> 
+> How about using int *kernel_fd and int *initrd_fd as the argument? Then
+> if I don't need initrd, in userspace I can do this:
 
-Signed-off-by: Marcus Nutzinger <marcus.nutzinger@theobroma-systems.com>
-Reviewed-by: Christoph Muellner <christoph.muellner@theobroma-systems.com>
----
- drivers/usb/gadget/inode.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+Hi Chao,
 
-diff --git a/drivers/usb/gadget/inode.c b/drivers/usb/gadget/inode.c
-index a925d0c..6330528 100644
---- a/drivers/usb/gadget/inode.c
-+++ b/drivers/usb/gadget/inode.c
-@@ -1264,8 +1264,13 @@ dev_release (struct inode *inode, struct file *fd)
- 
- 	kfree (dev->buf);
- 	dev->buf = NULL;
--	put_dev (dev);
- 
-+	/* other endpoints were all decoupled from this device */
-+	spin_lock_irq(&dev->lock);
-+	dev->state = STATE_DEV_DISABLED;
-+	spin_unlock_irq(&dev->lock);
-+
-+	put_dev (dev);
- 	return 0;
- }
- 
--- 
-1.9.0
+I really am not too keen converting plain int fd arguments into pointers.
 
+Given the fact that fd is int, that means all valid values are greater
+than 0. How about using -1 to denote that initrd is not being loaded?
+
+This does create one little anomaly and that is for all -ve values we
+will return -EBADF except -1 which we special cased.
+
+> 
+> kexec_file_load(&kernel_fd, NULL, ...)
+> 
+> And even you can remove KEXEC_FILE_UNLOAD flag, because you could tell
+> that one wants to unload if the following is invoked:
+> 
+> kexec_file_load(NULL, NULL, ...)
+
+I would prefer not to derive special meanings of NULL parameters and
+instead use an explicit flag to unload kernel.
+
+Thanks
+Vivek
