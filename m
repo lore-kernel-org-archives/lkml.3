@@ -1,86 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752587AbaFEUts (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 16:49:48 -0400
-Received: from mxip3-inbound.gatech.edu ([130.207.182.45]:13942 "EHLO
-	mxip3-inbound.gatech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752471AbaFEUtq (ORCPT
+	id S1752631AbaFEUuH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 16:50:07 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:50416 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752276AbaFEUtC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 16:49:46 -0400
-X-RemoteIP: 130.207.185.162
-X-Group: ZimbraSenderGroup
-X-Policy: $ZIMBRA
-X-MID: 92163964
-X-SBRS: None
-X-IronPort-AV: E=Sophos;i="4.98,983,1392181200"; 
-   d="scan'208";a="92163964"
-X-GT-Spam-Rating: (0%)
-Message-ID: <5390D7E1.7060606@gatech.edu>
-Date: Thu, 05 Jun 2014 16:49:37 -0400
-From: Pranith Kumar <pranith@gatech.edu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: peterz@infradead.org
-CC: linux-kernel@vger.kernel.org, tim.c.chen@linux.intel.com, davidlohr@hp.com,
-        mingo@redhat.com
-Subject: [RFC PATCH 1/1] cleanup: use bool as return type for rwsem_is_locked
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 5 Jun 2014 16:49:02 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org
+Subject: [PATCH 2/5] staging/iio: IIO_SIMPLE_DUMMY_BUFFER neds IIO_BUFFER
+Date: Thu,  5 Jun 2014 22:48:12 +0200
+Message-Id: <1402001295-1980118-3-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1402001295-1980118-1-git-send-email-arnd@arndb.de>
+References: <1402001295-1980118-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:Iekz5lrD8IlhFLI//NxUokYMGWDl5ZxGT5K7WRWhKiy
+ pSWQcjnc1+iGJC4TvTSadnUU0gNTZu214VlghghYQOrg60HrXo
+ NaLGhcA8iJIPPuBrQGwE0589avVo4+SQ295hB2v+zBq5U9zzkt
+ +G3sbcjpEnXuQEMygfyN5lbeIGq3Q9xh5DDeGA2p+L43x9qzfN
+ ipYVlevcGWKgEF+CXiBcevyM9FKywoB7SLROoVIAvAn51erRUR
+ cubuF8SQZ0My7aBEWxtbwlrHAsC7jik6NAK9KRyhTWSza4A3By
+ lzjshLXhH7GDVvJPYmbIK2PKF8o4TT2f8aq7CwDTmDcJYJWrcH
+ 5Qql97pjWNVgaKFKnvNmV2CaHdfYT/SUCLTLUTaoO
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I see that there are functions like this which basically say:
+An obviously missing 'select' statement, without this we
+get a link error
 
-return 1 if true else return 0. Is it worth cleaning them up? Or is there any reason why this convention is followed?
-
-use bool as the return type. No reason for return type to be int.
-
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Jonathan Cameron <jic23@kernel.org>
+Cc: linux-iio@vger.kernel.org
 ---
- include/linux/rwsem-spinlock.h  |    2 +-
- include/linux/rwsem.h           |    2 +-
- kernel/locking/rwsem-spinlock.c |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/staging/iio/Kconfig | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/rwsem-spinlock.h b/include/linux/rwsem-spinlock.h
-index d5b13bc..9026d2a 100644
---- a/include/linux/rwsem-spinlock.h
-+++ b/include/linux/rwsem-spinlock.h
-@@ -39,7 +39,7 @@ extern int __down_write_trylock(struct rw_semaphore *sem);
- extern void __up_read(struct rw_semaphore *sem);
- extern void __up_write(struct rw_semaphore *sem);
- extern void __downgrade_write(struct rw_semaphore *sem);
--extern int rwsem_is_locked(struct rw_semaphore *sem);
-+extern bool rwsem_is_locked(struct rw_semaphore *sem);
+diff --git a/drivers/staging/iio/Kconfig b/drivers/staging/iio/Kconfig
+index b36feb0..fa38be0 100644
+--- a/drivers/staging/iio/Kconfig
++++ b/drivers/staging/iio/Kconfig
+@@ -36,10 +36,11 @@ config IIO_SIMPLE_DUMMY_EVENTS
+          Add some dummy events to the simple dummy driver.
  
- #endif /* __KERNEL__ */
- #endif /* _LINUX_RWSEM_SPINLOCK_H */
-diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
-index 091d993..04faf87 100644
---- a/include/linux/rwsem.h
-+++ b/include/linux/rwsem.h
-@@ -49,7 +49,7 @@ extern struct rw_semaphore *rwsem_downgrade_wake(struct rw_semaphore *sem);
- #include <asm/rwsem.h>
+ config IIO_SIMPLE_DUMMY_BUFFER
+-       boolean "Buffered capture support"
+-       select IIO_KFIFO_BUF
+-       help
+-         Add buffered data capture to the simple dummy driver.
++	boolean "Buffered capture support"
++	select IIO_BUFFER
++	select IIO_KFIFO_BUF
++	help
++	  Add buffered data capture to the simple dummy driver.
  
- /* In all implementations count != 0 means locked */
--static inline int rwsem_is_locked(struct rw_semaphore *sem)
-+static inline bool rwsem_is_locked(struct rw_semaphore *sem)
- {
- 	return sem->count != 0;
- }
-diff --git a/kernel/locking/rwsem-spinlock.c b/kernel/locking/rwsem-spinlock.c
-index 9be8a91..7374139 100644
---- a/kernel/locking/rwsem-spinlock.c
-+++ b/kernel/locking/rwsem-spinlock.c
-@@ -20,7 +20,7 @@ struct rwsem_waiter {
- 	enum rwsem_waiter_type type;
- };
+ endif # IIO_SIMPLE_DUMMY
  
--int rwsem_is_locked(struct rw_semaphore *sem)
-+bool rwsem_is_locked(struct rw_semaphore *sem)
- {
- 	int ret = 1;
- 	unsigned long flags;
 -- 
-1.7.9.5
+1.8.3.2
+
