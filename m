@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751851AbaFEQDa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 12:03:30 -0400
-Received: from mga09.intel.com ([134.134.136.24]:21903 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750853AbaFEQD2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 12:03:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,981,1392192000"; 
-   d="scan'208";a="523254286"
-Subject: Re: [PATCH v4] rwsem: Support optimistic spinning
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Davidlohr Bueso <davidlohr@hp.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jason Low <jason.low2@hp.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>, linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@us.ibm.com>
-In-Reply-To: <20140605083804.GF4926@gmail.com>
-References: <1398205166.6345.7.camel@buesod1.americas.hpqcorp.net>
-	 <1399055055.6275.15.camel@buesod1.americas.hpqcorp.net>
-	 <20140605083804.GF4926@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 05 Jun 2014 09:03:07 -0700
-Message-ID: <1401984187.2970.513.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1751946AbaFEQEi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 12:04:38 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42604 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751000AbaFEQEh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 12:04:37 -0400
+Date: Thu, 5 Jun 2014 12:04:35 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Marcus Nutzinger <marcus.nutzinger@theobroma-systems.com>
+cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: gadget: gadgetfs: correct dev state
+In-Reply-To: <5A6C89E5-92AB-4908-8867-2BE783794E60@theobroma-systems.com>
+Message-ID: <Pine.LNX.4.44L0.1406051201040.1103-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-06-05 at 10:38 +0200, Ingo Molnar wrote:
-> When trying to apply this patch again I noticed the following detail:
-> 
-> > From: Davidlohr Bueso <davidlohr@hp.com>
-> >
-> > [...]
-> >
-> > Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-> > Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
-> 
-> That's not a valid signoff sequence - the person sending the patch 
-> should be the last SOB.
-> 
-> I've changed it to:
-> 
->  Based-on-work-from: Tim Chen <tim.c.chen@linux.intel.com>
->  Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-> 
-> which I suspect describes the intention of the SOB line fairly?
-> 
-> Thanks,
-> 
-> 	Ingo
+On Thu, 5 Jun 2014, Marcus Nutzinger wrote:
 
-It's fine with me.  Thanks.
+> Hi Sergei,
+> 
+> On Jun 5, 2014, at 4:18 PM, Sergei Shtylyov <sergei.shtylyov@cogentembedded.com> wrote:
+> 
+> >   Please also specify that commit's summary line in parens.
+> 
+> I'll resubmit the updated patch in a minute!
+> 
+> >> +	/* other endpoints were all decoupled from this device */
+> >> +	spin_lock_irq(&dev->lock);
+> >> +	dev->state = STATE_DEV_DISABLED;
+> >> +	spin_unlock_irq(&dev->lock);
+> > 
+> >   Not sure I understand why you need spinlock here... isn't the assignment atomic already?
+> 
+> 
+> Sure, an assignment might be atomic. However, following the policy of commit 7489d149
+> (USB: gadgetfs cleanups) all ep0 state changes shall be protected by spinlocks.
 
-Tim
+Sometimes an assignment needs to be protected by a lock, even though 
+the assignment itself is atomic.  This happens, for example, when some 
+other code executes a lock-protected region that expects the variable 
+not to change.
 
+I don't know if that's the case here.  But this example shows that in
+general, one sometimes needs locks in places where you wouldn't expect
+them.
 
+In fact, it may even be necessary to take and release a lock, without
+doing anything in between!
+
+Alan Stern
 
