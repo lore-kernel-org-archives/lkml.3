@@ -1,124 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751505AbaFEGvu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 02:51:50 -0400
-Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:17683 "EHLO
-	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751255AbaFEGvr (ORCPT
+	id S1751571AbaFEGwT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 02:52:19 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:33422 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751255AbaFEGwQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 02:51:47 -0400
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: "'Ulf Hansson'" <ulf.hansson@linaro.org>, Pavel Machek <pavel@ucw.cz>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-CC: "len.brown@intel.com" <len.brown@intel.com>, "rjw@sisk.pl" <rjw@sisk.pl>,
+	Thu, 5 Jun 2014 02:52:16 -0400
+Date: Thu, 5 Jun 2014 08:52:05 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Morten Rasmussen <morten.rasmussen@arm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>
-Date: Thu, 5 Jun 2014 14:51:41 +0800
-Subject: RE: autosleep suspend too frquent problem
-Thread-Topic: autosleep suspend too frquent problem
-Thread-Index: Ac9/dkEfm6YcZSSIQSWBWFvVAsWmbgBE8UVA
-Message-ID: <35FD53F367049845BC99AC72306C23D1029A27656A38@CNBJMBX05.corpusers.net>
-References: <35FD53F367049845BC99AC72306C23D1029A27656A2D@CNBJMBX05.corpusers.net>
-	<20140603120128.GA5080@amd.pavel.ucw.cz>
- <CAPDyKFqnC1u_Nhe7sJrAzBc8YktDUJC4KAKTPtYVK-Qk6mmk0A@mail.gmail.com>
-In-Reply-To: <CAPDyKFqnC1u_Nhe7sJrAzBc8YktDUJC4KAKTPtYVK-Qk6mmk0A@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        Dietmar Eggemann <Dietmar.Eggemann@arm.com>, len.brown@intel.com
+Subject: Re: [RFC PATCH 06/16] arm: topology: Define TC2 sched energy and
+ provide it to scheduler
+Message-ID: <20140605065205.GA3213@twins.programming.kicks-ass.net>
+References: <1400869003-27769-1-git-send-email-morten.rasmussen@arm.com>
+ <20140604160230.GS29593@e103034-lin>
+ <20140604172712.GJ13930@laptop.programming.kicks-ass.net>
+ <2484761.vkWavnsDx3@vostro.rjw.lan>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="n8g4imXOkfNTN/H1"
+Content-Disposition: inline
+In-Reply-To: <2484761.vkWavnsDx3@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s556q2Jb024245
-
-Hi  
-
-Thanks for your clarification.
-
-One problem is the sd card driver itself .
-
-In addition, I also think kernel's autosleep.c module
-Have problem too.
-It just test wake up count ,if the count is zero, then enter suspend.
-
-This will result in frequent suspend / resume problems sometimes,
-It is not acceptable, I think also need to be fixed to 
-Avoid this special scenario .
-
-Thanks
 
 
------Original Message-----
-From: Ulf Hansson [mailto:ulf.hansson@linaro.org] 
-Sent: Wednesday, June 04, 2014 5:53 AM
-To: Pavel Machek
-Cc: Wang, Yalin; len.brown@intel.com; rjw@sisk.pl; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org; linux-mmc
-Subject: Re: autosleep suspend too frquent problem
+--n8g4imXOkfNTN/H1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 3 June 2014 14:01, Pavel Machek <pavel@ucw.cz> wrote:
-> Hi!
->
->
->> I found sd card sometimes are damaged/ destroyed On our devices .
->> And seems it is caused by kernel's frequently suspend/resume, Because 
->> during suspend/resume, the driver will suspend/resume sdcard Very 
->> frequently, this will damaged the sdcard sometimes, and the damage is 
->> not recoverable ..
->>
->> Sometimes kernel will enter suspend and exit suspend very frequently, 
->> Especially when the system is in idle, but some driver is not idle, 
->> And it will  wake up the system by irq frequently.
->> By our power test result, if system enter suspend /resume very 
->> frequently, Will consume more power , because it will enable /disable 
->> many devices During a short time .
->>
->> I make a patch to prevent the system to enter suspend/resume state 
->> More than one time during 2 secondsÔºö
->
-> It is good you managed to diagnose the problem, but this si not the 
-> right solution.
->
-> Either:
->
-> 1) don't power down SD card during system suspend
+On Wed, Jun 04, 2014 at 11:56:55PM +0200, Rafael J. Wysocki wrote:
+> On Wednesday, June 04, 2014 07:27:12 PM Peter Zijlstra wrote:
 
-NAK. The amount of power a card (even if there are good behaving cards as well) may utilize, in powered but idle state could be significant.
-I have seen cases of constant power consumption of several mA here.
+> > Well, we eventually want to go there I think. Although we still needed
+> > to come up with something for Intel, because I'm not at all sure how all
+> > that works.
+>=20
+> Do you mean power numbers or how P-states work on Intel in general?
 
->
-> or maybe even better
->
-> 2) don't power _up_ SD card during system resume. Let it be powered 
-> down until the first access.
+P-states, I'm still not at all sure how all that works on Intel and what
+we can sanely do with them.
 
-Good news! This is "almost" supported already by the mmc subsystem.
+Supposedly Intel has a means of setting P-states (there's a driver after
+all), but then is completely free to totally ignore it and do something
+entirely different anyhow.
 
-If your mmc host has set the capability flag MMC_CAP_RUNTIME_RESUME, that means the card won't be powered up (and initialized) until the next request.
+And while APERF/MPERF allows observing what it did, its afaik, nigh on
+impossible to predict wtf its going to do, and therefore any such energy
+computation is going to be a PRNG at best.
 
-However, for removable cards (!MMC_CAP_NONREMOVABLE), during system resume phase, the mmc core will trigger a "rescan" of the card, to verify it has not been removed. Thus, unfortunate for this use case, the first request (for removable cards) will be triggered during the system resume phase.
+Now, given all that I'm not sure what we need that P-state driver for,
+so supposedly I'm missing something.
 
-I suppose we should add some extra conditions/flags which makes the mmc core to handle the above scenario. Actually I have been thinking of putting together a patch for this, but it never pops up on the top of my TODO list. :-)
+Ideally Len (or someone equally in-the-know) would explain to me how
+exactly all that works and what we can rely upon. All I've gotten so far
+is, you can't rely on anything, and magik. Which is entirely useless.
 
-Additionally, I wonder if this bouncing up and down from suspend to resume, could have other negative impact for other subsystems? Is it just a mmc subsystem problem? I am not so sure.
+--n8g4imXOkfNTN/H1
+Content-Type: application/pgp-signature
 
-Kind regards
-Ulf Hansson
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
->
-> Thanks,
->                                                                         
-> Pavel
-> --
-> (english) http://www.livejournal.com/~pavelmachek
-> (cesky, pictures) 
-> http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
-> --
-> To unsubscribe from this list: send the line "unsubscribe 
-> linux-kernel" in the body of a message to majordomo@vger.kernel.org 
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+iQIcBAEBAgAGBQJTkBOHAAoJEHZH4aRLwOS64+kQAKlCijXlyN6C5acpPZH1Yqkm
++32a0/SWifD93YqgslU2Vq0ml9LhSJ+5FyTxZxJ80/hkGaAf3tbvCfq7u2UOJCzS
+HSuXKk9ZSLl+hTGD+M1MSx3YMFUUWyb1+9Gm+oaaV2FydG51eN/7c5/QEzT9lzKf
+PgJnlPi8TnI9n/FYJ3nQ134lBlmHvwWvyTTkzi0FvdChyUj2VlhHyf5PybQcZdM8
+zDvcMt9E4a825XDyFK74ubqE9RicCydRg8e3aVSMvKUJbsMg9QKJzoez34eAwo6P
+H7rk3vU6nwIJCd0/OQwOkAi0ENU+WyXxg+SxDsQ+it67YeRGa0zBLHQ9IGw09/H/
+sstGV1+pR7ep5/NMGBovAG8ukBxbABTU+AllrDOlffBhWxTRSl/V3nA0ZPPE8hNX
+7aeIxHAYYXGFSe+JI5JfhECVQSXvDi92Sjg/MSz0KRvliTTE8F9ly3Sppk6RU7Gd
+2ZBfNXBy5W11htNTHpUjumFiOnI/cjF2fvYUCTDbnA11Eo1iDPKOrcBqpujYNEiL
+86s156ve23zDpRx1D8VblyphlHOIo8kHiZLdSF2N91ZLYgTEaVO7wEqL+SNzzveS
+8wFAbJ2r31UE103YqvZQIgX/u3o4Z05DHu39dmtt5UG3OAGM4oAdCTY9Lnt/7FJM
+ZzFMi25FO5NUoHgpvXol
+=V40h
+-----END PGP SIGNATURE-----
+
+--n8g4imXOkfNTN/H1--
