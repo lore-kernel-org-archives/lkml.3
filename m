@@ -1,100 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751362AbaFEJnI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 05:43:08 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:56051 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750833AbaFEJnF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 05:43:05 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, Dave Martin <Dave.Martin@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        Marc Zyngier <marc.zyngier@arm.com>, iommu@lists.linux-foundation.org,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        linux-tegra@vger.kernel.org, Cho KyongHo <pullip.cho@samsung.com>,
-        Hiroshi Doyu <hdoyu@nvidia.com>
-Subject: Re: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
-Date: Thu, 05 Jun 2014 11:42:12 +0200
-Message-ID: <6794037.0YTCc6JFQV@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140604213159.GB18780@mithrandir>
-References: <1400877395-4235-1-git-send-email-thierry.reding@gmail.com> <4830064.JvgTAs8Xty@wuerfel> <20140604213159.GB18780@mithrandir>
+	id S1751438AbaFEJqs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 05:46:48 -0400
+Received: from mga03.intel.com ([143.182.124.21]:57838 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750833AbaFEJqr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 05:46:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,980,1392192000"; 
+   d="scan'208";a="441186874"
+Date: Thu, 5 Jun 2014 12:46:42 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Chew Chiau Ee <chiau.ee.chew@intel.com>
+Cc: Mark Brown <broonie@kernel.org>, Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-spi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] spi/pxa2xx: change default supported DMA burst size to 1
+Message-ID: <20140605094642.GJ5214@lahna.fi.intel.com>
+References: <1401990309-12492-1-git-send-email-chiau.ee.chew@intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:yYAghirob7CGtXfYNEqoxhraT2j+yLohYnioRr2RDEo
- GsOkOucAve+RoKkJGVCUnmarVUJ5YXvCkDwBL3Z3iJ4x7BNJZK
- Zqmvelp5ut6o4W+YFu7BK69U+5ePi1ycsPhH12mUO4jusCYVV2
- sSlYEG8iXq+Y8Lv7bb5fdocWsNhYflHOnXOqYwzAq3JAkBc2s4
- vSdJeU7Ibj+mjPEGnEGM1+pqBJ+JqA0EobmmuwKeePmWIju0T0
- 9kSPNPqAFOiIealSPP6MzuP1xNpZbnjUutUgEY8tQjBoX7XpiE
- NwnwPkIz4AXY9JyTVoZxCxbyTkyHIZgE1cwDsv5KgD3+o8ILhb
- 6Wl8gwb0n5fUQMYcrU0w=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401990309-12492-1-git-send-email-chiau.ee.chew@intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 04 June 2014 23:32:00 Thierry Reding wrote:
-> On Fri, May 30, 2014 at 09:01:19PM +0200, Arnd Bergmann wrote:
-> > On Friday 30 May 2014 12:22:32 Dave Martin wrote:
-> > > > +
-> > > > +Examples:
-> > > > +=========
-> > > > +
-> > > > +Single-master IOMMU:
-> > > > +--------------------
-> > > > +
-> > > > + iommu {
-> > > > +         #address-cells = <0>;
-> > > > +         #size-cells = <0>;
-> > > > + };
-> > > > +
-> > > > + master {
-> > > > +         iommus = <&/iommu>;
-> > > > + };
-> > > > +
-> > > > +Multiple-master IOMMU with fixed associations:
-> > > > +----------------------------------------------
-> > > > +
-> > > > + /* multiple-master IOMMU */
-> > > > + iommu {
-> > > > +         /*
-> > > > +          * Masters are statically associated with this IOMMU and
-> > > > +          * address translation is always enabled.
-> > > > +          */
-> > > > +         #address-cells = <0>;
-> > > > +         #size-cells = <0>;
-> > > 
-> > > In this example, can different translations be set up for the different
-> > > masters?
-> > > 
-> > > With no cells available to contain any sort of ID, it looks like this
-> > > is not possible.
-> > 
-> > Correct, this example is for an IOMMU that does not use IDs but has a
-> > shared address space for all devices.
+On Fri, Jun 06, 2014 at 01:45:09AM +0800, Chew Chiau Ee wrote:
+> From: Chew, Chiau Ee <chiau.ee.chew@intel.com>
 > 
-> Couldn't these device all still have separate address spaces?
+> This is to fix the SPI DMA transfer failure for speed less than 1M.
+> If using current DMA burst size setting (16), the Rx data bytes are
+> invalid due to each data byte is multiplied according to the burst
+> size setting.
+> 
+> Let's said supposedly we shall receive the following 18 bytes of data:
+> 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18
+> Instead, the data bytes received consist of "16 bytes of '01' +
+> 2 bytes of '02'" :
+> 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 02 02
+> 
+> Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
+> Cc: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-No. If they had separate address spaces, they would require a more
-sophisticated IOMMU. A simple IOMMU without IDs can only be used
-for overcoming address space limits (e.g. for 32-bit DMA masters on
-systems with more than 4GB RAM) but not for strict isolation.
+Works for me (and individual chips can tune this by passing custom
+dma_burst_size if needed).
 
-You basically have one page table shared across all devices connected
-to the IOMMU, and every call to dma_alloc_coherent or dma_map_*
-allocates a new IOVA that isn't used by any of the other devices
-already, but you can't prevent a malicious user from getting a device
-to do DMA to an IOVA that has been set up for another device.
-
-You could have one such IOMMU per device of course, but I guess that's
-not what you mean.
-
-	Arnd
+Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
