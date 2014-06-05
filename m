@@ -1,40 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752786AbaFEWab (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 18:30:31 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:63922 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751306AbaFEWa1 (ORCPT
+	id S1752529AbaFEWfU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 18:35:20 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:47762 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751471AbaFEWfS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 18:30:27 -0400
-Date: Thu, 5 Jun 2014 15:30:24 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: eric ernst <eric.ernst@linux.intel.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, rdunlap@infradead.org,
-        jwboyer@fedoraproject.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1 1/1] Add kernel parameter for kernel version
-In-Reply-To: <5390EC1B.3000706@linux.intel.com>
-Message-ID: <alpine.DEB.2.02.1406051528120.30564@chino.kir.corp.google.com>
-References: <538CC567.2060305@linux.intel.com> <1402006157-126864-1-git-send-email-eric.ernst@linux.intel.com> <20140605151633.7dd15e8307cbd3b519ae257b@linux-foundation.org> <5390EC1B.3000706@linux.intel.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 5 Jun 2014 18:35:18 -0400
+X-AuditID: 85900ec0-cff26b9000001514-cd-5390f0a3d58f
+Subject: [PATCH ftrace/core 0/3] ftrace: Fix three small bugs
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Ingo Molnar <mingo@redhat.com>, yrl.pp-manager.tt@hitachi.com
+Date: Fri, 06 Jun 2014 07:35:15 +0900
+Message-ID: <20140605223515.32311.71203.stgit@yunodevel>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 Jun 2014, eric ernst wrote:
+Hi Steven,
 
-> We have a need to keep a single product binary (kernel) across multiple
-> android devices.  A subset of these platforms are looking for extra versioning
-> information appended to it, accessible via /proc/version.  Rather than build
-> multiple otherwise identical kernels with only this extended versioning as
-> differentiation, we are looking to make this a command line parameter.
-> Understandable if there isn't enough value-add for the community in this
-> patch, but I figured I'd give the patch a shot, as we need this functionality
-> locally.  Thanks.
+I found three small bugs for current ftrace/core, so I fixed those.
+Would you apply these patches?
 
-Unrecognized parameters on the kernel command line are disregarded, so 
-your platforms should be able to parse /proc/cmdline for 
-version_addendum=foo already.
+Thanks!
+
+---
+
+Yoshihiro YUNOMAE (3):
+      trace/event: Return error if ftrace_trace_arrays is empty list
+      trace/kprobes: Avoid self tests if tracing is disabled on boot up
+      trace: Fix memory leak when new instance creation failed
+
+
+ kernel/trace/trace.c        |   23 ++++++++++++++---------
+ kernel/trace/trace.h        |    3 +++
+ kernel/trace/trace_events.c |   13 +++++++++++++
+ kernel/trace/trace_kprobe.c |    3 +++
+ 4 files changed, 33 insertions(+), 9 deletions(-)
+
+-- 
+Yoshihiro YUNOMAE
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: yoshihiro.yunomae.ez@hitachi.com
