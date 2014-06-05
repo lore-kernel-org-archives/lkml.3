@@ -1,99 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751912AbaFEXd0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 19:33:26 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:56151 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751222AbaFEXdY (ORCPT
+	id S1752038AbaFEX5I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 19:57:08 -0400
+Received: from mailgw12.technion.ac.il ([132.68.225.12]:49228 "EHLO
+	mailgw12.technion.ac.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751712AbaFEX5F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 19:33:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <5390A624.8020308@kernel.dk>
-References: <20140604103544.GA11350@dhcp-26-207.brq.redhat.com>
-	<538F2AC2.1060904@kernel.dk>
-	<20140605140127.GA22198@dhcp-26-207.brq.redhat.com>
-	<53907895.8090102@kernel.dk>
-	<CACVXFVMFjR5kqB9SQG-EiKMB3dC0O58_EhJZw2R2m7a9vUuH0A@mail.gmail.com>
-	<5390A624.8020308@kernel.dk>
-Date: Fri, 6 Jun 2014 07:33:23 +0800
-Message-ID: <CACVXFVO-1shNB=tSpNBp_tpx+9imx5ycxfaSwofg-VeR_4S+MA@mail.gmail.com>
-Subject: Re: blk-mq: bitmap tag: performance degradation?
-From: Ming Lei <tom.leiming@gmail.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 5 Jun 2014 19:57:05 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ag8CAPECkVOERCABjGdsb2JhbABZx0cBgQgWDgEBASc8giYBBXkQQBFXiFvNYYUxF45SBxaEKgSKJaZi
+X-IPAS-Result: Ag8CAPECkVOERCABjGdsb2JhbABZx0cBgQgWDgEBASc8giYBBXkQQBFXiFvNYYUxF45SBxaEKgSKJaZi
+X-IronPort-AV: E=Sophos;i="4.98,984,1392156000"; 
+   d="scan'208";a="110197071"
+From: Nadav Amit <namit@cs.technion.ac.il>
+To: pbonzini@redhat.com
+Cc: gleb@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        x86@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nadav Amit <namit@cs.technion.ac.il>
+Subject: [PATCH kvm-unit-tests 0/2] x86: Additional smsw tests
+Date: Fri,  6 Jun 2014 02:56:51 +0300
+Message-Id: <1402012613-29891-1-git-send-email-namit@cs.technion.ac.il>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <53908C66.20600@redhat.com>
+References: <53908C66.20600@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 6, 2014 at 1:17 AM, Jens Axboe <axboe@kernel.dk> wrote:
-> On 06/05/2014 08:16 AM, Ming Lei wrote:
->> On Thu, Jun 5, 2014 at 10:03 PM, Jens Axboe <axboe@kernel.dk> wrote:
->>> On 2014-06-05 08:01, Alexander Gordeev wrote:
->>>>
->>>> On Wed, Jun 04, 2014 at 08:18:42AM -0600, Jens Axboe wrote:
->>>>>
->>>>> A null_blk test is the absolute best case for percpu_ida, since
->>>>> there are enough tags and everything is localized. The above test is
->>>>> more useful for testing blk-mq than any real world application of
->>>>> the tagging.
->>>>>
->>>>> I've done considerable testing on both 2 and 4 socket (32 and 64
->>>>> CPUs) and bitmap tagging is better in a much wider range of
->>>>> applications. This includes even high tag depth devices like nvme,
->>>>> and more normal ranges like mtip32xx and scsi-mq setups.
->>>>
->>>>
->>>> Just for the record: bitmap tags on a 48 CPU box with NVMe device
->>>> indeed shows almost the same performance/cache rate as the stock
->>>> kernel.
->>>
->>>
->>> Thanks for confirming. It's one of the dangers of null_blk, it's not always
->>> a very accurate simulation of what a real device will do. I think it's
->>> mostly a completion side thing, would be great with a small device that
->>> supported msi-x and could be used as an irq trigger :-)
->>
->> Maybe null_blk at IRQ_TIMER mode is more close to
->> a real device, and I guess the result may be different with
->> mode IRQ_NONE/IRQ_SOFTIRQ.
->
-> It'd be closer in behavior, but the results might then be skewed by
-> hitting the timer way too hard. And it'd be a general slowdown, again
-> possibly skewing it. But I haven't tried with the timer completion, to
-> see if that yields more accurate modelling for this test, so it might
-> actually be a lot better.
+This patch set adds two tests for smsw. The first one is intended to add
+coverage of smsw. It covers the case smsw is executed with memory operand in a
+page which is write-protected by the hypervisor. Note that the existing smsw
+tests are not supposed to be trapped by the hypervisor. This test was added
+just for additional coverage.
 
-My test on a 16core VM(host: 2 sockets, 16core):
+The realmode smsw test covers the recent patch that saves the high 16-bits to
+32-bit register operand. Implementing a long-mode test is difficult since we
+need to cause an "invalid guest state" in long-mode.
 
-1, bitmap tag allocation(3.15-rc7-next):
-- softirq mode: 759K IOPS
-- timer mode: 409K IOPS
+Nadav Amit (2):
+  x86: emulator: additional smsw test-case
+  x86: realmode: test smsw behavior with register operand
 
-2, percpu_ida allocation(3.15-rc7)
-- softirq mode: 1116K IOPS
-- timer mode: 411K IOPS
+ x86/emulator.c | 10 ++++++++--
+ x86/realmode.c | 15 +++++++++++++++
+ 2 files changed, 23 insertions(+), 2 deletions(-)
 
-Also on real hardware, I remember there is no such big difference
-between softirq mode and timer mode.
-
-[global]
-direct=1
-size=128G
-bsrange=4k-4k
-timeout=20
-numjobs=16
-ioengine=libaio
-iodepth=64
-filename=/dev/nullb0
-group_reporting=1
-
-[f2]
-stonewall
-rw=randread
-
-
-Thanks,
 -- 
-Ming Lei
+1.9.1
+
