@@ -1,95 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751332AbaFEMfT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 08:35:19 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:58748 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750723AbaFEMfR (ORCPT
+	id S1751365AbaFEMlJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 08:41:09 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:51294 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751015AbaFEMlH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 08:35:17 -0400
-Date: Thu, 5 Jun 2014 14:35:12 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Davidlohr Bueso <davidlohr@hp.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "Paul E. McKenney" <paulmck@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] locking tree changes for v3.16
-Message-ID: <20140605123512.GB1392@gmail.com>
-References: <20140603114821.GA23711@gmail.com>
- <1401832251.8843.3.camel@buesod1.americas.hpqcorp.net>
- <20140604103003.GE11096@twins.programming.kicks-ass.net>
- <20140605081742.GC4926@gmail.com>
- <20140605111110.GA26771@gmail.com>
- <20140605122715.GD6758@twins.programming.kicks-ass.net>
+	Thu, 5 Jun 2014 08:41:07 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: "David E. Box" <david.e.box@linux.intel.com>
+Cc: lenb@kernel.org, Randy Wright <rwright@hp.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI: Fix bug when acpi reset register is implemented in system memory
+Date: Thu, 05 Jun 2014 14:58:22 +0200
+Message-ID: <7970700.XBb1Ob3tCb@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1401897359-28873-1-git-send-email-david.e.box@linux.intel.com>
+References: <1401897359-28873-1-git-send-email-david.e.box@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140605122715.GD6758@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Peter Zijlstra <peterz@infradead.org> wrote:
-
-> On Thu, Jun 05, 2014 at 01:11:10PM +0200, Ingo Molnar wrote:
-> > Unfortunately even with the latest bits from you the breakage I 
-> > reported weeks ago is not resolved:
+On Wednesday, June 04, 2014 08:55:59 AM David E. Box wrote:
+> From: Randy Wright <rwright@hp.com>
 > 
-> crap, its the qrwlock bits, I fixed it for the config you gave me. 
-> Some paravirt crap header hell thing. Happen to have another 
-> .config?
+> Use acpi_os_map_generic_address to pre-map the reset register if it is memory
+> mapped, thereby preventing https://bugzilla.kernel.org/show_bug.cgi?id=77131
+> 
+> Signed-off-by: Randy Wright <rwright@hp.com>
+> Signed-off-by: David E. Box <david.e.box@linux.intel.com>
 
-A simple 'make defconfig' triggers the build failure for me:
+Applied with minor changes, thanks!.
 
-  kernel/locking/qrwlock.c:24:25: fatal error: asm/qrwlock.h: No such file or directory
+Please check the bleeding-edge branch of the linux-pm.git tree.
 
-If I apply the minimal feature-enabling patch below on top of the base 
-qrwlock patch.
+Rafael
 
-Thanks,
 
-	Ingo
+> ---
+>  drivers/acpi/osl.c |   15 +++++++++++++++
+>  1 file changed, 15 insertions(+)
+> 
+> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+> index 6776c59..5325844 100644
+> --- a/drivers/acpi/osl.c
+> +++ b/drivers/acpi/osl.c
+> @@ -1798,6 +1798,19 @@ acpi_status __init acpi_os_initialize(void)
+>  	acpi_os_map_generic_address(&acpi_gbl_FADT.xpm1b_event_block);
+>  	acpi_os_map_generic_address(&acpi_gbl_FADT.xgpe0_block);
+>  	acpi_os_map_generic_address(&acpi_gbl_FADT.xgpe1_block);
+> +	if (acpi_gbl_FADT.flags & ACPI_FADT_RESET_REGISTER) {
+> +		/*
+> +		 * Use acpi_os_map_generic_address to pre-map the reset
+> +		 * register if it's in system memory, thereby preventing
+> +		 * https://bugzilla.kernel.org/show_bug.cgi?id=77131
+> +		 */
+> +		int rv;
+> +		struct acpi_generic_address *reset_reg
+> +			= &acpi_gbl_FADT.reset_register;
+> +		rv = acpi_os_map_generic_address(reset_reg);
+> +		pr_info(PREFIX
+> +			"%s: map reset_reg status %d\n", __func__, rv);
+> +	}
+>  
+>  	return AE_OK;
+>  }
+> @@ -1826,6 +1839,8 @@ acpi_status acpi_os_terminate(void)
+>  	acpi_os_unmap_generic_address(&acpi_gbl_FADT.xgpe0_block);
+>  	acpi_os_unmap_generic_address(&acpi_gbl_FADT.xpm1b_event_block);
+>  	acpi_os_unmap_generic_address(&acpi_gbl_FADT.xpm1a_event_block);
+> +	if (acpi_gbl_FADT.flags & ACPI_FADT_RESET_REGISTER)
+> +		acpi_os_unmap_generic_address(&acpi_gbl_FADT.reset_register);
+>  
+>  	destroy_workqueue(kacpid_wq);
+>  	destroy_workqueue(kacpi_notify_wq);
+> 
 
-==========================>
->From a79dedeee44dadf8e033a047b7cd4409bb7ad0d8 Mon Sep 17 00:00:00 2001
-From: Waiman Long <Waiman.Long@hp.com>
-Date: Mon, 3 Feb 2014 13:18:57 +0100
-Subject: [PATCH] x86, locking: Switch x86 to qrwlock-style rwlocks
-
-Make x86 use the fair rwlock_t.
-
-Don't implement a custom queue_write_unlock() yet, use the generic path.
-
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/n/tip-r1xuzmdysvuhl3h86n5fbxi7@git.kernel.org
-Cc: "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-[ Simplified it. ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 25d2c6f..bf7626f 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -121,6 +121,7 @@ config X86
- 	select MODULES_USE_ELF_RELA if X86_64
- 	select CLONE_BACKWARDS if X86_32
- 	select ARCH_USE_BUILTIN_BSWAP
-+	select ARCH_USE_QUEUE_RWLOCK
- 	select OLD_SIGSUSPEND3 if X86_32 || IA32_EMULATION
- 	select OLD_SIGACTION if X86_32
- 	select COMPAT_OLD_SIGACTION if IA32_EMULATION
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
