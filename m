@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752718AbaFEEUy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:20:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44000 "EHLO
+	id S1753275AbaFEEzJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:55:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44012 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752672AbaFEEUu (ORCPT
+	with ESMTP id S1752697AbaFEEUx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:20:50 -0400
+	Thu, 5 Jun 2014 00:20:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Adamson <andros@netapp.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Ben Hutchings <ben@decadent.org.uk>, Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 3.4 087/214] NFSv4 wait on recovery for async session errors
-Date: Wed,  4 Jun 2014 21:17:30 -0700
-Message-Id: <20140605041651.293104432@linuxfoundation.org>
+        Harshula Jayasuriya <harshula@redhat.com>,
+        "J. Bruce Fields" <bfields@redhat.com>,
+        Rui Xiang <rui.xiang@huawei.com>
+Subject: [PATCH 3.4 098/214] nfsd: nfsd_open: when dentry_open returns an error do not propagate as struct file
+Date: Wed,  4 Jun 2014 21:17:41 -0700
+Message-Id: <20140605041652.875797186@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -28,78 +28,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Adamson <andros@netapp.com>
+From: Harshula Jayasuriya <harshula@redhat.com>
 
-commit 4a82fd7c4e78a1b7a224f9ae8bb7e1fd95f670e0 upstream.
+commit e4daf1ffbe6cc3b12aab4d604e627829e93e9914 upstream.
 
-When the state manager is processing the NFS4CLNT_DELEGRETURN flag, session
-draining is off, but DELEGRETURN can still get a session error.
-The async handler calls nfs4_schedule_session_recovery returns -EAGAIN, and
-the DELEGRETURN done then restarts the RPC task in the prepare state.
-With the state manager still processing the NFS4CLNT_DELEGRETURN flag with
-session draining off, these DELEGRETURNs will cycle with errors filling up the
-session slots.
+The following call chain:
+------------------------------------------------------------
+nfs4_get_vfs_file
+- nfsd_open
+  - dentry_open
+    - do_dentry_open
+      - __get_file_write_access
+        - get_write_access
+          - return atomic_inc_unless_negative(&inode->i_writecount) ? 0 : -ETXTBSY;
+------------------------------------------------------------
 
-This prevents OPEN reclaims (from nfs_delegation_claim_opens) required by the
-NFS4CLNT_DELEGRETURN state manager processing from completing, hanging the
-state manager in the __rpc_wait_for_completion_task in nfs4_run_open_task
-as seen in this kernel thread dump:
+can result in the following state:
+------------------------------------------------------------
+struct nfs4_file {
+...
+  fi_fds = {0xffff880c1fa65c80, 0xffffffffffffffe6, 0x0},
+  fi_access = {{
+      counter = 0x1
+    }, {
+      counter = 0x0
+    }},
+...
+------------------------------------------------------------
 
-kernel: 4.12.32.53-ma D 0000000000000000     0  3393      2 0x00000000
-kernel: ffff88013995fb60 0000000000000046 ffff880138cc5400 ffff88013a9df140
-kernel: ffff8800000265c0 ffffffff8116eef0 ffff88013fc10080 0000000300000001
-kernel: ffff88013a4ad058 ffff88013995ffd8 000000000000fbc8 ffff88013a4ad058
-kernel: Call Trace:
-kernel: [<ffffffff8116eef0>] ? cache_alloc_refill+0x1c0/0x240
-kernel: [<ffffffffa0358110>] ? rpc_wait_bit_killable+0x0/0xa0 [sunrpc]
-kernel: [<ffffffffa0358152>] rpc_wait_bit_killable+0x42/0xa0 [sunrpc]
-kernel: [<ffffffff8152914f>] __wait_on_bit+0x5f/0x90
-kernel: [<ffffffffa0358110>] ? rpc_wait_bit_killable+0x0/0xa0 [sunrpc]
-kernel: [<ffffffff815291f8>] out_of_line_wait_on_bit+0x78/0x90
-kernel: [<ffffffff8109b520>] ? wake_bit_function+0x0/0x50
-kernel: [<ffffffffa035810d>] __rpc_wait_for_completion_task+0x2d/0x30 [sunrpc]
-kernel: [<ffffffffa040d44c>] nfs4_run_open_task+0x11c/0x160 [nfs]
-kernel: [<ffffffffa04114e7>] nfs4_open_recover_helper+0x87/0x120 [nfs]
-kernel: [<ffffffffa0411646>] nfs4_open_recover+0xc6/0x150 [nfs]
-kernel: [<ffffffffa040cc6f>] ? nfs4_open_recoverdata_alloc+0x2f/0x60 [nfs]
-kernel: [<ffffffffa0414e1a>] nfs4_open_delegation_recall+0x6a/0xa0 [nfs]
-kernel: [<ffffffffa0424020>] nfs_end_delegation_return+0x120/0x2e0 [nfs]
-kernel: [<ffffffff8109580f>] ? queue_work+0x1f/0x30
-kernel: [<ffffffffa0424347>] nfs_client_return_marked_delegations+0xd7/0x110 [nfs]
-kernel: [<ffffffffa04225d8>] nfs4_run_state_manager+0x548/0x620 [nfs]
-kernel: [<ffffffffa0422090>] ? nfs4_run_state_manager+0x0/0x620 [nfs]
-kernel: [<ffffffff8109b0f6>] kthread+0x96/0xa0
-kernel: [<ffffffff8100c20a>] child_rip+0xa/0x20
-kernel: [<ffffffff8109b060>] ? kthread+0x0/0xa0
-kernel: [<ffffffff8100c200>] ? child_rip+0x0/0x20
+1) First time around, in nfs4_get_vfs_file() fp->fi_fds[O_WRONLY] is
+NULL, hence nfsd_open() is called where we get status set to an error
+and fp->fi_fds[O_WRONLY] to -ETXTBSY. Thus we do not reach
+nfs4_file_get_access() and fi_access[O_WRONLY] is not incremented.
 
-The state manager can not therefore process the DELEGRETURN session errors.
-Change the async handler to wait for recovery on session errors.
+2) Second time around, in nfs4_get_vfs_file() fp->fi_fds[O_WRONLY] is
+NOT NULL (-ETXTBSY), so nfsd_open() is NOT called, but
+nfs4_file_get_access() IS called and fi_access[O_WRONLY] is incremented.
+Thus we leave a landmine in the form of the nfs4_file data structure in
+an incorrect state.
 
-Signed-off-by: Andy Adamson <andros@netapp.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-[bwh: Backported to 3.2:
- - Adjust context
- - There's no restart_call label]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Rui Xiang <rui.xiang@huawei.com>
+3) Eventually, when __nfs4_file_put_access() is called it finds
+fi_access[O_WRONLY] being non-zero, it decrements it and calls
+nfs4_file_put_fd() which tries to fput -ETXTBSY.
+------------------------------------------------------------
+...
+     [exception RIP: fput+0x9]
+     RIP: ffffffff81177fa9  RSP: ffff88062e365c90  RFLAGS: 00010282
+     RAX: ffff880c2b3d99cc  RBX: ffff880c2b3d9978  RCX: 0000000000000002
+     RDX: dead000000100101  RSI: 0000000000000001  RDI: ffffffffffffffe6
+     RBP: ffff88062e365c90   R8: ffff88041fe797d8   R9: ffff88062e365d58
+     R10: 0000000000000008  R11: 0000000000000000  R12: 0000000000000001
+     R13: 0000000000000007  R14: 0000000000000000  R15: 0000000000000000
+     ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
+  #9 [ffff88062e365c98] __nfs4_file_put_access at ffffffffa0562334 [nfsd]
+ #10 [ffff88062e365cc8] nfs4_file_put_access at ffffffffa05623ab [nfsd]
+ #11 [ffff88062e365ce8] free_generic_stateid at ffffffffa056634d [nfsd]
+ #12 [ffff88062e365d18] release_open_stateid at ffffffffa0566e4b [nfsd]
+ #13 [ffff88062e365d38] nfsd4_close at ffffffffa0567401 [nfsd]
+ #14 [ffff88062e365d88] nfsd4_proc_compound at ffffffffa0557f28 [nfsd]
+ #15 [ffff88062e365dd8] nfsd_dispatch at ffffffffa054543e [nfsd]
+ #16 [ffff88062e365e18] svc_process_common at ffffffffa04ba5a4 [sunrpc]
+ #17 [ffff88062e365e98] svc_process at ffffffffa04babe0 [sunrpc]
+ #18 [ffff88062e365eb8] nfsd at ffffffffa0545b62 [nfsd]
+ #19 [ffff88062e365ee8] kthread at ffffffff81090886
+ #20 [ffff88062e365f48] kernel_thread at ffffffff8100c14a
+------------------------------------------------------------
+
+
+Signed-off-by: Harshula Jayasuriya <harshula@redhat.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+[xr: Backported to 3.4: adjust context]
+Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/nfs/nfs4proc.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ fs/nfsd/vfs.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -3910,8 +3910,7 @@ nfs4_async_handle_error(struct rpc_task
- 			dprintk("%s ERROR %d, Reset session\n", __func__,
- 				task->tk_status);
- 			nfs4_schedule_session_recovery(clp->cl_session);
--			task->tk_status = 0;
--			return -EAGAIN;
-+			goto wait_on_recovery;
- #endif /* CONFIG_NFS_V4_1 */
- 		case -NFS4ERR_DELAY:
- 			nfs_inc_server_stats(server, NFSIOS_DELAY);
+--- a/fs/nfsd/vfs.c
++++ b/fs/nfsd/vfs.c
+@@ -828,9 +828,10 @@ nfsd_open(struct svc_rqst *rqstp, struct
+ 	}
+ 	*filp = dentry_open(dget(dentry), mntget(fhp->fh_export->ex_path.mnt),
+ 			    flags, current_cred());
+-	if (IS_ERR(*filp))
++	if (IS_ERR(*filp)) {
+ 		host_err = PTR_ERR(*filp);
+-	else {
++		*filp = NULL;
++	} else {
+ 		host_err = ima_file_check(*filp, may_flags);
+ 
+ 		if (may_flags & NFSD_MAY_64BIT_COOKIE)
 
 
