@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753698AbaFEFGU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 01:06:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43817 "EHLO
+	id S1752406AbaFEEUY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:20:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43772 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752284AbaFEEUZ (ORCPT
+	with ESMTP id S1752284AbaFEEUS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:20:25 -0400
+	Thu, 5 Jun 2014 00:20:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linaro-kernel@lists.linaro.org,
-        linaro-networking@linaro.org, fweisbec@gmail.com,
-        arvind.chauhan@arm.com
-Subject: [PATCH 3.4 049/214] hrtimer: Set expiry time before switch_hrtimer_base()
-Date: Wed,  4 Jun 2014 21:16:52 -0700
-Message-Id: <20140605041646.057418235@linuxfoundation.org>
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.4 033/214] net-gro: reset skb->truesize in napi_reuse_skb()
+Date: Wed,  4 Jun 2014 21:16:36 -0700
+Message-Id: <20140605041644.327093210@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -29,59 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Viresh Kumar <viresh.kumar@linaro.org>
+From: Eric Dumazet <edumazet@google.com>
 
-commit 84ea7fe37908254c3bd90910921f6e1045c1747a upstream.
+[ Upstream commit e33d0ba8047b049c9262fdb1fcafb93cb52ceceb ]
 
-switch_hrtimer_base() calls hrtimer_check_target() which ensures that
-we do not migrate a timer to a remote cpu if the timer expires before
-the current programmed expiry time on that remote cpu.
+Recycling skb always had been very tough...
 
-But __hrtimer_start_range_ns() calls switch_hrtimer_base() before the
-new expiry time is set. So the sanity check in hrtimer_check_target()
-is operating on stale or even uninitialized data.
+This time it appears GRO layer can accumulate skb->truesize
+adjustments made by drivers when they attach a fragment to skb.
 
-Update expiry time before calling switch_hrtimer_base().
+skb_gro_receive() can only subtract from skb->truesize the used part
+of a fragment.
 
-[ tglx: Rewrote changelog once again ]
+I spotted this problem seeing TcpExtPruneCalled and
+TcpExtTCPRcvCollapsed that were unexpected with a recent kernel, where
+TCP receive window should be sized properly to accept traffic coming
+from a driver not overshooting skb->truesize.
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linaro-kernel@lists.linaro.org
-Cc: linaro-networking@linaro.org
-Cc: fweisbec@gmail.com
-Cc: arvind.chauhan@arm.com
-Link: http://lkml.kernel.org/r/81999e148745fc51bbcd0615823fbab9b2e87e23.1399882253.git.viresh.kumar@linaro.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- kernel/hrtimer.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ net/core/dev.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -985,11 +985,8 @@ int __hrtimer_start_range_ns(struct hrti
- 	/* Remove an active timer from the queue: */
- 	ret = remove_hrtimer(timer, base);
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -3574,6 +3574,7 @@ static void napi_reuse_skb(struct napi_s
+ 	skb->vlan_tci = 0;
+ 	skb->dev = napi->dev;
+ 	skb->skb_iif = 0;
++	skb->truesize = SKB_TRUESIZE(skb_end_offset(skb));
  
--	/* Switch the timer base, if necessary: */
--	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
--
- 	if (mode & HRTIMER_MODE_REL) {
--		tim = ktime_add_safe(tim, new_base->get_time());
-+		tim = ktime_add_safe(tim, base->get_time());
- 		/*
- 		 * CONFIG_TIME_LOW_RES is a temporary way for architectures
- 		 * to signal that they simply return xtime in
-@@ -1004,6 +1001,9 @@ int __hrtimer_start_range_ns(struct hrti
- 
- 	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
- 
-+	/* Switch the timer base, if necessary: */
-+	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
-+
- 	timer_stats_hrtimer_set_start_info(timer);
- 
- 	leftmost = enqueue_hrtimer(timer, new_base);
+ 	napi->skb = skb;
+ }
 
 
