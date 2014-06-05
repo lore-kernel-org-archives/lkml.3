@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752278AbaFEPTq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 11:19:46 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:39113 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750866AbaFEPTp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 11:19:45 -0400
-Date: Thu, 5 Jun 2014 17:17:34 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
-Cc: Stephane Eranian <eranian@google.com>,
-        Matt Fleming <matt@console-pimps.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: Re: [PATCH 9/9] perf/x86: add syfs entry to disable HT bug workaround
-Message-ID: <20140605151734.GD16811@pd.tnic>
-References: <CADknwL5S8QpzCAgrKHjbGTbEx7nA8L=Vu8d-UWAYCg6X25OcGw@mail.gmail.com>
- <CABPqkBSimH8Ob_q3dDtQiW_OwuS9nA4Gsx87H26ywNcmYd38Xw@mail.gmail.com>
- <CADknwL6s2ttb5E2JDr6bc_XkwpxnW5ecU-3Ns88=gvgPvLYkPg@mail.gmail.com>
- <CABPqkBQUUb+yEvC8y3oLc0DUbF3DJPzbt3sNL7Zqzufh6EYdRw@mail.gmail.com>
- <CADknwL71NC5wBG1tnqgJ6iiA4y+HYomGpufOn7V+MP2=m7+Mig@mail.gmail.com>
- <CABPqkBTEafZ5MbYM4UQxX92uWcPiphPeXMoJRKTt8jnrB+5j2w@mail.gmail.com>
- <20140605132750.GA16811@pd.tnic>
- <CABPqkBT9ExD4unz0VZ5G1d+oGpkepiwXskgBpv5GTavs=tYAKA@mail.gmail.com>
- <20140605140316.GB16811@pd.tnic>
- <CAHzUATiVCHytrG3sz8AmC8anZTQcPDRHp91-kWEoeq=RU7UNiw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAHzUATiVCHytrG3sz8AmC8anZTQcPDRHp91-kWEoeq=RU7UNiw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752467AbaFEPVR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 11:21:17 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:63203 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751419AbaFEPVP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 11:21:15 -0400
+Message-Id: <20140605151540.672365024@goodmis.org>
+User-Agent: quilt/0.63-1
+Date: Thu, 05 Jun 2014 11:15:40 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+Subject: [for-next][PATCH 0/5] tracing: More stuff for this merge window
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 05, 2014 at 05:45:24PM +0300, Maria Dimakopoulou wrote:
-> The issue is that the outcoming leaked counts are not compensated
-> by the incoming leaked counts of the sibling thread. With the workaround,
-> corrupting events are always scheduled with an empty sibling counter.
-> This means that their leaked counts are lost. So it is expected to see
-> lower counts with the workaround. Note that this is not a side-effect of
-> the workaround; leaked counts are expected to be lost with nothing
-> measured on the sibling counter in general.
-> 
-> In a second series we intend to re-integrate the counts for counting mode
-> events. The workaround makes this easier because it guarantees
-> that the sibling counter is unused, thus its counts are purely leaked
-> counts and they can be safely re-integrated.
+I know the merge window has opened early (strange), but I'm still
+sorting out patches to get into 3.16 before I do any pushes.
 
-IIUC, sounds to me like reintegrating the leaked counts from the unused
-counter should be part of the workaround too, not a second series...
+I also just discovered that I'm not getting emails from Fengguang Wu's
+kbuild bot tests. I haven't been since March. All this time I thought
+I was good enough not to trigger those bugs, but I was naive. I'm still
+working the issue with Fengguang, but from my SMTP error message, I had:
 
--- 
-Regards/Gruss,
-    Boris.
+Sender address rejected: need fully-qualified address; from=<kbuild@bee>
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+That "kbuild@bee" seems to be causing it to be rejected. I wonder
+how many others are not getting these emails.
+
+Anyway, I'm pushing this out because they passed my tests. Now I
+need to look at all the error reports that Fengguang's test reported
+and fix them up (he gave me a link to where reports are).
+
+Enjoy.
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+for-next
+
+Head SHA1: 64b8e48a72f45eedfdddfc62c25691d6c96ac919
+
+
+Minchan Kim (1)
+      tracing: Print max callstack on stacktrace bug
+
+Petr Mladek (1)
+      ftrace/x86: Call text_ip_addr() instead of the duplicated code
+
+Steven Rostedt (Red Hat) (2)
+      tracing: Remove unused variable in trace_benchmark
+      tracing: Add __get_dynamic_array_len() macro for trace events
+
+Yoshihiro YUNOMAE (1)
+      tracing: Eliminate double free on failure of allocation on boot up
+
+----
+ arch/x86/kernel/ftrace.c       |   11 +----------
+ include/trace/ftrace.h         |   11 ++++++++++-
+ kernel/trace/trace.c           |    4 ----
+ kernel/trace/trace_benchmark.c |    1 -
+ kernel/trace/trace_stack.c     |   34 ++++++++++++++++++++++++++++++----
+ 5 files changed, 41 insertions(+), 20 deletions(-)
