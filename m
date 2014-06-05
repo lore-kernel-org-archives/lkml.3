@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752129AbaFEEUJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:20:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43649 "EHLO
+	id S1752443AbaFEEU0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:20:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43761 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751332AbaFEEUD (ORCPT
+	with ESMTP id S1752280AbaFEEUR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:20:03 -0400
+	Thu, 5 Jun 2014 00:20:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 032/214] skb: Add inline helper for getting the skb end offset from head
-Date: Wed,  4 Jun 2014 21:16:35 -0700
-Message-Id: <20140605041644.177521961@linuxfoundation.org>
+        Bodo Stroesser <bstroesser@ts.fujitsu.com>,
+        Corey Minyard <cminyard@mvista.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.4 041/214] ipmi: Reset the KCS timeout when starting error recovery
+Date: Wed,  4 Jun 2014 21:16:44 -0700
+Message-Id: <20140605041645.139057930@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -28,143 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Duyck <alexander.h.duyck@intel.com>
+From: Corey Minyard <cminyard@mvista.com>
 
-[ Upstream commit ec47ea82477404631d49b8e568c71826c9b663ac ]
+commit eb6d78ec213e6938559b801421d64714dafcf4b2 upstream.
 
-With the recent changes for how we compute the skb truesize it occurs to me
-we are probably going to have a lot of calls to skb_end_pointer -
-skb->head.  Instead of running all over the place doing that it would make
-more sense to just make it a separate inline skb_end_offset(skb) that way
-we can return the correct value without having gcc having to do all the
-optimization to cancel out skb->head - skb->head.
+The OBF timer in KCS was not reset in one situation when error recovery
+was started, resulting in an immediate timeout.
 
-Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Bodo Stroesser <bstroesser@ts.fujitsu.com>
+Signed-off-by: Corey Minyard <cminyard@mvista.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/atm/ambassador.c             |    2 +-
- drivers/atm/idt77252.c               |    2 +-
- drivers/net/wimax/i2400m/usb-rx.c    |    2 +-
- drivers/staging/octeon/ethernet-tx.c |    2 +-
- include/linux/skbuff.h               |   12 +++++++++++-
- net/core/skbuff.c                    |    9 ++++-----
- 6 files changed, 19 insertions(+), 10 deletions(-)
 
---- a/drivers/atm/ambassador.c
-+++ b/drivers/atm/ambassador.c
-@@ -802,7 +802,7 @@ static void fill_rx_pool (amb_dev * dev,
-     }
-     // cast needed as there is no %? for pointer differences
-     PRINTD (DBG_SKB, "allocated skb at %p, head %p, area %li",
--	    skb, skb->head, (long) (skb_end_pointer(skb) - skb->head));
-+	    skb, skb->head, (long) skb_end_offset(skb));
-     rx.handle = virt_to_bus (skb);
-     rx.host_address = cpu_to_be32 (virt_to_bus (skb->data));
-     if (rx_give (dev, &rx, pool))
---- a/drivers/atm/idt77252.c
-+++ b/drivers/atm/idt77252.c
-@@ -1258,7 +1258,7 @@ idt77252_rx_raw(struct idt77252_dev *car
- 	tail = readl(SAR_REG_RAWCT);
- 
- 	pci_dma_sync_single_for_cpu(card->pcidev, IDT77252_PRV_PADDR(queue),
--				    skb_end_pointer(queue) - queue->head - 16,
-+				    skb_end_offset(queue) - 16,
- 				    PCI_DMA_FROMDEVICE);
- 
- 	while (head != tail) {
---- a/drivers/net/wimax/i2400m/usb-rx.c
-+++ b/drivers/net/wimax/i2400m/usb-rx.c
-@@ -277,7 +277,7 @@ retry:
- 		d_printf(1, dev, "RX: size changed to %d, received %d, "
- 			 "copied %d, capacity %ld\n",
- 			 rx_size, read_size, rx_skb->len,
--			 (long) (skb_end_pointer(new_skb) - new_skb->head));
-+			 (long) skb_end_offset(new_skb));
- 		goto retry;
+---
+ drivers/char/ipmi/ipmi_kcs_sm.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+--- a/drivers/char/ipmi/ipmi_kcs_sm.c
++++ b/drivers/char/ipmi/ipmi_kcs_sm.c
+@@ -251,8 +251,9 @@ static inline int check_obf(struct si_sm
+ 	if (!GET_STATUS_OBF(status)) {
+ 		kcs->obf_timeout -= time;
+ 		if (kcs->obf_timeout < 0) {
+-		    start_error_recovery(kcs, "OBF not ready in time");
+-		    return 1;
++			kcs->obf_timeout = OBF_RETRY_TIMEOUT;
++			start_error_recovery(kcs, "OBF not ready in time");
++			return 1;
+ 		}
+ 		return 0;
  	}
- 		/* In most cases, it happens due to the hardware scheduling a
---- a/drivers/staging/octeon/ethernet-tx.c
-+++ b/drivers/staging/octeon/ethernet-tx.c
-@@ -345,7 +345,7 @@ int cvm_oct_xmit(struct sk_buff *skb, st
- 	}
- 	if (unlikely
- 	    (skb->truesize !=
--	     sizeof(*skb) + skb_end_pointer(skb) - skb->head)) {
-+	     sizeof(*skb) + skb_end_offset(skb))) {
- 		/*
- 		   printk("TX buffer truesize has been changed\n");
- 		 */
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -640,11 +640,21 @@ static inline unsigned char *skb_end_poi
- {
- 	return skb->head + skb->end;
- }
-+
-+static inline unsigned int skb_end_offset(const struct sk_buff *skb)
-+{
-+	return skb->end;
-+}
- #else
- static inline unsigned char *skb_end_pointer(const struct sk_buff *skb)
- {
- 	return skb->end;
- }
-+
-+static inline unsigned int skb_end_offset(const struct sk_buff *skb)
-+{
-+	return skb->end - skb->head;
-+}
- #endif
- 
- /* Internal */
-@@ -2574,7 +2584,7 @@ static inline bool skb_is_recycleable(co
- 		return false;
- 
- 	skb_size = SKB_DATA_ALIGN(skb_size + NET_SKB_PAD);
--	if (skb_end_pointer(skb) - skb->head < skb_size)
-+	if (skb_end_offset(skb) < skb_size)
- 		return false;
- 
- 	if (skb_shared(skb) || skb_cloned(skb))
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -821,7 +821,7 @@ static void copy_skb_header(struct sk_bu
- struct sk_buff *skb_copy(const struct sk_buff *skb, gfp_t gfp_mask)
- {
- 	int headerlen = skb_headroom(skb);
--	unsigned int size = (skb_end_pointer(skb) - skb->head) + skb->data_len;
-+	unsigned int size = skb_end_offset(skb) + skb->data_len;
- 	struct sk_buff *n = alloc_skb(size, gfp_mask);
- 
- 	if (!n)
-@@ -922,7 +922,7 @@ int pskb_expand_head(struct sk_buff *skb
- {
- 	int i;
- 	u8 *data;
--	int size = nhead + (skb_end_pointer(skb) - skb->head) + ntail;
-+	int size = nhead + skb_end_offset(skb) + ntail;
- 	long off;
- 	bool fastpath;
- 
-@@ -2721,14 +2721,13 @@ struct sk_buff *skb_segment(struct sk_bu
- 			if (unlikely(!nskb))
- 				goto err;
- 
--			hsize = skb_end_pointer(nskb) - nskb->head;
-+			hsize = skb_end_offset(nskb);
- 			if (skb_cow_head(nskb, doffset + headroom)) {
- 				kfree_skb(nskb);
- 				goto err;
- 			}
- 
--			nskb->truesize += skb_end_pointer(nskb) - nskb->head -
--					  hsize;
-+			nskb->truesize += skb_end_offset(nskb) - hsize;
- 			skb_release_head_state(nskb);
- 			__skb_push(nskb, doffset);
- 		} else {
 
 
