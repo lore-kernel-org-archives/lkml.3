@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753382AbaFEEV4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:21:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44339 "EHLO
+	id S1753000AbaFEEet (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:34:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44374 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753329AbaFEEVv (ORCPT
+	with ESMTP id S1753329AbaFEEV4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:21:51 -0400
+	Thu, 5 Jun 2014 00:21:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans Verkuil <hverkuil@xs4all.nl>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
+        Carsten Emde <C.Emde@osadl.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@intel.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
         Weng Meiling <wengmeiling.weng@huawei.com>
-Subject: [PATCH 3.4 162/214] drm/radeon: add connector table for SAM440ep embedded board
-Date: Wed,  4 Jun 2014 21:18:45 -0700
-Message-Id: <20140605041701.319658944@linuxfoundation.org>
+Subject: [PATCH 3.4 170/214] drm/i915: panel: invert brightness via parameter
+Date: Wed,  4 Jun 2014 21:18:53 -0700
+Message-Id: <20140605041702.406066231@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -29,115 +31,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Carsten Emde <C.Emde@osadl.org>
 
-commit 6a556039e7823d27a0a7f7724d4d455053ea9253 upstream.
+commit 7bd90909bbf9ce7c40e1da3d72b97b93839c188a upstream.
 
-RV250 found on ppc embedded boards.
+Following the documentation of the Legacy Backlight Brightness (LBB)
+Register in the configuration space of some Intel PCI graphics adapters,
+setting the LBB register with the value 0x0 causes the backlight to be
+turned off, and 0xFF causes the backlight to be set to 100% intensity
+(http://download.intel.com/embedded/processors/Whitepaper/324567.pdf).
+The Acer Aspire 5734Z, however, turns the backlight off at 0xFF and sets
+it to maximum intensity at 0. In consequence, the screen of this systems
+becomes dark at an early boot stage which makes it unusable. The same
+inversion applies to the BLC_PWM_CTL I915 register. This problem was
+introduced in kernel version 2.6.38 when the PCI device of this system
+was first supported by the i915 KMS module.
 
-Cc: Hans Verkuil <hverkuil@xs4all.nl>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+This patch adds a parameter to the i915 module to enable inversion of
+the brightness variable (i915.invert_brightness).
+
+Signed-off-by: Carsten Emde <C.Emde@osadl.org>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Acked-by: Jani Nikula <jani.nikula@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Weng Meiling <wengmeiling.weng@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_combios.c |   66 ++++++++++++++++++++++++++++++++
- drivers/gpu/drm/radeon/radeon_mode.h    |    1 
- 2 files changed, 67 insertions(+)
+ Documentation/kernel-parameters.txt |    9 +++++++++
+ drivers/gpu/drm/i915/intel_panel.c  |   17 +++++++++++++++++
+ 2 files changed, 26 insertions(+)
 
---- a/drivers/gpu/drm/radeon/radeon_combios.c
-+++ b/drivers/gpu/drm/radeon/radeon_combios.c
-@@ -1509,6 +1509,11 @@ bool radeon_get_legacy_connector_info_fr
- 			   (rdev->pdev->subsystem_device == 0x4150)) {
- 			/* Mac G5 tower 9600 */
- 			rdev->mode_info.connector_table = CT_MAC_G5_9600;
-+		} else if ((rdev->pdev->device == 0x4c66) &&
-+			   (rdev->pdev->subsystem_vendor == 0x1002) &&
-+			   (rdev->pdev->subsystem_device == 0x4c66)) {
-+			/* SAM440ep RV250 embedded board */
-+			rdev->mode_info.connector_table = CT_SAM440EP;
- 		} else
- #endif /* CONFIG_PPC_PMAC */
- #ifdef CONFIG_PPC64
-@@ -2080,6 +2085,67 @@ bool radeon_get_legacy_connector_info_fr
- 					    DRM_MODE_CONNECTOR_SVIDEO,
- 					    &ddc_i2c,
- 					    CONNECTOR_OBJECT_ID_SVIDEO,
-+					    &hpd);
-+		break;
-+	case CT_SAM440EP:
-+		DRM_INFO("Connector Table: %d (SAM440ep embedded board)\n",
-+			 rdev->mode_info.connector_table);
-+		/* LVDS */
-+		ddc_i2c = combios_setup_i2c_bus(rdev, DDC_NONE_DETECTED, 0, 0);
-+		hpd.hpd = RADEON_HPD_NONE;
-+		radeon_add_legacy_encoder(dev,
-+					  radeon_get_encoder_enum(dev,
-+								ATOM_DEVICE_LCD1_SUPPORT,
-+								0),
-+					  ATOM_DEVICE_LCD1_SUPPORT);
-+		radeon_add_legacy_connector(dev, 0, ATOM_DEVICE_LCD1_SUPPORT,
-+					    DRM_MODE_CONNECTOR_LVDS, &ddc_i2c,
-+					    CONNECTOR_OBJECT_ID_LVDS,
-+					    &hpd);
-+		/* DVI-I - secondary dac, int tmds */
-+		ddc_i2c = combios_setup_i2c_bus(rdev, DDC_DVI, 0, 0);
-+		hpd.hpd = RADEON_HPD_1; /* ??? */
-+		radeon_add_legacy_encoder(dev,
-+					  radeon_get_encoder_enum(dev,
-+								ATOM_DEVICE_DFP1_SUPPORT,
-+								0),
-+					  ATOM_DEVICE_DFP1_SUPPORT);
-+		radeon_add_legacy_encoder(dev,
-+					  radeon_get_encoder_enum(dev,
-+								ATOM_DEVICE_CRT2_SUPPORT,
-+								2),
-+					  ATOM_DEVICE_CRT2_SUPPORT);
-+		radeon_add_legacy_connector(dev, 1,
-+					    ATOM_DEVICE_DFP1_SUPPORT |
-+					    ATOM_DEVICE_CRT2_SUPPORT,
-+					    DRM_MODE_CONNECTOR_DVII, &ddc_i2c,
-+					    CONNECTOR_OBJECT_ID_SINGLE_LINK_DVI_I,
-+					    &hpd);
-+		/* VGA - primary dac */
-+		ddc_i2c = combios_setup_i2c_bus(rdev, DDC_VGA, 0, 0);
-+		hpd.hpd = RADEON_HPD_NONE;
-+		radeon_add_legacy_encoder(dev,
-+					  radeon_get_encoder_enum(dev,
-+								ATOM_DEVICE_CRT1_SUPPORT,
-+								1),
-+					  ATOM_DEVICE_CRT1_SUPPORT);
-+		radeon_add_legacy_connector(dev, 2,
-+					    ATOM_DEVICE_CRT1_SUPPORT,
-+					    DRM_MODE_CONNECTOR_VGA, &ddc_i2c,
-+					    CONNECTOR_OBJECT_ID_VGA,
-+					    &hpd);
-+		/* TV - TV DAC */
-+		ddc_i2c.valid = false;
-+		hpd.hpd = RADEON_HPD_NONE;
-+		radeon_add_legacy_encoder(dev,
-+					  radeon_get_encoder_enum(dev,
-+								ATOM_DEVICE_TV1_SUPPORT,
-+								2),
-+					  ATOM_DEVICE_TV1_SUPPORT);
-+		radeon_add_legacy_connector(dev, 3, ATOM_DEVICE_TV1_SUPPORT,
-+					    DRM_MODE_CONNECTOR_SVIDEO,
-+					    &ddc_i2c,
-+					    CONNECTOR_OBJECT_ID_SVIDEO,
- 					    &hpd);
- 		break;
- 	default:
---- a/drivers/gpu/drm/radeon/radeon_mode.h
-+++ b/drivers/gpu/drm/radeon/radeon_mode.h
-@@ -210,6 +210,7 @@ enum radeon_connector_table {
- 	CT_RN50_POWER,
- 	CT_MAC_X800,
- 	CT_MAC_G5_9600,
-+	CT_SAM440EP
- };
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -993,6 +993,15 @@ bytes respectively. Such letter suffixes
+ 	i8k.restricted	[HW] Allow controlling fans only if SYS_ADMIN
+ 			capability is set.
  
- enum radeon_dvo_chip {
++	i915.invert_brightness
++			[DRM] Invert the sense of the variable that is used to
++			set the brightness of the panel backlight. Normally a
++			value of 0 indicates backlight switched off, and the
++			maximum value sets the backlight to maximum brightness.
++			If this parameter is specified, a value of 0 sets the
++			backlight to maximum brightness, and the maximum value
++			switches the backlight off.
++
+ 	icn=		[HW,ISDN]
+ 			Format: <io>[,<membase>[,<icn_id>[,<icn_id2>]]]
+ 
+--- a/drivers/gpu/drm/i915/intel_panel.c
++++ b/drivers/gpu/drm/i915/intel_panel.c
+@@ -28,6 +28,7 @@
+  *      Chris Wilson <chris@chris-wilson.co.uk>
+  */
+ 
++#include <linux/moduleparam.h>
+ #include "intel_drv.h"
+ 
+ #define PCI_LBPC 0xf4 /* legacy/combination backlight modes */
+@@ -189,6 +190,20 @@ u32 intel_panel_get_max_backlight(struct
+ 	return max;
+ }
+ 
++static bool i915_panel_invert_brightness;
++MODULE_PARM_DESC(invert_brightness, "Invert backlight brightness, please "
++	"report PCI device ID, subsystem vendor and subsystem device ID "
++	"to dri-devel@lists.freedesktop.org, if your machine needs it. "
++	"It will then be included in an upcoming module version.");
++module_param_named(invert_brightness, i915_panel_invert_brightness, bool, 0600);
++static u32 intel_panel_compute_brightness(struct drm_device *dev, u32 val)
++{
++	if (i915_panel_invert_brightness)
++		return intel_panel_get_max_backlight(dev) - val;
++
++	return val;
++}
++
+ u32 intel_panel_get_backlight(struct drm_device *dev)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+@@ -209,6 +224,7 @@ u32 intel_panel_get_backlight(struct drm
+ 		}
+ 	}
+ 
++	val = intel_panel_compute_brightness(dev, val);
+ 	DRM_DEBUG_DRIVER("get backlight PWM = %d\n", val);
+ 	return val;
+ }
+@@ -226,6 +242,7 @@ static void intel_panel_actually_set_bac
+ 	u32 tmp;
+ 
+ 	DRM_DEBUG_DRIVER("set backlight PWM = %d\n", level);
++	level = intel_panel_compute_brightness(dev, level);
+ 
+ 	if (HAS_PCH_SPLIT(dev))
+ 		return intel_pch_panel_set_backlight(dev, level);
 
 
