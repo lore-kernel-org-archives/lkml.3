@@ -1,97 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751867AbaFEOEN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 10:04:13 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:55532 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751085AbaFEOEM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 10:04:12 -0400
-Date: Thu, 5 Jun 2014 16:04:00 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, ak@linux.intel.com,
-        jolsa@redhat.com, zheng.z.yan@intel.com,
-        maria.n.dimakopoulou@gmail.com
-Subject: Re: [PATCH 5/9] perf/x86: implement cross-HT corruption bug
- workaround
-Message-ID: <20140605140400.GM3213@twins.programming.kicks-ass.net>
-References: <1401917658-26065-1-git-send-email-eranian@google.com>
- <1401917658-26065-6-git-send-email-eranian@google.com>
+	id S1751687AbaFEOFB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 10:05:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40470 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751135AbaFEOE7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 10:04:59 -0400
+Date: Thu, 5 Jun 2014 10:04:16 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: WANG Chao <chaowang@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, kexec@lists.infradead.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, mjg59@srcf.ucam.org,
+        Greg Kroah-Hartman <greg@kroah.com>, Borislav Petkov <bp@alien8.de>,
+        Jiri Kosina <jkosina@suse.cz>, dyoung@redhat.com, bhe@redhat.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux API <linux-api@vger.kernel.org>
+Subject: Re: [RFC PATCH 00/13][V3] kexec: A new system call to allow in
+ kernel loading
+Message-ID: <20140605140416.GB17389@redhat.com>
+References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
+ <20140603131203.GA23395@redhat.com>
+ <20140604092214.GA17528@dhcp-17-89.nay.redhat.com>
+ <20140604175031.GA4406@redhat.com>
+ <CAHO5Pa0dxpq7YNe5eUMPE9Mn5m7XCnB1C5mZxrvt2-OqOpVZAA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Z/kiM2A+9acXa48/"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1401917658-26065-6-git-send-email-eranian@google.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CAHO5Pa0dxpq7YNe5eUMPE9Mn5m7XCnB1C5mZxrvt2-OqOpVZAA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 04, 2014 at 09:39:10PM +0200, Michael Kerrisk wrote:
+> Vivek,
+> 
+> As per Documentation/SubmitChecklist , please CC linux-api@ on patces
+> that change the ABI/API. See
+> https://www.kernel.org/doc/man-pages/linux-api-ml.html.
 
---Z/kiM2A+9acXa48/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hi Michael,
 
-On Wed, Jun 04, 2014 at 11:34:14PM +0200, Stephane Eranian wrote:
-> +
-> +	/*
-> +	 * Modify static constraint with current dynamic
-> +	 * state of thread
-> +	 *
-> +	 * EXCLUSIVE: sibling counter measuring exclusive event
-> +	 * SHARED   : sibling counter measuring non-exclusive event
-> +	 * UNUSED   : sibling counter unused
-> +	 */
-> +	for_each_set_bit(i, cx->idxmsk, X86_PMC_IDX_MAX) {
-> +		/*
-> +		 * exclusive event in sibling counter
-> +		 * our corresponding counter cannot be used
-> +		 * regardless of our event
-> +		 */
-> +		if (xl->state[i] == INTEL_EXCL_EXCLUSIVE)
-> +			__clear_bit(i, cx->idxmsk);
-> +		/*
-> +		 * if measuring an exclusive event, sibling
-> +		 * measuring non-exclusive, then counter cannot
-> +		 * be used
-> +		 */
-> +		if (is_excl && xl->state[i] == INTEL_EXCL_SHARED)
-> +			__clear_bit(i, cx->idxmsk);
-> +	}
-> +
-> +	/*
-> +	 * recompute actual bit weight for scheduling algorithm
-> +	 */
-> +	cx->weight = hweight64(cx->idxmsk64);
+Sorry, I did not notice that. I will CC linux-api@ in next version of
+patches in patches which introduce new systemcal..
 
-So I think we talked about this a bit; what happens if CPU0 (taking your
-4 core HSW-client) is first to program its counters and takes all 4 in
-exclusive mode?
+> 
+> Also, is there some draft man page for this new system call?
 
-Then there's none left for CPU4.
+No, there is none yet. In fact I don't see a man page for old kexec
+system call either kexec_load().
 
-Did I miss where we avoid that problem, or is that an actual issue?
+Do you want me to write man page for this new syscall?
 
---Z/kiM2A+9acXa48/
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTkHjQAAoJEHZH4aRLwOS6rz4P/1/mMOSGZivDcVwKv4Tuv7Xd
-Jfpx2XWxo59tfdAuPcz7Oj8+yUUaf7jXdNlXeoz7117C3WcfOTll+lZmo5/hD31a
-WZKjWJ8CpdypLkHLBukAVmpw08YNEHymiiAswMh5CSBWGBBlh8rbmDG+H/M3NWy+
-wlTvRWSF5NewZWxMl1IXKutfuIbW/6RKAbHMOybu6+XpW65n93RsF78Vps/HFAKL
-v4cIUayQvisGZ10+W0ZC2XK5yz2zpwNbM/sAfWSofxtcO+g2Ar5HatsB3oXMOIu5
-jqn25wyFszZhPV8zqnfQ6TIyxiZDhpPQXEpbHP0Qe8RyUpiybGoNH+Arr8QkreWz
-G8NqccVmb1o7kbPsi7sNuC71lnG4kPuk4DWUksgeAG0twgjeOO0hd05XhKUChCOm
-QSXbFOoXmitpjcGzEuARiOydnP+lAWWA4+yGLjbQqWrizUX2LM2WVLytYxIJ8PHq
-vWXsDuSZZhVlTBkUIuUOF5IQqDHJO6ZfRv0Soqp94lHYMkdQ+/EwS9J5Uj5ARWUm
-s3bWh5AiTvq4Ge+YqIuJaAG+iiU0yW7F8VPXHMFJD4MthLerlUrfhKn1QbCN/JGh
-+k7Desz5j65KYITwjhMTUQBFs00VY2C+pWJTMMMqfKcE/GadMCdDb1rKYkCPBST6
-MwUX00sbRzF8i56qYudL
-=7StL
------END PGP SIGNATURE-----
-
---Z/kiM2A+9acXa48/--
+Thanks
+Vivek
