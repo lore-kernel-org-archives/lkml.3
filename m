@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752788AbaFER0s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 13:26:48 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:37080 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752732AbaFER0o (ORCPT
+	id S1753008AbaFER1k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 13:27:40 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:52524 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751761AbaFER0m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 13:26:44 -0400
+	Thu, 5 Jun 2014 13:26:42 -0400
 From: Matthias Brugger <matthias.bgg@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
@@ -21,34 +21,54 @@ Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         maxime.ripard@free-electrons.com, soren.brinkmann@xilinx.com,
         devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v7 4/7] vendor-prefixes: add prefix for Mediaktek Inc.
-Date: Thu,  5 Jun 2014 19:26:18 +0200
-Message-Id: <1401989181-4712-5-git-send-email-matthias.bgg@gmail.com>
+Subject: [PATCH v7 3/7] dt-bindings: add mtk-timer bindings
+Date: Thu,  5 Jun 2014 19:26:17 +0200
+Message-Id: <1401989181-4712-4-git-send-email-matthias.bgg@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1401989181-4712-1-git-send-email-matthias.bgg@gmail.com>
 References: <1401989181-4712-1-git-send-email-matthias.bgg@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add binding documentation for the General Porpose Timer driver of
+the Mediatek SoCs.
+
 Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
+Acked-by: Sören Brinkmann <soren.brinkmann@xilinx.com>
 Acked-by: Rob Herring <robh@kernel.org>
 ---
- .../devicetree/bindings/vendor-prefixes.txt        |    1 +
- 1 file changed, 1 insertion(+)
+ .../bindings/timer/mediatek,mtk-timer.txt          |   18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/timer/mediatek,mtk-timer.txt
 
-diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-index abc3080..73f9e4c 100644
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@ -75,6 +75,7 @@ linux	Linux-specific binding
- lsi	LSI Corp. (LSI Logic)
- marvell	Marvell Technology Group Ltd.
- maxim	Maxim Integrated Products
-+mediatek	MediaTek Inc.
- microchip	Microchip Technology Inc.
- mosaixtech	Mosaix Technologies, Inc.
- moxa	Moxa
+diff --git a/Documentation/devicetree/bindings/timer/mediatek,mtk-timer.txt b/Documentation/devicetree/bindings/timer/mediatek,mtk-timer.txt
+new file mode 100644
+index 0000000..10b7e09
+--- /dev/null
++++ b/Documentation/devicetree/bindings/timer/mediatek,mtk-timer.txt
+@@ -0,0 +1,18 @@
++Mediatek MT6577, MT6572 and MT6589 Timers
++---------------------------------------
++
++Required properties:
++- compatible: Should be "mediatek,mt6577-timer"
++- reg: Should contain location and length for timers register.
++- clocks: Clocks driving the timer hardware. This list should include two
++	clocks. The order is system clock and as second clock the RTC clock.
++
++Examples:
++
++	timer@10008000 {
++		compatible = "mediatek,mt6577-timer";
++		reg = <0x10008000 0x80>;
++		interrupts = <GIC_SPI 113 IRQ_TYPE_LEVEL_LOW>;
++		clocks = <&system_clk>, <&rtc_clk>;
++		clock-names = "system-clk", "rtc-clk";
++	};
 -- 
 1.7.9.5
 
