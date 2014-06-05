@@ -1,67 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751969AbaFEDJF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 23:09:05 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:1840 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750944AbaFEDJD (ORCPT
+	id S1752163AbaFEDKs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 23:10:48 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:58464 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751549AbaFEDKq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 23:09:03 -0400
-Message-ID: <1401937739.6680.5.camel@j-VirtualBox>
-Subject: Re: [RFC PATCH 3/3] locking/mutex: Optimize mutex trylock slowpath
-From: Jason Low <jason.low2@hp.com>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        paulmck@linux.vnet.ibm.com, tim.c.chen@linux.intel.com,
-        peter@hurleysoftware.com, riel@redhat.com, hpa@zytor.com,
-        walken@google.com, Waiman.Long@hp.com, aswin@hp.com,
-        scott.norton@hp.com, chegu_vinod@hp.com
-Date: Wed, 04 Jun 2014 20:08:59 -0700
-In-Reply-To: <1401930628.13877.29.camel@buesod1.americas.hpqcorp.net>
-References: <1401908911-8947-1-git-send-email-jason.low2@hp.com>
-	 <1401908911-8947-4-git-send-email-jason.low2@hp.com>
-	 <1401913714.13877.11.camel@buesod1.americas.hpqcorp.net>
-	 <1401918431.2232.32.camel@j-VirtualBox>
-	 <1401930628.13877.29.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 4 Jun 2014 23:10:46 -0400
+MIME-Version: 1.0
+In-Reply-To: <538F6DEB.2000601@redhat.com>
+References: <1401881699-1456-1-git-send-email-pbonzini@redhat.com>
+	<1401881699-1456-6-git-send-email-pbonzini@redhat.com>
+	<CAHdzE-8KoMrg_jSuj-F9c=HnapCiLCg9bKCifduTaxx-DAJZRw@mail.gmail.com>
+	<538F6DEB.2000601@redhat.com>
+Date: Wed, 4 Jun 2014 20:10:45 -0700
+Message-ID: <CAHdzE--6krnQ2H9yyfNzX5Y4RoZs-XfKdmFzPufxpMp5hx33pQ@mail.gmail.com>
+Subject: Re: [PATCH v3 5/6] virtio-scsi: fix various bad behavior on aborted requests
+From: Venkatesh Srinivas <venkateshs@google.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org, hch@lst.de,
+        JBottomley@parallels.com, stable@vger.kernel.org,
+        Venkatesh Srinivas <vsrinivas@ops101.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-06-04 at 18:10 -0700, Davidlohr Bueso wrote:
-> On Wed, 2014-06-04 at 14:47 -0700, Jason Low wrote:
-> > On Wed, 2014-06-04 at 13:28 -0700, Davidlohr Bueso wrote:
-> > > On Wed, 2014-06-04 at 12:08 -0700, Jason Low wrote:
-> > > > In __mutex_trylock_slowpath(), we acquire the wait_lock spinlock,
-> > > > xchg() lock->count with -1, then set lock->count back to 0 if there
-> > > > are no waiters, and return true if the prev lock count was 1.
-> > > > 
-> > > > However, if we the mutex is already locked, then there may not be
-> > >              ^^ leave that out.
-> > > 
-> > > > much point in attempting the above operations. 
-> > > 
-> > > Isn't this redundant? I mean, if we enter the slowpath its because
-> > > __mutex_fastpath_trylock() already failed so we already know that the
-> > > lock is taken.
-> > 
-> > This function is really just used as an alternative method of trylock
-> > for !__HAVE_ARCH_CMPXCHG.  In that case, the fastpath can call directly
-> > into the slowpath function, without checking for if the lock is taken.
-> 
-> Ah, ok I hadn't seen that we do this in 32bit x86 and was wondering why
-> the heck we fallback on a slowpath for something like trylock, which
-> should return right away no matter what. I'd suggest explicitly
-> mentioning this in the changelog. Otherwise makes sense now.
+On 6/4/14, Paolo Bonzini <pbonzini@redhat.com> wrote:
+> Il 04/06/2014 19:29, Venkatesh Srinivas ha scritto:
+>> Do you really want to poll the request VQs for completions if the TMF
+>> was rejected?
+>
+> I wasn't sure, but bugs in this path are hard enough that I preferred
+> the safer patch.
 
-Yup, I was also initially wondering why we have a slowpath for trylock,
-which prompted me to take a look into this function. I'll add some more
-information about this to the changelog.
+Ok. As long as it was deliberate. I'd slightly prefer only doing so in
+the success case, but simplicity is a compelling argument :)
 
-Thanks,
-Jason
+Reviewed-by: Venkatesh Srinivas <venkateshs@google.com>
 
+-- vs;
