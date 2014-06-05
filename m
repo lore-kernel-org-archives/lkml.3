@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752586AbaFEEUl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:20:41 -0400
+	id S1753720AbaFEE70 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:59:26 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:43889 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752547AbaFEEUg (ORCPT
+	with ESMTP id S1752557AbaFEEUk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:20:36 -0400
+	Thu, 5 Jun 2014 00:20:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marcel Apfelbaum <marcel.a@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-Subject: [PATCH 3.4 071/214] PCI: shpchp: Check bridges secondary (not primary) bus speed
-Date: Wed,  4 Jun 2014 21:17:14 -0700
-Message-Id: <20140605041649.083952082@linuxfoundation.org>
+        Justin Lecher <jlec@gentoo.org>,
+        Suresh Jayaraman <sjayaraman@suse.com>,
+        David Howells <dhowells@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>, Rui Xiang <rui.xiang@huawei.com>
+Subject: [PATCH 3.4 078/214] fs: cachefiles: add support for large files in filesystem caching
+Date: Wed,  4 Jun 2014 21:17:21 -0700
+Message-Id: <20140605041650.046871508@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -28,45 +31,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcel Apfelbaum <marcel.a@redhat.com>
+From: Justin Lecher <jlec@gentoo.org>
 
-commit 93fa9d32670f5592c8e56abc9928fc194e1e72fc upstream.
+commit 98c350cda2c14a343d34ea01a3d9c24fea5ec66d upstream.
 
-When a new device is added below a hotplug bridge, the bridge's secondary
-bus speed and the device's bus speed must match.  The shpchp driver
-previously checked the bridge's *primary* bus speed, not the secondary bus
-speed.
+Support the caching of large files.
 
-This caused hot-add errors like:
+Addresses https://bugzilla.kernel.org/show_bug.cgi?id=31182
 
-  shpchp 0000:00:03.0: Speed of bus ff and adapter 0 mismatch
-
-Check the secondary bus speed instead.
-
-[bhelgaas: changelog]
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=75251
-Fixes: 3749c51ac6c1 ("PCI: Make current and maximum bus speeds part of the PCI core")
-Signed-off-by: Marcel Apfelbaum <marcel.a@redhat.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Justin Lecher <jlec@gentoo.org>
+Signed-off-by: Suresh Jayaraman <sjayaraman@suse.com>
+Tested-by: Suresh Jayaraman <sjayaraman@suse.com>
+Acked-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - dentry_open() takes dentry and vfsmount pointers, not a path pointer]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: Rui Xiang <rui.xiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/hotplug/shpchp_ctrl.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/cachefiles/rdwr.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/pci/hotplug/shpchp_ctrl.c
-+++ b/drivers/pci/hotplug/shpchp_ctrl.c
-@@ -285,8 +285,8 @@ static int board_added(struct slot *p_sl
- 		return WRONG_BUS_FREQUENCY;
- 	}
- 
--	bsp = ctrl->pci_dev->bus->cur_bus_speed;
--	msp = ctrl->pci_dev->bus->max_bus_speed;
-+	bsp = ctrl->pci_dev->subordinate->cur_bus_speed;
-+	msp = ctrl->pci_dev->subordinate->max_bus_speed;
- 
- 	/* Check if there are other slots or devices on the same bus */
- 	if (!list_empty(&ctrl->pci_dev->subordinate->devices))
+--- a/fs/cachefiles/rdwr.c
++++ b/fs/cachefiles/rdwr.c
+@@ -918,7 +918,7 @@ int cachefiles_write_page(struct fscache
+ 	 * own time */
+ 	dget(object->backer);
+ 	mntget(cache->mnt);
+-	file = dentry_open(object->backer, cache->mnt, O_RDWR,
++	file = dentry_open(object->backer, cache->mnt, O_RDWR | O_LARGEFILE,
+ 			   cache->cache_cred);
+ 	if (IS_ERR(file)) {
+ 		ret = PTR_ERR(file);
 
 
