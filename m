@@ -1,110 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751948AbaFEIjs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 04:39:48 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:45306 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751152AbaFEIjp (ORCPT
+	id S1751686AbaFEIoc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 04:44:32 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:37173 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750939AbaFEIoa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 04:39:45 -0400
-X-IronPort-AV: E=Sophos;i="4.98,979,1392134400"; 
-   d="scan'208";a="31498285"
-Message-ID: <53902A44.50005@cn.fujitsu.com>
-Date: Thu, 5 Jun 2014 16:28:52 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	Thu, 5 Jun 2014 04:44:30 -0400
+Date: Thu, 5 Jun 2014 10:44:24 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] perf fixes for v3.15
+Message-ID: <20140605084424.GA14595@gmail.com>
 MIME-Version: 1.0
-To: linux-kernel <linux-kernel@vger.kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        <linux-mm@kvack.org>, Cgroups <cgroups@vger.kernel.org>,
-        <stable@vger.kernel.org>
-Subject: [PATCH] mm/mempolicy: fix sleeping function called from invalid context
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.100]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When running with the kernel(3.15-rc7+), the follow bug occurs:
-[ 9969.258987] BUG: sleeping function called from invalid context at kernel/locking/mutex.c:586
-[ 9969.359906] in_atomic(): 1, irqs_disabled(): 0, pid: 160655, name: python
-[ 9969.441175] INFO: lockdep is turned off.
-[ 9969.488184] CPU: 26 PID: 160655 Comm: python Tainted: G       A      3.15.0-rc7+ #85
-[ 9969.581032] Hardware name: FUJITSU-SV PRIMEQUEST 1800E/SB, BIOS PRIMEQUEST 1000 Series BIOS Version 1.39 11/16/2012
-[ 9969.706052]  ffffffff81a20e60 ffff8803e941fbd0 ffffffff8162f523 ffff8803e941fd18
-[ 9969.795323]  ffff8803e941fbe0 ffffffff8109995a ffff8803e941fc58 ffffffff81633e6c
-[ 9969.884710]  ffffffff811ba5dc ffff880405c6b480 ffff88041fdd90a0 0000000000002000
-[ 9969.974071] Call Trace:
-[ 9970.003403]  [<ffffffff8162f523>] dump_stack+0x4d/0x66
-[ 9970.065074]  [<ffffffff8109995a>] __might_sleep+0xfa/0x130
-[ 9970.130743]  [<ffffffff81633e6c>] mutex_lock_nested+0x3c/0x4f0
-[ 9970.200638]  [<ffffffff811ba5dc>] ? kmem_cache_alloc+0x1bc/0x210
-[ 9970.272610]  [<ffffffff81105807>] cpuset_mems_allowed+0x27/0x140
-[ 9970.344584]  [<ffffffff811b1303>] ? __mpol_dup+0x63/0x150
-[ 9970.409282]  [<ffffffff811b1385>] __mpol_dup+0xe5/0x150
-[ 9970.471897]  [<ffffffff811b1303>] ? __mpol_dup+0x63/0x150
-[ 9970.536585]  [<ffffffff81068c86>] ? copy_process.part.23+0x606/0x1d40
-[ 9970.613763]  [<ffffffff810bf28d>] ? trace_hardirqs_on+0xd/0x10
-[ 9970.683660]  [<ffffffff810ddddf>] ? monotonic_to_bootbased+0x2f/0x50
-[ 9970.759795]  [<ffffffff81068cf0>] copy_process.part.23+0x670/0x1d40
-[ 9970.834885]  [<ffffffff8106a598>] do_fork+0xd8/0x380
-[ 9970.894375]  [<ffffffff81110e4c>] ? __audit_syscall_entry+0x9c/0xf0
-[ 9970.969470]  [<ffffffff8106a8c6>] SyS_clone+0x16/0x20
-[ 9971.030011]  [<ffffffff81642009>] stub_clone+0x69/0x90
-[ 9971.091573]  [<ffffffff81641c29>] ? system_call_fastpath+0x16/0x1b
+Linus,
 
-The cause is that cpuset_mems_allowed() try to take mutex_lock(&callback_mutex)
-under the rcu_read_lock(which was hold in __mpol_dup()). And in cpuset_mems_allowed(),
-the access to cpuset is under rcu_read_lock, so in __mpol_dup, we can reduce the
-rcu_read_lock protection region to protect the access to cpuset only in
-current_cpuset_is_being_rebound(). So that we can avoid this bug.
+Please pull the latest perf-urgent-for-linus git tree from:
 
-Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
----
- kernel/cpuset.c |    8 +++++++-
- mm/mempolicy.c  |    2 --
- 2 files changed, 7 insertions(+), 3 deletions(-)
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
 
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 3d54c41..a735402 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -1188,7 +1188,13 @@ done:
- 
- int current_cpuset_is_being_rebound(void)
+   # HEAD: 22c91aa23547a4363fd2a9ffddde95c899ac8aa0 Merge tag 'perf-urgent-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf into perf/urgent
+
+Two last minute tooling fixes.
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Masami Hiramatsu (2):
+      perf probe: Fix a segfault if asked for variable it doesn't find
+      perf probe: Fix perf probe to find correct variable DIE
+
+
+ tools/perf/util/dwarf-aux.c    | 7 +++++--
+ tools/perf/util/probe-finder.c | 4 ++--
+ 2 files changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/tools/perf/util/dwarf-aux.c b/tools/perf/util/dwarf-aux.c
+index 7defd77..cc66c40 100644
+--- a/tools/perf/util/dwarf-aux.c
++++ b/tools/perf/util/dwarf-aux.c
+@@ -747,14 +747,17 @@ struct __find_variable_param {
+ static int __die_find_variable_cb(Dwarf_Die *die_mem, void *data)
  {
--	return task_cs(current) == cpuset_being_rebound;
-+	int ret;
-+
-+	rcu_read_lock();
-+	ret = task_cs(current) == cpuset_being_rebound;
-+	rcu_read_unlock();
-+
-+	return ret;
- }
+ 	struct __find_variable_param *fvp = data;
++	Dwarf_Attribute attr;
+ 	int tag;
  
- static int update_relax_domain_level(struct cpuset *cs, s64 val)
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 78e1472..b58a9d5 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2138,7 +2138,6 @@ struct mempolicy *__mpol_dup(struct mempolicy *old)
- 	} else
- 		*new = *old;
+ 	tag = dwarf_tag(die_mem);
+ 	if ((tag == DW_TAG_formal_parameter ||
+ 	     tag == DW_TAG_variable) &&
+-	    die_compare_name(die_mem, fvp->name))
++	    die_compare_name(die_mem, fvp->name) &&
++	/* Does the DIE have location information or external instance? */
++	    (dwarf_attr(die_mem, DW_AT_external, &attr) ||
++	     dwarf_attr(die_mem, DW_AT_location, &attr)))
+ 		return DIE_FIND_CB_END;
+-
+ 	if (dwarf_haspc(die_mem, fvp->addr))
+ 		return DIE_FIND_CB_CONTINUE;
+ 	else
+diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+index 5627621..9d8eb26 100644
+--- a/tools/perf/util/probe-finder.c
++++ b/tools/perf/util/probe-finder.c
+@@ -511,12 +511,12 @@ static int convert_variable(Dwarf_Die *vr_die, struct probe_finder *pf)
  
--	rcu_read_lock();
- 	if (current_cpuset_is_being_rebound()) {
- 		nodemask_t mems = cpuset_mems_allowed(current);
- 		if (new->flags & MPOL_F_REBINDING)
-@@ -2146,7 +2145,6 @@ struct mempolicy *__mpol_dup(struct mempolicy *old)
- 		else
- 			mpol_rebind_policy(new, &mems, MPOL_REBIND_ONCE);
- 	}
--	rcu_read_unlock();
- 	atomic_set(&new->refcnt, 1);
- 	return new;
- }
--- 
-1.7.7
-
+ 	ret = convert_variable_location(vr_die, pf->addr, pf->fb_ops,
+ 					&pf->sp_die, pf->tvar);
+-	if (ret == -ENOENT)
++	if (ret == -ENOENT || ret == -EINVAL)
+ 		pr_err("Failed to find the location of %s at this address.\n"
+ 		       " Perhaps, it has been optimized out.\n", pf->pvar->var);
+ 	else if (ret == -ENOTSUP)
+ 		pr_err("Sorry, we don't support this variable location yet.\n");
+-	else if (pf->pvar->field) {
++	else if (ret == 0 && pf->pvar->field) {
+ 		ret = convert_variable_fields(vr_die, pf->pvar->var,
+ 					      pf->pvar->field, &pf->tvar->ref,
+ 					      &die_mem);
