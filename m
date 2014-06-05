@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752666AbaFEEUt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:20:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43948 "EHLO
+	id S1753424AbaFEEzx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:55:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43965 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752595AbaFEEUn (ORCPT
+	with ESMTP id S1752641AbaFEEUr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:20:43 -0400
+	Thu, 5 Jun 2014 00:20:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Ingo Molnar <mingo@kernel.org>, Rui Xiang <rui.xiang@huawei.com>,
-        a.p.zijlstra@chello.nl, paulus@samba.org, acme@ghostprotocols.net
-Subject: [PATCH 3.4 083/214] perf: Fix error return code
-Date: Wed,  4 Jun 2014 21:17:26 -0700
-Message-Id: <20140605041650.743735178@linuxfoundation.org>
+        fanchaoting <fanchaoting@cn.fujitsu.com>,
+        "J. Bruce Fields" <bfields@redhat.com>,
+        Ben Hutchings <ben@decadent.org.uk>, Rui Xiang <rui.xiang@huawei.com>
+Subject: [PATCH 3.4 090/214] nfsd: dont run get_file if nfs4_preprocess_stateid_op return error
+Date: Wed,  4 Jun 2014 21:17:33 -0700
+Message-Id: <20140605041651.734917421@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -28,36 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+From: fanchaoting <fanchaoting@cn.fujitsu.com>
 
-commit c481420248c6730246d2a1b1773d5d7007ae0835 upstream.
+commit b022032e195ffca83d7002d6b84297d796ed443b upstream.
 
-Fix to return -ENOMEM in the allocation error case instead of 0
-(if pmu_bus_running == 1), as done elsewhere in this function.
+we should return error status directly when nfs4_preprocess_stateid_op
+return error.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Cc: a.p.zijlstra@chello.nl
-Cc: paulus@samba.org
-Cc: acme@ghostprotocols.net
-Link: http://lkml.kernel.org/r/CAPgLHd8j_fWcgqe%3DKLWjpBj%2B%3Do0Pw6Z-SEq%3DNTPU08c2w1tngQ@mail.gmail.com
-[ Tweaked the error code setting placement and the changelog. ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: fanchaoting <fanchaoting@cn.fujitsu.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Rui Xiang <rui.xiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/events/core.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/nfsd/nfs4proc.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -5871,6 +5871,7 @@ skip_type:
- 	if (pmu->pmu_cpu_context)
- 		goto got_cpu_context;
+--- a/fs/nfsd/nfs4proc.c
++++ b/fs/nfsd/nfs4proc.c
+@@ -904,14 +904,14 @@ nfsd4_write(struct svc_rqst *rqstp, stru
  
-+	ret = -ENOMEM;
- 	pmu->pmu_cpu_context = alloc_percpu(struct perf_cpu_context);
- 	if (!pmu->pmu_cpu_context)
- 		goto free_dev;
+ 	nfs4_lock_state();
+ 	status = nfs4_preprocess_stateid_op(cstate, stateid, WR_STATE, &filp);
+-	if (filp)
+-		get_file(filp);
+-	nfs4_unlock_state();
+-
+ 	if (status) {
++		nfs4_unlock_state();
+ 		dprintk("NFSD: nfsd4_write: couldn't process stateid!\n");
+ 		return status;
+ 	}
++	if (filp)
++		get_file(filp);
++	nfs4_unlock_state();
+ 
+ 	cnt = write->wr_buflen;
+ 	write->wr_how_written = write->wr_stable_how;
 
 
