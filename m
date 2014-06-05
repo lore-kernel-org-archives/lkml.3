@@ -1,41 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751581AbaFEHnQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 03:43:16 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:41120 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751135AbaFEHnO convert rfc822-to-8bit (ORCPT
+	id S1751121AbaFEHpW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 03:45:22 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:47566 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750866AbaFEHpU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 03:43:14 -0400
-Date: Thu, 05 Jun 2014 00:43:11 -0700 (PDT)
-Message-Id: <20140605.004311.19890338095820543.davem@davemloft.net>
-To: linus.luessing@web.de
-Cc: netdev@vger.kernel.org, bridge@lists.linux-foundation.org,
-        stephen@networkplumber.org, herbert@gondor.apana.org.au,
-        linux-kernel@vger.kernel.org, b.a.t.m.a.n@lists.open-mesh.org
-Subject: Re: [PATCHv3 net-next 0/4] bridge: multicast snooping patches /
- exports
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140602184215.GA2460@Linus-Debian>
-References: <1401732466-3027-1-git-send-email-linus.luessing@web.de>
-	<20140602184215.GA2460@Linus-Debian>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 05 Jun 2014 00:43:14 -0700 (PDT)
+	Thu, 5 Jun 2014 03:45:20 -0400
+Date: Thu, 5 Jun 2014 08:45:16 +0100
+From: Peter Griffin <peter.griffin@linaro.org>
+To: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
+Cc: mturquette@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, devicetree@vger.kernel.org, kernel@stlinux.com,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [STLinux Kernel] [PATCH RESEND 06/12] drivers: clk: st: Add
+ polarity bit indication
+Message-ID: <20140605074516.GA3865@griffinp-ThinkPad-X1-Carbon-2nd>
+References: <1401892320-18211-1-git-send-email-gabriel.fernandez@linaro.org>
+ <1401892320-18211-7-git-send-email-gabriel.fernandez@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401892320-18211-7-git-send-email-gabriel.fernandez@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Lüssing <linus.luessing@web.de>
-Date: Mon, 2 Jun 2014 20:42:15 +0200
+Hi Gabi,
 
-> Changes in v3:
-> 
-> * use EXPORT_SYMBOL_GPL() instead of EXPORT_SYMBOL()
+On Wed, 04 Jun 2014, Gabriel FERNANDEZ wrote:
 
-This is not a sufficient header posting.
+> This patch introduces polarity indication for pll power up bit
+> and for standby bit in order to have same code between Orly 2
+> and CAN.
 
-You must also describe at a high level what this patch series is
-doing, and why you are doing it.
+I think it would be better to refer to the SoC's by there numeric
+name stih416 and stih407, as people unfamiliar with ST SoC names
+reading the commit message are unlikely to know what Orly2 or CAN 
+mean.
+
+Once fixed you can add my:
+Acked-by: Peter Griffin <peter.griffin@linaro.org>
+
+regards,
+
+Peter.
+
