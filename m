@@ -1,112 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752097AbaFEUVv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 16:21:51 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:41742 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750840AbaFEUVr (ORCPT
+	id S1752134AbaFEUXn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 16:23:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56947 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750840AbaFEUXl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 16:21:47 -0400
-Message-ID: <5390D152.30702@oracle.com>
-Date: Thu, 05 Jun 2014 16:21:38 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: "David S. Miller" <davem@davemloft.net>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: net: netlink executing RO memory
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 5 Jun 2014 16:23:41 -0400
+Date: Thu, 5 Jun 2014 13:23:39 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        <linux-mm@kvack.org>, Cgroups <cgroups@vger.kernel.org>,
+        <stable@vger.kernel.org>
+Subject: Re: [PATCH] mm/mempolicy: fix sleeping function called from invalid
+ context
+Message-Id: <20140605132339.ddf6df4a0cf5c14d17eb8691@linux-foundation.org>
+In-Reply-To: <53902A44.50005@cn.fujitsu.com>
+References: <53902A44.50005@cn.fujitsu.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Thu, 5 Jun 2014 16:28:52 +0800 Gu Zheng <guz.fnst@cn.fujitsu.com> wrote:
 
-While fuzzing with trinity inside a KVM tools guest running the latest -next
-kernel I've stumbled on the following spew:
+> When running with the kernel(3.15-rc7+), the follow bug occurs:
+> [ 9969.258987] BUG: sleeping function called from invalid context at kernel/locking/mutex.c:586
+> [ 9969.359906] in_atomic(): 1, irqs_disabled(): 0, pid: 160655, name: python
+> [ 9969.441175] INFO: lockdep is turned off.
+> [ 9969.488184] CPU: 26 PID: 160655 Comm: python Tainted: G       A      3.15.0-rc7+ #85
+> [ 9969.581032] Hardware name: FUJITSU-SV PRIMEQUEST 1800E/SB, BIOS PRIMEQUEST 1000 Series BIOS Version 1.39 11/16/2012
+> [ 9969.706052]  ffffffff81a20e60 ffff8803e941fbd0 ffffffff8162f523 ffff8803e941fd18
+> [ 9969.795323]  ffff8803e941fbe0 ffffffff8109995a ffff8803e941fc58 ffffffff81633e6c
+> [ 9969.884710]  ffffffff811ba5dc ffff880405c6b480 ffff88041fdd90a0 0000000000002000
+> [ 9969.974071] Call Trace:
+> [ 9970.003403]  [<ffffffff8162f523>] dump_stack+0x4d/0x66
+> [ 9970.065074]  [<ffffffff8109995a>] __might_sleep+0xfa/0x130
+> [ 9970.130743]  [<ffffffff81633e6c>] mutex_lock_nested+0x3c/0x4f0
+> [ 9970.200638]  [<ffffffff811ba5dc>] ? kmem_cache_alloc+0x1bc/0x210
+> [ 9970.272610]  [<ffffffff81105807>] cpuset_mems_allowed+0x27/0x140
+> [ 9970.344584]  [<ffffffff811b1303>] ? __mpol_dup+0x63/0x150
+> [ 9970.409282]  [<ffffffff811b1385>] __mpol_dup+0xe5/0x150
+> [ 9970.471897]  [<ffffffff811b1303>] ? __mpol_dup+0x63/0x150
+> [ 9970.536585]  [<ffffffff81068c86>] ? copy_process.part.23+0x606/0x1d40
+> [ 9970.613763]  [<ffffffff810bf28d>] ? trace_hardirqs_on+0xd/0x10
+> [ 9970.683660]  [<ffffffff810ddddf>] ? monotonic_to_bootbased+0x2f/0x50
+> [ 9970.759795]  [<ffffffff81068cf0>] copy_process.part.23+0x670/0x1d40
+> [ 9970.834885]  [<ffffffff8106a598>] do_fork+0xd8/0x380
+> [ 9970.894375]  [<ffffffff81110e4c>] ? __audit_syscall_entry+0x9c/0xf0
+> [ 9970.969470]  [<ffffffff8106a8c6>] SyS_clone+0x16/0x20
+> [ 9971.030011]  [<ffffffff81642009>] stub_clone+0x69/0x90
+> [ 9971.091573]  [<ffffffff81641c29>] ? system_call_fastpath+0x16/0x1b
+> 
+> The cause is that cpuset_mems_allowed() try to take mutex_lock(&callback_mutex)
+> under the rcu_read_lock(which was hold in __mpol_dup()). And in cpuset_mems_allowed(),
+> the access to cpuset is under rcu_read_lock, so in __mpol_dup, we can reduce the
+> rcu_read_lock protection region to protect the access to cpuset only in
+> current_cpuset_is_being_rebound(). So that we can avoid this bug.
+>
+> ...
+>
+> --- a/kernel/cpuset.c
+> +++ b/kernel/cpuset.c
+> @@ -1188,7 +1188,13 @@ done:
+>  
+>  int current_cpuset_is_being_rebound(void)
+>  {
+> -	return task_cs(current) == cpuset_being_rebound;
+> +	int ret;
+> +
+> +	rcu_read_lock();
+> +	ret = task_cs(current) == cpuset_being_rebound;
+> +	rcu_read_unlock();
+> +
+> +	return ret;
+>  }
 
-[  306.065161] kernel tried to execute NX-protected page - exploit attempt? (uid: 0)
-[  306.067295] BUG: unable to handle kernel paging request at ffff880053b8fd08
-[  306.069237] IP: 0xffff880053b8fd08  (??:?)
-[  306.070071] PGD 24b9c067 PUD 705dd2067 PMD 705d34067 PTE 8000000053b8f163
-[  306.070071] Oops: 0011 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[  306.070071] Dumping ftrace buffer:
-[  306.070071]    (ftrace buffer empty)
-[  306.070071] Modules linked in:
-[  306.070071] CPU: 16 PID: 9577 Comm: trinity-c194 Tainted: G        W     3.15.0-rc8-next-20140605-sasha-00020-g833a807 #592
-[  306.070071] task: ffff880053b90000 ti: ffff880053b8c000 task.ti: ffff880053b8c000
-[  306.070071] RIP: 0xffff880053b8fd08  (??:?)
-[  306.070071] RSP: 0018:ffff880053b8fcc8  EFLAGS: 00010287
-[  306.070071] RAX: ffff8806286e8000 RBX: 0000000000000000 RCX: 0000004742e748d4
-[  306.070071] RDX: 0000000000000007 RSI: ffffffff9fffd31c RDI: ffffffffa0558ed5
-[  306.070071] RBP: ffff880053b8fd08 R08: 0000000000005d3c R09: 0000000000000000
-[  306.070071] R10: 0000000000000000 R11: 0000000000000001 R12: ffff880053b8fdf8
-[  306.070071] R13: ffff8803d55b8000 R14: ffff88065ea35cd0 R15: 0000000000000000
-[  306.070071] FS:  00007f5c3bb31700(0000) GS:ffff8803d7000000(0000) knlGS:0000000000000000
-[  306.070071] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  306.070071] CR2: ffff880053b8fd08 CR3: 0000000053b6b000 CR4: 00000000000006a0
-[  306.070071] DR0: 00000000006d6000 DR1: 00000000006d6000 DR2: 0000000000000000
-[  306.070071] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 000000000095060a
-[  306.070071] Stack:
-[  306.070071]  ffff880053b8fdc8 00000000026d7de0 0000000000000010 7fffffffffffffff
-[  306.070071]  0000000000000000 ffff88065ea35cd0 0000000000000001 0000000000000000
-[  306.095047]  ffff880053b8fda8 ffffffffa0000ad1 ffff8803d55b8000 ffff8803d71d8340
-[  306.095047] Call Trace:
-[  306.095047] netlink_sendmsg (net/netlink/af_netlink.c:2398)
-[  306.095047] sock_aio_write (net/socket.c:959 net/socket.c:974)
-[  306.095047] ? sched_clock_local (kernel/sched/clock.c:214)
-[  306.095047] ? vtime_account_user (kernel/sched/cputime.c:687)
-[  306.095047] do_sync_write (fs/read_write.c:458)
-[  306.095047] vfs_write (fs/read_write.c:534)
-[  306.095047] SyS_write (fs/read_write.c:584 fs/read_write.c:576)
-[  306.095047] tracesys (arch/x86/kernel/entry_64.S:542)
-[ 306.095047] Code: 00 00 00 ff ff ff ff ff ff ff 7f 00 00 00 00 00 00 00 00 d0 5c a3 5e 06 88 ff ff 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 <a8> fd b8 53 00 88 ff ff d1 0a 00 a0 ff ff ff ff 00 80 5b d5 03
-All code
-========
-   0:	00 00                	add    %al,(%rax)
-   2:	00 ff                	add    %bh,%bh
-   4:	ff                   	(bad)
-   5:	ff                   	(bad)
-   6:	ff                   	(bad)
-   7:	ff                   	(bad)
-   8:	ff                   	(bad)
-   9:	ff                   	(bad)
-   a:	7f 00                	jg     0xc
-   c:	00 00                	add    %al,(%rax)
-   e:	00 00                	add    %al,(%rax)
-  10:	00 00                	add    %al,(%rax)
-  12:	00 d0                	add    %dl,%al
-  14:	5c                   	pop    %rsp
-  15:	a3 5e 06 88 ff ff 01 	movabs %eax,0x1ffff88065e
-  1c:	00 00
-	...
-  2a:*	00 a8 fd b8 53 00    	add    %ch,0x53b8fd(%rax)		<-- trapping instruction
-  30:	88 ff                	mov    %bh,%bh
-  32:	ff d1                	callq  *%rcx
-  34:	0a 00                	or     (%rax),%al
-  36:	a0 ff ff ff ff 00 80 	movabs 0xd55b8000ffffffff,%al
-  3d:	5b d5
-  3f:	03 00                	add    (%rax),%eax
+Looks fishy to me.  If the rcu_read_lock() stabilizes
+cpuset_being_rebound then cpuset_being_rebound can change immediately
+after rcu_read_unlock() and `ret' is now wrong.
 
-Code starting with the faulting instruction
-===========================================
-   0:	a8 fd                	test   $0xfd,%al
-   2:	b8 53 00 88 ff       	mov    $0xff880053,%eax
-   7:	ff d1                	callq  *%rcx
-   9:	0a 00                	or     (%rax),%al
-   b:	a0 ff ff ff ff 00 80 	movabs 0xd55b8000ffffffff,%al
-  12:	5b d5
-  14:	03 00                	add    (%rax),%eax
-[  306.095047] RIP 0xffff880053b8fd08  (??:?)
-[  306.095047]  RSP <ffff880053b8fcc8>
-[  306.095047] CR2: ffff880053b8fd08
-
-
-Thanks,
-Sasha
+Anyway.  Tejun, this one is yours please ;)
