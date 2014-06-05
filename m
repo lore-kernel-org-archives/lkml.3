@@ -1,170 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751717AbaFELYP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 07:24:15 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:37614 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750907AbaFELYO (ORCPT
+	id S1751851AbaFELZE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 07:25:04 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:12363 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751220AbaFELZB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 07:24:14 -0400
-Date: Thu, 5 Jun 2014 13:24:09 +0200
-From: Christoffer Dall <christoffer.dall@linaro.org>
-To: Eric Auger <eric.auger@linaro.org>
-Cc: eric.auger@st.com, marc.zyngier@arm.com,
-        linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org, patches@linaro.org,
-        christophe.barnichon@st.com
-Subject: Re: [PATCH v2] ARM: KVM: Unmap IPA on memslot delete/move
-Message-ID: <20140605112409.GD3994@lvm>
-References: <1401889674-10067-1-git-send-email-eric.auger@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1401889674-10067-1-git-send-email-eric.auger@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 5 Jun 2014 07:25:01 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-80-5390538a1bb3
+From: Krzysztof Opasiak <k.opasiak@samsung.com>
+To: "'Michal Nazarewicz'" <mina86@mina86.com>, "'Felipe Balbi'" <balbi@ti.com>
+Cc: Krzysztof Opasiak <k.opasiak@samsung.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1401954206-8491-1-git-send-email-mina86@mina86.com>
+ <1401954206-8491-2-git-send-email-mina86@mina86.com>
+In-reply-to: <1401954206-8491-2-git-send-email-mina86@mina86.com>
+Subject: RE: [PATCH 2/2] tools: ffs-test: convert to new descriptor format
+ fixing compilation error
+Date: Thu, 05 Jun 2014 13:25:01 +0200
+Message-id: <008101cf80b0$caf88dc0$60e9a940$%opasiak@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac+AkeGQNjmGw0WaTO6XyMCvFODpVgAHKllg
+Content-language: en-us
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHLMWRmVeSWpSXmKPExsVy+t/xq7pdwROCDe5+NbU4eL/e4vbEaWwW
+	l3fNYbNYtKyV2WLB8RZWB1aPdX9eMXn0bVnF6HH8xnYmj8+b5AJYorhsUlJzMstSi/TtErgy
+	vn+8zliwTbDi2oENrA2M0/m6GDk4JARMJPb8Le1i5AQyxSQu3FvP1sXIxSEksJRR4v2Mz8wQ
+	TgOTxKErK1hAGtgE9CXm7RIFaRAR8JK4v2kBI4jNLJAhMfnZQiYQW0igXOLpokPMIDangKPE
+	3n2/WEBsYYFUiXeLz7KDjGERUJU4dr8EJMwLVHL153cWCFtQ4sfkeywQI9UlJs1bxAxha0s8
+	eXeBFeJkdYlHf3UhLjCS+Nm/lB2iRFxi0oOH7BMYhWYhmTQLyaRZSCbNQtKygJFlFaNoamly
+	QXFSeq6hXnFibnFpXrpecn7uJkZIHHzZwbj4mNUhRgEORiUeXofX/cFCrIllxZW5hxglOJiV
+	RHjtHCYEC/GmJFZWpRblxxeV5qQWH2Jk4uCUamAsj3CoPDO3jl1HY+nP0ok+BqwhVxdluKdo
+	WWm+lpvDnVx1qce0feX5E16Jx+aU/3jS9Or9fnWf6eVfn4ffzuG41M90sOOQRFOO8M6ybxuP
+	Psn4pSSbuaBWqHdDF4P5cdusIl+H/UcMopK7n1i+ONR78Yzjxju/89+qr7Hml9sl/OBFR9mi
+	G5ZKLMUZiYZazEXFiQBvXWK8YQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 04, 2014 at 03:47:54PM +0200, Eric Auger wrote:
-> Currently when a KVM region is deleted or moved after
-> KVM_SET_USER_MEMORY_REGION ioctl, the corresponding
-> intermediate physical memory is not unmapped.
-> 
-> This patch corrects this and unmaps the region's IPA range
-> in kvm_arch_commit_memory_region using unmap_stage2_range.
-> 
-> The patch was tested with QEMU using the VFIO platform
-> device. In a specific IRQ handling case, the device regularly
-> deletes/creates some RAM regions.
-> 
-> Changes v1 -> v2
-> - KVM_MR_MOVE case also handled and tested using a QEMU hack
-> - memslot and memory_region stubs moved from arm.c to mmu.c
->   following Marc Zyngier recommendations.
-> 
-> Signed-off-by: Eric Auger <eric.auger@linaro.org>
-> ---
->  arch/arm/kvm/arm.c | 37 -------------------------------------
->  arch/arm/kvm/mmu.c | 46 ++++++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 46 insertions(+), 37 deletions(-)
-> 
-> diff --git a/arch/arm/kvm/arm.c b/arch/arm/kvm/arm.c
-> index f0e50a0..bcc2929 100644
-> --- a/arch/arm/kvm/arm.c
-> +++ b/arch/arm/kvm/arm.c
-> @@ -155,16 +155,6 @@ int kvm_arch_vcpu_fault(struct kvm_vcpu *vcpu, struct vm_fault *vmf)
->  	return VM_FAULT_SIGBUS;
->  }
->  
-> -void kvm_arch_free_memslot(struct kvm *kvm, struct kvm_memory_slot *free,
-> -			   struct kvm_memory_slot *dont)
-> -{
-> -}
-> -
-> -int kvm_arch_create_memslot(struct kvm *kvm, struct kvm_memory_slot *slot,
-> -			    unsigned long npages)
-> -{
-> -	return 0;
-> -}
->  
->  /**
->   * kvm_arch_destroy_vm - destroy the VM data structure
-> @@ -224,33 +214,6 @@ long kvm_arch_dev_ioctl(struct file *filp,
->  	return -EINVAL;
->  }
->  
-> -void kvm_arch_memslots_updated(struct kvm *kvm)
-> -{
-> -}
-> -
-> -int kvm_arch_prepare_memory_region(struct kvm *kvm,
-> -				   struct kvm_memory_slot *memslot,
-> -				   struct kvm_userspace_memory_region *mem,
-> -				   enum kvm_mr_change change)
-> -{
-> -	return 0;
-> -}
-> -
-> -void kvm_arch_commit_memory_region(struct kvm *kvm,
-> -				   struct kvm_userspace_memory_region *mem,
-> -				   const struct kvm_memory_slot *old,
-> -				   enum kvm_mr_change change)
-> -{
-> -}
-> -
-> -void kvm_arch_flush_shadow_all(struct kvm *kvm)
-> -{
-> -}
-> -
-> -void kvm_arch_flush_shadow_memslot(struct kvm *kvm,
-> -				   struct kvm_memory_slot *slot)
-> -{
-> -}
->  
->  struct kvm_vcpu *kvm_arch_vcpu_create(struct kvm *kvm, unsigned int id)
->  {
-> diff --git a/arch/arm/kvm/mmu.c b/arch/arm/kvm/mmu.c
-> index 16f8049..921245c 100644
-> --- a/arch/arm/kvm/mmu.c
-> +++ b/arch/arm/kvm/mmu.c
-> @@ -1100,3 +1100,49 @@ out:
->  	free_hyp_pgds();
->  	return err;
->  }
-> +
-> +void kvm_arch_commit_memory_region(struct kvm *kvm,
-> +				   struct kvm_userspace_memory_region *mem,
-> +				   const struct kvm_memory_slot *old,
-> +				   enum kvm_mr_change change)
-> +{
-> +	gpa_t gpa = old->base_gfn << PAGE_SHIFT;
-> +	u64 size = old->npages << PAGE_SHIFT;
+Hi,
 
-phys_addr_t instead of u64?
-
-> +	if (change == KVM_MR_DELETE || change == KVM_MR_MOVE) {
-> +		spin_lock(&kvm->mmu_lock);
-> +		unmap_stage2_range(kvm, gpa, size);
-> +		spin_unlock(&kvm->mmu_lock);
-> +	}
-> +}
-> +
-> +int kvm_arch_prepare_memory_region(struct kvm *kvm,
-> +				   struct kvm_memory_slot *memslot,
-> +				   struct kvm_userspace_memory_region *mem,
-> +				   enum kvm_mr_change change)
-> +{
-> +	return 0;
-> +}
-> +
-> +void kvm_arch_free_memslot(struct kvm *kvm, struct kvm_memory_slot *free,
-> +			   struct kvm_memory_slot *dont)
-> +{
-> +}
-> +
-> +int kvm_arch_create_memslot(struct kvm *kvm, struct kvm_memory_slot *slot,
-> +			    unsigned long npages)
-> +{
-> +	return 0;
-> +}
-> +
-> +void kvm_arch_memslots_updated(struct kvm *kvm)
-> +{
-> +}
-> +
-> +void kvm_arch_flush_shadow_all(struct kvm *kvm)
-> +{
-> +}
-> +
-> +void kvm_arch_flush_shadow_memslot(struct kvm *kvm,
-> +				   struct kvm_memory_slot *slot)
-> +{
-> +}
-> -- 
-> 1.9.1
+> -----Original Message-----
+> From: Michal Nazarewicz [mailto:mina86@mina86.com]
+> Sent: Thursday, June 05, 2014 9:43 AM
+> To: Felipe Balbi
+> Cc: Krzysztof Opasiak; linux-usb@vger.kernel.org; linux-
+> kernel@vger.kernel.org; Michal Nazarewicz
+> Subject: [PATCH 2/2] tools: ffs-test: convert to new descriptor
+> format fixing compilation error
 > 
+> Commit [ac8dde11: “usb: gadget: f_fs: Add flags to descriptors
+> block”]
+> which introduced a new descriptor format for FunctionFS removed the
+> usb_functionfs_descs_head structure, which is still used by ffs-
+> test.
+> tool.
+> 
+> Convert ffs-test by converting it to use the new header format.
+> For
+> testing kernels prior to 3.14 (when the new format was introduced)
+> and
+> parsing of the legacy headers in the new kernels, provide a
+> compilation
+> flag to make the tool use the old format.
+> 
+> Finally, include information as to when the legacy FunctionFS
+> headers
+> format has been deprecated (which is also when the new one has been
+> introduced).
+> 
+> Reported-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> Reported-by: Krzysztof Opasiak <k.opasiak@samsung.com>
+> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
 
-Otherwise, this looks pretty straight forward:
+(...)
 
-Acked-by: Christoffer Dall <christoffer.dall@linaro.org>
+> 
+>  static const struct {
+> -	struct usb_functionfs_descs_head header;
+> +	struct {
+> +		__le32 magic;
+> +		__le32 length;
+> +#ifndef USE_LEGACY_DESC_HEAD
+> +		__le32 flags;
+> +#endif
+> +		__le32 fs_count;
+> +		__le32 hs_count;
+> +	} __attribute__((packed)) header;
+
+I would suggest adding a suitable structure as you described in previous discussion[1]. Writing first 3 fields in each userspace program doesn't look quite good. Using:
+
+#ifndef USE_LEGACY_DESC_HEAD
+struct {
+	struct usb_functionfs_desc_head2 header;
+	__le32 fs_count
+	(... and rest according to flags ...)
+} __attribute__((packed)) header;
+#else ...
+
+Would be shorter, more flexible and user friendly. Moreover it gives less places for mistake (writing fields in wrong order).
+
+Footnotes:
+1 - http://marc.info/?l=linux-usb&m=140190878901586&w=2
+
+
+--
+BR's
+Krzysztof Opasiak
+Samsung R&D Institute Poland
+Samsung Electronics
+k.opasiak@samsung.com
+
+
+
+
+
