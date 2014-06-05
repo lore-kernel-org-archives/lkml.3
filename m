@@ -1,241 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752825AbaFERjQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 13:39:16 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:50645 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752692AbaFERjN (ORCPT
+	id S1751989AbaFERpg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 13:45:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54857 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751000AbaFERpf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 13:39:13 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>
-Cc: Minchan Kim <minchan@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Alexander Graf <agraf@suse.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: [RFC PATCH 1/3] CMA: generalize CMA reserved area management functionality
-In-Reply-To: <1401757919-30018-2-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1401757919-30018-1-git-send-email-iamjoonsoo.kim@lge.com> <1401757919-30018-2-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Notmuch/0.18~rc0+2~gbc64cdc (http://notmuchmail.org) Emacs/24.3.91.1 (x86_64-unknown-linux-gnu)
-Date: Thu, 05 Jun 2014 23:09:05 +0530
-Message-ID: <87zjhrtfwm.fsf@linux.vnet.ibm.com>
+	Thu, 5 Jun 2014 13:45:35 -0400
+Date: Thu, 5 Jun 2014 10:49:16 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Sumit Semwal <sumit.semwal@linaro.org>
+Cc: Rob Clark <robdclark@gmail.com>, Thierry Reding <thierry.reding@gmail.com>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] fence: Use smp_mb__before_atomic()
+Message-ID: <20140605174916.GA3433@kroah.com>
+References: <1401287192-14701-1-git-send-email-thierry.reding@gmail.com>
+ <20140528205145.GB10468@kroah.com>
+ <20140530081504.GA16669@ulmo>
+ <20140530160831.GA11182@kroah.com>
+ <CAO_48GE_Y7DQj_nCZ=0gb_AY26_vtPsQybf9zuhsLW1nnaOuQw@mail.gmail.com>
+ <20140604132831.GC28484@ulmo>
+ <20140604174902.GC20812@kroah.com>
+ <CAF6AEGuaURm-AHHh6G=HnJYFLUWBhPOxKaBQCqn-=-9CQdKe8w@mail.gmail.com>
+ <20140605154831.GA23993@kroah.com>
+ <CAO_48GFfFFqqMuR0Vgg4=4zsPmJ2GOBpt=P2ZTNnYOKv8sGnrA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14060517-9574-0000-0000-00000E117486
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAO_48GFfFFqqMuR0Vgg4=4zsPmJ2GOBpt=P2ZTNnYOKv8sGnrA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
+On Thu, Jun 05, 2014 at 10:09:29PM +0530, Sumit Semwal wrote:
+> Hi Greg,
+> 
+> On 5 June 2014 21:18, Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+> >> > But again, why is the fence.c code needed at all anyway?  I'm not sold
+> >> > on that.
+> >>
+> >> Fence serves as a way to synchronize between (for example) multiple
+> >> asynchronous gpu's.  There is definitely a need for this.  Otherwise
+> >> performance for optimus/prime type setups is going to suck.
+> >
+> > What's wrong with the 'sync' code in the drivers/staging/android/
+> > directory?  I thought that is what that codebase was supposed to be
+> > doing.
+> >
+> (Just a quick recap on sync v/s fences):
+> Well, there was a discussion on Sync v/s Fences at LPC 2013 [1], and
+> the agreement was that if (explicit) sync could be implemented on top
+> of (implicitly synchronized) fences, fences might provide more
+> flexibility.
+> Maarten implemented that (it is a part of this patch series), and
+> Android guys confirmed that it worked the same way as expected in the
+> Android system. That is a major reason for acceptance of fence as the
+> solution.
 
-> Currently, there are two users on CMA functionality, one is the DMA
-> subsystem and the other is the kvm on powerpc. They have their own code
-> to manage CMA reserved area even if they looks really similar.
-> From my guess, it is caused by some needs on bitmap management. Kvm side
-> wants to maintain bitmap not for 1 page, but for more size. Eventually it
-> use bitmap where one bit represents 64 pages.
->
-> When I implement CMA related patches, I should change those two places
-> to apply my change and it seem to be painful to me. I want to change
-> this situation and reduce future code management overhead through
-> this patch.
->
-> This change could also help developer who want to use CMA in their
-> new feature development, since they can use CMA easily without
-> copying & pasting this reserved area management code.
->
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+That's great to hear, again, it should have been conveyed somehow :)
 
+> >> I thought we had added something under Documentation/ about it, but I
+> >> can't find it now (although possibly looking at the wrong trees)..
+> >> there is at least a bit of a description in the commit msg:
+> >>
+> >>   https://lkml.org/lkml/2014/2/24/602
+> >
+> > Ah, so no documenation, no discussion, and you want to just throw it in
+> > a directory I am responsible for?  That sounds like a major rush job...
+> >
+> While I totally agree that it was an honest mistake to not have you
+> notified in CC for the patch series, for your other observations,
+> please allow me to answer one-by-one:
+>  (1) No documentation: there is in-code documentation which is also
+> added to Documentation/DocBook/device-drivers.tmpl; the commit message
+> has a lot of description about it. Of course, it could do with its own
+> documentation as well.
+>  (2) No discussion: the patch series is into v17 - v2 was posted in
+> July 2012, so it does seem like it has gone through a series of
+> reviews - I would admit that it has been mostly limited to the people
+> it seemed to matter the most for - the dri-devel and v4l communities.
 
-The way patches are split makes it difficult to review. Will it be
-possible to make changes against one implementation and them move that
-to generic code. That helps in finding out what exactly changed.
+Limiting the discussion to the people involved is fine, and great, but
+really, for a core kernel function, you need to pull in _some_ core
+kernel people to at least go over the api.
 
->
-> diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
-> index 00e13ce..b3fe1cc 100644
-> --- a/drivers/base/Kconfig
-> +++ b/drivers/base/Kconfig
-> @@ -283,7 +283,7 @@ config CMA_ALIGNMENT
->
->  	  If unsure, leave the default value "8".
->
-> -config CMA_AREAS
-> +config DMA_CMA_AREAS
->  	int "Maximum count of the CMA device-private areas"
->  	default 7
->  	help
+With just a quick glance, I already had api objections to how you were
+implementing things, those should be addressed at the least before the
+code is merged.
 
-for ex: The above can be a seperate patch along with further DMA related
-cleanups . 
+> >> I don't think the question about whether we need something like fence
+> >> to augment dma-buf is really in doubt.  Maybe it should live somewhere
+> >> else, I'm not sure.  But it makes sense for it to live wherever
+> >> dma-buf does, as they are intended to work together.
+> >
+> > Ok, then let's give it a proper review cycle, and notify everyone
+> > involved.  It doesn't look like this happened at all.  We don't add core
+> > primitives to the kernel without a lot of discussion and agreement.  And
+> > we sure don't add them without telling the person who owns the directory
+> > (again, my pet peeve, I know...)
+> >
+> And again, I do apologize that we all missed the fact that you weren't
+> CC'ed onto the patch series.
+> 
+> Still, even in the wake of above information, if you feel we are not
+> ready to take it for 3.16, I would drop it from my queue for 3.16
+> (though there are quite a few people who've waited long for this to
+> land in).
 
+Given that I have yet to even be cc:ed on a patch, and the merge window
+is 1 week in, _and_ people are still discussing where to put the files,
+yes, it's too late for 3.16, sorry.
 
-> diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
-> index 83969f8..48cdac8 100644
-> --- a/drivers/base/dma-contiguous.c
-> +++ b/drivers/base/dma-contiguous.c
-> @@ -186,7 +186,7 @@ static int __init cma_activate_area(struct cma *cma)
->  	return 0;
->  }
->
-> -static struct cma cma_areas[MAX_CMA_AREAS];
-> +static struct cma cma_areas[MAX_DMA_CMA_AREAS];
->  static unsigned cma_area_count;
->
->  static int __init cma_init_reserved_areas(void)
-> diff --git a/include/linux/cma.h b/include/linux/cma.h
-> new file mode 100644
-> index 0000000..60ba06f
-> --- /dev/null
-> +++ b/include/linux/cma.h
-> @@ -0,0 +1,28 @@
-> +/*
-> + * Contiguous Memory Allocator
-> + *
-> + * Copyright LG Electronics Inc., 2014
-> + * Written by:
-> + *	Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License as
-> + * published by the Free Software Foundation; either version 2 of the
-> + * License or (at your optional) any later version of the license.
-> + *
-> + */
-> +
-> +#ifndef __CMA_H__
-> +#define __CMA_H__
-> +
-> +struct cma;
-> +
-> +extern struct page *cma_alloc(struct cma *cma, unsigned long count,
-> +				unsigned long align);
-> +extern bool cma_release(struct cma *cma, struct page *pages,
-> +				unsigned long count);
-> +extern int __init cma_declare_contiguous(phys_addr_t size, phys_addr_t base,
-> +				phys_addr_t limit, phys_addr_t alignment,
-> +				unsigned long bitmap_shift, bool fixed,
-> +				struct cma **res_cma);
-> +#endif
-> diff --git a/include/linux/dma-contiguous.h b/include/linux/dma-contiguous.h
-> index 772eab5..dfb1dc9 100644
-> --- a/include/linux/dma-contiguous.h
-> +++ b/include/linux/dma-contiguous.h
-> @@ -63,7 +63,7 @@ struct device;
->   * There is always at least global CMA area and a few optional device
->   * private areas configured in kernel .config.
->   */
-> -#define MAX_CMA_AREAS	(1 + CONFIG_CMA_AREAS)
-> +#define MAX_DMA_CMA_AREAS  (1 + CONFIG_DMA_CMA_AREAS)
->
->  extern struct cma *dma_contiguous_default_area;
->
-> @@ -123,7 +123,7 @@ bool dma_release_from_contiguous(struct device *dev, struct page *pages,
->
->  #else
->
-> -#define MAX_CMA_AREAS	(0)
-> +#define MAX_DMA_CMA_AREAS	(0)
->
->  static inline struct cma *dev_get_cma_area(struct device *dev)
->  {
-> diff --git a/mm/Kconfig b/mm/Kconfig
-> index 7511b4a..0877ddc 100644
-> --- a/mm/Kconfig
-> +++ b/mm/Kconfig
-> @@ -515,6 +515,17 @@ config CMA_DEBUG
->  	  processing calls such as dma_alloc_from_contiguous().
->  	  This option does not affect warning and error messages.
->
-> +config CMA_AREAS
-> +	int "Maximum count of the CMA areas"
-> +	depends on CMA
-> +	default 7
-> +	help
-> +	  CMA allows to create CMA areas for particular purpose, mainly,
-> +	  used as device private area. This parameter sets the maximum
-> +	  number of CMA area in the system.
-> +
-> +	  If unsure, leave the default value "7".
-> +
+Please feel free to respin and resend after 3.16-rc1 is out.  There is
+no "deadline" here that is requiring code to ever be merged.  We do
+things correctly, not rushed.
 
-If we have 7 declare continugous request, a kvm cma allocation request will fail ?
+thanks,
 
->  config ZBUD
->  	tristate
->  	default n
-> diff --git a/mm/Makefile b/mm/Makefile
-> index 1eaa70b..bc0422b 100644
-> --- a/mm/Makefile
-> +++ b/mm/Makefile
-> @@ -62,3 +62,4 @@ obj-$(CONFIG_MEMORY_ISOLATION) += page_isolation.o
->  obj-$(CONFIG_ZBUD)	+= zbud.o
->  obj-$(CONFIG_ZSMALLOC)	+= zsmalloc.o
->  obj-$(CONFIG_GENERIC_EARLY_IOREMAP) += early_ioremap.o
-> +obj-$(CONFIG_CMA)	+= cma.o
-> diff --git a/mm/cma.c b/mm/cma.c
-> new file mode 100644
-> index 0000000..0dae88d
-> --- /dev/null
-> +++ b/mm/cma.c
-> @@ -0,0 +1,329 @@
-> +/*
-> + * Contiguous Memory Allocator
-> + *
-> + * Copyright (c) 2010-2011 by Samsung Electronics.
-> + * Copyright IBM Corporation, 2013
-> + * Copyright LG Electronics Inc., 2014
-> + * Written by:
-> + *	Marek Szyprowski <m.szyprowski@samsung.com>
-> + *	Michal Nazarewicz <mina86@mina86.com>
-> + *	Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> + *	Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License as
-> + * published by the Free Software Foundation; either version 2 of the
-> + * License or (at your optional) any later version of the license.
-> + */
-> +
-> +#define pr_fmt(fmt) "cma: " fmt
-> +
-> +#ifdef CONFIG_CMA_DEBUG
-> +#ifndef DEBUG
-> +#  define DEBUG
-> +#endif
-> +#endif
-> +
-> +#include <linux/memblock.h>
-> +#include <linux/err.h>
-> +#include <linux/mm.h>
-> +#include <linux/mutex.h>
-> +#include <linux/sizes.h>
-> +#include <linux/slab.h>
-> +
-> +struct cma {
-> +	unsigned long	base_pfn;
-> +	unsigned long	count;
-> +	unsigned long	*bitmap;
-> +	unsigned long	bitmap_shift;
-
-I guess this is added to accommodate the kvm specific alloc chunks. May
-be you should do this as a patch against kvm implementation and then
-move the code to generic ?
-
-> +	struct mutex	lock;
-> +};
-> +
-
--aneesh
-
+greg k-h
