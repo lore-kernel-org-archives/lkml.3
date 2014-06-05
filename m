@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753930AbaFEEYs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:24:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44597 "EHLO
+	id S1753739AbaFEEWg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:22:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44545 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752510AbaFEEWk (ORCPT
+	with ESMTP id S1753687AbaFEEW3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:22:40 -0400
+	Thu, 5 Jun 2014 00:22:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Mian Yousaf KAUKAB <mian.yousaf.kaukab@stericsson.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Ben Hutchings <ben@decadent.org.uk>,
         Qiang Huang <h.huangqiang@huawei.com>
-Subject: [PATCH 3.4 209/214] can: sja1000: fix {pre,post}_irq() handling and IRQ handler return value
-Date: Wed,  4 Jun 2014 21:19:32 -0700
-Message-Id: <20140605041707.562661578@linuxfoundation.org>
+Subject: [PATCH 3.4 192/214] drivers/rtc/rtc-pl031.c: restore ST variant functionality
+Date: Wed,  4 Jun 2014 21:19:15 -0700
+Message-Id: <20140605041705.233124777@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -30,76 +34,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Hartkopp <socketcan@hartkopp.net>
+From: Linus Walleij <linus.walleij@linaro.org>
 
-commit 2fea6cd303c0d0cd9067da31d873b6a6d5bd75e7 upstream.
+commit 3399cfb5df9594495b876d1843a7165f77366b2b upstream.
 
-This patch fixes the issue that the sja1000_interrupt() function may have
-returned IRQ_NONE without processing the optional pre_irq() and post_irq()
-function before. Further the irq processing counter 'n' is moved to the end of
-the while statement to return correct IRQ_[NONE|HANDLED] values at error
-conditions.
+Commit e7e034e18a0a ("drivers/rtc/rtc-pl031.c: fix the missing operation
+on enable") accidentally broke the ST variants of PL031.
 
-Reported-by: Wolfgang Grandegger <wg@grandegger.com>
-Acked-by: Wolfgang Grandegger <wg@grandegger.com>
-Signed-off-by: Oliver Hartkopp <socketcan@hartkopp.net>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
-[bwh: Backported to 3.2: s/SJA1000_IER/REG_IER/; s/SJA1000_IR/REG_IR/]
+The bit that is being poked as "clockwatch" enable bit for the ST
+variants does the work of bit 0 on this variant.  Bit 0 is used for a
+clock divider on the ST variants, and setting it to 1 will affect
+timekeeping in a very bad way.
+
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>
+Cc: Mian Yousaf KAUKAB <mian.yousaf.kaukab@stericsson.com>
+Cc: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Qiang Huang <h.huangqiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/sja1000/sja1000.c |   17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+ drivers/rtc/rtc-pl031.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/net/can/sja1000/sja1000.c
-+++ b/drivers/net/can/sja1000/sja1000.c
-@@ -487,19 +487,19 @@ irqreturn_t sja1000_interrupt(int irq, v
- 	uint8_t isrc, status;
- 	int n = 0;
+--- a/drivers/rtc/rtc-pl031.c
++++ b/drivers/rtc/rtc-pl031.c
+@@ -344,7 +344,9 @@ static int pl031_probe(struct amba_devic
+ 	/* Enable the clockwatch on ST Variants */
+ 	if (ldata->hw_designer == AMBA_VENDOR_ST)
+ 		data |= RTC_CR_CWEN;
+-	writel(data | RTC_CR_EN, ldata->base + RTC_CR);
++	else
++		data |= RTC_CR_EN;
++	writel(data, ldata->base + RTC_CR);
  
--	/* Shared interrupts and IRQ off? */
--	if (priv->read_reg(priv, REG_IER) == IRQ_OFF)
--		return IRQ_NONE;
--
- 	if (priv->pre_irq)
- 		priv->pre_irq(priv);
- 
-+	/* Shared interrupts and IRQ off? */
-+	if (priv->read_reg(priv, REG_IER) == IRQ_OFF)
-+		goto out;
-+
- 	while ((isrc = priv->read_reg(priv, REG_IR)) && (n < SJA1000_MAX_IRQ)) {
--		n++;
-+
- 		status = priv->read_reg(priv, SJA1000_REG_SR);
- 		/* check for absent controller due to hw unplug */
- 		if (status == 0xFF && sja1000_is_absent(priv))
--			return IRQ_NONE;
-+			goto out;
- 
- 		if (isrc & IRQ_WUI)
- 			netdev_warn(dev, "wakeup interrupt\n");
-@@ -518,7 +518,7 @@ irqreturn_t sja1000_interrupt(int irq, v
- 				status = priv->read_reg(priv, SJA1000_REG_SR);
- 				/* check for absent controller */
- 				if (status == 0xFF && sja1000_is_absent(priv))
--					return IRQ_NONE;
-+					goto out;
- 			}
- 		}
- 		if (isrc & (IRQ_DOI | IRQ_EI | IRQ_BEI | IRQ_EPI | IRQ_ALI)) {
-@@ -526,8 +526,9 @@ irqreturn_t sja1000_interrupt(int irq, v
- 			if (sja1000_err(dev, isrc, status))
- 				break;
- 		}
-+		n++;
- 	}
--
-+out:
- 	if (priv->post_irq)
- 		priv->post_irq(priv);
- 
+ 	/*
+ 	 * On ST PL031 variants, the RTC reset value does not provide correct
 
 
