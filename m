@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754022AbaFEEmr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:42:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44205 "EHLO
+	id S1753985AbaFEEmq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:42:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44222 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753145AbaFEEVb (ORCPT
+	with ESMTP id S1753150AbaFEEVb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 5 Jun 2014 00:21:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Frederic Berat <fredericx.berat@intel.com>,
+        Russ Gorby <russ.gorby@intel.com>, Alan Cox <alan@linux.intel.com>,
         Ben Hutchings <ben@decadent.org.uk>, Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 3.4 139/214] ptrace/x86: Introduce set_task_blockstep() helper
-Date: Wed,  4 Jun 2014 21:18:22 -0700
-Message-Id: <20140605041658.446516319@linuxfoundation.org>
+Subject: [PATCH 3.4 134/214] n_gsm : Flow control handling in Mux driver
+Date: Wed,  4 Jun 2014 21:18:17 -0700
+Message-Id: <20140605041657.725355907@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -28,89 +28,202 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Frederic Berat <fredericx.berat@intel.com>
 
-commit 848e8f5f0ad3169560c516fff6471be65f76e69f upstream.
+commit c01af4fec2c8f303d6b3354d44308d9e6bef8026 upstream.
 
-No functional changes, preparation for the next fix and for uprobes
-single-step fixes.
+- Correcting handling of FCon/FCoff in order to respect 27.010 spec
+- Consider FCon/off will overide all dlci flow control except for
+  dlci0 as we must be able to send control frames.
+- Dlci constipated handling according to FC, RTC and RTR values.
+- Modifying gsm_dlci_data_kick and gsm_dlci_data_sweep according
+  to dlci constipated value
 
-Move the code playing with TIF_BLOCKSTEP/DEBUGCTLMSR_BTF into the
-new helper, set_task_blockstep().
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Signed-off-by: Frederic Berat <fredericx.berat@intel.com>
+Signed-off-by: Russ Gorby <russ.gorby@intel.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Rui Xiang <rui.xiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/step.c |   41 +++++++++++++++++++++--------------------
- 1 file changed, 21 insertions(+), 20 deletions(-)
+ drivers/tty/n_gsm.c |   79 +++++++++++++++++++++++++++++++++++++---------------
+ 1 file changed, 57 insertions(+), 22 deletions(-)
 
---- a/arch/x86/kernel/step.c
-+++ b/arch/x86/kernel/step.c
-@@ -157,6 +157,21 @@ static int enable_single_step(struct tas
- 	return 1;
- }
- 
-+static void set_task_blockstep(struct task_struct *task, bool on)
-+{
-+	unsigned long debugctl;
-+
-+	debugctl = get_debugctlmsr();
-+	if (on) {
-+		debugctl |= DEBUGCTLMSR_BTF;
-+		set_tsk_thread_flag(task, TIF_BLOCKSTEP);
-+	} else {
-+		debugctl &= ~DEBUGCTLMSR_BTF;
-+		clear_tsk_thread_flag(task, TIF_BLOCKSTEP);
-+	}
-+	update_debugctlmsr(debugctl);
-+}
-+
- /*
-  * Enable single or block step.
+--- a/drivers/tty/n_gsm.c
++++ b/drivers/tty/n_gsm.c
+@@ -673,6 +673,8 @@ static struct gsm_msg *gsm_data_alloc(st
+  *
+  *	The tty device has called us to indicate that room has appeared in
+  *	the transmit queue. Ram more data into the pipe if we have any
++ *	If we have been flow-stopped by a CMD_FCOFF, then we can only
++ *	send messages on DLCI0 until CMD_FCON
+  *
+  *	FIXME: lock against link layer control transmissions
   */
-@@ -169,19 +184,10 @@ static void enable_step(struct task_stru
- 	 * So no one should try to use debugger block stepping in a program
- 	 * that uses user-mode single stepping itself.
- 	 */
--	if (enable_single_step(child) && block) {
--		unsigned long debugctl = get_debugctlmsr();
+@@ -680,15 +682,19 @@ static struct gsm_msg *gsm_data_alloc(st
+ static void gsm_data_kick(struct gsm_mux *gsm)
+ {
+ 	struct gsm_msg *msg = gsm->tx_head;
++	struct gsm_msg *free_msg;
+ 	int len;
+ 	int skip_sof = 0;
+ 
+-	/* FIXME: We need to apply this solely to data messages */
+-	if (gsm->constipated)
+-		return;
 -
--		debugctl |= DEBUGCTLMSR_BTF;
--		update_debugctlmsr(debugctl);
--		set_tsk_thread_flag(child, TIF_BLOCKSTEP);
--	} else if (test_tsk_thread_flag(child, TIF_BLOCKSTEP)) {
--		unsigned long debugctl = get_debugctlmsr();
--
--		debugctl &= ~DEBUGCTLMSR_BTF;
--		update_debugctlmsr(debugctl);
--		clear_tsk_thread_flag(child, TIF_BLOCKSTEP);
--	}
-+	if (enable_single_step(child) && block)
-+		set_task_blockstep(child, true);
-+	else if (test_tsk_thread_flag(child, TIF_BLOCKSTEP))
-+		set_task_blockstep(child, false);
+-	while (gsm->tx_head != NULL) {
+-		msg = gsm->tx_head;
++	while (msg) {
++		if (gsm->constipated && msg->addr) {
++			msg = msg->next;
++			continue;
++		}
++		if (gsm->dlci[msg->addr]->constipated) {
++			msg = msg->next;
++			continue;
++		}
+ 		if (gsm->encoding != 0) {
+ 			gsm->txframe[0] = GSM1_SOF;
+ 			len = gsm_stuff_frame(msg->data,
+@@ -711,15 +717,19 @@ static void gsm_data_kick(struct gsm_mux
+ 						len - skip_sof) < 0)
+ 			break;
+ 		/* FIXME: Can eliminate one SOF in many more cases */
+-		gsm->tx_head = msg->next;
+-		if (gsm->tx_head == NULL)
+-			gsm->tx_tail = NULL;
+ 		gsm->tx_bytes -= msg->len;
+-		kfree(msg);
+ 		/* For a burst of frames skip the extra SOF within the
+ 		   burst */
+ 		skip_sof = 1;
++
++		if (gsm->tx_head == msg)
++			gsm->tx_head = msg->next;
++		free_msg = msg;
++		msg = msg->next;
++		kfree(free_msg);
+ 	}
++	if (!gsm->tx_head)
++		gsm->tx_tail = NULL;
  }
  
- void user_enable_single_step(struct task_struct *child)
-@@ -199,13 +205,8 @@ void user_disable_single_step(struct tas
- 	/*
- 	 * Make sure block stepping (BTF) is disabled.
- 	 */
--	if (test_tsk_thread_flag(child, TIF_BLOCKSTEP)) {
--		unsigned long debugctl = get_debugctlmsr();
--
--		debugctl &= ~DEBUGCTLMSR_BTF;
--		update_debugctlmsr(debugctl);
--		clear_tsk_thread_flag(child, TIF_BLOCKSTEP);
--	}
-+	if (test_tsk_thread_flag(child, TIF_BLOCKSTEP))
-+		set_task_blockstep(child, false);
+ /**
+@@ -738,6 +748,8 @@ static void __gsm_data_queue(struct gsm_
+ 	u8 *dp = msg->data;
+ 	u8 *fcs = dp + msg->len;
  
- 	/* Always clear TIF_SINGLESTEP... */
- 	clear_tsk_thread_flag(child, TIF_SINGLESTEP);
++	WARN_ONCE(dlci->constipated, "%s: queueing from a constipated DLCI",
++		__func__);
+ 	/* Fill in the header */
+ 	if (gsm->encoding == 0) {
+ 		if (msg->len < 128)
+@@ -947,6 +959,9 @@ static void gsm_dlci_data_sweep(struct g
+ 			break;
+ 		dlci = gsm->dlci[i];
+ 		if (dlci == NULL || dlci->constipated) {
++			if (dlci && (debug & 0x20))
++				pr_info("%s: DLCI %d is constipated",
++					__func__, i);
+ 			i++;
+ 			continue;
+ 		}
+@@ -976,6 +991,13 @@ static void gsm_dlci_data_kick(struct gs
+ 	unsigned long flags;
+ 	int sweep;
+ 
++	if (dlci->constipated) {
++		if (debug & 0x20)
++			pr_info("%s: DLCI %d is constipated",
++				__func__, dlci->addr);
++		return;
++	}
++
+ 	spin_lock_irqsave(&dlci->gsm->tx_lock, flags);
+ 	/* If we have nothing running then we need to fire up */
+ 	sweep = (dlci->gsm->tx_bytes < TX_THRESH_LO);
+@@ -1033,6 +1055,7 @@ static void gsm_process_modem(struct tty
+ {
+ 	int  mlines = 0;
+ 	u8 brk = 0;
++	int fc;
+ 
+ 	/* The modem status command can either contain one octet (v.24 signals)
+ 	   or two octets (v.24 signals + break signals). The length field will
+@@ -1044,19 +1067,27 @@ static void gsm_process_modem(struct tty
+ 	else {
+ 		brk = modem & 0x7f;
+ 		modem = (modem >> 7) & 0x7f;
+-	};
++	}
+ 
+ 	/* Flow control/ready to communicate */
+-	if (modem & MDM_FC) {
++	fc = (modem & MDM_FC) || !(modem & MDM_RTR);
++	if (fc && !dlci->constipated) {
++		if (debug & 0x20)
++			pr_info("%s: DLCI %d START constipated (tx_bytes=%d)",
++				__func__, dlci->addr, dlci->gsm->tx_bytes);
+ 		/* Need to throttle our output on this device */
+ 		dlci->constipated = 1;
+-	}
+-	if (modem & MDM_RTC) {
+-		mlines |= TIOCM_DSR | TIOCM_DTR;
++	} else if (!fc && dlci->constipated) {
++		if (debug & 0x20)
++			pr_info("%s: DLCI %d END constipated (tx_bytes=%d)",
++				__func__, dlci->addr, dlci->gsm->tx_bytes);
+ 		dlci->constipated = 0;
+ 		gsm_dlci_data_kick(dlci);
+ 	}
++
+ 	/* Map modem bits */
++	if (modem & MDM_RTC)
++		mlines |= TIOCM_DSR | TIOCM_DTR;
+ 	if (modem & MDM_RTR)
+ 		mlines |= TIOCM_RTS | TIOCM_CTS;
+ 	if (modem & MDM_IC)
+@@ -1225,19 +1256,23 @@ static void gsm_control_message(struct g
+ 		gsm_control_reply(gsm, CMD_TEST, data, clen);
+ 		break;
+ 	case CMD_FCON:
+-		/* Modem wants us to STFU */
+-		gsm->constipated = 1;
+-		gsm_control_reply(gsm, CMD_FCON, NULL, 0);
+-		break;
+-	case CMD_FCOFF:
+ 		/* Modem can accept data again */
++		if (debug & 0x20)
++			pr_info("%s: GSM END constipation", __func__);
+ 		gsm->constipated = 0;
+-		gsm_control_reply(gsm, CMD_FCOFF, NULL, 0);
++		gsm_control_reply(gsm, CMD_FCON, NULL, 0);
+ 		/* Kick the link in case it is idling */
+ 		spin_lock_irqsave(&gsm->tx_lock, flags);
+ 		gsm_data_kick(gsm);
+ 		spin_unlock_irqrestore(&gsm->tx_lock, flags);
+ 		break;
++	case CMD_FCOFF:
++		/* Modem wants us to STFU */
++		if (debug & 0x20)
++			pr_info("%s: GSM START constipation", __func__);
++		gsm->constipated = 1;
++		gsm_control_reply(gsm, CMD_FCOFF, NULL, 0);
++		break;
+ 	case CMD_MSC:
+ 		/* Out of band modem line change indicator for a DLCI */
+ 		gsm_control_modem(gsm, data, clen);
+@@ -2306,7 +2341,7 @@ static void gsmld_receive_buf(struct tty
+ 			gsm->error(gsm, *dp, flags);
+ 			break;
+ 		default:
+-			WARN_ONCE("%s: unknown flag %d\n",
++			WARN_ONCE(1, "%s: unknown flag %d\n",
+ 			       tty_name(tty, buf), flags);
+ 			break;
+ 		}
 
 
