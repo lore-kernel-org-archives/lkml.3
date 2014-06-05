@@ -1,77 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751578AbaFEIAJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 04:00:09 -0400
-Received: from mga03.intel.com ([143.182.124.21]:53041 "EHLO mga03.intel.com"
+	id S1751739AbaFEIA3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 04:00:29 -0400
+Received: from mga11.intel.com ([192.55.52.93]:59321 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750742AbaFEIAG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 04:00:06 -0400
+	id S1751251AbaFEIA1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 04:00:27 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,979,1392192000"; 
-   d="scan'208";a="441153099"
-Date: Thu, 5 Jun 2014 11:00:00 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        wsa@the-dreams.de, grant.likely@linaro.org, linux-i2c@vger.kernel.org,
-        devicetree@vger.kernel.org, linus.walleij@linaro.org
-Subject: Re: [PATCH 7/7] OF/ACPI/I2C: Add generic match function for the
- aforementioned systems
-Message-ID: <20140605080000.GE5214@lahna.fi.intel.com>
-References: <1401883796-17841-1-git-send-email-lee.jones@linaro.org>
- <1401883796-17841-8-git-send-email-lee.jones@linaro.org>
- <5769487.6cMQUCkisu@vostro.rjw.lan>
- <20140604125141.GB5214@lahna.fi.intel.com>
- <20140604132820.GA19550@lee--X1>
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="351330422"
+Message-ID: <53902398.70005@linux.intel.com>
+Date: Thu, 05 Jun 2014 16:00:24 +0800
+From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140604132820.GA19550@lee--X1>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Peter Zijlstra <peterz@infradead.org>, Liu ShuoX <shuox.liu@intel.com>
+CC: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Zhang Yanmin <yanmin.zhang@intel.com>
+Subject: Re: [PATCH] perf: fix kernel panic when parsing user space CS saved
+ in pt_regs
+References: <20140605023610.GA12905@lskakaxi-intel> <20140605071919.GD3213@twins.programming.kicks-ass.net> <20140605073321.GA14869@lskakaxi-intel> <20140605075507.GA6758@twins.programming.kicks-ass.net>
+In-Reply-To: <20140605075507.GA6758@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 04, 2014 at 02:28:20PM +0100, Lee Jones wrote:
-> On Wed, 04 Jun 2014, Mika Westerberg wrote:
-> > On Wed, Jun 04, 2014 at 02:37:42PM +0200, Rafael J. Wysocki wrote:
-> > > On Wednesday, June 04, 2014 01:09:56 PM Lee Jones wrote:
-> > > > Currently this is a helper function for the I2C subsystem to aid the
-> > > > matching of non-standard compatible strings and devices which use DT
-> > > > and/or ACPI, but do not supply any nodes (see: [1] Method 4).  However,
-> > > > it has been made more generic as it can be used to only make one call
-> > > > for drivers which support any mixture of OF, ACPI and/or I2C matching.
-> > > > 
-> > > > The initial aim is for of_match_device() to be replaced by this call
-> > > > in all I2C device drivers.
-> > > > 
-> > > > [1] Documentation/i2c/instantiating-devices
-> > > > 
-> > > > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > > 
-> > > Mika, can you please have a look at this, please?
-> > 
-> > I don't see any fundamental problems with this wrt. ACPI.
-> > 
-> > That said, I find it kind of weird to have generic function that then
-> > has knowledge of how different buses do their matching.
-> > 
-> > I would rather see something like firmware_device_match(dev) that goes
-> > and matches from DT/ACPI and leave bus specific match to happen internal
-> > to that bus.
-> 
-> Unfortunately that completely defeats the object of the patch.  When a
-> of_match_device() is invoked it solely looks up devices based on OF
-> matching, but I2C is special in that devices can be registered via
-> sysfs, thus will no have device node.  If of_match_device() is called
-> in one of these instances it will fail.  The idea of this patch is to
-> generify the matching into something does has the knowledge to firstly
-> attempt a traditional match, and if that fails will fall back to a
-> special i2c_{of,acpi}_match_device() which knows how to deal with
-> node-less registration.
+On 2014/6/5 15:55, Peter Zijlstra wrote:
+> On Thu, Jun 05, 2014 at 03:33:21PM +0800, Liu ShuoX wrote:
+>> On Thu  5.Jun'14 at  9:19:19 +0200, Peter Zijlstra wrote:
+>>> On Thu, Jun 05, 2014 at 10:36:10AM +0800, Liu ShuoX wrote:
+>>>> From: Zhang Yanmin <yanmin.zhang@intel.com>
+>>>>
+>>>> We hit a kernel panic when running perf to collect some performance data.
+>>>> kenel is x86_64 and user space apps are 32bit.
+>>>>
+>>>> [   71.965351, 1] [       Binder_2] BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
+>>>> [   71.965360, 1] [       Binder_2] IP: [<ffffffff82012091>] get_segment_base+0x71/0xc0
+>>>> [   71.965367, 1] [       Binder_2] PGD 6c65f067 PUD 0
+>>>> [   71.965375, 1] [       Binder_2] Oops: 0000 [#1] PREEMPT SMP
+>>>> [   71.965413, 1] [       Binder_2] Modules linked in: ddrgx snd_merr_dpcm_wm8958 snd_intel_sst snd_soc_sst_platform snd_soc_wm8994 snd_soc_wm_hubs lm3559 imx1x5 atomisp_css2401a0_v21 libmsrlisthelper rmi4 bcm_bt_lpm videobuf_vmalloc videobuf_core fps_throttle hdmi_audio pn544(O) tngdisp bcm4335(O) cfg80211
+>>>> [   71.965420, 1] [       Binder_2] CPU: 1 PID: 304 Comm: Binder_2 Tainted: G        W  O 3.10.20-263902-g184bfbc-dirty #14
+>>>> [   71.965426, 1] [       Binder_2] task: ffff8800764dc300 ti: ffff88006c6e8000 task.ti: ffff88006c6e8000
+>>>> [   71.965439, 1] [       Binder_2] RIP: 0010:[<ffffffff82012091>]  [<ffffff?f82012091>] get_segment_base+0x71/0xc0
+>>>                                                                              ^
+>>>> [   71.965<44, 1] [       Binder_2] RSP: 0018:ffff^X8007ea87b98  EFLAGS: 00010092
+>>>            ^                                       ^
+>>>> [   71.965447, 1] [      !Binder_2] RAX: 0000000000000024 RBX: 0000000000000000 RCX: 0000000000000000
+>>>                           ^
+>>>> [   71.965450, 1] [       Binder_2] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000009
+>>>> [   71.965454, 1] [       Binder_2] RBP: ffff88007ea87ba8 R08: ffffffff83143b3c R09: ffffffff831848a8
+>>>> [   71.965458, 1] [       Binder_2] R10: 0000000000000000 R11: 00000000001bf2d8 R12: 0000000000000000
+>>>> [   71.965462, 1] [       Binder_2] R13: ffff88006c6e9fd8 R14: ffff88006c6e9f58 R15: ffff8800764dc300
+>>>> [   71.965468, 1_ [       Binder_2] FS:  0000000000000000(0000) GS:ffff88007ea80000(006b) knlGS:00000000f704add0
+>>>                  ^
+>>>
+>>> Are you suffering some serious corruption?
+>> The log captured by pstore after rebooting, so there are some
+>> corruption. Please ignore those.
+> Why does pstore cause corruption? I thought that stuff was supposed to
+> be 'good' ?
+pstore is good if the board is reset by WarmReset as memory content is 
+kept across rebooting.
+If it's a ColdReset, memory might lose some or all contents. My board 
+uses Coldreset, which is a very
+fast ColdReset. Most memory content can be kept. But sometimes, some 
+data has little change.
 
-OK, then but since this is now I2C specific, why call it device_match()
-instead of something like i2c_device_match()? Or do you have plans to
-add there more knowledge about other buses like SPI and PCI to name few?
+Yanmin
+
+
