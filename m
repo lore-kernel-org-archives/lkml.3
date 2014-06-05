@@ -1,146 +1,301 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751809AbaFEFz0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 01:55:26 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:12787 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750715AbaFEFzY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 01:55:24 -0400
-X-IronPort-AV: E=Sophos;i="4.98,978,1392134400"; 
-   d="scan'208";a="31489555"
-Message-ID: <539003C6.9060308@cn.fujitsu.com>
-Date: Thu, 5 Jun 2014 13:44:38 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1751362AbaFEGQD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 02:16:03 -0400
+Received: from ns.pmeerw.net ([87.118.82.44]:32878 "EHLO pmeerw.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751159AbaFEGQB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 02:16:01 -0400
+Date: Thu, 5 Jun 2014 08:15:57 +0200 (CEST)
+From: Peter Meerwald <pmeerw@pmeerw.net>
+To: Michael Welling <mwelling@ieee.org>
+cc: Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] iio: dac: mcp4902/mcp4912/mcp4922 dac driver
+In-Reply-To: <1401944595-6042-1-git-send-email-mwelling@ieee.org>
+Message-ID: <alpine.DEB.2.01.1406050812220.20498@pmeerw.net>
+References: <alpine.DEB.2.01.1406041128570.12546@pmeerw.net> <1401944595-6042-1-git-send-email-mwelling@ieee.org>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>, Johannes Weiner <hannes@cmpxchg.org>
-CC: <stable@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        tangchen <tangchen@cn.fujitsu.com>
-Subject: Re: [stable-3.10.y] possible unsafe locking warning
-References: <5385B52A.7050106@cn.fujitsu.com> <20140528154856.GD1419@htj.dyndns.org>
-In-Reply-To: <20140528154856.GD1419@htj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.100]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
-Sorry for late replay.
-On 05/28/2014 11:48 PM, Tejun Heo wrote:
 
-> (cc'ing Johannes for mm-foo)
-> 
-> Hello,
-> 
-> On Wed, May 28, 2014 at 06:06:34PM +0800, Gu Zheng wrote:
->> [ 2457.683370] inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-R} usage.
->> [ 2457.761540] kswapd2/1151 [HC0[0]:SC0[0]:HE1:SE1] takes:
->> [ 2457.824102]  (&sig->group_rwsem){+++++?}, at: [<ffffffff81071864>] exit_signals+0x24/0x130
->> [ 2457.923538] {RECLAIM_FS-ON-W} state was registered at:
->> [ 2457.985055]   [<ffffffff810bfc99>] mark_held_locks+0xb9/0x140
->> [ 2458.053976]   [<ffffffff810c1e3a>] lockdep_trace_alloc+0x7a/0xe0
->> [ 2458.126015]   [<ffffffff81194f47>] kmem_cache_alloc_trace+0x37/0x240
->> [ 2458.202214]   [<ffffffff812c6e89>] flex_array_alloc+0x99/0x1a0
->> [ 2458.272175]   [<ffffffff810da563>] cgroup_attach_task+0x63/0x430
->> [ 2458.344214]   [<ffffffff810dcca0>] attach_task_by_pid+0x210/0x280
->> [ 2458.417294]   [<ffffffff810dcd26>] cgroup_procs_write+0x16/0x20
->> [ 2458.488287]   [<ffffffff810d8410>] cgroup_file_write+0x120/0x2c0
->> [ 2458.560320]   [<ffffffff811b21a0>] vfs_write+0xc0/0x1f0
->> [ 2458.622994]   [<ffffffff811b2bac>] SyS_write+0x4c/0xa0
->> [ 2458.684618]   [<ffffffff815ec3c0>] tracesys+0xdd/0xe2
->> [ 2458.745214] irq event stamp: 49
->> [ 2458.782794] hardirqs last  enabled at (49): [<ffffffff815e2b56>] _raw_spin_unlock_irqrestore+0x36/0x70
->> [ 2458.894388] hardirqs last disabled at (48): [<ffffffff815e337b>] _raw_spin_lock_irqsave+0x2b/0xa0
->> [ 2459.000771] softirqs last  enabled at (0): [<ffffffff81059247>] copy_process.part.24+0x627/0x15f0
->> [ 2459.107161] softirqs last disabled at (0): [<          (null)>]           (null)
->> [ 2459.195852] 
->> [ 2459.195852] other info that might help us debug this:
->> [ 2459.274024]  Possible unsafe locking scenario:
->> [ 2459.274024] 
->> [ 2459.344911]        CPU0
->> [ 2459.374161]        ----
->> [ 2459.403408]   lock(&sig->group_rwsem);
->> [ 2459.448490]   <Interrupt>
->> [ 2459.479825]     lock(&sig->group_rwsem);
->> [ 2459.526979] 
->> [ 2459.526979]  *** DEADLOCK ***
->> [ 2459.526979] 
->> [ 2459.597866] no locks held by kswapd2/1151.
->> [ 2459.646896] 
->> [ 2459.646896] stack backtrace:
->> [ 2459.699049] CPU: 30 PID: 1151 Comm: kswapd2 Not tainted 3.10.39+ #4
->> [ 2459.774098] Hardware name: FUJITSU PRIMEQUEST2800E/SB, BIOS PRIMEQUEST 2000 Series BIOS Version 01.48 05/07/2014
->> [ 2459.895983]  ffffffff82284bf0 ffff88085856bbf8 ffffffff815dbcf6 ffff88085856bc48
->> [ 2459.985003]  ffffffff815d67c6 0000000000000000 ffff880800000001 ffff880800000001
->> [ 2460.074024]  000000000000000a ffff88085edc9600 ffffffff810be0e0 0000000000000009
->> [ 2460.163087] Call Trace:
->> [ 2460.192345]  [<ffffffff815dbcf6>] dump_stack+0x19/0x1b
->> [ 2460.253874]  [<ffffffff815d67c6>] print_usage_bug+0x1f7/0x208
->> [ 2460.399807]  [<ffffffff810bfb5d>] mark_lock+0x21d/0x2a0
->> [ 2460.462369]  [<ffffffff810c076a>] __lock_acquire+0x52a/0xb60
->> [ 2460.735516]  [<ffffffff810c1592>] lock_acquire+0xa2/0x140
->> [ 2460.935691]  [<ffffffff815e01e1>] down_read+0x51/0xa0
->> [ 2461.062888]  [<ffffffff81071864>] exit_signals+0x24/0x130
->> [ 2461.127536]  [<ffffffff81060d55>] do_exit+0xb5/0xa50
->> [ 2461.320433]  [<ffffffff8108303b>] kthread+0xdb/0x100
->> [ 2461.532049]  [<ffffffff815ec0ec>] ret_from_fork+0x7c/0xb0
-> 
-> The lockdep warning is about threadgroup_lock being grabbed by kswapd
-> which is depended upon during memory reclaim when the lock may be held
-> by tasks which may wait on memory reclaim.  From the backtrace, it
-> looks like the right thing to do is marking the kswapd that it's no
-> longer a memory reclaimer once before it starts exiting.
-> 
->> And when reference to the related code(kernel-3.10.y), it seems that cgroup_attach_task(thread-2,
->> attach kswapd) trigger kswapd(reclaim memory?) when trying to alloc memory(flex_array_alloc) under
->> the protection of sig->group_rwsem, but meanwhile the kswapd(thread-1) is in the exit routine
->> (because it was marked SHOULD STOP when offline pages completed), which needs to acquire
->> sig->group_rwsem in exit_signals(), so the deadlock occurs.
->>
->>        thread-1                           			 |            thread-2
->>                                                                  |
->> __offline_pages():                                               | system_call_fastpath()
->> |-> kswapd_stop(node);                                           | |-> ......
->>     |-> kthread_stop(kswapd)                                     | |-> cgroup_file_write()
->>         |-> set_bit(KTHREAD_SHOULD_STOP, &kthread->flags);       | |-> ......
->>         |-> wake_up_process(k)                                   | |-> attach_task_by_pid()
->>             |                                                    |     |-> threadgroup_lock(tsk)
->> |<----------|                                                    |        // Here, got the lock.
->> |-> kswapd()                                                     |    |-> ...
->>     |-> if (kthread_should_stop())                               |     |-> cgroup_attach_task()
->>             return;                                              |         |-> flex_array_alloc()
->>             |                                                    |             |-> kzalloc()
->> |<----------|                                                    |                |-> wait for kswapd to reclaim memory
->> |-> kthread()                                                    |
->>     |-> do_exit(ret)                                             |
->>         |-> exit_signals()                                       |
->>             |-> threadgroup_change_begin(tsk)                    |
->>                 |-> down_read(&tsk->signal->group_rwsem)         |
->>                     // Here, acquire the lock. 
->>
->> If my analysis is correct, the latest kernel may have the same issue, though the flex_array was replaced
->> by list, but we still need to alloc memory(e.g. in find_css_set()), so the race may still occur.
->> Any comments about this? If I missed something, please correct me.:)
-> 
-> Not sure whether this can actually happen but if so the right fix
-> would be making thread-2 not wait for kswapd which is exiting and can
-> no longer serve as memory reclaimer.
+> This patch provides an iio device driver for the Microchip
+> MCP49x2 series DACs.
 
-Thanks for your suggestion, I'll try this way if possible.
-
-To Johannes:
-Any comment about this issue and Tejun's suggestion?
-
-Best regards,
-Gu
-
+comments inline
+ 
+> Signed-off-by: Michael Welling <mwelling@ieee.org>
+> ---
+>  drivers/iio/dac/Kconfig   |   10 +++
+>  drivers/iio/dac/Makefile  |    1 +
+>  drivers/iio/dac/mcp49x2.c |  213 +++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 224 insertions(+)
+>  create mode 100644 drivers/iio/dac/mcp49x2.c
 > 
-> Thanks.
+> diff --git a/drivers/iio/dac/Kconfig b/drivers/iio/dac/Kconfig
+> index f378ca8..032d678 100644
+> --- a/drivers/iio/dac/Kconfig
+> +++ b/drivers/iio/dac/Kconfig
+> @@ -163,4 +163,14 @@ config MCP4725
+>  	  To compile this driver as a module, choose M here: the module
+>  	  will be called mcp4725.
+>  
+> +config MCP49X2
+> +	tristate "MCP4902, MCP4912, MCP4922 DAC driver"
+> +	depends on SPI
+> +	---help---
+> +	  Say yes here to build the driver for the Microchip MCP49x2
+> +	  series DAC devices.
+> +
+> +	  To compile this driver as a module, choose M here: the module
+> +	  will be called mcp49x2.
+> +
+>  endmenu
+> diff --git a/drivers/iio/dac/Makefile b/drivers/iio/dac/Makefile
+> index bb84ad6..2fdfc2e 100644
+> --- a/drivers/iio/dac/Makefile
+> +++ b/drivers/iio/dac/Makefile
+> @@ -18,3 +18,4 @@ obj-$(CONFIG_AD5686) += ad5686.o
+>  obj-$(CONFIG_AD7303) += ad7303.o
+>  obj-$(CONFIG_MAX517) += max517.o
+>  obj-$(CONFIG_MCP4725) += mcp4725.o
+> +obj-$(CONFIG_MCP49X2) += mcp49x2.o
+> diff --git a/drivers/iio/dac/mcp49x2.c b/drivers/iio/dac/mcp49x2.c
+> new file mode 100644
+> index 0000000..f90a83a
+> --- /dev/null
+> +++ b/drivers/iio/dac/mcp49x2.c
+> @@ -0,0 +1,213 @@
+> +/*
+> + * mcp49x2.c
+> + *
+> + * Driver for Microchip Digital to Analog Converters.
+> + * Supports MCP4902, MCP4912, and MCP4922.
+> + *
+> + * Copyright (c) 2014 EMAC Inc.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/init.h>
+> +#include <linux/spi/spi.h>
+> +#include <linux/iio/iio.h>
+> +#include <linux/iio/sysfs.h>
+> +#include <linux/regulator/consumer.h>
+> +#include <linux/bitops.h>
+> +
+> +#define	MCP49X2_RES_MASK(x)	GENMASK(x, 0)
+
+MCP49X2_RES_MASK() could go away
+it should be GENMASK(x-1, 0)
+
+> +#define MCP49X2_NUM_CHANNELS	2
+> +
+> +enum mcp49x2_supported_device_ids {
+> +	ID_MCP4902,
+> +	ID_MCP4912,
+> +	ID_MCP4922,
+> +};
+> +
+> +struct mcp49x2_state {
+> +	struct spi_device *spi;
+> +	unsigned int value[MCP49X2_NUM_CHANNELS];
+> +	unsigned int power_mode[MCP49X2_NUM_CHANNELS];
+> +	unsigned int vref_mv;
+> +	struct regulator *vref_reg;
+> +};
+> +
+> +#define MCP49X2_CHAN(chan, bits) {			\
+> +	.type = IIO_VOLTAGE,				\
+> +	.output = 1,					\
+> +	.indexed = 1,					\
+> +	.channel = chan,				\
+> +	.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),	\
+> +	.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),	\
+> +	.scan_type = IIO_ST('u', bits, 16, 12-bits),	\
+> +}
+> +
+> +static int mcp49x2_spi_write(struct spi_device *spi, u8 addr, u32 val)
+> +{
+> +	u8 mosi[2] ____cacheline_aligned;
+> +
+> +	mosi[1] = val & 0xff;
+> +	mosi[0] = (addr == 0) ? 0x00: 0x80;
+> +	mosi[0] |= 0x30 | ((val >> 8) & 0x0f);
+> +
+> +	return spi_write(spi, mosi, 2);
+> +}
+> +
+> +static int mcp49x2_read_raw(struct iio_dev *indio_dev,
+> +		struct iio_chan_spec const *chan,
+> +		int *val,
+> +		int *val2,
+> +		long mask)
+> +{
+> +	struct mcp49x2_state *state = iio_priv(indio_dev);
+> +
+> +	switch (mask) {
+> +	case IIO_CHAN_INFO_RAW:
+> +		*val = state->value[chan->address];
+
+address is gone, use chan->channel
+
+> +		return IIO_VAL_INT;
+> +	case IIO_CHAN_INFO_SCALE:
+> +		*val = state->vref_mv;
+> +		*val2 = chan->scan_type.realbits;
+> +		return IIO_VAL_FRACTIONAL_LOG2;
+> +	default:
+> +		return -EINVAL;
+> +	}
+> +}
+> +
+> +static int mcp49x2_write_raw(struct iio_dev *indio_dev,
+> +		struct iio_chan_spec const *chan,
+> +		int val,
+> +		int val2,
+> +		long mask)
+> +{
+> +	struct mcp49x2_state *state = iio_priv(indio_dev);
+> +
+> +	switch (mask) {
+> +	case IIO_CHAN_INFO_RAW:
+> +		if (val > MCP49X2_RES_MASK(chan->scan_type.realbits))
+> +			return -EINVAL;
+> +		val <<= chan->scan_type.shift;
+> +		state->value[chan->address] = val;
+
+use chan->channel
+
+> +		return mcp49x2_spi_write(state->spi, chan->address, val);
+> +	default:
+> +		return -EINVAL;
+> +	}
+> +}
+> +
+> +static const struct iio_chan_spec mcp49x2_channels[3][MCP49X2_NUM_CHANNELS] = {
+> +	[ID_MCP4902] = { MCP49X2_CHAN(0, 8),	MCP49X2_CHAN(1, 8) },
+> +	[ID_MCP4912] = { MCP49X2_CHAN(0, 10),	MCP49X2_CHAN(1, 10) },
+> +	[ID_MCP4922] = { MCP49X2_CHAN(0, 12),	MCP49X2_CHAN(1, 12) },
+> +};
+> +
+> +static const struct iio_info mcp49x2_info = {
+> +	.read_raw = &mcp49x2_read_raw,
+> +	.write_raw = &mcp49x2_write_raw,
+> +	.driver_module = THIS_MODULE,
+> +};
+> +
+> +static int mcp49x2_probe(struct spi_device *spi)
+> +{
+> +	struct iio_dev *indio_dev;
+> +	struct mcp49x2_state *state;
+> +	const struct spi_device_id *id;
+> +	int ret;
+> +
+> +	indio_dev = devm_iio_device_alloc(&spi->dev, sizeof(*state));
+> +	if (indio_dev == NULL)
+> +		return -ENOMEM;
+> +
+> +	state = iio_priv(indio_dev);
+> +	state->spi = spi;
+> +	state->vref_reg = devm_regulator_get(&spi->dev, "vref");
+> +	if (!IS_ERR(state->vref_reg)) {
+> +		ret = regulator_enable(state->vref_reg);
+> +		if (ret) {
+> +			dev_err(&spi->dev, "Failed to enable vref regulator: %d\n",
+> +				ret);
+> +			return ret;
+> +		}
+> +
+> +		ret = regulator_get_voltage(state->vref_reg);
+> +		if (ret < 0) {
+> +			dev_err(&spi->dev, "Failed to read vref regulator: %d\n",
+> +				ret);
+> +			goto error_disable_reg;
+> +		}
+> +		state->vref_mv = ret / 1000;
+> +	} else {
+> +		dev_info(&spi->dev, "Vref regulator not specified assuming 2.5V\n");
+> +		state->vref_mv = 2500;
+> +	}
+> +
+> +	spi_set_drvdata(spi, indio_dev);
+> +	id = spi_get_device_id(spi);
+> +	indio_dev->dev.parent = &spi->dev;
+> +	indio_dev->info = &mcp49x2_info;
+> +	indio_dev->modes = INDIO_DIRECT_MODE;
+> +	indio_dev->channels = mcp49x2_channels[id->driver_data];
+> +	indio_dev->num_channels = MCP49X2_NUM_CHANNELS;
+> +	indio_dev->name = id->name;
+> +
+> +	ret = devm_iio_device_register(&spi->dev, indio_dev);
+> +	if (ret) {
+> +		dev_err(&spi->dev, "Failed to register iio device: %d\n",
+> +				ret);
+> +		goto error_disable_reg;
+> +	}
+> +
+> +	return 0;
+> +
+> +error_disable_reg:
+> +	if (!IS_ERR(state->vref_reg))
+> +		regulator_disable(state->vref_reg);
+> +
+> +	return ret;
+> +}
+> +
+> +static int mcp49x2_remove(struct spi_device *spi)
+> +{
+> +	struct iio_dev *indio_dev = spi_get_drvdata(spi);
+> +	struct mcp49x2_state *state;
+> +
+> +	state = iio_priv(indio_dev);
+> +
+> +	if (!IS_ERR(state->vref_reg))
+> +		regulator_disable(state->vref_reg);
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct spi_device_id mcp49x2_id[] = {
+> +	{"mcp4902", ID_MCP4902},
+> +	{"mcp4912", ID_MCP4912},
+> +	{"mcp4922", ID_MCP4922},
+> +	{}
+> +};
+> +MODULE_DEVICE_TABLE(spi, mcp49x2_id);
+> +
+> +static struct spi_driver mcp49x2_driver = {
+> +	.driver = {
+> +		   .name = "mcp49x2",
+> +		   .owner = THIS_MODULE,
+> +		   },
+> +	.probe = mcp49x2_probe,
+> +	.remove = mcp49x2_remove,
+> +	.id_table = mcp49x2_id,
+> +};
+> +module_spi_driver(mcp49x2_driver);
+> +
+> +MODULE_AUTHOR("Michael Welling <mwelling@ieee.org>");
+> +MODULE_DESCRIPTION("Microchip MCP4902, MCP4912, MCP4922 DAC");
+> +MODULE_LICENSE("GPL v2");
 > 
 
+-- 
 
+Peter Meerwald
++43-664-2444418 (mobile)
