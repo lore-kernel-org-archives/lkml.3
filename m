@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754468AbaFEE6l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:58:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43941 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752587AbaFEEUl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752586AbaFEEUl (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 5 Jun 2014 00:20:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43889 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752547AbaFEEUg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 00:20:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 3.4 081/214] sched/debug: Limit sd->*_idx range on sysctl
-Date: Wed,  4 Jun 2014 21:17:24 -0700
-Message-Id: <20140605041650.461945474@linuxfoundation.org>
+        Marcel Apfelbaum <marcel.a@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>
+Subject: [PATCH 3.4 071/214] PCI: shpchp: Check bridges secondary (not primary) bus speed
+Date: Wed,  4 Jun 2014 21:17:14 -0700
+Message-Id: <20140605041649.083952082@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -28,97 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Marcel Apfelbaum <marcel.a@redhat.com>
 
-commit 201c373e8e4823700d3160d5c28e1ab18fd1193e upstream.
+commit 93fa9d32670f5592c8e56abc9928fc194e1e72fc upstream.
 
-Various sd->*_idx's are used for refering the rq's load average table
-when selecting a cpu to run.  However they can be set to any number
-with sysctl knobs so that it can crash the kernel if something bad is
-given. Fix it by limiting them into the actual range.
+When a new device is added below a hotplug bridge, the bridge's secondary
+bus speed and the device's bus speed must match.  The shpchp driver
+previously checked the bridge's *primary* bus speed, not the secondary bus
+speed.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1345104204-8317-1-git-send-email-namhyung@kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Rui Xiang <rui.xiang@huawei.com>
+This caused hot-add errors like:
+
+  shpchp 0000:00:03.0: Speed of bus ff and adapter 0 mismatch
+
+Check the secondary bus speed instead.
+
+[bhelgaas: changelog]
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=75251
+Fixes: 3749c51ac6c1 ("PCI: Make current and maximum bus speeds part of the PCI core")
+Signed-off-by: Marcel Apfelbaum <marcel.a@redhat.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sched/core.c |   35 ++++++++++++++++++++++-------------
- 1 file changed, 22 insertions(+), 13 deletions(-)
+ drivers/pci/hotplug/shpchp_ctrl.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5433,16 +5433,25 @@ static void sd_free_ctl_entry(struct ctl
- 	*tablep = NULL;
- }
+--- a/drivers/pci/hotplug/shpchp_ctrl.c
++++ b/drivers/pci/hotplug/shpchp_ctrl.c
+@@ -285,8 +285,8 @@ static int board_added(struct slot *p_sl
+ 		return WRONG_BUS_FREQUENCY;
+ 	}
  
-+static int min_load_idx = 0;
-+static int max_load_idx = CPU_LOAD_IDX_MAX;
-+
- static void
- set_table_entry(struct ctl_table *entry,
- 		const char *procname, void *data, int maxlen,
--		umode_t mode, proc_handler *proc_handler)
-+		umode_t mode, proc_handler *proc_handler,
-+		bool load_idx)
- {
- 	entry->procname = procname;
- 	entry->data = data;
- 	entry->maxlen = maxlen;
- 	entry->mode = mode;
- 	entry->proc_handler = proc_handler;
-+
-+	if (load_idx) {
-+		entry->extra1 = &min_load_idx;
-+		entry->extra2 = &max_load_idx;
-+	}
- }
+-	bsp = ctrl->pci_dev->bus->cur_bus_speed;
+-	msp = ctrl->pci_dev->bus->max_bus_speed;
++	bsp = ctrl->pci_dev->subordinate->cur_bus_speed;
++	msp = ctrl->pci_dev->subordinate->max_bus_speed;
  
- static struct ctl_table *
-@@ -5454,30 +5463,30 @@ sd_alloc_ctl_domain_table(struct sched_d
- 		return NULL;
- 
- 	set_table_entry(&table[0], "min_interval", &sd->min_interval,
--		sizeof(long), 0644, proc_doulongvec_minmax);
-+		sizeof(long), 0644, proc_doulongvec_minmax, false);
- 	set_table_entry(&table[1], "max_interval", &sd->max_interval,
--		sizeof(long), 0644, proc_doulongvec_minmax);
-+		sizeof(long), 0644, proc_doulongvec_minmax, false);
- 	set_table_entry(&table[2], "busy_idx", &sd->busy_idx,
--		sizeof(int), 0644, proc_dointvec_minmax);
-+		sizeof(int), 0644, proc_dointvec_minmax, true);
- 	set_table_entry(&table[3], "idle_idx", &sd->idle_idx,
--		sizeof(int), 0644, proc_dointvec_minmax);
-+		sizeof(int), 0644, proc_dointvec_minmax, true);
- 	set_table_entry(&table[4], "newidle_idx", &sd->newidle_idx,
--		sizeof(int), 0644, proc_dointvec_minmax);
-+		sizeof(int), 0644, proc_dointvec_minmax, true);
- 	set_table_entry(&table[5], "wake_idx", &sd->wake_idx,
--		sizeof(int), 0644, proc_dointvec_minmax);
-+		sizeof(int), 0644, proc_dointvec_minmax, true);
- 	set_table_entry(&table[6], "forkexec_idx", &sd->forkexec_idx,
--		sizeof(int), 0644, proc_dointvec_minmax);
-+		sizeof(int), 0644, proc_dointvec_minmax, true);
- 	set_table_entry(&table[7], "busy_factor", &sd->busy_factor,
--		sizeof(int), 0644, proc_dointvec_minmax);
-+		sizeof(int), 0644, proc_dointvec_minmax, false);
- 	set_table_entry(&table[8], "imbalance_pct", &sd->imbalance_pct,
--		sizeof(int), 0644, proc_dointvec_minmax);
-+		sizeof(int), 0644, proc_dointvec_minmax, false);
- 	set_table_entry(&table[9], "cache_nice_tries",
- 		&sd->cache_nice_tries,
--		sizeof(int), 0644, proc_dointvec_minmax);
-+		sizeof(int), 0644, proc_dointvec_minmax, false);
- 	set_table_entry(&table[10], "flags", &sd->flags,
--		sizeof(int), 0644, proc_dointvec_minmax);
-+		sizeof(int), 0644, proc_dointvec_minmax, false);
- 	set_table_entry(&table[11], "name", sd->name,
--		CORENAME_MAX_SIZE, 0444, proc_dostring);
-+		CORENAME_MAX_SIZE, 0444, proc_dostring, false);
- 	/* &table[12] is terminator */
- 
- 	return table;
+ 	/* Check if there are other slots or devices on the same bus */
+ 	if (!list_empty(&ctrl->pci_dev->subordinate->devices))
 
 
