@@ -1,172 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751748AbaFED77 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 23:59:59 -0400
-Received: from ozlabs.org ([103.22.144.67]:39565 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751094AbaFED75 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 23:59:57 -0400
-Date: Thu, 5 Jun 2014 13:59:50 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Airlie <airlied@linux.ie>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zhao Yakui <yakui.zhao@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Jani Nikula <jani.nikula@intel.com>
-Subject: linux-next: manual merge of the drm tree with Linus' tree
-Message-ID: <20140605135950.78ee7dee@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1750907AbaFEEBZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:01:25 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:59306 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750776AbaFEEBX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 00:01:23 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AoMOAF3qj1N5La4v/2dsb2JhbABZgwerdAEBAQEBBpgnAYELF3SCJQEBBAE6HBUHBwULCAMYCSUPBSUDIRMUiCYH0lwXFoU/iBFsB4MrgRUEmhKTOoNKK4E5
+Date: Thu, 5 Jun 2014 14:01:07 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: josh@joshtriplett.org, Joe Perches <joe@perches.com>,
+        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        fweisbec@gmail.com, oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH RFC 1/2] MAINTAINERS: Add "R:" designated-reviewers tag
+Message-ID: <20140605040107.GA4453@dastard>
+References: <20140602185504.GA13569@cloud>
+ <1401735917.7323.23.camel@joe-AO725>
+ <20140602190951.GA13648@cloud>
+ <1401736666.7323.25.camel@joe-AO725>
+ <20140602231949.GV14410@dastard>
+ <20140602235915.GB14801@cloud>
+ <20140603011125.GW14410@dastard>
+ <20140602213045.26219ddb@gandalf.local.home>
+ <20140603071654.GC14410@dastard>
+ <20140603134347.6e39f946@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/GMQnUCfHxg.+AN2s37K2.oI"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140603134347.6e39f946@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/GMQnUCfHxg.+AN2s37K2.oI
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Tue, Jun 03, 2014 at 01:43:47PM -0400, Steven Rostedt wrote:
+> On Tue, 3 Jun 2014 17:16:54 +1000
+> Dave Chinner <david@fromorbit.com> wrote:
+> 
+> 
+> > If you take it to an extremes. Think about what you can test in 15
+> > minutes. Or for larger patchsets, how long it takes you to read the
+> > patchset?
+> 
+> Yeah, what about that?
 
-Hi Dave,
+That testing a patch for obvious, common regressions takes no longer
+than it does to read and review the logic. 
 
-Today's linux-next merge of the drm tree got a conflict in
-drivers/gpu/drm/i915/i915_gem_execbuffer.c between commit d23db88c3ab2
-("drm/i915: Prevent negative relocation deltas from wrapping") from
-Linus' tree and commit a8ebba75b358 ("drm/i915: Use the coarse
-ping-pong mechanism based on drm fd to dispatch the BSD command on BDW
-GT3") from the drm tree.
+> > IMO, every reviewer has their own developement environment and they
+> > should be at least testing that the change they are reviewing
+> > doesn't cause problems in that environment, just like they do for
+> > their own code before they post it for review.
+> 
+> Let me ask you this. In the scientific community, when someone posts a
+> research project and asks their peers to review their work. Are all
+> those reviewers required to test out that paper?
+> Or are they to review it, check the math, look for cases that are
+> missed, see common errors, and other checks? I'm sure some
+> reviewers may do various tests, but others will just check the
+> logic. I'm having a very hard time seeing where Reviewed-by means
+> tested-by. I see those as two completely different tags.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+We are not conducting a scientific research experiment here. We are
+conduting a very large software *engineering* project here.
 
---=20
+So perhaps we should be using robust software engineering processes
+rather than academic peer review as the model for our code review
+process?
+
+> > > I find the reviewers of my code to be the worse testers.
+> > > That's because those that I ask to review my code know what
+> > > it's suppose to do, and those are the people that are not
+> > > going to stumble over bugs. It's the people that have no idea
+> > > how your code works that will trigger the most bugs in testing
+> > > it. My best testers would be my worse reviewers.
+> > 
+> > "Reviewers are the worst testers".
+> > 
+> > Yet you accept the code they write as sufficiently well tested
+> > for merging? :/
+> 
+> Heh, that's why I have a full test suite. Yes, I run my tests on
+> every single patch (to make sure it's fully bisectable, this is
+> why I wrote ktest.pl).
+> 
+> And yes, I find bugs and then send the patches back to be fixed. I
+> never blindly accept anyone's patches and just merge it.
+
+IOWs, part of your patch acceptance requirement is that patches are
+fully bisectable and mostly pass your own tests. Isn't that exactly
+what I've been saying Reviewed-by is supposed to mean?
+
+Anyway, let's not split hairs over the testing levels anymore, we
+can agree to disagree there. Why? Because that disagreement is the
+most important point here: reviewed-by means different things to
+different people, and that's a big problem from a software
+engineering process point of view.
+
+> > > patches, but since I don't have an XFS filesystem, I doubt
+> > > that would be much use for you.
+> > 
+> > I don't want you to review XFS code - you have no domain
+> > specific knowledge nor a test environment for XFS changes. IOWs,
+> > you meet none of the requirements to give a "reviewed-by" for an
+> > XFS change, and so to say you reviewed a change makes a mockery
+> > of the expectations outlines in the SubmittingPatches
+> > guidelines.
+> 
+> Actually, I would be able to review tracing changes in XFS. I've
+> given tags like "Revieved-by: Steven Rostedt <rostedt@goodmis.org>
+> # for the tracing part". before.
+
+But in that case you are reviewing tracing code - not XFS code -
+which is within your field of expertise. However, I wouldn't expect
+your review to tell me that the tracepoints are accessing some
+internal XFS state unsafely or not providing the information that
+the patch submitter expects to provide. That side of things still
+needs XFS expertise to determine....
+
+> > Reviewed-by only has value when it is backed by process and
+> > domain specific knowledge. If the person giving that tag doesn't
+> > have either of these, then it's worthless and they need to be
+> > taught what the correct thing to do is. Most people (even
+> > projects) don't learn proper software engineering processes
+> > until after they have been at the pointy end of a pile of crap
+> > at least once. :/
+> 
+> This last paragraph I totally agree with. There's a few people
+> that I trust very much so for a review. I don't expect them to
+> test my code, but they are usually good enough to see something
+> that may break under certain conditions. I don't add any review-by
+> tags from anyone I don't already have a working relationship with
+> and trust their judgment.
+
+Again, you're demonstrating exactly the problem I see: Reviewed-by
+has no meaning unless the maintainer trusts the developer and knows
+they have the necessary processes in place to perform a reliable
+review.
+
+> What I'm saying is that to most, Reviewed-by means just that. The
+> patch was reviewed. I think the person adding their reviewed-by
+> tag is placing their reputation on the line. I know I am every
+> time I add it.  That's why I give a lot more "Acked-by" than
+> "Reviewed-by". Those acks are me saying "I skimmed the patch, and
+> there's nothing in there that bothers me". I does not mean that I
+> looked over every change in detail.
+
+That's exactly how I use the two tags as well. If I'm not going to
+(or can't) fully commit to a review, Acked-by is what I use. But you
+or I are not the problem here....
+
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc drivers/gpu/drm/i915/i915_gem_execbuffer.c
-index 20fef6c50267,008e208e9a3a..000000000000
---- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-+++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-@@@ -597,38 -595,8 +600,38 @@@ i915_gem_execbuffer_reserve_vma(struct=20
-  	return 0;
-  }
- =20
- +static bool
- +eb_vma_misplaced(struct i915_vma *vma, bool has_fenced_gpu_access)
- +{
- +	struct drm_i915_gem_exec_object2 *entry =3D vma->exec_entry;
- +	struct drm_i915_gem_object *obj =3D vma->obj;
- +	bool need_fence, need_mappable;
- +
- +	need_fence =3D
- +		has_fenced_gpu_access &&
- +		entry->flags & EXEC_OBJECT_NEEDS_FENCE &&
- +		obj->tiling_mode !=3D I915_TILING_NONE;
- +	need_mappable =3D need_fence || need_reloc_mappable(vma);
- +
- +	WARN_ON((need_mappable || need_fence) &&
- +	       !i915_is_ggtt(vma->vm));
- +
- +	if (entry->alignment &&
- +	    vma->node.start & (entry->alignment - 1))
- +		return true;
- +
- +	if (need_mappable && !obj->map_and_fenceable)
- +		return true;
- +
- +	if (entry->flags & __EXEC_OBJECT_NEEDS_BIAS &&
- +	    vma->node.start < BATCH_OFFSET_BIAS)
- +		return true;
- +
- +	return false;
- +}
- +
-  static int
-- i915_gem_execbuffer_reserve(struct intel_ring_buffer *ring,
-+ i915_gem_execbuffer_reserve(struct intel_engine_cs *ring,
-  			    struct list_head *vmas,
-  			    bool *need_relocs)
-  {
-@@@ -1018,25 -1009,37 +1028,56 @@@ i915_reset_gen7_sol_offsets(struct drm_
-  	return 0;
-  }
- =20
- +static struct drm_i915_gem_object *
- +eb_get_batch(struct eb_vmas *eb)
- +{
- +	struct i915_vma *vma =3D list_entry(eb->vmas.prev, typeof(*vma), exec_li=
-st);
- +
- +	/*
- +	 * SNA is doing fancy tricks with compressing batch buffers, which leads
- +	 * to negative relocation deltas. Usually that works out ok since the
- +	 * relocate address is still positive, except when the batch is placed
- +	 * very low in the GTT. Ensure this doesn't happen.
- +	 *
- +	 * Note that actual hangs have only been observed on gen7, but for
- +	 * paranoia do it everywhere.
- +	 */
- +	vma->exec_entry->flags |=3D __EXEC_OBJECT_NEEDS_BIAS;
- +
- +	return vma->obj;
- +}
- +
-+ /**
-+  * Find one BSD ring to dispatch the corresponding BSD command.
-+  * The Ring ID is returned.
-+  */
-+ static int gen8_dispatch_bsd_ring(struct drm_device *dev,
-+ 				  struct drm_file *file)
-+ {
-+ 	struct drm_i915_private *dev_priv =3D dev->dev_private;
-+ 	struct drm_i915_file_private *file_priv =3D file->driver_priv;
-+=20
-+ 	/* Check whether the file_priv is using one ring */
-+ 	if (file_priv->bsd_ring)
-+ 		return file_priv->bsd_ring->id;
-+ 	else {
-+ 		/* If no, use the ping-pong mechanism to select one ring */
-+ 		int ring_id;
-+=20
-+ 		mutex_lock(&dev->struct_mutex);
-+ 		if (dev_priv->mm.bsd_ring_dispatch_index =3D=3D 0) {
-+ 			ring_id =3D VCS;
-+ 			dev_priv->mm.bsd_ring_dispatch_index =3D 1;
-+ 		} else {
-+ 			ring_id =3D VCS2;
-+ 			dev_priv->mm.bsd_ring_dispatch_index =3D 0;
-+ 		}
-+ 		file_priv->bsd_ring =3D &dev_priv->ring[ring_id];
-+ 		mutex_unlock(&dev->struct_mutex);
-+ 		return ring_id;
-+ 	}
-+ }
-+=20
-  static int
-  i915_gem_do_execbuffer(struct drm_device *dev, void *data,
-  		       struct drm_file *file,
-
---Sig_/GMQnUCfHxg.+AN2s37K2.oI
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTj+s7AAoJEMDTa8Ir7ZwVFWgP/0VKja2C8aIJQ979A1l/uQB8
-5ESfXvEmNEii9z991jhl+8DfycMK6gBGa88BzrfTABmB/CuFxpVwdWG+mJQVDDBE
-PlT9nNbuR8VyE/H4czbXoPcVvwWCbb7HhGkCFMQRHmRN2hW98jF++TOYPcVzAGP+
-ns+m4DGNyRVZOyNG53XxwR1i1eLQ2NMss2Ui7Mxihou45V6IyoTqR9sXBI1q0d2j
-LnnyeVdLeY07lJMGVTjeVkULdYqeQGcIEPFW6kvICt2ILI8UuWSSygUtSxOWjHqB
-8NNMcvZGafADh6N5YVlEQ/OrnUBgh7ak8KkXfLRGUlZqtuj28UY2zF+GoajBfA0S
-w93y9pvwn94RJASu40rJbgnodTZAN/6ZG5R8zQEreduA1ut8bHe/gF7X9fORwk5J
-LapJaR6ir/+zj5AMF/GWFjD3D3eTVV+xgj3//UD/PU2a/yEP/Y7u5fqHsyj22UI8
-BG+i/qusWTGbBDva6Rv72uGMiqVtHLOUManu22zSfzAv7Pyj86jW2Jb+K64BgJm5
-aAV7fjorKegsezmBcPmh4IwufWuXWpJ257E8YoI3/PkboQFRGGK1wWkLF15rYWgm
-C/KlDnzU/7m3yduoXyptut4MEfLI73d1AncQosZUw3LptC7E6+0x7zywBGm5CxrP
-s9g+TO38cE53MOt3r1yV
-=9HBk
------END PGP SIGNATURE-----
-
---Sig_/GMQnUCfHxg.+AN2s37K2.oI--
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
