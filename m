@@ -1,68 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752669AbaFEPbH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 11:31:07 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:52378 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752307AbaFEPbE (ORCPT
+	id S1752890AbaFEPbN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 11:31:13 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:45054 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752128AbaFEPbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 11:31:04 -0400
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+	Thu, 5 Jun 2014 11:31:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140605142135.GM6758@twins.programming.kicks-ass.net>
+References: <1401917658-26065-1-git-send-email-eranian@google.com>
+	<1401917658-26065-6-git-send-email-eranian@google.com>
+	<20140605140400.GM3213@twins.programming.kicks-ass.net>
+	<CABPqkBQRDpbkF73sWKXiXJOO0Jbeb9tRTWqScbjNdTG50EN3ug@mail.gmail.com>
+	<20140605142135.GM6758@twins.programming.kicks-ass.net>
+Date: Thu, 5 Jun 2014 17:31:07 +0200
+Message-ID: <CABPqkBRbst4sgpgE5O_VXt-CSC0VD=aP2KWA0e3Uy64tw7df3A@mail.gmail.com>
+Subject: Re: [PATCH 5/9] perf/x86: implement cross-HT corruption bug workaround
+From: Stephane Eranian <eranian@google.com>
 To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH] Revert lockdep check in raw_seqcount_begin
-Date: Thu,  5 Jun 2014 11:31:01 -0400
-Message-Id: <1401982261-11246-1-git-send-email-trond.myklebust@primarydata.com>
-X-Mailer: git-send-email 1.9.3
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>,
+        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit reverts the addition of lockdep checking to raw_seqcount_begin
-for the following reasons:
+On Thu, Jun 5, 2014 at 4:21 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Thu, Jun 05, 2014 at 04:15:17PM +0200, Stephane Eranian wrote:
+>> On Thu, Jun 5, 2014 at 4:04 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> > On Wed, Jun 04, 2014 at 11:34:14PM +0200, Stephane Eranian wrote:
+>> >> +
+>> >> +     /*
+>> >> +      * Modify static constraint with current dynamic
+>> >> +      * state of thread
+>> >> +      *
+>> >> +      * EXCLUSIVE: sibling counter measuring exclusive event
+>> >> +      * SHARED   : sibling counter measuring non-exclusive event
+>> >> +      * UNUSED   : sibling counter unused
+>> >> +      */
+>> >> +     for_each_set_bit(i, cx->idxmsk, X86_PMC_IDX_MAX) {
+>> >> +             /*
+>> >> +              * exclusive event in sibling counter
+>> >> +              * our corresponding counter cannot be used
+>> >> +              * regardless of our event
+>> >> +              */
+>> >> +             if (xl->state[i] == INTEL_EXCL_EXCLUSIVE)
+>> >> +                     __clear_bit(i, cx->idxmsk);
+>> >> +             /*
+>> >> +              * if measuring an exclusive event, sibling
+>> >> +              * measuring non-exclusive, then counter cannot
+>> >> +              * be used
+>> >> +              */
+>> >> +             if (is_excl && xl->state[i] == INTEL_EXCL_SHARED)
+>> >> +                     __clear_bit(i, cx->idxmsk);
+>> >> +     }
+>> >> +
+>> >> +     /*
+>> >> +      * recompute actual bit weight for scheduling algorithm
+>> >> +      */
+>> >> +     cx->weight = hweight64(cx->idxmsk64);
+>> >
+>> > So I think we talked about this a bit; what happens if CPU0 (taking your
+>> > 4 core HSW-client) is first to program its counters and takes all 4 in
+>> > exclusive mode?
+>> >
+>> > Then there's none left for CPU4.
+>> >
+>> > Did I miss where we avoid that problem, or is that an actual issue?
+>>
+>> Yes, this patch series does not address this problem yet. It will be
+>> in a second series.
+>> Don't have a good solution yet.
+>
+> We could limit each cpu to num_counters/2 exclusive slots. That'll still
+> be painful with some constrained events I imagine, but in general that
+> should 'work' I suppose.
 
-1) It violates the naming convention that raw_* functions should not
-   do lockdep checks (a convention that is also followed by the other
-   raw_*_seqcount_begin functions).
-2) raw_seqcount_begin does not spin, so it can only be part of an ABBA
-   deadlock in very special circumstances (for instance if a lock
-   is held across the entire raw_seqcount_begin()+read_seqcount_retry()
-   loop while also being taken inside the write_seqcount protected area).
-3) It is causing false positives with some existing callers, and there
-   is no non-lockdep alternative for those callers to use.
-
-None of the three existing callers (__d_lookup_rcu, netdev_get_name, and
-the NFS state code) appear to use the function in a manner that is ABBA
-deadlock prone.
-
-Fixes: 1ca7d67cf5d5: seqcount: Add lockdep functionality to seqcount/seqlock
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Link: http://lkml.kernel.org/r/CAHQdGtRR6SvEhXiqWo24hoUh9AU9cL82Z8Z-d8-7u951F_d+5g@mail.gmail.com
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
----
- include/linux/seqlock.h | 2 --
- 1 file changed, 2 deletions(-)
-
-diff --git a/include/linux/seqlock.h b/include/linux/seqlock.h
-index 535f158977b9..8cf350325dc6 100644
---- a/include/linux/seqlock.h
-+++ b/include/linux/seqlock.h
-@@ -164,8 +164,6 @@ static inline unsigned read_seqcount_begin(const seqcount_t *s)
- static inline unsigned raw_seqcount_begin(const seqcount_t *s)
- {
- 	unsigned ret = ACCESS_ONCE(s->sequence);
--
--	seqcount_lockdep_reader_access(s);
- 	smp_rmb();
- 	return ret & ~1;
- }
--- 
-1.9.3
-
+Ok, tried this. It avoids the problems and just requires a 3 line patch.
+So we could go with that for now. It would avoid total starvation.
