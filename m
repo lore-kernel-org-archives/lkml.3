@@ -1,94 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751306AbaFEWQk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 18:16:40 -0400
-Received: from mail-qg0-f52.google.com ([209.85.192.52]:63080 "EHLO
-	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751589AbaFEWQg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 18:16:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <1399566363-25837-8-git-send-email-mathias.nyman@linux.intel.com>
-References: <1399566363-25837-1-git-send-email-mathias.nyman@linux.intel.com>
-	<1399566363-25837-8-git-send-email-mathias.nyman@linux.intel.com>
-Date: Thu, 5 Jun 2014 15:16:35 -0700
-Message-ID: <CAA9_cmfhm_OEqk_5dX=j_9mFFmXZCPQmgszYeyQkKmBUgr-pRw@mail.gmail.com>
-Subject: Re: [PATCH 07/10] xhci: Use command structures when queuing commands
- on the command ring
-From: Dan Williams <dan.j.williams@gmail.com>
-To: Mathias Nyman <mathias.nyman@linux.intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1753102AbaFEWRF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 18:17:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38051 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752745AbaFEWRC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 18:17:02 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CAJfpegvSkr4NJJOfPH4MOhYvaLe=yWv_pR9kK4uiRpScyiapig@mail.gmail.com>
+References: <CAJfpegvSkr4NJJOfPH4MOhYvaLe=yWv_pR9kK4uiRpScyiapig@mail.gmail.com> <CAJfpegtobxoMs+RRrPYLFRPOVSfr_uqZs+HJFLRif3svHGyQwA@mail.gmail.com> <1400838223-30844-1-git-send-email-miklos@szeredi.hu> <28592.1401382081@warthog.procyon.org.uk> <11446.1401420931@jrobl> <7184.1401439773@warthog.procyon.org.uk> <CA+icZUV5P=fVwe_MJJHixwBOBoj7HoKSFuySLdS6AU5L++S=4g@mail.gmail.com> <15839.1401786056@warthog.procyon.org.uk> <CA+icZUUiirxYnoL7pg5TvFEy6pQ+5Q3CuJ0jonJMXTOwhT-LDw@mail.gmail.com> <CA+icZUU8BqGUoQdtuqt403NdCBnJnH1-k64bxTM0b_GSfQr1hQ@mail.gmail.com> <10013.1401791634@warthog.procyon.org.uk> <20140603132153.GA26512@tucsk.piliscsaba.szeredi.hu> <19281.1401809418@warthog.procyon.org.uk>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: dhowells@redhat.com, Sedat Dilek <sedat.dilek@gmail.com>,
+        "J. R. Okajima" <hooanon05g@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Robo Bot <apw@canonical.com>, Felix Fietkau <nbd@openwrt.org>,
+        Neil Brown <neilb@suse.de>, Jordi Pujol <jordipujolp@gmail.com>,
+        ezk@fsl.cs.sunysb.edu, "mszeredi@suse.cz" <mszeredi@suse.cz>
+Subject: Re: Unionmount and overlayfs testsuite
+Date: Thu, 05 Jun 2014 23:16:00 +0100
+Message-ID: <10878.1402006560@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mathias, hit a small issue playing with -next:
+Miklos Szeredi <miklos@szeredi.hu> wrote:
 
-On Thu, May 8, 2014 at 9:26 AM, Mathias Nyman
-<mathias.nyman@linux.intel.com> wrote:
-> To create a global command queue we require that each command put on the
-> command ring is submitted with a command structure.
->
-> Functions that queue commands and wait for completion need to allocate a command
-> before submitting it, and free it once completed. The following command queuing
-> functions need to be modified.
->
-> xhci_configure_endpoint()
-> xhci_address_device()
-> xhci_queue_slot_control()
-> xhci_queue_stop_endpoint()
-> xhci_queue_new_dequeue_state()
-> xhci_queue_reset_ep()
-> xhci_configure_endpoint()
->
-> xhci_configure_endpoint() could already be called with a command structure,
-> and only xhci_check_maxpacket and xhci_check_bandwidth did not do so. These
-> are changed and a command structure is now required. This change also simplifies
-> the configure endpoint command completion handling and the "goto bandwidth_change"
-> handling code can be removed.
->
-> In some cases the command queuing function is called in interrupt context.
-> These commands needs to be allocated atomically, and they can't wait for
-> completion. These commands will in this patch be freed directly after queuing,
-> but freeing will be moved to the command completion event handler in a later
-> patch once we get the global command queue up.(Just so that we won't leak
-> memory in the middle of the patch set)
->
-> Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-> ---
->  drivers/usb/host/xhci-hub.c  |  21 +++--
->  drivers/usb/host/xhci-ring.c | 107 +++++++++++++-----------
->  drivers/usb/host/xhci.c      | 194 ++++++++++++++++++++++++++++---------------
->  drivers/usb/host/xhci.h      |  31 +++----
->  4 files changed, 216 insertions(+), 137 deletions(-)
->
-> diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
-> index 1ad6bc1..3ce9c0a 100644
-> --- a/drivers/usb/host/xhci-hub.c
-> +++ b/drivers/usb/host/xhci-hub.c
-> @@ -20,7 +20,8 @@
->   * Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
->   */
->
-> -#include <linux/gfp.h>
-> +
-> +#include <linux/slab.h>
->  #include <asm/unaligned.h>
->
->  #include "xhci.h"
-> @@ -284,12 +285,22 @@ static int xhci_stop_device(struct xhci_hcd *xhci, int slot_id, int suspend)
->
->         spin_lock_irqsave(&xhci->lock, flags);
->         for (i = LAST_EP_INDEX; i > 0; i--) {
-> -               if (virt_dev->eps[i].ring && virt_dev->eps[i].ring->dequeue)
-> -                       xhci_queue_stop_endpoint(xhci, slot_id, i, suspend);
-> +               if (virt_dev->eps[i].ring && virt_dev->eps[i].ring->dequeue) {
-> +                       struct xhci_command *command;
-> +                       command = xhci_alloc_command(xhci, false, false,
-> +                                                    GFP_NOIO);
+> Shell script is the one I'm most familiar with, and that maybe true
+> for other kernel developers too.
+> 
+> Also, it's what xfstests are using and it would make sense to move
+> towards that.  Although I'm not sure how well it supports
+> multiple-device filesystems.
 
-...this needs to be GFP_NOWAIT, or move it outside the lock.
+It was already shell script, but I can do all the layer checking and
+automatically fixing up the error prediction for when pathnames have slashes
+appended much more easily in something like python where I can build and
+maintain a map of the state of the filesystem.
+
+See:
+
+	http://git.infradead.org/users/dhowells/unionmount-testsuite.git/shortlog/refs/heads/switch-to-python
+
+I've also added tests to exercise mkdir and rmdir and have enabled the unlink
+tests.  So far so good with overlayfs.
+
+David
