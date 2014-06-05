@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752467AbaFEPVR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 11:21:17 -0400
+	id S1752614AbaFEPVT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 11:21:19 -0400
 Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:63203 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751419AbaFEPVP (ORCPT
+	by vger.kernel.org with ESMTP id S1752471AbaFEPVS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 11:21:15 -0400
-Message-Id: <20140605151540.672365024@goodmis.org>
+	Thu, 5 Jun 2014 11:21:18 -0400
+Message-Id: <20140605152114.191155594@goodmis.org>
 User-Agent: quilt/0.63-1
-Date: Thu, 05 Jun 2014 11:15:40 -0400
+Date: Thu, 05 Jun 2014 11:15:44 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-Subject: [for-next][PATCH 0/5] tracing: More stuff for this merge window
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: [for-next][PATCH 4/5] tracing: Remove unused variable in trace_benchmark
+References: <20140605151540.672365024@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline; filename=0003-tracing-Remove-unused-variable-in-trace_benchmark.patch
 X-RR-Connecting-IP: 107.14.168.142:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I know the merge window has opened early (strange), but I'm still
-sorting out patches to get into 3.16 before I do any pushes.
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-I also just discovered that I'm not getting emails from Fengguang Wu's
-kbuild bot tests. I haven't been since March. All this time I thought
-I was good enough not to trigger those bugs, but I was naive. I'm still
-working the issue with Fengguang, but from my SMTP error message, I had:
+Somehow this unused variable warning sneaked past my warnings check
+(probably due to it depending on a new config).
 
-Sender address rejected: need fully-qualified address; from=<kbuild@bee>
+kernel/trace/trace_benchmark.c: In function 'trace_do_benchmark':
+kernel/trace/trace_benchmark.c:38:6: warning: unused variable 'seedsq' [-Wunused-variable]
+  u64 seedsq;
+      ^
 
-That "kbuild@bee" seems to be causing it to be rejected. I wonder
-how many others are not getting these emails.
+Link: http://lkml.kernel.org/r/20140604160921.4f4e69c4@canb.auug.org.au
 
-Anyway, I'm pushing this out because they passed my tests. Now I
-need to look at all the error reports that Fengguang's test reported
-and fix them up (he gave me a link to where reports are).
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace_benchmark.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-Enjoy.
+diff --git a/kernel/trace/trace_benchmark.c b/kernel/trace/trace_benchmark.c
+index 7dc1c42dfee2..a10adc7095cd 100644
+--- a/kernel/trace/trace_benchmark.c
++++ b/kernel/trace/trace_benchmark.c
+@@ -35,7 +35,6 @@ static void trace_do_benchmark(void)
+ 	u64 delta;
+ 	s64 stddev;
+ 	u64 seed;
+-	u64 seedsq;
+ 	u64 last_seed;
+ 	unsigned int avg;
+ 	unsigned int std = 0;
+-- 
+2.0.0.rc2
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-for-next
 
-Head SHA1: 64b8e48a72f45eedfdddfc62c25691d6c96ac919
-
-
-Minchan Kim (1)
-      tracing: Print max callstack on stacktrace bug
-
-Petr Mladek (1)
-      ftrace/x86: Call text_ip_addr() instead of the duplicated code
-
-Steven Rostedt (Red Hat) (2)
-      tracing: Remove unused variable in trace_benchmark
-      tracing: Add __get_dynamic_array_len() macro for trace events
-
-Yoshihiro YUNOMAE (1)
-      tracing: Eliminate double free on failure of allocation on boot up
-
-----
- arch/x86/kernel/ftrace.c       |   11 +----------
- include/trace/ftrace.h         |   11 ++++++++++-
- kernel/trace/trace.c           |    4 ----
- kernel/trace/trace_benchmark.c |    1 -
- kernel/trace/trace_stack.c     |   34 ++++++++++++++++++++++++++++++----
- 5 files changed, 41 insertions(+), 20 deletions(-)
