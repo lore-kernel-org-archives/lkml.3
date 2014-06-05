@@ -1,122 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199AbaFEUsx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 16:48:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51815 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751175AbaFEUsu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 16:48:50 -0400
-Message-ID: <1402001319.9207.252.camel@ul30vt.home>
-Subject: Re: [RFC PATCH v6 07/20] vfio/iommu_type1: implement the
- VFIO_DMA_MAP_FLAG_NOEXEC flag
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Antonios Motakis <a.motakis@virtualopensystems.com>
-Cc: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
-        tech@virtualopensystems.com, a.rigo@virtualopensystems.com,
-        kvm@vger.kernel.org, christoffer.dall@linaro.org, will.deacon@arm.com,
-        kim.phillips@freescale.com, stuart.yoder@freescale.com,
-        eric.auger@linaro.org, open list <linux-kernel@vger.kernel.org>
-Date: Thu, 05 Jun 2014 14:48:39 -0600
-In-Reply-To: <1401987808-23596-8-git-send-email-a.motakis@virtualopensystems.com>
-References: <1401987808-23596-1-git-send-email-a.motakis@virtualopensystems.com>
-	 <1401987808-23596-8-git-send-email-a.motakis@virtualopensystems.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752123AbaFEUsp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 16:48:45 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:49153 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751530AbaFEUsk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 16:48:40 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Florian Schilhabel <florian.c.schilhabel@googlemail.com>,
+        Henk de Groot <pe1dnn@amsat.org>, Jarod Wilson <jarod@wilsonet.com>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Luca Risolia <luca.risolia@studio.unibo.it>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>, linux-iio@vger.kernel.org,
+        linux-media@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: [PATCH 0/5] randconfig build fixes for staging
+Date: Thu,  5 Jun 2014 22:48:10 +0200
+Message-Id: <1402001295-1980118-1-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.8.3.2
+X-Provags-ID: V02:K0:R1AQya4hmsoWkl3KSnTfa1l5bNPBuV+2G7xQv4RwoTk
+ uqsqcP3slpNeIL19pj1ACkzOQ3MrCXVbVJc0TpZ6DxUoa/RIok
+ aKyjjkk4Wnpc8NSYcMbfmcuz1nlm4W/PnRL69tJscJrFXrDdvD
+ AKExc1zRB5OFctLeVvYeqGEtjVTFHubN/ZMKimhTAA2A3rQlel
+ o50wRpf9Pi2W9eCKHDL55//jukUiKEmr4lh0odU8LB3MoQ4G5q
+ s+n4smDGNhVwnfdXZ+3DuTaVqH8IQpSnjmmehe8WJ7hMu3cxRx
+ CTef6hrsh/0DmHMxsZuywgNuCz82VwX4ZLAkXHEcCMoyDPpJIY
+ 205AM2MPbeb8KELpduBVOInjVnQc+AyDTFH+FVIGi
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-06-05 at 19:03 +0200, Antonios Motakis wrote:
-> Some IOMMU drivers, such as the ARM SMMU driver, make available the
-> IOMMU_NOEXEC flag, to set the page tables for a device as XN (execute never).
-> This affects devices such as the ARM PL330 DMA Controller, which respects
-> this flag and will refuse to fetch DMA instructions from memory where the
-> XN flag has been set.
-> 
-> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
-> ---
->  drivers/vfio/vfio_iommu_type1.c | 30 +++++++++++++++++++++++++++++-
->  1 file changed, 29 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/vfio/vfio_iommu_type1.c b/drivers/vfio/vfio_iommu_type1.c
-> index 6673e7b..e2566fd 100644
-> --- a/drivers/vfio/vfio_iommu_type1.c
-> +++ b/drivers/vfio/vfio_iommu_type1.c
-> @@ -80,6 +80,24 @@ struct vfio_group {
->  	struct list_head	next;
->  };
->  
-> +static int vfio_domains_have_cap_noexec(struct vfio_iommu *iommu)
-> +{
-> +	struct vfio_domain *d;
-> +	int ret = 1;
-> +
-> +	mutex_lock(&iommu->lock);
-> +	list_for_each_entry(d, &iommu->domain_list, next) {
-> +		if (!iommu_domain_has_cap(d->domain, IOMMU_CAP_NOEXEC)) {
-> +			ret = 0;
-> +			break;
-> +		}
-> +	}
-> +	mutex_unlock(&iommu->lock);
-> +
-> +	return ret;
-> +}
-> +
-> +
->  /*
->   * This code handles mapping and unmapping of user data buffers
->   * into DMA'ble space using the IOMMU
-> @@ -542,6 +560,11 @@ static int vfio_dma_do_map(struct vfio_iommu *iommu,
->  		prot |= IOMMU_WRITE;
->  	if (map->flags & VFIO_DMA_MAP_FLAG_READ)
->  		prot |= IOMMU_READ;
-> +	if (map->flags & VFIO_DMA_MAP_FLAG_NOEXEC) {
-> +		if (!vfio_domains_have_cap_noexec(iommu))
-> +			return -EINVAL;
-> +		prot |= IOMMU_NOEXEC;
-> +	}
->  
->  	if (!prot)
->  		return -EINVAL; /* No READ/WRITE? */
-> @@ -899,6 +922,10 @@ static long vfio_iommu_type1_ioctl(void *iommu_data,
->  			if (!iommu)
->  				return 0;
->  			return vfio_domains_have_iommu_cache(iommu);
-> +		case VFIO_IOMMU_PROT_NOEXEC:
-> +			if (!iommu)
-> +				return 0;
-> +			return vfio_domains_have_cap_noexec(iommu);
->  		default:
->  			return 0;
->  		}
-> @@ -922,7 +949,8 @@ static long vfio_iommu_type1_ioctl(void *iommu_data,
->  	} else if (cmd == VFIO_IOMMU_MAP_DMA) {
->  		struct vfio_iommu_type1_dma_map map;
->  		uint32_t mask = VFIO_DMA_MAP_FLAG_READ |
-> -				VFIO_DMA_MAP_FLAG_WRITE;
-> +				VFIO_DMA_MAP_FLAG_WRITE |
-> +				VFIO_DMA_MAP_FLAG_NOEXEC;
->  
->  		minsz = offsetofend(struct vfio_iommu_type1_dma_map, size);
->  
+Hi Greg,
 
-This doesn't look complete.  What happens if we support NOEXEC, then we
-add a group behind an IOMMU that doesn't support NOEXEC?  In one case we
-attempt to use the same domain, which might imply the same IOMMU page
-tables, but is the hardware going to support that?  In the other case we
-create a new domain, then try to replay the mappings, including the
-NOEXEC bit... what's that going to do?  Can we add a non-NOEXEC domain
-to a container that was previously NOEXEC?  The point of changing the
-flag from EXEC to NOEXEC was to make it enforceable, but doesn't that
-mean we need to prevent that happening if we have NOEXEC mappings?
+Here are a couple of simple fixes from my backlog of ARM
+randconfig bugs. Nothing urgent, they can probably all go
+into next for 3.17 after the merge window, but see for
+yourself.
 
-Something needs to happen in vfio_iommu_type1_attach_group() to figure
-out what's allowed.  Also, vfio_domains_have_cap_noexec() should be
-named vfio_domains_have_iommu_nexec() to match _iommu_cache() and
-possibly they should both be wrappers to a common function if they end
-up sharing similar implementations.  Thanks,
+	Arnd
 
-Alex
+Arnd Bergmann (5):
+  staging: lirc: remove sa1100 support
+  staging/iio: IIO_SIMPLE_DUMMY_BUFFER neds IIO_BUFFER
+  staging: sn9c102 depends on USB
+  staging: wlags49_h2: avoid PROFILE_ALL_BRANCHES warnings
+  staging: rtl8712, rtl8712: avoid lots of build warnings
 
+ drivers/staging/iio/Kconfig                    |   9 +-
+ drivers/staging/media/lirc/lirc_sir.c          | 301 +------------------------
+ drivers/staging/media/sn9c102/Kconfig          |   2 +-
+ drivers/staging/rtl8192u/ieee80211/ieee80211.h |  10 +-
+ drivers/staging/rtl8712/ieee80211.h            |   4 +-
+ drivers/staging/wlags49_h2/wl_internal.h       |   4 +-
+ 6 files changed, 17 insertions(+), 313 deletions(-)
+
+-- 
+1.8.3.2
+
+Cc: Florian Schilhabel <florian.c.schilhabel@googlemail.com>
+Cc: Henk de Groot <pe1dnn@amsat.org>
+Cc: Jarod Wilson <jarod@wilsonet.com>
+Cc: Jonathan Cameron <jic23@kernel.org>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Luca Risolia <luca.risolia@studio.unibo.it>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>
+Cc: linux-iio@vger.kernel.org
+Cc: linux-media@vger.kernel.org
+Cc: linux-usb@vger.kernel.org
