@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753926AbaFEEYH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:24:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44615 "EHLO
+	id S1753909AbaFEEYF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:24:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44622 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753781AbaFEEWm (ORCPT
+	with ESMTP id S1753794AbaFEEWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 5 Jun 2014 00:22:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wei Liu <wei.liu2@citrix.com>, Ian Campbell <ian.campbell@citrix.com>,
-        "David S. Miller" <davem@davemloft.net>,
+        Thomas Huehn <thomas@net.t-labs.tu-berlin.de>,
+        Felix Fietkau <nbd@openwrt.org>,
+        Johannes Berg <johannes.berg@intel.com>,
         Ben Hutchings <ben@decadent.org.uk>,
         Qiang Huang <h.huangqiang@huawei.com>
-Subject: [PATCH 3.4 212/214] xen-netfront: reduce gso_max_size to account for max TCP header
-Date: Wed,  4 Jun 2014 21:19:35 -0700
-Message-Id: <20140605041707.988595332@linuxfoundation.org>
+Subject: [PATCH 3.4 205/214] mac80211: drop spoofed packets in ad-hoc mode
+Date: Wed,  4 Jun 2014 21:19:28 -0700
+Message-Id: <20140605041707.003026585@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -29,86 +30,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei Liu <wei.liu2@citrix.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 9ecd1a75d977e2e8c48139c7d3efed183f898d94 upstream.
+commit 6329b8d917adc077caa60c2447385554130853a3 upstream.
 
-The maximum packet including header that can be handled by netfront / netback
-wire format is 65535. Reduce gso_max_size accordingly.
+If an Ad-Hoc node receives packets with the Cell ID or its own MAC
+address as source address, it hits a WARN_ON in sta_info_insert_check()
+With many packets, this can massively spam the logs. One way that this
+can easily happen is through having Cisco APs in the area with rouge AP
+detection and countermeasures enabled.
+Such Cisco APs will regularly send fake beacons, disassoc and deauth
+packets that trigger these warnings.
 
-Drop skb and print warning when skb->len > 65535. This can 1) save the effort
-to send malformed packet to netback, 2) help spotting misconfiguration of
-netfront in the future.
+To fix this issue, drop such spoofed packets early in the rx path.
 
-Signed-off-by: Wei Liu <wei.liu2@citrix.com>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[bwh: Backported to 3.2: adjust context]
+Reported-by: Thomas Huehn <thomas@net.t-labs.tu-berlin.de>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+[bwh: Backported to 3.2: use compare_ether_addr() instead of ether_addr_equal()]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-[hq: Backported to 3.4: adjust context]
-Signed-off-by: Qiang Huang <h.huangqiang@huawei.com>
+Cc: Qiang Huang <h.huangqiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/xen-netfront.c       |   17 +++++++++++++++--
- include/xen/interface/io/netif.h |    1 +
- 2 files changed, 16 insertions(+), 2 deletions(-)
 
---- a/drivers/net/xen-netfront.c
-+++ b/drivers/net/xen-netfront.c
-@@ -36,7 +36,7 @@
- #include <linux/skbuff.h>
- #include <linux/ethtool.h>
- #include <linux/if_ether.h>
--#include <linux/tcp.h>
-+#include <net/tcp.h>
- #include <linux/udp.h>
- #include <linux/moduleparam.h>
- #include <linux/mm.h>
-@@ -492,6 +492,16 @@ static int xennet_start_xmit(struct sk_b
- 	unsigned int len = skb_headlen(skb);
- 	unsigned long flags;
- 
-+	/* If skb->len is too big for wire format, drop skb and alert
-+	 * user about misconfiguration.
-+	 */
-+	if (unlikely(skb->len > XEN_NETIF_MAX_TX_SIZE)) {
-+		net_alert_ratelimited(
-+			"xennet: skb->len = %u, too big for wire format\n",
-+			skb->len);
-+		goto drop;
-+	}
-+
- 	frags += DIV_ROUND_UP(offset + len, PAGE_SIZE);
- 	if (unlikely(frags > MAX_SKB_FRAGS + 1)) {
- 		printk(KERN_ALERT "xennet: skb rides the rocket: %d frags\n",
-@@ -1045,7 +1055,8 @@ err:
- 
- static int xennet_change_mtu(struct net_device *dev, int mtu)
- {
--	int max = xennet_can_sg(dev) ? 65535 - ETH_HLEN : ETH_DATA_LEN;
-+	int max = xennet_can_sg(dev) ?
-+		XEN_NETIF_MAX_TX_SIZE - MAX_TCP_HEADER : ETH_DATA_LEN;
- 
- 	if (mtu > max)
- 		return -EINVAL;
-@@ -1349,6 +1360,8 @@ static struct net_device * __devinit xen
- 	SET_ETHTOOL_OPS(netdev, &xennet_ethtool_ops);
- 	SET_NETDEV_DEV(netdev, &dev->dev);
- 
-+	netif_set_gso_max_size(netdev, XEN_NETIF_MAX_TX_SIZE - MAX_TCP_HEADER);
-+
- 	np->netdev = netdev;
- 
- 	netif_carrier_off(netdev);
---- a/include/xen/interface/io/netif.h
-+++ b/include/xen/interface/io/netif.h
-@@ -65,6 +65,7 @@
- #define _XEN_NETTXF_extra_info		(3)
- #define  XEN_NETTXF_extra_info		(1U<<_XEN_NETTXF_extra_info)
- 
-+#define XEN_NETIF_MAX_TX_SIZE 0xFFFF
- struct xen_netif_tx_request {
-     grant_ref_t gref;      /* Reference to buffer page */
-     uint16_t offset;       /* Offset within buffer page */
+---
+ net/mac80211/rx.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -2828,6 +2828,9 @@ static int prepare_for_handlers(struct i
+ 	case NL80211_IFTYPE_ADHOC:
+ 		if (!bssid)
+ 			return 0;
++		if (compare_ether_addr(sdata->vif.addr, hdr->addr2) == 0 ||
++		    compare_ether_addr(sdata->u.ibss.bssid, hdr->addr2) == 0)
++			return 0;
+ 		if (ieee80211_is_beacon(hdr->frame_control)) {
+ 			return 1;
+ 		}
 
 
