@@ -1,112 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752789AbaFEPs6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 11:48:58 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:58892 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751667AbaFEPsz (ORCPT
+	id S1752890AbaFEPt1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 11:49:27 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:33699 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752709AbaFEPtY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 11:48:55 -0400
-From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: sebastian.hesselbarth@gmail.com, Peter.Chen@freescale.com, balbi@ti.com
-Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 8/9] ARM: dts: berlin: add BG2Q nodes for USB support
-Date: Thu,  5 Jun 2014 17:48:45 +0200
-Message-Id: <1401983326-19205-9-git-send-email-antoine.tenart@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1401983326-19205-1-git-send-email-antoine.tenart@free-electrons.com>
-References: <1401983326-19205-1-git-send-email-antoine.tenart@free-electrons.com>
+	Thu, 5 Jun 2014 11:49:24 -0400
+Message-ID: <5390917D.4040607@wwwdotorg.org>
+Date: Thu, 05 Jun 2014 09:49:17 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: fwu@marvell.com, linus.walleij@linaro.org
+CC: tony@atomide.com, plagnioj@jcrosoft.com, kgene.kim@samsung.com,
+        heiko@sntech.de, t.figa@samsung.com, thomas.abraham@linaro.org,
+        srinivas.kandagatla@gmail.com, maxime.coquelin@st.com,
+        patrice.chotard@st.com, thierry.reding@gmail.com, baohua@kernel.org,
+        viresh.linux@gmail.com, matt.porter@linaro.org, syin@broadcom.com,
+        jg1.han@samsung.com, Rongjun.Ying@csr.com, Rong.Wang@csr.com,
+        linux@prisktech.co.nz, yongjun_wei@trendmicro.com.cn,
+        laurent.navet@gmail.com, linux-kernel@vger.kernel.org,
+        swarren@nvidia.com, cxie4@marvell.com, ylmao@marvell.com,
+        njiang1@marvell.com, tianxf@marvell.com, fswu@marvell.com
+Subject: Re: [PATCH v5] pinctrl: to avoid duplicated calling enable_pinmux_setting
+ for a pin
+References: <1401951040-17403-1-git-send-email-fwu@marvell.com>
+In-Reply-To: <1401951040-17403-1-git-send-email-fwu@marvell.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds nodes describing the Marvell Berlin BG2Q USB PHY and USB. The BG2Q
-SoC has 3 USB host controller, compatible with ChipIdea.
+On 06/05/2014 12:50 AM, fwu@marvell.com wrote:
+> From: Fan Wu <fwu@marvell.com>
+> 
+> What the patch did:
+> 1.To call pinmux_disable_setting ahead of pinmux_enable_setting in each time of
+>   calling pinctrl_select_state
+> 2.Remove the HW disable operation in in pinmux_disable_setting function.
+> 3.Remove the disable ops in struct pinmux_ops
+> 4.Remove all the disable ops users in current code base.
+...
 
-Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
----
- arch/arm/boot/dts/berlin2q.dtsi | 51 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 51 insertions(+)
+The overall concept, plus the bcm2835, and Tegra driver parts,
+Acked-by: Stephen Warren <swarren@nvidia.com>
 
-diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
-index b74e5ec66354..a6902ea5580c 100644
---- a/arch/arm/boot/dts/berlin2q.dtsi
-+++ b/arch/arm/boot/dts/berlin2q.dtsi
-@@ -87,6 +87,39 @@
- 			#interrupt-cells = <3>;
- 		};
- 
-+		usb_phy2: usbphy@a2f400 {
-+			compatible = "marvell,berlin-usbphy";
-+			reg = <0xa2f400 0x128>;
-+			#phy-cells = <0>;
-+			resets = <&chip 14>;
-+			status = "disabled";
-+		};
-+
-+		usb2: usb@a30000 {
-+			compatible = "marvell,berlin-usb";
-+			reg = <0xa30000 0x10000>;
-+			interrupts = <GIC_SPI 52 IRQ_TYPE_LEVEL_HIGH>;
-+			clocks = <&chip CLKID_USB2>;
-+			marvell,usbphy = <&usb_phy2>;
-+			status = "disabled";
-+		};
-+
-+		usb_phy0: usbphy@b74000 {
-+			compatible = "marvell,berlin-usbphy";
-+			reg = <0xb74000 0x128>;
-+			#phy-cells = <0>;
-+			resets = <&chip 12>;
-+			status = "disabled";
-+		};
-+
-+		usb_phy1: usbphy@b78000 {
-+			compatible = "marvell,berlin-usbphy";
-+			reg = <0xb78000 0x128>;
-+			#phy-cells = <0>;
-+			resets = <&chip 13>;
-+			status = "disabled";
-+		};
-+
- 		apb@e80000 {
- 			compatible = "simple-bus";
- 			#address-cells = <1>;
-@@ -280,6 +313,24 @@
- 			clock-names = "refclk";
- 		};
- 
-+		usb0: usb@ed0000 {
-+			compatible = "marvell,berlin-usb";
-+			reg = <0xed0000 0x10000>;
-+			interrupts = <GIC_SPI 11 IRQ_TYPE_LEVEL_HIGH>;
-+			clocks = <&chip CLKID_USB0>;
-+			marvell,usbphy = <&usb_phy0>;
-+			status = "disabled";
-+		};
-+
-+		usb1: usb@ee0000 {
-+			compatible = "marvell,berlin-usb";
-+			reg = <0xee0000 0x10000>;
-+			interrupts = <GIC_SPI 12 IRQ_TYPE_LEVEL_HIGH>;
-+			clocks = <&chip CLKID_USB1>;
-+			marvell,usbphy = <&usb_phy1>;
-+			status = "disabled";
-+		};
-+
- 		apb@fc0000 {
- 			compatible = "simple-bus";
- 			#address-cells = <1>;
--- 
-1.9.1
+That said ...
 
+> diff --git a/drivers/pinctrl/pinctrl-tegra.c b/drivers/pinctrl/pinctrl-tegra.c
+
+> -static void tegra_pinctrl_disable(struct pinctrl_dev *pctldev,
+> -				  unsigned function, unsigned group)
+> -{
+> -	struct tegra_pmx *pmx = pinctrl_dev_get_drvdata(pctldev);
+> -	const struct tegra_pingroup *g;
+> -	u32 val;
+> -
+> -	g = &pmx->soc->groups[group];
+> -
+> -	if (WARN_ON(g->mux_reg < 0))
+> -		return;
+> -
+> -	val = pmx_readl(pmx, g->mux_bank, g->mux_reg);
+> -	val &= ~(0x3 << g->mux_bit);
+> -	val |= g->func_safe << g->mux_bit;
+> -	pmx_writel(pmx, val, g->mux_bank, g->mux_reg);
+
+Those last 5 lines don't exist in the latest code, so this patch won't
+apply cleanly. You probably want to rebase this on top of LinusW's
+latest pinctrl development branch.
