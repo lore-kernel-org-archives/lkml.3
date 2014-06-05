@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754483AbaFEE7k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:59:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43885 "EHLO
+	id S1754537AbaFEFAP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 01:00:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43882 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752553AbaFEEUk (ORCPT
+	with ESMTP id S1752540AbaFEEUf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:20:40 -0400
+	Thu, 5 Jun 2014 00:20:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Geyslan G. Bem" <geyslan@gmail.com>,
-        Tyler Hicks <tyhicks@canonical.com>,
-        Ben Hutchings <ben@decadent.org.uk>, Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 3.4 077/214] ecryptfs: Fix memory leakage in keystore.c
-Date: Wed,  4 Jun 2014 21:17:20 -0700
-Message-Id: <20140605041649.903356983@linuxfoundation.org>
+        Ilia Mirkin <imirkin@alum.mit.edu>, Ben Skeggs <bskeggs@redhat.com>
+Subject: [PATCH 3.4 060/214] drm/nouveau/acpi: allow non-optimus setups to load vbios from acpi
+Date: Wed,  4 Jun 2014 21:17:03 -0700
+Message-Id: <20140605041647.553726774@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -28,43 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Geyslan G. Bem" <geyslan@gmail.com>
+From: Ilia Mirkin <imirkin@alum.mit.edu>
 
-commit 3edc8376c06133e3386265a824869cad03a4efd4 upstream.
+commit a3d0b1218d351c6e6f3cea36abe22236a08cb246 upstream.
 
-In 'decrypt_pki_encrypted_session_key' function:
+There appear to be a crop of new hardware where the vbios is not
+available from PROM/PRAMIN, but there is a valid _ROM method in ACPI.
+The data read from PCIROM almost invariably contains invalid
+instructions (still has the x86 opcodes), which makes this a low-risk
+way to try to obtain a valid vbios image.
 
-Initializes 'payload' pointer and releases it on exit.
-
-Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
-Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
-[bwh: Backported to 3.2: adjust context]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Rui Xiang <rui.xiang@huawei.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=76475
+Signed-off-by: Ilia Mirkin <imirkin@alum.mit.edu>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ecryptfs/keystore.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/nouveau/nouveau_acpi.c |    3 ---
+ 1 file changed, 3 deletions(-)
 
---- a/fs/ecryptfs/keystore.c
-+++ b/fs/ecryptfs/keystore.c
-@@ -1149,7 +1149,7 @@ decrypt_pki_encrypted_session_key(struct
- 	struct ecryptfs_msg_ctx *msg_ctx;
- 	struct ecryptfs_message *msg = NULL;
- 	char *auth_tok_sig;
--	char *payload;
-+	char *payload = NULL;
- 	size_t payload_len;
- 	int rc;
+--- a/drivers/gpu/drm/nouveau/nouveau_acpi.c
++++ b/drivers/gpu/drm/nouveau/nouveau_acpi.c
+@@ -375,9 +375,6 @@ bool nouveau_acpi_rom_supported(struct p
+ 	acpi_status status;
+ 	acpi_handle dhandle, rom_handle;
  
-@@ -1204,6 +1204,7 @@ decrypt_pki_encrypted_session_key(struct
- out:
- 	if (msg)
- 		kfree(msg);
-+	kfree(payload);
- 	return rc;
- }
- 
+-	if (!nouveau_dsm_priv.dsm_detected && !nouveau_dsm_priv.optimus_detected)
+-		return false;
+-
+ 	dhandle = DEVICE_ACPI_HANDLE(&pdev->dev);
+ 	if (!dhandle)
+ 		return false;
 
 
