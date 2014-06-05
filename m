@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753946AbaFEFAM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 01:00:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43882 "EHLO
+	id S1753957AbaFEFBP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 01:01:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43873 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752549AbaFEEUh (ORCPT
+	with ESMTP id S1752514AbaFEEUe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:20:37 -0400
+	Thu, 5 Jun 2014 00:20:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kim Phillips <kim.phillips@freescale.com>,
-        Horia Geanta <horia.geanta@freescale.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Subject: [PATCH 3.4 074/214] crypto: caam - add allocation failure handling in SPRINTFCAT macro
-Date: Wed,  4 Jun 2014 21:17:17 -0700
-Message-Id: <20140605041649.489764476@linuxfoundation.org>
+        Jianyu Zhan <nasa4836@gmail.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.4 068/214] percpu: make pcpu_alloc_chunk() use pcpu_mem_free() instead of kfree()
+Date: Wed,  4 Jun 2014 21:17:11 -0700
+Message-Id: <20140605041648.666089915@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -28,40 +26,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Horia Geanta <horia.geanta@freescale.com>
+From: Jianyu Zhan <nasa4836@gmail.com>
 
-commit 27c5fb7a84242b66bf1e0b2fe6bf40d19bcc5c04 upstream.
+commit 5a838c3b60e3a36ade764cf7751b8f17d7c9c2da upstream.
 
-GFP_ATOMIC memory allocation could fail.
-In this case, avoid NULL pointer dereference and notify user.
+pcpu_chunk_struct_size = sizeof(struct pcpu_chunk) +
+	BITS_TO_LONGS(pcpu_unit_pages) * sizeof(unsigned long)
 
-Cc: Kim Phillips <kim.phillips@freescale.com>
-Signed-off-by: Horia Geanta <horia.geanta@freescale.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+It hardly could be ever bigger than PAGE_SIZE even for large-scale machine,
+but for consistency with its couterpart pcpu_mem_zalloc(),
+use pcpu_mem_free() instead.
+
+Commit b4916cb17c26 ("percpu: make pcpu_free_chunk() use
+pcpu_mem_free() instead of kfree()") addressed this problem, but
+missed this one.
+
+tj: commit message updated
+
+Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Fixes: 099a19d91ca4 ("percpu: allow limited allocation before slab is online)
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/crypto/caam/error.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ mm/percpu.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/crypto/caam/error.c
-+++ b/drivers/crypto/caam/error.c
-@@ -16,9 +16,13 @@
- 	char *tmp;						\
- 								\
- 	tmp = kmalloc(sizeof(format) + max_alloc, GFP_ATOMIC);	\
--	sprintf(tmp, format, param);				\
--	strcat(str, tmp);					\
--	kfree(tmp);						\
-+	if (likely(tmp)) {					\
-+		sprintf(tmp, format, param);			\
-+		strcat(str, tmp);				\
-+		kfree(tmp);					\
-+	} else {						\
-+		strcat(str, "kmalloc failure in SPRINTFCAT");	\
-+	}							\
- }
+--- a/mm/percpu.c
++++ b/mm/percpu.c
+@@ -612,7 +612,7 @@ static struct pcpu_chunk *pcpu_alloc_chu
+ 	chunk->map = pcpu_mem_zalloc(PCPU_DFL_MAP_ALLOC *
+ 						sizeof(chunk->map[0]));
+ 	if (!chunk->map) {
+-		kfree(chunk);
++		pcpu_mem_free(chunk, pcpu_chunk_struct_size);
+ 		return NULL;
+ 	}
  
- static void report_jump_idx(u32 status, char *outstr)
 
 
