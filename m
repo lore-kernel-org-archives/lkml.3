@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752656AbaFEOjP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 10:39:15 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48616 "EHLO
+	id S1752664AbaFEOje (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 10:39:34 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48642 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752008AbaFEOjL (ORCPT
+	with ESMTP id S1751326AbaFEOjc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 10:39:11 -0400
-Date: Thu, 5 Jun 2014 07:38:06 -0700
-From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-ebf905fc7a6e7c99c53b5afc888d8f950da90aff@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, sasha.levin@oracle.com, hpa@zytor.com,
-        mingo@kernel.org, torvalds@linux-foundation.org, peterz@infradead.org,
-        acme@kernel.org, davej@redhat.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, sasha.levin@oracle.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        peterz@infradead.org, davej@redhat.com, acme@kernel.org,
+	Thu, 5 Jun 2014 10:39:32 -0400
+Date: Thu, 5 Jun 2014 07:38:21 -0700
+From: tip-bot for Vince Weaver <tipbot@zytor.com>
+Message-ID: <tip-53b25335dd60981ad608da7890420898a34469a6@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, will.deacon@arm.com,
+        peterz@infradead.org, acme@kernel.org, vincent.weaver@maine.edu,
         tglx@linutronix.de
-In-Reply-To: <20140529170024.GA2315@laptop.programming.kicks-ass.net>
-References: <20140529170024.GA2315@laptop.programming.kicks-ass.net>
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        will.deacon@arm.com, torvalds@linux-foundation.org,
+        peterz@infradead.org, acme@kernel.org, vincent.weaver@maine.edu,
+        tglx@linutronix.de
+In-Reply-To: <alpine.DEB.2.10.1405161708060.11099@vincent-weaver-1.umelst.maine.edu>
+References: <alpine.DEB.2.10.1405161708060.11099@vincent-weaver-1.umelst.maine.edu>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf:
-  Fix use after free in perf_remove_from_context()
-Git-Commit-ID: ebf905fc7a6e7c99c53b5afc888d8f950da90aff
+Subject: [tip:perf/core] perf: Disable sampled events if no PMU interrupt
+Git-Commit-ID: 53b25335dd60981ad608da7890420898a34469a6
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -35,56 +35,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ebf905fc7a6e7c99c53b5afc888d8f950da90aff
-Gitweb:     http://git.kernel.org/tip/ebf905fc7a6e7c99c53b5afc888d8f950da90aff
-Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Thu, 29 May 2014 19:00:24 +0200
+Commit-ID:  53b25335dd60981ad608da7890420898a34469a6
+Gitweb:     http://git.kernel.org/tip/53b25335dd60981ad608da7890420898a34469a6
+Author:     Vince Weaver <vincent.weaver@maine.edu>
+AuthorDate: Fri, 16 May 2014 17:12:12 -0400
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 5 Jun 2014 12:29:52 +0200
+CommitDate: Thu, 5 Jun 2014 12:29:55 +0200
 
-perf: Fix use after free in perf_remove_from_context()
+perf: Disable sampled events if no PMU interrupt
 
-While that mutex should guard the elements, it doesn't guard against the
-use-after-free that's from list_for_each_entry_rcu().
-__perf_event_exit_task() can actually free the event.
+Add common code to generate -ENOTSUPP at event creation time if an
+architecture attempts to create a sampled event and
+PERF_PMU_NO_INTERRUPT is set.
 
-And because list addition/deletion is guarded by both ctx->mutex and
-ctx->lock, holding ctx->mutex is sufficient for reading the list, so we
-don't actually need the rcu list iteration.
+This adds a new pmu->capabilities flag.  Initially we only support
+PERF_PMU_NO_INTERRUPT (to indicate a PMU has no support for generating
+hardware interrupts) but there are other capabilities that can be
+added later.
 
-Fixes: 3a497f48637e ("perf: Simplify perf_event_exit_task_context()")
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Tested-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
+Acked-by: Will Deacon <will.deacon@arm.com>
+[peterz: rename to PERF_PMU_CAP_* and moved the pmu::capabilities word into a hole]
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Dave Jones <davej@redhat.com>
-Cc: acme@ghostprotocols.net
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20140529170024.GA2315@laptop.programming.kicks-ass.net
+Link: http://lkml.kernel.org/r/alpine.DEB.2.10.1405161708060.11099@vincent-weaver-1.umelst.maine.edu
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/events/core.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/linux/perf_event.h | 10 ++++++++++
+ kernel/events/core.c       |  7 +++++++
+ 2 files changed, 17 insertions(+)
 
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index af6dcf1..267c8f3 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -167,6 +167,11 @@ struct perf_event;
+ #define PERF_EVENT_TXN 0x1
+ 
+ /**
++ * pmu::capabilities flags
++ */
++#define PERF_PMU_CAP_NO_INTERRUPT		0x01
++
++/**
+  * struct pmu - generic performance monitoring unit
+  */
+ struct pmu {
+@@ -178,6 +183,11 @@ struct pmu {
+ 	const char			*name;
+ 	int				type;
+ 
++	/*
++	 * various common per-pmu feature flags
++	 */
++	int				capabilities;
++
+ 	int * __percpu			pmu_disable_count;
+ 	struct perf_cpu_context * __percpu pmu_cpu_context;
+ 	int				task_ctx_nr;
 diff --git a/kernel/events/core.c b/kernel/events/core.c
-index ed50b09..a62d142 100644
+index a62d142..e9ef0c6 100644
 --- a/kernel/events/core.c
 +++ b/kernel/events/core.c
-@@ -7431,7 +7431,7 @@ __perf_event_exit_task(struct perf_event *child_event,
+@@ -7120,6 +7120,13 @@ SYSCALL_DEFINE5(perf_event_open,
+ 		}
+ 	}
  
- static void perf_event_exit_task_context(struct task_struct *child, int ctxn)
- {
--	struct perf_event *child_event;
-+	struct perf_event *child_event, *next;
- 	struct perf_event_context *child_ctx;
- 	unsigned long flags;
++	if (is_sampling_event(event)) {
++		if (event->pmu->capabilities & PERF_PMU_CAP_NO_INTERRUPT) {
++			err = -ENOTSUPP;
++			goto err_alloc;
++		}
++	}
++
+ 	account_event(event);
  
-@@ -7485,7 +7485,7 @@ static void perf_event_exit_task_context(struct task_struct *child, int ctxn)
- 	 */
- 	mutex_lock(&child_ctx->mutex);
- 
--	list_for_each_entry_rcu(child_event, &child_ctx->event_list, event_entry)
-+	list_for_each_entry_safe(child_event, next, &child_ctx->event_list, event_entry)
- 		__perf_event_exit_task(child_event, child_ctx, child);
- 
- 	mutex_unlock(&child_ctx->mutex);
+ 	/*
