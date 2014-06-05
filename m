@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752966AbaFEEVO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:21:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44067 "EHLO
+	id S1754156AbaFEEtK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:49:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44106 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752879AbaFEEVI (ORCPT
+	with ESMTP id S1752944AbaFEEVN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:21:08 -0400
+	Thu, 5 Jun 2014 00:21:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Daniel Kurtz <djkurtz@chromium.org>, Alan Swanson <swanson@ukfsn.org>,
-        Arteom <arutemus@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Alexander Stein <alexander.stein@systec-electronic.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
         Ben Hutchings <ben@decadent.org.uk>,
         Qiang Huang <h.huangqiang@huawei.com>
-Subject: [PATCH 3.4 109/214] Input: synaptics - adjust threshold for treating position values as negative
-Date: Wed,  4 Jun 2014 21:17:52 -0700
-Message-Id: <20140605041654.328640868@linuxfoundation.org>
+Subject: [PATCH 3.4 117/214] can: c_can: Set reserved bit in IFx_MASK2 to 1 on write
+Date: Wed,  4 Jun 2014 21:18:00 -0700
+Message-Id: <20140605041655.406628034@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -31,93 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seth Forshee <seth.forshee@canonical.com>
+From: Alexander Stein <alexander.stein@systec-electronic.com>
 
-commit 824efd37415961d38821ecbd9694e213fb2e8b32 upstream.
+commit 2bd3bc4e8472424f1a6009825397639a8968920a upstream.
 
-Commit c039450 (Input: synaptics - handle out of bounds values from the
-hardware) caused any hardware reported values over 7167 to be treated as
-a wrapped-around negative value. It turns out that some firmware uses
-the value 8176 to indicate a finger near the edge of the touchpad whose
-actual position cannot be determined. This value now gets treated as
-negative, which can cause pointer jumps and broken edge scrolling on
-these machines.
+According to C_CAN documentation, the reserved bit in IFx_MASK2 register is
+fixed 1.
 
-I only know of one touchpad which reports negative values, and this
-hardware never reports any value lower than -8 (i.e. 8184). Moving the
-threshold for treating a value as negative up to 8176 should work fine
-then for any hardware we currently know about, and since we're dealing
-with unspecified behavior it's probably the best we can do. The special
-8176 value is also likely to result in sudden jumps in position, so
-let's also clamp this to the maximum specified value for the axis.
-
-BugLink: http://bugs.launchpad.net/bugs/1046512
-https://bugzilla.kernel.org/show_bug.cgi?id=46371
-
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-Reviewed-by: Daniel Kurtz <djkurtz@chromium.org>
-Tested-by: Alan Swanson <swanson@ukfsn.org>
-Tested-by: Arteom <arutemus@gmail.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Qiang Huang <h.huangqiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/mouse/synaptics.c |   31 +++++++++++++++++++++++--------
- 1 file changed, 23 insertions(+), 8 deletions(-)
+ drivers/net/can/c_can/c_can.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -53,14 +53,19 @@
- #define ABS_POS_BITS 13
+--- a/drivers/net/can/c_can/c_can.c
++++ b/drivers/net/can/c_can/c_can.c
+@@ -446,8 +446,12 @@ static void c_can_setup_receive_object(s
  
- /*
-- * Any position values from the hardware above the following limits are
-- * treated as "wrapped around negative" values that have been truncated to
-- * the 13-bit reporting range of the hardware. These are just reasonable
-- * guesses and can be adjusted if hardware is found that operates outside
-- * of these parameters.
-+ * These values should represent the absolute maximum value that will
-+ * be reported for a positive position value. Some Synaptics firmware
-+ * uses this value to indicate a finger near the edge of the touchpad
-+ * whose precise position cannot be determined.
-+ *
-+ * At least one touchpad is known to report positions in excess of this
-+ * value which are actually negative values truncated to the 13-bit
-+ * reporting range. These values have never been observed to be lower
-+ * than 8184 (i.e. -8), so we treat all values greater than 8176 as
-+ * negative and any other value as positive.
-  */
--#define X_MAX_POSITIVE (((1 << ABS_POS_BITS) + XMAX) / 2)
--#define Y_MAX_POSITIVE (((1 << ABS_POS_BITS) + YMAX) / 2)
-+#define X_MAX_POSITIVE 8176
-+#define Y_MAX_POSITIVE 8176
- 
- /*
-  * Synaptics touchpads report the y coordinate from bottom to top, which is
-@@ -583,11 +588,21 @@ static int synaptics_parse_hw_state(cons
- 		hw->right = (buf[0] & 0x02) ? 1 : 0;
- 	}
- 
--	/* Convert wrap-around values to negative */
-+	/*
-+	 * Convert wrap-around values to negative. (X|Y)_MAX_POSITIVE
-+	 * is used by some firmware to indicate a finger at the edge of
-+	 * the touchpad whose precise position cannot be determined, so
-+	 * convert these values to the maximum axis value.
-+	 */
- 	if (hw->x > X_MAX_POSITIVE)
- 		hw->x -= 1 << ABS_POS_BITS;
-+	else if (hw->x == X_MAX_POSITIVE)
-+		hw->x = XMAX;
+ 	priv->write_reg(priv, &priv->regs->ifregs[iface].mask1,
+ 			IFX_WRITE_LOW_16BIT(mask));
 +
- 	if (hw->y > Y_MAX_POSITIVE)
- 		hw->y -= 1 << ABS_POS_BITS;
-+	else if (hw->y == Y_MAX_POSITIVE)
-+		hw->y = YMAX;
++	/* According to C_CAN documentation, the reserved bit
++	 * in IFx_MASK2 register is fixed 1
++	 */
+ 	priv->write_reg(priv, &priv->regs->ifregs[iface].mask2,
+-			IFX_WRITE_HIGH_16BIT(mask));
++			IFX_WRITE_HIGH_16BIT(mask) | BIT(13));
  
- 	return 0;
- }
+ 	priv->write_reg(priv, &priv->regs->ifregs[iface].arb1,
+ 			IFX_WRITE_LOW_16BIT(id));
 
 
