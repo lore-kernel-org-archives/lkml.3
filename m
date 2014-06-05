@@ -1,64 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751565AbaFEQyn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 12:54:43 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:56470 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750907AbaFEQym (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 12:54:42 -0400
-Date: Thu, 5 Jun 2014 18:52:13 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
-Cc: Stephane Eranian <eranian@google.com>,
-        Matt Fleming <matt@console-pimps.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: Re: [PATCH 9/9] perf/x86: add syfs entry to disable HT bug workaround
-Message-ID: <20140605165213.GI16642@pd.tnic>
-References: <CADknwL6s2ttb5E2JDr6bc_XkwpxnW5ecU-3Ns88=gvgPvLYkPg@mail.gmail.com>
- <CABPqkBQUUb+yEvC8y3oLc0DUbF3DJPzbt3sNL7Zqzufh6EYdRw@mail.gmail.com>
- <CADknwL71NC5wBG1tnqgJ6iiA4y+HYomGpufOn7V+MP2=m7+Mig@mail.gmail.com>
- <CABPqkBTEafZ5MbYM4UQxX92uWcPiphPeXMoJRKTt8jnrB+5j2w@mail.gmail.com>
- <20140605132750.GA16811@pd.tnic>
- <CABPqkBT9ExD4unz0VZ5G1d+oGpkepiwXskgBpv5GTavs=tYAKA@mail.gmail.com>
- <20140605140316.GB16811@pd.tnic>
- <CAHzUATiVCHytrG3sz8AmC8anZTQcPDRHp91-kWEoeq=RU7UNiw@mail.gmail.com>
- <20140605151734.GD16811@pd.tnic>
- <CAHzUATioT8e=RxypbqBsHw-QkcYsdQEiKhb3e44A4S+98Ut6=Q@mail.gmail.com>
+	id S1751697AbaFEQ41 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 12:56:27 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:59423 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751118AbaFEQ40 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 12:56:26 -0400
+Date: Thu, 5 Jun 2014 18:56:23 +0200
+From: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        sebastian.hesselbarth@gmail.com, alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/9] reset: add the Berlin reset controller driver
+Message-ID: <20140605165623.GB21960@kwain>
+References: <1401983326-19205-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1401983326-19205-2-git-send-email-antoine.tenart@free-electrons.com>
+ <1401986205.4103.9.camel@paszta.hi.pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <CAHzUATioT8e=RxypbqBsHw-QkcYsdQEiKhb3e44A4S+98Ut6=Q@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1401986205.4103.9.camel@paszta.hi.pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 05, 2014 at 07:39:55PM +0300, Maria Dimakopoulou wrote:
-> This series aims to avoid corruption of non-corrupting events.
-> Re-integration of the counts is not related to this.
+Hi Philipp,
 
-What do you mean "not related"? Then you have a partial workaround. This
-whole thing is trying to fix a hw bug so of course it is related.
+On Thu, Jun 05, 2014 at 06:36:45PM +0200, Philipp Zabel wrote:
+> > +#include <linux/platform_device.h>
+> 
+> Is there a reason this is not actually implemented as platform device?
 
-Once you do the "full" workaround, along with the part which
-reintegrates the counts and thus completely fixes the issue (I believe),
-then you don't need to disable it at all because disabling it doesn't
-make any sense then. See what I'm saying?
+The node describing this driver is shared with a pin controller and a
+clock driver. The pin controller is implemented as a platform device. I
+don't think we can have two platform device drivers using the device
+tree for the same node. Or I'm maybe missing something.
 
-This is the whole point Matt and I are trying to make: if the *full*
-workaround doesn't have any noticeable disadvantages, then you don't
-need to add a disable-mechanism due to the can of worms opening if you
-do.
+> 
+> > +#include <linux/reset-controller.h>
+> > +#include <linux/slab.h>
+> > +#include <linux/spinlock.h>
+> > +#include <linux/types.h>
+> > +
+> > +#define BERLIN_RESET_REGISTER		0x104
+> 
+> How many reset registers are there? (See below).
 
-How you get this upstream to ease the review is a whole another story
-and I applaud your desire to keep things clean.
+I don't have lots of information about this. For now only the one used
+to reset the USB PHY but others may come later.
+
+> > +
+> > +static int berlin_reset_reset(struct reset_controller_dev *rcdev,
+> > +			      unsigned long id)
+> > +{
+> > +	struct berlin_reset_priv *priv = to_berlin_reset_priv(rcdev);
+> > +	unsigned long flags;
+> > +	int bank = id / BITS_PER_LONG;
+> > +	int offset = id % BITS_PER_LONG;
+> > +
+> > +	spin_lock_irqsave(&priv->lock, flags);
+> > +
+> > +	writel(BIT(offset), priv->base + bank * 4);
+> > +
+> > +	spin_unlock_irqrestore(&priv->lock, flags);
+> 
+> Since this is a single write into an apparently self-clearing
+> register, I see no need for the spinlock here.
+
+Sure.
+
+> 
+> > +	/* let the reset be effective */
+> > +	udelay(10);
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static struct reset_control_ops berlin_reset_ops = {
+> > +	.reset	= berlin_reset_reset,
+> > +};
+> > +
+> > +static int __berlin_reset_init(struct device_node *np)
+> > +{
+> > +	struct berlin_reset_priv *priv;
+> > +	struct resource res;
+> > +	resource_size_t size;
+> > +	int ret;
+> > +
+> > +	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
+> > +	if (!priv)
+> > +		return -ENOMEM;
+> > +
+> > +	ret = of_address_to_resource(np, 0, &res);
+> > +	if (ret)
+> > +		goto err;
+> > +
+> > +	size = resource_size(&res);
+> > +
+> > +	priv->base = ioremap(res.start, size);
+> > +	if (!priv->base) {
+> > +		ret = -ENOMEM;
+> > +		goto err;
+> > +	}
+> 
+> A platform driver could use devm_kzalloc, platform_get_resource,
+> and devm_ioremap_resource here.
+> 
+> > +	priv->base += BERLIN_RESET_REGISTER;
+> > +
+> > +	priv->rcdev.owner = THIS_MODULE;
+> > +	priv->rcdev.nr_resets = size * 32;
+> 
+> This doesn't seem right. The device tree patch shows that
+> size = 0x400.
+
+The reg property is shared between drivers using the common chip
+controller node. I do not know how many registers are actually used
+to reset.
+
+We then could hardcode the size, with the registers actually used here?
+
+
+Thanks for the review!
+
+Antoine
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
