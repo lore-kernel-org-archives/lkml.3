@@ -1,34 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752742AbaFEWQf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 18:16:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58030 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751589AbaFEWQe (ORCPT
+	id S1751306AbaFEWQk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 18:16:40 -0400
+Received: from mail-qg0-f52.google.com ([209.85.192.52]:63080 "EHLO
+	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751589AbaFEWQg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 18:16:34 -0400
-Date: Thu, 5 Jun 2014 15:16:33 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: eric.ernst@linux.intel.com
-Cc: rdunlap@infradead.org, jwboyer@fedoraproject.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1 1/1] Add kernel parameter for kernel version
-Message-Id: <20140605151633.7dd15e8307cbd3b519ae257b@linux-foundation.org>
-In-Reply-To: <1402006157-126864-1-git-send-email-eric.ernst@linux.intel.com>
-References: <538CC567.2060305@linux.intel.com>
-	<1402006157-126864-1-git-send-email-eric.ernst@linux.intel.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 5 Jun 2014 18:16:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <1399566363-25837-8-git-send-email-mathias.nyman@linux.intel.com>
+References: <1399566363-25837-1-git-send-email-mathias.nyman@linux.intel.com>
+	<1399566363-25837-8-git-send-email-mathias.nyman@linux.intel.com>
+Date: Thu, 5 Jun 2014 15:16:35 -0700
+Message-ID: <CAA9_cmfhm_OEqk_5dX=j_9mFFmXZCPQmgszYeyQkKmBUgr-pRw@mail.gmail.com>
+Subject: Re: [PATCH 07/10] xhci: Use command structures when queuing commands
+ on the command ring
+From: Dan Williams <dan.j.williams@gmail.com>
+To: Mathias Nyman <mathias.nyman@linux.intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        USB list <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  5 Jun 2014 15:09:17 -0700 eric.ernst@linux.intel.com wrote:
+Hi Mathias, hit a small issue playing with -next:
 
-> Create a kernel cmdline parameter, "version_addendum", which can be
-> used to add text to the kernel version that is reported from
-> /proc/version.
+On Thu, May 8, 2014 at 9:26 AM, Mathias Nyman
+<mathias.nyman@linux.intel.com> wrote:
+> To create a global command queue we require that each command put on the
+> command ring is submitted with a command structure.
+>
+> Functions that queue commands and wait for completion need to allocate a command
+> before submitting it, and free it once completed. The following command queuing
+> functions need to be modified.
+>
+> xhci_configure_endpoint()
+> xhci_address_device()
+> xhci_queue_slot_control()
+> xhci_queue_stop_endpoint()
+> xhci_queue_new_dequeue_state()
+> xhci_queue_reset_ep()
+> xhci_configure_endpoint()
+>
+> xhci_configure_endpoint() could already be called with a command structure,
+> and only xhci_check_maxpacket and xhci_check_bandwidth did not do so. These
+> are changed and a command structure is now required. This change also simplifies
+> the configure endpoint command completion handling and the "goto bandwidth_change"
+> handling code can be removed.
+>
+> In some cases the command queuing function is called in interrupt context.
+> These commands needs to be allocated atomically, and they can't wait for
+> completion. These commands will in this patch be freed directly after queuing,
+> but freeing will be moved to the command completion event handler in a later
+> patch once we get the global command queue up.(Just so that we won't leak
+> memory in the middle of the patch set)
+>
+> Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+> ---
+>  drivers/usb/host/xhci-hub.c  |  21 +++--
+>  drivers/usb/host/xhci-ring.c | 107 +++++++++++++-----------
+>  drivers/usb/host/xhci.c      | 194 ++++++++++++++++++++++++++++---------------
+>  drivers/usb/host/xhci.h      |  31 +++----
+>  4 files changed, 216 insertions(+), 137 deletions(-)
+>
+> diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
+> index 1ad6bc1..3ce9c0a 100644
+> --- a/drivers/usb/host/xhci-hub.c
+> +++ b/drivers/usb/host/xhci-hub.c
+> @@ -20,7 +20,8 @@
+>   * Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+>   */
+>
+> -#include <linux/gfp.h>
+> +
+> +#include <linux/slab.h>
+>  #include <asm/unaligned.h>
+>
+>  #include "xhci.h"
+> @@ -284,12 +285,22 @@ static int xhci_stop_device(struct xhci_hcd *xhci, int slot_id, int suspend)
+>
+>         spin_lock_irqsave(&xhci->lock, flags);
+>         for (i = LAST_EP_INDEX; i > 0; i--) {
+> -               if (virt_dev->eps[i].ring && virt_dev->eps[i].ring->dequeue)
+> -                       xhci_queue_stop_endpoint(xhci, slot_id, i, suspend);
+> +               if (virt_dev->eps[i].ring && virt_dev->eps[i].ring->dequeue) {
+> +                       struct xhci_command *command;
+> +                       command = xhci_alloc_command(xhci, false, false,
+> +                                                    GFP_NOIO);
 
-why?
+...this needs to be GFP_NOWAIT, or move it outside the lock.
