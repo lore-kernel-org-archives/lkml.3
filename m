@@ -1,58 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753031AbaFEBKi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 21:10:38 -0400
-Received: from g2t2352.austin.hp.com ([15.217.128.51]:9312 "EHLO
-	g2t2352.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717AbaFEBKh (ORCPT
+	id S1753410AbaFEBMJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 21:12:09 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:15287 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752833AbaFEBMH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 21:10:37 -0400
-Message-ID: <1401930628.13877.29.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [RFC PATCH 3/3] locking/mutex: Optimize mutex trylock slowpath
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Jason Low <jason.low2@hp.com>
-Cc: mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        paulmck@linux.vnet.ibm.com, tim.c.chen@linux.intel.com,
-        peter@hurleysoftware.com, riel@redhat.com, hpa@zytor.com,
-        walken@google.com, Waiman.Long@hp.com, aswin@hp.com,
-        scott.norton@hp.com, chegu_vinod@hp.com
-Date: Wed, 04 Jun 2014 18:10:28 -0700
-In-Reply-To: <1401918431.2232.32.camel@j-VirtualBox>
-References: <1401908911-8947-1-git-send-email-jason.low2@hp.com>
-	 <1401908911-8947-4-git-send-email-jason.low2@hp.com>
-	 <1401913714.13877.11.camel@buesod1.americas.hpqcorp.net>
-	 <1401918431.2232.32.camel@j-VirtualBox>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	Wed, 4 Jun 2014 21:12:07 -0400
+X-Greylist: delayed 31551 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 Jun 2014 21:12:06 EDT
+Date: Wed, 4 Jun 2014 21:12:02 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build warning after merge of the ftrace tree
+Message-ID: <20140604211202.0eb5d147@gandalf.local.home>
+In-Reply-To: <20140605010353.GA13193@localhost>
+References: <20140604160921.4f4e69c4@canb.auug.org.au>
+	<20140604122612.366e2874@gandalf.local.home>
+	<20140605002012.GA10446@localhost>
+	<20140604210016.4766adba@gandalf.local.home>
+	<20140605010353.GA13193@localhost>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-06-04 at 14:47 -0700, Jason Low wrote:
-> On Wed, 2014-06-04 at 13:28 -0700, Davidlohr Bueso wrote:
-> > On Wed, 2014-06-04 at 12:08 -0700, Jason Low wrote:
-> > > In __mutex_trylock_slowpath(), we acquire the wait_lock spinlock,
-> > > xchg() lock->count with -1, then set lock->count back to 0 if there
-> > > are no waiters, and return true if the prev lock count was 1.
-> > > 
-> > > However, if we the mutex is already locked, then there may not be
-> >              ^^ leave that out.
-> > 
-> > > much point in attempting the above operations. 
-> > 
-> > Isn't this redundant? I mean, if we enter the slowpath its because
-> > __mutex_fastpath_trylock() already failed so we already know that the
-> > lock is taken.
-> 
-> This function is really just used as an alternative method of trylock
-> for !__HAVE_ARCH_CMPXCHG.  In that case, the fastpath can call directly
-> into the slowpath function, without checking for if the lock is taken.
+On Thu, 5 Jun 2014 09:03:53 +0800
+Fengguang Wu <fengguang.wu@intel.com> wrote:
 
-Ah, ok I hadn't seen that we do this in 32bit x86 and was wondering why
-the heck we fallback on a slowpath for something like trylock, which
-should return right away no matter what. I'd suggest explicitly
-mentioning this in the changelog. Otherwise makes sense now.
+> > Was I Cc'd? I don't have that in my inbox, nor do I see it in any of my
+> > spam filters.
+> 
+> Yes, here is the email message:
+> 
+>         Date: Sat, 31 May 2014 02:16:43 +0800
+>         From: kbuild test robot <fengguang.wu@intel.com>
+> ==>     To: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+
+Hmm, I wonder where it ended up? I do have a pretty complex procmailrc
+file, but I even checked the procmail log file, and it doesn't show it.
+
+I don't think my email provider dropped it, as I have all the spam
+filtering turned off and do my own filtering. Although, they may have
+added something behind my back. Wouldn't be the first time.
+
+Are you sure that got sent?
+
+Can you check if your bots have triggered anything else for me. Because
+your bots have been surprisingly quiet lately. I just took that as me
+getting better at not pushing crap.
+
+I may add a bad commit to one of my branches and see if I get a
+response from you just to test it out. I really hope we can fix this
+because I've gotten someone dependent on your reports. :-/
+
+
+-- Steve
+
+
+>         CC: kbuild-all@01.org
+>         Subject: [trace:ftrace/core 29/32] kernel/trace/trace_benchmark.c:38:6: warning: unused variable 'seedsq'
+>         User-Agent: Heirloom mailx 12.5 6/20/10
+> 
+>         tree:   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git ftrace/core
+>         head:   4c27e756bc019ec1c11232893af036fdae720a97
+>         commit: 81dc9f0ef21e40114cc895894c7acf3055f6d1fb [29/32] tracing: Add tracepoint benchmark tracepoint
+>         config: make ARCH=x86_64 allmodconfig
+> 
+>         All warnings:
+> 
+>            kernel/trace/trace_benchmark.c: In function 'trace_do_benchmark':
+>         >> kernel/trace/trace_benchmark.c:38:6: warning: unused variable 'seedsq' [-Wunused-variable]
+>              u64 seedsq;                                                                             
+>                  ^
+> Thanks,
+> Fengguang
 
