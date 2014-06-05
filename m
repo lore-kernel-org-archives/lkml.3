@@ -1,96 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751848AbaFEM7g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 08:59:36 -0400
-Received: from casper.infradead.org ([85.118.1.10]:52112 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751795AbaFEM7f (ORCPT
+	id S1751579AbaFENEN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 09:04:13 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:35894 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751043AbaFENEI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 08:59:35 -0400
-Date: Thu, 5 Jun 2014 14:59:29 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Matt Fleming <matt@console-pimps.org>, LKML <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>,
-        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
-Subject: Re: [PATCH 9/9] perf/x86: add syfs entry to disable HT bug workaround
-Message-ID: <20140605125929.GH6758@twins.programming.kicks-ass.net>
-References: <1401917658-26065-1-git-send-email-eranian@google.com>
- <1401917658-26065-10-git-send-email-eranian@google.com>
- <CADknwL5S8QpzCAgrKHjbGTbEx7nA8L=Vu8d-UWAYCg6X25OcGw@mail.gmail.com>
- <CABPqkBSimH8Ob_q3dDtQiW_OwuS9nA4Gsx87H26ywNcmYd38Xw@mail.gmail.com>
- <CADknwL6s2ttb5E2JDr6bc_XkwpxnW5ecU-3Ns88=gvgPvLYkPg@mail.gmail.com>
- <CABPqkBQUUb+yEvC8y3oLc0DUbF3DJPzbt3sNL7Zqzufh6EYdRw@mail.gmail.com>
- <CADknwL71NC5wBG1tnqgJ6iiA4y+HYomGpufOn7V+MP2=m7+Mig@mail.gmail.com>
- <20140605125022.GF6758@twins.programming.kicks-ass.net>
- <CABPqkBQMi5NoL1EFB8ajopF8QbF3kiFgk6NkSkaqzruVaEQJOQ@mail.gmail.com>
+	Thu, 5 Jun 2014 09:04:08 -0400
+Message-ID: <53906AC1.6000404@ozlabs.ru>
+Date: Thu, 05 Jun 2014 23:04:01 +1000
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Bg2esWel0ueIH/G/"
-Content-Disposition: inline
-In-Reply-To: <CABPqkBQMi5NoL1EFB8ajopF8QbF3kiFgk6NkSkaqzruVaEQJOQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Alexander Graf <agraf@suse.de>
+CC: linuxppc-dev@lists.ozlabs.org, Paul Mackerras <paulus@samba.org>,
+        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kvm-ppc@vger.kernel.org
+Subject: Re: [PATCH 3/3] PPC: KVM: Add support for 64bit TCE windows
+References: <1401953144-19186-1-git-send-email-aik@ozlabs.ru>	 <1401953144-19186-4-git-send-email-aik@ozlabs.ru>	 <1401953908.3247.121.camel@pasglop> <539037DB.5080706@ozlabs.ru>	 <1401964037.3247.129.camel@pasglop> <53905ADB.8000100@suse.de> <1401971411.3247.132.camel@pasglop>
+In-Reply-To: <1401971411.3247.132.camel@pasglop>
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/05/2014 10:30 PM, Benjamin Herrenschmidt wrote:
+> On Thu, 2014-06-05 at 13:56 +0200, Alexander Graf wrote:
+>> What if we ask user space to give us a pointer to user space allocated 
+>> memory along with the TCE registration? We would still ask user space to 
+>> only use the returned fd for TCE modifications, but would have some 
+>> nicely swappable memory we can store the TCE entries in.
+> 
+> That isn't going to work terribly well for VFIO :-) But yes, for
+> emulated devices, we could improve things a bit, including for
+> the 32-bit TCE tables.
+> 
+> For emulated, the real mode path could walk the page tables and fallback
+> to virtual mode & get_user if the page isn't present, thus operating
+> directly on qemu memory TCE tables instead of the current pinned stuff.
+> 
+> However that has a cost in performance, but since that's really only
+> used for emulated devices and PAPR VIOs, it might not be a huge issue.
+> 
+> But for VFIO we don't have much choice, we need to create something the
+> HW can access.
 
---Bg2esWel0ueIH/G/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+You are confusing things here.
 
-On Thu, Jun 05, 2014 at 02:55:05PM +0200, Stephane Eranian wrote:
-> On Thu, Jun 5, 2014 at 2:50 PM, Peter Zijlstra <peterz@infradead.org> wro=
-te:
-> > On Thu, Jun 05, 2014 at 12:16:01PM +0100, Matt Fleming wrote:
-> >> On 5 June 2014 11:19, Stephane Eranian <eranian@google.com> wrote:
-> >> > How would you know that you have a uniform workload from inside
-> >> > the kernel?
-> >>
-> >> That's what I'm asking you ;-)
-> >>
-> >> >> Does cpu_sibling_map not give you some indication of whether HT is
-> >> >> enabled? I think the topology_thread_cpumask() is the topology API =
-for
-> >> >> that. But I could most definitely be wrong. Hopefully someone on the
-> >> >> Cc list will know.
-> >> >>
-> >> > Remember trying some of that, but when perf_event is initialized, th=
-ose
-> >> > masks are not yet setup properly.
-> >>
-> >> Oh, bummer.
-> >
-> > So we init perf very early to get nmi-watchdog up and running, but
-> > there's no reason you cannot register a second initcall later and flip
-> > the switch from it there.
->=20
-> and what initcall would that be?
+There are 2 tables:
+1. guest-visible TCE table, this is what is allocated for VIO or emulated PCI;
+2. real HW DMA window, one exists already for DMA32 and one I will
+allocated for a huge window.
 
-Pretty much anything !early_initcall() is ran after SMP bringup iirc.
+I have just #2 for VFIO now but we will need both in order to implement
+H_GET_TCE correctly, and this is the table I will allocate by this new ioctl.
 
---Bg2esWel0ueIH/G/
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+>> In fact, the code as is today can allocate an arbitrary amount of pinned 
+>> kernel memory from within user space without any checks.
+> 
+> Right. We should at least account it in the locked limit.
 
-iQIcBAEBAgAGBQJTkGmxAAoJEHZH4aRLwOS6ossP/1J/YlOPFB4Iyz5koV6ouCU1
-iaZmybbT7XKovIBmq1Q2I6dnlYMhpXGCCyVdgncMWNUgbTTB772AJFBpKnwaMIJd
-J6U8BK4fRSExXcMGXw/WIwQJfdWLoLydlv87YzFs8vSJMGbekrwyqle5KgMowJFZ
-2FMw728Ljoph7+wWGbghF8NRa80bCZQ9vJXCK6+XDJKRzh1DnCOWcrvir8xujex7
-rkvCiAND+s/OfMPdQiTFv67gOKixl4AeVwTpji/ouRp9O12xTCej876nWdioUXCT
-ppm98tkWPcMaemAbvUnMorZ6Hp8dAZJawL4QbqILFck9nnol6SrTrriGjxBcf+dB
-vZtkLU7xFTX6fsElPvKIo8gzyOfDZnC/oDFtAjDQMbTo9xwvATzf647f/2d3FWFe
-/wK946KYgF4/Jjkr0e66wO7z1o1gHhIFoBPRJnfqAOIMzONUY0G6O84rVdp0FW+1
-HbQ1A7GzCq33LFFBBEOesMkJJNLDZ8XOnXgJCPk/gFCpRzOA39WdOU4zzX2MWwt3
-uz3tNBiG5IwTZ4OVbe8oYvkl1A6rNTjkOnGjWZ/2Oent+EwjsIiS7pRm8obT8p/w
-XciesohzhFOjIss3ltvXXYbjQk/pFOPtMbfdRArNCJki6obAYp8bv8nDvAbo/jwF
-cD2YPvFpCTnYHB2hiiBY
-=RDgi
------END PGP SIGNATURE-----
+Yup. And (probably) this thing will keep a counter of how many windows were
+created per KVM instance to avoid having multiple copies of the same table.
 
---Bg2esWel0ueIH/G/--
+
+-- 
+Alexey
