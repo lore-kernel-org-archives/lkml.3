@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753466AbaFEEWF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:22:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44404 "EHLO
+	id S1753506AbaFEEWK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:22:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44445 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753435AbaFEEWC (ORCPT
+	with ESMTP id S1753474AbaFEEWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:22:02 -0400
+	Thu, 5 Jun 2014 00:22:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Zimmerman <alan.zimm@gmail.com>,
-        Jani Nikula <jani.nikula@intel.com>,
+        Aaron Lu <aaron.lu@intel.com>, Jani Nikula <jani.nikula@intel.com>,
         Daniel Vetter <daniel.vetter@ffwll.ch>,
         Ben Hutchings <ben@decadent.org.uk>,
         Weng Meiling <wengmeiling.weng@huawei.com>
-Subject: [PATCH 3.4 175/214] drm/i915: add quirk to invert brightness on Packard Bell NCL20
-Date: Wed,  4 Jun 2014 21:18:58 -0700
-Message-Id: <20140605041703.087576327@linuxfoundation.org>
+Subject: [PATCH 3.4 182/214] drm/i915: try not to lose backlight CBLV precision
+Date: Wed,  4 Jun 2014 21:19:05 -0700
+Message-Id: <20140605041703.938573324@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -32,31 +31,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jani Nikula <jani.nikula@intel.com>
 
-commit 5559ecadad5a73b27f863e92f4b4f369501dce6f upstream.
+commit cac6a5ae0118832936eb162ec4cedb30f2422bcc upstream.
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=44156
-Reported-by: Alan Zimmerman <alan.zimm@gmail.com>
+ACPI has _BCM and _BQC methods to set and query the backlight
+brightness, respectively. The ACPI opregion has variables BCLP and CBLV
+to hold the requested and current backlight brightness, respectively.
+
+The BCLP variable has range 0..255 while the others have range
+0..100. This means the _BCM method has to scale the brightness for BCLP,
+and the gfx driver has to scale the requested value back for CBLV. If
+the _BQC method uses the CBLV variable (apparently some implementations
+do, some don't) for current backlight level reporting, there's room for
+rounding errors.
+
+Use DIV_ROUND_UP for scaling back to CBLV to get back to the same values
+that were passed to _BCM, presuming the _BCM simply uses bclp = (in *
+255) / 100 for scaling to BCLP.
+
+Reference: https://gist.github.com/aaronlu/6314920
+Reported-by: Aaron Lu <aaron.lu@intel.com>
 Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Reviewed-by: Aaron Lu <aaron.lu@intel.com>
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - ASLE region is treated as normal memory rather than __iomem]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-[wml: Backported to 3.4: Adjust context]
-Signed-off-by: Weng Meiling <wengmeiling.weng@huawei.com>
+Cc: Weng Meiling <wengmeiling.weng@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/gpu/drm/i915/intel_display.c |    3 +++
- 1 file changed, 3 insertions(+)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -9252,6 +9252,9 @@ struct intel_quirk intel_quirks[] = {
- 	/* Acer/eMachines e725 */
- 	{ 0x2a42, 0x1025, 0x0212, quirk_invert_brightness },
+---
+ drivers/gpu/drm/i915/intel_opregion.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/gpu/drm/i915/intel_opregion.c
++++ b/drivers/gpu/drm/i915/intel_opregion.c
+@@ -161,7 +161,7 @@ static u32 asle_set_backlight(struct drm
  
-+	/* Acer/Packard Bell NCL20 */
-+	{ 0x2a42, 0x1025, 0x034b, quirk_invert_brightness },
-+
- 	/* Dell XPS13 HD Sandy Bridge */
- 	{ 0x0116, 0x1028, 0x052e, quirk_no_pcm_pwm_enable },
- 	/* Dell XPS13 HD and XPS13 FHD Ivy Bridge */
+ 	max = intel_panel_get_max_backlight(dev);
+ 	intel_panel_set_backlight(dev, bclp * max / 255);
+-	asle->cblv = (bclp*0x64)/0xff | ASLE_CBLV_VALID;
++	asle->cblv = DIV_ROUND_UP(bclp * 100, 255) | ASLE_CBLV_VALID;
+ 
+ 	return 0;
+ }
 
 
