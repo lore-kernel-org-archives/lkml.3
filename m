@@ -1,46 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752175AbaFEQoO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 12:44:14 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50439 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751997AbaFEQoM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 12:44:12 -0400
-Message-ID: <53909E46.4020904@zytor.com>
-Date: Thu, 05 Jun 2014 09:43:50 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752212AbaFEQof (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 12:44:35 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:59345 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751641AbaFEQo3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 12:44:29 -0400
+Date: Thu, 5 Jun 2014 18:44:26 +0200
+From: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        sebastian.hesselbarth@gmail.com, alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/9] ARM: dts: berlin: add a required reset property in
+ the chip controller node
+Message-ID: <20140605164426.GA21960@kwain>
+References: <1401983326-19205-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1401983326-19205-4-git-send-email-antoine.tenart@free-electrons.com>
+ <1401986347.4103.11.camel@paszta.hi.pengutronix.de>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Andy Lutomirski <luto@amacapital.net>,
-        Matt Fleming <matt.fleming@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Ricardo Neri <ricardo.neri-calderon@linux.intel.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:x86/efi] x86/efi: Check for unsafe dealing with FPU state
- in irq ctxt
-References: <20140605071805.GA16647@pd.tnic> <CAL01qpuj6jvH4XLvhHAszbqmSPXfW=VOdv+TqMwBuDnArL=ofw@mail.gmail.com> <20140605090206.GA16642@pd.tnic> <CALCETrU2TZhxOZyCvBd1nLDiU4ceiSx_Sd2bsDUCX5arOFidBg@mail.gmail.com> <20140605155307.GD16642@pd.tnic> <CALCETrVqqgExhuAYawh_7tc8-Nm8GGiMxmtw25mLFoxru-odZg@mail.gmail.com> <20140605160842.GE16642@pd.tnic> <CALCETrUors-39hUxS9Bg-dh+DzMcmPOs=6t998sbCVjqXYgyug@mail.gmail.com> <20140605161834.GF16642@pd.tnic> <53909B50.50407@zytor.com> <20140605163711.GG16642@pd.tnic>
-In-Reply-To: <20140605163711.GG16642@pd.tnic>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1401986347.4103.11.camel@paszta.hi.pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2014 09:37 AM, Borislav Petkov wrote:
-> On Thu, Jun 05, 2014 at 09:31:12AM -0700, H. Peter Anvin wrote:
->> The bottom line is that we can't call EFI from a context where we can't
->> use the FPU.  Or specifically, we can't then resume execution.
+On Thu, Jun 05, 2014 at 06:39:07PM +0200, Philipp Zabel wrote:
+> Am Donnerstag, den 05.06.2014, 17:48 +0200 schrieb Antoine Ténart:
+> > The chip controller node now also describes the Marvell Berlin reset
+> > controller. Add the required 'reset-cells' property.
+> > 
+> > Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+> > ---
+> >  arch/arm/boot/dts/berlin2.dtsi   | 1 +
+> >  arch/arm/boot/dts/berlin2cd.dtsi | 1 +
+> >  arch/arm/boot/dts/berlin2q.dtsi  | 1 +
+> >  3 files changed, 3 insertions(+)
+> > 
+> > diff --git a/arch/arm/boot/dts/berlin2.dtsi b/arch/arm/boot/dts/berlin2.dtsi
+> > index 2477dac4d643..379ff1a38377 100644
+> > --- a/arch/arm/boot/dts/berlin2.dtsi
+> > +++ b/arch/arm/boot/dts/berlin2.dtsi
+> > @@ -243,6 +243,7 @@
+> >  		chip: chip-control@ea0000 {
+> >  			compatible = "marvell,berlin2-chip-ctrl";
+> >  			#clock-cells = <1>;
+> > +			#reset-cells = <1>;
 > 
-> Can't we allocate a save-state area, stash the state there and let EFI
-> scribble over it? When EFI returns, we scribble over it back assuming it
-> has done the saving/restoring on its own.
+> Are the marvell,berlin2q-chip-ctrl bindings already documented? This
+> should also be added to the documentation.
 
-I'm sorry I don't follow.
+It is, I'll add information about its reset function.
 
-	-hpa
+Antoine
 
+-- 
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
