@@ -1,82 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752919AbaFESsY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 14:48:24 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:6176 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752843AbaFESsW (ORCPT
+	id S1753001AbaFESsg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 14:48:36 -0400
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:46489 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752962AbaFESse (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 14:48:22 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 05 Jun 2014 11:40:19 -0700
-From: Vidya Sagar <vidyas@nvidia.com>
-To: <linux@arm.linux.org.uk>, <bhelgaas@google.com>, <wangyijing@huawei.com>,
-        <thierry.reding@gmail.com>, <jason@lakedaemon.net>,
-        <will.deacon@arm.com>, <swarren@nvidia.com>, <kthota@nvidia.com>,
-        <vidyas@nvidia.com>
-CC: <sagar.tv@gmail.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] ARM: fix debug prints relevant to PCI devices
-Date: Fri, 6 Jun 2014 00:17:48 +0530
-Message-ID: <1401994068-820-1-git-send-email-vidyas@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-X-NVConfidentiality: public
+	Thu, 5 Jun 2014 14:48:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1401467562-5585-1-git-send-email-dianders@chromium.org>
+References: <1401398496-4624-1-git-send-email-dianders@chromium.org>
+	<1401467562-5585-1-git-send-email-dianders@chromium.org>
+Date: Thu, 5 Jun 2014 11:48:32 -0700
+X-Google-Sender-Auth: mqv93sqTMyL3g5_kxurEG9xRfqA
+Message-ID: <CAD=FV=W8-M5iOMDG190WGaeSySTd=qcp30k-H8DMUs_C5Pdwog@mail.gmail.com>
+Subject: Re: [PATCH v2] clk: exynos5420: Keep aclk66_peric enabled during boot
+From: Doug Anderson <dianders@chromium.org>
+To: Tomasz Figa <t.figa@samsung.com>, Mike Turquette <mturquette@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Cc: Olof Johansson <olof@lixom.net>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Doug Anderson <dianders@chromium.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As per PCIe spec, fast back-to-back transactions feature
-is not applicable to PCIe devices. Hence, do not print
-that fast back-to-back trasactions are disabled when
-there is a PCIe device found on the bus
+Tomasz / Mike,
 
-Signed-off-by: Vidya Sagar <vidyas@nvidia.com>
----
+On Fri, May 30, 2014 at 9:32 AM, Doug Anderson <dianders@chromium.org> wrote:
+> Right now if you've got earlyprintk enabled on exynos5420-peach-pit
+> then you'll get a hang on boot.  Here's why:
+>
+> 1. The i2c-s3c2410 driver will probe at subsys_initcall.  It will
+>    enable its clock and disable it.  This is the clock "i2c2".
+> 2. The act of disabling "i2c2" will disable its parents.  In this case
+>    the parent is "aclk66_peric".  There are no other children of
+>    "aclk66_peric" officially enabled, so "aclk66_peric" will be turned
+>    off (despite being CLK_IGNORE_UNUSED, but that's by design).
+> 3. The next time you try to earlyprintk you'll do so without the UART
+>    clock enabled.  That's because the UART clocks are also children of
+>    "aclk66_peric".  You'll hang.
+>
+> There's no good place to put a clock enable for earlyprintk, which is
+> handled by a bunch of assembly code.  The best we can do is to handle
+> this in the clock driver.
+>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> Tested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> ---
+> Changes in v2:
+> - Use GATE_A and clk_get().  Save the clock for putting later.
+> - Return 0 from exynos5420_clk_late_init().
+>
+>  drivers/clk/samsung/clk-exynos5420.c | 33 +++++++++++++++++++++++++++++++--
+>  1 file changed, 31 insertions(+), 2 deletions(-)
 
-v2:
-* Modified has_pcie_dev type to bool and used pci_is_pcie() instead of pci_pcie_cap()
-* replaced printk with pr_info
+Are there other changes you'd like me to make to this?  It would be
+really nice to get this in for 3.16 so the system doesn't just
+mysteriously hang when you use earlyprintk.
 
- arch/arm/kernel/bios32.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
-
-diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
-index 17a26c1..d48d9d3 100644
---- a/arch/arm/kernel/bios32.c
-+++ b/arch/arm/kernel/bios32.c
-@@ -290,6 +290,7 @@ void pcibios_fixup_bus(struct pci_bus *bus)
- {
- 	struct pci_dev *dev;
- 	u16 features = PCI_COMMAND_SERR | PCI_COMMAND_PARITY | PCI_COMMAND_FAST_BACK;
-+	bool has_pcie_dev = 0;
- 
- 	/*
- 	 * Walk the devices on this bus, working out what we can
-@@ -298,6 +299,8 @@ void pcibios_fixup_bus(struct pci_bus *bus)
- 	list_for_each_entry(dev, &bus->devices, bus_list) {
- 		u16 status;
- 
-+		if (!has_pcie_dev)
-+			has_pcie_dev = pci_is_pcie(dev);
- 		pci_read_config_word(dev, PCI_STATUS, &status);
- 
- 		/*
-@@ -354,9 +357,11 @@ void pcibios_fixup_bus(struct pci_bus *bus)
- 
- 	/*
- 	 * Report what we did for this bus
-+	 * (only if the bus doesn't have even one PCIe device)
- 	 */
--	printk(KERN_INFO "PCI: bus%d: Fast back to back transfers %sabled\n",
--		bus->number, (features & PCI_COMMAND_FAST_BACK) ? "en" : "dis");
-+	if (!has_pcie_dev)
-+		pr_info(KERN_INFO "PCI: bus%d: Fast back to back transfers %sabled\n",
-+			bus->number, (features & PCI_COMMAND_FAST_BACK) ? "en" : "dis");
- }
- EXPORT_SYMBOL(pcibios_fixup_bus);
- 
--- 
-1.8.1.5
-
+-Doug
