@@ -1,65 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752455AbaFEPDO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 11:03:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58310 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751426AbaFEPDN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 11:03:13 -0400
-Date: Thu, 5 Jun 2014 11:01:59 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Dave Young <dyoung@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
-        greg@kroah.com, bp@alien8.de, jkosina@suse.cz, chaowang@redhat.com,
-        bhe@redhat.com, akpm@linux-foundation.org
-Subject: Re: [RFC PATCH 00/13][V3] kexec: A new system call to allow in
- kernel loading
-Message-ID: <20140605150159.GA14083@redhat.com>
-References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
- <20140603131203.GA23395@redhat.com>
- <20140605083134.GE3506@darkstar.nay.redhat.com>
+	id S1752486AbaFEPDV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 11:03:21 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:61264 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752464AbaFEPDS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 11:03:18 -0400
+Message-ID: <539086B3.2010804@gmail.com>
+Date: Thu, 05 Jun 2014 08:03:15 -0700
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140605083134.GE3506@darkstar.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: dirk.brandewie@gmail.com, Morten Rasmussen <morten.rasmussen@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        Dietmar Eggemann <Dietmar.Eggemann@arm.com>, len.brown@intel.com
+Subject: Re: [RFC PATCH 06/16] arm: topology: Define TC2 sched energy and
+ provide it to scheduler
+References: <1400869003-27769-1-git-send-email-morten.rasmussen@arm.com> <20140604160230.GS29593@e103034-lin> <20140604172712.GJ13930@laptop.programming.kicks-ass.net> <2484761.vkWavnsDx3@vostro.rjw.lan> <20140605065205.GA3213@twins.programming.kicks-ass.net>
+In-Reply-To: <20140605065205.GA3213@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 05, 2014 at 04:31:34PM +0800, Dave Young wrote:
+On 06/04/2014 11:52 PM, Peter Zijlstra wrote:
+> On Wed, Jun 04, 2014 at 11:56:55PM +0200, Rafael J. Wysocki wrote:
+>> On Wednesday, June 04, 2014 07:27:12 PM Peter Zijlstra wrote:
+>
+>>> Well, we eventually want to go there I think. Although we still needed
+>>> to come up with something for Intel, because I'm not at all sure how all
+>>> that works.
+>>
+>> Do you mean power numbers or how P-states work on Intel in general?
+>
+> P-states, I'm still not at all sure how all that works on Intel and what
+> we can sanely do with them.
+>
+> Supposedly Intel has a means of setting P-states (there's a driver after
+> all), but then is completely free to totally ignore it and do something
+> entirely different anyhow.
 
-[..]
-> > +	ret = kexec_file_load(kernel_fd, info.initrd_fd, info.command_line,
-> > +			info.command_line_len, info.kexec_flags);
-> 
-> Vivek,
-> 
-> I tried your patch on my uefi test machine, but kexec load fails like below:
-> 
-> [root@localhost ~]# kexec -l /boot/vmlinuz-3.15.0-rc8+ --use-kexec2-syscall
-> Could not find a free area of memory of 0xa000 bytes ...
+You can request a P state per core but the package does coordination at
+a package level for the P state that will be used based on all requests.
+This is due to the fact that most SKUs have a single VR and PLL. So
+the highest P state wins.  When a core goes idle it loses it's vote
+for the current package P state and that cores clock it turned off.
 
-Hi Dave,
+>
+> And while APERF/MPERF allows observing what it did, its afaik, nigh on
+> impossible to predict wtf its going to do, and therefore any such energy
+> computation is going to be a PRNG at best.
+>
+> Now, given all that I'm not sure what we need that P-state driver for,
+> so supposedly I'm missing something.
 
-I think this message is coming from kexec-tools from old loading path. I
-think somehow new path did not even kick in. I tried above and I got
--EBADF as I did not pass initrd. Can you run gdb on kexec and see if
-you are getting to syscall or run strace.
+intel_pstate tries to keep the core P state as low as possible to satisfy
+the given load, so when various cores go idle the package P state can be
+as low as possible.  The big power win is a core going idle.
 
-> 
-> Another issue is that the syscall should allow load kernel only without initrd
-
-Agreed. Currently my code is not handling it. I am thinking of ways how to
-make passing initrd fd optional.
-
-> 
-> and
-> cmdline since kernel can mount root and embed cmdline in itself.
-
-Passing command line is already optional. I tried it and kexec loaded
-successfully.
-
-Thanks
-Vivek
+>
+> Ideally Len (or someone equally in-the-know) would explain to me how
+> exactly all that works and what we can rely upon. All I've gotten so far
+> is, you can't rely on anything, and magik. Which is entirely useless.
+>
+The only thing you can rely on is that you will get "at least" the P state
+requested in the presence of hardware coordination.
