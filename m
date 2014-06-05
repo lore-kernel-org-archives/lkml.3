@@ -1,71 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752538AbaFEP6r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 11:58:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29292 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751909AbaFEP6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 11:58:45 -0400
-Date: Thu, 5 Jun 2014 11:22:09 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: WANG Chao <chaowang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
-        greg@kroah.com, bp@alien8.de, jkosina@suse.cz, dyoung@redhat.com,
-        bhe@redhat.com, akpm@linux-foundation.org
-Subject: Re: [PATCH 06/13] kexec: New syscall kexec_file_load() declaration
-Message-ID: <20140605152209.GC14083@redhat.com>
-References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
- <1401800822-27425-7-git-send-email-vgoyal@redhat.com>
- <20140605095603.GD3876@dhcp-17-89.nay.redhat.com>
- <20140605151639.GB14083@redhat.com>
+	id S1751679AbaFEQBZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 12:01:25 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:62969 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751409AbaFEQBX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 12:01:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140605151639.GB14083@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140605155307.GD16642@pd.tnic>
+References: <tip-baa916f39b50ad91661534652110df40396acda0@git.kernel.org>
+ <538F9AFA.5050806@zytor.com> <20140604224920.GB4126@pd.tnic>
+ <538FB775.8070405@amacapital.net> <20140605071805.GA16647@pd.tnic>
+ <CAL01qpuj6jvH4XLvhHAszbqmSPXfW=VOdv+TqMwBuDnArL=ofw@mail.gmail.com>
+ <20140605090206.GA16642@pd.tnic> <CALCETrU2TZhxOZyCvBd1nLDiU4ceiSx_Sd2bsDUCX5arOFidBg@mail.gmail.com>
+ <20140605155307.GD16642@pd.tnic>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 5 Jun 2014 09:01:02 -0700
+Message-ID: <CALCETrVqqgExhuAYawh_7tc8-Nm8GGiMxmtw25mLFoxru-odZg@mail.gmail.com>
+Subject: Re: [tip:x86/efi] x86/efi: Check for unsafe dealing with FPU state in
+ irq ctxt
+To: Borislav Petkov <bp@alien8.de>
+Cc: Matt Fleming <matt.fleming@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Ricardo Neri <ricardo.neri-calderon@linux.intel.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 05, 2014 at 11:16:39AM -0400, Vivek Goyal wrote:
-> On Thu, Jun 05, 2014 at 05:56:03PM +0800, WANG Chao wrote:
-> 
-> [..]
-> > > diff --git a/kernel/kexec.c b/kernel/kexec.c
-> > > index c435c5f..a3044e6 100644
-> > > --- a/kernel/kexec.c
-> > > +++ b/kernel/kexec.c
-> > > @@ -1098,6 +1098,13 @@ COMPAT_SYSCALL_DEFINE4(kexec_load, compat_ulong_t, entry,
-> > >  }
-> > >  #endif
-> > >  
-> > > +SYSCALL_DEFINE5(kexec_file_load, int, kernel_fd, int, initrd_fd,
-> > > +		const char __user *, cmdline_ptr, unsigned long,
-> > > +		cmdline_len, unsigned long, flags)
-> > 
-> > initrd is optional for system boot.
-> > 
-> > How about using int *kernel_fd and int *initrd_fd as the argument? Then
-> > if I don't need initrd, in userspace I can do this:
-> 
-> Hi Chao,
-> 
-> I really am not too keen converting plain int fd arguments into pointers.
-> 
-> Given the fact that fd is int, that means all valid values are greater
-> than 0. How about using -1 to denote that initrd is not being loaded?
-> 
-> This does create one little anomaly and that is for all -ve values we
-> will return -EBADF except -1 which we special cased.
+On Thu, Jun 5, 2014 at 8:53 AM, Borislav Petkov <bp@alien8.de> wrote:
+> On Thu, Jun 05, 2014 at 08:44:20AM -0700, Andy Lutomirski wrote:
+>> Are there weird contexts from which EFI calls can happen? It looks
+>> like the current code isn't necessarily safe in things that aren't
+>> normal process context but aren't interrupts either (e.g. debug traps,
+>> #GP, etc).
+>
+> The efi-pstore thing registers as a kmsg dumper which can be run in NMI
+> context and efi can be called there.
 
-Or we could do.
+NMI might be okay.  I haven't checked.
 
-- Define extra flag which should be set by user if valid initrd fd is not
-  being passed. Say, KEXEC_FILE_NO_INITRAMFS. And if kernel sees that flag
-  it will not try to parse value passed in argument initrd_fd at all.
+>
+>> I wonder if it would make sense at some point to maintain an explicit
+>> stack of kernel entries. There doesn't seem to be a reliable way to
+>> answer the question of "what context am I in" from C code right now.
+>
+> So that you can ask int ctxt = what_context_Im_in() and then that
+> context can go and change right underneath you. :-)
+>
 
-I think I like this better.
+It has to change back, though.  Completely unrealistic and useless example:
 
-Thanks
-Vivek
+int ctxt = what_context_im_in();
+
+set_up_the_fpu(ctxt);
+
+// kprobe fires and changes the context
+// kprobe does something
+// kprobe changes the context back
+
+use the FPU.  Life is good.
+
+put_back_the_fpu(ctxt);
+
+--Andy
