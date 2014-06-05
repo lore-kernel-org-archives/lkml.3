@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751821AbaFEMbG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 08:31:06 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:7219 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751774AbaFEMbD (ORCPT
+	id S1751871AbaFEMbM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 08:31:12 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:9346 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751774AbaFEMbH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 08:31:03 -0400
+	Thu, 5 Jun 2014 08:31:07 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 05 Jun 2014 05:23:01 -0700
+	by hqnvupgp08.nvidia.com on Thu, 05 Jun 2014 05:25:57 -0700
 From: Peter De Schrijver <pdeschrijver@nvidia.com>
 To: Peter De Schrijver <pdeschrijver@nvidia.com>
 CC: Russell King <linux@arm.linux.org.uk>,
@@ -19,10 +19,12 @@ CC: Russell King <linux@arm.linux.org.uk>,
         Wolfram Sang <wsa@the-dreams.de>,
         <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH 0/5] efuse driver for Tegra
-Date: Thu, 5 Jun 2014 15:30:42 +0300
-Message-ID: <1401971448-18448-1-git-send-email-pdeschrijver@nvidia.com>
+Subject: [PATCH 2/5] ARM: tegra: move fuse exports to tegra-soc.h
+Date: Thu, 5 Jun 2014 15:30:44 +0300
+Message-ID: <1401971448-18448-3-git-send-email-pdeschrijver@nvidia.com>
 X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+In-Reply-To: <1401971448-18448-1-git-send-email-pdeschrijver@nvidia.com>
+References: <1401971448-18448-1-git-send-email-pdeschrijver@nvidia.com>
 X-NVConfidentiality: public
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -30,107 +32,335 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver allows userspace to read the raw efuse data. Its userspace
-interface is modelled after the sunxi_sid driver which provides similar
-functionality for some Allwinner SoCs. It has been tested on
-Tegra20 (ventana), Tegra30 (beaverboard), Tegra114 (dalmore) and
-Tegra124 (jetson TK1).
+All fuse related functionality will move to a driver in the following patches.
+To prepare for this, export all the required functionality in a global header
+file and move all users of fuse.h to tegra-soc.h. While we're at it, remove
+tegra_bct_strapping, as its only user was removed in Commit a7cbe92cef27
+("ARM: tegra: remove tegra EMC scaling driver").
 
-Changes since v1:
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+---
+ arch/arm/mach-tegra/cpuidle.c         |    2 +-
+ arch/arm/mach-tegra/flowctrl.c        |    2 +-
+ arch/arm/mach-tegra/fuse.h            |   18 ------------------
+ arch/arm/mach-tegra/hotplug.c         |    2 +-
+ arch/arm/mach-tegra/platsmp.c         |    2 +-
+ arch/arm/mach-tegra/pm.c              |    2 +-
+ arch/arm/mach-tegra/pmc.c             |    2 +-
+ arch/arm/mach-tegra/powergate.c       |    2 +-
+ arch/arm/mach-tegra/reset-handler.S   |    2 +-
+ arch/arm/mach-tegra/reset.c           |    2 +-
+ arch/arm/mach-tegra/sleep-tegra30.S   |    2 +-
+ arch/arm/mach-tegra/tegra.c           |    2 +-
+ arch/arm/mach-tegra/tegra114_speedo.c |    1 +
+ arch/arm/mach-tegra/tegra20_speedo.c  |    1 +
+ arch/arm/mach-tegra/tegra30_speedo.c  |    1 +
+ include/linux/tegra-soc.h             |   24 ++++++++++++++++++++++++
+ 16 files changed, 38 insertions(+), 29 deletions(-)
 
-* Add documentation for sysfs interface
-* Cleanup messages
-
-Changes since v2:
-
-* Incorporate early fuse code
-* Remove module support
-* Make driver always build when Tegra platform is selected
-* Add DT binding document
-* Address comments on v2
-
-Changes since v3:
-
-* Document sysfs file format
-* Added apbmisc DT node for access to the apbmisc registers
-* Address comments on v3
-
-Changes since v4:
-
-* Provide fallback to hardcoded 0x70000800 in case the apbmisc DT node is
-  missing. This is exactly what the current code does and prevents a system
-  crash in that case due to an invalid memory access by tegra_read_chipid()
-* Added tegra_fuse_readl() function for drivers to read calibration data
-
-Changes since v5:
-
-* Fix kernel panic when booting onm Tegra20 A03 with a missing fuse DT node
-* Incorporate review comments
-
-Peter De Schrijver (5):
-  ARM: tegra: export apb dma readl/writel
-  ARM: tegra: move fuse exports to tegra-soc.h
-  misc: fuse: Add efuse driver for Tegra
-  ARM: tegra: Add efuse and apbmisc bindings
-  ARM: tegra: build new fuse driver in drivers/misc
-
- Documentation/ABI/testing/sysfs-driver-tegra-fuse  |   11 +
- .../bindings/fuse/nvidia,tegra20-fuse.txt          |   40 +++
- .../bindings/misc/nvidia,tegra20-apbmisc.txt       |   13 +
- arch/arm/boot/dts/tegra114.dtsi                    |   15 +
- arch/arm/boot/dts/tegra124.dtsi                    |   15 +
- arch/arm/boot/dts/tegra20.dtsi                     |   15 +
- arch/arm/boot/dts/tegra30.dtsi                     |   15 +
- arch/arm/mach-tegra/Makefile                       |    4 -
- arch/arm/mach-tegra/apbio.c                        |   51 ++--
- arch/arm/mach-tegra/cpuidle.c                      |    2 +-
- arch/arm/mach-tegra/flowctrl.c                     |    2 +-
- arch/arm/mach-tegra/fuse.c                         |  252 -----------------
- arch/arm/mach-tegra/fuse.h                         |   79 ------
- arch/arm/mach-tegra/hotplug.c                      |    2 +-
- arch/arm/mach-tegra/platsmp.c                      |    2 +-
- arch/arm/mach-tegra/pm.c                           |    2 +-
- arch/arm/mach-tegra/pmc.c                          |    2 +-
- arch/arm/mach-tegra/powergate.c                    |    2 +-
- arch/arm/mach-tegra/reset-handler.S                |    2 +-
- arch/arm/mach-tegra/reset.c                        |    2 +-
- arch/arm/mach-tegra/sleep-tegra30.S                |    2 +-
- arch/arm/mach-tegra/tegra.c                        |    2 +-
- arch/arm/mach-tegra/tegra114_speedo.c              |  104 -------
- arch/arm/mach-tegra/tegra20_speedo.c               |  109 --------
- arch/arm/mach-tegra/tegra30_speedo.c               |  292 -------------------
- drivers/misc/Makefile                              |    1 +
- drivers/misc/fuse/Makefile                         |    1 +
- drivers/misc/fuse/tegra/Makefile                   |    7 +
- drivers/misc/fuse/tegra/fuse-tegra.c               |  250 +++++++++++++++++
- drivers/misc/fuse/tegra/fuse-tegra20.c             |  134 +++++++++
- drivers/misc/fuse/tegra/fuse-tegra30.c             |  177 ++++++++++++
- drivers/misc/fuse/tegra/fuse.h                     |   82 ++++++
- drivers/misc/fuse/tegra/speedo-tegra114.c          |  110 ++++++++
- drivers/misc/fuse/tegra/speedo-tegra124.c          |  180 ++++++++++++
- drivers/misc/fuse/tegra/speedo-tegra20.c           |  110 ++++++++
- drivers/misc/fuse/tegra/speedo-tegra30.c           |  294 ++++++++++++++++++++
- include/linux/tegra-soc.h                          |   42 +++
- 37 files changed, 1554 insertions(+), 871 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-driver-tegra-fuse
- create mode 100644 Documentation/devicetree/bindings/fuse/nvidia,tegra20-fuse.txt
- create mode 100644 Documentation/devicetree/bindings/misc/nvidia,tegra20-apbmisc.txt
- delete mode 100644 arch/arm/mach-tegra/fuse.c
- delete mode 100644 arch/arm/mach-tegra/fuse.h
- delete mode 100644 arch/arm/mach-tegra/tegra114_speedo.c
- delete mode 100644 arch/arm/mach-tegra/tegra20_speedo.c
- delete mode 100644 arch/arm/mach-tegra/tegra30_speedo.c
- create mode 100644 drivers/misc/fuse/Makefile
- create mode 100644 drivers/misc/fuse/tegra/Makefile
- create mode 100644 drivers/misc/fuse/tegra/fuse-tegra.c
- create mode 100644 drivers/misc/fuse/tegra/fuse-tegra20.c
- create mode 100644 drivers/misc/fuse/tegra/fuse-tegra30.c
- create mode 100644 drivers/misc/fuse/tegra/fuse.h
- create mode 100644 drivers/misc/fuse/tegra/speedo-tegra114.c
- create mode 100644 drivers/misc/fuse/tegra/speedo-tegra124.c
- create mode 100644 drivers/misc/fuse/tegra/speedo-tegra20.c
- create mode 100644 drivers/misc/fuse/tegra/speedo-tegra30.c
-
+diff --git a/arch/arm/mach-tegra/cpuidle.c b/arch/arm/mach-tegra/cpuidle.c
+index 7bc5d8d..ff0a10b 100644
+--- a/arch/arm/mach-tegra/cpuidle.c
++++ b/arch/arm/mach-tegra/cpuidle.c
+@@ -23,8 +23,8 @@
+ 
+ #include <linux/kernel.h>
+ #include <linux/module.h>
++#include <linux/tegra-soc.h>
+ 
+-#include "fuse.h"
+ #include "cpuidle.h"
+ 
+ void __init tegra_cpuidle_init(void)
+diff --git a/arch/arm/mach-tegra/flowctrl.c b/arch/arm/mach-tegra/flowctrl.c
+index ce8ab8a..4b31091 100644
+--- a/arch/arm/mach-tegra/flowctrl.c
++++ b/arch/arm/mach-tegra/flowctrl.c
+@@ -22,10 +22,10 @@
+ #include <linux/kernel.h>
+ #include <linux/io.h>
+ #include <linux/cpumask.h>
++#include <linux/tegra-soc.h>
+ 
+ #include "flowctrl.h"
+ #include "iomap.h"
+-#include "fuse.h"
+ 
+ static u8 flowctrl_offset_halt_cpu[] = {
+ 	FLOW_CTRL_HALT_CPU0_EVENTS,
+diff --git a/arch/arm/mach-tegra/fuse.h b/arch/arm/mach-tegra/fuse.h
+index c01d047..b17c4ba 100644
+--- a/arch/arm/mach-tegra/fuse.h
++++ b/arch/arm/mach-tegra/fuse.h
+@@ -26,21 +26,7 @@
+ #define SKU_ID_AP25E	27
+ #define SKU_ID_T25E	28
+ 
+-#define TEGRA20		0x20
+-#define TEGRA30		0x30
+-#define TEGRA114	0x35
+-#define TEGRA124	0x40
+-
+ #ifndef __ASSEMBLY__
+-enum tegra_revision {
+-	TEGRA_REVISION_UNKNOWN = 0,
+-	TEGRA_REVISION_A01,
+-	TEGRA_REVISION_A02,
+-	TEGRA_REVISION_A03,
+-	TEGRA_REVISION_A03p,
+-	TEGRA_REVISION_A04,
+-	TEGRA_REVISION_MAX,
+-};
+ 
+ extern int tegra_sku_id;
+ extern int tegra_cpu_process_id;
+@@ -48,12 +34,8 @@ extern int tegra_core_process_id;
+ extern int tegra_chip_id;
+ extern int tegra_cpu_speedo_id;		/* only exist in Tegra30 and later */
+ extern int tegra_soc_speedo_id;
+-extern enum tegra_revision tegra_revision;
+-
+-extern int tegra_bct_strapping;
+ 
+ unsigned long long tegra_chip_uid(void);
+-void tegra_init_fuse(void);
+ bool tegra_spare_fuse(int bit);
+ u32 tegra_fuse_readl(unsigned long offset);
+ 
+diff --git a/arch/arm/mach-tegra/hotplug.c b/arch/arm/mach-tegra/hotplug.c
+index ff26af2..38c5170 100644
+--- a/arch/arm/mach-tegra/hotplug.c
++++ b/arch/arm/mach-tegra/hotplug.c
+@@ -10,10 +10,10 @@
+ #include <linux/kernel.h>
+ #include <linux/smp.h>
+ #include <linux/clk/tegra.h>
++#include <linux/tegra-soc.h>
+ 
+ #include <asm/smp_plat.h>
+ 
+-#include "fuse.h"
+ #include "sleep.h"
+ 
+ static void (*tegra_hotplug_shutdown)(void);
+diff --git a/arch/arm/mach-tegra/platsmp.c b/arch/arm/mach-tegra/platsmp.c
+index 929d104..d9878ac 100644
+--- a/arch/arm/mach-tegra/platsmp.c
++++ b/arch/arm/mach-tegra/platsmp.c
+@@ -19,13 +19,13 @@
+ #include <linux/smp.h>
+ #include <linux/io.h>
+ #include <linux/clk/tegra.h>
++#include <linux/tegra-soc.h>
+ 
+ #include <asm/cacheflush.h>
+ #include <asm/mach-types.h>
+ #include <asm/smp_scu.h>
+ #include <asm/smp_plat.h>
+ 
+-#include "fuse.h"
+ #include "flowctrl.h"
+ #include "reset.h"
+ #include "pmc.h"
+diff --git a/arch/arm/mach-tegra/pm.c b/arch/arm/mach-tegra/pm.c
+index f55b05a..d7e6370 100644
+--- a/arch/arm/mach-tegra/pm.c
++++ b/arch/arm/mach-tegra/pm.c
+@@ -26,6 +26,7 @@
+ #include <linux/err.h>
+ #include <linux/slab.h>
+ #include <linux/clk/tegra.h>
++#include <linux/tegra-soc.h>
+ 
+ #include <asm/smp_plat.h>
+ #include <asm/cacheflush.h>
+@@ -37,7 +38,6 @@
+ #include "iomap.h"
+ #include "reset.h"
+ #include "flowctrl.h"
+-#include "fuse.h"
+ #include "pm.h"
+ #include "pmc.h"
+ #include "sleep.h"
+diff --git a/arch/arm/mach-tegra/pmc.c b/arch/arm/mach-tegra/pmc.c
+index fb79202..d8fe587 100644
+--- a/arch/arm/mach-tegra/pmc.c
++++ b/arch/arm/mach-tegra/pmc.c
+@@ -21,9 +21,9 @@
+ #include <linux/of.h>
+ #include <linux/of_address.h>
+ #include <linux/tegra-powergate.h>
++#include <linux/tegra-soc.h>
+ 
+ #include "flowctrl.h"
+-#include "fuse.h"
+ #include "pm.h"
+ #include "pmc.h"
+ #include "sleep.h"
+diff --git a/arch/arm/mach-tegra/powergate.c b/arch/arm/mach-tegra/powergate.c
+index 4cefc5c..50a9af4 100644
+--- a/arch/arm/mach-tegra/powergate.c
++++ b/arch/arm/mach-tegra/powergate.c
+@@ -30,8 +30,8 @@
+ #include <linux/spinlock.h>
+ #include <linux/clk/tegra.h>
+ #include <linux/tegra-powergate.h>
++#include <linux/tegra-soc.h>
+ 
+-#include "fuse.h"
+ #include "iomap.h"
+ 
+ #define DPD_SAMPLE		0x020
+diff --git a/arch/arm/mach-tegra/reset-handler.S b/arch/arm/mach-tegra/reset-handler.S
+index 8c1ba4f..0c480d69 100644
+--- a/arch/arm/mach-tegra/reset-handler.S
++++ b/arch/arm/mach-tegra/reset-handler.S
+@@ -20,9 +20,9 @@
+ #include <asm/cache.h>
+ #include <asm/asm-offsets.h>
+ #include <asm/hardware/cache-l2x0.h>
++#include <linux/tegra-soc.h>
+ 
+ #include "flowctrl.h"
+-#include "fuse.h"
+ #include "iomap.h"
+ #include "reset.h"
+ #include "sleep.h"
+diff --git a/arch/arm/mach-tegra/reset.c b/arch/arm/mach-tegra/reset.c
+index 146fe8e..203bac5 100644
+--- a/arch/arm/mach-tegra/reset.c
++++ b/arch/arm/mach-tegra/reset.c
+@@ -22,12 +22,12 @@
+ #include <asm/cacheflush.h>
+ #include <asm/hardware/cache-l2x0.h>
+ #include <asm/firmware.h>
++#include <linux/tegra-soc.h>
+ 
+ #include "iomap.h"
+ #include "irammap.h"
+ #include "reset.h"
+ #include "sleep.h"
+-#include "fuse.h"
+ 
+ #define TEGRA_IRAM_RESET_BASE (TEGRA_IRAM_BASE + \
+ 				TEGRA_IRAM_RESET_HANDLER_OFFSET)
+diff --git a/arch/arm/mach-tegra/sleep-tegra30.S b/arch/arm/mach-tegra/sleep-tegra30.S
+index b16d4a57..f808c2c 100644
+--- a/arch/arm/mach-tegra/sleep-tegra30.S
++++ b/arch/arm/mach-tegra/sleep-tegra30.S
+@@ -15,13 +15,13 @@
+  */
+ 
+ #include <linux/linkage.h>
++#include <linux/tegra-soc.h>
+ 
+ #include <asm/assembler.h>
+ #include <asm/asm-offsets.h>
+ #include <asm/cache.h>
+ 
+ #include "irammap.h"
+-#include "fuse.h"
+ #include "sleep.h"
+ #include "flowctrl.h"
+ 
+diff --git a/arch/arm/mach-tegra/tegra.c b/arch/arm/mach-tegra/tegra.c
+index 6191603..e48b271 100644
+--- a/arch/arm/mach-tegra/tegra.c
++++ b/arch/arm/mach-tegra/tegra.c
+@@ -34,6 +34,7 @@
+ #include <linux/usb/tegra_usb_phy.h>
+ #include <linux/clk/tegra.h>
+ #include <linux/irqchip.h>
++#include <linux/tegra-soc.h>
+ 
+ #include <asm/hardware/cache-l2x0.h>
+ #include <asm/mach-types.h>
+@@ -46,7 +47,6 @@
+ #include "board.h"
+ #include "common.h"
+ #include "cpuidle.h"
+-#include "fuse.h"
+ #include "iomap.h"
+ #include "irq.h"
+ #include "pmc.h"
+diff --git a/arch/arm/mach-tegra/tegra114_speedo.c b/arch/arm/mach-tegra/tegra114_speedo.c
+index 5218d48..7c73716 100644
+--- a/arch/arm/mach-tegra/tegra114_speedo.c
++++ b/arch/arm/mach-tegra/tegra114_speedo.c
+@@ -16,6 +16,7 @@
+ 
+ #include <linux/kernel.h>
+ #include <linux/bug.h>
++#include <linux/tegra-soc.h>
+ 
+ #include "fuse.h"
+ 
+diff --git a/arch/arm/mach-tegra/tegra20_speedo.c b/arch/arm/mach-tegra/tegra20_speedo.c
+index fa6eb57..3b1bb53 100644
+--- a/arch/arm/mach-tegra/tegra20_speedo.c
++++ b/arch/arm/mach-tegra/tegra20_speedo.c
+@@ -16,6 +16,7 @@
+ 
+ #include <linux/kernel.h>
+ #include <linux/bug.h>
++#include <linux/tegra-soc.h>
+ 
+ #include "fuse.h"
+ 
+diff --git a/arch/arm/mach-tegra/tegra30_speedo.c b/arch/arm/mach-tegra/tegra30_speedo.c
+index 125cb16..81a958d 100644
+--- a/arch/arm/mach-tegra/tegra30_speedo.c
++++ b/arch/arm/mach-tegra/tegra30_speedo.c
+@@ -16,6 +16,7 @@
+ 
+ #include <linux/kernel.h>
+ #include <linux/bug.h>
++#include <linux/tegra-soc.h>
+ 
+ #include "fuse.h"
+ 
+diff --git a/include/linux/tegra-soc.h b/include/linux/tegra-soc.h
+index b02d73b..db93b77 100644
+--- a/include/linux/tegra-soc.h
++++ b/include/linux/tegra-soc.h
+@@ -17,8 +17,29 @@
+ #ifndef __LINUX_TEGRA_SOC_H_
+ #define __LINUX_TEGRA_SOC_H_
+ 
++#define TEGRA20		0x20
++#define TEGRA30		0x30
++#define TEGRA114	0x35
++#define TEGRA124	0x40
++
++#ifndef __ASSEMBLY__
++
++enum tegra_revision {
++	TEGRA_REVISION_UNKNOWN = 0,
++	TEGRA_REVISION_A01,
++	TEGRA_REVISION_A02,
++	TEGRA_REVISION_A03,
++	TEGRA_REVISION_A03p,
++	TEGRA_REVISION_A04,
++	TEGRA_REVISION_MAX,
++};
++
++u32 tegra_read_straps(void);
+ u32 tegra_read_chipid(void);
++void tegra_init_fuse(void);
+ 
++extern int tegra_chip_id;
++extern enum tegra_revision tegra_revision;
+ 
+ #if defined(CONFIG_TEGRA20_APB_DMA)
+ int tegra_apb_readl_using_dma(unsigned long offset, u32 *value);
+@@ -33,4 +54,7 @@ static inline int tegra_apb_writel_using_dma(u32 value, unsigned long offset)
+ 	return -EINVAL;
+ }
+ #endif
++
++#endif /* __ASSEMBLY__ */
++
+ #endif /* __LINUX_TEGRA_SOC_H_ */
 -- 
 1.7.7.rc0.72.g4b5ea.dirty
 
