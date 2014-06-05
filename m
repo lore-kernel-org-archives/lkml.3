@@ -1,98 +1,361 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751873AbaFENit (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 09:38:49 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:45371 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866AbaFENis (ORCPT
+	id S1751953AbaFENkq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 09:40:46 -0400
+Received: from mail-wi0-f202.google.com ([209.85.212.202]:60076 "EHLO
+	mail-wi0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751572AbaFENkn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 09:38:48 -0400
-Date: Thu, 5 Jun 2014 15:38:39 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, ak@linux.intel.com,
-        jolsa@redhat.com, zheng.z.yan@intel.com,
-        maria.n.dimakopoulou@gmail.com
-Subject: Re: [PATCH 5/9] perf/x86: implement cross-HT corruption bug
- workaround
-Message-ID: <20140605133839.GJ3213@twins.programming.kicks-ass.net>
-References: <1401917658-26065-1-git-send-email-eranian@google.com>
- <1401917658-26065-6-git-send-email-eranian@google.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="u3bvv0EcKsvvYeex"
-Content-Disposition: inline
-In-Reply-To: <1401917658-26065-6-git-send-email-eranian@google.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Thu, 5 Jun 2014 09:40:43 -0400
+From: David Drysdale <drysdale@google.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Meredydd Luff <meredydd@senatehouse.org>, linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
+        x86@kernel.org, linux-arch@vger.kernel.org, linux-api@vger.kernel.org,
+        David Drysdale <drysdale@google.com>
+Subject: [PATCHv4 RESEND 2/3] syscalls,x86: add selftest for execveat(2)
+Date: Thu,  5 Jun 2014 14:40:34 +0100
+Message-Id: <1401975635-6162-3-git-send-email-drysdale@google.com>
+X-Mailer: git-send-email 2.0.0.526.g5318336
+In-Reply-To: <1401975635-6162-1-git-send-email-drysdale@google.com>
+References: <1401975635-6162-1-git-send-email-drysdale@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: David Drysdale <drysdale@google.com>
+---
+ tools/testing/selftests/Makefile        |   1 +
+ tools/testing/selftests/exec/.gitignore |   6 +
+ tools/testing/selftests/exec/Makefile   |  32 ++++
+ tools/testing/selftests/exec/execveat.c | 251 ++++++++++++++++++++++++++++++++
+ 4 files changed, 290 insertions(+)
+ create mode 100644 tools/testing/selftests/exec/.gitignore
+ create mode 100644 tools/testing/selftests/exec/Makefile
+ create mode 100644 tools/testing/selftests/exec/execveat.c
 
---u3bvv0EcKsvvYeex
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+diff --git a/tools/testing/selftests/Makefile b/tools/testing/selftests/Makefile
+index 32487ed18354..26b7e6410fcd 100644
+--- a/tools/testing/selftests/Makefile
++++ b/tools/testing/selftests/Makefile
+@@ -10,6 +10,7 @@ TARGETS += timers
+ TARGETS += vm
+ TARGETS += powerpc
+ TARGETS += user
++TARGETS += exec
 
-On Wed, Jun 04, 2014 at 11:34:14PM +0200, Stephane Eranian wrote:
->  static void
-> +intel_start_scheduling(struct cpu_hw_events *cpuc)
-> +{
+ all:
+ 	for TARGET in $(TARGETS); do \
+diff --git a/tools/testing/selftests/exec/.gitignore b/tools/testing/selftests/exec/.gitignore
+new file mode 100644
+index 000000000000..349a786899a7
+--- /dev/null
++++ b/tools/testing/selftests/exec/.gitignore
+@@ -0,0 +1,6 @@
++subdir*
++script*
++execveat
++execveat.symlink
++execveat.moved
++execveat.ephemeral
+diff --git a/tools/testing/selftests/exec/Makefile b/tools/testing/selftests/exec/Makefile
+new file mode 100644
+index 000000000000..55771ed05dda
+--- /dev/null
++++ b/tools/testing/selftests/exec/Makefile
+@@ -0,0 +1,32 @@
++CC = $(CROSS_COMPILE)gcc
++CFLAGS = -Wall
++BINARIES = execveat
++DEPS = execveat.symlink script execveat.ephemeral script.ephemeral subdir subdir.ephemeral subdir.ephemeral/script
++all: $(BINARIES) $(DEPS)
++
++subdir:
++	mkdir -p $@
++subdir.ephemeral:
++	mkdir -p $@
++subdir.ephemeral/script: | subdir.ephemeral
++	echo '#!/bin/sh' > $@
++	echo 'exit $$*' >> $@
++	chmod +x $@
++script:
++	echo '#!/bin/sh' > $@
++	echo 'exit $$*' >> $@
++	chmod +x $@
++script.ephemeral: script
++	cp $< $@
++execveat.symlink: execveat
++	ln -s -f $< $@
++execveat.ephemeral: execveat
++	cp $< $@
++%: %.c
++	$(CC) $(CFLAGS) -o $@ $^
++
++run_tests: all
++	./execveat
++
++clean:
++	rm -rf $(BINARIES) $(DEPS) subdir.moved execveat.moved
+diff --git a/tools/testing/selftests/exec/execveat.c b/tools/testing/selftests/exec/execveat.c
+new file mode 100644
+index 000000000000..f67862fa3f38
+--- /dev/null
++++ b/tools/testing/selftests/exec/execveat.c
+@@ -0,0 +1,251 @@
++/*
++ * Copyright (c) 2014 Google, Inc.
++ *
++ * Licensed under the terms of the GNU GPL License version 2
++ *
++ * Selftests for execveat(2).
++ */
++
++#define _GNU_SOURCE  /* to get O_PATH */
++#include <sys/types.h>
++#include <sys/wait.h>
++#include <sys/syscall.h>
++#include <sys/stat.h>
++#include <stdio.h>
++#include <errno.h>
++#include <string.h>
++#include <fcntl.h>
++#include <unistd.h>
++#include <limits.h>
++#include <stdlib.h>
++
++static char *envp[] = { "IN_TEST=yes", NULL };
++static char *argv[] = { "execveat", "99", NULL };
++
++static int execveat_(int fd, const char *path, char **argv, char **envp,
++		     int flags)
++{
++#ifdef __NR_execveat
++	return syscall(__NR_execveat, fd, path, argv, envp, flags);
++#else
++	errno = -ENOSYS;
++	return -1;
++#endif
++}
++
++#define check_execveat_fail(fd, path, flags, errno)	\
++	_check_execveat_fail(fd, path, flags, errno, #errno)
++static int _check_execveat_fail(int fd, const char *path, int flags,
++				int expected_errno, const char *errno_str)
++{
++	errno = 0;
++	printf("Check failure of execveat(%d, '%s', %d) with %s... ",
++		fd, path?:"(null)", flags, errno_str);
++	int rc = execveat_(fd, path, argv, envp, flags);
++	if (rc > 0) {
++		printf("[FAIL] (unexpected success from execveat(2))\n");
++		return 1;
++	}
++	if (errno != expected_errno) {
++		printf("[FAIL] (expected errno %d (%s) not %d (%s)\n",
++			expected_errno, strerror(expected_errno),
++			errno, strerror(errno));
++		return 1;
++	}
++	printf("[OK]\n");
++	return 0;
++}
++
++static int check_execveat_invoked_rc(int fd, const char *path, int flags,
++				     int expected_rc)
++{
++	int status;
++	int rc;
++	pid_t child;
++	printf("Check success of execveat(%d, '%s', %d)... ",
++		fd, path?:"(null)", flags);
++	child = fork();
++	if (child < 0) {
++		printf("[FAIL] (fork() failed)\n");
++		return 1;
++	}
++	if (child == 0) {
++		/* Child: do execveat(). */
++		rc = execveat_(fd, path, argv, envp, flags);
++		printf("[FAIL]: execveat() failed, rc=%d errno=%d (%s)\n",
++			rc, errno, strerror(errno));
++		exit(1);  /* should not reach here */
++	}
++	/* Parent: wait for & check child's exit status. */
++	rc = waitpid(child, &status, 0);
++	if (rc != child) {
++		printf("[FAIL] (waitpid(%d,...) returned %d)\n", child, rc);
++		return 1;
++	}
++	if (!WIFEXITED(status)) {
++		printf("[FAIL] (child %d did not exit cleanly, status=%08x)\n",
++			child, status);
++		return 1;
++	}
++	if (WEXITSTATUS(status) != expected_rc) {
++		printf("[FAIL] (child %d exited with %d not %d)\n",
++			child, WEXITSTATUS(status), expected_rc);
++		return 1;
++	}
++	printf("[OK]\n");
++	return 0;
++}
++
++static int check_execveat(int fd, const char *path, int flags)
++{
++	return check_execveat_invoked_rc(fd, path, flags, 99);
++}
++
++static char *concat(const char *left, const char *right)
++{
++	char *result = malloc(strlen(left) + strlen(right) + 1);
++	strcpy(result, left);
++	strcat(result, right);
++	return result;
++}
++
++static int open_or_die(const char *filename, int flags)
++{
++	int fd = open(filename, flags);
++	if (fd < 0) {
++		printf("Failed to open '%s'; "
++			"check prerequisites are available\n", filename);
++		exit(1);
++	}
++	return fd;
++}
++
++static int run_tests(void)
++{
++	int fail = 0;
++	char *fullname = realpath("execveat", NULL);
++	char *fullname_script = realpath("script", NULL);
++	char *fullname_symlink = concat(fullname, ".symlink");
++	int subdir_dfd = open_or_die("subdir", O_DIRECTORY|O_RDONLY);
++	int subdir_dfd_ephemeral = open_or_die("subdir.ephemeral",
++					       O_DIRECTORY|O_RDONLY);
++	int dot_dfd = open_or_die(".", O_DIRECTORY|O_RDONLY);
++	int dot_dfd_path = open_or_die(".", O_DIRECTORY|O_RDONLY|O_PATH);
++	int fd = open_or_die("execveat", O_RDONLY);
++	int fd_path = open_or_die("execveat", O_RDONLY|O_PATH);
++	int fd_symlink = open_or_die("execveat.symlink", O_RDONLY);
++	int fd_script = open_or_die("script", O_RDONLY);
++	int fd_ephemeral = open_or_die("execveat.ephemeral", O_RDONLY);
++	int fd_script_ephemeral = open_or_die("script.ephemeral", O_RDONLY);
++
++	/* Normal executable file: */
++	/*   dfd + path */
++	fail |= check_execveat(subdir_dfd, "../execveat", 0);
++	fail |= check_execveat(dot_dfd, "execveat", 0);
++	fail |= check_execveat(dot_dfd_path, "execveat", 0);
++	/*   absolute path */
++	fail |= check_execveat(AT_FDCWD, fullname, 0);
++	/*   absolute path with nonsense dfd */
++	fail |= check_execveat(99, fullname, 0);
++	/*   fd + no path */
++	fail |= check_execveat(fd, NULL, 0);
++
++	/* Mess with executable file that's already open: */
++	/*   fd + no path to a file that's been renamed */
++	rename("execveat.ephemeral", "execveat.moved");
++	fail |= check_execveat(fd_ephemeral, NULL, 0);
++	/*   fd + no path to a file that's been deleted */
++	unlink("execveat.moved"); /* remove the file now fd open */
++	fail |= check_execveat(fd_ephemeral, NULL, 0);
++
++	/* Symlink to executable file: */
++	/*   dfd + path */
++	fail |= check_execveat(dot_dfd, "execveat.symlink", 0);
++	fail |= check_execveat(dot_dfd_path, "execveat.symlink", 0);
++	/*   absolute path */
++	fail |= check_execveat(AT_FDCWD, fullname_symlink, 0);
++	/*   fd + no path, even with AT_SYMLINK_NOFOLLOW (already followed) */
++	fail |= check_execveat(fd_symlink, NULL, 0);
++	fail |= check_execveat(fd_symlink, NULL, AT_SYMLINK_NOFOLLOW);
++
++	/* Symlink fails when AT_SYMLINK_NOFOLLOW set: */
++	/*   dfd + path */
++	fail |= check_execveat_fail(dot_dfd, "execveat.symlink",
++				    AT_SYMLINK_NOFOLLOW, ELOOP);
++	fail |= check_execveat_fail(dot_dfd_path, "execveat.symlink",
++				    AT_SYMLINK_NOFOLLOW, ELOOP);
++	/*   absolute path */
++	fail |= check_execveat_fail(AT_FDCWD, fullname_symlink,
++				    AT_SYMLINK_NOFOLLOW, ELOOP);
++
++	/* Shell script wrapping executable file: */
++	/*   dfd + path */
++	fail |= check_execveat(subdir_dfd, "../script", 0);
++	fail |= check_execveat(dot_dfd, "script", 0);
++	fail |= check_execveat(dot_dfd_path, "script", 0);
++	/*   absolute path */
++	fail |= check_execveat(AT_FDCWD, fullname_script, 0);
++	/*   fd + no path */
++	fail |= check_execveat(fd_script, NULL, 0);
++	fail |= check_execveat(fd_script, NULL, AT_SYMLINK_NOFOLLOW);
++
++	/* Mess with script file that's already open: */
++	/*   fd + no path to a file that's been renamed */
++	rename("script.ephemeral", "script.moved");
++	fail |= check_execveat(fd_script_ephemeral, NULL, 0);
++	/*   fd + no path to a file that's been deleted */
++	unlink("script.moved"); /* remove the file while fd open */
++	/* Shell attempts to load the deleted file but fails => rc=127 */
++	fail |= check_execveat_invoked_rc(fd_script_ephemeral, NULL, 0, 127);
++
++	/* Rename a subdirectory in the path: */
++	rename("subdir.ephemeral", "subdir.moved");
++	fail |= check_execveat(subdir_dfd_ephemeral, "../script", 0);
++	fail |= check_execveat(subdir_dfd_ephemeral, "script", 0);
++	/* Remove the subdir and its contents */
++	unlink("subdir.moved/script");
++	unlink("subdir.moved");
++	/* Shell loads via deleted subdir OK because name starts with .. */
++	fail |= check_execveat(subdir_dfd_ephemeral, "../script", 0);
++	fail |= check_execveat_fail(subdir_dfd_ephemeral, "script", 0, ENOENT);
++
++	/* Flag values other than AT_SYMLINK_NOFOLLOW => EINVAL */
++	fail |= check_execveat_fail(dot_dfd, "execveat", 0xFFFF, EINVAL);
++	/* Invalid path => ENOENT */
++	fail |= check_execveat_fail(dot_dfd, "no-such-file", 0, ENOENT);
++	fail |= check_execveat_fail(dot_dfd_path, "no-such-file", 0, ENOENT);
++	fail |= check_execveat_fail(AT_FDCWD, "no-such-file", 0, ENOENT);
++	/* Attempt to execute directory => EACCES */
++	fail |= check_execveat_fail(dot_dfd, NULL, 0, EACCES);
++	/* Attempt to execute non-executable => EACCES */
++	fail |= check_execveat_fail(dot_dfd, "Makefile", 0, EACCES);
++	/* Attempt to execute file opened with O_PATH => EBADF */
++	fail |= check_execveat_fail(dot_dfd_path, NULL, 0, EBADF);
++	fail |= check_execveat_fail(fd_path, NULL, 0, EBADF);
++	/* Attempt to execute nonsense FD => EBADF */
++	fail |= check_execveat_fail(99, NULL, 0, EBADF);
++	fail |= check_execveat_fail(99, "execveat", 0, EBADF);
++	/* Attempt to execute relative to non-directory => ENOTDIR */
++	fail |= check_execveat_fail(fd, "execveat", 0, ENOTDIR);
++
++	return fail ? -1 : 0;
++}
++
++int main(int argc, char **argv)
++{
++	if (argc >= 2) {
++		/* If we are invoked with an argument, exit immediately. */
++		/* Check expected environment transferred. */
++		if (strcmp(getenv("IN_TEST"), "yes") != 0) {
++			printf("[FAIL] (no IN_TEST=yes in env)\n");
++			return 1;
++		}
++
++		/* Use the argument as an exit code. */
++		int rc = atoi(argv[1]);
++		fflush(stdout);
++		return rc;
++	} else {
++		return run_tests();
++	}
++}
+--
+1.9.1.423.g4596e3a
 
-> +	/*
-> +	 * lock shared state until we are done scheduling
-> +	 * in stop_event_scheduling()
-> +	 * makes scheduling appear as a transaction
-> +	 */
-> +	spin_lock_irqsave(&excl_cntrs->lock, excl_cntrs->lock_flags);
-> +
-> +	/*
-> +	 * save initial state of sibling thread
-> +	 */
-> +	memcpy(xlo->init_state, xlo->state, sizeof(xlo->init_state));
-> +}
-> +
-> +static void
-> +intel_stop_scheduling(struct cpu_hw_events *cpuc)
-> +{
-
-> +	/*
-> +	 * make new sibling thread state visible
-> +	 */
-> +	memcpy(xlo->state, xlo->init_state, sizeof(xlo->state));
-> +
-> +	xl->sched_started = false;
-> +	/*
-> +	 * release shared state lock (lock acquire in intel_start_scheduling())
-> +	 */
-> +	spin_unlock_irqrestore(&excl_cntrs->lock, excl_cntrs->lock_flags);
-> +}
-
-Do you really need the irqsave/irqrestore? From what I can tell this is
-always called under perf_event_context::lock and that is already an
-IRQ-safe lock, so interrupts should always be disabled here.
-
-Also, it looks like xl->state is the effective state, and ->init_state
-is the work state? Is init the right name for this?
-
---u3bvv0EcKsvvYeex
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTkHLfAAoJEHZH4aRLwOS6p64P/iguTooxOLtrgJWx1CTjiAnY
-PF1leVvBqjpDyL1EKWdw7crLTA3X4VA/SALXclCKLz+X1FIrJiLR9g997+FkBi/B
-5LwdE+YlfRTjJgwdUfmg8++6C6aTtZHlpyUhsUDCrSlKzrhWUFPXX66es5YpDi90
-TgHkxYX7pruC2KBAJCeiz2Qzi8ic76Je1fr8n7sbnC4+HMoVe/esrhq21jTPxExs
-7kw4whyzxcdyMbQpy3A0uv+WYvDDq3lIAy2YMJE1sg0VU94LdDJEAEDhM6PK0Tm4
-8WKDFWYtHcWVDud5uJPrQbWIjLiz/ea8jwAcQkQ7cO1jW9AgpX1rq6K4EPISd9nG
-7D3Tf3aMkh/pkBUcAuNe3c8jT8YWwyundm//JeIHzpVE7ZRuxyeGQZdkrg+jOPhz
-j+622ll3lCOEaglB23Rh1unl9rUkb3GC6XJ2ejbv+I/VULqe9qAabpFBeJZSTCVF
-arShgs8GFK4FtOG3y5ggZSnCDesyLvsxuqyUf/swpAOMzyIpjTe2zJQ4nibk3IWV
-JZXAsxd4ZBc5sHkUI4j76qqGlsQzstVrTmPMdwik/jTZjAOThUZh2xCt4qNs2QyT
-X1Lh6VeaBmncmf93GxaslH4HS/VStBCjNapjbSdQLp+iQF0lhEDGtO2NaCYS4MIZ
-+p1050TriAVxDxK4nwfW
-=mGb2
------END PGP SIGNATURE-----
-
---u3bvv0EcKsvvYeex--
