@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752745AbaFEWNH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 18:13:07 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:16844 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752291AbaFEWNG (ORCPT
+	id S1753064AbaFEWO6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 18:14:58 -0400
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:45398 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751936AbaFEWO4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 18:13:06 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 05 Jun 2014 15:05:01 -0700
-Date: Fri, 6 Jun 2014 01:13:01 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Linus Walleij" <linus.walleij@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v7 4/5] ARM: tegra: Add efuse and apbmisc bindings
-Message-ID: <20140605221301.GQ5961@tbergstrom-lnx.Nvidia.com>
-References: <1401973754-19701-1-git-send-email-pdeschrijver@nvidia.com>
- <1401973754-19701-5-git-send-email-pdeschrijver@nvidia.com>
- <5390B9F3.8030108@wwwdotorg.org>
+	Thu, 5 Jun 2014 18:14:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <5390B9F3.8030108@wwwdotorg.org>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140605053032.E84EE146058C@linuxdev-32>
+References: <20140605053032.E84EE146058C@linuxdev-32>
+Date: Thu, 5 Jun 2014 15:14:55 -0700
+X-Google-Sender-Auth: AGZanv8WEUyN9rNx8lyebuqEIaA
+Message-ID: <CA+55aFzjjgXhCgyzzsq2iCH6=X_GVPF-cw8TW6dsNuoQJcYKeQ@mail.gmail.com>
+Subject: Re: [GIT PULL] UniCore32 update for v3.15-rc8
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: guanxuetao <guanxuetao@mprc.pku.edu.cn>
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 05, 2014 at 08:41:55PM +0200, Stephen Warren wrote:
-> On 06/05/2014 07:09 AM, Peter De Schrijver wrote:
-> > Add efuse and apbmisc bindings for Tegra20, Tegra30, Tegra114 and Tegra124.
-> 
-> > diff --git a/arch/arm/boot/dts/tegra114.dtsi b/arch/arm/boot/dts/tegra114.dtsi
-> 
-> > +	apbmisc@70000800 {
-> > +		compatible = "nvidia,tegra114-apbmisc", "nvidia,tegra20-apbmisc";
-> 
-> Is the Tegra114 APBMISC register layout 100% a backwards-compatible
-> superset of that in Tegra20? For both registers the code currently uses
-> *and* all possible registers the code could ever use? Since the APB MISC
-> is a bit of a dumping ground for random registers, that feels unlikely,
-> but perhaps it's possible.
+On Wed, Jun 4, 2014 at 10:30 PM, guanxuetao <guanxuetao@mprc.pku.edu.cn> wrote:
+>
+> This is unicore32 pull request for v3.15-rc8.
 
-For all I can see it is. At least for the registers the kernel is likely to
-use.
+So I can't pull this, because you rebased it recently, and you rebased
+it on a random git-tree-of-the-day thing.
 
-Cheers,
+That's a bad idea in general and I ask people to not do that, but it's
+*doubly* bad this time, because I don't think it's critical enough to
+hit 3.15 (there are *no* unicore32 changes pending in 3.15, so "fixes"
+that come in after -rc8 are clearly not fixing anything that happened
+during the merge window).
 
-Peter.
+So I could pull it into my "next" branch for 3.16, but that one was
+based on 3.15-rc8, and you rebased your patches on top of somethinig
+more recent than that.
+
+End result: I'm not pulling this. You shouldn't have rebased things in
+the first place, and you definitely shouldn't have rebased on some
+random "git tree of the day" that wasn't any real release or even rc.
+
+I can pull it after I've done 3.15 and merged that into my next branch
+(which will then become my normal "master" branch), because by then my
+development tree will have the base that you used for applying your
+patches.
+
+            Linus
