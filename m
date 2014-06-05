@@ -1,105 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751791AbaFENhv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 09:37:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60960 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750864AbaFENhu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 09:37:50 -0400
-Date: Thu, 5 Jun 2014 15:37:47 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: Interactivity regression since v3.11 in mm/vmscan.c
-Message-ID: <20140605133747.GB2942@dhcp22.suse.cz>
-References: <53905594d284f_71f12992fc6a@nysa.notmuch>
+	id S1751873AbaFENit (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 09:38:49 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:45371 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750866AbaFENis (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 09:38:48 -0400
+Date: Thu, 5 Jun 2014 15:38:39 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, ak@linux.intel.com,
+        jolsa@redhat.com, zheng.z.yan@intel.com,
+        maria.n.dimakopoulou@gmail.com
+Subject: Re: [PATCH 5/9] perf/x86: implement cross-HT corruption bug
+ workaround
+Message-ID: <20140605133839.GJ3213@twins.programming.kicks-ass.net>
+References: <1401917658-26065-1-git-send-email-eranian@google.com>
+ <1401917658-26065-6-git-send-email-eranian@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="u3bvv0EcKsvvYeex"
 Content-Disposition: inline
-In-Reply-To: <53905594d284f_71f12992fc6a@nysa.notmuch>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1401917658-26065-6-git-send-email-eranian@google.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 05-06-14 06:33:40, Felipe Contreras wrote:
-> Hi,
 
-Hi,
- 
-> For a while I've noticed that my machine bogs down in certain
-> situations, usually while doing heavy I/O operations, it is not just the
-> I/O operations, but everything, including the graphical interface, even
-> the mouse pointer.
-> 
-> As far as I can recall this did not happen in the past.
-> 
-> I noticed this specially on certain operations, for example updating a
-> a game on Steam (to an exteranl USB 3.0 device), or copying TV episodes
-> to a USB memory stick (probably flash-based).
+--u3bvv0EcKsvvYeex
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-We had a similar report for opensuse. The common part was that there was
-an IO to a slow USB device going on.
- 
-> Today I decided to finally hunt down the problem, so I created a
-> synthetic test that basically consists on copying a bunch of files from
-> one drive to another (from an SSD to an external USB 3.0). This is
-> pretty similar to what I noticed; the graphical interface slows down.
-> 
-> Then I bisected the issue and it turns out that indeed it wasn't
-> happening in the past, it started happening in v3.11, and it was
-> triggered by this commit:
-> 
->   e2be15f (mm: vmscan: stall page reclaim and writeback pages based on
->   dirty/writepage pages encountered)
-> 
-> Then I went back to the latest stable version (v3.14.5), and commented
-> out the line I think is causing the slow down:
-> 
->   if (nr_unqueued_dirty == nr_taken || nr_immediate)
-> 	  congestion_wait(BLK_RW_ASYNC, HZ/10);
+On Wed, Jun 04, 2014 at 11:34:14PM +0200, Stephane Eranian wrote:
+>  static void
+> +intel_start_scheduling(struct cpu_hw_events *cpuc)
+> +{
 
-Yes, I came to the same check. I didn't have any confirmation yet so
-thanks for your confirmation. I've suggested to reduce this
-congestion_wait only to kswapd:
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 32c661d66a45..ef6a1c0e788c 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1566,7 +1566,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
- 		 * implies that pages are cycling through the LRU faster than
- 		 * they are written so also forcibly stall.
- 		 */
--		if (nr_unqueued_dirty == nr_taken || nr_immediate)
-+		if ((nr_unqueued_dirty == nr_taken || nr_immediate) && current_is_kswapd())
- 			congestion_wait(BLK_RW_ASYNC, HZ/10);
- 	}
+> +	/*
+> +	 * lock shared state until we are done scheduling
+> +	 * in stop_event_scheduling()
+> +	 * makes scheduling appear as a transaction
+> +	 */
+> +	spin_lock_irqsave(&excl_cntrs->lock, excl_cntrs->lock_flags);
+> +
+> +	/*
+> +	 * save initial state of sibling thread
+> +	 */
+> +	memcpy(xlo->init_state, xlo->state, sizeof(xlo->init_state));
+> +}
+> +
+> +static void
+> +intel_stop_scheduling(struct cpu_hw_events *cpuc)
+> +{
 
-But I am still not sure whether this is the right way to fix it. Direct
-reclaimers can be throttled later on wait_iff_congested. I guess the
-original intention was to throttle kswapd to not scan LRU full of dirty
-pages like crazy. So I think it makes some sense to reduce the
-congestion_wait only to kswapd.
+> +	/*
+> +	 * make new sibling thread state visible
+> +	 */
+> +	memcpy(xlo->state, xlo->init_state, sizeof(xlo->state));
+> +
+> +	xl->sched_started = false;
+> +	/*
+> +	 * release shared state lock (lock acquire in intel_start_scheduling())
+> +	 */
+> +	spin_unlock_irqrestore(&excl_cntrs->lock, excl_cntrs->lock_flags);
+> +}
 
- 
-> After that I don't notice the slow down any more.
-> 
-> Anybody has any ideas how to fix the issue properly?
-> 
-> -- 
-> Felipe Contreras
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Do you really need the irqsave/irqrestore? From what I can tell this is
+always called under perf_event_context::lock and that is already an
+IRQ-safe lock, so interrupts should always be disabled here.
 
--- 
-Michal Hocko
-SUSE Labs
+Also, it looks like xl->state is the effective state, and ->init_state
+is the work state? Is init the right name for this?
+
+--u3bvv0EcKsvvYeex
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTkHLfAAoJEHZH4aRLwOS6p64P/iguTooxOLtrgJWx1CTjiAnY
+PF1leVvBqjpDyL1EKWdw7crLTA3X4VA/SALXclCKLz+X1FIrJiLR9g997+FkBi/B
+5LwdE+YlfRTjJgwdUfmg8++6C6aTtZHlpyUhsUDCrSlKzrhWUFPXX66es5YpDi90
+TgHkxYX7pruC2KBAJCeiz2Qzi8ic76Je1fr8n7sbnC4+HMoVe/esrhq21jTPxExs
+7kw4whyzxcdyMbQpy3A0uv+WYvDDq3lIAy2YMJE1sg0VU94LdDJEAEDhM6PK0Tm4
+8WKDFWYtHcWVDud5uJPrQbWIjLiz/ea8jwAcQkQ7cO1jW9AgpX1rq6K4EPISd9nG
+7D3Tf3aMkh/pkBUcAuNe3c8jT8YWwyundm//JeIHzpVE7ZRuxyeGQZdkrg+jOPhz
+j+622ll3lCOEaglB23Rh1unl9rUkb3GC6XJ2ejbv+I/VULqe9qAabpFBeJZSTCVF
+arShgs8GFK4FtOG3y5ggZSnCDesyLvsxuqyUf/swpAOMzyIpjTe2zJQ4nibk3IWV
+JZXAsxd4ZBc5sHkUI4j76qqGlsQzstVrTmPMdwik/jTZjAOThUZh2xCt4qNs2QyT
+X1Lh6VeaBmncmf93GxaslH4HS/VStBCjNapjbSdQLp+iQF0lhEDGtO2NaCYS4MIZ
++p1050TriAVxDxK4nwfW
+=mGb2
+-----END PGP SIGNATURE-----
+
+--u3bvv0EcKsvvYeex--
