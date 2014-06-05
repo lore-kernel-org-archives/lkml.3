@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752357AbaFEEUW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:20:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43766 "EHLO
+	id S1754703AbaFEFIb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 01:08:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43792 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751332AbaFEEUR (ORCPT
+	with ESMTP id S1752338AbaFEEUV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:20:17 -0400
+	Thu, 5 Jun 2014 00:20:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anthony Iliopoulos <anthony.iliopoulos@huawei.com>,
-        Shay Goikhman <shay.goikhman@huawei.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 3.4 042/214] x86, mm, hugetlb: Add missing TLB page invalidation for hugetlb_cow()
-Date: Wed,  4 Jun 2014 21:16:45 -0700
-Message-Id: <20140605041645.243855252@linuxfoundation.org>
+        Liu Hua <sdu.liu@huawei.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.4 058/214] ARM: 8012/1: kdump: Avoid overflow when converting pfn to physaddr
+Date: Wed,  4 Jun 2014 21:17:01 -0700
+Message-Id: <20140605041647.280229503@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -29,42 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anthony Iliopoulos <anthony.iliopoulos@huawei.com>
+From: Liu Hua <sdu.liu@huawei.com>
 
-commit 9844f5462392b53824e8b86726e7c33b5ecbb676 upstream.
+commit 8fad87bca7ac9737e413ba5f1656f1114a8c314d upstream.
 
-The invalidation is required in order to maintain proper semantics
-under CoW conditions. In scenarios where a process clones several
-threads, a thread operating on a core whose DTLB entry for a
-particular hugepage has not been invalidated, will be reading from
-the hugepage that belongs to the forked child process, even after
-hugetlb_cow().
+When we configure CONFIG_ARM_LPAE=y, pfn << PAGE_SHIFT will
+overflow if pfn >= 0x100000 in copy_oldmem_page.
+So use __pfn_to_phys for converting.
 
-The thread will not see the updated page as long as the stale DTLB
-entry remains cached, the thread attempts to write into the page,
-the child process exits, or the thread gets migrated to a different
-processor.
-
-Signed-off-by: Anthony Iliopoulos <anthony.iliopoulos@huawei.com>
-Link: http://lkml.kernel.org/r/20140514092948.GA17391@server-36.huawei.corp
-Suggested-by: Shay Goikhman <shay.goikhman@huawei.com>
-Acked-by: Dave Hansen <dave.hansen@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Liu Hua <sdu.liu@huawei.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/hugetlb.h |    1 +
- 1 file changed, 1 insertion(+)
+ arch/arm/kernel/crash_dump.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/include/asm/hugetlb.h
-+++ b/arch/x86/include/asm/hugetlb.h
-@@ -51,6 +51,7 @@ static inline pte_t huge_ptep_get_and_cl
- static inline void huge_ptep_clear_flush(struct vm_area_struct *vma,
- 					 unsigned long addr, pte_t *ptep)
- {
-+	ptep_clear_flush(vma, addr, ptep);
- }
+--- a/arch/arm/kernel/crash_dump.c
++++ b/arch/arm/kernel/crash_dump.c
+@@ -39,7 +39,7 @@ ssize_t copy_oldmem_page(unsigned long p
+ 	if (!csize)
+ 		return 0;
  
- static inline int huge_pte_none(pte_t pte)
+-	vaddr = ioremap(pfn << PAGE_SHIFT, PAGE_SIZE);
++	vaddr = ioremap(__pfn_to_phys(pfn), PAGE_SIZE);
+ 	if (!vaddr)
+ 		return -ENOMEM;
+ 
 
 
