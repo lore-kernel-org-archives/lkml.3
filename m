@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752804AbaFERGF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 13:06:05 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:63209 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752133AbaFERGB (ORCPT
+	id S1752858AbaFERGO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 13:06:14 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:53756 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752133AbaFERGL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 13:06:01 -0400
+	Thu, 5 Jun 2014 13:06:11 -0400
 From: Antonios Motakis <a.motakis@virtualopensystems.com>
 To: alex.williamson@redhat.com, kvmarm@lists.cs.columbia.edu,
         iommu@lists.linux-foundation.org
@@ -15,12 +15,11 @@ Cc: tech@virtualopensystems.com, a.rigo@virtualopensystems.com,
         kim.phillips@freescale.com, stuart.yoder@freescale.com,
         eric.auger@linaro.org,
         Antonios Motakis <a.motakis@virtualopensystems.com>,
-        Alexander Gordeev <agordeev@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
         linux-kernel@vger.kernel.org (open list)
-Subject: [RFC PATCH v6 17/20] vfio: add local lock in virqfd instead of depending on VFIO PCI
-Date: Thu,  5 Jun 2014 19:03:25 +0200
-Message-Id: <1401987808-23596-18-git-send-email-a.motakis@virtualopensystems.com>
+Subject: [RFC PATCH v6 19/20] vfio: initialize the virqfd workqueue in VFIO generic code
+Date: Thu,  5 Jun 2014 19:03:27 +0200
+Message-Id: <1401987808-23596-20-git-send-email-a.motakis@virtualopensystems.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1401987808-23596-1-git-send-email-a.motakis@virtualopensystems.com>
 References: <1401987808-23596-1-git-send-email-a.motakis@virtualopensystems.com>
@@ -28,154 +27,121 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sharing the same spinlock with the VFIO bus driver is not necessary for
-the virqfd code, so remove that dependency.
+Now we have finally completely decoupled virqfd from VFIO_PCI. We can
+initialize it from the VFIO generic code, in order to safely use it from
+many different VFIO bus drivers.
 
 Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
 ---
- drivers/vfio/pci/vfio_pci_intrs.c | 10 +++++-----
- drivers/vfio/virqfd.c             | 24 +++++++++++++-----------
- include/linux/vfio.h              |  3 +--
- 3 files changed, 19 insertions(+), 18 deletions(-)
+ drivers/vfio/pci/vfio_pci.c | 8 --------
+ drivers/vfio/vfio.c         | 8 ++++++++
+ drivers/vfio/virqfd.c       | 4 ++--
+ include/linux/vfio.h        | 4 ++--
+ 4 files changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/vfio/pci/vfio_pci_intrs.c b/drivers/vfio/pci/vfio_pci_intrs.c
-index 3f909bb..e56c814 100644
---- a/drivers/vfio/pci/vfio_pci_intrs.c
-+++ b/drivers/vfio/pci/vfio_pci_intrs.c
-@@ -226,8 +226,8 @@ static int vfio_intx_set_signal(struct vfio_pci_device *vdev, int fd)
- static void vfio_intx_disable(struct vfio_pci_device *vdev)
+diff --git a/drivers/vfio/pci/vfio_pci.c b/drivers/vfio/pci/vfio_pci.c
+index 7ba0424..9969eaf 100644
+--- a/drivers/vfio/pci/vfio_pci.c
++++ b/drivers/vfio/pci/vfio_pci.c
+@@ -899,7 +899,6 @@ static struct pci_driver vfio_pci_driver = {
+ static void __exit vfio_pci_cleanup(void)
  {
- 	vfio_intx_set_signal(vdev, -1);
--	virqfd_disable(vdev, &vdev->ctx[0].unmask);
--	virqfd_disable(vdev, &vdev->ctx[0].mask);
-+	virqfd_disable(&vdev->ctx[0].unmask);
-+	virqfd_disable(&vdev->ctx[0].mask);
- 	vdev->irq_type = VFIO_PCI_NUM_IRQS;
- 	vdev->num_ctx = 0;
- 	kfree(vdev->ctx);
-@@ -377,8 +377,8 @@ static void vfio_msi_disable(struct vfio_pci_device *vdev, bool msix)
- 	vfio_msi_set_block(vdev, 0, vdev->num_ctx, NULL, msix);
- 
- 	for (i = 0; i < vdev->num_ctx; i++) {
--		virqfd_disable(vdev, &vdev->ctx[i].unmask);
--		virqfd_disable(vdev, &vdev->ctx[i].mask);
-+		virqfd_disable(&vdev->ctx[i].unmask);
-+		virqfd_disable(&vdev->ctx[i].mask);
- 	}
- 
- 	if (msix) {
-@@ -415,7 +415,7 @@ static int vfio_pci_set_intx_unmask(struct vfio_pci_device *vdev,
- 					     vfio_send_intx_eventfd, NULL,
- 					     &vdev->ctx[0].unmask, fd);
- 
--		virqfd_disable(vdev, &vdev->ctx[0].unmask);
-+		virqfd_disable(&vdev->ctx[0].unmask);
- 	}
- 
- 	return 0;
-diff --git a/drivers/vfio/virqfd.c b/drivers/vfio/virqfd.c
-index 9cf2842..4528450 100644
---- a/drivers/vfio/virqfd.c
-+++ b/drivers/vfio/virqfd.c
-@@ -17,6 +17,7 @@
- #include "pci/vfio_pci_private.h"
- 
- static struct workqueue_struct *vfio_irqfd_cleanup_wq;
-+static spinlock_t lock;
- 
- int __init vfio_pci_virqfd_init(void)
- {
-@@ -25,6 +26,8 @@ int __init vfio_pci_virqfd_init(void)
- 	if (!vfio_irqfd_cleanup_wq)
- 		return -ENOMEM;
- 
-+	spin_lock_init(&lock);
-+
- 	return 0;
+ 	pci_unregister_driver(&vfio_pci_driver);
+-	vfio_pci_virqfd_exit();
+ 	vfio_pci_uninit_perm_bits();
  }
  
-@@ -53,21 +56,21 @@ static int virqfd_wakeup(wait_queue_t *wait, unsigned mode, int sync, void *key)
+@@ -912,11 +911,6 @@ static int __init vfio_pci_init(void)
+ 	if (ret)
+ 		return ret;
  
- 	if (flags & POLLHUP) {
- 		unsigned long flags;
--		spin_lock_irqsave(&virqfd->vdev->irqlock, flags);
-+		spin_lock_irqsave(&lock, flags);
- 
- 		/*
- 		 * The eventfd is closing, if the virqfd has not yet been
- 		 * queued for release, as determined by testing whether the
--		 * vdev pointer to it is still valid, queue it now.  As
-+		 * virqfd pointer to it is still valid, queue it now.  As
- 		 * with kvm irqfds, we know we won't race against the virqfd
--		 * going away because we hold wqh->lock to get here.
-+		 * going away because we hold the lock to get here.
- 		 */
- 		if (*(virqfd->pvirqfd) == virqfd) {
- 			*(virqfd->pvirqfd) = NULL;
- 			virqfd_deactivate(virqfd);
- 		}
- 
--		spin_unlock_irqrestore(&virqfd->vdev->irqlock, flags);
-+		spin_unlock_irqrestore(&lock, flags);
- 	}
- 
+-	/* Start the virqfd cleanup handler */
+-	ret = vfio_pci_virqfd_init();
+-	if (ret)
+-		goto out_virqfd;
+-
+ 	/* Register and scan for devices */
+ 	ret = pci_register_driver(&vfio_pci_driver);
+ 	if (ret)
+@@ -925,8 +919,6 @@ static int __init vfio_pci_init(void)
  	return 0;
-@@ -143,16 +146,16 @@ int virqfd_enable(struct vfio_pci_device *vdev,
- 	 * we update the pointer to the virqfd under lock to avoid
- 	 * pushing multiple jobs to release the same virqfd.
- 	 */
--	spin_lock_irq(&vdev->irqlock);
-+	spin_lock_irq(&lock);
  
- 	if (*pvirqfd) {
--		spin_unlock_irq(&vdev->irqlock);
-+		spin_unlock_irq(&lock);
- 		ret = -EBUSY;
- 		goto err_busy;
- 	}
- 	*pvirqfd = virqfd;
- 
--	spin_unlock_irq(&vdev->irqlock);
-+	spin_unlock_irq(&lock);
- 
- 	/*
- 	 * Install our own custom wake-up handling so we are notified via
-@@ -189,19 +192,18 @@ err_fd:
+ out_driver:
+-	vfio_pci_virqfd_exit();
+-out_virqfd:
+ 	vfio_pci_uninit_perm_bits();
  	return ret;
  }
+diff --git a/drivers/vfio/vfio.c b/drivers/vfio/vfio.c
+index 512f479..4f95a17 100644
+--- a/drivers/vfio/vfio.c
++++ b/drivers/vfio/vfio.c
+@@ -1470,6 +1470,11 @@ static int __init vfio_init(void)
+ 	if (ret)
+ 		goto err_cdev_add;
  
--void virqfd_disable(struct vfio_pci_device *vdev,
--			   struct virqfd **pvirqfd)
-+void virqfd_disable(struct virqfd **pvirqfd)
- {
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&vdev->irqlock, flags);
-+	spin_lock_irqsave(&lock, flags);
- 
- 	if (*pvirqfd) {
- 		virqfd_deactivate(*pvirqfd);
- 		*pvirqfd = NULL;
- 	}
- 
--	spin_unlock_irqrestore(&vdev->irqlock, flags);
-+	spin_unlock_irqrestore(&lock, flags);
++	/* Start the virqfd cleanup handler used by some VFIO bus drivers */
++	ret = vfio_virqfd_init();
++	if (ret)
++		goto err_virqfd;
++
+ 	pr_info(DRIVER_DESC " version: " DRIVER_VERSION "\n");
  
  	/*
- 	 * Block until we know all outstanding shutdown jobs have completed.
+@@ -1482,6 +1487,8 @@ static int __init vfio_init(void)
+ 
+ 	return 0;
+ 
++err_virqfd:
++	cdev_del(&vfio.group_cdev);
+ err_cdev_add:
+ 	unregister_chrdev_region(vfio.group_devt, MINORMASK);
+ err_alloc_chrdev:
+@@ -1496,6 +1503,7 @@ static void __exit vfio_cleanup(void)
+ {
+ 	WARN_ON(!list_empty(&vfio.group_list));
+ 
++	vfio_virqfd_exit();
+ 	idr_destroy(&vfio.group_idr);
+ 	cdev_del(&vfio.group_cdev);
+ 	unregister_chrdev_region(vfio.group_devt, MINORMASK);
+diff --git a/drivers/vfio/virqfd.c b/drivers/vfio/virqfd.c
+index 8c97e2e..8d286ca 100644
+--- a/drivers/vfio/virqfd.c
++++ b/drivers/vfio/virqfd.c
+@@ -18,7 +18,7 @@
+ static struct workqueue_struct *vfio_irqfd_cleanup_wq;
+ static spinlock_t lock;
+ 
+-int __init vfio_pci_virqfd_init(void)
++int __init vfio_virqfd_init(void)
+ {
+ 	vfio_irqfd_cleanup_wq =
+ 		create_singlethread_workqueue("vfio-irqfd-cleanup");
+@@ -30,7 +30,7 @@ int __init vfio_pci_virqfd_init(void)
+ 	return 0;
+ }
+ 
+-void vfio_pci_virqfd_exit(void)
++void vfio_virqfd_exit(void)
+ {
+ 	destroy_workqueue(vfio_irqfd_cleanup_wq);
+ }
 diff --git a/include/linux/vfio.h b/include/linux/vfio.h
-index 43968e8..44c9808 100644
+index e4f7de8..132e61f 100644
 --- a/include/linux/vfio.h
 +++ b/include/linux/vfio.h
-@@ -123,7 +123,6 @@ extern int virqfd_enable(struct vfio_pci_device *vdev,
- 			 int (*handler)(struct vfio_pci_device *, void *),
- 			 void (*thread)(struct vfio_pci_device *, void *),
- 			 void *data, struct virqfd **pvirqfd, int fd);
--extern void virqfd_disable(struct vfio_pci_device *vdev,
--			   struct virqfd **pvirqfd);
-+extern void virqfd_disable(struct virqfd **pvirqfd);
+@@ -117,8 +117,8 @@ struct virqfd {
+ 	struct virqfd		**pvirqfd;
+ };
  
- #endif /* VFIO_H */
+-extern int vfio_pci_virqfd_init(void);
+-extern void vfio_pci_virqfd_exit(void);
++extern int vfio_virqfd_init(void);
++extern void vfio_virqfd_exit(void);
+ extern int virqfd_enable(void *opaque,
+ 			 int (*handler)(void *, void *),
+ 			 void (*thread)(void *, void *),
 -- 
 1.8.3.2
 
