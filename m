@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753160AbaFEEiO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:38:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44317 "EHLO
+	id S1753284AbaFEEVq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:21:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44286 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753302AbaFEEVt (ORCPT
+	with ESMTP id S1753256AbaFEEVo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:21:49 -0400
+	Thu, 5 Jun 2014 00:21:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Jani Nikula <jani.nikula@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Weng Meiling <wengmeiling.weng@huawei.com>
-Subject: [PATCH 3.4 158/214] drm/i915/sdvo: clean up connectors on intel_sdvo_init() failures
-Date: Wed,  4 Jun 2014 21:18:41 -0700
-Message-Id: <20140605041700.980038633@linuxfoundation.org>
+        Sergey Vlasov <vsu@altlinux.ru>, Matt Fleming <matt.fleming@intel.com>,
+        Ben Hutchings <ben@decadent.org.uk>, Rui Xiang <rui.xiang@huawei.com>
+Subject: [PATCH 3.4 152/214] efi: Export efi_query_variable_store() for efivars.ko
+Date: Wed,  4 Jun 2014 21:18:35 -0700
+Message-Id: <20140605041700.238106958@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -30,86 +27,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jani Nikula <jani.nikula@intel.com>
+From: Sergey Vlasov <vsu@altlinux.ru>
 
-commit d0ddfbd3d1346c1f481ec2289eef350cdba64b42 upstream.
+commit 3668011d4ad556224f7c012c1e870a6eaa0e59da upstream.
 
-Any failures in intel_sdvo_init() after the intel_sdvo_setup_output() call
-left behind ghost connectors, attached (with a dangling pointer) to the
-sdvo that has been cleaned up and freed. Properly destroy any connectors
-attached to the encoder.
+Fixes build with CONFIG_EFI_VARS=m which was broken after the commit
+"x86, efivars: firmware bug workarounds should be in platform code".
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=46381
-CC: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Tested-by: bjo@nord-west.org
-[danvet: added a comment to explain why we need to clean up connectors
-even when sdvo_output_setup fails.]
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Sergey Vlasov <vsu@altlinux.ru>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Weng Meiling <wengmeiling.weng@huawei.com>
+Cc: Rui Xiang <rui.xiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_sdvo.c |   22 +++++++++++++++++++---
- 1 file changed, 19 insertions(+), 3 deletions(-)
+ arch/x86/platform/efi/efi.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/gpu/drm/i915/intel_sdvo.c
-+++ b/drivers/gpu/drm/i915/intel_sdvo.c
-@@ -2265,6 +2265,18 @@ intel_sdvo_output_setup(struct intel_sdv
- 	return true;
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -990,3 +990,4 @@ efi_status_t efi_query_variable_store(u3
+ 
+ 	return EFI_SUCCESS;
  }
- 
-+static void intel_sdvo_output_cleanup(struct intel_sdvo *intel_sdvo)
-+{
-+	struct drm_device *dev = intel_sdvo->base.base.dev;
-+	struct drm_connector *connector, *tmp;
-+
-+	list_for_each_entry_safe(connector, tmp,
-+				 &dev->mode_config.connector_list, head) {
-+		if (intel_attached_encoder(connector) == &intel_sdvo->base)
-+			intel_sdvo_destroy(connector);
-+	}
-+}
-+
- static bool intel_sdvo_tv_create_property(struct intel_sdvo *intel_sdvo,
- 					  struct intel_sdvo_connector *intel_sdvo_connector,
- 					  int type)
-@@ -2583,7 +2595,8 @@ bool intel_sdvo_init(struct drm_device *
- 				    intel_sdvo->caps.output_flags) != true) {
- 		DRM_DEBUG_KMS("SDVO output failed to setup on SDVO%c\n",
- 			      IS_SDVOB(sdvo_reg) ? 'B' : 'C');
--		goto err;
-+		/* Output_setup can leave behind connectors! */
-+		goto err_output;
- 	}
- 
- 	/* Only enable the hotplug irq if we need it, to work around noisy
-@@ -2596,12 +2609,12 @@ bool intel_sdvo_init(struct drm_device *
- 
- 	/* Set the input timing to the screen. Assume always input 0. */
- 	if (!intel_sdvo_set_target_input(intel_sdvo))
--		goto err;
-+		goto err_output;
- 
- 	if (!intel_sdvo_get_input_pixel_clock_range(intel_sdvo,
- 						    &intel_sdvo->pixel_clock_min,
- 						    &intel_sdvo->pixel_clock_max))
--		goto err;
-+		goto err_output;
- 
- 	DRM_DEBUG_KMS("%s device VID/DID: %02X:%02X.%02X, "
- 			"clock range %dMHz - %dMHz, "
-@@ -2621,6 +2634,9 @@ bool intel_sdvo_init(struct drm_device *
- 			(SDVO_OUTPUT_TMDS1 | SDVO_OUTPUT_RGB1) ? 'Y' : 'N');
- 	return true;
- 
-+err_output:
-+	intel_sdvo_output_cleanup(intel_sdvo);
-+
- err:
- 	drm_encoder_cleanup(&intel_encoder->base);
- 	i2c_del_adapter(&intel_sdvo->ddc);
++EXPORT_SYMBOL_GPL(efi_query_variable_store);
 
 
