@@ -1,79 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751740AbaFEN1j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 09:27:39 -0400
-Received: from mail-wi0-f193.google.com ([209.85.212.193]:35997 "EHLO
-	mail-wi0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750926AbaFEN1i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 09:27:38 -0400
-From: Matt Fleming <matt@console-pimps.org>
-To: linux-efi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Dave Hansen <dave.hansen@intel.com>, Borislav Petkov <bp@suse.de>
-Subject: [PATCH] x86/efi: Only pass mapped RAM regions to free_bootmem_late()
-Date: Thu,  5 Jun 2014 14:27:34 +0100
-Message-Id: <1401974854-7716-1-git-send-email-matt@console-pimps.org>
-X-Mailer: git-send-email 1.9.0
+	id S1751591AbaFEN3k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 09:29:40 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:45008 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750860AbaFEN3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 09:29:38 -0400
+Date: Thu, 5 Jun 2014 15:27:50 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Stephane Eranian <eranian@google.com>
+Cc: Matt Fleming <matt@console-pimps.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>,
+        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
+Subject: Re: [PATCH 9/9] perf/x86: add syfs entry to disable HT bug workaround
+Message-ID: <20140605132750.GA16811@pd.tnic>
+References: <1401917658-26065-1-git-send-email-eranian@google.com>
+ <1401917658-26065-10-git-send-email-eranian@google.com>
+ <CADknwL5S8QpzCAgrKHjbGTbEx7nA8L=Vu8d-UWAYCg6X25OcGw@mail.gmail.com>
+ <CABPqkBSimH8Ob_q3dDtQiW_OwuS9nA4Gsx87H26ywNcmYd38Xw@mail.gmail.com>
+ <CADknwL6s2ttb5E2JDr6bc_XkwpxnW5ecU-3Ns88=gvgPvLYkPg@mail.gmail.com>
+ <CABPqkBQUUb+yEvC8y3oLc0DUbF3DJPzbt3sNL7Zqzufh6EYdRw@mail.gmail.com>
+ <CADknwL71NC5wBG1tnqgJ6iiA4y+HYomGpufOn7V+MP2=m7+Mig@mail.gmail.com>
+ <CABPqkBTEafZ5MbYM4UQxX92uWcPiphPeXMoJRKTt8jnrB+5j2w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CABPqkBTEafZ5MbYM4UQxX92uWcPiphPeXMoJRKTt8jnrB+5j2w@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Fleming <matt.fleming@intel.com>
+On Thu, Jun 05, 2014 at 02:02:51PM +0200, Stephane Eranian wrote:
+> It is enabled by default. Nothing is done to try and disable it later
+> even once the kernel is fully booted. So this is mostly for testing
+> and power-users.
 
-free_bootmem_late() expects to only be passed RAM regions that the
-kernel can access, and that have a corresponding 'struct page'. It's
-possible for regions in the EFI memory map to reside in address ranges
-for which pfn_to_page() doesn't work, for instance when running on an
-i386 system with CONFIG_HIGHMEM=n.
+You keep saying "power-users". What is the disadvantage for power users
+running with the workaround disabled? I.e., why would anyone want to
+disable it at all, what is the use case for that?
 
-This is in fact the case for one of Alan's machines where some of the
-EFI boot services pages live in highmem, and running a kernel without
-CONFIG_HIGHMEM enabled results in the following oops,
+Thanks.
 
- BUG: unable to handle kernel paging request at f7f1f080
- IP: [<c17fba96>] __free_pages_bootmem+0x5a/0xb8
- *pdpt = 0000000001887001 *pde = 0000000001984067 *pte = 000000000 0000000
- Oops: 0002 [#1] SMP
-
-[...]
-
- Call Trace:
-  [<c17feacc>] free_bootmem_late+0x2d/0x3d
-  [<c17f1013>] efi_free_boot_services+0x48/0x5b
-  [<c17ddc12>] start_kernel+0x3ad/0x3cf
-  [<c17dd654>] ? set_init_arg+0x49/0x49
-  [<c17dd380>] i386_start_kernel+0x12e/0x131
-
-Reported-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Dave Hansen <dave.hansen@intel.com>
-Cc: Borislav Petkov <bp@suse.de>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
----
-
-Alan, could you double check that this patch also fixes the oops on your
-CONFIG_HIGHMEM=n machine?
-
- arch/x86/platform/efi/efi.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index 3781dd39e8bd..893d183ee98f 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -451,6 +451,9 @@ void __init efi_free_boot_services(void)
- 		if (!size)
- 			continue;
- 
-+		if (!e820_all_mapped(start, start + size, E820_RAM))
-+			continue;
-+
- 		free_bootmem_late(start, size);
- 	}
- 
 -- 
-1.9.0
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
