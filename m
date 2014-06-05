@@ -1,124 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752718AbaFEWJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 18:09:58 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:16244 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751306AbaFEWJx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 18:09:53 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 05 Jun 2014 15:01:49 -0700
-Date: Fri, 6 Jun 2014 01:09:46 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Linus Walleij" <linus.walleij@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v7 3/5] misc: fuse: Add efuse driver for Tegra
-Message-ID: <20140605220946.GP5961@tbergstrom-lnx.Nvidia.com>
-References: <1401973754-19701-1-git-send-email-pdeschrijver@nvidia.com>
- <1401973754-19701-4-git-send-email-pdeschrijver@nvidia.com>
- <5390B8E6.1050600@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <5390B8E6.1050600@wwwdotorg.org>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752801AbaFEWLP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 18:11:15 -0400
+Received: from mga02.intel.com ([134.134.136.20]:46406 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752734AbaFEWLH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 18:11:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,983,1392192000"; 
+   d="scan'208";a="523425316"
+From: eric.ernst@linux.intel.com
+To: rdunlap@infradead.org, akpm@linux-foundation.org,
+        jwboyer@fedoraproject.org, linux-kernel@vger.kernel.org
+Cc: Eric Ernst <eric.ernst@linux.intel.com>
+Subject: [PATCH v1 1/1] Add kernel parameter for kernel version
+Date: Thu,  5 Jun 2014 15:09:17 -0700
+Message-Id: <1402006157-126864-1-git-send-email-eric.ernst@linux.intel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <538CC567.2060305@linux.intel.com>
+References: <538CC567.2060305@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 05, 2014 at 08:37:26PM +0200, Stephen Warren wrote:
-> On 06/05/2014 07:09 AM, Peter De Schrijver wrote:
-> > Implement fuse driver for Tegra20, Tegra30, Tegra114 and Tegra124.
-> > 
-> > Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
-> > ---
-> >  Documentation/ABI/testing/sysfs-driver-tegra-fuse |   11 +
-> >  drivers/misc/fuse/Makefile                        |    1 +
-> >  drivers/misc/fuse/tegra/Makefile                  |    7 +
-> >  drivers/misc/fuse/tegra/fuse-tegra.c              |  250 +++++++++++++++++
-> 
-> I wonder if we shouldn't put this into drivers/soc/tegra?
-> 
-> > diff --git a/drivers/misc/fuse/tegra/fuse-tegra.c b/drivers/misc/fuse/tegra/fuse-tegra.c
-> 
-> > +void __init tegra_init_fuse(void)
-> > +{
-> > +	struct device_node *np;
-> > +	u32 id;
-> > +	void __iomem *car_base;
-> > +
-> > +	np = of_find_matching_node(NULL, apbmisc_match);
-> > +	apbmisc_base = of_iomap(np, 0);
-> > +	if (!apbmisc_base) {
-> > +		pr_warn("ioremap tegra apbmisc failed. using %08x instead\n",
-> > +			APBMISC_BASE);
-> > +		apbmisc_base = ioremap(APBMISC_BASE, APBMISC_SIZE);
-> > +	}
-> > +
-> > +	id = tegra_read_chipid();
-> > +	tegra_chip_id = (id >> 8) & 0xff;
-> 
-> So there's a fallback using APBMIS_BASE above if the node is missing, so
-> those last 2 lines always happen. However, if any of the following fail:
-> 
-> > +	strapping_base = of_iomap(np, 0);
-> ...
-> > +	np = of_find_matching_node(NULL, tegra_fuse_match);
-> ...
-> > +	np = of_find_matching_node(NULL, car_match);
-> 
-> Then this doesn't get executed:
-> 
-> > +	tegra_get_revision(id);
-> 
-> Isn't that important?
-> 
+From: Eric Ernst <eric.ernst@linux.intel.com>
 
-No. It's only used to populate /sys/devices/soc0/revision. I don't think
-that's particularly important.
+Create a kernel cmdline parameter, "version_addendum", which can be
+used to add text to the kernel version that is reported from
+/proc/version.
 
-> I guess that can't run if the lookup for tegra_fuse_match isn't
-> successful, since that tegra_get_revision may call
-> tegra20_spare_fuse_early() which uses fuse_base which is set up in
-> response to succesfully calling on of those node lookups. Isn't a
-> fallback needed there too?
-> 
+Signed-off-by: Eric Ernst <eric.ernst@linux.intel.com>
+---
+ fs/proc/version.c |   14 +++++++++++++-
+ init/version.c    |    2 +-
+ 2 files changed, 14 insertions(+), 2 deletions(-)
 
-tegra20_spare_fuse_early() will not be called if fuse_base is NULL.
+diff --git a/fs/proc/version.c b/fs/proc/version.c
+index d2154eb6d78f..442e69e3eecb 100644
+--- a/fs/proc/version.c
++++ b/fs/proc/version.c
+@@ -5,12 +5,17 @@
+ #include <linux/seq_file.h>
+ #include <linux/utsname.h>
+ 
++#define ADDENDUM_LENGTH 20
++static char version_addendum[ADDENDUM_LENGTH];
++
+ static int version_proc_show(struct seq_file *m, void *v)
+ {
+ 	seq_printf(m, linux_proc_banner,
+ 		utsname()->sysname,
+ 		utsname()->release,
+-		utsname()->version);
++		utsname()->version,
++		version_addendum);
++
+ 	return 0;
+ }
+ 
+@@ -26,6 +31,13 @@ static const struct file_operations version_proc_fops = {
+ 	.release	= single_release,
+ };
+ 
++static int __init set_version_addendum(char *str)
++{
++	strncpy(version_addendum, str, ADDENDUM_LENGTH-1);
++	return 0;
++}
++early_param("version_addendum", set_version_addendum);
++
+ static int __init proc_version_init(void)
+ {
+ 	proc_create("version", 0, NULL, &version_proc_fops);
+diff --git a/init/version.c b/init/version.c
+index 1a4718e500fe..180059b69b7a 100644
+--- a/init/version.c
++++ b/init/version.c
+@@ -47,4 +47,4 @@ const char linux_banner[] =
+ const char linux_proc_banner[] =
+ 	"%s version %s"
+ 	" (" LINUX_COMPILE_BY "@" LINUX_COMPILE_HOST ")"
+-	" (" LINUX_COMPILER ") %s\n";
++	" (" LINUX_COMPILER ") %s " "%s\n";
+-- 
+1.7.9.5
 
-> I'm also a bit concerned that the driver probes, rather than the early
-> function tegra_init_fuse(), are doing things like setting up the speedo
-> data initialization, randomness addition, etc. For one, those won't
-> happen any more unless the DT nodes are present, and secondly,
-> triggering all those from driver probe rather than a function that's
-> called from the machine descriptor makes guaranteeing the timing
-> problematic.
-> 
-
-Today there are no users of the speedo ID in upstream. Looking at chromeos
-the users of the speedo ID are: CPU dvfs, GPU dvfs and sdhci. The last 2 also
-need regulators and therefor will need to support deferred probing anyway.
-CPU dvfs isn't critical at all, we don't care when it gets initialized. So
-deferred probe is fine.
-sdhci needs this for faster modes I guess which will also need extra DT
-properties looking at the chromeos driver. The others definitely will need
-an updated DT. For randomness I haven't seen any appreciable difference in when
-the 'random: nonblocking pool is initialized' message appears between having
-the randomness addition or not. Most likely the bulk of the randomness comes
-from serial interrupts rather than the fuse data. So I don't think the move to
-a driver probe will cause any problem. Nor do I think the lack of an updated
-DT will cause problems.
-
-Cheers,
-
-Peter.
