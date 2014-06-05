@@ -1,94 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752845AbaFEOp2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 10:45:28 -0400
-Received: from mail-yk0-f177.google.com ([209.85.160.177]:41947 "EHLO
-	mail-yk0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752587AbaFEOpY (ORCPT
+	id S1751791AbaFEObo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 10:31:44 -0400
+Received: from casper.infradead.org ([85.118.1.10]:52695 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751739AbaFEObn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 10:45:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140605140316.GB16811@pd.tnic>
-References: <1401917658-26065-1-git-send-email-eranian@google.com>
-	<1401917658-26065-10-git-send-email-eranian@google.com>
-	<CADknwL5S8QpzCAgrKHjbGTbEx7nA8L=Vu8d-UWAYCg6X25OcGw@mail.gmail.com>
-	<CABPqkBSimH8Ob_q3dDtQiW_OwuS9nA4Gsx87H26ywNcmYd38Xw@mail.gmail.com>
-	<CADknwL6s2ttb5E2JDr6bc_XkwpxnW5ecU-3Ns88=gvgPvLYkPg@mail.gmail.com>
-	<CABPqkBQUUb+yEvC8y3oLc0DUbF3DJPzbt3sNL7Zqzufh6EYdRw@mail.gmail.com>
-	<CADknwL71NC5wBG1tnqgJ6iiA4y+HYomGpufOn7V+MP2=m7+Mig@mail.gmail.com>
-	<CABPqkBTEafZ5MbYM4UQxX92uWcPiphPeXMoJRKTt8jnrB+5j2w@mail.gmail.com>
-	<20140605132750.GA16811@pd.tnic>
-	<CABPqkBT9ExD4unz0VZ5G1d+oGpkepiwXskgBpv5GTavs=tYAKA@mail.gmail.com>
-	<20140605140316.GB16811@pd.tnic>
-Date: Thu, 5 Jun 2014 17:45:24 +0300
-Message-ID: <CAHzUATiVCHytrG3sz8AmC8anZTQcPDRHp91-kWEoeq=RU7UNiw@mail.gmail.com>
-Subject: Re: [PATCH 9/9] perf/x86: add syfs entry to disable HT bug workaround
-From: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Stephane Eranian <eranian@google.com>,
-        Matt Fleming <matt@console-pimps.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+	Thu, 5 Jun 2014 10:31:43 -0400
+Date: Thu, 5 Jun 2014 16:31:40 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
         "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>
-Content-Type: text/plain; charset=UTF-8
+        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>,
+        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
+Subject: Re: [PATCH 5/9] perf/x86: implement cross-HT corruption bug
+ workaround
+Message-ID: <20140605143140.GN6758@twins.programming.kicks-ass.net>
+References: <1401917658-26065-1-git-send-email-eranian@google.com>
+ <1401917658-26065-6-git-send-email-eranian@google.com>
+ <20140605140400.GM3213@twins.programming.kicks-ass.net>
+ <CABPqkBQRDpbkF73sWKXiXJOO0Jbeb9tRTWqScbjNdTG50EN3ug@mail.gmail.com>
+ <20140605142135.GM6758@twins.programming.kicks-ass.net>
+ <CABPqkBQ9_HWN-LbwoxqDY52gHjevA_8fSoYbcv=wp04Rtp2ESg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="p1Od3smaOkJqivj4"
+Content-Disposition: inline
+In-Reply-To: <CABPqkBQ9_HWN-LbwoxqDY52gHjevA_8fSoYbcv=wp04Rtp2ESg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 5, 2014 at 5:03 PM, Borislav Petkov <bp@alien8.de> wrote:
-> On Thu, Jun 05, 2014 at 03:42:14PM +0200, Stephane Eranian wrote:
->> I gave a test case earlier:
->>
->> # echo 0 >/proc/sys/kernel/nmi_watchdog
->> # run_my_uniform_workload_on_all_cpus &
->> # perf stat -a -e r81d0,r01d1,r08d0,r20d1 sleep 5
->>
->> That run gives the correct answer.
->>
->> If I just look at CPU0 CPU4 siblings:
->>
->> CPU0, counter0 leaks N counts to CPU4, counter 0
->>
->> but at the same time:
->>
->> CPU4, counter0 leaks N counts to CPU0, counter 0
->>
->> This is because we have the same event in the same
->> counter AND the workload is uniform, meaning the
->> event (here loads retired) occurs at the same rate
->> on both siblings.
->>
->> You can test this by measuring only on one HT.
->> # perf stat -a -C0 -e r81d0,r01d1,r08d0,r20d1 sleep 5
->>
->> Note that some events, leak more than they count.
->
-> Ok, so AFAIU, this particular workload counts correctly just because
-> counters leak the same amount. If so, what happens if you run this exact
-> same workload with the workaround enabled? I read something about a bit
-> more counter multiplexing... or is there a more serious issue?
 
-The issue is that the outcoming leaked counts are not compensated
-by the incoming leaked counts of the sibling thread. With the workaround,
-corrupting events are always scheduled with an empty sibling counter.
-This means that their leaked counts are lost. So it is expected to see
-lower counts with the workaround. Note that this is not a side-effect of
-the workaround; leaked counts are expected to be lost with nothing
-measured on the sibling counter in general.
+--p1Od3smaOkJqivj4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-In a second series we intend to re-integrate the counts for counting mode
-events. The workaround makes this easier because it guarantees
-that the sibling counter is unused, thus its counts are purely leaked
-counts and they can be safely re-integrated.
+On Thu, Jun 05, 2014 at 04:26:38PM +0200, Stephane Eranian wrote:
+> On Thu, Jun 5, 2014 at 4:21 PM, Peter Zijlstra <peterz@infradead.org> wro=
+te:
 
+> > We could limit each cpu to num_counters/2 exclusive slots. That'll still
+> > be painful with some constrained events I imagine, but in general that
+> > should 'work' I suppose.
+>=20
+> That is probably the easiest solution, just modify the dynamic constraint
+> mask some more. Have not yet tried it.
 
->
-> Thanks.
->
-> --
-> Regards/Gruss,
->     Boris.
->
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
+Right, see what happens :-)
+
+> The repatriation of the leaked count is not so easy either. Need to IPI
+> the other HT. There may be some restrictions as to when we can
+> safely do this.
+
+Yes, that'll be 'interesting'. You typically cannot do things like
+smp_function_call() from IRQ/NMI context. Which leaves you to
+asynchonous IPIs.
+
+I suppose the easiest way is to simply push the count out to the right
+event when you reprogram the sibling. And maybe kick it every so often
+to force do this just in case the PMU doesn't get reprogrammed a lot.
+
+Still tricky.
+
+--p1Od3smaOkJqivj4
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTkH9MAAoJEHZH4aRLwOS6PK0P/2OgBvQLeKJpMcOu0ms4qN+l
+25EmWgQi8nyzwXZ3r+FGW32dCrn5ZW2I3IYl9FRAAdDigxDE2vPwHOfO3nhF3r99
+3S3cd28AAzMkkqgqHen00TNawkrGzHaMIFORbIBLRZIX6U0LTBM2DoI7aqDneoEd
+jE7aXdkI1mybf5zynYLIxgpNJWYCT9rKghhkoREzU1mU+fo/1YuaD/ocUKAeZw0N
+0k+ELhSraMkIKerWD849LDg8Mgemz3YhrJMGxJjqIwsUc5Kwjd3tKoSKjuvz/4Ku
+BfViUlX9LUUAxjIFZm/25XS59WxVjowzHGc8omtaDCrK7+wGB68aDN0xtuOmH1mN
+Ps1dh1hBeUWjaA20PxCAqAazK4wlsI/dkccdopwda96SabaOk5MGOtzzXXo07j8v
+S8dBspRDicP6c2Oa+yAaCiMeRiuyWhYXTI4iDf5HZeJhhrv1/PFziehmwYmAL5t4
+gcdhF7JwJDZHOvnulczUJkz/kqrK/dqMgXrKQeNDnoRr2afYV4GTRDn6ez3H6lGv
+qgX5cykRB8fQ/73m6p2whFfqZO5dupeEkrukEqrU6JqnDbeqmpBtJhCgu7kma6tp
+e+ij13hv/y1F7XKgzlkadlpCdawj/aIpQBPwE73jHdUmL9HLeM8jFRLNv0cesT93
+dH3UUKlqQEauENoSKj3I
+=Kxvq
+-----END PGP SIGNATURE-----
+
+--p1Od3smaOkJqivj4--
