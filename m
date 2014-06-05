@@ -1,89 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752409AbaFEVOk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 17:14:40 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:65499 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752005AbaFEVOj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 17:14:39 -0400
-Message-ID: <5390DDA6.2010700@gmail.com>
-Date: Thu, 05 Jun 2014 14:14:14 -0700
-From: Frank Rowand <frowand.list@gmail.com>
-Reply-To: frowand.list@gmail.com
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1752119AbaFEVTf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 17:19:35 -0400
+Received: from mout.web.de ([212.227.15.3]:60730 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751306AbaFEVTb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 17:19:31 -0400
+Date: Thu, 5 Jun 2014 23:20:16 +0200
+From: Linus =?utf-8?Q?L=C3=BCssing?= <linus.luessing@web.de>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, bridge@lists.linux-foundation.org,
+        stephen@networkplumber.org, herbert@gondor.apana.org.au,
+        linux-kernel@vger.kernel.org, b.a.t.m.a.n@lists.open-mesh.org
+Subject: Re: [PATCHv3 net-next 0/4] bridge: multicast snooping patches /
+ exports
+Message-ID: <20140605212016.GE2544@Linus-Debian>
+References: <1401732466-3027-1-git-send-email-linus.luessing@web.de>
+ <20140602184215.GA2460@Linus-Debian>
+ <20140605.004311.19890338095820543.davem@davemloft.net>
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: Steven Rostedt <rostedt@goodmis.org>, josh@joshtriplett.org,
-        Joe Perches <joe@perches.com>, paulmck@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        sbw@mit.edu
-Subject: Re: [PATCH RFC 1/2] MAINTAINERS: Add "R:" designated-reviewers tag
-References: <20140602185504.GA13569@cloud> <1401735917.7323.23.camel@joe-AO725> <20140602190951.GA13648@cloud> <1401736666.7323.25.camel@joe-AO725> <20140602231949.GV14410@dastard> <20140602235915.GB14801@cloud> <20140603011125.GW14410@dastard> <20140602213045.26219ddb@gandalf.local.home> <20140603071654.GC14410@dastard> <20140603134347.6e39f946@gandalf.local.home> <20140605040107.GA4453@dastard>
-In-Reply-To: <20140605040107.GA4453@dastard>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140605.004311.19890338095820543.davem@davemloft.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Provags-ID: V03:K0:iZ5e4ItEoc7gxb9e9tTS9kMmKVHDWbmG2Ff4ORTnuSFJKu0oJf7
+ bLJgmJtmdRKjnL7CE0w8qUxmJWubNl0VZfLca1Ochru8/2MpjNXCiHsfJyEqmMTY9jikFox
+ c9tssNA9IuvLtKlFVYzuMw3Fk1tcxrnTfCsXQDmbUCd3pSgKfoVvxBGDVf8ch+dpccyve8q
+ Ie1c/tpvhSf9UmKbD5Bfg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/4/2014 9:01 PM, Dave Chinner wrote:
-> On Tue, Jun 03, 2014 at 01:43:47PM -0400, Steven Rostedt wrote:
->> On Tue, 3 Jun 2014 17:16:54 +1000
->> Dave Chinner <david@fromorbit.com> wrote:
->>
->>
->>> If you take it to an extremes. Think about what you can test in 15
->>> minutes. Or for larger patchsets, how long it takes you to read the
->>> patchset?
->>
->> Yeah, what about that?
+
+On Thu, Jun 05, 2014 at 12:43:11AM -0700, David Miller wrote:
+> From: Linus Lüssing <linus.luessing@web.de>
+> Date: Mon, 2 Jun 2014 20:42:15 +0200
 > 
-> That testing a patch for obvious, common regressions takes no longer
-> than it does to read and review the logic. 
+> > Changes in v3:
+> > 
+> > * use EXPORT_SYMBOL_GPL() instead of EXPORT_SYMBOL()
 > 
->>> IMO, every reviewer has their own developement environment and they
->>> should be at least testing that the change they are reviewing
->>> doesn't cause problems in that environment, just like they do for
->>> their own code before they post it for review.
->>
->> Let me ask you this. In the scientific community, when someone posts a
->> research project and asks their peers to review their work. Are all
->> those reviewers required to test out that paper?
->> Or are they to review it, check the math, look for cases that are
->> missed, see common errors, and other checks? I'm sure some
->> reviewers may do various tests, but others will just check the
->> logic. I'm having a very hard time seeing where Reviewed-by means
->> tested-by. I see those as two completely different tags.
+> This is not a sufficient header posting.
 > 
-> We are not conducting a scientific research experiment here. We are
-> conduting a very large software *engineering* project here.
+> You must also describe at a high level what this patch series is
+> doing, and why you are doing it.
 
-Yes, software engineering.  Where software review is a manual process
-of *reading* and understanding code, in all of the processes I have
-been involved in at big corporations that love big process.  (Not to
-claim I know of all the processes everyone else uses...)
+Oh, I'm sorry, I thought it'd only be necessary for the v1
+patchset. Going to change that from now on. Anyways, here it is
+(copied 'n' pasted):
 
-Why can't you just let reviewed-by and tested-by mean different
-things instead of one being a super-set of the other?
+-----
 
-If you force reviewed-by to also mean tested-by then you just
-shrank your available pool of reviewers.
+The first patch is simply a cosmetic patch. So far I (and maybe others
+too?) have been regularly confusing these two structs, therefore I'd
+suggest renaming them and therefore making the follow-up patches easier
+to understand and nicer to fit in.
 
-</dead-horse beating>
+The second patch fixes a minor issue, but probably not worth for stable.
 
-> 
-> So perhaps we should be using robust software engineering processes
-> rather than academic peer review as the model for our code review
-> process?
 
-< snip >
+On the other hand the first two patches are also preparations for the
+third and fourth patch:
 
-Cheers,
+These two patches are exporting functionality needed to marry the bridge
+multicast snooping with the batman-adv multicast optimizations recently
+added for the 3.15 kernel, allowing to use these optimzations in common
+setups having a bridge on top of e.g. bat0, too. So far these bridged
+setups would fall back to simple flooding through the batman-adv mesh
+network for any multicast packet entering bat0.
 
-Frank
+More information about the batman-adv multicast optimizations currently
+implemented can be found here:
 
+http://www.open-mesh.org/projects/batman-adv/wiki/Basic-multicast-optimizations
+
+The integration on the batman-adv side could afterwards look like this,
+for instance:
+
+http://git.open-mesh.org/batman-adv.git/commitdiff/576b59dd3e34737c702e548b21fa72059262f796?hp=f95ce7131746c65fbcdffcf2089cab59e2c2f7ac
+
+-----
