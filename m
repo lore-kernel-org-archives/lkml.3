@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754583AbaFEFCk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 01:02:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43854 "EHLO
+	id S1754593AbaFEFC6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 01:02:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43849 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752486AbaFEEUa (ORCPT
+	with ESMTP id S1752301AbaFEEUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 5 Jun 2014 00:20:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Salva=20Peir=C3=B3?= <speiro@ai2.upv.es>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.4 063/214] media: media-device: fix infoleak in ioctl media_enum_entities()
-Date: Wed,  4 Jun 2014 21:17:06 -0700
-Message-Id: <20140605041647.980617145@linuxfoundation.org>
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH 3.4 062/214] crypto: crypto_wq - Fix late crypto work queue initialization
+Date: Wed,  4 Jun 2014 21:17:05 -0700
+Message-Id: <20140605041647.826241796@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,30 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Salva=20Peir=C3=B3?= <speiro@ai2.upv.es>
+From: Tim Chen <tim.c.chen@linux.intel.com>
 
-commit e6a623460e5fc960ac3ee9f946d3106233fd28d8 upstream.
+commit 130fa5bc81b44b6cc1fbdea3abf6db0da22964e0 upstream.
 
-This fixes CVE-2014-1739.
+The crypto algorithm modules utilizing the crypto daemon could
+be used early when the system start up.  Using module_init
+does not guarantee that the daemon's work queue is initialized
+when the cypto alorithm depending on crypto_wq starts.  It is necessary
+to initialize the crypto work queue earlier at the subsystem
+init time to make sure that it is initialized
+when used.
 
-Signed-off-by: Salva Peiró <speiro@ai2.upv.es>
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/media-device.c |    1 +
- 1 file changed, 1 insertion(+)
+ crypto/crypto_wq.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/media/media-device.c
-+++ b/drivers/media/media-device.c
-@@ -90,6 +90,7 @@ static long media_device_enum_entities(s
- 	struct media_entity *ent;
- 	struct media_entity_desc u_ent;
+--- a/crypto/crypto_wq.c
++++ b/crypto/crypto_wq.c
+@@ -33,7 +33,7 @@ static void __exit crypto_wq_exit(void)
+ 	destroy_workqueue(kcrypto_wq);
+ }
  
-+	memset(&u_ent, 0, sizeof(u_ent));
- 	if (copy_from_user(&u_ent.id, &uent->id, sizeof(u_ent.id)))
- 		return -EFAULT;
+-module_init(crypto_wq_init);
++subsys_initcall(crypto_wq_init);
+ module_exit(crypto_wq_exit);
  
+ MODULE_LICENSE("GPL");
 
 
