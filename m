@@ -1,70 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752752AbaFER4V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 13:56:21 -0400
-Received: from mailout3.w2.samsung.com ([211.189.100.13]:33903 "EHLO
-	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752050AbaFER4T (ORCPT
+	id S1752782AbaFER5d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 13:57:33 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:59684 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374AbaFER5b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 13:56:19 -0400
-X-AuditID: cbfec37a-b7f206d000005572-bf-5390af4261a2
-Message-id: <5390AF40.4030804@samsung.com>
-Date: Thu, 05 Jun 2014 11:56:16 -0600
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.5.0
-MIME-version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux@roeck-us.net, satoru.takeuchi@gmail.com, stable@vger.kernel.org,
-        Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH 3.4 000/214] 3.4.92-stable review
-References: <20140605041639.638675216@linuxfoundation.org>
-In-reply-to: <20140605041639.638675216@linuxfoundation.org>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.34.6]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsVy+t9hP12n9ROCDU7MkbaYs34Nm0Xz4vVs
-	Fpd3zWGzeLLwDJPF1FMTWCwWbHzEaPGo7y27A7vHzll32T1OzPjN4rF/7hog93sDu8fnTXIB
-	rFFcNimpOZllqUX6dglcGbualjAXnGSr6P10nb2BcTZrFyMnh4SAicStR+eZIWwxiQv31rN1
-	MXJxCAksY5To7X7PCOH0Mkl0vpnKDOFsYJT48mwLO0gLr4CWxLMNy5i6GDk4WARUJY68LgQJ
-	swmoS3x+vQOsREhATqJpyWpmkBJRgQiJxxeEIDoFJX5MvscCYosIBEus/boQbBezwCpGieuX
-	l7OBJIQFTCW+fl3GBjHHSmLTqu9gl3IKWEuseLkFrJlZwEziUcs6ZghbXmLzmrfMEPXKEn8u
-	n2KC+ExB4tHVVvYJjCKzkOyehaR9FpL2BYzMqxjFSouTC4qT0lMrDPWKE3OLS/PS9ZLzczcx
-	QiKpagfjna82hxgFOBiVeHgD+icEC7EmlhVX5h5ilOBgVhLh5VkBFOJNSaysSi3Kjy8qzUkt
-	PsTIxMEp1cDYGn/l66MkNZ253iv690SdkHyp8oj/794ULWU35yL93Kua7FtNG99tyJxSd3XW
-	/mATv6Vnntv6L/Y8EFzkt6PGbI4hm8XG5bVHspSiQu6f59v4WOM680SpEzuv7bJlfXDN6FbM
-	oux/BhdTpjIxNWQ4rfS48nCd6dfcWzkibxKv5iTseeLT22qpxFKckWioxVxUnAgAlfSb9IIC	AAA=
+	Thu, 5 Jun 2014 13:57:31 -0400
+Message-ID: <5390AF88.9050007@wwwdotorg.org>
+Date: Thu, 05 Jun 2014 11:57:28 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Russell King <linux@arm.linux.org.uk>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7 1/5] ARM: tegra: export apb dma readl/writel
+References: <1401973754-19701-1-git-send-email-pdeschrijver@nvidia.com> <1401973754-19701-2-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1401973754-19701-2-git-send-email-pdeschrijver@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2014 10:16 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.4.92 release.
-> There are 214 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Sat Jun  7 04:15:47 UTC 2014.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.92-rc1.gz
-> and the diffstat can be found below.
->
-> thanks,
->
-> greg k-h
->
+On 06/05/2014 07:09 AM, Peter De Schrijver wrote:
+> Export APB DMA readl and writel. These are needed because we can't access
+> the fuses directly on Tegra20 without potentially causing a system hang.
+> Also have the APB DMA readl and writel return an error in case of a read
+> failure instead of just returning zero or ignore write failures.
 
-Compiled and booted on my test system with no dmesg regressions.
+> diff --git a/include/linux/tegra-soc.h b/include/linux/tegra-soc.h
 
--- Shuah
+> +int tegra_apb_readl_using_dma(unsigned long offset, u32 *value);
+> +int tegra_apb_writel_using_dma(u32 value, unsigned long offset);
 
--- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+Hmm. I wonder why we're exporting those low-level internal functions
+rather than the higher-level tegra_apb_readl()/writel() wrappers that
+"clients" are supposed to be using.
