@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753828AbaFEEtI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:49:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44113 "EHLO
+	id S1754049AbaFEEtk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:49:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44099 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211AbaFEEVN (ORCPT
+	with ESMTP id S1752927AbaFEEVM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:21:13 -0400
+	Thu, 5 Jun 2014 00:21:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>,
-        Grant Grundler <grundler@parisc-linux.org>,
-        Nobin Mathew <nobin.mathew@gmail.com>,
-        Robert Hancock <hancockr@shaw.ca>, Arnd Bergmann <arnd@arndb.de>,
-        David Altobelli <david.altobelli@hp.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Ben Hutchings <ben@decadent.org.uk>,
         Qiang Huang <h.huangqiang@huawei.com>
-Subject: [PATCH 3.4 111/214] MISC: hpilo, remove pci_disable_device
-Date: Wed,  4 Jun 2014 21:17:54 -0700
-Message-Id: <20140605041654.605779691@linuxfoundation.org>
+Subject: [PATCH 3.4 116/214] intel_idle: Dont register CPU notifier if we are not running.
+Date: Wed,  4 Jun 2014 21:17:59 -0700
+Message-Id: <20140605041655.277443243@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -32,65 +30,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Slaby <jslaby@suse.cz>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit bcdee04ea7ae0406ae69094f6df1aacb66a69a0b upstream.
+commit 6f8c2e7933679f54b6478945dc72e59ef9a3d5e0 upstream.
 
-pci_disable_device(pdev) used to be in pci remove function. But this
-PCI device has two functions with interrupt lines connected to a
-single pin. The other one is a USB host controller. So when we disable
-the PIN there e.g. by rmmod hpilo, the controller stops working. It is
-because the interrupt link is disabled in ACPI since it is not
-refcounted yet. See acpi_pci_link_free_irq called from
-acpi_pci_irq_disable.
+The 'intel_idle_probe' probes the CPU and sets the CPU notifier.
+But if later on during the module initialization we fail (say
+in cpuidle_register_driver), we stop loading, but we neglect
+to unregister the CPU notifier.  This means that during CPU
+hotplug events the system will fail:
 
-It is not the best solution whatsoever, but as a workaround until the
-ACPI irq link refcounting is sorted out this should fix the reported
-errors.
+calling  intel_idle_init+0x0/0x326 @ 1
+intel_idle: MWAIT substates: 0x1120
+intel_idle: v0.4 model 0x2A
+intel_idle: lapic_timer_reliable_states 0xffffffff
+intel_idle: intel_idle yielding to none
+initcall intel_idle_init+0x0/0x326 returned -19 after 14 usecs
 
-References: https://lkml.org/lkml/2008/11/4/535
+... some time later, offlining and onlining a CPU:
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Grant Grundler <grundler@parisc-linux.org>
-Cc: Nobin Mathew <nobin.mathew@gmail.com>
-Cc: Robert Hancock <hancockr@shaw.ca>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: David Altobelli <david.altobelli@hp.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+cpu 3 spinlock event irq 62
+BUG: unable to ] __cpuidle_register_device+0x1c/0x120
+PGD 99b8b067 PUD 99b95067 PMD 0
+Oops: 0000 [#1] SMP
+Modules linked in: xen_evtchn nouveau mxm_wmi wmi radeon ttm i915 fbcon tileblit font atl1c bitblit softcursor drm_kms_helper video xen_blkfront xen_netfront fb_sys_fops sysimgblt sysfillrect syscopyarea xenfs xen_privcmd mperf
+CPU 0
+Pid: 2302, comm: udevd Not tainted 3.8.0-rc3upstream-00249-g09ad159 #1 MSI MS-7680/H61M-P23 (MS-7680)
+RIP: e030:[<ffffffff814d956c>]  [<ffffffff814d956c>] __cpuidle_register_device+0x1c/0x120
+RSP: e02b:ffff88009dacfcb8  EFLAGS: 00010286
+RAX: 0000000000000000 RBX: ffff880105380000 RCX: 000000000000001c
+RDX: 0000000000000000 RSI: 0000000000000055 RDI: ffff880105380000
+RBP: ffff88009dacfce8 R08: ffffffff81a4f048 R09: 0000000000000008
+R10: 0000000000000008 R11: 0000000000000000 R12: ffff880105380000
+R13: 00000000ffffffdd R14: 0000000000000000 R15: ffffffff81a523d0
+FS:  00007f37bd83b7a0(0000) GS:ffff880105200000(0000) knlGS:0000000000000000
+CS:  e033 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000000000008 CR3: 00000000a09ea000 CR4: 0000000000042660
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process udevd (pid: 2302, threadinfo ffff88009dace000, task ffff88009afb47f0)
+Stack:
+ ffffffff8107f2d0 ffffffff810c2fb7 ffff88009dacfce8 00000000ffffffea
+ ffff880105380000 00000000ffffffdd ffff88009dacfd08 ffffffff814d9882
+ 0000000000000003 ffff880105380000 ffff88009dacfd28 ffffffff81340afd
+Call Trace:
+ [<ffffffff8107f2d0>] ? collect_cpu_info_local+0x30/0x30
+ [<ffffffff810c2fb7>] ? __might_sleep+0xe7/0x100
+ [<ffffffff814d9882>] cpuidle_register_device+0x32/0x70
+ [<ffffffff81340afd>] intel_idle_cpu_init+0xad/0x110
+ [<ffffffff81340bc8>] cpu_hotplug_notify+0x68/0x80
+ [<ffffffff8166023d>] notifier_call_chain+0x4d/0x70
+ [<ffffffff810bc369>] __raw_notifier_call_chain+0x9/0x10
+ [<ffffffff81094a4b>] __cpu_notify+0x1b/0x30
+ [<ffffffff81652cf7>] _cpu_up+0x103/0x14b
+ [<ffffffff81652e18>] cpu_up+0xd9/0xec
+ [<ffffffff8164a254>] store_online+0x94/0xd0
+ [<ffffffff814122fb>] dev_attr_store+0x1b/0x20
+ [<ffffffff81216404>] sysfs_write_file+0xf4/0x170
+ [<ffffffff811a1024>] vfs_write+0xb4/0x130
+ [<ffffffff811a17ea>] sys_write+0x5a/0xa0
+ [<ffffffff816643a9>] system_call_fastpath+0x16/0x1b
+Code: 03 18 00 c9 c3 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 48 83 ec 30 48 89 5d e8 4c 89 65 f0 48 89 fb 4c 89 6d f8 e8 84 08 00 00 <48> 8b 78 08 49 89 c4 e8 f8 7f c1 ff 89 c2 b8 ea ff ff ff 84 d2
+RIP  [<ffffffff814d956c>] __cpuidle_register_device+0x1c/0x120
+ RSP <ffff88009dacfcb8>
+
+This patch fixes that by moving the CPU notifier registration
+as the last item to be done by the module.
+
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+[bwh: Backported to 3.2: notifier is registered only if we do not have ARAT]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Qiang Huang <h.huangqiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/misc/hpilo.c |   11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ drivers/idle/intel_idle.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/drivers/misc/hpilo.c
-+++ b/drivers/misc/hpilo.c
-@@ -735,7 +735,14 @@ static void ilo_remove(struct pci_dev *p
- 	free_irq(pdev->irq, ilo_hw);
- 	ilo_unmap_device(pdev, ilo_hw);
- 	pci_release_regions(pdev);
--	pci_disable_device(pdev);
-+	/*
-+	 * pci_disable_device(pdev) used to be here. But this PCI device has
-+	 * two functions with interrupt lines connected to a single pin. The
-+	 * other one is a USB host controller. So when we disable the PIN here
-+	 * e.g. by rmmod hpilo, the controller stops working. It is because
-+	 * the interrupt link is disabled in ACPI since it is not refcounted
-+	 * yet. See acpi_pci_link_free_irq called from acpi_pci_irq_disable.
-+	 */
- 	kfree(ilo_hw);
- 	ilo_hwdev[(minor / MAX_CCB)] = 0;
+--- a/drivers/idle/intel_idle.c
++++ b/drivers/idle/intel_idle.c
+@@ -443,10 +443,8 @@ static int intel_idle_probe(void)
+ 
+ 	if (boot_cpu_has(X86_FEATURE_ARAT))	/* Always Reliable APIC Timer */
+ 		lapic_timer_reliable_states = LAPIC_TIMER_ALWAYS_RELIABLE;
+-	else {
++	else
+ 		on_each_cpu(__setup_broadcast_timer, (void *)true, 1);
+-		register_cpu_notifier(&setup_broadcast_notifier);
+-	}
+ 
+ 	pr_debug(PREFIX "v" INTEL_IDLE_VERSION
+ 		" model 0x%X\n", boot_cpu_data.x86_model);
+@@ -612,6 +610,9 @@ static int __init intel_idle_init(void)
+ 		}
+ 	}
+ 
++	if (lapic_timer_reliable_states != LAPIC_TIMER_ALWAYS_RELIABLE)
++		register_cpu_notifier(&setup_broadcast_notifier);
++
+ 	return 0;
  }
-@@ -820,7 +827,7 @@ unmap:
- free_regions:
- 	pci_release_regions(pdev);
- disable:
--	pci_disable_device(pdev);
-+/*	pci_disable_device(pdev);  see comment in ilo_remove */
- free:
- 	kfree(ilo_hw);
- out:
+ 
 
 
