@@ -1,60 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752201AbaFEOeN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 10:34:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7802 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752146AbaFEOeL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 10:34:11 -0400
-Date: Thu, 5 Jun 2014 16:33:07 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@elte.hu>, Denys Vlasenko <dvlasenk@redhat.com>,
-        Jim Keniston <jkenisto@us.ibm.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] uprobes: tmpfs support (Was: uprobes/x86: Rename
-	arch_uprobe->def into ->dflt, minor comment updates)
-Message-ID: <20140605143307.GA24982@redhat.com>
-References: <20140601192520.GA14539@redhat.com> <20140603182142.GA5097@gmail.com> <20140603183057.GA31382@redhat.com> <20140603183919.GC7664@gmail.com> <20140603191315.GA32736@redhat.com> <538E8FAA.7010302@hitachi.com> <20140604163945.GA26429@redhat.com> <20140605092850.GA4632@gmail.com>
+	id S1752260AbaFEOek (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 10:34:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48272 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751326AbaFEOeg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 10:34:36 -0400
+Date: Thu, 5 Jun 2014 07:33:25 -0700
+From: tip-bot for Steven Rostedt <tipbot@zytor.com>
+Message-ID: <tip-e9dd685ce81815811fb4da72e6ab10a694ac8468@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        eric.dumazet@gmail.com, torvalds@linux-foundation.org,
+        peterz@infradead.org, umgwanakikbuti@gmail.com, rostedt@goodmis.org,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        eric.dumazet@gmail.com, torvalds@linux-foundation.org,
+        peterz@infradead.org, umgwanakikbuti@gmail.com, rostedt@goodmis.org,
+        tglx@linutronix.de
+In-Reply-To: <20140527182541.GH11096@twins.programming.kicks-ass.net>
+References: <20140527182541.GH11096@twins.programming.kicks-ass.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/urgent] sched/numa: Fix use of spin_{un}lock_irq()
+  when interrupts are disabled
+Git-Commit-ID: e9dd685ce81815811fb4da72e6ab10a694ac8468
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20140605092850.GA4632@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05, Ingo Molnar wrote:
->
-> * Oleg Nesterov <oleg@redhat.com> wrote:
->
-> > On 06/04, Masami Hiramatsu wrote:
-> > >
-> > > Hmm, how about ->defparam ? :)
-> >
-> > Fine with me ;)
-> >
-> > Ingo, will you agree with s/def/defparam/ ?
->
-> Certainly! :)
+Commit-ID:  e9dd685ce81815811fb4da72e6ab10a694ac8468
+Gitweb:     http://git.kernel.org/tip/e9dd685ce81815811fb4da72e6ab10a694ac8468
+Author:     Steven Rostedt <rostedt@goodmis.org>
+AuthorDate: Tue, 27 May 2014 17:02:04 -0400
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 5 Jun 2014 11:07:41 +0200
 
-Great ;) I updated this patch in uprobes/core, please pull from
+sched/numa: Fix use of spin_{un}lock_irq() when interrupts are disabled
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/oleg/misc uprobes/core
+As Peter Zijlstra told me, we have the following path:
 
-based on tip:perf/uprobes
+do_exit()
+  exit_itimers()
+    itimer_delete()
+      spin_lock_irqsave(&timer->it_lock, &flags);
+      timer_delete_hook(timer);
+        kc->timer_del(timer) := posix_cpu_timer_del()
+          put_task_struct()
+            __put_task_struct()
+              task_numa_free()
+                spin_lock(&grp->lock);
 
+Which means that task_numa_free() can be called with interrupts
+disabled, which means that we should not be using spin_lock_irq() but
+spin_lock_irqsave() instead. Otherwise we are enabling interrupts while
+holding an interrupt unsafe lock!
 
-Oleg Nesterov (3):
-      uprobes: Shift ->readpage check from __copy_insn() to uprobe_register()
-      uprobes: Teach copy_insn() to support tmpfs
-      uprobes/x86: Rename arch_uprobe->def to ->defparam, minor comment updates
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner<tglx@linutronix.de>
+Cc: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/20140527182541.GH11096@twins.programming.kicks-ass.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/sched/fair.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
- arch/x86/include/asm/uprobes.h |    2 +-
- arch/x86/kernel/uprobes.c      |   37 ++++++++++++++++++-------------------
- kernel/events/uprobes.c        |   17 +++++++++++------
- 3 files changed, 30 insertions(+), 26 deletions(-)
-
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 0fdb96d..b4768c0 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1707,18 +1707,19 @@ no_join:
+ void task_numa_free(struct task_struct *p)
+ {
+ 	struct numa_group *grp = p->numa_group;
+-	int i;
+ 	void *numa_faults = p->numa_faults_memory;
++	unsigned long flags;
++	int i;
+ 
+ 	if (grp) {
+-		spin_lock_irq(&grp->lock);
++		spin_lock_irqsave(&grp->lock, flags);
+ 		for (i = 0; i < NR_NUMA_HINT_FAULT_STATS * nr_node_ids; i++)
+ 			grp->faults[i] -= p->numa_faults_memory[i];
+ 		grp->total_faults -= p->total_numa_faults;
+ 
+ 		list_del(&p->numa_entry);
+ 		grp->nr_tasks--;
+-		spin_unlock_irq(&grp->lock);
++		spin_unlock_irqrestore(&grp->lock, flags);
+ 		rcu_assign_pointer(p->numa_group, NULL);
+ 		put_numa_group(grp);
+ 	}
