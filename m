@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259AbaFEEVo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:21:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44270 "EHLO
+	id S1753833AbaFEEjo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:39:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44281 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753225AbaFEEVm (ORCPT
+	with ESMTP id S1753240AbaFEEVn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:21:42 -0400
+	Thu, 5 Jun 2014 00:21:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        Matt Fleming <matt.fleming@intel.com>, Tony Luck <tony.luck@intel.com>,
-        Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 3.4 149/214] efi_pstore: Introducing workqueue updating sysfs
-Date: Wed,  4 Jun 2014 21:18:32 -0700
-Message-Id: <20140605041659.846734439@linuxfoundation.org>
+        Richard Weinberger <richard@nod.at>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Ben Hutchings <ben@decadent.org.uk>, Rui Xiang <rui.xiang@huawei.com>
+Subject: [PATCH 3.4 151/214] x86,efi: Check max_size only if it is non-zero.
+Date: Wed,  4 Jun 2014 21:18:34 -0700
+Message-Id: <20140605041700.121237528@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -28,136 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seiji Aguchi <seiji.aguchi@hds.com>
+From: Richard Weinberger <richard@nod.at>
 
-commit a93bc0c6e07ed9bac44700280e65e2945d864fd4 upstream.
+commit 7791c8423f1f7f4dad94e753bae67461d5b80be8 upstream.
 
-[Problem]
-efi_pstore creates sysfs entries, which enable users to access to NVRAM,
-in a write callback. If a kernel panic happens in an interrupt context,
-it may fail because it could sleep due to dynamic memory allocations during
-creating sysfs entries.
+Some EFI implementations return always a MaximumVariableSize of 0,
+check against max_size only if it is non-zero.
+My Intel DQ67SW desktop board has such an implementation.
 
-[Patch Description]
-This patch removes sysfs operations from a write callback by introducing
-a workqueue updating sysfs entries which is scheduled after the write
-callback is called.
-
-Also, the workqueue is kicked in a just oops case.
-A system will go down in other cases such as panic, clean shutdown and emergency
-restart. And we don't need to create sysfs entries because there is no chance for
-users to access to them.
-
-efi_pstore will be robust against a kernel panic in an interrupt context with this patch.
-
-Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
-Acked-by: Matt Fleming <matt.fleming@intel.com>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
-[xr: Backported to 3.4:
-  - Adjust contest
-  - Remove repeated definition of helper function variable_is_present]
-Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
+Signed-off-by: Richard Weinberger <richard@nod.at>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: Rui Xiang <rui.xiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/firmware/efivars.c |   61 +++++++++++++++++++++++++++++++++++++++++----
- include/linux/efi.h        |    3 +-
- 2 files changed, 58 insertions(+), 6 deletions(-)
 
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -154,6 +154,13 @@ efivar_create_sysfs_entry(struct efivars
- 			  efi_char16_t *variable_name,
- 			  efi_guid_t *vendor_guid);
+---
+ arch/x86/platform/efi/efi.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -979,7 +979,12 @@ efi_status_t efi_query_variable_store(u3
+ 	if (status != EFI_SUCCESS)
+ 		return status;
  
-+/*
-+ * Prototype for workqueue functions updating sysfs entry
-+ */
+-	if (!storage_size || size > remaining_size || size > max_size ||
++	if (!max_size && remaining_size > size)
++		printk_once(KERN_ERR FW_BUG "Broken EFI implementation"
++			    " is returning MaxVariableSize=0\n");
 +
-+static void efivar_update_sysfs_entries(struct work_struct *);
-+static DECLARE_WORK(efivar_work, efivar_update_sysfs_entries);
-+
- /* Return the number of unicode characters in data */
- static unsigned long
- utf16_strnlen(efi_char16_t *s, size_t maxlength)
-@@ -839,11 +846,8 @@ static int efi_pstore_write(enum pstore_
- 	if (found)
- 		efivar_unregister(found);
++	if (!storage_size || size > remaining_size ||
++	    (max_size && size > max_size) ||
+ 	    (remaining_size - size) < (storage_size / 2))
+ 		return EFI_OUT_OF_RESOURCES;
  
--	if (size)
--		ret = efivar_create_sysfs_entry(efivars,
--					  utf16_strsize(efi_name,
--							DUMP_NAME_LEN * 2),
--					  efi_name, &vendor);
-+	if (reason == KMSG_DUMP_OOPS)
-+		schedule_work(&efivar_work);
- 
- 	*id = part;
- 	return ret;
-@@ -1044,6 +1048,53 @@ static bool variable_is_present(efi_char
- 	return found;
- }
- 
-+static void efivar_update_sysfs_entries(struct work_struct *work)
-+{
-+	struct efivars *efivars = &__efivars;
-+	efi_guid_t vendor;
-+	efi_char16_t *variable_name;
-+	unsigned long variable_name_size = 1024;
-+	efi_status_t status = EFI_NOT_FOUND;
-+	bool found;
-+
-+	/* Add new sysfs entries */
-+	while (1) {
-+		variable_name = kzalloc(variable_name_size, GFP_KERNEL);
-+		if (!variable_name) {
-+			pr_err("efivars: Memory allocation failed.\n");
-+			return;
-+		}
-+
-+		spin_lock_irq(&efivars->lock);
-+		found = false;
-+		while (1) {
-+			variable_name_size = 1024;
-+			status = efivars->ops->get_next_variable(
-+							&variable_name_size,
-+							variable_name,
-+							&vendor);
-+			if (status != EFI_SUCCESS) {
-+				break;
-+			} else {
-+				if (!variable_is_present(variable_name,
-+				    &vendor)) {
-+					found = true;
-+					break;
-+				}
-+			}
-+		}
-+		spin_unlock_irq(&efivars->lock);
-+
-+		if (!found) {
-+			kfree(variable_name);
-+			break;
-+		} else
-+			efivar_create_sysfs_entry(efivars,
-+						  variable_name_size,
-+						  variable_name, &vendor);
-+	}
-+}
-+
- /*
-  * Returns the size of variable_name, in bytes, including the
-  * terminating NULL character, or variable_name_size if no NULL
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -666,7 +666,8 @@ struct efivars {
- 	 * 1) ->list - adds, removals, reads, writes
- 	 * 2) ops.[gs]et_variable() calls.
- 	 * It must not be held when creating sysfs entries or calling kmalloc.
--	 * ops.get_next_variable() is only called from register_efivars(),
-+	 * ops.get_next_variable() is only called from register_efivars()
-+	 * or efivar_update_sysfs_entries(),
- 	 * which is protected by the BKL, so that path is safe.
- 	 */
- 	spinlock_t lock;
 
 
