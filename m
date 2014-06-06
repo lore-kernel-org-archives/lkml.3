@@ -1,81 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580AbaFFI5j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 04:57:39 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:42179 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751871AbaFFI5g (ORCPT
+	id S1752144AbaFFJCr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 05:02:47 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:37528 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750853AbaFFJCp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 04:57:36 -0400
-Date: Fri, 6 Jun 2014 10:57:33 +0200
-From: Jiri Pirko <jiri@resnulli.us>
-To: Michal Privoznik <mprivozn@redhat.com>
-Cc: davem@davemloft.net, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] net-sysfs: Report link speed only when possible
-Message-ID: <20140606085733.GJ2984@minipsycho.orion>
-References: <771f792d4d4391c656305a522557c53c4e84a666.1402043894.git.mprivozn@redhat.com>
+	Fri, 6 Jun 2014 05:02:45 -0400
+Date: Fri, 6 Jun 2014 10:02:42 +0100 (BST)
+From: "Maciej W. Rozycki" <macro@linux-mips.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+cc: Josh Triplett <josh@joshtriplett.org>, Jann Horn <jann@thejh.net>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH] drivers/char/mem.c: Add /dev/ioports, supporting 16-bit
+ and 32-bit ports
+In-Reply-To: <538FA4C7.2050206@zytor.com>
+Message-ID: <alpine.LFD.2.11.1406060457410.18344@eddie.linux-mips.org>
+References: <20140509191914.GA7286@jtriplet-mobl1> <20140510070742.GE6099@debjann.fritz.box> <20140510193246.GA12079@thin> <20140511125006.GA16197@debjann.fritz.box> <20140511210514.GB6056@thin> <alpine.LFD.2.11.1406011101400.30121@eddie.linux-mips.org>
+ <538FA4C7.2050206@zytor.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <771f792d4d4391c656305a522557c53c4e84a666.1402043894.git.mprivozn@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fri, Jun 06, 2014 at 10:40:30AM CEST, mprivozn@redhat.com wrote:
->The link speed is available at /sys/class/net/$nic/speed.
->However, in some cases, depending on the driver, if the link is
->not plugged, -1 is reported (this is the case of e1000e for
->instance). To make things worse, the value is printed out as an
+On Wed, 4 Jun 2014, H. Peter Anvin wrote:
 
-Actually, SPEED_UNKNOWN is also -1
-So e1000e is not any exception.
-
-
->unsigned integer, so you'll get this shady number which you can't
->evaluate correctly. This is actually a regression in 3.X kernels
->as the commit that broke things is 8ae6daca. With this change,
->you'll get -EINVAL whenever a -1 is to be printed out.
->
->Before the change:
->  # cat /sys/class/net/eth0/speed
->  4294967295
->
->After the change:
->  # cat /sys/class/net/eth0/speed
->  cat: /sys/class/net/eth0/speed: Invalid argument
->
->Signed-off-by: Michal Privoznik <mprivozn@redhat.com>
->---
-> net/core/net-sysfs.c | 9 +++++++--
-> 1 file changed, 7 insertions(+), 2 deletions(-)
->
->diff --git a/net/core/net-sysfs.c b/net/core/net-sysfs.c
->index 1cac29e..ce4b298 100644
->--- a/net/core/net-sysfs.c
->+++ b/net/core/net-sysfs.c
->@@ -172,8 +172,13 @@ static ssize_t speed_show(struct device *dev,
+> > Also IIRC PCI-PCI bridges only forward port I/O space accesses 
+> > within the low 64kB.
 > 
-> 	if (netif_running(netdev)) {
-> 		struct ethtool_cmd cmd;
->-		if (!__ethtool_get_settings(netdev, &cmd))
->-			ret = sprintf(buf, fmt_udec, ethtool_cmd_speed(&cmd));
->+		if (!__ethtool_get_settings(netdev, &cmd)) {
->+			__u32 speed = ethtool_cmd_speed(&cmd);
->+
->+			if (speed != (__u32) -1)
+> Not true.
 
-Just rather use SPEED_UNKNOWN instead of -1 here.
+ It must have been an implementation-specific constraint then (e.g. 
+DECchip 21050), it's been a while since I looked into it.  Thanks for 
+straightening me out.
 
-
->+				ret = sprintf(buf, fmt_udec,
->+					      ethtool_cmd_speed(&cmd));
->+		}
-> 	}
-> 	rtnl_unlock();
-> 	return ret;
->-- 
->2.0.0
->
+  Maciej
