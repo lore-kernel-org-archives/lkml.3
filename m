@@ -1,91 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752201AbaFFPuU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 11:50:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37591 "EHLO
+	id S1752241AbaFFPvm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 11:51:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37599 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751624AbaFFPuS (ORCPT
+	with ESMTP id S1751276AbaFFPvl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 11:50:18 -0400
-Date: Fri, 6 Jun 2014 08:50:12 -0700
-From: Greg KH <greg@kroah.com>
-To: Ken Helias <kenhelias@firemail.de>
-Cc: lkml <linux-kernel@vger.kernel.org>, devel@driverdev.osuosl.org,
-        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
-        b.a.t.m.a.n@lists.open-mesh.org, dri-devel@lists.freedesktop.org,
-        linux-fsdevel@vger.kernel.org, paulmck@linux.vnet.ibm.com
-Subject: Re: [PATCH] list: Fix order of arguments for hlist_add_after(_rcu)
-Message-ID: <20140606155012.GA15110@kroah.com>
-References: <1402047743-3391-1-git-send-email-kenhelias@firemail.de>
+	Fri, 6 Jun 2014 11:51:41 -0400
+Date: Fri, 6 Jun 2014 08:51:31 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: David Herrmann <dh.herrmann@gmail.com>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        Jiri Slaby <jslaby@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>
+Subject: Re: [PATCH 2/5] vt: Fix up unregistration of vt drivers
+Message-ID: <20140606155131.GB15110@kroah.com>
+References: <1401980308-5116-1-git-send-email-daniel.vetter@ffwll.ch>
+ <1401980308-5116-2-git-send-email-daniel.vetter@ffwll.ch>
+ <CANq1E4QpST-ZQbhm8FS-xuyda0dnYAFjasqFCspTPKdzJ6zW6w@mail.gmail.com>
+ <20140606075655.GC7416@phenom.ffwll.local>
+ <CANq1E4Rs725k9HgtsVtQmjU7DOeaUqfL-Y+_TSQWQCj848C9kA@mail.gmail.com>
+ <20140606094050.GE7416@phenom.ffwll.local>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1402047743-3391-1-git-send-email-kenhelias@firemail.de>
+In-Reply-To: <20140606094050.GE7416@phenom.ffwll.local>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 06, 2014 at 11:42:23AM +0200, Ken Helias wrote:
-> All other add functions for lists have the new item as first argument and the
-> position where it is added as second argument. This was changed for no good
-> reason in this function and makes using it unnecessary confusing.
+On Fri, Jun 06, 2014 at 11:40:50AM +0200, Daniel Vetter wrote:
+> On Fri, Jun 06, 2014 at 10:47:25AM +0200, David Herrmann wrote:
+> > Hi
+> > 
+> > On Fri, Jun 6, 2014 at 9:56 AM, Daniel Vetter <daniel@ffwll.ch> wrote:
+> > > On Fri, Jun 06, 2014 at 09:24:35AM +0200, David Herrmann wrote:
+> > >> Hi
+> > >>
+> > >> On Thu, Jun 5, 2014 at 4:58 PM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+> > >> > A bunch of issues:
+> > >> > - We should not kick out the default console (which is tracked in
+> > >> >   conswitchp), so check for that.
+> > >> > - Add better error codes so callers can differentiate between "something
+> > >> >   went wrong" and "your driver isn't registered already". i915 needs
+> > >> >   that so it doesn't fall over when reloading the driver and hence
+> > >> >   vga_con is already unregistered.
+> > >> > - There's a mess with the driver flags: What we need to check for is
+> > >> >   that the driver isn't used any more, i.e. unbound completely (FLAG_INIT).
+> > >> >   And not whether it's the boot console or not (which is the only one
+> > >> >   which doesn't have FLAG_MODULE). Otherwise there's no way to kick
+> > >> >   out the boot console, which i915 wants to do to prevent havoc with
+> > >> >   vga_con interferring (which tends to hang machines).
+> > >> >
+> > >> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > >> > Cc: Jiri Slaby <jslaby@suse.cz>
+> > >> > Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+> > >> > ---
+> > >> >  drivers/tty/vt/vt.c | 16 +++++++++-------
+> > >> >  1 file changed, 9 insertions(+), 7 deletions(-)
+> > >> >
+> > >> > diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
+> > >> > index ea600f482eeb..5077fe87324d 100644
+> > >> > --- a/drivers/tty/vt/vt.c
+> > >> > +++ b/drivers/tty/vt/vt.c
+> > >> > @@ -3573,17 +3573,20 @@ err:
+> > >> >   */
+> > >> >  int do_unregister_con_driver(const struct consw *csw)
+> > >> >  {
+> > >> > -       int i, retval = -ENODEV;
+> > >> > +       int i;
+> > >> >
+> > >> >         /* cannot unregister a bound driver */
+> > >> >         if (con_is_bound(csw))
+> > >> > -               goto err;
+> > >> > +               return -EBUSY;
+> > >> > +
+> > >> > +       if (csw == conswitchp)
+> > >> > +               return -EINVAL;
+> > >>
+> > >> Ugh, that fix is correct, but I'd rather like to see
+> > >> do_unbind_con_driver() do the right thing. It currently resets
+> > >> conswitchp _only_ if the new fallback is unbound. Why not _always_ set
+> > >> conswitchp to defcsw _iff_ conswitchp == csw there?
+> > >
+> > > Ha, that's what I've thought, too. But do_unbind doesn't actually change
+> > > conswitchp, it only restores it because apparently the
+> > > vga_con->con_startup function is a real con and changes it behind
+> > > everyones back for no good reason. Or at least that's what the comment
+> > > claims. Note how defconsw != defcsw ...
+> > >
+> > > I've tried to follow around how conswitchp is actually used, but besides
+> > > that it's used to select the boot console I'm not sure at all what's going
+> > > hence.
+> > 
+> > I missed that line:
+> >   const struct consw *defconsw = conswitchp;
+> > 
+> > Now that I looked at it again, this looks _really_ wrong. If
+> > conswitchp is vgacon and startup fails, we keep it set to vgacon..
+> > ugh, weird. But ok, that's up to the people who wrote that.
+> > 
+> > Btw., conswitchp is used for visual_init(), that is, every new VT
+> > allocation gets assigned to conswitchp. Therefore, it must be a valid
+> > driver. (VTs are allocated and deallocated by agetty/systemd after a
+> > session is started/ended).
 > 
-> Also the naming of the arguments in hlist_add_after was confusing. It was
-> changed to use the same names as hlist_add_after_rcu.
+> Ah, I missed where conswitchp was used in the maze, was getting a bit hazy
+> ;-)
 > 
-> Signed-off-by: Ken Helias <kenhelias@firemail.de>
-> Cc: David Airlie <airlied@linux.ie>
-> Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-> Cc: Jesse Brandeburg <jesse.brandeburg@intel.com>
-> Cc: Bruce Allan <bruce.w.allan@intel.com>
-> Cc: Carolyn Wyborny <carolyn.wyborny@intel.com>
-> Cc: Don Skidmore <donald.c.skidmore@intel.com>
-> Cc: Greg Rose <gregory.v.rose@intel.com>
-> Cc: Alex Duyck <alexander.h.duyck@intel.com>
-> Cc: John Ronciak <john.ronciak@intel.com>
-> Cc: Mitch Williams <mitch.a.williams@intel.com>
-> Cc: Linux NICS <linux.nics@intel.com>
-> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-> Cc: Dipankar Sarma <dipankar@in.ibm.com>
-> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> Cc: Marek Lindner <mareklindner@neomailbox.ch>
-> Cc: Simon Wunderlich <sw@simonwunderlich.de>
-> Cc: Antonio Quartulli <antonio@meshcoding.com>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: Stephen Hemminger <stephen@networkplumber.org>
-> Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-> Cc: James Morris <jmorris@namei.org>
-> Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-> Cc: Patrick McHardy <kaber@trash.net>
-> Cc: Steffen Klassert <steffen.klassert@secunet.com>
-> Cc: Herbert Xu <herbert@gondor.apana.org.au>
-> Cc: dri-devel@lists.freedesktop.org
-> Cc: e1000-devel@lists.sourceforge.net
-> Cc: netdev@vger.kernel.org
-> Cc: devel@driverdev.osuosl.org
-> Cc: linux-fsdevel@vger.kernel.org
-> Cc: b.a.t.m.a.n@lists.open-mesh.org
-> Cc: bridge@lists.linux-foundation.org
-> ---
-> Patch based on "Add linux-next specific files for 20140606"
+> Rules for changing/updateing conswitchp are indeed a bit strange, which is
+> why I really don't want to touch this too much.
 > 
->  drivers/gpu/drm/drm_hashtab.c                    |  2 +-
->  drivers/net/ethernet/intel/i40e/i40e_ethtool.c   |  2 +-
->  drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c |  2 +-
->  drivers/staging/lustre/lustre/libcfs/hash.c      |  4 ++--
->  fs/namespace.c                                   |  2 +-
->  fs/notify/inode_mark.c                           |  2 +-
->  fs/notify/vfsmount_mark.c                        |  2 +-
->  include/linux/list.h                             | 12 ++++++------
->  include/linux/rculist.h                          |  6 +++---
->  net/batman-adv/fragmentation.c                   |  2 +-
->  net/bridge/br_multicast.c                        |  2 +-
->  net/ipv4/fib_trie.c                              |  2 +-
->  net/ipv6/addrlabel.c                             |  2 +-
->  net/xfrm/xfrm_policy.c                           |  4 ++--
->  14 files changed, 23 insertions(+), 23 deletions(-)
+> > >> This way, you _know_ here that if !con_is_bound(csw), then csw != conswitchp.
+> > >
+> > > Hence why I dropped this approach again (I've done it originally) and
+> > > opted for the straightforward but albeit crude direct check.
+> > >
+> > >> >
+> > >> >         for (i = 0; i < MAX_NR_CON_DRIVER; i++) {
+> > >> >                 struct con_driver *con_driver = &registered_con_driver[i];
+> > >> >
+> > >> >                 if (con_driver->con == csw &&
+> > >> > -                   con_driver->flag & CON_DRIVER_FLAG_MODULE) {
+> > >> > +                   con_driver->flag & CON_DRIVER_FLAG_INIT) {
+> > >>
+> > >> That makes FLAG_MODULE almost a no-op except for ->unbind(). I wonder
+> > >> why FLAG_MODULE exists, anyway.
+> > >
+> > > I've dug around in git history and it's less than useful. It was renamed
+> > > from FLAG_BIND (which makes somewhat sense, since it roughly tracks
+> > > whether a console is bound). But there's never been a justification for
+> > > it, neither in the original patch nor in the one that renamed it.
+> > >
+> > > So I decided to not tempt fate and went with the small change here that
+> > > I've understood somewhat (I've tried other, more invasive changes and
+> > > failed).
+> > >
+> > >> Otherwise looks good.
+> > >
+> > > I'm really reluctant to do the right thing here since the code overall has
+> > > very unclear semantics with conswitchp and FLAG_MODULE. Can I convince
+> > > yout that the more direct approach here is the right one?
+> > 
+> > Yeah, patch looks good.
+> > 
+> > Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+> 
+> Thanks for the review.
+> 
+> Greg, are you ok with these 3 vt patches and with me merging them through
+> drm-intel trees? We need them to properly kick out vgacon, which tends to
+> result in machine hangs (mostly across module reload, but also on driver
+> load on really unlucky systems) and other havoc.
 
+Yes, no objection from me at all, please feel free to add:
 
-drivers/staging/ portion:
-	Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+to them.
+
+greg k-h
