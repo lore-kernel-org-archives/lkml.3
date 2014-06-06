@@ -1,126 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610AbaFFIQk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 04:16:40 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:62070 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751098AbaFFIQh (ORCPT
+	id S1752631AbaFFIRw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 04:17:52 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:52176 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751783AbaFFIRs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 04:16:37 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-fa-539178e22259
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene.kim@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v2] ARM: EXYNOS: SWRESET is needed to boot secondary CPU on
- Exynos3250
-Date: Fri, 06 Jun 2014 10:16:30 +0200
-Message-id: <1402042590-8056-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrAJMWRmVeSWpSXmKPExsVy+t/xK7qPKiYGG/yfzm6xccZ6VovXLwwt
-	ehdcZbM42/SG3WLT42usFpd3zWGzmHF+H5PF7cu8FmuP3GW3WD/jNYvFql1/GB24PVqae9g8
-	ds66y+6xeUm9R9+WVYwenzfJBbBGcdmkpOZklqUW6dslcGUs3bOYpeC0WMXvpUkNjGeEuhg5
-	OSQETCTuPp7NAmGLSVy4t56ti5GLQ0hgKaPE1cnvmCGcPiaJm3f2MoJUsQkYS2xevgSsSkRg
-	B6PE8nuX2UEcZpCql/9XMYFUCQtESJw8dQXMZhFQlZi6bTEziM0r4Cbx/fg/Noh9chInj01m
-	ncDIvYCRYRWjaGppckFxUnqukV5xYm5xaV66XnJ+7iZGSCh93cG49JjVIUYBDkYlHt6M9xOC
-	hVgTy4orcw8xSnAwK4nw7o+ZGCzEm5JYWZValB9fVJqTWnyIkYmDU6qBceb+PyH1kS2/uA7c
-	kPXg7ch88mPKxQWn11hfCGR9uibw4rnfqksOvlwlO02jvSvDKKFe12D9pTkSH3aGnzLbJPB4
-	+QSJQ0vONWWnHb53p+W0NbdTwlzVt68KuBbYBG/0VXSZHpDBv/VJV4/+9d06ykkT6xcpOlWe
-	XsHLsOmVzzPmGwUsVb8bWZVYijMSDbWYi4oTAQVsLJcDAgAA
+	Fri, 6 Jun 2014 04:17:48 -0400
+Date: Fri, 6 Jun 2014 10:17:26 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Richard Yao <ryao@gentoo.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Vineet Gupta <vgupta@synopsys.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>, Jiri Slaby <jslaby@suse.cz>,
+        linux-kernel@vger.kernel.org, kernel@gentoo.org,
+        Brian Behlendorf <behlendorf1@llnl.gov>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH] x86/dumpstack: Walk frames when built with frame pointers
+Message-ID: <20140606081726.GT6758@twins.programming.kicks-ass.net>
+References: <1398535818-14217-1-git-send-email-ryao@gentoo.org>
+ <20140427120820.GC22116@gmail.com>
+ <20140430215606.GD17745@localhost.localdomain>
+ <20140507164014.GB16034@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="pd495SECmvzXpBRb"
+Content-Disposition: inline
+In-Reply-To: <20140507164014.GB16034@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Without software reset the secondary CPU does not power up and
-exynos_boot_secondary() ends with pen_release equal to 1. This can be
-observed in dmesg:
-	CPU1: failed to come online
-	Brought up 1 CPUs
-	SMP: Total of 1 processors activated.
-	CPU: All CPU(s) started in SVC mode.
 
-When booting the secondary CPU on Exynos3250 execute also software
-reset for core 1.
+--pd495SECmvzXpBRb
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
----
-Changes since v1:
-1. Removed inline keyword and change if statement to early return as
-   Tomasz suggested.
-2. Added reviewed-by Tomasz Figa.
----
- arch/arm/mach-exynos/platsmp.c  | 23 +++++++++++++++++++++++
- arch/arm/mach-exynos/regs-pmu.h |  3 +++
- 2 files changed, 26 insertions(+)
+On Wed, May 07, 2014 at 06:40:14PM +0200, Ingo Molnar wrote:
+> Agreed, that's a very good point.
+>=20
+> Also, consider the following holistic argument, what is easier to=20
+> achieve, when looking at an oops and not seeing the bug:
+>=20
+>   - if only I had more information
+>   - if only I had less information
+>=20
+> we cannot put in information that we cut out, but it's not=20
+> particularly hard to skip overly verbose information in most cases.
+> =20
+> Yes, there's a line to be drawn with verbosity: scroll-off is a=20
+> concern when the oops does not make it to a log file.
+>=20
+> So I don't really know.
 
-diff --git a/arch/arm/mach-exynos/platsmp.c b/arch/arm/mach-exynos/platsmp.c
-index 7071e49197c3..4031b0ed8057 100644
---- a/arch/arm/mach-exynos/platsmp.c
-+++ b/arch/arm/mach-exynos/platsmp.c
-@@ -76,6 +76,26 @@ static inline void __iomem *cpu_boot_reg(int cpu)
- }
- 
- /*
-+ * Set wake up by local power mode and execute software reset for given core.
-+ *
-+ * Currently this is needed only when booting secondary CPU on Exynos3250.
-+ */
-+static void exynos_core_restart(u32 core_id)
-+{
-+	u32 val;
-+
-+	if (!of_machine_is_compatible("samsung,exynos3250"))
-+		return;
-+
-+	val = __raw_readl(EXYNOS_ARM_CORE_STATUS(core_id));
-+	val |= S5P_CORE_WAKEUP_FROM_LOCAL_CFG;
-+	__raw_writel(val, EXYNOS_ARM_CORE_STATUS(core_id));
-+
-+	pr_info("CPU%u: Software reset\n", core_id);
-+	__raw_writel(EXYNOS_CORE_PO_RESET(core_id), EXYNOS_SWRESET);
-+}
-+
-+/*
-  * Write pen_release in a way that is guaranteed to be visible to all
-  * observers, irrespective of whether they're taking part in coherency
-  * or not.  This is necessary for the hotplug code to work reliably.
-@@ -150,6 +170,9 @@ static int exynos_boot_secondary(unsigned int cpu, struct task_struct *idle)
- 			return -ETIMEDOUT;
- 		}
- 	}
-+
-+	exynos_core_restart(core_id);
-+
- 	/*
- 	 * Send the secondary CPU a soft interrupt, thereby causing
- 	 * the boot monitor to read the system wide flags register,
-diff --git a/arch/arm/mach-exynos/regs-pmu.h b/arch/arm/mach-exynos/regs-pmu.h
-index 4179f6a6d595..4f578ddd4d8b 100644
---- a/arch/arm/mach-exynos/regs-pmu.h
-+++ b/arch/arm/mach-exynos/regs-pmu.h
-@@ -26,6 +26,8 @@
- #define S5P_USE_STANDBY_WFI0			(1 << 16)
- #define S5P_USE_STANDBY_WFE0			(1 << 24)
- 
-+#define EXYNOS_CORE_PO_RESET(n)			((1 << 4) << n)
-+
- #define EXYNOS_SWRESET				S5P_PMUREG(0x0400)
- #define EXYNOS5440_SWRESET			S5P_PMUREG(0x00C4)
- 
-@@ -127,6 +129,7 @@
- #define S5P_PAD_RET_EBIB_OPTION			S5P_PMUREG(0x31A8)
- 
- #define S5P_CORE_LOCAL_PWR_EN			0x3
-+#define S5P_CORE_WAKEUP_FROM_LOCAL_CFG		(0x3 << 8)
- #define S5P_INT_LOCAL_PWR_EN			0x7
- 
- #define S5P_CHECK_SLEEP				0x00000BAD
--- 
-1.9.1
+So it really stinks its so hard to debug laptops, and it doesn't help
+the ehci debug dongle costs an arm and a leg.
 
+Hopefully the EFI pstore thing will work out, but I've already heard
+that can wear out very quickly and render your machine a brick :-(
+
+Me, I simply refuse to work on machines if they don't have a serial
+line, but in general that's not a tenable position I suppose :/
+
+--pd495SECmvzXpBRb
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTkXkWAAoJEHZH4aRLwOS6h8gP/At7ksJPLulxaZAb4ruWbxPr
+9+Y5gGnT/QEctyT1E8doHs3SBiKXmCjdq87GG78XTbwfzltC+NsJcB6eh7ClkPsn
+YG0JGiekhAPa3sNFGxpvH2Yg3+JhihBBT8RSQmRFHXX9lGvllIQaAMniLSyC3h6w
+8mnZdOR7O4crkUG0xEKvauWD8Fxh9KMVzoYjziXpv1AKYWRZzVnZ59coO95bZrte
+g/8LjxfCQ4oFQ1kUeG2U4dpEGogXQ/xMyMrk1uvIrvBarStw4ObwFfMnhxPB8gel
+GFBZUG705tV/MKABJNlsvh2DmzPrkNq56uxyxrX6ZpYgvM/blwZ+wDDWLdk+CXqO
+ZIWBwUbIiOOZztLvCre4VEyzkV5k9nWHGNd7yi3d0Vhu5m89MWuiNjq4N1xlEwzr
+pE5Uri4MT4eoIvZoCL4IMDoT/Nj3u9iNwoKJCVRnXvG6YxCtKFNwghHh1EmKsz8q
+va9JfN/DHmd/QVq/ABTcU5swguXTQwN5ezGZ3KlgXfP49cdau8FI3LBD9JCEE0OQ
+cC081Q4kwbUAmfWJ+FB86qdoW8oy9VPNC6SXW3nOG2M87g80eo4I4h3wRujyoLMV
+Y3zryey83XjtjlXVenFK52Zj0v9WdVciod9JcJkkXyItAVjvvKVi7+4ps7KTJPE0
+1VxvXj/28sfNBqaTjwzB
+=6IhC
+-----END PGP SIGNATURE-----
+
+--pd495SECmvzXpBRb--
