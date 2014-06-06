@@ -1,79 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751896AbaFFSdT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 14:33:19 -0400
-Received: from smtprelay0139.hostedemail.com ([216.40.44.139]:46708 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751279AbaFFSdS (ORCPT
+	id S1752087AbaFFSfe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 14:35:34 -0400
+Received: from forward1h.mail.yandex.net ([84.201.187.146]:44682 "EHLO
+	forward1h.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197AbaFFSfd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 14:33:18 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3865:3867:3871:4321:4605:5007:7652:7904:10004:10400:10848:11026:11232:11658:11914:12043:12517:12519:12555:12740:13069:13221:13229:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: frame53_56c81bc7c9a17
-X-Filterd-Recvd-Size: 2942
-Message-ID: <1402079594.13264.18.camel@joe-AO725>
-Subject: [PATCH] checkpatch: Fix function pointers in blank line needed
- after declarations test
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Allan, Bruce W" <bruce.w.allan@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andy Whitcroft <apw@canonical.com>
-Date: Fri, 06 Jun 2014 11:33:14 -0700
-In-Reply-To: <804857E1F29AAC47BF68C404FC60A184656254DF@ORSMSX105.amr.corp.intel.com>
-References: <20140604225241.16944.94025.stgit@gitlad.jf.intel.com>
-	 <20140604225343.16944.46261.stgit@gitlad.jf.intel.com>
-	 <804857E1F29AAC47BF68C404FC60A18465623125@ORSMSX105.amr.corp.intel.com>
-	 <1402071084.13264.0.camel@joe-AO725>
-	 <804857E1F29AAC47BF68C404FC60A184656232C2@ORSMSX105.amr.corp.intel.com>
-	 <1402072268.13264.4.camel@joe-AO725>
-	 <804857E1F29AAC47BF68C404FC60A184656254DF@ORSMSX105.amr.corp.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 6 Jun 2014 14:35:33 -0400
+From: Evgeniy Polyakov <zbr@ioremap.net>
+Envelope-From: drustafa@yandex.ru
+To: Scott Alfter <scott@alfter.us>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: "greg@kroah.com" <greg@kroah.com>
+In-Reply-To: <37853c31eb688a3745310acf905ca9fa.squirrel@webmail.alfter.us>
+References: <1853313.sEkU5HsBDk@kaylee> <64681401965067@web25m.yandex.ru> <37853c31eb688a3745310acf905ca9fa.squirrel@webmail.alfter.us>
+Subject: Re: new driver: w1_ds2406
+MIME-Version: 1.0
+Message-Id: <786161402079729@web30h.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Fri, 06 Jun 2014 22:35:29 +0400
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=koi8-r
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a function pointer declaration check to the
-test for blank line needed after declarations.
+Hi everyone
 
-Reported-by: Bruce W Allan <bruce.w.allan@intel.com>
-Signed-off-by: Joe Perches <joe@perches.com>
----
-On Fri, 2014-06-06 at 17:23 +0000, Allan, Bruce W wrote:
-> > WARNING: Missing a blank line after declarations
-> > #318: FILE: drivers/crypto/qat/qat_common/adf_accel_devices.h:140:
-> > +	struct adf_hw_device_class *dev_class;
-> > +	uint32_t (*get_accel_mask)(uint32_t fuse);
-> 
-> This one is a false positive from checkpatch
+Greg, please pull this patch into the tree
 
- scripts/checkpatch.pl | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 010b18e..f4b8911 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2295,6 +2295,8 @@ sub process {
- 		if ($sline =~ /^\+\s+\S/ &&			#Not at char 1
- 			# actual declarations
- 		    ($prevline =~ /^\+\s+$Declare\s*$Ident\s*[=,;:\[]/ ||
-+			# function pointer declarations
-+		     $prevline =~ /^\+\s+$Declare\s*\(\s*\*\s*$Ident\s*\)\s*[=,;:\[\(]/ ||
- 			# foo bar; where foo is some local typedef or #define
- 		     $prevline =~ /^\+\s+$Ident(?:\s+|\s*\*\s*)$Ident\s*[=,;\[]/ ||
- 			# known declaration macros
-@@ -2307,6 +2309,8 @@ sub process {
- 		      $prevline =~ /(?:\{\s*|\\)$/) &&
- 			# looks like a declaration
- 		    !($sline =~ /^\+\s+$Declare\s*$Ident\s*[=,;:\[]/ ||
-+			# function pointer declarations
-+		      $sline =~ /^\+\s+$Declare\s*\(\s*\*\s*$Ident\s*\)\s*[=,;:\[\(]/ ||
- 			# foo bar; where foo is some local typedef or #define
- 		      $sline =~ /^\+\s+$Ident(?:\s+|\s*\*\s*)$Ident\s*[=,;\[]/ ||
- 			# known declaration macros
-
-
+06.06.2014, 21:47, "Scott Alfter" <scott@alfter.us>:
+> On Thu, June 5, 2014 10:44, Evgeniy Polyakov wrote:
+>> š04.06.2014, 08:25, "Scott Alfter" <scott@alfter.us>:
+>>> šI have a project for which I needed support for the DS2406 addressable
+>>> šswitch, so I started with an existing driver and modified it as needed.
+>>> šIt allows the switch outputs to be controlled over the bus, which is
+>>> šwhat I needed from it.
+>> šDriver seems good, although debug prints like 'mutex is locked' are better
+>> što be dropped.
+>
+> Those were in the DS2413 driver, which I used as a base for my changes.
+> I've taken them out. šAlso, I fixed a typo I made in the description in a
+> Kconfig file.
+>> šPlease send this patch to linux-kernel@ and add me and greg@kroah.com to
+>> šcopy, and patch will be pulled upstream.
+>> šFeel free to add my acked/reviewed-by tags.
+>
+> Signed-off-by: Scott Alfter <scott@alfter.us>
+> Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
+> Reviewed-by: Evgeniy Polyakov <zbr@ioremap.net>
