@@ -1,78 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751233AbaFFLuQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 07:50:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50773 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750759AbaFFLuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 07:50:14 -0400
-Message-ID: <1402055410.5859.12.camel@marge.simpson.net>
-Subject: Re: sched: how to pick runqueue when checking task hot?
-From: Mike Galbraith <mgalbraith@suse.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: zhdxzx@sina.com, linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, dhillf <dhillf@gmail.com>,
-        "hillf.zj" <hillf.zj@alibaba-inc.com>
-Date: Fri, 06 Jun 2014 13:50:10 +0200
-In-Reply-To: <20140606113454.GR3213@twins.programming.kicks-ass.net>
-References: <20140606065956.854A6718001@webmail.sinamail.sina.com.cn>
-	 <20140606101508.GP3213@twins.programming.kicks-ass.net>
-	 <1402053383.5859.8.camel@marge.simpson.net>
-	 <20140606113454.GR3213@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751085AbaFFL40 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 07:56:26 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:44411 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750727AbaFFL4Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 07:56:25 -0400
+Date: Fri, 6 Jun 2014 13:56:20 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andrey Ryabinin <a.ryabinin@samsung.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, dvyukov@google.com, koct9i@gmail.com,
+        v3.0+@samsung.com
+Subject: Re: [PATCH] mm: rmap: fix use-after-free in __put_anon_vma
+Message-ID: <20140606115620.GS3213@twins.programming.kicks-ass.net>
+References: <1402054255-4930-1-git-send-email-a.ryabinin@samsung.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ZmeoGP/RI+eIV+cU"
+Content-Disposition: inline
+In-Reply-To: <1402054255-4930-1-git-send-email-a.ryabinin@samsung.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-06-06 at 13:34 +0200, Peter Zijlstra wrote: 
-> On Fri, Jun 06, 2014 at 01:16:23PM +0200, Mike Galbraith wrote:
-> > On Fri, 2014-06-06 at 12:15 +0200, Peter Zijlstra wrote:
-> > 
-> > > > --- a/kernel/sched/fair.c	Fri Jun  6 12:37:37 2014
-> > > > +++ b/kernel/sched/fair.c	Fri Jun  6 14:32:34 2014
-> > > > @@ -5051,7 +5051,7 @@ task_hot(struct task_struct *p, u64 now)
-> > > >  	/*
-> > > >  	 * Buddy candidates are cache hot:
-> > > >  	 */
-> > > > -	if (sched_feat(CACHE_HOT_BUDDY) && this_rq()->nr_running &&
-> > > > +	if (sched_feat(CACHE_HOT_BUDDY) && task_rq(p)->nr_running &&
-> > > >  			(&p->se == cfs_rq_of(&p->se)->next ||
-> > > >  			 &p->se == cfs_rq_of(&p->se)->last))
-> > > >  		return 1;
-> > > 
-> > > That does appear to make more sense indeed, seeing how buddies are pairs
-> > > of tasks, so protecting a lone task doesn't make sense.
-> > > 
-> > > 
-> > > Mike, how did you intend this code to work?
-> > 
-> > IIRC, this_rq()->nr_running was to say if we're idle, we don't care that
-> > it's last/next, pull it.  Not sure I'm the one who did that, but could
-> > be, I didn't look.
-> > 
-> 
-> commit f685ceacab07d3f6c236f04803e2f2f0dbcc5afb
-> Author: Mike Galbraith <efault@gmx.de>
-> Date:   Fri Oct 23 23:09:22 2009 +0200
-> 
->     sched: Strengthen buddies and mitigate buddy induced latencies
-> 
-> ...
-> 
-> -       if (sched_feat(CACHE_HOT_BUDDY) &&
-> +       if (sched_feat(CACHE_HOT_BUDDY) && this_rq()->nr_running &&
->                         (&p->se == cfs_rq_of(&p->se)->next ||
->                          &p->se == cfs_rq_of(&p->se)->last))
-> 
-> Yeah, was you ;-)
 
-    Last hunk prevents buddies from stymieing BALANCE_NEWIDLE via
-    CACHE_HOT_BUDDY.
+--ZmeoGP/RI+eIV+cU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Last hunk, first hunk, whatever, that's what it was for :)
+On Fri, Jun 06, 2014 at 03:30:55PM +0400, Andrey Ryabinin wrote:
+> While working address sanitizer for kernel I've discovered use-after-free
+> bug in __put_anon_vma.
+> For the last anon_vma, anon_vma->root freed before child anon_vma.
+> Later in anon_vma_free(anon_vma) we are referencing to already freed anon=
+_vma->root
+> to check rwsem.
+> This patch puts freeing of child anon_vma before freeing of anon_vma->roo=
+t.
 
--Mike
+Yes, I think that is right indeed.
 
+Very hard to hit, but valid since not all callers hold rcu_read_lock().
+
+>=20
+> Cc: stable@vger.kernel.org # v3.0+
+> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+> ---
+>  mm/rmap.c | 7 ++++---
+>  1 file changed, 4 insertions(+), 3 deletions(-)
+>=20
+> diff --git a/mm/rmap.c b/mm/rmap.c
+> index 9c3e773..161bffc7 100644
+> --- a/mm/rmap.c
+> +++ b/mm/rmap.c
+> @@ -1564,10 +1564,11 @@ void __put_anon_vma(struct anon_vma *anon_vma)
+>  {
+>  	struct anon_vma *root =3D anon_vma->root;
+> =20
+> -	if (root !=3D anon_vma && atomic_dec_and_test(&root->refcount))
+> +	if (root !=3D anon_vma && atomic_dec_and_test(&root->refcount)) {
+> +		anon_vma_free(anon_vma);
+>  		anon_vma_free(root);
+> -
+> -	anon_vma_free(anon_vma);
+> +	} else
+> +		anon_vma_free(anon_vma);
+>  }
+
+Why not simply move the freeing of anon_vma before the root, like:
+
+	anon_vma_free(anon_vma);
+	if (root !=3D anon_vma && atomic_dec_and_test(&root->refcount))
+		anon_vma_free(root);
+
+?
+
+--ZmeoGP/RI+eIV+cU
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTkaxjAAoJEHZH4aRLwOS6XegP/0dLJTOi+1Z3MD2hcFmdr5vl
+Cjn3A7TqGmn3AUQU5PFXGUAFj5eT4mQewruH8za7tcME+M7iN/ReDf0OWMRlejae
+Yaz2PzSusdiBuZ2qQKvLiPSzKDfx0sgi9ElbI24Yhvck1dFUrHZf1o6HcsuBlnFq
+zjnbNnL6wZ0RwgP05WEd9cc1eCRGEsVXO1kZ/4bc/sFBH2YKxHgROEvNwErJxl6K
+o+HIay3vINfYzPv9NNIk7V+HRFD79UJ+rbp7Su8zXcoBj/SyfkcwQxzPvXG7SV13
+3z5RW/E6TNj9vUWM2uOdzUAhikmayLAog+fllM5Uq8mY8C/jiOeWFo3v3doUggux
+PH2uDf11vhUESxNyd5Qg11XUcq407NuO3xlw4CzBsCaozivix1Hbedck2StiOdoB
+LMH1QmwjZlUvR3Pyu+RSJMYBsEL+wlEn6o1OpaeWDEezaepoEG5ykiubMy7U2EWm
+FXHoq9337NIWCiFYTnvpqMR5iFwSHHI5yEesFEh0MxSGTZkv39wVAQp0ZVyW8nmB
+SHATVUf+FDFu4GST8WRFfBwzUayyiMMV7LrjYuLMpCbSNGk7Bu81TA5vmTbjuPL0
+pivuSCMtnko0qslBC0PJAOMGiUURMGJt9/ZpeJVlB434dbjSttsIuE+q3odEOPPb
+vO+WQlT9e7lS2VhiqTuS
+=ZZYw
+-----END PGP SIGNATURE-----
+
+--ZmeoGP/RI+eIV+cU--
