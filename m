@@ -1,158 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752092AbaFFP0I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 11:26:08 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:33716 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751884AbaFFP0G (ORCPT
+	id S1752225AbaFFP0w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 11:26:52 -0400
+Received: from smtprelay0188.hostedemail.com ([216.40.44.188]:49875 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751902AbaFFP0v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 11:26:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <CACVXFVNX-K2=3zSfKhhkx37QLK4LmSohmq36bs8DtiVoQ+xfTg@mail.gmail.com>
-References: <1401896895-14262-1-git-send-email-tiwai@suse.de>
-	<CACVXFVPpmdXJV2CC-U=bsA820VD42i2-OqBfNfTPPaMergu8TQ@mail.gmail.com>
-	<CAG-2HqU=LAXr0o2e9RRCmrX1eWouhepEZHaPfBjrs64xUeb=gw@mail.gmail.com>
-	<CACVXFVP1uS7szLqvabtMbiaUgd13bWoYXv5q-Az7wBia=ogf7Q@mail.gmail.com>
-	<s5hfvjj1n90.wl%tiwai@suse.de>
-	<CACVXFVP5CSNoyThAcsmihYg_bkq2wn1JtiFJ_7ehpxwjBSaZxQ@mail.gmail.com>
-	<s5hbnu71mf1.wl%tiwai@suse.de>
-	<CACVXFVPWq93u5KmLhr+g23t4AiGAnLfd+hX3viajzR_KN+sMrw@mail.gmail.com>
-	<CAG-2HqXiFgy5M=k55iOYAdXezxsN-ZanWRWDgH-6fuU-uLawOQ@mail.gmail.com>
-	<CACVXFVNKGPyv6AVUctotD=Sc97VRRGCXVzJ50pprjCNB7jhUxg@mail.gmail.com>
-	<CAG-2HqWtbpKjkNTLAksGZSqskJRfjVOhGkJJFcJUNBFfajLhCg@mail.gmail.com>
-	<CACVXFVOgr1y5KQxGDzvyPfqKHo0e3CsN+3HWo-_dxo6bmufbLQ@mail.gmail.com>
-	<s5hegz2yw2s.wl%tiwai@suse.de>
-	<CAG-2HqUe1oYJ8VBq1kP_Vy_smtkNjAWJ6_+TPu8c9-KVv6EOMA@mail.gmail.com>
-	<CACVXFVNX-K2=3zSfKhhkx37QLK4LmSohmq36bs8DtiVoQ+xfTg@mail.gmail.com>
-Date: Fri, 6 Jun 2014 11:26:05 -0400
-X-Google-Sender-Auth: FHWOBAsBvi6YCPIvphKXdcQK_yE
-Message-ID: <CAKb7UvjxJ-tzsKR5Sgak9rAwRqGKhOiibdv5tcw72LYATeB5=Q@mail.gmail.com>
-Subject: Re: [PATCH v2] firmware loader: allow disabling of udev as firmware loader
-From: Ilia Mirkin <imirkin@alum.mit.edu>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Tom Gundersen <teg@jklm.no>, Takashi Iwai <tiwai@suse.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Stefan Roese <sr@denx.de>,
-        Arnd Bergmann <arnd@arndb.de>, Abhay Salunke <Abhay_Salunke@dell.com>,
-        Kay Sievers <kay@vrfy.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 6 Jun 2014 11:26:51 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:69:355:379:541:599:800:901:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2525:2551:2553:2560:2563:2682:2685:2691:2693:2828:2829:2859:2899:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3354:3622:3657:3742:3865:3866:3867:3868:3870:3871:3872:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:4321:4384:5007:6119:6248:7576:7652:7903:7904:8599:8603:8957:9007:9010:9025:9040:9545:10004:10400:10482:10848:11232:11658:11854:11914:12043:12050:12517:12519:12683:12740:12776:13095:13137:13150:13181:13229:13230:13231:13436:14039:14096:14097:19901:19997:21063,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DN
+X-HE-Tag: birth25_3b50390912546
+X-Filterd-Recvd-Size: 3281
+Message-ID: <1402068405.12513.5.camel@joe-AO725>
+Subject: Re: [PATCH] checkpatch: warn when patch exceeds a maximum message
+ size
+From: Joe Perches <joe@perches.com>
+To: "Allan, Bruce W" <bruce.w.allan@intel.com>
+Cc: "apw@canonical.com" <apw@canonical.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        postmaster <postmaster@vger.kernel.org>
+Date: Fri, 06 Jun 2014 08:26:45 -0700
+In-Reply-To: <804857E1F29AAC47BF68C404FC60A18465622F2F@ORSMSX105.amr.corp.intel.com>
+References: <20140606000037.18356.720.stgit@gitlad.jf.intel.com>
+	 <1402018556.3038.2.camel@joe-AO725>
+	 <804857E1F29AAC47BF68C404FC60A18465622F2F@ORSMSX105.amr.corp.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 6, 2014 at 11:19 AM, Ming Lei <ming.lei@canonical.com> wrote:
-> On Fri, Jun 6, 2014 at 10:15 PM, Tom Gundersen <teg@jklm.no> wrote:
->> On Fri, Jun 6, 2014 at 4:03 PM, Takashi Iwai <tiwai@suse.de> wrote:
->>> At Fri, 6 Jun 2014 07:00:22 +0800,
->>> Ming Lei wrote:
->>>>
->>>> On Thu, Jun 5, 2014 at 11:15 PM, Tom Gundersen <teg@jklm.no> wrote:
->>>> > On Thu, Jun 5, 2014 at 4:54 PM, Ming Lei <ming.lei@canonical.com> wrote:
->>>> >>> Ubuntu currently enables the firmware loader in both the kernel and in
->>>> >>> udev, so would not yet have a problem here at the moment. However, I
->>>> >>> spoke with Martin Pitt and he told me that both Debian and Ubuntu
->>>> >>> would like to switch this off in udev once it is possible (i.e., once
->>>> >>> this patch has been merged I guess). Fedora already did, and speaking
->>>> >>> for Arch we definitely would like to do the same. I did not check with
->>>> >>> other distros, but I'm pretty sure "everyone" will disable this in
->>>> >>> udev by the next cycle. At which point having it enabled in the kernel
->>>> >>> will cause real problems and bug reports.
->>>> >>
->>>> >> That won't cover the case of old distributions with new kernel,
->>>> >
->>>> > Again: disabling this option will not give problems (unless you have a
->>>> > custom setup), even on old userspace, only keeping it enabled on
->>>> > future userspace may.
->>>> >
->>>> >> do
->>>> >> you want to break/confuse these users?
->>>> >
->>>> > Not really, no :)
->>>> >
->>>> >>> For distro kernels that's not a problem, as they know what to do, but
->>>> >>> I guess for random kernel users we should give them the correct
->>>> >>> recommendation.
->>>> >>
->>>> >> Also I remember that android users put firmware under their
->>>> >> special path.
->>>> >
->>>> > That may be, but I don't think this text is primarily aimed at the
->>>> > people who put together Android systems... Surely their non-standard
->>>> > userspace means that a lot of the advice (and it is nothing else than
->>>> > advice!) in the help text does not necessarily apply?
->>>> >
->>>> >>>>>> It only falls back if the request fw is _not_ found from direct loading,
->>>> >>>>>> so it is reasonable to try to continue to look for it from user space.
->>>> >>>>
->>>> >>>>> Some drivers fall back to different firmware (e.g. different revision
->>>> >>>>> suffix) if the requested file isn't found.  So, this happens in
->>>> >>>>> reality.
->>>> >>>>
->>>> >>>> So do you think the fallback is better or worse? For CPU microcode
->>>> >>>> case, maybe it is fine, but for other devices, maybe it is better to
->>>> >>>> get a firmware for working at least.
->>>> >>>
->>>> >>> What usecase do you have in mind here? For people using stock udev,
->>>> >>> enabling the fallback will not give any benefit, but it will soon
->>>> >>
->>>> >> Again, we have old distributions, also it should make sense to fall back
->>>> >> to userspace for non-exist firmwares under default path.
->>>> >
->>>> > Even on old distributions, falling back to stock udev will not give
->>>> > any benefits. It will look in the same paths as the kernel and fail in
->>>> > the same way.
->>>> >
->>>> >>> start giving real problems...
->>>> >>
->>>> >> If there isn't firmwares at default path for devices, the device may
->>>> >> not work, and that is the real problem.
->>>> >
->>>> > These devices will never have worked with stock udev, as it looks in
->>>> > the same path as the kernel (the paths the kernel looks in was taken
->>>> > from udev to make sure they work the sam). So this must be a
->>>> > special/custom setup by someone who knows what they are doing, and
->>>> > hopefully knows how to answer the Kconfig.
->>>>
->>>> I have to say all your statement about old distributions is just your
->>>> take for granted, and you can't verified on all old distributions at all.
->>>> That is said, disabling fallback may cause regression on these
->>>> distributions.
->>>>
->>>> Given that the user helper(fallback) has been used for tens of
->>>> years on these distributions, I suggest you to change Kconfig
->>>> help message as something like below:
->>>>
->>>> If your aren't sure, please check your udev/systemd version, if it
->>>> is below than XXX or no udev/systemd shipped in your system,
->>>> say Y here, otherwise say N.
->>>
->>> Yeah, a detailed suggestion like the above would be more helpful.
->>
->> How about:
->>
->> "If you rely on a customized udev (or other userspace tool) to load
->> firmware from a non-standard path, say Y. Otherwise, say N. If your
->> udev version does not support firmware loading (which is currently the
->> upstream default), you must say N."
->
-> Please make it explicit since we know the fisrt version of
-> udev which disables firmware loading at default. And 'upstream
-> default' isn't needed because it depends on udev upstream version, and
-> 'currently' is confused too because old distribution ships old udev.
->
-> Something like below should be enough:
->
-> If you aren't sure, please check the udev/systemd version, if it
-> is below than XXX or no udev/systemd shipped in your system,
-> say Y here, otherwise say N.
+On Fri, 2014-06-06 at 15:08 +0000, Allan, Bruce W wrote:
+> > -----Original Message-----
+> > From: Joe Perches [mailto:joe@perches.com]
+> > Sent: Thursday, June 05, 2014 6:36 PM
+> > To: Allan, Bruce W
+> > Cc: apw@canonical.com; linux-kernel@vger.kernel.org; postmaster
+> > Subject: Re: [PATCH] checkpatch: warn when patch exceeds a maximum
+> > message size
+> > 
+> > On Thu, 2014-06-05 at 17:00 -0700, Bruce Allan wrote:
+> > > the maximum message size (100,000 characters) allowed by Majordomo at
+> > > vger.kernel.org since that is where most Linux email lists are served.
+> > 
+> > I believe this is incorrect and the patch is unnecessary.
+> 
+> Actually, it is correct (it even says so at http://vger.kernel.org/majordomo-info.html).
 
-There are basically no reasonable conditions when it should be
-enabled, irrespective of udev version. Countless man-hours have been
-spent debugging issues with weird hangs caused by this. I know I've
-spent at least one of my own working out why resume from suspend hung
-mysteriously. Is there an actual, _real_, situation where the usermode
-helper is used for something constructive (on a kernel that can load
-its own firmware)? Certainly one can be imagined, but were there any
-systems that made use of that imagination?
+where?
 
-  -ilia
+All it says there that's relevant is:
+
+------------------------------------------
+All email sent to there must be TEXT/PLAIN, there can be no multipart
+messages, no VCARDs, nothing ``fancy''. In presence of such things,
+Majordomo will very likely do the wrong thing. 
+
+When you send there email, do make sure that all of the email headers,
+both visible and transport level, have same addresses in them. People
+experience problems when for example ``From:'', ``Sender:'' and possible
+``Reply-To:'' headers present different addresses. The most common
+manifestation is complete silence from VGER! 
+------------------------------------------
+
+> We just experienced 2 out of 4 patches in the initial RFC submittal of the Intel(R)
+> QuickAssist Technology (QAT) driver being blocked by Majordomo from getting out
+> on the linux-crypto mailing list.
+
+Possible, but the largest patch I've seen recently
+on linux-kernel is about .5 Meg, 5 times your limit.
+
+>   It took a while to figure out the problem and had to
+> break up those two blocked patches into smaller ones which went through fine.  I
+> submitted this checkpatch patch in hopes to prevent others from having to figure out
+> the same.
+
+Maybe specific to crypto?
+
+> > It'd maybe more interesting if the email header sizes
+> > were calculated and if > 1024, then some bleating message
+> > were emitted.
+
+This specific bit, email headers > 1K in total size,
+is an actual failure mode btw.
+
+
