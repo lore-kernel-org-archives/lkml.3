@@ -1,156 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753081AbaFFCOt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 22:14:49 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:47165 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751708AbaFFCOs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 22:14:48 -0400
-Date: Fri, 6 Jun 2014 04:11:33 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
-        greg@kroah.com, jkosina@suse.cz, dyoung@redhat.com,
-        chaowang@redhat.com, bhe@redhat.com, akpm@linux-foundation.org
-Subject: Re: [PATCH 07/13] kexec: Implementation of new syscall
- kexec_file_load
-Message-ID: <20140606021133.GB27257@pd.tnic>
-References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
- <1401800822-27425-8-git-send-email-vgoyal@redhat.com>
- <20140605111535.GB16642@pd.tnic>
- <20140605201732.GF14083@redhat.com>
+	id S1751859AbaFFCf4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 22:35:56 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:51035 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751166AbaFFCfz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 22:35:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140605201732.GF14083@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <53911FA6.1030505@kernel.dk>
+References: <20140604103544.GA11350@dhcp-26-207.brq.redhat.com>
+	<538F2AC2.1060904@kernel.dk>
+	<20140605140127.GA22198@dhcp-26-207.brq.redhat.com>
+	<53907895.8090102@kernel.dk>
+	<CACVXFVMFjR5kqB9SQG-EiKMB3dC0O58_EhJZw2R2m7a9vUuH0A@mail.gmail.com>
+	<5390A624.8020308@kernel.dk>
+	<CACVXFVO-1shNB=tSpNBp_tpx+9imx5ycxfaSwofg-VeR_4S+MA@mail.gmail.com>
+	<53911FA6.1030505@kernel.dk>
+Date: Fri, 6 Jun 2014 10:35:53 +0800
+Message-ID: <CACVXFVNyVaPvDxM3TcN87yGG-hh1Xvzis4ox=g3XjSuRKwvhbA@mail.gmail.com>
+Subject: Re: blk-mq: bitmap tag: performance degradation?
+From: Ming Lei <tom.leiming@gmail.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 05, 2014 at 04:17:32PM -0400, Vivek Goyal wrote:
-> I think everything is already available in "struct kimage *image". So
-> I don't have to pass all these separately. I think I will remove all
-> these extra parameters and expect arch function to retrieve all that
-> from "struct kimage *image".
+On Fri, Jun 6, 2014 at 9:55 AM, Jens Axboe <axboe@kernel.dk> wrote:
+> On 2014-06-05 17:33, Ming Lei wrote:
+>>
+>> On Fri, Jun 6, 2014 at 1:17 AM, Jens Axboe <axboe@kernel.dk> wrote:
+>>>
+>>> On 06/05/2014 08:16 AM, Ming Lei wrote:
+>>>>
+>>>> On Thu, Jun 5, 2014 at 10:03 PM, Jens Axboe <axboe@kernel.dk> wrote:
+>>>>>
+>>>>> On 2014-06-05 08:01, Alexander Gordeev wrote:
+>>>>>>
+>>>>>>
+>>>>>> On Wed, Jun 04, 2014 at 08:18:42AM -0600, Jens Axboe wrote:
+>>>>>>>
+>>>>>>>
+>>>>>>> A null_blk test is the absolute best case for percpu_ida, since
+>>>>>>> there are enough tags and everything is localized. The above test is
+>>>>>>> more useful for testing blk-mq than any real world application of
+>>>>>>> the tagging.
+>>>>>>>
+>>>>>>> I've done considerable testing on both 2 and 4 socket (32 and 64
+>>>>>>> CPUs) and bitmap tagging is better in a much wider range of
+>>>>>>> applications. This includes even high tag depth devices like nvme,
+>>>>>>> and more normal ranges like mtip32xx and scsi-mq setups.
+>>>>>>
+>>>>>>
+>>>>>>
+>>>>>> Just for the record: bitmap tags on a 48 CPU box with NVMe device
+>>>>>> indeed shows almost the same performance/cache rate as the stock
+>>>>>> kernel.
+>>>>>
+>>>>>
+>>>>>
+>>>>> Thanks for confirming. It's one of the dangers of null_blk, it's not
+>>>>> always
+>>>>> a very accurate simulation of what a real device will do. I think it's
+>>>>> mostly a completion side thing, would be great with a small device that
+>>>>> supported msi-x and could be used as an irq trigger :-)
+>>>>
+>>>>
+>>>> Maybe null_blk at IRQ_TIMER mode is more close to
+>>>> a real device, and I guess the result may be different with
+>>>> mode IRQ_NONE/IRQ_SOFTIRQ.
+>>>
+>>>
+>>> It'd be closer in behavior, but the results might then be skewed by
+>>> hitting the timer way too hard. And it'd be a general slowdown, again
+>>> possibly skewing it. But I haven't tried with the timer completion, to
+>>> see if that yields more accurate modelling for this test, so it might
+>>> actually be a lot better.
+>>
+>>
+>> My test on a 16core VM(host: 2 sockets, 16core):
+>>
+>> 1, bitmap tag allocation(3.15-rc7-next):
+>> - softirq mode: 759K IOPS
+>> - timer mode: 409K IOPS
+>>
+>> 2, percpu_ida allocation(3.15-rc7)
+>> - softirq mode: 1116K IOPS
+>> - timer mode: 411K IOPS
+>
+>
+> It's hard to say if this is close, or whether we are just timer bound at
+> that point.
 
-Sounds good.
+You are right, my previous test should be timer bound, but it
+should be eased by increasing timer period.
 
-> I guess I was trying to make "struct kimage" mostly opaque to arch
-> functions.
+I do the test again with increasing parameter of completion_nsec
+to 235000 from default 10000:
 
-Sure, of course. The question is, is it really worth it at the price
-of having a lot of args. And you're passing struct kimage to arch_*
-functions anyway.
+1, nullblk(timer mode)3.15-rc7:
+- each fio cpu utilization: 80% ~ 90%
+- 860K IOPS
 
-...
+2, nullbk(timer mode)3.15-rc7-next
+- each fio cpu utilization: 70~80%
+- 940K IOPS
 
-> It is obivious that we are freeing memory but what was not obivious to
-> me that I already copied contents of these buffers in a seaparate memory
-> region (segment), hence I am able to free it. So I would like to keep
-> comment there.
+Then bitmap based allocation can be observed to be a bit
+better than percpu ida.
 
-Ok.
-
-> > > +
-> > > +	result = -ENOMEM;
-> > > +	image->control_code_page = kimage_alloc_control_pages(image,
-> > > +					   get_order(KEXEC_CONTROL_PAGE_SIZE));
-> > > +	if (!image->control_code_page) {
-> > > +		pr_err("Could not allocate control_code_buffer\n");
-> > 
-> > Might wanna define pr_fmt when using the pr_* things fo the first time
-> > in this file.
-> 
-> Hmm....
-> 
-> I see that printk.h already provides a definition is pr_fmt is not
-> defined. So that means I shouldn't have to define pr_fmt() before I
-> use pr_*?
-> 
-> #ifndef pr_fmt
-> #define pr_fmt(fmt) fmt
-> #endif
-
-Yep, so you could do
-
-#undef pr_fmt
-#define pr_fmt(fmt) "kexec: "
-
-or you can do the standard
-
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-
-Just look around the tree for examples, there's plenty.
-
-> > This test looks strange: according to it, kexec_file_load has to always
-> > be called with both KEXEC_FILE_UNLOAD and KEXEC_FILE_ON_CRASH set.
-> 
-> I think this test says that "flags" has to be some combination of valid
-> flags and superset is in KEXEC_FILE_FLAGS.
-> 
-> So user can pass only KEXEC_FILE_ON_CRASH.
-> flags = 0x00000002
-> KEXEC_FILE_FLAGS = 0x0x00000003
-> flags & KEXEC_FILE_FLAGS = 0x00000002 = flags.
-
-Bah, ignore me - I got confused, sorry.
-
-> > > +	kbuf->buf_align = max(buf_align, PAGE_SIZE);
-> > > +	kbuf->buf_min = buf_min;
-> > > +	kbuf->buf_max = buf_max;
-> > > +	kbuf->top_down = top_down;
-> > > +
-> > > +	/* Walk the RAM ranges and allocate a suitable range for the buffer */
-> > > +	walk_system_ram_res(0, -1, kbuf, walk_ram_range_callback);
-> > > +
-> > > +	/*
-> > > +	 * If range could be found successfully, it would have incremented
-> > > +	 * the nr_segments value.
-> > > +	 */
-> > > +	new_nr_segments = image->nr_segments;
-> > > +
-> > > +	/* A suitable memory range could not be found for buffer */
-> > > +	if (new_nr_segments == nr_segments)
-> > > +		return -EADDRNOTAVAIL;
-> > 
-> > Right, why don't you check walk_system_ram_res's retval? If it is != 0,
-> > i.e. walk_ram_range_callback gives a 1 on "success", you can drop this
-> > way of checking whether finding a new range succeeded.
-> 
-> In last version when I had ELF header support, I was checking for return
-> code 1 at one place and you had not liked that.
-> 
-> Anyway, I am thinking that problem here is that walk_* variants use
-> return code of called function to decide whether to continue looping
-> or not. I think these are two independent activities.  Pass a boolean
-> to called function which should be set to false if callee wants to
-> stop the loop.
-> 
-> That way, callee can pass both errors and success without having to
-> worry about loop. And callee can return 0 to represent success and
-> negative error code to represent error.
-
-But why? It should be caller's responsibility to deal with the errors.
-If it encounters one, it either decides to stop looping or not.
-
-In any case, you don't need a second bool arg to pass around.
-
-If you want to make it more explicit, you could do
-
-#define RES_OK		0
-#define RES_ERR		1
-#define RES_STOP	2
-
-("RES" for resource :-)) and signal what to do by returning one of those
-return values. Or?
-
-Thanks.
-
+Thanks,
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Ming Lei
