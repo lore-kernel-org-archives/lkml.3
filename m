@@ -1,111 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752966AbaFFBrI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 21:47:08 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:32913 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751693AbaFFBrF (ORCPT
+	id S1752966AbaFFBtf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 21:49:35 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:56641 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751677AbaFFBte (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 21:47:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140605134120.GA21607@htj.dyndns.org>
-References: <CACVXFVMnM6w5ZLX=S8fJHeVoEqxH2JG3Wg=GPMeoVnOpAjsvAA@mail.gmail.com>
-	<CAPcyv4icNZU9s7zLYYcrFrNA_9qk4W1je42KKG+ETWqdoQu_kg@mail.gmail.com>
-	<CACVXFVPHfP1VXujLx9sGt3c7ptdG1JvBQkw2JiJQsU1KwJ1zog@mail.gmail.com>
-	<20140605134120.GA21607@htj.dyndns.org>
-Date: Fri, 6 Jun 2014 09:47:03 +0800
-Message-ID: <CACVXFVNUp3jfb1TVo7H7TNm4r2RaqDU0GDaMRq-DtB8ZEXaC+Q@mail.gmail.com>
-Subject: Re: [Regression] commit 8a4aeec8d(libata/ahci: accommodate tag
- ordered controllers)
-From: Ming Lei <ming.lei@canonical.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Dan Williams <dan.j.williams@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Loc Ho <lho@apm.com>, Tuan Phan <tphan@apm.com>,
-        Suman Tripathi <stripathi@apm.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 5 Jun 2014 21:49:34 -0400
+Message-ID: <1402019369.5458.55.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: ima_mmap_file returning 0 to userspace as mmap result.
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Dave Jones <davej@redhat.com>
+Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 05 Jun 2014 21:49:29 -0400
+In-Reply-To: <20140605162045.GA25474@redhat.com>
+References: <20140604233122.GA19838@redhat.com> <538FF4C4.5090300@gmail.com>
+	 <20140605155658.GA22673@redhat.com> <20140605162045.GA25474@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14060601-0928-0000-0000-00000273A9D5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+On Thu, 2014-06-05 at 12:20 -0400, Dave Jones wrote: 
+> On Thu, Jun 05, 2014 at 11:56:58AM -0400, Dave Jones wrote:
+>  > On Thu, Jun 05, 2014 at 06:40:36AM +0200, Michael Kerrisk (man-pages) wrote:
+>  >  > On 06/05/2014 01:31 AM, Dave Jones wrote:
+>  >  > > I just noticed that trinity was freaking out in places when mmap was
+>  >  > > returning zero.  This surprised me, because I had the mmap_min_addr
+>  >  > > sysctl set to 64k, so it wasn't a MAP_FIXED mapping that did it.
+>  >  > > 
+>  >  > > There's no mention of this return value in the man page, so I dug
+>  >  > > into the kernel code, and it appears that we do..
+>  >  > > 
+>  >  > > sys_mmap
+>  >  > > vm_mmap_pgoff
+>  >  > > security_mmap_file
+>  >  > > ima_file_mmap <- returns 0 if not PROT_EXEC
+>  >  > > 
+>  >  > > and then the 0 gets propagated up as a retval all the way to userspace.
+>  > 
+>  > I just realised that this affects even kernels with CONFIG_IMA unset,
+>  > because there we just do 'return 0' unconditionally.
+>  > 
+>  > Also, it appears that kernels with CONFIG_SECURITY unset will also
+>  > return a zero for the same reason.
+> 
+> Hang on, I was misreading that whole security_mmap_file ret handling code.
+> There's something else at work here.  I'll dig and get a reproducer.
 
-On Thu, Jun 5, 2014 at 9:41 PM, Tejun Heo <tj@kernel.org> wrote:
-> Hello,
->
-> (cc'ing ahci_xgene folks)
->
-> On Thu, Jun 05, 2014 at 09:24:04PM +0800, Ming Lei wrote:
->> On Thu, Jun 5, 2014 at 9:12 PM, Dan Williams <dan.j.williams@intel.com> wrote:
->> > On Thu, Jun 5, 2014 at 1:53 AM, Ming Lei <ming.lei@canonical.com> wrote:
->> >> Hi Dan and Tejun,
->> >>
->> >> Looks the commit 8a4aeec8d(libata/ahci: accommodate tag ordered
->> >> controllers) causes below sata failure[1] on APM AHCI controller.
->> >>
->> >> And the error does disappear after reverting the commit.
->> >
->> > Can you give some more details about the workload and the disk?  What
->> > is the APM AHCI?
->>
->> The commit causes the APM arm64 based system not bootable, and not
->> special workload, just when mounting rootfs or reading init files.
->>
->> APM AHCI:
->>       drivers/ata/ahci_xgene.c
->
-> Urgh... so, the controller can't handle tags allocated in round-robin
-> instead of lowest-first?  Ming, can you please test with different
-> controllers / disks / ssds and see whether the problem stays with the
-> controller?  Loc, can you guys please look into it so that at least
-> the next revision hardware can fix the issue?
+According to security.h, it should return 0 if permission is granted.
+If IMA is not enabled, it should also return 0.  What exactly is the
+problem?
 
-The problem has been observed on several apm arm64 boards
-with different disks.
+thanks,
 
->
-> Provided that the tag allocation itself isn't broken, which isn't too
-> likely given the lack of bug reports on other controllers, we'll need
-> to blacklist ahci_xgene somehow.  Either disable NCQ support on it or
-> implement an alternative lowest-first tag allocation for it.  If this
-> actually is the controller freaking out about tags allocated in a
-> different order, I'm not sure how much confidence we can put in its
-> NCQ implementation tho and it might be a better idea to simply plug
-> NCQ support on it until we understand the details of the problem.
->
-> So, something like the following?  Ming, can you please verify whether
-> the following makes the machine boot again?
+Mimi
 
-Looks the problem still persists after applying your patch of disabling
-NCQ.
-
->
-> Thanks.
->
-> diff --git a/drivers/ata/ahci_xgene.c b/drivers/ata/ahci_xgene.c
-> index 77c89bf..4950600 100644
-> --- a/drivers/ata/ahci_xgene.c
-> +++ b/drivers/ata/ahci_xgene.c
-> @@ -302,9 +302,16 @@ static struct ata_port_operations xgene_ahci_ops = {
->         .read_id = xgene_ahci_read_id,
->  };
->
-> +/*
-> + * The controller seems to freak out depending on the order of tag
-> + * allocation.  NCQ support is disabled until the problem is better
-> + * understood.
-> + *
-> + * http://lkml.kernel.org/g/CACVXFVMnM6w5ZLX=S8fJHeVoEqxH2JG3Wg=GPMeoVnOpAjsvAA@mail.gmail.com
-> + */
->  static const struct ata_port_info xgene_ahci_port_info = {
-> -       AHCI_HFLAGS(AHCI_HFLAG_NO_PMP | AHCI_HFLAG_YES_NCQ),
-> -       .flags = AHCI_FLAG_COMMON | ATA_FLAG_NCQ,
-> +       AHCI_HFLAGS(AHCI_HFLAG_NO_PMP),
-> +       .flags = AHCI_FLAG_COMMON,
->         .pio_mask = ATA_PIO4,
->         .udma_mask = ATA_UDMA6,
->         .port_ops = &xgene_ahci_ops,
-
-Thanks,
---
-Ming Lei
