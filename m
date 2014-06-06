@@ -1,167 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752755AbaFFXA4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 19:00:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53889 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752238AbaFFW7D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 18:59:03 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: linux-mm@kvack.org
-Cc: Dave Hansen <dave.hansen@intel.com>,
+	id S1752483AbaFFXGw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 19:06:52 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:61963 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752225AbaFFXGu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 19:06:50 -0400
+Date: Fri, 6 Jun 2014 16:05:27 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Sasha Levin <sasha.levin@oracle.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/7] madvise: cleanup swapin_walk_pmd_entry()
-Date: Fri,  6 Jun 2014 18:58:36 -0400
-Message-Id: <1402095520-10109-4-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1402095520-10109-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1402095520-10109-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Dave Jones <davej@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: 3.15-rc8 mm/filemap.c:202 BUG
+In-Reply-To: <538F121E.9020100@oracle.com>
+Message-ID: <alpine.LSU.2.11.1406061549500.9818@eggly.anvils>
+References: <20140603042121.GA27177@redhat.com> <CALYGNiNV951SnBKdr0PEkgLbLCxy+YB6HJpafRr6CynO+a1sdQ@mail.gmail.com> <alpine.LSU.2.11.1406031524470.7878@eggly.anvils> <538F121E.9020100@oracle.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the recent update on page table walker, we can use common code for
-the walking more. Unlike many other users, this swapin_walk expects to
-handle swap entries. As a result we should be careful about ptl locking.
-Swapin operation, read_swap_cache_async(), could cause page reclaim, so
-we can't keep holding ptl throughout this pte loop.
-In order to properly handle ptl in pte_entry(), this patch adds two new
-members on struct mm_walk.
+On Wed, 4 Jun 2014, Sasha Levin wrote:
+> On 06/03/2014 07:11 PM, Hugh Dickins wrote:
+> > On Tue, 3 Jun 2014, Konstantin Khlebnikov wrote:
+> >> > On Tue, Jun 3, 2014 at 8:21 AM, Dave Jones <davej@redhat.com> wrote:
+> >>> > > I'm still seeing this one from time to time, though it takes me quite a while to hit it,
+> >>> > > despite my attempts at trying to narrow down the set of syscalls that cause it.
+> >>> > >
+> >>> > > kernel BUG at mm/filemap.c:202!
+> >>> > > invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> >>> > > CPU: 3 PID: 3013 Comm: trinity-c361 Not tainted 3.15.0-rc8+ #225
+> >>> > > task: ffff88006c610000 ti: ffff880055960000 task.ti: ffff880055960000
+> >>> > > RIP: 0010:[<ffffffffac158e28>]  [<ffffffffac158e28>] __delete_from_page_cache+0x318/0x360
+> >>> > > RSP: 0018:ffff880055963b90  EFLAGS: 00010046
+> >>> > > RAX: 0000000000000000 RBX: 0000000000000003 RCX: ffff880146f68388
+> >>> > > RDX: 000000000000022a RSI: ffffffffaca8db38 RDI: ffffffffaca62b17
+> >>> > > RBP: ffff880055963be0 R08: 0000000000000002 R09: ffff88000613d530
+> >>> > > R10: ffff880055963ba8 R11: ffff880007f49a40 R12: ffffea0006795880
+> >>> > > R13: ffff880143232ad0 R14: 0000000000000000 R15: ffff880143232ad8
+> >>> > > FS:  00007f1e40673700(0000) GS:ffff88024d180000(0000) knlGS:0000000000000000
+> >>> > > CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> >>> > > CR2: 00007f1e404e6000 CR3: 00000000603eb000 CR4: 00000000001407e0
+> >>> > > DR0: 0000000001bb1000 DR1: 0000000002537000 DR2: 00000000016a5000
+> >>> > > DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
+> >>> > > Stack:
+> >>> > >  ffff880143232ae8 0000000000000000 ffff88000613d530 ffff88000613d568
+> >>> > >  0000000008828259 ffffea0006795880 ffff880143232ae8 0000000000000000
+> >>> > >  0000000000000002 0000000000000002 ffff880055963c08 ffffffffac158eae
+> >>> > > Call Trace:
+> >>> > >  [<ffffffffac158eae>] delete_from_page_cache+0x3e/0x70
+> >>> > >  [<ffffffffac16921b>] truncate_inode_page+0x5b/0x90
+> >>> > >  [<ffffffffac174493>] shmem_undo_range+0x363/0x790
+> >>> > >  [<ffffffffac1748d4>] shmem_truncate_range+0x14/0x30
+> >>> > >  [<ffffffffac174bcf>] shmem_fallocate+0x9f/0x340
+> >>> > >  [<ffffffffac324d40>] ? timerqueue_add+0x60/0xb0
+> >>> > >  [<ffffffffac1c5ff6>] do_fallocate+0x116/0x1a0
+> >>> > >  [<ffffffffac182260>] SyS_madvise+0x3c0/0x870
+> >>> > >  [<ffffffffac346b33>] ? __this_cpu_preempt_check+0x13/0x20
+> >>> > >  [<ffffffffac74c41f>] tracesys+0xdd/0xe2
+> >>> > > Code: ff ff 01 41 f6 c6 01 48 8b 45 c8 75 16 4c 89 30 e9 70 fe ff ff 66 0f 1f 44 00 00 0f 0b 66 0f 1f 44 00 00 0f 0b 66 0f 1f 44 00 00 <0f> 0b 66 0f 1f 44 00 00  41 54 9d e8 78 9e fd ff e9 8c fe ff ff
+> >>> > > RIP  [<ffffffffac158e28>] __delete_from_page_cache+0x318/0x360
+> >>> > >
+> >>> > > There was also another variant of the same BUG with a slighty different stack trace.
+> >>> > >
+> >>> > > kernel BUG at mm/filemap.c:202!
+> >>> > > invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> >>> > > CPU: 2 PID: 6928 Comm: trinity-c45 Not tainted 3.15.0-rc5+ #208
+> >>> > > task: ffff88023669d0a0 ti: ffff880186146000 task.ti: ffff880186146000
+> >>> > > RIP: 0010:[<ffffffff8415ba05>]  [<ffffffff8415ba05>] __delete_from_page_cache+0x315/0x320
+> >>> > > RSP: 0018:ffff880186147b18  EFLAGS: 00010046
+> >>> > > RAX: 0000000000000000 RBX: 0000000000000003 RCX: 0000000000000002
+> >>> > > RDX: 000000000000012a RSI: ffffffff84a9a83c RDI: ffffffff84a6e0c0
+> >>> > > RBP: ffff880186147b68 R08: 0000000000000002 R09: ffff88002669e668
+> >>> > > R10: ffff880186147b30 R11: 0000000000000000 R12: ffffea0008b067c0
+> >>> > > R13: ffff880025355670 R14: 0000000000000000 R15: ffff880025355678
+> >>> > > FS:  00007fc10026f740(0000) GS:ffff880244400000(0000) knlGS:0000000000000000
+> >>> > > CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> >>> > > CR2: 00002ab350f5c004 CR3: 000000018566c000 CR4: 00000000001407e0
+> >>> > > DR0: 0000000001989000 DR1: 0000000000944000 DR2: 0000000002494000
+> >>> > > DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
+> >>> > > Stack:
+> >>> > >  ffff880025355688 ffff8800253556a0 ffff88002669e668 ffff88002669e6a0
+> >>> > >  000000008ea099ef ffffea0008b067c0 ffff880025355688 0000000000000000
+> >>> > >  0000000000000000 0000000000000002 ffff880186147b90 ffffffff8415ba4d
+> >>> > > Call Trace:
+> >>> > >  [<ffffffff8415ba4d>] delete_from_page_cache+0x3d/0x70
+> >>> > >  [<ffffffff8416b0ab>] truncate_inode_page+0x5b/0x90
+> >>> > >  [<ffffffff84175f0b>] shmem_undo_range+0x30b/0x780
+> >>> > >  [<ffffffff84176394>] shmem_truncate_range+0x14/0x30
+> >>> > >  [<ffffffff8417647d>] shmem_evict_inode+0xcd/0x150
+> >>> > >  [<ffffffff841e4b17>] evict+0xa7/0x170
+> >>> > >  [<ffffffff841e5435>] iput+0xf5/0x180
+> >>> > >  [<ffffffff841df8a0>] dentry_kill+0x260/0x2d0
+> >>> > >  [<ffffffff841df97c>] dput+0x6c/0x110
+> >>> > >  [<ffffffff841c92a9>] __fput+0x189/0x200
+> >>> > >  [<ffffffff841c936e>] ____fput+0xe/0x10
+> >>> > >  [<ffffffff84090484>] task_work_run+0xb4/0xe0
+> >>> > >  [<ffffffff8406ee42>] do_exit+0x302/0xb80
+> >>> > >  [<ffffffff84349e13>] ? __this_cpu_preempt_check+0x13/0x20
+> >>> > >  [<ffffffff8407073c>] do_group_exit+0x4c/0xc0
+> >>> > >  [<ffffffff840707c4>] SyS_exit_group+0x14/0x20
+> >>> > >  [<ffffffff8475bf64>] tracesys+0xdd/0xe2
+> >>> > > Code: 4c 89 30 e9 80 fe ff ff 48 8b 75 c0 4c 89 ff e8 82 8f 1c 00 84 c0 0f 85 6c fe ff ff e9 4f fe ff ff 0f 1f 44 00 00 e8 ae 95 5e 00 <0f> 0b e8 04 1c f1 ff 0f 0b 66 90 0f 1f 44 00 00 55 48 89 e5 41
+> >>> > >
+> >>> > >
+> >>> > > --
+> >>> > > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> >>> > > the body to majordomo@kvack.org.  For more info on Linux MM,
+> >>> > > see: http://www.linux-mm.org/ .
+> >>> > > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> >> > 
+> >> > This might shine some light, CONFIG_DEBUG_VM should be =y.
+> >> > 
+> >> > --- a/mm/filemap.c
+> >> > +++ b/mm/filemap.c
+> >> > @@ -199,7 +199,7 @@ void __delete_from_page_cache(struct page *page,
+> >> > void *shadow)
+> >> >         __dec_zone_page_state(page, NR_FILE_PAGES);
+> >> >         if (PageSwapBacked(page))
+> >> >                 __dec_zone_page_state(page, NR_SHMEM);
+> >> > -       BUG_ON(page_mapped(page));
+> >> > +       VM_BUG_ON_PAGE(page_mapped(page), page);
+> >> > 
+> >> >         /*
+> >> >          * Some filesystems seem to re-dirty the page even after
+> > Yes, there's a chance that will tell us more (but I don't have high
+> > hopes of it).  I'm still stumped by this issue, just as before.
+> > 
+> > Sasha (or Dave), any update on whether you see this without THP?
+> > and whether you see the remove_migration_pte oops without THP?
+> 
+> I'm pretty sure at this point that I only see both with THP enabled.
 
-This cleanup is necessary to get to the final form of page table walker,
-where we should do all caller's specific work on leaf entries (IOW, all
-pmd_entry() should be used for trans_pmd.)
+Thanks for the hint, though I've made nothing of it.  Of course, some
+problems come from THP itself, and some from its pressure for migration.
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Hugh Dickins <hughd@google.com>
+Though I'd wanted to see the remove_migration_pte oops as a key to the
+page_mapped bug, my guess is that they're actually independent.
+
+I might have a potential fix for the remove_migration_pte one, I just
+want to go back and look at my logic again, will reply in that thread
+if I'm still convinced.
+
+But a couple of hours ago had a thought on the page_mapped() bug,
+and would like to propose a patch which could be the answer to that -
+though frankly I remain pessimistic.  See below.
+
+> 
+> I've started seeing much less of them during fuzzing. Timing changes?
+
+Strange; I've no idea.  Anyway, here's today's thought...
+
+
+[PATCH] mm: entry = ACCESS_ONCE(*pte) in handle_pte_fault
+
+Use ACCESS_ONCE() in handle_pte_fault() when getting the entry or orig_pte
+upon which all subsequent decisions and pte_same() tests will be made.
+
+I have no evidence that its lack is responsible for the mm/filemap.c:202
+BUG_ON(page_mapped(page)) in __delete_from_page_cache() found by trinity,
+and I am not optimistic that it will fix it.  But I have found no other
+explanation, and ACCESS_ONCE() here will surely not hurt.
+
+If gcc does re-access the pte before passing it down, then that would be
+disastrous for correct page fault handling, and certainly could explain
+the page_mapped() BUGs seen (concurrent fault causing page to be mapped
+in a second time on top of itself: mapcount 2 for a single pte).
+
+Signed-off-by: Hugh Dickins <hughd@google.com>
 ---
- include/linux/mm.h |  4 ++++
- mm/madvise.c       | 54 +++++++++++++++++++++++-------------------------------
- mm/pagewalk.c      |  5 +++--
- 3 files changed, 30 insertions(+), 33 deletions(-)
 
-diff --git v3.15-rc8-mmots-2014-06-03-16-28.orig/include/linux/mm.h v3.15-rc8-mmots-2014-06-03-16-28/include/linux/mm.h
-index 43449eba3032..a94166b1b48b 100644
---- v3.15-rc8-mmots-2014-06-03-16-28.orig/include/linux/mm.h
-+++ v3.15-rc8-mmots-2014-06-03-16-28/include/linux/mm.h
-@@ -1106,6 +1106,8 @@ void unmap_vmas(struct mmu_gather *tlb, struct vm_area_struct *start_vma,
-  *             right now." 0 means "skip the current vma."
-  * @mm:        mm_struct representing the target process of page table walk
-  * @vma:       vma currently walked
-+ * @pmd:       current pmd entry
-+ * @ptl:       page table lock associated with current entry
-  * @control:   walk control flag
-  * @private:   private data for callbacks' use
-  *
-@@ -1124,6 +1126,8 @@ struct mm_walk {
- 			struct mm_walk *walk);
- 	struct mm_struct *mm;
- 	struct vm_area_struct *vma;
-+	pmd_t *pmd;
-+	spinlock_t *ptl;
- 	int control;
- 	void *private;
- };
-diff --git v3.15-rc8-mmots-2014-06-03-16-28.orig/mm/madvise.c v3.15-rc8-mmots-2014-06-03-16-28/mm/madvise.c
-index a402f8fdc68e..06b390a6fbbd 100644
---- v3.15-rc8-mmots-2014-06-03-16-28.orig/mm/madvise.c
-+++ v3.15-rc8-mmots-2014-06-03-16-28/mm/madvise.c
-@@ -135,38 +135,31 @@ static long madvise_behavior(struct vm_area_struct *vma,
- }
- 
- #ifdef CONFIG_SWAP
--static int swapin_walk_pmd_entry(pmd_t *pmd, unsigned long start,
-+/*
-+ * Assuming that page table walker holds page table lock.
-+ */
-+static int swapin_walk_pte_entry(pte_t *pte, unsigned long start,
- 	unsigned long end, struct mm_walk *walk)
- {
--	pte_t *orig_pte;
--	struct vm_area_struct *vma = walk->private;
--	unsigned long index;
--
--	if (pmd_none_or_trans_huge_or_clear_bad(pmd))
--		return 0;
--
--	for (index = start; index != end; index += PAGE_SIZE) {
--		pte_t pte;
--		swp_entry_t entry;
--		struct page *page;
--		spinlock_t *ptl;
--
--		orig_pte = pte_offset_map_lock(vma->vm_mm, pmd, start, &ptl);
--		pte = *(orig_pte + ((index - start) / PAGE_SIZE));
--		pte_unmap_unlock(orig_pte, ptl);
--
--		if (pte_present(pte) || pte_none(pte) || pte_file(pte))
--			continue;
--		entry = pte_to_swp_entry(pte);
--		if (unlikely(non_swap_entry(entry)))
--			continue;
--
--		page = read_swap_cache_async(entry, GFP_HIGHUSER_MOVABLE,
--								vma, index);
--		if (page)
--			page_cache_release(page);
--	}
-+	pte_t ptent;
-+	pte_t *orig_pte = pte - ((start & (PMD_SIZE - 1)) >> PAGE_SHIFT);
-+	swp_entry_t entry;
-+	struct page *page;
- 
-+	ptent = *pte;
-+	pte_unmap_unlock(orig_pte, walk->ptl);
-+	if (pte_present(ptent) || pte_none(ptent) || pte_file(ptent))
-+		goto lock;
-+	entry = pte_to_swp_entry(ptent);
-+	if (unlikely(non_swap_entry(entry)))
-+		goto lock;
-+	page = read_swap_cache_async(entry, GFP_HIGHUSER_MOVABLE,
-+				     walk->vma, start);
-+	if (page)
-+		page_cache_release(page);
-+lock:
-+	pte_offset_map(walk->pmd, start & PMD_MASK);
-+	spin_lock(walk->ptl);
- 	return 0;
- }
- 
-@@ -175,8 +168,7 @@ static void force_swapin_readahead(struct vm_area_struct *vma,
- {
- 	struct mm_walk walk = {
- 		.mm = vma->vm_mm,
--		.pmd_entry = swapin_walk_pmd_entry,
--		.private = vma,
-+		.pte_entry = swapin_walk_pte_entry,
- 	};
- 
- 	walk_page_range(start, end, &walk);
-diff --git v3.15-rc8-mmots-2014-06-03-16-28.orig/mm/pagewalk.c v3.15-rc8-mmots-2014-06-03-16-28/mm/pagewalk.c
-index 385efd59178f..8d71e09a36ea 100644
---- v3.15-rc8-mmots-2014-06-03-16-28.orig/mm/pagewalk.c
-+++ v3.15-rc8-mmots-2014-06-03-16-28/mm/pagewalk.c
-@@ -20,7 +20,8 @@ static int walk_pte_range(pmd_t *pmd, unsigned long addr,
+ mm/memory.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- 3.15-rc8/mm/memory.c	2014-04-27 23:55:53.608801152 -0700
++++ linux/mm/memory.c	2014-06-06 15:02:35.044320183 -0700
+@@ -3810,7 +3810,7 @@ static int handle_pte_fault(struct mm_st
+ 	pte_t entry;
  	spinlock_t *ptl;
- 	int err = 0;
  
--	orig_pte = pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
-+	walk->pmd = pmd;
-+	orig_pte = pte = pte_offset_map_lock(mm, pmd, addr, &walk->ptl);
- 	do {
- 		if (pte_none(*pte)) {
- 			if (walk->pte_hole)
-@@ -49,7 +50,7 @@ static int walk_pte_range(pmd_t *pmd, unsigned long addr,
- 		}
- 	} while (pte++, addr += PAGE_SIZE, addr < end);
- out_unlock:
--	pte_unmap_unlock(orig_pte, ptl);
-+	pte_unmap_unlock(orig_pte, walk->ptl);
- 	cond_resched();
- 	return addr == end ? 0 : err;
- }
--- 
-1.9.3
-
+-	entry = *pte;
++	entry = ACCESS_ONCE(*pte);
+ 	if (!pte_present(entry)) {
+ 		if (pte_none(entry)) {
+ 			if (vma->vm_ops) {
