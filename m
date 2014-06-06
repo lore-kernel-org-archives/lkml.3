@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752074AbaFFSYM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 14:24:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18575 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751197AbaFFSYL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 14:24:11 -0400
-Message-ID: <5392072D.6040605@redhat.com>
-Date: Fri, 06 Jun 2014 14:23:41 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752138AbaFFS0Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 14:26:16 -0400
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:49323 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751443AbaFFS0P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 14:26:15 -0400
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: linux-kernel@vger.kernel.org, mgorman@suse.de, mingo@kernel.org
-Subject: Re: [PATCH] sched,numa: always try to migrate to preferred node at
- task_numa_placement time
-References: <20140604163315.1dbc7b56@cuia.bos.redhat.com> <20140606171801.GE11371@laptop.programming.kicks-ass.net>
-In-Reply-To: <20140606171801.GE11371@laptop.programming.kicks-ass.net>
+In-Reply-To: <20140606174317.GA1741@redhat.com>
+References: <20140606174317.GA1741@redhat.com>
+Date: Fri, 6 Jun 2014 11:26:14 -0700
+X-Google-Sender-Auth: C_I_jsTmgyUSt0FDTZ2P549AiQ4
+Message-ID: <CA+55aFxiOsceOsm7zYyvFAxDF3=gxUXj=_61Nce3VkELfJr7cg@mail.gmail.com>
+Subject: Re: 3.15-rc8 oops in copy_page_rep after page fault.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        David Rientjes <rientjes@google.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/2014 01:18 PM, Peter Zijlstra wrote:
-> On Wed, Jun 04, 2014 at 04:33:15PM -0400, Rik van Riel wrote:
->> It is possible that at task_numa_placement time, the task's
->> numa_preferred_nid does not change, but the task is not
->> actually running on the preferred node at the time.
->>
->> In that case, we still want to attempt migration to the
->> preferred node.
-> 
-> So we have that numa_migrate_retry which was supposed to keep kicking
-> the task until it got where it needed to go.
+On Fri, Jun 6, 2014 at 10:43 AM, Dave Jones <davej@redhat.com> wrote:
+>
+> RIP: 0010:[<ffffffff8b3287b5>]  [<ffffffff8b3287b5>] copy_page_rep+0x5/0x10
 
-It does, and it appears to work.
+Ok, it's the first iteration of "rep movsq" (%rcx is still 0x200) for
+copying a page, and the pages are
 
-> But now you continuously kick from task_numa_placement().
+  RSI: ffff880052766000
+  RDI: ffff880014efe000
 
-No, we only kick from task_numa_placement() if the task is not
-already running on its preferred nid.
+which both look like reasonable kernel addresses. So I'm assuming it's
+DEBUG_PAGEALLOC that makes this trigger, and since the error code is
+0, and the CR2 value matches RSI, it's the source page that seems to
+have been freed.
 
-> Clearly the retry thing didn't work, what happened? We got to the
-> preferred nid, disabled the retry and got moved away again?
-> 
-> Do we want to remove the retry logic in favour of this more aggressive
-> form?
+And I see absolutely _zero_ reason for wht your 64k mmap_min_addr
+should make any difference what-so-ever. That's just odd.
 
-I think we want both. When we have fresh statistics, and we discover
-that we are not running on our preferred nid, is there any reason
-not to relocate to a better node?
+Anyway, can you try to figure out _which_ copy_user_highpage() it is
+(by looking at what is around the call-site at
+"handle_mm_fault+0x1e0". The fact that we have a stale
+do_huge_pmd_wp_page() on the stack makes me suspect that we have hit
+that VM_FAULT_FALLBACK case and this is related to splitting. Adding a
+few more people explicitly to the cc in case anybody sees anything
+(original email on lkml and linux-mm for context, guys).
 
-Moving a task to another node is cheap, and moving it sooner means
-we can end up avoiding migrating memory around twice.
-
->> @@ -1575,11 +1575,13 @@ static void task_numa_placement(struct task_struct *p)
-> 
->> +	if (max_faults) {
->> +		/* Set the new preferred node */
->> +		if (max_nid != p->numa_preferred_nid)
->> +			sched_setnuma(p, max_nid);
->> +
->> +		if (task_node(p) != p->numa_preferred_nid)
->> +			numa_migrate_preferred(p);
->>  	}
->>  
-> 
-> 
-
-
--- 
-All rights reversed
+            Linus
