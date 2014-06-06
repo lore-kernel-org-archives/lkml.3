@@ -1,62 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751880AbaFFGaz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 02:30:55 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:33834 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751316AbaFFGay convert rfc822-to-8bit (ORCPT
+	id S1751945AbaFFGbU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 02:31:20 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:51366 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751898AbaFFGbT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 02:30:54 -0400
+	Fri, 6 Jun 2014 02:31:19 -0400
+X-AuditID: 85900ec0-d1328b9000001514-8d-53916033df37
+Message-ID: <53916033.1040908@hitachi.com>
+Date: Fri, 06 Jun 2014 15:31:15 +0900
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120604 Thunderbird/13.0
 MIME-Version: 1.0
-In-Reply-To: <539152B3.5070702@linux.vnet.ibm.com>
-References: <1401981695-3682-1-git-send-email-shreyas@linux.vnet.ibm.com>
-	<539152B3.5070702@linux.vnet.ibm.com>
-Date: Fri, 6 Jun 2014 08:30:52 +0200
-X-Google-Sender-Auth: T98qHPrcs7kdhHELfRQWioz53e8
-Message-ID: <CAMuHMdXrKUoj_+ApkJpyxKSUiduTNJ4svJD0qNcMbSM1CspiEw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] powerpc/powernv: include asm/smp.h to handle UP config
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Cc: "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ingo Molnar <mingo@redhat.com>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH ftrace/core] tracing: Remove return value in event_trace_self_tests()
+ when top_trace_array() returns NULL
+References: <20140605234623.484afaf8@gandalf.local.home> <20140606062844.7955.61919.stgit@yunodevel>
+In-Reply-To: <20140606062844.7955.61919.stgit@yunodevel>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 6, 2014 at 7:33 AM, Anshuman Khandual
-<khandual@linux.vnet.ibm.com> wrote:
-> On 06/05/2014 08:51 PM, Shreyas B. Prabhu wrote:
->> Build throws following errors when CONFIG_SMP=n
->> arch/powerpc/platforms/powernv/setup.c: In function ‘pnv_kexec_wait_secondaries_down’:
->> arch/powerpc/platforms/powernv/setup.c:179:4: error: implicit declaration of function ‘get_hard_smp_processor_id’
->>     rc = opal_query_cpu_status(get_hard_smp_processor_id(i),
->>
->> The usage of get_hard_smp_processor_id() needs the declaration from
->> <asm/smp.h>. The file setup.c includes <linux/sched.h>, which in-turn
->> includes <linux/smp.h>. However, <linux/smp.h> includes <asm/smp.h>
->> only on SMP configs and hence UP builds fail.
->>
->> Fix this by directly including <asm/smp.h> in setup.c unconditionally.
+Hi Steven,
+
+Thank you for applying my patches.
+I received build warning report from kbuild test bot,
+so I fixed it. Would you apply this patch?
+
+Thank you,
+Yoshihiro YUNOMAE
+
+(2014/06/06 15:28), Yoshihiro YUNOMAE wrote:
+> Remove return value in event_trace_self_tests() when top_trace_array() returns
+> NULL because event_trace_self_tests() is void type.
 >
-> Can you please clean up the description in the commit message ? and also
-> the first line in the commit message should mention that the patch is
-> trying to fix a UP specific build failure.
+> Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>   kernel/trace/trace_events.c |    2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+> index 1349870..f99e0b3 100644
+> --- a/kernel/trace/trace_events.c
+> +++ b/kernel/trace/trace_events.c
+> @@ -2547,7 +2547,7 @@ static __init void event_trace_self_tests(void)
+>
+>   	tr = top_trace_array();
+>   	if (!tr)
+> -		return -ENODEV;
+> +		return;
+>
+>   	pr_info("Running tests on trace events:\n");
+>
+>
+>
 
-Both the one-line summary and the first line already mention "UP" or
-"CONFIG_SMP=n".
+-- 
+Yoshihiro YUNOMAE
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: yoshihiro.yunomae.ez@hitachi.com
 
-Gr{oetje,eeting}s,
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
