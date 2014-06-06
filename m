@@ -1,60 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752350AbaFFWHi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 18:07:38 -0400
-Received: from mail-bn1lp0144.outbound.protection.outlook.com ([207.46.163.144]:7667
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752092AbaFFWHh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 18:07:37 -0400
-X-WSS-ID: 0N6RPGF-08-4Q2-02
-X-M-MSG: 
-From: <suravee.suthikulpanit@amd.com>
-To: <catalin.marinas@arm.com>, <Will.Deacon@arm.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <thomas.lendacky@amd.com>,
-        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-Subject: [PATCH] arm64/dma: Removing ARCH_HAS_DMA_GET_REQUIRED_MASK macro
-Date: Fri, 6 Jun 2014 17:07:16 -0500
-Message-ID: <1402092436-2144-1-git-send-email-suravee.suthikulpanit@amd.com>
-X-Mailer: git-send-email 1.9.0
+	id S1752492AbaFFWH4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 18:07:56 -0400
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:58978 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752458AbaFFWHz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 18:07:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428001)(199002)(189002)(19580405001)(87936001)(97736001)(88136002)(89996001)(44976005)(102836001)(19580395003)(83322001)(87286001)(53416003)(36756003)(68736004)(84676001)(77156001)(101416001)(77982001)(33646001)(99396002)(104166001)(76482001)(50226001)(4396001)(50466002)(21056001)(86152002)(92726001)(92566001)(48376002)(50986999)(83072002)(85852003)(31966008)(86362001)(93916002)(46102001)(74662001)(80022001)(74502001)(79102001)(64706001)(47776003)(20776003)(81542001)(81342001)(62966002);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR02MB050;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
-X-Forefront-PRVS: 023495660C
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
- smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+Date: Fri, 6 Jun 2014 15:07:54 -0700
+Message-ID: <CA+8MBb+f+83Kj3JyuxGfX9EYJNNgLnMgQRLKGZ15yzNM=cYrEg@mail.gmail.com>
+Subject: Garbage characters on serial console (Linus "next")
+From: Tony Luck <tony.luck@gmail.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+Pulled from Linus' "next" branch (HEAD =
+2b03adc1911d1c84cb7fad8b424234f589547cb3)
+and built & booted on ia64.  I see a lot of random characters on the
+serial console. Suspiciously starting right after reporting the serial
+line has been found.
 
-Arm64 does not define dma_get_required_mask() function.
-Therefore, it should not define the ARCH_HAS_DMA_GET_REQUIRED_MASK.
-This causes build errors in some device drivers (e.g. mpt2sas)
+Here's what the output looks like when I "vi" the saved file:
 
-Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
----
- arch/arm64/include/asm/dma-mapping.h | 2 --
- 1 file changed, 2 deletions(-)
+io scheduler noop registered^M
+io scheduler deadline registered^M
+io scheduler cfq registered (default)^M
+pci_hotplug: PCI Hot Plug PCI Core version: 0.5^M
+Serial: 8250/16550 driver, 4 ports, IRQ sharing enabled^M
+00:02: ttyS0 at I/O 0x3f8 (irq = 44, base_baud = 115200) is a 16550A^M
+<80>^\þÇ^@üþ^\à^\<8c>àüðð^\<80><80>üðøþ<80>à<8e>^@üà^\àðÀ<80>^@<8e>à^@à<80><80>^\^\ÿ^\^@^\þþà^@à^\ðð^\<80><80>üþ<80>ü<80>þðøüà<8e>^\à<80>ð^@ÿ<80>üðà^@à<8e>ð<80><80><80><80>þðþ<80>üþ^\à^\^\<80>þÇü^\øà<8e>^@^\à^\^\^\ð<8e><80>ðà<8e><80>^\^@^@^\^\<8e><8e>^\àþþ^\<8e>^@^\<80>^@þ^\ÿ^\à<80>^@^\^\ø^\^\à^L^@<8e>ð^\<80>^\^\ü^\ø^\ÿ
 
-diff --git a/arch/arm64/include/asm/dma-mapping.h b/arch/arm64/include/asm/dma-mapping.h
-index 3a4572e..dc82e52 100644
---- a/arch/arm64/include/asm/dma-mapping.h
-+++ b/arch/arm64/include/asm/dma-mapping.h
-@@ -26,8 +26,6 @@
- #include <xen/xen.h>
- #include <asm/xen/hypervisor.h>
- 
--#define ARCH_HAS_DMA_GET_REQUIRED_MASK
--
- #define DMA_ERROR_CODE	(~(dma_addr_t)0)
- extern struct dma_map_ops *dma_ops;
- extern struct dma_map_ops coherent_swiotlb_dma_ops;
--- 
-1.9.0
+Output continues with alternating blocks of legible text and garbage.
+System eventually boots (with a legible "login:" prompt).
 
+-Tony
