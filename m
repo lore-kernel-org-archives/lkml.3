@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753024AbaFFRYr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 13:24:47 -0400
-Received: from goliath.siemens.de ([192.35.17.28]:34747 "EHLO
+	id S1753001AbaFFRYp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 13:24:45 -0400
+Received: from goliath.siemens.de ([192.35.17.28]:34750 "EHLO
 	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752276AbaFFRTh (ORCPT
+	with ESMTP id S1752428AbaFFRTh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 13:19:37 -0400
 From: Jan Kiszka <jan.kiszka@siemens.com>
@@ -15,11 +15,10 @@ Cc: Jason Wessel <jason.wessel@windriver.com>,
         kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
         Borislav Petkov <bp@suse.de>,
-        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>,
-        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
-Subject: [PATCH v8 01/22] scripts/gdb: Add infrastructure
-Date: Fri,  6 Jun 2014 19:18:42 +0200
-Message-Id: <fdabd5c51b800ce584474b08007ba59f5f5bef75.1402075138.git.jan.kiszka@siemens.com>
+        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>
+Subject: [PATCH v8 09/22] scripts/gdb: Add get_target_endianness helper
+Date: Fri,  6 Jun 2014 19:18:50 +0200
+Message-Id: <e7afb2d807b7c9d2433925650436b72978dbf805.1402075140.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
 In-Reply-To: <cover.1402075136.git.jan.kiszka@siemens.com>
 References: <cover.1402075136.git.jan.kiszka@siemens.com>
@@ -29,162 +28,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This provides the basic infrastructure to load kernel-specific python
-helper scripts when debugging the kernel in gdb.
+Parse the target endianness from the output of "show endian" and cache
+the result to return it via the new helper get_target_endiannes. We will
+need it for reading integers from buffers that contain target memory.
 
-The loading mechanism is based on gdb loading for <objfile>-gdb.py when
-opening <objfile>. Therefore, this places a corresponding link to the
-main helper script into the output directory that contains vmlinux.
-
-The main scripts will pull in submodules containing Linux specific gdb
-commands and functions. To avoid polluting the source directory with
-compiled python modules, we link to them from the object directory.
-
-Due to gdb.parse_and_eval and string redirection for gdb.execute, we
-depend on gdb >= 7.2.
-
-This feature is enabled via CONFIG_GDB_SCRIPTS.
-
-CC: Michal Marek <mmarek@suse.cz>
-CC: linux-kbuild@vger.kernel.org
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- Makefile                      |  6 +++++-
- lib/Kconfig.debug             | 11 +++++++++++
- scripts/Makefile              |  3 ++-
- scripts/gdb/Makefile          | 11 +++++++++++
- scripts/gdb/linux/Makefile    |  9 +++++++++
- scripts/gdb/linux/__init__.py |  0
- scripts/gdb/vmlinux-gdb.py    | 23 +++++++++++++++++++++++
- 7 files changed, 61 insertions(+), 2 deletions(-)
- create mode 100644 scripts/gdb/Makefile
- create mode 100644 scripts/gdb/linux/Makefile
- create mode 100644 scripts/gdb/linux/__init__.py
- create mode 100644 scripts/gdb/vmlinux-gdb.py
+ scripts/gdb/linux/utils.py | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
-diff --git a/Makefile b/Makefile
-index cdaa5b6..029e700 100644
---- a/Makefile
-+++ b/Makefile
-@@ -861,6 +861,9 @@ endif
- ifdef CONFIG_BUILD_DOCSRC
- 	$(Q)$(MAKE) $(build)=Documentation
- endif
-+ifdef CONFIG_GDB_SCRIPTS
-+	$(Q)ln -fsn $(srctree)/scripts/gdb/vmlinux-gdb.py
-+endif
- 	+$(call if_changed,link-vmlinux)
+diff --git a/scripts/gdb/linux/utils.py b/scripts/gdb/linux/utils.py
+index c9d705b..10a227b 100644
+--- a/scripts/gdb/linux/utils.py
++++ b/scripts/gdb/linux/utils.py
+@@ -67,3 +67,21 @@ Note that TYPE and ELEMENT have to be quoted as strings."""
+                             elementname.string())
  
- # The actual objects are generated when descending, 
-@@ -1109,7 +1112,8 @@ MRPROPER_FILES += .config .config.old .version .old_version $(version_h) \
- 		  Module.symvers tags TAGS cscope* GPATH GTAGS GRTAGS GSYMS \
- 		  signing_key.priv signing_key.x509 x509.genkey		\
- 		  extra_certificates signing_key.x509.keyid		\
--		  signing_key.x509.signer include/linux/version.h
-+		  signing_key.x509.signer include/linux/version.h	\
-+		  vmlinux-gdb.py
- 
- # clean - Delete most, but leave enough to build external modules
- #
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 819ac51..89be8f6 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -143,6 +143,17 @@ config DEBUG_INFO_REDUCED
- 	  DEBUG_INFO build and compile times are reduced too.
- 	  Only works with newer gcc versions.
- 
-+config GDB_SCRIPTS
-+	bool "Provide GDB scripts for kernel debugging"
-+	select DEBUG_INFO
-+	help
-+	  This creates the required links to GDB helper scripts in the
-+	  build directory. If you load vmlinux into gdb, the helper
-+	  scripts will be automatically imported by gdb as well, and
-+	  additional functions are available to analyze a Linux kernel
-+	  instance. See Documentation/gdb-kernel-debugging.txt for further
-+	  details.
+ ContainerOf()
 +
- config ENABLE_WARN_DEPRECATED
- 	bool "Enable __deprecated logic"
- 	default y
-diff --git a/scripts/Makefile b/scripts/Makefile
-index 1d07860..9361e96 100644
---- a/scripts/Makefile
-+++ b/scripts/Makefile
-@@ -37,6 +37,7 @@ subdir-$(CONFIG_MODVERSIONS) += genksyms
- subdir-y                     += mod
- subdir-$(CONFIG_SECURITY_SELINUX) += selinux
- subdir-$(CONFIG_DTC)         += dtc
-+subdir-$(CONFIG_GDB_SCRIPTS) += gdb
- 
- # Let clean descend into subdirs
--subdir-	+= basic kconfig package selinux
-+subdir-	+= basic kconfig package selinux gdb
-diff --git a/scripts/gdb/Makefile b/scripts/gdb/Makefile
-new file mode 100644
-index 0000000..c0e2fd3
---- /dev/null
-+++ b/scripts/gdb/Makefile
-@@ -0,0 +1,11 @@
-+subdir-y := linux
 +
-+always := gdb-scripts
++BIG_ENDIAN = 0
++LITTLE_ENDIAN = 1
++target_endianness = None
 +
-+$(obj)/gdb-scripts:
-+ifneq ($(KBUILD_SRC),)
-+	$(Q)ln -fsn $(srctree)/$(obj)/*.py $(objtree)/$(obj)
-+endif
-+	@:
 +
-+clean-files := *.pyc $(if $(KBUILD_SRC),*.py)
-diff --git a/scripts/gdb/linux/Makefile b/scripts/gdb/linux/Makefile
-new file mode 100644
-index 0000000..34ccd06
---- /dev/null
-+++ b/scripts/gdb/linux/Makefile
-@@ -0,0 +1,9 @@
-+always := gdb-scripts
-+
-+$(obj)/gdb-scripts:
-+ifneq ($(KBUILD_SRC),)
-+	$(Q)ln -fsn $(srctree)/$(obj)/*.py $(objtree)/$(obj)
-+endif
-+	@:
-+
-+clean-files := *.pyc $(if $(KBUILD_SRC),*.py)
-diff --git a/scripts/gdb/linux/__init__.py b/scripts/gdb/linux/__init__.py
-new file mode 100644
-index 0000000..e69de29
-diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
-new file mode 100644
-index 0000000..c1d90ce
---- /dev/null
-+++ b/scripts/gdb/vmlinux-gdb.py
-@@ -0,0 +1,23 @@
-+#
-+# gdb helper commands and functions for Linux kernel debugging
-+#
-+#  loader module
-+#
-+# Copyright (c) Siemens AG, 2012, 2013
-+#
-+# Authors:
-+#  Jan Kiszka <jan.kiszka@siemens.com>
-+#
-+# This work is licensed under the terms of the GNU GPL version 2.
-+#
-+
-+import os
-+
-+sys.path.insert(0, os.path.dirname(__file__) + "/scripts/gdb")
-+
-+try:
-+    gdb.parse_and_eval("0")
-+    gdb.execute("", to_string=True)
-+except:
-+    gdb.write("NOTE: gdb 7.2 or later required for Linux helper scripts to "
-+              "work.\n")
++def get_target_endianness():
++    global target_endianness
++    if target_endianness is None:
++        endian = gdb.execute("show endian", to_string=True)
++        if "little endian" in endian:
++            target_endianness = LITTLE_ENDIAN
++        elif "big endian" in endian:
++            target_endianness = BIG_ENDIAN
++        else:
++            raise gdb.GdgError("unknown endianness '{0}'".format(endian))
++    return target_endianness
 -- 
 1.8.1.1.298.ge7eed54
 
