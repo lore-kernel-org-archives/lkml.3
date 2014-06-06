@@ -1,100 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752072AbaFFBgE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 21:36:04 -0400
-Received: from smtprelay0171.hostedemail.com ([216.40.44.171]:35224 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751419AbaFFBgD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 21:36:03 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2691:2828:2829:3138:3139:3140:3141:3142:3354:3622:3653:3742:3865:3867:3868:3870:3871:3872:3874:4321:4605:5007:7652:7903:8603:8957:9007:9010:9040:9121:10004:10400:10482:10848:11026:11232:11233:11473:11658:11914:12438:12517:12519:12555:12740:13019:13095:19901:19997:21063,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: coil20_514689cefa719
-X-Filterd-Recvd-Size: 3338
-Message-ID: <1402018556.3038.2.camel@joe-AO725>
-Subject: Re: [PATCH] checkpatch: warn when patch exceeds a maximum message
- size
-From: Joe Perches <joe@perches.com>
-To: Bruce Allan <bruce.w.allan@intel.com>
-Cc: apw@canonical.com, linux-kernel@vger.kernel.org,
-        postmaster <postmaster@vger.kernel.org>
-Date: Thu, 05 Jun 2014 18:35:56 -0700
-In-Reply-To: <20140606000037.18356.720.stgit@gitlad.jf.intel.com>
-References: <20140606000037.18356.720.stgit@gitlad.jf.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1752575AbaFFBmD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 21:42:03 -0400
+Received: from sabe.cs.wisc.edu ([128.105.6.20]:57777 "EHLO sabe.cs.wisc.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751419AbaFFBmB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 21:42:01 -0400
+Message-ID: <53911A35.7010805@cs.wisc.edu>
+Date: Thu, 05 Jun 2014 20:32:37 -0500
+From: Mike Christie <michaelc@cs.wisc.edu>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130917 Thunderbird/17.0.9
+MIME-Version: 1.0
+To: KY Srinivasan <kys@microsoft.com>
+CC: James Bottomley <jbottomley@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: Re: [PATCH 1/1] [SCSI] Fix a bug in deriving the FLUSH_TIMEOUT from
+ the basic I/O timeout
+References: <1401899623-24194-1-git-send-email-kys@microsoft.com> <1401901323.17510.23.camel@dabdike> <d61f4b87a72544e4b0c1e1872a76f97b@BY2PR03MB299.namprd03.prod.outlook.com>
+In-Reply-To: <d61f4b87a72544e4b0c1e1872a76f97b@BY2PR03MB299.namprd03.prod.outlook.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-06-05 at 17:00 -0700, Bruce Allan wrote:
-> the maximum message size (100,000 characters) allowed by Majordomo at
-> vger.kernel.org since that is where most Linux email lists are served.
+On 06/04/2014 12:15 PM, KY Srinivasan wrote:
+> 
+> 
+>> -----Original Message-----
+>> From: James Bottomley [mailto:jbottomley@parallels.com]
+>> Sent: Wednesday, June 4, 2014 10:02 AM
+>> To: KY Srinivasan
+>> Cc: linux-kernel@vger.kernel.org; apw@canonical.com;
+>> devel@linuxdriverproject.org; hch@infradead.org; linux-
+>> scsi@vger.kernel.org; ohering@suse.com; gregkh@linuxfoundation.org;
+>> jasowang@redhat.com
+>> Subject: Re: [PATCH 1/1] [SCSI] Fix a bug in deriving the FLUSH_TIMEOUT
+>> from the basic I/O timeout
+>>
+>> On Wed, 2014-06-04 at 09:33 -0700, K. Y. Srinivasan wrote:
+>>> Commit ID: 7e660100d85af860e7ad763202fff717adcdaacd added code to
+>>> derive the FLUSH_TIMEOUT from the basic I/O timeout. However, this
+>>> patch did not use the basic I/O timeout of the device. Fix this bug.
+>>>
+>>> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+>>> ---
+>>>  drivers/scsi/sd.c |    4 +++-
+>>>  1 files changed, 3 insertions(+), 1 deletions(-)
+>>>
+>>> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c index
+>>> e9689d5..54150b1 100644
+>>> --- a/drivers/scsi/sd.c
+>>> +++ b/drivers/scsi/sd.c
+>>> @@ -832,7 +832,9 @@ static int sd_setup_write_same_cmnd(struct
+>>> scsi_device *sdp, struct request *rq)
+>>>
+>>>  static int scsi_setup_flush_cmnd(struct scsi_device *sdp, struct
+>>> request *rq)  {
+>>> -	rq->timeout *= SD_FLUSH_TIMEOUT_MULTIPLIER;
+>>> +	int timeout = sdp->request_queue->rq_timeout;
+>>> +
+>>> +	rq->timeout = (timeout * SD_FLUSH_TIMEOUT_MULTIPLIER);
+>>
+>> Could you share where you found this to be a problem?  It looks like a bug in
+>> block because all inbound requests being prepared should have a timeout
+>> set, so block would be the place to fix it.
+> 
+> Perhaps; what I found was that the value in rq->timeout was 0 coming into
+> this function and thus multiplying obviously has no effect.
+> 
 
-I believe this is incorrect and the patch is unnecessary.
+I think you are right. We hit this problem because we are doing:
 
-It'd maybe more interesting if the email header sizes
-were calculated and if > 1024, then some bleating message
-were emitted.
+scsi_request_fn -> blk_peek_request -> sd_prep_fn -> scsi_setup_flush_cmnd.
 
-> Also provide a command-line option to specify a different maximum size.
-> 
-> Signed-off-by: Bruce Allan <bruce.w.allan@intel.com>
-> ---
-> 
->  scripts/checkpatch.pl |   15 +++++++++++++++
->  1 file changed, 15 insertions(+)
-> 
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> index 34eb216..79bd7fd6 100755
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -40,6 +40,7 @@ my @ignore = ();
->  my $help = 0;
->  my $configuration_file = ".checkpatch.conf";
->  my $max_line_length = 80;
-> +my $max_msg_size = 100000;	# Max allowed by Majordomo at vger.kernel.org
->  my $ignore_perl_version = 0;
->  my $minimum_perl_version = 5.10.0;
->  
-> @@ -62,6 +63,7 @@ Options:
->    --types TYPE(,TYPE2...)    show only these comma separated message types
->    --ignore TYPE(,TYPE2...)   ignore various comma separated message types
->    --max-line-length=n        set the maximum line length, if exceeded, warn
-> +  --max-msg-size=n           set the maximum message size, if exceeded, warn
->    --show-types               show the message "types" in the output
->    --root=PATH                PATH to the kernel tree root
->    --no-summary               suppress the per-file summary
-> @@ -130,6 +132,7 @@ GetOptions(
->  	'types=s'	=> \@use,
->  	'show-types!'	=> \$show_types,
->  	'max-line-length=i' => \$max_line_length,
-> +	'max-msg-size=i' => \$max_msg_size,
->  	'root=s'	=> \$root,
->  	'summary!'	=> \$summary,
->  	'mailback!'	=> \$mailback,
-> @@ -4600,6 +4603,18 @@ sub process {
->  		exit(0);
->  	}
->  
-> +	# Warn if patch exceeds the maximum message size
-> +	if (!$file) {
-> +		my $cnt_chars = 0;
-> +		foreach my $rawline (@rawlines) {
-> +			$cnt_chars += length($rawline) + 1;
-> +		}
-> +		if ($cnt_chars > $max_msg_size) {
-> +			WARN("PATCH_TOO_LARGE",
-> +			     "patch exceeds maximum message size ($max_msg_size) and might be blocked by email list server(s).\n");
-> +		}
-> +	}
-> +
->  	if (!$is_patch) {
->  		ERROR("NOT_UNIFIED_DIFF",
->  		      "Does not appear to be a unified-diff format patch\n");
-> 
+At this time request->timeout is zero so the multiplication does
+nothing. See how sd_setup_write_same_cmnd will set the request->timeout
+at this time.
+
+Then in scsi_request_fn we do:
+
+scsi_request_fn -> blk_start_request -> blk_add_timer.
+
+At this time it will set the request->timeout if something like req
+block pc users (like scsi_execute() or block/scsi_ioctl.c) or the write
+same code mentioned above have not set the timeout.
 
 
 
