@@ -1,486 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688AbaFFWa5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 18:30:57 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:54711 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752522AbaFFWay (ORCPT
+	id S1752447AbaFFWfT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 18:35:19 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:62892 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752207AbaFFWfR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 18:30:54 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Lan Tianyu <tianyu.lan@intel.com>, mika.westerberg@linux.intel.com
-Cc: wsa@the-dreams.de, awilliam@redhat.com, lenb@kernel.org,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [Patch V3 4/5] I2C/ACPI: Add i2c ACPI operation region support
-Date: Sat, 07 Jun 2014 00:48:13 +0200
-Message-ID: <17324514.CZVTFJVpea@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1400590764-11108-5-git-send-email-tianyu.lan@intel.com>
-References: <1400590764-11108-1-git-send-email-tianyu.lan@intel.com> <1400590764-11108-5-git-send-email-tianyu.lan@intel.com>
+	Fri, 6 Jun 2014 18:35:17 -0400
+Date: Fri, 6 Jun 2014 18:35:15 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Doug Anderson <dianders@chromium.org>
+cc: Kukjin Kim <kgene.kim@samsung.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Inderpal Singh <inderpal.s@samsung.com>,
+        Thomas Abraham <thomas.ab@samsung.com>, olof@lixom.net,
+        Tushar Behera <trblinux@gmail.com>, Kevin Hilman <khilman@linaro.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        linux-samsung-soc@vger.kernel.org, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: EXYNOS: mcpm: Don't rely on firmware's
+ secondary_cpu_start
+In-Reply-To: <1402090985-8061-1-git-send-email-dianders@chromium.org>
+Message-ID: <alpine.LFD.2.11.1406061831310.25775@knanqh.ubzr>
+References: <1402090985-8061-1-git-send-email-dianders@chromium.org>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mika,
+On Fri, 6 Jun 2014, Doug Anderson wrote:
 
-Do I believe correctly that you have reviewed this patch already?
-
-Rafael
-
-
-On Tuesday, May 20, 2014 08:59:23 PM Lan Tianyu wrote:
-> ACPI 5.0 spec(5.5.2.4.5) defines GenericSerialBus(i2c, spi, uart) operation region.
-> It allows ACPI aml code able to access such kind of devices to implement
-> some ACPI standard method.
+> On exynos mcpm systems the firmware is hardcoded to jump to an address
+> in SRAM (0x02073000) when secondary CPUs come up.  By default the
+> firmware puts a bunch of code at that location.  That code expects the
+> kernel to fill in a few slots with addresses that it uses to jump back
+> to the kernel's entry point for secondary CPUs.
 > 
-> ACPI Spec defines some access attribute to associate with i2c protocol.
-> AttribQuick 	       	       		Read/Write Quick Protocol
-> AttribSendReceive			Send/Receive Byte Protocol
-> AttribByte 			 	Read/Write Byte Protocol
-> AttribWord				Read/Write Word Protocol
-> AttribBlock				Read/Write Block Protocol
-> AttribBytes				Read/Write N-Bytes Protocol
-> AttribProcessCall			Process Call Protocol
-> AttribBlockProcessCall			Write Block-Read Block Process Call Protocol
-> AttribRawBytes 				Raw Read/Write N-BytesProtocol
-> AttribRawProcessBytes			Raw Process Call Protocol
+> Originally (on prerelease hardware) this firmware code contained a
+> bunch of workarounds to deal with boot ROM bugs.  However on all
+> shipped hardware we simply use this code to redirect to a kernel
+> function for bringing up the CPUs.
 > 
-> On the Asus T100TA, Bios use GenericSerialBus operation region to access
-> i2c device to get battery info.
+> Let's stop relying on the code provided by the bootloader and just
+> plumb in our own (simple) code jump to the kernel.  This has the nice
+> benefit of fixing problems due to the fact that older bootloaders
+> (like the one shipped on the Samsung Chromebook 2) might have put
+> slightly different code into this location.
 > 
-> Sample code From Asus T100TA
+> Once suspend/resume is implemented for systems using exynos-mcpm we'll
+> need to make sure we reinstall our fixed up code after resume.  ...but
+> that's not anything new since IRAM (and thus the address of the
+> mcpm_entry_point) is lost across suspend/resume anyway.
 > 
->     Scope (_SB.I2C1)
->     {
->         Name (UMPC, ResourceTemplate ()
->         {
->             I2cSerialBus (0x0066, ControllerInitiated, 0x00061A80,
->                 AddressingMode7Bit, "\\_SB.I2C1",
->                 0x00, ResourceConsumer, ,
->                 )
->         })
-> 
-> 	...
-> 
->         OperationRegion (DVUM, GenericSerialBus, Zero, 0x0100)
->         Field (DVUM, BufferAcc, NoLock, Preserve)
->         {
->             Connection (UMPC),
->             Offset (0x81),
->             AccessAs (BufferAcc, AttribBytes (0x3E)),
->             FGC0,   8
->         }
-> 	...
->      }
-> 
->      Device (BATC)
->      {
->          Name (_HID, EisaId ("PNP0C0A"))  // _HID: Hardware ID
->          Name (_UID, One)  // _UID: Unique ID
-> 	 ...
-> 
->             Method (_BST, 0, NotSerialized)  // _BST: Battery Status
->             {
->                 If (LEqual (AVBL, One))
->                 {
->                     Store (FGC0, BFFG)
->                     If (LNotEqual (STAT, One))
->                     {
->                         ShiftRight (CHST, 0x04, Local0)
->                         And (Local0, 0x03, Local0)
->                         If (LOr (LEqual (Local0, One), LEqual (Local0, 0x02)))
->                         {
->                             Store (0x02, Local1)
->                         }
-> 	...
-> 
->     }
-> 
-> The i2c operation region is defined under I2C1 scope. _BST method under
-> battery device BATC read battery status from the field "FCG0". The request
-> would be sent to i2c operation region handler.
-> 
-> This patch is to add i2c ACPI operation region support. Due to there are
-> only "Byte" and "Bytes" protocol access on the Asus T100TA, other protocols
-> have not been tested.
-> 
-> About RawBytes and RawProcessBytes protocol, they needs specific drivers to interpret
-> reference data from AML code according ACPI 5.0 SPEC(5.5.2.4.5.3.9 and 5.5.2.4.5.3.10).
-> So far, not found such case and will add when find real case.
-> 
-> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
 > ---
->  drivers/i2c/Makefile   |   5 +-
->  drivers/i2c/i2c-acpi.c | 273 +++++++++++++++++++++++++++++++++++++++++++++++++
->  drivers/i2c/i2c-core.c |   2 +
->  include/linux/acpi.h   |  11 ++
->  include/linux/i2c.h    |  10 ++
->  5 files changed, 300 insertions(+), 1 deletion(-)
->  create mode 100644 drivers/i2c/i2c-acpi.c
+>  arch/arm/mach-exynos/mcpm-exynos.c | 10 ++++++----
+>  1 file changed, 6 insertions(+), 4 deletions(-)
 > 
-> diff --git a/drivers/i2c/Makefile b/drivers/i2c/Makefile
-> index 1722f50..80db307 100644
-> --- a/drivers/i2c/Makefile
-> +++ b/drivers/i2c/Makefile
-> @@ -2,8 +2,11 @@
->  # Makefile for the i2c core.
->  #
+> diff --git a/arch/arm/mach-exynos/mcpm-exynos.c b/arch/arm/mach-exynos/mcpm-exynos.c
+> index 0498d0b..3a7fad0 100644
+> --- a/arch/arm/mach-exynos/mcpm-exynos.c
+> +++ b/arch/arm/mach-exynos/mcpm-exynos.c
+> @@ -343,11 +343,13 @@ static int __init exynos_mcpm_init(void)
+>  	pr_info("Exynos MCPM support installed\n");
 >  
-> +i2ccore-y := i2c-core.o
-> +i2ccore-$(CONFIG_ACPI)		+= i2c-acpi.o
-> +
->  obj-$(CONFIG_I2C_BOARDINFO)	+= i2c-boardinfo.o
-> -obj-$(CONFIG_I2C)		+= i2c-core.o
-> +obj-$(CONFIG_I2C)		+= i2ccore.o
->  obj-$(CONFIG_I2C_SMBUS)		+= i2c-smbus.o
->  obj-$(CONFIG_I2C_CHARDEV)	+= i2c-dev.o
->  obj-$(CONFIG_I2C_MUX)		+= i2c-mux.o
-> diff --git a/drivers/i2c/i2c-acpi.c b/drivers/i2c/i2c-acpi.c
-> new file mode 100644
-> index 0000000..f7f4c89
-> --- /dev/null
-> +++ b/drivers/i2c/i2c-acpi.c
-> @@ -0,0 +1,273 @@
-> +/*
-> + * I2C ACPI code
-> + *
-> + * Copyright (C) 2014 Intel Corp
-> + *
-> + * Author: Lan Tianyu <tianyu.lan@intel.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful, but
-> + * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-> + * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-> + * for more details.
-> + */
-> +#define pr_fmt(fmt) "I2C/ACPI : " fmt
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/errno.h>
-> +#include <linux/err.h>
-> +#include <linux/i2c.h>
-> +#include <linux/acpi.h>
-> +
-> +struct acpi_i2c_handler_data {
-> +	struct acpi_connection_info info;
-> +	struct i2c_adapter *adapter;
-> +};
-> +
-> +struct gsb_buffer {
-> +	u8	status;
-> +	u8	len;
-> +	union {
-> +		u16	wdata;
-> +		u8	bdata;
-> +		u8	data[0];
-> +	};
-> +} __packed;
-> +
-> +static int acpi_gsb_i2c_read_bytes(struct i2c_client *client,
-> +		u8 cmd, u8 *data, u8 data_len)
-> +{
-> +
-> +	struct i2c_msg msgs[2];
-> +	int ret;
-> +	u8 *buffer;
-> +
-> +	buffer = kzalloc(data_len, GFP_KERNEL);
-> +	if (!buffer)
-> +		return AE_NO_MEMORY;
-> +
-> +	msgs[0].addr = client->addr;
-> +	msgs[0].flags = client->flags;
-> +	msgs[0].len = 1;
-> +	msgs[0].buf = &cmd;
-> +
-> +	msgs[1].addr = client->addr;
-> +	msgs[1].flags = client->flags | I2C_M_RD;
-> +	msgs[1].len = data_len;
-> +	msgs[1].buf = buffer;
-> +
-> +	ret = i2c_transfer(client->adapter, msgs, ARRAY_SIZE(msgs));
-> +	if (ret < 0)
-> +		dev_err(&client->adapter->dev, "i2c read failed\n");
-> +	else
-> +		memcpy(data, buffer, data_len);
-> +
-> +	kfree(buffer);
-> +	return ret;
-> +}
-> +
-> +static int acpi_gsb_i2c_write_bytes(struct i2c_client *client,
-> +		u8 cmd, u8 *data, u8 data_len)
-> +{
-> +
-> +	struct i2c_msg msgs[1];
-> +	u8 *buffer;
-> +	int ret = AE_OK;
-> +
-> +	buffer = kzalloc(data_len + 1, GFP_KERNEL);
-> +	if (!buffer)
-> +		return AE_NO_MEMORY;
-> +
-> +	buffer[0] = cmd;
-> +	memcpy(buffer + 1, data, data_len);
-> +
-> +	msgs[0].addr = client->addr;
-> +	msgs[0].flags = client->flags;
-> +	msgs[0].len = data_len + 1;
-> +	msgs[0].buf = buffer;
-> +
-> +	ret = i2c_transfer(client->adapter, msgs, ARRAY_SIZE(msgs));
-> +	if (ret < 0)
-> +		dev_err(&client->adapter->dev, "i2c write failed\n");
-> +
-> +	kfree(buffer);
-> +	return ret;
-> +}
-> +
-> +static acpi_status
-> +acpi_i2c_space_handler(u32 function, acpi_physical_address command,
-> +			u32 bits, u64 *value64,
-> +			void *handler_context, void *region_context)
-> +{
-> +	struct gsb_buffer *gsb = (struct gsb_buffer *)value64;
-> +	struct acpi_i2c_handler_data *data = handler_context;
-> +	struct acpi_connection_info *info = &data->info;
-> +	struct acpi_resource_i2c_serialbus *sb;
-> +	struct i2c_adapter *adapter = data->adapter;
-> +	struct i2c_client client;
-> +	struct acpi_resource *ares;
-> +	u32 accessor_type = function >> 16;
-> +	u8 action = function & ACPI_IO_MASK;
-> +	acpi_status ret = AE_OK;
-> +	int status;
-> +
-> +	ret = acpi_buffer_to_resource(info->connection, info->length, &ares);
-> +	if (ACPI_FAILURE(ret))
-> +		return ret;
-> +
-> +	if (!value64 || ares->type != ACPI_RESOURCE_TYPE_SERIAL_BUS) {
-> +		ret = AE_BAD_PARAMETER;
-> +		goto err;
-> +	}
-> +
-> +	sb = &ares->data.i2c_serial_bus;
-> +	if (sb->type != ACPI_RESOURCE_SERIAL_TYPE_I2C) {
-> +		ret = AE_BAD_PARAMETER;
-> +		goto err;
-> +	}
-> +
-> +	memset(&client, 0, sizeof(client));
-> +	client.adapter = adapter;
-> +	client.addr = sb->slave_address;
-> +	client.flags = 0;
-> +
-> +	if (sb->access_mode == ACPI_I2C_10BIT_MODE)
-> +		client.flags |= I2C_CLIENT_TEN;
-> +
-> +	switch (accessor_type) {
-> +	case ACPI_GSB_ACCESS_ATTRIB_SEND_RCV:
-> +		if (action == ACPI_READ) {
-> +			status = i2c_smbus_read_byte(&client);
-> +			if (status >= 0) {
-> +				gsb->bdata = status;
-> +				status = 0;
-> +			}
-> +		} else {
-> +			status = i2c_smbus_write_byte(&client, gsb->bdata);
-> +		}
-> +		break;
-> +
-> +	case ACPI_GSB_ACCESS_ATTRIB_BYTE:
-> +		if (action == ACPI_READ) {
-> +			status = i2c_smbus_read_byte_data(&client, command);
-> +			if (status >= 0) {
-> +				gsb->bdata = status;
-> +				status = 0;
-> +			}
-> +		} else {
-> +			status = i2c_smbus_write_byte_data(&client, command,
-> +					gsb->bdata);
-> +		}
-> +		break;
-> +
-> +	case ACPI_GSB_ACCESS_ATTRIB_WORD:
-> +		if (action == ACPI_READ) {
-> +			status = i2c_smbus_read_word_data(&client, command);
-> +			if (status >= 0) {
-> +				gsb->wdata = status;
-> +				status = 0;
-> +			}
-> +		} else {
-> +			status = i2c_smbus_write_word_data(&client, command,
-> +					gsb->wdata);
-> +		}
-> +		break;
-> +
-> +	case ACPI_GSB_ACCESS_ATTRIB_BLOCK:
-> +		if (action == ACPI_READ) {
-> +			status = i2c_smbus_read_block_data(&client, command,
-> +					gsb->data);
-> +			if (status >= 0) {
-> +				gsb->len = status;
-> +				status = 0;
-> +			}
-> +		} else {
-> +			status = i2c_smbus_write_block_data(&client, command,
-> +					gsb->len, gsb->data);
-> +		}
-> +		break;
-> +
-> +	case ACPI_GSB_ACCESS_ATTRIB_MULTIBYTE:
-> +		if (action == ACPI_READ) {
-> +			status = acpi_gsb_i2c_read_bytes(&client, command,
-> +					gsb->data, info->access_length);
-> +			if (status > 0)
-> +				status = 0;
-> +		} else {
-> +			status = acpi_gsb_i2c_write_bytes(&client, command,
-> +					gsb->data, info->access_length);
-> +		}
-> +		break;
-> +
-> +	default:
-> +		pr_info("protocol(0x%02x) is not supported.\n", accessor_type);
-> +		ret = AE_BAD_PARAMETER;
-> +		goto err;
-> +	}
-> +
-> +	gsb->status = status;
-> +
-> + err:
-> +	ACPI_FREE(ares);
-> +	return ret;
-> +}
-> +
-> +
-> +int acpi_i2c_install_space_handler(struct i2c_adapter *adapter)
-> +{
-> +	acpi_handle handle = ACPI_HANDLE(adapter->dev.parent);
-> +	struct acpi_i2c_handler_data *data;
-> +	acpi_status status;
-> +
-> +	if (!handle)
-> +		return -ENODEV;
-> +
-> +	data = kzalloc(sizeof(struct acpi_i2c_handler_data),
-> +			    GFP_KERNEL);
-> +	if (!data)
-> +		return -ENOMEM;
-> +
-> +	data->adapter = adapter;
-> +	status = acpi_bus_attach_private_data(handle, (void *)data);
-> +	if (ACPI_FAILURE(status)) {
-> +		kfree(data);
-> +		return -ENOMEM;
-> +	}
-> +
-> +	status = acpi_install_address_space_handler(handle,
-> +				ACPI_ADR_SPACE_GSBUS,
-> +				&acpi_i2c_space_handler,
-> +				NULL,
-> +				data);
-> +	if (ACPI_FAILURE(status)) {
-> +		dev_err(&adapter->dev, "Error installing i2c space handler\n");
-> +		acpi_bus_detach_private_data(handle);
-> +		kfree(data);
-> +		return -ENOMEM;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +void acpi_i2c_remove_space_handler(struct i2c_adapter *adapter)
-> +{
-> +	acpi_handle handle = ACPI_HANDLE(adapter->dev.parent);
-> +	struct acpi_i2c_handler_data *data;
-> +	acpi_status status;
-> +
-> +	if (!handle)
-> +		return;
-> +
-> +	acpi_remove_address_space_handler(handle,
-> +				ACPI_ADR_SPACE_GSBUS,
-> +				&acpi_i2c_space_handler);
-> +
-> +	status = acpi_bus_get_private_data(handle, (void **)&data);
-> +	if (ACPI_SUCCESS(status))
-> +		kfree(data);
-> +
-> +	acpi_bus_detach_private_data(handle);
-> +}
-> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-> index 7c7f4b8..e25cb84 100644
-> --- a/drivers/i2c/i2c-core.c
-> +++ b/drivers/i2c/i2c-core.c
-> @@ -1293,6 +1293,7 @@ exit_recovery:
->  	/* create pre-declared device nodes */
->  	of_i2c_register_devices(adap);
->  	acpi_i2c_register_devices(adap);
-> +	acpi_i2c_install_space_handler(adap);
->  
->  	if (adap->nr < __i2c_first_dynamic_bus_num)
->  		i2c_scan_static_board_info(adap);
-> @@ -1466,6 +1467,7 @@ void i2c_del_adapter(struct i2c_adapter *adap)
->  		return;
->  	}
->  
-> +	acpi_i2c_remove_space_handler(adap);
->  	/* Tell drivers about this removal */
->  	mutex_lock(&core_lock);
->  	bus_for_each_drv(&i2c_bus_type, NULL, adap,
-> diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-> index 7a8f2cd..ea53b9b 100644
-> --- a/include/linux/acpi.h
-> +++ b/include/linux/acpi.h
-> @@ -361,6 +361,17 @@ extern bool osc_sb_apei_support_acked;
->  #define OSC_PCI_EXPRESS_CAPABILITY_CONTROL	0x00000010
->  #define OSC_PCI_CONTROL_MASKS			0x0000001f
->  
-> +#define ACPI_GSB_ACCESS_ATTRIB_QUICK		0x00000002
-> +#define ACPI_GSB_ACCESS_ATTRIB_SEND_RCV         0x00000004
-> +#define ACPI_GSB_ACCESS_ATTRIB_BYTE		0x00000006
-> +#define ACPI_GSB_ACCESS_ATTRIB_WORD		0x00000008
-> +#define ACPI_GSB_ACCESS_ATTRIB_BLOCK		0x0000000A
-> +#define ACPI_GSB_ACCESS_ATTRIB_MULTIBYTE	0x0000000B
-> +#define ACPI_GSB_ACCESS_ATTRIB_WORD_CALL	0x0000000C
-> +#define ACPI_GSB_ACCESS_ATTRIB_BLOCK_CALL	0x0000000D
-> +#define ACPI_GSB_ACCESS_ATTRIB_RAW_BYTES	0x0000000E
-> +#define ACPI_GSB_ACCESS_ATTRIB_RAW_PROCESS	0x0000000F
-> +
->  extern acpi_status acpi_pci_osc_control_set(acpi_handle handle,
->  					     u32 *mask, u32 req);
->  
-> diff --git a/include/linux/i2c.h b/include/linux/i2c.h
-> index b556e0a..f7a939a 100644
-> --- a/include/linux/i2c.h
-> +++ b/include/linux/i2c.h
-> @@ -577,4 +577,14 @@ static inline struct i2c_adapter *of_find_i2c_adapter_by_node(struct device_node
->  }
->  #endif /* CONFIG_OF */
->  
-> +#ifdef CONFIG_ACPI
-> +int acpi_i2c_install_space_handler(struct i2c_adapter *adapter);
-> +void acpi_i2c_remove_space_handler(struct i2c_adapter *adapter);
-> +#else
-> +static inline void acpi_i2c_remove_space_handler(struct i2c_adapter *adapter)
-> +{ }
-> +static inline int acpi_i2c_install_space_handler(struct i2c_adapter *adapter)
-> +{ return 0; }
-> +#endif
-> +
->  #endif /* _LINUX_I2C_H */
-> 
+>  	/*
+> -	 * Future entries into the kernel can now go
+> -	 * through the cluster entry vectors.
+> +	 * U-Boot SPL is hardcoded to jump to the start of ns_sram_base_addr
+> +	 * as part of secondary_cpu_start().  Let's redirect it to the
+> +	 * mcpm_entry_point().
+>  	 */
+> -	__raw_writel(virt_to_phys(mcpm_entry_point),
+> -			ns_sram_base_addr + MCPM_BOOT_ADDR_OFFSET);
+> +	__raw_writel(0xe59f0000, ns_sram_base_addr);     /* ldr r0, [pc, #0] */
+> +	__raw_writel(0xe12fff10, ns_sram_base_addr + 4); /* bx  r0 */
+> +	__raw_writel(virt_to_phys(mcpm_entry_point), ns_sram_base_addr + 8);
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Is this valid for all exynos systems, or is this particular to
+Chromebooks?
+
+If this is all that is needed to solve the problem being discussed in 
+the other thread I have absolutely no issue with such a workaround going 
+into mainline.
+
+
+Nicolas
