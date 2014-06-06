@@ -1,75 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590AbaFFVpO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 17:45:14 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:61172 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752458AbaFFVpM (ORCPT
+	id S1752359AbaFFVs6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 17:48:58 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:54632 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752075AbaFFVs5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 17:45:12 -0400
+	Fri, 6 Jun 2014 17:48:57 -0400
 MIME-Version: 1.0
-In-Reply-To: <539235C5.1030002@zytor.com>
-References: <201406042235.s54MZgwP020553@terminus.zytor.com>
- <20140606140017.afb7f91142f66cb3dd13c186@linux-foundation.org>
- <CA+55aFyKTbBUM4DJukmW5fiH213D0FbVmrreR9wOtMRmmijQ9Q@mail.gmail.com>
- <CALCETrWA92Q4ro9eaRkUrebjgQT7B2uj+bK81m9byZnDY_eMxA@mail.gmail.com>
- <CA+55aFx8ezbe-mCYWp6kM8Nh3oUQd_+SNz6mLoGQtMVDk3EALA@mail.gmail.com>
- <53922F74.20406@linux.intel.com> <CALCETrXpCMdyPjM6MSbxoi0matoYLfduuSiwmTjGCUU62KOsTw@mail.gmail.com>
- <539231B8.8000400@zytor.com> <CALCETrXUDiN2RspG3hK4ovDU9WSfo8hnvQjx7cx=Au7A7N1v_w@mail.gmail.com>
- <53923490.2060407@zytor.com> <CALCETrV4LPNwQFYghygqUjPQd2vSYew=wghgveX7turZzYBMFQ@mail.gmail.com>
- <539235C5.1030002@zytor.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 6 Jun 2014 14:44:51 -0700
-Message-ID: <CALCETrXoveOV5qoQ0vBcLiZ15BXAyEiL+oWUWrHKOXuui-Cspg@mail.gmail.com>
-Subject: Re: [GIT PULL] x86/vdso changes for v3.16
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Sasha Levin <sasha.levin@oracle.com>,
-        Stefani Seibold <stefani@seibold.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Pavel Emelyanov <xemul@parallels.com>
+In-Reply-To: <1401818318-15780-2-git-send-email-zohar@linux.vnet.ibm.com>
+References: <1401818318-15780-1-git-send-email-zohar@linux.vnet.ibm.com>
+	<1401818318-15780-2-git-send-email-zohar@linux.vnet.ibm.com>
+Date: Sat, 7 Jun 2014 00:48:55 +0300
+Message-ID: <CACE9dm909SGRBOybkh8z8jNiGPc_ksKHzsMuvNB+ro9furQ_tQ@mail.gmail.com>
+Subject: Re: [RFC PATCH v5 1/4] KEYS: special dot prefixed keyring name bug fix
+From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: linux-security-module <linux-security-module@vger.kernel.org>,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        David Howells <dhowells@redhat.com>, Josh Boyer <jwboyer@redhat.com>,
+        keyrings <keyrings@linux-nfs.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 6, 2014 at 2:42 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 06/06/2014 02:39 PM, Andy Lutomirski wrote:
->>>
->>> For accessing memory members doing it via a pointer is pretty much TRT,
->>> but for things that might be in register it is undesirable to force it
->>> out to memory.
->>
->> Do you also believe in the folklore that GCC can optimize code
->> sequences like the things in that header?  Because I'm pretty sure
->> that no clang or gcc version I've ever seen can do it.
->>
+On 3 June 2014 20:58, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> Dot prefixed keyring names are supposed to be reserved for the
+> kernel, but add_key() calls key_get_type_from_user(), which
+> incorrectly verifies the 'type' field, not the 'description' field.
+> This patch verifies the 'description' field isn't dot prefixed,
+> when creating a new keyring, and removes the dot prefix test in
+> key_get_type_from_user().
 >
-> I have seen gcc do some pretty sophisticated memory elision lately.
-> Don't know if that includes byte swaps.
+> Changelog v5:
+> - Only prevent userspace from creating a dot prefixed keyring, not
+>   regular keys  - Dmitry
 >
->> On the other hand, even a factor of ten in the time it takes to run
->> vdso2c is completely irrelevant.
+> Reported-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+> Cc: David Howells <dhowells@redhat.com>
+> Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+> ---
+>  security/keys/keyctl.c | 6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
 >
-> Yep, as I noted in the patch I sent (which is broken - updated one
-> included here.)
-
-Acked-by: Andy Lutomirski <luto@amacapital.net>
-
-The generated vdso-image-*.c files are identical.
-
---Andy
-
+> diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+> index cd5bd0c..62a9952 100644
+> --- a/security/keys/keyctl.c
+> +++ b/security/keys/keyctl.c
+> @@ -37,8 +37,6 @@ static int key_get_type_from_user(char *type,
+>                 return ret;
+>         if (ret == 0 || ret >= len)
+>                 return -EINVAL;
+> -       if (type[0] == '.')
+> -               return -EPERM;
+>         type[len - 1] = '\0';
+>         return 0;
+>  }
+> @@ -86,6 +84,10 @@ SYSCALL_DEFINE5(add_key, const char __user *, _type,
+>                 if (!*description) {
+>                         kfree(description);
+>                         description = NULL;
+> +               } else if ((description[0] == '.') &&
+> +                          (strncmp(type, "keyring", 7) == 0)) {
+> +                               ret = -EPERM;
+> +                               goto error2;
+>                 }
+>         }
 >
->         -hpa
+> --
+> 1.8.1.4
 >
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
+I think it does not another problem...
+It is not only prevent creating new keyring with ".abc" name but also
+prevent adding new key...
 
+this is wrong...
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+- Dmitry
