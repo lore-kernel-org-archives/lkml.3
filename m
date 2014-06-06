@@ -1,227 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752588AbaFFWAw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 18:00:52 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38456 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752075AbaFFWAu (ORCPT
+	id S1752307AbaFFWDl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 18:03:41 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:58116 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752184AbaFFWDk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 18:00:50 -0400
-Date: Fri, 6 Jun 2014 15:00:29 -0700
-From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
-Message-ID: <tip-bdfb9bcc25005d06a9c301830bdeb7ca5a0b6ef7@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, luto@amacapital.net, hpa@zytor.com,
-        mingo@kernel.org, akpm@linux-foundation.org, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, luto@amacapital.net,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <20140606140017.afb7f91142f66cb3dd13c186@linux-foundation.org>
-References: <20140606140017.afb7f91142f66cb3dd13c186@linux-foundation.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/vdso] x86, vdso: Use <tools/le_byteshift.h>
-  for littleendian access
-Git-Commit-ID: bdfb9bcc25005d06a9c301830bdeb7ca5a0b6ef7
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Fri, 6 Jun 2014 18:03:40 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Anil Gurumurthy <anil.gurumurthy@qlogic.com>,
+        Sudarsana Kalluru <sudarsana.kalluru@qlogic.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] scsi: bfa: bfad_attr.c:  Optimization of the code
+Date: Sat,  7 Jun 2014 00:04:33 +0200
+Message-Id: <1402092273-5992-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  bdfb9bcc25005d06a9c301830bdeb7ca5a0b6ef7
-Gitweb:     http://git.kernel.org/tip/bdfb9bcc25005d06a9c301830bdeb7ca5a0b6ef7
-Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Fri, 6 Jun 2014 14:30:37 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 6 Jun 2014 14:54:54 -0700
+Minimized the use of snprintf()
+And removed a variable that was only used for the temporary storage.
 
-x86, vdso: Use <tools/le_byteshift.h> for littleendian access
-
-There are no standard functions for littleendian data (unlike
-bigendian data.)  Thus, use <tools/le_byteshift.h> to access
-littleendian data members.  Those are fairly inefficient, but it
-doesn't matter for this purpose (and can be optimized later.)  This
-avoids portability problems.
-
-Reported-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Tested-by: Andy Lutomirski <luto@amacapital.net>
-Link: http://lkml.kernel.org/r/20140606140017.afb7f91142f66cb3dd13c186@linux-foundation.org
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- arch/x86/vdso/Makefile |  1 +
- arch/x86/vdso/vdso2c.c | 10 ++++----
- arch/x86/vdso/vdso2c.h | 62 +++++++++++++++++++++++++-------------------------
- 3 files changed, 38 insertions(+), 35 deletions(-)
+ drivers/scsi/bfa/bfad_attr.c |  114 ++++++++++++++++++++++++------------------
+ 1 file changed, 66 insertions(+), 48 deletions(-)
 
-diff --git a/arch/x86/vdso/Makefile b/arch/x86/vdso/Makefile
-index 895d4b1..9769df0 100644
---- a/arch/x86/vdso/Makefile
-+++ b/arch/x86/vdso/Makefile
-@@ -59,6 +59,7 @@ VDSO_LDFLAGS_vdso.lds = -m64 -Wl,-soname=linux-vdso.so.1 \
- $(obj)/vdso64.so.dbg: $(src)/vdso.lds $(vobjs) FORCE
- 	$(call if_changed,vdso)
+diff --git a/drivers/scsi/bfa/bfad_attr.c b/drivers/scsi/bfa/bfad_attr.c
+index 40be670..3fe75ff 100644
+--- a/drivers/scsi/bfa/bfad_attr.c
++++ b/drivers/scsi/bfa/bfad_attr.c
+@@ -751,69 +751,89 @@ bfad_im_model_desc_show(struct device *dev, struct device_attribute *attr,
+ 	bfa_get_adapter_model(&bfad->bfa, model);
+ 	nports = bfa_get_nports(&bfad->bfa);
+ 	if (!strcmp(model, "Brocade-425"))
+-		snprintf(model_descr, BFA_ADAPTER_MODEL_DESCR_LEN,
+-			"Brocade 4Gbps PCIe dual port FC HBA");
++		strlcpy(model_descr,
++				"Brocade 4Gbps PCIe dual port FC HBA\n",
++				BFA_ADAPTER_MODEL_DESCR_LEN);
+ 	else if (!strcmp(model, "Brocade-825"))
+-		snprintf(model_descr, BFA_ADAPTER_MODEL_DESCR_LEN,
+-			"Brocade 8Gbps PCIe dual port FC HBA");
++		strlcpy(model_descr,
++				"Brocade 8Gbps PCIe dual port FC HBA\n",
++				BFA_ADAPTER_MODEL_DESCR_LEN);
+ 	else if (!strcmp(model, "Brocade-42B"))
+-		snprintf(model_descr, BFA_ADAPTER_MODEL_DESCR_LEN,
+-			"Brocade 4Gbps PCIe dual port FC HBA for HP");
++		strlcpy(model_descr,
++				"Brocade 4Gbps PCIe dual port FC HBA for HP\n",
++				BFA_ADAPTER_MODEL_DESCR_LEN);
+ 	else if (!strcmp(model, "Brocade-82B"))
+-		snprintf(model_descr, BFA_ADAPTER_MODEL_DESCR_LEN,
+-			"Brocade 8Gbps PCIe dual port FC HBA for HP");
++		strlcpy(model_descr,
++				"Brocade 8Gbps PCIe dual port FC HBA for HP\n",
++				BFA_ADAPTER_MODEL_DESCR_LEN);
+ 	else if (!strcmp(model, "Brocade-1010"))
+-		snprintf(model_descr, BFA_ADAPTER_MODEL_DESCR_LEN,
+-			"Brocade 10Gbps single port CNA");
++		strlcpy(model_descr,
++				"Brocade 10Gbps single port CNA\n",
++				BFA_ADAPTER_MODEL_DESCR_LEN);
+ 	else if (!strcmp(model, "Brocade-1020"))
+-		snprintf(model_descr, BFA_ADAPTER_MODEL_DESCR_LEN,
+-			"Brocade 10Gbps dual port CNA");
++		strlcpy(model_descr,
++				"Brocade 10Gbps dual port CNA\n",
++				BFA_ADAPTER_MODEL_DESCR_LEN);
+ 	else if (!strcmp(model, "Brocade-1007"))
+-		snprintf(model_descr, BFA_ADAPTER_MODEL_DESCR_LEN,
+-			"Brocade 10Gbps CNA for IBM Blade Center");
++		strlcpy(model_descr,
++				"Brocade 10Gbps CNA for IBM Blade Center\n",
++				BFA_ADAPTER_MODEL_DESCR_LEN);
+ 	else if (!strcmp(model, "Brocade-415"))
+-		snprintf(model_descr, BFA_ADAPTER_MODEL_DESCR_LEN,
+-			"Brocade 4Gbps PCIe single port FC HBA");
++		strlcpy(model_descr,
++				"Brocade 4Gbps PCIe single port FC HBA\n",
++				BFA_ADAPTER_MODEL_DESCR_LEN);
+ 	else if (!strcmp(model, "Brocade-815"))
+-		snprintf(model_descr, BFA_ADAPTER_MODEL_DESCR_LEN,
+-			"Brocade 8Gbps PCIe single port FC HBA");
++		strlcpy(model_descr,
++				"Brocade 8Gbps PCIe single port FC HBA\n",
++				BFA_ADAPTER_MODEL_DESCR_LEN);
+ 	else if (!strcmp(model, "Brocade-41B"))
+-		snprintf(model_descr, BFA_ADAPTER_MODEL_DESCR_LEN,
+-			"Brocade 4Gbps PCIe single port FC HBA for HP");
++		strlcpy(model_descr,
++				"Brocade 4Gbps PCIe single port FC HBA for HP\n",
++				BFA_ADAPTER_MODEL_DESCR_LEN);
+ 	else if (!strcmp(model, "Brocade-81B"))
+-		snprintf(model_descr, BFA_ADAPTER_MODEL_DESCR_LEN,
+-			"Brocade 8Gbps PCIe single port FC HBA for HP");
++		strlcpy(model_descr,
++				"Brocade 8Gbps PCIe single port FC HBA for HP\n",
++				BFA_ADAPTER_MODEL_DESCR_LEN);
+ 	else if (!strcmp(model, "Brocade-804"))
+-		snprintf(model_descr, BFA_ADAPTER_MODEL_DESCR_LEN,
+-			"Brocade 8Gbps FC HBA for HP Bladesystem C-class");
++		strlcpy(model_descr,
++				"Brocade 8Gbps FC HBA for HP Bladesystem C-class\n",
++				BFA_ADAPTER_MODEL_DESCR_LEN);
+ 	else if (!strcmp(model, "Brocade-1741"))
+-		snprintf(model_descr, BFA_ADAPTER_MODEL_DESCR_LEN,
+-			"Brocade 10Gbps CNA for Dell M-Series Blade Servers");
++		strlcpy(model_descr,
++				"Brocade 10Gbps CNA for Dell M-Series Blade Servers\n",
++				BFA_ADAPTER_MODEL_DESCR_LEN);
+ 	else if (strstr(model, "Brocade-1860")) {
+ 		if (nports == 1 && bfa_ioc_is_cna(&bfad->bfa.ioc))
+-			snprintf(model_descr, BFA_ADAPTER_MODEL_DESCR_LEN,
+-				"Brocade 10Gbps single port CNA");
++			strlcpy(model_descr,
++					"Brocade 10Gbps single port CNA\n",
++					BFA_ADAPTER_MODEL_DESCR_LEN);
+ 		else if (nports == 1 && !bfa_ioc_is_cna(&bfad->bfa.ioc))
+-			snprintf(model_descr, BFA_ADAPTER_MODEL_DESCR_LEN,
+-				"Brocade 16Gbps PCIe single port FC HBA");
++			strlcpy(model_descr,
++					"Brocade 16Gbps PCIe single port FC HBA\n",
++					BFA_ADAPTER_MODEL_DESCR_LEN);
+ 		else if (nports == 2 && bfa_ioc_is_cna(&bfad->bfa.ioc))
+-			snprintf(model_descr, BFA_ADAPTER_MODEL_DESCR_LEN,
+-				"Brocade 10Gbps dual port CNA");
++			strlcpy(model_descr,
++					"Brocade 10Gbps dual port CNA\n",
++					BFA_ADAPTER_MODEL_DESCR_LEN);
+ 		else if (nports == 2 && !bfa_ioc_is_cna(&bfad->bfa.ioc))
+-			snprintf(model_descr, BFA_ADAPTER_MODEL_DESCR_LEN,
+-				"Brocade 16Gbps PCIe dual port FC HBA");
++			strlcpy(model_descr,
++					"Brocade 16Gbps PCIe dual port FC HBA\n",
++					BFA_ADAPTER_MODEL_DESCR_LEN);
+ 	} else if (!strcmp(model, "Brocade-1867")) {
+ 		if (nports == 1 && !bfa_ioc_is_cna(&bfad->bfa.ioc))
+-			snprintf(model_descr, BFA_ADAPTER_MODEL_DESCR_LEN,
+-				"Brocade 16Gbps PCIe single port FC HBA for IBM");
++			strlcpy(model_descr,
++					"Brocade 16Gbps PCIe single port FC HBA for IBM\n",
++					BFA_ADAPTER_MODEL_DESCR_LEN);
+ 		else if (nports == 2 && !bfa_ioc_is_cna(&bfad->bfa.ioc))
+-			snprintf(model_descr, BFA_ADAPTER_MODEL_DESCR_LEN,
+-				"Brocade 16Gbps PCIe dual port FC HBA for IBM");
++			strlcpy(model_descr,
++					"Brocade 16Gbps PCIe dual port FC HBA for IBM\n",
++					BFA_ADAPTER_MODEL_DESCR_LEN);
+ 	} else
+-		snprintf(model_descr, BFA_ADAPTER_MODEL_DESCR_LEN,
+-			"Invalid Model");
++		strlcpy(model_descr,
++				"Invalid Model\n",
++				BFA_ADAPTER_MODEL_DESCR_LEN);
  
-+HOST_EXTRACFLAGS += -I$(srctree)/tools/include
- hostprogs-y			+= vdso2c
+-	return snprintf(buf, PAGE_SIZE, "%s\n", model_descr);
++	return strlcpy(buf, model_descr, PAGE_SIZE);
+ }
  
- quiet_cmd_vdso2c = VDSO2C  $@
-diff --git a/arch/x86/vdso/vdso2c.c b/arch/x86/vdso/vdso2c.c
-index deabaf5..450ac6e 100644
---- a/arch/x86/vdso/vdso2c.c
-+++ b/arch/x86/vdso/vdso2c.c
-@@ -11,6 +11,8 @@
- #include <sys/mman.h>
- #include <sys/types.h>
+ static ssize_t
+@@ -839,12 +859,10 @@ bfad_im_symbolic_name_show(struct device *dev, struct device_attribute *attr,
+ 			(struct bfad_im_port_s *) shost->hostdata[0];
+ 	struct bfad_s *bfad = im_port->bfad;
+ 	struct bfa_lport_attr_s port_attr;
+-	char symname[BFA_SYMNAME_MAXLEN];
  
-+#include <tools/le_byteshift.h>
-+
- #include <linux/elf.h>
- #include <linux/types.h>
+ 	bfa_fcs_lport_get_attr(&bfad->bfa_fcs.fabric.bport, &port_attr);
+-	strncpy(symname, port_attr.port_cfg.sym_name.symname,
+-			BFA_SYMNAME_MAXLEN);
+-	return snprintf(buf, PAGE_SIZE, "%s\n", symname);
++	return snprintf(buf, PAGE_SIZE, "%s\n",
++			port_attr.port_cfg.sym_name.symname);
+ }
  
-@@ -56,12 +58,12 @@ static void fail(const char *format, ...)
-  */
- #define GLE(x, bits, ifnot)						\
- 	__builtin_choose_expr(						\
--		(sizeof(x) == bits/8),					\
--		(__typeof__(x))le##bits##toh(x), ifnot)
-+		(sizeof(*(x)) == bits/8),				\
-+		(__typeof__(*(x)))get_unaligned_le##bits(x), ifnot)
+ static ssize_t
+@@ -865,7 +883,7 @@ static ssize_t
+ bfad_im_drv_version_show(struct device *dev, struct device_attribute *attr,
+ 				char *buf)
+ {
+-	return snprintf(buf, PAGE_SIZE, "%s\n", BFAD_DRIVER_VERSION);
++	return strlcpy(buf, BFAD_DRIVER_VERSION  "\n", PAGE_SIZE);
+ }
  
--extern void bad_get_le(uint64_t);
-+extern void bad_get_le(void);
- #define LAST_LE(x)							\
--	__builtin_choose_expr(sizeof(x) == 1, (x), bad_get_le(x))
-+	__builtin_choose_expr(sizeof(*(x)) == 1, *(x), bad_get_le())
+ static ssize_t
+@@ -913,7 +931,7 @@ static ssize_t
+ bfad_im_drv_name_show(struct device *dev, struct device_attribute *attr,
+ 				char *buf)
+ {
+-	return snprintf(buf, PAGE_SIZE, "%s\n", BFAD_DRIVER_NAME);
++	return strlcpy(buf, BFAD_DRIVER_NAME  "\n", PAGE_SIZE);
+ }
  
- #define GET_LE(x)							\
- 	GLE(x, 64, GLE(x, 32, GLE(x, 16, LAST_LE(x))))
-diff --git a/arch/x86/vdso/vdso2c.h b/arch/x86/vdso/vdso2c.h
-index d1e99e1..8a07463 100644
---- a/arch/x86/vdso/vdso2c.h
-+++ b/arch/x86/vdso/vdso2c.h
-@@ -18,27 +18,27 @@ static void GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
- 	const char *secstrings;
- 	uint64_t syms[NSYMS] = {};
+ static ssize_t
+@@ -932,7 +950,7 @@ bfad_im_num_of_discovered_ports_show(struct device *dev,
+ 	rports = kzalloc(sizeof(struct bfa_rport_qualifier_s) * nrports,
+ 			 GFP_ATOMIC);
+ 	if (rports == NULL)
+-		return snprintf(buf, PAGE_SIZE, "Failed\n");
++		return strlcpy(buf, "Failed\n", PAGE_SIZE);
  
--	Elf_Phdr *pt = (Elf_Phdr *)(addr + GET_LE(hdr->e_phoff));
-+	Elf_Phdr *pt = (Elf_Phdr *)(addr + GET_LE(&hdr->e_phoff));
- 
- 	/* Walk the segment table. */
--	for (i = 0; i < GET_LE(hdr->e_phnum); i++) {
--		if (GET_LE(pt[i].p_type) == PT_LOAD) {
-+	for (i = 0; i < GET_LE(&hdr->e_phnum); i++) {
-+		if (GET_LE(&pt[i].p_type) == PT_LOAD) {
- 			if (found_load)
- 				fail("multiple PT_LOAD segs\n");
- 
--			if (GET_LE(pt[i].p_offset) != 0 ||
--			    GET_LE(pt[i].p_vaddr) != 0)
-+			if (GET_LE(&pt[i].p_offset) != 0 ||
-+			    GET_LE(&pt[i].p_vaddr) != 0)
- 				fail("PT_LOAD in wrong place\n");
- 
--			if (GET_LE(pt[i].p_memsz) != GET_LE(pt[i].p_filesz))
-+			if (GET_LE(&pt[i].p_memsz) != GET_LE(&pt[i].p_filesz))
- 				fail("cannot handle memsz != filesz\n");
- 
--			load_size = GET_LE(pt[i].p_memsz);
-+			load_size = GET_LE(&pt[i].p_memsz);
- 			found_load = 1;
--		} else if (GET_LE(pt[i].p_type) == PT_DYNAMIC) {
--			dyn = addr + GET_LE(pt[i].p_offset);
--			dyn_end = addr + GET_LE(pt[i].p_offset) +
--				GET_LE(pt[i].p_memsz);
-+		} else if (GET_LE(&pt[i].p_type) == PT_DYNAMIC) {
-+			dyn = addr + GET_LE(&pt[i].p_offset);
-+			dyn_end = addr + GET_LE(&pt[i].p_offset) +
-+				GET_LE(&pt[i].p_memsz);
- 		}
- 	}
- 	if (!found_load)
-@@ -47,24 +47,24 @@ static void GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
- 
- 	/* Walk the dynamic table */
- 	for (i = 0; dyn + i < dyn_end &&
--		     GET_LE(dyn[i].d_tag) != DT_NULL; i++) {
--		typeof(dyn[i].d_tag) tag = GET_LE(dyn[i].d_tag);
-+		     GET_LE(&dyn[i].d_tag) != DT_NULL; i++) {
-+		typeof(dyn[i].d_tag) tag = GET_LE(&dyn[i].d_tag);
- 		if (tag == DT_REL || tag == DT_RELSZ ||
- 		    tag == DT_RELENT || tag == DT_TEXTREL)
- 			fail("vdso image contains dynamic relocations\n");
- 	}
- 
- 	/* Walk the section table */
--	secstrings_hdr = addr + GET_LE(hdr->e_shoff) +
--		GET_LE(hdr->e_shentsize)*GET_LE(hdr->e_shstrndx);
--	secstrings = addr + GET_LE(secstrings_hdr->sh_offset);
--	for (i = 0; i < GET_LE(hdr->e_shnum); i++) {
--		Elf_Shdr *sh = addr + GET_LE(hdr->e_shoff) +
--			GET_LE(hdr->e_shentsize) * i;
--		if (GET_LE(sh->sh_type) == SHT_SYMTAB)
-+	secstrings_hdr = addr + GET_LE(&hdr->e_shoff) +
-+		GET_LE(&hdr->e_shentsize)*GET_LE(&hdr->e_shstrndx);
-+	secstrings = addr + GET_LE(&secstrings_hdr->sh_offset);
-+	for (i = 0; i < GET_LE(&hdr->e_shnum); i++) {
-+		Elf_Shdr *sh = addr + GET_LE(&hdr->e_shoff) +
-+			GET_LE(&hdr->e_shentsize) * i;
-+		if (GET_LE(&sh->sh_type) == SHT_SYMTAB)
- 			symtab_hdr = sh;
- 
--		if (!strcmp(secstrings + GET_LE(sh->sh_name),
-+		if (!strcmp(secstrings + GET_LE(&sh->sh_name),
- 			    ".altinstructions"))
- 			alt_sec = sh;
- 	}
-@@ -72,25 +72,25 @@ static void GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
- 	if (!symtab_hdr)
- 		fail("no symbol table\n");
- 
--	strtab_hdr = addr + GET_LE(hdr->e_shoff) +
--		GET_LE(hdr->e_shentsize) * GET_LE(symtab_hdr->sh_link);
-+	strtab_hdr = addr + GET_LE(&hdr->e_shoff) +
-+		GET_LE(&hdr->e_shentsize) * GET_LE(&symtab_hdr->sh_link);
- 
- 	/* Walk the symbol table */
- 	for (i = 0;
--	     i < GET_LE(symtab_hdr->sh_size) / GET_LE(symtab_hdr->sh_entsize);
-+	     i < GET_LE(&symtab_hdr->sh_size) / GET_LE(&symtab_hdr->sh_entsize);
- 	     i++) {
- 		int k;
--		Elf_Sym *sym = addr + GET_LE(symtab_hdr->sh_offset) +
--			GET_LE(symtab_hdr->sh_entsize) * i;
--		const char *name = addr + GET_LE(strtab_hdr->sh_offset) +
--			GET_LE(sym->st_name);
-+		Elf_Sym *sym = addr + GET_LE(&symtab_hdr->sh_offset) +
-+			GET_LE(&symtab_hdr->sh_entsize) * i;
-+		const char *name = addr + GET_LE(&strtab_hdr->sh_offset) +
-+			GET_LE(&sym->st_name);
- 		for (k = 0; k < NSYMS; k++) {
- 			if (!strcmp(name, required_syms[k])) {
- 				if (syms[k]) {
- 					fail("duplicate symbol %s\n",
- 					     required_syms[k]);
- 				}
--				syms[k] = GET_LE(sym->st_value);
-+				syms[k] = GET_LE(&sym->st_value);
- 			}
- 		}
- 	}
-@@ -150,9 +150,9 @@ static void GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
- 	fprintf(outfile, "\t},\n");
- 	if (alt_sec) {
- 		fprintf(outfile, "\t.alt = %lu,\n",
--			(unsigned long)GET_LE(alt_sec->sh_offset));
-+			(unsigned long)GET_LE(&alt_sec->sh_offset));
- 		fprintf(outfile, "\t.alt_len = %lu,\n",
--			(unsigned long)GET_LE(alt_sec->sh_size));
-+			(unsigned long)GET_LE(&alt_sec->sh_size));
- 	}
- 	for (i = 0; i < NSYMS; i++) {
- 		if (syms[i])
+ 	spin_lock_irqsave(&bfad->bfad_lock, flags);
+ 	bfa_fcs_lport_get_rport_quals(port->fcs_port, rports, &nrports);
+-- 
+1.7.10.4
+
