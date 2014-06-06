@@ -1,110 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752334AbaFFPzW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 11:55:22 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:54051 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752471AbaFFPww (ORCPT
+	id S1752749AbaFFP4G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 11:56:06 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:59329 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751986AbaFFP4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 11:52:52 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: wsa@the-dreams.de, grant.likely@linaro.org, linus.walleij@linaro.org,
-        linux-i2c@vger.kernel.org, devicetree@vger.kernel.org,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 2/9] i2c: Add the ability to match device to compatible string without an of_node
-Date: Fri,  6 Jun 2014 16:52:25 +0100
-Message-Id: <1402069952-28022-3-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1402069952-28022-1-git-send-email-lee.jones@linaro.org>
-References: <1402069952-28022-1-git-send-email-lee.jones@linaro.org>
+	Fri, 6 Jun 2014 11:56:03 -0400
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: peterz@infradead.org, mingo@kernel.org
+Cc: mpatocka@redhat.com, torvalds@linux-foundation.org, jason.low2@hp.com,
+        waiman.long@hp.com, jejb@parisc-linux.org, paulmck@linux.vnet.ibm.com,
+        dave.anglin@bell.net, aswin@hp.com, davidlohr@hp.com,
+        linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org
+Subject: [PATCH 1/2] locking/rwsem: Add CONFIG_RWSEM_SPIN_ON_OWNER
+Date: Fri,  6 Jun 2014 08:55:39 -0700
+Message-Id: <1402070140-15090-2-git-send-email-davidlohr@hp.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1402070140-15090-1-git-send-email-davidlohr@hp.com>
+References: <1402070140-15090-1-git-send-email-davidlohr@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A great deal of I2C devices are currently matched via DT node name, and
-as such the compatible naming convention of '<vendor>,<device>' has gone
-somewhat awry - some nodes don't supply one, some supply an arbitrary
-string and others the correct device name with an arbitrary vendor prefix.
+Just like with mutexes (CONFIG_MUTEX_SPIN_ON_OWNER),
+encapsulate the dependencies for rwsem optimistic spinning.
+No logical changes here as it continues to depend on both
+SMP and the XADD algorithm variant.
 
-In an effort to correct this problem we have to supply a mechanism to
-match a device by compatible string AND by simple device name.  This
-function strips off the '<vendor>,' part of a supplied compatible string
-and attempts to match without it.
-
-The plan is to remove this function once all of the compatible strings
-for each device have been brought into line.
-
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
 ---
- drivers/i2c/i2c-core.c | 25 +++++++++++++++++++++++++
- include/linux/i2c.h    | 10 ++++++++++
- 2 files changed, 35 insertions(+)
+ include/linux/rwsem.h  | 4 ++--
+ kernel/Kconfig.locks   | 4 ++++
+ kernel/locking/rwsem.c | 2 +-
+ 3 files changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index d3802dc..face8f9 100644
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -1090,6 +1090,31 @@ struct i2c_adapter *of_find_i2c_adapter_by_node(struct device_node *node)
- 	return i2c_verify_adapter(dev);
- }
- EXPORT_SYMBOL(of_find_i2c_adapter_by_node);
-+
-+const struct of_device_id
-+*i2c_of_match_device_strip_vendor(const struct of_device_id *matches,
-+				  struct device *dev)
-+{
-+	const struct i2c_client *client = i2c_verify_client(dev);
-+	const char *name;
-+
-+	if (!(client && matches))
-+		return NULL;
-+
-+	for (; matches->compatible[0]; matches++) {
-+		name = strchr(matches->compatible, ',');
-+		if (!name)
-+			name = matches->compatible;
-+		else
-+			name++;
-+
-+		if (!strnicmp(client->name, name, strlen(client->name)))
-+			return matches;
-+	}
-+
-+	return NULL;
-+}
-+EXPORT_SYMBOL_GPL(i2c_of_match_device_strip_vendor);
- #else
- static void of_i2c_register_devices(struct i2c_adapter *adap) { }
- #endif /* CONFIG_OF */
-diff --git a/include/linux/i2c.h b/include/linux/i2c.h
-index b556e0a..f7ec75b 100644
---- a/include/linux/i2c.h
-+++ b/include/linux/i2c.h
-@@ -564,6 +564,9 @@ extern struct i2c_client *of_find_i2c_device_by_node(struct device_node *node);
- /* must call put_device() when done with returned i2c_adapter device */
- extern struct i2c_adapter *of_find_i2c_adapter_by_node(struct device_node *node);
+diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
+index 8d79708..accdef7 100644
+--- a/include/linux/rwsem.h
++++ b/include/linux/rwsem.h
+@@ -27,7 +27,7 @@ struct rw_semaphore {
+ 	long count;
+ 	raw_spinlock_t wait_lock;
+ 	struct list_head wait_list;
+-#ifdef CONFIG_SMP
++#ifdef CONFIG_RWSEM_SPIN_ON_OWNER
+ 	/*
+ 	 * Write owner. Used as a speculative check to see
+ 	 * if the owner is running on the cpu.
+@@ -64,7 +64,7 @@ static inline int rwsem_is_locked(struct rw_semaphore *sem)
+ # define __RWSEM_DEP_MAP_INIT(lockname)
+ #endif
  
-+extern const struct of_device_id
-+*i2c_of_match_device_strip_vendor(const struct of_device_id *matches,
-+				  struct device *dev);
- #else
+-#if defined(CONFIG_SMP) && !defined(CONFIG_RWSEM_GENERIC_SPINLOCK)
++#ifdef CONFIG_RWSEM_SPIN_ON_OWNER
+ #define __RWSEM_INITIALIZER(name)			\
+ 	{ RWSEM_UNLOCKED_VALUE,				\
+ 	  __RAW_SPIN_LOCK_UNLOCKED(name.wait_lock),	\
+diff --git a/kernel/Kconfig.locks b/kernel/Kconfig.locks
+index 35536d9..e4c3162 100644
+--- a/kernel/Kconfig.locks
++++ b/kernel/Kconfig.locks
+@@ -224,6 +224,10 @@ config MUTEX_SPIN_ON_OWNER
+ 	def_bool y
+ 	depends on SMP && !DEBUG_MUTEXES
  
- static inline struct i2c_client *of_find_i2c_device_by_node(struct device_node *node)
-@@ -575,6 +578,13 @@ static inline struct i2c_adapter *of_find_i2c_adapter_by_node(struct device_node
++config RWSEM_SPIN_ON_OWNER
++       def_bool y
++       depends on SMP && RWSEM_XCHGADD_ALGORITHM
++
+ config ARCH_USE_QUEUE_RWLOCK
+ 	bool
+ 
+diff --git a/kernel/locking/rwsem.c b/kernel/locking/rwsem.c
+index 42f806d..e2d3bc7 100644
+--- a/kernel/locking/rwsem.c
++++ b/kernel/locking/rwsem.c
+@@ -12,7 +12,7 @@
+ 
+ #include <linux/atomic.h>
+ 
+-#if defined(CONFIG_SMP) && defined(CONFIG_RWSEM_XCHGADD_ALGORITHM)
++#ifdef CONFIG_RWSEM_SPIN_ON_OWNER
+ static inline void rwsem_set_owner(struct rw_semaphore *sem)
  {
- 	return NULL;
- }
-+
-+const struct of_device_id
-+*i2c_of_match_device_strip_vendor(const struct of_device_id *matches,
-+				  struct device *dev)
-+{
-+	return NULL;
-+}
- #endif /* CONFIG_OF */
- 
- #endif /* _LINUX_I2C_H */
+ 	sem->owner = current;
 -- 
-1.8.3.2
+1.8.1.4
 
