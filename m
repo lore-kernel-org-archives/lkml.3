@@ -1,76 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752291AbaFFLAX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 07:00:23 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:56438 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751058AbaFFLAV (ORCPT
+	id S1752409AbaFFLCG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 07:02:06 -0400
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:45189 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751494AbaFFLCE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 07:00:21 -0400
-Message-ID: <53919EF7.2000904@ti.com>
-Date: Fri, 6 Jun 2014 16:29:03 +0530
-From: Keerthy <a0393675@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Fri, 6 Jun 2014 07:02:04 -0400
 MIME-Version: 1.0
-To: Keerthy <j-keerthy@ti.com>
-CC: <linux-omap@vger.kernel.org>, <lgirdwood@gmail.com>, <broonie@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <sameo@linux.intel.com>,
-        <lee.jones@linaro.org>
-Subject: Re: [PATCH 0/9] mfd: tps65917: Add support for for TPS65917 PMIC
-References: <1401272423-25761-1-git-send-email-j-keerthy@ti.com>
-In-Reply-To: <1401272423-25761-1-git-send-email-j-keerthy@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140606071106.GA30156@kwain>
+References: <1401983326-19205-1-git-send-email-antoine.tenart@free-electrons.com>
+	<1401983326-19205-5-git-send-email-antoine.tenart@free-electrons.com>
+	<CAFp+6iEKLD_rLg84h3J2oyzw7vizEV-Eqo0e_jqurx_v9ZX2JA@mail.gmail.com>
+	<20140606071106.GA30156@kwain>
+Date: Fri, 6 Jun 2014 16:32:03 +0530
+X-Google-Sender-Auth: RzYx2Xtik9Ht137qFzE_4jW_70U
+Message-ID: <CAFp+6iH+J4T=7pJU_+ZZKrgDwJWwQfznv9NWuy5SkLgz_j75_Q@mail.gmail.com>
+Subject: Re: [PATCH 4/9] usb: phy: add the Berlin USB PHY driver
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: =?UTF-8?Q?Antoine_T=C3=A9nart?= <antoine.tenart@free-electrons.com>
+Cc: kishon <kishon@ti.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Felipe Balbi <balbi@ti.com>, alexandre.belloni@free-electrons.com,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        zhiming Xu <zmxu@marvell.com>, jszhang@marvell.com,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark/Lee Jones,
+Hi,
 
-On Wednesday 28 May 2014 03:50 PM, Keerthy wrote:
-> The TPS65917 chip is a power management IC for Portable Navigation Systems
-> and Tablet Computing devices. It contains the following components:
+On Fri, Jun 6, 2014 at 12:41 PM, Antoine Ténart
+<antoine.tenart@free-electrons.com> wrote:
+> Hi,
 >
->   - Regulators.
->   - GPADC.
->   - Over Temperature warning and Shut down.
+> On Fri, Jun 06, 2014 at 12:09:06PM +0530, Vivek Gautam wrote:
+>> On Thu, Jun 5, 2014 at 9:18 PM, Antoine Ténart
+>> <antoine.tenart@free-electrons.com> wrote:
+>> > Add the driver driving the Marvell Berlin USB PHY. This allows to
+>> > initialize the PHY and to use it from the USB driver later.
+>>
+>> Just out of curiosity, going forward we would like to have phy drivers based on
+>> generic phy framework (drivers/phy).
+>> Any particular reason that we are still adding phy drivers in usb-phy layer ?
+>>
+>> Looking at it, seems like it can very well be written based on phy framework.
 >
-> This patch series adds support for TPS65917 mfd device. At this time only
-> the regulator functionality is made available.
->
-> The closest drivers are PALMAS series drivers. Hence adapted palmas mfd
-> driver to support the tps65917 PMIC.
->
-> The register set for SMPSs and LDOs are changed and the ramp delay support
-> is also changed. Bit-field defenitions are changed.
-> Hence added driver data structures for mfd and regulator drivers
-> for palmas and added support for tps65917.
->
-> The patches are boot tested on DRA72-EVM.
-> The patches are boot tested on OMAP5-UEVM board.
+> This USB controller are ChipIdea compatible, and the ChipIdea common
+> functions use the usb_phy framework. That's why this PHY driver is
+> there.
 
-A gentle ping on this rework.
+Ok, i see that now. In that case shouldn't we be moving even the chipidea
+drivers to use the generic phy functions to get the phy and init/exit it.
 
-> Keerthy (9):
->    mfd: Add DT bindings for tps65917 PMIC
->    regulator: palmas: Add tps65917 compatible string
->    mfd: palmas: Add tps65917 specific definitions and enums
->    mfd: palmas: Add tps65917 support
->    regulator: palmas: Shift the reg_info structure definition to the
->      header file
->    mfd: palmas: shift the palmas_sleep_requestor_info structure
->      definition to the header file
->    regulator: palmas: Add palmas_pmic_driver_data structure
->    regulator: palmas: add driver data and modularize the probe
->    regulator: palmas: Add tps65917 PMIC support
->
->   Documentation/devicetree/bindings/mfd/palmas.txt   |    2 +
->   .../devicetree/bindings/regulator/palmas-pmic.txt  |    1 +
->   drivers/mfd/palmas.c                               |  228 +++--
->   drivers/regulator/palmas-regulator.c               | 1006 +++++++++++++++-----
->   include/linux/mfd/palmas.h                         |  837 ++++++++++++++++
->   5 files changed, 1770 insertions(+), 304 deletions(-)
->
+I think Felipe and Kishon can comment on this better, and tell how
+things should be. :-)
 
-Regards,
-Keerthy
+[snip]
+
+
+-- 
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
