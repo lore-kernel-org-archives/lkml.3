@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752542AbaFFRTp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 13:19:45 -0400
-Received: from thoth.sbs.de ([192.35.17.2]:52020 "EHLO thoth.sbs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752497AbaFFRTn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 13:19:43 -0400
-From: Jan Kiszka <jan.kiszka@siemens.com>
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
-        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
-        Borislav Petkov <bp@suse.de>,
-        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [PATCH v8 06/22] module: Do not inline do_init_module
-Date: Fri,  6 Jun 2014 19:18:47 +0200
-Message-Id: <76b0a984fb41ee5fa7aecaed4e4d94ee760c39ab.1402075139.git.jan.kiszka@siemens.com>
-X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
-In-Reply-To: <cover.1402075136.git.jan.kiszka@siemens.com>
-References: <cover.1402075136.git.jan.kiszka@siemens.com>
-In-Reply-To: <cover.1402075136.git.jan.kiszka@siemens.com>
-References: <cover.1402075136.git.jan.kiszka@siemens.com>
+	id S1752626AbaFFRUE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 13:20:04 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:36752 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752585AbaFFRUA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 13:20:00 -0400
+X-CheckPoint: {5391F83F-13-2100090A-C0000000}
+Message-ID: <5391F83F.60005@tilera.com>
+Date: Fri, 6 Jun 2014 13:19:59 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Davidlohr Bueso <davidlohr@hp.com>, <mingo@kernel.org>,
+        <mpatocka@redhat.com>, <torvalds@linux-foundation.org>,
+        <jason.low2@hp.com>, <waiman.long@hp.com>, <jejb@parisc-linux.org>,
+        <paulmck@linux.vnet.ibm.com>, <dave.anglin@bell.net>, <aswin@hp.com>,
+        <linux-kernel@vger.kernel.org>, <linux-parisc@vger.kernel.org>,
+        <davem@davemloft.net>, <james.hogan@imgtec.com>, <vgupta@synopsys.com>
+Subject: Re: [PATCH 2/2] locking/rwsem: Disable optimistic spinning for PA-RISC
+References: <1402070140-15090-1-git-send-email-davidlohr@hp.com> <1402070140-15090-3-git-send-email-davidlohr@hp.com> <1402070987.2207.75.camel@dabdike.int.hansenpartnership.com> <20140606171145.GU13930@laptop.programming.kicks-ass.net>
+In-Reply-To: <20140606171145.GU13930@laptop.programming.kicks-ass.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.9.0.23]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This provides a reliable breakpoint target, required for automatic
-symbol loading via the gdb helper command 'lx-symbols'.
+On 6/6/2014 1:11 PM, Peter Zijlstra wrote:
+> The thing is, all these archs are broken beyond this particular problem,
+> Mikulas Patocka found a number of other spots.
+>
+> In any case, sure I can exclude more. Although ideally someone goes do
+> that __atomic sparse thing to flush out all this.
+>
+> ---
+> Subject: locking, mutex: Disable optimistic spinning on !RMW archs
+>
+> For some archs a regular store does not play nice with cmpxchg(), the
+> optimistic spinning code (and various other places not caught by this)
+> break this assumption and make things go boom.
+>
+> Until something better is found, disable optimistic spinning for these
+> archs.
+>
+> [..]
+>   
+> +config ARCH_NO_ATOMIC_RMW
+> +	def_bool y
+> +	depends on PARISC || SPARC32 || METAG_ATOMICITY_LOCK1 || (TILE && !TILEGX) || (ARC && !ARC_HAS_LLSC)
 
-CC: Rusty Russell <rusty@rustcorp.com.au>
-Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
----
- kernel/module.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+For tile:
 
-diff --git a/kernel/module.c b/kernel/module.c
-index 079c461..a5a5734 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -3009,8 +3009,13 @@ static void do_mod_ctors(struct module *mod)
- #endif
- }
- 
--/* This is where the real work happens */
--static int do_init_module(struct module *mod)
-+/*
-+ * This is where the real work happens.
-+ *
-+ * Keep it uninlined to provide a reliable breakpoint target, e.g. for the gdb
-+ * helper command 'lx-symbols'.
-+ */
-+static noinline int do_init_module(struct module *mod)
- {
- 	int ret = 0;
- 
+Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+
+But you should use "TILEPRO" (added in kernel 3.5) instead of "(TILE && !TILEGX)".
+
 -- 
-1.8.1.1.298.ge7eed54
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
