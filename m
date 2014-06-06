@@ -1,169 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752120AbaFFPUe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 11:20:34 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:60929 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751646AbaFFPUd (ORCPT
+	id S1752227AbaFFPVf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 11:21:35 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:58862 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752180AbaFFPVc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 11:20:33 -0400
+	Fri, 6 Jun 2014 11:21:32 -0400
+Date: Fri, 6 Jun 2014 11:21:27 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "Chen, Gong" <gong.chen@linux.intel.com>
+Cc: "Luck, Tony" <tony.luck@intel.com>, Borislav Petkov <bp@alien8.de>,
+        "m.chehab@samsung.com" <m.chehab@samsung.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/7 v6] trace, RAS: Add eMCA trace event interface
+Message-ID: <20140606112127.37d2cf95@gandalf.local.home>
+In-Reply-To: <20140606065141.GA10998@gchen.bj.intel.com>
+References: <20140528163452.GF17196@pd.tnic>
+	<20140528125625.6f6dcf7f@gandalf.local.home>
+	<20140530092232.GA13495@gchen.bj.intel.com>
+	<20140530100716.GE28131@pd.tnic>
+	<3908561D78D1C84285E8C5FCA982C28F32823D2B@ORSMSX114.amr.corp.intel.com>
+	<20140530210759.267a854e@gandalf.local.home>
+	<3908561D78D1C84285E8C5FCA982C28F3282545B@ORSMSX114.amr.corp.intel.com>
+	<20140602125748.7093ced8@gandalf.local.home>
+	<20140603083606.GA15476@gchen.bj.intel.com>
+	<20140603103544.207eaa6e@gandalf.local.home>
+	<20140606065141.GA10998@gchen.bj.intel.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-X-Originating-IP: [84.73.67.144]
-In-Reply-To: <1401980308-5116-5-git-send-email-daniel.vetter@ffwll.ch>
-References: <1401980308-5116-1-git-send-email-daniel.vetter@ffwll.ch>
-	<1401980308-5116-5-git-send-email-daniel.vetter@ffwll.ch>
-Date: Fri, 6 Jun 2014 17:20:30 +0200
-Message-ID: <CAKMK7uH7GWspr03NBi7rVY+2UN-vdthMV7eixXA-xc3t2JdzPg@mail.gmail.com>
-Subject: Re: [PATCH 5/5] drm/i915: Kick out vga console
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Intel Graphics Development <intel-gfx@lists.freedesktop.org>
-Cc: DRI Development <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tomi/Jean can you please ack merging this through drm-intel trees? It
-just exports the vga and dummy consoles so that i915 can do what it
-needs to do.
-
-Thanks, Daniel
-
-On Thu, Jun 5, 2014 at 4:58 PM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
-> Touching the VGA resources on an IVB EFI machine causes hard hangs when
-> we then kick out the efifb. Ouch.
->
-> Apparently this also prevents unclaimed register errors on hsw and
-> hard machine hangs on my i855gm when trying to unbind fbcon.
->
-> Also, we want this to make I915_FBDEV=n safe.
->
-> v2: Rebase and pimp commit message.
->
-> v3: We also need to unregister the vga console, otherwise the unbind
-> of the fb console before module unload might resurrect it again.
->
-> v4: Ignore errors when the vga console is already unregistered - this
-> can happen when e.g. reloading i915.ko.
->
-> Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=67813
-> Cc: David Herrmann <dh.herrmann@gmail.com>
-> Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-> Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
-> Cc: linux-fbdev@vger.kernel.org
-> Cc: Jani Nikula <jani.nikula@linux.intel.com>
-> Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk> (v1)
-> Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-> ---
->  drivers/gpu/drm/i915/i915_dma.c  | 43 +++++++++++++++++++++++++++++++++++++++-
->  drivers/video/console/dummycon.c |  1 +
->  drivers/video/console/vgacon.c   |  1 +
->  3 files changed, 44 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-> index 27fe65ac5940..bcb66ddd649e 100644
-> --- a/drivers/gpu/drm/i915/i915_dma.c
-> +++ b/drivers/gpu/drm/i915/i915_dma.c
-> @@ -36,6 +36,8 @@
->  #include "i915_drv.h"
->  #include "i915_trace.h"
->  #include <linux/pci.h>
-> +#include <linux/console.h>
-> +#include <linux/vt.h>
->  #include <linux/vgaarb.h>
->  #include <linux/acpi.h>
->  #include <linux/pnp.h>
-> @@ -1449,6 +1451,38 @@ static void i915_kick_out_firmware_fb(struct drm_i915_private *dev_priv)
->  }
->  #endif
->
-> +#if !defined(CONFIG_VGA_CONSOLE)
-> +static int i915_kick_out_vgacon(struct drm_i915_private *dev_priv)
-> +{
-> +       return 0;
-> +}
-> +#elif !defined(CONFIG_DUMMY_CONSOLE)
-> +static int i915_kick_out_vgacon(struct drm_i915_private *dev_priv)
-> +{
-> +       return -ENODEV;
-> +}
-> +#else
-> +static int i915_kick_out_vgacon(struct drm_i915_private *dev_priv)
-> +{
-> +       int ret;
-> +
-> +       DRM_INFO("Replacing VGA console driver\n");
-> +
-> +       console_lock();
-> +       ret = do_take_over_console(&dummy_con, 0, MAX_NR_CONSOLES - 1, 1);
-> +       if (ret == 0) {
-> +               ret = do_unregister_con_driver(&vga_con);
-> +
-> +               /* Ignore "already unregistered". */
-> +               if (ret == -ENODEV)
-> +                       ret = 0;
-> +       }
-> +       console_unlock();
-> +
-> +       return ret;
-> +}
-> +#endif
-> +
->  static void i915_dump_device_info(struct drm_i915_private *dev_priv)
->  {
->         const struct intel_device_info *info = &dev_priv->info;
-> @@ -1622,8 +1656,15 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
->         if (ret)
->                 goto out_regs;
->
-> -       if (drm_core_check_feature(dev, DRIVER_MODESET))
-> +       if (drm_core_check_feature(dev, DRIVER_MODESET)) {
-> +               ret = i915_kick_out_vgacon(dev_priv);
-> +               if (ret) {
-> +                       DRM_ERROR("failed to remove conflicting VGA console\n");
-> +                       goto out_gtt;
-> +               }
-> +
->                 i915_kick_out_firmware_fb(dev_priv);
-> +       }
->
->         pci_set_master(dev->pdev);
->
-> diff --git a/drivers/video/console/dummycon.c b/drivers/video/console/dummycon.c
-> index b63860f7beab..40bec8d64b0a 100644
-> --- a/drivers/video/console/dummycon.c
-> +++ b/drivers/video/console/dummycon.c
-> @@ -77,3 +77,4 @@ const struct consw dummy_con = {
->      .con_set_palette = DUMMY,
->      .con_scrolldelta = DUMMY,
->  };
-> +EXPORT_SYMBOL_GPL(dummy_con);
-> diff --git a/drivers/video/console/vgacon.c b/drivers/video/console/vgacon.c
-> index 9d8feac67637..84acd6223dc5 100644
-> --- a/drivers/video/console/vgacon.c
-> +++ b/drivers/video/console/vgacon.c
-> @@ -1440,5 +1440,6 @@ const struct consw vga_con = {
->         .con_build_attr = vgacon_build_attr,
->         .con_invert_region = vgacon_invert_region,
->  };
-> +EXPORT_SYMBOL(vga_con);
->
->  MODULE_LICENSE("GPL");
-> --
-> 1.8.1.4
->
+On Fri, 6 Jun 2014 02:51:41 -0400
+"Chen, Gong" <gong.chen@linux.intel.com> wrote:
 
 
+> +/*
+> + * MCE Extended Error Log trace event
+> + *
+> + * These events are generated when hardware detects a corrected or
+> + * uncorrected event.
+> + */
+> +
+> +/* memory trace event */
+> +
+> +TRACE_EVENT(extlog_mem_event,
+> +	TP_PROTO(struct cper_sec_mem_err *mem,
+> +		 u32 err_seq,
+> +		 const uuid_le *fru_id,
+> +		 const char *fru_text,
+> +		 u8 sev),
+> +
+> +	TP_ARGS(mem, err_seq, fru_id, fru_text, sev),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(u32, err_seq)
+> +		__field(u8, etype)
+> +		__field(u8, sev)
+> +		__field(u64, pa)
+> +		__field(u8, pa_mask_lsb)
+> +		__dynamic_array(char, fru, 48)
+> +		__dynamic_array(u8, data, sizeof(struct cper_mem_err_compact))
 
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+For constant size arrays, don't use __dynamic_array() just use
+__array().
+
+Although I'd get rid of the fru and replace that with:
+
+		__field(unsigned long, fru_id)
+		__string(fru_text, fru_text)
+
+
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->err_seq = err_seq;
+> +		if (mem->validation_bits & CPER_MEM_VALID_ERROR_TYPE)
+> +			__entry->etype = mem->error_type;
+> +		else
+> +			__entry->etype = ~0;
+> +		__entry->sev = sev;
+> +		if (mem->validation_bits & CPER_MEM_VALID_PA)
+> +			__entry->pa = mem->physical_addr;
+> +		else
+> +			__entry->pa = ~0ull;
+> +
+> +		if (mem->validation_bits & CPER_MEM_VALID_PA_MASK)
+> +			__entry->pa_mask_lsb =
+> +				(u8)__ffs64(mem->physical_addr_mask);
+> +		else
+> +			__entry->pa_mask_lsb = ~0;
+> +		snprintf(__get_dynamic_array(fru), 47,
+> +			 "FRU: %pUl %.20s", fru_id, fru_text);
+
+Although, why not just save the id and text straight? Why format it
+here?
+
+	__entry->fru_id = fru_id;
+	__assign_str(fru_text, fru_text);
+
+> +		cper_mem_err_pack(mem, __get_dynamic_array(data));
+> +	),
+> +
+> +	TP_printk("{%d} %s error: %s physical addr: %016llx (mask lsb: %x) %s%s",
+
+	TP_printk("{%d} %s error: %s physical addr: %016llx (mask lsb: %x) %s FRU: %pUl %.20s",
+
+> +		  __entry->err_seq,
+> +		  cper_severity_str(__entry->sev),
+> +		  cper_mem_err_type_str(__entry->etype),
+> +		  __entry->pa,
+> +		  __entry->pa_mask_lsb,
+> +		  cper_mem_err_unpack(p, __get_dynamic_array(data)),
+> +		  __get_str(fru))
+
+		__entry->fru_id,
+		__get_str(fru_text))
+
+-- Steve
+
+> +);
+>  
+>  /*
+>   * Hardware Events Report
+
