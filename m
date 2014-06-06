@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752490AbaFFRTl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 13:19:41 -0400
-Received: from goliath.siemens.de ([192.35.17.28]:34748 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752055AbaFFRTh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 13:19:37 -0400
+	id S1752565AbaFFRTq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 13:19:46 -0400
+Received: from thoth.sbs.de ([192.35.17.2]:52021 "EHLO thoth.sbs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752055AbaFFRTm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 13:19:42 -0400
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -16,9 +15,9 @@ Cc: Jason Wessel <jason.wessel@windriver.com>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
         Borislav Petkov <bp@suse.de>,
         Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>
-Subject: [PATCH v8 08/22] scripts/gdb: Add internal helper and convenience function to look up a module
-Date: Fri,  6 Jun 2014 19:18:49 +0200
-Message-Id: <f0aae3b8d66defc73fe01d81bace100fc059e634.1402075140.git.jan.kiszka@siemens.com>
+Subject: [PATCH v8 03/22] scripts/gdb: Add container_of helper and convenience function
+Date: Fri,  6 Jun 2014 19:18:44 +0200
+Message-Id: <add85ba35885de9916d67c505876d153cdfe13b2.1402075139.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
 In-Reply-To: <cover.1402075136.git.jan.kiszka@siemens.com>
 References: <cover.1402075136.git.jan.kiszka@siemens.com>
@@ -28,61 +27,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the internal helper get_module_by_name to obtain the module
-structure corresponding to the given name. Also export this service as a
-convenience function.
+Provide an internal helper with container_of semantics. As type lookups
+are very slow in gdb-python and we need a type "long" for this, cache
+the reference to this type object. Then export the helper also as a
+convenience function form use at the gdb command line.
 
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- scripts/gdb/linux/modules.py | 28 ++++++++++++++++++++++++++++
- scripts/gdb/vmlinux-gdb.py   |  1 +
- 2 files changed, 29 insertions(+)
+ scripts/gdb/linux/utils.py | 35 +++++++++++++++++++++++++++++++++++
+ scripts/gdb/vmlinux-gdb.py |  2 ++
+ 2 files changed, 37 insertions(+)
 
-diff --git a/scripts/gdb/linux/modules.py b/scripts/gdb/linux/modules.py
-index 8a65c3d..531f763 100644
---- a/scripts/gdb/linux/modules.py
-+++ b/scripts/gdb/linux/modules.py
-@@ -37,3 +37,31 @@ class ModuleList:
-             return utils.container_of(entry, self.module_ptr_type, "list")
-         else:
-             raise StopIteration
+diff --git a/scripts/gdb/linux/utils.py b/scripts/gdb/linux/utils.py
+index f883611..c9d705b 100644
+--- a/scripts/gdb/linux/utils.py
++++ b/scripts/gdb/linux/utils.py
+@@ -32,3 +32,38 @@ class CachedType:
+             if hasattr(gdb, 'events') and hasattr(gdb.events, 'new_objfile'):
+                 gdb.events.new_objfile.connect(self._new_objfile_handler)
+         return self._type
 +
 +
-+def find_module_by_name(name):
-+    for module in ModuleList():
-+        if module['name'].string() == name:
-+            return module
-+    return None
++long_type = CachedType("long")
 +
 +
-+class LxModule(gdb.Function):
-+    """Find module by name and return the module variable.
++def get_long_type():
++    global long_type
++    return long_type.get_type()
 +
-+$lx_module("MODULE"): Given the name MODULE, iterate over all loaded modules
-+of the target and return that module variable which MODULE matches."""
++
++def offset_of(typeobj, field):
++    element = gdb.Value(0).cast(typeobj)
++    return int(str(element[field].address).split()[0], 16)
++
++
++def container_of(ptr, typeobj, member):
++    return (ptr.cast(get_long_type()) -
++            offset_of(typeobj, member)).cast(typeobj)
++
++
++class ContainerOf(gdb.Function):
++    """Return pointer to containing data structure.
++
++$container_of(PTR, "TYPE", "ELEMENT"): Given PTR, return a pointer to the
++data structure of the type TYPE in which PTR is the address of ELEMENT.
++Note that TYPE and ELEMENT have to be quoted as strings."""
 +
 +    def __init__(self):
-+        super(LxModule, self).__init__("lx_module")
++        super(ContainerOf, self).__init__("container_of")
 +
-+    def invoke(self, mod_name):
-+        mod_name = mod_name.string()
-+        module = find_module_by_name(mod_name)
-+        if module:
-+            return module.dereference()
-+        else:
-+            raise gdb.GdbError("Unable to find MODULE " + mod_name)
++    def invoke(self, ptr, typename, elementname):
++        return container_of(ptr, gdb.lookup_type(typename.string()).pointer(),
++                            elementname.string())
 +
-+
-+LxModule()
++ContainerOf()
 diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
-index 0b0faa4..cf2e716 100644
+index c1d90ce..6495841 100644
 --- a/scripts/gdb/vmlinux-gdb.py
 +++ b/scripts/gdb/vmlinux-gdb.py
-@@ -24,3 +24,4 @@ except:
- else:
-     import linux.utils
-     import linux.symbols
-+    import linux.modules
+@@ -21,3 +21,5 @@ try:
+ except:
+     gdb.write("NOTE: gdb 7.2 or later required for Linux helper scripts to "
+               "work.\n")
++else:
++    import linux.utils
 -- 
 1.8.1.1.298.ge7eed54
 
