@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752657AbaFFLDp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 07:03:45 -0400
-Received: from gate.crashing.org ([63.228.1.57]:50229 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751058AbaFFLDo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 07:03:44 -0400
-Message-ID: <1402052599.3247.225.camel@pasglop>
-Subject: Re: [PATCH 1/2] powerpc/powernv: include asm/smp.h to handle UP
- config
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Cc: "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Date: Fri, 06 Jun 2014 21:03:19 +1000
-In-Reply-To: <539152B3.5070702@linux.vnet.ibm.com>
-References: <1401981695-3682-1-git-send-email-shreyas@linux.vnet.ibm.com>
-	 <539152B3.5070702@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2 
-Mime-Version: 1.0
+	id S1752223AbaFFLFv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 07:05:51 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:57671 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803AbaFFLFt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 07:05:49 -0400
+From: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+To: Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
+        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Shawn Guo <shawn.guo@freescale.com>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+Subject: [PATCH] ARM: dts: imx6: add missing compatible and clock properties for kpp
+Date: Fri,  6 Jun 2014 13:02:59 +0200
+Message-Id: <1402052579-22803-1-git-send-email-LW@KARO-electronics.de>
+X-Mailer: git-send-email 1.7.10.4
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-06-06 at 11:03 +0530, Anshuman Khandual wrote:
-> On 06/05/2014 08:51 PM, Shreyas B. Prabhu wrote:
-> > Build throws following errors when CONFIG_SMP=n
-> > arch/powerpc/platforms/powernv/setup.c: In function ‘pnv_kexec_wait_secondaries_down’:
-> > arch/powerpc/platforms/powernv/setup.c:179:4: error: implicit declaration of function ‘get_hard_smp_processor_id’
-> >     rc = opal_query_cpu_status(get_hard_smp_processor_id(i),
-> > 
-> > The usage of get_hard_smp_processor_id() needs the declaration from
-> > <asm/smp.h>. The file setup.c includes <linux/sched.h>, which in-turn
-> > includes <linux/smp.h>. However, <linux/smp.h> includes <asm/smp.h>
-> > only on SMP configs and hence UP builds fail.
-> > 
-> > Fix this by directly including <asm/smp.h> in setup.c unconditionally.
-> 
-> Can you please clean up the description in the commit message ? and also
-> the first line in the commit message should mention that the patch is
-> trying to fix a UP specific build failure.
 
-I don't understand your comment ... the description and subject line
-are perfectly fine...
+Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
+---
+ arch/arm/boot/dts/imx6qdl.dtsi |    2 ++
+ 1 file changed, 2 insertions(+)
 
-Ben.
-
+diff --git a/arch/arm/boot/dts/imx6qdl.dtsi b/arch/arm/boot/dts/imx6qdl.dtsi
+index ce05991..3266d01 100644
+--- a/arch/arm/boot/dts/imx6qdl.dtsi
++++ b/arch/arm/boot/dts/imx6qdl.dtsi
+@@ -466,8 +466,10 @@
+ 			};
+ 
+ 			kpp: kpp@020b8000 {
++				compatible = "fsl,imx6q-kpp", "fsl,imx21-kpp";
+ 				reg = <0x020b8000 0x4000>;
+ 				interrupts = <0 82 IRQ_TYPE_LEVEL_HIGH>;
++				clocks = <&clks 62>; /* IPG clock */
+ 			};
+ 
+ 			wdog1: wdog@020bc000 {
+-- 
+1.7.10.4
 
