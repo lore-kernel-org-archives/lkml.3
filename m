@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751383AbaFFReo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 13:34:44 -0400
-Received: from mout.web.de ([212.227.17.12]:52536 "EHLO mout.web.de"
+	id S1751764AbaFFRev (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 13:34:51 -0400
+Received: from mout.web.de ([212.227.17.11]:49835 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750876AbaFFRem (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 13:34:42 -0400
+	id S1750891AbaFFRes (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 13:34:48 -0400
 From: Ken Helias <kenhelias@web.de>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Ken Helias <kenhelias@firemail.de>
-Subject: [PATCHv2 01/13] list: Use argument hlist_add_after names from rcu variant
-Date: Fri,  6 Jun 2014 19:34:20 +0200
-Message-Id: <1402076072-4044-1-git-send-email-kenhelias@web.de>
+Cc: linux-kernel@vger.kernel.org, Ken Helias <kenhelias@firemail.de>,
+        linux-metag@vger.kernel.org
+Subject: [PATCH 04/13] metag: dma: Use list_add_(before|after) macros
+Date: Fri,  6 Jun 2014 19:34:23 +0200
+Message-Id: <1402076072-4044-4-git-send-email-kenhelias@web.de>
 X-Mailer: git-send-email 2.0.0
-X-Provags-ID: V03:K0:lTiBs9fL31fOhDhL3JgxioNH8YDR72tt3FHVa4s36oqo8R2QE8Q
- eS6h389RJcK+Fm4z2esq9h1yrgSzC1ta5JNPquKCde8aY3fFAaXnBufnxQgl9apMH7v1ElX
- zRdiLXJGAYNLul2OFoJGCvRwXZzjmd3nh+yC3obmd50juYb0He6mNaxlr41F3FIwoNBuIjJ
- l4KjVgM5KtcT8gEQ3Z84A==
+In-Reply-To: <1402076072-4044-1-git-send-email-kenhelias@web.de>
+References: <1402076072-4044-1-git-send-email-kenhelias@web.de>
+X-Provags-ID: V03:K0:VbYVyOTqA8TEQrIb/6M9HwjhiKLh7LuOwFC5SZNINsw9jbkCtcE
+ V8Za+F7XwTCh6GNTbNZHlH0BkvsRezHERjmgHTawvCk1nHldhfRF6VvTihfvWyGULwqJW63
+ LBDTXNeyI3C885axKa1p964Ee4vxQAHL1mAd3dvO+MI6AgbF+ur/2NMgrwiRwanGeeFlCx3
+ L4S8HJBL5XD+rmoaMlRyQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ken Helias <kenhelias@firemail.de>
 
-The argument names of the hlist_add_after are poorly chosen because they look
-the same as the ones from hlist_add_before but have to be used completely
-different. This easily confuses the reader. The creator of the 
-hlist_add_after_rcu function has made a lot better choice.
+Many places in the code uses list_add_tail/list_add to insert an entry
+before/after another entry. This confuses the reader because these are usually
+used to add an item to a list_head and not an entry. Better use the self
+explaining function name.
 
 Signed-off-by: Ken Helias <kenhelias@firemail.de>
+Cc: linux-metag@vger.kernel.org
 ---
-v2:
-Splitted into two patches
+ arch/metag/kernel/dma.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- include/linux/list.h | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
-
-diff --git a/include/linux/list.h b/include/linux/list.h
-index ef95941..624ec7f 100644
---- a/include/linux/list.h
-+++ b/include/linux/list.h
-@@ -654,15 +654,15 @@ static inline void hlist_add_before(struct hlist_node *n,
- 	*(n->pprev) = n;
- }
- 
--static inline void hlist_add_after(struct hlist_node *n,
--					struct hlist_node *next)
-+static inline void hlist_add_after(struct hlist_node *prev,
-+				   struct hlist_node *n)
- {
--	next->next = n->next;
--	n->next = next;
--	next->pprev = &n->next;
-+	n->next = prev->next;
-+	prev->next = n;
-+	n->pprev = &prev->next;
- 
--	if(next->next)
--		next->next->pprev  = &next->next;
-+	if (n->next)
-+		n->next->pprev  = &n->next;
- }
- 
- /* after that we'll appear to be on some hlist and hlist_del will work */
+diff --git a/arch/metag/kernel/dma.c b/arch/metag/kernel/dma.c
+index c700d62..8b384d8 100644
+--- a/arch/metag/kernel/dma.c
++++ b/arch/metag/kernel/dma.c
+@@ -138,7 +138,7 @@ found:
+ 	/*
+ 	 * Insert this entry _before_ the one we found.
+ 	 */
+-	list_add_tail(&new->vm_list, &c->vm_list);
++	list_add_before(&new->vm_list, &c->vm_list);
+ 	new->vm_start = addr;
+ 	new->vm_end = addr + size;
+ 	new->vm_active = 1;
 -- 
 2.0.0
 
