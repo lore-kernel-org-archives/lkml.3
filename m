@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752583AbaFFW7H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 18:59:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15342 "EHLO mx1.redhat.com"
+	id S1752625AbaFFW7S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 18:59:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3617 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752174AbaFFW7D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 18:59:03 -0400
+	id S1752566AbaFFW7G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 18:59:06 -0400
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: linux-mm@kvack.org
 Cc: Dave Hansen <dave.hansen@intel.com>,
@@ -13,85 +13,305 @@ Cc: Dave Hansen <dave.hansen@intel.com>,
         Hugh Dickins <hughd@google.com>,
         "Kirill A. Shutemov" <kirill@shutemov.name>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/7] mm/pagewalk: remove pgd_entry() and pud_entry()
-Date: Fri,  6 Jun 2014 18:58:34 -0400
-Message-Id: <1402095520-10109-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH 7/7] mincore: apply page table walker on do_mincore()
+Date: Fri,  6 Jun 2014 18:58:40 -0400
+Message-Id: <1402095520-10109-8-git-send-email-n-horiguchi@ah.jp.nec.com>
 In-Reply-To: <1402095520-10109-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 References: <1402095520-10109-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently no user of page table walker sets ->pgd_entry() or ->pud_entry(),
-so checking their existence in each loop is just wasting CPU cycle.
-So let's remove it to reduce overhead.
+This patch makes do_mincore() use walk_page_vma(), which reduces many lines
+of code by using common page table walk code.
 
 Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 ---
- include/linux/mm.h |  6 ------
- mm/pagewalk.c      | 18 +-----------------
- 2 files changed, 1 insertion(+), 23 deletions(-)
+ mm/huge_memory.c |  20 ------
+ mm/mincore.c     | 192 +++++++++++++++++++------------------------------------
+ 2 files changed, 65 insertions(+), 147 deletions(-)
 
-diff --git v3.15-rc8-mmots-2014-06-03-16-28.orig/include/linux/mm.h v3.15-rc8-mmots-2014-06-03-16-28/include/linux/mm.h
-index 563c79ea07bd..b4aa6579f2b1 100644
---- v3.15-rc8-mmots-2014-06-03-16-28.orig/include/linux/mm.h
-+++ v3.15-rc8-mmots-2014-06-03-16-28/include/linux/mm.h
-@@ -1092,8 +1092,6 @@ void unmap_vmas(struct mmu_gather *tlb, struct vm_area_struct *start_vma,
+diff --git v3.15-rc8-mmots-2014-06-03-16-28.orig/mm/huge_memory.c v3.15-rc8-mmots-2014-06-03-16-28/mm/huge_memory.c
+index 6fd0668d4e1d..2671a9621d0e 100644
+--- v3.15-rc8-mmots-2014-06-03-16-28.orig/mm/huge_memory.c
++++ v3.15-rc8-mmots-2014-06-03-16-28/mm/huge_memory.c
+@@ -1379,26 +1379,6 @@ int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
+ 	return ret;
+ }
  
- /**
-  * mm_walk - callbacks for walk_page_range
-- * @pgd_entry: if set, called for each non-empty PGD (top-level) entry
-- * @pud_entry: if set, called for each non-empty PUD (2nd-level) entry
-  * @pmd_entry: if set, called for each non-empty PMD (3rd-level) entry
-  *	       this handler is required to be able to handle
-  *	       pmd_trans_huge() pmds.  They may simply choose to
-@@ -1115,10 +1113,6 @@ void unmap_vmas(struct mmu_gather *tlb, struct vm_area_struct *start_vma,
-  * (see the comment on walk_page_range() for more details)
-  */
- struct mm_walk {
--	int (*pgd_entry)(pgd_t *pgd, unsigned long addr,
--			 unsigned long next, struct mm_walk *walk);
--	int (*pud_entry)(pud_t *pud, unsigned long addr,
--	                 unsigned long next, struct mm_walk *walk);
- 	int (*pmd_entry)(pmd_t *pmd, unsigned long addr,
- 			 unsigned long next, struct mm_walk *walk);
- 	int (*pte_entry)(pte_t *pte, unsigned long addr,
-diff --git v3.15-rc8-mmots-2014-06-03-16-28.orig/mm/pagewalk.c v3.15-rc8-mmots-2014-06-03-16-28/mm/pagewalk.c
-index b2a075ffb96e..15c7585e8684 100644
---- v3.15-rc8-mmots-2014-06-03-16-28.orig/mm/pagewalk.c
-+++ v3.15-rc8-mmots-2014-06-03-16-28/mm/pagewalk.c
-@@ -115,14 +115,6 @@ static int walk_pud_range(pgd_t *pgd, unsigned long addr,
- 			continue;
- 		}
+-int mincore_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
+-		unsigned long addr, unsigned long end,
+-		unsigned char *vec)
+-{
+-	spinlock_t *ptl;
+-	int ret = 0;
+-
+-	if (__pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
+-		/*
+-		 * All logical pages in the range are present
+-		 * if backed by a huge page.
+-		 */
+-		spin_unlock(ptl);
+-		memset(vec, 1, (end - addr) >> PAGE_SHIFT);
+-		ret = 1;
+-	}
+-
+-	return ret;
+-}
+-
+ int move_huge_pmd(struct vm_area_struct *vma, struct vm_area_struct *new_vma,
+ 		  unsigned long old_addr,
+ 		  unsigned long new_addr, unsigned long old_end,
+diff --git v3.15-rc8-mmots-2014-06-03-16-28.orig/mm/mincore.c v3.15-rc8-mmots-2014-06-03-16-28/mm/mincore.c
+index 725c80961048..6ca7b1fd62fe 100644
+--- v3.15-rc8-mmots-2014-06-03-16-28.orig/mm/mincore.c
++++ v3.15-rc8-mmots-2014-06-03-16-28/mm/mincore.c
+@@ -19,38 +19,27 @@
+ #include <asm/uaccess.h>
+ #include <asm/pgtable.h>
  
--		if (walk->pud_entry) {
--			err = walk->pud_entry(pud, addr, next, walk);
--			if (skip_lower_level_walking(walk))
--				continue;
--			if (err)
+-static void mincore_hugetlb_page_range(struct vm_area_struct *vma,
+-				unsigned long addr, unsigned long end,
+-				unsigned char *vec)
++static int mincore_hugetlb(pte_t *pte, unsigned long addr,
++			unsigned long end, struct mm_walk *walk)
+ {
++	int err = 0;
+ #ifdef CONFIG_HUGETLB_PAGE
+-	struct hstate *h;
++	unsigned char present;
++	unsigned char *vec = walk->private;
+ 
+-	h = hstate_vma(vma);
+-	while (1) {
+-		unsigned char present;
+-		pte_t *ptep;
+-		/*
+-		 * Huge pages are always in RAM for now, but
+-		 * theoretically it needs to be checked.
+-		 */
+-		ptep = huge_pte_offset(current->mm,
+-				       addr & huge_page_mask(h));
+-		present = ptep && !huge_pte_none(huge_ptep_get(ptep));
+-		while (1) {
+-			*vec = present;
+-			vec++;
+-			addr += PAGE_SIZE;
+-			if (addr == end)
+-				return;
+-			/* check hugepage border */
+-			if (!(addr & ~huge_page_mask(h)))
 -				break;
 -		}
--
- 		if (walk->pmd_entry || walk->pte_entry) {
- 			err = walk_pmd_range(pud, addr, next, walk);
- 			if (err)
-@@ -152,15 +144,7 @@ static int walk_pgd_range(unsigned long addr, unsigned long end,
- 			continue;
- 		}
+-	}
++	/*
++	 * Hugepages under user process are always in RAM and never
++	 * swapped out, but theoretically it needs to be checked.
++	 */
++	present = pte && !huge_pte_none(huge_ptep_get(pte));
++	for (; addr != end; vec++, addr += PAGE_SIZE)
++		*vec = present;
++	cond_resched();
++	walk->private += (end - addr) >> PAGE_SHIFT;
+ #else
+ 	BUG();
+ #endif
++	return err;
+ }
  
--		if (walk->pgd_entry) {
--			err = walk->pgd_entry(pgd, addr, next, walk);
--			if (skip_lower_level_walking(walk))
--				continue;
--			if (err)
--				break;
--		}
+ /*
+@@ -94,10 +83,11 @@ static unsigned char mincore_page(struct address_space *mapping, pgoff_t pgoff)
+ 	return present;
+ }
+ 
+-static void mincore_unmapped_range(struct vm_area_struct *vma,
+-				unsigned long addr, unsigned long end,
+-				unsigned char *vec)
++static int mincore_hole(unsigned long addr, unsigned long end,
++				struct mm_walk *walk)
+ {
++	struct vm_area_struct *vma = walk->vma;
++	unsigned char *vec = walk->private;
+ 	unsigned long nr = (end - addr) >> PAGE_SHIFT;
+ 	int i;
+ 
+@@ -111,110 +101,49 @@ static void mincore_unmapped_range(struct vm_area_struct *vma,
+ 		for (i = 0; i < nr; i++)
+ 			vec[i] = 0;
+ 	}
++	walk->private += nr;
++	return 0;
+ }
+ 
+-static void mincore_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
+-			unsigned long addr, unsigned long end,
+-			unsigned char *vec)
++static int mincore_pte(pte_t *pte, unsigned long addr, unsigned long end,
++			struct mm_walk *walk)
+ {
+-	unsigned long next;
+-	spinlock_t *ptl;
+-	pte_t *ptep;
 -
--		if (walk->pud_entry || walk->pmd_entry || walk->pte_entry) {
-+		if (walk->pmd_entry || walk->pte_entry) {
- 			err = walk_pud_range(pgd, addr, next, walk);
- 			if (err)
- 				break;
+-	ptep = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
+-	do {
+-		pte_t pte = *ptep;
+-		pgoff_t pgoff;
+-
+-		next = addr + PAGE_SIZE;
+-		if (pte_none(pte))
+-			mincore_unmapped_range(vma, addr, next, vec);
+-		else if (pte_present(pte))
++	struct vm_area_struct *vma = walk->vma;
++	unsigned char *vec = walk->private;
++	pgoff_t pgoff;
++
++	if (pte_present(*pte))
++		*vec = 1;
++	else if (pte_file(*pte)) {
++		pgoff = pte_to_pgoff(*pte);
++		*vec = mincore_page(vma->vm_file->f_mapping, pgoff);
++	} else { /* pte is a swap entry */
++		swp_entry_t entry = pte_to_swp_entry(*pte);
++
++		if (is_migration_entry(entry)) {
++			/* migration entries are always uptodate */
+ 			*vec = 1;
+-		else if (pte_file(pte)) {
+-			pgoff = pte_to_pgoff(pte);
+-			*vec = mincore_page(vma->vm_file->f_mapping, pgoff);
+-		} else { /* pte is a swap entry */
+-			swp_entry_t entry = pte_to_swp_entry(pte);
+-
+-			if (is_migration_entry(entry)) {
+-				/* migration entries are always uptodate */
+-				*vec = 1;
+-			} else {
++		} else {
+ #ifdef CONFIG_SWAP
+-				pgoff = entry.val;
+-				*vec = mincore_page(swap_address_space(entry),
+-					pgoff);
++			pgoff = entry.val;
++			*vec = mincore_page(swap_address_space(entry),
++					    pgoff);
+ #else
+-				WARN_ON(1);
+-				*vec = 1;
++			WARN_ON(1);
++			*vec = 1;
+ #endif
+-			}
+ 		}
+-		vec++;
+-	} while (ptep++, addr = next, addr != end);
+-	pte_unmap_unlock(ptep - 1, ptl);
+-}
+-
+-static void mincore_pmd_range(struct vm_area_struct *vma, pud_t *pud,
+-			unsigned long addr, unsigned long end,
+-			unsigned char *vec)
+-{
+-	unsigned long next;
+-	pmd_t *pmd;
+-
+-	pmd = pmd_offset(pud, addr);
+-	do {
+-		next = pmd_addr_end(addr, end);
+-		if (pmd_trans_huge(*pmd)) {
+-			if (mincore_huge_pmd(vma, pmd, addr, next, vec)) {
+-				vec += (next - addr) >> PAGE_SHIFT;
+-				continue;
+-			}
+-			/* fall through */
+-		}
+-		if (pmd_none_or_trans_huge_or_clear_bad(pmd))
+-			mincore_unmapped_range(vma, addr, next, vec);
+-		else
+-			mincore_pte_range(vma, pmd, addr, next, vec);
+-		vec += (next - addr) >> PAGE_SHIFT;
+-	} while (pmd++, addr = next, addr != end);
+-}
+-
+-static void mincore_pud_range(struct vm_area_struct *vma, pgd_t *pgd,
+-			unsigned long addr, unsigned long end,
+-			unsigned char *vec)
+-{
+-	unsigned long next;
+-	pud_t *pud;
+-
+-	pud = pud_offset(pgd, addr);
+-	do {
+-		next = pud_addr_end(addr, end);
+-		if (pud_none_or_clear_bad(pud))
+-			mincore_unmapped_range(vma, addr, next, vec);
+-		else
+-			mincore_pmd_range(vma, pud, addr, next, vec);
+-		vec += (next - addr) >> PAGE_SHIFT;
+-	} while (pud++, addr = next, addr != end);
++	}
++	walk->private++;
++	return 0;
+ }
+ 
+-static void mincore_page_range(struct vm_area_struct *vma,
+-			unsigned long addr, unsigned long end,
+-			unsigned char *vec)
++static int mincore_pmd(pmd_t *pmd, unsigned long addr, unsigned long end,
++			struct mm_walk *walk)
+ {
+-	unsigned long next;
+-	pgd_t *pgd;
+-
+-	pgd = pgd_offset(vma->vm_mm, addr);
+-	do {
+-		next = pgd_addr_end(addr, end);
+-		if (pgd_none_or_clear_bad(pgd))
+-			mincore_unmapped_range(vma, addr, next, vec);
+-		else
+-			mincore_pud_range(vma, pgd, addr, next, vec);
+-		vec += (next - addr) >> PAGE_SHIFT;
+-	} while (pgd++, addr = next, addr != end);
++	memset(walk->private, 1, (end - addr) >> PAGE_SHIFT);
++	walk->private += (end - addr) >> PAGE_SHIFT;
++	return 0;
+ }
+ 
+ /*
+@@ -226,6 +155,7 @@ static long do_mincore(unsigned long addr, unsigned long pages, unsigned char *v
+ {
+ 	struct vm_area_struct *vma;
+ 	unsigned long end;
++	int err;
+ 
+ 	vma = find_vma(current->mm, addr);
+ 	if (!vma || addr < vma->vm_start)
+@@ -233,12 +163,20 @@ static long do_mincore(unsigned long addr, unsigned long pages, unsigned char *v
+ 
+ 	end = min(vma->vm_end, addr + (pages << PAGE_SHIFT));
+ 
+-	if (is_vm_hugetlb_page(vma))
+-		mincore_hugetlb_page_range(vma, addr, end, vec);
++	struct mm_walk mincore_walk = {
++		.pmd_entry = mincore_pmd,
++		.pte_entry = mincore_pte,
++		.pte_hole = mincore_hole,
++		.hugetlb_entry = mincore_hugetlb,
++		.mm = vma->vm_mm,
++		.vma = vma,
++		.private = vec,
++	};
++	err = walk_page_vma(vma, &mincore_walk);
++	if (err < 0)
++		return err;
+ 	else
+-		mincore_page_range(vma, addr, end, vec);
+-
+-	return (end - addr) >> PAGE_SHIFT;
++		return (end - addr) >> PAGE_SHIFT;
+ }
+ 
+ /*
 -- 
 1.9.3
 
