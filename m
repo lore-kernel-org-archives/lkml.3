@@ -1,80 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752242AbaFFUhG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 16:37:06 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:34468 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751877AbaFFUhE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 16:37:04 -0400
+	id S1752294AbaFFUib (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 16:38:31 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37728 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752134AbaFFUia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 16:38:30 -0400
+Message-ID: <53922686.6010301@zytor.com>
+Date: Fri, 06 Jun 2014 13:37:26 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <1402082953.28220.7.camel@ceramic.home.fifi.org>
-References: <1402082953.28220.7.camel@ceramic.home.fifi.org>
-Date: Fri, 6 Jun 2014 16:37:03 -0400
-Message-ID: <CAHQdGtS2BL9u4DV=FZ0HaXO-iTNPU4hTGVR--HubNa4A_6UNog@mail.gmail.com>
-Subject: Re: Phantom ACL-related xattrs on 3.14.4 NFS client
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-To: Philippe Troin <phil@coldcreektech.com>,
-        Christoph Hellwig <hch@infradead.org>
-Cc: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
+To: Dave Young <dyoung@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        "Fleming, Matt" <matt.fleming@intel.com>
+CC: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        ebiederm@xmission.com, mjg59@srcf.ucam.org, greg@kroah.com,
+        bp@alien8.de, jkosina@suse.cz, chaowang@redhat.com, bhe@redhat.com,
+        akpm@linux-foundation.org
+Subject: Re: [RFC PATCH 00/13][V3] kexec: A new system call to allow in kernel
+ loading
+References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com> <20140603131203.GA23395@redhat.com> <20140605083134.GE3506@darkstar.nay.redhat.com> <20140605150159.GA14083@redhat.com> <20140606073748.GC3343@darkstar.nay.redhat.com>
+In-Reply-To: <20140606073748.GC3343@darkstar.nay.redhat.com>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 6, 2014 at 3:29 PM, Philippe Troin <phil@coldcreektech.com> wrote:
-> This happens on an NFS client running on:
-> Linux ceramic32 3.14.4 #1 SMP Fri May 30 00:52:07 PDT 2014 i686 i686 i386 GNU/Linux
-> (also happens on x86_64).
->
-> The NFS server can be either 3.14 or 3.13, it doesn't change a thing.
->
-> Mount options are:
-> (from /proc/mtab)
-> ceramic:/export/home/phil /home/phil nfs rw,nosuid,nodev,relatime,vers=3,rsize=1048576,wsize=1048576,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,mountaddr=172.17.1.2,mountvers=3,mountport=20048,mountproto=tcp,local_lock=none,addr=172.17.1.2 0 0
-> (This is NFSv3)
->
-> The symptom:
->
-> Run getfacl on any NFS inode.  See there are no ACLs:
->
->         % getfacl .
->         # file: .
->         # owner: phil
->         # group: phil
->         user::rwx
->         group::r-x
->         other::r-x
->
-> Yet, getfattr says there are some acl-related xattrs:
->
->         % getfattr -m '.*' .
->         # file: .
->         system.posix_acl_access
->         system.posix_acl_default
->
-> But when you want to retrieve these phantom xattrs, I get errors:
->
->         % getfattr -n system.posix_acl_access .
->         .: system.posix_acl_access: No such attribute
->         [1]    1136 exit 1     getfattr -n system.posix_acl_access .
->         % getfattr -n system.posix_acl_default .
->         .: system.posix_acl_default: No such attribute
->         [1]    1146 exit 1     getfattr -n system.posix_acl_default .
->
-> I've noticed because it breaks the patch utility.
->
-> This is a regression from 3.13, probably due to the 3.14 NFS ACL overhaul.
->
+On 06/06/2014 12:37 AM, Dave Young wrote:
+> On 06/05/14 at 11:01am, Vivek Goyal wrote:
+>> On Thu, Jun 05, 2014 at 04:31:34PM +0800, Dave Young wrote:
+>>
+>> [..]
+>>>> +	ret = kexec_file_load(kernel_fd, info.initrd_fd, info.command_line,
+>>>> +			info.command_line_len, info.kexec_flags);
+>>>
+>>> Vivek,
+>>>
+>>> I tried your patch on my uefi test machine, but kexec load fails like below:
+>>>
+>>> [root@localhost ~]# kexec -l /boot/vmlinuz-3.15.0-rc8+ --use-kexec2-syscall
+>>> Could not find a free area of memory of 0xa000 bytes ...
+>>
+>> Hi Dave,
+>>
+>> I think this message is coming from kexec-tools from old loading path. I
+>> think somehow new path did not even kick in. I tried above and I got
+>> -EBADF as I did not pass initrd. Can you run gdb on kexec and see if
+>> you are getting to syscall or run strace.
+> 
+> Seems I can not reproduce the local hole fail issue but I'm sure it happens
+> before the new syscall callback.
+> 
+> This time I got -ENOEXEC. It's caused by CONFIG_EFI_MIXED=y. In case EFI_MIXED
+> 64bit kernel runs on 32bit efi firmware thus XLF_CAN_BE_LOADED_ABOVE_4G is not
+> set thus bzImage probe will fail with NOEXEC.
+> 
 
-Christoph, what is the intended interface for telling
-posix_acl_xattr_list() that there are no acls on a particular file?
-Should there perhaps be a call to get_acl()?
+OK... this is seriously problematic.
 
--- 
-Trond Myklebust
+#if defined(CONFIG_RELOCATABLE) && defined(CONFIG_X86_64) && \
+	!defined(CONFIG_EFI_MIXED)
+   /* kernel/boot_param/ramdisk could be loaded above 4g */
+# define XLF1 XLF_CAN_BE_LOADED_ABOVE_4G
+#else
+# define XLF1 0
+#endif
 
-Linux NFS client maintainer, PrimaryData
+The fact that even compiling with CONFIG_EFI_MIXED disables
+XLF_CAN_BE_LOADED_ABOVE_4G is really not going to fly.  We should expect
+CONFIG_EFI_MIXED to be the norm, but *also* should expect that there is
+a legitimate need to load above 4G.
 
-trond.myklebust@primarydata.com
+Matt, could you explain why this is necessary?  We need to figure out a
+way around this.
+
+My thinking is that disabling this flag is unnecessary, since a 32-bit
+EFI loader should not load above the 4G mark anyway, but if I'm confused
+and there is a more fundamental requirement, then we need to consider
+that more carefully.
+
+	-hpa
+
