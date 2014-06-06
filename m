@@ -1,77 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752410AbaFEX5i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 19:57:38 -0400
-Received: from mailgw12.technion.ac.il ([132.68.225.12]:49228 "EHLO
-	mailgw12.technion.ac.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751834AbaFEX5H (ORCPT
+	id S1752854AbaFEX7R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 19:59:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59031 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751494AbaFEX7P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 19:57:07 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ag8CAPECkVOERCABjGdsb2JhbABZx0cBgQgWDgEBASc8giYBBXkQQBFXGYhCzWGFMReOUgcWhCoEiiWmYg
-X-IPAS-Result: Ag8CAPECkVOERCABjGdsb2JhbABZx0cBgQgWDgEBASc8giYBBXkQQBFXGYhCzWGFMReOUgcWhCoEiiWmYg
-X-IronPort-AV: E=Sophos;i="4.98,984,1392156000"; 
-   d="scan'208";a="110197070"
-From: Nadav Amit <namit@cs.technion.ac.il>
-To: pbonzini@redhat.com
-Cc: gleb@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nadav Amit <namit@cs.technion.ac.il>
-Subject: [PATCH kvm-unit-tests1/2] x86: emulator: additional smsw test-case
-Date: Fri,  6 Jun 2014 02:56:52 +0300
-Message-Id: <1402012613-29891-2-git-send-email-namit@cs.technion.ac.il>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1402012613-29891-1-git-send-email-namit@cs.technion.ac.il>
-References: <53908C66.20600@redhat.com>
- <1402012613-29891-1-git-send-email-namit@cs.technion.ac.il>
+	Thu, 5 Jun 2014 19:59:15 -0400
+Date: Thu, 5 Jun 2014 17:02:57 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Neil Horman <nhorman@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-pci@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pci/msi: fix memory leak in free_msi_irqs()
+Message-ID: <20140606000257.GB16117@kroah.com>
+References: <1401922190-25357-1-git-send-email-ast@plumgrid.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401922190-25357-1-git-send-email-ast@plumgrid.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An additional test case for the emulator was added to test smsw which is
-trapped by the emulator.  The other existing test-cases occur in the guest (at
-least on VMX), since the values are read directly from the CR0 read shadow.
+On Wed, Jun 04, 2014 at 03:49:50PM -0700, Alexei Starovoitov wrote:
+> free_msi_irqs() is leaking memory, since
+> list_for_each_entry(entry, &dev->msi_list, list) {...}
+> is never executed, because dev->msi_list is made empty by
+> the loop just above this one.
+> 
+> Fix it by relying on zero termination of attribute array like
+> populate_msi_sysfs() does.
+> 
+> Fixes: 1c51b50c2995 ("PCI/MSI: Export MSI mode using attributes, not kobjects")
+> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+> ---
+> 
+> This was found by kmemleak report:
+> unreferenced object 0xffff880808eda600 (size 64):
+>   comm "modprobe", pid 1526, jiffies 4294902299 (age 58422.716s)
+>   hex dump (first 32 bytes):
+>     20 c4 66 09 08 88 ff ff 24 01 00 00 00 00 00 00   .f.....$.......
+>     50 97 77 82 ff ff ff ff 00 00 00 00 00 00 00 00  P.w.............
+>   backtrace:
+>     [<ffffffff816e5fc8>] kmemleak_alloc+0x28/0x50
+>     [<ffffffff811b885e>] kmem_cache_alloc_trace+0xde/0x230
+>     [<ffffffff813aa286>] populate_msi_sysfs+0xc6/0x250
+>     [<ffffffff813aafdb>] pci_enable_msix+0x34b/0x430
+>     [<ffffffff813ab0ec>] pci_enable_msix_range+0x2c/0x70
+>     [<ffffffffa0034ade>] igb_init_interrupt_scheme+0x9e/0x420 [igb]
+>     [<ffffffffa003d668>] igb_probe+0x4a8/0x1250 [igb]
+>     [<ffffffff813930de>] local_pci_probe+0x4e/0xa0
+>     [<ffffffff813933e9>] pci_device_probe+0xd9/0x120
+>     [<ffffffff814697cd>] driver_probe_device+0x8d/0x250
+>     [<ffffffff81469a3b>] __driver_attach+0xab/0xb0
+>     [<ffffffff8146799d>] bus_for_each_dev+0x5d/0xa0
+>     [<ffffffff814691de>] driver_attach+0x1e/0x20
+>     [<ffffffff81468e57>] bus_add_driver+0x117/0x220
+>     [<ffffffff8146a104>] driver_register+0x64/0xf0
+>     [<ffffffff813923f4>] __pci_register_driver+0x64/0x70
+> 
+> IGB driver is calling pci_enable_msix_range() and immediately pci_disable_msix()
+> which leaks the memory.
+> Obviously the leak happens with any driver.
+> 
+>  drivers/pci/msi.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+> index 955ab7990c5b..fb02fc2fb034 100644
+> --- a/drivers/pci/msi.c
+> +++ b/drivers/pci/msi.c
+> @@ -414,7 +414,7 @@ static void free_msi_irqs(struct pci_dev *dev)
+>  	if (dev->msi_irq_groups) {
+>  		sysfs_remove_groups(&dev->dev.kobj, dev->msi_irq_groups);
+>  		msi_attrs = dev->msi_irq_groups[0]->attrs;
+> -		list_for_each_entry(entry, &dev->msi_list, list) {
+> +		while (msi_attrs[count]) {
+>  			dev_attr = container_of(msi_attrs[count],
+>  						struct device_attribute, attr);
+>  			kfree(dev_attr->attr.name);
 
-Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
----
- x86/emulator.c | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+Looks good, thanks for catching this:
 
-diff --git a/x86/emulator.c b/x86/emulator.c
-index 20e3a45..033f246 100644
---- a/x86/emulator.c
-+++ b/x86/emulator.c
-@@ -336,7 +336,7 @@ void test_incdecnotneg(void *mem)
-     report("lock notb", *mb == vb);
- }
- 
--void test_smsw(void)
-+void test_smsw(uint64_t *h_mem)
- {
- 	char mem[16];
- 	unsigned short msw, msw_orig, *pmsw;
-@@ -355,6 +355,12 @@ void test_smsw(void)
- 		if (i != 4 && pmsw[i])
- 			zero = 0;
- 	report("smsw (2)", msw == pmsw[4] && zero);
-+
-+	/* Trigger exit on smsw */
-+	*h_mem = 0x12345678abcdeful;
-+	asm volatile("smsw %0" : "=m"(*h_mem));
-+	report("smsw (3)", msw == (unsigned short)*h_mem &&
-+		(*h_mem & ~0xfffful) == 0x12345678ab0000ul);
- }
- 
- void test_lmsw(void)
-@@ -998,7 +1004,7 @@ int main()
- 
- 	test_cr8();
- 
--	test_smsw();
-+	test_smsw(mem);
- 	test_lmsw();
- 	test_ljmp(mem);
- 	test_stringio();
--- 
-1.9.1
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
