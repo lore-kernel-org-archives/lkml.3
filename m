@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752642AbaFFRUw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 13:20:52 -0400
-Received: from david.siemens.de ([192.35.17.14]:35964 "EHLO david.siemens.de"
+	id S1752795AbaFFRVQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 13:21:16 -0400
+Received: from david.siemens.de ([192.35.17.14]:35963 "EHLO david.siemens.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752504AbaFFRTo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 13:19:44 -0400
+	id S1752501AbaFFRTn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 13:19:43 -0400
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -14,11 +14,10 @@ Cc: Jason Wessel <jason.wessel@windriver.com>,
         kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
         Borislav Petkov <bp@suse.de>,
-        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>,
-        Kay Sievers <kay@vrfy.org>
-Subject: [PATCH v8 11/22] scripts/gdb: Add lx-dmesg command
-Date: Fri,  6 Jun 2014 19:18:52 +0200
-Message-Id: <124628afa72035a4da7c1204f11ec9b995ea05a5.1402075140.git.jan.kiszka@siemens.com>
+        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>
+Subject: [PATCH v8 19/22] scripts/gdb: Add class to iterate over CPU masks
+Date: Fri,  6 Jun 2014 19:19:00 +0200
+Message-Id: <69b20dba882df37ba7d5d3b48041db12925132fa.1402075141.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
 In-Reply-To: <cover.1402075136.git.jan.kiszka@siemens.com>
 References: <cover.1402075136.git.jan.kiszka@siemens.com>
@@ -28,97 +27,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This pokes into the log buffer of the debugged kernel, dumping it to the
-gdb console. Helping in case the target should or can no longer execute
-dmesg itself.
+Will be used first to count module references. It is optimized to read
+the mask only once per stop.
 
-CC: Kay Sievers <kay@vrfy.org>
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- scripts/gdb/linux/dmesg.py | 64 ++++++++++++++++++++++++++++++++++++++++++++++
- scripts/gdb/vmlinux-gdb.py |  1 +
- 2 files changed, 65 insertions(+)
- create mode 100644 scripts/gdb/linux/dmesg.py
+ scripts/gdb/linux/cpus.py | 54 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 54 insertions(+)
 
-diff --git a/scripts/gdb/linux/dmesg.py b/scripts/gdb/linux/dmesg.py
-new file mode 100644
-index 0000000..7650f24
---- /dev/null
-+++ b/scripts/gdb/linux/dmesg.py
-@@ -0,0 +1,64 @@
-+#
-+# gdb helper commands and functions for Linux kernel debugging
-+#
-+#  kernel log buffer dump
-+#
-+# Copyright (c) Siemens AG, 2011, 2012
-+#
-+# Authors:
-+#  Jan Kiszka <jan.kiszka@siemens.com>
-+#
-+# This work is licensed under the terms of the GNU GPL version 2.
-+#
-+
-+import gdb
-+import string
-+
-+from linux import utils
+diff --git a/scripts/gdb/linux/cpus.py b/scripts/gdb/linux/cpus.py
+index b683da9..c1441f2 100644
+--- a/scripts/gdb/linux/cpus.py
++++ b/scripts/gdb/linux/cpus.py
+@@ -50,6 +50,60 @@ def per_cpu(var_ptr, cpu):
+     return pointer.cast(var_ptr.type).dereference()
+ 
+ 
++cpu_mask = {}
 +
 +
-+class LxDmesg(gdb.Command):
-+    """Print Linux kernel log buffer."""
-+
-+    def __init__(self):
-+        super(LxDmesg, self).__init__("lx-dmesg", gdb.COMMAND_DATA)
-+
-+    def invoke(self, arg, from_tty):
-+        log_buf_addr = int(str(gdb.parse_and_eval("log_buf")).split()[0], 16)
-+        log_first_idx = int(gdb.parse_and_eval("log_first_idx"))
-+        log_next_idx = int(gdb.parse_and_eval("log_next_idx"))
-+        log_buf_len = int(gdb.parse_and_eval("log_buf_len"))
-+
-+        inf = gdb.inferiors()[0]
-+        start = log_buf_addr + log_first_idx
-+        if log_first_idx < log_next_idx:
-+            log_buf_2nd_half = -1
-+            length = log_next_idx - log_first_idx
-+            log_buf = inf.read_memory(start, length)
-+        else:
-+            log_buf_2nd_half = log_buf_len - log_first_idx
-+            log_buf = inf.read_memory(start, log_buf_2nd_half) + \
-+                inf.read_memory(log_buf_addr, log_next_idx)
-+
-+        pos = 0
-+        while pos < log_buf.__len__():
-+            length = utils.read_u16(log_buf[pos + 8:pos + 10])
-+            if length == 0:
-+                if log_buf_2nd_half == -1:
-+                    gdb.write("Corrupted log buffer!\n")
-+                    break
-+                pos = log_buf_2nd_half
-+                continue
-+
-+            text_len = utils.read_u16(log_buf[pos + 10:pos + 12])
-+            time_stamp = utils.read_u64(log_buf[pos:pos + 8])
-+
-+            for line in log_buf[pos + 16:pos + 16 + text_len].splitlines():
-+                gdb.write("[{time:12.6f}] {line}\n".format(
-+                    time=time_stamp / 1000000000.0,
-+                    line=line))
-+
-+            pos += length
++def cpu_mask_invalidate(event):
++    global cpu_mask
++    cpu_mask = {}
++    gdb.events.stop.disconnect(cpu_mask_invalidate)
++    if hasattr(gdb.events, 'new_objfile'):
++        gdb.events.new_objfile.disconnect(cpu_mask_invalidate)
 +
 +
-+LxDmesg()
-diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
-index cf2e716..fa66d23 100644
---- a/scripts/gdb/vmlinux-gdb.py
-+++ b/scripts/gdb/vmlinux-gdb.py
-@@ -25,3 +25,4 @@ else:
-     import linux.utils
-     import linux.symbols
-     import linux.modules
-+    import linux.dmesg
++class CpuList():
++    def __init__(self, mask_name):
++        global cpu_mask
++        self.mask = None
++        if mask_name in cpu_mask:
++            self.mask = cpu_mask[mask_name]
++        if self.mask is None:
++            self.mask = gdb.parse_and_eval(mask_name + ".bits")
++            if hasattr(gdb, 'events'):
++                cpu_mask[mask_name] = self.mask
++                gdb.events.stop.connect(cpu_mask_invalidate)
++                if hasattr(gdb.events, 'new_objfile'):
++                    gdb.events.new_objfile.connect(cpu_mask_invalidate)
++        self.bits_per_entry = self.mask[0].type.sizeof * 8
++        self.num_entries = self.mask.type.sizeof * 8 / self.bits_per_entry
++        self.entry = -1
++        self.bits = 0
++
++    def __iter__(self):
++        return self
++
++    def next(self):
++        while self.bits == 0:
++            self.entry += 1
++            if self.entry == self.num_entries:
++                raise StopIteration
++            self.bits = self.mask[self.entry]
++            if self.bits != 0:
++                self.bit = 0
++                break
++
++        while self.bits & 1 == 0:
++            self.bits >>= 1
++            self.bit += 1
++
++        cpu = self.entry * self.bits_per_entry + self.bit
++
++        self.bits >>= 1
++        self.bit += 1
++
++        return cpu
++
++
+ class PerCpu(gdb.Function):
+     """Return per-cpu variable.
+ 
 -- 
 1.8.1.1.298.ge7eed54
 
