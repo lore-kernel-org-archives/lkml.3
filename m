@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752089AbaFFNQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 09:16:58 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:38703 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751060AbaFFNQ5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 09:16:57 -0400
+	id S1752080AbaFFNVw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 09:21:52 -0400
+Received: from mail-bn1lp0141.outbound.protection.outlook.com ([207.46.163.141]:36501
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751675AbaFFNVu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 09:21:50 -0400
+X-WSS-ID: 0N6R147-07-AU7-02
+X-M-MSG: 
+Message-ID: <5391C063.3010207@amd.com>
+Date: Fri, 6 Jun 2014 08:21:39 -0500
+From: Tom Lendacky <thomas.lendacky@amd.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <20140604223114.GC16855@tassilo.jf.intel.com>
-References: <1401918378-3842-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<20140604222047.GA16855@tassilo.jf.intel.com>
-	<CAFo99gY_GZg7TY=H_UZBDL3dP2vL6NW-TCvtCDx+voY0uH80AA@mail.gmail.com>
-	<20140604223114.GC16855@tassilo.jf.intel.com>
-Date: Fri, 6 Jun 2014 15:16:56 +0200
-Message-ID: <CAFo99gb4+_nn-5PonfgNfXfyB9PdqsiWX=VqgSxRUtP3oOhD9Q@mail.gmail.com>
-Subject: Re: [PATCH] tools: perf: util: parse-events.c: Cleaning up missing
- null-terminate after strncpy call
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Stephane Eranian <eranian@google.com>, David Ahern <dsahern@gmail.com>,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the net-next tree
+References: <20140606164543.6c5bbe67@canb.auug.org.au>
+In-Reply-To: <20140606164543.6c5bbe67@canb.auug.org.au>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.180.168.240]
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428001)(479174003)(377454003)(51704005)(53754006)(24454002)(189002)(199002)(86362001)(46102001)(81542001)(97736001)(81342001)(74502001)(84676001)(23756003)(83072002)(77982001)(85852003)(59896001)(76482001)(31966008)(74662001)(36756003)(79102001)(92566001)(92726001)(99396002)(4396001)(83506001)(21056001)(64706001)(64126003)(101416001)(65806001)(80022001)(65956001)(68736004)(65816999)(76176999)(77096999)(54356999)(87266999)(87936001)(20776003)(44976005)(47776003)(50986999)(50466002)(83322001)(33656002)(102836001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR02MB201;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
+X-Forefront-PRVS: 023495660C
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Thomas.Lendacky@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
-
-I really do not want to complicate things here, both work course here.
-But sptlcpy is definitely faster. But this is hardly time-critical
-code, so maybe it looks better to use snprintf in both cases.
-
-I vote for sptlcpy, but who decides?
-Someone decides and I submit another patch :-)
-
-Best regards
-Rickard Strandqvist
-
-
-2014-06-05 0:31 GMT+02:00 Andi Kleen <ak@linux.intel.com>:
-> On Thu, Jun 05, 2014 at 12:23:55AM +0200, Rickard Strandqvist wrote:
->> Hi
->>
->> A little embarrassing, but I actually did not know that there was a
->> better replacement for strncpy.
+On 06/06/2014 01:45 AM, Stephen Rothwell wrote:
+> Hi all,
 >
-> This works for perf, but not in general because standard glibc
-> does not have strlcpy. snprintf works always.
+> After merging the net-next tree, today's linux-next build (powerpc allyesconfig)
+> failed like this:
 >
-> In practice if you could tolerate strncpy always zeroing
-> the complete string before you can also tolerate snprintf.
 >
-> -Andi
+> drivers/net/ethernet/amd/xgbe/xgbe-dev.c:119:25: fatal error: asm/cputype.h: No such file or directory
+>   #include <asm/cputype.h>
+>                           ^
+
+I accidentally left this in from driver debugging and it is not
+necessary.  Patch to follow.
+
+Tom
+
+>
+> Caused by commit c5aa9e3b8156 ("amd-xgbe: Initial AMD 10GbE platform driver").
+>
+> I reverted commit 54a4ca8e3730 ("Merge branch 'amd-xgbe'") for today.
+>
