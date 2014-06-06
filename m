@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041AbaFFMpP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 08:45:15 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:56428 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751761AbaFFMpM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1751983AbaFFMpM (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 6 Jun 2014 08:45:12 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:56422 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751237AbaFFMpK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 08:45:10 -0400
 From: Simon Horman <horms+renesas@verge.net.au>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
         Magnus Damm <magnus.damm@gmail.com>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
         Simon Horman <horms+renesas@verge.net.au>
-Subject: [PATCH 2/4] drivers: sh: Restrict INTC_USERIMASK to SH4A
-Date: Fri,  6 Jun 2014 21:44:33 +0900
-Message-Id: <39c5abbc54179998bf04368a11c561e19220d7d4.1402058435.git.horms+renesas@verge.net.au>
+Subject: [GIT PULL] SH Driver Updates for v3.16
+Date: Fri,  6 Jun 2014 21:44:31 +0900
+Message-Id: <cover.1402058435.git.horms+renesas@verge.net.au>
 X-Mailer: git-send-email 1.8.4
-In-Reply-To: <cover.1402058435.git.horms+renesas@verge.net.au>
-References: <cover.1402058435.git.horms+renesas@verge.net.au>
-In-Reply-To: <cover.1402058435.git.horms+renesas@verge.net.au>
-References: <cover.1402058435.git.horms+renesas@verge.net.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Geert Uytterhoeven <geert+renesas@glider.be>
+Hi Linus,
 
-register_intc_userimask() is called from sh4a code only.
+Please consider these SH Driver Updates for v3.16
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-Reviewed-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Tested-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com> [r8a7779 legacy]
-Signed-off-by: Simon Horman <horms+renesas@verge.net.au>
----
- drivers/sh/intc/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+This pull request is based on the SH Driver Updates for v3.15,
+tagged as sh-drivers-for-v3.15, which you included in v3.15-rc6.
 
-diff --git a/drivers/sh/intc/Kconfig b/drivers/sh/intc/Kconfig
-index f7d9061..60228fa 100644
---- a/drivers/sh/intc/Kconfig
-+++ b/drivers/sh/intc/Kconfig
-@@ -6,7 +6,7 @@ comment "Interrupt controller options"
- 
- config INTC_USERIMASK
- 	bool "Userspace interrupt masking support"
--	depends on ARCH_SHMOBILE || (SUPERH && CPU_SH4A) || COMPILE_TEST
-+	depends on (SUPERH && CPU_SH4A) || COMPILE_TEST
- 	help
- 	  This enables support for hardware-assisted userspace hardirq
- 	  masking.
--- 
-1.8.4
 
+The following changes since commit 3c90c55dcde745bed81f6447f24ba96bda43d984:
+
+  drivers: sh: compile drivers/sh/pm_runtime.c if ARCH_SHMOBILE_MULTI (2014-05-12 16:05:01 +0900)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/horms/renesas.git tags/renesas-sh-drivers-for-v3.16
+
+for you to fetch changes up to 2f35fb3c8a6018a0a5fe4a7fb0948b853c157256:
+
+  drivers: sh: Enable PM runtime for new R-Car Gen2 SoCs (2014-06-05 09:50:11 +0900)
+
+----------------------------------------------------------------
+SH Driver Update for v3.16
+
+* PM Runtime enhancements targeted for use with
+  ARM-based Renesas R-Car Gen2 SoCs
+* Restrict INTC_USERIMASK to SH4A as it is only used there
+
+----------------------------------------------------------------
+Ben Dooks (2):
+      drivers: sh: pm_runtime does not need idle callback
+      drivers: sh: pm_runtime implementation needs to suspend and resume devices
+
+Geert Uytterhoeven (2):
+      drivers: sh: Restrict INTC_USERIMASK to SH4A
+      drivers: sh: Enable PM runtime for new R-Car Gen2 SoCs
+
+ drivers/sh/intc/Kconfig |  2 +-
+ drivers/sh/pm_runtime.c | 40 ++++++++++++++++++++++++++++++++++------
+ 2 files changed, 35 insertions(+), 7 deletions(-)
