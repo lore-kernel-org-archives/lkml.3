@@ -1,52 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751796AbaFFRvg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 13:51:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45229 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751522AbaFFRve (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 13:51:34 -0400
-Date: Fri, 6 Jun 2014 13:51:25 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: 3.15-rc8 oops in copy_page_rep after page fault.
-Message-ID: <20140606175125.GB1741@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-	Linus Torvalds <torvalds@linux-foundation.org>
-References: <20140606174317.GA1741@redhat.com>
+	id S1752100AbaFFRw7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 13:52:59 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:56516 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751363AbaFFRw6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 13:52:58 -0400
+From: James Bottomley <jbottomley@parallels.com>
+To: "michaelc@cs.wisc.edu" <michaelc@cs.wisc.edu>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "kys@microsoft.com" <kys@microsoft.com>,
+        "axboe@kernel.dk" <axboe@kernel.dk>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: Re: [PATCH 1/1] [SCSI] Fix a bug in deriving the FLUSH_TIMEOUT from
+ the basic I/O timeout
+Thread-Topic: [PATCH 1/1] [SCSI] Fix a bug in deriving the FLUSH_TIMEOUT
+ from the basic I/O timeout
+Thread-Index: AQHPgAuS4RnOBmJ/q0aQf1y8l+Zt2ZthoquAgAGuOnqAAIlJgIAA8d+AgAAJdIA=
+Date: Fri, 6 Jun 2014 17:52:48 +0000
+Message-ID: <1402077167.2207.89.camel@dabdike.int.hansenpartnership.com>
+References: <1401899623-24194-1-git-send-email-kys@microsoft.com>
+	 <1401901323.17510.23.camel@dabdike>
+	 <d61f4b87a72544e4b0c1e1872a76f97b@BY2PR03MB299.namprd03.prod.outlook.com>
+	 <53911A35.7010805@cs.wisc.edu>
+	 <d9854e6ff97f4b0087dbe835a2a57c8f@BY2PR03MB299.namprd03.prod.outlook.com>
+	 <5391F801.4010107@cs.wisc.edu>
+In-Reply-To: <5391F801.4010107@cs.wisc.edu>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [50.46.103.107]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <6EBF7AC574A9D24DB6472C945B247365@sw.swsoft.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140606174317.GA1741@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 06, 2014 at 01:43:17PM -0400, Dave Jones wrote:
- > Not much to go on here. It rebooted right after dumping this.
- > 
- > RIP: 0010:[<ffffffff8b3287b5>]  [<ffffffff8b3287b5>] copy_page_rep+0x5/0x10
- > Call Trace:
- >  [<ffffffff8b1be8db>] ? do_huge_pmd_wp_page+0x5cb/0x850
- >  [<ffffffff8b187010>] handle_mm_fault+0x1e0/0xc50
- >  [<ffffffff8b1b4662>] ? kmem_cache_free+0x1c2/0x200
- >  [<ffffffff8b7472d9>] __do_page_fault+0x1c9/0x630
- >  [<ffffffff8b010a98>] ? perf_trace_sys_enter+0x38/0x180
- >  [<ffffffff8b11897b>] ? __acct_update_integrals+0x8b/0x120
- >  [<ffffffff8b747bfb>] ? preempt_count_sub+0xab/0x100
- >  [<ffffffff8b74775e>] do_page_fault+0x1e/0x70
- >  [<ffffffff8b7441b2>] page_fault+0x22/0x30
+On Fri, 2014-06-06 at 12:18 -0500, Mike Christie wrote:
+> On 6/5/14, 9:53 PM, KY Srinivasan wrote:
+> >
+> >
+> >> -----Original Message-----
+> >> From: Mike Christie [mailto:michaelc@cs.wisc.edu]
+> >> Sent: Thursday, June 5, 2014 6:33 PM
+> >> To: KY Srinivasan
+> >> Cc: James Bottomley; linux-kernel@vger.kernel.org; apw@canonical.com;
+> >> devel@linuxdriverproject.org; hch@infradead.org; linux-
+> >> scsi@vger.kernel.org; ohering@suse.com; gregkh@linuxfoundation.org;
+> >> jasowang@redhat.com
+> >> Subject: Re: [PATCH 1/1] [SCSI] Fix a bug in deriving the FLUSH_TIMEOUT
+> >> from the basic I/O timeout
+> >>
+> >> On 06/04/2014 12:15 PM, KY Srinivasan wrote:
+> >>>
+> >>>
+> >>>> -----Original Message-----
+> >>>> From: James Bottomley [mailto:jbottomley@parallels.com]
+> >>>> Sent: Wednesday, June 4, 2014 10:02 AM
+> >>>> To: KY Srinivasan
+> >>>> Cc: linux-kernel@vger.kernel.org; apw@canonical.com;
+> >>>> devel@linuxdriverproject.org; hch@infradead.org; linux-
+> >>>> scsi@vger.kernel.org; ohering@suse.com; gregkh@linuxfoundation.org;
+> >>>> jasowang@redhat.com
+> >>>> Subject: Re: [PATCH 1/1] [SCSI] Fix a bug in deriving the
+> >>>> FLUSH_TIMEOUT from the basic I/O timeout
+> >>>>
+> >>>> On Wed, 2014-06-04 at 09:33 -0700, K. Y. Srinivasan wrote:
+> >>>>> Commit ID: 7e660100d85af860e7ad763202fff717adcdaacd added code to
+> >>>>> derive the FLUSH_TIMEOUT from the basic I/O timeout. However, this
+> >>>>> patch did not use the basic I/O timeout of the device. Fix this bug.
+> >>>>>
+> >>>>> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> >>>>> ---
+> >>>>>   drivers/scsi/sd.c |    4 +++-
+> >>>>>   1 files changed, 3 insertions(+), 1 deletions(-)
+> >>>>>
+> >>>>> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c index
+> >>>>> e9689d5..54150b1 100644
+> >>>>> --- a/drivers/scsi/sd.c
+> >>>>> +++ b/drivers/scsi/sd.c
+> >>>>> @@ -832,7 +832,9 @@ static int sd_setup_write_same_cmnd(struct
+> >>>>> scsi_device *sdp, struct request *rq)
+> >>>>>
+> >>>>>   static int scsi_setup_flush_cmnd(struct scsi_device *sdp, struct
+> >>>>> request *rq)  {
+> >>>>> -	rq->timeout *= SD_FLUSH_TIMEOUT_MULTIPLIER;
+> >>>>> +	int timeout = sdp->request_queue->rq_timeout;
+> >>>>> +
+> >>>>> +	rq->timeout = (timeout * SD_FLUSH_TIMEOUT_MULTIPLIER);
+> >>>>
+> >>>> Could you share where you found this to be a problem?  It looks like
+> >>>> a bug in block because all inbound requests being prepared should
+> >>>> have a timeout set, so block would be the place to fix it.
+> >>>
+> >>> Perhaps; what I found was that the value in rq->timeout was 0 coming
+> >>> into this function and thus multiplying obviously has no effect.
+> >>>
+> >>
+> >> I think you are right. We hit this problem because we are doing:
+> >>
+> >> scsi_request_fn -> blk_peek_request -> sd_prep_fn ->
+> >> scsi_setup_flush_cmnd.
+> >>
+> >> At this time request->timeout is zero so the multiplication does nothing. See
+> >> how sd_setup_write_same_cmnd will set the request->timeout at this time.
+> >>
+> >> Then in scsi_request_fn we do:
+> >>
+> >> scsi_request_fn -> blk_start_request -> blk_add_timer.
+> >>
+> >> At this time it will set the request->timeout if something like req block pc
+> >> users (like scsi_execute() or block/scsi_ioctl.c) or the write same code
+> >> mentioned above have not set the timeout.
+> >
+> > I don't think this is a recent change. Prior to this commit, we were setting the timeout
+> > value in this function; it just happened to be a different constant unrelated to the I/O
+> > timeout.
+> >
+> 
+> Yeah, it looks like when 7e660100d85af860e7ad763202fff717adcdaacd was 
+> merged we were supposed to initialize it like in your patch in this thread.
+> 
+> I guess we could do your patch in this thread, or if we want the block 
+> layer to initialize the timeout before the prep_fn callout is called 
+> then we would need to have the blk-flush.c code to that when it sets up 
+> the request. If we do the latter, do we want the discard and write same 
+> code to initialize the request's timeout before the prep_fn callout is 
+> called too?
 
-Ok, I can reproduce this fairly easily.
+I looked through the call chain; it seems to be intentional behaviour on
+the part of block.  Just from an mq point of view, it would make better
+code if we unconditionally initialised rq->timeout early and allowed
+prep to modify it and then dumped the if(!req->timeout) in
+blk_add_timer(), but it's a marginal if condition that would compile to
+a conditional store on sensible architectures, so losing the conditional
+probably isn't worth worrying about.
 
-The only prerequisite seems to be that before I start the fuzzer I do..
+Cc'd Jens for his opinion with the block patch
 
-echo 65536 > /proc/sys/vm/mmap_min_addr
+James
 
-If I don't do that, then it seems to survive, so maybe that's a clue ?
+---
 
-	Dave
+diff --git a/block/blk-core.c b/block/blk-core.c
+index a0e3096..cad6b2a 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -111,6 +111,7 @@ void blk_rq_init(struct request_queue *q, struct request *rq)
+ 	rq->cmd = rq->__cmd;
+ 	rq->cmd_len = BLK_MAX_CDB;
+ 	rq->tag = -1;
++	rq->timeout = q->rq_timeout;
+ 	rq->start_time = jiffies;
+ 	set_start_time_ns(rq);
+ 	rq->part = NULL;
+diff --git a/block/blk-timeout.c b/block/blk-timeout.c
+index d96f706..9063ade 100644
+--- a/block/blk-timeout.c
++++ b/block/blk-timeout.c
+@@ -180,13 +180,6 @@ void __blk_add_timer(struct request *req, struct list_head *timeout_list)
+ 
+ 	BUG_ON(!list_empty(&req->timeout_list));
+ 
+-	/*
+-	 * Some LLDs, like scsi, peek at the timeout to prevent a
+-	 * command from being retried forever.
+-	 */
+-	if (!req->timeout)
+-		req->timeout = q->rq_timeout;
+-
+ 	req->deadline = jiffies + req->timeout;
+ 	if (timeout_list)
+ 		list_add_tail(&req->timeout_list, timeout_list);
 
