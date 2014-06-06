@@ -1,41 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752492AbaFFWH4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 18:07:56 -0400
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:58978 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752458AbaFFWHz convert rfc822-to-8bit (ORCPT
+	id S1752269AbaFFWR6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 18:17:58 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:37427 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752134AbaFFWR5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 18:07:55 -0400
+	Fri, 6 Jun 2014 18:17:57 -0400
+Date: Fri, 6 Jun 2014 15:17:49 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: dormando <dormando@rydia.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: Multitude of dst obsolescense race conditions
+Message-ID: <20140606221749.GX4581@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <alpine.DEB.2.02.1405140233210.16893@dtop>
+ <1400067618.7973.72.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20140606181236.GS4581@linux.vnet.ibm.com>
+ <1402081030.3645.312.camel@edumazet-glaptop2.roam.corp.google.com>
 MIME-Version: 1.0
-Date: Fri, 6 Jun 2014 15:07:54 -0700
-Message-ID: <CA+8MBb+f+83Kj3JyuxGfX9EYJNNgLnMgQRLKGZ15yzNM=cYrEg@mail.gmail.com>
-Subject: Garbage characters on serial console (Linus "next")
-From: Tony Luck <tony.luck@gmail.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402081030.3645.312.camel@edumazet-glaptop2.roam.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14060622-1344-0000-0000-0000020F8054
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pulled from Linus' "next" branch (HEAD =
-2b03adc1911d1c84cb7fad8b424234f589547cb3)
-and built & booted on ia64.  I see a lot of random characters on the
-serial console. Suspiciously starting right after reporting the serial
-line has been found.
+On Fri, Jun 06, 2014 at 11:57:10AM -0700, Eric Dumazet wrote:
+> On Fri, 2014-06-06 at 11:12 -0700, Paul E. McKenney wrote:
+> 
+> > It is probably just be me getting lost in the code, but I am not seeing
+> > a synchronize_rcu(), call_rcu(), or synchronize_net() anywhere in
+> > dst_release() or the things that it calls.  If there really isn't such
+> > a call, then I don't see how the above code is safe in the case where
+> > __sk_dst_set() is invoked on one CPU just after sk_dst_get() executes
+> > the rcu_dereference() on some other CPU.
+> 
+> Well, this part is fine, dst_release() do not free dst that are
+> potentially stored in sk_dst_cache
+> 
+> Only the refcount is decremented.
+> 
+> The bug is elsewhere, we had another thread raising this issue on netdev
+> this morning.
+> 
+> I am cooking a patch to clear the mess.
 
-Here's what the output looks like when I "vi" the saved file:
+Ah, thank you, sorry for the noise!
 
-io scheduler noop registered^M
-io scheduler deadline registered^M
-io scheduler cfq registered (default)^M
-pci_hotplug: PCI Hot Plug PCI Core version: 0.5^M
-Serial: 8250/16550 driver, 4 ports, IRQ sharing enabled^M
-00:02: ttyS0 at I/O 0x3f8 (irq = 44, base_baud = 115200) is a 16550A^M
-<80>^\þÇ^@üþ^\à^\<8c>àüðð^\<80><80>üðøþ<80>à<8e>^@üà^\àðÀ<80>^@<8e>à^@à<80><80>^\^\ÿ^\^@^\þþà^@à^\ðð^\<80><80>üþ<80>ü<80>þðøüà<8e>^\à<80>ð^@ÿ<80>üðà^@à<8e>ð<80><80><80><80>þðþ<80>üþ^\à^\^\<80>þÇü^\øà<8e>^@^\à^\^\^\ð<8e><80>ðà<8e><80>^\^@^@^\^\<8e><8e>^\àþþ^\<8e>^@^\<80>^@þ^\ÿ^\à<80>^@^\^\ø^\^\à^L^@<8e>ð^\<80>^\^\ü^\ø^\ÿ
+							Thanx, Paul
 
-Output continues with alternating blocks of legible text and garbage.
-System eventually boots (with a legible "login:" prompt).
-
--Tony
