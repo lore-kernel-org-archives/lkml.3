@@ -1,86 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752389AbaFFC7R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 22:59:17 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:43015 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751694AbaFFC7Q (ORCPT
+	id S1752527AbaFFDAj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 23:00:39 -0400
+Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:6879 "EHLO
+	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751419AbaFFDAh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 22:59:16 -0400
-Date: Thu, 5 Jun 2014 22:59:14 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, Brad Mouring <bmouring@ni.com>
-Subject: Re: [patch 1/2] rtmutex: Handle deadlock detection smarter
-Message-ID: <20140605225914.13b8b714@gandalf.local.home>
-In-Reply-To: <20140605152801.836501969@linutronix.de>
-References: <20140605152544.641846795@linutronix.de>
-	<20140605152801.836501969@linutronix.de>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Thu, 5 Jun 2014 23:00:37 -0400
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'Pavel Machek'" <pavel@ucw.cz>
+CC: "'Ulf Hansson'" <ulf.hansson@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "rjw@sisk.pl" <rjw@sisk.pl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>
+Date: Fri, 6 Jun 2014 10:59:13 +0800
+Subject: RE: autosleep suspend too frquent problem
+Thread-Topic: autosleep suspend too frquent problem
+Thread-Index: Ac+AxTevX1Xd79C7Q7qzIu8IPMr3PwAbIoEQ
+Message-ID: <35FD53F367049845BC99AC72306C23D1029A27656A3E@CNBJMBX05.corpusers.net>
+References: <35FD53F367049845BC99AC72306C23D1029A27656A2D@CNBJMBX05.corpusers.net>
+ <20140603120128.GA5080@amd.pavel.ucw.cz>
+ <CAPDyKFqnC1u_Nhe7sJrAzBc8YktDUJC4KAKTPtYVK-Qk6mmk0A@mail.gmail.com>
+ <35FD53F367049845BC99AC72306C23D1029A27656A38@CNBJMBX05.corpusers.net>
+ <20140605135108.GA14162@amd.pavel.ucw.cz>
+In-Reply-To: <20140605135108.GA14162@amd.pavel.ucw.cz>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5630oBB030591
 
-On Thu, 05 Jun 2014 15:28:32 -0000
-Thomas Gleixner <tglx@linutronix.de> wrote:
+Hi  Pavel,
 
-> Index: tip/kernel/locking/rtmutex.h
-> ===================================================================
-> --- tip.orig/kernel/locking/rtmutex.h
-> +++ tip/kernel/locking/rtmutex.h
-> @@ -21,6 +21,10 @@
->  #define debug_rt_mutex_unlock(l)			do { } while (0)
->  #define debug_rt_mutex_init(m, n)			do { } while (0)
->  #define debug_rt_mutex_deadlock(d, a ,l)		do { } while (0)
-> -#define debug_rt_mutex_print_deadlock(w)		do { } while (0)
->  #define debug_rt_mutex_detect_deadlock(w,d)		(d)
->  #define debug_rt_mutex_reset_waiter(w)			do { } while (0)
-> +
-> +static inline void debug_rt_mutex_print_deadlock(struct rt_mutex_waiter *w)
-> +{
-> +	WARN(1, "rtmutex deadlock detected\n");
-> +}
+
+This is kernel log from a Android phone:
+
+<6>[ 7262.353794] PM: suspend exit 2014-05-07 21:19:17.438320072 UTC
+<6>[ 7262.353820] PM: suspend entry 2014-05-07 21:19:17.438348353 UTC
+<6>[ 7264.822367] PM: suspend exit 2014-05-07 21:19:19.906892259 UTC
+<6>[ 7264.822391] PM: suspend entry 2014-05-07 21:19:19.906919447 UTC
+<6>[ 7266.100346] PM: suspend exit 2014-05-07 21:19:21.184872206 UTC
+<6>[ 7266.100371] PM: suspend entry 2014-05-07 21:19:21.184899342 UTC
+<6>[ 7268.650852] PM: suspend exit 2014-05-07 21:19:23.735377778 UTC
+<6>[ 7268.650876] PM: suspend entry 2014-05-07 21:19:23.735404393 UTC
+<6>[ 7269.023665] PM: suspend exit 2014-05-07 21:19:26.398622725 UTC
+<6>[ 7269.023691] PM: suspend entry 2014-05-07 21:19:26.398651787 UTC
+<6>[ 7269.232675] PM: suspend exit 2014-05-07 21:19:28.959217201 UTC
+<6>[ 7269.250878] PM: suspend entry 2014-05-07 21:19:28.977414076 UTC
+<6>[ 7269.256004] PM: suspend exit 2014-05-07 21:19:28.982547202 UTC
+<6>[ 7269.260040] PM: suspend entry 2014-05-07 21:19:28.986580588 UTC
+<6>[ 7269.265169] PM: suspend exit 2014-05-07 21:19:28.991711785 UTC
+<6>[ 7269.269311] PM: suspend entry 2014-05-07 21:19:28.995851004 UTC
+<6>[ 7270.410962] PM: suspend exit 2014-05-07 21:19:30.137503920 UTC
+<6>[ 7270.410986] PM: suspend entry 2014-05-07 21:19:30.137529389 UTC
+<6>[ 7272.970123] PM: suspend exit 2014-05-07 21:19:32.696662461 UTC
+<6>[ 7272.973330] PM: suspend entry 2014-05-07 21:19:32.699869909 UTC
+<6>[ 7275.534527] PM: suspend exit 2014-05-07 21:19:35.261069387 UTC
+<6>[ 7275.534551] PM: suspend entry 2014-05-07 21:19:35.261095846 UTC
+<6>[ 7275.556227] PM: suspend exit 2014-05-07 21:19:35.282769491 UTC
+<6>[ 7275.579152] PM: suspend entry 2014-05-07 21:19:35.305686210 UTC
+<6>[ 7275.822618] PM: suspend exit 2014-05-07 21:19:37.918187092 UTC
+<6>[ 7275.822644] PM: suspend entry 2014-05-07 21:19:37.918215894 UTC
+<6>[ 7276.122721] PM: suspend exit 2014-05-07 21:19:40.479243344 UTC
+<6>[ 7276.122745] PM: suspend entry 2014-05-07 21:19:40.479269125 UTC
+<6>[ 7278.578212] PM: suspend exit 2014-05-07 21:19:42.934733395 UTC
+<6>[ 7278.578237] PM: suspend entry 2014-05-07 21:19:42.934761520 UTC
+
+You can see there is several times suspend / resume status change 
+Form 2014-05-07 21:19:28. 959217201  to 2014-05-07 21:19:28.995851004
+
+There is also some suspend fail in this log , the suspend return -EBUSY  
+Because of driver wake up system during suspend process .
+
+During our power test , suspend frequently like this will consume more
+Power , because it will suspend/resume lots of
+Devices . Why don't we make a time window to make sure there is no more than
+1 time suspend during the time window ?
+
+I remember Android use wakelock for suspend in older linux kernel ,
+The wakelock will make some time window check to make sure
+Not suspend frequently ,  could autosleep also add this ?
+
+Thanks
+
+
+
+-----Original Message-----
+From: Pavel Machek [mailto:pavel@ucw.cz] 
+Sent: Thursday, June 05, 2014 9:51 PM
+To: Wang, Yalin
+Cc: 'Ulf Hansson'; linux-pm@vger.kernel.org; len.brown@intel.com; rjw@sisk.pl; linux-kernel@vger.kernel.org; linux-mmc
+Subject: Re: autosleep suspend too frquent problem
+
+On Thu 2014-06-05 14:51:41, Wang, Yalin wrote:
+> Hi
 > 
+> Thanks for your clarification.
+> 
+> One problem is the sd card driver itself .
+> 
+> In addition, I also think kernel's autosleep.c module Have problem 
+> too.
+> It just test wake up count ,if the count is zero, then enter suspend.
+> 
+> This will result in frequent suspend / resume problems sometimes, It 
+> is not acceptable, I think also need to be fixed to Avoid this special 
+> scenario .
 
-The above is called directly in rt_mutex_start_proxy_lock(), and as it
-doesn't have a conditional where the DEBUG_RT_MUTEXES version does, I
-get a ton of these:
+Android phones pretty much want to sleep very very often. But if you think there's coding bug in there, let us know..
+								Pavel
 
-[   27.192428] WARNING: CPU: 1 PID: 1013 at /home/rostedt/work/git/linux-rt.git/kernel/locking/rtmutex.h:29 rt_mutex_start_proxy_lock+0x89/0xc0()
-[   27.205212] rtmutex deadlock detected
-[   27.208901] Modules linked in: lockd bnep bluetooth nf_conntrack_ipv4 ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv4 nf_defrag_ipv6 xt_state ip6table_filter nf_conntrack ip6_table
-s snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_codec_generic snd_hda_intel snd_hda_controller snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm x86_pkg_temp_thermal hp_wmi
- tpm_infineon snd_timer rfkill i2c_i801 lpc_ich coretemp sparse_keymap wmi mfd_core tpm_tis tpm snd soundcore serio_raw microcode pcspkr uinput i915 i2c_algo_bit e1000e drm_kms_hel
-per ptp crc32c_intel drm pps_core i2c_core video sunrpc
-[   27.262062] CPU: 1 PID: 1013 Comm: threaded-ml Tainted: G        W     3.15.0-rc8-test+ #292
-[   27.270531] Hardware name: Hewlett-Packard HP Compaq Pro 6300 SFF/339A, BIOS K01 v02.05 05/07/2012
-[   27.279504]  000000000000001d ffff8800c7bc3c48 ffffffff816884fd ffff88011ea4ef68
-[   27.287008]  ffff8800c7bc3c98 ffff8800c7bc3c88 ffffffff8106f28c ffff8800c7bc3c78
-[   27.294519]  ffff8800c795a8b0 0000000000000000 ffff8800c890bd40 ffffc9000476e7f0
-[   27.302018] Call Trace:
-[   27.304491]  [<ffffffff816884fd>] dump_stack+0x4f/0x7c
-[   27.309643]  [<ffffffff8106f28c>] warn_slowpath_common+0x8c/0xc0
-[   27.315678]  [<ffffffff8106f376>] warn_slowpath_fmt+0x46/0x50
-[   27.321461]  [<ffffffff810b9259>] rt_mutex_start_proxy_lock+0x89/0xc0
-[   27.327921]  [<ffffffff810e0ad7>] futex_requeue+0x507/0x840
-[   27.333504]  [<ffffffff810e1576>] do_futex+0x2e6/0xb80
-[   27.338660]  [<ffffffff8118317a>] ? unmap_region+0xea/0x110
-[   27.344257]  [<ffffffff8109f0f1>] ? get_parent_ip+0x11/0x50
-[   27.349876]  [<ffffffff8169374d>] ? preempt_count_add+0x5d/0xb0
-[   27.355816]  [<ffffffff8109f0f1>] ? get_parent_ip+0x11/0x50
-[   27.361404]  [<ffffffff81338633>] ? __this_cpu_preempt_check+0x13/0x20
-[   27.367947]  [<ffffffff81344093>] ? __percpu_counter_add+0x93/0xd0
-[   27.374161]  [<ffffffff810e1f52>] SyS_futex+0x142/0x1a0
-[   27.379403]  [<ffffffff81101fa0>] ? __audit_syscall_exit+0x200/0x280
-[   27.385776]  [<ffffffff81697cd2>] system_call_fastpath+0x16/0x1b
-[   27.391797] ---[ end trace 438aec68793ded61 ]---
-[   27.396483] ------------[ cut here ]------------
+> Thanks
+> 
+> 
+> -----Original Message-----
+> From: Ulf Hansson [mailto:ulf.hansson@linaro.org]
+> Sent: Wednesday, June 04, 2014 5:53 AM
+> To: Pavel Machek
+> Cc: Wang, Yalin; len.brown@intel.com; rjw@sisk.pl; 
+> linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org; linux-mmc
+> Subject: Re: autosleep suspend too frquent problem
+> 
+> On 3 June 2014 14:01, Pavel Machek <pavel@ucw.cz> wrote:
+> > Hi!
+> >
+> >
+> >> I found sd card sometimes are damaged/ destroyed On our devices .
+> >> And seems it is caused by kernel's frequently suspend/resume, 
+> >> Because during suspend/resume, the driver will suspend/resume 
+> >> sdcard Very frequently, this will damaged the sdcard sometimes, and 
+> >> the damage is not recoverable ..
+> >>
+> >> Sometimes kernel will enter suspend and exit suspend very 
+> >> frequently, Especially when the system is in idle, but some driver 
+> >> is not idle, And it will  wake up the system by irq frequently.
+> >> By our power test result, if system enter suspend /resume very 
+> >> frequently, Will consume more power , because it will enable 
+> >> /disable many devices During a short time .
+> >>
+> >> I make a patch to prevent the system to enter suspend/resume state 
+> >> More than one time during 2 secondsÔºö
+> >
+> > It is good you managed to diagnose the problem, but this si not the 
+> > right solution.
+> >
+> > Either:
+> >
+> > 1) don't power down SD card during system suspend
+> 
+> NAK. The amount of power a card (even if there are good behaving cards as well) may utilize, in powered but idle state could be significant.
+> I have seen cases of constant power consumption of several mA here.
+> 
+> >
+> > or maybe even better
+> >
+> > 2) don't power _up_ SD card during system resume. Let it be powered 
+> > down until the first access.
+> 
+> Good news! This is "almost" supported already by the mmc subsystem.
+> 
+> If your mmc host has set the capability flag MMC_CAP_RUNTIME_RESUME, that means the card won't be powered up (and initialized) until the next request.
+> 
+> However, for removable cards (!MMC_CAP_NONREMOVABLE), during system resume phase, the mmc core will trigger a "rescan" of the card, to verify it has not been removed. Thus, unfortunate for this use case, the first request (for removable cards) will be triggered during the system resume phase.
+> 
+> I suppose we should add some extra conditions/flags which makes the 
+> mmc core to handle the above scenario. Actually I have been thinking 
+> of putting together a patch for this, but it never pops up on the top 
+> of my TODO list. :-)
+> 
+> Additionally, I wonder if this bouncing up and down from suspend to resume, could have other negative impact for other subsystems? Is it just a mmc subsystem problem? I am not so sure.
+> 
+> Kind regards
+> Ulf Hansson
+> 
+> >
+> > Thanks,
+> >                                                                         
+> > Pavel
+> > --
+> > (english) http://www.livejournal.com/~pavelmachek
+> > (cesky, pictures)
+> > http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe 
+> > linux-kernel" in the body of a message to majordomo@vger.kernel.org 
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
 
-
--- Steve
+--
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
