@@ -1,157 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752002AbaFFMcU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 08:32:20 -0400
-Received: from sauhun.de ([89.238.76.85]:54161 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751939AbaFFMcR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 08:32:17 -0400
-Date: Fri, 6 Jun 2014 14:32:14 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
-Subject: Re: [PATCH 1/2] i2c/ACPI: Support for multiple serial bus addresses
-Message-ID: <20140606123214.GB2810@katana>
-References: <1397189717-30657-1-git-send-email-srinivas.pandruvada@linux.intel.com>
+	id S1752054AbaFFMcp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 08:32:45 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:49251 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751494AbaFFMco (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 08:32:44 -0400
+Message-ID: <5391B494.6050908@linux.vnet.ibm.com>
+Date: Fri, 06 Jun 2014 18:01:16 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="QTprm0S8XgL7H0Dt"
-Content-Disposition: inline
-In-Reply-To: <1397189717-30657-1-git-send-email-srinivas.pandruvada@linux.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: ego@linux.vnet.ibm.com, matt@ozlabs.org, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, suzuki@in.ibm.com, ebiederm@xmission.com,
+        mahesh@linux.vnet.ibm.com, paulus@samba.org,
+        linuxppc-dev@lists.ozlabs.org,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH] powerpc, kexec: Fix "Processor X is stuck" issue during
+ kexec from ST mode
+References: <20140527105511.24309.74320.stgit@srivatsabhat.in.ibm.com> <20140528133143.GK14863@redhat.com> <538E2FF8.8060707@linux.vnet.ibm.com> <20140604134108.GA27557@redhat.com>
+In-Reply-To: <20140604134108.GA27557@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14060612-8878-0000-0000-00000CD6E659
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/04/2014 07:11 PM, Vivek Goyal wrote:
+> On Wed, Jun 04, 2014 at 01:58:40AM +0530, Srivatsa S. Bhat wrote:
+>> On 05/28/2014 07:01 PM, Vivek Goyal wrote:
+>>> On Tue, May 27, 2014 at 04:25:34PM +0530, Srivatsa S. Bhat wrote:
+>>>> If we try to perform a kexec when the machine is in ST (Single-Threaded) mode
+>>>> (ppc64_cpu --smt=off), the kexec operation doesn't succeed properly, and we
+>>>> get the following messages during boot:
+>>>>
+[...]
+>>>> diff --git a/kernel/kexec.c b/kernel/kexec.c
+>>>> index c8380ad..28c5706 100644
+>>>> --- a/kernel/kexec.c
+>>>> +++ b/kernel/kexec.c
+>>>> @@ -1683,6 +1683,14 @@ int kernel_kexec(void)
+>>>>  		kexec_in_progress = true;
+>>>>  		kernel_restart_prepare(NULL);
+>>>>  		migrate_to_reboot_cpu();
+>>>> +
+>>>> +		/*
+>>>> +		 * migrate_to_reboot_cpu() disables CPU hotplug assuming that
+>>>> +		 * no further code needs to use CPU hotplug (which is true in
+>>>> +		 * the reboot case). However, the kexec path depends on using
+>>>> +		 * CPU hotplug again; so re-enable it here.
+>>>> +		 */
+>>>> +		cpu_hotplug_enable();
+>>>>  		printk(KERN_EMERG "Starting new kernel\n");
+>>>>  		machine_shutdown();
+>>>
+>>> After migrate_to_reboot_cpu(), we are calling machine_shutdown() which
+>>> calls disable_nonboot_cpus() and which in turn calls _cpu_down().
+>>>
+>>
+>> Hmm? I see only 'arm' calling disable_nonboot_cpus() from machine_shutdown().
+>> None of the other architectures call it. Is that a leftover in arm?
+> 
+> You are right. I did not notice that only arm is doing that. Looks like
+> it is calling into some platform code, I am not sure what exactly arm
+> does for disabling cpu.
+> 
+> x86 code calls stop_other_cpus() in machine_shutdown() which sends
+> REBOOT_VECTOR to other cpus and calls stop_this_cpu() which in turn
+> does.
+> 
+>         for (;;)
+>                 halt();
+> 
+> IIUC, upon receipt of certain interrupts cpu will come out of halt state.
+> Not sure how safe it is from kexec point of view as we will be replacing
+> original kernel that means if cpu comes out of halt state it might be
+> running some random code.
+> 
+> Eric/hpa might know better the context here and what safeguards us on x86.
+> 
+> So one should not make cpu spin on some code as kexec will change that
+> code. It should be some other platform specific mechanism which brings
+> cpu in to hlt like state. So that way arm seems to be doing right thing.
+> 
+> I am not sure what powerpc does to stop cpus.
+> 
 
---QTprm0S8XgL7H0Dt
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+powerpc shepherds all CPUs to a safe state, by making them run kexec_smp_down(),
+and eventually those CPUs end up calling kexec_wait() in assembly.
 
-On Thu, Apr 10, 2014 at 09:15:16PM -0700, Srinivas Pandruvada wrote:
-> ACPI specification allows multiple i2c addresses defined under one
-> ACPI device object. These addresses are defined using _CRS method.
-> The current implementation will pickup the last entry in _CRS, and
-> create an i2C device, ignoring all other previous entries for addresses.
->=20
-> The ACPI specification does not define, whether these addresses for one
-> i2c device or for multiple i2c devices, which are defined under the same
-> ACPI device object. We need some appoach where i2c clients can enumerate
-> on each of the i2C address and/or have access to those extra addresses.
->=20
-> This change addresses both cases:
-> - Create a new i2c device for each i2c address
-> - Allow each i2 client to get addresses of all other devices under
-> the same ACPI device object (companions or siblings)
->=20
-> Example 1:
-> Here in the following example, there are two i2C address in _CRS.
-> They belong to two different physical chipsets, with two different i2c
-> address but part of a module.
-> Method (_CRS, 0, NotSerialized)  // _CRS: Current Resource Settings
-> {
->         Name (RBUF, ResourceTemplate ()
->         {
-> 		I2cSerialBus (0x0068, ControllerInitiated, 0x00061A80,
-> 			AddressingMode7Bit, "\\_SB.I2C5",
-> 			0x00, ResourceConsumer, ,
-> 		)
-> 		I2cSerialBus (0x000C, ControllerInitiated, 0x00061A80,
-> 			AddressingMode7Bit, "\\_SB.I2C5",
-> 			0x00, ResourceConsumer, ,
-> 		)
-> 		Interrupt (ResourceConsumer, Level, ActiveHigh, Shared, ,, )
-> 		{
-> 			0x00000044,
-> 		}
-> 	})
-> 	Return (RBUF)
-> }
-> This change adds i2c_new_device for each i2c address. Here contents of
-> /sys/bus/i2c/devices will
-> 	i2c-some_acpi_dev_name:00:068
-> 	i2c-some_acpi_dev_name::00:00c
->=20
-> Example 2
->=20
-> Method (_CRS, 0, NotSerialized)  // _CRS: Current Resource Settings
->                 {
->                     Name (SBUF, ResourceTemplate ()
->                     {
->                         GpioIo (Exclusive, PullDefault, 0x0000, 0x0000, I=
-oRestrictionOutputOnly,
->                             "\\_SB.GPO1", 0x00, ResourceConsumer, ,
->                             )
->                             {   // Pin list
->                                 0x0018
->                             }
->                         I2cSerialBus (0x0010, ControllerInitiated, 0x0006=
-1A80,
->                             AddressingMode7Bit, "\\_SB.I2C4",
->                             0x00, ResourceConsumer, ,
->                             )
->                         I2cSerialBus (0x000C, ControllerInitiated, 0x0006=
-1A80,
->                             AddressingMode7Bit, "\\_SB.I2C4",
->                             0x00, ResourceConsumer, ,
->                             )
->                         I2cSerialBus (0x0054, ControllerInitiated, 0x0006=
-1A80,
->                             AddressingMode7Bit, "\\_SB.I2C4",
->                             0x00, ResourceConsumer, ,
->                             )
->                     })
->                     Return (SBUF) /* \_SB_.I2C4.CAM1._CRS.SBUF */
->                 }
-> }
-> Here there are three i2c addresses for this device.
->=20
-> When there is only I2cSerialBus address is present then there is no
-> change. The device name will not include address. In this way if
-> some device is using hardcoded path, this change will not impact them.
->=20
-> Here any i2c client driver simply need to add ACPI bindings. They will
-> be probed multiple times, the client will bind to correct i2c device,
-> based on checking its identity and returning error for other.
-> At the same time, any i2c client can call i2c_for_each_acpi_comp_client
-> to get the i2c client instances of companion addresses defined
-> under the same ACPI device.
->=20
-> Signed-off-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+Regards,
+Srivatsa S. Bhat
 
-Sorry that I need to postpone the ACPI related stuff to the next release
-cycle (where it has priority). It was simply too much for this one.
-
-Mika: Your review for ACPI specific details would be much appreciated
-here.
-
-Thanks,
-
-   Wolfram
-
-
---QTprm0S8XgL7H0Dt
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTkbTOAAoJEBQN5MwUoCm2QEMQAKWscKUfNrOil/h3s4Ji4jWn
-8w736GHR0SOIaDvWmiWn1857yJS4mDY7vuVJjCOEKoGqifNUnx3bIFnRl9WJjzRq
-xftvfOMSl35RftIyJ2m9kOH9YYhO9IdAknCpTR1wx2kcRtwcMUgfjJdMW1OT0ynT
-51+LYMJ8Yurn7ECinGyynmot1u+36lqDiwu18YzAAlm8NWW2bLwF4nqUQIPuUeSm
-fAYvlVfqbDwReXQnoJGEi4ssg7MVPXzun+7HSMHH+jBQEe2HIX1w4ZsjTvDP9Zq4
-gHepxHs7VHm+n8ZOEh9Ek+UmQ+wGHsFyA2qHpFsM/hVgHIZmk0SEd59/OC1V+7yj
-9camVXah4m3jBo49iHboNcE2EELqCjohFZo6T8jt+ETEDfbO6kqH+a2W8YSOpTBO
-wzi0cG/9nsKv6CPIiheodEC3i3uYYQ3NvqZ0Mo+dLOEH9VM/Lsx5IZdv1LfYyv21
-ri8KfSovP8X/bJSnivtiHI4fm14/A+qYIjbbnLx2oIPZkJwlqSt9+jeF8cy2/xV8
-wgB5wkr2/tUn2HtHL6MkiExU+LslC12OG27504GAkQfB0uYxHUuHdUjzW8c6hpM1
-x/Xp92CNbBlJp1kfKUVTESS2wMF0gYpgrIVsBKVJwxZHpSTDhQSvLK7UifmK/uMz
-JzPMXR6H8cSlsaAOD6XK
-=6zXu
------END PGP SIGNATURE-----
-
---QTprm0S8XgL7H0Dt--
