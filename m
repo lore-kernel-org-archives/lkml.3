@@ -1,121 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752559AbaFFIFx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 04:05:53 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56252 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752180AbaFFIFu (ORCPT
+	id S1752252AbaFFIJV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 04:09:21 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:49672 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751204AbaFFIJP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 04:05:50 -0400
-Date: Fri, 6 Jun 2014 10:05:43 +0200
+	Fri, 6 Jun 2014 04:09:15 -0400
+Date: Fri, 6 Jun 2014 10:09:03 +0200
 From: Peter Zijlstra <peterz@infradead.org>
-To: Yuyang Du <yuyang.du@intel.com>
-Cc: Dirk Brandewie <dirk.brandewie@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        Dietmar Eggemann <Dietmar.Eggemann@arm.com>, len.brown@intel.com
-Subject: Re: [RFC PATCH 06/16] arm: topology: Define TC2 sched energy and
- provide it to scheduler
-Message-ID: <20140606080543.GR6758@twins.programming.kicks-ass.net>
-References: <1400869003-27769-1-git-send-email-morten.rasmussen@arm.com>
- <20140604160230.GS29593@e103034-lin>
- <20140604172712.GJ13930@laptop.programming.kicks-ass.net>
- <2484761.vkWavnsDx3@vostro.rjw.lan>
- <20140605065205.GA3213@twins.programming.kicks-ass.net>
- <539086B3.2010804@gmail.com>
- <20140605202930.GA15484@intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>, mingo@elte.hu,
+        amit.kucheria@linaro.org, linaro-kernel@lists.linaro.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2 1/2] sched: idle: Encapsulate the code to compile it
+ out
+Message-ID: <20140606080903.GS6758@twins.programming.kicks-ass.net>
+References: <1398859263-7632-1-git-send-email-daniel.lezcano@linaro.org>
+ <2782801.UzoMhgfu56@vostro.rjw.lan>
+ <53639F1B.5080000@linaro.org>
+ <8539453.ED7vQGf2Gc@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="JKGvNdIvrY8Ovf7Z"
+	protocol="application/pgp-signature"; boundary="xe2geHXJg22At20M"
 Content-Disposition: inline
-In-Reply-To: <20140605202930.GA15484@intel.com>
+In-Reply-To: <8539453.ED7vQGf2Gc@vostro.rjw.lan>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---JKGvNdIvrY8Ovf7Z
+--xe2geHXJg22At20M
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Fri, Jun 06, 2014 at 04:29:30AM +0800, Yuyang Du wrote:
-> On Thu, Jun 05, 2014 at 08:03:15AM -0700, Dirk Brandewie wrote:
-> >=20
-> > You can request a P state per core but the package does coordination at
-> > a package level for the P state that will be used based on all requests.
-> > This is due to the fact that most SKUs have a single VR and PLL. So
-> > the highest P state wins.  When a core goes idle it loses it's vote
-> > for the current package P state and that cores clock it turned off.
-> >=20
+On Fri, May 02, 2014 at 05:32:25PM +0200, Rafael J. Wysocki wrote:
+
+> That would be perfectly fine by me, but I'm not sure what Ingo and Peter =
+think
+> about that.
 >=20
-> You need to differentiate Turbo and non-Turbo. The highest P state wins? =
-Not
-> really.
+> I can set up a branch with sched/idle/cpuidle changes.
 
-*sigh* and here we go again.. someone please, write something coherent
-and have all intel people sign off on it and stop saying different
-things.
+Ingo typically likes things like that. I'm still a git Luddite, I'll
+learn someday :-)
 
-> Actually, silicon supports indepdent non-Turbo pstate, but just not enabl=
-ed.
-
-Then it doesn't exist, so no point in mentioning it.
-
-> For Turbo, it basically depends on power budget of both core and gfx (bec=
-ause
-> they share) for each core to get which Turbo point.
-
-And RAPL controls can give preference of which gfx/core gets most,
-right?
-
-> > intel_pstate tries to keep the core P state as low as possible to satis=
-fy
-> > the given load, so when various cores go idle the package P state can be
-> > as low as possible.  The big power win is a core going idle.
-> >=20
->=20
-> In terms of prediction, it is definitely can't be 100% right. But the
-> performance of most workloads does scale with pstate (frequency), may not=
- be
-> linearly. So it is to some point predictable FWIW. And this is all govern=
-ors
-> and Intel_pstate's basic assumption.
-
-So frequency isn't _that_ interesting, voltage is. And while
-predictability it might be their assumption, is it actually true? I
-mean, there's really nothing else except to assume that, if its not you
-can't do anything at all, so you _have_ to assume this.
-
-But again, is the assumption true? Or just happy thoughts in an attempt
-to do something.
-
---JKGvNdIvrY8Ovf7Z
+--xe2geHXJg22At20M
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTkXZXAAoJEHZH4aRLwOS6Rr0QALHzVn13dqJC5ID0gp82Koqr
-Z2ICa/DvF9U9fAVTRMasiU0M8QubtwEXU0hk24inAn+wimMN9MXcCUgdCuZ3Dd6K
-eoOpH2mY4JtBH0zu7yuKF181PqSZHdPayBccToMzEAKBqvkAUe+pTFjf+mjrW6Pg
-/9q4M5r4A/CKEArgPKKGigxpDFSyr+1gHlrvL9zYJoRsByoxNrjH16sOTPK1D4K9
-pqPmkefxas8XwP9s5jR4ifNzdndsDce7cIFkpJVKOXMt84XRw1Q+iCRe0gMw1j4w
-fq73KlasoFbznmGpAcGYjxPMc+9wBnGXN4mATzheJZn83Poh9bW4YqzmUYFR2F5S
-ErBJCWNL4/Z0GIZNI7DLVH2jFwuIu/PYRtqq2xkUb47Xag6NR6DrcSvxB6y7/A0u
-lmw2cQ0m0CvcH8+hcfEvlReCHc82rbM3X2Xkadnj5EGHPWrpDYzsdGki/U6BdLwZ
-4dn6rwHj0F/KXeXuD2tnGjeAPUIoqqfDAsGibOeGV25D6dYNHhqpdcz3WsXoVVsL
-6kxxCm1MOnfUhW73lGc+wC4Eo9KLivqEZ2+KgPAy0Q6vHEOyKJw4/Tm+sXxtiFrm
-6qT2Y5HpcMF0kxg9Gl5TEEtXzpbLaXJmologk5y37/DEQ3XxEnlJXZqDI6+bdyn0
-jLZijbdI5wZwHMhXMx1R
-=wowj
+iQIcBAEBAgAGBQJTkXcfAAoJEHZH4aRLwOS68mMP/RyoRIURdFUmubVYm6NJNhWn
+fqakN77Zt73bS20BCTVg5f5ALBSK2WALIC7KELGgpBfeMcPyhZyS361YYpOS8DgM
+bWAo7yxs8S81UX/RdV5c3wAv/PRwHTy//U/KOGH1Tyijo30OFqH8Nyp9/9S3x/De
+iwJ7EbvWxu2biqwT2it6nG3LtoPhqoGaxd3bMsMrIRzBzG1iBJGU/izcnbeHCejz
+aVklrzeyinjLvgRgfu8nPFReI1pgUUhkylUwrKV2jMfNqC4O8q5XSeLzFLiAbpAr
+T9mFT8wPxzX7++plHDdRVLFCHYavEqtzDI5nYJqjYdPO5SsTfQUp1qQZSlcjmUQA
+zUyYPM5VS3VjoanLrkOJOVE/WNG8LsM7eKJw5p63pLYrJuznVv7mU9k/YO89xy+v
+wP4Sr2ncH4bbymyRBk4kqnOhngVWxLtBRGT95bbv5ze3Hde/LLoqnKid39MljLyd
+oqf09PW9+HDV/bQx0kqMhz+gVixFvbKBv6o0JoNM7KITWes6DP4ff3THuPujQtIu
+xnNWb0mV51lc8Flr28ORyxVPw9Ipk6Rnktukrxa8xp5YQPXPsoGrH1FKVystbCdK
+JIxXR9whGCgkinpMm8vN8sEdvjneTa6yZICFXV74h12aa9fHMJ8gujT/fRLfvZcY
+joSHz4Op2jQIkVUmEVus
+=PYU+
 -----END PGP SIGNATURE-----
 
---JKGvNdIvrY8Ovf7Z--
+--xe2geHXJg22At20M--
