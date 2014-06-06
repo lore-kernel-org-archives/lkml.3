@@ -1,94 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752202AbaFFPP1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 11:15:27 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:56053 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751646AbaFFPPY (ORCPT
+	id S1751997AbaFFPTH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 11:19:07 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37169 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751162AbaFFPTG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 11:15:24 -0400
-Date: Fri, 6 Jun 2014 08:15:18 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>,
-        Parisc List <linux-parisc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>, Waiman Long <Waiman.Long@hp.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr@hp.com>, Peter Anvin <hpa@zytor.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>, Jason Low <jason.low2@hp.com>,
-        mingo@kernel.org
-Subject: Re: [PATCH v2] introduce atomic_pointer to fix a race condition in
- cancelable mcs spinlocks
-Message-ID: <20140606151518.GI4581@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com>
- <alpine.LRH.2.02.1406021158360.20627@file01.intranet.prod.int.rdu2.redhat.com>
- <20140602162525.GH16155@laptop.programming.kicks-ass.net>
- <CA+55aFzwrqkwD=G=w2m7TdXTpsMFjV7XUMXv5DMPGr=5x5YGCQ@mail.gmail.com>
- <20140606150607.GT13930@laptop.programming.kicks-ass.net>
+	Fri, 6 Jun 2014 11:19:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140606150607.GT13930@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14060615-6688-0000-0000-000002631B87
+In-Reply-To: <CAG-2HqUe1oYJ8VBq1kP_Vy_smtkNjAWJ6_+TPu8c9-KVv6EOMA@mail.gmail.com>
+References: <1401896895-14262-1-git-send-email-tiwai@suse.de>
+	<CACVXFVPpmdXJV2CC-U=bsA820VD42i2-OqBfNfTPPaMergu8TQ@mail.gmail.com>
+	<CAG-2HqU=LAXr0o2e9RRCmrX1eWouhepEZHaPfBjrs64xUeb=gw@mail.gmail.com>
+	<CACVXFVP1uS7szLqvabtMbiaUgd13bWoYXv5q-Az7wBia=ogf7Q@mail.gmail.com>
+	<s5hfvjj1n90.wl%tiwai@suse.de>
+	<CACVXFVP5CSNoyThAcsmihYg_bkq2wn1JtiFJ_7ehpxwjBSaZxQ@mail.gmail.com>
+	<s5hbnu71mf1.wl%tiwai@suse.de>
+	<CACVXFVPWq93u5KmLhr+g23t4AiGAnLfd+hX3viajzR_KN+sMrw@mail.gmail.com>
+	<CAG-2HqXiFgy5M=k55iOYAdXezxsN-ZanWRWDgH-6fuU-uLawOQ@mail.gmail.com>
+	<CACVXFVNKGPyv6AVUctotD=Sc97VRRGCXVzJ50pprjCNB7jhUxg@mail.gmail.com>
+	<CAG-2HqWtbpKjkNTLAksGZSqskJRfjVOhGkJJFcJUNBFfajLhCg@mail.gmail.com>
+	<CACVXFVOgr1y5KQxGDzvyPfqKHo0e3CsN+3HWo-_dxo6bmufbLQ@mail.gmail.com>
+	<s5hegz2yw2s.wl%tiwai@suse.de>
+	<CAG-2HqUe1oYJ8VBq1kP_Vy_smtkNjAWJ6_+TPu8c9-KVv6EOMA@mail.gmail.com>
+Date: Fri, 6 Jun 2014 23:19:02 +0800
+Message-ID: <CACVXFVNX-K2=3zSfKhhkx37QLK4LmSohmq36bs8DtiVoQ+xfTg@mail.gmail.com>
+Subject: Re: [PATCH v2] firmware loader: allow disabling of udev as firmware loader
+From: Ming Lei <ming.lei@canonical.com>
+To: Tom Gundersen <teg@jklm.no>
+Cc: Takashi Iwai <tiwai@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>, Stefan Roese <sr@denx.de>,
+        Arnd Bergmann <arnd@arndb.de>, Abhay Salunke <Abhay_Salunke@dell.com>,
+        Kay Sievers <kay@vrfy.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 06, 2014 at 05:06:07PM +0200, Peter Zijlstra wrote:
-> On Mon, Jun 02, 2014 at 10:09:35AM -0700, Linus Torvalds wrote:
-> > On Mon, Jun 2, 2014 at 9:25 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > >
-> > > And I can't say I'm a particular fan of these ops either, as alternative
-> > > I'm almost inclined to just exclude parisc from using opt spinning.
-> > 
-> > Please do.
-> 
-> Something like so; if the rwsem stuff lands in .15 we need more for
-> that, it doesn't have a convenient CONFIG symbol like this.
-> 
-> Linus will you take this from email, or should I get it through
-> tip/locking/urgent or so?
-> 
-> ---
-> Subject: locking, mutex: Disable optimistic spinning for PA-RISC
-> 
-> PA-RISC's cmpxchg is not save against normal stores and the code used
-> for optimistic spinning is known broken because of this.
-> 
-> Disable for now.
-> 
-> Reported-by: Mikulas Patocka <mpatocka@redhat.com>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+On Fri, Jun 6, 2014 at 10:15 PM, Tom Gundersen <teg@jklm.no> wrote:
+> On Fri, Jun 6, 2014 at 4:03 PM, Takashi Iwai <tiwai@suse.de> wrote:
+>> At Fri, 6 Jun 2014 07:00:22 +0800,
+>> Ming Lei wrote:
+>>>
+>>> On Thu, Jun 5, 2014 at 11:15 PM, Tom Gundersen <teg@jklm.no> wrote:
+>>> > On Thu, Jun 5, 2014 at 4:54 PM, Ming Lei <ming.lei@canonical.com> wrote:
+>>> >>> Ubuntu currently enables the firmware loader in both the kernel and in
+>>> >>> udev, so would not yet have a problem here at the moment. However, I
+>>> >>> spoke with Martin Pitt and he told me that both Debian and Ubuntu
+>>> >>> would like to switch this off in udev once it is possible (i.e., once
+>>> >>> this patch has been merged I guess). Fedora already did, and speaking
+>>> >>> for Arch we definitely would like to do the same. I did not check with
+>>> >>> other distros, but I'm pretty sure "everyone" will disable this in
+>>> >>> udev by the next cycle. At which point having it enabled in the kernel
+>>> >>> will cause real problems and bug reports.
+>>> >>
+>>> >> That won't cover the case of old distributions with new kernel,
+>>> >
+>>> > Again: disabling this option will not give problems (unless you have a
+>>> > custom setup), even on old userspace, only keeping it enabled on
+>>> > future userspace may.
+>>> >
+>>> >> do
+>>> >> you want to break/confuse these users?
+>>> >
+>>> > Not really, no :)
+>>> >
+>>> >>> For distro kernels that's not a problem, as they know what to do, but
+>>> >>> I guess for random kernel users we should give them the correct
+>>> >>> recommendation.
+>>> >>
+>>> >> Also I remember that android users put firmware under their
+>>> >> special path.
+>>> >
+>>> > That may be, but I don't think this text is primarily aimed at the
+>>> > people who put together Android systems... Surely their non-standard
+>>> > userspace means that a lot of the advice (and it is nothing else than
+>>> > advice!) in the help text does not necessarily apply?
+>>> >
+>>> >>>>>> It only falls back if the request fw is _not_ found from direct loading,
+>>> >>>>>> so it is reasonable to try to continue to look for it from user space.
+>>> >>>>
+>>> >>>>> Some drivers fall back to different firmware (e.g. different revision
+>>> >>>>> suffix) if the requested file isn't found.  So, this happens in
+>>> >>>>> reality.
+>>> >>>>
+>>> >>>> So do you think the fallback is better or worse? For CPU microcode
+>>> >>>> case, maybe it is fine, but for other devices, maybe it is better to
+>>> >>>> get a firmware for working at least.
+>>> >>>
+>>> >>> What usecase do you have in mind here? For people using stock udev,
+>>> >>> enabling the fallback will not give any benefit, but it will soon
+>>> >>
+>>> >> Again, we have old distributions, also it should make sense to fall back
+>>> >> to userspace for non-exist firmwares under default path.
+>>> >
+>>> > Even on old distributions, falling back to stock udev will not give
+>>> > any benefits. It will look in the same paths as the kernel and fail in
+>>> > the same way.
+>>> >
+>>> >>> start giving real problems...
+>>> >>
+>>> >> If there isn't firmwares at default path for devices, the device may
+>>> >> not work, and that is the real problem.
+>>> >
+>>> > These devices will never have worked with stock udev, as it looks in
+>>> > the same path as the kernel (the paths the kernel looks in was taken
+>>> > from udev to make sure they work the sam). So this must be a
+>>> > special/custom setup by someone who knows what they are doing, and
+>>> > hopefully knows how to answer the Kconfig.
+>>>
+>>> I have to say all your statement about old distributions is just your
+>>> take for granted, and you can't verified on all old distributions at all.
+>>> That is said, disabling fallback may cause regression on these
+>>> distributions.
+>>>
+>>> Given that the user helper(fallback) has been used for tens of
+>>> years on these distributions, I suggest you to change Kconfig
+>>> help message as something like below:
+>>>
+>>> If your aren't sure, please check your udev/systemd version, if it
+>>> is below than XXX or no udev/systemd shipped in your system,
+>>> say Y here, otherwise say N.
+>>
+>> Yeah, a detailed suggestion like the above would be more helpful.
+>
+> How about:
+>
+> "If you rely on a customized udev (or other userspace tool) to load
+> firmware from a non-standard path, say Y. Otherwise, say N. If your
+> udev version does not support firmware loading (which is currently the
+> upstream default), you must say N."
 
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Please make it explicit since we know the fisrt version of
+udev which disables firmware loading at default. And 'upstream
+default' isn't needed because it depends on udev upstream version, and
+'currently' is confused too because old distribution ships old udev.
 
-> ---
->  kernel/Kconfig.locks | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/kernel/Kconfig.locks b/kernel/Kconfig.locks
-> index 35536d9c0964..9c239e080c2d 100644
-> --- a/kernel/Kconfig.locks
-> +++ b/kernel/Kconfig.locks
-> @@ -222,7 +222,7 @@ endif
-> 
->  config MUTEX_SPIN_ON_OWNER
->  	def_bool y
-> -	depends on SMP && !DEBUG_MUTEXES
-> +	depends on SMP && !DEBUG_MUTEXES && !PARISC
-> 
->  config ARCH_USE_QUEUE_RWLOCK
->  	bool
-> 
+Something like below should be enough:
 
+If you aren't sure, please check the udev/systemd version, if it
+is below than XXX or no udev/systemd shipped in your system,
+say Y here, otherwise say N.
+
+
+Thanks,
+--
+Ming Lei
