@@ -1,76 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751945AbaFFGbU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 02:31:20 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:51366 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751898AbaFFGbT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 02:31:19 -0400
-X-AuditID: 85900ec0-d1328b9000001514-8d-53916033df37
-Message-ID: <53916033.1040908@hitachi.com>
-Date: Fri, 06 Jun 2014 15:31:15 +0900
-From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120604 Thunderbird/13.0
+	id S1751686AbaFFGfQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 02:35:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15891 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750874AbaFFGfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 02:35:14 -0400
+Date: Fri, 6 Jun 2014 14:34:24 +0800
+From: WANG Chao <chaowang@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
+        greg@kroah.com, bp@alien8.de, jkosina@suse.cz, dyoung@redhat.com,
+        bhe@redhat.com, akpm@linux-foundation.org
+Subject: Re: [PATCH 06/13] kexec: New syscall kexec_file_load() declaration
+Message-ID: <20140606063424.GD2785@dhcp-17-89.nay.redhat.com>
+References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
+ <1401800822-27425-7-git-send-email-vgoyal@redhat.com>
+ <20140605095603.GD3876@dhcp-17-89.nay.redhat.com>
+ <20140605151639.GB14083@redhat.com>
+ <20140605152209.GC14083@redhat.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@redhat.com>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH ftrace/core] tracing: Remove return value in event_trace_self_tests()
- when top_trace_array() returns NULL
-References: <20140605234623.484afaf8@gandalf.local.home> <20140606062844.7955.61919.stgit@yunodevel>
-In-Reply-To: <20140606062844.7955.61919.stgit@yunodevel>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140605152209.GC14083@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steven,
+On 06/05/14 at 11:22am, Vivek Goyal wrote:
+> On Thu, Jun 05, 2014 at 11:16:39AM -0400, Vivek Goyal wrote:
+> > On Thu, Jun 05, 2014 at 05:56:03PM +0800, WANG Chao wrote:
+> > 
+> > [..]
+> > > > diff --git a/kernel/kexec.c b/kernel/kexec.c
+> > > > index c435c5f..a3044e6 100644
+> > > > --- a/kernel/kexec.c
+> > > > +++ b/kernel/kexec.c
+> > > > @@ -1098,6 +1098,13 @@ COMPAT_SYSCALL_DEFINE4(kexec_load, compat_ulong_t, entry,
+> > > >  }
+> > > >  #endif
+> > > >  
+> > > > +SYSCALL_DEFINE5(kexec_file_load, int, kernel_fd, int, initrd_fd,
+> > > > +		const char __user *, cmdline_ptr, unsigned long,
+> > > > +		cmdline_len, unsigned long, flags)
+> > > 
+> > > initrd is optional for system boot.
+> > > 
+> > > How about using int *kernel_fd and int *initrd_fd as the argument? Then
+> > > if I don't need initrd, in userspace I can do this:
+> > 
+> > Hi Chao,
+> > 
+> > I really am not too keen converting plain int fd arguments into pointers.
+> > 
+> > Given the fact that fd is int, that means all valid values are greater
+> > than 0. How about using -1 to denote that initrd is not being loaded?
+> > 
+> > This does create one little anomaly and that is for all -ve values we
+> > will return -EBADF except -1 which we special cased.
+> 
+> Or we could do.
+> 
+> - Define extra flag which should be set by user if valid initrd fd is not
+>   being passed. Say, KEXEC_FILE_NO_INITRAMFS. And if kernel sees that flag
+>   it will not try to parse value passed in argument initrd_fd at all.
+> 
+> I think I like this better.
 
-Thank you for applying my patches.
-I received build warning report from kbuild test bot,
-so I fixed it. Would you apply this patch?
+Yep, it makes more sense to me as well. Please add this new flag.
 
-Thank you,
-Yoshihiro YUNOMAE
-
-(2014/06/06 15:28), Yoshihiro YUNOMAE wrote:
-> Remove return value in event_trace_self_tests() when top_trace_array() returns
-> NULL because event_trace_self_tests() is void type.
->
-> Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: linux-kernel@vger.kernel.org
-> ---
->   kernel/trace/trace_events.c |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-> index 1349870..f99e0b3 100644
-> --- a/kernel/trace/trace_events.c
-> +++ b/kernel/trace/trace_events.c
-> @@ -2547,7 +2547,7 @@ static __init void event_trace_self_tests(void)
->
->   	tr = top_trace_array();
->   	if (!tr)
-> -		return -ENODEV;
-> +		return;
->
->   	pr_info("Running tests on trace events:\n");
->
->
->
-
--- 
-Yoshihiro YUNOMAE
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: yoshihiro.yunomae.ez@hitachi.com
-
-
+Thanks
+WANG Chao
