@@ -1,73 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004AbaFFPO3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 11:14:29 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:28770 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751646AbaFFPO1 (ORCPT
+	id S1752123AbaFFPOv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 11:14:51 -0400
+Received: from smtp103.biz.mail.gq1.yahoo.com ([98.137.12.178]:25272 "HELO
+	smtp103.biz.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751646AbaFFPOu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 11:14:27 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-5e-5391dad03c9b
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, koct9i@gmail.com,
-        Andrey Ryabinin <a.ryabinin@samsung.com>, stable@vger.kernel.org
-Subject: [PATCH v2] mm: rmap: fix use-after-free in __put_anon_vma
-Date: Fri, 06 Jun 2014 19:09:30 +0400
-Message-id: <1402067370-5773-1-git-send-email-a.ryabinin@samsung.com>
-X-Mailer: git-send-email 1.8.5.5
-In-reply-to: <20140606115620.GS3213@twins.programming.kicks-ass.net>
-References: <20140606115620.GS3213@twins.programming.kicks-ass.net>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkluLIzCtJLcpLzFFi42I5/e/4Fd0LtyYGG7zsUrDY9usRm8Wc9WvY
-	LFZ2PmC1uLxrDpvFvTX/WS2O9x5gsliw8RGjxaO+t+wOHB47Z91l99i8Qstj06dJ7B4nZvxm
-	8ejbsorR4/MmuQC2KC6blNSczLLUIn27BK6MDT8bWQpWclQcv7iHpYHxI1sXIyeHhICJxNGv
-	i5ggbDGJC/fWA8W5OIQEljJKLP60lxnC6WOS+PanBayDTUBP4t+s7WBVIgIdjBJ3V79gB3GY
-	BboYJW7e/84IUiUs4CSxfM51FhCbRUBVYsafLcwgNq+Aq8SMzj9Q+xQkli2fyQpicwq4SGx4
-	fx8sLiTgLLHh/2zGCYy8CxgZVjGKppYmFxQnpeca6hUn5haX5qXrJefnbmKEBNuXHYyLj1kd
-	YhTgYFTi4V1wdUKwEGtiWXFl7iFGCQ5mJRFetuaJwUK8KYmVValF+fFFpTmpxYcYmTg4pRoY
-	5TbvWpL8KUBsruwOrqCnhxYqsE1cvmHq2eIXia/3/r/qZclQ3+7/dMZxprcfLwTc+nWl03u7
-	7OK/9102zGgItCh/P9MrLNbAbvOjaUeqL38wvMyh5GWlvGduQKrVY+4lPcl3dj7Ve1CRb3NS
-	vn6Z4JbOK9/6yj09g7cdS7f35HdcGNu5W0l6jxJLcUaioRZzUXEiADkxVRUUAgAA
+	Fri, 6 Jun 2014 11:14:50 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 Jun 2014 11:14:50 EDT
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: Jgc3JZ4VM1nj_O..iJ3R4hGo2omiq4DiBaxGDfzhIhv2GxU
+ e5FIGfS4OC2RZu27EqS61GBwxj5mAxnxMfF59sIh6XSWtqpCB_oLHiUUMwU2
+ na.bfrOcYOzibD9pglifjUT7hMC3xVDzKScQacivJNCnPGJZWn6zW7IEJiZm
+ ECbXy4V5vKDfp5S0ekz7hDpEc.9WaOXkgfQrGElSWyDZCEm7BKUrpmTPoLVZ
+ UZLY5d6qP9.WWtSqZIgGVT0YDO4yt84ruaBkhI873H2b7TS8NtmZH7gpuQR9
+ QowQtycyeN4LK3yM1fwJUe8nry.JyItIRvxttpoQUCMS4xQyDrl10LrqwUy_
+ u8aVBy0HqdpN6FNl8Blim9L3Rl5MNsDFyOf2g1gm2ULAqHV4v3Z4iO56kdSc
+ GNFFxgn10VmEPKsV0GACb2hI3qL7fTA5osLVzqpns98yTlVtqi2cBhrqCwka
+ UfS..1qTxd.6_kwZsbEGtDe5IXflPPxrlJ9fuvo57YJIK4ikB1va7hduIXgA
+ eHJgxKMdp2fxPluiDqApEZ5GahpEx1NUm0qxoNS0DvL0e2zhBgzUi7Gt_toK
+ 2PCy0AfQnHfGbJvJN5laPq1N5EqFYamE5kxyPMIFXgvGplmastWidWDBUYBx
+ Hgrok8Zg4qPp1c3fjXs5Q3YMd2p47qYNBwW2_HmTHf442rXrTxwWFSiLGIe9
+ FyKLqNWE-
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+X-Rocket-Received: from [192.168.0.105] (casey@67.180.103.242 with plain [208.71.40.208])
+        by smtp103.biz.mail.gq1.yahoo.com with SMTP; 06 Jun 2014 08:08:09 -0700 PDT
+Message-ID: <5391D95B.5020408@schaufler-ca.com>
+Date: Fri, 06 Jun 2014 08:08:11 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Serge Hallyn <serge.hallyn@ubuntu.com>,
+        Greg KH <gregkh@linuxfoundation.org>
+CC: Paul Moore <paul@paul-moore.com>, Jiri Kosina <jkosina@suse.cz>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        "Serge E. Hallyn" <serge@canonical.com>,
+        Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: Change in security maintainer for a few weeks
+References: <20140605183050.GA5054@kroah.com> <alpine.LRH.2.00.1406052355500.2434@twin.jikos.cz> <4426926.gIRHbeKnmD@sifl> <20140605225311.GB32470@kroah.com> <20140606044201.GG22106@ubuntumail>
+In-Reply-To: <20140606044201.GG22106@ubuntumail>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While working address sanitizer for kernel I've discovered use-after-free
-bug in __put_anon_vma.
-For the last anon_vma, anon_vma->root freed before child anon_vma.
-Later in anon_vma_free(anon_vma) we are referencing to already freed anon_vma->root
-to check rwsem.
-This patch puts freeing of child anon_vma before freeing of anon_vma->root.
+On 6/5/2014 9:42 PM, Serge Hallyn wrote:
+> Quoting Greg KH (gregkh@linuxfoundation.org):
+>> On Thu, Jun 05, 2014 at 06:39:09PM -0400, Paul Moore wrote:
+>>> On Thursday, June 05, 2014 11:59:11 PM Jiri Kosina wrote:
+>>>> On Thu, 5 Jun 2014, Greg KH wrote:
+>>>>> James has had to step back from doing kernel work for a few weeks, so
+>>>>> I've offered to step up and handle the security patches to get shuttled
+>>>>> to Linus for merging for a while.
+>>>> As exactly this (working with active contributors to help co-maintain the
+>>>> subsystem) has been brought at the ksummit maling list, I am just curious
+>>>> whether noone else actively working in that area was willing to step up?
+>>>>
+>>>> 	$ ./scripts/get_maintainer.pl --git -f security/
+>>>> 	James Morris <james.l.morris@oracle.com> (supporter:SECURITY SUBSYSTEM)
+>>>>    ...
+>>>>
+>>>> If not, then I think this can be shown as a prime example why the problem
+>>>> of "non-substituability" of many maintainers is actually real.
+>>> Once several of us became aware that James was stepping away for a few weeks 
+>>> (I should mention this was not a planned absence and took most of us by 
+>>> surprise) we had a brief discussion off-list and several of us did offer to 
+>>> "step-up"; Serge had already created a repo and since he had pushed patches 
+>>> while James was away in the past it seemed a reasonable approach this time 
+>>> around.
+>> That's great, as the communication around this has not been very much
+>> (an non-existant on the subsystem mailing list) I was not aware of it.
+>>
+>> If Serge wants to do this, and as he has been the stand-in for James in
+>> the past, I have _no_ objection to this at all.
+>>
+>> Serge, feel free to resend your patches to Linus if he doesn't pick them
+>> up in a few days, with the information that you are doing this in
+>> James's absence for a while.
+> Will do (and wil cc: lsm).
+>
+>> So, that was easy, I don't have to do this at all, great.
+>>
+>> greg k-h
 
-Cc: <stable@vger.kernel.org> # v3.0+
-Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
----
+How can I verify that the pull James accepted from me is
+moving forward somehow? Or, if it isn't, where does it go now?
 
-Changes since v1:
- - just made it more simple following Peter's suggestion
 
- mm/rmap.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+On Thu, 15 May 2014, Casey Schaufler wrote:
 
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 9c3e773..cb5f70a 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -1564,10 +1564,10 @@ void __put_anon_vma(struct anon_vma *anon_vma)
- {
- 	struct anon_vma *root = anon_vma->root;
- 
-+	anon_vma_free(anon_vma);
-+
- 	if (root != anon_vma && atomic_dec_and_test(&root->refcount))
- 		anon_vma_free(root);
--
--	anon_vma_free(anon_vma);
- }
- 
- static struct anon_vma *rmap_walk_anon_lock(struct page *page,
--- 
-1.8.5.5
+> The following changes since commit f64410ec665479d7b4b77b7519e814253ed0f686:
+>
+>   selinux: correctly label /proc inodes in use before the policy is loaded (2014-03-19 16:46:18 -0400)
+>
+> are available in the git repository at:
+>
+>   git://git.gitorious.org/smack-next/kernel.git smack-for-3.16
+>
+> for you to fetch changes up to ec554fa75ec94dcf47e52db9551755679c10235b:
+
+Thanks, pulled.
+
+
+-- James Morris <jmorris@namei.org> 
+
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
