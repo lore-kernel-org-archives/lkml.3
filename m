@@ -1,107 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664AbaFFKPR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 06:15:17 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56842 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752631AbaFFKPQ (ORCPT
+	id S1752674AbaFFKSd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 06:18:33 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:24742 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751866AbaFFKSb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 06:15:16 -0400
-Date: Fri, 6 Jun 2014 12:15:08 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: zhdxzx@sina.com
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Mike Galbraith <mgalbraith@suse.de>, Ingo Molnar <mingo@kernel.org>,
-        dhillf <dhillf@gmail.com>, "hillf.zj" <hillf.zj@alibaba-inc.com>
-Subject: Re: sched: how to pick runqueue when checking task hot?
-Message-ID: <20140606101508.GP3213@twins.programming.kicks-ass.net>
-References: <20140606065956.854A6718001@webmail.sinamail.sina.com.cn>
+	Fri, 6 Jun 2014 06:18:31 -0400
+X-IronPort-AV: E=Sophos;i="4.98,988,1392134400"; 
+   d="scan'208";a="31562667"
+Message-ID: <539192F1.7050308@cn.fujitsu.com>
+Date: Fri, 6 Jun 2014 18:07:45 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="X78YbkCBd9ye7Cvs"
-Content-Disposition: inline
-In-Reply-To: <20140606065956.854A6718001@webmail.sinamail.sina.com.cn>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        <linux-mm@kvack.org>, Cgroups <cgroups@vger.kernel.org>,
+        <stable@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH] mm/mempolicy: fix sleeping function called from invalid
+ context
+References: <53902A44.50005@cn.fujitsu.com> <20140605132339.ddf6df4a0cf5c14d17eb8691@linux-foundation.org>
+In-Reply-To: <20140605132339.ddf6df4a0cf5c14d17eb8691@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.100]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(cc'ing Li)
 
---X78YbkCBd9ye7Cvs
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Andrew,
+Thanks for your comment.
+On 06/06/2014 04:23 AM, Andrew Morton wrote:
 
-On Fri, Jun 06, 2014 at 02:59:56PM +0800, zhdxzx@sina.com wrote:
-> Hi all
->=20
-> When computing cache hot, question-1: should we check the number of runni=
-ng tasks
-> against the migration target runqueue, as shown by the following diff?
->=20
-> It looks that we dont migrate task if it is buddy and the target cpu is n=
-ot idle.
->=20
->=20
-> --- a/kernel/sched/fair.c	Fri Jun  6 12:37:37 2014
-> +++ b/kernel/sched/fair.c	Fri Jun  6 13:55:35 2014
-> @@ -5051,7 +5050,7 @@ task_hot(struct task_struct *p, u64 now)
->  	/*
->  	 * Buddy candidates are cache hot:
->  	 */
-> -	if (sched_feat(CACHE_HOT_BUDDY) && this_rq()->nr_running &&
-> +	if (sched_feat(CACHE_HOT_BUDDY) && env->dst_rq->nr_running &&
->  			(&p->se =3D=3D cfs_rq_of(&p->se)->next ||
->  			 &p->se =3D=3D cfs_rq_of(&p->se)->last))
->  		return 1;
+> On Thu, 5 Jun 2014 16:28:52 +0800 Gu Zheng <guz.fnst@cn.fujitsu.com> wrote:
+> 
+>> When running with the kernel(3.15-rc7+), the follow bug occurs:
+>> [ 9969.258987] BUG: sleeping function called from invalid context at kernel/locking/mutex.c:586
+>> [ 9969.359906] in_atomic(): 1, irqs_disabled(): 0, pid: 160655, name: python
+>> [ 9969.441175] INFO: lockdep is turned off.
+>> [ 9969.488184] CPU: 26 PID: 160655 Comm: python Tainted: G       A      3.15.0-rc7+ #85
+>> [ 9969.581032] Hardware name: FUJITSU-SV PRIMEQUEST 1800E/SB, BIOS PRIMEQUEST 1000 Series BIOS Version 1.39 11/16/2012
+>> [ 9969.706052]  ffffffff81a20e60 ffff8803e941fbd0 ffffffff8162f523 ffff8803e941fd18
+>> [ 9969.795323]  ffff8803e941fbe0 ffffffff8109995a ffff8803e941fc58 ffffffff81633e6c
+>> [ 9969.884710]  ffffffff811ba5dc ffff880405c6b480 ffff88041fdd90a0 0000000000002000
+>> [ 9969.974071] Call Trace:
+>> [ 9970.003403]  [<ffffffff8162f523>] dump_stack+0x4d/0x66
+>> [ 9970.065074]  [<ffffffff8109995a>] __might_sleep+0xfa/0x130
+>> [ 9970.130743]  [<ffffffff81633e6c>] mutex_lock_nested+0x3c/0x4f0
+>> [ 9970.200638]  [<ffffffff811ba5dc>] ? kmem_cache_alloc+0x1bc/0x210
+>> [ 9970.272610]  [<ffffffff81105807>] cpuset_mems_allowed+0x27/0x140
+>> [ 9970.344584]  [<ffffffff811b1303>] ? __mpol_dup+0x63/0x150
+>> [ 9970.409282]  [<ffffffff811b1385>] __mpol_dup+0xe5/0x150
+>> [ 9970.471897]  [<ffffffff811b1303>] ? __mpol_dup+0x63/0x150
+>> [ 9970.536585]  [<ffffffff81068c86>] ? copy_process.part.23+0x606/0x1d40
+>> [ 9970.613763]  [<ffffffff810bf28d>] ? trace_hardirqs_on+0xd/0x10
+>> [ 9970.683660]  [<ffffffff810ddddf>] ? monotonic_to_bootbased+0x2f/0x50
+>> [ 9970.759795]  [<ffffffff81068cf0>] copy_process.part.23+0x670/0x1d40
+>> [ 9970.834885]  [<ffffffff8106a598>] do_fork+0xd8/0x380
+>> [ 9970.894375]  [<ffffffff81110e4c>] ? __audit_syscall_entry+0x9c/0xf0
+>> [ 9970.969470]  [<ffffffff8106a8c6>] SyS_clone+0x16/0x20
+>> [ 9971.030011]  [<ffffffff81642009>] stub_clone+0x69/0x90
+>> [ 9971.091573]  [<ffffffff81641c29>] ? system_call_fastpath+0x16/0x1b
+>>
+>> The cause is that cpuset_mems_allowed() try to take mutex_lock(&callback_mutex)
+>> under the rcu_read_lock(which was hold in __mpol_dup()). And in cpuset_mems_allowed(),
+>> the access to cpuset is under rcu_read_lock, so in __mpol_dup, we can reduce the
+>> rcu_read_lock protection region to protect the access to cpuset only in
+>> current_cpuset_is_being_rebound(). So that we can avoid this bug.
+>>
+>> ...
+>>
+>> --- a/kernel/cpuset.c
+>> +++ b/kernel/cpuset.c
+>> @@ -1188,7 +1188,13 @@ done:
+>>  
+>>  int current_cpuset_is_being_rebound(void)
+>>  {
+>> -	return task_cs(current) == cpuset_being_rebound;
+>> +	int ret;
+>> +
+>> +	rcu_read_lock();
+>> +	ret = task_cs(current) == cpuset_being_rebound;
+>> +	rcu_read_unlock();
+>> +
+>> +	return ret;
+>>  }
+> 
+> Looks fishy to me.  If the rcu_read_lock() stabilizes
+> cpuset_being_rebound then cpuset_being_rebound can change immediately
+> after rcu_read_unlock() and `ret' is now wrong.
+
+IMO, whether cpuset_being_rebound changed or not is immaterial here, we
+just want to know whether the cpuset is being rebound at that point.
+
+> 
+> Anyway.  Tejun, this one is yours please ;)
+
+To Tejun, Li:
+Any comment? And if I misread something, please correct me?
+
+Thanks,
+Gu
+
+> .
+> 
 
 
-That is indeed the effective result for normal balancing, seeing how it
-pulls to the dst rq, and this_rq would be dst.
-
-This is of course false for a number of cases these days, most obviously
-the nohz idle balancing.
-
-> But based on the comment, question-2: should we check running tasks
-> against the runqueue of the given task?
-
-> --- a/kernel/sched/fair.c	Fri Jun  6 12:37:37 2014
-> +++ b/kernel/sched/fair.c	Fri Jun  6 14:32:34 2014
-> @@ -5051,7 +5051,7 @@ task_hot(struct task_struct *p, u64 now)
->  	/*
->  	 * Buddy candidates are cache hot:
->  	 */
-> -	if (sched_feat(CACHE_HOT_BUDDY) && this_rq()->nr_running &&
-> +	if (sched_feat(CACHE_HOT_BUDDY) && task_rq(p)->nr_running &&
->  			(&p->se =3D=3D cfs_rq_of(&p->se)->next ||
->  			 &p->se =3D=3D cfs_rq_of(&p->se)->last))
->  		return 1;
-
-That does appear to make more sense indeed, seeing how buddies are pairs
-of tasks, so protecting a lone task doesn't make sense.
-
-
-Mike, how did you intend this code to work?=20
-
---X78YbkCBd9ye7Cvs
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTkZSsAAoJEHZH4aRLwOS6SnEP/j0HPqrFCwWu2OwBCl+iAEUN
-3/zDrDFVE6N+Z9bB0M/icD2MqMAmlm0eTfK9P8c0j8MhmlnfjDNrXOE3dQk6FQj3
-QAe9rHMfwjo+lmn3IVh+TPMpZO0Bwu6xJTqX5T7/ag1erIwQbw2LjPiP86auXVpi
-8u3JmDmv+GwakDU5/Um+vzPVhZ9GcC382bP1LuO+6RYcF2XlvYr4XhA8wkNtpMdc
-oQ6tktWR1ZKtig2qS4hWvACzhYc+jB2zNSCQmD8Hr6LUG3zz0YntgeUimmVpQH0X
-9qWXp9FzRX+q+dbPc6+nLNzHJH02vZ6OBm9uZbzdMsYjeSkbZl9IcVUaSgPbkKmu
-1J8k4w+FWD6B2tPQyDNMTxoTctSnYAsOQMGcF0KM3SEN92x2Y9OXcaCA0kcEILtn
-0C/fb2s+jlWW/Yi5lhIYqE1dNEMINXZ9RqSLWE4vYab6LNz8j3uOh/6ZmptFDCpO
-AkgvacZczRTRI4YDXpc/lyrIglFJVTOD9m3EhY5riaWx5Ri0WFpFDzVBJpTjJCX2
-rvU3bgel9QgHoTriUYHkLRDo94apqagxB4t0Pc3Padi1dOSFJUUKWMfh1ixjk/iZ
-9QT7WTnIcUrRVM0Qwy1HWSoGWskMudxqWaqB/wdIUu8QIbtmUB9eNEsWX24Whxc2
-T1XYsOVcTD1znBo6+8dB
-=7dk8
------END PGP SIGNATURE-----
-
---X78YbkCBd9ye7Cvs--
