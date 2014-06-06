@@ -1,134 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752689AbaFFRiY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 13:38:24 -0400
-Received: from mout.web.de ([212.227.17.11]:59881 "EHLO mout.web.de"
+	id S1751818AbaFFRn3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 13:43:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53066 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751471AbaFFReu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 13:34:50 -0400
-From: Ken Helias <kenhelias@web.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Ken Helias <kenhelias@firemail.de>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>, Dave Jones <davej@redhat.com>
-Subject: [PATCH 03/13] list: Add list_add_(before|after) macros
-Date: Fri,  6 Jun 2014 19:34:22 +0200
-Message-Id: <1402076072-4044-3-git-send-email-kenhelias@web.de>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1402076072-4044-1-git-send-email-kenhelias@web.de>
-References: <1402076072-4044-1-git-send-email-kenhelias@web.de>
-X-Provags-ID: V03:K0:8nbVxsncn6PobjWA7MJH8tiUOXylvlTLR5afLI9pU7EPq70KYWu
- +a/kjCdJLGG5mXwVLBvO0KjODDxHTQmlLZTAhuftMO43jrteQMPP4sk9KjqKmM9aSPnNlRQ
- PRJlPjc28HPIohnEu6lfJHnHknlXJRZWh5XWIzPYdxI4eXRXZM8Xhx/dqDQm7Ht9dqH5xsV
- AcCxr9gkMxdK/MKPc1caw==
+	id S1750743AbaFFRn1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 13:43:27 -0400
+Date: Fri, 6 Jun 2014 13:43:17 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>
+Subject: 3.15-rc8 oops in copy_page_rep after page fault.
+Message-ID: <20140606174317.GA1741@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+	Linus Torvalds <torvalds@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ken Helias <kenhelias@firemail.de>
+Not much to go on here. It rebooted right after dumping this.
 
-Many places in the code uses list_add_tail/list_add to insert an entry
-before/after another entry. This confuses the reader because these are usually
-used to add an item to a list_head and not an entry. hlist already have
-functions to do the same which makes the code a lot more readable. It would be
-a lot easier to understand when all places use a self explaining function name
-instead of misusing other functions.
-
-Signed-off-by: Ken Helias <kenhelias@firemail.de>
-Cc: Dipankar Sarma <dipankar@in.ibm.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ken Helias <kenhelias@firemail.de>
-Cc: Dave Jones <davej@redhat.com>
----
- include/linux/list.h    | 22 ++++++++++++++++++++++
- include/linux/rculist.h | 38 ++++++++++++++++++++++++++++++++++++++
- 2 files changed, 60 insertions(+)
-
-diff --git a/include/linux/list.h b/include/linux/list.h
-index ab43d01..5ea0eca 100644
---- a/include/linux/list.h
-+++ b/include/linux/list.h
-@@ -76,6 +76,28 @@ static inline void list_add_tail(struct list_head *new, struct list_head *head)
- 	__list_add(new, head->prev, head);
- }
- 
-+/**
-+ * list_add_after
-+ * @n: new entry to be added
-+ * @prev: the existing element to add the new element after.
-+ *
-+ * Description:
-+ * Adds the specified element to the specified list
-+ * after the specified node.
-+ */
-+#define list_add_after(n, prev) list_add(n, prev)
-+
-+/**
-+ * list_add_before
-+ * @n: new entry to be added
-+ * @next:  the existing element to add the new element before.
-+ *
-+ * Description:
-+ * Adds the specified element to the specified list
-+ * before the specified node.
-+ */
-+#define list_add_before(n, next) list_add_tail(n, next)
-+
- /*
-  * Delete a list entry by making the prev/next entries
-  * point to each other.
-diff --git a/include/linux/rculist.h b/include/linux/rculist.h
-index 648773f..eec274d 100644
---- a/include/linux/rculist.h
-+++ b/include/linux/rculist.h
-@@ -103,6 +103,44 @@ static inline void list_add_tail_rcu(struct list_head *new,
- }
- 
- /**
-+ * list_add_after_rcu
-+ * @n: new entry to be added
-+ * @prev: the existing element to add the new element after.
-+ *
-+ * Description:
-+ * Adds the specified element to the specified list
-+ * after the specified node while permitting racing traversals.
-+ *
-+ * The caller must take whatever precautions are necessary
-+ * (such as holding appropriate locks) to avoid racing
-+ * with another list-mutation primitive, such as list_add_rcu()
-+ * or list_del_rcu(), running on this same list.
-+ * However, it is perfectly legal to run concurrently with
-+ * the _rcu list-traversal primitives, such as
-+ * list_for_each_entry_rcu().
-+ */
-+#define list_add_after_rcu(n, next) list_add_rcu(n, next)
-+
-+/**
-+ * list_add_before_rcu
-+ * @n: new entry to be added
-+ * @next:  the existing element to add the new element before.
-+ *
-+ * Description:
-+ * Adds the specified element to the specified list
-+ * before the specified node while permitting racing traversals.
-+ *
-+ * The caller must take whatever precautions are necessary
-+ * (such as holding appropriate locks) to avoid racing
-+ * with another list-mutation primitive, such as list_add_tail_rcu()
-+ * or list_del_rcu(), running on this same list.
-+ * However, it is perfectly legal to run concurrently with
-+ * the _rcu list-traversal primitives, such as
-+ * list_for_each_entry_rcu().
-+ */
-+#define list_add_before_rcu(n, next) list_add_tail_rcu(n, next)
-+
-+/**
-  * list_del_rcu - deletes entry from list without re-initialization
-  * @entry: the element to delete from the list.
-  *
--- 
-2.0.0
+Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+Modules linked in: fuse sctp tun hidp rfcomm llc2 af_key nfnetlink ipt_ULOG scsi_transport_iscsi bnep can_raw nfc caif_socket caif af_802154 ieee802154 phonet af_rxrpc can_bcm can pppoe pppox p
+pp_generic slhc irda crc_ccitt rds rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 cfg80211 coretemp hwmon x86_pkg_temp_thermal kvm_intel kvm xfs libcrc32c crct10dif_pclmul crc32c_intel snd_hda_c
+odec_hdmi snd_hda_codec_realtek snd_hda_codec_generic snd_hda_intel snd_hda_controller snd_hda_codec btusb snd_hwdep bluetooth e1000e snd_seq 6lowpan_iphc ghash_clmulni_intel snd_seq_device snd_pcm snd_timer 
+shpchp microcode snd rfkill usb_debug ptp serio_raw pcspkr pps_core soundcore
+CPU: 3 PID: 7553 Comm: trinity-c196 Not tainted 3.15.0-rc8+ #229
+task: ffff880095966390 ti: ffff880002084000 task.ti: ffff880002084000
+RIP: 0010:[<ffffffff8b3287b5>]  [<ffffffff8b3287b5>] copy_page_rep+0x5/0x10
+RSP: 0000:ffff880002087d08  EFLAGS: 00010286
+RAX: ffff880000000000 RBX: ffffea000053bf80 RCX: 0000000000000200
+RDX: 0000000000000000 RSI: ffff880052766000 RDI: ffff880014efe000
+RBP: ffff880002087d80 R08: 000000024e558000 R09: ffff880000000000
+R10: 0000000000002c2a R11: 0000000000016ae0 R12: 000000000149d980
+R13: ffff8800020a9000 R14: 00000000014a0000 R15: ffff880070d63f08
+FS:  00007f3700519780(0000) GS:ffff88024d180000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: ffff880052766000 CR3: 0000000002068000 CR4: 00000000001407e0
+DR0: 0000627000019000 DR1: 0000000000a94000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 00000000000b0602
+Stack:
+ ffffffff8b1be8db ffff88011cec5000 80000000526008c5 ffff880070d633d8
+ ffff880070d633d8 ffff8800020a9000 ffff880002090000 ffffea0001498000
+ 00000c1080000000 0000160000000000 ffff8800020a9000 00000c10800033e4
+Call Trace:
+ [<ffffffff8b1be8db>] ? do_huge_pmd_wp_page+0x5cb/0x850
+ [<ffffffff8b187010>] handle_mm_fault+0x1e0/0xc50
+ [<ffffffff8b1b4662>] ? kmem_cache_free+0x1c2/0x200
+ [<ffffffff8b7472d9>] __do_page_fault+0x1c9/0x630
+ [<ffffffff8b010a98>] ? perf_trace_sys_enter+0x38/0x180
+ [<ffffffff8b11897b>] ? __acct_update_integrals+0x8b/0x120
+ [<ffffffff8b747bfb>] ? preempt_count_sub+0xab/0x100
+ [<ffffffff8b74775e>] do_page_fault+0x1e/0x70
+ [<ffffffff8b7441b2>] page_fault+0x22/0x30
+Code: 90 90 90 90 90 90 9c fa 65 48 3b 06 75 14 65 48 3b 56 08 75 0d 65 48 89 1e 65 48 89 4e 08 9d b0 01 c3 9d 30 c0 c3 b9 00 02 00 00 <f3> 48 a5 c3 0f 1f 80 00 00 00 00 eb ee 0f 1f 84 00 00 00
+ 00 00 
+RIP  [<ffffffff8b3287b5>] copy_page_rep+0x5/0x10
+ RSP <ffff880002087d08>
+CR2: ffff880052766000
 
