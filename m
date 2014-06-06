@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752647AbaFFNYq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 09:24:46 -0400
-Received: from relay.parallels.com ([195.214.232.42]:42661 "EHLO
+	id S1752673AbaFFNZK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 09:25:10 -0400
+Received: from relay.parallels.com ([195.214.232.42]:42643 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752243AbaFFNWx (ORCPT
+	with ESMTP id S1751979AbaFFNWv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 09:22:53 -0400
+	Fri, 6 Jun 2014 09:22:51 -0400
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <akpm@linux-foundation.org>
 CC: <cl@linux.com>, <iamjoonsoo.kim@lge.com>, <rientjes@google.com>,
         <penberg@kernel.org>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
         <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: [PATCH -mm v2 5/8] slub: make slab_free non-preemptable
-Date: Fri, 6 Jun 2014 17:22:42 +0400
-Message-ID: <7cd6784a36ed997cc6631615d98e11e02e811b1b.1402060096.git.vdavydov@parallels.com>
+Subject: [PATCH -mm v2 0/8] memcg/slab: reintroduce dead cache self-destruction
+Date: Fri, 6 Jun 2014 17:22:37 +0400
+Message-ID: <cover.1402060096.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1402060096.git.vdavydov@parallels.com>
-References: <cover.1402060096.git.vdavydov@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.24.25.3]
@@ -25,67 +23,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since per memcg cache destruction is scheduled when the last slab is
-freed, to avoid use-after-free in kmem_cache_free we should either
-rearrange code in kmem_cache_free so that it won't dereference the cache
-ptr after freeing the object, or wait for all kmem_cache_free's to
-complete before proceeding to cache destruction.
+Hi,
 
-The former approach isn't a good option from the future development
-point of view, because every modifications to kmem_cache_free must be
-done with great care then. Hence we should provide a method to wait for
-all currently executing kmem_cache_free's to finish.
+When a memcg is turned offline, some of its kmem caches can still have
+active objects and therefore cannot be destroyed immediately. Currently,
+we simply leak such caches along with the owner memcg, which is bad and
+should be resolved.
 
-This patch makes SLUB's implementation of kmem_cache_free
-non-preemptable. As a result, synchronize_sched() will work as a barrier
-against kmem_cache_free's in flight, so that issuing it before cache
-destruction will protect us against the use-after-free.
+It would be perfect if we could move all slab pages of such dead caches
+to the root/parent cache on memcg offline. However, when I tried to
+implement such re-parenting, I was pointed out by Christoph that the
+overhead of this would be unacceptable, at least for SLUB (see
+https://lkml.org/lkml/2014/5/13/446)
 
-This won't affect performance of kmem_cache_free, because we already
-disable preemption there, and this patch only moves preempt_enable to
-the end of the function. Neither should it affect the system latency,
-because kmem_cache_free is extremely short, even in its slow path.
+The problem with re-parenting of individual slabs is that it requires
+tracking of all slabs allocated to a cache, but SLUB doesn't track full
+slabs if !debug. Changing this behavior would result in significant
+performance degradation of regular alloc/free paths, because it would
+make alloc/free take per node list locks more often.
 
-SLAB's version of kmem_cache_free already proceeds with irqs disabled,
-so nothing to be done there.
+After pondering about this problem for some time, I think we should
+return to dead caches self-destruction, i.e. scheduling cache
+destruction work when the last slab page is freed.
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
----
- mm/slub.c |   10 ++--------
- 1 file changed, 2 insertions(+), 8 deletions(-)
+This is the behavior we had before commit 5bd93da9917f ("memcg, slab:
+simplify synchronization scheme"). The reason why it was removed was that
+it simply didn't work, because SL[AU]B are implemented in such a way
+that they don't discard empty slabs immediately, but prefer keeping them
+cached for indefinite time to speed up further allocations.
 
-diff --git a/mm/slub.c b/mm/slub.c
-index 35741592be8c..e46d6abe8a68 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2673,18 +2673,11 @@ static __always_inline void slab_free(struct kmem_cache *s,
- 
- 	slab_free_hook(s, x);
- 
--redo:
--	/*
--	 * Determine the currently cpus per cpu slab.
--	 * The cpu may change afterward. However that does not matter since
--	 * data is retrieved via this pointer. If we are on the same cpu
--	 * during the cmpxchg then the free will succedd.
--	 */
- 	preempt_disable();
-+redo:
- 	c = this_cpu_ptr(s->cpu_slab);
- 
- 	tid = c->tid;
--	preempt_enable();
- 
- 	if (likely(page == c->page)) {
- 		set_freepointer(s, object, c->freelist);
-@@ -2701,6 +2694,7 @@ redo:
- 	} else
- 		__slab_free(s, page, x, addr);
- 
-+	preempt_enable();
- }
- 
- void kmem_cache_free(struct kmem_cache *s, void *x)
+However, we can change this w/o noticeable performance impact for both
+SLAB and SLUB by making them drop free slabs as soon as they become
+empty. Since dead caches should never be allocated from, removing empty
+slabs from them shouldn't result in noticeable performance degradation.
+
+So, this patch set reintroduces dead cache self-destruction and adds
+some tweaks to SL[AU]B to prevent dead caches from hanging around
+indefinitely. It is organized as follows:
+
+ - patches 1-3 reintroduce dead memcg cache self-destruction;
+ - patch 4 makes SLUB's version of kmem_cache_shrink always drop empty
+   slabs, even if it fails to allocate a temporary array;
+ - patches 5 and 6 fix possible use-after-free connected with
+   asynchronous cache destruction;
+ - patches 7 and 8 disable caching of empty slabs for dead memcg caches
+   for SLUB and SLAB respectively.
+
+Note, this doesn't resolve the problem of memcgs pinned by dead kmem
+caches. I'm planning to solve this by re-parenting dead kmem caches to
+the parent memcg.
+
+v2:
+ - fix use-after-free connected with asynchronous cache destruction;
+ - less intrusive version of SLUB's kmem_cache_shrink fix;
+ - simplify disabling of free slabs caching for SLUB (Joonsoo);
+ - disable free slabs caching instead of using cache_reap for SLAB
+   (Christoph).
+
+v1: https://lkml.org/lkml/2014/5/30/264
+
+Thanks,
+
+Vladimir Davydov (8):
+  memcg: cleanup memcg_cache_params refcnt usage
+  memcg: destroy kmem caches when last slab is freed
+  memcg: mark caches that belong to offline memcgs as dead
+  slub: don't fail kmem_cache_shrink if slab placement optimization
+    fails
+  slub: make slab_free non-preemptable
+  memcg: wait for kfree's to finish before destroying cache
+  slub: make dead memcg caches discard free slabs immediately
+  slab: make dead memcg caches discard free slabs immediately
+
+ include/linux/slab.h |   14 +++++----
+ mm/memcontrol.c      |   57 +++++++++++++++++++++++++++++++---
+ mm/slab.c            |   83 +++++++++++++++++++++++++++++++++++++-------------
+ mm/slab.h            |   10 ++++++
+ mm/slub.c            |   49 +++++++++++++++++++++--------
+ 5 files changed, 170 insertions(+), 43 deletions(-)
+
 -- 
 1.7.10.4
 
