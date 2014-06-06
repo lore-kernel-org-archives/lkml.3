@@ -1,73 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752800AbaFFRW0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 13:22:26 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:63645 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752160AbaFFRWW (ORCPT
+	id S1752681AbaFFRVI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 13:21:08 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:27385 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752648AbaFFRVG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 13:22:22 -0400
+	Fri, 6 Jun 2014 13:21:06 -0400
+Message-Id: <20140606172104.693665166@goodmis.org>
+User-Agent: quilt/0.63-1
+Date: Fri, 06 Jun 2014 12:30:38 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Subject: [for-next][PATCH 4/6] tracing: Return error if ftrace_trace_arrays list is empty
+References: <20140606163034.516780857@goodmis.org>
 MIME-Version: 1.0
-In-Reply-To: <20140606171145.GU13930@laptop.programming.kicks-ass.net>
-References: <1402070140-15090-1-git-send-email-davidlohr@hp.com>
-	<1402070140-15090-3-git-send-email-davidlohr@hp.com>
-	<1402070987.2207.75.camel@dabdike.int.hansenpartnership.com>
-	<20140606171145.GU13930@laptop.programming.kicks-ass.net>
-Date: Fri, 6 Jun 2014 10:22:21 -0700
-X-Google-Sender-Auth: VNQwkmhnZYzHLKvfy9Iwnqmwcq4
-Message-ID: <CA+55aFxNLRufHyLHetnst7Lq0Ya1xoAagZf=DbEDTf1ZSfKFCQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] locking/rwsem: Disable optimistic spinning for PA-RISC
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Davidlohr Bueso <davidlohr@hp.com>, Ingo Molnar <mingo@kernel.org>,
-        Mikulas Patocka <mpatocka@redhat.com>, Jason Low <jason.low2@hp.com>,
-        Waiman Long <waiman.long@hp.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        John David Anglin <dave.anglin@bell.net>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Parisc List <linux-parisc@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        James Hogan <james.hogan@imgtec.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Vineet Gupta <vgupta@synopsys.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline; filename=0003-tracing-Return-error-if-ftrace_trace_arrays-list-is-.patch
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 6, 2014 at 10:11 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->
-> +config ARCH_NO_ATOMIC_RMW
-> +       def_bool y
-> +       depends on PARISC || SPARC32 || METAG_ATOMICITY_LOCK1 || (TILE && !TILEGX) || (ARC && !ARC_HAS_LLSC)
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
 
-Ugh. We've had these kinds of things before, and they are broken and
-nasty to maintain.
+ftrace_trace_arrays links global_trace.list. However, global_trace
+is not added to ftrace_trace_arrays if trace_alloc_buffers() failed.
+As the result, ftrace_trace_arrays becomes an empty list. If
+ftrace_trace_arrays is an empty list, current top_trace_array() returns
+an invalid pointer. As the result, the kernel can induce memory corruption
+or panic.
 
-Just make it
+Current implementation does not check whether ftrace_trace_arrays is empty
+list or not. So, in this patch, if ftrace_trace_arrays is empty list,
+top_trace_array() returns NULL. Moreover, this patch makes all functions
+calling top_trace_array() handle it appropriately.
 
-    config ARCH_SUPPORTS_ATOMIC_RMW
-        bool
+Link: http://lkml.kernel.org/p/20140605223517.32311.99233.stgit@yunodevel
 
-which defaults to no. And then make MUTEX_SPIN_ON_OWNER depend on that.
+Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace.h        |  3 +++
+ kernel/trace/trace_events.c | 13 +++++++++++++
+ 2 files changed, 16 insertions(+)
 
-And then we can add "select ARCH_SUPPORTS_ATOMIC_RMW" to the few
-architectures we (a) care about and (b) know work. So start with x86,
-arm, powerpc and sparc64, and then the rest can just add their own
-oneliners if they care.
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 217207ad60b3..9e82551dd566 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -252,6 +252,9 @@ static inline struct trace_array *top_trace_array(void)
+ {
+ 	struct trace_array *tr;
+ 
++	if (list_empty(ftrace_trace_arrays.prev))
++		return NULL;
++
+ 	tr = list_entry(ftrace_trace_arrays.prev,
+ 			typeof(*tr), list);
+ 	WARN_ON(!(tr->flags & TRACE_ARRAY_FL_GLOBAL));
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 3ddfd8f62c05..f99e0b3bca8c 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -574,6 +574,9 @@ int trace_set_clr_event(const char *system, const char *event, int set)
+ {
+ 	struct trace_array *tr = top_trace_array();
+ 
++	if (!tr)
++		return -ENODEV;
++
+ 	return __ftrace_set_clr_event(tr, NULL, system, event, set);
+ }
+ EXPORT_SYMBOL_GPL(trace_set_clr_event);
+@@ -2065,6 +2068,9 @@ event_enable_func(struct ftrace_hash *hash,
+ 	bool enable;
+ 	int ret;
+ 
++	if (!tr)
++		return -ENODEV;
++
+ 	/* hash funcs only work with set_ftrace_filter */
+ 	if (!enabled || !param)
+ 		return -EINVAL;
+@@ -2396,6 +2402,9 @@ static __init int event_trace_enable(void)
+ 	char *token;
+ 	int ret;
+ 
++	if (!tr)
++		return -ENODEV;
++
+ 	for_each_event(iter, __start_ftrace_events, __stop_ftrace_events) {
+ 
+ 		call = *iter;
+@@ -2442,6 +2451,8 @@ static __init int event_trace_init(void)
+ 	int ret;
+ 
+ 	tr = top_trace_array();
++	if (!tr)
++		return -ENODEV;
+ 
+ 	d_tracer = tracing_init_dentry();
+ 	if (!d_tracer)
+@@ -2535,6 +2546,8 @@ static __init void event_trace_self_tests(void)
+ 	int ret;
+ 
+ 	tr = top_trace_array();
++	if (!tr)
++		return;
+ 
+ 	pr_info("Running tests on trace events:\n");
+ 
+-- 
+2.0.0.rc2
 
-Remember, most people really won't ever care about this, simply
-because it only matters if you have enough CPU's for the whole
-spinning thing to make a noticeable difference.  So missing some odd
-architecture _really_ doesn't matter.
 
-And we really really *really* shouldn't have these kinds of "random
-really odd architecture details" in the generic code, not even if it's
-something as specific as kernel/Kconfig.locks.
-
-               Linus
-
-              Linus
