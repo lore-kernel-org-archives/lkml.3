@@ -1,75 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751872AbaFFJkG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 05:40:06 -0400
-Received: from nasmtp01.atmel.com ([192.199.1.246]:45457 "EHLO
-	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751125AbaFFJkE (ORCPT
+	id S1752550AbaFFJk7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 05:40:59 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:42607 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751321AbaFFJk4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 05:40:04 -0400
-From: Bo Shen <voice.shen@atmel.com>
-To: <nicolas.ferre@atmel.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        "Bo Shen" <voice.shen@atmel.com>
-Subject: [PATCH 1/2] ARM: at91/at91_dt_defconfig: enable sound support
-Date: Fri, 6 Jun 2014 17:37:05 +0800
-Message-ID: <1402047426-4058-1-git-send-email-voice.shen@atmel.com>
-X-Mailer: git-send-email 1.8.5.2
+	Fri, 6 Jun 2014 05:40:56 -0400
+Date: Fri, 6 Jun 2014 11:40:50 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        Jiri Slaby <jslaby@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: Re: [PATCH 2/5] vt: Fix up unregistration of vt drivers
+Message-ID: <20140606094050.GE7416@phenom.ffwll.local>
+Mail-Followup-To: David Herrmann <dh.herrmann@gmail.com>,
+	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+	Jiri Slaby <jslaby@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+	DRI Development <dri-devel@lists.freedesktop.org>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+References: <1401980308-5116-1-git-send-email-daniel.vetter@ffwll.ch>
+ <1401980308-5116-2-git-send-email-daniel.vetter@ffwll.ch>
+ <CANq1E4QpST-ZQbhm8FS-xuyda0dnYAFjasqFCspTPKdzJ6zW6w@mail.gmail.com>
+ <20140606075655.GC7416@phenom.ffwll.local>
+ <CANq1E4Rs725k9HgtsVtQmjU7DOeaUqfL-Y+_TSQWQCj848C9kA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANq1E4Rs725k9HgtsVtQmjU7DOeaUqfL-Y+_TSQWQCj848C9kA@mail.gmail.com>
+X-Operating-System: Linux phenom 3.15.0-rc3+ 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As sound support depends on ssc, i2c and dma, so also enable them.
+On Fri, Jun 06, 2014 at 10:47:25AM +0200, David Herrmann wrote:
+> Hi
+> 
+> On Fri, Jun 6, 2014 at 9:56 AM, Daniel Vetter <daniel@ffwll.ch> wrote:
+> > On Fri, Jun 06, 2014 at 09:24:35AM +0200, David Herrmann wrote:
+> >> Hi
+> >>
+> >> On Thu, Jun 5, 2014 at 4:58 PM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+> >> > A bunch of issues:
+> >> > - We should not kick out the default console (which is tracked in
+> >> >   conswitchp), so check for that.
+> >> > - Add better error codes so callers can differentiate between "something
+> >> >   went wrong" and "your driver isn't registered already". i915 needs
+> >> >   that so it doesn't fall over when reloading the driver and hence
+> >> >   vga_con is already unregistered.
+> >> > - There's a mess with the driver flags: What we need to check for is
+> >> >   that the driver isn't used any more, i.e. unbound completely (FLAG_INIT).
+> >> >   And not whether it's the boot console or not (which is the only one
+> >> >   which doesn't have FLAG_MODULE). Otherwise there's no way to kick
+> >> >   out the boot console, which i915 wants to do to prevent havoc with
+> >> >   vga_con interferring (which tends to hang machines).
+> >> >
+> >> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> >> > Cc: Jiri Slaby <jslaby@suse.cz>
+> >> > Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+> >> > ---
+> >> >  drivers/tty/vt/vt.c | 16 +++++++++-------
+> >> >  1 file changed, 9 insertions(+), 7 deletions(-)
+> >> >
+> >> > diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
+> >> > index ea600f482eeb..5077fe87324d 100644
+> >> > --- a/drivers/tty/vt/vt.c
+> >> > +++ b/drivers/tty/vt/vt.c
+> >> > @@ -3573,17 +3573,20 @@ err:
+> >> >   */
+> >> >  int do_unregister_con_driver(const struct consw *csw)
+> >> >  {
+> >> > -       int i, retval = -ENODEV;
+> >> > +       int i;
+> >> >
+> >> >         /* cannot unregister a bound driver */
+> >> >         if (con_is_bound(csw))
+> >> > -               goto err;
+> >> > +               return -EBUSY;
+> >> > +
+> >> > +       if (csw == conswitchp)
+> >> > +               return -EINVAL;
+> >>
+> >> Ugh, that fix is correct, but I'd rather like to see
+> >> do_unbind_con_driver() do the right thing. It currently resets
+> >> conswitchp _only_ if the new fallback is unbound. Why not _always_ set
+> >> conswitchp to defcsw _iff_ conswitchp == csw there?
+> >
+> > Ha, that's what I've thought, too. But do_unbind doesn't actually change
+> > conswitchp, it only restores it because apparently the
+> > vga_con->con_startup function is a real con and changes it behind
+> > everyones back for no good reason. Or at least that's what the comment
+> > claims. Note how defconsw != defcsw ...
+> >
+> > I've tried to follow around how conswitchp is actually used, but besides
+> > that it's used to select the boot console I'm not sure at all what's going
+> > hence.
+> 
+> I missed that line:
+>   const struct consw *defconsw = conswitchp;
+> 
+> Now that I looked at it again, this looks _really_ wrong. If
+> conswitchp is vgacon and startup fails, we keep it set to vgacon..
+> ugh, weird. But ok, that's up to the people who wrote that.
+> 
+> Btw., conswitchp is used for visual_init(), that is, every new VT
+> allocation gets assigned to conswitchp. Therefore, it must be a valid
+> driver. (VTs are allocated and deallocated by agetty/systemd after a
+> session is started/ended).
 
-Signed-off-by: Bo Shen <voice.shen@atmel.com>
----
- arch/arm/configs/at91_dt_defconfig | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+Ah, I missed where conswitchp was used in the maze, was getting a bit hazy
+;-)
 
-diff --git a/arch/arm/configs/at91_dt_defconfig b/arch/arm/configs/at91_dt_defconfig
-index 300ded9..bd0a307 100644
---- a/arch/arm/configs/at91_dt_defconfig
-+++ b/arch/arm/configs/at91_dt_defconfig
-@@ -77,6 +77,7 @@ CONFIG_BLK_DEV_RAM_COUNT=4
- CONFIG_BLK_DEV_RAM_SIZE=8192
- CONFIG_ATMEL_PWM=y
- CONFIG_ATMEL_TCLIB=y
-+CONFIG_ATMEL_SSC=y
- CONFIG_SCSI=y
- CONFIG_BLK_DEV_SD=y
- CONFIG_SCSI_MULTI_LUN=y
-@@ -128,6 +129,7 @@ CONFIG_SERIAL_ATMEL=y
- CONFIG_SERIAL_ATMEL_CONSOLE=y
- CONFIG_HW_RANDOM=y
- CONFIG_I2C=y
-+CONFIG_I2C_AT91=y
- CONFIG_I2C_GPIO=y
- CONFIG_SPI=y
- CONFIG_SPI_ATMEL=y
-@@ -149,6 +151,13 @@ CONFIG_FONT_8x8=y
- CONFIG_FONT_ACORN_8x8=y
- CONFIG_FONT_MINI_4x6=y
- CONFIG_LOGO=y
-+CONFIG_SOUND=y
-+CONFIG_SND=y
-+CONFIG_SND_SOC=y
-+CONFIG_SND_ATMEL_SOC=y
-+CONFIG_SND_AT91_SOC_SAM9G20_WM8731=y
-+CONFIG_SND_ATMEL_SOC_WM8904=y
-+CONFIG_SND_AT91_SOC_SAM9X5_WM8731=y
- CONFIG_USB=y
- CONFIG_USB_ANNOUNCE_NEW_DEVICES=y
- CONFIG_USB_EHCI_HCD=y
-@@ -178,6 +187,7 @@ CONFIG_RTC_DRV_RV3029C2=y
- CONFIG_RTC_DRV_AT91RM9200=y
- CONFIG_RTC_DRV_AT91SAM9=y
- CONFIG_DMADEVICES=y
-+CONFIG_AT_HDMAC=y
- # CONFIG_IOMMU_SUPPORT is not set
- CONFIG_EXT4_FS=y
- CONFIG_FANOTIFY=y
+Rules for changing/updateing conswitchp are indeed a bit strange, which is
+why I really don't want to touch this too much.
+
+> >> This way, you _know_ here that if !con_is_bound(csw), then csw != conswitchp.
+> >
+> > Hence why I dropped this approach again (I've done it originally) and
+> > opted for the straightforward but albeit crude direct check.
+> >
+> >> >
+> >> >         for (i = 0; i < MAX_NR_CON_DRIVER; i++) {
+> >> >                 struct con_driver *con_driver = &registered_con_driver[i];
+> >> >
+> >> >                 if (con_driver->con == csw &&
+> >> > -                   con_driver->flag & CON_DRIVER_FLAG_MODULE) {
+> >> > +                   con_driver->flag & CON_DRIVER_FLAG_INIT) {
+> >>
+> >> That makes FLAG_MODULE almost a no-op except for ->unbind(). I wonder
+> >> why FLAG_MODULE exists, anyway.
+> >
+> > I've dug around in git history and it's less than useful. It was renamed
+> > from FLAG_BIND (which makes somewhat sense, since it roughly tracks
+> > whether a console is bound). But there's never been a justification for
+> > it, neither in the original patch nor in the one that renamed it.
+> >
+> > So I decided to not tempt fate and went with the small change here that
+> > I've understood somewhat (I've tried other, more invasive changes and
+> > failed).
+> >
+> >> Otherwise looks good.
+> >
+> > I'm really reluctant to do the right thing here since the code overall has
+> > very unclear semantics with conswitchp and FLAG_MODULE. Can I convince
+> > yout that the more direct approach here is the right one?
+> 
+> Yeah, patch looks good.
+> 
+> Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+
+Thanks for the review.
+
+Greg, are you ok with these 3 vt patches and with me merging them through
+drm-intel trees? We need them to properly kick out vgacon, which tends to
+result in machine hangs (mostly across module reload, but also on driver
+load on really unlucky systems) and other havoc.
+
+Cheers, Daniel
 -- 
-1.8.5.2
-
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
