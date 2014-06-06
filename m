@@ -1,28 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752793AbaFFKpE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 06:45:04 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:42132 "EHLO
+	id S1752278AbaFFKqr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 06:46:47 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:43334 "EHLO
 	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751058AbaFFKpB (ORCPT
+	with ESMTP id S1750803AbaFFKqq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 06:45:01 -0400
+	Fri, 6 Jun 2014 06:46:46 -0400
 Content-Type: text/plain; charset=us-ascii
 Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
-Subject: Re: [RFC] Bluetooth: Add ACL MTU, available buffers and total buffers to hci_conn_info.
+Subject: Re: [RFC] Bluetooth: Do not attempt to send dlci disconnect when in BT_CONFIG.
 From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <1402049880-7686-1-git-send-email-kiran.kumar@linaro.org>
-Date: Fri, 6 Jun 2014 12:44:55 +0200
-Cc: LKML <linux-kernel@vger.kernel.org>, Nick Pelly <npelly@google.com>,
+In-Reply-To: <1402049971-7762-1-git-send-email-kiran.kumar@linaro.org>
+Date: Fri, 6 Jun 2014 12:46:40 +0200
+Cc: linux-kernel@vger.kernel.org, Nick Pelly <npelly@google.com>,
         "Gustavo F. Padovan" <gustavo@padovan.org>,
         Johan Hedberg <johan.hedberg@gmail.com>,
         "David S. Miller" <davem@davemloft.net>,
-        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
-        netdev@vger.kernel.org, Android Kernel Team <kernel-team@android.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+        Android Kernel Team <kernel-team@android.com>,
         John Stultz <john.stultz@linaro.org>
-Content-Transfer-Encoding: 7bit
-Message-Id: <39777AAC-6DB7-444D-9137-BCDDE99DA781@holtmann.org>
-References: <1402049880-7686-1-git-send-email-kiran.kumar@linaro.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <02B0CA51-A2BB-47D0-B526-229C12C8195C@holtmann.org>
+References: <1402049971-7762-1-git-send-email-kiran.kumar@linaro.org>
 To: Kiran Kumar Raparthy <kiran.kumar@linaro.org>
 X-Mailer: Apple Mail (2.1878.2)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -31,9 +33,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Kiran,
 
-> Add ACL MTU, available buffers and total buffers to hci_conn_info.
+> Do not attempt to send dlci disconnect when in BT_CONFIG.
 > 
-> This provides userspace debugging tools access to ACL flow control state.
+> This fixes a bug where shutdown() and close() on a rfcomm socket during ACL
+> connection would not cause HCI Create Connection Cancel.
 > 
 > This is one of the number of patches from the Android AOSP common.git tree,
 > which is used on almost all Android devices.  so I wanted to submit it for
@@ -43,6 +46,9 @@ Hi Kiran,
 > Cc: Gustavo Padovan <gustavo@padovan.org>
 > Cc: Johan Hedberg <johan.hedberg@gmail.com>
 > Cc: David S. Miller <davem@davemloft.net>
+> Cc: Peter Hurley <peter@hurleysoftware.com>
+> Cc: Seung-Woo Kim <sw0312.kim@samsung.com>
+> Cc: Nick Pelly <npelly@google.com>
 > Cc: linux-bluetooth@vger.kernel.org
 > Cc: netdev@vger.kernel.org
 > Cc: linux-kernel@vger.kernel.org
@@ -52,11 +58,23 @@ Hi Kiran,
 > [kiran: Added context to commit message]
 > Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
 > ---
-> include/net/bluetooth/hci.h |  3 +++
-> net/bluetooth/hci_conn.c    | 18 ++++++++++++++++++
-> 2 files changed, 21 insertions(+)
+> net/bluetooth/rfcomm/core.c | 1 -
+> 1 file changed, 1 deletion(-)
+> 
+> diff --git a/net/bluetooth/rfcomm/core.c b/net/bluetooth/rfcomm/core.c
+> index cf62026..6a531e7 100644
+> --- a/net/bluetooth/rfcomm/core.c
+> +++ b/net/bluetooth/rfcomm/core.c
+> @@ -456,7 +456,6 @@ static int __rfcomm_dlc_close(struct rfcomm_dlc *d, int err)
+> 
+> 	switch (d->state) {
+> 	case BT_CONNECT:
+> -	case BT_CONFIG:
+> 	case BT_OPEN:
+> 	case BT_CONNECT2:
+> 		if (test_and_clear_bit(RFCOMM_DEFER_SETUP, &d->flags)) {
 
-this would break existing API and can not be accepted. NAK.
+you can include traces and a test program that will demonstrate this behavior. I am hearing about this one for the first time. Nobody else has indicated an issue like this before.
 
 Regards
 
