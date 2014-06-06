@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752269AbaFFWR6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 18:17:58 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:37427 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752134AbaFFWR5 (ORCPT
+	id S1752331AbaFFWYy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 18:24:54 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:55530 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751969AbaFFWYx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 18:17:57 -0400
-Date: Fri, 6 Jun 2014 15:17:49 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: dormando <dormando@rydia.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: Multitude of dst obsolescense race conditions
-Message-ID: <20140606221749.GX4581@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <alpine.DEB.2.02.1405140233210.16893@dtop>
- <1400067618.7973.72.camel@edumazet-glaptop2.roam.corp.google.com>
- <20140606181236.GS4581@linux.vnet.ibm.com>
- <1402081030.3645.312.camel@edumazet-glaptop2.roam.corp.google.com>
+	Fri, 6 Jun 2014 18:24:53 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: Lan Tianyu <tianyu.lan@intel.com>, mika.westerberg@linux.intel.com,
+        awilliam@redhat.com, lenb@kernel.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [Patch V3 0/5] I2C ACPI operation region handler
+Date: Sat, 07 Jun 2014 00:42:12 +0200
+Message-ID: <1917135.fMutVWuhmT@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140606122858.GA2810@katana>
+References: <1400590764-11108-1-git-send-email-tianyu.lan@intel.com> <53887B77.7060907@intel.com> <20140606122858.GA2810@katana>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402081030.3645.312.camel@edumazet-glaptop2.roam.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14060622-1344-0000-0000-0000020F8054
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 06, 2014 at 11:57:10AM -0700, Eric Dumazet wrote:
-> On Fri, 2014-06-06 at 11:12 -0700, Paul E. McKenney wrote:
+On Friday, June 06, 2014 02:28:58 PM Wolfram Sang wrote:
 > 
-> > It is probably just be me getting lost in the code, but I am not seeing
-> > a synchronize_rcu(), call_rcu(), or synchronize_net() anywhere in
-> > dst_release() or the things that it calls.  If there really isn't such
-> > a call, then I don't see how the above code is safe in the case where
-> > __sk_dst_set() is invoked on one CPU just after sk_dst_get() executes
-> > the rcu_dereference() on some other CPU.
+> --azLHFNyN32YCQGCU
+> Content-Type: text/plain; charset=us-ascii
+> Content-Disposition: inline
 > 
-> Well, this part is fine, dst_release() do not free dst that are
-> potentially stored in sk_dst_cache
+> On Fri, May 30, 2014 at 08:37:11PM +0800, Lan Tianyu wrote:
+> > On 05/30/2014 08:10 PM, Wolfram Sang wrote:
+> > >>>Hi Wolfram:
+> > >>>	Since this version resolved all comments, it's ok for you?
+> > >
+> > >Sorry, I misunderstood. I thought a V4 was needed, but it isn't. I'll
+> > >try to have a look this weekend.
+> > >
+> > OK. Thanks.
 > 
-> Only the refcount is decremented.
-> 
-> The bug is elsewhere, we had another thread raising this issue on netdev
-> this morning.
-> 
-> I am cooking a patch to clear the mess.
+> Sorry, I didn't manage to get a deeper look into this as I wanted. Let
+> me assure that your (and the other) ACPI changes have high priority for
+> the next release cycle.
 
-Ah, thank you, sorry for the noise!
+Well, can you review patches [4-5/5] when you have the time, please?
 
-							Thanx, Paul
+I'd like to queue them up for 3.17 as soon as possible if you are
+OK with them.
+
+Rafael
 
