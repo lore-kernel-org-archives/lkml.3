@@ -1,75 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752092AbaFFPma (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 11:42:30 -0400
-Received: from g2t2354.austin.hp.com ([15.217.128.53]:44758 "EHLO
-	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752005AbaFFPm3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 11:42:29 -0400
-Message-ID: <1402069339.14433.0.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH v2] introduce atomic_pointer to fix a race condition in
- cancelable mcs spinlocks
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>,
-        Parisc List <linux-parisc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>, Waiman Long <Waiman.Long@hp.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Peter Anvin <hpa@zytor.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>, Jason Low <jason.low2@hp.com>,
-        mingo@kernel.org
-Date: Fri, 06 Jun 2014 08:42:19 -0700
-In-Reply-To: <20140606150607.GT13930@laptop.programming.kicks-ass.net>
-References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com>
-	 <alpine.LRH.2.02.1406021158360.20627@file01.intranet.prod.int.rdu2.redhat.com>
-	 <20140602162525.GH16155@laptop.programming.kicks-ass.net>
-	 <CA+55aFzwrqkwD=G=w2m7TdXTpsMFjV7XUMXv5DMPGr=5x5YGCQ@mail.gmail.com>
-	 <20140606150607.GT13930@laptop.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752142AbaFFPmm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 11:42:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53878 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752107AbaFFPmk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 11:42:40 -0400
+Date: Fri, 6 Jun 2014 11:42:31 -0400
+From: Dave Jones <davej@redhat.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: net: llc: NULL ptr deref in llc_ui_sendmsg
+Message-ID: <20140606154231.GA7629@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Sasha Levin <sasha.levin@oracle.com>,
+	Arnaldo Carvalho de Melo <acme@redhat.com>,
+	"David S. Miller" <davem@davemloft.net>,
+	"netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <5391D971.4030001@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5391D971.4030001@oracle.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-06-06 at 17:06 +0200, Peter Zijlstra wrote:
-> On Mon, Jun 02, 2014 at 10:09:35AM -0700, Linus Torvalds wrote:
-> > On Mon, Jun 2, 2014 at 9:25 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > >
-> > > And I can't say I'm a particular fan of these ops either, as alternative
-> > > I'm almost inclined to just exclude parisc from using opt spinning.
-> > 
-> > Please do.
-> 
-> Something like so; if the rwsem stuff lands in .15 we need more for
-> that, it doesn't have a convenient CONFIG symbol like this.
-> 
-> Linus will you take this from email, or should I get it through
-> tip/locking/urgent or so?
-> 
-> ---
-> Subject: locking, mutex: Disable optimistic spinning for PA-RISC
-> 
-> PA-RISC's cmpxchg is not save against normal stores and the code used
-> for optimistic spinning is known broken because of this.
-> 
-> Disable for now.
+On Fri, Jun 06, 2014 at 11:08:33AM -0400, Sasha Levin wrote:
+ > Hi all,
+ > 
+ > While fuzzing with trinity inside a KVM tools guest running the latest -next
+ > kernel I've stumbled on the following spew:
+ > 
+ > [  269.531162] BUG: unable to handle kernel NULL pointer dereference at 000000000000021e
+ > [  269.531217] IP: llc_ui_sendmsg (net/llc/af_llc.c:912)
 
-I almost hit the send button :)
+ 905         /* must bind connection to sap if user hasn't done it. */
+ 906         if (sock_flag(sk, SOCK_ZAPPED)) {
+ 907                 /* bind to sap with null dev, exclusive. */
+ 908                 rc = llc_ui_autobind(sock, addr);
+ 909                 if (rc)
+ 910                         goto release;
+ 911         }
+ 912         hdrlen = llc->dev->hard_header_len + llc_ui_header_len(sk, addr);
 
-> 
-> Reported-by: Mikulas Patocka <mpatocka@redhat.com>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> ---
+looks like llc->dev was null, (understandable, given Trinity doesn't really know
+how to set up llc beyond random socket()/setsockopt() calls).
 
-Reviewed-by: Davidlohr Bueso <davidlohr@hp.com>
+llc_ui_autobind returns -ENODEV in that case, so it looks like the SOCK_ZAPPED test
+was false. Something like the patch below maybe ? It feels ugly to be duplicating that
+test there, but if this is agreed upon I'll resubmit this properly.
 
+	Dave
+
+diff --git a/net/llc/af_llc.c b/net/llc/af_llc.c
+index 0080d2b0a8ae..9b192db9883b 100644
+--- a/net/llc/af_llc.c
++++ b/net/llc/af_llc.c
+@@ -908,6 +908,11 @@ static int llc_ui_sendmsg(struct kiocb *iocb, struct socket *sock,
+ 		rc = llc_ui_autobind(sock, addr);
+ 		if (rc)
+ 			goto release;
++	} else {
++		if (!llc->dev) {
++			rc = -ENODEV;
++			goto release;
++		}
+ 	}
+ 	hdrlen = llc->dev->hard_header_len + llc_ui_header_len(sk, addr);
+ 	size = hdrlen + len;
