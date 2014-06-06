@@ -1,124 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751692AbaFFMji (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 08:39:38 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:56323 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750993AbaFFMjh (ORCPT
+	id S1751870AbaFFMkn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 08:40:43 -0400
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:37534 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803AbaFFMkm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 08:39:37 -0400
-Message-ID: <5391B683.9040809@linux.vnet.ibm.com>
-Date: Fri, 06 Jun 2014 08:39:31 -0400
-From: "Jason J. Herne" <jjherne@linux.vnet.ibm.com>
-Reply-To: jjherne@linux.vnet.ibm.com
+	Fri, 6 Jun 2014 08:40:42 -0400
+Subject: Re: [PATCH 4/4] GenWQE: Increase driver version number
+From: Frank Haverkamp <haver@linux.vnet.ibm.com>
+Reply-To: haver@linux.vnet.ibm.com
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, haver@linux.vnet.ibm.com,
+        schwidefsky@de.ibm.com
+In-Reply-To: <1402056453.31366.34.camel@oc7383187364.ibm.com>
+References: <1401890273-13067-1-git-send-email-klebers@linux.vnet.ibm.com>
+	 <1401890273-13067-5-git-send-email-klebers@linux.vnet.ibm.com>
+	 <20140604155454.GA2866@kroah.com>
+	 <1401960184.11932.10.camel@oc7383187364.ibm.com>
+	 <20140605160010.GF23993@kroah.com>
+	 <1402056453.31366.34.camel@oc7383187364.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
 Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: Sasha Levin <sasha.levin@oracle.com>, Tejun Heo <tj@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: workqueue: WARN at at kernel/workqueue.c:2176
-References: <CACvQF52-jUMzK32uoDCb8zn0RZsiC9uzUOq+ZBRXK22esYKS0g@mail.gmail.com> <20140516162945.GZ11096@twins.programming.kicks-ass.net> <53849EB7.9090302@linux.vnet.ibm.com> <20140527142637.GB19143@laptop.programming.kicks-ass.net> <53875F09.3090607@linux.vnet.ibm.com> <538DB076.4090704@cn.fujitsu.com> <20140603141659.GO30445@twins.programming.kicks-ass.net> <538E840D.2040300@cn.fujitsu.com> <20140604064946.GF30445@twins.programming.kicks-ass.net> <538ED7EB.5050303@cn.fujitsu.com> <20140604093907.GC11096@twins.programming.kicks-ass.net> <53904C6B.90001@cn.fujitsu.com>
-In-Reply-To: <53904C6B.90001@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Date: Fri, 06 Jun 2014 14:40:35 +0200
+Message-ID: <1402058435.31366.46.camel@oc7383187364.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14060612-3532-0000-0000-0000024B993E
+x-cbid: 14060612-1948-0000-0000-00000018FD1C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2014 06:54 AM, Lai Jiangshan wrote:
-> The patch is not tested by Jason, I don't know whether the patch fix the problem.
-> The changlog including the "Reported-by:" and "Tested-by:" need to be updated
-> after it is proved.
->
+Hi Greg,
 
-With this patch, my workload ran overnight without hitting the warning. 
-This seems promising. I would like to run a day or two more before 
-declaring success though. Just to be sure :).
+Am Freitag, den 06.06.2014, 14:07 +0200 schrieb Frank Haverkamp:
+> Hi Greg,
+> 
+> Am Donnerstag, den 05.06.2014, 09:00 -0700 schrieb Greg KH:
+> > On Thu, Jun 05, 2014 at 11:23:04AM +0200, Frank Haverkamp wrote:
+> > > Hi Greg,
+> > > 
+> > > Am Mittwoch, den 04.06.2014, 08:54 -0700 schrieb Greg KH:
+> > > > On Wed, Jun 04, 2014 at 10:57:53AM -0300, Kleber Sacilotto de Souza wrote:
+> > > > > Increase genwqe driver version number.
+> > > > > 
+> > > > > Signed-off-by: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
+> > > > > ---
+> > > > >  drivers/misc/genwqe/genwqe_driver.h |    2 +-
+> > > > >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > > > > 
+> > > > > diff --git a/drivers/misc/genwqe/genwqe_driver.h b/drivers/misc/genwqe/genwqe_driver.h
+> > > > > index cd52631..a506e9a 100644
+> > > > > --- a/drivers/misc/genwqe/genwqe_driver.h
+> > > > > +++ b/drivers/misc/genwqe/genwqe_driver.h
+> > > > > @@ -36,7 +36,7 @@
+> > > > >  #include <asm/byteorder.h>
+> > > > >  #include <linux/genwqe/genwqe_card.h>
+> > > > >  
+> > > > > -#define DRV_VERS_STRING		"2.0.15"
+> > > > > +#define DRV_VERS_STRING		"2.0.21"
+> > > > 
+> > > > Why is this even needed?  Can't you go off of the kernel version number
+> > > > now?  Who needs / wants this number?
+> > > 
+> > > I am aware that if just considering the mainline kernels, we could use
+> > > the kernel version itself for the purpose of identifying which code we
+> > > are running.
+> > 
+> > Which is what you are patching here :)
+> > 
+> > > But in our lab we are running multiple back-ported versions of this
+> > > driver on different Linux distributions using different kernel versions.
+> > 
+> > Then deal with that in the backported code, the upstream kernel doesn't
+> > care about this.
+> > 
+> > > Our user-space software needs to know if the driver has or has not
+> > > bug-fixes or features. For this purpose, we are using this extra number.
+> > 
+> > Why would you rely on a version number for this, shouldn't you be able
+> > to tell with your api what features are present?
+> 
+> For version "2.0.15" there is no automatic recovery for certain
+> problems, for "2.0.21" there is.
+> 
+> I personally use the driver versions sysfs entry if a user complains
+> that something e.g. the recovery is not working right. First thing I am
+> asking for is the version of the code/driver  as part of the debug data.
+> If that is not matching my expectations, I will tell the user to update
+> the code.
+> 
+> In the current example new applications could more gracefully handle
+> failing recovery scenarios by knowing that the old version of the code
+> cannot properly handle certain problems. And it could this without
+> knowing if it is using a driver which is in the mainline tree or if it
+> is a back-ported version.
+> 
+> Therefore I find it much more convenient for us to handle such things
+> and I would kindly ask you to accept patch 4/4.
+> 
 
-> ------------
->
-> Subject: [PATCH] sched: migrate the waking tasks
->
-> Current code skips to migrate the waking task silently when TTWU_QUEUE is enabled.
->
-> When a task is waking, it is pending on the wake_list of the rq, but
-> it is not on queue (task->on_rq == 0). In this case, set_cpus_allowed_ptr()
-> and __migrate_task() will not migrate it due to it is not on queue.
->
-> This behavior is incorrect, because the task had been already waken-up, it will
-> be running on the wrong CPU without correct placement until the next wake-up
-> or update for cpus_allowed.
->
-> To fix this problem, we need to make the waking tasks on-queue (transfer
-> the waking tasks to running state) before migrate them.
->
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> ---
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 268a45e..d05a5a1 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -1474,20 +1474,24 @@ static int ttwu_remote(struct task_struct *p, int wake_flags)
->   }
->
->   #ifdef CONFIG_SMP
-> -static void sched_ttwu_pending(void)
-> +static void sched_ttwu_pending_locked(struct rq *rq)
->   {
-> -	struct rq *rq = this_rq();
->   	struct llist_node *llist = llist_del_all(&rq->wake_list);
->   	struct task_struct *p;
->
-> -	raw_spin_lock(&rq->lock);
-> -
->   	while (llist) {
->   		p = llist_entry(llist, struct task_struct, wake_entry);
->   		llist = llist_next(llist);
->   		ttwu_do_activate(rq, p, 0);
->   	}
-> +}
->
-> +static void sched_ttwu_pending(void)
-> +{
-> +	struct rq *rq = this_rq();
-> +
-> +	raw_spin_lock(&rq->lock);
-> +	sched_ttwu_pending_locked(rq);
->   	raw_spin_unlock(&rq->lock);
->   }
->
-> @@ -4530,6 +4534,11 @@ int set_cpus_allowed_ptr(struct task_struct *p, const struct cpumask *new_mask)
->   		goto out;
->
->   	dest_cpu = cpumask_any_and(cpu_active_mask, new_mask);
-> +
-> +	/* Ensure it is on rq for migration if it is waking */
-> +	if (p->state == TASK_WAKING)
-> +		sched_ttwu_pending_locked(rq);
-> +
->   	if (p->on_rq) {
->   		struct migration_arg arg = { p, dest_cpu };
->   		/* Need help from migration thread: drop lock and wait. */
-> @@ -4576,6 +4585,10 @@ static int __migrate_task(struct task_struct *p, int src_cpu, int dest_cpu)
->   	if (!cpumask_test_cpu(dest_cpu, tsk_cpus_allowed(p)))
->   		goto fail;
->
-> +	/* Ensure it is on rq for migration if it is waking */
-> +	if (p->state == TASK_WAKING)
-> +		sched_ttwu_pending_locked(rq_src);
-> +
->   	/*
->   	 * If we're not on a rq, the next wake-up will ensure we're
->   	 * placed properly.
->
+I talked a bit with a colleague about version numbers for kernel
+drivers. He pointed me on to the fact that when other people contribute
+to our code, they will mostly not alter my version number, which is
+certainly ok. That in turn makes it impossible for me to figure out the
+exact code version from my own (internal) version number.
 
--- 
--- Jason J. Herne (jjherne@linux.vnet.ibm.com)
+So at the end it is the kernel version number or maybe the git checksum
+used to build the code what enables me to identify the exact version of
+the code. If this be the case, than I wonder, if we should not remove
+the "version" sysfs entry entirely. I mean, if you reject the update to
+it anyways ;-).
+
+> > thanks,
+> > 
+> > greg k-h
+> 
+> Thanks
+> 
+> Frank
+> 
+
+Regards
+
+Frank
 
