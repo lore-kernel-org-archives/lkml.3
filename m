@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752202AbaFFPoZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 11:44:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37560 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751624AbaFFPoX (ORCPT
+	id S1752245AbaFFPpX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 11:45:23 -0400
+Received: from smtprelay0067.hostedemail.com ([216.40.44.67]:56002 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751692AbaFFPpW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 11:44:23 -0400
-Date: Fri, 6 Jun 2014 08:44:17 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Tom Gundersen <teg@jklm.no>
-Cc: Takashi Iwai <tiwai@suse.de>, Stefan Roese <sr@denx.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Abhay Salunke <Abhay_Salunke@dell.com>, Arnd Bergmann <arnd@arndb.de>,
-        Kay Sievers <kay@vrfy.org>, Ming Lei <ming.lei@canonical.com>
-Subject: Re: [PATCH v2] firmware loader: allow disabling of udev as firmware
- loader
-Message-ID: <20140606154417.GA14450@kroah.com>
-References: <s5hbnu71mf1.wl%tiwai@suse.de>
- <CACVXFVPWq93u5KmLhr+g23t4AiGAnLfd+hX3viajzR_KN+sMrw@mail.gmail.com>
- <CAG-2HqXiFgy5M=k55iOYAdXezxsN-ZanWRWDgH-6fuU-uLawOQ@mail.gmail.com>
- <CACVXFVNKGPyv6AVUctotD=Sc97VRRGCXVzJ50pprjCNB7jhUxg@mail.gmail.com>
- <CAG-2HqWtbpKjkNTLAksGZSqskJRfjVOhGkJJFcJUNBFfajLhCg@mail.gmail.com>
- <CACVXFVOgr1y5KQxGDzvyPfqKHo0e3CsN+3HWo-_dxo6bmufbLQ@mail.gmail.com>
- <s5hegz2yw2s.wl%tiwai@suse.de>
- <CAG-2HqUe1oYJ8VBq1kP_Vy_smtkNjAWJ6_+TPu8c9-KVv6EOMA@mail.gmail.com>
- <20140606152240.GB13400@kroah.com>
- <CAG-2HqVQ5gT3svBG+B-tE3m2aJ=T2TYjJ2vsA6k3ZxpyFu_6Kg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAG-2HqVQ5gT3svBG+B-tE3m2aJ=T2TYjJ2vsA6k3ZxpyFu_6Kg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 6 Jun 2014 11:45:22 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2691:2828:3138:3139:3140:3141:3142:3350:3622:3865:3866:3871:3872:3873:3874:4321:5007:6119:7652:7903:7904:8603:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13095:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: talk49_4b9f473800d1b
+X-Filterd-Recvd-Size: 1636
+Message-ID: <1402069518.12882.5.camel@joe-AO725>
+Subject: Re: [PATCH] checkpatch: warn when patch exceeds a maximum message
+ size
+From: Joe Perches <joe@perches.com>
+To: "Allan, Bruce W" <bruce.w.allan@intel.com>
+Cc: "apw@canonical.com" <apw@canonical.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        postmaster <postmaster@vger.kernel.org>
+Date: Fri, 06 Jun 2014 08:45:18 -0700
+In-Reply-To: <804857E1F29AAC47BF68C404FC60A18465623059@ORSMSX105.amr.corp.intel.com>
+References: <20140606000037.18356.720.stgit@gitlad.jf.intel.com>
+	 <1402018556.3038.2.camel@joe-AO725>
+	 <804857E1F29AAC47BF68C404FC60A18465622F2F@ORSMSX105.amr.corp.intel.com>
+	 <1402068405.12513.5.camel@joe-AO725> <1402068842.12513.7.camel@joe-AO725>
+	 <804857E1F29AAC47BF68C404FC60A18465623059@ORSMSX105.amr.corp.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 06, 2014 at 05:35:58PM +0200, Tom Gundersen wrote:
-> 
-> On 6 Jun 2014 17:22, "Greg KH" <gregkh@linuxfoundation.org> wrote:
-> >
-> > On Fri, Jun 06, 2014 at 04:15:03PM +0200, Tom Gundersen wrote:
-> > > How about:
-> > >
-> > > "If you rely on a customized udev (or other userspace tool) to load
-> > > firmware from a non-standard path, say Y. Otherwise, say N. If your
-> > > udev version does not support firmware loading (which is currently the
-> > > upstream default), you must say N."
-> >
-> > Like anyone ever reads help entries for config options...
-> >
-> > "customized udev"?  What does that mean?
-> >
-> > This is all bikeshedding, right?
-> 
-> Yup. I don't care, as long as the patch goes in :)
+On Fri, 2014-06-06 at 15:35 +0000, Allan, Bruce W wrote:
+> > 	Message size exceeding 100 000 characters causes blocking.
+> > 
+> > But I believe that info is out of date.
+> > 
+> If it is out of date, can you explain how/why we got stung by it?
 
-It will, don't worry.  Sometime next week I'll queue it up, I'll take
-whatever text you all agree on in the end...
+Dunno.
 
-greg k-h
+Too many recipients maybe?
+
+cc'ing more than 20 or so people can run up against
+that 1024 total byte header limit.
+
+Maybe send me a copy of the original rejected posting?
+
+
