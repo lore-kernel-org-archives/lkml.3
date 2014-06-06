@@ -1,10 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753043AbaFFRYs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 13:24:48 -0400
-Received: from thoth.sbs.de ([192.35.17.2]:51975 "EHLO thoth.sbs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752421AbaFFRTh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753024AbaFFRYr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 13:24:47 -0400
+Received: from goliath.siemens.de ([192.35.17.28]:34747 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752276AbaFFRTh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 13:19:37 -0400
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Thomas Gleixner <tglx@linutronix.de>,
@@ -14,10 +15,11 @@ Cc: Jason Wessel <jason.wessel@windriver.com>,
         kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
         Borislav Petkov <bp@suse.de>,
-        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>
-Subject: [PATCH v8 05/22] scripts/gdb: Add lx-symbols command
-Date: Fri,  6 Jun 2014 19:18:46 +0200
-Message-Id: <73660de0d8a17f29cd69dab547be941790e19ff9.1402075139.git.jan.kiszka@siemens.com>
+        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>,
+        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
+Subject: [PATCH v8 01/22] scripts/gdb: Add infrastructure
+Date: Fri,  6 Jun 2014 19:18:42 +0200
+Message-Id: <fdabd5c51b800ce584474b08007ba59f5f5bef75.1402075138.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
 In-Reply-To: <cover.1402075136.git.jan.kiszka@siemens.com>
 References: <cover.1402075136.git.jan.kiszka@siemens.com>
@@ -27,34 +29,145 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is probably the most useful helper when debugging kernel modules:
-lx-symbols first reloads vmlinux. Then it searches recursively for *.ko
-files in the specified paths and the current directory. Finally it walks
-the kernel's module list, issuing the necessary add-symbol-file command
-for each loaded module so that gdb knows which module symbol corresponds
-to which address. It also looks up variable sections (bss, data, rodata)
-and appends their address to the add-symbole-file command line. This
-allows to access global module variables just like any other variable.
+This provides the basic infrastructure to load kernel-specific python
+helper scripts when debugging the kernel in gdb.
 
+The loading mechanism is based on gdb loading for <objfile>-gdb.py when
+opening <objfile>. Therefore, this places a corresponding link to the
+main helper script into the output directory that contains vmlinux.
+
+The main scripts will pull in submodules containing Linux specific gdb
+commands and functions. To avoid polluting the source directory with
+compiled python modules, we link to them from the object directory.
+
+Due to gdb.parse_and_eval and string redirection for gdb.execute, we
+depend on gdb >= 7.2.
+
+This feature is enabled via CONFIG_GDB_SCRIPTS.
+
+CC: Michal Marek <mmarek@suse.cz>
+CC: linux-kbuild@vger.kernel.org
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- scripts/gdb/linux/symbols.py | 127 +++++++++++++++++++++++++++++++++++++++++++
- scripts/gdb/vmlinux-gdb.py   |   1 +
- 2 files changed, 128 insertions(+)
- create mode 100644 scripts/gdb/linux/symbols.py
+ Makefile                      |  6 +++++-
+ lib/Kconfig.debug             | 11 +++++++++++
+ scripts/Makefile              |  3 ++-
+ scripts/gdb/Makefile          | 11 +++++++++++
+ scripts/gdb/linux/Makefile    |  9 +++++++++
+ scripts/gdb/linux/__init__.py |  0
+ scripts/gdb/vmlinux-gdb.py    | 23 +++++++++++++++++++++++
+ 7 files changed, 61 insertions(+), 2 deletions(-)
+ create mode 100644 scripts/gdb/Makefile
+ create mode 100644 scripts/gdb/linux/Makefile
+ create mode 100644 scripts/gdb/linux/__init__.py
+ create mode 100644 scripts/gdb/vmlinux-gdb.py
 
-diff --git a/scripts/gdb/linux/symbols.py b/scripts/gdb/linux/symbols.py
+diff --git a/Makefile b/Makefile
+index cdaa5b6..029e700 100644
+--- a/Makefile
++++ b/Makefile
+@@ -861,6 +861,9 @@ endif
+ ifdef CONFIG_BUILD_DOCSRC
+ 	$(Q)$(MAKE) $(build)=Documentation
+ endif
++ifdef CONFIG_GDB_SCRIPTS
++	$(Q)ln -fsn $(srctree)/scripts/gdb/vmlinux-gdb.py
++endif
+ 	+$(call if_changed,link-vmlinux)
+ 
+ # The actual objects are generated when descending, 
+@@ -1109,7 +1112,8 @@ MRPROPER_FILES += .config .config.old .version .old_version $(version_h) \
+ 		  Module.symvers tags TAGS cscope* GPATH GTAGS GRTAGS GSYMS \
+ 		  signing_key.priv signing_key.x509 x509.genkey		\
+ 		  extra_certificates signing_key.x509.keyid		\
+-		  signing_key.x509.signer include/linux/version.h
++		  signing_key.x509.signer include/linux/version.h	\
++		  vmlinux-gdb.py
+ 
+ # clean - Delete most, but leave enough to build external modules
+ #
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 819ac51..89be8f6 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -143,6 +143,17 @@ config DEBUG_INFO_REDUCED
+ 	  DEBUG_INFO build and compile times are reduced too.
+ 	  Only works with newer gcc versions.
+ 
++config GDB_SCRIPTS
++	bool "Provide GDB scripts for kernel debugging"
++	select DEBUG_INFO
++	help
++	  This creates the required links to GDB helper scripts in the
++	  build directory. If you load vmlinux into gdb, the helper
++	  scripts will be automatically imported by gdb as well, and
++	  additional functions are available to analyze a Linux kernel
++	  instance. See Documentation/gdb-kernel-debugging.txt for further
++	  details.
++
+ config ENABLE_WARN_DEPRECATED
+ 	bool "Enable __deprecated logic"
+ 	default y
+diff --git a/scripts/Makefile b/scripts/Makefile
+index 1d07860..9361e96 100644
+--- a/scripts/Makefile
++++ b/scripts/Makefile
+@@ -37,6 +37,7 @@ subdir-$(CONFIG_MODVERSIONS) += genksyms
+ subdir-y                     += mod
+ subdir-$(CONFIG_SECURITY_SELINUX) += selinux
+ subdir-$(CONFIG_DTC)         += dtc
++subdir-$(CONFIG_GDB_SCRIPTS) += gdb
+ 
+ # Let clean descend into subdirs
+-subdir-	+= basic kconfig package selinux
++subdir-	+= basic kconfig package selinux gdb
+diff --git a/scripts/gdb/Makefile b/scripts/gdb/Makefile
 new file mode 100644
-index 0000000..bd21a96
+index 0000000..c0e2fd3
 --- /dev/null
-+++ b/scripts/gdb/linux/symbols.py
-@@ -0,0 +1,127 @@
++++ b/scripts/gdb/Makefile
+@@ -0,0 +1,11 @@
++subdir-y := linux
++
++always := gdb-scripts
++
++$(obj)/gdb-scripts:
++ifneq ($(KBUILD_SRC),)
++	$(Q)ln -fsn $(srctree)/$(obj)/*.py $(objtree)/$(obj)
++endif
++	@:
++
++clean-files := *.pyc $(if $(KBUILD_SRC),*.py)
+diff --git a/scripts/gdb/linux/Makefile b/scripts/gdb/linux/Makefile
+new file mode 100644
+index 0000000..34ccd06
+--- /dev/null
++++ b/scripts/gdb/linux/Makefile
+@@ -0,0 +1,9 @@
++always := gdb-scripts
++
++$(obj)/gdb-scripts:
++ifneq ($(KBUILD_SRC),)
++	$(Q)ln -fsn $(srctree)/$(obj)/*.py $(objtree)/$(obj)
++endif
++	@:
++
++clean-files := *.pyc $(if $(KBUILD_SRC),*.py)
+diff --git a/scripts/gdb/linux/__init__.py b/scripts/gdb/linux/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
+new file mode 100644
+index 0000000..c1d90ce
+--- /dev/null
++++ b/scripts/gdb/vmlinux-gdb.py
+@@ -0,0 +1,23 @@
 +#
 +# gdb helper commands and functions for Linux kernel debugging
 +#
-+#  load kernel and module symbols
++#  loader module
 +#
-+# Copyright (c) Siemens AG, 2011-2013
++# Copyright (c) Siemens AG, 2012, 2013
 +#
 +# Authors:
 +#  Jan Kiszka <jan.kiszka@siemens.com>
@@ -62,129 +175,16 @@ index 0000000..bd21a96
 +# This work is licensed under the terms of the GNU GPL version 2.
 +#
 +
-+import gdb
 +import os
-+import re
-+import string
 +
-+from linux import modules, utils
++sys.path.insert(0, os.path.dirname(__file__) + "/scripts/gdb")
 +
-+
-+class LxSymbols(gdb.Command):
-+    """(Re-)load symbols of Linux kernel and currently loaded modules.
-+
-+The kernel (vmlinux) is taken from the current working directly. Modules (.ko)
-+are scanned recursively, starting in the same directory. Optionally, the module
-+search path can be extended by a space separated list of paths passed to the
-+lx-symbols command."""
-+
-+    module_paths = []
-+    module_files = []
-+    module_files_updated = False
-+
-+    def __init__(self):
-+        super(LxSymbols, self).__init__("lx-symbols", gdb.COMMAND_FILES,
-+                                        gdb.COMPLETE_FILENAME)
-+
-+    def _update_module_files(self):
-+        self.module_files = []
-+        for path in self.module_paths:
-+            gdb.write("scanning for modules in {0}\n".format(path))
-+            for root, dirs, files in os.walk(path):
-+                for name in files:
-+                    if name.endswith(".ko"):
-+                        self.module_files.append(root + "/" + name)
-+        self.module_files_updated = True
-+
-+    def _get_module_file(self, module_name):
-+        module_pattern = ".*/{0}\.ko$".format(
-+            string.replace(module_name, "_", r"[_\-]"))
-+        for name in self.module_files:
-+            if re.match(module_pattern, name) and os.path.exists(name):
-+                return name
-+        return None
-+
-+    def _section_arguments(self, module):
-+        try:
-+            sect_attrs = module['sect_attrs'].dereference()
-+        except gdb.error:
-+            return ""
-+        attrs = sect_attrs['attrs']
-+        section_name_to_address = {
-+            attrs[n]['name'].string() : attrs[n]['address']
-+            for n in range(sect_attrs['nsections'])}
-+        args = []
-+        for section_name in [".data", ".data..read_mostly", ".rodata", ".bss"]:
-+            address = section_name_to_address.get(section_name)
-+            if address:
-+                args.append(" -s {name} {addr}".format(
-+                    name=section_name, addr=str(address)))
-+        return "".join(args)
-+
-+    def load_module_symbols(self, module):
-+        module_name = module['name'].string()
-+        module_addr = str(module['module_core']).split()[0]
-+
-+        module_file = self._get_module_file(module_name)
-+        if not module_file and not self.module_files_updated:
-+            self._update_module_files()
-+            module_file = self._get_module_file(module_name)
-+
-+        if module_file:
-+            gdb.write("loading @{addr}: {filename}\n".format(
-+                addr=module_addr, filename=module_file))
-+            cmdline = "add-symbol-file {filename} {addr}{sections}".format(
-+                filename=module_file,
-+                addr=module_addr,
-+                sections=self._section_arguments(module))
-+            gdb.execute(cmdline, to_string=True)
-+        else:
-+            gdb.write("no module object found for '{0}'\n".format(module_name))
-+
-+    def load_all_symbols(self):
-+        gdb.write("loading vmlinux\n")
-+
-+        # Dropping symbols will disable all breakpoints. So save their states
-+        # and restore them afterward.
-+        saved_states = []
-+        if hasattr(gdb, 'breakpoints') and not gdb.breakpoints() is None:
-+            for bp in gdb.breakpoints():
-+                saved_states.append({'breakpoint': bp, 'enabled': bp.enabled})
-+
-+        # drop all current symbols and reload vmlinux
-+        gdb.execute("symbol-file", to_string=True)
-+        gdb.execute("symbol-file vmlinux")
-+
-+        module_list = modules.ModuleList()
-+        if not module_list:
-+            gdb.write("no modules found\n")
-+        else:
-+            [self.load_module_symbols(module) for module in module_list]
-+
-+        for saved_state in saved_states:
-+            saved_state['breakpoint'].enabled = saved_state['enabled']
-+
-+    def invoke(self, arg, from_tty):
-+        self.module_paths = arg.split()
-+        self.module_paths.append(os.getcwd())
-+
-+        # enforce update
-+        self.module_files = []
-+        self.module_files_updated = False
-+
-+        self.load_all_symbols()
-+
-+
-+LxSymbols()
-diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
-index 6495841..0b0faa4 100644
---- a/scripts/gdb/vmlinux-gdb.py
-+++ b/scripts/gdb/vmlinux-gdb.py
-@@ -23,3 +23,4 @@ except:
-               "work.\n")
- else:
-     import linux.utils
-+    import linux.symbols
++try:
++    gdb.parse_and_eval("0")
++    gdb.execute("", to_string=True)
++except:
++    gdb.write("NOTE: gdb 7.2 or later required for Linux helper scripts to "
++              "work.\n")
 -- 
 1.8.1.1.298.ge7eed54
 
