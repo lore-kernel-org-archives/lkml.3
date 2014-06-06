@@ -1,50 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752331AbaFFS5N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 14:57:13 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:37101 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751796AbaFFS5L (ORCPT
+	id S1752336AbaFFS7W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 14:59:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39315 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751877AbaFFS7V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 14:57:11 -0400
-Message-ID: <1402081030.3645.312.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: Multitude of dst obsolescense race conditions
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: dormando <dormando@rydia.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Date: Fri, 06 Jun 2014 11:57:10 -0700
-In-Reply-To: <20140606181236.GS4581@linux.vnet.ibm.com>
-References: <alpine.DEB.2.02.1405140233210.16893@dtop>
-	 <1400067618.7973.72.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <20140606181236.GS4581@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	Fri, 6 Jun 2014 14:59:21 -0400
+Date: Fri, 6 Jun 2014 11:59:19 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: jwboyer@fedoraproject.org, Sasha Levin <sasha.levin@oracle.com>,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Dave Hansen <dave.hansen@intel.com>
+Subject: Re: pte_present check on hugetlb_entry fix for 3.15?
+Message-Id: <20140606115919.df17197c7182a0f7ed59c3a9@linux-foundation.org>
+In-Reply-To: <53920c95.685a8c0a.2111.ffffe52fSMTPIN_ADDED_BROKEN@mx.google.com>
+References: <20140606173546.GA1869@zod>
+	<53920c95.685a8c0a.2111.ffffe52fSMTPIN_ADDED_BROKEN@mx.google.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-06-06 at 11:12 -0700, Paul E. McKenney wrote:
+On Fri,  6 Jun 2014 14:46:37 -0400 Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
 
-> It is probably just be me getting lost in the code, but I am not seeing
-> a synchronize_rcu(), call_rcu(), or synchronize_net() anywhere in
-> dst_release() or the things that it calls.  If there really isn't such
-> a call, then I don't see how the above code is safe in the case where
-> __sk_dst_set() is invoked on one CPU just after sk_dst_get() executes
-> the rcu_dereference() on some other CPU.
+> On Fri, Jun 06, 2014 at 01:36:54PM -0400, Josh Boyer wrote:
+> > Hi Naoya,
+> > 
+> > I noticed that your
+> > mm-add-pte_present-check-on-existing-hugetlb_entry-callbacks.patch in
+> > Andrew's -mm tree has been queued for a while and has a CC to stable on
+> > it.  Is that something that should get into 3.15?
+> 
+> I'm not sure. I guess Andrew will decide this in a few days.
 
-Well, this part is fine, dst_release() do not free dst that are
-potentially stored in sk_dst_cache
-
-Only the refcount is decremented.
-
-The bug is elsewhere, we had another thread raising this issue on netdev
-this morning.
-
-I am cooking a patch to clear the mess.
-
-Thanks
-
+I was planning on doing so but then Dave popped up with an alternative
+which rather blew a hole in things.
 
