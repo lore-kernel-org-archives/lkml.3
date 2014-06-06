@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753151AbaFFRY7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 13:24:59 -0400
-Received: from david.siemens.de ([192.35.17.14]:35924 "EHLO david.siemens.de"
+	id S1753120AbaFFRYz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 13:24:55 -0400
+Received: from david.siemens.de ([192.35.17.14]:35931 "EHLO david.siemens.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752234AbaFFRTh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752242AbaFFRTh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 13:19:37 -0400
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Thomas Gleixner <tglx@linutronix.de>,
@@ -15,9 +15,9 @@ Cc: Jason Wessel <jason.wessel@windriver.com>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
         Borislav Petkov <bp@suse.de>,
         Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>
-Subject: [PATCH v8 14/22] scripts/gdb: Add is_target_arch helper
-Date: Fri,  6 Jun 2014 19:18:55 +0200
-Message-Id: <a77f07897c21dc1459aef39e39033f0ad7455d2f.1402075140.git.jan.kiszka@siemens.com>
+Subject: [PATCH v8 12/22] scripts/gdb: Add task iteration class
+Date: Fri,  6 Jun 2014 19:18:53 +0200
+Message-Id: <1f744f5e341c4aa93abfb85aea65502491b04072.1402075140.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
 In-Reply-To: <cover.1402075136.git.jan.kiszka@siemens.com>
 References: <cover.1402075136.git.jan.kiszka@siemens.com>
@@ -27,35 +27,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This helper caches to result of "show architecture" and matches the
-provided arch (sub-)string against that output.
+This class allows to iterate over all tasks of the target.
 
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- scripts/gdb/linux/utils.py | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ scripts/gdb/linux/tasks.py | 46 ++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 46 insertions(+)
+ create mode 100644 scripts/gdb/linux/tasks.py
 
-diff --git a/scripts/gdb/linux/utils.py b/scripts/gdb/linux/utils.py
-index 808a265..71ee48c 100644
---- a/scripts/gdb/linux/utils.py
-+++ b/scripts/gdb/linux/utils.py
-@@ -106,3 +106,16 @@ def read_u64(buffer):
-         return read_u32(buffer[0:4]) + (read_u32(buffer[4:8]) << 32)
-     else:
-         return read_u32(buffer[4:8]) + (read_u32(buffer[0:4]) << 32)
+diff --git a/scripts/gdb/linux/tasks.py b/scripts/gdb/linux/tasks.py
+new file mode 100644
+index 0000000..cd25984
+--- /dev/null
++++ b/scripts/gdb/linux/tasks.py
+@@ -0,0 +1,46 @@
++#
++# gdb helper commands and functions for Linux kernel debugging
++#
++#  task & thread tools
++#
++# Copyright (c) Siemens AG, 2011-2013
++#
++# Authors:
++#  Jan Kiszka <jan.kiszka@siemens.com>
++#
++# This work is licensed under the terms of the GNU GPL version 2.
++#
++
++import gdb
++
++from linux import utils
 +
 +
-+target_arch = None
++task_type = utils.CachedType("struct task_struct")
 +
 +
-+def is_target_arch(arch):
-+    if hasattr(gdb.Frame, 'architecture'):
-+        return arch in gdb.newest_frame().architecture().name()
-+    else:
-+        global target_arch
-+        if target_arch is None:
-+            target_arch = gdb.execute("show architecture", to_string=True)
-+        return arch in target_arch
++class TaskList:
++    def __init__(self):
++        global task_type
++        self.task_ptr_type = task_type.get_type().pointer()
++        self.init_task = gdb.parse_and_eval("init_task")
++        self.curr_group = self.init_task.address
++        self.curr_task = None
++
++    def __iter__(self):
++        return self
++
++    def next(self):
++        t = self.curr_task
++        if not t or t == self.curr_group:
++            self.curr_group = \
++                utils.container_of(self.curr_group['tasks']['next'],
++                                   self.task_ptr_type, "tasks")
++            if self.curr_group == self.init_task.address:
++                raise StopIteration
++            t = self.curr_task = self.curr_group
++        else:
++            self.curr_task = \
++                utils.container_of(t['thread_group']['next'],
++                                   self.task_ptr_type, "thread_group")
++        return t
 -- 
 1.8.1.1.298.ge7eed54
 
