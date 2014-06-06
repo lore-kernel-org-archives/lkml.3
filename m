@@ -1,163 +1,302 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070AbaFFKus (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 06:50:48 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:54443 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750874AbaFFKuq (ORCPT
+	id S1752154AbaFFKyO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 06:54:14 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:43783 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751390AbaFFKyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 06:50:46 -0400
-Date: Fri, 6 Jun 2014 12:50:36 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Yuyang Du <yuyang.du@intel.com>
-Cc: Dirk Brandewie <dirk.brandewie@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        Dietmar Eggemann <Dietmar.Eggemann@arm.com>, len.brown@intel.com,
-        jacob.jun.pan@linux.intel.com
-Subject: Re: [RFC PATCH 06/16] arm: topology: Define TC2 sched energy and
- provide it to scheduler
-Message-ID: <20140606105036.GQ3213@twins.programming.kicks-ass.net>
-References: <1400869003-27769-1-git-send-email-morten.rasmussen@arm.com>
- <20140604160230.GS29593@e103034-lin>
- <20140604172712.GJ13930@laptop.programming.kicks-ass.net>
- <2484761.vkWavnsDx3@vostro.rjw.lan>
- <20140605065205.GA3213@twins.programming.kicks-ass.net>
- <539086B3.2010804@gmail.com>
- <20140605202930.GA15484@intel.com>
- <20140606080543.GR6758@twins.programming.kicks-ass.net>
- <20140606003520.GB22261@intel.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SlnaBQtdWG0gYnqZ"
-Content-Disposition: inline
-In-Reply-To: <20140606003520.GB22261@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Fri, 6 Jun 2014 06:54:12 -0400
+Message-ID: <53919DCE.1050708@gmail.com>
+Date: Fri, 06 Jun 2014 12:54:06 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+To: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
+	<antoine.tenart@free-electrons.com>,
+        balbi@ti.com
+CC: alexandre.belloni@free-electrons.com, thomas.petazzoni@free-electrons.com,
+        zmxu@marvell.com, jszhang@marvell.com,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/9] usb: phy: add the Berlin USB PHY driver
+References: <1401983326-19205-1-git-send-email-antoine.tenart@free-electrons.com> <1401983326-19205-5-git-send-email-antoine.tenart@free-electrons.com>
+In-Reply-To: <1401983326-19205-5-git-send-email-antoine.tenart@free-electrons.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/05/2014 05:48 PM, Antoine Ténart wrote:
+> Add the driver driving the Marvell Berlin USB PHY. This allows to
+> initialize the PHY and to use it from the USB driver later.
+>
+> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+> ---
+>   drivers/usb/phy/Kconfig          |   9 ++
+>   drivers/usb/phy/Makefile         |   1 +
+>   drivers/usb/phy/phy-berlin-usb.c | 223 +++++++++++++++++++++++++++++++++++++++
+>   3 files changed, 233 insertions(+)
+>   create mode 100644 drivers/usb/phy/phy-berlin-usb.c
+>
+[...]
+> diff --git a/drivers/usb/phy/phy-berlin-usb.c b/drivers/usb/phy/phy-berlin-usb.c
+> new file mode 100644
+> index 000000000000..79416668a71b
+> --- /dev/null
+> +++ b/drivers/usb/phy/phy-berlin-usb.c
+> @@ -0,0 +1,223 @@
+> +/*
+> + * Copyright (C) 2014 Marvell Technology Group Ltd.
+> + *
+> + * Antoine Ténart <antoine.tenart@free-electrons.com>
+> + * Jisheng Zhang <jszhang@marvell.com>
+> + *
+> + * This file is licensed under the terms of the GNU General Public
+> + * License version 2. This program is licensed "as is" without any
+> + * warranty of any kind, whether express or implied.
+> + */
+> +
+> +#include <linux/gpio.h>
+> +#include <linux/io.h>
+> +#include <linux/module.h>
+> +#include <linux/of_gpio.h>
+> +#include <linux/usb/phy.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/reset.h>
 
---SlnaBQtdWG0gYnqZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+nit: keep above alphabetically sorted.
 
-On Fri, Jun 06, 2014 at 08:35:21AM +0800, Yuyang Du wrote:
+> +#define USB_PHY_PLL		0x04
+> +#define USB_PHY_PLL_CONTROL	0x08
+> +#define USB_PHY_TX_CTRL0	0x10
+> +#define USB_PHY_TX_CTRL1	0x14
+> +#define USB_PHY_TX_CTRL2	0x18
+> +#define USB_PHY_RX_CTRL		0x20
+> +#define USB_PHY_ANALOG		0x34
+> +
+> +/* USB_PHY_PLL */
+> +#define CLK_REF_DIV(x)		((x) << 4)
+> +#define FEEDBACK_CLK_DIV(x)	((x) << 8)
+> +
+> +/* USB_PHY_PLL_CONTROL */
+> +#define CLK_STABLE		(0x1 << 0)
+> +#define PLL_CTRL_PIN		(0x1 << 1)
+> +#define PLL_CTRL_REG		(0x1 << 2)
+> +#define PLL_ON			(0x1 << 3)
+> +#define PHASE_OFF_TOL_125	(0x0 << 5)
+> +#define PHASE_OFF_TOL_250	(0x1 << 5)
+> +#define KVC0_CALIB		(0x0 << 9)
+> +#define KVC0_REG_CTRL		(0x1 << 9)
+> +#define KVC0_HIGH		(0x0 << 10)
+> +#define KVC0_LOW		(0x3 << 10)
+> +#define CLK_BLK_EN		(0x1 << 13)
 
-> > > Actually, silicon supports indepdent non-Turbo pstate, but just not e=
-nabled.
-> >=20
-> > Then it doesn't exist, so no point in mentioning it.
-> >=20
->=20
-> Well, things actually get more complicated. Not-enabled is for Core. For =
-Atom
-> Baytrail, each core indeed can operate on difference frequency. I am not =
-sure for
-> Xeon, :)
+BIT() for the single bit flags above and below.
 
-Yes, I understand Atom is an entirely different thing.
+> +/* USB_PHY_TX_CTRL0 */
+> +#define EXT_HS_RCAL_EN		(0x1 << 3)
+> +#define EXT_FS_RCAL_EN		(0x1 << 4)
+> +#define IMPCAL_VTH_DIV(x)	((x) << 5)
+> +#define EXT_RS_RCAL_DIV(x)	((x) << 8)
+> +#define EXT_FS_RCAL_DIV(x)	((x) << 12)
+> +
+> +/* USB_PHY_TX_CTRL1 */
+> +#define TX_VDD15_14		(0x0 << 4)
+> +#define TX_VDD15_15		(0x1 << 4)
+> +#define TX_VDD15_16		(0x2 << 4)
+> +#define TX_VDD15_17		(0x3 << 4)
+> +#define TX_VDD12_VDD		(0x0 << 6)
+> +#define TX_VDD12_11		(0x1 << 6)
+> +#define TX_VDD12_12		(0x2 << 6)
+> +#define TX_VDD12_13		(0x3 << 6)
+> +#define LOW_VDD_EN		(0x1 << 8)
+> +#define TX_OUT_AMP(x)		((x) << 9)
+> +
+> +/* USB_PHY_TX_CTRL2 */
+> +#define TX_CHAN_CTRL_REG(x)	((x) << 0)
+> +#define DRV_SLEWRATE(x)		((x) << 4)
+> +#define IMP_CAL_FS_HS_DLY_0	(0x0 << 6)
+> +#define IMP_CAL_FS_HS_DLY_1	(0x1 << 6)
+> +#define IMP_CAL_FS_HS_DLY_2	(0x2 << 6)
+> +#define IMP_CAL_FS_HS_DLY_3	(0x3 << 6)
+> +#define FS_DRV_EN_MASK(x)	((x) << 8)
+> +#define HS_DRV_EN_MASK(x)	((x) << 12)
+> +
+> +/* USB_PHY_RX_CTRL */
+> +#define PHASE_FREEZE_DLY_2_CL	(0x0 << 0)
+> +#define PHASE_FREEZE_DLY_4_CL	(0x1 << 0)
+> +#define ACK_LENGTH_8_CL		(0x0 << 2)
+> +#define ACK_LENGTH_12_CL	(0x1 << 2)
+> +#define ACK_LENGTH_16_CL	(0x2 << 2)
+> +#define ACK_LENGTH_20_CL	(0x3 << 2)
+> +#define SQ_LENGTH_3		(0x0 << 4)
+> +#define SQ_LENGTH_6		(0x1 << 4)
+> +#define SQ_LENGTH_9		(0x2 << 4)
+> +#define SQ_LENGTH_12		(0x3 << 4)
+> +#define DISCON_THRESHOLD_260	(0x0 << 6)
+> +#define DISCON_THRESHOLD_270	(0x1 << 6)
+> +#define DISCON_THRESHOLD_280	(0x2 << 6)
+> +#define DISCON_THRESHOLD_290	(0x3 << 6)
+> +#define SQ_THRESHOLD(x)		((x) << 8)
+> +#define LPF_COEF(x)		((x) << 12)
+> +#define INTPL_CUR_10		(0x0 << 14)
+> +#define INTPL_CUR_20		(0x1 << 14)
+> +#define INTPL_CUR_30		(0x2 << 14)
+> +#define INTPL_CUR_40		(0x3 << 14)
+> +
+> +/* USB_PHY_ANALOG */
+> +#define ANA_PWR_UP		(0x1 << 1)
+> +#define ANA_PWR_DOWN		(0x1 << 2)
+> +#define V2I_VCO_RATIO(x)	((x) << 7)
+> +#define R_ROTATE_90		(0x0 << 10)
+> +#define R_ROTATE_0		(0x1 << 10)
+> +#define MODE_TEST_EN		(0x1 << 11)
+> +#define ANA_TEST_DC_CTRL(x)	((x) << 12)
+> +
+> +#define to_berlin_phy_priv(p)	container_of((p), struct berlin_phy_priv, phy)
+> +
+> +struct berlin_phy_priv {
+> +	void __iomem		*base;
+> +	struct usb_phy		phy;
+> +	struct reset_control	*rst_ctrl;
+> +	int			pwr_gpio;
 
-> > So frequency isn't _that_ interesting, voltage is. And while
-> > predictability it might be their assumption, is it actually true? I
-> > mean, there's really nothing else except to assume that, if its not you
-> > can't do anything at all, so you _have_ to assume this.
-> >=20
-> > But again, is the assumption true? Or just happy thoughts in an attempt
-> > to do something.
->=20
-> Voltage is combined with frequency, roughly, voltage is proportional
-> to freuquecy, so roughly, power is proportionaly to voltage^3. You
+Is the GPIO used for USB power? If so, we should not rely on
+GPIO at all but use regulator API. Thinking of Chromecast which
+is externally powered over USB, there will be no regulator nor
+GPIO at all.
 
-P ~ V^2, last time I checked.
+> +};
+> +
+> +static int berlin_phy_init(struct usb_phy *phy)
+> +{
+> +	struct berlin_phy_priv *priv = to_berlin_phy_priv(phy);
+> +	int ret;
+> +
+> +	reset_control_reset(priv->rst_ctrl);
+> +
+> +	writel(CLK_REF_DIV(0xc) | FEEDBACK_CLK_DIV(0x54),
+> +	       priv->base + USB_PHY_PLL);
 
-> can't say which is more important, or there is no reason to raise
-> voltage without raising frequency.
+@Jisheng: IIRC the dividers above are different for BG2? Can you please
+evaluate?
 
-Well, some chips have far fewer voltage steps than freq steps; or,
-differently put, they have multiple freq steps for a single voltage
-level.
+> +	writel(CLK_STABLE | PLL_CTRL_REG | PHASE_OFF_TOL_250 | KVC0_REG_CTRL |
+> +	       CLK_BLK_EN, priv->base + USB_PHY_PLL_CONTROL);
+> +	writel(V2I_VCO_RATIO(0x5) | R_ROTATE_0 | ANA_TEST_DC_CTRL(0x5),
+> +	       priv->base + USB_PHY_ANALOG);
+> +	writel(PHASE_FREEZE_DLY_4_CL | ACK_LENGTH_16_CL | SQ_LENGTH_12 |
+> +	       DISCON_THRESHOLD_260 | SQ_THRESHOLD(0xa) | LPF_COEF(0x2) |
+> +	       INTPL_CUR_30, priv->base + USB_PHY_RX_CTRL);
+> +
+> +	writel(TX_VDD12_13 | TX_OUT_AMP(0x3), priv->base + USB_PHY_TX_CTRL1);
+> +	writel(EXT_HS_RCAL_EN | IMPCAL_VTH_DIV(0x3) | EXT_RS_RCAL_DIV(0x4),
+> +	       priv->base + USB_PHY_TX_CTRL0);
+> +
+> +	writel(EXT_HS_RCAL_EN | IMPCAL_VTH_DIV(0x3) | EXT_RS_RCAL_DIV(0x4) |
+> +	       EXT_FS_RCAL_DIV(0x2), priv->base + USB_PHY_TX_CTRL0);
+> +
+> +	writel(EXT_HS_RCAL_EN | IMPCAL_VTH_DIV(0x3) | EXT_RS_RCAL_DIV(0x4),
+> +	       priv->base + USB_PHY_TX_CTRL0);
+> +	writel(TX_CHAN_CTRL_REG(0xf) | DRV_SLEWRATE(0x3) | IMP_CAL_FS_HS_DLY_3 |
+> +	       FS_DRV_EN_MASK(0xd), priv->base + USB_PHY_TX_CTRL2);
+> +
+> +	ret = gpio_direction_output(priv->pwr_gpio, 0);
 
-And since the power (Watts) is proportional to Voltage squared, its the
-biggest term.
+As mentioned above, this should be using regulator API. And also, if
+there is no dummy regulator allowed, it should be optional.
 
-If you have a distinct voltage level for each freq, it all doesn't
-matter.
+> +	if (ret)
+> +		return ret;
+> +
+> +	gpio_set_value(priv->pwr_gpio, 1);
+> +
+> +	return 0;
+> +}
+> +
+> +static void berlin_phy_shutdown(struct usb_phy *phy)
+> +{
+> +	struct berlin_phy_priv *priv = to_berlin_phy_priv(phy);
+> +
+> +	gpio_set_value(priv->pwr_gpio, 0);
+> +}
+> +
+> +static int berlin_phy_probe(struct platform_device *pdev)
+> +{
+> +	struct device_node *np = pdev->dev.of_node;
+> +	struct berlin_phy_priv *priv;
+> +	struct resource *res;
+> +	int ret, gpio;
+> +
+> +	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
+> +	if (!priv)
+> +		return -ENOMEM;
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	priv->base = devm_ioremap_resource(&pdev->dev, res);
+> +	if (IS_ERR(priv->base))
+> +		return PTR_ERR(priv->base);
+> +
+> +	priv->rst_ctrl = devm_reset_control_get(&pdev->dev, NULL);
+> +	if (IS_ERR(priv->rst_ctrl)) {
+> +		ret = PTR_ERR(priv->rst_ctrl);
+> +		dev_err(&pdev->dev, "cannot get reset controller: %d\n", ret);
 
-> If only one word to say: true of false, it is true. Because given any
-> fixed workload, I can't see why performance would be worse if
-> frequency is higher.
+Hmm, considering a non arch_init call registered reset driver, it does
+also spit out an error for -EPROBE_DEFER, does it?
 
-Well, our work here is to redefine performance as performance/watt. So
-running at higher frequency (and thus likely higher voltage) is a
-definite performance decrease in that sense.
+> +		return ret;
+> +	}
+> +
+> +	gpio = of_get_named_gpio(np, "power-gpio", 0);
+> +	if (!gpio_is_valid(gpio))
+> +		return gpio;
+> +
+> +	ret = gpio_request(gpio, "power-gpio");
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "cannot request GPIO %d", gpio);
+> +		return ret;
+> +	}
+> +	priv->pwr_gpio = gpio;
+> +
+> +	priv->phy.io_priv = priv->base;
+> +	priv->phy.dev = &pdev->dev;
+> +	priv->phy.label = "phy-berlin-usb";
+> +	priv->phy.init = berlin_phy_init;
+> +	priv->phy.shutdown = berlin_phy_shutdown;
+> +	priv->phy.type = USB_PHY_TYPE_USB2;
+> +
+> +	platform_set_drvdata(pdev, priv);
+> +
+> +	return usb_add_phy_dev(&priv->phy);
+> +}
+> +
+> +static const struct of_device_id phy_berlin_sata_of_match[] = {
+> +	{ .compatible = "marvell,berlin-usbphy" },
 
-> The reality as opposed to the assumption is in two-fold:
-> 1) if workload is CPU bound, performance scales with frequency absolutely=
-=2E if workload is
->    memory bound, it does not scale. But from kernel, we don't know whethe=
-r it is CPU bound
->    or not (or it is hard to know). uArch statistics can model that.
+If we need to distinguish BG2 and later SoCs, we either need two
+different compatibles. Or we just have a vendor specific property
+describing the divider values above.
 
-Well, we could know for a number of archs, its just that these
-statistics are expensive to track.
+Sebastian
 
-Also, lowering P-state is 'fine', as long as you can 'guarantee' you
-don't loose IPC performance, since running at lower voltage for the same
-IPC is actually better IPC/watt than estimated.
+> +	{ },
+> +};
+> +MODULE_DEVICE_TABLE(of, phy_berlin_sata_of_match);
+> +
+> +static struct platform_driver phy_berlin_usb_driver = {
+> +	.probe	= berlin_phy_probe,
+> +	.driver	= {
+> +		.name		= "phy-berlin-usb",
+> +		.owner		= THIS_MODULE,
+> +		.of_match_table	= phy_berlin_sata_of_match,
+> +	 },
+> +};
+> +module_platform_driver(phy_berlin_usb_driver);
+> +
+> +MODULE_AUTHOR("Antoine Ténart <antoine.tenart@free-electrons.com>");
+> +MODULE_DESCRIPTION("Marvell Berlin USB PHY driver");
+> +MODULE_LICENSE("GPL");
+>
 
-But what was said earlier is that P-state is a lower limit, not a higher
-limit. In that case the core can run at higher voltage and the estimate
-is just plain wrong.
-
-> But still, the assumption is a must or no guilty, because we adjust
-> frequency continuously, for example, if the workload is fixed, and if
-> the performance does not scale with freq we stop increasing frequency.
-> So a good frequency governor or driver should and can continuously
-> pursue "good" frequency with the changing workload. Therefore, in the
-> long term, we will be better off.
-
-Sure, but realize that we must fully understand this governor and
-integrate it in the scheduler if we're to attain the goal of IPC/watt
-optimized scheduling behaviour.
-
-So you (or rather Intel in general) will have to be very explicit on how
-their stuff works and can no longer hide in some driver and do magic.
-The same is true for all other vendors for that matter.
-
-If you (vendors, not Yuyang in specific) do not want to play (and be
-explicit and expose how your hardware functions) then you simply will
-not get power efficient scheduling full stop.
-
-There's no rocks to hide under, no magic veils to hide behind. You tell
-_in_public_ or you get nothing.
-
---SlnaBQtdWG0gYnqZ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTkZz8AAoJEHZH4aRLwOS6M/oQAK/ibsZQqle+YENY5GgUVeS6
-WalaRkNzQL7YiiS7xfl93pLjOxEacJY5J4n5PC4bUSx6Aj3UvYEYTRzr8FHoLthj
-vdHMtjDjSfYKaKgTsUS84rBCI5wmI0Jx6ZSOAG2EPqS9BeO4+PMiTYRA2S1Z8hr5
-aEr/FcvJ69adWwK9/hNErZ1Sos9kcMYdfJV89ZWUmwyhkDCuyDcfVlXJuXIMlYty
-gE+H1MD8z5FBTdfgPGftnrqKkuDPtXwBMd7wsAYuAd+c4Ajqgh+BfncP6jV1tyX5
-6paR6xCnr6gV6QuwGFQFfviknrfWlWMCKINBweqlXta9OLpxcX9/kdGwZPTpo6fg
-mPggHas+GU1wdcYtPyN4TPHO++O+MwmR3+bmqVuw0ZJD+Wcx9xNPSB05VN+60tHp
-F/2pqwWFjA6pfqSObXSFxdv/Wvk/cdgqHBPSpXABPBKl/Aj5nZeUer8BUZipmt+j
-vkMVqysA2zlpsMXZPdTwtx1zagsBw8kGuDsRL19yTpjPeQOzBwg4UNkXwvh+hqZn
-ba8s5/NapZAGYynTANwypr4EhBFOBS3cR5LZCVyMqGEIz8/oDv00kIoh5Gy8P4b2
-frNd5gFU+sctIjredOhyZD4CWRJRS4f1Nw1SI3CFBBElYNr2+oV+QfYmKFzOE04u
-1zw1oKbN3lotC6OTHKSY
-=bxOL
------END PGP SIGNATURE-----
-
---SlnaBQtdWG0gYnqZ--
