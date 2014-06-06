@@ -1,66 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752966AbaFFBtf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 21:49:35 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:56641 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751677AbaFFBte (ORCPT
+	id S1752613AbaFFBzy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 21:55:54 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:39356 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751677AbaFFBzx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 21:49:34 -0400
-Message-ID: <1402019369.5458.55.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: ima_mmap_file returning 0 to userspace as mmap result.
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Dave Jones <davej@redhat.com>
-Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 05 Jun 2014 21:49:29 -0400
-In-Reply-To: <20140605162045.GA25474@redhat.com>
-References: <20140604233122.GA19838@redhat.com> <538FF4C4.5090300@gmail.com>
-	 <20140605155658.GA22673@redhat.com> <20140605162045.GA25474@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	Thu, 5 Jun 2014 21:55:53 -0400
+Message-ID: <53911FA6.1030505@kernel.dk>
+Date: Thu, 05 Jun 2014 19:55:50 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Ming Lei <tom.leiming@gmail.com>
+CC: Alexander Gordeev <agordeev@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: blk-mq: bitmap tag: performance degradation?
+References: <20140604103544.GA11350@dhcp-26-207.brq.redhat.com>	<538F2AC2.1060904@kernel.dk>	<20140605140127.GA22198@dhcp-26-207.brq.redhat.com>	<53907895.8090102@kernel.dk>	<CACVXFVMFjR5kqB9SQG-EiKMB3dC0O58_EhJZw2R2m7a9vUuH0A@mail.gmail.com>	<5390A624.8020308@kernel.dk> <CACVXFVO-1shNB=tSpNBp_tpx+9imx5ycxfaSwofg-VeR_4S+MA@mail.gmail.com>
+In-Reply-To: <CACVXFVO-1shNB=tSpNBp_tpx+9imx5ycxfaSwofg-VeR_4S+MA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14060601-0928-0000-0000-00000273A9D5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-06-05 at 12:20 -0400, Dave Jones wrote: 
-> On Thu, Jun 05, 2014 at 11:56:58AM -0400, Dave Jones wrote:
->  > On Thu, Jun 05, 2014 at 06:40:36AM +0200, Michael Kerrisk (man-pages) wrote:
->  >  > On 06/05/2014 01:31 AM, Dave Jones wrote:
->  >  > > I just noticed that trinity was freaking out in places when mmap was
->  >  > > returning zero.  This surprised me, because I had the mmap_min_addr
->  >  > > sysctl set to 64k, so it wasn't a MAP_FIXED mapping that did it.
->  >  > > 
->  >  > > There's no mention of this return value in the man page, so I dug
->  >  > > into the kernel code, and it appears that we do..
->  >  > > 
->  >  > > sys_mmap
->  >  > > vm_mmap_pgoff
->  >  > > security_mmap_file
->  >  > > ima_file_mmap <- returns 0 if not PROT_EXEC
->  >  > > 
->  >  > > and then the 0 gets propagated up as a retval all the way to userspace.
->  > 
->  > I just realised that this affects even kernels with CONFIG_IMA unset,
->  > because there we just do 'return 0' unconditionally.
->  > 
->  > Also, it appears that kernels with CONFIG_SECURITY unset will also
->  > return a zero for the same reason.
-> 
-> Hang on, I was misreading that whole security_mmap_file ret handling code.
-> There's something else at work here.  I'll dig and get a reproducer.
+On 2014-06-05 17:33, Ming Lei wrote:
+> On Fri, Jun 6, 2014 at 1:17 AM, Jens Axboe <axboe@kernel.dk> wrote:
+>> On 06/05/2014 08:16 AM, Ming Lei wrote:
+>>> On Thu, Jun 5, 2014 at 10:03 PM, Jens Axboe <axboe@kernel.dk> wrote:
+>>>> On 2014-06-05 08:01, Alexander Gordeev wrote:
+>>>>>
+>>>>> On Wed, Jun 04, 2014 at 08:18:42AM -0600, Jens Axboe wrote:
+>>>>>>
+>>>>>> A null_blk test is the absolute best case for percpu_ida, since
+>>>>>> there are enough tags and everything is localized. The above test is
+>>>>>> more useful for testing blk-mq than any real world application of
+>>>>>> the tagging.
+>>>>>>
+>>>>>> I've done considerable testing on both 2 and 4 socket (32 and 64
+>>>>>> CPUs) and bitmap tagging is better in a much wider range of
+>>>>>> applications. This includes even high tag depth devices like nvme,
+>>>>>> and more normal ranges like mtip32xx and scsi-mq setups.
+>>>>>
+>>>>>
+>>>>> Just for the record: bitmap tags on a 48 CPU box with NVMe device
+>>>>> indeed shows almost the same performance/cache rate as the stock
+>>>>> kernel.
+>>>>
+>>>>
+>>>> Thanks for confirming. It's one of the dangers of null_blk, it's not always
+>>>> a very accurate simulation of what a real device will do. I think it's
+>>>> mostly a completion side thing, would be great with a small device that
+>>>> supported msi-x and could be used as an irq trigger :-)
+>>>
+>>> Maybe null_blk at IRQ_TIMER mode is more close to
+>>> a real device, and I guess the result may be different with
+>>> mode IRQ_NONE/IRQ_SOFTIRQ.
+>>
+>> It'd be closer in behavior, but the results might then be skewed by
+>> hitting the timer way too hard. And it'd be a general slowdown, again
+>> possibly skewing it. But I haven't tried with the timer completion, to
+>> see if that yields more accurate modelling for this test, so it might
+>> actually be a lot better.
+>
+> My test on a 16core VM(host: 2 sockets, 16core):
+>
+> 1, bitmap tag allocation(3.15-rc7-next):
+> - softirq mode: 759K IOPS
+> - timer mode: 409K IOPS
+>
+> 2, percpu_ida allocation(3.15-rc7)
+> - softirq mode: 1116K IOPS
+> - timer mode: 411K IOPS
 
-According to security.h, it should return 0 if permission is granted.
-If IMA is not enabled, it should also return 0.  What exactly is the
-problem?
+It's hard to say if this is close, or whether we are just timer bound at 
+that point.
 
-thanks,
+What other parameters did you load null_blk with (unmber of queues, 
+queue depth)?
 
-Mimi
+
+-- 
+Jens Axboe
 
