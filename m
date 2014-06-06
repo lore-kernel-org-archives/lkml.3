@@ -1,105 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752066AbaFFSMn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 14:12:43 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:57067 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751711AbaFFSMl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 14:12:41 -0400
-Date: Fri, 6 Jun 2014 11:12:36 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: dormando <dormando@rydia.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: Multitude of dst obsolescense race conditions
-Message-ID: <20140606181236.GS4581@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <alpine.DEB.2.02.1405140233210.16893@dtop>
- <1400067618.7973.72.camel@edumazet-glaptop2.roam.corp.google.com>
+	id S1751575AbaFFSTm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 14:19:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46292 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750743AbaFFSTl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 14:19:41 -0400
+Date: Fri, 6 Jun 2014 14:19:00 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: WANG Chao <chaowang@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
+        greg@kroah.com, bp@alien8.de, jkosina@suse.cz, dyoung@redhat.com,
+        bhe@redhat.com, akpm@linux-foundation.org
+Subject: Re: [PATCH 07/13] kexec: Implementation of new syscall
+ kexec_file_load
+Message-ID: <20140606181859.GK1526@redhat.com>
+References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
+ <1401800822-27425-8-git-send-email-vgoyal@redhat.com>
+ <20140606065605.GE2785@dhcp-17-89.nay.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1400067618.7973.72.camel@edumazet-glaptop2.roam.corp.google.com>
+In-Reply-To: <20140606065605.GE2785@dhcp-17-89.nay.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14060618-3532-0000-0000-0000024DD33F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 14, 2014 at 04:40:18AM -0700, Eric Dumazet wrote:
-> On Wed, 2014-05-14 at 02:57 -0700, dormando wrote:
-> > Hi,
+On Fri, Jun 06, 2014 at 02:56:05PM +0800, WANG Chao wrote:
+> On 06/03/14 at 09:06am, Vivek Goyal wrote:
+> > Previous patch provided the interface definition and this patch prvides
+> > implementation of new syscall.
 > > 
-> > Given a machine with frequently changing routes (ie; a router with an
-> > active internet BGP table and multiple interfaces), there're at least
-> > several places where obsolete dst's are handled improperly. If I pause the
-> > route changes, the crashes appear to stop. This first one has a crash
-> > utility we've made, so I was able to more quickly find a patch and test
-> > it. The others take time to reproduce.
+> > Previously segment list was prepared in user space. Now user space just
+> > passes kernel fd, initrd fd and command line and kernel will create a
+> > segment list internally.
 > > 
-> > I'm testing against 3.10.39, but I think if these were fixed they'd be
-> > backported to stable? I've also had recent 3.12's running that have
-> > crashed in the same spots. Anyway correct me if I'm wrong...
+> > This patch contains generic part of the code. Actual segment preparation
+> > and loading is done by arch and image specific loader. Which comes in
+> > next patch.
+> > 
+> > Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 > 
-> Is this a vanilla kernel ? I never had any issues like that.
+> [..]
+> > diff --git a/kernel/kexec.c b/kernel/kexec.c
+> > index a3044e6..1ad4d60 100644
+> > --- a/kernel/kexec.c
+> > +++ b/kernel/kexec.c
 > 
-> I wonder if you have some RCU issues.
+> > +static int kimage_file_prepare_segments(struct kimage *image, int kernel_fd,
+> > +		int initrd_fd, const char __user *cmdline_ptr,
+> > +		unsigned long cmdline_len)
+> > +{
+> > +	int ret = 0;
+> > +	void *ldata;
+> > +
+> > +	ret = copy_file_from_fd(kernel_fd, &image->kernel_buf,
+> > +					&image->kernel_buf_len);
+> > +	if (ret)
+> > +		return ret;
+> > +
+> > +	/* Call arch image probe handlers */
+> > +	ret = arch_kexec_kernel_image_probe(image, image->kernel_buf,
+> > +						image->kernel_buf_len);
+> > +
+> > +	if (ret)
+> > +		goto out;
+> > +
+> > +	ret = copy_file_from_fd(initrd_fd, &image->initrd_buf,
+> > +					&image->initrd_buf_len);
+> > +	if (ret)
+> > +		goto out;
+> > +
+> > +	image->cmdline_buf = vzalloc(cmdline_len);
 > 
-> static inline struct dst_entry *
-> sk_dst_get(struct sock *sk)
-> {
->         struct dst_entry *dst;
-> 
->         rcu_read_lock();
->         dst = rcu_dereference(sk->sk_dst_cache);
->         if (dst)
->                 dst_hold(dst);
->         rcu_read_unlock();
->         return dst;
-> }
-> 
-> static inline void
-> __sk_dst_set(struct sock *sk, struct dst_entry *dst)
-> {
->         struct dst_entry *old_dst;
-> 
->         sk_tx_queue_clear(sk);
->         /*
->          * This can be called while sk is owned by the caller only,
->          * with no state that can be checked in a rcu_dereference_check() cond
->          */
->         old_dst = rcu_dereference_raw(sk->sk_dst_cache);
->         rcu_assign_pointer(sk->sk_dst_cache, dst);
->         dst_release(old_dst);
+> You should validate the upper/lower boundary of cmdline_len before
+> calling vzalloc. When cmdline_len is 0 or too large, vmalloc failure
+> message would be fired.
 
-It is probably just be me getting lost in the code, but I am not seeing
-a synchronize_rcu(), call_rcu(), or synchronize_net() anywhere in
-dst_release() or the things that it calls.  If there really isn't such
-a call, then I don't see how the above code is safe in the case where
-__sk_dst_set() is invoked on one CPU just after sk_dst_get() executes
-the rcu_dereference() on some other CPU.
+What's the upper length of vzalloc(). I think if it is too big to alloc,
+then vzalloc() should return me an error?
 
-							Thanx, Paul
+> 
+> > +	if (!image->cmdline_buf)
+> > +		goto out;
+> > +
+> > +	ret = copy_from_user(image->cmdline_buf, cmdline_ptr, cmdline_len);
+> > +	if (ret) {
+> > +		ret = -EFAULT;
+> > +		goto out;
+> > +	}
+> > +
+> > +	image->cmdline_buf_len = cmdline_len;
+> > +
+> > +	/* command line should be a string with last byte null */
+> > +	if (image->cmdline_buf[cmdline_len - 1] != '\0') {
+> > +		ret = -EINVAL;
+> > +		goto out;
+> > +	}
+> 
+> Given the fact that command line is optional as well as initrd, I think
+> above chunk of code needs to update a bit for the case cmdline_len is 0
+> or cmdline_buf is pointing NULL?
 
-> }
-> 
-> static inline void
-> sk_dst_set(struct sock *sk, struct dst_entry *dst)
-> {
->         spin_lock(&sk->sk_dst_lock);
->         __sk_dst_set(sk, dst);
->         spin_unlock(&sk->sk_dst_lock);
-> }
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+I agree. I think all this vzalloc(), copy_from_user() etc should be called
+only fir cmdline_len is non-zero. Will fix it.
+
+Thanks
+Vivek
 
