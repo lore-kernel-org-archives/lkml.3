@@ -1,77 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752292AbaFFTGK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 15:06:10 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:40382 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751361AbaFFTGI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 15:06:08 -0400
-Message-ID: <53921116.5050804@oracle.com>
-Date: Fri, 06 Jun 2014 15:05:58 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>, Peter Hurley <peter@hurleysoftware.com>
-CC: pmladek@suse.cz, Andrew Morton <akpm@linux-foundation.org>,
-        Jet Chen <jet.chen@intel.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: console: lockup on boot
-References: <5388838B.8070802@oracle.com> <53888E76.5040101@hurleysoftware.com> <20140530140757.GC2419@quack.suse.cz>
-In-Reply-To: <20140530140757.GC2419@quack.suse.cz>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	id S1752490AbaFFTHW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 15:07:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17052 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752423AbaFFTHU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 15:07:20 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>, Christoph Lameter <cl@linux.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH] hugetlb: fix copy_hugetlb_page_range() to handle migration/hwpoisoned entry
+Date: Fri,  6 Jun 2014 15:07:00 -0400
+Message-Id: <1402081620-1247-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2014 10:07 AM, Jan Kara wrote:
-> On Fri 30-05-14 09:58:14, Peter Hurley wrote:
->> > On 05/30/2014 09:11 AM, Sasha Levin wrote:
->>> > >Hi all,
->>> > >
->>> > >I sometime see lockups when booting my KVM guest with the latest -next kernel,
->>> > >it basically hangs right when it should start 'init', and after a while I get
->>> > >the following spew:
->>> > >
->>> > >[   30.790833] BUG: spinlock lockup suspected on CPU#1, swapper/1/0
->> > 
->> > Maybe related to this report: https://lkml.org/lkml/2014/5/30/26
->> > from Jet Chen which was bisected to
->> > 
->> > commit bafe980f5afc7ccc693fd8c81c8aa5a02fbb5ae0
->> > Author:     Jan Kara <jack@suse.cz>
->> > AuthorDate: Thu May 22 10:43:35 2014 +1000
->> > Commit:     Stephen Rothwell <sfr@canb.auug.org.au>
->> > CommitDate: Thu May 22 10:43:35 2014 +1000
->> > 
->> >     printk: enable interrupts before calling console_trylock_for_printk()
->> >         We need interrupts disabled when calling console_trylock_for_printk() only
->> >     so that cpu id we pass to can_use_console() remains valid (for other
->> >     things console_sem provides all the exclusion we need and deadlocks on
->> >     console_sem due to interrupts are impossible because we use
->> >     down_trylock()).  However if we are rescheduled, we are guaranteed to run
->> >     on an online cpu so we can easily just get the cpu id in
->> >     can_use_console().
->> >         We can lose a bit of performance when we enable interrupts in
->> >     vprintk_emit() and then disable them again in console_unlock() but OTOH it
->> >     can somewhat reduce interrupt latency caused by console_unlock()
->> >     especially since later in the patch series we will want to spin on
->> >     console_sem in console_trylock_for_printk().
->> >         Signed-off-by: Jan Kara <jack@suse.cz>
->> >     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
->> > 
->> > ?
->   Yeah, very likely. I think I see the problem, I'll send the fix shortly.
+There's a race between fork() and hugepage migration, as a result we try to
+"dereference" a swap entry as a normal pte, causing kernel panic.
+The cause of the problem is that copy_hugetlb_page_range() can't handle "swap
+entry" family (migration entry and hwpoisoned entry,) so let's fix it.
 
-Hi Jan,
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: stable@vger.kernel.org # v2.6.36+
+---
+ include/linux/mm.h |  6 +++++
+ mm/hugetlb.c       | 72 ++++++++++++++++++++++++++++++++----------------------
+ mm/memory.c        |  5 ----
+ 3 files changed, 49 insertions(+), 34 deletions(-)
 
-It seems that the issue I'm seeing is different from the "[prink]  BUG: spinlock
-lockup suspected on CPU#0, swapper/1".
+diff --git v3.15-rc8.orig/include/linux/mm.h v3.15-rc8/include/linux/mm.h
+index d6777060449f..6b4fe9ec79ba 100644
+--- v3.15-rc8.orig/include/linux/mm.h
++++ v3.15-rc8/include/linux/mm.h
+@@ -1924,6 +1924,12 @@ static inline struct vm_area_struct *find_exact_vma(struct mm_struct *mm,
+ 	return vma;
+ }
+ 
++static inline bool is_cow_mapping(vm_flags_t flags)
++{
++	return (flags & (VM_SHARED | VM_MAYWRITE)) == VM_MAYWRITE;
++}
++
++
+ #ifdef CONFIG_MMU
+ pgprot_t vm_get_page_prot(unsigned long vm_flags);
+ #else
+diff --git v3.15-rc8.orig/mm/hugetlb.c v3.15-rc8/mm/hugetlb.c
+index c82290b9c1fc..47ae7db288f7 100644
+--- v3.15-rc8.orig/mm/hugetlb.c
++++ v3.15-rc8/mm/hugetlb.c
+@@ -2377,6 +2377,31 @@ static void set_huge_ptep_writable(struct vm_area_struct *vma,
+ 		update_mmu_cache(vma, address, ptep);
+ }
+ 
++static int is_hugetlb_entry_migration(pte_t pte)
++{
++	swp_entry_t swp;
++
++	if (huge_pte_none(pte) || pte_present(pte))
++		return 0;
++	swp = pte_to_swp_entry(pte);
++	if (non_swap_entry(swp) && is_migration_entry(swp))
++		return 1;
++	else
++		return 0;
++}
++
++static int is_hugetlb_entry_hwpoisoned(pte_t pte)
++{
++	swp_entry_t swp;
++
++	if (huge_pte_none(pte) || pte_present(pte))
++		return 0;
++	swp = pte_to_swp_entry(pte);
++	if (non_swap_entry(swp) && is_hwpoison_entry(swp))
++		return 1;
++	else
++		return 0;
++}
+ 
+ int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
+ 			    struct vm_area_struct *vma)
+@@ -2391,7 +2416,7 @@ int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
+ 	unsigned long mmun_end;		/* For mmu_notifiers */
+ 	int ret = 0;
+ 
+-	cow = (vma->vm_flags & (VM_SHARED | VM_MAYWRITE)) == VM_MAYWRITE;
++	cow = is_cow_mapping(vma->vm_flags);
+ 
+ 	mmun_start = vma->vm_start;
+ 	mmun_end = vma->vm_end;
+@@ -2416,10 +2441,25 @@ int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
+ 		dst_ptl = huge_pte_lock(h, dst, dst_pte);
+ 		src_ptl = huge_pte_lockptr(h, src, src_pte);
+ 		spin_lock_nested(src_ptl, SINGLE_DEPTH_NESTING);
+-		if (!huge_pte_none(huge_ptep_get(src_pte))) {
++		entry = huge_ptep_get(src_pte);
++		if (huge_pte_none(entry)) { /* skip none entry */
++			;
++		} else if (unlikely(is_hugetlb_entry_migration(entry) ||
++				    is_hugetlb_entry_hwpoisoned(entry))) {
++			swp_entry_t swp_entry = pte_to_swp_entry(entry);
++			if (is_write_migration_entry(swp_entry) && cow) {
++				/*
++				 * COW mappings require pages in both
++				 * parent and child to be set to read.
++				 */
++				make_migration_entry_read(&swp_entry);
++				entry = swp_entry_to_pte(swp_entry);
++				set_pte_at(src, addr, src_pte, entry);
++			}
++			set_huge_pte_at(dst, addr, dst_pte, entry);
++		} else {
+ 			if (cow)
+ 				huge_ptep_set_wrprotect(src, addr, src_pte);
+-			entry = huge_ptep_get(src_pte);
+ 			ptepage = pte_page(entry);
+ 			get_page(ptepage);
+ 			page_dup_rmap(ptepage);
+@@ -2435,32 +2475,6 @@ int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
+ 	return ret;
+ }
+ 
+-static int is_hugetlb_entry_migration(pte_t pte)
+-{
+-	swp_entry_t swp;
+-
+-	if (huge_pte_none(pte) || pte_present(pte))
+-		return 0;
+-	swp = pte_to_swp_entry(pte);
+-	if (non_swap_entry(swp) && is_migration_entry(swp))
+-		return 1;
+-	else
+-		return 0;
+-}
+-
+-static int is_hugetlb_entry_hwpoisoned(pte_t pte)
+-{
+-	swp_entry_t swp;
+-
+-	if (huge_pte_none(pte) || pte_present(pte))
+-		return 0;
+-	swp = pte_to_swp_entry(pte);
+-	if (non_swap_entry(swp) && is_hwpoison_entry(swp))
+-		return 1;
+-	else
+-		return 0;
+-}
+-
+ void __unmap_hugepage_range(struct mmu_gather *tlb, struct vm_area_struct *vma,
+ 			    unsigned long start, unsigned long end,
+ 			    struct page *ref_page)
+diff --git v3.15-rc8.orig/mm/memory.c v3.15-rc8/mm/memory.c
+index 037b812a9531..efc66b128976 100644
+--- v3.15-rc8.orig/mm/memory.c
++++ v3.15-rc8/mm/memory.c
+@@ -698,11 +698,6 @@ static void print_bad_pte(struct vm_area_struct *vma, unsigned long addr,
+ 	add_taint(TAINT_BAD_PAGE, LOCKDEP_NOW_UNRELIABLE);
+ }
+ 
+-static inline bool is_cow_mapping(vm_flags_t flags)
+-{
+-	return (flags & (VM_SHARED | VM_MAYWRITE)) == VM_MAYWRITE;
+-}
+-
+ /*
+  * vm_normal_page -- This function gets the "struct page" associated with a pte.
+  *
+-- 
+1.9.3
 
-Is there anything else I could try here? The issue is very common during testing.
-
-
-Thanks,
-Sasha
