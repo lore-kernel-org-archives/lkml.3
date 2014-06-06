@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751872AbaFFKWe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 06:22:34 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:35356 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750803AbaFFKWd (ORCPT
+	id S1752143AbaFFKXZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 06:23:25 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:45669 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751135AbaFFKXY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 06:22:33 -0400
+	Fri, 6 Jun 2014 06:23:24 -0400
 From: "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>
 Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
         Anshuman Khandual <khandual@linux.vnet.ibm.com>,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
         "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>
-Subject: [PATCHv2 1/2] powerpc/powernv: include asm/smp.h to fix UP build failure
-Date: Fri,  6 Jun 2014 15:51:05 +0530
-Message-Id: <1402050065-18007-1-git-send-email-shreyas@linux.vnet.ibm.com>
+Subject: [PATCH v2 2/2] powerpc/powernv : Disable subcore for UP configs
+Date: Fri,  6 Jun 2014 15:52:51 +0530
+Message-Id: <1402050171-18270-1-git-send-email-shreyas@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1402050065-18007-1-git-send-email-shreyas@linux.vnet.ibm.com>
+References: <1402050065-18007-1-git-send-email-shreyas@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14060610-2674-0000-0000-000000447C48
+x-cbid: 14060610-8256-0000-0000-00000D9726FF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Build throws following errors when CONFIG_SMP=n
-arch/powerpc/platforms/powernv/setup.c: In function ‘pnv_kexec_wait_secondaries_down’:
-arch/powerpc/platforms/powernv/setup.c:179:4: error: implicit declaration of function ‘get_hard_smp_processor_id’
-    rc = opal_query_cpu_status(get_hard_smp_processor_id(i),
+arch/powerpc/platforms/powernv/subcore.c: In function ‘cpu_update_split_mode’:
+arch/powerpc/platforms/powernv/subcore.c:274:15: error: ‘setup_max_cpus’ undeclared (first use in this function)
+arch/powerpc/platforms/powernv/subcore.c:285:5: error: lvalue required as left operand of assignment
 
-The usage of get_hard_smp_processor_id() needs the declaration from
-<asm/smp.h>. The file setup.c includes <linux/sched.h>, which in-turn
-includes <linux/smp.h>. However, <linux/smp.h> includes <asm/smp.h>
-only on SMP configs and hence UP builds fail.
+'setup_max_cpus' variable is relevant only on SMP, so there is no point
+working around it for UP. Furthermore, subcore itself is relevant only
+on SMP and hence the better solution is to exclude subcore.o and
+subcore-asm.o for UP builds.
 
-Fix this by directly including <asm/smp.h> in setup.c unconditionally.
-
-Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 Signed-off-by: Shreyas B. Prabhu <shreyas@linux.vnet.ibm.com>
 ---
-Changes is v2:
-Commit message improved based on suggestion.
+Changes in v2:
+Excluding subcore-asm.o which is part of the subcore feature for UP configs.
 
- arch/powerpc/platforms/powernv/setup.c | 1 +
- 1 file changed, 1 insertion(+)
+ arch/powerpc/platforms/powernv/Makefile | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/powerpc/platforms/powernv/setup.c b/arch/powerpc/platforms/powernv/setup.c
-index 8c16a5f..678573c 100644
---- a/arch/powerpc/platforms/powernv/setup.c
-+++ b/arch/powerpc/platforms/powernv/setup.c
-@@ -35,6 +35,7 @@
- #include <asm/rtas.h>
- #include <asm/opal.h>
- #include <asm/kexec.h>
-+#include <asm/smp.h>
+diff --git a/arch/powerpc/platforms/powernv/Makefile b/arch/powerpc/platforms/powernv/Makefile
+index 4ad0d34..d55891f 100644
+--- a/arch/powerpc/platforms/powernv/Makefile
++++ b/arch/powerpc/platforms/powernv/Makefile
+@@ -1,9 +1,9 @@
+ obj-y			+= setup.o opal-takeover.o opal-wrappers.o opal.o opal-async.o
+ obj-y			+= opal-rtc.o opal-nvram.o opal-lpc.o opal-flash.o
+ obj-y			+= rng.o opal-elog.o opal-dump.o opal-sysparam.o opal-sensor.o
+-obj-y			+= opal-msglog.o subcore.o subcore-asm.o
++obj-y			+= opal-msglog.o
  
- #include "powernv.h"
- 
+-obj-$(CONFIG_SMP)	+= smp.o
++obj-$(CONFIG_SMP)	+= smp.o subcore.o subcore-asm.o
+ obj-$(CONFIG_PCI)	+= pci.o pci-p5ioc2.o pci-ioda.o
+ obj-$(CONFIG_EEH)	+= eeh-ioda.o eeh-powernv.o
+ obj-$(CONFIG_PPC_SCOM)	+= opal-xscom.o
 -- 
 1.9.0
 
