@@ -1,95 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752561AbaFFWAj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 18:00:39 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:60609 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752209AbaFFWAh (ORCPT
+	id S1752588AbaFFWAw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 18:00:52 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38456 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752075AbaFFWAu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 18:00:37 -0400
-Message-ID: <1402092031.11626.35.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [RFC PATCH v5 1/4] KEYS: special dot prefixed keyring name bug
- fix
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-Cc: linux-security-module <linux-security-module@vger.kernel.org>,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        David Howells <dhowells@redhat.com>, Josh Boyer <jwboyer@redhat.com>,
-        keyrings <keyrings@linux-nfs.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Fri, 06 Jun 2014 18:00:31 -0400
-In-Reply-To: <CACE9dm909SGRBOybkh8z8jNiGPc_ksKHzsMuvNB+ro9furQ_tQ@mail.gmail.com>
-References: <1401818318-15780-1-git-send-email-zohar@linux.vnet.ibm.com>
-	 <1401818318-15780-2-git-send-email-zohar@linux.vnet.ibm.com>
-	 <CACE9dm909SGRBOybkh8z8jNiGPc_ksKHzsMuvNB+ro9furQ_tQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14060622-1344-0000-0000-0000020F6E21
+	Fri, 6 Jun 2014 18:00:50 -0400
+Date: Fri, 6 Jun 2014 15:00:29 -0700
+From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
+Message-ID: <tip-bdfb9bcc25005d06a9c301830bdeb7ca5a0b6ef7@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, luto@amacapital.net, hpa@zytor.com,
+        mingo@kernel.org, akpm@linux-foundation.org, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, luto@amacapital.net,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <20140606140017.afb7f91142f66cb3dd13c186@linux-foundation.org>
+References: <20140606140017.afb7f91142f66cb3dd13c186@linux-foundation.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/vdso] x86, vdso: Use <tools/le_byteshift.h>
+  for littleendian access
+Git-Commit-ID: bdfb9bcc25005d06a9c301830bdeb7ca5a0b6ef7
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-06-07 at 00:48 +0300, Dmitry Kasatkin wrote: 
-> On 3 June 2014 20:58, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> > Dot prefixed keyring names are supposed to be reserved for the
-> > kernel, but add_key() calls key_get_type_from_user(), which
-> > incorrectly verifies the 'type' field, not the 'description' field.
-> > This patch verifies the 'description' field isn't dot prefixed,
-> > when creating a new keyring, and removes the dot prefix test in
-> > key_get_type_from_user().
-> >
-> > Changelog v5:
-> > - Only prevent userspace from creating a dot prefixed keyring, not
-> >   regular keys  - Dmitry
-> >
-> > Reported-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-> > Cc: David Howells <dhowells@redhat.com>
-> > Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
-> > ---
-> >  security/keys/keyctl.c | 6 ++++--
-> >  1 file changed, 4 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-> > index cd5bd0c..62a9952 100644
-> > --- a/security/keys/keyctl.c
-> > +++ b/security/keys/keyctl.c
-> > @@ -37,8 +37,6 @@ static int key_get_type_from_user(char *type,
-> >                 return ret;
-> >         if (ret == 0 || ret >= len)
-> >                 return -EINVAL;
-> > -       if (type[0] == '.')
-> > -               return -EPERM;
-> >         type[len - 1] = '\0';
-> >         return 0;
-> >  }
-> > @@ -86,6 +84,10 @@ SYSCALL_DEFINE5(add_key, const char __user *, _type,
-> >                 if (!*description) {
-> >                         kfree(description);
-> >                         description = NULL;
-> > +               } else if ((description[0] == '.') &&
-> > +                          (strncmp(type, "keyring", 7) == 0)) {
-> > +                               ret = -EPERM;
-> > +                               goto error2;
-> >                 }
-> >         }
+Commit-ID:  bdfb9bcc25005d06a9c301830bdeb7ca5a0b6ef7
+Gitweb:     http://git.kernel.org/tip/bdfb9bcc25005d06a9c301830bdeb7ca5a0b6ef7
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Fri, 6 Jun 2014 14:30:37 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 6 Jun 2014 14:54:54 -0700
 
-> I think it does not another problem...
-> It is not only prevent creating new keyring with ".abc" name but also
-> prevent adding new key...
-> 
-> this is wrong...
+x86, vdso: Use <tools/le_byteshift.h> for littleendian access
 
-Seems to prevent creating a dot prefixed keyring, but permits creating a
-dot prefixed key.  Do you have an example?
+There are no standard functions for littleendian data (unlike
+bigendian data.)  Thus, use <tools/le_byteshift.h> to access
+littleendian data members.  Those are fairly inefficient, but it
+doesn't matter for this purpose (and can be optimized later.)  This
+avoids portability problems.
 
-thanks,
+Reported-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Tested-by: Andy Lutomirski <luto@amacapital.net>
+Link: http://lkml.kernel.org/r/20140606140017.afb7f91142f66cb3dd13c186@linux-foundation.org
+---
+ arch/x86/vdso/Makefile |  1 +
+ arch/x86/vdso/vdso2c.c | 10 ++++----
+ arch/x86/vdso/vdso2c.h | 62 +++++++++++++++++++++++++-------------------------
+ 3 files changed, 38 insertions(+), 35 deletions(-)
 
-Mimi
-
-Mimi
-
-
+diff --git a/arch/x86/vdso/Makefile b/arch/x86/vdso/Makefile
+index 895d4b1..9769df0 100644
+--- a/arch/x86/vdso/Makefile
++++ b/arch/x86/vdso/Makefile
+@@ -59,6 +59,7 @@ VDSO_LDFLAGS_vdso.lds = -m64 -Wl,-soname=linux-vdso.so.1 \
+ $(obj)/vdso64.so.dbg: $(src)/vdso.lds $(vobjs) FORCE
+ 	$(call if_changed,vdso)
+ 
++HOST_EXTRACFLAGS += -I$(srctree)/tools/include
+ hostprogs-y			+= vdso2c
+ 
+ quiet_cmd_vdso2c = VDSO2C  $@
+diff --git a/arch/x86/vdso/vdso2c.c b/arch/x86/vdso/vdso2c.c
+index deabaf5..450ac6e 100644
+--- a/arch/x86/vdso/vdso2c.c
++++ b/arch/x86/vdso/vdso2c.c
+@@ -11,6 +11,8 @@
+ #include <sys/mman.h>
+ #include <sys/types.h>
+ 
++#include <tools/le_byteshift.h>
++
+ #include <linux/elf.h>
+ #include <linux/types.h>
+ 
+@@ -56,12 +58,12 @@ static void fail(const char *format, ...)
+  */
+ #define GLE(x, bits, ifnot)						\
+ 	__builtin_choose_expr(						\
+-		(sizeof(x) == bits/8),					\
+-		(__typeof__(x))le##bits##toh(x), ifnot)
++		(sizeof(*(x)) == bits/8),				\
++		(__typeof__(*(x)))get_unaligned_le##bits(x), ifnot)
+ 
+-extern void bad_get_le(uint64_t);
++extern void bad_get_le(void);
+ #define LAST_LE(x)							\
+-	__builtin_choose_expr(sizeof(x) == 1, (x), bad_get_le(x))
++	__builtin_choose_expr(sizeof(*(x)) == 1, *(x), bad_get_le())
+ 
+ #define GET_LE(x)							\
+ 	GLE(x, 64, GLE(x, 32, GLE(x, 16, LAST_LE(x))))
+diff --git a/arch/x86/vdso/vdso2c.h b/arch/x86/vdso/vdso2c.h
+index d1e99e1..8a07463 100644
+--- a/arch/x86/vdso/vdso2c.h
++++ b/arch/x86/vdso/vdso2c.h
+@@ -18,27 +18,27 @@ static void GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
+ 	const char *secstrings;
+ 	uint64_t syms[NSYMS] = {};
+ 
+-	Elf_Phdr *pt = (Elf_Phdr *)(addr + GET_LE(hdr->e_phoff));
++	Elf_Phdr *pt = (Elf_Phdr *)(addr + GET_LE(&hdr->e_phoff));
+ 
+ 	/* Walk the segment table. */
+-	for (i = 0; i < GET_LE(hdr->e_phnum); i++) {
+-		if (GET_LE(pt[i].p_type) == PT_LOAD) {
++	for (i = 0; i < GET_LE(&hdr->e_phnum); i++) {
++		if (GET_LE(&pt[i].p_type) == PT_LOAD) {
+ 			if (found_load)
+ 				fail("multiple PT_LOAD segs\n");
+ 
+-			if (GET_LE(pt[i].p_offset) != 0 ||
+-			    GET_LE(pt[i].p_vaddr) != 0)
++			if (GET_LE(&pt[i].p_offset) != 0 ||
++			    GET_LE(&pt[i].p_vaddr) != 0)
+ 				fail("PT_LOAD in wrong place\n");
+ 
+-			if (GET_LE(pt[i].p_memsz) != GET_LE(pt[i].p_filesz))
++			if (GET_LE(&pt[i].p_memsz) != GET_LE(&pt[i].p_filesz))
+ 				fail("cannot handle memsz != filesz\n");
+ 
+-			load_size = GET_LE(pt[i].p_memsz);
++			load_size = GET_LE(&pt[i].p_memsz);
+ 			found_load = 1;
+-		} else if (GET_LE(pt[i].p_type) == PT_DYNAMIC) {
+-			dyn = addr + GET_LE(pt[i].p_offset);
+-			dyn_end = addr + GET_LE(pt[i].p_offset) +
+-				GET_LE(pt[i].p_memsz);
++		} else if (GET_LE(&pt[i].p_type) == PT_DYNAMIC) {
++			dyn = addr + GET_LE(&pt[i].p_offset);
++			dyn_end = addr + GET_LE(&pt[i].p_offset) +
++				GET_LE(&pt[i].p_memsz);
+ 		}
+ 	}
+ 	if (!found_load)
+@@ -47,24 +47,24 @@ static void GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
+ 
+ 	/* Walk the dynamic table */
+ 	for (i = 0; dyn + i < dyn_end &&
+-		     GET_LE(dyn[i].d_tag) != DT_NULL; i++) {
+-		typeof(dyn[i].d_tag) tag = GET_LE(dyn[i].d_tag);
++		     GET_LE(&dyn[i].d_tag) != DT_NULL; i++) {
++		typeof(dyn[i].d_tag) tag = GET_LE(&dyn[i].d_tag);
+ 		if (tag == DT_REL || tag == DT_RELSZ ||
+ 		    tag == DT_RELENT || tag == DT_TEXTREL)
+ 			fail("vdso image contains dynamic relocations\n");
+ 	}
+ 
+ 	/* Walk the section table */
+-	secstrings_hdr = addr + GET_LE(hdr->e_shoff) +
+-		GET_LE(hdr->e_shentsize)*GET_LE(hdr->e_shstrndx);
+-	secstrings = addr + GET_LE(secstrings_hdr->sh_offset);
+-	for (i = 0; i < GET_LE(hdr->e_shnum); i++) {
+-		Elf_Shdr *sh = addr + GET_LE(hdr->e_shoff) +
+-			GET_LE(hdr->e_shentsize) * i;
+-		if (GET_LE(sh->sh_type) == SHT_SYMTAB)
++	secstrings_hdr = addr + GET_LE(&hdr->e_shoff) +
++		GET_LE(&hdr->e_shentsize)*GET_LE(&hdr->e_shstrndx);
++	secstrings = addr + GET_LE(&secstrings_hdr->sh_offset);
++	for (i = 0; i < GET_LE(&hdr->e_shnum); i++) {
++		Elf_Shdr *sh = addr + GET_LE(&hdr->e_shoff) +
++			GET_LE(&hdr->e_shentsize) * i;
++		if (GET_LE(&sh->sh_type) == SHT_SYMTAB)
+ 			symtab_hdr = sh;
+ 
+-		if (!strcmp(secstrings + GET_LE(sh->sh_name),
++		if (!strcmp(secstrings + GET_LE(&sh->sh_name),
+ 			    ".altinstructions"))
+ 			alt_sec = sh;
+ 	}
+@@ -72,25 +72,25 @@ static void GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
+ 	if (!symtab_hdr)
+ 		fail("no symbol table\n");
+ 
+-	strtab_hdr = addr + GET_LE(hdr->e_shoff) +
+-		GET_LE(hdr->e_shentsize) * GET_LE(symtab_hdr->sh_link);
++	strtab_hdr = addr + GET_LE(&hdr->e_shoff) +
++		GET_LE(&hdr->e_shentsize) * GET_LE(&symtab_hdr->sh_link);
+ 
+ 	/* Walk the symbol table */
+ 	for (i = 0;
+-	     i < GET_LE(symtab_hdr->sh_size) / GET_LE(symtab_hdr->sh_entsize);
++	     i < GET_LE(&symtab_hdr->sh_size) / GET_LE(&symtab_hdr->sh_entsize);
+ 	     i++) {
+ 		int k;
+-		Elf_Sym *sym = addr + GET_LE(symtab_hdr->sh_offset) +
+-			GET_LE(symtab_hdr->sh_entsize) * i;
+-		const char *name = addr + GET_LE(strtab_hdr->sh_offset) +
+-			GET_LE(sym->st_name);
++		Elf_Sym *sym = addr + GET_LE(&symtab_hdr->sh_offset) +
++			GET_LE(&symtab_hdr->sh_entsize) * i;
++		const char *name = addr + GET_LE(&strtab_hdr->sh_offset) +
++			GET_LE(&sym->st_name);
+ 		for (k = 0; k < NSYMS; k++) {
+ 			if (!strcmp(name, required_syms[k])) {
+ 				if (syms[k]) {
+ 					fail("duplicate symbol %s\n",
+ 					     required_syms[k]);
+ 				}
+-				syms[k] = GET_LE(sym->st_value);
++				syms[k] = GET_LE(&sym->st_value);
+ 			}
+ 		}
+ 	}
+@@ -150,9 +150,9 @@ static void GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
+ 	fprintf(outfile, "\t},\n");
+ 	if (alt_sec) {
+ 		fprintf(outfile, "\t.alt = %lu,\n",
+-			(unsigned long)GET_LE(alt_sec->sh_offset));
++			(unsigned long)GET_LE(&alt_sec->sh_offset));
+ 		fprintf(outfile, "\t.alt_len = %lu,\n",
+-			(unsigned long)GET_LE(alt_sec->sh_size));
++			(unsigned long)GET_LE(&alt_sec->sh_size));
+ 	}
+ 	for (i = 0; i < NSYMS; i++) {
+ 		if (syms[i])
