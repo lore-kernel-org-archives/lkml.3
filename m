@@ -1,105 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752795AbaFFRVQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 13:21:16 -0400
-Received: from david.siemens.de ([192.35.17.14]:35963 "EHLO david.siemens.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752501AbaFFRTn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 13:19:43 -0400
-From: Jan Kiszka <jan.kiszka@siemens.com>
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
-        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
-        Borislav Petkov <bp@suse.de>,
-        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>
-Subject: [PATCH v8 19/22] scripts/gdb: Add class to iterate over CPU masks
-Date: Fri,  6 Jun 2014 19:19:00 +0200
-Message-Id: <69b20dba882df37ba7d5d3b48041db12925132fa.1402075141.git.jan.kiszka@siemens.com>
-X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
-In-Reply-To: <cover.1402075136.git.jan.kiszka@siemens.com>
-References: <cover.1402075136.git.jan.kiszka@siemens.com>
-In-Reply-To: <cover.1402075136.git.jan.kiszka@siemens.com>
-References: <cover.1402075136.git.jan.kiszka@siemens.com>
+	id S1752773AbaFFRVO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 13:21:14 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:27385 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752504AbaFFRVF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 13:21:05 -0400
+Message-Id: <20140606172104.552734596@goodmis.org>
+User-Agent: quilt/0.63-1
+Date: Fri, 06 Jun 2014 12:30:37 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+Subject: [for-next][PATCH 3/6] tracing: Only calculate stats of tracepoint benchmarks for 2^32 times
+References: <20140606163034.516780857@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline; filename=0002-tracing-Only-calculate-stats-of-tracepoint-benchmark.patch
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Will be used first to count module references. It is optimized to read
-the mask only once per stop.
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+When calculating the average and standard deviation, it is required that
+the count be less than UINT_MAX, otherwise the do_div() will get
+undefined results. After 2^32 counts of data, the average and standard
+deviation should pretty much be set anyway.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- scripts/gdb/linux/cpus.py | 54 +++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 54 insertions(+)
+ kernel/trace/trace_benchmark.c | 37 ++++++++++++++++++++++++++++++-------
+ 1 file changed, 30 insertions(+), 7 deletions(-)
 
-diff --git a/scripts/gdb/linux/cpus.py b/scripts/gdb/linux/cpus.py
-index b683da9..c1441f2 100644
---- a/scripts/gdb/linux/cpus.py
-+++ b/scripts/gdb/linux/cpus.py
-@@ -50,6 +50,60 @@ def per_cpu(var_ptr, cpu):
-     return pointer.cast(var_ptr.type).dereference()
+diff --git a/kernel/trace/trace_benchmark.c b/kernel/trace/trace_benchmark.c
+index 8bd3365a65b2..40a14cbcf8e0 100644
+--- a/kernel/trace/trace_benchmark.c
++++ b/kernel/trace/trace_benchmark.c
+@@ -16,7 +16,10 @@ static u64 bm_last;
+ static u64 bm_max;
+ static u64 bm_min;
+ static u64 bm_first;
+-static s64 bm_cnt;
++static u64 bm_cnt;
++static u64 bm_stddev;
++static unsigned int bm_avg;
++static unsigned int bm_std;
  
+ /*
+  * This gets called in a loop recording the time it took to write
+@@ -66,22 +69,35 @@ static void trace_do_benchmark(void)
  
-+cpu_mask = {}
-+
-+
-+def cpu_mask_invalidate(event):
-+    global cpu_mask
-+    cpu_mask = {}
-+    gdb.events.stop.disconnect(cpu_mask_invalidate)
-+    if hasattr(gdb.events, 'new_objfile'):
-+        gdb.events.new_objfile.disconnect(cpu_mask_invalidate)
-+
-+
-+class CpuList():
-+    def __init__(self, mask_name):
-+        global cpu_mask
-+        self.mask = None
-+        if mask_name in cpu_mask:
-+            self.mask = cpu_mask[mask_name]
-+        if self.mask is None:
-+            self.mask = gdb.parse_and_eval(mask_name + ".bits")
-+            if hasattr(gdb, 'events'):
-+                cpu_mask[mask_name] = self.mask
-+                gdb.events.stop.connect(cpu_mask_invalidate)
-+                if hasattr(gdb.events, 'new_objfile'):
-+                    gdb.events.new_objfile.connect(cpu_mask_invalidate)
-+        self.bits_per_entry = self.mask[0].type.sizeof * 8
-+        self.num_entries = self.mask.type.sizeof * 8 / self.bits_per_entry
-+        self.entry = -1
-+        self.bits = 0
-+
-+    def __iter__(self):
-+        return self
-+
-+    def next(self):
-+        while self.bits == 0:
-+            self.entry += 1
-+            if self.entry == self.num_entries:
-+                raise StopIteration
-+            self.bits = self.mask[self.entry]
-+            if self.bits != 0:
-+                self.bit = 0
-+                break
-+
-+        while self.bits & 1 == 0:
-+            self.bits >>= 1
-+            self.bit += 1
-+
-+        cpu = self.entry * self.bits_per_entry + self.bit
-+
-+        self.bits >>= 1
-+        self.bit += 1
-+
-+        return cpu
-+
-+
- class PerCpu(gdb.Function):
-     """Return per-cpu variable.
+ 	bm_last = delta;
  
+-	bm_total += delta;
+-	bm_totalsq += delta * delta;
+-
+ 	if (delta > bm_max)
+ 		bm_max = delta;
+ 	if (!bm_min || delta < bm_min)
+ 		bm_min = delta;
+ 
++	/*
++	 * When bm_cnt is greater than UINT_MAX, it breaks the statistics
++	 * accounting. Freeze the statistics when that happens.
++	 * We should have enough data for the avg and stddev anyway.
++	 */
++	if (bm_cnt > UINT_MAX) {
++		scnprintf(bm_str, BENCHMARK_EVENT_STRLEN,
++		    "last=%llu first=%llu max=%llu min=%llu ** avg=%u std=%d std^2=%lld",
++			  bm_last, bm_first, bm_max, bm_min, bm_avg, bm_std, bm_stddev);
++		return;
++	}
++
++	bm_total += delta;
++	bm_totalsq += delta * delta;
++
++
+ 	if (bm_cnt > 1) {
+ 		/*
+ 		 * Apply Welford's method to calculate standard deviation:
+ 		 * s^2 = 1 / (n * (n-1)) * (n * \Sum (x_i)^2 - (\Sum x_i)^2)
+ 		 */
+ 		stddev = (u64)bm_cnt * bm_totalsq - bm_total * bm_total;
+-		do_div(stddev, bm_cnt);
+-		do_div(stddev, bm_cnt - 1);
++		do_div(stddev, (u32)bm_cnt);
++		do_div(stddev, (u32)bm_cnt - 1);
+ 	} else
+ 		stddev = 0;
+ 
+@@ -119,6 +135,10 @@ static void trace_do_benchmark(void)
+ 	scnprintf(bm_str, BENCHMARK_EVENT_STRLEN,
+ 		  "last=%llu first=%llu max=%llu min=%llu avg=%u std=%d std^2=%lld",
+ 		  bm_last, bm_first, bm_max, bm_min, avg, std, stddev);
++
++	bm_std = std;
++	bm_avg = avg;
++	bm_stddev = stddev;
+ }
+ 
+ static int benchmark_event_kthread(void *arg)
+@@ -170,6 +190,9 @@ void trace_benchmark_unreg(void)
+ 	bm_max = 0;
+ 	bm_min = 0;
+ 	bm_cnt = 0;
+-	/* bm_first doesn't need to be reset but reset it anyway */
++	/* These don't need to be reset but reset them anyway */
+ 	bm_first = 0;
++	bm_std = 0;
++	bm_avg = 0;
++	bm_stddev = 0;
+ }
 -- 
-1.8.1.1.298.ge7eed54
+2.0.0.rc2
+
 
