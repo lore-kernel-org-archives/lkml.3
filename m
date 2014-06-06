@@ -1,78 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751463AbaFFMHt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 08:07:49 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:65259 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751314AbaFFMHp (ORCPT
+	id S1751320AbaFFMMf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 08:12:35 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:57524 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750727AbaFFMMd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 08:07:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140529231001.GC2353@verge.net.au>
-References: <20140529131650.2329.3197.sendpatchset@w520>
-	<20140529131732.2329.50630.sendpatchset@w520>
-	<20140529132034.GB15585@mwanda>
-	<CANqRtoTzOn5d9qB85sXvmLYhoTDMDtbjSkLbz9V4FRmzFM3ycQ@mail.gmail.com>
-	<20140529231001.GC2353@verge.net.au>
-Date: Fri, 6 Jun 2014 21:07:44 +0900
-Message-ID: <CANqRtoTLznzU1mJRJMjNgr0pAY8fY__-12qE77Dz97n47FekhQ@mail.gmail.com>
-Subject: Re: [PATCH v2 04/05] staging: board: Initial board staging support
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Simon Horman <horms@verge.net.au>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        devel <devel@driverdev.osuosl.org>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Olof Johansson <olof@lixom.net>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 6 Jun 2014 08:12:33 -0400
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        gregkh@linuxfoundation.org, kishon@ti.com, mathias.nyman@intel.com
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kgene.kim@samsung.com, jwerner@chromium.org,
+        Vivek Gautam <gautam.vivek@samsung.com>
+Subject: [PATCH v1 0/4] Fine tune USB 3.0 PHY on exynos5420
+Date: Fri,  6 Jun 2014 17:42:11 +0530
+Message-Id: <1402056736-12674-1-git-send-email-gautam.vivek@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 30, 2014 at 8:10 AM, Simon Horman <horms@verge.net.au> wrote:
-> On Thu, May 29, 2014 at 10:27:30PM +0900, Magnus Damm wrote:
->> Hi Dan,
->>
->> On Thu, May 29, 2014 at 10:20 PM, Dan Carpenter
->> <dan.carpenter@oracle.com> wrote:
->> > On Thu, May 29, 2014 at 10:17:32PM +0900, Magnus Damm wrote:
->> >> --- /dev/null
->> >> +++ work/drivers/staging/board/Kconfig        2014-05-29 21:40:41.000000000 +0900
->> >> @@ -0,0 +1,7 @@
->> >> +config STAGING_BOARD
->> >> +     boolean "Staging Board Support"
->> >> +     help
->> >> +       Select to enable per-board staging support code.
->> >> +
->> >> +       If in doubt, say N here.
->> >> +
->> >
->> > Actually, you're probably going to need to add a bunch of dependencies
->> > here or it will break "make randconfig" right away.  Sorry that I forgot
->> > about this in the first review.
->>
->> Good point, thanks for checking. I will have a look at this and add
->> dependencies to make sure it builds on a wide range of platforms.
->
-> Hi Magnus,
->
-> let me know if you would like me to perform some build-testing.
+The RFC version of this series was posted long time back, around December
+last year [1].
+This series is based on Heikki's patches for simpliefied phy lookup table:
+[PATCHv2 0/6] phy: simplified phy lookup [2], applied against 'usb-next'
+branch of Greg's usb tree.
+Tested on peach-pit boards with SuperSpeed devices and confirmed that now
+the devices are detected as SupedSpeed, not as HighSpeed.
 
-Hey Simon,
+Explanation for the need of this patch-series:
+"The DWC3-exynos eXtensible host controller present on Exynos5420
+SoC is quirky. The PHY serving this controller operates at High-Speed
+by default, so it detects even Super-speed devices as high-speed ones.
+Certain PHY parameters like Tx LOS levels and Boost levels need to be
+calibrated further post initialization of xHCI controller, to get
+SuperSpeed operations working."
 
-Thanks for the offer. When you have time, can you please feed V3 into
-your build test setup?
+[1] https://lkml.org/lkml/2013/12/10/365
+[2] https://lkml.org/lkml/2014/6/5/358
 
-[PATCH v3 00/05] staging: Emma Mobile USB driver and KZM9D board code V3
-[PATCH v3 01/05] staging: emxx_udc: Add Emma Mobile USB Gadget driver
-[PATCH v3 02/05] staging: emxx_udc: I/O memory and IRQ resource support
-[PATCH v3 03/05] staging: emxx_udc: Add TODO file
-[PATCH v3 04/05] staging: board: Initial board staging support
-[PATCH v3 05/05] staging: board: kzm9d: Board staging support for emxx_udc
+Vivek Gautam (4):
+  phy: Add provision for calibrating phy.
+  usb: host: xhci-plat: Add support to get PHYs
+  usb: host: xhci-plat: Caibrate PHY post host reset
+  phy: exynos5-usbdrd: Calibrate LOS levels for exynos5420/5800
 
-Cheers,
+ drivers/phy/phy-core.c           |   36 ++++++++
+ drivers/phy/phy-exynos5-usbdrd.c |  168 ++++++++++++++++++++++++++++++++++++++
+ drivers/usb/host/xhci-plat.c     |   74 ++++++++++++++++-
+ drivers/usb/host/xhci.h          |    3 +
+ include/linux/phy/phy.h          |    7 ++
+ 5 files changed, 286 insertions(+), 2 deletions(-)
 
-/ magnus
+-- 
+1.7.10.4
+
