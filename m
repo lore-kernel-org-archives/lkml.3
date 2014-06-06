@@ -1,10 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752961AbaFFRYn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 13:24:43 -0400
-Received: from thoth.sbs.de ([192.35.17.2]:51979 "EHLO thoth.sbs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752411AbaFFRTh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752942AbaFFRYm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 13:24:42 -0400
+Received: from goliath.siemens.de ([192.35.17.28]:34741 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752420AbaFFRTh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 13:19:37 -0400
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Thomas Gleixner <tglx@linutronix.de>,
@@ -15,11 +16,10 @@ Cc: Jason Wessel <jason.wessel@windriver.com>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
         Borislav Petkov <bp@suse.de>,
         Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-ia64@vger.kernel.org
-Subject: [PATCH v8 15/22] scripts/gdb: Add internal helper and convenience function to retrieve thread_info
-Date: Fri,  6 Jun 2014 19:18:56 +0200
-Message-Id: <425ebcd46612e6e4445b63af908fd600b6fed39c.1402075141.git.jan.kiszka@siemens.com>
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
+Subject: [PATCH v8 17/22] scripts/gdb: Add internal helper and convenience function for per-cpu lookup
+Date: Fri,  6 Jun 2014 19:18:58 +0200
+Message-Id: <8798e406453ac369607924e5b57ad9a41e40e15e.1402075141.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
 In-Reply-To: <cover.1402075136.git.jan.kiszka@siemens.com>
 References: <cover.1402075136.git.jan.kiszka@siemens.com>
@@ -29,63 +29,103 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the internal helper get_thread_info that calculates the thread_info
-from a given task variable. Also export this service as a convenience
-function.
+This function allows to obtain a per-cpu variable, either of the current
+or an explicitly specified CPU.
 
-Note: ia64 version is untested.
+Note: sparc64 version is untested.
 
-CC: Tony Luck <tony.luck@intel.com>
-CC: Fenghua Yu <fenghua.yu@intel.com>
-CC: linux-ia64@vger.kernel.org
+CC: "David S. Miller" <davem@davemloft.net>
+CC: sparclinux@vger.kernel.org
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- scripts/gdb/linux/tasks.py | 35 +++++++++++++++++++++++++++++++++++
- 1 file changed, 35 insertions(+)
+ scripts/gdb/linux/cpus.py  | 68 ++++++++++++++++++++++++++++++++++++++++++++++
+ scripts/gdb/vmlinux-gdb.py |  1 +
+ 2 files changed, 69 insertions(+)
+ create mode 100644 scripts/gdb/linux/cpus.py
 
-diff --git a/scripts/gdb/linux/tasks.py b/scripts/gdb/linux/tasks.py
-index 13bb97c..63cd6c5 100644
---- a/scripts/gdb/linux/tasks.py
-+++ b/scripts/gdb/linux/tasks.py
-@@ -71,3 +71,38 @@ return that task_struct variable which PID matches."""
- 
- 
- LxTaskByPidFunc()
+diff --git a/scripts/gdb/linux/cpus.py b/scripts/gdb/linux/cpus.py
+new file mode 100644
+index 0000000..18337e0
+--- /dev/null
++++ b/scripts/gdb/linux/cpus.py
+@@ -0,0 +1,68 @@
++#
++# gdb helper commands and functions for Linux kernel debugging
++#
++#  per-cpu tools
++#
++# Copyright (c) Siemens AG, 2011-2013
++#
++# Authors:
++#  Jan Kiszka <jan.kiszka@siemens.com>
++#
++# This work is licensed under the terms of the GNU GPL version 2.
++#
++
++import gdb
++
++from linux import tasks, utils
 +
 +
-+thread_info_type = utils.CachedType("struct thread_info")
-+
-+ia64_task_size = None
++MAX_CPUS = 4096
 +
 +
-+def get_thread_info(task):
-+    global thread_info_type
-+    thread_info_ptr_type = thread_info_type.get_type().pointer()
-+    if utils.is_target_arch("ia64"):
-+        global ia64_task_size
-+        if ia64_task_size is None:
-+            ia64_task_size = gdb.parse_and_eval("sizeof(struct task_struct)")
-+        thread_info_addr = task.address + ia64_task_size
-+        thread_info = thread_info_addr.cast(thread_info_ptr_type)
++def get_current_cpu():
++    if utils.get_gdbserver_type() == utils.GDBSERVER_QEMU:
++        return gdb.selected_thread().num - 1
++    elif utils.get_gdbserver_type() == utils.GDBSERVER_KGDB:
++        tid = gdb.selected_thread().ptid[2]
++        if tid > (0x100000000 - MAX_CPUS - 2):
++            return 0x100000000 - tid - 2
++        else:
++            return tasks.get_thread_info(tasks.get_task_by_pid(tid))['cpu']
 +    else:
-+        thread_info = task['stack'].cast(thread_info_ptr_type)
-+    return thread_info.dereference()
++        raise gdb.GdbError("Sorry, obtaining the current CPU is not yet "
++                           "supported with this gdb server.")
 +
 +
-+class LxThreadInfoFunc (gdb.Function):
-+    """Calculate Linux thread_info from task variable.
++def per_cpu(var_ptr, cpu):
++    if cpu == -1:
++        cpu = get_current_cpu()
++    if utils.is_target_arch("sparc:v9"):
++        offset = gdb.parse_and_eval(
++            "trap_block[{0}].__per_cpu_base".format(str(cpu)))
++    else:
++        try:
++            offset = gdb.parse_and_eval(
++                "__per_cpu_offset[{0}]".format(str(cpu)))
++        except gdb.error:
++            # !CONFIG_SMP case
++            offset = 0
++    pointer = var_ptr.cast(utils.get_long_type()) + offset
++    return pointer.cast(var_ptr.type).dereference()
 +
-+$lx_thread_info(TASK): Given TASK, return the corresponding thread_info
-+variable."""
++
++class PerCpu(gdb.Function):
++    """Return per-cpu variable.
++
++$lx_per_cpu("VAR"[, CPU]): Return the per-cpu variable called VAR for the
++given CPU number. If CPU is omitted, the CPU of the current context is used.
++Note that VAR has to be quoted as string."""
 +
 +    def __init__(self):
-+        super(LxThreadInfoFunc, self).__init__("lx_thread_info")
++        super(PerCpu, self).__init__("lx_per_cpu")
 +
-+    def invoke(self, task):
-+        return get_thread_info(task)
++    def invoke(self, var_name, cpu=-1):
++        var_ptr = gdb.parse_and_eval("&" + var_name.string())
++        return per_cpu(var_ptr, cpu)
 +
 +
-+LxThreadInfoFunc()
++PerCpu()
+diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
+index 4d7eb2c..4848928 100644
+--- a/scripts/gdb/vmlinux-gdb.py
++++ b/scripts/gdb/vmlinux-gdb.py
+@@ -27,3 +27,4 @@ else:
+     import linux.modules
+     import linux.dmesg
+     import linux.tasks
++    import linux.cpus
 -- 
 1.8.1.1.298.ge7eed54
 
