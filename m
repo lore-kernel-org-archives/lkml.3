@@ -1,124 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752879AbaFFHeF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 03:34:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46346 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751876AbaFFHeD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 03:34:03 -0400
-Message-ID: <53916EE7.9000806@suse.cz>
-Date: Fri, 06 Jun 2014 09:33:59 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+	id S1752706AbaFFHfM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 03:35:12 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:18254 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751834AbaFFHfK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 03:35:10 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 06 Jun 2014 00:29:59 -0700
+Date: Fri, 6 Jun 2014 10:35:07 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Russell King <linux@arm.linux.org.uk>,
+        Thierry Reding <thierry.reding@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [RFC PATCH 6/6] mm, compaction: don't migrate in blocks that
- cannot be fully compacted in async direct compaction
-References: <alpine.DEB.2.02.1405211954410.13243@chino.kir.corp.google.com> <1401898310-14525-1-git-send-email-vbabka@suse.cz> <1401898310-14525-6-git-send-email-vbabka@suse.cz> <alpine.DEB.2.02.1406041705140.22536@chino.kir.corp.google.com> <53908F10.4020603@suse.cz> <alpine.DEB.2.02.1406051431030.18119@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1406051431030.18119@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Linus Walleij <linus.walleij@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v7 3/5] misc: fuse: Add efuse driver for Tegra
+Message-ID: <20140606073507.GS5961@tbergstrom-lnx.Nvidia.com>
+References: <1401973754-19701-1-git-send-email-pdeschrijver@nvidia.com>
+ <1401973754-19701-4-git-send-email-pdeschrijver@nvidia.com>
+ <5390B8E6.1050600@wwwdotorg.org>
+ <20140605220946.GP5961@tbergstrom-lnx.Nvidia.com>
+ <5390F508.8080104@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <5390F508.8080104@wwwdotorg.org>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2014 11:38 PM, David Rientjes wrote:
-> On Thu, 5 Jun 2014, Vlastimil Babka wrote:
+On Fri, Jun 06, 2014 at 12:54:00AM +0200, Stephen Warren wrote:
+> On 06/05/2014 04:09 PM, Peter De Schrijver wrote:
+> > On Thu, Jun 05, 2014 at 08:37:26PM +0200, Stephen Warren wrote:
+> >> On 06/05/2014 07:09 AM, Peter De Schrijver wrote:
+> >>> Implement fuse driver for Tegra20, Tegra30, Tegra114 and Tegra124.
+> >>>
+> >>> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+> >>> ---
+> >>>  Documentation/ABI/testing/sysfs-driver-tegra-fuse |   11 +
+> >>>  drivers/misc/fuse/Makefile                        |    1 +
+> >>>  drivers/misc/fuse/tegra/Makefile                  |    7 +
+> >>>  drivers/misc/fuse/tegra/fuse-tegra.c              |  250 +++++++++++++++++
+> >>
+> >> I wonder if we shouldn't put this into drivers/soc/tegra?
+> >>
+> >>> diff --git a/drivers/misc/fuse/tegra/fuse-tegra.c b/drivers/misc/fuse/tegra/fuse-tegra.c
+> >>
+> >>> +void __init tegra_init_fuse(void)
+> >>> +{
+> >>> +	struct device_node *np;
+> >>> +	u32 id;
+> >>> +	void __iomem *car_base;
+> >>> +
+> >>> +	np = of_find_matching_node(NULL, apbmisc_match);
+> >>> +	apbmisc_base = of_iomap(np, 0);
+> >>> +	if (!apbmisc_base) {
+> >>> +		pr_warn("ioremap tegra apbmisc failed. using %08x instead\n",
+> >>> +			APBMISC_BASE);
+> >>> +		apbmisc_base = ioremap(APBMISC_BASE, APBMISC_SIZE);
+> >>> +	}
+> >>> +
+> >>> +	id = tegra_read_chipid();
+> >>> +	tegra_chip_id = (id >> 8) & 0xff;
+> >>
+> >> So there's a fallback using APBMIS_BASE above if the node is missing, so
+> >> those last 2 lines always happen. However, if any of the following fail:
+> >>
+> >>> +	strapping_base = of_iomap(np, 0);
+> >> ...
+> >>> +	np = of_find_matching_node(NULL, tegra_fuse_match);
+> >> ...
+> >>> +	np = of_find_matching_node(NULL, car_match);
+> >>
+> >> Then this doesn't get executed:
+> >>
+> >>> +	tegra_get_revision(id);
+> >>
+> >> Isn't that important?
+> > 
+> > No. It's only used to populate /sys/devices/soc0/revision. I don't think
+> > that's particularly important.
 > 
->> > Ok, so this obsoletes my patchseries that did something similar.  I hope
->> 
->> Your patches 1/3 and 2/3 would still make sense. Checking alloc flags is IMHO
->> better than checking async here. That way, hugepaged and kswapd would still
->> try to migrate stuff which is important as Mel described in the reply to your
->> 3/3.
->> 
+> But it's a feature that works today. Why should we break it?
 > 
-> Would you mind folding those two patches into your series since you'll be 
-> requiring the gfp_mask in struct compact_control and your pageblock skip 
-> is better than mine?
 
-Sure!
+I don't expect people to not update their DT actually...
 
->> > you can rebase this set on top of linux-next and then propose it formally
->> > without the RFC tag.
->> 
->> I posted this early to facilitate discussion, but if you want to test on
->> linux-next then sure.
->> 
+> >> I guess that can't run if the lookup for tegra_fuse_match isn't
+> >> successful, since that tegra_get_revision may call
+> >> tegra20_spare_fuse_early() which uses fuse_base which is set up in
+> >> response to succesfully calling on of those node lookups. Isn't a
+> >> fallback needed there too?
+> > 
+> > tegra20_spare_fuse_early() will not be called if fuse_base is NULL.
 > 
-> I'd love to test these.
-
-OK, I'll repost it based on -next.
-
->> > We also need to discuss the scheduling heuristics, the reliance on
->> > need_resched(), to abort async compaction.  In testing, we actualy
->> > sometimes see 2-3 pageblocks scanned before terminating and thp has a very
->> > little chance of being allocated.  At the same time, if we try to fault
->> > 64MB of anon memory in and each of the 32 calls to compaction are
->> > expensive but don't result in an order-9 page, we see very lengthy fault
->> > latency.
->> 
->> Yes, I thought you were about to try the 1GB per call setting. I don't
->> currently have a test setup like you. My patch 1/6 still uses on
->> need_resched() but that could be replaced with a later patch.
->> 
+> Oh yes. We can at least call the function then even if the fuses can't
+> be mapped.
 > 
-> Agreed.  I was thinking higher than 1GB would be possible once we have 
-> your series that does the pageblock skip for thp, I think the expense 
-> would be constant because we won't needlessly be migrating pages unless it 
-> has a good chance at succeeding.
-
-Looks like a counter of iterations actually done in scanners, maintained in
-compact_control, would work better than any memory size based limit? It could
-better reflect the actual work done and thus latency. Maybe increase the counter
-also for migrations, with a higher cost than for a scanner iteration.
-
-
-> I'm slightly concerned about the 
-> COMPACT_CLUSTER_MAX termination, though, before we find unmigratable 
-> memory but I think that will be very low probability.
-
-Well I have removed the COMPACT_CLUSTER_MAX termination for this case. But
-that could be perhaps an issue with compactors starving reclaimers through
-too_many_isolated().
-
->> > I think it would be interesting to consider doing async compaction
->> > deferral up to 1 << COMPACT_MAX_DEFER_SHIFT after a sysctl-configurable
->> > amount of memory is scanned, at least for thp, and remove the scheduling
->> > heuristic entirely.
->> 
->> That could work. How about the lock contention heuristic? Is it possible on a
->> large and/or busy system to compact anything substantional without hitting the
->> lock contention? Are your observations about too early abort based on
->> need_resched() or lock contention?
->> 
+> But to avoid regressions, we should simply make sure the fuses can be
+> mapped.
 > 
-> Eek, it's mostly need_resched() because we don't use zone->lru_lock, we 
-> have the memcg lruvec locks for lru locking.  We end up dropping and 
-> reacquiring different locks based on the memcg of the page being isolated 
-> quite a bit.
+> >> I'm also a bit concerned that the driver probes, rather than the early
+> >> function tegra_init_fuse(), are doing things like setting up the speedo
+> >> data initialization, randomness addition, etc. For one, those won't
+> >> happen any more unless the DT nodes are present, and secondly,
+> >> triggering all those from driver probe rather than a function that's
+> >> called from the machine descriptor makes guaranteeing the timing
+> >> problematic.
+> > 
+> > Today there are no users of the speedo ID in upstream.
+> 
+> Well, except people reading kernel log messages. Accurate speedo-related
+> log messages have help pin-point a problem or two in the past.
+> 
 
-Hm I will probably as a first thing remove setting cc->contended for need_resched()
-Looks like a bad decision, if there's no lock contention. cc->contended = true
-means that there is no second direct compaction attempt (sync for hugepaged) which
-is not good. And you basically say that this happens almost always. But it makes me
-wonder how much difference could your patch "mm, thp: avoid excessive compaction latency
-during fault" actually make? Because it makes the second attempt async instead of sync,
-but if the second attempt never happens...
-Ah, I get it, it was probably before I put cc->contended setting everywhere...
+It's not gone if you use the new DT, it's unfortunate, but I don't think that
+should be a problem. We've had the same when introducing clocks in DT for
+example.
 
-> This does beg the question about parallel direct compactors, though, that 
-> will be contending on the same coarse zone->lru_lock locks and immediately 
-> aborting and falling back to PAGE_SIZE pages for thp faults that will be 
-> more likely if your patch to grab the high-order page and return it to the 
-> page allocator is merged.
+> > Looking at chromeos
+> > the users of the speedo ID are: CPU dvfs, GPU dvfs and sdhci. The last 2 also
+> > need regulators and therefor will need to support deferred probing anyway.
+> > CPU dvfs isn't critical at all, we don't care when it gets initialized. So
+> > deferred probe is fine.
+> 
+> What condition will those modules/drivers use to defer their probe?
+> 
 
-Hm can you explain how the page capturing makes this worse? I don't see it.
+The function to get the speedo ID will return an appropriate error.
 
+> > sdhci needs this for faster modes I guess which will also need extra DT
+> > properties looking at the chromeos driver. The others definitely will need
+> > an updated DT. For randomness I haven't seen any appreciable difference in when
+> > the 'random: nonblocking pool is initialized' message appears between having
+> > the randomness addition or not. Most likely the bulk of the randomness comes
+> > from serial interrupts rather than the fuse data. So I don't think the move to
+> > a driver probe will cause any problem. Nor do I think the lack of an updated
+> > DT will cause problems.
+> 
+> But what advantage do we have by actively changing it?
+
+We need to move the code anyway when we will have 64bit SoCs. Using DT also
+allows us to reuse the code even when the base address changes in the future.
+If it weren't for Tegra20 A03p, we could also drop the hack to enable the
+clocks directly, but use CCF instead.
+
+Cheers,
+
+Peter.
