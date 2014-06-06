@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777AbaFFIqa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 04:46:30 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:34233 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752073AbaFFIpp (ORCPT
+	id S1752718AbaFFIpo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 04:45:44 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:47752 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752073AbaFFIoT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 04:45:45 -0400
-Date: Fri, 6 Jun 2014 04:45:35 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: linux-kernel@vger.kernel.org,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@redhat.com>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH ftrace/core] tracing: Remove return value in
- event_trace_self_tests() when top_trace_array() returns NULL
-Message-ID: <20140606044535.6430c581@gandalf.local.home>
-In-Reply-To: <53916033.1040908@hitachi.com>
-References: <20140605234623.484afaf8@gandalf.local.home>
-	<20140606062844.7955.61919.stgit@yunodevel>
-	<53916033.1040908@hitachi.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	Fri, 6 Jun 2014 04:44:19 -0400
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+To: linuxppc-dev@lists.ozlabs.org
+Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Alistair Popple <alistair@popple.id.au>, linux-kernel@vger.kernel.org
+Subject: [PATCH 5/6] powerpc/powernv: Make set_bypass() callback a type
+Date: Fri,  6 Jun 2014 18:44:05 +1000
+Message-Id: <1402044246-13650-6-git-send-email-aik@ozlabs.ru>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1402044246-13650-1-git-send-email-aik@ozlabs.ru>
+References: <1402044246-13650-1-git-send-email-aik@ozlabs.ru>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14060608-3568-0000-0000-000005A33722
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 06 Jun 2014 15:31:15 +0900
-Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com> wrote:
+There are going to be other callbacks which are going to be used as
+function parameters so change the existing set_bypass() callback to be
+a type.
 
-> Hi Steven,
-> 
-> Thank you for applying my patches.
-> I received build warning report from kbuild test bot,
-> so I fixed it. Would you apply this patch?
->
+Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+---
+ arch/powerpc/include/asm/iommu.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-My tests also caught it. I pushed to my ftrace/core branch which is
-allowed to rebase (I push only to trigger Wu's bots). I'll just fold
-that fix into the original patch.
+diff --git a/arch/powerpc/include/asm/iommu.h b/arch/powerpc/include/asm/iommu.h
+index f503a5c..2bc8f8c 100644
+--- a/arch/powerpc/include/asm/iommu.h
++++ b/arch/powerpc/include/asm/iommu.h
+@@ -65,6 +65,7 @@ struct iommu_owner {
+ 	unsigned char __unused[0];
+ };
+ 
++typedef void (*iommu_set_bypass_fn)(struct iommu_table *tbl, bool enable);
+ struct iommu_table {
+ 	unsigned long  it_busno;     /* Bus number this table belongs to */
+ 	unsigned long  it_size;      /* Size of iommu table in entries */
+@@ -82,7 +83,7 @@ struct iommu_table {
+ #ifdef CONFIG_IOMMU_API
+ 	struct iommu_group *it_group;
+ #endif
+-	void (*set_bypass)(struct iommu_table *tbl, bool enable);
++	iommu_set_bypass_fn set_bypass;
+ 	struct iommu_owner *it_owner;
+ };
+ 
+-- 
+2.0.0
 
-Thanks,
-
--- Steve
