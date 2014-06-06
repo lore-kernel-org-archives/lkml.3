@@ -1,122 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752759AbaFFKo0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 06:44:26 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:51985 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751740AbaFFKoX (ORCPT
+	id S1752793AbaFFKpE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 06:45:04 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:42132 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751058AbaFFKpB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 06:44:23 -0400
-Message-ID: <53919B82.9040705@gmail.com>
-Date: Fri, 06 Jun 2014 12:44:18 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-To: Philipp Zabel <p.zabel@pengutronix.de>,
-        =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
-	<antoine.tenart@free-electrons.com>
-CC: alexandre.belloni@free-electrons.com, thomas.petazzoni@free-electrons.com,
-        zmxu@marvell.com, jszhang@marvell.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/9] reset: add the Berlin reset controller driver
-References: <1401983326-19205-1-git-send-email-antoine.tenart@free-electrons.com> <1401983326-19205-2-git-send-email-antoine.tenart@free-electrons.com> <1401986205.4103.9.camel@paszta.hi.pengutronix.de>
-In-Reply-To: <1401986205.4103.9.camel@paszta.hi.pengutronix.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Fri, 6 Jun 2014 06:45:01 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
+Subject: Re: [RFC] Bluetooth: Add ACL MTU, available buffers and total buffers to hci_conn_info.
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <1402049880-7686-1-git-send-email-kiran.kumar@linaro.org>
+Date: Fri, 6 Jun 2014 12:44:55 +0200
+Cc: LKML <linux-kernel@vger.kernel.org>, Nick Pelly <npelly@google.com>,
+        "Gustavo F. Padovan" <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
+        netdev@vger.kernel.org, Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>
+Content-Transfer-Encoding: 7bit
+Message-Id: <39777AAC-6DB7-444D-9137-BCDDE99DA781@holtmann.org>
+References: <1402049880-7686-1-git-send-email-kiran.kumar@linaro.org>
+To: Kiran Kumar Raparthy <kiran.kumar@linaro.org>
+X-Mailer: Apple Mail (2.1878.2)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2014 06:36 PM, Philipp Zabel wrote:
-> Am Donnerstag, den 05.06.2014, 17:48 +0200 schrieb Antoine Ténart:
->> Add a reset controller for Marvell Berlin SoCs which is used by the
->> USB PHYs drivers (for now).
->>
->> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
->> ---
->>   drivers/reset/Makefile       |   1 +
->>   drivers/reset/reset-berlin.c | 113 +++++++++++++++++++++++++++++++++++++++++++
->>   2 files changed, 114 insertions(+)
->>   create mode 100644 drivers/reset/reset-berlin.c
->>
-[...]
->>   obj-$(CONFIG_ARCH_STI) += sti/
->> diff --git a/drivers/reset/reset-berlin.c b/drivers/reset/reset-berlin.c
->> new file mode 100644
->> index 000000000000..78b42c882cb2
->> --- /dev/null
->> +++ b/drivers/reset/reset-berlin.c
->> @@ -0,0 +1,113 @@
->> +/*
->> + * Copyright (C) 2014 Marvell Technology Group Ltd.
->> + *
->> + * Antoine Ténart <antoine.tenart@free-electrons.com>
->> + *
->> + * This file is licensed under the terms of the GNU General Public
->> + * License version 2. This program is licensed "as is" without any
->> + * warranty of any kind, whether express or implied.
->> + */
->> +
->> +#include <linux/delay.h>
->> +#include <linux/io.h>
->> +#include <linux/module.h>
->> +#include <linux/of.h>
->> +#include <linux/of_address.h>
->> +#include <linux/platform_device.h>
->
-> Is there a reason this is not actually implemented as platform device?
->
-[...]
->> +static int __berlin_reset_init(struct device_node *np)
->> +{
->> +	struct berlin_reset_priv *priv;
->> +	struct resource res;
->> +	resource_size_t size;
->> +	int ret;
->> +
->> +	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
->> +	if (!priv)
->> +		return -ENOMEM;
->> +
->> +	ret = of_address_to_resource(np, 0, &res);
->> +	if (ret)
->> +		goto err;
->> +
->> +	size = resource_size(&res);
->> +
->> +	priv->base = ioremap(res.start, size);
->> +	if (!priv->base) {
->> +		ret = -ENOMEM;
->> +		goto err;
->> +	}
->
-> A platform driver could use devm_kzalloc, platform_get_resource,
-> and devm_ioremap_resource here.
->
->> +	priv->base += BERLIN_RESET_REGISTER;
->> +
->> +	priv->rcdev.owner = THIS_MODULE;
->> +	priv->rcdev.nr_resets = size * 32;
->
-> This doesn't seem right. The device tree patch shows that
-> size = 0x400.
+Hi Kiran,
 
-Actually, not using a platform_device now is the outcome of
-some late DT node rework we had for the clock driver. The reason
-we only have one node for the whole register set providing
-pinctrl, reset, clock, ... is that it would require tiny separate
-register ranges spread over the whole register set.
+> Add ACL MTU, available buffers and total buffers to hci_conn_info.
+> 
+> This provides userspace debugging tools access to ACL flow control state.
+> 
+> This is one of the number of patches from the Android AOSP common.git tree,
+> which is used on almost all Android devices.  so I wanted to submit it for
+> review to see if it should go upstream.
+> 
+> Cc: Marcel Holtmann <marcel@holtmann.org>
+> Cc: Gustavo Padovan <gustavo@padovan.org>
+> Cc: Johan Hedberg <johan.hedberg@gmail.com>
+> Cc: David S. Miller <davem@davemloft.net>
+> Cc: linux-bluetooth@vger.kernel.org
+> Cc: netdev@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: Android Kernel Team <kernel-team@android.com>
+> Cc: John Stultz <john.stultz@linaro.org>
+> Signed-off-by: Nick Pelly <npelly@google.com>
+> [kiran: Added context to commit message]
+> Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
+> ---
+> include/net/bluetooth/hci.h |  3 +++
+> net/bluetooth/hci_conn.c    | 18 ++++++++++++++++++
+> 2 files changed, 21 insertions(+)
 
-Instead, the idea is to have a single DT node, register a
-driver providing a mmio regmap, and registering individual
-platform_devices for the non-early drivers using the regmap.
-We also evaluated syscon, but it will require dummy nodes for
-each proper platform_device and that is something we really
-want to avoid here.
+this would break existing API and can not be accepted. NAK.
 
-Of course, writing that driver is delayed on my side because
-of other non-Linux stuff that has to be taken care of first.
-As I cannot tell how much time I can spend on it now, I prefer
-to take this as is and provide update patches as soon as I have
-worked out the regset driver.
+Regards
 
-Sebastian
+Marcel
+
