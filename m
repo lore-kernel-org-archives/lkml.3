@@ -1,62 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751876AbaFFHLR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 03:11:17 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:40155 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750803AbaFFHLQ (ORCPT
+	id S1751783AbaFFHNm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 03:13:42 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:64193 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751098AbaFFHNk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 03:11:16 -0400
-Date: Fri, 6 Jun 2014 09:11:06 +0200
-From: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: Vivek Gautam <gautam.vivek@samsung.com>
-Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        kishon <kishon@ti.com>, sebastian.hesselbarth@gmail.com,
-        Felipe Balbi <balbi@ti.com>, alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/9] usb: phy: add the Berlin USB PHY driver
-Message-ID: <20140606071106.GA30156@kwain>
-References: <1401983326-19205-1-git-send-email-antoine.tenart@free-electrons.com>
- <1401983326-19205-5-git-send-email-antoine.tenart@free-electrons.com>
- <CAFp+6iEKLD_rLg84h3J2oyzw7vizEV-Eqo0e_jqurx_v9ZX2JA@mail.gmail.com>
+	Fri, 6 Jun 2014 03:13:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAFp+6iEKLD_rLg84h3J2oyzw7vizEV-Eqo0e_jqurx_v9ZX2JA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1401980308-5116-3-git-send-email-daniel.vetter@ffwll.ch>
+References: <1401980308-5116-1-git-send-email-daniel.vetter@ffwll.ch>
+	<1401980308-5116-3-git-send-email-daniel.vetter@ffwll.ch>
+Date: Fri, 6 Jun 2014 09:13:40 +0200
+Message-ID: <CANq1E4Tg3+7VRBe+k6dbsNx=M_NO7XodK--yc+4ej4Lw6-i6KA@mail.gmail.com>
+Subject: Re: [PATCH 3/5] vt: Don't ignore unbind errors in vt_unbind
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        Jiri Slaby <jslaby@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi
 
-On Fri, Jun 06, 2014 at 12:09:06PM +0530, Vivek Gautam wrote:
-> On Thu, Jun 5, 2014 at 9:18 PM, Antoine Ténart
-> <antoine.tenart@free-electrons.com> wrote:
-> > Add the driver driving the Marvell Berlin USB PHY. This allows to
-> > initialize the PHY and to use it from the USB driver later.
-> 
-> Just out of curiosity, going forward we would like to have phy drivers based on
-> generic phy framework (drivers/phy).
-> Any particular reason that we are still adding phy drivers in usb-phy layer ?
-> 
-> Looking at it, seems like it can very well be written based on phy framework.
+On Thu, Jun 5, 2014 at 4:58 PM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+> Otherwise the loop will never stop since we don't make any
+> forward progress. Noticed while breaking this accidentally
+> in a painful attempt to make vga_con unregistering work.
+>
+> With this patch we'll bail out on the first attempt, which
+> at least leaves a useful enough system behind for debugging.
+> Livelocks on console_lock just aren't fun.
+>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Jiri Slaby <jslaby@suse.cz>
+> Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-This USB controller are ChipIdea compatible, and the ChipIdea common
-functions use the usb_phy framework. That's why this PHY driver is
-there.
+We used to return 0 on errors here, which is very backwards to me.. so
+your change to use "retval" looks fine to me. This is:
 
-Antoine
+Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
 
--- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Thanks
+David
+
+> ---
+>  drivers/tty/vt/vt.c | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
+> index 5077fe87324d..3c00dcb3b145 100644
+> --- a/drivers/tty/vt/vt.c
+> +++ b/drivers/tty/vt/vt.c
+> @@ -3260,6 +3260,7 @@ static int vt_unbind(struct con_driver *con)
+>  {
+>         const struct consw *csw = NULL;
+>         int i, more = 1, first = -1, last = -1, deflt = 0;
+> +       int ret;
+>
+>         if (!con->con || !(con->flag & CON_DRIVER_FLAG_MODULE) ||
+>             con_is_graphics(con->con, con->first, con->last))
+> @@ -3285,8 +3286,10 @@ static int vt_unbind(struct con_driver *con)
+>
+>                 if (first != -1) {
+>                         console_lock();
+> -                       do_unbind_con_driver(csw, first, last, deflt);
+> +                       ret = do_unbind_con_driver(csw, first, last, deflt);
+>                         console_unlock();
+> +                       if (ret != 0)
+> +                               return ret;
+>                 }
+>
+>                 first = -1;
+> --
+> 1.8.1.4
+>
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
