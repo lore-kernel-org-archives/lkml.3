@@ -1,53 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752638AbaFFX2P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 19:28:15 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:32967 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752286AbaFFX2O (ORCPT
+	id S1752527AbaFFXc3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 19:32:29 -0400
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:47000 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752286AbaFFXc2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 19:28:14 -0400
-Date: Fri, 06 Jun 2014 16:28:12 -0700 (PDT)
-Message-Id: <20140606.162812.1842868056512941704.davem@davemloft.net>
-To: rickard_strandqvist@spectrumdigital.se
-Cc: isdn@linux-pingi.de, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] isdn: mISDN: dsp_cmx.c: Cleaning up a define that is
- no longer available
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1402097131-10954-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1402097131-10954-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 06 Jun 2014 16:28:13 -0700 (PDT)
+	Fri, 6 Jun 2014 19:32:28 -0400
+X-Sasl-enc: fi3W2lnNg4QG5io4wpDzo0nMbjuNx32qAN2rHp+ulfgL 1402097543
+Date: Fri, 6 Jun 2014 16:32:15 -0700
+From: GregKH <greg@kroah.com>
+To: Evgeniy Polyakov <zbr@ioremap.net>
+Cc: Thomas Wood <tommyandrena@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers/w1/w1_int.c: Fix style errors.
+Message-ID: <20140606233215.GA1281@kroah.com>
+References: <1401491420-6953-1-git-send-email-tommyandrena@gmail.com>
+ <2069611401539121@web10m.yandex.ru>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2069611401539121@web10m.yandex.ru>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Date: Sat,  7 Jun 2014 01:25:30 +0200
-
-> Removes an ifdef that is no longer available,
-> and that would cause a compile error if it was activated.
+On Sat, May 31, 2014 at 04:25:21PM +0400, Evgeniy Polyakov wrote:
+> Hi Thomas
 > 
-> This was partly found using a static code analysis program called cppcheck.
+> 31.05.2014, 03:11, "Thomas Wood" <tommyandrena@gmail.com>:
+> > Replace spaces at beginning of the string with tabs, and replace foo * bar with foo *bar in a pointer declaration.
+> >
+> > Signed-off-by: Thomas Wood <tommyandrena@gmail.com>
 > 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> Looks good, thank you.
+> Greg, please pull it into your tree or suggest appropriate.
+> 
+> Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
 
-This indentation looks wrong, and if you scan up you'll see why.
+Thanks, I'll take this after 3.16-rc1 is out.
 
-A different set of CPP guards create the openning curly brace(s):
-
-	/* PROCESS DATA (two members) */
-#ifdef CMX_CONF_DEBUG
-	if (0) {
-#else
-		if (members == 2) {
-#endif
-
-This is crazy, and deleting only the DSP_NEVER_DEFINED part makes it
-even more confusing because less sophisticated code analysis tools and
-editing mode will think that the braces are unbalanced now.
-
-I'm not applying this, it makes things worse not better, sorry.
+greg k-h
