@@ -1,48 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752158AbaFFOta (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 10:49:30 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:56329 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751662AbaFFOt3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 10:49:29 -0400
-Date: Fri, 6 Jun 2014 10:49:23 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, Brad Mouring <bmouring@ni.com>
-Subject: Re: [patch 2/2] rtmutex: Detect changes in the pi lock chain
-Message-ID: <20140606104923.3020a352@gandalf.local.home>
-In-Reply-To: <20140605152801.930031935@linutronix.de>
-References: <20140605152544.641846795@linutronix.de>
-	<20140605152801.930031935@linutronix.de>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1752173AbaFFOvE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 10:51:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22460 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751653AbaFFOvC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 10:51:02 -0400
+Date: Fri, 6 Jun 2014 16:50:23 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 2/2] perf tests: Show the inner make output when an error
+ happens
+Message-ID: <20140606145023.GA8865@krava.brq.redhat.com>
+References: <1402063909-13859-1-git-send-email-acme@kernel.org>
+ <1402063909-13859-3-git-send-email-acme@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402063909-13859-3-git-send-email-acme@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 05 Jun 2014 15:28:33 -0000
-Thomas Gleixner <tglx@linutronix.de> wrote:
- 
->  /**
-> @@ -764,7 +802,7 @@ __rt_mutex_slowlock(struct rt_mutex *loc
->  }
->  
->  static void rt_mutex_handle_deadlock(int res, int detect_deadlock,
-> -				     struct rtmutex_waiter *w)
-> +				     struct rt_mutex_waiter *w)
->  {
->  	/*
->  	 * If the result is not -EDEADLOCK or the caller requested
+On Fri, Jun 06, 2014 at 11:11:49AM -0300, Arnaldo Carvalho de Melo wrote:
+> From: Arnaldo Carvalho de Melo <acme@redhat.com>
 > 
+> Before:
+> 
+>   [acme@zoo linux]$ make -C tools/perf -f tests/make make_static
+>   make: Entering directory `/home/git/linux/tools/perf'
+>   - make_static: cd . && make -f Makefile DESTDIR=/tmp/tmp.JcWuM4Zu9f LDFLAGS=-static
+>   make: *** [make_static] Error 1
+>   make: Leaving directory `/home/git/linux/tools/perf'
+>   [acme@zoo linux]$
+> 
+> After:
+> 
+>   [acme@zoo linux]$ make -C tools/perf -f tests/make make_static
+>   make: Entering directory `/home/git/linux/tools/perf'
+>   - make_static: cd . && make -f Makefile DESTDIR=/tmp/tmp.X3su83i14u LDFLAGS=-static
+>   cd . && make -f Makefile DESTDIR=/tmp/tmp.X3su83i14u LDFLAGS=-static
+>     BUILD:   Doing 'make -j4' parallel build
+>   config/Makefile:303: *** No static glibc found, please install glibc-static.  Stop.
+>   make[1]: *** [all] Error 2
+>     test: test -x ./perf
+>   make: Leaving directory `/home/git/linux/tools/perf'
+>   [acme@zoo linux]$
+> 
+> Cc: Adrian Hunter <adrian.hunter@intel.com>
+> Cc: David Ahern <dsahern@gmail.com>
+> Cc: Don Zickus <dzickus@redhat.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Mike Galbraith <efault@gmx.de>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Stephane Eranian <eranian@google.com>
+> Link: http://lkml.kernel.org/n/tip-s3ycajsl9n249n9e8gomfex5@git.kernel.org
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> ---
+>  tools/perf/tests/make | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff --git a/tools/perf/tests/make b/tools/perf/tests/make
+> index 2f92d6e7ee00..c21db653b1f2 100644
+> --- a/tools/perf/tests/make
+> +++ b/tools/perf/tests/make
+> @@ -205,8 +205,7 @@ $(run):
+>  	( eval $$cmd ) >> $@ 2>&1; \
+>  	echo "  test: $(call test,$@)" >> $@ 2>&1; \
+>  	$(call test,$@) && \
+> -	rm -f $@ \
+> -	rm -rf $$TMP_DEST
+> +	rm -rf $@ $$TMP_DEST || cat $@
 
-This needs to be folded in patch 1.
+I like that we show the log, but we need to fail the target
+so the processing is stopped and the rest is not executed,
+like adding this:
 
--- Steve
+    .... cat $@ && false
+>  
+>  $(run_O):
+>  	$(call clean)
 
+also you need to put same change to $(run_O) target
+
+thanks,
+jirka
