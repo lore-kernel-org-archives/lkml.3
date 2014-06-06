@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752719AbaFFKTr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 06:19:47 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:35006 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752212AbaFFKTp (ORCPT
+	id S1751872AbaFFKWe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 06:22:34 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:35356 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803AbaFFKWd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 06:19:45 -0400
-From: Kiran Kumar Raparthy <kiran.kumar@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: Nick Pelly <npelly@google.com>, Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>,
-        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Kiran Raparthy <kiran.kumar@linaro.org>
-Subject: [RFC] Bluetooth: Do not attempt to send dlci disconnect when in BT_CONFIG.
-Date: Fri,  6 Jun 2014 15:49:31 +0530
-Message-Id: <1402049971-7762-1-git-send-email-kiran.kumar@linaro.org>
-X-Mailer: git-send-email 1.8.2.1
+	Fri, 6 Jun 2014 06:22:33 -0400
+From: "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Anshuman Khandual <khandual@linux.vnet.ibm.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>
+Subject: [PATCHv2 1/2] powerpc/powernv: include asm/smp.h to fix UP build failure
+Date: Fri,  6 Jun 2014 15:51:05 +0530
+Message-Id: <1402050065-18007-1-git-send-email-shreyas@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.9.0
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14060610-2674-0000-0000-000000447C48
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nick Pelly <npelly@google.com>
+Build throws following errors when CONFIG_SMP=n
+arch/powerpc/platforms/powernv/setup.c: In function ‘pnv_kexec_wait_secondaries_down’:
+arch/powerpc/platforms/powernv/setup.c:179:4: error: implicit declaration of function ‘get_hard_smp_processor_id’
+    rc = opal_query_cpu_status(get_hard_smp_processor_id(i),
 
-Do not attempt to send dlci disconnect when in BT_CONFIG.
+The usage of get_hard_smp_processor_id() needs the declaration from
+<asm/smp.h>. The file setup.c includes <linux/sched.h>, which in-turn
+includes <linux/smp.h>. However, <linux/smp.h> includes <asm/smp.h>
+only on SMP configs and hence UP builds fail.
 
-This fixes a bug where shutdown() and close() on a rfcomm socket during ACL
-connection would not cause HCI Create Connection Cancel.
+Fix this by directly including <asm/smp.h> in setup.c unconditionally.
 
-This is one of the number of patches from the Android AOSP common.git tree,
-which is used on almost all Android devices.  so I wanted to submit it for
-review to see if it should go upstream.
-
-Cc: Marcel Holtmann <marcel@holtmann.org>
-Cc: Gustavo Padovan <gustavo@padovan.org>
-Cc: Johan Hedberg <johan.hedberg@gmail.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Peter Hurley <peter@hurleysoftware.com>
-Cc: Seung-Woo Kim <sw0312.kim@samsung.com>
-Cc: Nick Pelly <npelly@google.com>
-Cc: linux-bluetooth@vger.kernel.org
-Cc: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: Android Kernel Team <kernel-team@android.com>
-Cc: John Stultz <john.stultz@linaro.org>
-Signed-off-by: Nick Pelly <npelly@google.com>
-[kiran: Added context to commit message]
-Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
+Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Shreyas B. Prabhu <shreyas@linux.vnet.ibm.com>
 ---
- net/bluetooth/rfcomm/core.c | 1 -
- 1 file changed, 1 deletion(-)
+Changes is v2:
+Commit message improved based on suggestion.
 
-diff --git a/net/bluetooth/rfcomm/core.c b/net/bluetooth/rfcomm/core.c
-index cf62026..6a531e7 100644
---- a/net/bluetooth/rfcomm/core.c
-+++ b/net/bluetooth/rfcomm/core.c
-@@ -456,7 +456,6 @@ static int __rfcomm_dlc_close(struct rfcomm_dlc *d, int err)
+ arch/powerpc/platforms/powernv/setup.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/powerpc/platforms/powernv/setup.c b/arch/powerpc/platforms/powernv/setup.c
+index 8c16a5f..678573c 100644
+--- a/arch/powerpc/platforms/powernv/setup.c
++++ b/arch/powerpc/platforms/powernv/setup.c
+@@ -35,6 +35,7 @@
+ #include <asm/rtas.h>
+ #include <asm/opal.h>
+ #include <asm/kexec.h>
++#include <asm/smp.h>
  
- 	switch (d->state) {
- 	case BT_CONNECT:
--	case BT_CONFIG:
- 	case BT_OPEN:
- 	case BT_CONNECT2:
- 		if (test_and_clear_bit(RFCOMM_DEFER_SETUP, &d->flags)) {
+ #include "powernv.h"
+ 
 -- 
-1.8.2.1
+1.9.0
 
