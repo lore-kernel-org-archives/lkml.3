@@ -1,72 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752490AbaFFSmO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 14:42:14 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:63366 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751924AbaFFSmN (ORCPT
+	id S1752087AbaFFSqM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 14:46:12 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:58164 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751437AbaFFSqJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 14:42:13 -0400
-Date: Fri, 6 Jun 2014 11:40:50 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: 3.15-rc8 oops in copy_page_rep after page fault.
-In-Reply-To: <CA+55aFxiOsceOsm7zYyvFAxDF3=gxUXj=_61Nce3VkELfJr7cg@mail.gmail.com>
-Message-ID: <alpine.LSU.2.11.1406061128480.15624@eggly.anvils>
-References: <20140606174317.GA1741@redhat.com> <CA+55aFxiOsceOsm7zYyvFAxDF3=gxUXj=_61Nce3VkELfJr7cg@mail.gmail.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Fri, 6 Jun 2014 14:46:09 -0400
+Date: Fri, 6 Jun 2014 11:46:05 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Greg Ungerer <gerg@uclinux.org>
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        Linux/m68k <linux-m68k@vger.kernel.org>
+Subject: Re: rcu alignment warning tripping on m68k
+Message-ID: <20140606184605.GT4581@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <538696A0.5090601@uclinux.org>
+ <20140529141151.21ed6f95@alan.etchedpixels.co.uk>
+ <5387DF05.1020103@uclinux.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5387DF05.1020103@uclinux.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14060618-1344-0000-0000-0000020E9726
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 6 Jun 2014, Linus Torvalds wrote:
-> On Fri, Jun 6, 2014 at 10:43 AM, Dave Jones <davej@redhat.com> wrote:
-> >
-> > RIP: 0010:[<ffffffff8b3287b5>]  [<ffffffff8b3287b5>] copy_page_rep+0x5/0x10
+On Fri, May 30, 2014 at 11:29:41AM +1000, Greg Ungerer wrote:
+> On 29/05/14 23:11, One Thousand Gnomes wrote:
+> > On Thu, 29 May 2014 12:08:32 +1000
+> > Greg Ungerer <gerg@uclinux.org> wrote:
+> > 
+> >> Hi All,
+> >>
+> >> Inside kernel/rcy/tree.c in __call_rcu() it does an alignment check on
+> >> the head pointer passed in. This trips on m68k systems, because they only
+> >> need alignment of 32bit quantities to 16bit boundaries.
+> > 
+> > __alignof perhaps ?
 > 
-> Ok, it's the first iteration of "rep movsq" (%rcx is still 0x200) for
-> copying a page, and the pages are
+> That might do. Change then becomes something like:
 > 
->   RSI: ffff880052766000
->   RDI: ffff880014efe000
+> --- a/kernel/rcu/tree.c
+> +++ b/kernel/rcu/tree.c
+> @@ -2467,7 +2467,7 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_
+>         unsigned long flags;
+>         struct rcu_data *rdp;
 > 
-> which both look like reasonable kernel addresses. So I'm assuming it's
-> DEBUG_PAGEALLOC that makes this trigger, and since the error code is
-> 0, and the CR2 value matches RSI, it's the source page that seems to
-> have been freed.
+> -       WARN_ON_ONCE((unsigned long)head & 0x3); /* Misaligned rcu_head! */
+> +       WARN_ON_ONCE((unsigned long)head & (__alignof__(head) - 1)); /* Misaligned rcu_head! */
+
+Hmmm...  The purpose of the check is to reserve the low-order bits to
+allow RCU to classify callbacks as being time-critical or not.  RCU
+can probably live with a single bit, but if there is some architecture
+out there that simply refuses to do alignment, I need to know about it.
+
+(See "git show 0bb7b59d6e2b8" for more info.)
+
+So how about this instead?
+
+ -       WARN_ON_ONCE((unsigned long)head & 0x1); /* Misaligned rcu_head! */
+
+(Trying to remember if I have seen Linux kernel code that uses both
+the lower bits...)
+
+							Thanx, Paul
+
+>         if (debug_rcu_head_queue(head)) {
+>                 /* Probable double call_rcu(), so leak the callback. */
+>                 ACCESS_ONCE(head->func) = rcu_leak_callback;
 > 
-> And I see absolutely _zero_ reason for wht your 64k mmap_min_addr
-> should make any difference what-so-ever. That's just odd.
+> Thanks
+> Greg
 > 
-> Anyway, can you try to figure out _which_ copy_user_highpage() it is
-> (by looking at what is around the call-site at
-> "handle_mm_fault+0x1e0". The fact that we have a stale
-> do_huge_pmd_wp_page() on the stack makes me suspect that we have hit
-> that VM_FAULT_FALLBACK case and this is related to splitting. Adding a
-> few more people explicitly to the cc in case anybody sees anything
-> (original email on lkml and linux-mm for context, guys).
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-It's a familiar one, that Sasha first reported over a year ago:
-see https://lkml.org/lkml/2013/3/29/103
-
-Somewhere in that thread I suggest that it's due to the source THPage
-being split, and a tail page freed, while copy is in progress; and
-not a problem without DEBUG_PAGEALLOC, since the pmd_same check
-will prevent a miscopy from being made visible.
-
-It's not a v3.15 regression, and it's no worry without DEBUG_PAGEALLOC.
-
-If it's becoming easier to trigger and thus interfering with trinity,
-then I guess we shall have to do something about it.  Kirill tried one
-approach that didn't work out, and we have so far both felt reluctant
-to make the code uglier just to satisfy DEBUG_PAGEALLOC.
-
-Hugh
