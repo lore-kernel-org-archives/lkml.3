@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622AbaFFLCp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 07:02:45 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:57649 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751740AbaFFLCn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 07:02:43 -0400
-From: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-To: Bryan Wu <cooloney@gmail.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Jingoo Han <jg1.han@samsung.com>, Lee Jones <lee.jones@linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pwm@vger.kernel.org
-Cc: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-Subject: [PATCH] pwm-backlight:
-Date: Fri,  6 Jun 2014 13:02:09 +0200
-Message-Id: <1402052529-22761-1-git-send-email-LW@KARO-electronics.de>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752648AbaFFLDJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 07:03:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49976 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751905AbaFFLDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 07:03:08 -0400
+Date: Fri, 6 Jun 2014 13:03:07 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: Interactivity regression since v3.11 in mm/vmscan.c
+Message-ID: <20140606110306.GD26253@dhcp22.suse.cz>
+References: <53905594d284f_71f12992fc6a@nysa.notmuch>
+ <20140605133747.GB2942@dhcp22.suse.cz>
+ <CAMP44s1kk8PyMd603g0C9yvHuuUZXzwwNQHpM8Abghvc_Os-SQ@mail.gmail.com>
+ <20140606091620.GC26253@dhcp22.suse.cz>
+ <CAMP44s2K-kZ8yLC3NPbpO9Z9ykQeySXW+cRiZ_NpLUMzDuiq9g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMP44s2K-kZ8yLC3NPbpO9Z9ykQeySXW+cRiZ_NpLUMzDuiq9g@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 257462dbf3ed pwm-backlight: switch to gpiod interface
-introduced a regression leading to acquiring a bogus GPIO-0 when
-configured from DT without an 'enable-gpios' property.
-The driver will happily accept the 0 initialized 'enable_gpio' member
-of the struct platform_pwm_backlight_data as valid gpio number, and
-request this GPIO as enable pin. In case of multiple driver instances,
-the second will fail to register with the error message:
-pwm-backlight backlight1.23: failed to request GPIO#0: -16
+On Fri 06-06-14 05:33:28, Felipe Contreras wrote:
+> On Fri, Jun 6, 2014 at 4:16 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> 
+> > Mel has a nice systemtap script (attached) to watch for stalls. Maybe
+> > you can give it a try?
+> 
+> Is there any special configurations I should enable?
 
-Fix this by setting enable_gpio in the pdata struct to -EINVAL.
-
-Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
----
- drivers/video/backlight/pwm_bl.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
-index 38ca88b..3d265c4 100644
---- a/drivers/video/backlight/pwm_bl.c
-+++ b/drivers/video/backlight/pwm_bl.c
-@@ -178,7 +178,7 @@ static int pwm_backlight_parse_dt(struct device *dev,
- 		data->dft_brightness = value;
- 		data->max_brightness--;
- 	}
--
-+	data->enable_gpio = -EINVAL;
- 	return 0;
- }
- 
+You need debuginfo and systemtap AFAIK. I haven't used this script
+myself.
 -- 
-1.7.10.4
-
+Michal Hocko
+SUSE Labs
