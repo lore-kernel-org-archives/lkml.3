@@ -1,84 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752303AbaFFFlO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 01:41:14 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:11857 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750806AbaFFFlN (ORCPT
+	id S1752715AbaFFFl0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 01:41:26 -0400
+Received: from www.linutronix.de ([62.245.132.108]:53506 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752554AbaFFFlZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 01:41:13 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 05 Jun 2014 22:36:02 -0700
-From: Vidya Sagar <vidyas@nvidia.com>
-To: <linux@arm.linux.org.uk>, <bhelgaas@google.com>, <wangyijing@huawei.com>,
-        <thierry.reding@gmail.com>, <jason@lakedaemon.net>,
-        <will.deacon@arm.com>, <swarren@nvidia.com>, <kthota@nvidia.com>,
-        <vidyas@nvidia.com>
-CC: <sagar.tv@gmail.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3] ARM: fix debug prints relevant to PCI devices
-Date: Fri, 6 Jun 2014 11:10:44 +0530
-Message-ID: <1402033244-19050-1-git-send-email-vidyas@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-X-NVConfidentiality: public
+	Fri, 6 Jun 2014 01:41:25 -0400
+Date: Fri, 6 Jun 2014 07:41:19 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, Brad Mouring <bmouring@ni.com>
+Subject: Re: [patch 1/2] rtmutex: Handle deadlock detection smarter
+In-Reply-To: <20140605211403.199fe580@gandalf.local.home>
+Message-ID: <alpine.DEB.2.10.1406060740510.23174@nanos>
+References: <20140605152544.641846795@linutronix.de> <20140605152801.836501969@linutronix.de> <20140605211403.199fe580@gandalf.local.home>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As per PCIe spec, fast back-to-back transactions feature
-is not applicable to PCIe devices. Hence, do not print
-that fast back-to-back trasactions are disabled when
-there is a PCIe device found on the bus
+On Thu, 5 Jun 2014, Steven Rostedt wrote:
 
-Signed-off-by: Vidya Sagar <vidyas@nvidia.com>
----
-v3:
-* removed KERN_INFO from pr_info() which was not removed by mistake in previous patch
+> On Thu, 05 Jun 2014 15:28:32 -0000
+> Thomas Gleixner <tglx@linutronix.de> wrote:
+> 
+> 
+> > @@ -1112,7 +1134,8 @@ int rt_mutex_start_proxy_lock(struct rt_
+> >  		return 1;
+> >  	}
+> >  
+> > -	ret = task_blocks_on_rt_mutex(lock, waiter, task, detect_deadlock);
+> > +	/* We enforce deadlock detection for futexes */
+> > +	ret = task_blocks_on_rt_mutex(lock, waiter, task, 1);
+> 
+> Why bother with passing in detect_deadlock then?
+> 
+> Same goes for rt_mutex_finish_proxy_lock().
 
-v2:
-* Modified has_pcie_dev type to bool and used pci_is_pcie() instead of pci_pcie_cap()
-* replaced printk with pr_info
-
- arch/arm/kernel/bios32.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
-
-diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
-index 17a26c1..fcf2581 100644
---- a/arch/arm/kernel/bios32.c
-+++ b/arch/arm/kernel/bios32.c
-@@ -290,6 +290,7 @@ void pcibios_fixup_bus(struct pci_bus *bus)
- {
- 	struct pci_dev *dev;
- 	u16 features = PCI_COMMAND_SERR | PCI_COMMAND_PARITY | PCI_COMMAND_FAST_BACK;
-+	bool has_pcie_dev = 0;
- 
- 	/*
- 	 * Walk the devices on this bus, working out what we can
-@@ -298,6 +299,8 @@ void pcibios_fixup_bus(struct pci_bus *bus)
- 	list_for_each_entry(dev, &bus->devices, bus_list) {
- 		u16 status;
- 
-+		if (!has_pcie_dev)
-+			has_pcie_dev = pci_is_pcie(dev);
- 		pci_read_config_word(dev, PCI_STATUS, &status);
- 
- 		/*
-@@ -354,9 +357,11 @@ void pcibios_fixup_bus(struct pci_bus *bus)
- 
- 	/*
- 	 * Report what we did for this bus
-+	 * (only if the bus doesn't have even one PCIe device)
- 	 */
--	printk(KERN_INFO "PCI: bus%d: Fast back to back transfers %sabled\n",
--		bus->number, (features & PCI_COMMAND_FAST_BACK) ? "en" : "dis");
-+	if (!has_pcie_dev)
-+		pr_info("PCI: bus%d: Fast back to back transfers %sabled\n",
-+			bus->number, (features & PCI_COMMAND_FAST_BACK) ? "en" : "dis");
- }
- EXPORT_SYMBOL(pcibios_fixup_bus);
- 
--- 
-1.8.1.5
+Because that's part of the cleanup series to remove it and I did not
+want mix stuff here.
 
