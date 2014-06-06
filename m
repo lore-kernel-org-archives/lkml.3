@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752619AbaFFNY1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 09:24:27 -0400
-Received: from relay.parallels.com ([195.214.232.42]:42667 "EHLO
+	id S1752305AbaFFNWx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 09:22:53 -0400
+Received: from relay.parallels.com ([195.214.232.42]:42640 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752301AbaFFNWy (ORCPT
+	with ESMTP id S1750907AbaFFNWv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 09:22:54 -0400
+	Fri, 6 Jun 2014 09:22:51 -0400
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <akpm@linux-foundation.org>
 CC: <cl@linux.com>, <iamjoonsoo.kim@lge.com>, <rientjes@google.com>,
         <penberg@kernel.org>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
         <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: [PATCH -mm v2 6/8] memcg: wait for kfree's to finish before destroying cache
-Date: Fri, 6 Jun 2014 17:22:43 +0400
-Message-ID: <07a2c0a9d898a68a7c8593c398d428aa16be9fd5.1402060096.git.vdavydov@parallels.com>
+Subject: [PATCH -mm v2 2/8] memcg: destroy kmem caches when last slab is freed
+Date: Fri, 6 Jun 2014 17:22:39 +0400
+Message-ID: <6884cccbbf6382c91a9ce2d26f922b2102af441f.1402060096.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1402060096.git.vdavydov@parallels.com>
 References: <cover.1402060096.git.vdavydov@parallels.com>
@@ -25,102 +25,101 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kmem_cache_free doesn't expect that the cache can be destroyed as soon
-as the object is freed, e.g. SLUB's implementation may want to update
-cache stats after putting the object to the free list.
+When the memcg_cache_params->refcnt goes to 0, schedule the worker that
+will unregister the cache. To prevent this from happening when the owner
+memcg is alive, keep the refcnt incremented during memcg lifetime.
 
-Therefore we should wait for all kmem_cache_free's to finish before
-proceeding to cache destruction. Since both SLAB and SLUB versions of
-kmem_cache_free are non-preemptable, we wait for rcu-sched grace period
-to elapse.
+Note, this doesn't guarantee that the cache that belongs to a dead memcg
+will go away as soon as the last object is freed, because SL[AU]B
+implementation can cache empty slabs for performance reasons. Hence the
+cache may be hanging around indefinitely after memcg offline. This is to
+be resolved by the next patches.
 
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Acked-by: Christoph Lameter <cl@linux.com>
 ---
- include/linux/slab.h |    6 ++----
- mm/memcontrol.c      |   34 ++++++++++++++++++++++++++++++++--
- 2 files changed, 34 insertions(+), 6 deletions(-)
+ include/linux/slab.h |    2 ++
+ mm/memcontrol.c      |   22 ++++++++++++++++++++--
+ 2 files changed, 22 insertions(+), 2 deletions(-)
 
 diff --git a/include/linux/slab.h b/include/linux/slab.h
-index d99d5212b815..68b1feaba9d6 100644
+index 1985bd9bec7d..d9716fdc8211 100644
 --- a/include/linux/slab.h
 +++ b/include/linux/slab.h
-@@ -532,11 +532,9 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
+@@ -527,6 +527,7 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
+  * @list: list_head for the list of all caches in this memcg
+  * @root_cache: pointer to the global, root cache, this cache was derived from
+  * @refcnt: reference counter
++ * @unregister_work: worker to destroy the cache
   */
  struct memcg_cache_params {
  	bool is_root_cache;
-+	struct rcu_head rcu_head;
- 	union {
--		struct {
--			struct rcu_head rcu_head;
--			struct kmem_cache *memcg_caches[0];
--		};
-+		struct kmem_cache *memcg_caches[0];
- 		struct {
- 			struct mem_cgroup *memcg;
+@@ -540,6 +541,7 @@ struct memcg_cache_params {
  			struct list_head list;
+ 			struct kmem_cache *root_cache;
+ 			atomic_long_t refcnt;
++			struct work_struct unregister_work;
+ 		};
+ 	};
+ };
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index ed42fd1105a5..5b3543a9257e 100644
+index 98a24e5ea4b5..886b5b414958 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -3232,6 +3232,14 @@ static void memcg_unregister_cache_func(struct work_struct *work)
- 	mutex_unlock(&memcg_slab_mutex);
+@@ -3114,6 +3114,8 @@ int memcg_update_cache_size(struct kmem_cache *s, int num_groups)
+ 	return 0;
  }
  
-+static void memcg_unregister_cache_rcu_func(struct rcu_head *rcu)
++static void memcg_unregister_cache_func(struct work_struct *work);
++
+ int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
+ 			     struct kmem_cache *root_cache)
+ {
+@@ -3135,6 +3137,9 @@ int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
+ 	if (memcg) {
+ 		s->memcg_params->memcg = memcg;
+ 		s->memcg_params->root_cache = root_cache;
++		atomic_long_set(&s->memcg_params->refcnt, 1);
++		INIT_WORK(&s->memcg_params->unregister_work,
++			  memcg_unregister_cache_func);
+ 		css_get(&memcg->css);
+ 	} else
+ 		s->memcg_params->is_root_cache = true;
+@@ -3216,6 +3221,17 @@ static void memcg_unregister_cache(struct kmem_cache *cachep)
+ 	kmem_cache_destroy(cachep);
+ }
+ 
++static void memcg_unregister_cache_func(struct work_struct *work)
 +{
 +	struct memcg_cache_params *params =
-+		container_of(rcu, struct memcg_cache_params, rcu_head);
++		container_of(work, struct memcg_cache_params, unregister_work);
++	struct kmem_cache *cachep = memcg_params_to_cache(params);
 +
-+	schedule_work(&params->unregister_work);
++	mutex_lock(&memcg_slab_mutex);
++	memcg_unregister_cache(cachep);
++	mutex_unlock(&memcg_slab_mutex);
 +}
 +
  /*
   * During the creation a new cache, we need to disable our accounting mechanism
   * altogether. This is true even if we are not creating, but rather just
-@@ -3287,6 +3295,7 @@ static void memcg_unregister_all_caches(struct mem_cgroup *memcg)
- {
- 	struct kmem_cache *cachep;
- 	struct memcg_cache_params *params, *tmp;
-+	LIST_HEAD(empty_caches);
- 
- 	if (!memcg_kmem_is_active(memcg))
- 		return;
-@@ -3297,7 +3306,26 @@ static void memcg_unregister_all_caches(struct mem_cgroup *memcg)
- 		cachep->memcg_params->dead = true;
+@@ -3279,7 +3295,7 @@ static void memcg_unregister_all_caches(struct mem_cgroup *memcg)
+ 	list_for_each_entry_safe(params, tmp, &memcg->memcg_slab_caches, list) {
+ 		cachep = memcg_params_to_cache(params);
  		kmem_cache_shrink(cachep);
- 		if (atomic_long_dec_and_test(&cachep->memcg_params->refcnt))
--			memcg_unregister_cache(cachep);
-+			list_move(&cachep->memcg_params->list, &empty_caches);
-+	}
-+
-+	/*
-+	 * kmem_cache_free doesn't expect that the cache can be destroyed as
-+	 * soon as the object is freed, e.g. SLUB's implementation may want to
-+	 * update cache stats after putting the object to the free list.
-+	 *
-+	 * Therefore we should wait for all kmem_cache_free's to finish before
-+	 * proceeding to cache destruction. Since both SLAB and SLUB versions
-+	 * of kmem_cache_free are non-preemptable, we wait for rcu-sched grace
-+	 * period to elapse.
-+	 */
-+	synchronize_sched();
-+
-+	while (!list_empty(&empty_caches)) {
-+		params = list_first_entry(&empty_caches,
-+					  struct memcg_cache_params, list);
-+		cachep = memcg_params_to_cache(params);
-+		memcg_unregister_cache(cachep);
+-		if (atomic_long_read(&cachep->memcg_params->refcnt) == 0)
++		if (atomic_long_dec_and_test(&cachep->memcg_params->refcnt))
+ 			memcg_unregister_cache(cachep);
  	}
  	mutex_unlock(&memcg_slab_mutex);
- }
-@@ -3379,7 +3407,9 @@ void __memcg_uncharge_slab(struct kmem_cache *cachep, int order)
+@@ -3360,7 +3376,9 @@ int __memcg_charge_slab(struct kmem_cache *cachep, gfp_t gfp, int order)
+ void __memcg_uncharge_slab(struct kmem_cache *cachep, int order)
+ {
  	memcg_uncharge_kmem(cachep->memcg_params->memcg, PAGE_SIZE << order);
- 
- 	if (unlikely(atomic_long_dec_and_test(&cachep->memcg_params->refcnt)))
--		schedule_work(&cachep->memcg_params->unregister_work);
-+		/* see memcg_unregister_all_caches */
-+		call_rcu_sched(&cachep->memcg_params->rcu_head,
-+			       memcg_unregister_cache_rcu_func);
+-	atomic_long_dec(&cachep->memcg_params->refcnt);
++
++	if (unlikely(atomic_long_dec_and_test(&cachep->memcg_params->refcnt)))
++		schedule_work(&cachep->memcg_params->unregister_work);
  }
  
  /*
