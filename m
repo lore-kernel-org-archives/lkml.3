@@ -1,85 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752081AbaFFOMm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 10:12:42 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54490 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751791AbaFFOMA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 10:12:00 -0400
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [GIT PULL 0/2] perf/tests improvements
-Date: Fri,  6 Jun 2014 11:11:47 -0300
-Message-Id: <1402063909-13859-1-git-send-email-acme@kernel.org>
-X-Mailer: git-send-email 1.9.3
+	id S1752060AbaFFOPZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 10:15:25 -0400
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:40411 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751640AbaFFOPY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 10:15:24 -0400
+MIME-Version: 1.0
+X-Originating-IP: [84.49.246.117]
+In-Reply-To: <s5hegz2yw2s.wl%tiwai@suse.de>
+References: <1401896895-14262-1-git-send-email-tiwai@suse.de>
+ <CACVXFVPpmdXJV2CC-U=bsA820VD42i2-OqBfNfTPPaMergu8TQ@mail.gmail.com>
+ <CAG-2HqU=LAXr0o2e9RRCmrX1eWouhepEZHaPfBjrs64xUeb=gw@mail.gmail.com>
+ <CACVXFVP1uS7szLqvabtMbiaUgd13bWoYXv5q-Az7wBia=ogf7Q@mail.gmail.com>
+ <s5hfvjj1n90.wl%tiwai@suse.de> <CACVXFVP5CSNoyThAcsmihYg_bkq2wn1JtiFJ_7ehpxwjBSaZxQ@mail.gmail.com>
+ <s5hbnu71mf1.wl%tiwai@suse.de> <CACVXFVPWq93u5KmLhr+g23t4AiGAnLfd+hX3viajzR_KN+sMrw@mail.gmail.com>
+ <CAG-2HqXiFgy5M=k55iOYAdXezxsN-ZanWRWDgH-6fuU-uLawOQ@mail.gmail.com>
+ <CACVXFVNKGPyv6AVUctotD=Sc97VRRGCXVzJ50pprjCNB7jhUxg@mail.gmail.com>
+ <CAG-2HqWtbpKjkNTLAksGZSqskJRfjVOhGkJJFcJUNBFfajLhCg@mail.gmail.com>
+ <CACVXFVOgr1y5KQxGDzvyPfqKHo0e3CsN+3HWo-_dxo6bmufbLQ@mail.gmail.com> <s5hegz2yw2s.wl%tiwai@suse.de>
+From: Tom Gundersen <teg@jklm.no>
+Date: Fri, 6 Jun 2014 16:15:03 +0200
+Message-ID: <CAG-2HqUe1oYJ8VBq1kP_Vy_smtkNjAWJ6_+TPu8c9-KVv6EOMA@mail.gmail.com>
+Subject: Re: [PATCH v2] firmware loader: allow disabling of udev as firmware loader
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Ming Lei <ming.lei@canonical.com>, LKML <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>, Stefan Roese <sr@denx.de>,
+        Arnd Bergmann <arnd@arndb.de>, Abhay Salunke <Abhay_Salunke@dell.com>,
+        Kay Sievers <kay@vrfy.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+On Fri, Jun 6, 2014 at 4:03 PM, Takashi Iwai <tiwai@suse.de> wrote:
+> At Fri, 6 Jun 2014 07:00:22 +0800,
+> Ming Lei wrote:
+>>
+>> On Thu, Jun 5, 2014 at 11:15 PM, Tom Gundersen <teg@jklm.no> wrote:
+>> > On Thu, Jun 5, 2014 at 4:54 PM, Ming Lei <ming.lei@canonical.com> wrote:
+>> >>> Ubuntu currently enables the firmware loader in both the kernel and in
+>> >>> udev, so would not yet have a problem here at the moment. However, I
+>> >>> spoke with Martin Pitt and he told me that both Debian and Ubuntu
+>> >>> would like to switch this off in udev once it is possible (i.e., once
+>> >>> this patch has been merged I guess). Fedora already did, and speaking
+>> >>> for Arch we definitely would like to do the same. I did not check with
+>> >>> other distros, but I'm pretty sure "everyone" will disable this in
+>> >>> udev by the next cycle. At which point having it enabled in the kernel
+>> >>> will cause real problems and bug reports.
+>> >>
+>> >> That won't cover the case of old distributions with new kernel,
+>> >
+>> > Again: disabling this option will not give problems (unless you have a
+>> > custom setup), even on old userspace, only keeping it enabled on
+>> > future userspace may.
+>> >
+>> >> do
+>> >> you want to break/confuse these users?
+>> >
+>> > Not really, no :)
+>> >
+>> >>> For distro kernels that's not a problem, as they know what to do, but
+>> >>> I guess for random kernel users we should give them the correct
+>> >>> recommendation.
+>> >>
+>> >> Also I remember that android users put firmware under their
+>> >> special path.
+>> >
+>> > That may be, but I don't think this text is primarily aimed at the
+>> > people who put together Android systems... Surely their non-standard
+>> > userspace means that a lot of the advice (and it is nothing else than
+>> > advice!) in the help text does not necessarily apply?
+>> >
+>> >>>>>> It only falls back if the request fw is _not_ found from direct loading,
+>> >>>>>> so it is reasonable to try to continue to look for it from user space.
+>> >>>>
+>> >>>>> Some drivers fall back to different firmware (e.g. different revision
+>> >>>>> suffix) if the requested file isn't found.  So, this happens in
+>> >>>>> reality.
+>> >>>>
+>> >>>> So do you think the fallback is better or worse? For CPU microcode
+>> >>>> case, maybe it is fine, but for other devices, maybe it is better to
+>> >>>> get a firmware for working at least.
+>> >>>
+>> >>> What usecase do you have in mind here? For people using stock udev,
+>> >>> enabling the fallback will not give any benefit, but it will soon
+>> >>
+>> >> Again, we have old distributions, also it should make sense to fall back
+>> >> to userspace for non-exist firmwares under default path.
+>> >
+>> > Even on old distributions, falling back to stock udev will not give
+>> > any benefits. It will look in the same paths as the kernel and fail in
+>> > the same way.
+>> >
+>> >>> start giving real problems...
+>> >>
+>> >> If there isn't firmwares at default path for devices, the device may
+>> >> not work, and that is the real problem.
+>> >
+>> > These devices will never have worked with stock udev, as it looks in
+>> > the same path as the kernel (the paths the kernel looks in was taken
+>> > from udev to make sure they work the sam). So this must be a
+>> > special/custom setup by someone who knows what they are doing, and
+>> > hopefully knows how to answer the Kconfig.
+>>
+>> I have to say all your statement about old distributions is just your
+>> take for granted, and you can't verified on all old distributions at all.
+>> That is said, disabling fallback may cause regression on these
+>> distributions.
+>>
+>> Given that the user helper(fallback) has been used for tens of
+>> years on these distributions, I suggest you to change Kconfig
+>> help message as something like below:
+>>
+>> If your aren't sure, please check your udev/systemd version, if it
+>> is below than XXX or no udev/systemd shipped in your system,
+>> say Y here, otherwise say N.
+>
+> Yeah, a detailed suggestion like the above would be more helpful.
 
-	Experimenting with more topic branches, this time for things you're the
-are the original developer and de facto maintainer, the tools/perf/tests/ harness.
+How about:
 
-	This was done on top of your perf/core branch, please let me know if all is
-ok and then you can try pulling from it or perhaps you could just ack it and then
-Ingo could pull it directly, opinions? Ingo?
+"If you rely on a customized udev (or other userspace tool) to load
+firmware from a non-standard path, say Y. Otherwise, say N. If your
+udev version does not support firmware loading (which is currently the
+upstream default), you must say N."
 
-- Arnaldo
+?
 
-The following changes since commit 1bb7b24b0457eeea549262780c0b9d0755416e2f:
+Cheers,
 
-  perf tools: Support spark lines in perf stat (2014-06-06 11:54:06 +0200)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git tags/perf-tests-for-jirka
-
-for you to fetch changes up to 38b8d135293e110780eaa02b021eb9c13c4009a6:
-
-  perf tests: Show the inner make output when an error happens (2014-06-06 10:45:09 -0300)
-
-----------------------------------------------------------------
-perf/tests improvements:
-
-Developer stuff.
-
-. Emit more precise message for missing glibc static library,
-  from Arnaldo Carvalho de Melo.
-
-. Show the 'make -f tests/make' inner make output when an error happens.
-
-  The perf build tests harness, invoked with:
-
-    make -C tools/perf -f tests/make
-
-  Will call many combinations of builds, trying to check if all of them
-  continue to work over time, for instance, if removing perl support, or
-  if building using static libraries still builds fine.
-
-  But one would have to check the contents of a per build test entry
-  file to figure out what the error was about. Do it automatically,
-  speeding up the process of, for instance, installing missing static
-  libraries.
-
-  from Arnaldo Carvalho de Melo.
-
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-
-----------------------------------------------------------------
-Arnaldo Carvalho de Melo (2):
-      perf tools: Emit more precise message for missing glibc static library
-      perf tests: Show the inner make output when an error happens
-
- tools/perf/config/Makefile | 6 +++++-
- tools/perf/tests/make      | 3 +--
- 2 files changed, 6 insertions(+), 3 deletions(-)
+Tom
