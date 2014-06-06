@@ -1,111 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752674AbaFFKSd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 06:18:33 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:24742 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751866AbaFFKSb (ORCPT
+	id S1752716AbaFFKSn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 06:18:43 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:43126 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752664AbaFFKSj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 06:18:31 -0400
-X-IronPort-AV: E=Sophos;i="4.98,988,1392134400"; 
-   d="scan'208";a="31562667"
-Message-ID: <539192F1.7050308@cn.fujitsu.com>
-Date: Fri, 6 Jun 2014 18:07:45 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        <linux-mm@kvack.org>, Cgroups <cgroups@vger.kernel.org>,
-        <stable@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH] mm/mempolicy: fix sleeping function called from invalid
- context
-References: <53902A44.50005@cn.fujitsu.com> <20140605132339.ddf6df4a0cf5c14d17eb8691@linux-foundation.org>
-In-Reply-To: <20140605132339.ddf6df4a0cf5c14d17eb8691@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.100]
+	Fri, 6 Jun 2014 06:18:39 -0400
+From: Kiran Kumar Raparthy <kiran.kumar@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: Nick Pelly <npelly@google.com>, Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Kiran Raparthy <kiran.kumar@linaro.org>
+Subject: [RFC] Bluetooth: Add ACL MTU, available buffers and total buffers to hci_conn_info.
+Date: Fri,  6 Jun 2014 15:48:00 +0530
+Message-Id: <1402049880-7686-1-git-send-email-kiran.kumar@linaro.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc'ing Li)
+From: Nick Pelly <npelly@google.com>
 
-Hi Andrew,
-Thanks for your comment.
-On 06/06/2014 04:23 AM, Andrew Morton wrote:
+Add ACL MTU, available buffers and total buffers to hci_conn_info.
 
-> On Thu, 5 Jun 2014 16:28:52 +0800 Gu Zheng <guz.fnst@cn.fujitsu.com> wrote:
-> 
->> When running with the kernel(3.15-rc7+), the follow bug occurs:
->> [ 9969.258987] BUG: sleeping function called from invalid context at kernel/locking/mutex.c:586
->> [ 9969.359906] in_atomic(): 1, irqs_disabled(): 0, pid: 160655, name: python
->> [ 9969.441175] INFO: lockdep is turned off.
->> [ 9969.488184] CPU: 26 PID: 160655 Comm: python Tainted: G       A      3.15.0-rc7+ #85
->> [ 9969.581032] Hardware name: FUJITSU-SV PRIMEQUEST 1800E/SB, BIOS PRIMEQUEST 1000 Series BIOS Version 1.39 11/16/2012
->> [ 9969.706052]  ffffffff81a20e60 ffff8803e941fbd0 ffffffff8162f523 ffff8803e941fd18
->> [ 9969.795323]  ffff8803e941fbe0 ffffffff8109995a ffff8803e941fc58 ffffffff81633e6c
->> [ 9969.884710]  ffffffff811ba5dc ffff880405c6b480 ffff88041fdd90a0 0000000000002000
->> [ 9969.974071] Call Trace:
->> [ 9970.003403]  [<ffffffff8162f523>] dump_stack+0x4d/0x66
->> [ 9970.065074]  [<ffffffff8109995a>] __might_sleep+0xfa/0x130
->> [ 9970.130743]  [<ffffffff81633e6c>] mutex_lock_nested+0x3c/0x4f0
->> [ 9970.200638]  [<ffffffff811ba5dc>] ? kmem_cache_alloc+0x1bc/0x210
->> [ 9970.272610]  [<ffffffff81105807>] cpuset_mems_allowed+0x27/0x140
->> [ 9970.344584]  [<ffffffff811b1303>] ? __mpol_dup+0x63/0x150
->> [ 9970.409282]  [<ffffffff811b1385>] __mpol_dup+0xe5/0x150
->> [ 9970.471897]  [<ffffffff811b1303>] ? __mpol_dup+0x63/0x150
->> [ 9970.536585]  [<ffffffff81068c86>] ? copy_process.part.23+0x606/0x1d40
->> [ 9970.613763]  [<ffffffff810bf28d>] ? trace_hardirqs_on+0xd/0x10
->> [ 9970.683660]  [<ffffffff810ddddf>] ? monotonic_to_bootbased+0x2f/0x50
->> [ 9970.759795]  [<ffffffff81068cf0>] copy_process.part.23+0x670/0x1d40
->> [ 9970.834885]  [<ffffffff8106a598>] do_fork+0xd8/0x380
->> [ 9970.894375]  [<ffffffff81110e4c>] ? __audit_syscall_entry+0x9c/0xf0
->> [ 9970.969470]  [<ffffffff8106a8c6>] SyS_clone+0x16/0x20
->> [ 9971.030011]  [<ffffffff81642009>] stub_clone+0x69/0x90
->> [ 9971.091573]  [<ffffffff81641c29>] ? system_call_fastpath+0x16/0x1b
->>
->> The cause is that cpuset_mems_allowed() try to take mutex_lock(&callback_mutex)
->> under the rcu_read_lock(which was hold in __mpol_dup()). And in cpuset_mems_allowed(),
->> the access to cpuset is under rcu_read_lock, so in __mpol_dup, we can reduce the
->> rcu_read_lock protection region to protect the access to cpuset only in
->> current_cpuset_is_being_rebound(). So that we can avoid this bug.
->>
->> ...
->>
->> --- a/kernel/cpuset.c
->> +++ b/kernel/cpuset.c
->> @@ -1188,7 +1188,13 @@ done:
->>  
->>  int current_cpuset_is_being_rebound(void)
->>  {
->> -	return task_cs(current) == cpuset_being_rebound;
->> +	int ret;
->> +
->> +	rcu_read_lock();
->> +	ret = task_cs(current) == cpuset_being_rebound;
->> +	rcu_read_unlock();
->> +
->> +	return ret;
->>  }
-> 
-> Looks fishy to me.  If the rcu_read_lock() stabilizes
-> cpuset_being_rebound then cpuset_being_rebound can change immediately
-> after rcu_read_unlock() and `ret' is now wrong.
+This provides userspace debugging tools access to ACL flow control state.
 
-IMO, whether cpuset_being_rebound changed or not is immaterial here, we
-just want to know whether the cpuset is being rebound at that point.
+This is one of the number of patches from the Android AOSP common.git tree,
+which is used on almost all Android devices.  so I wanted to submit it for
+review to see if it should go upstream.
 
-> 
-> Anyway.  Tejun, this one is yours please ;)
+Cc: Marcel Holtmann <marcel@holtmann.org>
+Cc: Gustavo Padovan <gustavo@padovan.org>
+Cc: Johan Hedberg <johan.hedberg@gmail.com>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: linux-bluetooth@vger.kernel.org
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: Android Kernel Team <kernel-team@android.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Nick Pelly <npelly@google.com>
+[kiran: Added context to commit message]
+Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
+---
+ include/net/bluetooth/hci.h |  3 +++
+ net/bluetooth/hci_conn.c    | 18 ++++++++++++++++++
+ 2 files changed, 21 insertions(+)
 
-To Tejun, Li:
-Any comment? And if I misread something, please correct me?
-
-Thanks,
-Gu
-
-> .
-> 
-
+diff --git a/include/net/bluetooth/hci.h b/include/net/bluetooth/hci.h
+index be150cf..67dc0fb 100644
+--- a/include/net/bluetooth/hci.h
++++ b/include/net/bluetooth/hci.h
+@@ -1830,6 +1830,9 @@ struct hci_conn_info {
+ 	__u8     out;
+ 	__u16    state;
+ 	__u32    link_mode;
++	__u32    mtu;
++	__u32    cnt;
++	__u32    pkts;
+ };
+ 
+ struct hci_dev_req {
+diff --git a/net/bluetooth/hci_conn.c b/net/bluetooth/hci_conn.c
+index 521fd4f..c2ba0fe 100644
+--- a/net/bluetooth/hci_conn.c
++++ b/net/bluetooth/hci_conn.c
+@@ -1064,6 +1064,15 @@ int hci_get_conn_list(void __user *arg)
+ 		(ci + n)->out   = c->out;
+ 		(ci + n)->state = c->state;
+ 		(ci + n)->link_mode = c->link_mode;
++		if (c->type == SCO_LINK) {
++			(ci + n)->mtu = hdev->sco_mtu;
++			(ci + n)->cnt = hdev->sco_cnt;
++			(ci + n)->pkts = hdev->sco_pkts;
++		} else {
++			(ci + n)->mtu = hdev->acl_mtu;
++			(ci + n)->cnt = hdev->acl_cnt;
++			(ci + n)->pkts = hdev->acl_pkts;
++		}
+ 		if (++n >= req.conn_num)
+ 			break;
+ 	}
+@@ -1100,6 +1109,15 @@ int hci_get_conn_info(struct hci_dev *hdev, void __user *arg)
+ 		ci.out   = conn->out;
+ 		ci.state = conn->state;
+ 		ci.link_mode = conn->link_mode;
++		if (req.type == SCO_LINK) {
++			ci.mtu = hdev->sco_mtu;
++			ci.cnt = hdev->sco_cnt;
++			ci.pkts = hdev->sco_pkts;
++		} else {
++			ci.mtu = hdev->acl_mtu;
++			ci.cnt = hdev->acl_cnt;
++			ci.pkts = hdev->acl_pkts;
++		}
+ 	}
+ 	hci_dev_unlock(hdev);
+ 
+-- 
+1.8.2.1
 
