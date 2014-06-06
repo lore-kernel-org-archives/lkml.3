@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752331AbaFFWYy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 18:24:54 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:55530 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751969AbaFFWYx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 18:24:53 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Lan Tianyu <tianyu.lan@intel.com>, mika.westerberg@linux.intel.com,
-        awilliam@redhat.com, lenb@kernel.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [Patch V3 0/5] I2C ACPI operation region handler
-Date: Sat, 07 Jun 2014 00:42:12 +0200
-Message-ID: <1917135.fMutVWuhmT@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140606122858.GA2810@katana>
-References: <1400590764-11108-1-git-send-email-tianyu.lan@intel.com> <53887B77.7060907@intel.com> <20140606122858.GA2810@katana>
+	id S1752342AbaFFW2J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 18:28:09 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38651 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752092AbaFFW2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 18:28:07 -0400
+Message-ID: <53924070.3030209@zytor.com>
+Date: Fri, 06 Jun 2014 15:28:00 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Tony Luck <tony.luck@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Garbage characters on serial console (Linus "next")
+References: <CA+8MBb+f+83Kj3JyuxGfX9EYJNNgLnMgQRLKGZ15yzNM=cYrEg@mail.gmail.com>
+In-Reply-To: <CA+8MBb+f+83Kj3JyuxGfX9EYJNNgLnMgQRLKGZ15yzNM=cYrEg@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, June 06, 2014 02:28:58 PM Wolfram Sang wrote:
+On 06/06/2014 03:07 PM, Tony Luck wrote:
+> Pulled from Linus' "next" branch (HEAD =
+> 2b03adc1911d1c84cb7fad8b424234f589547cb3)
+> and built & booted on ia64.  I see a lot of random characters on the
+> serial console. Suspiciously starting right after reporting the serial
+> line has been found.
 > 
-> --azLHFNyN32YCQGCU
-> Content-Type: text/plain; charset=us-ascii
-> Content-Disposition: inline
+> Here's what the output looks like when I "vi" the saved file:
 > 
-> On Fri, May 30, 2014 at 08:37:11PM +0800, Lan Tianyu wrote:
-> > On 05/30/2014 08:10 PM, Wolfram Sang wrote:
-> > >>>Hi Wolfram:
-> > >>>	Since this version resolved all comments, it's ok for you?
-> > >
-> > >Sorry, I misunderstood. I thought a V4 was needed, but it isn't. I'll
-> > >try to have a look this weekend.
-> > >
-> > OK. Thanks.
+> io scheduler noop registered^M
+> io scheduler deadline registered^M
+> io scheduler cfq registered (default)^M
+> pci_hotplug: PCI Hot Plug PCI Core version: 0.5^M
+> Serial: 8250/16550 driver, 4 ports, IRQ sharing enabled^M
+> 00:02: ttyS0 at I/O 0x3f8 (irq = 44, base_baud = 115200) is a 16550A^M
+> <80>^\þÇ^@üþ^\à^\<8c>àüðð^\<80><80>üðøþ<80>à<8e>^@üà^\àðÀ<80>^@<8e>à^@à<80><80>^\^\ÿ^\^@^\þþà^@à^\ðð^\<80><80>üþ<80>ü<80>þðøüà<8e>^\à<80>ð^@ÿ<80>üðà^@à<8e>ð<80><80><80><80>þðþ<80>üþ^\à^\^\<80>þÇü^\øà<8e>^@^\à^\^\^\ð<8e><80>ðà<8e><80>^\^@^@^\^\<8e><8e>^\àþþ^\<8e>^@^\<80>^@þ^\ÿ^\à<80>^@^\^\ø^\^\à^L^@<8e>ð^\<80>^\^\ü^\ø^\ÿ
 > 
-> Sorry, I didn't manage to get a deeper look into this as I wanted. Let
-> me assure that your (and the other) ACPI changes have high priority for
-> the next release cycle.
+> Output continues with alternating blocks of legible text and garbage.
+> System eventually boots (with a legible "login:" prompt).
+> 
 
-Well, can you review patches [4-5/5] when you have the time, please?
+Looks like the baud rate changed...
 
-I'd like to queue them up for 3.17 as soon as possible if you are
-OK with them.
+	-hpa
 
-Rafael
 
