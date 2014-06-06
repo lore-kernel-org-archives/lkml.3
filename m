@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752544AbaFFVuJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 17:50:09 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:48088 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752108AbaFFVuH (ORCPT
+	id S1752450AbaFFVxm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 17:53:42 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:44915 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751901AbaFFVxk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 17:50:07 -0400
+	Fri, 6 Jun 2014 17:53:40 -0400
 MIME-Version: 1.0
-In-Reply-To: <1401818318-15780-3-git-send-email-zohar@linux.vnet.ibm.com>
+In-Reply-To: <1401818318-15780-4-git-send-email-zohar@linux.vnet.ibm.com>
 References: <1401818318-15780-1-git-send-email-zohar@linux.vnet.ibm.com>
-	<1401818318-15780-3-git-send-email-zohar@linux.vnet.ibm.com>
-Date: Sat, 7 Jun 2014 00:50:05 +0300
-Message-ID: <CACE9dm_VGRiG7Sok_nONwbBTGoH3RbJCvBD=YayiWuRDoJo3-g@mail.gmail.com>
-Subject: Re: [RFC PATCH v5 2/4] KEYS: verify a certificate is signed by a
- 'trusted' key
+	<1401818318-15780-4-git-send-email-zohar@linux.vnet.ibm.com>
+Date: Sat, 7 Jun 2014 00:53:38 +0300
+Message-ID: <CACE9dm_o6RLvn9vP9X9BXGB1mFjC3Y7G15dZKqGsh+iZ3cFy5Q@mail.gmail.com>
+Subject: Re: [RFC PATCH v5 3/4] ima: define '.ima' as a builtin 'trusted' keyring
 From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
 To: Mimi Zohar <zohar@linux.vnet.ibm.com>
 Cc: linux-security-module <linux-security-module@vger.kernel.org>,
@@ -28,165 +27,151 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 3 June 2014 20:58, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> Only public keys, with certificates signed by an existing
-> 'trusted' key on the system trusted keyring, should be added
-> to a trusted keyring.  This patch adds support for verifying
-> a certificate's signature.
+> Require all keys added to the IMA keyring be signed by an
+> existing trusted key on the system trusted keyring.
 >
-> This is derived from David Howells pkcs7_request_asymmetric_key() patch.
+> Changelog v5:
+> - Move integrity_init_keyring() to init_ima() - Dmitry
+> - reset keyring[id] on failure - Dmitry
+>
+> Changelog v1:
+> - don't link IMA trusted keyring to user keyring
 >
 > Changelog:
-> - define get_system_trusted_keyring() to fix kbuild issues
+> - define stub integrity_init_keyring() function (reported-by Fengguang Wu)
+> - differentiate between regular and trusted keyring names.
+> - replace printk with pr_info (D. Kasatkin)
+> - only make the IMA keyring a trusted keyring (reported-by D. Kastatkin)
+> - define stub integrity_init_keyring() definition based on
+>   CONFIG_INTEGRITY_SIGNATURE, not CONFIG_INTEGRITY_ASYMMETRIC_KEYS.
+>   (reported-by Jim Davis)
 >
-> Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
-> Signed-off-by: David Howells <dhowells@redhat.com>
-
-Acked-by: me
-
-
+> Signed-off-by: Mimi Zohar<zohar@linux.vnet.ibm.com>
 > ---
->  crypto/asymmetric_keys/x509_public_key.c | 84 +++++++++++++++++++++++++++++++-
->  include/keys/system_keyring.h            | 10 +++-
->  2 files changed, 92 insertions(+), 2 deletions(-)
+>  security/integrity/digsig.c       | 26 ++++++++++++++++++++++++++
+>  security/integrity/ima/Kconfig    |  8 ++++++++
+>  security/integrity/ima/ima_main.c | 12 ++++++++++--
+>  security/integrity/integrity.h    |  5 +++++
+>  4 files changed, 49 insertions(+), 2 deletions(-)
 >
-> diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
-> index 382ef0d..1af8a30 100644
-> --- a/crypto/asymmetric_keys/x509_public_key.c
-> +++ b/crypto/asymmetric_keys/x509_public_key.c
-> @@ -18,12 +18,60 @@
->  #include <linux/asn1_decoder.h>
->  #include <keys/asymmetric-subtype.h>
->  #include <keys/asymmetric-parser.h>
-> +#include <keys/system_keyring.h>
->  #include <crypto/hash.h>
->  #include "asymmetric_keys.h"
->  #include "public_key.h"
->  #include "x509_parser.h"
+> diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
+> index b4af4eb..fa4c2fd 100644
+> --- a/security/integrity/digsig.c
+> +++ b/security/integrity/digsig.c
+> @@ -13,7 +13,9 @@
+>  #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 >
->  /*
-> + * Find a key in the given keyring by issuer and authority.
-> + */
-> +static struct key *x509_request_asymmetric_key(
-> +       struct key *keyring,
-> +       const char *signer, size_t signer_len,
-> +       const char *authority, size_t auth_len)
-> +{
-> +       key_ref_t key;
-> +       char *id;
-> +
-> +       /* Construct an identifier. */
-> +       id = kmalloc(signer_len + 2 + auth_len + 1, GFP_KERNEL);
-> +       if (!id)
-> +               return ERR_PTR(-ENOMEM);
-> +
-> +       memcpy(id, signer, signer_len);
-> +       id[signer_len + 0] = ':';
-> +       id[signer_len + 1] = ' ';
-> +       memcpy(id + signer_len + 2, authority, auth_len);
-> +       id[signer_len + 2 + auth_len] = 0;
-> +
-> +       pr_debug("Look up: \"%s\"\n", id);
-> +
-> +       key = keyring_search(make_key_ref(keyring, 1),
-> +                            &key_type_asymmetric, id);
-> +       if (IS_ERR(key))
-> +               pr_debug("Request for module key '%s' err %ld\n",
-> +                        id, PTR_ERR(key));
-> +       kfree(id);
-> +
-> +       if (IS_ERR(key)) {
-> +               switch (PTR_ERR(key)) {
-> +                       /* Hide some search errors */
-> +               case -EACCES:
-> +               case -ENOTDIR:
-> +               case -EAGAIN:
-> +                       return ERR_PTR(-ENOKEY);
-> +               default:
-> +                       return ERR_CAST(key);
-> +               }
-> +       }
-> +
-> +       pr_devel("<==%s() = 0 [%x]\n", __func__, key_serial(key_ref_to_ptr(key)));
-> +       return key_ref_to_ptr(key);
-> +}
-> +
-> +/*
->   * Set up the signature parameters in an X.509 certificate.  This involves
->   * digesting the signed data and extracting the signature.
->   */
-> @@ -103,6 +151,36 @@ int x509_check_signature(const struct public_key *pub,
->  EXPORT_SYMBOL_GPL(x509_check_signature);
+>  #include <linux/err.h>
+> +#include <linux/sched.h>
+>  #include <linux/rbtree.h>
+> +#include <linux/cred.h>
+>  #include <linux/key-type.h>
+>  #include <linux/digsig.h>
 >
->  /*
-> + * Check the new certificate against the ones in the trust keyring.  If one of
-> + * those is the signing key and validates the new certificate, then mark the
-> + * new certificate as being trusted.
-> + *
-> + * Return 0 if the new certificate was successfully validated, 1 if we couldn't
-> + * find a matching parent certificate in the trusted list and an error if there
-> + * is a matching certificate but the signature check fails.
-> + */
-> +static int x509_validate_trust(struct x509_certificate *cert,
-> +                              struct key *trust_keyring)
-> +{
-> +       const struct public_key *pk;
-> +       struct key *key;
-> +       int ret = 1;
-> +
-> +       if (!trust_keyring)
-> +               return -EOPNOTSUPP;
-> +
-> +       key = x509_request_asymmetric_key(trust_keyring,
-> +                                         cert->issuer, strlen(cert->issuer),
-> +                                         cert->authority,
-> +                                         strlen(cert->authority));
-> +       if (!IS_ERR(key))  {
-> +               pk = key->payload.data;
-> +               ret = x509_check_signature(pk, cert);
-> +       }
-> +       return ret;
-> +}
-> +
-> +/*
->   * Attempt to parse a data blob for a key as an X509 certificate.
->   */
->  static int x509_key_preparse(struct key_preparsed_payload *prep)
-> @@ -155,9 +233,13 @@ static int x509_key_preparse(struct key_preparsed_payload *prep)
->         /* Check the signature on the key if it appears to be self-signed */
->         if (!cert->authority ||
->             strcmp(cert->fingerprint, cert->authority) == 0) {
-> -               ret = x509_check_signature(cert->pub, cert);
-> +               ret = x509_check_signature(cert->pub, cert); /* self-signed */
->                 if (ret < 0)
->                         goto error_free_cert;
-> +       } else {
-> +               ret = x509_validate_trust(cert, get_system_trusted_keyring());
-> +               if (!ret)
-> +                       prep->trusted = 1;
->         }
->
->         /* Propose a description */
-> diff --git a/include/keys/system_keyring.h b/include/keys/system_keyring.h
-> index 8dabc39..72665eb 100644
-> --- a/include/keys/system_keyring.h
-> +++ b/include/keys/system_keyring.h
-> @@ -17,7 +17,15 @@
->  #include <linux/key.h>
->
->  extern struct key *system_trusted_keyring;
-> -
-> +static inline struct key *get_system_trusted_keyring(void)
-> +{
-> +       return system_trusted_keyring;
-> +}
+> @@ -24,7 +26,11 @@ static struct key *keyring[INTEGRITY_KEYRING_MAX];
+>  static const char *keyring_name[INTEGRITY_KEYRING_MAX] = {
+>         "_evm",
+>         "_module",
+> +#ifndef CONFIG_IMA_TRUSTED_KEYRING
+>         "_ima",
 > +#else
-> +static inline struct key *get_system_trusted_keyring(void)
-> +{
-> +       return NULL;
-> +}
->  #endif
+> +       ".ima",
+> +#endif
+>  };
 >
->  #endif /* _KEYS_SYSTEM_KEYRING_H */
+>  int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+> @@ -56,3 +62,23 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+>
+>         return -EOPNOTSUPP;
+>  }
+> +
+> +int integrity_init_keyring(const unsigned int id)
+> +{
+> +       const struct cred *cred = current_cred();
+> +
+> +       keyring[id] = keyring_alloc(keyring_name[id], KUIDT_INIT(0),
+> +                                   KGIDT_INIT(0), cred,
+> +                                   ((KEY_POS_ALL & ~KEY_POS_SETATTR) |
+> +                                     KEY_USR_VIEW | KEY_USR_READ |
+> +                                     KEY_USR_WRITE | KEY_USR_SEARCH),
+> +                                   KEY_ALLOC_NOT_IN_QUOTA, NULL);
+> +       if (!IS_ERR(keyring[id]))
+> +               set_bit(KEY_FLAG_TRUSTED_ONLY, &keyring[id]->flags);
+> +       else {
+> +               pr_info("Can't allocate %s keyring (%ld)\n",
+> +                       keyring_name[id], PTR_ERR(keyring[id]));
+> +               keyring[id] = NULL;
+> +       }
+> +       return 0;
+> +}
+> diff --git a/security/integrity/ima/Kconfig b/security/integrity/ima/Kconfig
+> index 81a2797..dad8d4c 100644
+> --- a/security/integrity/ima/Kconfig
+> +++ b/security/integrity/ima/Kconfig
+> @@ -123,3 +123,11 @@ config IMA_APPRAISE
+>           For more information on integrity appraisal refer to:
+>           <http://linux-ima.sourceforge.net>
+>           If unsure, say N.
+> +
+> +config IMA_TRUSTED_KEYRING
+> +       bool "Require all keys on the _ima keyring be signed"
+> +       depends on IMA_APPRAISE && SYSTEM_TRUSTED_KEYRING
+> +       default y
+> +       help
+> +          This option requires that all keys added to the _ima
+> +          keyring be signed by a key on the system trusted keyring.
+> diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+> index 09baa33..4c60cc5 100644
+> --- a/security/integrity/ima/ima_main.c
+> +++ b/security/integrity/ima/ima_main.c
+> @@ -328,8 +328,16 @@ static int __init init_ima(void)
+>
+>         hash_setup(CONFIG_IMA_DEFAULT_HASH);
+>         error = ima_init();
+> -       if (!error)
+> -               ima_initialized = 1;
+> +       if (error)
+> +               goto out;
+> +
+> +#ifdef CONFIG_IMA_TRUSTED_KEYRING
+> +       error = integrity_init_keyring(INTEGRITY_KEYRING_IMA);
+> +       if (error)
+> +               goto out;
+> +#endif
+
+integrity_init_keyring() has variation in header file...
+Why do you need #ifdef in .c file? You you usually do not like it...
+
+- Dmitry
+
+> +       ima_initialized = 1;
+> +out:
+>         return error;
+>  }
+>
+> diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+> index 33c0a70..09c440d 100644
+> --- a/security/integrity/integrity.h
+> +++ b/security/integrity/integrity.h
+> @@ -124,6 +124,7 @@ struct integrity_iint_cache *integrity_iint_find(struct inode *inode);
+>  int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+>                             const char *digest, int digestlen);
+>
+> +int integrity_init_keyring(const unsigned int id);
+>  #else
+>
+>  static inline int integrity_digsig_verify(const unsigned int id,
+> @@ -133,6 +134,10 @@ static inline int integrity_digsig_verify(const unsigned int id,
+>         return -EOPNOTSUPP;
+>  }
+>
+> +static inline int integrity_init_keyring(const unsigned int id)
+> +{
+> +       return 0;
+> +}
+>  #endif /* CONFIG_INTEGRITY_SIGNATURE */
+>
+>  #ifdef CONFIG_INTEGRITY_ASYMMETRIC_KEYS
 > --
 > 1.8.1.4
 >
