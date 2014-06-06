@@ -1,85 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752294AbaFFUib (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 16:38:31 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37728 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752134AbaFFUia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 16:38:30 -0400
-Message-ID: <53922686.6010301@zytor.com>
-Date: Fri, 06 Jun 2014 13:37:26 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752151AbaFFUpR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 16:45:17 -0400
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:59169 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751969AbaFFUpP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 16:45:15 -0400
 MIME-Version: 1.0
-To: Dave Young <dyoung@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        "Fleming, Matt" <matt.fleming@intel.com>
-CC: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        ebiederm@xmission.com, mjg59@srcf.ucam.org, greg@kroah.com,
-        bp@alien8.de, jkosina@suse.cz, chaowang@redhat.com, bhe@redhat.com,
-        akpm@linux-foundation.org
-Subject: Re: [RFC PATCH 00/13][V3] kexec: A new system call to allow in kernel
- loading
-References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com> <20140603131203.GA23395@redhat.com> <20140605083134.GE3506@darkstar.nay.redhat.com> <20140605150159.GA14083@redhat.com> <20140606073748.GC3343@darkstar.nay.redhat.com>
-In-Reply-To: <20140606073748.GC3343@darkstar.nay.redhat.com>
-X-Enigmail-Version: 1.6
+In-Reply-To: <CALCETrUCKMv+56TWJP3gOrpKJETz0+G8U-+=0pxF7mZyCnrjUQ@mail.gmail.com>
+References: <CACkGtriM1jwP9OSED21mNrKWPubeJp9YjL-8uetLqhjqfoH=Lg@mail.gmail.com>
+	<CACkGtrincr-oEu5Aq2EpYmbJDVSzuzwLguOaUvRY4uBqz=5-6A@mail.gmail.com>
+	<53920B05.9010602@mit.edu>
+	<CACkGtrhbOYAEGF=c1Mii9ssXzLMb2YEcnwNdh6PW1Djnyb_QxA@mail.gmail.com>
+	<CALCETrUCKMv+56TWJP3gOrpKJETz0+G8U-+=0pxF7mZyCnrjUQ@mail.gmail.com>
+Date: Fri, 6 Jun 2014 13:45:14 -0700
+Message-ID: <CACkGtriVsYdk77frWD16MfzpENYy_-azch2LH2RBCWi7zKLa-w@mail.gmail.com>
+Subject: Re: "." in vmlinux.lds.S
+From: =?UTF-8?B?SMOhbiBTaMSbbiAo5rKI5ra1KQ==?= <shenhan@google.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/2014 12:37 AM, Dave Young wrote:
-> On 06/05/14 at 11:01am, Vivek Goyal wrote:
->> On Thu, Jun 05, 2014 at 04:31:34PM +0800, Dave Young wrote:
+Hi Andy, this changes "Ndx" field for the symbol. For example, one of
+the symbol '__end_rodata_hpage_align' in symtab, the contents changed
+from
+    50206: ffffffff81800000     0 NOTYPE  GLOBAL DEFAULT  ABS
+__end_rodata_hpage_align
+which is correct, to
+    50206: ffffffff81800000     0 NOTYPE  GLOBAL DEFAULT   25
+__end_rodata_hpage_align
+(25 is the index to section '.data')
+which is wrong.
+
+Han
+
+
+
+On Fri, Jun 6, 2014 at 12:08 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Fri, Jun 6, 2014 at 11:53 AM, Hán Shěn (沈涵) <shenhan@google.com> wrote:
+>> Yeah, the symbol "__end_rodata_hpage_align" is defined as absolute in
+>> older binutils, the newer binutils making it relative seems
+>> meaningless in this context.
+>
+> What I mean is: what actually changes in the linker output when the
+> symbol is relative?
+>
+> --Andy
+>
 >>
->> [..]
->>>> +	ret = kexec_file_load(kernel_fd, info.initrd_fd, info.command_line,
->>>> +			info.command_line_len, info.kexec_flags);
+>> On Fri, Jun 6, 2014 at 11:40 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>> On 06/06/2014 10:08 AM, Hán Shěn (沈涵) wrote:
+>>>> A gentle ping?
+>>>>
+>>>> On Tue, Jun 3, 2014 at 2:46 PM, Hán Shěn (沈涵) <shenhan@google.com> wrote:
+>>>>> Hi we are trying to boot up a x86_64 chrome book using binutils 2.24 and
+>>>>> kernel 3.8, but failed.
+>>>>>
+>>>>> After some triage work, we found that a 2-year-old binutil CL changed the
+>>>>> interpretation of "." in linker script （short story: absolute -> relative,
+>>>>> long story: https://sourceware.org/ml/binutils/2012-06/msg00155.html).
+>>>>>
+>>>>> After some further work, we are able to boot the kernel with a kernel patch
+>>>>> pasted at EOM. I am curious, why the upstream kernel is never hit by this
+>>>>> behavior? We enabled "CONFIG_DEBUG_RODATA", so we were hit, is this some
+>>>>> macro not usually turned on?
 >>>
->>> Vivek,
+>>> What does a section-relative symbol do?
 >>>
->>> I tried your patch on my uefi test machine, but kexec load fails like below:
->>>
->>> [root@localhost ~]# kexec -l /boot/vmlinuz-3.15.0-rc8+ --use-kexec2-syscall
->>> Could not find a free area of memory of 0xa000 bytes ...
+>>> --Andy
 >>
->> Hi Dave,
 >>
->> I think this message is coming from kexec-tools from old loading path. I
->> think somehow new path did not even kick in. I tried above and I got
->> -EBADF as I did not pass initrd. Can you run gdb on kexec and see if
->> you are getting to syscall or run strace.
-> 
-> Seems I can not reproduce the local hole fail issue but I'm sure it happens
-> before the new syscall callback.
-> 
-> This time I got -ENOEXEC. It's caused by CONFIG_EFI_MIXED=y. In case EFI_MIXED
-> 64bit kernel runs on 32bit efi firmware thus XLF_CAN_BE_LOADED_ABOVE_4G is not
-> set thus bzImage probe will fail with NOEXEC.
-> 
+>>
+>> --
+>> Han Shen |  Software Engineer |  shenhan@google.com |  +1-650-440-3330
+>
+>
+>
+> --
+> Andy Lutomirski
+> AMA Capital Management, LLC
 
-OK... this is seriously problematic.
 
-#if defined(CONFIG_RELOCATABLE) && defined(CONFIG_X86_64) && \
-	!defined(CONFIG_EFI_MIXED)
-   /* kernel/boot_param/ramdisk could be loaded above 4g */
-# define XLF1 XLF_CAN_BE_LOADED_ABOVE_4G
-#else
-# define XLF1 0
-#endif
 
-The fact that even compiling with CONFIG_EFI_MIXED disables
-XLF_CAN_BE_LOADED_ABOVE_4G is really not going to fly.  We should expect
-CONFIG_EFI_MIXED to be the norm, but *also* should expect that there is
-a legitimate need to load above 4G.
-
-Matt, could you explain why this is necessary?  We need to figure out a
-way around this.
-
-My thinking is that disabling this flag is unnecessary, since a 32-bit
-EFI loader should not load above the 4G mark anyway, but if I'm confused
-and there is a more fundamental requirement, then we need to consider
-that more carefully.
-
-	-hpa
-
+-- 
+Han Shen |  Software Engineer |  shenhan@google.com |  +1-650-440-3330
