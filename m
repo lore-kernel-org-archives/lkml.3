@@ -1,77 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752460AbaFFSvX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 14:51:23 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:50192 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752237AbaFFSvV (ORCPT
+	id S1752471AbaFFSxM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 14:53:12 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:56190 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751886AbaFFSxL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 14:51:21 -0400
-Date: Fri, 6 Jun 2014 22:51:17 +0400
-From: Dmitry Popov <ixaphire@qrator.net>
-To: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, trivial@kernel.org
-Subject: [PATCH] ipip, sit: fix ipv4_{update_pmtu,redirect} calls
-Message-Id: <20140606225117.684592168760890b595a166d@qrator.net>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 6 Jun 2014 14:53:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <1402080068.14433.5.camel@buesod1.americas.hpqcorp.net>
+References: <5390D7E1.7060606@gatech.edu> <5391FFFD.1060901@gatech.edu>
+ <20140606175655.GX13930@laptop.programming.kicks-ass.net> <1402080068.14433.5.camel@buesod1.americas.hpqcorp.net>
+From: Pranith Kumar <pranith@gatech.edu>
+Date: Fri, 6 Jun 2014 14:52:40 -0400
+X-Google-Sender-Auth: FMYmBsOzHnoM5bUsfv8n7Q-C0FM
+Message-ID: <CAJhHMCDRdgKgNkpLekfyjxRTfwgXxe-iJCByGPZzVJBjwCa4_w@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/1] cleanup: use bool as return type for rwsem_is_locked
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        tim.c.chen@linux.intel.com, mingo@redhat.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ipv4_{update_pmtu,redirect) were called with tunnel's ifindex (t->dev is a 
-tunnel netdevice). It caused wrong route lookup and failure of pmtu update or 
-redirect. We should use the same ifindex that we use in ip_route_output_* in 
-*tunnel_xmit code. It is t->parms.link .
+On Fri, Jun 6, 2014 at 2:41 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+> On Fri, 2014-06-06 at 19:56 +0200, Peter Zijlstra wrote:
+>> On Fri, Jun 06, 2014 at 01:53:01PM -0400, Pranith Kumar wrote:
+>> > On Fri, Jun 6, 2014 at 3:35 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> > >
+>> > > Now in general, I don't particularly like such superfluous changes, so
+>> > > unless you can show that GCC actually generates better code, I'd prefer
+>> > > to keep things as they are.
+>> >
+>> > Fixed and checked the assembly. It saves us 2 bytes of code, not much. I am not sure if that is worth it :(
+>>
+>> still 2 bytes, so sure.
+>>
+>> Which gcc did you use and what arch did you build? That might be useful
+>> info for the changelog.
+>
+> Yeah, please attach the output of 'size kernel/locking/rwsem.o' for both
+> before and after. I think there's similar opportunity in other locking
+> code as well.
+>
 
-Signed-off-by: Dmitry Popov <ixaphire@qrator.net>
----
- net/ipv4/ipip.c | 4 ++--
- net/ipv6/sit.c  | 4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+Ok. Here is the data.
 
-diff --git a/net/ipv4/ipip.c b/net/ipv4/ipip.c
-index 812b183..09680dd 100644
---- a/net/ipv4/ipip.c
-+++ b/net/ipv4/ipip.c
-@@ -149,13 +149,13 @@ static int ipip_err(struct sk_buff *skb, u32 info)
- 
- 	if (type == ICMP_DEST_UNREACH && code == ICMP_FRAG_NEEDED) {
- 		ipv4_update_pmtu(skb, dev_net(skb->dev), info,
--				 t->dev->ifindex, 0, IPPROTO_IPIP, 0);
-+				 t->parms.link, 0, IPPROTO_IPIP, 0);
- 		err = 0;
- 		goto out;
- 	}
- 
- 	if (type == ICMP_REDIRECT) {
--		ipv4_redirect(skb, dev_net(skb->dev), t->dev->ifindex, 0,
-+		ipv4_redirect(skb, dev_net(skb->dev), t->parms.link, 0,
- 			      IPPROTO_IPIP, 0);
- 		err = 0;
- 		goto out;
-diff --git a/net/ipv6/sit.c b/net/ipv6/sit.c
-index e5a453c..45397b2 100644
---- a/net/ipv6/sit.c
-+++ b/net/ipv6/sit.c
-@@ -560,12 +560,12 @@ static int ipip6_err(struct sk_buff *skb, u32 info)
- 
- 	if (type == ICMP_DEST_UNREACH && code == ICMP_FRAG_NEEDED) {
- 		ipv4_update_pmtu(skb, dev_net(skb->dev), info,
--				 t->dev->ifindex, 0, IPPROTO_IPV6, 0);
-+				 t->parms.link, 0, IPPROTO_IPV6, 0);
- 		err = 0;
- 		goto out;
- 	}
- 	if (type == ICMP_REDIRECT) {
--		ipv4_redirect(skb, dev_net(skb->dev), t->dev->ifindex, 0,
-+		ipv4_redirect(skb, dev_net(skb->dev), t->parms.link, 0,
- 			      IPPROTO_IPV6, 0);
- 		err = 0;
- 		goto out;
+size kernel/locking/rwsem-spinlock.o
+
+Before change to bool:
+
+   text       data        bss        dec        hex
+   1336          0          0       1336        538
+
+After change to bool:
+
+   text       data        bss        dec        hex
+   1334          0          0       1334        536
+
+-- 
+Pranith
