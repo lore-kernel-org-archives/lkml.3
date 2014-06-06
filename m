@@ -1,135 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807AbaFGGxT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 02:53:19 -0400
-Received: from mga09.intel.com ([134.134.136.24]:64282 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751860AbaFGGxS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 02:53:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,993,1392192000"; 
-   d="scan'208";a="524445267"
-Message-ID: <5392B6DC.6040502@intel.com>
-Date: Sat, 07 Jun 2014 14:53:16 +0800
-From: Jet Chen <jet.chen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Eivind Sarto <eivindsarto@gmail.com>
-CC: NeilBrown <neilb@suse.de>, LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: [raid5] cf170f3fa45: +4.8% vmstat.io.bo
-Content-Type: multipart/mixed;
- boundary="------------030901080405080605080103"
+	id S1752840AbaFGHaT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 03:30:19 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:54537 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752753AbaFGHaQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jun 2014 03:30:16 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH 7/9] of/device: Allow I2C devices to OF match without
+ supplying an OF node
+To: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Cc: wsa@the-dreams.de, linus.walleij@linaro.org, linux-i2c@vger.kernel.org,
+        devicetree@vger.kernel.org, Lee Jones <lee.jones@linaro.org>
+In-Reply-To: <1402069952-28022-8-git-send-email-lee.jones@linaro.org>
+References: <1402069952-28022-1-git-send-email-lee.jones@linaro.org>
+	<1402069952-28022-8-git-send-email-lee.jones@linaro.org>
+Date: Sat, 07 Jun 2014 00:28:18 +0100
+Message-Id: <20140606232818.8D870C42604@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------030901080405080605080103
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+On Fri,  6 Jun 2014 16:52:30 +0100, Lee Jones <lee.jones@linaro.org> wrote:
+> The I2C framework supplies a means for devices to be registered without
+> the requirement for platform_data, DT or ACPI.  The current solution is
+> that every single I2C device in the kernel is forced to supply a
+> normally empty/sparse I2C ID table so the I2C subsystem can match to.
+> In an effort to rid the kernel of these tables we need to provide some
+> temporary work arounds until we can straighten out the blocking factors.
+> 
+> This change is meant to be temporary and will be stripped out once
+> we've converted all I2C device drivers from of_match_device() over
+> to the new I2C generic i2c_of_match_device().
 
-Hi Eivind,
+This change imposes the i2c workaround onto every single caller of
+i2c_of_match_device(), regardless of subsystem, and regardless of the
+desired behaviour. It also prevents an i2c driver from getting the
+correct behavour when it wants it.
 
-FYI, we noticed the below changes on
+So, no, I'm not okay with hooking into the core code to work around the
+subsystem problem. I2C drivers need to call the i2c specific version
+directly. I know that adds a line of change to the driver patches, but I
+think it is necessary.
 
-git://neil.brown.name/md for-next
-commit cf170f3fa451350e431314e1a0a52014fda4b2d6 ("raid5: avoid release list until last reference of the stripe")
+g.
 
-test case: lkp-st02/dd-write/11HDD-RAID5-cfq-xfs-10dd
+> 
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  drivers/of/device.c | 19 ++++++++++++++++++-
+>  1 file changed, 18 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/of/device.c b/drivers/of/device.c
+> index dafb973..3b1c8f9 100644
+> --- a/drivers/of/device.c
+> +++ b/drivers/of/device.c
+> @@ -1,6 +1,7 @@
+>  #include <linux/string.h>
+>  #include <linux/kernel.h>
+>  #include <linux/of.h>
+> +#include <linux/i2c.h>
+>  #include <linux/of_device.h>
+>  #include <linux/init.h>
+>  #include <linux/module.h>
+> @@ -21,9 +22,25 @@
+>  const struct of_device_id *of_match_device(const struct of_device_id *matches,
+>  					   const struct device *dev)
+>  {
+> +	const struct of_device_id *match;
+> +
+>  	if ((!matches) || (!dev->of_node))
+>  		return NULL;
+> -	return of_match_node(matches, dev->of_node);
+> +
+> +	match = of_match_node(matches, dev->of_node);
+> +	if (match)
+> +		return match;
+> +
+> +	/*
+> +	 * Low impact workaround, until we can convert all I2C compatible
+> +	 * strings over to the correctly specified <vendor>,<device> format.
+> +	 */
+> +	match = i2c_of_match_device_strip_vendor(matches, (struct device *)dev);
+> +	if (match)
+> +		dev_warn(dev,
+> +			 "WARNING: Vendor ID missing from compatible string\n");
+> +
+> +	return match;
+>  }
+>  EXPORT_SYMBOL(of_match_device);
+>  
+> -- 
+> 1.8.3.2
+> 
 
-8b32bf5e37328c0  cf170f3fa451350e431314e1a
----------------  -------------------------
-    486996 ~ 0%      +4.8%     510428 ~ 0%  TOTAL vmstat.io.bo
-     17643 ~ 1%     -17.3%      14599 ~ 0%  TOTAL vmstat.system.in
-     11633 ~ 4%     -56.7%       5039 ~ 0%  TOTAL vmstat.system.cs
-       109 ~ 1%      +6.5%        116 ~ 1%  TOTAL iostat.sdb.rrqm/s
-       109 ~ 2%      +5.1%        114 ~ 1%  TOTAL iostat.sdc.rrqm/s
-       110 ~ 2%      +5.5%        117 ~ 0%  TOTAL iostat.sdj.rrqm/s
-     12077 ~ 0%      +4.8%      12660 ~ 0%  TOTAL iostat.sde.wrqm/s
-     48775 ~ 0%      +4.8%      51125 ~ 0%  TOTAL iostat.sde.wkB/s
-     12077 ~ 0%      +4.8%      12659 ~ 0%  TOTAL iostat.sdb.wrqm/s
-     12076 ~ 0%      +4.8%      12659 ~ 0%  TOTAL iostat.sdd.wrqm/s
-     12077 ~ 0%      +4.8%      12660 ~ 0%  TOTAL iostat.sdf.wrqm/s
-     48775 ~ 0%      +4.8%      51121 ~ 0%  TOTAL iostat.sdb.wkB/s
-     12078 ~ 0%      +4.8%      12659 ~ 0%  TOTAL iostat.sdj.wrqm/s
-     12078 ~ 0%      +4.8%      12660 ~ 0%  TOTAL iostat.sdi.wrqm/s
-     12076 ~ 0%      +4.8%      12658 ~ 0%  TOTAL iostat.sdg.wrqm/s
-     48774 ~ 0%      +4.8%      51122 ~ 0%  TOTAL iostat.sdd.wkB/s
-     48776 ~ 0%      +4.8%      51128 ~ 0%  TOTAL iostat.sdf.wkB/s
-     48780 ~ 0%      +4.8%      51121 ~ 0%  TOTAL iostat.sdj.wkB/s
-     48779 ~ 0%      +4.8%      51128 ~ 0%  TOTAL iostat.sdi.wkB/s
-     48773 ~ 0%      +4.8%      51119 ~ 0%  TOTAL iostat.sdg.wkB/s
-    486971 ~ 0%      +4.8%     510409 ~ 0%  TOTAL iostat.md0.wkB/s
-     12076 ~ 0%      +4.8%      12657 ~ 0%  TOTAL iostat.sdc.wrqm/s
-     12077 ~ 0%      +4.8%      12659 ~ 0%  TOTAL iostat.sdh.wrqm/s
-      1910 ~ 0%      +4.8%       2001 ~ 0%  TOTAL iostat.md0.w/s
-       110 ~ 2%      +6.5%        117 ~ 1%  TOTAL iostat.sdk.rrqm/s
-     12077 ~ 0%      +4.8%      12659 ~ 0%  TOTAL iostat.sdk.wrqm/s
-     48772 ~ 0%      +4.8%      51115 ~ 0%  TOTAL iostat.sdc.wkB/s
-     48776 ~ 0%      +4.8%      51121 ~ 0%  TOTAL iostat.sdh.wkB/s
-     48777 ~ 0%      +4.8%      51121 ~ 0%  TOTAL iostat.sdk.wkB/s
-       109 ~ 2%      +3.3%        113 ~ 1%  TOTAL iostat.sde.rrqm/s
-  4.28e+09 ~ 0%      -4.1%  4.104e+09 ~ 0%  TOTAL perf-stat.cache-misses
- 8.654e+10 ~ 0%      +4.7%  9.058e+10 ~ 0%  TOTAL perf-stat.L1-dcache-store-misses
- 3.549e+09 ~ 1%      +3.7%  3.682e+09 ~ 0%  TOTAL perf-stat.L1-dcache-prefetches
- 6.764e+11 ~ 0%      +3.7%  7.011e+11 ~ 0%  TOTAL perf-stat.dTLB-stores
- 6.759e+11 ~ 0%      +3.7%  7.011e+11 ~ 0%  TOTAL perf-stat.L1-dcache-stores
- 4.731e+10 ~ 0%      +3.6%  4.903e+10 ~ 0%  TOTAL perf-stat.L1-dcache-load-misses
- 3.017e+12 ~ 0%      +3.5%  3.121e+12 ~ 0%  TOTAL perf-stat.instructions
- 1.118e+12 ~ 0%      +3.3%  1.156e+12 ~ 0%  TOTAL perf-stat.dTLB-loads
- 1.117e+12 ~ 0%      +3.2%  1.152e+12 ~ 0%  TOTAL perf-stat.L1-dcache-loads
- 3.022e+12 ~ 0%      +3.2%  3.119e+12 ~ 0%  TOTAL perf-stat.iTLB-loads
- 5.613e+11 ~ 0%      +3.2%  5.794e+11 ~ 0%  TOTAL perf-stat.branch-instructions
-  5.62e+11 ~ 0%      +3.1%  5.793e+11 ~ 0%  TOTAL perf-stat.branch-loads
- 1.343e+09 ~ 0%      +2.6%  1.378e+09 ~ 0%  TOTAL perf-stat.LLC-store-misses
- 2.073e+10 ~ 0%      +2.9%  2.133e+10 ~ 1%  TOTAL perf-stat.LLC-loads
- 4.854e+10 ~ 0%      +1.6%  4.931e+10 ~ 0%  TOTAL perf-stat.cache-references
- 1.167e+10 ~ 0%      +1.4%  1.183e+10 ~ 0%  TOTAL perf-stat.L1-icache-load-misses
-   7068624 ~ 4%     -56.4%    3078966 ~ 0%  TOTAL perf-stat.context-switches
- 2.214e+09 ~ 1%      -7.8%  2.041e+09 ~ 1%  TOTAL perf-stat.LLC-load-misses
-    131433 ~ 0%     -18.9%     106597 ~ 1%  TOTAL perf-stat.cpu-migrations
-
-
-Legend:
-	~XX%    - stddev percent
-	[+-]XX% - change percent
-
-Disclaimer:
-Results have been estimated based on internal Intel analysis and are provided
-for informational purposes only. Any difference in system hardware or software
-design or configuration may affect actual performance.
-
-Thanks,
-Jet
-
-
---------------030901080405080605080103
-Content-Type: text/plain; charset=UTF-8;
- name="reproduce"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="reproduce"
-
-mdadm -q --create /dev/md0 --chunk=256 --level=raid5 --raid-devices=11 --force --assume-clean /dev/sdb1 /dev/sdc1 /dev/sdd1 /dev/sde1 /dev/sdf1 /dev/sdg1 /dev/sdh1 /dev/sdi1 /dev/sdj1 /dev/sdk1 /dev/sdl1
-echo 1 > /sys/kernel/debug/tracing/events/writeback/balance_dirty_pages/enable
-echo 1 > /sys/kernel/debug/tracing/events/writeback/bdi_dirty_ratelimit/enable
-echo 1 > /sys/kernel/debug/tracing/events/writeback/global_dirty_state/enable
-echo 1 > /sys/kernel/debug/tracing/events/writeback/writeback_single_inode/enable
-mkfs -t xfs /dev/md0
-mount -t xfs -o nobarrier,inode64 /dev/md0 /fs/md0
-dd  if=/dev/zero of=/fs/md0/zero-1 status=none &
-dd  if=/dev/zero of=/fs/md0/zero-2 status=none &
-dd  if=/dev/zero of=/fs/md0/zero-3 status=none &
-dd  if=/dev/zero of=/fs/md0/zero-4 status=none &
-dd  if=/dev/zero of=/fs/md0/zero-5 status=none &
-dd  if=/dev/zero of=/fs/md0/zero-6 status=none &
-dd  if=/dev/zero of=/fs/md0/zero-7 status=none &
-dd  if=/dev/zero of=/fs/md0/zero-8 status=none &
-dd  if=/dev/zero of=/fs/md0/zero-9 status=none &
-dd  if=/dev/zero of=/fs/md0/zero-10 status=none &
-sleep 600
-killall -9 dd
-
-
---------------030901080405080605080103--
