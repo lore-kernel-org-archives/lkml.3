@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752508AbaFFXLQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 19:11:16 -0400
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:64664 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752238AbaFFXLP (ORCPT
+	id S1752610AbaFFXLU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 19:11:20 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:57254 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752571AbaFFXLS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 19:11:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAMP44s2K-kZ8yLC3NPbpO9Z9ykQeySXW+cRiZ_NpLUMzDuiq9g@mail.gmail.com>
-References: <53905594d284f_71f12992fc6a@nysa.notmuch>
-	<20140605133747.GB2942@dhcp22.suse.cz>
-	<CAMP44s1kk8PyMd603g0C9yvHuuUZXzwwNQHpM8Abghvc_Os-SQ@mail.gmail.com>
-	<20140606091620.GC26253@dhcp22.suse.cz>
-	<CAMP44s2K-kZ8yLC3NPbpO9Z9ykQeySXW+cRiZ_NpLUMzDuiq9g@mail.gmail.com>
-Date: Fri, 6 Jun 2014 18:11:14 -0500
-Message-ID: <CAMP44s0pyjRyBM4u5-irCt0DbR96yR=hok+VZgC1KS782edN3w@mail.gmail.com>
-Subject: Re: Interactivity regression since v3.11 in mm/vmscan.c
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 6 Jun 2014 19:11:18 -0400
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        "Luis R. Rodriguez" <mcgrof@suse.com>, Borislav Petkov <bp@suse.de>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, Michal Marek <mmarek@suse.cz>,
+        Randy Dunlap <rdunlap@infradead.org>, levinsasha928@gmail.com,
+        mtosatti@redhat.com, fengguang.wu@intel.com,
+        David Vrabel <david.vrabel@citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        xen-devel@lists.xenproject.org
+Subject: [PATCH 1/3] x86, platform, xen, kconfig: clarify kvmconfig is for kvm
+Date: Fri,  6 Jun 2014 16:11:07 -0700
+Message-Id: <1402096269-4512-1-git-send-email-mcgrof@do-not-panic.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 6, 2014 at 5:33 AM, Felipe Contreras
-<felipe.contreras@gmail.com> wrote:
-> On Fri, Jun 6, 2014 at 4:16 AM, Michal Hocko <mhocko@suse.cz> wrote:
->
->> Mel has a nice systemtap script (attached) to watch for stalls. Maybe
->> you can give it a try?
->
-> Is there any special configurations I should enable?
->
-> I get this:
-> semantic error: unresolved arity-1 global array name, missing global
-> declaration?: identifier 'name' at /tmp/stapd6pu9A:4:2
->         source: name[t]=execname()
->                 ^
->
-> Pass 2: analysis failed.  [man error::pass2]
-> Number of similar error messages suppressed: 71.
-> Rerun with -v to see them.
-> Unexpected exit of STAP script at
-> /home/felipec/Downloads/watch-dstate-new.pl line 320.
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
 
-Actually I debugged the problem, and it's that the format of the
-script is DOS, not UNIX. After changing the format the script works.
+We'll be adding options for xen as well.
 
-However, it's not returning anything. It's running, but doesn't seem
-to find any stalls.
+Cc: Borislav Petkov <bp@suse.de>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: penberg@kernel.org
+Cc: levinsasha928@gmail.com
+Cc: mtosatti@redhat.com
+Cc: fengguang.wu@intel.com
+Cc: David Vrabel <david.vrabel@citrix.com>
+Cc: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: xen-devel@lists.xenproject.org
+Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+---
+ arch/x86/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index 33f71b0..37621ac 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -269,5 +269,5 @@ define archhelp
+   echo  '                  bzdisk/fdimage*/isoimage also accept:'
+   echo  '                  FDARGS="..."  arguments for the booted kernel'
+   echo  '                  FDINITRD=file initrd for the booted kernel'
+-  echo  '  kvmconfig	- Enable additional options for guest kernel support'
++  echo  '  kvmconfig	- Enable additional options for kvm guest kernel support'
+ endef
 -- 
-Felipe Contreras
+2.0.0.rc3.18.g00a5b79
+
