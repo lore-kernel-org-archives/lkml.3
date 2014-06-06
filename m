@@ -1,81 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751495AbaFFRuy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 13:50:54 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:63167 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750717AbaFFRuw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 13:50:52 -0400
-Message-ID: <5391FF87.1010000@cogentembedded.com>
-Date: Fri, 06 Jun 2014 21:51:03 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751796AbaFFRvg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 13:51:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45229 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751522AbaFFRve (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 13:51:34 -0400
+Date: Fri, 6 Jun 2014 13:51:25 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: 3.15-rc8 oops in copy_page_rep after page fault.
+Message-ID: <20140606175125.GB1741@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+	Linus Torvalds <torvalds@linux-foundation.org>
+References: <20140606174317.GA1741@redhat.com>
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>, Sasha Levin <sasha.levin@oracle.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: net: llc: NULL ptr deref in llc_ui_sendmsg
-References: <5391D971.4030001@oracle.com> <20140606154231.GA7629@redhat.com>
-In-Reply-To: <20140606154231.GA7629@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140606174317.GA1741@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Fri, Jun 06, 2014 at 01:43:17PM -0400, Dave Jones wrote:
+ > Not much to go on here. It rebooted right after dumping this.
+ > 
+ > RIP: 0010:[<ffffffff8b3287b5>]  [<ffffffff8b3287b5>] copy_page_rep+0x5/0x10
+ > Call Trace:
+ >  [<ffffffff8b1be8db>] ? do_huge_pmd_wp_page+0x5cb/0x850
+ >  [<ffffffff8b187010>] handle_mm_fault+0x1e0/0xc50
+ >  [<ffffffff8b1b4662>] ? kmem_cache_free+0x1c2/0x200
+ >  [<ffffffff8b7472d9>] __do_page_fault+0x1c9/0x630
+ >  [<ffffffff8b010a98>] ? perf_trace_sys_enter+0x38/0x180
+ >  [<ffffffff8b11897b>] ? __acct_update_integrals+0x8b/0x120
+ >  [<ffffffff8b747bfb>] ? preempt_count_sub+0xab/0x100
+ >  [<ffffffff8b74775e>] do_page_fault+0x1e/0x70
+ >  [<ffffffff8b7441b2>] page_fault+0x22/0x30
 
-On 06/06/2014 07:42 PM, Dave Jones wrote:
+Ok, I can reproduce this fairly easily.
 
->   > Hi all,
+The only prerequisite seems to be that before I start the fuzzer I do..
 
->   > While fuzzing with trinity inside a KVM tools guest running the latest -next
->   > kernel I've stumbled on the following spew:
+echo 65536 > /proc/sys/vm/mmap_min_addr
 
->   > [  269.531162] BUG: unable to handle kernel NULL pointer dereference at 000000000000021e
->   > [  269.531217] IP: llc_ui_sendmsg (net/llc/af_llc.c:912)
+If I don't do that, then it seems to survive, so maybe that's a clue ?
 
->   905         /* must bind connection to sap if user hasn't done it. */
->   906         if (sock_flag(sk, SOCK_ZAPPED)) {
->   907                 /* bind to sap with null dev, exclusive. */
->   908                 rc = llc_ui_autobind(sock, addr);
->   909                 if (rc)
->   910                         goto release;
->   911         }
->   912         hdrlen = llc->dev->hard_header_len + llc_ui_header_len(sk, addr);
-
-> looks like llc->dev was null, (understandable, given Trinity doesn't really know
-> how to set up llc beyond random socket()/setsockopt() calls).
-
-> llc_ui_autobind returns -ENODEV in that case, so it looks like the SOCK_ZAPPED test
-> was false. Something like the patch below maybe ? It feels ugly to be duplicating that
-> test there, but if this is agreed upon I'll resubmit this properly.
-
-> 	Dave
-
-> diff --git a/net/llc/af_llc.c b/net/llc/af_llc.c
-> index 0080d2b0a8ae..9b192db9883b 100644
-> --- a/net/llc/af_llc.c
-> +++ b/net/llc/af_llc.c
-> @@ -908,6 +908,11 @@ static int llc_ui_sendmsg(struct kiocb *iocb, struct socket *sock,
->   		rc = llc_ui_autobind(sock, addr);
->   		if (rc)
->   			goto release;
-> +	} else {
-> +		if (!llc->dev) {
-
-	} else if (!llc->dev) {
-
-> +			rc = -ENODEV;
-> +			goto release;
-> +		}
->   	}
->   	hdrlen = llc->dev->hard_header_len + llc_ui_header_len(sk, addr);
->   	size = hdrlen + len;
-
-WBR, Sergei
+	Dave
 
