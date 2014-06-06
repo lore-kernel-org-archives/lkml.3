@@ -1,10 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753181AbaFFRZD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 13:25:03 -0400
-Received: from thoth.sbs.de ([192.35.17.2]:51977 "EHLO thoth.sbs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752209AbaFFRTh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753165AbaFFRZA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 13:25:00 -0400
+Received: from goliath.siemens.de ([192.35.17.28]:34744 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752199AbaFFRTh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 13:19:37 -0400
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Thomas Gleixner <tglx@linutronix.de>,
@@ -14,11 +15,10 @@ Cc: Jason Wessel <jason.wessel@windriver.com>,
         kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
         Borislav Petkov <bp@suse.de>,
-        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>,
-        Pantelis Koukousoulas <pktoss@gmail.com>
-Subject: [PATCH v8 22/22] scripts/gdb: Port to python3 / gdb7.7
-Date: Fri,  6 Jun 2014 19:19:03 +0200
-Message-Id: <40ced373c582598ca520896e8f30840cbfd47bfd.1402075141.git.jan.kiszka@siemens.com>
+        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>
+Subject: [PATCH v8 13/22] scripts/gdb: Add helper and convenience function to look up tasks
+Date: Fri,  6 Jun 2014 19:18:54 +0200
+Message-Id: <eeb48197cea48eea3f9c7963507221bac6b0ad4a.1402075140.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
 In-Reply-To: <cover.1402075136.git.jan.kiszka@siemens.com>
 References: <cover.1402075136.git.jan.kiszka@siemens.com>
@@ -28,178 +28,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pantelis Koukousoulas <pktoss@gmail.com>
+Add the helper task_by_pid that can look up a task by its PID. Also
+export it as a convenience function.
 
-I tried to use these scripts in an ubuntu 14.04 host (gdb 7.7 compiled
-against python 3.3) but there were several errors.
-
-I believe this patch fixes these issues so that the commands
-now work (I tested lx-symbols, lx-dmesg, lx-lsmod).
-
-Main issues that needed to be resolved:
-
-  * In python 2 iterators have a "next()" method. In python 3 it is
-    __next__() instead (so let's just add both).
-
-  * In older python versions there was an implicit conversion
-    in object.__format__() (used when an object is in string.format())
-    where it was converting the object to str first and then
-    calling str's __format__(). This has now been removed so
-    we must explicitly convert to str the objects for which
-    we need to keep this behavior.
-
-  * In dmesg.py: in python 3 log_buf is now a "memoryview" object
-    which needs to be converted to a string in order to use string
-    methods like "splitlines()". Luckily memoryview exists in
-    python 2.7.6 as well, so we can convert log_buf to memoryview
-    and use the same code in both python 2 and python 3.
-
-This version of the patch has now been tested with gdb 7.7 and
-both python 3.4 and python 2.7.6 (I think asking for at least
-python 2.7.6 is a reasonable requirement instead of complicating
-the code with version checks etc).
-
-Signed-off-by: Pantelis Koukousoulas <pktoss@gmail.com>
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- scripts/gdb/linux/cpus.py    | 5 ++++-
- scripts/gdb/linux/dmesg.py   | 3 ++-
- scripts/gdb/linux/modules.py | 9 ++++++---
- scripts/gdb/linux/symbols.py | 4 ++--
- scripts/gdb/linux/tasks.py   | 4 +++-
- scripts/gdb/linux/utils.py   | 2 +-
- 6 files changed, 18 insertions(+), 9 deletions(-)
+ scripts/gdb/linux/tasks.py | 27 +++++++++++++++++++++++++++
+ scripts/gdb/vmlinux-gdb.py |  1 +
+ 2 files changed, 28 insertions(+)
 
-diff --git a/scripts/gdb/linux/cpus.py b/scripts/gdb/linux/cpus.py
-index c1441f2..8045871 100644
---- a/scripts/gdb/linux/cpus.py
-+++ b/scripts/gdb/linux/cpus.py
-@@ -82,7 +82,7 @@ class CpuList():
-     def __iter__(self):
-         return self
- 
--    def next(self):
-+    def __next__(self):
-         while self.bits == 0:
-             self.entry += 1
-             if self.entry == self.num_entries:
-@@ -103,6 +103,9 @@ class CpuList():
- 
-         return cpu
- 
-+    def next(self):
-+        return self.__next__()
-+
- 
- class PerCpu(gdb.Function):
-     """Return per-cpu variable.
-diff --git a/scripts/gdb/linux/dmesg.py b/scripts/gdb/linux/dmesg.py
-index 7650f24..3c947f0 100644
---- a/scripts/gdb/linux/dmesg.py
-+++ b/scripts/gdb/linux/dmesg.py
-@@ -51,9 +51,10 @@ class LxDmesg(gdb.Command):
-                 continue
- 
-             text_len = utils.read_u16(log_buf[pos + 10:pos + 12])
-+            text = log_buf[pos + 16:pos + 16 + text_len]
-             time_stamp = utils.read_u64(log_buf[pos:pos + 8])
- 
--            for line in log_buf[pos + 16:pos + 16 + text_len].splitlines():
-+            for line in memoryview(text).tobytes().splitlines():
-                 gdb.write("[{time:12.6f}] {line}\n".format(
-                     time=time_stamp / 1000000000.0,
-                     line=line))
-diff --git a/scripts/gdb/linux/modules.py b/scripts/gdb/linux/modules.py
-index e7c99e9..2dbf679 100644
---- a/scripts/gdb/linux/modules.py
-+++ b/scripts/gdb/linux/modules.py
-@@ -30,7 +30,7 @@ class ModuleList:
-     def __iter__(self):
-         return self
- 
--    def next(self):
-+    def __next__(self):
-         entry = self.curr_entry
-         if entry != self.end_of_list:
-             self.curr_entry = entry['next']
-@@ -38,6 +38,9 @@ class ModuleList:
-         else:
-             raise StopIteration
- 
-+    def next(self):
-+        return self.__next__()
-+
- 
- def find_module_by_name(name):
-     for module in ModuleList():
-@@ -91,8 +94,8 @@ class LxLsmod(gdb.Command):
-             gdb.write("{address} {name:<19} {size:>8}  {ref}".format(
-                 address=str(module['module_core']).split()[0],
-                 name=module['name'].string(),
--                size=module['core_size'],
--                ref=ref))
-+                size=str(module['core_size']),
-+                ref=str(ref)))
- 
-             source_list = module['source_list']
-             t = self._module_use_type.get_type().pointer()
-diff --git a/scripts/gdb/linux/symbols.py b/scripts/gdb/linux/symbols.py
-index 139841f..ae757fd 100644
---- a/scripts/gdb/linux/symbols.py
-+++ b/scripts/gdb/linux/symbols.py
-@@ -73,7 +73,7 @@ lx-symbols command."""
- 
-     def _get_module_file(self, module_name):
-         module_pattern = ".*/{0}\.ko$".format(
--            string.replace(module_name, "_", r"[_\-]"))
-+            module_name.replace("_", r"[_\-]"))
-         for name in self.module_files:
-             if re.match(module_pattern, name) and os.path.exists(name):
-                 return name
-@@ -87,7 +87,7 @@ lx-symbols command."""
-         attrs = sect_attrs['attrs']
-         section_name_to_address = {
-             attrs[n]['name'].string() : attrs[n]['address']
--            for n in range(sect_attrs['nsections'])}
-+            for n in range(int(sect_attrs['nsections']))}
-         args = []
-         for section_name in [".data", ".data..read_mostly", ".rodata", ".bss"]:
-             address = section_name_to_address.get(section_name)
 diff --git a/scripts/gdb/linux/tasks.py b/scripts/gdb/linux/tasks.py
-index 63cd6c5..0008e75 100644
+index cd25984..13bb97c 100644
 --- a/scripts/gdb/linux/tasks.py
 +++ b/scripts/gdb/linux/tasks.py
-@@ -30,7 +30,7 @@ class TaskList:
-     def __iter__(self):
-         return self
- 
--    def next(self):
-+    def __next__(self):
-         t = self.curr_task
-         if not t or t == self.curr_group:
-             self.curr_group = \
-@@ -45,6 +45,8 @@ class TaskList:
+@@ -44,3 +44,30 @@ class TaskList:
+                 utils.container_of(t['thread_group']['next'],
                                     self.task_ptr_type, "thread_group")
          return t
- 
-+    def next(self):
-+        return self.__next__()
- 
- def get_task_by_pid(pid):
-     for task in TaskList():
-diff --git a/scripts/gdb/linux/utils.py b/scripts/gdb/linux/utils.py
-index a4a1640..128c306 100644
---- a/scripts/gdb/linux/utils.py
-+++ b/scripts/gdb/linux/utils.py
-@@ -83,7 +83,7 @@ def get_target_endianness():
-         elif "big endian" in endian:
-             target_endianness = BIG_ENDIAN
-         else:
--            raise gdb.GdgError("unknown endianness '{0}'".format(endian))
-+            raise gdb.GdgError("unknown endianness '{0}'".format(str(endian)))
-     return target_endianness
- 
- 
++
++
++def get_task_by_pid(pid):
++    for task in TaskList():
++        if int(task['pid']) == pid:
++            return task
++    return None
++
++
++class LxTaskByPidFunc(gdb.Function):
++    """Find Linux task by PID and return the task_struct variable.
++
++$lx_task_by_pid(PID): Given PID, iterate over all tasks of the target and
++return that task_struct variable which PID matches."""
++
++    def __init__(self):
++        super(LxTaskByPidFunc, self).__init__("lx_task_by_pid")
++
++    def invoke(self, pid):
++        task = get_task_by_pid(pid)
++        if task:
++            return task.dereference()
++        else:
++            raise gdb.GdbError("No task of PID " + str(pid))
++
++
++LxTaskByPidFunc()
+diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
+index fa66d23..4d7eb2c 100644
+--- a/scripts/gdb/vmlinux-gdb.py
++++ b/scripts/gdb/vmlinux-gdb.py
+@@ -26,3 +26,4 @@ else:
+     import linux.symbols
+     import linux.modules
+     import linux.dmesg
++    import linux.tasks
 -- 
 1.8.1.1.298.ge7eed54
 
