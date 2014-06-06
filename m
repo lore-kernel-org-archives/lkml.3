@@ -1,86 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751662AbaFFMYL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 08:24:11 -0400
-Received: from mail.eperm.de ([89.247.134.16]:46361 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750840AbaFFMYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 08:24:09 -0400
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
-        linux-crypto@vger.kernel.org
-Subject: Re: [PATCH 0/2] Add in-kernel /dev/random equivalent
-Date: Fri, 06 Jun 2014 14:23:23 +0200
-Message-ID: <33386917.yDDF1yg5fp@tauon>
-User-Agent: KMail/4.12.5 (Linux/3.14.4-200.fc20.x86_64; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <20140606115900.GA4367@amd.pavel.ucw.cz>
-References: <1937020.H2HvEFgXrB@myon.chronox.de> <20140606115900.GA4367@amd.pavel.ucw.cz>
+	id S1751682AbaFFM1K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 08:27:10 -0400
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:32960 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750929AbaFFM1I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 08:27:08 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <20140605133747.GB2942@dhcp22.suse.cz>
+References: <53905594d284f_71f12992fc6a@nysa.notmuch>
+	<20140605133747.GB2942@dhcp22.suse.cz>
+Date: Fri, 6 Jun 2014 07:27:08 -0500
+Message-ID: <CAMP44s2ExpR2OdvsiPVe9bdKdRYgsjEsXCfExTjQ_-eGMzvgKg@mail.gmail.com>
+Subject: Re: Interactivity regression since v3.11 in mm/vmscan.c
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, 6. Juni 2014, 13:59:00 schrieb Pavel Machek:
+On Thu, Jun 5, 2014 at 8:37 AM, Michal Hocko <mhocko@suse.cz> wrote:
 
-Hi Pavel,
+> We had a similar report for opensuse. The common part was that there was
+> an IO to a slow USB device going on.
 
->On Mon 2014-05-12 00:36:01, Stephan Mueller wrote:
->> Hi,
->> 
->> as discussed in thread [1], an in-kernel equivalent to the blocking
->> /dev/random device behavior is suggested. This in-kernel blocking
->> access to the RNG can be used to seed deterministic random number
->> generators with random numbers that are directly backed by the
->> underlying noise sources.
->> 
->> The following patch implements this concept by adding a third output
->> pool, the kernel_pool that is only accessible inside the kernel.
->> That kernel_pool feeds the blocking operation API calls to obtain
->> random numbers.
->> 
->> Please find a test kernel module attached. You can unload it even
->> while the collection process is ongoing.
->> 
->> [1] https://lkml.org/lkml/2014/4/27/174
->> 
->> Stephan Mueller (2):
->>   Addition of kernel_pool
->>   Asynchronous and syncronous API for accessing kernel_pool
->>  
->>  drivers/char/random.c  | 163
->> 
->> +++++++++++++++++++++++++++++++++++++++++++++----
->> 
->>  include/linux/random.h |  16 +++++
->>  2 files changed, 166 insertions(+), 13 deletions(-)
->
-> * Copyright (c) 2014
-> *
-> * Permission is hereby granted, free of charge, to any person
-> *obtaining a copy
-> * of this software and associated documentation files (the
-> *"Software"), to deal
-> * in the Software without restriction, including without limitation
-> *the rights
-> * to use, copy, modify, merge, publish, distribute, sublicense,
-> *and/or sell
-> * copies of the Software, and to permit persons to whom the Software
-> *is
-> * furnished to do so, subject to the following conditions:
->
->...but module_license says this is GPL...
+Actually I've managed to narrow down my synthetic test, and all I need
+is to copy a big file, and it even happens reading and writing to the
+SSD (although the stall is less severe).
 
-Thank you very much for the hint -- this is an oversight on my behalf. I 
-wanted the test kernel code to be licensed in a dual BSD/GPLv2 style.
+Here's the test:
+http://pastie.org/9264124
 
-As this is just a test module to demonstrate the appropriateness of the 
-offered patch, I hope you can still live with it until a potential new 
-submission is provided. Though, if you insist I can resubmit the test 
-module with the dual BSD/GPLv2 clause.
+Just pass a big file as the first argument.
 
-Ciao
-Stephan
+I don't have much memory in this machine, so I guess running out of
+memory is the trigger.
+
+-- 
+Felipe Contreras
