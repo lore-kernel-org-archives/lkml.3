@@ -1,101 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751861AbaFFMNN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 08:13:13 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:48470 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751680AbaFFMNK (ORCPT
+	id S1751589AbaFFMMn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 08:12:43 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:50560 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751407AbaFFMMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 08:13:10 -0400
-Date: Fri, 6 Jun 2014 14:13:05 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Yuyang Du <yuyang.du@intel.com>, Dirk Brandewie <dirk.brandewie@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        Dietmar Eggemann <Dietmar.Eggemann@arm.com>, len.brown@intel.com,
-        jacob.jun.pan@linux.intel.com
-Subject: Re: [RFC PATCH 06/16] arm: topology: Define TC2 sched energy and
- provide it to scheduler
-Message-ID: <20140606121305.GA8571@gmail.com>
-References: <1400869003-27769-1-git-send-email-morten.rasmussen@arm.com>
- <20140604160230.GS29593@e103034-lin>
- <20140604172712.GJ13930@laptop.programming.kicks-ass.net>
- <2484761.vkWavnsDx3@vostro.rjw.lan>
- <20140605065205.GA3213@twins.programming.kicks-ass.net>
- <539086B3.2010804@gmail.com>
- <20140605202930.GA15484@intel.com>
- <20140606080543.GR6758@twins.programming.kicks-ass.net>
- <20140606003520.GB22261@intel.com>
- <20140606105036.GQ3213@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140606105036.GQ3213@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 6 Jun 2014 08:12:38 -0400
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        gregkh@linuxfoundation.org, kishon@ti.com, mathias.nyman@intel.com
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kgene.kim@samsung.com, jwerner@chromium.org,
+        Vivek Gautam <gautam.vivek@samsung.com>
+Subject: [PATCH 1/4] phy: Add provision for calibrating phy.
+Date: Fri,  6 Jun 2014 17:42:12 +0530
+Message-Id: <1402056736-12674-2-git-send-email-gautam.vivek@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1402056736-12674-1-git-send-email-gautam.vivek@samsung.com>
+References: <1402056736-12674-1-git-send-email-gautam.vivek@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Some PHY controllers may need to calibrate certain
+PHY settings after initialization of the controller and
+sometimes even after initializing the PHY-consumer too.
+Add support for the same in order to let consumers do so in need.
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+Signed-off-by: vivek Gautam <gautam.vivek@samsung.com>
+---
+ drivers/phy/phy-core.c  |   36 ++++++++++++++++++++++++++++++++++++
+ include/linux/phy/phy.h |    7 +++++++
+ 2 files changed, 43 insertions(+)
 
-> > Voltage is combined with frequency, roughly, voltage is 
-> > proportional to freuquecy, so roughly, power is proportionaly to 
-> > voltage^3. You
-> 
-> P ~ V^2, last time I checked.
+diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
+index 74d4346..92d31a3 100644
+--- a/drivers/phy/phy-core.c
++++ b/drivers/phy/phy-core.c
+@@ -376,6 +376,42 @@ int phy_power_off(struct phy *phy)
+ EXPORT_SYMBOL_GPL(phy_power_off);
+ 
+ /**
++ * phy_calibrate - calibrate a phy post initialization
++ * @phy: Pointer to 'phy' from consumer
++ *
++ * For certain PHYs, it may be needed to calibrate few phy parameters
++ * post initialization. The need to calibrate may arise after the
++ * initialization of consumer itself, in order to prevent further any
++ * loss of phy settings post consumer-initialization.
++ *	example: USB 3.0 DRD PHY on Exynos5420/5800 systems is one such
++ *	phy which needs calibration after the host controller reset
++ *	has happened.
++ */
++int phy_calibrate(struct phy *phy)
++{
++	int ret = -ENOTSUPP;
++
++	if (!phy)
++		return 0;
++
++	mutex_lock(&phy->mutex);
++	if (phy->ops->calibrate) {
++		ret =  phy->ops->calibrate(phy);
++		if (ret < 0) {
++			dev_err(&phy->dev,
++				"phy calibration failed --> %d\n", ret);
++			goto out;
++		}
++	}
++
++out:
++	mutex_unlock(&phy->mutex);
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(phy_calibrate);
++
++/**
+  * _of_phy_get() - lookup and obtain a reference to a phy by phandle
+  * @np: device_node for which to get the phy
+  * @index: the index of the phy
+diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
+index 5a537a5..1de6c0a 100644
+--- a/include/linux/phy/phy.h
++++ b/include/linux/phy/phy.h
+@@ -34,6 +34,7 @@ struct phy_ops {
+ 	int	(*exit)(struct phy *phy);
+ 	int	(*power_on)(struct phy *phy);
+ 	int	(*power_off)(struct phy *phy);
++	int	(*calibrate)(struct phy *phy);
+ 	struct module *owner;
+ };
+ 
+@@ -124,6 +125,7 @@ int phy_init(struct phy *phy);
+ int phy_exit(struct phy *phy);
+ int phy_power_on(struct phy *phy);
+ int phy_power_off(struct phy *phy);
++int phy_calibrate(struct phy *phy);
+ static inline int phy_get_bus_width(struct phy *phy)
+ {
+ 	return phy->attrs.bus_width;
+@@ -227,6 +229,11 @@ static inline int phy_power_off(struct phy *phy)
+ 	return -ENOSYS;
+ }
+ 
++static inline int phy_calibrate(struct phy *phy)
++{
++	return -ENOSYS;
++}
++
+ static inline int phy_get_bus_width(struct phy *phy)
+ {
+ 	return -ENOSYS;
+-- 
+1.7.10.4
 
-Yes, that's a good approximation for CMOS gates:
-
-  The switching power dissipated by a chip using static CMOS gates is 
-  C·V^2·f, where C is the capacitance being switched per clock cycle, 
-  V is the supply voltage, and f is the switching frequency,[1] so 
-  this part of the power consumption decreases quadratically with 
-  voltage. The formula is not exact however, as many modern chips are 
-  not implemented using 100% CMOS, but also use special memory 
-  circuits, dynamic logic such as domino logic, etc. Moreover, there 
-  is also a static leakage current, which has become more and more 
-  accentuated as feature sizes have become smaller (below 90 
-  nanometres) and threshold levels lower.
-
-  Accordingly, dynamic voltage scaling is widely used as part of 
-  strategies to manage switching power consumption in battery powered 
-  devices such as cell phones and laptop computers. Low voltage modes 
-  are used in conjunction with lowered clock frequencies to minimize 
-  power consumption associated with components such as CPUs and DSPs; 
-  only when significant computational power is needed will the voltage 
-  and frequency be raised.
-
-  Some peripherals also support low voltage operational modes. For 
-  example, low power MMC and SD cards can run at 1.8 V as well as at 
-  3.3 V, and driver stacks may conserve power by switching to the 
-  lower voltage after detecting a card which supports it.
-
-  When leakage current is a significant factor in terms of power 
-  consumption, chips are often designed so that portions of them can 
-  be powered completely off. This is not usually viewed as being 
-  dynamic voltage scaling, because it is not transparent to software. 
-  When sections of chips can be turned off, as for example on TI OMAP3 
-  processors, drivers and other support software need to support that.
-
-  http://en.wikipedia.org/wiki/Dynamic_voltage_scaling
-
-Leakage current typically gets higher with higher frequencies, but 
-it's also highly process dependent AFAIK.
-
-If switching power dissipation is the main factor in power use, then 
-we can essentially assume that P ~ V^2, at the same frequency - and 
-scales linearly with frequency - but real work performed also scales 
-semi-linearly with frequency for many workloads, so that's an 
-invariant for everything except highly memory bound workloads.
-
-Thanks,
-
-	Ingo
