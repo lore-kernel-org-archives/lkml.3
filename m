@@ -1,131 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752942AbaFFRYm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 13:24:42 -0400
-Received: from goliath.siemens.de ([192.35.17.28]:34741 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752420AbaFFRTh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 13:19:37 -0400
-From: Jan Kiszka <jan.kiszka@siemens.com>
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
-        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
-        Borislav Petkov <bp@suse.de>,
-        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
-Subject: [PATCH v8 17/22] scripts/gdb: Add internal helper and convenience function for per-cpu lookup
-Date: Fri,  6 Jun 2014 19:18:58 +0200
-Message-Id: <8798e406453ac369607924e5b57ad9a41e40e15e.1402075141.git.jan.kiszka@siemens.com>
-X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
-In-Reply-To: <cover.1402075136.git.jan.kiszka@siemens.com>
-References: <cover.1402075136.git.jan.kiszka@siemens.com>
-In-Reply-To: <cover.1402075136.git.jan.kiszka@siemens.com>
-References: <cover.1402075136.git.jan.kiszka@siemens.com>
+	id S1751383AbaFFReo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 13:34:44 -0400
+Received: from mout.web.de ([212.227.17.12]:52536 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750876AbaFFRem (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 13:34:42 -0400
+From: Ken Helias <kenhelias@web.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Ken Helias <kenhelias@firemail.de>
+Subject: [PATCHv2 01/13] list: Use argument hlist_add_after names from rcu variant
+Date: Fri,  6 Jun 2014 19:34:20 +0200
+Message-Id: <1402076072-4044-1-git-send-email-kenhelias@web.de>
+X-Mailer: git-send-email 2.0.0
+X-Provags-ID: V03:K0:lTiBs9fL31fOhDhL3JgxioNH8YDR72tt3FHVa4s36oqo8R2QE8Q
+ eS6h389RJcK+Fm4z2esq9h1yrgSzC1ta5JNPquKCde8aY3fFAaXnBufnxQgl9apMH7v1ElX
+ zRdiLXJGAYNLul2OFoJGCvRwXZzjmd3nh+yC3obmd50juYb0He6mNaxlr41F3FIwoNBuIjJ
+ l4KjVgM5KtcT8gEQ3Z84A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function allows to obtain a per-cpu variable, either of the current
-or an explicitly specified CPU.
+From: Ken Helias <kenhelias@firemail.de>
 
-Note: sparc64 version is untested.
+The argument names of the hlist_add_after are poorly chosen because they look
+the same as the ones from hlist_add_before but have to be used completely
+different. This easily confuses the reader. The creator of the 
+hlist_add_after_rcu function has made a lot better choice.
 
-CC: "David S. Miller" <davem@davemloft.net>
-CC: sparclinux@vger.kernel.org
-Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+Signed-off-by: Ken Helias <kenhelias@firemail.de>
 ---
- scripts/gdb/linux/cpus.py  | 68 ++++++++++++++++++++++++++++++++++++++++++++++
- scripts/gdb/vmlinux-gdb.py |  1 +
- 2 files changed, 69 insertions(+)
- create mode 100644 scripts/gdb/linux/cpus.py
+v2:
+Splitted into two patches
 
-diff --git a/scripts/gdb/linux/cpus.py b/scripts/gdb/linux/cpus.py
-new file mode 100644
-index 0000000..18337e0
---- /dev/null
-+++ b/scripts/gdb/linux/cpus.py
-@@ -0,0 +1,68 @@
-+#
-+# gdb helper commands and functions for Linux kernel debugging
-+#
-+#  per-cpu tools
-+#
-+# Copyright (c) Siemens AG, 2011-2013
-+#
-+# Authors:
-+#  Jan Kiszka <jan.kiszka@siemens.com>
-+#
-+# This work is licensed under the terms of the GNU GPL version 2.
-+#
-+
-+import gdb
-+
-+from linux import tasks, utils
-+
-+
-+MAX_CPUS = 4096
-+
-+
-+def get_current_cpu():
-+    if utils.get_gdbserver_type() == utils.GDBSERVER_QEMU:
-+        return gdb.selected_thread().num - 1
-+    elif utils.get_gdbserver_type() == utils.GDBSERVER_KGDB:
-+        tid = gdb.selected_thread().ptid[2]
-+        if tid > (0x100000000 - MAX_CPUS - 2):
-+            return 0x100000000 - tid - 2
-+        else:
-+            return tasks.get_thread_info(tasks.get_task_by_pid(tid))['cpu']
-+    else:
-+        raise gdb.GdbError("Sorry, obtaining the current CPU is not yet "
-+                           "supported with this gdb server.")
-+
-+
-+def per_cpu(var_ptr, cpu):
-+    if cpu == -1:
-+        cpu = get_current_cpu()
-+    if utils.is_target_arch("sparc:v9"):
-+        offset = gdb.parse_and_eval(
-+            "trap_block[{0}].__per_cpu_base".format(str(cpu)))
-+    else:
-+        try:
-+            offset = gdb.parse_and_eval(
-+                "__per_cpu_offset[{0}]".format(str(cpu)))
-+        except gdb.error:
-+            # !CONFIG_SMP case
-+            offset = 0
-+    pointer = var_ptr.cast(utils.get_long_type()) + offset
-+    return pointer.cast(var_ptr.type).dereference()
-+
-+
-+class PerCpu(gdb.Function):
-+    """Return per-cpu variable.
-+
-+$lx_per_cpu("VAR"[, CPU]): Return the per-cpu variable called VAR for the
-+given CPU number. If CPU is omitted, the CPU of the current context is used.
-+Note that VAR has to be quoted as string."""
-+
-+    def __init__(self):
-+        super(PerCpu, self).__init__("lx_per_cpu")
-+
-+    def invoke(self, var_name, cpu=-1):
-+        var_ptr = gdb.parse_and_eval("&" + var_name.string())
-+        return per_cpu(var_ptr, cpu)
-+
-+
-+PerCpu()
-diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
-index 4d7eb2c..4848928 100644
---- a/scripts/gdb/vmlinux-gdb.py
-+++ b/scripts/gdb/vmlinux-gdb.py
-@@ -27,3 +27,4 @@ else:
-     import linux.modules
-     import linux.dmesg
-     import linux.tasks
-+    import linux.cpus
+ include/linux/list.h | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/include/linux/list.h b/include/linux/list.h
+index ef95941..624ec7f 100644
+--- a/include/linux/list.h
++++ b/include/linux/list.h
+@@ -654,15 +654,15 @@ static inline void hlist_add_before(struct hlist_node *n,
+ 	*(n->pprev) = n;
+ }
+ 
+-static inline void hlist_add_after(struct hlist_node *n,
+-					struct hlist_node *next)
++static inline void hlist_add_after(struct hlist_node *prev,
++				   struct hlist_node *n)
+ {
+-	next->next = n->next;
+-	n->next = next;
+-	next->pprev = &n->next;
++	n->next = prev->next;
++	prev->next = n;
++	n->pprev = &prev->next;
+ 
+-	if(next->next)
+-		next->next->pprev  = &next->next;
++	if (n->next)
++		n->next->pprev  = &n->next;
+ }
+ 
+ /* after that we'll appear to be on some hlist and hlist_del will work */
 -- 
-1.8.1.1.298.ge7eed54
+2.0.0
 
