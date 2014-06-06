@@ -1,72 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752117AbaFFPsJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 11:48:09 -0400
-Received: from mga01.intel.com ([192.55.52.88]:49279 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751692AbaFFPsG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 11:48:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,989,1392192000"; 
-   d="scan'208";a="543637757"
-Date: Fri, 6 Jun 2014 08:47:42 -0700
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: rafael.j.wysocki@intel.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, lenb@kernel.org, mingo@kernel.org,
-        tglx@linutronix.de, hpa@zytor.com, arjan@linux.intel.com,
-        rui.zhang@intel.com, luto@amacapital.net
-Subject: Re: [PATCH] idle, thermal, acpi: Remove home grown idle
- implementations
-Message-ID: <20140606084742.1ff06c12@ultegra>
-In-Reply-To: <20140605065520.GB3213@twins.programming.kicks-ass.net>
-References: <20140604085418.GA11096@twins.programming.kicks-ass.net>
-	<20140604015812.140a00d1@jacob-desktop>
-	<20140605065520.GB3213@twins.programming.kicks-ass.net>
-Organization: OTC
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752134AbaFFPtc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 11:49:32 -0400
+Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:36083 "EHLO
+	ducie-dc1.codethink.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751624AbaFFPtb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 11:49:31 -0400
+Message-ID: <5391E304.6030008@codethink.co.uk>
+Date: Fri, 06 Jun 2014 16:49:24 +0100
+From: Ben Dooks <ben.dooks@codethink.co.uk>
+Organization: Codethink Limited.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+CC: Ian Molton <ian.molton@codethink.co.uk>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        William Towle <william.towle@codethink.co.uk>
+Subject: Re: [GIT PULL for 3.16-rc1] updates and DT support for adv7604
+References: <20140605095535.7753cb6b.m.chehab@samsung.com>
+In-Reply-To: <20140605095535.7753cb6b.m.chehab@samsung.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 Jun 2014 08:55:20 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
+On 05/06/14 13:55, Mauro Carvalho Chehab wrote:
+> Linus,
+> 
+> Please pull from:
+>   git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media topic/adv76xx
+> 
+> For adv7604 driver updates, including DT support.
 
-> On Wed, Jun 04, 2014 at 01:58:12AM -0700, Jacob Pan wrote:
-> > On Wed, 4 Jun 2014 10:54:18 +0200
-> > Peter Zijlstra <peterz@infradead.org> wrote:
-> > 
-> > > 
-> > > I'm still sitting on this patch. Jacub you were going to make it
-> > > play nice with QoS?
-> > > 
-> > I had a patchset to work through system PM QOS and still maintain
-> > the idle injection efficiency. When I saw you did not merge the
-> > patch below, I thought you have abandoned it :)
-> 
-> I was waiting for you to do the QoS bits :-)
-> 
-> > The only issue as per our last discussion is the lack of
-> > notification when PM QOS cannot be met. But that is intrinsic to PM
-> > QOS itself.
-> > 
-> > I also consulted with Arjan and looked at directly intercept with
-> > intel_idle since both intel_powerclamp and intel_idle are arch
-> > specific drivers. But I think that is hard to do at per idle period
-> > basis, since we should still allow "natural" idle during the forced
-> > idle time.
-> > 
-> > So, I think we can take a two stepped approach,
-> > 1. integrate your patch with a
-> > updated version of https://lkml.org/lkml/2013/11/26/534 such that
-> > there is no performance/efficiency regression.
-> > 2. add notification mechanism to system qos when constraints cannot
-> > be met.
-> 
-> That's fine with me; can you respin those bits?
+Can we use the adv7611 for the adv7612 with these?
 
-yes, working on it. it may take some time since lots of testing needed.
-will include acpipad as well.
+-- 
+Ben Dooks				http://www.codethink.co.uk/
+Senior Engineer				Codethink - Providing Genius
