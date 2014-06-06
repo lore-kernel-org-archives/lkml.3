@@ -1,69 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752565AbaFFNXN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 09:23:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13814 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752128AbaFFNXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 09:23:11 -0400
-Date: Fri, 6 Jun 2014 15:22:47 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Andi Kleen <ak@linux.intel.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Stephane Eranian <eranian@google.com>, David Ahern <dsahern@gmail.com>,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] tools: perf: util: parse-events.c: Cleaning up missing
- null-terminate after strncpy call
-Message-ID: <20140606132247.GA1110@krava.brq.redhat.com>
-References: <1401918378-3842-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <20140604222047.GA16855@tassilo.jf.intel.com>
- <CAFo99gY_GZg7TY=H_UZBDL3dP2vL6NW-TCvtCDx+voY0uH80AA@mail.gmail.com>
- <20140604223114.GC16855@tassilo.jf.intel.com>
- <CAFo99gb4+_nn-5PonfgNfXfyB9PdqsiWX=VqgSxRUtP3oOhD9Q@mail.gmail.com>
+	id S1752490AbaFFNW4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 09:22:56 -0400
+Received: from relay.parallels.com ([195.214.232.42]:42644 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751722AbaFFNWv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 09:22:51 -0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: <akpm@linux-foundation.org>
+CC: <cl@linux.com>, <iamjoonsoo.kim@lge.com>, <rientjes@google.com>,
+        <penberg@kernel.org>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
+Subject: [PATCH -mm v2 1/8] memcg: cleanup memcg_cache_params refcnt usage
+Date: Fri, 6 Jun 2014 17:22:38 +0400
+Message-ID: <178605c7465356f9cf00ee0f2cb52e554085abc0.1402060096.git.vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <cover.1402060096.git.vdavydov@parallels.com>
+References: <cover.1402060096.git.vdavydov@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFo99gb4+_nn-5PonfgNfXfyB9PdqsiWX=VqgSxRUtP3oOhD9Q@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-Originating-IP: [10.24.25.3]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 06, 2014 at 03:16:56PM +0200, Rickard Strandqvist wrote:
-> Hi
-> 
-> I really do not want to complicate things here, both work course here.
-> But sptlcpy is definitely faster. But this is hardly time-critical
-> code, so maybe it looks better to use snprintf in both cases.
-> 
-> I vote for sptlcpy, but who decides?
-> Someone decides and I submit another patch :-)
+Currently, we count the number of pages allocated to a per memcg cache
+in memcg_cache_params->nr_pages. We only use this counter to find out if
+the cache is empty and can be destroyed. So let's rename it to refcnt
+and make it count not pages, but slabs so that we can use atomic_inc/dec
+instead of atomic_add/sub in memcg_charge/uncharge_slab.
 
-I vote for snprintf ;-)
+Also, as the number of slabs theoretically can be greater than INT_MAX,
+let's use atomic_long for the counter.
 
-jirka
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Acked-by: Christoph Lameter <cl@linux.com>
+---
+ include/linux/slab.h |    4 ++--
+ mm/memcontrol.c      |    6 +++---
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-> 
-> Best regards
-> Rickard Strandqvist
-> 
-> 
-> 2014-06-05 0:31 GMT+02:00 Andi Kleen <ak@linux.intel.com>:
-> > On Thu, Jun 05, 2014 at 12:23:55AM +0200, Rickard Strandqvist wrote:
-> >> Hi
-> >>
-> >> A little embarrassing, but I actually did not know that there was a
-> >> better replacement for strncpy.
-> >
-> > This works for perf, but not in general because standard glibc
-> > does not have strlcpy. snprintf works always.
-> >
-> > In practice if you could tolerate strncpy always zeroing
-> > the complete string before you can also tolerate snprintf.
-> >
-> > -Andi
+diff --git a/include/linux/slab.h b/include/linux/slab.h
+index 1d9abb7d22a0..1985bd9bec7d 100644
+--- a/include/linux/slab.h
++++ b/include/linux/slab.h
+@@ -526,7 +526,7 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
+  * @memcg: pointer to the memcg this cache belongs to
+  * @list: list_head for the list of all caches in this memcg
+  * @root_cache: pointer to the global, root cache, this cache was derived from
+- * @nr_pages: number of pages that belongs to this cache.
++ * @refcnt: reference counter
+  */
+ struct memcg_cache_params {
+ 	bool is_root_cache;
+@@ -539,7 +539,7 @@ struct memcg_cache_params {
+ 			struct mem_cgroup *memcg;
+ 			struct list_head list;
+ 			struct kmem_cache *root_cache;
+-			atomic_t nr_pages;
++			atomic_long_t refcnt;
+ 		};
+ 	};
+ };
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 15bda8133ff9..98a24e5ea4b5 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3279,7 +3279,7 @@ static void memcg_unregister_all_caches(struct mem_cgroup *memcg)
+ 	list_for_each_entry_safe(params, tmp, &memcg->memcg_slab_caches, list) {
+ 		cachep = memcg_params_to_cache(params);
+ 		kmem_cache_shrink(cachep);
+-		if (atomic_read(&cachep->memcg_params->nr_pages) == 0)
++		if (atomic_long_read(&cachep->memcg_params->refcnt) == 0)
+ 			memcg_unregister_cache(cachep);
+ 	}
+ 	mutex_unlock(&memcg_slab_mutex);
+@@ -3353,14 +3353,14 @@ int __memcg_charge_slab(struct kmem_cache *cachep, gfp_t gfp, int order)
+ 	res = memcg_charge_kmem(cachep->memcg_params->memcg, gfp,
+ 				PAGE_SIZE << order);
+ 	if (!res)
+-		atomic_add(1 << order, &cachep->memcg_params->nr_pages);
++		atomic_long_inc(&cachep->memcg_params->refcnt);
+ 	return res;
+ }
+ 
+ void __memcg_uncharge_slab(struct kmem_cache *cachep, int order)
+ {
+ 	memcg_uncharge_kmem(cachep->memcg_params->memcg, PAGE_SIZE << order);
+-	atomic_sub(1 << order, &cachep->memcg_params->nr_pages);
++	atomic_long_dec(&cachep->memcg_params->refcnt);
+ }
+ 
+ /*
+-- 
+1.7.10.4
+
