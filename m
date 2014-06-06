@@ -1,141 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751732AbaFFLqv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 07:46:51 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:52976 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750939AbaFFLqg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 07:46:36 -0400
-From: =?UTF-8?q?Matias=20Bj=C3=B8rling?= <m@bjorling.me>
-To: axboe@fb.com
-Cc: linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Matias=20Bj=C3=B8rling?= <m@bjorling.me>
-Subject: [PATCH] block: blk_rq_set_block_pc overwrites __data_len
-Date: Fri,  6 Jun 2014 13:46:01 +0200
-Message-Id: <1402055161-25533-2-git-send-email-m@bjorling.me>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1402055161-25533-1-git-send-email-m@bjorling.me>
-References: <1402055161-25533-1-git-send-email-m@bjorling.me>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1751233AbaFFLuQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 07:50:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50773 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750759AbaFFLuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 07:50:14 -0400
+Message-ID: <1402055410.5859.12.camel@marge.simpson.net>
+Subject: Re: sched: how to pick runqueue when checking task hot?
+From: Mike Galbraith <mgalbraith@suse.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: zhdxzx@sina.com, linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, dhillf <dhillf@gmail.com>,
+        "hillf.zj" <hillf.zj@alibaba-inc.com>
+Date: Fri, 06 Jun 2014 13:50:10 +0200
+In-Reply-To: <20140606113454.GR3213@twins.programming.kicks-ass.net>
+References: <20140606065956.854A6718001@webmail.sinamail.sina.com.cn>
+	 <20140606101508.GP3213@twins.programming.kicks-ass.net>
+	 <1402053383.5859.8.camel@marge.simpson.net>
+	 <20140606113454.GR3213@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Drivers that issue REQ_TYPE_BLOCK_PC command, calls blk_rq_map_kern() before
-the command is intialized to REQ_TYPE_BLOCK_PC. As blk_rq_map_kern() increases
-rq->__data_len, and blk_rq_set_block_pc sets it to zero. Results in a zero
-request being sent to hw.
+On Fri, 2014-06-06 at 13:34 +0200, Peter Zijlstra wrote: 
+> On Fri, Jun 06, 2014 at 01:16:23PM +0200, Mike Galbraith wrote:
+> > On Fri, 2014-06-06 at 12:15 +0200, Peter Zijlstra wrote:
+> > 
+> > > > --- a/kernel/sched/fair.c	Fri Jun  6 12:37:37 2014
+> > > > +++ b/kernel/sched/fair.c	Fri Jun  6 14:32:34 2014
+> > > > @@ -5051,7 +5051,7 @@ task_hot(struct task_struct *p, u64 now)
+> > > >  	/*
+> > > >  	 * Buddy candidates are cache hot:
+> > > >  	 */
+> > > > -	if (sched_feat(CACHE_HOT_BUDDY) && this_rq()->nr_running &&
+> > > > +	if (sched_feat(CACHE_HOT_BUDDY) && task_rq(p)->nr_running &&
+> > > >  			(&p->se == cfs_rq_of(&p->se)->next ||
+> > > >  			 &p->se == cfs_rq_of(&p->se)->last))
+> > > >  		return 1;
+> > > 
+> > > That does appear to make more sense indeed, seeing how buddies are pairs
+> > > of tasks, so protecting a lone task doesn't make sense.
+> > > 
+> > > 
+> > > Mike, how did you intend this code to work?
+> > 
+> > IIRC, this_rq()->nr_running was to say if we're idle, we don't care that
+> > it's last/next, pull it.  Not sure I'm the one who did that, but could
+> > be, I didn't look.
+> > 
+> 
+> commit f685ceacab07d3f6c236f04803e2f2f0dbcc5afb
+> Author: Mike Galbraith <efault@gmx.de>
+> Date:   Fri Oct 23 23:09:22 2009 +0200
+> 
+>     sched: Strengthen buddies and mitigate buddy induced latencies
+> 
+> ...
+> 
+> -       if (sched_feat(CACHE_HOT_BUDDY) &&
+> +       if (sched_feat(CACHE_HOT_BUDDY) && this_rq()->nr_running &&
+>                         (&p->se == cfs_rq_of(&p->se)->next ||
+>                          &p->se == cfs_rq_of(&p->se)->last))
+> 
+> Yeah, was you ;-)
 
-Signed-off-by: Matias Bjørling <m@bjorling.me>
----
- drivers/block/pktcdvd.c                    | 2 +-
- drivers/cdrom/cdrom.c                      | 2 +-
- drivers/scsi/device_handler/scsi_dh_alua.c | 2 +-
- drivers/scsi/device_handler/scsi_dh_rdac.c | 2 +-
- drivers/scsi/scsi_lib.c                    | 2 +-
- 5 files changed, 5 insertions(+), 5 deletions(-)
+    Last hunk prevents buddies from stymieing BALANCE_NEWIDLE via
+    CACHE_HOT_BUDDY.
 
-diff --git a/drivers/block/pktcdvd.c b/drivers/block/pktcdvd.c
-index 0ce8a3e..758ac44 100644
---- a/drivers/block/pktcdvd.c
-+++ b/drivers/block/pktcdvd.c
-@@ -704,6 +704,7 @@ static int pkt_generic_packet(struct pktcdvd_device *pd, struct packet_command *
- 
- 	rq = blk_get_request(q, (cgc->data_direction == CGC_DATA_WRITE) ?
- 			     WRITE : READ, __GFP_WAIT);
-+	blk_rq_set_block_pc(rq);
- 
- 	if (cgc->buflen) {
- 		ret = blk_rq_map_kern(q, rq, cgc->buffer, cgc->buflen,
-@@ -712,7 +713,6 @@ static int pkt_generic_packet(struct pktcdvd_device *pd, struct packet_command *
- 			goto out;
- 	}
- 
--	blk_rq_set_block_pc(rq);
- 	rq->cmd_len = COMMAND_SIZE(cgc->cmd[0]);
- 	memcpy(rq->cmd, cgc->cmd, CDROM_PACKET_SIZE);
- 
-diff --git a/drivers/cdrom/cdrom.c b/drivers/cdrom/cdrom.c
-index 4d10024..0f40c95 100644
---- a/drivers/cdrom/cdrom.c
-+++ b/drivers/cdrom/cdrom.c
-@@ -2184,6 +2184,7 @@ static int cdrom_read_cdda_bpc(struct cdrom_device_info *cdi, __u8 __user *ubuf,
- 			ret = -ENOMEM;
- 			break;
- 		}
-+		blk_rq_set_block_pc(rq);
- 
- 		ret = blk_rq_map_user(q, rq, NULL, ubuf, len, GFP_KERNEL);
- 		if (ret) {
-@@ -2191,7 +2192,6 @@ static int cdrom_read_cdda_bpc(struct cdrom_device_info *cdi, __u8 __user *ubuf,
- 			break;
- 		}
- 
--		blk_rq_set_block_pc(rq);
- 		rq->cmd[0] = GPCMD_READ_CD;
- 		rq->cmd[1] = 1 << 2;
- 		rq->cmd[2] = (lba >> 24) & 0xff;
-diff --git a/drivers/scsi/device_handler/scsi_dh_alua.c b/drivers/scsi/device_handler/scsi_dh_alua.c
-index 3dcd93f..7bcf67e 100644
---- a/drivers/scsi/device_handler/scsi_dh_alua.c
-+++ b/drivers/scsi/device_handler/scsi_dh_alua.c
-@@ -120,6 +120,7 @@ static struct request *get_alua_req(struct scsi_device *sdev,
- 			    "%s: blk_get_request failed\n", __func__);
- 		return NULL;
- 	}
-+	blk_rq_set_block_pc(rq);
- 
- 	if (buflen && blk_rq_map_kern(q, rq, buffer, buflen, GFP_NOIO)) {
- 		blk_put_request(rq);
-@@ -128,7 +129,6 @@ static struct request *get_alua_req(struct scsi_device *sdev,
- 		return NULL;
- 	}
- 
--	blk_rq_set_block_pc(rq);
- 	rq->cmd_flags |= REQ_FAILFAST_DEV | REQ_FAILFAST_TRANSPORT |
- 			 REQ_FAILFAST_DRIVER;
- 	rq->retries = ALUA_FAILOVER_RETRIES;
-diff --git a/drivers/scsi/device_handler/scsi_dh_rdac.c b/drivers/scsi/device_handler/scsi_dh_rdac.c
-index ea35f0a..826069d 100644
---- a/drivers/scsi/device_handler/scsi_dh_rdac.c
-+++ b/drivers/scsi/device_handler/scsi_dh_rdac.c
-@@ -279,6 +279,7 @@ static struct request *get_rdac_req(struct scsi_device *sdev,
- 				"get_rdac_req: blk_get_request failed.\n");
- 		return NULL;
- 	}
-+	blk_rq_set_block_pc(rq);
- 
- 	if (buflen && blk_rq_map_kern(q, rq, buffer, buflen, GFP_NOIO)) {
- 		blk_put_request(rq);
-@@ -287,7 +288,6 @@ static struct request *get_rdac_req(struct scsi_device *sdev,
- 		return NULL;
- 	}
- 
--	blk_rq_set_block_pc(rq);
- 	rq->cmd_flags |= REQ_FAILFAST_DEV | REQ_FAILFAST_TRANSPORT |
- 			 REQ_FAILFAST_DRIVER;
- 	rq->retries = RDAC_RETRIES;
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index 6660e43..c3c1697 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -195,12 +195,12 @@ int scsi_execute(struct scsi_device *sdev, const unsigned char *cmd,
- 	req = blk_get_request(sdev->request_queue, write, __GFP_WAIT);
- 	if (!req)
- 		return ret;
-+	blk_rq_set_block_pc(req);
- 
- 	if (bufflen &&	blk_rq_map_kern(sdev->request_queue, req,
- 					buffer, bufflen, __GFP_WAIT))
- 		goto out;
- 
--	blk_rq_set_block_pc(req);
- 	req->cmd_len = COMMAND_SIZE(cmd[0]);
- 	memcpy(req->cmd, cmd, req->cmd_len);
- 	req->sense = sense;
--- 
-1.9.1
+Last hunk, first hunk, whatever, that's what it was for :)
+
+-Mike
 
