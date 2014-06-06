@@ -1,71 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752237AbaFFPah (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 11:30:37 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58095 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751692AbaFFPag convert rfc822-to-8bit (ORCPT
+	id S1752113AbaFFPcn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 11:32:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37453 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809AbaFFPcl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 11:30:36 -0400
-Date: Fri, 6 Jun 2014 17:30:33 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andrey Ryabinin <a.ryabinin@samsung.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, koct9i@gmail.com, stable@vger.kernel.org,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH v2] mm: rmap: fix use-after-free in __put_anon_vma
-Message-ID: <20140606153033.GC11371@laptop.programming.kicks-ass.net>
-References: <20140606115620.GS3213@twins.programming.kicks-ass.net>
- <1402067370-5773-1-git-send-email-a.ryabinin@samsung.com>
+	Fri, 6 Jun 2014 11:32:41 -0400
+Date: Fri, 6 Jun 2014 08:32:33 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Satoru Takeuchi <satoru.takeuchi@gmail.com>
+Cc: Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        shuah.kh@samsung.com, stable@vger.kernel.org
+Subject: Re: [PATCH 3.14 000/228] 3.14.6-stable review
+Message-ID: <20140606153233.GC13635@kroah.com>
+References: <20140604232347.966798903@linuxfoundation.org>
+ <20140605232008.GB14136@kroah.com>
+ <20140606075310.GC13355@roeck-us.net>
+ <87d2emay69.wl%satoru.takeuchi@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <1402067370-5773-1-git-send-email-a.ryabinin@samsung.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <87d2emay69.wl%satoru.takeuchi@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 06, 2014 at 07:09:30PM +0400, Andrey Ryabinin wrote:
-> While working address sanitizer for kernel I've discovered use-after-free
-> bug in __put_anon_vma.
-> For the last anon_vma, anon_vma->root freed before child anon_vma.
-> Later in anon_vma_free(anon_vma) we are referencing to already freed anon_vma->root
-> to check rwsem.
-> This patch puts freeing of child anon_vma before freeing of anon_vma->root.
+On Fri, Jun 06, 2014 at 11:51:42PM +0900, Satoru Takeuchi wrote:
+> Hi Greg,
 > 
-> Cc: <stable@vger.kernel.org> # v3.0+
+> At Fri, 6 Jun 2014 00:53:10 -0700,
+> Guenter Roeck wrote:
+> > 
+> > On Thu, Jun 05, 2014 at 04:20:08PM -0700, Greg Kroah-Hartman wrote:
+> > > On Wed, Jun 04, 2014 at 04:20:29PM -0700, Greg Kroah-Hartman wrote:
+> > > > This is the start of the stable review cycle for the 3.14.6 release.
+> > > > There are 228 patches in this series, all will be posted as a response
+> > > > to this one.  If anyone has any issues with these being applied, please
+> > > > let me know.
+> > > > 
+> > > > Responses should be made by Fri Jun  6 23:23:11 UTC 2014.
+> > > > Anything received after that time might be too late.
+> > > > 
+> > > > The whole patch series can be found in one patch at:
+> > > > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.14.6-rc1.gz
+> > > > and the diffstat can be found below.
+> > > 
+> > > I've updated the stable tree with the futex patches as lots of people
+> > > have been asking me about them, so here is a -rc2 with them
+> > > incorporated:
+> > > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.14.6-rc1.gz
+> 
+> "s/-rc1/-rc2/" ? I used the following one.
 
-Acked-by: Peter Zijlstra <peterz@infradead.org>
+Yes, sorry :(
 
-> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
-> ---
+> https://www.kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.14.6-rc2.xz
 > 
-> Changes since v1:
->  - just made it more simple following Peter's suggestion
+> > > 
+> > 
+> > Build and qemu tests are still ok. Same applies to 3.4 and 3.10.
 > 
->  mm/rmap.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+> 3.14.6-rc2, 3.10.42-rc1, and 3.4.92-rc1 passed my test.
 > 
-> diff --git a/mm/rmap.c b/mm/rmap.c
-> index 9c3e773..cb5f70a 100644
-> --- a/mm/rmap.c
-> +++ b/mm/rmap.c
-> @@ -1564,10 +1564,10 @@ void __put_anon_vma(struct anon_vma *anon_vma)
->  {
->  	struct anon_vma *root = anon_vma->root;
->  
-> +	anon_vma_free(anon_vma);
-> +
->  	if (root != anon_vma && atomic_dec_and_test(&root->refcount))
->  		anon_vma_free(root);
-> -
-> -	anon_vma_free(anon_vma);
->  }
->  
->  static struct anon_vma *rmap_walk_anon_lock(struct page *page,
-> -- 
-> 1.8.5.5
+>  - Test Cases:
+>    - Build this kernel.
+>    - Boot this kernel.
+>    - Build the latest mainline kernel with this kernel.
 > 
+>  - Test Tool:
+>    https://github.com/satoru-takeuchi/test-linux-stable
+> 
+>  - Test Result (kernel .config, ktest config and test log):
+>    http://satoru-takeuchi.org/test-linux-stable/results/<version>-<test datetime>.tar.xz
+> 
+>  - Build Environment:
+>    - OS: Debian Jessy x86_64
+>    - CPU: Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz x 4
+>    - memory: 8GB
+> 
+>  - Test Target Environment:
+>    - Debian Jessy x86_64 (KVM guest on the Build Environment)
+>    - # of vCPU: 2
+>    - memory: 2GB
+
+Great, thanks for testing and letting me know.
+
+greg k-h
