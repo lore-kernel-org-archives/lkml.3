@@ -1,87 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752043AbaFFOGS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 10:06:18 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:41512 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751541AbaFFOGR (ORCPT
+	id S1751871AbaFFOHi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 10:07:38 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:35067 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751174AbaFFOHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 10:06:17 -0400
-From: Stephane Viau <sviau@codeaurora.org>
-To: robdclark@gmail.com
-Cc: dri-devel@lists.freedesktop.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Stephane Viau <sviau@codeaurora.org>
-Subject: [PATCH] drm/msm/hdmi: set hdp clock rate before prepare_enable call
-Date: Fri,  6 Jun 2014 10:03:32 -0400
-Message-Id: <1402063412-10407-1-git-send-email-sviau@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
+	Fri, 6 Jun 2014 10:07:37 -0400
+Date: Fri, 6 Jun 2014 16:07:32 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Trond Myklebust <trond.myklebust@primarydata.com>
+Cc: linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH] Revert lockdep check in raw_seqcount_begin
+Message-ID: <20140606140732.GA11371@laptop.programming.kicks-ass.net>
+References: <1401982261-11246-1-git-send-email-trond.myklebust@primarydata.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401982261-11246-1-git-send-email-trond.myklebust@primarydata.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The clock driver usually complains when a clock is being prepared
-before setting its rate. It is the case here for "core_clk" which
-needs to be set at 19.2 MHz before we attempt a prepare_enable().
+On Thu, Jun 05, 2014 at 11:31:01AM -0400, Trond Myklebust wrote:
+> This commit reverts the addition of lockdep checking to raw_seqcount_begin
+> for the following reasons:
+> 
+> 1) It violates the naming convention that raw_* functions should not
+>    do lockdep checks (a convention that is also followed by the other
+>    raw_*_seqcount_begin functions).
+> 2) raw_seqcount_begin does not spin, so it can only be part of an ABBA
+>    deadlock in very special circumstances (for instance if a lock
+>    is held across the entire raw_seqcount_begin()+read_seqcount_retry()
+>    loop while also being taken inside the write_seqcount protected area).
+> 3) It is causing false positives with some existing callers, and there
+>    is no non-lockdep alternative for those callers to use.
+> 
+> None of the three existing callers (__d_lookup_rcu, netdev_get_name, and
+> the NFS state code) appear to use the function in a manner that is ABBA
+> deadlock prone.
+> 
+> Fixes: 1ca7d67cf5d5: seqcount: Add lockdep functionality to seqcount/seqlock
+> Cc: John Stultz <john.stultz@linaro.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: Al Viro <viro@zeniv.linux.org.uk>
+> Link: http://lkml.kernel.org/r/CAHQdGtRR6SvEhXiqWo24hoUh9AU9cL82Z8Z-d8-7u951F_d+5g@mail.gmail.com
+> Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 
-Signed-off-by: Stephane Viau <sviau@codeaurora.org>
----
- drivers/gpu/drm/msm/hdmi/hdmi.c           | 2 ++
- drivers/gpu/drm/msm/hdmi/hdmi.h           | 1 +
- drivers/gpu/drm/msm/hdmi/hdmi_connector.c | 8 ++++++++
- 3 files changed, 11 insertions(+)
-
-diff --git a/drivers/gpu/drm/msm/hdmi/hdmi.c b/drivers/gpu/drm/msm/hdmi/hdmi.c
-index ae750f6..7f7aade 100644
---- a/drivers/gpu/drm/msm/hdmi/hdmi.c
-+++ b/drivers/gpu/drm/msm/hdmi/hdmi.c
-@@ -277,6 +277,7 @@ static int hdmi_bind(struct device *dev, struct device *master, void *data)
- 	static const char *hpd_reg_names[] = {"hpd-gdsc", "hpd-5v"};
- 	static const char *pwr_reg_names[] = {"core-vdda", "core-vcc"};
- 	static const char *hpd_clk_names[] = {"iface_clk", "core_clk", "mdp_core_clk"};
-+	static unsigned long hpd_clk_freq[] = {0, 19200000, 0};
- 	static const char *pwr_clk_names[] = {"extp_clk", "alt_iface_clk"};
- 
- 	config.phy_init      = hdmi_phy_8x74_init;
-@@ -286,6 +287,7 @@ static int hdmi_bind(struct device *dev, struct device *master, void *data)
- 	config.pwr_reg_names = pwr_reg_names;
- 	config.pwr_reg_cnt   = ARRAY_SIZE(pwr_reg_names);
- 	config.hpd_clk_names = hpd_clk_names;
-+	config.hpd_freq      = hpd_clk_freq;
- 	config.hpd_clk_cnt   = ARRAY_SIZE(hpd_clk_names);
- 	config.pwr_clk_names = pwr_clk_names;
- 	config.pwr_clk_cnt   = ARRAY_SIZE(pwr_clk_names);
-diff --git a/drivers/gpu/drm/msm/hdmi/hdmi.h b/drivers/gpu/drm/msm/hdmi/hdmi.h
-index 9fafee6..9d7723c 100644
---- a/drivers/gpu/drm/msm/hdmi/hdmi.h
-+++ b/drivers/gpu/drm/msm/hdmi/hdmi.h
-@@ -87,6 +87,7 @@ struct hdmi_platform_config {
- 
- 	/* clks that need to be on for hpd: */
- 	const char **hpd_clk_names;
-+	const long unsigned *hpd_freq;
- 	int hpd_clk_cnt;
- 
- 	/* clks that need to be on for screen pwr (ie pixel clk): */
-diff --git a/drivers/gpu/drm/msm/hdmi/hdmi_connector.c b/drivers/gpu/drm/msm/hdmi/hdmi_connector.c
-index 7dedfdd..93d1551 100644
---- a/drivers/gpu/drm/msm/hdmi/hdmi_connector.c
-+++ b/drivers/gpu/drm/msm/hdmi/hdmi_connector.c
-@@ -127,6 +127,14 @@ static int hpd_enable(struct hdmi_connector *hdmi_connector)
- 	}
- 
- 	for (i = 0; i < config->hpd_clk_cnt; i++) {
-+		if (config->hpd_freq[i]) {
-+			ret = clk_set_rate(hdmi->hpd_clks[i],
-+					config->hpd_freq[i]);
-+			if (ret)
-+				dev_warn(dev->dev, "failed to set clk %s (%d)\n",
-+						config->hpd_clk_names[i], ret);
-+		}
-+
- 		ret = clk_prepare_enable(hdmi->hpd_clks[i]);
- 		if (ret) {
- 			dev_err(dev->dev, "failed to enable hpd clk: %s (%d)\n",
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+Thanks Trond!
