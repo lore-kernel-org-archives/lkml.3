@@ -1,78 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752260AbaFFQab (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 12:30:31 -0400
-Received: from mail-by2lp0239.outbound.protection.outlook.com ([207.46.163.239]:41664
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751854AbaFFQaa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 12:30:30 -0400
-X-WSS-ID: 0N6R9UN-07-NRS-02
-X-M-MSG: 
-Message-ID: <5391EC92.8040500@amd.com>
-Date: Fri, 6 Jun 2014 11:30:10 -0500
-From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752083AbaFFQjm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 12:39:42 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:64180 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751624AbaFFQjk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 12:39:40 -0400
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>
-CC: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jacob Shin <jacob.w.shin@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, xiakaixu <xiakaixu@huawei.com>
-Subject: Re: [PATCH 2/4] perf tools: allow user to specify hardware breakpoint
- bp_len
-References: <1401377213-24551-1-git-send-email-fweisbec@gmail.com>
- <1401377213-24551-3-git-send-email-fweisbec@gmail.com>
- <20140530133906.GC7427@krava.brq.redhat.com>
- <87mwduepux.fsf@sejong.aot.lge.com>
- <20140603115503.GA2864@krava.brq.redhat.com>
-In-Reply-To: <20140603115503.GA2864@krava.brq.redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428001)(479174003)(377454003)(189002)(199002)(51704005)(24454002)(164054003)(101416001)(84676001)(36756003)(46102001)(64126003)(20776003)(65956001)(50466002)(83072002)(85852003)(4396001)(65806001)(79102001)(64706001)(83506001)(81342001)(65816999)(47776003)(99396002)(68736004)(102836001)(80022001)(81542001)(86362001)(76482001)(92566001)(92726001)(87936001)(97736001)(93886002)(59896001)(77982001)(21056001)(23756003)(33656002)(74502001)(44976005)(80316001)(54356999)(76176999)(31966008)(74662001)(77096999)(87266999)(50986999)(19580405001)(83322001)(19580395003);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR02MB202;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
-X-Forefront-PRVS: 023495660C
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+X-Originating-IP: [2a01:e35:2434:4600:61b0:c77e:e905:5cc9]
+In-Reply-To: <1402002841.9207.260.camel@ul30vt.home>
+References: <1401987808-23596-1-git-send-email-a.motakis@virtualopensystems.com>
+ <1401987808-23596-11-git-send-email-a.motakis@virtualopensystems.com> <1402002841.9207.260.camel@ul30vt.home>
+From: Antonios Motakis <a.motakis@virtualopensystems.com>
+Date: Fri, 6 Jun 2014 18:39:19 +0200
+Message-ID: <CAG8rG2yqDWW03o74Hq1N=p7hKgrSLt1CAAFkLy=79RPvqp6=Mw@mail.gmail.com>
+Subject: Re: [RFC PATCH v6 10/20] vfio/platform: return info for device and
+ its memory mapped IO regions
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: kvm-arm <kvmarm@lists.cs.columbia.edu>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        VirtualOpenSystems Technical Team <tech@virtualopensystems.com>,
+        alvise rigo <a.rigo@virtualopensystems.com>,
+        KVM devel mailing list <kvm@vger.kernel.org>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Kim Phillips <kim.phillips@freescale.com>,
+        Stuart Yoder <stuart.yoder@freescale.com>,
+        Eric Auger <eric.auger@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Vladimir Murzin <vladimir.murzin@arm.com>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/3/2014 6:55 AM, Jiri Olsa wrote:
-> On Tue, Jun 03, 2014 at 10:36:22AM +0900, Namhyung Kim wrote:
->> Hi Jiri,
+On Thu, Jun 5, 2014 at 11:14 PM, Alex Williamson
+<alex.williamson@redhat.com> wrote:
+> On Thu, 2014-06-05 at 19:03 +0200, Antonios Motakis wrote:
+>> A VFIO userspace driver will start by opening the VFIO device
+>> that corresponds to an IOMMU group, and will use the ioctl interface
+>> to get the basic device info, such as number of memory regions and
+>> interrupts, and their properties.
 >>
->> On Fri, 30 May 2014 15:39:06 +0200, Jiri Olsa wrote:
->>> On Thu, May 29, 2014 at 05:26:51PM +0200, Frederic Weisbecker wrote:
->>>> From: Jacob Shin <jacob.w.shin@gmail.com>
->>>>
->>>> Currently bp_len is given a default value of 4. Allow user to override it:
->>>>
->>>>    $ perf stat -e mem:0x1000/8
->>>>                              ^
->>>>                              bp_len
->>>>
->>>> If no value is given, it will default to 4 as it did before.
->>>
->>> Namhyung,
->>> both perf tols patches from this patchset mess up with hists
->>> tests..  I havent found any connection yet.. any idea? ;-)
+>> This patch enables the IOCTLs:
+>>  - VFIO_DEVICE_GET_INFO
+>>  - VFIO_DEVICE_GET_REGION_INFO
 >>
->> So you already found the problem in the hpp->elide change and that's the
->> reason of the failure, right? :)
+>> IRQ info is provided by one of the latter patches.
+>>
+>> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+>> ---
+>>  drivers/vfio/platform/vfio_platform.c         | 79 +++++++++++++++++++++++++--
+>>  drivers/vfio/platform/vfio_platform_private.h | 17 ++++++
+>>  2 files changed, 90 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/drivers/vfio/platform/vfio_platform.c b/drivers/vfio/platform/vfio_platform.c
+>> index 1df76d8..eeaebc4 100644
+>> --- a/drivers/vfio/platform/vfio_platform.c
+>> +++ b/drivers/vfio/platform/vfio_platform.c
+>> @@ -34,17 +34,66 @@
+>>  #define DRIVER_AUTHOR   "Antonios Motakis <a.motakis@virtualopensystems.com>"
+>>  #define DRIVER_DESC     "VFIO for platform devices - User Level meta-driver"
+>>
+>> +static int vfio_platform_regions_init(struct vfio_platform_device *vdev)
+>> +{
+>> +     int cnt = 0, i;
+>> +
+>> +     while (platform_get_resource(vdev->pdev, IORESOURCE_MEM, cnt))
+>> +             cnt++;
+>> +
+>> +     vdev->region = kzalloc(sizeof(struct vfio_platform_region) * cnt,
+>> +                             GFP_KERNEL);
+>> +     if (!vdev->region)
+>> +             return -ENOMEM;
+>> +
+>> +     for (i = 0; i < cnt;  i++) {
+>> +             struct resource *res =
+>> +                     platform_get_resource(vdev->pdev, IORESOURCE_MEM, i);
+>> +
+>> +             if (!res)
+>> +                     goto err;
+>> +
+>> +             vdev->region[i].addr = res->start;
+>> +             vdev->region[i].size = resource_size(res);
+>> +             vdev->region[i].flags = 0;
+>> +     }
+>> +
+>> +     vdev->num_regions = cnt;
+>> +
+>> +     return 0;
+>> +err:
+>> +     kfree(vdev->region);
+>> +     return -EINVAL;
+>> +}
+>> +
+>> +static void vfio_platform_regions_cleanup(struct vfio_platform_device *vdev)
+>> +{
+>> +     vdev->num_regions = 0;
+>> +     kfree(vdev->region);
+>> +}
+>> +
+>>  static void vfio_platform_release(void *device_data)
+>>  {
+>> +     struct vfio_platform_device *vdev = device_data;
+>> +
+>> +     vfio_platform_regions_cleanup(vdev);
+>> +
+>>       module_put(THIS_MODULE);
+>>  }
+>>
+>>  static int vfio_platform_open(void *device_data)
+>>  {
+>> +     struct vfio_platform_device *vdev = device_data;
+>> +     int ret;
+>> +
+>>       if (!try_module_get(THIS_MODULE))
+>>               return -ENODEV;
+>>
+>> -     return 0;
+>> +     ret = vfio_platform_regions_init(vdev);
+>> +     if (ret)
+>> +             module_put(THIS_MODULE);
+>> +
+>> +     return ret;
 >
-> I haven't got a chance to test it yet.. but it looks like
-> thats the case.. I'll retest soon ;-)
+> The user can call VFIO_GROUP_GET_DEVICE_FD for a single device more than
+> once, vfio_pci maintains a reference count to make sure we only allocate
+> and initialize on the first open and cleanup on the last close.
 >
-> jirka
+
+Ack
+
+>>  }
+>>
+>>  static long vfio_platform_ioctl(void *device_data,
+>> @@ -65,18 +114,36 @@ static long vfio_platform_ioctl(void *device_data,
+>>                       return -EINVAL;
+>>
+>>               info.flags = VFIO_DEVICE_FLAGS_PLATFORM;
+>> -             info.num_regions = 0;
+>> +             info.num_regions = vdev->num_regions;
+>>               info.num_irqs = 0;
+>>
+>>               return copy_to_user((void __user *)arg, &info, minsz);
+>>
+>> -     } else if (cmd == VFIO_DEVICE_GET_REGION_INFO)
+>> -             return -EINVAL;
+>> +     } else if (cmd == VFIO_DEVICE_GET_REGION_INFO) {
+>> +             struct vfio_region_info info;
+>> +
+>> +             minsz = offsetofend(struct vfio_region_info, offset);
+>> +
+>> +             if (copy_from_user(&info, (void __user *)arg, minsz))
+>> +                     return -EFAULT;
+>> +
+>> +             if (info.argsz < minsz)
+>> +                     return -EINVAL;
+>> +
+>> +             if (info.index >= vdev->num_regions)
+>> +                     return -EINVAL;
+>> +
+>> +             /* map offset to the physical address  */
+>> +             info.offset = VFIO_PLATFORM_INDEX_TO_OFFSET(info.index);
+>> +             info.size = vdev->region[info.index].size;
+>> +             info.flags = vdev->region[info.index].flags;
+>> +
+>> +             return copy_to_user((void __user *)arg, &info, minsz);
+>>
+>> -     else if (cmd == VFIO_DEVICE_GET_IRQ_INFO)
+>> +     } else if (cmd == VFIO_DEVICE_GET_IRQ_INFO) {
+>>               return -EINVAL;
+>>
+>> -     else if (cmd == VFIO_DEVICE_SET_IRQS)
+>> +     } else if (cmd == VFIO_DEVICE_SET_IRQS)
+>>               return -EINVAL;
+>>
+>>       else if (cmd == VFIO_DEVICE_RESET)
+>> diff --git a/drivers/vfio/platform/vfio_platform_private.h b/drivers/vfio/platform/vfio_platform_private.h
+>> index 4ae88f8..3448f918 100644
+>> --- a/drivers/vfio/platform/vfio_platform_private.h
+>> +++ b/drivers/vfio/platform/vfio_platform_private.h
+>> @@ -15,8 +15,25 @@
+>>  #ifndef VFIO_PLATFORM_PRIVATE_H
+>>  #define VFIO_PLATFORM_PRIVATE_H
+>>
+>> +#define VFIO_PLATFORM_OFFSET_SHIFT   40
+>> +#define VFIO_PLATFORM_OFFSET_MASK (((u64)(1) << VFIO_PLATFORM_OFFSET_SHIFT) - 1)
+>> +
+>> +#define VFIO_PLATFORM_OFFSET_TO_INDEX(off)   \
+>> +     (off >> VFIO_PLATFORM_OFFSET_SHIFT)
+>> +
+>> +#define VFIO_PLATFORM_INDEX_TO_OFFSET(index) \
+>> +     ((u64)(index) << VFIO_PLATFORM_OFFSET_SHIFT)
+>> +
+>> +struct vfio_platform_region {
+>> +     u64                     addr;
+>> +     resource_size_t         size;
+>> +     u32                     flags;
+>> +};
+>> +
+>>  struct vfio_platform_device {
+>>       struct platform_device          *pdev;
+>> +     struct vfio_platform_region     *region;
 >
-Anything I can do to help here?
+> "regions" (plural) has slightly better consistency.  Thanks,
+>
 
-Thanks,
+Ack as well.
 
-Suravee
 
+-- 
+Antonios Motakis
+Virtual Open Systems
