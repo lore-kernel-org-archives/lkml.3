@@ -1,117 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752764AbaFFDyd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 23:54:33 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:2944 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752088AbaFFDyc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 23:54:32 -0400
-Date: Thu, 5 Jun 2014 23:54:30 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Ingo Molnar <mingo@redhat.com>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH ftrace/core 3/3] trace: Fix memory leak when new
- instance creation failed
-Message-ID: <20140605235430.1ece2c26@gandalf.local.home>
-In-Reply-To: <20140605223522.32311.31664.stgit@yunodevel>
-References: <20140605223515.32311.71203.stgit@yunodevel>
-	<20140605223522.32311.31664.stgit@yunodevel>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1752866AbaFFDyw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 23:54:52 -0400
+Received: from ozlabs.org ([103.22.144.67]:52590 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752223AbaFFDyu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 23:54:50 -0400
+Date: Fri, 6 Jun 2014 13:54:38 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexei Starovoitov <ast@plumgrid.com>
+Subject: linux-next: manual merge of the net-next tree with the net tree
+Message-ID: <20140606135438.06d7b7a5@canb.auug.org.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/xGsEp6NUHLEeZz8uk9qM=Ag"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 06 Jun 2014 07:35:22 +0900
-Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com> wrote:
+--Sig_/xGsEp6NUHLEeZz8uk9qM=Ag
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> Current new_instance_create() implements just two fail paths for four
-> allocation operations. So, it can induce memory leak if new instance
-> creation failed. This patch fixes it by defining all fail paths and
-> freeing allocated memories appropriately.
-> 
-> Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  kernel/trace/trace.c |   23 ++++++++++++++---------
->  1 file changed, 14 insertions(+), 9 deletions(-)
-> 
-> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-> index 473eb68..bbd86d2 100644
-> --- a/kernel/trace/trace.c
-> +++ b/kernel/trace/trace.c
-> @@ -6277,7 +6277,7 @@ static int new_instance_create(const char *name)
->  		goto out_free_tr;
->  
->  	if (!alloc_cpumask_var(&tr->tracing_cpumask, GFP_KERNEL))
-> -		goto out_free_tr;
-> +		goto out_free_tr_name;
->  
->  	cpumask_copy(tr->tracing_cpumask, cpu_all_mask);
->  
-> @@ -6291,16 +6291,16 @@ static int new_instance_create(const char *name)
->  	INIT_LIST_HEAD(&tr->events);
->  
->  	if (allocate_trace_buffers(tr, trace_buf_size) < 0)
-> -		goto out_free_tr;
-> +		goto out_free_cpumask_var;
->  
->  	tr->dir = debugfs_create_dir(name, trace_instance_dir);
->  	if (!tr->dir)
-> -		goto out_free_tr;
-> +		goto out_free_trace_buffers;
->  
->  	ret = event_trace_add_tracer(tr->dir, tr);
->  	if (ret) {
->  		debugfs_remove_recursive(tr->dir);
-> -		goto out_free_tr;
-> +		goto out_free_trace_buffers;
->  	}
->  
->  	init_tracer_debugfs(tr, tr->dir);
-> @@ -6311,18 +6311,23 @@ static int new_instance_create(const char *name)
->  
->  	return 0;
->  
-> - out_free_tr:
-> -	if (tr->trace_buffer.buffer)
-> -		ring_buffer_free(tr->trace_buffer.buffer);
-> + out_free_trace_buffers:
-> +	ring_buffer_free(tr->trace_buffer.buffer);
-> +	free_percpu(tr->trace_buffer.data);
-> +#ifdef CONFIG_TRACER_MAX_TRACE
-> +	ring_buffer_free(tr->max_buffer.buffer);
-> +	free_percpu(tr->max_buffer.data);
-> +#endif
+Hi all,
 
-I think we need a free_trace_buffer() that complements
-allocate_trace_buffer().
+Today's linux-next merge of the net-next tree got a conflict in
+net/core/filter.c between commit 0dcceabb0c1b ("net: filter: fix
+SKF_AD_PKTTYPE extension on big-endian") from the net tree and commit
+9739eef13c92 ("net: filter: make BPF conversion more readable") from
+the net-next tree.
 
--- Steve
+I fixed it up (not well, but see below) and can carry the fix as
+necessary (no action is required).
 
-> + out_free_cpumask_var:
->  	free_cpumask_var(tr->tracing_cpumask);
-> + out_free_tr_name:
->  	kfree(tr->name);
-> + out_free_tr:
->  	kfree(tr);
-> -
->   out_unlock:
->  	mutex_unlock(&trace_types_lock);
->  
->  	return ret;
-> -
->  }
->  
->  static int instance_delete(const char *name)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc net/core/filter.c
+index ab3c74e49f07,9de0c25323b4..000000000000
+--- a/net/core/filter.c
++++ b/net/core/filter.c
+@@@ -685,17 -684,7 +688,14 @@@ static bool convert_bpf_extensions(stru
+  		if (insn->off < 0)
+  			return false;
+  		insn++;
+-=20
+- 		insn->code =3D BPF_ALU | BPF_AND | BPF_K;
+- 		insn->a_reg =3D A_REG;
+- 		insn->imm =3D PKT_TYPE_MAX;
++ 		*insn =3D BPF_ALU32_IMM(BPF_AND, BPF_REG_A, PKT_TYPE_MAX);
+ +#ifdef __BIG_ENDIAN_BITFIELD
+ +		insn++;
+ +
+ +		insn->code =3D BPF_ALU | BPF_RSH | BPF_K;
+ +		insn->a_reg =3D A_REG;
+ +		insn->imm =3D 5;
+ +#endif
+  		break;
+ =20
+  	case SKF_AD_OFF + SKF_AD_IFINDEX:
+
+--Sig_/xGsEp6NUHLEeZz8uk9qM=Ag
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTkTuHAAoJEMDTa8Ir7ZwV06YP/3Y0xFPyuk+lSkWbdAHtUKT1
+Mo372rbFZvmtwZ2jlyS6ql4p0HgGOuv9W/hLsiLjmsI6rxfDPYGMp+n38M6Gobt9
+PwYvImST+B5eC6uBB1G0OCQWMbga9sCEozx8jPgSu7U1AzkouYFnhXVlcaZgyiDR
+kQEXqO/Rw/ZPSUzEsg4CTs0d2JjYvP5ldmKVKXs7Ed1cERpZXz342z9YxeEYaRYz
+temYrvzMo/aT1VtPVj6nC06dmTZn3zo+5IGBFh7pvtMzXe4uXDB7Lc9NI2ccPA24
+SwqxWP22mczGFVOki1nNY/7wjjZpe2P8bGm3XHrBNshzzY3RqqcbD4bpkesTGFnn
+630io8VOrF8yzHoe0q1HDpeOATyCj2ke1sac+jZUvHxozMniIlI6jSjs7JLh0ERG
+vaDpP9mjcHajYRNsLdFCDIqqbbsdAOl3a/6wRTLnHrHnmAbqXVwNUdZY785/z9wb
+DibvG5BEYkxY7OP4HvFyjp6E8gxmZ2LXTcOM+yiehNB3fAe5bX6waGGdFbQR1Esu
+Xd2CT5ueMsQpW9I/CVjARemROoYk/toWTuGya2c+hePArMz+l1uZWQwmrSz7XU6r
+v0EzmyXuUOStuMAFSvwtuPvNpjLwzdzPm+VKSyur5kbHeQhNMzDqS5XdsESPDK7y
+KqZ06/LloaMHjGLCd9OP
+=Dtsn
+-----END PGP SIGNATURE-----
+
+--Sig_/xGsEp6NUHLEeZz8uk9qM=Ag--
