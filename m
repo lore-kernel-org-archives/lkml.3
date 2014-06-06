@@ -1,118 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144AbaFFIjW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 04:39:22 -0400
-Received: from mga02.intel.com ([134.134.136.20]:2665 "EHLO mga02.intel.com"
+	id S1752424AbaFFIko (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 04:40:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44622 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750853AbaFFIjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 04:39:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,987,1392192000"; 
-   d="scan'208";a="523761902"
-Date: Fri, 6 Jun 2014 08:35:21 +0800
-From: Yuyang Du <yuyang.du@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Dirk Brandewie <dirk.brandewie@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        Dietmar Eggemann <Dietmar.Eggemann@arm.com>, len.brown@intel.com,
-        jacob.jun.pan@linux.intel.com
-Subject: Re: [RFC PATCH 06/16] arm: topology: Define TC2 sched energy and
- provide it to scheduler
-Message-ID: <20140606003520.GB22261@intel.com>
-References: <1400869003-27769-1-git-send-email-morten.rasmussen@arm.com>
- <20140604160230.GS29593@e103034-lin>
- <20140604172712.GJ13930@laptop.programming.kicks-ass.net>
- <2484761.vkWavnsDx3@vostro.rjw.lan>
- <20140605065205.GA3213@twins.programming.kicks-ass.net>
- <539086B3.2010804@gmail.com>
- <20140605202930.GA15484@intel.com>
- <20140606080543.GR6758@twins.programming.kicks-ass.net>
+	id S1750910AbaFFIkm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 04:40:42 -0400
+From: Michal Privoznik <mprivozn@redhat.com>
+To: davem@davemloft.net
+Cc: gregkh@linuxfoundation.org, jiri@resnulli.us, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: [PATCH] net-sysfs: Report link speed only when possible
+Date: Fri,  6 Jun 2014 10:40:30 +0200
+Message-Id: <771f792d4d4391c656305a522557c53c4e84a666.1402043894.git.mprivozn@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140606080543.GR6758@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 06, 2014 at 10:05:43AM +0200, Peter Zijlstra wrote:
-> On Fri, Jun 06, 2014 at 04:29:30AM +0800, Yuyang Du wrote:
-> > On Thu, Jun 05, 2014 at 08:03:15AM -0700, Dirk Brandewie wrote:
-> > > 
-> > > You can request a P state per core but the package does coordination at
-> > > a package level for the P state that will be used based on all requests.
-> > > This is due to the fact that most SKUs have a single VR and PLL. So
-> > > the highest P state wins.  When a core goes idle it loses it's vote
-> > > for the current package P state and that cores clock it turned off.
-> > > 
-> > 
-> > You need to differentiate Turbo and non-Turbo. The highest P state wins? Not
-> > really.
-> 
-> *sigh* and here we go again.. someone please, write something coherent
-> and have all intel people sign off on it and stop saying different
-> things.
-> 
-> > Actually, silicon supports indepdent non-Turbo pstate, but just not enabled.
-> 
-> Then it doesn't exist, so no point in mentioning it.
-> 
+The link speed is available at /sys/class/net/$nic/speed.
+However, in some cases, depending on the driver, if the link is
+not plugged, -1 is reported (this is the case of e1000e for
+instance). To make things worse, the value is printed out as an
+unsigned integer, so you'll get this shady number which you can't
+evaluate correctly. This is actually a regression in 3.X kernels
+as the commit that broke things is 8ae6daca. With this change,
+you'll get -EINVAL whenever a -1 is to be printed out.
 
-Well, things actually get more complicated. Not-enabled is for Core. For Atom
-Baytrail, each core indeed can operate on difference frequency. I am not sure for
-Xeon, :)
+Before the change:
+  # cat /sys/class/net/eth0/speed
+  4294967295
 
-> > For Turbo, it basically depends on power budget of both core and gfx (because
-> > they share) for each core to get which Turbo point.
-> 
-> And RAPL controls can give preference of which gfx/core gets most,
-> right?
->
+After the change:
+  # cat /sys/class/net/eth0/speed
+  cat: /sys/class/net/eth0/speed: Invalid argument
 
-Maybe Jacob knows that.
+Signed-off-by: Michal Privoznik <mprivozn@redhat.com>
+---
+ net/core/net-sysfs.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-> > > intel_pstate tries to keep the core P state as low as possible to satisfy
-> > > the given load, so when various cores go idle the package P state can be
-> > > as low as possible.  The big power win is a core going idle.
-> > > 
-> > 
-> > In terms of prediction, it is definitely can't be 100% right. But the
-> > performance of most workloads does scale with pstate (frequency), may not be
-> > linearly. So it is to some point predictable FWIW. And this is all governors
-> > and Intel_pstate's basic assumption.
-> 
-> So frequency isn't _that_ interesting, voltage is. And while
-> predictability it might be their assumption, is it actually true? I
-> mean, there's really nothing else except to assume that, if its not you
-> can't do anything at all, so you _have_ to assume this.
-> 
-> But again, is the assumption true? Or just happy thoughts in an attempt
-> to do something.
-
-Voltage is combined with frequency, roughly, voltage is proportional to freuquecy, so
-roughly, power is proportionaly to voltage^3. You can't say which is more important,
-or there is no reason to raise voltage without raising frequency.
-
-If only one word to say: true of false, it is true. Because given any fixed
-workload, I can't see why performance would be worse if frequency is higher.
-
-The reality as opposed to the assumption is in two-fold:
-1) if workload is CPU bound, performance scales with frequency absolutely. if workload is
-   memory bound, it does not scale. But from kernel, we don't know whether it is CPU bound
-   or not (or it is hard to know). uArch statistics can model that.
-2) the workload is not fixed in real-time, changing all the time.
-
-But still, the assumption is a must or no guilty, because we adjust frequency continuously,
-for example, if the workload is fixed, and if the performance does not scale with freq we stop
-increasing frequency. So a good frequency governor or driver should and can continuously
-pursue "good" frequency with the changing workload. Therefore, in the long term, we will be
-better off.
+diff --git a/net/core/net-sysfs.c b/net/core/net-sysfs.c
+index 1cac29e..ce4b298 100644
+--- a/net/core/net-sysfs.c
++++ b/net/core/net-sysfs.c
+@@ -172,8 +172,13 @@ static ssize_t speed_show(struct device *dev,
+ 
+ 	if (netif_running(netdev)) {
+ 		struct ethtool_cmd cmd;
+-		if (!__ethtool_get_settings(netdev, &cmd))
+-			ret = sprintf(buf, fmt_udec, ethtool_cmd_speed(&cmd));
++		if (!__ethtool_get_settings(netdev, &cmd)) {
++			__u32 speed = ethtool_cmd_speed(&cmd);
++
++			if (speed != (__u32) -1)
++				ret = sprintf(buf, fmt_udec,
++					      ethtool_cmd_speed(&cmd));
++		}
+ 	}
+ 	rtnl_unlock();
+ 	return ret;
+-- 
+2.0.0
 
