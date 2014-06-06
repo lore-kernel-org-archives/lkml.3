@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598AbaFFRUA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 13:20:00 -0400
-Received: from thoth.sbs.de ([192.35.17.2]:52027 "EHLO thoth.sbs.de"
+	id S1752642AbaFFRUw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 13:20:52 -0400
+Received: from david.siemens.de ([192.35.17.14]:35964 "EHLO david.siemens.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752507AbaFFRTp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 13:19:45 -0400
+	id S1752504AbaFFRTo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 13:19:44 -0400
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -15,108 +15,110 @@ Cc: Jason Wessel <jason.wessel@windriver.com>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
         Borislav Petkov <bp@suse.de>,
         Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Fenghua Yu <fenghua.yu@intel.com>, Kay Sievers <kay@vrfy.org>,
-        linux-doc@vger.kernel.org, linux-ia64@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-        Pantelis Koukousoulas <pktoss@gmail.com>,
-        Rob Landley <rob@landley.net>, Rusty Russell <rusty@rustcorp.com.au>,
-        sparclinux@vger.kernel.org, Tony Luck <tony.luck@intel.com>
-Subject: [PATCH v8 00/22] Add gdb python scripts as kernel debugging helpers
-Date: Fri,  6 Jun 2014 19:18:41 +0200
-Message-Id: <cover.1402075136.git.jan.kiszka@siemens.com>
+        Kay Sievers <kay@vrfy.org>
+Subject: [PATCH v8 11/22] scripts/gdb: Add lx-dmesg command
+Date: Fri,  6 Jun 2014 19:18:52 +0200
+Message-Id: <124628afa72035a4da7c1204f11ec9b995ea05a5.1402075140.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
+In-Reply-To: <cover.1402075136.git.jan.kiszka@siemens.com>
+References: <cover.1402075136.git.jan.kiszka@siemens.com>
+In-Reply-To: <cover.1402075136.git.jan.kiszka@siemens.com>
+References: <cover.1402075136.git.jan.kiszka@siemens.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some time passed since the last posting. Basically, this round comes
-with two changes:
- - make the code Python 3 compatible [Pantelis Koukousoulas]
- - rebase over recent Linux version, resolving a trivial conflict
+This pokes into the log buffer of the debugged kernel, dumping it to the
+gdb console. Helping in case the target should or can no longer execute
+dmesg itself.
 
-See http://lkml.indiana.edu/hypermail/linux/kernel/1210.0/01598.html for
-the original description and
-
-    git://git.kiszka.org/linux.git queues/gdb-scripts
-
-for the latest version.
-
-I'm still hoping someone will move this forward via his tree towards
-upstream. Please let me know if any changes are required to enable this.
-
-Jan
-
-CC: "David S. Miller" <davem@davemloft.net>
-CC: Fenghua Yu <fenghua.yu@intel.com>
 CC: Kay Sievers <kay@vrfy.org>
-CC: linux-doc@vger.kernel.org
-CC: linux-ia64@vger.kernel.org
-CC: linux-kbuild@vger.kernel.org
-CC: Michal Marek <mmarek@suse.cz>
-CC: Pantelis Koukousoulas <pktoss@gmail.com>
-CC: Rob Landley <rob@landley.net>
-CC: Rusty Russell <rusty@rustcorp.com.au>
-CC: sparclinux@vger.kernel.org
-CC: Tony Luck <tony.luck@intel.com>
-
-Jan Kiszka (21):
-  scripts/gdb: Add infrastructure
-  scripts/gdb: Add cache for type objects
-  scripts/gdb: Add container_of helper and convenience function
-  scripts/gdb: Add module iteration class
-  scripts/gdb: Add lx-symbols command
-  module: Do not inline do_init_module
-  scripts/gdb: Add automatic symbol reloading on module insertion
-  scripts/gdb: Add internal helper and convenience function to look up a
-    module
-  scripts/gdb: Add get_target_endianness helper
-  scripts/gdb: Add read_u16/32/64 helpers
-  scripts/gdb: Add lx-dmesg command
-  scripts/gdb: Add task iteration class
-  scripts/gdb: Add helper and convenience function to look up tasks
-  scripts/gdb: Add is_target_arch helper
-  scripts/gdb: Add internal helper and convenience function to retrieve
-    thread_info
-  scripts/gdb: Add get_gdbserver_type helper
-  scripts/gdb: Add internal helper and convenience function for per-cpu
-    lookup
-  scripts/gdb: Add lx_current convenience function
-  scripts/gdb: Add class to iterate over CPU masks
-  scripts/gdb: Add lx-lsmod command
-  scripts/gdb: Add basic documentation
-
-Pantelis Koukousoulas (1):
-  scripts/gdb: Port to python3 / gdb7.7
-
- Documentation/gdb-kernel-debugging.txt | 160 +++++++++++++++++++++++++++++++
- Makefile                               |   6 +-
- kernel/module.c                        |   9 +-
- lib/Kconfig.debug                      |  11 +++
- scripts/Makefile                       |   3 +-
- scripts/gdb/Makefile                   |  11 +++
- scripts/gdb/linux/Makefile             |   9 ++
- scripts/gdb/linux/__init__.py          |   0
- scripts/gdb/linux/cpus.py              | 142 ++++++++++++++++++++++++++++
- scripts/gdb/linux/dmesg.py             |  65 +++++++++++++
- scripts/gdb/linux/modules.py           | 114 ++++++++++++++++++++++
- scripts/gdb/linux/symbols.py           | 166 +++++++++++++++++++++++++++++++++
- scripts/gdb/linux/tasks.py             | 110 ++++++++++++++++++++++
- scripts/gdb/linux/utils.py             | 156 +++++++++++++++++++++++++++++++
- scripts/gdb/vmlinux-gdb.py             |  30 ++++++
- 15 files changed, 988 insertions(+), 4 deletions(-)
- create mode 100644 Documentation/gdb-kernel-debugging.txt
- create mode 100644 scripts/gdb/Makefile
- create mode 100644 scripts/gdb/linux/Makefile
- create mode 100644 scripts/gdb/linux/__init__.py
- create mode 100644 scripts/gdb/linux/cpus.py
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+---
+ scripts/gdb/linux/dmesg.py | 64 ++++++++++++++++++++++++++++++++++++++++++++++
+ scripts/gdb/vmlinux-gdb.py |  1 +
+ 2 files changed, 65 insertions(+)
  create mode 100644 scripts/gdb/linux/dmesg.py
- create mode 100644 scripts/gdb/linux/modules.py
- create mode 100644 scripts/gdb/linux/symbols.py
- create mode 100644 scripts/gdb/linux/tasks.py
- create mode 100644 scripts/gdb/linux/utils.py
- create mode 100644 scripts/gdb/vmlinux-gdb.py
 
+diff --git a/scripts/gdb/linux/dmesg.py b/scripts/gdb/linux/dmesg.py
+new file mode 100644
+index 0000000..7650f24
+--- /dev/null
++++ b/scripts/gdb/linux/dmesg.py
+@@ -0,0 +1,64 @@
++#
++# gdb helper commands and functions for Linux kernel debugging
++#
++#  kernel log buffer dump
++#
++# Copyright (c) Siemens AG, 2011, 2012
++#
++# Authors:
++#  Jan Kiszka <jan.kiszka@siemens.com>
++#
++# This work is licensed under the terms of the GNU GPL version 2.
++#
++
++import gdb
++import string
++
++from linux import utils
++
++
++class LxDmesg(gdb.Command):
++    """Print Linux kernel log buffer."""
++
++    def __init__(self):
++        super(LxDmesg, self).__init__("lx-dmesg", gdb.COMMAND_DATA)
++
++    def invoke(self, arg, from_tty):
++        log_buf_addr = int(str(gdb.parse_and_eval("log_buf")).split()[0], 16)
++        log_first_idx = int(gdb.parse_and_eval("log_first_idx"))
++        log_next_idx = int(gdb.parse_and_eval("log_next_idx"))
++        log_buf_len = int(gdb.parse_and_eval("log_buf_len"))
++
++        inf = gdb.inferiors()[0]
++        start = log_buf_addr + log_first_idx
++        if log_first_idx < log_next_idx:
++            log_buf_2nd_half = -1
++            length = log_next_idx - log_first_idx
++            log_buf = inf.read_memory(start, length)
++        else:
++            log_buf_2nd_half = log_buf_len - log_first_idx
++            log_buf = inf.read_memory(start, log_buf_2nd_half) + \
++                inf.read_memory(log_buf_addr, log_next_idx)
++
++        pos = 0
++        while pos < log_buf.__len__():
++            length = utils.read_u16(log_buf[pos + 8:pos + 10])
++            if length == 0:
++                if log_buf_2nd_half == -1:
++                    gdb.write("Corrupted log buffer!\n")
++                    break
++                pos = log_buf_2nd_half
++                continue
++
++            text_len = utils.read_u16(log_buf[pos + 10:pos + 12])
++            time_stamp = utils.read_u64(log_buf[pos:pos + 8])
++
++            for line in log_buf[pos + 16:pos + 16 + text_len].splitlines():
++                gdb.write("[{time:12.6f}] {line}\n".format(
++                    time=time_stamp / 1000000000.0,
++                    line=line))
++
++            pos += length
++
++
++LxDmesg()
+diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
+index cf2e716..fa66d23 100644
+--- a/scripts/gdb/vmlinux-gdb.py
++++ b/scripts/gdb/vmlinux-gdb.py
+@@ -25,3 +25,4 @@ else:
+     import linux.utils
+     import linux.symbols
+     import linux.modules
++    import linux.dmesg
 -- 
 1.8.1.1.298.ge7eed54
 
