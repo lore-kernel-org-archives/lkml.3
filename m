@@ -1,110 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752878AbaFGHac (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 03:30:32 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:58622 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752762AbaFGHaR (ORCPT
+	id S1752959AbaFGHbF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 03:31:05 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:33338 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752807AbaFGHaS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 03:30:17 -0400
+	Sat, 7 Jun 2014 03:30:18 -0400
 From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH 3/9] i2c: Match using traditional OF methods, then by
- vendor-less compatible strings
+Subject: Re: [PATCH 1/9] i2c: Add pointer dereference protection to
+ i2c_match_id()
 To: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
 Cc: wsa@the-dreams.de, linus.walleij@linaro.org, linux-i2c@vger.kernel.org,
         devicetree@vger.kernel.org, Lee Jones <lee.jones@linaro.org>
-In-Reply-To: <1402069952-28022-4-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1402069952-28022-2-git-send-email-lee.jones@linaro.org>
 References: <1402069952-28022-1-git-send-email-lee.jones@linaro.org>
-	<1402069952-28022-4-git-send-email-lee.jones@linaro.org>
-Date: Sat, 07 Jun 2014 00:19:14 +0100
-Message-Id: <20140606231914.2E2FDC4218F@trevor.secretlab.ca>
+	<1402069952-28022-2-git-send-email-lee.jones@linaro.org>
+Date: Fri, 06 Jun 2014 23:59:35 +0100
+Message-Id: <20140606225935.7491DC4206E@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  6 Jun 2014 16:52:26 +0100, Lee Jones <lee.jones@linaro.org> wrote:
-> This function provides a single call for all I2C devices which need to
-> match firstly using traditional OF means i.e by of_node, then if that
-> fails we attempt to match using the supplied I2C client name with a
-> list of supplied compatible strings with the '<vendor>,' string
-> removed.  The latter is required due to the unruly naming conventions
-> used currently by I2C devices.
+On Fri,  6 Jun 2014 16:52:24 +0100, Lee Jones <lee.jones@linaro.org> wrote:
+> Here we're providing dereference protection for i2c_match_id(), which
+> saves us having to do it each time it's called.  We're also stripping
+> out the (now) needless checks in i2c_device_match().  This patch paves
+> the way for other, similar code trimming.
 > 
+> Acked-by: Grant Likely <grant.likely@linaro.org>
 > Signed-off-by: Lee Jones <lee.jones@linaro.org>
 > ---
->  drivers/i2c/i2c-core.c | 13 +++++++++++++
->  include/linux/i2c.h    |  9 +++++++++
->  2 files changed, 22 insertions(+)
+>  drivers/i2c/i2c-core.c | 12 +++++++-----
+>  1 file changed, 7 insertions(+), 5 deletions(-)
 > 
 > diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-> index face8f9..80a2f2e 100644
+> index 7c7f4b8..d3802dc 100644
 > --- a/drivers/i2c/i2c-core.c
 > +++ b/drivers/i2c/i2c-core.c
-> @@ -1115,6 +1115,19 @@ const struct of_device_id
->  	return NULL;
->  }
->  EXPORT_SYMBOL_GPL(i2c_of_match_device_strip_vendor);
+> @@ -82,6 +82,9 @@ void i2c_transfer_trace_unreg(void)
+>  static const struct i2c_device_id *i2c_match_id(const struct i2c_device_id *id,
+>  						const struct i2c_client *client)
+>  {
+> +	if (!(id && client))
+> +		return NULL;
 > +
-> +const struct of_device_id
-> +*i2c_of_match_device(const struct of_device_id *matches, struct device *dev)
+>  	while (id->name[0]) {
+>  		if (strcmp(client->name, id->name) == 0)
+>  			return id;
+> @@ -95,8 +98,6 @@ static int i2c_device_match(struct device *dev, struct device_driver *drv)
+>  	struct i2c_client	*client = i2c_verify_client(dev);
+>  	struct i2c_driver	*driver;
+>  
+> -	if (!client)
+> -		return 0;
+>  
+>  	/* Attempt an OF style match */
+>  	if (of_driver_match_device(dev, drv))
+> @@ -107,9 +108,10 @@ static int i2c_device_match(struct device *dev, struct device_driver *drv)
+>  		return 1;
+>  
+>  	driver = to_i2c_driver(drv);
+> -	/* match on an id table if there is one */
+> -	if (driver->id_table)
+> -		return i2c_match_id(driver->id_table, client) != NULL;
+> +
+> +	/* Finally an I2C match */
+> +	if (i2c_match_id(driver->id_table, client))
+> +		return 1;
+>  
+>  	return 0;
 
-Should be:
-const struct of_device_id *
-i2c_of_match_device(const struct of_device_id *matches, struct i2c_client *dev)
+Nit: the above 4 lines can now simply be:
 
-Since it is only applicable to i2c_client. Don't allow random subsystems
-to call into it with any struct device (even if there is little risk due
-to the name and location of the function). Same comment goes for
-i2c_of_match_device_strip_vendor().
-
-In fact, i2c_of_match_device_strip_vendor() should be rolled directly
-into i2c_of_match_device(). I know you're calling it in patch 7/9, but
-that needs to be removed. I'll comment directly on that patch though.
+	return (i2c_match_id(driver->id_table, client) != NULL);
 
 g.
-
-> +{
-> +	const struct of_device_id *match;
-> +
-> +	match = of_match_device(matches, dev);
-> +	if (match)
-> +		return match;
-> +
-> +	return i2c_of_match_device_strip_vendor(matches, dev);
-> +}
-> +EXPORT_SYMBOL_GPL(i2c_of_match_device);
->  #else
->  static void of_i2c_register_devices(struct i2c_adapter *adap) { }
->  #endif /* CONFIG_OF */
-> diff --git a/include/linux/i2c.h b/include/linux/i2c.h
-> index f7ec75b..ab5866f 100644
-> --- a/include/linux/i2c.h
-> +++ b/include/linux/i2c.h
-> @@ -565,6 +565,9 @@ extern struct i2c_client *of_find_i2c_device_by_node(struct device_node *node);
->  extern struct i2c_adapter *of_find_i2c_adapter_by_node(struct device_node *node);
->  
->  extern const struct of_device_id
-> +*i2c_of_match_device(const struct of_device_id *matches, struct device *dev);
-> +
-> +extern const struct of_device_id
->  *i2c_of_match_device_strip_vendor(const struct of_device_id *matches,
->  				  struct device *dev);
->  #else
-> @@ -580,6 +583,12 @@ static inline struct i2c_adapter *of_find_i2c_adapter_by_node(struct device_node
->  }
->  
->  const struct of_device_id
-> +*i2c_of_match_device(const struct of_device_id *matches, struct device *dev)
-> +{
-> +	return NULL;
-> +}
-> +
-> +const struct of_device_id
->  *i2c_of_match_device_strip_vendor(const struct of_device_id *matches,
->  				  struct device *dev)
->  {
-> -- 
-> 1.8.3.2
-> 
-
