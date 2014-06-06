@@ -1,102 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752642AbaFFJ6c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 05:58:32 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:3529 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751701AbaFFJ6b (ORCPT
+	id S1752664AbaFFKPR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 06:15:17 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56842 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752631AbaFFKPQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 05:58:31 -0400
-Date: Fri, 6 Jun 2014 05:58:29 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Brad Mouring <bmouring@ni.com>
-Subject: Re: [patch 2/2] rtmutex: Detect changes in the pi lock chain
-Message-ID: <20140606055829.3f214902@gandalf.local.home>
-In-Reply-To: <20140606094859.GW6758@twins.programming.kicks-ass.net>
-References: <20140605152544.641846795@linutronix.de>
-	<20140605152801.930031935@linutronix.de>
-	<20140606094859.GW6758@twins.programming.kicks-ass.net>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Fri, 6 Jun 2014 06:15:16 -0400
+Date: Fri, 6 Jun 2014 12:15:08 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: zhdxzx@sina.com
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Mike Galbraith <mgalbraith@suse.de>, Ingo Molnar <mingo@kernel.org>,
+        dhillf <dhillf@gmail.com>, "hillf.zj" <hillf.zj@alibaba-inc.com>
+Subject: Re: sched: how to pick runqueue when checking task hot?
+Message-ID: <20140606101508.GP3213@twins.programming.kicks-ass.net>
+References: <20140606065956.854A6718001@webmail.sinamail.sina.com.cn>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="X78YbkCBd9ye7Cvs"
+Content-Disposition: inline
+In-Reply-To: <20140606065956.854A6718001@webmail.sinamail.sina.com.cn>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 6 Jun 2014 11:48:59 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
 
-> 
-> 
-> hehe, I can almost follow this code :-)
-> 
-> How about something like this on top?
+--X78YbkCBd9ye7Cvs
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-
--- Steve
-
-> 
-> ---
-> --- a/kernel/locking/rtmutex.c
-> +++ b/kernel/locking/rtmutex.c
-> @@ -260,6 +260,11 @@ static void rt_mutex_adjust_prio(struct
->   */
->  int max_lock_depth = 1024;
->  
-> +static inline struct rt_mutex *task_blocked_on(struct task_struct *p)
-> +{
-> +	return p->pi_blocked_on ? p->pi_blocked_on->lock : NULL;
-> +}
-> +
->  /*
->   * Adjust the priority chain. Also used for deadlock detection.
->   * Decreases task's usage by one - may thus free the task.
-> @@ -443,10 +448,7 @@ static int rt_mutex_adjust_prio_chain(st
->  	 * blocked itself. If yes we store a pointer to the lock for
->  	 * the lock chain change detection above.
+On Fri, Jun 06, 2014 at 02:59:56PM +0800, zhdxzx@sina.com wrote:
+> Hi all
+>=20
+> When computing cache hot, question-1: should we check the number of runni=
+ng tasks
+> against the migration target runqueue, as shown by the following diff?
+>=20
+> It looks that we dont migrate task if it is buddy and the target cpu is n=
+ot idle.
+>=20
+>=20
+> --- a/kernel/sched/fair.c	Fri Jun  6 12:37:37 2014
+> +++ b/kernel/sched/fair.c	Fri Jun  6 13:55:35 2014
+> @@ -5051,7 +5050,7 @@ task_hot(struct task_struct *p, u64 now)
+>  	/*
+>  	 * Buddy candidates are cache hot:
 >  	 */
-> -	if (task->pi_blocked_on)
-> -		next_lock = task->pi_blocked_on->lock;
-> -	else
-> -		next_lock = NULL;
-> +	next_lock = task_blocked_on(task);
->  
->  	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
->  
-> @@ -569,7 +571,7 @@ static int task_blocks_on_rt_mutex(struc
->  {
->  	struct task_struct *owner = rt_mutex_owner(lock);
->  	struct rt_mutex_waiter *top_waiter = waiter;
-> -	struct rt_mutex *next_lock = NULL;
-> +	struct rt_mutex *next_lock;
->  	unsigned long flags;
->  	int chain_walk, res;
->  
-> @@ -614,8 +616,8 @@ static int task_blocks_on_rt_mutex(struc
->  	} else if (debug_rt_mutex_detect_deadlock(waiter, detect_deadlock)) {
->  		chain_walk = 1;
->  	}
-> -	if (owner->pi_blocked_on)
-> -		next_lock = owner->pi_blocked_on->lock;
-> +
-> +	next_lock = task_blocked_on(owner);
->  
->  	raw_spin_unlock_irqrestore(&owner->pi_lock, flags);
->  	if (!chain_walk)
-> @@ -705,8 +707,7 @@ static void remove_waiter(struct rt_mute
->  		}
->  		__rt_mutex_adjust_prio(owner);
->  
-> -		if (owner->pi_blocked_on)
-> -			next_lock = owner->pi_blocked_on->lock;
-> +		next_lock = task_blocked_on(owner);
->  
->  		raw_spin_unlock_irqrestore(&owner->pi_lock, flags);
->  	}
+> -	if (sched_feat(CACHE_HOT_BUDDY) && this_rq()->nr_running &&
+> +	if (sched_feat(CACHE_HOT_BUDDY) && env->dst_rq->nr_running &&
+>  			(&p->se =3D=3D cfs_rq_of(&p->se)->next ||
+>  			 &p->se =3D=3D cfs_rq_of(&p->se)->last))
+>  		return 1;
 
+
+That is indeed the effective result for normal balancing, seeing how it
+pulls to the dst rq, and this_rq would be dst.
+
+This is of course false for a number of cases these days, most obviously
+the nohz idle balancing.
+
+> But based on the comment, question-2: should we check running tasks
+> against the runqueue of the given task?
+
+> --- a/kernel/sched/fair.c	Fri Jun  6 12:37:37 2014
+> +++ b/kernel/sched/fair.c	Fri Jun  6 14:32:34 2014
+> @@ -5051,7 +5051,7 @@ task_hot(struct task_struct *p, u64 now)
+>  	/*
+>  	 * Buddy candidates are cache hot:
+>  	 */
+> -	if (sched_feat(CACHE_HOT_BUDDY) && this_rq()->nr_running &&
+> +	if (sched_feat(CACHE_HOT_BUDDY) && task_rq(p)->nr_running &&
+>  			(&p->se =3D=3D cfs_rq_of(&p->se)->next ||
+>  			 &p->se =3D=3D cfs_rq_of(&p->se)->last))
+>  		return 1;
+
+That does appear to make more sense indeed, seeing how buddies are pairs
+of tasks, so protecting a lone task doesn't make sense.
+
+
+Mike, how did you intend this code to work?=20
+
+--X78YbkCBd9ye7Cvs
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTkZSsAAoJEHZH4aRLwOS6SnEP/j0HPqrFCwWu2OwBCl+iAEUN
+3/zDrDFVE6N+Z9bB0M/icD2MqMAmlm0eTfK9P8c0j8MhmlnfjDNrXOE3dQk6FQj3
+QAe9rHMfwjo+lmn3IVh+TPMpZO0Bwu6xJTqX5T7/ag1erIwQbw2LjPiP86auXVpi
+8u3JmDmv+GwakDU5/Um+vzPVhZ9GcC382bP1LuO+6RYcF2XlvYr4XhA8wkNtpMdc
+oQ6tktWR1ZKtig2qS4hWvACzhYc+jB2zNSCQmD8Hr6LUG3zz0YntgeUimmVpQH0X
+9qWXp9FzRX+q+dbPc6+nLNzHJH02vZ6OBm9uZbzdMsYjeSkbZl9IcVUaSgPbkKmu
+1J8k4w+FWD6B2tPQyDNMTxoTctSnYAsOQMGcF0KM3SEN92x2Y9OXcaCA0kcEILtn
+0C/fb2s+jlWW/Yi5lhIYqE1dNEMINXZ9RqSLWE4vYab6LNz8j3uOh/6ZmptFDCpO
+AkgvacZczRTRI4YDXpc/lyrIglFJVTOD9m3EhY5riaWx5Ri0WFpFDzVBJpTjJCX2
+rvU3bgel9QgHoTriUYHkLRDo94apqagxB4t0Pc3Padi1dOSFJUUKWMfh1ixjk/iZ
+9QT7WTnIcUrRVM0Qwy1HWSoGWskMudxqWaqB/wdIUu8QIbtmUB9eNEsWX24Whxc2
+T1XYsOVcTD1znBo6+8dB
+=7dk8
+-----END PGP SIGNATURE-----
+
+--X78YbkCBd9ye7Cvs--
