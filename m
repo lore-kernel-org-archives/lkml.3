@@ -1,133 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752569AbaFFHUX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 03:20:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45965 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751783AbaFFHUW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 03:20:22 -0400
-Message-ID: <53916BB0.3070001@suse.cz>
-Date: Fri, 06 Jun 2014 09:20:16 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1751887AbaFFHYh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 03:24:37 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:37815 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751204AbaFFHYg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 03:24:36 -0400
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [RFC PATCH 4/6] mm, compaction: skip buddy pages by their order
- in the migrate scanner
-References: <alpine.DEB.2.02.1405211954410.13243@chino.kir.corp.google.com> <1401898310-14525-1-git-send-email-vbabka@suse.cz> <1401898310-14525-4-git-send-email-vbabka@suse.cz> <alpine.DEB.2.02.1406041656400.22536@chino.kir.corp.google.com> <5390374E.5080708@suse.cz> <alpine.DEB.2.02.1406051428360.18119@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1406051428360.18119@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1401980308-5116-2-git-send-email-daniel.vetter@ffwll.ch>
+References: <1401980308-5116-1-git-send-email-daniel.vetter@ffwll.ch>
+	<1401980308-5116-2-git-send-email-daniel.vetter@ffwll.ch>
+Date: Fri, 6 Jun 2014 09:24:35 +0200
+Message-ID: <CANq1E4QpST-ZQbhm8FS-xuyda0dnYAFjasqFCspTPKdzJ6zW6w@mail.gmail.com>
+Subject: Re: [PATCH 2/5] vt: Fix up unregistration of vt drivers
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        Jiri Slaby <jslaby@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2014 11:30 PM, David Rientjes wrote:
-> On Thu, 5 Jun 2014, Vlastimil Babka wrote:
-> 
->> > > diff --git a/mm/compaction.c b/mm/compaction.c
->> > > index ae7db5f..3dce5a7 100644
->> > > --- a/mm/compaction.c
->> > > +++ b/mm/compaction.c
->> > > @@ -640,11 +640,18 @@ isolate_migratepages_range(struct zone *zone, struct
->> > > compact_control *cc,
->> > >   		}
->> > > 
->> > >   		/*
->> > > -		 * Skip if free. page_order cannot be used without zone->lock
->> > > -		 * as nothing prevents parallel allocations or buddy merging.
->> > > +		 * Skip if free. We read page order here without zone lock
->> > > +		 * which is generally unsafe, but the race window is small and
->> > > +		 * the worst thing that can happen is that we skip some
->> > > +		 * potential isolation targets.
->> > 
->> > Should we only be doing the low_pfn adjustment based on the order for
->> > MIGRATE_ASYNC?  It seems like sync compaction, including compaction that
->> > is triggered from the command line, would prefer to scan over the
->> > following pages.
->> 
->> I thought even sync compaction would benefit from the skipped iterations. I'd
->> say the probability of this race is smaller than probability of somebody
->> allocating what compaction just freed.
->> 
-> 
-> Ok.
-> 
->> > > diff --git a/mm/internal.h b/mm/internal.h
->> > > index 1a8a0d4..6aa1f74 100644
->> > > --- a/mm/internal.h
->> > > +++ b/mm/internal.h
->> > > @@ -164,7 +164,8 @@ isolate_migratepages_range(struct zone *zone, struct
->> > > compact_control *cc,
->> > >    * general, page_zone(page)->lock must be held by the caller to prevent
->> > > the
->> > >    * page from being allocated in parallel and returning garbage as the
->> > > order.
->> > >    * If a caller does not hold page_zone(page)->lock, it must guarantee
->> > > that the
->> > > - * page cannot be allocated or merged in parallel.
->> > > + * page cannot be allocated or merged in parallel. Alternatively, it must
->> > > + * handle invalid values gracefully, and use page_order_unsafe() below.
->> > >    */
->> > >   static inline unsigned long page_order(struct page *page)
->> > >   {
->> > > @@ -172,6 +173,23 @@ static inline unsigned long page_order(struct page
->> > > *page)
->> > >   	return page_private(page);
->> > >   }
->> > > 
->> > > +/*
->> > > + * Like page_order(), but for callers who cannot afford to hold the zone
->> > > lock,
->> > > + * and handle invalid values gracefully. ACCESS_ONCE is used so that if
->> > > the
->> > > + * caller assigns the result into a local variable and e.g. tests it for
->> > > valid
->> > > + * range  before using, the compiler cannot decide to remove the variable
->> > > and
->> > > + * inline the function multiple times, potentially observing different
->> > > values
->> > > + * in the tests and the actual use of the result.
->> > > + */
->> > > +static inline unsigned long page_order_unsafe(struct page *page)
->> > > +{
->> > > +	/*
->> > > +	 * PageBuddy() should be checked by the caller to minimize race
->> > > window,
->> > > +	 * and invalid values must be handled gracefully.
->> > > +	 */
->> > > +	return ACCESS_ONCE(page_private(page));
->> > > +}
->> > > +
->> > >   /* mm/util.c */
->> > >   void __vma_link_list(struct mm_struct *mm, struct vm_area_struct *vma,
->> > >   		struct vm_area_struct *prev, struct rb_node *rb_parent);
->> > 
->> > I don't like this change at all, I don't think we should have header
->> > functions that imply the context in which the function will be called.  I
->> > think it would make much more sense to just do
->> > ACCESS_ONCE(page_order(page)) in the migration scanner with a comment.
->> 
->> But that won't compile. It would have to be converted to a #define, unless
->> there's some trick I don't know. Sure I would hope this could be done cleaner
->> somehow.
->> 
-> 
-> Sorry, I meant ACCESS_ONCE(page_private(page)) in the migration scanner 
+Hi
 
-Hm but that's breaking the abstraction of page_order(). I don't know if it's
-worse to create a new variant of page_order() or to do this. BTW, seems like
-next_active_pageblock() in memory-hotplug.c should use this variant too.
+On Thu, Jun 5, 2014 at 4:58 PM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+> A bunch of issues:
+> - We should not kick out the default console (which is tracked in
+>   conswitchp), so check for that.
+> - Add better error codes so callers can differentiate between "something
+>   went wrong" and "your driver isn't registered already". i915 needs
+>   that so it doesn't fall over when reloading the driver and hence
+>   vga_con is already unregistered.
+> - There's a mess with the driver flags: What we need to check for is
+>   that the driver isn't used any more, i.e. unbound completely (FLAG_INIT).
+>   And not whether it's the boot console or not (which is the only one
+>   which doesn't have FLAG_MODULE). Otherwise there's no way to kick
+>   out the boot console, which i915 wants to do to prevent havoc with
+>   vga_con interferring (which tends to hang machines).
+>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Jiri Slaby <jslaby@suse.cz>
+> Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+> ---
+>  drivers/tty/vt/vt.c | 16 +++++++++-------
+>  1 file changed, 9 insertions(+), 7 deletions(-)
+>
+> diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
+> index ea600f482eeb..5077fe87324d 100644
+> --- a/drivers/tty/vt/vt.c
+> +++ b/drivers/tty/vt/vt.c
+> @@ -3573,17 +3573,20 @@ err:
+>   */
+>  int do_unregister_con_driver(const struct consw *csw)
+>  {
+> -       int i, retval = -ENODEV;
+> +       int i;
+>
+>         /* cannot unregister a bound driver */
+>         if (con_is_bound(csw))
+> -               goto err;
+> +               return -EBUSY;
+> +
+> +       if (csw == conswitchp)
+> +               return -EINVAL;
 
-> with a comment about it being racy.  It also helps to understand why 
-> you're testing for order < MAX_ORDER before skipping low_pfn there which 
-> is a little subtle right now.
-> 
+Ugh, that fix is correct, but I'd rather like to see
+do_unbind_con_driver() do the right thing. It currently resets
+conswitchp _only_ if the new fallback is unbound. Why not _always_ set
+conswitchp to defcsw _iff_ conswitchp == csw there?
 
+This way, you _know_ here that if !con_is_bound(csw), then csw != conswitchp.
+
+>
+>         for (i = 0; i < MAX_NR_CON_DRIVER; i++) {
+>                 struct con_driver *con_driver = &registered_con_driver[i];
+>
+>                 if (con_driver->con == csw &&
+> -                   con_driver->flag & CON_DRIVER_FLAG_MODULE) {
+> +                   con_driver->flag & CON_DRIVER_FLAG_INIT) {
+
+That makes FLAG_MODULE almost a no-op except for ->unbind(). I wonder
+why FLAG_MODULE exists, anyway.
+
+Otherwise looks good.
+
+Thanks
+David
+
+>                         vtconsole_deinit_device(con_driver);
+>                         device_destroy(vtconsole_class,
+>                                        MKDEV(0, con_driver->node));
+> @@ -3594,12 +3597,11 @@ int do_unregister_con_driver(const struct consw *csw)
+>                         con_driver->flag = 0;
+>                         con_driver->first = 0;
+>                         con_driver->last = 0;
+> -                       retval = 0;
+> -                       break;
+> +                       return 0;
+>                 }
+>         }
+> -err:
+> -       return retval;
+> +
+> +       return -ENODEV;
+>  }
+>  EXPORT_SYMBOL_GPL(do_unregister_con_driver);
+>
+> --
+> 1.8.1.4
+>
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
