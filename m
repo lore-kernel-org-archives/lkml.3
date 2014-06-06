@@ -1,83 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752685AbaFFXLb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 19:11:31 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44111 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752418AbaFFXL2 (ORCPT
+	id S1752544AbaFFXQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 19:16:57 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:60270 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752183AbaFFXQ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 19:11:28 -0400
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        "Luis R. Rodriguez" <mcgrof@suse.com>, Borislav Petkov <bp@suse.de>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>, Michal Marek <mmarek@suse.cz>,
-        Randy Dunlap <rdunlap@infradead.org>, levinsasha928@gmail.com,
-        mtosatti@redhat.com, fengguang.wu@intel.com,
-        David Vrabel <david.vrabel@citrix.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        xen-devel@lists.xenproject.org
-Subject: [PATCH 3/3] x86, platform, kconfig: add virtconfig defconfig helper
-Date: Fri,  6 Jun 2014 16:11:09 -0700
-Message-Id: <1402096269-4512-3-git-send-email-mcgrof@do-not-panic.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1402096269-4512-1-git-send-email-mcgrof@do-not-panic.com>
-References: <1402096269-4512-1-git-send-email-mcgrof@do-not-panic.com>
+	Fri, 6 Jun 2014 19:16:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LSU.2.11.1406061549500.9818@eggly.anvils>
+References: <20140603042121.GA27177@redhat.com>
+	<CALYGNiNV951SnBKdr0PEkgLbLCxy+YB6HJpafRr6CynO+a1sdQ@mail.gmail.com>
+	<alpine.LSU.2.11.1406031524470.7878@eggly.anvils>
+	<538F121E.9020100@oracle.com>
+	<alpine.LSU.2.11.1406061549500.9818@eggly.anvils>
+Date: Fri, 6 Jun 2014 16:16:55 -0700
+X-Google-Sender-Auth: uYhXv7SOq4P8DcAaHCKU6kI3-Ig
+Message-ID: <CA+55aFy939whF-vo+GyOhkyqgOEUGqAt-cmAB2gSOFHKBeGCPA@mail.gmail.com>
+Subject: Re: 3.15-rc8 mm/filemap.c:202 BUG
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Dave Jones <davej@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
+On Fri, Jun 6, 2014 at 4:05 PM, Hugh Dickins <hughd@google.com> wrote:
+>
+> [PATCH] mm: entry = ACCESS_ONCE(*pte) in handle_pte_fault
+>
+> Use ACCESS_ONCE() in handle_pte_fault() when getting the entry or orig_pte
+> upon which all subsequent decisions and pte_same() tests will be made.
+>
+> I have no evidence that its lack is responsible for the mm/filemap.c:202
+> BUG_ON(page_mapped(page)) in __delete_from_page_cache() found by trinity,
+> and I am not optimistic that it will fix it.  But I have found no other
+> explanation, and ACCESS_ONCE() here will surely not hurt.
 
-This lets you use:
+The patch looks obviously correct to me, although like you, I have no
+real reason to believe it really fixes anything. But we definitely
+should just load it once, since it's very much an optimistic load done
+before we take the real lock and re-compare.
 
-   make virtconfig
+I'm somewhat dubious whether it actually would change code generation
+- it doesn't change anything with the test-configuration I tried with
+- but it's unquestionably a good patch. And hey, maybe some
+configurations have sufficiently different code generation that gcc
+actually _can_ sometimes do reloads, perhaps explaining why some
+people see problems. So it's certainly worth testing even if it
+doesn't make any change to code generation with *my* compiler and
+config..
 
-to merge you current kernel configuration with options to
-enable both kvm and xen (dom0 and guest) requirements.
-
-Cc: Borislav Petkov <bp@suse.de>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: penberg@kernel.org
-Cc: levinsasha928@gmail.com
-Cc: mtosatti@redhat.com
-Cc: fengguang.wu@intel.com
-Cc: David Vrabel <david.vrabel@citrix.com>
-Cc: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: xen-devel@lists.xenproject.org
-Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
----
- arch/x86/Makefile | 6 ++++++
- 1 file changed, 6 insertions(+)
-
-diff --git a/arch/x86/Makefile b/arch/x86/Makefile
-index 9db34e2..f2df13e 100644
---- a/arch/x86/Makefile
-+++ b/arch/x86/Makefile
-@@ -262,6 +262,11 @@ xenconfig:
- 	$(Q)$(CONFIG_SHELL) $(srctree)/scripts/kconfig/merge_config.sh -m -O $(objtree) $(objtree)/.config $(srctree)/arch/x86/configs/xen.config
- 	$(Q)yes "" | $(MAKE) -f $(srctree)/Makefile oldconfig
- 
-+PHONY += virtconfig
-+virtconfig:
-+	$(Q)$(MAKE) kvmconfig
-+	$(Q)$(MAKE) xenconfig
-+
- define archhelp
-   echo  '* bzImage      - Compressed kernel image (arch/x86/boot/bzImage)'
-   echo  '  install      - Install kernel using'
-@@ -277,4 +282,5 @@ define archhelp
-   echo  '                  FDINITRD=file initrd for the booted kernel'
-   echo  '  kvmconfig	- Enable additional options for kvm guest kernel support'
-   echo  '  xenconfig    - Enable additional options for xen dom0 and guest kernel support'
-+  echo  '  virtconfig   - Enable additional options for kvm and xen kernel support'
- endef
--- 
-2.0.0.rc3.18.g00a5b79
-
+          Linus
