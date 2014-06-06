@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752299AbaFFVdv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 17:33:51 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:48076 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751901AbaFFVdu (ORCPT
+	id S1752472AbaFFVfa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 17:35:30 -0400
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:64054 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752061AbaFFVf1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 17:33:50 -0400
+	Fri, 6 Jun 2014 17:35:27 -0400
 MIME-Version: 1.0
-In-Reply-To: <539231B8.8000400@zytor.com>
-References: <201406042235.s54MZgwP020553@terminus.zytor.com>
- <20140606140017.afb7f91142f66cb3dd13c186@linux-foundation.org>
- <CA+55aFyKTbBUM4DJukmW5fiH213D0FbVmrreR9wOtMRmmijQ9Q@mail.gmail.com>
- <CALCETrWA92Q4ro9eaRkUrebjgQT7B2uj+bK81m9byZnDY_eMxA@mail.gmail.com>
- <CA+55aFx8ezbe-mCYWp6kM8Nh3oUQd_+SNz6mLoGQtMVDk3EALA@mail.gmail.com>
- <53922F74.20406@linux.intel.com> <CALCETrXpCMdyPjM6MSbxoi0matoYLfduuSiwmTjGCUU62KOsTw@mail.gmail.com>
- <539231B8.8000400@zytor.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 6 Jun 2014 14:33:28 -0700
-Message-ID: <CALCETrXUDiN2RspG3hK4ovDU9WSfo8hnvQjx7cx=Au7A7N1v_w@mail.gmail.com>
-Subject: Re: [GIT PULL] x86/vdso changes for v3.16
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
+In-Reply-To: <20140606155126.27059.76543.stgit@viggo.jf.intel.com>
+References: <20140606155126.27059.76543.stgit@viggo.jf.intel.com>
+Date: Fri, 6 Jun 2014 14:35:26 -0700
+X-Google-Sender-Auth: uBFJD0dkhuewx7oyNNeQjf__Y9k
+Message-ID: <CAA9_cmc4oi6S2dzngiMy0TnX1QW_Xcf6nwU6AS_XH=8iaMtmBg@mail.gmail.com>
+Subject: Re: [boot regression PATCH] libata: allow xgene-ahci to opt-out of
+ tag ordered submission
+From: Dan Williams <dan.j.williams@intel.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Dave Jiang <dave.jiang@intel.com>, Ming Lei <ming.lei@canonical.com>,
+        Ed Ciechanowski <ed.ciechanowski@intel.com>, stable@vger.kernel.org,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Sasha Levin <sasha.levin@oracle.com>,
-        Stefani Seibold <stefani@seibold.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Pavel Emelyanov <xemul@parallels.com>
+        "IDE/ATA development list" <linux-ide@vger.kernel.org>,
+        Loc Ho <lho@apm.com>, Suman Tripathi <stripathi@apm.com>,
+        Tuan Phan <tphan@apm.com>, Matthew Wilcox <matthew.r.wilcox@intel.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 6, 2014 at 2:25 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 06/06/2014 02:22 PM, Andy Lutomirski wrote:
->>
->> Sounds good.
->>
->> In the mean time, a trivial fix is here:
->>
->> https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/commit/?h=vdso/cleanup_fixes&id=cf780a0dc71f7cbd9a417e6ce2d5ddf56abccb74
->>
->> (or it will be once the mirrors sync)
->>
+On Fri, Jun 6, 2014 at 8:52 AM, Dan Williams <dan.j.williams@intel.com> wrote:
+> Ming Lei reports:
+>   "Looks the commit 8a4aeec8d(libata/ahci: accommodate tag ordered
+>    controllers) causes below sata failure on APM AHCI controller.
 >
-> Unfortunately gcc didn't introduce __BYTE_ORDER__ at the compiler level
-> until 2010.  This makes it harder to do this in a portable manner.
-
-Is there anything wrong with using __get_unaligned_leNN directly?
-
+>    And the error does disappear after reverting the commit.
 >
->         -hpa
+>      ata4.00: exception Emask 0x40 SAct 0xff00 SErr 0x800 action 0x6 frozen
+>      ata4: SError: { HostInt }
+>      ata4.00: failed command: READ FPDMA QUEUED
+>      ata4.00: cmd 60/08:40:e0:a4:88/00:00:04:00:00/40 tag 8 ncq 4096 in
+>               res 40/00:00:00:00:00/00:00:00:00:00/00 Emask 0x44 (timeout)"
 >
+> http://marc.info/?l=linux-kernel&m=140195842716315&w=2
 >
+> Maintain tag ordered submission as the default, but allow xgene-ahci to
+> continue with the old behavior.
+>
+> Cc: Loc Ho <lho@apm.com>
+> Cc: <stable@vger.kernel.org>
+> Cc: Tuan Phan <tphan@apm.com>
+> Cc: Dave Jiang <dave.jiang@intel.com>
+> Cc: Suman Tripathi <stripathi@apm.com>
+> Cc: Ed Ciechanowski <ed.ciechanowski@intel.com>
+> Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>
+> Tested-by: Ming Lei <ming.lei@canonical.com>
+> Reported-by: Ming Lei <ming.lei@canonical.com>
+> Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+> ---
 
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Hold off on this as it appears an ahci_xgene fix is on its way.
