@@ -1,43 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752509AbaFFVCm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 17:02:42 -0400
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:38926 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752174AbaFFVCl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 17:02:41 -0400
+	id S1752203AbaFFVHO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 17:07:14 -0400
+Received: from mga01.intel.com ([192.55.52.88]:5047 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751635AbaFFVHN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 17:07:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,991,1392192000"; 
+   d="scan'208";a="543802355"
+Message-ID: <53922D7F.8090601@linux.intel.com>
+Date: Fri, 06 Jun 2014 14:07:11 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <53922C01.4040800@zytor.com>
-References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
-	<20140603131203.GA23395@redhat.com>
-	<20140605083134.GE3506@darkstar.nay.redhat.com>
-	<20140605150159.GA14083@redhat.com>
-	<20140606073748.GC3343@darkstar.nay.redhat.com>
-	<53922686.6010301@zytor.com>
-	<CAL01qpsf_-Ae_P-mfmqfu6DYavcb866YUnE4XM_7vdhfcAvMGg@mail.gmail.com>
-	<53922C01.4040800@zytor.com>
-Date: Fri, 6 Jun 2014 22:02:40 +0100
-Message-ID: <CAL01qpu4P0+_yNoBekcpohuSv+n=u=a8sEnBMhfi7DzDRiiEfQ@mail.gmail.com>
-Subject: Re: [RFC PATCH 00/13][V3] kexec: A new system call to allow in kernel loading
-From: Matt Fleming <matt.fleming@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Dave Young <dyoung@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kexec@lists.infradead.org, ebiederm@xmission.com,
-        "mjg59@srcf.ucam.org" <mjg59@srcf.ucam.org>, greg@kroah.com,
-        "bp@alien8.de" <bp@alien8.de>, "jkosina@suse.cz" <jkosina@suse.cz>,
-        chaowang@redhat.com, bhe@redhat.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>, gorcunov@openvz.org,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, luto@amacapital.net,
+        mingo@kernel.org, sasha.levin@oracle.com, stefani@seibold.net,
+        tglx@linutronix.de, xemul@parallels.com, kbuild@vger.kernel.org,
+        Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: [GIT PULL] x86/vdso changes for v3.16
+References: <201406042235.s54MZgwP020553@terminus.zytor.com> <20140606140017.afb7f91142f66cb3dd13c186@linux-foundation.org>
+In-Reply-To: <20140606140017.afb7f91142f66cb3dd13c186@linux-foundation.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6 June 2014 22:00, H. Peter Anvin <hpa@zytor.com> wrote:
->
-> Yes, presumably (as a separate patch since the actual commit is quite
-> large.)  The patch needs to have a good description why the original
-> patch was wrong.
+On 06/06/2014 02:00 PM, Andrew Morton wrote:
+> On Wed, 4 Jun 2014 15:35:42 -0700 "H. Peter Anvin" <hpa@linux.intel.com> wrote:
+> 
+>> Vdso cleanups and improvements largely from Andy Lutomirski.
+> 
+> arch/x86/vdso/vdso2c.h: In function 'go64':
+> arch/x86/vdso/vdso2c.h:21: warning: implicit declaration of function 'le64toh'
+> arch/x86/vdso/vdso2c.h:21: warning: implicit declaration of function 'le32toh'
+> arch/x86/vdso/vdso2c.h:21: warning: implicit declaration of function 'le16toh'
+> arch/x86/vdso/vdso2c.h:119: warning: implicit declaration of function 'htole16'
+> 
+> My Fedora Core 6 (lol gotcha) test box doesn't have these.
+> 
+> http://www.unix.com/man-page/linux/3/le64toh/ has some details.  I
+> don't appear to have letoh64 and friends either.  
+> 
 
-Right. I'll take a look at this in the morning.
+OK... so now we have a tools baseline problem.  It isn't that we
+couldn't open-code these functions, but of course we'd also like to not
+*have* to do so... but also we don't want to have the kernel build rely
+on autoconf ;)
+
+So we have a few options, here:
+
+1. We could use the unaligned macros defined in
+   tools/include/tools/*_byteshift.h.
+
+2. Open-code it.
+
+3. Define a baseline which includes these kinds of functions.
+
+I guess I would be leaning toward #1, but would also wonder if that also
+means we should add -I$(srctree)/tools/include to the global settings
+... we are *already* adding it to HOSTCFLAGS_sortextable.o.
+
+Thoughs?
+
+	-hpa
+
