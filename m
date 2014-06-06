@@ -1,39 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752465AbaFFXrO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 19:47:14 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:60667 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752371AbaFFXrN (ORCPT
+	id S1752563AbaFFXrU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 19:47:20 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:60163 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752484AbaFFXrQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 19:47:13 -0400
+	Fri, 6 Jun 2014 19:47:16 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: stefani@seibold.net, x86@kernel.org
 Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH 0/2] Update vDSO examples for 32-bit systems
-Date: Fri,  6 Jun 2014 16:47:04 -0700
-Message-Id: <cover.1402098294.git.luto@amacapital.net>
+Subject: [PATCH 1/2] doc,vdso: Rename vdso_test.c to vdso_standalone_test_x86.c
+Date: Fri,  6 Jun 2014 16:47:05 -0700
+Message-Id: <6f87666eaf9e45d084b589e4a3f4102717877569.1402098295.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <cover.1402098294.git.luto@amacapital.net>
+References: <cover.1402098294.git.luto@amacapital.net>
+In-Reply-To: <cover.1402098294.git.luto@amacapital.net>
+References: <cover.1402098294.git.luto@amacapital.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have useful code in the 32-bit x86 vDSO now; update the sample code.
+This thing is hopelessly x86_64-specific: it's an example of how to
+access the vDSO without any runtime support at all.
 
-Despite the late submission, this might be 3.16 material: it's just
-documentation.  If I'd been more on top of this, I would have done it
-for 3.15.
-
-Andy Lutomirski (2):
-  doc,vdso: Rename vdso_test.c to vdso_standalone_test_x86.c
-  doc,vdso: Make vDSO examples more portable
-
- Documentation/vDSO/parse_vdso.c               |  59 ++++++------
- Documentation/vDSO/vdso_standalone_test_x86.c | 128 ++++++++++++++++++++++++++
- Documentation/vDSO/vdso_test.c                | 103 +++++----------------
- 3 files changed, 181 insertions(+), 109 deletions(-)
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
+ Documentation/vDSO/vdso_standalone_test_x86.c | 111 ++++++++++++++++++++++++++
+ Documentation/vDSO/vdso_test.c                | 111 --------------------------
+ 2 files changed, 111 insertions(+), 111 deletions(-)
  create mode 100644 Documentation/vDSO/vdso_standalone_test_x86.c
+ delete mode 100644 Documentation/vDSO/vdso_test.c
 
+diff --git a/Documentation/vDSO/vdso_standalone_test_x86.c b/Documentation/vDSO/vdso_standalone_test_x86.c
+new file mode 100644
+index 0000000..1523f5d
+--- /dev/null
++++ b/Documentation/vDSO/vdso_standalone_test_x86.c
+@@ -0,0 +1,111 @@
++/*
++ * vdso_test.c: Sample code to test parse_vdso.c on x86_64
++ * Copyright (c) 2011 Andy Lutomirski
++ * Subject to the GNU General Public License, version 2
++ *
++ * You can amuse yourself by compiling with:
++ * gcc -std=gnu99 -nostdlib
++ *     -Os -fno-asynchronous-unwind-tables -flto
++ *      vdso_standalone_test_x86.c parse_vdso.c
++ * to generate a small binary with no dependencies at all.
++ */
++
++#include <sys/syscall.h>
++#include <sys/time.h>
++#include <unistd.h>
++#include <stdint.h>
++
++extern void *vdso_sym(const char *version, const char *name);
++extern void vdso_init_from_sysinfo_ehdr(uintptr_t base);
++extern void vdso_init_from_auxv(void *auxv);
++
++/* We need a libc functions... */
++int strcmp(const char *a, const char *b)
++{
++	/* This implementation is buggy: it never returns -1. */
++	while (*a || *b) {
++		if (*a != *b)
++			return 1;
++		if (*a == 0 || *b == 0)
++			return 1;
++		a++;
++		b++;
++	}
++
++	return 0;
++}
++
++/* ...and two syscalls.  This is x86_64-specific. */
++static inline long linux_write(int fd, const void *data, size_t len)
++{
++
++	long ret;
++	asm volatile ("syscall" : "=a" (ret) : "a" (__NR_write),
++		      "D" (fd), "S" (data), "d" (len) :
++		      "cc", "memory", "rcx",
++		      "r8", "r9", "r10", "r11" );
++	return ret;
++}
++
++static inline void linux_exit(int code)
++{
++	asm volatile ("syscall" : : "a" (__NR_exit), "D" (code));
++}
++
++void to_base10(char *lastdig, uint64_t n)
++{
++	while (n) {
++		*lastdig = (n % 10) + '0';
++		n /= 10;
++		lastdig--;
++	}
++}
++
++__attribute__((externally_visible)) void c_main(void **stack)
++{
++	/* Parse the stack */
++	long argc = (long)*stack;
++	stack += argc + 2;
++
++	/* Now we're pointing at the environment.  Skip it. */
++	while(*stack)
++		stack++;
++	stack++;
++
++	/* Now we're pointing at auxv.  Initialize the vDSO parser. */
++	vdso_init_from_auxv((void *)stack);
++
++	/* Find gettimeofday. */
++	typedef long (*gtod_t)(struct timeval *tv, struct timezone *tz);
++	gtod_t gtod = (gtod_t)vdso_sym("LINUX_2.6", "__vdso_gettimeofday");
++
++	if (!gtod)
++		linux_exit(1);
++
++	struct timeval tv;
++	long ret = gtod(&tv, 0);
++
++	if (ret == 0) {
++		char buf[] = "The time is                     .000000\n";
++		to_base10(buf + 31, tv.tv_sec);
++		to_base10(buf + 38, tv.tv_usec);
++		linux_write(1, buf, sizeof(buf) - 1);
++	} else {
++		linux_exit(ret);
++	}
++
++	linux_exit(0);
++}
++
++/*
++ * This is the real entry point.  It passes the initial stack into
++ * the C entry point.
++ */
++asm (
++	".text\n"
++	".global _start\n"
++        ".type _start,@function\n"
++        "_start:\n\t"
++        "mov %rsp,%rdi\n\t"
++        "jmp c_main"
++	);
+diff --git a/Documentation/vDSO/vdso_test.c b/Documentation/vDSO/vdso_test.c
+deleted file mode 100644
+index fff6334..0000000
+--- a/Documentation/vDSO/vdso_test.c
++++ /dev/null
+@@ -1,111 +0,0 @@
+-/*
+- * vdso_test.c: Sample code to test parse_vdso.c on x86_64
+- * Copyright (c) 2011 Andy Lutomirski
+- * Subject to the GNU General Public License, version 2
+- *
+- * You can amuse yourself by compiling with:
+- * gcc -std=gnu99 -nostdlib
+- *     -Os -fno-asynchronous-unwind-tables -flto
+- *      vdso_test.c parse_vdso.c -o vdso_test
+- * to generate a small binary with no dependencies at all.
+- */
+-
+-#include <sys/syscall.h>
+-#include <sys/time.h>
+-#include <unistd.h>
+-#include <stdint.h>
+-
+-extern void *vdso_sym(const char *version, const char *name);
+-extern void vdso_init_from_sysinfo_ehdr(uintptr_t base);
+-extern void vdso_init_from_auxv(void *auxv);
+-
+-/* We need a libc functions... */
+-int strcmp(const char *a, const char *b)
+-{
+-	/* This implementation is buggy: it never returns -1. */
+-	while (*a || *b) {
+-		if (*a != *b)
+-			return 1;
+-		if (*a == 0 || *b == 0)
+-			return 1;
+-		a++;
+-		b++;
+-	}
+-
+-	return 0;
+-}
+-
+-/* ...and two syscalls.  This is x86_64-specific. */
+-static inline long linux_write(int fd, const void *data, size_t len)
+-{
+-
+-	long ret;
+-	asm volatile ("syscall" : "=a" (ret) : "a" (__NR_write),
+-		      "D" (fd), "S" (data), "d" (len) :
+-		      "cc", "memory", "rcx",
+-		      "r8", "r9", "r10", "r11" );
+-	return ret;
+-}
+-
+-static inline void linux_exit(int code)
+-{
+-	asm volatile ("syscall" : : "a" (__NR_exit), "D" (code));
+-}
+-
+-void to_base10(char *lastdig, uint64_t n)
+-{
+-	while (n) {
+-		*lastdig = (n % 10) + '0';
+-		n /= 10;
+-		lastdig--;
+-	}
+-}
+-
+-__attribute__((externally_visible)) void c_main(void **stack)
+-{
+-	/* Parse the stack */
+-	long argc = (long)*stack;
+-	stack += argc + 2;
+-
+-	/* Now we're pointing at the environment.  Skip it. */
+-	while(*stack)
+-		stack++;
+-	stack++;
+-
+-	/* Now we're pointing at auxv.  Initialize the vDSO parser. */
+-	vdso_init_from_auxv((void *)stack);
+-
+-	/* Find gettimeofday. */
+-	typedef long (*gtod_t)(struct timeval *tv, struct timezone *tz);
+-	gtod_t gtod = (gtod_t)vdso_sym("LINUX_2.6", "__vdso_gettimeofday");
+-
+-	if (!gtod)
+-		linux_exit(1);
+-
+-	struct timeval tv;
+-	long ret = gtod(&tv, 0);
+-
+-	if (ret == 0) {
+-		char buf[] = "The time is                     .000000\n";
+-		to_base10(buf + 31, tv.tv_sec);
+-		to_base10(buf + 38, tv.tv_usec);
+-		linux_write(1, buf, sizeof(buf) - 1);
+-	} else {
+-		linux_exit(ret);
+-	}
+-
+-	linux_exit(0);
+-}
+-
+-/*
+- * This is the real entry point.  It passes the initial stack into
+- * the C entry point.
+- */
+-asm (
+-	".text\n"
+-	".global _start\n"
+-        ".type _start,@function\n"
+-        "_start:\n\t"
+-        "mov %rsp,%rdi\n\t"
+-        "jmp c_main"
+-	);
 -- 
 1.9.3
 
