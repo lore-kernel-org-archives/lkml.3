@@ -1,98 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752278AbaFFKzk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 06:55:40 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:33087 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751541AbaFFKzj (ORCPT
+	id S1752485AbaFFK4A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 06:56:00 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:60015 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752097AbaFFKz7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 06:55:39 -0400
-Message-ID: <53919E24.3010206@hurleysoftware.com>
-Date: Fri, 06 Jun 2014 06:55:32 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
+	Fri, 6 Jun 2014 06:55:59 -0400
+Message-ID: <53919E3A.7070008@gmail.com>
+Date: Fri, 06 Jun 2014 12:55:54 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Pranith Kumar <bobby.prani@gmail.com>, Pranith Kumar <pranith@gatech.edu>,
-        dwmw2@infradead.org, joro@8bytes.org
-CC: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] use documented cmpxchg api
-References: <5390ED07.2070009@gatech.edu> <53910C95.7000808@hurleysoftware.com> <5391136C.3010809@gmail.com>
-In-Reply-To: <5391136C.3010809@gmail.com>
+To: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
+	<antoine.tenart@free-electrons.com>,
+        Peter.Chen@freescale.com
+CC: alexandre.belloni@free-electrons.com, thomas.petazzoni@free-electrons.com,
+        zmxu@marvell.com, jszhang@marvell.com,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/9] usb: chipidea: add Berlin USB support
+References: <1401983326-19205-1-git-send-email-antoine.tenart@free-electrons.com> <1401983326-19205-7-git-send-email-antoine.tenart@free-electrons.com>
+In-Reply-To: <1401983326-19205-7-git-send-email-antoine.tenart@free-electrons.com>
 Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2014 09:03 PM, Pranith Kumar wrote:
-> On 06/05/2014 08:34 PM, Peter Hurley wrote:
->> On 06/05/2014 06:19 PM, Pranith Kumar wrote:
->>> use the documented atomic_cmpxchg instead of __cmpxchg64
->>>
->>> This kills the last user of said API in drivers code.
->>>
->>>
->>> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
->>> ---
->>>    drivers/iommu/intel-iommu.c |    2 +-
->>>    1 file changed, 1 insertion(+), 1 deletion(-)
->>>
->>> diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
->>> index 6bb3277..270113f 100644
->>> --- a/drivers/iommu/intel-iommu.c
->>> +++ b/drivers/iommu/intel-iommu.c
->>> @@ -293,7 +293,7 @@ static inline u64 dma_pte_addr(struct dma_pte *pte)
->>>        return pte->val & VTD_PAGE_MASK;
->>>    #else
->>>        /* Must have a full atomic 64-bit read */
->>> -    return  __cmpxchg64(&pte->val, 0ULL, 0ULL) & VTD_PAGE_MASK;
->>> +    return  atomic_cmpxchg(&pte->val, 0ULL, 0ULL) & VTD_PAGE_MASK;
->>
->> This is not equivalent.
->>
->> The __cmpxchg64() is specifically being used in this case
->> when !CONFIG_64BIT for a full 64-bit RMW, whereas atomic_cmpxchg()
->> uses ints which would be 32-bit RMW.
->>
+On 06/05/2014 05:48 PM, Antoine Ténart wrote:
+> The Marvell Berlin USB controllers are compatible with ChipIdea. Add a
+> driver using the ChipIdea common functions to support them.
 >
->
-> You are right! The previous patch is wrong in that atomic_cmpxchg needs an atomic_t argument.
-> cmpxchg() handles the size internally using typeof() to figure out the width of RMW.
-> There is also an explicit cmpxchg64() which does the same thing.
-
-
-This won't work either, and should generate a compile or link error
-on CONFIG_X86_32.
-
-The auto-sizing done by __cmpxchg() does not substitute the cmpxchg8b
-instruction for the cmpxchg instruction. __X86_CASE_Q is defined as -1 for
-CONFIG_X86_32 so the 8-byte size variant is dead-code, and calls
-__cmpxchg_wrong_size() instead.
-
-
-> Fixed with the following v2:
->
-> use the documented cmpxchg instead of __cmpxchg64
->
-> This kills the last user of said API in drivers code.
->
-> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
 > ---
->   drivers/iommu/intel-iommu.c |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
-> diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-> index 6bb3277..270113f 100644
-> --- a/drivers/iommu/intel-iommu.c
-> +++ b/drivers/iommu/intel-iommu.c
-> @@ -293,7 +293,7 @@ static inline u64 dma_pte_addr(struct dma_pte *pte)
->   	return pte->val & VTD_PAGE_MASK;
->   #else
->   	/* Must have a full atomic 64-bit read */
-> -	return  __cmpxchg64(&pte->val, 0ULL, 0ULL) & VTD_PAGE_MASK;
-> +	return  cmpxchg(&pte->val, 0ULL, 0ULL) & VTD_PAGE_MASK;
->   #endif
->   }
+>   drivers/usb/chipidea/Makefile         |   1 +
+>   drivers/usb/chipidea/ci_hdrc_berlin.c | 108 ++++++++++++++++++++++++++++++++++
+>   2 files changed, 109 insertions(+)
+>   create mode 100644 drivers/usb/chipidea/ci_hdrc_berlin.c
+>
+> diff --git a/drivers/usb/chipidea/Makefile b/drivers/usb/chipidea/Makefile
+> index 480bd4d5710a..b3a1b0b3b7a9 100644
+> --- a/drivers/usb/chipidea/Makefile
+> +++ b/drivers/usb/chipidea/Makefile
+> @@ -19,4 +19,5 @@ endif
+>
+>   ifneq ($(CONFIG_OF),)
+>   	obj-$(CONFIG_USB_CHIPIDEA)	+= usbmisc_imx.o ci_hdrc_imx.o
+> +	obj-$(CONFIG_USB_CHIPIDEA)	+= ci_hdrc_berlin.o
+>   endif
+> diff --git a/drivers/usb/chipidea/ci_hdrc_berlin.c b/drivers/usb/chipidea/ci_hdrc_berlin.c
+> new file mode 100644
+> index 000000000000..567d83039e3e
+> --- /dev/null
+> +++ b/drivers/usb/chipidea/ci_hdrc_berlin.c
+> @@ -0,0 +1,108 @@
+> +/*
+> + * Copyright (C) 2014 Marvell Technology Group Ltd.
+> + *
+> + * Antoine Ténart <antoine.tenart@free-electrons.com>
+> + *
+> + * This file is licensed under the terms of the GNU General Public
+> + * License version 2. This program is licensed "as is" without any
+> + * warranty of any kind, whether express or implied.
+> + */
+> +
+> +#include <linux/clk.h>
+> +#include <linux/module.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/usb/chipidea.h>
+> +#include <linux/usb/hcd.h>
+> +#include <linux/usb/ulpi.h>
+> +
+> +#include "ci.h"
+> +
+> +struct ci_hdrc_berlin_priv {
+> +	struct platform_device	*ci_pdev;
+> +	struct clk		*clk;
+> +};
+> +
+> +static int ci_hdrc_berlin_probe(struct platform_device *pdev)
+> +{
+> +	struct device *dev = &pdev->dev;
+> +	struct ci_hdrc_berlin_priv *priv;
+> +	struct ci_hdrc_platform_data ci_pdata = {
+> +		.name		= "ci_hdrc_berlin",
+> +		.capoffset	= DEF_CAPOFFSET,
+> +		.flags		= CI_HDRC_REQUIRE_TRANSCEIVER |
+> +				  CI_HDRC_DISABLE_STREAMING,
+> +	};
+> +	int ret;
+> +
+> +	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
+> +	if (!priv)
+> +		return -ENOMEM;
+> +
+> +	priv->clk = devm_clk_get(dev, NULL);
+> +	if (IS_ERR(priv->clk)) {
+> +		dev_err(dev, "failed to get clock: %ld\n", PTR_ERR(priv->clk));
+> +		return PTR_ERR(priv->clk);
+> +	}
+> +
+> +	ret = clk_prepare_enable(priv->clk);
+> +	if (ret)
+> +		return ret;
+> +
+> +	ci_pdata.phy = devm_usb_get_phy_by_phandle(dev, "marvell,usbphy", 0);
+> +	if (IS_ERR(ci_pdata.phy)) {
+> +		ret = PTR_ERR(ci_pdata.phy);
+> +		goto clk_err;
+> +	}
+> +
+> +	priv->ci_pdev = ci_hdrc_add_device(dev, pdev->resource,
+> +				     pdev->num_resources, &ci_pdata);
+> +	if (IS_ERR(priv->ci_pdev)) {
+> +		ret = PTR_ERR(priv->ci_pdev);
+> +		dev_err(dev,
+> +			"failed to register ci_hdrc platform device: %d\n",
+> +			ret);
+> +		goto clk_err;
+> +	}
+> +
+> +	platform_set_drvdata(pdev, priv);
+> +
+> +	pm_runtime_no_callbacks(dev);
+> +	pm_runtime_enable(dev);
+> +
+> +	return 0;
+> +
+> +clk_err:
+> +	clk_disable_unprepare(priv->clk);
+> +	return ret;
+> +}
+> +
+> +static int ci_hdrc_berlin_remove(struct platform_device *pdev)
+> +{
+> +	struct ci_hdrc_berlin_priv *priv = platform_get_drvdata(pdev);
+> +
+> +	pm_runtime_disable(&pdev->dev);
+> +	ci_hdrc_remove_device(priv->ci_pdev);
+> +	clk_disable_unprepare(priv->clk);
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct of_device_id ci_hdrc_berlin_of_match[] = {
+> +	{ .compatible = "marvell,berlin-usb" },
 
+Looking at the driver, I can see no Berlin-specific code at all. Maybe
+we just take the chance and have a generic chipidea boiler plate driver
+now?
+
+Sebastian
+
+> +	{ }
+> +};
+> +
+> +static struct platform_driver ci_hdrc_berlin_driver = {
+> +	.probe	= ci_hdrc_berlin_probe,
+> +	.remove	= ci_hdrc_berlin_remove,
+> +	.driver	= {
+> +		.name		= "berlin-usb",
+> +		.owner		= THIS_MODULE,
+> +		.of_match_table	= ci_hdrc_berlin_of_match,
+> +	},
+> +};
+> +module_platform_driver(ci_hdrc_berlin_driver);
+> +
+> +MODULE_DESCRIPTION("ChipIdea HDRC Berlin USB binding");
+> +MODULE_AUTHOR("Antoine Ténart <antoine.tenart@free-electrons.com>");
+> +MODULE_LICENSE("GPL");
+>
 
