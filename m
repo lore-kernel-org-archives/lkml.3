@@ -1,52 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752752AbaFFJNX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 05:13:23 -0400
-Received: from mail-la0-f74.google.com ([209.85.215.74]:48135 "EHLO
-	mail-la0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752636AbaFFJNB (ORCPT
+	id S1752671AbaFFJQK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 05:16:10 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:33895 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752030AbaFFJQH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 05:13:01 -0400
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Felipe Balbi <balbi@ti.com>, Krzysztof Opasiak <k.opasiak@samsung.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, Michal Nazarewicz <mina86@mina86.com>
-Subject: [PATCHv2 2/5] tools: ffs-test: fix header values endianess
-Date: Fri,  6 Jun 2014 11:12:53 +0200
-Message-Id: <1402045976-26580-2-git-send-email-mina86@mina86.com>
-X-Mailer: git-send-email 2.0.0.526.g5318336
-In-Reply-To: <1402045976-26580-1-git-send-email-mina86@mina86.com>
-References: <1402045976-26580-1-git-send-email-mina86@mina86.com>
+	Fri, 6 Jun 2014 05:16:07 -0400
+Date: Fri, 6 Jun 2014 11:16:03 +0200
+From: Christoffer Dall <christoffer.dall@linaro.org>
+To: Eric Auger <eric.auger@linaro.org>
+Cc: eric.auger@st.com, marc.zyngier@arm.com,
+        linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org, patches@linaro.org,
+        christophe.barnichon@st.com
+Subject: Re: [PATCH v3] ARM: KVM: Unmap IPA on memslot delete/move
+Message-ID: <20140606091603.GA22341@lvm>
+References: <1402045823-26912-1-git-send-email-eric.auger@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402045823-26912-1-git-send-email-eric.auger@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It appears that no one ever run ffs-test on a big-endian machine,
-since it used cpu-endianess for fs_count and hs_count fields which
-should be in little-endian format.  Fix by wrapping the numbers in
-cpu_to_le32.
+On Fri, Jun 06, 2014 at 11:10:23AM +0200, Eric Auger wrote:
+> Currently when a KVM region is deleted or moved after
+> KVM_SET_USER_MEMORY_REGION ioctl, the corresponding
+> intermediate physical memory is not unmapped.
+> 
+> This patch corrects this and unmaps the region's IPA range
+> in kvm_arch_commit_memory_region using unmap_stage2_range.
+> 
+> Signed-off-by: Eric Auger <eric.auger@linaro.org>
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
----
- tools/usb/ffs-test.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+I think I already acked it in the last version, if Marc is ok with it, I
+can queue it for next.
 
-diff --git a/tools/usb/ffs-test.c b/tools/usb/ffs-test.c
-index fe1e66b..a87e99f 100644
---- a/tools/usb/ffs-test.c
-+++ b/tools/usb/ffs-test.c
-@@ -116,8 +116,8 @@ static const struct {
- 	.header = {
- 		.magic = cpu_to_le32(FUNCTIONFS_DESCRIPTORS_MAGIC),
- 		.length = cpu_to_le32(sizeof descriptors),
--		.fs_count = 3,
--		.hs_count = 3,
-+		.fs_count = cpu_to_le32(3),
-+		.hs_count = cpu_to_le32(3),
- 	},
- 	.fs_descs = {
- 		.intf = {
--- 
-2.0.0.526.g5318336
-
+-Christoffer
