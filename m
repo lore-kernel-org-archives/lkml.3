@@ -1,83 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752043AbaFFGxj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 02:53:39 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:60244 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750802AbaFFGxh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 02:53:37 -0400
-Message-ID: <53916556.10608@ti.com>
-Date: Fri, 6 Jun 2014 01:53:10 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752112AbaFFGx6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 02:53:58 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:63321 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752075AbaFFGx5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 02:53:57 -0400
+Date: Fri, 6 Jun 2014 07:53:51 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/3] mfd: UCB1x00: enable modular build
+Message-ID: <20140606065351.GL24240@lee--X1>
+References: <1402003454-1989084-1-git-send-email-arnd@arndb.de>
+ <1402003454-1989084-2-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
-To: George Cherian <george.cherian@ti.com>, <tony@atomide.com>,
-        <bcousson@baylibre.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH] ARM: dts: am43x-epos-evm: Add Missing cpsw-phy-sel for
- am43x-epos-evm
-References: <1402035454-25676-1-git-send-email-george.cherian@ti.com>
-In-Reply-To: <1402035454-25676-1-git-send-email-george.cherian@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1402003454-1989084-2-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/2014 01:17 AM, George Cherian wrote:
-> AM437x EPOS evm use external clock for RMII interface.
-> Enable the same in DT. 
+> The UCB1200 / UCB1300 driver uses the MCP_SA11X0 driver, which
+> can be a loadable module, but this results in a link error
+> when UCB1200 itself is built-in:
 > 
-> Signed-off-by: George Cherian <george.cherian@ti.com>
-> Reported-by: Nishanth Menon <nm@ti.com>
+> drivers/built-in.o: In function `ucb1x00_io_set_dir':
+> :(.text+0x4a364): undefined reference to `mcp_reg_write'
+> drivers/built-in.o: In function `ucb1x00_io_write':
+> :(.text+0x4a3dc): undefined reference to `mcp_reg_write'
+> drivers/built-in.o: In function `ucb1x00_io_read':
+> :(.text+0x4a400): undefined reference to `mcp_reg_read'
+> drivers/built-in.o: In function `ucb1x00_adc_enable':
+> :(.text+0x4a460): undefined reference to `mcp_enable'
+> ...
+> 
+> This can easily be resolved by making CONFIG_MCP_UCB1200 itself
+> a tristate option, since that causes Kconfig to track the
+> dependency correctly.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 > ---
->  arch/arm/boot/dts/am43x-epos-evm.dts | 4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/am43x-epos-evm.dts b/arch/arm/boot/dts/am43x-epos-evm.dts
-> index 19f1f7e..90098f9 100644
-> --- a/arch/arm/boot/dts/am43x-epos-evm.dts
-> +++ b/arch/arm/boot/dts/am43x-epos-evm.dts
-> @@ -319,6 +319,10 @@
->  	phy-mode = "rmii";
->  };
+>  drivers/mfd/Kconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+
+Applied, thanks.
+
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index ee8204c..4370692 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -1248,7 +1248,7 @@ config MCP_SA11X0
 >  
-> +&phy_sel {
-> +	rmii-clock-ext;
-> +};
-> +
->  &i2c0 {
->  	status = "okay";
->  	pinctrl-names = "default";
-> 
-Where does this apply on?
-With linux-next next-20140506 tag, and this patch applied, I get the
-following error.
-
-  LD      kernel/trace/built-in.o
-  LD      kernel/built-in.o
-build fail, Error:
-Error: arch/arm/boot/dts/am43x-epos-evm.dts:219.2-3 label or path,
-'phy_sel', not found
-FATAL ERROR: Syntax error parsing input tree
-make[1]: *** [arch/arm/boot/dts/am43x-epos-evm.dtb] Error 1
-make[1]: *** Waiting for unfinished jobs....
-make: *** [dtbs] Error 2
-make: *** Waiting for unfinished jobs....
-
-in the future, it is helpful if you can point out that this is a
-regression seen on next-20140603 and the patch needs to be applied on
-some specific branch.
-
-for the record:
-last working next tag:
-https://github.com/nmenon/kernel-test-logs/blob/next-20140602/omap2plus_defconfig/am43xx-epos.txt
-
-first broken next tag:
-https://github.com/nmenon/kernel-test-logs/blob/next-20140603/omap2plus_defconfig/am43xx-epos.txt
-
+>  # Chip drivers
+>  config MCP_UCB1200
+> -	bool "Support for UCB1200 / UCB1300"
+> +	tristate "Support for UCB1200 / UCB1300"
+>  	depends on MCP_SA11X0
+>  	select MCP
+>  
 
 -- 
-Regards,
-Nishanth Menon
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
