@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752668AbaFFP50 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 11:57:26 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:45086 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752042AbaFFP5Y convert rfc822-to-8bit (ORCPT
+	id S1752244AbaFFQBL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 12:01:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37831 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751693AbaFFQBK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 11:57:24 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Ken Helias'" <kenhelias@firemail.de>,
-        lkml <linux-kernel@vger.kernel.org>
-CC: "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "b.a.t.m.a.n@lists.open-mesh.org" <b.a.t.m.a.n@lists.open-mesh.org>,
-        "bridge@lists.linux-foundation.org" 
-	<bridge@lists.linux-foundation.org>
-Subject: RE: [PATCH] list: Fix order of arguments for hlist_add_after(_rcu)
-Thread-Topic: [PATCH] list: Fix order of arguments for hlist_add_after(_rcu)
-Thread-Index: AQHPgXQ+hBdMMebuGkWiQFDRKWBroJtkPA2w
-Date: Fri, 6 Jun 2014 15:56:52 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D17258AEA@AcuExch.aculab.com>
-References: <1402047743-3391-1-git-send-email-kenhelias@firemail.de>
-In-Reply-To: <1402047743-3391-1-git-send-email-kenhelias@firemail.de>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Fri, 6 Jun 2014 12:01:10 -0400
+Date: Fri, 6 Jun 2014 09:01:03 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Eli Billauer <eli.billauer@gmail.com>
+Cc: Joerg Roedel <joro@8bytes.org>, devel@driverdev.osuosl.org,
+        Shuah Khan <shuah.kh@samsung.com>, discuss@x86-64.org,
+        linux-kernel@vger.kernel.org, bhelgaas@google.com,
+        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH v2 1/4] dma-mapping: Add devm_ interface for
+ dma_map_single()
+Message-ID: <20140606160103.GG15110@kroah.com>
+References: <1401606077-1739-1-git-send-email-eli.billauer@gmail.com>
+ <1401606077-1739-2-git-send-email-eli.billauer@gmail.com>
+ <538E3D04.9060808@samsung.com>
+ <20140603233907.GB23880@8bytes.org>
+ <20140604140408.GC5004@htj.dyndns.org>
+ <20140604141211.GC23880@8bytes.org>
+ <20140604141416.GD5004@htj.dyndns.org>
+ <538F3548.4050101@gmail.com>
+ <20140604212525.GE23880@8bytes.org>
+ <5391A9C2.3040602@gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5391A9C2.3040602@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Behalf Of Ken Helias
-> All other add functions for lists have the new item as first argument and the
-> position where it is added as second argument. This was changed for no good
-> reason in this function and makes using it unnecessary confusing.
+On Fri, Jun 06, 2014 at 02:45:06PM +0300, Eli Billauer wrote:
+> Hello Joerg.
 > 
-> Also the naming of the arguments in hlist_add_after was confusing. It was
-> changed to use the same names as hlist_add_after_rcu.
-...
-> -static inline void hlist_add_after_rcu(struct hlist_node *prev,
-> -				       struct hlist_node *n)
-> +static inline void hlist_add_after_rcu(struct hlist_node *n,
-> +				       struct hlist_node *prev)
+> 
+> On 05/06/14 00:25, Joerg Roedel wrote:
+> >
+> >What you are trying to do should work with dma_alloc_noncoherent(). The
+> >API allows partial syncs on this memory, so you should be fine.
+> Please try to put yourself in my position: I have a driver that I care
+> about, which works fine for a few years. It's based upon dma_map_single(),
+> which seems to be the common way to get non-coherent memory, even for the
+> driver's entire lifespan. I realize that dma_alloc_* was the intended way to
+> do it, but fact is that dma_map_* has become the common choice.
 
-It is rather a shame that the change doesn't generate a compilation
-error for old source files.
+Is your driver in the kernel tree?  If not, you really are on your own :(
 
-	David
-
-
-
+greg k-h
