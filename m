@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752902AbaFFRYS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 13:24:18 -0400
-Received: from thoth.sbs.de ([192.35.17.2]:51997 "EHLO thoth.sbs.de"
+	id S1753058AbaFFRYt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 13:24:49 -0400
+Received: from david.siemens.de ([192.35.17.14]:35925 "EHLO david.siemens.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752437AbaFFRTi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 13:19:38 -0400
+	id S1752410AbaFFRTh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 13:19:37 -0400
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -15,9 +15,9 @@ Cc: Jason Wessel <jason.wessel@windriver.com>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
         Borislav Petkov <bp@suse.de>,
         Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>
-Subject: [PATCH v8 02/22] scripts/gdb: Add cache for type objects
-Date: Fri,  6 Jun 2014 19:18:43 +0200
-Message-Id: <d501ee0a92f9d10f6c27dbdd4b2664b4bf6c5ba5.1402075139.git.jan.kiszka@siemens.com>
+Subject: [PATCH v8 20/22] scripts/gdb: Add lx-lsmod command
+Date: Fri,  6 Jun 2014 19:19:01 +0200
+Message-Id: <344d979850adb0e1de059a742f64857c624db84a.1402075141.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
 In-Reply-To: <cover.1402075136.git.jan.kiszka@siemens.com>
 References: <cover.1402075136.git.jan.kiszka@siemens.com>
@@ -27,57 +27,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Type lookups are very slow in gdb-python which is often noticeable when
-iterating over a number of objects. Introduce the helper class
-CachedType that keeps a reference to a gdb.Type object but also
-refreshes it after an object file has been loaded.
+This adds a lsmod-like command to list all currently loaded modules of
+the target.
 
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- scripts/gdb/linux/utils.py | 34 ++++++++++++++++++++++++++++++++++
- 1 file changed, 34 insertions(+)
- create mode 100644 scripts/gdb/linux/utils.py
+ scripts/gdb/linux/modules.py | 46 +++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 45 insertions(+), 1 deletion(-)
 
-diff --git a/scripts/gdb/linux/utils.py b/scripts/gdb/linux/utils.py
-new file mode 100644
-index 0000000..f883611
---- /dev/null
-+++ b/scripts/gdb/linux/utils.py
-@@ -0,0 +1,34 @@
-+#
-+# gdb helper commands and functions for Linux kernel debugging
-+#
-+#  common utilities
-+#
-+# Copyright (c) Siemens AG, 2011-2013
-+#
-+# Authors:
-+#  Jan Kiszka <jan.kiszka@siemens.com>
-+#
-+# This work is licensed under the terms of the GNU GPL version 2.
-+#
-+
-+import gdb
+diff --git a/scripts/gdb/linux/modules.py b/scripts/gdb/linux/modules.py
+index 531f763..e7c99e9 100644
+--- a/scripts/gdb/linux/modules.py
++++ b/scripts/gdb/linux/modules.py
+@@ -13,7 +13,7 @@
+ 
+ import gdb
+ 
+-from linux import utils
++from linux import cpus, utils
+ 
+ 
+ module_type = utils.CachedType("struct module")
+@@ -65,3 +65,47 @@ of the target and return that module variable which MODULE matches."""
+ 
+ 
+ LxModule()
 +
 +
-+class CachedType:
-+    def __init__(self, name):
-+        self._type = None
-+        self._name = name
++class LxLsmod(gdb.Command):
++    """List currently loaded modules."""
 +
-+    def _new_objfile_handler(self, event):
-+        self._type = None
-+        gdb.events.new_objfile.disconnect(self._new_objfile_handler)
++    _module_use_type = utils.CachedType("struct module_use")
 +
-+    def get_type(self):
-+        if self._type is None:
-+            self._type = gdb.lookup_type(self._name)
-+            if self._type is None:
-+                raise gdb.GdbError(
-+                    "cannot resolve type '{0}'".format(self._name))
-+            if hasattr(gdb, 'events') and hasattr(gdb.events, 'new_objfile'):
-+                gdb.events.new_objfile.connect(self._new_objfile_handler)
-+        return self._type
++    def __init__(self):
++        super(LxLsmod, self).__init__("lx-lsmod", gdb.COMMAND_DATA)
++
++    def invoke(self, arg, from_tty):
++        gdb.write(
++            "Address{0}    Module                  Size  Used by\n".format(
++                "        " if utils.get_long_type().sizeof == 8 else ""))
++
++        for module in ModuleList():
++            ref = 0
++            module_refptr = module['refptr']
++            for cpu in cpus.CpuList("cpu_possible_mask"):
++                refptr = cpus.per_cpu(module_refptr, cpu)
++                ref += refptr['incs']
++                ref -= refptr['decs']
++
++            gdb.write("{address} {name:<19} {size:>8}  {ref}".format(
++                address=str(module['module_core']).split()[0],
++                name=module['name'].string(),
++                size=module['core_size'],
++                ref=ref))
++
++            source_list = module['source_list']
++            t = self._module_use_type.get_type().pointer()
++            entry = source_list['next']
++            first = True
++            while entry != source_list.address:
++                use = utils.container_of(entry, t, "source_list")
++                gdb.write("{separator}{name}".format(
++                    separator=" " if first else ",",
++                    name=use['source']['name'].string()))
++                first = False
++                entry = entry['next']
++            gdb.write("\n")
++
++
++LxLsmod()
 -- 
 1.8.1.1.298.ge7eed54
 
