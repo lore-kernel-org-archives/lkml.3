@@ -1,59 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751876AbaFFMT0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 08:19:26 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:57978 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751135AbaFFMTZ (ORCPT
+	id S1751650AbaFFMUe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 08:20:34 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60937 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750840AbaFFMUc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 08:19:25 -0400
-X-Nat-Received: from [202.181.97.72]:59536 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1402057163.21672
-To: david@fromorbit.com
-Cc: rientjes@google.com, Motohiro.Kosaki@us.fujitsu.com, riel@redhat.com,
-        kosaki.motohiro@jp.fujitsu.com, fengguang.wu@intel.com,
-        kamezawa.hiroyu@jp.fujitsu.com, akpm@linux-foundation.org,
-        hch@infradead.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: [PATCH] mm/vmscan: Do not block forever atshrink_inactive_list().
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <6B2BA408B38BA1478B473C31C3D2074E31D59D8673@SV-EXCHANGE1.Corp.FC.LOCAL>
-	<201405262045.CDG95893.HLFFOSFMQOVOJt@I-love.SAKURA.ne.jp>
-	<alpine.DEB.2.02.1406031442170.19491@chino.kir.corp.google.com>
-	<201406052145.CIB35534.OQLVMSJFOHtFOF@I-love.SAKURA.ne.jp>
-	<20140605131753.GD4523@dastard>
-In-Reply-To: <20140605131753.GD4523@dastard>
-Message-Id: <201406062119.HHJ30796.FtLFOSFJOOVQMH@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Fri, 6 Jun 2014 21:19:22 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 06062014 #8155937, status: clean
+	Fri, 6 Jun 2014 08:20:32 -0400
+Date: Fri, 6 Jun 2014 05:19:15 -0700
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-e041e328c4b41e1db79bfe5ba9992c2ed771ad19@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org, acme@kernel.org,
+        davej@redhat.com, viro@zeniv.linux.org.uk, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org, davej@redhat.com,
+        acme@kernel.org, viro@zeniv.linux.org.uk, tglx@linutronix.de
+In-Reply-To: <20140521153219.GH5226@laptop.programming.kicks-ass.net>
+References: <20140521153219.GH5226@laptop.programming.kicks-ass.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf: Fix perf_event_comm() vs. exec() assumption
+Git-Commit-ID: e041e328c4b41e1db79bfe5ba9992c2ed771ad19
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Chinner wrote:
-> On Thu, Jun 05, 2014 at 09:45:26PM +0900, Tetsuo Handa wrote:
-> > This means that, under rare circumstances, it is possible that all processes
-> > other than kswapd are trapped into too_many_isolated()/congestion_wait() loop
-> > while kswapd is sleeping because this loop assumes that somebody else shall
-> > wake up kswapd and kswapd shall perform operations for making
-> > too_many_isolated() to return 0. However, we cannot guarantee that kswapd is
-> > waken by somebody nor kswapd is not blocked by blocking operations inside
-> > shrinker functions (e.g. mutex_lock()).
-> 
-> So what you are saying is that kswapd is having problems with
-> getting blocked on locks held by processes in direct reclaim?
-> 
-> What are the stack traces that demonstrate such a dependency loop?
+Commit-ID:  e041e328c4b41e1db79bfe5ba9992c2ed771ad19
+Gitweb:     http://git.kernel.org/tip/e041e328c4b41e1db79bfe5ba9992c2ed771ad19
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Wed, 21 May 2014 17:32:19 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Fri, 6 Jun 2014 07:54:02 +0200
 
-If a normal task's GFP_KERNEL memory allocation called a shrinker function and
-the shrinker function does GFP_WAIT-able allocation with a mutex held, there
-is a possibility that kswapd is waken up due to GFP_WAIT-able allocation and
-kswapd calls the shrinker function, and the kswapd is blocked at trying to
-hold the same mutex inside the shrinker function, isn't it?
+perf: Fix perf_event_comm() vs. exec() assumption
 
-Since ttm_dma_pool_shrink_count()/ttm_dma_pool_shrink_scan() holds a mutex
-and ttm_dma_pool_shrink_scan() does GFP_WAIT-able allocation, I think such
-a dependency loop is possible.
+perf_event_comm() assumes that set_task_comm() is only called on
+exec(), and in particular that its only called on current.
+
+Neither are true, as Dave reported a WARN triggered by set_task_comm()
+being called on !current.
+
+Separate the exec() hook from the comm hook.
+
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Link: http://lkml.kernel.org/r/20140521153219.GH5226@laptop.programming.kicks-ass.net
+[ Build fix. ]
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ fs/exec.c                  |  1 +
+ include/linux/perf_event.h |  4 +++-
+ kernel/events/core.c       | 28 ++++++++++++++++------------
+ 3 files changed, 20 insertions(+), 13 deletions(-)
+
+diff --git a/fs/exec.c b/fs/exec.c
+index 238b7aa..a038a41 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1110,6 +1110,7 @@ void setup_new_exec(struct linux_binprm * bprm)
+ 	else
+ 		set_dumpable(current->mm, suid_dumpable);
+ 
++	perf_event_exec();
+ 	set_task_comm(current, kbasename(bprm->filename));
+ 
+ 	/* Set the new mm task size. We have to do that late because it may
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 3ef6ea1..9b5cd19 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -695,6 +695,7 @@ extern struct perf_guest_info_callbacks *perf_guest_cbs;
+ extern int perf_register_guest_info_callbacks(struct perf_guest_info_callbacks *callbacks);
+ extern int perf_unregister_guest_info_callbacks(struct perf_guest_info_callbacks *callbacks);
+ 
++extern void perf_event_exec(void);
+ extern void perf_event_comm(struct task_struct *tsk);
+ extern void perf_event_fork(struct task_struct *tsk);
+ 
+@@ -772,7 +773,7 @@ extern void perf_event_enable(struct perf_event *event);
+ extern void perf_event_disable(struct perf_event *event);
+ extern int __perf_event_disable(void *info);
+ extern void perf_event_task_tick(void);
+-#else
++#else /* !CONFIG_PERF_EVENTS: */
+ static inline void
+ perf_event_task_sched_in(struct task_struct *prev,
+ 			 struct task_struct *task)			{ }
+@@ -802,6 +803,7 @@ static inline int perf_unregister_guest_info_callbacks
+ (struct perf_guest_info_callbacks *callbacks)				{ return 0; }
+ 
+ static inline void perf_event_mmap(struct vm_area_struct *vma)		{ }
++static inline void perf_event_exec(void)				{ }
+ static inline void perf_event_comm(struct task_struct *tsk)		{ }
+ static inline void perf_event_fork(struct task_struct *tsk)		{ }
+ static inline void perf_event_init(void)				{ }
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 440eefc..647698f 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -2970,6 +2970,22 @@ out:
+ 	local_irq_restore(flags);
+ }
+ 
++void perf_event_exec(void)
++{
++	struct perf_event_context *ctx;
++	int ctxn;
++
++	rcu_read_lock();
++	for_each_task_context_nr(ctxn) {
++		ctx = current->perf_event_ctxp[ctxn];
++		if (!ctx)
++			continue;
++
++		perf_event_enable_on_exec(ctx);
++	}
++	rcu_read_unlock();
++}
++
+ /*
+  * Cross CPU call to read the hardware event
+  */
+@@ -5057,18 +5073,6 @@ static void perf_event_comm_event(struct perf_comm_event *comm_event)
+ void perf_event_comm(struct task_struct *task)
+ {
+ 	struct perf_comm_event comm_event;
+-	struct perf_event_context *ctx;
+-	int ctxn;
+-
+-	rcu_read_lock();
+-	for_each_task_context_nr(ctxn) {
+-		ctx = task->perf_event_ctxp[ctxn];
+-		if (!ctx)
+-			continue;
+-
+-		perf_event_enable_on_exec(ctx);
+-	}
+-	rcu_read_unlock();
+ 
+ 	if (!atomic_read(&nr_comm_events))
+ 		return;
