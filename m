@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752803AbaFFHbj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 03:31:39 -0400
-Received: from relay-s04-hub006.domainlocalhost.com ([74.115.207.217]:38435
-	"EHLO relay-S04-HUB006.domainlocalhost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752522AbaFFH3N (ORCPT
+	id S1752821AbaFFHcX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 03:32:23 -0400
+Received: from relay-s04-hub002.domainlocalhost.com ([74.115.207.101]:27870
+	"EHLO relay-S04-HUB002.domainlocalhost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752467AbaFFH2y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 03:29:13 -0400
+	Fri, 6 Jun 2014 03:28:54 -0400
 Content-Type: multipart/mixed;
-	boundary="_000_77BC725C9062764F874D79F51E1F1A8F4406C8E4S04MBX0101s04lo_"
+	boundary="_000_77BC725C9062764F874D79F51E1F1A8F4406C8C3S04MBX0101s04lo_"
 From: Dudley Du <dudl@cypress.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
@@ -17,248 +17,466 @@ CC: Benson Leung <bleung@google.com>, Lily Rui <lily@cypress.com>,
         "Daniel Kurtz" <djkurtz@google.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
-Subject: [PATCH v2 9/14] input: cyapa: add gen3 trackpad device read
- firmware image function supported
-Thread-Topic: [PATCH v2 9/14] input: cyapa: add gen3 trackpad device read
- firmware image function supported
-Thread-Index: Ac+BWOzJPIh1Vy0uRvy9B48DS0G8TQ==
-Date: Fri, 6 Jun 2014 07:29:11 +0000
-Message-ID: <77BC725C9062764F874D79F51E1F1A8F4406C8E4@S04-MBX01-01.s04.local>
+Subject: [PATCH v2 5/14] input: cyapa: add read firmware image and raw data
+ interfaces in debugfs system
+Thread-Topic: [PATCH v2 5/14] input: cyapa: add read firmware image and raw
+ data interfaces in debugfs system
+Thread-Index: Ac+BWOlnZdsTdFNRR5mxwICJn+qIrg==
+Date: Fri, 6 Jun 2014 07:28:52 +0000
+Message-ID: <77BC725C9062764F874D79F51E1F1A8F4406C8C3@S04-MBX01-01.s04.local>
 Accept-Language: zh-CN, en-US
 Content-Language: zh-CN
 X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: <77BC725C9062764F874D79F51E1F1A8F4406C8E4@S04-MBX01-01.s04.local>
+X-MS-TNEF-Correlator: <77BC725C9062764F874D79F51E1F1A8F4406C8C3@S04-MBX01-01.s04.local>
 x-originating-ip: [10.30.12.146]
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_000_77BC725C9062764F874D79F51E1F1A8F4406C8E4S04MBX0101s04lo_
+--_000_77BC725C9062764F874D79F51E1F1A8F4406C8C3S04MBX0101s04lo_
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: quoted-printable
 
-Add read firmware image function supported for gen3 trackpad device,
-which its function is supplied through cyapa core read_fw interface.
+Add read_fw and raw_data debugfs interfaces for easier issues location
+and collection when report by user.
 TEST=3Dtest on Chomebooks.
 
 Signed-off-by: Du, Dudley <dudl@cypress.com>
 ---
-diff --git a/drivers/input/mouse/cyapa_gen3.c b/drivers/input/mouse/cyapa_g=
-en3.c
-index 9ffdbc1..e903e62 100644
---- a/drivers/input/mouse/cyapa_gen3.c
-+++ b/drivers/input/mouse/cyapa_gen3.c
-@@ -689,6 +689,35 @@ static int cyapa_gen3_write_fw_block(struct cyapa *cya=
-pa,
-        return ret;
+diff --git a/drivers/input/mouse/cyapa.c b/drivers/input/mouse/cyapa.c
+index 3b80de6..b5dc9f9 100644
+--- a/drivers/input/mouse/cyapa.c
++++ b/drivers/input/mouse/cyapa.c
+@@ -39,6 +39,9 @@
+
+ const char unique_str[] =3D "CYTRA";
+
++/* global root node of the cyapa debugfs directory. */
++static struct dentry *cyapa_debugfs_root;
++
+
+ void cyapa_enable_irq(struct cyapa *cyapa)
+ {
+@@ -205,6 +208,9 @@ const struct cyapa_dev_ops cyapa_default_ops =3D {
+        NULL,
+        NULL,
+
++       NULL,
++       NULL,
++
+        cyapa_default_irq_handler,
+        NULL,
+        NULL,
+@@ -554,6 +560,205 @@ done:
  }
 
-+/*
-+ * A firmware block read command reads 16 bytes of data from flash startin=
-g
-+ * from a given address.  The 12-byte block read command has the format:
-+ *   <0xff> <CMD> <Key> <Addr>
-+ *
-+ *  <0xff>  - every command starts with 0xff
-+ *  <CMD>   - the read command value is 0x3c
-+ *  <Key>   - read commands include an 8-byte key: { 00 01 02 03 04 05 06 =
-07 }
-+ *  <Addr>  - Memory address (16-bit, big-endian)
-+ *
-+ * The command is followed by an i2c block read to read the 16 bytes of da=
-ta.
-+ */
-+static int cyapa_gen3_read_fw_bytes(struct cyapa *cyapa, u16 addr, u8 *dat=
-a)
+ /*
++ **************************************************************
++ * debugfs interface
++ **************************************************************
++*/
++static int cyapa_debugfs_open(struct inode *inode, struct file *file)
 +{
++       struct cyapa *cyapa =3D inode->i_private;
 +       int ret;
-+       u8 cmd[] =3D { 0xff, 0x3c, 0, 1, 2, 3, 4, 5, 6, 7, addr >> 8, addr =
-};
 +
-+       ret =3D cyapa_gen3_write_buffer(cyapa, cmd, sizeof(cmd));
++       if (!cyapa)
++               return -ENODEV;
++
++       ret =3D mutex_lock_interruptible(&cyapa->debugfs_mutex);
 +       if (ret)
 +               return ret;
 +
-+       /* read data buffer starting from offset 16 */
-+       ret =3D cyapa_i2c_reg_read_block(cyapa, 16, CYAPA_FW_READ_SIZE, dat=
-a);
-+       if (ret !=3D CYAPA_FW_READ_SIZE)
-+               return (ret < 0) ? ret : -EIO;
++       if (!kobject_get(&cyapa->client->dev.kobj)) {
++               ret =3D -ENODEV;
++               goto out;
++       }
++
++       file->private_data =3D cyapa;
++
++       if (cyapa->read_fw_image) {
++               ret =3D 0;
++               goto out;
++       }
++
++       if (!cyapa_state_sync_enter(cyapa))
++               return -EBUSY;
++       /*
++        * If firmware hasn't been read yet, read it all in one pass.
++        * Subsequent opens will reuse the data in this same buffer.
++        */
++       if (cyapa->ops->cyapa_read_fw)
++               ret =3D cyapa->ops->cyapa_read_fw(cyapa);
++       else
++               ret =3D -EPERM;
++       cyapa_state_sync_exit(cyapa);
++
++       /* redetect trackpad device states. */
++       cyapa_detect_async(cyapa, 0);
++
++out:
++       mutex_unlock(&cyapa->debugfs_mutex);
++       return ret;
++}
++
++static int cyapa_debugfs_release(struct inode *inode, struct file *file)
++{
++       struct cyapa *cyapa =3D file->private_data;
++       int ret;
++
++       if (!cyapa)
++               return 0;
++
++       ret =3D mutex_lock_interruptible(&cyapa->debugfs_mutex);
++       if (ret)
++               return ret;
++       file->private_data =3D NULL;
++       kobject_put(&cyapa->client->dev.kobj);
++       mutex_unlock(&cyapa->debugfs_mutex);
 +
 +       return 0;
 +}
 +
- static int cyapa_gen3_do_fw_update(struct cyapa *cyapa,
-                const struct firmware *fw)
- {
-@@ -724,6 +753,47 @@ static int cyapa_gen3_do_fw_update(struct cyapa *cyapa=
-,
-        return 0;
- }
-
-+/*
-+ * Read the entire firmware image into ->read_fw_image.
-+ * If the ->read_fw_image has already been allocated, then this function
-+ * doesn't do anything and just returns 0.
-+ * If an error occurs while reading the image, ->read_fw_image is freed, a=
-nd
-+ * the error is returned.
-+ *
-+ * The firmware is a fixed size (CYAPA_FW_SIZE), and is read out in
-+ * fixed length (CYAPA_FW_READ_SIZE) chunks.
-+ */
-+static int cyapa_gen3_read_fw(struct cyapa *cyapa)
++/* Return some bytes from the buffered firmware image, starting from *ppos=
+ */
++static ssize_t cyapa_debugfs_read_fw(struct file *file, char __user *buffe=
+r,
++                                    size_t count, loff_t *ppos)
 +{
++       struct cyapa *cyapa =3D file->private_data;
++
++       if (!cyapa->read_fw_image)
++               return -EINVAL;
++
++       if (*ppos >=3D cyapa->read_fw_image_size)
++               return 0;
++
++       if (count + *ppos > cyapa->read_fw_image_size)
++               count =3D cyapa->read_fw_image_size - *ppos;
++
++       if (copy_to_user(buffer, &cyapa->read_fw_image[*ppos], count))
++               return -EFAULT;
++
++       *ppos +=3D count;
++       return count;
++}
++
++static const struct file_operations cyapa_read_fw_fops =3D {
++       .open =3D cyapa_debugfs_open,
++       .release =3D cyapa_debugfs_release,
++       .read =3D cyapa_debugfs_read_fw
++};
++
++static int cyapa_debugfs_raw_data_open(struct inode *inode, struct file *f=
+ile)
++{
++       struct cyapa *cyapa =3D inode->i_private;
 +       int ret;
-+       int addr;
 +
-+       ret =3D cyapa_gen3_bl_enter(cyapa);
++       if (!cyapa)
++               return -ENODEV;
++
++       ret =3D mutex_lock_interruptible(&cyapa->debugfs_mutex);
 +       if (ret)
-+               goto err;
++               return ret;
 +
-+       cyapa->read_fw_image =3D kmalloc(CYAPA_FW_SIZE, GFP_KERNEL);
-+       if (!cyapa->read_fw_image) {
-+               ret =3D -ENOMEM;
-+               goto err;
++       if (!kobject_get(&cyapa->client->dev.kobj)) {
++               ret =3D -ENODEV;
++               goto out;
 +       }
 +
-+       for (addr =3D 0; addr < CYAPA_FW_SIZE; addr +=3D CYAPA_FW_READ_SIZE=
-) {
-+               ret =3D cyapa_gen3_read_fw_bytes(cyapa, CYAPA_FW_HDR_START =
-+ addr,
-+                                         &cyapa->read_fw_image[addr]);
-+               if (ret) {
-+                       kfree(cyapa->read_fw_image);
-+                       cyapa->read_fw_image =3D NULL;
-+                       break;
-+               }
-+       }
++       file->private_data =3D cyapa;
 +
-+err:
-+       if (cyapa->read_fw_image)
-+               cyapa->read_fw_image_size =3D CYAPA_FW_SIZE;
++       if (!cyapa_state_sync_enter(cyapa)) {
++               ret =3D -EBUSY;
++               goto out;
++       }
++       if (cyapa->ops->cyapa_read_raw_data)
++               ret =3D cyapa->ops->cyapa_read_raw_data(cyapa);
++       else
++               ret =3D -EPERM;
++       cyapa_state_sync_exit(cyapa);
++out:
++       mutex_unlock(&cyapa->debugfs_mutex);
 +       return ret;
 +}
 +
- static ssize_t cyapa_gen3_do_calibrate(struct device *dev,
-                                     struct device_attribute *attr,
-                                     const char *buf, size_t count)
-@@ -1122,7 +1192,7 @@ const struct cyapa_dev_ops cyapa_gen3_ops =3D {
-        cyapa_gen3_show_baseline,
-        cyapa_gen3_do_calibrate,
++static int cyapa_debugfs_raw_data_release(struct inode *inode,
++                               struct file *file)
++{
++       struct cyapa *cyapa =3D file->private_data;
++       int ret;
++
++       if (!cyapa)
++               return 0;
++
++       ret =3D mutex_lock_interruptible(&cyapa->debugfs_mutex);
++       if (ret)
++               return ret;
++       file->private_data =3D NULL;
++       kobject_put(&cyapa->client->dev.kobj);
++       mutex_unlock(&cyapa->debugfs_mutex);
++
++       return 0;
++}
++
++/* Always return the sensors' latest raw data from trackpad device. */
++static ssize_t cyapa_debugfs_read_raw_data(struct file *file,
++                                    char __user *buffer,
++                                    size_t count, loff_t *ppos)
++{
++       struct cyapa *cyapa =3D file->private_data;
++
++       if (!cyapa->tp_raw_data)
++               return -EINVAL;
++
++       if (*ppos >=3D cyapa->tp_raw_data_size)
++               return 0;
++
++       if (count + *ppos > cyapa->tp_raw_data_size)
++               count =3D cyapa->tp_raw_data_size - *ppos;
++
++       if (copy_to_user(buffer, &cyapa->tp_raw_data[*ppos], count))
++               return -EFAULT;
++
++       *ppos +=3D count;
++       return count;
++}
++
++static const struct file_operations cyapa_read_raw_data_fops =3D {
++       .open =3D cyapa_debugfs_raw_data_open,
++       .release =3D cyapa_debugfs_raw_data_release,
++       .read =3D cyapa_debugfs_read_raw_data
++};
++
++static int cyapa_debugfs_init(struct cyapa *cyapa)
++{
++       struct device *dev =3D &cyapa->client->dev;
++
++       if (!cyapa_debugfs_root)
++               return -ENODEV;
++
++       cyapa->dentry_dev =3D debugfs_create_dir(kobject_name(&dev->kobj),
++                                              cyapa_debugfs_root);
++
++       if (!cyapa->dentry_dev)
++               return -ENODEV;
++
++       mutex_init(&cyapa->debugfs_mutex);
++
++       debugfs_create_file(CYAPA_DEBUGFS_READ_FW, S_IRUSR, cyapa->dentry_d=
+ev,
++                           cyapa, &cyapa_read_fw_fops);
++
++       debugfs_create_file(CYAPA_DEBUGFS_RAW_DATA, S_IRUSR, cyapa->dentry_=
+dev,
++                           cyapa, &cyapa_read_raw_data_fops);
++       return 0;
++}
++
++/*
+  * Sysfs Interface.
+  */
 
--       NULL,
-+       cyapa_gen3_read_fw,
-        NULL,
+@@ -947,6 +1152,13 @@ static int cyapa_probe(struct i2c_client *client,
+        if (sysfs_create_group(&client->dev.kobj, &cyapa_sysfs_group))
+                dev_warn(dev, "error creating sysfs entries.\n");
 
-        NULL,
++       /* Create a global debugfs root for all cyapa devices */
++       cyapa_debugfs_root =3D debugfs_create_dir("cyapa", NULL);
++       if (cyapa_debugfs_root =3D=3D ERR_PTR(-ENODEV))
++               cyapa_debugfs_root =3D NULL;
++       if (cyapa_debugfs_init(cyapa))
++               dev_warn(dev, "error creating debugfs entries.\n");
++
+ #ifdef CONFIG_PM_SLEEP
+        if (device_can_wakeup(dev) &&
+            sysfs_merge_group(&client->dev.kobj, &cyapa_power_wakeup_group)=
+)
+@@ -978,8 +1190,19 @@ static int cyapa_remove(struct i2c_client *client)
+ #ifdef CONFIG_PM_RUNTIME
+        sysfs_unmerge_group(&client->dev.kobj, &cyapa_power_runtime_group);
+ #endif
++
++       kfree(cyapa->read_fw_image);
++       cyapa->read_fw_image =3D NULL;
++       cyapa->read_fw_image_size =3D 0;
++       kfree(cyapa->tp_raw_data);
++       cyapa->tp_raw_data =3D NULL;
++       cyapa->tp_raw_data_size =3D 0;
+        free_irq(cyapa->irq, cyapa);
+
++       debugfs_remove_recursive(cyapa->dentry_dev);
++       debugfs_remove_recursive(cyapa_debugfs_root);
++       mutex_destroy(&cyapa->debugfs_mutex);
++
+        input_unregister_device(cyapa->input);
+        if (cyapa->ops->cyapa_set_power_mode)
+                cyapa->ops->cyapa_set_power_mode(cyapa, PWR_MODE_OFF, 0);
+diff --git a/drivers/input/mouse/cyapa.h b/drivers/input/mouse/cyapa.h
+index 3e72fca..319f19d 100644
+--- a/drivers/input/mouse/cyapa.h
++++ b/drivers/input/mouse/cyapa.h
+@@ -173,6 +173,9 @@ struct cyapa_dev_ops {
+        ssize_t (*cyapa_calibrate_store)(struct device *,
+                        struct device_attribute *, const char *, size_t);
+
++       int (*cyapa_read_fw)(struct cyapa *);
++       int (*cyapa_read_raw_data)(struct cyapa *);
++
+        size_t (*cyapa_get_private_size)(void);
+        int (*cyapa_private_init)(struct cyapa *cyapa, void *private_mem);
+
+@@ -244,6 +247,17 @@ struct cyapa {
+        bool irq_enabled;
+        bool prev_irq_enabled;
+
++       /* per-instance debugfs root */
++       struct dentry *dentry_dev;
++
++       /* Buffer to store firmware read using debugfs */
++       struct mutex debugfs_mutex;
++       u8 *read_fw_image;
++       size_t read_fw_image_size;
++       /* Buffer to store sensors' raw data */
++       u8 *tp_raw_data;
++       size_t tp_raw_data_size;
++
+        const struct cyapa_dev_ops *ops;
+ };
+
 This message and any attachments may contain Cypress (or its subsidiaries) =
 confidential information. If it has been received in error, please advise t=
 he sender and immediately delete this message.
 
---_000_77BC725C9062764F874D79F51E1F1A8F4406C8E4S04MBX0101s04lo_
+--_000_77BC725C9062764F874D79F51E1F1A8F4406C8C3S04MBX0101s04lo_
 Content-Disposition: attachment; filename="winmail.dat"
 Content-Transfer-Encoding: base64
 Content-Type: application/ms-tnef; name="winmail.dat"
 
-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
-cABhADoAIABhAGQAZAAgAGcAZQBuADMAIAB0AHIAYQBjAGsAcABhAGQAIABkAGUAdgBpAGMAZQAg
-AHIAZQBhAGQAIABmAGkAcgBtAHcAYQByAGUAIABpAG0AYQBnAGUAIABmAHUAbgBjAHQAaQBvAG4A
-IABzAHUAcABwAG8AcgB0AGUAZAAAAB8APQABAAAAAgAAAAAAAAADADYAAAAAAAIBcQABAAAAFgAA
-AAHPgVjsyTyIdVctLkb8vQePA0tBvE0AAB8AcAABAAAAvAAAAFsAUABBAFQAQwBIACAAdgAyACAA
-OQAvADEANABdACAAaQBuAHAAdQB0ADoAIABjAHkAYQBwAGEAOgAgAGEAZABkACAAZwBlAG4AMwAg
-AHQAcgBhAGMAawBwAGEAZAAgAGQAZQB2AGkAYwBlACAAcgBlAGEAZAAgAGYAaQByAG0AdwBhAHIA
-ZQAgAGkAbQBhAGcAZQAgAGYAdQBuAGMAdABpAG8AbgAgAHMAdQBwAHAAbwByAHQAZQBkAAAAHwA1
-EAEAAACEAAAAPAA3ADcAQgBDADcAMgA1AEMAOQAwADYAMgA3ADYANABGADgANwA0AEQANwA5AEYA
-NQAxAEUAMQBGADEAQQA4AEYANAA0ADAANgBDADgARQA0AEAAUwAwADQALQBNAEIAWAAwADEALQAw
-ADEALgBzADAANAAuAGwAbwBjAGEAbAA+AAAAAwDeP59OAAALAACACCAGAAAAAADAAAAAAAAARgAA
-AAADhQAAAAAAAAMAAIAIIAYAAAAAAMAAAAAAAABGAAAAAAGFAAAAAAAAAwAAgAMgBgAAAAAAwAAA
-AAAAAEYAAAAAAYEAAAAAAAADAIAQ/////wUAAIADIAYAAAAAAMAAAAAAAABGAAAAAAKBAAAAAAAA
-AAAAAAsAAIADIAYAAAAAAMAAAAAAAABGAAAAAByBAAAAAAAAQAAHMJ1MOAJZgc8BCwACAAEAAAAD
-ACYAAAAAAAIBEDABAAAARgAAAAAAAACxH6E5MCBRRp20pXDe0J/UBwB3vHJckGJ2T4dNefUeHxqP
-AAAAmTwbAAC6pz7uy9f3QKN27zX8YVmJABiD/MNOAAAAAB8A+j8BAAAAFAAAAEQAdQBkAGwAZQB5
-ACAARAB1AAAAAwAJWQEAAAADAACACCAGAAAAAADAAAAAAAAARgAAAAAQhQAAAAAAAB8AAIAfpOsz
-qHouQr57eeGpjlSzAQAAADgAAABDAG8AbgB2AGUAcgBzAGEAdABpAG8AbgBJAG4AZABlAHgAVABy
-AGEAYwBrAGkAbgBnAEUAeAAAAAEAAAC6AAAASQBJAD0AMAAxAEMARgA4ADEANQA4AEUAQwBDADkA
-MwBDADgAOAA3ADUANQA3ADIARAAyAEUANAA2AEYAQwBCAEQAMAA3ADgARgAwADMANABCADQAMQBC
-AEMANABEADsAVgBlAHIAcwBpAG8AbgA9AFYAZQByAHMAaQBvAG4AIAAxADQALgAzACAAKABCAHUA
-aQBsAGQAIAAxADcANAAuADAAKQAsACAAUwB0AGEAZwBlAD0ASAA0AAAAAAADAACAAyAGAAAAAADA
-AAAAAAAARgAAAAATgQAAAQAAAAMAAIADIAYAAAAAAMAAAAAAAABGAAAAACOBAAD///9/AwAAgAMg
-BgAAAAAAwAAAAAAAAEYAAAAAEIEAAAAAAAADAACAAyAGAAAAAADAAAAAAAAARgAAAAARgQAAAAAA
-AAsAAIADIAYAAAAAAMAAAAAAAABGAAAAACSBAAAAAAAACwAAgAMgBgAAAAAAwAAAAAAAAEYAAAAA
-LIEAAAAAAAADAACAAyAGAAAAAADAAAAAAAAARgAAAAApgQAAAAAAAAMAAIADIAYAAAAAAMAAAAAA
-AABGAAAAACqBAAAAAAAAHwAAgAMgBgAAAAAAwAAAAAAAAEYAAAAAJ4EAAAEAAAACAAAAAAAAAAMA
-AIADIAYAAAAAAMAAAAAAAABGAAAAABKBAAABAAAAHwAAgAMgBgAAAAAAwAAAAAAAAEYAAAAAIYEA
-AAEAAAACAAAAAAAAAAsAAIADIAYAAAAAAMAAAAAAAABGAAAAAAOBAAAAAAAACwAAgAMgBgAAAAAA
-wAAAAAAAAEYAAAAAJoEAAAAAAAALAACACCAGAAAAAADAAAAAAAAARgAAAAAOhQAAAAAAAAMAAIAI
-IAYAAAAAAMAAAAAAAABGAAAAABiFAAAAAAAACwAAgAggBgAAAAAAwAAAAAAAAEYAAAAAgoUAAAAA
-AAADAA00/T8AAB8AAICGAwIAAAAAAMAAAAAAAABGAQAAACAAAAB4AC0AbQBzAC0AaABhAHMALQBh
-AHQAdABhAGMAaAAAAAEAAAACAAAAAAAAAB8AAICGAwIAAAAAAMAAAAAAAABGAQAAACIAAAB4AC0A
-bwByAGkAZwBpAG4AYQB0AGkAbgBnAC0AaQBwAAAAAAABAAAAHgAAAFsAMQAwAC4AMwAwAC4AMQAy
-AC4AMQA0ADYAXQAAAAAAa9Q=
+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
+dT/AKk4Lkf6GVVMPtP+frV9b4NBgxlAggHMnvwD/zDCLoFjisE+z8lr5tQ+GZN9a/pWfBjbGSoRc
+KslRXDdz1Dgv1VRobDBnsGgwc39Q8jiQ0cA4kKsAjCENcGj35nBKEMSRYasAjPHVcC/w/USgeaTx
+hkDtkCCB1xAzgPhzdWJbsOWQMZAz4Tlg/4zxAPDj0siQotHJMCCAUOD71ZCNAC4NAO2AdxGNYDOA
+/xHgQwDwQQ2AYaHRwMcBGuM9XmBwziTRsIvQzRF0aP+5o0iAIJHFQUow5nDIgSTw/myrAEiAARCM
+kc2wxIgNpgx9fRQA0VAfAEIAAQAAABQAAABEAHUAZABsAGUAeQAgAEQAdQAAAB8AZQABAAAAIgAA
+AGQAdQBkAGwAQABjAHkAcAByAGUAcwBzAC4AYwBvAG0AAAAAAB8AZAABAAAACgAAAFMATQBUAFAA
+AAAAAAIBQQABAAAAWAAAAAAAAACBKx+kvqMQGZ1uAN0BD1QCAAAAgEQAdQBkAGwAZQB5ACAARAB1
+AAAAUwBNAFQAUAAAAGQAdQBkAGwAQABjAHkAcAByAGUAcwBzAC4AYwBvAG0AAAAfAAJdAQAAACIA
+AABkAHUAZABsAEAAYwB5AHAAcgBlAHMAcwAuAGMAbwBtAAAAAAAfAOVfAQAAACoAAABzAGkAcAA6
+AGQAdQBkAGwAQABjAHkAcAByAGUAcwBzAC4AYwBvAG0AAAAAAB8AGgwBAAAAFAAAAEQAdQBkAGwA
+ZQB5ACAARAB1AAAAHwAfDAEAAAAiAAAAZAB1AGQAbABAAGMAeQBwAHIAZQBzAHMALgBjAG8AbQAA
+AAAAHwAeDAEAAAAKAAAAUwBNAFQAUAAAAAAAAgEZDAEAAABYAAAAAAAAAIErH6S+oxAZnW4A3QEP
+VAIAAACARAB1AGQAbABlAHkAIABEAHUAAABTAE0AVABQAAAAZAB1AGQAbABAAGMAeQBwAHIAZQBz
+AHMALgBjAG8AbQAAAB8AAV0BAAAAIgAAAGQAdQBkAGwAQABjAHkAcAByAGUAcwBzAC4AYwBvAG0A
+AAAAAB8A+D8BAAAAFAAAAEQAdQBkAGwAZQB5ACAARAB1AAAAHwAjQAEAAAAiAAAAZAB1AGQAbABA
+AGMAeQBwAHIAZQBzAHMALgBjAG8AbQAAAAAAHwAiQAEAAAAKAAAAUwBNAFQAUAAAAAAAAgH5PwEA
+AABYAAAAAAAAAIErH6S+oxAZnW4A3QEPVAIAAACARAB1AGQAbABlAHkAIABEAHUAAABTAE0AVABQ
+AAAAZAB1AGQAbABAAGMAeQBwAHIAZQBzAHMALgBjAG8AbQAAAB8ACV0BAAAAIgAAAGQAdQBkAGwA
+QABjAHkAcAByAGUAcwBzAC4AYwBvAG0AAAAAAB8AMUABAAAAAgAAAAAAAAALAEA6AQAAAB8AMEAB
+AAAAAgAAAAAAAAAfABoAAQAAABIAAABJAFAATQAuAE4AbwB0AGUAAAAAAAMA8T8ECAAACwBAOgEA
+AAADAP0/qAMAAAIBCzABAAAAEAAAAAXjuiGHOsdDs/y79iPvHT4DABcAAQAAAEAAOQAA0hz3WIHP
+AUAACDBtjVf3WIHPAQsAKQAAAAAACwAjAAAAAAAfAACAhgMCAAAAAADAAAAAAAAARgEAAAAeAAAA
+YQBjAGMAZQBwAHQAbABhAG4AZwB1AGEAZwBlAAAAAAABAAAAGgAAAHoAaAAtAEMATgAsACAAZQBu
+AC0AVQBTAAAAAAALAACACCAGAAAAAADAAAAAAAAARgAAAAAGhQAAAAAAAB8ANwABAAAAwAAAAFsA
+UABBAFQAQwBIACAAdgAyACAANQAvADEANABdACAAaQBuAHAAdQB0ADoAIABjAHkAYQBwAGEAOgAg
+AGEAZABkACAAcgBlAGEAZAAgAGYAaQByAG0AdwBhAHIAZQAgAGkAbQBhAGcAZQAgAGEAbgBkACAA
+cgBhAHcAIABkAGEAdABhACAAaQBuAHQAZQByAGYAYQBjAGUAcwAgAGkAbgAgAGQAZQBiAHUAZwBm
+AHMAIABzAHkAcwB0AGUAbQAAAB8APQABAAAAAgAAAAAAAAADADYAAAAAAAIBcQABAAAAFgAAAAHP
+gVjpZ2XbE3RTUUeZscCAiZ/qiK4AAB8AcAABAAAAwAAAAFsAUABBAFQAQwBIACAAdgAyACAANQAv
+ADEANABdACAAaQBuAHAAdQB0ADoAIABjAHkAYQBwAGEAOgAgAGEAZABkACAAcgBlAGEAZAAgAGYA
+aQByAG0AdwBhAHIAZQAgAGkAbQBhAGcAZQAgAGEAbgBkACAAcgBhAHcAIABkAGEAdABhACAAaQBu
+AHQAZQByAGYAYQBjAGUAcwAgAGkAbgAgAGQAZQBiAHUAZwBmAHMAIABzAHkAcwB0AGUAbQAAAB8A
+NRABAAAAhAAAADwANwA3AEIAQwA3ADIANQBDADkAMAA2ADIANwA2ADQARgA4ADcANABEADcAOQBG
+ADUAMQBFADEARgAxAEEAOABGADQANAAwADYAQwA4AEMAMwBAAFMAMAA0AC0ATQBCAFgAMAAxAC0A
+MAAxAC4AcwAwADQALgBsAG8AYwBhAGwAPgAAAAMA3j+fTgAACwAAgAggBgAAAAAAwAAAAAAAAEYA
+AAAAA4UAAAAAAAADAACACCAGAAAAAADAAAAAAAAARgAAAAABhQAAAAAAAAMAAIADIAYAAAAAAMAA
+AAAAAABGAAAAAAGBAAAAAAAAAwCAEP////8FAACAAyAGAAAAAADAAAAAAAAARgAAAAACgQAAAAAA
+AAAAAAALAACAAyAGAAAAAADAAAAAAAAARgAAAAAcgQAAAAAAAEAABzBJeL31WIHPAQsAAgABAAAA
+AwAmAAAAAAACARAwAQAAAEYAAAAAAAAAsR+hOTAgUUadtKVw3tCf1AcAd7xyXJBidk+HTXn1Hh8a
+jwAAAJk8GwAAuqc+7svX90Cjdu81/GFZiQAYg/zDSgAAAAAfAPo/AQAAABQAAABEAHUAZABsAGUA
+eQAgAEQAdQAAAAMACVkBAAAAAwAAgAggBgAAAAAAwAAAAAAAAEYAAAAAEIUAAAAAAAAfAACAH6Tr
+M6h6LkK+e3nhqY5UswEAAAA4AAAAQwBvAG4AdgBlAHIAcwBhAHQAaQBvAG4ASQBuAGQAZQB4AFQA
+cgBhAGMAawBpAG4AZwBFAHgAAAABAAAAugAAAEkASQA9ADAAMQBDAEYAOAAxADUAOABFADkANgA3
+ADYANQBEAEIAMQAzADcANAA1ADMANQAxADQANwA5ADkAQgAxAEMAMAA4ADAAOAA5ADkARgBFAEEA
+OAA4AEEARQA7AFYAZQByAHMAaQBvAG4APQBWAGUAcgBzAGkAbwBuACAAMQA0AC4AMwAgACgAQgB1
+AGkAbABkACAAMQA3ADQALgAwACkALAAgAFMAdABhAGcAZQA9AEgANAAAAAAAAwAAgAMgBgAAAAAA
+wAAAAAAAAEYAAAAAE4EAAAEAAAADAACAAyAGAAAAAADAAAAAAAAARgAAAAAjgQAA////fwMAAIAD
+IAYAAAAAAMAAAAAAAABGAAAAABCBAAAAAAAAAwAAgAMgBgAAAAAAwAAAAAAAAEYAAAAAEYEAAAAA
+AAALAACAAyAGAAAAAADAAAAAAAAARgAAAAAkgQAAAAAAAAsAAIADIAYAAAAAAMAAAAAAAABGAAAA
+ACyBAAAAAAAAAwAAgAMgBgAAAAAAwAAAAAAAAEYAAAAAKYEAAAAAAAADAACAAyAGAAAAAADAAAAA
+AAAARgAAAAAqgQAAAAAAAB8AAIADIAYAAAAAAMAAAAAAAABGAAAAACeBAAABAAAAAgAAAAAAAAAD
+AACAAyAGAAAAAADAAAAAAAAARgAAAAASgQAAAQAAAB8AAIADIAYAAAAAAMAAAAAAAABGAAAAACGB
+AAABAAAAAgAAAAAAAAALAACAAyAGAAAAAADAAAAAAAAARgAAAAADgQAAAAAAAAsAAIADIAYAAAAA
+AMAAAAAAAABGAAAAACaBAAAAAAAACwAAgAggBgAAAAAAwAAAAAAAAEYAAAAADoUAAAAAAAADAACA
+CCAGAAAAAADAAAAAAAAARgAAAAAYhQAAAAAAAAsAAIAIIAYAAAAAAMAAAAAAAABGAAAAAIKFAAAA
+AAAAAwANNP0/AAAfAACAhgMCAAAAAADAAAAAAAAARgEAAAAgAAAAeAAtAG0AcwAtAGgAYQBzAC0A
+YQB0AHQAYQBjAGgAAAABAAAAAgAAAAAAAAAfAACAhgMCAAAAAADAAAAAAAAARgEAAAAiAAAAeAAt
+AG8AcgBpAGcAaQBuAGEAdABpAG4AZwAtAGkAcAAAAAAAAQAAAB4AAABbADEAMAAuADMAMAAuADEA
+MgAuADEANAA2AF0AAAAAAJiz
 
---_000_77BC725C9062764F874D79F51E1F1A8F4406C8E4S04MBX0101s04lo_--
+--_000_77BC725C9062764F874D79F51E1F1A8F4406C8C3S04MBX0101s04lo_--
