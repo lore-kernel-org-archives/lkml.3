@@ -1,71 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752252AbaFFIJV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 04:09:21 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:49672 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751204AbaFFIJP (ORCPT
+	id S1752598AbaFFIKl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 04:10:41 -0400
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:54998 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751783AbaFFIKd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 04:09:15 -0400
-Date: Fri, 6 Jun 2014 10:09:03 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>, mingo@elte.hu,
-        amit.kucheria@linaro.org, linaro-kernel@lists.linaro.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 1/2] sched: idle: Encapsulate the code to compile it
- out
-Message-ID: <20140606080903.GS6758@twins.programming.kicks-ass.net>
-References: <1398859263-7632-1-git-send-email-daniel.lezcano@linaro.org>
- <2782801.UzoMhgfu56@vostro.rjw.lan>
- <53639F1B.5080000@linaro.org>
- <8539453.ED7vQGf2Gc@vostro.rjw.lan>
+	Fri, 6 Jun 2014 04:10:33 -0400
+Date: Fri, 6 Jun 2014 09:10:26 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        wsa@the-dreams.de, linux-i2c@vger.kernel.org,
+        devicetree@vger.kernel.org, linus.walleij@linaro.org
+Subject: Re: [PATCH 3/7] i2c: Add the ability to match device to compatible
+ string without an of_node
+Message-ID: <20140606081026.GO24240@lee--X1>
+References: <1401883796-17841-1-git-send-email-lee.jones@linaro.org>
+ <1401883796-17841-4-git-send-email-lee.jones@linaro.org>
+ <20140605173620.5BDFBC41CBF@trevor.secretlab.ca>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xe2geHXJg22At20M"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <8539453.ED7vQGf2Gc@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140605173620.5BDFBC41CBF@trevor.secretlab.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 05 Jun 2014, Grant Likely wrote:
 
---xe2geHXJg22At20M
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On Wed,  4 Jun 2014 13:09:52 +0100, Lee Jones <lee.jones@linaro.org> wrote:
+> > A great deal of I2C devices are currently matched via DT node name, and
+> > as such the compatible naming convention of '<vendor>,<device>' has gone
+> > somewhat awry - some nodes don't supply one, some supply an arbitrary
+> > string and others the correct device name with an arbitrary vendor prefix.
+> > 
+> > In an effort to correct this problem we have to supply a mechanism to
+> > match a device by compatible string AND by simple device name.  This
+> > function strips off the '<vendor>,' part of a supplied compatible string
+> > and attempts to match without it.
+> > 
+> > The plan is to remove this function once all of the compatible strings
+> > for each device have been brought into line.
+> > 
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > ---
+> >  drivers/i2c/i2c-core.c | 25 +++++++++++++++++++++++++
+> >  include/linux/i2c.h    | 10 ++++++++++
+> >  2 files changed, 35 insertions(+)
+> > 
+> > diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+> > index d3802dc..7dcd5c3 100644
+> > --- a/drivers/i2c/i2c-core.c
+> > +++ b/drivers/i2c/i2c-core.c
+> > @@ -1090,6 +1090,31 @@ struct i2c_adapter *of_find_i2c_adapter_by_node(struct device_node *node)
+> >  	return i2c_verify_adapter(dev);
+> >  }
+> >  EXPORT_SYMBOL(of_find_i2c_adapter_by_node);
+> > +
+> > +const struct of_device_id
+> > +*i2c_of_match_device_strip_vendor(const struct of_device_id *matches,
+> > +				  struct device *dev)
+> > +{
+> > +	const struct i2c_client *client = i2c_verify_client(dev);
+> > +	const char *name;
+> > +
+> > +	if (!(client && matches))
+> > +		return NULL;
+> > +
+> > +	for (; matches->compatible[0]; matches++) {
+> > +		name = strchr(matches->compatible, ',');
+> > +		if (!name)
+> > +			name = matches->compatible;
+> > +		else
+> > +			name++;
+> > +
+> > +		if (!strncmp(client->name, name, strlen(client->name)))
+> > +			return matches;
+> > +	}
+> 
+> Is it actually necessary to strip off the vendor name? It would be fine
+> to make users include the vendor prefix when creating the device in
+> sysfs. In fact that would be preferrable for new drivers so that vendor
+> prefixes start getting used correctly.
 
-On Fri, May 02, 2014 at 05:32:25PM +0200, Rafael J. Wysocki wrote:
+I see a few issues with this strategy.  Firstly, there are already
+users registering their devices via sysfs, some are taking their
+device names from an EEPROM which would require reprogramming in order
+to prefix the vendor ID.  I'm keen not to break existing systems -
+which not stripping off the vendor name would inevitably do.
+Secondly, I'm not sure how Wolfram would feel about the client->name
+containing a DT compatible string. And finally, other than looking
+at the kernel source, there is no real way for a user to know if the
+device supports ACPI or OF, or neither and if an i2c_device_table is
+supplied or not.
 
-> That would be perfectly fine by me, but I'm not sure what Ingo and Peter =
-think
-> about that.
->=20
-> I can set up a branch with sched/idle/cpuidle changes.
+Remember that the idea of this set is to remove i2c_device_table's,
+doing so will break any devices which are still registering via sysfs
+with only the model number of the device.  I think the sysfs
+interface should be a black-box.  I think requiring users to have
+kernel knowledge is a sub-optimal idea.
 
-Ingo typically likes things like that. I'm still a git Luddite, I'll
-learn someday :-)
+> If you're worried about preserving exisiting ABI, then I would make
+> striping the prefix an option that drivers can enable, but by default
+> only match on the full string.
+> 
+> g.
 
---xe2geHXJg22At20M
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTkXcfAAoJEHZH4aRLwOS68mMP/RyoRIURdFUmubVYm6NJNhWn
-fqakN77Zt73bS20BCTVg5f5ALBSK2WALIC7KELGgpBfeMcPyhZyS361YYpOS8DgM
-bWAo7yxs8S81UX/RdV5c3wAv/PRwHTy//U/KOGH1Tyijo30OFqH8Nyp9/9S3x/De
-iwJ7EbvWxu2biqwT2it6nG3LtoPhqoGaxd3bMsMrIRzBzG1iBJGU/izcnbeHCejz
-aVklrzeyinjLvgRgfu8nPFReI1pgUUhkylUwrKV2jMfNqC4O8q5XSeLzFLiAbpAr
-T9mFT8wPxzX7++plHDdRVLFCHYavEqtzDI5nYJqjYdPO5SsTfQUp1qQZSlcjmUQA
-zUyYPM5VS3VjoanLrkOJOVE/WNG8LsM7eKJw5p63pLYrJuznVv7mU9k/YO89xy+v
-wP4Sr2ncH4bbymyRBk4kqnOhngVWxLtBRGT95bbv5ze3Hde/LLoqnKid39MljLyd
-oqf09PW9+HDV/bQx0kqMhz+gVixFvbKBv6o0JoNM7KITWes6DP4ff3THuPujQtIu
-xnNWb0mV51lc8Flr28ORyxVPw9Ipk6Rnktukrxa8xp5YQPXPsoGrH1FKVystbCdK
-JIxXR9whGCgkinpMm8vN8sEdvjneTa6yZICFXV74h12aa9fHMJ8gujT/fRLfvZcY
-joSHz4Op2jQIkVUmEVus
-=PYU+
------END PGP SIGNATURE-----
-
---xe2geHXJg22At20M--
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
