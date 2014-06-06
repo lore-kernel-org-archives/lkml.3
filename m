@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752409AbaFFLCG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 07:02:06 -0400
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:45189 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751494AbaFFLCE convert rfc822-to-8bit (ORCPT
+	id S1752622AbaFFLCp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 07:02:45 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:57649 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751740AbaFFLCn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 07:02:04 -0400
+	Fri, 6 Jun 2014 07:02:43 -0400
+From: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+To: Bryan Wu <cooloney@gmail.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Jingoo Han <jg1.han@samsung.com>, Lee Jones <lee.jones@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-pwm@vger.kernel.org
+Cc: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+Subject: [PATCH] pwm-backlight:
+Date: Fri,  6 Jun 2014 13:02:09 +0200
+Message-Id: <1402052529-22761-1-git-send-email-LW@KARO-electronics.de>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-In-Reply-To: <20140606071106.GA30156@kwain>
-References: <1401983326-19205-1-git-send-email-antoine.tenart@free-electrons.com>
-	<1401983326-19205-5-git-send-email-antoine.tenart@free-electrons.com>
-	<CAFp+6iEKLD_rLg84h3J2oyzw7vizEV-Eqo0e_jqurx_v9ZX2JA@mail.gmail.com>
-	<20140606071106.GA30156@kwain>
-Date: Fri, 6 Jun 2014 16:32:03 +0530
-X-Google-Sender-Auth: RzYx2Xtik9Ht137qFzE_4jW_70U
-Message-ID: <CAFp+6iH+J4T=7pJU_+ZZKrgDwJWwQfznv9NWuy5SkLgz_j75_Q@mail.gmail.com>
-Subject: Re: [PATCH 4/9] usb: phy: add the Berlin USB PHY driver
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: =?UTF-8?Q?Antoine_T=C3=A9nart?= <antoine.tenart@free-electrons.com>
-Cc: kishon <kishon@ti.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Felipe Balbi <balbi@ti.com>, alexandre.belloni@free-electrons.com,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        zhiming Xu <zmxu@marvell.com>, jszhang@marvell.com,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+commit 257462dbf3ed pwm-backlight: switch to gpiod interface
+introduced a regression leading to acquiring a bogus GPIO-0 when
+configured from DT without an 'enable-gpios' property.
+The driver will happily accept the 0 initialized 'enable_gpio' member
+of the struct platform_pwm_backlight_data as valid gpio number, and
+request this GPIO as enable pin. In case of multiple driver instances,
+the second will fail to register with the error message:
+pwm-backlight backlight1.23: failed to request GPIO#0: -16
 
-On Fri, Jun 6, 2014 at 12:41 PM, Antoine Ténart
-<antoine.tenart@free-electrons.com> wrote:
-> Hi,
->
-> On Fri, Jun 06, 2014 at 12:09:06PM +0530, Vivek Gautam wrote:
->> On Thu, Jun 5, 2014 at 9:18 PM, Antoine Ténart
->> <antoine.tenart@free-electrons.com> wrote:
->> > Add the driver driving the Marvell Berlin USB PHY. This allows to
->> > initialize the PHY and to use it from the USB driver later.
->>
->> Just out of curiosity, going forward we would like to have phy drivers based on
->> generic phy framework (drivers/phy).
->> Any particular reason that we are still adding phy drivers in usb-phy layer ?
->>
->> Looking at it, seems like it can very well be written based on phy framework.
->
-> This USB controller are ChipIdea compatible, and the ChipIdea common
-> functions use the usb_phy framework. That's why this PHY driver is
-> there.
+Fix this by setting enable_gpio in the pdata struct to -EINVAL.
 
-Ok, i see that now. In that case shouldn't we be moving even the chipidea
-drivers to use the generic phy functions to get the phy and init/exit it.
+Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
+---
+ drivers/video/backlight/pwm_bl.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I think Felipe and Kishon can comment on this better, and tell how
-things should be. :-)
-
-[snip]
-
-
+diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
+index 38ca88b..3d265c4 100644
+--- a/drivers/video/backlight/pwm_bl.c
++++ b/drivers/video/backlight/pwm_bl.c
+@@ -178,7 +178,7 @@ static int pwm_backlight_parse_dt(struct device *dev,
+ 		data->dft_brightness = value;
+ 		data->max_brightness--;
+ 	}
+-
++	data->enable_gpio = -EINVAL;
+ 	return 0;
+ }
+ 
 -- 
-Best Regards
-Vivek Gautam
-Samsung R&D Institute, Bangalore
-India
+1.7.10.4
+
