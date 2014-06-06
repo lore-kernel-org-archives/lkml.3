@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752591AbaFFNX5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 09:23:57 -0400
-Received: from relay.parallels.com ([195.214.232.42]:42679 "EHLO
+	id S1752424AbaFFNWy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 09:22:54 -0400
+Received: from relay.parallels.com ([195.214.232.42]:42642 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752418AbaFFNWz (ORCPT
+	with ESMTP id S1751085AbaFFNWv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 09:22:55 -0400
+	Fri, 6 Jun 2014 09:22:51 -0400
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <akpm@linux-foundation.org>
 CC: <cl@linux.com>, <iamjoonsoo.kim@lge.com>, <rientjes@google.com>,
         <penberg@kernel.org>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
         <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: [PATCH -mm v2 7/8] slub: make dead memcg caches discard free slabs immediately
-Date: Fri, 6 Jun 2014 17:22:44 +0400
-Message-ID: <3b53266b76556dd042bbf6147207c70473572a7e.1402060096.git.vdavydov@parallels.com>
+Subject: [PATCH -mm v2 3/8] memcg: mark caches that belong to offline memcgs as dead
+Date: Fri, 6 Jun 2014 17:22:40 +0400
+Message-ID: <9e6537847c22a5050f84bd2bf5633f7c022fb801.1402060096.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1402060096.git.vdavydov@parallels.com>
 References: <cover.1402060096.git.vdavydov@parallels.com>
@@ -25,68 +25,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since a dead memcg cache is destroyed only after the last slab allocated
-to it is freed, we must disable caching of empty slabs for such caches,
-otherwise they will be hanging around forever.
-
-This patch makes SLUB discard dead memcg caches' slabs as soon as they
-become empty. To achieve that, it disables per cpu partial lists for
-dead caches (see put_cpu_partial) and forbids keeping empty slabs on per
-node partial lists by setting cache's min_partial to 0 on
-kmem_cache_shrink, which is always called on memcg offline (see
-memcg_unregister_all_caches).
+This will be used by the next patches.
 
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Thanks-to: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Acked-by: Christoph Lameter <cl@linux.com>
 ---
- mm/slub.c |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ include/linux/slab.h |    2 ++
+ mm/memcontrol.c      |    1 +
+ mm/slab.h            |   10 ++++++++++
+ 3 files changed, 13 insertions(+)
 
-diff --git a/mm/slub.c b/mm/slub.c
-index e46d6abe8a68..1dad7e2c586a 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2015,6 +2015,8 @@ static void unfreeze_partials(struct kmem_cache *s,
- #endif
+diff --git a/include/linux/slab.h b/include/linux/slab.h
+index d9716fdc8211..d99d5212b815 100644
+--- a/include/linux/slab.h
++++ b/include/linux/slab.h
+@@ -527,6 +527,7 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
+  * @list: list_head for the list of all caches in this memcg
+  * @root_cache: pointer to the global, root cache, this cache was derived from
+  * @refcnt: reference counter
++ * @dead: set to true when owner memcg is turned offline
+  * @unregister_work: worker to destroy the cache
+  */
+ struct memcg_cache_params {
+@@ -541,6 +542,7 @@ struct memcg_cache_params {
+ 			struct list_head list;
+ 			struct kmem_cache *root_cache;
+ 			atomic_long_t refcnt;
++			bool dead;
+ 			struct work_struct unregister_work;
+ 		};
+ 	};
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 886b5b414958..ed42fd1105a5 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3294,6 +3294,7 @@ static void memcg_unregister_all_caches(struct mem_cgroup *memcg)
+ 	mutex_lock(&memcg_slab_mutex);
+ 	list_for_each_entry_safe(params, tmp, &memcg->memcg_slab_caches, list) {
+ 		cachep = memcg_params_to_cache(params);
++		cachep->memcg_params->dead = true;
+ 		kmem_cache_shrink(cachep);
+ 		if (atomic_long_dec_and_test(&cachep->memcg_params->refcnt))
+ 			memcg_unregister_cache(cachep);
+diff --git a/mm/slab.h b/mm/slab.h
+index 961a3fb1f5a2..9515cc520bf8 100644
+--- a/mm/slab.h
++++ b/mm/slab.h
+@@ -121,6 +121,11 @@ static inline bool is_root_cache(struct kmem_cache *s)
+ 	return !s->memcg_params || s->memcg_params->is_root_cache;
  }
  
-+static void flush_all(struct kmem_cache *s);
++static inline bool memcg_cache_dead(struct kmem_cache *s)
++{
++	return !is_root_cache(s) && s->memcg_params->dead;
++}
 +
- /*
-  * Put a page that was just frozen (in __slab_free) into a partial page
-  * slot if available. This is done without interrupts disabled and without
-@@ -2064,6 +2066,21 @@ static void put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
- 
- 	} while (this_cpu_cmpxchg(s->cpu_slab->partial, oldpage, page)
- 								!= oldpage);
-+
-+	if (memcg_cache_dead(s)) {
-+               bool done = false;
-+               unsigned long flags;
-+
-+               local_irq_save(flags);
-+               if (this_cpu_read(s->cpu_slab->partial) == page) {
-+                       unfreeze_partials(s, this_cpu_ptr(s->cpu_slab));
-+                       done = true;
-+               }
-+               local_irq_restore(flags);
-+
-+               if (!done)
-+                       flush_all(s);
-+	}
- #endif
+ static inline bool slab_equal_or_root(struct kmem_cache *s,
+ 					struct kmem_cache *p)
+ {
+@@ -203,6 +208,11 @@ static inline bool is_root_cache(struct kmem_cache *s)
+ 	return true;
  }
  
-@@ -3403,6 +3420,9 @@ int __kmem_cache_shrink(struct kmem_cache *s)
- 		kmalloc(sizeof(struct list_head) * objects, GFP_KERNEL);
- 	unsigned long flags;
- 
-+	if (memcg_cache_dead(s))
-+		s->min_partial = 0;
++static inline bool memcg_cache_dead(struct kmem_cache *s)
++{
++	return false;
++}
 +
- 	if (!slabs_by_inuse) {
- 		/*
- 		 * Do not fail shrinking empty slabs if allocation of the
+ static inline bool slab_equal_or_root(struct kmem_cache *s,
+ 				      struct kmem_cache *p)
+ {
 -- 
 1.7.10.4
 
