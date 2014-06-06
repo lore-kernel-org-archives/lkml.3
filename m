@@ -1,217 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752547AbaFFWpp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 18:45:45 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38818 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752476AbaFFWpo (ORCPT
+	id S1752591AbaFFWpx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 18:45:53 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:44187 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752476AbaFFWpu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 18:45:44 -0400
-Date: Fri, 6 Jun 2014 15:45:26 -0700
-Message-Id: <201406062245.s56MjQh6013059@terminus.zytor.com>
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] x86/vdso fix for v3.16
+	Fri, 6 Jun 2014 18:45:50 -0400
+Date: Sat, 7 Jun 2014 00:45:45 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Cho KyongHo <pullip.cho@samsung.com>,
+        Grant Grundler <grundler@chromium.org>,
+        Dave Martin <Dave.Martin@arm.com>, Marc Zyngier <marc.zyngier@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Joerg Roedel <joro@8bytes.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Hiroshi Doyu <hdoyu@nvidia.com>, devicetree@vger.kernel.org,
+        iommu@lists.linux-foundation.org, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
+Message-ID: <20140606224542.GA22188@mithrandir>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset="UTF-8"
-Cc: akpm@linux-foundation.org, hpa@linux.intel.com, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, luto@amacapital.net, mingo@kernel.org,
-        tglx@linutronix.de
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qMm9M+Fa2AknHoGS"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-This fixes building the vdso code on older Linux systems, and probably
-some non-Linux systems.
+--qMm9M+Fa2AknHoGS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-The following changes since commit a0abcf2e8f8017051830f738ac1bf5ef42703243:
+This is somewhat off-topic, but given the various concepts discussed in
+this thread I'm beginning to wonder how they will be implemented. The
+current implementation hooks the IOMMU API into the DMA mapping API, and
+the way this is done is by setting a single IOMMU (or rather a set of
+IOMMU operations) globally per bus type.
 
-  Merge branch 'x86/vdso' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip into next (2014-06-05 08:05:29 -0700)
+There are two issues that I can see with that: one is that we can't
+support multiple IOMMUs in the system at all, and the other is that
+there is no context associated with the IOMMU ops, and therefore there
+is no way to differentiate between two instances of the same IOMMU. A
+few drivers use global variables to keep track of context information
+but that won't work with multiple instances, unless they keep a global
+list of all instances and then require explicit lookup in each of the
+IOMMU operations. That sounds more like a workaround rather than a
+proper solution to me.
 
-are available in the git repository at:
+Discussion in this thread indicates that both of the above will be
+required at some point. Have I completely missed something or will we
+have to rework (parts of) the IOMMU API to make this work?
 
+One other thing that I have some difficulty understanding is how we can
+support things like process isolation using the current IOMMU API. Since
+a device will be statically assigned to one IOMMU domain at probe time
+there is no way we can change the address space upon a context switch.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-vdso-for-linus
+Thierry
 
-for you to fetch changes up to bdfb9bcc25005d06a9c301830bdeb7ca5a0b6ef7:
+--qMm9M+Fa2AknHoGS
+Content-Type: application/pgp-signature
 
-  x86, vdso: Use <tools/le_byteshift.h> for littleendian access (2014-06-06 14:54:54 -0700)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-----------------------------------------------------------------
-H. Peter Anvin (1):
-      x86, vdso: Use <tools/le_byteshift.h> for littleendian access
+iQIcBAEBAgAGBQJTkkSWAAoJEN0jrNd/PrOhnAoP/3dnbiyJe31uxLcJwE0Bm10+
+EMBYvkA7Bct+YasVpd/xS3BVCda+L4mG3qDxUWJriU9YZ6ybEnRIrpPhxh1+xoWA
+iQXLkPHK+1+0f5NR56vqfOtDlY+NS2YQx2lQZ/CtswpRSzA8dYXGiVZwWXQMjsC/
+f+Uj19Wusn+4Qym4AekPP5HclGyqBpYuqmZM8Yp96QHyrd3jEu4YZeRh492Fs9Xv
+Xi8R5en3ZHEfU2erAgJIrY1jg0/g8TI6WGaXmGEz5SsTX7QSLde1RaJYsSoLOqsE
+zm2icD8FEM3oS95zoAuoFXk5N0zL/xNWDghurLWcmG6A6iHNAeB0qAYebq888HNe
+KUUObwgkfy2UaFGcLqf1VmQ8uw4p76yNwgRT1Zv+jNO7zsrZAo7zyzcYFnF4pHrv
+BmspaojhXs3CRVXG0PwipcYP2SmKgnV2KpkK4aHnAS6uUMyEHP6ZB2UOqi7/SfOD
+57h5Eo6ZczLWbYzYHaLr7JZE2F94p9h2vZg6utUmlaWoVFFgJeowWr+DgpdhiCwH
+EFhYz4+YP4f8tEpnMY39Y8BqMJayIYbinqVgmwsbHOQWQnYAV+D3f0UzxxxRnqjP
+tYhmNsaC+fiW0ZXAifXcxkddv+Dr1Owg7cEvZ7lFr6CCsIdEsbVfs8aFZ5zHQiCI
+p2HYv8e/oeHFxbpX+8wi
+=iyXI
+-----END PGP SIGNATURE-----
 
- arch/x86/vdso/Makefile |  1 +
- arch/x86/vdso/vdso2c.c | 10 ++++----
- arch/x86/vdso/vdso2c.h | 62 +++++++++++++++++++++++++-------------------------
- 3 files changed, 38 insertions(+), 35 deletions(-)
-
-diff --git a/arch/x86/vdso/Makefile b/arch/x86/vdso/Makefile
-index 895d4b1..9769df0 100644
---- a/arch/x86/vdso/Makefile
-+++ b/arch/x86/vdso/Makefile
-@@ -59,6 +59,7 @@ VDSO_LDFLAGS_vdso.lds = -m64 -Wl,-soname=linux-vdso.so.1 \
- $(obj)/vdso64.so.dbg: $(src)/vdso.lds $(vobjs) FORCE
- 	$(call if_changed,vdso)
- 
-+HOST_EXTRACFLAGS += -I$(srctree)/tools/include
- hostprogs-y			+= vdso2c
- 
- quiet_cmd_vdso2c = VDSO2C  $@
-diff --git a/arch/x86/vdso/vdso2c.c b/arch/x86/vdso/vdso2c.c
-index deabaf5..450ac6e 100644
---- a/arch/x86/vdso/vdso2c.c
-+++ b/arch/x86/vdso/vdso2c.c
-@@ -11,6 +11,8 @@
- #include <sys/mman.h>
- #include <sys/types.h>
- 
-+#include <tools/le_byteshift.h>
-+
- #include <linux/elf.h>
- #include <linux/types.h>
- 
-@@ -56,12 +58,12 @@ static void fail(const char *format, ...)
-  */
- #define GLE(x, bits, ifnot)						\
- 	__builtin_choose_expr(						\
--		(sizeof(x) == bits/8),					\
--		(__typeof__(x))le##bits##toh(x), ifnot)
-+		(sizeof(*(x)) == bits/8),				\
-+		(__typeof__(*(x)))get_unaligned_le##bits(x), ifnot)
- 
--extern void bad_get_le(uint64_t);
-+extern void bad_get_le(void);
- #define LAST_LE(x)							\
--	__builtin_choose_expr(sizeof(x) == 1, (x), bad_get_le(x))
-+	__builtin_choose_expr(sizeof(*(x)) == 1, *(x), bad_get_le())
- 
- #define GET_LE(x)							\
- 	GLE(x, 64, GLE(x, 32, GLE(x, 16, LAST_LE(x))))
-diff --git a/arch/x86/vdso/vdso2c.h b/arch/x86/vdso/vdso2c.h
-index d1e99e1..8a07463 100644
---- a/arch/x86/vdso/vdso2c.h
-+++ b/arch/x86/vdso/vdso2c.h
-@@ -18,27 +18,27 @@ static void GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
- 	const char *secstrings;
- 	uint64_t syms[NSYMS] = {};
- 
--	Elf_Phdr *pt = (Elf_Phdr *)(addr + GET_LE(hdr->e_phoff));
-+	Elf_Phdr *pt = (Elf_Phdr *)(addr + GET_LE(&hdr->e_phoff));
- 
- 	/* Walk the segment table. */
--	for (i = 0; i < GET_LE(hdr->e_phnum); i++) {
--		if (GET_LE(pt[i].p_type) == PT_LOAD) {
-+	for (i = 0; i < GET_LE(&hdr->e_phnum); i++) {
-+		if (GET_LE(&pt[i].p_type) == PT_LOAD) {
- 			if (found_load)
- 				fail("multiple PT_LOAD segs\n");
- 
--			if (GET_LE(pt[i].p_offset) != 0 ||
--			    GET_LE(pt[i].p_vaddr) != 0)
-+			if (GET_LE(&pt[i].p_offset) != 0 ||
-+			    GET_LE(&pt[i].p_vaddr) != 0)
- 				fail("PT_LOAD in wrong place\n");
- 
--			if (GET_LE(pt[i].p_memsz) != GET_LE(pt[i].p_filesz))
-+			if (GET_LE(&pt[i].p_memsz) != GET_LE(&pt[i].p_filesz))
- 				fail("cannot handle memsz != filesz\n");
- 
--			load_size = GET_LE(pt[i].p_memsz);
-+			load_size = GET_LE(&pt[i].p_memsz);
- 			found_load = 1;
--		} else if (GET_LE(pt[i].p_type) == PT_DYNAMIC) {
--			dyn = addr + GET_LE(pt[i].p_offset);
--			dyn_end = addr + GET_LE(pt[i].p_offset) +
--				GET_LE(pt[i].p_memsz);
-+		} else if (GET_LE(&pt[i].p_type) == PT_DYNAMIC) {
-+			dyn = addr + GET_LE(&pt[i].p_offset);
-+			dyn_end = addr + GET_LE(&pt[i].p_offset) +
-+				GET_LE(&pt[i].p_memsz);
- 		}
- 	}
- 	if (!found_load)
-@@ -47,24 +47,24 @@ static void GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
- 
- 	/* Walk the dynamic table */
- 	for (i = 0; dyn + i < dyn_end &&
--		     GET_LE(dyn[i].d_tag) != DT_NULL; i++) {
--		typeof(dyn[i].d_tag) tag = GET_LE(dyn[i].d_tag);
-+		     GET_LE(&dyn[i].d_tag) != DT_NULL; i++) {
-+		typeof(dyn[i].d_tag) tag = GET_LE(&dyn[i].d_tag);
- 		if (tag == DT_REL || tag == DT_RELSZ ||
- 		    tag == DT_RELENT || tag == DT_TEXTREL)
- 			fail("vdso image contains dynamic relocations\n");
- 	}
- 
- 	/* Walk the section table */
--	secstrings_hdr = addr + GET_LE(hdr->e_shoff) +
--		GET_LE(hdr->e_shentsize)*GET_LE(hdr->e_shstrndx);
--	secstrings = addr + GET_LE(secstrings_hdr->sh_offset);
--	for (i = 0; i < GET_LE(hdr->e_shnum); i++) {
--		Elf_Shdr *sh = addr + GET_LE(hdr->e_shoff) +
--			GET_LE(hdr->e_shentsize) * i;
--		if (GET_LE(sh->sh_type) == SHT_SYMTAB)
-+	secstrings_hdr = addr + GET_LE(&hdr->e_shoff) +
-+		GET_LE(&hdr->e_shentsize)*GET_LE(&hdr->e_shstrndx);
-+	secstrings = addr + GET_LE(&secstrings_hdr->sh_offset);
-+	for (i = 0; i < GET_LE(&hdr->e_shnum); i++) {
-+		Elf_Shdr *sh = addr + GET_LE(&hdr->e_shoff) +
-+			GET_LE(&hdr->e_shentsize) * i;
-+		if (GET_LE(&sh->sh_type) == SHT_SYMTAB)
- 			symtab_hdr = sh;
- 
--		if (!strcmp(secstrings + GET_LE(sh->sh_name),
-+		if (!strcmp(secstrings + GET_LE(&sh->sh_name),
- 			    ".altinstructions"))
- 			alt_sec = sh;
- 	}
-@@ -72,25 +72,25 @@ static void GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
- 	if (!symtab_hdr)
- 		fail("no symbol table\n");
- 
--	strtab_hdr = addr + GET_LE(hdr->e_shoff) +
--		GET_LE(hdr->e_shentsize) * GET_LE(symtab_hdr->sh_link);
-+	strtab_hdr = addr + GET_LE(&hdr->e_shoff) +
-+		GET_LE(&hdr->e_shentsize) * GET_LE(&symtab_hdr->sh_link);
- 
- 	/* Walk the symbol table */
- 	for (i = 0;
--	     i < GET_LE(symtab_hdr->sh_size) / GET_LE(symtab_hdr->sh_entsize);
-+	     i < GET_LE(&symtab_hdr->sh_size) / GET_LE(&symtab_hdr->sh_entsize);
- 	     i++) {
- 		int k;
--		Elf_Sym *sym = addr + GET_LE(symtab_hdr->sh_offset) +
--			GET_LE(symtab_hdr->sh_entsize) * i;
--		const char *name = addr + GET_LE(strtab_hdr->sh_offset) +
--			GET_LE(sym->st_name);
-+		Elf_Sym *sym = addr + GET_LE(&symtab_hdr->sh_offset) +
-+			GET_LE(&symtab_hdr->sh_entsize) * i;
-+		const char *name = addr + GET_LE(&strtab_hdr->sh_offset) +
-+			GET_LE(&sym->st_name);
- 		for (k = 0; k < NSYMS; k++) {
- 			if (!strcmp(name, required_syms[k])) {
- 				if (syms[k]) {
- 					fail("duplicate symbol %s\n",
- 					     required_syms[k]);
- 				}
--				syms[k] = GET_LE(sym->st_value);
-+				syms[k] = GET_LE(&sym->st_value);
- 			}
- 		}
- 	}
-@@ -150,9 +150,9 @@ static void GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
- 	fprintf(outfile, "\t},\n");
- 	if (alt_sec) {
- 		fprintf(outfile, "\t.alt = %lu,\n",
--			(unsigned long)GET_LE(alt_sec->sh_offset));
-+			(unsigned long)GET_LE(&alt_sec->sh_offset));
- 		fprintf(outfile, "\t.alt_len = %lu,\n",
--			(unsigned long)GET_LE(alt_sec->sh_size));
-+			(unsigned long)GET_LE(&alt_sec->sh_size));
- 	}
- 	for (i = 0; i < NSYMS; i++) {
- 		if (syms[i])
+--qMm9M+Fa2AknHoGS--
