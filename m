@@ -1,47 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751668AbaFFRod (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 13:44:33 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:62227 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751877AbaFFRoc (ORCPT
+	id S1751495AbaFFRuy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 13:50:54 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:63167 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717AbaFFRuw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 13:44:32 -0400
-From: navin patidar <navin.patidar@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 13/13] staging: rtl8188eu: rtw_io.h: Remove unused members from struct _io_ops
-Date: Fri,  6 Jun 2014 23:13:18 +0530
-Message-Id: <1402076598-29637-1-git-send-email-navin.patidar@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 6 Jun 2014 13:50:52 -0400
+Message-ID: <5391FF87.1010000@cogentembedded.com>
+Date: Fri, 06 Jun 2014 21:51:03 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Dave Jones <davej@redhat.com>, Sasha Levin <sasha.levin@oracle.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: net: llc: NULL ptr deref in llc_ui_sendmsg
+References: <5391D971.4030001@oracle.com> <20140606154231.GA7629@redhat.com>
+In-Reply-To: <20140606154231.GA7629@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello.
 
-Signed-off-by: navin patidar <navin.patidar@gmail.com>
----
- drivers/staging/rtl8188eu/include/rtw_io.h |    2 --
- 1 file changed, 2 deletions(-)
+On 06/06/2014 07:42 PM, Dave Jones wrote:
 
-diff --git a/drivers/staging/rtl8188eu/include/rtw_io.h b/drivers/staging/rtl8188eu/include/rtw_io.h
-index 9c6384b..bc36129 100644
---- a/drivers/staging/rtl8188eu/include/rtw_io.h
-+++ b/drivers/staging/rtl8188eu/include/rtw_io.h
-@@ -55,12 +55,10 @@ struct _io_ops {
- 	int (*_write8_async)(struct intf_hdl *pintfhdl, u32 addr, u8 val);
- 	int (*_write16_async)(struct intf_hdl *pintfhdl, u32 addr, u16 val);
- 	int (*_write32_async)(struct intf_hdl *pintfhdl, u32 addr, u32 val);
--	u32 (*_read_interrupt)(struct intf_hdl *pintfhdl, u32 addr);
- 	u32 (*_read_port)(struct intf_hdl *pintfhdl, u32 addr, u32 cnt,
- 			  u8 *pmem);
- 	u32 (*_write_port)(struct intf_hdl *pintfhdl, u32 addr, u32 cnt,
- 			   u8 *pmem);
--	u32 (*_write_scsi)(struct intf_hdl *pintfhdl, u32 cnt, u8 *pmem);
- 	void (*_read_port_cancel)(struct intf_hdl *pintfhdl);
- 	void (*_write_port_cancel)(struct intf_hdl *pintfhdl);
- };
---
-1.7.10.4
+>   > Hi all,
+
+>   > While fuzzing with trinity inside a KVM tools guest running the latest -next
+>   > kernel I've stumbled on the following spew:
+
+>   > [  269.531162] BUG: unable to handle kernel NULL pointer dereference at 000000000000021e
+>   > [  269.531217] IP: llc_ui_sendmsg (net/llc/af_llc.c:912)
+
+>   905         /* must bind connection to sap if user hasn't done it. */
+>   906         if (sock_flag(sk, SOCK_ZAPPED)) {
+>   907                 /* bind to sap with null dev, exclusive. */
+>   908                 rc = llc_ui_autobind(sock, addr);
+>   909                 if (rc)
+>   910                         goto release;
+>   911         }
+>   912         hdrlen = llc->dev->hard_header_len + llc_ui_header_len(sk, addr);
+
+> looks like llc->dev was null, (understandable, given Trinity doesn't really know
+> how to set up llc beyond random socket()/setsockopt() calls).
+
+> llc_ui_autobind returns -ENODEV in that case, so it looks like the SOCK_ZAPPED test
+> was false. Something like the patch below maybe ? It feels ugly to be duplicating that
+> test there, but if this is agreed upon I'll resubmit this properly.
+
+> 	Dave
+
+> diff --git a/net/llc/af_llc.c b/net/llc/af_llc.c
+> index 0080d2b0a8ae..9b192db9883b 100644
+> --- a/net/llc/af_llc.c
+> +++ b/net/llc/af_llc.c
+> @@ -908,6 +908,11 @@ static int llc_ui_sendmsg(struct kiocb *iocb, struct socket *sock,
+>   		rc = llc_ui_autobind(sock, addr);
+>   		if (rc)
+>   			goto release;
+> +	} else {
+> +		if (!llc->dev) {
+
+	} else if (!llc->dev) {
+
+> +			rc = -ENODEV;
+> +			goto release;
+> +		}
+>   	}
+>   	hdrlen = llc->dev->hard_header_len + llc_ui_header_len(sk, addr);
+>   	size = hdrlen + len;
+
+WBR, Sergei
 
