@@ -1,185 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752100AbaFFRw7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 13:52:59 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:56516 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751363AbaFFRw6 convert rfc822-to-8bit (ORCPT
+	id S1752175AbaFFRxG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 13:53:06 -0400
+Received: from mxip5-inbound.gatech.edu ([130.207.182.47]:15936 "EHLO
+	mxip5-inbound.gatech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751363AbaFFRxD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 13:52:58 -0400
-From: James Bottomley <jbottomley@parallels.com>
-To: "michaelc@cs.wisc.edu" <michaelc@cs.wisc.edu>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "kys@microsoft.com" <kys@microsoft.com>,
-        "axboe@kernel.dk" <axboe@kernel.dk>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "jasowang@redhat.com" <jasowang@redhat.com>
-Subject: Re: [PATCH 1/1] [SCSI] Fix a bug in deriving the FLUSH_TIMEOUT from
- the basic I/O timeout
-Thread-Topic: [PATCH 1/1] [SCSI] Fix a bug in deriving the FLUSH_TIMEOUT
- from the basic I/O timeout
-Thread-Index: AQHPgAuS4RnOBmJ/q0aQf1y8l+Zt2ZthoquAgAGuOnqAAIlJgIAA8d+AgAAJdIA=
-Date: Fri, 6 Jun 2014 17:52:48 +0000
-Message-ID: <1402077167.2207.89.camel@dabdike.int.hansenpartnership.com>
-References: <1401899623-24194-1-git-send-email-kys@microsoft.com>
-	 <1401901323.17510.23.camel@dabdike>
-	 <d61f4b87a72544e4b0c1e1872a76f97b@BY2PR03MB299.namprd03.prod.outlook.com>
-	 <53911A35.7010805@cs.wisc.edu>
-	 <d9854e6ff97f4b0087dbe835a2a57c8f@BY2PR03MB299.namprd03.prod.outlook.com>
-	 <5391F801.4010107@cs.wisc.edu>
-In-Reply-To: <5391F801.4010107@cs.wisc.edu>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [50.46.103.107]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <6EBF7AC574A9D24DB6472C945B247365@sw.swsoft.com>
-Content-Transfer-Encoding: 7BIT
+	Fri, 6 Jun 2014 13:53:03 -0400
+X-RemoteIP: 130.207.185.167
+X-Group: ZimbraSenderGroup
+X-Policy: $ZIMBRA
+X-MID: 92091733
+X-SBRS: None
+X-IronPort-AV: E=Sophos;i="4.98,990,1392181200"; 
+   d="scan'208";a="92091733"
+X-GT-Spam-Rating: (0%)
+Message-ID: <5391FFFD.1060901@gatech.edu>
+Date: Fri, 06 Jun 2014 13:53:01 -0400
+From: Pranith Kumar <pranith@gatech.edu>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
+To: peterz@infradead.org
+CC: linux-kernel@vger.kernel.org, tim.c.chen@linux.intel.com, davidlohr@hp.com,
+        mingo@redhat.com
+Subject: Re: [RFC PATCH 1/1] cleanup: use bool as return type for rwsem_is_locked
+References: <5390D7E1.7060606@gatech.edu>
+In-Reply-To: <5390D7E1.7060606@gatech.edu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-06-06 at 12:18 -0500, Mike Christie wrote:
-> On 6/5/14, 9:53 PM, KY Srinivasan wrote:
-> >
-> >
-> >> -----Original Message-----
-> >> From: Mike Christie [mailto:michaelc@cs.wisc.edu]
-> >> Sent: Thursday, June 5, 2014 6:33 PM
-> >> To: KY Srinivasan
-> >> Cc: James Bottomley; linux-kernel@vger.kernel.org; apw@canonical.com;
-> >> devel@linuxdriverproject.org; hch@infradead.org; linux-
-> >> scsi@vger.kernel.org; ohering@suse.com; gregkh@linuxfoundation.org;
-> >> jasowang@redhat.com
-> >> Subject: Re: [PATCH 1/1] [SCSI] Fix a bug in deriving the FLUSH_TIMEOUT
-> >> from the basic I/O timeout
-> >>
-> >> On 06/04/2014 12:15 PM, KY Srinivasan wrote:
-> >>>
-> >>>
-> >>>> -----Original Message-----
-> >>>> From: James Bottomley [mailto:jbottomley@parallels.com]
-> >>>> Sent: Wednesday, June 4, 2014 10:02 AM
-> >>>> To: KY Srinivasan
-> >>>> Cc: linux-kernel@vger.kernel.org; apw@canonical.com;
-> >>>> devel@linuxdriverproject.org; hch@infradead.org; linux-
-> >>>> scsi@vger.kernel.org; ohering@suse.com; gregkh@linuxfoundation.org;
-> >>>> jasowang@redhat.com
-> >>>> Subject: Re: [PATCH 1/1] [SCSI] Fix a bug in deriving the
-> >>>> FLUSH_TIMEOUT from the basic I/O timeout
-> >>>>
-> >>>> On Wed, 2014-06-04 at 09:33 -0700, K. Y. Srinivasan wrote:
-> >>>>> Commit ID: 7e660100d85af860e7ad763202fff717adcdaacd added code to
-> >>>>> derive the FLUSH_TIMEOUT from the basic I/O timeout. However, this
-> >>>>> patch did not use the basic I/O timeout of the device. Fix this bug.
-> >>>>>
-> >>>>> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> >>>>> ---
-> >>>>>   drivers/scsi/sd.c |    4 +++-
-> >>>>>   1 files changed, 3 insertions(+), 1 deletions(-)
-> >>>>>
-> >>>>> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c index
-> >>>>> e9689d5..54150b1 100644
-> >>>>> --- a/drivers/scsi/sd.c
-> >>>>> +++ b/drivers/scsi/sd.c
-> >>>>> @@ -832,7 +832,9 @@ static int sd_setup_write_same_cmnd(struct
-> >>>>> scsi_device *sdp, struct request *rq)
-> >>>>>
-> >>>>>   static int scsi_setup_flush_cmnd(struct scsi_device *sdp, struct
-> >>>>> request *rq)  {
-> >>>>> -	rq->timeout *= SD_FLUSH_TIMEOUT_MULTIPLIER;
-> >>>>> +	int timeout = sdp->request_queue->rq_timeout;
-> >>>>> +
-> >>>>> +	rq->timeout = (timeout * SD_FLUSH_TIMEOUT_MULTIPLIER);
-> >>>>
-> >>>> Could you share where you found this to be a problem?  It looks like
-> >>>> a bug in block because all inbound requests being prepared should
-> >>>> have a timeout set, so block would be the place to fix it.
-> >>>
-> >>> Perhaps; what I found was that the value in rq->timeout was 0 coming
-> >>> into this function and thus multiplying obviously has no effect.
-> >>>
-> >>
-> >> I think you are right. We hit this problem because we are doing:
-> >>
-> >> scsi_request_fn -> blk_peek_request -> sd_prep_fn ->
-> >> scsi_setup_flush_cmnd.
-> >>
-> >> At this time request->timeout is zero so the multiplication does nothing. See
-> >> how sd_setup_write_same_cmnd will set the request->timeout at this time.
-> >>
-> >> Then in scsi_request_fn we do:
-> >>
-> >> scsi_request_fn -> blk_start_request -> blk_add_timer.
-> >>
-> >> At this time it will set the request->timeout if something like req block pc
-> >> users (like scsi_execute() or block/scsi_ioctl.c) or the write same code
-> >> mentioned above have not set the timeout.
-> >
-> > I don't think this is a recent change. Prior to this commit, we were setting the timeout
-> > value in this function; it just happened to be a different constant unrelated to the I/O
-> > timeout.
-> >
-> 
-> Yeah, it looks like when 7e660100d85af860e7ad763202fff717adcdaacd was 
-> merged we were supposed to initialize it like in your patch in this thread.
-> 
-> I guess we could do your patch in this thread, or if we want the block 
-> layer to initialize the timeout before the prep_fn callout is called 
-> then we would need to have the blk-flush.c code to that when it sets up 
-> the request. If we do the latter, do we want the discard and write same 
-> code to initialize the request's timeout before the prep_fn callout is 
-> called too?
+On Fri, Jun 6, 2014 at 3:35 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>
+> Now in general, I don't particularly like such superfluous changes, so
+> unless you can show that GCC actually generates better code, I'd prefer
+> to keep things as they are.
 
-I looked through the call chain; it seems to be intentional behaviour on
-the part of block.  Just from an mq point of view, it would make better
-code if we unconditionally initialised rq->timeout early and allowed
-prep to modify it and then dumped the if(!req->timeout) in
-blk_add_timer(), but it's a marginal if condition that would compile to
-a conditional store on sensible architectures, so losing the conditional
-probably isn't worth worrying about.
+Fixed and checked the assembly. It saves us 2 bytes of code, not much. I am not sure if that is worth it :(
 
-Cc'd Jens for his opinion with the block patch
+use bool as the return type for rwsem_is_locked() instead of int
 
-James
-
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 ---
+ include/linux/rwsem-spinlock.h  |    2 +-
+ include/linux/rwsem.h           |    2 +-
+ kernel/locking/rwsem-spinlock.c |    4 ++--
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index a0e3096..cad6b2a 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -111,6 +111,7 @@ void blk_rq_init(struct request_queue *q, struct request *rq)
- 	rq->cmd = rq->__cmd;
- 	rq->cmd_len = BLK_MAX_CDB;
- 	rq->tag = -1;
-+	rq->timeout = q->rq_timeout;
- 	rq->start_time = jiffies;
- 	set_start_time_ns(rq);
- 	rq->part = NULL;
-diff --git a/block/blk-timeout.c b/block/blk-timeout.c
-index d96f706..9063ade 100644
---- a/block/blk-timeout.c
-+++ b/block/blk-timeout.c
-@@ -180,13 +180,6 @@ void __blk_add_timer(struct request *req, struct list_head *timeout_list)
+diff --git a/include/linux/rwsem-spinlock.h b/include/linux/rwsem-spinlock.h
+index d5b13bc..9026d2a 100644
+--- a/include/linux/rwsem-spinlock.h
++++ b/include/linux/rwsem-spinlock.h
+@@ -39,7 +39,7 @@ extern int __down_write_trylock(struct rw_semaphore *sem);
+ extern void __up_read(struct rw_semaphore *sem);
+ extern void __up_write(struct rw_semaphore *sem);
+ extern void __downgrade_write(struct rw_semaphore *sem);
+-extern int rwsem_is_locked(struct rw_semaphore *sem);
++extern bool rwsem_is_locked(struct rw_semaphore *sem);
  
- 	BUG_ON(!list_empty(&req->timeout_list));
+ #endif /* __KERNEL__ */
+ #endif /* _LINUX_RWSEM_SPINLOCK_H */
+diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
+index 03f3b05..b056780 100644
+--- a/include/linux/rwsem.h
++++ b/include/linux/rwsem.h
+@@ -40,7 +40,7 @@ extern struct rw_semaphore *rwsem_downgrade_wake(struct rw_semaphore *sem);
+ #include <asm/rwsem.h>
  
--	/*
--	 * Some LLDs, like scsi, peek at the timeout to prevent a
--	 * command from being retried forever.
--	 */
--	if (!req->timeout)
--		req->timeout = q->rq_timeout;
--
- 	req->deadline = jiffies + req->timeout;
- 	if (timeout_list)
- 		list_add_tail(&req->timeout_list, timeout_list);
-
+ /* In all implementations count != 0 means locked */
+-static inline int rwsem_is_locked(struct rw_semaphore *sem)
++static inline bool rwsem_is_locked(struct rw_semaphore *sem)
+ {
+ 	return sem->count != 0;
+ }
+diff --git a/kernel/locking/rwsem-spinlock.c b/kernel/locking/rwsem-spinlock.c
+index 9be8a91..3f8adf8 100644
+--- a/kernel/locking/rwsem-spinlock.c
++++ b/kernel/locking/rwsem-spinlock.c
+@@ -20,9 +20,9 @@ struct rwsem_waiter {
+ 	enum rwsem_waiter_type type;
+ };
+ 
+-int rwsem_is_locked(struct rw_semaphore *sem)
++bool rwsem_is_locked(struct rw_semaphore *sem)
+ {
+-	int ret = 1;
++	bool ret = true;
+ 	unsigned long flags;
+ 
+ 	if (raw_spin_trylock_irqsave(&sem->wait_lock, flags)) {
+-- 
+1.7.9.5
