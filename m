@@ -1,59 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752411AbaFFIxT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 04:53:19 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:62855 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751658AbaFFIxR (ORCPT
+	id S1752580AbaFFI5j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 04:57:39 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:42179 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751871AbaFFI5g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 04:53:17 -0400
-Date: Fri, 6 Jun 2014 04:53:14 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Brad Mouring <bmouring@ni.com>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Clark Williams <williams@redhat.com>
-Subject: Re: [PATCH 1/1] rtmutex: Handle when top lock owner changes
-Message-ID: <20140606045314.03829996@gandalf.local.home>
-In-Reply-To: <alpine.DEB.2.10.1406060739030.23174@nanos>
-References: <1400855410-14773-1-git-send-email-brad.mouring@ni.com>
-	<1400855410-14773-2-git-send-email-brad.mouring@ni.com>
-	<20140603210609.62de6451@gandalf.local.home>
-	<alpine.DEB.2.10.1406041623170.3319@nanos>
-	<20140605231940.1fc277a4@gandalf.local.home>
-	<alpine.DEB.2.10.1406060739030.23174@nanos>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Fri, 6 Jun 2014 04:57:36 -0400
+Date: Fri, 6 Jun 2014 10:57:33 +0200
+From: Jiri Pirko <jiri@resnulli.us>
+To: Michal Privoznik <mprivozn@redhat.com>
+Cc: davem@davemloft.net, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] net-sysfs: Report link speed only when possible
+Message-ID: <20140606085733.GJ2984@minipsycho.orion>
+References: <771f792d4d4391c656305a522557c53c4e84a666.1402043894.git.mprivozn@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <771f792d4d4391c656305a522557c53c4e84a666.1402043894.git.mprivozn@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 6 Jun 2014 07:40:10 +0200 (CEST)
-Thomas Gleixner <tglx@linutronix.de> wrote:
+Fri, Jun 06, 2014 at 10:40:30AM CEST, mprivozn@redhat.com wrote:
+>The link speed is available at /sys/class/net/$nic/speed.
+>However, in some cases, depending on the driver, if the link is
+>not plugged, -1 is reported (this is the case of e1000e for
+>instance). To make things worse, the value is printed out as an
 
-> On Thu, 5 Jun 2014, Steven Rostedt wrote:
-> > On Wed, 4 Jun 2014 17:32:37 +0200 (CEST)
-> > Thomas Gleixner <tglx@linutronix.de> wrote:
-> > +	/*
-> > +	 * When we dropped the spinlocks, if the owner of the lock we
-> > +	 * are currently processing changed since we chain walked
-> > +	 * to that lock, we are done with the chain walk. The previous
-> > +	 * owner was obviously running to release it.
-> > +	 */
-> > +	if (lock && rt_mutex_owner(lock) != task)
-> > +		goto out_unlock_pi;
+Actually, SPEED_UNKNOWN is also -1
+So e1000e is not any exception.
+
+
+>unsigned integer, so you'll get this shady number which you can't
+>evaluate correctly. This is actually a regression in 3.X kernels
+>as the commit that broke things is 8ae6daca. With this change,
+>you'll get -EINVAL whenever a -1 is to be printed out.
+>
+>Before the change:
+>  # cat /sys/class/net/eth0/speed
+>  4294967295
+>
+>After the change:
+>  # cat /sys/class/net/eth0/speed
+>  cat: /sys/class/net/eth0/speed: Invalid argument
+>
+>Signed-off-by: Michal Privoznik <mprivozn@redhat.com>
+>---
+> net/core/net-sysfs.c | 9 +++++++--
+> 1 file changed, 7 insertions(+), 2 deletions(-)
+>
+>diff --git a/net/core/net-sysfs.c b/net/core/net-sysfs.c
+>index 1cac29e..ce4b298 100644
+>--- a/net/core/net-sysfs.c
+>+++ b/net/core/net-sysfs.c
+>@@ -172,8 +172,13 @@ static ssize_t speed_show(struct device *dev,
 > 
-> NO. You CANNOT derefernce lock after dropping the locks. It might be
-> gone already.
-> 
+> 	if (netif_running(netdev)) {
+> 		struct ethtool_cmd cmd;
+>-		if (!__ethtool_get_settings(netdev, &cmd))
+>-			ret = sprintf(buf, fmt_udec, ethtool_cmd_speed(&cmd));
+>+		if (!__ethtool_get_settings(netdev, &cmd)) {
+>+			__u32 speed = ethtool_cmd_speed(&cmd);
+>+
+>+			if (speed != (__u32) -1)
 
-Ah, the lock can be freed (out of memory that is). Why didn't you say
-so in the first place ;-)
+Just rather use SPEED_UNKNOWN instead of -1 here.
 
--- Steve
+
+>+				ret = sprintf(buf, fmt_udec,
+>+					      ethtool_cmd_speed(&cmd));
+>+		}
+> 	}
+> 	rtnl_unlock();
+> 	return ret;
+>-- 
+>2.0.0
+>
