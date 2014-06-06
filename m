@@ -1,53 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245AbaFFPpX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 11:45:23 -0400
-Received: from smtprelay0067.hostedemail.com ([216.40.44.67]:56002 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751692AbaFFPpW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 11:45:22 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2691:2828:3138:3139:3140:3141:3142:3350:3622:3865:3866:3871:3872:3873:3874:4321:5007:6119:7652:7903:7904:8603:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13095:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: talk49_4b9f473800d1b
-X-Filterd-Recvd-Size: 1636
-Message-ID: <1402069518.12882.5.camel@joe-AO725>
-Subject: Re: [PATCH] checkpatch: warn when patch exceeds a maximum message
- size
-From: Joe Perches <joe@perches.com>
-To: "Allan, Bruce W" <bruce.w.allan@intel.com>
-Cc: "apw@canonical.com" <apw@canonical.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        postmaster <postmaster@vger.kernel.org>
-Date: Fri, 06 Jun 2014 08:45:18 -0700
-In-Reply-To: <804857E1F29AAC47BF68C404FC60A18465623059@ORSMSX105.amr.corp.intel.com>
-References: <20140606000037.18356.720.stgit@gitlad.jf.intel.com>
-	 <1402018556.3038.2.camel@joe-AO725>
-	 <804857E1F29AAC47BF68C404FC60A18465622F2F@ORSMSX105.amr.corp.intel.com>
-	 <1402068405.12513.5.camel@joe-AO725> <1402068842.12513.7.camel@joe-AO725>
-	 <804857E1F29AAC47BF68C404FC60A18465623059@ORSMSX105.amr.corp.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752285AbaFFPpz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 11:45:55 -0400
+Received: from mail.kernel.org ([198.145.19.201]:57962 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751854AbaFFPpy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 11:45:54 -0400
+Date: Fri, 6 Jun 2014 12:45:47 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 2/2] perf tests: Show the inner make output when an error
+ happens
+Message-ID: <20140606154547.GK3696@kernel.org>
+References: <1402063909-13859-1-git-send-email-acme@kernel.org>
+ <1402063909-13859-3-git-send-email-acme@kernel.org>
+ <20140606145023.GA8865@krava.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140606145023.GA8865@krava.brq.redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-06-06 at 15:35 +0000, Allan, Bruce W wrote:
-> > 	Message size exceeding 100 000 characters causes blocking.
-> > 
-> > But I believe that info is out of date.
-> > 
-> If it is out of date, can you explain how/why we got stung by it?
+Em Fri, Jun 06, 2014 at 04:50:23PM +0200, Jiri Olsa escreveu:
+> On Fri, Jun 06, 2014 at 11:11:49AM -0300, Arnaldo Carvalho de Melo wrote:
+> > From: Arnaldo Carvalho de Melo <acme@redhat.com>
+> > +++ b/tools/perf/tests/make
+> > @@ -205,8 +205,7 @@ $(run):
+> >  	( eval $$cmd ) >> $@ 2>&1; \
+> >  	echo "  test: $(call test,$@)" >> $@ 2>&1; \
+> >  	$(call test,$@) && \
+> > -	rm -f $@ \
+> > -	rm -rf $$TMP_DEST
+> > +	rm -rf $@ $$TMP_DEST || cat $@
+ 
+> I like that we show the log, but we need to fail the target
+> so the processing is stopped and the rest is not executed,
+> like adding this:
+ 
+>     .... cat $@ && false
+  
+> >  $(run_O):
+> >  	$(call clean)
+ 
+> also you need to put same change to $(run_O) target
 
-Dunno.
+Updated patch:
 
-Too many recipients maybe?
+commit 40cb3da56c614bb3ea42ce4b99e379859d8be9a5
+Author: Arnaldo Carvalho de Melo <acme@redhat.com>
+Date:   Thu Jun 5 17:15:47 2014 -0300
 
-cc'ing more than 20 or so people can run up against
-that 1024 total byte header limit.
+    perf tests: Show the inner make output when an error happens
+    
+    Before:
+    
+      [acme@zoo linux]$ make -C tools/perf -f tests/make make_static
+      make: Entering directory `/home/git/linux/tools/perf'
+      - make_static: cd . && make -f Makefile DESTDIR=/tmp/tmp.JcWuM4Zu9f LDFLAGS=-static
+      make: *** [make_static] Error 1
+      make: Leaving directory `/home/git/linux/tools/perf'
+      [acme@zoo linux]$
+    
+    After:
+    
+      [acme@zoo linux]$ make -C tools/perf -f tests/make make_static
+      make: Entering directory `/home/git/linux/tools/perf'
+      - make_static: cd . && make -f Makefile DESTDIR=/tmp/tmp.X3su83i14u LDFLAGS=-static
+      cd . && make -f Makefile DESTDIR=/tmp/tmp.X3su83i14u LDFLAGS=-static
+        BUILD:   Doing 'make -j4' parallel build
+      config/Makefile:303: *** No static glibc found, please install glibc-static.  Stop.
+      make[1]: *** [all] Error 2
+        test: test -x ./perf
+      make: Leaving directory `/home/git/linux/tools/perf'
+      [acme@zoo linux]$
+    
+    Cc: Adrian Hunter <adrian.hunter@intel.com>
+    Cc: David Ahern <dsahern@gmail.com>
+    Cc: Don Zickus <dzickus@redhat.com>
+    Cc: Frederic Weisbecker <fweisbec@gmail.com>
+    Cc: Ingo Molnar <mingo@kernel.org>
+    Cc: Mike Galbraith <efault@gmx.de>
+    Cc: Namhyung Kim <namhyung@kernel.org>
+    Cc: Paul Mackerras <paulus@samba.org>
+    Cc: Peter Zijlstra <peterz@infradead.org>
+    Cc: Stephane Eranian <eranian@google.com>
+    Link: http://lkml.kernel.org/n/tip-h4kby5wyp6nfev3882rzm3r9@git.kernel.org
+    Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Maybe send me a copy of the original rejected posting?
-
-
+diff --git a/tools/perf/tests/make b/tools/perf/tests/make
+index 2f92d6e7ee00..69a71ff84e01 100644
+--- a/tools/perf/tests/make
++++ b/tools/perf/tests/make
+@@ -205,8 +205,7 @@ $(run):
+ 	( eval $$cmd ) >> $@ 2>&1; \
+ 	echo "  test: $(call test,$@)" >> $@ 2>&1; \
+ 	$(call test,$@) && \
+-	rm -f $@ \
+-	rm -rf $$TMP_DEST
++	rm -rf $@ $$TMP_DEST || (cat $@ ; false)
+ 
+ $(run_O):
+ 	$(call clean)
+@@ -217,9 +216,7 @@ $(run_O):
+ 	( eval $$cmd ) >> $@ 2>&1 && \
+ 	echo "  test: $(call test_O,$@)" >> $@ 2>&1; \
+ 	$(call test_O,$@) && \
+-	rm -f $@ && \
+-	rm -rf $$TMP_O \
+-	rm -rf $$TMP_DEST
++	rm -rf $@ $$TMP_O $$TMP_DEST || (cat $@ ; false)
+ 
+ tarpkg:
+ 	@cmd="$(PERF)/tests/perf-targz-src-pkg $(PERF)"; \
