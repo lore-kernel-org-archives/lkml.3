@@ -1,118 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752135AbaFFCkP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 22:40:15 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:64184 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751748AbaFFCkO (ORCPT
+	id S1752120AbaFFCxV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 22:53:21 -0400
+Received: from mail-bn1blp0185.outbound.protection.outlook.com ([207.46.163.185]:26953
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751748AbaFFCxU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 22:40:14 -0400
-Message-ID: <53912A0B.7060901@kernel.dk>
-Date: Thu, 05 Jun 2014 20:40:11 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 5 Jun 2014 22:53:20 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Mike Christie <michaelc@cs.wisc.edu>
+CC: James Bottomley <jbottomley@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: RE: [PATCH 1/1] [SCSI] Fix a bug in deriving the FLUSH_TIMEOUT from
+ the basic I/O timeout
+Thread-Topic: [PATCH 1/1] [SCSI] Fix a bug in deriving the FLUSH_TIMEOUT from
+ the basic I/O timeout
+Thread-Index: AQHPgAqq5L1zp+ngQ0O2dQQp+rFvKZthLVSAgAABPoCAAh+9gIAAFcfQ
+Date: Fri, 6 Jun 2014 02:53:15 +0000
+Message-ID: <d9854e6ff97f4b0087dbe835a2a57c8f@BY2PR03MB299.namprd03.prod.outlook.com>
+References: <1401899623-24194-1-git-send-email-kys@microsoft.com>
+ <1401901323.17510.23.camel@dabdike>
+ <d61f4b87a72544e4b0c1e1872a76f97b@BY2PR03MB299.namprd03.prod.outlook.com>
+ <53911A35.7010805@cs.wisc.edu>
+In-Reply-To: <53911A35.7010805@cs.wisc.edu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2601:8:9b00:402:605e:a01a:1e1f:e170]
+x-microsoft-antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
+x-forefront-prvs: 023495660C
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(428001)(479174003)(51704005)(377454003)(24454002)(13464003)(377424004)(199002)(189002)(92566001)(19580395003)(86612001)(74316001)(77982001)(79102001)(46102001)(101416001)(80022001)(20776003)(93886002)(99396002)(81542001)(64706001)(74662001)(86362001)(21056001)(83322001)(19580405001)(50986999)(87936001)(77096999)(85852003)(76176999)(31966008)(54356999)(2656002)(83072002)(76576001)(2171001)(76482001)(99286001)(33646001)(4396001)(74502001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB297;H:BY2PR03MB299.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+authentication-results: spf=none (sender IP is )
+ smtp.mailfrom=kys@microsoft.com; 
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Ming Lei <tom.leiming@gmail.com>
-CC: Alexander Gordeev <agordeev@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: blk-mq: bitmap tag: performance degradation?
-References: <20140604103544.GA11350@dhcp-26-207.brq.redhat.com>	<538F2AC2.1060904@kernel.dk>	<20140605140127.GA22198@dhcp-26-207.brq.redhat.com>	<53907895.8090102@kernel.dk>	<CACVXFVMFjR5kqB9SQG-EiKMB3dC0O58_EhJZw2R2m7a9vUuH0A@mail.gmail.com>	<5390A624.8020308@kernel.dk>	<CACVXFVO-1shNB=tSpNBp_tpx+9imx5ycxfaSwofg-VeR_4S+MA@mail.gmail.com>	<53911FA6.1030505@kernel.dk> <CACVXFVNyVaPvDxM3TcN87yGG-hh1Xvzis4ox=g3XjSuRKwvhbA@mail.gmail.com>
-In-Reply-To: <CACVXFVNyVaPvDxM3TcN87yGG-hh1Xvzis4ox=g3XjSuRKwvhbA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-06-05 20:35, Ming Lei wrote:
-> On Fri, Jun 6, 2014 at 9:55 AM, Jens Axboe <axboe@kernel.dk> wrote:
->> On 2014-06-05 17:33, Ming Lei wrote:
->>>
->>> On Fri, Jun 6, 2014 at 1:17 AM, Jens Axboe <axboe@kernel.dk> wrote:
->>>>
->>>> On 06/05/2014 08:16 AM, Ming Lei wrote:
->>>>>
->>>>> On Thu, Jun 5, 2014 at 10:03 PM, Jens Axboe <axboe@kernel.dk> wrote:
->>>>>>
->>>>>> On 2014-06-05 08:01, Alexander Gordeev wrote:
->>>>>>>
->>>>>>>
->>>>>>> On Wed, Jun 04, 2014 at 08:18:42AM -0600, Jens Axboe wrote:
->>>>>>>>
->>>>>>>>
->>>>>>>> A null_blk test is the absolute best case for percpu_ida, since
->>>>>>>> there are enough tags and everything is localized. The above test is
->>>>>>>> more useful for testing blk-mq than any real world application of
->>>>>>>> the tagging.
->>>>>>>>
->>>>>>>> I've done considerable testing on both 2 and 4 socket (32 and 64
->>>>>>>> CPUs) and bitmap tagging is better in a much wider range of
->>>>>>>> applications. This includes even high tag depth devices like nvme,
->>>>>>>> and more normal ranges like mtip32xx and scsi-mq setups.
->>>>>>>
->>>>>>>
->>>>>>>
->>>>>>> Just for the record: bitmap tags on a 48 CPU box with NVMe device
->>>>>>> indeed shows almost the same performance/cache rate as the stock
->>>>>>> kernel.
->>>>>>
->>>>>>
->>>>>>
->>>>>> Thanks for confirming. It's one of the dangers of null_blk, it's not
->>>>>> always
->>>>>> a very accurate simulation of what a real device will do. I think it's
->>>>>> mostly a completion side thing, would be great with a small device that
->>>>>> supported msi-x and could be used as an irq trigger :-)
->>>>>
->>>>>
->>>>> Maybe null_blk at IRQ_TIMER mode is more close to
->>>>> a real device, and I guess the result may be different with
->>>>> mode IRQ_NONE/IRQ_SOFTIRQ.
->>>>
->>>>
->>>> It'd be closer in behavior, but the results might then be skewed by
->>>> hitting the timer way too hard. And it'd be a general slowdown, again
->>>> possibly skewing it. But I haven't tried with the timer completion, to
->>>> see if that yields more accurate modelling for this test, so it might
->>>> actually be a lot better.
->>>
->>>
->>> My test on a 16core VM(host: 2 sockets, 16core):
->>>
->>> 1, bitmap tag allocation(3.15-rc7-next):
->>> - softirq mode: 759K IOPS
->>> - timer mode: 409K IOPS
->>>
->>> 2, percpu_ida allocation(3.15-rc7)
->>> - softirq mode: 1116K IOPS
->>> - timer mode: 411K IOPS
->>
->>
->> It's hard to say if this is close, or whether we are just timer bound at
->> that point.
->
-> You are right, my previous test should be timer bound, but it
-> should be eased by increasing timer period.
->
-> I do the test again with increasing parameter of completion_nsec
-> to 235000 from default 10000:
->
-> 1, nullblk(timer mode)3.15-rc7:
-> - each fio cpu utilization: 80% ~ 90%
-> - 860K IOPS
->
-> 2, nullbk(timer mode)3.15-rc7-next
-> - each fio cpu utilization: 70~80%
-> - 940K IOPS
->
-> Then bitmap based allocation can be observed to be a bit
-> better than percpu ida.
 
-That's more inline with the real device testing I did. If tags are 
-plenty, it's a wash between the two. But once you exceed 50% 
-utilization, percpu_ida starts to degrade, and in some cases very badly. 
-This is especially apparent on bigger 2 socket, or 4 socket boxes.
 
--- 
-Jens Axboe
+> -----Original Message-----
+> From: Mike Christie [mailto:michaelc@cs.wisc.edu]
+> Sent: Thursday, June 5, 2014 6:33 PM
+> To: KY Srinivasan
+> Cc: James Bottomley; linux-kernel@vger.kernel.org; apw@canonical.com;
+> devel@linuxdriverproject.org; hch@infradead.org; linux-
+> scsi@vger.kernel.org; ohering@suse.com; gregkh@linuxfoundation.org;
+> jasowang@redhat.com
+> Subject: Re: [PATCH 1/1] [SCSI] Fix a bug in deriving the FLUSH_TIMEOUT
+> from the basic I/O timeout
+> 
+> On 06/04/2014 12:15 PM, KY Srinivasan wrote:
+> >
+> >
+> >> -----Original Message-----
+> >> From: James Bottomley [mailto:jbottomley@parallels.com]
+> >> Sent: Wednesday, June 4, 2014 10:02 AM
+> >> To: KY Srinivasan
+> >> Cc: linux-kernel@vger.kernel.org; apw@canonical.com;
+> >> devel@linuxdriverproject.org; hch@infradead.org; linux-
+> >> scsi@vger.kernel.org; ohering@suse.com; gregkh@linuxfoundation.org;
+> >> jasowang@redhat.com
+> >> Subject: Re: [PATCH 1/1] [SCSI] Fix a bug in deriving the
+> >> FLUSH_TIMEOUT from the basic I/O timeout
+> >>
+> >> On Wed, 2014-06-04 at 09:33 -0700, K. Y. Srinivasan wrote:
+> >>> Commit ID: 7e660100d85af860e7ad763202fff717adcdaacd added code to
+> >>> derive the FLUSH_TIMEOUT from the basic I/O timeout. However, this
+> >>> patch did not use the basic I/O timeout of the device. Fix this bug.
+> >>>
+> >>> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> >>> ---
+> >>>  drivers/scsi/sd.c |    4 +++-
+> >>>  1 files changed, 3 insertions(+), 1 deletions(-)
+> >>>
+> >>> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c index
+> >>> e9689d5..54150b1 100644
+> >>> --- a/drivers/scsi/sd.c
+> >>> +++ b/drivers/scsi/sd.c
+> >>> @@ -832,7 +832,9 @@ static int sd_setup_write_same_cmnd(struct
+> >>> scsi_device *sdp, struct request *rq)
+> >>>
+> >>>  static int scsi_setup_flush_cmnd(struct scsi_device *sdp, struct
+> >>> request *rq)  {
+> >>> -	rq->timeout *= SD_FLUSH_TIMEOUT_MULTIPLIER;
+> >>> +	int timeout = sdp->request_queue->rq_timeout;
+> >>> +
+> >>> +	rq->timeout = (timeout * SD_FLUSH_TIMEOUT_MULTIPLIER);
+> >>
+> >> Could you share where you found this to be a problem?  It looks like
+> >> a bug in block because all inbound requests being prepared should
+> >> have a timeout set, so block would be the place to fix it.
+> >
+> > Perhaps; what I found was that the value in rq->timeout was 0 coming
+> > into this function and thus multiplying obviously has no effect.
+> >
+> 
+> I think you are right. We hit this problem because we are doing:
+> 
+> scsi_request_fn -> blk_peek_request -> sd_prep_fn ->
+> scsi_setup_flush_cmnd.
+> 
+> At this time request->timeout is zero so the multiplication does nothing. See
+> how sd_setup_write_same_cmnd will set the request->timeout at this time.
+> 
+> Then in scsi_request_fn we do:
+> 
+> scsi_request_fn -> blk_start_request -> blk_add_timer.
+> 
+> At this time it will set the request->timeout if something like req block pc
+> users (like scsi_execute() or block/scsi_ioctl.c) or the write same code
+> mentioned above have not set the timeout.
+
+I don't think this is a recent change. Prior to this commit, we were setting the timeout
+value in this function; it just happened to be a different constant unrelated to the I/O
+timeout.
+
+K. Y
+> 
+> 
 
