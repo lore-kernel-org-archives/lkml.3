@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752708AbaFFHhD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 03:37:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26629 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751316AbaFFHhB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 03:37:01 -0400
-Date: Fri, 6 Jun 2014 15:37:48 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
-        greg@kroah.com, bp@alien8.de, jkosina@suse.cz, chaowang@redhat.com,
-        bhe@redhat.com, akpm@linux-foundation.org
-Subject: Re: [RFC PATCH 00/13][V3] kexec: A new system call to allow in
- kernel loading
-Message-ID: <20140606073748.GC3343@darkstar.nay.redhat.com>
-References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
- <20140603131203.GA23395@redhat.com>
- <20140605083134.GE3506@darkstar.nay.redhat.com>
- <20140605150159.GA14083@redhat.com>
+	id S1752692AbaFFHil (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 03:38:41 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:51218 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751829AbaFFHik (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 03:38:40 -0400
+Message-ID: <53916FAA.3030008@linux.vnet.ibm.com>
+Date: Fri, 06 Jun 2014 13:07:14 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140605150159.GA14083@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: akpm@linux-foundation.org, fweisbec@gmail.com, tglx@linutronix.de,
+        hch@infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] smp, ipi: Speed up IPI handling by invoking the callbacks
+ in reverse order
+References: <20140604193934.21321.19185.stgit@srivatsabhat.in.ibm.com> <20140604194731.GO13930@laptop.programming.kicks-ass.net> <538F7C7D.9040606@linux.vnet.ibm.com> <20140605072637.GF3213@twins.programming.kicks-ass.net>
+In-Reply-To: <20140605072637.GF3213@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14060607-6102-0000-0000-000005B93B36
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/14 at 11:01am, Vivek Goyal wrote:
-> On Thu, Jun 05, 2014 at 04:31:34PM +0800, Dave Young wrote:
+On 06/05/2014 12:56 PM, Peter Zijlstra wrote:
+> On Thu, Jun 05, 2014 at 01:37:25AM +0530, Srivatsa S. Bhat wrote:
+>> On 06/05/2014 01:17 AM, Peter Zijlstra wrote:
+>>> On Thu, Jun 05, 2014 at 01:09:35AM +0530, Srivatsa S. Bhat wrote:
+>>>> The current implementation of lockless list (llist) has a drawback: if we
+>>>> want to traverse the list in FIFO order (oldest to newest), we need to
+>>>> reverse the list first (and this can be expensive if the list is large,
+>>>> since this is an O(n) operation).
+>>>
+>>> Have you actually looked at the queue depth of this thing? Large queues
+>>> are a problem for interrupt latency.
+>>>
+>>
+>> Actually, I wrote this patch just by looking at the code and realizing
+>> that we don't need to reverse the list. In practice, I haven't actually
+>> seen any noticeable interrupt latencies or large queues so far. So I think
+>> this patch is just a very tiny optimization, that's all.
 > 
-> [..]
-> > > +	ret = kexec_file_load(kernel_fd, info.initrd_fd, info.command_line,
-> > > +			info.command_line_len, info.kexec_flags);
-> > 
-> > Vivek,
-> > 
-> > I tried your patch on my uefi test machine, but kexec load fails like below:
-> > 
-> > [root@localhost ~]# kexec -l /boot/vmlinuz-3.15.0-rc8+ --use-kexec2-syscall
-> > Could not find a free area of memory of 0xa000 bytes ...
+> So conceptually it makes sense to service in FIFO because the first
+> entry is waiting longest, by servicing them in LIFO order you get far
+> more variance in latency.
 > 
-> Hi Dave,
+> And if the list is small, the cost isn't high.
 > 
-> I think this message is coming from kexec-tools from old loading path. I
-> think somehow new path did not even kick in. I tried above and I got
-> -EBADF as I did not pass initrd. Can you run gdb on kexec and see if
-> you are getting to syscall or run strace.
+> Then again, we don't have any good numbers one way or the other.
+> 
 
-Seems I can not reproduce the local hole fail issue but I'm sure it happens
-before the new syscall callback.
+Hmm, right. I thought hard to see if there is a clever way to maintain
+the llist in the FIFO order itself, while still preserving the atomicity
+guarantees, but I couldn't think of anything sane :-(
 
-This time I got -ENOEXEC. It's caused by CONFIG_EFI_MIXED=y. In case EFI_MIXED
-64bit kernel runs on 32bit efi firmware thus XLF_CAN_BE_LOADED_ABOVE_4G is not
-set thus bzImage probe will fail with NOEXEC.
+Regards,
+Srivatsa S. Bhat
 
-> 
-> > 
-> > Another issue is that the syscall should allow load kernel only without initrd
-> 
-> Agreed. Currently my code is not handling it. I am thinking of ways how to
-> make passing initrd fd optional.
-> 
-> > 
-> > and
-> > cmdline since kernel can mount root and embed cmdline in itself.
-> 
-> Passing command line is already optional. I tried it and kexec loaded
-> successfully.
-> 
-> Thanks
-> Vivek
