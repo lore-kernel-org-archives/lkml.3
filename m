@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752331AbaFFPvv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 11:51:51 -0400
-Received: from mga14.intel.com ([192.55.52.115]:10091 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752253AbaFFPvt convert rfc822-to-8bit (ORCPT
+	id S1752413AbaFFPwG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 11:52:06 -0400
+Received: from smtp-out-004.synserver.de ([212.40.185.4]:1043 "EHLO
+	smtp-out-004.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752371AbaFFPwE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 11:51:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,989,1392192000"; 
-   d="scan'208";a="543639353"
-From: "Allan, Bruce W" <bruce.w.allan@intel.com>
-To: Joe Perches <joe@perches.com>
-CC: "apw@canonical.com" <apw@canonical.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        postmaster <postmaster@vger.kernel.org>
-Subject: RE: [PATCH] checkpatch: warn when patch exceeds a maximum message
- size
-Thread-Topic: [PATCH] checkpatch: warn when patch exceeds a maximum message
- size
-Thread-Index: AQHPgRqYmzGw4rMJHUaHraTqiFbMAptjwnYAgABqpnCAAH16gIAAAgkA//+LAnCAAHgkAP//jFZg
-Date: Fri, 6 Jun 2014 15:51:47 +0000
-Message-ID: <804857E1F29AAC47BF68C404FC60A184656230FE@ORSMSX105.amr.corp.intel.com>
-References: <20140606000037.18356.720.stgit@gitlad.jf.intel.com>
-	 <1402018556.3038.2.camel@joe-AO725>
-	 <804857E1F29AAC47BF68C404FC60A18465622F2F@ORSMSX105.amr.corp.intel.com>
-	 <1402068405.12513.5.camel@joe-AO725> <1402068842.12513.7.camel@joe-AO725>
-	 <804857E1F29AAC47BF68C404FC60A18465623059@ORSMSX105.amr.corp.intel.com>
- <1402069518.12882.5.camel@joe-AO725>
-In-Reply-To: <1402069518.12882.5.camel@joe-AO725>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 6 Jun 2014 11:52:04 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 10154
+Message-ID: <5391E39F.1030402@metafoo.de>
+Date: Fri, 06 Jun 2014 17:51:59 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
+To: Ben Dooks <ben.dooks@codethink.co.uk>
+CC: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Ian Molton <ian.molton@codethink.co.uk>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        William Towle <william.towle@codethink.co.uk>
+Subject: Re: [GIT PULL for 3.16-rc1] updates and DT support for adv7604
+References: <20140605095535.7753cb6b.m.chehab@samsung.com> <5391E304.6030008@codethink.co.uk>
+In-Reply-To: <5391E304.6030008@codethink.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Joe Perches [mailto:joe@perches.com]
-> Sent: Friday, June 06, 2014 8:45 AM
-> To: Allan, Bruce W
-> Cc: apw@canonical.com; linux-kernel@vger.kernel.org; postmaster
-> Subject: Re: [PATCH] checkpatch: warn when patch exceeds a maximum
-> message size
-> 
-> On Fri, 2014-06-06 at 15:35 +0000, Allan, Bruce W wrote:
-> > > 	Message size exceeding 100 000 characters causes blocking.
-> > >
-> > > But I believe that info is out of date.
-> > >
-> > If it is out of date, can you explain how/why we got stung by it?
-> 
-> Dunno.
-> 
-> Too many recipients maybe?
-> 
-> cc'ing more than 20 or so people can run up against
-> that 1024 total byte header limit.
-> 
-> Maybe send me a copy of the original rejected posting?
+On 06/06/2014 05:49 PM, Ben Dooks wrote:
+> On 05/06/14 13:55, Mauro Carvalho Chehab wrote:
+>> Linus,
+>>
+>> Please pull from:
+>>    git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media topic/adv76xx
+>>
+>> For adv7604 driver updates, including DT support.
+>
+> Can we use the adv7611 for the adv7612 with these?
+>
 
-Will-do, off-list.
+You can, except that you won't be able to use the second HDMI in. But it 
+should be fairly trivial to add that.
 
+- Lars
