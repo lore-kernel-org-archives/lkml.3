@@ -1,65 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752368AbaFFVWe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 17:22:34 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:42356 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751985AbaFFVWd (ORCPT
+	id S1752472AbaFFVYW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 17:24:22 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:54505 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752191AbaFFVYV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 17:22:33 -0400
+	Fri, 6 Jun 2014 17:24:21 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, arvind.chauhan@arm.com,
+        inderpal.s@samsung.com, nm@ti.com, chander.kashyap@linaro.org,
+        pavel@ucw.cz, len.brown@intel.com, sudeep.holla@arm.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [PATCH V4 4/8] driver/core: cpu: initialize opp table
+Date: Fri, 06 Jun 2014 23:41:40 +0200
+Message-ID: <1525676.DA5e83Tunr@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <ce68a1ba333ab080a2428242d8fa4d4629064a4d.1401191054.git.viresh.kumar@linaro.org>
+References: <cover.1401191054.git.viresh.kumar@linaro.org> <ce68a1ba333ab080a2428242d8fa4d4629064a4d.1401191054.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <53922F74.20406@linux.intel.com>
-References: <201406042235.s54MZgwP020553@terminus.zytor.com>
- <20140606140017.afb7f91142f66cb3dd13c186@linux-foundation.org>
- <CA+55aFyKTbBUM4DJukmW5fiH213D0FbVmrreR9wOtMRmmijQ9Q@mail.gmail.com>
- <CALCETrWA92Q4ro9eaRkUrebjgQT7B2uj+bK81m9byZnDY_eMxA@mail.gmail.com>
- <CA+55aFx8ezbe-mCYWp6kM8Nh3oUQd_+SNz6mLoGQtMVDk3EALA@mail.gmail.com> <53922F74.20406@linux.intel.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 6 Jun 2014 14:22:12 -0700
-Message-ID: <CALCETrXpCMdyPjM6MSbxoi0matoYLfduuSiwmTjGCUU62KOsTw@mail.gmail.com>
-Subject: Re: [GIT PULL] x86/vdso changes for v3.16
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>, Peter Anvin <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Sasha Levin <sasha.levin@oracle.com>,
-        Stefani Seibold <stefani@seibold.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Pavel Emelyanov <xemul@parallels.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 6, 2014 at 2:15 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
-> On 06/06/2014 02:13 PM, Linus Torvalds wrote:
->> On Fri, Jun 6, 2014 at 2:09 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>>
->>> The only real downside to that would be the chance of bitrot if that
->>> code isn't getting used on native builds.
->>
->> Sure. Does anybody really care?
->>
->> You could obviously just open-code the things, but the fact is,
->> "le64toh()" isn't exactly a standard function anyway, so now that I
->> see it needed I go "yeah, that's clearly completely unacceptable".
->>
->> I'd much rather say "screw cross-compiling" (because let's face it,
->> nobody sane cross-compiles x86 on anything else) than say "screw old
->> machines".
->>
->
-> I'm thinking we should just carry the support functions with us, we
-> already have some of those in tools/include.  Working on a patchset for
-> this.
+On Tuesday, May 27, 2014 05:20:53 PM Viresh Kumar wrote:
+> Drivers expecting CPU's OPPs from device tree initialize OPP table themselves by
+> calling of_init_opp_table() and there is nothing driver specific in that. They
+> all do it in the same redundant way.
+> 
+> It would be better if we can get rid of redundancy by initializing CPU OPPs from
+> CPU core code for all CPUs (that have a "operating-points" property defined in
+> their node).
+> 
+> This patch calls of_init_opp_table() right after CPU device is registered in
+> register_cpu(). of_init_opp_table() also has a dummy implementation which simply
+> returns -ENOSYS when CONFIG_OPP or CONFIG_OF isn't supported by some platform.
+> 
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> Cc: Kukjin Kim <kgene.kim@samsung.com>
+> Cc: Shawn Guo <shawn.guo@linaro.org>
+> Cc: Sudeep Holla <sudeep.holla@arm.com>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+>  drivers/base/cpu.c | 11 +++++++----
+>  1 file changed, 7 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+> index 006b1bc..790183f 100644
+> --- a/drivers/base/cpu.c
+> +++ b/drivers/base/cpu.c
+> @@ -16,6 +16,7 @@
+>  #include <linux/acpi.h>
+>  #include <linux/of.h>
+>  #include <linux/cpufeature.h>
+> +#include <linux/pm_opp.h>
+>  
+>  #include "base.h"
+>  
+> @@ -349,10 +350,12 @@ int register_cpu(struct cpu *cpu, int num)
+>  	if (cpu->hotpluggable)
+>  		cpu->dev.groups = hotplugable_cpu_attr_groups;
+>  	error = device_register(&cpu->dev);
+> -	if (!error)
+> -		per_cpu(cpu_sys_devices, num) = &cpu->dev;
+> -	if (!error)
+> -		register_cpu_under_node(num, cpu_to_node(num));
+> +	if (error)
+> +		return error;
+> +
+> +	per_cpu(cpu_sys_devices, num) = &cpu->dev;
+> +	register_cpu_under_node(num, cpu_to_node(num));
+> +	of_init_opp_table(&cpu->dev);
 
-Sounds good.
+Having thought a bit more about that I don't really like this.
 
-In the mean time, a trivial fix is here:
+In the ACPI land we have a processor driver that binds to CPU devices and
+carries out similar initialization.  I kind of prefer that to littering
+core code with platform-specific stuff.
 
-https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/commit/?h=vdso/cleanup_fixes&id=cf780a0dc71f7cbd9a417e6ce2d5ddf56abccb74
+Rafael
 
-(or it will be once the mirrors sync)
-
---Andy
