@@ -1,101 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752578AbaFFJnz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 05:43:55 -0400
-Received: from mail-we0-f202.google.com ([74.125.82.202]:53662 "EHLO
-	mail-we0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752089AbaFFJnx (ORCPT
+	id S1752603AbaFFJpR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 05:45:17 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:27264 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752291AbaFFJpP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 05:43:53 -0400
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Felipe Balbi <balbi@ti.com>, Krzysztof Opasiak <k.opasiak@samsung.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, Lad@google.com,
-        Prabhakar <prabhakar.csengg@gmail.com>,
-        Michal Nazarewicz <mina86@mina86.com>
-Subject: [PATCHv2 4/5] tools: ffs-test: convert to new descriptor format
-Date: Fri,  6 Jun 2014 11:12:55 +0200
-Message-Id: <1402045976-26580-4-git-send-email-mina86@mina86.com>
-X-Mailer: git-send-email 2.0.0.526.g5318336
-In-Reply-To: <1402045976-26580-1-git-send-email-mina86@mina86.com>
-References: <1402045976-26580-1-git-send-email-mina86@mina86.com>
+	Fri, 6 Jun 2014 05:45:15 -0400
+X-IronPort-AV: E=Sophos;i="4.98,988,1392134400"; 
+   d="scan'208";a="31560960"
+Message-ID: <53918B25.5010703@cn.fujitsu.com>
+Date: Fri, 6 Jun 2014 17:34:29 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Greg KH <greg@kroah.com>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        <linux-mm@kvack.org>, Cgroups <cgroups@vger.kernel.org>,
+        <stable@vger.kernel.org>
+Subject: Re: [PATCH] mm/mempolicy: fix sleeping function called from invalid
+ context
+References: <53902A44.50005@cn.fujitsu.com> <20140605141833.GA26830@kroah.com>
+In-Reply-To: <20140605141833.GA26830@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.100]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit [ac8dde11: “Add flags to descriptors block”] functionfs
-supports a new, more powerful and extensible, descriptor format.
-Since ffs-test is probably the first thing users of the functionfs
-interface see when they start writing functionfs user space daemons,
-convert it to use the new format thus promoting it.
+Hi Greg,
+On 06/05/2014 10:18 PM, Greg KH wrote:
 
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
----
- include/uapi/linux/usb/functionfs.h |  2 +-
- tools/usb/ffs-test.c                | 14 +++++++++-----
- 2 files changed, 10 insertions(+), 6 deletions(-)
+> On Thu, Jun 05, 2014 at 04:28:52PM +0800, Gu Zheng wrote:
+>> When running with the kernel(3.15-rc7+), the follow bug occurs:
+>> [ 9969.258987] BUG: sleeping function called from invalid context at kernel/locking/mutex.c:586
+>> [ 9969.359906] in_atomic(): 1, irqs_disabled(): 0, pid: 160655, name: python
+>> [ 9969.441175] INFO: lockdep is turned off.
+>> [ 9969.488184] CPU: 26 PID: 160655 Comm: python Tainted: G       A      3.15.0-rc7+ #85
+>> [ 9969.581032] Hardware name: FUJITSU-SV PRIMEQUEST 1800E/SB, BIOS PRIMEQUEST 1000 Series BIOS Version 1.39 11/16/2012
+>> [ 9969.706052]  ffffffff81a20e60 ffff8803e941fbd0 ffffffff8162f523 ffff8803e941fd18
+>> [ 9969.795323]  ffff8803e941fbe0 ffffffff8109995a ffff8803e941fc58 ffffffff81633e6c
+>> [ 9969.884710]  ffffffff811ba5dc ffff880405c6b480 ffff88041fdd90a0 0000000000002000
+>> [ 9969.974071] Call Trace:
+>> [ 9970.003403]  [<ffffffff8162f523>] dump_stack+0x4d/0x66
+>> [ 9970.065074]  [<ffffffff8109995a>] __might_sleep+0xfa/0x130
+>> [ 9970.130743]  [<ffffffff81633e6c>] mutex_lock_nested+0x3c/0x4f0
+>> [ 9970.200638]  [<ffffffff811ba5dc>] ? kmem_cache_alloc+0x1bc/0x210
+>> [ 9970.272610]  [<ffffffff81105807>] cpuset_mems_allowed+0x27/0x140
+>> [ 9970.344584]  [<ffffffff811b1303>] ? __mpol_dup+0x63/0x150
+>> [ 9970.409282]  [<ffffffff811b1385>] __mpol_dup+0xe5/0x150
+>> [ 9970.471897]  [<ffffffff811b1303>] ? __mpol_dup+0x63/0x150
+>> [ 9970.536585]  [<ffffffff81068c86>] ? copy_process.part.23+0x606/0x1d40
+>> [ 9970.613763]  [<ffffffff810bf28d>] ? trace_hardirqs_on+0xd/0x10
+>> [ 9970.683660]  [<ffffffff810ddddf>] ? monotonic_to_bootbased+0x2f/0x50
+>> [ 9970.759795]  [<ffffffff81068cf0>] copy_process.part.23+0x670/0x1d40
+>> [ 9970.834885]  [<ffffffff8106a598>] do_fork+0xd8/0x380
+>> [ 9970.894375]  [<ffffffff81110e4c>] ? __audit_syscall_entry+0x9c/0xf0
+>> [ 9970.969470]  [<ffffffff8106a8c6>] SyS_clone+0x16/0x20
+>> [ 9971.030011]  [<ffffffff81642009>] stub_clone+0x69/0x90
+>> [ 9971.091573]  [<ffffffff81641c29>] ? system_call_fastpath+0x16/0x1b
+>>
+>> The cause is that cpuset_mems_allowed() try to take mutex_lock(&callback_mutex)
+>> under the rcu_read_lock(which was hold in __mpol_dup()). And in cpuset_mems_allowed(),
+>> the access to cpuset is under rcu_read_lock, so in __mpol_dup, we can reduce the
+>> rcu_read_lock protection region to protect the access to cpuset only in
+>> current_cpuset_is_being_rebound(). So that we can avoid this bug.
+>>
+>> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+>> ---
+>>  kernel/cpuset.c |    8 +++++++-
+>>  mm/mempolicy.c  |    2 --
+>>  2 files changed, 7 insertions(+), 3 deletions(-)
+> 
+> <formletter>
+> 
+> This is not the correct way to submit patches for inclusion in the
+> stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
+> for how to do this properly.
 
-diff --git a/include/uapi/linux/usb/functionfs.h b/include/uapi/linux/usb/functionfs.h
-index 2592d86..1dc473a 100644
---- a/include/uapi/linux/usb/functionfs.h
-+++ b/include/uapi/linux/usb/functionfs.h
-@@ -70,7 +70,7 @@ struct usb_functionfs_descs_head {
-  * structure.  Any flags that are not recognised cause the whole block to be
-  * rejected with -ENOSYS.
-  *
-- * Legacy descriptors format:
-+ * Legacy descriptors format (deprecated as of 3.14):
-  *
-  * | off | name      | type         | description                          |
-  * |-----+-----------+--------------+--------------------------------------|
-diff --git a/tools/usb/ffs-test.c b/tools/usb/ffs-test.c
-index a87e99f..708d317 100644
---- a/tools/usb/ffs-test.c
-+++ b/tools/usb/ffs-test.c
-@@ -1,5 +1,5 @@
- /*
-- * ffs-test.c.c -- user mode filesystem api for usb composite function
-+ * ffs-test.c -- user mode filesystem api for usb composite function
-  *
-  * Copyright (C) 2010 Samsung Electronics
-  *                    Author: Michal Nazarewicz <mina86@mina86.com>
-@@ -106,7 +106,9 @@ static void _msg(unsigned level, const char *fmt, ...)
- /******************** Descriptors and Strings *******************************/
- 
- static const struct {
--	struct usb_functionfs_descs_head header;
-+	struct usb_functionfs_descs_head_v2 header;
-+	__le32 fs_count;
-+	__le32 hs_count;
- 	struct {
- 		struct usb_interface_descriptor intf;
- 		struct usb_endpoint_descriptor_no_audio sink;
-@@ -114,11 +116,12 @@ static const struct {
- 	} __attribute__((packed)) fs_descs, hs_descs;
- } __attribute__((packed)) descriptors = {
- 	.header = {
--		.magic = cpu_to_le32(FUNCTIONFS_DESCRIPTORS_MAGIC),
-+		.magic = cpu_to_le32(FUNCTIONFS_DESCRIPTORS_MAGIC_V2),
-+		.flags = cpu_to_le32(FUNCTIONFS_HAS_FS_DESC |
-+				     FUNCTIONFS_HAS_HS_DESC),
- 		.length = cpu_to_le32(sizeof descriptors),
--		.fs_count = cpu_to_le32(3),
--		.hs_count = cpu_to_le32(3),
- 	},
-+	.fs_count = cpu_to_le32(3),
- 	.fs_descs = {
- 		.intf = {
- 			.bLength = sizeof descriptors.fs_descs.intf,
-@@ -142,6 +145,7 @@ static const struct {
- 			/* .wMaxPacketSize = autoconfiguration (kernel) */
- 		},
- 	},
-+	.hs_count = cpu_to_le32(3),
- 	.hs_descs = {
- 		.intf = {
- 			.bLength = sizeof descriptors.fs_descs.intf,
--- 
-2.0.0.526.g5318336
+> 
+> </formletter>
+
+Thanks for your reminder.
+I'll follow the right rules.
+
+Regards,
+Gu
+
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> .
+> 
+
 
