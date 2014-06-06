@@ -1,57 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752080AbaFFNVw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 09:21:52 -0400
-Received: from mail-bn1lp0141.outbound.protection.outlook.com ([207.46.163.141]:36501
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751675AbaFFNVu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 09:21:50 -0400
-X-WSS-ID: 0N6R147-07-AU7-02
-X-M-MSG: 
-Message-ID: <5391C063.3010207@amd.com>
-Date: Fri, 6 Jun 2014 08:21:39 -0500
-From: Tom Lendacky <thomas.lendacky@amd.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the net-next tree
-References: <20140606164543.6c5bbe67@canb.auug.org.au>
-In-Reply-To: <20140606164543.6c5bbe67@canb.auug.org.au>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.180.168.240]
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428001)(479174003)(377454003)(51704005)(53754006)(24454002)(189002)(199002)(86362001)(46102001)(81542001)(97736001)(81342001)(74502001)(84676001)(23756003)(83072002)(77982001)(85852003)(59896001)(76482001)(31966008)(74662001)(36756003)(79102001)(92566001)(92726001)(99396002)(4396001)(83506001)(21056001)(64706001)(64126003)(101416001)(65806001)(80022001)(65956001)(68736004)(65816999)(76176999)(77096999)(54356999)(87266999)(87936001)(20776003)(44976005)(47776003)(50986999)(50466002)(83322001)(33656002)(102836001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR02MB201;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
-X-Forefront-PRVS: 023495660C
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Thomas.Lendacky@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+	id S1752225AbaFFNWX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 09:22:23 -0400
+Received: from mga11.intel.com ([192.55.52.93]:13244 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751706AbaFFNWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 09:22:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,989,1392192000"; 
+   d="asc'?scan'208";a="543577714"
+Message-ID: <1402060936.12971.2.camel@intelbox>
+Subject: Re: [PATCH 4/5] drm/i915: Fixup global gtt cleanup
+From: Imre Deak <imre.deak@intel.com>
+Reply-To: imre.deak@intel.com
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>
+Date: Fri, 06 Jun 2014 16:22:16 +0300
+In-Reply-To: <1401980308-5116-4-git-send-email-daniel.vetter@ffwll.ch>
+References: <1401980308-5116-1-git-send-email-daniel.vetter@ffwll.ch>
+	 <1401980308-5116-4-git-send-email-daniel.vetter@ffwll.ch>
+Organization: Intel
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-2BCPdOH0cs5aaY9fHwqv"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/2014 01:45 AM, Stephen Rothwell wrote:
-> Hi all,
->
-> After merging the net-next tree, today's linux-next build (powerpc allyesconfig)
-> failed like this:
->
->
-> drivers/net/ethernet/amd/xgbe/xgbe-dev.c:119:25: fatal error: asm/cputype.h: No such file or directory
->   #include <asm/cputype.h>
->                           ^
 
-I accidentally left this in from driver debugging and it is not
-necessary.  Patch to follow.
+--=-2BCPdOH0cs5aaY9fHwqv
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Tom
+On Thu, 2014-06-05 at 16:58 +0200, Daniel Vetter wrote:
+> The global gtt is setup up in 2 parts, so we need to be careful
+> with the cleanup. For consistency shovel it all into the ->cleanup
+> callback, like with ppgtt.
+>=20
+> Noticed because it blew up in the out_gtt: cleanup code while
+> fiddling with the vgacon code.
+>=20
+> Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 
->
-> Caused by commit c5aa9e3b8156 ("amd-xgbe: Initial AMD 10GbE platform driver").
->
-> I reverted commit 54a4ca8e3730 ("Merge branch 'amd-xgbe'") for today.
->
+Reviewed-by: Imre Deak <imre.deak@intel.com>
+
+> ---
+>  drivers/gpu/drm/i915/i915_dma.c     | 4 ----
+>  drivers/gpu/drm/i915/i915_gem_gtt.c | 9 ++++++++-
+>  2 files changed, 8 insertions(+), 5 deletions(-)
+>=20
+> diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_=
+dma.c
+> index b9159ade5e85..27fe65ac5940 100644
+> --- a/drivers/gpu/drm/i915/i915_dma.c
+> +++ b/drivers/gpu/drm/i915/i915_dma.c
+> @@ -1386,7 +1386,6 @@ cleanup_gem:
+>  	i915_gem_context_fini(dev);
+>  	mutex_unlock(&dev->struct_mutex);
+>  	WARN_ON(dev_priv->mm.aliasing_ppgtt);
+> -	drm_mm_takedown(&dev_priv->gtt.base.mm);
+>  cleanup_irq:
+>  	drm_irq_uninstall(dev);
+>  cleanup_gem_stolen:
+> @@ -1756,8 +1755,6 @@ out_mtrrfree:
+>  	arch_phys_wc_del(dev_priv->gtt.mtrr);
+>  	io_mapping_free(dev_priv->gtt.mappable);
+>  out_gtt:
+> -	list_del(&dev_priv->gtt.base.global_link);
+> -	drm_mm_takedown(&dev_priv->gtt.base.mm);
+>  	dev_priv->gtt.base.cleanup(&dev_priv->gtt.base);
+>  out_regs:
+>  	intel_uncore_fini(dev);
+> @@ -1846,7 +1843,6 @@ int i915_driver_unload(struct drm_device *dev)
+>  			i915_free_hws(dev);
+>  	}
+> =20
+> -	list_del(&dev_priv->gtt.base.global_link);
+>  	WARN_ON(!list_empty(&dev_priv->vm_list));
+> =20
+>  	drm_vblank_cleanup(dev);
+> diff --git a/drivers/gpu/drm/i915/i915_gem_gtt.c b/drivers/gpu/drm/i915/i=
+915_gem_gtt.c
+> index 931b906f292a..41e864ec5632 100644
+> --- a/drivers/gpu/drm/i915/i915_gem_gtt.c
+> +++ b/drivers/gpu/drm/i915/i915_gem_gtt.c
+> @@ -1985,7 +1985,10 @@ static void gen6_gmch_remove(struct i915_address_s=
+pace *vm)
+> =20
+>  	struct i915_gtt *gtt =3D container_of(vm, struct i915_gtt, base);
+> =20
+> -	drm_mm_takedown(&vm->mm);
+> +	if (drm_mm_initialized(&vm->mm)) {
+> +		drm_mm_takedown(&vm->mm);
+> +		list_del(&vm->global_link);
+> +	}
+>  	iounmap(gtt->gsm);
+>  	teardown_scratch_page(vm->dev);
+>  }
+> @@ -2018,6 +2021,10 @@ static int i915_gmch_probe(struct drm_device *dev,
+> =20
+>  static void i915_gmch_remove(struct i915_address_space *vm)
+>  {
+> +	if (drm_mm_initialized(&vm->mm)) {
+> +		drm_mm_takedown(&vm->mm);
+> +		list_del(&vm->global_link);
+> +	}
+>  	intel_gmch_remove();
+>  }
+> =20
+
+
+--=-2BCPdOH0cs5aaY9fHwqv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQEcBAABAgAGBQJTkcCIAAoJEORIIAnNuWDFww8H/3eHS5Ps+9l3CBgIDCDNqXtJ
+65PJpcv4Ys0c9zr5jLwITfxwCWD4xY35nKjAYkvCXXv/MKSsOhpDp2g2/iKDOSdZ
+xByYcQk0eV670u4Rqrsp9jqAsJ9G7EalRNmQn+XBMPH9RgMLNu87tVyZSVNY5gMO
+zgbnTZiPef91jmWOQbMezySQclKCNcNe9wNZ2k048vGxB49xH7PO/AjnMkigKINV
+F3g8ImgfZh96cLmw6nT8r4gE99sscy4suxUgA9BDfuaZ+8lXnDttwCIw49TAdD6H
+gPqCz1XKLL99pr2EGGQL5ZsciQBAEwNKsezlqYDD2b5wYzH57Nbu6sbjUqMeB0c=
+=kaTi
+-----END PGP SIGNATURE-----
+
+--=-2BCPdOH0cs5aaY9fHwqv--
+
