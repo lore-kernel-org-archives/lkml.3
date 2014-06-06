@@ -1,108 +1,293 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752368AbaFFVSN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 17:18:13 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:36830 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752061AbaFFVSL (ORCPT
+	id S1752548AbaFFVTx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 17:19:53 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:57345 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752150AbaFFVTw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 17:18:11 -0400
-Message-ID: <53922FB8.6070408@linux.vnet.ibm.com>
-Date: Sat, 07 Jun 2014 02:46:40 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Fri, 6 Jun 2014 17:19:52 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: viresh.kumar@linaro.org, svaidy@linux.vnet.ibm.com, ego@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] cpufreq: governor: Be friendly towards latency-sensitive bursty workloads
+Date: Fri, 06 Jun 2014 23:37:10 +0200
+Message-ID: <1574521.TWqGMgFGby@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140603214625.723.58779.stgit@srivatsabhat.in.ibm.com>
+References: <20140603214625.723.58779.stgit@srivatsabhat.in.ibm.com>
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: ego@linux.vnet.ibm.com, matt@ozlabs.org, mahesh@linux.vnet.ibm.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        suzuki@in.ibm.com, ebiederm@xmission.com, paulus@samba.org,
-        linuxppc-dev@lists.ozlabs.org, Vivek Goyal <vgoyal@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Subject: Re: [PATCH] powerpc, kexec: Fix "Processor X is stuck" issue during
- kexec from ST mode
-References: <20140527105511.24309.74320.stgit@srivatsabhat.in.ibm.com> <20140528133143.GK14863@redhat.com> <538E2FF8.8060707@linux.vnet.ibm.com> <1401833365.3247.36.camel@pasglop> <5391B413.100@linux.vnet.ibm.com>
-In-Reply-To: <5391B413.100@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14060621-1396-0000-0000-000004FA6A90
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/2014 05:59 PM, Srivatsa S. Bhat wrote:
-> On 06/04/2014 03:39 AM, Benjamin Herrenschmidt wrote:
->> On Wed, 2014-06-04 at 01:58 +0530, Srivatsa S. Bhat wrote:
->>> Yep, that makes sense. But unfortunately I don't have enough insight into
->>> why exactly powerpc has to online the CPUs before doing a kexec. I just
->>> know from the commit log and the comment mentioned above (and from my own
->>> experiments) that the CPUs will get stuck if they were offline. Perhaps
->>> somebody more knowledgeable can explain this in detail and suggest a proper
->>> long-term solution.
->>>
->>> Matt, Ben, any thoughts on this?
->>
->> The problem is with our "soft offline" which we do on some platforms. When we
->> offline we don't actually send the CPUs back to firmware or anything like that.
->>
->> We put them into a very low low power loop inside Linux.
->>
->> The new kernel has no way to extract them from that loop. So we must re-"online"
->> them before we kexec so they can be passed to the new kernel normally (or returned
->> to firmware like we do on powernv).
->>
+On Wednesday, June 04, 2014 03:17:00 AM Srivatsa S. Bhat wrote:
+> Cpufreq governors like the ondemand governor calculate the load on the CPU
+> periodically by employing deferrable timers. A deferrable timer won't fire
+> if the CPU is completely idle (and there are no other timers to be run), in
+> order to avoid unnecessary wakeups and thus save CPU power.
 > 
-> Thanks a lot for the explanation Ben!
+> However, the load calculation logic is agnostic to all this, and this can
+> lead to the problem described below.
 > 
-> I thought about this and this is what I think: whether the CPU is in the kernel
-> or in the firmware is a hard-boundary. But once we know it is still in the
-> kernel, whether it is online or offline is a soft-boundary, something that
-> ideally shouldn't make any difference to kexec.
 > 
-> Then I looked at what is that special state that kexec expects the online CPUs
-> to be in, before performing kexec, and I found that that state is entered via
-> kexec_smp_down().
+> Time (ms)               CPU 1
 > 
-> Which means, if we poke the soft-offline CPUs and make them execute
-> kexec_smp_down(), we should be able to do a successful kexec without having to
-> actually online them. After all, the core kexec code doesn't mandate that they
-> should be online. So if we satisfy powerpc's requirement that all the CPUs are
-> in a sane state, that should be good enough. (This would be similar to how the
-> subcore code wakes up offline CPUs to perform the split-core procedure).
+> 100                Task-A running
 > 
-> I know, this is all theory for now since I haven't tested it yet, but I think
-> we can make this work.
+> 110                Governor's timer fires, finds load as 100% in the last
+>                    10ms interval and increases the CPU frequency.
 > 
-> Below are the 4 preliminary patches I'm have so far, to implement this.
+> 110.5              Task-A running
 > 
+> 120		   Governor's timer fires, finds load as 100% in the last
+> 		   10ms interval and increases the CPU frequency.
+> 
+> 125		   Task-A went to sleep. With nothing else to do, CPU 1
+> 		   went completely idle.
+> 
+> 200		   Task-A woke up and started running again.
+> 
+> 200.5		   Governor's deferred timer (which was originally programmed
+> 		   to fire at time 130) fires now. It calculates load for the
+> 		   time period 120 to 200.5, and finds the load is almost zero.
+> 		   Hence it decreases the CPU frequency to the minimum.
+> 
+> 210		   Governor's timer fires, finds load as 100% in the last
+> 		   10ms interval and increases the CPU frequency.
+> 
+> 
+> So, after the workload woke up and started running, the frequency was suddenly
+> dropped to absolute minimum, and after that, there was an unnecessary delay of
+> 10ms (sampling period) to increase the CPU frequency back to a reasonable value.
+> And this pattern repeats for every wake-up-from-cpu-idle for that workload.
+> This can be quite undesirable for latency- or response-time sensitive bursty
+> workloads. So we need to fix the governor's logic to detect such wake-up-from-
+> cpu-idle scenarios and start the workload at a reasonably high CPU frequency.
+> 
+> One extreme solution would be to fake a load of 100% in such scenarios. But
+> that might lead to undesirable side-effects such as frequency spikes (which
+> might also need voltage changes) especially if the previous frequency happened
+> to be very low.
+> 
+> We just want to avoid the stupidity of dropping down the frequency to a minimum
+> and then enduring a needless (and long) delay before ramping it up back again.
+> So, let us simply carry forward the previous load - that is, let us just pretend
+> that the 'load' for the current time-window is the same as the load for the
+> previous window. That way, the frequency and voltage will continue to be set
+> to whatever values they were set at previously. This means that bursty workloads
+> will get a chance to influence the CPU frequency at which they wake up from
+> cpu-idle, based on their past execution history. Thus, they might be able to
+> avoid suffering from slow wakeups and long response-times.
+> 
+> [ The right way to solve this problem is to teach the CPU frequency governors
+> to track load on a per-task basis, not a per-CPU basis, and set the appropriate
+> frequency on whichever CPU the task executes. But that involves redesigning
+> the cpufreq subsystem, so this patch should make the situation bearable until
+> then. ]
+> 
+> Experimental results:
+> ====================
 
-And with the following hunk added (which I had forgotten earlier), it worked just
-fine on powernv :-)
+This formatting of the changelog evidently confused Patchwork.
+
+That's not a big deal, but please try to avoid that in the future if possible.
+
+Rafael
 
 
-diff --git a/arch/powerpc/kernel/machine_kexec_64.c b/arch/powerpc/kernel/machine_kexec_64.c
-index 2ef6c58..84e91293 100644
---- a/arch/powerpc/kernel/machine_kexec_64.c
-+++ b/arch/powerpc/kernel/machine_kexec_64.c
-@@ -243,6 +243,9 @@ static void wake_offline_cpus(void)
- {
- 	int cpu = 0;
- 
-+	if (ppc_md.kexec_wake_prepare)
-+		ppc_md.kexec_wake_prepare();
-+
- 	for_each_present_cpu(cpu) {
- 		if (!cpu_online(cpu)) {
- 			printk(KERN_INFO "kexec: Waking offline cpu %d.\n",
+> 
+> I ran a modified version of ebizzy (called 'sleeping-ebizzy') that sleeps in
+> between its execution such that its total utilization can be a user-defined
+> value, say 10% or 20% (higher the utilization specified, lesser the amount of
+> sleeps injected). This ebizzy was run with a single-thread, tied to CPU 8.
+> 
+> Behavior observed with tracing (sample taken from 40% utilization runs):
+> ------------------------------------------------------------------------
+> 
+> Without patch:
+> ~~~~~~~~~~~~~~
+> kworker/8:2-12137  416.335742: cpu_frequency: state=2061000 cpu_id=8
+> kworker/8:2-12137  416.335744: sched_switch: prev_comm=kworker/8:2 ==> next_comm=ebizzy
+>       <...>-40753  416.345741: sched_switch: prev_comm=ebizzy ==> next_comm=kworker/8:2
+> kworker/8:2-12137  416.345744: cpu_frequency: state=4123000 cpu_id=8
+> kworker/8:2-12137  416.345746: sched_switch: prev_comm=kworker/8:2 ==> next_comm=ebizzy
+>       <...>-40753  416.355738: sched_switch: prev_comm=ebizzy ==> next_comm=kworker/8:2
+> <snip>  ---------------------------------------------------------------------  <snip>
+>       <...>-40753  416.402202: sched_switch: prev_comm=ebizzy ==> next_comm=swapper/8
+>      <idle>-0      416.502130: sched_switch: prev_comm=swapper/8 ==> next_comm=ebizzy
+>       <...>-40753  416.505738: sched_switch: prev_comm=ebizzy ==> next_comm=kworker/8:2
+> kworker/8:2-12137  416.505739: cpu_frequency: state=2061000 cpu_id=8
+> kworker/8:2-12137  416.505741: sched_switch: prev_comm=kworker/8:2 ==> next_comm=ebizzy
+>       <...>-40753  416.515739: sched_switch: prev_comm=ebizzy ==> next_comm=kworker/8:2
+> kworker/8:2-12137  416.515742: cpu_frequency: state=4123000 cpu_id=8
+> kworker/8:2-12137  416.515744: sched_switch: prev_comm=kworker/8:2 ==> next_comm=ebizzy
+> 
+> Observation: Ebizzy went idle at 416.402202, and started running again at
+> 416.502130. But cpufreq noticed the long idle period, and dropped the frequency
+> at 416.505739, only to increase it back again at 416.515742, realizing that the
+> workload is in-fact CPU bound. Thus ebizzy needlessly ran at the lowest frequency
+> for almost 13 milliseconds (almost 1 full sample period), and this pattern
+> repeats on every sleep-wakeup. This could hurt latency-sensitive workloads quite
+> a lot.
+> 
+> With patch:
+> ~~~~~~~~~~~
+> 
+> kworker/8:2-29802  464.832535: cpu_frequency: state=2061000 cpu_id=8
+> <snip>  ---------------------------------------------------------------------  <snip>
+> kworker/8:2-29802  464.962538: sched_switch: prev_comm=kworker/8:2 ==> next_comm=ebizzy
+>       <...>-40738  464.972533: sched_switch: prev_comm=ebizzy ==> next_comm=kworker/8:2
+> kworker/8:2-29802  464.972536: cpu_frequency: state=4123000 cpu_id=8
+> kworker/8:2-29802  464.972538: sched_switch: prev_comm=kworker/8:2 ==> next_comm=ebizzy
+>       <...>-40738  464.982531: sched_switch: prev_comm=ebizzy ==> next_comm=kworker/8:2
+> <snip>  ---------------------------------------------------------------------  <snip>
+> kworker/8:2-29802  465.022533: sched_switch: prev_comm=kworker/8:2 ==> next_comm=ebizzy
+>       <...>-40738  465.032531: sched_switch: prev_comm=ebizzy ==> next_comm=kworker/8:2
+> kworker/8:2-29802  465.032532: sched_switch: prev_comm=kworker/8:2 ==> next_comm=ebizzy
+>       <...>-40738  465.035797: sched_switch: prev_comm=ebizzy ==> next_comm=swapper/8
+>      <idle>-0      465.240178: sched_switch: prev_comm=swapper/8 ==> next_comm=ebizzy
+>       <...>-40738  465.242533: sched_switch: prev_comm=ebizzy ==> next_comm=kworker/8:2
+> kworker/8:2-29802  465.242535: sched_switch: prev_comm=kworker/8:2 ==> next_comm=ebizzy
+>       <...>-40738  465.252531: sched_switch: prev_comm=ebizzy ==> next_comm=kworker/8:2
+> 
+> Observation: Ebizzy went idle at 465.035797, and started running again at
+> 465.240178. Since ebizzy was the only real workload running on this CPU,
+> cpufreq retained the frequency at 4.1Ghz throughout the run of ebizzy, no
+> matter how many times ebizzy slept and woke-up in-between. Thus, ebizzy
+> got the 10ms worth of 4.1 Ghz benefit during every sleep-wakeup (as compared
+> to the run without the patch) and this boost gave a modest improvement in total
+> throughput, as shown below.
+> 
+> Sleeping-ebizzy records-per-second:
+> -----------------------------------
+> 
+> Utilization  Without patch  With patch  Difference (Absolute and % values)
+>     10%         274767        277046        +  2279 (+0.829%)
+>     20%         543429        553484        + 10055 (+1.850%)
+>     40%        1090744       1107959        + 17215 (+1.578%)
+>     60%        1634908       1662018        + 27110 (+1.658%)
+> 
+> A rudimentary and somewhat approximately latency-sensitive workload such as
+> sleeping-ebizzy itself showed a consistent, noticeable performance improvement
+> with this patch. Hence, workloads that are truly latency-sensitive will benefit
+> quite a bit from this change. Moreover, this is an overall win-win since this
+> patch does not hurt power-savings at all (because, this patch does not reduce
+> the idle time or idle residency; and the high frequency of the CPU when it goes
+> to cpu-idle does not affect/hurt the power-savings of deep idle states).
+> 
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> Reviewed-by: Gautham R. Shenoy <ego@linux.vnet.ibm.com>
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+> 
+> Changes in v2:
+> * Removed the 'sampling_rate' parameter to dbs_check_cpu() to make the code
+>   cleaner, as suggested by Viresh.
+> 
+>  drivers/cpufreq/cpufreq_governor.c |   47 ++++++++++++++++++++++++++++++++++--
+>  drivers/cpufreq/cpufreq_governor.h |    1 +
+>  2 files changed, 45 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+> index e1c6433..2597bbe 100644
+> --- a/drivers/cpufreq/cpufreq_governor.c
+> +++ b/drivers/cpufreq/cpufreq_governor.c
+> @@ -36,14 +36,29 @@ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu)
+>  	struct od_dbs_tuners *od_tuners = dbs_data->tuners;
+>  	struct cs_dbs_tuners *cs_tuners = dbs_data->tuners;
+>  	struct cpufreq_policy *policy;
+> +	unsigned int sampling_rate;
+>  	unsigned int max_load = 0;
+>  	unsigned int ignore_nice;
+>  	unsigned int j;
+>  
+> -	if (dbs_data->cdata->governor == GOV_ONDEMAND)
+> +	if (dbs_data->cdata->governor == GOV_ONDEMAND) {
+> +		struct od_cpu_dbs_info_s *od_dbs_info =
+> +				dbs_data->cdata->get_cpu_dbs_info_s(cpu);
+> +
+> +		/*
+> +		 * Sometimes, the ondemand governor uses an additional
+> +		 * multiplier to give long delays. So apply this multiplier to
+> +		 * the 'sampling_rate', so as to keep the wake-up-from-idle
+> +		 * detection logic a bit conservative.
+> +		 */
+> +		sampling_rate = od_tuners->sampling_rate;
+> +		sampling_rate *= od_dbs_info->rate_mult;
+> +
+>  		ignore_nice = od_tuners->ignore_nice_load;
+> -	else
+> +	} else {
+> +		sampling_rate = cs_tuners->sampling_rate;
+>  		ignore_nice = cs_tuners->ignore_nice_load;
+> +	}
+>  
+>  	policy = cdbs->cur_policy;
+>  
+> @@ -96,7 +111,29 @@ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu)
+>  		if (unlikely(!wall_time || wall_time < idle_time))
+>  			continue;
+>  
+> -		load = 100 * (wall_time - idle_time) / wall_time;
+> +		/*
+> +		 * If the CPU had gone completely idle, and a task just woke up
+> +		 * on this CPU now, it would be unfair to calculate 'load' the
+> +		 * usual way for this elapsed time-window, because it will show
+> +		 * near-zero load, irrespective of how CPU intensive the new
+> +		 * task is. This is undesirable for latency-sensitive bursty
+> +		 * workloads.
+> +		 *
+> +		 * To avoid this, we reuse the 'load' from the previous
+> +		 * time-window and give this task a chance to start with a
+> +		 * reasonably high CPU frequency.
+> +		 *
+> +		 * Detecting this situation is easy: the governor's deferrable
+> +		 * timer would not have fired during CPU-idle periods. Hence
+> +		 * an unusually large 'wall_time' (as compared to the sampling
+> +		 * rate) indicates this scenario.
+> +		 */
+> +		if (unlikely(wall_time > (2 * sampling_rate))) {
+> +			load = j_cdbs->prev_load;
+> +		} else {
+> +			load = 100 * (wall_time - idle_time) / wall_time;
+> +			j_cdbs->prev_load = load;
+> +		}
+>  
+>  		if (load > max_load)
+>  			max_load = load;
+> @@ -323,6 +360,10 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+>  			j_cdbs->cur_policy = policy;
+>  			j_cdbs->prev_cpu_idle = get_cpu_idle_time(j,
+>  					       &j_cdbs->prev_cpu_wall, io_busy);
+> +			j_cdbs->prev_load = 100 * (j_cdbs->prev_cpu_wall -
+> +						   j_cdbs->prev_cpu_idle) /
+> +						   j_cdbs->prev_cpu_wall;
+> +
+>  			if (ignore_nice)
+>  				j_cdbs->prev_cpu_nice =
+>  					kcpustat_cpu(j).cpustat[CPUTIME_NICE];
+> diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
+> index bfb9ae1..b56552b 100644
+> --- a/drivers/cpufreq/cpufreq_governor.h
+> +++ b/drivers/cpufreq/cpufreq_governor.h
+> @@ -134,6 +134,7 @@ struct cpu_dbs_common_info {
+>  	u64 prev_cpu_idle;
+>  	u64 prev_cpu_wall;
+>  	u64 prev_cpu_nice;
+> +	unsigned int prev_load;
+>  	struct cpufreq_policy *cur_policy;
+>  	struct delayed_work work;
+>  	/*
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-I tried putting the machine into ST mode, and in a separate experiment, I kept
-just CPU 0 online in the first kernel, and then issued a kexec. The second kernel
-booted successfully with all the CPUs in both the cases.
-
-I haven't explored the crashed-kernel case though, it might need some auditing
-to check if the code handles that as well.
-
-Regards,
-Srivatsa S. Bhat
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
