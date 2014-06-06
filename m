@@ -1,160 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752396AbaFFFTX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 01:19:23 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:18731 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751204AbaFFFTW (ORCPT
+	id S1752197AbaFFFbE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 01:31:04 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:11584 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751494AbaFFFbD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 01:19:22 -0400
-X-IronPort-AV: E=Sophos;i="4.98,986,1392134400"; 
-   d="scan'208";a="31548319"
-Date: Fri, 6 Jun 2014 13:15:35 +0800
-From: Hu Tao <hutao@cn.fujitsu.com>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-CC: <gregkh@linuxfoundation.org>, <akpm@linux-foundation.org>,
-        <toshi.kani@hp.com>, <tj@kernel.org>, <hpa@zytor.com>, <mingo@elte.hu>,
-        <laijs@cn.fujitsu.com>, <isimatu.yasuaki@jp.fujitsu.com>,
-        <guz.fnst@cn.fujitsu.com>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>
-Subject: Re: [PATCH v2 2/2] mem-hotplug: Introduce MMOP_OFFLINE to replace
- the hard coding -1.
-Message-ID: <20140606051535.GC4454@G08FNSTD100614.fnst.cn.fujitsu.com>
-References: <1402027134-14423-1-git-send-email-tangchen@cn.fujitsu.com>
- <1402027134-14423-3-git-send-email-tangchen@cn.fujitsu.com>
+	Fri, 6 Jun 2014 01:31:03 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 05 Jun 2014 22:22:56 -0700
+From: Vidya Sagar <vidyas@nvidia.com>
+To: Joe Perches <joe@perches.com>
+CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "wangyijing@huawei.com" <wangyijing@huawei.com>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "Stephen Warren" <swarren@nvidia.com>,
+        Krishna Thota <kthota@nvidia.com>,
+        "sagar.tv@gmail.com" <sagar.tv@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 6 Jun 2014 11:00:32 +0530
+Subject: RE: [PATCH v2] ARM: fix debug prints relevant to PCI devices
+Thread-Topic: [PATCH v2] ARM: fix debug prints relevant to PCI devices
+Thread-Index: Ac+BRsuQCdy2nOhWTUeNUB1Q1kCz2AAAZDWw
+Message-ID: <113ACA888B71994BB56E5CF3704953486D6CE1E2DF@BGMAIL02.nvidia.com>
+References: <1401994068-820-1-git-send-email-vidyas@nvidia.com>
+ <1402028592.3038.4.camel@joe-AO725>
+In-Reply-To: <1402028592.3038.4.camel@joe-AO725>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <1402027134-14423-3-git-send-email-tangchen@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [10.167.226.102]
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 06, 2014 at 11:58:54AM +0800, Tang Chen wrote:
-> In store_mem_state(), we have:
-> ......
->  334         else if (!strncmp(buf, "offline", min_t(int, count, 7)))
->  335                 online_type = -1;
-> ......
->  355         case -1:
->  356                 ret = device_offline(&mem->dev);
->  357                 break;
-> ......
-> 
-> Here, "offline" is hard coded as -1.
-> 
-> This patch does the following renaming:
->  ONLINE_KEEP     ->  MMOP_ONLINE_KEEP
->  ONLINE_KERNEL   ->  MMOP_ONLINE_KERNEL
->  ONLINE_MOVABLE  ->  MMOP_ONLINE_MOVABLE
-> 
-> and introduce MMOP_OFFLINE = -1 to avoid hard coding.
-> 
-> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-> ---
->  drivers/base/memory.c          | 16 ++++++++--------
->  include/linux/memory_hotplug.h |  9 +++++----
->  mm/memory_hotplug.c            |  9 ++++++---
->  3 files changed, 19 insertions(+), 15 deletions(-)
-> 
-> diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-> index fa664b9..0f3fa8c 100644
-> --- a/drivers/base/memory.c
-> +++ b/drivers/base/memory.c
-> @@ -294,7 +294,7 @@ static int memory_subsys_online(struct device *dev)
->  	 * attribute and need to set the online_type.
->  	 */
->  	if (mem->online_type < 0)
-> -		mem->online_type = ONLINE_KEEP;
-> +		mem->online_type = MMOP_ONLINE_KEEP;
->  
->  	ret = memory_block_change_state(mem, MEM_ONLINE, MEM_OFFLINE);
->  
-> @@ -326,22 +326,22 @@ store_mem_state(struct device *dev,
->  		return ret;
->  
->  	if (sysfs_streq(buf, "online_kernel"))
-> -		online_type = ONLINE_KERNEL;
-> +		online_type = MMOP_ONLINE_KERNEL;
->  	else if (sysfs_streq(buf, "online_movable"))
-> -		online_type = ONLINE_MOVABLE;
-> +		online_type = MMOP_ONLINE_MOVABLE;
->  	else if (sysfs_streq(buf, "online"))
-> -		online_type = ONLINE_KEEP;
-> +		online_type = MMOP_ONLINE_KEEP;
->  	else if (sysfs_streq(buf, "offline"))
-> -		online_type = -1;
-> +		online_type = MMOP_OFFLINE;
->  	else {
->  		ret = -EINVAL;
->  		goto err;
->  	}
->  
->  	switch (online_type) {
-> -	case ONLINE_KERNEL:
-> -	case ONLINE_MOVABLE:
-> -	case ONLINE_KEEP:
-> +	case MMOP_ONLINE_KERNEL:
-> +	case MMOP_ONLINE_MOVABLE:
-> +	case MMOP_ONLINE_KEEP:
+oops... I missed it somehow. I'll post a new patch.
 
-There is a `case -1' several lines below should have been converted.
+> -----Original Message-----
+> From: Joe Perches [mailto:joe@perches.com]
+> Sent: Friday, June 06, 2014 9:53 AM
+> To: Vidya Sagar
+> Cc: linux@arm.linux.org.uk; bhelgaas@google.com;
+> wangyijing@huawei.com; thierry.reding@gmail.com;
+> jason@lakedaemon.net; will.deacon@arm.com; Stephen Warren; Krishna
+> Thota; sagar.tv@gmail.com; linux-arm-kernel@lists.infradead.org; linux-
+> kernel@vger.kernel.org
+> Subject: Re: [PATCH v2] ARM: fix debug prints relevant to PCI devices
+> 
+> On Fri, 2014-06-06 at 00:17 +0530, Vidya Sagar wrote:
+> > * replaced printk with pr_info
+> []
+> > diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
+> []
+> > @@ -354,9 +357,11 @@ void pcibios_fixup_bus(struct pci_bus *bus)
+> >
+> >  	/*
+> >  	 * Report what we did for this bus
+> > +	 * (only if the bus doesn't have even one PCIe device)
+> >  	 */
+> > -	printk(KERN_INFO "PCI: bus%d: Fast back to back transfers
+> %sabled\n",
+> > -		bus->number, (features & PCI_COMMAND_FAST_BACK) ?
+> "en" : "dis");
+> > +	if (!has_pcie_dev)
+> > +		pr_info(KERN_INFO "PCI: bus%d: Fast back to back transfers
+> %sabled\n",
+> > +			bus->number, (features &
+> PCI_COMMAND_FAST_BACK) ? "en" : "dis");
+> 
+> when you convert to pr_<level> you need to remove the KERN_<LEVEL>
+> from the format string too.
+> 
 
->  		/*
->  		 * mem->online_type is not protected so there can be a
->  		 * race here.  However, when racing online, the first
-> diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
-> index 4ca3d95..b4240cf 100644
-> --- a/include/linux/memory_hotplug.h
-> +++ b/include/linux/memory_hotplug.h
-> @@ -26,11 +26,12 @@ enum {
->  	MEMORY_HOTPLUG_MAX_BOOTMEM_TYPE = NODE_INFO,
->  };
->  
-> -/* Types for control the zone type of onlined memory */
-> +/* Types for control the zone type of onlined and offlined memory */
->  enum {
-> -	ONLINE_KEEP,
-> -	ONLINE_KERNEL,
-> -	ONLINE_MOVABLE,
-> +	MMOP_OFFLINE = -1,
-> +	MMOP_ONLINE_KEEP,
-> +	MMOP_ONLINE_KERNEL,
-> +	MMOP_ONLINE_MOVABLE,
->  };
->  
->  /*
-> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-> index a650db2..6075f04 100644
-> --- a/mm/memory_hotplug.c
-> +++ b/mm/memory_hotplug.c
-> @@ -907,19 +907,22 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages, int online_typ
->  	 */
->  	zone = page_zone(pfn_to_page(pfn));
->  
-> -	if ((zone_idx(zone) > ZONE_NORMAL || online_type == ONLINE_MOVABLE) &&
-> +	if ((zone_idx(zone) > ZONE_NORMAL ||
-> +	     online_type == MMOP_ONLINE_MOVABLE) &&
->  	    !can_online_high_movable(zone)) {
->  		unlock_memory_hotplug();
->  		return -EINVAL;
->  	}
->  
-> -	if (online_type == ONLINE_KERNEL && zone_idx(zone) == ZONE_MOVABLE) {
-> +	if (online_type == MMOP_ONLINE_KERNEL &&
-> +	    zone_idx(zone) == ZONE_MOVABLE) {
->  		if (move_pfn_range_left(zone - 1, zone, pfn, pfn + nr_pages)) {
->  			unlock_memory_hotplug();
->  			return -EINVAL;
->  		}
->  	}
-> -	if (online_type == ONLINE_MOVABLE && zone_idx(zone) == ZONE_MOVABLE - 1) {
-> +	if (online_type == MMOP_ONLINE_MOVABLE &&
-> +	    zone_idx(zone) == ZONE_MOVABLE - 1) {
->  		if (move_pfn_range_right(zone, zone + 1, pfn, pfn + nr_pages)) {
->  			unlock_memory_hotplug();
->  			return -EINVAL;
-> -- 
-> 1.8.3.1
