@@ -1,104 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752565AbaFFVZS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 17:25:18 -0400
-Received: from mx1.scotdoyle.com ([69.85.92.149]:54697 "EHLO mx1.scotdoyle.com"
+	id S1752574AbaFFV0A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 17:26:00 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38157 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751901AbaFFVZR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 17:25:17 -0400
-Date: Fri, 6 Jun 2014 23:25:14 +0100 (BST)
-From: Scot Doyle <lkml14@scotdoyle.com>
-To: Benson Leung <bleung@chromium.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Olof Johansson <olof@lixom.net>, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/1] platform/chrome: Probe multiple i2c adapters of the same
- name
-In-Reply-To: <alpine.DEB.2.02.1406062259070.31301@scotdoyle.com>
-Message-ID: <alpine.DEB.2.02.1406062316230.32568@scotdoyle.com>
-References: <1401800524-28934-1-git-send-email-mika.westerberg@linux.intel.com> <CANLzEksLB1=+TePxgPRBhsGKpC-4tWB8JOh-Ey80Hj43LkVn=g@mail.gmail.com> <20140604083726.GN1730@lahna.fi.intel.com> <CANLzEkuAxGrRHtb=vFAm9AGws7Qyg3A_oQpAGGFaYEqP2A2g8g@mail.gmail.com>
- <alpine.DEB.2.02.1406062259070.31301@scotdoyle.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1751985AbaFFVZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 17:25:59 -0400
+Message-ID: <539231B8.8000400@zytor.com>
+Date: Fri, 06 Jun 2014 14:25:12 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+To: Andy Lutomirski <luto@amacapital.net>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Sasha Levin <sasha.levin@oracle.com>,
+        Stefani Seibold <stefani@seibold.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: [GIT PULL] x86/vdso changes for v3.16
+References: <201406042235.s54MZgwP020553@terminus.zytor.com> <20140606140017.afb7f91142f66cb3dd13c186@linux-foundation.org> <CA+55aFyKTbBUM4DJukmW5fiH213D0FbVmrreR9wOtMRmmijQ9Q@mail.gmail.com> <CALCETrWA92Q4ro9eaRkUrebjgQT7B2uj+bK81m9byZnDY_eMxA@mail.gmail.com> <CA+55aFx8ezbe-mCYWp6kM8Nh3oUQd_+SNz6mLoGQtMVDk3EALA@mail.gmail.com> <53922F74.20406@linux.intel.com> <CALCETrXpCMdyPjM6MSbxoi0matoYLfduuSiwmTjGCUU62KOsTw@mail.gmail.com>
+In-Reply-To: <CALCETrXpCMdyPjM6MSbxoi0matoYLfduuSiwmTjGCUU62KOsTw@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The chromeos_laptop module probes the first i2c adapter with a specific 
-name for expected hardware. However, the Acer C720 Chromebook has two i2c 
-adapters with the same name. This patch probes each i2c adapter with a 
-specific name in turn, until locating the expected hardware.
+On 06/06/2014 02:22 PM, Andy Lutomirski wrote:
+> 
+> Sounds good.
+> 
+> In the mean time, a trivial fix is here:
+> 
+> https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/commit/?h=vdso/cleanup_fixes&id=cf780a0dc71f7cbd9a417e6ce2d5ddf56abccb74
+> 
+> (or it will be once the mirrors sync)
+> 
 
-Signed-off-by: Scot Doyle <lkml14@scotdoyle.com>
-CC: Benson Leung <bleung@chromium.org>
-CC: Mika Westerberg <mika.westerberg@linux.intel.com>
----
-diff --git a/drivers/platform/chrome/chromeos_laptop.c b/drivers/platform/chrome/chromeos_laptop.c
-index 7f3aad0..3a3382e 100644
---- a/drivers/platform/chrome/chromeos_laptop.c
-+++ b/drivers/platform/chrome/chromeos_laptop.c
-@@ -173,7 +173,7 @@ static struct i2c_client *__add_probed_i2c_device(
-  	/* add the i2c device */
-  	client = i2c_new_probed_device(adapter, info, addrs, NULL);
-  	if (!client)
--		pr_err("%s failed to register device %d-%02x\n",
-+		pr_debug("%s did not add i2c device %d-%02x\n",
-  		       __func__, bus, info->addr);
-  	else
-  		pr_debug("%s added i2c device %d-%02x\n",
-@@ -194,13 +194,14 @@ static int __find_i2c_adap(struct device *dev, void *data)
-  	return (strncmp(adapter->name, name, strlen(name)) == 0);
-  }
+Unfortunately gcc didn't introduce __BYTE_ORDER__ at the compiler level
+until 2010.  This makes it harder to do this in a portable manner.
 
--static int find_i2c_adapter_num(enum i2c_adapter_type type)
-+static int find_i2c_next_adapter_num(enum i2c_adapter_type type,
-+		struct device *start)
-  {
-  	struct device *dev = NULL;
-  	struct i2c_adapter *adapter;
-  	const char *name = i2c_adapter_names[type];
--	/* find the adapter by name */
--	dev = bus_find_device(&i2c_bus_type, NULL, (void *)name,
-+	/* find the next adapter by name */
-+	dev = bus_find_device(&i2c_bus_type, start, (void *)name,
-  			      __find_i2c_adap);
-  	if (!dev) {
-  		/* Adapters may appear later. Deferred probing will retry */
-@@ -226,10 +227,17 @@ static struct i2c_client *add_probed_i2c_device(
-  		struct i2c_board_info *info,
-  		const unsigned short *addrs)
-  {
--	return __add_probed_i2c_device(name,
--				       find_i2c_adapter_num(type),
--				       info,
--				       addrs);
-+	struct i2c_client *client = NULL;
-+	struct device *start = NULL;
-+	int adapter_num = 0;
-+	while (!client && adapter_num > -1) {
-+		adapter_num = find_i2c_next_adapter_num(type, start);
-+		client = __add_probed_i2c_device(name,
-+						 adapter_num,
-+						 info,
-+						 addrs);
-+	}
-+	return client;
-  }
+	-hpa
 
-  /*
-@@ -242,10 +250,10 @@ static struct i2c_client *add_i2c_device(const char *name,
-  						struct i2c_board_info *info)
-  {
-  	const unsigned short addr_list[] = { info->addr, I2C_CLIENT_END };
--	return __add_probed_i2c_device(name,
--				       find_i2c_adapter_num(type),
--				       info,
--				       addr_list);
-+	return add_probed_i2c_device(name,
-+				     type,
-+				     info,
-+				     addr_list);
-  }
 
-  static int setup_cyapa_tp(enum i2c_adapter_type type)
