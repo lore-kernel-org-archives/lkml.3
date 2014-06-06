@@ -1,154 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753040AbaFFD57 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 23:57:59 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:1529 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752896AbaFFD55 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 23:57:57 -0400
-X-IronPort-AV: E=Sophos;i="4.98,986,1392134400"; 
-   d="scan'208";a="31545957"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: <gregkh@linuxfoundation.org>, <akpm@linux-foundation.org>,
-        <toshi.kani@hp.com>, <tj@kernel.org>, <hpa@zytor.com>, <mingo@elte.hu>,
-        <laijs@cn.fujitsu.com>
-CC: <isimatu.yasuaki@jp.fujitsu.com>, <hutao@cn.fujitsu.com>,
-        <guz.fnst@cn.fujitsu.com>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>
-Subject: [PATCH v2 2/2] mem-hotplug: Introduce MMOP_OFFLINE to replace the hard coding -1.
-Date: Fri, 6 Jun 2014 11:58:54 +0800
-Message-ID: <1402027134-14423-3-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1402027134-14423-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1402027134-14423-1-git-send-email-tangchen@cn.fujitsu.com>
+	id S1750993AbaFFEHD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 00:07:03 -0400
+Received: from ozlabs.org ([103.22.144.67]:44320 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750710AbaFFEHB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 00:07:01 -0400
+Date: Fri, 6 Jun 2014 14:06:51 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the net-next tree
+Message-ID: <20140606140651.1c393d7a@canb.auug.org.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.167.226.99]
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/LpwfM8eg+rXoae73mu8hekU"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In store_mem_state(), we have:
-......
- 334         else if (!strncmp(buf, "offline", min_t(int, count, 7)))
- 335                 online_type = -1;
-......
- 355         case -1:
- 356                 ret = device_offline(&mem->dev);
- 357                 break;
-......
+--Sig_/LpwfM8eg+rXoae73mu8hekU
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Here, "offline" is hard coded as -1.
+Hi all,
 
-This patch does the following renaming:
- ONLINE_KEEP     ->  MMOP_ONLINE_KEEP
- ONLINE_KERNEL   ->  MMOP_ONLINE_KERNEL
- ONLINE_MOVABLE  ->  MMOP_ONLINE_MOVABLE
+After merging the net-next tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-and introduce MMOP_OFFLINE = -1 to avoid hard coding.
+net/core/filter.c: In function 'convert_bpf_extensions':
+net/core/filter.c:696:17: error: 'A_REG' undeclared (first use in this func=
+tion)
+   insn->a_reg =3D A_REG;
+                 ^
 
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Caused by my bad merge resolution :-(
+
+I applied this in the hope that it is correct (at least it builds):
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Fri, 6 Jun 2014 14:00:07 +1000
+Subject: [PATCH] net: filter: merge fix up
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
- drivers/base/memory.c          | 16 ++++++++--------
- include/linux/memory_hotplug.h |  9 +++++----
- mm/memory_hotplug.c            |  9 ++++++---
- 3 files changed, 19 insertions(+), 15 deletions(-)
+ net/core/filter.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-index fa664b9..0f3fa8c 100644
---- a/drivers/base/memory.c
-+++ b/drivers/base/memory.c
-@@ -294,7 +294,7 @@ static int memory_subsys_online(struct device *dev)
- 	 * attribute and need to set the online_type.
- 	 */
- 	if (mem->online_type < 0)
--		mem->online_type = ONLINE_KEEP;
-+		mem->online_type = MMOP_ONLINE_KEEP;
- 
- 	ret = memory_block_change_state(mem, MEM_ONLINE, MEM_OFFLINE);
- 
-@@ -326,22 +326,22 @@ store_mem_state(struct device *dev,
- 		return ret;
- 
- 	if (sysfs_streq(buf, "online_kernel"))
--		online_type = ONLINE_KERNEL;
-+		online_type = MMOP_ONLINE_KERNEL;
- 	else if (sysfs_streq(buf, "online_movable"))
--		online_type = ONLINE_MOVABLE;
-+		online_type = MMOP_ONLINE_MOVABLE;
- 	else if (sysfs_streq(buf, "online"))
--		online_type = ONLINE_KEEP;
-+		online_type = MMOP_ONLINE_KEEP;
- 	else if (sysfs_streq(buf, "offline"))
--		online_type = -1;
-+		online_type = MMOP_OFFLINE;
- 	else {
- 		ret = -EINVAL;
- 		goto err;
- 	}
- 
- 	switch (online_type) {
--	case ONLINE_KERNEL:
--	case ONLINE_MOVABLE:
--	case ONLINE_KEEP:
-+	case MMOP_ONLINE_KERNEL:
-+	case MMOP_ONLINE_MOVABLE:
-+	case MMOP_ONLINE_KEEP:
- 		/*
- 		 * mem->online_type is not protected so there can be a
- 		 * race here.  However, when racing online, the first
-diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
-index 4ca3d95..b4240cf 100644
---- a/include/linux/memory_hotplug.h
-+++ b/include/linux/memory_hotplug.h
-@@ -26,11 +26,12 @@ enum {
- 	MEMORY_HOTPLUG_MAX_BOOTMEM_TYPE = NODE_INFO,
- };
- 
--/* Types for control the zone type of onlined memory */
-+/* Types for control the zone type of onlined and offlined memory */
- enum {
--	ONLINE_KEEP,
--	ONLINE_KERNEL,
--	ONLINE_MOVABLE,
-+	MMOP_OFFLINE = -1,
-+	MMOP_ONLINE_KEEP,
-+	MMOP_ONLINE_KERNEL,
-+	MMOP_ONLINE_MOVABLE,
- };
- 
- /*
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index a650db2..6075f04 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -907,19 +907,22 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages, int online_typ
- 	 */
- 	zone = page_zone(pfn_to_page(pfn));
- 
--	if ((zone_idx(zone) > ZONE_NORMAL || online_type == ONLINE_MOVABLE) &&
-+	if ((zone_idx(zone) > ZONE_NORMAL ||
-+	     online_type == MMOP_ONLINE_MOVABLE) &&
- 	    !can_online_high_movable(zone)) {
- 		unlock_memory_hotplug();
- 		return -EINVAL;
- 	}
- 
--	if (online_type == ONLINE_KERNEL && zone_idx(zone) == ZONE_MOVABLE) {
-+	if (online_type == MMOP_ONLINE_KERNEL &&
-+	    zone_idx(zone) == ZONE_MOVABLE) {
- 		if (move_pfn_range_left(zone - 1, zone, pfn, pfn + nr_pages)) {
- 			unlock_memory_hotplug();
- 			return -EINVAL;
- 		}
- 	}
--	if (online_type == ONLINE_MOVABLE && zone_idx(zone) == ZONE_MOVABLE - 1) {
-+	if (online_type == MMOP_ONLINE_MOVABLE &&
-+	    zone_idx(zone) == ZONE_MOVABLE - 1) {
- 		if (move_pfn_range_right(zone, zone + 1, pfn, pfn + nr_pages)) {
- 			unlock_memory_hotplug();
- 			return -EINVAL;
--- 
-1.8.3.1
+diff --git a/net/core/filter.c b/net/core/filter.c
+index 7b46e4553c17..74dd87596257 100644
+--- a/net/core/filter.c
++++ b/net/core/filter.c
+@@ -691,10 +691,7 @@ static bool convert_bpf_extensions(struct sock_filter =
+*fp,
+ 		*insn =3D BPF_ALU32_IMM(BPF_AND, BPF_REG_A, PKT_TYPE_MAX);
+ #ifdef __BIG_ENDIAN_BITFIELD
+ 		insn++;
+-
+-		insn->code =3D BPF_ALU | BPF_RSH | BPF_K;
+-		insn->a_reg =3D A_REG;
+-		insn->imm =3D 5;
++		*insn =3D BPF_ALU32_IMM(BPF_RSH, BPF_REG_A, 5);
+ #endif
+ 		break;
+=20
+--=20
+2.0.0
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/LpwfM8eg+rXoae73mu8hekU
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTkT5hAAoJEMDTa8Ir7ZwVXkAP/jLiWO660gmEvDVpMHDYhg9J
+2naxz+DC8Nb4ZuUVIpdFJsQtLQuY6U+rVPGeeHALalHzs/WmGD35HDtaekIrxyuK
+VQPSdPea7RSNiUI5AMfHl6QHpXc1q2N1A0F0Q/pVmFfxG5DkyJ3oQLreDEPabIPe
+xctesY/hluDrfOaODpTdvB8SUCyV39QLKu4/xkHEv+N5DNPigGxaeniNbCMYkn/+
+wC61979gsJfufNrk2itLc8D/c9dsz0HCQ1H2dqZZblxVpgCJEN2oyyS+A3vRIn18
+iM1TG7liLukYrMCp/KGQ57XjGMxeDGVzqnc547VOlazmA9sqdeNHmoIV5mVhOfmK
+kYiU7kk2vDSKB1UXn435qee5rNdqCo0IfljyD80zBcKS90daTD+EovBqY5FcEU/V
+QaAXqJ9Y36qooQc4jWnrx8jhy/c+papSmOCZfzOsP4fQyAwElNu7Rfh+FIVRNNBp
+cy+kVsY2regdad3NDDFrUGh9tvx163ILmeSBWHM11CKocfBCBU6uWXq5cSarNFlj
+A/pXpJKdhdpD04m6VIqVE5VjFMvxe8ss7YQJcBsbyTV6S4fmWvCK5i4IuzYtrSdt
+ePI4IZwcClpBnkHG3ts9t+bXfpm1Xzz5NnWoiID4mwDFz0HYxl9IhF/n/5lmEr6u
+nFs7bAVnAfMCWl3ulXum
+=1poB
+-----END PGP SIGNATURE-----
+
+--Sig_/LpwfM8eg+rXoae73mu8hekU--
