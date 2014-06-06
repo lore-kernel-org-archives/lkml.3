@@ -1,173 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752198AbaFFAXW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 20:23:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43145 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751409AbaFFAXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 20:23:21 -0400
-Date: Fri, 6 Jun 2014 10:23:03 +1000
-From: NeilBrown <neilb@suse.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        David Howells <dhowells@redhat.com>,
-        Steven Whitehouse <swhiteho@redhat.com>, dm-devel@redhat.com,
-        Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
-        Steve French <sfrench@samba.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Ingo Molnar <mingo@redhat.com>, Roland McGrath <roland@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-nfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] SCHED: remove proliferation of wait_on_bit action
- functions.
-Message-ID: <20140606102303.09ef9fb3@notabene.brown>
-In-Reply-To: <20140605124509.GA1975@gmail.com>
-References: <20140501123738.3e64b2d2@notabene.brown>
-	<20140522090502.GB30094@gmail.com>
-	<20140522195056.445f2dcb@notabene.brown>
-	<20140605124509.GA1975@gmail.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/fiPA8qbnQ1B8HYSL6RXukPC"; protocol="application/pgp-signature"
+	id S1751774AbaFFAeh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 20:34:37 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:52480 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751384AbaFFAeg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 20:34:36 -0400
+Message-ID: <53910C95.7000808@hurleysoftware.com>
+Date: Thu, 05 Jun 2014 20:34:29 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Pranith Kumar <pranith@gatech.edu>, dwmw2@infradead.org, joro@8bytes.org
+CC: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] use documented cmpxchg api
+References: <5390ED07.2070009@gatech.edu>
+In-Reply-To: <5390ED07.2070009@gatech.edu>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/fiPA8qbnQ1B8HYSL6RXukPC
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On 06/05/2014 06:19 PM, Pranith Kumar wrote:
+> use the documented atomic_cmpxchg instead of __cmpxchg64
+>
+> This kills the last user of said API in drivers code.
+>
+>
+> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+> ---
+>   drivers/iommu/intel-iommu.c |    2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+> index 6bb3277..270113f 100644
+> --- a/drivers/iommu/intel-iommu.c
+> +++ b/drivers/iommu/intel-iommu.c
+> @@ -293,7 +293,7 @@ static inline u64 dma_pte_addr(struct dma_pte *pte)
+>   	return pte->val & VTD_PAGE_MASK;
+>   #else
+>   	/* Must have a full atomic 64-bit read */
+> -	return  __cmpxchg64(&pte->val, 0ULL, 0ULL) & VTD_PAGE_MASK;
+> +	return  atomic_cmpxchg(&pte->val, 0ULL, 0ULL) & VTD_PAGE_MASK;
 
-On Thu, 5 Jun 2014 14:45:09 +0200 Ingo Molnar <mingo@kernel.org> wrote:
+This is not equivalent.
 
->=20
-> * NeilBrown <neilb@suse.de> wrote:
->=20
-> > On Thu, 22 May 2014 11:05:02 +0200 Ingo Molnar <mingo@kernel.org> wrote:
-> >=20
-> > >=20
-> > > * NeilBrown <neilb@suse.de> wrote:
-> > >=20
-> > > > [[ get_maintainer.pl suggested 61 email address for this patch.
-> > > >    I've trimmed that list somewhat.  Hope I didn't miss anyone
-> > > >    important...
-> > > >    I'm hoping it will go in through the scheduler tree, but would
-> > > >    particularly like an Acked-by for the fscache parts.  Other acks
-> > > >    welcome.
-> > > > ]]
-> > > >=20
-> > > > The current "wait_on_bit" interface requires an 'action' function
-> > > > to be provided which does the actual waiting.
-> > > > There are over 20 such functions, many of them identical.
-> > > > Most cases can be satisfied by one of just two functions, one
-> > > > which uses io_schedule() and one which just uses schedule().
-> > > >=20
-> > > > So:
-> > > >  Rename wait_on_bit and        wait_on_bit_lock to
-> > > >         wait_on_bit_action and wait_on_bit_lock_action
-> > > >  to make it explicit that they need an action function.
-> > > >=20
-> > > >  Introduce new wait_on_bit{,_lock} and wait_on_bit{,_lock}_io
-> > > >  which are *not* given an action function but implicitly use
-> > > >  a standard one.
-> > > >  The decision to error-out if a signal is pending is now made
-> > > >  based on the 'mode' argument rather than being encoded in the acti=
-on
-> > > >  function.
-> > >=20
-> > > this patch fails to build on x86-32 allyesconfigs.
-> >=20
-> > Could you share the build errors?
->=20
-> Sure, find it attached below.
+The __cmpxchg64() is specifically being used in this case
+when !CONFIG_64BIT for a full 64-bit RMW, whereas atomic_cmpxchg()
+uses ints which would be 32-bit RMW.
 
-Thanks.
-
-It looks like this is a wait_on_bit usage that was added after I created the
-patch.
-
-How about you drop my patch for now, we wait for -rc1 to come out, then I
-submit a new version against -rc1 and we get that into -rc2.
-That should minimise such conflicts.
-
-Does that work for you?
-
-Thanks,
-NeilBrown
+Regards,
+Peter Hurley
 
 
->=20
-> > >=20
-> > > Could we keep the old names for a while, and remove them in the next=
-=20
-> > > cycle or so?
-> >=20
-> > I don't see how changing the names later rather than now will reduce the
-> > chance of errors... maybe I'm missing something.
->=20
-> Well, it would reduce build errors?
->=20
-> Thanks,
->=20
-> 	Ingo
->=20
-> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D>
-> fs/cifs/file.c: In function =E2=80=98cifs_oplock_break=E2=80=99:
-> fs/cifs/file.c:3652:4: warning: passing argument 3 of =E2=80=98wait_on_bi=
-t=E2=80=99 makes integer from pointer without a cast [enabled by default]
->     cifs_pending_writers_wait, TASK_UNINTERRUPTIBLE);
->     ^
-> In file included from include/linux/fs.h:6:0,
->                  from fs/cifs/file.c:24:
-> include/linux/wait.h:878:1: note: expected =E2=80=98unsigned int=E2=80=99=
- but argument is of type =E2=80=98int (*)(void *)=E2=80=99
->  wait_on_bit(void *word, int bit, unsigned mode)
->  ^
-> fs/cifs/file.c:3652:4: error: too many arguments to function =E2=80=98wai=
-t_on_bit=E2=80=99
->     cifs_pending_writers_wait, TASK_UNINTERRUPTIBLE);
->     ^
-> In file included from include/linux/fs.h:6:0,
->                  from fs/cifs/file.c:24:
-> include/linux/wait.h:878:1: note: declared here
->  wait_on_bit(void *word, int bit, unsigned mode)
->  ^
->   CC      kernel/smp.o
->   CC      kernel/trace/trace_event_perf.o
-> make[2]: *** [fs/cifs/file.o] Error 1
-> make[2]: *** Waiting for unfinished jobs....
->   CC      drivers/bcma/sprom.o
->   CC      fs/btrfs/locking.o
->   LD      sound/isa/ad1848/snd-ad1848.o
->   LD      sound/isa/ad1848/built-in.o
->   CC      sound/isa/cs423x/cs4231.o
->   CC      lib/fonts/fonts.o
->   CC      lib/fonts/font_sun8x16.o
->   CC      drivers/bcma/driver_chipcommon.o
->   CC      lib/fonts/font_sun12x22.o
-
-
---Sig_/fiPA8qbnQ1B8HYSL6RXukPC
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIVAwUBU5EJ5znsnt1WYoG5AQKrmhAAuiLNpK4A5qmajKP6fCUhyhosJkjutCGM
-T9ILwSTPzIGp6fbAwxT7oNu1Kbkm1VeiqYnQizhW0OOseELTATKHPGkwXyqAyaOI
-AErDTNJkCTxEC6RZSGydc4rUvf5koECbYm+eL/TI8/4BScKwzrlSNzzOmuNh3GXD
-9Pf/KjEgq9rwBNos73HjMFUBNTi8xliroSHKIldkCmDuX5p7w770k2rtzzCTnPSV
-G8TFMVJsi//3fr4j/rtCmDT1BfL0NIlBiPbcstDEfM9S7y+RmSbiwC2074SY4XFG
-F/2TpVRB00dHrvQaUr/T8D5cZTVMim2n85wr7ma+aCrupuEQCqE6UrpQiGZhGSm7
-3croD4lYMto06H91VI3977ZBJ4UxblKrPJLxCUTjcOIwLdSzr/gVuvNFTocShSn2
-CiLvTkRyvJkZY+KBgI9/E3E14KWlUiY7woyvSI5OoCFxArDp3CZhb6rCL6kPtOi8
-+ocVtPvJWQOeDIOzOIFLfB98PVFD8xKaem9m6caWOqA6hQ7fDcWytZhoIBlucjSF
-qfFVOpPXqiESNhAEJ1ZBk/x7o6YaUkOAR4QCwtvUqKkv9gev+GZsMKGdZntcslh0
-JCm8uI7M6O8OLaCYBlI0lIYv4rDS1bCQlBbxAhAh9G7otJ0B/JjnSTDrz3/YchOw
-ciFiCSJTxRI=
-=X+YS
------END PGP SIGNATURE-----
-
---Sig_/fiPA8qbnQ1B8HYSL6RXukPC--
