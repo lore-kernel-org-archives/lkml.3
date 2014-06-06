@@ -1,59 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752501AbaFFV5q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 17:57:46 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:54355 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752075AbaFFV5p (ORCPT
+	id S1752561AbaFFWAj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 18:00:39 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:60609 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752209AbaFFWAh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 17:57:45 -0400
-Message-ID: <539239EF.3090006@fb.com>
-Date: Fri, 6 Jun 2014 18:00:15 -0400
-From: Chris Mason <clm@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Btrfs for 3.15
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
+	Fri, 6 Jun 2014 18:00:37 -0400
+Message-ID: <1402092031.11626.35.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [RFC PATCH v5 1/4] KEYS: special dot prefixed keyring name bug
+ fix
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+Cc: linux-security-module <linux-security-module@vger.kernel.org>,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        David Howells <dhowells@redhat.com>, Josh Boyer <jwboyer@redhat.com>,
+        keyrings <keyrings@linux-nfs.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Fri, 06 Jun 2014 18:00:31 -0400
+In-Reply-To: <CACE9dm909SGRBOybkh8z8jNiGPc_ksKHzsMuvNB+ro9furQ_tQ@mail.gmail.com>
+References: <1401818318-15780-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <1401818318-15780-2-git-send-email-zohar@linux.vnet.ibm.com>
+	 <CACE9dm909SGRBOybkh8z8jNiGPc_ksKHzsMuvNB+ro9furQ_tQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-06-06_07:2014-06-06,2014-06-06,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=5.16997000765684e-11 kscore.compositescore=0
- circleOfTrustscore=29.4129509548051 compositescore=0.998049563855454
- urlsuspect_oldscore=0.998049563855454 suspectscore=0
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=64355
- rbsscore=0.998049563855454 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1406060289
-X-FB-Internal: deliver
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14060622-1344-0000-0000-0000020F6E21
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Sat, 2014-06-07 at 00:48 +0300, Dmitry Kasatkin wrote: 
+> On 3 June 2014 20:58, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> > Dot prefixed keyring names are supposed to be reserved for the
+> > kernel, but add_key() calls key_get_type_from_user(), which
+> > incorrectly verifies the 'type' field, not the 'description' field.
+> > This patch verifies the 'description' field isn't dot prefixed,
+> > when creating a new keyring, and removes the dot prefix test in
+> > key_get_type_from_user().
+> >
+> > Changelog v5:
+> > - Only prevent userspace from creating a dot prefixed keyring, not
+> >   regular keys  - Dmitry
+> >
+> > Reported-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+> > Cc: David Howells <dhowells@redhat.com>
+> > Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+> > ---
+> >  security/keys/keyctl.c | 6 ++++--
+> >  1 file changed, 4 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+> > index cd5bd0c..62a9952 100644
+> > --- a/security/keys/keyctl.c
+> > +++ b/security/keys/keyctl.c
+> > @@ -37,8 +37,6 @@ static int key_get_type_from_user(char *type,
+> >                 return ret;
+> >         if (ret == 0 || ret >= len)
+> >                 return -EINVAL;
+> > -       if (type[0] == '.')
+> > -               return -EPERM;
+> >         type[len - 1] = '\0';
+> >         return 0;
+> >  }
+> > @@ -86,6 +84,10 @@ SYSCALL_DEFINE5(add_key, const char __user *, _type,
+> >                 if (!*description) {
+> >                         kfree(description);
+> >                         description = NULL;
+> > +               } else if ((description[0] == '.') &&
+> > +                          (strncmp(type, "keyring", 7) == 0)) {
+> > +                               ret = -EPERM;
+> > +                               goto error2;
+> >                 }
+> >         }
 
-I had this in my 3.16 merge window queue, but it is small and obvious
-enough for 3.15.  I cherry-picked and retested against current rc8.
+> I think it does not another problem...
+> It is not only prevent creating new keyring with ".abc" name but also
+> prevent adding new key...
+> 
+> this is wrong...
 
-Please pull from my for-linus branch:
+Seems to prevent creating a dot prefixed keyring, but permits creating a
+dot prefixed key.  Do you have an example?
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
+thanks,
 
+Mimi
 
-Filipe Manana (1) commits (+5/-2):
-    Btrfs: send, fix corrupted path strings for long paths
-
-Total: (1) commits (+5/-2)
-
- fs/btrfs/send.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+Mimi
 
 
