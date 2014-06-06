@@ -1,50 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752179AbaFFPnJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 11:43:09 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:54896 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751624AbaFFPnH (ORCPT
+	id S1752202AbaFFPoZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 11:44:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37560 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751624AbaFFPoX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 11:43:07 -0400
-Date: Fri, 6 Jun 2014 17:43:01 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-kernel@vger.kernel.org, mgorman@suse.de, mingo@kernel.org
-Subject: Re: [PATCH] sched,numa: ensure task_numa_migrate checks the
- preferred node
-Message-ID: <20140606154301.GD11371@laptop.programming.kicks-ass.net>
-References: <20140604160942.6969b101@cuia.bos.redhat.com>
+	Fri, 6 Jun 2014 11:44:23 -0400
+Date: Fri, 6 Jun 2014 08:44:17 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Tom Gundersen <teg@jklm.no>
+Cc: Takashi Iwai <tiwai@suse.de>, Stefan Roese <sr@denx.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Abhay Salunke <Abhay_Salunke@dell.com>, Arnd Bergmann <arnd@arndb.de>,
+        Kay Sievers <kay@vrfy.org>, Ming Lei <ming.lei@canonical.com>
+Subject: Re: [PATCH v2] firmware loader: allow disabling of udev as firmware
+ loader
+Message-ID: <20140606154417.GA14450@kroah.com>
+References: <s5hbnu71mf1.wl%tiwai@suse.de>
+ <CACVXFVPWq93u5KmLhr+g23t4AiGAnLfd+hX3viajzR_KN+sMrw@mail.gmail.com>
+ <CAG-2HqXiFgy5M=k55iOYAdXezxsN-ZanWRWDgH-6fuU-uLawOQ@mail.gmail.com>
+ <CACVXFVNKGPyv6AVUctotD=Sc97VRRGCXVzJ50pprjCNB7jhUxg@mail.gmail.com>
+ <CAG-2HqWtbpKjkNTLAksGZSqskJRfjVOhGkJJFcJUNBFfajLhCg@mail.gmail.com>
+ <CACVXFVOgr1y5KQxGDzvyPfqKHo0e3CsN+3HWo-_dxo6bmufbLQ@mail.gmail.com>
+ <s5hegz2yw2s.wl%tiwai@suse.de>
+ <CAG-2HqUe1oYJ8VBq1kP_Vy_smtkNjAWJ6_+TPu8c9-KVv6EOMA@mail.gmail.com>
+ <20140606152240.GB13400@kroah.com>
+ <CAG-2HqVQ5gT3svBG+B-tE3m2aJ=T2TYjJ2vsA6k3ZxpyFu_6Kg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20140604160942.6969b101@cuia.bos.redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAG-2HqVQ5gT3svBG+B-tE3m2aJ=T2TYjJ2vsA6k3ZxpyFu_6Kg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 04, 2014 at 04:09:42PM -0400, Rik van Riel wrote:
-> The first thing task_numa_migrate does is check to see if there is
-> CPU capacity available on the preferred node, in order to move the
-> task there.
+On Fri, Jun 06, 2014 at 05:35:58PM +0200, Tom Gundersen wrote:
 > 
-> However, if the preferred node is all busy, we would skip considering
-> that node for tasks swaps in the subsequent loop. This prevents NUMA
-> convergence of tasks on busy systems.
+> On 6 Jun 2014 17:22, "Greg KH" <gregkh@linuxfoundation.org> wrote:
+> >
+> > On Fri, Jun 06, 2014 at 04:15:03PM +0200, Tom Gundersen wrote:
+> > > How about:
+> > >
+> > > "If you rely on a customized udev (or other userspace tool) to load
+> > > firmware from a non-standard path, say Y. Otherwise, say N. If your
+> > > udev version does not support firmware loading (which is currently the
+> > > upstream default), you must say N."
+> >
+> > Like anyone ever reads help entries for config options...
+> >
+> > "customized udev"?  What does that mean?
+> >
+> > This is all bikeshedding, right?
 > 
-> However, swapping locations with a task on our preferred nid, when
-> the preferred nid is busy, is perfectly fine.
-> 
-> The fix is to also look for a CPU on our preferred nid when it is
-> totally busy.
-> 
-> This changes "perf bench numa mem -p 4 -t 20 -m -0 -P 1000" from
-> not converging in 15 minutes on my 4 node system, to converging in
-> 10-20 seconds.
-> 
-> Signed-off-by: Rik van Riel <riel@redhat.com>
+> Yup. I don't care, as long as the patch goes in :)
 
+It will, don't worry.  Sometime next week I'll queue it up, I'll take
+whatever text you all agree on in the end...
 
-Indeed so. Thanks Rik!
-
+greg k-h
