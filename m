@@ -1,131 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751870AbaFFMkn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 08:40:43 -0400
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:37534 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750803AbaFFMkm (ORCPT
+	id S1751572AbaFFMmi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 08:42:38 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:61469 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750910AbaFFMmh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 08:40:42 -0400
-Subject: Re: [PATCH 4/4] GenWQE: Increase driver version number
-From: Frank Haverkamp <haver@linux.vnet.ibm.com>
-Reply-To: haver@linux.vnet.ibm.com
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, haver@linux.vnet.ibm.com,
-        schwidefsky@de.ibm.com
-In-Reply-To: <1402056453.31366.34.camel@oc7383187364.ibm.com>
-References: <1401890273-13067-1-git-send-email-klebers@linux.vnet.ibm.com>
-	 <1401890273-13067-5-git-send-email-klebers@linux.vnet.ibm.com>
-	 <20140604155454.GA2866@kroah.com>
-	 <1401960184.11932.10.camel@oc7383187364.ibm.com>
-	 <20140605160010.GF23993@kroah.com>
-	 <1402056453.31366.34.camel@oc7383187364.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: IBM
-Date: Fri, 06 Jun 2014 14:40:35 +0200
-Message-ID: <1402058435.31366.46.camel@oc7383187364.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14060612-1948-0000-0000-00000018FD1C
+	Fri, 6 Jun 2014 08:42:37 -0400
+Date: Fri, 6 Jun 2014 13:42:30 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
+Cc: Bryan Wu <cooloney@gmail.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-pwm@vger.kernel.org
+Subject: Re: [PATCH] pwm-backlight:
+Message-ID: <20140606124230.GQ24240@lee--X1>
+References: <1402052529-22761-1-git-send-email-LW@KARO-electronics.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1402052529-22761-1-git-send-email-LW@KARO-electronics.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Fri, 06 Jun 2014, Lothar Waßmann wrote:
 
-Am Freitag, den 06.06.2014, 14:07 +0200 schrieb Frank Haverkamp:
-> Hi Greg,
+> commit 257462dbf3ed pwm-backlight: switch to gpiod interface
+> introduced a regression leading to acquiring a bogus GPIO-0 when
+> configured from DT without an 'enable-gpios' property.
+> The driver will happily accept the 0 initialized 'enable_gpio' member
+> of the struct platform_pwm_backlight_data as valid gpio number, and
+> request this GPIO as enable pin. In case of multiple driver instances,
+> the second will fail to register with the error message:
+> pwm-backlight backlight1.23: failed to request GPIO#0: -16
 > 
-> Am Donnerstag, den 05.06.2014, 09:00 -0700 schrieb Greg KH:
-> > On Thu, Jun 05, 2014 at 11:23:04AM +0200, Frank Haverkamp wrote:
-> > > Hi Greg,
-> > > 
-> > > Am Mittwoch, den 04.06.2014, 08:54 -0700 schrieb Greg KH:
-> > > > On Wed, Jun 04, 2014 at 10:57:53AM -0300, Kleber Sacilotto de Souza wrote:
-> > > > > Increase genwqe driver version number.
-> > > > > 
-> > > > > Signed-off-by: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
-> > > > > ---
-> > > > >  drivers/misc/genwqe/genwqe_driver.h |    2 +-
-> > > > >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > > > > 
-> > > > > diff --git a/drivers/misc/genwqe/genwqe_driver.h b/drivers/misc/genwqe/genwqe_driver.h
-> > > > > index cd52631..a506e9a 100644
-> > > > > --- a/drivers/misc/genwqe/genwqe_driver.h
-> > > > > +++ b/drivers/misc/genwqe/genwqe_driver.h
-> > > > > @@ -36,7 +36,7 @@
-> > > > >  #include <asm/byteorder.h>
-> > > > >  #include <linux/genwqe/genwqe_card.h>
-> > > > >  
-> > > > > -#define DRV_VERS_STRING		"2.0.15"
-> > > > > +#define DRV_VERS_STRING		"2.0.21"
-> > > > 
-> > > > Why is this even needed?  Can't you go off of the kernel version number
-> > > > now?  Who needs / wants this number?
-> > > 
-> > > I am aware that if just considering the mainline kernels, we could use
-> > > the kernel version itself for the purpose of identifying which code we
-> > > are running.
-> > 
-> > Which is what you are patching here :)
-> > 
-> > > But in our lab we are running multiple back-ported versions of this
-> > > driver on different Linux distributions using different kernel versions.
-> > 
-> > Then deal with that in the backported code, the upstream kernel doesn't
-> > care about this.
-> > 
-> > > Our user-space software needs to know if the driver has or has not
-> > > bug-fixes or features. For this purpose, we are using this extra number.
-> > 
-> > Why would you rely on a version number for this, shouldn't you be able
-> > to tell with your api what features are present?
+> Fix this by setting enable_gpio in the pdata struct to -EINVAL.
 > 
-> For version "2.0.15" there is no automatic recovery for certain
-> problems, for "2.0.21" there is.
+> Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
+> ---
+>  drivers/video/backlight/pwm_bl.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> I personally use the driver versions sysfs entry if a user complains
-> that something e.g. the recovery is not working right. First thing I am
-> asking for is the version of the code/driver  as part of the debug data.
-> If that is not matching my expectations, I will tell the user to update
-> the code.
-> 
-> In the current example new applications could more gracefully handle
-> failing recovery scenarios by knowing that the old version of the code
-> cannot properly handle certain problems. And it could this without
-> knowing if it is using a driver which is in the mainline tree or if it
-> is a back-ported version.
-> 
-> Therefore I find it much more convenient for us to handle such things
-> and I would kindly ask you to accept patch 4/4.
-> 
+> diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
+> index 38ca88b..3d265c4 100644
+> --- a/drivers/video/backlight/pwm_bl.c
+> +++ b/drivers/video/backlight/pwm_bl.c
+> @@ -178,7 +178,7 @@ static int pwm_backlight_parse_dt(struct device *dev,
+>  		data->dft_brightness = value;
+>  		data->max_brightness--;
+>  	}
+> -
+> +	data->enable_gpio = -EINVAL;
+>  	return 0;
+>  }
 
-I talked a bit with a colleague about version numbers for kernel
-drivers. He pointed me on to the fact that when other people contribute
-to our code, they will mostly not alter my version number, which is
-certainly ok. That in turn makes it impossible for me to figure out the
-exact code version from my own (internal) version number.
+This patch doesn't look like it will apply.  I suggest you pull
+v3.17-rc1 when it lands and rebase your patch.
 
-So at the end it is the kernel version number or maybe the git checksum
-used to build the code what enables me to identify the exact version of
-the code. If this be the case, than I wonder, if we should not remove
-the "version" sysfs entry entirely. I mean, if you reject the update to
-it anyways ;-).
-
-> > thanks,
-> > 
-> > greg k-h
-> 
-> Thanks
-> 
-> Frank
-> 
-
-Regards
-
-Frank
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
