@@ -1,95 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751912AbaFFAq1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 20:46:27 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:36316 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751419AbaFFAqY (ORCPT
+	id S1752088AbaFFBBz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 21:01:55 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:41873 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751637AbaFFBBy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 20:46:24 -0400
+	Thu, 5 Jun 2014 21:01:54 -0400
+Message-ID: <539112FC.6070604@hitachi.com>
+Date: Fri, 06 Jun 2014 10:01:48 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <20140606000324.10062.10257@quantum>
-References: <1401467562-5585-1-git-send-email-dianders@chromium.org>
-	<1402000514-30752-1-git-send-email-dianders@chromium.org>
-	<20140606000324.10062.10257@quantum>
-Date: Thu, 5 Jun 2014 17:46:23 -0700
-X-Google-Sender-Auth: ihts_9ErUcaELGhrgFbZNJaZvS0
-Message-ID: <CAD=FV=UQhBh68Bgv=kfUROCOxg1dS1OnZ1ir+wouewKoDFE_1g@mail.gmail.com>
-Subject: Re: [PATCH v3] clk: exynos5420: Remove aclk66_peric from the clock
- tree description
-From: Doug Anderson <dianders@chromium.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Tomasz Figa <t.figa@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Olof Johansson <olof@lixom.net>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        Shaik Ameer Basha <shaik.ameer@samsung.com>,
-        Arun Kumar <arun.kk@samsung.com>,
-        Alim Akhtar <alim.akhtar@samsung.com>, a.hajda@samsung.com,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Ingo Molnar <mingo@redhat.com>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH ftrace/core 2/3] trace/kprobes: Avoid self tests if tracing
+ is disabled on boot up
+References: <20140605223515.32311.71203.stgit@yunodevel> <20140605223520.32311.56097.stgit@yunodevel>
+In-Reply-To: <20140605223520.32311.56097.stgit@yunodevel>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike,
+(2014/06/06 7:35), Yoshihiro YUNOMAE wrote:
+> If tracing is disabled on boot up, the kernel should not execute self tests.
+> In this patch, the kernel checks whether tracing is disabled or not
+> before executing self tests.
 
-On Thu, Jun 5, 2014 at 5:03 PM, Mike Turquette <mturquette@linaro.org> wrote:
-> Quoting Doug Anderson (2014-06-05 13:35:14)
->> The "aclk66_peric" clock is a gate clock with a whole bunch of gates
->> underneath it.  This big gate isn't very useful to include in our
->> clock tree.  If any of the children need to be turned on then the big
->> gate will need to be on anyway.  ...and there are plenty of other "big
->> gates" that aren't described in our clock tree, some of which shut off
->> collections of clocks that have no relationship in the hierarchy so
->> are hard to model.
->
-> I think this is a common problem. On OMAP we have something similar to
-> this called "clock domains" or "clkdm" and it has been historically
-> handled outside of the Linux clock framework[1]. There is a relationship
-> to the clock framework of course and in the future it might be
-> worthwhile to see if there is a generic way to handle this stuff.
+Looks good to me, thanks! :)
 
-That sounds like something that would be nice to solve, but it's not
-going to happen now.
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-On the off chance that the user manual mentioned the existence of one
-of these "big gate" bits, it tends to not be very specific about
-_exactly_ which sets of clocks it disables.
-
-Tracking down every one of these would be hugely time consuming.
-Also: as Tomasz has indicated they don't provide a huge amount of
-benefit since we're already dealing with clocks on a more fine-grained
-level...
-
-
->> "aclk66_peric" is causing earlyprintk problems since it gets disabled
->> as part of the boot process, so let's just remove it.
->>
->> Strangely (and for no good reason) this clock is exported as part of
->> the common clock bindings.  Remove it since there are no in-kernel
->> device trees using it and no reason anyone out of tree should refer to
->> it either.
->
-> So Linux has no control over the big gate now, correct? You are
-> dependent on the bootloader to ungate this thing?
-
-A better way to put it is that you're dependent on the bootloader not
-to gate it.
-
-...but that's also true for pretty much any clock marked IGNORE_UNUSED
-and not explicitly enabled anywhere.
+> 
+> Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  kernel/trace/trace_kprobe.c |    3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+> index 903ae28..ef2fba1 100644
+> --- a/kernel/trace/trace_kprobe.c
+> +++ b/kernel/trace/trace_kprobe.c
+> @@ -1377,6 +1377,9 @@ static __init int kprobe_trace_self_tests_init(void)
+>  	struct trace_kprobe *tk;
+>  	struct ftrace_event_file *file;
+>  
+> +	if (tracing_is_disabled())
+> +		return -ENODEV;
+> +
+>  	target = kprobe_trace_selftest_target;
+>  
+>  	pr_info("Testing kprobe tracing: ");
+> 
+> 
 
 
-Are you opposed to this landing as-is to unblock things and people can
-continue to work on the clock driver to make it even better?
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
--Doug
+
