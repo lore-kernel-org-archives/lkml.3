@@ -1,134 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752120AbaFFCxV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 22:53:21 -0400
-Received: from mail-bn1blp0185.outbound.protection.outlook.com ([207.46.163.185]:26953
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751748AbaFFCxU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 22:53:20 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Mike Christie <michaelc@cs.wisc.edu>
-CC: James Bottomley <jbottomley@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "jasowang@redhat.com" <jasowang@redhat.com>
-Subject: RE: [PATCH 1/1] [SCSI] Fix a bug in deriving the FLUSH_TIMEOUT from
- the basic I/O timeout
-Thread-Topic: [PATCH 1/1] [SCSI] Fix a bug in deriving the FLUSH_TIMEOUT from
- the basic I/O timeout
-Thread-Index: AQHPgAqq5L1zp+ngQ0O2dQQp+rFvKZthLVSAgAABPoCAAh+9gIAAFcfQ
-Date: Fri, 6 Jun 2014 02:53:15 +0000
-Message-ID: <d9854e6ff97f4b0087dbe835a2a57c8f@BY2PR03MB299.namprd03.prod.outlook.com>
-References: <1401899623-24194-1-git-send-email-kys@microsoft.com>
- <1401901323.17510.23.camel@dabdike>
- <d61f4b87a72544e4b0c1e1872a76f97b@BY2PR03MB299.namprd03.prod.outlook.com>
- <53911A35.7010805@cs.wisc.edu>
-In-Reply-To: <53911A35.7010805@cs.wisc.edu>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2601:8:9b00:402:605e:a01a:1e1f:e170]
-x-microsoft-antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
-x-forefront-prvs: 023495660C
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(428001)(479174003)(51704005)(377454003)(24454002)(13464003)(377424004)(199002)(189002)(92566001)(19580395003)(86612001)(74316001)(77982001)(79102001)(46102001)(101416001)(80022001)(20776003)(93886002)(99396002)(81542001)(64706001)(74662001)(86362001)(21056001)(83322001)(19580405001)(50986999)(87936001)(77096999)(85852003)(76176999)(31966008)(54356999)(2656002)(83072002)(76576001)(2171001)(76482001)(99286001)(33646001)(4396001)(74502001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB297;H:BY2PR03MB299.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-authentication-results: spf=none (sender IP is )
- smtp.mailfrom=kys@microsoft.com; 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: microsoft.onmicrosoft.com
+	id S1752256AbaFFC5M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 22:57:12 -0400
+Received: from mga14.intel.com ([192.55.52.115]:32588 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751748AbaFFC5K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 22:57:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,986,1392192000"; 
+   d="scan'208";a="543243190"
+Message-ID: <1402023429.30026.4.camel@dwillia2-mobl2.amr.corp.intel.com>
+Subject: Re: [Regression] commit 8a4aeec8d(libata/ahci: accommodate tag
+ ordered controllers)
+From: Dan Williams <dan.j.williams@intel.com>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Tejun Heo <tj@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Loc Ho <lho@apm.com>, Tuan Phan <tphan@apm.com>,
+        Suman Tripathi <stripathi@apm.com>
+Date: Thu, 05 Jun 2014 19:57:09 -0700
+In-Reply-To: <CACVXFVNUp3jfb1TVo7H7TNm4r2RaqDU0GDaMRq-DtB8ZEXaC+Q@mail.gmail.com>
+References: <CACVXFVMnM6w5ZLX=S8fJHeVoEqxH2JG3Wg=GPMeoVnOpAjsvAA@mail.gmail.com>
+	 <CAPcyv4icNZU9s7zLYYcrFrNA_9qk4W1je42KKG+ETWqdoQu_kg@mail.gmail.com>
+	 <CACVXFVPHfP1VXujLx9sGt3c7ptdG1JvBQkw2JiJQsU1KwJ1zog@mail.gmail.com>
+	 <20140605134120.GA21607@htj.dyndns.org>
+	 <CACVXFVNUp3jfb1TVo7H7TNm4r2RaqDU0GDaMRq-DtB8ZEXaC+Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Mike Christie [mailto:michaelc@cs.wisc.edu]
-> Sent: Thursday, June 5, 2014 6:33 PM
-> To: KY Srinivasan
-> Cc: James Bottomley; linux-kernel@vger.kernel.org; apw@canonical.com;
-> devel@linuxdriverproject.org; hch@infradead.org; linux-
-> scsi@vger.kernel.org; ohering@suse.com; gregkh@linuxfoundation.org;
-> jasowang@redhat.com
-> Subject: Re: [PATCH 1/1] [SCSI] Fix a bug in deriving the FLUSH_TIMEOUT
-> from the basic I/O timeout
+On Fri, 2014-06-06 at 09:47 +0800, Ming Lei wrote:
+> Hi Tejun,
 > 
-> On 06/04/2014 12:15 PM, KY Srinivasan wrote:
+> On Thu, Jun 5, 2014 at 9:41 PM, Tejun Heo <tj@kernel.org> wrote:
+> > Hello,
 > >
+> > (cc'ing ahci_xgene folks)
 > >
-> >> -----Original Message-----
-> >> From: James Bottomley [mailto:jbottomley@parallels.com]
-> >> Sent: Wednesday, June 4, 2014 10:02 AM
-> >> To: KY Srinivasan
-> >> Cc: linux-kernel@vger.kernel.org; apw@canonical.com;
-> >> devel@linuxdriverproject.org; hch@infradead.org; linux-
-> >> scsi@vger.kernel.org; ohering@suse.com; gregkh@linuxfoundation.org;
-> >> jasowang@redhat.com
-> >> Subject: Re: [PATCH 1/1] [SCSI] Fix a bug in deriving the
-> >> FLUSH_TIMEOUT from the basic I/O timeout
+> > On Thu, Jun 05, 2014 at 09:24:04PM +0800, Ming Lei wrote:
+> >> On Thu, Jun 5, 2014 at 9:12 PM, Dan Williams <dan.j.williams@intel.com> wrote:
+> >> > On Thu, Jun 5, 2014 at 1:53 AM, Ming Lei <ming.lei@canonical.com> wrote:
+> >> >> Hi Dan and Tejun,
+> >> >>
+> >> >> Looks the commit 8a4aeec8d(libata/ahci: accommodate tag ordered
+> >> >> controllers) causes below sata failure[1] on APM AHCI controller.
+> >> >>
+> >> >> And the error does disappear after reverting the commit.
+> >> >
+> >> > Can you give some more details about the workload and the disk?  What
+> >> > is the APM AHCI?
 > >>
-> >> On Wed, 2014-06-04 at 09:33 -0700, K. Y. Srinivasan wrote:
-> >>> Commit ID: 7e660100d85af860e7ad763202fff717adcdaacd added code to
-> >>> derive the FLUSH_TIMEOUT from the basic I/O timeout. However, this
-> >>> patch did not use the basic I/O timeout of the device. Fix this bug.
-> >>>
-> >>> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> >>> ---
-> >>>  drivers/scsi/sd.c |    4 +++-
-> >>>  1 files changed, 3 insertions(+), 1 deletions(-)
-> >>>
-> >>> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c index
-> >>> e9689d5..54150b1 100644
-> >>> --- a/drivers/scsi/sd.c
-> >>> +++ b/drivers/scsi/sd.c
-> >>> @@ -832,7 +832,9 @@ static int sd_setup_write_same_cmnd(struct
-> >>> scsi_device *sdp, struct request *rq)
-> >>>
-> >>>  static int scsi_setup_flush_cmnd(struct scsi_device *sdp, struct
-> >>> request *rq)  {
-> >>> -	rq->timeout *= SD_FLUSH_TIMEOUT_MULTIPLIER;
-> >>> +	int timeout = sdp->request_queue->rq_timeout;
-> >>> +
-> >>> +	rq->timeout = (timeout * SD_FLUSH_TIMEOUT_MULTIPLIER);
+> >> The commit causes the APM arm64 based system not bootable, and not
+> >> special workload, just when mounting rootfs or reading init files.
 > >>
-> >> Could you share where you found this to be a problem?  It looks like
-> >> a bug in block because all inbound requests being prepared should
-> >> have a timeout set, so block would be the place to fix it.
+> >> APM AHCI:
+> >>       drivers/ata/ahci_xgene.c
 > >
-> > Perhaps; what I found was that the value in rq->timeout was 0 coming
-> > into this function and thus multiplying obviously has no effect.
+> > Urgh... so, the controller can't handle tags allocated in round-robin
+> > instead of lowest-first?  Ming, can you please test with different
+> > controllers / disks / ssds and see whether the problem stays with the
+> > controller?  Loc, can you guys please look into it so that at least
+> > the next revision hardware can fix the issue?
+> 
+> The problem has been observed on several apm arm64 boards
+> with different disks.
+> 
 > >
+> > Provided that the tag allocation itself isn't broken, which isn't too
+> > likely given the lack of bug reports on other controllers, we'll need
+> > to blacklist ahci_xgene somehow.  Either disable NCQ support on it or
+> > implement an alternative lowest-first tag allocation for it.  If this
+> > actually is the controller freaking out about tags allocated in a
+> > different order, I'm not sure how much confidence we can put in its
+> > NCQ implementation tho and it might be a better idea to simply plug
+> > NCQ support on it until we understand the details of the problem.
+> >
+> > So, something like the following?  Ming, can you please verify whether
+> > the following makes the machine boot again?
 > 
-> I think you are right. We hit this problem because we are doing:
-> 
-> scsi_request_fn -> blk_peek_request -> sd_prep_fn ->
-> scsi_setup_flush_cmnd.
-> 
-> At this time request->timeout is zero so the multiplication does nothing. See
-> how sd_setup_write_same_cmnd will set the request->timeout at this time.
-> 
-> Then in scsi_request_fn we do:
-> 
-> scsi_request_fn -> blk_start_request -> blk_add_timer.
-> 
-> At this time it will set the request->timeout if something like req block pc
-> users (like scsi_execute() or block/scsi_ioctl.c) or the write same code
-> mentioned above have not set the timeout.
+> Looks the problem still persists after applying your patch of disabling
+> NCQ.
 
-I don't think this is a recent change. Prior to this commit, we were setting the timeout
-value in this function; it just happened to be a different constant unrelated to the I/O
-timeout.
+How about the following patch?
 
-K. Y
-> 
-> 
+8<---------
+libata: allow xgene-ahci to opt-out of tag ordered submission
+
+From: Dan Williams <dan.j.williams@intel.com>
+
+Ming Lei reports:
+  "Looks the commit 8a4aeec8d(libata/ahci: accommodate tag ordered
+   controllers) causes below sata failure[1] on APM AHCI controller.
+
+   And the error does disappear after reverting the commit.
+
+     ata4.00: exception Emask 0x40 SAct 0xff00 SErr 0x800 action 0x6 frozen
+     ata4: SError: { HostInt }
+     ata4.00: failed command: READ FPDMA QUEUED
+     ata4.00: cmd 60/08:40:e0:a4:88/00:00:04:00:00/40 tag 8 ncq 4096 in
+              res 40/00:00:00:00:00/00:00:00:00:00/00 Emask 0x44 (timeout)"
+
+Maintain tag ordered submission as the default, but allow xgene-ahci to
+continue with the old behavior.
+
+Reported-by: Ming Lei <ming.lei@canonical.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+---
+ drivers/ata/ahci_xgene.c  |    1 +
+ drivers/ata/libata-core.c |   42 +++++++++++++++++++++++++++++++++++++++---
+ drivers/ata/libata.h      |    2 ++
+ include/linux/libata.h    |    1 +
+ 4 files changed, 43 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/ata/ahci_xgene.c b/drivers/ata/ahci_xgene.c
+index 77c89bf171f1..9be069f5f58a 100644
+--- a/drivers/ata/ahci_xgene.c
++++ b/drivers/ata/ahci_xgene.c
+@@ -300,6 +300,7 @@ static struct ata_port_operations xgene_ahci_ops = {
+ 	.host_stop = xgene_ahci_host_stop,
+ 	.hardreset = xgene_ahci_hardreset,
+ 	.read_id = xgene_ahci_read_id,
++	.qc_new = ata_qc_new_fifo_order,
+ };
+ 
+ static const struct ata_port_info xgene_ahci_port_info = {
+diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+index 943cc8b83e59..dd554354791f 100644
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -83,6 +83,7 @@ const struct ata_port_operations ata_base_port_ops = {
+ 	.error_handler		= ata_std_error_handler,
+ 	.sched_eh		= ata_std_sched_eh,
+ 	.end_eh			= ata_std_end_eh,
++	.qc_new			= ata_qc_new_tag_order,
+ };
+ 
+ const struct ata_port_operations sata_port_ops = {
+@@ -4784,14 +4785,17 @@ void swap_buf_le16(u16 *buf, unsigned int buf_words)
+ }
+ 
+ /**
+- *	ata_qc_new - Request an available ATA command, for queueing
++ *	ata_qc_new_tag_order - Request an available ATA command, for queueing
+  *	@ap: target port
+  *
++ *	Accomodates controllers that issue commands in tag order rather
++ *	than FIFO order (Intel AHCI).
++ *
+  *	LOCKING:
+  *	None.
+  */
+ 
+-static struct ata_queued_cmd *ata_qc_new(struct ata_port *ap)
++struct ata_queued_cmd *ata_qc_new_tag_order(struct ata_port *ap)
+ {
+ 	struct ata_queued_cmd *qc = NULL;
+ 	unsigned int i, tag;
+@@ -4819,6 +4823,38 @@ static struct ata_queued_cmd *ata_qc_new(struct ata_port *ap)
+ }
+ 
+ /**
++ *	ata_qc_new_fifo_order - Request an available ATA command, for queueing
++ *	@ap: target port
++ *
++ *	Allocate first available tag, for hosts that maintain fifo issue
++ *	order on the wire, or otherwise cannot handle tag order.
++ *
++ *	LOCKING:
++ *	None.
++ */
++
++struct ata_queued_cmd *ata_qc_new_fifo_order(struct ata_port *ap)
++{
++	struct ata_queued_cmd *qc = NULL;
++	unsigned int i;
++
++	/* no command while frozen */
++	if (unlikely(ap->pflags & ATA_PFLAG_FROZEN))
++		return NULL;
++
++	/* the last tag is reserved for internal command. */
++	for (i = 0; i < ATA_MAX_QUEUE - 1; i++)
++		if (!test_and_set_bit(i, &ap->qc_allocated)) {
++			qc = __ata_qc_from_tag(ap, i);
++			qc->tag = i;
++			break;
++		}
++
++	return qc;
++}
++EXPORT_SYMBOL_GPL(ata_qc_new_fifo_order);
++
++/**
+  *	ata_qc_new_init - Request an available ATA command, and initialize it
+  *	@dev: Device from whom we request an available command structure
+  *
+@@ -4831,7 +4867,7 @@ struct ata_queued_cmd *ata_qc_new_init(struct ata_device *dev)
+ 	struct ata_port *ap = dev->link->ap;
+ 	struct ata_queued_cmd *qc;
+ 
+-	qc = ata_qc_new(ap);
++	qc = ap->ops->qc_new(ap);
+ 	if (qc) {
+ 		qc->scsicmd = NULL;
+ 		qc->ap = ap;
+diff --git a/drivers/ata/libata.h b/drivers/ata/libata.h
+index 45b5ab3a95d5..381ba41de464 100644
+--- a/drivers/ata/libata.h
++++ b/drivers/ata/libata.h
+@@ -90,6 +90,8 @@ extern int ata_down_xfermask_limit(struct ata_device *dev, unsigned int sel);
+ extern unsigned int ata_dev_set_feature(struct ata_device *dev,
+ 					u8 enable, u8 feature);
+ extern void ata_sg_clean(struct ata_queued_cmd *qc);
++extern struct ata_queued_cmd *ata_qc_new_tag_order(struct ata_port *ap);
++extern struct ata_queued_cmd *ata_qc_new_fifo_order(struct ata_port *ap);
+ extern void ata_qc_free(struct ata_queued_cmd *qc);
+ extern void ata_qc_issue(struct ata_queued_cmd *qc);
+ extern void __ata_qc_complete(struct ata_queued_cmd *qc);
+diff --git a/include/linux/libata.h b/include/linux/libata.h
+index 5ab4e3a76721..852686837d1c 100644
+--- a/include/linux/libata.h
++++ b/include/linux/libata.h
+@@ -880,6 +880,7 @@ struct ata_port_operations {
+ 	void (*qc_prep)(struct ata_queued_cmd *qc);
+ 	unsigned int (*qc_issue)(struct ata_queued_cmd *qc);
+ 	bool (*qc_fill_rtf)(struct ata_queued_cmd *qc);
++	struct ata_queued_cmd *(*qc_new)(struct ata_port *ap);
+ 
+ 	/*
+ 	 * Configuration and exception handling
+
 
