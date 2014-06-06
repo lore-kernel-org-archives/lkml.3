@@ -1,66 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752142AbaFFSMo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 14:12:44 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:1209 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752006AbaFFSMn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752066AbaFFSMn (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 6 Jun 2014 14:12:43 -0400
-Message-ID: <1402078358.14433.3.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH 1/2] locking/rwsem: Add CONFIG_RWSEM_SPIN_ON_OWNER
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Jason Low <jason.low2@hp.com>
-Cc: peterz@infradead.org, mingo@kernel.org, mpatocka@redhat.com,
-        torvalds@linux-foundation.org, waiman.long@hp.com,
-        jejb@parisc-linux.org, paulmck@linux.vnet.ibm.com,
-        dave.anglin@bell.net, aswin@hp.com, linux-kernel@vger.kernel.org,
-        linux-parisc@vger.kernel.org
-Date: Fri, 06 Jun 2014 11:12:38 -0700
-In-Reply-To: <1402074788.6680.50.camel@j-VirtualBox>
-References: <1402070140-15090-1-git-send-email-davidlohr@hp.com>
-	 <1402070140-15090-2-git-send-email-davidlohr@hp.com>
-	 <1402074788.6680.50.camel@j-VirtualBox>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Received: from e36.co.us.ibm.com ([32.97.110.154]:57067 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751711AbaFFSMl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 14:12:41 -0400
+Date: Fri, 6 Jun 2014 11:12:36 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: dormando <dormando@rydia.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: Multitude of dst obsolescense race conditions
+Message-ID: <20140606181236.GS4581@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <alpine.DEB.2.02.1405140233210.16893@dtop>
+ <1400067618.7973.72.camel@edumazet-glaptop2.roam.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400067618.7973.72.camel@edumazet-glaptop2.roam.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14060618-3532-0000-0000-0000024DD33F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-06-06 at 10:13 -0700, Jason Low wrote:
-> On Fri, 2014-06-06 at 08:55 -0700, Davidlohr Bueso wrote:
-> > Just like with mutexes (CONFIG_MUTEX_SPIN_ON_OWNER),
-> > encapsulate the dependencies for rwsem optimistic spinning.
-> > No logical changes here as it continues to depend on both
-> > SMP and the XADD algorithm variant.
+On Wed, May 14, 2014 at 04:40:18AM -0700, Eric Dumazet wrote:
+> On Wed, 2014-05-14 at 02:57 -0700, dormando wrote:
+> > Hi,
 > > 
-> > Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-> > ---
-> >  include/linux/rwsem.h  | 4 ++--
-> >  kernel/Kconfig.locks   | 4 ++++
-> >  kernel/locking/rwsem.c | 2 +-
-> >  3 files changed, 7 insertions(+), 3 deletions(-)
+> > Given a machine with frequently changing routes (ie; a router with an
+> > active internet BGP table and multiple interfaces), there're at least
+> > several places where obsolete dst's are handled improperly. If I pause the
+> > route changes, the crashes appear to stop. This first one has a crash
+> > utility we've made, so I was able to more quickly find a patch and test
+> > it. The others take time to reproduce.
+> > 
+> > I'm testing against 3.10.39, but I think if these were fixed they'd be
+> > backported to stable? I've also had recent 3.12's running that have
+> > crashed in the same spots. Anyway correct me if I'm wrong...
 > 
-> Do we also want to add an #ifdef CONFIG_RWSEM_SPIN_ON_OWNER in
-> __init_rwsem() and in the optimistic spinning functions for rwsem-xadd?
+> Is this a vanilla kernel ? I never had any issues like that.
 > 
-
-Not really, as we conditionally build rwsem-xadd.o based on
-CONFIG_RWSEM_XCHGADD_ALGORITHM:
-
-obj-$(CONFIG_RWSEM_GENERIC_SPINLOCK) += rwsem-spinlock.o
-obj-$(CONFIG_RWSEM_XCHGADD_ALGORITHM) += rwsem-xadd.o
-
-So leaving just SMP is ok there.
-
+> I wonder if you have some RCU issues.
 > 
-> Besides that:
+> static inline struct dst_entry *
+> sk_dst_get(struct sock *sk)
+> {
+>         struct dst_entry *dst;
 > 
-> Acked-by: Jason Low <jason.low2@hp.com>
+>         rcu_read_lock();
+>         dst = rcu_dereference(sk->sk_dst_cache);
+>         if (dst)
+>                 dst_hold(dst);
+>         rcu_read_unlock();
+>         return dst;
+> }
 > 
+> static inline void
+> __sk_dst_set(struct sock *sk, struct dst_entry *dst)
+> {
+>         struct dst_entry *old_dst;
+> 
+>         sk_tx_queue_clear(sk);
+>         /*
+>          * This can be called while sk is owned by the caller only,
+>          * with no state that can be checked in a rcu_dereference_check() cond
+>          */
+>         old_dst = rcu_dereference_raw(sk->sk_dst_cache);
+>         rcu_assign_pointer(sk->sk_dst_cache, dst);
+>         dst_release(old_dst);
 
-Thanks,
-Davidlohr
+It is probably just be me getting lost in the code, but I am not seeing
+a synchronize_rcu(), call_rcu(), or synchronize_net() anywhere in
+dst_release() or the things that it calls.  If there really isn't such
+a call, then I don't see how the above code is safe in the case where
+__sk_dst_set() is invoked on one CPU just after sk_dst_get() executes
+the rcu_dereference() on some other CPU.
+
+							Thanx, Paul
+
+> }
+> 
+> static inline void
+> sk_dst_set(struct sock *sk, struct dst_entry *dst)
+> {
+>         spin_lock(&sk->sk_dst_lock);
+>         __sk_dst_set(sk, dst);
+>         spin_unlock(&sk->sk_dst_lock);
+> }
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
