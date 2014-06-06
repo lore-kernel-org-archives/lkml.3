@@ -1,51 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752174AbaFFTyw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 15:54:52 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:59798 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751589AbaFFTyu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 15:54:50 -0400
-Date: Fri, 06 Jun 2014 12:54:47 -0700 (PDT)
-Message-Id: <20140606.125447.1665616708152334692.davem@davemloft.net>
-To: jiri@resnulli.us
-Cc: mprivozn@redhat.com, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] net-sysfs: Report link speed only when possible
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140606085733.GJ2984@minipsycho.orion>
-References: <771f792d4d4391c656305a522557c53c4e84a666.1402043894.git.mprivozn@redhat.com>
-	<20140606085733.GJ2984@minipsycho.orion>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 06 Jun 2014 12:54:50 -0700 (PDT)
+	id S1752072AbaFFUFC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 16:05:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25869 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751901AbaFFUFA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 16:05:00 -0400
+Date: Fri, 6 Jun 2014 16:04:18 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Dave Young <dyoung@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
+        greg@kroah.com, bp@alien8.de, jkosina@suse.cz, chaowang@redhat.com,
+        bhe@redhat.com, akpm@linux-foundation.org
+Subject: Re: [RFC PATCH 00/13][V3] kexec: A new system call to allow in
+ kernel loading
+Message-ID: <20140606200418.GN1526@redhat.com>
+References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
+ <20140603131203.GA23395@redhat.com>
+ <20140605083134.GE3506@darkstar.nay.redhat.com>
+ <20140605150159.GA14083@redhat.com>
+ <20140606073748.GC3343@darkstar.nay.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140606073748.GC3343@darkstar.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Pirko <jiri@resnulli.us>
-Date: Fri, 6 Jun 2014 10:57:33 +0200
-
-> Fri, Jun 06, 2014 at 10:40:30AM CEST, mprivozn@redhat.com wrote:
->>The link speed is available at /sys/class/net/$nic/speed.
->>However, in some cases, depending on the driver, if the link is
->>not plugged, -1 is reported (this is the case of e1000e for
->>instance). To make things worse, the value is printed out as an
+On Fri, Jun 06, 2014 at 03:37:48PM +0800, Dave Young wrote:
+> On 06/05/14 at 11:01am, Vivek Goyal wrote:
+> > On Thu, Jun 05, 2014 at 04:31:34PM +0800, Dave Young wrote:
+> > 
+> > [..]
+> > > > +	ret = kexec_file_load(kernel_fd, info.initrd_fd, info.command_line,
+> > > > +			info.command_line_len, info.kexec_flags);
+> > > 
+> > > Vivek,
+> > > 
+> > > I tried your patch on my uefi test machine, but kexec load fails like below:
+> > > 
+> > > [root@localhost ~]# kexec -l /boot/vmlinuz-3.15.0-rc8+ --use-kexec2-syscall
+> > > Could not find a free area of memory of 0xa000 bytes ...
+> > 
+> > Hi Dave,
+> > 
+> > I think this message is coming from kexec-tools from old loading path. I
+> > think somehow new path did not even kick in. I tried above and I got
+> > -EBADF as I did not pass initrd. Can you run gdb on kexec and see if
+> > you are getting to syscall or run strace.
 > 
-> Actually, SPEED_UNKNOWN is also -1
-> So e1000e is not any exception.
+> Seems I can not reproduce the local hole fail issue but I'm sure it happens
+> before the new syscall callback.
+> 
+> This time I got -ENOEXEC. It's caused by CONFIG_EFI_MIXED=y. In case EFI_MIXED
+> 64bit kernel runs on 32bit efi firmware thus XLF_CAN_BE_LOADED_ABOVE_4G is not
+> set thus bzImage probe will fail with NOEXEC.
 
-And pity the person who is handling this by evaluating that unsigned
-value, we'll break them.
+Yep, current bzImage loader only supports loading 64bit image which can
+be loaded above 4G.
 
-We can't keep changing behavior for the SPEED_UNKOWN case back and
-forth.
+I am wondering how user space implementation is taking care of it. I guess
+we are falling back to 32bit implementation where we use 32bit entry and
+assume that bzImage has to be below 4G.
 
-A program that wants to work with all kernels now has to handle three
-different kinds of behavior if we apply this patch, that's not making
-things better, it's making things worse.
+We will have to do similar thing in kernel when 32bit loader comes in.
+Compile that in for 64bit kernel and let it handle the case of bzImage
+not being loadable above 4G.
 
-I'm not applying a patch that does this, sorry.
+Thanks
+Vivek
