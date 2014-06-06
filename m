@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752251AbaFFLQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 07:16:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50136 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752008AbaFFLQ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 07:16:27 -0400
-Message-ID: <1402053383.5859.8.camel@marge.simpson.net>
-Subject: Re: sched: how to pick runqueue when checking task hot?
-From: Mike Galbraith <mgalbraith@suse.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: zhdxzx@sina.com, linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, dhillf <dhillf@gmail.com>,
-        "hillf.zj" <hillf.zj@alibaba-inc.com>
-Date: Fri, 06 Jun 2014 13:16:23 +0200
-In-Reply-To: <20140606101508.GP3213@twins.programming.kicks-ass.net>
-References: <20140606065956.854A6718001@webmail.sinamail.sina.com.cn>
-	 <20140606101508.GP3213@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752603AbaFFLSw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 07:18:52 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:9463 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752521AbaFFLSv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 07:18:51 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 06 Jun 2014 04:10:42 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <gregkh@linuxfoundation.org>
+CC: <swarren@wwwdotorg.org>, <linux-serial@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Pradeep Goudagunta <pgoudagunta@nvidia.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH 2/2] serial: tegra: ack the rx dma desc after transfer terminated
+Date: Fri, 6 Jun 2014 16:48:09 +0530
+Message-ID: <1402053489-21262-2-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1402053489-21262-1-git-send-email-ldewangan@nvidia.com>
+References: <1402053489-21262-1-git-send-email-ldewangan@nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-06-06 at 12:15 +0200, Peter Zijlstra wrote:
+From: Pradeep Goudagunta <pgoudagunta@nvidia.com>
 
-> > --- a/kernel/sched/fair.c	Fri Jun  6 12:37:37 2014
-> > +++ b/kernel/sched/fair.c	Fri Jun  6 14:32:34 2014
-> > @@ -5051,7 +5051,7 @@ task_hot(struct task_struct *p, u64 now)
-> >  	/*
-> >  	 * Buddy candidates are cache hot:
-> >  	 */
-> > -	if (sched_feat(CACHE_HOT_BUDDY) && this_rq()->nr_running &&
-> > +	if (sched_feat(CACHE_HOT_BUDDY) && task_rq(p)->nr_running &&
-> >  			(&p->se == cfs_rq_of(&p->se)->next ||
-> >  			 &p->se == cfs_rq_of(&p->se)->last))
-> >  		return 1;
-> 
-> That does appear to make more sense indeed, seeing how buddies are pairs
-> of tasks, so protecting a lone task doesn't make sense.
-> 
-> 
-> Mike, how did you intend this code to work?
+The Rx dma descriptor allocated without the DMA_ACK flags so that
+once after tarnsfer done or terminated, client can ack the descriptor
+to free it for later use.
 
-IIRC, this_rq()->nr_running was to say if we're idle, we don't care that
-it's last/next, pull it.  Not sure I'm the one who did that, but could
-be, I didn't look.
+If the Rx DMA is terminated for some reason then rx-dma descriptor
+is not getting acked which causes the memory leak and list of usage
+desc to grow continuously.
 
--Mike
+Hence, acknowledge the rx-dma descriptor once transfer is terminated
+to avoid memory leak and desc list to grow.
+
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ drivers/tty/serial/serial-tegra.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/tty/serial/serial-tegra.c b/drivers/tty/serial/serial-tegra.c
+index 117d8d1..53d7c31 100644
+--- a/drivers/tty/serial/serial-tegra.c
++++ b/drivers/tty/serial/serial-tegra.c
+@@ -602,6 +602,7 @@ static void tegra_uart_handle_rx_dma(struct tegra_uart_port *tup,
+ 
+ 	dmaengine_terminate_all(tup->rx_dma_chan);
+ 	dmaengine_tx_status(tup->rx_dma_chan,  tup->rx_cookie, &state);
++	async_tx_ack(tup->rx_dma_desc);
+ 	count = tup->rx_bytes_requested - state.residue;
+ 
+ 	/* If we are here, DMA is stopped */
+-- 
+1.8.1.5
 
