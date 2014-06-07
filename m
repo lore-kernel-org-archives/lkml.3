@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752582AbaFFXtk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 19:49:40 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:39427 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752277AbaFFXti (ORCPT
+	id S1752451AbaFGAGt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 20:06:49 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:47034 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752274AbaFGAGs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 19:49:38 -0400
+	Fri, 6 Jun 2014 20:06:48 -0400
 MIME-Version: 1.0
-In-Reply-To: <594cf0e6982c471eb314fe4a00647bfaf59a3456.1402029512.git.viresh.kumar@linaro.org>
-References: <594cf0e6982c471eb314fe4a00647bfaf59a3456.1402029512.git.viresh.kumar@linaro.org>
-Date: Fri, 6 Jun 2014 16:49:37 -0700
-X-Google-Sender-Auth: hDgeJQ8YWdnOgeKg7-bB41eUcKI
-Message-ID: <CAD=FV=Wq-bmN+7Kz7OjLHfQ+b6+ooSwOSbGmkuNqW=TU317TFg@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: tegra: update comment for clarity
-From: Doug Anderson <dianders@chromium.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        Stephen Warren <swarren@nvidia.com>
+From: Nikolay Amiantov <nikoamia@gmail.com>
+Date: Sat, 7 Jun 2014 04:06:27 +0400
+Message-ID: <CA+waHKUfu0Mxy_J9qWwayxZVDBA_RDYrpsL100Mr1sUBQRchVw@mail.gmail.com>
+Subject: What can change in ways Linux handles memory when all memory >4G is
+ disabled? (x86)
+To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Viresh,
+Hello all,
 
-On Thu, Jun 5, 2014 at 9:38 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> Tegra's driver got updated a bit (00917dd cpufreq: Tegra: implement intermediate
-> frequency callbacks) and implements new 'intermediate freq' infrastructure of
-> core. Above commit updated comments about when to call
-> clk_prepare_enable(pll_x_clk) and Doug wasn't satisfied with those comments and
-> said this:
->
->> The "Though when target-freq is intermediate freq, we don't need to
->> take this reference." makes me think that this function is actually
->> called when target-freq is intermediate freq.  I don't think it is,
->> right?
->
-> For better clarity just make that comment more explicit about when we call
-> tegra_target_intermediate(). Wasn't sure if we actually need a commit for this,
-> but anyway lets other decide if its worth enough :)
->
-> Reported-by: Doug Anderson <dianders@chromium.org>
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
->  drivers/cpufreq/tegra-cpufreq.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/cpufreq/tegra-cpufreq.c b/drivers/cpufreq/tegra-cpufreq.c
-> index a5fbc0a..48bc89b 100644
-> --- a/drivers/cpufreq/tegra-cpufreq.c
-> +++ b/drivers/cpufreq/tegra-cpufreq.c
-> @@ -73,7 +73,7 @@ static int tegra_target_intermediate(struct cpufreq_policy *policy,
->          * off when we move the cpu off of it as enabling it again while we
->          * switch to it from tegra_target() would take additional time. Though
->          * when target-freq is intermediate freq, we don't need to take this
-> -        * reference.
-> +        * reference and so this routine isn't called at all.
+I'm trying to resolve a cryptic problem with Lenovo T440p (and with
+Dell XPS 15z, as it appears) and nvidia in my spare time. You can read
+more at [1]. Basically: when the user disables and then re-enables
+nvidia card (via ACPI, bbswitch or nouveau's dynpm) on new BIOS
+versions, something becomes really wrong. User sees fs, usb devices
+and network controllers faults of all kinds, system renders unusable
+and user can observe filesystem corruption after reboot. Nvidia
+drivers (or nouveau, or i915) can not even be loaded -- all that is
+needed to trigger a bug is to call several ACPI methods to disable and
+re-enable the card (e.g., via acpi-call module).
 
-I'm OK either way, so up to others.
+I've attached a debugger to Windows kernel to catch ACPI calls for
+disabling and re-enabling NVIDIA card -- they don't really differ with
+what bbswitch and others use. Furthermore, the difference between ACPI
+DSDT tables in 1.14 (last good) and 1.16 (first broken) BIOSes are
+minimal, and loading table from 1.14 into system running 1.16 does not
+help. But -- all those devices are using memory I/O, so my current
+theory is that memory is somehow corrupted. There are also some
+changes in lspci output for nvidia [2].
 
-Reviewed-by: Doug Anderson <dianders@chromium.org>
+I've played a bit with this theory in mind and found a very
+interesting thing -- when I reserve all memory upper than 4G with
+"memmap" kernel option ("memmap=99G$0x100000000"), everything works!
+Also, I've written a small utility that fills memory with zeros using
+/dev/mem and then checks it. I've checked reserved memory with it, and
+it appears that no memory in that region is corrupted at all, which is
+even more strange. I suspect that somehow when nvidia is enabled
+I/O-mapped memory regions are corrupted, and only when upper memory is
+not enabled. Also, memory map does not differ apart from missing last
+big chunk of memory with and without "memmap", and with Windows, too.
+If I enable even small chunk of "upper" memory (e.g.,
+0x270000000-0x280000000), there are usual crashes.
+
+Long story short: I'm interested how memory management can differ when
+this "upper" memory regions are enabled?
+
+P.S.: This is my first time posting to LKML, if I've done something
+wrong, please tell!
+
+[1]: https://github.com/Bumblebee-Project/bbswitch/issues/78
+[2]: http://bpaste.net/show/350758/
+
+--
+Nikolay Amiantov.
