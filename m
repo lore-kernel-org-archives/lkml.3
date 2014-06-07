@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310AbaFGBah (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:30:37 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36122 "EHLO
+	id S1753296AbaFGBag (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:30:36 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36127 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752673AbaFGBXj (ORCPT
+	by vger.kernel.org with ESMTP id S1752669AbaFGBXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 21:23:39 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Stuart Hayes" <stuart.w.hayes@gmail.com>,
-        "Thomas Gleixner" <tglx@linutronix.de>
+CC: akpm@linux-foundation.org, "Thomas Gleixner" <tglx@linutronix.de>,
+        "Deborah Townsend" <dstownse@us.ibm.com>,
+        "Jiri Bohac" <jbohac@suse.cz>
 Date: Sat, 07 Jun 2014 02:26:29 +0100
-Message-ID: <lsq.1402104389.469315064@decadent.org.uk>
+Message-ID: <lsq.1402104389.514324212@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 39/92] hrtimer: Prevent all reprogramming if hang detected
+Subject: [PATCH 3.2 41/92] timer: Prevent overflow in apply_slack
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,75 +32,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stuart Hayes <stuart.w.hayes@gmail.com>
+From: Jiri Bohac <jbohac@suse.cz>
 
-commit 6c6c0d5a1c949d2e084706f9e5fb1fccc175b265 upstream.
+commit 98a01e779f3c66b0b11cd7e64d531c0e41c95762 upstream.
 
-If the last hrtimer interrupt detected a hang it sets hang_detected=1
-and programs the clock event device with a delay to let the system
-make progress.
+On architectures with sizeof(int) < sizeof (long), the
+computation of mask inside apply_slack() can be undefined if the
+computed bit is > 32.
 
-If hang_detected == 1, we prevent reprogramming of the clock event
-device in hrtimer_reprogram() but not in hrtimer_force_reprogram().
+E.g. with: expires = 0xffffe6f5 and slack = 25, we get:
 
-This can lead to the following situation:
+expires_limit = 0x20000000e
+bit = 33
+mask = (1 << 33) - 1  /* undefined */
 
-hrtimer_interrupt()
-   hang_detected = 1;
-   program ce device to Xms from now (hang delay)
+On x86, mask becomes 1 and and the slack is not applied properly.
+On s390, mask is -1, expires is set to 0 and the timer fires immediately.
 
-We have two timers pending:
-   T1 expires 50ms from now
-   T2 expires 5s from now
+Use 1UL << bit to solve that issue.
 
-Now T1 gets canceled, which causes hrtimer_force_reprogram() to be
-invoked, which in turn programs the clock event device to T2 (5
-seconds from now).
-
-Any hrtimer_start after that will not reprogram the hardware due to
-hang_detected still being set. So we effectivly block all timers until
-the T2 event fires and cleans up the hang situation.
-
-Add a check for hang_detected to hrtimer_force_reprogram() which
-prevents the reprogramming of the hang delay in the hardware
-timer. The subsequent hrtimer_interrupt will resolve all outstanding
-issues.
-
-[ tglx: Rewrote subject and changelog and fixed up the comment in
-  	hrtimer_force_reprogram() ]
-
-Signed-off-by: Stuart Hayes <stuart.w.hayes@gmail.com>
-Link: http://lkml.kernel.org/r/53602DC6.2060101@gmail.com
+Suggested-by: Deborah Townsend <dstownse@us.ibm.com>
+Signed-off-by: Jiri Bohac <jbohac@suse.cz>
+Link: http://lkml.kernel.org/r/20140418152310.GA13654@midget.suse.cz
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/hrtimer.c | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ kernel/timer.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -567,6 +567,23 @@ hrtimer_force_reprogram(struct hrtimer_c
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -769,7 +769,7 @@ unsigned long apply_slack(struct timer_l
  
- 	cpu_base->expires_next.tv64 = expires_next.tv64;
+ 	bit = find_last_bit(&mask, BITS_PER_LONG);
  
-+	/*
-+	 * If a hang was detected in the last timer interrupt then we
-+	 * leave the hang delay active in the hardware. We want the
-+	 * system to make progress. That also prevents the following
-+	 * scenario:
-+	 * T1 expires 50ms from now
-+	 * T2 expires 5s from now
-+	 *
-+	 * T1 is removed, so this code is called and would reprogram
-+	 * the hardware to 5s from now. Any hrtimer_start after that
-+	 * will not reprogram the hardware due to hang_detected being
-+	 * set. So we'd effectivly block all timers until the T2 event
-+	 * fires.
-+	 */
-+	if (cpu_base->hang_detected)
-+		return;
-+
- 	if (cpu_base->expires_next.tv64 != KTIME_MAX)
- 		tick_program_event(cpu_base->expires_next, 1);
- }
+-	mask = (1 << bit) - 1;
++	mask = (1UL << bit) - 1;
+ 
+ 	expires_limit = expires_limit & ~(mask);
+ 
 
