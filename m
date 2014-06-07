@@ -1,145 +1,300 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753236AbaFGSY7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 14:24:59 -0400
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:39589 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752983AbaFGSY5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 14:24:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140607123518.88983301D2@webmail.sinamail.sina.com.cn>
-References: <20140607123518.88983301D2@webmail.sinamail.sina.com.cn>
-Date: Sat, 7 Jun 2014 11:24:56 -0700
-X-Google-Sender-Auth: A0G2AP9FZi_FwWMJA0OLE9D8jbY
-Message-ID: <CA+55aFzRWZNt2AqdVzQpCChB1UJh12oBAof8UiKsvNGSMUe9BA@mail.gmail.com>
-Subject: Re: Interactivity regression since v3.11 in mm/vmscan.c
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: zhdxzx@sina.com
-Cc: Felipe Contreras <felipe.contreras@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, dhillf <dhillf@gmail.com>,
-        "hillf.zj" <hillf.zj@alibaba-inc.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1753066AbaFGSkM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 14:40:12 -0400
+Received: from [60.169.0.28] ([60.169.0.28]:3096 "HELO 137.com.cn"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with SMTP
+	id S1751087AbaFGSkK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jun 2014 14:40:10 -0400
+X-Greylist: delayed 316 seconds by postgrey-1.27 at vger.kernel.org; Sat, 07 Jun 2014 14:40:10 EDT
+Date: Sun, 8 Jun 2014 02:34:25 +0800
+X-Mailer: Microsoft Outlook Express 6.00.2900.5512
+Message-ID: <008105407513$27237733$38867054@kjniqdemh>
+From: =?gb2312?B?vfC+rcDt?= <zhangyang@dlpipe.cn>
+To: <czsyj@gdcic.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So we very recently (as in this merge window) merged a change to this
-very area, but that change was very specific to one case.
 
-Hillf's patch (below) apparently fixes the problem Felipe sees, and I
-have to say, his problem sounds a *lot* like the kind of horrible
-performance I've seen with writing to USB devices. I blamed
-non-working per-bdi throttling, but this implies it is more generic
-than that. The fact that the very same code also made nfsd very
-unhappy makes me think that the code is just fundamentally broken.
 
-And quite frankly, the whole logic is a bit questionable. That
+	
+	           《成功的产品经理——产品经理的野蛮成长》	【主讲：Charles】
 
-  "nr_unqueued_dirty == nr_taken"
+	
+	
+	  报名详情 >	
 
-test is claimed to be "implies that flushers are not keeping up", but
-that's not actually true at all. It just means that
+	【培训时间】2014年6月23-24日上海、6月26-27日深圳、6月30-7月1日北京	
+	
+	【培训对象】企业CEO/总经理、研发总经理/副总、公司总工/技术总监、公司人力资源总监、产品线总	
 
- (a) all the pages we isolated are dirty
- (b) .. and none of them are under writeback
+	           监、产品经理/项目经理、PMO（项目管理办公室）成员、市场总监、技术支持总监等。	
 
-and it's very possible that none of them are under writeback because
-nobody has even decided to start writeback on them yet, because nobody
-has even walked through the list yet, so they were all still marked as
-referenced. I guess you could say that "flushers are not keeping up",
-but *we're* one of the flushers, and it's not that we aren't keeping
-up, it's that we haven't even scanned things yet.
+	【授课方式】案例分享、实务分析、互动讨论、项目模拟、培训游戏	
 
-So what do we do when we haven't scanned the list enough to see any
-non-referenced pages? Do we scan it a bit more? No. We decide to
-congestion-wait.
+	【培训费用】4300元/2天/2人  ,单独一人收费2800元	
 
-That sounds completely and utterly stupid and broken. Does it make any
-sense at all? No it doesn't. It just seems to delay starting any
-writeback at all.
+	【承办单位】宇 杰 企 管	
 
-I suspect the code comes from "let's not spend too much time scanning
-the dirty lists when everything is dirty", and is trying to avoid CPU
-use. But what it seems to do is actually to avoid even starting
-writeback in the first place, and just "congestion-waiting" even when
-nothing is being written back (here "nothing" is not absolute - we're
-only looking at a part of the dirty pages, obviously, but we're
-looking at the *old* dirty pages, so it's a fairly important part of
-it).
+        【报名热线】深 圳：07 55-6 1282 360 上 海: 02 1-51 602 030 北 京：010-516 69 310
+  
+        【Q  Q在线】     5117 983 37
 
-So I really get the feeling that this code is broken, and that the
-patch to remove that "nr_unqueued_dirty == nr_taken" is correct.
+	  课程简介 >	
 
-In particular, doesn't that congestion wait - which is supposed to
-wait for kswapd - end up waiting even when the process in question
-*is* kswapd?
+	【课程背景】	
 
-So it's not just processes like nfsd that got throttled down (which no
-longer happens because of the recent commit 399ba0b95670), it seems
-like kswapd itself gets throttled down because of this test.
+	在为国内很多科技企业服务的过程中，发现企业中普遍存在如下问题：
+	
+	*产品开发闭门造车，只关注技术，不关注客户，研发从早忙到晚，产品开发的不少，但赚钱的产品	
 
-So at the *very* least I feel like the new current_may_throttle()
-needs to say that "kswapd must not be throttled", but I wonder if that
-whole thing just needs to go.
+	 屈指可数	
 
-And maybe that recent commit 399ba0b95670 is actually broken, and
-wanted to fix just this part too. Maybe it *should* wait for the
-"nr_immediate" case, which is the one that is currently aimed at
-*only* throttling down kswapd itself. Maybe we should remove the
-"current_is_kswapd()" test in the nr_immediate code instead, and make
-everybody throttle when they hit the actual _real_ congestion case of
-the whole zone being under writeback?
+	*产品开发出来才找客户、找卖点，销售人员报怨我们的产品从娘胎中出来就躺在担架上，产品没有	
 
-Comments? Mel, this code is mostly attributed to you, I'd like to hear
-what you think in particular.
+	 优势，也不知道竞争对手产品的弱点，但我们产品的弱点往往被对手抓住	
 
-                    Linus
+	*几乎没有产品路标的规划，有规划也主要是技术驱动，客户需求到不了规划人员手中，公司神经末	
 
-On Sat, Jun 7, 2014 at 5:35 AM,  <zhdxzx@sina.com> wrote:
->
-> The comments around the congestion_wait,
-> [1]
->          *
->          * Once a zone is flagged ZONE_WRITEBACK, kswapd will count the number
->          * of pages under pages flagged for immediate reclaim and stall if any
->          * are encountered in the nr_immediate check below.
->          */
->         if (nr_writeback && nr_writeback == nr_taken)
->                 zone_set_flag(zone, ZONE_WRITEBACK);
->
->
-> [2]
->                 /*
->                  * If dirty pages are scanned that are not queued for IO, it
->                  * implies that flushers are not keeping up. In this case, flag
->                  * the zone ZONE_TAIL_LRU_DIRTY and kswapd will start writing
->                  * pages from reclaim context. It will forcibly stall in the
->                  * next check.
->                  */
->                 if (nr_unqueued_dirty == nr_taken)
->                         zone_set_flag(zone, ZONE_TAIL_LRU_DIRTY);
->
-> The "force stall" in [2] conflicts with "start writing pages" in [2], and
-> conflicts with "nr_immediate check below" in [1] as well, IIUC.
->
-> Would you please try again based only on comment [1](based on v3.15-rc8)?
-> thanks
-> Hillf
->
-> --- a/mm/vmscan.c       Sat Jun  7 18:38:08 2014
-> +++ b/mm/vmscan.c       Sat Jun  7 20:08:36 2014
-> @@ -1566,7 +1566,7 @@ shrink_inactive_list(unsigned long nr_to
->                  * implies that pages are cycling through the LRU faster than
->                  * they are written so also forcibly stall.
->                  */
-> -               if (nr_unqueued_dirty == nr_taken || nr_immediate)
-> +               if (nr_immediate)
->                         congestion_wait(BLK_RW_ASYNC, HZ/10);
->         }
->
-> --
+	 梢与大脑失去联系	
+
+	*了解市场的不懂技术，懂技术的不了解市场，不知道需求应该谁负责，缺少完备的需求收集、汇总	
+
+	 分析机制	
+
+	*把销售驱动误以为是市场驱动，销售人员反馈的需求往往是短期行为、而且很个性化，研发总是被……
+	
+	 这些短平快的个性化需求驱动的团团转，还被老板骂“你们这帮笨蛋，怎么搞不出几个拳头产品出	
+
+	 来？”……	
+
+	当一个企业从单一产品线向多产品线跨越的时候，必须突破的一个瓶颈就是公司产品经理的培养，	
+
+	因为产品经理是公司价值链中最重要的一个环节，是直接面向客户、带领团队创造价值的领军人物，
+	
+	因此产品经理个人及其所率领的团队的能力往往决定了该产品在市场上的竞争力。然而，很多发展中
+	
+	的企业在构建产品管理体系和培养产品经理的过程中却面临很多困惑，比如：	
+
+	1.产品经理该如何定位？其职责是什么？	
+
+	2.产品经理需要具备什么样的能力？如何培养？	
+
+	3.如何与客户有效沟通，从而发掘客户的隐性需求？	
+
+	4.如何从大量的需求信息中提炼出核心的客户需求？	
+
+	5.如何策划有竞争力的差异化产品？	
+
+	6.如何确保策划的核心需求在开发过程中被充分实现？	
+
+	7.如何把新产品成功的推向市场？	
+
+	8.如何避免产品经理沦落成“问题经理”？	
+
+	9.如何实现产品经理从“单挑”模式向“打群架”模式的转变？	
+
+	10.如何构建适合产品经理成长的优良土壤？	
+
+	……	
+	基于以上典型问题，我们结合大量的培训和咨询案例，并不断总结，从而推出该课程，案例、模板、
+	
+	经验、教训、学员分享等贯穿全课程。	
+		
+	【培训收益】
+	
+	1.了解产品经理产生的背景、时机	
+	2.了解不同时期、不同行业的产品经理定位、职责、素质、能力要求	
+	3.理解产品经理、项目经理、市场经理的关键区别以及相应的组织运作	
+	4.理解产品经理的核心能力是如何折腾出来的	
+	5.掌握如何才能持续策划出有竞争力的产品的方法	
+	6.掌握产品经理如何有效的监管产品开发过程而不需要过度陷入的方法	
+	7.掌握新产品上市管理的方法，确保营销团队顺利接手新产品的销售	
+	8.掌握产品生命周期管理的基本方法和决策机制，把脉产品的退市时机	
+	9.了解业界如何培养产品经理的方法	
+	10.分享讲师５0多个咨询项目的产品管理和产品经理队伍建设的案例资料（流程、制度、模板、样例……）	
+		
+	  导师简介 >【Charles】	
+
+	研发管理咨询资深顾问	
+	国家发改委创新管理培训中心特邀讲师	
+	清华大学国际工程项目管理研究院特邀讲师	
+		
+	【专业背景】	
+
+	    16年的高科技企业从业背景，具有丰富的产品策划、产品研发、产品中试、产品服务等领域的实	
+	践与管理经验。从事过产品设计与开发、NPI、项目经理、产品经理、研发管理部经理、企业管理顾问	
+	等职务；	
+	    曾在国内某著名通信设备公司工作过７年（97～04），期间与国际顶尖咨询顾问一起工作，作为	
+	核心成员全程参与推动该公司研发管理体系的变革工作，并作为产品经理主导了某产品线多个大型项	
+	目的产品设计、开发、中试、转产与上市工作。	
+		
+	【研发管理咨询经验】	
+
+	7年的研发管理咨询经验，主导了20多个研发管理咨询项目，项目范围涉及到市场需求、产品规划、产	
+	品开发、产品决策、技术评审、技术开发、研发组织、研发绩效、技术任职资格、项目管理、变更管	
+	理、知识管理、研发IT规划等领域。典型客户如下：	
+	1)科达通信	
+	2)OPPO	
+	3)TCL家网事业部	
+	4)苏州金龙	
+	5)宇通重工	
+	6)京信集团	
+	7)福建敏讯	
+	8)中电集团某军品研究所	
+		
+	【研发管理培训经验】	
+
+	曾为中国空间技术研究院、南瑞科技、TCL集团、长虹集团、OPPO、同方威视、宝钢集团、中国移动、	
+	大唐电信、上海电信、陕鼓集团、科达通信、中电集团、威创科技、和记奥普泰、国人通信、京信科	
+	技、天碁科技、格林威尔、兴大豪科技、星星集团、山特电子、富港电子、宇龙通信、聚光科技、绿	
+	盟科技、天津内燃机研究所、中集集团、高斯贝尔、星网锐捷、特变电工、思源电器、美的集团、海	
+	尔集团、海信集团、普天集团、福建敏讯、国光电子、苏州金龙、宇通重工、雷沃重汽、上汽五凌、	
+	东风汽车、威科姆、同洲电子、科立讯、新北洋、光迅科技、沈阳机床、瑞斯康达、佳讯飞鸿、浪潮	
+	集团、威胜电子、京城控股、联想集团、迈瑞医疗、华大电子、上海华虹、联芯科技、旋极科技、畅	
+	通科技、长城软件、九院、天地奔牛、阳天电子、清华机械、方正集团、研祥智能、烟台万华、东方	
+	电子、东方通信、美菱、科大讯飞、万峰石材、万家乐、泛仕达、远光软件、优特等近500家企业提供	
+	了专业的研发管理培训。	
+		
+	课程大纲	
+
+	一、案例分析：成长的烦恼	
+	1.成长过程中存在的问题	
+	2.产品经理成长的三个步骤	
+	3.实现角色转变过程中的痛苦蜕变	
+	4.成功的产品经理给公司带来的收益	
+		
+	二、产品经理的定位、职责与能力要求	
+	1.产品经理的定位选择（与公司发展时期、规模、行业、产品特点相关）	
+	1）产品全生命周期的管理（产品/产品线经理，产品/产品线总监）	
+	2）产品策划（产品策划经理）	
+	3）产品开发（产品开发经理）	
+	4）产品推广（产品行销/推广经理与产品维护经理）	
+	5）研讨：分享学员公司产品经理的定位	
+	2.产品经理的能力要求	
+	1）应该具备的知识和技能	
+	2）产品经理的任职资格标准	
+	3）产品经理的资格认证	
+	4）产品经理的培养途径和职业晋升通道	
+	5）模板分享：产品经理素质模型及任职资格标准	
+	3.产品全生命周期管理业务框架	
+	1）产品战略管理	
+	2）产品规划管理	
+	3）市场需求管理	
+	4）产品开发管理	
+	5）技术开发管理	
+	6）研发项目管理	
+	7）产品运营管理	
+	8）产品运作支撑体系（流程、组织、IT）	
+	9）模板分享：产品经理工作手册	
+		
+	三、产品经理的核心业务之一：产品规划	
+	1.市场细分	
+	1)为什么要细分市场？	
+	2)市场细分的八种方法	
+	3)细分市场分类（按产品/领域、区域、行业）	
+	4)各细分市场容量、市场份额、销售利润率分析	
+	5)各细分市场主流产品的SWOT分析	
+	6)主流产品竞争对手分析（$APPEALS）	
+	7)细分市场策略分析	
+	8)模板分享：细分市场描述模板	
+	2.目标市场的确定	
+	1)判断市场潜力	
+	2)产品竞争力分析	
+	3)产品定位与细分市场的匹配（SPAN）	
+	4)客户价值分析	
+	5)产品组合分析	
+	6)企业扩张策略（产品线与市场扩张）	
+	7)评估选定的目标市场有多少胜算的把握？	
+	3.市场需求	
+	1)市场需求、产品需求、设计需求的关系	
+	2)市场需求的收集	
+	a.需求收集渠道：外部渠道与内部渠道	
+	b.需求收集需要注意的问题	
+	c.需求收集的十四种方法（原型法、客户访谈、现场观察、客户决策委员会、用户大会、客户简报、	
+	 高层拜访、标杆学习、Beta测试、产品试用、现场支持、支持热线、行业会议、客户满意度调查）	
+	d.模板分享：原始需求模板	
+	3)市场需求分析	
+	a.市场需求的$APPEALS模型	
+	b.确定产品的竞争要素、寻找竞争对手	
+	c.客户需求分析、排序，寻找客户的兴奋点（BSA）	
+	d.与竞争对手的产品进行比较，找出优势、劣势	
+	e.基于竞争分析的需求调整、差异化策略	
+	f.市场需求规格书的形成	
+	g.模板分享：市场需求管理流程与模板	
+	4.产品路标规划	
+	1)路标规划的输出（平台开发计划、产品开发计划、技术研究计划、资源缺口计划）	
+	2)产品路标规划过程	
+	a.技术、平台、产品线、产品、解决方案的关系	
+	b.产品平台的形成过程	
+	c.产品版本管理V/R/M（大版本、小版本、客户定制）	
+	d.产品路标规划的形成（实际案例同步演练）	
+	e.制定产品开发任务书	
+	f.模板分享：产品路标规划流程	
+	g.模板分享：产品路标规划报告模板	
+	h.模板分享：产品开发任务书模板	
+	3)产品路标规划决策与立项评审	
+	a.决策机制（决策团队、运作模式、支撑机制）	
+	b.决策标准（评审关键要素）	
+	c.分享：业界产品路标规划的组织运作与支撑体系	
+		
+	四、产品经理的核心业务之二：产品开发管理	
+	1.产品开发团队的构成	
+	1）贯穿全流程的产品开发团队的构成	
+	2）产品开发团队成员的角色构成及相应职责	
+	3）产品经理如何保证产品开发团队高效运作	
+	2.产品开发的结构化流程	
+	1）结构化的产品开发流程的特点	
+	2）产品经理在结构化产品开发流程中如何推动工作	
+	3）产品经理在结构化流程的每个阶段的工作重点	
+	4）实例讲解：某案例公司产品经理在结构化流程中的重点活动	
+	3.产品开发的决策评审机制	
+	1）产品经理在公司的产品决策机制中扮演什么角色	
+	2）产品经理如何参与决策	
+	3）实例讲解：某案例公司产品经理的决策评审报告	
+	4.产品开发的过程的项目管理	
+	1）产品经理在如何监控整个项目的研发进展	
+	2）产品经理如何协调与项目经理之间的关系	
+	3）产品开发过程中的突发事件如何处理	
+	4）实例讲解：某案例公司产品经理在项目管理中的控制点	
+	5.演练与问题讨论	
+		
+	五、产品经理的核心业务之三：产品上市	
+	1.产品经理如何整体把控产品的上市节奏	
+	2.产品上市的策略：先“营”后“销”	
+	1）如何理解营的工作	
+	2）如何理解销的工作	
+	3）营和销之间的关系	
+	3.新产品上市流程	
+	1）新产品上市流程中各环节的主要活动	
+	2）发布策略	
+	3）发布准备	
+	4）正式发布	
+	5）发布计划的执行与监控	
+	4.新产品上市的支撑体系	
+	1）产品上市“一纸禅”	
+	2）产品的命名管理	
+	3）产品的外部测试（投放市场测试的几个阶段）	
+	4）产品的Beta测试、用户早期试用和正式发布之间的关系	
+	5）产品上市的效果评估	
+	6）对产品上市中容易出现的问题产品经理如何应对	
+	7）新产品上市如何处理与老产品和其他关联产品的关系	
+	8）产品上市的“151”策略	
+	9）模板分享：新产品上市计划模板	
+		
+	六、产品经理的培养	
+	1.常用的产品经理培养方法	
+	1）岗位轮换、自我批判、导师制、参加学习	
+	2.产品经理培养方法――资源池	
+	3.资源池的概念	
+	4.建立资源池的目的与原则	
+	5.资源池的运作流程	
+	1）产品经理的筛选	
+	2）产品经理的面试	
+	3）产品经理候选人的培养	
+	4）候选人的资格认定	
+	5）资源池的运作机构及职责	
+	6.实例讲解：产品经理资源池的建设过程和运作机制	
+		
+
