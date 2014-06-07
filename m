@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753385AbaFGBcj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:32:39 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36120 "EHLO
+	id S1753369AbaFGBci (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:32:38 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36125 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752666AbaFGBXj (ORCPT
+	by vger.kernel.org with ESMTP id S1752667AbaFGBXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 21:23:39 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Leon Ma" <xindong.ma@intel.com>,
-        "Thomas Gleixner" <tglx@linutronix.de>
+CC: akpm@linux-foundation.org, "Kim Phillips" <kim.phillips@freescale.com>,
+        "Horia Geanta" <horia.geanta@freescale.com>,
+        "Herbert Xu" <herbert@gondor.apana.org.au>
 Date: Sat, 07 Jun 2014 02:26:29 +0100
-Message-ID: <lsq.1402104389.108159880@decadent.org.uk>
+Message-ID: <lsq.1402104389.620662234@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 40/92] hrtimer: Prevent remote enqueue of leftmost timers
+Subject: [PATCH 3.2 33/92] crypto: caam - add allocation failure handling
+ in SPRINTFCAT macro
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,53 +33,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Leon Ma <xindong.ma@intel.com>
+From: Horia Geanta <horia.geanta@freescale.com>
 
-commit 012a45e3f4af68e86d85cce060c6c2fed56498b2 upstream.
+commit 27c5fb7a84242b66bf1e0b2fe6bf40d19bcc5c04 upstream.
 
-If a cpu is idle and starts an hrtimer which is not pinned on that
-same cpu, the nohz code might target the timer to a different cpu.
+GFP_ATOMIC memory allocation could fail.
+In this case, avoid NULL pointer dereference and notify user.
 
-In the case that we switch the cpu base of the timer we already have a
-sanity check in place, which determines whether the timer is earlier
-than the current leftmost timer on the target cpu. In that case we
-enqueue the timer on the current cpu because we cannot reprogram the
-clock event device on the target.
-
-If the timers base is already the target CPU we do not have this
-sanity check in place so we enqueue the timer as the leftmost timer in
-the target cpus rb tree, but we cannot reprogram the clock event
-device on the target cpu. So the timer expires late and subsequently
-prevents the reprogramming of the target cpu clock event device until
-the previously programmed event fires or a timer with an earlier
-expiry time gets enqueued on the target cpu itself.
-
-Add the same target check as we have for the switch base case and
-start the timer on the current cpu if it would become the leftmost
-timer on the target.
-
-[ tglx: Rewrote subject and changelog ]
-
-Signed-off-by: Leon Ma <xindong.ma@intel.com>
-Link: http://lkml.kernel.org/r/1398847391-5994-1-git-send-email-xindong.ma@intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Kim Phillips <kim.phillips@freescale.com>
+Signed-off-by: Horia Geanta <horia.geanta@freescale.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/hrtimer.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/crypto/caam/error.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -232,6 +232,11 @@ again:
- 			goto again;
- 		}
- 		timer->base = new_base;
-+	} else {
-+		if (cpu != this_cpu && hrtimer_check_target(timer, new_base)) {
-+			cpu = this_cpu;
-+			goto again;
-+		}
- 	}
- 	return new_base;
+--- a/drivers/crypto/caam/error.c
++++ b/drivers/crypto/caam/error.c
+@@ -16,9 +16,13 @@
+ 	char *tmp;						\
+ 								\
+ 	tmp = kmalloc(sizeof(format) + max_alloc, GFP_ATOMIC);	\
+-	sprintf(tmp, format, param);				\
+-	strcat(str, tmp);					\
+-	kfree(tmp);						\
++	if (likely(tmp)) {					\
++		sprintf(tmp, format, param);			\
++		strcat(str, tmp);				\
++		kfree(tmp);					\
++	} else {						\
++		strcat(str, "kmalloc failure in SPRINTFCAT");	\
++	}							\
  }
+ 
+ static void report_jump_idx(u32 status, char *outstr)
 
