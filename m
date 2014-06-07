@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752780AbaFGBXp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:23:45 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35946 "EHLO
+	id S1752760AbaFGBXn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:23:43 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35932 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752368AbaFGBXg (ORCPT
+	by vger.kernel.org with ESMTP id S1752299AbaFGBXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 21:23:36 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,15 +13,16 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "YOSHIFUJI Hideaki" <yoshfuji@linux-ipv6.org>,
-        "Francois WELLENREITER" <f.wellenreiter@gmail.com>,
-        "Eric Dumazet" <edumazet@google.com>,
+CC: akpm@linux-foundation.org, "Mathias Krause" <minipli@googlemail.com>,
+        "Daniel Borkmann" <dborkman@redhat.com>,
+        "Pablo Neira Ayuso" <pablo@netfilter.org>,
         "David S. Miller" <davem@davemloft.net>,
-        "Hannes Frederic Sowa" <hannes@stressinduktion.org>
+        "Patrick McHardy" <kaber@trash.net>
 Date: Sat, 07 Jun 2014 02:26:28 +0100
-Message-ID: <lsq.1402104388.744707529@decadent.org.uk>
+Message-ID: <lsq.1402104388.330778184@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 10/92] ipv6: Limit mtu to 65575 bytes
+Subject: [PATCH 3.2 12/92] filter: prevent nla extensions to peek beyond
+ the end  of the message
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,74 +35,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Mathias Krause <minipli@googlemail.com>
 
-[ Upstream commit 30f78d8ebf7f514801e71b88a10c948275168518 ]
+[ Upstream commit 05ab8f2647e4221cbdb3856dd7d32bd5407316b3 ]
 
-Francois reported that setting big mtu on loopback device could prevent
-tcp sessions making progress.
+The BPF_S_ANC_NLATTR and BPF_S_ANC_NLATTR_NEST extensions fail to check
+for a minimal message length before testing the supplied offset to be
+within the bounds of the message. This allows the subtraction of the nla
+header to underflow and therefore -- as the data type is unsigned --
+allowing far to big offset and length values for the search of the
+netlink attribute.
 
-We do not support (yet ?) IPv6 Jumbograms and cook corrupted packets.
+The remainder calculation for the BPF_S_ANC_NLATTR_NEST extension is
+also wrong. It has the minuend and subtrahend mixed up, therefore
+calculates a huge length value, allowing to overrun the end of the
+message while looking for the netlink attribute.
 
-We must limit the IPv6 MTU to (65535 + 40) bytes in theory.
+The following three BPF snippets will trigger the bugs when attached to
+a UNIX datagram socket and parsing a message with length 1, 2 or 3.
 
-Tested:
+ ,-[ PoC for missing size check in BPF_S_ANC_NLATTR ]--
+ | ld	#0x87654321
+ | ldx	#42
+ | ld	#nla
+ | ret	a
+ `---
 
-ifconfig lo mtu 70000
-netperf -H ::1
+ ,-[ PoC for the same bug in BPF_S_ANC_NLATTR_NEST ]--
+ | ld	#0x87654321
+ | ldx	#42
+ | ld	#nlan
+ | ret	a
+ `---
 
-Before patch : Throughput :   0.05 Mbits
+ ,-[ PoC for wrong remainder calculation in BPF_S_ANC_NLATTR_NEST ]--
+ | ; (needs a fake netlink header at offset 0)
+ | ld	#0
+ | ldx	#42
+ | ld	#nlan
+ | ret	a
+ `---
 
-After patch : Throughput : 35484 Mbits
+Fix the first issue by ensuring the message length fulfills the minimal
+size constrains of a nla header. Fix the second bug by getting the math
+for the remainder calculation right.
 
-Reported-by: Francois WELLENREITER <f.wellenreiter@gmail.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Acked-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Fixes: 4738c1db15 ("[SKFILTER]: Add SKF_ADF_NLATTR instruction")
+Fixes: d214c7537b ("filter: add SKF_AD_NLATTR_NEST to look for nested..")
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: Pablo Neira Ayuso <pablo@netfilter.org>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Acked-by: Daniel Borkmann <dborkman@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
+[bwh: Fix misplacement of the first check due to a bug in the patch program]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/net/ip6_route.h | 5 +++++
- net/ipv6/route.c        | 5 +++--
- 2 files changed, 8 insertions(+), 2 deletions(-)
+ net/core/filter.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/include/net/ip6_route.h b/include/net/ip6_route.h
-index 5e91b72..4913dac 100644
---- a/include/net/ip6_route.h
-+++ b/include/net/ip6_route.h
-@@ -34,6 +34,11 @@ struct route_info {
- #define RT6_LOOKUP_F_SRCPREF_PUBLIC	0x00000010
- #define RT6_LOOKUP_F_SRCPREF_COA	0x00000020
+--- a/net/core/filter.c
++++ b/net/core/filter.c
+@@ -320,6 +320,8 @@ load_b:
  
-+/* We do not (yet ?) support IPv6 jumbograms (RFC 2675)
-+ * Unlike IPv4, hdr->seg_len doesn't include the IPv6 header
-+ */
-+#define IP6_MAX_MTU (0xFFFF + sizeof(struct ipv6hdr))
-+
- /*
-  * rt6_srcprefs2flags() and rt6_flags2srcprefs() translate
-  * between IPV6_ADDR_PREFERENCES socket option values
-diff --git a/net/ipv6/route.c b/net/ipv6/route.c
-index 39e11f9..782f67a 100644
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -1056,7 +1056,7 @@ static unsigned int ip6_mtu(const struct dst_entry *dst)
- 	unsigned int mtu = dst_metric_raw(dst, RTAX_MTU);
+ 			if (skb_is_nonlinear(skb))
+ 				return 0;
++			if (skb->len < sizeof(struct nlattr))
++				return 0;
+ 			if (A > skb->len - sizeof(struct nlattr))
+ 				return 0;
  
- 	if (mtu)
--		return mtu;
-+		goto out;
+@@ -336,11 +338,13 @@ load_b:
  
- 	mtu = IPV6_MIN_MTU;
+ 			if (skb_is_nonlinear(skb))
+ 				return 0;
++			if (skb->len < sizeof(struct nlattr))
++				return 0;
+ 			if (A > skb->len - sizeof(struct nlattr))
+ 				return 0;
  
-@@ -1066,7 +1066,8 @@ static unsigned int ip6_mtu(const struct dst_entry *dst)
- 		mtu = idev->cnf.mtu6;
- 	rcu_read_unlock();
+ 			nla = (struct nlattr *)&skb->data[A];
+-			if (nla->nla_len > A - skb->len)
++			if (nla->nla_len > skb->len - A)
+ 				return 0;
  
--	return mtu;
-+out:
-+	return min_t(unsigned int, mtu, IP6_MAX_MTU);
- }
- 
- static struct dst_entry *icmp6_dst_gc_list;
+ 			nla = nla_find_nested(nla, X);
 
