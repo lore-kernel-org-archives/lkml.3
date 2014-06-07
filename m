@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752792AbaFGKmf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 06:42:35 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47503 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752749AbaFGKme (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 06:42:34 -0400
-Date: Sat, 7 Jun 2014 12:42:32 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Bin Wang <binw@marvell.com>,
-        Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Norbert Ciosek <norbertciosek@gmail.com>
-Subject: Re: [GIT PULL] char/misc driver patches for 3.16-rc1
-Message-ID: <20140607104232.GC23815@amd.pavel.ucw.cz>
-References: <20140603054434.GB2921@kroah.com>
- <CA+55aFyQ=iSMnLAywumYpGBOBiqxL2qO9u9OsTF=RFfYBnz10g@mail.gmail.com>
- <20140603170244.GA22867@kroah.com>
- <CA+55aFwMEigYZGeF4sFTSpmnvb8YQ3hOndjNrd9ObL2EdOptgQ@mail.gmail.com>
- <20140603182555.GA28541@kroah.com>
+	id S1752830AbaFGKod (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 06:44:33 -0400
+Received: from mail.kernel.org ([198.145.19.201]:55325 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752391AbaFGKoc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jun 2014 06:44:32 -0400
+Message-ID: <5392ED7E.7060201@kernel.org>
+Date: Sat, 07 Jun 2014 11:46:22 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140603182555.GA28541@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: devel@driverdev.osuosl.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org
+Subject: Re: [PATCH 2/5] staging/iio: IIO_SIMPLE_DUMMY_BUFFER neds IIO_BUFFER
+References: <1402001295-1980118-1-git-send-email-arnd@arndb.de> <1402001295-1980118-3-git-send-email-arnd@arndb.de>
+In-Reply-To: <1402001295-1980118-3-git-send-email-arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2014-06-03 11:25:55, Greg KH wrote:
-> On Tue, Jun 03, 2014 at 10:14:41AM -0700, Linus Torvalds wrote:
-> > On Tue, Jun 3, 2014 at 10:02 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > >
-> > > Hm, I got two different bug reports, and this same patch from two
-> > > different people insisting that we broke their drivers with the above
-> > > patches, and asked for this patch to be applied.
-> > 
-> > So I do think that we might be able to apply this patch, but I think
-> > it needs a *lot* more thought than was obviously spent on it so far.
-> > 
-> > For example, right now it's actively insecure. Do we care? Maybe we
-> > don't. The user-space uio side presumably is root-owned, and hopefully
-> > trusted.
-> 
-> It better be trusted, as userspace has access to the "raw" hardware
-> here, and is getting notified about every irq that happens to the
-> device.
+On 05/06/14 21:48, Arnd Bergmann wrote:
+> An obviously missing 'select' statement, without this we
+> get a link error
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Jonathan Cameron <jic23@kernel.org>
+> Cc: linux-iio@vger.kernel.org
+Applied to the fixes-togreg branch of iio.git
 
-At the very least, we have (CAP_SYS_ADMIN?) should be required before
-allowing root to compromise kernel, no?
+Thanks,
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Jonathan
+> ---
+>   drivers/staging/iio/Kconfig | 9 +++++----
+>   1 file changed, 5 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/staging/iio/Kconfig b/drivers/staging/iio/Kconfig
+> index b36feb0..fa38be0 100644
+> --- a/drivers/staging/iio/Kconfig
+> +++ b/drivers/staging/iio/Kconfig
+> @@ -36,10 +36,11 @@ config IIO_SIMPLE_DUMMY_EVENTS
+>            Add some dummy events to the simple dummy driver.
+>
+>   config IIO_SIMPLE_DUMMY_BUFFER
+> -       boolean "Buffered capture support"
+> -       select IIO_KFIFO_BUF
+> -       help
+> -         Add buffered data capture to the simple dummy driver.
+> +	boolean "Buffered capture support"
+> +	select IIO_BUFFER
+> +	select IIO_KFIFO_BUF
+> +	help
+> +	  Add buffered data capture to the simple dummy driver.
+>
+>   endif # IIO_SIMPLE_DUMMY
+>
+>
+
