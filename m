@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752867AbaFGBZE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:25:04 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36219 "EHLO
+	id S1752846AbaFGBZB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:25:01 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36181 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752715AbaFGBXk (ORCPT
+	by vger.kernel.org with ESMTP id S1752712AbaFGBXk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 21:23:40 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,11 +13,19 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "J. Bruce Fields" <bfields@redhat.com>
-Date: Sat, 07 Jun 2014 02:26:29 +0100
-Message-ID: <lsq.1402104389.744813879@decadent.org.uk>
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
+        "Eric Dumazet" <eric.dumazet@gmail.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        "Patrick McHardy" <kaber@trash.net>,
+        "Daniel Lezcano" <daniel.lezcano@free.fr>,
+        "Jason Wang" <jasowang@redhat.com>,
+        "Andrian Nord" <nightnord@gmail.com>,
+        "Vlad Yasevich" <vyasevic@redhat.com>
+Date: Sat, 07 Jun 2014 02:26:28 +0100
+Message-ID: <lsq.1402104388.775889089@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 82/92] nfsd4: remove lockowner when removing lock stateid
+Subject: [PATCH 3.2 18/92] Revert "macvlan : fix checksums error when we
+ are in  bridge mode"
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,46 +38,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Vlad Yasevich <vyasevic@redhat.com>
 
-commit a1b8ff4c97b4375d21b6d6c45d75877303f61b3b upstream.
+[ Upstream commit f114890cdf84d753f6b41cd0cc44ba51d16313da ]
 
-The nfsv4 state code has always assumed a one-to-one correspondance
-between lock stateid's and lockowners even if it appears not to in some
-places.
+This reverts commit 12a2856b604476c27d85a5f9a57ae1661fc46019.
+The commit above doesn't appear to be necessary any more as the
+checksums appear to be correctly computed/validated.
 
-We may actually change that, but for now when FREE_STATEID releases a
-lock stateid it also needs to release the parent lockowner.
+Additionally the above commit breaks kvm configurations where
+one VM is using a device that support checksum offload (virtio) and
+the other VM does not.
+In this case, packets leaving virtio device will have CHECKSUM_PARTIAL
+set.  The packets is forwarded to a macvtap that has offload features
+turned off.  Since we use CHECKSUM_UNNECESSARY, the host does does not
+update the checksum and thus a bad checksum is passed up to
+the guest.
 
-Symptoms were a subsequent LOCK crashing in find_lockowner_str when it
-calls same_lockowner_ino on a lockowner that unexpectedly has an empty
-so_stateids list.
-
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+CC: Daniel Lezcano <daniel.lezcano@free.fr>
+CC: Patrick McHardy <kaber@trash.net>
+CC: Andrian Nord <nightnord@gmail.com>
+CC: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Michael S. Tsirkin <mst@redhat.com>
+CC: Jason Wang <jasowang@redhat.com>
+Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Acked-by: Jason Wang <jasowang@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/nfsd/nfs4state.c | 11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ drivers/net/macvlan.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -3376,9 +3376,16 @@ out:
- static __be32
- nfsd4_free_lock_stateid(struct nfs4_ol_stateid *stp)
- {
--	if (check_for_locks(stp->st_file, lockowner(stp->st_stateowner)))
-+	struct nfs4_lockowner *lo = lockowner(stp->st_stateowner);
-+
-+	if (check_for_locks(stp->st_file, lo))
- 		return nfserr_locks_held;
--	release_lock_stateid(stp);
-+	/*
-+	 * Currently there's a 1-1 lock stateid<->lockowner
-+	 * correspondance, and we have to delete the lockowner when we
-+	 * delete the lock stateid:
-+	 */
-+	unhash_lockowner(lo);
- 	return nfs_ok;
- }
+diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
+index 301b39e..ab5786b 100644
+--- a/drivers/net/macvlan.c
++++ b/drivers/net/macvlan.c
+@@ -236,11 +236,9 @@ static int macvlan_queue_xmit(struct sk_buff *skb, struct net_device *dev)
+ 	const struct macvlan_dev *vlan = netdev_priv(dev);
+ 	const struct macvlan_port *port = vlan->port;
+ 	const struct macvlan_dev *dest;
+-	__u8 ip_summed = skb->ip_summed;
  
+ 	if (vlan->mode == MACVLAN_MODE_BRIDGE) {
+ 		const struct ethhdr *eth = (void *)skb->data;
+-		skb->ip_summed = CHECKSUM_UNNECESSARY;
+ 
+ 		/* send to other bridge ports directly */
+ 		if (is_multicast_ether_addr(eth->h_dest)) {
+@@ -258,7 +256,6 @@ static int macvlan_queue_xmit(struct sk_buff *skb, struct net_device *dev)
+ 	}
+ 
+ xmit_world:
+-	skb->ip_summed = ip_summed;
+ 	skb->dev = vlan->lowerdev;
+ 	return dev_queue_xmit(skb);
+ }
 
