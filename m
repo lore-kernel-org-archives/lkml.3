@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752870AbaFGN6N (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 09:58:13 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:53126 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752615AbaFGN6M (ORCPT
+	id S1752898AbaFGOBK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 10:01:10 -0400
+Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:30118 "EHLO
+	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752737AbaFGOBJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 09:58:12 -0400
-From: Anton Protopopov <a.s.protopopov@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Anton Protopopov <a.s.protopopov@gmail.com>
-Subject: [PATCH] Staging: comedi: check the return value of kobject_set_name
-Date: Sat,  7 Jun 2014 17:56:55 +0400
-Message-Id: <1402149415-20037-1-git-send-email-a.s.protopopov@gmail.com>
-X-Mailer: git-send-email 1.8.3.4
+	Sat, 7 Jun 2014 10:01:09 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmIOAMUZk1NXQ3Uj/2dsb2JhbABYgw2sGQgBAQUBmRCBBBd1hDEvI4EaN4hGAbQpmHwXhV2IK2QdhCsEj1qKR4soiB2DPjuBMA
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Xishi Qiu <qiuxishi@huawei.com>
+Subject: [PATCH 1/1] fs/proc/kcore.c: use PAGE_ALIGN instead of ALIGN(PAGE_SIZE)
+Date: Sat,  7 Jun 2014 16:00:43 +0200
+Message-Id: <1402149643-31534-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added a check of the return value of the kobject_set_name function.
+use mm.h definition
 
-Signed-off-by: Anton Protopopov <a.s.protopopov@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Xishi Qiu <qiuxishi@huawei.com>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- drivers/staging/comedi/comedi_fops.c | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ fs/proc/kcore.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
-index 9d99fb3..dfeefa2 100644
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -2597,7 +2597,14 @@ static int __init comedi_init(void)
- 		return -EIO;
- 	cdev_init(&comedi_cdev, &comedi_fops);
- 	comedi_cdev.owner = THIS_MODULE;
--	kobject_set_name(&comedi_cdev.kobj, "comedi");
-+
-+	retval = kobject_set_name(&comedi_cdev.kobj, "comedi");
-+	if (retval) {
-+		unregister_chrdev_region(MKDEV(COMEDI_MAJOR, 0),
-+					 COMEDI_NUM_MINORS);
-+		return retval;
-+	}
-+
- 	if (cdev_add(&comedi_cdev, MKDEV(COMEDI_MAJOR, 0), COMEDI_NUM_MINORS)) {
- 		unregister_chrdev_region(MKDEV(COMEDI_MAJOR, 0),
- 					 COMEDI_NUM_MINORS);
+diff --git a/fs/proc/kcore.c b/fs/proc/kcore.c
+index 39e6ef3..6df8d07 100644
+--- a/fs/proc/kcore.c
++++ b/fs/proc/kcore.c
+@@ -172,7 +172,7 @@ get_sparsemem_vmemmap_info(struct kcore_list *ent, struct list_head *head)
+ 
+ 	start = ((unsigned long)pfn_to_page(pfn)) & PAGE_MASK;
+ 	end = ((unsigned long)pfn_to_page(pfn + nr_pages)) - 1;
+-	end = ALIGN(end, PAGE_SIZE);
++	end = PAGE_ALIGN(end);
+ 	/* overlap check (because we have to align page */
+ 	list_for_each_entry(tmp, head, list) {
+ 		if (tmp->type != KCORE_VMEMMAP)
 -- 
-1.8.3.4
+1.9.1
 
