@@ -1,64 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830AbaFGKod (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 06:44:33 -0400
-Received: from mail.kernel.org ([198.145.19.201]:55325 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752391AbaFGKoc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 06:44:32 -0400
-Message-ID: <5392ED7E.7060201@kernel.org>
-Date: Sat, 07 Jun 2014 11:46:22 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: devel@driverdev.osuosl.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org
-Subject: Re: [PATCH 2/5] staging/iio: IIO_SIMPLE_DUMMY_BUFFER neds IIO_BUFFER
-References: <1402001295-1980118-1-git-send-email-arnd@arndb.de> <1402001295-1980118-3-git-send-email-arnd@arndb.de>
-In-Reply-To: <1402001295-1980118-3-git-send-email-arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752681AbaFGLCq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 07:02:46 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:55741 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752425AbaFGLCp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jun 2014 07:02:45 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Krzysztof Halasa <khc@pm.waw.pl>, netdev@vger.kernel.org
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] net: wan: wanxl.c:  Cleaning up declaration of a while loop
+Date: Sat,  7 Jun 2014 13:03:38 +0200
+Message-Id: <1402139018-17208-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/14 21:48, Arnd Bergmann wrote:
-> An obviously missing 'select' statement, without this we
-> get a link error
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Jonathan Cameron <jic23@kernel.org>
-> Cc: linux-iio@vger.kernel.org
-Applied to the fixes-togreg branch of iio.git
+Unusual declaration of a while loop.
+However, believe you also want to make sure that the pointer is not NULL
 
-Thanks,
+This was partly found using a static code analysis program called cppcheck.
 
-Jonathan
-> ---
->   drivers/staging/iio/Kconfig | 9 +++++----
->   1 file changed, 5 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/staging/iio/Kconfig b/drivers/staging/iio/Kconfig
-> index b36feb0..fa38be0 100644
-> --- a/drivers/staging/iio/Kconfig
-> +++ b/drivers/staging/iio/Kconfig
-> @@ -36,10 +36,11 @@ config IIO_SIMPLE_DUMMY_EVENTS
->            Add some dummy events to the simple dummy driver.
->
->   config IIO_SIMPLE_DUMMY_BUFFER
-> -       boolean "Buffered capture support"
-> -       select IIO_KFIFO_BUF
-> -       help
-> -         Add buffered data capture to the simple dummy driver.
-> +	boolean "Buffered capture support"
-> +	select IIO_BUFFER
-> +	select IIO_KFIFO_BUF
-> +	help
-> +	  Add buffered data capture to the simple dummy driver.
->
->   endif # IIO_SIMPLE_DUMMY
->
->
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ drivers/net/wan/wanxl.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/wan/wanxl.c b/drivers/net/wan/wanxl.c
+index f76aa90..bde0943 100644
+--- a/drivers/net/wan/wanxl.c
++++ b/drivers/net/wan/wanxl.c
+@@ -196,7 +196,7 @@ static inline void wanxl_tx_intr(port_t *port)
+ static inline void wanxl_rx_intr(card_t *card)
+ {
+ 	desc_t *desc;
+-	while (desc = &card->status->rx_descs[card->rx_in],
++	while (desc = &card->status->rx_descs[card->rx_in] &&
+ 	       desc->stat != PACKET_EMPTY) {
+ 		if ((desc->stat & PACKET_PORT_MASK) > card->n_ports)
+ 			pr_crit("%s: received packet for nonexistent port\n",
+-- 
+1.7.10.4
 
