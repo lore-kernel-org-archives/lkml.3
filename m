@@ -1,49 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752912AbaFGPXx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 11:23:53 -0400
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:60521 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752786AbaFGPXv (ORCPT
+	id S1753011AbaFGPYX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 11:24:23 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:34486 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752954AbaFGPYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 11:23:51 -0400
+	Sat, 7 Jun 2014 11:24:20 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140607123518.88983301D2@webmail.sinamail.sina.com.cn>
-References: <20140607123518.88983301D2@webmail.sinamail.sina.com.cn>
-Date: Sat, 7 Jun 2014 10:23:50 -0500
-Message-ID: <CAMP44s366jWnpyz1+th9+ndrD8XbPgEgOokQPYpBKS=suzeUdA@mail.gmail.com>
-Subject: Re: Interactivity regression since v3.11 in mm/vmscan.c
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: zhdxzx@sina.com
-Cc: Michal Hocko <mhocko@suse.cz>, linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, dhillf <dhillf@gmail.com>,
-        "hillf.zj" <hillf.zj@alibaba-inc.com>
+In-Reply-To: <1670424.dXK6NPb10R@al>
+References: <1402151419-18296-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	<1670424.dXK6NPb10R@al>
+Date: Sat, 7 Jun 2014 17:24:19 +0200
+Message-ID: <CAFo99gZ+iu3FA9Nuwdo_AT1xZkno7w=6JidWYcm8g0bOvshwTw@mail.gmail.com>
+Subject: Re: [PATCH] net: wireless: rtlwifi: rtl8192de: hw.c: Cleaning up
+ conjunction always evaluates to false
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Peter Wu <peter@lekensteyn.nl>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 7, 2014 at 7:35 AM,  <zhdxzx@sina.com> wrote:
+Hi!
 
-> Would you please try again based only on comment [1](based on v3.15-rc8)?
-> thanks
-> Hillf
+Yes, 0x3 was one of the most likely :)
+But wanted someone who knows the code better would be heard.
+All agreed? Then I do a new patch.
+
+Looks like it is the same error in the files below, I'll fix them all them to.
+
+rtl8192cu/hw.c:1363:    if ((bt_msr & 0xfc) == MSR_AP)
+rtl8192ce/hw.c:1209:    if ((bt_msr & 0xfc) == MSR_AP)
+rtl8188ee/hw.c:1234:    if ((bt_msr & 0xfc) == MSR_AP)
+rtl8192de/hw.c:1131:    if ((bt_msr & 0xfc) == MSR_AP)
+
+
+Best regards
+Rickard Strandqvist
+
+
+2014-06-07 17:02 GMT+02:00 Peter Wu <peter@lekensteyn.nl>:
+> On Saturday 07 June 2014 16:30:19 Rickard Strandqvist wrote:
+>> Expression '(X & 0xfc) == 0x3' is always false
 >
-> --- a/mm/vmscan.c       Sat Jun  7 18:38:08 2014
-> +++ b/mm/vmscan.c       Sat Jun  7 20:08:36 2014
-> @@ -1566,7 +1566,7 @@ shrink_inactive_list(unsigned long nr_to
->                  * implies that pages are cycling through the LRU faster than
->                  * they are written so also forcibly stall.
->                  */
-> -               if (nr_unqueued_dirty == nr_taken || nr_immediate)
-> +               if (nr_immediate)
->                         congestion_wait(BLK_RW_ASYNC, HZ/10);
->         }
-
-That actually seems to work correctly on v3.15-rc8.
-
--- 
-Felipe Contreras
+> While this is true, I believe that some other mistake is made.
+>
+>> I chose to remove this code, because it will not make any difference.
+>> But obviously it is rather a properly designed if statement that is needed.
+>>
+>> This was partly found using a static code analysis program called cppcheck.
+>>
+>> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+>> ---
+>>  drivers/net/wireless/rtlwifi/rtl8192de/hw.c |    5 +----
+>>  1 file changed, 1 insertion(+), 4 deletions(-)
+>>
+>> diff --git a/drivers/net/wireless/rtlwifi/rtl8192de/hw.c b/drivers/net/wireless/rtlwifi/rtl8192de/hw.c
+>> index 2b08671..a1520d5 100644
+>> --- a/drivers/net/wireless/rtlwifi/rtl8192de/hw.c
+>> +++ b/drivers/net/wireless/rtlwifi/rtl8192de/hw.c
+>> @@ -1128,10 +1128,7 @@ static int _rtl92de_set_media_status(struct ieee80211_hw *hw,
+>>       }
+>>       rtl_write_byte(rtlpriv, REG_CR + 2, bt_msr);
+>>       rtlpriv->cfg->ops->led_control(hw, ledaction);
+>> -     if ((bt_msr & 0xfc) == MSR_AP)
+>
+> If you look a few lines up, then you see that bt_msr is OR-ed with MSR_AP
+> for AP interfaces. The 0xfc should be 0x03, see other drivers for example:
+>
+> rtl8723ae/hw.c:1112:    if ((bt_msr & 0x03) == MSR_AP)
+> rtl8723be/hw.c:1200:    if ((bt_msr & 0x03) == MSR_AP)
+> rtl8192cu/hw.c:1363:    if ((bt_msr & 0xfc) == MSR_AP)
+> rtl8192ce/hw.c:1209:    if ((bt_msr & 0xfc) == MSR_AP)
+> rtl8188ee/hw.c:1234:    if ((bt_msr & 0xfc) == MSR_AP)
+> rtl8192de/hw.c:1131:    if ((bt_msr & 0xfc) == MSR_AP)
+>
+>> -             rtl_write_byte(rtlpriv, REG_BCNTCFG + 1, 0x00);
+>> -     else
+>> -             rtl_write_byte(rtlpriv, REG_BCNTCFG + 1, 0x66);
+>> +     rtl_write_byte(rtlpriv, REG_BCNTCFG + 1, 0x66);
+>>       return 0;
+>>  }
+>
+> Kind regards,
+> Peter
+>
