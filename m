@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753039AbaFGPyT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 11:54:19 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:45638 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752975AbaFGPyR (ORCPT
+	id S1753110AbaFGPz3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 11:55:29 -0400
+Received: from smtprelay0153.hostedemail.com ([216.40.44.153]:55258 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753070AbaFGPz2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 11:54:17 -0400
-Date: Sat, 7 Jun 2014 19:54:12 +0400
-From: Dmitry Popov <ixaphire@qrator.net>
-To: Cong Wang <cwang@twopensource.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, Fan Du <fan.du@windriver.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        trivial@kernel.org
-Subject: Re: [PATCH] ipip, sit: fix ipv4_{update_pmtu,redirect} calls
-Message-Id: <20140607195412.94b079a97a6e1452e539037f@qrator.net>
-In-Reply-To: <CAHA+R7NUVPz47AKCTk7nYBkZXK=93vJOO8f6FTkyU0UkU6Q30Q@mail.gmail.com>
-References: <20140606231921.2ff39106ac54216fd9170fae@qrator.net>
-	<CAHA+R7NUVPz47AKCTk7nYBkZXK=93vJOO8f6FTkyU0UkU6Q30Q@mail.gmail.com>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-unknown-linux-gnu)
+	Sat, 7 Jun 2014 11:55:28 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1567:1593:1594:1711:1714:1730:1747:1777:1792:2198:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3867:3871:3872:4321:5007:7652:10004:10400:10848:11026:11232:11658:11914:12043:12114:12296:12438:12517:12519:12740:13019:13069:13138:13231:13311:13357:13894,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: gold65_4ca09d3cc5e34
+X-Filterd-Recvd-Size: 1395
+Message-ID: <1402156524.28369.4.camel@joe-AO725>
+Subject: Re: [PATCH] media-device: Remove duplicated memset() in
+ media_enum_entities()
+From: Joe Perches <joe@perches.com>
+To: Salva =?ISO-8859-1?Q?Peir=F3?= <speiro@ai2.upv.es>
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+Date: Sat, 07 Jun 2014 08:55:24 -0700
+In-Reply-To: <1402152104-16865-1-git-send-email-speiro@ai2.upv.es>
+References: <1402152104-16865-1-git-send-email-speiro@ai2.upv.es>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 6 Jun 2014 17:45:44 -0700
-Cong Wang <cwang@twopensource.com> wrote:
+On Sat, 2014-06-07 at 16:41 +0200, Salva Peiró wrote:
+> After the zeroing the whole struct struct media_entity_desc u_ent,
+> it is no longer necessary to memset(0) its u_ent.name field.
 
-> I think vti (v4 and v6) tunnel needs to fix as well?
+trivia:
 
-1) vti:
-Well, probably it needs a fix, but:
-a) I don't know a scenario when vti4_err would be called, ah4/esp4/ipcomp4
-should handle icmp errors. vti_err was removed in aba826958830 but (don't know
-why, maybe someone can explain?) vti4_err was introduced back in df3893c176e9.
-b) vti uses complex routing through xfrm, see pt. 2).
+> diff --git a/drivers/media/media-device.c b/drivers/media/media-device.c
+[]
+> @@ -106,8 +106,6 @@ static long media_device_enum_entities(struct media_device *mdev,
+>  	if (ent->name) {
+>  		strncpy(u_ent.name, ent->name, sizeof(u_ent.name));
+>  		u_ent.name[sizeof(u_ent.name) - 1] = '\0';
 
-2) ah4/esp/ipcomp:
-They probably have a problem with ipv4_{update_pmtu,redirect} too, because
-ah4/esp/ipcomp use xfrm policies for correct routing, but ipv4_{update_pmtu,
-redirect} implementation do not xfrm_lookup. Moreover, the whole 
-ipv4_*_{update_pmtu, redirect} family looks like using __ip_route_output_key 
-which doesn't do xfrm_lookup, except ipv4_sk_update_pmtu which does it through
-ip_route_output_flow. I also do not understand ideas behind it, but I am not
-so familiar with xfrm stuff, so feel free to correct me.
-Also ah4/esp/ipcomp use oif=0 for ipv4_{update_pmtu,redirect} which should work 
-well with most setups (and wrong oif !=0 like in ipip/sit doesn't work), so I
-don't think it's a big problem.
+this could be strlcpy too.
 
-3) gre:
-There are 2 gre protocols in kernel: pptp(drivers/net/ppp/pptp.c) and 
-cisco/ipgre(net/ipv4/gre_demux.c).
-Pptp simply ignores ICMP errors, I'd simply let it be. 
-ipgre is a framework for subprotos which doesn't work with tunnel devices by
-itself (see net/ipv4/gre_demux.c:gre_cisco_err). Although it uses 
-skb->dev->ifindex for ipv4_{update_pmtu,redirect} which might be wrong for hosts
-with asymmetric routing, this is not a big deal, because tunnels bound to device 
-will not work with asymmetric routing anyway. So I think it is okay.
+
+
