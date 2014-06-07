@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752895AbaFGBad (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:30:33 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36112 "EHLO
+	id S1752864AbaFGBab (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:30:31 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36108 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752678AbaFGBXj (ORCPT
+	by vger.kernel.org with ESMTP id S1752675AbaFGBXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 21:23:39 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,19 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Ben Greear" <greearb@candelatech.com>,
-        "Chuck Lever" <chuck.lever@oracle.com>,
-        "Marco Munderloh" <munderl@tnt.uni-hannover.de>,
-        "Al Viro" <viro@zeniv.linux.org.uk>, "Christoph Hellwig" <hch@lst.de>
+CC: akpm@linux-foundation.org, "Michal Hocko" <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        "Rik van Riel" <riel@redhat.com>,
+        "Nishanth Aravamudan" <nacc@linux.vnet.ibm.com>,
+        "Masayoshi Mizuma" <m.mizuma@jp.fujitsu.com>,
+        "Mel Gorman" <mgorman@suse.de>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Luiz Capitulino" <lcapitulino@redhat.com>
 Date: Sat, 07 Jun 2014 02:26:29 +0100
-Message-ID: <lsq.1402104389.363183483@decadent.org.uk>
+Message-ID: <lsq.1402104389.671190598@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 58/92] posix_acl: handle NULL ACL in posix_acl_equiv_mode
+Subject: [PATCH 3.2 60/92] mm/page-writeback.c: fix divide by zero in
+ pos_ratio_polynom
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,42 +38,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Hellwig <hch@lst.de>
+From: Rik van Riel <riel@redhat.com>
 
-commit 50c6e282bdf5e8dabf8d7cf7b162545a55645fd9 upstream.
+commit d5c9fde3dae750889168807038243ff36431d276 upstream.
 
-Various filesystems don't bother checking for a NULL ACL in
-posix_acl_equiv_mode, and thus can dereference a NULL pointer when it
-gets passed one. This usually happens from the NFS server, as the ACL tools
-never pass a NULL ACL, but instead of one representing the mode bits.
+It is possible for "limit - setpoint + 1" to equal zero, after getting
+truncated to a 32 bit variable, and resulting in a divide by zero error.
 
-Instead of adding boilerplat to all filesystems put this check into one place,
-which will allow us to remove the check from other filesystems as well later
-on.
+Using the fully 64 bit divide functions avoids this problem.  It also
+will cause pos_ratio_polynom() to return the correct value when
+(setpoint - limit) exceeds 2^32.
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Reported-by: Ben Greear <greearb@candelatech.com>
-Reported-by: Marco Munderloh <munderl@tnt.uni-hannover.de>,
-Cc: Chuck Lever <chuck.lever@oracle.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Also uninline pos_ratio_polynom, at Andrew's request.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Cc: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+Cc: Luiz Capitulino <lcapitulino@redhat.com>
+Cc: Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[bwh: Backported to 3.2:
+ Adjust context - pos_ratio_polynom() is not a separate function]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/posix_acl.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ mm/page-writeback.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/fs/posix_acl.c
-+++ b/fs/posix_acl.c
-@@ -155,6 +155,12 @@ posix_acl_equiv_mode(const struct posix_
- 	umode_t mode = 0;
- 	int not_equiv = 0;
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -559,7 +559,7 @@ static unsigned long bdi_position_ratio(
+ 	 *     => fast response on large errors; small oscillation near setpoint
+ 	 */
+ 	setpoint = (freerun + limit) / 2;
+-	x = div_s64(((s64)setpoint - (s64)dirty) << RATELIMIT_CALC_SHIFT,
++	x = div64_s64(((s64)setpoint - (s64)dirty) << RATELIMIT_CALC_SHIFT,
+ 		    limit - setpoint + 1);
+ 	pos_ratio = x;
+ 	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
+@@ -625,7 +625,7 @@ static unsigned long bdi_position_ratio(
+ 	x_intercept = bdi_setpoint + span;
  
-+	/*
-+	 * A null ACL can always be presented as mode bits.
-+	 */
-+	if (!acl)
-+		return 0;
-+
- 	FOREACH_ACL_ENTRY(pa, acl, pe) {
- 		switch (pa->e_tag) {
- 			case ACL_USER_OBJ:
+ 	if (bdi_dirty < x_intercept - span / 4) {
+-		pos_ratio = div_u64(pos_ratio * (x_intercept - bdi_dirty),
++		pos_ratio = div64_u64(pos_ratio * (x_intercept - bdi_dirty),
+ 				    x_intercept - bdi_setpoint + 1);
+ 	} else
+ 		pos_ratio /= 4;
 
