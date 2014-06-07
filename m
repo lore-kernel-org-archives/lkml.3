@@ -1,105 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753178AbaFGBhm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:37:42 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36024 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752605AbaFGBXh (ORCPT
+	id S1752845AbaFGBlZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:41:25 -0400
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:55599 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752731AbaFGBlW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 21:23:37 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	Fri, 6 Jun 2014 21:41:22 -0400
+Message-ID: <53926DC1.4050304@gmail.com>
+Date: Fri, 06 Jun 2014 21:41:21 -0400
+From: Pranith Kumar <bobby.prani@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "J. Bruce Fields" <bfields@redhat.com>,
-        "Trond Myklebust" <trond.myklebust@primarydata.com>
-Date: Sat, 07 Jun 2014 02:26:29 +0100
-Message-ID: <lsq.1402104389.309462673@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 56/92] NFSd: Move default initialisers from
- create_client() to alloc_client()
-In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+To: Dave Chinner <david@fromorbit.com>, Pranith Kumar <pranith@gatech.edu>
+CC: peterz@infradead.org, linux-kernel@vger.kernel.org,
+        tim.c.chen@linux.intel.com, davidlohr@hp.com, mingo@redhat.com,
+        xfs@oss.sgi.com
+Subject: Re: [RFC PATCH 1/1] cleanup: use bool as return type for rwsem_is_locked
+References: <5390D7E1.7060606@gatech.edu> <5391FFFD.1060901@gatech.edu> <53920446.7060505@gatech.edu> <20140607001819.GE4453@dastard> <53926406.4020200@gmail.com>
+In-Reply-To: <53926406.4020200@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.60-rc1 review patch.  If anyone has any objections, please let me know.
+On 06/06/2014 08:59 PM, Pranith Kumar wrote:
+> On 06/06/2014 08:18 PM, Dave Chinner wrote:
+>> On Fri, Jun 06, 2014 at 02:11:18PM -0400, Pranith Kumar wrote:
+>>> On 06/06/2014 01:53 PM, Pranith Kumar wrote:
+>>>> On Fri, Jun 6, 2014 at 3:35 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>>>>>
+>>>>> Now in general, I don't particularly like such superfluous changes, so
+>>>>> unless you can show that GCC actually generates better code, I'd prefer
+>>>>> to keep things as they are.
+>>>>
+>>>> Fixed and checked the assembly. It saves us 2 bytes of code, not much. I am not sure if that is worth it :(
+>>>>
+>>>> use bool as the return type for rwsem_is_locked() instead of int
+>>>>
+> 
+>>
+>> If you are going to change the return type to bool, then you should
+>> also remove the manual "!!" conversions to a boolean return and let
+>> the compiler do it in the most optimal way.
+>>
+>  
+> Agreed, please find patch below:
+> 
 
-------------------
+Simplify the "!!" condition. This is much simpler. :)
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+change return type to bool to follow rwsem_is_locked()
 
-commit 5694c93e6c4954fa9424c215f75eeb919bddad64 upstream.
-
-Aside from making it clearer what is non-trivial in create_client(), it
-also fixes a bug whereby we can call free_client() before idr_init()
-has been called.
-
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-[bwh: Backported to 3.2:
- - Adjust context
- - Also move initialisation of nfs4_client::cl_strhash, but
-   not nfs4_client::cl_revoked]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 ---
- fs/nfsd/nfs4state.c | 24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
+ fs/xfs/xfs_inode.c | 8 ++++----
+ fs/xfs/xfs_inode.h | 2 +-
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -986,6 +986,18 @@ static struct nfs4_client *alloc_client(
- 	}
- 	memcpy(clp->cl_name.data, name.data, name.len);
- 	clp->cl_name.len = name.len;
-+	INIT_LIST_HEAD(&clp->cl_sessions);
-+	idr_init(&clp->cl_stateids);
-+	atomic_set(&clp->cl_refcount, 0);
-+	clp->cl_cb_state = NFSD4_CB_UNKNOWN;
-+	INIT_LIST_HEAD(&clp->cl_idhash);
-+	INIT_LIST_HEAD(&clp->cl_strhash);
-+	INIT_LIST_HEAD(&clp->cl_openowners);
-+	INIT_LIST_HEAD(&clp->cl_delegations);
-+	INIT_LIST_HEAD(&clp->cl_lru);
-+	INIT_LIST_HEAD(&clp->cl_callbacks);
-+	spin_lock_init(&clp->cl_lock);
-+	rpc_init_wait_queue(&clp->cl_cb_waitq, "Backchannel slot table");
- 	return clp;
+diff --git a/fs/xfs/xfs_inode.c b/fs/xfs/xfs_inode.c
+index a6115fe..c02ac49 100644
+--- a/fs/xfs/xfs_inode.c
++++ b/fs/xfs/xfs_inode.c
+@@ -285,25 +285,25 @@ xfs_ilock_demote(
  }
  
-@@ -1163,7 +1175,6 @@ static struct nfs4_client *create_client
- 	if (clp == NULL)
- 		return NULL;
- 
--	INIT_LIST_HEAD(&clp->cl_sessions);
- 
- 	princ = svc_gss_principal(rqstp);
- 	if (princ) {
-@@ -1174,21 +1185,10 @@ static struct nfs4_client *create_client
- 		}
+ #if defined(DEBUG) || defined(XFS_WARN)
+-int
++bool
+ xfs_isilocked(
+ 	xfs_inode_t		*ip,
+ 	uint			lock_flags)
+ {
+ 	if (lock_flags & (XFS_ILOCK_EXCL|XFS_ILOCK_SHARED)) {
+ 		if (!(lock_flags & XFS_ILOCK_SHARED))
+-			return !!ip->i_lock.mr_writer;
++			return (ip->i_lock.mr_writer != 0);
+ 		return rwsem_is_locked(&ip->i_lock.mr_lock);
  	}
  
--	idr_init(&clp->cl_stateids);
- 	memcpy(clp->cl_recdir, recdir, HEXDIR_LEN);
--	atomic_set(&clp->cl_refcount, 0);
--	clp->cl_cb_state = NFSD4_CB_UNKNOWN;
--	INIT_LIST_HEAD(&clp->cl_idhash);
--	INIT_LIST_HEAD(&clp->cl_strhash);
--	INIT_LIST_HEAD(&clp->cl_openowners);
--	INIT_LIST_HEAD(&clp->cl_delegations);
--	INIT_LIST_HEAD(&clp->cl_lru);
--	INIT_LIST_HEAD(&clp->cl_callbacks);
--	spin_lock_init(&clp->cl_lock);
- 	INIT_WORK(&clp->cl_cb_null.cb_work, nfsd4_do_callback_rpc);
- 	clp->cl_time = get_seconds();
- 	clear_bit(0, &clp->cl_cb_slot_busy);
--	rpc_init_wait_queue(&clp->cl_cb_waitq, "Backchannel slot table");
- 	copy_verf(clp, verf);
- 	rpc_copy_addr((struct sockaddr *) &clp->cl_addr, sa);
- 	clp->cl_flavor = rqstp->rq_flavor;
+ 	if (lock_flags & (XFS_IOLOCK_EXCL|XFS_IOLOCK_SHARED)) {
+ 		if (!(lock_flags & XFS_IOLOCK_SHARED))
+-			return !!ip->i_iolock.mr_writer;
++			return (ip->i_iolock.mr_writer != 0);
+ 		return rwsem_is_locked(&ip->i_iolock.mr_lock);
+ 	}
+ 
+ 	ASSERT(0);
+-	return 0;
++	return false;
+ }
+ #endif
+ 
+diff --git a/fs/xfs/xfs_inode.h b/fs/xfs/xfs_inode.h
+index f72bffa..efebed6 100644
+--- a/fs/xfs/xfs_inode.h
++++ b/fs/xfs/xfs_inode.h
+@@ -346,7 +346,7 @@ void		xfs_ilock(xfs_inode_t *, uint);
+ int		xfs_ilock_nowait(xfs_inode_t *, uint);
+ void		xfs_iunlock(xfs_inode_t *, uint);
+ void		xfs_ilock_demote(xfs_inode_t *, uint);
+-int		xfs_isilocked(xfs_inode_t *, uint);
++bool		xfs_isilocked(xfs_inode_t *, uint);
+ uint		xfs_ilock_data_map_shared(struct xfs_inode *);
+ uint		xfs_ilock_attr_map_shared(struct xfs_inode *);
+ int		xfs_ialloc(struct xfs_trans *, xfs_inode_t *, umode_t,
+-- 
+1.9.1
 
