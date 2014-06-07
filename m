@@ -1,44 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753217AbaFGXiv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 19:38:51 -0400
-Received: from mail-am1hn0245.outbound.protection.outlook.com ([157.56.112.245]:13112
-	"EHLO emea01-am1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753039AbaFGXit convert rfc822-to-8bit (ORCPT
+	id S1753207AbaFGXoQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 19:44:16 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:23501 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752945AbaFGXoO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 19:38:49 -0400
-Content-Type: text/plain; charset="iso-8859-1"
+	Sat, 7 Jun 2014 19:44:14 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqdtAN6ik1N5LGMPPGdsb2JhbABYgw2sKwEGmRABgQEXBAEBAQE4NYQDAQEFJxMcIxAIAxgJJQ8FJQMHGhOIQc1KFxaFR4kPB4MrgRYBA5ogiymLays
+Date: Sun, 8 Jun 2014 09:44:11 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Joe Perches <joe@perches.com>
+Cc: Pranith Kumar <bobby.prani@gmail.com>, Pranith Kumar <pranith@gatech.edu>,
+        peterz@infradead.org, linux-kernel@vger.kernel.org,
+        tim.c.chen@linux.intel.com, davidlohr@hp.com, mingo@redhat.com,
+        xfs@oss.sgi.com
+Subject: Re: [RFC PATCH 1/1] cleanup: use bool as return type for
+ rwsem_is_locked
+Message-ID: <20140607234411.GA9508@dastard>
+References: <5390D7E1.7060606@gatech.edu>
+ <5391FFFD.1060901@gatech.edu>
+ <53920446.7060505@gatech.edu>
+ <20140607001819.GE4453@dastard>
+ <53926406.4020200@gmail.com>
+ <53926DC1.4050304@gmail.com>
+ <1402108770.25112.5.camel@joe-AO725>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: Free Lotto Award Notification(Reference:WIN-37-14-29-14)
-To: Recipients <freelotto15@ascend482.onmicrosoft.com>
-From: INFO <freelotto15@ascend482.onmicrosoft.com>
-Date: Sun, 8 Jun 2014 01:38:29 +0200
-Reply-To: <freel261@aol.com>
-Message-ID: <15e06786-9395-43b9-807f-fe1e3f527980@DB4PR02MB173.eurprd02.prod.outlook.com>
-X-Originating-IP: [46.229.224.148]
-X-ClientProxiedBy: AMXPR05CA004.eurprd05.prod.outlook.com (10.242.64.34) To
- DB4PR02MB173.eurprd02.prod.outlook.com (10.242.158.142)
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 0235CBE7D0
-X-Forefront-Antispam-Report: SFV:SPM;SFS:(6049001)(6039001)(6009001)(428001)(189002)(199002)(5423002)(50986999)(54356999)(53806999)(23756003)(87976001)(1496006)(92726001)(85852003)(325944007)(19580405001)(83072002)(19580395003)(83322001)(33646001)(81342001)(53256004)(79102001)(80022001)(66066001)(64706001)(20776003)(47776003)(101416001)(46102001)(74316001)(50466002)(4396001)(86372001)(86362001)(42186004)(77982001)(74502001)(76482001)(81542001)(43066003)(86442001)(74662001)(86902001)(89136004)(21056001)(64872006)(86632001)(102836001)(76576001)(99396002)(31696002)(493694002);DIR:OUT;SFP:1501;SCL:5;SRVR:DB4PR02MB173;H:[10.200.1.94];FPR:;MLV:ovrspm;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
-Authentication-Results: spf=none (sender IP is )
- smtp.mailfrom=freelotto15@ascend482.onmicrosoft.com; 
-X-OriginatorOrg: ascend482.onmicrosoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402108770.25112.5.camel@joe-AO725>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From claim´s processing office.
-Free Lotto Lottery Award Notification
-Confirmation Ticket No: 33-48-19-H5H
-Reference:WIN-37-14-29-14
-You have won( 1 Million Euros )in the Free Lotto Lottery Award 2014 held in Madrid Spain
-This email was sent to notify you officially as you are advise to contact the claim´s processing office with your details immediately for claim,
-Contact Person: Martinez Adela
-Contact Email: freelottoaward066@gmail.com
-Signed (Announcer)
-Director, Cooperate HR and Communication.
-FREE LOTTO LOTTERY AWARD
+On Fri, Jun 06, 2014 at 07:39:30PM -0700, Joe Perches wrote:
+> On Fri, 2014-06-06 at 21:41 -0400, Pranith Kumar wrote:
+> > On 06/06/2014 08:59 PM, Pranith Kumar wrote:
+> > > On 06/06/2014 08:18 PM, Dave Chinner wrote:
+> > >> If you are going to change the return type to bool, then you should
+> > >> also remove the manual "!!" conversions to a boolean return and let
+> > >> the compiler do it in the most optimal way.
+> > > Agreed, please find patch below:
+> > Simplify the "!!" condition. This is much simpler. :)
+> []
+> > diff --git a/fs/xfs/xfs_inode.c b/fs/xfs/xfs_inode.c
+> 
+> > @@ -285,25 +285,25 @@ xfs_ilock_demote(
+> >  }
+> >  
+> >  #if defined(DEBUG) || defined(XFS_WARN)
+> > -int
+> > +bool
+> >  xfs_isilocked(
+> >  	xfs_inode_t		*ip,
+> >  	uint			lock_flags)
+> >  {
+> >  	if (lock_flags & (XFS_ILOCK_EXCL|XFS_ILOCK_SHARED)) {
+> >  		if (!(lock_flags & XFS_ILOCK_SHARED))
+> > -			return !!ip->i_lock.mr_writer;
+> > +			return (ip->i_lock.mr_writer != 0);
+> 
+> simpler still would be just removing the !! completely.
+> I presume in no case would it make an actual difference
+> in emitted code.
+> 
+> ie:
+> 			return ip->i_lock.mr_writer;
+
+Yup, that's exactly what I meant. Casting to a bool type does all
+the work of squashing all non-zero values to 1...
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
