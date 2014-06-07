@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752969AbaFGI2I (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 04:28:08 -0400
-Received: from ns.horizon.com ([71.41.210.147]:53791 "HELO ns.horizon.com"
+	id S1753056AbaFGI3B (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 04:29:01 -0400
+Received: from ns.horizon.com ([71.41.210.147]:35595 "HELO ns.horizon.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752805AbaFGI2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 04:28:06 -0400
-Date: 7 Jun 2014 04:28:05 -0400
-Message-ID: <20140607082805.10120.qmail@ns.horizon.com>
+	id S1752839AbaFGI3A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jun 2014 04:29:00 -0400
+Date: 7 Jun 2014 04:28:59 -0400
+Message-ID: <20140607082859.10162.qmail@ns.horizon.com>
 From: "George Spelvin" <linux@horizon.com>
 To: davem@davemloft.net, dborkman@redhat.com, linux@horizon.com,
         shemminger@osdl.org, tytso@mit.edu
-Subject: [PATCH 5/7] lib/random32.c: Make prandom_u32_max efficient for powers of 2
+Subject: [PATCH 6/7] lib/random32.c: Randomize timeout to the millisecond, not the second
 Cc: linux-kernel@vger.kernel.org
 In-Reply-To: <20140607081828.9294.qmail@ns.horizon.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The multiply-and-shift is efficient in the general case, but slower than
-a simple bitwise AND if the range is a power of 2.  Make the function
-handle this case so callers don't have to worry about micro-optimizing it.
+If you're going to bother randomizing it, do it right.
+And use prandom_u32_max(), which is designed for the job, rather
+than "% 40".
 
 Signed-off-by: George Spelvin <linux@horizon.com>
 ---
- include/linux/random.h | 14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+ lib/random32.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/random.h b/include/linux/random.h
-index 57fbbffd..e1f3ec9a 100644
---- a/include/linux/random.h
-+++ b/include/linux/random.h
-@@ -47,11 +47,23 @@ void prandom_bytes_state(struct rnd_state *state, void *buf, int nbytes);
-  * generator, that is, prandom_u32(). This is useful when requesting a
-  * random index of an array containing ep_ro elements, for example.
-  *
-+ * If ep_ro is a power of 2 known at compile time, a modulo operation
-+ * reduces to a simple mask to extract the low order bits.  Otherwise,
-+ * it uses a multiply and shift, which is faster than a general modulus.
-+ *
-  * Returns: pseudo-random number in interval [0, ep_ro)
-  */
- static inline u32 prandom_u32_max(u32 ep_ro)
+diff --git a/lib/random32.c b/lib/random32.c
+index eee60100..9cc410dd 100644
+--- a/lib/random32.c
++++ b/lib/random32.c
+@@ -208,14 +208,14 @@ static DEFINE_TIMER(seed_timer, __prandom_timer, 0, 0);
+ static void __prandom_timer(unsigned long dontcare)
  {
--	return (u32)(((u64) prandom_u32() * ep_ro) >> 32);
-+	/*
-+	 * Instead of just __builtin_constant_p(ep_ro), this test is
-+	 * "is it known at compile time that ep_ro is a power of 2?", and
-+	 * can in theory handle the case that it's an unknown power of 2.
-+	 */
-+	if (__builtin_constant_p(ep_ro & (ep_ro-1)) && !(ep_ro & (ep_ro-1)))
-+		return prandom_u32() & (ep_ro-1);
-+	else
-+		return (u32)((u64)prandom_u32() * ep_ro >> 32);
- }
+ 	u32 entropy;
+-	unsigned long expires;
++	unsigned int expires;
  
- /*
+ 	get_random_bytes(&entropy, sizeof(entropy));
+ 	prandom_seed(entropy);
+ 
+ 	/* reseed every ~60 seconds, in [40 .. 80) interval with slack */
+-	expires = 40 + (prandom_u32() % 40);
+-	seed_timer.expires = jiffies + msecs_to_jiffies(expires * MSEC_PER_SEC);
++	expires = 40000 + prandom_u32_max(40000);
++	seed_timer.expires = jiffies + msecs_to_jiffies(expires);
+ 
+ 	add_timer(&seed_timer);
+ }
 -- 
 2.0.0
 
