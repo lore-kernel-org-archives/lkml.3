@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472AbaFGBnD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:43:03 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35993 "EHLO
+	id S1753444AbaFGBnB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:43:01 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35991 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752567AbaFGBXh (ORCPT
+	by vger.kernel.org with ESMTP id S1752568AbaFGBXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 21:23:37 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,15 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Stephane Grosjean" <s.grosjean@peak-system.com>,
-        "Christopher R. Baker" <cbaker@rec.ri.cmu.edu>,
-        "Marc Kleine-Budde" <mkl@pengutronix.de>
+CC: akpm@linux-foundation.org, "Mauro Carvalho Chehab" <m.chehab@samsung.com>,
+        "Jonathan Corbet" <corbet@lwn.net>,
+        "Guennadi Liakhovetski" <g.liakhovetski@gmx.de>
 Date: Sat, 07 Jun 2014 02:26:29 +0100
-Message-ID: <lsq.1402104389.731056193@decadent.org.uk>
+Message-ID: <lsq.1402104389.756029732@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 81/92] can: peak_pci: prevent use after free at netdev
- removal
+Subject: [PATCH 3.2 67/92] [media] V4L2: ov7670: fix a wrong index,
+ potentially Oopsing the kernel from user-space
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,68 +33,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephane Grosjean <s.grosjean@peak-system.com>
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 
-commit 0b5a958cf4df3a5cd578b861471e62138f55c85e upstream.
+commit cfece5857ca51d1dcdb157017aba226f594e9dcf upstream.
 
-As remarked by Christopher R. Baker in his post at
+Commit 75e2bdad8901a0b599e01a96229be922eef1e488 "ov7670: allow
+configuration of image size, clock speed, and I/O method" uses a wrong
+index to iterate an array. Apart from being wrong, it also uses an
+unchecked value from user-space, which can cause access to unmapped
+memory in the kernel, triggered by a normal desktop user with rights to
+use V4L2 devices.
 
-http://marc.info/?l=linux-can&m=139707295706465&w=2
-
-there's a possibility for an use after free condition at device removal.
-
-This simplified patch introduces an additional variable to prevent the issue.
-Thanks for catching this.
-
-Reported-by: Christopher R. Baker <cbaker@rec.ri.cmu.edu>
-Signed-off-by: Stephane Grosjean <s.grosjean@peak-system.com>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Acked-by: Jonathan Corbet <corbet@lwn.net>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+[bwh: Backported to 3.2:
+ - Adjust filename
+ - win_sizes array is static, not per-device]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/can/sja1000/peak_pci.c | 14 +++++++++-----
- 1 file changed, 9 insertions(+), 5 deletions(-)
+ drivers/media/video/ov7670.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/can/sja1000/peak_pci.c
-+++ b/drivers/net/can/sja1000/peak_pci.c
-@@ -98,7 +98,7 @@ static int __devinit peak_pci_probe(stru
- {
- 	struct sja1000_priv *priv;
- 	struct peak_pci_chan *chan;
--	struct net_device *dev;
-+	struct net_device *dev, *prev_dev;
- 	void __iomem *cfg_base, *reg_base;
- 	u16 sub_sys_id, icr;
- 	int i, err, channels;
-@@ -213,11 +213,13 @@ failure_remove_channels:
- 	/* Disable interrupts */
- 	writew(0x0, cfg_base + PITA_ICR + 2);
- 
--	for (dev = pci_get_drvdata(pdev); dev; dev = chan->prev_dev) {
--		unregister_sja1000dev(dev);
--		free_sja1000dev(dev);
-+	for (dev = pci_get_drvdata(pdev); dev; dev = prev_dev) {
- 		priv = netdev_priv(dev);
- 		chan = priv->priv;
-+		prev_dev = chan->prev_dev;
-+
-+		unregister_sja1000dev(dev);
-+		free_sja1000dev(dev);
- 	}
- 
- 	pci_iounmap(pdev, reg_base);
-@@ -247,10 +249,12 @@ static void __devexit peak_pci_remove(st
- 
- 	/* Loop over all registered devices */
- 	while (1) {
-+		struct net_device *prev_dev = chan->prev_dev;
-+
- 		dev_info(&pdev->dev, "removing device %s\n", dev->name);
- 		unregister_sja1000dev(dev);
- 		free_sja1000dev(dev);
--		dev = chan->prev_dev;
-+		dev = prev_dev;
- 		if (!dev)
- 			break;
- 		priv = netdev_priv(dev);
+--- a/drivers/media/video/ov7670.c
++++ b/drivers/media/video/ov7670.c
+@@ -937,7 +937,7 @@ static int ov7670_enum_framesizes(struct
+ 	 * windows that fall outside that.
+ 	 */
+ 	for (i = 0; i < N_WIN_SIZES; i++) {
+-		struct ov7670_win_size *win = &ov7670_win_sizes[index];
++		struct ov7670_win_size *win = &ov7670_win_sizes[i];
+ 		if (info->min_width && win->width < info->min_width)
+ 			continue;
+ 		if (info->min_height && win->height < info->min_height)
 
