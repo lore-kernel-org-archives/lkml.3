@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753505AbaFGBoK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:44:10 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35979 "EHLO
+	id S1753332AbaFGBoI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:44:08 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35971 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752553AbaFGBXg (ORCPT
+	by vger.kernel.org with ESMTP id S1752561AbaFGBXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 21:23:36 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
-        "Julian Anastasov" <ja@ssi.bg>, "Vlad Yasevich" <vyasevich@gmail.com>,
-        "Xufeng Zhang" <xufeng.zhang@windriver.com>
-Date: Sat, 07 Jun 2014 02:26:28 +0100
-Message-ID: <lsq.1402104388.483599521@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Bjorn Helgaas" <bhelgaas@google.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        "Marcel Apfelbaum" <marcel.a@redhat.com>
+Date: Sat, 07 Jun 2014 02:26:29 +0100
+Message-ID: <lsq.1402104389.156824668@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 17/92] sctp: reset flowi4_oif parameter on route lookup
+Subject: [PATCH 3.2 73/92] PCI: shpchp: Check bridge's secondary (not
+ primary) bus speed
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,64 +33,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xufeng Zhang <xufeng.zhang@windriver.com>
+From: Marcel Apfelbaum <marcel.a@redhat.com>
 
-[ Upstream commit 85350871317a5adb35519d9dc6fc9e80809d42ad ]
+commit 93fa9d32670f5592c8e56abc9928fc194e1e72fc upstream.
 
-commit 813b3b5db83 (ipv4: Use caller's on-stack flowi as-is
-in output route lookups.) introduces another regression which
-is very similar to the problem of commit e6b45241c (ipv4: reset
-flowi parameters on route connect) wants to fix:
-Before we call ip_route_output_key() in sctp_v4_get_dst() to
-get a dst that matches a bind address as the source address,
-we have already called this function previously and the flowi
-parameters have been initialized including flowi4_oif, so when
-we call this function again, the process in __ip_route_output_key()
-will be different because of the setting of flowi4_oif, and we'll
-get a networking device which corresponds to the inputted flowi4_oif
-as the output device, this is wrong because we'll never hit this
-place if the previously returned source address of dst match one
-of the bound addresses.
+When a new device is added below a hotplug bridge, the bridge's secondary
+bus speed and the device's bus speed must match.  The shpchp driver
+previously checked the bridge's *primary* bus speed, not the secondary bus
+speed.
 
-To reproduce this problem, a vlan setting is enough:
-  # ifconfig eth0 up
-  # route del default
-  # vconfig add eth0 2
-  # vconfig add eth0 3
-  # ifconfig eth0.2 10.0.1.14 netmask 255.255.255.0
-  # route add default gw 10.0.1.254 dev eth0.2
-  # ifconfig eth0.3 10.0.0.14 netmask 255.255.255.0
-  # ip rule add from 10.0.0.14 table 4
-  # ip route add table 4 default via 10.0.0.254 src 10.0.0.14 dev eth0.3
-  # sctp_darn -H 10.0.0.14 -P 36422 -h 10.1.4.134 -p 36422 -s -I
-You'll detect that all the flow are routed to eth0.2(10.0.1.254).
+This caused hot-add errors like:
 
-Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
-Signed-off-by: Julian Anastasov <ja@ssi.bg>
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+  shpchp 0000:00:03.0: Speed of bus ff and adapter 0 mismatch
+
+Check the secondary bus speed instead.
+
+[bhelgaas: changelog]
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=75251
+Fixes: 3749c51ac6c1 ("PCI: Make current and maximum bus speeds part of the PCI core")
+Signed-off-by: Marcel Apfelbaum <marcel.a@redhat.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/sctp/protocol.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/pci/hotplug/shpchp_ctrl.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/net/sctp/protocol.c b/net/sctp/protocol.c
-index 6f6ad86..de35e01 100644
---- a/net/sctp/protocol.c
-+++ b/net/sctp/protocol.c
-@@ -528,8 +528,13 @@ static void sctp_v4_get_dst(struct sctp_transport *t, union sctp_addr *saddr,
- 			continue;
- 		if ((laddr->state == SCTP_ADDR_SRC) &&
- 		    (AF_INET == laddr->a.sa.sa_family)) {
--			fl4->saddr = laddr->a.v4.sin_addr.s_addr;
- 			fl4->fl4_sport = laddr->a.v4.sin_port;
-+			flowi4_update_output(fl4,
-+					     asoc->base.sk->sk_bound_dev_if,
-+					     RT_CONN_FLAGS(asoc->base.sk),
-+					     daddr->v4.sin_addr.s_addr,
-+					     laddr->a.v4.sin_addr.s_addr);
-+
- 			rt = ip_route_output_key(&init_net, fl4);
- 			if (!IS_ERR(rt)) {
- 				dst = &rt->dst;
+--- a/drivers/pci/hotplug/shpchp_ctrl.c
++++ b/drivers/pci/hotplug/shpchp_ctrl.c
+@@ -285,8 +285,8 @@ static int board_added(struct slot *p_sl
+ 		return WRONG_BUS_FREQUENCY;
+ 	}
+ 
+-	bsp = ctrl->pci_dev->bus->cur_bus_speed;
+-	msp = ctrl->pci_dev->bus->max_bus_speed;
++	bsp = ctrl->pci_dev->subordinate->cur_bus_speed;
++	msp = ctrl->pci_dev->subordinate->max_bus_speed;
+ 
+ 	/* Check if there are other slots or devices on the same bus */
+ 	if (!list_empty(&ctrl->pci_dev->subordinate->devices))
 
