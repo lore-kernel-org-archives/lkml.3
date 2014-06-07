@@ -1,45 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753184AbaFGSqT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 14:46:19 -0400
-Received: from zill.ext.symas.net ([69.43.206.106]:40704 "EHLO
-	zill.ext.symas.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751368AbaFGSqR (ORCPT
-	<rfc822;Linux-Kernel@Vger.Kernel.ORG>);
-	Sat, 7 Jun 2014 14:46:17 -0400
-X-Greylist: delayed 2289 seconds by postgrey-1.27 at vger.kernel.org; Sat, 07 Jun 2014 14:46:17 EDT
-Message-ID: <53935504.1080903@symas.com>
-Date: Sat, 07 Jun 2014 11:08:04 -0700
-From: Howard Chu <hyc@symas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:29.0) Gecko/20100101 Firefox/29.0 SeaMonkey/2.26a1
+	id S1753195AbaFGSzA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 14:55:00 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:64843 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751565AbaFGSy5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jun 2014 14:54:57 -0400
 MIME-Version: 1.0
-To: Linux Kernel Mailing List <Linux-Kernel@vger.kernel.org>
-Subject: 3.12.9 kern.log spam from vgaswitcheroo
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1402163811-21604-1-git-send-email-manuel.schoelling@gmx.de>
+References: <1402163811-21604-1-git-send-email-manuel.schoelling@gmx.de>
+Date: Sat, 7 Jun 2014 14:54:56 -0400
+Message-ID: <CAHQdGtTtwS_DAXx-nhVjjO3D1wksuV+5br10gX0DheHzWDD+sw@mail.gmail.com>
+Subject: Re: [PATCH] dns_resolver: assure that dns_query() result is null-terminated
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+To: =?UTF-8?Q?Manuel_Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
+Cc: "Miller David S." <davem@davemloft.net>, jeffrey.t.kirsher@intel.com,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Asus NP56D, if you use vgaswitcheroo to turn off the discrete GPU, the 
-kernel starts spewing these messages endlessly, until /var/log partition fills up:
+On Sat, Jun 7, 2014 at 1:56 PM, Manuel Schölling
+<manuel.schoelling@gmx.de> wrote:
+> dns_query() credulously assumes that keys are null-terminated and
+> returns a copy of a memory block that is off by one.
+> ---
+>  net/dns_resolver/dns_query.c |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+>
+> diff --git a/net/dns_resolver/dns_query.c b/net/dns_resolver/dns_query.c
+> index e7b6d53..53be635 100644
+> --- a/net/dns_resolver/dns_query.c
+> +++ b/net/dns_resolver/dns_query.c
+> @@ -149,7 +149,9 @@ int dns_query(const char *type, const char *name, size_t namelen,
+>         if (!*_result)
+>                 goto put;
+>
+> -       memcpy(*_result, upayload->data, len + 1);
+> +       memcpy(*_result, upayload->data, len);
+> +       *_result[len+1] = '\0';
 
-Jun  7 17:40:27 gamba kernel: [470008.702322] [drm:radeon_cs_parser_init] 
-*ERROR* VM not ac
-tive on asic!
-Jun  7 17:40:27 gamba kernel: [470008.702325] [drm:radeon_cs_ioctl] *ERROR* 
-Failed to initi
-alize parser !
-Jun  7 17:40:27 gamba kernel: [470008.702385] [drm:radeon_cs_parser_init] 
-*ERROR* VM not ac
-tive on asic!
-Jun  7 17:40:27 gamba kernel: [470008.702389] [drm:radeon_cs_ioctl] *ERROR* 
-Failed to initi
-alize parser !
+Off by one...
 
-Turning the discrete GPU back on stops the stream of messages.
+> +
+>         if (_expiry)
+>                 *_expiry = rkey->expiry;
+>
+> --
+> 1.7.10.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+
 -- 
-   -- Howard Chu
-   CTO, Symas Corp.           http://www.symas.com
-   Director, Highland Sun     http://highlandsun.com/hyc/
-   Chief Architect, OpenLDAP  http://www.openldap.org/project/
+Trond Myklebust
+
+Linux NFS client maintainer, PrimaryData
+
+trond.myklebust@primarydata.com
