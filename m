@@ -1,240 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752650AbaFGCoK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 22:44:10 -0400
-Received: from ns.horizon.com ([71.41.210.147]:50187 "HELO ns.horizon.com"
+	id S1752708AbaFGCtb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 22:49:31 -0400
+Received: from ns.horizon.com ([71.41.210.147]:49011 "HELO ns.horizon.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752424AbaFGCoH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 22:44:07 -0400
-Date: 6 Jun 2014 22:44:04 -0400
-Message-ID: <20140607024404.13786.qmail@ns.horizon.com>
+	id S1752544AbaFGCt3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jun 2014 22:49:29 -0400
+Date: 6 Jun 2014 22:49:28 -0400
+Message-ID: <20140607024928.14178.qmail@ns.horizon.com>
 From: "George Spelvin" <linux@horizon.com>
-To: rdunlap@infradead.org, tj@kernel.org
-Subject: [PATCH v2 1/3] Add lib/glob.c
+To: linux@horizon.com, rdunlap@infradead.org, tj@kernel.org
+Subject: [PATCH v2 2/3] lib: glob.c: Add CONFIG_GLOB_SELFTEST
 Cc: akpm@linux-foundation.org, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux@horizon.com, mingo@redhat.com
-In-Reply-To: <20140511123605.GB22945@htj.dyndns.org>
+        linux-kernel@vger.kernel.org, mingo@redhat.com
+In-Reply-To: <20140607024404.13786.qmail@ns.horizon.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a helper function from drivers/ata/libata_core.c, where it is used
-to blacklist particular device models.  It's being moved to lib/ so other
-drivers may use it for the same purpose.
+This was useful during development, and is retained for future regression
+testing.
 
-This implementation in non-recursive, so is safe for the kernel stack.
+GCC appears to have no way to place string literals in a particular
+section; adding __initconst to a char pointer leaves the string itself
+in the default string section, where it will not be thrown away after
+module load.
+
+Thus all string constants are kept in explicitly declared and named
+arrays.  Sorry this makes printk a bit harder to read.  At least the
+tests are more compact.
 
 Signed-off-by: George Spelvin <linux@horizon.com>
 ---
-Sorry for the delay; while researching ways to organize the self-test
-code I found lots of other code to fix up.
+Persuading GCC to throw away *all* the self-test data after running
+it was surprisingly annoying.
 
-Per previous discussion, support for out-of-tree users is currently
-disabled, although the machinery necessary to add it easily is
-still there.
+The one thing I'm not really sure about is what to do if the self-test
+fails.  For now, I make the module_init function fail too.  Opinions?
 
-If nothing else, it provides a good place to put the self-test code.
-(Which is now split out into a separate patch.)
+ lib/Kconfig |  14 ++++++
+ lib/glob.c  | 164 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 178 insertions(+)
 
-I believe I've addressed all the comments made last time.  Any more?
-(Acked-by: and Reviewed-by: particularly appreciated!)
-
- include/linux/glob.h |  10 +++++
- lib/Kconfig          |  19 ++++++++
- lib/Makefile         |   2 +
- lib/glob.c           | 123 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 154 insertions(+)
- create mode 100644 include/linux/glob.h
- create mode 100644 lib/glob.c
-
-diff --git a/include/linux/glob.h b/include/linux/glob.h
-new file mode 100644
-index 00000000..c990b7fb
---- /dev/null
-+++ b/include/linux/glob.h
-@@ -0,0 +1,10 @@
-+#ifndef _LINUX_GLOB_H
-+#define _LINUX_GLOB_H
-+
-+#include <linux/types.h>	/* For bool */
-+#include <linux/compiler.h>	/* For __pure */
-+
-+bool __pure glob_match(char const *pat, char const *str);
-+
-+#endif	/* _LINUX_GLOB_H */
-+
 diff --git a/lib/Kconfig b/lib/Kconfig
-index 4771fb3f..4a607036 100644
+index 4a607036..49592008 100644
 --- a/lib/Kconfig
 +++ b/lib/Kconfig
-@@ -382,6 +382,25 @@ config CPU_RMAP
- config DQL
- 	bool
+@@ -401,6 +401,20 @@ config GLOB
+ 	  are compiling an out-of tree driver which tells you that it
+ 	  depends on this.
  
-+config GLOB
-+	bool
-+#	This actually supports modular compilation, but the module overhead
-+#	is ridiculous for the amount of code involved.	Until an out-of-tree
-+#	driver asks for it, we'll just link it directly it into the kernel
-+#	when required.  Since we're ignoring out-of-tree users,	there's also
-+#	no need bother prompting for a manual decision:
-+#	prompt "glob_match() function"
++config GLOB_SELFTEST
++	bool "glob self-test on init"
++	default n
++	depends on GLOB
 +	help
-+	  This option provides a glob_match function for performing
-+	  simple text pattern matching.  It originated in the ATA code
-+	  to blacklist particular drive models, but other device drivers
-+	  may need similar functionality.
++	  This option enables a simple self-test of the glob_match
++	  function on startup.	It is primarily useful for people
++	  working on the code to ensure they haven't introduced any
++	  regressions.
 +
-+	  All drivers in the Linux kernel tree that require this function
-+	  should automatically select this option.  Say N unless you
-+	  are compiling an out-of tree driver which tells you that it
-+	  depends on this.
++	  It only adds a little bit of code and slows kernel boot (or
++	  module load) by a small amount, so you're welcome to play with
++	  it, but you probably don't need it.
 +
  #
  # Netlink attribute parsing support is select'ed if needed
  #
-diff --git a/lib/Makefile b/lib/Makefile
-index 0cd7b68e..a2ae6fe2 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -134,6 +134,8 @@ obj-$(CONFIG_CORDIC) += cordic.o
- 
- obj-$(CONFIG_DQL) += dynamic_queue_limits.o
- 
-+obj-$(CONFIG_GLOB) += glob.o
-+
- obj-$(CONFIG_MPILIB) += mpi/
- obj-$(CONFIG_SIGNATURE) += digsig.o
- 
 diff --git a/lib/glob.c b/lib/glob.c
-new file mode 100644
-index 00000000..05beb470
---- /dev/null
+index 05beb470..671f80d3 100644
+--- a/lib/glob.c
 +++ b/lib/glob.c
-@@ -0,0 +1,123 @@
-+#include <linux/module.h>
-+#include <linux/glob.h>
+@@ -121,3 +121,167 @@ backtrack:
+ 	}
+ }
+ EXPORT_SYMBOL(glob_match);
++
++
++#ifdef CONFIG_GLOB_SELFTEST
++
++#include <linux/printk.h>
++#include <linux/moduleparam.h>
++
++/* Boot with "glob.verbose=1" to show successful tests, too */
++static bool verbose = false;
++module_param(verbose, bool, 0);
++
++struct glob_test {
++	char const *pat, *str;
++	bool expected;
++};
++
++static bool __pure __init test(char const *pat, char const *str, bool expected)
++{
++	bool match = glob_match(pat, str);
++	bool success = match == expected;
++
++	/* Can't get string literals into a particular section, so... */
++	static char const msg_error[] __initconst =
++		KERN_ERR "glob: \"%s\" vs. \"%s\": %s *** ERROR ***\n";
++	static char const msg_ok[] __initconst =
++		KERN_DEBUG "glob: \"%s\" vs. \"%s\": %s OK\n";
++	static char const mismatch[] __initconst = "mismatch";
++	char const *message;
++
++	if (!success)
++		message = msg_error;
++	else if (verbose)
++		message = msg_ok;
++	else
++		return success;
++
++	printk(message, pat, str, mismatch + 3*match);
++	return success;
++}
 +
 +/*
-+ * The only reason this code can be compiled as a module is because the
-+ * ATA code that depends on it can be as well.  In practice, they're
-+ * both usually compiled in and the module overhead goes away.
++ * The tests are all jammed together in one array to make it simpler
++ * to place that array in the .init.rodata section.  The obvious
++ * "array of structures containing char *" has no way to force the
++ * pointed-to strings to be in a particular section.
++ *
++ * Anyway, a test consists of:
++ * 1. Expected glob_match result: '1' or '0'.
++ * 2. Pattern to match: null-terminated string
++ * 3. String to match against: null-terminated string
++ *
++ * The list of tests is terminated with a final '\0' instead of
++ * a glob_match result character.
 + */
-+MODULE_DESCRIPTION("glob(7) matching");
-+MODULE_LICENSE("Dual MIT/GPL");
++static char const glob_tests[] __initconst = 
++	/* Some basic tests */
++	"1" "a\0" "a\0"
++	"0" "a\0" "b\0"
++	"0" "a\0" "aa\0"
++	"0" "a\0" "\0"
++	"1" "\0" "\0"
++	"0" "\0" "a\0"
++	/* Simple character class tests */
++	"1" "[a]\0" "a\0"
++	"0" "[a]\0" "b\0"
++	"0" "[!a]\0" "a\0"
++	"1" "[!a]\0" "b\0"
++	"1" "[ab]\0" "a\0"
++	"1" "[ab]\0" "b\0"
++	"0" "[ab]\0" "c\0"
++	"1" "[!ab]\0" "c\0"
++	"1" "[a-c]\0" "b\0"
++	"0" "[a-c]\0" "d\0"
++	/* Corner cases in character class parsing */
++	"1" "[a-c-e-g]\0" "-\0"
++	"0" "[a-c-e-g]\0" "d\0"
++	"1" "[a-c-e-g]\0" "f\0"
++	"1" "[]a-ceg-ik[]\0" "a\0"
++	"1" "[]a-ceg-ik[]\0" "]\0"
++	"1" "[]a-ceg-ik[]\0" "[\0"
++	"1" "[]a-ceg-ik[]\0" "h\0"
++	"0" "[]a-ceg-ik[]\0" "f\0"
++	"0" "[!]a-ceg-ik[]\0" "h\0"
++	"0" "[!]a-ceg-ik[]\0" "]\0"
++	"1" "[!]a-ceg-ik[]\0" "f\0"
++	/* Simple wild cards */
++	"1" "?\0" "a\0"
++	"0" "?\0" "aa\0"
++	"0" "??\0" "a\0"
++	"1" "?x?\0" "axb\0"
++	"0" "?x?\0" "abx\0"
++	"0" "?x?\0" "xab\0"
++	/* Asterisk wild cards (backtracking) */
++	"0" "*??\0" "a\0"
++	"1" "*??\0" "ab\0"
++	"1" "*??\0" "abc\0"
++	"1" "*??\0" "abcd\0"
++	"0" "??*\0" "a\0"
++	"1" "??*\0" "ab\0"
++	"1" "??*\0" "abc\0"
++	"1" "??*\0" "abcd\0"
++	"0" "?*?\0" "a\0"
++	"1" "?*?\0" "ab\0"
++	"1" "?*?\0" "abc\0"
++	"1" "?*?\0" "abcd\0"
++	"1" "*b\0" "b\0"
++	"1" "*b\0" "ab\0"
++	"0" "*b\0" "ba\0"
++	"1" "*b\0" "bb\0"
++	"1" "*b\0" "abb\0"
++	"1" "*b\0" "bab\0"
++	"1" "*bc\0" "abbc\0"
++	"1" "*bc\0" "bc\0"
++	"1" "*bc\0" "bbc\0"
++	"1" "*bc\0" "bcbc\0"
++	/* Multiple asterisks (complex backtracking) */
++	"1" "*ac*\0" "abacadaeafag\0"
++	"1" "*ac*ae*ag*\0" "abacadaeafag\0"
++	"1" "*a*b*[bc]*[ef]*g*\0" "abacadaeafag\0"
++	"0" "*a*b*[ef]*[cd]*g*\0" "abacadaeafag\0"
++	"1" "*abcd*\0" "abcabcabcabcdefg\0"
++	"1" "*ab*cd*\0" "abcabcabcabcdefg\0"
++	"1" "*abcd*abcdef*\0" "abcabcdabcdeabcdefg\0"
++	"0" "*abcd*\0" "abcabcabcabcefg\0"
++	"0" "*ab*cd*\0" "abcabcabcabcefg\0";
 +
-+/**
-+ * glob_match - Shell-style pattern matching, like !fnmatch(pat, str, 0)
-+ * @pat: Shell-style pattern to match, e.g. "*.[ch]".
-+ * @str: String to match.  The pattern must match the entire string.
-+ *
-+ * Perform shell-style glob matching, returning true (1) if the match
-+ * succeeds, or false (0) if it fails.  Equivalent to !fnmatch(@pat, @str, 0).
-+ *
-+ * Pattern metacharacters are ?, *, [ and \.
-+ * (And, inside character classes, !, - and ].)
-+ *
-+ * This is small and simple implementation intended for device blacklists
-+ * where a string is matched against a number of patterns.  Thus, it
-+ * does not preprocess the patterns.  It is non-recursive, and run-time
-+ * is at most quadratic: strlen(@str)*strlen(@pat).
-+ *
-+ * An example of the worst case is glob_match("*aaaaa", "aaaaaaaaaa");
-+ * it takes 6 passes over the pattern before matching the string.
-+ *
-+ * Like !fnmatch(@pat, @str, 0) and unlike the shell, this does NOT
-+ * treat / or leading . specially; it isn't actually used for pathnames.
-+ *
-+ * Note that according to glob(7) (and unlike bash), character classes
-+ * are complemented by a leading !; this does not support the regex-style
-+ * [^a-z] syntax.
-+ *
-+ * An opening bracket without a matching close is matched literally.
-+ */
-+bool __pure glob_match(char const *pat, char const *str)
++static int __init glob_init(void)
 +{
-+	/*
-+	 * Backtrack to previous * on mismatch and retry starting one
-+	 * character later in the string.  Because * matches all characters
-+	 * (no exception for /), it can be easily proved that there's
-+	 * never a need to backtrack multiple levels.
-+	 */
-+	char const *back_pat = 0, *back_str = back_str;
++	unsigned successes = 0;
++	unsigned n = 0;
++	char const *p = glob_tests;
++	static char const message[] __initconst =
++		KERN_INFO "glob: %u self-tests passed, %u failed\n";
 +
 +	/*
-+	 * Loop over each token (character or class) in pat, matching
-+	 * it against the remaining unmatched tail of str.  Return false
-+	 * on mismatch, or true after matching the trailing nul bytes.
++	 * Tests are jammed together in a string.  The first byte is '1'
++	 * or '0' to indicate the expected outcome, or '\0' to indicate the
++	 * end of the tests.  Then come two null-terminated strings: the
++	 * pattern and the string to match it against.
 +	 */
-+	for (;;) {
-+		unsigned char c = *str++;
-+		unsigned char d = *pat++;
++	while (*p) {
++		bool expected = *p++ & 1;
++		char const *pat = p;
 +
-+		switch (d) {
-+		case '?':	/* Wildcard: anything but nul */
-+			if (c == '\0')
-+				return false;
-+			break;
-+		case '*':	/* Any-length wildcard */
-+			if (*pat == '\0')	/* Optimize trailing * case */
-+				return true;
-+			back_pat = pat;
-+			back_str = --str;	/* Allow zero-length match */
-+			break;
-+		case '[': {	/* Character class */
-+			bool match = false, inverted = (*pat == '!');
-+			char const *class = pat + inverted;
-+			unsigned char a = *class++;
-+
-+			/*
-+			 * Iterate over each span in the character class.
-+			 * A span is either a single character a, or a
-+			 * range a-b.  The first span may begin with ']'.
-+			 */
-+			do {
-+				unsigned char b = a;
-+
-+				if (a == '\0')	/* Malformed */
-+					goto literal;
-+
-+				if (class[0] == '-' && class[1] != ']') {
-+					b = class[1];
-+
-+					if (b == '\0')
-+						goto literal;
-+
-+					class += 2;
-+					/* Any special action if a > b? */
-+				}
-+				match |= (a <= c && c <= b);
-+			} while ((a = *class++) != ']');
-+
-+			if (match == inverted)
-+				goto backtrack;
-+			pat = class;
-+			}
-+			break;
-+		case '\\':
-+			d = *pat++;
-+			/*FALLTHROUGH*/
-+		default:	/* Literal character */
-+literal:
-+			if (c == d) {
-+				if (d == '\0')
-+					return true;
-+				break;
-+			}
-+backtrack:
-+			if (c == '\0' || !back_pat)
-+				return false;	/* No point continuing */
-+			/* Try again from last *, one character later in str. */
-+			pat = back_pat;
-+			str = ++back_str;
-+			break;
-+		}
++		p += strlen(p) + 1;
++		successes += test(pat, p, expected);
++		p += strlen(p) + 1;
++		n++;
 +	}
++
++	n -= successes;
++	printk(message, successes, n);
++
++	/* What's the errno for "kernel bug detected"?  Guess... */
++	return n ? -ECANCELED : 0;
 +}
-+EXPORT_SYMBOL(glob_match);
++
++/* We need a dummy exit function to allow unload */
++static void __exit glob_fini(void) { }
++
++module_init(glob_init);
++module_exit(glob_fini);
++
++#endif /* CONFIG_GLOB_SELFTEST */
 -- 
 2.0.0
 
