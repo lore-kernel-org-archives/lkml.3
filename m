@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753401AbaFGBcl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:32:41 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36094 "EHLO
+	id S1753510AbaFGBcw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:32:52 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36086 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752659AbaFGBXj (ORCPT
+	by vger.kernel.org with ESMTP id S1752636AbaFGBXi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 21:23:39 -0400
+	Fri, 6 Jun 2014 21:23:38 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "paul.szabo@sydney.edu.au" <paul.szabo@sydney.edu.au>,
-        "Fengguang Wu" <fengguang.wu@intel.com>, "Jan Kara" <jack@suse.cz>,
-        "Paul Szabo" <psz@maths.usyd.edu.au>
+CC: akpm@linux-foundation.org, "Jiri Kosina" <jkosina@suse.cz>,
+        "AceLan Kao" <acelan.kao@canonical.com>
 Date: Sat, 07 Jun 2014 02:26:29 +0100
-Message-ID: <lsq.1402104389.148768940@decadent.org.uk>
+Message-ID: <lsq.1402104389.579836525@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 59/92] Negative (setpoint-dirty) in bdi_position_ratio()
+Subject: [PATCH 3.2 50/92] HID: usbhid: quirk for Synaptics Large Touchccreen
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,49 +31,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "paul.szabo@sydney.edu.au" <paul.szabo@sydney.edu.au>
+From: AceLan Kao <acelan.kao@canonical.com>
 
-commit ed84825b785ceb932af7dd5aa08614801721320b upstream.
+commit 8171a67d587a09e14a4949a81e070345fedcf410 upstream.
 
-In bdi_position_ratio(), get difference (setpoint-dirty) right even when
-negative. Both setpoint and dirty are unsigned long, the difference was
-zero-padded thus wrongly sign-extended to s64. This issue affects all
-32-bit architectures, does not affect 64-bit architectures where long
-and s64 are equivalent.
+BugLink: http://bugs.launchpad.net/bugs/1180881
 
-In this function, dirty is between freerun and limit, the pseudo-float x
-is between [-1,1], expected to be negative about half the time. With
-zero-padding, instead of a small negative x we obtained a large positive
-one so bdi_position_ratio() returned garbage.
+Synaptics large touchscreen doesn't support some of the report request
+while initializing. The unspoorted request will make the device unreachable,
+and will lead to the following usb_submit_urb() function call timeout.
+So, add the IDs into HID_QUIRK_NO_INIT_REPORTS quirk.
 
-Casting the difference to s64 also prevents overflow with left-shift;
-though normally these numbers are small and I never observed a 32-bit
-overflow there.
-
-(This patch does not solve the PAE OOM issue.)
-
-Paul Szabo   psz@maths.usyd.edu.au   http://www.maths.usyd.edu.au/u/psz/
-School of Mathematics and Statistics   University of Sydney    Australia
-
-Reviewed-by: Jan Kara <jack@suse.cz>
-Reported-by: Paul Szabo <psz@maths.usyd.edu.au>
-Reference: http://bugs.debian.org/695182
-Signed-off-by: Paul Szabo <psz@maths.usyd.edu.au>
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: AceLan Kao <acelan.kao@canonical.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Add definition of USB_VENDOR_ID_SYNAPTICS]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/page-writeback.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -559,7 +559,7 @@ static unsigned long bdi_position_ratio(
- 	 *     => fast response on large errors; small oscillation near setpoint
- 	 */
- 	setpoint = (freerun + limit) / 2;
--	x = div_s64((setpoint - dirty) << RATELIMIT_CALC_SHIFT,
-+	x = div_s64(((s64)setpoint - (s64)dirty) << RATELIMIT_CALC_SHIFT,
- 		    limit - setpoint + 1);
- 	pos_ratio = x;
- 	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -678,6 +678,10 @@
+ #define USB_DEVICE_ID_SYMBOL_SCANNER_1	0x0800
+ #define USB_DEVICE_ID_SYMBOL_SCANNER_2	0x1300
+ 
++#define USB_VENDOR_ID_SYNAPTICS		0x06cb
++#define USB_DEVICE_ID_SYNAPTICS_LTS1	0x0af8
++#define USB_DEVICE_ID_SYNAPTICS_LTS2	0x1d10
++
+ #define USB_VENDOR_ID_THRUSTMASTER	0x044f
+ 
+ #define USB_VENDOR_ID_TOPSEED		0x0766
+--- a/drivers/hid/usbhid/hid-quirks.c
++++ b/drivers/hid/usbhid/hid-quirks.c
+@@ -100,6 +100,8 @@ static const struct hid_blacklist {
+ 	{ USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_WIRELESS, HID_QUIRK_MULTI_INPUT },
+ 	{ USB_VENDOR_ID_SIGMA_MICRO, USB_DEVICE_ID_SIGMA_MICRO_KEYBOARD, HID_QUIRK_NO_INIT_REPORTS },
+ 	{ USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_DUOSENSE, HID_QUIRK_NO_INIT_REPORTS },
++	{ USB_VENDOR_ID_SYNAPTICS, USB_DEVICE_ID_SYNAPTICS_LTS1, HID_QUIRK_NO_INIT_REPORTS },
++	{ USB_VENDOR_ID_SYNAPTICS, USB_DEVICE_ID_SYNAPTICS_LTS2, HID_QUIRK_NO_INIT_REPORTS },
+ 
+ 	{ 0, 0 }
+ };
 
