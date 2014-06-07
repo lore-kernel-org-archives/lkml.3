@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753544AbaFGBhx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:37:53 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35990 "EHLO
+	id S1753524AbaFGBhv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:37:51 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36016 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752566AbaFGBXh (ORCPT
+	by vger.kernel.org with ESMTP id S1752595AbaFGBXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 21:23:37 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,15 +13,15 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Steven Rostedt" <rostedt@goodmis.org>,
-        "Romain Izard" <romain.izard.pro@gmail.com>,
-        "Ingo Molnar" <mingo@kernel.org>,
-        "Frederic Weisbecker" <fweisbec@gmail.com>,
-        "Rusty Russell" <rusty@rustcorp.com.au>
+CC: akpm@linux-foundation.org, "Ingo Molnar" <mingo@kernel.org>,
+        "Mike Galbraith" <umgwanakikbuti@gmail.com>,
+        "Peter Zijlstra" <peterz@infradead.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 Date: Sat, 07 Jun 2014 02:26:29 +0100
-Message-ID: <lsq.1402104389.848491034@decadent.org.uk>
+Message-ID: <lsq.1402104389.591367832@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 62/92] trace: module: Maintain a valid user count
+Subject: [PATCH 3.2 61/92] sched: Use CPUPRI_NR_PRIORITIES instead of
+ MAX_RT_PRIO in cpupri check
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,42 +34,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Romain Izard <romain.izard.pro@gmail.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 098507ae3ec2331476fb52e85d4040c1cc6d0ef4 upstream.
+commit 6227cb00cc120f9a43ce8313bb0475ddabcb7d01 upstream.
 
-The replacement of the 'count' variable by two variables 'incs' and
-'decs' to resolve some race conditions during module unloading was done
-in parallel with some cleanup in the trace subsystem, and was integrated
-as a merge.
+The check at the beginning of cpupri_find() makes sure that the task_pri
+variable does not exceed the cp->pri_to_cpu array length. But that length
+is CPUPRI_NR_PRIORITIES not MAX_RT_PRIO, where it will miss the last two
+priorities in that array.
 
-Unfortunately, the formula for this replacement was wrong in the tracing
-code, and the refcount in the traces was not usable as a result.
+As task_pri is computed from convert_prio() which should never be bigger
+than CPUPRI_NR_PRIORITIES, if the check should cause a panic if it is
+hit.
 
-Use 'count = incs - decs' to compute the user count.
-
-Link: http://lkml.kernel.org/p/1393924179-9147-1-git-send-email-romain.izard.pro@gmail.com
-
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Fixes: c1ab9cab7509 "merge conflict resolution"
-Signed-off-by: Romain Izard <romain.izard.pro@gmail.com>
+Reported-by: Mike Galbraith <umgwanakikbuti@gmail.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1397015410.5212.13.camel@marge.simpson.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+[bwh: Backported to 3.2: adjust filename]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/trace/events/module.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/sched/cpupri.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/include/trace/events/module.h
-+++ b/include/trace/events/module.h
-@@ -78,7 +78,7 @@ DECLARE_EVENT_CLASS(module_refcnt,
+--- a/kernel/sched_cpupri.c
++++ b/kernel/sched_cpupri.c
+@@ -68,8 +68,7 @@ int cpupri_find(struct cpupri *cp, struc
+ 	int                  idx      = 0;
+ 	int                  task_pri = convert_prio(p->prio);
  
- 	TP_fast_assign(
- 		__entry->ip	= ip;
--		__entry->refcnt	= __this_cpu_read(mod->refptr->incs) + __this_cpu_read(mod->refptr->decs);
-+		__entry->refcnt	= __this_cpu_read(mod->refptr->incs) - __this_cpu_read(mod->refptr->decs);
- 		__assign_str(name, mod->name);
- 	),
+-	if (task_pri >= MAX_RT_PRIO)
+-		return 0;
++	BUG_ON(task_pri >= CPUPRI_NR_PRIORITIES);
  
+ 	for (idx = 0; idx < task_pri; idx++) {
+ 		struct cpupri_vec *vec  = &cp->pri_to_cpu[idx];
 
