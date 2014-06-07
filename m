@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752712AbaFGLZp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 07:25:45 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:64153 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752538AbaFGLZn (ORCPT
+	id S1752769AbaFGLar (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 07:30:47 -0400
+Received: from mailrelay003.isp.belgacom.be ([195.238.6.53]:28686 "EHLO
+	mailrelay003.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752538AbaFGLaq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 07:25:43 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>,
-        linux-wimax@intel.com
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] net: wimax: i2400m: control.c:  Cleaning up conjunction always evaluates to false
-Date: Sat,  7 Jun 2014 13:26:37 +0200
-Message-Id: <1402140397-17404-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sat, 7 Jun 2014 07:30:46 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmIOAGj2klNXQ3Uj/2dsb2JhbABZgw2sGggBAQUBmRCBBBd1hGAjgRo3iEYBtBqZCReFXYkPHYQrBI9aikeLKIgdgz47
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] mm/slab.c: add __init to init_lock_keys
+Date: Sat,  7 Jun 2014 13:30:26 +0200
+Message-Id: <1402140626-20914-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Logical conjunction always evaluates to false:  minor < 2 && minor > 1
-I guess what you wanted is rather: minor > 2 || minor < 1
+init_lock_keys is only called by __init kmem_cache_init_late
 
-This was partly found using a static code analysis program called cppcheck.
-
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Christoph Lameter <cl@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- drivers/net/wimax/i2400m/control.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/slab.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wimax/i2400m/control.c b/drivers/net/wimax/i2400m/control.c
-index 4a01e5c..4c41790 100644
---- a/drivers/net/wimax/i2400m/control.c
-+++ b/drivers/net/wimax/i2400m/control.c
-@@ -1061,7 +1061,7 @@ int i2400m_firmware_check(struct i2400m *i2400m)
- 		goto error_bad_major;
- 	}
- 	result = 0;
--	if (minor < I2400M_HDIv_MINOR_2 && minor > I2400M_HDIv_MINOR)
-+	if (minor > I2400M_HDIv_MINOR_2 || minor < I2400M_HDIv_MINOR)
- 		dev_warn(dev, "untested minor fw version %u.%u.%u\n",
- 			 major, minor, branch);
- 	/* Yes, we ignore the branch -- we don't have to track it */
+diff --git a/mm/slab.c b/mm/slab.c
+index 19d9218..4ff5298 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -536,7 +536,7 @@ static inline void on_slab_lock_classes(struct kmem_cache *cachep)
+ 		on_slab_lock_classes_node(cachep, node);
+ }
+ 
+-static inline void init_lock_keys(void)
++static inline void __init init_lock_keys(void)
+ {
+ 	int node;
+ 
+@@ -544,7 +544,7 @@ static inline void init_lock_keys(void)
+ 		init_node_lock_keys(node);
+ }
+ #else
+-static void init_node_lock_keys(int q)
++static void __init init_node_lock_keys(int q)
+ {
+ }
+ 
 -- 
-1.7.10.4
+1.9.1
 
