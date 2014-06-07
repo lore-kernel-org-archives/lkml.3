@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752887AbaFGBZG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:25:06 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36186 "EHLO
+	id S1752867AbaFGBZE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:25:04 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36219 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752709AbaFGBXk (ORCPT
+	by vger.kernel.org with ESMTP id S1752715AbaFGBXk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 21:23:40 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,11 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
-        "Jamal Hadi Salim" <jhs@mojatatu.com>,
-        "Jason Wang" <jasowang@redhat.com>
-Date: Sat, 07 Jun 2014 02:26:28 +0100
-Message-ID: <lsq.1402104388.689414421@decadent.org.uk>
+CC: akpm@linux-foundation.org, "J. Bruce Fields" <bfields@redhat.com>
+Date: Sat, 07 Jun 2014 02:26:29 +0100
+Message-ID: <lsq.1402104389.744813879@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 23/92] act_mirred: do not drop packets when fails to
- mirror it
+Subject: [PATCH 3.2 82/92] nfsd4: remove lockowner when removing lock stateid
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,50 +30,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-[ Upstream commit 16c0b164bd24d44db137693a36b428ba28970c62 ]
+commit a1b8ff4c97b4375d21b6d6c45d75877303f61b3b upstream.
 
-We drop packet unconditionally when we fail to mirror it. This is not intended
-in some cases. Consdier for kvm guest, we may mirror the traffic of the bridge
-to a tap device used by a VM. When kernel fails to mirror the packet in
-conditions such as when qemu crashes or stop polling the tap, it's hard for the
-management software to detect such condition and clean the the mirroring
-before. This would lead all packets to the bridge to be dropped and break the
-netowrk of other virtual machines.
+The nfsv4 state code has always assumed a one-to-one correspondance
+between lock stateid's and lockowners even if it appears not to in some
+places.
 
-To solve the issue, the patch does not drop packets when kernel fails to mirror
-it, and only drop the redirected packets.
+We may actually change that, but for now when FREE_STATEID releases a
+lock stateid it also needs to release the parent lockowner.
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Signed-off-by: Jamal Hadi Salim <jhs@mojatatu.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Symptoms were a subsequent LOCK crashing in find_lockowner_str when it
+calls same_lockowner_ino on a lockowner that unexpectedly has an empty
+so_stateids list.
+
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/sched/act_mirred.c | 11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+ fs/nfsd/nfs4state.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/net/sched/act_mirred.c b/net/sched/act_mirred.c
-index e051398..d067ed1 100644
---- a/net/sched/act_mirred.c
-+++ b/net/sched/act_mirred.c
-@@ -201,13 +201,12 @@ static int tcf_mirred(struct sk_buff *skb, const struct tc_action *a,
- out:
- 	if (err) {
- 		m->tcf_qstats.overlimits++;
--		/* should we be asking for packet to be dropped?
--		 * may make sense for redirect case only
--		 */
--		retval = TC_ACT_SHOT;
--	} else {
-+		if (m->tcfm_eaction != TCA_EGRESS_MIRROR)
-+			retval = TC_ACT_SHOT;
-+		else
-+			retval = m->tcf_action;
-+	} else
- 		retval = m->tcf_action;
--	}
- 	spin_unlock(&m->tcf_lock);
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -3376,9 +3376,16 @@ out:
+ static __be32
+ nfsd4_free_lock_stateid(struct nfs4_ol_stateid *stp)
+ {
+-	if (check_for_locks(stp->st_file, lockowner(stp->st_stateowner)))
++	struct nfs4_lockowner *lo = lockowner(stp->st_stateowner);
++
++	if (check_for_locks(stp->st_file, lo))
+ 		return nfserr_locks_held;
+-	release_lock_stateid(stp);
++	/*
++	 * Currently there's a 1-1 lock stateid<->lockowner
++	 * correspondance, and we have to delete the lockowner when we
++	 * delete the lock stateid:
++	 */
++	unhash_lockowner(lo);
+ 	return nfs_ok;
+ }
  
- 	return retval;
 
