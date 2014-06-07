@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752898AbaFGISb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 04:18:31 -0400
-Received: from ns.horizon.com ([71.41.210.147]:24620 "HELO ns.horizon.com"
+	id S1752950AbaFGITh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 04:19:37 -0400
+Received: from ns.horizon.com ([71.41.210.147]:59938 "HELO ns.horizon.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752875AbaFGIS3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 04:18:29 -0400
-Date: 7 Jun 2014 04:18:28 -0400
-Message-ID: <20140607081828.9294.qmail@ns.horizon.com>
+	id S1752864AbaFGITf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jun 2014 04:19:35 -0400
+Date: 7 Jun 2014 04:19:34 -0400
+Message-ID: <20140607081934.9387.qmail@ns.horizon.com>
 From: "George Spelvin" <linux@horizon.com>
-To: davem@davemloft.net, dborkman@redhat.com, shemminger@osdl.org,
-        tytso@mit.edu
-Subject: [PATCH 0/7] random32: Various minor cleanups
-Cc: linux@horizon.com, linux-kernel@vger.kernel.org
+To: davem@davemloft.net, dborkman@redhat.com, linux@horizon.com,
+        shemminger@osdl.org, tytso@mit.edu
+Subject: [PATCH 1/7] lib/random32.c: Mark self-test data as __initconst
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <20140607081828.9294.qmail@ns.horizon.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I was looking for self-test code to emulate for lib/glob.c and, while
-canvassing other code with self-tests, found some code that made me itch,
-so I scratched it.
+So it can be thrown away along with the code that uses it.
 
-7 patches;
+Signed-off-by: George Spelvin <linux@horizon.com>
+---
+ lib/random32.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-1/7: Mark the self-test data as __initconst
-2/7: Remove excess calls to prandom_u32_state in initialization
-3/7: Replace an #ifdef with a stub prandom_state_selftest()
-4/7: Use <asm/unaligned.h> instead of hand-rolling it
-5/7: Make prandom_u32_max efficient for powers of 2
-6/7: Randomize timeout to the millisecond, not the second
-7/7: Remove redundant U suffixes on integers
+diff --git a/lib/random32.c b/lib/random32.c
+index fa5da61c..4da5d281 100644
+--- a/lib/random32.c
++++ b/lib/random32.c
+@@ -296,7 +296,7 @@ late_initcall(prandom_reseed);
+ static struct prandom_test1 {
+ 	u32 seed;
+ 	u32 result;
+-} test1[] = {
++} const test1[] __initconst = {
+ 	{ 1U, 3484351685U },
+ 	{ 2U, 2623130059U },
+ 	{ 3U, 3125133893U },
+@@ -307,7 +307,7 @@ static struct prandom_test2 {
+ 	u32 seed;
+ 	u32 iteration;
+ 	u32 result;
+-} test2[] = {
++} const test2[] __initconst = {
+ 	/* Test cases against taus113 from GSL library. */
+ 	{  931557656U, 959U, 2975593782U },
+ 	{ 1339693295U, 876U, 3887776532U },
+-- 
+2.0.0
 
-I have a big follow-on patch series to replace all the (many) instances
-of "prandom_u32() % x" in the kernel with prandom_u32_max(x), which is
-more efficient.
-
-As of patch 5/7, "prandom_u32() & (x-1)" can also be replaced by
-"prandom_u32_max(x)", but that's optional.
-
-Patch 6/7 is dubious, and I'd like comments.  I just don't see
-a reason why integer granularity would be desirable.
