@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753464AbaFGBcr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:32:47 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36101 "EHLO
+	id S1753446AbaFGBcp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:32:45 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36104 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752653AbaFGBXj (ORCPT
+	by vger.kernel.org with ESMTP id S1752647AbaFGBXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 21:23:39 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Oleg Nesterov" <oleg@redhat.com>,
-        "Paolo Bonzini" <pbonzini@redhat.com>
+CC: akpm@linux-foundation.org, "Larry Finger" <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
 Date: Sat, 07 Jun 2014 02:26:29 +0100
-Message-ID: <lsq.1402104389.565998987@decadent.org.uk>
+Message-ID: <lsq.1402104389.691610255@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 36/92] KVM: async_pf: mm->mm_users can not pin apf->mm
+Subject: [PATCH 3.2 42/92] rtlwifi: rtl8192cu: Fix too long disable of IRQs
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,63 +31,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 41c22f626254b9dc0376928cae009e73d1b6a49a upstream.
+commit a53268be0cb9763f11da4f6fe3fb924cbe3a7d4a upstream.
 
-get_user_pages(mm) is simply wrong if mm->mm_users == 0 and exit_mmap/etc
-was already called (or is in progress), mm->mm_count can only pin mm->pgd
-and mm_struct itself.
+In commit f78bccd79ba3cd9d9664981b501d57bdb81ab8a4 entitled "rtlwifi:
+rtl8192ce: Fix too long disable of IRQs", Olivier Langlois
+<olivier@trillion01.com> fixed a problem caused by an extra long disabling
+of interrupts. This patch makes the same fix for rtl8192cu.
 
-Change kvm_setup_async_pf/async_pf_execute to inc/dec mm->mm_users.
-
-kvm_create_vm/kvm_destroy_vm play with ->mm_count too but this case looks
-fine at first glance, it seems that this ->mm is only used to verify that
-current->mm == kvm->mm.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- virt/kvm/async_pf.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/net/wireless/rtlwifi/rtl8192cu/hw.c | 15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
 
---- a/virt/kvm/async_pf.c
-+++ b/virt/kvm/async_pf.c
-@@ -87,7 +87,7 @@ static void async_pf_execute(struct work
- 	if (waitqueue_active(&vcpu->wq))
- 		wake_up_interruptible(&vcpu->wq);
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
+@@ -1158,6 +1158,17 @@ int rtl92cu_hw_init(struct ieee80211_hw
+ 	struct rtl_ps_ctl *ppsc = rtl_psc(rtl_priv(hw));
+ 	int err = 0;
+ 	static bool iqk_initialized;
++	unsigned long flags;
++
++	/* As this function can take a very long time (up to 350 ms)
++	 * and can be called with irqs disabled, reenable the irqs
++	 * to let the other devices continue being serviced.
++	 *
++	 * It is safe doing so since our own interrupts will only be enabled
++	 * in a subsequent step.
++	 */
++	local_save_flags(flags);
++	local_irq_enable();
  
--	mmdrop(mm);
-+	mmput(mm);
- 	kvm_put_kvm(vcpu->kvm);
+ 	rtlhal->hw_type = HARDWARE_TYPE_RTL8192CU;
+ 	err = _rtl92cu_init_mac(hw);
+@@ -1171,7 +1182,7 @@ int rtl92cu_hw_init(struct ieee80211_hw
+ 			 ("Failed to download FW. Init HW without FW now..\n"));
+ 		err = 1;
+ 		rtlhal->fw_ready = false;
+-		return err;
++		goto exit;
+ 	} else {
+ 		rtlhal->fw_ready = true;
+ 	}
+@@ -1212,6 +1223,8 @@ int rtl92cu_hw_init(struct ieee80211_hw
+ 	_update_mac_setting(hw);
+ 	rtl92c_dm_init(hw);
+ 	_dump_registers(hw);
++exit:
++	local_irq_restore(flags);
+ 	return err;
  }
  
-@@ -100,7 +100,7 @@ void kvm_clear_async_pf_completion_queue
- 				   typeof(*work), queue);
- 		list_del(&work->queue);
- 		if (cancel_work_sync(&work->work)) {
--			mmdrop(work->mm);
-+			mmput(work->mm);
- 			kvm_put_kvm(vcpu->kvm); /* == work->vcpu->kvm */
- 			kmem_cache_free(async_pf_cache, work);
- 		}
-@@ -169,7 +169,7 @@ int kvm_setup_async_pf(struct kvm_vcpu *
- 	work->addr = gfn_to_hva(vcpu->kvm, gfn);
- 	work->arch = *arch;
- 	work->mm = current->mm;
--	atomic_inc(&work->mm->mm_count);
-+	atomic_inc(&work->mm->mm_users);
- 	kvm_get_kvm(work->vcpu->kvm);
- 
- 	/* this can't really happen otherwise gfn_to_pfn_async
-@@ -187,7 +187,7 @@ int kvm_setup_async_pf(struct kvm_vcpu *
- 	return 1;
- retry_sync:
- 	kvm_put_kvm(work->vcpu->kvm);
--	mmdrop(work->mm);
-+	mmput(work->mm);
- 	kmem_cache_free(async_pf_cache, work);
- 	return 0;
- }
 
