@@ -1,73 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753081AbaFGQkR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 12:40:17 -0400
-Received: from mout.web.de ([212.227.17.11]:55357 "EHLO mout.web.de"
+	id S1753161AbaFGQkY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 12:40:24 -0400
+Received: from mout.web.de ([212.227.17.11]:57664 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752940AbaFGQkP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 12:40:15 -0400
+	id S1753095AbaFGQkT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jun 2014 12:40:19 -0400
 From: Ken Helias <kenhelias@web.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, Ken Helias <kenhelias@firemail.de>
-Subject: [PATCHv3 1/3] list: Use argument hlist_add_after names from rcu variant
-Date: Sat,  7 Jun 2014 18:40:09 +0200
-Message-Id: <1402159211-12629-1-git-send-email-kenhelias@web.de>
+Subject: [PATCHv3 3/3] klist: Use same naming scheme as hlist for klist_add_after
+Date: Sat,  7 Jun 2014 18:40:11 +0200
+Message-Id: <1402159211-12629-3-git-send-email-kenhelias@web.de>
 X-Mailer: git-send-email 2.0.0
-X-Provags-ID: V03:K0:PMCkHENREXxxS2zRddlxZE44jyNnoXLhMILjR7B9Pyqmu9W4U6I
- mJiCSX+OoLkgWU27YmpmzKK+fqfO1YsBaT6+LPLpc1Vj4kf52Ok2apuyQpcOuiQKFicAMdu
- 3MyFJhsDQ/7wAxcB7iy6k3o2Jw++uq3UXTCvRdeHP86M54hn57NOA3jXUJ0Sashiiu9wxkG
- HeSgpPbOoDoIhUWYUvFIw==
+In-Reply-To: <1402159211-12629-1-git-send-email-kenhelias@web.de>
+References: <1402159211-12629-1-git-send-email-kenhelias@web.de>
+X-Provags-ID: V03:K0:pVY4plztHYIVNNNcMvwze7A2vcD/qvJqpuZGfTyc4sKd4pjZx33
+ Fe8K9aWClcR6whq4tRjlKwVlopy3q9LlYHKUApzouQsCPUdap++nflpBvsEAQlVHhGgNuAt
+ xUn78Dt4znwN58x3gqwZGvWmxFA3gRAezHSLsWJ+Kp5hWO5pvJg6GFzInyf5fVvpMvzsV78
+ t9vtAykwTxH1gpP+jr2yQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ken Helias <kenhelias@firemail.de>
 
-The argument names of the hlist_add_after are poorly chosen because they look
-the same as the ones from hlist_add_before but have to be used completely
-different. This easily confuses the reader. The creator of the
-hlist_add_after_rcu function has made a lot better choice.
+The name was modified from hlist_add_after to hlist_add_behind when adjusting
+the order of arguments to match the one with klist_add_after. This is
+necessary to avoid old code to compile against it when it would use it
+the wrong way.
+
+It would be good when klist would also follow this naming scheme to have a
+consistent experience in all available list implementations.
 
 Signed-off-by: Ken Helias <kenhelias@firemail.de>
 ---
-v2:
-Splitted into two patches
+ include/linux/klist.h | 2 +-
+ lib/klist.c           | 6 +++---
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-The patches to add list_add_before/behind were removed because it seems that
-there is a consensus that list_add is understood by everyone automatically
-as list_add_behind and list_add_tail is understood by everyone as
-list_add_before.... even when the names suggest otherwise.
-
- include/linux/list.h | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
-
-diff --git a/include/linux/list.h b/include/linux/list.h
-index ef95941..624ec7f 100644
---- a/include/linux/list.h
-+++ b/include/linux/list.h
-@@ -654,15 +654,15 @@ static inline void hlist_add_before(struct hlist_node *n,
- 	*(n->pprev) = n;
- }
+diff --git a/include/linux/klist.h b/include/linux/klist.h
+index a370ce5..61e5b72 100644
+--- a/include/linux/klist.h
++++ b/include/linux/klist.h
+@@ -44,7 +44,7 @@ struct klist_node {
  
--static inline void hlist_add_after(struct hlist_node *n,
--					struct hlist_node *next)
-+static inline void hlist_add_after(struct hlist_node *prev,
-+				   struct hlist_node *n)
+ extern void klist_add_tail(struct klist_node *n, struct klist *k);
+ extern void klist_add_head(struct klist_node *n, struct klist *k);
+-extern void klist_add_after(struct klist_node *n, struct klist_node *pos);
++extern void klist_add_behind(struct klist_node *n, struct klist_node *pos);
+ extern void klist_add_before(struct klist_node *n, struct klist_node *pos);
+ 
+ extern void klist_del(struct klist_node *n);
+diff --git a/lib/klist.c b/lib/klist.c
+index 358a368..89b485a 100644
+--- a/lib/klist.c
++++ b/lib/klist.c
+@@ -140,11 +140,11 @@ void klist_add_tail(struct klist_node *n, struct klist *k)
+ EXPORT_SYMBOL_GPL(klist_add_tail);
+ 
+ /**
+- * klist_add_after - Init a klist_node and add it after an existing node
++ * klist_add_behind - Init a klist_node and add it after an existing node
+  * @n: node we're adding.
+  * @pos: node to put @n after
+  */
+-void klist_add_after(struct klist_node *n, struct klist_node *pos)
++void klist_add_behind(struct klist_node *n, struct klist_node *pos)
  {
--	next->next = n->next;
--	n->next = next;
--	next->pprev = &n->next;
-+	n->next = prev->next;
-+	prev->next = n;
-+	n->pprev = &prev->next;
+ 	struct klist *k = knode_klist(pos);
  
--	if(next->next)
--		next->next->pprev  = &next->next;
-+	if (n->next)
-+		n->next->pprev  = &n->next;
+@@ -153,7 +153,7 @@ void klist_add_after(struct klist_node *n, struct klist_node *pos)
+ 	list_add(&n->n_node, &pos->n_node);
+ 	spin_unlock(&k->k_lock);
  }
+-EXPORT_SYMBOL_GPL(klist_add_after);
++EXPORT_SYMBOL_GPL(klist_add_behind);
  
- /* after that we'll appear to be on some hlist and hlist_del will work */
+ /**
+  * klist_add_before - Init a klist_node and add it before an existing node
 -- 
 2.0.0
 
