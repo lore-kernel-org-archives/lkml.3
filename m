@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752801AbaFGMFO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 08:05:14 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:49033 "EHLO
+	id S1752839AbaFGMGS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 08:06:18 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:49055 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752563AbaFGMFM (ORCPT
+	with ESMTP id S1752563AbaFGMGR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 08:05:12 -0400
-Date: Sat, 7 Jun 2014 14:05:09 +0200
+	Sat, 7 Jun 2014 08:06:17 -0400
+Date: Sat, 7 Jun 2014 14:06:14 +0200
 From: Pavel Machek <pavel@ucw.cz>
 To: Daniel Vetter <daniel.vetter@ffwll.ch>
 Cc: Jiri Kosina <jkosina@suse.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
@@ -16,7 +16,7 @@ Cc: Jiri Kosina <jkosina@suse.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Chris Wilson <chris@chris-wilson.co.uk>,
         intel-gfx <intel-gfx@lists.freedesktop.org>
 Subject: Re: 3.15-rc: regression in suspend
-Message-ID: <20140607120509.GA5309@amd.pavel.ucw.cz>
+Message-ID: <20140607120614.GB5309@amd.pavel.ucw.cz>
 References: <20140513160926.GA3621@amd.pavel.ucw.cz>
  <20140513163734.GA4602@amd.pavel.ucw.cz>
  <20140513214155.GA5087@amd.pavel.ucw.cz>
@@ -52,25 +52,10 @@ On Thu 2014-05-15 17:31:54, Daniel Vetter wrote:
 > Someone succeeding at a bisect would be awesome ... Note that the only
 > key here is the ring init failure in dmesg.
 
-Hmm. I was slowly getting ready for doing the bisect, but it seems
-someone did it for me.
-
-Date: Wed, 28 May 2014 18:25:21 +0100
-From: Ken Moffat <zarniwhoop@ntlworld.com>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Dave Airlie <airlied@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Resume from suspend broken in 3.15. (bisected)
-User-Agent: Mutt/1.5.23 (2014-03-12)
-
-I manually reverted 25f397a429dfa43f22c278d0119a60a343aa568f and it
-seems I'm back at working suspend/resume in i915.
-
-The 3.15 regression seemed to be "if suspend works once, it seems to
-work until reboot", otherwise it failed in cca 70% cases. I did two
-reboots so far with 25f... reverted, and it seems to behave ok.
-
-Best regards,  
-								Pavel
+Oh and... the machine has problems comming up after reboot (never seen
+those before 3.15). Sometimes, boot will hang with blank screen, and hard
+powerdown is needed...
+									Pavel
 -- 
 (english) http://www.livejournal.com/~pavelmachek
 (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
