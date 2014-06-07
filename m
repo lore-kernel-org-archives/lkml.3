@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753064AbaFGBca (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:32:30 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36121 "EHLO
+	id S1752688AbaFGBXi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:23:38 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35916 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752672AbaFGBXj (ORCPT
+	by vger.kernel.org with ESMTP id S1752209AbaFGBXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 21:23:39 -0400
+	Fri, 6 Jun 2014 21:23:36 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Matthew Garrett" <mjg@redhat.com>,
-        "Alex Hung" <alex.hung@canonical.com>
+CC: akpm@linux-foundation.org,
+        "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 Date: Sat, 07 Jun 2014 02:26:28 +0100
-Message-ID: <lsq.1402104388.36905540@decadent.org.uk>
+Message-ID: <lsq.1402104388.759628115@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 27/92] thinkpad-acpi: fix issuing duplicated key
- events for brightness up/down
+Subject: [PATCH 3.2 06/92] tracepoint: Do not waste memory on mods with no
+ tracepoints
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,31 +33,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Hung <alex.hung@canonical.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit ff413195e830541afeae469fc866ecd0319abd7e upstream.
+commit 7dec935a3aa04412cba2cebe1524ae0d34a30c24 upstream.
 
-The tp_features.bright_acpimode will not be set correctly for brightness
-control because ACPI_VIDEO_HID will not be located in ACPI. As a result,
-a duplicated key event will always be sent. acpi_video_backlight_support()
-is sufficient to detect standard ACPI brightness control.
+No reason to allocate tp_module structures for modules that have no
+tracepoints. This just wastes memory.
 
-Signed-off-by: Alex Hung <alex.hung@canonical.com>
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Fixes: b75ef8b44b1c "Tracepoint: Dissociate from module mutex"
+Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/platform/x86/thinkpad_acpi.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/tracepoint.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/platform/x86/thinkpad_acpi.c
-+++ b/drivers/platform/x86/thinkpad_acpi.c
-@@ -3405,7 +3405,7 @@ static int __init hotkey_init(struct ibm
- 	/* Do not issue duplicate brightness change events to
- 	 * userspace. tpacpi_detect_brightness_capabilities() must have
- 	 * been called before this point  */
--	if (tp_features.bright_acpimode && acpi_video_backlight_support()) {
-+	if (acpi_video_backlight_support()) {
- 		pr_info("This ThinkPad has standard ACPI backlight "
- 			"brightness control, supported by the ACPI "
- 			"video driver\n");
+--- a/kernel/tracepoint.c
++++ b/kernel/tracepoint.c
+@@ -638,6 +638,9 @@ static int tracepoint_module_coming(stru
+ 	struct tp_module *tp_mod, *iter;
+ 	int ret = 0;
+ 
++	if (!mod->num_tracepoints)
++		return 0;
++
+ 	/*
+ 	 * We skip modules that taint the kernel, especially those with different
+ 	 * module headers (for forced load), to make sure we don't cause a crash.
+@@ -681,6 +684,9 @@ static int tracepoint_module_going(struc
+ {
+ 	struct tp_module *pos;
+ 
++	if (!mod->num_tracepoints)
++		return 0;
++
+ 	mutex_lock(&tracepoints_mutex);
+ 	tracepoint_update_probe_range(mod->tracepoints_ptrs,
+ 		mod->tracepoints_ptrs + mod->num_tracepoints);
 
