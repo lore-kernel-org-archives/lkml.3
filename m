@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753106AbaFGB1b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:27:31 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36175 "EHLO
+	id S1753310AbaFGBah (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:30:37 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36122 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752702AbaFGBXj (ORCPT
+	by vger.kernel.org with ESMTP id S1752673AbaFGBXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 21:23:39 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,19 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Dennis Jansen" <dennis.jansen@web.de>,
-        "Juan Manuel Cabo" <juanmanuel.cabo@gmail.com>,
-        "Kieran Clancy" <clancy.kieran@gmail.com>,
-        "Nicolas Porcel" <nicolasporcel06@gmail.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "Giannis Koutsou" <giannis.koutsou@gmail.com>,
-        "Maurizio D'Addona" <mauritiusdadd@gmail.com>,
-        "Stefan Biereigel" <stefan@biereigel.de>
-Date: Sat, 07 Jun 2014 02:26:28 +0100
-Message-ID: <lsq.1402104388.686682608@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Stuart Hayes" <stuart.w.hayes@gmail.com>,
+        "Thomas Gleixner" <tglx@linutronix.de>
+Date: Sat, 07 Jun 2014 02:26:29 +0100
+Message-ID: <lsq.1402104389.469315064@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 03/92] ACPI / EC: Process rather than discard events
- in acpi_ec_clear
+Subject: [PATCH 3.2 39/92] hrtimer: Prevent all reprogramming if hang detected
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -38,119 +31,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kieran Clancy <clancy.kieran@gmail.com>
+From: Stuart Hayes <stuart.w.hayes@gmail.com>
 
-commit 3eba563e280101209bad27d40bfc83ddf1489234 upstream.
+commit 6c6c0d5a1c949d2e084706f9e5fb1fccc175b265 upstream.
 
-Address a regression caused by commit ad332c8a4533:
-(ACPI / EC: Clear stale EC events on Samsung systems)
+If the last hrtimer interrupt detected a hang it sets hang_detected=1
+and programs the clock event device with a delay to let the system
+make progress.
 
-After the earlier patch, there was found to be a race condition on some
-earlier Samsung systems (N150/N210/N220). The function acpi_ec_clear was
-sometimes discarding a new EC event before its GPE was triggered by the
-system. In the case of these systems, this meant that the "lid open"
-event was not registered on resume if that was the cause of the wake,
-leading to problems when attempting to close the lid to suspend again.
+If hang_detected == 1, we prevent reprogramming of the clock event
+device in hrtimer_reprogram() but not in hrtimer_force_reprogram().
 
-After testing on a number of Samsung systems, both those affected by the
-previous EC bug and those affected by the race condition, it seemed that
-the best course of action was to process rather than discard the events.
-On Samsung systems which accumulate stale EC events, there does not seem
-to be any adverse side-effects of running the associated _Q methods.
+This can lead to the following situation:
 
-This patch adds an argument to the static function acpi_ec_sync_query so
-that it may be used within the acpi_ec_clear loop in place of
-acpi_ec_query_unlocked which was used previously.
+hrtimer_interrupt()
+   hang_detected = 1;
+   program ce device to Xms from now (hang delay)
 
-With thanks to Stefan Biereigel for reporting the issue, and for all the
-people who helped test the new patch on affected systems.
+We have two timers pending:
+   T1 expires 50ms from now
+   T2 expires 5s from now
 
-Fixes: ad332c8a4533 (ACPI / EC: Clear stale EC events on Samsung systems)
-References: https://lkml.kernel.org/r/532FE3B2.9060808@biereigel-wb.de
-References: https://bugzilla.kernel.org/show_bug.cgi?id=44161#c173
-Reported-by: Stefan Biereigel <stefan@biereigel.de>
-Signed-off-by: Kieran Clancy <clancy.kieran@gmail.com>
-Tested-by: Stefan Biereigel <stefan@biereigel.de>
-Tested-by: Dennis Jansen <dennis.jansen@web.de>
-Tested-by: Nicolas Porcel <nicolasporcel06@gmail.com>
-Tested-by: Maurizio D'Addona <mauritiusdadd@gmail.com>
-Tested-by: Juan Manuel Cabo <juanmanuel.cabo@gmail.com>
-Tested-by: Giannis Koutsou <giannis.koutsou@gmail.com>
-Tested-by: Kieran Clancy <clancy.kieran@gmail.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-[bwh: Backported to 3.2: adjust context]
+Now T1 gets canceled, which causes hrtimer_force_reprogram() to be
+invoked, which in turn programs the clock event device to T2 (5
+seconds from now).
+
+Any hrtimer_start after that will not reprogram the hardware due to
+hang_detected still being set. So we effectivly block all timers until
+the T2 event fires and cleans up the hang situation.
+
+Add a check for hang_detected to hrtimer_force_reprogram() which
+prevents the reprogramming of the hang delay in the hardware
+timer. The subsequent hrtimer_interrupt will resolve all outstanding
+issues.
+
+[ tglx: Rewrote subject and changelog and fixed up the comment in
+  	hrtimer_force_reprogram() ]
+
+Signed-off-by: Stuart Hayes <stuart.w.hayes@gmail.com>
+Link: http://lkml.kernel.org/r/53602DC6.2060101@gmail.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/acpi/ec.c | 21 ++++++++++++---------
- 1 file changed, 12 insertions(+), 9 deletions(-)
+ kernel/hrtimer.c | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -206,13 +206,13 @@ unlock:
- 	spin_unlock_irqrestore(&ec->curr_lock, flags);
- }
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -567,6 +567,23 @@ hrtimer_force_reprogram(struct hrtimer_c
  
--static int acpi_ec_sync_query(struct acpi_ec *ec);
-+static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data);
+ 	cpu_base->expires_next.tv64 = expires_next.tv64;
  
- static int ec_check_sci_sync(struct acpi_ec *ec, u8 state)
- {
- 	if (state & ACPI_EC_FLAG_SCI) {
- 		if (!test_and_set_bit(EC_FLAGS_QUERY_PENDING, &ec->flags))
--			return acpi_ec_sync_query(ec);
-+			return acpi_ec_sync_query(ec, NULL);
- 	}
- 	return 0;
- }
-@@ -452,10 +452,8 @@ int ec_transaction(u8 command,
- 
- EXPORT_SYMBOL(ec_transaction);
- 
--static int acpi_ec_query_unlocked(struct acpi_ec *ec, u8 *data);
--
- /*
-- * Clears stale _Q events that might have accumulated in the EC.
-+ * Process _Q events that might have accumulated in the EC.
-  * Run with locked ec mutex.
-  */
- static void acpi_ec_clear(struct acpi_ec *ec)
-@@ -464,7 +462,7 @@ static void acpi_ec_clear(struct acpi_ec
- 	u8 value = 0;
- 
- 	for (i = 0; i < ACPI_EC_CLEAR_MAX; i++) {
--		status = acpi_ec_query_unlocked(ec, &value);
-+		status = acpi_ec_sync_query(ec, &value);
- 		if (status || !value)
- 			break;
- 	}
-@@ -591,13 +589,18 @@ static void acpi_ec_run(void *cxt)
- 	kfree(handler);
- }
- 
--static int acpi_ec_sync_query(struct acpi_ec *ec)
-+static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data)
- {
- 	u8 value = 0;
- 	int status;
- 	struct acpi_ec_query_handler *handler, *copy;
--	if ((status = acpi_ec_query_unlocked(ec, &value)))
++	/*
++	 * If a hang was detected in the last timer interrupt then we
++	 * leave the hang delay active in the hardware. We want the
++	 * system to make progress. That also prevents the following
++	 * scenario:
++	 * T1 expires 50ms from now
++	 * T2 expires 5s from now
++	 *
++	 * T1 is removed, so this code is called and would reprogram
++	 * the hardware to 5s from now. Any hrtimer_start after that
++	 * will not reprogram the hardware due to hang_detected being
++	 * set. So we'd effectivly block all timers until the T2 event
++	 * fires.
++	 */
++	if (cpu_base->hang_detected)
++		return;
 +
-+	status = acpi_ec_query_unlocked(ec, &value);
-+	if (data)
-+		*data = value;
-+	if (status)
- 		return status;
-+
- 	list_for_each_entry(handler, &ec->list, node) {
- 		if (value == handler->query_bit) {
- 			/* have custom handler for this bit */
-@@ -620,7 +623,7 @@ static void acpi_ec_gpe_query(void *ec_c
- 	if (!ec)
- 		return;
- 	mutex_lock(&ec->lock);
--	acpi_ec_sync_query(ec);
-+	acpi_ec_sync_query(ec, NULL);
- 	mutex_unlock(&ec->lock);
+ 	if (cpu_base->expires_next.tv64 != KTIME_MAX)
+ 		tick_program_event(cpu_base->expires_next, 1);
  }
- 
 
