@@ -1,49 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753142AbaFGRsd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 13:48:33 -0400
-Received: from inx.pm.waw.pl ([195.116.170.130]:49990 "EHLO inx.pm.waw.pl"
+	id S1753085AbaFGR5D (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 13:57:03 -0400
+Received: from mout.gmx.net ([212.227.15.19]:52851 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752850AbaFGRsc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 13:48:32 -0400
-X-Greylist: delayed 546 seconds by postgrey-1.27 at vger.kernel.org; Sat, 07 Jun 2014 13:48:31 EDT
-From: Krzysztof Halasa <khc@pm.waw.pl>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: wan: wanxl.c:  Cleaning up declaration of a while loop
-References: <1402139018-17208-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Date: Sat, 07 Jun 2014 19:38:42 +0200
-In-Reply-To: <1402139018-17208-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	(Rickard Strandqvist's message of "Sat, 7 Jun 2014 13:03:38 +0200")
-Message-ID: <m3egz0mxgd.fsf@intrepid.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752850AbaFGR5B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jun 2014 13:57:01 -0400
+From: =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
+To: davem@davemloft.net
+Cc: jeffrey.t.kirsher@intel.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
+Subject: [PATCH] dns_resolver: assure that dns_query() result is null-terminated
+Date: Sat,  7 Jun 2014 19:56:51 +0200
+Message-Id: <1402163811-21604-1-git-send-email-manuel.schoelling@gmx.de>
+X-Mailer: git-send-email 1.7.10.4
+X-Provags-ID: V03:K0:jcGLdxDeFMvN0DBZp4SaQBb6l+xPZWdsg9RuldVCvgtU8HfCKQY
+ AI11oS873/XzzyytUPBQ2Jupgae9WrJk4I3PkgmwF0+BLoGAVbFN9N4nnYFNTuG0UNVmyI9
+ 6BuKzHxJ3Q2dULglxNrbUuXRxjw3wbiDyjgLS/erSnZ0VWo2itpT+oyWmCy5SF/RctE0NTO
+ EQndduSu++gBwigpfFALg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se> writes:
+dns_query() credulously assumes that keys are null-terminated and
+returns a copy of a memory block that is off by one.
+---
+ net/dns_resolver/dns_query.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-> Unusual declaration of a while loop.
-> However, believe you also want to make sure that the pointer is not NULL
-
-Not really. The code is meant to do exactly what it currently does -
-set variable desc and then check desc->stat.
-All rx_descs are at this point already initialized and not NULL
-(if desc was indeed NULL we better BUG*() or Oops on desc->stat access
-instead of failing silently).
-
-> --- a/drivers/net/wan/wanxl.c
-> +++ b/drivers/net/wan/wanxl.c
-> @@ -196,7 +196,7 @@ static inline void wanxl_tx_intr(port_t *port)
->  static inline void wanxl_rx_intr(card_t *card)
->  {
->  	desc_t *desc;
-> -	while (desc = &card->status->rx_descs[card->rx_in],
-> +	while (desc = &card->status->rx_descs[card->rx_in] &&
->  	       desc->stat != PACKET_EMPTY) {
->  		if ((desc->stat & PACKET_PORT_MASK) > card->n_ports)
->  			pr_crit("%s: received packet for nonexistent port\n",
-
+diff --git a/net/dns_resolver/dns_query.c b/net/dns_resolver/dns_query.c
+index e7b6d53..53be635 100644
+--- a/net/dns_resolver/dns_query.c
++++ b/net/dns_resolver/dns_query.c
+@@ -149,7 +149,9 @@ int dns_query(const char *type, const char *name, size_t namelen,
+ 	if (!*_result)
+ 		goto put;
+ 
+-	memcpy(*_result, upayload->data, len + 1);
++	memcpy(*_result, upayload->data, len);
++	*_result[len+1] = '\0';
++
+ 	if (_expiry)
+ 		*_expiry = rkey->expiry;
+ 
 -- 
-Krzysztof Halasa
+1.7.10.4
+
