@@ -1,106 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752490AbaFGA7x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 20:59:53 -0400
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:65181 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752366AbaFGA7w (ORCPT
+	id S1752841AbaFGBXs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:23:48 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35931 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752440AbaFGBXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 20:59:52 -0400
-Message-ID: <53926406.4020200@gmail.com>
-Date: Fri, 06 Jun 2014 20:59:50 -0400
-From: Pranith Kumar <bobby.prani@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Fri, 6 Jun 2014 21:23:36 -0400
+Content-Type: text/plain; charset="UTF-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>, Pranith Kumar <pranith@gatech.edu>
-CC: peterz@infradead.org, linux-kernel@vger.kernel.org,
-        tim.c.chen@linux.intel.com, davidlohr@hp.com, mingo@redhat.com,
-        xfs@oss.sgi.com
-Subject: Re: [RFC PATCH 1/1] cleanup: use bool as return type for rwsem_is_locked
-References: <5390D7E1.7060606@gatech.edu> <5391FFFD.1060901@gatech.edu> <53920446.7060505@gatech.edu> <20140607001819.GE4453@dastard>
-In-Reply-To: <20140607001819.GE4453@dastard>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "Ivan Vecera" <ivecera@redhat.com>,
+        "Michael Chan" <mchan@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Sat, 07 Jun 2014 02:26:28 +0100
+Message-ID: <lsq.1402104388.772971002@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 13/92] tg3: update rx_jumbo_pending ring param only
+ when jumbo  frames are enabled
+In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/2014 08:18 PM, Dave Chinner wrote:
-> On Fri, Jun 06, 2014 at 02:11:18PM -0400, Pranith Kumar wrote:
->> On 06/06/2014 01:53 PM, Pranith Kumar wrote:
->>> On Fri, Jun 6, 2014 at 3:35 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->>>>
->>>> Now in general, I don't particularly like such superfluous changes, so
->>>> unless you can show that GCC actually generates better code, I'd prefer
->>>> to keep things as they are.
->>>
->>> Fixed and checked the assembly. It saves us 2 bytes of code, not much. I am not sure if that is worth it :(
->>>
->>> use bool as the return type for rwsem_is_locked() instead of int
->>>
+3.2.60-rc1 review patch.  If anyone has any objections, please let me know.
 
-> 
-> If you are going to change the return type to bool, then you should
-> also remove the manual "!!" conversions to a boolean return and let
-> the compiler do it in the most optimal way.
-> 
- 
-Agreed, please find patch below:
+------------------
 
-change return type to bool to follow rwsem_is_locked()
+From: Ivan Vecera <ivecera@redhat.com>
 
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+commit ba67b510035141bd89b40bf65efa0a79834311ca upstream.
+
+The patch fixes a problem with dropped jumbo frames after usage of
+'ethtool -G ... rx'.
+
+Scenario:
+1. ip link set eth0 up
+2. ethtool -G eth0 rx N # <- This zeroes rx-jumbo
+3. ip link set mtu 9000 dev eth0
+
+The ethtool command set rx_jumbo_pending to zero so any received jumbo
+packets are dropped and you need to use 'ethtool -G eth0 rx-jumbo N'
+to workaround the issue.
+The patch changes the logic so rx_jumbo_pending value is changed only if
+jumbo frames are enabled (MTU > 1500).
+
+Signed-off-by: Ivan Vecera <ivecera@redhat.com>
+Acked-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/xfs/xfs_inode.c | 8 ++++----
- fs/xfs/xfs_inode.h | 2 +-
- 2 files changed, 5 insertions(+), 5 deletions(-)
+ drivers/net/ethernet/broadcom/tg3.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/fs/xfs/xfs_inode.c b/fs/xfs/xfs_inode.c
-index a6115fe..c02ac49 100644
---- a/fs/xfs/xfs_inode.c
-+++ b/fs/xfs/xfs_inode.c
-@@ -285,25 +285,25 @@ xfs_ilock_demote(
- }
+diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
+index c77c462..2615433 100644
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -10656,7 +10656,9 @@ static int tg3_set_ringparam(struct net_device *dev, struct ethtool_ringparam *e
+ 	if (tg3_flag(tp, MAX_RXPEND_64) &&
+ 	    tp->rx_pending > 63)
+ 		tp->rx_pending = 63;
+-	tp->rx_jumbo_pending = ering->rx_jumbo_pending;
++
++	if (tg3_flag(tp, JUMBO_RING_ENABLE))
++		tp->rx_jumbo_pending = ering->rx_jumbo_pending;
  
- #if defined(DEBUG) || defined(XFS_WARN)
--int
-+bool
- xfs_isilocked(
- 	xfs_inode_t		*ip,
- 	uint			lock_flags)
- {
- 	if (lock_flags & (XFS_ILOCK_EXCL|XFS_ILOCK_SHARED)) {
- 		if (!(lock_flags & XFS_ILOCK_SHARED))
--			return !!ip->i_lock.mr_writer;
-+			return !(ip->i_lock.mr_writer == 0);
- 		return rwsem_is_locked(&ip->i_lock.mr_lock);
- 	}
- 
- 	if (lock_flags & (XFS_IOLOCK_EXCL|XFS_IOLOCK_SHARED)) {
- 		if (!(lock_flags & XFS_IOLOCK_SHARED))
--			return !!ip->i_iolock.mr_writer;
-+			return !(ip->i_iolock.mr_writer == 0);
- 		return rwsem_is_locked(&ip->i_iolock.mr_lock);
- 	}
- 
- 	ASSERT(0);
--	return 0;
-+	return false;
- }
- #endif
- 
-diff --git a/fs/xfs/xfs_inode.h b/fs/xfs/xfs_inode.h
-index f72bffa..efebed6 100644
---- a/fs/xfs/xfs_inode.h
-+++ b/fs/xfs/xfs_inode.h
-@@ -346,7 +346,7 @@ void		xfs_ilock(xfs_inode_t *, uint);
- int		xfs_ilock_nowait(xfs_inode_t *, uint);
- void		xfs_iunlock(xfs_inode_t *, uint);
- void		xfs_ilock_demote(xfs_inode_t *, uint);
--int		xfs_isilocked(xfs_inode_t *, uint);
-+bool		xfs_isilocked(xfs_inode_t *, uint);
- uint		xfs_ilock_data_map_shared(struct xfs_inode *);
- uint		xfs_ilock_attr_map_shared(struct xfs_inode *);
- int		xfs_ialloc(struct xfs_trans *, xfs_inode_t *, umode_t,
--- 
-1.9.1
+ 	for (i = 0; i < tp->irq_max; i++)
+ 		tp->napi[i].tx_pending = ering->tx_pending;
+
