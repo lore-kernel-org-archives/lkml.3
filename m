@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752821AbaFGN4Q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 09:56:16 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:47193 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752650AbaFGN4P (ORCPT
+	id S1752870AbaFGN6N (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 09:58:13 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:53126 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752615AbaFGN6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 09:56:15 -0400
-Message-ID: <539319fd.22abb60a.05d2.70c7@mx.google.com>
-Date: Sat, 07 Jun 2014 08:56:08 -0500
-Subject: Re: [PATCH 1/1] mm/zswap.c: add __init to zswap_entry_cache_destroy
-From: Seth Jennings <sjennings@variantweb.net>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	Sat, 7 Jun 2014 09:58:12 -0400
+From: Anton Protopopov <a.s.protopopov@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Anton Protopopov <a.s.protopopov@gmail.com>
+Subject: [PATCH] Staging: comedi: check the return value of kobject_set_name
+Date: Sat,  7 Jun 2014 17:56:55 +0400
+Message-Id: <1402149415-20037-1-git-send-email-a.s.protopopov@gmail.com>
+X-Mailer: git-send-email 1.8.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s57DuPwY006346
 
+Added a check of the return value of the kobject_set_name function.
 
-On Jun 7, 2014 6:08 AM, Fabian Frederick <fabf@skynet.be> wrote:
->
-> zswap_entry_cache_destroy is only called by __init init_zswap 
->
-> This patch also fixes function name 
-> zswap_entry_cache_ s/destory/destroy
+Signed-off-by: Anton Protopopov <a.s.protopopov@gmail.com>
+---
+ drivers/staging/comedi/comedi_fops.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-Thanks for theÂ  improvement â˜º
+diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
+index 9d99fb3..dfeefa2 100644
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -2597,7 +2597,14 @@ static int __init comedi_init(void)
+ 		return -EIO;
+ 	cdev_init(&comedi_cdev, &comedi_fops);
+ 	comedi_cdev.owner = THIS_MODULE;
+-	kobject_set_name(&comedi_cdev.kobj, "comedi");
++
++	retval = kobject_set_name(&comedi_cdev.kobj, "comedi");
++	if (retval) {
++		unregister_chrdev_region(MKDEV(COMEDI_MAJOR, 0),
++					 COMEDI_NUM_MINORS);
++		return retval;
++	}
++
+ 	if (cdev_add(&comedi_cdev, MKDEV(COMEDI_MAJOR, 0), COMEDI_NUM_MINORS)) {
+ 		unregister_chrdev_region(MKDEV(COMEDI_MAJOR, 0),
+ 					 COMEDI_NUM_MINORS);
+-- 
+1.8.3.4
 
-Acked-by <sjennings@variantweb.net>
-
->
-> Cc: Seth Jennings <sjennings@variantweb.net> 
-> Cc: linux-mm@kvack.org 
-> Cc: Andrew Morton <akpm@linux-foundation.org> 
-> Signed-off-by: Fabian Frederick <fabf@skynet.be> 
-> --- 
-> mm/zswap.c | 4 ++-- 
-> 1 file changed, 2 insertions(+), 2 deletions(-) 
->
-> diff --git a/mm/zswap.c b/mm/zswap.c 
-> index aeaef0f..ab7fa0f 100644 
-> --- a/mm/zswap.c 
-> +++ b/mm/zswap.c 
-> @@ -207,7 +207,7 @@ static int zswap_entry_cache_create(void) 
-> return zswap_entry_cache == NULL; 
-> } 
->
-> -static void zswap_entry_cache_destory(void) 
-> +static void __init zswap_entry_cache_destroy(void) 
-> { 
-> kmem_cache_destroy(zswap_entry_cache); 
-> } 
-> @@ -926,7 +926,7 @@ static int __init init_zswap(void) 
-> pcpufail: 
-> zswap_comp_exit(); 
-> compfail: 
-> - zswap_entry_cache_destory(); 
-> + zswap_entry_cache_destroy(); 
-> cachefail: 
-> zbud_destroy_pool(zswap_pool); 
-> error: 
-> -- 
-> 1.9.1 
->
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
