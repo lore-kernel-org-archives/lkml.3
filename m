@@ -1,44 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752737AbaFGMB5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 08:01:57 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:48975 "EHLO
+	id S1752801AbaFGMFO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 08:05:14 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:49033 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752425AbaFGMB4 (ORCPT
+	with ESMTP id S1752563AbaFGMFM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 08:01:56 -0400
-Date: Sat, 7 Jun 2014 14:01:53 +0200
+	Sat, 7 Jun 2014 08:05:12 -0400
+Date: Sat, 7 Jun 2014 14:05:09 +0200
 From: Pavel Machek <pavel@ucw.cz>
-To: Ken Moffat <zarniwhoop@ntlworld.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, Dave Airlie <airlied@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Resume from suspend broken in 3.15. (bisected)
-Message-ID: <20140607120153.GA4721@amd.pavel.ucw.cz>
-References: <20140528172521.GA9945@milliways>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Jiri Kosina <jkosina@suse.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux-pm mailing list <linux-pm@lists.osdl.org>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>
+Subject: Re: 3.15-rc: regression in suspend
+Message-ID: <20140607120509.GA5309@amd.pavel.ucw.cz>
+References: <20140513160926.GA3621@amd.pavel.ucw.cz>
+ <20140513163734.GA4602@amd.pavel.ucw.cz>
+ <20140513214155.GA5087@amd.pavel.ucw.cz>
+ <alpine.LRH.2.00.1405141435510.30793@twin.jikos.cz>
+ <20140514155759.GB9723@amd.pavel.ucw.cz>
+ <20140514182046.GA13342@amd.pavel.ucw.cz>
+ <alpine.LNX.2.00.1405151727380.16459@pobox.suse.cz>
+ <CAKMK7uFEjDGSpdB0xDPL09GZ8N7aFrNA530HbRLyfTPx5SkLQw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140528172521.GA9945@milliways>
+In-Reply-To: <CAKMK7uFEjDGSpdB0xDPL09GZ8N7aFrNA530HbRLyfTPx5SkLQw@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
->  I've only started full testing of 3.15 on one of my machines now
-> that -rc7 has been released (this one had two issues in the radeon
-> code, second was fixed in rc7).  Unfortunately, suspend to RAM
-> (pm-suspend), or rather the wake-up, is broken on this box [ my
-> other two boxes are fine in rc7 ].
+On Thu 2014-05-15 17:31:54, Daniel Vetter wrote:
+> On Thu, May 15, 2014 at 5:29 PM, Jiri Kosina <jkosina@suse.cz> wrote:
+> >> > Note that X do work somehow after resume (I can't switch virtual
+> >> > desktops and dialog is stuck on screen, but it is not complete
+> >> > failure). I can do ctrl-alt-f1 and get to useful prompt.
+> >>
+> >> Oops. You were right. It seems it is duplicate after all.
+> >>
+> >> [drm:init_ring_common] *ERROR* render ring initialization failed ctl 0001f001 head 00001020 tail 00000000 start 00003000
+> >
+> > Pavel, thanks a lot for testing.
+> >
+> > Adding Daniel and Chris to CC -- we have another incarnation of the bug
+> > that is being chased in 76554.
 > 
-> Bisection identified one of your commits -
-> 
-> commit 25f397a429dfa43f22c278d0119a60a343aa568f
+> Someone succeeding at a bisect would be awesome ... Note that the only
+> key here is the ring init failure in dmesg.
 
-Thanks a lot for your work. It seems this commit breaks i915, too.
+Hmm. I was slowly getting ready for doing the bisect, but it seems
+someone did it for me.
 
-									Pavel
+Date: Wed, 28 May 2014 18:25:21 +0100
+From: Ken Moffat <zarniwhoop@ntlworld.com>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Dave Airlie <airlied@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Resume from suspend broken in 3.15. (bisected)
+User-Agent: Mutt/1.5.23 (2014-03-12)
+
+I manually reverted 25f397a429dfa43f22c278d0119a60a343aa568f and it
+seems I'm back at working suspend/resume in i915.
+
+The 3.15 regression seemed to be "if suspend works once, it seems to
+work until reboot", otherwise it failed in cca 70% cases. I did two
+reboots so far with 25f... reverted, and it seems to behave ok.
+
+Best regards,  
+								Pavel
 -- 
 (english) http://www.livejournal.com/~pavelmachek
 (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
