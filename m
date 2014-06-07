@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841AbaFGBXs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:23:48 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35931 "EHLO
+	id S1752739AbaFGBXl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:23:41 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35944 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752440AbaFGBXg (ORCPT
+	by vger.kernel.org with ESMTP id S1752290AbaFGBXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 21:23:36 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Ivan Vecera" <ivecera@redhat.com>,
-        "Michael Chan" <mchan@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Sat, 07 Jun 2014 02:26:28 +0100
-Message-ID: <lsq.1402104388.772971002@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Naoya Horiguchi" <n-horiguchi@ah.jp.nec.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Andi Kleen" <ak@linux.intel.com>, "Chen Yucong" <slaoub@gmail.com>
+Date: Sat, 07 Jun 2014 02:26:29 +0100
+Message-ID: <lsq.1402104389.959160530@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 13/92] tg3: update rx_jumbo_pending ring param only
- when jumbo  frames are enabled
+Subject: [PATCH 3.2 85/92] hwpoison, hugetlb: lock_page/unlock_page does
+ not match for handling a free hugepage
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,45 +33,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ivan Vecera <ivecera@redhat.com>
+From: Chen Yucong <slaoub@gmail.com>
 
-commit ba67b510035141bd89b40bf65efa0a79834311ca upstream.
+commit b985194c8c0a130ed155b71662e39f7eaea4876f upstream.
 
-The patch fixes a problem with dropped jumbo frames after usage of
-'ethtool -G ... rx'.
+For handling a free hugepage in memory failure, the race will happen if
+another thread hwpoisoned this hugepage concurrently.  So we need to
+check PageHWPoison instead of !PageHWPoison.
 
-Scenario:
-1. ip link set eth0 up
-2. ethtool -G eth0 rx N # <- This zeroes rx-jumbo
-3. ip link set mtu 9000 dev eth0
+If hwpoison_filter(p) returns true or a race happens, then we need to
+unlock_page(hpage).
 
-The ethtool command set rx_jumbo_pending to zero so any received jumbo
-packets are dropped and you need to use 'ethtool -G eth0 rx-jumbo N'
-to workaround the issue.
-The patch changes the logic so rx_jumbo_pending value is changed only if
-jumbo frames are enabled (MTU > 1500).
-
-Signed-off-by: Ivan Vecera <ivecera@redhat.com>
-Acked-by: Michael Chan <mchan@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Chen Yucong <slaoub@gmail.com>
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Tested-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reviewed-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[bwh: Backported to 3.2: s/num_poisoned_pages/bad_mce_pages/]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/ethernet/broadcom/tg3.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ mm/memory-failure.c | 15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
-index c77c462..2615433 100644
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -10656,7 +10656,9 @@ static int tg3_set_ringparam(struct net_device *dev, struct ethtool_ringparam *e
- 	if (tg3_flag(tp, MAX_RXPEND_64) &&
- 	    tp->rx_pending > 63)
- 		tp->rx_pending = 63;
--	tp->rx_jumbo_pending = ering->rx_jumbo_pending;
-+
-+	if (tg3_flag(tp, JUMBO_RING_ENABLE))
-+		tp->rx_jumbo_pending = ering->rx_jumbo_pending;
- 
- 	for (i = 0; i < tp->irq_max; i++)
- 		tp->napi[i].tx_pending = ering->tx_pending;
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1033,15 +1033,16 @@ int __memory_failure(unsigned long pfn,
+ 			return 0;
+ 		} else if (PageHuge(hpage)) {
+ 			/*
+-			 * Check "just unpoisoned", "filter hit", and
+-			 * "race with other subpage."
++			 * Check "filter hit" and "race with other subpage."
+ 			 */
+ 			lock_page(hpage);
+-			if (!PageHWPoison(hpage)
+-			    || (hwpoison_filter(p) && TestClearPageHWPoison(p))
+-			    || (p != hpage && TestSetPageHWPoison(hpage))) {
+-				atomic_long_sub(nr_pages, &mce_bad_pages);
+-				return 0;
++			if (PageHWPoison(hpage)) {
++				if ((hwpoison_filter(p) && TestClearPageHWPoison(p))
++				    || (p != hpage && TestSetPageHWPoison(hpage))) {
++					atomic_long_sub(nr_pages, &mce_bad_pages);
++					unlock_page(hpage);
++					return 0;
++				}
+ 			}
+ 			set_page_hwpoison_huge_page(hpage);
+ 			res = dequeue_hwpoisoned_huge_page(hpage);
 
