@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752984AbaFGBae (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:30:34 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36126 "EHLO
+	id S1752895AbaFGBad (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:30:33 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36112 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752674AbaFGBXj (ORCPT
+	by vger.kernel.org with ESMTP id S1752678AbaFGBXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 21:23:39 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Gleb Natapov" <gleb@redhat.com>,
-        "Paolo Bonzini" <pbonzini@redhat.com>,
-        "=?UTF-8?q?Radim=20Kr=C4=8Dm=C3=A1=C5=99?=" <rkrcmar@redhat.com>
+CC: akpm@linux-foundation.org, "Ben Greear" <greearb@candelatech.com>,
+        "Chuck Lever" <chuck.lever@oracle.com>,
+        "Marco Munderloh" <munderl@tnt.uni-hannover.de>,
+        "Al Viro" <viro@zeniv.linux.org.uk>, "Christoph Hellwig" <hch@lst.de>
 Date: Sat, 07 Jun 2014 02:26:29 +0100
-Message-ID: <lsq.1402104389.293842827@decadent.org.uk>
+Message-ID: <lsq.1402104389.363183483@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 35/92] kvm: remove .done from struct kvm_async_pf
+Subject: [PATCH 3.2 58/92] posix_acl: handle NULL ACL in posix_acl_equiv_mode
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,61 +33,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Radim Krčmář <rkrcmar@redhat.com>
+From: Christoph Hellwig <hch@lst.de>
 
-commit 98fda169290b3b28c0f2db2b8f02290c13da50ef upstream.
+commit 50c6e282bdf5e8dabf8d7cf7b162545a55645fd9 upstream.
 
-'.done' is used to mark the completion of 'async_pf_execute()', but
-'cancel_work_sync()' returns true when the work was canceled, so we
-use it instead.
+Various filesystems don't bother checking for a NULL ACL in
+posix_acl_equiv_mode, and thus can dereference a NULL pointer when it
+gets passed one. This usually happens from the NFS server, as the ACL tools
+never pass a NULL ACL, but instead of one representing the mode bits.
 
-Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
-Reviewed-by: Paolo Bonzini <pbonzini@redhat.com>
-Reviewed-by: Gleb Natapov <gleb@redhat.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Instead of adding boilerplat to all filesystems put this check into one place,
+which will allow us to remove the check from other filesystems as well later
+on.
+
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Reported-by: Ben Greear <greearb@candelatech.com>
+Reported-by: Marco Munderloh <munderl@tnt.uni-hannover.de>,
+Cc: Chuck Lever <chuck.lever@oracle.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/linux/kvm_host.h | 1 -
- virt/kvm/async_pf.c      | 5 +----
- 2 files changed, 1 insertion(+), 5 deletions(-)
+ fs/posix_acl.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -95,7 +95,6 @@ struct kvm_async_pf {
- 	unsigned long addr;
- 	struct kvm_arch_async_pf arch;
- 	struct page *page;
--	bool done;
- };
+--- a/fs/posix_acl.c
++++ b/fs/posix_acl.c
+@@ -155,6 +155,12 @@ posix_acl_equiv_mode(const struct posix_
+ 	umode_t mode = 0;
+ 	int not_equiv = 0;
  
- void kvm_clear_async_pf_completion_queue(struct kvm_vcpu *vcpu);
---- a/virt/kvm/async_pf.c
-+++ b/virt/kvm/async_pf.c
-@@ -75,7 +75,6 @@ static void async_pf_execute(struct work
- 	spin_lock(&vcpu->async_pf.lock);
- 	list_add_tail(&apf->link, &vcpu->async_pf.done);
- 	apf->page = page;
--	apf->done = true;
- 	spin_unlock(&vcpu->async_pf.lock);
- 
- 	/*
-@@ -99,9 +98,8 @@ void kvm_clear_async_pf_completion_queue
- 		struct kvm_async_pf *work =
- 			list_entry(vcpu->async_pf.queue.next,
- 				   typeof(*work), queue);
--		cancel_work_sync(&work->work);
- 		list_del(&work->queue);
--		if (!work->done) { /* work was canceled */
-+		if (cancel_work_sync(&work->work)) {
- 			mmdrop(work->mm);
- 			kvm_put_kvm(vcpu->kvm); /* == work->vcpu->kvm */
- 			kmem_cache_free(async_pf_cache, work);
-@@ -166,7 +164,6 @@ int kvm_setup_async_pf(struct kvm_vcpu *
- 		return 0;
- 
- 	work->page = NULL;
--	work->done = false;
- 	work->vcpu = vcpu;
- 	work->gva = gva;
- 	work->addr = gfn_to_hva(vcpu->kvm, gfn);
++	/*
++	 * A null ACL can always be presented as mode bits.
++	 */
++	if (!acl)
++		return 0;
++
+ 	FOREACH_ACL_ENTRY(pa, acl, pe) {
+ 		switch (pa->e_tag) {
+ 			case ACL_USER_OBJ:
 
