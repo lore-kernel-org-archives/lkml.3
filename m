@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753602AbaFGBrU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:47:20 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35956 "EHLO
+	id S1753618AbaFGBrS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:47:18 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35957 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752499AbaFGBXg (ORCPT
+	by vger.kernel.org with ESMTP id S1752490AbaFGBXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 21:23:36 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Lior Amsalem" <alior@marvell.com>,
-        "Ezequiel Garcia" <ezequiel.garcia@free-electrons.com>,
-        "Dan Williams" <dan.j.williams@intel.com>
-Date: Sat, 07 Jun 2014 02:26:29 +0100
-Message-ID: <lsq.1402104389.393624387@decadent.org.uk>
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
+        "Jay Vosburgh" <j.vosburgh@gmail.com>,
+        "Thomas Richter" <tmricht@linux.vnet.ibm.com>
+Date: Sat, 07 Jun 2014 02:26:28 +0100
+Message-ID: <lsq.1402104388.93237058@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 84/92] dma: mv_xor: Flush descriptors before
- activating a channel
+Subject: [PATCH 3.2 09/92] bonding: Remove debug_fs files when module init
+ fails
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,43 +33,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+From: Thomas Richter <tmricht@linux.vnet.ibm.com>
 
-commit 5a9a55bf9157d3490b0c8c4c81d4708602c26e07 upstream.
+[ Upstream commit db29868653394937037d71dc3545768302dda643 ]
 
-We need to use writel() instead of writel_relaxed() when starting
-a channel, to ensure all the descriptors have been flushed before
-the activation.
+Remove the bonding debug_fs entries when the
+module initialization fails. The debug_fs
+entries should be removed together with all other
+already allocated resources.
 
-While at it, remove the unneeded read-modify-write and make the
-code simpler.
-
-Signed-off-by: Lior Amsalem <alior@marvell.com>
-Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-[bwh: Backported to 3.2: it was using __raw_readl() and __raw_writel()
- which are just as wrong]
+Signed-off-by: Thomas Richter <tmricht@linux.vnet.ibm.com>
+Signed-off-by: Jay Vosburgh <j.vosburgh@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/dma/mv_xor.c | 8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ drivers/net/bonding/bond_main.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/dma/mv_xor.c
-+++ b/drivers/dma/mv_xor.c
-@@ -218,12 +218,10 @@ static void mv_set_mode(struct mv_xor_ch
- 
- static void mv_chan_activate(struct mv_xor_chan *chan)
- {
--	u32 activation;
--
- 	dev_dbg(chan->device->common.dev, " activate chan.\n");
--	activation = __raw_readl(XOR_ACTIVATION(chan));
--	activation |= 0x1;
--	__raw_writel(activation, XOR_ACTIVATION(chan));
-+
-+	/* writel ensures all descriptors are flushed before activation */
-+	writel(BIT(0), XOR_ACTIVATION(chan));
- }
- 
- static char mv_chan_is_busy(struct mv_xor_chan *chan)
+diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+index 1bf36ac..5af2a8f 100644
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -4914,6 +4914,7 @@ static int __init bonding_init(void)
+ out:
+ 	return res;
+ err:
++	bond_destroy_debugfs();
+ 	rtnl_link_unregister(&bond_link_ops);
+ err_link:
+ 	unregister_pernet_subsys(&bond_net_ops);
 
