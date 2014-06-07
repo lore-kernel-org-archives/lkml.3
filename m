@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753146AbaFGB1f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:27:35 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36159 "EHLO
+	id S1753126AbaFGB1d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:27:33 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36172 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752699AbaFGBXj (ORCPT
+	by vger.kernel.org with ESMTP id S1752209AbaFGBXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 21:23:39 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
-        "Alexei Starovoitov" <ast@plumgrid.com>,
-        "Li RongQing" <roy.qing.li@gmail.com>
+CC: akpm@linux-foundation.org, "Sergey Popovich" <popovich_sergei@mail.ru>,
+        "David S. Miller" <davem@davemloft.net>
 Date: Sat, 07 Jun 2014 02:26:28 +0100
-Message-ID: <lsq.1402104388.227368804@decadent.org.uk>
+Message-ID: <lsq.1402104388.159204002@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 24/92] ipv4: initialise the itag variable in
- __mkroute_input
+Subject: [PATCH 3.2 21/92] ipv4: fib_semantics: increment fib_info_cnt
+ after  fib_info allocation
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,35 +32,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li RongQing <roy.qing.li@gmail.com>
+From: Sergey Popovich <popovich_sergei@mail.ru>
 
-[ Upstream commit fbdc0ad095c0a299e9abf5d8ac8f58374951149a ]
+[ Upstream commit aeefa1ecfc799b0ea2c4979617f14cecd5cccbfd ]
 
-the value of itag is a random value from stack, and may not be initiated by
-fib_validate_source, which called fib_combine_itag if CONFIG_IP_ROUTE_CLASSID
-is not set
+Increment fib_info_cnt in fib_create_info() right after successfuly
+alllocating fib_info structure, overwise fib_metrics allocation failure
+leads to fib_info_cnt incorrectly decremented in free_fib_info(), called
+on error path from fib_create_info().
 
-This will make the cached dst uncertainty
-
-Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
-Acked-by: Alexei Starovoitov <ast@plumgrid.com>
+Signed-off-by: Sergey Popovich <popovich_sergei@mail.ru>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ipv4/route.c | 2 +-
+ net/ipv4/fib_semantics.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/ipv4/route.c b/net/ipv4/route.c
-index 6768ce2..6526110 100644
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -2142,7 +2142,7 @@ static int __mkroute_input(struct sk_buff *skb,
- 	struct in_device *out_dev;
- 	unsigned int flags = 0;
- 	__be32 spec_dst;
--	u32 itag;
-+	u32 itag = 0;
+diff --git a/net/ipv4/fib_semantics.c b/net/ipv4/fib_semantics.c
+index d01f9c6..76da979 100644
+--- a/net/ipv4/fib_semantics.c
++++ b/net/ipv4/fib_semantics.c
+@@ -752,13 +752,13 @@ struct fib_info *fib_create_info(struct fib_config *cfg)
+ 	fi = kzalloc(sizeof(*fi)+nhs*sizeof(struct fib_nh), GFP_KERNEL);
+ 	if (fi == NULL)
+ 		goto failure;
++	fib_info_cnt++;
+ 	if (cfg->fc_mx) {
+ 		fi->fib_metrics = kzalloc(sizeof(u32) * RTAX_MAX, GFP_KERNEL);
+ 		if (!fi->fib_metrics)
+ 			goto failure;
+ 	} else
+ 		fi->fib_metrics = (u32 *) dst_default_metrics;
+-	fib_info_cnt++;
  
- 	/* get a working reference to the output device */
- 	out_dev = __in_dev_get_rcu(FIB_RES_DEV(*res));
+ 	fi->fib_net = hold_net(net);
+ 	fi->fib_protocol = cfg->fc_protocol;
 
