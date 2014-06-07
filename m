@@ -1,53 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580AbaFGAp6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 20:45:58 -0400
-Received: from bosmailout03.eigbox.net ([66.96.189.3]:59741 "EHLO
-	bosmailout03.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752350AbaFGApv convert rfc822-to-8bit (ORCPT
+	id S1752490AbaFGApq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 20:45:46 -0400
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:37286 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752350AbaFGApo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 20:45:51 -0400
-X-Greylist: delayed 1865 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 Jun 2014 20:45:51 EDT
-X-Authority-Analysis: v=2.0 cv=eMORfQV1 c=1 sm=1 a=9cW_t1CCXrUA:10
- a=OahuBzyYeMIA:10 a=wPDyFdB5xvgA:10 a=IkcTkHD0fZMA:10 a=QPcu4mC3AAAA:8
- a=BycB9kcxMsRaXYcBeS0A:9 a=QEXdDO2ut3YA:10 a=ZIL9R3slh7IdqhIfVTHUXw==:117
-X-EN-OrigOutIP: 10.20.16.129
-X-EN-IMPSID: BBho1o0062n4cGA01BhoME
-Date: Fri, 6 Jun 2014 18:41:39 -0500 (EST)
-From: Tanisha Louis <54100me@seabird.me>
-Reply-To: Tanisha Louis <54100me@seabird.me>
-Message-ID: <1105940663.824112.1402098099414.open-xchange@bosoxweb02.eigbox.net>
-Subject: I'm Miss Tanisha
+	Fri, 6 Jun 2014 20:45:44 -0400
 MIME-Version: 1.0
+In-Reply-To: <20140606231921.2ff39106ac54216fd9170fae@qrator.net>
+References: <20140606231921.2ff39106ac54216fd9170fae@qrator.net>
+Date: Fri, 6 Jun 2014 17:45:44 -0700
+Message-ID: <CAHA+R7NUVPz47AKCTk7nYBkZXK=93vJOO8f6FTkyU0UkU6Q30Q@mail.gmail.com>
+Subject: Re: [PATCH] ipip, sit: fix ipv4_{update_pmtu,redirect} calls
+From: Cong Wang <cwang@twopensource.com>
+To: Dmitry Popov <ixaphire@qrator.net>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        trivial@kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Priority: 3
-Importance: Medium
-X-Mailer: Open-Xchange Mailer v7.4.2-Rev20
-X-Originating-IP: 41.82.0.246
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-I'm Miss Tanisha, I am a young woman who is looking for friendship and maybe
-more. I am well pleased to contact you after i came across your e-mail. I will
-like to further communication with you for us to know each other if you wouldn't
-mind and if you share the same view with me. You can reach me and try to tell me
-more about yourself. I will also tell you more about me once i recieved your
-message and send you my photos, so you can see how i look.
-Write back.
-Tanisha.
------------------------------------------------------------------------------------------------
-Hallo,
-Ich bin Fräulein Tanisha, Ich bin eine junge Frau, die auf der Suche nach
-Freundschaft und vielleicht auch mehr. Ich bin auch erfreut, Sie zu
-kontaktieren, nachdem ich auf Ihre E-Mail kam. Ich werde gerne Kommunikation mit
-Ihnen weiter für uns einander zu wissen, wenn es Ihnen nichts ausmacht, und wenn
-Sie die gleiche Ansicht mit mir teilen. Sie erreichen mich und versuche, mich
-mehr über sich selbst zu erzählen. Ich will Ihnen auch sagen, mehr über mich,
-wenn ich empfing Ihre Nachricht und senden Ihnen meine Fotos, damit Sie sehen
-können, wie ich aussehen.
-Schreiben zurück.
-Tanisha.
+On Fri, Jun 6, 2014 at 12:19 PM, Dmitry Popov <ixaphire@qrator.net> wrote:
+> ipv4_{update_pmtu,redirect} were called with tunnel's ifindex (t->dev is a
+> tunnel netdevice). It caused wrong route lookup and failure of pmtu update or
+> redirect. We should use the same ifindex that we use in ip_route_output_* in
+> *tunnel_xmit code. It is t->parms.link .
+>
+> Signed-off-by: Dmitry Popov <ixaphire@qrator.net>
+> ---
+>  net/ipv4/ipip.c | 4 ++--
+>  net/ipv6/sit.c  | 4 ++--
+>  2 files changed, 4 insertions(+), 4 deletions(-)
+
+I think vti (v4 and v6) tunnel needs to fix as well?
