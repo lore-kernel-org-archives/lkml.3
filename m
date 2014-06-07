@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753278AbaFGWgF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 18:36:05 -0400
-Received: from gate.crashing.org ([63.228.1.57]:57114 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753047AbaFGWgE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 18:36:04 -0400
-Message-ID: <1402180544.3979.3.camel@pasglop>
-Subject: Re: Missing USB XHCI and EHCI reset for kexec
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
-        linux-usb <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Greg KH <greg@kroah.com>, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Mathias Nyman <mathias.nyman@intel.com>
-Date: Sun, 08 Jun 2014 08:35:44 +1000
-In-Reply-To: <Pine.LNX.4.44L0.1406071133090.31120-100000@netrider.rowland.org>
-References: <Pine.LNX.4.44L0.1406071133090.31120-100000@netrider.rowland.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753187AbaFGWx7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 18:53:59 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:36362 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752388AbaFGWx6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jun 2014 18:53:58 -0400
+Date: Sun, 8 Jun 2014 00:53:56 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: kernel list <linux-kernel@vger.kernel.org>, chris@printf.net,
+        dsd@gentoo.org, dsd@laptop.org
+Subject: Kernel for olpc-1.75
+Message-ID: <20140607225356.GA5696@amd.pavel.ucw.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-06-07 at 11:40 -0400, Alan Stern wrote:
+Hi!
 
-> The current xhci-hcd driver includes a quirk flag (XHCI_SPURIOS_WAKEUP) 
-> that causes the shutdown routine to reset the controller.  It wasn't 
-> meant for fixing kexec problems, but I bet you could use it for that 
-> purpose.
-> 
-> In addition, it's possible that a reset is needed in the probe pathway.
+I broke installation on olpc-1.75, and I guess its time for it to
+start running self-compiled kernel. (It still boots if I hold right
+game key, but I can no longer control backlight. It does not boot at
+all by default.)
 
-Looking at the code a bit more ... that xhci_shutdown() worries me.
+AFAICT, olpc.fth and zImage in the boot/ directory of USB disk should
+do the trick.
 
-It basically just whacks xhci_halt() and optionally reset() but nothing
-is done that I can see to ensure that we aren't concurrently
-doing things like queuing URBs, polling the root hub etc...
+Unfortunately, 3.0 based kernels no longer compile with current tools,
+so I tried this version (3.6 based).
 
-That's definitely not clean and while it might work (most of the time
-at least) on actual shutdown it's definitely not right for kexec I
-reckon.
+commit 2a873e0e3681412ccc82a646630ffaf119d36af0
+Author: Chris Ball <cjb@laptop.org>
+Date:   Wed Aug 22 18:51:58 2012 -0400
 
-Now there's a separate discussion that we had a while ago and might
-want to resume which is to say that kexec shouldn't be calling
-shutdown() anyway, but instead remove() on all drivers which is
-a much better code path for the purpose of leaving the device in
-a state where a driver can reconnect to it.
+    Revert "ARM: mmp: Send decompress and debug output to UART3
+    instead of UART2
+    
+    This reverts commit 8fb8e2ccffd5387c4a5e4e5294270fa61716eb51.
 
-However, in the case of XHCI that leads to another issue described
-here:
+Unfortunately, no output at all with
+arch/arm/configs/xo_175_defconfig.
 
-http://marc.info/?l=linux-usb&m=139483181809062&w=2
+I tried replacing all =m's in .config with =y, but still no output.
 
-For which there was little / no discussion at all... I suppose we could
-do a quirk but I don't think the problem is fundamentally
-specific to the TI chip, we should probably stop both root hubs
-before we halt both HCDs.
+Is there more recent kernel to work with? Is 2a87... somehow buggy?
+Did I miss some critical step? Will recent mainline run on olpc
+unmodified?
 
-Cheers,
-Ben.
-
-
+Thanks,
+								Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
