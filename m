@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395AbaFGBm7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:42:59 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36001 "EHLO
+	id S1753806AbaFGBoY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:44:24 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35952 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752580AbaFGBXh (ORCPT
+	by vger.kernel.org with ESMTP id S1752522AbaFGBXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jun 2014 21:23:37 -0400
+	Fri, 6 Jun 2014 21:23:36 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Thomas Gleixner" <tglx@linutronix.de>,
-        "Vince Weaver" <vincent.weaver@maine.edu>,
-        "Peter Zijlstra" <peterz@infradead.org>
-Date: Sat, 07 Jun 2014 02:26:29 +0100
-Message-ID: <lsq.1402104389.764014488@decadent.org.uk>
+CC: akpm@linux-foundation.org, "David Gibson" <david@gibson.dropbear.id.au>,
+        "Jiri Pirko" <jpirko@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Sat, 07 Jun 2014 02:26:28 +0100
+Message-ID: <lsq.1402104388.82438035@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 76/92] perf: Limit perf_event_attr::sample_period to
- 63 bits
+Subject: [PATCH 3.2 14/92] rtnetlink: Warn when interface's information
+ won't fit  in our packet
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,36 +33,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: David Gibson <david@gibson.dropbear.id.au>
 
-commit 0819b2e30ccb93edf04876237b6205eef84ec8d2 upstream.
+[ Upstream commit 973462bbde79bb827824c73b59027a0aed5c9ca6 ]
 
-Vince reported that using a large sample_period (one with bit 63 set)
-results in wreckage since while the sample_period is fundamentally
-unsigned (negative periods don't make sense) the way we implement
-things very much rely on signed logic.
+Without IFLA_EXT_MASK specified, the information reported for a single
+interface in response to RTM_GETLINK is expected to fit within a netlink
+packet of NLMSG_GOODSIZE.
 
-So limit sample_period to 63 bits to avoid tripping over this.
+If it doesn't, however, things will go badly wrong,  When listing all
+interfaces, netlink_dump() will incorrectly treat -EMSGSIZE on the first
+message in a packet as the end of the listing and omit information for
+that interface and all subsequent ones.  This can cause getifaddrs(3) to
+enter an infinite loop.
 
-Reported-by: Vince Weaver <vincent.weaver@maine.edu>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/n/tip-p25fhunibl4y3qi0zuqmyf4b@git.kernel.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+This patch won't fix the problem, but it will WARN_ON() making it easier to
+track down what's going wrong.
+
+Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
+Reviewed-by: Jiri Pirko <jpirko@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/events/core.c | 3 +++
- 1 file changed, 3 insertions(+)
+ net/core/rtnetlink.c | 17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -6301,6 +6301,9 @@ SYSCALL_DEFINE5(perf_event_open,
- 	if (attr.freq) {
- 		if (attr.sample_freq > sysctl_perf_event_sample_rate)
- 			return -EINVAL;
-+	} else {
-+		if (attr.sample_period & (1ULL << 63))
-+			return -EINVAL;
- 	}
+diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
+index 5b7d5f2..978a367 100644
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -1057,6 +1057,7 @@ static int rtnl_dump_ifinfo(struct sk_buff *skb, struct netlink_callback *cb)
+ 	struct hlist_node *node;
+ 	struct nlattr *tb[IFLA_MAX+1];
+ 	u32 ext_filter_mask = 0;
++	int err;
  
- 	/*
+ 	s_h = cb->args[0];
+ 	s_idx = cb->args[1];
+@@ -1077,11 +1078,17 @@ static int rtnl_dump_ifinfo(struct sk_buff *skb, struct netlink_callback *cb)
+ 		hlist_for_each_entry_rcu(dev, node, head, index_hlist) {
+ 			if (idx < s_idx)
+ 				goto cont;
+-			if (rtnl_fill_ifinfo(skb, dev, RTM_NEWLINK,
+-					     NETLINK_CB(cb->skb).pid,
+-					     cb->nlh->nlmsg_seq, 0,
+-					     NLM_F_MULTI,
+-					     ext_filter_mask) <= 0)
++			err = rtnl_fill_ifinfo(skb, dev, RTM_NEWLINK,
++					       NETLINK_CB(cb->skb).pid,
++					       cb->nlh->nlmsg_seq, 0,
++					       NLM_F_MULTI,
++					       ext_filter_mask);
++			/* If we ran out of room on the first message,
++			 * we're in trouble
++			 */
++			WARN_ON((err == -EMSGSIZE) && (skb->len == 0));
++
++			if (err <= 0)
+ 				goto out;
+ 
+ 			nl_dump_check_consistent(cb, nlmsg_hdr(skb));
 
