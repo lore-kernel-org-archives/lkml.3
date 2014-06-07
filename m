@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357AbaFGBch (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:32:37 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36111 "EHLO
+	id S1753337AbaFGBcg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:32:36 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36099 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752668AbaFGBXj (ORCPT
+	by vger.kernel.org with ESMTP id S1752642AbaFGBXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 21:23:39 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,24 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Ilia Mirkin" <imirkin@alum.mit.edu>,
-        "Ben Skeggs" <bskeggs@redhat.com>
+CC: akpm@linux-foundation.org, "Clark Williams" <williams@redhat.com>,
+        "Roland McGrath" <roland@hack.frob.com>,
+        "Lai Jiangshan" <laijs@cn.fujitsu.com>,
+        "Carlos ODonell" <carlos@redhat.com>,
+        "Jakub Jelinek" <jakub@redhat.com>,
+        "Paul McKenney" <paulmck@linux.vnet.ibm.com>,
+        "Sebastian Andrzej Siewior" <bigeasy@linutronix.de>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Davidlohr Bueso" <davidlohr@hp.com>, "Dave Jones" <davej@redhat.com>,
+        "Peter Zijlstra" <peterz@infradead.org>,
+        "Darren Hart" <darren@dvhart.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Michael Kerrisk" <mtk.manpages@gmail.com>,
+        "Steven Rostedt" <rostedt@goodmis.org>
 Date: Sat, 07 Jun 2014 02:26:29 +0100
-Message-ID: <lsq.1402104389.1700776@decadent.org.uk>
+Message-ID: <lsq.1402104389.679439736@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 45/92] drm/nouveau/acpi: allow non-optimus setups to
- load vbios from acpi
+Subject: [PATCH 3.2 87/92] futex: Add another early deadlock detection check
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,35 +43,162 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ilia Mirkin <imirkin@alum.mit.edu>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit a3d0b1218d351c6e6f3cea36abe22236a08cb246 upstream.
+commit 866293ee54227584ffcb4a42f69c1f365974ba7f upstream.
 
-There appear to be a crop of new hardware where the vbios is not
-available from PROM/PRAMIN, but there is a valid _ROM method in ACPI.
-The data read from PCIROM almost invariably contains invalid
-instructions (still has the x86 opcodes), which makes this a low-risk
-way to try to obtain a valid vbios image.
+Dave Jones trinity syscall fuzzer exposed an issue in the deadlock
+detection code of rtmutex:
+  http://lkml.kernel.org/r/20140429151655.GA14277@redhat.com
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=76475
-Signed-off-by: Ilia Mirkin <imirkin@alum.mit.edu>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+That underlying issue has been fixed with a patch to the rtmutex code,
+but the futex code must not call into rtmutex in that case because
+    - it can detect that issue early
+    - it avoids a different and more complex fixup for backing out
+
+If the user space variable got manipulated to 0x80000000 which means
+no lock holder, but the waiters bit set and an active pi_state in the
+kernel is found we can figure out the recursive locking issue by
+looking at the pi_state owner. If that is the current task, then we
+can safely return -EDEADLK.
+
+The check should have been added in commit 59fa62451 (futex: Handle
+futex_pi OWNER_DIED take over correctly) already, but I did not see
+the above issue caused by user space manipulation back then.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Darren Hart <darren@dvhart.com>
+Cc: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Clark Williams <williams@redhat.com>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Roland McGrath <roland@hack.frob.com>
+Cc: Carlos ODonell <carlos@redhat.com>
+Cc: Jakub Jelinek <jakub@redhat.com>
+Cc: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Link: http://lkml.kernel.org/r/20140512201701.097349971@linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 [bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/nouveau/nouveau_acpi.c | 3 ---
- 1 file changed, 3 deletions(-)
+ kernel/futex.c | 47 ++++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 34 insertions(+), 13 deletions(-)
 
---- a/drivers/gpu/drm/nouveau/nouveau_acpi.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_acpi.c
-@@ -332,9 +332,6 @@ bool nouveau_acpi_rom_supported(struct p
- 	acpi_status status;
- 	acpi_handle dhandle, rom_handle;
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -590,7 +590,8 @@ void exit_pi_state_list(struct task_stru
  
--	if (!nouveau_dsm_priv.dsm_detected && !nouveau_dsm_priv.optimus_detected)
--		return false;
+ static int
+ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
+-		union futex_key *key, struct futex_pi_state **ps)
++		union futex_key *key, struct futex_pi_state **ps,
++		struct task_struct *task)
+ {
+ 	struct futex_pi_state *pi_state = NULL;
+ 	struct futex_q *this, *next;
+@@ -634,6 +635,16 @@ lookup_pi_state(u32 uval, struct futex_h
+ 					return -EINVAL;
+ 			}
+ 
++			/*
++			 * Protect against a corrupted uval. If uval
++			 * is 0x80000000 then pid is 0 and the waiter
++			 * bit is set. So the deadlock check in the
++			 * calling code has failed and we did not fall
++			 * into the check above due to !pid.
++			 */
++			if (task && pi_state->owner == task)
++				return -EDEADLK;
++
+ 			atomic_inc(&pi_state->refcount);
+ 			*ps = pi_state;
+ 
+@@ -783,7 +794,7 @@ retry:
+ 	 * We dont have the lock. Look up the PI state (or create it if
+ 	 * we are the first waiter):
+ 	 */
+-	ret = lookup_pi_state(uval, hb, key, ps);
++	ret = lookup_pi_state(uval, hb, key, ps, task);
+ 
+ 	if (unlikely(ret)) {
+ 		switch (ret) {
+@@ -1193,7 +1204,7 @@ void requeue_pi_wake_futex(struct futex_
+  *
+  * Returns:
+  *  0 - failed to acquire the lock atomicly
+- *  1 - acquired the lock
++ * >0 - acquired the lock, return value is vpid of the top_waiter
+  * <0 - error
+  */
+ static int futex_proxy_trylock_atomic(u32 __user *pifutex,
+@@ -1204,7 +1215,7 @@ static int futex_proxy_trylock_atomic(u3
+ {
+ 	struct futex_q *top_waiter = NULL;
+ 	u32 curval;
+-	int ret;
++	int ret, vpid;
+ 
+ 	if (get_futex_value_locked(&curval, pifutex))
+ 		return -EFAULT;
+@@ -1232,11 +1243,13 @@ static int futex_proxy_trylock_atomic(u3
+ 	 * the contended case or if set_waiters is 1.  The pi_state is returned
+ 	 * in ps in contended cases.
+ 	 */
++	vpid = task_pid_vnr(top_waiter->task);
+ 	ret = futex_lock_pi_atomic(pifutex, hb2, key2, ps, top_waiter->task,
+ 				   set_waiters);
+-	if (ret == 1)
++	if (ret == 1) {
+ 		requeue_pi_wake_futex(top_waiter, key2, hb2);
 -
- 	dhandle = DEVICE_ACPI_HANDLE(&pdev->dev);
- 	if (!dhandle)
- 		return false;
++		return vpid;
++	}
+ 	return ret;
+ }
+ 
+@@ -1268,7 +1281,6 @@ static int futex_requeue(u32 __user *uad
+ 	struct futex_hash_bucket *hb1, *hb2;
+ 	struct plist_head *head1;
+ 	struct futex_q *this, *next;
+-	u32 curval2;
+ 
+ 	if (requeue_pi) {
+ 		/*
+@@ -1354,16 +1366,25 @@ retry_private:
+ 		 * At this point the top_waiter has either taken uaddr2 or is
+ 		 * waiting on it.  If the former, then the pi_state will not
+ 		 * exist yet, look it up one more time to ensure we have a
+-		 * reference to it.
++		 * reference to it. If the lock was taken, ret contains the
++		 * vpid of the top waiter task.
+ 		 */
+-		if (ret == 1) {
++		if (ret > 0) {
+ 			WARN_ON(pi_state);
+ 			drop_count++;
+ 			task_count++;
+-			ret = get_futex_value_locked(&curval2, uaddr2);
+-			if (!ret)
+-				ret = lookup_pi_state(curval2, hb2, &key2,
+-						      &pi_state);
++			/*
++			 * If we acquired the lock, then the user
++			 * space value of uaddr2 should be vpid. It
++			 * cannot be changed by the top waiter as it
++			 * is blocked on hb2 lock if it tries to do
++			 * so. If something fiddled with it behind our
++			 * back the pi state lookup might unearth
++			 * it. So we rather use the known value than
++			 * rereading and handing potential crap to
++			 * lookup_pi_state.
++			 */
++			ret = lookup_pi_state(ret, hb2, &key2, &pi_state, NULL);
+ 		}
+ 
+ 		switch (ret) {
 
