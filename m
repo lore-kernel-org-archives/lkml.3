@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753187AbaFGWx7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 18:53:59 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:36362 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752388AbaFGWx6 (ORCPT
+	id S1753209AbaFGXDO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 19:03:14 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:62843 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753059AbaFGXDN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 18:53:58 -0400
-Date: Sun, 8 Jun 2014 00:53:56 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: kernel list <linux-kernel@vger.kernel.org>, chris@printf.net,
-        dsd@gentoo.org, dsd@laptop.org
-Subject: Kernel for olpc-1.75
-Message-ID: <20140607225356.GA5696@amd.pavel.ucw.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 7 Jun 2014 19:03:13 -0400
+Date: Sun, 8 Jun 2014 03:03:08 +0400
+From: Dmitry Popov <ixaphire@qrator.net>
+To: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ip_tunnel: fix i_key matching in ip_tunnel_find
+Message-Id: <20140608030308.77bc67a743827807737268f1@qrator.net>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Some tunnels (though only vti as for now) can use i_key just for internal use: 
+for example vti uses it for fwmark'ing incoming packets. So raw i_key value 
+shouldn't be treated as a distinguisher for them. ip_tunnel_key_match exists for
+cases when we want to compare two ip_tunnel_parms' i_keys.
 
-I broke installation on olpc-1.75, and I guess its time for it to
-start running self-compiled kernel. (It still boots if I hold right
-game key, but I can no longer control backlight. It does not boot at
-all by default.)
+Example bug:
+ip link add type vti ikey 1 local 1.0.0.1 remote 2.0.0.2
+ip link add type vti ikey 2 local 1.0.0.1 remote 2.0.0.2
+spawned two tunnels, although it doesn't make sense.
 
-AFAICT, olpc.fth and zImage in the boot/ directory of USB disk should
-do the trick.
+Signed-off-by: Dmitry Popov <ixaphire@qrator.net>
+---
+ net/ipv4/ip_tunnel.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-Unfortunately, 3.0 based kernels no longer compile with current tools,
-so I tried this version (3.6 based).
-
-commit 2a873e0e3681412ccc82a646630ffaf119d36af0
-Author: Chris Ball <cjb@laptop.org>
-Date:   Wed Aug 22 18:51:58 2012 -0400
-
-    Revert "ARM: mmp: Send decompress and debug output to UART3
-    instead of UART2
-    
-    This reverts commit 8fb8e2ccffd5387c4a5e4e5294270fa61716eb51.
-
-Unfortunately, no output at all with
-arch/arm/configs/xo_175_defconfig.
-
-I tried replacing all =m's in .config with =y, but still no output.
-
-Is there more recent kernel to work with? Is 2a87... somehow buggy?
-Did I miss some critical step? Will recent mainline run on olpc
-unmodified?
-
-Thanks,
-								Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+diff --git a/net/ipv4/ip_tunnel.c b/net/ipv4/ip_tunnel.c
+index 2acc233..cf67fe1 100644
+--- a/net/ipv4/ip_tunnel.c
++++ b/net/ipv4/ip_tunnel.c
+@@ -268,6 +268,7 @@ static struct ip_tunnel *ip_tunnel_find(struct ip_tunnel_net *itn,
+ 	__be32 remote = parms->iph.daddr;
+ 	__be32 local = parms->iph.saddr;
+ 	__be32 key = parms->i_key;
++	__be16 flags = parms->i_flags;
+ 	int link = parms->link;
+ 	struct ip_tunnel *t = NULL;
+ 	struct hlist_head *head = ip_bucket(itn, parms);
+@@ -275,9 +276,9 @@ static struct ip_tunnel *ip_tunnel_find(struct ip_tunnel_net *itn,
+ 	hlist_for_each_entry_rcu(t, head, hash_node) {
+ 		if (local == t->parms.iph.saddr &&
+ 		    remote == t->parms.iph.daddr &&
+-		    key == t->parms.i_key &&
+ 		    link == t->parms.link &&
+-		    type == t->dev->type)
++		    type == t->dev->type &&
++		    ip_tunnel_key_match(&t->parms, flags, key))
+ 			break;
+ 	}
+ 	return t;
