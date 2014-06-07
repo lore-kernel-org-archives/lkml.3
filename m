@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753088AbaFGBhg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:37:36 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36030 "EHLO
+	id S1753054AbaFGBhe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:37:34 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36041 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752610AbaFGBXh (ORCPT
+	by vger.kernel.org with ESMTP id S1752616AbaFGBXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 21:23:37 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Victor A. Santos" <victoraur.santos@gmail.com>
+CC: akpm@linux-foundation.org, "Jiri Kosina" <jkosina@suse.cz>,
+        "AceLan Kao" <acelan.kao@canonical.com>
 Date: Sat, 07 Jun 2014 02:26:29 +0100
-Message-ID: <lsq.1402104389.451292487@decadent.org.uk>
+Message-ID: <lsq.1402104389.190392762@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 48/92] USB: Nokia 305 should be treated as unusual dev
+Subject: [PATCH 3.2 51/92] HID: usbhid: quirk for Synaptics HD touchscreen
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,31 +31,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Victor A. Santos" <victoraur.santos@gmail.com>
+From: AceLan Kao <acelan.kao@canonical.com>
 
-commit f0ef5d41792a46a1085dead9dfb0bdb2c574638e upstream.
+commit d8e2e7581d2521910398c4c80d7a3b78e84da7d5 upstream.
 
-Signed-off-by: Victor A. Santos <victoraur.santos@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Add Synaptics HD touchscreen(06cb:0ac3) to no init report quirk.
+
+Signed-off-by: AceLan Kao <acelan.kao@canonical.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/storage/unusual_devs.h | 7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/hid/hid-ids.h           | 1 +
+ drivers/hid/usbhid/hid-quirks.c | 1 +
+ 2 files changed, 2 insertions(+)
 
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -226,6 +226,13 @@ UNUSUAL_DEV(  0x0421, 0x0495, 0x0370, 0x
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_MAX_SECTORS_64 ),
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -681,6 +681,7 @@
+ #define USB_VENDOR_ID_SYNAPTICS		0x06cb
+ #define USB_DEVICE_ID_SYNAPTICS_LTS1	0x0af8
+ #define USB_DEVICE_ID_SYNAPTICS_LTS2	0x1d10
++#define USB_DEVICE_ID_SYNAPTICS_HD	0x0ac3
  
-+/* Patch submitted by Victor A. Santos <victoraur.santos@gmail.com> */
-+UNUSUAL_DEV(  0x0421, 0x05af, 0x0742, 0x0742,
-+		"Nokia",
-+		"305",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_MAX_SECTORS_64),
-+
- /* Patch submitted by Mikhail Zolotaryov <lebon@lebon.org.ua> */
- UNUSUAL_DEV(  0x0421, 0x06aa, 0x1110, 0x1110,
- 		"Nokia",
+ #define USB_VENDOR_ID_THRUSTMASTER	0x044f
+ 
+--- a/drivers/hid/usbhid/hid-quirks.c
++++ b/drivers/hid/usbhid/hid-quirks.c
+@@ -102,6 +102,7 @@ static const struct hid_blacklist {
+ 	{ USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_DUOSENSE, HID_QUIRK_NO_INIT_REPORTS },
+ 	{ USB_VENDOR_ID_SYNAPTICS, USB_DEVICE_ID_SYNAPTICS_LTS1, HID_QUIRK_NO_INIT_REPORTS },
+ 	{ USB_VENDOR_ID_SYNAPTICS, USB_DEVICE_ID_SYNAPTICS_LTS2, HID_QUIRK_NO_INIT_REPORTS },
++	{ USB_VENDOR_ID_SYNAPTICS, USB_DEVICE_ID_SYNAPTICS_HD, HID_QUIRK_NO_INIT_REPORTS },
+ 
+ 	{ 0, 0 }
+ };
 
