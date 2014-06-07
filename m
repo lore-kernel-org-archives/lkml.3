@@ -1,126 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753081AbaFGSM3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 14:12:29 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:55852 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752864AbaFGSM1 convert rfc822-to-8bit (ORCPT
+	id S1753188AbaFGSSR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 14:18:17 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:37201 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752983AbaFGSSP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 14:12:27 -0400
-Date: Sat, 7 Jun 2014 19:12:21 +0100
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Kukjin Kim <kgene.kim@samsung.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Inderpal Singh <inderpal.s@samsung.com>,
-        Thomas Abraham <thomas.ab@samsung.com>,
-        "olof@lixom.net" <olof@lixom.net>, Tushar Behera <trblinux@gmail.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: EXYNOS: mcpm: Don't rely on firmware's
- secondary_cpu_start
-Message-ID: <20140607181221.GB25068@e102568-lin.cambridge.arm.com>
-References: <1402090985-8061-1-git-send-email-dianders@chromium.org>
-MIME-Version: 1.0
-In-Reply-To: <1402090985-8061-1-git-send-email-dianders@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 07 Jun 2014 18:12:18.0556 (UTC) FILETIME=[04D383C0:01CF827C]
-X-MC-Unique: 114060719122500201
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	Sat, 7 Jun 2014 14:18:15 -0400
+Message-ID: <1402165084.16568.10.camel@haakon3.risingtidesystems.com>
+Subject: [GIT PULL] target fixes for v3.15
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Sat, 07 Jun 2014 11:18:04 -0700
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 06, 2014 at 10:43:05PM +0100, Doug Anderson wrote:
-> On exynos mcpm systems the firmware is hardcoded to jump to an address
-> in SRAM (0x02073000) when secondary CPUs come up.  By default the
-> firmware puts a bunch of code at that location.  That code expects the
-> kernel to fill in a few slots with addresses that it uses to jump back
-> to the kernel's entry point for secondary CPUs.
-> 
-> Originally (on prerelease hardware) this firmware code contained a
-> bunch of workarounds to deal with boot ROM bugs.  However on all
-> shipped hardware we simply use this code to redirect to a kernel
-> function for bringing up the CPUs.
-> 
-> Let's stop relying on the code provided by the bootloader and just
-> plumb in our own (simple) code jump to the kernel.  This has the nice
-> benefit of fixing problems due to the fact that older bootloaders
-> (like the one shipped on the Samsung Chromebook 2) might have put
-> slightly different code into this location.
-> 
-> Once suspend/resume is implemented for systems using exynos-mcpm we'll
-> need to make sure we reinstall our fixed up code after resume.  ...but
-> that's not anything new since IRAM (and thus the address of the
-> mcpm_entry_point) is lost across suspend/resume anyway.
+Hi Linus,
 
-Can I ask you please what the firmware does for the boot (primary) cpu
-on cold-boot and warm-boot (resume from suspend) ?
+Here are the remaining fixes for v3.15.  Please go ahead and pull from:
 
-Does it jump to a specific (hardcoded) location ?
+  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git master
 
-Is the primary CPU (MPIDR) hardcoded in firmware so that on both
-cold and warm-boot firmware sees a specific MPIDR as "special" ?
+This series includes:
 
-I am asking to check if on this platform CPUidle (where the notion of
-primary CPU disappears) has a chance to run properly.
+  - iser-target fix for ImmediateData exception reference count bug (Sagi + nab)
+  - iscsi-target fix for MC/S login + potential iser-target MRDSL buffer
+    overrun (Santosh + Roland)
+  - iser-target fix for v3.15-rc multi network portal shutdown regression (nab)
+  - target fix for allowing READ_CAPCITY during ALUA Standby access state
+    (Chris + nab)
+  - target fix for NULL pointer dereference of alua_access_state for
+    un-configured devices (Chris + nab) 
 
-Probably CPUidle won't attain idle states where IRAM content is lost, but I
-am still worried about the primary vs secondaries firmware boot behaviour.
+Thank you,
 
-What happens on reboot from suspend to RAM (or to put it differently,
-what does secure firmware do on reboot from suspend to RAM - in
-particular how is the "jump" address to bootloader/kernel set ?)
+--nab
 
-Thank you very much.
+Nicholas Bellinger (4):
+  iser-target: Add missing target_put_sess_cmd for ImmedateData failure
+  iser-target: Fix multi network portal shutdown regression
+  target: Allow READ_CAPACITY opcode in ALUA Standby access state
+  target: Fix alua_access_state attribute OOPs for un-configured
+    devices
 
-Lorenzo
+Roland Dreier (1):
+  iscsi-target: Fix wrong buffer / buffer overrun in
+    iscsi_change_param_value()
 
-> 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> ---
->  arch/arm/mach-exynos/mcpm-exynos.c | 10 ++++++----
->  1 file changed, 6 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/arm/mach-exynos/mcpm-exynos.c b/arch/arm/mach-exynos/mcpm-exynos.c
-> index 0498d0b..3a7fad0 100644
-> --- a/arch/arm/mach-exynos/mcpm-exynos.c
-> +++ b/arch/arm/mach-exynos/mcpm-exynos.c
-> @@ -343,11 +343,13 @@ static int __init exynos_mcpm_init(void)
->  	pr_info("Exynos MCPM support installed\n");
->  
->  	/*
-> -	 * Future entries into the kernel can now go
-> -	 * through the cluster entry vectors.
-> +	 * U-Boot SPL is hardcoded to jump to the start of ns_sram_base_addr
-> +	 * as part of secondary_cpu_start().  Let's redirect it to the
-> +	 * mcpm_entry_point().
->  	 */
-> -	__raw_writel(virt_to_phys(mcpm_entry_point),
-> -			ns_sram_base_addr + MCPM_BOOT_ADDR_OFFSET);
-> +	__raw_writel(0xe59f0000, ns_sram_base_addr);     /* ldr r0, [pc, #0] */
-> +	__raw_writel(0xe12fff10, ns_sram_base_addr + 4); /* bx  r0 */
-> +	__raw_writel(virt_to_phys(mcpm_entry_point), ns_sram_base_addr + 8);
->  
->  	iounmap(ns_sram_base_addr);
->  
-> -- 
-> 2.0.0.526.g5318336
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+ drivers/infiniband/ulp/isert/ib_isert.c   |    2 +
+ drivers/target/iscsi/iscsi_target.c       |    1 +
+ drivers/target/iscsi/iscsi_target_login.c |   70 +++++++++++++----------------
+ drivers/target/iscsi/iscsi_target_tpg.c   |    3 +-
+ drivers/target/target_core_alua.c         |    9 ++++
+ drivers/target/target_core_configfs.c     |    5 +++
+ 6 files changed, 50 insertions(+), 40 deletions(-)
 
