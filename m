@@ -1,49 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753085AbaFGR5D (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 13:57:03 -0400
-Received: from mout.gmx.net ([212.227.15.19]:52851 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752850AbaFGR5B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 13:57:01 -0400
-From: =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
-To: davem@davemloft.net
-Cc: jeffrey.t.kirsher@intel.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
-Subject: [PATCH] dns_resolver: assure that dns_query() result is null-terminated
-Date: Sat,  7 Jun 2014 19:56:51 +0200
-Message-Id: <1402163811-21604-1-git-send-email-manuel.schoelling@gmx.de>
-X-Mailer: git-send-email 1.7.10.4
-X-Provags-ID: V03:K0:jcGLdxDeFMvN0DBZp4SaQBb6l+xPZWdsg9RuldVCvgtU8HfCKQY
- AI11oS873/XzzyytUPBQ2Jupgae9WrJk4I3PkgmwF0+BLoGAVbFN9N4nnYFNTuG0UNVmyI9
- 6BuKzHxJ3Q2dULglxNrbUuXRxjw3wbiDyjgLS/erSnZ0VWo2itpT+oyWmCy5SF/RctE0NTO
- EQndduSu++gBwigpfFALg==
+	id S1753081AbaFGSM3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 14:12:29 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:55852 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752864AbaFGSM1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jun 2014 14:12:27 -0400
+Date: Sat, 7 Jun 2014 19:12:21 +0100
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Kukjin Kim <kgene.kim@samsung.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Inderpal Singh <inderpal.s@samsung.com>,
+        Thomas Abraham <thomas.ab@samsung.com>,
+        "olof@lixom.net" <olof@lixom.net>, Tushar Behera <trblinux@gmail.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: EXYNOS: mcpm: Don't rely on firmware's
+ secondary_cpu_start
+Message-ID: <20140607181221.GB25068@e102568-lin.cambridge.arm.com>
+References: <1402090985-8061-1-git-send-email-dianders@chromium.org>
+MIME-Version: 1.0
+In-Reply-To: <1402090985-8061-1-git-send-email-dianders@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 07 Jun 2014 18:12:18.0556 (UTC) FILETIME=[04D383C0:01CF827C]
+X-MC-Unique: 114060719122500201
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dns_query() credulously assumes that keys are null-terminated and
-returns a copy of a memory block that is off by one.
----
- net/dns_resolver/dns_query.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+On Fri, Jun 06, 2014 at 10:43:05PM +0100, Doug Anderson wrote:
+> On exynos mcpm systems the firmware is hardcoded to jump to an address
+> in SRAM (0x02073000) when secondary CPUs come up.  By default the
+> firmware puts a bunch of code at that location.  That code expects the
+> kernel to fill in a few slots with addresses that it uses to jump back
+> to the kernel's entry point for secondary CPUs.
+> 
+> Originally (on prerelease hardware) this firmware code contained a
+> bunch of workarounds to deal with boot ROM bugs.  However on all
+> shipped hardware we simply use this code to redirect to a kernel
+> function for bringing up the CPUs.
+> 
+> Let's stop relying on the code provided by the bootloader and just
+> plumb in our own (simple) code jump to the kernel.  This has the nice
+> benefit of fixing problems due to the fact that older bootloaders
+> (like the one shipped on the Samsung Chromebook 2) might have put
+> slightly different code into this location.
+> 
+> Once suspend/resume is implemented for systems using exynos-mcpm we'll
+> need to make sure we reinstall our fixed up code after resume.  ...but
+> that's not anything new since IRAM (and thus the address of the
+> mcpm_entry_point) is lost across suspend/resume anyway.
 
-diff --git a/net/dns_resolver/dns_query.c b/net/dns_resolver/dns_query.c
-index e7b6d53..53be635 100644
---- a/net/dns_resolver/dns_query.c
-+++ b/net/dns_resolver/dns_query.c
-@@ -149,7 +149,9 @@ int dns_query(const char *type, const char *name, size_t namelen,
- 	if (!*_result)
- 		goto put;
- 
--	memcpy(*_result, upayload->data, len + 1);
-+	memcpy(*_result, upayload->data, len);
-+	*_result[len+1] = '\0';
-+
- 	if (_expiry)
- 		*_expiry = rkey->expiry;
- 
--- 
-1.7.10.4
+Can I ask you please what the firmware does for the boot (primary) cpu
+on cold-boot and warm-boot (resume from suspend) ?
+
+Does it jump to a specific (hardcoded) location ?
+
+Is the primary CPU (MPIDR) hardcoded in firmware so that on both
+cold and warm-boot firmware sees a specific MPIDR as "special" ?
+
+I am asking to check if on this platform CPUidle (where the notion of
+primary CPU disappears) has a chance to run properly.
+
+Probably CPUidle won't attain idle states where IRAM content is lost, but I
+am still worried about the primary vs secondaries firmware boot behaviour.
+
+What happens on reboot from suspend to RAM (or to put it differently,
+what does secure firmware do on reboot from suspend to RAM - in
+particular how is the "jump" address to bootloader/kernel set ?)
+
+Thank you very much.
+
+Lorenzo
+
+> 
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> ---
+>  arch/arm/mach-exynos/mcpm-exynos.c | 10 ++++++----
+>  1 file changed, 6 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/arm/mach-exynos/mcpm-exynos.c b/arch/arm/mach-exynos/mcpm-exynos.c
+> index 0498d0b..3a7fad0 100644
+> --- a/arch/arm/mach-exynos/mcpm-exynos.c
+> +++ b/arch/arm/mach-exynos/mcpm-exynos.c
+> @@ -343,11 +343,13 @@ static int __init exynos_mcpm_init(void)
+>  	pr_info("Exynos MCPM support installed\n");
+>  
+>  	/*
+> -	 * Future entries into the kernel can now go
+> -	 * through the cluster entry vectors.
+> +	 * U-Boot SPL is hardcoded to jump to the start of ns_sram_base_addr
+> +	 * as part of secondary_cpu_start().  Let's redirect it to the
+> +	 * mcpm_entry_point().
+>  	 */
+> -	__raw_writel(virt_to_phys(mcpm_entry_point),
+> -			ns_sram_base_addr + MCPM_BOOT_ADDR_OFFSET);
+> +	__raw_writel(0xe59f0000, ns_sram_base_addr);     /* ldr r0, [pc, #0] */
+> +	__raw_writel(0xe12fff10, ns_sram_base_addr + 4); /* bx  r0 */
+> +	__raw_writel(virt_to_phys(mcpm_entry_point), ns_sram_base_addr + 8);
+>  
+>  	iounmap(ns_sram_base_addr);
+>  
+> -- 
+> 2.0.0.526.g5318336
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
