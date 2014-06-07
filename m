@@ -1,124 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752975AbaFGPGQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 11:06:16 -0400
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:37045 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752769AbaFGPGO (ORCPT
+	id S1753047AbaFGPHa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 11:07:30 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:16400 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752896AbaFGPH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 11:06:14 -0400
+	Sat, 7 Jun 2014 11:07:29 -0400
+Message-ID: <53932AA2.4050204@oracle.com>
+Date: Sat, 07 Jun 2014 11:07:14 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <alpine.LRH.2.00.1406071845220.13290@lnfm1.sai.msu.ru>
-References: <alpine.LRH.2.00.1406071845220.13290@lnfm1.sai.msu.ru>
-Date: Sat, 7 Jun 2014 10:06:13 -0500
-Message-ID: <CAOCHtYjFT_96wxbsAUY4-aKAC7LmqVpFEGDfyLTODFQ-uy9e+A@mail.gmail.com>
-Subject: Re: [PATCH] dts: Add UARTs to am335x-bone-common.dtsi
-From: Robert Nelson <robertcnelson@gmail.com>
-To: "Matwey V. Kornilov" <matwey@sai.msu.ru>
-Cc: Benoit Cousson <bcousson@baylibre.com>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: "David S. Miller" <davem@davemloft.net>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: net: netlink executing RO memory
+References: <5390D152.30702@oracle.com> <53915571.7050801@oracle.com>
+In-Reply-To: <53915571.7050801@oracle.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 7, 2014 at 9:48 AM, Matwey V. Kornilov <matwey@sai.msu.ru> wrote:
-> From 739cee0aded1aac80764b3fca4e801464f199f93 Mon Sep 17 00:00:00 2001
-> From: "Matwey V. Kornilov" <matwey.kornilov@gmail.com>
-> Date: Sat, 7 Jun 2014 17:23:57 +0400
-> Subject: [PATCH] Add UARTs to am335x-bone-common.dtsi
->
-> Add four UARTs pinouts and ports to beagle bone common dtsi.
->
-> Signed-off-by: Matwey V. Kornilov <matwey@sai.msu.ru>
-> ---
->  arch/arm/boot/dts/am335x-bone-common.dtsi | 48
-> +++++++++++++++++++++++++++++++
->  1 file changed, 48 insertions(+)
->
-> diff --git a/arch/arm/boot/dts/am335x-bone-common.dtsi
-> b/arch/arm/boot/dts/am335x-bone-common.dtsi
-> index 2e7d932..da3db9f 100644
-> --- a/arch/arm/boot/dts/am335x-bone-common.dtsi
-> +++ b/arch/arm/boot/dts/am335x-bone-common.dtsi
-> @@ -90,6 +90,30 @@
->                         0x174 (PIN_OUTPUT_PULLDOWN | MUX_MODE0) /*
-> uart0_txd.uart0_txd */
->                 >;
->         };
-> +       uart1_pins: pinmux_uart1_pins {
-> +               pinctrl-single,pins = <
-> +                       0x180 (PIN_INPUT_PULLUP | MUX_MODE0)    /*
-> uart1_rxd.uart1_rxd */
-> +                       0x184 (PIN_OUTPUT_PULLDOWN | MUX_MODE0) /*
-> uart1_txd.uart1_txd */
-> +               >;
-> +       };
-> +       uart2_pins: pinmux_uart2_pins {
-> +               pinctrl-single,pins = <
-> +                       0x150 (PIN_INPUT_PULLUP | MUX_MODE1)    /*
-> spi0_sclk.uart2_rxd */
-> +                       0x154 (PIN_OUTPUT_PULLDOWN | MUX_MODE1) /*
-> spi0_d0.uart2_txd */
-> +               >;
-> +       };
-> +       uart3_pins: pinmux_uart3_pins {
-> +               pinctrl-single,pins = <
-> +       /* Pin 0x160 spi0_cs1.uart3_rxd is not exported to the expansion
-> header. The port is half-duplex */
-> +                       0x164 (PIN_OUTPUT_PULLDOWN | MUX_MODE1) /*
-> ecap0_in_pwm0_out.uart3_txd */
-> +               >;
-> +       };
-> +       uart4_pins: pinmux_uart4_pins {
-> +               pinctrl-single,pins = <
-> +                       0x070 (PIN_INPUT_PULLUP | MUX_MODE6)    /*
-> gpmc_wait0.uart4_rxd */
-> +                       0x074 (PIN_OUTPUT_PULLDOWN | MUX_MODE6) /*
-> gpmc_wpn.uart4_txd */
-> +               >;
-> +       };
->
->         clkout2_pin: pinmux_clkout2_pin {
->                 pinctrl-single,pins = <
-> @@ -179,6 +203,30 @@
->
->         status = "okay";
->  };
-> +&uart1 {
-> +       pinctrl-names = "default";
-> +       pinctrl-0 = <&uart1_pins>;
-> +
-> +       status = "okay";
-> +};
-> +&uart2 {
-> +       pinctrl-names = "default";
-> +       pinctrl-0 = <&uart2_pins>;
-> +
-> +       status = "okay";
-> +};
-> +&uart3 {
-> +       pinctrl-names = "default";
-> +       pinctrl-0 = <&uart3_pins>;
-> +
-> +       status = "okay";
-> +};
-> +&uart4 {
-> +       pinctrl-names = "default";
-> +       pinctrl-0 = <&uart4_pins>;
-> +
-> +       status = "okay";
-> +};
+On 06/06/2014 01:45 AM, Sasha Levin wrote:
+> On 06/05/2014 04:21 PM, Sasha Levin wrote:
+>> Hi all,
+>>
+>> While fuzzing with trinity inside a KVM tools guest running the latest -next
+>> kernel I've stumbled on the following spew:
+>>
+>> [  306.065161] kernel tried to execute NX-protected page - exploit attempt? (uid: 0)
+>> [  306.067295] BUG: unable to handle kernel paging request at ffff880053b8fd08
+> 
+> Same issue reproduced multiple times with exactly the same trace, so I think that it
+> rules out random memory corruption.
 
-These need to stay disabled in mainline, so drop the status = "okay";
-, (till we get a working capemgr/overlay). Otherwise the pinmuxing
-looks good.
+I might have another lead of this: I caught debug objects complaining about freeing
+active objects:
 
-Regards,
+[  592.020501] ODEBUG: free active (active state 1) object type: rcu_head hint:           (null)
+[  592.020501] Modules linked in:
+[  592.020501] CPU: 15 PID: 16543 Comm: trinity-c47 Not tainted 3.15.0-rc8-next-20140606-sasha-00021-ga9d3a0b-dirty #596
+[  592.020501]  0000000000000009 ffff880224793988 ffffffff9350fe6b 0000000000000002
+[  592.020501]  ffff8802247939d8 ffff8802247939c8 ffffffff9015f96c ffff88000fd40cf8
+[  592.020501]  ffff88006d9a9870 ffffffff9508a000 ffffffff948fbd48 ffffffff97891e90
+[  592.020501] Call Trace:
+[  592.020501] dump_stack (lib/dump_stack.c:52)
+[  592.020501] warn_slowpath_common (kernel/panic.c:430)
+[  592.020501] warn_slowpath_fmt (kernel/panic.c:445)
+[  592.020501] debug_print_object (lib/debugobjects.c:265)
+[  592.020501] __debug_check_no_obj_freed (lib/debugobjects.c:698)
+[  592.020501] debug_check_no_obj_freed (lib/debugobjects.c:727)
+[  592.020501] __vunmap (mm/vmalloc.c:1457)
+[  592.020501] vfree (mm/vmalloc.c:1505)
+[  592.020501] netlink_skb_destructor (net/netlink/af_netlink.c:882)
+[  592.020501] skb_release_head_state (net/core/skbuff.c:566)
+[  592.020501] skb_release_all (net/core/skbuff.c:584)
+[  592.020501] __kfree_skb (net/core/skbuff.c:529 net/core/skbuff.c:600)
+[  592.020501] consume_skb (net/core/skbuff.c:672)
+[  592.020501] skb_free_datagram (include/net/sock.h:1419 include/net/sock.h:1450 net/core/datagram.c:244)
+[  592.020501] netlink_recvmsg (net/netlink/af_netlink.c:2482)
+[  592.020501] ? preempt_count_sub (kernel/sched/core.c:2602)
+[  592.020501] sock_aio_read (net/socket.c:917 net/socket.c:935)
+[  592.020501] ? rw_copy_check_uvector (fs/read_write.c:753)
+[  592.020501] do_sync_readv_writev (fs/read_write.c:683)
+[  592.020501] do_readv_writev (fs/read_write.c:837)
+[  592.020501] ? vtime_account_user (kernel/sched/cputime.c:687)
+[  592.020501] ? get_parent_ip (kernel/sched/core.c:2546)
+[  592.020501] ? __fget_light (include/linux/rcupdate.h:428 include/linux/fdtable.h:80 fs/file.c:684)
+[  592.020501] vfs_readv (fs/read_write.c:866)
+[  592.020501] SyS_readv (fs/read_write.c:892 fs/read_write.c:884)
+[  592.020501] tracesys (arch/x86/kernel/entry_64.S:542)
 
--- 
-Robert Nelson
-http://www.rcn-ee.com/
+I can't link them together (stacks don't match with what I'd expect to see in that
+case), but that might be related somehow.
+
+
+Thanks,
+Sasha
