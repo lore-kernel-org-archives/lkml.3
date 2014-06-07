@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753124AbaFGBhj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:37:39 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36034 "EHLO
+	id S1753088AbaFGBhg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:37:36 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36030 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752608AbaFGBXh (ORCPT
+	by vger.kernel.org with ESMTP id S1752610AbaFGBXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 21:23:37 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -14,13 +14,12 @@ MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 CC: akpm@linux-foundation.org,
-        "Trond Myklebust" <trond.myklebust@primarydata.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Victor A. Santos" <victoraur.santos@gmail.com>
 Date: Sat, 07 Jun 2014 02:26:29 +0100
-Message-ID: <lsq.1402104389.309111302@decadent.org.uk>
+Message-ID: <lsq.1402104389.451292487@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 57/92] NFSd: call rpc_destroy_wait_queue() from
- free_client()
+Subject: [PATCH 3.2 48/92] USB: Nokia 305 should be treated as unusual dev
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,28 +32,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: "Victor A. Santos" <victoraur.santos@gmail.com>
 
-commit 4cb57e3032d4e4bf5e97780e9907da7282b02b0c upstream.
+commit f0ef5d41792a46a1085dead9dfb0bdb2c574638e upstream.
 
-Mainly to ensure that we don't leave any hanging timers.
-
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Victor A. Santos <victoraur.santos@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/nfsd/nfs4state.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/storage/unusual_devs.h | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -1011,6 +1011,7 @@ free_client(struct nfs4_client *clp)
- 		list_del(&ses->se_perclnt);
- 		nfsd4_put_session(ses);
- 	}
-+	rpc_destroy_wait_queue(&clp->cl_cb_waitq);
- 	if (clp->cl_cred.cr_group_info)
- 		put_group_info(clp->cl_cred.cr_group_info);
- 	kfree(clp->cl_principal);
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -226,6 +226,13 @@ UNUSUAL_DEV(  0x0421, 0x0495, 0x0370, 0x
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+ 		US_FL_MAX_SECTORS_64 ),
+ 
++/* Patch submitted by Victor A. Santos <victoraur.santos@gmail.com> */
++UNUSUAL_DEV(  0x0421, 0x05af, 0x0742, 0x0742,
++		"Nokia",
++		"305",
++		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
++		US_FL_MAX_SECTORS_64),
++
+ /* Patch submitted by Mikhail Zolotaryov <lebon@lebon.org.ua> */
+ UNUSUAL_DEV(  0x0421, 0x06aa, 0x1110, 0x1110,
+ 		"Nokia",
 
