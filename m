@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753612AbaFGBh7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:37:59 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36000 "EHLO
+	id S1753593AbaFGBh5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:37:57 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36012 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752584AbaFGBXh (ORCPT
+	by vger.kernel.org with ESMTP id S1752590AbaFGBXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 21:23:37 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,16 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Anthony Iliopoulos" <anthony.iliopoulos@huawei.com>,
-        "Shay Goikhman" <shay.goikhman@huawei.com>,
-        "Dave Hansen" <dave.hansen@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Date: Sat, 07 Jun 2014 02:26:29 +0100
-Message-ID: <lsq.1402104389.413887641@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Tom Gundersen" <teg@jklm.no>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Toshiaki Makita" <makita.toshiaki@lab.ntt.co.jp>
+Date: Sat, 07 Jun 2014 02:26:28 +0100
+Message-ID: <lsq.1402104388.805153570@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 69/92] x86, mm, hugetlb: Add missing TLB page
- invalidation for hugetlb_cow()
+Subject: [PATCH 3.2 16/92] bridge: Handle IFLA_ADDRESS correctly when
+ creating  bridge device
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,40 +33,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anthony Iliopoulos <anthony.iliopoulos@huawei.com>
+From: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
 
-commit 9844f5462392b53824e8b86726e7c33b5ecbb676 upstream.
+[ Upstream commit 30313a3d5794472c3548d7288e306a5492030370 ]
 
-The invalidation is required in order to maintain proper semantics
-under CoW conditions. In scenarios where a process clones several
-threads, a thread operating on a core whose DTLB entry for a
-particular hugepage has not been invalidated, will be reading from
-the hugepage that belongs to the forked child process, even after
-hugetlb_cow().
+When bridge device is created with IFLA_ADDRESS, we are not calling
+br_stp_change_bridge_id(), which leads to incorrect local fdb
+management and bridge id calculation, and prevents us from receiving
+frames on the bridge device.
 
-The thread will not see the updated page as long as the stale DTLB
-entry remains cached, the thread attempts to write into the page,
-the child process exits, or the thread gets migrated to a different
-processor.
-
-Signed-off-by: Anthony Iliopoulos <anthony.iliopoulos@huawei.com>
-Link: http://lkml.kernel.org/r/20140514092948.GA17391@server-36.huawei.corp
-Suggested-by: Shay Goikhman <shay.goikhman@huawei.com>
-Acked-by: Dave Hansen <dave.hansen@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Reported-by: Tom Gundersen <teg@jklm.no>
+Signed-off-by: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/include/asm/hugetlb.h | 1 +
- 1 file changed, 1 insertion(+)
+ net/bridge/br_netlink.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
---- a/arch/x86/include/asm/hugetlb.h
-+++ b/arch/x86/include/asm/hugetlb.h
-@@ -51,6 +51,7 @@ static inline pte_t huge_ptep_get_and_cl
- static inline void huge_ptep_clear_flush(struct vm_area_struct *vma,
- 					 unsigned long addr, pte_t *ptep)
- {
-+	ptep_clear_flush(vma, addr, ptep);
+diff --git a/net/bridge/br_netlink.c b/net/bridge/br_netlink.c
+index cbf9ccd..99a48a3 100644
+--- a/net/bridge/br_netlink.c
++++ b/net/bridge/br_netlink.c
+@@ -211,11 +211,26 @@ static int br_validate(struct nlattr *tb[], struct nlattr *data[])
+ 	return 0;
  }
  
- static inline int huge_pte_none(pte_t pte)
++static int br_dev_newlink(struct net *src_net, struct net_device *dev,
++			  struct nlattr *tb[], struct nlattr *data[])
++{
++	struct net_bridge *br = netdev_priv(dev);
++
++	if (tb[IFLA_ADDRESS]) {
++		spin_lock_bh(&br->lock);
++		br_stp_change_bridge_id(br, nla_data(tb[IFLA_ADDRESS]));
++		spin_unlock_bh(&br->lock);
++	}
++
++	return register_netdevice(dev);
++}
++
+ struct rtnl_link_ops br_link_ops __read_mostly = {
+ 	.kind		= "bridge",
+ 	.priv_size	= sizeof(struct net_bridge),
+ 	.setup		= br_dev_setup,
+ 	.validate	= br_validate,
++	.newlink	= br_dev_newlink,
+ 	.dellink	= br_dev_delete,
+ };
+ 
 
