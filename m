@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752933AbaFGBZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:25:58 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36180 "EHLO
+	id S1753061AbaFGB0r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:26:47 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36194 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752708AbaFGBXk (ORCPT
+	by vger.kernel.org with ESMTP id S1752706AbaFGBXk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 21:23:40 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Peter Christensen" <pch@ordbogen.com>,
-        "David S. Miller" <davem@davemloft.net>
+CC: akpm@linux-foundation.org, "Mikulas Patocka" <mpatocka@redhat.com>,
+        "Tomi Valkeinen" <tomi.valkeinen@ti.com>, stable@vga.kernel.org
 Date: Sat, 07 Jun 2014 02:26:28 +0100
-Message-ID: <lsq.1402104388.553134916@decadent.org.uk>
+Message-ID: <lsq.1402104388.924027552@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 22/92] macvlan: Don't propagate IFF_ALLMULTI changes
- on down  interfaces.
+Subject: [PATCH 3.2 04/92] tgafb: fix mode setting with fbset
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,40 +31,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Christensen <pch@ordbogen.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-[ Upstream commit bbeb0eadcf9fe74fb2b9b1a6fea82cd538b1e556 ]
+commit 624966589041deb32a2626ee2e176e8274581101 upstream.
 
-Clearing the IFF_ALLMULTI flag on a down interface could cause an allmulti
-overflow on the underlying interface.
+Mode setting in the TGA driver is broken for these reasons:
 
-Attempting the set IFF_ALLMULTI on the underlying interface would cause an
-error and the log message:
+- info->fix.line_length is set just once in tgafb_init_fix function. If
+  we change videomode, info->fix.line_length is not recalculated - so
+  the video mode is changed but the screen is corrupted because of wrong
+  info->fix.line_length.
 
-"allmulti touches root, set allmulti failed."
+- info->fix.smem_len is set in tgafb_init_fix to the size of the default
+  video mode (640x480). If we set a higher resolution,
+  info->fix.smem_len is smaller than the current screen size, preventing
+  the userspace program from mapping the framebuffer.
 
-Signed-off-by: Peter Christensen <pch@ordbogen.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This patch fixes it:
+
+- info->fix.line_length initialization is moved to tgafb_set_par so that
+  it is recalculated with each mode change.
+
+- info->fix.smem_len is set to a fixed value representing the real
+  amount of video ram (the values are taken from xfree86 driver).
+
+- add a check to tgafb_check_var to prevent us from setting a videomode
+  that doesn't fit into videoram.
+
+- in tgafb_register, tgafb_init_fix is moved upwards, to be called
+  before fb_find_mode (because fb_find_mode already needs the videoram
+  size set in tgafb_init_fix).
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Cc: stable@vga.kernel.org
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/macvlan.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/video/tgafb.c | 18 ++++++++++++++----
+ 1 file changed, 14 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
-index ab5786b..b74cdf6 100644
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -391,8 +391,10 @@ static void macvlan_change_rx_flags(struct net_device *dev, int change)
- 	struct macvlan_dev *vlan = netdev_priv(dev);
- 	struct net_device *lowerdev = vlan->lowerdev;
+--- a/drivers/video/tgafb.c
++++ b/drivers/video/tgafb.c
+@@ -192,6 +192,8 @@ tgafb_check_var(struct fb_var_screeninfo
  
--	if (change & IFF_ALLMULTI)
--		dev_set_allmulti(lowerdev, dev->flags & IFF_ALLMULTI ? 1 : -1);
-+	if (dev->flags & IFF_UP) {
-+		if (change & IFF_ALLMULTI)
-+			dev_set_allmulti(lowerdev, dev->flags & IFF_ALLMULTI ? 1 : -1);
-+	}
- }
+ 	if (var->xres_virtual != var->xres || var->yres_virtual != var->yres)
+ 		return -EINVAL;
++	if (var->xres * var->yres * (var->bits_per_pixel >> 3) > info->fix.smem_len)
++		return -EINVAL;
+ 	if (var->nonstd)
+ 		return -EINVAL;
+ 	if (1000000000 / var->pixclock > TGA_PLL_MAX_FREQ)
+@@ -272,6 +274,7 @@ tgafb_set_par(struct fb_info *info)
+ 	par->yres = info->var.yres;
+ 	par->pll_freq = pll_freq = 1000000000 / info->var.pixclock;
+ 	par->bits_per_pixel = info->var.bits_per_pixel;
++	info->fix.line_length = par->xres * (par->bits_per_pixel >> 3);
  
- static void macvlan_set_multicast_list(struct net_device *dev)
+ 	tga_type = par->tga_type;
+ 
+@@ -1318,6 +1321,7 @@ tgafb_init_fix(struct fb_info *info)
+ 	int tga_bus_tc = TGA_BUS_TC(par->dev);
+ 	u8 tga_type = par->tga_type;
+ 	const char *tga_type_name = NULL;
++	unsigned memory_size;
+ 
+ 	switch (tga_type) {
+ 	case TGA_TYPE_8PLANE:
+@@ -1325,21 +1329,25 @@ tgafb_init_fix(struct fb_info *info)
+ 			tga_type_name = "Digital ZLXp-E1";
+ 		if (tga_bus_tc)
+ 			tga_type_name = "Digital ZLX-E1";
++		memory_size = 2097152;
+ 		break;
+ 	case TGA_TYPE_24PLANE:
+ 		if (tga_bus_pci)
+ 			tga_type_name = "Digital ZLXp-E2";
+ 		if (tga_bus_tc)
+ 			tga_type_name = "Digital ZLX-E2";
++		memory_size = 8388608;
+ 		break;
+ 	case TGA_TYPE_24PLUSZ:
+ 		if (tga_bus_pci)
+ 			tga_type_name = "Digital ZLXp-E3";
+ 		if (tga_bus_tc)
+ 			tga_type_name = "Digital ZLX-E3";
++		memory_size = 16777216;
+ 		break;
+ 	default:
+ 		tga_type_name = "Unknown";
++		memory_size = 16777216;
+ 		break;
+ 	}
+ 
+@@ -1351,9 +1359,8 @@ tgafb_init_fix(struct fb_info *info)
+ 			    ? FB_VISUAL_PSEUDOCOLOR
+ 			    : FB_VISUAL_DIRECTCOLOR);
+ 
+-	info->fix.line_length = par->xres * (par->bits_per_pixel >> 3);
+ 	info->fix.smem_start = (size_t) par->tga_fb_base;
+-	info->fix.smem_len = info->fix.line_length * par->yres;
++	info->fix.smem_len = memory_size;
+ 	info->fix.mmio_start = (size_t) par->tga_regs_base;
+ 	info->fix.mmio_len = 512;
+ 
+@@ -1478,6 +1485,9 @@ tgafb_register(struct device *dev)
+ 		modedb_tga = &modedb_tc;
+ 		modedbsize_tga = 1;
+ 	}
++
++	tgafb_init_fix(info);
++
+ 	ret = fb_find_mode(&info->var, info,
+ 			   mode_option ? mode_option : mode_option_tga,
+ 			   modedb_tga, modedbsize_tga, NULL,
+@@ -1495,7 +1505,6 @@ tgafb_register(struct device *dev)
+ 	}
+ 
+ 	tgafb_set_par(info);
+-	tgafb_init_fix(info);
+ 
+ 	if (register_framebuffer(info) < 0) {
+ 		printk(KERN_ERR "tgafb: Could not register framebuffer\n");
 
