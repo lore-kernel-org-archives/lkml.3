@@ -1,215 +1,388 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753110AbaFGU4R (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 16:56:17 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:56252 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753003AbaFGU4P (ORCPT
+	id S1753120AbaFGVBM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 17:01:12 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48003 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752729AbaFGVBL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 16:56:15 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: viresh.kumar@linaro.org, pavel@ucw.cz, svaidy@linux.vnet.ibm.com,
-        ego@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] cpufreq: governor: Be friendly towards latency-sensitive bursty workloads
-Date: Sat, 07 Jun 2014 23:13:35 +0200
-Message-ID: <2855981.L5ysAMpFml@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140607204114.25673.87194.stgit@srivatsabhat.in.ibm.com>
-References: <20140607204114.25673.87194.stgit@srivatsabhat.in.ibm.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Sat, 7 Jun 2014 17:01:11 -0400
+Date: Sat, 7 Jun 2014 13:59:54 -0700
+Message-Id: <201406072059.s57KxsIp025789@terminus.zytor.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] x86 fixes for v3.15
+Cc: "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@linux.intel.com>,
+        Borislav Petkov <bp@suse.de>, Dave Young <dyoung@redhat.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Igor Mammedov <imammedo@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Ingo Molnar <mingo@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, "K. Y. Srinivasan" <kys@microsoft.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        Steven Rostedt (Red Hat) <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Toshi Kani <toshi.kani@hp.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
+        x86@kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, June 08, 2014 02:11:43 AM Srivatsa S. Bhat wrote:
-> Cpufreq governors like the ondemand governor calculate the load on the CPU
-> periodically by employing deferrable timers. A deferrable timer won't fire
-> if the CPU is completely idle (and there are no other timers to be run), in
-> order to avoid unnecessary wakeups and thus save CPU power.
-> 
-> However, the load calculation logic is agnostic to all this, and this can
-> lead to the problem described below.
-> 
-> 
-> Time (ms)               CPU 1
-> 
-> 100                Task-A running
-> 
-> 110                Governor's timer fires, finds load as 100% in the last
->                    10ms interval and increases the CPU frequency.
-> 
-> 110.5              Task-A running
-> 
-> 120		   Governor's timer fires, finds load as 100% in the last
-> 		   10ms interval and increases the CPU frequency.
-> 
-> 125		   Task-A went to sleep. With nothing else to do, CPU 1
-> 		   went completely idle.
-> 
-> 200		   Task-A woke up and started running again.
-> 
-> 200.5		   Governor's deferred timer (which was originally programmed
-> 		   to fire at time 130) fires now. It calculates load for the
-> 		   time period 120 to 200.5, and finds the load is almost zero.
-> 		   Hence it decreases the CPU frequency to the minimum.
-> 
-> 210		   Governor's timer fires, finds load as 100% in the last
-> 		   10ms interval and increases the CPU frequency.
-> 
-> 
-> So, after the workload woke up and started running, the frequency was suddenly
-> dropped to absolute minimum, and after that, there was an unnecessary delay of
-> 10ms (sampling period) to increase the CPU frequency back to a reasonable value.
-> And this pattern repeats for every wake-up-from-cpu-idle for that workload.
-> This can be quite undesirable for latency- or response-time sensitive bursty
-> workloads. So we need to fix the governor's logic to detect such wake-up-from-
-> cpu-idle scenarios and start the workload at a reasonably high CPU frequency.
-> 
-> One extreme solution would be to fake a load of 100% in such scenarios. But
-> that might lead to undesirable side-effects such as frequency spikes (which
-> might also need voltage changes) especially if the previous frequency happened
-> to be very low.
-> 
-> We just want to avoid the stupidity of dropping down the frequency to a minimum
-> and then enduring a needless (and long) delay before ramping it up back again.
-> So, let us simply carry forward the previous load - that is, let us just pretend
-> that the 'load' for the current time-window is the same as the load for the
-> previous window. That way, the frequency and voltage will continue to be set
-> to whatever values they were set at previously. This means that bursty workloads
-> will get a chance to influence the CPU frequency at which they wake up from
-> cpu-idle, based on their past execution history. Thus, they might be able to
-> avoid suffering from slow wakeups and long response-times.
-> 
-> However, we should take care not to over-do this. For example, such a "copy
-> previous load" logic will benefit cases like this: (where # represents busy
-> and . represents idle)
-> 
-> ##########.........#########.........###########...........##########........
-> 
-> but it will be detrimental in cases like the one shown below, because it will
-> retain the high frequency (copied from the previous interval) even in a mostly
-> idle system:
-> 
-> ##########.........#.................#.....................#...............
-> 
-> (i.e., the workload finished and the remaining tasks are such that their busy
-> periods are smaller than the sampling interval, which causes the timer to
-> always get deferred. So, this will make the copy-previous-load logic copy
-> the initial high load to subsequent idle periods over and over again, thus
-> keeping the frequency high unnecessarily).
-> 
-> So, we modify this copy-previous-load logic such that it is used only once
-> upon every wakeup-from-idle. Thus if we have 2 consecutive idle periods, the
-> previous load won't get blindly copied over; cpufreq will freshly evaluate the
-> load in the second idle interval, thus ensuring that the system comes back to
-> its normal state.
-> 
-> [ The right way to solve this whole problem is to teach the CPU frequency
-> governors to also track load on a per-task basis, not just a per-CPU basis,
-> and then use both the data sources intelligently to set the appropriate
-> frequency on the CPUs. But that involves redesigning the cpufreq subsystem,
-> so this patch should make the situation bearable until then. ]
-> 
-> Experimental results:
-> +-------------------+
-> 
-> I ran a modified version of ebizzy (called 'sleeping-ebizzy') that sleeps in
-> between its execution such that its total utilization can be a user-defined
-> value, say 10% or 20% (higher the utilization specified, lesser the amount of
-> sleeps injected). This ebizzy was run with a single-thread, tied to CPU 8.
-> 
-> Behavior observed with tracing (sample taken from 40% utilization runs):
-> ------------------------------------------------------------------------
-> 
-> Without patch:
-> ~~~~~~~~~~~~~~
-> kworker/8:2-12137  416.335742: cpu_frequency: state=2061000 cpu_id=8
-> kworker/8:2-12137  416.335744: sched_switch: prev_comm=kworker/8:2 ==> next_comm=ebizzy
->       <...>-40753  416.345741: sched_switch: prev_comm=ebizzy ==> next_comm=kworker/8:2
-> kworker/8:2-12137  416.345744: cpu_frequency: state=4123000 cpu_id=8
-> kworker/8:2-12137  416.345746: sched_switch: prev_comm=kworker/8:2 ==> next_comm=ebizzy
->       <...>-40753  416.355738: sched_switch: prev_comm=ebizzy ==> next_comm=kworker/8:2
-> <snip>  ---------------------------------------------------------------------  <snip>
->       <...>-40753  416.402202: sched_switch: prev_comm=ebizzy ==> next_comm=swapper/8
->      <idle>-0      416.502130: sched_switch: prev_comm=swapper/8 ==> next_comm=ebizzy
->       <...>-40753  416.505738: sched_switch: prev_comm=ebizzy ==> next_comm=kworker/8:2
-> kworker/8:2-12137  416.505739: cpu_frequency: state=2061000 cpu_id=8
-> kworker/8:2-12137  416.505741: sched_switch: prev_comm=kworker/8:2 ==> next_comm=ebizzy
->       <...>-40753  416.515739: sched_switch: prev_comm=ebizzy ==> next_comm=kworker/8:2
-> kworker/8:2-12137  416.515742: cpu_frequency: state=4123000 cpu_id=8
-> kworker/8:2-12137  416.515744: sched_switch: prev_comm=kworker/8:2 ==> next_comm=ebizzy
-> 
-> Observation: Ebizzy went idle at 416.402202, and started running again at
-> 416.502130. But cpufreq noticed the long idle period, and dropped the frequency
-> at 416.505739, only to increase it back again at 416.515742, realizing that the
-> workload is in-fact CPU bound. Thus ebizzy needlessly ran at the lowest frequency
-> for almost 13 milliseconds (almost 1 full sample period), and this pattern
-> repeats on every sleep-wakeup. This could hurt latency-sensitive workloads quite
-> a lot.
-> 
-> With patch:
-> ~~~~~~~~~~~
-> 
-> kworker/8:2-29802  464.832535: cpu_frequency: state=2061000 cpu_id=8
-> <snip>  ---------------------------------------------------------------------  <snip>
-> kworker/8:2-29802  464.962538: sched_switch: prev_comm=kworker/8:2 ==> next_comm=ebizzy
->       <...>-40738  464.972533: sched_switch: prev_comm=ebizzy ==> next_comm=kworker/8:2
-> kworker/8:2-29802  464.972536: cpu_frequency: state=4123000 cpu_id=8
-> kworker/8:2-29802  464.972538: sched_switch: prev_comm=kworker/8:2 ==> next_comm=ebizzy
->       <...>-40738  464.982531: sched_switch: prev_comm=ebizzy ==> next_comm=kworker/8:2
-> <snip>  ---------------------------------------------------------------------  <snip>
-> kworker/8:2-29802  465.022533: sched_switch: prev_comm=kworker/8:2 ==> next_comm=ebizzy
->       <...>-40738  465.032531: sched_switch: prev_comm=ebizzy ==> next_comm=kworker/8:2
-> kworker/8:2-29802  465.032532: sched_switch: prev_comm=kworker/8:2 ==> next_comm=ebizzy
->       <...>-40738  465.035797: sched_switch: prev_comm=ebizzy ==> next_comm=swapper/8
->      <idle>-0      465.240178: sched_switch: prev_comm=swapper/8 ==> next_comm=ebizzy
->       <...>-40738  465.242533: sched_switch: prev_comm=ebizzy ==> next_comm=kworker/8:2
-> kworker/8:2-29802  465.242535: sched_switch: prev_comm=kworker/8:2 ==> next_comm=ebizzy
->       <...>-40738  465.252531: sched_switch: prev_comm=ebizzy ==> next_comm=kworker/8:2
-> 
-> Observation: Ebizzy went idle at 465.035797, and started running again at
-> 465.240178. Since ebizzy was the only real workload running on this CPU,
-> cpufreq retained the frequency at 4.1Ghz throughout the run of ebizzy, no
-> matter how many times ebizzy slept and woke-up in-between. Thus, ebizzy
-> got the 10ms worth of 4.1 Ghz benefit during every sleep-wakeup (as compared
-> to the run without the patch) and this boost gave a modest improvement in total
-> throughput, as shown below.
-> 
-> Sleeping-ebizzy records-per-second:
-> -----------------------------------
-> 
-> Utilization  Without patch  With patch  Difference (Absolute and % values)
->     10%         274767        277046        +  2279 (+0.829%)
->     20%         543429        553484        + 10055 (+1.850%)
->     40%        1090744       1107959        + 17215 (+1.578%)
->     60%        1634908       1662018        + 27110 (+1.658%)
-> 
-> A rudimentary and somewhat approximately latency-sensitive workload such as
-> sleeping-ebizzy itself showed a consistent, noticeable performance improvement
-> with this patch. Hence, workloads that are truly latency-sensitive will benefit
-> quite a bit from this change. Moreover, this is an overall win-win since this
-> patch does not hurt power-savings at all (because, this patch does not reduce
-> the idle time or idle residency; and the high frequency of the CPU when it goes
-> to cpu-idle does not affect/hurt the power-savings of deep idle states).
-> 
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> Reviewed-by: Gautham R. Shenoy <ego@linux.vnet.ibm.com>
-> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
-> 
-> Changes in v3:
-> * Modified the "copy-previous-load" logic to copy only once, upon the first
->   wakeup from idle, to fix the flaw pointed out by Pavel Machek.
-> 
-> * Fixed the 64 bit division issue reported by Fengguang Wu's build robot.
+Hi Linus,
 
-Applied to bleeding-edge, thanks!
+A significantly larger than I'd like set of patches for just below the
+wire.  All of these, however, fix real problems.  However, if you feel
+it is too scary we can do it for the merge window and rely on pushing
+them into -stable.
+
+The one thing that is genuinely scary in here is the change of SMP
+initialization, but that *does* fix a confirmed hang when booting
+virtual machines.
+
+There is also a patch to actually do the right thing about not
+offlining a CPU when there are not enough interrupt vectors available
+in the system; the accounting was done incorrectly.  The worst case
+for that patch is that we fail to offline CPUs when we should (the new
+code is strictly more conservative than the old), so is not
+particularly risky.
+
+Most of the rest is minor stuff; the EFI patches are all about
+exporting correct information to boot loaders and kexec.
+
+The following changes since commit d2cfd3105094f593bc1fbd0b042a7752ddf08691:
+
+  Merge tag 'sound-3.15' of git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound (2014-06-03 12:07:30 -0700)
+
+are available in the git repository at:
 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+  git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86/urgent
+
+for you to fetch changes up to 745c51673e289acf4d9ffc2835524de73ef923fd:
+
+  x86/boot: EFI_MIXED should not prohibit loading above 4G (2014-06-07 09:31:00 -0700)
+
+----------------------------------------------------------------
+Dave Young (2):
+      x86/efi: earlyprintk=efi,keep fix
+      x86/efi: Do not export efi runtime map in case old map
+
+H. Peter Anvin (1):
+      Merge tag 'efi-urgent' into x86/urgent
+
+Igor Mammedov (3):
+      x86: Fix list/memory corruption on CPU hotplug
+      x86/smpboot: Log error on secondary CPU wakeup failure at ERR level
+      x86/smpboot: Initialize secondary CPU only if master CPU will wait for it
+
+Matt Fleming (1):
+      x86/boot: EFI_MIXED should not prohibit loading above 4G
+
+Yinghai Lu (1):
+      x86: irq: Get correct available vectors for cpu disable
+
+ arch/x86/boot/header.S       |   3 +-
+ arch/x86/kernel/cpu/common.c |  27 ++++++-----
+ arch/x86/kernel/irq.c        |  16 +++++--
+ arch/x86/kernel/smpboot.c    | 104 +++++++++++++------------------------------
+ arch/x86/platform/efi/efi.c  |   3 ++
+ 5 files changed, 64 insertions(+), 89 deletions(-)
+
+diff --git a/arch/x86/boot/header.S b/arch/x86/boot/header.S
+index 0ca9a5c362bc..84c223479e3c 100644
+--- a/arch/x86/boot/header.S
++++ b/arch/x86/boot/header.S
+@@ -375,8 +375,7 @@ xloadflags:
+ # define XLF0 0
+ #endif
+ 
+-#if defined(CONFIG_RELOCATABLE) && defined(CONFIG_X86_64) && \
+-	!defined(CONFIG_EFI_MIXED)
++#if defined(CONFIG_RELOCATABLE) && defined(CONFIG_X86_64)
+    /* kernel/boot_param/ramdisk could be loaded above 4g */
+ # define XLF1 XLF_CAN_BE_LOADED_ABOVE_4G
+ #else
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index a135239badb7..a4bcbacdbe0b 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -1221,6 +1221,17 @@ static void dbg_restore_debug_regs(void)
+ #define dbg_restore_debug_regs()
+ #endif /* ! CONFIG_KGDB */
+ 
++static void wait_for_master_cpu(int cpu)
++{
++	/*
++	 * wait for ACK from master CPU before continuing
++	 * with AP initialization
++	 */
++	WARN_ON(cpumask_test_and_set_cpu(cpu, cpu_initialized_mask));
++	while (!cpumask_test_cpu(cpu, cpu_callout_mask))
++		cpu_relax();
++}
++
+ /*
+  * cpu_init() initializes state that is per-CPU. Some data is already
+  * initialized (naturally) in the bootstrap process, such as the GDT
+@@ -1236,16 +1247,17 @@ void cpu_init(void)
+ 	struct task_struct *me;
+ 	struct tss_struct *t;
+ 	unsigned long v;
+-	int cpu;
++	int cpu = stack_smp_processor_id();
+ 	int i;
+ 
++	wait_for_master_cpu(cpu);
++
+ 	/*
+ 	 * Load microcode on this cpu if a valid microcode is available.
+ 	 * This is early microcode loading procedure.
+ 	 */
+ 	load_ucode_ap();
+ 
+-	cpu = stack_smp_processor_id();
+ 	t = &per_cpu(init_tss, cpu);
+ 	oist = &per_cpu(orig_ist, cpu);
+ 
+@@ -1257,9 +1269,6 @@ void cpu_init(void)
+ 
+ 	me = current;
+ 
+-	if (cpumask_test_and_set_cpu(cpu, cpu_initialized_mask))
+-		panic("CPU#%d already initialized!\n", cpu);
+-
+ 	pr_debug("Initializing CPU#%d\n", cpu);
+ 
+ 	clear_in_cr4(X86_CR4_VME|X86_CR4_PVI|X86_CR4_TSD|X86_CR4_DE);
+@@ -1336,13 +1345,9 @@ void cpu_init(void)
+ 	struct tss_struct *t = &per_cpu(init_tss, cpu);
+ 	struct thread_struct *thread = &curr->thread;
+ 
+-	show_ucode_info_early();
++	wait_for_master_cpu(cpu);
+ 
+-	if (cpumask_test_and_set_cpu(cpu, cpu_initialized_mask)) {
+-		printk(KERN_WARNING "CPU#%d already initialized!\n", cpu);
+-		for (;;)
+-			local_irq_enable();
+-	}
++	show_ucode_info_early();
+ 
+ 	printk(KERN_INFO "Initializing CPU#%d\n", cpu);
+ 
+diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+index 283a76a9cc40..11ccfb0a63e7 100644
+--- a/arch/x86/kernel/irq.c
++++ b/arch/x86/kernel/irq.c
+@@ -17,6 +17,7 @@
+ #include <asm/idle.h>
+ #include <asm/mce.h>
+ #include <asm/hw_irq.h>
++#include <asm/desc.h>
+ 
+ #define CREATE_TRACE_POINTS
+ #include <asm/trace/irq_vectors.h>
+@@ -334,10 +335,17 @@ int check_irq_vectors_for_cpu_disable(void)
+ 	for_each_online_cpu(cpu) {
+ 		if (cpu == this_cpu)
+ 			continue;
+-		for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS;
+-		     vector++) {
+-			if (per_cpu(vector_irq, cpu)[vector] < 0)
+-				count++;
++		/*
++		 * We scan from FIRST_EXTERNAL_VECTOR to first system
++		 * vector. If the vector is marked in the used vectors
++		 * bitmap or an irq is assigned to it, we don't count
++		 * it as available.
++		 */
++		for (vector = FIRST_EXTERNAL_VECTOR;
++		     vector < first_system_vector; vector++) {
++			if (!test_bit(vector, used_vectors) &&
++			    per_cpu(vector_irq, cpu)[vector] < 0)
++					count++;
+ 		}
+ 	}
+ 
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 34826934d4a7..bc52fac39dd3 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -111,7 +111,6 @@ atomic_t init_deasserted;
+ static void smp_callin(void)
+ {
+ 	int cpuid, phys_id;
+-	unsigned long timeout;
+ 
+ 	/*
+ 	 * If waken up by an INIT in an 82489DX configuration
+@@ -130,37 +129,6 @@ static void smp_callin(void)
+ 	 * (This works even if the APIC is not enabled.)
+ 	 */
+ 	phys_id = read_apic_id();
+-	if (cpumask_test_cpu(cpuid, cpu_callin_mask)) {
+-		panic("%s: phys CPU#%d, CPU#%d already present??\n", __func__,
+-					phys_id, cpuid);
+-	}
+-	pr_debug("CPU#%d (phys ID: %d) waiting for CALLOUT\n", cpuid, phys_id);
+-
+-	/*
+-	 * STARTUP IPIs are fragile beasts as they might sometimes
+-	 * trigger some glue motherboard logic. Complete APIC bus
+-	 * silence for 1 second, this overestimates the time the
+-	 * boot CPU is spending to send the up to 2 STARTUP IPIs
+-	 * by a factor of two. This should be enough.
+-	 */
+-
+-	/*
+-	 * Waiting 2s total for startup (udelay is not yet working)
+-	 */
+-	timeout = jiffies + 2*HZ;
+-	while (time_before(jiffies, timeout)) {
+-		/*
+-		 * Has the boot CPU finished it's STARTUP sequence?
+-		 */
+-		if (cpumask_test_cpu(cpuid, cpu_callout_mask))
+-			break;
+-		cpu_relax();
+-	}
+-
+-	if (!time_before(jiffies, timeout)) {
+-		panic("%s: CPU%d started up but did not get a callout!\n",
+-		      __func__, cpuid);
+-	}
+ 
+ 	/*
+ 	 * the boot CPU has finished the init stage and is spinning
+@@ -750,8 +718,8 @@ static int do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
+ 	unsigned long start_ip = real_mode_header->trampoline_start;
+ 
+ 	unsigned long boot_error = 0;
+-	int timeout;
+ 	int cpu0_nmi_registered = 0;
++	unsigned long timeout;
+ 
+ 	/* Just in case we booted with a single CPU. */
+ 	alternatives_enable_smp();
+@@ -799,6 +767,15 @@ static int do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
+ 	}
+ 
+ 	/*
++	 * AP might wait on cpu_callout_mask in cpu_init() with
++	 * cpu_initialized_mask set if previous attempt to online
++	 * it timed-out. Clear cpu_initialized_mask so that after
++	 * INIT/SIPI it could start with a clean state.
++	 */
++	cpumask_clear_cpu(cpu, cpu_initialized_mask);
++	smp_mb();
++
++	/*
+ 	 * Wake up a CPU in difference cases:
+ 	 * - Use the method in the APIC driver if it's defined
+ 	 * Otherwise,
+@@ -810,58 +787,41 @@ static int do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
+ 		boot_error = wakeup_cpu_via_init_nmi(cpu, start_ip, apicid,
+ 						     &cpu0_nmi_registered);
+ 
++
+ 	if (!boot_error) {
+ 		/*
+-		 * allow APs to start initializing.
++		 * Wait 10s total for a response from AP
+ 		 */
+-		pr_debug("Before Callout %d\n", cpu);
+-		cpumask_set_cpu(cpu, cpu_callout_mask);
+-		pr_debug("After Callout %d\n", cpu);
++		boot_error = -1;
++		timeout = jiffies + 10*HZ;
++		while (time_before(jiffies, timeout)) {
++			if (cpumask_test_cpu(cpu, cpu_initialized_mask)) {
++				/*
++				 * Tell AP to proceed with initialization
++				 */
++				cpumask_set_cpu(cpu, cpu_callout_mask);
++				boot_error = 0;
++				break;
++			}
++			udelay(100);
++			schedule();
++		}
++	}
+ 
++	if (!boot_error) {
+ 		/*
+-		 * Wait 5s total for a response
++		 * Wait till AP completes initial initialization
+ 		 */
+-		for (timeout = 0; timeout < 50000; timeout++) {
+-			if (cpumask_test_cpu(cpu, cpu_callin_mask))
+-				break;	/* It has booted */
+-			udelay(100);
++		while (!cpumask_test_cpu(cpu, cpu_callin_mask)) {
+ 			/*
+ 			 * Allow other tasks to run while we wait for the
+ 			 * AP to come online. This also gives a chance
+ 			 * for the MTRR work(triggered by the AP coming online)
+ 			 * to be completed in the stop machine context.
+ 			 */
++			udelay(100);
+ 			schedule();
+ 		}
+-
+-		if (cpumask_test_cpu(cpu, cpu_callin_mask)) {
+-			print_cpu_msr(&cpu_data(cpu));
+-			pr_debug("CPU%d: has booted.\n", cpu);
+-		} else {
+-			boot_error = 1;
+-			if (*trampoline_status == 0xA5A5A5A5)
+-				/* trampoline started but...? */
+-				pr_err("CPU%d: Stuck ??\n", cpu);
+-			else
+-				/* trampoline code not run */
+-				pr_err("CPU%d: Not responding\n", cpu);
+-			if (apic->inquire_remote_apic)
+-				apic->inquire_remote_apic(apicid);
+-		}
+-	}
+-
+-	if (boot_error) {
+-		/* Try to put things back the way they were before ... */
+-		numa_remove_cpu(cpu); /* was set by numa_add_cpu */
+-
+-		/* was set by do_boot_cpu() */
+-		cpumask_clear_cpu(cpu, cpu_callout_mask);
+-
+-		/* was set by cpu_init() */
+-		cpumask_clear_cpu(cpu, cpu_initialized_mask);
+-
+-		set_cpu_present(cpu, false);
+-		per_cpu(x86_cpu_to_apicid, cpu) = BAD_APICID;
+ 	}
+ 
+ 	/* mark "stuck" area as not stuck */
+@@ -921,7 +881,7 @@ int native_cpu_up(unsigned int cpu, struct task_struct *tidle)
+ 
+ 	err = do_boot_cpu(apicid, cpu, tidle);
+ 	if (err) {
+-		pr_debug("do_boot_cpu failed %d\n", err);
++		pr_err("do_boot_cpu failed(%d) to wakeup CPU#%u\n", err, cpu);
+ 		return -EIO;
+ 	}
+ 
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 3781dd39e8bd..4d36932ca4f2 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -919,6 +919,9 @@ static void __init save_runtime_map(void)
+ 	void *tmp, *p, *q = NULL;
+ 	int count = 0;
+ 
++	if (efi_enabled(EFI_OLD_MEMMAP))
++		return;
++
+ 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
+ 		md = p;
+ 
