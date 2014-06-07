@@ -1,48 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753110AbaFGPz3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 11:55:29 -0400
-Received: from smtprelay0153.hostedemail.com ([216.40.44.153]:55258 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753070AbaFGPz2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 11:55:28 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1567:1593:1594:1711:1714:1730:1747:1777:1792:2198:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3867:3871:3872:4321:5007:7652:10004:10400:10848:11026:11232:11658:11914:12043:12114:12296:12438:12517:12519:12740:13019:13069:13138:13231:13311:13357:13894,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: gold65_4ca09d3cc5e34
-X-Filterd-Recvd-Size: 1395
-Message-ID: <1402156524.28369.4.camel@joe-AO725>
-Subject: Re: [PATCH] media-device: Remove duplicated memset() in
- media_enum_entities()
-From: Joe Perches <joe@perches.com>
-To: Salva =?ISO-8859-1?Q?Peir=F3?= <speiro@ai2.upv.es>
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stable@kernel.org
-Date: Sat, 07 Jun 2014 08:55:24 -0700
-In-Reply-To: <1402152104-16865-1-git-send-email-speiro@ai2.upv.es>
-References: <1402152104-16865-1-git-send-email-speiro@ai2.upv.es>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1753022AbaFGQA0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 12:00:26 -0400
+Received: from lnfm1.sai.msu.ru ([93.180.26.255]:47825 "EHLO lnfm1.sai.msu.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752821AbaFGQAZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jun 2014 12:00:25 -0400
+Date: Sat, 7 Jun 2014 20:00:10 +0400 (MSK)
+From: "Matwey V. Kornilov" <matwey@sai.msu.ru>
+To: Robert Nelson <robertcnelson@gmail.com>
+cc: Benoit Cousson <bcousson@baylibre.com>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCHv2] dts: Add UARTs to am335x-bone-common.dtsi
+In-Reply-To: <CAOCHtYjFT_96wxbsAUY4-aKAC7LmqVpFEGDfyLTODFQ-uy9e+A@mail.gmail.com>
+Message-ID: <alpine.LRH.2.00.1406071955100.14484@lnfm1.sai.msu.ru>
+References: <alpine.LRH.2.00.1406071845220.13290@lnfm1.sai.msu.ru> <CAOCHtYjFT_96wxbsAUY4-aKAC7LmqVpFEGDfyLTODFQ-uy9e+A@mail.gmail.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-06-07 at 16:41 +0200, Salva Peiró wrote:
-> After the zeroing the whole struct struct media_entity_desc u_ent,
-> it is no longer necessary to memset(0) its u_ent.name field.
+>From 570b6d0f050aa00d301e2ee9000c8fcb6db75df1 Mon Sep 17 00:00:00 2001
+From: "Matwey V. Kornilov" <matwey.kornilov@gmail.com>
+Date: Sat, 7 Jun 2014 17:23:57 +0400
+Subject: [PATCH] Add UARTs to am335x-bone-common.dtsi
 
-trivia:
+Add five UARTs pinouts and ports to Beagle Bone common dtsi.
 
-> diff --git a/drivers/media/media-device.c b/drivers/media/media-device.c
-[]
-> @@ -106,8 +106,6 @@ static long media_device_enum_entities(struct media_device *mdev,
->  	if (ent->name) {
->  		strncpy(u_ent.name, ent->name, sizeof(u_ent.name));
->  		u_ent.name[sizeof(u_ent.name) - 1] = '\0';
+Signed-off-by: Matwey V. Kornilov <matwey@sai.msu.ru>
+---
+Changes from v1 of the patch:
+  + add uart5 initially lost
+  + left uarts disabled
 
-this could be strlcpy too.
+  arch/arm/boot/dts/am335x-bone-common.dtsi | 50 +++++++++++++++++++++++++++++++
+  1 file changed, 50 insertions(+)
 
+diff --git a/arch/arm/boot/dts/am335x-bone-common.dtsi b/arch/arm/boot/dts/am335x-bone-common.dtsi
+index 2e7d932..dad68a1 100644
+--- a/arch/arm/boot/dts/am335x-bone-common.dtsi
++++ b/arch/arm/boot/dts/am335x-bone-common.dtsi
+@@ -90,6 +90,36 @@
+  			0x174 (PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* uart0_txd.uart0_txd */
+  		>;
+  	};
++	uart1_pins: pinmux_uart1_pins {
++		pinctrl-single,pins = <
++			0x180 (PIN_INPUT_PULLUP | MUX_MODE0)	/* uart1_rxd.uart1_rxd */
++			0x184 (PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* uart1_txd.uart1_txd */
++		>;
++	};
++	uart2_pins: pinmux_uart2_pins {
++		pinctrl-single,pins = <
++			0x150 (PIN_INPUT_PULLUP | MUX_MODE1)	/* spi0_sclk.uart2_rxd */
++			0x154 (PIN_OUTPUT_PULLDOWN | MUX_MODE1)	/* spi0_d0.uart2_txd */
++		>;
++	};
++	uart3_pins: pinmux_uart3_pins {
++		pinctrl-single,pins = <
++	/* Pin 0x160 spi0_cs1.uart3_rxd is not exported to the expansion header. The port is half-duplex */
++			0x164 (PIN_OUTPUT_PULLDOWN | MUX_MODE1)	/* ecap0_in_pwm0_out.uart3_txd */
++		>;
++	};
++	uart4_pins: pinmux_uart4_pins {
++		pinctrl-single,pins = <
++			0x070 (PIN_INPUT_PULLUP | MUX_MODE6)	/* gpmc_wait0.uart4_rxd */
++			0x074 (PIN_OUTPUT_PULLDOWN | MUX_MODE6)	/* gpmc_wpn.uart4_txd */
++		>;
++	};
++	uart5_pins: pinmux_uart5_pins {
++		pinctrl-single,pins = <
++			0x0c4 (PIN_INPUT_PULLUP | MUX_MODE4)	/* lcd_data9.uart5_rxd */
++			0x0c0 (PIN_OUTPUT_PULLDOWN | MUX_MODE4)	/* lcd_data8.uart5_txd */
++		>;
++	};
+
+  	clkout2_pin: pinmux_clkout2_pin {
+  		pinctrl-single,pins = <
+@@ -179,6 +209,26 @@
+
+  	status = "okay";
+  };
++&uart1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&uart1_pins>;
++};
++&uart2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&uart2_pins>;
++};
++&uart3 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&uart3_pins>;
++};
++&uart4 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&uart4_pins>;
++};
++&uart5 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&uart5_pins>;
++};
+
+  &usb {
+  	status = "okay";
+-- 
+1.8.1.4
 
 
