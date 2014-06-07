@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753480AbaFGBcs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:32:48 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36097 "EHLO
+	id S1753464AbaFGBcr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:32:47 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36101 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752644AbaFGBXj (ORCPT
+	by vger.kernel.org with ESMTP id S1752653AbaFGBXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 21:23:39 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, arvind.chauhan@arm.com,
-        "Viresh Kumar" <viresh.kumar@linaro.org>, linaro-networking@linaro.org,
-        "Thomas Gleixner" <tglx@linutronix.de>, fweisbec@gmail.com,
-        linaro-kernel@lists.linaro.org
+CC: akpm@linux-foundation.org, "Oleg Nesterov" <oleg@redhat.com>,
+        "Paolo Bonzini" <pbonzini@redhat.com>
 Date: Sat, 07 Jun 2014 02:26:29 +0100
-Message-ID: <lsq.1402104389.60149753@decadent.org.uk>
+Message-ID: <lsq.1402104389.565998987@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 64/92] hrtimer: Set expiry time before switch_hrtimer_base()
+Subject: [PATCH 3.2 36/92] KVM: async_pf: mm->mm_users can not pin apf->mm
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,57 +31,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Viresh Kumar <viresh.kumar@linaro.org>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 84ea7fe37908254c3bd90910921f6e1045c1747a upstream.
+commit 41c22f626254b9dc0376928cae009e73d1b6a49a upstream.
 
-switch_hrtimer_base() calls hrtimer_check_target() which ensures that
-we do not migrate a timer to a remote cpu if the timer expires before
-the current programmed expiry time on that remote cpu.
+get_user_pages(mm) is simply wrong if mm->mm_users == 0 and exit_mmap/etc
+was already called (or is in progress), mm->mm_count can only pin mm->pgd
+and mm_struct itself.
 
-But __hrtimer_start_range_ns() calls switch_hrtimer_base() before the
-new expiry time is set. So the sanity check in hrtimer_check_target()
-is operating on stale or even uninitialized data.
+Change kvm_setup_async_pf/async_pf_execute to inc/dec mm->mm_users.
 
-Update expiry time before calling switch_hrtimer_base().
+kvm_create_vm/kvm_destroy_vm play with ->mm_count too but this case looks
+fine at first glance, it seems that this ->mm is only used to verify that
+current->mm == kvm->mm.
 
-[ tglx: Rewrote changelog once again ]
-
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linaro-kernel@lists.linaro.org
-Cc: linaro-networking@linaro.org
-Cc: fweisbec@gmail.com
-Cc: arvind.chauhan@arm.com
-Link: http://lkml.kernel.org/r/81999e148745fc51bbcd0615823fbab9b2e87e23.1399882253.git.viresh.kumar@linaro.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/hrtimer.c | 8 ++++----
+ virt/kvm/async_pf.c | 8 ++++----
  1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -980,11 +980,8 @@ int __hrtimer_start_range_ns(struct hrti
- 	/* Remove an active timer from the queue: */
- 	ret = remove_hrtimer(timer, base);
+--- a/virt/kvm/async_pf.c
++++ b/virt/kvm/async_pf.c
+@@ -87,7 +87,7 @@ static void async_pf_execute(struct work
+ 	if (waitqueue_active(&vcpu->wq))
+ 		wake_up_interruptible(&vcpu->wq);
  
--	/* Switch the timer base, if necessary: */
--	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
--
- 	if (mode & HRTIMER_MODE_REL) {
--		tim = ktime_add_safe(tim, new_base->get_time());
-+		tim = ktime_add_safe(tim, base->get_time());
- 		/*
- 		 * CONFIG_TIME_LOW_RES is a temporary way for architectures
- 		 * to signal that they simply return xtime in
-@@ -999,6 +996,9 @@ int __hrtimer_start_range_ns(struct hrti
+-	mmdrop(mm);
++	mmput(mm);
+ 	kvm_put_kvm(vcpu->kvm);
+ }
  
- 	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
+@@ -100,7 +100,7 @@ void kvm_clear_async_pf_completion_queue
+ 				   typeof(*work), queue);
+ 		list_del(&work->queue);
+ 		if (cancel_work_sync(&work->work)) {
+-			mmdrop(work->mm);
++			mmput(work->mm);
+ 			kvm_put_kvm(vcpu->kvm); /* == work->vcpu->kvm */
+ 			kmem_cache_free(async_pf_cache, work);
+ 		}
+@@ -169,7 +169,7 @@ int kvm_setup_async_pf(struct kvm_vcpu *
+ 	work->addr = gfn_to_hva(vcpu->kvm, gfn);
+ 	work->arch = *arch;
+ 	work->mm = current->mm;
+-	atomic_inc(&work->mm->mm_count);
++	atomic_inc(&work->mm->mm_users);
+ 	kvm_get_kvm(work->vcpu->kvm);
  
-+	/* Switch the timer base, if necessary: */
-+	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
-+
- 	timer_stats_hrtimer_set_start_info(timer);
- 
- 	leftmost = enqueue_hrtimer(timer, new_base);
+ 	/* this can't really happen otherwise gfn_to_pfn_async
+@@ -187,7 +187,7 @@ int kvm_setup_async_pf(struct kvm_vcpu *
+ 	return 1;
+ retry_sync:
+ 	kvm_put_kvm(work->vcpu->kvm);
+-	mmdrop(work->mm);
++	mmput(work->mm);
+ 	kmem_cache_free(async_pf_cache, work);
+ 	return 0;
+ }
 
