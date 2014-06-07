@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753194AbaFGB1i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:27:38 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36154 "EHLO
+	id S1753163AbaFGB1g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:27:36 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36165 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752695AbaFGBXj (ORCPT
+	by vger.kernel.org with ESMTP id S1752703AbaFGBXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 21:23:39 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Stanislaw Gruszka" <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
+        "Florian Westphal" <fw@strlen.de>
 Date: Sat, 07 Jun 2014 02:26:28 +0100
-Message-ID: <lsq.1402104388.531118585@decadent.org.uk>
+Message-ID: <lsq.1402104388.986180684@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 28/92] rt2x00: fix beaconing on USB
+Subject: [PATCH 3.2 20/92] net: ipv4: ip_forward: fix inverted local_df test
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,65 +31,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Florian Westphal <fw@strlen.de>
 
-commit 8834d3608cc516f13e2e510f4057c263f3d2ce42 upstream.
+[ Upstream commit ca6c5d4ad216d5942ae544bbf02503041bd802aa ]
 
-When disable beaconing we clear register with beacon and newer set it
-back, what make we stop send beacons infinitely.
+local_df means 'ignore DF bit if set', so if its set we're
+allowed to perform ip fragmentation.
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This wasn't noticed earlier because the output path also drops such skbs
+(and emits needed icmp error) and because netfilter ip defrag did not
+set local_df until couple of days ago.
+
+Only difference is that DF-packets-larger-than MTU now discarded
+earlier (f.e. we avoid pointless netfilter postrouting trip).
+
+While at it, drop the repeated test ip_exceeds_mtu, checking it once
+is enough...
+
+Fixes: fe6cc55f3a9 ("net: ip, ipv6: handle gso skbs in forwarding path")
+Signed-off-by: Florian Westphal <fw@strlen.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/rt2x00/rt2x00mac.c | 22 ++++++++++++----------
- 1 file changed, 12 insertions(+), 10 deletions(-)
+ net/ipv4/ip_forward.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/rt2x00/rt2x00mac.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00mac.c
-@@ -651,20 +651,18 @@ void rt2x00mac_bss_info_changed(struct i
- 				      bss_conf->bssid);
+diff --git a/net/ipv4/ip_forward.c b/net/ipv4/ip_forward.c
+index e0d9f02..7593f3a 100644
+--- a/net/ipv4/ip_forward.c
++++ b/net/ipv4/ip_forward.c
+@@ -42,12 +42,12 @@
+ static bool ip_may_fragment(const struct sk_buff *skb)
+ {
+ 	return unlikely((ip_hdr(skb)->frag_off & htons(IP_DF)) == 0) ||
+-	       !skb->local_df;
++		skb->local_df;
+ }
  
- 	/*
--	 * Update the beacon. This is only required on USB devices. PCI
--	 * devices fetch beacons periodically.
--	 */
--	if (changes & BSS_CHANGED_BEACON && rt2x00_is_usb(rt2x00dev))
--		rt2x00queue_update_beacon(rt2x00dev, vif);
--
--	/*
- 	 * Start/stop beaconing.
- 	 */
- 	if (changes & BSS_CHANGED_BEACON_ENABLED) {
- 		if (!bss_conf->enable_beacon && intf->enable_beacon) {
--			rt2x00queue_clear_beacon(rt2x00dev, vif);
- 			rt2x00dev->intf_beaconing--;
- 			intf->enable_beacon = false;
-+			/*
-+			 * Clear beacon in the H/W for this vif. This is needed
-+			 * to disable beaconing on this particular interface
-+			 * and keep it running on other interfaces.
-+			 */
-+			rt2x00queue_clear_beacon(rt2x00dev, vif);
+ static bool ip_exceeds_mtu(const struct sk_buff *skb, unsigned int mtu)
+ {
+-	if (skb->len <= mtu || skb->local_df)
++	if (skb->len <= mtu)
+ 		return false;
  
- 			if (rt2x00dev->intf_beaconing == 0) {
- 				/*
-@@ -675,11 +673,15 @@ void rt2x00mac_bss_info_changed(struct i
- 				rt2x00queue_stop_queue(rt2x00dev->bcn);
- 				mutex_unlock(&intf->beacon_skb_mutex);
- 			}
--
--
- 		} else if (bss_conf->enable_beacon && !intf->enable_beacon) {
- 			rt2x00dev->intf_beaconing++;
- 			intf->enable_beacon = true;
-+			/*
-+			 * Upload beacon to the H/W. This is only required on
-+			 * USB devices. PCI devices fetch beacons periodically.
-+			 */
-+			if (rt2x00_is_usb(rt2x00dev))
-+				rt2x00queue_update_beacon(rt2x00dev, vif);
- 
- 			if (rt2x00dev->intf_beaconing == 1) {
- 				/*
+ 	if (skb_is_gso(skb) && skb_gso_network_seglen(skb) <= mtu)
 
