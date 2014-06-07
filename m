@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753696AbaFGBoM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:44:12 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35977 "EHLO
+	id S1753505AbaFGBoK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:44:10 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35979 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752547AbaFGBXg (ORCPT
+	by vger.kernel.org with ESMTP id S1752553AbaFGBXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 21:23:36 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Date: Sat, 07 Jun 2014 02:26:29 +0100
-Message-ID: <lsq.1402104389.740292954@decadent.org.uk>
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
+        "Julian Anastasov" <ja@ssi.bg>, "Vlad Yasevich" <vyasevich@gmail.com>,
+        "Xufeng Zhang" <xufeng.zhang@windriver.com>
+Date: Sat, 07 Jun 2014 02:26:28 +0100
+Message-ID: <lsq.1402104388.483599521@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 72/92] x86-64, modify_ldt: Make support for 16-bit
- segments a runtime option
+Subject: [PATCH 3.2 17/92] sctp: reset flowi4_oif parameter on route lookup
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,84 +32,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Xufeng Zhang <xufeng.zhang@windriver.com>
 
-commit fa81511bb0bbb2b1aace3695ce869da9762624ff upstream.
+[ Upstream commit 85350871317a5adb35519d9dc6fc9e80809d42ad ]
 
-Checkin:
+commit 813b3b5db83 (ipv4: Use caller's on-stack flowi as-is
+in output route lookups.) introduces another regression which
+is very similar to the problem of commit e6b45241c (ipv4: reset
+flowi parameters on route connect) wants to fix:
+Before we call ip_route_output_key() in sctp_v4_get_dst() to
+get a dst that matches a bind address as the source address,
+we have already called this function previously and the flowi
+parameters have been initialized including flowi4_oif, so when
+we call this function again, the process in __ip_route_output_key()
+will be different because of the setting of flowi4_oif, and we'll
+get a networking device which corresponds to the inputted flowi4_oif
+as the output device, this is wrong because we'll never hit this
+place if the previously returned source address of dst match one
+of the bound addresses.
 
-b3b42ac2cbae x86-64, modify_ldt: Ban 16-bit segments on 64-bit kernels
+To reproduce this problem, a vlan setting is enough:
+  # ifconfig eth0 up
+  # route del default
+  # vconfig add eth0 2
+  # vconfig add eth0 3
+  # ifconfig eth0.2 10.0.1.14 netmask 255.255.255.0
+  # route add default gw 10.0.1.254 dev eth0.2
+  # ifconfig eth0.3 10.0.0.14 netmask 255.255.255.0
+  # ip rule add from 10.0.0.14 table 4
+  # ip route add table 4 default via 10.0.0.254 src 10.0.0.14 dev eth0.3
+  # sctp_darn -H 10.0.0.14 -P 36422 -h 10.1.4.134 -p 36422 -s -I
+You'll detect that all the flow are routed to eth0.2(10.0.1.254).
 
-disabled 16-bit segments on 64-bit kernels due to an information
-leak.  However, it does seem that people are genuinely using Wine to
-run old 16-bit Windows programs on Linux.
-
-A proper fix for this ("espfix64") is coming in the upcoming merge
-window, but as a temporary fix, create a sysctl to allow the
-administrator to re-enable support for 16-bit segments.
-
-It adds a "/proc/sys/abi/ldt16" sysctl that defaults to zero (off). If
-you hit this issue and care about your old Windows program more than
-you care about a kernel stack address information leak, you can do
-
-   echo 1 > /proc/sys/abi/ldt16
-
-as root (add it to your startup scripts), and you should be ok.
-
-The sysctl table is only added if you have COMPAT support enabled on
-x86-64, but I assume anybody who runs old windows binaries very much
-does that ;)
-
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Link: http://lkml.kernel.org/r/CA%2B55aFw9BPoD10U1LfHbOMpHWZkvJTkMcfCs9s3urPr1YyWBxw@mail.gmail.com
+Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
+Signed-off-by: Julian Anastasov <ja@ssi.bg>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/kernel/ldt.c        | 4 +++-
- arch/x86/vdso/vdso32-setup.c | 8 ++++++++
- 2 files changed, 11 insertions(+), 1 deletion(-)
+ net/sctp/protocol.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/arch/x86/kernel/ldt.c
-+++ b/arch/x86/kernel/ldt.c
-@@ -21,6 +21,8 @@
- #include <asm/mmu_context.h>
- #include <asm/syscalls.h>
- 
-+int sysctl_ldt16 = 0;
+diff --git a/net/sctp/protocol.c b/net/sctp/protocol.c
+index 6f6ad86..de35e01 100644
+--- a/net/sctp/protocol.c
++++ b/net/sctp/protocol.c
+@@ -528,8 +528,13 @@ static void sctp_v4_get_dst(struct sctp_transport *t, union sctp_addr *saddr,
+ 			continue;
+ 		if ((laddr->state == SCTP_ADDR_SRC) &&
+ 		    (AF_INET == laddr->a.sa.sa_family)) {
+-			fl4->saddr = laddr->a.v4.sin_addr.s_addr;
+ 			fl4->fl4_sport = laddr->a.v4.sin_port;
++			flowi4_update_output(fl4,
++					     asoc->base.sk->sk_bound_dev_if,
++					     RT_CONN_FLAGS(asoc->base.sk),
++					     daddr->v4.sin_addr.s_addr,
++					     laddr->a.v4.sin_addr.s_addr);
 +
- #ifdef CONFIG_SMP
- static void flush_ldt(void *current_mm)
- {
-@@ -235,7 +237,7 @@ static int write_ldt(void __user *ptr, u
- 	 * IRET leaking the high bits of the kernel stack address.
- 	 */
- #ifdef CONFIG_X86_64
--	if (!ldt_info.seg_32bit) {
-+	if (!ldt_info.seg_32bit && !sysctl_ldt16) {
- 		error = -EINVAL;
- 		goto out_unlock;
- 	}
---- a/arch/x86/vdso/vdso32-setup.c
-+++ b/arch/x86/vdso/vdso32-setup.c
-@@ -41,6 +41,7 @@ enum {
- #ifdef CONFIG_X86_64
- #define vdso_enabled			sysctl_vsyscall32
- #define arch_setup_additional_pages	syscall32_setup_pages
-+extern int sysctl_ldt16;
- #endif
- 
- /*
-@@ -387,6 +388,13 @@ static ctl_table abi_table2[] = {
- 		.maxlen		= sizeof(int),
- 		.mode		= 0644,
- 		.proc_handler	= proc_dointvec
-+	},
-+	{
-+		.procname	= "ldt16",
-+		.data		= &sysctl_ldt16,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec
- 	},
- 	{}
- };
+ 			rt = ip_route_output_key(&init_net, fl4);
+ 			if (!IS_ERR(rt)) {
+ 				dst = &rt->dst;
 
