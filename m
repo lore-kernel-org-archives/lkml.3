@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753132AbaFGQ0A (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 12:26:00 -0400
-Received: from mout.web.de ([212.227.15.3]:49866 "EHLO mout.web.de"
+	id S1753158AbaFGQ0M (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 12:26:12 -0400
+Received: from mout.web.de ([212.227.15.3]:64036 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753081AbaFGQZ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 12:25:57 -0400
+	id S1753104AbaFGQ0G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jun 2014 12:26:06 -0400
 From: =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>
 To: netdev@vger.kernel.org
 Cc: bridge@lists.linux-foundation.org,
@@ -14,243 +14,168 @@ Cc: bridge@lists.linux-foundation.org,
         Herbert Xu <herbert@gondor.apana.org.au>, linux-kernel@vger.kernel.org,
         b.a.t.m.a.n@lists.open-mesh.org,
         =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>
-Subject: [PATCHv4 net-next 2/4] bridge: adhere to querier election mechanism specified by RFCs
-Date: Sat,  7 Jun 2014 18:26:27 +0200
-Message-Id: <1402158389-13239-3-git-send-email-linus.luessing@web.de>
+Subject: [PATCHv4 net-next 3/4] bridge: add export of multicast database adjacent to net_dev
+Date: Sat,  7 Jun 2014 18:26:28 +0200
+Message-Id: <1402158389-13239-4-git-send-email-linus.luessing@web.de>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1402158389-13239-1-git-send-email-linus.luessing@web.de>
 References: <1402158389-13239-1-git-send-email-linus.luessing@web.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-X-Provags-ID: V03:K0:wumDY5rQ1DW544p/e7ULyFv/9Q2xbdkms2ekPoa5lVRejcxq/Vn
- v6rnDNDxn8SJB1+3iEbsSEZDsez2iIlSmuyCNkCeapM/INjFKjAtWU61jTl9RotZUOjJ448
- iBzP4F8hDHRoN6EXPH7rMVheEZzmGoN73MYxybvNwHwy7rGJfVI35epzfJ9kBVlju4+n/3x
- y9qcaOiccB7fxXohfe83w==
+X-Provags-ID: V03:K0:NQdUTGPzeDCnOpoDVvdUN8cGa0W1JDaBshw2qhn/2cW8MpOVhST
+ PjRgElXeT12g0CX874L3KzMROOeh8Vuj4q3BuJ0n3UlbBAdpdep5VoPZMONJ81ivIgXAH9j
+ DbvHCFgXNGl3w6PFkprp7y22HW+Sbom4ifiSWdL8xQ2qUyosSMH4h8z828zund8j748/s6M
+ 0QtsDGceAeheX//+Mc1Kg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MLDv1 (RFC2710 section 6), MLDv2 (RFC3810 section 7.6.2), IGMPv2
-(RFC2236 section 3) and IGMPv3 (RFC3376 section 6.6.2) specify that the
-querier with lowest source address shall become the selected
-querier.
+With this new, exported function br_multicast_list_adjacent(net_dev) a
+list of IPv4/6 addresses is returned. This list contains all multicast
+addresses sensed by the bridge multicast snooping feature on all bridge
+ports of the bridge interface of net_dev, excluding addresses from the
+specified net_device itself.
 
-So far the bridge stopped its querier as soon as it heard another
-querier regardless of its source address. This results in the "wrong"
-querier potentially becoming the active querier or a potential,
-unnecessary querying delay.
-
-With this patch the bridge memorizes the source address of the currently
-selected querier and ignores queries from queriers with a higher source
-address than the currently selected one. This slight optimization is
-supposed to make it more RFC compliant (but is rather uncritical and
-therefore probably not necessary to be queued for stable kernels).
+Adding bridge support to the batman-adv multicast optimization requires
+batman-adv knowing about the existence of bridged-in multicast
+listeners to be able to reliably serve them with multicast packets.
 
 Signed-off-by: Linus Lüssing <linus.luessing@web.de>
 ---
- net/bridge/br_multicast.c |  101 +++++++++++++++++++++++++++++++++++++++------
- net/bridge/br_private.h   |    7 ++++
- 2 files changed, 95 insertions(+), 13 deletions(-)
+ include/linux/if_bridge.h |   18 ++++++++++++++
+ net/bridge/br_multicast.c |   58 +++++++++++++++++++++++++++++++++++++++++++++
+ net/bridge/br_private.h   |   12 ----------
+ 3 files changed, 76 insertions(+), 12 deletions(-)
 
-diff --git a/net/bridge/br_multicast.c b/net/bridge/br_multicast.c
-index 5ccac62..b3f17c9 100644
---- a/net/bridge/br_multicast.c
-+++ b/net/bridge/br_multicast.c
-@@ -789,6 +789,18 @@ static void br_ip6_multicast_querier_expired(unsigned long data)
- }
- #endif
+diff --git a/include/linux/if_bridge.h b/include/linux/if_bridge.h
+index 1085ffe..44d6eb0 100644
+--- a/include/linux/if_bridge.h
++++ b/include/linux/if_bridge.h
+@@ -16,9 +16,27 @@
+ #include <linux/netdevice.h>
+ #include <uapi/linux/if_bridge.h>
  
-+static void br_multicast_select_own_querier(struct net_bridge *br,
-+					    struct br_ip *ip,
-+					    struct sk_buff *skb)
-+{
-+	if (ip->proto == htons(ETH_P_IP))
-+		br->ip4_querier.addr.u.ip4 = ip_hdr(skb)->saddr;
++struct br_ip {
++	union {
++		__be32	ip4;
 +#if IS_ENABLED(CONFIG_IPV6)
-+	else
-+		br->ip6_querier.addr.u.ip6 = ipv6_hdr(skb)->saddr;
++		struct in6_addr ip6;
 +#endif
-+}
++	} u;
++	__be16		proto;
++	__u16           vid;
++};
 +
- static void __br_multicast_send_query(struct net_bridge *br,
- 				      struct net_bridge_port *port,
- 				      struct br_ip *ip)
-@@ -804,8 +816,10 @@ static void __br_multicast_send_query(struct net_bridge *br,
- 		skb->dev = port->dev;
- 		NF_HOOK(NFPROTO_BRIDGE, NF_BR_LOCAL_OUT, skb, NULL, skb->dev,
- 			dev_queue_xmit);
--	} else
-+	} else {
-+		br_multicast_select_own_querier(br, ip, skb);
- 		netif_rx(skb);
-+	}
- }
- 
- static void br_multicast_send_query(struct net_bridge *br,
-@@ -1065,6 +1079,62 @@ static int br_ip6_multicast_mld2_report(struct net_bridge *br,
- }
- #endif
- 
-+static bool br_ip4_multicast_select_querier(struct net_bridge *br,
-+					    __be32 saddr)
-+{
-+	if (!timer_pending(&br->ip4_own_query.timer) &&
-+	    !timer_pending(&br->ip4_other_query.timer))
-+		goto update;
-+
-+	if (!br->ip4_querier.addr.u.ip4)
-+		goto update;
-+
-+	if (ntohl(saddr) <= ntohl(br->ip4_querier.addr.u.ip4))
-+		goto update;
-+
-+	return false;
-+
-+update:
-+	br->ip4_querier.addr.u.ip4 = saddr;
-+
-+	return true;
-+}
-+
-+#if IS_ENABLED(CONFIG_IPV6)
-+static bool br_ip6_multicast_select_querier(struct net_bridge *br,
-+					    struct in6_addr *saddr)
-+{
-+	if (!timer_pending(&br->ip6_own_query.timer) &&
-+	    !timer_pending(&br->ip6_other_query.timer))
-+		goto update;
-+
-+	if (ipv6_addr_cmp(saddr, &br->ip6_querier.addr.u.ip6) <= 0)
-+		goto update;
-+
-+	return false;
-+
-+update:
-+	br->ip6_querier.addr.u.ip6 = *saddr;
-+
-+	return true;
-+}
-+#endif
-+
-+static bool br_multicast_select_querier(struct net_bridge *br,
-+					struct br_ip *saddr)
-+{
-+	switch (saddr->proto) {
-+	case htons(ETH_P_IP):
-+		return br_ip4_multicast_select_querier(br, saddr->u.ip4);
-+#if IS_ENABLED(CONFIG_IPV6)
-+	case htons(ETH_P_IPV6):
-+		return br_ip6_multicast_select_querier(br, &saddr->u.ip6);
-+#endif
-+	}
-+
-+	return false;
-+}
-+
- static void
- br_multicast_update_query_timer(struct net_bridge *br,
- 				struct bridge_mcast_other_query *query,
-@@ -1127,15 +1197,13 @@ timer:
- static void br_multicast_query_received(struct net_bridge *br,
- 					struct net_bridge_port *port,
- 					struct bridge_mcast_other_query *query,
--					int saddr,
--					bool is_general_query,
-+					struct br_ip *saddr,
- 					unsigned long max_delay)
- {
--	if (saddr && is_general_query)
--		br_multicast_update_query_timer(br, query, max_delay);
--	else if (timer_pending(&query->timer))
-+	if (!br_multicast_select_querier(br, saddr))
- 		return;
- 
-+	br_multicast_update_query_timer(br, query, max_delay);
- 	br_multicast_mark_router(br, port);
- }
- 
-@@ -1150,6 +1218,7 @@ static int br_ip4_multicast_query(struct net_bridge *br,
- 	struct igmpv3_query *ih3;
- 	struct net_bridge_port_group *p;
- 	struct net_bridge_port_group __rcu **pp;
-+	struct br_ip saddr;
- 	unsigned long max_delay;
- 	unsigned long now = jiffies;
- 	__be32 group;
-@@ -1191,11 +1260,14 @@ static int br_ip4_multicast_query(struct net_bridge *br,
- 		goto out;
- 	}
- 
--	br_multicast_query_received(br, port, &br->ip4_other_query,
--				    !!iph->saddr, !group, max_delay);
-+	if (!group) {
-+		saddr.proto = htons(ETH_P_IP);
-+		saddr.u.ip4 = iph->saddr;
- 
--	if (!group)
-+		br_multicast_query_received(br, port, &br->ip4_other_query,
-+					    &saddr, max_delay);
- 		goto out;
-+	}
- 
- 	mp = br_mdb_ip4_get(mlock_dereference(br->mdb, br), group, vid);
- 	if (!mp)
-@@ -1235,6 +1307,7 @@ static int br_ip6_multicast_query(struct net_bridge *br,
- 	struct mld2_query *mld2q;
- 	struct net_bridge_port_group *p;
- 	struct net_bridge_port_group __rcu **pp;
-+	struct br_ip saddr;
- 	unsigned long max_delay;
- 	unsigned long now = jiffies;
- 	const struct in6_addr *group = NULL;
-@@ -1283,12 +1356,14 @@ static int br_ip6_multicast_query(struct net_bridge *br,
- 		goto out;
- 	}
- 
--	br_multicast_query_received(br, port, &br->ip6_other_query,
--				    !ipv6_addr_any(&ip6h->saddr),
--				    is_general_query, max_delay);
-+	if (is_general_query) {
-+		saddr.proto = htons(ETH_P_IPV6);
-+		saddr.u.ip6 = ip6h->saddr;
- 
--	if (!group)
-+		br_multicast_query_received(br, port, &br->ip6_other_query,
-+					    &saddr, max_delay);
- 		goto out;
-+	}
- 
- 	mp = br_mdb_ip6_get(mlock_dereference(br->mdb, br), group, vid);
- 	if (!mp)
-diff --git a/net/bridge/br_private.h b/net/bridge/br_private.h
-index 2469aee..97c5e46 100644
---- a/net/bridge/br_private.h
-+++ b/net/bridge/br_private.h
-@@ -78,6 +78,11 @@ struct bridge_mcast_other_query {
- 	struct timer_list		timer;
- 	unsigned long			delay_time;
- };
-+
-+/* selected querier */
-+struct bridge_mcast_querier {
++struct br_ip_list {
++	struct list_head list;
 +	struct br_ip addr;
 +};
- #endif
++
+ extern void brioctl_set(int (*ioctl_hook)(struct net *, unsigned int, void __user *));
  
- struct net_port_vlans {
-@@ -284,9 +289,11 @@ struct net_bridge
- 	struct timer_list		multicast_router_timer;
- 	struct bridge_mcast_other_query	ip4_other_query;
- 	struct bridge_mcast_own_query	ip4_own_query;
-+	struct bridge_mcast_querier	ip4_querier;
- #if IS_ENABLED(CONFIG_IPV6)
- 	struct bridge_mcast_other_query	ip6_other_query;
- 	struct bridge_mcast_own_query	ip6_own_query;
-+	struct bridge_mcast_querier	ip6_querier;
- #endif /* IS_ENABLED(CONFIG_IPV6) */
- #endif
+ typedef int br_should_route_hook_t(struct sk_buff *skb);
+ extern br_should_route_hook_t __rcu *br_should_route_hook;
++int br_multicast_list_adjacent(struct net_device *dev,
++			       struct list_head *br_ip_list);
  
+ #endif
+diff --git a/net/bridge/br_multicast.c b/net/bridge/br_multicast.c
+index b3f17c9..772476b 100644
+--- a/net/bridge/br_multicast.c
++++ b/net/bridge/br_multicast.c
+@@ -11,6 +11,7 @@
+  */
+ 
+ #include <linux/err.h>
++#include <linux/export.h>
+ #include <linux/if_ether.h>
+ #include <linux/igmp.h>
+ #include <linux/jhash.h>
+@@ -2141,3 +2142,60 @@ unlock:
+ 
+ 	return err;
+ }
++
++/**
++ * br_multicast_list_adjacent - Returns snooped multicast addresses
++ * @dev:	The bridge port adjacent to which to retrieve addresses
++ * @br_ip_list:	The list to store found, snooped multicast IP addresses in
++ *
++ * Creates a list of IP addresses (struct br_ip_list) sensed by the multicast
++ * snooping feature on all bridge ports of dev's bridge device, excluding
++ * the addresses from dev itself.
++ *
++ * Returns the number of items added to br_ip_list.
++ *
++ * Notes:
++ * - br_ip_list needs to be initialized by caller
++ * - br_ip_list might contain duplicates in the end
++ *   (needs to be taken care of by caller)
++ * - br_ip_list needs to be freed by caller
++ */
++int br_multicast_list_adjacent(struct net_device *dev,
++			       struct list_head *br_ip_list)
++{
++	struct net_bridge *br;
++	struct net_bridge_port *port;
++	struct net_bridge_port_group *group;
++	struct br_ip_list *entry;
++	int count = 0;
++
++	rcu_read_lock();
++	if (!br_ip_list || !br_port_exists(dev))
++		goto unlock;
++
++	port = br_port_get_rcu(dev);
++	if (!port || !port->br)
++		goto unlock;
++
++	br = port->br;
++
++	list_for_each_entry_rcu(port, &br->port_list, list) {
++		if (!port->dev || port->dev == dev)
++			continue;
++
++		hlist_for_each_entry_rcu(group, &port->mglist, mglist) {
++			entry = kmalloc(sizeof(*entry), GFP_ATOMIC);
++			if (!entry)
++				goto unlock;
++
++			entry->addr = group->addr;
++			list_add(&entry->list, br_ip_list);
++			count++;
++		}
++	}
++
++unlock:
++	rcu_read_unlock();
++	return count;
++}
++EXPORT_SYMBOL_GPL(br_multicast_list_adjacent);
+diff --git a/net/bridge/br_private.h b/net/bridge/br_private.h
+index 97c5e46..50e2ab0 100644
+--- a/net/bridge/br_private.h
++++ b/net/bridge/br_private.h
+@@ -54,18 +54,6 @@ struct mac_addr
+ 	unsigned char	addr[ETH_ALEN];
+ };
+ 
+-struct br_ip
+-{
+-	union {
+-		__be32	ip4;
+-#if IS_ENABLED(CONFIG_IPV6)
+-		struct in6_addr ip6;
+-#endif
+-	} u;
+-	__be16		proto;
+-	__u16		vid;
+-};
+-
+ #ifdef CONFIG_BRIDGE_IGMP_SNOOPING
+ /* our own querier */
+ struct bridge_mcast_own_query {
 -- 
 1.7.10.4
 
