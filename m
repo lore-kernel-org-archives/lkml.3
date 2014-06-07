@@ -1,47 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753077AbaFGRgm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 13:36:42 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:57025 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753072AbaFGRgk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 13:36:40 -0400
-Date: Sat, 7 Jun 2014 21:36:35 +0400
-From: Dmitry Popov <ixaphire@qrator.net>
-To: Dmitry Popov <ixaphire@qrator.net>
-Cc: Dmitry Kozlov <xeb@mail.ru>, Cong Wang <cwang@twopensource.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        trivial@kernel.org
-Subject: Re: [PATCH] ipip, sit: fix ipv4_{update_pmtu,redirect} calls
-Message-Id: <20140607213635.490493e5846e3c81704de67d@qrator.net>
-In-Reply-To: <20140607195412.94b079a97a6e1452e539037f@qrator.net>
-References: <20140606231921.2ff39106ac54216fd9170fae@qrator.net>
-	<CAHA+R7NUVPz47AKCTk7nYBkZXK=93vJOO8f6FTkyU0UkU6Q30Q@mail.gmail.com>
-	<20140607195412.94b079a97a6e1452e539037f@qrator.net>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753185AbaFGRjk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 13:39:40 -0400
+Received: from smtp3-g21.free.fr ([212.27.42.3]:6687 "EHLO smtp3-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752850AbaFGRjj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jun 2014 13:39:39 -0400
+From: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>
+To: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org
+Cc: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Larry Finger <Larry.Finger@lwfinger.net>
+Subject: [PATCH linux-next] staging: r8192ee: Adapt flush function prototype
+Date: Sat,  7 Jun 2014 19:39:19 +0200
+Message-Id: <1402162759-17074-1-git-send-email-vincent.stehle@laposte.net>
+X-Mailer: git-send-email 2.0.0.rc2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 7 Jun 2014 19:54:12 +0400
-Dmitry Popov <ixaphire@qrator.net> wrote:
+Commit 77be2c54c5bd 'mac80211: add vif to flush call' modifies the flush
+operation prototype. Update r8192ee function accordingly.
 
-> 3) gre:
-> ipgre is a framework for subprotos which doesn't work with tunnel devices by
-> itself (see net/ipv4/gre_demux.c:gre_cisco_err). Although it uses 
-> skb->dev->ifindex for ipv4_{update_pmtu,redirect} which might be wrong for hosts
-> with asymmetric routing, this is not a big deal, because tunnels bound to device 
-> will not work with asymmetric routing anyway. So I think it is okay.
+This fixes the following compilation warnings:
 
-Actually, yes, it may not work in case of unbound tunnel and asymmetric routing,
-but we'll need to put icmp redirects/frag_needed handling inside 
-gre_cisco_protocol->err_handler then, I am not sure if it's worth it.
+  drivers/staging/rtl8192ee/core.c: At top level:
+  drivers/staging/rtl8192ee/core.c:1599:2: warning: initialization from incompatible pointer type [enabled by default]
+    .flush = rtl_op_flush,
+    ^
+  drivers/staging/rtl8192ee/core.c:1599:2: warning: (near initialization for ‘rtl92e_ops.flush’) [enabled by default]
+
+Signed-off-by: Vincent Stehlé <vincent.stehle@laposte.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>
+---
+
+Hi,
+
+Linux next gives a "heads up" that the flush function of staging driver r8192ee
+needs to be adapted soon.
+
+This can be seen with e.g. linux next-20140606 and x86 allmodconfig.
+
+Also, r8192ee would benefit from the following patch:
+http://www.spinics.net/lists/linux-driver-devel/msg47690.html
+
+Best regards,
+
+V.
+
+ drivers/staging/rtl8192ee/core.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/staging/rtl8192ee/core.c b/drivers/staging/rtl8192ee/core.c
+index 76ea356..7f6accd 100644
+--- a/drivers/staging/rtl8192ee/core.c
++++ b/drivers/staging/rtl8192ee/core.c
+@@ -322,7 +322,7 @@ static void _rtl_add_wowlan_patterns(struct ieee80211_hw *hw,
+ 	struct rtl_mac *mac = &(rtlpriv->mac80211);
+ 	struct cfg80211_pkt_pattern *patterns = wow->patterns;
+ 	struct rtl_wow_pattern rtl_pattern;
+-	u8 *pattern_os, *mask_os;
++	const u8 *pattern_os, *mask_os;
+ 	u8 mask[MAX_WOL_BIT_MASK_SIZE] = {0};
+ 	u8 content[MAX_WOL_PATTERN_SIZE] = {0};
+ 	u8 broadcast_addr[6] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+@@ -1561,7 +1561,7 @@ static void rtl_op_rfkill_poll(struct ieee80211_hw *hw)
+  * before switch channle or power save, or tx buffer packet
+  * maybe send after offchannel or rf sleep, this may cause
+  * dis-association by AP */
+-static void rtl_op_flush(struct ieee80211_hw *hw,
++static void rtl_op_flush(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
+ 			 u32 queues, bool drop)
+ {
+ 	struct rtl_priv *rtlpriv = rtl_priv(hw);
+-- 
+2.0.0.rc2
+
