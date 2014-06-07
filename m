@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753806AbaFGBoY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:44:24 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35952 "EHLO
+	id S1753791AbaFGBoX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:44:23 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35929 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752522AbaFGBXg (ORCPT
+	by vger.kernel.org with ESMTP id S1752331AbaFGBXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 21:23:36 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,17 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David Gibson" <david@gibson.dropbear.id.au>,
-        "Jiri Pirko" <jpirko@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
+CC: akpm@linux-foundation.org, "Lan Tianyu" <tianyu.lan@intel.com>,
+        "Kieran Clancy" <clancy.kieran@gmail.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "San Zamoyski" <san@plusnet.pl>,
+        "Maurizio D'Addona" <mauritiusdadd@gmail.com>,
+        "Dennis Jansen" <dennis.jansen@web.de>,
+        "Juan Manuel Cabo" <juanmanuel.cabo@gmail.com>
 Date: Sat, 07 Jun 2014 02:26:28 +0100
-Message-ID: <lsq.1402104388.82438035@decadent.org.uk>
+Message-ID: <lsq.1402104388.665869942@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 14/92] rtnetlink: Warn when interface's information
- won't fit  in our packet
+Subject: [PATCH 3.2 02/92] ACPI / EC: Clear stale EC events on Samsung systems
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,64 +36,178 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Gibson <david@gibson.dropbear.id.au>
+From: Kieran Clancy <clancy.kieran@gmail.com>
 
-[ Upstream commit 973462bbde79bb827824c73b59027a0aed5c9ca6 ]
+commit ad332c8a45330d170bb38b95209de449b31cd1b4 upstream.
 
-Without IFLA_EXT_MASK specified, the information reported for a single
-interface in response to RTM_GETLINK is expected to fit within a netlink
-packet of NLMSG_GOODSIZE.
+A number of Samsung notebooks (530Uxx/535Uxx/540Uxx/550Pxx/900Xxx/etc)
+continue to log events during sleep (lid open/close, AC plug/unplug,
+battery level change), which accumulate in the EC until a buffer fills.
+After the buffer is full (tests suggest it holds 8 events), GPEs stop
+being triggered for new events. This state persists on wake or even on
+power cycle, and prevents new events from being registered until the EC
+is manually polled.
 
-If it doesn't, however, things will go badly wrong,  When listing all
-interfaces, netlink_dump() will incorrectly treat -EMSGSIZE on the first
-message in a packet as the end of the listing and omit information for
-that interface and all subsequent ones.  This can cause getifaddrs(3) to
-enter an infinite loop.
+This is the root cause of a number of bugs, including AC not being
+detected properly, lid close not triggering suspend, and low ambient
+light not triggering the keyboard backlight. The bug also seemed to be
+responsible for performance issues on at least one user's machine.
 
-This patch won't fix the problem, but it will WARN_ON() making it easier to
-track down what's going wrong.
+Juan Manuel Cabo found the cause of bug and the workaround of polling
+the EC manually on wake.
 
-Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
-Reviewed-by: Jiri Pirko <jpirko@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+The loop which clears the stale events is based on an earlier patch by
+Lan Tianyu (see referenced attachment).
+
+This patch:
+ - Adds a function acpi_ec_clear() which polls the EC for stale _Q
+   events at most ACPI_EC_CLEAR_MAX (currently 100) times. A warning is
+   logged if this limit is reached.
+ - Adds a flag EC_FLAGS_CLEAR_ON_RESUME which is set to 1 if the DMI
+   system vendor is Samsung. This check could be replaced by several
+   more specific DMI vendor/product pairs, but it's likely that the bug
+   affects more Samsung products than just the five series mentioned
+   above. Further, it should not be harmful to run acpi_ec_clear() on
+   systems without the bug; it will return immediately after finding no
+   data waiting.
+ - Runs acpi_ec_clear() on initialisation (boot), from acpi_ec_add()
+ - Runs acpi_ec_clear() on wake, from acpi_ec_unblock_transactions()
+
+References: https://bugzilla.kernel.org/show_bug.cgi?id=44161
+References: https://bugzilla.kernel.org/show_bug.cgi?id=45461
+References: https://bugzilla.kernel.org/show_bug.cgi?id=57271
+References: https://bugzilla.kernel.org/attachment.cgi?id=126801
+Suggested-by: Juan Manuel Cabo <juanmanuel.cabo@gmail.com>
+Signed-off-by: Kieran Clancy <clancy.kieran@gmail.com>
+Reviewed-by: Lan Tianyu <tianyu.lan@intel.com>
+Reviewed-by: Dennis Jansen <dennis.jansen@web.de>
+Tested-by: Kieran Clancy <clancy.kieran@gmail.com>
+Tested-by: Juan Manuel Cabo <juanmanuel.cabo@gmail.com>
+Tested-by: Dennis Jansen <dennis.jansen@web.de>
+Tested-by: Maurizio D'Addona <mauritiusdadd@gmail.com>
+Tested-by: San Zamoyski <san@plusnet.pl>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - acpi_ec::mutex was called lock]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/core/rtnetlink.c | 17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
+ drivers/acpi/ec.c | 64 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 64 insertions(+)
 
-diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
-index 5b7d5f2..978a367 100644
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -1057,6 +1057,7 @@ static int rtnl_dump_ifinfo(struct sk_buff *skb, struct netlink_callback *cb)
- 	struct hlist_node *node;
- 	struct nlattr *tb[IFLA_MAX+1];
- 	u32 ext_filter_mask = 0;
-+	int err;
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -70,6 +70,8 @@ enum ec_command {
+ #define ACPI_EC_DELAY		500	/* Wait 500ms max. during EC ops */
+ #define ACPI_EC_UDELAY_GLK	1000	/* Wait 1ms max. to get global lock */
+ #define ACPI_EC_MSI_UDELAY	550	/* Wait 550us for MSI EC */
++#define ACPI_EC_CLEAR_MAX	100	/* Maximum number of events to query
++					 * when trying to clear the EC */
  
- 	s_h = cb->args[0];
- 	s_idx = cb->args[1];
-@@ -1077,11 +1078,17 @@ static int rtnl_dump_ifinfo(struct sk_buff *skb, struct netlink_callback *cb)
- 		hlist_for_each_entry_rcu(dev, node, head, index_hlist) {
- 			if (idx < s_idx)
- 				goto cont;
--			if (rtnl_fill_ifinfo(skb, dev, RTM_NEWLINK,
--					     NETLINK_CB(cb->skb).pid,
--					     cb->nlh->nlmsg_seq, 0,
--					     NLM_F_MULTI,
--					     ext_filter_mask) <= 0)
-+			err = rtnl_fill_ifinfo(skb, dev, RTM_NEWLINK,
-+					       NETLINK_CB(cb->skb).pid,
-+					       cb->nlh->nlmsg_seq, 0,
-+					       NLM_F_MULTI,
-+					       ext_filter_mask);
-+			/* If we ran out of room on the first message,
-+			 * we're in trouble
-+			 */
-+			WARN_ON((err == -EMSGSIZE) && (skb->len == 0));
+ enum {
+ 	EC_FLAGS_QUERY_PENDING,		/* Query is pending */
+@@ -123,6 +125,7 @@ EXPORT_SYMBOL(first_ec);
+ static int EC_FLAGS_MSI; /* Out-of-spec MSI controller */
+ static int EC_FLAGS_VALIDATE_ECDT; /* ASUStec ECDTs need to be validated */
+ static int EC_FLAGS_SKIP_DSDT_SCAN; /* Not all BIOS survive early DSDT scan */
++static int EC_FLAGS_CLEAR_ON_RESUME; /* Needs acpi_ec_clear() on boot/resume */
+ 
+ /* --------------------------------------------------------------------------
+                              Transaction Management
+@@ -449,6 +452,29 @@ int ec_transaction(u8 command,
+ 
+ EXPORT_SYMBOL(ec_transaction);
+ 
++static int acpi_ec_query_unlocked(struct acpi_ec *ec, u8 *data);
 +
-+			if (err <= 0)
- 				goto out;
++/*
++ * Clears stale _Q events that might have accumulated in the EC.
++ * Run with locked ec mutex.
++ */
++static void acpi_ec_clear(struct acpi_ec *ec)
++{
++	int i, status;
++	u8 value = 0;
++
++	for (i = 0; i < ACPI_EC_CLEAR_MAX; i++) {
++		status = acpi_ec_query_unlocked(ec, &value);
++		if (status || !value)
++			break;
++	}
++
++	if (unlikely(i == ACPI_EC_CLEAR_MAX))
++		pr_warn("Warning: Maximum of %d stale EC events cleared\n", i);
++	else
++		pr_info("%d stale EC events cleared\n", i);
++}
++
+ void acpi_ec_block_transactions(void)
+ {
+ 	struct acpi_ec *ec = first_ec;
+@@ -472,6 +498,10 @@ void acpi_ec_unblock_transactions(void)
+ 	mutex_lock(&ec->lock);
+ 	/* Allow transactions to be carried out again */
+ 	clear_bit(EC_FLAGS_BLOCKED, &ec->flags);
++
++	if (EC_FLAGS_CLEAR_ON_RESUME)
++		acpi_ec_clear(ec);
++
+ 	mutex_unlock(&ec->lock);
+ }
  
- 			nl_dump_check_consistent(cb, nlmsg_hdr(skb));
+@@ -828,6 +858,13 @@ static int acpi_ec_add(struct acpi_devic
+ 
+ 	/* EC is fully operational, allow queries */
+ 	clear_bit(EC_FLAGS_QUERY_PENDING, &ec->flags);
++
++	/* Clear stale _Q events if hardware might require that */
++	if (EC_FLAGS_CLEAR_ON_RESUME) {
++		mutex_lock(&ec->lock);
++		acpi_ec_clear(ec);
++		mutex_unlock(&ec->lock);
++	}
+ 	return ret;
+ }
+ 
+@@ -929,6 +966,30 @@ static int ec_enlarge_storm_threshold(co
+ 	return 0;
+ }
+ 
++/*
++ * On some hardware it is necessary to clear events accumulated by the EC during
++ * sleep. These ECs stop reporting GPEs until they are manually polled, if too
++ * many events are accumulated. (e.g. Samsung Series 5/9 notebooks)
++ *
++ * https://bugzilla.kernel.org/show_bug.cgi?id=44161
++ *
++ * Ideally, the EC should also be instructed NOT to accumulate events during
++ * sleep (which Windows seems to do somehow), but the interface to control this
++ * behaviour is not known at this time.
++ *
++ * Models known to be affected are Samsung 530Uxx/535Uxx/540Uxx/550Pxx/900Xxx,
++ * however it is very likely that other Samsung models are affected.
++ *
++ * On systems which don't accumulate _Q events during sleep, this extra check
++ * should be harmless.
++ */
++static int ec_clear_on_resume(const struct dmi_system_id *id)
++{
++	pr_debug("Detected system needing EC poll on resume.\n");
++	EC_FLAGS_CLEAR_ON_RESUME = 1;
++	return 0;
++}
++
+ static struct dmi_system_id __initdata ec_dmi_table[] = {
+ 	{
+ 	ec_skip_dsdt_scan, "Compal JFL92", {
+@@ -968,6 +1029,9 @@ static struct dmi_system_id __initdata e
+ 	ec_validate_ecdt, "ASUS hardware", {
+ 	DMI_MATCH(DMI_SYS_VENDOR, "ASUSTek Computer Inc."),
+ 	DMI_MATCH(DMI_PRODUCT_NAME, "L4R"),}, NULL},
++	{
++	ec_clear_on_resume, "Samsung hardware", {
++	DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD.")}, NULL},
+ 	{},
+ };
+ 
 
