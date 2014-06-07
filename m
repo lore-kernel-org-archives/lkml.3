@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753296AbaFGBag (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:30:36 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36127 "EHLO
+	id S1752984AbaFGBae (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:30:34 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36126 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752669AbaFGBXj (ORCPT
+	by vger.kernel.org with ESMTP id S1752674AbaFGBXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 21:23:39 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Thomas Gleixner" <tglx@linutronix.de>,
-        "Deborah Townsend" <dstownse@us.ibm.com>,
-        "Jiri Bohac" <jbohac@suse.cz>
+CC: akpm@linux-foundation.org, "Gleb Natapov" <gleb@redhat.com>,
+        "Paolo Bonzini" <pbonzini@redhat.com>,
+        "=?UTF-8?q?Radim=20Kr=C4=8Dm=C3=A1=C5=99?=" <rkrcmar@redhat.com>
 Date: Sat, 07 Jun 2014 02:26:29 +0100
-Message-ID: <lsq.1402104389.514324212@decadent.org.uk>
+Message-ID: <lsq.1402104389.293842827@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 41/92] timer: Prevent overflow in apply_slack
+Subject: [PATCH 3.2 35/92] kvm: remove .done from struct kvm_async_pf
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,43 +32,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Bohac <jbohac@suse.cz>
+From: Radim Krčmář <rkrcmar@redhat.com>
 
-commit 98a01e779f3c66b0b11cd7e64d531c0e41c95762 upstream.
+commit 98fda169290b3b28c0f2db2b8f02290c13da50ef upstream.
 
-On architectures with sizeof(int) < sizeof (long), the
-computation of mask inside apply_slack() can be undefined if the
-computed bit is > 32.
+'.done' is used to mark the completion of 'async_pf_execute()', but
+'cancel_work_sync()' returns true when the work was canceled, so we
+use it instead.
 
-E.g. with: expires = 0xffffe6f5 and slack = 25, we get:
-
-expires_limit = 0x20000000e
-bit = 33
-mask = (1 << 33) - 1  /* undefined */
-
-On x86, mask becomes 1 and and the slack is not applied properly.
-On s390, mask is -1, expires is set to 0 and the timer fires immediately.
-
-Use 1UL << bit to solve that issue.
-
-Suggested-by: Deborah Townsend <dstownse@us.ibm.com>
-Signed-off-by: Jiri Bohac <jbohac@suse.cz>
-Link: http://lkml.kernel.org/r/20140418152310.GA13654@midget.suse.cz
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
+Reviewed-by: Paolo Bonzini <pbonzini@redhat.com>
+Reviewed-by: Gleb Natapov <gleb@redhat.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/timer.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/kvm_host.h | 1 -
+ virt/kvm/async_pf.c      | 5 +----
+ 2 files changed, 1 insertion(+), 5 deletions(-)
 
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -769,7 +769,7 @@ unsigned long apply_slack(struct timer_l
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -95,7 +95,6 @@ struct kvm_async_pf {
+ 	unsigned long addr;
+ 	struct kvm_arch_async_pf arch;
+ 	struct page *page;
+-	bool done;
+ };
  
- 	bit = find_last_bit(&mask, BITS_PER_LONG);
+ void kvm_clear_async_pf_completion_queue(struct kvm_vcpu *vcpu);
+--- a/virt/kvm/async_pf.c
++++ b/virt/kvm/async_pf.c
+@@ -75,7 +75,6 @@ static void async_pf_execute(struct work
+ 	spin_lock(&vcpu->async_pf.lock);
+ 	list_add_tail(&apf->link, &vcpu->async_pf.done);
+ 	apf->page = page;
+-	apf->done = true;
+ 	spin_unlock(&vcpu->async_pf.lock);
  
--	mask = (1 << bit) - 1;
-+	mask = (1UL << bit) - 1;
+ 	/*
+@@ -99,9 +98,8 @@ void kvm_clear_async_pf_completion_queue
+ 		struct kvm_async_pf *work =
+ 			list_entry(vcpu->async_pf.queue.next,
+ 				   typeof(*work), queue);
+-		cancel_work_sync(&work->work);
+ 		list_del(&work->queue);
+-		if (!work->done) { /* work was canceled */
++		if (cancel_work_sync(&work->work)) {
+ 			mmdrop(work->mm);
+ 			kvm_put_kvm(vcpu->kvm); /* == work->vcpu->kvm */
+ 			kmem_cache_free(async_pf_cache, work);
+@@ -166,7 +164,6 @@ int kvm_setup_async_pf(struct kvm_vcpu *
+ 		return 0;
  
- 	expires_limit = expires_limit & ~(mask);
- 
+ 	work->page = NULL;
+-	work->done = false;
+ 	work->vcpu = vcpu;
+ 	work->gva = gva;
+ 	work->addr = gfn_to_hva(vcpu->kvm, gfn);
 
