@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308AbaFGBhu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:37:50 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36013 "EHLO
+	id S1753271AbaFGBhs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:37:48 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36022 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752592AbaFGBXh (ORCPT
+	by vger.kernel.org with ESMTP id S1752599AbaFGBXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 21:23:37 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,15 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Kinglong Mee" <kinglongmee@gmail.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Date: Sat, 07 Jun 2014 02:26:29 +0100
-Message-ID: <lsq.1402104389.335906640@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Eric Dumazet" <edumazet@google.com>,
+        "Liu Yu" <allanyuliu@tencent.com>,
+        "Neal Cardwell" <ncardwell@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Stephen Hemminger" <shemminger@vyatta.com>
+Date: Sat, 07 Jun 2014 02:26:28 +0100
+Message-ID: <lsq.1402104388.475369630@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 63/92] NFSD: Call ->set_acl with a NULL ACL structure
- if no entries
+Subject: [PATCH 3.2 19/92] tcp_cubic: fix the range of delayed_ack
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,138 +34,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kinglong Mee <kinglongmee@gmail.com>
+From: Liu Yu <allanyuliu@tencent.com>
 
-commit aa07c713ecfc0522916f3cd57ac628ea6127c0ec upstream.
+[ Upstream commit 0cda345d1b2201dd15591b163e3c92bad5191745 ]
 
-After setting ACL for directory, I got two problems that caused
-by the cached zero-length default posix acl.
+commit b9f47a3aaeab (tcp_cubic: limit delayed_ack ratio to prevent
+divide error) try to prevent divide error, but there is still a little
+chance that delayed_ack can reach zero. In case the param cnt get
+negative value, then ratio+cnt would overflow and may happen to be zero.
+As a result, min(ratio, ACK_RATIO_LIMIT) will calculate to be zero.
 
-This patch make sure nfsd4_set_nfs4_acl calls ->set_acl
-with a NULL ACL structure if there are no entries.
+In some old kernels, such as 2.6.32, there is a bug that would
+pass negative param, which then ultimately leads to this divide error.
 
-Thanks for Christoph Hellwig's advice.
+commit 5b35e1e6e9c (tcp: fix tcp_trim_head() to adjust segment count
+with skb MSS) fixed the negative param issue. However,
+it's safe that we fix the range of delayed_ack as well,
+to make sure we do not hit a divide by zero.
 
-First problem:
-............ hang ...........
-
-Second problem:
-[ 1610.167668] ------------[ cut here ]------------
-[ 1610.168320] kernel BUG at /root/nfs/linux/fs/nfsd/nfs4acl.c:239!
-[ 1610.168320] invalid opcode: 0000 [#1] SMP DEBUG_PAGEALLOC
-[ 1610.168320] Modules linked in: nfsv4(OE) nfs(OE) nfsd(OE)
-rpcsec_gss_krb5 fscache ip6t_rpfilter ip6t_REJECT cfg80211 xt_conntrack
-rfkill ebtable_nat ebtable_broute bridge stp llc ebtable_filter ebtables
-ip6table_nat nf_conntrack_ipv6 nf_defrag_ipv6 nf_nat_ipv6
-ip6table_mangle ip6table_security ip6table_raw ip6table_filter
-ip6_tables iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4
-nf_nat nf_conntrack iptable_mangle iptable_security iptable_raw
-auth_rpcgss nfs_acl snd_intel8x0 ppdev lockd snd_ac97_codec ac97_bus
-snd_pcm snd_timer e1000 pcspkr parport_pc snd parport serio_raw joydev
-i2c_piix4 sunrpc(OE) microcode soundcore i2c_core ata_generic pata_acpi
-[last unloaded: nfsd]
-[ 1610.168320] CPU: 0 PID: 27397 Comm: nfsd Tainted: G           OE
-3.15.0-rc1+ #15
-[ 1610.168320] Hardware name: innotek GmbH VirtualBox/VirtualBox, BIOS
-VirtualBox 12/01/2006
-[ 1610.168320] task: ffff88005ab653d0 ti: ffff88005a944000 task.ti:
-ffff88005a944000
-[ 1610.168320] RIP: 0010:[<ffffffffa034d5ed>]  [<ffffffffa034d5ed>]
-_posix_to_nfsv4_one+0x3cd/0x3d0 [nfsd]
-[ 1610.168320] RSP: 0018:ffff88005a945b00  EFLAGS: 00010293
-[ 1610.168320] RAX: 0000000000000001 RBX: ffff88006700bac0 RCX:
-0000000000000000
-[ 1610.168320] RDX: 0000000000000000 RSI: ffff880067c83f00 RDI:
-ffff880068233300
-[ 1610.168320] RBP: ffff88005a945b48 R08: ffffffff81c64830 R09:
-0000000000000000
-[ 1610.168320] R10: ffff88004ea85be0 R11: 000000000000f475 R12:
-ffff880068233300
-[ 1610.168320] R13: 0000000000000003 R14: 0000000000000002 R15:
-ffff880068233300
-[ 1610.168320] FS:  0000000000000000(0000) GS:ffff880077800000(0000)
-knlGS:0000000000000000
-[ 1610.168320] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 1610.168320] CR2: 00007f5bcbd3b0b9 CR3: 0000000001c0f000 CR4:
-00000000000006f0
-[ 1610.168320] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
-0000000000000000
-[ 1610.168320] DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7:
-0000000000000400
-[ 1610.168320] Stack:
-[ 1610.168320]  ffffffff00000000 0000000b67c83500 000000076700bac0
-0000000000000000
-[ 1610.168320]  ffff88006700bac0 ffff880068233300 ffff88005a945c08
-0000000000000002
-[ 1610.168320]  0000000000000000 ffff88005a945b88 ffffffffa034e2d5
-000000065a945b68
-[ 1610.168320] Call Trace:
-[ 1610.168320]  [<ffffffffa034e2d5>] nfsd4_get_nfs4_acl+0x95/0x150 [nfsd]
-[ 1610.168320]  [<ffffffffa03400d6>] nfsd4_encode_fattr+0x646/0x1e70 [nfsd]
-[ 1610.168320]  [<ffffffff816a6e6e>] ? kmemleak_alloc+0x4e/0xb0
-[ 1610.168320]  [<ffffffffa0327962>] ?
-nfsd_setuser_and_check_port+0x52/0x80 [nfsd]
-[ 1610.168320]  [<ffffffff812cd4bb>] ? selinux_cred_prepare+0x1b/0x30
-[ 1610.168320]  [<ffffffffa0341caa>] nfsd4_encode_getattr+0x5a/0x60 [nfsd]
-[ 1610.168320]  [<ffffffffa0341e07>] nfsd4_encode_operation+0x67/0x110
-[nfsd]
-[ 1610.168320]  [<ffffffffa033844d>] nfsd4_proc_compound+0x21d/0x810 [nfsd]
-[ 1610.168320]  [<ffffffffa0324d9b>] nfsd_dispatch+0xbb/0x200 [nfsd]
-[ 1610.168320]  [<ffffffffa00850cd>] svc_process_common+0x46d/0x6d0 [sunrpc]
-[ 1610.168320]  [<ffffffffa0085433>] svc_process+0x103/0x170 [sunrpc]
-[ 1610.168320]  [<ffffffffa032472f>] nfsd+0xbf/0x130 [nfsd]
-[ 1610.168320]  [<ffffffffa0324670>] ? nfsd_destroy+0x80/0x80 [nfsd]
-[ 1610.168320]  [<ffffffff810a5202>] kthread+0xd2/0xf0
-[ 1610.168320]  [<ffffffff810a5130>] ? insert_kthread_work+0x40/0x40
-[ 1610.168320]  [<ffffffff816c1ebc>] ret_from_fork+0x7c/0xb0
-[ 1610.168320]  [<ffffffff810a5130>] ? insert_kthread_work+0x40/0x40
-[ 1610.168320] Code: 78 02 e9 e7 fc ff ff 31 c0 31 d2 31 c9 66 89 45 ce
-41 8b 04 24 66 89 55 d0 66 89 4d d2 48 8d 04 80 49 8d 5c 84 04 e9 37 fd
-ff ff <0f> 0b 90 0f 1f 44 00 00 55 8b 56 08 c7 07 00 00 00 00 8b 46 0c
-[ 1610.168320] RIP  [<ffffffffa034d5ed>] _posix_to_nfsv4_one+0x3cd/0x3d0
-[nfsd]
-[ 1610.168320]  RSP <ffff88005a945b00>
-[ 1610.257313] ---[ end trace 838254e3e352285b ]---
-
-Signed-off-by: Kinglong Mee <kinglongmee@gmail.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+CC: Stephen Hemminger <shemminger@vyatta.com>
+Signed-off-by: Liu Yu <allanyuliu@tencent.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Acked-by: Neal Cardwell <ncardwell@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/nfsd/nfs4acl.c | 17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+ net/ipv4/tcp_cubic.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/nfsd/nfs4acl.c
-+++ b/fs/nfsd/nfs4acl.c
-@@ -373,8 +373,10 @@ sort_pacl(struct posix_acl *pacl)
- 	 * by uid/gid. */
- 	int i, j;
+diff --git a/net/ipv4/tcp_cubic.c b/net/ipv4/tcp_cubic.c
+index b78eac2..ed3d6d4 100644
+--- a/net/ipv4/tcp_cubic.c
++++ b/net/ipv4/tcp_cubic.c
+@@ -406,7 +406,7 @@ static void bictcp_acked(struct sock *sk, u32 cnt, s32 rtt_us)
+ 		ratio -= ca->delayed_ack >> ACK_RATIO_SHIFT;
+ 		ratio += cnt;
  
--	if (pacl->a_count <= 4)
--		return; /* no users or groups */
-+	/* no users or groups */
-+	if (!pacl || pacl->a_count <= 4)
-+		return;
-+
- 	i = 1;
- 	while (pacl->a_entries[i].e_tag == ACL_USER)
- 		i++;
-@@ -498,13 +500,12 @@ posix_state_to_acl(struct posix_acl_stat
+-		ca->delayed_ack = min(ratio, ACK_RATIO_LIMIT);
++		ca->delayed_ack = clamp(ratio, 1U, ACK_RATIO_LIMIT);
+ 	}
  
- 	/*
- 	 * ACLs with no ACEs are treated differently in the inheritable
--	 * and effective cases: when there are no inheritable ACEs, we
--	 * set a zero-length default posix acl:
-+	 * and effective cases: when there are no inheritable ACEs,
-+	 * calls ->set_acl with a NULL ACL structure.
- 	 */
--	if (state->empty && (flags & NFS4_ACL_TYPE_DEFAULT)) {
--		pacl = posix_acl_alloc(0, GFP_KERNEL);
--		return pacl ? pacl : ERR_PTR(-ENOMEM);
--	}
-+	if (state->empty && (flags & NFS4_ACL_TYPE_DEFAULT))
-+		return NULL;
-+
- 	/*
- 	 * When there are no effective ACEs, the following will end
- 	 * up setting a 3-element effective posix ACL with all
+ 	/* Some calls are for duplicates without timetamps */
 
