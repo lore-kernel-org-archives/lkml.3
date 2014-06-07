@@ -1,115 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752868AbaFGOER (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 10:04:17 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:59508 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752642AbaFGOEQ (ORCPT
+	id S1752896AbaFGO32 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 10:29:28 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:65115 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752837AbaFGO31 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 10:04:16 -0400
-Date: Sat, 7 Jun 2014 07:04:14 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Trond Myklebust <trond.myklebust@primarydata.com>
-Cc: Philippe Troin <phil@coldcreektech.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: Phantom ACL-related xattrs on 3.14.4 NFS client
-Message-ID: <20140607140414.GA26534@infradead.org>
-References: <1402082953.28220.7.camel@ceramic.home.fifi.org>
- <CAHQdGtS2BL9u4DV=FZ0HaXO-iTNPU4hTGVR--HubNa4A_6UNog@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHQdGtS2BL9u4DV=FZ0HaXO-iTNPU4hTGVR--HubNa4A_6UNog@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Sat, 7 Jun 2014 10:29:27 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Peter Wu <lekensteyn@gmail.com>, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] net: wireless: rtlwifi: rtl8192de: hw.c:  Cleaning up conjunction always evaluates to false
+Date: Sat,  7 Jun 2014 16:30:19 +0200
+Message-Id: <1402151419-18296-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 06, 2014 at 04:37:03PM -0400, Trond Myklebust wrote:
-> Christoph, what is the intended interface for telling
-> posix_acl_xattr_list() that there are no acls on a particular file?
-> Should there perhaps be a call to get_acl()?
+Expression '(X & 0xfc) == 0x3' is always false
 
-The interface is to not call posix_acl_xattr_list unless you have ACLs.
-Every implementation does this, except for generic_listxattr which is
-only used by NFS.
+I chose to remove this code, because it will not make any difference.
+But obviously it is rather a properly designed if statement that is needed.
 
-Philippe, can you test the patch below?
+This was partly found using a static code analysis program called cppcheck.
 
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ drivers/net/wireless/rtlwifi/rtl8192de/hw.c |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-diff --git a/fs/nfs/nfs3acl.c b/fs/nfs/nfs3acl.c
-index 871d6ed..e083827 100644
---- a/fs/nfs/nfs3acl.c
-+++ b/fs/nfs/nfs3acl.c
-@@ -247,3 +247,45 @@ const struct xattr_handler *nfs3_xattr_handlers[] = {
- 	&posix_acl_default_xattr_handler,
- 	NULL,
- };
-+
-+static int
-+nfs3_list_one_acl(struct inode *inode, int type, const char *name, void *data,
-+		size_t size, ssize_t *result)
-+{
-+	struct posix_acl *acl;
-+	char *p = data + *result;
-+
-+	acl = get_acl(inode, type);
-+	if (!acl)
-+		return 0;
-+
-+	posix_acl_release(acl);
-+
-+	*result += strlen(name);
-+	if (!size)
-+		return 0;
-+	if (*result > size)
-+		return -ERANGE;
-+
-+	strcpy(p, name);
-+	return 0;
-+}
-+
-+ssize_t
-+nfs3_listxattr(struct dentry *dentry, char *data, size_t size)
-+{
-+	struct inode *inode = dentry->d_inode;
-+	ssize_t result = 0;
-+	int error;
-+
-+	error = nfs3_list_one_acl(inode, ACL_TYPE_ACCESS,
-+			POSIX_ACL_XATTR_ACCESS, data, size, &result);
-+	if (error)
-+		return error;
-+
-+	error = nfs3_list_one_acl(inode, ACL_TYPE_DEFAULT,
-+			POSIX_ACL_XATTR_DEFAULT, data, size, &result);
-+	if (error)
-+		return error;
-+	return result;
-+}
-diff --git a/fs/nfs/nfs3proc.c b/fs/nfs/nfs3proc.c
-index db60149..0e2bb26 100644
---- a/fs/nfs/nfs3proc.c
-+++ b/fs/nfs/nfs3proc.c
-@@ -891,7 +891,7 @@ static const struct inode_operations nfs3_dir_inode_operations = {
- 	.getattr	= nfs_getattr,
- 	.setattr	= nfs_setattr,
- #ifdef CONFIG_NFS_V3_ACL
--	.listxattr	= generic_listxattr,
-+	.listxattr	= nfs3_listxattr,
- 	.getxattr	= generic_getxattr,
- 	.setxattr	= generic_setxattr,
- 	.removexattr	= generic_removexattr,
-@@ -905,7 +905,7 @@ static const struct inode_operations nfs3_file_inode_operations = {
- 	.getattr	= nfs_getattr,
- 	.setattr	= nfs_setattr,
- #ifdef CONFIG_NFS_V3_ACL
--	.listxattr	= generic_listxattr,
-+	.listxattr	= nfs3_listxattr,
- 	.getxattr	= generic_getxattr,
- 	.setxattr	= generic_setxattr,
- 	.removexattr	= generic_removexattr,
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192de/hw.c b/drivers/net/wireless/rtlwifi/rtl8192de/hw.c
+index 2b08671..a1520d5 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192de/hw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192de/hw.c
+@@ -1128,10 +1128,7 @@ static int _rtl92de_set_media_status(struct ieee80211_hw *hw,
+ 	}
+ 	rtl_write_byte(rtlpriv, REG_CR + 2, bt_msr);
+ 	rtlpriv->cfg->ops->led_control(hw, ledaction);
+-	if ((bt_msr & 0xfc) == MSR_AP)
+-		rtl_write_byte(rtlpriv, REG_BCNTCFG + 1, 0x00);
+-	else
+-		rtl_write_byte(rtlpriv, REG_BCNTCFG + 1, 0x66);
++	rtl_write_byte(rtlpriv, REG_BCNTCFG + 1, 0x66);
+ 	return 0;
+ }
+ 
+-- 
+1.7.10.4
+
