@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752864AbaFGBab (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:30:31 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36108 "EHLO
+	id S1752819AbaFGBa3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:30:29 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36142 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752675AbaFGBXj (ORCPT
+	by vger.kernel.org with ESMTP id S1752682AbaFGBXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 21:23:39 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,19 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Michal Hocko" <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        "Rik van Riel" <riel@redhat.com>,
-        "Nishanth Aravamudan" <nacc@linux.vnet.ibm.com>,
-        "Masayoshi Mizuma" <m.mizuma@jp.fujitsu.com>,
-        "Mel Gorman" <mgorman@suse.de>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Luiz Capitulino" <lcapitulino@redhat.com>
-Date: Sat, 07 Jun 2014 02:26:29 +0100
-Message-ID: <lsq.1402104389.671190598@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Eric Dumazet" <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Sat, 07 Jun 2014 02:26:28 +0100
+Message-ID: <lsq.1402104388.651406927@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 60/92] mm/page-writeback.c: fix divide by zero in
- pos_ratio_polynom
+Subject: [PATCH 3.2 26/92] net-gro: reset skb->truesize in napi_reuse_skb()
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -38,53 +31,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rik van Riel <riel@redhat.com>
+From: Eric Dumazet <edumazet@google.com>
 
-commit d5c9fde3dae750889168807038243ff36431d276 upstream.
+[ Upstream commit e33d0ba8047b049c9262fdb1fcafb93cb52ceceb ]
 
-It is possible for "limit - setpoint + 1" to equal zero, after getting
-truncated to a 32 bit variable, and resulting in a divide by zero error.
+Recycling skb always had been very tough...
 
-Using the fully 64 bit divide functions avoids this problem.  It also
-will cause pos_ratio_polynom() to return the correct value when
-(setpoint - limit) exceeds 2^32.
+This time it appears GRO layer can accumulate skb->truesize
+adjustments made by drivers when they attach a fragment to skb.
 
-Also uninline pos_ratio_polynom, at Andrew's request.
+skb_gro_receive() can only subtract from skb->truesize the used part
+of a fragment.
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Cc: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
-Cc: Luiz Capitulino <lcapitulino@redhat.com>
-Cc: Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backported to 3.2:
- Adjust context - pos_ratio_polynom() is not a separate function]
+I spotted this problem seeing TcpExtPruneCalled and
+TcpExtTCPRcvCollapsed that were unexpected with a recent kernel, where
+TCP receive window should be sized properly to accept traffic coming
+from a driver not overshooting skb->truesize.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/page-writeback.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ net/core/dev.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -559,7 +559,7 @@ static unsigned long bdi_position_ratio(
- 	 *     => fast response on large errors; small oscillation near setpoint
- 	 */
- 	setpoint = (freerun + limit) / 2;
--	x = div_s64(((s64)setpoint - (s64)dirty) << RATELIMIT_CALC_SHIFT,
-+	x = div64_s64(((s64)setpoint - (s64)dirty) << RATELIMIT_CALC_SHIFT,
- 		    limit - setpoint + 1);
- 	pos_ratio = x;
- 	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
-@@ -625,7 +625,7 @@ static unsigned long bdi_position_ratio(
- 	x_intercept = bdi_setpoint + span;
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 7bcf37d..854da15 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -3648,6 +3648,7 @@ static void napi_reuse_skb(struct napi_struct *napi, struct sk_buff *skb)
+ 	skb->vlan_tci = 0;
+ 	skb->dev = napi->dev;
+ 	skb->skb_iif = 0;
++	skb->truesize = SKB_TRUESIZE(skb_end_offset(skb));
  
- 	if (bdi_dirty < x_intercept - span / 4) {
--		pos_ratio = div_u64(pos_ratio * (x_intercept - bdi_dirty),
-+		pos_ratio = div64_u64(pos_ratio * (x_intercept - bdi_dirty),
- 				    x_intercept - bdi_setpoint + 1);
- 	} else
- 		pos_ratio /= 4;
+ 	napi->skb = skb;
+ }
 
