@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753369AbaFGBci (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:32:38 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36125 "EHLO
+	id S1753357AbaFGBch (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:32:37 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36111 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752667AbaFGBXj (ORCPT
+	by vger.kernel.org with ESMTP id S1752668AbaFGBXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 21:23:39 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Kim Phillips" <kim.phillips@freescale.com>,
-        "Horia Geanta" <horia.geanta@freescale.com>,
-        "Herbert Xu" <herbert@gondor.apana.org.au>
+CC: akpm@linux-foundation.org, "Ilia Mirkin" <imirkin@alum.mit.edu>,
+        "Ben Skeggs" <bskeggs@redhat.com>
 Date: Sat, 07 Jun 2014 02:26:29 +0100
-Message-ID: <lsq.1402104389.620662234@decadent.org.uk>
+Message-ID: <lsq.1402104389.1700776@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 33/92] crypto: caam - add allocation failure handling
- in SPRINTFCAT macro
+Subject: [PATCH 3.2 45/92] drm/nouveau/acpi: allow non-optimus setups to
+ load vbios from acpi
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,38 +32,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Horia Geanta <horia.geanta@freescale.com>
+From: Ilia Mirkin <imirkin@alum.mit.edu>
 
-commit 27c5fb7a84242b66bf1e0b2fe6bf40d19bcc5c04 upstream.
+commit a3d0b1218d351c6e6f3cea36abe22236a08cb246 upstream.
 
-GFP_ATOMIC memory allocation could fail.
-In this case, avoid NULL pointer dereference and notify user.
+There appear to be a crop of new hardware where the vbios is not
+available from PROM/PRAMIN, but there is a valid _ROM method in ACPI.
+The data read from PCIROM almost invariably contains invalid
+instructions (still has the x86 opcodes), which makes this a low-risk
+way to try to obtain a valid vbios image.
 
-Cc: Kim Phillips <kim.phillips@freescale.com>
-Signed-off-by: Horia Geanta <horia.geanta@freescale.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=76475
+Signed-off-by: Ilia Mirkin <imirkin@alum.mit.edu>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/crypto/caam/error.c | 10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/nouveau/nouveau_acpi.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
---- a/drivers/crypto/caam/error.c
-+++ b/drivers/crypto/caam/error.c
-@@ -16,9 +16,13 @@
- 	char *tmp;						\
- 								\
- 	tmp = kmalloc(sizeof(format) + max_alloc, GFP_ATOMIC);	\
--	sprintf(tmp, format, param);				\
--	strcat(str, tmp);					\
--	kfree(tmp);						\
-+	if (likely(tmp)) {					\
-+		sprintf(tmp, format, param);			\
-+		strcat(str, tmp);				\
-+		kfree(tmp);					\
-+	} else {						\
-+		strcat(str, "kmalloc failure in SPRINTFCAT");	\
-+	}							\
- }
+--- a/drivers/gpu/drm/nouveau/nouveau_acpi.c
++++ b/drivers/gpu/drm/nouveau/nouveau_acpi.c
+@@ -332,9 +332,6 @@ bool nouveau_acpi_rom_supported(struct p
+ 	acpi_status status;
+ 	acpi_handle dhandle, rom_handle;
  
- static void report_jump_idx(u32 status, char *outstr)
+-	if (!nouveau_dsm_priv.dsm_detected && !nouveau_dsm_priv.optimus_detected)
+-		return false;
+-
+ 	dhandle = DEVICE_ACPI_HANDLE(&pdev->dev);
+ 	if (!dhandle)
+ 		return false;
 
