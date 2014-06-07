@@ -1,54 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753039AbaFGIWh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 04:22:37 -0400
-Received: from ns.horizon.com ([71.41.210.147]:47753 "HELO ns.horizon.com"
+	id S1752913AbaFGIZV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 04:25:21 -0400
+Received: from ns.horizon.com ([71.41.210.147]:43561 "HELO ns.horizon.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752854AbaFGIWg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 04:22:36 -0400
-Date: 7 Jun 2014 04:22:35 -0400
-Message-ID: <20140607082235.9839.qmail@ns.horizon.com>
+	id S1752839AbaFGIZT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jun 2014 04:25:19 -0400
+Date: 7 Jun 2014 04:25:18 -0400
+Message-ID: <20140607082518.9989.qmail@ns.horizon.com>
 From: "George Spelvin" <linux@horizon.com>
 To: davem@davemloft.net, dborkman@redhat.com, linux@horizon.com,
         shemminger@osdl.org, tytso@mit.edu
-Subject: [PATCH 3/7] lib/random32.c: Replace an #ifdef with a stub prandom_state_selftest()
+Subject: [PATCH 4/7] lib/random32.c: Use <asm/unaligned.h> instead of hand-rolling it
 Cc: linux-kernel@vger.kernel.org
 In-Reply-To: <20140607081828.9294.qmail@ns.horizon.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The preferred Linux style for optional features is to define
-no-op stub functions rather than wrap each call site in #ifdef.
+The functions exist for a reason; the manual byte-at-a-time code
+is unnecessarily slow (and bloated).
 
 Signed-off-by: George Spelvin <linux@horizon.com>
 ---
- lib/random32.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ lib/random32.c | 23 +++++++++++------------
+ 1 file changed, 11 insertions(+), 12 deletions(-)
 
 diff --git a/lib/random32.c b/lib/random32.c
-index 2e7c15c0..e8f3557b 100644
+index e8f3557b..eee60100 100644
 --- a/lib/random32.c
 +++ b/lib/random32.c
-@@ -40,6 +40,8 @@
+@@ -37,6 +37,7 @@
+ #include <linux/jiffies.h>
+ #include <linux/random.h>
+ #include <linux/sched.h>
++#include <asm/unaligned.h>
  
  #ifdef CONFIG_RANDOM32_SELFTEST
  static void __init prandom_state_selftest(void);
-+#else
-+#define prandom_state_selftest() (void)0
- #endif
- 
- static DEFINE_PER_CPU(struct rnd_state, net_rand_state);
-@@ -188,9 +190,7 @@ static int __init prandom_init(void)
+@@ -97,25 +98,23 @@ EXPORT_SYMBOL(prandom_u32);
+  */
+ void prandom_bytes_state(struct rnd_state *state, void *buf, int bytes)
  {
+-	unsigned char *p = buf;
++	u8 *p = buf;
  	int i;
  
--#ifdef CONFIG_RANDOM32_SELFTEST
- 	prandom_state_selftest();
--#endif
+-	for (i = 0; i < round_down(bytes, sizeof(u32)); i += sizeof(u32)) {
+-		u32 random = prandom_u32_state(state);
+-		int j;
++	for (i = 0; i < round_down(bytes, sizeof(u32)); i += sizeof(u32))
++		put_unaligned_le32(prandom_u32_state(state), p+i);
  
- 	for_each_possible_cpu(i) {
- 		struct rnd_state *state = &per_cpu(net_rand_state,i);
+-		for (j = 0; j < sizeof(u32); j++) {
+-			p[i + j] = random;
+-			random >>= BITS_PER_BYTE;
+-		}
+-	}
+ 	if (i < bytes) {
+ 		u32 random = prandom_u32_state(state);
+ 
+-		for (; i < bytes; i++) {
+-			p[i] = random;
+-			random >>= BITS_PER_BYTE;
++		if (bytes & 2) {
++			put_unaligned_le16((u16)random, p+i);
++			if ((bytes & 1) == 0)
++				return;
++			i += 2;
++			random >>= 16;
+ 		}
++		p[i] = (u8)random;
+ 	}
+ }
+ EXPORT_SYMBOL(prandom_bytes_state);
 -- 
 2.0.0
 
