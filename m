@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753248AbaFGB1n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:27:43 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36152 "EHLO
+	id S1753231AbaFGB1m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:27:42 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36148 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752692AbaFGBXj (ORCPT
+	by vger.kernel.org with ESMTP id S1752693AbaFGBXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 21:23:39 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,15 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Thomas Hellstrom" <thellstrom@vmware.com>,
-        "Jakob Bornecrantz" <jakob@vmware.com>
-Date: Sat, 07 Jun 2014 02:26:28 +0100
-Message-ID: <lsq.1402104388.15437572@decadent.org.uk>
+CC: akpm@linux-foundation.org,
+        "Laurent Pinchart" <laurent.pinchart@ideasonboard.com>,
+        "=?UTF-8?q?Salva=20Peir=C3=B3?=" <speiro@ai2.upv.es>,
+        "Mauro Carvalho Chehab" <m.chehab@samsung.com>
+Date: Sat, 07 Jun 2014 02:26:29 +0100
+Message-ID: <lsq.1402104389.665480053@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 30/92] drm/vmwgfx: Make sure user-space can't DMA
- across buffer object boundaries v2
+Subject: [PATCH 3.2 44/92] [media] media-device: fix infoleak in ioctl
+ media_enum_entities()
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,60 +34,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Hellstrom <thellstrom@vmware.com>
+From: Salva Peiró <speiro@ai2.upv.es>
 
-commit cbd75e97a525e3819c02dc18bc2d67aa544c9e45 upstream.
+commit e6a623460e5fc960ac3ee9f946d3106233fd28d8 upstream.
 
-We already check that the buffer object we're accessing is registered with
-the file. Now also make sure that we can't DMA across buffer object boundaries.
+This fixes CVE-2014-1739.
 
-v2: Code commenting update.
-
-Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
-Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Salva Peiró <speiro@ai2.upv.es>
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c | 22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+ drivers/media/media-device.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c
-@@ -558,14 +558,36 @@ static int vmw_cmd_dma(struct vmw_privat
- 	} *cmd;
- 	int ret;
- 	struct vmw_resource *res;
-+	SVGA3dCmdSurfaceDMASuffix *suffix;
-+	uint32_t bo_size;
+--- a/drivers/media/media-device.c
++++ b/drivers/media/media-device.c
+@@ -90,6 +90,7 @@ static long media_device_enum_entities(s
+ 	struct media_entity *ent;
+ 	struct media_entity_desc u_ent;
  
- 	cmd = container_of(header, struct vmw_dma_cmd, header);
-+	suffix = (SVGA3dCmdSurfaceDMASuffix *)((unsigned long) &cmd->dma +
-+					       header->size - sizeof(*suffix));
-+
-+	/* Make sure device and verifier stays in sync. */
-+	if (unlikely(suffix->suffixSize != sizeof(*suffix))) {
-+		DRM_ERROR("Invalid DMA suffix size.\n");
-+		return -EINVAL;
-+	}
-+
- 	ret = vmw_translate_guest_ptr(dev_priv, sw_context,
- 				      &cmd->dma.guest.ptr,
- 				      &vmw_bo);
- 	if (unlikely(ret != 0))
- 		return ret;
++	memset(&u_ent, 0, sizeof(u_ent));
+ 	if (copy_from_user(&u_ent.id, &uent->id, sizeof(u_ent.id)))
+ 		return -EFAULT;
  
-+	/* Make sure DMA doesn't cross BO boundaries. */
-+	bo_size = vmw_bo->base.num_pages * PAGE_SIZE;
-+	if (unlikely(cmd->dma.guest.ptr.offset > bo_size)) {
-+		DRM_ERROR("Invalid DMA offset.\n");
-+		return -EINVAL;
-+	}
-+
-+	bo_size -= cmd->dma.guest.ptr.offset;
-+	if (unlikely(suffix->maximumOffset > bo_size))
-+		suffix->maximumOffset = bo_size;
-+
- 	bo = &vmw_bo->base;
- 	ret = vmw_user_surface_lookup_handle(dev_priv, sw_context->tfile,
- 					     cmd->dma.host.sid, &srf);
 
