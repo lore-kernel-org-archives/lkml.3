@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752774AbaFGBa1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:30:27 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36146 "EHLO
+	id S1753401AbaFGBcl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:32:41 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36094 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752687AbaFGBXj (ORCPT
+	by vger.kernel.org with ESMTP id S1752659AbaFGBXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 21:23:39 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -14,12 +14,13 @@ MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 CC: akpm@linux-foundation.org,
-        "Gustavo Padovan" <gustavo.padovan@collabora.co.uk>,
-        "Mohammed Habibulla" <moch@chromium.org>
+        "paul.szabo@sydney.edu.au" <paul.szabo@sydney.edu.au>,
+        "Fengguang Wu" <fengguang.wu@intel.com>, "Jan Kara" <jack@suse.cz>,
+        "Paul Szabo" <psz@maths.usyd.edu.au>
 Date: Sat, 07 Jun 2014 02:26:29 +0100
-Message-ID: <lsq.1402104389.336268383@decadent.org.uk>
+Message-ID: <lsq.1402104389.148768940@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 32/92] Bluetooth: Add support for Lite-on [04ca:3007]
+Subject: [PATCH 3.2 59/92] Negative (setpoint-dirty) in bdi_position_ratio()
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,73 +33,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mohammed Habibulla <moch@chromium.org>
+From: "paul.szabo@sydney.edu.au" <paul.szabo@sydney.edu.au>
 
-commit 1fb4e09a7e780b915dbd172592ae7e2a4c071065 upstream.
+commit ed84825b785ceb932af7dd5aa08614801721320b upstream.
 
-Add support for the AR9462 chip
+In bdi_position_ratio(), get difference (setpoint-dirty) right even when
+negative. Both setpoint and dirty are unsigned long, the difference was
+zero-padded thus wrongly sign-extended to s64. This issue affects all
+32-bit architectures, does not affect 64-bit architectures where long
+and s64 are equivalent.
 
-T:  Bus=01 Lev=01 Prnt=01 Port=03 Cnt=03 Dev#=  3 Spd=12   MxCh= 0
-D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=04ca ProdID=3007 Rev= 0.01
-C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
-I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
-E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
-I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
-I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+In this function, dirty is between freerun and limit, the pseudo-float x
+is between [-1,1], expected to be negative about half the time. With
+zero-padding, instead of a small negative x we obtained a large positive
+one so bdi_position_ratio() returned garbage.
 
-Signed-off-by: Mohammed Habibulla <moch@chromium.org>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Casting the difference to s64 also prevents overflow with left-shift;
+though normally these numbers are small and I never observed a 32-bit
+overflow there.
+
+(This patch does not solve the PAE OOM issue.)
+
+Paul Szabo   psz@maths.usyd.edu.au   http://www.maths.usyd.edu.au/u/psz/
+School of Mathematics and Statistics   University of Sydney    Australia
+
+Reviewed-by: Jan Kara <jack@suse.cz>
+Reported-by: Paul Szabo <psz@maths.usyd.edu.au>
+Reference: http://bugs.debian.org/695182
+Signed-off-by: Paul Szabo <psz@maths.usyd.edu.au>
+Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/bluetooth/ath3k.c | 2 ++
- drivers/bluetooth/btusb.c | 1 +
- 2 files changed, 3 insertions(+)
+ mm/page-writeback.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/bluetooth/ath3k.c
-+++ b/drivers/bluetooth/ath3k.c
-@@ -81,6 +81,7 @@ static struct usb_device_id ath3k_table[
- 	{ USB_DEVICE(0x04CA, 0x3004) },
- 	{ USB_DEVICE(0x04CA, 0x3005) },
- 	{ USB_DEVICE(0x04CA, 0x3006) },
-+	{ USB_DEVICE(0x04CA, 0x3007) },
- 	{ USB_DEVICE(0x04CA, 0x3008) },
- 	{ USB_DEVICE(0x13d3, 0x3362) },
- 	{ USB_DEVICE(0x0CF3, 0xE004) },
-@@ -123,6 +124,7 @@ static struct usb_device_id ath3k_blist_
- 	{ USB_DEVICE(0x04ca, 0x3004), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x04ca, 0x3005), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x04ca, 0x3006), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x04ca, 0x3007), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x04ca, 0x3008), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3362), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0xe004), .driver_info = BTUSB_ATH3012 },
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -152,6 +152,7 @@ static struct usb_device_id blacklist_ta
- 	{ USB_DEVICE(0x04ca, 0x3004), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x04ca, 0x3005), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x04ca, 0x3006), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x04ca, 0x3007), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x04ca, 0x3008), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3362), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0xe004), .driver_info = BTUSB_ATH3012 },
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -559,7 +559,7 @@ static unsigned long bdi_position_ratio(
+ 	 *     => fast response on large errors; small oscillation near setpoint
+ 	 */
+ 	setpoint = (freerun + limit) / 2;
+-	x = div_s64((setpoint - dirty) << RATELIMIT_CALC_SHIFT,
++	x = div_s64(((s64)setpoint - (s64)dirty) << RATELIMIT_CALC_SHIFT,
+ 		    limit - setpoint + 1);
+ 	pos_ratio = x;
+ 	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
 
