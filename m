@@ -1,52 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275AbaFGVwc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 17:52:32 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:41653 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753146AbaFGVwb (ORCPT
+	id S1753299AbaFGVxi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 17:53:38 -0400
+Received: from mout.gmx.net ([212.227.15.15]:49490 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753146AbaFGVxh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 17:52:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <201406072059.s57KxsIp025789@terminus.zytor.com>
-References: <201406072059.s57KxsIp025789@terminus.zytor.com>
-Date: Sat, 7 Jun 2014 14:52:30 -0700
-X-Google-Sender-Auth: 7lY4u9YL8oZ77kH9_HSwBPmVViM
-Message-ID: <CA+55aFzTfFm3_7htQJ8uScxcf1bSrmZ8=C65rYEq5_7BHBrnJw@mail.gmail.com>
-Subject: Re: [GIT PULL] x86 fixes for v3.15
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@linux.intel.com>,
-        Borislav Petkov <bp@suse.de>, Dave Young <dyoung@redhat.com>,
-        Igor Mammedov <imammedo@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Ingo Molnar <mingo@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Toshi Kani <toshi.kani@hp.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 7 Jun 2014 17:53:37 -0400
+Message-ID: <1402178010.4806.3.camel@schoellingm.dzne.de>
+Subject: Re: [PATCH v2] dns_resolver: assure that dns_query() result is
+ null-terminated
+From: Manuel Schoelling <manuel.schoelling@gmx.de>
+To: David Rientjes <rientjes@google.com>
+Cc: davem@davemloft.net, jeffrey.t.kirsher@intel.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Sat, 07 Jun 2014 23:53:30 +0200
+In-Reply-To: <alpine.DEB.2.02.1406071441050.24927@chino.kir.corp.google.com>
+References: <CAHQdGtTtwS_DAXx-nhVjjO3D1wksuV+5br10gX0DheHzWDD+sw@mail.gmail.com>
+	 <1402167681-24676-1-git-send-email-manuel.schoelling@gmx.de>
+	 <alpine.DEB.2.02.1406071441050.24927@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+X-Provags-ID: V03:K0:wqBwOqvsRlPqEtsdpAXm748zeJlnHS5Z5SRutH1Geq8jADAHVnH
+ B9v2j3GEfYSWhPxRjYS8pQ5b/TT1OqnPM3rQYimHjfMA1MvxKawn57Puj2ey7ki+2LYNMnT
+ 2zxGRvJugkZu2lrWMU4WZi24yIBhdAPt5Pujehwam+BSe43J7u4Y3NsBujtSxOjkKJMu204
+ b71p4yZNPKkfwQJhYxwrQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 7, 2014 at 1:59 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
->
-> A significantly larger than I'd like set of patches for just below the
-> wire.  All of these, however, fix real problems.  However, if you feel
-> it is too scary we can do it for the merge window and rely on pushing
-> them into -stable.
+On Sa, 2014-06-07 at 14:42 -0700, David Rientjes wrote:
+> On Sat, 7 Jun 2014, Manuel Schölling wrote:
+> 
+> > dns_query() credulously assumes that keys are null-terminated and
+> > returns a copy of a memory block that is off by one.
+> 
+> No sign-off?  Please read Documentation/SubmittingPatches.
+It's just not my day today.
+Sorry, I forgot about the sign-off.
 
-Ugh. I really don't like the timing, but the patches themselves look
-ok. So I ended up pulling them into my 3.15 branch, even if it's just
-a day before release.
+> > ---
+> >  net/dns_resolver/dns_query.c |    4 ++--
+> >  1 file changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/net/dns_resolver/dns_query.c b/net/dns_resolver/dns_query.c
+> > index e7b6d53..84871a2 100644
+> > --- a/net/dns_resolver/dns_query.c
+> > +++ b/net/dns_resolver/dns_query.c
+> > @@ -145,11 +145,11 @@ int dns_query(const char *type, const char *name, size_t namelen,
+> >  	len = upayload->datalen;
+> >  
+> >  	ret = -ENOMEM;
+> > -	*_result = kmalloc(len + 1, GFP_KERNEL);
+> > +	*_result = kzalloc(len + 1, GFP_KERNEL);
+> >  	if (!*_result)
+> >  		goto put;
+> >  
+> > -	memcpy(*_result, upayload->data, len + 1);
+> > +	memcpy(*_result, upayload->data, len);
+> >  	if (_expiry)
+> >  		*_expiry = rkey->expiry;
+> >  
+> 
+> kzalloc() would be unnecessary overhead (zeroing definitely comes with a 
+> cost) if you're going to copy to the memory immediately afterwards.  Just 
+> leave the kmalloc(), do the memcpy() and explicitly zero terminate it 
+> _result.
 
-I'm really hoping they've gone through all the regular x86 build/boot
-test machinery..
+Using kzalloc() was suggested of a developer on IRC (#kernelnewbies) but
+if you prefer kmalloc, that's ok, too.
+I'll send you a corrected patch in a second.
 
-            Linus
+
