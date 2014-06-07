@@ -1,80 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753207AbaFGXoQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 19:44:16 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:23501 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752945AbaFGXoO (ORCPT
+	id S1753216AbaFGXww (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 19:52:52 -0400
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:35594 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752945AbaFGXwu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 19:44:14 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqdtAN6ik1N5LGMPPGdsb2JhbABYgw2sKwEGmRABgQEXBAEBAQE4NYQDAQEFJxMcIxAIAxgJJQ8FJQMHGhOIQc1KFxaFR4kPB4MrgRYBA5ogiymLays
-Date: Sun, 8 Jun 2014 09:44:11 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Joe Perches <joe@perches.com>
-Cc: Pranith Kumar <bobby.prani@gmail.com>, Pranith Kumar <pranith@gatech.edu>,
-        peterz@infradead.org, linux-kernel@vger.kernel.org,
-        tim.c.chen@linux.intel.com, davidlohr@hp.com, mingo@redhat.com,
-        xfs@oss.sgi.com
-Subject: Re: [RFC PATCH 1/1] cleanup: use bool as return type for
- rwsem_is_locked
-Message-ID: <20140607234411.GA9508@dastard>
-References: <5390D7E1.7060606@gatech.edu>
- <5391FFFD.1060901@gatech.edu>
- <53920446.7060505@gatech.edu>
- <20140607001819.GE4453@dastard>
- <53926406.4020200@gmail.com>
- <53926DC1.4050304@gmail.com>
- <1402108770.25112.5.camel@joe-AO725>
+	Sat, 7 Jun 2014 19:52:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402108770.25112.5.camel@joe-AO725>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140604202758.GC22927@quack.suse.cz>
+References: <20140604202758.GC22927@quack.suse.cz>
+Date: Sat, 7 Jun 2014 16:52:49 -0700
+X-Google-Sender-Auth: R9JL4YjCKw0FGg688Q0GvwXay_Q
+Message-ID: <CA+55aFzPvSGCorqEKRi87oCOrZN5RbUA1uUWq26WR=ZS2pNt+w@mail.gmail.com>
+Subject: Re: [GIT PULL] Reiserfs & ext3 changes for 3.16-rc1
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Jan Kara <jack@suse.cz>
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 06, 2014 at 07:39:30PM -0700, Joe Perches wrote:
-> On Fri, 2014-06-06 at 21:41 -0400, Pranith Kumar wrote:
-> > On 06/06/2014 08:59 PM, Pranith Kumar wrote:
-> > > On 06/06/2014 08:18 PM, Dave Chinner wrote:
-> > >> If you are going to change the return type to bool, then you should
-> > >> also remove the manual "!!" conversions to a boolean return and let
-> > >> the compiler do it in the most optimal way.
-> > > Agreed, please find patch below:
-> > Simplify the "!!" condition. This is much simpler. :)
-> []
-> > diff --git a/fs/xfs/xfs_inode.c b/fs/xfs/xfs_inode.c
-> 
-> > @@ -285,25 +285,25 @@ xfs_ilock_demote(
-> >  }
-> >  
-> >  #if defined(DEBUG) || defined(XFS_WARN)
-> > -int
-> > +bool
-> >  xfs_isilocked(
-> >  	xfs_inode_t		*ip,
-> >  	uint			lock_flags)
-> >  {
-> >  	if (lock_flags & (XFS_ILOCK_EXCL|XFS_ILOCK_SHARED)) {
-> >  		if (!(lock_flags & XFS_ILOCK_SHARED))
-> > -			return !!ip->i_lock.mr_writer;
-> > +			return (ip->i_lock.mr_writer != 0);
-> 
-> simpler still would be just removing the !! completely.
-> I presume in no case would it make an actual difference
-> in emitted code.
-> 
-> ie:
-> 			return ip->i_lock.mr_writer;
+On Wed, Jun 4, 2014 at 1:27 PM, Jan Kara <jack@suse.cz> wrote:
+>   Hello Linus,
+>
+>   could you please pull from
+>
+> git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs.git for_linus
+>
+> to get big reiserfs cleanup from Jeff, an ext3 deadlock fix, and some small
+> cleanups.
 
-Yup, that's exactly what I meant. Casting to a bool type does all
-the work of squashing all non-zero values to 1...
+This does not work at all for me:
 
-Cheers,
+  fs/reiserfs/do_balan.c: In function ‘balance_leaf_new_nodes’:
+  fs/reiserfs/do_balan.c:1248:3: error: implicit declaration of
+function ‘format_bh’ [-Werror=implicit-function-declaration]
+     RFALSE(!buffer_journaled(tb->S_new[i])
+     ^
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Hmm? "format_bh()"?
+
+           Linus
