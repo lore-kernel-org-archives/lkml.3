@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753500AbaFGBnF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:43:05 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35992 "EHLO
+	id S1753472AbaFGBnD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:43:03 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35993 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752564AbaFGBXh (ORCPT
+	by vger.kernel.org with ESMTP id S1752567AbaFGBXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 21:23:37 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,15 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Mauro Carvalho Chehab" <m.chehab@samsung.com>,
-        "Guennadi Liakhovetski" <g.liakhovetski@gmx.de>,
-        "Laurent Pinchart" <laurent.pinchart@ideasonboard.com>
+CC: akpm@linux-foundation.org,
+        "Stephane Grosjean" <s.grosjean@peak-system.com>,
+        "Christopher R. Baker" <cbaker@rec.ri.cmu.edu>,
+        "Marc Kleine-Budde" <mkl@pengutronix.de>
 Date: Sat, 07 Jun 2014 02:26:29 +0100
-Message-ID: <lsq.1402104389.469833317@decadent.org.uk>
+Message-ID: <lsq.1402104389.731056193@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 68/92] [media] V4L2: fix VIDIOC_CREATE_BUFS in 64- /
- 32-bit compatibility mode
+Subject: [PATCH 3.2 81/92] can: peak_pci: prevent use after free at netdev
+ removal
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,67 +34,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+From: Stephane Grosjean <s.grosjean@peak-system.com>
 
-commit 97d9d23dda6f37d90aefeec4ed619d52df525382 upstream.
+commit 0b5a958cf4df3a5cd578b861471e62138f55c85e upstream.
 
-If a struct contains 64-bit fields, it is aligned on 64-bit boundaries
-within containing structs in 64-bit compilations. This is the case with
-struct v4l2_window, which contains pointers and is embedded into struct
-v4l2_format, and that one is embedded into struct v4l2_create_buffers.
-Unlike some other structs, used as a part of the kernel ABI as ioctl()
-arguments, that are packed, these structs aren't packed. This isn't a
-problem per se, but the ioctl-compat code for VIDIOC_CREATE_BUFS contains
-a bug, that triggers in such 64-bit builds. That code wrongly assumes,
-that in struct v4l2_create_buffers, struct v4l2_format immediately follows
-the __u32 memory field, which in fact isn't the case. This bug wasn't
-visible until now, because until recently hardly any applications used
-this ioctl() and mostly embedded 32-bit only drivers implemented it. This
-is changing now with addition of this ioctl() to some USB drivers, e.g.
-UVC. This patch fixes the bug by copying parts of struct
-v4l2_create_buffers separately.
+As remarked by Christopher R. Baker in his post at
 
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-[bwh: Backported to 3.2: adjust filename]
+http://marc.info/?l=linux-can&m=139707295706465&w=2
+
+there's a possibility for an use after free condition at device removal.
+
+This simplified patch introduces an additional variable to prevent the issue.
+Thanks for catching this.
+
+Reported-by: Christopher R. Baker <cbaker@rec.ri.cmu.edu>
+Signed-off-by: Stephane Grosjean <s.grosjean@peak-system.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/media/video/v4l2-compat-ioctl32.c | 12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ drivers/net/can/sja1000/peak_pci.c | 14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
 
---- a/drivers/media/video/v4l2-compat-ioctl32.c
-+++ b/drivers/media/video/v4l2-compat-ioctl32.c
-@@ -178,6 +178,9 @@ struct v4l2_create_buffers32 {
- 
- static int __get_v4l2_format32(struct v4l2_format *kp, struct v4l2_format32 __user *up)
+--- a/drivers/net/can/sja1000/peak_pci.c
++++ b/drivers/net/can/sja1000/peak_pci.c
+@@ -98,7 +98,7 @@ static int __devinit peak_pci_probe(stru
  {
-+	if (get_user(kp->type, &up->type))
-+		return -EFAULT;
+ 	struct sja1000_priv *priv;
+ 	struct peak_pci_chan *chan;
+-	struct net_device *dev;
++	struct net_device *dev, *prev_dev;
+ 	void __iomem *cfg_base, *reg_base;
+ 	u16 sub_sys_id, icr;
+ 	int i, err, channels;
+@@ -213,11 +213,13 @@ failure_remove_channels:
+ 	/* Disable interrupts */
+ 	writew(0x0, cfg_base + PITA_ICR + 2);
+ 
+-	for (dev = pci_get_drvdata(pdev); dev; dev = chan->prev_dev) {
+-		unregister_sja1000dev(dev);
+-		free_sja1000dev(dev);
++	for (dev = pci_get_drvdata(pdev); dev; dev = prev_dev) {
+ 		priv = netdev_priv(dev);
+ 		chan = priv->priv;
++		prev_dev = chan->prev_dev;
 +
- 	switch (kp->type) {
- 	case V4L2_BUF_TYPE_VIDEO_CAPTURE:
- 	case V4L2_BUF_TYPE_VIDEO_OUTPUT:
-@@ -208,17 +211,16 @@ static int __get_v4l2_format32(struct v4
++		unregister_sja1000dev(dev);
++		free_sja1000dev(dev);
+ 	}
  
- static int get_v4l2_format32(struct v4l2_format *kp, struct v4l2_format32 __user *up)
- {
--	if (!access_ok(VERIFY_READ, up, sizeof(struct v4l2_format32)) ||
--			get_user(kp->type, &up->type))
--			return -EFAULT;
-+	if (!access_ok(VERIFY_READ, up, sizeof(struct v4l2_format32)))
-+		return -EFAULT;
- 	return __get_v4l2_format32(kp, up);
- }
+ 	pci_iounmap(pdev, reg_base);
+@@ -247,10 +249,12 @@ static void __devexit peak_pci_remove(st
  
- static int get_v4l2_create32(struct v4l2_create_buffers *kp, struct v4l2_create_buffers32 __user *up)
- {
- 	if (!access_ok(VERIFY_READ, up, sizeof(struct v4l2_create_buffers32)) ||
--	    copy_from_user(kp, up, offsetof(struct v4l2_create_buffers32, format.fmt)))
--			return -EFAULT;
-+	    copy_from_user(kp, up, offsetof(struct v4l2_create_buffers32, format)))
-+		return -EFAULT;
- 	return __get_v4l2_format32(&kp->format, &up->format);
- }
- 
+ 	/* Loop over all registered devices */
+ 	while (1) {
++		struct net_device *prev_dev = chan->prev_dev;
++
+ 		dev_info(&pdev->dev, "removing device %s\n", dev->name);
+ 		unregister_sja1000dev(dev);
+ 		free_sja1000dev(dev);
+-		dev = chan->prev_dev;
++		dev = prev_dev;
+ 		if (!dev)
+ 			break;
+ 		priv = netdev_priv(dev);
 
