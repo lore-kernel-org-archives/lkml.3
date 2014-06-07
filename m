@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752846AbaFGBZB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:25:01 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36181 "EHLO
+	id S1752976AbaFGB0B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:26:01 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36195 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752712AbaFGBXk (ORCPT
+	by vger.kernel.org with ESMTP id S1752707AbaFGBXk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 21:23:40 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,19 +13,16 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
-        "Eric Dumazet" <eric.dumazet@gmail.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        "Patrick McHardy" <kaber@trash.net>,
-        "Daniel Lezcano" <daniel.lezcano@free.fr>,
-        "Jason Wang" <jasowang@redhat.com>,
-        "Andrian Nord" <nightnord@gmail.com>,
-        "Vlad Yasevich" <vyasevic@redhat.com>
-Date: Sat, 07 Jun 2014 02:26:28 +0100
-Message-ID: <lsq.1402104388.775889089@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Kees Cook" <keescook@chromium.org>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Darren Hart" <dvhart@linux.intel.com>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Will Drewry" <wad@chromium.org>, Pinkie@decadent.org.uk
+Date: Sat, 07 Jun 2014 02:26:29 +0100
+Message-ID: <lsq.1402104389.125698523@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 18/92] Revert "macvlan : fix checksums error when we
- are in  bridge mode"
+Subject: [PATCH 3.2 89/92] futex-prevent-requeue-pi-on-same-futex.patch
+ futex: Forbid uaddr == uaddr2 in futex_requeue(..., requeue_pi=1)
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -38,60 +35,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlad Yasevich <vyasevic@redhat.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-[ Upstream commit f114890cdf84d753f6b41cd0cc44ba51d16313da ]
+commit e9c243a5a6de0be8e584c604d353412584b592f8 upstream.
 
-This reverts commit 12a2856b604476c27d85a5f9a57ae1661fc46019.
-The commit above doesn't appear to be necessary any more as the
-checksums appear to be correctly computed/validated.
+If uaddr == uaddr2, then we have broken the rule of only requeueing from
+a non-pi futex to a pi futex with this call.  If we attempt this, then
+dangling pointers may be left for rt_waiter resulting in an exploitable
+condition.
 
-Additionally the above commit breaks kvm configurations where
-one VM is using a device that support checksum offload (virtio) and
-the other VM does not.
-In this case, packets leaving virtio device will have CHECKSUM_PARTIAL
-set.  The packets is forwarded to a macvtap that has offload features
-turned off.  Since we use CHECKSUM_UNNECESSARY, the host does does not
-update the checksum and thus a bad checksum is passed up to
-the guest.
+This change brings futex_requeue() in line with futex_wait_requeue_pi()
+which performs the same check as per commit 6f7b0a2a5c0f ("futex: Forbid
+uaddr == uaddr2 in futex_wait_requeue_pi()")
 
-CC: Daniel Lezcano <daniel.lezcano@free.fr>
-CC: Patrick McHardy <kaber@trash.net>
-CC: Andrian Nord <nightnord@gmail.com>
-CC: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Michael S. Tsirkin <mst@redhat.com>
-CC: Jason Wang <jasowang@redhat.com>
-Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-Acked-by: Jason Wang <jasowang@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+[ tglx: Compare the resulting keys as well, as uaddrs might be
+  	different depending on the mapping ]
+
+Fixes CVE-2014-3153.
+
+Reported-by: Pinkie Pie
+Signed-off-by: Will Drewry <wad@chromium.org>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reviewed-by: Darren Hart <dvhart@linux.intel.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/macvlan.c | 3 ---
- 1 file changed, 3 deletions(-)
+ kernel/futex.c | 25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
 
-diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
-index 301b39e..ab5786b 100644
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -236,11 +236,9 @@ static int macvlan_queue_xmit(struct sk_buff *skb, struct net_device *dev)
- 	const struct macvlan_dev *vlan = netdev_priv(dev);
- 	const struct macvlan_port *port = vlan->port;
- 	const struct macvlan_dev *dest;
--	__u8 ip_summed = skb->ip_summed;
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -1289,6 +1289,13 @@ static int futex_requeue(u32 __user *uad
  
- 	if (vlan->mode == MACVLAN_MODE_BRIDGE) {
- 		const struct ethhdr *eth = (void *)skb->data;
--		skb->ip_summed = CHECKSUM_UNNECESSARY;
+ 	if (requeue_pi) {
+ 		/*
++		 * Requeue PI only works on two distinct uaddrs. This
++		 * check is only valid for private futexes. See below.
++		 */
++		if (uaddr1 == uaddr2)
++			return -EINVAL;
++
++		/*
+ 		 * requeue_pi requires a pi_state, try to allocate it now
+ 		 * without any locks in case it fails.
+ 		 */
+@@ -1326,6 +1333,15 @@ retry:
+ 	if (unlikely(ret != 0))
+ 		goto out_put_key1;
  
- 		/* send to other bridge ports directly */
- 		if (is_multicast_ether_addr(eth->h_dest)) {
-@@ -258,7 +256,6 @@ static int macvlan_queue_xmit(struct sk_buff *skb, struct net_device *dev)
- 	}
++	/*
++	 * The check above which compares uaddrs is not sufficient for
++	 * shared futexes. We need to compare the keys:
++	 */
++	if (requeue_pi && match_futex(&key1, &key2)) {
++		ret = -EINVAL;
++		goto out_put_keys;
++	}
++
+ 	hb1 = hash_futex(&key1);
+ 	hb2 = hash_futex(&key2);
  
- xmit_world:
--	skb->ip_summed = ip_summed;
- 	skb->dev = vlan->lowerdev;
- 	return dev_queue_xmit(skb);
- }
+@@ -2357,6 +2373,15 @@ static int futex_wait_requeue_pi(u32 __u
+ 	if (ret)
+ 		goto out_key2;
+ 
++	/*
++	 * The check above which compares uaddrs is not sufficient for
++	 * shared futexes. We need to compare the keys:
++	 */
++	if (match_futex(&q.key, &key2)) {
++		ret = -EINVAL;
++		goto out_put_keys;
++	}
++
+ 	/* Queue the futex_q, drop the hb lock, wait for wakeup. */
+ 	futex_wait_queue_me(hb, &q, to);
+ 
 
