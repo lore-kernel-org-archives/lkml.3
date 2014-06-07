@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753726AbaFGBoQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:44:16 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35960 "EHLO
+	id S1753709AbaFGBoN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:44:13 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35965 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752546AbaFGBXg (ORCPT
+	by vger.kernel.org with ESMTP id S1752548AbaFGBXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 21:23:36 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,15 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Christian =?UTF-8?Q?K=C3=B6nig?=" <christian.koenig@amd.com>,
-        "Alex Deucher" <alexdeucher@gmail.com>,
-        "Alex Deucher" <alexander.deucher@amd.com>
-Date: Sat, 07 Jun 2014 02:26:29 +0100
-Message-ID: <lsq.1402104389.670994932@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Jiri Pirko" <jiri@resnulli.us>,
+        "David S. Miller" <davem@davemloft.net>,
+        "David Gibson" <david@gibson.dropbear.id.au>
+Date: Sat, 07 Jun 2014 02:26:28 +0100
+Message-ID: <lsq.1402104388.624947710@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 79/92] drm/radeon: handle non-VGA class pci devices
- with ATRM
+Subject: [PATCH 3.2 15/92] rtnetlink: Only supply IFLA_VF_PORTS
+ information when  RTEXT_FILTER_VF is set
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,45 +33,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: David Gibson <david@gibson.dropbear.id.au>
 
-commit d8ade3526b2aa0505132c404c05a38b73ea15490 upstream.
+[ Upstream commit c53864fd60227de025cb79e05493b13f69843971 ]
 
-Newer PX systems have non-VGA pci class dGPUs.  Update
-the ATRM fetch method to handle those cases.
+Since 115c9b81928360d769a76c632bae62d15206a94a (rtnetlink: Fix problem with
+buffer allocation), RTM_NEWLINK messages only contain the IFLA_VFINFO_LIST
+attribute if they were solicited by a GETLINK message containing an
+IFLA_EXT_MASK attribute with the RTEXT_FILTER_VF flag.
 
-bug:
-https://bugzilla.kernel.org/show_bug.cgi?id=75401
+That was done because some user programs broke when they received more data
+than expected - because IFLA_VFINFO_LIST contains information for each VF
+it can become large if there are many VFs.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Christian König <christian.koenig@amd.com>
-[bwh: Backported to 3.2: s/ACPI_HANDLE()/DEVICE_ACPI_HANDLE()/]
+However, the IFLA_VF_PORTS attribute, supplied for devices which implement
+ndo_get_vf_port (currently the 'enic' driver only), has the same problem.
+It supplies per-VF information and can therefore become large, but it is
+not currently conditional on the IFLA_EXT_MASK value.
+
+Worse, it interacts badly with the existing EXT_MASK handling.  When
+IFLA_EXT_MASK is not supplied, the buffer for netlink replies is fixed at
+NLMSG_GOODSIZE.  If the information for IFLA_VF_PORTS exceeds this, then
+rtnl_fill_ifinfo() returns -EMSGSIZE on the first message in a packet.
+netlink_dump() will misinterpret this as having finished the listing and
+omit data for this interface and all subsequent ones.  That can cause
+getifaddrs(3) to enter an infinite loop.
+
+This patch addresses the problem by only supplying IFLA_VF_PORTS when
+IFLA_EXT_MASK is supplied with the RTEXT_FILTER_VF flag set.
+
+Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
+Reviewed-by: Jiri Pirko <jiri@resnulli.us>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/radeon/radeon_bios.c | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ net/core/rtnetlink.c | 16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_bios.c
-+++ b/drivers/gpu/drm/radeon/radeon_bios.c
-@@ -173,6 +173,20 @@ static bool radeon_atrm_get_bios(struct
- 		}
+diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
+index 978a367..7beaf10 100644
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -744,7 +744,8 @@ static inline int rtnl_vfinfo_size(const struct net_device *dev,
+ 		return 0;
+ }
+ 
+-static size_t rtnl_port_size(const struct net_device *dev)
++static size_t rtnl_port_size(const struct net_device *dev,
++			     u32 ext_filter_mask)
+ {
+ 	size_t port_size = nla_total_size(4)		/* PORT_VF */
+ 		+ nla_total_size(PORT_PROFILE_MAX)	/* PORT_PROFILE */
+@@ -760,7 +761,8 @@ static size_t rtnl_port_size(const struct net_device *dev)
+ 	size_t port_self_size = nla_total_size(sizeof(struct nlattr))
+ 		+ port_size;
+ 
+-	if (!dev->netdev_ops->ndo_get_vf_port || !dev->dev.parent)
++	if (!dev->netdev_ops->ndo_get_vf_port || !dev->dev.parent ||
++	    !(ext_filter_mask & RTEXT_FILTER_VF))
+ 		return 0;
+ 	if (dev_num_vf(dev->dev.parent))
+ 		return port_self_size + vf_ports_size +
+@@ -791,7 +793,7 @@ static noinline size_t if_nlmsg_size(const struct net_device *dev,
+ 	       + nla_total_size(ext_filter_mask
+ 			        & RTEXT_FILTER_VF ? 4 : 0) /* IFLA_NUM_VF */
+ 	       + rtnl_vfinfo_size(dev, ext_filter_mask) /* IFLA_VFINFO_LIST */
+-	       + rtnl_port_size(dev) /* IFLA_VF_PORTS + IFLA_PORT_SELF */
++	       + rtnl_port_size(dev, ext_filter_mask) /* IFLA_VF_PORTS + IFLA_PORT_SELF */
+ 	       + rtnl_link_get_size(dev) /* IFLA_LINKINFO */
+ 	       + rtnl_link_get_af_size(dev); /* IFLA_AF_SPEC */
+ }
+@@ -851,11 +853,13 @@ static int rtnl_port_self_fill(struct sk_buff *skb, struct net_device *dev)
+ 	return 0;
+ }
+ 
+-static int rtnl_port_fill(struct sk_buff *skb, struct net_device *dev)
++static int rtnl_port_fill(struct sk_buff *skb, struct net_device *dev,
++			  u32 ext_filter_mask)
+ {
+ 	int err;
+ 
+-	if (!dev->netdev_ops->ndo_get_vf_port || !dev->dev.parent)
++	if (!dev->netdev_ops->ndo_get_vf_port || !dev->dev.parent ||
++	    !(ext_filter_mask & RTEXT_FILTER_VF))
+ 		return 0;
+ 
+ 	err = rtnl_port_self_fill(skb, dev);
+@@ -1002,7 +1006,7 @@ static int rtnl_fill_ifinfo(struct sk_buff *skb, struct net_device *dev,
+ 		nla_nest_end(skb, vfinfo);
  	}
  
-+	if (!found) {
-+		while ((pdev = pci_get_class(PCI_CLASS_DISPLAY_OTHER << 8, pdev)) != NULL) {
-+			dhandle = DEVICE_ACPI_HANDLE(&pdev->dev);
-+			if (!dhandle)
-+				continue;
-+
-+			status = acpi_get_handle(dhandle, "ATRM", &atrm_handle);
-+			if (!ACPI_FAILURE(status)) {
-+				found = true;
-+				break;
-+			}
-+		}
-+	}
-+
- 	if (!found)
- 		return false;
+-	if (rtnl_port_fill(skb, dev))
++	if (rtnl_port_fill(skb, dev, ext_filter_mask))
+ 		goto nla_put_failure;
  
+ 	if (dev->rtnl_link_ops) {
 
