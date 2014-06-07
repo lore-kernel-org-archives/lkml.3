@@ -1,86 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753203AbaFGVZZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 17:25:25 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:53234 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753059AbaFGVZY (ORCPT
+	id S1753194AbaFGVjI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 17:39:08 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:49388 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753064AbaFGVjG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 17:25:24 -0400
-Date: Sun, 8 Jun 2014 01:25:18 +0400
-From: Dmitry Popov <ixaphire@qrator.net>
-To: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ip_vti: Fix 'ip tunnel add' with 'key' parameters
-Message-Id: <20140608012518.39affaff049874520ae5a0cc@qrator.net>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-unknown-linux-gnu)
+	Sat, 7 Jun 2014 17:39:06 -0400
+Message-ID: <1402177144.2236.26.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [RFC] Per-user namespace process accounting
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        LXC development mailing-list 
+	<lxc-devel@lists.linuxcontainers.org>
+Date: Sat, 07 Jun 2014 14:39:04 -0700
+In-Reply-To: <8738flkhf0.fsf@x220.int.ebiederm.org>
+References: <5386D58D.2080809@1h.com> <87tx88nbko.fsf@x220.int.ebiederm.org>
+	 <53870EAA.4060101@1h.com> <20140529153232.GB9714@ubuntumail>
+	 <538DFF72.7000209@parallels.com> <20140603172631.GL9714@ubuntumail>
+	 <8738flkhf0.fsf@x220.int.ebiederm.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.12.2 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ip tunnel add remote 10.2.2.1 local 10.2.2.2 mode vti ikey 1 okey 2
-translates to p->iflags = VTI_ISVTI|GRE_KEY and p->i_key = 1, but GRE_KEY !=
-TUNNEL_KEY, so ip_tunnel_ioctl would set i_key to 0 (same story with o_key) 
-making us unable to create vti tunnels with [io]key via ip tunnel.
+On Tue, 2014-06-03 at 10:54 -0700, Eric W. Biederman wrote:
+> Serge Hallyn <serge.hallyn@ubuntu.com> writes:
+> 
+> > Quoting Pavel Emelyanov (xemul@parallels.com):
+> >> On 05/29/2014 07:32 PM, Serge Hallyn wrote:
+> >> > Quoting Marian Marinov (mm@1h.com):
+> >> >> We are not using NFS. We are using a shared block storage that offers us snapshots. So provisioning new containers is
+> >> >> extremely cheep and fast. Comparing that with untar is comparing a race car with Smart. Yes it can be done and no, I
+> >> >> do not believe we should go backwards.
+> >> >>
+> >> >> We do not share filesystems between containers, we offer them block devices.
+> >> > 
+> >> > Yes, this is a real nuisance for openstack style deployments.
+> >> > 
+> >> > One nice solution to this imo would be a very thin stackable filesystem
+> >> > which does uid shifting, or, better yet, a non-stackable way of shifting
+> >> > uids at mount.
+> >> 
+> >> I vote for non-stackable way too. Maybe on generic VFS level so that filesystems 
+> >> don't bother with it. From what I've seen, even simple stacking is quite a challenge.
+> >
+> > Do you have any ideas for how to go about it?  It seems like we'd have
+> > to have separate inodes per mapping for each file, which is why of
+> > course stacking seems "natural" here.
+> >
+> > Trying to catch the uid/gid at every kernel-userspace crossing seems
+> > like a design regression from the current userns approach.  I suppose we
+> > could continue in the kuid theme and introduce a iiud/igid for the
+> > in-kernel inode uid/gid owners.  Then allow a user privileged in some
+> > ns to create a new mount associated with a different mapping for any
+> > ids over which he is privileged.
+> 
+> There is a simple solution.
+> 
+> We pick the filesystems we choose to support.
+> We add privileged mounting in a user namespace.
+> We create the user and mount namespace.
+> Global root goes into the target mount namespace with setns and performs
+> the mounts.
+> 
+> 90% of that work is already done.
+> 
+> As long as we don't plan to support XFS (as it XFS likes to expose it's
+> implementation details to userspace) it should be quite straight
+> forward.
 
-We cannot simply translate GRE_KEY to TUNNEL_KEY (as GRE module does) because 
-vti_tunnels with same local/remote addresses but different ikeys will be treated
-as different then. So, imo the best option here is to move p->i_flags&*_KEY 
-check for vti tunnels from ip_tunnel.c to ip_vti.c and to think about [io]_mark
-field for ip_tunnel_parm in the future.
+Any implementation which doesn't support XFS is unviable from a distro
+point of view.  The whole reason we're fighting to get USER_NS enabled
+in distros goes back to lack of XFS support (they basically refused to
+turn it on until it wasn't a choice between XFS and USER_NS).  If we put
+them in a position where they choose a namespace feature or XFS, they'll
+choose XFS.
 
-Signed-off-by: Dmitry Popov <ixaphire@qrator.net>
----
- net/ipv4/ip_tunnel.c | 10 ++++++----
- net/ipv4/ip_vti.c    |  8 +++++++-
- 2 files changed, 13 insertions(+), 5 deletions(-)
+XFS developers aren't unreasonable ... they'll help if we ask.  I mean
+it was them who eventually helped us get USER_NS turned on in the first
+place.
 
-diff --git a/net/ipv4/ip_tunnel.c b/net/ipv4/ip_tunnel.c
-index 2acc233..0a03ad1 100644
---- a/net/ipv4/ip_tunnel.c
-+++ b/net/ipv4/ip_tunnel.c
-@@ -747,10 +747,12 @@ int ip_tunnel_ioctl(struct net_device *dev, struct ip_tunnel_parm *p, int cmd)
- 			goto done;
- 		if (p->iph.ttl)
- 			p->iph.frag_off |= htons(IP_DF);
--		if (!(p->i_flags&TUNNEL_KEY))
--			p->i_key = 0;
--		if (!(p->o_flags&TUNNEL_KEY))
--			p->o_key = 0;
-+		if (!(p->i_flags&VTI_ISVTI)) {
-+			if (!(p->i_flags&TUNNEL_KEY))
-+				p->i_key = 0;
-+			if (!(p->o_flags&TUNNEL_KEY))
-+				p->o_key = 0;
-+		}
- 
- 		t = ip_tunnel_find(itn, p, itn->fb_tunnel_dev->type);
- 
-diff --git a/net/ipv4/ip_vti.c b/net/ipv4/ip_vti.c
-index 13ef00f..b8960f3 100644
---- a/net/ipv4/ip_vti.c
-+++ b/net/ipv4/ip_vti.c
-@@ -313,7 +313,13 @@ vti_tunnel_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
- 			return -EINVAL;
- 	}
- 
--	p.i_flags |= VTI_ISVTI;
-+	if (!(p.i_flags & GRE_KEY))
-+		p.i_key = 0;
-+	if (!(p.o_flags & GRE_KEY))
-+		p.o_key = 0;
-+
-+	p.i_flags = VTI_ISVTI;
-+
- 	err = ip_tunnel_ioctl(dev, &p, cmd);
- 	if (err)
- 		return err;
+James
+
+
