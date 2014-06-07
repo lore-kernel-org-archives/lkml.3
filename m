@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753634AbaFGBiA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jun 2014 21:38:00 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36002 "EHLO
+	id S1753612AbaFGBh7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jun 2014 21:37:59 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36000 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752583AbaFGBXh (ORCPT
+	by vger.kernel.org with ESMTP id S1752584AbaFGBXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jun 2014 21:23:37 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,16 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Guenter Roeck" <linux@roeck-us.net>,
-        "Josef Gajdusek" <atx@atx.name>
+CC: akpm@linux-foundation.org,
+        "Anthony Iliopoulos" <anthony.iliopoulos@huawei.com>,
+        "Shay Goikhman" <shay.goikhman@huawei.com>,
+        "Dave Hansen" <dave.hansen@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
 Date: Sat, 07 Jun 2014 02:26:29 +0100
-Message-ID: <lsq.1402104389.896527371@decadent.org.uk>
+Message-ID: <lsq.1402104389.413887641@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 66/92] hwmon: (emc1403) Support full range of known
- chip revision numbers
+Subject: [PATCH 3.2 69/92] x86, mm, hugetlb: Add missing TLB page
+ invalidation for hugetlb_cow()
 In-Reply-To: <lsq.1402104388.385007124@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,32 +35,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Gajdusek <atx@atx.name>
+From: Anthony Iliopoulos <anthony.iliopoulos@huawei.com>
 
-commit 3a18e1398fc2dc9c32bbdc50664da3a77959a8d1 upstream.
+commit 9844f5462392b53824e8b86726e7c33b5ecbb676 upstream.
 
-The datasheet for EMC1413/EMC1414, which is fully compatible to
-EMC1403/1404 and uses the same chip identification, references revision
-numbers 0x01, 0x03, and 0x04. Accept the full range of revision numbers
-from 0x01 to 0x04 to make sure none are missed.
+The invalidation is required in order to maintain proper semantics
+under CoW conditions. In scenarios where a process clones several
+threads, a thread operating on a core whose DTLB entry for a
+particular hugepage has not been invalidated, will be reading from
+the hugepage that belongs to the forked child process, even after
+hugetlb_cow().
 
-Signed-off-by: Josef Gajdusek <atx@atx.name>
-[Guenter Roeck: Updated headline and description]
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+The thread will not see the updated page as long as the stale DTLB
+entry remains cached, the thread attempts to write into the page,
+the child process exits, or the thread gets migrated to a different
+processor.
+
+Signed-off-by: Anthony Iliopoulos <anthony.iliopoulos@huawei.com>
+Link: http://lkml.kernel.org/r/20140514092948.GA17391@server-36.huawei.corp
+Suggested-by: Shay Goikhman <shay.goikhman@huawei.com>
+Acked-by: Dave Hansen <dave.hansen@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/hwmon/emc1403.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/include/asm/hugetlb.h | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/hwmon/emc1403.c
-+++ b/drivers/hwmon/emc1403.c
-@@ -290,7 +290,7 @@ static int emc1403_detect(struct i2c_cli
- 	}
+--- a/arch/x86/include/asm/hugetlb.h
++++ b/arch/x86/include/asm/hugetlb.h
+@@ -51,6 +51,7 @@ static inline pte_t huge_ptep_get_and_cl
+ static inline void huge_ptep_clear_flush(struct vm_area_struct *vma,
+ 					 unsigned long addr, pte_t *ptep)
+ {
++	ptep_clear_flush(vma, addr, ptep);
+ }
  
- 	id = i2c_smbus_read_byte_data(client, THERMAL_REVISION_REG);
--	if (id != 0x01)
-+	if (id < 0x01 || id > 0x04)
- 		return -ENODEV;
- 
- 	return 0;
+ static inline int huge_pte_none(pte_t pte)
 
