@@ -1,167 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753536AbaFHKJc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jun 2014 06:09:32 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:51364 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751765AbaFHKJa (ORCPT
+	id S1753560AbaFHKKL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jun 2014 06:10:11 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:59467 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753543AbaFHKKJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jun 2014 06:09:30 -0400
-Date: Sun, 8 Jun 2014 12:09:24 +0200
-From: Christoffer Dall <christoffer.dall@linaro.org>
-To: Antonios Motakis <a.motakis@virtualopensystems.com>
-Cc: alex.williamson@redhat.com, kvmarm@lists.cs.columbia.edu,
-        iommu@lists.linux-foundation.org, tech@virtualopensystems.com,
-        a.rigo@virtualopensystems.com, kvm@vger.kernel.org,
-        will.deacon@arm.com, kim.phillips@freescale.com,
-        stuart.yoder@freescale.com, eric.auger@linaro.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Vladimir Murzin <vladimir.murzin@arm.com>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH v6 14/20] vfio/platform: initial interrupts support
-Message-ID: <20140608100924.GA3279@lvm>
-References: <1401987808-23596-1-git-send-email-a.motakis@virtualopensystems.com>
- <1401987808-23596-15-git-send-email-a.motakis@virtualopensystems.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1401987808-23596-15-git-send-email-a.motakis@virtualopensystems.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 8 Jun 2014 06:10:09 -0400
+From: Yi Li <yi.li@linaro.org>
+To: ard.biesheuvel@linaro.org, msalter@redhat.com, catalin.marinas@arm.com,
+        will.deacon@arm.com, sudeep.karkadanagesha@arm.com,
+        steve.capper@linaro.org, lorenzo.pieralisi@arm.com,
+        liviu.dudau@arm.com, grant.likely@linaro.org, mark.rutland@arm.com
+Cc: yi.li@linaro.org, phoenix.liyi@huawei.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] arm64: dmi: Add SMBIOS/DMI support on arm64
+Date: Sun,  8 Jun 2014 18:09:25 +0800
+Message-Id: <1402222165-3363-1-git-send-email-yi.li@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 05, 2014 at 07:03:22PM +0200, Antonios Motakis wrote:
-> This patch allows to set an eventfd for a patform device's interrupt,
-> and also to trigger the interrupt eventfd from userspace for testing.
-> 
-> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
-> ---
->  drivers/vfio/platform/vfio_platform.c         |  36 ++++++-
->  drivers/vfio/platform/vfio_platform_irq.c     | 130 +++++++++++++++++++++++++-
->  drivers/vfio/platform/vfio_platform_private.h |   7 ++
->  3 files changed, 169 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/vfio/platform/vfio_platform.c b/drivers/vfio/platform/vfio_platform.c
-> index 192291c..f4c06c6 100644
-> --- a/drivers/vfio/platform/vfio_platform.c
-> +++ b/drivers/vfio/platform/vfio_platform.c
-> @@ -177,10 +177,40 @@ static long vfio_platform_ioctl(void *device_data,
->  
->  		return copy_to_user((void __user *)arg, &info, minsz);
->  
-> -	} else if (cmd == VFIO_DEVICE_SET_IRQS)
-> -		return -EINVAL;
-> +	} else if (cmd == VFIO_DEVICE_SET_IRQS) {
-> +		struct vfio_irq_set hdr;
-> +		int ret = 0;
-> +
-> +		minsz = offsetofend(struct vfio_irq_set, count);
-> +
-> +		if (copy_from_user(&hdr, (void __user *)arg, minsz))
-> +			return -EFAULT;
-> +
-> +		if (hdr.argsz < minsz)
-> +			return -EINVAL;
-> +
-> +		if (hdr.index >= vdev->num_irqs)
-> +			return -EINVAL;
-> +
-> +		if (hdr.start != 0 || hdr.count > 1)
-> +			return -EINVAL;
-> +
-> +		if (hdr.count == 0 &&
-> +			(!(hdr.flags & VFIO_IRQ_SET_DATA_NONE) ||
-> +			 !(hdr.flags & VFIO_IRQ_SET_ACTION_TRIGGER)))
-> +			return -EINVAL;
-> +
-> +		if (hdr.flags & ~(VFIO_IRQ_SET_DATA_TYPE_MASK |
-> +				  VFIO_IRQ_SET_ACTION_TYPE_MASK))
-> +			return -EINVAL;
-> +
-> +		ret = vfio_platform_set_irqs_ioctl(vdev, hdr.flags, hdr.index,
-> +						   hdr.start, hdr.count,
-> +						   (void *)arg+minsz);
-> +
-> +		return ret;
->  
-> -	else if (cmd == VFIO_DEVICE_RESET)
-> +	} else if (cmd == VFIO_DEVICE_RESET)
->  		return -EINVAL;
->  
->  	return -ENOTTY;
-> diff --git a/drivers/vfio/platform/vfio_platform_irq.c b/drivers/vfio/platform/vfio_platform_irq.c
-> index 22c214f..d79f5af 100644
-> --- a/drivers/vfio/platform/vfio_platform_irq.c
-> +++ b/drivers/vfio/platform/vfio_platform_irq.c
-> @@ -31,6 +31,9 @@
->  
->  #include "vfio_platform_private.h"
->  
-> +static int vfio_set_trigger(struct vfio_platform_device *vdev,
-> +			    int index, int fd);
-> +
->  int vfio_platform_irq_init(struct vfio_platform_device *vdev)
->  {
->  	int cnt = 0, i;
-> @@ -43,17 +46,142 @@ int vfio_platform_irq_init(struct vfio_platform_device *vdev)
->  		return -ENOMEM;
->  
->  	for (i = 0; i < cnt; i++) {
-> -		vdev->irq[i].flags = 0;
-> +		int hwirq = platform_get_irq(vdev->pdev, i);
-> +
-> +		if (hwirq < 0)
-> +			goto err;
-> +
-> +		vdev->irq[i].flags = VFIO_IRQ_INFO_EVENTFD;
->  		vdev->irq[i].count = 1;
-> +		vdev->irq[i].hwirq = hwirq;
->  	}
->  
->  	vdev->num_irqs = cnt;
->  
->  	return 0;
-> +err:
-> +	kfree(vdev->irq);
-> +	return -EINVAL;
->  }
->  
->  void vfio_platform_irq_cleanup(struct vfio_platform_device *vdev)
->  {
-> +	int i;
-> +
-> +	for (i = 0; i < vdev->num_irqs; i++)
-> +		vfio_set_trigger(vdev, i, -1);
-> +
->  	vdev->num_irqs = 0;
->  	kfree(vdev->irq);
->  }
-> +
-> +static irqreturn_t vfio_irq_handler(int irq, void *dev_id)
-> +{
-> +	struct eventfd_ctx *trigger = dev_id;
-> +
-> +	eventfd_signal(trigger, 1);
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static int vfio_set_trigger(struct vfio_platform_device *vdev,
-> +			    int index, int fd)
-> +{
-> +	struct vfio_platform_irq *irq = &vdev->irq[index];
-> +	struct eventfd_ctx *trigger;
-> +	int ret;
-> +
-> +	if (irq->trigger) {
-> +		free_irq(irq->hwirq, irq);
-> +		kfree(irq->name);
-> +		eventfd_ctx_put(irq->trigger);
-> +		irq->trigger = NULL;
-> +	}
+Add smbios/dmi support on arm64 system, it depends on EFI boot.
 
-this feels incredibly racy, is some lock protecting this access?
+Since SMBIOS is very important specification for the hardware vendors
+, it describes the hardware informations like BIOS version, 
+serial number, physical layout of the ports and so on. All x86 and IA64
+servers has supported this specfication. If ARM64 hopes to enter server
+market, then SMBIOS needs to support on ARM64, and it has been included
+as one important section in SBBR document from ARM.
 
--Christoffer
+This has been tested by dmidecode and lshw tools.
+
+Signed-off-by: Yi Li <yi.li@linaro.org>
+---
+
+Changes since v1:
+  -Followed Ard Biesheuvel's suggestion to rebase the patch on
+   Matt Fleming's arm64-efi branch.
+
+  -Followed Mark Rutland's suggesiton to change the include header.
+  
+  -Followed Grant likely's suggestion to enrich the SMBIOS background
+   and the reason why we need to enable the SMBIOS on ARM64 platform.
+
+ arch/arm64/Kconfig           |   10 ++++++++++
+ arch/arm64/include/asm/dmi.h |   28 ++++++++++++++++++++++++++++
+ arch/arm64/kernel/setup.c    |    2 ++
+ 3 files changed, 40 insertions(+)
+ create mode 100644 arch/arm64/include/asm/dmi.h
+
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index 6c71f12..13ee261 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -294,6 +294,16 @@ config EFI
+ 	  allow the kernel to be booted as an EFI application. This
+ 	  is only useful on systems that have UEFI firmware.
+ 
++config DMI
++	bool "Enable support for SMBIOS (DMI) tables"
++	depends on EFI
++	default y
++	help
++	  This enables SMBIOS/DMI feature for systems.
++
++	  This option is only useful on systems that have UEFI firmware.
++	  However, even with this option, the resultant kernel should
++	  continue to boot on existing non-UEFI platforms.
+ endmenu
+ 
+ menu "Userspace binary formats"
+diff --git a/arch/arm64/include/asm/dmi.h b/arch/arm64/include/asm/dmi.h
+new file mode 100644
+index 0000000..a0b3dac
+--- /dev/null
++++ b/arch/arm64/include/asm/dmi.h
+@@ -0,0 +1,28 @@
++/*
++ * arch/arm64/include/asm/dmi.h
++ *
++ * Copyright (C) 2013 Linaro Limited.
++ * Written by: Yi Li (yi.li@linaro.org)
++ *
++ * based on arch/ia64/include/asm/dmi.h
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
++
++
++#ifndef _ASM_DMI_H
++#define _ASM_DMI_H 1
++
++#include <linux/slab.h>
++#include <linux/efi.h>
++
++/* Use efi mappings for DMI */
++#define dmi_early_remap(x, l)	efi_lookup_mapped_addr(x)
++#define dmi_early_unmap(x, l)
++#define dmi_remap(x, l)			efi_lookup_mapped_addr(x)
++#define dmi_unmap(x)
++#define dmi_alloc(l)			kzalloc(l, GFP_ATOMIC)
++
++#endif
+diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
+index 0a14aaf..7622561 100644
+--- a/arch/arm64/kernel/setup.c
++++ b/arch/arm64/kernel/setup.c
+@@ -42,6 +42,7 @@
+ #include <linux/of_fdt.h>
+ #include <linux/of_platform.h>
+ #include <linux/efi.h>
++#include <linux/dmi.h>
+ 
+ #include <asm/fixmap.h>
+ #include <asm/cputype.h>
+@@ -400,6 +401,7 @@ static int __init arm64_device_init(void)
+ {
+ 	of_clk_init(NULL);
+ 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
++	dmi_scan_machine();
+ 	return 0;
+ }
+ arch_initcall(arm64_device_init);
+-- 
+1.7.9.5
+
