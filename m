@@ -1,31 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932933AbaFHUC5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jun 2014 16:02:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11493 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932935AbaFHUCs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jun 2014 16:02:48 -0400
-Message-ID: <5394C15D.3020507@redhat.com>
-Date: Sun, 08 Jun 2014 22:02:37 +0200
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S932234AbaFHUQQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jun 2014 16:16:16 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:51127 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753820AbaFHUQI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jun 2014 16:16:08 -0400
+Date: Sun, 8 Jun 2014 13:16:00 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Fabio Baltieri <fabio.baltieri@gmail.com>
+Cc: Jean Delvare <jdelvare@suse.de>, Lothar Felten <l-felten@ti.com>,
+        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] hwmon: (ina2xx) Change register cache to signed
+Message-ID: <20140608201600.GA30953@roeck-us.net>
+References: <1402174021-25857-1-git-send-email-fabio.baltieri@gmail.com>
 MIME-Version: 1.0
-To: Hannes Frederic Sowa <hannes@stressinduktion.org>
-CC: George Spelvin <linux@horizon.com>, davem@davemloft.net,
-        shemminger@osdl.org, tytso@mit.edu, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/7] lib/random32.c: Make prandom_u32_max efficient for
- powers of 2
-References: <20140607082805.10120.qmail@ns.horizon.com> <1402248852.14095.126480525.5C81F8C6@webmail.messagingengine.com>
-In-Reply-To: <1402248852.14095.126480525.5C81F8C6@webmail.messagingengine.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402174021-25857-1-git-send-email-fabio.baltieri@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/08/2014 07:34 PM, Hannes Frederic Sowa wrote:
-...
-> Please check this as it makes the code more complicated and I doubt it is worth it.
+On Sat, Jun 07, 2014 at 09:47:01PM +0100, Fabio Baltieri wrote:
+> All devices supported by the ina2xx driver are bidirectional and reports
+> the measured value as a signed 16 bit, but the current driver
+> implementation caches the number as an u16, leading to an incorrect sign
+> extension when reporting to the userspace in ina2xx_get_value().
+> 
+> This patch fixes the problem by using a s16 instead, and has been tested
+> on an INA219.
+> 
+> Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
 
-Agreed.
+Applied.
+
+Thanks,
+Guenter
