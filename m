@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753441AbaFHIFX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jun 2014 04:05:23 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:44343 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753381AbaFHIFS (ORCPT
+	id S1753459AbaFHIM0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jun 2014 04:12:26 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:49044 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753409AbaFHIMW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jun 2014 04:05:18 -0400
-Date: Sun, 8 Jun 2014 13:35:09 +0530
+	Sun, 8 Jun 2014 04:12:22 -0400
+Date: Sun, 8 Jun 2014 13:42:13 +0530
 From: Himangi Saraogi <himangi774@gmail.com>
-To: Tony Prisk <linux@prisktech.co.nz>, Alan Stern <stern@rowland.harvard.edu>,
+To: Alan Stern <stern@rowland.harvard.edu>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] uhci-platform: use devm_ioremap resource
-Message-ID: <20140608080509.GA3748@himangi-Dell>
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] usb: host: uhci-grlib.c : use devm_ functions
+Message-ID: <20140608081213.GA4387@himangi-Dell>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,78 +23,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replaces the memory allocation using request_mem_region and
-the ioremap by a single call to managed interface devm_ioremap_reource.
-The corresponding calls to release_mem_region and iounmap in the probe
-and release functions are now unnecessary and are removed. Also a label
-is done away with and linux/device.h is added to make sure the devm_*()
-outine declarations are unambiguously available.
+The various devm_ functions allocate memory that is released when a
+driver detaches. This patch uses devm_ioremap_resource for data
+that is allocated in the probe function of a platform device and
+is only freed in the remove function. The corresponding free functions
+are removed and two labels are done away with. Also, linux/device.h
+is added to make sure the devm_*() routine declarations are
+unambiguously available.
 
 Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
 Acked-by: Julia Lawall <julia.lawall@lip6.fr>
 ---
-Not compile tested due to incompatible architecture.
+ drivers/usb/host/uhci-grlib.c | 26 +++++++-------------------
+ 1 file changed, 7 insertions(+), 19 deletions(-)
 
- drivers/usb/host/uhci-platform.c | 23 ++++++-----------------
- 1 file changed, 6 insertions(+), 17 deletions(-)
-
-diff --git a/drivers/usb/host/uhci-platform.c b/drivers/usb/host/uhci-platform.c
-index 01833ab..34248a6 100644
---- a/drivers/usb/host/uhci-platform.c
-+++ b/drivers/usb/host/uhci-platform.c
-@@ -8,6 +8,7 @@
+diff --git a/drivers/usb/host/uhci-grlib.c b/drivers/usb/host/uhci-grlib.c
+index ab25dc3..2468fb0 100644
+--- a/drivers/usb/host/uhci-grlib.c
++++ b/drivers/usb/host/uhci-grlib.c
+@@ -17,6 +17,7 @@
+  * (C) Copyright 2004-2007 Alan Stern, stern@rowland.harvard.edu
   */
  
- #include <linux/of.h>
 +#include <linux/device.h>
- #include <linux/platform_device.h>
- 
- static int uhci_platform_init(struct usb_hcd *hcd)
-@@ -88,33 +89,23 @@ static int uhci_hcd_platform_probe(struct platform_device *pdev)
- 	hcd->rsrc_start = res->start;
- 	hcd->rsrc_len = resource_size(res);
+ #include <linux/of_irq.h>
+ #include <linux/of_address.h>
+ #include <linux/of_platform.h>
+@@ -113,23 +114,17 @@ static int uhci_hcd_grlib_probe(struct platform_device *op)
+ 	hcd->rsrc_start = res.start;
+ 	hcd->rsrc_len = resource_size(&res);
  
 -	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len, hcd_name)) {
--		pr_err("%s: request_mem_region failed\n", __func__);
--		ret = -EBUSY;
-+	hcd->regs = devm_ioremap_resource(&pdev->dev, hcd->rsrc_start,
-+					  hcd->rsrc_len);
-+	if (IS_ERR(hcd->regs)) {
-+		ret = PTR_ERR(hcd->regs);
- 		goto err_rmr;
- 	}
+-		printk(KERN_ERR "%s: request_mem_region failed\n", __FILE__);
+-		rv = -EBUSY;
+-		goto err_rmr;
+-	}
 -
+ 	irq = irq_of_parse_and_map(dn, 0);
+ 	if (irq == NO_IRQ) {
+ 		printk(KERN_ERR "%s: irq_of_parse_and_map failed\n", __FILE__);
+ 		rv = -EBUSY;
+-		goto err_irq;
++		goto err_rmr;
+ 	}
+ 
 -	hcd->regs = ioremap(hcd->rsrc_start, hcd->rsrc_len);
 -	if (!hcd->regs) {
--		pr_err("%s: ioremap failed\n", __func__);
--		ret = -ENOMEM;
--		goto err_irq;
--	}
- 	uhci = hcd_to_uhci(hcd);
+-		printk(KERN_ERR "%s: ioremap failed\n", __FILE__);
+-		rv = -ENOMEM;
++	hcd->regs = devm_ioremap_resource(&op->dev, hcd->rsrc_start,
++					  hcd->rsrc_len);
++	if (IS_ERR(hcd->regs)) {
++		rv = PTR_ERR(hcd->regs);
+ 		goto err_ioremap;
+ 	}
  
- 	uhci->regs = hcd->regs;
+@@ -139,17 +134,13 @@ static int uhci_hcd_grlib_probe(struct platform_device *op)
  
- 	ret = usb_add_hcd(hcd, pdev->resource[1].start, IRQF_SHARED);
- 	if (ret)
+ 	rv = usb_add_hcd(hcd, irq, 0);
+ 	if (rv)
 -		goto err_uhci;
-+		goto err_rmr;
++		goto err_ioremap;
  
  	device_wakeup_enable(hcd->self.controller);
  	return 0;
  
 -err_uhci:
 -	iounmap(hcd->regs);
+ err_ioremap:
+ 	irq_dispose_mapping(irq);
 -err_irq:
 -	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
  err_rmr:
  	usb_put_hcd(hcd);
  
-@@ -126,8 +117,6 @@ static int uhci_hcd_platform_remove(struct platform_device *pdev)
- 	struct usb_hcd *hcd = platform_get_drvdata(pdev);
+@@ -164,10 +155,7 @@ static int uhci_hcd_grlib_remove(struct platform_device *op)
  
  	usb_remove_hcd(hcd);
+ 
 -	iounmap(hcd->regs);
+ 	irq_dispose_mapping(hcd->irq);
 -	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
+-
  	usb_put_hcd(hcd);
  
  	return 0;
