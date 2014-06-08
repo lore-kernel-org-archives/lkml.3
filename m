@@ -1,44 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753667AbaFHM1R (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jun 2014 08:27:17 -0400
-Received: from ns.horizon.com ([71.41.210.147]:57679 "HELO ns.horizon.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753608AbaFHM1Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jun 2014 08:27:16 -0400
-Date: 8 Jun 2014 08:27:13 -0400
-Message-ID: <20140608122713.1627.qmail@ns.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: dborkman@redhat.com, linux@horizon.com
-Subject: Re: [PATCH 3/7] lib/random32.c: Replace an #ifdef with a stub prandom_state_selftest()
-Cc: davem@davemloft.net, hannes@stressinduktion.org,
+	id S1753689AbaFHM2Y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jun 2014 08:28:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7403 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753527AbaFHM2X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jun 2014 08:28:23 -0400
+Message-ID: <539456DD.4020601@redhat.com>
+Date: Sun, 08 Jun 2014 14:28:13 +0200
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: George Spelvin <linux@horizon.com>
+CC: davem@davemloft.net, hannes@stressinduktion.org,
         linux-kernel@vger.kernel.org, shemminger@osdl.org, tytso@mit.edu
-In-Reply-To: <5394540D.2030507@redhat.com>
+Subject: Re: [PATCH 6/7] lib/random32.c: Randomize timeout to the millisecond,
+ not the second
+References: <20140608113000.5423.qmail@ns.horizon.com>
+In-Reply-To: <20140608113000.5423.qmail@ns.horizon.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>   #ifdef CONFIG_RANDOM32_SELFTEST
->>   static void __init prandom_state_selftest(void);
->> +#else
->> +#define prandom_state_selftest() (void)0
+On 06/08/2014 01:30 PM, George Spelvin wrote:
+>> Fine by me this cleanup, although not strictly needed.
+>
+> Agreed.  The timer slack is set to HZ (1 second) anyway.
+>
+> It just dawned on me that a simpler and more efficient way to do this
+> (which I'll do in v2 of this) would be:
 
-> Fine by me. I think you can remove this '(void)0' here, though.
+Note, when you talk about efficiency here, this is called once every
+40+ secs ... ;)
 
-That's the standard way to write a no-op statement in C.
-
-I seem to recall there's a reason that the empty string can cause problems
-in some syntactic contexts, but I can't figure out what the situation is.
-
-At first, I thought of the obvious:
-
-if (condition)
-	prandom_state_selftest();
-unconditional_code();
-
-... but the semicolon makes that work.  I'll try to remember
-the reason.
-
-(I know that nobody uses it in any such context, but it's
-good manners to make a function-like macro behave as exactly
-like a function as possible.)
+>     	/* reseed every ~60 seconds, in [40 .. 80) interval with slack */
+> -	expires = 40 + (prandom_u32() % 40);
+> -	seed_timer.expires = jiffies + msecs_to_jiffies(expires * MSEC_PER_SEC);
+> +	expires = 40*HZ + prandom_u32_max(40*HZ);
+> +	seed_timer.expires = jiffies + expires;
+>
+> That avoids calling msecs_to_jiffies entirely.
+>
