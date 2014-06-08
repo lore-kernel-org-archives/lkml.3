@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753288AbaFHABo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 20:01:44 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:52118 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753024AbaFHABn (ORCPT
+	id S1753210AbaFHBKC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 21:10:02 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:48929 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753142AbaFHBKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 20:01:43 -0400
+	Sat, 7 Jun 2014 21:10:00 -0400
+Date: Sat, 7 Jun 2014 21:09:59 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+cc: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
+        linux-usb <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Greg KH <greg@kroah.com>, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Mathias Nyman <mathias.nyman@intel.com>
+Subject: Re: Missing USB XHCI and EHCI reset for kexec
+In-Reply-To: <1402180544.3979.3.camel@pasglop>
+Message-ID: <Pine.LNX.4.44L0.1406072106360.6204-100000@netrider.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <20140607194436.GB5500@mwanda>
-References: <1401834219-30682-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<20140607194436.GB5500@mwanda>
-Date: Sun, 8 Jun 2014 02:01:41 +0200
-Message-ID: <CAFo99gb+Q37Mo0d+71ON5JGWCrKwGHK+R4bin_m-7TQ1k5AO3g@mail.gmail.com>
-Subject: Re: [PATCH] staging: tidspbridge: pmgr: dspapi.c: Cleaning up
- uninitialized variable
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Omar Ramirez Luna <omar.ramirez@copitl.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, Rashika Kheria <rashika.kheria@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Sun, 8 Jun 2014, Benjamin Herrenschmidt wrote:
 
-Sure, no problem!
+> Looking at the code a bit more ... that xhci_shutdown() worries me.
+> 
+> It basically just whacks xhci_halt() and optionally reset() but nothing
+> is done that I can see to ensure that we aren't concurrently
+> doing things like queuing URBs, polling the root hub etc...
+> 
+> That's definitely not clean and while it might work (most of the time
+> at least) on actual shutdown it's definitely not right for kexec I
+> reckon.
 
-Glad I could help, and additionally with more than just a two-line fix
-this time :-)
+Yes, it really was meant for actual system shutdown.
 
-Best regards
-Rickard Strandqvist
+> Now there's a separate discussion that we had a while ago and might
+> want to resume which is to say that kexec shouldn't be calling
+> shutdown() anyway, but instead remove() on all drivers which is
+> a much better code path for the purpose of leaving the device in
+> a state where a driver can reconnect to it.
+> 
+> However, in the case of XHCI that leads to another issue described
+> here:
+> 
+> http://marc.info/?l=linux-usb&m=139483181809062&w=2
+> 
+> For which there was little / no discussion at all... I suppose we could
+> do a quirk but I don't think the problem is fundamentally
+> specific to the TI chip, we should probably stop both root hubs
+> before we halt both HCDs.
 
+The issue described in that email seems valid to me.  Maybe the patch
+should be resubmitted.  Now that xhci-hcd has changed maintainership,
+the discussion might move forward.
 
-2014-06-07 21:44 GMT+02:00 Dan Carpenter <dan.carpenter@oracle.com>:
-> On Wed, Jun 04, 2014 at 12:23:39AM +0200, Rickard Strandqvist wrote:
->> There is a risk that the variables will be used without being initialized.
->> Has also improved error handling, after an email proposal from Dan Carpenter.
->>
->> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
->
-> Looks ok.  This fixes some information leak bugs.  Thanks.
->
-> regards,
-> dan carpenter
->
+In any case, you certainly can try testing with that patch installed.  
+After all, xhci-hcd should work properly after a rmmod/modprobe 
+sequence, and this is pretty much the same thing.
+
+Alan Stern
+
