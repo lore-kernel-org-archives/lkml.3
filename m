@@ -1,71 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753479AbaFHBm1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 21:42:27 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:33761 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753184AbaFHBm0 (ORCPT
+	id S1753488AbaFHBmj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 21:42:39 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:53005 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753195AbaFHBmi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 21:42:26 -0400
-Date: Sat, 7 Jun 2014 21:42:17 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-Subject: [for-next][PATCH] tracing: Fix memory leak on instance deletion
-Message-ID: <20140607214217.403e3b87@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	Sat, 7 Jun 2014 21:42:38 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>, Levente Kurusa <levex@linux.com>,
+        Masanari Iida <standby24x7@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: rtl8821ae: rtl8821ae: hw.c:  Cleaning up if statement that always evaluates to false
+Date: Sun,  8 Jun 2014 03:43:32 +0200
+Message-Id: <1402191812-26264-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I find a logical error in an if statement '(X & 0xfc) == 0x3' is always false
 
-Ug, found a memory leak in instance deletion. Missed freeing the
-snapshot buffer.
+After pointing this out, Larry Finger informed what would be the correct one.
+'(X & 0x3) == 0x3'
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-for-next
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ drivers/staging/rtl8821ae/rtl8821ae/hw.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Head SHA1: 17f83bffd1b41b5cd6fe08ad12c8a69341542ba2
-
-
-Steven Rostedt (Red Hat) (1)
-      tracing: Fix memory leak on instance deletion
-
-----
- trace.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
----------------------------
-commit a9fcaaac37b3baba1343f906f52aeb65c4d4e356
-Author: Steven Rostedt (Red Hat) <rostedt@goodmis.org>
-Date:   Fri Jun 6 23:17:28 2014 -0400
-
-    tracing: Fix memory leak on instance deletion
-    
-    When an instance is created, it also gets a snapshot ring buffer
-    allocated (with minimum of pages). But when it is deleted the snapshot
-    buffer is not. There was a helper function added to match the allocation
-    of these ring buffers to a way to free them, but it wasn't used by
-    the deletion of an instance. Using that helper function solves this
-    memory leak.
-    
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 26cfff38e2ab..16f7038d1f4d 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -6349,8 +6349,7 @@ static int instance_delete(const char *name)
- 	event_trace_del_tracer(tr);
- 	ftrace_destroy_function_files(tr);
- 	debugfs_remove_recursive(tr->dir);
--	free_percpu(tr->trace_buffer.data);
--	ring_buffer_free(tr->trace_buffer.buffer);
-+	free_trace_buffers(tr);
+diff --git a/drivers/staging/rtl8821ae/rtl8821ae/hw.c b/drivers/staging/rtl8821ae/rtl8821ae/hw.c
+index 1b8583b..52322e3 100644
+--- a/drivers/staging/rtl8821ae/rtl8821ae/hw.c
++++ b/drivers/staging/rtl8821ae/rtl8821ae/hw.c
+@@ -1623,7 +1623,7 @@ static int _rtl8821ae_set_media_status(struct ieee80211_hw *hw,
  
- 	kfree(tr->name);
- 	kfree(tr);
+ 	rtl_write_byte(rtlpriv, (MSR), bt_msr);
+ 	rtlpriv->cfg->ops->led_control(hw, ledaction);
+-	if ((bt_msr & ~0xfc) == MSR_AP)
++	if ((bt_msr & MSR_AP) == MSR_AP)
+ 		rtl_write_byte(rtlpriv, REG_BCNTCFG + 1, 0x00);
+ 	else
+ 		rtl_write_byte(rtlpriv, REG_BCNTCFG + 1, 0x66);
+-- 
+1.7.10.4
+
