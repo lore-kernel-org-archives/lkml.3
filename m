@@ -1,90 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753585AbaFHMLQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jun 2014 08:11:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36812 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753313AbaFHMLP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jun 2014 08:11:15 -0400
-Message-ID: <539452DA.7060005@redhat.com>
-Date: Sun, 08 Jun 2014 14:11:06 +0200
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753639AbaFHMND (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jun 2014 08:13:03 -0400
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:40589 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753313AbaFHMNA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jun 2014 08:13:00 -0400
 MIME-Version: 1.0
-To: George Spelvin <linux@horizon.com>
-CC: davem@davemloft.net, shemminger@osdl.org, tytso@mit.edu,
-        linux-kernel@vger.kernel.org, hannes@stressinduktion.org
-Subject: Re: [PATCH 2/7] lib/random32.c: Remove excess calls to prandom_u32_state
- in initialization
-References: <20140607082056.9751.qmail@ns.horizon.com>
-In-Reply-To: <20140607082056.9751.qmail@ns.horizon.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1401906155-10543-3-git-send-email-berthe.ab@gmail.com>
+References: <CAAVeFuLMLfa-1RhcdSrKDUz7=eLqZurBSFSsN7N0x-0S+_btJA@mail.gmail.com>
+ <1401906155-10543-1-git-send-email-berthe.ab@gmail.com> <1401906155-10543-3-git-send-email-berthe.ab@gmail.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Sun, 8 Jun 2014 21:12:39 +0900
+Message-ID: <CAAVeFu+ZWy1He1CxTh+GmHtwow0P=vX_9u0P67-p_ntpqDQGtg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] gpio: gpiolib: set gpiochip_remove retval to void
+To: abdoulaye berthe <berthe.ab@gmail.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, m@bues.ch,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/07/2014 10:20 AM, George Spelvin wrote:
-> Unrolling code in single-use code paths is just silly.  There are two
-> instances:
+On Thu, Jun 5, 2014 at 3:22 AM, abdoulaye berthe <berthe.ab@gmail.com> wrote:
+> This avoids handling gpiochip remove error in device
+> remove handler.
 >
-> 1) prandom_warmup() calls 10 times.
-> 2) prandom_state_selftest() can avoid one call and simplify the
->     loop logic by repeating an assignment to a local variable
->     (that probably adds zero code anyway)
->
-> Signed-off-by: George Spelvin <linux@horizon.com>
-
-Fine by me although we simply resembled initialization code from
-GSL here. I think that your subject line is a bit misleading though.
-
+> Signed-off-by: abdoulaye berthe <berthe.ab@gmail.com>
 > ---
->   lib/random32.c | 21 ++++++++-------------
->   1 file changed, 8 insertions(+), 13 deletions(-)
+>  drivers/gpio/gpiolib.c      | 24 +++++++-----------------
+>  include/linux/gpio/driver.h |  2 +-
+>  2 files changed, 8 insertions(+), 18 deletions(-)
 >
-> diff --git a/lib/random32.c b/lib/random32.c
-> index 4da5d281..2e7c15c0 100644
-> --- a/lib/random32.c
-> +++ b/lib/random32.c
-> @@ -134,17 +134,11 @@ EXPORT_SYMBOL(prandom_bytes);
+> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+> index f48817d..022543f 100644
+> --- a/drivers/gpio/gpiolib.c
+> +++ b/drivers/gpio/gpiolib.c
+> @@ -1263,10 +1263,9 @@ static void gpiochip_irqchip_remove(struct gpio_chip *gpiochip);
+>   *
+>   * A gpio_chip with any GPIOs still requested may not be removed.
+>   */
+> -int gpiochip_remove(struct gpio_chip *chip)
+> +void gpiochip_remove(struct gpio_chip *chip)
+>  {
+>         unsigned long   flags;
+> -       int             status = 0;
+>         unsigned        id;
 >
->   static void prandom_warmup(struct rnd_state *state)
->   {
-> +	int i;
-> +
->   	/* Calling RNG ten times to satify recurrence condition */
-> -	prandom_u32_state(state);
-> -	prandom_u32_state(state);
-> -	prandom_u32_state(state);
-> -	prandom_u32_state(state);
-> -	prandom_u32_state(state);
-> -	prandom_u32_state(state);
-> -	prandom_u32_state(state);
-> -	prandom_u32_state(state);
-> -	prandom_u32_state(state);
-> -	prandom_u32_state(state);
-> +	for (i = 0; i < 10; i++)
-> +		prandom_u32_state(state);
->   }
+>         acpi_gpiochip_remove(chip);
+> @@ -1278,24 +1277,15 @@ int gpiochip_remove(struct gpio_chip *chip)
+>         of_gpiochip_remove(chip);
 >
->   static void prandom_seed_very_weak(struct rnd_state *state, u32 seed)
-> @@ -433,14 +427,15 @@ static void __init prandom_state_selftest(void)
->
->   	for (i = 0; i < ARRAY_SIZE(test2); i++) {
->   		struct rnd_state state;
-> +		u32 result;
->
->   		prandom_seed_very_weak(&state, test2[i].seed);
->   		prandom_warmup(&state);
->
-> -		for (j = 0; j < test2[i].iteration - 1; j++)
-> -			prandom_u32_state(&state);
-> +		for (j = 0; j < test2[i].iteration; j++)
-> +			result = prandom_u32_state(&state);
->
-> -		if (test2[i].result != prandom_u32_state(&state))
-> +		if (test2[i].result != result)
->   			errors++;
->
->   		runs++;
->
+>         for (id = 0; id < chip->ngpio; id++) {
+> -               if (test_bit(FLAG_REQUESTED, &chip->desc[id].flags)) {
+> -                       status = -EBUSY;
+> -                       break;
+> -               }
+> -       }
+> -       if (status == 0) {
+> -               for (id = 0; id < chip->ngpio; id++)
+> -                       chip->desc[id].chip = NULL;
+> -
+> -               list_del(&chip->list);
+> +               if (test_bit(FLAG_REQUESTED, &chip->desc[id].flags))
+> +                       panic("gpio: removing gpiochip with gpios still requested\n");
+
+Really, really I don't think we should panic here. Apparently if you
+don't do this things are going to crash later on some platforms. Could
+you detail what the problem is exactly so we can try and come with a
+solution?
+
+Event if we crash later with a more obscure reason, using pr_err()
+here to provide some information should be helpful enough.
+
+Alex.
