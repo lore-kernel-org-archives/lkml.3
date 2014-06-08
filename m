@@ -1,104 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753346AbaFHC5i (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 22:57:38 -0400
-Received: from mail-yh0-f44.google.com ([209.85.213.44]:54431 "EHLO
-	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753187AbaFHC5h (ORCPT
+	id S1753358AbaFHDCh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 23:02:37 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39372 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753207AbaFHDCg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 22:57:37 -0400
-Message-ID: <5393D11E.2090906@gmail.com>
-Date: Sat, 07 Jun 2014 22:57:34 -0400
-From: Pranith Kumar <bobby.prani@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>, Joe Perches <joe@perches.com>
-CC: Pranith Kumar <pranith@gatech.edu>, peterz@infradead.org,
-        linux-kernel@vger.kernel.org, tim.c.chen@linux.intel.com,
-        davidlohr@hp.com, mingo@redhat.com, xfs@oss.sgi.com
-Subject: Re: [RFC PATCH 1/1] cleanup: use bool as return type for rwsem_is_locked
-References: <5390D7E1.7060606@gatech.edu> <5391FFFD.1060901@gatech.edu> <53920446.7060505@gatech.edu> <20140607001819.GE4453@dastard> <53926406.4020200@gmail.com> <53926DC1.4050304@gmail.com> <1402108770.25112.5.camel@joe-AO725> <20140607234411.GA9508@dastard>
-In-Reply-To: <20140607234411.GA9508@dastard>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Sat, 7 Jun 2014 23:02:36 -0400
+Message-ID: <1402196538.23860.24.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH 3.14 186/228] PCI: Wrong register used to check pending
+ traffic
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Gavin Shan <gwshan@linux.vnet.ibm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Alex Williamson <alex.williamson@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci <linux-pci@vger.kernel.org>
+Date: Sun, 08 Jun 2014 04:02:18 +0100
+In-Reply-To: <20140604232354.004988520@linuxfoundation.org>
+References: <20140604232347.966798903@linuxfoundation.org>
+	 <20140604232354.004988520@linuxfoundation.org>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-Ku9j6oJri/88Jd58p1gw"
+X-Mailer: Evolution 3.12.2-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/07/2014 07:44 PM, Dave Chinner wrote:
-> On Fri, Jun 06, 2014 at 07:39:30PM -0700, Joe Perches wrote:
->> On Fri, 2014-06-06 at 21:41 -0400, Pranith Kumar wrote:
->>> On 06/06/2014 08:59 PM, Pranith Kumar wrote:
->>>> On 06/06/2014 08:18 PM, Dave Chinner wrote:
->>>>> If you are going to change the return type to bool, then you should
->>>>> also remove the manual "!!" conversions to a boolean return and let
->>>>> the compiler do it in the most optimal way.
->> simpler still would be just removing the !! completely.
->> I presume in no case would it make an actual difference
->> in emitted code.
->>
->> ie:
->> 			return ip->i_lock.mr_writer;
-> 
-> Yup, that's exactly what I meant. Casting to a bool type does all
-> the work of squashing all non-zero values to 1...
-> 
 
-change return type if xfs_isilocked() to bool to follow rwsem_is_locked()
+--=-Ku9j6oJri/88Jd58p1gw
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
----
- fs/xfs/xfs_inode.c | 8 ++++----
- fs/xfs/xfs_inode.h | 2 +-
- 2 files changed, 5 insertions(+), 5 deletions(-)
+On Wed, 2014-06-04 at 16:23 -0700, Greg Kroah-Hartman wrote:
+> 3.14-stable review patch.  If anyone has any objections, please let me kn=
+ow.
+>=20
+> ------------------
+>=20
+> From: Gavin Shan <gwshan@linux.vnet.ibm.com>
+>=20
+> commit d0b4cc4e32705ff00d90d32da7783c266c702c04 upstream.
+>=20
+> The incorrect register offset is passed to pci_wait_for_pending(), which =
+is
+> caused by commit 157e876ffe ("PCI: Add pci_wait_for_pending() (refactor
+> pci_wait_for_pending_transaction())").
+>=20
+> Fixes: 157e876ffe ("PCI: Add pci_wait_for_pending() (refactor pci_wait_fo=
+r_pending_transaction())
+> Signed-off-by: Gavin Shan <gwshan@linux.vnet.ibm.com>
+> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> Acked-by: Alex Williamson <alex.williamson@gmail.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>=20
+> ---
+>  drivers/pci/pci.c |    5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+>=20
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -3043,7 +3043,8 @@ int pci_wait_for_pending_transaction(str
+>  	if (!pci_is_pcie(dev))
+>  		return 1;
+> =20
+> -	return pci_wait_for_pending(dev, PCI_EXP_DEVSTA, PCI_EXP_DEVSTA_TRPND);
+> +	return pci_wait_for_pending(dev, pci_pcie_cap(dev) + PCI_EXP_DEVSTA,
+> +				    PCI_EXP_DEVSTA_TRPND);
+>  }
+>  EXPORT_SYMBOL(pci_wait_for_pending_transaction);
+> =20
+> @@ -3085,7 +3086,7 @@ static int pci_af_flr(struct pci_dev *de
+>  		return 0;
+> =20
+>  	/* Wait for Transaction Pending bit clean */
+> -	if (pci_wait_for_pending(dev, PCI_AF_STATUS, PCI_AF_STATUS_TP))
+> +	if (pci_wait_for_pending(dev, pos + PCI_AF_STATUS, PCI_AF_STATUS_TP))
+>  		goto clear;
+> =20
+>  	dev_err(&dev->dev, "transaction is not cleared; "
 
-diff --git a/fs/xfs/xfs_inode.c b/fs/xfs/xfs_inode.c
-index a6115fe..c02ac49 100644
---- a/fs/xfs/xfs_inode.c
-+++ b/fs/xfs/xfs_inode.c
-@@ -285,25 +285,25 @@ xfs_ilock_demote(
- }
- 
- #if defined(DEBUG) || defined(XFS_WARN)
--int
-+bool
- xfs_isilocked(
- 	xfs_inode_t		*ip,
- 	uint			lock_flags)
- {
- 	if (lock_flags & (XFS_ILOCK_EXCL|XFS_ILOCK_SHARED)) {
- 		if (!(lock_flags & XFS_ILOCK_SHARED))
--			return !!ip->i_lock.mr_writer;
-+			return ip->i_lock.mr_writer;
- 		return rwsem_is_locked(&ip->i_lock.mr_lock);
- 	}
- 
- 	if (lock_flags & (XFS_IOLOCK_EXCL|XFS_IOLOCK_SHARED)) {
- 		if (!(lock_flags & XFS_IOLOCK_SHARED))
--			return !!ip->i_iolock.mr_writer;
-+			return ip->i_iolock.mr_writer;
- 		return rwsem_is_locked(&ip->i_iolock.mr_lock);
- 	}
- 
- 	ASSERT(0);
--	return 0;
-+	return false;
- }
- #endif
- 
-diff --git a/fs/xfs/xfs_inode.h b/fs/xfs/xfs_inode.h
-index f72bffa..efebed6 100644
---- a/fs/xfs/xfs_inode.h
-+++ b/fs/xfs/xfs_inode.h
-@@ -346,7 +346,7 @@ void		xfs_ilock(xfs_inode_t *, uint);
- int		xfs_ilock_nowait(xfs_inode_t *, uint);
- void		xfs_iunlock(xfs_inode_t *, uint);
- void		xfs_ilock_demote(xfs_inode_t *, uint);
--int		xfs_isilocked(xfs_inode_t *, uint);
-+bool		xfs_isilocked(xfs_inode_t *, uint);
- uint		xfs_ilock_data_map_shared(struct xfs_inode *);
- uint		xfs_ilock_attr_map_shared(struct xfs_inode *);
- int		xfs_ialloc(struct xfs_trans *, xfs_inode_t *, umode_t,
--- 
-1.9.1
+This still seems to be broken because pci_wait_for_pending() does
+pci_read_config_word() but PCI_AF_STATUS is not word-aligned.
 
+Ben.
+
+--=20
+Ben Hutchings
+Never attribute to conspiracy what can adequately be explained by stupidity=
+.
+
+--=-Ku9j6oJri/88Jd58p1gw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIVAwUAU5PSP+e/yOyVhhEJAQqKsxAAxo1EbIMMcZewIY9JdFNSPXUC3kZVbDhc
+UJU/vbx5dFxplejijs7YeMhUwiPVCd40CJaV+hW3CaKWgaEhrDXSAlzMpqbZt0uv
+IwTV9JBzqPijNkco5sCZI+/w84R2lusaFqS6YRPyL8EV2/w7yXVuaSv31+9JZKQs
+P6zfWnDzso3lEoPesvpDiyGKFd6/YlgeBIQttFukyVbLnue2kagexjJj5/b51EWT
+HTFOhMqjxFJ3x3u/9Ltwj1Prk+cltux+/Qujc930b4fjwvbOqGwgs3I9J+gd8Crw
+DST4/W+NMoFnrrOwn8lsgveDlpzSTslLT3UU0Lo3dY1dHehvMh+mA5E2WDZjpH3U
+/XG5iRst0TKue/Pt5NVSQAt/lTxt8aZ3EgvUv/pPXNSYi1DGN+K70uyCOHyK5GWT
+hZpXnNA9qznel9NeW7hcda2kds3IcXB2Oe96+eXXuSlnG8dfDUExblHKxLXCDfrH
+61a3OuJZg/G45vWl7JeIUBNu2bRumH0yqHQ9A2NQ+oj08IzOZM1X2BzsAsWwmDXr
+9Aj5MFrdvwligGW+Vjp3xtRX/4F9nyUGz72r0FaBnbNXx6WjLf1ExL/lVhUEYyQu
+C5E4wquO+6+LUt/jfsqxhcMlTBryje3zQ5lY1tCJE8cXWhkSHqRWr+sMAjVmqmwS
+VlYpqYEHYCs=
+=DDsP
+-----END PGP SIGNATURE-----
+
+--=-Ku9j6oJri/88Jd58p1gw--
