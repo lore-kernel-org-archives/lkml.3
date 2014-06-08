@@ -1,66 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753386AbaFHKbg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jun 2014 06:31:36 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:52788 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752506AbaFHKbe (ORCPT
+	id S1753486AbaFHKgO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jun 2014 06:36:14 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:65379 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751907AbaFHKgM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jun 2014 06:31:34 -0400
-Date: Sun, 8 Jun 2014 12:31:29 +0200
-From: Christoffer Dall <christoffer.dall@linaro.org>
-To: Antonios Motakis <a.motakis@virtualopensystems.com>
-Cc: alex.williamson@redhat.com, kvmarm@lists.cs.columbia.edu,
-        iommu@lists.linux-foundation.org, tech@virtualopensystems.com,
-        a.rigo@virtualopensystems.com, kvm@vger.kernel.org,
-        will.deacon@arm.com, kim.phillips@freescale.com,
-        stuart.yoder@freescale.com, eric.auger@linaro.org,
-        Joerg Roedel <joro@8bytes.org>,
-        "moderated list:ARM SMMU DRIVER" 
-	<linux-arm-kernel@lists.infradead.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH v6 04/20] iommu/arm-smmu: add capability
- IOMMU_CAP_INTR_REMAP
-Message-ID: <20140608103129.GC3279@lvm>
-References: <1401987808-23596-1-git-send-email-a.motakis@virtualopensystems.com>
- <1401987808-23596-5-git-send-email-a.motakis@virtualopensystems.com>
+	Sun, 8 Jun 2014 06:36:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1401987808-23596-5-git-send-email-a.motakis@virtualopensystems.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1436639.AmJiDmeQZF@al>
+References: <1402151419-18296-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	<CAFo99gZ+iu3FA9Nuwdo_AT1xZkno7w=6JidWYcm8g0bOvshwTw@mail.gmail.com>
+	<5393A7D0.2080700@lwfinger.net>
+	<1436639.AmJiDmeQZF@al>
+Date: Sun, 8 Jun 2014 12:36:11 +0200
+Message-ID: <CAFo99gb2gzLjv_4b3O-e0B1R8P5BTGbPJLuYYAmoyww9hkmrvA@mail.gmail.com>
+Subject: Re: [PATCH] net: wireless: rtlwifi: rtl8192de: hw.c: Cleaning up
+ conjunction always evaluates to false
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Peter Wu <peter@lekensteyn.nl>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 05, 2014 at 07:03:12PM +0200, Antonios Motakis wrote:
-> With an ARM SMMU, interrupt remapping should always be safe from the
-> SMMU's point of view, as it is properly handled by the GIC.
-> 
-> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
-> ---
->  drivers/iommu/arm-smmu.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/iommu/arm-smmu.c b/drivers/iommu/arm-smmu.c
-> index 15ab2af..ff29402 100644
-> --- a/drivers/iommu/arm-smmu.c
-> +++ b/drivers/iommu/arm-smmu.c
-> @@ -1544,7 +1544,7 @@ static int arm_smmu_domain_has_cap(struct iommu_domain *domain,
->  	if (smmu_domain->root_cfg.smmu->features & ARM_SMMU_FEAT_COHERENT_WALK)
->  		caps |= IOMMU_CAP_CACHE_COHERENCY;
->  
-> -	caps |= IOMMU_CAP_NOEXEC;
-> +	caps |= IOMMU_CAP_NOEXEC | IOMMU_CAP_INTR_REMAP;
->  
->  	return !!(cap & caps);
->  }
-> -- 
-> 1.8.3.2
-> 
-What does IOMMU_CAP_INTR_REMAP signify exactly?  Is there docs/examples
-somewhere I can look at?  (A quick scan of the Linux souce code doesn't
-reveal much, and I'm not sure if this is purely MSI related or what...)
+Hi
 
-Thanks,
--Christoffer
+Damn, there I was bit too fast :-(
+
+Then we use MSR_MASK instead, new patch then. But I will wait a day?
+Or what is long enough to be sure that nobody else have any
+objections? How is this usually resolved?
+
+Sure, I can send a patch for all the files instead. However, earlier
+received complaints when I sent patches extending over more than one
+file.
+
+I'll check again how the cover letter works. Although when I try with
+my send patch mail script it did not work as I wanted.
+
+
+Best regards
+Rickard Strandqvist
+
+
+2014-06-08 11:26 GMT+02:00 Peter Wu <peter@lekensteyn.nl>:
+> On Saturday 07 June 2014 19:01:20 Larry Finger wrote:
+>> As you have learned here, automatically making changes suggested by some tool
+>> may convert a visible bug into one that is invisible, and only found by a
+>> detailed line-by-line examination of the code, and that is unlikely to happen.
+>> Please be careful.
+>>
+>>  From everything I see, the test in all drivers should be
+>>
+>>         if ((bt_msr & MSR_AP) == MSR_AP)
+>
+> That only happens to be case because MSR_INFRA | MSR_ADHOC == MSR_AP. This
+> seems to be the intent:
+>
+>     #define MSR_MASK 0x03
+>     if ((bt_msr & MSR_MASK) == MSR_AP)
+>
+> In rtl8192se, there are also MSR_LINK_... constants covering MSR_...
+> and in addition, there is a MSR_LINK_MASK. These macros are quite
+> redundant though given the other definitions, but the mask is still
+> nice to have I guess.
+>
+> Also, personally I would submit just one patch touching all drivers, but
+> I see that Rickard has submitted a bunch of patches (without cover letter
+> either, making it more difficult to group them). What would you prefer,
+> a single patch touching multiple drivers (as the changes are mostly the
+> same) or split patches?
+>
+> Kind regards,
+> Peter
+>
