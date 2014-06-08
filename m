@@ -1,82 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753386AbaFHNIl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jun 2014 09:08:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27152 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751907AbaFHNIk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jun 2014 09:08:40 -0400
-Date: Sun, 8 Jun 2014 15:07:18 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>
-Subject: safety of *mutex_unlock() (Was: [BUG] signal: sighand unprotected
-	when accessed by /proc)
-Message-ID: <20140608130718.GA11129@redhat.com>
-References: <20140603130233.658a6a3c@gandalf.local.home> <20140603172632.GA27956@redhat.com> <CA+55aFzT5CGv_T60voAqR+4PfiMmJmsDZLid2DZ4=+X8uvF+ig@mail.gmail.com> <20140603200125.GB1105@redhat.com> <20140606203350.GU4581@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140606203350.GU4581@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753477AbaFHOFG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jun 2014 10:05:06 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:39439 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753187AbaFHOFE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jun 2014 10:05:04 -0400
+From: navin patidar <navin.patidar@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
+Subject: [PATCH v2 25/26] staging: rtl8188eu: Remove unused function nat25_handle_frame()
+Date: Sun,  8 Jun 2014 19:34:33 +0530
+Message-Id: <1402236273-16240-1-git-send-email-navin.patidar@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1401625013-11208-25-git-send-email-navin.patidar@gmail.com>
+References: <1401625013-11208-25-git-send-email-navin.patidar@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06, Paul E. McKenney wrote:
->
-> On Tue, Jun 03, 2014 at 10:01:25PM +0200, Oleg Nesterov wrote:
-> >
-> > I'll try to recheck rt_mutex_unlock() tomorrow. _Perhaps_ rcu_read_unlock()
-> > should be shifted from lock_task_sighand() to unlock_task_sighand() to
-> > ensure that rt_mutex_unlock() does nothihg with this memory after it
-> > makes another lock/unlock possible.
-> >
-> > But if we need this (currently I do not think so), this doesn't depend on
-> > SLAB_DESTROY_BY_RCU. And, at first glance, in this case rcu_read_unlock_special()
-> > might be wrong too.
->
-> OK, I will bite...  What did I mess up in rcu_read_unlock_special()?
->
-> This function does not report leaving the RCU read-side critical section
-> until after its call to rt_mutex_unlock() has returned, so any RCU
-> read-side critical sections in rt_mutex_unlock() will be respected.
 
-Sorry for confusion.
+Signed-off-by: navin patidar <navin.patidar@gmail.com>
+---
+V2:
+Restore sequence of source code compilation, sequence was changed by v1
+of this patch.
 
-I only meant that afaics rcu_read_unlock_special() equally depends on the
-fact that rt_mutex_unlock() does nothing with "struct rt_mutex" after it
-makes another rt_mutex_lock() + rt_mutex_unlock() possible, otherwise this
-code is wrong (and unlock_task_sighand() would be wrong too).
+ drivers/staging/rtl8188eu/core/rtw_br_ext.c    |   61 ------------------------
+ drivers/staging/rtl8188eu/include/recv_osdep.h |    1 -
+ 2 files changed, 62 deletions(-)
 
-Just to simplify the discussion... suppose we add "atomic_t nr_slow_unlock"
-into "struct rt_mutex" and change rt_mutex_slowunlock() to do
-atomic_inc(&lock->nr_slow_unlock) after it drops ->wait_lock. Of course this
-would be ugly, just for illustration.
+diff --git a/drivers/staging/rtl8188eu/core/rtw_br_ext.c b/drivers/staging/rtl8188eu/core/rtw_br_ext.c
+index 9d9e89a..70b8f07 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_br_ext.c
++++ b/drivers/staging/rtl8188eu/core/rtw_br_ext.c
+@@ -1030,67 +1030,6 @@ int nat25_db_handle(struct adapter *priv, struct sk_buff *skb, int method)
+ 	return -1;
+ }
 
-In this case atomic_inc() above can write to rcu_boost()'s stack after this
-functions returns to the caller. And unlock_task_sighand() would be wrong
-too, atomic_inc() could write to the memory which was already returned to
-system because "unlock" path runs outside of rcu-protected section.
+-int nat25_handle_frame(struct adapter *priv, struct sk_buff *skb)
+-{
+-	if (!(skb->data[0] & 1)) {
+-		int is_vlan_tag = 0, i, retval = 0;
+-		unsigned short vlan_hdr = 0;
+-		unsigned short protocol;
+-
+-		protocol = be16_to_cpu(*((__be16 *)(skb->data + 2 * ETH_ALEN)));
+-		if (protocol == ETH_P_8021Q) {
+-			is_vlan_tag = 1;
+-			vlan_hdr = *((unsigned short *)(skb->data+ETH_ALEN*2+2));
+-			for (i = 0; i < 6; i++)
+-				*((unsigned short *)(skb->data+ETH_ALEN*2+2-i*2)) = *((unsigned short *)(skb->data+ETH_ALEN*2-2-i*2));
+-			skb_pull(skb, 4);
+-		}
+-
+-		if (!priv->ethBrExtInfo.nat25_disable) {
+-			spin_lock_bh(&priv->br_ext_lock);
+-			/*
+-			 *	This function look up the destination network address from
+-			 *	the NAT2.5 database. Return value = -1 means that the
+-			 *	corresponding network protocol is NOT support.
+-			 */
+-			if (!priv->ethBrExtInfo.nat25sc_disable &&
+-			    (be16_to_cpu(*((__be16 *)(skb->data+ETH_ALEN*2))) == ETH_P_IP) &&
+-			    !memcmp(priv->scdb_ip, skb->data+ETH_HLEN+16, 4)) {
+-				memcpy(skb->data, priv->scdb_mac, ETH_ALEN);
+-
+-				spin_unlock_bh(&priv->br_ext_lock);
+-			} else {
+-				spin_unlock_bh(&priv->br_ext_lock);
+-
+-				retval = nat25_db_handle(priv, skb, NAT25_LOOKUP);
+-			}
+-		} else {
+-			if (((be16_to_cpu(*((__be16 *)(skb->data+ETH_ALEN*2))) == ETH_P_IP) &&
+-			    !memcmp(priv->br_ip, skb->data+ETH_HLEN+16, 4)) ||
+-			    ((be16_to_cpu(*((__be16 *)(skb->data+ETH_ALEN*2))) == ETH_P_ARP) &&
+-			    !memcmp(priv->br_ip, skb->data+ETH_HLEN+24, 4))) {
+-				/*  for traffic to upper TCP/IP */
+-				retval = nat25_db_handle(priv, skb, NAT25_LOOKUP);
+-			}
+-		}
+-
+-		if (is_vlan_tag) {
+-			skb_push(skb, 4);
+-			for (i = 0; i < 6; i++)
+-				*((unsigned short *)(skb->data+i*2)) = *((unsigned short *)(skb->data+4+i*2));
+-			*((__be16 *)(skb->data+ETH_ALEN*2)) = __constant_htons(ETH_P_8021Q);
+-			*((unsigned short *)(skb->data+ETH_ALEN*2+2)) = vlan_hdr;
+-		}
+-
+-		if (retval == -1) {
+-			/* DEBUG_ERR("NAT25: Lookup fail!\n"); */
+-			return -1;
+-		}
+-	}
+-
+-	return 0;
+-}
+-
+ #define SERVER_PORT			67
+ #define CLIENT_PORT			68
+ #define DHCP_MAGIC			0x63825363
+diff --git a/drivers/staging/rtl8188eu/include/recv_osdep.h b/drivers/staging/rtl8188eu/include/recv_osdep.h
+index a4fd957..a52a696 100644
+--- a/drivers/staging/rtl8188eu/include/recv_osdep.h
++++ b/drivers/staging/rtl8188eu/include/recv_osdep.h
+@@ -46,7 +46,6 @@ int rtw_os_recvbuf_resource_alloc(struct adapter *adapt, struct recv_buf *buf);
+ void rtw_os_read_port(struct adapter *padapter, struct recv_buf *precvbuf);
 
-But it seems to me that currently we are safe, rt_mutex_unlock() doesn't do
-something like this, a concurrent rt_mutex_lock() must always take wait_lock
-too.
-
-
-And while this is off-topic and I can be easily wrong, it seems that the
-normal "struct mutex" is not safe in this respect. If nothing else, once
-__mutex_unlock_common_slowpath()->__mutex_slowpath_needs_to_unlock() sets
-lock->count = 1, a concurent mutex_lock() can take and then release this
-mutex before __mutex_unlock_common_slowpath() takes ->wait_lock.
-
-So _perhaps_ we should not rely on this property of rt_mutex "too much".
-
-Oleg.
+ void rtw_init_recv_timer(struct recv_reorder_ctrl *preorder_ctrl);
+-int nat25_handle_frame(struct adapter *priv, struct sk_buff *skb);
+ int _netdev_open(struct net_device *pnetdev);
+ int netdev_open(struct net_device *pnetdev);
+ int netdev_close(struct net_device *pnetdev);
+--
+1.7.10.4
 
