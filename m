@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753499AbaFHJlu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jun 2014 05:41:50 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:45249 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753342AbaFHJls (ORCPT
+	id S1753513AbaFHJpY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jun 2014 05:45:24 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:51012 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753358AbaFHJpW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jun 2014 05:41:48 -0400
-Date: Sun, 8 Jun 2014 11:41:43 +0200
+	Sun, 8 Jun 2014 05:45:22 -0400
+Date: Sun, 8 Jun 2014 11:45:17 +0200
 From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@linux.intel.com>,
-        Borislav Petkov <bp@suse.de>, Dave Young <dyoung@redhat.com>,
-        Igor Mammedov <imammedo@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Ingo Molnar <mingo@redhat.com>, "K. Y. Srinivasan" <kys@microsoft.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Toshi Kani <toshi.kani@hp.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>
-Subject: Re: [GIT PULL] x86 fixes for v3.15
-Message-ID: <20140608094143.GA12736@gmail.com>
-References: <201406072059.s57KxsIp025789@terminus.zytor.com>
- <CA+55aFzTfFm3_7htQJ8uScxcf1bSrmZ8=C65rYEq5_7BHBrnJw@mail.gmail.com>
+To: Sitsofe Wheeler <sitsofe@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Igor Mammedov <imammedo@redhat.com>, Toshi Kani <toshi.kani@hp.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [BISECTED][REGRESSION] Kernel does not boot on EeePC
+Message-ID: <20140608094517.GB12736@gmail.com>
+References: <20140608090223.GA8703@sucs.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFzTfFm3_7htQJ8uScxcf1bSrmZ8=C65rYEq5_7BHBrnJw@mail.gmail.com>
+In-Reply-To: <20140608090223.GA8703@sucs.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+* Sitsofe Wheeler <sitsofe@gmail.com> wrote:
 
-> On Sat, Jun 7, 2014 at 1:59 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
-> >
-> > A significantly larger than I'd like set of patches for just below the
-> > wire.  All of these, however, fix real problems.  However, if you feel
-> > it is too scary we can do it for the merge window and rely on pushing
-> > them into -stable.
+> Hi,
 > 
-> Ugh. I really don't like the timing, but the patches themselves look
-> ok. So I ended up pulling them into my 3.15 branch, even if it's just
-> a day before release.
+> The latest kernel (c593e8978722f7f4a12932733cfeed6c0c74fbaa) refuses to
+> boot on my EeePC - after grub is finished the screen just remains black
+> and the only thing that does something is pressing the power button. The
+> problem commit seems to be:
 > 
-> I'm really hoping they've gone through all the regular x86 build/boot
-> test machinery..
+> commit 3e1a878b7ccdb31da6d9d2b855c72ad87afeba3f
+> Author: Igor Mammedov <imammedo@redhat.com>
+> Date:   Thu Jun 5 15:42:45 2014 +0200
+> 
+>     x86/smpboot: Initialize secondary CPU only if master CPU will wait for it
 
-They have ... yet that's just a tiny cross section of what is out 
-there, so I'm too nervous about them a bit, especially the smpboot 
-hotplug fix :-/
+Argh, and have read this just a minute after expressing my hope that 
+the hotplug fix is correct :-/
+
+Linus, please revert commit 3e1a878b7ccdb.
+
+  Acked-by: Ingo Molnar <mingo@kernel.org>
 
 Thanks,
 
