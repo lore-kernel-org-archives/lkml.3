@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503AbaFHJdf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jun 2014 05:33:35 -0400
-Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:59478 "EHLO
-	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753278AbaFHJdd (ORCPT
+	id S1753499AbaFHJlu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jun 2014 05:41:50 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:45249 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753342AbaFHJls (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jun 2014 05:33:33 -0400
-X-Greylist: delayed 1853 seconds by postgrey-1.27 at vger.kernel.org; Sun, 08 Jun 2014 05:33:33 EDT
-Date: Sun, 8 Jun 2014 10:02:23 +0100
-From: Sitsofe Wheeler <sitsofe@gmail.com>
-To: Igor Mammedov <imammedo@redhat.com>
-Cc: Toshi Kani <toshi.kani@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
-Subject: [BISECTED][REGRESSION] Kernel does not boot on EeePC
-Message-ID: <20140608090223.GA8703@sucs.org>
+	Sun, 8 Jun 2014 05:41:48 -0400
+Date: Sun, 8 Jun 2014 11:41:43 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@linux.intel.com>,
+        Borislav Petkov <bp@suse.de>, Dave Young <dyoung@redhat.com>,
+        Igor Mammedov <imammedo@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Ingo Molnar <mingo@redhat.com>, "K. Y. Srinivasan" <kys@microsoft.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Toshi Kani <toshi.kani@hp.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>
+Subject: Re: [GIT PULL] x86 fixes for v3.15
+Message-ID: <20140608094143.GA12736@gmail.com>
+References: <201406072059.s57KxsIp025789@terminus.zytor.com>
+ <CA+55aFzTfFm3_7htQJ8uScxcf1bSrmZ8=C65rYEq5_7BHBrnJw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <CA+55aFzTfFm3_7htQJ8uScxcf1bSrmZ8=C65rYEq5_7BHBrnJw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-The latest kernel (c593e8978722f7f4a12932733cfeed6c0c74fbaa) refuses to
-boot on my EeePC - after grub is finished the screen just remains black
-and the only thing that does something is pressing the power button. The
-problem commit seems to be:
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-commit 3e1a878b7ccdb31da6d9d2b855c72ad87afeba3f
-Author: Igor Mammedov <imammedo@redhat.com>
-Date:   Thu Jun 5 15:42:45 2014 +0200
+> On Sat, Jun 7, 2014 at 1:59 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
+> >
+> > A significantly larger than I'd like set of patches for just below the
+> > wire.  All of these, however, fix real problems.  However, if you feel
+> > it is too scary we can do it for the merge window and rely on pushing
+> > them into -stable.
+> 
+> Ugh. I really don't like the timing, but the patches themselves look
+> ok. So I ended up pulling them into my 3.15 branch, even if it's just
+> a day before release.
+> 
+> I'm really hoping they've gone through all the regular x86 build/boot
+> test machinery..
 
-    x86/smpboot: Initialize secondary CPU only if master CPU will wait for it
+They have ... yet that's just a tiny cross section of what is out 
+there, so I'm too nervous about them a bit, especially the smpboot 
+hotplug fix :-/
 
-Here's the bisection log:
-# bad: [c593e8978722f7f4a12932733cfeed6c0c74fbaa] Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs
-# good: [14186fea0cb06bc43181ce239efe0df6f1af260a] Merge tag 'locks-v3.15-4' of git://git.samba.org/jlayton/linux
-git bisect start 'HEAD@{3}' 'HEAD@{4}'
-# good: [5fa6a683c061cd4662b436135cc76552dbc29a43] Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net
-git bisect good 5fa6a683c061cd4662b436135cc76552dbc29a43
-# good: [9f12600fe425bc28f0ccba034a77783c09c15af4] dcache: add missing lockdep annotation
-git bisect good 9f12600fe425bc28f0ccba034a77783c09c15af4
-# good: [ca755175f245b91f72cfa474aaa8acd9c26996f4] Merge tag 'md/3.15-fixes' of git://neil.brown.name/md
-git bisect good ca755175f245b91f72cfa474aaa8acd9c26996f4
-# bad: [3e1a878b7ccdb31da6d9d2b855c72ad87afeba3f] x86/smpboot: Initialize secondary CPU only if master CPU will wait for it
-git bisect bad 3e1a878b7ccdb31da6d9d2b855c72ad87afeba3f
-# good: [c65c7a306610ee7c13669a8f5601b472c19dc6f1] bridge: notify user space after fdb update
-git bisect good c65c7a306610ee7c13669a8f5601b472c19dc6f1
-# good: [3aab01d800eb195de3f273d9a195fe070a507d56] net: ec_bhf: Add runtime dependencies
-git bisect good 3aab01d800eb195de3f273d9a195fe070a507d56
-# good: [d2cfd3105094f593bc1fbd0b042a7752ddf08691] Merge tag 'sound-3.15' of git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound
-git bisect good d2cfd3105094f593bc1fbd0b042a7752ddf08691
-# good: [89f898c1e195fa6235c869bb457e500b7b3ac49d] x86: Fix list/memory corruption on CPU hotplug
-git bisect good 89f898c1e195fa6235c869bb457e500b7b3ac49d
-# good: [feef1e8ecbadf24f8e6829c935df8683cabae41b] x86/smpboot: Log error on secondary CPU wakeup failure at ERR level
-git bisect good feef1e8ecbadf24f8e6829c935df8683cabae41b
-# first bad commit: [3e1a878b7ccdb31da6d9d2b855c72ad87afeba3f] x86/smpboot: Initialize secondary CPU only if master CPU will wait for it
+Thanks,
 
--- 
-Sitsofe | http://sucs.org/~sits/
+	Ingo
