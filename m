@@ -1,80 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932645AbaFHU5s (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jun 2014 16:57:48 -0400
-Received: from lekensteyn.nl ([178.21.112.251]:49321 "EHLO lekensteyn.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753711AbaFHU5h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jun 2014 16:57:37 -0400
-From: Peter Wu <peter@lekensteyn.nl>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        linux-wireless@vger.kernel.org
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] net: wireless: rtlwifi: rtl8723be: hw.c: Cleaning up if statement that always evaluates to false
-Date: Sun, 08 Jun 2014 22:57:33 +0200
-Message-ID: <4553641.FfvMsmmpFu@al>
-User-Agent: KMail/4.13.1 (Linux/3.15.0-rc8-custom-00058-gd2cfd31; KDE/4.13.1; x86_64; ; )
-In-Reply-To: <CAFo99gZtZWEwgNoMzxOS-S_XG+p83_T3GypMdcDyhswe2-r3MA@mail.gmail.com>
-References: <1402191743-26177-1-git-send-email-rickard_strandqvist@spectrumdigital.se> <alpine.DEB.2.02.1406081333550.19183@chino.kir.corp.google.com> <CAFo99gZtZWEwgNoMzxOS-S_XG+p83_T3GypMdcDyhswe2-r3MA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Spam-Score: 0.0 (/)
+	id S932685AbaFHVGn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jun 2014 17:06:43 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:50767 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932586AbaFHVGe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jun 2014 17:06:34 -0400
+From: Fabio Baltieri <fabio.baltieri@gmail.com>
+To: Guenter Roeck <linux@roeck-us.net>, Jean Delvare <jdelvare@suse.de>
+Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
+        Fabio Baltieri <fabio.baltieri@gmail.com>
+Subject: [PATCH v2] hwmon: (ina2xx) Cast to s16 on shunt and current regs
+Date: Sun,  8 Jun 2014 22:06:24 +0100
+Message-Id: <1402261584-5301-1-git-send-email-fabio.baltieri@gmail.com>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Please do not top-post.)
+All devices supported by ina2xx are bidirectional and reports the
+measured shunt voltage and power values as a signed 16 bit, but the
+current driver implementation caches all registers as u16, leading to an
+incorrect sign extension when reporting to the userspace in
+ina2xx_get_value().
 
-On Sunday 08 June 2014 22:47:31 Rickard Strandqvist wrote:
-> I found this error in some of the files. And after discussion with
-> Larry Finger and Peter Wu, it was decided that all files with this if
-> statement should change.
-> 
-> But of course I should update the comment to something more suitable.
+This patch fixes the problem by casting the signed registers to s16.
+Tested on an INA219.
 
-Right, do not forget to use [PATCH v2] as prefix and adjust the subject
-too as this is no longer just "cleaning up a statement that always
-evaluates to false", but rather "fix [insert stuff here] mask" (for
-the 0xfc cases). The commit message must describe why the change is
-beneficial, see other commit messages for examples.
+Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
+---
+ drivers/hwmon/ina2xx.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-Kind regards,
-Peter
-
-> 2014-06-08 22:35 GMT+02:00 David Rientjes <rientjes@google.com>:
-> > On Sun, 8 Jun 2014, Rickard Strandqvist wrote:
-> >
-> >> I find a logical error in an if statement '(X & 0xfc) == 0x3' is always false
-> >>
-> >
-> > Where is the 0xfc that your converting?
-> >
-> >> After pointing this out, Larry Finger informed what would be the correct one.
-> >> '(X & 0x3) == 0x3'
-> >>
-> >
-> > This is already what it is, just say that you're replacing it with the
-> > constant.
-> >
-> >> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> >> ---
-> >>  drivers/net/wireless/rtlwifi/rtl8723be/hw.c |    2 +-
-> >>  1 file changed, 1 insertion(+), 1 deletion(-)
-> >>
-> >> diff --git a/drivers/net/wireless/rtlwifi/rtl8723be/hw.c b/drivers/net/wireless/rtlwifi/rtl8723be/hw.c
-> >> index 0fdf090..b61044f 100644
-> >> --- a/drivers/net/wireless/rtlwifi/rtl8723be/hw.c
-> >> +++ b/drivers/net/wireless/rtlwifi/rtl8723be/hw.c
-> >> @@ -1197,7 +1197,7 @@ static int _rtl8723be_set_media_status(struct ieee80211_hw *hw,
-> >>       }
-> >>       rtl_write_byte(rtlpriv, (MSR), bt_msr);
-> >>       rtlpriv->cfg->ops->led_control(hw, ledaction);
-> >> -     if ((bt_msr & 0x03) == MSR_AP)
-> >> +     if ((bt_msr & MSR_AP) == MSR_AP)
-> >>               rtl_write_byte(rtlpriv, REG_BCNTCFG + 1, 0x00);
-> >>       else
-> >>               rtl_write_byte(rtlpriv, REG_BCNTCFG + 1, 0x66);
+diff --git a/drivers/hwmon/ina2xx.c b/drivers/hwmon/ina2xx.c
+index 93d26e8..bfd3f3e 100644
+--- a/drivers/hwmon/ina2xx.c
++++ b/drivers/hwmon/ina2xx.c
+@@ -148,7 +148,8 @@ static int ina2xx_get_value(struct ina2xx_data *data, u8 reg)
+ 
+ 	switch (reg) {
+ 	case INA2XX_SHUNT_VOLTAGE:
+-		val = DIV_ROUND_CLOSEST(data->regs[reg],
++		/* signed register */
++		val = DIV_ROUND_CLOSEST((s16)data->regs[reg],
+ 					data->config->shunt_div);
+ 		break;
+ 	case INA2XX_BUS_VOLTAGE:
+@@ -160,8 +161,8 @@ static int ina2xx_get_value(struct ina2xx_data *data, u8 reg)
+ 		val = data->regs[reg] * data->config->power_lsb;
+ 		break;
+ 	case INA2XX_CURRENT:
+-		/* LSB=1mA (selected). Is in mA */
+-		val = data->regs[reg];
++		/* signed register, LSB=1mA (selected), in mA */
++		val = (s16)data->regs[reg];
+ 		break;
+ 	default:
+ 		/* programmer goofed */
+-- 
+1.8.4
 
