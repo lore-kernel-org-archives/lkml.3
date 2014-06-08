@@ -1,45 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753689AbaFHM2Y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jun 2014 08:28:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7403 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753527AbaFHM2X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jun 2014 08:28:23 -0400
-Message-ID: <539456DD.4020601@redhat.com>
-Date: Sun, 08 Jun 2014 14:28:13 +0200
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: George Spelvin <linux@horizon.com>
-CC: davem@davemloft.net, hannes@stressinduktion.org,
+	id S1753559AbaFHMke (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jun 2014 08:40:34 -0400
+Received: from ns.horizon.com ([71.41.210.147]:20764 "HELO ns.horizon.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751023AbaFHMkd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jun 2014 08:40:33 -0400
+Date: 8 Jun 2014 08:40:31 -0400
+Message-ID: <20140608124031.2571.qmail@ns.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: dborkman@redhat.com, linux@horizon.com
+Subject: Re: [PATCH 4/7] lib/random32.c: Use <asm/unaligned.h> instead of hand-rolling it
+Cc: davem@davemloft.net, hannes@stressinduktion.org,
         linux-kernel@vger.kernel.org, shemminger@osdl.org, tytso@mit.edu
-Subject: Re: [PATCH 6/7] lib/random32.c: Randomize timeout to the millisecond,
- not the second
-References: <20140608113000.5423.qmail@ns.horizon.com>
-In-Reply-To: <20140608113000.5423.qmail@ns.horizon.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <53945633.20702@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/08/2014 01:30 PM, George Spelvin wrote:
->> Fine by me this cleanup, although not strictly needed.
->
-> Agreed.  The timer slack is set to HZ (1 second) anyway.
->
-> It just dawned on me that a simpler and more efficient way to do this
-> (which I'll do in v2 of this) would be:
+> Seems fine by me, since it's random anyway archs might not care
+> about the *_le32, though this might yield additional work in some
+> cases I presume.
 
-Note, when you talk about efficiency here, this is called once every
-40+ secs ... ;)
+If you think that's okay, sure.  I kept it consistent to get byte-for-byte
+identical results.
 
->     	/* reseed every ~60 seconds, in [40 .. 80) interval with slack */
-> -	expires = 40 + (prandom_u32() % 40);
-> -	seed_timer.expires = jiffies + msecs_to_jiffies(expires * MSEC_PER_SEC);
-> +	expires = 40*HZ + prandom_u32_max(40*HZ);
-> +	seed_timer.expires = jiffies + expires;
->
-> That avoids calling msecs_to_jiffies entirely.
->
+If variations in that are allowed, that can also
+simplify the trailing storage case:
+
++		if (bytes & 2)
++			put_unaligned_le16((u16)random, p+i);
++		if (bytes & 1)
++			p[i+bytes-1] = (u8)(random >> 16);
+
+>> +	for (i = 0; i < round_down(bytes, sizeof(u32)); i += sizeof(u32))
+>> +		put_unaligned_le32(prandom_u32_state(state), p+i);
+
+> Nit: 'p + i'
+
+I don't really care, but I'm happy without the spaces; I add them
+to show what binds more weakly, and in this case that's the
+argument-separating comma.
+
+>> +		p[i] = (u8)random;
+
+> Nit: '(u8) random'
+
+Actually, my style and most of the kerel is to not put
+a space in a cast, since it binds so tighty.
+
+E.g. compare
+
+git grep ')[a-z]' kernel/
+git grep ') [a-z]' kernel/
+
+Notice that the second is alsmost all comments.
+(There are some spaces in kernel/ptrace.v.)
+
+I'd rather leave it without the space unless you feel
+very strongly about it.
