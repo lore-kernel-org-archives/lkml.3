@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753513AbaFHJpY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jun 2014 05:45:24 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:51012 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753358AbaFHJpW (ORCPT
+	id S1753518AbaFHJuP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jun 2014 05:50:15 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:53571 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753358AbaFHJuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jun 2014 05:45:22 -0400
-Date: Sun, 8 Jun 2014 11:45:17 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Sitsofe Wheeler <sitsofe@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Igor Mammedov <imammedo@redhat.com>, Toshi Kani <toshi.kani@hp.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [BISECTED][REGRESSION] Kernel does not boot on EeePC
-Message-ID: <20140608094517.GB12736@gmail.com>
-References: <20140608090223.GA8703@sucs.org>
+	Sun, 8 Jun 2014 05:50:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140608090223.GA8703@sucs.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [84.73.67.144]
+In-Reply-To: <20140607120153.GA4721@amd.pavel.ucw.cz>
+References: <20140528172521.GA9945@milliways>
+	<20140607120153.GA4721@amd.pavel.ucw.cz>
+Date: Sun, 8 Jun 2014 11:50:12 +0200
+Message-ID: <CAKMK7uGz1pyuh_1wuFVpKuos9VoW7jaLK2rgPYiA2EtvbnS=ZQ@mail.gmail.com>
+Subject: Re: Resume from suspend broken in 3.15. (bisected)
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Ken Moffat <zarniwhoop@ntlworld.com>, Dave Airlie <airlied@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Jun 7, 2014 at 2:01 PM, Pavel Machek <pavel@ucw.cz> wrote:
+>>  I've only started full testing of 3.15 on one of my machines now
+>> that -rc7 has been released (this one had two issues in the radeon
+>> code, second was fixed in rc7).  Unfortunately, suspend to RAM
+>> (pm-suspend), or rather the wake-up, is broken on this box [ my
+>> other two boxes are fine in rc7 ].
+>>
+>> Bisection identified one of your commits -
+>>
+>> commit 25f397a429dfa43f22c278d0119a60a343aa568f
+>
+> Thanks a lot for your work. It seems this commit breaks i915, too.
 
-* Sitsofe Wheeler <sitsofe@gmail.com> wrote:
-
-> Hi,
-> 
-> The latest kernel (c593e8978722f7f4a12932733cfeed6c0c74fbaa) refuses to
-> boot on my EeePC - after grub is finished the screen just remains black
-> and the only thing that does something is pressing the power button. The
-> problem commit seems to be:
-> 
-> commit 3e1a878b7ccdb31da6d9d2b855c72ad87afeba3f
-> Author: Igor Mammedov <imammedo@redhat.com>
-> Date:   Thu Jun 5 15:42:45 2014 +0200
-> 
->     x86/smpboot: Initialize secondary CPU only if master CPU will wait for it
-
-Argh, and have read this just a minute after expressing my hope that 
-the hotplug fix is correct :-/
-
-Linus, please revert commit 3e1a878b7ccdb.
-
-  Acked-by: Ingo Molnar <mingo@kernel.org>
-
-Thanks,
-
-	Ingo
+Really, really unlikely since we don't use that code with i915 at all.
+Or git bisect has simply gone completely bananas and always brings up
+this commit.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
