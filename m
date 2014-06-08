@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753115AbaFHKnM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jun 2014 06:43:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2810 "EHLO mx1.redhat.com"
+	id S1753544AbaFHKni (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jun 2014 06:43:38 -0400
+Received: from lekensteyn.nl ([178.21.112.251]:34774 "EHLO lekensteyn.nl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751741AbaFHKnK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jun 2014 06:43:10 -0400
-Message-ID: <53943E34.7030502@redhat.com>
-Date: Sun, 08 Jun 2014 12:43:00 +0200
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752819AbaFHKng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jun 2014 06:43:36 -0400
+From: Peter Wu <peter@lekensteyn.nl>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] net: wireless: rtlwifi: rtl8192de: hw.c: Cleaning up conjunction always evaluates to false
+Date: Sun, 08 Jun 2014 12:43:25 +0200
+Message-ID: <3239222.FyGtueg2aO@al>
+User-Agent: KMail/4.13.1 (Linux/3.15.0-rc8-custom-00058-gd2cfd31; KDE/4.13.1; x86_64; ; )
+In-Reply-To: <CAFo99gb2gzLjv_4b3O-e0B1R8P5BTGbPJLuYYAmoyww9hkmrvA@mail.gmail.com>
+References: <1402151419-18296-1-git-send-email-rickard_strandqvist@spectrumdigital.se> <1436639.AmJiDmeQZF@al> <CAFo99gb2gzLjv_4b3O-e0B1R8P5BTGbPJLuYYAmoyww9hkmrvA@mail.gmail.com>
 MIME-Version: 1.0
-To: George Spelvin <linux@horizon.com>
-CC: davem@davemloft.net, shemminger@osdl.org, tytso@mit.edu,
-        linux-kernel@vger.kernel.org, hannes@stressinduktion.org
-Subject: Re: [PATCH 6/7] lib/random32.c: Randomize timeout to the millisecond,
- not the second
-References: <20140607082859.10162.qmail@ns.horizon.com>
-In-Reply-To: <20140607082859.10162.qmail@ns.horizon.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Spam-Score: -0.0 (/)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/07/2014 10:28 AM, George Spelvin wrote:
-> If you're going to bother randomizing it, do it right.
-> And use prandom_u32_max(), which is designed for the job, rather
-> than "% 40".
->
-> Signed-off-by: George Spelvin <linux@horizon.com>
+On Sunday 08 June 2014 12:36:11 Rickard Strandqvist wrote:
+> Then we use MSR_MASK instead, new patch then. But I will wait a day?
+> Or what is long enough to be sure that nobody else have any
+> objections? How is this usually resolved?
 
-Fine by me this cleanup, although not strictly needed.
+Well, Larry is the maintainer, so he will ultimately pick up patches.
+One or two days should give people some time to read and reply.
 
-> ---
->   lib/random32.c | 6 +++---
->   1 file changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/lib/random32.c b/lib/random32.c
-> index eee60100..9cc410dd 100644
-> --- a/lib/random32.c
-> +++ b/lib/random32.c
-> @@ -208,14 +208,14 @@ static DEFINE_TIMER(seed_timer, __prandom_timer, 0, 0);
->   static void __prandom_timer(unsigned long dontcare)
->   {
->   	u32 entropy;
-> -	unsigned long expires;
-> +	unsigned int expires;
->
->   	get_random_bytes(&entropy, sizeof(entropy));
->   	prandom_seed(entropy);
->
->   	/* reseed every ~60 seconds, in [40 .. 80) interval with slack */
-> -	expires = 40 + (prandom_u32() % 40);
-> -	seed_timer.expires = jiffies + msecs_to_jiffies(expires * MSEC_PER_SEC);
-> +	expires = 40000 + prandom_u32_max(40000);
-> +	seed_timer.expires = jiffies + msecs_to_jiffies(expires);
->
->   	add_timer(&seed_timer);
->   }
->
+As for MSR_MASK, that macro does not exist yet, I was wondering whether
+it's OK to add a new macro? (Larry?)
+
+> Sure, I can send a patch for all the files instead. However, earlier
+> received complaints when I sent patches extending over more than one
+> file.
+> 
+> I'll check again how the cover letter works. Although when I try with
+> my send patch mail script it did not work as I wanted.
+
+See the manual page git-send-email(1) and git-format-patch(1). In
+particular the Example section of git-send-email(1).
+
+Kind regards,
+Peter
+
