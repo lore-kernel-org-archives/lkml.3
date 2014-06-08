@@ -1,47 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753654AbaFHSG5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jun 2014 14:06:57 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:62174 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753554AbaFHSG4 (ORCPT
+	id S1753720AbaFHSJI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jun 2014 14:09:08 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:48544 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753684AbaFHSJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jun 2014 14:06:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <5394A309.7030705@zytor.com>
-References: <CA+waHKUfu0Mxy_J9qWwayxZVDBA_RDYrpsL100Mr1sUBQRchVw@mail.gmail.com>
- <5394A309.7030705@zytor.com>
-From: Nikolay Amiantov <nikoamia@gmail.com>
-Date: Sun, 8 Jun 2014 22:06:35 +0400
-Message-ID: <CA+waHKVTONQVqj7=n5tHfmxa3FOWyYFi4rZvMD7j_eio4-NWLQ@mail.gmail.com>
-Subject: Re: What can change in ways Linux handles memory when all memory >4G
- is disabled? (x86)
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 8 Jun 2014 14:09:05 -0400
+From: Alexander Bersenev <bay@hackerdom.ru>
+To: linux-sunxi@googlegroups.com, david@hardeman.nu,
+        devicetree@vger.kernel.org, galak@codeaurora.org,
+        grant.likely@linaro.org, ijc+devicetree@hellion.org.uk,
+        james.hogan@imgtec.com, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, m.chehab@samsung.com, mark.rutland@arm.com,
+        maxime.ripard@free-electrons.com, pawel.moll@arm.com,
+        rdunlap@infradead.org, robh+dt@kernel.org, sean@mess.org,
+        srinivas.kandagatla@st.com, wingrime@linux-sunxi.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org
+Cc: Alexander Bersenev <bay@hackerdom.ru>
+Subject: [PATCH v9 0/5] ARM: sunxi: Add support for consumer infrared devices
+Date: Mon,  9 Jun 2014 00:08:08 +0600
+Message-Id: <1402250893-5412-1-git-send-email-bay@hackerdom.ru>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 8, 2014 at 9:53 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->
-> This would point either to an iommu problem, or a problem in the driver
-> where addresses somehow get truncated to 32 bits.  Since this is a
-> graphics driver it is extremely complex, and subtle problems could be
-> buried somewhere inside it.  The fact that you can trigger it without a
-> driver would point to that kind of problem inside the firmware.
->
->         -hpa
+This patch introduces Consumer IR(CIR) support for sunxi boards.
 
-My assumption is that in new BIOSes (old ones are working, as I've
-said, for T440p) there is some new way nvidia should be enabled, and
-it's not related to ACPI (the calls are same in Windows). There are no
-related changelog entries for T440p [1] (between 1.14 and 1.16). Also,
-about address truncation: I thought so too, but if I understand
-correctly, then some memory in >=4G region should be reserved for some
-driver's use, and this is not the case (see [2] for /proc/iomem).
+This is based on Alexsey Shestacov's work based on the original driver 
+supplied by Allwinner.
 
-Nikolay Amiantov.
+Signed-off-by: Alexander Bersenev <bay@hackerdom.ru>
+Signed-off-by: Alexsey Shestacov <wingrime@linux-sunxi.org>
 
-[1]: http://download.lenovo.com/ibmdl/pub/pc/pccbbs/mobiles/gluj13us.txt
-[2]: http://bpaste.net/show/355712/
+---
+Changes since version 1: 
+ - Fix timer memory leaks 
+ - Fix race condition when driver unloads while interrupt handler is active
+ - Support Cubieboard 2(need testing)
+
+Changes since version 2:
+- More reliable keydown events
+- Documentation fixes
+- Rename registers accurding to A20 user manual
+- Remove some includes, order includes alphabetically
+- Use BIT macro
+- Typo fixes
+
+Changes since version 3:
+- Split the patch on smaller parts
+- More documentation fixes
+- Add clock-names in DT
+- Use devm_clk_get function to get the clocks
+- Removed gpios property from ir's DT
+- Changed compatible from allwinner,sunxi-ir to allwinner,sun7i-a20-ir in DT
+- Use spin_lock_irq instead spin_lock_irqsave in interrupt handler
+- Add myself in the copyright ;)
+- Coding style and indentation fixes
+
+Changes since version 4:
+- Try to fix indentation errors by sending patches with git send-mail
+
+Changes since version 5:
+- More indentation fixes
+- Make patches pass checkpatch with --strict option
+- Replaced magic numbers with defines(patch by Priit Laes)
+- Fixed oops on loading(patch by Hans de Goede)
+
+Changes since version 6:
+- Removed constants from code
+- Better errrors handling on loading
+- Renamed sunxi-ir.c to sunxi-cir.c
+- Changed description of second commit
+- Order entries in dts and dtsi by register address
+- Code style fixes
+
+Changes since version 7:
+- Removed a couple of blank lines in code
+- Delay interrupts init until we are ready to handle them
+- Increased the reported duration of each pulse by one
+- Refactored defines
+
+Changes since version 8:
+- Split the DT patch to three
+- Code style fixes
+
+Alexander Bersenev (5):
+  ARM: sunxi: Add documentation for sunxi consumer infrared devices
+  [media] rc: add sunxi-ir driver
+  ARM: sunxi: Add pins for IR controller on A20 to dtsi
+  ARM: sunxi: Add IR controllers on A20 to dtsi
+  ARM: sunxi: Enable IR controller on cubieboard 2 and cubietruck in dts
+
+ .../devicetree/bindings/media/sunxi-ir.txt         |  23 ++
+ arch/arm/boot/dts/sun7i-a20-cubieboard2.dts        |   6 +
+ arch/arm/boot/dts/sun7i-a20-cubietruck.dts         |   6 +
+ arch/arm/boot/dts/sun7i-a20.dtsi                   |  32 +++
+ drivers/media/rc/Kconfig                           |  10 +
+ drivers/media/rc/Makefile                          |   1 +
+ drivers/media/rc/sunxi-cir.c                       | 318 +++++++++++++++++++++
+ 7 files changed, 396 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/media/sunxi-ir.txt
+ create mode 100644 drivers/media/rc/sunxi-cir.c
+
+-- 
+1.9.3
+
