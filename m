@@ -1,67 +1,295 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753210AbaFHBKC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 21:10:02 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:48929 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753142AbaFHBKA (ORCPT
+	id S1753272AbaFHBKp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 21:10:45 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:33056 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753142AbaFHBKn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 21:10:00 -0400
-Date: Sat, 7 Jun 2014 21:09:59 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-cc: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
-        linux-usb <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Greg KH <greg@kroah.com>, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Mathias Nyman <mathias.nyman@intel.com>
-Subject: Re: Missing USB XHCI and EHCI reset for kexec
-In-Reply-To: <1402180544.3979.3.camel@pasglop>
-Message-ID: <Pine.LNX.4.44L0.1406072106360.6204-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 7 Jun 2014 21:10:43 -0400
+From: Houcheng Lin <houcheng@gmail.com>
+To: linus.walleij@linaro.org, gnurou@gmail.com, grant.likely@linaro.org,
+        robh+dt@kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
+        devicetree@vger.kernel.org, Houcheng Lin <houcheng@gmail.com>
+Subject: [RFC PATCH] gpio: Add a defer reset object to send board specific reset
+Date: Sun,  8 Jun 2014 09:09:58 +0800
+Message-Id: <1402189798-7665-1-git-send-email-houcheng@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 8 Jun 2014, Benjamin Herrenschmidt wrote:
+The Problem
+-----------
+The reset signal on a hardware board is send either:
+    - during machine initialization
+    - during bus master's initialization
 
-> Looking at the code a bit more ... that xhci_shutdown() worries me.
-> 
-> It basically just whacks xhci_halt() and optionally reset() but nothing
-> is done that I can see to ensure that we aren't concurrently
-> doing things like queuing URBs, polling the root hub etc...
-> 
-> That's definitely not clean and while it might work (most of the time
-> at least) on actual shutdown it's definitely not right for kexec I
-> reckon.
+In some hardware design, devices on bus need a non-standard and extra reset
+signal after bus is initialied. Most reason is to wake up device from hanging
+state.
 
-Yes, it really was meant for actual system shutdown.
+The board spefic reset code can not be put into machine init code, as it is
+too early. This code can not also be put onto chip's driver, as it is board
+specific and not suitable for a common chip driver.
 
-> Now there's a separate discussion that we had a while ago and might
-> want to resume which is to say that kexec shouldn't be calling
-> shutdown() anyway, but instead remove() on all drivers which is
-> a much better code path for the purpose of leaving the device in
-> a state where a driver can reconnect to it.
-> 
-> However, in the case of XHCI that leads to another issue described
-> here:
-> 
-> http://marc.info/?l=linux-usb&m=139483181809062&w=2
-> 
-> For which there was little / no discussion at all... I suppose we could
-> do a quirk but I don't think the problem is fundamentally
-> specific to the TI chip, we should probably stop both root hubs
-> before we halt both HCDs.
+Defer Reset Object
+------------------
+The defer reset object is to resolve this issue, developer can put a defer-
+reset device on the board's dts file and enable DEFER RESET OBJECT CONFIG.
+During driver init-calls, a defer-reset object is created and issue reset signal
+after the enclosing device is initialized.
 
-The issue described in that email seems valid to me.  Maybe the patch
-should be resubmitted.  Now that xhci-hcd has changed maintainership,
-the discussion might move forward.
+This eliminate the need to rewrite a driver module with only one purpose: sending
+a board specific reset. This also allow mainstream kernel to support many boards
+that modify the common drivers to send board specific reset. Configuring defer-reset
+device in dts leave the board specific reset rules on board level and simple to
+maintain.
 
-In any case, you certainly can try testing with that patch installed.  
-After all, xhci-hcd should work properly after a rmmod/modprobe 
-sequence, and this is pretty much the same thing.
+Example dts File
+----------------
+    usb-ehci-chip@1211000{
+        usb-phy = <&usb2_phy>;
+        defer_reset_vbus {
+            compatible = "defer-reset";
+            reset-gpios = <&gpx3 5 1>;
+            reset-init = <0>;
+            reset-end = <1>;
+            delay = <5>;
+        };
+    };
 
-Alan Stern
+Block Diagram of dts File
+-------------------------
+    +-------------------------------------+
+    | usb-ehci-chip@1211000               |
+    |   +-------------------------+       |
+    |   | defer-reset(gpx3)       |       |
+    |   +-------------------------+       |
+    +-------------------------------------+
+
+Signed-off-by: Houcheng Lin <houcheng@gmail.com>
+---
+ drivers/gpio/Kconfig            |   8 ++
+ drivers/gpio/Makefile           |   1 +
+ drivers/gpio/gpio-defer-reset.c | 179 ++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 188 insertions(+)
+ create mode 100644 drivers/gpio/gpio-defer-reset.c
+
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index a86c49a..99aa0d6 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -851,6 +851,14 @@ config GPIO_BCM_KONA
+ 	help
+ 	  Turn on GPIO support for Broadcom "Kona" chips.
+ 
++config GPIO_DEFER_RESET
++	bool "Defer reset driver via gpio"
++	depends on OF_GPIO
++	help
++	  Enable defer reset drvier
++	  The reset signal would be issued after a device on USB or PCI bus is initialied.
++	  The dependency of reset signal and device can be specified in board's dts file.
++
+ comment "USB GPIO expanders:"
+ 
+ config GPIO_VIPERBOARD
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index 6309aff..0754758 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -101,3 +101,4 @@ obj-$(CONFIG_GPIO_WM8994)	+= gpio-wm8994.o
+ obj-$(CONFIG_GPIO_XILINX)	+= gpio-xilinx.o
+ obj-$(CONFIG_GPIO_XTENSA)	+= gpio-xtensa.o
+ obj-$(CONFIG_GPIO_ZEVIO)	+= gpio-zevio.o
++obj-$(CONFIG_GPIO_DEFER_RESET)	+= gpio-defer-reset.o
+diff --git a/drivers/gpio/gpio-defer-reset.c b/drivers/gpio/gpio-defer-reset.c
+new file mode 100644
+index 0000000..c6decab
+--- /dev/null
++++ b/drivers/gpio/gpio-defer-reset.c
+@@ -0,0 +1,179 @@
++/*
++ * GPIO Defer Reset Driver
++ *
++ * Copyright (C) 2014 Houcheng Lin
++ * Author: Houcheng Lin <houcheng@gmail.com>
++ *
++ * This program is free software; you can redistribute  it and/or modify it
++ * under  the terms of  the GNU General  Public License as published by the
++ * Free Software Foundation;  either version 2 of the  License, or (at your
++ * option) any later version.
++ *
++ */
++
++#include <linux/clk.h>
++#include <linux/dma-mapping.h>
++#include <linux/io.h>
++#include <linux/kernel.h>
++#include <linux/slab.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/of_gpio.h>
++#include <linux/of_platform.h>
++#include <linux/platform_device.h>
++#include <linux/usb/phy.h>
++#include <linux/usb/samsung_usb_phy.h>
++#include <linux/usb.h>
++#include <linux/usb/hcd.h>
++#include <linux/usb/otg.h>
++
++
++#define DRIVER_DESC "GPIO Defer Reset Driver"
++#define GDR_MAX_DEV 32
++
++
++static DEFINE_MUTEX(deferred_reset_mutex);
++static LIST_HEAD(deferred_reset_list);
++
++
++struct defer_reset_private {
++	struct list_head next;
++	struct device_node *node;  /* defer_reset device */
++	int    issued;
++};
++
++static void gdr_issue_reset(
++	struct platform_device *pdev, struct device_node *dnode)
++{
++	int gpio;
++	int i;
++	int count = of_gpio_named_count(dnode, "reset-gpios");
++	u32 reset_init[GDR_MAX_DEV];
++	u32 reset_end[GDR_MAX_DEV];
++	u32 delay;
++
++	if (count != of_property_count_u32_elems(dnode, "reset-init")) {
++		dev_err(&pdev->dev, "should call std error here, number is wrong:%d\n",
++			of_property_count_u32_elems(dnode, "reset-init"));
++		return;
++	}
++	if (count != of_property_count_u32_elems(dnode, "reset-end")) {
++		dev_err(&pdev->dev, "should call std error here, number is wrong:%d\n",
++			of_property_count_u32_elems(dnode, "reset-end"));
++		return;
++	}
++	if (count > GDR_MAX_DEV) {
++		dev_err(&pdev->dev, "too large reset array!\n");
++		return;
++	}
++
++	/* setup parameters */
++	of_property_read_u32_array(dnode, "reset-init", reset_init, count);
++	of_property_read_u32_array(dnode, "reset-end", reset_end, count);
++	of_property_read_u32(dnode, "delay", &delay);
++
++	/* reset init */
++	for (i = 0; i < count; i++) {
++		gpio = of_get_named_gpio(dnode, "reset-gpios", i);
++		dev_info(&pdev->dev,
++			"issue reset to gpio %d for device [%s]\n",
++			gpio, dnode->parent->name);
++		if (!gpio_is_valid(gpio))
++			continue;
++		__gpio_set_value(gpio, reset_init[i]);
++	}
++	if (delay == 0)
++		delay = 5;
++	mdelay(delay);
++	/* reset end */
++	for (i = 0; i < count; i++) {
++		gpio = of_get_named_gpio(dnode, "reset-gpios", i);
++		if (!gpio_is_valid(gpio))
++			continue;
++		__gpio_set_value(gpio, reset_end[i]);
++	}
++}
++
++/**
++  * the pdev parameter is null as it is provided by register routine, platform_device_register_simple
++  **/
++static int gdr_probe(struct platform_device *pdev)
++{
++	struct list_head *pos;
++
++	pr_debug("gpio defer reset probe\n");
++	list_for_each(pos, &deferred_reset_list) {
++		struct platform_device *pd;
++		struct defer_reset_private *prv = list_entry(
++			pos, struct defer_reset_private, next);
++		if (prv->issued)
++			continue;
++		pd = of_find_device_by_node(
++			prv->node->parent);
++		if (pd->dev.driver != 0) {
++			gdr_issue_reset(pdev, prv->node);
++			prv->issued = 1;
++		}
++	}
++	list_for_each(pos, &deferred_reset_list) {
++		struct defer_reset_private *prv = list_entry(pos,
++			struct defer_reset_private, next);
++		if (!prv->issued)
++			return -EPROBE_DEFER;
++	}
++	return 0;
++}
++
++static int gdr_remove(struct platform_device *pdev)
++{
++	return 0;
++}
++
++#ifdef CONFIG_OF
++static const struct of_device_id gdr_match[] = {
++	{ .compatible = "gpio-defer-reset" },
++	{ .compatible = "defer-reset" },
++	{},
++};
++MODULE_DEVICE_TABLE(of, gdr_match);
++#endif
++
++
++static struct platform_driver gdr_driver = {
++	.probe      = gdr_probe,
++	.remove     = gdr_remove,
++	.driver = {
++		.name   = "defer-reset",
++		.owner  = THIS_MODULE,
++		.of_match_table = of_match_ptr(gdr_match),
++	}
++};
++
++static int __init gdr_init(void)
++{
++	struct device_node *node;
++	pr_info("defer-reset-object initialied.\n");
++	platform_device_register_simple("defer-reset", -1, NULL, 0);
++	mutex_lock(&deferred_reset_mutex);
++	for_each_compatible_node(node, NULL, "defer-reset") {
++		struct defer_reset_private *prv = kmalloc(
++			sizeof(struct defer_reset_private), GFP_KERNEL);
++		prv->node = node;
++		prv->issued = 0;
++		list_add_tail(&prv->next, &deferred_reset_list);
++	}
++	mutex_unlock(&deferred_reset_mutex);
++	return platform_driver_register(&gdr_driver);
++}
++module_init(gdr_init);
++
++static void __exit gdr_cleanup(void)
++{
++	platform_driver_unregister(&gdr_driver);
++}
++module_exit(gdr_cleanup);
++
++MODULE_DESCRIPTION(DRIVER_DESC);
++MODULE_ALIAS("platform:defer-reset");
++MODULE_AUTHOR("Houcheng Lin");
++MODULE_LICENSE("GPL v2");
+-- 
+1.9.1
 
