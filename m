@@ -1,88 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753360AbaFHGID (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jun 2014 02:08:03 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:42027 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752860AbaFHGIA (ORCPT
+	id S1753405AbaFHG5q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jun 2014 02:57:46 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:59663 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752985AbaFHG5o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jun 2014 02:08:00 -0400
-Date: Sun, 8 Jun 2014 08:03:16 +0200
-From: Henrik Austad <henrik@austad.us>
-To: Morten Rasmussen <morten.rasmussen@arm.com>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        peterz@infradead.org, mingo@kernel.org, rjw@rjwysocki.net,
-        vincent.guittot@linaro.org, daniel.lezcano@linaro.org,
-        preeti@linux.vnet.ibm.com, dietmar.eggemann@arm.com
-Subject: Re: [RFC PATCH 02/16] sched: Introduce CONFIG_SCHED_ENERGY
-Message-ID: <20140608060316.GA18179@austad.us>
-References: <1400869003-27769-1-git-send-email-morten.rasmussen@arm.com>
- <1400869003-27769-3-git-send-email-morten.rasmussen@arm.com>
+	Sun, 8 Jun 2014 02:57:44 -0400
+Message-ID: <5394097C.9030006@gmail.com>
+Date: Sun, 08 Jun 2014 14:58:04 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400869003-27769-3-git-send-email-morten.rasmussen@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: liqin.linux@gmail.com, lennox.wu@gmail.com
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] arch/score/kernel/process.c: Remove useless varialbes 'ti'
+ and 'regs'
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 23, 2014 at 07:16:29PM +0100, Morten Rasmussen wrote:
-> The Energy-aware scheduler implementation is guarded by
-> CONFIG_SCHED_ENERGY.
-> 
-> Signed-off-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
-> Signed-off-by: Morten Rasmussen <morten.rasmussen@arm.com>
-> ---
->  arch/arm/Kconfig |    5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index ab438cb..bfc3a85 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
+They are useless, so remove them, the related warning (with
+allmodconfig under score):
 
-Is this going to be duplicate for each architecture enabling this? Why
-not make a kernel/Kconfig.energy and link to that from those
-architectures using it?
+    CC      arch/score/kernel/process.o
+  arch/score/kernel/process.c: In function 'copy_thread':
+  arch/score/kernel/process.c:76:18: warning: unused variable 'regs' [-Wunused-variable]
+    struct pt_regs *regs = current_pt_regs();
+                    ^
+  arch/score/kernel/process.c:74:22: warning: unused variable 'ti' [-Wunused-variable]
+    struct thread_info *ti = task_thread_info(p);
+                        ^
 
-> @@ -1926,6 +1926,11 @@ config XEN
->  	help
->  	  Say Y if you want to run Linux in a Virtual Machine on Xen on ARM.
->  
-> +config SCHED_ENERGY
-> +	bool "Energy-aware scheduling (EXPERIMENTAL)"
-> +	help
-> +	  Highly experimental energy aware task scheduling.
-> +
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+---
+ arch/score/kernel/process.c | 2 --
+ 1 file changed, 2 deletions(-)
 
-how about adding *slightly* more info here? :) (yes, yes, I know it's an RFC)
-
-"""
-Highly experimental energy aware task scheduling.
-
-This will allow the kernel to keep track of energy required for
-different capacity levels for a given CPU. That way, the scheduler can
-make more informed decisions as to where a newly woken task should be
-placed. Heterogenous platform will benefit the most from this option.
-
-Enabling this will add a significant overhead for a task-switch.
-
-If unsure, say N here.
-"""
-
->  endmenu
->  
->  menu "Boot options"
-> -- 
-> 1.7.9.5
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+diff --git a/arch/score/kernel/process.c b/arch/score/kernel/process.c
+index a1519ad3..50bf1b0 100644
+--- a/arch/score/kernel/process.c
++++ b/arch/score/kernel/process.c
+@@ -71,9 +71,7 @@ void flush_thread(void) {}
+ int copy_thread(unsigned long clone_flags, unsigned long usp,
+ 		unsigned long arg, struct task_struct *p)
+ {
+-	struct thread_info *ti = task_thread_info(p);
+ 	struct pt_regs *childregs = task_pt_regs(p);
+-	struct pt_regs *regs = current_pt_regs();
+ 
+ 	p->thread.reg0 = (unsigned long) childregs;
+ 	if (unlikely(p->flags & PF_KTHREAD)) {
 -- 
-Henrik Austad
+1.7.11.7
