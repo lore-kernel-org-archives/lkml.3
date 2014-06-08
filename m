@@ -1,82 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522AbaFHKFb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jun 2014 06:05:31 -0400
-Received: from mailgw12.technion.ac.il ([132.68.225.12]:18024 "EHLO
-	mailgw12.technion.ac.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753386AbaFHKF3 (ORCPT
+	id S1753536AbaFHKJc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jun 2014 06:09:32 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:51364 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751765AbaFHKJa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jun 2014 06:05:29 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ar4DACo0lFOERCABjGdsb2JhbABZrzoBAQaZEAGBAhYPAQEBJzyEBAEFeRBRVxmIQsgxhTEXhV2JDwcWhCsEiiymeQ
-X-IPAS-Result: Ar4DACo0lFOERCABjGdsb2JhbABZrzoBAQaZEAGBAhYPAQEBJzyEBAEFeRBRVxmIQsgxhTEXhV2JDwcWhCsEiiymeQ
-X-IronPort-AV: E=Sophos;i="4.98,998,1392156000"; 
-   d="scan'208";a="110400825"
-From: Nadav Amit <namit@cs.technion.ac.il>
-To: pbonzini@redhat.com
-Cc: gleb@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nadav Amit <namit@cs.technion.ac.il>
-Subject: [PATCH kvm-unit-tests v2] x86: emulator: long mode smsw tests
-Date: Sun,  8 Jun 2014 13:02:45 +0300
-Message-Id: <1402221765-24337-1-git-send-email-namit@cs.technion.ac.il>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <5391760E.2030401@redhat.com>
-References: <5391760E.2030401@redhat.com>
+	Sun, 8 Jun 2014 06:09:30 -0400
+Date: Sun, 8 Jun 2014 12:09:24 +0200
+From: Christoffer Dall <christoffer.dall@linaro.org>
+To: Antonios Motakis <a.motakis@virtualopensystems.com>
+Cc: alex.williamson@redhat.com, kvmarm@lists.cs.columbia.edu,
+        iommu@lists.linux-foundation.org, tech@virtualopensystems.com,
+        a.rigo@virtualopensystems.com, kvm@vger.kernel.org,
+        will.deacon@arm.com, kim.phillips@freescale.com,
+        stuart.yoder@freescale.com, eric.auger@linaro.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Vladimir Murzin <vladimir.murzin@arm.com>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH v6 14/20] vfio/platform: initial interrupts support
+Message-ID: <20140608100924.GA3279@lvm>
+References: <1401987808-23596-1-git-send-email-a.motakis@virtualopensystems.com>
+ <1401987808-23596-15-git-send-email-a.motakis@virtualopensystems.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401987808-23596-15-git-send-email-a.motakis@virtualopensystems.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SMSW instruction on long-mode is performed according to the operand size, if
-the destination operand is a register.  This patch tests whether it is
-performed correctly instead of always using two-bytes operands (as KVM
-previously did).  Note that when a dword destination operand is used, the
-result is zero-extended to qword on long-mode.
+On Thu, Jun 05, 2014 at 07:03:22PM +0200, Antonios Motakis wrote:
+> This patch allows to set an eventfd for a patform device's interrupt,
+> and also to trigger the interrupt eventfd from userspace for testing.
+> 
+> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+> ---
+>  drivers/vfio/platform/vfio_platform.c         |  36 ++++++-
+>  drivers/vfio/platform/vfio_platform_irq.c     | 130 +++++++++++++++++++++++++-
+>  drivers/vfio/platform/vfio_platform_private.h |   7 ++
+>  3 files changed, 169 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/vfio/platform/vfio_platform.c b/drivers/vfio/platform/vfio_platform.c
+> index 192291c..f4c06c6 100644
+> --- a/drivers/vfio/platform/vfio_platform.c
+> +++ b/drivers/vfio/platform/vfio_platform.c
+> @@ -177,10 +177,40 @@ static long vfio_platform_ioctl(void *device_data,
+>  
+>  		return copy_to_user((void __user *)arg, &info, minsz);
+>  
+> -	} else if (cmd == VFIO_DEVICE_SET_IRQS)
+> -		return -EINVAL;
+> +	} else if (cmd == VFIO_DEVICE_SET_IRQS) {
+> +		struct vfio_irq_set hdr;
+> +		int ret = 0;
+> +
+> +		minsz = offsetofend(struct vfio_irq_set, count);
+> +
+> +		if (copy_from_user(&hdr, (void __user *)arg, minsz))
+> +			return -EFAULT;
+> +
+> +		if (hdr.argsz < minsz)
+> +			return -EINVAL;
+> +
+> +		if (hdr.index >= vdev->num_irqs)
+> +			return -EINVAL;
+> +
+> +		if (hdr.start != 0 || hdr.count > 1)
+> +			return -EINVAL;
+> +
+> +		if (hdr.count == 0 &&
+> +			(!(hdr.flags & VFIO_IRQ_SET_DATA_NONE) ||
+> +			 !(hdr.flags & VFIO_IRQ_SET_ACTION_TRIGGER)))
+> +			return -EINVAL;
+> +
+> +		if (hdr.flags & ~(VFIO_IRQ_SET_DATA_TYPE_MASK |
+> +				  VFIO_IRQ_SET_ACTION_TYPE_MASK))
+> +			return -EINVAL;
+> +
+> +		ret = vfio_platform_set_irqs_ioctl(vdev, hdr.flags, hdr.index,
+> +						   hdr.start, hdr.count,
+> +						   (void *)arg+minsz);
+> +
+> +		return ret;
+>  
+> -	else if (cmd == VFIO_DEVICE_RESET)
+> +	} else if (cmd == VFIO_DEVICE_RESET)
+>  		return -EINVAL;
+>  
+>  	return -ENOTTY;
+> diff --git a/drivers/vfio/platform/vfio_platform_irq.c b/drivers/vfio/platform/vfio_platform_irq.c
+> index 22c214f..d79f5af 100644
+> --- a/drivers/vfio/platform/vfio_platform_irq.c
+> +++ b/drivers/vfio/platform/vfio_platform_irq.c
+> @@ -31,6 +31,9 @@
+>  
+>  #include "vfio_platform_private.h"
+>  
+> +static int vfio_set_trigger(struct vfio_platform_device *vdev,
+> +			    int index, int fd);
+> +
+>  int vfio_platform_irq_init(struct vfio_platform_device *vdev)
+>  {
+>  	int cnt = 0, i;
+> @@ -43,17 +46,142 @@ int vfio_platform_irq_init(struct vfio_platform_device *vdev)
+>  		return -ENOMEM;
+>  
+>  	for (i = 0; i < cnt; i++) {
+> -		vdev->irq[i].flags = 0;
+> +		int hwirq = platform_get_irq(vdev->pdev, i);
+> +
+> +		if (hwirq < 0)
+> +			goto err;
+> +
+> +		vdev->irq[i].flags = VFIO_IRQ_INFO_EVENTFD;
+>  		vdev->irq[i].count = 1;
+> +		vdev->irq[i].hwirq = hwirq;
+>  	}
+>  
+>  	vdev->num_irqs = cnt;
+>  
+>  	return 0;
+> +err:
+> +	kfree(vdev->irq);
+> +	return -EINVAL;
+>  }
+>  
+>  void vfio_platform_irq_cleanup(struct vfio_platform_device *vdev)
+>  {
+> +	int i;
+> +
+> +	for (i = 0; i < vdev->num_irqs; i++)
+> +		vfio_set_trigger(vdev, i, -1);
+> +
+>  	vdev->num_irqs = 0;
+>  	kfree(vdev->irq);
+>  }
+> +
+> +static irqreturn_t vfio_irq_handler(int irq, void *dev_id)
+> +{
+> +	struct eventfd_ctx *trigger = dev_id;
+> +
+> +	eventfd_signal(trigger, 1);
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static int vfio_set_trigger(struct vfio_platform_device *vdev,
+> +			    int index, int fd)
+> +{
+> +	struct vfio_platform_irq *irq = &vdev->irq[index];
+> +	struct eventfd_ctx *trigger;
+> +	int ret;
+> +
+> +	if (irq->trigger) {
+> +		free_irq(irq->hwirq, irq);
+> +		kfree(irq->name);
+> +		eventfd_ctx_put(irq->trigger);
+> +		irq->trigger = NULL;
+> +	}
 
-Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
----
- x86/emulator.c | 21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+this feels incredibly racy, is some lock protecting this access?
 
-diff --git a/x86/emulator.c b/x86/emulator.c
-index 033f246..f653127 100644
---- a/x86/emulator.c
-+++ b/x86/emulator.c
-@@ -825,6 +825,26 @@ static void test_movabs(uint64_t *mem, uint8_t *insn_page,
-     report("64-bit mov imm2", outregs.rcx == 0x9090909090909090);
- }
- 
-+static void test_smsw_reg(uint64_t *mem, uint8_t *insn_page,
-+		      uint8_t *alt_insn_page, void *insn_ram)
-+{
-+	unsigned long cr0 = read_cr0();
-+	inregs = (struct regs){ .rax = 0x1234567890abcdeful };
-+
-+	MK_INSN(smsww, "smsww %ax\n\t");
-+	trap_emulator(mem, alt_insn_page, &insn_smsww);
-+	report("16-bit smsw reg", (u16)outregs.rax == (u16)cr0 &&
-+				  outregs.rax >> 16 == inregs.rax >> 16);
-+
-+	MK_INSN(smswl, "smswl %eax\n\t");
-+	trap_emulator(mem, alt_insn_page, &insn_smswl);
-+	report("32-bit smsw reg", outregs.rax == (u32)cr0);
-+
-+	MK_INSN(smswq, "smswq %rax\n\t");
-+	trap_emulator(mem, alt_insn_page, &insn_smswq);
-+	report("64-bit smsw reg", outregs.rax == cr0);
-+}
-+
- static void test_crosspage_mmio(volatile uint8_t *mem)
- {
-     volatile uint16_t w, *pw;
-@@ -1024,6 +1044,7 @@ int main()
- 
- 	test_mmx_movq_mf(mem, insn_page, alt_insn_page, insn_ram);
- 	test_movabs(mem, insn_page, alt_insn_page, insn_ram);
-+	test_smsw_reg(mem, insn_page, alt_insn_page, insn_ram);
- 
- 	test_crosspage_mmio(mem);
- 
--- 
-1.9.1
-
+-Christoffer
