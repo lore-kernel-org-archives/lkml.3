@@ -1,64 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932261AbaFHVo4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jun 2014 17:44:56 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:53292 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753980AbaFHVog (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jun 2014 17:44:36 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Lisa Nguyen <lisa@xenapiadmin.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Tugce Sirin <ztugcesirin@gmail.com>,
-        Masanari Iida <standby24x7@gmail.com>,
-        Wenliang Fan <fanwlexca@gmail.com>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        Aldo Iljazi <neonsync1@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: bcm: nvm.c:  Cleaning up a array that is filled incompletely
-Date: Sun,  8 Jun 2014 23:45:28 +0200
-Message-Id: <1402263928-1961-2-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1402263928-1961-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1402263928-1961-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	id S1754070AbaFHWPF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jun 2014 18:15:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5607 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753707AbaFHWO5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jun 2014 18:14:57 -0400
+Date: Sun, 8 Jun 2014 18:14:36 -0400
+From: Luiz Capitulino <lcapitulino@redhat.com>
+To: akpm@linux-foundation.org
+Cc: andi@firstfloor.org, riel@redhat.com, yinghai@kernel.org,
+        isimatu.yasuaki@jp.fujitsu.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: [PATCH] x86: numa: drop ZONE_ALIGN
+Message-ID: <20140608181436.17de69ac@redhat.com>
+Organization: Red Hat
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Array 'SigBuff' is filled incompletely.
-Someone forget to multiply for the sizeof type.
+In short, I believe this is just dead code for the upstream kernel but this
+causes a bug for 2.6.32 based kernels.
 
-This was partly found using a static code analysis program called cppcheck.
+The setup_node_data() function is used to initialize NODE_DATA() for a node.
+It gets a node id and a memory range. The start address for the memory range
+is rounded up to ZONE_ALIGN and then it's used to initialize
+NODE_DATA(nid)->node_start_pfn.
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+However, a few function calls later free_area_init_node() is called and it
+overwrites NODE_DATA()->node_start_pfn with the lowest PFN for the node.
+Here's the call callchain:
+
+setup_arch()
+  initmem_init()
+    x86_numa_init()
+      numa_init()
+        numa_register_memblks()
+          setup_node_data()        <-- initializes NODE_DATA()->node_start_pfn
+  ...
+  x86_init.paging.pagetable_init()
+    paging_init()
+      zone_sizes_init()
+        free_area_init_nodes()
+          free_area_init_node()    <-- overwrites NODE_DATA()->node_start_pfn
+
+This doesn't seem to cause any problems to the current kernel because the
+rounded up start address is not really used. However, I came accross this
+dead assignment while debugging a real issue on a 2.6.32 based kernel.
+
+The 2.6.32 kernel did use the rounded up range start to register a node's
+memory range with the bootmem interface by calling init_bootmem_node().
+A few steps later during bootmem initialization, the 2.6.32 kernel calls
+free_bootmem_with_active_regions() to initialize the bootmem bitmap. This
+function goes through all memory ranges read from the SRAT table and try
+to mark them as usable for bootmem usage. However, before marking a range
+as usable, mark_bootmem_node() asserts if the memory range start address
+(as read from the SRAT table) is less than the value registered with
+init_bootmem_node(). The assertion will trigger whenever the memory range
+start address is rounded up, as it will always be greater than what is
+reported in the SRAT table. This is true when the 2.6.32 kernel runs as a
+HyperV guest on Windows Server 2012. Dropping ZONE_ALIGN solves the
+problem there.
+
+Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
 ---
- drivers/staging/bcm/nvm.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/numa.h | 1 -
+ arch/x86/mm/numa.c          | 2 --
+ 2 files changed, 3 deletions(-)
 
-diff --git a/drivers/staging/bcm/nvm.c b/drivers/staging/bcm/nvm.c
-index 63be3be..d56ca3b 100644
---- a/drivers/staging/bcm/nvm.c
-+++ b/drivers/staging/bcm/nvm.c
-@@ -3591,7 +3591,7 @@ int BcmCopyISO(struct bcm_mini_adapter *Adapter, struct bcm_flash2x_copy_section
+diff --git a/arch/x86/include/asm/numa.h b/arch/x86/include/asm/numa.h
+index 4064aca..01b493e 100644
+--- a/arch/x86/include/asm/numa.h
++++ b/arch/x86/include/asm/numa.h
+@@ -9,7 +9,6 @@
+ #ifdef CONFIG_NUMA
  
- 			if (IsThisHeaderSector == TRUE) {
- 				/* If this is header sector write 0xFFFFFFFF at the sig time and in last write sig */
--				memcpy(SigBuff, Buff + sigOffset, MAX_RW_SIZE);
-+				memcpy(SigBuff, Buff + sigOffset, sizeof(SigBuff));
+ #define NR_NODE_MEMBLKS		(MAX_NUMNODES*2)
+-#define ZONE_ALIGN (1UL << (MAX_ORDER+PAGE_SHIFT))
  
- 				for (i = 0; i < MAX_RW_SIZE; i++)
- 					*(Buff + sigOffset + i) = 0xFF;
-@@ -3704,7 +3704,7 @@ int BcmCopyISO(struct bcm_mini_adapter *Adapter, struct bcm_flash2x_copy_section
+ /*
+  * Too small node sizes may confuse the VM badly. Usually they
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index 1d045f9..69f6362 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -200,8 +200,6 @@ static void __init setup_node_data(int nid, u64 start, u64 end)
+ 	if (end && (end - start) < NODE_MIN_SIZE)
+ 		return;
  
- 			if (IsThisHeaderSector == TRUE) {
- 				/* If this is header sector write 0xFFFFFFFF at the sig time and in last write sig */
--				memcpy(SigBuff, Buff + sigOffset, MAX_RW_SIZE);
-+				memcpy(SigBuff, Buff + sigOffset, sizeof(SigBuff));
+-	start = roundup(start, ZONE_ALIGN);
+-
+ 	printk(KERN_INFO "Initmem setup node %d [mem %#010Lx-%#010Lx]\n",
+ 	       nid, start, end - 1);
  
- 				for (i = 0; i < MAX_RW_SIZE; i++)
- 					*(Buff + sigOffset + i) = 0xFF;
 -- 
-1.7.10.4
+1.9.3
 
