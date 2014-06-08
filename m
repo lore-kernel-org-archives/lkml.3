@@ -1,54 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753544AbaFHKni (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jun 2014 06:43:38 -0400
-Received: from lekensteyn.nl ([178.21.112.251]:34774 "EHLO lekensteyn.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752819AbaFHKng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jun 2014 06:43:36 -0400
-From: Peter Wu <peter@lekensteyn.nl>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] net: wireless: rtlwifi: rtl8192de: hw.c: Cleaning up conjunction always evaluates to false
-Date: Sun, 08 Jun 2014 12:43:25 +0200
-Message-ID: <3239222.FyGtueg2aO@al>
-User-Agent: KMail/4.13.1 (Linux/3.15.0-rc8-custom-00058-gd2cfd31; KDE/4.13.1; x86_64; ; )
-In-Reply-To: <CAFo99gb2gzLjv_4b3O-e0B1R8P5BTGbPJLuYYAmoyww9hkmrvA@mail.gmail.com>
-References: <1402151419-18296-1-git-send-email-rickard_strandqvist@spectrumdigital.se> <1436639.AmJiDmeQZF@al> <CAFo99gb2gzLjv_4b3O-e0B1R8P5BTGbPJLuYYAmoyww9hkmrvA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Spam-Score: -0.0 (/)
+	id S1753543AbaFHLO2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jun 2014 07:14:28 -0400
+Received: from ns.horizon.com ([71.41.210.147]:14128 "HELO ns.horizon.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753481AbaFHLO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jun 2014 07:14:27 -0400
+Date: 8 Jun 2014 07:14:25 -0400
+Message-ID: <20140608111425.3897.qmail@ns.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: dborkman@redhat.com, linux@horizon.com
+Subject: Re: [PATCH 7/7] lib/random32.c: Remove redundant U suffixes on integers
+Cc: davem@davemloft.net, hannes@stressinduktion.org,
+        linux-kernel@vger.kernel.org, shemminger@osdl.org, tytso@mit.edu
+In-Reply-To: <53943C95.4060200@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 08 June 2014 12:36:11 Rickard Strandqvist wrote:
-> Then we use MSR_MASK instead, new patch then. But I will wait a day?
-> Or what is long enough to be sure that nobody else have any
-> objections? How is this usually resolved?
+> [ Please also Cc Hannes in your series. ]
 
-Well, Larry is the maintainer, so he will ultimately pick up patches.
-One or two days should give people some time to read and reply.
+Thank you!  But there are two frequent kernel contributors with that name;
+the other is Hannes Reinecke <hare@suse.de>.
 
-As for MSR_MASK, that macro does not exist yet, I was wondering whether
-it's OK to add a new macro? (Larry?)
+> I don't see the point in why we _need_ to change this here.
 
-> Sure, I can send a patch for all the files instead. However, earlier
-> received complaints when I sent patches extending over more than one
-> file.
-> 
-> I'll check again how the cover letter works. Although when I try with
-> my send patch mail script it did not work as I wanted.
+We don't.  It was just a slight legibility improvement (at least, *I*
+find it more legible) included as long as I was working in the area.
+But split out to avoid making review of the substantive parts any
+more difficult, and so it can be dropped easily if there are objections.
 
-See the manual page git-send-email(1) and git-format-patch(1). In
-particular the Example section of git-send-email(1).
-
-Kind regards,
-Peter
-
+We tend to avoid cosmetic cleanups if there is not other work to
+do in an area, so I assume that if there *is* other work to do in
+an area, cosmetic cleanups are okay.
