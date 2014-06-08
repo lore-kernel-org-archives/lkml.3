@@ -1,78 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753639AbaFHMND (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jun 2014 08:13:03 -0400
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:40589 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753313AbaFHMNA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jun 2014 08:13:00 -0400
+	id S1753583AbaFHMQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jun 2014 08:16:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41456 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753313AbaFHMQ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jun 2014 08:16:27 -0400
+Message-ID: <5394540D.2030507@redhat.com>
+Date: Sun, 08 Jun 2014 14:16:13 +0200
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <1401906155-10543-3-git-send-email-berthe.ab@gmail.com>
-References: <CAAVeFuLMLfa-1RhcdSrKDUz7=eLqZurBSFSsN7N0x-0S+_btJA@mail.gmail.com>
- <1401906155-10543-1-git-send-email-berthe.ab@gmail.com> <1401906155-10543-3-git-send-email-berthe.ab@gmail.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Sun, 8 Jun 2014 21:12:39 +0900
-Message-ID: <CAAVeFu+ZWy1He1CxTh+GmHtwow0P=vX_9u0P67-p_ntpqDQGtg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] gpio: gpiolib: set gpiochip_remove retval to void
-To: abdoulaye berthe <berthe.ab@gmail.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>, m@bues.ch,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: George Spelvin <linux@horizon.com>
+CC: davem@davemloft.net, shemminger@osdl.org, tytso@mit.edu,
+        linux-kernel@vger.kernel.org, hannes@stressinduktion.org
+Subject: Re: [PATCH 3/7] lib/random32.c: Replace an #ifdef with a stub prandom_state_selftest()
+References: <20140607082235.9839.qmail@ns.horizon.com>
+In-Reply-To: <20140607082235.9839.qmail@ns.horizon.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 5, 2014 at 3:22 AM, abdoulaye berthe <berthe.ab@gmail.com> wrote:
-> This avoids handling gpiochip remove error in device
-> remove handler.
+On 06/07/2014 10:22 AM, George Spelvin wrote:
+> The preferred Linux style for optional features is to define
+> no-op stub functions rather than wrap each call site in #ifdef.
 >
-> Signed-off-by: abdoulaye berthe <berthe.ab@gmail.com>
+> Signed-off-by: George Spelvin <linux@horizon.com>
 > ---
->  drivers/gpio/gpiolib.c      | 24 +++++++-----------------
->  include/linux/gpio/driver.h |  2 +-
->  2 files changed, 8 insertions(+), 18 deletions(-)
+>   lib/random32.c | 4 ++--
+>   1 file changed, 2 insertions(+), 2 deletions(-)
 >
-> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-> index f48817d..022543f 100644
-> --- a/drivers/gpio/gpiolib.c
-> +++ b/drivers/gpio/gpiolib.c
-> @@ -1263,10 +1263,9 @@ static void gpiochip_irqchip_remove(struct gpio_chip *gpiochip);
->   *
->   * A gpio_chip with any GPIOs still requested may not be removed.
->   */
-> -int gpiochip_remove(struct gpio_chip *chip)
-> +void gpiochip_remove(struct gpio_chip *chip)
->  {
->         unsigned long   flags;
-> -       int             status = 0;
->         unsigned        id;
+> diff --git a/lib/random32.c b/lib/random32.c
+> index 2e7c15c0..e8f3557b 100644
+> --- a/lib/random32.c
+> +++ b/lib/random32.c
+> @@ -40,6 +40,8 @@
 >
->         acpi_gpiochip_remove(chip);
-> @@ -1278,24 +1277,15 @@ int gpiochip_remove(struct gpio_chip *chip)
->         of_gpiochip_remove(chip);
+>   #ifdef CONFIG_RANDOM32_SELFTEST
+>   static void __init prandom_state_selftest(void);
+> +#else
+> +#define prandom_state_selftest() (void)0
+
+Fine by me. I think you can remove this '(void)0' here, though.
+
+>   #endif
 >
->         for (id = 0; id < chip->ngpio; id++) {
-> -               if (test_bit(FLAG_REQUESTED, &chip->desc[id].flags)) {
-> -                       status = -EBUSY;
-> -                       break;
-> -               }
-> -       }
-> -       if (status == 0) {
-> -               for (id = 0; id < chip->ngpio; id++)
-> -                       chip->desc[id].chip = NULL;
-> -
-> -               list_del(&chip->list);
-> +               if (test_bit(FLAG_REQUESTED, &chip->desc[id].flags))
-> +                       panic("gpio: removing gpiochip with gpios still requested\n");
-
-Really, really I don't think we should panic here. Apparently if you
-don't do this things are going to crash later on some platforms. Could
-you detail what the problem is exactly so we can try and come with a
-solution?
-
-Event if we crash later with a more obscure reason, using pr_err()
-here to provide some information should be helpful enough.
-
-Alex.
+>   static DEFINE_PER_CPU(struct rnd_state, net_rand_state);
+> @@ -188,9 +190,7 @@ static int __init prandom_init(void)
+>   {
+>   	int i;
+>
+> -#ifdef CONFIG_RANDOM32_SELFTEST
+>   	prandom_state_selftest();
+> -#endif
+>
+>   	for_each_possible_cpu(i) {
+>   		struct rnd_state *state = &per_cpu(net_rand_state,i);
+>
