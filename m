@@ -1,256 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753325AbaFHCs0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 22:48:26 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:44388 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753256AbaFHCsY (ORCPT
+	id S1753278AbaFHC44 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 22:56:56 -0400
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:47320 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753187AbaFHC4y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 22:48:24 -0400
-Message-ID: <1402195701.12743.18.camel@ceramic.home.fifi.org>
-Subject: Re: Phantom ACL-related xattrs on 3.14.4 NFS client
-From: Philippe Troin <phil@coldcreektech.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
-Date: Sat, 07 Jun 2014 19:48:21 -0700
-In-Reply-To: <20140607140414.GA26534@infradead.org>
-References: <1402082953.28220.7.camel@ceramic.home.fifi.org>
-	 <CAHQdGtS2BL9u4DV=FZ0HaXO-iTNPU4hTGVR--HubNa4A_6UNog@mail.gmail.com>
-	 <20140607140414.GA26534@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 7 Jun 2014 22:56:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140605062336.GA14440@gondor.apana.org.au>
+References: <20110724011752.GA14373@gondor.apana.org.au>
+	<20111031040952.GA19659@gondor.apana.org.au>
+	<20120106041250.GA7759@gondor.apana.org.au>
+	<20121004095357.GA11777@gondor.apana.org.au>
+	<20121214103156.GA5840@gondor.apana.org.au>
+	<20130223023331.GA11002@gondor.apana.org.au>
+	<20130907035544.GA22658@gondor.apana.org.au>
+	<20131107080131.GA32307@gondor.apana.org.au>
+	<20140123115319.GA20602@gondor.apana.org.au>
+	<20140401100001.GA12386@gondor.apana.org.au>
+	<20140605062336.GA14440@gondor.apana.org.au>
+Date: Sat, 7 Jun 2014 19:56:53 -0700
+X-Google-Sender-Auth: UV-W-snJJsk0Wyz019MRM4uKAkE
+Message-ID: <CA+55aFz0d4N5hcjqPxzz894WMaoYxBX7rLWXnCa12z=9ogacTg@mail.gmail.com>
+Subject: Re: Crypto Update for 3.16
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Herbert Xu <herbert@gondor.apana.org.au>,
+        Sonic Zhang <sonic.zhang@analog.com>, Steven Miao <realmz6@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Trond & Christoph,
+On Wed, Jun 4, 2014 at 11:23 PM, Herbert Xu <herbert@gondor.apana.org.au> wrote:
+>
+> Here is the crypto update for 3.16:
 
-It's still broken, but in a different way.
-The phantom attrs are gone, but the attr/acl interaction is still
-uncertain.
+There's something odd going on with bfin_crc.h.
 
-I have tested vanilla  3.14.5 + this patch on x86_64.
-Mount options are the same as last time (NFSv3).
+You moved it in commit 52e6e543f2d8 ("crypto: bfin_crc - access crc
+registers by readl and writel functions").
 
-This is what I see on the client:
+It got *deleted* by commit 3356c99ea392 ("bfin_crc: Move architecture
+independant crc header file out of the blackfin folder") which claims
+to just move things.
 
-        nfsv3client% mkdir x
-        nfsv3client% cd x
-        nfsv3client% getfattr -m '.*' .
-        nfsv3client% getfacl .
-        # file: .
-        # owner: phil
-        # group: phil
-        user::rwx
-        group::rwx
-        other::r-x
+Both of those commits are by Sonic Zhang, just came to me through two
+different trees (though your crypto tree, and through Steven Miao's
+bfin tree).
 
-OK so far: no more phantom attrs.
-This is where things get dodgy:
-        
-        nfsv3client% setfacl -m u:root:r .   
-        nfsv3client% getfacl .
-        # file: .
-        # owner: phil
-        # group: phil
-        user::rwx
-        user:root:r--
-        group::rwx
-        mask::rwx
-        other::r-x
-        
-        nfsv3client% getfattr -m '.*' .
-        [1]    2123 segmentation fault  getfattr -m '.*' .
-        % strace getfattr -m '.*' . 2>&1 | tail -n 20
-        fstat(3, {st_mode=S_IFREG|0644, st_size=26254, ...}) = 0
-        mmap(NULL, 26254, PROT_READ, MAP_SHARED, 3, 0) = 0x7f46a1450000
-        close(3)                                = 0
-        getrlimit(RLIMIT_NOFILE, {rlim_cur=1024, rlim_max=4*1024}) = 0
-        lstat(".", {st_mode=S_IFDIR|0775, st_size=4096, ...}) = 0
-        listxattr(".", NULL, 0)                 = 23
-        listxattr(".", "system.posix_acl_access", 256) = 23
-        brk(0)                                  = 0x1138000
-        brk(0x1178000)                          = 0x1178000
-        brk(0)                                  = 0x1178000
-        brk(0)                                  = 0x1178000
-        brk(0x1159000)                          = 0x1159000
-        brk(0)                                  = 0x1159000
-        mmap(NULL, 266240, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f46a140f000
-        brk(0)                                  = 0x1159000
-        brk(0)                                  = 0x1159000
-        brk(0x1139000)                          = 0x1139000
-        brk(0)                                  = 0x1139000
-        --- SIGSEGV {si_signo=SIGSEGV, si_code=SEGV_MAPERR, si_addr=0x11586e8} ---
-        +++ killed by SIGSEGV +++
-        [1]    2311 segmentation fault  strace getfattr -m '.*' . 2>&1
-        | 
-               2312 done                tail -n 20
+I'm assuming that the delete was actually incorrect, and should have
+been a move, because it looks like the bfin_crc.c file won't compile
+without it. So I've re-instated that file.
 
-I have no idea get getfattr crashes right after the listxattr() syscall,
-but it surely doesn't on the NFSv3 server nor with 3.13.
-A quick check on the NFS server shows the the ACLs are correctly set:
+But the state of the bfin tree seems to be crap. Somebody should take
+a look at what happened here. My suspicion is that commit 3356c99ea392
+was broken by Steven Miao trying to only touch files in arch/blackfin
+or something.
 
-        nfsv3server% cd /path/to/x
-        nfsv3server% getfacl .
-        # file: .
-        # owner: phil
-        # group: phil
-        user::rwx
-        user:root:r--
-        group::rwx
-        mask::rwx
-        other::r-x
-        
-        nfsv3server% getfattr -m '.*' .
-        # file: .
-        system.posix_acl_access
-
-Back on the client, clearing the ACL confuses the client further:
-
-        nfsv3client% setfacl -b .                               
-        nfsv3client% getfacl .                                  
-        # file: .
-        # owner: phil
-        # group: phil
-        user::rwx
-        group::rwx
-        other::r-x
-        
-        nfsv3client% strace getfattr -m '.*' . 2>&1 | tail -n 20
-        fstat(3, {st_mode=S_IFREG|0644, st_size=26254, ...}) = 0
-        mmap(NULL, 26254, PROT_READ, MAP_SHARED, 3, 0) = 0x7fc7e3f9a000
-        close(3)                                = 0
-        getrlimit(RLIMIT_NOFILE, {rlim_cur=1024, rlim_max=4*1024}) = 0
-        lstat(".", {st_mode=S_IFDIR|0775, st_size=4096, ...}) = 0
-        listxattr(".", NULL, 0)                 = 23
-        listxattr(".", "system.posix_acl_access", 256) = 23
-        brk(0)                                  = 0x1655000
-        brk(0x1695000)                          = 0x1695000
-        brk(0)                                  = 0x1695000
-        brk(0)                                  = 0x1695000
-        brk(0x1676000)                          = 0x1676000
-        brk(0)                                  = 0x1676000
-        mmap(NULL, 266240, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fc7e3f59000
-        brk(0)                                  = 0x1676000
-        brk(0)                                  = 0x1676000
-        brk(0x1656000)                          = 0x1656000
-        brk(0)                                  = 0x1656000
-        --- SIGSEGV {si_signo=SIGSEGV, si_code=SEGV_MAPERR, si_addr=0x16756e8} ---
-        +++ killed by SIGSEGV +++
-        [1]    2353 segmentation fault  strace getfattr -m '.*' . 2>&1
-        | 
-               2354 done                tail -n 20
-        nfsv3client% getfattr -n system.posix_acl_access .
-        # file: .
-        system.posix_acl_access=0sAgAAAAEABwD/////BAAHAP////8gAAUA/////w==
-
-See how:
-      * getfacl says there's no ACLs
-      * getfattr says there's still a system.posix_acl_access attr.
-Interestingly, the server says otherwise:
-
-        nfsv3server% getfattr -m '.*' .
-        nfsv3server% getfattr -n system.posix_acl_access .
-        .: system.posix_acl_access: No such attribute
-        [1]    2233 exit 1     getfattr -n system.posix_acl_access .
-        nfsv3server% getfacl  .                          
-        # file: .
-        # owner: phil
-        # group: phil
-        user::rwx
-        group::rwx
-        other::r-x
-
-Phil.
-
-On Sat, 2014-06-07 at 07:04 -0700, Christoph Hellwig wrote:
-> On Fri, Jun 06, 2014 at 04:37:03PM -0400, Trond Myklebust wrote:
-> > Christoph, what is the intended interface for telling
-> > posix_acl_xattr_list() that there are no acls on a particular file?
-> > Should there perhaps be a call to get_acl()?
-> 
-> The interface is to not call posix_acl_xattr_list unless you have ACLs.
-> Every implementation does this, except for generic_listxattr which is
-> only used by NFS.
-> 
-> Philippe, can you test the patch below?
-> 
-> 
-> diff --git a/fs/nfs/nfs3acl.c b/fs/nfs/nfs3acl.c
-> index 871d6ed..e083827 100644
-> --- a/fs/nfs/nfs3acl.c
-> +++ b/fs/nfs/nfs3acl.c
-> @@ -247,3 +247,45 @@ const struct xattr_handler *nfs3_xattr_handlers[] = {
->  	&posix_acl_default_xattr_handler,
->  	NULL,
->  };
-> +
-> +static int
-> +nfs3_list_one_acl(struct inode *inode, int type, const char *name, void *data,
-> +		size_t size, ssize_t *result)
-> +{
-> +	struct posix_acl *acl;
-> +	char *p = data + *result;
-> +
-> +	acl = get_acl(inode, type);
-> +	if (!acl)
-> +		return 0;
-> +
-> +	posix_acl_release(acl);
-> +
-> +	*result += strlen(name);
-> +	if (!size)
-> +		return 0;
-> +	if (*result > size)
-> +		return -ERANGE;
-> +
-> +	strcpy(p, name);
-> +	return 0;
-> +}
-> +
-> +ssize_t
-> +nfs3_listxattr(struct dentry *dentry, char *data, size_t size)
-> +{
-> +	struct inode *inode = dentry->d_inode;
-> +	ssize_t result = 0;
-> +	int error;
-> +
-> +	error = nfs3_list_one_acl(inode, ACL_TYPE_ACCESS,
-> +			POSIX_ACL_XATTR_ACCESS, data, size, &result);
-> +	if (error)
-> +		return error;
-> +
-> +	error = nfs3_list_one_acl(inode, ACL_TYPE_DEFAULT,
-> +			POSIX_ACL_XATTR_DEFAULT, data, size, &result);
-> +	if (error)
-> +		return error;
-> +	return result;
-> +}
-> diff --git a/fs/nfs/nfs3proc.c b/fs/nfs/nfs3proc.c
-> index db60149..0e2bb26 100644
-> --- a/fs/nfs/nfs3proc.c
-> +++ b/fs/nfs/nfs3proc.c
-> @@ -891,7 +891,7 @@ static const struct inode_operations nfs3_dir_inode_operations = {
->  	.getattr	= nfs_getattr,
->  	.setattr	= nfs_setattr,
->  #ifdef CONFIG_NFS_V3_ACL
-> -	.listxattr	= generic_listxattr,
-> +	.listxattr	= nfs3_listxattr,
->  	.getxattr	= generic_getxattr,
->  	.setxattr	= generic_setxattr,
->  	.removexattr	= generic_removexattr,
-> @@ -905,7 +905,7 @@ static const struct inode_operations nfs3_file_inode_operations = {
->  	.getattr	= nfs_getattr,
->  	.setattr	= nfs_setattr,
->  #ifdef CONFIG_NFS_V3_ACL
-> -	.listxattr	= generic_listxattr,
-> +	.listxattr	= nfs3_listxattr,
->  	.getxattr	= generic_getxattr,
->  	.setxattr	= generic_setxattr,
->  	.removexattr	= generic_removexattr,
-
-
+               Linus
