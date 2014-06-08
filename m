@@ -1,131 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753560AbaFHKKL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jun 2014 06:10:11 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:59467 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753543AbaFHKKJ (ORCPT
+	id S1752799AbaFHKRL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jun 2014 06:17:11 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:50297 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751002AbaFHKRJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jun 2014 06:10:09 -0400
-From: Yi Li <yi.li@linaro.org>
-To: ard.biesheuvel@linaro.org, msalter@redhat.com, catalin.marinas@arm.com,
-        will.deacon@arm.com, sudeep.karkadanagesha@arm.com,
-        steve.capper@linaro.org, lorenzo.pieralisi@arm.com,
-        liviu.dudau@arm.com, grant.likely@linaro.org, mark.rutland@arm.com
-Cc: yi.li@linaro.org, phoenix.liyi@huawei.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] arm64: dmi: Add SMBIOS/DMI support on arm64
-Date: Sun,  8 Jun 2014 18:09:25 +0800
-Message-Id: <1402222165-3363-1-git-send-email-yi.li@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Sun, 8 Jun 2014 06:17:09 -0400
+Date: Sun, 8 Jun 2014 12:17:03 +0200
+From: Christoffer Dall <christoffer.dall@linaro.org>
+To: Antonios Motakis <a.motakis@virtualopensystems.com>
+Cc: alex.williamson@redhat.com, kvmarm@lists.cs.columbia.edu,
+        iommu@lists.linux-foundation.org, tech@virtualopensystems.com,
+        a.rigo@virtualopensystems.com, kvm@vger.kernel.org,
+        will.deacon@arm.com, kim.phillips@freescale.com,
+        stuart.yoder@freescale.com, eric.auger@linaro.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Vladimir Murzin <vladimir.murzin@arm.com>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH v6 15/20] vfio/platform: support for maskable and
+ automasked interrupts
+Message-ID: <20140608101703.GB3279@lvm>
+References: <1401987808-23596-1-git-send-email-a.motakis@virtualopensystems.com>
+ <1401987808-23596-16-git-send-email-a.motakis@virtualopensystems.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401987808-23596-16-git-send-email-a.motakis@virtualopensystems.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add smbios/dmi support on arm64 system, it depends on EFI boot.
+On Thu, Jun 05, 2014 at 07:03:23PM +0200, Antonios Motakis wrote:
+> Adds support to mask interrupts, and also for automasked interrupts.
+> Level sensitive interrupts are exposed as automasked interrupts and
+> are masked and disabled automatically when they fire.
+> 
+> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+> ---
+>  drivers/vfio/platform/vfio_platform_irq.c     | 112 ++++++++++++++++++++++++--
+>  drivers/vfio/platform/vfio_platform_private.h |   2 +
+>  2 files changed, 109 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/vfio/platform/vfio_platform_irq.c b/drivers/vfio/platform/vfio_platform_irq.c
+> index d79f5af..10dfbf0 100644
+> --- a/drivers/vfio/platform/vfio_platform_irq.c
+> +++ b/drivers/vfio/platform/vfio_platform_irq.c
+> @@ -51,9 +51,17 @@ int vfio_platform_irq_init(struct vfio_platform_device *vdev)
+>  		if (hwirq < 0)
+>  			goto err;
+>  
+> -		vdev->irq[i].flags = VFIO_IRQ_INFO_EVENTFD;
+> +		spin_lock_init(&vdev->irq[i].lock);
+> +
+> +		vdev->irq[i].flags = VFIO_IRQ_INFO_EVENTFD
+> +					| VFIO_IRQ_INFO_MASKABLE;
+> +
+> +		if (irq_get_trigger_type(hwirq) & IRQ_TYPE_LEVEL_MASK)
+> +			vdev->irq[i].flags |= VFIO_IRQ_INFO_AUTOMASKED;
 
-Since SMBIOS is very important specification for the hardware vendors
-, it describes the hardware informations like BIOS version, 
-serial number, physical layout of the ports and so on. All x86 and IA64
-servers has supported this specfication. If ARM64 hopes to enter server
-market, then SMBIOS needs to support on ARM64, and it has been included
-as one important section in SBBR document from ARM.
+This seems to rely on the fact that you had actually loaded a driver for
+your device to set the right type.  Is this assumption always correct?
 
-This has been tested by dmidecode and lshw tools.
+It seems to me that this configuration bit should now be up to your user
+space drive who is the best candidate to know details about your device
+at this point?
 
-Signed-off-by: Yi Li <yi.li@linaro.org>
----
+> +
+>  		vdev->irq[i].count = 1;
+>  		vdev->irq[i].hwirq = hwirq;
+> +		vdev->irq[i].masked = false;
+>  	}
+>  
+>  	vdev->num_irqs = cnt;
+> @@ -77,11 +85,27 @@ void vfio_platform_irq_cleanup(struct vfio_platform_device *vdev)
+>  
+>  static irqreturn_t vfio_irq_handler(int irq, void *dev_id)
+>  {
+> -	struct eventfd_ctx *trigger = dev_id;
+> +	struct vfio_platform_irq *irq_ctx = dev_id;
+> +	unsigned long flags;
+> +	int ret = IRQ_NONE;
+> +
+> +	spin_lock_irqsave(&irq_ctx->lock, flags);
+> +
+> +	if (!irq_ctx->masked) {
+> +		ret = IRQ_HANDLED;
+> +
+> +		if (irq_ctx->flags & VFIO_IRQ_INFO_AUTOMASKED) {
+> +			disable_irq_nosync(irq_ctx->hwirq);
+> +			irq_ctx->masked = true;
+> +		}
+> +	}
+>  
+> -	eventfd_signal(trigger, 1);
+> +	spin_unlock_irqrestore(&irq_ctx->lock, flags);
+>  
+> -	return IRQ_HANDLED;
+> +	if (ret == IRQ_HANDLED)
+> +		eventfd_signal(irq_ctx->trigger, 1);
+> +
+> +	return ret;
+>  }
+>  
+>  static int vfio_set_trigger(struct vfio_platform_device *vdev,
+> @@ -162,6 +186,82 @@ static int vfio_platform_set_irq_trigger(struct vfio_platform_device *vdev,
+>  	return -EFAULT;
+>  }
+>  
+> +static int vfio_platform_set_irq_unmask(struct vfio_platform_device *vdev,
+> +				    unsigned index, unsigned start,
+> +				    unsigned count, uint32_t flags, void *data)
+> +{
+> +	uint8_t arr;
 
-Changes since v1:
-  -Followed Ard Biesheuvel's suggestion to rebase the patch on
-   Matt Fleming's arm64-efi branch.
 
-  -Followed Mark Rutland's suggesiton to change the include header.
-  
-  -Followed Grant likely's suggestion to enrich the SMBIOS background
-   and the reason why we need to enable the SMBIOS on ARM64 platform.
+arr?
 
- arch/arm64/Kconfig           |   10 ++++++++++
- arch/arm64/include/asm/dmi.h |   28 ++++++++++++++++++++++++++++
- arch/arm64/kernel/setup.c    |    2 ++
- 3 files changed, 40 insertions(+)
- create mode 100644 arch/arm64/include/asm/dmi.h
+> +
+> +	if (start != 0 || count != 1)
+> +		return -EINVAL;
+> +
+> +	switch (flags & VFIO_IRQ_SET_DATA_TYPE_MASK) {
+> +	case VFIO_IRQ_SET_DATA_BOOL:
+> +		if (copy_from_user(&arr, data, sizeof(uint8_t)))
+> +			return -EFAULT;
+> +
+> +		if (arr != 0x1)
+> +			return -EINVAL;
 
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index 6c71f12..13ee261 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -294,6 +294,16 @@ config EFI
- 	  allow the kernel to be booted as an EFI application. This
- 	  is only useful on systems that have UEFI firmware.
- 
-+config DMI
-+	bool "Enable support for SMBIOS (DMI) tables"
-+	depends on EFI
-+	default y
-+	help
-+	  This enables SMBIOS/DMI feature for systems.
-+
-+	  This option is only useful on systems that have UEFI firmware.
-+	  However, even with this option, the resultant kernel should
-+	  continue to boot on existing non-UEFI platforms.
- endmenu
- 
- menu "Userspace binary formats"
-diff --git a/arch/arm64/include/asm/dmi.h b/arch/arm64/include/asm/dmi.h
-new file mode 100644
-index 0000000..a0b3dac
---- /dev/null
-+++ b/arch/arm64/include/asm/dmi.h
-@@ -0,0 +1,28 @@
-+/*
-+ * arch/arm64/include/asm/dmi.h
-+ *
-+ * Copyright (C) 2013 Linaro Limited.
-+ * Written by: Yi Li (yi.li@linaro.org)
-+ *
-+ * based on arch/ia64/include/asm/dmi.h
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ */
-+
-+
-+#ifndef _ASM_DMI_H
-+#define _ASM_DMI_H 1
-+
-+#include <linux/slab.h>
-+#include <linux/efi.h>
-+
-+/* Use efi mappings for DMI */
-+#define dmi_early_remap(x, l)	efi_lookup_mapped_addr(x)
-+#define dmi_early_unmap(x, l)
-+#define dmi_remap(x, l)			efi_lookup_mapped_addr(x)
-+#define dmi_unmap(x)
-+#define dmi_alloc(l)			kzalloc(l, GFP_ATOMIC)
-+
-+#endif
-diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
-index 0a14aaf..7622561 100644
---- a/arch/arm64/kernel/setup.c
-+++ b/arch/arm64/kernel/setup.c
-@@ -42,6 +42,7 @@
- #include <linux/of_fdt.h>
- #include <linux/of_platform.h>
- #include <linux/efi.h>
-+#include <linux/dmi.h>
- 
- #include <asm/fixmap.h>
- #include <asm/cputype.h>
-@@ -400,6 +401,7 @@ static int __init arm64_device_init(void)
- {
- 	of_clk_init(NULL);
- 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
-+	dmi_scan_machine();
- 	return 0;
- }
- arch_initcall(arm64_device_init);
--- 
-1.7.9.5
+why the fallthrough, what's this about?
 
+> +
+> +	case VFIO_IRQ_SET_DATA_NONE:
+> +
+> +		spin_lock_irq(&vdev->irq[index].lock);
+> +
+> +		if (vdev->irq[index].masked) {
+> +			enable_irq(vdev->irq[index].hwirq);
+> +			vdev->irq[index].masked = false;
+> +		}
+> +
+> +		spin_unlock_irq(&vdev->irq[index].lock);
+> +
+> +		return 0;
+> +
+> +	case VFIO_IRQ_SET_DATA_EVENTFD: /* XXX not implemented yet */
+> +	default:
+> +		return -ENOTTY;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int vfio_platform_set_irq_mask(struct vfio_platform_device *vdev,
+> +				    unsigned index, unsigned start,
+> +				    unsigned count, uint32_t flags, void *data)
+> +{
+> +	uint8_t arr;
+> +
+> +	if (start != 0 || count != 1)
+> +		return -EINVAL;
+> +
+> +	switch (flags & VFIO_IRQ_SET_DATA_TYPE_MASK) {
+> +	case VFIO_IRQ_SET_DATA_BOOL:
+> +		if (copy_from_user(&arr, data, sizeof(uint8_t)))
+> +			return -EFAULT;
+> +
+> +		if (arr != 0x1)
+> +			return -EINVAL;
+> +
+> +	case VFIO_IRQ_SET_DATA_NONE:
+> +
+> +		spin_lock_irq(&vdev->irq[index].lock);
+> +
+> +		if (!vdev->irq[index].masked) {
+> +			disable_irq(vdev->irq[index].hwirq);
+> +			vdev->irq[index].masked = true;
+> +		}
+> +
+> +		spin_unlock_irq(&vdev->irq[index].lock);
+> +
+> +		return 0;
+> +
+> +	case VFIO_IRQ_SET_DATA_EVENTFD: /* XXX not implemented yet */
+> +	default:
+> +		return -ENOTTY;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+>  int vfio_platform_set_irqs_ioctl(struct vfio_platform_device *vdev,
+>  				 uint32_t flags, unsigned index, unsigned start,
+>  				 unsigned count, void *data)
+> @@ -172,8 +272,10 @@ int vfio_platform_set_irqs_ioctl(struct vfio_platform_device *vdev,
+>  
+>  	switch (flags & VFIO_IRQ_SET_ACTION_TYPE_MASK) {
+>  	case VFIO_IRQ_SET_ACTION_MASK:
+> +		func = vfio_platform_set_irq_mask;
+> +		break;
+>  	case VFIO_IRQ_SET_ACTION_UNMASK:
+> -		/* XXX not implemented */
+> +		func = vfio_platform_set_irq_unmask;
+>  		break;
+>  	case VFIO_IRQ_SET_ACTION_TRIGGER:
+>  		func = vfio_platform_set_irq_trigger;
+> diff --git a/drivers/vfio/platform/vfio_platform_private.h b/drivers/vfio/platform/vfio_platform_private.h
+> index d6200df..4d887fd 100644
+> --- a/drivers/vfio/platform/vfio_platform_private.h
+> +++ b/drivers/vfio/platform/vfio_platform_private.h
+> @@ -30,6 +30,8 @@ struct vfio_platform_irq {
+>  	u32			count;
+>  	int			hwirq;
+>  	char			*name;
+> +	bool			masked;
+> +	spinlock_t		lock;
+>  };
+>  
+>  struct vfio_platform_region {
+> -- 
+> 1.8.3.2
+> 
