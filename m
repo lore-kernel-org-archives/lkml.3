@@ -1,135 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753386AbaFHD6a (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 23:58:30 -0400
-Received: from imap.thunk.org ([74.207.234.97]:56013 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753187AbaFHD62 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 23:58:28 -0400
-Date: Sat, 7 Jun 2014 23:58:25 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GET PULL] ext4 updates for 3.16
-Message-ID: <20140608035825.GA23368@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S1751023AbaFHEUL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jun 2014 00:20:11 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:46698 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750731AbaFHEUI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jun 2014 00:20:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <CA+waHKUfu0Mxy_J9qWwayxZVDBA_RDYrpsL100Mr1sUBQRchVw@mail.gmail.com>
+References: <CA+waHKUfu0Mxy_J9qWwayxZVDBA_RDYrpsL100Mr1sUBQRchVw@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Sat, 7 Jun 2014 22:19:46 -0600
+Message-ID: <CAErSpo6WoWrcVaZd9OoqaK9qBTY+vXQZqs40Hb2vZJ4Y8zjMXQ@mail.gmail.com>
+Subject: Re: What can change in ways Linux handles memory when all memory >4G
+ is disabled? (x86)
+To: Nikolay Amiantov <nikoamia@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A fairly minor obvious merge fix will be required due to a conflicting
-change to a comment made by a commit already in your tree:
+[+cc linux-pci, linux-pm]
 
- -       * Comments copied from block_write_full_page_endio:
-++       * Comments copied from block_write_full_page:
+On Fri, Jun 6, 2014 at 6:06 PM, Nikolay Amiantov <nikoamia@gmail.com> wrote:
+> Hello all,
+>
+> I'm trying to resolve a cryptic problem with Lenovo T440p (and with
+> Dell XPS 15z, as it appears) and nvidia in my spare time. You can read
+> more at [1]. Basically: when the user disables and then re-enables
+> nvidia card (via ACPI, bbswitch or nouveau's dynpm) on new BIOS
+> versions, something becomes really wrong. User sees fs, usb devices
+> and network controllers faults of all kinds, system renders unusable
+> and user can observe filesystem corruption after reboot. Nvidia
+> drivers (or nouveau, or i915) can not even be loaded -- all that is
+> needed to trigger a bug is to call several ACPI methods to disable and
+> re-enable the card (e.g., via acpi-call module).
 
-coupled with a move of the code in question in the ext4 tree.
+I don't know what ACPI methods you're calling, but (as I'm sure you
+know) it's not guaranteed to be safe to call random methods because
+they can make arbitrary changes to the system.
 
-Thanks!!
+> I've attached a debugger to Windows kernel to catch ACPI calls for
+> disabling and re-enabling NVIDIA card -- they don't really differ with
+> what bbswitch and others use. Furthermore, the difference between ACPI
+> DSDT tables in 1.14 (last good) and 1.16 (first broken) BIOSes are
+> minimal, and loading table from 1.14 into system running 1.16 does not
+> help. But -- all those devices are using memory I/O, so my current
+> theory is that memory is somehow corrupted. There are also some
+> changes in lspci output for nvidia [2].
 
-		       	       	   	   - Ted
+I skimmed through [1], but I'm not sure I understood everything.
+Here's what I gleaned; please correct any mistaken impressions:
 
-The following changes since commit 9ac03675010a69507c0a9d832d6a722e07d35cc6:
+  1) Suspend/resume is mentioned in [1], but the problem occurs even
+without any suspend/resume.
+  2) The problem happens on a completely stock untainted upstream
+kernel even with no nvidia, nouveau, or i915 drivers loaded.
+  3) Disabling the nvidia device (02:00.0) by executing an ACPI method
+works fine, and the system works fine after the nvidia device is
+disabled.
+  4) This ACPI method puts the nvidia device in D3cold state.
+  5) Problems start when enabling the nvidia device by executing
+another ACPI method.
 
-  Merge tag 'ext4_for_linus_stable' of git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4 (2014-04-20 20:43:47 -0700)
+In the D3cold state, the PCI device is entirely powered off.  After it
+is re-enabled, e.g., by the ACPI method in 5) above, the device needs
+to be completely re-initialized.  Since you're executing the ACPI
+method "by hand," outside the context of the Linux power management
+system, there's nothing to re-initialize the device.
 
-are available in the git repository at:
+This by itself shouldn't be a problem; the device should power up with
+its BARs zeroed out and disabled, bus mastering disabled, etc.
 
+BUT the kernel doesn't know about these power changes you're making,
+so some things will be broken.  For example, while the nvidia device
+is in D3cold, lspci will return garbage for that device.  After it
+returns to D0, lspci should work again, but now the state of the
+device (BAR assignments, interrupts, etc.) is different from what
+Linux thinks it is.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git tags/ext4_for_linus
+If a driver does anything with the device after it returns to D0, I
+think things will break, because the PCI core already knows what
+resources are assigned to the device, but the device forgot them when
+it was powered off.  So the PCI core would happily enable the device
+but it will respond at the wrong addresses.
 
-for you to fetch changes up to bd9db175dde14b606265e0d37e8319d96fe1a58f:
+But I think you said problems happen even without any driver for the
+nvidia device, so there's probably more going on.  This is a video
+device, and I wouldn't be surprised if there's some legacy VGA
+behavior that doesn't follow the usual PCI rules.
 
-  ext4: handle symlink properly with inline_data (2014-06-02 10:48:22 -0400)
+Can you:
 
-----------------------------------------------------------------
-Clean ups and miscellaneous bug fixes, in particular for the new
-collapse_range and zero_range fallocate functions.  In addition,
-improve the scalability of adding and remove inodes from the orphan
-list.
+1) Collect complete "lspci -vvxxx" output from the whole system, with
+the nvidia card enabled.
+2) Disable nvidia card.
+3) Collect complete dmesg log.
+4) Try "lspci -s02:00.0".  I expect this to show garbage if the nvidia
+card is powered off.
+5) Enable nvidia card.
+6) Try "lspci -vvxxx" again.  You mentioned changes to devices other
+than nvidia, which sounds suspicious.
+7) Collect dmesg log again.  I don't expect changes here, because the
+kernel probably doesn't notice the power transition.
 
-----------------------------------------------------------------
-Andrey Tsyvarev (1):
-      ext4: do not destroy ext4_groupinfo_caches if ext4_mb_init() fails
+Bjorn
 
-Darrick J. Wong (3):
-      ext4: find the group descriptors on a 1k-block bigalloc,meta_bg filesystem
-      ext4: fix block bitmap initialization under sparse_super2
-      ext4: fix block bitmap validation when bigalloc, ^flex_bg
-
-Dmitry Monakhov (1):
-      ext4: remove obsoleted check
-
-Giedrius Rekasius (1):
-      ext4: remove unused local variable "stored" from ext4_readdir(...)
-
-Jan Kara (3):
-      ext4: use sbi in ext4_orphan_{add|del}()
-      ext4: reduce contention on s_orphan_lock
-      ext4: fix zeroing of page during writeback
-
-Lukas Czerner (4):
-      ext4: get rid of EXT4_MAP_UNINIT flag
-      ext4: rename uninitialized extents to unwritten
-      ext4: remove unnecessary double parentheses
-      ext4: use EXT_MAX_BLOCKS in ext4_es_can_be_merged()
-
-Maurizio Lombardi (1):
-      ext4: fix wrong assert in ext4_mb_normalize_request()
-
-Namjae Jeon (2):
-      ext4: fix data integrity sync in ordered mode
-      ext4: fix ZERO_RANGE test failure in data journalling
-
-Stephen Hemminger (1):
-      ext4: make local functions static
-
-Theodore Ts'o (5):
-      ext4: inline generic_file_aio_write() into ext4_file_write()
-      ext4: move ext4_file_dio_write() into ext4_file_write()
-      ext4: factor out common code in ext4_file_write()
-      ext4: fix locking for O_APPEND writes
-      ext4: add a new spinlock i_raw_lock to protect the ext4's raw inode
-
-Zhang Zhen (1):
-      ext4: avoid unneeded lookup when xattr name is invalid
-
-Zheng Liu (1):
-      ext4: handle symlink properly with inline_data
-
-liang xie (1):
-      ext4: add missing BUFFER_TRACE before ext4_journal_get_write_access
-
- fs/ext4/balloc.c            |  66 ++++++++------
- fs/ext4/dir.c               |   3 +-
- fs/ext4/ext4.h              |  59 ++++--------
- fs/ext4/ext4_extents.h      |  22 ++---
- fs/ext4/ext4_jbd2.c         |   7 +-
- fs/ext4/ext4_jbd2.h         |   4 -
- fs/ext4/extents.c           | 236 ++++++++++++++++++++++++------------------------
- fs/ext4/extents_status.c    |  10 +-
- fs/ext4/file.c              | 153 +++++++++++++++----------------
- fs/ext4/inline.c            |  15 ++-
- fs/ext4/inode.c             |  90 ++++++++++--------
- fs/ext4/mballoc.c           |   8 +-
- fs/ext4/migrate.c           |   2 +-
- fs/ext4/mmp.c               |   4 +-
- fs/ext4/move_extent.c       |  39 ++++----
- fs/ext4/namei.c             | 131 ++++++++++++++++-----------
- fs/ext4/page-io.c           |  32 ++++---
- fs/ext4/resize.c            |  13 +++
- fs/ext4/super.c             |  20 +++-
- fs/ext4/xattr.c             |   9 +-
- include/linux/page-flags.h  |  12 ++-
- include/trace/events/ext4.h |   9 +-
- mm/page-writeback.c         |  11 ++-
- 23 files changed, 515 insertions(+), 440 deletions(-)
+> I've played a bit with this theory in mind and found a very
+> interesting thing -- when I reserve all memory upper than 4G with
+> "memmap" kernel option ("memmap=99G$0x100000000"), everything works!
+> Also, I've written a small utility that fills memory with zeros using
+> /dev/mem and then checks it. I've checked reserved memory with it, and
+> it appears that no memory in that region is corrupted at all, which is
+> even more strange. I suspect that somehow when nvidia is enabled
+> I/O-mapped memory regions are corrupted, and only when upper memory is
+> not enabled. Also, memory map does not differ apart from missing last
+> big chunk of memory with and without "memmap", and with Windows, too.
+> If I enable even small chunk of "upper" memory (e.g.,
+> 0x270000000-0x280000000), there are usual crashes.
+>
+> Long story short: I'm interested how memory management can differ when
+> this "upper" memory regions are enabled?
+>
+> P.S.: This is my first time posting to LKML, if I've done something
+> wrong, please tell!
+>
+> [1]: https://github.com/Bumblebee-Project/bbswitch/issues/78
+> [2]: http://bpaste.net/show/350758/
+>
+> --
+> Nikolay Amiantov.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
