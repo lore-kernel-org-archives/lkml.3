@@ -1,196 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753282AbaFHCq0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jun 2014 22:46:26 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:32421 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753187AbaFHCqZ (ORCPT
+	id S1753325AbaFHCs0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jun 2014 22:48:26 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:44388 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753256AbaFHCsY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jun 2014 22:46:25 -0400
-X-IronPort-AV: E=Sophos;i="4.98,997,1392134400"; 
-   d="scan'208";a="31608476"
-Message-ID: <5393CF90.9070807@cn.fujitsu.com>
-Date: Sun, 8 Jun 2014 10:50:56 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: <jjherne@linux.vnet.ibm.com>, Sasha Levin <sasha.levin@oracle.com>,
-        Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: workqueue: WARN at at kernel/workqueue.c:2176
-References: <53849EB7.9090302@linux.vnet.ibm.com> <20140527142637.GB19143@laptop.programming.kicks-ass.net> <53875F09.3090607@linux.vnet.ibm.com> <538DB076.4090704@cn.fujitsu.com> <20140603141659.GO30445@twins.programming.kicks-ass.net> <538E840D.2040300@cn.fujitsu.com> <20140604064946.GF30445@twins.programming.kicks-ass.net> <538ED7EB.5050303@cn.fujitsu.com> <20140604093907.GC11096@twins.programming.kicks-ass.net> <53904C6B.90001@cn.fujitsu.com> <20140606133629.GP13930@laptop.programming.kicks-ass.net>
-In-Reply-To: <20140606133629.GP13930@laptop.programming.kicks-ass.net>
+	Sat, 7 Jun 2014 22:48:24 -0400
+Message-ID: <1402195701.12743.18.camel@ceramic.home.fifi.org>
+Subject: Re: Phantom ACL-related xattrs on 3.14.4 NFS client
+From: Philippe Troin <phil@coldcreektech.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
+Date: Sat, 07 Jun 2014 19:48:21 -0700
+In-Reply-To: <20140607140414.GA26534@infradead.org>
+References: <1402082953.28220.7.camel@ceramic.home.fifi.org>
+	 <CAHQdGtS2BL9u4DV=FZ0HaXO-iTNPU4hTGVR--HubNa4A_6UNog@mail.gmail.com>
+	 <20140607140414.GA26534@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/2014 09:36 PM, Peter Zijlstra wrote:
-> On Thu, Jun 05, 2014 at 06:54:35PM +0800, Lai Jiangshan wrote:
->> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
->> index 268a45e..d05a5a1 100644
->> --- a/kernel/sched/core.c
->> +++ b/kernel/sched/core.c
->> @@ -1474,20 +1474,24 @@ static int ttwu_remote(struct task_struct *p, int wake_flags)
->>  }
->>  
->>  #ifdef CONFIG_SMP
->> -static void sched_ttwu_pending(void)
->> +static void sched_ttwu_pending_locked(struct rq *rq)
->>  {
->> -	struct rq *rq = this_rq();
->>  	struct llist_node *llist = llist_del_all(&rq->wake_list);
->>  	struct task_struct *p;
->>  
->> -	raw_spin_lock(&rq->lock);
->> -
->>  	while (llist) {
->>  		p = llist_entry(llist, struct task_struct, wake_entry);
->>  		llist = llist_next(llist);
->>  		ttwu_do_activate(rq, p, 0);
->>  	}
->> +}
->>  
->> +static void sched_ttwu_pending(void)
->> +{
->> +	struct rq *rq = this_rq();
->> +
->> +	raw_spin_lock(&rq->lock);
->> +	sched_ttwu_pending_locked(rq);
->>  	raw_spin_unlock(&rq->lock);
->>  }
+Hi Trond & Christoph,
+
+It's still broken, but in a different way.
+The phantom attrs are gone, but the attr/acl interaction is still
+uncertain.
+
+I have tested vanilla  3.14.5 + this patch on x86_64.
+Mount options are the same as last time (NFSv3).
+
+This is what I see on the client:
+
+        nfsv3client% mkdir x
+        nfsv3client% cd x
+        nfsv3client% getfattr -m '.*' .
+        nfsv3client% getfacl .
+        # file: .
+        # owner: phil
+        # group: phil
+        user::rwx
+        group::rwx
+        other::r-x
+
+OK so far: no more phantom attrs.
+This is where things get dodgy:
+        
+        nfsv3client% setfacl -m u:root:r .   
+        nfsv3client% getfacl .
+        # file: .
+        # owner: phil
+        # group: phil
+        user::rwx
+        user:root:r--
+        group::rwx
+        mask::rwx
+        other::r-x
+        
+        nfsv3client% getfattr -m '.*' .
+        [1]    2123 segmentation fault  getfattr -m '.*' .
+        % strace getfattr -m '.*' . 2>&1 | tail -n 20
+        fstat(3, {st_mode=S_IFREG|0644, st_size=26254, ...}) = 0
+        mmap(NULL, 26254, PROT_READ, MAP_SHARED, 3, 0) = 0x7f46a1450000
+        close(3)                                = 0
+        getrlimit(RLIMIT_NOFILE, {rlim_cur=1024, rlim_max=4*1024}) = 0
+        lstat(".", {st_mode=S_IFDIR|0775, st_size=4096, ...}) = 0
+        listxattr(".", NULL, 0)                 = 23
+        listxattr(".", "system.posix_acl_access", 256) = 23
+        brk(0)                                  = 0x1138000
+        brk(0x1178000)                          = 0x1178000
+        brk(0)                                  = 0x1178000
+        brk(0)                                  = 0x1178000
+        brk(0x1159000)                          = 0x1159000
+        brk(0)                                  = 0x1159000
+        mmap(NULL, 266240, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f46a140f000
+        brk(0)                                  = 0x1159000
+        brk(0)                                  = 0x1159000
+        brk(0x1139000)                          = 0x1139000
+        brk(0)                                  = 0x1139000
+        --- SIGSEGV {si_signo=SIGSEGV, si_code=SEGV_MAPERR, si_addr=0x11586e8} ---
+        +++ killed by SIGSEGV +++
+        [1]    2311 segmentation fault  strace getfattr -m '.*' . 2>&1
+        | 
+               2312 done                tail -n 20
+
+I have no idea get getfattr crashes right after the listxattr() syscall,
+but it surely doesn't on the NFSv3 server nor with 3.13.
+A quick check on the NFS server shows the the ACLs are correctly set:
+
+        nfsv3server% cd /path/to/x
+        nfsv3server% getfacl .
+        # file: .
+        # owner: phil
+        # group: phil
+        user::rwx
+        user:root:r--
+        group::rwx
+        mask::rwx
+        other::r-x
+        
+        nfsv3server% getfattr -m '.*' .
+        # file: .
+        system.posix_acl_access
+
+Back on the client, clearing the ACL confuses the client further:
+
+        nfsv3client% setfacl -b .                               
+        nfsv3client% getfacl .                                  
+        # file: .
+        # owner: phil
+        # group: phil
+        user::rwx
+        group::rwx
+        other::r-x
+        
+        nfsv3client% strace getfattr -m '.*' . 2>&1 | tail -n 20
+        fstat(3, {st_mode=S_IFREG|0644, st_size=26254, ...}) = 0
+        mmap(NULL, 26254, PROT_READ, MAP_SHARED, 3, 0) = 0x7fc7e3f9a000
+        close(3)                                = 0
+        getrlimit(RLIMIT_NOFILE, {rlim_cur=1024, rlim_max=4*1024}) = 0
+        lstat(".", {st_mode=S_IFDIR|0775, st_size=4096, ...}) = 0
+        listxattr(".", NULL, 0)                 = 23
+        listxattr(".", "system.posix_acl_access", 256) = 23
+        brk(0)                                  = 0x1655000
+        brk(0x1695000)                          = 0x1695000
+        brk(0)                                  = 0x1695000
+        brk(0)                                  = 0x1695000
+        brk(0x1676000)                          = 0x1676000
+        brk(0)                                  = 0x1676000
+        mmap(NULL, 266240, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fc7e3f59000
+        brk(0)                                  = 0x1676000
+        brk(0)                                  = 0x1676000
+        brk(0x1656000)                          = 0x1656000
+        brk(0)                                  = 0x1656000
+        --- SIGSEGV {si_signo=SIGSEGV, si_code=SEGV_MAPERR, si_addr=0x16756e8} ---
+        +++ killed by SIGSEGV +++
+        [1]    2353 segmentation fault  strace getfattr -m '.*' . 2>&1
+        | 
+               2354 done                tail -n 20
+        nfsv3client% getfattr -n system.posix_acl_access .
+        # file: .
+        system.posix_acl_access=0sAgAAAAEABwD/////BAAHAP////8gAAUA/////w==
+
+See how:
+      * getfacl says there's no ACLs
+      * getfattr says there's still a system.posix_acl_access attr.
+Interestingly, the server says otherwise:
+
+        nfsv3server% getfattr -m '.*' .
+        nfsv3server% getfattr -n system.posix_acl_access .
+        .: system.posix_acl_access: No such attribute
+        [1]    2233 exit 1     getfattr -n system.posix_acl_access .
+        nfsv3server% getfacl  .                          
+        # file: .
+        # owner: phil
+        # group: phil
+        user::rwx
+        group::rwx
+        other::r-x
+
+Phil.
+
+On Sat, 2014-06-07 at 07:04 -0700, Christoph Hellwig wrote:
+> On Fri, Jun 06, 2014 at 04:37:03PM -0400, Trond Myklebust wrote:
+> > Christoph, what is the intended interface for telling
+> > posix_acl_xattr_list() that there are no acls on a particular file?
+> > Should there perhaps be a call to get_acl()?
 > 
-> OK, so this won't apply to a recent kernel.
-
-Thank you for review.
-
-The code here was already changed in the recent kernel?
-or I touched too much to apply it?
-
+> The interface is to not call posix_acl_xattr_list unless you have ACLs.
+> Every implementation does this, except for generic_listxattr which is
+> only used by NFS.
 > 
->> @@ -4530,6 +4534,11 @@ int set_cpus_allowed_ptr(struct task_struct *p, const struct cpumask *new_mask)
->>  		goto out;
->>  
->>  	dest_cpu = cpumask_any_and(cpu_active_mask, new_mask);
->> +
->> +	/* Ensure it is on rq for migration if it is waking */
->> +	if (p->state == TASK_WAKING)
->> +		sched_ttwu_pending_locked(rq);
-> 
-> So I would really rather like to avoid this if possible, its doing full
-> remote queueing, exactly what we tried to avoid.
-
-set_cpus_allowed_ptr() is slow path, the bad effect introduced by this
-change is limited.
-
-> 
->> +
->>  	if (p->on_rq) {
->>  		struct migration_arg arg = { p, dest_cpu };
->>  		/* Need help from migration thread: drop lock and wait. */
->> @@ -4576,6 +4585,10 @@ static int __migrate_task(struct task_struct *p, int src_cpu, int dest_cpu)
->>  	if (!cpumask_test_cpu(dest_cpu, tsk_cpus_allowed(p)))
->>  		goto fail;
->>  
->> +	/* Ensure it is on rq for migration if it is waking */
->> +	if (p->state == TASK_WAKING)
->> +		sched_ttwu_pending_locked(rq_src);
->> +
->>  	/*
->>  	 * If we're not on a rq, the next wake-up will ensure we're
->>  	 * placed properly.
-> 
-> Oh man, another variant.. why did you change it again? And without
-> explanation for why you changed it.
-> 
-> I don't see a reason to call sched_ttwu_pending() with rq->lock held,
-> seeing as how we append to that list without it held.
-
-sched_ttwu_pending() requires rq->lock to do actual work.
-
-I swapped the order of "llist_del_all(&rq->wake_list)" and "raw_spin_lock(&rq->lock);"
-that it makes the lock section of rq->lock is slightly extend.
-
-> 
-> I'm still thinking the previous version is good, can you explain why you
-> changed it?
-
-There was a window in the previous version.
-
-sched_ttwu_pending();
-	<----------------window here, the task can be in WAKING state again.
-__migrate_task();
-
-
-When I thought deeply, it was still correct in current code for all migration_cpu_stop()'s
-callers. But we need a big chunk of comments to explain it. And I felt nervous
-with that window, it would be a bug if something else changed without regarding
-this window. I don't want to leave a fragile code.
-
-The new version patch is much straight and it is self comment.
-
-Migration: if the task is waken-up, migrate it, otherwise it is next wakeup's responsibility.
-Original code simply considered p->on_rq <==> waken-up.
-New patch just fixes up p->on_rq before considering it.
-
-
-How about this (slight changed without touching original sched_ttwu_pending())
-
----
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 268a45e..cd224ea 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1474,6 +1474,18 @@ static int ttwu_remote(struct task_struct *p, int wake_flags)
- }
- 
- #ifdef CONFIG_SMP
-+static void sched_ttwu_pending_locked(struct rq *rq)
-+{
-+	struct llist_node *llist = llist_del_all(&rq->wake_list);
-+	struct task_struct *p;
-+
-+	while (llist) {
-+		p = llist_entry(llist, struct task_struct, wake_entry);
-+		llist = llist_next(llist);
-+		ttwu_do_activate(rq, p, 0);
-+	}
-+}
-+
- static void sched_ttwu_pending(void)
- {
- 	struct rq *rq = this_rq();
-@@ -4530,7 +4542,7 @@ int set_cpus_allowed_ptr(struct task_struct *p, const struct cpumask *new_mask)
- 		goto out;
- 
- 	dest_cpu = cpumask_any_and(cpu_active_mask, new_mask);
--	if (p->on_rq) {
-+	if (p->on_rq || p->state == TASK_WAKING) {
- 		struct migration_arg arg = { p, dest_cpu };
- 		/* Need help from migration thread: drop lock and wait. */
- 		task_rq_unlock(rq, p, &flags);
-@@ -4576,6 +4588,10 @@ static int __migrate_task(struct task_struct *p, int src_cpu, int dest_cpu)
- 	if (!cpumask_test_cpu(dest_cpu, tsk_cpus_allowed(p)))
- 		goto fail;
- 
-+	/* Ensure it is on rq for migration if it is waking */
-+	if (p->state == TASK_WAKING)
-+		sched_ttwu_pending_locked(rq_src);
-+
- 	/*
- 	 * If we're not on a rq, the next wake-up will ensure we're
- 	 * placed properly.
+> Philippe, can you test the patch below?
 > 
 > 
-> 
-> 
-> 
-> 
-> .
-> 
+> diff --git a/fs/nfs/nfs3acl.c b/fs/nfs/nfs3acl.c
+> index 871d6ed..e083827 100644
+> --- a/fs/nfs/nfs3acl.c
+> +++ b/fs/nfs/nfs3acl.c
+> @@ -247,3 +247,45 @@ const struct xattr_handler *nfs3_xattr_handlers[] = {
+>  	&posix_acl_default_xattr_handler,
+>  	NULL,
+>  };
+> +
+> +static int
+> +nfs3_list_one_acl(struct inode *inode, int type, const char *name, void *data,
+> +		size_t size, ssize_t *result)
+> +{
+> +	struct posix_acl *acl;
+> +	char *p = data + *result;
+> +
+> +	acl = get_acl(inode, type);
+> +	if (!acl)
+> +		return 0;
+> +
+> +	posix_acl_release(acl);
+> +
+> +	*result += strlen(name);
+> +	if (!size)
+> +		return 0;
+> +	if (*result > size)
+> +		return -ERANGE;
+> +
+> +	strcpy(p, name);
+> +	return 0;
+> +}
+> +
+> +ssize_t
+> +nfs3_listxattr(struct dentry *dentry, char *data, size_t size)
+> +{
+> +	struct inode *inode = dentry->d_inode;
+> +	ssize_t result = 0;
+> +	int error;
+> +
+> +	error = nfs3_list_one_acl(inode, ACL_TYPE_ACCESS,
+> +			POSIX_ACL_XATTR_ACCESS, data, size, &result);
+> +	if (error)
+> +		return error;
+> +
+> +	error = nfs3_list_one_acl(inode, ACL_TYPE_DEFAULT,
+> +			POSIX_ACL_XATTR_DEFAULT, data, size, &result);
+> +	if (error)
+> +		return error;
+> +	return result;
+> +}
+> diff --git a/fs/nfs/nfs3proc.c b/fs/nfs/nfs3proc.c
+> index db60149..0e2bb26 100644
+> --- a/fs/nfs/nfs3proc.c
+> +++ b/fs/nfs/nfs3proc.c
+> @@ -891,7 +891,7 @@ static const struct inode_operations nfs3_dir_inode_operations = {
+>  	.getattr	= nfs_getattr,
+>  	.setattr	= nfs_setattr,
+>  #ifdef CONFIG_NFS_V3_ACL
+> -	.listxattr	= generic_listxattr,
+> +	.listxattr	= nfs3_listxattr,
+>  	.getxattr	= generic_getxattr,
+>  	.setxattr	= generic_setxattr,
+>  	.removexattr	= generic_removexattr,
+> @@ -905,7 +905,7 @@ static const struct inode_operations nfs3_file_inode_operations = {
+>  	.getattr	= nfs_getattr,
+>  	.setattr	= nfs_setattr,
+>  #ifdef CONFIG_NFS_V3_ACL
+> -	.listxattr	= generic_listxattr,
+> +	.listxattr	= nfs3_listxattr,
+>  	.getxattr	= generic_getxattr,
+>  	.setxattr	= generic_setxattr,
+>  	.removexattr	= generic_removexattr,
+
 
