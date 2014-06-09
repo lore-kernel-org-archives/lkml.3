@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933239AbaFILLL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 07:11:11 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:48084 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932067AbaFILLJ convert rfc822-to-8bit (ORCPT
+	id S933458AbaFILLX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 07:11:23 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:58882 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932067AbaFILLO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 07:11:09 -0400
-Content-Type: text/plain; charset=US-ASCII
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
-Subject: Re: [fuse-devel] [PATCH 0/5] fuse: close file synchronously (v2)
-From: John Muir <john@jmuir.com>
-In-Reply-To: <5395906F.3070903@parallels.com>
-Date: Mon, 9 Jun 2014 13:11:06 +0200
-Cc: Miklos Szeredi <miklos@szeredi.hu>,
-        fuse-devel <fuse-devel@lists.sourceforge.net>,
-        Linux List <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 7BIT
-Message-Id: <1AC1913F-47DF-4707-8E27-F2E7334CE2D6@jmuir.com>
-References: <20140606132541.30321.68679.stgit@localhost.localdomain> <E5474E5C-B6FC-459C-ACCE-F6871221D45E@jmuir.com> <53956730.1070302@parallels.com> <C6F7C8BC-7F62-45D9-AE9D-52CF096ACBC2@jmuir.com> <5395906F.3070903@parallels.com>
-To: Maxim Patlasov <mpatlasov@parallels.com>
-X-Mailer: Apple Mail (2.1878.2)
+	Mon, 9 Jun 2014 07:11:14 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: rdunlap@infradead.org, viresh.kumar@linaro.org,
+        "Srivatsa S. Bhat" <srivatsa@mit.edu>, linux-pm@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] PM / Documentation: Update Srivatsa S. Bhat's email address
+Date: Mon, 09 Jun 2014 13:28:36 +0200
+Message-ID: <1465703.Zlfm9gi0xo@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140609102426.26530.15670.stgit@srivatsabhat.in.ibm.com>
+References: <20140609102426.26530.15670.stgit@srivatsabhat.in.ibm.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014.06.09, at 12:46 , Maxim Patlasov <mpatlasov@parallels.com> wrote:
+On Monday, June 09, 2014 03:54:49 PM Srivatsa S. Bhat wrote:
+> My @linux.vnet.ibm.com email address is going to disappear soon, as I will be
+> beginning my M.S./PhD studies at MIT in a few months.
 
-> On 06/09/2014 01:26 PM, John Muir wrote:
->> On 2014.06.09, at 9:50 , Maxim Patlasov <mpatlasov@parallels.com> wrote:
->> 
->>> On 06/06/2014 05:51 PM, John Muir wrote:
->>>> On 2014.06.06, at 15:27 , Maxim Patlasov <mpatlasov@parallels.com> wrote:
->>>> 
->>>>> The patch-set resolves the problem by making fuse_release synchronous:
->>>>> wait for ACK from userspace for FUSE_RELEASE if the feature is ON.
->>>> Why not make this feature per-file with a new flag bit in struct fuse_file_info rather than as a file-system global?
->>> I don't expect a great demand for such a granularity. File-system global "close_wait" conveys a general user expectation about filesystem behaviour in distributed environment: if you stopped using a file on given node, whether it means that the file is immediately accessible from another node.
->>> 
->> By user do you mean the end-user, or the implementor of the file-system? It seems to me that the end-user doesn't care, and just wants the file-system to work as expected. I don't think we're really talking about the end-user.
+Congratulations!
+
+> So update my email address in the documentation.
 > 
-> No, this is exactly about end-user expectations. Imagine a complicated heavy-loaded shared storage where handling FUSE_RELEASE in userspace may take a few minutes. In close_wait=0 case, an end-user who has just called close(2) has no idea when it's safe to access the file from another node or even when it's OK to umount filesystem.
-
-I think we're saying the same thing here from different perspectives. The end-user wants the file-system to operate with the semantics you describe, but I don't think it makes sense to give the end-user control over those semantics. The file-system itself should be implemented that way, or not, or per-file
-
-If it's a read-only file, then does this not add the overhead of having the kernel wait for the user-space file-system process to respond before closing it. In my experience, there is actually significant cost to the kernel to user-space messaging in FUSE when manipulating thousands of files.
-
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> Signed-off-by: Srivatsa S. Bhat <srivatsa@mit.edu>
+> ---
 > 
->> 
->> The implementor of a file-system, on the other hand, might want the semantics for close_wait on some files, but not on others. Won't there be a performance impact? Some distributed file-systems might want this on specific files only. Implementing it as a flag on the struct fuse_file_info gives the flexibility to the file-system implementor.
+>  Documentation/power/suspend-and-cpuhotplug.txt |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> fuse_file_info is an userspace structure, in-kernel fuse knows nothing about it. In close_wait=1 case, nothing prevents a file-system implementation from ACK-ing FUSE_RELEASE request immediately (for specific files) and schedule actual handling for future processing.
+> diff --git a/Documentation/power/suspend-and-cpuhotplug.txt b/Documentation/power/suspend-and-cpuhotplug.txt
+> index e13dafc..3813703 100644
+> --- a/Documentation/power/suspend-and-cpuhotplug.txt
+> +++ b/Documentation/power/suspend-and-cpuhotplug.txt
+> @@ -1,6 +1,6 @@
+>  Interaction of Suspend code (S3) with the CPU hotplug infrastructure
+>  
+> -     (C) 2011 Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> +     (C) 2011-2014 Srivatsa S. Bhat <srivatsa@mit.edu>
 
-Of course you know I meant that you'd add another flag to both fuse_file_info, and in the kernel equivalent for those flags which is struct fuse_open_out -> open_flags. This is where other such per file options are specified such as whether or not to keep the in-kernal cache for a file, whether or not to allow direct-io, and whether or not to allow seek.
+I'm actually unsure if updating copyright notices like that is OK.
 
-Anyway, I guess you're the one doing all the work on this and if you have a particular implementation that doesn't require such fine-grained control, and no one else does then it's up to you. I'm just trying to show an alternative implementation that gives the file-system implementor more control while keeping the ability to meet user expectations.
+Yes, you're moving, but the address in the notice documents the status at
+the time you added it.
 
-Regards,
- 
-John.
+You still can add a new copyright notice with the new address when you update
+the document in the future. :-)
 
---
-John Muir - john@jmuir.com
-+32 491 64 22 76
+Updating the address where it is a "contact info" or in MAINTAINERS is a
+different matter, of course.
+
+Rafael
 
