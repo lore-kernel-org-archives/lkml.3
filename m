@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934712AbaFIXL1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 19:11:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56836 "EHLO
+	id S932510AbaFIXMP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 19:12:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56763 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933153AbaFIWpb (ORCPT
+	with ESMTP id S933389AbaFIWp3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:45:31 -0400
+	Mon, 9 Jun 2014 18:45:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.14 28/78] dm thin: add no_space_timeout dm-thin-pool module param
-Date: Mon,  9 Jun 2014 15:48:08 -0700
-Message-Id: <20140609224814.252926871@linuxfoundation.org>
+        Fabien Spindler <fabien.spindler@inria.fr>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [PATCH 3.14 26/78] firewire: revert to 4 GB RDMA, fix protocols using Memory Space
+Date: Mon,  9 Jun 2014 15:48:06 -0700
+Message-Id: <20140609224814.195085614@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140609224813.282275135@linuxfoundation.org>
 References: <20140609224813.282275135@linuxfoundation.org>
@@ -28,82 +29,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Snitzer <snitzer@redhat.com>
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
 
-commit 80c578930ce77ba8bcfb226a184b482020bdda7b upstream.
+commit 2fe2023adf695d08af5b598b2be3b288a95d563c upstream.
 
-Commit 85ad643b ("dm thin: add timeout to stop out-of-data-space mode
-holding IO forever") introduced a fixed 60 second timeout.  Users may
-want to either disable or modify this timeout.
+Undo a feature introduced in v3.14 by commit fcd46b34425d
+"firewire: Enable remote DMA above 4 GB".  That change raised the
+minimum address at which protocol drivers and user programs can register
+for request reception from 0x0001'0000'0000 to 0x8000'0000'0000.
+It turned out that at least one vendor-specific protocol exists which
+uses lower addresses:  https://bugzilla.kernel.org/show_bug.cgi?id=76921
 
-Allow the out-of-data-space timeout to be configured using the
-'no_space_timeout' dm-thin-pool module param.  Setting it to 0 will
-disable the timeout, resulting in IO being queued until more data space
-is added to the thin-pool.
+For the time being, revert most of commit fcd46b34425d so that affected
+protocols work like with kernel v3.13 and before.  Just keep the valid
+documentation parts from the regressing commit, and the ability to
+identify controllers which could be programmed to accept >32 bit
+physical DMA addresses.  The rest of fcd46b34425d should probably be
+brought back as an optional instead of default feature.
 
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Reported-by: Fabien Spindler <fabien.spindler@inria.fr>
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/device-mapper/thin-provisioning.txt |    5 ++++-
- drivers/md/dm-thin.c                              |   12 +++++++++---
- 2 files changed, 13 insertions(+), 4 deletions(-)
+ Documentation/debugging-via-ohci1394.txt |   13 ++++++++-----
+ drivers/firewire/core.h                  |    4 ++--
+ drivers/firewire/ohci.c                  |    2 +-
+ 3 files changed, 11 insertions(+), 8 deletions(-)
 
---- a/Documentation/device-mapper/thin-provisioning.txt
-+++ b/Documentation/device-mapper/thin-provisioning.txt
-@@ -309,7 +309,10 @@ ii) Status
-     error_if_no_space|queue_if_no_space
- 	If the pool runs out of data or metadata space, the pool will
- 	either queue or error the IO destined to the data device.  The
--	default is to queue the IO until more space is added.
-+	default is to queue the IO until more space is added or the
-+	'no_space_timeout' expires.  The 'no_space_timeout' dm-thin-pool
-+	module parameter can be used to change this timeout -- it
-+	defaults to 60 seconds but may be disabled using a value of 0.
- 
- iii) Messages
- 
---- a/drivers/md/dm-thin.c
-+++ b/drivers/md/dm-thin.c
-@@ -25,7 +25,9 @@
- #define MAPPING_POOL_SIZE 1024
- #define PRISON_CELLS 1024
- #define COMMIT_PERIOD HZ
--#define NO_SPACE_TIMEOUT (HZ * 60)
-+#define NO_SPACE_TIMEOUT_SECS 60
+--- a/Documentation/debugging-via-ohci1394.txt
++++ b/Documentation/debugging-via-ohci1394.txt
+@@ -25,9 +25,11 @@ using data transfer rates in the order o
+ With most FireWire controllers, memory access is limited to the low 4 GB
+ of physical address space.  This can be a problem on IA64 machines where
+ memory is located mostly above that limit, but it is rarely a problem on
+-more common hardware such as x86, x86-64 and PowerPC.  However, at least
+-Agere/LSI FW643e and FW643e2 controllers are known to support access to
+-physical addresses above 4 GB.
++more common hardware such as x86, x86-64 and PowerPC.
 +
-+static unsigned no_space_timeout_secs = NO_SPACE_TIMEOUT_SECS;
++At least LSI FW643e and FW643e2 controllers are known to support access to
++physical addresses above 4 GB, but this feature is currently not enabled by
++Linux.
  
- DECLARE_DM_KCOPYD_THROTTLE_WITH_MODULE_PARM(snapshot_copy_throttle,
- 		"A percentage of time allocated for copy on write");
-@@ -1529,6 +1531,7 @@ static void set_pool_mode(struct pool *p
- 	struct pool_c *pt = pool->ti->private;
- 	bool needs_check = dm_pool_metadata_needs_check(pool->pmd);
- 	enum pool_mode old_mode = get_pool_mode(pool);
-+	unsigned long no_space_timeout = ACCESS_ONCE(no_space_timeout_secs) * HZ;
+ Together with a early initialization of the OHCI-1394 controller for debugging,
+ this facility proved most useful for examining long debugs logs in the printk
+@@ -101,8 +103,9 @@ Step-by-step instructions for using fire
+    compliant, they are based on TI PCILynx chips and require drivers for Win-
+    dows operating systems.
  
- 	/*
- 	 * Never allow the pool to transition to PM_WRITE mode if user
-@@ -1591,8 +1594,8 @@ static void set_pool_mode(struct pool *p
- 		pool->process_prepared_mapping = process_prepared_mapping;
- 		pool->process_prepared_discard = process_prepared_discard_passdown;
+-   The mentioned kernel log message contains ">4 GB phys DMA" in case of
+-   OHCI-1394 controllers which support accesses above this limit.
++   The mentioned kernel log message contains the string "physUB" if the
++   controller implements a writable Physical Upper Bound register.  This is
++   required for physical DMA above 4 GB (but not utilized by Linux yet).
  
--		if (!pool->pf.error_if_no_space)
--			queue_delayed_work(pool->wq, &pool->no_space_timeout, NO_SPACE_TIMEOUT);
-+		if (!pool->pf.error_if_no_space && no_space_timeout)
-+			queue_delayed_work(pool->wq, &pool->no_space_timeout, no_space_timeout);
- 		break;
+ 2) Establish a working FireWire cable connection:
  
- 	case PM_WRITE:
-@@ -3326,6 +3329,9 @@ static void dm_thin_exit(void)
- module_init(dm_thin_init);
- module_exit(dm_thin_exit);
+--- a/drivers/firewire/core.h
++++ b/drivers/firewire/core.h
+@@ -237,8 +237,8 @@ static inline bool is_next_generation(in
  
-+module_param_named(no_space_timeout, no_space_timeout_secs, uint, S_IRUGO | S_IWUSR);
-+MODULE_PARM_DESC(no_space_timeout, "Out of data space queue IO timeout in seconds");
-+
- MODULE_DESCRIPTION(DM_NAME " thin provisioning target");
- MODULE_AUTHOR("Joe Thornber <dm-devel@redhat.com>");
- MODULE_LICENSE("GPL");
+ #define LOCAL_BUS 0xffc0
+ 
+-/* arbitrarily chosen maximum range for physical DMA: 128 TB */
+-#define FW_MAX_PHYSICAL_RANGE		(128ULL << 40)
++/* OHCI-1394's default upper bound for physical DMA: 4 GB */
++#define FW_MAX_PHYSICAL_RANGE		(1ULL << 32)
+ 
+ void fw_core_handle_request(struct fw_card *card, struct fw_packet *request);
+ void fw_core_handle_response(struct fw_card *card, struct fw_packet *packet);
+--- a/drivers/firewire/ohci.c
++++ b/drivers/firewire/ohci.c
+@@ -3716,7 +3716,7 @@ static int pci_probe(struct pci_dev *dev
+ 		    version >> 16, version & 0xff, ohci->card.index,
+ 		    ohci->n_ir, ohci->n_it, ohci->quirks,
+ 		    reg_read(ohci, OHCI1394_PhyUpperBound) ?
+-			", >4 GB phys DMA" : "");
++			", physUB" : "");
+ 
+ 	return 0;
+ 
 
 
