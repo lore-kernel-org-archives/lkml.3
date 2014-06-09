@@ -1,41 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933624AbaFIPvE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 11:51:04 -0400
-Received: from mail-yh0-f42.google.com ([209.85.213.42]:48436 "EHLO
-	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932675AbaFIPu6 (ORCPT
+	id S933662AbaFIPvm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 11:51:42 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:48437 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752169AbaFIPvj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 11:50:58 -0400
-MIME-Version: 1.0
-X-Originating-IP: [84.49.235.91]
-In-Reply-To: <8B2F6FFD0BD1E448853114367400A37306FCD2E02A@BLRX7MCDC203.AMER.DELL.COM>
-References: <8B2F6FFD0BD1E448853114367400A37306FCD2E023@BLRX7MCDC203.AMER.DELL.COM>
- <CAG-2HqUDQ3e-cq4y3zgehz6J8E6LsTCUfqvMEqPEqG7aBmEeRg@mail.gmail.com> <8B2F6FFD0BD1E448853114367400A37306FCD2E02A@BLRX7MCDC203.AMER.DELL.COM>
-From: Tom Gundersen <teg@jklm.no>
-Date: Mon, 9 Jun 2014 17:50:37 +0200
-Message-ID: <CAG-2HqXBOfZTGi-S=AzjGYDyGWkh0ijz73_pUUtmFdmQkgxWVQ@mail.gmail.com>
-Subject: Re: [PATCH] firmware loader: allow disabling of udev as firmware loader
-To: b_b_singh <B_B_Singh@dell.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ming Lei <ming.lei@canonical.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Abhay Salunke <Abhay_Salunke@dell.com>, Stefan Roese <sr@denx.de>,
-        Arnd Bergmann <arnd@arndb.de>, Kay Sievers <kay@vrfy.org>,
-        matt_domsch <Matt_Domsch@dell.com>,
-        srinivas_g_gowda <Srinivas_G_Gowda@dell.com>,
-        stuart_hayes <Stuart_Hayes@dell.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 9 Jun 2014 11:51:39 -0400
+From: Pranith Kumar <bobby.prani@gmail.com>
+To: trivial@rustcorp.com.au, Dipankar Sarma <dipankar@in.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org (open list:READ-COPY UPDATE...)
+Subject: [PATCH 1/6] update reference, kerneltrap.org no longer works
+Date: Mon,  9 Jun 2014 11:51:23 -0400
+Message-Id: <1402329088-4802-1-git-send-email-bobby.prani@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 9, 2014 at 4:01 PM,  <B_B_Singh@dell.com> wrote:
-> Older userspace or existing DUP's doesn't work with your patch & CONFIG_FW_LOADER_USER_HELPER=n.
->
-> I will give a try with https://lkml.org/lkml/2014/6/4/327 new patch & let you know ASAP.
+kerneltrap.org no longer works, update to a working reference
 
-Thanks!
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+---
+ Documentation/RCU/RTFP.txt | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Cheers,
+diff --git a/Documentation/RCU/RTFP.txt b/Documentation/RCU/RTFP.txt
+index 2f0fcb2..f29bcbc 100644
+--- a/Documentation/RCU/RTFP.txt
++++ b/Documentation/RCU/RTFP.txt
+@@ -2451,8 +2451,8 @@ lot of {Linux} into your technology!!!"
+ ,month="February"
+ ,year="2010"
+ ,note="Available:
+-\url{http://kerneltrap.com/mailarchive/linux-netdev/2010/2/26/6270589}
+-[Viewed March 20, 2011]"
++\url{http://thread.gmane.org/gmane.linux.network/153338}
++[Viewed June 9, 2014]"
+ ,annotation={
+ 	Use a pair of list_head structures to support RCU-protected
+ 	resizable hash tables.
+-- 
+1.9.1
 
-Tom
