@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934489AbaFIXNF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 19:13:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56745 "EHLO
+	id S934747AbaFIXNb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 19:13:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56757 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933331AbaFIWpZ (ORCPT
+	with ESMTP id S933320AbaFIWpY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:45:25 -0400
+	Mon, 9 Jun 2014 18:45:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joe Lawrence <joe.lawrence@stratus.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [PATCH 3.14 16/78] SCSI: scsi_transport_sas: move bsg destructor into sas_rphy_remove
-Date: Mon,  9 Jun 2014 15:47:56 -0700
-Message-Id: <20140609224813.885104481@linuxfoundation.org>
+        Lucas Stach <l.stach@pengutronix.de>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.14 24/78] cpufreq: cpu0: drop wrong devm usage
+Date: Mon,  9 Jun 2014 15:48:04 -0700
+Message-Id: <20140609224814.128964476@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140609224813.282275135@linuxfoundation.org>
 References: <20140609224813.282275135@linuxfoundation.org>
@@ -30,75 +30,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Lawrence <joe.lawrence@stratus.com>
+From: Lucas Stach <l.stach@pengutronix.de>
 
-commit 6aa6caff30f5dcb9e55b03b9710c30b83750cae5 upstream.
+commit e3beb0ac521d50d158a9d253373eae8421ac3998 upstream.
 
-The recent change in sysfs, bcdde7e221a8750f9b62b6d0bd31b72ea4ad9309
-"sysfs: make __sysfs_remove_dir() recursive" revealed an asymmetric
-rphy device creation/deletion sequence in scsi_transport_sas:
+This driver is using devres managed calls incorrectly, giving the cpu0
+device as first parameter instead of the cpufreq platform device.
+This results in resources not being freed if the cpufreq platform device
+is unbound, for example if probing has to be deferred for a missing
+regulator.
 
-  modprobe mpt2sas
-    sas_rphy_add
-      device_add A               rphy->dev
-      device_add B               sas_device transport class
-      device_add C               sas_end_device transport class
-      device_add D               bsg class
-
-  rmmod mpt2sas
-    sas_rphy_delete
-      sas_rphy_remove
-        device_del B
-        device_del C
-        device_del A
-          sysfs_remove_group     recursive sysfs dir removal
-      sas_rphy_free
-        device_del D             warning
-
-  where device A is the parent of B, C, and D.
-
-When sas_rphy_free tries to unregister the bsg request queue (device D
-above), the ensuing sysfs cleanup discovers that its sysfs group has
-already been removed and emits a warning, "sysfs group... not found for
-kobject 'end_device-X:0'".
-
-Since bsg creation is a side effect of sas_rphy_add, move its
-complementary removal call into sas_rphy_remove. This imposes the
-following tear-down order for the devices above: D, B, C, A.
-
-Note the sas_device and sas_end_device transport class devices (B and C
-above) are created and destroyed both via the list match traversal in
-attribute_container_device_trigger, so the order in which they are
-handled is fixed. This is fine as long as they are deleted before their
-parent device.
-
-Signed-off-by: Joe Lawrence <joe.lawrence@stratus.com>
-Acked-by: Dan Williams <dan.j.williams@intel.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Lucas Stach <l.stach@pengutronix.de>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/scsi_transport_sas.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/cpufreq/cpufreq-cpu0.c |   16 +++++++++++-----
+ 1 file changed, 11 insertions(+), 5 deletions(-)
 
---- a/drivers/scsi/scsi_transport_sas.c
-+++ b/drivers/scsi/scsi_transport_sas.c
-@@ -1621,8 +1621,6 @@ void sas_rphy_free(struct sas_rphy *rphy
- 	list_del(&rphy->list);
- 	mutex_unlock(&sas_host->lock);
- 
--	sas_bsg_remove(shost, rphy);
--
- 	transport_destroy_device(dev);
- 
- 	put_device(dev);
-@@ -1681,6 +1679,7 @@ sas_rphy_remove(struct sas_rphy *rphy)
+--- a/drivers/cpufreq/cpufreq-cpu0.c
++++ b/drivers/cpufreq/cpufreq-cpu0.c
+@@ -131,7 +131,7 @@ static int cpu0_cpufreq_probe(struct pla
+ 		return -ENOENT;
  	}
  
- 	sas_rphy_unlink(rphy);
-+	sas_bsg_remove(NULL, rphy);
- 	transport_remove_device(dev);
- 	device_del(dev);
- }
+-	cpu_reg = devm_regulator_get_optional(cpu_dev, "cpu0");
++	cpu_reg = regulator_get_optional(cpu_dev, "cpu0");
+ 	if (IS_ERR(cpu_reg)) {
+ 		/*
+ 		 * If cpu0 regulator supply node is present, but regulator is
+@@ -146,23 +146,23 @@ static int cpu0_cpufreq_probe(struct pla
+ 			PTR_ERR(cpu_reg));
+ 	}
+ 
+-	cpu_clk = devm_clk_get(cpu_dev, NULL);
++	cpu_clk = clk_get(cpu_dev, NULL);
+ 	if (IS_ERR(cpu_clk)) {
+ 		ret = PTR_ERR(cpu_clk);
+ 		pr_err("failed to get cpu0 clock: %d\n", ret);
+-		goto out_put_node;
++		goto out_put_reg;
+ 	}
+ 
+ 	ret = of_init_opp_table(cpu_dev);
+ 	if (ret) {
+ 		pr_err("failed to init OPP table: %d\n", ret);
+-		goto out_put_node;
++		goto out_put_clk;
+ 	}
+ 
+ 	ret = dev_pm_opp_init_cpufreq_table(cpu_dev, &freq_table);
+ 	if (ret) {
+ 		pr_err("failed to init cpufreq table: %d\n", ret);
+-		goto out_put_node;
++		goto out_put_clk;
+ 	}
+ 
+ 	of_property_read_u32(np, "voltage-tolerance", &voltage_tolerance);
+@@ -217,6 +217,12 @@ static int cpu0_cpufreq_probe(struct pla
+ 
+ out_free_table:
+ 	dev_pm_opp_free_cpufreq_table(cpu_dev, &freq_table);
++out_put_clk:
++	if (!IS_ERR(cpu_clk))
++		clk_put(cpu_clk);
++out_put_reg:
++	if (!IS_ERR(cpu_reg))
++		regulator_put(cpu_reg);
+ out_put_node:
+ 	of_node_put(np);
+ 	return ret;
 
 
