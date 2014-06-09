@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934003AbaFIWpy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 18:45:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56749 "EHLO
+	id S1754401AbaFIXAB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 19:00:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57010 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933616AbaFIWpi (ORCPT
+	with ESMTP id S933986AbaFIWpx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:45:38 -0400
+	Mon, 9 Jun 2014 18:45:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Dave Jones <davej@redhat.com>
-Subject: [PATCH 3.14 43/78] sched: Fix sched_policy < 0 comparison
-Date: Mon,  9 Jun 2014 15:48:23 -0700
-Message-Id: <20140609224814.739297176@linuxfoundation.org>
+        Santosh Kulkarni <santosh.kulkarni@calsoftinc.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.14 71/78] iscsi-target: Fix wrong buffer / buffer overrun in iscsi_change_param_value()
+Date: Mon,  9 Jun 2014 15:48:51 -0700
+Message-Id: <20140609224815.607055201@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140609224813.282275135@linuxfoundation.org>
 References: <20140609224813.282275135@linuxfoundation.org>
@@ -32,39 +30,145 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Weinberger <richard@nod.at>
+From: Roland Dreier <roland@purestorage.com>
 
-commit b14ed2c273f8ab872ae4e6735fe5ab09cb14b8c3 upstream.
+commit 79d59d08082dd0a0a18f8ceb78c99f9f321d72aa upstream.
 
-attr.sched_policy is u32, therefore a comparison against < 0 is never true.
-Fix this by casting sched_policy to int.
+In non-leading connection login, iscsi_login_non_zero_tsih_s1() calls
+iscsi_change_param_value() with the buffer it uses to hold the login
+PDU, not a temporary buffer.  This leads to the login header getting
+corrupted and login failing for non-leading connections in MC/S.
 
-This issue was reported by coverity CID 1219934.
+Fix this by adding a wrapper iscsi_change_param_sprintf() that handles
+the temporary buffer itself to avoid confusion.  Also handle sending a
+reject in case of failure in the wrapper, which lets the calling code
+get quite a bit smaller and easier to read.
 
-Fixes: dbdb22754fde ("sched: Disallow sched_attr::sched_policy < 0")
-Signed-off-by: Richard Weinberger <richard@nod.at>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1401741514-7045-1-git-send-email-richard@nod.at
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Dave Jones <davej@redhat.com>
+Finally, bump the size of the temporary buffer from 32 to 64 bytes to be
+safe, since "MaxRecvDataSegmentLength=" by itself is 25 bytes; with a
+trailing NUL, a value >= 1M will lead to a buffer overrun.  (This isn't
+the default but we don't need to run right at the ragged edge here)
+
+Reported-by: Santosh Kulkarni <santosh.kulkarni@calsoftinc.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sched/core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/target/iscsi/iscsi_target_login.c |   57 ++++++++++++++----------------
+ 1 file changed, 28 insertions(+), 29 deletions(-)
 
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3707,7 +3707,7 @@ SYSCALL_DEFINE3(sched_setattr, pid_t, pi
- 	if (retval)
- 		return retval;
+--- a/drivers/target/iscsi/iscsi_target_login.c
++++ b/drivers/target/iscsi/iscsi_target_login.c
+@@ -249,6 +249,28 @@ static void iscsi_login_set_conn_values(
+ 	mutex_unlock(&auth_id_lock);
+ }
  
--	if (attr.sched_policy < 0)
-+	if ((int)attr.sched_policy < 0)
- 		return -EINVAL;
++static __printf(2, 3) int iscsi_change_param_sprintf(
++	struct iscsi_conn *conn,
++	const char *fmt, ...)
++{
++	va_list args;
++	unsigned char buf[64];
++
++	memset(buf, 0, sizeof buf);
++
++	va_start(args, fmt);
++	vsnprintf(buf, sizeof buf, fmt, args);
++	va_end(args);
++
++	if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
++		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
++				ISCSI_LOGIN_STATUS_NO_RESOURCES);
++		return -1;
++	}
++
++	return 0;
++}
++
+ /*
+  *	This is the leading connection of a new session,
+  *	or session reinstatement.
+@@ -337,7 +359,6 @@ static int iscsi_login_zero_tsih_s2(
+ {
+ 	struct iscsi_node_attrib *na;
+ 	struct iscsi_session *sess = conn->sess;
+-	unsigned char buf[32];
+ 	bool iser = false;
  
- 	rcu_read_lock();
+ 	sess->tpg = conn->tpg;
+@@ -378,26 +399,16 @@ static int iscsi_login_zero_tsih_s2(
+ 	 *
+ 	 * In our case, we have already located the struct iscsi_tiqn at this point.
+ 	 */
+-	memset(buf, 0, 32);
+-	sprintf(buf, "TargetPortalGroupTag=%hu", sess->tpg->tpgt);
+-	if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
+-		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
+-				ISCSI_LOGIN_STATUS_NO_RESOURCES);
++	if (iscsi_change_param_sprintf(conn, "TargetPortalGroupTag=%hu", sess->tpg->tpgt))
+ 		return -1;
+-	}
+ 
+ 	/*
+ 	 * Workaround for Initiators that have broken connection recovery logic.
+ 	 *
+ 	 * "We would really like to get rid of this." Linux-iSCSI.org team
+ 	 */
+-	memset(buf, 0, 32);
+-	sprintf(buf, "ErrorRecoveryLevel=%d", na->default_erl);
+-	if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
+-		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
+-				ISCSI_LOGIN_STATUS_NO_RESOURCES);
++	if (iscsi_change_param_sprintf(conn, "ErrorRecoveryLevel=%d", na->default_erl))
+ 		return -1;
+-	}
+ 
+ 	if (iscsi_login_disable_FIM_keys(conn->param_list, conn) < 0)
+ 		return -1;
+@@ -409,12 +420,9 @@ static int iscsi_login_zero_tsih_s2(
+ 		unsigned long mrdsl, off;
+ 		int rc;
+ 
+-		sprintf(buf, "RDMAExtensions=Yes");
+-		if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
+-			iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
+-				ISCSI_LOGIN_STATUS_NO_RESOURCES);
++		if (iscsi_change_param_sprintf(conn, "RDMAExtensions=Yes"))
+ 			return -1;
+-		}
++
+ 		/*
+ 		 * Make MaxRecvDataSegmentLength PAGE_SIZE aligned for
+ 		 * Immediate Data + Unsolicitied Data-OUT if necessary..
+@@ -444,12 +452,8 @@ static int iscsi_login_zero_tsih_s2(
+ 		pr_warn("Aligning ISER MaxRecvDataSegmentLength: %lu down"
+ 			" to PAGE_SIZE\n", mrdsl);
+ 
+-		sprintf(buf, "MaxRecvDataSegmentLength=%lu\n", mrdsl);
+-		if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
+-			iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
+-				ISCSI_LOGIN_STATUS_NO_RESOURCES);
++		if (iscsi_change_param_sprintf(conn, "MaxRecvDataSegmentLength=%lu\n", mrdsl))
+ 			return -1;
+-		}
+ 	}
+ 
+ 	return 0;
+@@ -591,13 +595,8 @@ static int iscsi_login_non_zero_tsih_s2(
+ 	 *
+ 	 * In our case, we have already located the struct iscsi_tiqn at this point.
+ 	 */
+-	memset(buf, 0, 32);
+-	sprintf(buf, "TargetPortalGroupTag=%hu", sess->tpg->tpgt);
+-	if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
+-		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
+-				ISCSI_LOGIN_STATUS_NO_RESOURCES);
++	if (iscsi_change_param_sprintf(conn, "TargetPortalGroupTag=%hu", sess->tpg->tpgt))
+ 		return -1;
+-	}
+ 
+ 	return iscsi_login_disable_FIM_keys(conn->param_list, conn);
+ }
 
 
