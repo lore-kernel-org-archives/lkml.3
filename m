@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754112AbaFIS32 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 14:29:28 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:48947 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750956AbaFIS3Z (ORCPT
+	id S1754175AbaFISaD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 14:30:03 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:49306 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750956AbaFIS37 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 14:29:25 -0400
-Message-ID: <5395FD01.2060908@wwwdotorg.org>
-Date: Mon, 09 Jun 2014 12:29:21 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Thierry Reding <thierry.reding@gmail.com>,
+	Mon, 9 Jun 2014 14:29:59 -0400
+Date: Mon, 9 Jun 2014 14:29:56 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v7 3/5] misc: fuse: Add efuse driver for Tegra
-References: <1401973754-19701-1-git-send-email-pdeschrijver@nvidia.com> <1401973754-19701-4-git-send-email-pdeschrijver@nvidia.com> <5390B8E6.1050600@wwwdotorg.org> <20140605220946.GP5961@tbergstrom-lnx.Nvidia.com> <5390F508.8080104@wwwdotorg.org> <20140606073507.GS5961@tbergstrom-lnx.Nvidia.com>
-In-Reply-To: <20140606073507.GS5961@tbergstrom-lnx.Nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>
+Subject: Re: safety of *mutex_unlock() (Was: [BUG] signal: sighand
+ unprotected when accessed by /proc)
+Message-ID: <20140609142956.3d79e9d1@gandalf.local.home>
+In-Reply-To: <20140609181553.GA13681@redhat.com>
+References: <20140603130233.658a6a3c@gandalf.local.home>
+	<20140603172632.GA27956@redhat.com>
+	<CA+55aFzT5CGv_T60voAqR+4PfiMmJmsDZLid2DZ4=+X8uvF+ig@mail.gmail.com>
+	<20140603200125.GB1105@redhat.com>
+	<20140606203350.GU4581@linux.vnet.ibm.com>
+	<20140608130718.GA11129@redhat.com>
+	<20140609162613.GE4581@linux.vnet.ibm.com>
+	<20140609181553.GA13681@redhat.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/2014 01:35 AM, Peter De Schrijver wrote:
-> On Fri, Jun 06, 2014 at 12:54:00AM +0200, Stephen Warren wrote:
-...
->>> No. It's only used to populate /sys/devices/soc0/revision. I don't think
->>> that's particularly important.
->>
->> But it's a feature that works today. Why should we break it?
+On Mon, 9 Jun 2014 20:15:53 +0200
+Oleg Nesterov <oleg@redhat.com> wrote:
+
+
+> > That would indeed be a bad thing, as it could potentially lead to
+> > use-after-free bugs.  Though one could argue that any code that resulted
+> > in use-after-free would be quite aggressive.  But still...
 > 
-> I don't expect people to not update their DT actually...
+> And once again, note that the normal mutex is already unsafe (unless I missed
+> something).
 
-But that's not how DT works; old DTs must continue to work.
+Is it unsafe?
 
->>> sdhci needs this for faster modes I guess which will also need extra DT
->>> properties looking at the chromeos driver. The others definitely will need
->>> an updated DT. For randomness I haven't seen any appreciable difference in when
->>> the 'random: nonblocking pool is initialized' message appears between having
->>> the randomness addition or not. Most likely the bulk of the randomness comes
->>> from serial interrupts rather than the fuse data. So I don't think the move to
->>> a driver probe will cause any problem. Nor do I think the lack of an updated
->>> DT will cause problems.
->>
->> But what advantage do we have by actively changing it?
-> 
-> We need to move the code anyway when we will have 64bit SoCs. Using DT also
-> allows us to reuse the code even when the base address changes in the future.
-> If it weren't for Tegra20 A03p, we could also drop the hack to enable the
-> clocks directly, but use CCF instead.
+This thread was started because of a bug we triggered in -rt, which
+ended up being a change specific to -rt that modified the way slub
+handled SLAB_DESTROY_BY_RCU. What else was wrong with it?
 
-Sure we need to move the code out of arch/arm so it can be shared with
-arm64. However, that doesn't imply that we need to change anything about
-the way the code works or is initialized; we can still do all the
-initialization in response to a function call from the arch/board
-support, and not in response to driver probe.
+-- Steve
