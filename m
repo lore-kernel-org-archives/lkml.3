@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755939AbaFII3F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 04:29:05 -0400
-Received: from mga11.intel.com ([192.55.52.93]:33908 "EHLO mga11.intel.com"
+	id S932237AbaFII35 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 04:29:57 -0400
+Received: from mga14.intel.com ([192.55.52.115]:36134 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755822AbaFIIUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 04:20:54 -0400
+	id S1755329AbaFIITd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 04:19:33 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="352320929"
+   d="scan'208";a="352320247"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>,
@@ -17,19 +17,17 @@ To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Bjorn Helgaas <bhelgaas@google.com>,
         Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        x86@kernel.org
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        x86@kernel.org, Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: [Patch V4 22/42] x86, irq, ACPI: change __acpi_register_gsi to return IRQ number instead of GSI
-Date: Mon,  9 Jun 2014 16:19:51 +0800
-Message-Id: <1402302011-23642-23-git-send-email-jiang.liu@linux.intel.com>
+        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
+Subject: [Patch V4 15/42] x86, irq: reorganize IO_APIC_get_PCI_irq_vector() to prepare for irqdomain
+Date: Mon,  9 Jun 2014 16:19:44 +0800
+Message-Id: <1402302011-23642-16-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1402302011-23642-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1402302011-23642-1-git-send-email-jiang.liu@linux.intel.com>
@@ -37,82 +35,101 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently __acpi_register_gsi is defined to return GSI number and
-may be set to acpi_register_gsi_pic(), acpi_register_gsi_ioapic(),
-acpi_register_gsi_xen_hvm() and acpi_register_gsi_xen().
-
-Among which, acpi_register_gsi_ioapic() returns GSI number, but
-acpi_register_gsi_xen_hvm() and acpi_register_gsi_xen() actually
-returns IRQ number instead of GSI. And for acpi_register_gsi_pic(),
-GSI number equals to IRQ number.
-
-So change acpi_register_gsi_ioapic() to return IRQ number, it also
-simplifies the code.
+Reorganize function IO_APIC_get_PCI_irq_vector() a bit to better support
+coming irqdomain.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- arch/x86/kernel/acpi/boot.c |   21 ++++++++-------------
- 1 file changed, 8 insertions(+), 13 deletions(-)
+ arch/x86/kernel/apic/io_apic.c |   61 ++++++++++++++++++++++------------------
+ 1 file changed, 33 insertions(+), 28 deletions(-)
 
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index e5e645fdd690..0c9dcf6824b6 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -419,7 +419,7 @@ static int mp_register_gsi(struct device *dev, u32 gsi, int trigger,
- 
- 	irq = map_gsi_to_irq(gsi);
- 	if (irq < 0)
--		return ACPI_INVALID_GSI;
-+		return irq;
- 
- 	ioapic = mp_find_ioapic(gsi);
- 	if (ioapic < 0) {
-@@ -444,12 +444,11 @@ static int mp_register_gsi(struct device *dev, u32 gsi, int trigger,
- 			     polarity == ACPI_ACTIVE_HIGH ? 0 : 1);
- 	ret = io_apic_set_pci_routing(dev, irq, &irq_attr);
- 	if (ret < 0)
--		gsi = ACPI_INVALID_GSI;
-+		irq = -1;
- 
--	return gsi;
-+	return irq;
- }
- 
--
- static int __init
- acpi_parse_ioapic(struct acpi_subtable_header * header, const unsigned long end)
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 0b2fb2aac7a6..4ca3151d26f9 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -997,7 +997,7 @@ static int pin_2_irq(int idx, int apic, int pin)
+ int IO_APIC_get_PCI_irq_vector(int bus, int slot, int pin,
+ 				struct io_apic_irq_attr *irq_attr)
  {
-@@ -652,11 +651,13 @@ static int acpi_register_gsi_pic(struct device *dev, u32 gsi,
- static int acpi_register_gsi_ioapic(struct device *dev, u32 gsi,
- 				    int trigger, int polarity)
- {
-+	int irq = gsi;
+-	int ioapic_idx, i, best_guess = -1;
++	int irq, i, best_guess = -1;
+ 
+ 	apic_printk(APIC_DEBUG,
+ 		    "querying PCI -> IRQ mapping bus:%d, slot:%d, pin:%d.\n",
+@@ -1007,41 +1007,46 @@ int IO_APIC_get_PCI_irq_vector(int bus, int slot, int pin,
+ 			    "PCI BIOS passed nonexistent PCI bus %d!\n", bus);
+ 		return -1;
+ 	}
 +
- #ifdef CONFIG_X86_IO_APIC
--	gsi = mp_register_gsi(dev, gsi, trigger, polarity);
-+	irq = mp_register_gsi(dev, gsi, trigger, polarity);
- #endif
+ 	for (i = 0; i < mp_irq_entries; i++) {
+ 		int lbus = mp_irqs[i].srcbus;
++		int ioapic_idx, found = 0;
++
++		if (bus != lbus || mp_irqs[i].irqtype != mp_INT ||
++		    slot != ((mp_irqs[i].srcbusirq >> 2) & 0x1f))
++			continue;
  
--	return gsi;
-+	return irq;
- }
+ 		for_each_ioapic(ioapic_idx)
+ 			if (mpc_ioapic_id(ioapic_idx) == mp_irqs[i].dstapic ||
+-			    mp_irqs[i].dstapic == MP_APIC_ALL)
++			    mp_irqs[i].dstapic == MP_APIC_ALL) {
++				found = 1;
+ 				break;
++			}
++		if (!found)
++			continue;
  
- int (*__acpi_register_gsi)(struct device *dev, u32 gsi,
-@@ -674,13 +675,7 @@ int (*acpi_suspend_lowlevel)(void);
-  */
- int acpi_register_gsi(struct device *dev, u32 gsi, int trigger, int polarity)
- {
--	unsigned int plat_gsi;
+-		if (!test_bit(lbus, mp_bus_not_pci) &&
+-		    mp_irqs[i].irqtype == mp_INT &&
+-		    (bus == lbus) &&
+-		    (slot == ((mp_irqs[i].srcbusirq >> 2) & 0x1f))) {
+-			int irq = pin_2_irq(i, ioapic_idx, mp_irqs[i].dstirq);
 -
--	plat_gsi = (*__acpi_register_gsi)(dev, gsi, trigger, polarity);
--	if (plat_gsi != ACPI_INVALID_GSI)
--		return map_gsi_to_irq(plat_gsi);
--
--	return -1;
-+	return (*__acpi_register_gsi)(dev, gsi, trigger, polarity);
- }
- EXPORT_SYMBOL_GPL(acpi_register_gsi);
+-			if (!(ioapic_idx || IO_APIC_IRQ(irq)))
+-				continue;
++		/* Skip ISA IRQs */
++		irq = pin_2_irq(i, ioapic_idx, mp_irqs[i].dstirq);
++		if (ioapic_idx == 0 && !IO_APIC_IRQ(irq))
++			continue;
  
+-			if (pin == (mp_irqs[i].srcbusirq & 3)) {
+-				set_io_apic_irq_attr(irq_attr, ioapic_idx,
+-						     mp_irqs[i].dstirq,
+-						     irq_trigger(i),
+-						     irq_polarity(i));
+-				return irq;
+-			}
+-			/*
+-			 * Use the first all-but-pin matching entry as a
+-			 * best-guess fuzzy result for broken mptables.
+-			 */
+-			if (best_guess < 0) {
+-				set_io_apic_irq_attr(irq_attr, ioapic_idx,
+-						     mp_irqs[i].dstirq,
+-						     irq_trigger(i),
+-						     irq_polarity(i));
+-				best_guess = irq;
+-			}
++		if (pin == (mp_irqs[i].srcbusirq & 3)) {
++			set_io_apic_irq_attr(irq_attr, ioapic_idx,
++					     mp_irqs[i].dstirq,
++					     irq_trigger(i),
++					     irq_polarity(i));
++			return irq;
++		}
++		/*
++		 * Use the first all-but-pin matching entry as a
++		 * best-guess fuzzy result for broken mptables.
++		 */
++		if (best_guess < 0) {
++			set_io_apic_irq_attr(irq_attr, ioapic_idx,
++					     mp_irqs[i].dstirq,
++					     irq_trigger(i),
++					     irq_polarity(i));
++			best_guess = irq;
+ 		}
+ 	}
+ 	return best_guess;
 -- 
 1.7.10.4
 
