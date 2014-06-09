@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933947AbaFIJPR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 05:15:17 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58387 "EHLO
+	id S933926AbaFIJPN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 05:15:13 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58413 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754815AbaFIIvY (ORCPT
+	by vger.kernel.org with ESMTP id S1754856AbaFIIvY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jun 2014 04:51:24 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, NeilBrown <neilb@suse.de>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 040/146] md: avoid possible spinning md thread at shutdown.
-Date: Mon,  9 Jun 2014 10:49:35 +0200
-Message-Id: <c9378670f53de5174f73a7efc8eb88799e2473ee.1402303820.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Eliad Peller <eliad@wizery.com>,
+        Eliad Peller <eliadx.peller@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 027/146] cfg80211: free sme on connection failures
+Date: Mon,  9 Jun 2014 10:49:22 +0200
+Message-Id: <7f506377f05d1d087806e42949db49ef52aa397b.1402303820.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
 References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
@@ -23,44 +24,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: NeilBrown <neilb@suse.de>
+From: Eliad Peller <eliad@wizery.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 0f62fb220aa4ebabe8547d3a9ce4a16d3c045f21 upstream.
+commit c1fbb258846dfc425507a093922d2d001e54c3ea upstream.
 
-If an md array with externally managed metadata (e.g. DDF or IMSM)
-is in use, then we should not set safemode==2 at shutdown because:
+cfg80211 is notified about connection failures by
+__cfg80211_connect_result() call. However, this
+function currently does not free cfg80211 sme.
 
-1/ this is ineffective: user-space need to be involved in any 'safemode' handling,
-2/ The safemode management code doesn't cope with safemode==2 on external metadata
-   and md_check_recover enters an infinite loop.
+This results in hanging connection attempts in some cases
 
-Even at shutdown, an infinite-looping process can be problematic, so this
-could cause shutdown to hang.
+e.g. when mac80211 authentication attempt is denied,
+we have this function call:
+ieee80211_rx_mgmt_auth() -> cfg80211_rx_mlme_mgmt() ->
+cfg80211_process_auth() -> cfg80211_sme_rx_auth() ->
+__cfg80211_connect_result()
 
-Signed-off-by: NeilBrown <neilb@suse.de>
+but cfg80211_sme_free() is never get called.
+
+Fixes: ceca7b712 ("cfg80211: separate internal SME implementation")
+Signed-off-by: Eliad Peller <eliadx.peller@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/md/md.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/wireless/sme.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/md/md.c b/drivers/md/md.c
-index 015bc455cf1c..0ed6daf3b1e4 100644
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -8520,7 +8520,8 @@ static int md_notify_reboot(struct notifier_block *this,
- 		if (mddev_trylock(mddev)) {
- 			if (mddev->pers)
- 				__md_stop_writes(mddev);
--			mddev->safemode = 2;
-+			if (mddev->persistent)
-+				mddev->safemode = 2;
- 			mddev_unlock(mddev);
+diff --git a/net/wireless/sme.c b/net/wireless/sme.c
+index 20e86a95dc4e..2f844eec9c6d 100644
+--- a/net/wireless/sme.c
++++ b/net/wireless/sme.c
+@@ -242,7 +242,6 @@ void cfg80211_conn_work(struct work_struct *work)
+ 					NULL, 0, NULL, 0,
+ 					WLAN_STATUS_UNSPECIFIED_FAILURE,
+ 					false, NULL);
+-			cfg80211_sme_free(wdev);
  		}
- 		need_delay = 1;
+ 		wdev_unlock(wdev);
+ 	}
+@@ -646,6 +645,7 @@ void __cfg80211_connect_result(struct net_device *dev, const u8 *bssid,
+ 			cfg80211_unhold_bss(bss_from_pub(bss));
+ 			cfg80211_put_bss(wdev->wiphy, bss);
+ 		}
++		cfg80211_sme_free(wdev);
+ 		return;
+ 	}
+ 
 -- 
 1.9.3
 
