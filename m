@@ -1,96 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755595AbaFIPmW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 11:42:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37551 "EHLO mx1.redhat.com"
+	id S933501AbaFIPuy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 11:50:54 -0400
+Received: from imap.thunk.org ([74.207.234.97]:57647 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755089AbaFIPmU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 11:42:20 -0400
-Date: Mon, 9 Jun 2014 11:41:37 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: WANG Chao <chaowang@redhat.com>
-Cc: Dave Young <dyoung@redhat.com>, mjg59@srcf.ucam.org, bhe@redhat.com,
-        jkosina@suse.cz, greg@kroah.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, bp@alien8.de, ebiederm@xmission.com,
-        hpa@zytor.com, akpm@linux-foundation.org
-Subject: Re: [PATCH 07/13] kexec: Implementation of new syscall
- kexec_file_load
-Message-ID: <20140609154137.GD22049@redhat.com>
-References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
- <1401800822-27425-8-git-send-email-vgoyal@redhat.com>
- <20140606065605.GE2785@dhcp-17-89.nay.redhat.com>
- <20140606181859.GK1526@redhat.com>
- <20140609021122.GB1924@darkstar.nay.redhat.com>
- <20140609053538.GA2874@dhcp-17-89.nay.redhat.com>
+	id S932675AbaFIPuw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 11:50:52 -0400
+Date: Mon, 9 Jun 2014 11:50:46 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: George Spelvin <linux@horizon.com>
+Cc: hpa@linux.intel.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
+        price@mit.edu
+Subject: Re: [RFC PATCH] drivers/char/random.c: Is reducing locking range
+ like this safe?
+Message-ID: <20140609155046.GA8993@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	George Spelvin <linux@horizon.com>, hpa@linux.intel.com,
+	linux-kernel@vger.kernel.org, mingo@kernel.org, price@MIT.EDU
+References: <20140609133448.GA8418@thunk.org>
+ <20140609150426.3885.qmail@ns.horizon.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140609053538.GA2874@dhcp-17-89.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140609150426.3885.qmail@ns.horizon.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 09, 2014 at 01:35:38PM +0800, WANG Chao wrote:
-
-[..]
-> > > What's the upper length of vzalloc(). I think if it is too big to alloc,
-> > > then vzalloc() should return me an error?
+On Mon, Jun 09, 2014 at 11:04:26AM -0400, George Spelvin wrote:
+> > What could be a problem is if we get really unlucky (an interrupt
+> > update happening at the same time as an update from rngd), it's
+> > possible we could end up with an entropy addition getting lost.  It's
+> > not such a big deal if a contribution from add_interrupt_randomness()
+> > gets lost, since we only giving one bit worth of entropy credit.  But
+> > it's possible than a much larger input from rngd could potentially end
+> > up getting overwritten from the fast_pool contribution.
 > 
-> When allocating too large, eg. vzalloc(-1), kernel spits:
+> What I can't see in the code is how that case is detected and the entropy
+> credit suppressed.
+
+Sorry, I didn't make myself clear.  In the common case where we don't
+have rngd running, and so we only have add_interrupt_randomness()
+racing with itself, what's at stake is only one bit of entropy credit.
+In the absolute worse case, where two CPU's run
+add_interrupt_randomness() at the the exact same time (after servicing
+different irq's), what can happen is that both cpu's will get the same
+add_ptr, and so both CPU's will end up updating the same portion of
+the entropy pool, and so one CPU's worth of add_interrupt_randomness()
+will get lost by being overwritten by the other CPU's updates.  This
+means that we will have given two bits worth of entropy credit, but
+only one add_interrupt_randomness()'s worth of updates.  Given that
+the single bit of entropy bit credits was being very conservative to
+begin with, it's not such a big deal.
+
+However, and this is the case I failed to consider when I made this
+change almost two years ago, is what happens if you have one updater
+coming from add_interrupt_randomness(), and another one coming from
+rngd calling RNGADDENTROPY ioctl.  Now if add_interrupt_randomness()
+wins the race and all of the entropy pool updates are coming from it,
+then the entropy credit coming from RNDADDENTROPY will be credited to
+the pool without the contribution from rngd being actually added to
+the pool, since those contributions might have gotten overwritten by
+add_interrupt_randomness().
+
+So I was't saying that we could detect the situation; it's just that
+in cases where we aren't adding any credit anyway, or as in the case
+of add_interrupt_randomness() racing with each other, it's 50-50 with
+CPU will win the race, and so an adversary which can't predict which
+CPU's contribution to the entropy pool will actually "win" has to
+explore both possibilities, and that mitigates the fact that entropy
+count might be bumped without the corresponding entropy having been
+added.
+
+But there is the RNGADDENTROPY icotl case where this reasoning doesn't
+hold, and that's the case which I'm now worried about.
+
+> Consider the case of a full pool, and a concurrent write and read
+> of a full pool's worth of entropy.
 > 
-> [  457.407579] vmalloc: allocation failure: 18446744073709551606 bytes
-> [  457.413854] kexec: page allocation failure: order:0, mode:0x80d2
-> [  457.419853] CPU: 3 PID: 2058 Comm: kexec Not tainted
-> 3.15.0-rc8-00096-g3dc85e8 #10
-> [  457.427408] Hardware name: Dell Inc. OptiPlex 760
-> /0M860N, BIOS A12 05/23/2011
-> [  457.435999]  ffffffff81a2f678 ffff8800bfb03db0 ffffffff816944fd
-> 00000000000080d2
-> [  457.443422]  ffff8800bfb03e38 ffffffff8118a31a ffffffff81a2f678
-> ffff8800bfb03dd0
-> [  457.450851]  ffff880100000018 ffff8800bfb03e48 ffff8800bfb03de8
-> ffff8800bfb03e10
-> [  457.458278] Call Trace:
-> [  457.460731]  [<ffffffff816944fd>] dump_stack+0x45/0x56
-> [  457.465865]  [<ffffffff8118a31a>] warn_alloc_failed+0xda/0x140
-> [  457.471693]  [<ffffffff811f56d1>] ? kernel_read+0x41/0x60
-> [  457.477085]  [<ffffffff811bf466>] __vmalloc_node_range+0x1b6/0x270
-> [  457.483256]  [<ffffffff811bf5bb>] vzalloc+0x4b/0x50
-> [  457.488132]  [<ffffffff81121815>] ?
-> kimage_file_prepare_segments.part.10+0x85/0x140
-> [  457.495774]  [<ffffffff81121815>]
-> kimage_file_prepare_segments.part.10+0x85/0x140
-> [  457.503244]  [<ffffffff8112301a>] SyS_kexec_file_load+0x38a/0x690
-> [  457.509330]  [<ffffffff816a2f29>] system_call_fastpath+0x16/0x1b
-> [..]
+> If the write wins the race, it overfills the pool, so may not give
+> any credit, and the read them empties it.
 > 
-> I think it's better to do some sane check to prevent such warning when
-> taking arbitrary argument from user space.
+> If the read wins the race, it empties the pool, and then the write
+> refills it.
 
-Hmm.., I did not know that memory allocation failures had to dump stack
-trace.
+Yes, but again, if we're only adding a single bit's worth of entropy
+credit, then at worst we'll only be off by one.  And if the race is a
+50-50 proposition (and I know life is not that simple; for example, it
+doesn't deal with N-way races), then we might not even be off by one.  :-)
 
-Anyway, I think I can implement another function which calls into image
-loader and query the maximum command length size they will support and
-use that number as uppper limit. It is little more code and one extra
-call. Hopefully it is worth it.
+One other thing to consider is that we don't really need to care about
+how efficient RNGADDENTROPY needs to be.  So if necessary, we can put
+a mutex around that so that we know that there's only a single
+RNGADDENTROPY being processed at a time.  So if we need to play
+cmpxchg games to make sure the RNGADDENTROPY contribution doesn't get
+lost, and retry the input mixing multiple times if necessary, that's
+quite acceptable, so long as we can minimize the overhead on the
+add_interrupt_randomness() side of the path (and where again, if there
+is a 50-50 change that we lose the contribution from
+add_interrupt_randomness(), that's probably acceptable so long as we
+don't lose the RNGADDENTROPY contribution).
 
+Come to think of it, something that we 
+
+> Ah!  It turns out that there is a simple technique after all.
+> I have three add counters, and due to lack of imagination thinking
+> of good descriptive names, I'll call them add1, add2 and add3.
 > 
- > 
-> > function __vmalloc_node_range:
-> >         if (!size || (size >> PAGE_SHIFT) > totalram_pages)
-> >                 goto fail;
-> > 
-> > So I think only checking cmdline_len == 0 is enough.
-> > 
-> > For the upper length shouldn't it be stripped to COMMAND_LINE_SIZE?
+> add1-add2 is the amount of outstanding writes in progress.  The location
+> of the writes is not known, excpe that it's somewhere between add3 and add1.
 > 
-> Yes, COMMAND_LINE_SIZE
+> The invariant is add3 <= add2 <= add1.
+> 
+> add1 is the ticket lock.  A would-be writer checks that it is
+> not trying to increment add1 to more than add3+POOLSIZE, and
+> if so does an atomic fetch-and-add on add1.
+> 
+> This tells it the range of the pool it's allowed to write to.  All good,
+> and it does the appropriate update.
+> 
+> When the write complete, atomically bump add2.  Then check if add2 ==
+> add1.  If not, return.  If they are equal, set add3 to the shared value,
+> collapsing the "writes in progress somewhere in this range" window.
 
-IIUC, COMMAND_LINE_SIZE gives max limits of running kernel and it does
-not tell us anything about command line size supported by kernel being
-loaded.
+I need to think about this more, but that's clever!  And if we end up
+having to throw away a contribution from add_interrupt_entropy(),
+that's fine.
 
-Thanks
-Vivek
+Speaking of which, there's an even simpler solution that I've failed
+to consider.  We could simply use a trylock in
+add_interrupt_randomness(), and if we can't get the lock, decrement
+fast_pool->count so we try to transfer the entropy from the fast_pool
+to the entropy pool on the next interrupt.
+
+Doh!  That solves all of the problems, and it's much simpler and
+easier to reason about.
+
+						- Ted
