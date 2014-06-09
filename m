@@ -1,84 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932289AbaFIKTM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 06:19:12 -0400
-Received: from mga03.intel.com ([143.182.124.21]:60243 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753950AbaFIKTK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 06:19:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,1001,1392192000"; 
-   d="scan'208";a="443246698"
-Date: Mon, 9 Jun 2014 10:15:16 +0800
-From: Yuyang Du <yuyang.du@intel.com>
-To: Morten Rasmussen <morten.rasmussen@arm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	id S932502AbaFIKUb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 06:20:31 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:45840 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752948AbaFIKU2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 06:20:28 -0400
+Date: Mon, 9 Jun 2014 11:20:27 +0100
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: Henrik Austad <henrik@austad.us>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
         "mingo@kernel.org" <mingo@kernel.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
         "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
         "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
         "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "jacob.jun.pan@linux.intel.com" <jacob.jun.pan@linux.intel.com>
-Subject: Re: [RFC PATCH 06/16] arm: topology: Define TC2 sched energy and
- provide it to scheduler
-Message-ID: <20140609021516.GE22261@intel.com>
-References: <20140604172712.GJ13930@laptop.programming.kicks-ass.net>
- <2484761.vkWavnsDx3@vostro.rjw.lan>
- <20140605065205.GA3213@twins.programming.kicks-ass.net>
- <539086B3.2010804@gmail.com>
- <20140605202930.GA15484@intel.com>
- <20140606080543.GR6758@twins.programming.kicks-ass.net>
- <20140606003520.GB22261@intel.com>
- <20140606105036.GQ3213@twins.programming.kicks-ass.net>
- <20140607232628.GC22261@intel.com>
- <20140609085952.GZ29593@e103034-lin>
+        Dietmar Eggemann <Dietmar.Eggemann@arm.com>
+Subject: Re: [RFC PATCH 02/16] sched: Introduce CONFIG_SCHED_ENERGY
+Message-ID: <20140609102027.GA29593@e103034-lin>
+References: <1400869003-27769-1-git-send-email-morten.rasmussen@arm.com>
+ <1400869003-27769-3-git-send-email-morten.rasmussen@arm.com>
+ <20140608060316.GA18179@austad.us>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140609085952.GZ29593@e103034-lin>
+In-Reply-To: <20140608060316.GA18179@austad.us>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 09, 2014 at 09:59:52AM +0100, Morten Rasmussen wrote:
-> IMHO, the per-entity load-tracking does a fair job representing the task
-> compute capacity requirements. Sure it isn't perfect, particularly not
-> for memory bound tasks, but it is way better than not having any task
-> history at all, which was the case before.
+On Sun, Jun 08, 2014 at 07:03:16AM +0100, Henrik Austad wrote:
+> On Fri, May 23, 2014 at 07:16:29PM +0100, Morten Rasmussen wrote:
+> > The Energy-aware scheduler implementation is guarded by
+> > CONFIG_SCHED_ENERGY.
+> > 
+> > Signed-off-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
+> > Signed-off-by: Morten Rasmussen <morten.rasmussen@arm.com>
+> > ---
+> >  arch/arm/Kconfig |    5 +++++
+> >  1 file changed, 5 insertions(+)
+> > 
+> > diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> > index ab438cb..bfc3a85 100644
+> > --- a/arch/arm/Kconfig
+> > +++ b/arch/arm/Kconfig
 > 
-> The story is more or less the same for performance scaling. It is not
-> taken into account at all in the scheduler at the moment. cpufreq is
-> actually messing up load-balancing decisions after task load-tracking
-> was introduced. Adding performance scaling awareness should only make
-> things better even if predictions are not accurate for all workloads. I
-> don't see why it shouldn't given the current state of energy-awareness
-> in the scheduler.
+> Is this going to be duplicate for each architecture enabling this? Why
+> not make a kernel/Kconfig.energy and link to that from those
+> architectures using it?
+
+kernel/Kconfig.energy is better I think.
+
 > 
-
-Optimized IPC is good for sure (with regard to pstate adjustment). My point is
-how it is practical to rightly correlate to scheduler and pstate
-power-efficiency. Put another way, with fixed workload, you really can do such
-a thing by offline running the workload several times to conclude with a very
-power-efficient solution which takes IPC into account. Actually, lots of
-people have done that in papers/reports (for SPECXXX or TPC-X for example). But
-I can't see how online realtime workload can be done like it.
-
-> > Currently, all freq governors take CPU utilization (load%) as the indicator
-> > (target), which can server both: workload and perf scaling.
+> > @@ -1926,6 +1926,11 @@ config XEN
+> >  	help
+> >  	  Say Y if you want to run Linux in a Virtual Machine on Xen on ARM.
+> >  
+> > +config SCHED_ENERGY
+> > +	bool "Energy-aware scheduling (EXPERIMENTAL)"
+> > +	help
+> > +	  Highly experimental energy aware task scheduling.
+> > +
 > 
-> With a bunch of hacks on top to make it more reactive because the
-> current cpu utilization metric is not responsive enough to deal with
-> workload changes. That is at least the case for ondemand and interactive
-> (in Android).
+> how about adding *slightly* more info here? :) (yes, yes, I know it's an RFC)
+
+Fair point.
+
 > 
+> """
+> Highly experimental energy aware task scheduling.
+> 
+> This will allow the kernel to keep track of energy required for
+> different capacity levels for a given CPU. That way, the scheduler can
+> make more informed decisions as to where a newly woken task should be
+> placed. Heterogenous platform will benefit the most from this option.
 
-To what end it is not responsive enough? And how it is related here?
+Platforms with hierarchical power domains (for example, having ability
+to power off groups of cpus and their caches) should see some benefit as
+well.
 
-Thanks,
-Yuyang
+> Enabling this will add a significant overhead for a task-switch.
+
+The overhead is at task wakeup, task switch (as in task preemption)
+should not be affected.
+
+Thanks for the text. I will roll into v2.
+
+Morten
