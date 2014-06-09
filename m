@@ -1,110 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753953AbaFIFYz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 01:24:55 -0400
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:34357 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751252AbaFIFYw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 01:24:52 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@rjwysocki.net
-Cc: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arvind.chauhan@arm.com,
-        srivatsa.bhat@linux.vnet.ibm.com, svaidy@linux.vnet.ibm.com,
-        ego@linux.vnet.ibm.com, pavel@ucw.cz,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH] cpufreq: governor: remove copy_prev_load from 'struct cpu_dbs_common_info'
-Date: Mon,  9 Jun 2014 10:54:17 +0530
-Message-Id: <d4241c6ef57c901dde270380cce74e24effa4852.1402291351.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 2.0.0.rc2
+	id S1751288AbaFIFg3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 01:36:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45297 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750836AbaFIFg2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 01:36:28 -0400
+Date: Mon, 9 Jun 2014 13:35:38 +0800
+From: WANG Chao <chaowang@redhat.com>
+To: Dave Young <dyoung@redhat.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, mjg59@srcf.ucam.org, bhe@redhat.com,
+        jkosina@suse.cz, greg@kroah.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, bp@alien8.de, ebiederm@xmission.com,
+        hpa@zytor.com, akpm@linux-foundation.org
+Subject: Re: [PATCH 07/13] kexec: Implementation of new syscall
+ kexec_file_load
+Message-ID: <20140609053538.GA2874@dhcp-17-89.nay.redhat.com>
+References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
+ <1401800822-27425-8-git-send-email-vgoyal@redhat.com>
+ <20140606065605.GE2785@dhcp-17-89.nay.redhat.com>
+ <20140606181859.GK1526@redhat.com>
+ <20140609021122.GB1924@darkstar.nay.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140609021122.GB1924@darkstar.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'copy_prev_load' was recently added by commit: 18b46ab (cpufreq: governor: Be
-friendly towards latency-sensitive bursty workloads).
+On 06/09/14 at 10:11am, Dave Young wrote:
+> On 06/06/14 at 02:19pm, Vivek Goyal wrote:
+> > On Fri, Jun 06, 2014 at 02:56:05PM +0800, WANG Chao wrote:
+> > > On 06/03/14 at 09:06am, Vivek Goyal wrote:
+> > > > Previous patch provided the interface definition and this patch prvides
+> > > > implementation of new syscall.
+> > > > 
+> > > > Previously segment list was prepared in user space. Now user space just
+> > > > passes kernel fd, initrd fd and command line and kernel will create a
+> > > > segment list internally.
+> > > > 
+> > > > This patch contains generic part of the code. Actual segment preparation
+> > > > and loading is done by arch and image specific loader. Which comes in
+> > > > next patch.
+> > > > 
+> > > > Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+> > > 
+> > > [..]
+> > > > diff --git a/kernel/kexec.c b/kernel/kexec.c
+> > > > index a3044e6..1ad4d60 100644
+> > > > --- a/kernel/kexec.c
+> > > > +++ b/kernel/kexec.c
+> > > 
+> > > > +static int kimage_file_prepare_segments(struct kimage *image, int kernel_fd,
+> > > > +		int initrd_fd, const char __user *cmdline_ptr,
+> > > > +		unsigned long cmdline_len)
+> > > > +{
+> > > > +	int ret = 0;
+> > > > +	void *ldata;
+> > > > +
+> > > > +	ret = copy_file_from_fd(kernel_fd, &image->kernel_buf,
+> > > > +					&image->kernel_buf_len);
+> > > > +	if (ret)
+> > > > +		return ret;
+> > > > +
+> > > > +	/* Call arch image probe handlers */
+> > > > +	ret = arch_kexec_kernel_image_probe(image, image->kernel_buf,
+> > > > +						image->kernel_buf_len);
+> > > > +
+> > > > +	if (ret)
+> > > > +		goto out;
+> > > > +
+> > > > +	ret = copy_file_from_fd(initrd_fd, &image->initrd_buf,
+> > > > +					&image->initrd_buf_len);
+> > > > +	if (ret)
+> > > > +		goto out;
+> > > > +
+> > > > +	image->cmdline_buf = vzalloc(cmdline_len);
+> > > 
+> > > You should validate the upper/lower boundary of cmdline_len before
+> > > calling vzalloc. When cmdline_len is 0 or too large, vmalloc failure
+> > > message would be fired.
+> > 
+> > What's the upper length of vzalloc(). I think if it is too big to alloc,
+> > then vzalloc() should return me an error?
 
-It actually is a bit redundant as we also have 'prev_load' which can store any
-integer value and can be used instead of 'copy_prev_load' by setting it to zero
-when we don't want to use previous load.
+When allocating too large, eg. vzalloc(-1), kernel spits:
 
-So, drop 'copy_prev_load' and use 'prev_load' instead.
+[  457.407579] vmalloc: allocation failure: 18446744073709551606 bytes
+[  457.413854] kexec: page allocation failure: order:0, mode:0x80d2
+[  457.419853] CPU: 3 PID: 2058 Comm: kexec Not tainted
+3.15.0-rc8-00096-g3dc85e8 #10
+[  457.427408] Hardware name: Dell Inc. OptiPlex 760
+/0M860N, BIOS A12 05/23/2011
+[  457.435999]  ffffffff81a2f678 ffff8800bfb03db0 ffffffff816944fd
+00000000000080d2
+[  457.443422]  ffff8800bfb03e38 ffffffff8118a31a ffffffff81a2f678
+ffff8800bfb03dd0
+[  457.450851]  ffff880100000018 ffff8800bfb03e48 ffff8800bfb03de8
+ffff8800bfb03e10
+[  457.458278] Call Trace:
+[  457.460731]  [<ffffffff816944fd>] dump_stack+0x45/0x56
+[  457.465865]  [<ffffffff8118a31a>] warn_alloc_failed+0xda/0x140
+[  457.471693]  [<ffffffff811f56d1>] ? kernel_read+0x41/0x60
+[  457.477085]  [<ffffffff811bf466>] __vmalloc_node_range+0x1b6/0x270
+[  457.483256]  [<ffffffff811bf5bb>] vzalloc+0x4b/0x50
+[  457.488132]  [<ffffffff81121815>] ?
+kimage_file_prepare_segments.part.10+0x85/0x140
+[  457.495774]  [<ffffffff81121815>]
+kimage_file_prepare_segments.part.10+0x85/0x140
+[  457.503244]  [<ffffffff8112301a>] SyS_kexec_file_load+0x38a/0x690
+[  457.509330]  [<ffffffff816a2f29>] system_call_fastpath+0x16/0x1b
+[..]
 
-Update comments as well to make it more clear.
+I think it's better to do some sane check to prevent such warning when
+taking arbitrary argument from user space.
 
-There is another change here which was probably missed by Srivatsa during the
-last version of updates he made. The unlikely in the 'if' statement was covering
-only half of the condition and the whole line should actually come under it.
+> 
+> function __vmalloc_node_range:
+>         if (!size || (size >> PAGE_SHIFT) > totalram_pages)
+>                 goto fail;
+> 
+> So I think only checking cmdline_len == 0 is enough.
+> 
+> For the upper length shouldn't it be stripped to COMMAND_LINE_SIZE?
 
-Also checkpatch is made more silent as it was reporting this (--strict option):
-
-CHECK: Alignment should match open parenthesis
-+		if (unlikely(wall_time > (2 * sampling_rate) &&
-+						j_cdbs->prev_load)) {
-
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/cpufreq_governor.c | 13 ++++++++-----
- drivers/cpufreq/cpufreq_governor.h |  8 ++++----
- 2 files changed, 12 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
-index 9004450..a1ad804 100644
---- a/drivers/cpufreq/cpufreq_governor.c
-+++ b/drivers/cpufreq/cpufreq_governor.c
-@@ -132,14 +132,18 @@ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu)
- 		 * an unusually large 'wall_time' (as compared to the sampling
- 		 * rate) indicates this scenario.
- 		 */
--		if (unlikely(wall_time > (2 * sampling_rate)) &&
--						j_cdbs->copy_prev_load) {
-+		if (unlikely(wall_time > (2 * sampling_rate) &&
-+			     j_cdbs->prev_load)) {
- 			load = j_cdbs->prev_load;
--			j_cdbs->copy_prev_load = false;
-+
-+			/*
-+			 * Ensure that we copy the previous load only once, upon
-+			 * the first wake-up from idle.
-+			 */
-+			j_cdbs->prev_load = 0;
- 		} else {
- 			load = 100 * (wall_time - idle_time) / wall_time;
- 			j_cdbs->prev_load = load;
--			j_cdbs->copy_prev_load = true;
- 		}
- 
- 		if (load > max_load)
-@@ -373,7 +377,6 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
- 				(j_cdbs->prev_cpu_wall - j_cdbs->prev_cpu_idle);
- 			j_cdbs->prev_load = 100 * prev_load /
- 					(unsigned int) j_cdbs->prev_cpu_wall;
--			j_cdbs->copy_prev_load = true;
- 
- 			if (ignore_nice)
- 				j_cdbs->prev_cpu_nice =
-diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
-index c2a5b7e..d3082ee 100644
---- a/drivers/cpufreq/cpufreq_governor.h
-+++ b/drivers/cpufreq/cpufreq_governor.h
-@@ -134,12 +134,12 @@ struct cpu_dbs_common_info {
- 	u64 prev_cpu_idle;
- 	u64 prev_cpu_wall;
- 	u64 prev_cpu_nice;
--	unsigned int prev_load;
- 	/*
--	 * Flag to ensure that we copy the previous load only once, upon the
--	 * first wake-up from idle.
-+	 * Used to store system load before going into idle, when set to zero:
-+	 * used as a flag to ensure that we copy the previous load only once,
-+	 * upon the first wake-up from idle.
- 	 */
--	bool copy_prev_load;
-+	unsigned int prev_load;
- 	struct cpufreq_policy *cur_policy;
- 	struct delayed_work work;
- 	/*
--- 
-2.0.0.rc2
-
+Yes, COMMAND_LINE_SIZE
