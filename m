@@ -1,99 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933932AbaFIXst (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 19:48:49 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:34712 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933234AbaFIXss (ORCPT
+	id S934016AbaFIXuX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 19:50:23 -0400
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:55210 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932265AbaFIXuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 19:48:48 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        sparclinux@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Seth Bollinger <sethb@digi.com>,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: FW: Linux 3.15: SPARC serial console regression
-Date: Mon,  9 Jun 2014 19:48:17 -0400
-Message-Id: <1402357697-20976-1-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <20140609205917.GA913@drone.musicnaut.iki.fi>
-References: <20140609205917.GA913@drone.musicnaut.iki.fi>
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+	Mon, 9 Jun 2014 19:50:21 -0400
+Date: Mon, 9 Jun 2014 16:50:18 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Vlastimil Babka <vbabka@suse.cz>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 02/10] mm, compaction: report compaction as contended
+ only due to lock contention
+In-Reply-To: <1402305982-6928-2-git-send-email-vbabka@suse.cz>
+Message-ID: <alpine.DEB.2.02.1406091647140.17705@chino.kir.corp.google.com>
+References: <1402305982-6928-1-git-send-email-vbabka@suse.cz> <1402305982-6928-2-git-send-email-vbabka@suse.cz>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/2014 04:59 PM, Aaro Koskinen wrote:> Hi,
+On Mon, 9 Jun 2014, Vlastimil Babka wrote:
+
+> Async compaction aborts when it detects zone lock contention or need_resched()
+> is true. David Rientjes has reported that in practice, most direct async
+> compactions for THP allocation abort due to need_resched(). This means that a
+> second direct compaction is never attempted, which might be OK for a page
+> fault, but hugepaged is intended to attempt a sync compaction in such case and
+> in these cases it won't.
 > 
-> While testing the final 3.15, I noticed the serial console (sunsab)
-> does not work anymore on Sun Ultra.
+> This patch replaces "bool contended" in compact_control with an enum that
+> distinguieshes between aborting due to need_resched() and aborting due to lock
+> contention. This allows propagating the abort through all compaction functions
+> as before, but declaring the direct compaction as contended only when lock
+> contantion has been detected.
 > 
-> It will tx fine the console output during the boot. But then I try
-> to type something e.g. at the login: prompt, it behaves oddly:
-> it re-transmits some old output, and then stalls for a few secs, usually
-> for each character. Typed characters are however received correctly.
-> But the console is impossible to use...
+> As a result, hugepaged will proceed with second sync compaction as intended,
+> when the preceding async compaction aborted due to need_resched().
 > 
-> I bisected this to:
+
+s/hugepaged/khugepaged/ on the changelog.
+
+> Reported-by: David Rientjes <rientjes@google.com>
+> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+> Cc: Minchan Kim <minchan@kernel.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Cc: Michal Nazarewicz <mina86@mina86.com>
+> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> ---
+>  mm/compaction.c | 20 ++++++++++++++------
+>  mm/internal.h   | 15 +++++++++++----
+>  2 files changed, 25 insertions(+), 10 deletions(-)
 > 
-> 717f3bbab3c7628736ef738fdbf3d9a28578c26c is the first bad commit
-> commit 717f3bbab3c7628736ef738fdbf3d9a28578c26c
-> Author: Seth Bollinger <sethb@digi.com>
-> Date:   Tue Mar 25 12:55:37 2014 -0500
-> 
->      serial_core: Fix conditional start_tx on ring buffer not empty
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index b73b182..d37f4a8 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -185,9 +185,14 @@ static void update_pageblock_skip(struct compact_control *cc,
+>  }
+>  #endif /* CONFIG_COMPACTION */
+>  
+> -static inline bool should_release_lock(spinlock_t *lock)
+> +enum compact_contended should_release_lock(spinlock_t *lock)
+>  {
+> -	return need_resched() || spin_is_contended(lock);
+> +	if (need_resched())
+> +		return COMPACT_CONTENDED_SCHED;
+> +	else if (spin_is_contended(lock))
+> +		return COMPACT_CONTENDED_LOCK;
+> +	else
+> +		return COMPACT_CONTENDED_NONE;
+>  }
+>  
+>  /*
 
-[Let's try that again. This time without the mess]
+I think eventually we're going to remove the need_resched() heuristic 
+entirely and so enum compact_contended might be overkill, but do we need 
+to worry about spin_is_contended(lock) && need_resched() reporting 
+COMPACT_CONTENDED_SCHED here instead of COMPACT_CONTENDED_LOCK?
 
-Thanks for the report Aaro.
+> @@ -202,7 +207,9 @@ static inline bool should_release_lock(spinlock_t *lock)
+>  static bool compact_checklock_irqsave(spinlock_t *lock, unsigned long *flags,
+>  				      bool locked, struct compact_control *cc)
+>  {
+> -	if (should_release_lock(lock)) {
+> +	enum compact_contended contended = should_release_lock(lock);
+> +
+> +	if (contended) {
+>  		if (locked) {
+>  			spin_unlock_irqrestore(lock, *flags);
+>  			locked = false;
+> @@ -210,7 +217,7 @@ static bool compact_checklock_irqsave(spinlock_t *lock, unsigned long *flags,
+>  
+>  		/* async aborts if taking too long or contended */
+>  		if (cc->mode == MIGRATE_ASYNC) {
+> -			cc->contended = true;
+> +			cc->contended = contended;
+>  			return false;
+>  		}
+>  
+> @@ -236,7 +243,7 @@ static inline bool compact_should_abort(struct compact_control *cc)
+>  	/* async compaction aborts if contended */
+>  	if (need_resched()) {
+>  		if (cc->mode == MIGRATE_ASYNC) {
+> -			cc->contended = true;
+> +			cc->contended = COMPACT_CONTENDED_SCHED;
+>  			return true;
+>  		}
+>  
+> @@ -1095,7 +1102,8 @@ static unsigned long compact_zone_order(struct zone *zone, int order,
+>  	VM_BUG_ON(!list_empty(&cc.freepages));
+>  	VM_BUG_ON(!list_empty(&cc.migratepages));
+>  
+> -	*contended = cc.contended;
+> +	/* We only signal lock contention back to the allocator */
+> +	*contended = cc.contended == COMPACT_CONTENDED_LOCK;
+>  	return ret;
+>  }
+>  
 
-Looks like Seth's fix exposes some broken assumptions in the Sun
-serial drivers.
+Hmm, since the only thing that matters for cc->contended is 
+COMPACT_CONTENDED_LOCK, it may make sense to just leave this as a bool 
+within struct compact_control instead of passing the actual reason around 
+when it doesn't matter.
 
-Can you test the patch below?
-
-Regards,
-Peter Hurley
-
-PS - Do you have a way to test also your setup using hardware flow
-control, ie. CRTSCTS?  I ask because I would expect that to be broken
-even before Seth's patch.
-
---- %< ---
-From: Peter Hurley <peter@hurleysoftware.com>
-Date: Mon, 9 Jun 2014 19:21:43 -0400
-Subject: [PATCH] serial: sunsab: Test for no tx data on tx restart
-
-Commit 717f3bbab3c7628736ef738fdbf3d9a28578c26c,
-'serial_core: Fix conditional start_tx on ring buffer not empty'
-exposes an incorrect assumption in sunsab's start_tx method; the
-tx ring buffer can, in fact, be empty when restarting tx when
-performing flow control.
-
-Test for empty tx ring buffer when in sunsab's start_tx method.
-
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/tty/serial/sunsab.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/drivers/tty/serial/sunsab.c b/drivers/tty/serial/sunsab.c
-index 5faa8e9..b99a4ea 100644
---- a/drivers/tty/serial/sunsab.c
-+++ b/drivers/tty/serial/sunsab.c
-@@ -427,6 +427,9 @@ static void sunsab_start_tx(struct uart_port *port)
- 	struct circ_buf *xmit = &up->port.state->xmit;
- 	int i;
- 
-+	if (uart_circ_empty(xmit))
-+		return;
-+
- 	up->interrupt_mask1 &= ~(SAB82532_IMR1_ALLS|SAB82532_IMR1_XPR);
- 	writeb(up->interrupt_mask1, &up->regs->w.imr1);
- 	
--- 
-2.0.0
-
+> diff --git a/mm/internal.h b/mm/internal.h
+> index 7f22a11f..4659e8e 100644
+> --- a/mm/internal.h
+> +++ b/mm/internal.h
+> @@ -117,6 +117,13 @@ extern int user_min_free_kbytes;
+>  
+>  #if defined CONFIG_COMPACTION || defined CONFIG_CMA
+>  
+> +/* Used to signal whether compaction detected need_sched() or lock contention */
+> +enum compact_contended {
+> +	COMPACT_CONTENDED_NONE = 0, /* no contention detected */
+> +	COMPACT_CONTENDED_SCHED,    /* need_sched() was true */
+> +	COMPACT_CONTENDED_LOCK,     /* zone lock or lru_lock was contended */
+> +};
+> +
+>  /*
+>   * in mm/compaction.c
+>   */
+> @@ -144,10 +151,10 @@ struct compact_control {
+>  	int order;			/* order a direct compactor needs */
+>  	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
+>  	struct zone *zone;
+> -	bool contended;			/* True if a lock was contended, or
+> -					 * need_resched() true during async
+> -					 * compaction
+> -					 */
+> +	enum compact_contended contended; /* Signal need_sched() or lock
+> +					   * contention detected during
+> +					   * compaction
+> +					   */
+>  };
+>  
+>  unsigned long
