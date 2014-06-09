@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754967AbaFIJFD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 05:05:03 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58503 "EHLO
+	id S1756548AbaFIJJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 05:09:29 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58451 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755109AbaFIIv0 (ORCPT
+	by vger.kernel.org with ESMTP id S1754889AbaFIIvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 04:51:26 -0400
+	Mon, 9 Jun 2014 04:51:25 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        Felipe Balbi <balbi@ti.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 056/146] usb: gadget: at91-udc: fix irq and iomem resource retrieval
-Date: Mon,  9 Jun 2014 10:49:51 +0200
-Message-Id: <4999a062177c37f7ea1a21c45720cb36d3dbe8cf.1402303821.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
+        Thierry Reding <treding@nvidia.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 024/146] gpu: host1x: handle the correct # of syncpt regs
+Date: Mon,  9 Jun 2014 10:49:19 +0200
+Message-Id: <5fc7e548c184705e46aac7d5149febc95001691f.1402303820.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
 References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
@@ -24,48 +23,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+From: Stephen Warren <swarren@nvidia.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 886c7c426d465732ec9d1b2bbdda5642fc2e7e05 upstream.
+commit 22bbd5d949dc7fdd72a4e78e767fa09d8e54b446 upstream.
 
-When using dt resources retrieval (interrupts and reg properties) there is
-no predefined order for these resources in the platform dev resource
-table. Also don't expect the number of resource to be always 2.
+BIT_WORD() truncates rather than rounds, so the loops in
+syncpt_thresh_isr() and _host1x_intr_disable_all_syncpt_intrs() use <=
+rather than < in an attempt to process the correct number of registers
+when rounding of the conversion of count of bits to count of words is
+necessary. However, when rounding isn't necessary because the value is
+already a multiple of the divisor (as is the case for all values of
+nb_pts the code actually sees), this causes one too many registers to
+be processed.
 
-Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-Acked-by: Boris BREZILLON <b.brezillon@overkiz.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Solve this by using and explicit DIV_ROUND_UP() call, rather than
+BIT_WORD(), and comparing with < rather than <=.
+
+Fixes: 7ede0b0bf3e2 ("gpu: host1x: Add syncpoint wait and interrupts")
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Acked-By: Terje Bergstrom <tbergstrom@nvidia.com>
+Signed-off-by: Thierry Reding <treding@nvidia.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/usb/gadget/at91_udc.c | 10 ----------
- 1 file changed, 10 deletions(-)
+ drivers/gpu/host1x/hw/intr_hw.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/gadget/at91_udc.c b/drivers/usb/gadget/at91_udc.c
-index 4cc4fd6d1473..dfd29438a11e 100644
---- a/drivers/usb/gadget/at91_udc.c
-+++ b/drivers/usb/gadget/at91_udc.c
-@@ -1710,16 +1710,6 @@ static int at91udc_probe(struct platform_device *pdev)
- 		return -ENODEV;
- 	}
+diff --git a/drivers/gpu/host1x/hw/intr_hw.c b/drivers/gpu/host1x/hw/intr_hw.c
+index b592eef1efcb..b083509325e4 100644
+--- a/drivers/gpu/host1x/hw/intr_hw.c
++++ b/drivers/gpu/host1x/hw/intr_hw.c
+@@ -48,7 +48,7 @@ static irqreturn_t syncpt_thresh_isr(int irq, void *dev_id)
+ 	unsigned long reg;
+ 	int i, id;
  
--	if (pdev->num_resources != 2) {
--		DBG("invalid num_resources\n");
--		return -ENODEV;
--	}
--	if ((pdev->resource[0].flags != IORESOURCE_MEM)
--			|| (pdev->resource[1].flags != IORESOURCE_IRQ)) {
--		DBG("invalid resource type\n");
--		return -ENODEV;
--	}
--
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!res)
- 		return -ENXIO;
+-	for (i = 0; i <= BIT_WORD(host->info->nb_pts); i++) {
++	for (i = 0; i < DIV_ROUND_UP(host->info->nb_pts, 32); i++) {
+ 		reg = host1x_sync_readl(host,
+ 			HOST1X_SYNC_SYNCPT_THRESH_CPU0_INT_STATUS(i));
+ 		for_each_set_bit(id, &reg, BITS_PER_LONG) {
+@@ -65,7 +65,7 @@ static void _host1x_intr_disable_all_syncpt_intrs(struct host1x *host)
+ {
+ 	u32 i;
+ 
+-	for (i = 0; i <= BIT_WORD(host->info->nb_pts); ++i) {
++	for (i = 0; i < DIV_ROUND_UP(host->info->nb_pts, 32); ++i) {
+ 		host1x_sync_writel(host, 0xffffffffu,
+ 			HOST1X_SYNC_SYNCPT_THRESH_INT_DISABLE(i));
+ 		host1x_sync_writel(host, 0xffffffffu,
 -- 
 1.9.3
 
