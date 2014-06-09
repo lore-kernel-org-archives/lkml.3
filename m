@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754160AbaFIUt3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 16:49:29 -0400
-Received: from staff.gunadarma.ac.id ([202.125.94.79]:51818 "EHLO
-	staff.gunadarma.ac.id" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753856AbaFIUt1 convert rfc822-to-8bit (ORCPT
+	id S1754199AbaFIU4E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 16:56:04 -0400
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:58235 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751736AbaFIU4A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 16:49:27 -0400
-X-Greylist: delayed 736 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 Jun 2014 16:49:26 EDT
-Date: Tue, 10 Jun 2014 03:35:44 +0700 (WIT)
-From: DIAMONDSWISS LOANSCOMPANY <tiwukwp@staff.gunadarma.ac.id>
-Reply-To: " diamondsw_issloans@hotmail.com" <diamondsw_issloans@hotmail.com>
-Subject: =?utf-8?Q?kred=C4=ABta_pied=C4=81v=C4=81jums?=
-Message-ID: <34e09962-945e-413d-a474-afdf9f8f74d5@staff.gunadarma.ac.id>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 9 Jun 2014 16:56:00 -0400
+Date: Mon, 9 Jun 2014 16:55:58 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Kevin Hilman <khilman@linaro.org>
+cc: Andrew Bresticker <abrestic@chromium.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Inderpal Singh <inderpal.s@samsung.com>,
+        Thomas Abraham <thomas.ab@samsung.com>,
+        Olof Johansson <olof@lixom.net>, Tushar Behera <trblinux@gmail.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] ARM: EXYNOS: mcpm: Don't rely on firmware's
+ secondary_cpu_start
+In-Reply-To: <CAGa+x87puSoPftG6ddGTVtxOOxoUg_dLmMmZUHm-j6pjFuhr=g@mail.gmail.com>
+Message-ID: <alpine.LFD.2.11.1406091649290.25775@knanqh.ubzr>
+References: <1402090985-8061-1-git-send-email-dianders@chromium.org> <1402096465-13218-1-git-send-email-dianders@chromium.org> <7htx7uq7k1.fsf@paris.lan> <CAL1qeaGv+hBCr8oqs-E2j_Qh0Z=ZTVEaM-gdyu286Snu4otbMA@mail.gmail.com> <alpine.LFD.2.11.1406091617181.25775@knanqh.ubzr>
+ <CAGa+x87puSoPftG6ddGTVtxOOxoUg_dLmMmZUHm-j6pjFuhr=g@mail.gmail.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-X-Originating-IP: [196.46.246.65]
-X-Mailer: Zimbra 7.1.3_GA_3346 (zclient/7.1.3_GA_3346)
-To: undisclosed-recipients:;
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 9 Jun 2014, Kevin Hilman wrote:
+
+> On Mon, Jun 9, 2014 at 1:22 PM, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+> > On Mon, 9 Jun 2014, Andrew Bresticker wrote:
+> >
+> >> > [1] While waiting for the forth-coming patch from Andrew to enable the
+> >> >     CCI port for the boot cluster), I do this from u-boot before starting
+> >> >     the kernel (based on earlier email from Doug):
+> >> >
+> >> >     mw.l 10d25000 3  # Enable CCI from U-Boot
+> >>
+> >> From the other thread, it sounds like Nicolas wants enabling of the
+> >> boot cluster's CCI port to be done unconditionally for all MCPM
+> >> platforms.  Nicolas, are you preparing a patch for this or should I?
+> >
+> > I would like confirmation this indeed solves your problem first before I
+> > go ahead with it.
+> 
+> FYI... I confirmed on the other thread.  It works on the Chromebook2.
+
+OK I'll clean it up for mainline.
 
 
-
-Laba diena, 
-      
-     Mēs esam DIAMOND ŠVEICES aizdevumu uzņēmumam sniedzot aizdevumus ar pasta reklāma. Mēs piedāvājam dažāda veida aizdevumu (īstermiņa un ilgtermiņa aizdevumi, individuālie aizņēmumi, aizdevumi uzņēmumiem uc), par 3% procentu likmi. Mēs izsniegt aizdevumus cilvēkiem, kam nepieciešama ne neatkarīgi no to atrašanās vietas, dzimuma, ģimenes stāvokļa, izglītības, nodarbinātības statusu, bet ir jābūt ar tiesiskiem līdzekļiem atmaksu. Mūsu aizdevumu svārstās no 5,000.00 līdz 10,000,000.00 ASV dolāru vai eiro, vai mārciņa ar maksimālo ilgumu 20 gadi. Ja jūs interesē vairāk informācijas, lūdzu, aizpildiet zemāk esošo formu un nosūtiet to uz mūsu e-pasta adresi: diamondsw_issloans@hotmail.com 
-Lūdzu, aizpildiet: 
-
-vārds: 
-
-adrese: 
-
-vecums: 
-
-dzimums: 
-
-Kontaktu Tālrunis: 
-
-Nodarbošanās: 
-
-Ikmēneša ienākumi: 
-
-Nepieciešama aizdevuma summa: 
-
-Ilgums aizdevums: 
-
-Aizdevuma mērķis: 
-
-Valsts: 
-
-ZIP kods: 
-
-
-"Mēs parādīsim jums labāku veidu, lai jūsu finansiālo brīvību" 
-
-Ar cieņu, 
-Mr Diamond Peters (Managing Director). 
-Mr Bill Anthony (mārketinga vadītājs).
+Nicolas
