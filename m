@@ -1,230 +1,574 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107AbaFIIpr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 04:45:47 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:27286 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751893AbaFIIpn (ORCPT
+	id S1754796AbaFIIvK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 04:51:10 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58371 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753079AbaFIIvG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 04:45:43 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-60-539574349c2c
-Message-id: <53957420.3080709@samsung.com>
-Date: Mon, 09 Jun 2014 11:45:20 +0300
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.5.0
-MIME-version: 1.0
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-Cc: linux-security-module <linux-security-module@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>, Josh Boyer <jwboyer@redhat.com>,
-        keyrings <keyrings@linux-nfs.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH v5 3/4] ima: define '.ima' as a builtin 'trusted'
- keyring
-References: <1401818318-15780-1-git-send-email-zohar@linux.vnet.ibm.com>
- <1401818318-15780-4-git-send-email-zohar@linux.vnet.ibm.com>
- <CACE9dm_o6RLvn9vP9X9BXGB1mFjC3Y7G15dZKqGsh+iZ3cFy5Q@mail.gmail.com>
- <1402097230.11626.73.camel@dhcp-9-2-203-236.watson.ibm.com>
-In-reply-to: <1402097230.11626.73.camel@dhcp-9-2-203-236.watson.ibm.com>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Originating-IP: [106.122.1.121]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrILMWRmVeSWpSXmKPExsVy+t/xq7omJVODDVq7FC3eNf1msfiytM7i
-	wLsnLBazdz1ksbi8aw6bxYeeR2wWn1ZMYnZg99g56y67x7QTy1g8HhzazOLxft9VNo/Pm+QC
-	WKO4bFJSczLLUov07RK4Ml7P3cpYsNq8YkpnbQPjBa0uRk4OCQETiRcfpjNC2GISF+6tZwOx
-	hQSWMkqseyPUxcgFZDcySSy5t5UdwpnFKPH65EpWkCpeAS2J1y/esIPYLAKqEte+rGcCsdkE
-	9CQ2NP8AinNwiApESDy+IARRLijxY/I9FhBbBCh8aM8pFpCZzAK3GSVeHjwMtllYIFji+spJ
-	bBDLepgkHvYsAVvAKeAh0XjoJlg3s4C6xKR5i5ghbHmJzWveMkOcrSrRvXYtG8Q7ihKnJ59j
-	nsAoPAvJ8llI2mchaV/AyLyKUTS1NLmgOCk910ivODG3uDQvXS85P3cTIyRavu5gXHrM6hCj
-	AAejEg9vAtPUYCHWxLLiytxDjBIczEoivD45QCHelMTKqtSi/Pii0pzU4kOMTBycUg2M2s8F
-	qvdudz21W1JQIE3z8Gq1Vexh1qWtp35OsZATWXvr2OpDcp1n5oZWfL+gtVOFf1JzkPy024f4
-	HQ4suiW/4v+LBy3/v686Ze1vtv7NiSt/JctvXp6yjOuUla+JSSW/huCLB0GvzbX0Nx9OWHTu
-	x8qanwq/n/BEvetJaYtQOSmrfuu3/g//HiWW4oxEQy3mouJEAG504wd0AgAA
+	Mon, 9 Jun 2014 04:51:06 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 000/146] 3.12.22-stable review
+Date: Mon,  9 Jun 2014 10:50:59 +0200
+Message-Id: <cover.1402303820.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/06/14 02:27, Mimi Zohar wrote:
-> On Sat, 2014-06-07 at 00:53 +0300, Dmitry Kasatkin wrote: 
->> On 3 June 2014 20:58, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
->>> Require all keys added to the IMA keyring be signed by an
->>> existing trusted key on the system trusted keyring.
->>>
->>> Changelog v5:
->>> - Move integrity_init_keyring() to init_ima() - Dmitry
->>> - reset keyring[id] on failure - Dmitry
->>>
->>> Changelog v1:
->>> - don't link IMA trusted keyring to user keyring
->>>
->>> Changelog:
->>> - define stub integrity_init_keyring() function (reported-by Fengguang Wu)
->>> - differentiate between regular and trusted keyring names.
->>> - replace printk with pr_info (D. Kasatkin)
->>> - only make the IMA keyring a trusted keyring (reported-by D. Kastatkin)
->>> - define stub integrity_init_keyring() definition based on
->>>   CONFIG_INTEGRITY_SIGNATURE, not CONFIG_INTEGRITY_ASYMMETRIC_KEYS.
->>>   (reported-by Jim Davis)
->>>
->>> Signed-off-by: Mimi Zohar<zohar@linux.vnet.ibm.com>
->>> ---
->>>  security/integrity/digsig.c       | 26 ++++++++++++++++++++++++++
->>>  security/integrity/ima/Kconfig    |  8 ++++++++
->>>  security/integrity/ima/ima_main.c | 12 ++++++++++--
->>>  security/integrity/integrity.h    |  5 +++++
->>>  4 files changed, 49 insertions(+), 2 deletions(-)
->>>
->>> diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
->>> index b4af4eb..fa4c2fd 100644
->>> --- a/security/integrity/digsig.c
->>> +++ b/security/integrity/digsig.c
->>> @@ -13,7 +13,9 @@
->>>  #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
->>>
->>>  #include <linux/err.h>
->>> +#include <linux/sched.h>
->>>  #include <linux/rbtree.h>
->>> +#include <linux/cred.h>
->>>  #include <linux/key-type.h>
->>>  #include <linux/digsig.h>
->>>
->>> @@ -24,7 +26,11 @@ static struct key *keyring[INTEGRITY_KEYRING_MAX];
->>>  static const char *keyring_name[INTEGRITY_KEYRING_MAX] = {
->>>         "_evm",
->>>         "_module",
->>> +#ifndef CONFIG_IMA_TRUSTED_KEYRING
->>>         "_ima",
->>> +#else
->>> +       ".ima",
->>> +#endif
->>>  };
->>>
->>>  int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
->>> @@ -56,3 +62,23 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
->>>
->>>         return -EOPNOTSUPP;
->>>  }
->>> +
->>> +int integrity_init_keyring(const unsigned int id)
->>> +{
->>> +       const struct cred *cred = current_cred();
->>> +
->>> +       keyring[id] = keyring_alloc(keyring_name[id], KUIDT_INIT(0),
->>> +                                   KGIDT_INIT(0), cred,
->>> +                                   ((KEY_POS_ALL & ~KEY_POS_SETATTR) |
->>> +                                     KEY_USR_VIEW | KEY_USR_READ |
->>> +                                     KEY_USR_WRITE | KEY_USR_SEARCH),
->>> +                                   KEY_ALLOC_NOT_IN_QUOTA, NULL);
->>> +       if (!IS_ERR(keyring[id]))
->>> +               set_bit(KEY_FLAG_TRUSTED_ONLY, &keyring[id]->flags);
->>> +       else {
->>> +               pr_info("Can't allocate %s keyring (%ld)\n",
->>> +                       keyring_name[id], PTR_ERR(keyring[id]));
->>> +               keyring[id] = NULL;
->>> +       }
->>> +       return 0;
->>> +}
->>> diff --git a/security/integrity/ima/Kconfig b/security/integrity/ima/Kconfig
->>> index 81a2797..dad8d4c 100644
->>> --- a/security/integrity/ima/Kconfig
->>> +++ b/security/integrity/ima/Kconfig
->>> @@ -123,3 +123,11 @@ config IMA_APPRAISE
->>>           For more information on integrity appraisal refer to:
->>>           <http://linux-ima.sourceforge.net>
->>>           If unsure, say N.
->>> +
->>> +config IMA_TRUSTED_KEYRING
->>> +       bool "Require all keys on the _ima keyring be signed"
->>> +       depends on IMA_APPRAISE && SYSTEM_TRUSTED_KEYRING
->>> +       default y
->>> +       help
->>> +          This option requires that all keys added to the _ima
->>> +          keyring be signed by a key on the system trusted keyring.
->>> diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
->>> index 09baa33..4c60cc5 100644
->>> --- a/security/integrity/ima/ima_main.c
->>> +++ b/security/integrity/ima/ima_main.c
->>> @@ -328,8 +328,16 @@ static int __init init_ima(void)
->>>
->>>         hash_setup(CONFIG_IMA_DEFAULT_HASH);
->>>         error = ima_init();
->>> -       if (!error)
->>> -               ima_initialized = 1;
->>> +       if (error)
->>> +               goto out;
->>> +
->>> +#ifdef CONFIG_IMA_TRUSTED_KEYRING
->>> +       error = integrity_init_keyring(INTEGRITY_KEYRING_IMA);
->>> +       if (error)
->>> +               goto out;
->>> +#endif
->> integrity_init_keyring() has variation in header file...
->> Why do you need #ifdef in .c file? You you usually do not like it...
-> Up to now, unsigned certificates could be added to the IMA keyring.  We
-> can not all of a sudden require all keys being added to the IMA keyring
-> to be signed.  Although there is a stub integrity_init_keyring()
-> function definition, it is based on CONFIG_INTEGRITY_SIGNATURE, not
-> CONFIG_IMA_TRUSTED_KEYRING.
->
-> Right, ifdef's don't belong in C code.  One solution would be to define
-> ima_init_keyring() as a wrapper for integrity_init_keyring() and a stub
-> function.
->
-> Mimi
+This is the start of the stable review cycle for the 3.12.22 release.
+There are 146 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-I think 'ima_init_keyring" could be a good approach.
+Responses should be made by Wed Jun 11 08:50:21 2014
+Anything received after that time might be too late.
 
->From other hand, if you look to kernel/module.c, then you will find ~40
-#ifdefs of the source code...
+The whole patch series can be found in one patch at:
+	http://kernel.org/pub/linux/kernel/people/jirislaby/stable-review/patch-3.12.22-rc1.xz
+and the diffstat can be found below.
 
-So it may be indeed clear from __init point of view what we initialize
-and what not...
+thanks,
+js
 
-- Dmitry
+===============
 
 
->>> +       ima_initialized = 1;
->>> +out:
->>>         return error;
->>>  }
->>>
->>> diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
->>> index 33c0a70..09c440d 100644
->>> --- a/security/integrity/integrity.h
->>> +++ b/security/integrity/integrity.h
->>> @@ -124,6 +124,7 @@ struct integrity_iint_cache *integrity_iint_find(struct inode *inode);
->>>  int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
->>>                             const char *digest, int digestlen);
->>>
->>> +int integrity_init_keyring(const unsigned int id);
->>>  #else
->>>
->>>  static inline int integrity_digsig_verify(const unsigned int id,
->>> @@ -133,6 +134,10 @@ static inline int integrity_digsig_verify(const unsigned int id,
->>>         return -EOPNOTSUPP;
->>>  }
->>>
->>> +static inline int integrity_init_keyring(const unsigned int id)
->>> +{
->>> +       return 0;
->>> +}
->>>  #endif /* CONFIG_INTEGRITY_SIGNATURE */
->>>
->>>  #ifdef CONFIG_INTEGRITY_ASYMMETRIC_KEYS
->>> --
->>> 1.8.1.4
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
->>
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Aaron Lu (1):
+  ACPI / video: Fix initial level validity test
+
+Alan Stern (1):
+  USB: OHCI: fix problem with global suspend on ATI controllers
+
+Alex Deucher (6):
+  drm/radeon: disable mclk dpm on R7 260X
+  drm/radeon: add support for newer mc ucode on SI (v2)
+  drm/radeon/si: make sure mc ucode is loaded before checking the size
+  drm/radeon: fix ATPX detection on non-VGA GPUs
+  drm/radeon/pm: don't walk the crtc list before it has been initialized
+    (v2)
+  drm/radeon: fix count in cik_sdma_ring_test()
+
+Alex Williamson (1):
+  iommu/amd: Fix interrupt remapping for aliased devices
+
+Andy Grover (1):
+  target: Don't allow setting WC emulation if device doesn't support
+
+Andy Shevchenko (1):
+  dmaengine: dw: went back to plain {request,free}_irq() calls
+
+Anssi Hannula (1):
+  ALSA: hda - hdmi: Set converter channel count even without sink
+
+Anthony Iliopoulos (1):
+  x86, mm, hugetlb: Add missing TLB page invalidation for hugetlb_cow()
+
+Antti Palosaari (1):
+  media: fc2580: fix tuning failure on 32-bit arch
+
+Aristeu Rozanski (2):
+  device_cgroup: rework device access check and exception checking
+  device_cgroup: check if exception removal is allowed
+
+Arnd Bergmann (1):
+  genirq: Provide irq_force_affinity fallback for non-SMP
+
+Atilla Filiz (1):
+  iio:imu:mpu6050: Fixed segfault in Invensens MPU driver due to null
+    dereference
+
+Bartlomiej Zolnierkiewicz (1):
+  pata_at91: fix ata_host_activate() failure handling
+
+Ben Hutchings (1):
+  rtl8192cu: Fix unbalanced irq enable in error path of
+    rtl92cu_hw_init()
+
+Bjørn Mork (1):
+  usb: qcserial: add a number of Dell devices
+
+Charles Keepax (1):
+  ASoC: wm8962: Update register CLASS_D_CONTROL_1 to be non-volatile
+
+Chen Yucong (1):
+  hwpoison, hugetlb: lock_page/unlock_page does not match for handling a
+    free hugepage
+
+Chris Wilson (1):
+  drm/i915: Fix unsafe loop iteration over vma whilst unbinding them
+
+Christian König (2):
+  drm/radeon/uvd: use lower clocks on old UVD to boot v2
+  drm/radeon: use pflip irq on R600+ v2
+
+Christoph Hellwig (1):
+  posix_acl: handle NULL ACL in posix_acl_equiv_mode
+
+Chunwei Chen (1):
+  libceph: fix corruption when using page_count 0 page in rbd
+
+Clemens Ladisch (1):
+  ALSA: usb-audio: work around corrupted TEAC UD-H01 feedback data
+
+Corey Minyard (1):
+  ipmi: Reset the KCS timeout when starting error recovery
+
+Daeseok Youn (1):
+  workqueue: fix bugs in wq_update_unbound_numa() failure path
+
+Dan Carpenter (1):
+  clk: vexpress: NULL dereference on error path
+
+Daniel Vetter (2):
+  drm/i915: Don't check gmch state on inherited configs
+  drm/i915: Disable self-refresh for untiled fbs on i915gm
+
+Daniele Forsi (2):
+  usb: storage: shuttle_usbat: fix discs being detected twice
+  USB: Nokia 5300 should be treated as unusual dev
+
+David Rientjes (1):
+  mm, oom: prefer thread group leaders for display purposes
+
+Du, Wenkai (1):
+  i2c: designware: Mask all interrupts during i2c controller enable
+
+Edward Lin (1):
+  ACPI: blacklist win8 OSI for Dell Inspiron 7737
+
+Egbert Eich (1):
+  drm/i915: Break encoder->crtc link separately in intel_sanitize_crtc()
+
+Eliad Peller (1):
+  cfg80211: free sme on connection failures
+
+Emmanuel Grumbach (1):
+  mac80211: fix suspend vs. association race
+
+Eric Dumazet (1):
+  coredump: fix va_list corruption
+
+Ezequiel Garcia (1):
+  dma: mv_xor: Flush descriptors before activating a channel
+
+Gavin Shan (1):
+  powerpc/powernv: Reset root port in firmware
+
+Geert Uytterhoeven (2):
+  Documentation: Update stable address in Chinese and Japanese
+    translations
+  spi: core: Ignore unsupported Dual/Quad Transfer Mode bits
+
+Grant Likely (1):
+  drivercore: deferral race condition fix
+
+Guennadi Liakhovetski (2):
+  media: V4L2: ov7670: fix a wrong index, potentially Oopsing the kernel
+    from user-space
+  media: V4L2: fix VIDIOC_CREATE_BUFS in 64- / 32-bit compatibility mode
+
+Guenter Roeck (1):
+  powerpc: Fix 64 bit builds with binutils 2.24
+
+Hans de Goede (4):
+  Input: elantech - fix touchpad initialization on Gigabyte U2442
+  Input: synaptics - add min/max quirk for the ThinkPad W540
+  Input: synaptics - T540p - unify with other LEN0034 models
+  ACPI / blacklist: Add dmi_enable_osi_linux quirk for Asus EEE PC
+    1015PX
+
+Horia Geanta (1):
+  crypto: caam - add allocation failure handling in SPRINTFCAT macro
+
+Ian Kent (1):
+  autofs: fix lockref lookup
+
+Igor Mammedov (1):
+  ACPI / processor: do not mark present at boot but not onlined CPU as
+    onlined
+
+Ilia Mirkin (1):
+  drm/nouveau/acpi: allow non-optimus setups to load vbios from acpi
+
+J. Bruce Fields (2):
+  nfsd4: warn on finding lockowner without stateid's
+  nfsd4: remove lockowner when removing lock stateid
+
+James Hogan (1):
+  metag: Reduce maximum stack size to 256MB
+
+Jani Nikula (2):
+  drm/i915/vlv: reset VLV media force wake request register
+  drm/i915: quirk invert brightness for Acer Aspire 5336
+
+Jean-Jacques Hiblot (1):
+  usb: gadget: at91-udc: fix irq and iomem resource retrieval
+
+Jianyu Zhan (1):
+  percpu: make pcpu_alloc_chunk() use pcpu_mem_free() instead of kfree()
+
+Jiri Bohac (1):
+  timer: Prevent overflow in apply_slack
+
+Johan Hedberg (2):
+  Bluetooth: Fix triggering BR/EDR L2CAP Connect too early
+  Bluetooth: Fix redundant encryption request for reauthentication
+
+Johannes Berg (1):
+  mac80211: fix on-channel remain-on-channel
+
+Johannes Weiner (1):
+  revert "mm: vmscan: do not swap anon pages just because free+file is
+    low"
+
+Josef Gajdusek (2):
+  hwmon: (emc1403) fix inverted store_hyst()
+  hwmon: (emc1403) Support full range of known chip revision numbers
+
+Kinglong Mee (1):
+  NFSD: Call ->set_acl with a NULL ACL structure if no entries
+
+Kirill A. Shutemov (1):
+  mm, thp: close race between mremap() and split_huge_page()
+
+Krzysztof Kozlowski (1):
+  clocksource: Exynos_mct: Register clock event after request_irq()
+
+Lai Jiangshan (2):
+  workqueue: fix a possible race condition between rescuer and
+    pwq-release
+  workqueue: make rescuer_thread() empty wq->maydays list before exiting
+
+Leif Lindholm (2):
+  mips: dts: Fix missing device_type="memory" property in memory nodes
+  arm: dts: Fix missing device_type="memory" for ste-ccu8540
+
+Leo Liu (1):
+  drm/radeon: check buffer relocation offset
+
+Leon Ma (1):
+  hrtimer: Prevent remote enqueue of leftmost timers
+
+Leon Yu (1):
+  aio: fix potential leak in aio_run_iocb().
+
+Levente Kurusa (1):
+  libata: clean up ZPODD when a port is detached
+
+Linus Torvalds (2):
+  mm: make fixup_user_fault() check the vma access rights too
+  x86-64, modify_ldt: Make support for 16-bit segments a runtime option
+
+Liu Hua (1):
+  ARM: 8012/1: kdump: Avoid overflow when converting pfn to physaddr
+
+Loic Poulain (2):
+  serial: 8250: Fix thread unsafe __dma_tx_complete function
+  8250_core: Fix unwanted TX chars write
+
+Maarten Lankhorst (1):
+  drm/nouveau: fix another lock unbalance in nouveau_crtc_page_flip
+
+Marcel Apfelbaum (1):
+  PCI: shpchp: Check bridge's secondary (not primary) bus speed
+
+Mark Salter (1):
+  arm64: fix pud_huge() for 2-level pagetables
+
+Martin Peres (1):
+  drm/nouveau/pm/fan: drop the fan lock in fan_update() before
+    rescheduling
+
+Mikulas Patocka (3):
+  metag: fix memory barriers
+  target: fix memory leak on XCOPY
+  dm crypt: fix cpu hotplug crash by removing per-cpu structure
+
+Mohammed Habibulla (1):
+  Bluetooth: Add support for Lite-on [04ca:3007]
+
+NeilBrown (1):
+  md: avoid possible spinning md thread at shutdown.
+
+Nicholas Bellinger (1):
+  iscsi-target: Change BUG_ON to REJECT in iscsit_process_nop_out
+
+Nikita Yushchenko (1):
+  fsl-usb: do not test for PHY_CLK_VALID bit on controller version 1.6
+
+Oleg Nesterov (4):
+  introduce for_each_thread() to replace the buggy while_each_thread()
+  oom_kill: change oom_kill.c to use for_each_thread()
+  oom_kill: has_intersects_mems_allowed() needs rcu_read_lock()
+  oom_kill: add rcu_read_lock() into find_lock_task_mm()
+
+Olof Johansson (1):
+  i2c: s3c2410: resume race fix
+
+Peter De Schrijver (1):
+  clk: tegra: use pll_ref as the pll_e parent
+
+Rik van Riel (1):
+  mm/page-writeback.c: fix divide by zero in pos_ratio_polynom
+
+Romain Izard (1):
+  trace: module: Maintain a valid user count
+
+Russell King (1):
+  leds: leds-pwm: properly clean up after probe failure
+
+Sagi Grimberg (2):
+  Target/iser: Fix wrong connection requests list addition
+  Target/iser: Fix iscsit_accept_np and rdma_cm racy flow
+
+Salva Peiró (1):
+  media: media-device: fix infoleak in ioctl media_enum_entities()
+
+Sascha Hauer (1):
+  ARM: dts: i.MX53: Fix ipu register space size
+
+Sebastian Hesselbarth (1):
+  ARM: dts: kirkwood: fix mislocated pcie-controller nodes
+
+Sergey Popovich (1):
+  netfilter: Fix potential use after free in ip6_route_me_harder()
+
+Sheng-Liang Song (1):
+  Input: atkbd - fix keyboard not working on some LG laptops
+
+Srivatsa S. Bhat (1):
+  powerpc, kexec: Fix "Processor X is stuck" issue during kexec from ST
+    mode
+
+Stanislaw Gruszka (1):
+  rt2x00: fix beaconing on USB
+
+Stephen Warren (1):
+  gpu: host1x: handle the correct # of syncpt regs
+
+Steven Rostedt (Red Hat) (1):
+  ftrace/module: Hardcode ftrace_module_init() call into load_module()
+
+Stuart Hayes (1):
+  hrtimer: Prevent all reprogramming if hang detected
+
+Takashi Iwai (1):
+  ALSA: hda - Fix onboard audio on Intel H97/Z97 chipsets
+
+Thierry Reding (1):
+  drm/tegra: Remove gratuitous pad field
+
+Thomas Gleixner (9):
+  futex: Add another early deadlock detection check
+  futex: Prevent attaching to kernel threads
+  irqchip: Gic: Support forced affinity setting
+  genirq: Allow forcing cpu affinity of interrupts
+  clocksource: Exynos_mct: Use irq_force_affinity() in cpu bringup
+  futex-prevent-requeue-pi-on-same-futex.patch futex: Forbid uaddr ==
+    uaddr2 in futex_requeue(..., requeue_pi=1)
+  futex: Validate atomic acquisition in futex_lock_pi_atomic()
+  futex: Always cleanup owner tid in unlock_pi
+  futex: Make lookup_pi_state more robust
+
+Thomas Petazzoni (6):
+  ARM: orion5x: fix target ID for crypto SRAM window
+  ARM: mvebu: fix NOR bus-width in Armada XP GP Device Tree
+  ARM: mvebu: fix NOR bus-width in Armada XP DB Device Tree
+  ARM: mvebu: fix NOR bus-width in Armada XP OpenBlocks AX3 Device Tree
+  memory: mvebu-devbus: fix the conversion of the bus width
+  bus: mvebu-mbus: allow several windows with the same target/attribute
+
+Tim Chen (1):
+  crypto: crypto_wq - Fix late crypto work queue initialization
+
+Trond Myklebust (2):
+  NFSd: Move default initialisers from create_client() to alloc_client()
+  NFSd: call rpc_destroy_wait_queue() from free_client()
+
+Tuomas Tynkkynen (1):
+  clk: tegra: Fix wrong value written to PLLE_AUX
+
+Victor A. Santos (1):
+  USB: Nokia 305 should be treated as unusual dev
+
+Viresh Kumar (1):
+  hrtimer: Set expiry time before switch_hrtimer_base()
+
+Willy Tarreau (1):
+  PCI: mvebu: fix off-by-one in the computed size of the mbus windows
+
+Wolfram Sang (1):
+  i2c: rcar: bail out on zero length transfers
+
+ Documentation/input/elantech.txt                 |   5 +-
+ Documentation/ja_JP/HOWTO                        |   2 +-
+ Documentation/ja_JP/stable_kernel_rules.txt      |   6 +-
+ Documentation/zh_CN/HOWTO                        |   2 +-
+ Documentation/zh_CN/stable_kernel_rules.txt      |   2 +-
+ arch/arm/boot/dts/armada-xp-db.dts               |   2 +-
+ arch/arm/boot/dts/armada-xp-gp.dts               |   2 +-
+ arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts |   2 +-
+ arch/arm/boot/dts/imx53.dtsi                     |   2 +-
+ arch/arm/boot/dts/kirkwood-mv88f6281gtw-ge.dts   |  18 +-
+ arch/arm/boot/dts/kirkwood-nsa310-common.dtsi    |  18 +-
+ arch/arm/boot/dts/ste-ccu8540.dts                |   1 +
+ arch/arm/kernel/crash_dump.c                     |   2 +-
+ arch/arm/mach-orion5x/common.h                   |   2 +-
+ arch/arm64/mm/hugetlbpage.c                      |   4 +
+ arch/metag/include/asm/barrier.h                 |   3 +
+ arch/metag/include/asm/processor.h               |   2 +
+ arch/mips/cavium-octeon/octeon-irq.c             |   2 +-
+ arch/mips/lantiq/dts/easy50712.dts               |   1 +
+ arch/mips/ralink/dts/mt7620a_eval.dts            |   1 +
+ arch/mips/ralink/dts/rt2880_eval.dts             |   1 +
+ arch/mips/ralink/dts/rt3052_eval.dts             |   1 +
+ arch/mips/ralink/dts/rt3883_eval.dts             |   1 +
+ arch/parisc/include/asm/processor.h              |   2 +
+ arch/powerpc/Makefile                            |   4 +-
+ arch/powerpc/include/asm/ppc_asm.h               |   7 +-
+ arch/powerpc/kernel/machine_kexec_64.c           |   2 +-
+ arch/powerpc/platforms/powernv/eeh-ioda.c        |   3 +-
+ arch/x86/include/asm/hugetlb.h                   |   1 +
+ arch/x86/kernel/ldt.c                            |   4 +-
+ arch/x86/vdso/vdso32-setup.c                     |   8 +
+ crypto/crypto_wq.c                               |   2 +-
+ drivers/acpi/acpi_processor.c                    |   1 -
+ drivers/acpi/blacklist.c                         |  21 ++
+ drivers/acpi/video.c                             |   2 +-
+ drivers/ata/libata-core.c                        |   9 +
+ drivers/ata/pata_at91.c                          |  11 +-
+ drivers/base/dd.c                                |  17 ++
+ drivers/bluetooth/ath3k.c                        |   2 +
+ drivers/bluetooth/btusb.c                        |   1 +
+ drivers/bus/mvebu-mbus.c                         |   6 -
+ drivers/char/ipmi/ipmi_kcs_sm.c                  |   5 +-
+ drivers/clk/tegra/clk-pll.c                      |  10 +-
+ drivers/clk/tegra/clk-tegra114.c                 |   3 +-
+ drivers/clk/versatile/clk-vexpress-osc.c         |   2 +-
+ drivers/clocksource/exynos_mct.c                 |  12 +-
+ drivers/crypto/caam/error.c                      |  10 +-
+ drivers/dma/dw/core.c                            |  11 +-
+ drivers/dma/mv_xor.c                             |   8 +-
+ drivers/gpu/drm/i915/i915_gem.c                  |   4 +-
+ drivers/gpu/drm/i915/intel_display.c             |  52 +++--
+ drivers/gpu/drm/i915/intel_drv.h                 |   3 +-
+ drivers/gpu/drm/i915/intel_pm.c                  |  10 +
+ drivers/gpu/drm/i915/intel_uncore.c              |   2 +
+ drivers/gpu/drm/nouveau/core/subdev/therm/fan.c  |  19 +-
+ drivers/gpu/drm/nouveau/nouveau_acpi.c           |   3 -
+ drivers/gpu/drm/nouveau/nouveau_display.c        |   2 +-
+ drivers/gpu/drm/radeon/ci_dpm.c                  |   4 +
+ drivers/gpu/drm/radeon/cik.c                     |  76 +++++++
+ drivers/gpu/drm/radeon/cik_sdma.c                |   2 +-
+ drivers/gpu/drm/radeon/cikd.h                    |   9 +
+ drivers/gpu/drm/radeon/evergreen.c               |  28 ++-
+ drivers/gpu/drm/radeon/r600.c                    |  13 +-
+ drivers/gpu/drm/radeon/r600_dpm.c                |  35 ++--
+ drivers/gpu/drm/radeon/radeon.h                  |   6 +
+ drivers/gpu/drm/radeon/radeon_atpx_handler.c     |   7 +
+ drivers/gpu/drm/radeon/radeon_display.c          |   4 +
+ drivers/gpu/drm/radeon/radeon_pm.c               |  28 +--
+ drivers/gpu/drm/radeon/radeon_ucode.h            |   3 +
+ drivers/gpu/drm/radeon/radeon_uvd.c              |   4 +
+ drivers/gpu/drm/radeon/si.c                      |  65 ++++--
+ drivers/gpu/drm/radeon/uvd_v1_0.c                |  10 +-
+ drivers/gpu/host1x/hw/intr_hw.c                  |   4 +-
+ drivers/hwmon/emc1403.c                          |   4 +-
+ drivers/i2c/busses/i2c-designware-core.c         |   3 +
+ drivers/i2c/busses/i2c-rcar.c                    |   9 +-
+ drivers/i2c/busses/i2c-s3c2410.c                 |   2 +-
+ drivers/iio/imu/inv_mpu6050/inv_mpu_core.c       |   7 +-
+ drivers/infiniband/ulp/isert/ib_isert.c          |  27 +--
+ drivers/infiniband/ulp/isert/ib_isert.h          |   2 +-
+ drivers/input/keyboard/atkbd.c                   |  29 ++-
+ drivers/input/mouse/elantech.c                   |  26 ++-
+ drivers/input/mouse/elantech.h                   |   1 +
+ drivers/input/mouse/synaptics.c                  |  10 +-
+ drivers/iommu/amd_iommu.c                        |   2 +-
+ drivers/irqchip/irq-gic.c                        |   8 +-
+ drivers/leds/leds-pwm.c                          |  23 ++-
+ drivers/md/dm-crypt.c                            |  61 ++----
+ drivers/md/md.c                                  |   3 +-
+ drivers/media/i2c/ov7670.c                       |   2 +-
+ drivers/media/media-device.c                     |   1 +
+ drivers/media/tuners/fc2580.c                    |   6 +-
+ drivers/media/tuners/fc2580_priv.h               |   1 +
+ drivers/media/v4l2-core/v4l2-compat-ioctl32.c    |  12 +-
+ drivers/memory/mvebu-devbus.c                    |  15 +-
+ drivers/net/wireless/rt2x00/rt2x00mac.c          |  22 ++-
+ drivers/net/wireless/rtlwifi/rtl8192cu/hw.c      |   2 +-
+ drivers/pci/host/pci-mvebu.c                     |   4 +-
+ drivers/pci/hotplug/shpchp_ctrl.c                |   4 +-
+ drivers/spi/spi.c                                |  11 +-
+ drivers/target/iscsi/iscsi_target.c              |   4 +-
+ drivers/target/target_core_device.c              |   8 +-
+ drivers/target/target_core_transport.c           |   2 +-
+ drivers/tty/serial/8250/8250_core.c              |   2 +-
+ drivers/tty/serial/8250/8250_dma.c               |   9 +-
+ drivers/usb/gadget/at91_udc.c                    |  10 -
+ drivers/usb/host/ehci-fsl.c                      |   3 +-
+ drivers/usb/host/ohci-hub.c                      |  18 ++
+ drivers/usb/host/ohci-pci.c                      |   1 +
+ drivers/usb/host/ohci.h                          |   2 +
+ drivers/usb/serial/qcserial.c                    |  15 ++
+ drivers/usb/storage/shuttle_usbat.c              |   2 +-
+ drivers/usb/storage/unusual_devs.h               |  14 ++
+ fs/aio.c                                         |   6 +-
+ fs/autofs4/root.c                                |   4 +-
+ fs/coredump.c                                    |   7 +-
+ fs/exec.c                                        |   6 +-
+ fs/nfsd/nfs4acl.c                                |  17 +-
+ fs/nfsd/nfs4state.c                              |  40 ++--
+ fs/posix_acl.c                                   |   6 +
+ include/linux/ftrace.h                           |   2 +
+ include/linux/init_task.h                        |   2 +
+ include/linux/interrupt.h                        |  40 +++-
+ include/linux/irq.h                              |   3 +-
+ include/linux/sched.h                            |  12 ++
+ include/trace/events/module.h                    |   2 +-
+ include/uapi/drm/tegra_drm.h                     |   1 -
+ kernel/exit.c                                    |   1 +
+ kernel/fork.c                                    |   7 +
+ kernel/futex.c                                   | 239 ++++++++++++++++++-----
+ kernel/hrtimer.c                                 |  30 ++-
+ kernel/irq/manage.c                              |  17 +-
+ kernel/kexec.c                                   |   8 +
+ kernel/module.c                                  |   3 +
+ kernel/timer.c                                   |   2 +-
+ kernel/trace/ftrace.c                            |  27 +--
+ kernel/workqueue.c                               |  36 +++-
+ mm/memcontrol.c                                  |  19 +-
+ mm/memory-failure.c                              |  15 +-
+ mm/memory.c                                      |   5 +
+ mm/mremap.c                                      |   9 +-
+ mm/oom_kill.c                                    |  63 +++---
+ mm/page-writeback.c                              |   6 +-
+ mm/percpu.c                                      |   2 +-
+ mm/vmscan.c                                      |  18 ++
+ net/bluetooth/hci_conn.c                         |   9 +-
+ net/bluetooth/hci_event.c                        |   6 +
+ net/ceph/messenger.c                             |  20 +-
+ net/ipv6/netfilter.c                             |   6 +-
+ net/mac80211/ieee80211_i.h                       |   1 +
+ net/mac80211/mlme.c                              |  20 +-
+ net/mac80211/offchannel.c                        |  27 ++-
+ net/wireless/sme.c                               |   2 +-
+ security/device_cgroup.c                         | 203 +++++++++++++++----
+ sound/pci/hda/hda_intel.c                        |   3 +
+ sound/pci/hda/patch_hdmi.c                       |   4 +-
+ sound/soc/codecs/wm8962.c                        |  15 +-
+ sound/soc/codecs/wm8962.h                        |   4 +
+ sound/usb/card.h                                 |   1 +
+ sound/usb/endpoint.c                             |  15 +-
+ 160 files changed, 1456 insertions(+), 561 deletions(-)
+
+-- 
+1.9.3
 
