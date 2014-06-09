@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964879AbaFIWqy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 18:46:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57190 "EHLO
+	id S964860AbaFIWqw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 18:46:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57198 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934309AbaFIWqL (ORCPT
+	with ESMTP id S934307AbaFIWqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jun 2014 18:46:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Will Deacon <will.deacon@arm.com>
-Subject: [PATCH 3.10 33/40] USB: Avoid runtime suspend loops for HCDs that cant handle suspend/resume
-Date: Mon,  9 Jun 2014 15:49:04 -0700
-Message-Id: <20140609224840.262767830@linuxfoundation.org>
+        Alexej Starschenko <starschenko@gmail.com>,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.10 31/40] USB: serial: option: add support for Novatel E371 PCIe card
+Date: Mon,  9 Jun 2014 15:49:02 -0700
+Message-Id: <20140609224840.199276632@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140609224839.127615063@linuxfoundation.org>
 References: <20140609224839.127615063@linuxfoundation.org>
@@ -29,85 +29,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Alexej Starschenko <starschenko@gmail.com>
 
-commit 8ef42ddd9a53b73e6fc3934278710c27f80f324f upstream.
+commit 8a61ba3a47ac39f660702aa66a172185dd605a86 upstream.
 
-Not all host controller drivers have bus-suspend and bus-resume
-methods.  When one doesn't, it will cause problems if runtime PM is
-enabled in the kernel.  The PM core will attempt to suspend the
-controller's root hub, the suspend will fail because there is no
-bus-suspend routine, and a -EBUSY error code will be returned to the
-PM core.  This will cause the suspend attempt to be repeated shortly
-thereafter, in a never-ending loop.
+Adds product ID for the Novatel E371 PCI Express Mini Card.
 
-Part of the problem is that the original error code -ENOENT gets
-changed to -EBUSY in usb_runtime_suspend(), on the grounds that the PM
-core will interpret -ENOENT as meaning that the root hub has gotten
-into a runtime-PM error state.  While this change is appropriate for
-real USB devices, it's not such a good idea for a root hub.  In fact,
-considering the root hub to be in a runtime-PM error state would not
-be far from the truth.  Therefore this patch updates
-usb_runtime_suspend() so that it adjusts error codes only for
-non-root-hub devices.
+$ lsusb
+Bus 001 Device 024: ID 1410:9011 Novatel Wireless
 
-Furthermore, the patch attempts to prevent the problem from occurring
-in the first place by not enabling runtime PM by default for root hubs
-whose host controller driver doesn't have bus_suspend and bus_resume
-methods.
+$ usb-devices
+T:  Bus=01 Lev=01 Prnt=01 Port=03 Cnt=01 Dev#= 24 Spd=480 MxCh= 0
+D:  Ver= 2.00 Cls=ef(misc ) Sub=02 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=1410 ProdID=9011 Rev=00.03
+S:  Manufacturer=Novatel Wireless, Inc.
+S:  Product=Novatel Wireless HSPA
+S:  SerialNumber=012773002115811
+C:  #Ifs= 6 Cfg#= 1 Atr=e0 MxPwr=500mA
+I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
+I:  If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
+I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
+I:  If#= 3 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
+I:  If#= 6 Alt= 0 #EPs= 1 Cls=02(commc) Sub=06 Prot=00 Driver=cdc_ether
+I:  If#= 7 Alt= 1 #EPs= 2 Cls=0a(data ) Sub=00 Prot=00 Driver=cdc_ether
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Will Deacon <will.deacon@arm.com>
-Tested-by: Will Deacon <will.deacon@arm.com>
+Tested with kernel 3.2.0.
+
+Signed-off-by: Alexej Starschenko <starschenko@gmail.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/driver.c |    9 ++++++---
- drivers/usb/core/hub.c    |   15 +++++++++++++--
- 2 files changed, 19 insertions(+), 5 deletions(-)
+ drivers/usb/serial/option.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/usb/core/driver.c
-+++ b/drivers/usb/core/driver.c
-@@ -1754,10 +1754,13 @@ int usb_runtime_suspend(struct device *d
- 	if (status == -EAGAIN || status == -EBUSY)
- 		usb_mark_last_busy(udev);
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -161,6 +161,7 @@ static void option_instat_callback(struc
+ #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_FULLSPEED	0x9000
+ #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_HIGHSPEED	0x9001
+ #define NOVATELWIRELESS_PRODUCT_E362		0x9010
++#define NOVATELWIRELESS_PRODUCT_E371		0x9011
+ #define NOVATELWIRELESS_PRODUCT_G2		0xA010
+ #define NOVATELWIRELESS_PRODUCT_MC551		0xB001
  
--	/* The PM core reacts badly unless the return code is 0,
--	 * -EAGAIN, or -EBUSY, so always return -EBUSY on an error.
-+	/*
-+	 * The PM core reacts badly unless the return code is 0,
-+	 * -EAGAIN, or -EBUSY, so always return -EBUSY on an error
-+	 * (except for root hubs, because they don't suspend through
-+	 * an upstream port like other USB devices).
- 	 */
--	if (status != 0)
-+	if (status != 0 && udev->parent)
- 		return -EBUSY;
- 	return status;
- }
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -1683,8 +1683,19 @@ static int hub_probe(struct usb_interfac
- 	 */
- 	pm_runtime_set_autosuspend_delay(&hdev->dev, 0);
+@@ -1012,6 +1013,7 @@ static const struct usb_device_id option
+ 	/* Novatel Ovation MC551 a.k.a. Verizon USB551L */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_MC551, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_E362, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_E371, 0xff, 0xff, 0xff) },
  
--	/* Hubs have proper suspend/resume support. */
--	usb_enable_autosuspend(hdev);
-+	/*
-+	 * Hubs have proper suspend/resume support, except for root hubs
-+	 * where the controller driver doesn't have bus_suspend and
-+	 * bus_resume methods.
-+	 */
-+	if (hdev->parent) {		/* normal device */
-+		usb_enable_autosuspend(hdev);
-+	} else {			/* root hub */
-+		const struct hc_driver *drv = bus_to_hcd(hdev->bus)->driver;
-+
-+		if (drv->bus_suspend && drv->bus_resume)
-+			usb_enable_autosuspend(hdev);
-+	}
- 
- 	if (hdev->level == MAX_TOPO_LEVEL) {
- 		dev_err(&intf->dev,
+ 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_H01) },
+ 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_H01A) },
 
 
