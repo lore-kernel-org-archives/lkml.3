@@ -1,73 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754946AbaFINWx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 09:22:53 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:60575 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753298AbaFINWv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 09:22:51 -0400
-Date: Mon, 9 Jun 2014 09:22:49 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Morten Rasmussen <morten.rasmussen@arm.com>
-cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Yuyang Du <yuyang.du@intel.com>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "jacob.jun.pan@linux.intel.com" <jacob.jun.pan@linux.intel.com>
-Subject: Re: [RFC PATCH 06/16] arm: topology: Define TC2 sched energy and
- provide it to scheduler
-In-Reply-To: <20140609082739.GY29593@e103034-lin>
-Message-ID: <alpine.LFD.2.11.1406090920540.25775@knanqh.ubzr>
-References: <2484761.vkWavnsDx3@vostro.rjw.lan> <20140605065205.GA3213@twins.programming.kicks-ass.net> <539086B3.2010804@gmail.com> <20140605202930.GA15484@intel.com> <20140606080543.GR6758@twins.programming.kicks-ass.net> <20140606003520.GB22261@intel.com>
- <20140606105036.GQ3213@twins.programming.kicks-ass.net> <20140606121305.GA8571@gmail.com> <20140606122740.GA9318@gmail.com> <alpine.LFD.2.11.1406062224090.25775@knanqh.ubzr> <20140609082739.GY29593@e103034-lin>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	id S1755226AbaFINXF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 09:23:05 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:43169 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755059AbaFINXB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 09:23:01 -0400
+Message-ID: <5395B52A.1030701@ti.com>
+Date: Mon, 9 Jun 2014 16:22:50 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>
+CC: DRI Development <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: [PATCH 5/5] drm/i915: Kick out vga console
+References: <1401980308-5116-1-git-send-email-daniel.vetter@ffwll.ch>	<1401980308-5116-5-git-send-email-daniel.vetter@ffwll.ch> <CAKMK7uH7GWspr03NBi7rVY+2UN-vdthMV7eixXA-xc3t2JdzPg@mail.gmail.com>
+In-Reply-To: <CAKMK7uH7GWspr03NBi7rVY+2UN-vdthMV7eixXA-xc3t2JdzPg@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="EKBw13oRrsdqiu7N34pkQGEaqLSp2ug57"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Jun 2014, Morten Rasmussen wrote:
+--EKBw13oRrsdqiu7N34pkQGEaqLSp2ug57
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-> On Sat, Jun 07, 2014 at 03:33:58AM +0100, Nicolas Pitre wrote:
-> > On Fri, 6 Jun 2014, Ingo Molnar wrote:
-> > 
-> > > In any case, even with turbo frequencies, switching power use is 
-> > > probably an order of magnitude higher than leakage current power use, 
-> > > on any marketable chip, so we should concentrate on being able to 
-> > > cover this first order effect (P/work ~ V^2), before considering any 
-> > > second order effects (leakage current).
-> > 
-> > Just so that people are aware... We'll have to introduce thermal 
-> > constraint management into the scheduler mix as well at some point.  
-> > Right now what we have is an ad hoc subsystem that simply monitors 
-> > temperature and apply crude cooling strategies when some thresholds are 
-> > met. But a better strategy would imply thermal "provisioning".
-> 
-> There is already work going on to improve thermal management:
-> 
-> http://lwn.net/Articles/599598/
-> 
-> The proposal is based on power/energy models (too). The goal is to
-> allocate power intelligently based on performance requirements.
+Hi,
 
-Ah, great!  I missed that.
+On 06/06/14 18:20, Daniel Vetter wrote:
+> Tomi/Jean can you please ack merging this through drm-intel trees? It
+> just exports the vga and dummy consoles so that i915 can do what it
+> needs to do.
 
-> While it is related to energy-aware scheduling and I fully agree that it
-> is something we need to consider, I think it is worth developing the two
-> ideas in parallel and look at sharing things like the power model later
-> once things mature. Energy-aware scheduling is complex enough on its
-> own to keep us entertained for a while :-)
+Acked-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
 
-Absolutely.  This is why I said "at some point".
+ Tomi
 
 
-Nicolas
+
+--EKBw13oRrsdqiu7N34pkQGEaqLSp2ug57
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTlbUqAAoJEPo9qoy8lh71sDkP/RDL7eH9cPpWkukLNES6vS16
+22pbbhAn6hPFZwzeGPlKZ35po0F7VwsIFyZJ8nGM4Tn4PlFF17dlyxdDQZkNu1yV
+FE6oX5WLlB9KddJBnrM40l2AxN3Q5hQaBV68oa0Uwv565iRhlhRC2mRUHRngp8ch
+nEmiWBUA3CkmAD+ar3v5Bph4YWUIrNiXw1CloFv6jg+7uoI8s3QJWEhzY4aPOHLf
+8T58vHuEkeWU5VZ3JYAWyaQUdnSeyRI57QNhYNi4D+4CrIxjp45PcZ35Fi0iA5tt
+WCYPXII5LXedZ58kL7GrqNK8mPPj5zfKY7nQ48wQZWE9E7uAm17FdhH/pVz7VvnG
+bYeF0+br5enOhOi9rioMRQGxx9PJJ6YlDeAhYWkKZyR9VIU0/SmcsDodGhx6wsJ9
+s6qf8SUPpH2WFJ3hI6/Bu9sBwvaTJF+m/bU7aONIPmakPjKW5ra5aYThaBrXMnbz
+10EwrWNlOVQcIkbZAqccUFW54reMKFhh2aZEe6YgsJ2IC/D/fa/sw7pCFcnGlAc6
+kwrzLc2UTnc80Hgq+/S7jL7khkEa11WJ1Xf3UKcVA/cjipzLwHpT9Sr/Rvn4Rg3B
+OEhJaHxBx/DZhzvV2gPmkZH7WP6msKsl6G4a+S726W5OEoS26TB1BRGdOGWXqlH6
+/G9T1aB4mnvLnfTzbWax
+=6era
+-----END PGP SIGNATURE-----
+
+--EKBw13oRrsdqiu7N34pkQGEaqLSp2ug57--
