@@ -1,96 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964796AbaFIJFm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 05:05:42 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58484 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755026AbaFIIvZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 04:51:25 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 061/146] rt2x00: fix beaconing on USB
-Date: Mon,  9 Jun 2014 10:49:56 +0200
-Message-Id: <07aac1cd8fa963f5ee0519106b46a2c955ad2f18.1402303821.git.jslaby@suse.cz>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
-References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
-In-Reply-To: <cover.1402303820.git.jslaby@suse.cz>
-References: <cover.1402303820.git.jslaby@suse.cz>
+	id S933527AbaFIJFs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 05:05:48 -0400
+Received: from imp02.mtu.ru ([62.5.255.19]:44522 "EHLO imp02.mtu.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964897AbaFIJFn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 05:05:43 -0400
+X-Spam-Flag: NO
+Message-ID: <53957896.6020907@pavlinux.ru>
+Date: Mon, 09 Jun 2014 13:04:22 +0400
+From: Pavel Vasilyev <pavel@pavlinux.ru>
+Organization: Pavlinux. Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+CC: RT <linux-rt-users@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] rt/aio: fix rcu garbage collection might_sleep()
+ splat
+References: <1402216538.31630.7.camel@marge.simpson.net>	 <5395172E.4010007@cn.fujitsu.com>	 <1402283822.5195.3.camel@marge.simpson.net> <1402294928.6316.38.camel@marge.simpson.net>
+In-Reply-To: <1402294928.6316.38.camel@marge.simpson.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+09.06.2014 10:22, Mike Galbraith пишет:
+> On Mon, 2014-06-09 at 05:17 +0200, Mike Galbraith wrote:
+>> On Mon, 2014-06-09 at 10:08 +0800, Lai Jiangshan wrote:
+>>> Hi, rt-people
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+> @@ -522,7 +524,9 @@ static void free_ioctx_users(struct perc
+>   	struct kioctx *ctx = container_of(ref, struct kioctx, users);
+>   	struct kiocb *req;
+>
+> +	preempt_enable_rt();
+>   	spin_lock_irq(&ctx->ctx_lock);
+> +	local_irq_disable_rt();
+>
+>   	while (!list_empty(&ctx->active_reqs)) {
+>   		req = list_first_entry(&ctx->active_reqs,
+> @@ -536,6 +540,8 @@ static void free_ioctx_users(struct perc
+>
+>   	percpu_ref_kill(&ctx->reqs);
+>   	percpu_ref_put(&ctx->reqs);
+> +	preempt_disable_rt();
+> +	local_irq_enable_rt();
 
-===============
 
-commit 8834d3608cc516f13e2e510f4057c263f3d2ce42 upstream.
+I think, enable_/disable_ must be as mirror reflections
 
-When disable beaconing we clear register with beacon and newer set it
-back, what make we stop send beacons infinitely.
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/net/wireless/rt2x00/rt2x00mac.c | 22 ++++++++++++----------
- 1 file changed, 12 insertions(+), 10 deletions(-)
+     preempt_enable_rt();
+         local_irq_disable_rt();
 
-diff --git a/drivers/net/wireless/rt2x00/rt2x00mac.c b/drivers/net/wireless/rt2x00/rt2x00mac.c
-index f8cff1f0b6b7..2b724fc4e306 100644
---- a/drivers/net/wireless/rt2x00/rt2x00mac.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00mac.c
-@@ -623,20 +623,18 @@ void rt2x00mac_bss_info_changed(struct ieee80211_hw *hw,
- 				      bss_conf->bssid);
- 
- 	/*
--	 * Update the beacon. This is only required on USB devices. PCI
--	 * devices fetch beacons periodically.
--	 */
--	if (changes & BSS_CHANGED_BEACON && rt2x00_is_usb(rt2x00dev))
--		rt2x00queue_update_beacon(rt2x00dev, vif);
--
--	/*
- 	 * Start/stop beaconing.
- 	 */
- 	if (changes & BSS_CHANGED_BEACON_ENABLED) {
- 		if (!bss_conf->enable_beacon && intf->enable_beacon) {
--			rt2x00queue_clear_beacon(rt2x00dev, vif);
- 			rt2x00dev->intf_beaconing--;
- 			intf->enable_beacon = false;
-+			/*
-+			 * Clear beacon in the H/W for this vif. This is needed
-+			 * to disable beaconing on this particular interface
-+			 * and keep it running on other interfaces.
-+			 */
-+			rt2x00queue_clear_beacon(rt2x00dev, vif);
- 
- 			if (rt2x00dev->intf_beaconing == 0) {
- 				/*
-@@ -647,11 +645,15 @@ void rt2x00mac_bss_info_changed(struct ieee80211_hw *hw,
- 				rt2x00queue_stop_queue(rt2x00dev->bcn);
- 				mutex_unlock(&intf->beacon_skb_mutex);
- 			}
--
--
- 		} else if (bss_conf->enable_beacon && !intf->enable_beacon) {
- 			rt2x00dev->intf_beaconing++;
- 			intf->enable_beacon = true;
-+			/*
-+			 * Upload beacon to the H/W. This is only required on
-+			 * USB devices. PCI devices fetch beacons periodically.
-+			 */
-+			if (rt2x00_is_usb(rt2x00dev))
-+				rt2x00queue_update_beacon(rt2x00dev, vif);
- 
- 			if (rt2x00dev->intf_beaconing == 1) {
- 				/*
+                 do_something();
+
+         local_irq_enable_rt();
+     preempt_disable_rt();
+
+
+
 -- 
-1.9.3
 
+                                                          Pavel.
