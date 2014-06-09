@@ -1,163 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933840AbaFIRaK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 13:30:10 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:44651 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755109AbaFIRaH (ORCPT
+	id S933896AbaFIRaT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 13:30:19 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:54934 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755109AbaFIRaR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 13:30:07 -0400
-From: Raghavendra Ganiga <ravi23ganiga@gmail.com>
-To: a.zummo@towertech.it, rtc-linux@googlegroups.com
-Cc: linux-kernel@vger.kernel.org, Raghavendra Ganiga <ravi23ganiga@gmail.com>
-Subject: [PATCH] rtc: add support of nvram for maxim dallas rtc ds1343
-Date: Mon,  9 Jun 2014 22:59:52 +0530
-Message-Id: <1402334992-3945-1-git-send-email-ravi23ganiga@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Mon, 9 Jun 2014 13:30:17 -0400
+Date: Mon, 9 Jun 2014 18:30:21 +0100
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 00/16 v3] A new CPU load metric for power-efficient
+ scheduler: CPU ConCurrency
+Message-ID: <20140609173021.GC29593@e103034-lin>
+References: <1401431772-14320-1-git-send-email-yuyang.du@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1401431772-14320-1-git-send-email-yuyang.du@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to add support of nvram for maxim dallas
-rtc ds1343
+Resend... The first attempt didn't reach LKML for some reason.
 
-Signed-off-by: Raghavendra Chandra Ganiga <ravi23ganiga@gmail.com>
----
- drivers/rtc/rtc-ds1343.c | 75 ++++++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 73 insertions(+), 2 deletions(-)
+On Fri, May 30, 2014 at 07:35:56AM +0100, Yuyang Du wrote:
+> Thanks to CFS’s “model an ideal, precise multi-tasking CPU”, tasks can be seen
+> as concurrently running (the tasks in the runqueue). So it is natural to use
+> task concurrency as load indicator. Having said that, we do two things:
+> 
+> 1) Divide continuous time into periods of time, and average task concurrency
+> in period, for tolerating the transient bursts:
+> a = sum(concurrency * time) / period
+> 2) Exponentially decay past periods, and synthesize them all, for hysteresis
+> to load drops or resilience to load rises (let f be decaying factor, and a_x
+> the xth period average since period 0):
+> s = a_n + f^1 * a_n-1 + f^2 * a_n-2 +, ..., + f^(n-1) * a_1 + f^n * a_0
+> 
+> We name this load indicator as CPU ConCurrency (CC): task concurrency
+> determines how many CPUs are needed to be running concurrently.
+> 
+> Another two ways of how to interpret CC:
+> 
+> 1) the current work-conserving load balance also uses CC, but instantaneous
+> CC.
+> 
+> 2) CC vs. CPU utilization. CC is runqueue-length-weighted CPU utilization. If
+> we change: "a = sum(concurrency * time) / period" to "a' = sum(1 * time) /
+> period". Then a' is just about the CPU utilization. And the way we weight
+> runqueue-length is the simplest one (excluding the exponential decays, and you
+> may have other ways).
 
-diff --git a/drivers/rtc/rtc-ds1343.c b/drivers/rtc/rtc-ds1343.c
-index c371918..ae9f997 100644
---- a/drivers/rtc/rtc-ds1343.c
-+++ b/drivers/rtc/rtc-ds1343.c
-@@ -4,6 +4,7 @@
-  * Real Time Clock
-  *
-  * Author : Raghavendra Chandra Ganiga <ravi23ganiga@gmail.com>
-+ *	    Ankur Srivastava <sankurece@gmail.com> : DS1343 Nvram Support
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-@@ -45,6 +46,9 @@
- #define DS1343_CONTROL_REG	0x0F
- #define DS1343_STATUS_REG	0x10
- #define DS1343_TRICKLE_REG	0x11
-+#define DS1343_NVRAM		0x20
-+
-+#define DS1343_NVRAM_LEN	96
- 
- /* DS1343 Control Registers bits */
- #define DS1343_EOSC		0x80
-@@ -149,6 +153,64 @@ static ssize_t ds1343_store_glitchfilter(struct device *dev,
- static DEVICE_ATTR(glitch_filter, S_IRUGO | S_IWUSR, ds1343_show_glitchfilter,
- 			ds1343_store_glitchfilter);
- 
-+static ssize_t ds1343_nvram_write(struct file *filp, struct kobject *kobj,
-+			struct bin_attribute *attr,
-+			char *buf, loff_t off, size_t count)
-+{
-+	int ret;
-+	unsigned char address;
-+	struct device *dev = kobj_to_dev(kobj);
-+	struct ds1343_priv *priv = dev_get_drvdata(dev);
-+
-+	if (unlikely(!count))
-+		return count;
-+
-+	if ((count + off) > DS1343_NVRAM_LEN)
-+		count = DS1343_NVRAM_LEN - off;
-+
-+	address = DS1343_NVRAM + off;
-+
-+	ret = regmap_bulk_write(priv->map, address, buf, count);
-+	if (ret < 0)
-+		dev_err(&priv->spi->dev, "Error in nvram write %d", ret);
-+
-+	return (ret < 0) ? ret : count;
-+}
-+
-+
-+static ssize_t ds1343_nvram_read(struct file *filp, struct kobject *kobj,
-+				struct bin_attribute *attr,
-+				char *buf, loff_t off, size_t count)
-+{
-+	int ret;
-+	unsigned char address;
-+	struct device *dev = kobj_to_dev(kobj);
-+	struct ds1343_priv *priv = dev_get_drvdata(dev);
-+
-+	if (unlikely(!count))
-+		return count;
-+
-+	if ((count + off) > DS1343_NVRAM_LEN)
-+		count = DS1343_NVRAM_LEN - off;
-+
-+	address = DS1343_NVRAM + off;
-+
-+	ret = regmap_bulk_read(priv->map, address, buf, count);
-+	if (ret < 0)
-+		dev_err(&priv->spi->dev, "Error in nvram read %d\n", ret);
-+
-+	return (ret < 0) ? ret : count;
-+}
-+
-+
-+static struct bin_attribute nvram_attr = {
-+	.attr.name	= "nvram",
-+	.attr.mode	= S_IRUGO | S_IWUSR,
-+	.read		= ds1343_nvram_read,
-+	.write		= ds1343_nvram_write,
-+	.size		= DS1343_NVRAM_LEN,
-+};
-+
- static ssize_t ds1343_show_alarmstatus(struct device *dev,
- 				struct device_attribute *attr, char *buf)
- {
-@@ -274,12 +336,16 @@ static int ds1343_sysfs_register(struct device *dev)
- 	if (err)
- 		goto error1;
- 
-+	err = device_create_bin_file(dev, &nvram_attr);
-+	if (err)
-+		goto error2;
-+
- 	if (priv->irq <= 0)
- 		return err;
- 
- 	err = device_create_file(dev, &dev_attr_alarm_mode);
- 	if (err)
--		goto error2;
-+		goto error3;
- 
- 	err = device_create_file(dev, &dev_attr_alarm_status);
- 	if (!err)
-@@ -287,6 +353,9 @@ static int ds1343_sysfs_register(struct device *dev)
- 
- 	device_remove_file(dev, &dev_attr_alarm_mode);
- 
-+error3:
-+	device_remove_bin_file(dev, &nvram_attr);
-+
- error2:
- 	device_remove_file(dev, &dev_attr_trickle_charger);
- 
-@@ -302,6 +371,7 @@ static void ds1343_sysfs_unregister(struct device *dev)
- 
- 	device_remove_file(dev, &dev_attr_glitch_filter);
- 	device_remove_file(dev, &dev_attr_trickle_charger);
-+	device_remove_bin_file(dev, &nvram_attr);
- 
- 	if (priv->irq <= 0)
- 		return;
-@@ -684,6 +754,7 @@ static struct spi_driver ds1343_driver = {
- module_spi_driver(ds1343_driver);
- 
- MODULE_DESCRIPTION("DS1343 RTC SPI Driver");
--MODULE_AUTHOR("Raghavendra Chandra Ganiga <ravi23ganiga@gmail.com>");
-+MODULE_AUTHOR("Raghavendra Chandra Ganiga <ravi23ganiga@gmail.com>,"
-+		"Ankur Srivastava <sankurece@gmail.com>");
- MODULE_LICENSE("GPL v2");
- MODULE_VERSION(DS1343_DRV_VERSION);
--- 
-1.9.1
+Isn't a' exactly to the rq runnable_avg_{sum, period} that you remove in
+patch 1? In that case it seems more obvious to repurpose them by
+multiplying the the contributions to the rq runnable_avg_sum by
+nr_running. AFAICT, that should give you the same metric.
 
+On the other hand, I don't see what this new metric gives us that can't
+be inferred from the existing load tracking metrics or through slight
+modifications of those. It came up recently in a different thread that
+the tracked task load is heavily influenced by other tasks running on
+the same cpu if they happen to overlap in time. IIUC, that exactly the
+information you are after. I think you could implement the same task
+packing behaviour based on an unweighted version of
+cfs.runnable_load_avg instead, which should be fairly straightforward to
+introduce (I think it will become useful for other purposes as well). I
+sort of hinted that in that thread already:
+
+https://lkml.org/lkml/2014/6/4/54
+
+> 
+> To track CC, we intercept the scheduler in 1) enqueue, 2) dequeue, 3)
+> scheduler tick, and 4) enter/exit idle.
+> 
+> After CC, in the consolidation part, we do 1) attach the CPU topology to be
+> adaptive beyond our experimental platforms, and 2) intercept the current load
+> balance for load and load balancing containment.
+> 
+> Currently, CC is per CPU. To consolidate, the formula is based on a heuristic.
+> Suppose we have 2 CPUs, their task concurrency over time is ('-' means no
+> task, 'x' having tasks):
+> 
+> 1)
+> CPU0: ---xxxx---------- (CC[0])
+> CPU1: ---------xxxx---- (CC[1])
+> 
+> 2)
+> CPU0: ---xxxx---------- (CC[0])
+> CPU1: ---xxxx---------- (CC[1])
+> 
+> If we consolidate CPU0 and CPU1, the consolidated CC will be: CC' = CC[0] +
+> CC[1] for case 1 and CC'' = (CC[0] + CC[1]) * 2 for case 2. For the cases in
+> between case 1 and 2 in terms of how xxx overlaps, the CC should be between
+> CC' and CC''.
+
+The potential worst case consolidated CC sum is:
+
+	n * \sum{cpus}^{n} CC[n]
+
+So, the range in which the true consolidated CC lies grows
+proportionally to the number of cpus. We can't really say anything about
+how things will pan out if we consolidate on fewer cpus. However, if it
+turns out to be a bad mix of tasks the task runnable_avg_sum will go up
+and if we use cfs.runnable_load_avg as the indication of compute
+capacity requirements, we would eventually spread the load again.
+Clearly, we don't want an unstable situation, so it might be better to
+the consolidation partially and see where things are going.
+
+> So, we uniformly use this condition for consolidation (suppose
+> we consolidate m CPUs to n CPUs, m > n):
+> 
+> (CC[0] + CC[1] + ... + CC[m-2] + CC[m-1]) * (n + log(m-n)) >=<? (1 * n) * n *
+> consolidating_coefficient
+
+Do you have a rationale behind this heuristic? It seems to be more and
+more pessimistic about how much load we can put on 'n' cpus as 'm'
+increases. Basically trying to factor in some of the error that be in
+the consolidated CC. Why the '(1 * n) * n...' and not just 'n * n * con...'?
+
+Overall, IIUC, the aim of this patch set seems quite similar to the
+previous proposals for task packing.
+
+Morten
