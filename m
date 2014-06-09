@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933647AbaFIJcJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 05:32:09 -0400
+	id S936561AbaFIJcb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 05:32:31 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59137 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932780AbaFIJ1R (ORCPT
+	by vger.kernel.org with ESMTP id S936287AbaFIJ1M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 05:27:17 -0400
+	Mon, 9 Jun 2014 05:27:12 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Aristeu Rozanski <aris@redhat.com>,
-        cgroups@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        Aristeu Rozanski <arozansk@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 085/146] device_cgroup: check if exception removal is allowed
-Date: Mon,  9 Jun 2014 10:50:20 +0200
-Message-Id: <b5b9b87f76e80cff1fbff43e0a47ba6ea2b30840.1402303821.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Sagi Grimberg <sagig@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 116/146] Target/iser: Fix iscsit_accept_np and rdma_cm racy flow
+Date: Mon,  9 Jun 2014 10:50:51 +0200
+Message-Id: <9ac1060a228d2f0be0a65c4e6e20165390ed7e2b.1402303821.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
 References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
@@ -25,129 +23,120 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Aristeu Rozanski <aris@redhat.com>
+From: Sagi Grimberg <sagig@mellanox.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit d2c2b11cfa134f4fbdcc34088824da26a084d8de upstream.
+commit 531b7bf4bd795d9a09eac92504322a472c010bc8 upstream.
 
-[PATCH v3 1/2] device_cgroup: check if exception removal is allowed
+RDMA CM and iSCSI target flows are asynchronous and completely
+uncorrelated. Relying on the fact that iscsi_accept_np will be called
+after CM connection request event and will wait for it is a mistake.
 
-When the device cgroup hierarchy was introduced in
-	bd2953ebbb53 - devcg: propagate local changes down the hierarchy
+When attempting to login to a few targets this flow is racy and
+unpredictable, but for parallel login to dozens of targets will
+race and hang every time.
 
-a specific case was overlooked. Consider the hierarchy bellow:
+The correct synchronizing mechanism in this case is pending on
+a semaphore rather than a wait_for_event. We keep the pending
+interruptible for iscsi_np cleanup stage.
 
-	A	default policy: ALLOW, exceptions will deny access
-	 \
-	  B	default policy: ALLOW, exceptions will deny access
+(Squash patch to remove dead code into parent - nab)
 
-There's no need to verify when an new exception is added to B because
-in this case exceptions will deny access to further devices, which is
-always fine. Hierarchy in device cgroup only makes sure B won't have
-more access than A.
-
-But when an exception is removed (by writing devices.allow), it isn't
-checked if the user is in fact removing an inherited exception from A,
-thus giving more access to B.
-
-Example:
-
-	# echo 'a' >A/devices.allow
-	# echo 'c 1:3 rw' >A/devices.deny
-	# echo $$ >A/B/tasks
-	# echo >/dev/null
-	-bash: /dev/null: Operation not permitted
-	# echo 'c 1:3 w' >A/B/devices.allow
-	# echo >/dev/null
-	#
-
-This shouldn't be allowed and this patch fixes it by making sure to never allow
-exceptions in this case to be removed if the exception is partially or fully
-present on the parent.
-
-v3: missing '*' in function description
-v2: improved log message and formatting fixes
-
-Cc: cgroups@vger.kernel.org
-Cc: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Aristeu Rozanski <arozansk@redhat.com>
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Slava Shwartsman <valyushash@gmail.com>
+Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- security/device_cgroup.c | 41 ++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 38 insertions(+), 3 deletions(-)
+ drivers/infiniband/ulp/isert/ib_isert.c | 25 ++++++-------------------
+ drivers/infiniband/ulp/isert/ib_isert.h |  2 +-
+ 2 files changed, 7 insertions(+), 20 deletions(-)
 
-diff --git a/security/device_cgroup.c b/security/device_cgroup.c
-index 70a76321fc4f..e34818192c8d 100644
---- a/security/device_cgroup.c
-+++ b/security/device_cgroup.c
-@@ -477,6 +477,37 @@ static int parent_has_perm(struct dev_cgroup *childcg,
+diff --git a/drivers/infiniband/ulp/isert/ib_isert.c b/drivers/infiniband/ulp/isert/ib_isert.c
+index d62b61cc6175..e6737607a088 100644
+--- a/drivers/infiniband/ulp/isert/ib_isert.c
++++ b/drivers/infiniband/ulp/isert/ib_isert.c
+@@ -27,6 +27,7 @@
+ #include <target/target_core_base.h>
+ #include <target/target_core_fabric.h>
+ #include <target/iscsi/iscsi_transport.h>
++#include <linux/semaphore.h>
+ 
+ #include "isert_proto.h"
+ #include "ib_isert.h"
+@@ -575,8 +576,8 @@ isert_connect_request(struct rdma_cm_id *cma_id, struct rdma_cm_event *event)
+ 	list_add_tail(&isert_conn->conn_accept_node, &isert_np->np_accept_list);
+ 	mutex_unlock(&isert_np->np_accept_mutex);
+ 
+-	pr_debug("isert_connect_request() waking up np_accept_wq: %p\n", np);
+-	wake_up(&isert_np->np_accept_wq);
++	pr_debug("isert_connect_request() up np_sem np: %p\n", np);
++	up(&isert_np->np_sem);
+ 	return 0;
+ 
+ out_conn_dev:
+@@ -2477,7 +2478,7 @@ isert_setup_np(struct iscsi_np *np,
+ 		pr_err("Unable to allocate struct isert_np\n");
+ 		return -ENOMEM;
+ 	}
+-	init_waitqueue_head(&isert_np->np_accept_wq);
++	sema_init(&isert_np->np_sem, 0);
+ 	mutex_init(&isert_np->np_accept_mutex);
+ 	INIT_LIST_HEAD(&isert_np->np_accept_list);
+ 	init_completion(&isert_np->np_login_comp);
+@@ -2526,18 +2527,6 @@ out:
  }
  
- /**
-+ * parent_allows_removal - verify if it's ok to remove an exception
-+ * @childcg: child cgroup from where the exception will be removed
-+ * @ex: exception being removed
-+ *
-+ * When removing an exception in cgroups with default ALLOW policy, it must
-+ * be checked if removing it will give the child cgroup more access than the
-+ * parent.
-+ *
-+ * Return: true if it's ok to remove exception, false otherwise
-+ */
-+static bool parent_allows_removal(struct dev_cgroup *childcg,
-+				  struct dev_exception_item *ex)
-+{
-+	struct dev_cgroup *parent = css_to_devcgroup(css_parent(&childcg->css));
-+
-+	if (!parent)
-+		return true;
-+
-+	/* It's always allowed to remove access to devices */
-+	if (childcg->behavior == DEVCG_DEFAULT_DENY)
-+		return true;
-+
-+	/*
-+	 * Make sure you're not removing part or a whole exception existing in
-+	 * the parent cgroup
-+	 */
-+	return !match_exception_partial(&parent->exceptions, ex->type,
-+					ex->major, ex->minor, ex->access);
-+}
-+
-+/**
-  * may_allow_all - checks if it's possible to change the behavior to
-  *		   allow based on parent's rules.
-  * @parent: device cgroup's parent
-@@ -711,17 +742,21 @@ static int devcgroup_update_access(struct dev_cgroup *devcgroup,
+ static int
+-isert_check_accept_queue(struct isert_np *isert_np)
+-{
+-	int empty;
+-
+-	mutex_lock(&isert_np->np_accept_mutex);
+-	empty = list_empty(&isert_np->np_accept_list);
+-	mutex_unlock(&isert_np->np_accept_mutex);
+-
+-	return empty;
+-}
+-
+-static int
+ isert_rdma_accept(struct isert_conn *isert_conn)
+ {
+ 	struct rdma_cm_id *cm_id = isert_conn->conn_cm_id;
+@@ -2629,16 +2618,14 @@ isert_accept_np(struct iscsi_np *np, struct iscsi_conn *conn)
+ 	int max_accept = 0, ret;
  
- 	switch (filetype) {
- 	case DEVCG_ALLOW:
--		if (!parent_has_perm(devcgroup, &ex))
--			return -EPERM;
- 		/*
- 		 * If the default policy is to allow by default, try to remove
- 		 * an matching exception instead. And be silent about it: we
- 		 * don't want to break compatibility
- 		 */
- 		if (devcgroup->behavior == DEVCG_DEFAULT_ALLOW) {
-+			/* Check if the parent allows removing it first */
-+			if (!parent_allows_removal(devcgroup, &ex))
-+				return -EPERM;
- 			dev_exception_rm(devcgroup, &ex);
--			return 0;
-+			break;
- 		}
-+
-+		if (!parent_has_perm(devcgroup, &ex))
-+			return -EPERM;
- 		rc = dev_exception_add(devcgroup, &ex);
- 		break;
- 	case DEVCG_DENY:
+ accept_wait:
+-	ret = wait_event_interruptible(isert_np->np_accept_wq,
+-			!isert_check_accept_queue(isert_np) ||
+-			np->np_thread_state == ISCSI_NP_THREAD_RESET);
++	ret = down_interruptible(&isert_np->np_sem);
+ 	if (max_accept > 5)
+ 		return -ENODEV;
+ 
+ 	spin_lock_bh(&np->np_thread_lock);
+ 	if (np->np_thread_state == ISCSI_NP_THREAD_RESET) {
+ 		spin_unlock_bh(&np->np_thread_lock);
+-		pr_err("ISCSI_NP_THREAD_RESET for isert_accept_np\n");
++		pr_debug("ISCSI_NP_THREAD_RESET for isert_accept_np\n");
+ 		return -ENODEV;
+ 	}
+ 	spin_unlock_bh(&np->np_thread_lock);
+diff --git a/drivers/infiniband/ulp/isert/ib_isert.h b/drivers/infiniband/ulp/isert/ib_isert.h
+index 52f4bf0d1a0f..ba695c33a2df 100644
+--- a/drivers/infiniband/ulp/isert/ib_isert.h
++++ b/drivers/infiniband/ulp/isert/ib_isert.h
+@@ -154,7 +154,7 @@ struct isert_device {
+ };
+ 
+ struct isert_np {
+-	wait_queue_head_t	np_accept_wq;
++	struct semaphore	np_sem;
+ 	struct rdma_cm_id	*np_cm_id;
+ 	struct mutex		np_accept_mutex;
+ 	struct list_head	np_accept_list;
 -- 
 1.9.3
 
