@@ -1,86 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933441AbaFILZd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 07:25:33 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:56241 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933390AbaFILZ3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 07:25:29 -0400
-Message-ID: <5395994E.3050504@linux.vnet.ibm.com>
-Date: Mon, 09 Jun 2014 16:53:58 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S933388AbaFILfw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 07:35:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34569 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933236AbaFILft (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 07:35:49 -0400
+Message-ID: <53959C11.2000305@suse.cz>
+Date: Mon, 09 Jun 2014 13:35:45 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: rdunlap@infradead.org, viresh.kumar@linaro.org,
-        "Srivatsa S. Bhat" <srivatsa@mit.edu>, linux-pm@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] PM / Documentation: Update Srivatsa S. Bhat's email address
-References: <20140609102426.26530.15670.stgit@srivatsabhat.in.ibm.com> <1465703.Zlfm9gi0xo@vostro.rjw.lan>
-In-Reply-To: <1465703.Zlfm9gi0xo@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
+To: David Rientjes <rientjes@google.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [RFC PATCH 4/6] mm, compaction: skip buddy pages by their order
+ in the migrate scanner
+References: <alpine.DEB.2.02.1405211954410.13243@chino.kir.corp.google.com> <1401898310-14525-1-git-send-email-vbabka@suse.cz> <1401898310-14525-4-git-send-email-vbabka@suse.cz> <alpine.DEB.2.02.1406041656400.22536@chino.kir.corp.google.com> <5390374E.5080708@suse.cz> <alpine.DEB.2.02.1406051428360.18119@chino.kir.corp.google.com> <53916BB0.3070001@suse.cz> <alpine.DEB.2.02.1406090207300.24247@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1406090207300.24247@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14060911-6102-0000-0000-000005BD2017
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/2014 04:58 PM, Rafael J. Wysocki wrote:
-> On Monday, June 09, 2014 03:54:49 PM Srivatsa S. Bhat wrote:
->> My @linux.vnet.ibm.com email address is going to disappear soon, as I will be
->> beginning my M.S./PhD studies at MIT in a few months.
-> 
-> Congratulations!
-> 
-
-Thanks a lot! :-)
-
->> So update my email address in the documentation.
->>
->> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
->> Signed-off-by: Srivatsa S. Bhat <srivatsa@mit.edu>
->> ---
->>
->>  Documentation/power/suspend-and-cpuhotplug.txt |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/Documentation/power/suspend-and-cpuhotplug.txt b/Documentation/power/suspend-and-cpuhotplug.txt
->> index e13dafc..3813703 100644
->> --- a/Documentation/power/suspend-and-cpuhotplug.txt
->> +++ b/Documentation/power/suspend-and-cpuhotplug.txt
->> @@ -1,6 +1,6 @@
->>  Interaction of Suspend code (S3) with the CPU hotplug infrastructure
->>  
->> -     (C) 2011 Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
->> +     (C) 2011-2014 Srivatsa S. Bhat <srivatsa@mit.edu>
-> 
-> I'm actually unsure if updating copyright notices like that is OK.
-> 
-> Yes, you're moving, but the address in the notice documents the status at
-> the time you added it.
-> 
-
-Oh, ok..
-
-> You still can add a new copyright notice with the new address when you update
-> the document in the future. :-)
+On 06/09/2014 11:09 AM, David Rientjes wrote:
+> On Fri, 6 Jun 2014, Vlastimil Babka wrote:
 >
+>>>>>> diff --git a/mm/internal.h b/mm/internal.h
+>>>>>> index 1a8a0d4..6aa1f74 100644
+>>>>>> --- a/mm/internal.h
+>>>>>> +++ b/mm/internal.h
+>>>>>> @@ -164,7 +164,8 @@ isolate_migratepages_range(struct zone *zone, struct
+>>>>>> compact_control *cc,
+>>>>>>     * general, page_zone(page)->lock must be held by the caller to prevent
+>>>>>> the
+>>>>>>     * page from being allocated in parallel and returning garbage as the
+>>>>>> order.
+>>>>>>     * If a caller does not hold page_zone(page)->lock, it must guarantee
+>>>>>> that the
+>>>>>> - * page cannot be allocated or merged in parallel.
+>>>>>> + * page cannot be allocated or merged in parallel. Alternatively, it must
+>>>>>> + * handle invalid values gracefully, and use page_order_unsafe() below.
+>>>>>>     */
+>>>>>>    static inline unsigned long page_order(struct page *page)
+>>>>>>    {
+>>>>>> @@ -172,6 +173,23 @@ static inline unsigned long page_order(struct page
+>>>>>> *page)
+>>>>>>    	return page_private(page);
+>>>>>>    }
+>>>>>>
+>>>>>> +/*
+>>>>>> + * Like page_order(), but for callers who cannot afford to hold the zone
+>>>>>> lock,
+>>>>>> + * and handle invalid values gracefully. ACCESS_ONCE is used so that if
+>>>>>> the
+>>>>>> + * caller assigns the result into a local variable and e.g. tests it for
+>>>>>> valid
+>>>>>> + * range  before using, the compiler cannot decide to remove the variable
+>>>>>> and
+>>>>>> + * inline the function multiple times, potentially observing different
+>>>>>> values
+>>>>>> + * in the tests and the actual use of the result.
+>>>>>> + */
+>>>>>> +static inline unsigned long page_order_unsafe(struct page *page)
+>>>>>> +{
+>>>>>> +	/*
+>>>>>> +	 * PageBuddy() should be checked by the caller to minimize race
+>>>>>> window,
+>>>>>> +	 * and invalid values must be handled gracefully.
+>>>>>> +	 */
+>>>>>> +	return ACCESS_ONCE(page_private(page));
+>>>>>> +}
+>>>>>> +
+>>>>>>    /* mm/util.c */
+>>>>>>    void __vma_link_list(struct mm_struct *mm, struct vm_area_struct *vma,
+>>>>>>    		struct vm_area_struct *prev, struct rb_node *rb_parent);
+>>>>>
+>>>>> I don't like this change at all, I don't think we should have header
+>>>>> functions that imply the context in which the function will be called.  I
+>>>>> think it would make much more sense to just do
+>>>>> ACCESS_ONCE(page_order(page)) in the migration scanner with a comment.
+>>>>
+>>>> But that won't compile. It would have to be converted to a #define, unless
+>>>> there's some trick I don't know. Sure I would hope this could be done cleaner
+>>>> somehow.
+>>>>
+>>>
+>>> Sorry, I meant ACCESS_ONCE(page_private(page)) in the migration scanner
+>>
+>> Hm but that's breaking the abstraction of page_order(). I don't know if it's
+>> worse to create a new variant of page_order() or to do this. BTW, seems like
+>> next_active_pageblock() in memory-hotplug.c should use this variant too.
+>>
+>
+> The compiler seems free to disregard the access of a volatile object above
+> because the return value of the inline function is unsigned long.  What's
+> the difference between unsigned long order = page_order_unsafe(page) and
+> unsigned long order = (unsigned long)ACCESS_ONCE(page_private(page)) and
 
-Sure :-) For now, I'll just send a patch to update the copyright and extend
-it to 2014 (for my IBM id), while that email-id is still in use.
+I think there's none functionally, but one is abstraction layer 
+violation and the other imply the context of usage as you say (but is 
+that so uncommon?).
 
-But what about .mailmap? Can I add to that? I guess I can, since that's not
-related to copyrights and it is meant to handle email-id changes and such.
- 
-> Updating the address where it is a "contact info" or in MAINTAINERS is a
-> different matter, of course.
-> 
+> the compiler being able to reaccess page_private() because the result is
+> no longer volatile qualified?
 
-Ah, I see. Thank you!
+You think it will reaccess? That would defeat all current ACCESS_ONCE 
+usages, no?
 
-Regards,
-Srivatsa S. Bhat
+What I'm trying to prevent is that this code:
+
+unsigned long freepage_order = page_order(page);
+
+if (freepage_order > 0 && freepage_order < MAX_ORDER)
+	low_pfn += (1UL << freepage_order) - 1;
+
+could be effectively changed (AFAIK legal for the compiler to do) to:
+
+if (page_order(page) > 0 && page_order(page) < MAX_ORDER)
+	low_pfn += (1UL << page_order(page)) - 1;
+
+And thus check a different value than it's in the end used to bump low_pfn.
+
+I believe that even though freepage_order itself is not volatile, the 
+fact it was assigned through a volatile cast means the compiler won't be 
+able to do this anymore.
+
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
 
