@@ -1,110 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932375AbaFIWYV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 18:24:21 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46111 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753838AbaFIWYS (ORCPT
+	id S932468AbaFIWZW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 18:25:22 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:36121 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753978AbaFIWZR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:24:18 -0400
-Message-ID: <5396340B.6060804@infradead.org>
-Date: Mon, 09 Jun 2014 15:24:11 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 9 Jun 2014 18:25:17 -0400
+Date: Mon, 9 Jun 2014 15:25:14 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Vlastimil Babka <vbabka@suse.cz>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [RFC PATCH 4/6] mm, compaction: skip buddy pages by their order
+ in the migrate scanner
+In-Reply-To: <53959C11.2000305@suse.cz>
+Message-ID: <alpine.DEB.2.02.1406091512540.5271@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1405211954410.13243@chino.kir.corp.google.com> <1401898310-14525-1-git-send-email-vbabka@suse.cz> <1401898310-14525-4-git-send-email-vbabka@suse.cz> <alpine.DEB.2.02.1406041656400.22536@chino.kir.corp.google.com> <5390374E.5080708@suse.cz>
+ <alpine.DEB.2.02.1406051428360.18119@chino.kir.corp.google.com> <53916BB0.3070001@suse.cz> <alpine.DEB.2.02.1406090207300.24247@chino.kir.corp.google.com> <53959C11.2000305@suse.cz>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Michal Marek <mmarek@suse.cz>,
-        Richard Weinberger <richard.weinberger@gmail.com>
-CC: linux-kbuild@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Sam Ravnborg <sam@ravnborg.org>
-Subject: Re: [PATCH v2 3/5] kbuild: Use relative path for $(objtree)
-References: <1399639944-20551-1-git-send-email-mmarek@suse.cz> <1399639944-20551-4-git-send-email-mmarek@suse.cz> <CAFLxGvyz-aX8rTveo9W3mqsQxPeg8cb7Oq59UiC1kMz4qTiYwg@mail.gmail.com> <538EEA3D.1080105@suse.cz> <538F1B41.3060904@suse.cz> <20140605155614.GA18376@sepie.suse.cz> <539625D1.2090905@infradead.org> <539631CC.9040002@suse.cz>
-In-Reply-To: <539631CC.9040002@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/14 15:14, Michal Marek wrote:
-> Dne 9.6.2014 23:23, Randy Dunlap napsal(a):
->> On 06/05/14 08:56, Michal Marek wrote:
->>> On Wed, Jun 04, 2014 at 03:12:33PM +0200, Michal Marek wrote:
->>>> On 2014-06-04 11:43, Michal Marek wrote:
->>>>> On 2014-06-04 11:03, Richard Weinberger wrote:
->>>>>> To reproduce run:
->>>>>> make defconfig ARCH=um O=/mnt/o && make linux ARCH=um O=/mnt/
->>>>>>
->>>>>> If there is anything in UML which needs fixing, please tell. :-)
->>>>>
->>>>> I'll have a look, thanks for the report.
->>>>
->>>> Findings so far: For some reason, syscalls_32.h is generated in the
->>>> source tree (which is wrong) and syscalls_64.h is not generated at all.
->>>> Looking further.
->>>
->>> Can you try the below patch? The same pattern is used in the rules for
->>> tools/ and tools/% in the main Makefile, need to look into that as well.
->>> But UML should work now.
->>>
->>> Michal
->>>
->>> From d4bc590f8716f7dde6b7bca319097ac30a8cb0b4 Mon Sep 17 00:00:00 2001
->>> From: Michal Marek <mmarek@suse.cz>
->>> Date: Thu, 5 Jun 2014 17:44:44 +0200
->>> Subject: [PATCH] um: Fix for relative objtree when generating x86 headers
->>>
->>> In an O= build, rely on the generated Makefile to call the main Makefile
->>> properly. When building in the source tree, we do not need to specify
->>> the -C and O= either. This fixes the problem when $(objtree) is a
->>> relative path and the -C changes the directory.
->>>
->>> Reported-by: Richard Weinberger <richard.weinberger@gmail.com>
->>> Signed-off-by: Michal Marek <mmarek@suse.cz>
->>> ---
->>>  arch/um/Makefile | 3 +--
->>>  1 file changed, 1 insertion(+), 2 deletions(-)
->>>
->>> diff --git a/arch/um/Makefile b/arch/um/Makefile
->>> index 36e658a..e4b1a96 100644
->>> --- a/arch/um/Makefile
->>> +++ b/arch/um/Makefile
->>> @@ -111,8 +111,7 @@ endef
->>>  KBUILD_KCONFIG := $(HOST_DIR)/um/Kconfig
->>>  
->>>  archheaders:
->>> -	$(Q)$(MAKE) -C '$(srctree)' KBUILD_SRC= \
->>> -		ARCH=$(HEADER_ARCH) O='$(objtree)' archheaders
->>> +	$(Q)$(MAKE) KBUILD_SRC= ARCH=$(HEADER_ARCH) archheaders
->>>  
->>>  archprepare: include/generated/user_constants.h
->>>  
->>>
->>
->> I still get this build error when building uml for i386:
->>
->>   CC      arch/x86/um/user-offsets.s
->> ../arch/x86/um/user-offsets.c:14:29: fatal error: asm/syscalls_32.h: No such file or directory
->> compilation terminated.
->> make[2]: *** [arch/x86/um/user-offsets.s] Error 1
+On Mon, 9 Jun 2014, Vlastimil Babka wrote:
+
+> > > > Sorry, I meant ACCESS_ONCE(page_private(page)) in the migration scanner
+> > > 
+> > > Hm but that's breaking the abstraction of page_order(). I don't know if
+> > > it's
+> > > worse to create a new variant of page_order() or to do this. BTW, seems
+> > > like
+> > > next_active_pageblock() in memory-hotplug.c should use this variant too.
+> > > 
+> > 
+> > The compiler seems free to disregard the access of a volatile object above
+> > because the return value of the inline function is unsigned long.  What's
+> > the difference between unsigned long order = page_order_unsafe(page) and
+> > unsigned long order = (unsigned long)ACCESS_ONCE(page_private(page)) and
 > 
-> Thanks for testing the patch. I cannot reproduce it though:
+> I think there's none functionally, but one is abstraction layer violation and
+> the other imply the context of usage as you say (but is that so uncommon?).
 > 
->   make ARCH=um SUBARCH=i386 O=/dev/shm/li defconfig
->   make ARCH=um SUBARCH=i386 O=/dev/shm/li
-
-That doesn't work for me either.  Must be a difference somewhere else.
-I am using linux-next of 20140606 (latest that I know of) with only your
-recent patch applied to it.
-
-> works fine (at least it gets to the point when it starts compiling the
-> actual kernel source). This is the previous kbuild/kbuild branch (commit
-> 9da0763) with the above fix applied.
+> > the compiler being able to reaccess page_private() because the result is
+> > no longer volatile qualified?
 > 
-> Also, you pointed out i386 -- Does it mean that the fix worked for you
-> on x86_64?
+> You think it will reaccess? That would defeat all current ACCESS_ONCE usages,
+> no?
+> 
 
-Yes, it did work on x86_64 for some reason.
+I think the compiler is allowed to turn this into
 
+	if (ACCESS_ONCE(page_private(page)) > 0 &&
+	    ACCESS_ONCE(page_private(page)) < MAX_ORDER)
+		low_pfn += (1UL << ACCESS_ONCE(page_private(page))) - 1;
 
--- 
-~Randy
+since the inline function has a return value of unsigned long but gcc may 
+not do this.  I think
+
+	/*
+	 * Big fat comment describing why we're using ACCESS_ONCE(), that 
+	 * we're ok to race, and that this is meaningful only because of
+	 * the previous PageBuddy() check.
+	 */
+	unsigned long pageblock_order = ACCESS_ONCE(page_private(page));
+
+is better.
