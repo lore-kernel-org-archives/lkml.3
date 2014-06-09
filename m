@@ -1,390 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756255AbaFIJJQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 05:09:16 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58460 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754898AbaFIIvZ (ORCPT
+	id S1756797AbaFIJKj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 05:10:39 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:58129 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754900AbaFIJJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 04:51:25 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 050/146] drm/radeon: use pflip irq on R600+ v2
-Date: Mon,  9 Jun 2014 10:49:45 +0200
-Message-Id: <701a07922310762f938c3e60e04c9eebba073b34.1402303820.git.jslaby@suse.cz>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
-References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
-In-Reply-To: <cover.1402303820.git.jslaby@suse.cz>
-References: <cover.1402303820.git.jslaby@suse.cz>
+	Mon, 9 Jun 2014 05:09:14 -0400
+Date: Mon, 9 Jun 2014 02:09:10 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Vlastimil Babka <vbabka@suse.cz>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [RFC PATCH 4/6] mm, compaction: skip buddy pages by their order
+ in the migrate scanner
+In-Reply-To: <53916BB0.3070001@suse.cz>
+Message-ID: <alpine.DEB.2.02.1406090207300.24247@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1405211954410.13243@chino.kir.corp.google.com> <1401898310-14525-1-git-send-email-vbabka@suse.cz> <1401898310-14525-4-git-send-email-vbabka@suse.cz> <alpine.DEB.2.02.1406041656400.22536@chino.kir.corp.google.com> <5390374E.5080708@suse.cz>
+ <alpine.DEB.2.02.1406051428360.18119@chino.kir.corp.google.com> <53916BB0.3070001@suse.cz>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Christian König <christian.koenig@amd.com>
+On Fri, 6 Jun 2014, Vlastimil Babka wrote:
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+> >> > > diff --git a/mm/internal.h b/mm/internal.h
+> >> > > index 1a8a0d4..6aa1f74 100644
+> >> > > --- a/mm/internal.h
+> >> > > +++ b/mm/internal.h
+> >> > > @@ -164,7 +164,8 @@ isolate_migratepages_range(struct zone *zone, struct
+> >> > > compact_control *cc,
+> >> > >    * general, page_zone(page)->lock must be held by the caller to prevent
+> >> > > the
+> >> > >    * page from being allocated in parallel and returning garbage as the
+> >> > > order.
+> >> > >    * If a caller does not hold page_zone(page)->lock, it must guarantee
+> >> > > that the
+> >> > > - * page cannot be allocated or merged in parallel.
+> >> > > + * page cannot be allocated or merged in parallel. Alternatively, it must
+> >> > > + * handle invalid values gracefully, and use page_order_unsafe() below.
+> >> > >    */
+> >> > >   static inline unsigned long page_order(struct page *page)
+> >> > >   {
+> >> > > @@ -172,6 +173,23 @@ static inline unsigned long page_order(struct page
+> >> > > *page)
+> >> > >   	return page_private(page);
+> >> > >   }
+> >> > > 
+> >> > > +/*
+> >> > > + * Like page_order(), but for callers who cannot afford to hold the zone
+> >> > > lock,
+> >> > > + * and handle invalid values gracefully. ACCESS_ONCE is used so that if
+> >> > > the
+> >> > > + * caller assigns the result into a local variable and e.g. tests it for
+> >> > > valid
+> >> > > + * range  before using, the compiler cannot decide to remove the variable
+> >> > > and
+> >> > > + * inline the function multiple times, potentially observing different
+> >> > > values
+> >> > > + * in the tests and the actual use of the result.
+> >> > > + */
+> >> > > +static inline unsigned long page_order_unsafe(struct page *page)
+> >> > > +{
+> >> > > +	/*
+> >> > > +	 * PageBuddy() should be checked by the caller to minimize race
+> >> > > window,
+> >> > > +	 * and invalid values must be handled gracefully.
+> >> > > +	 */
+> >> > > +	return ACCESS_ONCE(page_private(page));
+> >> > > +}
+> >> > > +
+> >> > >   /* mm/util.c */
+> >> > >   void __vma_link_list(struct mm_struct *mm, struct vm_area_struct *vma,
+> >> > >   		struct vm_area_struct *prev, struct rb_node *rb_parent);
+> >> > 
+> >> > I don't like this change at all, I don't think we should have header
+> >> > functions that imply the context in which the function will be called.  I
+> >> > think it would make much more sense to just do
+> >> > ACCESS_ONCE(page_order(page)) in the migration scanner with a comment.
+> >> 
+> >> But that won't compile. It would have to be converted to a #define, unless
+> >> there's some trick I don't know. Sure I would hope this could be done cleaner
+> >> somehow.
+> >> 
+> > 
+> > Sorry, I meant ACCESS_ONCE(page_private(page)) in the migration scanner 
+> 
+> Hm but that's breaking the abstraction of page_order(). I don't know if it's
+> worse to create a new variant of page_order() or to do this. BTW, seems like
+> next_active_pageblock() in memory-hotplug.c should use this variant too.
+> 
 
-===============
-
-commit f5d636d2a74b755879feec35e14a259de52ccc07 upstream.
-
-Testing the update pending bit directly after issuing an
-update is nonsense cause depending on the pixel clock the
-CRTC needs a bit of time to execute the flip even when we
-are in the VBLANK period.
-
-This is just a non invasive patch to solve the problem at
-hand, a more complete and cleaner solution should follow
-in the next merge window.
-
-Fixes: https://bugs.freedesktop.org/show_bug.cgi?id=76564
-
-v2: fix source IDs for CRTC2-6
-
-Signed-off-by: Christian König <christian.koenig@amd.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/gpu/drm/radeon/cik.c            | 76 +++++++++++++++++++++++++++++++++
- drivers/gpu/drm/radeon/cikd.h           |  9 ++++
- drivers/gpu/drm/radeon/evergreen.c      | 28 +++++++++---
- drivers/gpu/drm/radeon/r600.c           | 13 ++++--
- drivers/gpu/drm/radeon/radeon.h         |  6 +++
- drivers/gpu/drm/radeon/radeon_display.c |  4 ++
- drivers/gpu/drm/radeon/si.c             | 28 +++++++++---
- 7 files changed, 147 insertions(+), 17 deletions(-)
-
-diff --git a/drivers/gpu/drm/radeon/cik.c b/drivers/gpu/drm/radeon/cik.c
-index bcefa1de3e97..bb7f2ae7683d 100644
---- a/drivers/gpu/drm/radeon/cik.c
-+++ b/drivers/gpu/drm/radeon/cik.c
-@@ -5956,6 +5956,19 @@ static void cik_disable_interrupt_state(struct radeon_device *rdev)
- 		WREG32(LB_INTERRUPT_MASK + EVERGREEN_CRTC4_REGISTER_OFFSET, 0);
- 		WREG32(LB_INTERRUPT_MASK + EVERGREEN_CRTC5_REGISTER_OFFSET, 0);
- 	}
-+	/* pflip */
-+	if (rdev->num_crtc >= 2) {
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET, 0);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET, 0);
-+	}
-+	if (rdev->num_crtc >= 4) {
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET, 0);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET, 0);
-+	}
-+	if (rdev->num_crtc >= 6) {
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET, 0);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET, 0);
-+	}
- 
- 	/* dac hotplug */
- 	WREG32(DAC_AUTODETECT_INT_CONTROL, 0);
-@@ -6312,6 +6325,25 @@ int cik_irq_set(struct radeon_device *rdev)
- 		WREG32(LB_INTERRUPT_MASK + EVERGREEN_CRTC5_REGISTER_OFFSET, crtc6);
- 	}
- 
-+	if (rdev->num_crtc >= 2) {
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
-+	}
-+	if (rdev->num_crtc >= 4) {
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
-+	}
-+	if (rdev->num_crtc >= 6) {
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
-+	}
-+
- 	WREG32(DC_HPD1_INT_CONTROL, hpd1);
- 	WREG32(DC_HPD2_INT_CONTROL, hpd2);
- 	WREG32(DC_HPD3_INT_CONTROL, hpd3);
-@@ -6348,6 +6380,29 @@ static inline void cik_irq_ack(struct radeon_device *rdev)
- 	rdev->irq.stat_regs.cik.disp_int_cont5 = RREG32(DISP_INTERRUPT_STATUS_CONTINUE5);
- 	rdev->irq.stat_regs.cik.disp_int_cont6 = RREG32(DISP_INTERRUPT_STATUS_CONTINUE6);
- 
-+	rdev->irq.stat_regs.cik.d1grph_int = RREG32(GRPH_INT_STATUS +
-+		EVERGREEN_CRTC0_REGISTER_OFFSET);
-+	rdev->irq.stat_regs.cik.d2grph_int = RREG32(GRPH_INT_STATUS +
-+		EVERGREEN_CRTC1_REGISTER_OFFSET);
-+	if (rdev->num_crtc >= 4) {
-+		rdev->irq.stat_regs.cik.d3grph_int = RREG32(GRPH_INT_STATUS +
-+			EVERGREEN_CRTC2_REGISTER_OFFSET);
-+		rdev->irq.stat_regs.cik.d4grph_int = RREG32(GRPH_INT_STATUS +
-+			EVERGREEN_CRTC3_REGISTER_OFFSET);
-+	}
-+	if (rdev->num_crtc >= 6) {
-+		rdev->irq.stat_regs.cik.d5grph_int = RREG32(GRPH_INT_STATUS +
-+			EVERGREEN_CRTC4_REGISTER_OFFSET);
-+		rdev->irq.stat_regs.cik.d6grph_int = RREG32(GRPH_INT_STATUS +
-+			EVERGREEN_CRTC5_REGISTER_OFFSET);
-+	}
-+
-+	if (rdev->irq.stat_regs.cik.d1grph_int & GRPH_PFLIP_INT_OCCURRED)
-+		WREG32(GRPH_INT_STATUS + EVERGREEN_CRTC0_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_CLEAR);
-+	if (rdev->irq.stat_regs.cik.d2grph_int & GRPH_PFLIP_INT_OCCURRED)
-+		WREG32(GRPH_INT_STATUS + EVERGREEN_CRTC1_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_CLEAR);
- 	if (rdev->irq.stat_regs.cik.disp_int & LB_D1_VBLANK_INTERRUPT)
- 		WREG32(LB_VBLANK_STATUS + EVERGREEN_CRTC0_REGISTER_OFFSET, VBLANK_ACK);
- 	if (rdev->irq.stat_regs.cik.disp_int & LB_D1_VLINE_INTERRUPT)
-@@ -6358,6 +6413,12 @@ static inline void cik_irq_ack(struct radeon_device *rdev)
- 		WREG32(LB_VLINE_STATUS + EVERGREEN_CRTC1_REGISTER_OFFSET, VLINE_ACK);
- 
- 	if (rdev->num_crtc >= 4) {
-+		if (rdev->irq.stat_regs.cik.d3grph_int & GRPH_PFLIP_INT_OCCURRED)
-+			WREG32(GRPH_INT_STATUS + EVERGREEN_CRTC2_REGISTER_OFFSET,
-+			       GRPH_PFLIP_INT_CLEAR);
-+		if (rdev->irq.stat_regs.cik.d4grph_int & GRPH_PFLIP_INT_OCCURRED)
-+			WREG32(GRPH_INT_STATUS + EVERGREEN_CRTC3_REGISTER_OFFSET,
-+			       GRPH_PFLIP_INT_CLEAR);
- 		if (rdev->irq.stat_regs.cik.disp_int_cont2 & LB_D3_VBLANK_INTERRUPT)
- 			WREG32(LB_VBLANK_STATUS + EVERGREEN_CRTC2_REGISTER_OFFSET, VBLANK_ACK);
- 		if (rdev->irq.stat_regs.cik.disp_int_cont2 & LB_D3_VLINE_INTERRUPT)
-@@ -6369,6 +6430,12 @@ static inline void cik_irq_ack(struct radeon_device *rdev)
- 	}
- 
- 	if (rdev->num_crtc >= 6) {
-+		if (rdev->irq.stat_regs.cik.d5grph_int & GRPH_PFLIP_INT_OCCURRED)
-+			WREG32(GRPH_INT_STATUS + EVERGREEN_CRTC4_REGISTER_OFFSET,
-+			       GRPH_PFLIP_INT_CLEAR);
-+		if (rdev->irq.stat_regs.cik.d6grph_int & GRPH_PFLIP_INT_OCCURRED)
-+			WREG32(GRPH_INT_STATUS + EVERGREEN_CRTC5_REGISTER_OFFSET,
-+			       GRPH_PFLIP_INT_CLEAR);
- 		if (rdev->irq.stat_regs.cik.disp_int_cont4 & LB_D5_VBLANK_INTERRUPT)
- 			WREG32(LB_VBLANK_STATUS + EVERGREEN_CRTC4_REGISTER_OFFSET, VBLANK_ACK);
- 		if (rdev->irq.stat_regs.cik.disp_int_cont4 & LB_D5_VLINE_INTERRUPT)
-@@ -6720,6 +6787,15 @@ restart_ih:
- 				break;
- 			}
- 			break;
-+		case 8: /* D1 page flip */
-+		case 10: /* D2 page flip */
-+		case 12: /* D3 page flip */
-+		case 14: /* D4 page flip */
-+		case 16: /* D5 page flip */
-+		case 18: /* D6 page flip */
-+			DRM_DEBUG("IH: D%d flip\n", ((src_id - 8) >> 1) + 1);
-+			radeon_crtc_handle_flip(rdev, (src_id - 8) >> 1);
-+			break;
- 		case 42: /* HPD hotplug */
- 			switch (src_data) {
- 			case 0:
-diff --git a/drivers/gpu/drm/radeon/cikd.h b/drivers/gpu/drm/radeon/cikd.h
-index 203d2a09a1f5..70e88498a1fd 100644
---- a/drivers/gpu/drm/radeon/cikd.h
-+++ b/drivers/gpu/drm/radeon/cikd.h
-@@ -868,6 +868,15 @@
- #       define DC_HPD6_RX_INTERRUPT                     (1 << 18)
- #define DISP_INTERRUPT_STATUS_CONTINUE6                 0x6780
- 
-+/* 0x6858, 0x7458, 0x10058, 0x10c58, 0x11858, 0x12458 */
-+#define GRPH_INT_STATUS                                 0x6858
-+#       define GRPH_PFLIP_INT_OCCURRED                  (1 << 0)
-+#       define GRPH_PFLIP_INT_CLEAR                     (1 << 8)
-+/* 0x685c, 0x745c, 0x1005c, 0x10c5c, 0x1185c, 0x1245c */
-+#define GRPH_INT_CONTROL                                0x685c
-+#       define GRPH_PFLIP_INT_MASK                      (1 << 0)
-+#       define GRPH_PFLIP_INT_TYPE                      (1 << 8)
-+
- #define	DAC_AUTODETECT_INT_CONTROL			0x67c8
- 
- #define DC_HPD1_INT_STATUS                              0x601c
-diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
-index c429bb9b17b6..e1b2470d3443 100644
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -4276,7 +4276,6 @@ int evergreen_irq_set(struct radeon_device *rdev)
- 	u32 crtc1 = 0, crtc2 = 0, crtc3 = 0, crtc4 = 0, crtc5 = 0, crtc6 = 0;
- 	u32 hpd1, hpd2, hpd3, hpd4, hpd5, hpd6;
- 	u32 grbm_int_cntl = 0;
--	u32 grph1 = 0, grph2 = 0, grph3 = 0, grph4 = 0, grph5 = 0, grph6 = 0;
- 	u32 afmt1 = 0, afmt2 = 0, afmt3 = 0, afmt4 = 0, afmt5 = 0, afmt6 = 0;
- 	u32 dma_cntl, dma_cntl1 = 0;
- 	u32 thermal_int = 0;
-@@ -4459,15 +4458,21 @@ int evergreen_irq_set(struct radeon_device *rdev)
- 		WREG32(INT_MASK + EVERGREEN_CRTC5_REGISTER_OFFSET, crtc6);
- 	}
- 
--	WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET, grph1);
--	WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET, grph2);
-+	WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET,
-+	       GRPH_PFLIP_INT_MASK);
-+	WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET,
-+	       GRPH_PFLIP_INT_MASK);
- 	if (rdev->num_crtc >= 4) {
--		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET, grph3);
--		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET, grph4);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
- 	}
- 	if (rdev->num_crtc >= 6) {
--		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET, grph5);
--		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET, grph6);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
- 	}
- 
- 	WREG32(DC_HPD1_INT_CONTROL, hpd1);
-@@ -4856,6 +4861,15 @@ restart_ih:
- 				break;
- 			}
- 			break;
-+		case 8: /* D1 page flip */
-+		case 10: /* D2 page flip */
-+		case 12: /* D3 page flip */
-+		case 14: /* D4 page flip */
-+		case 16: /* D5 page flip */
-+		case 18: /* D6 page flip */
-+			DRM_DEBUG("IH: D%d flip\n", ((src_id - 8) >> 1) + 1);
-+			radeon_crtc_handle_flip(rdev, (src_id - 8) >> 1);
-+			break;
- 		case 42: /* HPD hotplug */
- 			switch (src_data) {
- 			case 0:
-diff --git a/drivers/gpu/drm/radeon/r600.c b/drivers/gpu/drm/radeon/r600.c
-index 5af2729f2055..2c2b91f16ecf 100644
---- a/drivers/gpu/drm/radeon/r600.c
-+++ b/drivers/gpu/drm/radeon/r600.c
-@@ -3371,7 +3371,6 @@ int r600_irq_set(struct radeon_device *rdev)
- 	u32 hpd1, hpd2, hpd3, hpd4 = 0, hpd5 = 0, hpd6 = 0;
- 	u32 grbm_int_cntl = 0;
- 	u32 hdmi0, hdmi1;
--	u32 d1grph = 0, d2grph = 0;
- 	u32 dma_cntl;
- 	u32 thermal_int = 0;
- 
-@@ -3480,8 +3479,8 @@ int r600_irq_set(struct radeon_device *rdev)
- 	WREG32(CP_INT_CNTL, cp_int_cntl);
- 	WREG32(DMA_CNTL, dma_cntl);
- 	WREG32(DxMODE_INT_MASK, mode_int);
--	WREG32(D1GRPH_INTERRUPT_CONTROL, d1grph);
--	WREG32(D2GRPH_INTERRUPT_CONTROL, d2grph);
-+	WREG32(D1GRPH_INTERRUPT_CONTROL, DxGRPH_PFLIP_INT_MASK);
-+	WREG32(D2GRPH_INTERRUPT_CONTROL, DxGRPH_PFLIP_INT_MASK);
- 	WREG32(GRBM_INT_CNTL, grbm_int_cntl);
- 	if (ASIC_IS_DCE3(rdev)) {
- 		WREG32(DC_HPD1_INT_CONTROL, hpd1);
-@@ -3784,6 +3783,14 @@ restart_ih:
- 				break;
- 			}
- 			break;
-+		case 9: /* D1 pflip */
-+			DRM_DEBUG("IH: D1 flip\n");
-+			radeon_crtc_handle_flip(rdev, 0);
-+			break;
-+		case 11: /* D2 pflip */
-+			DRM_DEBUG("IH: D2 flip\n");
-+			radeon_crtc_handle_flip(rdev, 1);
-+			break;
- 		case 19: /* HPD/DAC hotplug */
- 			switch (src_data) {
- 			case 0:
-diff --git a/drivers/gpu/drm/radeon/radeon.h b/drivers/gpu/drm/radeon/radeon.h
-index b11433f75578..5c903a884bb8 100644
---- a/drivers/gpu/drm/radeon/radeon.h
-+++ b/drivers/gpu/drm/radeon/radeon.h
-@@ -715,6 +715,12 @@ struct cik_irq_stat_regs {
- 	u32 disp_int_cont4;
- 	u32 disp_int_cont5;
- 	u32 disp_int_cont6;
-+	u32 d1grph_int;
-+	u32 d2grph_int;
-+	u32 d3grph_int;
-+	u32 d4grph_int;
-+	u32 d5grph_int;
-+	u32 d6grph_int;
- };
- 
- union radeon_irq_stat_regs {
-diff --git a/drivers/gpu/drm/radeon/radeon_display.c b/drivers/gpu/drm/radeon/radeon_display.c
-index 2f7fd3ff12c0..0254a7596a55 100644
---- a/drivers/gpu/drm/radeon/radeon_display.c
-+++ b/drivers/gpu/drm/radeon/radeon_display.c
-@@ -281,6 +281,10 @@ void radeon_crtc_handle_flip(struct radeon_device *rdev, int crtc_id)
- 	u32 update_pending;
- 	int vpos, hpos;
- 
-+	/* can happen during initialization */
-+	if (radeon_crtc == NULL)
-+		return;
-+
- 	spin_lock_irqsave(&rdev->ddev->event_lock, flags);
- 	work = radeon_crtc->unpin_work;
- 	if (work == NULL ||
-diff --git a/drivers/gpu/drm/radeon/si.c b/drivers/gpu/drm/radeon/si.c
-index bbd83f5aa75d..c9f9c07f888d 100644
---- a/drivers/gpu/drm/radeon/si.c
-+++ b/drivers/gpu/drm/radeon/si.c
-@@ -5731,7 +5731,6 @@ int si_irq_set(struct radeon_device *rdev)
- 	u32 crtc1 = 0, crtc2 = 0, crtc3 = 0, crtc4 = 0, crtc5 = 0, crtc6 = 0;
- 	u32 hpd1 = 0, hpd2 = 0, hpd3 = 0, hpd4 = 0, hpd5 = 0, hpd6 = 0;
- 	u32 grbm_int_cntl = 0;
--	u32 grph1 = 0, grph2 = 0, grph3 = 0, grph4 = 0, grph5 = 0, grph6 = 0;
- 	u32 dma_cntl, dma_cntl1;
- 	u32 thermal_int = 0;
- 
-@@ -5870,16 +5869,22 @@ int si_irq_set(struct radeon_device *rdev)
- 	}
- 
- 	if (rdev->num_crtc >= 2) {
--		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET, grph1);
--		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET, grph2);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
- 	}
- 	if (rdev->num_crtc >= 4) {
--		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET, grph3);
--		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET, grph4);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
- 	}
- 	if (rdev->num_crtc >= 6) {
--		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET, grph5);
--		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET, grph6);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
- 	}
- 
- 	if (!ASIC_IS_NODCE(rdev)) {
-@@ -6243,6 +6248,15 @@ restart_ih:
- 				break;
- 			}
- 			break;
-+		case 8: /* D1 page flip */
-+		case 10: /* D2 page flip */
-+		case 12: /* D3 page flip */
-+		case 14: /* D4 page flip */
-+		case 16: /* D5 page flip */
-+		case 18: /* D6 page flip */
-+			DRM_DEBUG("IH: D%d flip\n", ((src_id - 8) >> 1) + 1);
-+			radeon_crtc_handle_flip(rdev, (src_id - 8) >> 1);
-+			break;
- 		case 42: /* HPD hotplug */
- 			switch (src_data) {
- 			case 0:
--- 
-1.9.3
-
+The compiler seems free to disregard the access of a volatile object above 
+because the return value of the inline function is unsigned long.  What's 
+the difference between unsigned long order = page_order_unsafe(page) and
+unsigned long order = (unsigned long)ACCESS_ONCE(page_private(page)) and 
+the compiler being able to reaccess page_private() because the result is 
+no longer volatile qualified?
