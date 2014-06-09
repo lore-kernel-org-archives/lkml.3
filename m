@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933832AbaFIPwd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 11:52:33 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:34938 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933795AbaFIPwY (ORCPT
+	id S933870AbaFIPxA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 11:53:00 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:52929 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933776AbaFIPwW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 11:52:24 -0400
+	Mon, 9 Jun 2014 11:52:22 -0400
 From: Pranith Kumar <bobby.prani@gmail.com>
-To: trivial@rustcorp.com.au, Harry Wei <harryxiyou@gmail.com>,
-        linux-kernel@zh-kernel.org (moderated list:CHINESE DOCUMENTA...),
+To: trivial@rustcorp.com.au, Alexey Klimov <klimov.linux@gmail.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-media@vger.kernel.org (open list:MR800 AVERMEDIA U...),
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH 6/6] remove dead link, kerneltrap.org no longer works
-Date: Mon,  9 Jun 2014 11:51:28 -0400
-Message-Id: <1402329088-4802-6-git-send-email-bobby.prani@gmail.com>
+Subject: [PATCH 5/6] update reference, kerneltrap.org no longer works
+Date: Mon,  9 Jun 2014 11:51:27 -0400
+Message-Id: <1402329088-4802-5-git-send-email-bobby.prani@gmail.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402329088-4802-1-git-send-email-bobby.prani@gmail.com>
 References: <1402329088-4802-1-git-send-email-bobby.prani@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kerneltrap.org no longer works, remove dead reference
+kerneltrap.org no longer works, update to a working reference
 
 Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 ---
- Documentation/zh_CN/SubmittingDrivers | 4 ----
- 1 file changed, 4 deletions(-)
+ drivers/media/radio/radio-mr800.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/Documentation/zh_CN/SubmittingDrivers b/Documentation/zh_CN/SubmittingDrivers
-index 5889f8d..d313f5d 100644
---- a/Documentation/zh_CN/SubmittingDrivers
-+++ b/Documentation/zh_CN/SubmittingDrivers
-@@ -150,10 +150,6 @@ LWN.net:
- 	将旧版内核的驱动程序移植到 2.6 版：
- 		http://lwn.net/Articles/driver-porting/
- 
--KernelTrap：
--	Linux 内核的最新动态以及开发者访谈
--	http://kerneltrap.org/
--
- 内核新手(KernelNewbies):
- 	为新的内核开发者提供文档和帮助
- 	http://kernelnewbies.org/
+diff --git a/drivers/media/radio/radio-mr800.c b/drivers/media/radio/radio-mr800.c
+index a360227..f476071 100644
+--- a/drivers/media/radio/radio-mr800.c
++++ b/drivers/media/radio/radio-mr800.c
+@@ -32,7 +32,7 @@
+  * achievements (specifications given).
+  * Also, Faidon Liambotis <paravoid@debian.org> wrote nice driver for this radio
+  * in 2007. He allowed to use his driver to improve current mr800 radio driver.
+- * http://kerneltrap.org/mailarchive/linux-usb-devel/2007/10/11/342492
++ * http://www.spinics.net/lists/linux-usb-devel/msg10109.html
+  *
+  * Version 0.01:	First working version.
+  * 			It's required to blacklist AverMedia USB Radio
 -- 
 1.9.1
 
