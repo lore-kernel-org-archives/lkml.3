@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754946AbaFIK3x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 06:29:53 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:63299 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754769AbaFIK3r (ORCPT
+	id S932778AbaFIK36 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 06:29:58 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:56212 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932330AbaFIK3t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 06:29:47 -0400
-X-AuditID: cbfee68d-b7fd46d000005f36-94-53958c99e6fd
+	Mon, 9 Jun 2014 06:29:49 -0400
+X-AuditID: cbfee690-b7fb56d000003439-41-53958c9a3d69
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: broonie@kernel.org, lgirdwood@gmail.com, grant.likely@linaro.org,
         robh+dt@kernel.org
 Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
         linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
         Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCH 1/2] regulator: of: Add support for parsing regulator_state for
- suspend state
-Date: Mon, 09 Jun 2014 19:29:39 +0900
-Message-id: <1402309780-8118-2-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCH 2/2] dt-bindings: regulator: Add regulator suspend state for PM
+ state
+Date: Mon, 09 Jun 2014 19:29:40 +0900
+Message-id: <1402309780-8118-3-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.0
 In-reply-to: <1402309780-8118-1-git-send-email-cw00.choi@samsung.com>
 References: <1402309780-8118-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgkeLIzCtJLcpLzFFi42JZI2JSojuzZ2qwQf8MYYupD5+wWVz/8pzV
-	Yv6Rc6wWB/7sYLQ42/SG3eLblQ4mi8u75rBZ3G5cwWbRuvcIuwOnx85Zd9k9Nq3qZPO4c20P
-	m0ffllWMHp83yQWwRnHZpKTmZJalFunbJXBltP7/ylZwVbzi6/eXrA2Mj4S7GDk5JARMJPZf
-	nsoCYYtJXLi3nq2LkYtDSGApo0RD5wNWmKIrD0+wQiSmM0ocWvwaymlikvh58DtYO5uAlsT+
-	FzeA2jk4RASiJNZ2MIHUMAvMZpRoOd/HDFIjLBAvMf1hJ5jNIqAq8f/xHrB6XgEXidZ+bYhl
-	chIf9jxiB7E5BVwlVp/cxwRiCwGVfFu8BGyvhMA6dom3v54yQcwRkPg2+RALyBwJAVmJTQeY
-	IeZIShxccYNlAqPwAkaGVYyiqQXJBcVJ6UWGesWJucWleel6yfm5mxiBoX/637PeHYy3D1gf
-	YkwGGjeRWUo0OR8YO3kl8YbGZkYWpiamxkbmlmakCSuJ8yY9TAoSEkhPLEnNTk0tSC2KLyrN
-	SS0+xMjEwSnVwFjnvZpngv/Tym8HNCxNtskFT1soWPznSdXfPec7BW0mXP8kIJfZmrDh6h9H
-	oTjphMIX768/3VT2cfqlNYcbW91XRHbusl5ry2gqkS2y+h9HvnJuQfISDblSFVarnu6OM4lm
-	jRZurxe9cTqn8+XGZoUtxtZFFfVOn785rJNzuS62+vq1UzuX6CmxFGckGmoxFxUnAgBKMtY0
-	kwIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLIsWRmVeSWpSXmKPExsVy+t9jQd2ZPVODDe5M5raY+vAJm8X1L89Z
-	LeYfOcdqceDPDkaLs01v2C2+Xelgsri8aw6bxe3GFWwWrXuPsDtweuycdZfdY9OqTjaPO9f2
-	sHn0bVnF6PF5k1wAa1QDo01GamJKapFCal5yfkpmXrqtkndwvHO8qZmBoa6hpYW5kkJeYm6q
-	rZKLT4CuW2YO0EVKCmWJOaVAoYDE4mIlfTtME0JD3HQtYBojdH1DguB6jAzQQMIaxozW/1/Z
-	Cq6KV3z9/pK1gfGRcBcjJ4eEgInElYcnWCFsMYkL99azdTFycQgJTGeUOLT4NSuE08Qk8fPg
-	dxaQKjYBLYn9L24AVXFwiAhESaztYAKpYRaYzSjRcr6PGaRGWCBeYvrDTjCbRUBV4v/jPWD1
-	vAIuEq392hDL5CQ+7HnEDmJzCrhKrD65jwnEFgIq+bZ4CesERt4FjAyrGEVTC5ILipPSc430
-	ihNzi0vz0vWS83M3MYIj65n0DsZVDRaHGAU4GJV4eCN+TwkWYk0sK67MPcQowcGsJMLrkzM1
-	WIg3JbGyKrUoP76oNCe1+BBjMtBRE5mlRJPzgVGfVxJvaGxiZmRpZG5oYWRsTpqwkjjvwVbr
-	QCGB9MSS1OzU1ILUIpgtTBycUg2MNaIawawfnqbxMBa7ras7fK/Effdt/Re1otf3RrTr/prr
-	e+aRa9r1k7fUNj1PKc/mT5cI6pZrObPWzek3D+8ic6v2prAFd3Us+3K3X32a3ODHuesJ23Lf
-	N6rf5qs66p+J+Oc8qytw4qN4Pe501yh+HS3xCxfS1U5efeOl19LFeGXHM4bqTyeVWIozEg21
-	mIuKEwGqwh+X8AIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPLMWRmVeSWpSXmKPExsWyRsSkQHdWz9Rgg/MrJSymPnzCZnH9y3NW
+	i/lHzrFaHPizg9HibNMbdotvVzqYLC7vmsNmcbtxBZtF694j7A6cHjtn3WX32LSqk83jzrU9
+	bB59W1YxenzeJBfAGsVlk5Kak1mWWqRvl8CVsfXFG9aCu3wVt2f5NTBu5+li5OCQEDCRuHTM
+	r4uRE8gUk7hwbz1bFyMXh5DAUkaJrpY+RoiEicTK+bOYIRLTGSUubp/DBOE0MUns2XiWFaSK
+	TUBLYv+LG2wgU0UEoiTWdoDVMAvMZpRoOd/HDFIjLBAucerWdjYQm0VAVWL+jhtMIDavgIvE
+	+cMP2CC2yUl82POIHcTmFHCVWH1yH1iNEFDNt8VLWEGGSgisY5doXTqBCWKQgMS3yYdYIN6R
+	ldh0gBlijqTEwRU3WCYwCi9gZFjFKJpakFxQnJReZKJXnJhbXJqXrpecn7uJERj4p/89m7CD
+	8d4B60OMyUDjJjJLiSbnAyMnryTe0NjMyMLUxNTYyNzSjDRhJXFetUdJQUIC6YklqdmpqQWp
+	RfFFpTmpxYcYmTg4pRoY01I6VitsFTwu//b2l77fXVrrTFq1LvnuzHjAvrZQME5eNW3pAwYz
+	aeuIvMQp+zvbGSqX5IvLK1vsZXv/TfL0tJr60Ls/Xk+XedT1sVzN4klHH9uxr6dLLyeL+vHP
+	Xlp98MMnj24trYJrRuFm1lvn961Yu/BggAm7Q3hkwMHwtMgjYn/Xna9UYinOSDTUYi4qTgQA
+	TgUguZICAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLIsWRmVeSWpSXmKPExsVy+t9jQd1ZPVODDe42CFhMffiEzeL6l+es
+	FvOPnGO1OPBnB6PF2aY37BbfrnQwWVzeNYfN4nbjCjaL1r1H2B04PXbOusvusWlVJ5vHnWt7
+	2Dz6tqxi9Pi8SS6ANaqB0SYjNTEltUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfV
+	VsnFJ0DXLTMH6CIlhbLEnFKgUEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGENY8bWF29Y
+	C+7yVdye5dfAuJ2ni5GTQ0LARGLl/FnMELaYxIV769m6GLk4hASmM0pc3D6HCcJpYpLYs/Es
+	K0gVm4CWxP4XN4CqODhEBKIk1naA1TALzGaUaDnfBzZJWCBc4tSt7WwgNouAqsT8HTeYQGxe
+	AReJ84cfsEFsk5P4sOcRO4jNKeAqsfrkPrAaIaCab4uXsE5g5F3AyLCKUTS1ILmgOCk910iv
+	ODG3uDQvXS85P3cTIziynknvYFzVYHGIUYCDUYmHN+L3lGAh1sSy4srcQ4wSHMxKIrw+OVOD
+	hXhTEiurUovy44tKc1KLDzEmA101kVlKNDkfGPV5JfGGxiZmRpZG5oYWRsbmpAkrifMebLUO
+	FBJITyxJzU5NLUgtgtnCxMEp1cDYtXNHjcwE84a8C1xNx2Wm92UzFzUEB84XFuYS4Dz88ZeG
+	/ALlW+7/FiwU+bbe7CXPXKdb+SvMDtV4Zv6ZxKvFWD9h7j1J2+ztAtnV7H+f3eP+dMQousBN
+	0Ndglea+Ve17qiymbJu8V37bD0uufVLvDnld7OPJucRd1/JgWlCuVajRN6fTdWZKLMUZiYZa
+	zEXFiQDWwIuO8AIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -53,98 +53,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The regulation_constraints structure includes specific field to support
-suspend state for global PMIC STANDBY/HIBERNATE mode. This patch add support
-for parsing regulator_state for suspend state.
+This patch add regulator suspend state to constraint in dt file. The regulation_
+constraints structure already has regulator suspend state field as following.
+The regulator suspend state control the state of regulator according to
+PM (Power Management) state.
+- struct regulator_state state_disk
+- struct regulator_state state_mem
+- struct regulator_state state_standby
 
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 ---
- drivers/regulator/of_regulator.c | 61 ++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 59 insertions(+), 2 deletions(-)
+ Documentation/devicetree/bindings/regulator/regulator.txt | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-diff --git a/drivers/regulator/of_regulator.c b/drivers/regulator/of_regulator.c
-index ee5e67b..f8925a2 100644
---- a/drivers/regulator/of_regulator.c
-+++ b/drivers/regulator/of_regulator.c
-@@ -16,12 +16,20 @@
- #include <linux/regulator/machine.h>
- #include <linux/regulator/of_regulator.h>
+diff --git a/Documentation/devicetree/bindings/regulator/regulator.txt b/Documentation/devicetree/bindings/regulator/regulator.txt
+index e2c7f1e..b2a4a72 100644
+--- a/Documentation/devicetree/bindings/regulator/regulator.txt
++++ b/Documentation/devicetree/bindings/regulator/regulator.txt
+@@ -19,6 +19,12 @@ Optional properties:
+   design requires. This property describes the total system ramp time
+   required due to the combination of internal ramping of the regulator itself,
+   and board design issues such as trace capacitance and load on the supply.
++- regulator-initial-state: initial state for suspend state
++- regulator-state-[standby/mem/disk] sub-root node for suspend state
++	regulator-volt: voltage consumers may set in suspend state
++	regulator-mode: voltage mode in suspend state
++	regulator-on-in-suspend: regulator should be on in suspend state
++	regulator-off-in-suspend: regulator should be off in suspend state
  
-+const char *const regulator_states[PM_SUSPEND_MAX + 1] = {
-+	[PM_SUSPEND_STANDBY]	= "regulator-state-standby",
-+	[PM_SUSPEND_MEM]	= "regulator-state-mem",
-+	[PM_SUSPEND_MAX]	= "regulator-state-disk",
-+};
+ Deprecated properties:
+ - regulator-compatible: If a regulator chip contains multiple
+@@ -34,6 +40,12 @@ Example:
+ 		regulator-max-microvolt = <2500000>;
+ 		regulator-always-on;
+ 		vin-supply = <&vin>;
 +
- static void of_get_regulation_constraints(struct device_node *np,
- 					struct regulator_init_data **init_data)
- {
--	const __be32 *min_uV, *max_uV;
-+	const __be32 *min_uV, *max_uV, *uV_offset, *suspend_uV;
- 	struct regulation_constraints *constraints = &(*init_data)->constraints;
--	int ret;
-+	struct regulator_state *suspend_state;
-+	struct device_node *suspend_np;
-+	int ret, i;
- 	u32 pval;
- 
- 	constraints->name = of_get_property(np, "regulator-name", NULL);
-@@ -70,6 +78,55 @@ static void of_get_regulation_constraints(struct device_node *np,
- 	ret = of_property_read_u32(np, "regulator-enable-ramp-delay", &pval);
- 	if (!ret)
- 		constraints->enable_time = pval;
-+
-+	ret = of_property_read_u32(np, "regulator-initial-state", &pval);
-+	if (!ret)
-+		constraints->initial_state = pval;
-+
-+	for (i = 0; i < ARRAY_SIZE(regulator_states); i++) {
-+		switch (i) {
-+		case PM_SUSPEND_STANDBY:
-+			suspend_state = &constraints->state_standby;
-+			break;
-+		case PM_SUSPEND_MEM:
-+			suspend_state = &constraints->state_mem;
-+			break;
-+		case PM_SUSPEND_MAX:
-+			suspend_state = &constraints->state_disk;
-+			break;
-+		case PM_SUSPEND_ON:
-+		case PM_SUSPEND_FREEZE:
-+		default:
-+			continue;
++		regulator-state-mem {
++			regulator-volt = <1000000>;
++			regulator-mode = <0x8>;
++			regulator-off-in-suspend;
 +		};
-+
-+		suspend_np = of_get_child_by_name(np, regulator_states[i]);
-+		if (!suspend_np || !suspend_state)
-+			continue;
-+
-+		suspend_uV = of_get_property(suspend_np, "regulator-volt", NULL);
-+		if (suspend_uV) {
-+			suspend_state->uV = be32_to_cpu(*suspend_uV);
-+
-+			if (suspend_state->uV < constraints->min_uV)
-+				suspend_state->uV = constraints->min_uV;
-+			if (suspend_state->uV > constraints->max_uV)
-+				suspend_state->uV = constraints->max_uV;
-+		}
-+
-+		ret = of_property_read_u32(suspend_np, "regulator-mode", &pval);
-+		if (!ret)
-+			suspend_state->mode = pval;
-+
-+		if (of_property_read_bool(suspend_np, "regulator-on-in-suspend"))
-+			suspend_state->enabled = true;
-+
-+		if (of_property_read_bool(suspend_np, "regulator-off-in-suspend"))
-+			suspend_state->disabled = true;
-+
-+		suspend_state = NULL;
-+		suspend_np = NULL;
-+	}
- }
+ 	};
  
- /**
+ Regulator Consumers:
 -- 
 1.8.0
 
