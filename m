@@ -1,62 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932211AbaFISi2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 14:38:28 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:44468 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751158AbaFISiZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 14:38:25 -0400
-Message-ID: <5395FF1D.1010606@wwwdotorg.org>
-Date: Mon, 09 Jun 2014 12:38:21 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1754201AbaFISk1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 14:40:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59390 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751036AbaFISkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 14:40:24 -0400
+From: Bandan Das <bsd@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, gleb@kernel.org
+Subject: Re: [PATCH 12/25] KVM: emulate: extend memory access optimization to stores
+References: <1402318753-23362-1-git-send-email-pbonzini@redhat.com>
+	<1402318753-23362-13-git-send-email-pbonzini@redhat.com>
+Date: Mon, 09 Jun 2014 14:40:19 -0400
+In-Reply-To: <1402318753-23362-13-git-send-email-pbonzini@redhat.com> (Paolo
+	Bonzini's message of "Mon, 9 Jun 2014 14:59:00 +0200")
+Message-ID: <jpg61kaexkc.fsf@redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>, rjw@rjwysocki.net
-CC: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arvind.chauhan@arm.com,
-        swarren@nvidia.com, dianders@chromium.org
-Subject: Re: [PATCH] cpufreq: tegra: update comment for clarity
-References: <594cf0e6982c471eb314fe4a00647bfaf59a3456.1402029512.git.viresh.kumar@linaro.org>
-In-Reply-To: <594cf0e6982c471eb314fe4a00647bfaf59a3456.1402029512.git.viresh.kumar@linaro.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2014 10:38 PM, Viresh Kumar wrote:
-> Tegra's driver got updated a bit (00917dd cpufreq: Tegra: implement intermediate
-> frequency callbacks) and implements new 'intermediate freq' infrastructure of
-> core. Above commit updated comments about when to call
-> clk_prepare_enable(pll_x_clk) and Doug wasn't satisfied with those comments and
-> said this:
-> 
->> The "Though when target-freq is intermediate freq, we don't need to
->> take this reference." makes me think that this function is actually
->> called when target-freq is intermediate freq.  I don't think it is,
->> right?
-> 
-> For better clarity just make that comment more explicit about when we call
-> tegra_target_intermediate(). Wasn't sure if we actually need a commit for this,
-> but anyway lets other decide if its worth enough :)
+Paolo Bonzini <pbonzini@redhat.com> writes:
 
-> diff --git a/drivers/cpufreq/tegra-cpufreq.c b/drivers/cpufreq/tegra-cpufreq.c
-> index a5fbc0a..48bc89b 100644
-> --- a/drivers/cpufreq/tegra-cpufreq.c
-> +++ b/drivers/cpufreq/tegra-cpufreq.c
-> @@ -73,7 +73,7 @@ static int tegra_target_intermediate(struct cpufreq_policy *policy,
->  	 * off when we move the cpu off of it as enabling it again while we
->  	 * switch to it from tegra_target() would take additional time. Though
->  	 * when target-freq is intermediate freq, we don't need to take this
-> -	 * reference.
-> +	 * reference and so this routine isn't called at all.
->  	 */
->  	clk_prepare_enable(pll_x_clk);
+> Even on a store the optimization saves about 50 clock cycles,
+> mostly because the jump in write_memory_operand becomes much more
+> predictable.
+>
+> Reviewed-by: Paolo Bonzini <pbonzini@redhat.com>
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Isn't the reviewed-by automatically implied ? :)
 
-I would remove the word "so" in the added line; the function is not
-called because we don't need to use an intermediate frequency, not
-because we don't need to take a reference to pll_x. With that change,
-
-Reviewed-by: Stephen Warren <swarren@nvidia.com>
+> ---
+>  arch/x86/kvm/emulate.c | 14 +++++++++-----
+>  1 file changed, 9 insertions(+), 5 deletions(-)
+>
+> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+> index 594cb560947c..eaf0853ffaf9 100644
+> --- a/arch/x86/kvm/emulate.c
+> +++ b/arch/x86/kvm/emulate.c
+> @@ -1589,7 +1589,7 @@ static int load_segment_descriptor(struct x86_emulate_ctxt *ctxt,
+>  
+>  static int prepare_memory_operand(struct x86_emulate_ctxt *ctxt,
+>  				  struct operand *op,
+> -				  bool write)
+> +				  bool read, bool write)
+>  {
+>  	int rc;
+>  	unsigned long gva;
+> @@ -1605,6 +1605,10 @@ static int prepare_memory_operand(struct x86_emulate_ctxt *ctxt,
+>  	if (rc != X86EMUL_CONTINUE)
+>  		return rc;
+>  
+> +	/* optimisation - avoid slow emulated read if Mov */
+> +	if (!read)
+> +		return X86EMUL_CONTINUE;
+> +
+>  	if (likely(!kvm_is_error_hva(op->hva))) {
+>  		rc = read_from_user(ctxt, op->hva, &op->val, size);
+>  		if (!write)
+> @@ -4699,14 +4703,14 @@ int x86_emulate_insn(struct x86_emulate_ctxt *ctxt)
+>  	}
+>  
+>  	if ((ctxt->src.type == OP_MEM) && !(ctxt->d & NoAccess)) {
+> -		rc = prepare_memory_operand(ctxt, &ctxt->src, false);
+> +		rc = prepare_memory_operand(ctxt, &ctxt->src, true, false);
+>  		if (rc != X86EMUL_CONTINUE)
+>  			goto done;
+>  		ctxt->src.orig_val64 = ctxt->src.val64;
+>  	}
+>  
+>  	if (ctxt->src2.type == OP_MEM) {
+> -		rc = prepare_memory_operand(ctxt, &ctxt->src2, false);
+> +		rc = prepare_memory_operand(ctxt, &ctxt->src2, true, false);
+>  		if (rc != X86EMUL_CONTINUE)
+>  			goto done;
+>  	}
+> @@ -4715,9 +4719,9 @@ int x86_emulate_insn(struct x86_emulate_ctxt *ctxt)
+>  		goto special_insn;
+>  
+>  
+> -	if ((ctxt->dst.type == OP_MEM) && !(ctxt->d & Mov)) {
+> -		/* optimisation - avoid slow emulated read if Mov */
+> +	if (ctxt->dst.type == OP_MEM) {
+>  		rc = prepare_memory_operand(ctxt, &ctxt->dst,
+> +					    !(ctxt->d & Mov),
+>  					    !(ctxt->d & NoWrite));
+>  		if (rc != X86EMUL_CONTINUE)
+>  			goto done;
