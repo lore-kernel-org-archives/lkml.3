@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754745AbaFIIxj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 04:53:39 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58521 "EHLO
+	id S932801AbaFIIwE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 04:52:04 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58489 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932818AbaFIIwG (ORCPT
+	by vger.kernel.org with ESMTP id S1755010AbaFIIvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 04:52:06 -0400
+	Mon, 9 Jun 2014 04:51:25 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 015/146] irqchip: Gic: Support forced affinity setting
-Date: Mon,  9 Jun 2014 10:49:10 +0200
-Message-Id: <a46aaa63b66b1836ca6ad054003f035d3201548e.1402303820.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        Sergey Dyasly <dserrg@gmail.com>, Sameer Nanda <snanda@chromium.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        "Ma, Xindong" <xindong.ma@intel.com>,
+        "Tu, Xiaobing" <xiaobing.tu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 004/146] oom_kill: add rcu_read_lock() into find_lock_task_mm()
+Date: Mon,  9 Jun 2014 10:48:59 +0200
+Message-Id: <fbdb0229b07126b55126a95d8e2cf60d47fe9848.1402303820.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
 References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
@@ -29,58 +31,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Oleg Nesterov <oleg@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit ffde1de64012c406dfdda8690918248b472f24e4 upstream.
+commit 4d4048be8a93769350efa31d2482a038b7de73d0 upstream.
 
-To support the affinity setting of per cpu timers in the early startup
-of a not yet online cpu, implement the force logic, which disables the
-cpu online check.
+find_lock_task_mm() expects it is called under rcu or tasklist lock, but
+it seems that at least oom_unkillable_task()->task_in_mem_cgroup() and
+mem_cgroup_out_of_memory()->oom_badness() can call it lockless.
 
-Tagged for stable to allow a simple fix of the affected SoC clock
-event drivers.
+Perhaps we could fix the callers, but this patch simply adds rcu lock
+into find_lock_task_mm().  This also allows to simplify a bit one of its
+callers, oom_kill_process().
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Tested-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Tomasz Figa <t.figa@samsung.com>,
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-Link: http://lkml.kernel.org/r/20140416143315.916984416@linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Cc: Sergey Dyasly <dserrg@gmail.com>
+Cc: Sameer Nanda <snanda@chromium.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mandeep Singh Baines <msb@chromium.org>
+Cc: "Ma, Xindong" <xindong.ma@intel.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Cc: "Tu, Xiaobing" <xiaobing.tu@intel.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/irqchip/irq-gic.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ mm/oom_kill.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index d0e948084eaf..86df97f6fd27 100644
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -246,10 +246,14 @@ static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val,
- 			    bool force)
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 7cdd05e685dc..f5bed7f17463 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -102,14 +102,19 @@ struct task_struct *find_lock_task_mm(struct task_struct *p)
  {
- 	void __iomem *reg = gic_dist_base(d) + GIC_DIST_TARGET + (gic_irq(d) & ~3);
--	unsigned int shift = (gic_irq(d) % 4) * 8;
--	unsigned int cpu = cpumask_any_and(mask_val, cpu_online_mask);
-+	unsigned int cpu, shift = (gic_irq(d) % 4) * 8;
- 	u32 val, mask, bit;
+ 	struct task_struct *t;
  
-+	if (!force)
-+		cpu = cpumask_any_and(mask_val, cpu_online_mask);
-+	else
-+		cpu = cpumask_first(mask_val);
++	rcu_read_lock();
 +
- 	if (cpu >= NR_GIC_CPU_IF || cpu >= nr_cpu_ids)
- 		return -EINVAL;
+ 	for_each_thread(p, t) {
+ 		task_lock(t);
+ 		if (likely(t->mm))
+-			return t;
++			goto found;
+ 		task_unlock(t);
+ 	}
++	t = NULL;
++found:
++	rcu_read_unlock();
  
+-	return NULL;
++	return t;
+ }
+ 
+ /* return true if the task is not adequate as candidate victim task. */
+@@ -461,10 +466,8 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ 	}
+ 	read_unlock(&tasklist_lock);
+ 
+-	rcu_read_lock();
+ 	p = find_lock_task_mm(victim);
+ 	if (!p) {
+-		rcu_read_unlock();
+ 		put_task_struct(victim);
+ 		return;
+ 	} else if (victim != p) {
+@@ -490,6 +493,7 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ 	 * That thread will now get access to memory reserves since it has a
+ 	 * pending fatal signal.
+ 	 */
++	rcu_read_lock();
+ 	for_each_process(p)
+ 		if (p->mm == mm && !same_thread_group(p, victim) &&
+ 		    !(p->flags & PF_KTHREAD)) {
 -- 
 1.9.3
 
