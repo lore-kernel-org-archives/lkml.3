@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936561AbaFIJcb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 05:32:31 -0400
+	id S936276AbaFIJ1I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 05:27:08 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59137 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S936287AbaFIJ1M (ORCPT
+	by vger.kernel.org with ESMTP id S932283AbaFIJ0i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 05:27:12 -0400
+	Mon, 9 Jun 2014 05:26:38 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Sagi Grimberg <sagig@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 116/146] Target/iser: Fix iscsit_accept_np and rdma_cm racy flow
-Date: Mon,  9 Jun 2014 10:50:51 +0200
-Message-Id: <9ac1060a228d2f0be0a65c4e6e20165390ed7e2b.1402303821.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 135/146] powerpc: Fix 64 bit builds with binutils 2.24
+Date: Mon,  9 Jun 2014 10:51:10 +0200
+Message-Id: <737585cd59617a76c1be68e3ab3350fba47bdf81.1402303821.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
 References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
@@ -23,120 +24,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sagi Grimberg <sagig@mellanox.com>
+From: Guenter Roeck <linux@roeck-us.net>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 531b7bf4bd795d9a09eac92504322a472c010bc8 upstream.
+commit 7998eb3dc700aaf499f93f50b3d77da834ef9e1d upstream.
 
-RDMA CM and iSCSI target flows are asynchronous and completely
-uncorrelated. Relying on the fact that iscsi_accept_np will be called
-after CM connection request event and will wait for it is a mistake.
+With binutils 2.24, various 64 bit builds fail with relocation errors
+such as
 
-When attempting to login to a few targets this flow is racy and
-unpredictable, but for parallel login to dozens of targets will
-race and hang every time.
+arch/powerpc/kernel/built-in.o: In function `exc_debug_crit_book3e':
+	(.text+0x165ee): relocation truncated to fit: R_PPC64_ADDR16_HI
+	against symbol `interrupt_base_book3e' defined in .text section
+	in arch/powerpc/kernel/built-in.o
+arch/powerpc/kernel/built-in.o: In function `exc_debug_crit_book3e':
+	(.text+0x16602): relocation truncated to fit: R_PPC64_ADDR16_HI
+	against symbol `interrupt_end_book3e' defined in .text section
+	in arch/powerpc/kernel/built-in.o
 
-The correct synchronizing mechanism in this case is pending on
-a semaphore rather than a wait_for_event. We keep the pending
-interruptible for iscsi_np cleanup stage.
+The assembler maintainer says:
 
-(Squash patch to remove dead code into parent - nab)
+ I changed the ABI, something that had to be done but unfortunately
+ happens to break the booke kernel code.  When building up a 64-bit
+ value with lis, ori, shl, oris, ori or similar sequences, you now
+ should use @high and @higha in place of @h and @ha.  @h and @ha
+ (and their associated relocs R_PPC64_ADDR16_HI and R_PPC64_ADDR16_HA)
+ now report overflow if the value is out of 32-bit signed range.
+ ie. @h and @ha assume you're building a 32-bit value. This is needed
+ to report out-of-range -mcmodel=medium toc pointer offsets in @toc@h
+ and @toc@ha expressions, and for consistency I did the same for all
+ other @h and @ha relocs.
 
-Reported-by: Slava Shwartsman <valyushash@gmail.com>
-Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Replacing @h with @high in one strategic location fixes the relocation
+errors. This has to be done conditionally since the assembler either
+supports @h or @high but not both.
+
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/infiniband/ulp/isert/ib_isert.c | 25 ++++++-------------------
- drivers/infiniband/ulp/isert/ib_isert.h |  2 +-
- 2 files changed, 7 insertions(+), 20 deletions(-)
+ arch/powerpc/Makefile              | 4 +++-
+ arch/powerpc/include/asm/ppc_asm.h | 7 ++++++-
+ 2 files changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/infiniband/ulp/isert/ib_isert.c b/drivers/infiniband/ulp/isert/ib_isert.c
-index d62b61cc6175..e6737607a088 100644
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -27,6 +27,7 @@
- #include <target/target_core_base.h>
- #include <target/target_core_fabric.h>
- #include <target/iscsi/iscsi_transport.h>
-+#include <linux/semaphore.h>
+diff --git a/arch/powerpc/Makefile b/arch/powerpc/Makefile
+index 51cfb78d4061..994337bb529c 100644
+--- a/arch/powerpc/Makefile
++++ b/arch/powerpc/Makefile
+@@ -114,7 +114,9 @@ endif
  
- #include "isert_proto.h"
- #include "ib_isert.h"
-@@ -575,8 +576,8 @@ isert_connect_request(struct rdma_cm_id *cma_id, struct rdma_cm_event *event)
- 	list_add_tail(&isert_conn->conn_accept_node, &isert_np->np_accept_list);
- 	mutex_unlock(&isert_np->np_accept_mutex);
+ CFLAGS-$(CONFIG_TUNE_CELL) += $(call cc-option,-mtune=cell)
  
--	pr_debug("isert_connect_request() waking up np_accept_wq: %p\n", np);
--	wake_up(&isert_np->np_accept_wq);
-+	pr_debug("isert_connect_request() up np_sem np: %p\n", np);
-+	up(&isert_np->np_sem);
- 	return 0;
+-KBUILD_CPPFLAGS	+= -Iarch/$(ARCH)
++asinstr := $(call as-instr,lis 9$(comma)foo@high,-DHAVE_AS_ATHIGH=1)
++
++KBUILD_CPPFLAGS	+= -Iarch/$(ARCH) $(asinstr)
+ KBUILD_AFLAGS	+= -Iarch/$(ARCH)
+ KBUILD_CFLAGS	+= -msoft-float -pipe -Iarch/$(ARCH) $(CFLAGS-y)
+ CPP		= $(CC) -E $(KBUILD_CFLAGS)
+diff --git a/arch/powerpc/include/asm/ppc_asm.h b/arch/powerpc/include/asm/ppc_asm.h
+index 0d2d0f03163b..e6d03c7a8031 100644
+--- a/arch/powerpc/include/asm/ppc_asm.h
++++ b/arch/powerpc/include/asm/ppc_asm.h
+@@ -378,11 +378,16 @@ n:
+  *      ld	rY,ADDROFF(name)(rX)
+  */
+ #ifdef __powerpc64__
++#ifdef HAVE_AS_ATHIGH
++#define __AS_ATHIGH high
++#else
++#define __AS_ATHIGH h
++#endif
+ #define LOAD_REG_IMMEDIATE(reg,expr)		\
+ 	lis     reg,(expr)@highest;		\
+ 	ori     reg,reg,(expr)@higher;	\
+ 	rldicr  reg,reg,32,31;		\
+-	oris    reg,reg,(expr)@h;		\
++	oris    reg,reg,(expr)@__AS_ATHIGH;	\
+ 	ori     reg,reg,(expr)@l;
  
- out_conn_dev:
-@@ -2477,7 +2478,7 @@ isert_setup_np(struct iscsi_np *np,
- 		pr_err("Unable to allocate struct isert_np\n");
- 		return -ENOMEM;
- 	}
--	init_waitqueue_head(&isert_np->np_accept_wq);
-+	sema_init(&isert_np->np_sem, 0);
- 	mutex_init(&isert_np->np_accept_mutex);
- 	INIT_LIST_HEAD(&isert_np->np_accept_list);
- 	init_completion(&isert_np->np_login_comp);
-@@ -2526,18 +2527,6 @@ out:
- }
- 
- static int
--isert_check_accept_queue(struct isert_np *isert_np)
--{
--	int empty;
--
--	mutex_lock(&isert_np->np_accept_mutex);
--	empty = list_empty(&isert_np->np_accept_list);
--	mutex_unlock(&isert_np->np_accept_mutex);
--
--	return empty;
--}
--
--static int
- isert_rdma_accept(struct isert_conn *isert_conn)
- {
- 	struct rdma_cm_id *cm_id = isert_conn->conn_cm_id;
-@@ -2629,16 +2618,14 @@ isert_accept_np(struct iscsi_np *np, struct iscsi_conn *conn)
- 	int max_accept = 0, ret;
- 
- accept_wait:
--	ret = wait_event_interruptible(isert_np->np_accept_wq,
--			!isert_check_accept_queue(isert_np) ||
--			np->np_thread_state == ISCSI_NP_THREAD_RESET);
-+	ret = down_interruptible(&isert_np->np_sem);
- 	if (max_accept > 5)
- 		return -ENODEV;
- 
- 	spin_lock_bh(&np->np_thread_lock);
- 	if (np->np_thread_state == ISCSI_NP_THREAD_RESET) {
- 		spin_unlock_bh(&np->np_thread_lock);
--		pr_err("ISCSI_NP_THREAD_RESET for isert_accept_np\n");
-+		pr_debug("ISCSI_NP_THREAD_RESET for isert_accept_np\n");
- 		return -ENODEV;
- 	}
- 	spin_unlock_bh(&np->np_thread_lock);
-diff --git a/drivers/infiniband/ulp/isert/ib_isert.h b/drivers/infiniband/ulp/isert/ib_isert.h
-index 52f4bf0d1a0f..ba695c33a2df 100644
---- a/drivers/infiniband/ulp/isert/ib_isert.h
-+++ b/drivers/infiniband/ulp/isert/ib_isert.h
-@@ -154,7 +154,7 @@ struct isert_device {
- };
- 
- struct isert_np {
--	wait_queue_head_t	np_accept_wq;
-+	struct semaphore	np_sem;
- 	struct rdma_cm_id	*np_cm_id;
- 	struct mutex		np_accept_mutex;
- 	struct list_head	np_accept_list;
+ #define LOAD_REG_ADDR(reg,name)			\
 -- 
 1.9.3
 
