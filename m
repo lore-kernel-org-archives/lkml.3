@@ -1,69 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754268AbaFIDt4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jun 2014 23:49:56 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:40157 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753688AbaFIDtv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jun 2014 23:49:51 -0400
-Date: Mon, 9 Jun 2014 09:19:03 +0530
-From: Pratyush Anand <pratyush.anand@st.com>
-To: Vivek Gautam <gautam.vivek@samsung.com>
-Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "kishon@ti.com" <kishon@ti.com>,
-        "mathias.nyman@intel.com" <mathias.nyman@intel.com>,
-        "jwerner@chromium.org" <jwerner@chromium.org>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/4] phy: Add provision for calibrating phy.
-Message-ID: <20140609034902.GA2625@pratyush-vbox>
-References: <1402056736-12674-1-git-send-email-gautam.vivek@samsung.com>
- <1402056736-12674-2-git-send-email-gautam.vivek@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1402056736-12674-2-git-send-email-gautam.vivek@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-06-08_03:2014-06-06,2014-06-08,1970-01-01 signatures=0
+	id S1750819AbaFIEEG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 00:04:06 -0400
+Received: from ns.horizon.com ([71.41.210.147]:55534 "HELO ns.horizon.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1750706AbaFIED6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 00:03:58 -0400
+Date: 9 Jun 2014 00:03:55 -0400
+Message-ID: <20140609040355.8126.qmail@ns.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux@horizon.com, tytso@mit.edu
+Subject: Re: [RFC PATCH] drivers/char/random.c: Is reducing locking range like this safe?
+Cc: hpa@linux.intel.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
+        price@mit.edu
+In-Reply-To: <20140609021820.2038.qmail@ns.horizon.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 06, 2014 at 08:12:12PM +0800, Vivek Gautam wrote:
-> Some PHY controllers may need to calibrate certain
-> PHY settings after initialization of the controller and
-> sometimes even after initializing the PHY-consumer too.
-> Add support for the same in order to let consumers do so in need.
-> 
-> Signed-off-by: vivek Gautam <gautam.vivek@samsung.com>
-> ---
->  drivers/phy/phy-core.c  |   36 ++++++++++++++++++++++++++++++++++++
->  include/linux/phy/phy.h |    7 +++++++
->  2 files changed, 43 insertions(+)
-> 
-> diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
-> index 74d4346..92d31a3 100644
-> --- a/drivers/phy/phy-core.c
-> +++ b/drivers/phy/phy-core.c
-> @@ -376,6 +376,42 @@ int phy_power_off(struct phy *phy)
->  EXPORT_SYMBOL_GPL(phy_power_off);
->  
->  /**
-> + * phy_calibrate - calibrate a phy post initialization
-> + * @phy: Pointer to 'phy' from consumer
-> + *
-> + * For certain PHYs, it may be needed to calibrate few phy parameters
-> + * post initialization. The need to calibrate may arise after the
+Sigh, adventures in "unable to mount root filesystem" currently underway.
 
-For USB you may need to calibrate phy after each new connection. If
-so, why not to use already existing struct usb_phy's notify_connect.
+Tested on a different computer without patches (half size, since it's
+an older machine):
 
-        pratyush
+Writing 16 MiB:
+16777216 bytes (17 MB) copied, 0.289169 s, 58.0 MB/s
+16777216 bytes (17 MB) copied, 0.289378 s, 58.0 MB/s
 
+Writing while reading:
+16777216 bytes (17 MB) copied, 0.538839 s, 31.1 MB/s
+4194304 bytes (4.2 MB) copied, 0.544769 s, 7.7 MB/s
+16777216 bytes (17 MB) copied, 0.537425 s, 31.2 MB/s
+4194304 bytes (4.2 MB) copied, 0.544259 s, 7.7 MB/s
+
+16777216 bytes (17 MB) copied, 0.740495 s, 22.7 MB/s
+4194304 bytes (4.2 MB) copied, 0.879353 s, 4.8 MB/s
+4194304 bytes (4.2 MB) copied, 0.879629 s, 4.8 MB/s
+16777216 bytes (17 MB) copied, 0.7262 s, 23.1 MB/s
+4194304 bytes (4.2 MB) copied, 0.877035 s, 4.8 MB/s
+4194304 bytes (4.2 MB) copied, 0.880627 s, 4.8 MB/s
+
+16777216 bytes (17 MB) copied, 0.996933 s, 16.8 MB/s
+4194304 bytes (4.2 MB) copied, 1.24551 s, 3.4 MB/s
+4194304 bytes (4.2 MB) copied, 1.26138 s, 3.3 MB/s
+4194304 bytes (4.2 MB) copied, 1.2664 s, 3.3 MB/s
+16777216 bytes (17 MB) copied, 0.969144 s, 17.3 MB/s
+4194304 bytes (4.2 MB) copied, 1.25311 s, 3.3 MB/s
+4194304 bytes (4.2 MB) copied, 1.26076 s, 3.3 MB/s
+4194304 bytes (4.2 MB) copied, 1.25887 s, 3.3 MB/s
+
+Summarized:
+0 readers: 0.289169 0.289378
+1 reader:  0.538839 0.537425	(+86%)
+2 readers: 0.740495 0.726200	(+153%)
+3 readers: 0.996933 0.969144	(+240%)
+
+That seems... noticeable.  Causing iterrupt latency problems is defintiely
+a theoretical extrapolation, however.
+
+For comparison, on this system, dd from /dev/zero runs at 1 GB/s per
+thread for up to 4 threads with no interference.
+
+*Really* confusingly, dd from /dev/zero to tmpfs runs at 450 MB/s (per
+thread) for 2 to 4 threads, but 325 MB/s for 1 thread.  NFclue.
+(This is writing to separate files; writing the the same file is
+slower.)
+
+dd from tmpfs to tmpfs runs at about 380 MB/s, again independent
+of the number of threads up to the number of CPUs.
