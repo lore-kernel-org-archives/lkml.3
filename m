@@ -1,63 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933164AbaFIWkl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 18:40:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45503 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932415AbaFIWki (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:40:38 -0400
-Date: Tue, 10 Jun 2014 00:40:36 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Alexander Holler <holler@ahsoftware.de>
-cc: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: HID: hid-sensor-hub: fix sleeping function called from invalid
- context
-In-Reply-To: <53963364.4010104@ahsoftware.de>
-Message-ID: <alpine.LNX.2.00.1406100038150.2827@pobox.suse.cz>
-References: <53963364.4010104@ahsoftware.de>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S932881AbaFIWnB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 18:43:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56518 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754276AbaFIWm6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 18:42:58 -0400
+Date: Mon, 9 Jun 2014 15:46:45 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Eric Paris <eparis@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-audit@redhat.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 1/2] auditsc: audit_krule mask accesses need bounds
+ checking
+Message-ID: <20140609224645.GA8113@kroah.com>
+References: <1401332999-15167-1-git-send-email-eparis@redhat.com>
+ <20140609223057.GB18475@kroah.com>
+ <CALCETrUD75vSwJUjFuxGCrZ_7DJhCc1KW2v_ndF6EHJ31fUMBg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrUD75vSwJUjFuxGCrZ_7DJhCc1KW2v_ndF6EHJ31fUMBg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Jun 2014, Alexander Holler wrote:
-
-> Hello,
+On Mon, Jun 09, 2014 at 03:35:02PM -0700, Andy Lutomirski wrote:
+> On Mon, Jun 9, 2014 at 3:30 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > On Wed, May 28, 2014 at 11:09:58PM -0400, Eric Paris wrote:
+> >> From: Andy Lutomirski <luto@amacapital.net>
+> >>
+> >> Fixes an easy DoS and possible information disclosure.
+> >>
+> >> This does nothing about the broken state of x32 auditing.
+> >>
+> >> eparis: If the admin has enabled auditd and has specifically loaded audit
+> >> rules.  This bug has been around since before git.  Wow...
+> >>
+> >> Cc: stable@vger.kernel.org
+> >> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> >> Signed-off-by: Eric Paris <eparis@redhat.com>
+> >> ---
+> >>  kernel/auditsc.c | 27 ++++++++++++++++++---------
+> >>  1 file changed, 18 insertions(+), 9 deletions(-)
+> >
+> > Did this patch get dropped somewhere?  Isn't it a valid bugfix, or did I
+> > miss a later conversation about this?
 > 
-> while rebasing the dozens (currently around 60) of refused, ignored or
-> similiar bugfixes and patches I need to use a Linux kernel, I've noticed that
-> Jiri Kosinas patch here
+> Hmm.  It seems that it didn't make it into Linus' tree.  Crap.
 > 
-> https://lkml.org/lkml/2013/8/9/214
-> 
-> doesn't apply anymore.
-> 
-> Looking why, I've seen that a similiar patch from Srinivas Pandruvada named
-> like the topic ended up in the kernel.
+> IMO we need some kind of real tracking system for issues reported to
+> security@.
 
-Hi Alexander,
+That seems to be my mbox at times :)
 
-thanks for drawing this one from the boulevard of forgotten patches.
+But yes, having something "real" might be good if the load gets higher,
+right now it's so low that my "sweep pending security patches" task
+usually catches anything pending, which is rare.
 
-I am actually not aware of any patch by Srinivas that would conflict with 
-the one I've written -- could you please elaborate where you believe the 
-conflict is?
+thanks,
 
-> Looking at the differences, I wonder if not all spin_lock() calls in 
-> hid-sensor-hub.c should be changed into spin_lock_irqsave() like the 
-> patch from Jiri Kosina did.
-
-Could you please give me your Tested-by:? I'll then be happily queuing the 
-fix. Thanks.
-
-> (sorry for the duplicate message, I've forgotten to add the
-> wanna-be-reviewer-school named lkml to the recipients)
-
-You want to make it to LWN quotes of the week, don't you? :)
-
--- 
-Jiri Kosina
-SUSE Labs
+greg k-h
