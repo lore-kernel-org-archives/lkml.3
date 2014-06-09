@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934369AbaFIXUA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 19:20:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46258 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932475AbaFIXT6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 19:19:58 -0400
-Date: Tue, 10 Jun 2014 01:19:56 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-cc: Alexander Holler <holler@ahsoftware.de>, linux-kernel@vger.kernel.org,
-        Reyad Attiyat <reyad.attiyat@gmail.com>
-Subject: Re: HID: hid-sensor-hub: fix sleeping function called from invalid
- context
-In-Reply-To: <5396409D.5000501@linux.intel.com>
-Message-ID: <alpine.LNX.2.00.1406100119210.2827@pobox.suse.cz>
-References: <53963364.4010104@ahsoftware.de> <alpine.LNX.2.00.1406100038150.2827@pobox.suse.cz> <5396409D.5000501@linux.intel.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754427AbaFIXVU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 19:21:20 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46263 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754298AbaFIXVS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 19:21:18 -0400
+Message-ID: <1402356070.9238.69.camel@smoke>
+Subject: Re: [PATCH] net: ethernet: toshiba: ps3_gelic_net.c:  Cleaning up a
+ check on a memory allocation
+From: Geoff Levand <geoff@infradead.org>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, cbe-oss-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org,
+        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Date: Mon, 09 Jun 2014 16:21:10 -0700
+In-Reply-To: <1402136528-16857-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1402136528-16857-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Jun 2014, Srinivas Pandruvada wrote:
+Hi,
 
-> > > while rebasing the dozens (currently around 60) of refused, ignored 
-> > > or similiar bugfixes and patches I need to use a Linux kernel, I've 
-> > > noticed that Jiri Kosinas patch here
-> > > 
-> > > https://lkml.org/lkml/2013/8/9/214
-> > > 
-> > > doesn't apply anymore.
-> > > 
-> > > Looking why, I've seen that a similiar patch from Srinivas Pandruvada
-> > > named
-> > > like the topic ended up in the kernel.
-> > 
-> > Hi Alexander,
-> > 
-> > thanks for drawing this one from the boulevard of forgotten patches.
-> > 
-> > I am actually not aware of any patch by Srinivas that would conflict with
-> > the one I've written -- could you please elaborate where you believe the
-> > conflict is?
-> > 
-> > > Looking at the differences, I wonder if not all spin_lock() calls in
-> > > hid-sensor-hub.c should be changed into spin_lock_irqsave() like the
-> > > patch from Jiri Kosina did.
-> > 
+On Sat, 2014-06-07 at 12:22 +0200, Rickard Strandqvist wrote:
+> A check on a memory allocation is checked incorrectly.
 > 
-> There is a patch submitted by "reyad.attiyat@gmail.com"
-> [PATCH] HID: hid-sensor-hub: Fix lockdep warning for dynamic callback locks.
+> This was partly found using a static code analysis program called cppcheck.
 > 
-> Already doing this, what you suggested?
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>  drivers/net/ethernet/toshiba/ps3_gelic_net.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/net/ethernet/toshiba/ps3_gelic_net.c b/drivers/net/ethernet/toshiba/ps3_gelic_net.c
+> index d899d00..bb79928 100644
+> --- a/drivers/net/ethernet/toshiba/ps3_gelic_net.c
+> +++ b/drivers/net/ethernet/toshiba/ps3_gelic_net.c
+> @@ -1561,7 +1561,7 @@ static struct gelic_card *gelic_alloc_card_net(struct net_device **netdev)
+>  	 * alloc netdev
+>  	 */
+>  	*netdev = alloc_etherdev(sizeof(struct gelic_port));
+> -	if (!netdev) {
+> +	if (!*netdev) {
+>  		kfree(card->unalign);
+>  		return NULL;
+>  	}
 
-I don't see this in my mailbox at all .. so where was this submitted to, 
-and who merged it to which tree?
+Looks good, thanks for posting.
 
--- 
-Jiri Kosina
-SUSE Labs
+Dave, please queue for merge upstream.
+
+Acked-by: Geoff Levand <geoff@infradead.org>
+
