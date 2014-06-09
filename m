@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754767AbaFIMdU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 08:33:20 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:51185 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754217AbaFIMdQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 08:33:16 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH] PM / Documentation: Update copyright in
- suspend-and-cpuhotplug.txt
-To: rjw@rjwysocki.net
-Cc: rdunlap@infradead.org, viresh.kumar@linaro.org, linux-pm@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 09 Jun 2014 18:01:42 +0530
-Message-ID: <20140609123103.11086.12353.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
+	id S932386AbaFIMrI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 08:47:08 -0400
+Received: from mga03.intel.com ([143.182.124.21]:25856 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752662AbaFIMrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 08:47:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,1002,1392192000"; 
+   d="scan'208";a="443299558"
+Date: Mon, 9 Jun 2014 15:47:00 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Scot Doyle <lkml14@scotdoyle.com>
+Cc: Benson Leung <bleung@chromium.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Olof Johansson <olof@lixom.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] platform/chrome: Probe multiple i2c adapters of the
+ same name
+Message-ID: <20140609124700.GJ1657@lahna.fi.intel.com>
+References: <1401800524-28934-1-git-send-email-mika.westerberg@linux.intel.com>
+ <CANLzEksLB1=+TePxgPRBhsGKpC-4tWB8JOh-Ey80Hj43LkVn=g@mail.gmail.com>
+ <20140604083726.GN1730@lahna.fi.intel.com>
+ <CANLzEkuAxGrRHtb=vFAm9AGws7Qyg3A_oQpAGGFaYEqP2A2g8g@mail.gmail.com>
+ <alpine.DEB.2.02.1406062259070.31301@scotdoyle.com>
+ <alpine.DEB.2.02.1406062316230.32568@scotdoyle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14060912-8256-0000-0000-00000DA5C357
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1406062316230.32568@scotdoyle.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Extend the year to 2014 in the copyright.
+On Fri, Jun 06, 2014 at 11:25:14PM +0100, Scot Doyle wrote:
+> The chromeos_laptop module probes the first i2c adapter with a specific name
+> for expected hardware. However, the Acer C720 Chromebook has two i2c
+> adapters with the same name. This patch probes each i2c adapter with a
+> specific name in turn, until locating the expected hardware.
+> 
+> Signed-off-by: Scot Doyle <lkml14@scotdoyle.com>
+> CC: Benson Leung <bleung@chromium.org>
+> CC: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
+I don't have anything against this approach.
 
- Documentation/power/suspend-and-cpuhotplug.txt |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/Documentation/power/suspend-and-cpuhotplug.txt b/Documentation/power/suspend-and-cpuhotplug.txt
-index e13dafc..2850df3 100644
---- a/Documentation/power/suspend-and-cpuhotplug.txt
-+++ b/Documentation/power/suspend-and-cpuhotplug.txt
-@@ -1,6 +1,6 @@
- Interaction of Suspend code (S3) with the CPU hotplug infrastructure
- 
--     (C) 2011 Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-+     (C) 2011 - 2014 Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
- 
- 
- I. How does the regular CPU hotplug code differ from how the Suspend-to-RAM
-
+One comment though, if you happen to have two devices with the same
+address but in different buses this can go wrong. Not sure how likely
+that will happen.
