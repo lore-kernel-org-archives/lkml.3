@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932275AbaFIWLz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 18:11:55 -0400
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:37106 "EHLO
-	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751223AbaFIWLw convert rfc822-to-8bit (ORCPT
+	id S932402AbaFIWMc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 18:12:32 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:53614 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932299AbaFIWM3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:11:52 -0400
-From: Martin Steigerwald <Martin@lichtvoll.de>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+	Mon, 9 Jun 2014 18:12:29 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Martin Steigerwald <Martin@lichtvoll.de>
 Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
 Subject: Re: [REGRESSION] 3.15: Seems to turbo mode Intel Sandybridge Dual Core without need, overheating CPU
-Date: Tue, 10 Jun 2014 00:11:50 +0200
-Message-ID: <31874206.p2BkN8t4Hy@merkaba>
-User-Agent: KMail/4.14 pre (Linux/3.15.0-tp520; KDE/4.13.1; x86_64; git-6ae2ca8; 2014-06-08)
+Date: Tue, 10 Jun 2014 00:29:52 +0200
+Message-ID: <2491989.M5MhllcFpf@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
 In-Reply-To: <1773550.hda5I1At4Q@vostro.rjw.lan>
 References: <1996399.buoKlNI5nG@merkaba> <4677478.c1YrKzctMH@merkaba> <1773550.hda5I1At4Q@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 10. Juni 2014, 00:20:20 schrieb Rafael J. Wysocki:
+On Tuesday, June 10, 2014 12:20:20 AM Rafael J. Wysocki wrote:
 > On Monday, June 09, 2014 11:41:40 PM Martin Steigerwald wrote:
 > > Am Montag, 9. Juni 2014, 23:33:43 schrieb Martin Steigerwald:
 > > > Hi!
@@ -38,13 +38,13 @@ Am Dienstag, 10. Juni 2014, 00:20:20 schrieb Rafael J. Wysocki:
 > > > merkaba:~> sensors                                                         
 > > > acpitz-virtual-0
 > > > Adapter: Virtual device
-> > > temp1:        +71.0캜  (crit = +98.0캜)
+> > > temp1:        +71.0째C  (crit = +98.0째C)
 > > > 
 > > > coretemp-isa-0000
 > > > Adapter: ISA adapter
-> > > Physical id 0:  +71.0캜  (high = +86.0캜, crit = +100.0캜)
-> > > Core 0:         +70.0캜  (high = +86.0캜, crit = +100.0캜)
-> > > Core 1:         +71.0캜  (high = +86.0캜, crit = +100.0캜)
+> > > Physical id 0:  +71.0째C  (high = +86.0째C, crit = +100.0째C)
+> > > Core 0:         +70.0째C  (high = +86.0째C, crit = +100.0째C)
+> > > Core 1:         +71.0째C  (high = +86.0째C, crit = +100.0째C)
 > > > 
 > > > thinkpad-isa-0000
 > > > Adapter: ISA adapter
@@ -58,7 +58,7 @@ Am Dienstag, 10. Juni 2014, 00:20:20 schrieb Rafael J. Wysocki:
 > > > 
 > > > I can test whether this also happens with ACPI cpufreq driver.
 > > > 
-> > > I think I didn큧 see this with 3.14.
+> > > I think I didn쨈t see this with 3.14.
 > > 
 > > Its not just me:
 > > 
@@ -67,16 +67,7 @@ Am Dienstag, 10. Juni 2014, 00:20:20 schrieb Rafael J. Wysocki:
 > 
 > Did you test the 3.15-rc kernels?  If so, do they have this problem too?
 
-I think I saw this with 3.15-rc7 as well. Not so sure about 3.15-rc5.
+Or is that just you have tried intel_pstate for the first time?
 
-I now switched to acpi + ondemand governor which seems to work better, as I
-posted. I still hit cpu throttling, but well its hot inside here. And maybe the fan
-also needs some cleaning.
+Rafael
 
-Anyway, need to get some sleep now. I can test with rc7, rc5 and probably
-some older rc as I still have those available. Will take some time tough.
-
-Thanks,
--- 
-Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
