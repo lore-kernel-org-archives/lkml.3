@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933464AbaFIO7y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 10:59:54 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:45312 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752994AbaFIO7v (ORCPT
+	id S933576AbaFIPAX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 11:00:23 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54850 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754738AbaFIPAV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 10:59:51 -0400
-Date: Mon, 9 Jun 2014 07:59:44 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Jens Axboe <axboe@fb.com>
-Cc: Ming Lei <tom.leiming@gmail.com>, Matias Bj??rling <m@bjorling.me>,
-        willy@linux.intel.com, keith.busch@intel.com, sbradshaw@micron.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-nvme@lists.infradead.org
-Subject: Re: [PATCH v6] NVMe: conversion to blk-mq
-Message-ID: <20140609145944.GA30626@infradead.org>
-References: <1402057225-7312-1-git-send-email-m@bjorling.me>
- <1402057225-7312-2-git-send-email-m@bjorling.me>
- <CACVXFVOieM2cT4FFJhD9MecfCLBtE3AwjCpOeGGRUcmWnN=B=A@mail.gmail.com>
- <5395BFF2.2080402@fb.com>
+	Mon, 9 Jun 2014 11:00:21 -0400
+Date: Mon, 9 Jun 2014 16:00:13 +0100
+From: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+To: sameo@linux.intel.com, lee.jones@linaro.org,
+        ckeepax@opensource.wolfsonmicro.com, broonie@kernel.org,
+        lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de
+Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org
+Subject: [PATCH 0/4] arizona: Improvements to codec DVFS control
+Message-ID: <20140609150013.GA5229@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5395BFF2.2080402@fb.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 09, 2014 at 08:08:50AM -0600, Jens Axboe wrote:
-> >[  487.704074] nvme 0000:00:07.0: Cancelling I/O 202 QID 1
-> >[  487.717881] nvme 0000:00:07.0: Aborting I/O 202 QID 1
-> >[  487.736093] end_request: I/O error, dev nvme0n1, sector 91532352
-> >[  487.747378] nvme 0000:00:07.0: completed id 0 twice on queue 0
-> >
-> >
-> >when running fio randread(libaio, iodepth:64) with more than 3 jobs.
-> >
-> >And looks no such failure when jobs is 1 or 2.
-> 
-> It's a known issue, make sure you have this patch:
-> 
-> http://git.kernel.dk/?p=linux-block.git;a=commit;h=f6be4fb4bcb396fc3b1c134b7863351972de081f
+This set of changes cleans up the way the drivers handle
+the control of internal subsystem clocks for codecs with
+DVFS. This previously relied on the clock control happening
+as a side-effect of changing the regulator voltage, rather
+than explicitly, which assumed that you were uusing the
+built-int regulator. Also DVFS control was being done from
+the ADSP driver despite that driver supposedly being codec-
+agnostic.
+There are other cases on some codecs where DVFS control is
+needed so this sequence of patches cleans up the way DVFS
+is implemented and adds the extra case of DVFS boost for
+higher sample rates on WM8997 and WM5102
 
-So without this patch we can get duplicate completions?  That could
-explain the issues that Robert sees with scsi-mq and hpsa..
+Richard Fitzgerald (4):
+  mfd: arizona: Export function to control subsystem DVFS
+  ASoC: wm_adsp: Move DVFS control into codec driver
+  ASoC: arizona: Add DVFS handling for sample rate control
+  regulator: arizona-ldo1: Do not control clocking from regulator
+
+ drivers/mfd/arizona-core.c       |   84 ++++++++++++++++++++++++++++++++++++++
+ drivers/regulator/arizona-ldo1.c |    5 --
+ include/linux/mfd/arizona/core.h |   12 +++++
+ sound/soc/codecs/arizona.c       |   22 +++++++++-
+ sound/soc/codecs/wm5102.c        |   47 ++++++++++++++++++++-
+ sound/soc/codecs/wm5110.c        |    2 +-
+ sound/soc/codecs/wm_adsp.c       |   76 +---------------------------------
+ sound/soc/codecs/wm_adsp.h       |   11 +++--
+ 8 files changed, 170 insertions(+), 89 deletions(-)
+
+-- 
+1.7.2.5
 
