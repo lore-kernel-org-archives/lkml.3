@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934438AbaFIXGS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 19:06:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56884 "EHLO
+	id S933736AbaFIWpi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 18:45:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56763 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933681AbaFIWpk (ORCPT
+	with ESMTP id S933287AbaFIWp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:45:40 -0400
+	Mon, 9 Jun 2014 18:45:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kirill Tkhai <tkhai@yandex.ru>, Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.14 37/78] sched/dl: Fix race in dl_task_timer()
-Date: Mon,  9 Jun 2014 15:48:17 -0700
-Message-Id: <20140609224814.540854196@linuxfoundation.org>
+        Roger Quadros <rogerq@ti.com>, Tony Lindgren <tony@atomide.com>
+Subject: [PATCH 3.14 19/78] ARM: OMAP2+: nand: Fix NAND on OMAP2 and OMAP3 boards
+Date: Mon,  9 Jun 2014 15:47:59 -0700
+Message-Id: <20140609224813.976309192@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140609224813.282275135@linuxfoundation.org>
 References: <20140609224813.282275135@linuxfoundation.org>
@@ -30,63 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kirill Tkhai <tkhai@yandex.ru>
+From: Roger Quadros <rogerq@ti.com>
 
-commit 0f397f2c90ce68821ee864c2c53baafe78de765d upstream.
+commit 5005e0b76781c37d0a16dd6dd17d015098e8ce92 upstream.
 
-Throttled task is still on rq, and it may be moved to other cpu
-if user is playing with sched_setaffinity(). Therefore, unlocked
-task_rq() access makes the race.
+Commit c66d039197e4 broke NAND for non-DT boot on all OMAP2 and OMAP3
+boards using board_nand_init(). Following error is seen at boot
 
-Juri Lelli reports he got this race when dl_bandwidth_enabled()
-was not set.
+[    0.154998]  (null): Unsupported NAND ECC scheme selected
 
-Other thing, pointed by Peter Zijlstra:
+For OMAP2 and OMAP3 platforms, the ecc_opt parameter in platform data
+must be set to OMAP_ECC_HAM1_CODE_HW to work properly.
 
-   "Now I suppose the problem can still actually happen when
-    you change the root domain and trigger a effective affinity
-    change that way".
+Tested on omap3-beagle c4.
 
-To fix that we do the same as made in __task_rq_lock(). We do not
-use __task_rq_lock() itself, because it has a useful lockdep check,
-which is not correct in case of dl_task_timer(). We do not need
-pi_lock locked here. This case is an exception (PeterZ):
-
-   "The only reason we don't strictly need ->pi_lock now is because
-    we're guaranteed to have p->state == TASK_RUNNING here and are
-    thus free of ttwu races".
-
-Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/3056991400578422@web14g.yandex.ru
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Fixes: c66d039197e4 (mtd: nand: omap: combine different flavours of 1-bit hamming ecc schemes)
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sched/deadline.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ arch/arm/mach-omap2/board-flash.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -490,9 +490,17 @@ static enum hrtimer_restart dl_task_time
- 						     struct sched_dl_entity,
- 						     dl_timer);
- 	struct task_struct *p = dl_task_of(dl_se);
--	struct rq *rq = task_rq(p);
-+	struct rq *rq;
-+again:
-+	rq = task_rq(p);
- 	raw_spin_lock(&rq->lock);
+--- a/arch/arm/mach-omap2/board-flash.c
++++ b/arch/arm/mach-omap2/board-flash.c
+@@ -142,7 +142,7 @@ __init board_nand_init(struct mtd_partit
+ 	board_nand_data.nr_parts	= nr_parts;
+ 	board_nand_data.devsize		= nand_type;
  
-+	if (rq != task_rq(p)) {
-+		/* Task was moved, retrying. */
-+		raw_spin_unlock(&rq->lock);
-+		goto again;
-+	}
-+
- 	/*
- 	 * We need to take care of a possible races here. In fact, the
- 	 * task might have changed its scheduling policy to something
+-	board_nand_data.ecc_opt = OMAP_ECC_BCH8_CODE_HW;
++	board_nand_data.ecc_opt = OMAP_ECC_HAM1_CODE_HW;
+ 	gpmc_nand_init(&board_nand_data, gpmc_t);
+ }
+ #endif /* CONFIG_MTD_NAND_OMAP2 || CONFIG_MTD_NAND_OMAP2_MODULE */
 
 
