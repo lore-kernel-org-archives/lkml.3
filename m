@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964836AbaFIWqt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 18:46:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57187 "EHLO
+	id S964816AbaFIWqr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 18:46:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57111 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932293AbaFIWqL (ORCPT
+	with ESMTP id S934271AbaFIWqE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:46:11 -0400
+	Mon, 9 Jun 2014 18:46:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
+To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        kbuild test robot <fengguang.wu@intel.com>,
-        Ludovic Drolez <ldrolez@debian.org>, Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.10 32/40] USB: io_ti: fix firmware download on big-endian machines (part 2)
-Date: Mon,  9 Jun 2014 15:49:03 -0700
-Message-Id: <20140609224840.232144542@linuxfoundation.org>
+        iommu@lists.linux-foundation.org,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: [PATCH 3.14 78/78] [stable PATCH] iommu/vt-d: Fix missing IOTLB flush in intel_iommu_unmap()
+Date: Mon,  9 Jun 2014 15:48:58 -0700
+Message-Id: <20140609224815.816758729@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140609224839.127615063@linuxfoundation.org>
-References: <20140609224839.127615063@linuxfoundation.org>
+In-Reply-To: <20140609224813.282275135@linuxfoundation.org>
+References: <20140609224813.282275135@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,61 +25,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: David Woodhouse <dwmw2@infradead.org>
 
-commit c03890ff5e24a4bf59059f2d179f427559b7330a upstream.
+Based on commit ea8ea460c9ace60bbb5ac6e5521d637d5c15293d upstream
 
-A recent patch that purported to fix firmware download on big-endian
-machines failed to add the corresponding sparse annotation to the
-i2c-header. This was reported by the kbuild test robot.
+This missing IOTLB flush was added as a minor, inconsequential bug-fix
+in commit ea8ea460c ("iommu/vt-d: Clean up and fix page table clear/free
+behaviour") in 3.15. It wasn't originally intended for -stable but a
+couple of users have reported issues which turn out to be fixed by
+adding the missing flush.
 
-Adding the appropriate annotation revealed another endianess bug related
-to the i2c-header Size-field in a code path that is exercised when the
-firmware is actually being downloaded (and not just verified and left
-untouched unless older than the firmware at hand).
-
-This patch adds the required sparse annotation to the i2c-header and
-makes sure that the Size-field is sent in little-endian byte order
-during firmware download also on big-endian machines.
-
-Note that this patch is only compile-tested, but that there is no
-functional change for little-endian systems.
-
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-Cc: Ludovic Drolez <ldrolez@debian.org>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 ---
- drivers/usb/serial/io_ti.c      |    2 +-
- drivers/usb/serial/io_usbvend.h |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+For 3.14 and earlier. As noted, this fix is in 3.15 already.
 
---- a/drivers/usb/serial/io_ti.c
-+++ b/drivers/usb/serial/io_ti.c
-@@ -835,7 +835,7 @@ static int build_i2c_fw_hdr(__u8 *header
- 	firmware_rec =  (struct ti_i2c_firmware_rec*)i2c_header->Data;
+ drivers/iommu/intel-iommu.c |   18 +++++++++++++++++-
+ 1 file changed, 17 insertions(+), 1 deletion(-)
+
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -4075,7 +4075,7 @@ static size_t intel_iommu_unmap(struct i
+ 			     unsigned long iova, size_t size)
+ {
+ 	struct dmar_domain *dmar_domain = domain->priv;
+-	int order;
++	int order, iommu_id;
  
- 	i2c_header->Type	= I2C_DESC_TYPE_FIRMWARE_BLANK;
--	i2c_header->Size	= (__u16)buffer_size;
-+	i2c_header->Size	= cpu_to_le16(buffer_size);
- 	i2c_header->CheckSum	= cs;
- 	firmware_rec->Ver_Major	= OperationalMajorVersion;
- 	firmware_rec->Ver_Minor	= OperationalMinorVersion;
---- a/drivers/usb/serial/io_usbvend.h
-+++ b/drivers/usb/serial/io_usbvend.h
-@@ -594,7 +594,7 @@ struct edge_boot_descriptor {
+ 	order = dma_pte_clear_range(dmar_domain, iova >> VTD_PAGE_SHIFT,
+ 			    (iova + size - 1) >> VTD_PAGE_SHIFT);
+@@ -4083,6 +4083,22 @@ static size_t intel_iommu_unmap(struct i
+ 	if (dmar_domain->max_addr == iova + size)
+ 		dmar_domain->max_addr = iova;
  
- struct ti_i2c_desc {
- 	__u8	Type;			// Type of descriptor
--	__u16	Size;			// Size of data only not including header
-+	__le16	Size;			// Size of data only not including header
- 	__u8	CheckSum;		// Checksum (8 bit sum of data only)
- 	__u8	Data[0];		// Data starts here
- } __attribute__((packed));
++	for_each_set_bit(iommu_id, dmar_domain->iommu_bmp, g_num_of_iommus) {
++		struct intel_iommu *iommu = g_iommus[iommu_id];
++		int num, ndomains;
++
++		/*
++		 * find bit position of dmar_domain
++		 */
++		ndomains = cap_ndoms(iommu->cap);
++		for_each_set_bit(num, iommu->domain_ids, ndomains) {
++			if (iommu->domains[num] == dmar_domain)
++				iommu_flush_iotlb_psi(iommu, num,
++						      iova >> VTD_PAGE_SHIFT,
++						      1 << order, 0);
++		}
++	}
++
+ 	return PAGE_SIZE << order;
+ }
+ 
 
 
