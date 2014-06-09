@@ -1,82 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753926AbaFISB4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 14:01:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61608 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753256AbaFISBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 14:01:53 -0400
-Message-ID: <1402336882.14174.107.camel@ul30vt.home>
-Subject: Re: [PATCH v4 00/16] PCI/iommu: Fix DMA alias problems
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>
-Cc: iommu@lists.linux-foundation.org, bhelgaas@google.com,
-        linux-kernel@vger.kernel.org, linux-pci <linux-pci@vger.kernel.org>
-Date: Mon, 09 Jun 2014 12:01:22 -0600
-In-Reply-To: <20140522230230.2856.40017.stgit@bling.home>
-References: <20140522230230.2856.40017.stgit@bling.home>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753942AbaFISFM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 14:05:12 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:36037 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752520AbaFISFJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 14:05:09 -0400
+From: Florian Fainelli <f.fainelli@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, jason@lakedaemon.net,
+        tglx@linutronix.de, Florian Fainelli <f.fainelli@gmail.com>
+Subject: [PATCH] irqchip: brcmstb-l2: Level-2 interrupts are edge sensitive
+Date: Mon,  9 Jun 2014 11:05:02 -0700
+Message-Id: <1402337102-19428-1-git-send-email-f.fainelli@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-05-22 at 17:07 -0600, Alex Williamson wrote:
-> Alex Williamson (16):
->       PCI: Add DMA alias iterator
->       PCI: define pci_dev_flags as bit shifts
->       PCI: quirk pci_for_each_dma_alias()
->       PCI: quirk dma_alias_devfn for Ricoh devices
->       PCI: quirk dma_alias_devfn for Marvell devices
->       PCI: Quirk pci_for_each_dma_alias() for bridges
->       PCI: Add quirks for ASMedia and Tundra bridges
+The driver was configuring the interrupt handler for the Level-2
+interrupts to be "level" triggered while they are in fact "edge"
+triggered. Fix this by using the correct handler.
 
+Reported-by: Brian Norris <computersforpeace@gmail.com>
+Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
+---
+ drivers/irqchip/irq-brcmstb-l2.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Hi Joerg & David,
-
-Bjorn has accepted the above patches for v3.16 and they currently live
-in his pci/iommu branch.  This series has been shown by numerous users
-to make devices with buggy DMA issues work in the presence of an IOMMU
-and it would be really great if we could get an opinion on both the
-common IOMMU changes as well as the changes for AMD-Vi and Intel VT-d.
-Varun has already ack'd the changes for fsl.  Please let us know how
-you'd like to proceed.  Can we get acks and allow Bjorn to shepherd the
-whole series in?  Would you prefer to pull the changes via your
-respective trees and let Bjorn follow-up with the code removal?  Do you
-have any outstanding issues with the patches to your areas?  Thanks,
-
-Alex
-
->       iommu: Create central IOMMU group lookup/creation interface
->       iommu/amd: Update to use PCI DMA aliases
->       iommu/amd: Use iommu_group_get_for_dev()
->       iommu/intel: Use iommu_group_get_for_dev()
->       iommu/intel: Update to use PCI DMA aliases
->       iommu/fsl: Use iommu_group_get_for_dev() for IOMMU groups
->       iommu: Remove pci.h
->       PCI: Remove pci_find_upstream_pcie_bridge()
->       PCI: Remove pci_get_dma_source()
-> 
-> 
->  drivers/iommu/amd_iommu.c           |  214 +++++++-----------------
->  drivers/iommu/amd_iommu_types.h     |    1 
->  drivers/iommu/fsl_pamu_domain.c     |   66 --------
->  drivers/iommu/intel-iommu.c         |  307 +++++++++++++----------------------
->  drivers/iommu/intel_irq_remapping.c |   55 ++++--
->  drivers/iommu/iommu.c               |  181 +++++++++++++++++++++
->  drivers/iommu/pci.h                 |   29 ---
->  drivers/pci/quirks.c                |  116 ++++++++-----
->  drivers/pci/search.c                |  104 +++++++++---
->  include/linux/iommu.h               |    1 
->  include/linux/pci.h                 |   31 +---
->  11 files changed, 557 insertions(+), 548 deletions(-)
->  delete mode 100644 drivers/iommu/pci.h
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
+diff --git a/drivers/irqchip/irq-brcmstb-l2.c b/drivers/irqchip/irq-brcmstb-l2.c
+index 8ee2a36d5840..c15c840987d2 100644
+--- a/drivers/irqchip/irq-brcmstb-l2.c
++++ b/drivers/irqchip/irq-brcmstb-l2.c
+@@ -150,7 +150,7 @@ int __init brcmstb_l2_intc_of_init(struct device_node *np,
+ 
+ 	/* Allocate a single Generic IRQ chip for this node */
+ 	ret = irq_alloc_domain_generic_chips(data->domain, 32, 1,
+-				np->full_name, handle_level_irq, clr, 0, 0);
++				np->full_name, handle_edge_irq, clr, 0, 0);
+ 	if (ret) {
+ 		pr_err("failed to allocate generic irq chip\n");
+ 		goto out_free_domain;
+-- 
+1.9.1
 
