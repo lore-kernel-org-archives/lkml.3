@@ -1,270 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933354AbaFIJ0q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 05:26:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32904 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932816AbaFIJ0f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 05:26:35 -0400
-From: Vlastimil Babka <vbabka@suse.cz>
-To: David Rientjes <rientjes@google.com>, linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>, Vlastimil Babka <vbabka@suse.cz>,
-        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: [PATCH 03/10] mm, compaction: periodically drop lock and restore IRQs in scanners
-Date: Mon,  9 Jun 2014 11:26:15 +0200
-Message-Id: <1402305982-6928-3-git-send-email-vbabka@suse.cz>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1402305982-6928-1-git-send-email-vbabka@suse.cz>
-References: <1402305982-6928-1-git-send-email-vbabka@suse.cz>
+	id S1755524AbaFIJgx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 05:36:53 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59137 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933253AbaFIJ0o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 05:26:44 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 142/146] media: V4L2: fix VIDIOC_CREATE_BUFS in 64- / 32-bit compatibility mode
+Date: Mon,  9 Jun 2014 10:51:17 +0200
+Message-Id: <953d7307f00ff6baed3ebf3bd40ca2bb4793b922.1402303821.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
+References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
+In-Reply-To: <cover.1402303820.git.jslaby@suse.cz>
+References: <cover.1402303820.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Compaction scanners regularly check for lock contention and need_resched()
-through the compact_checklock_irqsave() function. However, if there is no
-contention, the lock can be held and IRQ disabled for potentially long time.
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 
-This has been addressed by commit b2eef8c0d0 ("mm: compaction: minimise the
-time IRQs are disabled while isolating pages for migration") for the migration
-scanner. However, the refactoring done by commit 748446bb6b ("mm: compaction:
-acquire the zone->lru_lock as late as possible") has changed the conditions so
-that the lock is dropped only when there's contention on the lock or
-need_resched() is true. Also, need_resched() is checked only when the lock is
-already held. The comment "give a chance to irqs before checking need_resched"
-is therefore misleading, as IRQs remain disabled when the check is done.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-This patch restores the behavior intended by commit b2eef8c0d0 and also tries
-to better balance and make more deterministic the time spent by checking for
-contention vs the time the scanners might run between the checks. It also
-avoids situations where checking has not been done often enough before. The
-result should be avoiding both too frequent and too infrequent contention
-checking, and especially the potentially long-running scans with IRQs disabled
-and no checking of need_resched() or for fatal signal pending, which can happen
-when many consecutive pages or pageblocks fail the preliminary tests and do not
-reach the later call site to compact_checklock_irqsave(), as explained below.
+===============
 
-Before the patch:
+commit 97d9d23dda6f37d90aefeec4ed619d52df525382 upstream.
 
-In the migration scanner, compact_checklock_irqsave() was called each loop, if
-reached. If not reached, some lower-frequency checking could still be done if
-the lock was already held, but this would not result in aborting contended
-async compaction until reaching compact_checklock_irqsave() or end of
-pageblock. In the free scanner, it was similar but completely without the
-periodical checking, so lock can be potentially held until reaching the end of
-pageblock.
+If a struct contains 64-bit fields, it is aligned on 64-bit boundaries
+within containing structs in 64-bit compilations. This is the case with
+struct v4l2_window, which contains pointers and is embedded into struct
+v4l2_format, and that one is embedded into struct v4l2_create_buffers.
+Unlike some other structs, used as a part of the kernel ABI as ioctl()
+arguments, that are packed, these structs aren't packed. This isn't a
+problem per se, but the ioctl-compat code for VIDIOC_CREATE_BUFS contains
+a bug, that triggers in such 64-bit builds. That code wrongly assumes,
+that in struct v4l2_create_buffers, struct v4l2_format immediately follows
+the __u32 memory field, which in fact isn't the case. This bug wasn't
+visible until now, because until recently hardly any applications used
+this ioctl() and mostly embedded 32-bit only drivers implemented it. This
+is changing now with addition of this ioctl() to some USB drivers, e.g.
+UVC. This patch fixes the bug by copying parts of struct
+v4l2_create_buffers separately.
 
-After the patch, in both scanners:
-
-The periodical check is done as the first thing in the loop on each
-SWAP_CLUSTER_MAX aligned pfn, using the new compact_unlock_should_abort()
-function, which always unlocks the lock (if locked) and aborts async compaction
-if scheduling is needed or someone else holds the lock. It also aborts any type
-of compaction when a fatal signal is pending.
-
-The compact_checklock_irqsave() function is replaced with a slightly different
-compact_trylock_irqsave(). The biggest difference is that the function is not
-called at all if the lock is already held. The periodical contention checking
-is left solely to compact_unlock_should_abort(). If the lock is not held, the
-function however does avoid contended run for async compaction by aborting when
-trylock fails. Sync compaction does not use trylock.
-
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Michal Nazarewicz <mina86@mina86.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: David Rientjes <rientjes@google.com>
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
-V2: do not consider need/cond_resched() in compact_trylock_irqsave(); spelling
-    remove inline: compaction.o size reduced
- mm/compaction.c | 121 ++++++++++++++++++++++++++++++++++++--------------------
- 1 file changed, 79 insertions(+), 42 deletions(-)
+ drivers/media/v4l2-core/v4l2-compat-ioctl32.c | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index d37f4a8..e1a4283 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -185,54 +185,77 @@ static void update_pageblock_skip(struct compact_control *cc,
- }
- #endif /* CONFIG_COMPACTION */
+diff --git a/drivers/media/v4l2-core/v4l2-compat-ioctl32.c b/drivers/media/v4l2-core/v4l2-compat-ioctl32.c
+index b63a5e584aa0..fca336b65351 100644
+--- a/drivers/media/v4l2-core/v4l2-compat-ioctl32.c
++++ b/drivers/media/v4l2-core/v4l2-compat-ioctl32.c
+@@ -178,6 +178,9 @@ struct v4l2_create_buffers32 {
  
--enum compact_contended should_release_lock(spinlock_t *lock)
-+/*
-+ * Compaction requires the taking of some coarse locks that are potentially
-+ * very heavily contended. For async compaction, back out if the lock cannot
-+ * be taken immediately. For sync compaction, spin on the lock if needed.
-+ *
-+ * Returns true if the lock is held
-+ * Returns false if the lock is not held and compaction should abort
-+ */
-+static bool compact_trylock_irqsave(spinlock_t *lock,
-+			unsigned long *flags, struct compact_control *cc)
+ static int __get_v4l2_format32(struct v4l2_format *kp, struct v4l2_format32 __user *up)
  {
--	if (need_resched())
--		return COMPACT_CONTENDED_SCHED;
--	else if (spin_is_contended(lock))
--		return COMPACT_CONTENDED_LOCK;
--	else
--		return COMPACT_CONTENDED_NONE;
-+	if (cc->mode == MIGRATE_ASYNC) {
-+		if (!spin_trylock_irqsave(lock, *flags)) {
-+			cc->contended = COMPACT_CONTENDED_LOCK;
-+			return false;
-+		}
-+	} else {
-+		spin_lock_irqsave(lock, *flags);
-+	}
++	if (get_user(kp->type, &up->type))
++		return -EFAULT;
 +
-+	return true;
- }
+ 	switch (kp->type) {
+ 	case V4L2_BUF_TYPE_VIDEO_CAPTURE:
+ 	case V4L2_BUF_TYPE_VIDEO_OUTPUT:
+@@ -204,17 +207,16 @@ static int __get_v4l2_format32(struct v4l2_format *kp, struct v4l2_format32 __us
  
- /*
-  * Compaction requires the taking of some coarse locks that are potentially
-- * very heavily contended. Check if the process needs to be scheduled or
-- * if the lock is contended. For async compaction, back out in the event
-- * if contention is severe. For sync compaction, schedule.
-+ * very heavily contended. The lock should be periodically unlocked to avoid
-+ * having disabled IRQs for a long time, even when there is nobody waiting on
-+ * the lock. It might also be that allowing the IRQs will result in
-+ * need_resched() becoming true. If scheduling is needed, or somebody else
-+ * has taken the lock, async compaction aborts. Sync compaction schedules.
-+ * Either compaction type will also abort if a fatal signal is pending.
-+ * In either case if the lock was locked, it is dropped and not regained.
-  *
-- * Returns true if the lock is held.
-- * Returns false if the lock is released and compaction should abort
-+ * Returns true if compaction should abort due to fatal signal pending, or
-+ *		async compaction due to lock contention or need to schedule
-+ * Returns false when compaction can continue (sync compaction might have
-+ *		scheduled)
-  */
--static bool compact_checklock_irqsave(spinlock_t *lock, unsigned long *flags,
--				      bool locked, struct compact_control *cc)
-+static bool compact_unlock_should_abort(spinlock_t *lock,
-+		unsigned long flags, bool *locked, struct compact_control *cc)
+ static int get_v4l2_format32(struct v4l2_format *kp, struct v4l2_format32 __user *up)
  {
--	enum compact_contended contended = should_release_lock(lock);
-+	if (*locked) {
-+		spin_unlock_irqrestore(lock, flags);
-+		*locked = false;
-+	}
- 
--	if (contended) {
--		if (locked) {
--			spin_unlock_irqrestore(lock, *flags);
--			locked = false;
--		}
-+	if (fatal_signal_pending(current)) {
-+		cc->contended = COMPACT_CONTENDED_SCHED;
-+		return true;
-+	}
- 
--		/* async aborts if taking too long or contended */
--		if (cc->mode == MIGRATE_ASYNC) {
--			cc->contended = contended;
--			return false;
-+	if (cc->mode == MIGRATE_ASYNC) {
-+		if (need_resched()) {
-+			cc->contended = COMPACT_CONTENDED_SCHED;
-+			return true;
- 		}
--
-+		if (spin_is_locked(lock)) {
-+			cc->contended = COMPACT_CONTENDED_LOCK;
-+			return true;
-+		}
-+	} else {
- 		cond_resched();
- 	}
- 
--	if (!locked)
--		spin_lock_irqsave(lock, *flags);
--	return true;
-+	return false;
+-	if (!access_ok(VERIFY_READ, up, sizeof(struct v4l2_format32)) ||
+-			get_user(kp->type, &up->type))
+-			return -EFAULT;
++	if (!access_ok(VERIFY_READ, up, sizeof(struct v4l2_format32)))
++		return -EFAULT;
+ 	return __get_v4l2_format32(kp, up);
  }
  
- /*
-  * Aside from avoiding lock contention, compaction also periodically checks
-  * need_resched() and either schedules in sync compaction or aborts async
-- * compaction. This is similar to what compact_checklock_irqsave() does, but
-+ * compaction. This is similar to what compact_unlock_should_abort() does, but
-  * is used where no lock is concerned.
-  *
-  * Returns false when no scheduling was needed, or sync compaction scheduled.
-@@ -291,6 +314,16 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
- 		int isolated, i;
- 		struct page *page = cursor;
+ static int get_v4l2_create32(struct v4l2_create_buffers *kp, struct v4l2_create_buffers32 __user *up)
+ {
+ 	if (!access_ok(VERIFY_READ, up, sizeof(struct v4l2_create_buffers32)) ||
+-	    copy_from_user(kp, up, offsetof(struct v4l2_create_buffers32, format.fmt)))
+-			return -EFAULT;
++	    copy_from_user(kp, up, offsetof(struct v4l2_create_buffers32, format)))
++		return -EFAULT;
+ 	return __get_v4l2_format32(&kp->format, &up->format);
+ }
  
-+		/*
-+		 * Periodically drop the lock (if held) regardless of its
-+		 * contention, to give chance to IRQs. Abort async compaction
-+		 * if contended.
-+		 */
-+		if (!(blockpfn % SWAP_CLUSTER_MAX)
-+		    && compact_unlock_should_abort(&cc->zone->lock, flags,
-+								&locked, cc))
-+			break;
-+
- 		nr_scanned++;
- 		if (!pfn_valid_within(blockpfn))
- 			goto isolate_fail;
-@@ -308,8 +341,9 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
- 		 * spin on the lock and we acquire the lock as late as
- 		 * possible.
- 		 */
--		locked = compact_checklock_irqsave(&cc->zone->lock, &flags,
--								locked, cc);
-+		if (!locked)
-+			locked = compact_trylock_irqsave(&cc->zone->lock,
-+								&flags, cc);
- 		if (!locked)
- 			break;
- 
-@@ -514,13 +548,15 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
- 
- 	/* Time to isolate some pages for migration */
- 	for (; low_pfn < end_pfn; low_pfn++) {
--		/* give a chance to irqs before checking need_resched() */
--		if (locked && !(low_pfn % SWAP_CLUSTER_MAX)) {
--			if (should_release_lock(&zone->lru_lock)) {
--				spin_unlock_irqrestore(&zone->lru_lock, flags);
--				locked = false;
--			}
--		}
-+		/*
-+		 * Periodically drop the lock (if held) regardless of its
-+		 * contention, to give chance to IRQs. Abort async compaction
-+		 * if contended.
-+		 */
-+		if (!(low_pfn % SWAP_CLUSTER_MAX)
-+		    && compact_unlock_should_abort(&zone->lru_lock, flags,
-+								&locked, cc))
-+			break;
- 
- 		/*
- 		 * migrate_pfn does not necessarily start aligned to a
-@@ -622,10 +658,11 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
- 		    page_count(page) > page_mapcount(page))
- 			continue;
- 
--		/* Check if it is ok to still hold the lock */
--		locked = compact_checklock_irqsave(&zone->lru_lock, &flags,
--								locked, cc);
--		if (!locked || fatal_signal_pending(current))
-+		/* If the lock is not held, try to take it */
-+		if (!locked)
-+			locked = compact_trylock_irqsave(&zone->lru_lock,
-+								&flags, cc);
-+		if (!locked)
- 			break;
- 
- 		/* Recheck PageLRU and PageTransHuge under lock */
 -- 
-1.8.4.5
+1.9.3
 
