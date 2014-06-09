@@ -1,265 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932573AbaFIU3r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 16:29:47 -0400
-Received: from www.linutronix.de ([62.245.132.108]:46582 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754082AbaFIU2L (ORCPT
+	id S932837AbaFIUap (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 16:30:45 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:50241 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753918AbaFIUam (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 16:28:11 -0400
-Message-Id: <20140609202336.338874430@linutronix.de>
-User-Agent: quilt/0.63-1
-Date: Mon, 09 Jun 2014 20:28:09 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Jason Low <jason.low2@hp.com>,
-        Brad Mouring <bmouring@ni.com>
-Subject: [patch V3 5/7] rtmutex: Confine deadlock logic to futex
-References: <20140609201118.387571774@linutronix.de>
+	Mon, 9 Jun 2014 16:30:42 -0400
+Message-ID: <5396196E.1070507@linaro.org>
+Date: Mon, 09 Jun 2014 21:30:38 +0100
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline;
- filename=rtmutex-confine-deadlock-logic-to-futex.patch
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Peter Griffin <peter.griffin@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        maxime.coquelin@st.com, patrice.chotard@st.com,
+        srinivas.kandagatla@gmail.com
+CC: daniel.thompson@linaro.org, lee.jones@linaro.org, gabriel.fernandez@st.com
+Subject: Re: [PATCH] ARM: STi: DT: Properly define sti-ethclk & stmmaceth
+ for stih415/6
+References: <1402345355-5682-1-git-send-email-peter.griffin@linaro.org>
+In-Reply-To: <1402345355-5682-1-git-send-email-peter.griffin@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The deadlock logic is only required for futexes.
+Thanks Pete for the patch.
+Patch looks good for me.
 
-Remove the extra arguments for the public functions and also for the
-futex specific ones which get always called with deadlock detection
-enabled.
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- include/linux/rtmutex.h         |    6 +---
- kernel/futex.c                  |   10 +++---
- kernel/locking/rtmutex.c        |   59 ++++++++++++++++++++--------------------
- kernel/locking/rtmutex_common.h |    7 ++--
- 4 files changed, 40 insertions(+), 42 deletions(-)
-
-Index: tip/include/linux/rtmutex.h
-===================================================================
---- tip.orig/include/linux/rtmutex.h
-+++ tip/include/linux/rtmutex.h
-@@ -90,11 +90,9 @@ extern void __rt_mutex_init(struct rt_mu
- extern void rt_mutex_destroy(struct rt_mutex *lock);
- 
- extern void rt_mutex_lock(struct rt_mutex *lock);
--extern int rt_mutex_lock_interruptible(struct rt_mutex *lock,
--						int detect_deadlock);
-+extern int rt_mutex_lock_interruptible(struct rt_mutex *lock);
- extern int rt_mutex_timed_lock(struct rt_mutex *lock,
--					struct hrtimer_sleeper *timeout,
--					int detect_deadlock);
-+			       struct hrtimer_sleeper *timeout);
- 
- extern int rt_mutex_trylock(struct rt_mutex *lock);
- 
-Index: tip/kernel/futex.c
-===================================================================
---- tip.orig/kernel/futex.c
-+++ tip/kernel/futex.c
-@@ -1718,7 +1718,7 @@ retry_private:
- 			this->pi_state = pi_state;
- 			ret = rt_mutex_start_proxy_lock(&pi_state->pi_mutex,
- 							this->rt_waiter,
--							this->task, 1);
-+							this->task);
- 			if (ret == 1) {
- 				/* We got the lock. */
- 				requeue_pi_wake_futex(this, &key2, hb2);
-@@ -2337,9 +2337,9 @@ retry_private:
- 	/*
- 	 * Block on the PI mutex:
- 	 */
--	if (!trylock)
--		ret = rt_mutex_timed_lock(&q.pi_state->pi_mutex, to, 1);
--	else {
-+	if (!trylock) {
-+		ret = __rt_mutex_timed_lock(&q.pi_state->pi_mutex, to);
-+	} else {
- 		ret = rt_mutex_trylock(&q.pi_state->pi_mutex);
- 		/* Fixup the trylock return value: */
- 		ret = ret ? 0 : -EWOULDBLOCK;
-@@ -2669,7 +2669,7 @@ static int futex_wait_requeue_pi(u32 __u
- 		 */
- 		WARN_ON(!q.pi_state);
- 		pi_mutex = &q.pi_state->pi_mutex;
--		ret = rt_mutex_finish_proxy_lock(pi_mutex, to, &rt_waiter, 1);
-+		ret = rt_mutex_finish_proxy_lock(pi_mutex, to, &rt_waiter);
- 		debug_rt_mutex_free_waiter(&rt_waiter);
- 
- 		spin_lock(q.lock_ptr);
-Index: tip/kernel/locking/rtmutex.c
-===================================================================
---- tip.orig/kernel/locking/rtmutex.c
-+++ tip/kernel/locking/rtmutex.c
-@@ -1035,16 +1035,15 @@ rt_mutex_slowunlock(struct rt_mutex *loc
-  */
- static inline int
- rt_mutex_fastlock(struct rt_mutex *lock, int state,
--		  int detect_deadlock,
- 		  int (*slowfn)(struct rt_mutex *lock, int state,
- 				struct hrtimer_sleeper *timeout,
- 				int detect_deadlock))
- {
--	if (!detect_deadlock && likely(rt_mutex_cmpxchg(lock, NULL, current))) {
-+	if (likely(rt_mutex_cmpxchg(lock, NULL, current))) {
- 		rt_mutex_deadlock_account_lock(lock, current);
- 		return 0;
- 	} else
--		return slowfn(lock, state, NULL, detect_deadlock);
-+		return slowfn(lock, state, NULL, 0);
- }
- 
- static inline int
-@@ -1091,54 +1090,59 @@ void __sched rt_mutex_lock(struct rt_mut
- {
- 	might_sleep();
- 
--	rt_mutex_fastlock(lock, TASK_UNINTERRUPTIBLE, 0, rt_mutex_slowlock);
-+	rt_mutex_fastlock(lock, TASK_UNINTERRUPTIBLE, rt_mutex_slowlock);
- }
- EXPORT_SYMBOL_GPL(rt_mutex_lock);
- 
- /**
-  * rt_mutex_lock_interruptible - lock a rt_mutex interruptible
-  *
-- * @lock: 		the rt_mutex to be locked
-- * @detect_deadlock:	deadlock detection on/off
-+ * @lock:		the rt_mutex to be locked
-  *
-  * Returns:
-- *  0 		on success
-- * -EINTR 	when interrupted by a signal
-- * -EDEADLK	when the lock would deadlock (when deadlock detection is on)
-+ *  0		on success
-+ * -EINTR	when interrupted by a signal
-  */
--int __sched rt_mutex_lock_interruptible(struct rt_mutex *lock,
--						 int detect_deadlock)
-+int __sched rt_mutex_lock_interruptible(struct rt_mutex *lock)
- {
- 	might_sleep();
- 
--	return rt_mutex_fastlock(lock, TASK_INTERRUPTIBLE,
--				 detect_deadlock, rt_mutex_slowlock);
-+	return rt_mutex_fastlock(lock, TASK_INTERRUPTIBLE, rt_mutex_slowlock);
- }
- EXPORT_SYMBOL_GPL(rt_mutex_lock_interruptible);
- 
-+/*
-+ * Futex variant to allow full deadlock detection.
-+ */
-+int __rt_mutex_timed_lock(struct rt_mutex *lock,
-+			  struct hrtimer_sleeper *timeout)
-+{
-+	might_sleep();
-+
-+	return rt_mutex_timed_fastlock(lock, TASK_INTERRUPTIBLE, timeout, 0,
-+				       rt_mutex_slowlock);
-+}
-+
- /**
-  * rt_mutex_timed_lock - lock a rt_mutex interruptible
-  *			the timeout structure is provided
-  *			by the caller
-  *
-- * @lock: 		the rt_mutex to be locked
-+ * @lock:		the rt_mutex to be locked
-  * @timeout:		timeout structure or NULL (no timeout)
-- * @detect_deadlock:	deadlock detection on/off
-  *
-  * Returns:
-- *  0 		on success
-- * -EINTR 	when interrupted by a signal
-+ *  0		on success
-+ * -EINTR	when interrupted by a signal
-  * -ETIMEDOUT	when the timeout expired
-- * -EDEADLK	when the lock would deadlock (when deadlock detection is on)
-  */
- int
--rt_mutex_timed_lock(struct rt_mutex *lock, struct hrtimer_sleeper *timeout,
--		    int detect_deadlock)
-+rt_mutex_timed_lock(struct rt_mutex *lock, struct hrtimer_sleeper *timeout)
- {
- 	might_sleep();
- 
--	return rt_mutex_timed_fastlock(lock, TASK_INTERRUPTIBLE, timeout,
--				       detect_deadlock, rt_mutex_slowlock);
-+	return rt_mutex_timed_fastlock(lock, TASK_INTERRUPTIBLE, timeout, 0,
-+				       rt_mutex_slowlock);
- }
- EXPORT_SYMBOL_GPL(rt_mutex_timed_lock);
- 
-@@ -1244,7 +1248,6 @@ void rt_mutex_proxy_unlock(struct rt_mut
-  * @lock:		the rt_mutex to take
-  * @waiter:		the pre-initialized rt_mutex_waiter
-  * @task:		the task to prepare
-- * @detect_deadlock:	perform deadlock detection (1) or not (0)
-  *
-  * Returns:
-  *  0 - task blocked on lock
-@@ -1255,7 +1258,7 @@ void rt_mutex_proxy_unlock(struct rt_mut
-  */
- int rt_mutex_start_proxy_lock(struct rt_mutex *lock,
- 			      struct rt_mutex_waiter *waiter,
--			      struct task_struct *task, int detect_deadlock)
-+			      struct task_struct *task)
- {
- 	int ret;
- 
-@@ -1313,22 +1316,20 @@ struct task_struct *rt_mutex_next_owner(
-  * rt_mutex_finish_proxy_lock() - Complete lock acquisition
-  * @lock:		the rt_mutex we were woken on
-  * @to:			the timeout, null if none. hrtimer should already have
-- * 			been started.
-+ *			been started.
-  * @waiter:		the pre-initialized rt_mutex_waiter
-- * @detect_deadlock:	perform deadlock detection (1) or not (0)
-  *
-  * Complete the lock acquisition started our behalf by another thread.
-  *
-  * Returns:
-  *  0 - success
-- * <0 - error, one of -EINTR, -ETIMEDOUT, or -EDEADLK
-+ * <0 - error, one of -EINTR, -ETIMEDOUT
-  *
-  * Special API call for PI-futex requeue support
-  */
- int rt_mutex_finish_proxy_lock(struct rt_mutex *lock,
- 			       struct hrtimer_sleeper *to,
--			       struct rt_mutex_waiter *waiter,
--			       int detect_deadlock)
-+			       struct rt_mutex_waiter *waiter)
- {
- 	int ret;
- 
-Index: tip/kernel/locking/rtmutex_common.h
-===================================================================
---- tip.orig/kernel/locking/rtmutex_common.h
-+++ tip/kernel/locking/rtmutex_common.h
-@@ -111,12 +111,11 @@ extern void rt_mutex_proxy_unlock(struct
- 				  struct task_struct *proxy_owner);
- extern int rt_mutex_start_proxy_lock(struct rt_mutex *lock,
- 				     struct rt_mutex_waiter *waiter,
--				     struct task_struct *task,
--				     int detect_deadlock);
-+				     struct task_struct *task);
- extern int rt_mutex_finish_proxy_lock(struct rt_mutex *lock,
- 				      struct hrtimer_sleeper *to,
--				      struct rt_mutex_waiter *waiter,
--				      int detect_deadlock);
-+				      struct rt_mutex_waiter *waiter);
-+extern int __rt_mutex_timed_lock(struct rt_mutex *l, struct hrtimer_sleeper *to);
- 
- #ifdef CONFIG_DEBUG_RT_MUTEXES
- # include "rtmutex-debug.h"
+Acked-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 
 
+On 09/06/14 21:22, Peter Griffin wrote:
+> This patch fixes two problems: -
+>
+> 1) The device tree isn't currently providing sti-ethclk which is
+> required by the dwmac glue code to correctly configure the ethernet
+> PHY clock speed.
+>
+> This means depending on what the bootloader/jtag has
+> configured this clock to, and what switch/hub the board is plugged
+> into you most likely will NOT successfully negotiate a ethernet link.
+>
+> 2) The stmmaceth clock was associated with the wrong clock. It was
+> referencing the PHY clock rather than the interconnect clock which
+> clocks the IP.
+>
+> This patch also brings us closer to not having to boot the upstream
+> kernel with the clk_ignore_unused parameter.
+>
+> Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
+> ---
+>   arch/arm/boot/dts/stih415.dtsi           | 8 ++++----
+>   arch/arm/boot/dts/stih416.dtsi           | 8 ++++----
+>   include/dt-bindings/clock/stih415-clks.h | 1 +
+>   include/dt-bindings/clock/stih416-clks.h | 1 +
+>   4 files changed, 10 insertions(+), 8 deletions(-)
+>
+> diff --git a/arch/arm/boot/dts/stih415.dtsi b/arch/arm/boot/dts/stih415.dtsi
+> index c81dce4..768bf27 100644
+> --- a/arch/arm/boot/dts/stih415.dtsi
+> +++ b/arch/arm/boot/dts/stih415.dtsi
+> @@ -169,8 +169,8 @@
+>
+>   			pinctrl-names 	= "default";
+>   			pinctrl-0	= <&pinctrl_mii0>;
+> -			clock-names	= "stmmaceth";
+> -			clocks		= <&clk_s_a1_ls CLK_GMAC0_PHY>;
+> +			clock-names	= "stmmaceth", "sti-ethclk";
+> +			clocks		= <&clk_s_a1_ls CLK_ICN_IF_2>, <&clk_s_a1_ls CLK_GMAC0_PHY>;
+>   		};
+>
+>   		ethernet1: dwmac@fef08000 {
+> @@ -189,11 +189,11 @@
+>   			st,syscon		= <&syscfg_sbc>;
+>
+>   			resets			= <&softreset STIH415_ETH1_SOFTRESET>;
+> -			reset-names		= "stmmaceth";
+> +			reset-names		= "stmmaceth", "sti-ethclk";
+>   			pinctrl-names 	= "default";
+>   			pinctrl-0	= <&pinctrl_mii1>;
+>   			clock-names	= "stmmaceth";
+> -			clocks		= <&clk_s_a0_ls CLK_ETH1_PHY>;
+> +			clocks		= <&clk_s_a0_ls CLK_ICN_REG>, <&clk_s_a0_ls CLK_ETH1_PHY>;
+>   		};
+>
+>   		rc: rc@fe518000 {
+> diff --git a/arch/arm/boot/dts/stih416.dtsi b/arch/arm/boot/dts/stih416.dtsi
+> index 6473287..98c43cc 100644
+> --- a/arch/arm/boot/dts/stih416.dtsi
+> +++ b/arch/arm/boot/dts/stih416.dtsi
+> @@ -175,8 +175,8 @@
+>   			reset-names		= "stmmaceth";
+>   			pinctrl-names 	= "default";
+>   			pinctrl-0	= <&pinctrl_mii0>;
+> -			clock-names	= "stmmaceth";
+> -			clocks		= <&clk_s_a1_ls CLK_GMAC0_PHY>;
+> +			clock-names	= "stmmaceth", "sti-ethclk";
+> +			clocks		= <&clk_s_a1_ls CLK_ICN_IF_2>, <&clk_s_a1_ls CLK_GMAC0_PHY>;
+>   		};
+>
+>   		ethernet1: dwmac@fef08000 {
+> @@ -197,8 +197,8 @@
+>   			reset-names	= "stmmaceth";
+>   			pinctrl-names 	= "default";
+>   			pinctrl-0	= <&pinctrl_mii1>;
+> -			clock-names	= "stmmaceth";
+> -			clocks		= <&clk_s_a0_ls CLK_ETH1_PHY>;
+> +			clock-names	= "stmmaceth", "sti-ethclk";
+> +			clocks		= <&clk_s_a0_ls CLK_ICN_REG>, <&clk_s_a0_ls CLK_ETH1_PHY>;
+>   		};
+>
+>   		rc: rc@fe518000 {
+> diff --git a/include/dt-bindings/clock/stih415-clks.h b/include/dt-bindings/clock/stih415-clks.h
+> index 0d2c739..d80caa6 100644
+> --- a/include/dt-bindings/clock/stih415-clks.h
+> +++ b/include/dt-bindings/clock/stih415-clks.h
+> @@ -10,6 +10,7 @@
+>   #define CLK_ETH1_PHY		4
+>
+>   /* CLOCKGEN A1 */
+> +#define CLK_ICN_IF_2		0
+>   #define CLK_GMAC0_PHY		3
+>
+>   #endif
+> diff --git a/include/dt-bindings/clock/stih416-clks.h b/include/dt-bindings/clock/stih416-clks.h
+> index 552c779..f9bdbd1 100644
+> --- a/include/dt-bindings/clock/stih416-clks.h
+> +++ b/include/dt-bindings/clock/stih416-clks.h
+> @@ -10,6 +10,7 @@
+>   #define CLK_ETH1_PHY		4
+>
+>   /* CLOCKGEN A1 */
+> +#define CLK_ICN_IF_2		0
+>   #define CLK_GMAC0_PHY		3
+>
+>   #endif
+>
