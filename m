@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933652AbaFIJOo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 05:14:44 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58421 "EHLO
+	id S964784AbaFIJRp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 05:17:45 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58396 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754865AbaFIIvY (ORCPT
+	by vger.kernel.org with ESMTP id S1754832AbaFIIvY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jun 2014 04:51:24 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 036/146] drivercore: deferral race condition fix
-Date: Mon,  9 Jun 2014 10:49:31 +0200
-Message-Id: <89257541ba46c24c3559580dd07c38bd8e644166.1402303820.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Loic Poulain <loic.poulain@intel.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 023/146] 8250_core: Fix unwanted TX chars write
+Date: Mon,  9 Jun 2014 10:49:18 +0200
+Message-Id: <9ebff4b62caaf11ad6a701f8c4905411410b7728.1402303820.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
 References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
@@ -23,129 +23,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Grant Likely <grant.likely@linaro.org>
+From: Loic Poulain <loic.poulain@intel.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 58b116bce13612e5aa6fcd49ecbd4cf8bb59e835 upstream.
+commit b08c9c317e3f7764a91d522cd031639ba42b98cc upstream.
 
-When the kernel is built with CONFIG_PREEMPT it is possible to reach a state
-when all modules loaded but some driver still stuck in the deferred list
-and there is a need for external event to kick the deferred queue to probe
-these drivers.
+On transmit-hold-register empty, serial8250_tx_chars
+should be called only if we don't use DMA.
+DMA has its own tx cycle.
 
-The issue has been observed on embedded systems with CONFIG_PREEMPT enabled,
-audio support built as modules and using nfsroot for root filesystem.
-
-The following log fragment shows such sequence when all audio modules
-were loaded but the sound card is not present since the machine driver has
-failed to probe due to missing dependency during it's probe.
-The board is am335x-evmsk (McASP<->tlv320aic3106 codec) with davinci-evm
-machine driver:
-
-...
-[   12.615118] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: ENTER
-[   12.719969] davinci_evm sound.3: davinci_evm_probe: ENTER
-[   12.725753] davinci_evm sound.3: davinci_evm_probe: snd_soc_register_card
-[   12.753846] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: snd_soc_register_component
-[   12.922051] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: snd_soc_register_component DONE
-[   12.950839] davinci_evm sound.3: ASoC: platform (null) not registered
-[   12.957898] davinci_evm sound.3: davinci_evm_probe: snd_soc_register_card DONE (-517)
-[   13.099026] davinci-mcasp 4803c000.mcasp: Kicking the deferred list
-[   13.177838] davinci-mcasp 4803c000.mcasp: really_probe: probe_count = 2
-[   13.194130] davinci_evm sound.3: snd_soc_register_card failed (-517)
-[   13.346755] davinci_mcasp_driver_init: LEAVE
-[   13.377446] platform sound.3: Driver davinci_evm requests probe deferral
-[   13.592527] platform sound.3: really_probe: probe_count = 0
-
-In the log the machine driver enters it's probe at 12.719969 (this point it
-has been removed from the deferred lists). McASP driver already executing
-it's probing (since 12.615118).
-The machine driver tries to construct the sound card (12.950839) but did
-not found one of the components so it fails. After this McASP driver
-registers all the ASoC components (the machine driver still in it's probe
-function after it failed to construct the card) and the deferred work is
-prepared at 13.099026 (note that this time the machine driver is not in the
-lists so it is not going to be handled when the work is executing).
-Lastly the machine driver exit from it's probe and the core places it to
-the deferred list but there will be no other driver going to load and the
-deferred queue is not going to be kicked again - till we have external event
-like connecting USB stick, etc.
-
-The proposed solution is to try the deferred queue once more when the last
-driver is asking for deferring and we had drivers loaded while this last
-driver was probing.
-
-This way we can avoid drivers stuck in the deferred queue.
-
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
-Reviewed-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Tested-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Mark Brown <broonie@kernel.org>
+Signed-off-by: Loic Poulain <loic.poulain@intel.com>
+Reviewed-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/base/dd.c | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ drivers/tty/serial/8250/8250_core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/base/dd.c b/drivers/base/dd.c
-index 06051767393f..8a8d611f2021 100644
---- a/drivers/base/dd.c
-+++ b/drivers/base/dd.c
-@@ -52,6 +52,7 @@ static DEFINE_MUTEX(deferred_probe_mutex);
- static LIST_HEAD(deferred_probe_pending_list);
- static LIST_HEAD(deferred_probe_active_list);
- static struct workqueue_struct *deferred_wq;
-+static atomic_t deferred_trigger_count = ATOMIC_INIT(0);
+diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
+index aa6db8f4ee18..bf9d2ac9c9ed 100644
+--- a/drivers/tty/serial/8250/8250_core.c
++++ b/drivers/tty/serial/8250/8250_core.c
+@@ -1520,7 +1520,7 @@ int serial8250_handle_irq(struct uart_port *port, unsigned int iir)
+ 			status = serial8250_rx_chars(up, status);
+ 	}
+ 	serial8250_modem_status(up);
+-	if (status & UART_LSR_THRE)
++	if (!up->dma && (status & UART_LSR_THRE))
+ 		serial8250_tx_chars(up);
  
- /**
-  * deferred_probe_work_func() - Retry probing devices in the active list.
-@@ -135,6 +136,17 @@ static bool driver_deferred_probe_enable = false;
-  * This functions moves all devices from the pending list to the active
-  * list and schedules the deferred probe workqueue to process them.  It
-  * should be called anytime a driver is successfully bound to a device.
-+ *
-+ * Note, there is a race condition in multi-threaded probe. In the case where
-+ * more than one device is probing at the same time, it is possible for one
-+ * probe to complete successfully while another is about to defer. If the second
-+ * depends on the first, then it will get put on the pending list after the
-+ * trigger event has already occured and will be stuck there.
-+ *
-+ * The atomic 'deferred_trigger_count' is used to determine if a successful
-+ * trigger has occurred in the midst of probing a driver. If the trigger count
-+ * changes in the midst of a probe, then deferred processing should be triggered
-+ * again.
-  */
- static void driver_deferred_probe_trigger(void)
- {
-@@ -147,6 +159,7 @@ static void driver_deferred_probe_trigger(void)
- 	 * into the active list so they can be retried by the workqueue
- 	 */
- 	mutex_lock(&deferred_probe_mutex);
-+	atomic_inc(&deferred_trigger_count);
- 	list_splice_tail_init(&deferred_probe_pending_list,
- 			      &deferred_probe_active_list);
- 	mutex_unlock(&deferred_probe_mutex);
-@@ -265,6 +278,7 @@ static DECLARE_WAIT_QUEUE_HEAD(probe_waitqueue);
- static int really_probe(struct device *dev, struct device_driver *drv)
- {
- 	int ret = 0;
-+	int local_trigger_count = atomic_read(&deferred_trigger_count);
- 
- 	atomic_inc(&probe_count);
- 	pr_debug("bus: '%s': %s: probing driver %s with device %s\n",
-@@ -310,6 +324,9 @@ probe_failed:
- 		/* Driver requested deferred probing */
- 		dev_info(dev, "Driver %s requests probe deferral\n", drv->name);
- 		driver_deferred_probe_add(dev);
-+		/* Did a trigger occur while probing? Need to re-trigger if yes */
-+		if (local_trigger_count != atomic_read(&deferred_trigger_count))
-+			driver_deferred_probe_trigger();
- 	} else if (ret != -ENODEV && ret != -ENXIO) {
- 		/* driver matched but the probe failed */
- 		printk(KERN_WARNING
+ 	spin_unlock_irqrestore(&port->lock, flags);
 -- 
 1.9.3
 
