@@ -1,124 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933836AbaFIRZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 13:25:57 -0400
-Received: from gws07.hcl.com ([192.8.186.130]:9935 "EHLO GWS07.hcl.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933644AbaFIRZz convert rfc822-to-8bit (ORCPT
+	id S933840AbaFIRaK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 13:30:10 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:44651 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755109AbaFIRaH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 13:25:55 -0400
-X-IronPort-AV: E=Sophos;i="4.98,1003,1392143400"; 
-   d="scan'208";a="21636561"
-From: "Sathish Kumar Balasubramaniam -ERS, HCL Tech" 
-	<b-sathishkumar@hcl.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-CC: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 3.14.6 1/1] pinctrl/sh-pfc: fix pfc-r8a7790 pin mux data
- for IPSR5 bug
-Thread-Topic: [PATCH 3.14.6 1/1] pinctrl/sh-pfc: fix pfc-r8a7790 pin mux
- data for IPSR5 bug
-Thread-Index: AQHPg0316zNVnchdh0SA2IoGvZkgN5toVCWAgAC0WrA=
-Date: Mon, 9 Jun 2014 17:25:51 +0000
-Message-ID: <5D833673AB94D9489A7F7F73E9E611C814AD9514@chn-hclt-mbs08.HCLT.CORP.HCL.IN>
-References: <5D833673AB94D9489A7F7F73E9E611C814AD9363@chn-hclt-mbs08.HCLT.CORP.HCL.IN>
- <19212082.k9WjBDNGR8@avalon>
-In-Reply-To: <19212082.k9WjBDNGR8@avalon>
-Accept-Language: en-IN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.150.5.114]
-Content-Type: text/plain; charset="us-ascii"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
+	Mon, 9 Jun 2014 13:30:07 -0400
+From: Raghavendra Ganiga <ravi23ganiga@gmail.com>
+To: a.zummo@towertech.it, rtc-linux@googlegroups.com
+Cc: linux-kernel@vger.kernel.org, Raghavendra Ganiga <ravi23ganiga@gmail.com>
+Subject: [PATCH] rtc: add support of nvram for maxim dallas rtc ds1343
+Date: Mon,  9 Jun 2014 22:59:52 +0530
+Message-Id: <1402334992-3945-1-git-send-email-ravi23ganiga@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent,
+This is a patch to add support of nvram for maxim dallas
+rtc ds1343
 
-Oh. Good to see that its already fixed :)
-Thanks for your comments.
+Signed-off-by: Raghavendra Chandra Ganiga <ravi23ganiga@gmail.com>
+---
+ drivers/rtc/rtc-ds1343.c | 75 ++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 73 insertions(+), 2 deletions(-)
 
-Regards,
-B.Sathish Kumar
-
------Original Message-----
-From: Laurent Pinchart [mailto:laurent.pinchart@ideasonboard.com] 
-Sent: Monday, June 09, 2014 5:38 PM
-To: Sathish Kumar Balasubramaniam -ERS, HCL Tech
-Cc: Simon Horman; Magnus Damm; Paul Mundt; linux-sh@vger.kernel.org; linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3.14.6 1/1] pinctrl/sh-pfc: fix pfc-r8a7790 pin mux data for IPSR5 bug
-
-Hi Sathish,
-
-Thank you for the patch. This has already been fixed in v3.15-rc4 by commit
-34ce57e9df7d14b52c7613bb2c190e411ca99186 ("sh-pfc: r8a7790: Fix definition of IPSR5").
-
-On Sunday 08 June 2014 19:15:08 Sathish Kumar Balasubramaniam -ERS, HCL Tech
-wrote:
-> From: Sathish Kumar Balasubramaniam <b-sathishkumar@hcl.com>
-> 
-> This patch fixes a bug in the list of peripheral functions for the 
-> IPSR5 pin mux configuration of the PFC (Pin Function Controller) of 
-> the Renesas R-Car
-> H2 SoC (R8A7790). There should be exactly 8 values listed for the 
-> IP5_23_21 peripheral function which is using 3 bits. But there are 9 
-> values present in the list.
-> 
-> This bug unexpectedly increases the internal position variable by 1 
-> which is used by the PFC framework to identify the peripheral 
-> function. Due to this bug, peripheral function configuration from 
-> IP5_20_18 to IP5_2_0 may not work properly.
-> 
-> This issue can be easily reproduced by setting the FN_I2C1_SDA ( 
-> IP5_9_6 [4]
-> ) which has the function value of 9 but the actual function value is 
-> set as
-> 10 due to this bug.
-> 
-> ----------------------------------------------------------------------------
-> --- --- linux-3.14.6/drivers/pinctrl/sh-pfc/pfc-r8a7790.c.original   
-> 2014-06-08 22:03:44.681669692 +0530 +++
-> linux-3.14.6/drivers/pinctrl/sh-pfc/pfc-r8a7790.c    2014-06-08
-> 22:02:10.361673511 +0530 @@ -4624,7 +4624,7 @@ static const struct 
-> pinmux_cfg_reg pinmu
->          /* IP5_23_21 [3] */
->          FN_WE1_N, FN_IERX, FN_CAN1_RX, FN_VI1_G4,
->          FN_VI1_G4_B, FN_VI2_R6, FN_SCIFA0_CTS_N_B,
-> -        FN_IERX_C, 0,
-> +        FN_IERX_C,
->          /* IP5_20_18 [3] */
->          FN_WE0_N, FN_IECLK, FN_CAN_CLK,
->          FN_VI2_VSYNC_N, FN_SCIFA0_TXD_B, FN_VI2_VSYNC_N_B, 0, 0,
-> 
-> 
-> Signed-off-by: Sathish Kumar Balasubramaniam <b-sathishkumar@hcl.com>
-
-The SoB line should be before the patch content, not after. Beside, it seems that tabs have been converted to spaces. Please use git format-patch to generate patch files, and git send-email to send them.
-
---
-Regards,
-
-Laurent Pinchart
-
-
-
-::DISCLAIMER::
-----------------------------------------------------------------------------------------------------------------------------------------------------
-
-The contents of this e-mail and any attachment(s) are confidential and intended for the named recipient(s) only.
-E-mail transmission is not guaranteed to be secure or error-free as information could be intercepted, corrupted,
-lost, destroyed, arrive late or incomplete, or may contain viruses in transmission. The e mail and its contents
-(with or without referred errors) shall therefore not attach any liability on the originator or HCL or its affiliates.
-Views or opinions, if any, presented in this email are solely those of the author and may not necessarily reflect the
-views or opinions of HCL or its affiliates. Any form of reproduction, dissemination, copying, disclosure, modification,
-distribution and / or publication of this message without the prior written consent of authorized representative of
-HCL is strictly prohibited. If you have received this email in error please delete it and notify the sender immediately.
-Before opening any email and/or attachments, please check them for viruses and other defects.
-
-----------------------------------------------------------------------------------------------------------------------------------------------------
+diff --git a/drivers/rtc/rtc-ds1343.c b/drivers/rtc/rtc-ds1343.c
+index c371918..ae9f997 100644
+--- a/drivers/rtc/rtc-ds1343.c
++++ b/drivers/rtc/rtc-ds1343.c
+@@ -4,6 +4,7 @@
+  * Real Time Clock
+  *
+  * Author : Raghavendra Chandra Ganiga <ravi23ganiga@gmail.com>
++ *	    Ankur Srivastava <sankurece@gmail.com> : DS1343 Nvram Support
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 as
+@@ -45,6 +46,9 @@
+ #define DS1343_CONTROL_REG	0x0F
+ #define DS1343_STATUS_REG	0x10
+ #define DS1343_TRICKLE_REG	0x11
++#define DS1343_NVRAM		0x20
++
++#define DS1343_NVRAM_LEN	96
+ 
+ /* DS1343 Control Registers bits */
+ #define DS1343_EOSC		0x80
+@@ -149,6 +153,64 @@ static ssize_t ds1343_store_glitchfilter(struct device *dev,
+ static DEVICE_ATTR(glitch_filter, S_IRUGO | S_IWUSR, ds1343_show_glitchfilter,
+ 			ds1343_store_glitchfilter);
+ 
++static ssize_t ds1343_nvram_write(struct file *filp, struct kobject *kobj,
++			struct bin_attribute *attr,
++			char *buf, loff_t off, size_t count)
++{
++	int ret;
++	unsigned char address;
++	struct device *dev = kobj_to_dev(kobj);
++	struct ds1343_priv *priv = dev_get_drvdata(dev);
++
++	if (unlikely(!count))
++		return count;
++
++	if ((count + off) > DS1343_NVRAM_LEN)
++		count = DS1343_NVRAM_LEN - off;
++
++	address = DS1343_NVRAM + off;
++
++	ret = regmap_bulk_write(priv->map, address, buf, count);
++	if (ret < 0)
++		dev_err(&priv->spi->dev, "Error in nvram write %d", ret);
++
++	return (ret < 0) ? ret : count;
++}
++
++
++static ssize_t ds1343_nvram_read(struct file *filp, struct kobject *kobj,
++				struct bin_attribute *attr,
++				char *buf, loff_t off, size_t count)
++{
++	int ret;
++	unsigned char address;
++	struct device *dev = kobj_to_dev(kobj);
++	struct ds1343_priv *priv = dev_get_drvdata(dev);
++
++	if (unlikely(!count))
++		return count;
++
++	if ((count + off) > DS1343_NVRAM_LEN)
++		count = DS1343_NVRAM_LEN - off;
++
++	address = DS1343_NVRAM + off;
++
++	ret = regmap_bulk_read(priv->map, address, buf, count);
++	if (ret < 0)
++		dev_err(&priv->spi->dev, "Error in nvram read %d\n", ret);
++
++	return (ret < 0) ? ret : count;
++}
++
++
++static struct bin_attribute nvram_attr = {
++	.attr.name	= "nvram",
++	.attr.mode	= S_IRUGO | S_IWUSR,
++	.read		= ds1343_nvram_read,
++	.write		= ds1343_nvram_write,
++	.size		= DS1343_NVRAM_LEN,
++};
++
+ static ssize_t ds1343_show_alarmstatus(struct device *dev,
+ 				struct device_attribute *attr, char *buf)
+ {
+@@ -274,12 +336,16 @@ static int ds1343_sysfs_register(struct device *dev)
+ 	if (err)
+ 		goto error1;
+ 
++	err = device_create_bin_file(dev, &nvram_attr);
++	if (err)
++		goto error2;
++
+ 	if (priv->irq <= 0)
+ 		return err;
+ 
+ 	err = device_create_file(dev, &dev_attr_alarm_mode);
+ 	if (err)
+-		goto error2;
++		goto error3;
+ 
+ 	err = device_create_file(dev, &dev_attr_alarm_status);
+ 	if (!err)
+@@ -287,6 +353,9 @@ static int ds1343_sysfs_register(struct device *dev)
+ 
+ 	device_remove_file(dev, &dev_attr_alarm_mode);
+ 
++error3:
++	device_remove_bin_file(dev, &nvram_attr);
++
+ error2:
+ 	device_remove_file(dev, &dev_attr_trickle_charger);
+ 
+@@ -302,6 +371,7 @@ static void ds1343_sysfs_unregister(struct device *dev)
+ 
+ 	device_remove_file(dev, &dev_attr_glitch_filter);
+ 	device_remove_file(dev, &dev_attr_trickle_charger);
++	device_remove_bin_file(dev, &nvram_attr);
+ 
+ 	if (priv->irq <= 0)
+ 		return;
+@@ -684,6 +754,7 @@ static struct spi_driver ds1343_driver = {
+ module_spi_driver(ds1343_driver);
+ 
+ MODULE_DESCRIPTION("DS1343 RTC SPI Driver");
+-MODULE_AUTHOR("Raghavendra Chandra Ganiga <ravi23ganiga@gmail.com>");
++MODULE_AUTHOR("Raghavendra Chandra Ganiga <ravi23ganiga@gmail.com>,"
++		"Ankur Srivastava <sankurece@gmail.com>");
+ MODULE_LICENSE("GPL v2");
+ MODULE_VERSION(DS1343_DRV_VERSION);
+-- 
+1.9.1
 
