@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935045AbaFIXOc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 19:14:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56757 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933299AbaFIWpW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933311AbaFIWpW (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 9 Jun 2014 18:45:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56706 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933121AbaFIWpM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 18:45:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jean Delvare <jdelvare@suse.de>, Guenter Roeck <linux@roeck-us.net>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        Doug Anderson <dianders@chromium.org>
-Subject: [PATCH 3.14 09/78] hwmon: (ntc_thermistor) Fix dependencies
-Date: Mon,  9 Jun 2014 15:47:49 -0700
-Message-Id: <20140609224813.662555147@linuxfoundation.org>
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Shaun Ruffell <sruffell@digium.com>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.14 03/78] sched: Sanitize irq accounting madness
+Date: Mon,  9 Jun 2014 15:47:43 -0700
+Message-Id: <20140609224813.466716857@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140609224813.282275135@linuxfoundation.org>
 References: <20140609224813.282275135@linuxfoundation.org>
@@ -30,66 +33,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <jdelvare@suse.de>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 59cf4243e557aa64ab2ef51280454aa1f3828e14 upstream.
+commit 2d513868e2a33e1d5315490ef4c861ee65babd65 upstream.
 
-In commit 9e8269de, support was added for ntc_thermistor devices being
-declared in the device tree and implemented on top of IIO. With that
-change, a dependency was added to the ntc_thermistor driver:
+Russell reported, that irqtime_account_idle_ticks() takes ages due to:
 
-	depends on (!OF && !IIO) || (OF && IIO)
+       for (i = 0; i < ticks; i++)
+               irqtime_account_process_tick(current, 0, rq);
 
-This construct has the drawback that the driver can no longer be
-selected when OF is set and IIO isn't, nor when IIO is set and OF is
-not. This is a regression for the original users of the driver.
+It's sad, that this code was written way _AFTER_ the NOHZ idle
+functionality was available. I charge myself guitly for not paying
+attention when that crap got merged with commit abb74cefa ("sched:
+Export ns irqtimes through /proc/stat")
 
-As the new code depends on IIO and is useless without OF, include it
-only if both are enabled, and set the dependencies accordingly. This
-is clearer, more simple and more correct.
+So instead of looping nr_ticks times just apply the whole thing at
+once.
 
-Signed-off-by: Jean Delvare <jdelvare@suse.de>
-Fixes: 9e8269de hwmon: (ntc_thermistor) Add DT with IIO support to NTC thermistor driver
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Cc: Doug Anderson <dianders@chromium.org>
+As a side note: The whole cputime_t vs. u64 business in that context
+wants to be cleaned up as well. There is no point in having all these
+back and forth conversions. Lets standardise on u64 nsec for all
+kernel internal accounting and be done with it. Everything else does
+not make sense at all for fine grained accounting. Frederic, can you
+please take care of that?
+
+Reported-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Venkatesh Pallipadi <venki@google.com>
+Cc: Shaun Ruffell <sruffell@digium.com>
+Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1405022307000.6261@ionos.tec.linutronix.de
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/Kconfig          |    2 +-
- drivers/hwmon/ntc_thermistor.c |    4 +++-
- 2 files changed, 4 insertions(+), 2 deletions(-)
+ kernel/sched/cputime.c |   32 ++++++++++++++++----------------
+ 1 file changed, 16 insertions(+), 16 deletions(-)
 
---- a/drivers/hwmon/Kconfig
-+++ b/drivers/hwmon/Kconfig
-@@ -971,7 +971,7 @@ config SENSORS_NCT6775
- 
- config SENSORS_NTC_THERMISTOR
- 	tristate "NTC thermistor support"
--	depends on (!OF && !IIO) || (OF && IIO)
-+	depends on !OF || IIO=n || IIO
- 	help
- 	  This driver supports NTC thermistors sensor reading and its
- 	  interpretation. The driver can also monitor the temperature and
---- a/drivers/hwmon/ntc_thermistor.c
-+++ b/drivers/hwmon/ntc_thermistor.c
-@@ -141,7 +141,7 @@ struct ntc_data {
- 	char name[PLATFORM_NAME_SIZE];
- };
- 
--#ifdef CONFIG_OF
-+#if defined(CONFIG_OF) && IS_ENABLED(CONFIG_IIO)
- static int ntc_adc_iio_read(struct ntc_thermistor_platform_data *pdata)
+--- a/kernel/sched/cputime.c
++++ b/kernel/sched/cputime.c
+@@ -326,50 +326,50 @@ out:
+  * softirq as those do not count in task exec_runtime any more.
+  */
+ static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
+-						struct rq *rq)
++					 struct rq *rq, int ticks)
  {
- 	struct iio_channel *channel = pdata->chan;
-@@ -223,6 +223,8 @@ ntc_thermistor_parse_dt(struct platform_
- 	return NULL;
+-	cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
++	cputime_t scaled = cputime_to_scaled(cputime_one_jiffy);
++	u64 cputime = (__force u64) cputime_one_jiffy;
+ 	u64 *cpustat = kcpustat_this_cpu->cpustat;
+ 
+ 	if (steal_account_process_tick())
+ 		return;
+ 
++	cputime *= ticks;
++	scaled *= ticks;
++
+ 	if (irqtime_account_hi_update()) {
+-		cpustat[CPUTIME_IRQ] += (__force u64) cputime_one_jiffy;
++		cpustat[CPUTIME_IRQ] += cputime;
+ 	} else if (irqtime_account_si_update()) {
+-		cpustat[CPUTIME_SOFTIRQ] += (__force u64) cputime_one_jiffy;
++		cpustat[CPUTIME_SOFTIRQ] += cputime;
+ 	} else if (this_cpu_ksoftirqd() == p) {
+ 		/*
+ 		 * ksoftirqd time do not get accounted in cpu_softirq_time.
+ 		 * So, we have to handle it separately here.
+ 		 * Also, p->stime needs to be updated for ksoftirqd.
+ 		 */
+-		__account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
+-					CPUTIME_SOFTIRQ);
++		__account_system_time(p, cputime, scaled, CPUTIME_SOFTIRQ);
+ 	} else if (user_tick) {
+-		account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
++		account_user_time(p, cputime, scaled);
+ 	} else if (p == rq->idle) {
+-		account_idle_time(cputime_one_jiffy);
++		account_idle_time(cputime);
+ 	} else if (p->flags & PF_VCPU) { /* System time or guest time */
+-		account_guest_time(p, cputime_one_jiffy, one_jiffy_scaled);
++		account_guest_time(p, cputime, scaled);
+ 	} else {
+-		__account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
+-					CPUTIME_SYSTEM);
++		__account_system_time(p, cputime, scaled,	CPUTIME_SYSTEM);
+ 	}
  }
  
-+#define ntc_match	NULL
-+
- static void ntc_iio_channel_release(struct ntc_thermistor_platform_data *pdata)
- { }
- #endif
+ static void irqtime_account_idle_ticks(int ticks)
+ {
+-	int i;
+ 	struct rq *rq = this_rq();
+ 
+-	for (i = 0; i < ticks; i++)
+-		irqtime_account_process_tick(current, 0, rq);
++	irqtime_account_process_tick(current, 0, rq, ticks);
+ }
+ #else /* CONFIG_IRQ_TIME_ACCOUNTING */
+ static inline void irqtime_account_idle_ticks(int ticks) {}
+ static inline void irqtime_account_process_tick(struct task_struct *p, int user_tick,
+-						struct rq *rq) {}
++						struct rq *rq, int nr_ticks) {}
+ #endif /* CONFIG_IRQ_TIME_ACCOUNTING */
+ 
+ /*
+@@ -458,7 +458,7 @@ void account_process_tick(struct task_st
+ 		return;
+ 
+ 	if (sched_clock_irqtime) {
+-		irqtime_account_process_tick(p, user_tick, rq);
++		irqtime_account_process_tick(p, user_tick, rq, 1);
+ 		return;
+ 	}
+ 
 
 
