@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932599AbaFII6z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 04:58:55 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58560 "EHLO
+	id S933688AbaFII6t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 04:58:49 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58505 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932179AbaFIIv0 (ORCPT
+	by vger.kernel.org with ESMTP id S932104AbaFIIv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jun 2014 04:51:26 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 112/146] x86-64, modify_ldt: Make support for 16-bit segments a runtime option
-Date: Mon,  9 Jun 2014 10:50:47 +0200
-Message-Id: <8591de4d1bf97dffbcbedda237a78639a0d1f393.1402303821.git.jslaby@suse.cz>
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 073/146] ARM: mvebu: fix NOR bus-width in Armada XP DB Device Tree
+Date: Mon,  9 Jun 2014 10:50:08 +0200
+Message-Id: <0b1e0bc4b75b241e989d7a203122e62a63529ace.1402303821.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
 References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
@@ -24,94 +24,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit fa81511bb0bbb2b1aace3695ce869da9762624ff upstream.
+commit f3aec8f3f05025e7b450102dae0759375346706e upstream.
 
-Checkin:
+The mvebu-devbus driver had a serious bug, which lead to a 8 bits bus
+width declared in the Device Tree being considered as a 16 bits bus
+width when configuring the hardware.
 
-b3b42ac2cbae x86-64, modify_ldt: Ban 16-bit segments on 64-bit kernels
+This bug in mvebu-devbus driver was compensated by a symetric mistake
+in the Armada XP DB Device Tree: a 8 bits bus width was declared, even
+though the hardware actually has a 16 bits bus width connection with
+the NOR flash.
 
-disabled 16-bit segments on 64-bit kernels due to an information
-leak.  However, it does seem that people are genuinely using Wine to
-run old 16-bit Windows programs on Linux.
+Now that we have fixed the mvebu-devbus driver to behave according to
+its Device Tree binding, this commit fixes the problematic Device Tree
+files as well.
 
-A proper fix for this ("espfix64") is coming in the upcoming merge
-window, but as a temporary fix, create a sysctl to allow the
-administrator to re-enable support for 16-bit segments.
+This bug was introduced in commit
+b484ff42df475c5087d614c4d477273e1906bcb9 ('ARM: mvebu: Add support for
+NOR flash device on Armada XP-DB board') which was merged in v3.11.
 
-It adds a "/proc/sys/abi/ldt16" sysctl that defaults to zero (off). If
-you hit this issue and care about your old Windows program more than
-you care about a kernel stack address information leak, you can do
-
-   echo 1 > /proc/sys/abi/ldt16
-
-as root (add it to your startup scripts), and you should be ok.
-
-The sysctl table is only added if you have COMPAT support enabled on
-x86-64, but I assume anybody who runs old windows binaries very much
-does that ;)
-
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Link: http://lkml.kernel.org/r/CA%2B55aFw9BPoD10U1LfHbOMpHWZkvJTkMcfCs9s3urPr1YyWBxw@mail.gmail.com
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Link: https://lkml.kernel.org/r/1397489361-5833-4-git-send-email-thomas.petazzoni@free-electrons.com
+Fixes: b484ff42df47 ('ARM: mvebu: Add support for NOR flash device on Armada XP-DB board')
+Acked-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/x86/kernel/ldt.c        | 4 +++-
- arch/x86/vdso/vdso32-setup.c | 8 ++++++++
- 2 files changed, 11 insertions(+), 1 deletion(-)
+ arch/arm/boot/dts/armada-xp-db.dts | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/ldt.c b/arch/x86/kernel/ldt.c
-index af1d14a9ebda..dcbbaa165bde 100644
---- a/arch/x86/kernel/ldt.c
-+++ b/arch/x86/kernel/ldt.c
-@@ -20,6 +20,8 @@
- #include <asm/mmu_context.h>
- #include <asm/syscalls.h>
+diff --git a/arch/arm/boot/dts/armada-xp-db.dts b/arch/arm/boot/dts/armada-xp-db.dts
+index bcf6d79a57ec..8c2fe44e4dfe 100644
+--- a/arch/arm/boot/dts/armada-xp-db.dts
++++ b/arch/arm/boot/dts/armada-xp-db.dts
+@@ -40,7 +40,7 @@
+ 			/* Device Bus parameters are required */
  
-+int sysctl_ldt16 = 0;
-+
- #ifdef CONFIG_SMP
- static void flush_ldt(void *current_mm)
- {
-@@ -234,7 +236,7 @@ static int write_ldt(void __user *ptr, unsigned long bytecount, int oldmode)
- 	 * IRET leaking the high bits of the kernel stack address.
- 	 */
- #ifdef CONFIG_X86_64
--	if (!ldt_info.seg_32bit) {
-+	if (!ldt_info.seg_32bit && !sysctl_ldt16) {
- 		error = -EINVAL;
- 		goto out_unlock;
- 	}
-diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
-index d6bfb876cfb0..f1d633a43f8e 100644
---- a/arch/x86/vdso/vdso32-setup.c
-+++ b/arch/x86/vdso/vdso32-setup.c
-@@ -41,6 +41,7 @@ enum {
- #ifdef CONFIG_X86_64
- #define vdso_enabled			sysctl_vsyscall32
- #define arch_setup_additional_pages	syscall32_setup_pages
-+extern int sysctl_ldt16;
- #endif
- 
- /*
-@@ -380,6 +381,13 @@ static struct ctl_table abi_table2[] = {
- 		.mode		= 0644,
- 		.proc_handler	= proc_dointvec
- 	},
-+	{
-+		.procname	= "ldt16",
-+		.data		= &sysctl_ldt16,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec
-+	},
- 	{}
- };
- 
+ 			/* Read parameters */
+-			devbus,bus-width    = <8>;
++			devbus,bus-width    = <16>;
+ 			devbus,turn-off-ps  = <60000>;
+ 			devbus,badr-skew-ps = <0>;
+ 			devbus,acc-first-ps = <124000>;
 -- 
 1.9.3
 
