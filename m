@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753942AbaFITJJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 15:09:09 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:62446 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753808AbaFITJH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 15:09:07 -0400
+	id S1753930AbaFITQb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 15:16:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5275 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753824AbaFITQ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 15:16:29 -0400
+Date: Mon, 9 Jun 2014 15:15:51 -0400
+From: Dave Jones <davej@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, gregkh@linuxfoundation.org, mingo@kernel.org,
+        mtk.manpages@gmail.com, torvalds@linux-foundation.org,
+        stable@vger.kernel.org
+Subject: Re: Patch "sched: Disallow sched_attr::sched_policy < 0" has been
+ added to the 3.14-stable tree
+Message-ID: <20140609191551.GA1422@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	linux-kernel@vger.kernel.org, peterz@infradead.org,
+	gregkh@linuxfoundation.org, mingo@kernel.org,
+	mtk.manpages@gmail.com, torvalds@linux-foundation.org,
+	stable@vger.kernel.org
+References: <1402340827594@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <20140602214019.GA2134@redhat.com>
-References: <CA+55aFwSLmJ1kLO-zNm944Q-=oYYH2Lo0W14Dn0mbj91V5MNFA@mail.gmail.com>
-	<20140602214019.GA2134@redhat.com>
-Date: Mon, 9 Jun 2014 21:09:04 +0200
-X-Google-Sender-Auth: lgNyPiiHGIURrc6K0Ela0T788YI
-Message-ID: <CAMuHMdUikt_rW+rx+2NfpnAKV_2J_DP__U6nV9os--ZQ2HdQyg@mail.gmail.com>
-Subject: Re: Linux 3.15-rc8 ... and merge window for 3.16
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402340827594@kroah.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 2, 2014 at 11:40 PM, Dave Jones <davej@redhat.com> wrote:
-> On Sun, Jun 01, 2014 at 07:37:20PM -0700, Linus Torvalds wrote:
->  > So let's try to see how well that works - the last weeks of the
->  > release tends to be me just waiting around to make sure nothing bad is
->  > happening, so doing this kind of overlapping development *should* work
->  > fine. Maybe it works so well that we'll end up doing it in the future
->  > even if there *isn't* some kind of scheduling conflict that makes me
->  > want to start the merge window before I'm 100% comfortable doing the
->  > release for the previous version.
->
-> one side-effect of this is that the git-commits-head list is now posting
-> the commits you're queueing in your next branch but no way afaict to
-> distinguish them from changes going into 3.15
->
-> Can whoever maintains that hook add an X-branch header or something to make
-> filtering them easier ?
+On Mon, Jun 09, 2014 at 12:07:07PM -0700, gregkh@linuxfoundation.org wrote:
+ > 
+ > This is a note to let you know that I've just added the patch titled
+ > 
+ >     sched: Disallow sched_attr::sched_policy < 0
+ > 
+ > to the 3.14-stable tree which can be found at:
+ >     http://www.kernel.org/git/?p=linux/kernel/git/stable/stable-queue.git;a=summary
 
-Not to mention what happened when "next" got merged into "master": we
-received another copy of all commits. I had a backlog of only 4000 commits
-before the weekend, but after the pentecost holidays, this increased to 12000,
-incl. 5000 duplicates or so.
+ > --- a/kernel/sched/core.c
+ > +++ b/kernel/sched/core.c
+ > @@ -3683,6 +3683,9 @@ SYSCALL_DEFINE3(sched_setattr, pid_t, pi
+ >  	if (sched_copy_attr(uattr, &attr))
+ >  		return -EFAULT;
+ >  
+ > +	if (attr.sched_policy < 0)
+ > +		return -EINVAL;
+ > +
+ >  	rcu_read_lock();
+ >  	retval = -ESRCH;
+ >  	p = find_process_by_pid(pid);
 
-Gr{oetje,eeting}s,
+Greg,
 
-                        Geert
+Make sure you also grab b14ed2c273f8ab872ae4e6735fe5ab09cb14b8c3 to fix this commit.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+	Dave
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
