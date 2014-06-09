@@ -1,108 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756797AbaFIJKj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 05:10:39 -0400
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:58129 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754900AbaFIJJO (ORCPT
+	id S1756205AbaFIJJN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 05:09:13 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58471 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754900AbaFIIvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 05:09:14 -0400
-Date: Mon, 9 Jun 2014 02:09:10 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Vlastimil Babka <vbabka@suse.cz>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [RFC PATCH 4/6] mm, compaction: skip buddy pages by their order
- in the migrate scanner
-In-Reply-To: <53916BB0.3070001@suse.cz>
-Message-ID: <alpine.DEB.2.02.1406090207300.24247@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1405211954410.13243@chino.kir.corp.google.com> <1401898310-14525-1-git-send-email-vbabka@suse.cz> <1401898310-14525-4-git-send-email-vbabka@suse.cz> <alpine.DEB.2.02.1406041656400.22536@chino.kir.corp.google.com> <5390374E.5080708@suse.cz>
- <alpine.DEB.2.02.1406051428360.18119@chino.kir.corp.google.com> <53916BB0.3070001@suse.cz>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 9 Jun 2014 04:51:25 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Alex Deucher <alexdeucher@gmail.com>,
+        Alex Deucher <alexander.deucher@amd.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 044/146] drm/radeon: add support for newer mc ucode on SI (v2)
+Date: Mon,  9 Jun 2014 10:49:39 +0200
+Message-Id: <0f9aed4142002f86e1eef78a2506e8c650f2a85a.1402303820.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
+References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
+In-Reply-To: <cover.1402303820.git.jslaby@suse.cz>
+References: <cover.1402303820.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 6 Jun 2014, Vlastimil Babka wrote:
+From: Alex Deucher <alexdeucher@gmail.com>
 
-> >> > > diff --git a/mm/internal.h b/mm/internal.h
-> >> > > index 1a8a0d4..6aa1f74 100644
-> >> > > --- a/mm/internal.h
-> >> > > +++ b/mm/internal.h
-> >> > > @@ -164,7 +164,8 @@ isolate_migratepages_range(struct zone *zone, struct
-> >> > > compact_control *cc,
-> >> > >    * general, page_zone(page)->lock must be held by the caller to prevent
-> >> > > the
-> >> > >    * page from being allocated in parallel and returning garbage as the
-> >> > > order.
-> >> > >    * If a caller does not hold page_zone(page)->lock, it must guarantee
-> >> > > that the
-> >> > > - * page cannot be allocated or merged in parallel.
-> >> > > + * page cannot be allocated or merged in parallel. Alternatively, it must
-> >> > > + * handle invalid values gracefully, and use page_order_unsafe() below.
-> >> > >    */
-> >> > >   static inline unsigned long page_order(struct page *page)
-> >> > >   {
-> >> > > @@ -172,6 +173,23 @@ static inline unsigned long page_order(struct page
-> >> > > *page)
-> >> > >   	return page_private(page);
-> >> > >   }
-> >> > > 
-> >> > > +/*
-> >> > > + * Like page_order(), but for callers who cannot afford to hold the zone
-> >> > > lock,
-> >> > > + * and handle invalid values gracefully. ACCESS_ONCE is used so that if
-> >> > > the
-> >> > > + * caller assigns the result into a local variable and e.g. tests it for
-> >> > > valid
-> >> > > + * range  before using, the compiler cannot decide to remove the variable
-> >> > > and
-> >> > > + * inline the function multiple times, potentially observing different
-> >> > > values
-> >> > > + * in the tests and the actual use of the result.
-> >> > > + */
-> >> > > +static inline unsigned long page_order_unsafe(struct page *page)
-> >> > > +{
-> >> > > +	/*
-> >> > > +	 * PageBuddy() should be checked by the caller to minimize race
-> >> > > window,
-> >> > > +	 * and invalid values must be handled gracefully.
-> >> > > +	 */
-> >> > > +	return ACCESS_ONCE(page_private(page));
-> >> > > +}
-> >> > > +
-> >> > >   /* mm/util.c */
-> >> > >   void __vma_link_list(struct mm_struct *mm, struct vm_area_struct *vma,
-> >> > >   		struct vm_area_struct *prev, struct rb_node *rb_parent);
-> >> > 
-> >> > I don't like this change at all, I don't think we should have header
-> >> > functions that imply the context in which the function will be called.  I
-> >> > think it would make much more sense to just do
-> >> > ACCESS_ONCE(page_order(page)) in the migration scanner with a comment.
-> >> 
-> >> But that won't compile. It would have to be converted to a #define, unless
-> >> there's some trick I don't know. Sure I would hope this could be done cleaner
-> >> somehow.
-> >> 
-> > 
-> > Sorry, I meant ACCESS_ONCE(page_private(page)) in the migration scanner 
-> 
-> Hm but that's breaking the abstraction of page_order(). I don't know if it's
-> worse to create a new variant of page_order() or to do this. BTW, seems like
-> next_active_pageblock() in memory-hotplug.c should use this variant too.
-> 
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-The compiler seems free to disregard the access of a volatile object above 
-because the return value of the inline function is unsigned long.  What's 
-the difference between unsigned long order = page_order_unsafe(page) and
-unsigned long order = (unsigned long)ACCESS_ONCE(page_private(page)) and 
-the compiler being able to reaccess page_private() because the result is 
-no longer volatile qualified?
+===============
+
+commit 1ebe92802eaf0569784dce843bc28a78842d236c upstream.
+
+May fix stability issues with some newer cards.
+
+v2: print out mc firmware version used and size
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/gpu/drm/radeon/radeon_ucode.h |  3 +++
+ drivers/gpu/drm/radeon/si.c           | 35 ++++++++++++++++++++++-------------
+ 2 files changed, 25 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/gpu/drm/radeon/radeon_ucode.h b/drivers/gpu/drm/radeon/radeon_ucode.h
+index 33858364fe89..7e48c359b04c 100644
+--- a/drivers/gpu/drm/radeon/radeon_ucode.h
++++ b/drivers/gpu/drm/radeon/radeon_ucode.h
+@@ -57,6 +57,9 @@
+ #define BTC_MC_UCODE_SIZE            6024
+ #define CAYMAN_MC_UCODE_SIZE         6037
+ #define SI_MC_UCODE_SIZE             7769
++#define TAHITI_MC_UCODE_SIZE         7808
++#define PITCAIRN_MC_UCODE_SIZE       7775
++#define VERDE_MC_UCODE_SIZE          7875
+ #define OLAND_MC_UCODE_SIZE          7863
+ #define CIK_MC_UCODE_SIZE            7866
+ 
+diff --git a/drivers/gpu/drm/radeon/si.c b/drivers/gpu/drm/radeon/si.c
+index 873e0a608948..de0c2bfcc7fc 100644
+--- a/drivers/gpu/drm/radeon/si.c
++++ b/drivers/gpu/drm/radeon/si.c
+@@ -39,30 +39,35 @@ MODULE_FIRMWARE("radeon/TAHITI_pfp.bin");
+ MODULE_FIRMWARE("radeon/TAHITI_me.bin");
+ MODULE_FIRMWARE("radeon/TAHITI_ce.bin");
+ MODULE_FIRMWARE("radeon/TAHITI_mc.bin");
++MODULE_FIRMWARE("radeon/TAHITI_mc2.bin");
+ MODULE_FIRMWARE("radeon/TAHITI_rlc.bin");
+ MODULE_FIRMWARE("radeon/TAHITI_smc.bin");
+ MODULE_FIRMWARE("radeon/PITCAIRN_pfp.bin");
+ MODULE_FIRMWARE("radeon/PITCAIRN_me.bin");
+ MODULE_FIRMWARE("radeon/PITCAIRN_ce.bin");
+ MODULE_FIRMWARE("radeon/PITCAIRN_mc.bin");
++MODULE_FIRMWARE("radeon/PITCAIRN_mc2.bin");
+ MODULE_FIRMWARE("radeon/PITCAIRN_rlc.bin");
+ MODULE_FIRMWARE("radeon/PITCAIRN_smc.bin");
+ MODULE_FIRMWARE("radeon/VERDE_pfp.bin");
+ MODULE_FIRMWARE("radeon/VERDE_me.bin");
+ MODULE_FIRMWARE("radeon/VERDE_ce.bin");
+ MODULE_FIRMWARE("radeon/VERDE_mc.bin");
++MODULE_FIRMWARE("radeon/VERDE_mc2.bin");
+ MODULE_FIRMWARE("radeon/VERDE_rlc.bin");
+ MODULE_FIRMWARE("radeon/VERDE_smc.bin");
+ MODULE_FIRMWARE("radeon/OLAND_pfp.bin");
+ MODULE_FIRMWARE("radeon/OLAND_me.bin");
+ MODULE_FIRMWARE("radeon/OLAND_ce.bin");
+ MODULE_FIRMWARE("radeon/OLAND_mc.bin");
++MODULE_FIRMWARE("radeon/OLAND_mc2.bin");
+ MODULE_FIRMWARE("radeon/OLAND_rlc.bin");
+ MODULE_FIRMWARE("radeon/OLAND_smc.bin");
+ MODULE_FIRMWARE("radeon/HAINAN_pfp.bin");
+ MODULE_FIRMWARE("radeon/HAINAN_me.bin");
+ MODULE_FIRMWARE("radeon/HAINAN_ce.bin");
+ MODULE_FIRMWARE("radeon/HAINAN_mc.bin");
++MODULE_FIRMWARE("radeon/HAINAN_mc2.bin");
+ MODULE_FIRMWARE("radeon/HAINAN_rlc.bin");
+ MODULE_FIRMWARE("radeon/HAINAN_smc.bin");
+ 
+@@ -1470,7 +1475,7 @@ static int si_mc_load_microcode(struct radeon_device *rdev)
+ 	const __be32 *fw_data;
+ 	u32 running, blackout = 0;
+ 	u32 *io_mc_regs;
+-	int i, ucode_size, regs_size;
++	int i, regs_size, ucode_size = rdev->mc_fw->size / 4;
+ 
+ 	if (!rdev->mc_fw)
+ 		return -EINVAL;
+@@ -1478,28 +1483,23 @@ static int si_mc_load_microcode(struct radeon_device *rdev)
+ 	switch (rdev->family) {
+ 	case CHIP_TAHITI:
+ 		io_mc_regs = (u32 *)&tahiti_io_mc_regs;
+-		ucode_size = SI_MC_UCODE_SIZE;
+ 		regs_size = TAHITI_IO_MC_REGS_SIZE;
+ 		break;
+ 	case CHIP_PITCAIRN:
+ 		io_mc_regs = (u32 *)&pitcairn_io_mc_regs;
+-		ucode_size = SI_MC_UCODE_SIZE;
+ 		regs_size = TAHITI_IO_MC_REGS_SIZE;
+ 		break;
+ 	case CHIP_VERDE:
+ 	default:
+ 		io_mc_regs = (u32 *)&verde_io_mc_regs;
+-		ucode_size = SI_MC_UCODE_SIZE;
+ 		regs_size = TAHITI_IO_MC_REGS_SIZE;
+ 		break;
+ 	case CHIP_OLAND:
+ 		io_mc_regs = (u32 *)&oland_io_mc_regs;
+-		ucode_size = OLAND_MC_UCODE_SIZE;
+ 		regs_size = TAHITI_IO_MC_REGS_SIZE;
+ 		break;
+ 	case CHIP_HAINAN:
+ 		io_mc_regs = (u32 *)&hainan_io_mc_regs;
+-		ucode_size = OLAND_MC_UCODE_SIZE;
+ 		regs_size = TAHITI_IO_MC_REGS_SIZE;
+ 		break;
+ 	}
+@@ -1555,7 +1555,7 @@ static int si_init_microcode(struct radeon_device *rdev)
+ 	const char *chip_name;
+ 	const char *rlc_chip_name;
+ 	size_t pfp_req_size, me_req_size, ce_req_size, rlc_req_size, mc_req_size;
+-	size_t smc_req_size;
++	size_t smc_req_size, mc2_req_size;
+ 	char fw_name[30];
+ 	int err;
+ 
+@@ -1570,6 +1570,7 @@ static int si_init_microcode(struct radeon_device *rdev)
+ 		ce_req_size = SI_CE_UCODE_SIZE * 4;
+ 		rlc_req_size = SI_RLC_UCODE_SIZE * 4;
+ 		mc_req_size = SI_MC_UCODE_SIZE * 4;
++		mc2_req_size = TAHITI_MC_UCODE_SIZE * 4;
+ 		smc_req_size = ALIGN(TAHITI_SMC_UCODE_SIZE, 4);
+ 		break;
+ 	case CHIP_PITCAIRN:
+@@ -1580,6 +1581,7 @@ static int si_init_microcode(struct radeon_device *rdev)
+ 		ce_req_size = SI_CE_UCODE_SIZE * 4;
+ 		rlc_req_size = SI_RLC_UCODE_SIZE * 4;
+ 		mc_req_size = SI_MC_UCODE_SIZE * 4;
++		mc2_req_size = PITCAIRN_MC_UCODE_SIZE * 4;
+ 		smc_req_size = ALIGN(PITCAIRN_SMC_UCODE_SIZE, 4);
+ 		break;
+ 	case CHIP_VERDE:
+@@ -1590,6 +1592,7 @@ static int si_init_microcode(struct radeon_device *rdev)
+ 		ce_req_size = SI_CE_UCODE_SIZE * 4;
+ 		rlc_req_size = SI_RLC_UCODE_SIZE * 4;
+ 		mc_req_size = SI_MC_UCODE_SIZE * 4;
++		mc2_req_size = VERDE_MC_UCODE_SIZE * 4;
+ 		smc_req_size = ALIGN(VERDE_SMC_UCODE_SIZE, 4);
+ 		break;
+ 	case CHIP_OLAND:
+@@ -1599,7 +1602,7 @@ static int si_init_microcode(struct radeon_device *rdev)
+ 		me_req_size = SI_PM4_UCODE_SIZE * 4;
+ 		ce_req_size = SI_CE_UCODE_SIZE * 4;
+ 		rlc_req_size = SI_RLC_UCODE_SIZE * 4;
+-		mc_req_size = OLAND_MC_UCODE_SIZE * 4;
++		mc_req_size = mc2_req_size = OLAND_MC_UCODE_SIZE * 4;
+ 		smc_req_size = ALIGN(OLAND_SMC_UCODE_SIZE, 4);
+ 		break;
+ 	case CHIP_HAINAN:
+@@ -1609,7 +1612,7 @@ static int si_init_microcode(struct radeon_device *rdev)
+ 		me_req_size = SI_PM4_UCODE_SIZE * 4;
+ 		ce_req_size = SI_CE_UCODE_SIZE * 4;
+ 		rlc_req_size = SI_RLC_UCODE_SIZE * 4;
+-		mc_req_size = OLAND_MC_UCODE_SIZE * 4;
++		mc_req_size = mc2_req_size = OLAND_MC_UCODE_SIZE * 4;
+ 		smc_req_size = ALIGN(HAINAN_SMC_UCODE_SIZE, 4);
+ 		break;
+ 	default: BUG();
+@@ -1662,16 +1665,22 @@ static int si_init_microcode(struct radeon_device *rdev)
+ 		err = -EINVAL;
+ 	}
+ 
+-	snprintf(fw_name, sizeof(fw_name), "radeon/%s_mc.bin", chip_name);
++	snprintf(fw_name, sizeof(fw_name), "radeon/%s_mc2.bin", chip_name);
+ 	err = request_firmware(&rdev->mc_fw, fw_name, rdev->dev);
+-	if (err)
+-		goto out;
+-	if (rdev->mc_fw->size != mc_req_size) {
++	if (err) {
++		snprintf(fw_name, sizeof(fw_name), "radeon/%s_mc.bin", chip_name);
++		err = request_firmware(&rdev->mc_fw, fw_name, rdev->dev);
++		if (err)
++			goto out;
++	}
++	if ((rdev->mc_fw->size != mc_req_size) &&
++	    (rdev->mc_fw->size != mc2_req_size)) {
+ 		printk(KERN_ERR
+ 		       "si_mc: Bogus length %zu in firmware \"%s\"\n",
+ 		       rdev->mc_fw->size, fw_name);
+ 		err = -EINVAL;
+ 	}
++	DRM_INFO("%s: %zu bytes\n", fw_name, rdev->mc_fw->size);
+ 
+ 	snprintf(fw_name, sizeof(fw_name), "radeon/%s_smc.bin", chip_name);
+ 	err = request_firmware(&rdev->smc_fw, fw_name, rdev->dev);
+-- 
+1.9.3
+
