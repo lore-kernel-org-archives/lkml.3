@@ -1,125 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754778AbaFIIzA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 04:55:00 -0400
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:54396 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932452AbaFIIvc (ORCPT
+	id S933644AbaFII6f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 04:58:35 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58534 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932193AbaFIIv1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 04:51:32 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@rjwysocki.net
-Cc: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arvind.chauhan@arm.com,
-        srivatsa.bhat@linux.vnet.ibm.com, svaidy@linux.vnet.ibm.com,
-        ego@linux.vnet.ibm.com, pavel@ucw.cz,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH Resend] cpufreq: governor: remove copy_prev_load from 'struct cpu_dbs_common_info'
-Date: Mon,  9 Jun 2014 14:21:24 +0530
-Message-Id: <c7add1b66e706fc52c493f765d0ddfc8c83f3b2e.1402303829.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 2.0.0.rc2
+	Mon, 9 Jun 2014 04:51:27 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Martin Peres <martin.peres@labri.fr>,
+        Martin Peres <martin.peres@free.fr>, Ben Skeggs <bskeggs@redhat.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 081/146] drm/nouveau/pm/fan: drop the fan lock in fan_update() before rescheduling
+Date: Mon,  9 Jun 2014 10:50:16 +0200
+Message-Id: <fb5996a588e3d0aec3fc54f72b7fffcd5bc84326.1402303821.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
+References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
+In-Reply-To: <cover.1402303820.git.jslaby@suse.cz>
+References: <cover.1402303820.git.jslaby@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'copy_prev_load' was recently added by commit: 18b46ab (cpufreq: governor: Be
-friendly towards latency-sensitive bursty workloads).
+From: Martin Peres <martin.peres@labri.fr>
 
-It actually is a bit redundant as we also have 'prev_load' which can store any
-integer value and can be used instead of 'copy_prev_load' by setting it zero.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-True load can also turn out to be zero during long idle intervals (and hence the
-actual value of 'prev_load' and the overloaded value can clash). However this is
-not a problem because, if the true load was really zero in the previous
-interval, it makes sense to evaluate the load afresh for the current interval
-rather than copying the previous load.
+===============
 
-So, drop 'copy_prev_load' and use 'prev_load' instead.
+commit 61679fe153b2b9ea5b5e2ab93305419e85e99a9d upstream.
 
-Update comments as well to make it more clear.
+This should fix a deadlock that has been reported to us where fan_update()
+would hold the fan lock and try to grab the alarm_program_lock to reschedule
+an update. On an other CPU, the alarm_program_lock would have been taken
+before calling fan_update(), leading to a deadlock.
 
-There is another change here which was probably missed by Srivatsa during the
-last version of updates he made. The unlikely in the 'if' statement was covering
-only half of the condition and the whole line should actually come under it.
+We should Cc: <stable@vger.kernel.org> # 3.9+
 
-Also checkpatch is made more silent as it was reporting this (--strict option):
-
-CHECK: Alignment should match open parenthesis
-+		if (unlikely(wall_time > (2 * sampling_rate) &&
-+						j_cdbs->prev_load)) {
-
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Reported-by: Marcin Slusarz <marcin.slusarz@gmail.com>
+Tested-by: Timothée Ravier <tim@siosm.fr>
+Tested-by: Boris Fersing (IRC nick fersingb, no public email address)
+Signed-off-by: Martin Peres <martin.peres@free.fr>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
-Resend: Updated comments/logs as suggested by Srivatsa.
+ drivers/gpu/drm/nouveau/core/subdev/therm/fan.c | 19 +++++++++++++------
+ 1 file changed, 13 insertions(+), 6 deletions(-)
 
- drivers/cpufreq/cpufreq_governor.c | 19 ++++++++++++++-----
- drivers/cpufreq/cpufreq_governor.h |  9 +++++----
- 2 files changed, 19 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
-index 9004450..1b44496 100644
---- a/drivers/cpufreq/cpufreq_governor.c
-+++ b/drivers/cpufreq/cpufreq_governor.c
-@@ -131,15 +131,25 @@ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu)
- 		 * timer would not have fired during CPU-idle periods. Hence
- 		 * an unusually large 'wall_time' (as compared to the sampling
- 		 * rate) indicates this scenario.
-+		 *
-+		 * prev_load can be zero in two cases and we must recalculate it
-+		 * for both cases:
-+		 * - during long idle intervals
-+		 * - explicitly set to zero
- 		 */
--		if (unlikely(wall_time > (2 * sampling_rate)) &&
--						j_cdbs->copy_prev_load) {
-+		if (unlikely(wall_time > (2 * sampling_rate) &&
-+			     j_cdbs->prev_load)) {
- 			load = j_cdbs->prev_load;
--			j_cdbs->copy_prev_load = false;
+diff --git a/drivers/gpu/drm/nouveau/core/subdev/therm/fan.c b/drivers/gpu/drm/nouveau/core/subdev/therm/fan.c
+index 39f47b950ad1..c14cb093a64e 100644
+--- a/drivers/gpu/drm/nouveau/core/subdev/therm/fan.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/therm/fan.c
+@@ -54,8 +54,10 @@ nouveau_fan_update(struct nouveau_fan *fan, bool immediate, int target)
+ 
+ 	/* check that we're not already at the target duty cycle */
+ 	duty = fan->get(therm);
+-	if (duty == target)
+-		goto done;
++	if (duty == target) {
++		spin_unlock_irqrestore(&fan->lock, flags);
++		return 0;
++	}
+ 
+ 	/* smooth out the fanspeed increase/decrease */
+ 	if (!immediate && duty >= 0) {
+@@ -73,8 +75,15 @@ nouveau_fan_update(struct nouveau_fan *fan, bool immediate, int target)
+ 
+ 	nv_debug(therm, "FAN update: %d\n", duty);
+ 	ret = fan->set(therm, duty);
+-	if (ret)
+-		goto done;
++	if (ret) {
++		spin_unlock_irqrestore(&fan->lock, flags);
++		return ret;
++	}
 +
-+			/*
-+			 * Perform a destructive copy, to ensure that we copy
-+			 * the previous load only once, upon the first wake-up
-+			 * from idle.
-+			 */
-+			j_cdbs->prev_load = 0;
- 		} else {
- 			load = 100 * (wall_time - idle_time) / wall_time;
- 			j_cdbs->prev_load = load;
--			j_cdbs->copy_prev_load = true;
- 		}
++	/* fan speed updated, drop the fan lock before grabbing the
++	 * alarm-scheduling lock and risking a deadlock
++	 */
++	spin_unlock_irqrestore(&fan->lock, flags);
  
- 		if (load > max_load)
-@@ -373,7 +383,6 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
- 				(j_cdbs->prev_cpu_wall - j_cdbs->prev_cpu_idle);
- 			j_cdbs->prev_load = 100 * prev_load /
- 					(unsigned int) j_cdbs->prev_cpu_wall;
--			j_cdbs->copy_prev_load = true;
+ 	/* schedule next fan update, if not at target speed already */
+ 	if (list_empty(&fan->alarm.head) && target != duty) {
+@@ -92,8 +101,6 @@ nouveau_fan_update(struct nouveau_fan *fan, bool immediate, int target)
+ 		ptimer->alarm(ptimer, delay * 1000 * 1000, &fan->alarm);
+ 	}
  
- 			if (ignore_nice)
- 				j_cdbs->prev_cpu_nice =
-diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
-index c2a5b7e..cc401d1 100644
---- a/drivers/cpufreq/cpufreq_governor.h
-+++ b/drivers/cpufreq/cpufreq_governor.h
-@@ -134,12 +134,13 @@ struct cpu_dbs_common_info {
- 	u64 prev_cpu_idle;
- 	u64 prev_cpu_wall;
- 	u64 prev_cpu_nice;
--	unsigned int prev_load;
- 	/*
--	 * Flag to ensure that we copy the previous load only once, upon the
--	 * first wake-up from idle.
-+	 * Used to keep track of load in the previous interval. However, when
-+	 * explicitly set to zero, it is used as a flag to ensure that we copy
-+	 * the previous load to the current interval only once, upon the first
-+	 * wake-up from idle.
- 	 */
--	bool copy_prev_load;
-+	unsigned int prev_load;
- 	struct cpufreq_policy *cur_policy;
- 	struct delayed_work work;
- 	/*
+-done:
+-	spin_unlock_irqrestore(&fan->lock, flags);
+ 	return ret;
+ }
+ 
 -- 
-2.0.0.rc2
+1.9.3
 
