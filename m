@@ -1,88 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754922AbaFJF1K (ORCPT <rfc822;w@1wt.eu>);
+	id S1755023AbaFJF1T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 01:27:19 -0400
+Received: from mga09.intel.com ([134.134.136.24]:58137 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754841AbaFJF1K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 10 Jun 2014 01:27:10 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:46887 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754714AbaFJF1H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 01:27:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,1007,1392192000"; 
+   d="scan'208";a="554902058"
+Date: Tue, 10 Jun 2014 05:23:20 +0800
+From: Yuyang Du <yuyang.du@intel.com>
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+Cc: "mingo@redhat.com" <mingo@redhat.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Subject: Re: [RFC PATCH 00/16 v3] A new CPU load metric for power-efficient
+ scheduler: CPU ConCurrency
+Message-ID: <20140609212320.GA5487@intel.com>
+References: <1401431772-14320-1-git-send-email-yuyang.du@intel.com>
+ <20140609164848.GB29593@e103034-lin>
 MIME-Version: 1.0
-In-Reply-To: <5396207D.7030704@semaphore.gr>
-References: <5396207D.7030704@semaphore.gr>
-Date: Tue, 10 Jun 2014 10:57:06 +0530
-Message-ID: <CAKohpokYB4oKxrEwHH888T5hg=zrpb0PCs_QKTLS0bd-_fqeTA@mail.gmail.com>
-Subject: Re: [PATCH 4/7] cpufreq: intel_pstate: Simplify code in intel_pstate_adjust_busy_pstate
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Stratos Karafotis <stratosk@semaphore.gr>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140609164848.GB29593@e103034-lin>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 June 2014 02:30, Stratos Karafotis <stratosk@semaphore.gr> wrote:
-> Simplify the code by removing the inline functions
-> pstate_increase and pstate_decrease and use directly the
-> intel_pstate_set_pstate.
->
-> Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
-> ---
->  drivers/cpufreq/intel_pstate.c | 26 +++-----------------------
->  1 file changed, 3 insertions(+), 23 deletions(-)
->
-> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-> index 3a49269..26a0262 100644
-> --- a/drivers/cpufreq/intel_pstate.c
-> +++ b/drivers/cpufreq/intel_pstate.c
-> @@ -588,21 +588,6 @@ static void intel_pstate_set_pstate(struct cpudata *cpu, int pstate)
->         pstate_funcs.set(cpu, pstate);
->  }
->
-> -static inline void intel_pstate_pstate_increase(struct cpudata *cpu, int steps)
-> -{
-> -       int target;
-> -       target = cpu->pstate.current_pstate + steps;
-> -
-> -       intel_pstate_set_pstate(cpu, target);
-> -}
-> -
-> -static inline void intel_pstate_pstate_decrease(struct cpudata *cpu, int steps)
-> -{
-> -       int target;
-> -       target = cpu->pstate.current_pstate - steps;
-> -       intel_pstate_set_pstate(cpu, target);
-> -}
-> -
->  static void intel_pstate_get_cpu_pstates(struct cpudata *cpu)
->  {
->         cpu->pstate.min_pstate = pstate_funcs.get_min();
-> @@ -695,20 +680,15 @@ static inline void intel_pstate_calc_scaled_busy(struct cpudata *cpu)
->  static inline void intel_pstate_adjust_busy_pstate(struct cpudata *cpu)
->  {
->         struct _pid *pid;
-> -       signed int ctl = 0;
-> -       int steps;
-> +       signed int ctl;
->
->         pid = &cpu->pid;
->         intel_pstate_calc_scaled_busy(cpu);
->
->         ctl = pid_calc(pid, cpu->sample.busy_scaled);
->
-> -       steps = abs(ctl);
-> -
-> -       if (ctl < 0)
-> -               intel_pstate_pstate_increase(cpu, steps);
-> -       else
-> -               intel_pstate_pstate_decrease(cpu, steps);
-> +       /* Negative values of ctl increase the pstate and vice versa */
-> +       intel_pstate_set_pstate(cpu, cpu->pstate.current_pstate - ctl);
->  }
+On Mon, Jun 09, 2014 at 05:48:48PM +0100, Morten Rasmussen wrote:
 
-I am not very good at this driver but there is some obvious functional
-change here. Earlier we used to pass
-'cpu->pstate.current_pstate {-|+} steps' and now you are doing '-ctl' only
+Thanks, Morten.
+
+> > 2) CC vs. CPU utilization. CC is runqueue-length-weighted CPU utilization. If
+> > we change: "a = sum(concurrency * time) / period" to "a' = sum(1 * time) /
+> > period". Then a' is just about the CPU utilization. And the way we weight
+> > runqueue-length is the simplest one (excluding the exponential decays, and you
+> > may have other ways).
+> 
+> Isn't a' exactly to the rq runnable_avg_{sum, period} that you remove in
+> patch 1? In that case it seems more obvious to repurpose them by
+> multiplying the the contributions to the rq runnable_avg_sum by
+> nr_running. AFAICT, that should give you the same metric.
+> 
+Yes, essentially it is. Removing it is simply because rq runnable_avg_X is not used.
+And yes, by repurposing it, I can get CC, in that sense what I do is replacing it
+not just removing it, :)
+
+> On the other hand, I don't see what this new metric gives us that can't
+> be inferred from the existing load tracking metrics or through slight
+> modifications of those. It came up recently in a different thread that
+> the tracked task load is heavily influenced by other tasks running on
+> the same cpu if they happen to overlap in time. IIUC, that exactly the
+> information you are after. I think you could implement the same task
+> packing behaviour based on an unweighted version of
+> cfs.runnable_load_avg instead, which should be fairly straightforward to
+> introduce (I think it will become useful for other purposes as well). I
+> sort of hinted that in that thread already:
+> 
+> https://lkml.org/lkml/2014/6/4/54
+> 
+
+Yes, it seems an unweighted cfs.runnable_load_avg should be similar to what CC is.
+I have been thinking about and working on this.
+
+My work in this regard is in the middle. One of my concerns is how sum and period
+accrue with time, and how contrib is calculated (for both entity and rq runnable).
+Resultingly, the period is "always" around 48000, and it takes sum a long time to
+reflect the latest activity (IIUC, you also pointed this out). For balancing, this
+might not be a problem, but for consolidating, we need much more sensitivity.
+
+I don't know, but anyway, I will solve this/give a good reason (as is also
+required by PeterZ).
+
+> 
+> The potential worst case consolidated CC sum is:
+> 
+> 	n * \sum{cpus}^{n} CC[n]
+> 
+> So, the range in which the true consolidated CC lies grows
+> proportionally to the number of cpus. We can't really say anything about
+> how things will pan out if we consolidate on fewer cpus. However, if it
+> turns out to be a bad mix of tasks the task runnable_avg_sum will go up
+> and if we use cfs.runnable_load_avg as the indication of compute
+> capacity requirements, we would eventually spread the load again.
+> Clearly, we don't want an unstable situation, so it might be better to
+> the consolidation partially and see where things are going.
+> 
+
+No. The current load balancing is all done by pulling, and Workload Consolidation
+will prevent the pulling when consolidated, that said, the current load
+balancing (effectively) can/will not act in the opposite direction of
+Workload Consolidation at the same time.
+
+Is that what you are concerned?
+
+> > So, we uniformly use this condition for consolidation (suppose
+> > we consolidate m CPUs to n CPUs, m > n):
+> > 
+> > (CC[0] + CC[1] + ... + CC[m-2] + CC[m-1]) * (n + log(m-n)) >=<? (1 * n) * n *
+> > consolidating_coefficient
+> 
+> Do you have a rationale behind this heuristic? It seems to be more and
+> more pessimistic about how much load we can put on 'n' cpus as 'm'
+> increases. Basically trying to factor in some of the error that be in
+> the consolidated CC. Why the '(1 * n) * n...' and not just 'n * n * con...'?
+> 
+
+The rationale is: the more CPUs, the less likely they are concurrently running
+(coscheduled), especially when load is not high and transient (this is when we
+want to consolidate). So we go toward more optimistic for large m to small n,
+exponentially by log.
+
+> Overall, IIUC, the aim of this patch set seems quite similar to the
+> previous proposals for task packing.
+> 
+
+Ok. So I did not do a weird thing, that is good, :) and help me do it together
+since we all want it.
+
+Thanks,
+Yuyang
