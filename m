@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933688AbaFII6t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 04:58:49 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58505 "EHLO
+	id S964788AbaFII6r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 04:58:47 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58555 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932104AbaFIIv0 (ORCPT
+	by vger.kernel.org with ESMTP id S932172AbaFIIv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jun 2014 04:51:26 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 073/146] ARM: mvebu: fix NOR bus-width in Armada XP DB Device Tree
-Date: Mon,  9 Jun 2014 10:50:08 +0200
-Message-Id: <0b1e0bc4b75b241e989d7a203122e62a63529ace.1402303821.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Ilia Mirkin <imirkin@alum.mit.edu>,
+        Ben Skeggs <bskeggs@redhat.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 078/146] drm/nouveau/acpi: allow non-optimus setups to load vbios from acpi
+Date: Mon,  9 Jun 2014 10:50:13 +0200
+Message-Id: <00a54adad8dd6f044acf8e8e494650c1c6c8a93f.1402303821.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
 References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
@@ -24,55 +23,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: Ilia Mirkin <imirkin@alum.mit.edu>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit f3aec8f3f05025e7b450102dae0759375346706e upstream.
+commit a3d0b1218d351c6e6f3cea36abe22236a08cb246 upstream.
 
-The mvebu-devbus driver had a serious bug, which lead to a 8 bits bus
-width declared in the Device Tree being considered as a 16 bits bus
-width when configuring the hardware.
+There appear to be a crop of new hardware where the vbios is not
+available from PROM/PRAMIN, but there is a valid _ROM method in ACPI.
+The data read from PCIROM almost invariably contains invalid
+instructions (still has the x86 opcodes), which makes this a low-risk
+way to try to obtain a valid vbios image.
 
-This bug in mvebu-devbus driver was compensated by a symetric mistake
-in the Armada XP DB Device Tree: a 8 bits bus width was declared, even
-though the hardware actually has a 16 bits bus width connection with
-the NOR flash.
-
-Now that we have fixed the mvebu-devbus driver to behave according to
-its Device Tree binding, this commit fixes the problematic Device Tree
-files as well.
-
-This bug was introduced in commit
-b484ff42df475c5087d614c4d477273e1906bcb9 ('ARM: mvebu: Add support for
-NOR flash device on Armada XP-DB board') which was merged in v3.11.
-
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Link: https://lkml.kernel.org/r/1397489361-5833-4-git-send-email-thomas.petazzoni@free-electrons.com
-Fixes: b484ff42df47 ('ARM: mvebu: Add support for NOR flash device on Armada XP-DB board')
-Acked-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=76475
+Signed-off-by: Ilia Mirkin <imirkin@alum.mit.edu>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/arm/boot/dts/armada-xp-db.dts | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/nouveau/nouveau_acpi.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
-diff --git a/arch/arm/boot/dts/armada-xp-db.dts b/arch/arm/boot/dts/armada-xp-db.dts
-index bcf6d79a57ec..8c2fe44e4dfe 100644
---- a/arch/arm/boot/dts/armada-xp-db.dts
-+++ b/arch/arm/boot/dts/armada-xp-db.dts
-@@ -40,7 +40,7 @@
- 			/* Device Bus parameters are required */
+diff --git a/drivers/gpu/drm/nouveau/nouveau_acpi.c b/drivers/gpu/drm/nouveau/nouveau_acpi.c
+index 200e8564c59d..efdb689024e3 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_acpi.c
++++ b/drivers/gpu/drm/nouveau/nouveau_acpi.c
+@@ -419,9 +419,6 @@ bool nouveau_acpi_rom_supported(struct pci_dev *pdev)
+ 	acpi_status status;
+ 	acpi_handle dhandle, rom_handle;
  
- 			/* Read parameters */
--			devbus,bus-width    = <8>;
-+			devbus,bus-width    = <16>;
- 			devbus,turn-off-ps  = <60000>;
- 			devbus,badr-skew-ps = <0>;
- 			devbus,acc-first-ps = <124000>;
+-	if (!nouveau_dsm_priv.dsm_detected && !nouveau_dsm_priv.optimus_detected)
+-		return false;
+-
+ 	dhandle = DEVICE_ACPI_HANDLE(&pdev->dev);
+ 	if (!dhandle)
+ 		return false;
 -- 
 1.9.3
 
