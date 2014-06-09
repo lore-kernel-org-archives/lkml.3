@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964816AbaFIWqr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 18:46:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57111 "EHLO
+	id S934448AbaFIWqn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 18:46:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57062 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934271AbaFIWqE (ORCPT
+	with ESMTP id S934045AbaFIWp5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:46:04 -0400
+	Mon, 9 Jun 2014 18:45:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
+To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        iommu@lists.linux-foundation.org,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [PATCH 3.14 78/78] [stable PATCH] iommu/vt-d: Fix missing IOTLB flush in intel_iommu_unmap()
-Date: Mon,  9 Jun 2014 15:48:58 -0700
-Message-Id: <20140609224815.816758729@linuxfoundation.org>
+        Doug Smythies <dsmythies@telus.net>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.14 64/78] intel_pstate: Remove C0 tracking
+Date: Mon,  9 Jun 2014 15:48:44 -0700
+Message-Id: <20140609224815.398256803@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140609224813.282275135@linuxfoundation.org>
 References: <20140609224813.282275135@linuxfoundation.org>
@@ -29,56 +30,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Woodhouse <dwmw2@infradead.org>
+From: Dirk Brandewie <dirk.j.brandewie@intel.com>
 
-Based on commit ea8ea460c9ace60bbb5ac6e5521d637d5c15293d upstream
+commit adacdf3f2b8e65aa441613cf61c4f598e9042690 upstream.
 
-This missing IOTLB flush was added as a minor, inconsequential bug-fix
-in commit ea8ea460c ("iommu/vt-d: Clean up and fix page table clear/free
-behaviour") in 3.15. It wasn't originally intended for -stable but a
-couple of users have reported issues which turn out to be fixed by
-adding the missing flush.
+Commit fcb6a15c (intel_pstate: Take core C0 time into account for core
+busy calculation) introduced a regression referenced below.  The issue
+with "lockup" after suspend that this commit was addressing is now dealt
+with in the suspend path.
 
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Fixes: fcb6a15c2e7e (intel_pstate: Take core C0 time into account for core busy calculation)
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=66581
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=75121
+Reported-by: Doug Smythies <dsmythies@telus.net>
+Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
-For 3.14 and earlier. As noted, this fix is in 3.15 already.
+ drivers/cpufreq/intel_pstate.c |   13 +------------
+ 1 file changed, 1 insertion(+), 12 deletions(-)
 
- drivers/iommu/intel-iommu.c |   18 +++++++++++++++++-
- 1 file changed, 17 insertions(+), 1 deletion(-)
-
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -4075,7 +4075,7 @@ static size_t intel_iommu_unmap(struct i
- 			     unsigned long iova, size_t size)
+--- a/drivers/cpufreq/intel_pstate.c
++++ b/drivers/cpufreq/intel_pstate.c
+@@ -59,7 +59,6 @@ struct sample {
+ 	int32_t core_pct_busy;
+ 	u64 aperf;
+ 	u64 mperf;
+-	unsigned long long tsc;
+ 	int freq;
+ };
+ 
+@@ -100,7 +99,6 @@ struct cpudata {
+ 
+ 	u64	prev_aperf;
+ 	u64	prev_mperf;
+-	unsigned long long prev_tsc;
+ 	struct sample sample;
+ };
+ 
+@@ -561,46 +559,37 @@ static inline void intel_pstate_calc_bus
+ 					struct sample *sample)
  {
- 	struct dmar_domain *dmar_domain = domain->priv;
--	int order;
-+	int order, iommu_id;
+ 	int32_t core_pct;
+-	int32_t c0_pct;
  
- 	order = dma_pte_clear_range(dmar_domain, iova >> VTD_PAGE_SHIFT,
- 			    (iova + size - 1) >> VTD_PAGE_SHIFT);
-@@ -4083,6 +4083,22 @@ static size_t intel_iommu_unmap(struct i
- 	if (dmar_domain->max_addr == iova + size)
- 		dmar_domain->max_addr = iova;
+ 	core_pct = div_fp(int_tofp((sample->aperf)),
+ 			int_tofp((sample->mperf)));
+ 	core_pct = mul_fp(core_pct, int_tofp(100));
+ 	FP_ROUNDUP(core_pct);
  
-+	for_each_set_bit(iommu_id, dmar_domain->iommu_bmp, g_num_of_iommus) {
-+		struct intel_iommu *iommu = g_iommus[iommu_id];
-+		int num, ndomains;
-+
-+		/*
-+		 * find bit position of dmar_domain
-+		 */
-+		ndomains = cap_ndoms(iommu->cap);
-+		for_each_set_bit(num, iommu->domain_ids, ndomains) {
-+			if (iommu->domains[num] == dmar_domain)
-+				iommu_flush_iotlb_psi(iommu, num,
-+						      iova >> VTD_PAGE_SHIFT,
-+						      1 << order, 0);
-+		}
-+	}
-+
- 	return PAGE_SIZE << order;
+-	c0_pct = div_fp(int_tofp(sample->mperf), int_tofp(sample->tsc));
+-
+ 	sample->freq = fp_toint(
+ 		mul_fp(int_tofp(cpu->pstate.max_pstate * 1000), core_pct));
+ 
+-	sample->core_pct_busy = mul_fp(core_pct, c0_pct);
++	sample->core_pct_busy = core_pct;
  }
  
+ static inline void intel_pstate_sample(struct cpudata *cpu)
+ {
+ 	u64 aperf, mperf;
+-	unsigned long long tsc;
+ 
+ 	rdmsrl(MSR_IA32_APERF, aperf);
+ 	rdmsrl(MSR_IA32_MPERF, mperf);
+-	tsc = native_read_tsc();
+ 
+ 	aperf = aperf >> FRAC_BITS;
+ 	mperf = mperf >> FRAC_BITS;
+-	tsc = tsc >> FRAC_BITS;
+ 
+ 	cpu->sample.aperf = aperf;
+ 	cpu->sample.mperf = mperf;
+-	cpu->sample.tsc = tsc;
+ 	cpu->sample.aperf -= cpu->prev_aperf;
+ 	cpu->sample.mperf -= cpu->prev_mperf;
+-	cpu->sample.tsc -= cpu->prev_tsc;
+ 
+ 	intel_pstate_calc_busy(cpu, &cpu->sample);
+ 
+ 	cpu->prev_aperf = aperf;
+ 	cpu->prev_mperf = mperf;
+-	cpu->prev_tsc = tsc;
+ }
+ 
+ static inline void intel_pstate_set_sample_time(struct cpudata *cpu)
 
 
