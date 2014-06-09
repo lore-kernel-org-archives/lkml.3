@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932387AbaFIVH2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 17:07:28 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:56215 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932226AbaFIVHY (ORCPT
+	id S932433AbaFIVHx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 17:07:53 -0400
+Received: from filtteri6.pp.htv.fi ([213.243.153.189]:44848 "EHLO
+	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932195AbaFIVHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 17:07:24 -0400
-Date: Mon, 9 Jun 2014 14:07:22 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Stratos Karafotis <stratosk@semaphore.gr>
-cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 7/7] cpufreq: intel_pstate: Make intel_pstate_kobject
- local
-In-Reply-To: <53962096.1060202@semaphore.gr>
-Message-ID: <alpine.DEB.2.02.1406091405540.30620@chino.kir.corp.google.com>
-References: <53962096.1060202@semaphore.gr>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 9 Jun 2014 17:07:50 -0400
+X-Greylist: delayed 504 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 Jun 2014 17:07:49 EDT
+Date: Mon, 9 Jun 2014 23:59:17 +0300
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Seth Bollinger <sethb@digi.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        sparclinux@vger.kernel.org
+Subject: Linux 3.15: SPARC serial console regression
+Message-ID: <20140609205917.GA913@drone.musicnaut.iki.fi>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Jun 2014, Stratos Karafotis wrote:
+Hi,
 
-> Since we never remove sysfs entry, we can make the intel_pstate_kobject
-> local.
-> 
+While testing the final 3.15, I noticed the serial console (sunsab)
+does not work anymore on Sun Ultra.
 
-For even more savings, this function and 
-intel_pstate_debug_expose_params() can be annotated with __init and freed 
-after bootstrap.
+It will tx fine the console output during the boot. But then I try
+to type something e.g. at the login: prompt, it behaves oddly:
+it re-transmits some old output, and then stalls for a few secs, usually
+for each character. Typed characters are however received correctly.
+But the console is impossible to use...
 
-> Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
-> ---
->  drivers/cpufreq/intel_pstate.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-> index fa44f0f..9533fff 100644
-> --- a/drivers/cpufreq/intel_pstate.c
-> +++ b/drivers/cpufreq/intel_pstate.c
-> @@ -387,10 +387,10 @@ static struct attribute *intel_pstate_attributes[] = {
->  static struct attribute_group intel_pstate_attr_group = {
->  	.attrs = intel_pstate_attributes,
->  };
-> -static struct kobject *intel_pstate_kobject;
->  
->  static void intel_pstate_sysfs_expose_params(void)
->  {
-> +	struct kobject *intel_pstate_kobject;
->  	int rc;
->  
->  	intel_pstate_kobject = kobject_create_and_add("intel_pstate",
+I bisected this to:
+
+717f3bbab3c7628736ef738fdbf3d9a28578c26c is the first bad commit
+commit 717f3bbab3c7628736ef738fdbf3d9a28578c26c
+Author: Seth Bollinger <sethb@digi.com>
+Date:   Tue Mar 25 12:55:37 2014 -0500
+
+    serial_core: Fix conditional start_tx on ring buffer not empty
+
+A.
