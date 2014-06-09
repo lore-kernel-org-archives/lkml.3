@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755328AbaFIIyo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 04:54:44 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58480 "EHLO
+	id S933395AbaFIIzL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 04:55:11 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58580 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932476AbaFIIvy (ORCPT
+	by vger.kernel.org with ESMTP id S932227AbaFIIv1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 04:51:54 -0400
+	Mon, 9 Jun 2014 04:51:27 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Egbert Eich <eich@suse.de>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        Jani Nikula <jani.nikula@intel.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 042/146] drm/i915: Break encoder->crtc link separately in intel_sanitize_crtc()
-Date: Mon,  9 Jun 2014 10:49:37 +0200
-Message-Id: <6d7ed02039761fc0e7acbb839de65a4bfdd40486.1402303820.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Mikulas Patocka <mpatocka@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 123/146] dm crypt: fix cpu hotplug crash by removing per-cpu structure
+Date: Mon,  9 Jun 2014 10:50:58 +0200
+Message-Id: <c523f216aba1f3db34986c514dcfa738e5e00497.1402303821.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
 References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
@@ -24,122 +23,230 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Egbert Eich <eich@suse.de>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 7f1950fbb989e8fc5463b307e062b4529d51c862 upstream.
+commit 610f2de3559c383caf8fbbf91e9968102dff7ca0 upstream.
 
-Depending on the SDVO output_flags SDVO may have multiple connectors
-linking to the same encoder (in intel_connector->encoder->base).
-Only one of those connectors should be active (ie link to the encoder
-thru drm_connector->encoder).
-If intel_connector_break_all_links() is called from intel_sanitize_crtc()
-we may break the crtc connection of an encoder thru an inactive connector
-in which case intel_connector_break_all_links() will not be called again
-for the active connector if this happens to come later in the list due to:
-    if (connector->encoder->base.crtc != &crtc->base)
-                                 continue;
-in intel_sanitize_crtc().
-This will however leave the drm_connector->encoder linkage for this
-active connector in place. Subsequently this will cause multiple
-warnings in intel_connector_check_state() to trigger and the driver
-will eventually die in drm_encoder_crtc_ok() (because of crtc == NULL).
+The DM crypt target used per-cpu structures to hold pointers to a
+ablkcipher_request structure.  The code assumed that the work item keeps
+executing on a single CPU, so it didn't use synchronization when
+accessing this structure.
 
-To avoid this remove intel_connector_break_all_links() and move its
-code to its two calling functions: intel_sanitize_crtc() and
-intel_sanitize_encoder().
-This allows to implement the link breaking more flexibly matching
-the surrounding code: ie. in intel_sanitize_crtc() we can break the
-crtc link separatly after the links to the encoders have been
-broken which avoids above problem.
+If a CPU is disabled by writing 0 to /sys/devices/system/cpu/cpu*/online,
+the work item could be moved to another CPU.  This causes dm-crypt
+crashes, like the following, because the code starts using an incorrect
+ablkcipher_request:
 
-This regression has been introduced in:
+ smpboot: CPU 7 is now offline
+ BUG: unable to handle kernel NULL pointer dereference at 0000000000000130
+ IP: [<ffffffffa1862b3d>] crypt_convert+0x12d/0x3c0 [dm_crypt]
+ ...
+ Call Trace:
+  [<ffffffffa1864415>] ? kcryptd_crypt+0x305/0x470 [dm_crypt]
+  [<ffffffff81062060>] ? finish_task_switch+0x40/0xc0
+  [<ffffffff81052a28>] ? process_one_work+0x168/0x470
+  [<ffffffff8105366b>] ? worker_thread+0x10b/0x390
+  [<ffffffff81053560>] ? manage_workers.isra.26+0x290/0x290
+  [<ffffffff81058d9f>] ? kthread+0xaf/0xc0
+  [<ffffffff81058cf0>] ? kthread_create_on_node+0x120/0x120
+  [<ffffffff813464ac>] ? ret_from_fork+0x7c/0xb0
+  [<ffffffff81058cf0>] ? kthread_create_on_node+0x120/0x120
 
-commit 24929352481f085c5f85d4d4cbc919ddf106d381
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Mon Jul 2 20:28:59 2012 +0200
+Fix this bug by removing the per-cpu definition.  The structure
+ablkcipher_request is accessed via a pointer from convert_context.
+Consequently, if the work item is rescheduled to a different CPU, the
+thread still uses the same ablkcipher_request.
 
-    drm/i915: read out the modeset hw state at load and resume time
+This change may undermine performance improvements intended by commit
+c0297721 ("dm crypt: scale to multiple cpus") on select hardware.  In
+practice no performance difference was observed on recent hardware.  But
+regardless, correctness is more important than performance.
 
-so goes back to the very beginning of the modeset rework.
-
-v2: This patch takes care of the concernes voiced by Chris Wilson
-and Daniel Vetter that only breaking links if the drm_connector
-is linked to an encoder may miss some links.
-v3: move all encoder handling to encoder loop as suggested by
-Daniel Vetter.
-
-Signed-off-by: Egbert Eich <eich@suse.de>
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Jani Nikula <jani.nikula@linux.intel.com>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/gpu/drm/i915/intel_display.c | 26 ++++++++++++++------------
- 1 file changed, 14 insertions(+), 12 deletions(-)
+ drivers/md/dm-crypt.c | 61 ++++++++++-----------------------------------------
+ 1 file changed, 12 insertions(+), 49 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index 48a4faf5e63a..c74bf330d290 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -10239,15 +10239,6 @@ void intel_modeset_init(struct drm_device *dev)
- 	intel_disable_fbc(dev);
- }
+diff --git a/drivers/md/dm-crypt.c b/drivers/md/dm-crypt.c
+index 0fce0bc1a957..c513e5e4cde6 100644
+--- a/drivers/md/dm-crypt.c
++++ b/drivers/md/dm-crypt.c
+@@ -18,7 +18,6 @@
+ #include <linux/crypto.h>
+ #include <linux/workqueue.h>
+ #include <linux/backing-dev.h>
+-#include <linux/percpu.h>
+ #include <linux/atomic.h>
+ #include <linux/scatterlist.h>
+ #include <asm/page.h>
+@@ -44,6 +43,7 @@ struct convert_context {
+ 	unsigned int idx_out;
+ 	sector_t cc_sector;
+ 	atomic_t cc_pending;
++	struct ablkcipher_request *req;
+ };
  
--static void
--intel_connector_break_all_links(struct intel_connector *connector)
+ /*
+@@ -105,15 +105,7 @@ struct iv_lmk_private {
+ enum flags { DM_CRYPT_SUSPENDED, DM_CRYPT_KEY_VALID };
+ 
+ /*
+- * Duplicated per-CPU state for cipher.
+- */
+-struct crypt_cpu {
+-	struct ablkcipher_request *req;
+-};
+-
+-/*
+- * The fields in here must be read only after initialization,
+- * changing state should be in crypt_cpu.
++ * The fields in here must be read only after initialization.
+  */
+ struct crypt_config {
+ 	struct dm_dev *dev;
+@@ -143,12 +135,6 @@ struct crypt_config {
+ 	sector_t iv_offset;
+ 	unsigned int iv_size;
+ 
+-	/*
+-	 * Duplicated per cpu state. Access through
+-	 * per_cpu_ptr() only.
+-	 */
+-	struct crypt_cpu __percpu *cpu;
+-
+ 	/* ESSIV: struct crypto_cipher *essiv_tfm */
+ 	void *iv_private;
+ 	struct crypto_ablkcipher **tfms;
+@@ -184,11 +170,6 @@ static void clone_init(struct dm_crypt_io *, struct bio *);
+ static void kcryptd_queue_crypt(struct dm_crypt_io *io);
+ static u8 *iv_of_dmreq(struct crypt_config *cc, struct dm_crypt_request *dmreq);
+ 
+-static struct crypt_cpu *this_crypt_config(struct crypt_config *cc)
 -{
--	connector->base.dpms = DRM_MODE_DPMS_OFF;
--	connector->base.encoder = NULL;
--	connector->encoder->connectors_active = false;
--	connector->encoder->base.crtc = NULL;
+-	return this_cpu_ptr(cc->cpu);
 -}
 -
- static void intel_enable_pipe_a(struct drm_device *dev)
+ /*
+  * Use this to access cipher attributes that are the same for each CPU.
+  */
+@@ -738,16 +719,15 @@ static void kcryptd_async_done(struct crypto_async_request *async_req,
+ static void crypt_alloc_req(struct crypt_config *cc,
+ 			    struct convert_context *ctx)
  {
- 	struct intel_connector *connector;
-@@ -10329,8 +10320,17 @@ static void intel_sanitize_crtc(struct intel_crtc *crtc)
- 			if (connector->encoder->base.crtc != &crtc->base)
- 				continue;
+-	struct crypt_cpu *this_cc = this_crypt_config(cc);
+ 	unsigned key_index = ctx->cc_sector & (cc->tfms_count - 1);
  
--			intel_connector_break_all_links(connector);
-+			connector->base.dpms = DRM_MODE_DPMS_OFF;
-+			connector->base.encoder = NULL;
- 		}
-+		/* multiple connectors may have the same encoder:
-+		 *  handle them and break crtc link separately */
-+		list_for_each_entry(connector, &dev->mode_config.connector_list,
-+				    base.head)
-+			if (connector->encoder->base.crtc == &crtc->base) {
-+				connector->encoder->base.crtc = NULL;
-+				connector->encoder->connectors_active = false;
-+			}
+-	if (!this_cc->req)
+-		this_cc->req = mempool_alloc(cc->req_pool, GFP_NOIO);
++	if (!ctx->req)
++		ctx->req = mempool_alloc(cc->req_pool, GFP_NOIO);
  
- 		WARN_ON(crtc->active);
- 		crtc->base.enabled = false;
-@@ -10401,6 +10401,8 @@ static void intel_sanitize_encoder(struct intel_encoder *encoder)
- 				      drm_get_encoder_name(&encoder->base));
- 			encoder->disable(encoder);
- 		}
-+		encoder->base.crtc = NULL;
-+		encoder->connectors_active = false;
+-	ablkcipher_request_set_tfm(this_cc->req, cc->tfms[key_index]);
+-	ablkcipher_request_set_callback(this_cc->req,
++	ablkcipher_request_set_tfm(ctx->req, cc->tfms[key_index]);
++	ablkcipher_request_set_callback(ctx->req,
+ 	    CRYPTO_TFM_REQ_MAY_BACKLOG | CRYPTO_TFM_REQ_MAY_SLEEP,
+-	    kcryptd_async_done, dmreq_of_req(cc, this_cc->req));
++	    kcryptd_async_done, dmreq_of_req(cc, ctx->req));
+ }
  
- 		/* Inconsistent output/port/pipe state happens presumably due to
- 		 * a bug in one of the get_hw_state functions. Or someplace else
-@@ -10411,8 +10413,8 @@ static void intel_sanitize_encoder(struct intel_encoder *encoder)
- 				    base.head) {
- 			if (connector->encoder != encoder)
- 				continue;
+ /*
+@@ -756,7 +736,6 @@ static void crypt_alloc_req(struct crypt_config *cc,
+ static int crypt_convert(struct crypt_config *cc,
+ 			 struct convert_context *ctx)
+ {
+-	struct crypt_cpu *this_cc = this_crypt_config(cc);
+ 	int r;
+ 
+ 	atomic_set(&ctx->cc_pending, 1);
+@@ -768,7 +747,7 @@ static int crypt_convert(struct crypt_config *cc,
+ 
+ 		atomic_inc(&ctx->cc_pending);
+ 
+-		r = crypt_convert_block(cc, ctx, this_cc->req);
++		r = crypt_convert_block(cc, ctx, ctx->req);
+ 
+ 		switch (r) {
+ 		/* async */
+@@ -777,7 +756,7 @@ static int crypt_convert(struct crypt_config *cc,
+ 			INIT_COMPLETION(ctx->restart);
+ 			/* fall through*/
+ 		case -EINPROGRESS:
+-			this_cc->req = NULL;
++			ctx->req = NULL;
+ 			ctx->cc_sector++;
+ 			continue;
+ 
+@@ -876,6 +855,7 @@ static struct dm_crypt_io *crypt_io_alloc(struct crypt_config *cc,
+ 	io->sector = sector;
+ 	io->error = 0;
+ 	io->base_io = NULL;
++	io->ctx.req = NULL;
+ 	atomic_set(&io->io_pending, 0);
+ 
+ 	return io;
+@@ -901,6 +881,8 @@ static void crypt_dec_pending(struct dm_crypt_io *io)
+ 	if (!atomic_dec_and_test(&io->io_pending))
+ 		return;
+ 
++	if (io->ctx.req)
++		mempool_free(io->ctx.req, cc->req_pool);
+ 	mempool_free(io, cc->io_pool);
+ 
+ 	if (likely(!base_io))
+@@ -1326,8 +1308,6 @@ static int crypt_wipe_key(struct crypt_config *cc)
+ static void crypt_dtr(struct dm_target *ti)
+ {
+ 	struct crypt_config *cc = ti->private;
+-	struct crypt_cpu *cpu_cc;
+-	int cpu;
+ 
+ 	ti->private = NULL;
+ 
+@@ -1339,13 +1319,6 @@ static void crypt_dtr(struct dm_target *ti)
+ 	if (cc->crypt_queue)
+ 		destroy_workqueue(cc->crypt_queue);
+ 
+-	if (cc->cpu)
+-		for_each_possible_cpu(cpu) {
+-			cpu_cc = per_cpu_ptr(cc->cpu, cpu);
+-			if (cpu_cc->req)
+-				mempool_free(cpu_cc->req, cc->req_pool);
+-		}
 -
--			intel_connector_break_all_links(connector);
-+			connector->base.dpms = DRM_MODE_DPMS_OFF;
-+			connector->base.encoder = NULL;
- 		}
- 	}
- 	/* Enabled encoders without active connectors will be fixed in
+ 	crypt_free_tfms(cc);
+ 
+ 	if (cc->bs)
+@@ -1364,9 +1337,6 @@ static void crypt_dtr(struct dm_target *ti)
+ 	if (cc->dev)
+ 		dm_put_device(ti, cc->dev);
+ 
+-	if (cc->cpu)
+-		free_percpu(cc->cpu);
+-
+ 	kzfree(cc->cipher);
+ 	kzfree(cc->cipher_string);
+ 
+@@ -1421,13 +1391,6 @@ static int crypt_ctr_cipher(struct dm_target *ti,
+ 	if (tmp)
+ 		DMWARN("Ignoring unexpected additional cipher options");
+ 
+-	cc->cpu = __alloc_percpu(sizeof(*(cc->cpu)),
+-				 __alignof__(struct crypt_cpu));
+-	if (!cc->cpu) {
+-		ti->error = "Cannot allocate per cpu state";
+-		goto bad_mem;
+-	}
+-
+ 	/*
+ 	 * For compatibility with the original dm-crypt mapping format, if
+ 	 * only the cipher name is supplied, use cbc-plain.
 -- 
 1.9.3
 
