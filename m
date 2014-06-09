@@ -1,139 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932425AbaFIWxY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 18:53:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57183 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934296AbaFIWqI (ORCPT
+	id S934610AbaFIWxy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 18:53:54 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:34312 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932895AbaFIWxw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:46:08 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH 3.10 20/40] drm/i915: Only copy back the modified fields to userspace from execbuffer
-Date: Mon,  9 Jun 2014 15:48:51 -0700
-Message-Id: <20140609224839.845300849@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140609224839.127615063@linuxfoundation.org>
-References: <20140609224839.127615063@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Mon, 9 Jun 2014 18:53:52 -0400
 MIME-Version: 1.0
+In-Reply-To: <CALCETrUD75vSwJUjFuxGCrZ_7DJhCc1KW2v_ndF6EHJ31fUMBg@mail.gmail.com>
+References: <1401332999-15167-1-git-send-email-eparis@redhat.com>
+	<20140609223057.GB18475@kroah.com>
+	<CALCETrUD75vSwJUjFuxGCrZ_7DJhCc1KW2v_ndF6EHJ31fUMBg@mail.gmail.com>
+Date: Mon, 9 Jun 2014 15:53:51 -0700
+X-Google-Sender-Auth: T3gKRIFievXRiS_-U5Oiho7MUtY
+Message-ID: <CA+55aFwmajRnDOiBmZQf8rpVE-HigsDYy9oy-TsWLzn-vdyF+Q@mail.gmail.com>
+Subject: Re: [PATCH 1/2] auditsc: audit_krule mask accesses need bounds checking
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Eric Paris <eparis@redhat.com>,
+        linux-audit@redhat.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Mon, Jun 9, 2014 at 3:35 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>
+> Hmm.  It seems that it didn't make it into Linus' tree.  Crap.
 
-------------------
+I assume that if there is a maintainer who normally sends me stuff by
+git, when I see patches in emails they are just informational
+heads-ups about stuff that is being discussed or pending, and that
+I'll see it later in a pull request. So I just ignore them unless I
+have specific comments, since clearly the emailed patch is just
+informational and/or for comments/acks from others.
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+The exception is unless it *VERY CLEARLY* says otherwise (as in
+"Linus, can you please take this directly due to xyz").
 
-commit 9aab8bff7aa3bee567213ad3c1fdfb217bb980a2 upstream.
+Because why would somebody send me a patch series sometimes, and git
+trees at other times? That would just be stupid.
 
-We only want to modifiy a single field in the userspace view of the
-execbuffer command buffer, so explicitly change that rather than copy
-everything back again.
-
-This serves two purposes:
-
-1. The single fields are much cheaper to copy (constant size so the
-copy uses special case code) and much smaller than the whole array.
-
-2. We modify the array for internal use that need to be masked from
-the user.
-
-Note: We need this backported since without it the next bugfix will
-blow up when userspace recycles batchbuffers and relocations.
-
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/gpu/drm/i915/i915_gem_execbuffer.c |   54 +++++++++++++++++------------
- 1 file changed, 32 insertions(+), 22 deletions(-)
-
---- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-+++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-@@ -635,9 +635,9 @@ i915_gem_execbuffer_relocate_slow(struct
- 		 * relocations were valid.
- 		 */
- 		for (j = 0; j < exec[i].relocation_count; j++) {
--			if (copy_to_user(&user_relocs[j].presumed_offset,
--					 &invalid_offset,
--					 sizeof(invalid_offset))) {
-+			if (__copy_to_user(&user_relocs[j].presumed_offset,
-+					   &invalid_offset,
-+					   sizeof(invalid_offset))) {
- 				ret = -EFAULT;
- 				mutex_lock(&dev->struct_mutex);
- 				goto err;
-@@ -1151,18 +1151,21 @@ i915_gem_execbuffer(struct drm_device *d
- 
- 	ret = i915_gem_do_execbuffer(dev, data, file, &exec2, exec2_list);
- 	if (!ret) {
-+		struct drm_i915_gem_exec_object __user *user_exec_list =
-+			to_user_ptr(args->buffers_ptr);
-+
- 		/* Copy the new buffer offsets back to the user's exec list. */
--		for (i = 0; i < args->buffer_count; i++)
--			exec_list[i].offset = exec2_list[i].offset;
--		/* ... and back out to userspace */
--		ret = copy_to_user(to_user_ptr(args->buffers_ptr),
--				   exec_list,
--				   sizeof(*exec_list) * args->buffer_count);
--		if (ret) {
--			ret = -EFAULT;
--			DRM_DEBUG("failed to copy %d exec entries "
--				  "back to user (%d)\n",
--				  args->buffer_count, ret);
-+		for (i = 0; i < args->buffer_count; i++) {
-+			ret = __copy_to_user(&user_exec_list[i].offset,
-+					     &exec2_list[i].offset,
-+					     sizeof(user_exec_list[i].offset));
-+			if (ret) {
-+				ret = -EFAULT;
-+				DRM_DEBUG("failed to copy %d exec entries "
-+					  "back to user (%d)\n",
-+					  args->buffer_count, ret);
-+				break;
-+			}
- 		}
- 	}
- 
-@@ -1208,14 +1211,21 @@ i915_gem_execbuffer2(struct drm_device *
- 	ret = i915_gem_do_execbuffer(dev, data, file, args, exec2_list);
- 	if (!ret) {
- 		/* Copy the new buffer offsets back to the user's exec list. */
--		ret = copy_to_user(to_user_ptr(args->buffers_ptr),
--				   exec2_list,
--				   sizeof(*exec2_list) * args->buffer_count);
--		if (ret) {
--			ret = -EFAULT;
--			DRM_DEBUG("failed to copy %d exec entries "
--				  "back to user (%d)\n",
--				  args->buffer_count, ret);
-+		struct drm_i915_gem_exec_object2 *user_exec_list =
-+				   to_user_ptr(args->buffers_ptr);
-+		int i;
-+
-+		for (i = 0; i < args->buffer_count; i++) {
-+			ret = __copy_to_user(&user_exec_list[i].offset,
-+					     &exec2_list[i].offset,
-+					     sizeof(user_exec_list[i].offset));
-+			if (ret) {
-+				ret = -EFAULT;
-+				DRM_DEBUG("failed to copy %d exec entries "
-+					  "back to user\n",
-+					  args->buffer_count);
-+				break;
-+			}
- 		}
- 	}
- 
-
-
+              Linus
