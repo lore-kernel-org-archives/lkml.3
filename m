@@ -1,146 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932772AbaFIM7W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 08:59:22 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:39449 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752679AbaFIM7U (ORCPT
+	id S933194AbaFIM71 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 08:59:27 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:36893 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932758AbaFIM7X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 08:59:20 -0400
+	Mon, 9 Jun 2014 08:59:23 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: bdas@redhat.com, gleb@kernel.org
-Subject: [PATCH 00/25] KVM: x86: Speed up emulation of invalid state
-Date: Mon,  9 Jun 2014 14:58:48 +0200
-Message-Id: <1402318753-23362-1-git-send-email-pbonzini@redhat.com>
+Subject: [PATCH 02/25] KVM: x86: return all bits from get_interrupt_shadow
+Date: Mon,  9 Jun 2014 14:58:50 +0200
+Message-Id: <1402318753-23362-3-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1402318753-23362-1-git-send-email-pbonzini@redhat.com>
+References: <1402318753-23362-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series, done in collaboration with Bandan Das, speeds up
-emulation of invalid state by approximately a factor of 4
-(as measured by realmode.flat).  It brings together patches sent
-as RFC in the past 3 months, and adds a few more on top.
+For the next patch we will need to know the full state of the
+interrupt shadow; we will then set KVM_REQ_EVENT when one bit
+is cleared.
 
-The total speedup achieved is around 3x.  Some changes shave a constant
-number of cycles from all instructions; others only affect more complex
-instructions that take more clock cycles to run.  Together, these two
-different effects make the speedup nicely homogeneous across various kinds
-of instructions.  Here are rough numbers (expressed in clock cycles on a
-Sandy Bridge Xeon machine, with unrestricted_guest=0) at various points
-of the series:
+However, right now get_interrupt_shadow only returns the one
+corresponding to the emulated instruction, or an unconditional
+0 if the emulated instruction does not have an interrupt shadow.
+This is confusing and does not allow us to check for cleared
+bits as mentioned above.
 
-    jump  move  arith load  store RMW
-    2300  2600  2500  2800  2800  3200
-    1650  1950  1900  2150  2150  2600   KVM: vmx: speed up emulation of invalid guest state
-    900   1250  1050  1350  1300  1700   KVM: x86: avoid useless set of KVM_REQ_EVENT after emulation
-    900   1050  1050  1350  1300  1700   KVM: emulate: speed up emulated moves
-    900   1050  1050  1300  1250  1400   KVM: emulate: extend memory access optimization to stores
-    825   1000  1000  1250  1200  1350   KVM: emulate: do not initialize memopp
-    750   950   950   1150  1050  1200   KVM: emulate: avoid per-byte copying in instruction fetches
-    720   850   850   1075  1000  1100   KVM: x86: use kvm_read_guest_page for emulator accesses
+Clean the callback up, and modify toggle_interruptibility to
+match the comment above the call.  As a small result, the
+call to set_interrupt_shadow will be skipped in the common
+case where int_shadow == 0 && mask == 0.
 
-The above only lists the patches where the improvement on kvm-unit-tests
-became consistently identifiable and reproducible.  Take these with a
-grain of salt, since all the rounding here was done by hand, no stddev
-is provided, etc.
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+ arch/x86/include/asm/kvm_host.h |  2 +-
+ arch/x86/kvm/svm.c              |  6 +++---
+ arch/x86/kvm/vmx.c              |  4 ++--
+ arch/x86/kvm/x86.c              | 10 +++++-----
+ 4 files changed, 11 insertions(+), 11 deletions(-)
 
-I tried to be quite strict and limited this series to patches that obey
-the following criteria:
-
-* either the patch is by itself a measurable improvement
-(example: patch 6)
-
-* or the patch is a really really obvious improvement (example:
-patch 17), the compiler must really screw up for this not to be the
-case
-
-* or the patch is just preparatory for a subsequent measurable
-improvement.
-
-Quite a few functions disappear from the profile, and others have their
-cost cut by a pretty large factor:
-
-   61643         [kvm_intel]       vmx_segment_access_rights
-   47504         [kvm]             vcpu_enter_guest
-   34610         [kvm_intel]       rmode_segment_valid
-   30312  7119   [kvm_intel]       vmx_get_segment
-   27371 23363   [kvm]             x86_decode_insn
-   20924 21185   [kernel.kallsyms] copy_user_generic_string
-   18775  3614   [kvm_intel]       vmx_read_guest_seg_selector
-   18040  9580   [kvm]             emulator_get_segment
-   16061  5791   [kvm]             do_insn_fetch (__do_insn_fetch_bytes after patches)
-   15834  5530   [kvm]             kvm_read_guest (kvm_fetch_guest_virt after patches)
-   15721         [kernel.kallsyms] __srcu_read_lock
-   15439  4115   [kvm]             init_emulate_ctxt
-   14421 11692   [kvm]             x86_emulate_instruction
-   12498         [kernel.kallsyms] __srcu_read_unlock
-   12385 11779   [kvm]             __linearize
-   12385 13194   [kvm]             decode_operand
-    7408  5574   [kvm]             x86_emulate_insn
-    6447         [kvm]             kvm_lapic_find_highest_irr
-    6390         [kvm_intel]       vmx_handle_exit
-    5598  3418   [kvm_intel]       vmx_interrupt_allowed
-
-Honorable mentions among things that I tried and didn't have the effect
-I hoped for: using __get_user/__put_user to read memory operands, and
-simplifying linearize.
-
-
-Patches 1-6 are various low-hanging fruit, which alone provide a
-2-2.5x speedup (higher on simpler instructions).
-
-Patches 7-12 make the emulator cache the host virtual address of memory
-operands, thus avoid walking the page table twice.
-
-Patch 13-18 avoid wasting time unnecessarily in the memset call of
-x86_emulate_ctxt.
-
-Patches 19-22 speed up operand fetching.
-
-Patches 23-25 are the loose ends.
-
-Bandan Das (6):
-  KVM: emulate: move init_decode_cache to emulate.c
-  KVM: emulate: Remove ctxt->intercept and ctxt->check_perm checks
-  KVM: emulate: cleanup decode_modrm
-  KVM: emulate: clean up initializations in init_decode_cache
-  KVM: emulate: rework seg_override
-  KVM: emulate: do not initialize memopp
-
-Paolo Bonzini (19):
-  KVM: vmx: speed up emulation of invalid guest state
-  KVM: x86: return all bits from get_interrupt_shadow
-  KVM: x86: avoid useless set of KVM_REQ_EVENT after emulation
-  KVM: emulate: move around some checks
-  KVM: emulate: protect checks on ctxt->d by a common "if (unlikely())"
-  KVM: emulate: speed up emulated moves
-  KVM: emulate: simplify writeback
-  KVM: emulate: abstract handling of memory operands
-  KVM: export mark_page_dirty_in_slot
-  KVM: emulate: introduce memory_prepare callback to speed up memory access
-  KVM: emulate: activate memory access optimization
-  KVM: emulate: extend memory access optimization to stores
-  KVM: emulate: speed up do_insn_fetch
-  KVM: emulate: avoid repeated calls to do_insn_fetch_bytes
-  KVM: emulate: avoid per-byte copying in instruction fetches
-  KVM: emulate: put pointers in the fetch_cache
-  KVM: x86: use kvm_read_guest_page for emulator accesses
-  KVM: emulate: simplify BitOp handling
-  KVM: emulate: fix harmless typo in MMX decoding
-
- arch/x86/include/asm/kvm_emulate.h |  59 ++++-
- arch/x86/include/asm/kvm_host.h    |   2 +-
- arch/x86/kvm/emulate.c             | 481 ++++++++++++++++++++++---------------
- arch/x86/kvm/svm.c                 |   6 +-
- arch/x86/kvm/trace.h               |   6 +-
- arch/x86/kvm/vmx.c                 |   9 +-
- arch/x86/kvm/x86.c                 | 147 +++++++++---
- include/linux/kvm_host.h           |   6 +
- virt/kvm/kvm_main.c                |  17 +-
- 9 files changed, 473 insertions(+), 260 deletions(-)
-
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 63e020be3da7..0b140dc65bee 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -717,7 +717,7 @@ struct kvm_x86_ops {
+ 	int (*handle_exit)(struct kvm_vcpu *vcpu);
+ 	void (*skip_emulated_instruction)(struct kvm_vcpu *vcpu);
+ 	void (*set_interrupt_shadow)(struct kvm_vcpu *vcpu, int mask);
+-	u32 (*get_interrupt_shadow)(struct kvm_vcpu *vcpu, int mask);
++	u32 (*get_interrupt_shadow)(struct kvm_vcpu *vcpu);
+ 	void (*patch_hypercall)(struct kvm_vcpu *vcpu,
+ 				unsigned char *hypercall_addr);
+ 	void (*set_irq)(struct kvm_vcpu *vcpu);
+diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+index ec8366c5cfea..175702d51176 100644
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -486,14 +486,14 @@ static int is_external_interrupt(u32 info)
+ 	return info == (SVM_EVTINJ_VALID | SVM_EVTINJ_TYPE_INTR);
+ }
+ 
+-static u32 svm_get_interrupt_shadow(struct kvm_vcpu *vcpu, int mask)
++static u32 svm_get_interrupt_shadow(struct kvm_vcpu *vcpu)
+ {
+ 	struct vcpu_svm *svm = to_svm(vcpu);
+ 	u32 ret = 0;
+ 
+ 	if (svm->vmcb->control.int_state & SVM_INTERRUPT_SHADOW_MASK)
+-		ret |= KVM_X86_SHADOW_INT_STI | KVM_X86_SHADOW_INT_MOV_SS;
+-	return ret & mask;
++		ret = KVM_X86_SHADOW_INT_STI | KVM_X86_SHADOW_INT_MOV_SS;
++	return ret;
+ }
+ 
+ static void svm_set_interrupt_shadow(struct kvm_vcpu *vcpu, int mask)
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index a2ae11d162fe..57ed3aa0f5d3 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -1940,7 +1940,7 @@ static void vmx_set_rflags(struct kvm_vcpu *vcpu, unsigned long rflags)
+ 	vmcs_writel(GUEST_RFLAGS, rflags);
+ }
+ 
+-static u32 vmx_get_interrupt_shadow(struct kvm_vcpu *vcpu, int mask)
++static u32 vmx_get_interrupt_shadow(struct kvm_vcpu *vcpu)
+ {
+ 	u32 interruptibility = vmcs_read32(GUEST_INTERRUPTIBILITY_INFO);
+ 	int ret = 0;
+@@ -1950,7 +1950,7 @@ static u32 vmx_get_interrupt_shadow(struct kvm_vcpu *vcpu, int mask)
+ 	if (interruptibility & GUEST_INTR_STATE_MOV_SS)
+ 		ret |= KVM_X86_SHADOW_INT_MOV_SS;
+ 
+-	return ret & mask;
++	return ret;
+ }
+ 
+ static void vmx_set_interrupt_shadow(struct kvm_vcpu *vcpu, int mask)
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 451d6acea808..70faa1089b75 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -2974,9 +2974,7 @@ static void kvm_vcpu_ioctl_x86_get_vcpu_events(struct kvm_vcpu *vcpu,
+ 		vcpu->arch.interrupt.pending && !vcpu->arch.interrupt.soft;
+ 	events->interrupt.nr = vcpu->arch.interrupt.nr;
+ 	events->interrupt.soft = 0;
+-	events->interrupt.shadow =
+-		kvm_x86_ops->get_interrupt_shadow(vcpu,
+-			KVM_X86_SHADOW_INT_MOV_SS | KVM_X86_SHADOW_INT_STI);
++	events->interrupt.shadow = kvm_x86_ops->get_interrupt_shadow(vcpu);
+ 
+ 	events->nmi.injected = vcpu->arch.nmi_injected;
+ 	events->nmi.pending = vcpu->arch.nmi_pending != 0;
+@@ -4857,7 +4855,7 @@ static const struct x86_emulate_ops emulate_ops = {
+ 
+ static void toggle_interruptibility(struct kvm_vcpu *vcpu, u32 mask)
+ {
+-	u32 int_shadow = kvm_x86_ops->get_interrupt_shadow(vcpu, mask);
++	u32 int_shadow = kvm_x86_ops->get_interrupt_shadow(vcpu);
+ 	/*
+ 	 * an sti; sti; sequence only disable interrupts for the first
+ 	 * instruction. So, if the last instruction, be it emulated or
+@@ -4865,7 +4863,9 @@ static void toggle_interruptibility(struct kvm_vcpu *vcpu, u32 mask)
+ 	 * means that the last instruction is an sti. We should not
+ 	 * leave the flag on in this case. The same goes for mov ss
+ 	 */
+-	if (!(int_shadow & mask))
++	if (int_shadow & mask)
++		mask = 0;
++	if (unlikely(int_shadow || mask))
+ 		kvm_x86_ops->set_interrupt_shadow(vcpu, mask);
+ }
+ 
 -- 
 1.8.3.1
+
 
