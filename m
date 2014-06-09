@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933909AbaFINEw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 09:04:52 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:65016 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933204AbaFIM7a (ORCPT
+	id S933667AbaFINFM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 09:05:12 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:35788 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932816AbaFIM7Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 08:59:30 -0400
+	Mon, 9 Jun 2014 08:59:25 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: bdas@redhat.com, gleb@kernel.org
-Subject: [PATCH 07/25] KVM: emulate: simplify writeback
-Date: Mon,  9 Jun 2014 14:58:55 +0200
-Message-Id: <1402318753-23362-8-git-send-email-pbonzini@redhat.com>
+Subject: [PATCH 04/25] KVM: emulate: move around some checks
+Date: Mon,  9 Jun 2014 14:58:52 +0200
+Message-Id: <1402318753-23362-5-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1402318753-23362-1-git-send-email-pbonzini@redhat.com>
 References: <1402318753-23362-1-git-send-email-pbonzini@redhat.com>
@@ -20,65 +20,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The "if/return" checks are useless, because we return X86EMUL_CONTINUE
-anyway if we do not return.
+The only purpose of this patch is to make the next patch simpler
+to review.  No semantic change.
 
-Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- arch/x86/kvm/emulate.c | 28 +++++++++++-----------------
- 1 file changed, 11 insertions(+), 17 deletions(-)
+ arch/x86/kvm/emulate.c | 17 ++++++++++-------
+ 1 file changed, 10 insertions(+), 7 deletions(-)
 
 diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index 5f902d40740c..a1daf52fae58 100644
+index bc670675223d..63ba8bd82a36 100644
 --- a/arch/x86/kvm/emulate.c
 +++ b/arch/x86/kvm/emulate.c
-@@ -1585,34 +1585,28 @@ static void write_register_operand(struct operand *op)
+@@ -4381,12 +4381,15 @@ done_prefixes:
+ 		ctxt->d |= opcode.flags;
+ 	}
  
- static int writeback(struct x86_emulate_ctxt *ctxt, struct operand *op)
- {
--	int rc;
--
- 	switch (op->type) {
- 	case OP_REG:
- 		write_register_operand(op);
- 		break;
- 	case OP_MEM:
- 		if (ctxt->lock_prefix)
--			rc = segmented_cmpxchg(ctxt,
-+			return segmented_cmpxchg(ctxt,
-+						 op->addr.mem,
-+						 &op->orig_val,
-+						 &op->val,
-+						 op->bytes);
-+		else
-+			return segmented_write(ctxt,
- 					       op->addr.mem,
--					       &op->orig_val,
- 					       &op->val,
- 					       op->bytes);
--		else
--			rc = segmented_write(ctxt,
--					     op->addr.mem,
--					     &op->val,
--					     op->bytes);
--		if (rc != X86EMUL_CONTINUE)
--			return rc;
- 		break;
- 	case OP_MEM_STR:
--		rc = segmented_write(ctxt,
--				op->addr.mem,
--				op->data,
--				op->bytes * op->count);
--		if (rc != X86EMUL_CONTINUE)
--			return rc;
-+		return segmented_write(ctxt,
-+				       op->addr.mem,
-+				       op->data,
-+				       op->bytes * op->count);
- 		break;
- 	case OP_XMM:
- 		write_sse_reg(ctxt, &op->vec_val, op->addr.xmm);
++	/* Unrecognised? */
++	if (ctxt->d == 0)
++		return EMULATION_FAILED;
++
+ 	ctxt->execute = opcode.u.execute;
+ 	ctxt->check_perm = opcode.check_perm;
+ 	ctxt->intercept = opcode.intercept;
+ 
+-	/* Unrecognised? */
+-	if (ctxt->d == 0 || (ctxt->d & NotImpl))
++	if (ctxt->d & NotImpl)
+ 		return EMULATION_FAILED;
+ 
+ 	if (!(ctxt->d & EmulateOnUD) && ctxt->ud)
+@@ -4528,19 +4531,19 @@ int x86_emulate_insn(struct x86_emulate_ctxt *ctxt)
+ 
+ 	ctxt->mem_read.pos = 0;
+ 
+-	if ((ctxt->mode == X86EMUL_MODE_PROT64 && (ctxt->d & No64)) ||
+-			(ctxt->d & Undefined)) {
++	/* LOCK prefix is allowed only with some instructions */
++	if (ctxt->lock_prefix && (!(ctxt->d & Lock) || ctxt->dst.type != OP_MEM)) {
+ 		rc = emulate_ud(ctxt);
+ 		goto done;
+ 	}
+ 
+-	/* LOCK prefix is allowed only with some instructions */
+-	if (ctxt->lock_prefix && (!(ctxt->d & Lock) || ctxt->dst.type != OP_MEM)) {
++	if ((ctxt->d & SrcMask) == SrcMemFAddr && ctxt->src.type != OP_MEM) {
+ 		rc = emulate_ud(ctxt);
+ 		goto done;
+ 	}
+ 
+-	if ((ctxt->d & SrcMask) == SrcMemFAddr && ctxt->src.type != OP_MEM) {
++	if ((ctxt->mode == X86EMUL_MODE_PROT64 && (ctxt->d & No64)) ||
++			(ctxt->d & Undefined)) {
+ 		rc = emulate_ud(ctxt);
+ 		goto done;
+ 	}
 -- 
 1.8.3.1
 
