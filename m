@@ -1,128 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933126AbaFIXkk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 19:40:40 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:50248 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754369AbaFIXki (ORCPT
+	id S933377AbaFIXlk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 19:41:40 -0400
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:56084 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933147AbaFIXlj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 19:40:38 -0400
-Message-ID: <539645EE.6020009@collabora.co.uk>
-Date: Tue, 10 Jun 2014 01:40:30 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Mon, 9 Jun 2014 19:41:39 -0400
+Date: Mon, 9 Jun 2014 16:41:36 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Vlastimil Babka <vbabka@suse.cz>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 01/10] mm, compaction: do not recheck suitable_migration_target
+ under lock
+In-Reply-To: <1402305982-6928-1-git-send-email-vbabka@suse.cz>
+Message-ID: <alpine.DEB.2.02.1406091636190.17705@chino.kir.corp.google.com>
+References: <1402305982-6928-1-git-send-email-vbabka@suse.cz>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
-        Daniel Stone <daniels@collabora.com>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] mfd: Add driver for Maxim 77802 Power Management
- IC
-References: <1402306670-17041-1-git-send-email-javier.martinez@collabora.co.uk> <1402306670-17041-2-git-send-email-javier.martinez@collabora.co.uk> <20140609194713.GF5099@sirena.org.uk>
-In-Reply-To: <20140609194713.GF5099@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Mark,
+On Mon, 9 Jun 2014, Vlastimil Babka wrote:
 
-On 06/09/2014 09:47 PM, Mark Brown wrote:
-> On Mon, Jun 09, 2014 at 11:37:46AM +0200, Javier Martinez Canillas wrote:
+> isolate_freepages_block() rechecks if the pageblock is suitable to be a target
+> for migration after it has taken the zone->lock. However, the check has been
+> optimized to occur only once per pageblock, and compact_checklock_irqsave()
+> might be dropping and reacquiring lock, which means somebody else might have
+> changed the pageblock's migratetype meanwhile.
 > 
->> +Optional node:
->> +- voltage-regulators : The regulators of max77802 have to be instantiated
->> +  under subnode named "voltage-regulators" using the following format.
+> Furthermore, nothing prevents the migratetype to change right after
+> isolate_freepages_block() has finished isolating. Given how imperfect this is,
+> it's simpler to just rely on the check done in isolate_freepages() without
+> lock, and not pretend that the recheck under lock guarantees anything. It is
+> just a heuristic after all.
 > 
-> Every other PMIC calls this node regulators...
-> 
+> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+> Cc: Minchan Kim <minchan@kernel.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Cc: Michal Nazarewicz <mina86@mina86.com>
+> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: David Rientjes <rientjes@google.com>
 
-Ok, I'll change for consistency.
+Acked-by: David Rientjes <rientjes@google.com>
 
->> +	regulator_name {
->> +		regulator-compatible = LDOn/BUCKn
-> 
-> regulator-compatible is deprecated, use the node name instead.
-> 
+We already do a preliminary check for suitable_migration_target() in 
+isolate_freepages() in a racy way to avoid unnecessary work (and 
+page_order() there is unprotected, I think you already mentioned this) so 
+this seems fine to abandon.
 
-Ok.
-
->> +config MFD_MAX77802
->> +	bool "Maxim Integrated MAX77802 PMIC Support"
-> 
-> Why is this bool and not tristate?
-> 
-
-I noticed that the majority of the mfd PMIC drivers were bool and not tristate
-so I thought it was a convention. But nothing prevents this driver to be built
-as a module so I'll change it to tristate.
-
->> +int max77802_irq_resume(struct max77802_dev *max77802)
->> +{
->> +	/*
->> +	 * The IRQ that woke us up may still need to be ACK'ed on resume.
->> +	 * If it isn't ever ACK'ed, future IRQs may not be delivered.
->> +	 */
->> +	if (max77802->irq)
->> +		max77802_irq_thread(0, max77802);
->> +
->> +	return 0;
->> +}
-> 
-> As covered in another subthread all this code looks like it should be
-> regmap-irq.
+> ---
+> I suggest folding mm-compactionc-isolate_freepages_block-small-tuneup.patch into this
 > 
 
-It seems so, I'll take that into account for v2.
-
->> +	if (regmap_read(max77802->regmap,
->> +			 MAX77802_REG_DEVICE_ID, &data) < 0) {
->> +		dev_err(max77802->dev,
->> +			"device not found on this channel (this is not an error)\n");
->> +		return -ENODEV;
-> 
-> If this is not an error why is it printed as dev_err()?  It does look
-> like an error to me, though.
-> 
-
-Yeah, it is an error so I'll clean that message.
-
->> +	} else {
->> +		dev_info(max77802->dev, "device found\n");
->> +	}
-> 
-> These sort of prints are just noise, remove this unless there is some
-> revision information you can display.  It's also better practice to
-> check that the device ID is actually what was expected in case there was
-> an error in the DT.
-> 
-
-Ok, will do.
-
->> +static const struct i2c_device_id max77802_i2c_id[] = {
->> +	{ "max77802", TYPE_MAX77802 },
->> +	{ }
->> +};
->> +MODULE_DEVICE_TABLE(i2c, max77802_i2c_id);
-> 
-> We have type information here but not in the OF ID table (not that we
-> ever look at it).
-> 
-
-Yeah, I'll remove the type information here. It is a left over when trying to
-combine both max77802 and max77686 drivers since in a combined driver we need
-the type information.
-
-Thanks a lot for your feedback.
-
-Best regards,
-Javier
+Hmm, Andrew was just moving some code around in that patch, I'm not sure 
+that it makes sense to couple these two together and your patch here is 
+addressing an optimization rather than a cleanup (and you've documented it 
+well, no need to obscure it with unrelated changes).
