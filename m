@@ -1,26 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936472AbaFIJmI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 05:42:08 -0400
+	id S936744AbaFIJmd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 05:42:33 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59137 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755348AbaFIJ0U (ORCPT
+	by vger.kernel.org with ESMTP id S1754893AbaFIJ0R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 05:26:20 -0400
+	Mon, 9 Jun 2014 05:26:17 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        "Ma, Xindong" <xindong.ma@intel.com>,
-        "Tu, Xiaobing" <xiaobing.tu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 002/146] oom_kill: change oom_kill.c to use for_each_thread()
-Date: Mon,  9 Jun 2014 10:48:57 +0200
-Message-Id: <7fdd16a11979a1cdb9157d144574010700497b69.1402303820.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert+renesas@glider.be>,
+        Mark Brown <broonie@linaro.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 137/146] spi: core: Ignore unsupported Dual/Quad Transfer Mode bits
+Date: Mon,  9 Jun 2014 10:51:12 +0200
+Message-Id: <fe18843c6cd2860ac6981c6465315a9b49612e06.1402303821.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
 References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
@@ -30,126 +23,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Geert Uytterhoeven <geert+renesas@glider.be>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 1da4db0cd5c8a31d4468ec906b413e75e604b465 upstream.
+commit 83596fbeb5d28e8cb8878786133945d4dc7c0090 upstream.
 
-Change oom_kill.c to use for_each_thread() rather than the racy
-while_each_thread() which can loop forever if we race with exit.
+The availability of SPI Dual or Quad Transfer Mode as indicated by the
+"spi-tx-bus-width" and "spi-rx-bus-width" properties in the device tree is
+a hardware property of the SPI master, SPI slave, and board wiring.  Hence
+the SPI core should not reject an SPI slave because an SPI master driver
+doesn't (yet) support Dual or Quad Transfer Mode.
 
-Note also that most users were buggy even if while_each_thread() was
-fine, the task can exit even _before_ rcu_read_lock().
+Change the lack of Dual or Quad Transfer Mode support in the SPI master
+driver from an error condition to a warning condition, and ignore the
+unsupported mode bits, falling back to Single Transfer Mode, to avoid
+breakages when running old kernels with new device trees.
 
-Fortunately the new for_each_thread() only requires the stable
-task_struct, so this change fixes both problems.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Reviewed-by: Sergey Dyasly <dserrg@gmail.com>
-Tested-by: Sergey Dyasly <dserrg@gmail.com>
-Reviewed-by: Sameer Nanda <snanda@chromium.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mandeep Singh Baines <msb@chromium.org>
-Cc: "Ma, Xindong" <xindong.ma@intel.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Cc: "Tu, Xiaobing" <xiaobing.tu@intel.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Fixes: f477b7fb13df (spi: DUAL and QUAD support)
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- mm/oom_kill.c | 20 ++++++++++----------
- 1 file changed, 10 insertions(+), 10 deletions(-)
+ drivers/spi/spi.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index e73f01c56d10..cae791c15c51 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -59,7 +59,7 @@ static bool has_intersects_mems_allowed(struct task_struct *tsk,
- {
- 	struct task_struct *start = tsk;
- 
--	do {
-+	for_each_thread(start, tsk) {
- 		if (mask) {
- 			/*
- 			 * If this is a mempolicy constrained oom, tsk's
-@@ -77,7 +77,7 @@ static bool has_intersects_mems_allowed(struct task_struct *tsk,
- 			if (cpuset_mems_allowed_intersects(current, tsk))
- 				return true;
- 		}
--	} while_each_thread(start, tsk);
-+	}
- 
- 	return false;
- }
-@@ -97,14 +97,14 @@ static bool has_intersects_mems_allowed(struct task_struct *tsk,
+diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+index 9e039c60c068..d254477372b9 100644
+--- a/drivers/spi/spi.c
++++ b/drivers/spi/spi.c
+@@ -1370,7 +1370,7 @@ EXPORT_SYMBOL_GPL(spi_busnum_to_master);
   */
- struct task_struct *find_lock_task_mm(struct task_struct *p)
+ int spi_setup(struct spi_device *spi)
  {
--	struct task_struct *t = p;
-+	struct task_struct *t;
+-	unsigned	bad_bits;
++	unsigned	bad_bits, ugly_bits;
+ 	int		status = 0;
  
--	do {
-+	for_each_thread(p, t) {
- 		task_lock(t);
- 		if (likely(t->mm))
- 			return t;
- 		task_unlock(t);
--	} while_each_thread(p, t);
-+	}
- 
- 	return NULL;
- }
-@@ -301,7 +301,7 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
- 	unsigned long chosen_points = 0;
- 
- 	rcu_read_lock();
--	do_each_thread(g, p) {
-+	for_each_process_thread(g, p) {
- 		unsigned int points;
- 
- 		switch (oom_scan_process_thread(p, totalpages, nodemask,
-@@ -323,7 +323,7 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
- 			chosen = p;
- 			chosen_points = points;
- 		}
--	} while_each_thread(g, p);
-+	}
- 	if (chosen)
- 		get_task_struct(chosen);
- 	rcu_read_unlock();
-@@ -406,7 +406,7 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- {
- 	struct task_struct *victim = p;
- 	struct task_struct *child;
--	struct task_struct *t = p;
-+	struct task_struct *t;
- 	struct mm_struct *mm;
- 	unsigned int victim_points = 0;
- 	static DEFINE_RATELIMIT_STATE(oom_rs, DEFAULT_RATELIMIT_INTERVAL,
-@@ -437,7 +437,7 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- 	 * still freeing memory.
+ 	/* check mode to prevent that DUAL and QUAD set at the same time
+@@ -1390,6 +1390,15 @@ int spi_setup(struct spi_device *spi)
+ 	 * that aren't supported with their current master
  	 */
- 	read_lock(&tasklist_lock);
--	do {
-+	for_each_thread(p, t) {
- 		list_for_each_entry(child, &t->children, sibling) {
- 			unsigned int child_points;
- 
-@@ -455,7 +455,7 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- 				get_task_struct(victim);
- 			}
- 		}
--	} while_each_thread(p, t);
+ 	bad_bits = spi->mode & ~spi->master->mode_bits;
++	ugly_bits = bad_bits &
++		    (SPI_TX_DUAL | SPI_TX_QUAD | SPI_RX_DUAL | SPI_RX_QUAD);
++	if (ugly_bits) {
++		dev_warn(&spi->dev,
++			 "setup: ignoring unsupported mode bits %x\n",
++			 ugly_bits);
++		spi->mode &= ~ugly_bits;
++		bad_bits &= ~ugly_bits;
 +	}
- 	read_unlock(&tasklist_lock);
- 
- 	rcu_read_lock();
+ 	if (bad_bits) {
+ 		dev_err(&spi->dev, "setup: unsupported mode bits %x\n",
+ 			bad_bits);
 -- 
 1.9.3
 
