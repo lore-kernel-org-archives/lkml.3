@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964830AbaFIXIv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 19:08:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56799 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932495AbaFIWpe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933609AbaFIWpe (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 9 Jun 2014 18:45:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56749 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932495AbaFIWp2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 18:45:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bibek Basu <bbasu@nvidia.com>, Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.14 25/78] cpufreq: remove race while accessing cur_policy
-Date: Mon,  9 Jun 2014 15:48:05 -0700
-Message-Id: <20140609224814.163324850@linuxfoundation.org>
+        Roger Quadros <rogerq@ti.com>, Kevin Hilman <khilman@linaro.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: [PATCH 3.14 21/78] ARM: OMAP4: Fix the boot regression with CPU_IDLE enabled
+Date: Mon,  9 Jun 2014 15:48:01 -0700
+Message-Id: <20140609224814.033264279@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140609224813.282275135@linuxfoundation.org>
 References: <20140609224813.282275135@linuxfoundation.org>
@@ -29,88 +31,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bibek Basu <bbasu@nvidia.com>
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
 
-commit c5450db85b828d0c46ac8fc570fb8a51bf07ac40 upstream.
+commit 4b353a706a86598ba47307c47301c3c428b79e09 upstream.
 
-While accessing cur_policy during executing events
-CPUFREQ_GOV_START, CPUFREQ_GOV_STOP, CPUFREQ_GOV_LIMITS,
-same mutex lock is not taken, dbs_data->mutex, which leads
-to race and data corruption while running continious suspend
-resume test. This is seen with ondemand governor with suspend
-resume test using rtcwake.
+On OMAP4 panda board, there have been several bug reports about boot
+hang and lock-ups with CPU_IDLE enabled. The root cause of the issue
+is missing interrupts while in idle state. Commit cb7094e8 {cpuidle / omap4 :
+use CPUIDLE_FLAG_TIMER_STOP flag} moved the broadcast notifiers to common
+code for right reasons but on OMAP4 which suffers from a nasty ROM code
+bug with GIC, commit ff999b8a {ARM: OMAP4460: Workaround for ROM bug ..},
+we loose interrupts which leads to issues like lock-up, hangs etc.
 
- Unable to handle kernel NULL pointer dereference at virtual address 00000028
- pgd = ed610000
- [00000028] *pgd=adf11831, *pte=00000000, *ppte=00000000
- Internal error: Oops: 17 [#1] PREEMPT SMP ARM
- Modules linked in: nvhost_vi
- CPU: 1 PID: 3243 Comm: rtcwake Not tainted 3.10.24-gf5cf9e5 #1
- task: ee708040 ti: ed61c000 task.ti: ed61c000
- PC is at cpufreq_governor_dbs+0x400/0x634
- LR is at cpufreq_governor_dbs+0x3f8/0x634
- pc : [<c05652b8>] lr : [<c05652b0>] psr: 600f0013
- sp : ed61dcb0 ip : 000493e0 fp : c1cc14f0
- r10: 00000000 r9 : 00000000 r8 : 00000000
- r7 : eb725280 r6 : c1cc1560 r5 : eb575200 r4 : ebad7740
- r3 : ee708040 r2 : ed61dca8 r1 : 001ebd24 r0 : 00000000
- Flags: nZCv IRQs on FIQs on Mode SVC_32 ISA ARM Segment user
- Control: 10c5387d Table: ad61006a DAC: 00000015
- [<c05652b8>] (cpufreq_governor_dbs+0x400/0x634) from [<c055f700>] (__cpufreq_governor+0x98/0x1b4)
- [<c055f700>] (__cpufreq_governor+0x98/0x1b4) from [<c0560770>] (__cpufreq_set_policy+0x250/0x320)
- [<c0560770>] (__cpufreq_set_policy+0x250/0x320) from [<c0561dcc>] (cpufreq_update_policy+0xcc/0x168)
- [<c0561dcc>] (cpufreq_update_policy+0xcc/0x168) from [<c0561ed0>] (cpu_freq_notify+0x68/0xdc)
- [<c0561ed0>] (cpu_freq_notify+0x68/0xdc) from [<c008eff8>] (notifier_call_chain+0x4c/0x8c)
- [<c008eff8>] (notifier_call_chain+0x4c/0x8c) from [<c008f3d4>] (__blocking_notifier_call_chain+0x50/0x68)
- [<c008f3d4>] (__blocking_notifier_call_chain+0x50/0x68) from [<c008f40c>] (blocking_notifier_call_chain+0x20/0x28)
- [<c008f40c>] (blocking_notifier_call_chain+0x20/0x28) from [<c00aac6c>] (pm_qos_update_bounded_target+0xd8/0x310)
- [<c00aac6c>] (pm_qos_update_bounded_target+0xd8/0x310) from [<c00ab3b0>] (__pm_qos_update_request+0x64/0x70)
- [<c00ab3b0>] (__pm_qos_update_request+0x64/0x70) from [<c004b4b8>] (tegra_pm_notify+0x114/0x134)
- [<c004b4b8>] (tegra_pm_notify+0x114/0x134) from [<c008eff8>] (notifier_call_chain+0x4c/0x8c)
- [<c008eff8>] (notifier_call_chain+0x4c/0x8c) from [<c008f3d4>] (__blocking_notifier_call_chain+0x50/0x68)
- [<c008f3d4>] (__blocking_notifier_call_chain+0x50/0x68) from [<c008f40c>] (blocking_notifier_call_chain+0x20/0x28)
- [<c008f40c>] (blocking_notifier_call_chain+0x20/0x28) from [<c00ac228>] (pm_notifier_call_chain+0x1c/0x34)
- [<c00ac228>] (pm_notifier_call_chain+0x1c/0x34) from [<c00ad38c>] (enter_state+0xec/0x128)
- [<c00ad38c>] (enter_state+0xec/0x128) from [<c00ad400>] (pm_suspend+0x38/0xa4)
- [<c00ad400>] (pm_suspend+0x38/0xa4) from [<c00ac114>] (state_store+0x70/0xc0)
- [<c00ac114>] (state_store+0x70/0xc0) from [<c027b1e8>] (kobj_attr_store+0x14/0x20)
- [<c027b1e8>] (kobj_attr_store+0x14/0x20) from [<c019cd9c>] (sysfs_write_file+0x104/0x184)
- [<c019cd9c>] (sysfs_write_file+0x104/0x184) from [<c0143038>] (vfs_write+0xd0/0x19c)
- [<c0143038>] (vfs_write+0xd0/0x19c) from [<c0143414>] (SyS_write+0x4c/0x78)
- [<c0143414>] (SyS_write+0x4c/0x78) from [<c000f080>] (ret_fast_syscall+0x0/0x30)
- Code: e1a00006 eb084346 e59b0020 e5951024 (e5903028)
- ---[ end trace 0488523c8f6b0f9d ]---
+Patch reverts commit cb7094 {cpuidle / omap4 : use CPUIDLE_FLAG_TIMER_STOP
+flag} and 54769d6 {cpuidle: OMAP4: remove timer broadcast initialization} to
+avoid the issue. With this change, OMAP4 panda boards, the mentioned
+issues are getting fixed. We no longer loose interrupts which was the cause
+of the regression.
 
-Signed-off-by: Bibek Basu <bbasu@nvidia.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Fixes: cb7094e8 (cpuidle / omap4 : use CPUIDLE_FLAG_TIMER_STOP flag)
+Fixes: ff999b8a (cpuidle: OMAP4: remove timer broadcast initialization)
+Cc: Roger Quadros <rogerq@ti.com>
+Cc: Kevin Hilman <khilman@linaro.org>
+Cc: Tony Lindgren <tony@atomide.com>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+Reported-tested-by: Roger Quadros <rogerq@ti.com>
+Reported-tested-by: Kevin Hilman <khilman@linaro.org>
+Tested-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/cpufreq_governor.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ arch/arm/mach-omap2/cpuidle44xx.c |   25 +++++++++++++++++++++----
+ 1 file changed, 21 insertions(+), 4 deletions(-)
 
---- a/drivers/cpufreq/cpufreq_governor.c
-+++ b/drivers/cpufreq/cpufreq_governor.c
-@@ -366,6 +366,11 @@ int cpufreq_governor_dbs(struct cpufreq_
- 		break;
+--- a/arch/arm/mach-omap2/cpuidle44xx.c
++++ b/arch/arm/mach-omap2/cpuidle44xx.c
+@@ -14,6 +14,7 @@
+ #include <linux/cpuidle.h>
+ #include <linux/cpu_pm.h>
+ #include <linux/export.h>
++#include <linux/clockchips.h>
  
- 	case CPUFREQ_GOV_LIMITS:
-+		mutex_lock(&dbs_data->mutex);
-+		if (!cpu_cdbs->cur_policy) {
-+			mutex_unlock(&dbs_data->mutex);
-+			break;
-+		}
- 		mutex_lock(&cpu_cdbs->timer_mutex);
- 		if (policy->max < cpu_cdbs->cur_policy->cur)
- 			__cpufreq_driver_target(cpu_cdbs->cur_policy,
-@@ -375,6 +380,7 @@ int cpufreq_governor_dbs(struct cpufreq_
- 					policy->min, CPUFREQ_RELATION_L);
- 		dbs_check_cpu(dbs_data, cpu);
- 		mutex_unlock(&cpu_cdbs->timer_mutex);
-+		mutex_unlock(&dbs_data->mutex);
- 		break;
- 	}
- 	return 0;
+ #include <asm/cpuidle.h>
+ #include <asm/proc-fns.h>
+@@ -83,6 +84,7 @@ static int omap_enter_idle_coupled(struc
+ {
+ 	struct idle_statedata *cx = state_ptr + index;
+ 	u32 mpuss_can_lose_context = 0;
++	int cpu_id = smp_processor_id();
+ 
+ 	/*
+ 	 * CPU0 has to wait and stay ON until CPU1 is OFF state.
+@@ -110,6 +112,8 @@ static int omap_enter_idle_coupled(struc
+ 	mpuss_can_lose_context = (cx->mpu_state == PWRDM_POWER_RET) &&
+ 				 (cx->mpu_logic_state == PWRDM_POWER_OFF);
+ 
++	clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &cpu_id);
++
+ 	/*
+ 	 * Call idle CPU PM enter notifier chain so that
+ 	 * VFP and per CPU interrupt context is saved.
+@@ -165,6 +169,8 @@ static int omap_enter_idle_coupled(struc
+ 	if (dev->cpu == 0 && mpuss_can_lose_context)
+ 		cpu_cluster_pm_exit();
+ 
++	clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu_id);
++
+ fail:
+ 	cpuidle_coupled_parallel_barrier(dev, &abort_barrier);
+ 	cpu_done[dev->cpu] = false;
+@@ -172,6 +178,16 @@ fail:
+ 	return index;
+ }
+ 
++/*
++ * For each cpu, setup the broadcast timer because local timers
++ * stops for the states above C1.
++ */
++static void omap_setup_broadcast_timer(void *arg)
++{
++	int cpu = smp_processor_id();
++	clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ON, &cpu);
++}
++
+ static struct cpuidle_driver omap4_idle_driver = {
+ 	.name				= "omap4_idle",
+ 	.owner				= THIS_MODULE,
+@@ -189,8 +205,7 @@ static struct cpuidle_driver omap4_idle_
+ 			/* C2 - CPU0 OFF + CPU1 OFF + MPU CSWR */
+ 			.exit_latency = 328 + 440,
+ 			.target_residency = 960,
+-			.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_COUPLED |
+-			         CPUIDLE_FLAG_TIMER_STOP,
++			.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_COUPLED,
+ 			.enter = omap_enter_idle_coupled,
+ 			.name = "C2",
+ 			.desc = "CPUx OFF, MPUSS CSWR",
+@@ -199,8 +214,7 @@ static struct cpuidle_driver omap4_idle_
+ 			/* C3 - CPU0 OFF + CPU1 OFF + MPU OSWR */
+ 			.exit_latency = 460 + 518,
+ 			.target_residency = 1100,
+-			.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_COUPLED |
+-			         CPUIDLE_FLAG_TIMER_STOP,
++			.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_COUPLED,
+ 			.enter = omap_enter_idle_coupled,
+ 			.name = "C3",
+ 			.desc = "CPUx OFF, MPUSS OSWR",
+@@ -231,5 +245,8 @@ int __init omap4_idle_init(void)
+ 	if (!cpu_clkdm[0] || !cpu_clkdm[1])
+ 		return -ENODEV;
+ 
++	/* Configure the broadcast timer on each cpu */
++	on_each_cpu(omap_setup_broadcast_timer, NULL, 1);
++
+ 	return cpuidle_register(&omap4_idle_driver, cpu_online_mask);
+ }
 
 
