@@ -1,78 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933591AbaFIQRH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 12:17:07 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:47901 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932653AbaFIQRF (ORCPT
+	id S933666AbaFIQSA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 12:18:00 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:46797 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932653AbaFIQR6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 12:17:05 -0400
-From: Ming Lei <tom.leiming@gmail.com>
-To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Cc: Ming Lei <tom.leiming@gmail.com>
-Subject: [PATCH] blk-mq: add timer in blk_mq_start_request
-Date: Tue, 10 Jun 2014 00:16:41 +0800
-Message-Id: <1402330601-12837-1-git-send-email-tom.leiming@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 9 Jun 2014 12:17:58 -0400
+Message-ID: <5395DE2E.7080700@oracle.com>
+Date: Mon, 09 Jun 2014 12:17:50 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Chris Mason <clm@fb.com>, jbacik@fb.com
+CC: LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        linux-btrfs@vger.kernel.org
+Subject: Re: btrfs: hang on boot due to tests
+References: <5395CFE6.10804@oracle.com> <5395D9D6.3080101@fb.com>
+In-Reply-To: <5395D9D6.3080101@fb.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This way will become consistent with non-mq case, also
-avoid to update rq->deadline twice for mq.
+On 06/09/2014 11:59 AM, Chris Mason wrote:
+> On 06/09/2014 11:16 AM, Sasha Levin wrote:
+>> > Hi all,
+>> > 
+>> > It seems that some recent changes to btrfs tests make it hang during boot:
+>> > 
+>> > [   49.730033] NMI watchdog: BUG: soft lockup - CPU#34 stuck for 23s! [swapper/0:1]
+>> > [   49.730033] Modules linked in:
+>> > [   49.730033] hardirqs last enabled at (6389143): restore_args (arch/x86/kernel/entry_64.S:829)
+>> > [   49.730033] hardirqs last disabled at (6389144): apic_timer_interrupt (arch/x86/kernel/entry_64.S:1021)
+>> > [   49.730033] softirqs last enabled at (6389142): __do_softirq (./arch/x86/include/asm/preempt.h:22 kernel/softirq.c:296)
+>> > [   49.730033] softirqs last disabled at (6389139): irq_exit (kernel/softirq.c:346 kernel/softirq.c:387)
+>> > [   49.730033] CPU: 34 PID: 1 Comm: swapper/0 Not tainted 3.15.0-rc8-next-20140606-sasha-00021-ga9d3a0b-dirty #597
+> 
+> This is 3.15-rc8 + linux-next?  I'll try to reproduce here, but the
+> tests were working for me.
 
-The comment said: "We do this early, to ensure we are on
-the right CPU.", but no percpu stuff is used in blk_add_timer(),
-so it isn't necessary. Even when inserting from plug list, there
-is no such guarantee at all.
+Yes, it's the latest -next tree available.
 
-Signed-off-by: Ming Lei <tom.leiming@gmail.com>
----
- block/blk-mq.c |   17 +----------------
- 1 file changed, 1 insertion(+), 16 deletions(-)
+Also note that it doesn't happen every time, so might be some sort of a race?
 
-diff --git a/block/blk-mq.c b/block/blk-mq.c
-index a6ee74e..bf6e13d 100644
---- a/block/blk-mq.c
-+++ b/block/blk-mq.c
-@@ -406,16 +406,7 @@ static void blk_mq_start_request(struct request *rq, bool last)
- 	if (unlikely(blk_bidi_rq(rq)))
- 		rq->next_rq->resid_len = blk_rq_bytes(rq->next_rq);
- 
--	/*
--	 * Just mark start time and set the started bit. Due to memory
--	 * ordering, we know we'll see the correct deadline as long as
--	 * REQ_ATOMIC_STARTED is seen. Use the default queue timeout,
--	 * unless one has been set in the request.
--	 */
--	if (!rq->timeout)
--		rq->deadline = jiffies + q->rq_timeout;
--	else
--		rq->deadline = jiffies + rq->timeout;
-+	blk_add_timer(rq);
- 
- 	/*
- 	 * Mark us as started and clear complete. Complete might have been
-@@ -967,11 +958,6 @@ static void __blk_mq_insert_request(struct blk_mq_hw_ctx *hctx,
- 		list_add_tail(&rq->queuelist, &ctx->rq_list);
- 
- 	blk_mq_hctx_mark_pending(hctx, ctx);
--
--	/*
--	 * We do this early, to ensure we are on the right CPU.
--	 */
--	blk_add_timer(rq);
- }
- 
- void blk_mq_insert_request(struct request *rq, bool at_head, bool run_queue,
-@@ -1216,7 +1202,6 @@ static void blk_mq_make_request(struct request_queue *q, struct bio *bio)
- 
- 		blk_mq_bio_to_request(rq, bio);
- 		blk_mq_start_request(rq, true);
--		blk_add_timer(rq);
- 
- 		/*
- 		 * For OK queue, we are done. For error, kill it. Any other
--- 
-1.7.9.5
 
+Thanks,
+Sasha
