@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934448AbaFIWqn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 18:46:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57062 "EHLO
+	id S934427AbaFIWqk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 18:46:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57068 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934045AbaFIWp5 (ORCPT
+	with ESMTP id S934037AbaFIWp5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jun 2014 18:45:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Doug Smythies <dsmythies@telus.net>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.14 64/78] intel_pstate: Remove C0 tracking
-Date: Mon,  9 Jun 2014 15:48:44 -0700
-Message-Id: <20140609224815.398256803@linuxfoundation.org>
+        Jean Delvare <jdelvare@suse.de>, Guenter Roeck <linux@roeck-us.net>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        Doug Anderson <dianders@chromium.org>
+Subject: [PATCH 3.10 10/40] hwmon: (ntc_thermistor) Fix OF device ID mapping
+Date: Mon,  9 Jun 2014 15:48:41 -0700
+Message-Id: <20140609224839.542190076@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140609224813.282275135@linuxfoundation.org>
-References: <20140609224813.282275135@linuxfoundation.org>
+In-Reply-To: <20140609224839.127615063@linuxfoundation.org>
+References: <20140609224839.127615063@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,96 +26,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+From: Jean Delvare <jdelvare@suse.de>
 
-commit adacdf3f2b8e65aa441613cf61c4f598e9042690 upstream.
+commit ead82d6792ef5c600d535bca6ec50a4da14ff7c7 upstream.
 
-Commit fcb6a15c (intel_pstate: Take core C0 time into account for core
-busy calculation) introduced a regression referenced below.  The issue
-with "lockup" after suspend that this commit was addressing is now dealt
-with in the suspend path.
+The mapping from OF device IDs to platform device IDs is wrong.
+TYPE_NCPXXWB473 is 0, TYPE_NCPXXWL333 is 1, so
+ntc_thermistor_id[TYPE_NCPXXWB473] is { "ncp15wb473", TYPE_NCPXXWB473 }
+while
+ntc_thermistor_id[TYPE_NCPXXWL333] is { "ncp18wb473", TYPE_NCPXXWB473 }.
 
-Fixes: fcb6a15c2e7e (intel_pstate: Take core C0 time into account for core busy calculation)
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=66581
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=75121
-Reported-by: Doug Smythies <dsmythies@telus.net>
-Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+So the name is wrong for all but the "ntc,ncp15wb473" entry, and the
+type is wrong for the "ntc,ncp15wl333" entry.
+
+So map the entries by index, it is neither elegant nor robust but at
+least it is correct.
+
+Signed-off-by: Jean Delvare <jdelvare@suse.de>
+Fixes: 9e8269de hwmon: (ntc_thermistor) Add DT with IIO support to NTC thermistor driver
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Cc: Doug Anderson <dianders@chromium.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/intel_pstate.c |   13 +------------
- 1 file changed, 1 insertion(+), 12 deletions(-)
+ drivers/hwmon/ntc_thermistor.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -59,7 +59,6 @@ struct sample {
- 	int32_t core_pct_busy;
- 	u64 aperf;
- 	u64 mperf;
--	unsigned long long tsc;
- 	int freq;
+--- a/drivers/hwmon/ntc_thermistor.c
++++ b/drivers/hwmon/ntc_thermistor.c
+@@ -44,6 +44,7 @@ struct ntc_compensation {
+ 	unsigned int	ohm;
  };
  
-@@ -100,7 +99,6 @@ struct cpudata {
++/* Order matters, ntc_match references the entries by index */
+ static const struct platform_device_id ntc_thermistor_id[] = {
+ 	{ "ncp15wb473", TYPE_NCPXXWB473 },
+ 	{ "ncp18wb473", TYPE_NCPXXWB473 },
+@@ -163,15 +164,15 @@ static int ntc_adc_iio_read(struct ntc_t
  
- 	u64	prev_aperf;
- 	u64	prev_mperf;
--	unsigned long long prev_tsc;
- 	struct sample sample;
+ static const struct of_device_id ntc_match[] = {
+ 	{ .compatible = "ntc,ncp15wb473",
+-		.data = &ntc_thermistor_id[TYPE_NCPXXWB473] },
++		.data = &ntc_thermistor_id[0] },
+ 	{ .compatible = "ntc,ncp18wb473",
+-		.data = &ntc_thermistor_id[TYPE_NCPXXWB473] },
++		.data = &ntc_thermistor_id[1] },
+ 	{ .compatible = "ntc,ncp21wb473",
+-		.data = &ntc_thermistor_id[TYPE_NCPXXWB473] },
++		.data = &ntc_thermistor_id[2] },
+ 	{ .compatible = "ntc,ncp03wb473",
+-		.data = &ntc_thermistor_id[TYPE_NCPXXWB473] },
++		.data = &ntc_thermistor_id[3] },
+ 	{ .compatible = "ntc,ncp15wl333",
+-		.data = &ntc_thermistor_id[TYPE_NCPXXWL333] },
++		.data = &ntc_thermistor_id[4] },
+ 	{ },
  };
- 
-@@ -561,46 +559,37 @@ static inline void intel_pstate_calc_bus
- 					struct sample *sample)
- {
- 	int32_t core_pct;
--	int32_t c0_pct;
- 
- 	core_pct = div_fp(int_tofp((sample->aperf)),
- 			int_tofp((sample->mperf)));
- 	core_pct = mul_fp(core_pct, int_tofp(100));
- 	FP_ROUNDUP(core_pct);
- 
--	c0_pct = div_fp(int_tofp(sample->mperf), int_tofp(sample->tsc));
--
- 	sample->freq = fp_toint(
- 		mul_fp(int_tofp(cpu->pstate.max_pstate * 1000), core_pct));
- 
--	sample->core_pct_busy = mul_fp(core_pct, c0_pct);
-+	sample->core_pct_busy = core_pct;
- }
- 
- static inline void intel_pstate_sample(struct cpudata *cpu)
- {
- 	u64 aperf, mperf;
--	unsigned long long tsc;
- 
- 	rdmsrl(MSR_IA32_APERF, aperf);
- 	rdmsrl(MSR_IA32_MPERF, mperf);
--	tsc = native_read_tsc();
- 
- 	aperf = aperf >> FRAC_BITS;
- 	mperf = mperf >> FRAC_BITS;
--	tsc = tsc >> FRAC_BITS;
- 
- 	cpu->sample.aperf = aperf;
- 	cpu->sample.mperf = mperf;
--	cpu->sample.tsc = tsc;
- 	cpu->sample.aperf -= cpu->prev_aperf;
- 	cpu->sample.mperf -= cpu->prev_mperf;
--	cpu->sample.tsc -= cpu->prev_tsc;
- 
- 	intel_pstate_calc_busy(cpu, &cpu->sample);
- 
- 	cpu->prev_aperf = aperf;
- 	cpu->prev_mperf = mperf;
--	cpu->prev_tsc = tsc;
- }
- 
- static inline void intel_pstate_set_sample_time(struct cpudata *cpu)
+ MODULE_DEVICE_TABLE(of, ntc_match);
 
 
