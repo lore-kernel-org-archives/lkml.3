@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934470AbaFIXIy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 19:08:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56836 "EHLO
+	id S934375AbaFIXIw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 19:08:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56763 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933566AbaFIWpe (ORCPT
+	with ESMTP id S933591AbaFIWpe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jun 2014 18:45:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -12,11 +12,14 @@ To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Michael Kerrisk <mtk.manpages@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
+        Dario Faggioli <raistlin@linux.it>,
+        linux-man <linux-man@vger.kernel.org>,
+        Juri Lelli <juri.lelli@gmail.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.14 33/78] sched: Make sched_setattr() correctly return -EFBIG
-Date: Mon,  9 Jun 2014 15:48:13 -0700
-Message-Id: <20140609224814.406356819@linuxfoundation.org>
+Subject: [PATCH 3.14 34/78] sched/deadline: Change sched_getparam() behaviour vs SCHED_DEADLINE
+Date: Mon,  9 Jun 2014 15:48:14 -0700
+Message-Id: <20140609224814.443200272@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140609224813.282275135@linuxfoundation.org>
 References: <20140609224813.282275135@linuxfoundation.org>
@@ -31,49 +34,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Kerrisk <mtk.manpages@gmail.com>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit 143cf23df25b7082cd706c3c53188e741e7881c3 upstream.
+commit ce5f7f8200ca2504f6f290044393d73ca314965a upstream.
 
-The documented[1] behavior of sched_attr() in the proposed man page text is:
+The way we read POSIX one should only call sched_getparam() when
+sched_getscheduler() returns either SCHED_FIFO or SCHED_RR.
 
-    sched_attr::size must be set to the size of the structure, as in
-    sizeof(struct sched_attr), if the provided structure is smaller
-    than the kernel structure, any additional fields are assumed
-    '0'. If the provided structure is larger than the kernel structure,
-    the kernel verifies all additional fields are '0' if not the
-    syscall will fail with -E2BIG.
+Given that we currently return sched_param::sched_priority=0 for all
+others, extend the same behaviour to SCHED_DEADLINE.
 
-As currently implemented, sched_copy_attr() returns -EFBIG for
-for this case, but the logic in sys_sched_setattr() converts that
-error to -EFAULT. This patch fixes the behavior.
-
-[1] http://thread.gmane.org/gmane.linux.kernel/1615615/focus=1697760
-
-Signed-off-by: Michael Kerrisk <mtk.manpages@gmail.com>
+Requested-by: Michael Kerrisk <mtk.manpages@gmail.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Acked-by: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: Dario Faggioli <raistlin@linux.it>
+Cc: linux-man <linux-man@vger.kernel.org>
+Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: Juri Lelli <juri.lelli@gmail.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/536CEC17.9070903@gmail.com
+Link: http://lkml.kernel.org/r/20140512205034.GH13467@laptop.programming.kicks-ass.net
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sched/core.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ kernel/sched/core.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -3680,8 +3680,9 @@ SYSCALL_DEFINE3(sched_setattr, pid_t, pi
- 	if (!uattr || pid < 0 || flags)
- 		return -EINVAL;
+@@ -3735,7 +3735,7 @@ SYSCALL_DEFINE1(sched_getscheduler, pid_
+  */
+ SYSCALL_DEFINE2(sched_getparam, pid_t, pid, struct sched_param __user *, param)
+ {
+-	struct sched_param lp;
++	struct sched_param lp = { .sched_priority = 0 };
+ 	struct task_struct *p;
+ 	int retval;
  
--	if (sched_copy_attr(uattr, &attr))
--		return -EFAULT;
-+	retval = sched_copy_attr(uattr, &attr);
-+	if (retval)
-+		return retval;
+@@ -3752,11 +3752,8 @@ SYSCALL_DEFINE2(sched_getparam, pid_t, p
+ 	if (retval)
+ 		goto out_unlock;
  
- 	if (attr.sched_policy < 0)
- 		return -EINVAL;
+-	if (task_has_dl_policy(p)) {
+-		retval = -EINVAL;
+-		goto out_unlock;
+-	}
+-	lp.sched_priority = p->rt_priority;
++	if (task_has_rt_policy(p))
++		lp.sched_priority = p->rt_priority;
+ 	rcu_read_unlock();
+ 
+ 	/*
 
 
