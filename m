@@ -1,53 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933343AbaFIXg5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 19:36:57 -0400
-Received: from mail-ve0-f169.google.com ([209.85.128.169]:46733 "EHLO
-	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754051AbaFIXgz (ORCPT
+	id S933126AbaFIXkk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 19:40:40 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:50248 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754369AbaFIXki (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 19:36:55 -0400
+	Mon, 9 Jun 2014 19:40:38 -0400
+Message-ID: <539645EE.6020009@collabora.co.uk>
+Date: Tue, 10 Jun 2014 01:40:30 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <CALCETrXBSd4qKJE+yVp0YTPdrCDSfGf_SOxaZFgQpULg1bF3aA@mail.gmail.com>
-References: <1401332999-15167-1-git-send-email-eparis@redhat.com>
-	<20140609223057.GB18475@kroah.com>
-	<CALCETrUD75vSwJUjFuxGCrZ_7DJhCc1KW2v_ndF6EHJ31fUMBg@mail.gmail.com>
-	<CA+55aFwmajRnDOiBmZQf8rpVE-HigsDYy9oy-TsWLzn-vdyF+Q@mail.gmail.com>
-	<CALCETrXBSd4qKJE+yVp0YTPdrCDSfGf_SOxaZFgQpULg1bF3aA@mail.gmail.com>
-Date: Mon, 9 Jun 2014 16:36:54 -0700
-X-Google-Sender-Auth: oB5HoVUqhaC8tKCT8KGt7k1z30o
-Message-ID: <CA+55aFxAj5nA-fqTRE0Cotwxywf5LNCb-NnpWCHxZTn2GF3C4g@mail.gmail.com>
-Subject: Re: [PATCH 1/2] auditsc: audit_krule mask accesses need bounds checking
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Eric Paris <eparis@redhat.com>,
-        linux-audit@redhat.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Mark Brown <broonie@kernel.org>
+CC: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
+        Daniel Stone <daniels@collabora.com>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] mfd: Add driver for Maxim 77802 Power Management
+ IC
+References: <1402306670-17041-1-git-send-email-javier.martinez@collabora.co.uk> <1402306670-17041-2-git-send-email-javier.martinez@collabora.co.uk> <20140609194713.GF5099@sirena.org.uk>
+In-Reply-To: <20140609194713.GF5099@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 9, 2014 at 3:56 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->
-> In this particular case, it's my patch, and I've never sent you a pull
-> request.  I sort of assumed that security@kernel.org magically caused
-> acknowledged fixes to end up in your tree.  I'm not sure what I'm
-> supposed to do here.
->
-> Maybe the confusion is because Eric resent the patch?
+Hello Mark,
 
-So I saw the patch twice in email , but neither time did I get the
-feeling that I should apply it. The first time Eric responded to it,
-so the maintainer clearly knew about it and was reacting to it, so I
-ignored it. The second time Eric resent it as email to various people
-and lists, and I didn't react to it because I expected that was again
-just for discussion.
+On 06/09/2014 09:47 PM, Mark Brown wrote:
+> On Mon, Jun 09, 2014 at 11:37:46AM +0200, Javier Martinez Canillas wrote:
+> 
+>> +Optional node:
+>> +- voltage-regulators : The regulators of max77802 have to be instantiated
+>> +  under subnode named "voltage-regulators" using the following format.
+> 
+> Every other PMIC calls this node regulators...
+> 
 
-So I'm not blaming you as much as Eric. If a maintainer expects me to
-pick it up from the email (rather than his usual git pulls), I want
-that maintainer to *say* so. Because otherwise, as mentioned, I expect
-it to come through the maintainer tree as usual.
+Ok, I'll change for consistency.
 
-              Linus
+>> +	regulator_name {
+>> +		regulator-compatible = LDOn/BUCKn
+> 
+> regulator-compatible is deprecated, use the node name instead.
+> 
+
+Ok.
+
+>> +config MFD_MAX77802
+>> +	bool "Maxim Integrated MAX77802 PMIC Support"
+> 
+> Why is this bool and not tristate?
+> 
+
+I noticed that the majority of the mfd PMIC drivers were bool and not tristate
+so I thought it was a convention. But nothing prevents this driver to be built
+as a module so I'll change it to tristate.
+
+>> +int max77802_irq_resume(struct max77802_dev *max77802)
+>> +{
+>> +	/*
+>> +	 * The IRQ that woke us up may still need to be ACK'ed on resume.
+>> +	 * If it isn't ever ACK'ed, future IRQs may not be delivered.
+>> +	 */
+>> +	if (max77802->irq)
+>> +		max77802_irq_thread(0, max77802);
+>> +
+>> +	return 0;
+>> +}
+> 
+> As covered in another subthread all this code looks like it should be
+> regmap-irq.
+> 
+
+It seems so, I'll take that into account for v2.
+
+>> +	if (regmap_read(max77802->regmap,
+>> +			 MAX77802_REG_DEVICE_ID, &data) < 0) {
+>> +		dev_err(max77802->dev,
+>> +			"device not found on this channel (this is not an error)\n");
+>> +		return -ENODEV;
+> 
+> If this is not an error why is it printed as dev_err()?  It does look
+> like an error to me, though.
+> 
+
+Yeah, it is an error so I'll clean that message.
+
+>> +	} else {
+>> +		dev_info(max77802->dev, "device found\n");
+>> +	}
+> 
+> These sort of prints are just noise, remove this unless there is some
+> revision information you can display.  It's also better practice to
+> check that the device ID is actually what was expected in case there was
+> an error in the DT.
+> 
+
+Ok, will do.
+
+>> +static const struct i2c_device_id max77802_i2c_id[] = {
+>> +	{ "max77802", TYPE_MAX77802 },
+>> +	{ }
+>> +};
+>> +MODULE_DEVICE_TABLE(i2c, max77802_i2c_id);
+> 
+> We have type information here but not in the OF ID table (not that we
+> ever look at it).
+> 
+
+Yeah, I'll remove the type information here. It is a left over when trying to
+combine both max77802 and max77686 drivers since in a combined driver we need
+the type information.
+
+Thanks a lot for your feedback.
+
+Best regards,
+Javier
