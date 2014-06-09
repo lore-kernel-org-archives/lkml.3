@@ -1,110 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932273AbaFHWv6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jun 2014 18:51:58 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41548 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754127AbaFHWvw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jun 2014 18:51:52 -0400
-Message-ID: <1402267903.23860.45.camel@deadeye.wl.decadent.org.uk>
-Subject: [PATCH v2] drivers/base: Fix length checks in
- create_syslog_header()/dev_vprintk_emit()
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Joe Perches <joe@perches.com>,
-        Kay Sievers <kay@vrfy.org>
-Date: Sun, 08 Jun 2014 23:51:43 +0100
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-Fivrhe8wQsS8otsIBxVU"
-X-Mailer: Evolution 3.12.2-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1754009AbaFIAFc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jun 2014 20:05:32 -0400
+Received: from ns.horizon.com ([71.41.210.147]:11244 "HELO ns.horizon.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753102AbaFIAFZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jun 2014 20:05:25 -0400
+Date: 8 Jun 2014 20:05:24 -0400
+Message-ID: <20140609000524.19476.qmail@ns.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: hpa@linux.intel.com, price@mit.edu, tytso@mit.edu
+Subject: [RFC PATCH] drivers/char/random.c: Is reducing locking range like this safe?
+Cc: linux@horizon.com, linux-kernel@vger.kernel.org, mingo@kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I have a few assorted cleanups in-work, but I was thinking about the
+following and it's led to some thinking about the (non-)usefulness
+of the out[] buffer from _mix_pool_bytes.
 
---=-Fivrhe8wQsS8otsIBxVU
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+The problem I started trying to solve is readers (entropy extractors)
+monopolizing the pool lock and stalling writers (entropy mixers), which
+are supposed to be fast and low overhead.
 
-snprintf() returns the number of bytes that could have been written
-(excluding the null), not the actual number of bytes written.  Given a
-long enough subsystem or device name, these functions will advance
-beyond the end of the on-stack buffer in dev_vprintk_exit(), resulting
-in an information leak or stack corruption.  I don't know whether such
-a long name is currently possible.
+So I thought I could rely on the "out" buffer returned from
+_mix_pool_bytes to make concurrent extractors produce different output.
+That led to the patch below, which drops the lock during the main pool
+hash and only locks around the mix-back.  (Using the mix_pool_bytes
+wrapper rather than explicit locking and __mix_pool_bytes.)
+But I'm not sure it's quite right.
 
-In case snprintf() returns a value >=3D the buffer size, do not add
-structured logging information.  Also WARN if this happens, so we can
-fix the driver or increase the buffer size.
+Suppose we have a pool that's mostly all-zero, but has a small dense
+high-entropy section, and no arch_get_random_long().  Narrowing the
+lock lets concurrent readers get to the __mix_pool_bytes() mix-back
+(last hunk of the diff) with identical SHA states.
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
-v2: use dev_WARN() not dev_WARN_ON()
+With the original code, which fills out[] with data from just *after*
+the add_ptr (i.e. the oldest portion of the pool), it's possible for
+multiple readers to obtain all-zero out[] buffers and return identical
+hashes.
 
- drivers/base/core.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+(Or, in a less extreme case, very low-entropy out[] buffers and
+strongly correlated outputs.  I'll keep using "all-zero" to make
+the examples simpler, and assume people can see the extrapolation.)
 
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index 20da3ad..062b7bf 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -2007,6 +2007,8 @@ create_syslog_header(const struct device *dev, char *=
-hdr, size_t hdrlen)
- 		return 0;
-=20
- 	pos +=3D snprintf(hdr + pos, hdrlen - pos, "SUBSYSTEM=3D%s", subsys);
-+	if (pos >=3D hdrlen)
-+		goto overflow;
-=20
- 	/*
- 	 * Add device identifier DEVICE=3D:
-@@ -2038,7 +2040,14 @@ create_syslog_header(const struct device *dev, char =
-*hdr, size_t hdrlen)
- 				"DEVICE=3D+%s:%s", subsys, dev_name(dev));
- 	}
-=20
-+	if (pos >=3D hdrlen)
-+		goto overflow;
+Well, okay, I think, easily fixed (included in the patch below):
+change it to return the most recently modified section just *before*
+the add_ptr, which includes the previus extractor's SHA hash.  That
+way, I'm guaranteed to get different data on multiple concurrent
+calls and everything is okay.
+
+But is it?
+
+Suppose I have three concurrent callers.  (I need three because the
+hash folding covers up the problem with two.)  The pool contains
+30 bytes of entropy, so it should be possible to return uncorrelated
+outputs to each of them, but as mentioned that's in a small dense
+region of the pool and the area around add_ptr is all zeros.
+
+Each hashes the pool to obtain identical 20-byte SHA-1 hashes.  Then they
+serialize arond calls to _mix_pool_bytes.  The first gets zeros in out[],
+the second gets the first's SHA-1 hash and so generates a different hash,
+and the third gets the second's SHA-1 hash.
+
+So they all produce different outputs, but the outputs (totalling 30
+bytes) passed through a 20-byte choke point and so have at most 20 bytes
+of entropy between them.  This violates the /dev/random security goals.
+
+
+Here are the solutions I've been thinking about:
+
+1) Continue to lock the entire hashing operation.
+
+   As long as we do this, the out[] parameter to _mix_pool_bytes is
+   unnecessary and should be deleted.  Since the pool can't change
+   between the bulk hash and the hash of out[], there's no point to
+   re-hashing some data that was just hashed.  (You are sampling the
+   add_ptr, which differs between callers, but that's negligible.)
+
+   One way to address my concern would be to split r->lock into
+   r->mix_lock and r->extract_lock.  Extractors would obtain the
+   latter for the entire hash, and only obtain the mix_lock
+   for the brief mix-back operation.
+
+   The downside, of course, is a second lock on the extract path, but
+   given that the efficiency of the extract path is not a design goal,
+   perhaps that's fine.
+
+2) Shrink the lock and add a nonce (like a CPUID) to the *initial* SHA state.
+
+   This is fun because of its greater cryptographic cleverness,
+   but that means it should be discussed carefully first.
+
+   Due to the non-linearity of SHA hashing, this would result in
+   the concurrent hashes sampling different parts of the pool's
+   entropy, and the 20-byte entropy bottleneck would disappear.
+
+   But in this case, the out[] buffer also does not contribute to
+   the security guarantee and could also disappear.
+
+Thoughts, anyone?
+
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index 102c50d..d847367 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -499,6 +499,15 @@ static void _mix_pool_bytes(struct entropy_store *r, const void *in,
+ 	input_rotate = ACCESS_ONCE(r->input_rotate);
+ 	i = ACCESS_ONCE(r->add_ptr);
+ 
++	/*
++	 * Out gets a copy of the portion of the pool most recently
++	 * modified by previous writers.  Since add_ptr counts down,
++	 * this is at positive offsets from the initial value.
++	 */
++	if (out)
++		for (j = 0; j < 16; j++)
++			((__u32 *)out)[j] = r->pool[(i + j) & wordmask];
 +
- 	return pos;
-+
-+overflow:
-+	dev_WARN(dev, 1, "device/subsystem name too long");
-+	return 0;
+ 	/* mix one byte at a time to simplify size handling and churn faster */
+ 	while (nbytes--) {
+ 		w = rol32(*bytes++, input_rotate);
+@@ -527,10 +536,6 @@ static void _mix_pool_bytes(struct entropy_store *r, const void *in,
+ 	ACCESS_ONCE(r->input_rotate) = input_rotate;
+ 	ACCESS_ONCE(r->add_ptr) = i;
+ 	smp_wmb();
+-
+-	if (out)
+-		for (j = 0; j < 16; j++)
+-			((__u32 *)out)[j] = r->pool[(i - j) & wordmask];
  }
-=20
- int dev_vprintk_emit(int level, const struct device *dev,
-
---=20
-Ben Hutchings
-Never attribute to conspiracy what can adequately be explained by stupidity=
-.
-
---=-Fivrhe8wQsS8otsIBxVU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIVAwUAU5TpAOe/yOyVhhEJAQr0lBAAgni3QL8ZJGS4Peq7btR/4eURDX7HE0aI
-VTCabI6WEYXWRvI7HNtoiQzdVyusDC+gl6JNuPMVm+yzl5foPsY3+Dmzi6wOng6u
-Wr4ylwLJUnptkhNg3KvkRmL+pYrzaKfWHc3E2G0TAks0Kkx35IV5V2BgbCAjJuJK
-bwL36Ng3fsn7wh952mtekM8a9TGvbdV/aJcZTNifbX36L2SBasIt5Hz2HMmaHKwg
-xKTkvNpOHa+oJ20qZGlwquMAp70W/6lyejhHFw01AN1gCufGaYvsWiZQ5vQAwB7C
-lGNmBjg2Ig4109Dh5JQoyjDJA4tmEBTFWwErIqdbtHRRQ8TosZZ69VcqeA0tInlu
-O2y+hlBkbJns5RzT4MC7+MqxGe3NdkYhG526jVoPjbzYGZ3rjku61lIyDnN97+XD
-bsyNVsk+FBeU/LCX1vOHzf7fbLT2x/CtzcxZF/5U8VaPFhQd/fx30xG3uS4nGP5Q
-WjluxxukxNDCphTWyLc6kwPu3dOExJO6P9rczxTb+7uWVjViKrTi45foe2jtDFDF
-EY92gjYFNRZvW/765DiNBRGtHRFn6UiOQSW5JbZJlJ3bTQyKbvAe0G3GhIH73xp6
-fEIeiQ83Y67T052zIDtI8MRxiIr2r3QkUQLg7zu3gLTOEVaM4Sy0IPELKnOu6OBA
-oPGUgd9NatE=
-=ppra
------END PGP SIGNATURE-----
-
---=-Fivrhe8wQsS8otsIBxVU--
+ 
+ static void __mix_pool_bytes(struct entropy_store *r, const void *in,
+@@ -1043,7 +1048,6 @@ static void extract_buf(struct entropy_store *r, __u8 *out)
+ 	}
+ 
+ 	/* Generate a hash across the pool, 16 words (512 bits) at a time */
+-	spin_lock_irqsave(&r->lock, flags);
+ 	for (i = 0; i < r->poolinfo->poolwords; i += 16)
+ 		sha_transform(hash.w, (__u8 *)(r->pool + i), workspace);
+ 
+@@ -1056,8 +1060,7 @@ static void extract_buf(struct entropy_store *r, __u8 *out)
+ 	 * brute-forcing the feedback as hard as brute-forcing the
+ 	 * hash.
+ 	 */
+-	__mix_pool_bytes(r, hash.w, sizeof(hash.w), extract);
+-	spin_unlock_irqrestore(&r->lock, flags);
++	mix_pool_bytes(r, hash.w, sizeof(hash.w), extract);
+ 
+ 	/*
+ 	 * To avoid duplicates, we atomically extract a portion of the
