@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933334AbaFII6Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 04:58:24 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58542 "EHLO
+	id S933268AbaFII6V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 04:58:21 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58550 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932206AbaFIIv1 (ORCPT
+	by vger.kernel.org with ESMTP id S932214AbaFIIv1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jun 2014 04:51:27 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Anssi Hannula <anssi.hannula@iki.fi>,
-        Takashi Iwai <tiwai@suse.de>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 095/146] ALSA: hda - hdmi: Set converter channel count even without sink
-Date: Mon,  9 Jun 2014 10:50:30 +0200
-Message-Id: <33d531477c11345db670fe7f2d9c5910773a1789.1402303821.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Jianyu Zhan <nasa4836@gmail.com>,
+        Tejun Heo <tj@kernel.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 108/146] percpu: make pcpu_alloc_chunk() use pcpu_mem_free() instead of kfree()
+Date: Mon,  9 Jun 2014 10:50:43 +0200
+Message-Id: <ecc74016ea3cf8ebc7301450d6abd1a7df4fa4cf.1402303821.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
 References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
@@ -23,61 +23,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anssi Hannula <anssi.hannula@iki.fi>
+From: Jianyu Zhan <nasa4836@gmail.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit f06ab794af7055d0949b09885f79f8b493deec64 upstream.
+commit 5a838c3b60e3a36ade764cf7751b8f17d7c9c2da upstream.
 
-Since commit 1df5a06a ("ALSA: hda - hdmi: Fix programmed active channel
-count") channel count is no longer being set if monitor_present is 0.
-This is because setting the count was moved after the CA value is
-determined, which is only after the monitor_present check in
-hdmi_setup_audio_infoframe().
+pcpu_chunk_struct_size = sizeof(struct pcpu_chunk) +
+	BITS_TO_LONGS(pcpu_unit_pages) * sizeof(unsigned long)
 
-Unfortunately, in some cases, such as with a non-spec-compliant codec or
-with a problematic video driver, monitor_present is always 0. As a
-specific example, this seems to happen with gen1 ATV (SiI1390 codec),
-causing left-channel-only stereo playback (multi-channel playback has
-apparently never worked with this codec despite it reporting 8 channels,
-reason unknown).
+It hardly could be ever bigger than PAGE_SIZE even for large-scale machine,
+but for consistency with its couterpart pcpu_mem_zalloc(),
+use pcpu_mem_free() instead.
 
-Simply setting converter channel count without setting the pin infoframe
-and channel mapping as well does not theoretically make much sense as
-this will just mean they are out-of-sync and multichannel playback will
-have a wrong channel mapping.
+Commit b4916cb17c26 ("percpu: make pcpu_free_chunk() use
+pcpu_mem_free() instead of kfree()") addressed this problem, but
+missed this one.
 
-However, adding back just setting the converter channel count even in
-no-monitor case is the safest change which at least fixes the stereo
-playback regression on SiI1390 codec. Do that.
+tj: commit message updated
 
-Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
-Reported-by: Stephan Raue <stephan@openelec.tv>
-Tested-by: Stephan Raue <stephan@openelec.tv>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Fixes: 099a19d91ca4 ("percpu: allow limited allocation before slab is online)
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- sound/pci/hda/patch_hdmi.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ mm/percpu.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/sound/pci/hda/patch_hdmi.c b/sound/pci/hda/patch_hdmi.c
-index 23e0bc6d6568..2949c8d34d33 100644
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -1023,8 +1023,10 @@ static void hdmi_setup_audio_infoframe(struct hda_codec *codec,
- 					    AMP_OUT_UNMUTE);
+diff --git a/mm/percpu.c b/mm/percpu.c
+index 8c8e08f3a692..25e2ea52db82 100644
+--- a/mm/percpu.c
++++ b/mm/percpu.c
+@@ -612,7 +612,7 @@ static struct pcpu_chunk *pcpu_alloc_chunk(void)
+ 	chunk->map = pcpu_mem_zalloc(PCPU_DFL_MAP_ALLOC *
+ 						sizeof(chunk->map[0]));
+ 	if (!chunk->map) {
+-		kfree(chunk);
++		pcpu_mem_free(chunk, pcpu_chunk_struct_size);
+ 		return NULL;
+ 	}
  
- 	eld = &per_pin->sink_eld;
--	if (!eld->monitor_present)
-+	if (!eld->monitor_present) {
-+		hdmi_set_channel_count(codec, per_pin->cvt_nid, channels);
- 		return;
-+	}
- 
- 	if (!non_pcm && per_pin->chmap_set)
- 		ca = hdmi_manual_channel_allocation(channels, per_pin->chmap);
 -- 
 1.9.3
 
