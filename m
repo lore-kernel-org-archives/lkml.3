@@ -1,100 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933644AbaFII6f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 04:58:35 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58534 "EHLO
+	id S932599AbaFII6z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 04:58:55 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58560 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932193AbaFIIv1 (ORCPT
+	by vger.kernel.org with ESMTP id S932179AbaFIIv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 04:51:27 -0400
+	Mon, 9 Jun 2014 04:51:26 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Martin Peres <martin.peres@labri.fr>,
-        Martin Peres <martin.peres@free.fr>, Ben Skeggs <bskeggs@redhat.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 081/146] drm/nouveau/pm/fan: drop the fan lock in fan_update() before rescheduling
-Date: Mon,  9 Jun 2014 10:50:16 +0200
-Message-Id: <fb5996a588e3d0aec3fc54f72b7fffcd5bc84326.1402303821.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 112/146] x86-64, modify_ldt: Make support for 16-bit segments a runtime option
+Date: Mon,  9 Jun 2014 10:50:47 +0200
+Message-Id: <8591de4d1bf97dffbcbedda237a78639a0d1f393.1402303821.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
 References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
 In-Reply-To: <cover.1402303820.git.jslaby@suse.cz>
 References: <cover.1402303820.git.jslaby@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Martin Peres <martin.peres@labri.fr>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 61679fe153b2b9ea5b5e2ab93305419e85e99a9d upstream.
+commit fa81511bb0bbb2b1aace3695ce869da9762624ff upstream.
 
-This should fix a deadlock that has been reported to us where fan_update()
-would hold the fan lock and try to grab the alarm_program_lock to reschedule
-an update. On an other CPU, the alarm_program_lock would have been taken
-before calling fan_update(), leading to a deadlock.
+Checkin:
 
-We should Cc: <stable@vger.kernel.org> # 3.9+
+b3b42ac2cbae x86-64, modify_ldt: Ban 16-bit segments on 64-bit kernels
 
-Reported-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-Tested-by: Timothée Ravier <tim@siosm.fr>
-Tested-by: Boris Fersing (IRC nick fersingb, no public email address)
-Signed-off-by: Martin Peres <martin.peres@free.fr>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+disabled 16-bit segments on 64-bit kernels due to an information
+leak.  However, it does seem that people are genuinely using Wine to
+run old 16-bit Windows programs on Linux.
+
+A proper fix for this ("espfix64") is coming in the upcoming merge
+window, but as a temporary fix, create a sysctl to allow the
+administrator to re-enable support for 16-bit segments.
+
+It adds a "/proc/sys/abi/ldt16" sysctl that defaults to zero (off). If
+you hit this issue and care about your old Windows program more than
+you care about a kernel stack address information leak, you can do
+
+   echo 1 > /proc/sys/abi/ldt16
+
+as root (add it to your startup scripts), and you should be ok.
+
+The sysctl table is only added if you have COMPAT support enabled on
+x86-64, but I assume anybody who runs old windows binaries very much
+does that ;)
+
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Link: http://lkml.kernel.org/r/CA%2B55aFw9BPoD10U1LfHbOMpHWZkvJTkMcfCs9s3urPr1YyWBxw@mail.gmail.com
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/gpu/drm/nouveau/core/subdev/therm/fan.c | 19 +++++++++++++------
- 1 file changed, 13 insertions(+), 6 deletions(-)
+ arch/x86/kernel/ldt.c        | 4 +++-
+ arch/x86/vdso/vdso32-setup.c | 8 ++++++++
+ 2 files changed, 11 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/nouveau/core/subdev/therm/fan.c b/drivers/gpu/drm/nouveau/core/subdev/therm/fan.c
-index 39f47b950ad1..c14cb093a64e 100644
---- a/drivers/gpu/drm/nouveau/core/subdev/therm/fan.c
-+++ b/drivers/gpu/drm/nouveau/core/subdev/therm/fan.c
-@@ -54,8 +54,10 @@ nouveau_fan_update(struct nouveau_fan *fan, bool immediate, int target)
+diff --git a/arch/x86/kernel/ldt.c b/arch/x86/kernel/ldt.c
+index af1d14a9ebda..dcbbaa165bde 100644
+--- a/arch/x86/kernel/ldt.c
++++ b/arch/x86/kernel/ldt.c
+@@ -20,6 +20,8 @@
+ #include <asm/mmu_context.h>
+ #include <asm/syscalls.h>
  
- 	/* check that we're not already at the target duty cycle */
- 	duty = fan->get(therm);
--	if (duty == target)
--		goto done;
-+	if (duty == target) {
-+		spin_unlock_irqrestore(&fan->lock, flags);
-+		return 0;
-+	}
- 
- 	/* smooth out the fanspeed increase/decrease */
- 	if (!immediate && duty >= 0) {
-@@ -73,8 +75,15 @@ nouveau_fan_update(struct nouveau_fan *fan, bool immediate, int target)
- 
- 	nv_debug(therm, "FAN update: %d\n", duty);
- 	ret = fan->set(therm, duty);
--	if (ret)
--		goto done;
-+	if (ret) {
-+		spin_unlock_irqrestore(&fan->lock, flags);
-+		return ret;
-+	}
++int sysctl_ldt16 = 0;
 +
-+	/* fan speed updated, drop the fan lock before grabbing the
-+	 * alarm-scheduling lock and risking a deadlock
-+	 */
-+	spin_unlock_irqrestore(&fan->lock, flags);
- 
- 	/* schedule next fan update, if not at target speed already */
- 	if (list_empty(&fan->alarm.head) && target != duty) {
-@@ -92,8 +101,6 @@ nouveau_fan_update(struct nouveau_fan *fan, bool immediate, int target)
- 		ptimer->alarm(ptimer, delay * 1000 * 1000, &fan->alarm);
+ #ifdef CONFIG_SMP
+ static void flush_ldt(void *current_mm)
+ {
+@@ -234,7 +236,7 @@ static int write_ldt(void __user *ptr, unsigned long bytecount, int oldmode)
+ 	 * IRET leaking the high bits of the kernel stack address.
+ 	 */
+ #ifdef CONFIG_X86_64
+-	if (!ldt_info.seg_32bit) {
++	if (!ldt_info.seg_32bit && !sysctl_ldt16) {
+ 		error = -EINVAL;
+ 		goto out_unlock;
  	}
+diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
+index d6bfb876cfb0..f1d633a43f8e 100644
+--- a/arch/x86/vdso/vdso32-setup.c
++++ b/arch/x86/vdso/vdso32-setup.c
+@@ -41,6 +41,7 @@ enum {
+ #ifdef CONFIG_X86_64
+ #define vdso_enabled			sysctl_vsyscall32
+ #define arch_setup_additional_pages	syscall32_setup_pages
++extern int sysctl_ldt16;
+ #endif
  
--done:
--	spin_unlock_irqrestore(&fan->lock, flags);
- 	return ret;
- }
+ /*
+@@ -380,6 +381,13 @@ static struct ctl_table abi_table2[] = {
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec
+ 	},
++	{
++		.procname	= "ldt16",
++		.data		= &sysctl_ldt16,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec
++	},
+ 	{}
+ };
  
 -- 
 1.9.3
