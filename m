@@ -1,27 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932801AbaFIIwE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 04:52:04 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58489 "EHLO
+	id S932695AbaFIIwA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 04:52:00 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58490 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755010AbaFIIvZ (ORCPT
+	by vger.kernel.org with ESMTP id S1755003AbaFIIvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jun 2014 04:51:25 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        Sergey Dyasly <dserrg@gmail.com>, Sameer Nanda <snanda@chromium.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        "Ma, Xindong" <xindong.ma@intel.com>,
-        "Tu, Xiaobing" <xiaobing.tu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: linux-kernel@vger.kernel.org, Mohammed Habibulla <moch@chromium.org>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 004/146] oom_kill: add rcu_read_lock() into find_lock_task_mm()
-Date: Mon,  9 Jun 2014 10:48:59 +0200
-Message-Id: <fbdb0229b07126b55126a95d8e2cf60d47fe9848.1402303820.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 065/146] Bluetooth: Add support for Lite-on [04ca:3007]
+Date: Mon,  9 Jun 2014 10:50:00 +0200
+Message-Id: <09d317bc013aa210ebe3be8750c6a3e3ead41210.1402303821.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
 References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
@@ -31,84 +24,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Mohammed Habibulla <moch@chromium.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 4d4048be8a93769350efa31d2482a038b7de73d0 upstream.
+commit 1fb4e09a7e780b915dbd172592ae7e2a4c071065 upstream.
 
-find_lock_task_mm() expects it is called under rcu or tasklist lock, but
-it seems that at least oom_unkillable_task()->task_in_mem_cgroup() and
-mem_cgroup_out_of_memory()->oom_badness() can call it lockless.
+Add support for the AR9462 chip
 
-Perhaps we could fix the callers, but this patch simply adds rcu lock
-into find_lock_task_mm().  This also allows to simplify a bit one of its
-callers, oom_kill_process().
+T:  Bus=01 Lev=01 Prnt=01 Port=03 Cnt=03 Dev#=  3 Spd=12   MxCh= 0
+D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=04ca ProdID=3007 Rev= 0.01
+C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
+E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Cc: Sergey Dyasly <dserrg@gmail.com>
-Cc: Sameer Nanda <snanda@chromium.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mandeep Singh Baines <msb@chromium.org>
-Cc: "Ma, Xindong" <xindong.ma@intel.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Cc: "Tu, Xiaobing" <xiaobing.tu@intel.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mohammed Habibulla <moch@chromium.org>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- mm/oom_kill.c | 12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ drivers/bluetooth/ath3k.c | 2 ++
+ drivers/bluetooth/btusb.c | 1 +
+ 2 files changed, 3 insertions(+)
 
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 7cdd05e685dc..f5bed7f17463 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -102,14 +102,19 @@ struct task_struct *find_lock_task_mm(struct task_struct *p)
- {
- 	struct task_struct *t;
- 
-+	rcu_read_lock();
-+
- 	for_each_thread(p, t) {
- 		task_lock(t);
- 		if (likely(t->mm))
--			return t;
-+			goto found;
- 		task_unlock(t);
- 	}
-+	t = NULL;
-+found:
-+	rcu_read_unlock();
- 
--	return NULL;
-+	return t;
- }
- 
- /* return true if the task is not adequate as candidate victim task. */
-@@ -461,10 +466,8 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- 	}
- 	read_unlock(&tasklist_lock);
- 
--	rcu_read_lock();
- 	p = find_lock_task_mm(victim);
- 	if (!p) {
--		rcu_read_unlock();
- 		put_task_struct(victim);
- 		return;
- 	} else if (victim != p) {
-@@ -490,6 +493,7 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- 	 * That thread will now get access to memory reserves since it has a
- 	 * pending fatal signal.
- 	 */
-+	rcu_read_lock();
- 	for_each_process(p)
- 		if (p->mm == mm && !same_thread_group(p, victim) &&
- 		    !(p->flags & PF_KTHREAD)) {
+diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
+index 0a327f4154a2..2acabdaecec8 100644
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -82,6 +82,7 @@ static struct usb_device_id ath3k_table[] = {
+ 	{ USB_DEVICE(0x04CA, 0x3004) },
+ 	{ USB_DEVICE(0x04CA, 0x3005) },
+ 	{ USB_DEVICE(0x04CA, 0x3006) },
++	{ USB_DEVICE(0x04CA, 0x3007) },
+ 	{ USB_DEVICE(0x04CA, 0x3008) },
+ 	{ USB_DEVICE(0x13d3, 0x3362) },
+ 	{ USB_DEVICE(0x0CF3, 0xE004) },
+@@ -124,6 +125,7 @@ static struct usb_device_id ath3k_blist_tbl[] = {
+ 	{ USB_DEVICE(0x04ca, 0x3004), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04ca, 0x3005), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04ca, 0x3006), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x04ca, 0x3007), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04ca, 0x3008), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3362), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0xe004), .driver_info = BTUSB_ATH3012 },
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index 6e30356d3e42..6e6740b9521b 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -149,6 +149,7 @@ static struct usb_device_id blacklist_table[] = {
+ 	{ USB_DEVICE(0x04ca, 0x3004), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04ca, 0x3005), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04ca, 0x3006), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x04ca, 0x3007), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04ca, 0x3008), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3362), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0xe004), .driver_info = BTUSB_ATH3012 },
 -- 
 1.9.3
 
