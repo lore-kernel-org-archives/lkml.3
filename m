@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752662AbaFINCY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 09:02:24 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:63085 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932476AbaFIM7r (ORCPT
+	id S933454AbaFIM7m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 08:59:42 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:34243 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933427AbaFIM7i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 08:59:47 -0400
+	Mon, 9 Jun 2014 08:59:38 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: bdas@redhat.com, gleb@kernel.org, Bandan Das <bsd@redhat.com>
-Subject: [PATCH 18/25] KVM: emulate: do not initialize memopp
-Date: Mon,  9 Jun 2014 14:59:06 +0200
-Message-Id: <1402318753-23362-19-git-send-email-pbonzini@redhat.com>
+Subject: [PATCH 13/25] KVM: emulate: move init_decode_cache to emulate.c
+Date: Mon,  9 Jun 2014 14:59:01 +0200
+Message-Id: <1402318753-23362-14-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1402318753-23362-1-git-send-email-pbonzini@redhat.com>
 References: <1402318753-23362-1-git-send-email-pbonzini@redhat.com>
@@ -22,73 +22,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Bandan Das <bsd@redhat.com>
 
-rip_relative is only set if decode_modrm runs, and if you have ModRM
-you will also have a memopp.  We can then access memopp unconditionally.
-Note that rip_relative cannot be hoisted up to decode_modrm, or you
-break "mov $0, xyz(%rip)".
-
-Also, move typecast on "out of range value" of mem.ea to decode_modrm.
-
-Together, all these optimizations save about 50 cycles on each emulated
-instructions (4-6%).
+Core emulator functions all belong in emulator.c,
+x86 should have no knowledge of emulator internals
 
 Signed-off-by: Bandan Das <bsd@redhat.com>
-[Fix immediate operands with rip-relative addressing. - Paolo]
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- arch/x86/include/asm/kvm_emulate.h | 5 +++++
- arch/x86/kvm/emulate.c             | 8 ++++----
- 2 files changed, 9 insertions(+), 4 deletions(-)
+ arch/x86/include/asm/kvm_emulate.h |  1 +
+ arch/x86/kvm/emulate.c             | 13 +++++++++++++
+ arch/x86/kvm/x86.c                 | 13 -------------
+ 3 files changed, 14 insertions(+), 13 deletions(-)
 
 diff --git a/arch/x86/include/asm/kvm_emulate.h b/arch/x86/include/asm/kvm_emulate.h
-index 268bbd4aae99..692b0bfadf91 100644
+index f596976a3ab2..b8456835eddb 100644
 --- a/arch/x86/include/asm/kvm_emulate.h
 +++ b/arch/x86/include/asm/kvm_emulate.h
-@@ -322,6 +322,11 @@ struct x86_emulate_ctxt {
- 	struct operand dst;
- 	int (*execute)(struct x86_emulate_ctxt *ctxt);
- 	int (*check_perm)(struct x86_emulate_ctxt *ctxt);
-+	/*
-+	 * The following six fields are cleared together,
-+	 * the rest are initialized unconditionally in x86_decode_insn
-+	 * or elsewhere
-+	 */
- 	bool rip_relative;
- 	u8 rex_prefix;
- 	u8 lock_prefix;
+@@ -436,6 +436,7 @@ bool x86_page_table_writing_insn(struct x86_emulate_ctxt *ctxt);
+ #define EMULATION_OK 0
+ #define EMULATION_RESTART 1
+ #define EMULATION_INTERCEPTED 2
++void init_decode_cache(struct x86_emulate_ctxt *ctxt);
+ int x86_emulate_insn(struct x86_emulate_ctxt *ctxt);
+ int emulator_task_switch(struct x86_emulate_ctxt *ctxt,
+ 			 u16 tss_selector, int idt_index, int reason,
 diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index 05f7bb416fc2..32f38a3467a0 100644
+index eaf0853ffaf9..34a04ba26c23 100644
 --- a/arch/x86/kvm/emulate.c
 +++ b/arch/x86/kvm/emulate.c
-@@ -1176,6 +1176,9 @@ static int decode_modrm(struct x86_emulate_ctxt *ctxt,
- 		}
- 	}
- 	op->addr.mem.ea = modrm_ea;
-+	if (ctxt->ad_bytes != 8)
-+		ctxt->memop.addr.mem.ea = (u32)ctxt->memop.addr.mem.ea;
-+
- done:
- 	return rc;
+@@ -4608,6 +4608,19 @@ static int fastop(struct x86_emulate_ctxt *ctxt, void (*fop)(struct fastop *))
+ 	return X86EMUL_CONTINUE;
  }
-@@ -4499,9 +4502,6 @@ done_prefixes:
  
- 	ctxt->memop.addr.mem.seg = ctxt->seg_override;
++void init_decode_cache(struct x86_emulate_ctxt *ctxt)
++{
++	memset(&ctxt->opcode_len, 0,
++	       (void *)&ctxt->_regs - (void *)&ctxt->opcode_len);
++
++	ctxt->fetch.start = 0;
++	ctxt->fetch.end = 0;
++	ctxt->io_read.pos = 0;
++	ctxt->io_read.end = 0;
++	ctxt->mem_read.pos = 0;
++	ctxt->mem_read.end = 0;
++}
++
+ int x86_emulate_insn(struct x86_emulate_ctxt *ctxt)
+ {
+ 	const struct x86_emulate_ops *ops = ctxt->ops;
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 02678c2f3721..401bdef24d54 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -4952,19 +4952,6 @@ static void inject_emulated_exception(struct kvm_vcpu *vcpu)
+ 		kvm_queue_exception(vcpu, ctxt->exception.vector);
+ }
  
--	if (ctxt->memop.type == OP_MEM && ctxt->ad_bytes != 8)
--		ctxt->memop.addr.mem.ea = (u32)ctxt->memop.addr.mem.ea;
+-static void init_decode_cache(struct x86_emulate_ctxt *ctxt)
+-{
+-	memset(&ctxt->opcode_len, 0,
+-	       (void *)&ctxt->_regs - (void *)&ctxt->opcode_len);
 -
- 	/*
- 	 * Decode and fetch the source operand: register, memory
- 	 * or immediate.
-@@ -4522,7 +4522,7 @@ done_prefixes:
- 	rc = decode_operand(ctxt, &ctxt->dst, (ctxt->d >> DstShift) & OpMask);
- 
- done:
--	if (ctxt->memopp && ctxt->memopp->type == OP_MEM && ctxt->rip_relative)
-+	if (ctxt->rip_relative)
- 		ctxt->memopp->addr.mem.ea += ctxt->_eip;
- 
- 	return (rc != X86EMUL_CONTINUE) ? EMULATION_FAILED : EMULATION_OK;
+-	ctxt->fetch.start = 0;
+-	ctxt->fetch.end = 0;
+-	ctxt->io_read.pos = 0;
+-	ctxt->io_read.end = 0;
+-	ctxt->mem_read.pos = 0;
+-	ctxt->mem_read.end = 0;
+-}
+-
+ static void init_emulate_ctxt(struct kvm_vcpu *vcpu)
+ {
+ 	struct x86_emulate_ctxt *ctxt = &vcpu->arch.emulate_ctxt;
 -- 
 1.8.3.1
 
