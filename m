@@ -1,120 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933352AbaFIN26 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 09:28:58 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:43954 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755604AbaFIN25 (ORCPT
+	id S1755354AbaFIN3F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 09:29:05 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:62386 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933379AbaFIN3A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 09:28:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140609125931.GL26511@stfomichev-desktop.yandex.net>
-References: <1402305825-3015-1-git-send-email-stfomichev@yandex-team.ru>
-	<alpine.DEB.2.10.1406091304140.3830@nanos>
-	<20140609111115.GK26511@stfomichev-desktop.yandex.net>
-	<20140609125931.GL26511@stfomichev-desktop.yandex.net>
-Date: Mon, 9 Jun 2014 18:58:56 +0530
-Message-ID: <CAKohpon3s3P2WE8oGiKgw8BU-3zGCPPjq=Bo9gAG4+7vVhTfdw@mail.gmail.com>
-Subject: Re: [PATCH v2] hrtimers: add fast path to hrtimer_get_next_event
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Stanislav Fomichev <stfomichev@yandex-team.ru>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stuart Hayes <stuart.w.hayes@gmail.com>, david.vrabel@citrix.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 9 Jun 2014 09:29:00 -0400
+From: Chen Yucong <slaoub@gmail.com>
+To: mgorman@suse.de
+Cc: mhocko@suse.cz, hannes@cmpxchg.org, akpm@linux-foundation.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Chen Yucong <slaoub@gmail.com>
+Subject: [PATCH] mm/vmscan.c: avoid recording the original scan targets in shrink_lruvec()
+Date: Mon,  9 Jun 2014 21:27:16 +0800
+Message-Id: <1402320436-22270-1-git-send-email-slaoub@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 June 2014 18:29, Stanislav Fomichev <stfomichev@yandex-team.ru> wrote:
-> In hrtimer_get_next_event we unconditionally lock/unlock spinlock, even if it's
-> not required (hrtimer_hres_active() != 0). This patch adds fast path
-> when highres is active so we don't execute unnecessary operations.
->
-> We can safely do lockless check because:
-> - hrtimer_get_next_event is always called with interrupts disabled;
-> - we may switch to hres only from softirq handler with disabled interrupts.
->
-> Because we only care about hres_active which may be changed only from
-> local CPU, we can use interrupt context for synchronization.
->
-> run_timer_softirq
->   hrtimer_run_pending
->     hrtimer_switch_to_hres
->       local_irq_save <-
->       base->hres_active = 0
->
-> tick_nohz_idle_enter
->   local_irq_disable <-
->   __tick_nohz_idle_enter
->     tick_nohz_stop_sched_tick
->       get_next_timer_interrupt
->         cmp_next_hrtimer_event
->           hrtimer_get_next_event
->           check base->hres_active
->
-> irq_exit <- irq context
->   tick_irq_exit
->     tick_nohz_irq_exit
->       tick_nohz_full_stop_tick
->         tick_nohz_stop_sched_tick
->             ... <see above>
->       __tick_nohz_idle_enter
->         ... <see above>
->
-> Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
-> ---
->  kernel/hrtimer.c | 27 ++++++++++++++-------------
->  1 file changed, 14 insertions(+), 13 deletions(-)
->
-> diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-> index ba340739c701..731be91e927f 100644
-> --- a/kernel/hrtimer.c
-> +++ b/kernel/hrtimer.c
-> @@ -1167,23 +1167,24 @@ ktime_t hrtimer_get_next_event(void)
->         unsigned long flags;
->         int i;
->
-> +       if (hrtimer_hres_active())
-> +               return mindelta;
-> +
->         raw_spin_lock_irqsave(&cpu_base->lock, flags);
->
-> -       if (!hrtimer_hres_active()) {
-> -               for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++, base++) {
-> -                       struct hrtimer *timer;
-> -                       struct timerqueue_node *next;
-> +       for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++, base++) {
-> +               struct hrtimer *timer;
-> +               struct timerqueue_node *next;
->
-> -                       next = timerqueue_getnext(&base->active);
-> -                       if (!next)
-> -                               continue;
-> +               next = timerqueue_getnext(&base->active);
-> +               if (!next)
-> +                       continue;
->
-> -                       timer = container_of(next, struct hrtimer, node);
-> -                       delta.tv64 = hrtimer_get_expires_tv64(timer);
-> -                       delta = ktime_sub(delta, base->get_time());
-> -                       if (delta.tv64 < mindelta.tv64)
-> -                               mindelta.tv64 = delta.tv64;
-> -               }
-> +               timer = container_of(next, struct hrtimer, node);
-> +               delta.tv64 = hrtimer_get_expires_tv64(timer);
-> +               delta = ktime_sub(delta, base->get_time());
-> +               if (delta.tv64 < mindelta.tv64)
-> +                       mindelta.tv64 = delta.tv64;
->         }
->
->         raw_spin_unlock_irqrestore(&cpu_base->lock, flags);
+Via https://lkml.org/lkml/2013/4/10/334 , we can find that recording the
+original scan targets introduces extra 40 bytes on the stack. This patch
+is able to avoid this situation and the call to memcpy(). At the same time,
+it does not change the relative design idea.
 
-Even I was concerned about a bigger diff earlier and so didn't comment
-to rewrite it this way :)
+ratio = original_nr_file / original_nr_anon;
 
-Codewise, looks much better..
+If (nr_file > nr_anon), then ratio = (nr_file - x) / nr_anon.
+ x = nr_file - ratio * nr_anon;
 
-Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
+if (nr_file <= nr_anon), then ratio = nr_file / (nr_anon - x).
+ x = nr_anon - nr_file / ratio;
+
+Signed-off-by: Chen Yucong <slaoub@gmail.com>
+---
+ mm/vmscan.c |   28 +++++++++-------------------
+ 1 file changed, 9 insertions(+), 19 deletions(-)
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index a8ffe4e..daaf89c 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2057,8 +2057,7 @@ out:
+ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
+ {
+ 	unsigned long nr[NR_LRU_LISTS];
+-	unsigned long targets[NR_LRU_LISTS];
+-	unsigned long nr_to_scan;
++	unsigned long nr_to_scan, ratio;
+ 	enum lru_list lru;
+ 	unsigned long nr_reclaimed = 0;
+ 	unsigned long nr_to_reclaim = sc->nr_to_reclaim;
+@@ -2067,8 +2066,8 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
+ 
+ 	get_scan_count(lruvec, sc, nr);
+ 
+-	/* Record the original scan target for proportional adjustments later */
+-	memcpy(targets, nr, sizeof(nr));
++	ratio = (nr[LRU_INACTIVE_FILE] + nr[LRU_ACTIVE_FILE] + 1) /
++			(nr[LRU_INACTIVE_ANON] + nr[LRU_ACTIVE_ANON] + 1);
+ 
+ 	/*
+ 	 * Global reclaiming within direct reclaim at DEF_PRIORITY is a normal
+@@ -2088,7 +2087,6 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
+ 	while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
+ 					nr[LRU_INACTIVE_FILE]) {
+ 		unsigned long nr_anon, nr_file, percentage;
+-		unsigned long nr_scanned;
+ 
+ 		for_each_evictable_lru(lru) {
+ 			if (nr[lru]) {
+@@ -2123,15 +2121,13 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
+ 			break;
+ 
+ 		if (nr_file > nr_anon) {
+-			unsigned long scan_target = targets[LRU_INACTIVE_ANON] +
+-						targets[LRU_ACTIVE_ANON] + 1;
++			nr_to_scan = nr_file - ratio * nr_anon;
++			percentage = nr[LRU_FILE] * 100 / nr_file;
+ 			lru = LRU_BASE;
+-			percentage = nr_anon * 100 / scan_target;
+ 		} else {
+-			unsigned long scan_target = targets[LRU_INACTIVE_FILE] +
+-						targets[LRU_ACTIVE_FILE] + 1;
++			nr_to_scan = nr_anon - nr_file / ratio;
++			percentage = nr[LRU_BASE] * 100 / nr_anon;
+ 			lru = LRU_FILE;
+-			percentage = nr_file * 100 / scan_target;
+ 		}
+ 
+ 		/* Stop scanning the smaller of the LRU */
+@@ -2143,14 +2139,8 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
+ 		 * scan target and the percentage scanning already complete
+ 		 */
+ 		lru = (lru == LRU_FILE) ? LRU_BASE : LRU_FILE;
+-		nr_scanned = targets[lru] - nr[lru];
+-		nr[lru] = targets[lru] * (100 - percentage) / 100;
+-		nr[lru] -= min(nr[lru], nr_scanned);
+-
+-		lru += LRU_ACTIVE;
+-		nr_scanned = targets[lru] - nr[lru];
+-		nr[lru] = targets[lru] * (100 - percentage) / 100;
+-		nr[lru] -= min(nr[lru], nr_scanned);
++		nr[lru] = nr_to_scan * percentage / 100;
++		nr[lru + LRU_ACTIVE] = nr_to_scan - nr[lru];
+ 
+ 		scan_adjusted = true;
+ 	}
+-- 
+1.7.10.4
+
