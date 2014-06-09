@@ -1,309 +1,740 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753418AbaFIGKQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 02:10:16 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:38975 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752077AbaFIGKN (ORCPT
+	id S1754204AbaFIGQE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 02:16:04 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:52451 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751061AbaFIGP6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 02:10:13 -0400
-Date: Sun, 8 Jun 2014 23:10:10 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: [git pull] Input updates for 3.16-rc0
-Message-ID: <20140609061009.GA29871@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LZvS9be/3tNcYl/X"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 9 Jun 2014 02:15:58 -0400
+X-AuditID: cbfee690-b7fb56d000003439-ef-5395511871a9
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: lee.jones@linaro.org, broonie@kernel.org, sbkim73@samsung.com,
+        sameo@linux.intel.com, lgirdwood@gmail.com,
+        linux-kernel@vger.kernel.org
+Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        jonghwa3.lee@samsung.com, k.kozlowski@samsung.com,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Subject: [PATCHv3 2/3] regulator: s2mps11: Add support S2MPU02 regulator device
+Date: Mon, 09 Jun 2014 15:15:47 +0900
+Message-id: <1402294548-10380-3-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.8.0
+In-reply-to: <1402294548-10380-1-git-send-email-cw00.choi@samsung.com>
+References: <1402294548-10380-1-git-send-email-cw00.choi@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAIsWRmVeSWpSXmKPExsWyRsSkSFcycGqwwZ1pjBZTHz5hs7j+5Tmr
+	RefZJ8wWr18YWpxtesNucf/rUUaLb1c6mCwu75rDZnG7cQWbxeluVouLK74wOXB77Jx1l91j
+	06pONo871/awecw7GejRt2UVo8fnTXIBbFFcNimpOZllqUX6dglcGetOtzMX7F/JWNG6+iZL
+	A+OKXsYuRg4OCQETif0njLoYOYFMMYkL99azdTFycQgJLGWUuLKulwUiYSLx/+gvJojEdEaJ
+	07va2SGcJiaJE9PWg1WxCWhJ7H9xA6xdRKCXUeJN/zSwFmaBKYwSHzub2ECqhAX8JRY9mQTW
+	wSKgKvH3+1ywOK+Aq8TPa28ZIfbJSXzY84gdxOYUcJN41DEDrEYIqObD8c+MIEMlBA6xS2zb
+	eooRYpCAxLfJh1ggHpKV2HSAGWKOpMTBFTdYJjAKL2BkWMUomlqQXFCclF5kolecmFtcmpeu
+	l5yfu4kRGBun/z2bsIPx3gHrQ4zJQOMmMkuJJucDYyuvJN7Q2MzIwtTE1NjI3NKMNGElcV61
+	R0lBQgLpiSWp2ampBalF8UWlOanFhxiZODilGhh59vJou1y8OeVW9xq7htXPHnSH17D9ja8p
+	Pn/V47O98ff+V0u/VG82nX+Rk81qS/W3pDm3/0uf38Ga1Xgz/O6MiMun7aNVArr3RwoFWDn1
+	vNCV1g+P6iq24wn53dPSJfLxoIQj19XSybF9LtpXc+cnLei+v7Yx69EG+X+TTu+rv1j/7Nat
+	aU5KLMUZiYZazEXFiQAE9blhowIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrHIsWRmVeSWpSXmKPExsVy+t9jQV2JwKnBBpd/GlhMffiEzeL6l+es
+	Fp1nnzBbvH5haHG26Q27xf2vRxktvl3pYLK4vGsOm8XtxhVsFqe7WS0urvjC5MDtsXPWXXaP
+	Tas62TzuXNvD5jHvZKBH35ZVjB6fN8kFsEU1MNpkpCampBYppOYl56dk5qXbKnkHxzvHm5oZ
+	GOoaWlqYKynkJeam2iq5+AToumXmAF2npFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3JAiu
+	x8gADSSsYcxYd7qduWD/SsaK1tU3WRoYV/QydjFyckgImEj8P/qLCcIWk7hwbz1bFyMXh5DA
+	dEaJ07va2SGcJiaJE9PWs4BUsQloSex/cQOsSkSgl1HiTf80JhCHWWAKo8THziY2kCphAX+J
+	RU8mgXWwCKhK/P0+FyzOK+Aq8fPaW6jdchIf9jxiB7E5BdwkHnXMAKsRAqr5cPwz4wRG3gWM
+	DKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxgmPvmfQOxlUNFocYBTgYlXh4I35PCRZiTSwr
+	rsw9xCjBwawkwmtgNTVYiDclsbIqtSg/vqg0J7X4EGMy0FUTmaVEk/OBaSGvJN7Q2MTMyNLI
+	3NDCyNicNGElcd6DrdaBQgLpiSWp2ampBalFMFuYODilGhhrq08nTA+dLhZ70nhO/l6R40EG
+	5SJ+dSf3x9slayy69alotY6M3tozKnsmxa6cru/5ad9umYcHlt54/fWR+J/a81ue/JwTPC3J
+	9iv/F69EScuKq/cXKq549y3B+ujhE0q5Gp3O7muW5+pULDsT+oGX7/hd8emmkzc8O9786BPT
+	lfKENWvPHTW3VGIpzkg01GIuKk4EAHnd14MBAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch add S2MPU02 regulator device to existing S2MPS11 device driver
+because of little difference between S2MPS1x and S2MPU02. The S2MPU02
+regulator device includes LDO[1-28] and BUCK[1-7].
 
---LZvS9be/3tNcYl/X
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+[Add missing linear_min_sel of S2MPU02 LDO regulators by Jonghwa Lee]
+Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Acked-by: Mark Brown <broonie@linaro.org>
+---
+ drivers/mfd/sec-core.c              |  25 +++
+ drivers/regulator/s2mps11.c         | 311 +++++++++++++++++++++++++++++++++---
+ include/linux/mfd/samsung/s2mpu02.h | 200 +++++++++++++++++++++++
+ 3 files changed, 517 insertions(+), 19 deletions(-)
+ create mode 100644 include/linux/mfd/samsung/s2mpu02.h
 
-Hi Linus,
+diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
+index 5e8784b..9eae5ab 100644
+--- a/drivers/mfd/sec-core.c
++++ b/drivers/mfd/sec-core.c
+@@ -28,6 +28,7 @@
+ #include <linux/mfd/samsung/s2mpa01.h>
+ #include <linux/mfd/samsung/s2mps11.h>
+ #include <linux/mfd/samsung/s2mps14.h>
++#include <linux/mfd/samsung/s2mpu02.h>
+ #include <linux/mfd/samsung/s5m8763.h>
+ #include <linux/mfd/samsung/s5m8767.h>
+ #include <linux/regmap.h>
+@@ -146,6 +147,18 @@ static bool s2mps11_volatile(struct device *dev, unsigned int reg)
+ 	}
+ }
+ 
++static bool s2mpu02_volatile(struct device *dev, unsigned int reg)
++{
++	switch (reg) {
++	case S2MPU02_REG_INT1M:
++	case S2MPU02_REG_INT2M:
++	case S2MPU02_REG_INT3M:
++		return false;
++	default:
++		return true;
++	}
++}
++
+ static bool s5m8763_volatile(struct device *dev, unsigned int reg)
+ {
+ 	switch (reg) {
+@@ -191,6 +204,15 @@ static const struct regmap_config s2mps14_regmap_config = {
+ 	.cache_type = REGCACHE_FLAT,
+ };
+ 
++static const struct regmap_config s2mpu02_regmap_config = {
++	.reg_bits = 8,
++	.val_bits = 8,
++
++	.max_register = S2MPU02_REG_DVSDATA,
++	.volatile_reg = s2mpu02_volatile,
++	.cache_type = REGCACHE_FLAT,
++};
++
+ static const struct regmap_config s5m8763_regmap_config = {
+ 	.reg_bits = 8,
+ 	.val_bits = 8,
+@@ -311,6 +333,9 @@ static int sec_pmic_probe(struct i2c_client *i2c,
+ 	case S5M8767X:
+ 		regmap = &s5m8767_regmap_config;
+ 		break;
++	case S2MPU02:
++		regmap = &s2mpu02_regmap_config;
++		break;
+ 	default:
+ 		regmap = &sec_regmap_config;
+ 		break;
+diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
+index 02e2fb2..c52d4ac 100644
+--- a/drivers/regulator/s2mps11.c
++++ b/drivers/regulator/s2mps11.c
+@@ -31,6 +31,7 @@
+ #include <linux/mfd/samsung/core.h>
+ #include <linux/mfd/samsung/s2mps11.h>
+ #include <linux/mfd/samsung/s2mps14.h>
++#include <linux/mfd/samsung/s2mpu02.h>
+ 
+ struct s2mps11_info {
+ 	unsigned int rdev_num;
+@@ -40,11 +41,15 @@ struct s2mps11_info {
+ 	int ramp_delay16;
+ 	int ramp_delay7810;
+ 	int ramp_delay9;
++
++	enum sec_device_type dev_type;
++
+ 	/*
+-	 * One bit for each S2MPS14 regulator whether the suspend mode
++	 * One bit for each S2MPS14/S2MPU02 regulator whether the suspend mode
+ 	 * was enabled.
+ 	 */
+-	unsigned int s2mps14_suspend_state:30;
++	unsigned long long s2mps14_suspend_state:35;
++
+ 	/* Array of size rdev_num with GPIO-s for external sleep control */
+ 	int *ext_control_gpio;
+ };
+@@ -415,12 +420,24 @@ static int s2mps14_regulator_enable(struct regulator_dev *rdev)
+ 	struct s2mps11_info *s2mps11 = rdev_get_drvdata(rdev);
+ 	unsigned int val;
+ 
+-	if (s2mps11->s2mps14_suspend_state & (1 << rdev_get_id(rdev)))
+-		val = S2MPS14_ENABLE_SUSPEND;
+-	else if (gpio_is_valid(s2mps11->ext_control_gpio[rdev_get_id(rdev)]))
+-		val = S2MPS14_ENABLE_EXT_CONTROL;
+-	else
+-		val = rdev->desc->enable_mask;
++	switch (s2mps11->dev_type) {
++	case S2MPS14X:
++		if (s2mps11->s2mps14_suspend_state & (1 << rdev_get_id(rdev)))
++			val = S2MPS14_ENABLE_SUSPEND;
++		else if (gpio_is_valid(s2mps11->ext_control_gpio[rdev_get_id(rdev)]))
++			val = S2MPS14_ENABLE_EXT_CONTROL;
++		else
++			val = rdev->desc->enable_mask;
++		break;
++	case S2MPU02:
++		if (s2mps11->s2mps14_suspend_state & (1 << rdev_get_id(rdev)))
++			val = S2MPU02_ENABLE_SUSPEND;
++		else
++			val = rdev->desc->enable_mask;
++		break;
++	default:
++		return -EINVAL;
++	};
+ 
+ 	return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
+ 			rdev->desc->enable_mask, val);
+@@ -431,10 +448,30 @@ static int s2mps14_regulator_set_suspend_disable(struct regulator_dev *rdev)
+ 	int ret;
+ 	unsigned int val;
+ 	struct s2mps11_info *s2mps11 = rdev_get_drvdata(rdev);
++	int rdev_id = rdev_get_id(rdev);
+ 
+-	/* LDO3 should be always on and does not support suspend mode */
+-	if (rdev_get_id(rdev) == S2MPS14_LDO3)
+-		return 0;
++	/* Below LDO should be always on or does not support suspend mode. */
++	switch (s2mps11->dev_type) {
++	case S2MPS14X:
++		switch (rdev_id) {
++		case S2MPS14_LDO3:
++			return 0;
++		};
++		break;
++	case S2MPU02:
++		switch (rdev_id) {
++		case S2MPU02_LDO13:
++		case S2MPU02_LDO14:
++		case S2MPU02_LDO15:
++		case S2MPU02_LDO16:
++		case S2MPU02_LDO17:
++		case S2MPU02_BUCK7:
++			return 0;
++		};
++		break;
++	default:
++		return -EINVAL;
++	};
+ 
+ 	ret = regmap_read(rdev->regmap, rdev->desc->enable_reg, &val);
+ 	if (ret < 0)
+@@ -605,8 +642,7 @@ static void s2mps14_pmic_dt_parse_ext_control_gpio(struct platform_device *pdev,
+ }
+ 
+ static int s2mps11_pmic_dt_parse(struct platform_device *pdev,
+-		struct of_regulator_match *rdata, struct s2mps11_info *s2mps11,
+-		enum sec_device_type dev_type)
++		struct of_regulator_match *rdata, struct s2mps11_info *s2mps11)
+ {
+ 	struct device_node *reg_np;
+ 
+@@ -617,7 +653,7 @@ static int s2mps11_pmic_dt_parse(struct platform_device *pdev,
+ 	}
+ 
+ 	of_regulator_match(&pdev->dev, reg_np, rdata, s2mps11->rdev_num);
+-	if (dev_type == S2MPS14X)
++	if (s2mps11->dev_type == S2MPS14X)
+ 		s2mps14_pmic_dt_parse_ext_control_gpio(pdev, rdata, s2mps11);
+ 
+ 	of_node_put(reg_np);
+@@ -625,6 +661,238 @@ static int s2mps11_pmic_dt_parse(struct platform_device *pdev,
+ 	return 0;
+ }
+ 
++static int s2mpu02_set_ramp_delay(struct regulator_dev *rdev, int ramp_delay)
++{
++	unsigned int ramp_val, ramp_shift, ramp_reg;
++
++	switch (rdev_get_id(rdev)) {
++	case S2MPU02_BUCK1:
++		ramp_shift = S2MPU02_BUCK1_RAMP_SHIFT;
++		break;
++	case S2MPU02_BUCK2:
++		ramp_shift = S2MPU02_BUCK2_RAMP_SHIFT;
++		break;
++	case S2MPU02_BUCK3:
++		ramp_shift = S2MPU02_BUCK3_RAMP_SHIFT;
++		break;
++	case S2MPU02_BUCK4:
++		ramp_shift = S2MPU02_BUCK4_RAMP_SHIFT;
++		break;
++	default:
++		return 0;
++	}
++	ramp_reg = S2MPU02_REG_RAMP1;
++	ramp_val = get_ramp_delay(ramp_delay);
++
++	return regmap_update_bits(rdev->regmap, ramp_reg,
++				  S2MPU02_BUCK1234_RAMP_MASK << ramp_shift,
++				  ramp_val << ramp_shift);
++}
++
++static struct regulator_ops s2mpu02_ldo_ops = {
++	.list_voltage		= regulator_list_voltage_linear,
++	.map_voltage		= regulator_map_voltage_linear,
++	.is_enabled		= regulator_is_enabled_regmap,
++	.enable			= s2mps14_regulator_enable,
++	.disable		= regulator_disable_regmap,
++	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
++	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
++	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
++	.set_suspend_disable	= s2mps14_regulator_set_suspend_disable,
++};
++
++static struct regulator_ops s2mpu02_buck_ops = {
++	.list_voltage		= regulator_list_voltage_linear,
++	.map_voltage		= regulator_map_voltage_linear,
++	.is_enabled		= regulator_is_enabled_regmap,
++	.enable			= s2mps14_regulator_enable,
++	.disable		= regulator_disable_regmap,
++	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
++	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
++	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
++	.set_suspend_disable	= s2mps14_regulator_set_suspend_disable,
++	.set_ramp_delay		= s2mpu02_set_ramp_delay,
++};
++
++#define regulator_desc_s2mpu02_ldo1(num) {		\
++	.name		= "LDO"#num,			\
++	.id		= S2MPU02_LDO##num,		\
++	.ops		= &s2mpu02_ldo_ops,		\
++	.type		= REGULATOR_VOLTAGE,		\
++	.owner		= THIS_MODULE,			\
++	.min_uV		= S2MPU02_LDO_MIN_900MV,	\
++	.uV_step	= S2MPU02_LDO_STEP_12_5MV,	\
++	.linear_min_sel	= S2MPU02_LDO_GROUP1_START_SEL,	\
++	.n_voltages	= S2MPU02_LDO_N_VOLTAGES,	\
++	.vsel_reg	= S2MPU02_REG_L1CTRL,		\
++	.vsel_mask	= S2MPU02_LDO_VSEL_MASK,	\
++	.enable_reg	= S2MPU02_REG_L1CTRL,		\
++	.enable_mask	= S2MPU02_ENABLE_MASK		\
++}
++#define regulator_desc_s2mpu02_ldo2(num) {		\
++	.name		= "LDO"#num,			\
++	.id		= S2MPU02_LDO##num,		\
++	.ops		= &s2mpu02_ldo_ops,		\
++	.type		= REGULATOR_VOLTAGE,		\
++	.owner		= THIS_MODULE,			\
++	.min_uV		= S2MPU02_LDO_MIN_1050MV,	\
++	.uV_step	= S2MPU02_LDO_STEP_25MV,	\
++	.linear_min_sel	= S2MPU02_LDO_GROUP2_START_SEL,	\
++	.n_voltages	= S2MPU02_LDO_N_VOLTAGES,	\
++	.vsel_reg	= S2MPU02_REG_L2CTRL1,		\
++	.vsel_mask	= S2MPU02_LDO_VSEL_MASK,	\
++	.enable_reg	= S2MPU02_REG_L2CTRL1,		\
++	.enable_mask	= S2MPU02_ENABLE_MASK		\
++}
++#define regulator_desc_s2mpu02_ldo3(num) {		\
++	.name		= "LDO"#num,			\
++	.id		= S2MPU02_LDO##num,		\
++	.ops		= &s2mpu02_ldo_ops,		\
++	.type		= REGULATOR_VOLTAGE,		\
++	.owner		= THIS_MODULE,			\
++	.min_uV		= S2MPU02_LDO_MIN_900MV,	\
++	.uV_step	= S2MPU02_LDO_STEP_12_5MV,	\
++	.linear_min_sel	= S2MPU02_LDO_GROUP1_START_SEL,	\
++	.n_voltages	= S2MPU02_LDO_N_VOLTAGES,	\
++	.vsel_reg	= S2MPU02_REG_L3CTRL + num - 3,	\
++	.vsel_mask	= S2MPU02_LDO_VSEL_MASK,	\
++	.enable_reg	= S2MPU02_REG_L3CTRL + num - 3,	\
++	.enable_mask	= S2MPU02_ENABLE_MASK		\
++}
++#define regulator_desc_s2mpu02_ldo4(num) {		\
++	.name		= "LDO"#num,			\
++	.id		= S2MPU02_LDO##num,		\
++	.ops		= &s2mpu02_ldo_ops,		\
++	.type		= REGULATOR_VOLTAGE,		\
++	.owner		= THIS_MODULE,			\
++	.min_uV		= S2MPU02_LDO_MIN_1050MV,	\
++	.uV_step	= S2MPU02_LDO_STEP_25MV,	\
++	.linear_min_sel	= S2MPU02_LDO_GROUP2_START_SEL,	\
++	.n_voltages	= S2MPU02_LDO_N_VOLTAGES,	\
++	.vsel_reg	= S2MPU02_REG_L3CTRL + num - 3,	\
++	.vsel_mask	= S2MPU02_LDO_VSEL_MASK,	\
++	.enable_reg	= S2MPU02_REG_L3CTRL + num - 3,	\
++	.enable_mask	= S2MPU02_ENABLE_MASK		\
++}
++#define regulator_desc_s2mpu02_ldo5(num) {		\
++	.name		= "LDO"#num,			\
++	.id		= S2MPU02_LDO##num,		\
++	.ops		= &s2mpu02_ldo_ops,		\
++	.type		= REGULATOR_VOLTAGE,		\
++	.owner		= THIS_MODULE,			\
++	.min_uV		= S2MPU02_LDO_MIN_1600MV,	\
++	.uV_step	= S2MPU02_LDO_STEP_50MV,	\
++	.linear_min_sel	= S2MPU02_LDO_GROUP3_START_SEL,	\
++	.n_voltages	= S2MPU02_LDO_N_VOLTAGES,	\
++	.vsel_reg	= S2MPU02_REG_L3CTRL + num - 3,	\
++	.vsel_mask	= S2MPU02_LDO_VSEL_MASK,	\
++	.enable_reg	= S2MPU02_REG_L3CTRL + num - 3,	\
++	.enable_mask	= S2MPU02_ENABLE_MASK		\
++}
++
++#define regulator_desc_s2mpu02_buck1234(num) {			\
++	.name		= "BUCK"#num,				\
++	.id		= S2MPU02_BUCK##num,			\
++	.ops		= &s2mpu02_buck_ops,			\
++	.type		= REGULATOR_VOLTAGE,			\
++	.owner		= THIS_MODULE,				\
++	.min_uV		= S2MPU02_BUCK1234_MIN_600MV,		\
++	.uV_step	= S2MPU02_BUCK1234_STEP_6_25MV,		\
++	.n_voltages	= S2MPU02_BUCK_N_VOLTAGES,		\
++	.linear_min_sel = S2MPU02_BUCK1234_START_SEL,		\
++	.ramp_delay	= S2MPU02_BUCK_RAMP_DELAY,		\
++	.vsel_reg	= S2MPU02_REG_B1CTRL2 + (num - 1) * 2,	\
++	.vsel_mask	= S2MPU02_BUCK_VSEL_MASK,		\
++	.enable_reg	= S2MPU02_REG_B1CTRL1 + (num - 1) * 2,	\
++	.enable_mask	= S2MPU02_ENABLE_MASK			\
++}
++#define regulator_desc_s2mpu02_buck5(num) {			\
++	.name		= "BUCK"#num,				\
++	.id		= S2MPU02_BUCK##num,			\
++	.ops		= &s2mpu02_ldo_ops,			\
++	.type		= REGULATOR_VOLTAGE,			\
++	.owner		= THIS_MODULE,				\
++	.min_uV		= S2MPU02_BUCK5_MIN_1081_25MV,		\
++	.uV_step	= S2MPU02_BUCK5_STEP_6_25MV,		\
++	.n_voltages	= S2MPU02_BUCK_N_VOLTAGES,		\
++	.linear_min_sel = S2MPU02_BUCK5_START_SEL,		\
++	.ramp_delay	= S2MPU02_BUCK_RAMP_DELAY,		\
++	.vsel_reg	= S2MPU02_REG_B5CTRL2,			\
++	.vsel_mask	= S2MPU02_BUCK_VSEL_MASK,		\
++	.enable_reg	= S2MPU02_REG_B5CTRL1,			\
++	.enable_mask	= S2MPU02_ENABLE_MASK			\
++}
++#define regulator_desc_s2mpu02_buck6(num) {			\
++	.name		= "BUCK"#num,				\
++	.id		= S2MPU02_BUCK##num,			\
++	.ops		= &s2mpu02_ldo_ops,			\
++	.type		= REGULATOR_VOLTAGE,			\
++	.owner		= THIS_MODULE,				\
++	.min_uV		= S2MPU02_BUCK6_MIN_1700MV,		\
++	.uV_step	= S2MPU02_BUCK6_STEP_2_50MV,		\
++	.n_voltages	= S2MPU02_BUCK_N_VOLTAGES,		\
++	.linear_min_sel = S2MPU02_BUCK6_START_SEL,		\
++	.ramp_delay	= S2MPU02_BUCK_RAMP_DELAY,		\
++	.vsel_reg	= S2MPU02_REG_B6CTRL2,			\
++	.vsel_mask	= S2MPU02_BUCK_VSEL_MASK,		\
++	.enable_reg	= S2MPU02_REG_B6CTRL1,			\
++	.enable_mask	= S2MPU02_ENABLE_MASK			\
++}
++#define regulator_desc_s2mpu02_buck7(num) {			\
++	.name		= "BUCK"#num,				\
++	.id		= S2MPU02_BUCK##num,			\
++	.ops		= &s2mpu02_ldo_ops,			\
++	.type		= REGULATOR_VOLTAGE,			\
++	.owner		= THIS_MODULE,				\
++	.min_uV		= S2MPU02_BUCK7_MIN_900MV,		\
++	.uV_step	= S2MPU02_BUCK7_STEP_6_25MV,		\
++	.n_voltages	= S2MPU02_BUCK_N_VOLTAGES,		\
++	.linear_min_sel = S2MPU02_BUCK7_START_SEL,		\
++	.ramp_delay	= S2MPU02_BUCK_RAMP_DELAY,		\
++	.vsel_reg	= S2MPU02_REG_B7CTRL2,			\
++	.vsel_mask	= S2MPU02_BUCK_VSEL_MASK,		\
++	.enable_reg	= S2MPU02_REG_B7CTRL1,			\
++	.enable_mask	= S2MPU02_ENABLE_MASK			\
++}
++
++static const struct regulator_desc s2mpu02_regulators[] = {
++	regulator_desc_s2mpu02_ldo1(1),
++	regulator_desc_s2mpu02_ldo2(2),
++	regulator_desc_s2mpu02_ldo4(3),
++	regulator_desc_s2mpu02_ldo5(4),
++	regulator_desc_s2mpu02_ldo4(5),
++	regulator_desc_s2mpu02_ldo3(6),
++	regulator_desc_s2mpu02_ldo3(7),
++	regulator_desc_s2mpu02_ldo4(8),
++	regulator_desc_s2mpu02_ldo5(9),
++	regulator_desc_s2mpu02_ldo3(10),
++	regulator_desc_s2mpu02_ldo4(11),
++	regulator_desc_s2mpu02_ldo5(12),
++	regulator_desc_s2mpu02_ldo5(13),
++	regulator_desc_s2mpu02_ldo5(14),
++	regulator_desc_s2mpu02_ldo5(15),
++	regulator_desc_s2mpu02_ldo5(16),
++	regulator_desc_s2mpu02_ldo4(17),
++	regulator_desc_s2mpu02_ldo5(18),
++	regulator_desc_s2mpu02_ldo3(19),
++	regulator_desc_s2mpu02_ldo4(20),
++	regulator_desc_s2mpu02_ldo5(21),
++	regulator_desc_s2mpu02_ldo5(22),
++	regulator_desc_s2mpu02_ldo5(23),
++	regulator_desc_s2mpu02_ldo4(24),
++	regulator_desc_s2mpu02_ldo5(25),
++	regulator_desc_s2mpu02_ldo4(26),
++	regulator_desc_s2mpu02_ldo5(27),
++	regulator_desc_s2mpu02_ldo5(28),
++	regulator_desc_s2mpu02_buck1234(1),
++	regulator_desc_s2mpu02_buck1234(2),
++	regulator_desc_s2mpu02_buck1234(3),
++	regulator_desc_s2mpu02_buck1234(4),
++	regulator_desc_s2mpu02_buck5(5),
++	regulator_desc_s2mpu02_buck6(6),
++	regulator_desc_s2mpu02_buck7(7),
++};
++
+ static int s2mps11_pmic_probe(struct platform_device *pdev)
+ {
+ 	struct sec_pmic_dev *iodev = dev_get_drvdata(pdev->dev.parent);
+@@ -634,15 +902,14 @@ static int s2mps11_pmic_probe(struct platform_device *pdev)
+ 	struct s2mps11_info *s2mps11;
+ 	int i, ret = 0;
+ 	const struct regulator_desc *regulators;
+-	enum sec_device_type dev_type;
+ 
+ 	s2mps11 = devm_kzalloc(&pdev->dev, sizeof(struct s2mps11_info),
+ 				GFP_KERNEL);
+ 	if (!s2mps11)
+ 		return -ENOMEM;
+ 
+-	dev_type = platform_get_device_id(pdev)->driver_data;
+-	switch (dev_type) {
++	s2mps11->dev_type = platform_get_device_id(pdev)->driver_data;
++	switch (s2mps11->dev_type) {
+ 	case S2MPS11X:
+ 		s2mps11->rdev_num = ARRAY_SIZE(s2mps11_regulators);
+ 		regulators = s2mps11_regulators;
+@@ -651,8 +918,13 @@ static int s2mps11_pmic_probe(struct platform_device *pdev)
+ 		s2mps11->rdev_num = ARRAY_SIZE(s2mps14_regulators);
+ 		regulators = s2mps14_regulators;
+ 		break;
++	case S2MPU02:
++		s2mps11->rdev_num = ARRAY_SIZE(s2mpu02_regulators);
++		regulators = s2mpu02_regulators;
++		break;
+ 	default:
+-		dev_err(&pdev->dev, "Invalid device type: %u\n", dev_type);
++		dev_err(&pdev->dev, "Invalid device type: %u\n",
++				    s2mps11->dev_type);
+ 		return -EINVAL;
+ 	};
+ 
+@@ -686,7 +958,7 @@ static int s2mps11_pmic_probe(struct platform_device *pdev)
+ 	for (i = 0; i < s2mps11->rdev_num; i++)
+ 		rdata[i].name = regulators[i].name;
+ 
+-	ret = s2mps11_pmic_dt_parse(pdev, rdata, s2mps11, dev_type);
++	ret = s2mps11_pmic_dt_parse(pdev, rdata, s2mps11);
+ 	if (ret)
+ 		goto out;
+ 
+@@ -739,6 +1011,7 @@ out:
+ static const struct platform_device_id s2mps11_pmic_id[] = {
+ 	{ "s2mps11-pmic", S2MPS11X},
+ 	{ "s2mps14-pmic", S2MPS14X},
++	{ "s2mpu02-pmic", S2MPU02},
+ 	{ },
+ };
+ MODULE_DEVICE_TABLE(platform, s2mps11_pmic_id);
+diff --git a/include/linux/mfd/samsung/s2mpu02.h b/include/linux/mfd/samsung/s2mpu02.h
+new file mode 100644
+index 0000000..434eb87
+--- /dev/null
++++ b/include/linux/mfd/samsung/s2mpu02.h
+@@ -0,0 +1,200 @@
++/*
++ * s2mpu02.h
++ *
++ * Copyright (c) 2014 Samsung Electronics Co., Ltd
++ *              http://www.samsung.com
++ *
++ * This program is free software; you can redistribute  it and/or modify it
++ * under  the terms of  the GNU General  Public License as published by the
++ * Free Software Foundation;  either version 2 of the  License, or (at your
++ * option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#ifndef __LINUX_MFD_S2MPU02_H
++#define __LINUX_MFD_S2MPU02_H
++
++/* S2MPU02 registers */
++enum S2MPU02_reg {
++	S2MPU02_REG_ID,
++	S2MPU02_REG_INT1,
++	S2MPU02_REG_INT2,
++	S2MPU02_REG_INT3,
++	S2MPU02_REG_INT1M,
++	S2MPU02_REG_INT2M,
++	S2MPU02_REG_INT3M,
++	S2MPU02_REG_ST1,
++	S2MPU02_REG_ST2,
++	S2MPU02_REG_PWRONSRC,
++	S2MPU02_REG_OFFSRC,
++	S2MPU02_REG_BU_CHG,
++	S2MPU02_REG_RTCCTRL,
++	S2MPU02_REG_PMCTRL1,
++	S2MPU02_REG_RSVD1,
++	S2MPU02_REG_RSVD2,
++	S2MPU02_REG_RSVD3,
++	S2MPU02_REG_RSVD4,
++	S2MPU02_REG_RSVD5,
++	S2MPU02_REG_RSVD6,
++	S2MPU02_REG_RSVD7,
++	S2MPU02_REG_WRSTEN,
++	S2MPU02_REG_RSVD8,
++	S2MPU02_REG_RSVD9,
++	S2MPU02_REG_RSVD10,
++	S2MPU02_REG_B1CTRL1,
++	S2MPU02_REG_B1CTRL2,
++	S2MPU02_REG_B2CTRL1,
++	S2MPU02_REG_B2CTRL2,
++	S2MPU02_REG_B3CTRL1,
++	S2MPU02_REG_B3CTRL2,
++	S2MPU02_REG_B4CTRL1,
++	S2MPU02_REG_B4CTRL2,
++	S2MPU02_REG_B5CTRL1,
++	S2MPU02_REG_B5CTRL2,
++	S2MPU02_REG_B5CTRL3,
++	S2MPU02_REG_B5CTRL4,
++	S2MPU02_REG_B5CTRL5,
++	S2MPU02_REG_B6CTRL1,
++	S2MPU02_REG_B6CTRL2,
++	S2MPU02_REG_B7CTRL1,
++	S2MPU02_REG_B7CTRL2,
++	S2MPU02_REG_RAMP1,
++	S2MPU02_REG_RAMP2,
++	S2MPU02_REG_L1CTRL,
++	S2MPU02_REG_L2CTRL1,
++	S2MPU02_REG_L2CTRL2,
++	S2MPU02_REG_L2CTRL3,
++	S2MPU02_REG_L2CTRL4,
++	S2MPU02_REG_L3CTRL,
++	S2MPU02_REG_L4CTRL,
++	S2MPU02_REG_L5CTRL,
++	S2MPU02_REG_L6CTRL,
++	S2MPU02_REG_L7CTRL,
++	S2MPU02_REG_L8CTRL,
++	S2MPU02_REG_L9CTRL,
++	S2MPU02_REG_L10CTRL,
++	S2MPU02_REG_L11CTRL,
++	S2MPU02_REG_L12CTRL,
++	S2MPU02_REG_L13CTRL,
++	S2MPU02_REG_L14CTRL,
++	S2MPU02_REG_L15CTRL,
++	S2MPU02_REG_L16CTRL,
++	S2MPU02_REG_L17CTRL,
++	S2MPU02_REG_L18CTRL,
++	S2MPU02_REG_L19CTRL,
++	S2MPU02_REG_L20CTRL,
++	S2MPU02_REG_L21CTRL,
++	S2MPU02_REG_L22CTRL,
++	S2MPU02_REG_L23CTRL,
++	S2MPU02_REG_L24CTRL,
++	S2MPU02_REG_L25CTRL,
++	S2MPU02_REG_L26CTRL,
++	S2MPU02_REG_L27CTRL,
++	S2MPU02_REG_L28CTRL,
++	S2MPU02_REG_LDODSCH1,
++	S2MPU02_REG_LDODSCH2,
++	S2MPU02_REG_LDODSCH3,
++	S2MPU02_REG_LDODSCH4,
++	S2MPU02_REG_SELMIF,
++	S2MPU02_REG_RSVD11,
++	S2MPU02_REG_RSVD12,
++	S2MPU02_REG_RSVD13,
++	S2MPU02_REG_DVSSEL,
++	S2MPU02_REG_DVSPTR,
++	S2MPU02_REG_DVSDATA,
++};
++
++/* S2MPU02 regulator ids */
++enum S2MPU02_regulators {
++	S2MPU02_LDO1,
++	S2MPU02_LDO2,
++	S2MPU02_LDO3,
++	S2MPU02_LDO4,
++	S2MPU02_LDO5,
++	S2MPU02_LDO6,
++	S2MPU02_LDO7,
++	S2MPU02_LDO8,
++	S2MPU02_LDO9,
++	S2MPU02_LDO10,
++	S2MPU02_LDO11,
++	S2MPU02_LDO12,
++	S2MPU02_LDO13,
++	S2MPU02_LDO14,
++	S2MPU02_LDO15,
++	S2MPU02_LDO16,
++	S2MPU02_LDO17,
++	S2MPU02_LDO18,
++	S2MPU02_LDO19,
++	S2MPU02_LDO20,
++	S2MPU02_LDO21,
++	S2MPU02_LDO22,
++	S2MPU02_LDO23,
++	S2MPU02_LDO24,
++	S2MPU02_LDO25,
++	S2MPU02_LDO26,
++	S2MPU02_LDO27,
++	S2MPU02_LDO28,
++	S2MPU02_BUCK1,
++	S2MPU02_BUCK2,
++	S2MPU02_BUCK3,
++	S2MPU02_BUCK4,
++	S2MPU02_BUCK5,
++	S2MPU02_BUCK6,
++	S2MPU02_BUCK7,
++
++	S2MPU02_REGULATOR_MAX,
++};
++
++/* Regulator constraints for BUCKx */
++#define S2MPU02_BUCK1234_MIN_600MV	600000
++#define S2MPU02_BUCK5_MIN_1081_25MV	1081250
++#define S2MPU02_BUCK6_MIN_1700MV	1700000
++#define S2MPU02_BUCK7_MIN_900MV		900000
++
++#define S2MPU02_BUCK1234_STEP_6_25MV	6250
++#define S2MPU02_BUCK5_STEP_6_25MV	6250
++#define S2MPU02_BUCK6_STEP_2_50MV	2500
++#define S2MPU02_BUCK7_STEP_6_25MV	6250
++
++#define S2MPU02_BUCK1234_START_SEL	0x00
++#define S2MPU02_BUCK5_START_SEL		0x4D
++#define S2MPU02_BUCK6_START_SEL		0x28
++#define S2MPU02_BUCK7_START_SEL		0x30
++
++#define S2MPU02_BUCK_RAMP_DELAY		12500
++
++/* Regulator constraints for different types of LDOx */
++#define S2MPU02_LDO_MIN_900MV		900000
++#define S2MPU02_LDO_MIN_1050MV		1050000
++#define S2MPU02_LDO_MIN_1600MV		1600000
++#define S2MPU02_LDO_STEP_12_5MV		12500
++#define S2MPU02_LDO_STEP_25MV		25000
++#define S2MPU02_LDO_STEP_50MV		50000
++
++#define S2MPU02_LDO_GROUP1_START_SEL	0x8
++#define S2MPU02_LDO_GROUP2_START_SEL	0xA
++#define S2MPU02_LDO_GROUP3_START_SEL	0x10
++
++#define S2MPU02_LDO_VSEL_MASK		0x3F
++#define S2MPU02_BUCK_VSEL_MASK		0xFF
++#define S2MPU02_ENABLE_MASK		(0x03 << S2MPU02_ENABLE_SHIFT)
++#define S2MPU02_ENABLE_SHIFT		6
++
++/* On/Off controlled by PWREN */
++#define S2MPU02_ENABLE_SUSPEND		(0x01 << S2MPU02_ENABLE_SHIFT)
++#define S2MPU02_LDO_N_VOLTAGES		(S2MPU02_LDO_VSEL_MASK + 1)
++#define S2MPU02_BUCK_N_VOLTAGES		(S2MPU02_BUCK_VSEL_MASK + 1)
++
++/* RAMP delay for BUCK1234*/
++#define S2MPU02_BUCK1_RAMP_SHIFT	6
++#define S2MPU02_BUCK2_RAMP_SHIFT	4
++#define S2MPU02_BUCK3_RAMP_SHIFT	2
++#define S2MPU02_BUCK4_RAMP_SHIFT	0
++#define S2MPU02_BUCK1234_RAMP_MASK	0x3
++
++#endif /*  __LINUX_MFD_S2MPU02_H */
+-- 
+1.8.0
 
-Please pull from:
-
-	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
-or
-	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
-
-to receive updates for the input subsystem. You will get a big update to
-Atmel touchscreen driver, devm support for polled input devices, several
-drivers have been converted to using managed resources, and assorted
-driver fixes.
-
-Changelog:
----------
-
-Alexander Shiyan (3):
-      Input: gpio-beeper - simplify GPIO handling
-      Input: gpio_keys - more conversions to devm-* API
-      Input: gpio_keys_polled - convert to devm-* API
-
-Andy Shevchenko (2):
-      Input: gpio_keys - convert to use devm_*
-      Input: gpio_keys - convert struct descriptions to kernel-doc
-
-Benjamin Tissoires (1):
-      Input: synaptics - fix resolution for manually provided min/max
-
-Benson Leung (2):
-      Input: atmel_mxt_ts - wait for CHG assert in mxt_check_bootloader
-      Input: atmel_mxt_ts - wait for CHG after bootloader resets
-
-Beomho Seo (4):
-      Input: mcs_touchkey - fix incorrect input device name
-      Input: mms114 - fix incorrect input device name
-      Input: mcs5000_ts - fix incorrect input device name
-      Input: mcs5000_ts - switch to using managed resources
-
-Christian Engelmayer (1):
-      Input: ims-pcu - fix uninitialized use of 'error' in ims_pcu_buffers_=
-alloc()
-
-Daniel Kurtz (1):
-      Input: atmel_mxt_ts - define helper functions for size and instances
-
-Daniele Forsi (1):
-      Input: logips2pp - fix typo in Kconfig help
-
-Dmitry Torokhov (3):
-      Input: evdev - get rid of old workaround for EVIOCGBIT
-      Input: remove race when instantiating polled device attributes
-      Input: implement managed polled input devices
-
-Ezequiel Garcia (1):
-      Input: gpio-keys - move the gpio-keys bindings documentation
-
-Fabio Estevam (1):
-      Input: twl6040-vibra - use devm functions
-
-Gabriel FERNANDEZ (1):
-      Input: add st-keyscan driver
-
-Hans de Goede (4):
-      Input: add driver for Allwinner sunxi SoC's rtp controller
-      Input: sun4i-ts - add support for temperature sensor
-      Input: elantech - deal with clickpads reporting right button events
-      Input: elantech - don't set bit 1 of reg_10 when the no_hw_res quirk =
-is set
-
-Himangi Saraogi (8):
-      Input: da9034-ts - switch to using managed resources
-      Input: adp5520-keys - switch to using managed resources
-      Input: jornada680_kbd - switch top using managed resources
-      Input: intel-mid-touch - switch to using managed resources
-      Input: 88pm860x_onkey - switch to using managed resources
-      Input: 88pm860x-ts - switch to using managed resources
-      Input: max8925_onkey - switch to using managed resources
-      Input: ab8500-ponkey - switch to using managed resources
-
-Iiro Valkonen (1):
-      Input: atmel_mxt_ts - make wait-after-reset period compatible with al=
-l chips
-
-Jason Gerecke (3):
-      Input: wacom - add support for 0x116 sensor on Win8 Panasonic CF-H2
-      Input: wacom - use unaligned access where necessary
-      Input: wacom - add support for three new ISDv4 sensors
-
-Jean Delvare (1):
-      Input: w90p910_ts - depend on ARCH_W90X900
-
-Jingoo Han (13):
-      Input: clps711x-keypad - make of_device_id array const
-      Input: gpio_keys - make of_device_id array const
-      Input: gpio_keys_polled - make of_device_id array const
-      Input: imx_keypad - make of_device_id array const
-      Input: gpio-beeper - make of_device_id array const
-      Input: rotary_encoder - make of_device_id array const
-      Input: olpc_apsp - make of_device_id array const
-      Input: apbps2 - make of_device_id array const
-      Input: auo-pixcir-ts - make of_device_id array const
-      Input: egalax_ts - make of_device_id array const
-      Input: lpc32xx_ts - make of_device_id array const
-      Input: mms114 - make of_device_id array const
-      Input: zforce - make of_device_id array const
-
-Joachim Eastwood (2):
-      ARM: OMAP2+: remove unused omap4-keypad file and code
-      Input: omap-keypad - remove platform data support
-
-Linus Walleij (1):
-      Input: tc3589x-keypad - support probing from device tree
-
-Mark Brown (2):
-      Input: ads7846 - correct log message for spi_sync() errors
-      Input: ads7877 - remove bitrotted comment
-
-Nick Dyer (16):
-      Input: atmel_mxt_ts - remove unnecessary platform data
-      Input: atmel_mxt_ts - improve T19 GPIO keys handling
-      Input: atmel_mxt_ts - return IRQ_NONE when interrupt handler fails
-      Input: atmel_mxt_ts - select FW_LOADER for firmware code
-      Input: atmel_mxt_ts - improve error reporting and debug
-      Input: atmel_mxt_ts - implement CRC check for configuration data
-      Input: atmel_mxt_ts - add additional bootloader addresses
-      Input: atmel_mxt_ts - read and report bootloader version
-      Input: atmel_mxt_ts - implement bootloader frame retries
-      Input: atmel_mxt_ts - improve bootloader progress output
-      Input: atmel_mxt_ts - add check for incorrect firmware file format
-      Input: atmel_mxt_ts - read screen config from chip
-      Input: atmel_mxt_ts - rename pressure to amplitude to match spec
-      Input: atmel_mxt_ts - rename touchscreen defines to include T9
-      Input: atmel_mxt_ts - handle multiple input reports in one message
-      Input: atmel_mxt_ts - fix invalid return from mxt_get_bootloader_vers=
-ion
-
-Ping Cheng (2):
-      Input: wacom - set stylus_in_proximity when pen is in range
-      Input: wacom - process outbound for newer Cintiqs
-
-Robert Woerle (1):
-      Input: edt-ft5x06 - fix an i2c write for M09 support
-
-Roger Quadros (4):
-      Input: pixcir_i2c_ts - use devres managed resource allocations
-      Input: pixcir_i2c_ts - initialize interrupt mode and power mode
-      Input: pixcir_i2c_ts - get rid of pdata->attb_read_val()
-      Input: pixcir_i2c_ts - implement wakeup from suspend
-
-Sachin Kamat (2):
-      Input: soc_button_array - remove duplicate inclusion of input.h
-      Input: max8997_haptic - add error handling for regulator and pwm
-
-Sebastian Reichel (5):
-      Input: tsc2005 - use dev_err for error messages
-      Input: tsc2005 - convert driver to use devm_*
-      Input: add common DT binding for touchscreens
-      Input: tsc2005 - add DT support
-      DTS: ARM: OMAP3-N900: Add tsc2005 support
-
-Stephen Boyd (1):
-      Input: pmic8xxx-pwrkey - set sane default for debounce time
-
-
-Diffstat:
---------
-
- .../{gpio/gpio_keys.txt =3D> input/gpio-keys.txt}    |   0
- .../devicetree/bindings/input/st-keyscan.txt       |  60 ++
- .../bindings/input/touchscreen/sun4i.txt           |  20 +
- .../bindings/input/touchscreen/touchscreen.txt     |  27 +
- .../bindings/input/touchscreen/tsc2005.txt         |  42 +
- arch/arm/boot/dts/omap3-n900.dts                   |  17 +-
- arch/arm/mach-omap2/devices.c                      |  33 -
- arch/arm/mach-omap2/omap4-keypad.h                 |   8 -
- arch/arm/mach-s5pv210/mach-goni.c                  |   8 -
- drivers/input/evdev.c                              |  18 -
- drivers/input/input-polldev.c                      | 131 +++-
- drivers/input/keyboard/Kconfig                     |  13 +-
- drivers/input/keyboard/Makefile                    |   1 +
- drivers/input/keyboard/adp5520-keys.c              |  32 +-
- drivers/input/keyboard/clps711x-keypad.c           |   2 +-
- drivers/input/keyboard/gpio_keys.c                 | 145 ++--
- drivers/input/keyboard/gpio_keys_polled.c          | 100 +--
- drivers/input/keyboard/imx_keypad.c                |   2 +-
- drivers/input/keyboard/jornada680_kbd.c            |  36 +-
- drivers/input/keyboard/mcs_touchkey.c              |   2 +-
- drivers/input/keyboard/omap4-keypad.c              |  32 +-
- drivers/input/keyboard/st-keyscan.c                | 274 +++++++
- drivers/input/keyboard/tc3589x-keypad.c            |  66 +-
- drivers/input/misc/88pm860x_onkey.c                |  40 +-
- drivers/input/misc/Kconfig                         |   2 +-
- drivers/input/misc/ab8500-ponkey.c                 |  54 +-
- drivers/input/misc/gpio-beeper.c                   |  29 +-
- drivers/input/misc/ims-pcu.c                       |   1 +
- drivers/input/misc/max8925_onkey.c                 |  55 +-
- drivers/input/misc/max8997_haptic.c                |  18 +-
- drivers/input/misc/pmic8xxx-pwrkey.c               |   8 +-
- drivers/input/misc/rotary_encoder.c                |   2 +-
- drivers/input/misc/soc_button_array.c              |   1 -
- drivers/input/misc/twl6040-vibra.c                 |  83 +-
- drivers/input/mouse/Kconfig                        |   2 +-
- drivers/input/mouse/elantech.c                     |  27 +-
- drivers/input/mouse/synaptics.c                    |  19 +-
- drivers/input/serio/apbps2.c                       |   2 +-
- drivers/input/serio/olpc_apsp.c                    |   2 +-
- drivers/input/tablet/wacom_sys.c                   |  19 +
- drivers/input/tablet/wacom_wac.c                   |  92 ++-
- drivers/input/tablet/wacom_wac.h                   |   6 +
- drivers/input/touchscreen/88pm860x-ts.c            |  41 +-
- drivers/input/touchscreen/Kconfig                  |  18 +-
- drivers/input/touchscreen/Makefile                 |   2 +
- drivers/input/touchscreen/ad7877.c                 |   5 -
- drivers/input/touchscreen/ads7846.c                |   2 +-
- drivers/input/touchscreen/atmel_mxt_ts.c           | 862 ++++++++++++++---=
-----
- drivers/input/touchscreen/auo-pixcir-ts.c          |   2 +-
- drivers/input/touchscreen/da9034-ts.c              |  39 +-
- drivers/input/touchscreen/edt-ft5x06.c             |   2 +-
- drivers/input/touchscreen/egalax_ts.c              |   2 +-
- drivers/input/touchscreen/intel-mid-touch.c        |  47 +-
- drivers/input/touchscreen/lpc32xx_ts.c             |   2 +-
- drivers/input/touchscreen/mcs5000_ts.c             |  83 +-
- drivers/input/touchscreen/mms114.c                 |   4 +-
- drivers/input/touchscreen/of_touchscreen.c         |  45 ++
- drivers/input/touchscreen/pixcir_i2c_ts.c          | 281 ++++++-
- drivers/input/touchscreen/sun4i-ts.c               | 339 ++++++++
- drivers/input/touchscreen/tsc2005.c                | 157 +++-
- drivers/input/touchscreen/zforce_ts.c              |   2 +-
- drivers/platform/chrome/chromeos_laptop.c          |  33 +-
- include/linux/gpio_keys.h                          |  48 +-
- include/linux/i2c/atmel_mxt_ts.h                   |  27 +-
- include/linux/input-polldev.h                      |   3 +
- include/linux/input/pixcir_ts.h                    |  44 +-
- include/linux/input/touchscreen.h                  |  22 +
- include/linux/platform_data/omap4-keypad.h         |  13 -
- 68 files changed, 2517 insertions(+), 1139 deletions(-)
- rename Documentation/devicetree/bindings/{gpio/gpio_keys.txt =3D> input/gp=
-io-keys.txt} (100%)
- create mode 100644 Documentation/devicetree/bindings/input/st-keyscan.txt
- create mode 100644 Documentation/devicetree/bindings/input/touchscreen/sun=
-4i.txt
- create mode 100644 Documentation/devicetree/bindings/input/touchscreen/tou=
-chscreen.txt
- create mode 100644 Documentation/devicetree/bindings/input/touchscreen/tsc=
-2005.txt
- delete mode 100644 arch/arm/mach-omap2/omap4-keypad.h
- create mode 100644 drivers/input/keyboard/st-keyscan.c
- create mode 100644 drivers/input/touchscreen/of_touchscreen.c
- create mode 100644 drivers/input/touchscreen/sun4i-ts.c
- create mode 100644 include/linux/input/touchscreen.h
- delete mode 100644 include/linux/platform_data/omap4-keypad.h
-
---=20
-Dmitry
-
-
---LZvS9be/3tNcYl/X
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTlU/BAAoJEH70+W8r6ZYqSt4P/R4QfWPbvzdugdSnhoCcFZgT
-u563JDDEPvmG1X9E6QL3Ov2vTnURhSoo30R5Jx9Mdi8tR/p4TQ4AXcvTvJGlpReK
-+2wZeJwcLzqvxlOliLaNebYPzNhAFcLZqNMayiHgr/pUcJNfFzxnuJ1n15e+vheC
-FZGqJ1L/2oyMk7Q7kBybZREke36zDDIMIfEZf8m9/ek/Tdbey26qBdbM7vFVdQKR
-738zF/5Bf6VQNq2JfgECt8msbHk/oADKCOOY4gT54RfSbXsWD9EaE4UF+N+RI1iW
-TrHeg4+8y9Fq+e6ursGftTa4reMbV5xU+v4SmGeqD3l80W8rrdu4949Yj71eozOv
-TR8s1gqaAh/dlT7yo6GMIRdTG0ZRVdHSZBJYOwNoyOXFX6/N7IFL8sJ8QherVXDx
-skHy4O6EyUMn+9oGpwBGqGh4zvYa9eB9bEQcUIXZpNYTD+asvvletuMkrb0EDLzT
-ycfWORxXINhtmPaDcRnPhXffff60jqW3EOyZXb3yBHLWRCYvPF3NOdxWfPTIlur3
-6RqHqKO/tTkU3A0o6YEQ8znSsu2xP9cySB9qJDeWyOrSH9F5Y3bBZv/RjtCU3EaB
-oQATIFFLL0nCqtgMjy3q/EjzasTQUkXHgRLTaPg8h/Va/RNFHh7480sMGpUKXr4Y
-oC/okoRuWa/ZYDBWKPqV
-=0e0f
------END PGP SIGNATURE-----
-
---LZvS9be/3tNcYl/X--
