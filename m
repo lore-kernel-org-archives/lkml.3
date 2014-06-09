@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932278AbaFIUE2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 16:04:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43469 "EHLO mx1.redhat.com"
+	id S932317AbaFIUEe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 16:04:34 -0400
+Received: from mga11.intel.com ([192.55.52.93]:9328 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754543AbaFIUDF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 16:03:05 -0400
-From: Jiri Olsa <jolsa@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Don Zickus <dzickus@redhat.com>,
-        Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 11/15] perf report: Add mem-mode documentation to report command
-Date: Mon,  9 Jun 2014 22:02:26 +0200
-Message-Id: <1402344150-14860-12-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1402344150-14860-1-git-send-email-jolsa@kernel.org>
-References: <1402344150-14860-1-git-send-email-jolsa@kernel.org>
+	id S1754543AbaFIUEa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 16:04:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="352666330"
+Message-ID: <53961338.4050309@intel.com>
+Date: Mon, 09 Jun 2014 13:04:08 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org
+CC: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/7] mm/pagewalk: move pmd_trans_huge_lock() from callbacks
+ to common code
+References: <1402095520-10109-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1402095520-10109-7-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1402095520-10109-7-git-send-email-n-horiguchi@ah.jp.nec.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Don Zickus <dzickus@redhat.com>
+On 06/06/2014 03:58 PM, Naoya Horiguchi wrote:
+> @@ -6723,14 +6723,9 @@ static int mem_cgroup_count_precharge_pmd(pmd_t *pmd,
+>  					struct mm_walk *walk)
+>  {
+>  	struct vm_area_struct *vma = walk->vma;
+> -	spinlock_t *ptl;
+>  
+> -	if (pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
+> -		if (get_mctgt_type_thp(vma, addr, *pmd, NULL) == MC_TARGET_PAGE)
+> -			mc.precharge += HPAGE_PMD_NR;
+> -		spin_unlock(ptl);
+> -	} else
+> -		skip->control = PTWALK_DOWN;
+> +	if (get_mctgt_type_thp(vma, addr, *pmd, NULL) == MC_TARGET_PAGE)
+> +		mc.precharge += HPAGE_PMD_NR;
+>  	return 0;
+>  }
 
-Add mem-mode sorting types and mem-mode itself to perf-report documentation.
+I guess my series did two things:
+1. move page table walking to the walk_page_range() code
+2. make new walk handler that can take arbitrarily-sizes ptes
 
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-Link: http://lkml.kernel.org/r/1400526833-141779-5-git-send-email-dzickus@redhat.com
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
----
- tools/perf/Documentation/perf-report.txt | 22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
-
-diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-index cefdf43..00fbfb6 100644
---- a/tools/perf/Documentation/perf-report.txt
-+++ b/tools/perf/Documentation/perf-report.txt
-@@ -117,6 +117,21 @@ OPTIONS
- 	By default, every sort keys not specified in -F will be appended
- 	automatically.
- 
-+	If --mem-mode option is used, following sort keys are also available
-+	(incompatible with --branch-stack):
-+	symbol_daddr, dso_daddr, locked, tlb, mem, snoop.
-+
-+	- symbol_daddr: name of data symbol being executed on at the time of sample
-+	- dso_daddr: name of library or module containing the data being executed
-+	on at the time of sample
-+	- locked: whether the bus was locked at the time of sample
-+	- tlb: type of tlb access for the data at the time of sample
-+	- mem: type of memory access for the data at the time of sample
-+	- snoop: type of snoop (if any) for the data at the time of sample
-+
-+	And default sort keys are changed to local_weight, mem, sym, dso,
-+	symbol_daddr, dso_daddr, snoop, tlb, locked, see '--mem-mode'.
-+
- -p::
- --parent=<regex>::
-         A regex filter to identify parent. The parent is a caller of this
-@@ -260,6 +275,13 @@ OPTIONS
- 	Demangle symbol names to human readable form. It's enabled by default,
- 	disable with --no-demangle.
- 
-+--mem-mode::
-+	Use the data addresses of samples in addition to instruction addresses
-+	to build the histograms.  To generate meaningful output, the perf.data
-+	file must have been obtained using perf record -d -W and using a
-+	special event -e cpu/mem-loads/ or -e cpu/mem-stores/. See
-+	'perf mem' for simpler access.
-+
- --percent-limit::
- 	Do not show entries which have an overhead under that percent.
- 	(Default: 0).
--- 
-1.8.3.1
-
+This does (1) quite nicely and has some nice code savings.  I still
+think (2) has some value, and like my approach, but this is definitely a
+step in the right direction.
