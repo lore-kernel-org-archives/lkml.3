@@ -1,232 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933788AbaFIJg6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 05:36:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32971 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933223AbaFIJ0j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 05:26:39 -0400
-From: Vlastimil Babka <vbabka@suse.cz>
-To: David Rientjes <rientjes@google.com>, linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>, Vlastimil Babka <vbabka@suse.cz>,
-        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: [RFC PATCH 10/10] mm, compaction: do not migrate pages when that cannot satisfy page fault allocation
-Date: Mon,  9 Jun 2014 11:26:22 +0200
-Message-Id: <1402305982-6928-10-git-send-email-vbabka@suse.cz>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1402305982-6928-1-git-send-email-vbabka@suse.cz>
-References: <1402305982-6928-1-git-send-email-vbabka@suse.cz>
+	id S964860AbaFIJhL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 05:37:11 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59137 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932771AbaFIJ0f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 05:26:35 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Tejun Heo <tj@kernel.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 019/146] pata_at91: fix ata_host_activate() failure handling
+Date: Mon,  9 Jun 2014 10:49:14 +0200
+Message-Id: <0bba38e7d849d5cb2c58fada1d5368ead19bf147.1402303820.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
+References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
+In-Reply-To: <cover.1402303820.git.jslaby@suse.cz>
+References: <cover.1402303820.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In direct compaction for a page fault, we want to allocate the high-order page
-as soon as possible, so migrating from a cc->order aligned block of pages that
-contains also unmigratable pages just adds to page fault latency.
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 
-This patch therefore makes the migration scanner skip to the next cc->order
-aligned block of pages as soon as it cannot isolate a non-free page. Everything
-isolated up to that point is put back.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-In this mode, the nr_isolated limit to COMPACT_CLUSTER_MAX is not observed,
-allowing the scanner to scan the whole block at once, instead of migrating
-COMPACT_CLUSTER_MAX pages and then finding an unmigratable page in the next
-call. This might however have some implications on direct reclaimers through
-too_many_isolated().
+===============
 
-In very preliminary tests, this has reduced migrate_scanned, isolations and
-migrations by about 10%, while the success rate of stress-highalloc mmtests
-actually improved a bit.
+commit 27aa64b9d1bd0d23fd692c91763a48309b694311 upstream.
 
-[rientjes@google.com: skip_on_failure logic; cleanups]
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: David Rientjes <rientjes@google.com>
+Add missing clk_put() call to ata_host_activate() failure path.
+
+Sergei says,
+
+  "Hm, I have once fixed that (see that *if* (!ret)) but looks like a
+   later commit 477c87e90853d136b188c50c0e4a93d01cad872e (ARM:
+   at91/pata: use gpio_is_valid to check the gpio) broke it again. :-(
+   Would be good if the changelog did mention that..."
+
+Cc: Andrew Victor <linux@maxim.org.za>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- mm/compaction.c | 56 ++++++++++++++++++++++++++++++++++++++++----------------
- 1 file changed, 40 insertions(+), 16 deletions(-)
+ drivers/ata/pata_at91.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index b69ac19..6dda4eb 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -543,6 +543,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
- 				    (unevictable ? ISOLATE_UNEVICTABLE : 0);
- 	unsigned long capture_pfn = 0;   /* current candidate for capturing */
- 	unsigned long next_capture_pfn = 0; /* next candidate for capturing */
-+	bool skip_on_failure = false; /* skip block when isolation fails */
+diff --git a/drivers/ata/pata_at91.c b/drivers/ata/pata_at91.c
+index d63ee8f41a4f..e3a49df958a3 100644
+--- a/drivers/ata/pata_at91.c
++++ b/drivers/ata/pata_at91.c
+@@ -408,12 +408,13 @@ static int pata_at91_probe(struct platform_device *pdev)
  
- 	if (cc->order > PAGE_ALLOC_COSTLY_ORDER
- 		&& gfpflags_to_migratetype(cc->gfp_mask) == MIGRATE_MOVABLE
-@@ -550,6 +551,14 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
- 		/* This may be outside the zone, but we check that later */
- 		capture_pfn = low_pfn & ~((1UL << cc->order) - 1);
- 		next_capture_pfn = ALIGN(low_pfn + 1, (1UL << cc->order));
-+		/*
-+		 * It is too expensive for compaction to migrate pages from a
-+		 * cc->order block of pages on page faults, unless the entire
-+		 * block can become free. But hugepaged should try anyway for
-+		 * THP so that general defragmentation happens.
-+		 */
-+		skip_on_failure = (cc->gfp_mask & __GFP_NO_KSWAPD)
-+				&& !(current->flags & PF_KTHREAD);
- 	}
+ 	host->private_data = info;
  
- 	/*
-@@ -613,7 +622,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
- 		}
+-	return ata_host_activate(host, gpio_is_valid(irq) ? gpio_to_irq(irq) : 0,
+-			gpio_is_valid(irq) ? ata_sff_interrupt : NULL,
+-			irq_flags, &pata_at91_sht);
++	ret = ata_host_activate(host, gpio_is_valid(irq) ? gpio_to_irq(irq) : 0,
++				gpio_is_valid(irq) ? ata_sff_interrupt : NULL,
++				irq_flags, &pata_at91_sht);
++	if (ret)
++		goto err_put;
  
- 		if (!pfn_valid_within(low_pfn))
--			continue;
-+			goto isolation_failed;
- 		nr_scanned++;
+-	if (!ret)
+-		return 0;
++	return 0;
  
- 		/*
-@@ -624,7 +633,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
- 		 */
- 		page = pfn_to_page(low_pfn);
- 		if (page_zone(page) != zone)
--			continue;
-+			goto isolation_failed;
- 
- 		if (!valid_page)
- 			valid_page = page;
-@@ -686,7 +695,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
- 					goto isolate_success;
- 				}
- 			}
--			continue;
-+			goto isolation_failed;
- 		}
- 
- 		/*
-@@ -706,7 +715,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
- 			if (next_capture_pfn)
- 				next_capture_pfn =
- 					ALIGN(low_pfn + 1, (1UL << cc->order));
--			continue;
-+			goto isolation_failed;
- 		}
- 
- 		/*
-@@ -716,7 +725,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
- 		 */
- 		if (!page_mapping(page) &&
- 		    page_count(page) > page_mapcount(page))
--			continue;
-+			goto isolation_failed;
- 
- 		/* If we already hold the lock, we can skip some rechecking */
- 		if (!locked) {
-@@ -727,11 +736,11 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
- 
- 			/* Recheck PageLRU and PageTransHuge under lock */
- 			if (!PageLRU(page))
--				continue;
-+				goto isolation_failed;
- 			if (PageTransHuge(page)) {
- 				low_pfn += (1 << compound_order(page)) - 1;
- 				next_capture_pfn = low_pfn + 1;
--				continue;
-+				goto isolation_failed;
- 			}
- 		}
- 
-@@ -739,7 +748,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
- 
- 		/* Try isolate the page */
- 		if (__isolate_lru_page(page, mode) != 0)
--			continue;
-+			goto isolation_failed;
- 
- 		VM_BUG_ON_PAGE(PageTransCompound(page), page);
- 
-@@ -749,11 +758,14 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
- isolate_success:
- 		cc->finished_update_migrate = true;
- 		list_add(&page->lru, migratelist);
--		cc->nr_migratepages++;
- 		nr_isolated++;
- 
--		/* Avoid isolating too much */
--		if (cc->nr_migratepages == COMPACT_CLUSTER_MAX) {
-+		/*
-+		 * Avoid isolating too much, except if we try to capture a
-+		 * free page and want to find out at once if it can be done
-+		 * or we should skip to the next block.
-+		 */
-+		if (!skip_on_failure && nr_isolated == COMPACT_CLUSTER_MAX) {
- 			++low_pfn;
- 			break;
- 		}
-@@ -764,6 +776,20 @@ next_pageblock:
- 		low_pfn = ALIGN(low_pfn + 1, pageblock_nr_pages) - 1;
- 		if (next_capture_pfn)
- 			next_capture_pfn = low_pfn + 1;
-+
-+isolation_failed:
-+		if (skip_on_failure) {
-+			if (nr_isolated) {
-+				if (locked) {
-+					spin_unlock_irqrestore(&zone->lru_lock,
-+									flags);
-+					locked = false;
-+				}
-+				putback_movable_pages(migratelist);
-+				nr_isolated = 0;
-+			}
-+			low_pfn = next_capture_pfn - 1;
-+		}
- 	}
- 
- 	/*
-@@ -773,6 +799,7 @@ next_pageblock:
- 	if (unlikely(low_pfn > end_pfn))
- 		low_pfn = end_pfn;
- 
-+	cc->nr_migratepages = nr_isolated;
- 	acct_isolated(zone, locked, cc);
- 
- 	if (locked)
-@@ -782,7 +809,7 @@ next_pageblock:
- 	 * Update the pageblock-skip information and cached scanner pfn,
- 	 * if the whole pageblock was scanned without isolating any page.
- 	 */
--	if (low_pfn == end_pfn)
-+	if (low_pfn == end_pfn && !skip_on_failure)
- 		update_pageblock_skip(cc, valid_page, nr_isolated,
- 				      set_unsuitable, true);
- 
-@@ -998,7 +1025,7 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
- 
- 	cc->migrate_pfn = low_pfn;
- 
--	return ISOLATE_SUCCESS;
-+	return cc->nr_migratepages ? ISOLATE_SUCCESS : ISOLATE_NONE;
- }
- 
- /*
-@@ -1212,9 +1239,6 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 			;
- 		}
- 
--		if (!cc->nr_migratepages)
--			continue;
--
- 		err = migrate_pages(&cc->migratepages, compaction_alloc,
- 				compaction_free, (unsigned long)cc, cc->mode,
- 				MR_COMPACTION);
+ err_put:
+ 	clk_put(info->mck);
 -- 
-1.8.4.5
+1.9.3
 
