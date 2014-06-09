@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933454AbaFIM7m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 08:59:42 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:34243 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933427AbaFIM7i (ORCPT
+	id S933841AbaFINC4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 09:02:56 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:56507 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933437AbaFIM7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 08:59:38 -0400
+	Mon, 9 Jun 2014 08:59:41 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: bdas@redhat.com, gleb@kernel.org, Bandan Das <bsd@redhat.com>
-Subject: [PATCH 13/25] KVM: emulate: move init_decode_cache to emulate.c
-Date: Mon,  9 Jun 2014 14:59:01 +0200
-Message-Id: <1402318753-23362-14-git-send-email-pbonzini@redhat.com>
+Subject: [PATCH 15/25] KVM: emulate: cleanup decode_modrm
+Date: Mon,  9 Jun 2014 14:59:03 +0200
+Message-Id: <1402318753-23362-16-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1402318753-23362-1-git-send-email-pbonzini@redhat.com>
 References: <1402318753-23362-1-git-send-email-pbonzini@redhat.com>
@@ -22,77 +22,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Bandan Das <bsd@redhat.com>
 
-Core emulator functions all belong in emulator.c,
-x86 should have no knowledge of emulator internals
+Remove the if conditional - that will help us avoid
+an "else initialize to 0" Also, rearrange operators
+for slightly better code.
 
 Signed-off-by: Bandan Das <bsd@redhat.com>
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- arch/x86/include/asm/kvm_emulate.h |  1 +
- arch/x86/kvm/emulate.c             | 13 +++++++++++++
- arch/x86/kvm/x86.c                 | 13 -------------
- 3 files changed, 14 insertions(+), 13 deletions(-)
+ arch/x86/kvm/emulate.c | 14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_emulate.h b/arch/x86/include/asm/kvm_emulate.h
-index f596976a3ab2..b8456835eddb 100644
---- a/arch/x86/include/asm/kvm_emulate.h
-+++ b/arch/x86/include/asm/kvm_emulate.h
-@@ -436,6 +436,7 @@ bool x86_page_table_writing_insn(struct x86_emulate_ctxt *ctxt);
- #define EMULATION_OK 0
- #define EMULATION_RESTART 1
- #define EMULATION_INTERCEPTED 2
-+void init_decode_cache(struct x86_emulate_ctxt *ctxt);
- int x86_emulate_insn(struct x86_emulate_ctxt *ctxt);
- int emulator_task_switch(struct x86_emulate_ctxt *ctxt,
- 			 u16 tss_selector, int idt_index, int reason,
 diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index eaf0853ffaf9..34a04ba26c23 100644
+index 75e26bd4a21b..c92b1cfbb430 100644
 --- a/arch/x86/kvm/emulate.c
 +++ b/arch/x86/kvm/emulate.c
-@@ -4608,6 +4608,19 @@ static int fastop(struct x86_emulate_ctxt *ctxt, void (*fop)(struct fastop *))
- 	return X86EMUL_CONTINUE;
- }
- 
-+void init_decode_cache(struct x86_emulate_ctxt *ctxt)
-+{
-+	memset(&ctxt->opcode_len, 0,
-+	       (void *)&ctxt->_regs - (void *)&ctxt->opcode_len);
-+
-+	ctxt->fetch.start = 0;
-+	ctxt->fetch.end = 0;
-+	ctxt->io_read.pos = 0;
-+	ctxt->io_read.end = 0;
-+	ctxt->mem_read.pos = 0;
-+	ctxt->mem_read.end = 0;
-+}
-+
- int x86_emulate_insn(struct x86_emulate_ctxt *ctxt)
+@@ -1065,19 +1065,17 @@ static int decode_modrm(struct x86_emulate_ctxt *ctxt,
+ 			struct operand *op)
  {
- 	const struct x86_emulate_ops *ops = ctxt->ops;
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 02678c2f3721..401bdef24d54 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -4952,19 +4952,6 @@ static void inject_emulated_exception(struct kvm_vcpu *vcpu)
- 		kvm_queue_exception(vcpu, ctxt->exception.vector);
- }
+ 	u8 sib;
+-	int index_reg = 0, base_reg = 0, scale;
++	int index_reg, base_reg, scale;
+ 	int rc = X86EMUL_CONTINUE;
+ 	ulong modrm_ea = 0;
  
--static void init_decode_cache(struct x86_emulate_ctxt *ctxt)
--{
--	memset(&ctxt->opcode_len, 0,
--	       (void *)&ctxt->_regs - (void *)&ctxt->opcode_len);
--
--	ctxt->fetch.start = 0;
--	ctxt->fetch.end = 0;
--	ctxt->io_read.pos = 0;
--	ctxt->io_read.end = 0;
--	ctxt->mem_read.pos = 0;
--	ctxt->mem_read.end = 0;
--}
--
- static void init_emulate_ctxt(struct kvm_vcpu *vcpu)
- {
- 	struct x86_emulate_ctxt *ctxt = &vcpu->arch.emulate_ctxt;
+-	if (ctxt->rex_prefix) {
+-		ctxt->modrm_reg = (ctxt->rex_prefix & 4) << 1;	/* REX.R */
+-		index_reg = (ctxt->rex_prefix & 2) << 2; /* REX.X */
+-		ctxt->modrm_rm = base_reg = (ctxt->rex_prefix & 1) << 3; /* REG.B */
+-	}
++	ctxt->modrm_reg = ((ctxt->rex_prefix << 1) & 8); /* REX.R */
++	index_reg = (ctxt->rex_prefix << 2) & 8; /* REX.X */
++	base_reg = (ctxt->rex_prefix << 3) & 8; /* REX.B */
+ 
+-	ctxt->modrm_mod |= (ctxt->modrm & 0xc0) >> 6;
++	ctxt->modrm_mod = (ctxt->modrm & 0xc0) >> 6;
+ 	ctxt->modrm_reg |= (ctxt->modrm & 0x38) >> 3;
+-	ctxt->modrm_rm |= (ctxt->modrm & 0x07);
++	ctxt->modrm_rm = base_reg | (ctxt->modrm & 0x07);
+ 	ctxt->modrm_seg = VCPU_SREG_DS;
+ 
+ 	if (ctxt->modrm_mod == 3 || (ctxt->d & NoMod)) {
 -- 
 1.8.3.1
 
