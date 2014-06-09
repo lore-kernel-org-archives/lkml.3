@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933413AbaFIIzN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 04:55:13 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58587 "EHLO
+	id S933367AbaFIIzJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 04:55:09 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58606 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932244AbaFIIv1 (ORCPT
+	by vger.kernel.org with ESMTP id S932279AbaFIIv1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jun 2014 04:51:27 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Christoph Hellwig <hch@lst.de>,
-        Chuck Lever <chuck.lever@oracle.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 066/146] posix_acl: handle NULL ACL in posix_acl_equiv_mode
-Date: Mon,  9 Jun 2014 10:50:01 +0200
-Message-Id: <4a0f6231c2ba573a0471f69139e4eaff848ce2ce.1402303821.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 104/146] workqueue: make rescuer_thread() empty wq->maydays list before exiting
+Date: Mon,  9 Jun 2014 10:50:39 +0200
+Message-Id: <f685a411abe17727fbb1608d62845fdfec72e11a.1402303821.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
 References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
@@ -24,50 +23,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Christoph Hellwig <hch@lst.de>
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 50c6e282bdf5e8dabf8d7cf7b162545a55645fd9 upstream.
+commit 4d595b866d2c653dc90a492b9973a834eabfa354 upstream.
 
-Various filesystems don't bother checking for a NULL ACL in
-posix_acl_equiv_mode, and thus can dereference a NULL pointer when it
-gets passed one. This usually happens from the NFS server, as the ACL tools
-never pass a NULL ACL, but instead of one representing the mode bits.
+After a @pwq is scheduled for emergency execution, other workers may
+consume the affectd work items before the rescuer gets to them.  This
+means that a workqueue many have pwqs queued on @wq->maydays list
+while not having any work item pending or in-flight.  If
+destroy_workqueue() executes in such condition, the rescuer may exit
+without emptying @wq->maydays.
 
-Instead of adding boilerplat to all filesystems put this check into one place,
-which will allow us to remove the check from other filesystems as well later
-on.
+This currently doesn't cause any actual harm.  destroy_workqueue() can
+safely destroy all the involved data structures whether @wq->maydays
+is populated or not as nobody access the list once the rescuer exits.
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Reported-by: Ben Greear <greearb@candelatech.com>
-Reported-by: Marco Munderloh <munderl@tnt.uni-hannover.de>,
-Cc: Chuck Lever <chuck.lever@oracle.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+However, this is nasty and makes future development difficult.  Let's
+update rescuer_thread() so that it empties @wq->maydays after seeing
+should_stop to guarantee that the list is empty on rescuer exit.
+
+tj: Updated comment and patch description.
+
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/posix_acl.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ kernel/workqueue.c | 21 ++++++++++++++++-----
+ 1 file changed, 16 insertions(+), 5 deletions(-)
 
-diff --git a/fs/posix_acl.c b/fs/posix_acl.c
-index 8bd2135b7f82..3542f1f814e2 100644
---- a/fs/posix_acl.c
-+++ b/fs/posix_acl.c
-@@ -158,6 +158,12 @@ posix_acl_equiv_mode(const struct posix_acl *acl, umode_t *mode_p)
- 	umode_t mode = 0;
- 	int not_equiv = 0;
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index c0b6eb1e0b83..cea58300f650 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2389,6 +2389,7 @@ static int rescuer_thread(void *__rescuer)
+ 	struct worker *rescuer = __rescuer;
+ 	struct workqueue_struct *wq = rescuer->rescue_wq;
+ 	struct list_head *scheduled = &rescuer->scheduled;
++	bool should_stop;
  
+ 	set_user_nice(current, RESCUER_NICE_LEVEL);
+ 
+@@ -2400,11 +2401,15 @@ static int rescuer_thread(void *__rescuer)
+ repeat:
+ 	set_current_state(TASK_INTERRUPTIBLE);
+ 
+-	if (kthread_should_stop()) {
+-		__set_current_state(TASK_RUNNING);
+-		rescuer->task->flags &= ~PF_WQ_WORKER;
+-		return 0;
+-	}
 +	/*
-+	 * A null ACL can always be presented as mode bits.
++	 * By the time the rescuer is requested to stop, the workqueue
++	 * shouldn't have any work pending, but @wq->maydays may still have
++	 * pwq(s) queued.  This can happen by non-rescuer workers consuming
++	 * all the work items before the rescuer got to them.  Go through
++	 * @wq->maydays processing before acting on should_stop so that the
++	 * list is always empty on exit.
 +	 */
-+	if (!acl)
++	should_stop = kthread_should_stop();
+ 
+ 	/* see whether any pwq is asking for help */
+ 	spin_lock_irq(&wq_mayday_lock);
+@@ -2456,6 +2461,12 @@ repeat:
+ 
+ 	spin_unlock_irq(&wq_mayday_lock);
+ 
++	if (should_stop) {
++		__set_current_state(TASK_RUNNING);
++		rescuer->task->flags &= ~PF_WQ_WORKER;
 +		return 0;
++	}
 +
- 	FOREACH_ACL_ENTRY(pa, acl, pe) {
- 		switch (pa->e_tag) {
- 			case ACL_USER_OBJ:
+ 	/* rescuers should never participate in concurrency management */
+ 	WARN_ON_ONCE(!(rescuer->flags & WORKER_NOT_RUNNING));
+ 	schedule();
 -- 
 1.9.3
 
