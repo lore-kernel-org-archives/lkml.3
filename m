@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936673AbaFIJjO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 05:39:14 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:49792 "EHLO
+	id S936165AbaFIJik (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 05:38:40 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:49761 "EHLO
 	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936203AbaFIJin (ORCPT
+	with ESMTP id S934027AbaFIJic (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 05:38:43 -0400
+	Mon, 9 Jun 2014 05:38:32 -0400
 From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 To: Lee Jones <lee.jones@linaro.org>
 Cc: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
@@ -21,9 +21,9 @@ Cc: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
         linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
         linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH 4/5] rtc: Add driver for Maxim 77802 PMIC Real-Time-Clock
-Date: Mon,  9 Jun 2014 11:37:49 +0200
-Message-Id: <1402306670-17041-5-git-send-email-javier.martinez@collabora.co.uk>
+Subject: [PATCH 1/5] mfd: Add driver for Maxim 77802 Power Management IC
+Date: Mon,  9 Jun 2014 11:37:46 +0200
+Message-Id: <1402306670-17041-2-git-send-email-javier.martinez@collabora.co.uk>
 X-Mailer: git-send-email 2.0.0.rc2
 In-Reply-To: <1402306670-17041-1-git-send-email-javier.martinez@collabora.co.uk>
 References: <1402306670-17041-1-git-send-email-javier.martinez@collabora.co.uk>
@@ -31,704 +31,1214 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MAX7802 PMIC has a Real-Time-Clock (RTC) with two alarms.
-This patch adds support for the RTC and is based on a driver
-added by Simon Glass to the Chrome OS kernel 3.8 tree.
+Maxim MAX77802 is a power management chip that contains 10 high
+efficiency Buck regulators, 32 Low-dropout (LDO) regulators used
+to power up application processors and peripherals, a 2-channel
+32kHz clock outputs, a Real-Time-Clock (RTC) and a I2C interface
+to program the individual regulators, clocks outputs and the RTC.
+
+This patch adds the core support for MAX77802 PMIC and is based
+on a driver added by Simon Glass to the Chrome OS kernel 3.8 tree.
 
 Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 ---
- drivers/mfd/max77802.c     |   3 +
- drivers/rtc/Kconfig        |  10 +
- drivers/rtc/Makefile       |   1 +
- drivers/rtc/rtc-max77802.c | 632 +++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 646 insertions(+)
- create mode 100644 drivers/rtc/rtc-max77802.c
+ Documentation/devicetree/bindings/mfd/max77802.txt |  88 ++++++
+ drivers/mfd/Kconfig                                |  13 +
+ drivers/mfd/Makefile                               |   1 +
+ drivers/mfd/max77802-irq.c                         | 332 +++++++++++++++++++++
+ drivers/mfd/max77802.c                             | 282 +++++++++++++++++
+ include/linux/mfd/max77802-private.h               | 291 ++++++++++++++++++
+ include/linux/mfd/max77802.h                       | 124 ++++++++
+ 7 files changed, 1131 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mfd/max77802.txt
+ create mode 100644 drivers/mfd/max77802-irq.c
+ create mode 100644 drivers/mfd/max77802.c
+ create mode 100644 include/linux/mfd/max77802-private.h
+ create mode 100644 include/linux/mfd/max77802.h
 
-diff --git a/drivers/mfd/max77802.c b/drivers/mfd/max77802.c
-index 33e8023..62127fb 100644
---- a/drivers/mfd/max77802.c
-+++ b/drivers/mfd/max77802.c
-@@ -35,6 +35,9 @@
- 
- static const struct mfd_cell max77802_devs[] = {
- 	{ .name = "max77802-pmic", },
-+#if defined(CONFIG_RTC_DRV_MAX77802)
-+	{ .name = "max77802-rtc", },
-+#endif
- #if defined(CONFIG_COMMON_CLK_MAX77802)
- 	{ .name = "max77802-clk", },
- #endif
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index 0754f5c..e0b6495 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -288,6 +288,16 @@ config RTC_DRV_MAX77686
- 	  This driver can also be built as a module. If so, the module
- 	  will be called rtc-max77686.
- 
-+config RTC_DRV_MAX77802
-+	tristate "Maxim MAX77802"
-+	depends on MFD_MAX77802
-+	help
-+	  If you say yes here you will get support for the
-+	  RTC of Maxim MAX77802 PMIC.
-+
-+	  This driver can also be built as a module. If so, the module
-+	  will be called rtc-max77802.
-+
- config RTC_DRV_RS5C372
- 	tristate "Ricoh R2025S/D, RS5C372A/B, RV5C386, RV5C387A"
- 	help
-diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-index 70347d0..247de78 100644
---- a/drivers/rtc/Makefile
-+++ b/drivers/rtc/Makefile
-@@ -81,6 +81,7 @@ obj-$(CONFIG_RTC_DRV_MAX8998)	+= rtc-max8998.o
- obj-$(CONFIG_RTC_DRV_MAX8997)	+= rtc-max8997.o
- obj-$(CONFIG_RTC_DRV_MAX6902)	+= rtc-max6902.o
- obj-$(CONFIG_RTC_DRV_MAX77686)	+= rtc-max77686.o
-+obj-$(CONFIG_RTC_DRV_MAX77802)  += rtc-max77802.o
- obj-$(CONFIG_RTC_DRV_MC13XXX)	+= rtc-mc13xxx.o
- obj-$(CONFIG_RTC_DRV_MCP795)	+= rtc-mcp795.o
- obj-$(CONFIG_RTC_DRV_MSM6242)	+= rtc-msm6242.o
-diff --git a/drivers/rtc/rtc-max77802.c b/drivers/rtc/rtc-max77802.c
+diff --git a/Documentation/devicetree/bindings/mfd/max77802.txt b/Documentation/devicetree/bindings/mfd/max77802.txt
 new file mode 100644
-index 0000000..cb85b1d
+index 0000000..addf02e
 --- /dev/null
-+++ b/drivers/rtc/rtc-max77802.c
-@@ -0,0 +1,632 @@
++++ b/Documentation/devicetree/bindings/mfd/max77802.txt
+@@ -0,0 +1,88 @@
++Maxim MAX77802 multi-function device
++
++MAX77802 is a Mulitifunction device with PMIC, RTC and Charger on chip. It is
++interfaced to host controller using i2c interface. PMIC, Charger and RTC
++submodules are addressed using same i2c slave address
++
++This document describes the binding for mfd device and PMIC submodule.
++
++Binding for the built-in 32k clock generator block is defined separately
++in bindings/clk/maxim,max77802.txt file.
++
++Required properties:
++- compatible : Must be "maxim,max77802";
++- reg : Specifies the i2c slave address of PMIC block.
++- interrupts : This i2c device has an IRQ line connected to the main SoC.
++- interrupt-parent : The parent interrupt controller.
++
++Optional properties:
++- max77802,pmic-buck-default-dvs-idx: We'll always write this DVS index in the
++  PMIC for BUCKs with DVS (Bucks 1-4, 6).
++  NOTE: at the moment these bindings don't include enough details for actual
++  GPIO-DVS--this just lets you choose which single slot to use.
++
++- max77802,pmic-buck-dvs-gpios: The DVS GPIOs. We'll try to set these GPIOs
++  to match pmic-buck-default-dvs-idx at probe time if they are defined. If
++  some or all of these GPIOs are not defined it's assumed that the board has
++  any missing GPIOs hardwired to match pmic-buck-default-dvs-idx.
++
++- max77802,pmic-buck-selb-gpios: GPIOs to enable DVS-GPIO for BUCKs.
++  Should be five values: 1, 2, 3, 4, 6.  It is strongly suggested to include
++  these GPIOs if there's any chance that changing DVS GPIOs one line at a
++  time might glitch your DVS values.
++
++Optional node:
++- voltage-regulators : The regulators of max77802 have to be instantiated
++  under subnode named "voltage-regulators" using the following format.
++
++	regulator_name {
++		regulator-compatible = LDOn/BUCKn
++		standard regulator constraints....
++	};
++	refer Documentation/devicetree/bindings/regulator/regulator.txt
++
++  The regulator-compatible property of regulator should initialized with string
++to get matched with their hardware counterparts as follow:
++
++	-LDOn 	:	for LDOs, where n can lie in range 1 to 35.
++			example: LDO1, LDO2, LDO35.
++	-BUCKn 	:	for BUCKs, where n can lie in range 1 to 10.
++			example: BUCK1, BUCK5, BUCK10.
++Example:
++
++	max77802@09 {
++		compatible = "maxim,max77802";
++		interrupt-parent = <&wakeup_eint>;
++		interrupts = <26 0>;
++		reg = <0x09>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		max77802,pmic-buck-default-dvs-idx = <1>;
++		max77802,pmic-buck-dvs-gpios = <&gpy7 6 0>,
++					       <&gpj4 2 0>,
++					       <&gpj4 3 0>;
++		max77802,pmic-buck-selb-gpios = <&gph0 2 0>,
++						<&gph0 3 0>,
++						<&gph0 4 0>,
++						<&gph0 5 0>,
++						<&gph0 6 0>;
++
++		voltage-regulators {
++			ldo11_reg {
++				regulator-compatible = "LDO11";
++				regulator-name = "vdd_ldo11";
++				regulator-min-microvolt = <1900000>;
++				regulator-max-microvolt = <1900000>;
++				regulator-always-on;
++			};
++
++			buck1_reg {
++				regulator-compatible = "BUCK1";
++				regulator-name = "vdd_mif";
++				regulator-min-microvolt = <950000>;
++				regulator-max-microvolt = <1300000>;
++				regulator-always-on;
++				regulator-boot-on;
++			};
++	};
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index ee8204c..b8df9e4 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -392,6 +392,19 @@ config MFD_MAX77693
+ 	  additional drivers must be enabled in order to use the functionality
+ 	  of the device.
+ 
++config MFD_MAX77802
++	bool "Maxim Integrated MAX77802 PMIC Support"
++	depends on I2C=y
++	select MFD_CORE
++	select REGMAP_I2C
++	select IRQ_DOMAIN
++	help
++	  Say yes here to support for Maxim Integrated MAX77802.
++	  This is a Power Management IC with RTC on chip.
++	  This driver provides common support for accessing the device;
++	  additional drivers must be enabled in order to use the functionality
++	  of the device.
++
+ config MFD_MAX8907
+ 	tristate "Maxim Semiconductor MAX8907 PMIC Support"
+ 	select MFD_CORE
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index 8afedba..1a2a7ae 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -117,6 +117,7 @@ obj-$(CONFIG_MFD_DA9063)	+= da9063.o
+ obj-$(CONFIG_MFD_MAX14577)	+= max14577.o
+ obj-$(CONFIG_MFD_MAX77686)	+= max77686.o max77686-irq.o
+ obj-$(CONFIG_MFD_MAX77693)	+= max77693.o max77693-irq.o
++obj-$(CONFIG_MFD_MAX77802)	+= max77802.o max77802-irq.o
+ obj-$(CONFIG_MFD_MAX8907)	+= max8907.o
+ max8925-objs			:= max8925-core.o max8925-i2c.o
+ obj-$(CONFIG_MFD_MAX8925)	+= max8925.o
+diff --git a/drivers/mfd/max77802-irq.c b/drivers/mfd/max77802-irq.c
+new file mode 100644
+index 0000000..38a8ce7
+--- /dev/null
++++ b/drivers/mfd/max77802-irq.c
+@@ -0,0 +1,332 @@
 +/*
-+ * RTC driver for Maxim MAX77802
++ * max77802-irq.c - Interrupt controller support for MAX77802
 + *
-+ * Copyright (C) 2013 Google, Inc
++ * Copyright (C) 2013-2014 Google, Inc
 + *
 + * Copyright (C) 2012 Samsung Electronics Co.Ltd
++ * Chiwoong Byun <woong.byun@samsung.com>
 + *
-+ *  based on rtc-max8997.c
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
 + *
-+ *  This program is free software; you can redistribute  it and/or modify it
-+ *  under  the terms of  the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the  License, or (at your
-+ *  option) any later version.
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
 + *
++ * This driver is based on max8997-irq.c
 + */
 +
-+#include <linux/slab.h>
-+#include <linux/rtc.h>
-+#include <linux/delay.h>
-+#include <linux/mutex.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
++#include <linux/err.h>
++#include <linux/irq.h>
++#include <linux/interrupt.h>
++#include <linux/gpio.h>
++#include <linux/mfd/max77802.h>
 +#include <linux/mfd/max77802-private.h>
 +#include <linux/irqdomain.h>
 +#include <linux/regmap.h>
 +
-+/* RTC Control Register */
-+#define BCD_EN_SHIFT			0
-+#define BCD_EN_MASK			(1 << BCD_EN_SHIFT)
-+#define MODEL24_SHIFT			1
-+#define MODEL24_MASK			(1 << MODEL24_SHIFT)
-+/* RTC Update Register1 */
-+#define RTC_UDR_SHIFT			0
-+#define RTC_UDR_MASK			(1 << RTC_UDR_SHIFT)
-+#define RTC_RBUDR_SHIFT			4
-+#define RTC_RBUDR_MASK			(1 << RTC_RBUDR_SHIFT)
-+/* WTSR and SMPL Register */
-+#define WTSRT_SHIFT			0
-+#define SMPLT_SHIFT			2
-+#define WTSR_EN_SHIFT			6
-+#define SMPL_EN_SHIFT			7
-+#define WTSRT_MASK			(3 << WTSRT_SHIFT)
-+#define SMPLT_MASK			(3 << SMPLT_SHIFT)
-+#define WTSR_EN_MASK			(1 << WTSR_EN_SHIFT)
-+#define SMPL_EN_MASK			(1 << SMPL_EN_SHIFT)
-+/* RTC Hour register */
-+#define HOUR_PM_SHIFT			6
-+#define HOUR_PM_MASK			(1 << HOUR_PM_SHIFT)
-+/* RTC Alarm Enable */
-+#define ALARM_ENABLE_SHIFT		7
-+#define ALARM_ENABLE_MASK		(1 << ALARM_ENABLE_SHIFT)
-+
-+/* For the RTCAE1 register, we write this value to enable the alarm */
-+#define ALARM_ENABLE_VALUE		0x77
-+
-+#define MAX77802_RTC_UPDATE_DELAY_US	200
-+#undef MAX77802_RTC_WTSR_SMPL
-+
 +enum {
-+	RTC_SEC = 0,
-+	RTC_MIN,
-+	RTC_HOUR,
-+	RTC_WEEKDAY,
-+	RTC_MONTH,
-+	RTC_YEAR,
-+	RTC_DATE,
-+	RTC_NR_TIME
++	MAX77802_DEBUG_IRQ_INFO = 1 << 0,
++	MAX77802_DEBUG_IRQ_MASK = 1 << 1,
++	MAX77802_DEBUG_IRQ_INT = 1 << 2,
 +};
 +
-+struct max77802_rtc_info {
-+	struct device		*dev;
-+	struct max77802_dev	*max77802;
-+	struct i2c_client	*rtc;
-+	struct rtc_device	*rtc_dev;
-+	struct mutex		lock;
++static int debug_mask = 0;
++module_param(debug_mask, int, 0);
++MODULE_PARM_DESC(debug_mask, "Set debug_mask : 0x0=off 0x1=IRQ_INFO  0x2=IRQ_MASK 0x4=IRQ_INI)");
 +
-+	struct regmap		*regmap;
-+
-+	int virq;
-+	int rtc_24hr_mode;
++static const u8 max77802_mask_reg[] = {
++	[PMIC_INT1] = MAX77802_REG_INT1MSK,
++	[PMIC_INT2] = MAX77802_REG_INT2MSK,
++	[RTC_INT] = MAX77802_RTC_INTM,
 +};
 +
-+enum MAX77802_RTC_OP {
-+	MAX77802_RTC_WRITE,
-+	MAX77802_RTC_READ,
++struct max77802_irq_data {
++	int mask;
++	enum max77802_irq_source group;
 +};
 +
-+static inline int max77802_rtc_calculate_wday(u8 shifted)
++#define DECLARE_IRQ(idx, _group, _mask)		\
++	[(idx)] = { .group = (_group), .mask = (_mask) }
++static const struct max77802_irq_data max77802_irqs[] = {
++	DECLARE_IRQ(MAX77802_PMICIRQ_PWRONF,	PMIC_INT1, 1 << 0),
++	DECLARE_IRQ(MAX77802_PMICIRQ_PWRONR,	PMIC_INT1, 1 << 1),
++	DECLARE_IRQ(MAX77802_PMICIRQ_JIGONBF,	PMIC_INT1, 1 << 2),
++	DECLARE_IRQ(MAX77802_PMICIRQ_JIGONBR,	PMIC_INT1, 1 << 3),
++	DECLARE_IRQ(MAX77802_PMICIRQ_ACOKBF,	PMIC_INT1, 1 << 4),
++	DECLARE_IRQ(MAX77802_PMICIRQ_ACOKBR,	PMIC_INT1, 1 << 5),
++	DECLARE_IRQ(MAX77802_PMICIRQ_ONKEY1S,	PMIC_INT1, 1 << 6),
++	DECLARE_IRQ(MAX77802_PMICIRQ_MRSTB,		PMIC_INT1, 1 << 7),
++	DECLARE_IRQ(MAX77802_PMICIRQ_140C,		PMIC_INT2, 1 << 0),
++	DECLARE_IRQ(MAX77802_PMICIRQ_120C,		PMIC_INT2, 1 << 1),
++	DECLARE_IRQ(MAX77802_RTCIRQ_RTC60S,		RTC_INT, 1 << 0),
++	DECLARE_IRQ(MAX77802_RTCIRQ_RTCA1,		RTC_INT, 1 << 1),
++	DECLARE_IRQ(MAX77802_RTCIRQ_RTCA2,		RTC_INT, 1 << 2),
++	DECLARE_IRQ(MAX77802_RTCIRQ_SMPL,		RTC_INT, 1 << 3),
++	DECLARE_IRQ(MAX77802_RTCIRQ_RTC1S,		RTC_INT, 1 << 4),
++	DECLARE_IRQ(MAX77802_RTCIRQ_WTSR,		RTC_INT, 1 << 5),
++};
++
++static void max77802_irq_lock(struct irq_data *data)
 +{
-+	int counter = -1;
++	struct max77802_dev *max77802 = irq_get_chip_data(data->irq);
 +
-+	while (shifted) {
-+		shifted >>= 1;
-+		counter++;
-+	}
++	if (debug_mask & MAX77802_DEBUG_IRQ_MASK)
++		pr_info("%s\n", __func__);
 +
-+	return counter;
++	mutex_lock(&max77802->irqlock);
 +}
 +
-+static void max77802_rtc_data_to_tm(u8 *data, struct rtc_time *tm,
-+				   int rtc_24hr_mode)
++static void max77802_irq_sync_unlock(struct irq_data *data)
 +{
-+	tm->tm_sec = data[RTC_SEC] & 0xff;
-+	tm->tm_min = data[RTC_MIN] & 0xff;
-+	if (rtc_24hr_mode)
-+		tm->tm_hour = data[RTC_HOUR] & 0x1f;
-+	else {
-+		tm->tm_hour = data[RTC_HOUR] & 0x0f;
-+		if (data[RTC_HOUR] & HOUR_PM_MASK)
-+			tm->tm_hour += 12;
++	struct max77802_dev *max77802 = irq_get_chip_data(data->irq);
++	int i;
++
++	for (i = 0; i < MAX77802_IRQ_GROUP_NR; i++) {
++		u8 mask_reg = max77802_mask_reg[i];
++
++		if (debug_mask & MAX77802_DEBUG_IRQ_MASK)
++			pr_debug("%s: mask_reg[%d]=0x%x, cur=0x%x\n",
++			__func__, i, mask_reg, max77802->irq_masks_cur[i]);
++
++		if (mask_reg == MAX77802_REG_INVALID ||
++				IS_ERR_OR_NULL(max77802->regmap))
++			continue;
++
++		max77802->irq_masks_cache[i] = max77802->irq_masks_cur[i];
++
++		regmap_write(max77802->regmap, mask_reg,
++			     max77802->irq_masks_cur[i]);
 +	}
 +
-+	tm->tm_wday = max77802_rtc_calculate_wday(data[RTC_WEEKDAY] & 0xff);
-+	tm->tm_mday = data[RTC_DATE] & 0x1f;
-+	tm->tm_mon = (data[RTC_MONTH] & 0x0f) - 1;
-+
-+	tm->tm_year = data[RTC_YEAR] & 0xff;
-+	tm->tm_yday = 0;
-+	tm->tm_isdst = 0;
++	mutex_unlock(&max77802->irqlock);
 +}
 +
-+static int max77802_rtc_tm_to_data(struct rtc_time *tm, u8 *data)
++static const inline struct max77802_irq_data *to_max77802_irq(int irq)
 +{
-+	data[RTC_SEC] = tm->tm_sec;
-+	data[RTC_MIN] = tm->tm_min;
-+	data[RTC_HOUR] = tm->tm_hour;
-+	data[RTC_WEEKDAY] = 1 << tm->tm_wday;
-+	data[RTC_DATE] = tm->tm_mday;
-+	data[RTC_MONTH] = tm->tm_mon + 1;
-+	data[RTC_YEAR] = tm->tm_year;
++	struct irq_data *data = irq_get_irq_data(irq);
++	return &max77802_irqs[data->hwirq];
++}
 +
++static void max77802_irq_mask(struct irq_data *data)
++{
++	struct max77802_dev *max77802 = irq_get_chip_data(data->irq);
++	const struct max77802_irq_data *irq_data = to_max77802_irq(data->irq);
++
++	max77802->irq_masks_cur[irq_data->group] |= irq_data->mask;
++
++	if (debug_mask & MAX77802_DEBUG_IRQ_MASK)
++		pr_info("%s: group=%d, cur=0x%x\n",
++			__func__, irq_data->group,
++			max77802->irq_masks_cur[irq_data->group]);
++}
++
++static void max77802_irq_unmask(struct irq_data *data)
++{
++	struct max77802_dev *max77802 = irq_get_chip_data(data->irq);
++	const struct max77802_irq_data *irq_data = to_max77802_irq(data->irq);
++
++	max77802->irq_masks_cur[irq_data->group] &= ~irq_data->mask;
++
++	if (debug_mask & MAX77802_DEBUG_IRQ_MASK)
++		pr_info("%s: group=%d, cur=0x%x\n",
++			__func__, irq_data->group,
++			max77802->irq_masks_cur[irq_data->group]);
++}
++
++static int max77802_irq_set_wake(struct irq_data *data, unsigned int on)
++{
++	struct max77802_dev *max77802 = irq_get_chip_data(data->irq);
++
++	if (device_may_wakeup(max77802->dev)) {
++		if (on)
++			return enable_irq_wake(max77802->irq);
++		else
++			return disable_irq_wake(max77802->irq);
++	} else if (on) {
++		dev_warn(max77802->dev,
++			 "Child requested wakeup but wakeup disabled\n");
++		return -ENXIO;
++	}
 +	return 0;
 +}
 +
-+static int max77802_rtc_update(struct max77802_rtc_info *info,
-+	enum MAX77802_RTC_OP op)
++static struct irq_chip max77802_irq_chip = {
++	.name			= "max77802",
++	.irq_bus_lock		= max77802_irq_lock,
++	.irq_bus_sync_unlock	= max77802_irq_sync_unlock,
++	.irq_mask		= max77802_irq_mask,
++	.irq_unmask		= max77802_irq_unmask,
++	.irq_set_wake		= max77802_irq_set_wake,
++};
++
++static irqreturn_t max77802_irq_thread(int irq, void *data)
 +{
++	struct max77802_dev *max77802 = data;
++	unsigned int irq_reg[MAX77802_IRQ_GROUP_NR] = {};
++	unsigned int irq_src;
 +	int ret;
-+	unsigned int data;
++	int i, cur_irq;
 +
-+	if (op == MAX77802_RTC_WRITE)
-+		data = 1 << RTC_UDR_SHIFT;
-+	else
-+		data = 1 << RTC_RBUDR_SHIFT;
-+
-+	ret = regmap_update_bits(info->max77802->regmap,
-+				 MAX77802_RTC_UPDATE0, data, data);
-+	if (ret < 0)
-+		dev_err(info->dev, "%s: fail to write update reg(ret=%d, data=0x%x)\n",
-+				__func__, ret, data);
-+	else {
-+		/* Minimum delay required before RTC update. */
-+		usleep_range(MAX77802_RTC_UPDATE_DELAY_US,
-+			     MAX77802_RTC_UPDATE_DELAY_US * 2);
-+	}
-+
-+	return ret;
-+}
-+
-+static int max77802_rtc_read_time(struct device *dev, struct rtc_time *tm)
-+{
-+	struct max77802_rtc_info *info = dev_get_drvdata(dev);
-+	u8 data[RTC_NR_TIME];
-+	int ret;
-+
-+	mutex_lock(&info->lock);
-+
-+	ret = max77802_rtc_update(info, MAX77802_RTC_READ);
-+	if (ret < 0)
-+		goto out;
-+
-+	ret = regmap_bulk_read(info->max77802->regmap,
-+				MAX77802_RTC_SEC, data, RTC_NR_TIME);
++	ret = regmap_read(max77802->regmap,  MAX77802_REG_INTSRC, &irq_src);
 +	if (ret < 0) {
-+		dev_err(info->dev, "%s: fail to read time reg(%d)\n", __func__,	ret);
-+		goto out;
-+	}
-+
-+	max77802_rtc_data_to_tm(data, tm, info->rtc_24hr_mode);
-+
-+	ret = rtc_valid_tm(tm);
-+
-+out:
-+	mutex_unlock(&info->lock);
-+	return ret;
-+}
-+
-+static int max77802_rtc_set_time(struct device *dev, struct rtc_time *tm)
-+{
-+	struct max77802_rtc_info *info = dev_get_drvdata(dev);
-+	u8 data[RTC_NR_TIME];
-+	int ret;
-+
-+	ret = max77802_rtc_tm_to_data(tm, data);
-+	if (ret < 0)
-+		return ret;
-+
-+	mutex_lock(&info->lock);
-+
-+	ret = regmap_bulk_write(info->max77802->regmap,
-+				 MAX77802_RTC_SEC, data, RTC_NR_TIME);
-+	if (ret < 0) {
-+		dev_err(info->dev, "%s: fail to write time reg(%d)\n", __func__,
++		dev_err(max77802->dev, "Failed to read interrupt source: %d\n",
 +				ret);
-+		goto out;
++		return IRQ_NONE;
 +	}
 +
-+	ret = max77802_rtc_update(info, MAX77802_RTC_WRITE);
++	if (debug_mask & MAX77802_DEBUG_IRQ_INT)
++		pr_info("%s: irq_src=0x%x\n", __func__, irq_src);
 +
-+out:
-+	mutex_unlock(&info->lock);
-+	return ret;
-+}
++	if (irq_src == MAX77802_IRQSRC_PMIC) {
++		ret = regmap_bulk_read(max77802->regmap,
++					 MAX77802_REG_INT1, irq_reg, 2);
++		if (ret < 0) {
++			dev_err(max77802->dev, "Failed to read interrupt source: %d\n",
++					ret);
++			return IRQ_NONE;
++		}
 +
-+static int max77802_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
-+{
-+	struct max77802_rtc_info *info = dev_get_drvdata(dev);
-+	u8 data[RTC_NR_TIME];
-+	unsigned int val;
-+	int ret;
-+
-+	mutex_lock(&info->lock);
-+
-+	ret = max77802_rtc_update(info, MAX77802_RTC_READ);
-+	if (ret < 0)
-+		goto out;
-+
-+	ret = regmap_bulk_read(info->max77802->regmap,
-+				 MAX77802_ALARM1_SEC, data, RTC_NR_TIME);
-+	if (ret < 0) {
-+		dev_err(info->dev, "%s:%d fail to read alarm reg(%d)\n",
-+				__func__, __LINE__, ret);
-+		goto out;
++		if (debug_mask & MAX77802_DEBUG_IRQ_INT)
++			pr_info("%s: int1=0x%x, int2=0x%x\n", __func__,
++				 irq_reg[PMIC_INT1], irq_reg[PMIC_INT2]);
 +	}
 +
-+	max77802_rtc_data_to_tm(data, &alrm->time, info->rtc_24hr_mode);
++	if (irq_src & MAX77802_IRQSRC_RTC) {
++		ret = regmap_read(max77802->regmap,
++				  MAX77802_RTC_INT, &irq_reg[RTC_INT]);
++		if (ret < 0) {
++			dev_err(max77802->dev, "Failed to read interrupt source: %d\n",
++					ret);
++			return IRQ_NONE;
++		}
 +
-+	alrm->enabled = 0;
-+	ret = regmap_read(info->max77802->regmap,
-+			  MAX77802_RTC_AE1, &val);
-+	if (ret < 0) {
-+		dev_err(info->dev, "%s:%d fail to read alarm enable(%d)\n",
-+			__func__, __LINE__, ret);
-+		goto out;
-+	}
-+	if (val)
-+		alrm->enabled = 1;
++		if (debug_mask & MAX77802_DEBUG_IRQ_INT)
++			pr_info("%s: rtc int=0x%x\n", __func__,
++				irq_reg[RTC_INT]);
 +
-+	alrm->pending = 0;
-+	ret = regmap_read(info->max77802->regmap, MAX77802_REG_STATUS2, &val);
-+	if (ret < 0) {
-+		dev_err(info->dev, "%s:%d fail to read status2 reg(%d)\n",
-+				__func__, __LINE__, ret);
-+		goto out;
 +	}
 +
-+	if (val & (1 << 2)) /* RTCA1 */
-+		alrm->pending = 1;
++	for (i = 0; i < MAX77802_IRQ_GROUP_NR; i++)
++		irq_reg[i] &= ~max77802->irq_masks_cur[i];
 +
-+out:
-+	mutex_unlock(&info->lock);
-+	return 0;
-+}
-+
-+static int max77802_rtc_stop_alarm(struct max77802_rtc_info *info)
-+{
-+	int ret;
-+
-+	if (!mutex_is_locked(&info->lock))
-+		dev_warn(info->dev, "%s: should have mutex locked\n", __func__);
-+
-+	ret = max77802_rtc_update(info, MAX77802_RTC_READ);
-+	if (ret < 0)
-+		goto out;
-+
-+	ret = regmap_write(info->max77802->regmap,
-+			   MAX77802_RTC_AE1, 0);
-+	if (ret < 0) {
-+		dev_err(info->dev, "%s: fail to write alarm reg(%d)\n",
-+			__func__, ret);
-+		goto out;
++	for (i = 0; i < MAX77802_IRQ_NR; i++) {
++		if (irq_reg[max77802_irqs[i].group] & max77802_irqs[i].mask) {
++			cur_irq = irq_find_mapping(max77802->irq_domain, i);
++			if (cur_irq)
++				handle_nested_irq(cur_irq);
++		}
 +	}
-+
-+	ret = max77802_rtc_update(info, MAX77802_RTC_WRITE);
-+out:
-+	return ret;
-+}
-+
-+static int max77802_rtc_start_alarm(struct max77802_rtc_info *info)
-+{
-+	int ret;
-+
-+	if (!mutex_is_locked(&info->lock))
-+		dev_warn(info->dev, "%s: should have mutex locked\n",
-+			 __func__);
-+
-+	ret = max77802_rtc_update(info, MAX77802_RTC_READ);
-+	if (ret < 0)
-+		goto out;
-+
-+	ret = regmap_write(info->max77802->regmap,
-+				   MAX77802_RTC_AE1,
-+				   ALARM_ENABLE_VALUE);
-+
-+	if (ret < 0) {
-+		dev_err(info->dev, "%s: fail to read alarm reg(%d)\n",
-+				__func__, ret);
-+		goto out;
-+	}
-+
-+	ret = max77802_rtc_update(info, MAX77802_RTC_WRITE);
-+out:
-+	return ret;
-+}
-+
-+static int max77802_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
-+{
-+	struct max77802_rtc_info *info = dev_get_drvdata(dev);
-+	u8 data[RTC_NR_TIME];
-+	int ret;
-+
-+	ret = max77802_rtc_tm_to_data(&alrm->time, data);
-+	if (ret < 0)
-+		return ret;
-+
-+	mutex_lock(&info->lock);
-+
-+	ret = max77802_rtc_stop_alarm(info);
-+	if (ret < 0)
-+		goto out;
-+
-+	ret = regmap_bulk_write(info->max77802->regmap,
-+				 MAX77802_ALARM1_SEC, data, RTC_NR_TIME);
-+
-+	if (ret < 0) {
-+		dev_err(info->dev, "%s: fail to write alarm reg(%d)\n",
-+				__func__, ret);
-+		goto out;
-+	}
-+
-+	ret = max77802_rtc_update(info, MAX77802_RTC_WRITE);
-+	if (ret < 0)
-+		goto out;
-+
-+	if (alrm->enabled)
-+		ret = max77802_rtc_start_alarm(info);
-+out:
-+	mutex_unlock(&info->lock);
-+	return ret;
-+}
-+
-+static int max77802_rtc_alarm_irq_enable(struct device *dev,
-+					 unsigned int enabled)
-+{
-+	struct max77802_rtc_info *info = dev_get_drvdata(dev);
-+	int ret;
-+
-+	mutex_lock(&info->lock);
-+	if (enabled)
-+		ret = max77802_rtc_start_alarm(info);
-+	else
-+		ret = max77802_rtc_stop_alarm(info);
-+	mutex_unlock(&info->lock);
-+
-+	return ret;
-+}
-+
-+static irqreturn_t max77802_rtc_alarm_irq(int irq, void *data)
-+{
-+	struct max77802_rtc_info *info = data;
-+
-+	dev_info(info->dev, "%s:irq(%d)\n", __func__, irq);
-+
-+	rtc_update_irq(info->rtc_dev, 1, RTC_IRQF | RTC_AF);
 +
 +	return IRQ_HANDLED;
 +}
 +
-+static const struct rtc_class_ops max77802_rtc_ops = {
-+	.read_time = max77802_rtc_read_time,
-+	.set_time = max77802_rtc_set_time,
-+	.read_alarm = max77802_rtc_read_alarm,
-+	.set_alarm = max77802_rtc_set_alarm,
-+	.alarm_irq_enable = max77802_rtc_alarm_irq_enable,
-+};
-+
-+#ifdef MAX77802_RTC_WTSR_SMPL
-+static void max77802_rtc_enable_wtsr(struct max77802_rtc_info *info, bool enable)
++static int max77802_irq_domain_map(struct irq_domain *d, unsigned int irq,
++				   irq_hw_number_t hw)
 +{
-+	int ret;
-+	unsigned int val, mask;
++	struct max77802_dev *max77802 = d->host_data;
 +
-+	if (enable)
-+		val = (1 << WTSR_EN_SHIFT) | (3 << WTSRT_SHIFT);
-+	else
-+		val = 0;
-+
-+	mask = WTSR_EN_MASK | WTSRT_MASK;
-+
-+	dev_info(info->dev, "%s: %s WTSR\n", __func__,
-+			enable ? "enable" : "disable");
-+
-+	ret = regmap_update_bits(info->max77802->regmap,
-+				 MAX77802_WTSR_SMPL_CNTL, mask, val);
-+	if (ret < 0) {
-+		dev_err(info->dev, "%s: fail to update WTSR reg(%d)\n",
-+				__func__, ret);
-+		return;
-+	}
-+
-+	max77802_rtc_update(info, MAX77802_RTC_WRITE);
-+}
-+
-+static void max77802_rtc_enable_smpl(struct max77802_rtc_info *info, bool enable)
-+{
-+	int ret;
-+	unsigned int val, mask;
-+
-+	if (enable)
-+		val = (1 << SMPL_EN_SHIFT) | (0 << SMPLT_SHIFT);
-+	else
-+		val = 0;
-+
-+	mask = SMPL_EN_MASK | SMPLT_MASK;
-+
-+	dev_info(info->dev, "%s: %s SMPL\n", __func__,
-+			enable ? "enable" : "disable");
-+
-+	ret = regmap_update_bits(info->max77802->regmap,
-+				 MAX77802_WTSR_SMPL_CNTL, mask, val);
-+	if (ret < 0) {
-+		dev_err(info->dev, "%s: fail to update SMPL reg(%d)\n",
-+				__func__, ret);
-+		return;
-+	}
-+
-+	max77802_rtc_update(info, MAX77802_RTC_WRITE);
-+
-+	val = 0;
-+	regmap_read(info->max77802->regmap, MAX77802_WTSR_SMPL_CNTL, &val);
-+	dev_info(info->dev, "%s: WTSR_SMPL(0x%02x)\n", __func__, val);
-+}
-+#endif /* MAX77802_RTC_WTSR_SMPL */
-+
-+static int max77802_rtc_init_reg(struct max77802_rtc_info *info)
-+{
-+	u8 data[2];
-+	int ret;
-+
-+	max77802_rtc_update(info, MAX77802_RTC_READ);
-+
-+	/* Set RTC control register : Binary mode, 24hour mdoe */
-+	data[0] = (1 << BCD_EN_SHIFT) | (1 << MODEL24_SHIFT);
-+	data[1] = (0 << BCD_EN_SHIFT) | (1 << MODEL24_SHIFT);
-+
-+	info->rtc_24hr_mode = 1;
-+
-+	ret = regmap_bulk_write(info->max77802->regmap,
-+				MAX77802_RTC_CONTROLM, data, 2);
-+	if (ret < 0) {
-+		dev_err(info->dev, "%s: fail to write controlm reg(%d)\n",
-+				__func__, ret);
-+		return ret;
-+	}
-+
-+	ret = max77802_rtc_update(info, MAX77802_RTC_WRITE);
-+
-+	/* Mask control register */
-+	max77802_rtc_update(info, MAX77802_RTC_READ);
-+
-+	ret = regmap_update_bits(info->max77802->regmap,
-+				 MAX77802_RTC_CONTROLM, 0x0, 0x3);
-+	if (ret < 0) {
-+		dev_err(info->dev, "%s: fail to mask CONTROLM reg(%d)\n",
-+				__func__, ret);
-+		return ret;
-+	}
-+
-+	ret = max77802_rtc_update(info, MAX77802_RTC_WRITE);
-+
-+	return ret;
-+}
-+
-+static int max77802_rtc_probe(struct platform_device *pdev)
-+{
-+	struct max77802_dev *max77802 = dev_get_drvdata(pdev->dev.parent);
-+	struct max77802_rtc_info *info;
-+	int ret, virq;
-+
-+	dev_info(&pdev->dev, "%s\n", __func__);
-+
-+	info = devm_kzalloc(&pdev->dev, sizeof(struct max77802_rtc_info),
-+				GFP_KERNEL);
-+	if (!info)
-+		return -ENOMEM;
-+
-+	mutex_init(&info->lock);
-+	info->dev = &pdev->dev;
-+	info->max77802 = max77802;
-+	info->rtc = max77802->i2c;
-+
-+	platform_set_drvdata(pdev, info);
-+
-+	ret = max77802_rtc_init_reg(info);
-+
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "Failed to initialize RTC reg:%d\n", ret);
-+		return ret;
-+	}
-+
-+#ifdef MAX77802_RTC_WTSR_SMPL
-+	max77802_rtc_enable_wtsr(info, true);
-+	max77802_rtc_enable_smpl(info, true);
++	irq_set_chip_data(irq, max77802);
++	irq_set_chip_and_handler(irq, &max77802_irq_chip, handle_simple_irq);
++	irq_set_nested_thread(irq, 1);
++	irq_set_parent(irq, max77802->irq);
++#ifdef CONFIG_ARM
++	set_irq_flags(irq, IRQF_VALID);
++#else
++	irq_set_noprobe(irq);
 +#endif
-+
-+	device_init_wakeup(&pdev->dev, 1);
-+
-+	info->rtc_dev = devm_rtc_device_register(&pdev->dev, "max77802-rtc",
-+					&max77802_rtc_ops, THIS_MODULE);
-+
-+	if (IS_ERR(info->rtc_dev)) {
-+		dev_info(&pdev->dev, "%s: fail\n", __func__);
-+
-+		ret = PTR_ERR(info->rtc_dev);
-+		dev_err(&pdev->dev, "Failed to register RTC device: %d\n", ret);
-+		if (ret == 0)
-+			ret = -EINVAL;
-+		return ret;
-+	}
-+	virq = irq_create_mapping(max77802->irq_domain, MAX77802_RTCIRQ_RTCA1);
-+	if (!virq) {
-+		ret = -ENXIO;
-+		return ret;
-+	}
-+	info->virq = virq;
-+
-+	ret = devm_request_threaded_irq(&pdev->dev, virq, NULL,
-+				max77802_rtc_alarm_irq, 0, "rtc-alarm1", info);
-+	if (ret < 0)
-+		dev_err(&pdev->dev, "Failed to request alarm IRQ: %d: %d\n",
-+			info->virq, ret);
-+
-+	return ret;
-+}
-+
-+static int max77802_rtc_remove(struct platform_device *pdev)
-+{
-+	struct max77802_rtc_info *info = platform_get_drvdata(pdev);
-+
-+	free_irq(info->virq, info);
-+	rtc_device_unregister(info->rtc_dev);
-+
 +	return 0;
 +}
 +
-+static void max77802_rtc_shutdown(struct platform_device *pdev)
-+{
-+#ifdef MAX77802_RTC_WTSR_SMPL
-+	struct max77802_rtc_info *info = platform_get_drvdata(pdev);
-+	int i;
-+	u8 val = 0;
++static struct irq_domain_ops max77802_irq_domain_ops = {
++	.map = max77802_irq_domain_map,
++};
 +
-+	for (i = 0; i < 3; i++) {
-+		max77802_rtc_enable_wtsr(info, false);
-+		regmap_read(info->max77802->regmap,
-+			    MAX77802_WTSR_SMPL_CNTL, &val);
-+		dev_info(info->dev, "%s: WTSR_SMPL reg(0x%02x)\n", __func__,
-+				val);
-+		if (val & WTSR_EN_MASK) {
-+			dev_emerg(info->dev, "%s: fail to disable WTSR\n",
-+					__func__);
-+		} else {
-+			dev_info(info->dev, "%s: success to disable WTSR\n",
-+					__func__);
-+			break;
++int max77802_irq_init(struct max77802_dev *max77802)
++{
++	struct irq_domain *domain;
++	int i;
++	int ret;
++	int val;
++
++	mutex_init(&max77802->irqlock);
++
++	if (max77802->irq_gpio && !max77802->irq) {
++		max77802->irq = gpio_to_irq(max77802->irq_gpio);
++
++		if (debug_mask & MAX77802_DEBUG_IRQ_INT) {
++			ret = gpio_request(max77802->irq_gpio, "pmic_irq");
++			if (ret < 0) {
++				dev_err(max77802->dev,
++					"Failed to request gpio %d with ret:"
++					"%d\n",	max77802->irq_gpio, ret);
++				return IRQ_NONE;
++			}
++
++			gpio_direction_input(max77802->irq_gpio);
++			val = gpio_get_value(max77802->irq_gpio);
++			gpio_free(max77802->irq_gpio);
++			pr_info("%s: gpio_irq=%x\n", __func__, val);
 +		}
 +	}
 +
-+	/* Disable SMPL when power off */
-+	max77802_rtc_enable_smpl(info, false);
-+#endif /* MAX77802_RTC_WTSR_SMPL */
-+}
-+
-+#ifdef CONFIG_PM_SLEEP
-+static int max77802_rtc_suspend(struct device *dev)
-+{
-+	if (device_may_wakeup(dev)) {
-+		struct max77802_rtc_info *info = dev_get_drvdata(dev);
-+
-+		return enable_irq_wake(info->virq);
++	if (!max77802->irq) {
++		dev_err(max77802->dev, "irq is not specified\n");
++		return -ENODEV;
 +	}
++
++	/* Mask individual interrupt sources */
++	for (i = 0; i < MAX77802_IRQ_GROUP_NR; i++) {
++		max77802->irq_masks_cur[i] = 0xff;
++		max77802->irq_masks_cache[i] = 0xff;
++
++		if (IS_ERR_OR_NULL(max77802->regmap))
++			continue;
++		if (max77802_mask_reg[i] == MAX77802_REG_INVALID)
++			continue;
++
++		regmap_write(max77802->regmap, max77802_mask_reg[i], 0xff);
++	}
++	domain = irq_domain_add_linear(NULL, MAX77802_IRQ_NR,
++					&max77802_irq_domain_ops, max77802);
++	if (!domain) {
++		dev_err(max77802->dev, "could not create irq domain\n");
++		return -ENODEV;
++	}
++	max77802->irq_domain = domain;
++
++	ret = request_threaded_irq(max77802->irq, NULL, max77802_irq_thread,
++				   IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
++				   "max77802-irq", max77802);
++
++	if (ret)
++		dev_err(max77802->dev, "Failed to request IRQ %d: %d\n",
++			max77802->irq, ret);
++
++
++	if (debug_mask & MAX77802_DEBUG_IRQ_INFO)
++		pr_info("%s-\n", __func__);
 +
 +	return 0;
 +}
 +
-+static int max77802_rtc_resume(struct device *dev)
++void max77802_irq_exit(struct max77802_dev *max77802)
 +{
-+	if (device_may_wakeup(dev)) {
-+		struct max77802_rtc_info *info = dev_get_drvdata(dev);
++	if (max77802->irq)
++		free_irq(max77802->irq, max77802);
++}
 +
-+		return disable_irq_wake(info->virq);
++int max77802_irq_resume(struct max77802_dev *max77802)
++{
++	/*
++	 * The IRQ that woke us up may still need to be ACK'ed on resume.
++	 * If it isn't ever ACK'ed, future IRQs may not be delivered.
++	 */
++	if (max77802->irq)
++		max77802_irq_thread(0, max77802);
++
++	return 0;
++}
+diff --git a/drivers/mfd/max77802.c b/drivers/mfd/max77802.c
+new file mode 100644
+index 0000000..59696dd
+--- /dev/null
++++ b/drivers/mfd/max77802.c
+@@ -0,0 +1,282 @@
++/*
++ * max77802.c - mfd core driver for the Maxim 77802
++ *
++ * Copyright (C) 2013-2014 Google, Inc
++ * Simon Glass <sjg@chromium.org>
++ *
++ * Copyright (C) 2012 Samsung Electronics
++ * Chiwoong Byun <woong.byun@smasung.com>
++ * Jonghwa Lee <jonghwa3.lee@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * This driver is based on max8997.c
++ */
++
++#include <linux/export.h>
++#include <linux/slab.h>
++#include <linux/i2c.h>
++#include <linux/pm_runtime.h>
++#include <linux/module.h>
++#include <linux/mfd/core.h>
++#include <linux/mfd/max77802.h>
++#include <linux/mfd/max77802-private.h>
++#include <linux/of.h>
++#include <linux/of_gpio.h>
++#include <linux/err.h>
++
++static const struct mfd_cell max77802_devs[] = {
++	{ .name = "max77802-pmic", },
++};
++
++static bool max77802_pmic_is_accessible_reg(struct device *dev,
++					    unsigned int reg)
++{
++	return (reg >= MAX77802_REG_DEVICE_ID && reg < MAX77802_REG_PMIC_END);
++}
++
++static bool max77802_rtc_is_accessible_reg(struct device *dev,
++					   unsigned int reg)
++{
++	return (reg >= MAX77802_RTC_INT && reg < MAX77802_RTC_END);
++}
++
++static bool max77802_is_accessible_reg(struct device *dev, unsigned int reg)
++{
++	return (max77802_pmic_is_accessible_reg(dev, reg) ||
++		max77802_rtc_is_accessible_reg(dev, reg));
++}
++
++static bool max77802_pmic_is_precious_reg(struct device *dev, unsigned int reg)
++{
++	return (reg == MAX77802_REG_INTSRC || reg == MAX77802_REG_INT1 ||
++		reg == MAX77802_REG_INT2);
++}
++
++static bool max77802_rtc_is_precious_reg(struct device *dev, unsigned int reg)
++{
++	return (reg == MAX77802_RTC_INT ||
++		reg == MAX77802_RTC_UPDATE0 ||
++		reg == MAX77802_RTC_UPDATE1);
++}
++
++static bool max77802_is_precious_reg(struct device *dev, unsigned int reg)
++{
++	return (max77802_pmic_is_precious_reg(dev, reg) ||
++		max77802_rtc_is_precious_reg(dev, reg));
++}
++
++static bool max77802_pmic_is_volatile_reg(struct device *dev, unsigned int reg)
++{
++	return (max77802_is_precious_reg(dev, reg) ||
++		reg == MAX77802_REG_STATUS1 || reg == MAX77802_REG_STATUS2 ||
++		reg == MAX77802_REG_PWRON);
++}
++
++static bool max77802_rtc_is_volatile_reg(struct device *dev, unsigned int reg)
++{
++	return (max77802_rtc_is_precious_reg(dev, reg) ||
++		reg == MAX77802_RTC_SEC ||
++		reg == MAX77802_RTC_MIN ||
++		reg == MAX77802_RTC_HOUR ||
++		reg == MAX77802_RTC_WEEKDAY ||
++		reg == MAX77802_RTC_MONTH ||
++		reg == MAX77802_RTC_YEAR ||
++		reg == MAX77802_RTC_DATE);
++}
++
++static bool max77802_is_volatile_reg(struct device *dev, unsigned int reg)
++{
++	return (max77802_pmic_is_volatile_reg(dev, reg) ||
++		max77802_rtc_is_volatile_reg(dev, reg));
++}
++
++static struct regmap_config max77802_regmap_config = {
++	.reg_bits = 8,
++	.val_bits = 8,
++	.writeable_reg = max77802_is_accessible_reg,
++	.readable_reg = max77802_is_accessible_reg,
++	.precious_reg = max77802_is_precious_reg,
++	.volatile_reg = max77802_is_volatile_reg,
++	.name = "max77802-pmic",
++	.cache_type = REGCACHE_RBTREE,
++};
++
++#ifdef CONFIG_OF
++static struct of_device_id max77802_pmic_dt_match[] = {
++	{.compatible = "maxim,max77802", .data = NULL},
++	{},
++};
++
++static void max77802_dt_parse_dvs_gpio(struct device *dev,
++				       struct max77802_platform_data *pd,
++				       struct device_node *np)
++{
++	int i;
++
++	/*
++	 * NOTE: we don't consider GPIO errors fatal; board may have some lines
++	 * directly pulled high or low and thus doesn't specify them.
++	 */
++	for (i = 0; i < ARRAY_SIZE(pd->buck_gpio_dvs); i++)
++		pd->buck_gpio_dvs[i] =
++			of_get_named_gpio(np,
++					  "max77802,pmic-buck-dvs-gpios", i);
++
++	for (i = 0; i < ARRAY_SIZE(pd->buck_gpio_selb); i++)
++		pd->buck_gpio_selb[i] =
++			of_get_named_gpio(np,
++					  "max77802,pmic-buck-selb-gpios", i);
++}
++
++static struct max77802_platform_data *max77802_i2c_parse_dt_pdata(struct device
++								  *dev)
++{
++	struct device_node *np = dev->of_node;
++	struct max77802_platform_data *pd;
++
++	pd = devm_kzalloc(dev, sizeof(*pd), GFP_KERNEL);
++	if (!pd) {
++		dev_err(dev, "could not allocate memory for pdata\n");
++		return NULL;
 +	}
++
++	/* Read default index and ignore errors, since default is 0 */
++	of_property_read_u32(np, "max77802,pmic-buck-default-dvs-idx",
++			     &pd->buck_default_idx);
++
++	max77802_dt_parse_dvs_gpio(dev, pd, np);
++
++	dev->platform_data = pd;
++	return pd;
++}
++#else
++static struct max77802_platform_data *max77802_i2c_parse_dt_pdata(struct device
++								  *dev)
++{
++	return 0;
++}
++#endif
++
++static int max77802_i2c_probe(struct i2c_client *i2c,
++			      const struct i2c_device_id *id)
++{
++	struct max77802_dev *max77802 = NULL;
++	struct max77802_platform_data *pdata = dev_get_platdata(&i2c->dev);
++	unsigned int data;
++	int ret = 0;
++
++	if (i2c->dev.of_node)
++		pdata = max77802_i2c_parse_dt_pdata(&i2c->dev);
++
++	if (!pdata) {
++		dev_err(&i2c->dev, "No platform data found.\n");
++		return -EIO;
++	}
++
++	max77802 = devm_kzalloc(&i2c->dev, sizeof(struct max77802_dev),
++				GFP_KERNEL);
++	if (max77802 == NULL)
++		return -ENOMEM;
++
++	i2c_set_clientdata(i2c, max77802);
++	max77802->dev = &i2c->dev;
++	max77802->i2c = i2c;
++	max77802->type = id->driver_data;
++
++	max77802->wakeup = pdata->wakeup;
++	max77802->irq_gpio = pdata->irq_gpio;
++	max77802->irq = i2c->irq;
++
++	max77802->regmap = devm_regmap_init_i2c(i2c, &max77802_regmap_config);
++	if (IS_ERR(max77802->regmap)) {
++		ret = PTR_ERR(max77802->regmap);
++		dev_err(max77802->dev, "Failed to allocate register map: %d\n",
++			ret);
++		return ret;
++	}
++
++	if (regmap_read(max77802->regmap,
++			 MAX77802_REG_DEVICE_ID, &data) < 0) {
++		dev_err(max77802->dev,
++			"device not found on this channel (this is not an error)\n");
++		return -ENODEV;
++	} else {
++		dev_info(max77802->dev, "device found\n");
++	}
++
++	max77802_irq_init(max77802);
++
++	ret = mfd_add_devices(max77802->dev, -1, max77802_devs,
++			      ARRAY_SIZE(max77802_devs), NULL, 0, NULL);
++	if (ret < 0)
++		mfd_remove_devices(max77802->dev);
++
++	return ret;
++}
++
++static int max77802_i2c_remove(struct i2c_client *i2c)
++{
++	struct max77802_dev *max77802 = i2c_get_clientdata(i2c);
++
++	mfd_remove_devices(max77802->dev);
++
++	return 0;
++}
++
++static const struct i2c_device_id max77802_i2c_id[] = {
++	{ "max77802", TYPE_MAX77802 },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, max77802_i2c_id);
++
++#ifdef CONFIG_PM_SLEEP
++static int max77802_resume(struct device *dev)
++{
++	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
++	struct max77802_dev *max77802 = i2c_get_clientdata(i2c);
++
++	max77802_irq_resume(max77802);
 +
 +	return 0;
 +}
 +#endif
 +
-+static SIMPLE_DEV_PM_OPS(max77802_rtc_pm_ops,
-+			 max77802_rtc_suspend, max77802_rtc_resume);
++static SIMPLE_DEV_PM_OPS(max77802_pm_ops, NULL, max77802_resume);
 +
-+static const struct platform_device_id rtc_id[] = {
-+	{ "max77802-rtc", 0 },
-+	{},
-+};
-+
-+static struct platform_driver max77802_rtc_driver = {
-+	.driver		= {
-+		.name	= "max77802-rtc",
-+		.owner	= THIS_MODULE,
-+		.pm	= &max77802_rtc_pm_ops,
++static struct i2c_driver max77802_i2c_driver = {
++	.driver = {
++		   .name = "max77802",
++		   .owner = THIS_MODULE,
++		   .pm = &max77802_pm_ops,
++		   .of_match_table = of_match_ptr(max77802_pmic_dt_match),
 +	},
-+	.probe		= max77802_rtc_probe,
-+	.remove		= max77802_rtc_remove,
-+	.shutdown	= max77802_rtc_shutdown,
-+	.id_table	= rtc_id,
++	.probe = max77802_i2c_probe,
++	.remove = max77802_i2c_remove,
++	.id_table = max77802_i2c_id,
 +};
 +
-+module_platform_driver(max77802_rtc_driver);
++static int __init max77802_i2c_init(void)
++{
++	return i2c_add_driver(&max77802_i2c_driver);
++}
++/* init early so consumer devices can complete system boot */
++subsys_initcall(max77802_i2c_init);
 +
-+MODULE_DESCRIPTION("Maxim MAX77802 RTC driver");
++static void __exit max77802_i2c_exit(void)
++{
++	i2c_del_driver(&max77802_i2c_driver);
++}
++module_exit(max77802_i2c_exit);
++
++MODULE_DESCRIPTION("MAXIM 77802 multi-function core driver");
 +MODULE_AUTHOR("Simon Glass <sjg@chromium.org>");
 +MODULE_LICENSE("GPL");
+diff --git a/include/linux/mfd/max77802-private.h b/include/linux/mfd/max77802-private.h
+new file mode 100644
+index 0000000..7db5225
+--- /dev/null
++++ b/include/linux/mfd/max77802-private.h
+@@ -0,0 +1,291 @@
++/*
++ * max77802-private.h - Voltage regulator driver for the Maxim 77802
++ *
++ *  Copyright (C) 2012 Samsung Electrnoics
++ *  Chiwoong Byun <woong.byun@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#ifndef __LINUX_MFD_MAX77802_PRIV_H
++#define __LINUX_MFD_MAX77802_PRIV_H
++
++#include <linux/i2c.h>
++#include <linux/regmap.h>
++#include <linux/module.h>
++
++#define MAX77802_REG_INVALID		(0xff)
++
++enum max77802_pmic_reg {
++	MAX77802_REG_DEVICE_ID		= 0x00,
++	MAX77802_REG_INTSRC		= 0x01,
++	MAX77802_REG_INT1		= 0x02,
++	MAX77802_REG_INT2		= 0x03,
++
++	MAX77802_REG_INT1MSK		= 0x04,
++	MAX77802_REG_INT2MSK		= 0x05,
++
++	MAX77802_REG_STATUS1		= 0x06,
++	MAX77802_REG_STATUS2		= 0x07,
++
++	MAX77802_REG_PWRON		= 0x08,
++	/* Reserved: 0x09 */
++	MAX77802_REG_MRSTB		= 0x0A,
++	MAX77802_REG_EPWRHOLD		= 0x0B,
++	/* Reserved: 0x0C-0x0D */
++	MAX77802_REG_BOOSTCTRL		= 0x0E,
++	MAX77802_REG_BOOSTOUT		= 0x0F,
++
++	MAX77802_REG_BUCK1CTRL		= 0x10,
++	MAX77802_REG_BUCK1DVS1		= 0x11,
++	MAX77802_REG_BUCK1DVS2		= 0x12,
++	MAX77802_REG_BUCK1DVS3		= 0x13,
++	MAX77802_REG_BUCK1DVS4		= 0x14,
++	MAX77802_REG_BUCK1DVS5		= 0x15,
++	MAX77802_REG_BUCK1DVS6		= 0x16,
++	MAX77802_REG_BUCK1DVS7		= 0x17,
++	MAX77802_REG_BUCK1DVS8		= 0x18,
++	/* Reserved: 0x19 */
++	MAX77802_REG_BUCK2CTRL1		= 0x1A,
++	MAX77802_REG_BUCK2CTRL2		= 0x1B,
++	MAX77802_REG_BUCK2PHTRAN	= 0x1C,
++	MAX77802_REG_BUCK2DVS1		= 0x1D,
++	MAX77802_REG_BUCK2DVS2		= 0x1E,
++	MAX77802_REG_BUCK2DVS3		= 0x1F,
++	MAX77802_REG_BUCK2DVS4		= 0x20,
++	MAX77802_REG_BUCK2DVS5		= 0x21,
++	MAX77802_REG_BUCK2DVS6		= 0x22,
++	MAX77802_REG_BUCK2DVS7		= 0x23,
++	MAX77802_REG_BUCK2DVS8		= 0x24,
++	/* Reserved: 0x25-0x26 */
++	MAX77802_REG_BUCK3CTRL1		= 0x27,
++	MAX77802_REG_BUCK3DVS1		= 0x28,
++	MAX77802_REG_BUCK3DVS2		= 0x29,
++	MAX77802_REG_BUCK3DVS3		= 0x2A,
++	MAX77802_REG_BUCK3DVS4		= 0x2B,
++	MAX77802_REG_BUCK3DVS5		= 0x2C,
++	MAX77802_REG_BUCK3DVS6		= 0x2D,
++	MAX77802_REG_BUCK3DVS7		= 0x2E,
++	MAX77802_REG_BUCK3DVS8		= 0x2F,
++	/* Reserved: 0x30-0x36 */
++	MAX77802_REG_BUCK4CTRL1		= 0x37,
++	MAX77802_REG_BUCK4DVS1		= 0x38,
++	MAX77802_REG_BUCK4DVS2		= 0x39,
++	MAX77802_REG_BUCK4DVS3		= 0x3A,
++	MAX77802_REG_BUCK4DVS4		= 0x3B,
++	MAX77802_REG_BUCK4DVS5		= 0x3C,
++	MAX77802_REG_BUCK4DVS6		= 0x3D,
++	MAX77802_REG_BUCK4DVS7		= 0x3E,
++	MAX77802_REG_BUCK4DVS8		= 0x3F,
++	/* Reserved: 0x40 */
++	MAX77802_REG_BUCK5CTRL		= 0x41,
++	MAX77802_REG_BUCK5OUT		= 0x42,
++	/* Reserved: 0x43 */
++	MAX77802_REG_BUCK6CTRL		= 0x44,
++	MAX77802_REG_BUCK6DVS1		= 0x45,
++	MAX77802_REG_BUCK6DVS2		= 0x46,
++	MAX77802_REG_BUCK6DVS3		= 0x47,
++	MAX77802_REG_BUCK6DVS4		= 0x48,
++	MAX77802_REG_BUCK6DVS5		= 0x49,
++	MAX77802_REG_BUCK6DVS6		= 0x4A,
++	MAX77802_REG_BUCK6DVS7		= 0x4B,
++	MAX77802_REG_BUCK6DVS8		= 0x4C,
++	/* Reserved: 0x4D */
++	MAX77802_REG_BUCK7CTRL		= 0x4E,
++	MAX77802_REG_BUCK7OUT		= 0x4F,
++	/* Reserved: 0x50 */
++	MAX77802_REG_BUCK8CTRL		= 0x51,
++	MAX77802_REG_BUCK8OUT		= 0x52,
++	/* Reserved: 0x53 */
++	MAX77802_REG_BUCK9CTRL		= 0x54,
++	MAX77802_REG_BUCK9OUT		= 0x55,
++	/* Reserved: 0x56 */
++	MAX77802_REG_BUCK10CTRL		= 0x57,
++	MAX77802_REG_BUCK10OUT		= 0x58,
++
++	/* Reserved: 0x59-0x5F */
++
++	MAX77802_REG_LDO1CTRL1		= 0x60,
++	MAX77802_REG_LDO2CTRL1		= 0x61,
++	MAX77802_REG_LDO3CTRL1		= 0x62,
++	MAX77802_REG_LDO4CTRL1		= 0x63,
++	MAX77802_REG_LDO5CTRL1		= 0x64,
++	MAX77802_REG_LDO6CTRL1		= 0x65,
++	MAX77802_REG_LDO7CTRL1		= 0x66,
++	MAX77802_REG_LDO8CTRL1		= 0x67,
++	MAX77802_REG_LDO9CTRL1		= 0x68,
++	MAX77802_REG_LDO10CTRL1		= 0x69,
++	MAX77802_REG_LDO11CTRL1		= 0x6A,
++	MAX77802_REG_LDO12CTRL1		= 0x6B,
++	MAX77802_REG_LDO13CTRL1		= 0x6C,
++	MAX77802_REG_LDO14CTRL1		= 0x6D,
++	MAX77802_REG_LDO15CTRL1		= 0x6E,
++	/* Reserved: 0x6F */
++	MAX77802_REG_LDO17CTRL1		= 0x70,
++	MAX77802_REG_LDO18CTRL1		= 0x71,
++	MAX77802_REG_LDO19CTRL1		= 0x72,
++	MAX77802_REG_LDO20CTRL1		= 0x73,
++	MAX77802_REG_LDO21CTRL1		= 0x74,
++	MAX77802_REG_LDO22CTRL1		= 0x75,
++	MAX77802_REG_LDO23CTRL1		= 0x76,
++	MAX77802_REG_LDO24CTRL1		= 0x77,
++	MAX77802_REG_LDO25CTRL1		= 0x78,
++	MAX77802_REG_LDO26CTRL1		= 0x79,
++	MAX77802_REG_LDO27CTRL1		= 0x7A,
++	MAX77802_REG_LDO28CTRL1		= 0x7B,
++	MAX77802_REG_LDO29CTRL1		= 0x7C,
++	MAX77802_REG_LDO30CTRL1		= 0x7D,
++	/* Reserved: 0x7E */
++	MAX77802_REG_LDO32CTRL1		= 0x7F,
++	MAX77802_REG_LDO33CTRL1		= 0x80,
++	MAX77802_REG_LDO34CTRL1		= 0x81,
++	MAX77802_REG_LDO35CTRL1		= 0x82,
++	/* Reserved: 0x83-0x8F */
++	MAX77802_REG_LDO1CTRL2		= 0x90,
++	MAX77802_REG_LDO2CTRL2		= 0x91,
++	MAX77802_REG_LDO3CTRL2		= 0x92,
++	MAX77802_REG_LDO4CTRL2		= 0x93,
++	MAX77802_REG_LDO5CTRL2		= 0x94,
++	MAX77802_REG_LDO6CTRL2		= 0x95,
++	MAX77802_REG_LDO7CTRL2		= 0x96,
++	MAX77802_REG_LDO8CTRL2		= 0x97,
++	MAX77802_REG_LDO9CTRL2		= 0x98,
++	MAX77802_REG_LDO10CTRL2		= 0x99,
++	MAX77802_REG_LDO11CTRL2		= 0x9A,
++	MAX77802_REG_LDO12CTRL2		= 0x9B,
++	MAX77802_REG_LDO13CTRL2		= 0x9C,
++	MAX77802_REG_LDO14CTRL2		= 0x9D,
++	MAX77802_REG_LDO15CTRL2		= 0x9E,
++	/* Reserved: 0x9F */
++	MAX77802_REG_LDO17CTRL2		= 0xA0,
++	MAX77802_REG_LDO18CTRL2		= 0xA1,
++	MAX77802_REG_LDO19CTRL2		= 0xA2,
++	MAX77802_REG_LDO20CTRL2		= 0xA3,
++	MAX77802_REG_LDO21CTRL2		= 0xA4,
++	MAX77802_REG_LDO22CTRL2		= 0xA5,
++	MAX77802_REG_LDO23CTRL2		= 0xA6,
++	MAX77802_REG_LDO24CTRL2		= 0xA7,
++	MAX77802_REG_LDO25CTRL2		= 0xA8,
++	MAX77802_REG_LDO26CTRL2		= 0xA9,
++	MAX77802_REG_LDO27CTRL2		= 0xAA,
++	MAX77802_REG_LDO28CTRL2		= 0xAB,
++	MAX77802_REG_LDO29CTRL2		= 0xAC,
++	MAX77802_REG_LDO30CTRL2		= 0xAD,
++	/* Reserved: 0xAE */
++	MAX77802_REG_LDO32CTRL2		= 0xAF,
++	MAX77802_REG_LDO33CTRL2		= 0xB0,
++	MAX77802_REG_LDO34CTRL2		= 0xB1,
++	MAX77802_REG_LDO35CTRL2		= 0xB2,
++	/* Reserved: 0xB3 */
++
++	MAX77802_REG_BBAT_CHG		= 0xB4,
++	MAX77802_REG_32KHZ		= 0xB5,
++
++	MAX77802_REG_PMIC_END		= 0xB6,
++};
++
++enum max77802_rtc_reg {
++	MAX77802_RTC_INT		= 0xC0,
++	MAX77802_RTC_INTM		= 0xC1,
++	MAX77802_RTC_CONTROLM		= 0xC2,
++	MAX77802_RTC_CONTROL		= 0xC3,
++	MAX77802_RTC_UPDATE0		= 0xC4,
++	MAX77802_RTC_UPDATE1		= 0xC5,
++	MAX77802_WTSR_SMPL_CNTL		= 0xC6,
++	MAX77802_RTC_SEC		= 0xC7,
++	MAX77802_RTC_MIN		= 0xC8,
++	MAX77802_RTC_HOUR		= 0xC9,
++	MAX77802_RTC_WEEKDAY		= 0xCA,
++	MAX77802_RTC_MONTH		= 0xCB,
++	MAX77802_RTC_YEAR		= 0xCC,
++	MAX77802_RTC_DATE		= 0xCD,
++	MAX77802_RTC_AE1		= 0xCE,
++	MAX77802_ALARM1_SEC		= 0xCF,
++	MAX77802_ALARM1_MIN		= 0xD0,
++	MAX77802_ALARM1_HOUR		= 0xD1,
++	MAX77802_ALARM1_WEEKDAY		= 0xD2,
++	MAX77802_ALARM1_MONTH		= 0xD3,
++	MAX77802_ALARM1_YEAR		= 0xD4,
++	MAX77802_ALARM1_DATE		= 0xD5,
++	MAX77802_RTC_AE2		= 0xD6,
++	MAX77802_ALARM2_SEC		= 0xD7,
++	MAX77802_ALARM2_MIN		= 0xD8,
++	MAX77802_ALARM2_HOUR		= 0xD9,
++	MAX77802_ALARM2_WEEKDAY		= 0xDA,
++	MAX77802_ALARM2_MONTH		= 0xDB,
++	MAX77802_ALARM2_YEAR		= 0xDC,
++	MAX77802_ALARM2_DATE		= 0xDD,
++
++	MAX77802_RTC_END		= 0xDF,
++};
++
++#define MAX77802_IRQSRC_PMIC            (0)
++#define MAX77802_IRQSRC_RTC	        (1 << 0)
++
++enum max77802_irq_source {
++	PMIC_INT1 = 0,
++	PMIC_INT2,
++	RTC_INT,
++
++	MAX77802_IRQ_GROUP_NR,
++};
++
++enum max77802_irq {
++	MAX77802_PMICIRQ_PWRONF,
++	MAX77802_PMICIRQ_PWRONR,
++	MAX77802_PMICIRQ_JIGONBF,
++	MAX77802_PMICIRQ_JIGONBR,
++	MAX77802_PMICIRQ_ACOKBF,
++	MAX77802_PMICIRQ_ACOKBR,
++	MAX77802_PMICIRQ_ONKEY1S,
++	MAX77802_PMICIRQ_MRSTB,
++
++	MAX77802_PMICIRQ_140C,
++	MAX77802_PMICIRQ_120C,
++
++	MAX77802_RTCIRQ_RTC60S,
++	MAX77802_RTCIRQ_RTCA1,
++	MAX77802_RTCIRQ_RTCA2,
++	MAX77802_RTCIRQ_SMPL,
++	MAX77802_RTCIRQ_RTC1S,
++	MAX77802_RTCIRQ_WTSR,
++
++	MAX77802_IRQ_NR,
++};
++
++struct max77802_dev {
++	struct device *dev;
++	struct i2c_client *i2c; /* 0x09 / PMIC, Battery Control and RTC */
++
++	int type;
++
++	struct regmap *regmap;		/* regmap for mfd and rtc devices */
++
++	struct irq_domain *irq_domain;
++
++	int irq;
++	int irq_gpio;
++	bool wakeup;
++	struct mutex irqlock;
++	int irq_masks_cur[MAX77802_IRQ_GROUP_NR];
++	int irq_masks_cache[MAX77802_IRQ_GROUP_NR];
++};
++
++enum max77802_types {
++	TYPE_MAX77802,
++};
++
++extern int max77802_irq_init(struct max77802_dev *max77802);
++extern void max77802_irq_exit(struct max77802_dev *max77802);
++extern int max77802_irq_resume(struct max77802_dev *max77802);
++
++#endif /*  __LINUX_MFD_MAX77802_PRIV_H */
+diff --git a/include/linux/mfd/max77802.h b/include/linux/mfd/max77802.h
+new file mode 100644
+index 0000000..3c08b2a
+--- /dev/null
++++ b/include/linux/mfd/max77802.h
+@@ -0,0 +1,124 @@
++/*
++ * max77802.h - Driver for the Maxim 77802
++ *
++ * Copyright (c) 2013-2014 Google, Inc
++ *
++ *  Copyright (C) 2012 Samsung Electrnoics
++ *  Chiwoong Byun <woong.byun@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * This driver is based on max8997.h
++ *
++ * MAX77802 has PMIC, RTC devices.
++ * The devices share the same I2C bus and included in
++ * this mfd driver.
++ */
++
++#ifndef __LINUX_MFD_MAX77802_H
++#define __LINUX_MFD_MAX77802_H
++
++#include <linux/regulator/consumer.h>
++
++/* MAX77802 regulator IDs - LDOS must come before BUCKs */
++enum max77802_regulators {
++	MAX77802_LDO1 = 0,
++	MAX77802_LDO2,
++	MAX77802_LDO3,
++	MAX77802_LDO4,
++	MAX77802_LDO5,
++	MAX77802_LDO6,
++	MAX77802_LDO7,
++	MAX77802_LDO8,
++	MAX77802_LDO9,
++	MAX77802_LDO10,
++	MAX77802_LDO11,
++	MAX77802_LDO12,
++	MAX77802_LDO13,
++	MAX77802_LDO14,
++	MAX77802_LDO15,
++	MAX77802_LDO16,
++	MAX77802_LDO17,
++	MAX77802_LDO18,
++	MAX77802_LDO19,
++	MAX77802_LDO20,
++	MAX77802_LDO21,
++	MAX77802_LDO22,
++	MAX77802_LDO23,
++	MAX77802_LDO24,
++	MAX77802_LDO25,
++	MAX77802_LDO26,
++	MAX77802_LDO27,
++	MAX77802_LDO28,
++	MAX77802_LDO29,
++	MAX77802_LDO30,
++	MAX77802_LDO31,
++	MAX77802_LDO32,
++	MAX77802_LDO33,
++	MAX77802_LDO34,
++	MAX77802_LDO35,
++	MAX77802_BUCK1,
++	MAX77802_BUCK2,
++	MAX77802_BUCK3,
++	MAX77802_BUCK4,
++	MAX77802_BUCK5,
++	MAX77802_BUCK6,
++	MAX77802_BUCK7,
++	MAX77802_BUCK8,
++	MAX77802_BUCK9,
++	MAX77802_BUCK10,
++
++	MAX77802_REG_MAX,
++};
++
++struct max77802_regulator_data {
++	int id;
++	int opmode;
++	struct regulator_init_data *initdata;
++	struct device_node *of_node;
++};
++
++enum max77802_opmode {
++	MAX77802_OPMODE_OFF,
++	MAX77802_OPMODE_STANDBY,
++	MAX77802_OPMODE_LP,
++	MAX77802_OPMODE_NORMAL,
++};
++
++struct max77802_opmode_data {
++	int id;
++	int mode;
++};
++
++struct max77802_platform_data {
++	/* IRQ */
++	int irq_gpio;
++	int ono;
++	int wakeup;
++
++	/* ---- PMIC ---- */
++	struct max77802_regulator_data *regulators;
++	int num_regulators;
++
++	struct max77802_opmode_data *opmode_data;
++
++	/*
++	 * GPIO-DVS feature is not fully enabled with the current version of
++	 * MAX77802 driver, but the driver does support using a DVS index other
++	 * than the default of 0.
++	 */
++	int buck_gpio_dvs[3]; /* GPIO of [0]DVS1, [1]DVS2, [2]DVS3 */
++	int buck_default_idx; /* Default value of DVS1, 2, 3 */
++
++	int buck_gpio_selb[5]; /* 77802: 1, 2, 3, 4, 6 */
++};
++
++#endif /* __LINUX_MFD_MAX77802_H */
 -- 
 2.0.0.rc2
 
