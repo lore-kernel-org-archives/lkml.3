@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964791AbaFIPCf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 11:02:35 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54868 "EHLO
+	id S964806AbaFIPDT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 11:03:19 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54888 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933650AbaFIPCb (ORCPT
+	by vger.kernel.org with ESMTP id S932348AbaFIPDS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 11:02:31 -0400
-Date: Mon, 9 Jun 2014 16:02:26 +0100
+	Mon, 9 Jun 2014 11:03:18 -0400
+Date: Mon, 9 Jun 2014 16:03:14 +0100
 From: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
 To: sameo@linux.intel.com, lee.jones@linaro.org,
         ckeepax@opensource.wolfsonmicro.com, broonie@kernel.org,
         lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de
 Cc: alsa-devel@alsa-project.org, patches@opensource.wolfsonmicro.com,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4] mfd: arizona: Export function to control subsystem DVFS
-Message-ID: <20140609150226.GB5229@opensource.wolfsonmicro.com>
+Subject: [PATCH 2/4] ASoC: wm_adsp: Move DVFS control into codec driver
+Message-ID: <20140609150314.GC5229@opensource.wolfsonmicro.com>
 References: <20140609150013.GA5229@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -26,145 +26,260 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moving this control from being a side-effect of the LDO1
-regulator driver to a specific exported function.
+In theory the ADSP driver should not need to know
+anything about the codec it is part of. But some codecs
+need DVFS control based on ADSP clocking speed. This was
+being handled by bundling part of the knowledge of this
+into the ADSP driver.
+
+This change removes this handling out of the ADSP driver.
+A new macro WM_ADSP2_E() takes a callback function to be
+called by the preloader widget in place of the default
+handler, and this can be used to do codec-specific power
+control.
+
+The WM5102 driver has been updated to implement the DVFS.
 
 Signed-off-by: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
 ---
- drivers/mfd/arizona-core.c       |   84 ++++++++++++++++++++++++++++++++++++++
- include/linux/mfd/arizona/core.h |   12 +++++
- 2 files changed, 96 insertions(+), 0 deletions(-)
+ sound/soc/codecs/wm5102.c  |   47 ++++++++++++++++++++++++++-
+ sound/soc/codecs/wm5110.c  |    2 +-
+ sound/soc/codecs/wm_adsp.c |   76 +-------------------------------------------
+ sound/soc/codecs/wm_adsp.h |   11 +++---
+ 4 files changed, 53 insertions(+), 83 deletions(-)
 
-diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
-index 58e1fe5..a1b4fe6 100644
---- a/drivers/mfd/arizona-core.c
-+++ b/drivers/mfd/arizona-core.c
-@@ -94,6 +94,89 @@ int arizona_clk32k_disable(struct arizona *arizona)
+diff --git a/sound/soc/codecs/wm5102.c b/sound/soc/codecs/wm5102.c
+index dcf1d12..47cc404 100644
+--- a/sound/soc/codecs/wm5102.c
++++ b/sound/soc/codecs/wm5102.c
+@@ -612,6 +612,49 @@ static int wm5102_sysclk_ev(struct snd_soc_dapm_widget *w,
+ 	return 0;
  }
- EXPORT_SYMBOL_GPL(arizona_clk32k_disable);
  
-+int arizona_dvfs_up(struct arizona *arizona, unsigned int mask)
++static int wm5102_adsp_power_ev(struct snd_soc_dapm_widget *w,
++		   struct snd_kcontrol *kcontrol, int event)
 +{
-+	unsigned int new_flags;
-+	int ret = 0;
++	struct snd_soc_codec *codec = w->codec;
++	struct arizona *arizona = dev_get_drvdata(codec->dev->parent);
++	unsigned int v;
++	int ret;
 +
-+	mutex_lock(&arizona->subsys_max_lock);
-+
-+	new_flags = arizona->subsys_max_rq | mask;
-+
-+	if (arizona->subsys_max_rq != new_flags) {
-+		switch (arizona->type) {
-+		case WM5102:
-+		case WM8997:
-+			ret = regulator_set_voltage(arizona->dcvdd,
-+						    1800000, 1800000);
-+			if (ret != 0) {
-+				dev_err(arizona->dev,
-+					"Failed to raise dcvdd (%u)\n", ret);
-+				goto err;
-+			}
-+
-+			ret = regmap_update_bits(arizona->regmap,
-+					ARIZONA_DYNAMIC_FREQUENCY_SCALING_1,
-+					ARIZONA_SUBSYS_MAX_FREQ, 1);
-+			if (ret != 0) {
-+				dev_err(arizona->dev,
-+					"Failed to enable subsys max (%u)\n",
-+					ret);
-+				regulator_set_voltage(arizona->dcvdd,
-+						      1200000, 1800000);
-+				goto err;
-+			}
-+			break;
-+
-+		default:
-+			break;
++	switch (event) {
++	case SND_SOC_DAPM_PRE_PMU:
++		ret = regmap_read(arizona->regmap, ARIZONA_SYSTEM_CLOCK_1, &v);
++		if (ret != 0) {
++			dev_err(codec->dev,
++				"Failed to read SYSCLK state: %d\n", ret);
++			return -EIO;
 +		}
 +
-+	arizona->subsys_max_rq = new_flags;
-+	}
-+err:
-+	mutex_unlock(&arizona->subsys_max_lock);
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(arizona_dvfs_up);
++		v = (v & ARIZONA_SYSCLK_FREQ_MASK) >> ARIZONA_SYSCLK_FREQ_SHIFT;
 +
-+int arizona_dvfs_down(struct arizona *arizona, unsigned int mask)
-+{
-+	int ret = 0;
-+
-+	mutex_lock(&arizona->subsys_max_lock);
-+
-+	arizona->subsys_max_rq &= ~mask;
-+
-+	if (arizona->subsys_max_rq == 0) {
-+		switch (arizona->type) {
-+		case WM5102:
-+		case WM8997:
-+			ret = regmap_update_bits(arizona->regmap,
-+					ARIZONA_DYNAMIC_FREQUENCY_SCALING_1,
-+					ARIZONA_SUBSYS_MAX_FREQ, 0);
-+			if (ret != 0)
-+				dev_err(arizona->dev,
-+					"Failed to disable subsys max (%u)\n",
-+					ret);
-+
-+			ret = regulator_set_voltage(arizona->dcvdd,
-+						    1200000, 1800000);
-+			if (ret != 0)
-+				dev_err(arizona->dev,
-+					"Failed to lower dcvdd (%u)\n", ret);
-+			break;
-+
-+		default:
-+			break;
++		if (v >= 3) {
++			ret = arizona_dvfs_up(arizona, ARIZONA_DVFS_ADSP1_RQ);
++			if (ret != 0) {
++				dev_err(codec->dev,
++					"Failed to raise DVFS: %d\n", ret);
++				return ret;
++			}
 +		}
++		break;
++
++	case SND_SOC_DAPM_PRE_PMD:
++		ret = arizona_dvfs_down(arizona, ARIZONA_DVFS_ADSP1_RQ);
++		if (ret != 0)
++			dev_warn(codec->dev,
++				 "Failed to lower DVFS: %d\n", ret);
++		break;
++
++	default:
++		break;
 +	}
 +
-+	mutex_unlock(&arizona->subsys_max_lock);
-+	return ret;
++	return wm_adsp2_early_event(w, kcontrol, event);
 +}
-+EXPORT_SYMBOL_GPL(arizona_dvfs_down);
 +
- static irqreturn_t arizona_clkgen_err(int irq, void *data)
- {
- 	struct arizona *arizona = data;
-@@ -645,6 +728,7 @@ int arizona_dev_init(struct arizona *arizona)
- 
- 	dev_set_drvdata(arizona->dev, arizona);
- 	mutex_init(&arizona->clk_lock);
-+	mutex_init(&arizona->subsys_max_lock);
- 
- 	if (dev_get_platdata(arizona->dev))
- 		memcpy(&arizona->pdata, dev_get_platdata(arizona->dev),
-diff --git a/include/linux/mfd/arizona/core.h b/include/linux/mfd/arizona/core.h
-index 76564af..b4b8a7e 100644
---- a/include/linux/mfd/arizona/core.h
-+++ b/include/linux/mfd/arizona/core.h
-@@ -132,11 +132,23 @@ struct arizona {
- 	struct mutex clk_lock;
- 	int clk32k_ref;
- 
-+	struct mutex subsys_max_lock;
-+	unsigned int subsys_max_rq;
-+
- 	struct snd_soc_dapm_context *dapm;
+ static const char *wm5102_osr_text[] = {
+ 	"Low power", "Normal", "High performance",
  };
+@@ -1300,7 +1343,7 @@ ARIZONA_MUX_WIDGETS(ISRC2DEC2, "ISRC2DEC2"),
+ ARIZONA_MUX_WIDGETS(ISRC2INT1, "ISRC2INT1"),
+ ARIZONA_MUX_WIDGETS(ISRC2INT2, "ISRC2INT2"),
  
-+#define ARIZONA_DVFS_SR1_RQ          0x00000001
-+#define ARIZONA_DVFS_SR2_RQ          0x00000002
-+#define ARIZONA_DVFS_SR3_RQ          0x00000004
-+#define ARIZONA_DVFS_ASR1_RQ         0x00000010
-+#define ARIZONA_DVFS_ASR2_RQ         0x00000020
-+#define ARIZONA_DVFS_ADSP1_RQ        0x00010000
+-WM_ADSP2("DSP1", 0),
++WM_ADSP2_E("DSP1", 0, wm5102_adsp_power_ev),
+ 
+ SND_SOC_DAPM_OUTPUT("HPOUT1L"),
+ SND_SOC_DAPM_OUTPUT("HPOUT1R"),
+@@ -1843,7 +1886,7 @@ static int wm5102_probe(struct platform_device *pdev)
+ 	wm5102->core.adsp[0].mem = wm5102_dsp1_regions;
+ 	wm5102->core.adsp[0].num_mems = ARRAY_SIZE(wm5102_dsp1_regions);
+ 
+-	ret = wm_adsp2_init(&wm5102->core.adsp[0], true);
++	ret = wm_adsp2_init(&wm5102->core.adsp[0]);
+ 	if (ret != 0)
+ 		return ret;
+ 
+diff --git a/sound/soc/codecs/wm5110.c b/sound/soc/codecs/wm5110.c
+index 83a7e2f..a5c9f62 100644
+--- a/sound/soc/codecs/wm5110.c
++++ b/sound/soc/codecs/wm5110.c
+@@ -1683,7 +1683,7 @@ static int wm5110_probe(struct platform_device *pdev)
+ 		wm5110->core.adsp[i].num_mems
+ 			= ARRAY_SIZE(wm5110_dsp1_regions);
+ 
+-		ret = wm_adsp2_init(&wm5110->core.adsp[i], false);
++		ret = wm_adsp2_init(&wm5110->core.adsp[i]);
+ 		if (ret != 0)
+ 			return ret;
+ 	}
+diff --git a/sound/soc/codecs/wm_adsp.c b/sound/soc/codecs/wm_adsp.c
+index 53e3ab5..875a802 100644
+--- a/sound/soc/codecs/wm_adsp.c
++++ b/sound/soc/codecs/wm_adsp.c
+@@ -1539,35 +1539,6 @@ static void wm_adsp2_boot_work(struct work_struct *work)
+ 		return;
+ 	}
+ 
+-	if (dsp->dvfs) {
+-		ret = regmap_read(dsp->regmap,
+-				  dsp->base + ADSP2_CLOCKING, &val);
+-		if (ret != 0) {
+-			dev_err(dsp->dev, "Failed to read clocking: %d\n", ret);
+-			return;
+-		}
+-
+-		if ((val & ADSP2_CLK_SEL_MASK) >= 3) {
+-			ret = regulator_enable(dsp->dvfs);
+-			if (ret != 0) {
+-				dev_err(dsp->dev,
+-					"Failed to enable supply: %d\n",
+-					ret);
+-				return;
+-			}
+-
+-			ret = regulator_set_voltage(dsp->dvfs,
+-						    1800000,
+-						    1800000);
+-			if (ret != 0) {
+-				dev_err(dsp->dev,
+-					"Failed to raise supply: %d\n",
+-					ret);
+-				return;
+-			}
+-		}
+-	}
+-
+ 	ret = wm_adsp2_ena(dsp);
+ 	if (ret != 0)
+ 		return;
+@@ -1668,21 +1639,6 @@ int wm_adsp2_event(struct snd_soc_dapm_widget *w,
+ 		regmap_write(dsp->regmap, dsp->base + ADSP2_WDMA_CONFIG_2, 0);
+ 		regmap_write(dsp->regmap, dsp->base + ADSP2_RDMA_CONFIG_1, 0);
+ 
+-		if (dsp->dvfs) {
+-			ret = regulator_set_voltage(dsp->dvfs, 1200000,
+-						    1800000);
+-			if (ret != 0)
+-				dev_warn(dsp->dev,
+-					 "Failed to lower supply: %d\n",
+-					 ret);
+-
+-			ret = regulator_disable(dsp->dvfs);
+-			if (ret != 0)
+-				dev_err(dsp->dev,
+-					"Failed to enable supply: %d\n",
+-					ret);
+-		}
+-
+ 		list_for_each_entry(ctl, &dsp->ctl_list, list)
+ 			ctl->enabled = 0;
+ 
+@@ -1709,7 +1665,7 @@ err:
+ }
+ EXPORT_SYMBOL_GPL(wm_adsp2_event);
+ 
+-int wm_adsp2_init(struct wm_adsp *adsp, bool dvfs)
++int wm_adsp2_init(struct wm_adsp *adsp)
+ {
+ 	int ret;
+ 
+@@ -1728,36 +1684,6 @@ int wm_adsp2_init(struct wm_adsp *adsp, bool dvfs)
+ 	INIT_LIST_HEAD(&adsp->ctl_list);
+ 	INIT_WORK(&adsp->boot_work, wm_adsp2_boot_work);
+ 
+-	if (dvfs) {
+-		adsp->dvfs = devm_regulator_get(adsp->dev, "DCVDD");
+-		if (IS_ERR(adsp->dvfs)) {
+-			ret = PTR_ERR(adsp->dvfs);
+-			dev_err(adsp->dev, "Failed to get DCVDD: %d\n", ret);
+-			return ret;
+-		}
+-
+-		ret = regulator_enable(adsp->dvfs);
+-		if (ret != 0) {
+-			dev_err(adsp->dev, "Failed to enable DCVDD: %d\n",
+-				ret);
+-			return ret;
+-		}
+-
+-		ret = regulator_set_voltage(adsp->dvfs, 1200000, 1800000);
+-		if (ret != 0) {
+-			dev_err(adsp->dev, "Failed to initialise DVFS: %d\n",
+-				ret);
+-			return ret;
+-		}
+-
+-		ret = regulator_disable(adsp->dvfs);
+-		if (ret != 0) {
+-			dev_err(adsp->dev, "Failed to disable DCVDD: %d\n",
+-				ret);
+-			return ret;
+-		}
+-	}
+-
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(wm_adsp2_init);
+diff --git a/sound/soc/codecs/wm_adsp.h b/sound/soc/codecs/wm_adsp.h
+index a4f6b64..8b208d1 100644
+--- a/sound/soc/codecs/wm_adsp.h
++++ b/sound/soc/codecs/wm_adsp.h
+@@ -56,8 +56,6 @@ struct wm_adsp {
+ 	int fw;
+ 	bool running;
+ 
+-	struct regulator *dvfs;
+-
+ 	struct list_head ctl_list;
+ 
+ 	struct work_struct boot_work;
+@@ -67,19 +65,22 @@ struct wm_adsp {
+ 	SND_SOC_DAPM_PGA_E(wname, SND_SOC_NOPM, num, 0, NULL, 0, \
+ 		wm_adsp1_event, SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_PRE_PMD)
+ 
+-#define WM_ADSP2(wname, num) \
++#define WM_ADSP2_E(wname, num, event_fn) \
+ {	.id = snd_soc_dapm_dai_link, .name = wname " Preloader", \
+-	.reg = SND_SOC_NOPM, .shift = num, .event = wm_adsp2_early_event, \
++	.reg = SND_SOC_NOPM, .shift = num, .event = event_fn, \
+ 	.event_flags = SND_SOC_DAPM_PRE_PMU }, \
+ {	.id = snd_soc_dapm_out_drv, .name = wname, \
+ 	.reg = SND_SOC_NOPM, .shift = num, .event = wm_adsp2_event, \
+ 	.event_flags = SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_PRE_PMD }
+ 
++#define WM_ADSP2(wname, num) \
++	WM_ADSP2_E(wname, num, wm_adsp2_early_event)
 +
- int arizona_clk32k_enable(struct arizona *arizona);
- int arizona_clk32k_disable(struct arizona *arizona);
-+int arizona_dvfs_up(struct arizona *arizona, unsigned int mask);
-+int arizona_dvfs_down(struct arizona *arizona, unsigned int mask);
+ extern const struct snd_kcontrol_new wm_adsp1_fw_controls[];
+ extern const struct snd_kcontrol_new wm_adsp2_fw_controls[];
  
- int arizona_request_irq(struct arizona *arizona, int irq, char *name,
- 			irq_handler_t handler, void *data);
+ int wm_adsp1_init(struct wm_adsp *adsp);
+-int wm_adsp2_init(struct wm_adsp *adsp, bool dvfs);
++int wm_adsp2_init(struct wm_adsp *adsp);
+ int wm_adsp1_event(struct snd_soc_dapm_widget *w,
+ 		   struct snd_kcontrol *kcontrol, int event);
+ int wm_adsp2_early_event(struct snd_soc_dapm_widget *w,
 -- 
 1.7.2.5
 
