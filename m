@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932317AbaFIUEe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 16:04:34 -0400
-Received: from mga11.intel.com ([192.55.52.93]:9328 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754543AbaFIUEa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 16:04:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="352666330"
-Message-ID: <53961338.4050309@intel.com>
-Date: Mon, 09 Jun 2014 13:04:08 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S932358AbaFIUE5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 16:04:57 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:37093 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932326AbaFIUEv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 16:04:51 -0400
 MIME-Version: 1.0
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org
-CC: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/7] mm/pagewalk: move pmd_trans_huge_lock() from callbacks
- to common code
-References: <1402095520-10109-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1402095520-10109-7-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1402095520-10109-7-git-send-email-n-horiguchi@ah.jp.nec.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140609184157.17500.84469.stgit@bling.home>
+References: <20140609184157.17500.84469.stgit@bling.home>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 9 Jun 2014 14:04:30 -0600
+Message-ID: <CAErSpo5XNcw4sKdYrmg26N=qkvA9ysspy2kKf+bCv0KfKEGY8Q@mail.gmail.com>
+Subject: Re: [PATCH] PCI: Add bridge DMA alias quirk for ITE bridge
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        rwarsow@gmx.de
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/2014 03:58 PM, Naoya Horiguchi wrote:
-> @@ -6723,14 +6723,9 @@ static int mem_cgroup_count_precharge_pmd(pmd_t *pmd,
->  					struct mm_walk *walk)
+On Mon, Jun 9, 2014 at 12:43 PM, Alex Williamson
+<alex.williamson@redhat.com> wrote:
+> Link: https://bugzilla.kernel.org/show_bug.cgi?id=73551
+> Reported-by: rwarsow@gmx.de
+> Tested-by: rwarsow@gmx.de
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+
+Added to pci/iommu for v3.16, thanks!
+
+> ---
+>
+> One more for the pci/iommu branch
+>
+>  drivers/pci/quirks.c |    2 ++
+>  1 file changed, 2 insertions(+)
+>
+> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+> index ab620ac..533cd0d 100644
+> --- a/drivers/pci/quirks.c
+> +++ b/drivers/pci/quirks.c
+> @@ -3407,6 +3407,8 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ASMEDIA, 0x1080,
+>                          quirk_use_pcie_bridge_dma_alias);
+>  /* Tundra 8113, https://bugzilla.kernel.org/show_bug.cgi?id=44881#c43 */
+>  DECLARE_PCI_FIXUP_HEADER(0x10e3, 0x8113, quirk_use_pcie_bridge_dma_alias);
+> +/* ITE 8892, https://bugzilla.kernel.org/show_bug.cgi?id=73551 */
+> +DECLARE_PCI_FIXUP_HEADER(0x1283, 0x8892, quirk_use_pcie_bridge_dma_alias);
+>
+>  static struct pci_dev *pci_func_0_dma_source(struct pci_dev *dev)
 >  {
->  	struct vm_area_struct *vma = walk->vma;
-> -	spinlock_t *ptl;
->  
-> -	if (pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
-> -		if (get_mctgt_type_thp(vma, addr, *pmd, NULL) == MC_TARGET_PAGE)
-> -			mc.precharge += HPAGE_PMD_NR;
-> -		spin_unlock(ptl);
-> -	} else
-> -		skip->control = PTWALK_DOWN;
-> +	if (get_mctgt_type_thp(vma, addr, *pmd, NULL) == MC_TARGET_PAGE)
-> +		mc.precharge += HPAGE_PMD_NR;
->  	return 0;
->  }
-
-I guess my series did two things:
-1. move page table walking to the walk_page_range() code
-2. make new walk handler that can take arbitrarily-sizes ptes
-
-This does (1) quite nicely and has some nice code savings.  I still
-think (2) has some value, and like my approach, but this is definitely a
-step in the right direction.
+>
