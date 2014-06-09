@@ -1,79 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933062AbaFIWt7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 18:49:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57195 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933172AbaFIWqN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:46:13 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Knut Petersen <Knut_Petersen@t-online.de>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Weng Meiling <wengmeiling.weng@huawei.com>
-Subject: [PATCH 3.10 38/40] perf: Enforce 1 as lower limit for perf_event_max_sample_rate
-Date: Mon,  9 Jun 2014 15:49:09 -0700
-Message-Id: <20140609224840.454950708@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140609224839.127615063@linuxfoundation.org>
-References: <20140609224839.127615063@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	id S933025AbaFIWul (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 18:50:41 -0400
+Received: from mout.perfora.net ([74.208.4.194]:49713 "EHLO mout.perfora.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932860AbaFIWug (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 18:50:36 -0400
+From: Marcel Ziswiler <marcel@ziswiler.com>
+To: swarren@wwwdotorg.org, thierry.reding@gmail.com
+Cc: arm@kernel.org, linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, stefan@agner.ch,
+        Marcel Ziswiler <marcel@ziswiler.com>
+Subject: [PATCH v2 1/3] arm: multi_v7: enable igb, stmpe, lm95245, pwm leds
+Date: Tue, 10 Jun 2014 00:49:50 +0200
+Message-Id: <1741a33cd88cd5525f3c50c0e0cacc0853a3512a.1402350905.git.marcel@ziswiler.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Provags-ID: V02:K0:Y6gqw2zBE8XTgi7iACQkUMPVYohlaUggNpITK075M1i
+ vANlAAkAoOtLMkS6Wq135UBO2VVhOENG3xHP8LrspfLvn2ZKnX
+ 0ucS5kW+Y1Uc2A4DCkLkcxgQ2Uj4fFCD0O4fDKprp8yxq8arWa
+ cvZ+E8oKy1P6UzW3CZOs78yJYbuvUg1eMzUfzlCEAzXTbKJIdy
+ sI1HMGsXyzPffbIZlGF5Xd2Jvl8XDfrdeR1+US4inkRt7HXeLA
+ U5hc8OmuZXpR2VjLh9OzbIwCCnxdssGu2PEDIsvZT502+f9G/W
+ v6UFlccv16OBHKHbh+4tf330aVeQUdu8BCq3fqGzGM9+3fSHX1
+ QSj4WGXYz4zfOJwrPfd9huxtgT8uUMHY6eVLt3EjEO44eGtzuZ
+ vXPA2LiJOfPsHKvIDz7bkDL9pvhHP1eZWngXarPC2vGfdmc6KL
+ BFBXsp55Qo+mjTC3r/n8wPjCx6Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+The NVIDIA Tegra 3 based Apalis T30 module contains an Intel i210 resp.
+i211 gigabit Ethernet controller, an STMPE811 ADC/touch controller, PWM
+LEDs generically accessible from user space and an LM95245 temperature
+sensor chip. The later three can also be found on the Colibri T30
+module.
 
-------------------
+While at it move the NEON entry down to its proper place to have it all
+nicely ordered again.
 
-From: Knut Petersen <Knut_Petersen@t-online.de>
-
-commit 723478c8a471403c53cf144999701f6e0c4bbd11 upstream.
-
-/proc/sys/kernel/perf_event_max_sample_rate will accept
-negative values as well as 0.
-
-Negative values are unreasonable, and 0 causes a
-divide by zero exception in perf_proc_update_handler.
-
-This patch enforces a lower limit of 1.
-
-Signed-off-by: Knut Petersen <Knut_Petersen@t-online.de>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/5242DB0C.4070005@t-online.de
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Weng Meiling <wengmeiling.weng@huawei.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Marcel Ziswiler <marcel@ziswiler.com>
 ---
- kernel/events/core.c |    2 +-
- kernel/sysctl.c      |    1 +
- 2 files changed, 2 insertions(+), 1 deletion(-)
+Changes since v1:
+- Forget about spidev for now.
 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -190,7 +190,7 @@ int perf_proc_update_handler(struct ctl_
- 		void __user *buffer, size_t *lenp,
- 		loff_t *ppos)
- {
--	int ret = proc_dointvec(table, write, buffer, lenp, ppos);
-+	int ret = proc_dointvec_minmax(table, write, buffer, lenp, ppos);
- 
- 	if (ret || !write)
- 		return ret;
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -1049,6 +1049,7 @@ static struct ctl_table kern_table[] = {
- 		.maxlen		= sizeof(sysctl_perf_event_sample_rate),
- 		.mode		= 0644,
- 		.proc_handler	= perf_proc_update_handler,
-+		.extra1		= &one,
- 	},
- 	{
- 		.procname	= "perf_cpu_time_max_percent",
+ arch/arm/configs/multi_v7_defconfig |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
+diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
+index 19dbddb..b0b996e 100644
+--- a/arch/arm/configs/multi_v7_defconfig
++++ b/arch/arm/configs/multi_v7_defconfig
+@@ -66,7 +66,6 @@ CONFIG_ARCH_VEXPRESS=y
+ CONFIG_ARCH_VEXPRESS_CA9X4=y
+ CONFIG_ARCH_WM8850=y
+ CONFIG_ARCH_ZYNQ=y
+-CONFIG_NEON=y
+ CONFIG_TRUSTED_FOUNDATIONS=y
+ CONFIG_PCI=y
+ CONFIG_PCI_MSI=y
+@@ -83,6 +82,7 @@ CONFIG_CPU_FREQ=y
+ CONFIG_CPU_FREQ_STAT_DETAILS=y
+ CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND=y
+ CONFIG_CPU_IDLE=y
++CONFIG_NEON=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+ CONFIG_UNIX=y
+@@ -134,6 +134,7 @@ CONFIG_NETDEVICES=y
+ CONFIG_SUN4I_EMAC=y
+ CONFIG_MACB=y
+ CONFIG_NET_CALXEDA_XGMAC=y
++CONFIG_IGB=y
+ CONFIG_MV643XX_ETH=y
+ CONFIG_MVNETA=y
+ CONFIG_KS8851=y
+@@ -157,6 +158,8 @@ CONFIG_KEYBOARD_TEGRA=y
+ CONFIG_KEYBOARD_SPEAR=y
+ CONFIG_KEYBOARD_CROS_EC=y
+ CONFIG_MOUSE_PS2_ELANTECH=y
++CONFIG_INPUT_TOUCHSCREEN=y
++CONFIG_TOUCHSCREEN_STMPE=y
+ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_MPU3050=y
+ CONFIG_SERIO_AMBAKMI=y
+@@ -222,6 +225,7 @@ CONFIG_POWER_RESET_AS3722=y
+ CONFIG_POWER_RESET_GPIO=y
+ CONFIG_POWER_RESET_SUN6I=y
+ CONFIG_SENSORS_LM90=y
++CONFIG_SENSORS_LM95245=y
+ CONFIG_THERMAL=y
+ CONFIG_DOVE_THERMAL=y
+ CONFIG_ARMADA_THERMAL=y
+@@ -233,6 +237,7 @@ CONFIG_MFD_CROS_EC=y
+ CONFIG_MFD_CROS_EC_SPI=y
+ CONFIG_MFD_MAX8907=y
+ CONFIG_MFD_SEC_CORE=y
++CONFIG_MFD_STMPE=y
+ CONFIG_MFD_PALMAS=y
+ CONFIG_MFD_TPS65090=y
+ CONFIG_MFD_TPS6586X=y
+@@ -315,6 +320,9 @@ CONFIG_MMC_MVSDIO=y
+ CONFIG_MMC_SUNXI=y
+ CONFIG_MMC_DW=y
+ CONFIG_MMC_DW_EXYNOS=y
++CONFIG_NEW_LEDS=y
++CONFIG_LEDS_CLASS=y
++CONFIG_LEDS_PWM=y
+ CONFIG_EDAC=y
+ CONFIG_EDAC_MM_EDAC=y
+ CONFIG_EDAC_HIGHBANK_MC=y
+-- 
+1.7.9.5
 
