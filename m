@@ -1,83 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933893AbaFIPxx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 11:53:53 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:60912 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933736AbaFIPxv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 11:53:51 -0400
-Message-ID: <5395D88C.6070007@kernel.dk>
-Date: Mon, 09 Jun 2014 09:53:48 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S933476AbaFIPyz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 11:54:55 -0400
+Received: from mga02.intel.com ([134.134.136.20]:50829 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932234AbaFIPyw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 11:54:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,1003,1392192000"; 
+   d="scan'208";a="525677108"
+Date: Mon, 9 Jun 2014 21:05:44 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: "Wang, Xiaoming" <xiaoming.wang@intel.com>, jeeja.kp@intel.com,
+        dhowells@redhat.com, arnd@arndb.de, tglx@linutronix.de,
+        mtk.manpages@gmail.com, paulmck@linux.vnet.ibm.com, davej@redhat.com,
+        linux-kernel@vger.kernel.org, dongxing.zhang@intel.com
+Subject: Re: [PATCH] ALSA: compress: Fix the mismatch size of struc between
+ share lib(32bit) and kernel(64bit)
+Message-ID: <20140609153544.GA25075@intel.com>
+References: <1402346792.30956.17.camel@wxm-ubuntu>
+ <s5hwqcqwnne.wl%tiwai@suse.de>
 MIME-Version: 1.0
-To: Andreas Mohr <andi@lisas.de>, Junxiao Bi <junxiao.bi@oracle.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] block: make nr_requests tunable for loop
-References: <20140609072942.GA30728@rhlx01.hs-esslingen.de>
-In-Reply-To: <20140609072942.GA30728@rhlx01.hs-esslingen.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5hwqcqwnne.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-06-09 01:29, Andreas Mohr wrote:
-> Hi,
->
-> having had a look at current mainline sources,
-> frankly I've (well, initially...) got trouble understanding
-> what this patch is doing.
->
-> It's replacing an aggressive error-type bail-out (-EINVAL) for NULL request_fn
-> with an inoccuous-looking "return ret;", yet that ret content currently
-> *implicitly* is a >= 0 value (resulting from processing by earlier code
-> which may or may not get incomprehensibly rewritten in future).
-> I don't understand the reasons for this huge change in return value handling
-> (since it's now not assigning a specific return value
-> for this modified bail-out case).
->
-> OK, well... you could say that since all this function ever was
-> interested in is the result value of queue_var_store()
-> (except for error bail-out cases), doing an interim "return ret;"
-> (which is exactly what the function tail is also doing)
-> is exactly right.
->
-> But still simple textual appearance of the resulting patch hunks
-> seems strangely asymmetric
-> which may easily be a canary for structurally wrong layering of this function.
-> Not to mention the now required extra spin_unlock_irq()
-> in interim return handler...
->
->
-> Well, after further analysis I would come to the conclusion
-> that in general queue_requests_store() does a LOT more than it should -
-> since blk-sysfs.c's only (expected!) purpose is
-> to do parameterization of request_queue behaviour as gathered
-> from sysfs attribute space,
-> all that function should ever be concerned with is parsing that sysfs value
-> and then calling a blk helper for configuration of that very attribute value
-> which would *internally* do all the strange internal queue magic
-> that is currently being updated *open-coded*
-> at this supposedly *sysfs*-specific place. Ugh.
-> Main question here: what would one do if one decided to rip out sysfs
-> and use something entirely different for parameterization?
-> Yeah indeed - thought so...
->
->
-> So yeah, I'd definitely say that that function is lacking some cleanup
-> which would possibly then even lead (or: would have led ;)
-> to a much more nicely symmetric textual appearance
-> of the patch hunk of the small but quite likely useful change
-> that you currently intend to have here.
-
-If you are done ranting, look at the current tree where it has been 
-split out. There was no reason to have it split before, since the sysfs 
-entry point was the only place where we updated nr_requests. If that 
-code has been duplicated, there would have been a justified reason for 
-writing two pages about it.
+On Mon, Jun 09, 2014 at 09:24:53AM +0200, Takashi Iwai wrote:
+> At Mon, 09 Jun 2014 16:46:32 -0400,
+> Wang, Xiaoming wrote:
+> > 
+> > 
+> > The size of struct snd_compr_avail is 0x1c in 32bit kernel,
+> > while it is 0x20 in 64bit kernel 0x4 bytes added because of
+> > alignment. It is OK when 32bit kernel met 32bit user space.
+> > There exist stack corruption if 64bit kernel met 32bit user
+> > space, because the size of struct snd_compr_avail is 0x1c
+> > in 32bit user space which is smaller than it will get from
+> > kernel. The extra 4 bytes can corrupt the stack, and
+> > introduce unpredictable error.
+> > 
+> > Signed-off-by: Zhang Dongxing <dongxing.zhang@intel.com>
+> > Signed-off-by: xiaoming wang <xiaoming.wang@intel.com>
+> 
+> This would break the existing 32bit systems, so I don't think we can
+> take this approach.
+> 
+> Either break the 64bit systems (which aren't deployed yet much, so
+> far) by adding packed attribute, or implement 32/64 bit conversion in
+> compat_ioctl fop.
+I think former should be safe for now. Anyway we have only 1 driver using this
+in mainline so fallout shouldn't be widespread!
 
 -- 
-Jens Axboe
+~Vinod
+> 
+> 
+> thanks,
+> 
+> Takashi
+> 
+> > ---
+> >  include/uapi/sound/compress_offload.h |    1 +
+> >  1 files changed, 1 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/include/uapi/sound/compress_offload.h b/include/uapi/sound/compress_offload.h
+> > index 5759810..766b416 100644
+> > --- a/include/uapi/sound/compress_offload.h
+> > +++ b/include/uapi/sound/compress_offload.h
+> > @@ -70,6 +70,7 @@ struct snd_compr_tstamp {
+> >  	__u32 pcm_frames;
+> >  	__u32 pcm_io_frames;
+> >  	__u32 sampling_rate;
+> > +	__u32 reserved[1];
+> >  };
+> >  
+> >  /**
+> > -- 
+> > 1.7.1
+> > 
 
+-- 
