@@ -1,70 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754464AbaFIUDA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 16:03:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50214 "EHLO mx1.redhat.com"
+	id S1754548AbaFIUDF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 16:03:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64273 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754392AbaFIUCz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 16:02:55 -0400
+	id S1754446AbaFIUDA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 16:03:00 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 05/15] perf tools: Fix pipe check regression in attr event callback
-Date: Mon,  9 Jun 2014 22:02:20 +0200
-Message-Id: <1402344150-14860-6-git-send-email-jolsa@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Don Zickus <dzickus@redhat.com>,
+        Jiri Olsa <jolsa@kernel.org>
+Subject: [PATCH 10/15] Revert "perf: Disable PERF_RECORD_MMAP2 support"
+Date: Mon,  9 Jun 2014 22:02:25 +0200
+Message-Id: <1402344150-14860-11-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1402344150-14860-1-git-send-email-jolsa@kernel.org>
 References: <1402344150-14860-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The file factoring in builtin-inject.c object introduced regression
-in attr event callback. The commit is:
-  3406912 perf inject: Handle output file via perf_data_file object
+From: Don Zickus <dzickus@redhat.com>
 
-Following hunk reversed the logic:
-  -       if (!inject->pipe_output)
-  +       if (&inject->output.is_pipe)
+This reverts commit 3090ffb5a2515990182f3f55b0688a7817325488.
 
-putting it back, following example now works:
-  $ perf record -o - kill | perf inject -b | perf report -i -
+Re-enable the mmap2 interface as we will have a user soon.
 
-Plus removing extra '&' (kudos to Arnaldo)
+Since things have changed since perf disabled mmap2, small tweaks
+to the revert had to be done:
 
-Reported-by: Stephane Eranian <eranian@google.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20140605204117.GA1771@krava.redhat.com
+o commit 9d4ecc88 forced (n!=8) to become (n<7)
+o a new libunwind test needed updating to use mmap2 interface
+
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+Link: http://lkml.kernel.org/r/1401461382-209586-1-git-send-email-dzickus@redhat.com
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/builtin-inject.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/events/core.c            |  4 ----
+ tools/perf/tests/dwarf-unwind.c |  2 +-
+ tools/perf/util/event.c         | 34 ++++++++++++++++++++--------------
+ tools/perf/util/evsel.c         |  1 +
+ 4 files changed, 22 insertions(+), 19 deletions(-)
 
-diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index 6a3af00..16c7c11 100644
---- a/tools/perf/builtin-inject.c
-+++ b/tools/perf/builtin-inject.c
-@@ -72,7 +72,7 @@ static int perf_event__repipe_attr(struct perf_tool *tool,
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index eea1955..cd28335 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -6929,10 +6929,6 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
  	if (ret)
- 		return ret;
+ 		return -EFAULT;
  
--	if (&inject->output.is_pipe)
-+	if (!inject->output.is_pipe)
- 		return 0;
+-	/* disabled for now */
+-	if (attr->mmap2)
+-		return -EINVAL;
+-
+ 	if (attr->__reserved_1)
+ 		return -EINVAL;
  
- 	return perf_event__repipe_synth(tool, event);
+diff --git a/tools/perf/tests/dwarf-unwind.c b/tools/perf/tests/dwarf-unwind.c
+index 108f0cd..96adb73 100644
+--- a/tools/perf/tests/dwarf-unwind.c
++++ b/tools/perf/tests/dwarf-unwind.c
+@@ -15,7 +15,7 @@ static int mmap_handler(struct perf_tool *tool __maybe_unused,
+ 			struct perf_sample *sample __maybe_unused,
+ 			struct machine *machine)
+ {
+-	return machine__process_mmap_event(machine, event, NULL);
++	return machine__process_mmap2_event(machine, event, NULL);
+ }
+ 
+ static int init_live_machine(struct machine *machine)
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index ce43cba..d0281bd 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -179,13 +179,14 @@ int perf_event__synthesize_mmap_events(struct perf_tool *tool,
+ 		return -1;
+ 	}
+ 
+-	event->header.type = PERF_RECORD_MMAP;
++	event->header.type = PERF_RECORD_MMAP2;
+ 
+ 	while (1) {
+ 		char bf[BUFSIZ];
+ 		char prot[5];
+ 		char execname[PATH_MAX];
+ 		char anonstr[] = "//anon";
++		unsigned int ino;
+ 		size_t size;
+ 		ssize_t n;
+ 
+@@ -196,15 +197,20 @@ int perf_event__synthesize_mmap_events(struct perf_tool *tool,
+ 		strcpy(execname, "");
+ 
+ 		/* 00400000-0040c000 r-xp 00000000 fd:01 41038  /bin/cat */
+-		n = sscanf(bf, "%"PRIx64"-%"PRIx64" %s %"PRIx64" %*x:%*x %*u %s\n",
+-		       &event->mmap.start, &event->mmap.len, prot,
+-		       &event->mmap.pgoff,
+-		       execname);
++		n = sscanf(bf, "%"PRIx64"-%"PRIx64" %s %"PRIx64" %x:%x %u %s\n",
++		       &event->mmap2.start, &event->mmap2.len, prot,
++		       &event->mmap2.pgoff, &event->mmap2.maj,
++		       &event->mmap2.min,
++		       &ino, execname);
++
+ 		/*
+  		 * Anon maps don't have the execname.
+  		 */
+-		if (n < 4)
++		if (n < 7)
+ 			continue;
++
++		event->mmap2.ino = (u64)ino;
++
+ 		/*
+ 		 * Just like the kernel, see __perf_event_mmap in kernel/perf_event.c
+ 		 */
+@@ -239,15 +245,15 @@ int perf_event__synthesize_mmap_events(struct perf_tool *tool,
+ 			strcpy(execname, anonstr);
+ 
+ 		size = strlen(execname) + 1;
+-		memcpy(event->mmap.filename, execname, size);
++		memcpy(event->mmap2.filename, execname, size);
+ 		size = PERF_ALIGN(size, sizeof(u64));
+-		event->mmap.len -= event->mmap.start;
+-		event->mmap.header.size = (sizeof(event->mmap) -
+-					(sizeof(event->mmap.filename) - size));
+-		memset(event->mmap.filename + size, 0, machine->id_hdr_size);
+-		event->mmap.header.size += machine->id_hdr_size;
+-		event->mmap.pid = tgid;
+-		event->mmap.tid = pid;
++		event->mmap2.len -= event->mmap.start;
++		event->mmap2.header.size = (sizeof(event->mmap2) -
++					(sizeof(event->mmap2.filename) - size));
++		memset(event->mmap2.filename + size, 0, machine->id_hdr_size);
++		event->mmap2.header.size += machine->id_hdr_size;
++		event->mmap2.pid = tgid;
++		event->mmap2.tid = pid;
+ 
+ 		if (process(tool, event, &synth_sample, machine) != 0) {
+ 			rc = -1;
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 5c28d82..21154da 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -659,6 +659,7 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
+ 		perf_evsel__set_sample_bit(evsel, WEIGHT);
+ 
+ 	attr->mmap  = track;
++	attr->mmap2 = track && !perf_missing_features.mmap2;
+ 	attr->comm  = track;
+ 
+ 	if (opts->sample_transaction)
 -- 
 1.8.3.1
 
