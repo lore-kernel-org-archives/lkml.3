@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754052AbaFITER (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 15:04:17 -0400
-Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:47344 "EHLO
-	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753752AbaFITEO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 15:04:14 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AuQNAELxlVNbslom/2dsb2JhbABZgw2sEgUBmRCBEhd1hDEvI4EaN4hGAcwIhV2JDx2EKwSPWopHk0WDPjs
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, David Howells <dhowells@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] fs/cachefiles/daemon.c: remove unnecessary tests on unsigned values
-Date: Mon,  9 Jun 2014 21:02:54 +0200
-Message-Id: <1402340574-15655-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	id S1754141AbaFITFZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 15:05:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36400 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750992AbaFITFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 15:05:23 -0400
+Date: Mon, 9 Jun 2014 21:04:02 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>
+Subject: Re: safety of *mutex_unlock() (Was: [BUG] signal: sighand
+	unprotected when accessed by /proc)
+Message-ID: <20140609190402.GA15612@redhat.com>
+References: <20140603130233.658a6a3c@gandalf.local.home> <20140603172632.GA27956@redhat.com> <CA+55aFzT5CGv_T60voAqR+4PfiMmJmsDZLid2DZ4=+X8uvF+ig@mail.gmail.com> <20140603200125.GB1105@redhat.com> <20140606203350.GU4581@linux.vnet.ibm.com> <20140608130718.GA11129@redhat.com> <20140609162613.GE4581@linux.vnet.ibm.com> <20140609181553.GA13681@redhat.com> <20140609142956.3d79e9d1@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140609142956.3d79e9d1@gandalf.local.home>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-size_t and unsigned long values are never < 0
+On 06/09, Steven Rostedt wrote:
+>
+> On Mon, 9 Jun 2014 20:15:53 +0200
+> Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> > > That would indeed be a bad thing, as it could potentially lead to
+> > > use-after-free bugs.  Though one could argue that any code that resulted
+> > > in use-after-free would be quite aggressive.  But still...
+> >
+> > And once again, note that the normal mutex is already unsafe (unless I missed
+> > something).
+>
+> Is it unsafe?
 
-Cc: David Howells <dhowells@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/cachefiles/daemon.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Only in a sense that UNLOCK is not atomic.
 
-diff --git a/fs/cachefiles/daemon.c b/fs/cachefiles/daemon.c
-index b078d30..ff43e5a 100644
---- a/fs/cachefiles/daemon.c
-+++ b/fs/cachefiles/daemon.c
-@@ -222,7 +222,7 @@ static ssize_t cachefiles_daemon_write(struct file *file,
- 	if (test_bit(CACHEFILES_DEAD, &cache->flags))
- 		return -EIO;
- 
--	if (datalen < 0 || datalen > PAGE_SIZE - 1)
-+	if (datalen > PAGE_SIZE - 1)
- 		return -EOPNOTSUPP;
- 
- 	/* drag the command string into the kernel so we can parse it */
-@@ -385,7 +385,7 @@ static int cachefiles_daemon_fstop(struct cachefiles_cache *cache, char *args)
- 	if (args[0] != '%' || args[1] != '\0')
- 		return -EINVAL;
- 
--	if (fstop < 0 || fstop >= cache->fcull_percent)
-+	if (fstop >= cache->fcull_percent)
- 		return cachefiles_daemon_range_error(cache, args);
- 
- 	cache->fstop_percent = fstop;
-@@ -457,7 +457,7 @@ static int cachefiles_daemon_bstop(struct cachefiles_cache *cache, char *args)
- 	if (args[0] != '%' || args[1] != '\0')
- 		return -EINVAL;
- 
--	if (bstop < 0 || bstop >= cache->bcull_percent)
-+	if (bstop >= cache->bcull_percent)
- 		return cachefiles_daemon_range_error(cache, args);
- 
- 	cache->bstop_percent = bstop;
--- 
-1.8.4.5
+IOW, you can't, say, declare a mutex or semaphore on stack, and use lock/unlock
+to serialize with another thread.
+
+But rt_mutex seems fine in this case, and for example rcu_boost() does this.
+I do not know if this is by design or not, and can we rely on this or not.
+
+> This thread was started because of a bug we triggered in -rt, which
+> ended up being a change specific to -rt that modified the way slub
+> handled SLAB_DESTROY_BY_RCU. What else was wrong with it?
+
+And I specially changed the subject to avoid the confusion with
+SLAB_DESTROY_BY_RCU bug we discussed before, but apparently I need to
+apologize for confusion again ;)
+
+But. Note that if rt_mutex is changed so that UNLOCK becomes non-atomic
+in a sense above, then lock_task_sighand()/unlock_task_sighand() will be
+buggy in -rt.
+
+Oleg.
 
