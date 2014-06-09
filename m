@@ -1,64 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755524AbaFINxg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 09:53:36 -0400
-Received: from mail-yh0-f45.google.com ([209.85.213.45]:38130 "EHLO
-	mail-yh0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752118AbaFINxd convert rfc822-to-8bit (ORCPT
+	id S1755611AbaFINys (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 09:54:48 -0400
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:59879 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752118AbaFINyo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 09:53:33 -0400
+	Mon, 9 Jun 2014 09:54:44 -0400
+Date: Mon, 9 Jun 2014 09:54:41 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>,
+        Roman Gushchin <klamm@yandex-team.ru>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH 2/2] memcg: Allow hard guarantee mode for low limit
+ reclaim
+Message-ID: <20140609135441.GA22540@htj.dyndns.org>
+References: <20140606144421.GE26253@dhcp22.suse.cz>
+ <1402066010-25901-1-git-send-email-mhocko@suse.cz>
+ <1402066010-25901-2-git-send-email-mhocko@suse.cz>
+ <20140606152914.GA14001@htj.dyndns.org>
+ <20140609083042.GB7144@dhcp22.suse.cz>
 MIME-Version: 1.0
-X-Originating-IP: [188.148.39.83]
-In-Reply-To: <8B2F6FFD0BD1E448853114367400A37306FCD2E023@BLRX7MCDC203.AMER.DELL.COM>
-References: <8B2F6FFD0BD1E448853114367400A37306FCD2E023@BLRX7MCDC203.AMER.DELL.COM>
-From: Tom Gundersen <teg@jklm.no>
-Date: Mon, 9 Jun 2014 15:53:11 +0200
-Message-ID: <CAG-2HqUDQ3e-cq4y3zgehz6J8E6LsTCUfqvMEqPEqG7aBmEeRg@mail.gmail.com>
-Subject: Re: [PATCH] firmware loader: allow disabling of udev as firmware loader
-To: B_B_Singh@dell.com
-Cc: LKML <linux-kernel@vger.kernel.org>, Ming Lei <ming.lei@canonical.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Abhay Salunke <Abhay_Salunke@dell.com>, Stefan Roese <sr@denx.de>,
-        Arnd Bergmann <arnd@arndb.de>, Kay Sievers <kay@vrfy.org>,
-        Matt_Domsch@dell.com, Srinivas_G_Gowda@dell.com, Stuart_Hayes@dell.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140609083042.GB7144@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Balaji,
+Hello,
 
-On Mon, Jun 9, 2014 at 3:26 PM,  <B_B_Singh@dell.com> wrote:
-> The existing BIOS-DUP’s will not work on latest kernel, which has
-> CONFIG_FW_LOADER_USER_HELPER=n  configured in Kernel config by default which
-> is not expected by the dell_rbu.
->
->
->
-> We have made a changes in BIOS-Dell Update Package so that BIOS-DUP will
-> pick the payload from the /lib/firmware/ path & update the BIOS even when
-> CONFIG_FW_LOADER_USER_HELPER=n is configured .
->
->
->
-> We have tested this patch
-> http://www.spinics.net/lists/kernel/msg1755247.html  with latest BIOS Dell
-> Update Package (which has new implementation for the BIOS update i.e,
-> copying the BIOS payload in /lib/firmware path & dell_rbu picks the payload
-> from the same path)  & with  stable upstream       kernel-3.14.5 & we don’t
-> see any negative effects/errors for dell_rbu.
+On Mon, Jun 09, 2014 at 10:30:42AM +0200, Michal Hocko wrote:
+> On Fri 06-06-14 11:29:14, Tejun Heo wrote:
+> > Why is this necessary?
+> 
+> It allows user/admin to set the default behavior.
 
-Thanks for testing! May I ask if the dell_rbu still works with my
-patch and CONFIG_FW_LOADER_USER_HELPER=n with the old userspace? The
-intention was that you should not need to change anything in userspace
-at all.
+By recomipling the kernel for something which can be trivially
+configured post-boot without any difference?  The only thing it'll
+achieve is confusing the hell out of people why different kernels show
+different behaviors without any userland differences while taxing the
+already constrained kernel configuration process more for no gain
+whatsoever.
 
-By the way, there is now a new version of this patch:
-<https://lkml.org/lkml/2014/6/4/327>, which should allow your (old or
-new userspace) Dell RBU to work with FW_LOADER_USER_HELPER_FALLBACK=n,
-so maybe it would be best to test that instead.
+> How do you propose to tell the default then? Only at the runtime?
+> I really do not insist on the kconfig. I find it useful for a)
+> documentation purpose b) easy way to configure the default.
 
-Cheers,
+Please don't ever add Kconfig options like this.  This is uttrely
+unnecessary and idiotic.  You don't add completely redundant Kconfig
+option for documentation purposes.
 
-Tom
+> > * Are you sure soft and hard guarantees aren't useful when used in
+> >   combination?  If so, why would that be the case?
+> 
+> This was a call from Google to have per-memcg setup AFAIR. Using
+> different reclaim protection on the global case vs. limit reclaim makes
+> a lot of sense to me. If this is a major obstacle then I am OK to drop
+> it and only have a global setting for now.
+
+Isn't it obvious that what needs to be investigated is why we're
+trying to add an interface which is completely different for
+guarantees as compared to limits?  Why wouldn't they have a symmetric
+interface in the reverse direction as soft/hard limits?  If not, where
+does the asymmetry come from?  Thse are the *first* questions which
+should come to anyone's mind when [s]he is trying to add configs for a
+different type of threshholds and something which must be explicitly
+laid out as rationales for the design choices.
+
+> > * We have pressure monitoring interface which can be used for soft
+> >   limit pressure monitoring. 
+> 
+> Which one is that? I only know about oom_control triggered by the hard
+> limit pressure.
+
+Weren't you guys planning to use vmpressre notification to find out
+about softlimit breach conditions?
+
+> >   How should breaching soft guarantee be
+> >   factored into that?  There doesn't seem to be any way of notifying
+> >   that at the moment?  Wouldn't we want that to be integrated into the
+> >   same mechanism?
+> 
+> Yes, there is. We have a counter in memory.stat file which tells how
+> many times the limit has been breached.
+
+How does the userland find out?  By polling the file every frigging
+second?  Note that there actually is an actual asymmetry here which
+makes breaching soft guarantee a much more significant event than
+breaching soft limit - the former is violation of the configured
+objective, the latter is not.  You *need* a way to notify the event.
+
+> > What scares me the most is that you don't even seem to have noticed
+> > the asymmetry and are proposing userland-facing interface without
+> > actually thinking things through.  This is exactly how we've been
+> > getting into trouble.
+> 
+> This has been discussed up and down for the last _two_ years. I have
+> considered other options how to provide a very _useful_ feature users
+> are calling for. There is even general consensus among developers that
+
+AFAIR, there hasn't been much discussion about the details of the
+interface and the proposed one is almost laughable.  How is this
+acceptable as a userland visible API that we need to maintain for the
+future?  It's broken on delivery.
+
+> the feature is desirable and that the two modes (soft/hard) memory
+> protection are needed. Yet I would _really_ like to hear any
+> suggestion to get unstuck. It is far from useful to come and Nack this
+> _again_ without providing any alternative suggestions.
+
+I've pointed out two major points where the proposed interface is
+evidently deficient and told you why they're so and it's not like the
+said deficiencies are anything subtle.  If you can't figure out what
+to do next from there on, I don't think I can help you.
+
+Thanks.
+
+-- 
+tejun
