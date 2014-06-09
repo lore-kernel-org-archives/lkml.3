@@ -1,73 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754194AbaFITWS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 15:22:18 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:34281 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751109AbaFITWP (ORCPT
+	id S1754238AbaFITXM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 15:23:12 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:50974 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753770AbaFITXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 15:22:15 -0400
-Date: Mon, 9 Jun 2014 20:21:33 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: lgirdwood@gmail.com, grant.likely@linaro.org, robh+dt@kernel.org,
-        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Message-ID: <20140609192133.GD5099@sirena.org.uk>
-References: <1402309780-8118-1-git-send-email-cw00.choi@samsung.com>
- <1402309780-8118-2-git-send-email-cw00.choi@samsung.com>
+	Mon, 9 Jun 2014 15:23:08 -0400
+Date: Mon, 9 Jun 2014 15:22:07 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Borislav Petkov <bp@suse.de>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, Michal Marek <mmarek@suse.cz>,
+        Randy Dunlap <rdunlap@infradead.org>, levinsasha928@gmail.com,
+        mtosatti@redhat.com, fengguang.wu@intel.com,
+        David Vrabel <david.vrabel@citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>, xen-devel@lists.xenproject.org
+Subject: Re: [PATCH v2 3/3] x86, platform, xen, kconfig: add xen defconfig
+ helper
+Message-ID: <20140609192206.GA7618@laptop.dumpdata.com>
+References: <1402338984-9774-1-git-send-email-mcgrof@do-not-panic.com>
+ <1402338984-9774-3-git-send-email-mcgrof@do-not-panic.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8ZMYqwT4qqBjIaog"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1402309780-8118-2-git-send-email-cw00.choi@samsung.com>
-X-Cookie: Ditat Deus.
+In-Reply-To: <1402338984-9774-3-git-send-email-mcgrof@do-not-panic.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] regulator: of: Add support for parsing
- regulator_state for suspend state
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jun 09, 2014 at 11:36:24AM -0700, Luis R. Rodriguez wrote:
+> From: "Luis R. Rodriguez" <mcgrof@suse.com>
+> 
+> This lets you build a kernel which can support xen dom0
+> or xen guests by just using:
+> 
+>    make xenconfig
+> 
+> Technically xen supports a dom0 kernel and also a guest
+> kernel configuration but upon review with the xen team
+> since we don't have many dom0 options its best to just
+> combine these two into one.
 
---8ZMYqwT4qqBjIaog
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Both patches look good to me. If you want to add 
+Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-On Mon, Jun 09, 2014 at 07:29:39PM +0900, Chanwoo Choi wrote:
+please go ahead.
 
-> +		ret = of_property_read_u32(suspend_np, "regulator-mode", &pval);
-> +		if (!ret)
-> +			suspend_state->mode = pval;
-
-If we're going to do that we'd need to define what modes mean in the DT
-binding - currently there's no support for modes at all because it's
-complicated to come up with sensible and meaningful generic defintions.
-
---8ZMYqwT4qqBjIaog
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTlgk6AAoJELSic+t+oim9/q8QAIKJOFdSQd/ypBHEeNkpLx9z
-kG1tP1rTdYy/9jmI7Z82o5JFwWe6Qfo2qQEtnwLbbEy8g7GefoPF8wi1RvhHXCi3
-Y7Fn6wmSd87/zofoF3pZ58O0M0L2BswChsao+PJv/2ZJ22XDW45tFs29ThcVRb6y
-1G2MWsirqM/Rg1S2YUboZPlQIho6k9TCp/QsbamjOMwFdhLJCGJ2AG+8qEDwpuzd
-m0eJw4LSMcH/exs49x0mcG3zaPeN8l0lKYADBxdozkTNC8sp4wycqUqj0l+n1Zhe
-rgWqlwSZcKHt+Nx8iOvWqRE5XCHePELMSxTUIJgfQ23VA4io1UwleFi9lvGfRCvM
-o2CIeys+cKI7CAUXn1dl8ADRwNesqThPlJ3GPsJfRz8imBQtpvn7l+1LmgEol/TU
-nGtGq/uuHqbuqeKKiejqqpUTs+APBncUcoerF3NI85hGnXvW8Ka+c27fDMN9mjex
-DKwMzU9BVcqsUV736VFgDoispjsszzaXgTI4YmuRFYPsojSIl8Hvuqu37o412bd3
-wLrg1dsl/hLpRlLRfqMhgx3MrRnsOvgDz0Jm/2J45dDNhOnZdYq0b0Ge/r6rrbs1
-zT/HYCzQNeB4z/SlumkKbG7HaNDmOU0GeLPuRbBKqiRPOLYleXrudIqj++GNYoPT
-T6ru3av1xBw03yRChUJM
-=co7W
------END PGP SIGNATURE-----
-
---8ZMYqwT4qqBjIaog--
+> 
+> Cc: Borislav Petkov <bp@suse.de>
+> Cc: Pekka Enberg <penberg@kernel.org>
+> Cc: David Rientjes <rientjes@google.com>
+> Cc: Michal Marek <mmarek@suse.cz>
+> Cc: Randy Dunlap <rdunlap@infradead.org>
+> Cc: penberg@kernel.org
+> Cc: levinsasha928@gmail.com
+> Cc: mtosatti@redhat.com
+> Cc: fengguang.wu@intel.com
+> Cc: David Vrabel <david.vrabel@citrix.com>
+> Cc: Ian Campbell <Ian.Campbell@citrix.com>
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: xen-devel@lists.xenproject.org
+> Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+> ---
+>  arch/x86/Makefile           |  5 +++++
+>  arch/x86/configs/xen.config | 36 ++++++++++++++++++++++++++++++++++++
+>  2 files changed, 41 insertions(+)
+>  create mode 100644 arch/x86/configs/xen.config
+> 
+> diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+> index 36eea65..cbd9e06 100644
+> --- a/arch/x86/Makefile
+> +++ b/arch/x86/Makefile
+> @@ -260,6 +260,10 @@ PHONY += kvmconfig
+>  kvmconfig:
+>  	$(call build-virtconfig,kvm_guest.config)
+>  
+> +PHONY += xenconfig
+> +xenconfig:
+> +	$(call build-virtconfig,xen.config)
+> +
+>  define archhelp
+>    echo  '* bzImage      - Compressed kernel image (arch/x86/boot/bzImage)'
+>    echo  '  install      - Install kernel using'
+> @@ -274,4 +278,5 @@ define archhelp
+>    echo  '                  FDARGS="..."  arguments for the booted kernel'
+>    echo  '                  FDINITRD=file initrd for the booted kernel'
+>    echo  '  kvmconfig	- Enable additional options for kvm guest kernel support'
+> +  echo  '  xenconfig    - Enable additional options for xen dom0 and guest kernel support'
+>  endef
+> diff --git a/arch/x86/configs/xen.config b/arch/x86/configs/xen.config
+> new file mode 100644
+> index 0000000..fbfbe5c
+> --- /dev/null
+> +++ b/arch/x86/configs/xen.config
+> @@ -0,0 +1,36 @@
+> +CONFIG_XEN=y
+> +CONFIG_XEN_DOM0=y
+> +CONFIG_XEN_PVHVM=y
+> +CONFIG_XEN_MAX_DOMAIN_MEMORY=500
+> +CONFIG_XEN_SAVE_RESTORE=y
+> +# CONFIG_XEN_DEBUG_FS is not set
+> +CONFIG_XEN_PVH=y
+> +CONFIG_PCI_XEN=y
+> +CONFIG_XEN_PCIDEV_FRONTEND=m
+> +CONFIG_XEN_BLKDEV_FRONTEND=m
+> +CONFIG_XEN_BLKDEV_BACKEND=m
+> +CONFIG_XEN_NETDEV_FRONTEND=m
+> +CONFIG_XEN_NETDEV_BACKEND=m
+> +CONFIG_INPUT_XEN_KBDDEV_FRONTEND=y
+> +CONFIG_HVC_XEN=y
+> +CONFIG_HVC_XEN_FRONTEND=y
+> +CONFIG_TCG_XEN=m
+> +CONFIG_XEN_WDT=m
+> +CONFIG_XEN_FBDEV_FRONTEND=y
+> +CONFIG_XEN_BALLOON=y
+> +CONFIG_XEN_BALLOON_MEMORY_HOTPLUG=y
+> +CONFIG_XEN_SCRUB_PAGES=y
+> +CONFIG_XEN_DEV_EVTCHN=m
+> +CONFIG_XEN_BACKEND=y
+> +CONFIG_XENFS=m
+> +CONFIG_XEN_COMPAT_XENFS=y
+> +CONFIG_XEN_SYS_HYPERVISOR=y
+> +CONFIG_XEN_XENBUS_FRONTEND=y
+> +CONFIG_XEN_GNTDEV=m
+> +CONFIG_XEN_GRANT_DEV_ALLOC=m
+> +CONFIG_SWIOTLB_XEN=y
+> +CONFIG_XEN_PCIDEV_BACKEND=m
+> +CONFIG_XEN_PRIVCMD=m
+> +CONFIG_XEN_ACPI_PROCESSOR=m
+> +CONFIG_XEN_MCE_LOG=y
+> +CONFIG_XEN_HAVE_PVMMU=y
+> -- 
+> 2.0.0.rc3.18.g00a5b79
+> 
