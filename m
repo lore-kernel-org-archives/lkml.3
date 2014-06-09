@@ -1,132 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936180AbaFIJ05 (ORCPT <rfc822;w@1wt.eu>);
+	id S936188AbaFIJec (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 05:34:32 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59137 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933832AbaFIJ05 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jun 2014 05:26:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32908 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932780AbaFIJ0f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 05:26:35 -0400
-From: Vlastimil Babka <vbabka@suse.cz>
-To: David Rientjes <rientjes@google.com>, linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>, Vlastimil Babka <vbabka@suse.cz>,
-        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: [PATCH 04/10] mm, compaction: skip rechecks when lock was already held
-Date: Mon,  9 Jun 2014 11:26:16 +0200
-Message-Id: <1402305982-6928-4-git-send-email-vbabka@suse.cz>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1402305982-6928-1-git-send-email-vbabka@suse.cz>
-References: <1402305982-6928-1-git-send-email-vbabka@suse.cz>
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Sagi Grimberg <sagig@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 115/146] Target/iser: Fix wrong connection requests list addition
+Date: Mon,  9 Jun 2014 10:50:50 +0200
+Message-Id: <7eb84918df4b0c8ced79a87ed516377173d246f0.1402303821.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
+References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
+In-Reply-To: <cover.1402303820.git.jslaby@suse.cz>
+References: <cover.1402303820.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Compaction scanners try to lock zone locks as late as possible by checking
-many page or pageblock properties opportunistically without lock and skipping
-them if not unsuitable. For pages that pass the initial checks, some properties
-have to be checked again safely under lock. However, if the lock was already
-held from a previous iteration in the initial checks, the rechecks are
-unnecessary.
+From: Sagi Grimberg <sagig@mellanox.com>
 
-This patch therefore skips the rechecks when the lock was already held. This is
-now possible to do, since we don't (potentially) drop and reacquire the lock
-between the initial checks and the safe rechecks anymore.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Michal Nazarewicz <mina86@mina86.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: David Rientjes <rientjes@google.com>
+===============
+
+commit 9fe63c88b1d59f1ce054d6948ccd3096496ecedb upstream.
+
+Should be adding list_add_tail($new, $head) and not
+the other way around.
+
+Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
-V2: remove goto skip_recheck
+ drivers/infiniband/ulp/isert/ib_isert.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- mm/compaction.c | 53 +++++++++++++++++++++++++++++++----------------------
- 1 file changed, 31 insertions(+), 22 deletions(-)
-
-diff --git a/mm/compaction.c b/mm/compaction.c
-index e1a4283..83f72bd 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -334,22 +334,30 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
- 			goto isolate_fail;
+diff --git a/drivers/infiniband/ulp/isert/ib_isert.c b/drivers/infiniband/ulp/isert/ib_isert.c
+index 02e4d2efa208..d62b61cc6175 100644
+--- a/drivers/infiniband/ulp/isert/ib_isert.c
++++ b/drivers/infiniband/ulp/isert/ib_isert.c
+@@ -572,7 +572,7 @@ isert_connect_request(struct rdma_cm_id *cma_id, struct rdma_cm_event *event)
+ 		goto out_conn_dev;
  
- 		/*
--		 * The zone lock must be held to isolate freepages.
--		 * Unfortunately this is a very coarse lock and can be
--		 * heavily contended if there are parallel allocations
--		 * or parallel compactions. For async compaction do not
--		 * spin on the lock and we acquire the lock as late as
--		 * possible.
-+		 * If we already hold the lock, we can skip some rechecking.
-+		 * Note that if we hold the lock now, checked_pageblock was
-+		 * already set in some previous iteration (or strict is true),
-+		 * so it is correct to skip the suitable migration target
-+		 * recheck as well.
- 		 */
--		if (!locked)
-+		if (!locked) {
-+			/*
-+			 * The zone lock must be held to isolate freepages.
-+			 * Unfortunately this is a very coarse lock and can be
-+			 * heavily contended if there are parallel allocations
-+			 * or parallel compactions. For async compaction do not
-+			 * spin on the lock and we acquire the lock as late as
-+			 * possible.
-+			 */
- 			locked = compact_trylock_irqsave(&cc->zone->lock,
- 								&flags, cc);
--		if (!locked)
--			break;
-+			if (!locked)
-+				break;
+ 	mutex_lock(&isert_np->np_accept_mutex);
+-	list_add_tail(&isert_np->np_accept_list, &isert_conn->conn_accept_node);
++	list_add_tail(&isert_conn->conn_accept_node, &isert_np->np_accept_list);
+ 	mutex_unlock(&isert_np->np_accept_mutex);
  
--		/* Recheck this is a buddy page under lock */
--		if (!PageBuddy(page))
--			goto isolate_fail;
-+			/* Recheck this is a buddy page under lock */
-+			if (!PageBuddy(page))
-+				goto isolate_fail;
-+		}
- 
- 		/* Found a free page, break it into order-0 pages */
- 		isolated = split_free_page(page);
-@@ -658,19 +666,20 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
- 		    page_count(page) > page_mapcount(page))
- 			continue;
- 
--		/* If the lock is not held, try to take it */
--		if (!locked)
-+		/* If we already hold the lock, we can skip some rechecking */
-+		if (!locked) {
- 			locked = compact_trylock_irqsave(&zone->lru_lock,
- 								&flags, cc);
--		if (!locked)
--			break;
-+			if (!locked)
-+				break;
- 
--		/* Recheck PageLRU and PageTransHuge under lock */
--		if (!PageLRU(page))
--			continue;
--		if (PageTransHuge(page)) {
--			low_pfn += (1 << compound_order(page)) - 1;
--			continue;
-+			/* Recheck PageLRU and PageTransHuge under lock */
-+			if (!PageLRU(page))
-+				continue;
-+			if (PageTransHuge(page)) {
-+				low_pfn += (1 << compound_order(page)) - 1;
-+				continue;
-+			}
- 		}
- 
- 		lruvec = mem_cgroup_page_lruvec(page, zone);
+ 	pr_debug("isert_connect_request() waking up np_accept_wq: %p\n", np);
 -- 
-1.8.4.5
+1.9.3
 
