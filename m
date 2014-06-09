@@ -1,60 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754870AbaFIPlF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 11:41:05 -0400
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:63755 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752000AbaFIPlC (ORCPT
+	id S1755387AbaFIPmB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 11:42:01 -0400
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:54882 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755089AbaFIPl6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 11:41:02 -0400
-Message-ID: <5395D56C.4000304@fb.com>
-Date: Mon, 9 Jun 2014 09:40:28 -0600
-From: Jens Axboe <axboe@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 9 Jun 2014 11:41:58 -0400
+Date: Mon, 9 Jun 2014 11:41:55 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux-foundation.org>,
+        Kent Overstreet <kmo@daterainc.com>
+Subject: [GIT PULL] percpu changes for v3.16-rc1
+Message-ID: <20140609154155.GB22540@htj.dyndns.org>
 MIME-Version: 1.0
-To: Ming Lei <tom.leiming@gmail.com>
-CC: =?UTF-8?B?TWF0aWFzIEJqw7hybGluZw==?= <m@bjorling.me>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Keith Busch <keith.busch@intel.com>,
-        "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-nvme <linux-nvme@lists.infradead.org>
-Subject: Re: [PATCH v6] NVMe: conversion to blk-mq
-References: <1402057225-7312-1-git-send-email-m@bjorling.me>	<1402057225-7312-2-git-send-email-m@bjorling.me>	<CACVXFVOieM2cT4FFJhD9MecfCLBtE3AwjCpOeGGRUcmWnN=B=A@mail.gmail.com>	<5395BFF2.2080402@fb.com>	<CACVXFVPGO9vsOv_uVa0+5AdBduu1RJ0Fmg8XPx1QgJAvnjKj_g@mail.gmail.com>	<5395CE64.6040402@fb.com> <CACVXFVMQ_ehnsj=7+6-WmKLSQAhDRDvOEnE6Ekbwj8sfYuuRAA@mail.gmail.com>
-In-Reply-To: <CACVXFVMQ_ehnsj=7+6-WmKLSQAhDRDvOEnE6Ekbwj8sfYuuRAA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-06-09_03:2014-06-09,2014-06-09,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=1.16573417585641e-15 kscore.compositescore=0
- circleOfTrustscore=0 compositescore=0.533125042697551
- urlsuspect_oldscore=0.533125042697551 suspectscore=0
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=1996008
- rbsscore=0.533125042697551 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1406090204
-X-FB-Internal: deliver
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-06-09 09:15, Ming Lei wrote:
-> On Mon, Jun 9, 2014 at 11:10 PM, Jens Axboe <axboe@fb.com> wrote:
->> On 2014-06-09 09:07, Ming Lei wrote:
->>
->> You are right, I didn't get to the bottom of the thread first.
->> Might be better to just have ->start_time set always, regardless of io stats
->> being enabled or not.
->
-> Yes, just like what non-mq code did.
+Hello, Linus.
 
-I queued up a fix for it.
+Nothing too exciting.  percpu_ref is going through some interface
+changes and getting new features with more changes in the pipeline but
+given its young age and few users, it's very low impact.
 
--- 
-Jens Axboe
+Thanks.
 
+The following changes since commit 0c36b390a546055b6815d4b93a2c9fed4d980ffb:
+
+  percpu-refcount: fix usage of this_cpu_ops (2014-06-04 12:12:29 -0400)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git for-3.16
+
+for you to fetch changes up to 315c5554c406fdad404a99dfefc931db0df80692:
+
+  Merge branch 'for-3.15-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git into for-3.16 (2014-06-04 12:50:47 -0400)
+
+----------------------------------------------------------------
+
+Christoph Lameter (1):
+      percpu: Replace __get_cpu_var with this_cpu_ptr
+
+Tejun Heo (3):
+      percpu-refcount: rename percpu_ref_tryget() to percpu_ref_tryget_live()
+      percpu-refcount: implement percpu_ref_tryget()
+      Merge branch 'for-3.15-fixes' of git://git.kernel.org/.../tj/percpu.git into for-3.16
+
+ include/linux/cgroup.h          |  2 +-
+ include/linux/percpu-refcount.h | 34 +++++++++++++++++++++++++++++++++-
+ include/linux/percpu.h          |  2 +-
+ 3 files changed, 35 insertions(+), 3 deletions(-)
+
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index c251585..549aed8 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -101,7 +101,7 @@ static inline bool css_tryget(struct cgroup_subsys_state *css)
+ {
+ 	if (css->flags & CSS_ROOT)
+ 		return true;
+-	return percpu_ref_tryget(&css->refcnt);
++	return percpu_ref_tryget_live(&css->refcnt);
+ }
+ 
+ /**
+diff --git a/include/linux/percpu-refcount.h b/include/linux/percpu-refcount.h
+index 0afb48f..5d8920e 100644
+--- a/include/linux/percpu-refcount.h
++++ b/include/linux/percpu-refcount.h
+@@ -121,6 +121,36 @@ static inline void percpu_ref_get(struct percpu_ref *ref)
+  * percpu_ref_tryget - try to increment a percpu refcount
+  * @ref: percpu_ref to try-get
+  *
++ * Increment a percpu refcount unless its count already reached zero.
++ * Returns %true on success; %false on failure.
++ *
++ * The caller is responsible for ensuring that @ref stays accessible.
++ */
++static inline bool percpu_ref_tryget(struct percpu_ref *ref)
++{
++	unsigned __percpu *pcpu_count;
++	int ret = false;
++
++	rcu_read_lock_sched();
++
++	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
++
++	if (likely(REF_STATUS(pcpu_count) == PCPU_REF_PTR)) {
++		this_cpu_inc(*pcpu_count);
++		ret = true;
++	} else {
++		ret = atomic_inc_not_zero(&ref->count);
++	}
++
++	rcu_read_unlock_sched();
++
++	return ret;
++}
++
++/**
++ * percpu_ref_tryget_live - try to increment a live percpu refcount
++ * @ref: percpu_ref to try-get
++ *
+  * Increment a percpu refcount unless it has already been killed.  Returns
+  * %true on success; %false on failure.
+  *
+@@ -128,8 +158,10 @@ static inline void percpu_ref_get(struct percpu_ref *ref)
+  * will fail.  For such guarantee, percpu_ref_kill_and_confirm() should be
+  * used.  After the confirm_kill callback is invoked, it's guaranteed that
+  * no new reference will be given out by percpu_ref_tryget().
++ *
++ * The caller is responsible for ensuring that @ref stays accessible.
+  */
+-static inline bool percpu_ref_tryget(struct percpu_ref *ref)
++static inline bool percpu_ref_tryget_live(struct percpu_ref *ref)
+ {
+ 	unsigned __percpu *pcpu_count;
+ 	int ret = false;
+diff --git a/include/linux/percpu.h b/include/linux/percpu.h
+index e7a0b95..539b3ca 100644
+--- a/include/linux/percpu.h
++++ b/include/linux/percpu.h
+@@ -29,7 +29,7 @@
+  */
+ #define get_cpu_var(var) (*({				\
+ 	preempt_disable();				\
+-	&__get_cpu_var(var); }))
++	this_cpu_ptr(&var); }))
+ 
+ /*
+  * The weird & is necessary because sparse considers (void)(var) to be
