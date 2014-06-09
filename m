@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934840AbaFIW7l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 18:59:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57059 "EHLO
+	id S934003AbaFIWpy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 18:45:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56749 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934016AbaFIWp4 (ORCPT
+	with ESMTP id S933616AbaFIWpi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:45:56 -0400
+	Mon, 9 Jun 2014 18:45:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jean Delvare <jdelvare@suse.de>, Guenter Roeck <linux@roeck-us.net>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        Doug Anderson <dianders@chromium.org>
-Subject: [PATCH 3.10 09/40] hwmon: (ntc_thermistor) Fix dependencies
-Date: Mon,  9 Jun 2014 15:48:40 -0700
-Message-Id: <20140609224839.512565285@linuxfoundation.org>
+        Richard Weinberger <richard@nod.at>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Dave Jones <davej@redhat.com>
+Subject: [PATCH 3.14 43/78] sched: Fix sched_policy < 0 comparison
+Date: Mon,  9 Jun 2014 15:48:23 -0700
+Message-Id: <20140609224814.739297176@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140609224839.127615063@linuxfoundation.org>
-References: <20140609224839.127615063@linuxfoundation.org>
+In-Reply-To: <20140609224813.282275135@linuxfoundation.org>
+References: <20140609224813.282275135@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,70 +28,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jean Delvare <jdelvare@suse.de>
+From: Richard Weinberger <richard@nod.at>
 
-commit 59cf4243e557aa64ab2ef51280454aa1f3828e14 upstream.
+commit b14ed2c273f8ab872ae4e6735fe5ab09cb14b8c3 upstream.
 
-In commit 9e8269de, support was added for ntc_thermistor devices being
-declared in the device tree and implemented on top of IIO. With that
-change, a dependency was added to the ntc_thermistor driver:
+attr.sched_policy is u32, therefore a comparison against < 0 is never true.
+Fix this by casting sched_policy to int.
 
-	depends on (!OF && !IIO) || (OF && IIO)
+This issue was reported by coverity CID 1219934.
 
-This construct has the drawback that the driver can no longer be
-selected when OF is set and IIO isn't, nor when IIO is set and OF is
-not. This is a regression for the original users of the driver.
-
-As the new code depends on IIO and is useless without OF, include it
-only if both are enabled, and set the dependencies accordingly. This
-is clearer, more simple and more correct.
-
-Signed-off-by: Jean Delvare <jdelvare@suse.de>
-Fixes: 9e8269de hwmon: (ntc_thermistor) Add DT with IIO support to NTC thermistor driver
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Cc: Doug Anderson <dianders@chromium.org>
+Fixes: dbdb22754fde ("sched: Disallow sched_attr::sched_policy < 0")
+Signed-off-by: Richard Weinberger <richard@nod.at>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1401741514-7045-1-git-send-email-richard@nod.at
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Dave Jones <davej@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/Kconfig          |    2 +-
- drivers/hwmon/ntc_thermistor.c |    4 +++-
- 2 files changed, 4 insertions(+), 2 deletions(-)
+ kernel/sched/core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hwmon/Kconfig
-+++ b/drivers/hwmon/Kconfig
-@@ -944,7 +944,7 @@ config SENSORS_NCT6775
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3707,7 +3707,7 @@ SYSCALL_DEFINE3(sched_setattr, pid_t, pi
+ 	if (retval)
+ 		return retval;
  
- config SENSORS_NTC_THERMISTOR
- 	tristate "NTC thermistor support"
--	depends on (!OF && !IIO) || (OF && IIO)
-+	depends on !OF || IIO=n || IIO
- 	help
- 	  This driver supports NTC thermistors sensor reading and its
- 	  interpretation. The driver can also monitor the temperature and
---- a/drivers/hwmon/ntc_thermistor.c
-+++ b/drivers/hwmon/ntc_thermistor.c
-@@ -141,7 +141,7 @@ struct ntc_data {
- 	char name[PLATFORM_NAME_SIZE];
- };
+-	if (attr.sched_policy < 0)
++	if ((int)attr.sched_policy < 0)
+ 		return -EINVAL;
  
--#ifdef CONFIG_OF
-+#if defined(CONFIG_OF) && IS_ENABLED(CONFIG_IIO)
- static int ntc_adc_iio_read(struct ntc_thermistor_platform_data *pdata)
- {
- 	struct iio_channel *channel = pdata->chan;
-@@ -223,6 +223,8 @@ ntc_thermistor_parse_dt(struct platform_
- 	return NULL;
- }
- 
-+#define ntc_match	NULL
-+
- static void ntc_iio_channel_release(struct ntc_thermistor_platform_data *pdata)
- { }
- #endif
+ 	rcu_read_lock();
 
 
