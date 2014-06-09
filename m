@@ -1,87 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755256AbaFIMw1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 08:52:27 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:36409 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754042AbaFIMwZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 08:52:25 -0400
-Date: Mon, 9 Jun 2014 16:52:13 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Christoph Lameter <cl@gentwo.org>
-CC: <akpm@linux-foundation.org>, <iamjoonsoo.kim@lge.com>,
-        <rientjes@google.com>, <penberg@kernel.org>, <hannes@cmpxchg.org>,
-        <mhocko@suse.cz>, <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: Re: [PATCH -mm v2 5/8] slub: make slab_free non-preemptable
-Message-ID: <20140609125211.GA32192@esperanza>
-References: <cover.1402060096.git.vdavydov@parallels.com>
- <7cd6784a36ed997cc6631615d98e11e02e811b1b.1402060096.git.vdavydov@parallels.com>
- <alpine.DEB.2.10.1406060942160.32229@gentwo.org>
+	id S1755274AbaFIMyf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 08:54:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11620 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752094AbaFIMyc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 08:54:32 -0400
+Date: Mon, 9 Jun 2014 08:54:27 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        linux-efi@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>,
+        Dave Young <dyoung@redhat.com>
+Subject: Re: [PATCH] x86/boot: EFI_MIXED should not prohibit loading above 4G
+Message-ID: <20140609125427.GA16256@redhat.com>
+References: <1402140380-15377-1-git-send-email-matt@console-pimps.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1406060942160.32229@gentwo.org>
-X-Originating-IP: [81.5.110.170]
+In-Reply-To: <1402140380-15377-1-git-send-email-matt@console-pimps.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 06, 2014 at 09:46:57AM -0500, Christoph Lameter wrote:
-> On Fri, 6 Jun 2014, Vladimir Davydov wrote:
+On Sat, Jun 07, 2014 at 12:26:20PM +0100, Matt Fleming wrote:
+> From: Matt Fleming <matt.fleming@intel.com>
 > 
-> > This patch makes SLUB's implementation of kmem_cache_free
-> > non-preemptable. As a result, synchronize_sched() will work as a barrier
-> > against kmem_cache_free's in flight, so that issuing it before cache
-> > destruction will protect us against the use-after-free.
+> commit 7d453eee36ae ("x86/efi: Wire up CONFIG_EFI_MIXED") introduced a
+> regression for the functionality to load kernels above 4G. The relevant
+> (incorrect) reasoning behind this change can be seen in the commit
+> message,
 > 
+>   "The xloadflags field in the bzImage header is also updated to reflect
+>   that the kernel supports both entry points by setting both of
+>   XLF_EFI_HANDOVER_32 and XLF_EFI_HANDOVER_64 when CONFIG_EFI_MIXED=y.
+>   XLF_CAN_BE_LOADED_ABOVE_4G is disabled so that the kernel text is
+>   guaranteed to be addressable with 32-bits."
 > 
-> Subject: slub: reenable preemption before the freeing of slabs from slab_free
+> This is obviously bogus since 32-bit EFI loaders will never place the
+> kernel above the 4G mark. So this restriction is entirely unnecessary.
+
+Hi Matt,
+
+So with new kexec syscall I have written 64bit bzImage loader. For now
+I would like to detect this situation and disable loading and once
+32bit loader gets implemented it can take care of loading bzImage below
+4G.
+
+So how do I find out if EFI is 32bit.
+
+Thanks
+Vivek
+
 > 
-> I would prefer to call the page allocator with preemption enabled if possible.
+> But things are worse than that - since we want to encourage people to
+> always compile with CONFIG_EFI_MIXED=y so that their kernels work out of
+> the box for both 32-bit and 64-bit firmware, commit 7d453eee36ae
+> effectively disables XLF_CAN_BE_LOADED_ABOVE_4G completely.
 > 
-> Signed-off-by: Christoph Lameter <cl@linux.com>
+> Remove the overzealous and superfluous restriction and restore the
+> XLF_CAN_BE_LOADED_ABOVE_4G functionality.
 > 
-> Index: linux/mm/slub.c
-> ===================================================================
-> --- linux.orig/mm/slub.c	2014-05-29 11:45:32.065859887 -0500
-> +++ linux/mm/slub.c	2014-06-06 09:45:12.822480834 -0500
-> @@ -1998,6 +1998,7 @@
->  	if (n)
->  		spin_unlock(&n->list_lock);
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> Cc: Dave Young <dyoung@redhat.com>
+> Cc: Vivek Goyal <vgoyal@redhat.com>
+> Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+> ---
 > 
-> +	preempt_enable();
-
-The whole function (unfreeze_partials) is currently called with irqs
-off, so this is effectively a no-op. I guess we can restore irqs here
-though.
-
->  	while (discard_page) {
->  		page = discard_page;
->  		discard_page = discard_page->next;
-> @@ -2006,6 +2007,7 @@
->  		discard_slab(s, page);
-
-If we just freed the last slab of the cache and then get preempted
-(suppose we restored irqs above), nothing will prevent the cache from
-destruction, which may result in use-after-free below. We need to be
-more cautious if we want to call for page allocator with preemption and
-irqs on.
-
-However, I still don't understand what's the point in it. We *already*
-call discard_slab with irqs disabled, which is harder, and it haven't
-caused any problems AFAIK. Moreover, even if we enabled preemption/irqs,
-it wouldn't guarantee that discard_slab would always be called with
-preemption/irqs on, because the whole function - I mean kmem_cache_free
-- can be called with preemption/irqs disabled.
-
-So my point it would only complicate the code.
-
-Thanks.
-
->  		stat(s, FREE_SLAB);
->  	}
-> +	preempt_disable();
+> Peter, I realise that we're right on the edge of the v3.15 release here,
+> so this probably needs marking for stable (it only affects v3.15).
+> 
+>  arch/x86/boot/header.S | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/boot/header.S b/arch/x86/boot/header.S
+> index 0ca9a5c362bc..84c223479e3c 100644
+> --- a/arch/x86/boot/header.S
+> +++ b/arch/x86/boot/header.S
+> @@ -375,8 +375,7 @@ xloadflags:
+>  # define XLF0 0
 >  #endif
->  }
-> 
+>  
+> -#if defined(CONFIG_RELOCATABLE) && defined(CONFIG_X86_64) && \
+> -	!defined(CONFIG_EFI_MIXED)
+> +#if defined(CONFIG_RELOCATABLE) && defined(CONFIG_X86_64)
+>     /* kernel/boot_param/ramdisk could be loaded above 4g */
+>  # define XLF1 XLF_CAN_BE_LOADED_ABOVE_4G
+>  #else
+> -- 
+> 1.9.0
