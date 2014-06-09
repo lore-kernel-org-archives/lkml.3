@@ -1,44 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754194AbaFISd5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 14:33:57 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:41205 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753833AbaFISdx (ORCPT
+	id S1753820AbaFISgg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 14:36:36 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:56574 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750878AbaFISge (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 14:33:53 -0400
-Message-ID: <5395FE0E.80105@wwwdotorg.org>
-Date: Mon, 09 Jun 2014 12:33:50 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Mikko Perttunen <mperttunen@nvidia.com>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "tj@kernel.org" <tj@kernel.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Subject: Re: [PATCH 0/9] Serial ATA support for NVIDIA Tegra124
-References: <1401881559-18469-1-git-send-email-mperttunen@nvidia.com> <5390A8F9.2090408@wwwdotorg.org> <53915F3B.6050806@nvidia.com>
-In-Reply-To: <53915F3B.6050806@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 9 Jun 2014 14:36:34 -0400
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        "Luis R. Rodriguez" <mcgrof@suse.com>
+Subject: [PATCH v2 1/3] x86, platform, xen, kconfig: move kvmconfig functionality to a helper
+Date: Mon,  9 Jun 2014 11:36:22 -0700
+Message-Id: <1402338984-9774-1-git-send-email-mcgrof@do-not-panic.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/2014 12:27 AM, Mikko Perttunen wrote:
-> The only compile-time dependencies here should be that:
-> - patch 8 of 9 which contains the actual driver depends on patch 6 of 9
-> (though only when building as a module) and the efuse series
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
 
-> - patch 2 of 9 refers to the DT node called "padctl", so it requires the
-> xusb series. (in the submitted xusb series, the node isn't actually
-> named, though. I will fix this in v2)
+This can then be used by other virtual configs.
 
-Isn't that dependency a run-time dependency?
+Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+---
+ arch/x86/Makefile | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index 33f71b0..c78747b 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -250,11 +250,15 @@ archclean:
+ 	$(Q)$(MAKE) $(clean)=$(boot)
+ 	$(Q)$(MAKE) $(clean)=arch/x86/tools
+ 
++define build-virtconfig
++$(if $(wildcard $(objtree)/.config),, $(error You need an existing .config for this target))
++$(Q)$(CONFIG_SHELL) $(srctree)/scripts/kconfig/merge_config.sh -m -O $(objtree) $(objtree)/.config $(srctree)/arch/x86/configs/$(1)
++$(Q)yes "" | $(MAKE) -f $(srctree)/Makefile oldconfig
++endef
++
+ PHONY += kvmconfig
+ kvmconfig:
+-	$(if $(wildcard $(objtree)/.config),, $(error You need an existing .config for this target))
+-	$(Q)$(CONFIG_SHELL) $(srctree)/scripts/kconfig/merge_config.sh -m -O $(objtree) $(objtree)/.config $(srctree)/arch/x86/configs/kvm_guest.config
+-	$(Q)yes "" | $(MAKE) -f $(srctree)/Makefile oldconfig
++	$(call build-virtconfig,kvm_guest.config)
+ 
+ define archhelp
+   echo  '* bzImage      - Compressed kernel image (arch/x86/boot/bzImage)'
+-- 
+2.0.0.rc3.18.g00a5b79
 
