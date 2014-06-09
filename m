@@ -1,326 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933366AbaFILZY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 07:25:24 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:32797 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932253AbaFILZW (ORCPT
+	id S933441AbaFILZd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 07:25:33 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:56241 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933390AbaFILZ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 07:25:22 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
-Cc: linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
-        magnus.damm@gmail.com, horms+renesas@verge.net.au,
-        linux-sh@vger.kernel.org
-Subject: Re: [PATCH] pinctrl: sh-pfc: r8a7791: Add HSCIF pin support
-Date: Mon, 09 Jun 2014 13:25:53 +0200
-Message-ID: <2623425.GJLg6iuqD9@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.12.20-gentoo; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1401324729-31863-1-git-send-email-nobuhiro.iwamatsu.yj@renesas.com>
-References: <1401324729-31863-1-git-send-email-nobuhiro.iwamatsu.yj@renesas.com>
+	Mon, 9 Jun 2014 07:25:29 -0400
+Message-ID: <5395994E.3050504@linux.vnet.ibm.com>
+Date: Mon, 09 Jun 2014 16:53:58 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: rdunlap@infradead.org, viresh.kumar@linaro.org,
+        "Srivatsa S. Bhat" <srivatsa@mit.edu>, linux-pm@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] PM / Documentation: Update Srivatsa S. Bhat's email address
+References: <20140609102426.26530.15670.stgit@srivatsabhat.in.ibm.com> <1465703.Zlfm9gi0xo@vostro.rjw.lan>
+In-Reply-To: <1465703.Zlfm9gi0xo@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14060911-6102-0000-0000-000005BD2017
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Iwamatsu-san,
-
-Thank you for the patch.
-
-On Thursday 29 May 2014 09:52:09 Nobuhiro Iwamatsu wrote:
-
-A commit message would be nice. You're also missing hscif2_data_d. That could 
-be added later though, so
-
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-
-> Signed-off-by: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
-> ---
->  drivers/pinctrl/sh-pfc/pfc-r8a7791.c | 241 ++++++++++++++++++++++++++++++++
->  1 file changed, 241 insertions(+)
+On 06/09/2014 04:58 PM, Rafael J. Wysocki wrote:
+> On Monday, June 09, 2014 03:54:49 PM Srivatsa S. Bhat wrote:
+>> My @linux.vnet.ibm.com email address is going to disappear soon, as I will be
+>> beginning my M.S./PhD studies at MIT in a few months.
 > 
-> diff --git a/drivers/pinctrl/sh-pfc/pfc-r8a7791.c
-> b/drivers/pinctrl/sh-pfc/pfc-r8a7791.c index 2e688dc..bb32514 100644
-> --- a/drivers/pinctrl/sh-pfc/pfc-r8a7791.c
-> +++ b/drivers/pinctrl/sh-pfc/pfc-r8a7791.c
-> @@ -1867,6 +1867,185 @@ static const unsigned int eth_rmii_mux[] = {
->  	ETH_RXD0_MARK, ETH_RXD1_MARK, ETH_RX_ER_MARK, ETH_CRS_DV_MARK,
->  	ETH_TXD0_MARK, ETH_TXD1_MARK, ETH_TX_EN_MARK, ETH_REFCLK_MARK,
->  };
-> +
-> +/* - HSCIF0
-> ----------------------------------------------------------------- */
-> +static const unsigned int hscif0_data_pins[] = {
-> +	/* RX, TX */
-> +	RCAR_GP_PIN(7, 3), RCAR_GP_PIN(7, 4),
-> +};
-> +static const unsigned int hscif0_data_mux[] = {
-> +	HRX0_MARK, HTX0_MARK,
-> +};
-> +static const unsigned int hscif0_clk_pins[] = {
-> +	/* SCK */
-> +	RCAR_GP_PIN(7, 2),
-> +};
-> +static const unsigned int hscif0_clk_mux[] = {
-> +	HSCK0_MARK,
-> +};
-> +static const unsigned int hscif0_ctrl_pins[] = {
-> +	/* RTS, CTS */
-> +	RCAR_GP_PIN(7, 1), RCAR_GP_PIN(7, 0),
-> +};
-> +static const unsigned int hscif0_ctrl_mux[] = {
-> +	HRTS0_N_MARK, HCTS0_N_MARK,
-> +};
-> +static const unsigned int hscif0_data_b_pins[] = {
-> +	/* RX, TX */
-> +	RCAR_GP_PIN(3, 12), RCAR_GP_PIN(3, 15),
-> +};
-> +static const unsigned int hscif0_data_b_mux[] = {
-> +	HRX0_B_MARK, HTX0_B_MARK,
-> +};
-> +static const unsigned int hscif0_ctrl_b_pins[] = {
-> +	/* RTS, CTS */
-> +	RCAR_GP_PIN(3, 14), RCAR_GP_PIN(3, 13),
-> +};
-> +static const unsigned int hscif0_ctrl_b_mux[] = {
-> +	HRTS0_N_B_MARK, HCTS0_N_B_MARK,
-> +};
-> +static const unsigned int hscif0_data_c_pins[] = {
-> +	/* RX, TX */
-> +	RCAR_GP_PIN(2, 0), RCAR_GP_PIN(2, 1),
-> +};
-> +static const unsigned int hscif0_data_c_mux[] = {
-> +	HRX0_C_MARK, HTX0_C_MARK,
-> +};
-> +static const unsigned int hscif0_clk_c_pins[] = {
-> +	/* SCK */
-> +	RCAR_GP_PIN(5, 31),
-> +};
-> +static const unsigned int hscif0_clk_c_mux[] = {
-> +	HSCK0_C_MARK,
-> +};
-> +/* - HSCIF1
-> ----------------------------------------------------------------- */
-> +static const unsigned int hscif1_data_pins[] = {
-> +	/* RX, TX */
-> +	RCAR_GP_PIN(7, 5), RCAR_GP_PIN(7, 6),
-> +};
-> +static const unsigned int hscif1_data_mux[] = {
-> +	HRX1_MARK, HTX1_MARK,
-> +};
-> +static const unsigned int hscif1_clk_pins[] = {
-> +	/* SCK */
-> +	RCAR_GP_PIN(7, 7),
-> +};
-> +static const unsigned int hscif1_clk_mux[] = {
-> +	HSCK1_MARK,
-> +};
-> +static const unsigned int hscif1_ctrl_pins[] = {
-> +	/* RTS, CTS */
-> +	RCAR_GP_PIN(7, 9), RCAR_GP_PIN(7, 8),
-> +};
-> +static const unsigned int hscif1_ctrl_mux[] = {
-> +	HRTS1_N_MARK, HCTS1_N_MARK,
-> +};
-> +static const unsigned int hscif1_data_b_pins[] = {
-> +	/* RX, TX */
-> +	RCAR_GP_PIN(1, 17), RCAR_GP_PIN(1, 18),
-> +};
-> +static const unsigned int hscif1_data_b_mux[] = {
-> +	HRX1_B_MARK, HTX1_B_MARK,
-> +};
-> +static const unsigned int hscif1_data_c_pins[] = {
-> +	/* RX, TX */
-> +	RCAR_GP_PIN(7, 14), RCAR_GP_PIN(7, 15),
-> +};
-> +static const unsigned int hscif1_data_c_mux[] = {
-> +	HRX1_C_MARK, HTX1_C_MARK,
-> +};
-> +static const unsigned int hscif1_clk_c_pins[] = {
-> +	/* SCK */
-> +	RCAR_GP_PIN(7, 16),
-> +};
-> +static const unsigned int hscif1_clk_c_mux[] = {
-> +	HSCK1_C_MARK,
-> +};
-> +static const unsigned int hscif1_ctrl_c_pins[] = {
-> +	/* RTS, CTS */
-> +	RCAR_GP_PIN(7, 18), RCAR_GP_PIN(7, 17),
-> +};
-> +static const unsigned int hscif1_ctrl_c_mux[] = {
-> +	HRTS1_N_C_MARK, HCTS1_N_C_MARK,
-> +};
-> +static const unsigned int hscif1_data_d_pins[] = {
-> +	/* RX, TX */
-> +	RCAR_GP_PIN(4, 28), RCAR_GP_PIN(4, 18),
-> +};
-> +static const unsigned int hscif1_data_d_mux[] = {
-> +	HRX1_D_MARK, HTX1_D_MARK,
-> +};
-> +static const unsigned int hscif1_data_e_pins[] = {
-> +	/* RX, TX */
-> +	RCAR_GP_PIN(7, 14), RCAR_GP_PIN(7, 15),
-> +};
-> +static const unsigned int hscif1_data_e_mux[] = {
-> +	HRX1_C_MARK, HTX1_C_MARK,
-> +};
-> +static const unsigned int hscif1_clk_e_pins[] = {
-> +	/* SCK */
-> +	RCAR_GP_PIN(2, 6),
-> +};
-> +static const unsigned int hscif1_clk_e_mux[] = {
-> +	HSCK1_E_MARK,
-> +};
-> +static const unsigned int hscif1_ctrl_e_pins[] = {
-> +	/* RTS, CTS */
-> +	RCAR_GP_PIN(2, 8), RCAR_GP_PIN(2, 7),
-> +};
-> +static const unsigned int hscif1_ctrl_e_mux[] = {
-> +	HRTS1_N_E_MARK, HCTS1_N_E_MARK,
-> +};
-> +/* - HSCIF2
-> ----------------------------------------------------------------- */
-> +static const unsigned int hscif2_data_pins[] = {
-> +	/* RX, TX */
-> +	RCAR_GP_PIN(4, 16), RCAR_GP_PIN(4, 17),
-> +};
-> +static const unsigned int hscif2_data_mux[] = {
-> +	HRX2_MARK, HTX2_MARK,
-> +};
-> +static const unsigned int hscif2_clk_pins[] = {
-> +	/* SCK */
-> +	RCAR_GP_PIN(4, 15),
-> +};
-> +static const unsigned int hscif2_clk_mux[] = {
-> +	HSCK2_MARK,
-> +};
-> +static const unsigned int hscif2_ctrl_pins[] = {
-> +	/* RTS, CTS */
-> +	RCAR_GP_PIN(4, 14), RCAR_GP_PIN(4, 13),
-> +};
-> +static const unsigned int hscif2_ctrl_mux[] = {
-> +	HRTS2_N_MARK, HCTS2_N_MARK,
-> +};
-> +static const unsigned int hscif2_data_b_pins[] = {
-> +	/* RX, TX */
-> +	RCAR_GP_PIN(1, 20), RCAR_GP_PIN(1, 22),
-> +};
-> +static const unsigned int hscif2_data_b_mux[] = {
-> +	HRX2_B_MARK, HTX2_B_MARK,
-> +};
-> +static const unsigned int hscif2_ctrl_b_pins[] = {
-> +	/* RTS, CTS */
-> +	RCAR_GP_PIN(1, 23), RCAR_GP_PIN(1, 21),
-> +};
-> +static const unsigned int hscif2_ctrl_b_mux[] = {
-> +	HRTS2_N_B_MARK, HCTS2_N_B_MARK,
-> +};
-> +static const unsigned int hscif2_data_c_pins[] = {
-> +	/* RX, TX */
-> +	RCAR_GP_PIN(2, 0), RCAR_GP_PIN(2, 1),
-> +};
-> +static const unsigned int hscif2_data_c_mux[] = {
-> +	HRX2_C_MARK, HTX2_C_MARK,
-> +};
-> +static const unsigned int hscif2_clk_c_pins[] = {
-> +	/* SCK */
-> +	RCAR_GP_PIN(5, 31),
-> +};
-> +static const unsigned int hscif2_clk_c_mux[] = {
-> +	HSCK2_C_MARK,
-> +};
->  /* - I2C0
-> ------------------------------------------------------------------- */
-> static const unsigned int i2c0_pins[] = {
->  	/* SCL, SDA */
-> @@ -3885,6 +4064,31 @@ static const struct sh_pfc_pin_group pinmux_groups[]
-> = { SH_PFC_PIN_GROUP(eth_magic),
->  	SH_PFC_PIN_GROUP(eth_mdio),
->  	SH_PFC_PIN_GROUP(eth_rmii),
-> +	SH_PFC_PIN_GROUP(hscif0_data),
-> +	SH_PFC_PIN_GROUP(hscif0_clk),
-> +	SH_PFC_PIN_GROUP(hscif0_ctrl),
-> +	SH_PFC_PIN_GROUP(hscif0_data_b),
-> +	SH_PFC_PIN_GROUP(hscif0_ctrl_b),
-> +	SH_PFC_PIN_GROUP(hscif0_data_c),
-> +	SH_PFC_PIN_GROUP(hscif0_clk_c),
-> +	SH_PFC_PIN_GROUP(hscif1_data),
-> +	SH_PFC_PIN_GROUP(hscif1_clk),
-> +	SH_PFC_PIN_GROUP(hscif1_ctrl),
-> +	SH_PFC_PIN_GROUP(hscif1_data_b),
-> +	SH_PFC_PIN_GROUP(hscif1_data_c),
-> +	SH_PFC_PIN_GROUP(hscif1_clk_c),
-> +	SH_PFC_PIN_GROUP(hscif1_ctrl_c),
-> +	SH_PFC_PIN_GROUP(hscif1_data_d),
-> +	SH_PFC_PIN_GROUP(hscif1_data_e),
-> +	SH_PFC_PIN_GROUP(hscif1_clk_e),
-> +	SH_PFC_PIN_GROUP(hscif1_ctrl_e),
-> +	SH_PFC_PIN_GROUP(hscif2_data),
-> +	SH_PFC_PIN_GROUP(hscif2_clk),
-> +	SH_PFC_PIN_GROUP(hscif2_ctrl),
-> +	SH_PFC_PIN_GROUP(hscif2_data_b),
-> +	SH_PFC_PIN_GROUP(hscif2_ctrl_b),
-> +	SH_PFC_PIN_GROUP(hscif2_data_c),
-> +	SH_PFC_PIN_GROUP(hscif2_clk_c),
->  	SH_PFC_PIN_GROUP(i2c0),
->  	SH_PFC_PIN_GROUP(i2c0_b),
->  	SH_PFC_PIN_GROUP(i2c0_c),
-> @@ -4183,6 +4387,40 @@ static const char * const eth_groups[] = {
->  	"eth_rmii",
->  };
+> Congratulations!
 > 
-> +static const char * const hscif0_groups[] = {
-> +	"hscif0_data",
-> +	"hscif0_clk",
-> +	"hscif0_ctrl",
-> +	"hscif0_data_b",
-> +	"hscif0_ctrl_b",
-> +	"hscif0_data_c",
-> +	"hscif0_clk_c",
-> +};
-> +
-> +static const char * const hscif1_groups[] = {
-> +	"hscif1_data",
-> +	"hscif1_clk",
-> +	"hscif1_ctrl",
-> +	"hscif1_data_b",
-> +	"hscif1_data_c",
-> +	"hscif1_clk_c",
-> +	"hscif1_ctrl_c",
-> +	"hscif1_data_d",
-> +	"hscif1_data_e",
-> +	"hscif1_clk_e",
-> +	"hscif1_ctrl_e",
-> +};
-> +
-> +static const char * const hscif2_groups[] = {
-> +	"hscif2_data",
-> +	"hscif2_clk",
-> +	"hscif2_ctrl",
-> +	"hscif2_data_b",
-> +	"hscif2_ctrl_b",
-> +	"hscif2_data_c",
-> +	"hscif2_clk_c",
-> +};
-> +
->  static const char * const i2c0_groups[] = {
->  	"i2c0",
->  	"i2c0_b",
-> @@ -4547,6 +4785,9 @@ static const struct sh_pfc_function pinmux_functions[]
-> = { SH_PFC_FUNCTION(du0),
->  	SH_PFC_FUNCTION(du1),
->  	SH_PFC_FUNCTION(eth),
-> +	SH_PFC_FUNCTION(hscif0),
-> +	SH_PFC_FUNCTION(hscif1),
-> +	SH_PFC_FUNCTION(hscif2),
->  	SH_PFC_FUNCTION(i2c0),
->  	SH_PFC_FUNCTION(i2c1),
->  	SH_PFC_FUNCTION(i2c2),
 
--- 
+Thanks a lot! :-)
+
+>> So update my email address in the documentation.
+>>
+>> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+>> Signed-off-by: Srivatsa S. Bhat <srivatsa@mit.edu>
+>> ---
+>>
+>>  Documentation/power/suspend-and-cpuhotplug.txt |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/Documentation/power/suspend-and-cpuhotplug.txt b/Documentation/power/suspend-and-cpuhotplug.txt
+>> index e13dafc..3813703 100644
+>> --- a/Documentation/power/suspend-and-cpuhotplug.txt
+>> +++ b/Documentation/power/suspend-and-cpuhotplug.txt
+>> @@ -1,6 +1,6 @@
+>>  Interaction of Suspend code (S3) with the CPU hotplug infrastructure
+>>  
+>> -     (C) 2011 Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+>> +     (C) 2011-2014 Srivatsa S. Bhat <srivatsa@mit.edu>
+> 
+> I'm actually unsure if updating copyright notices like that is OK.
+> 
+> Yes, you're moving, but the address in the notice documents the status at
+> the time you added it.
+> 
+
+Oh, ok..
+
+> You still can add a new copyright notice with the new address when you update
+> the document in the future. :-)
+>
+
+Sure :-) For now, I'll just send a patch to update the copyright and extend
+it to 2014 (for my IBM id), while that email-id is still in use.
+
+But what about .mailmap? Can I add to that? I guess I can, since that's not
+related to copyrights and it is meant to handle email-id changes and such.
+ 
+> Updating the address where it is a "contact info" or in MAINTAINERS is a
+> different matter, of course.
+> 
+
+Ah, I see. Thank you!
+
 Regards,
-
-Laurent Pinchart
+Srivatsa S. Bhat
 
