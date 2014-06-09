@@ -1,150 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934714AbaFIW5S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 18:57:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57075 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934225AbaFIWqA (ORCPT
+	id S934379AbaFIW5W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 18:57:22 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:41309 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934722AbaFIW5T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:46:00 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Gevers <elbrus@debian.org>, Ben Hutchings <ben@decadent.org.uk>
-Subject: [PATCH 3.10 24/40] Staging: speakup: Move pasting into a work item
-Date: Mon,  9 Jun 2014 15:48:55 -0700
-Message-Id: <20140609224839.966840222@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140609224839.127615063@linuxfoundation.org>
-References: <20140609224839.127615063@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Mon, 9 Jun 2014 18:57:19 -0400
 MIME-Version: 1.0
+In-Reply-To: <CA+55aFwmajRnDOiBmZQf8rpVE-HigsDYy9oy-TsWLzn-vdyF+Q@mail.gmail.com>
+References: <1401332999-15167-1-git-send-email-eparis@redhat.com>
+ <20140609223057.GB18475@kroah.com> <CALCETrUD75vSwJUjFuxGCrZ_7DJhCc1KW2v_ndF6EHJ31fUMBg@mail.gmail.com>
+ <CA+55aFwmajRnDOiBmZQf8rpVE-HigsDYy9oy-TsWLzn-vdyF+Q@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 9 Jun 2014 15:56:58 -0700
+Message-ID: <CALCETrXBSd4qKJE+yVp0YTPdrCDSfGf_SOxaZFgQpULg1bF3aA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] auditsc: audit_krule mask accesses need bounds checking
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Eric Paris <eparis@redhat.com>,
+        linux-audit@redhat.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Mon, Jun 9, 2014 at 3:53 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Mon, Jun 9, 2014 at 3:35 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>
+>> Hmm.  It seems that it didn't make it into Linus' tree.  Crap.
+>
+> I assume that if there is a maintainer who normally sends me stuff by
+> git, when I see patches in emails they are just informational
+> heads-ups about stuff that is being discussed or pending, and that
+> I'll see it later in a pull request. So I just ignore them unless I
+> have specific comments, since clearly the emailed patch is just
+> informational and/or for comments/acks from others.
+>
+> The exception is unless it *VERY CLEARLY* says otherwise (as in
+> "Linus, can you please take this directly due to xyz").
+>
+> Because why would somebody send me a patch series sometimes, and git
+> trees at other times? That would just be stupid.
 
-------------------
+In this particular case, it's my patch, and I've never sent you a pull
+request.  I sort of assumed that security@kernel.org magically caused
+acknowledged fixes to end up in your tree.  I'm not sure what I'm
+supposed to do here.
 
-From: Ben Hutchings <ben@decadent.org.uk>
+Maybe the confusion is because Eric resent the patch?
 
-commit d7500135802ca55b3f4e01a16544e8b34082f8c3 upstream.
-
-Input is handled in softirq context, but when pasting we may
-need to sleep.  speakup_paste_selection() currently tries to
-bodge this by busy-waiting if in_atomic(), but that doesn't
-help because the ldisc may also sleep.
-
-For bonus breakage, speakup_paste_selection() changes the
-state of current, even though it's not running in process
-context.
-
-Move it into a work item and make sure to cancel it on exit.
-
-References: https://bugs.debian.org/735202
-References: https://bugs.debian.org/744015
-Reported-by: Paul Gevers <elbrus@debian.org>
-Reported-and-tested-by: Jarek Czekalski <jarekczek@poczta.onet.pl>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/staging/speakup/main.c      |    1 
- drivers/staging/speakup/selection.c |   40 +++++++++++++++++++++++++++++-------
- drivers/staging/speakup/speakup.h   |    1 
- 3 files changed, 35 insertions(+), 7 deletions(-)
-
---- a/drivers/staging/speakup/main.c
-+++ b/drivers/staging/speakup/main.c
-@@ -2219,6 +2219,7 @@ static void __exit speakup_exit(void)
- 	unregister_keyboard_notifier(&keyboard_notifier_block);
- 	unregister_vt_notifier(&vt_notifier_block);
- 	speakup_unregister_devsynth();
-+	speakup_cancel_paste();
- 	del_timer(&cursor_timer);
- 	kthread_stop(speakup_task);
- 	speakup_task = NULL;
---- a/drivers/staging/speakup/selection.c
-+++ b/drivers/staging/speakup/selection.c
-@@ -4,6 +4,8 @@
- #include <linux/sched.h>
- #include <linux/device.h> /* for dev_warn */
- #include <linux/selection.h>
-+#include <linux/workqueue.h>
-+#include <asm/cmpxchg.h>
- 
- #include "speakup.h"
- 
-@@ -121,20 +123,24 @@ int speakup_set_selection(struct tty_str
- 	return 0;
- }
- 
--/* TODO: move to some helper thread, probably.  That'd fix having to check for
-- * in_atomic().  */
--int speakup_paste_selection(struct tty_struct *tty)
--{
-+struct speakup_paste_work {
-+	struct work_struct work;
-+	struct tty_struct *tty;
-+};
-+
-+static void __speakup_paste_selection(struct work_struct *work)
-+{
-+	struct speakup_paste_work *spw =
-+		container_of(work, struct speakup_paste_work, work);
-+	struct tty_struct *tty = xchg(&spw->tty, NULL);
- 	struct vc_data *vc = (struct vc_data *) tty->driver_data;
- 	int pasted = 0, count;
- 	DECLARE_WAITQUEUE(wait, current);
-+
- 	add_wait_queue(&vc->paste_wait, &wait);
- 	while (sel_buffer && sel_buffer_lth > pasted) {
- 		set_current_state(TASK_INTERRUPTIBLE);
- 		if (test_bit(TTY_THROTTLED, &tty->flags)) {
--			if (in_atomic())
--				/* if we are in an interrupt handler, abort */
--				break;
- 			schedule();
- 			continue;
- 		}
-@@ -146,6 +152,26 @@ int speakup_paste_selection(struct tty_s
- 	}
- 	remove_wait_queue(&vc->paste_wait, &wait);
- 	current->state = TASK_RUNNING;
-+	tty_kref_put(tty);
-+}
-+
-+static struct speakup_paste_work speakup_paste_work = {
-+	.work = __WORK_INITIALIZER(speakup_paste_work.work,
-+				   __speakup_paste_selection)
-+};
-+
-+int speakup_paste_selection(struct tty_struct *tty)
-+{
-+	if (cmpxchg(&speakup_paste_work.tty, NULL, tty) != NULL)
-+		return -EBUSY;
-+
-+	tty_kref_get(tty);
-+	schedule_work_on(WORK_CPU_UNBOUND, &speakup_paste_work.work);
- 	return 0;
- }
- 
-+void speakup_cancel_paste(void)
-+{
-+	cancel_work_sync(&speakup_paste_work.work);
-+	tty_kref_put(speakup_paste_work.tty);
-+}
---- a/drivers/staging/speakup/speakup.h
-+++ b/drivers/staging/speakup/speakup.h
-@@ -77,6 +77,7 @@ extern void synth_buffer_clear(void);
- extern void speakup_clear_selection(void);
- extern int speakup_set_selection(struct tty_struct *tty);
- extern int speakup_paste_selection(struct tty_struct *tty);
-+extern void speakup_cancel_paste(void);
- extern void speakup_register_devsynth(void);
- extern void speakup_unregister_devsynth(void);
- extern void synth_write(const char *buf, size_t count);
-
-
+--Andy
