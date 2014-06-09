@@ -1,55 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754636AbaFIKIy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 06:08:54 -0400
-Received: from mail-yk0-f180.google.com ([209.85.160.180]:64789 "EHLO
-	mail-yk0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752679AbaFIKIw (ORCPT
+	id S1754787AbaFIKJI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 06:09:08 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:56581 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754670AbaFIKJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 06:08:52 -0400
+	Mon, 9 Jun 2014 06:09:04 -0400
+X-IronPort-AV: E=Sophos;i="4.98,1001,1392134400"; 
+   d="scan'208";a="31649858"
+Message-ID: <53958539.1070904@cn.fujitsu.com>
+Date: Mon, 9 Jun 2014 17:58:17 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <20140607225356.GA5696@amd.pavel.ucw.cz>
-References: <20140607225356.GA5696@amd.pavel.ucw.cz>
-Date: Mon, 9 Jun 2014 11:08:51 +0100
-X-Google-Sender-Auth: fPbgBTcQea-zAHtnrhIL9ba7Klc
-Message-ID: <CAMLZHHRsewk=YqWp_sKULSfqyejgUWcZMjFp-G388xqaQBbg-g@mail.gmail.com>
-Subject: Re: Kernel for olpc-1.75
-From: Daniel Drake <dsd@laptop.org>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: kernel list <linux-kernel@vger.kernel.org>, chris@printf.net,
-        dsd@gentoo.org
-Content-Type: text/plain; charset=UTF-8
+To: David Rientjes <rientjes@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        <linux-mm@kvack.org>, Cgroups <cgroups@vger.kernel.org>,
+        <stable@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH] mm/mempolicy: fix sleeping function called from invalid
+ context
+References: <53902A44.50005@cn.fujitsu.com> <20140605132339.ddf6df4a0cf5c14d17eb8691@linux-foundation.org> <539192F1.7050308@cn.fujitsu.com> <alpine.DEB.2.02.1406081539140.21744@chino.kir.corp.google.com> <539574F1.2060701@cn.fujitsu.com> <alpine.DEB.2.02.1406090209460.24247@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1406090209460.24247@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.100]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pavel,
+Hi David,
 
-On Sat, Jun 7, 2014 at 11:53 PM, Pavel Machek <pavel@ucw.cz> wrote:
-> I broke installation on olpc-1.75, and I guess its time for it to
-> start running self-compiled kernel. (It still boots if I hold right
-> game key, but I can no longer control backlight. It does not boot at
-> all by default.)
->
-> AFAICT, olpc.fth and zImage in the boot/ directory of USB disk should
-> do the trick.
->
-> Unfortunately, 3.0 based kernels no longer compile with current tools,
-> so I tried this version (3.6 based).
+On 06/09/2014 05:13 PM, David Rientjes wrote:
 
-Sorry but OLPC never progressed beyond shipping 3.0 on this hardware,
-and low-level development only really happens in maintenance mode at
-the moment.
+> On Mon, 9 Jun 2014, Gu Zheng wrote:
+> 
+>>> I think your patch addresses the problem that you're reporting but misses 
+>>> the larger problem with cpuset.mems rebinding on fork().  When the 
+>>> forker's task_struct is duplicated (which includes ->mems_allowed) and it 
+>>> races with an update to cpuset_being_rebound in update_tasks_nodemask() 
+>>> then the task's mems_allowed doesn't get updated.
+>>
+>> Yes, you are right, this patch just wants to address the bug reported above.
+>> The race condition you mentioned above inherently exists there, but it is yet
+>> another issue, the rcu lock here makes no sense to it, and I think we need
+>> additional sync-mechanisms if want to fix it.
+> 
+> Yes, the rcu lock is not providing protection for any critical section 
+> here that requires (1) the forker's cpuset to be stored in 
+> cpuset_being_rebound or (2) the forked thread's cpuset to be rebound by 
+> the cpuset nodemask update, and no race involving the two.
+> 
+>> But thinking more, though the current implementation has flaw, but I worry
+>> about the negative effect if we really want to fix it. Or maybe the fear
+>> is unnecessary.:) 
+>>
+> 
+> It needs to be slightly rewritten to work properly without negatively 
+> impacting the latency of fork().  Do you have the cycles to do it?
+> 
 
-We did almost get a newer version working, but it had some unresolved
-issues that prevented us from shipping it to users. I'm not sure of
-the state of that arm-3.6 branch you are trying but I don't see
-anything wrong in your process. I would try early printascii() calls
-and a serial cable next.
+To be honest, I'm busy with other schedule. And if you(or other
+guys) have proper proposal, please go ahead.
 
-Mainline won't run on the machine in any kind of usable state without
-quite a bit of work on drivers and DT (which comes from the firmware).
-I did once start on that but didn't manage to get even the initial
-easy patches past the Marvell maintainers :(
+To Tejun, Li and Andrew:
+Any comment? Or could you apply this *bug fix* first?
 
-Daniel
+Regards,
+Gu
