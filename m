@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964793AbaFIWq2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 18:46:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57010 "EHLO
+	id S934353AbaFIWqW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 18:46:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56763 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933960AbaFIWpv (ORCPT
+	with ESMTP id S933907AbaFIWpr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:45:51 -0400
+	Mon, 9 Jun 2014 18:45:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 68/78] mm: add !pte_present() check on existing hugetlb_entry callbacks
-Date: Mon,  9 Jun 2014 15:48:48 -0700
-Message-Id: <20140609224815.516161345@linuxfoundation.org>
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Shaun Ruffell <sruffell@digium.com>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.10 02/40] sched: Sanitize irq accounting madness
+Date: Mon,  9 Jun 2014 15:48:33 -0700
+Message-Id: <20140609224839.290900497@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140609224813.282275135@linuxfoundation.org>
-References: <20140609224813.282275135@linuxfoundation.org>
+In-Reply-To: <20140609224839.127615063@linuxfoundation.org>
+References: <20140609224839.127615063@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -28,73 +29,124 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit d4c54919ed86302094c0ca7d48a8cbd4ee753e92 upstream.
+commit 2d513868e2a33e1d5315490ef4c861ee65babd65 upstream.
 
-The age table walker doesn't check non-present hugetlb entry in common
-path, so hugetlb_entry() callbacks must check it.  The reason for this
-behavior is that some callers want to handle it in its own way.
+Russell reported, that irqtime_account_idle_ticks() takes ages due to:
 
-[ I think that reason is bogus, btw - it should just do what the regular
-  code does, which is to call the "pte_hole()" function for such hugetlb
-  entries  - Linus]
+       for (i = 0; i < ticks; i++)
+               irqtime_account_process_tick(current, 0, rq);
 
-However, some callers don't check it now, which causes unpredictable
-result, for example when we have a race between migrating hugepage and
-reading /proc/pid/numa_maps.  This patch fixes it by adding !pte_present
-checks on buggy callbacks.
+It's sad, that this code was written way _AFTER_ the NOHZ idle
+functionality was available. I charge myself guitly for not paying
+attention when that crap got merged with commit abb74cefa ("sched:
+Export ns irqtimes through /proc/stat")
 
-This bug exists for years and got visible by introducing hugepage
-migration.
+So instead of looping nr_ticks times just apply the whole thing at
+once.
 
-ChangeLog v2:
-- fix if condition (check !pte_present() instead of pte_present())
+As a side note: The whole cputime_t vs. u64 business in that context
+wants to be cleaned up as well. There is no point in having all these
+back and forth conversions. Lets standardise on u64 nsec for all
+kernel internal accounting and be done with it. Everything else does
+not make sense at all for fine grained accounting. Frederic, can you
+please take care of that?
 
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Rik van Riel <riel@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-[ Backported to 3.15.  Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org> ]
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Venkatesh Pallipadi <venki@google.com>
+Cc: Shaun Ruffell <sruffell@digium.com>
+Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1405022307000.6261@ionos.tec.linutronix.de
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/proc/task_mmu.c |    2 +-
- mm/mempolicy.c     |    6 +++++-
- 2 files changed, 6 insertions(+), 2 deletions(-)
+ kernel/sched/cputime.c |   32 ++++++++++++++++----------------
+ 1 file changed, 16 insertions(+), 16 deletions(-)
 
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -1350,7 +1350,7 @@ static int gather_hugetbl_stats(pte_t *p
- 	struct numa_maps *md;
- 	struct page *page;
+--- a/kernel/sched/cputime.c
++++ b/kernel/sched/cputime.c
+@@ -326,50 +326,50 @@ out:
+  * softirq as those do not count in task exec_runtime any more.
+  */
+ static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
+-						struct rq *rq)
++					 struct rq *rq, int ticks)
+ {
+-	cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
++	cputime_t scaled = cputime_to_scaled(cputime_one_jiffy);
++	u64 cputime = (__force u64) cputime_one_jiffy;
+ 	u64 *cpustat = kcpustat_this_cpu->cpustat;
  
--	if (pte_none(*pte))
-+	if (!pte_present(*pte))
- 		return 0;
+ 	if (steal_account_process_tick())
+ 		return;
  
- 	page = pte_page(*pte);
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -526,9 +526,13 @@ static void queue_pages_hugetlb_pmd_rang
- 	int nid;
- 	struct page *page;
- 	spinlock_t *ptl;
-+	pte_t entry;
++	cputime *= ticks;
++	scaled *= ticks;
++
+ 	if (irqtime_account_hi_update()) {
+-		cpustat[CPUTIME_IRQ] += (__force u64) cputime_one_jiffy;
++		cpustat[CPUTIME_IRQ] += cputime;
+ 	} else if (irqtime_account_si_update()) {
+-		cpustat[CPUTIME_SOFTIRQ] += (__force u64) cputime_one_jiffy;
++		cpustat[CPUTIME_SOFTIRQ] += cputime;
+ 	} else if (this_cpu_ksoftirqd() == p) {
+ 		/*
+ 		 * ksoftirqd time do not get accounted in cpu_softirq_time.
+ 		 * So, we have to handle it separately here.
+ 		 * Also, p->stime needs to be updated for ksoftirqd.
+ 		 */
+-		__account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
+-					CPUTIME_SOFTIRQ);
++		__account_system_time(p, cputime, scaled, CPUTIME_SOFTIRQ);
+ 	} else if (user_tick) {
+-		account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
++		account_user_time(p, cputime, scaled);
+ 	} else if (p == rq->idle) {
+-		account_idle_time(cputime_one_jiffy);
++		account_idle_time(cputime);
+ 	} else if (p->flags & PF_VCPU) { /* System time or guest time */
+-		account_guest_time(p, cputime_one_jiffy, one_jiffy_scaled);
++		account_guest_time(p, cputime, scaled);
+ 	} else {
+-		__account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
+-					CPUTIME_SYSTEM);
++		__account_system_time(p, cputime, scaled,	CPUTIME_SYSTEM);
+ 	}
+ }
  
- 	ptl = huge_pte_lock(hstate_vma(vma), vma->vm_mm, (pte_t *)pmd);
--	page = pte_page(huge_ptep_get((pte_t *)pmd));
-+	entry = huge_ptep_get((pte_t *)pmd);
-+	if (!pte_present(entry))
-+		goto unlock;
-+	page = pte_page(entry);
- 	nid = page_to_nid(page);
- 	if (node_isset(nid, *nodes) == !!(flags & MPOL_MF_INVERT))
- 		goto unlock;
+ static void irqtime_account_idle_ticks(int ticks)
+ {
+-	int i;
+ 	struct rq *rq = this_rq();
+ 
+-	for (i = 0; i < ticks; i++)
+-		irqtime_account_process_tick(current, 0, rq);
++	irqtime_account_process_tick(current, 0, rq, ticks);
+ }
+ #else /* CONFIG_IRQ_TIME_ACCOUNTING */
+ static inline void irqtime_account_idle_ticks(int ticks) {}
+ static inline void irqtime_account_process_tick(struct task_struct *p, int user_tick,
+-						struct rq *rq) {}
++						struct rq *rq, int nr_ticks) {}
+ #endif /* CONFIG_IRQ_TIME_ACCOUNTING */
+ 
+ /*
+@@ -464,7 +464,7 @@ void account_process_tick(struct task_st
+ 		return;
+ 
+ 	if (sched_clock_irqtime) {
+-		irqtime_account_process_tick(p, user_tick, rq);
++		irqtime_account_process_tick(p, user_tick, rq, 1);
+ 		return;
+ 	}
+ 
 
 
