@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934893AbaFIXPq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 19:15:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56732 "EHLO
+	id S935558AbaFIXQV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 19:16:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56724 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933138AbaFIWpO (ORCPT
+	with ESMTP id S933130AbaFIWpN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:45:14 -0400
+	Mon, 9 Jun 2014 18:45:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.14 01/78] sched: Use CPUPRI_NR_PRIORITIES instead of MAX_RT_PRIO in cpupri check
-Date: Mon,  9 Jun 2014 15:47:41 -0700
-Message-Id: <20140609224813.403895349@linuxfoundation.org>
+        Vince Weaver <vincent.weaver@maine.edu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.14 05/78] perf: Limit perf_event_attr::sample_period to 63 bits
+Date: Mon,  9 Jun 2014 15:47:45 -0700
+Message-Id: <20140609224813.533592741@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140609224813.282275135@linuxfoundation.org>
 References: <20140609224813.282275135@linuxfoundation.org>
@@ -30,41 +30,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit 6227cb00cc120f9a43ce8313bb0475ddabcb7d01 upstream.
+commit 0819b2e30ccb93edf04876237b6205eef84ec8d2 upstream.
 
-The check at the beginning of cpupri_find() makes sure that the task_pri
-variable does not exceed the cp->pri_to_cpu array length. But that length
-is CPUPRI_NR_PRIORITIES not MAX_RT_PRIO, where it will miss the last two
-priorities in that array.
+Vince reported that using a large sample_period (one with bit 63 set)
+results in wreckage since while the sample_period is fundamentally
+unsigned (negative periods don't make sense) the way we implement
+things very much rely on signed logic.
 
-As task_pri is computed from convert_prio() which should never be bigger
-than CPUPRI_NR_PRIORITIES, if the check should cause a panic if it is
-hit.
+So limit sample_period to 63 bits to avoid tripping over this.
 
-Reported-by: Mike Galbraith <umgwanakikbuti@gmail.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Reported-by: Vince Weaver <vincent.weaver@maine.edu>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1397015410.5212.13.camel@marge.simpson.net
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Link: http://lkml.kernel.org/n/tip-p25fhunibl4y3qi0zuqmyf4b@git.kernel.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sched/cpupri.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ kernel/events/core.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/kernel/sched/cpupri.c
-+++ b/kernel/sched/cpupri.c
-@@ -70,8 +70,7 @@ int cpupri_find(struct cpupri *cp, struc
- 	int idx = 0;
- 	int task_pri = convert_prio(p->prio);
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -7025,6 +7025,9 @@ SYSCALL_DEFINE5(perf_event_open,
+ 	if (attr.freq) {
+ 		if (attr.sample_freq > sysctl_perf_event_sample_rate)
+ 			return -EINVAL;
++	} else {
++		if (attr.sample_period & (1ULL << 63))
++			return -EINVAL;
+ 	}
  
--	if (task_pri >= MAX_RT_PRIO)
--		return 0;
-+	BUG_ON(task_pri >= CPUPRI_NR_PRIORITIES);
- 
- 	for (idx = 0; idx < task_pri; idx++) {
- 		struct cpupri_vec *vec  = &cp->pri_to_cpu[idx];
+ 	/*
 
 
