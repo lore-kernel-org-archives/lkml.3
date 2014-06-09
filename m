@@ -1,93 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932525AbaFIK3s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 06:29:48 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:56201 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754741AbaFIK3q (ORCPT
+	id S933167AbaFIKad (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 06:30:33 -0400
+Received: from new1-smtp.messagingengine.com ([66.111.4.221]:53590 "EHLO
+	new1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932201AbaFIKa2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 06:29:46 -0400
-X-AuditID: cbfee68e-b7fb96d000004bfc-1b-53958c984d9c
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: broonie@kernel.org, lgirdwood@gmail.com, grant.likely@linaro.org,
-        robh+dt@kernel.org
-Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCH 0/2] regulator: of: Add support for pasing regulator suspend
- state
-Date: Mon, 09 Jun 2014 19:29:38 +0900
-Message-id: <1402309780-8118-1-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.8.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBLMWRmVeSWpSXmKPExsWyRsSkQHdGz9Rgg6cNKhZTHz5hs7j+5Tmr
-	xfwj51gtDvzZwWhxtukNu8W3Kx1MFpd3zWGzuN24gs2ide8RdgdOj52z7rJ7bFrVyeZx59oe
-	No++LasYPT5vkgtgjeKySUnNySxLLdK3S+DK2DtpIVvBH86KFWsmMTYw/mLvYuTkkBAwkVg5
-	7RkLhC0mceHeerYuRi4OIYGljBKz119jgSl6P6ONGcQWEpjOKHHwYRJEUROTxM+D38GK2AS0
-	JPa/uAHUzcEhIhAlsbaDCaSGWWA2o0TL+T6wZmGBEIkni66D2SwCqhJL1twDs3kFXCTOdT2H
-	ukhO4sOeR+wgzRIC/ewSk/paoRoEJL5NPsQCskBCQFZi0wFmiHpJiYMrbrBMYBRcwMiwilE0
-	tSC5oDgpvchIrzgxt7g0L10vOT93EyMwlE//e9a3g/HmAetDjMlA4yYyS4km5wNjIa8k3tDY
-	zMjC1MTU2Mjc0ow0YSVx3kUPk4KEBNITS1KzU1MLUovii0pzUosPMTJxcEo1MIqtyZi+K6/C
-	1E/zysfXbML8bgxzlr5O+bV/ZYnQhlVKabs0G70XPP1u0bm+9YPe3Eq322oewbtcNaUuhpzd
-	8iVZ6Xxxr1WJ+YclhxeY/bmSsPxlbIP+G9NW5Wl3Nt3SfbvI+tBcZcblPrZWD0OKP158XP13
-	tfKvvfnHlUvCn0htvHeNt6nhfIASS3FGoqEWc1FxIgDg3o3PewIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKIsWRmVeSWpSXmKPExsVy+t9jQd0ZPVODDZbNkbGY+vAJm8X1L89Z
-	LeYfOcdqceDPDkaLs01v2C2+Xelgsri8aw6bxe3GFWwWrXuPsDtweuycdZfdY9OqTjaPO9f2
-	sHn0bVnF6PF5k1wAa1QDo01GamJKapFCal5yfkpmXrqtkndwvHO8qZmBoa6hpYW5kkJeYm6q
-	rZKLT4CuW2YO0EVKCmWJOaVAoYDE4mIlfTtME0JD3HQtYBojdH1DguB6jAzQQMIaxoy9kxay
-	FfzhrFixZhJjA+Mv9i5GTg4JAROJ9zPamCFsMYkL99azgdhCAtMZJQ4+TOpi5AKym5gkfh78
-	zgKSYBPQktj/4gZQEQeHiECUxNoOJpAaZoHZjBIt5/vABgkLhEg8WXQdzGYRUJVYsuYemM0r
-	4CJxrus51GI5iQ97HrFPYORewMiwilE0tSC5oDgpPddIrzgxt7g0L10vOT93EyM4Up5J72Bc
-	1WBxiFGAg1GJhzfi95RgIdbEsuLK3EOMEhzMSiK8PjlTg4V4UxIrq1KL8uOLSnNSiw8xJgNt
-	n8gsJZqcD4zivJJ4Q2MTMyNLI3NDCyNjc9KElcR5D7ZaBwoJpCeWpGanphakFsFsYeLglGpg
-	NJpV8+Bn4fxdvVd/ln3c8fq7zOeak07/F6TpKETNstjAJBN7VPf0maWXNZjdL790/W97ulKs
-	b6f61v7TiXOmb026ZP1ISVpkscfxUI4qgYyXIcKLm5YL3vR0b7ml0TM1pkL9oMNBpXmz7Z6V
-	f2aY/qn9vnKVK39/3E7mqm2Tyy9wmok6rlT9psRSnJFoqMVcVJwIAO4DFojYAgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 9 Jun 2014 06:30:28 -0400
+Message-Id: <1402309827.7242.126672901.053EFD6E@webmail.messagingengine.com>
+X-Sasl-Enc: GXDC2DATxSd8Ef8wS8Q7kXge/D/GOcbNjz2Ffh/Yxrse 1402309827
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: George Spelvin <linux@horizon.com>, davem@davemloft.net,
+        dborkman@redhat.com, shemminger@osdl.org, tytso@mit.edu
+Cc: linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Mailer: MessagingEngine.com Webmail Interface - ajax-037d6a32
+In-Reply-To: <20140608204800.7610.qmail@ns.horizon.com>
+References: <20140608204800.7610.qmail@ns.horizon.com>
+Subject: Re: [PATCH 5/7] lib/random32.c: Make prandom_u32_max efficient for
+ powers of 2
+Date: Mon, 09 Jun 2014 03:30:27 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The regulators would set different state/mode according to the kind of suspend
-state. So regulation_constraints structure has already regulator suspend state filed.
-This patch parse regulator suspend state from devicetree file.
+Thanks for your detailed explanation!
 
-For example:
+On Sun, Jun 8, 2014, at 13:48, George Spelvin wrote:
+> Thank you for your comments!
+> 
+> > Have you checked assembler output if this helps anything at all? Constant
+> > propagation in the compiler should be able to figure that out all by
+> > itself. The only places I use __builtin_constant_p today are where I
+> > also make use of inline assembler.
+> 
+> Yes, I did.  (I'll expand the commit comment for v2; my bad.)
+> 
+> It seems that GCC isn't smart enough to reduce this to a single shift.
+> With the multiply and reduce, the code looks like:
+>         call    prandom_u32
+>         xorl    %edx, %edx
+>         shldl   $4, %eax, %edx
+>         movl    %edx, %eax
+> 
+> Instead of the hoped-for
+>         call    prandom_u32
+> 	shrl	$28, %eax
 
-	ldoX_reg: LDOx {
-		regulator-name = "VAP_XXX_1.2V";
-		regulator-min-microvolt = <1200000>;
-		regulator-max-microvolt = <1200000>;
-		regulator-always-on;
+On x86_64 I get the above result. Seems like gcc doesn't see the downcast to u32 far enough ahead and stays in DI mode on i386, thus the shldl. It shouldn't matter that much... ;)
 
-		regulator-initial-state = <3>;	/* PM_SUSPEND_MEM */
-		regulator-state-standby {
-			regulator-volt = <1200000>;
-			regulator-mode = <0x2>;	/* REGULATOR_MODE_NORMAL */
-		};
+> Converting to a single mask is something the compiler can't do,
+> because it doesn't understand that using the lsbits instead of the
+> msbits is okay.
 
-		regulator-state-mem {
-			regulator-volt = <1200000>;
-			regulator-mode = <0x8>;	/* REGULATOR_MODE_STANDBY */
-			regulator-off-in-suspend;
-		};
+Yep, sure.
 
-		regulator-state-disk {
-			regulator-volt = <1200000>;
-			regulator-mode = <0x2>;	/* REGULATOR_MODE_NORMAL */
-			regulator-on-in-suspend;
-		};
-	};
+> With the mask, it turns into the spectacularly simple:
+>         call    prandom_u32
+>         andl    $15, %eax
+> 
+> An interesting question is which is preferred in general.
+> 
+> The AND allows non-constant powers of 2 without requiring CLZ.  But I
+> don't recall seeing that actually happen anywhere.  And the shift allows
+> a smaller encoding (8-bit rather than 32-bit immediate constant) when
+> the power of 2 is known at compile time and is larger than 128 (for
+> example, PAGE_SIZE).
 
-Chanwoo Choi (2):
-  regulator: of: Add support for parsing regulator_state for suspend state
-  dt-bindings: regulator: Add regulator suspend state for PM state
+I actually don't know if folding logic in gcc is so enhanced to see that coming. ;)
+Would be interesting tough, maybe I'll try that later.
 
- .../devicetree/bindings/regulator/regulator.txt    | 12 +++++
- drivers/regulator/of_regulator.c                   | 61 +++++++++++++++++++++-
- 2 files changed, 71 insertions(+), 2 deletions(-)
+> Me, I thought it was in the noise and not worth stressing about,
+> but I also understand the hackers's urge for maximum tweaking.
 
--- 
-1.8.0
+Totally ok. ;)
 
+I don't have any problems with the patch, although such a detailed changelog would be nice + some approx. numbers of how many times we run into the new optimization.
+
+Bye,
+Hannes
