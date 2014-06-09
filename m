@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933667AbaFII6k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 04:58:40 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58544 "EHLO
+	id S933625AbaFII6d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 04:58:33 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58538 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932186AbaFIIv1 (ORCPT
+	by vger.kernel.org with ESMTP id S932197AbaFIIv1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jun 2014 04:51:27 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 105/146] memory: mvebu-devbus: fix the conversion of the bus width
-Date: Mon,  9 Jun 2014 10:50:40 +0200
-Message-Id: <37f92fc6493c9f42b691dbc6c015ff28350ff6fa.1402303821.git.jslaby@suse.cz>
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        "J. Bruce Fields" <bfields@redhat.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 097/146] NFSd: Move default initialisers from create_client() to alloc_client()
+Date: Mon,  9 Jun 2014 10:50:32 +0200
+Message-Id: <3adce04c026b56960f37b07463319aee631523df.1402303821.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
 References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
@@ -24,70 +24,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit ce965c3d2e68c5325dd5624eb101d70423022fef upstream.
+commit 5694c93e6c4954fa9424c215f75eeb919bddad64 upstream.
 
-According to the Armada 370 and Armada XP datasheets, the part of the
-Device Bus register that configure the bus width should contain 0 for
-a 8 bits bus width, and 1 for a 16 bits bus width (other values are
-unsupported/reserved).
+Aside from making it clearer what is non-trivial in create_client(), it
+also fixes a bug whereby we can call free_client() before idr_init()
+has been called.
 
-However, the current conversion done in the driver to convert from a
-bus width in bits to the value expected by the register leads to
-setting the register to 1 for a 8 bits bus, and 2 for a 16 bits bus.
-
-This mistake was compensated by a mistake in the existing Device Tree
-files for Armada 370/XP platforms: they were declaring a 8 bits bus
-width, while the hardware in fact uses a 16 bits bus width.
-
-This commit fixes that by adjusting the conversion logic.
-
-This patch fixes a bug that was introduced in
-3edad321b1bd2e6c8b5f38146c115c8982438f06 ('drivers: memory: Introduce
-Marvell EBU Device Bus driver'), which was merged in v3.11.
-
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Link: https://lkml.kernel.org/r/1397489361-5833-2-git-send-email-thomas.petazzoni@free-electrons.com
-Fixes: 3edad321b1bd ('drivers: memory: Introduce Marvell EBU Device Bus driver')
-Acked-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/memory/mvebu-devbus.c | 15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+ fs/nfsd/nfs4state.c | 24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/memory/mvebu-devbus.c b/drivers/memory/mvebu-devbus.c
-index 110c03627051..b59a17fb7c3e 100644
---- a/drivers/memory/mvebu-devbus.c
-+++ b/drivers/memory/mvebu-devbus.c
-@@ -108,8 +108,19 @@ static int devbus_set_timing_params(struct devbus *devbus,
- 			node->full_name);
- 		return err;
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index 5cbdf38ffc66..7a32d576ed7e 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -1071,6 +1071,18 @@ static struct nfs4_client *alloc_client(struct xdr_netobj name)
+ 		return NULL;
  	}
--	/* Convert bit width to byte width */
--	r.bus_width /= 8;
-+
-+	/*
-+	 * The bus width is encoded into the register as 0 for 8 bits,
-+	 * and 1 for 16 bits, so we do the necessary conversion here.
-+	 */
-+	if (r.bus_width == 8)
-+		r.bus_width = 0;
-+	else if (r.bus_width == 16)
-+		r.bus_width = 1;
-+	else {
-+		dev_err(devbus->dev, "invalid bus width %d\n", r.bus_width);
-+		return -EINVAL;
-+	}
+ 	clp->cl_name.len = name.len;
++	INIT_LIST_HEAD(&clp->cl_sessions);
++	idr_init(&clp->cl_stateids);
++	atomic_set(&clp->cl_refcount, 0);
++	clp->cl_cb_state = NFSD4_CB_UNKNOWN;
++	INIT_LIST_HEAD(&clp->cl_idhash);
++	INIT_LIST_HEAD(&clp->cl_openowners);
++	INIT_LIST_HEAD(&clp->cl_delegations);
++	INIT_LIST_HEAD(&clp->cl_lru);
++	INIT_LIST_HEAD(&clp->cl_callbacks);
++	INIT_LIST_HEAD(&clp->cl_revoked);
++	spin_lock_init(&clp->cl_lock);
++	rpc_init_wait_queue(&clp->cl_cb_waitq, "Backchannel slot table");
+ 	return clp;
+ }
  
- 	err = get_timing_param_ps(devbus, node, "devbus,badr-skew-ps",
- 				 &r.badr_skew);
+@@ -1335,7 +1347,6 @@ static struct nfs4_client *create_client(struct xdr_netobj name,
+ 	if (clp == NULL)
+ 		return NULL;
+ 
+-	INIT_LIST_HEAD(&clp->cl_sessions);
+ 	ret = copy_cred(&clp->cl_cred, &rqstp->rq_cred);
+ 	if (ret) {
+ 		spin_lock(&nn->client_lock);
+@@ -1343,20 +1354,9 @@ static struct nfs4_client *create_client(struct xdr_netobj name,
+ 		spin_unlock(&nn->client_lock);
+ 		return NULL;
+ 	}
+-	idr_init(&clp->cl_stateids);
+-	atomic_set(&clp->cl_refcount, 0);
+-	clp->cl_cb_state = NFSD4_CB_UNKNOWN;
+-	INIT_LIST_HEAD(&clp->cl_idhash);
+-	INIT_LIST_HEAD(&clp->cl_openowners);
+-	INIT_LIST_HEAD(&clp->cl_delegations);
+-	INIT_LIST_HEAD(&clp->cl_lru);
+-	INIT_LIST_HEAD(&clp->cl_callbacks);
+-	INIT_LIST_HEAD(&clp->cl_revoked);
+-	spin_lock_init(&clp->cl_lock);
+ 	nfsd4_init_callback(&clp->cl_cb_null);
+ 	clp->cl_time = get_seconds();
+ 	clear_bit(0, &clp->cl_cb_slot_busy);
+-	rpc_init_wait_queue(&clp->cl_cb_waitq, "Backchannel slot table");
+ 	copy_verf(clp, verf);
+ 	rpc_copy_addr((struct sockaddr *) &clp->cl_addr, sa);
+ 	gen_confirm(clp);
 -- 
 1.9.3
 
