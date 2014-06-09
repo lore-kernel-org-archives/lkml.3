@@ -1,90 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933379AbaFILFh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 07:05:37 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:61390 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932253AbaFILFf (ORCPT
+	id S933415AbaFILG0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 07:06:26 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:32865 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932253AbaFILGW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 07:05:35 -0400
-X-AuditID: cbfee691-b7f2f6d0000040c4-fe-539594fdf4b7
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: lee.jones@linaro.org, sbkim73@samsung.com, sameo@linux.intel.com
-Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        linux-kernel@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCH] mfd: sec-core: Prepare regulators for suspend state to reduce
- power-consumption
-Date: Mon, 09 Jun 2014 20:05:30 +0900
-Message-id: <1402311930-24056-1-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.8.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKLMWRmVeSWpSXmKPExsWyRsSkSPfvlKnBBo/2iVlc//Kc1eJs0xt2
-	i/tfjzJaXN41h83iduMKNovT3awWF1d8YXJg97hzbQ+bx7yTgR59W1YxenzeJBfAEsVlk5Ka
-	k1mWWqRvl8CV0XrgC1NBO2fF+r4L7A2MJ9m7GDk5JARMJBo+zGCEsMUkLtxbz9bFyMEhJLCU
-	UWI+P0zJk85WNhBbSGARo8SCDVVdjFxAdhOTxPrNU8ESbAJaEvtf3ACzRQRcJJZ0vwOzmQVq
-	JfZda2IFsYUFkiQ+f1/LBGKzCKhKXDo0A6yGV8BVYu+ZZ8wQy+QkPux5xA6yQELgM5vE7zUP
-	WSAaBCS+TT7EAnKchICsxKYDUPWSEgdX3GCZwCi4gJFhFaNoakFyQXFSepGpXnFibnFpXrpe
-	cn7uJkZgkJ7+92ziDsb7B6wPMSYDjZvILCWanA8M8rySeENjMyMLUxNTYyNzSzPShJXEedMf
-	JQUJCaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRqYDzmw9vRMfGXLoOV/bvUDyf/pX+QWv6o+5cY
-	m3qw4qNQljntt9r3aEbet65Or5ZUSsp7Mfn+dOltHwSOhs247GjqcN2hokd/a/M+8RsOV6dl
-	HOa95tfw9/Xti48di3MDj0/fppF4m3XO3LsH6x5yfNnCydAUVKc6M6RD8LjTooql9Ss7Twax
-	7VNiKc5INNRiLipOBAADy9yJaAIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCIsWRmVeSWpSXmKPExsVy+t9jAd2/U6YGG5z/wGdx/ctzVouzTW/Y
-	Le5/PcpocXnXHDaL240r2CxOd7NaXFzxhcmB3ePOtT1sHvNOBnr0bVnF6PF5k1wAS1QDo01G
-	amJKapFCal5yfkpmXrqtkndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0AFKCmWJOaVA
-	oYDE4mIlfTtME0JD3HQtYBojdH1DguB6jAzQQMIaxozWA1+YCto5K9b3XWBvYDzJ3sXIySEh
-	YCLxpLOVDcIWk7hwbz2YLSSwiFFiwYaqLkYuILuJSWL95qlgCTYBLYn9L26A2SICLhJLut+B
-	2cwCtRL7rjWxgtjCAkkSn7+vZQKxWQRUJS4dmgFWwyvgKrH3zDNmiGVyEh/2PGKfwMi9gJFh
-	FaNoakFyQXFSeq6RXnFibnFpXrpecn7uJkZwHDyT3sG4qsHiEKMAB6MSD2/E7ynBQqyJZcWV
-	uYcYJTiYlUR4fXKmBgvxpiRWVqUW5ccXleakFh9iTAbaPpFZSjQ5HxijeSXxhsYmZkaWRuaG
-	FkbG5qQJK4nzHmy1DhQSSE8sSc1OTS1ILYLZwsTBKdXAmMomlHjz7eZHNkcS2dyl9i8W3cxp
-	su3elUP6Snb7Nu79Udd818mwddqZsk/t/4TWxjDuEzQ9H77WaI5KX0bemjWXtHcmvha70dh4
-	0MBSUvTrhunfVc59X3y8aI+4+NV2norb9299VehpqTM4F3lY/Hzt6/iPnXlhPmbPNT8FLA3l
-	1DD5clTRXYmlOCPRUIu5qDgRAJcZ+KTHAgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 9 Jun 2014 07:06:22 -0400
+Message-ID: <1402311976.7064.5.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [RFC PATCH v4 3/4] ima: define '.ima' as a builtin 'trusted'
+ keyring
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+Cc: linux-security-module <linux-security-module@vger.kernel.org>,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        David Howells <dhowells@redhat.com>, Josh Boyer <jwboyer@redhat.com>,
+        keyrings <keyrings@linux-nfs.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Mon, 09 Jun 2014 07:06:16 -0400
+In-Reply-To: <CACE9dm8f+nxvY+R1j0+n9wWqc2yCspOrfR4ZXhEyOPzPHXOJqA@mail.gmail.com>
+References: <1401289784-31340-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <1401289784-31340-4-git-send-email-zohar@linux.vnet.ibm.com>
+	 <CACE9dm8K8Qs_p3fcsW2m9h-M+iX7m=F=hbTeUeyi4vp_Pq7k0g@mail.gmail.com>
+	 <1401305182.13546.152.camel@dhcp-9-2-203-236.watson.ibm.com>
+	 <CACE9dm8f+nxvY+R1j0+n9wWqc2yCspOrfR4ZXhEyOPzPHXOJqA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14060911-6688-0000-0000-0000026F9E03
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch use regulator_suspend_prepare() function to prepare the proper state
-of regulators for suspend state to remove un-necessary leakage power-consumption.
+On Fri, 2014-05-30 at 19:05 +0300, Dmitry Kasatkin wrote:
+> On 28 May 2014 22:26, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> > On Wed, 2014-05-28 at 21:55 +0300, Dmitry Kasatkin wrote:
+> >> On 28 May 2014 18:09, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> >> > Require all keys added to the IMA keyring be signed by an
+> >> > existing trusted key on the system trusted keyring.
+> >> >
+> >> > Changelog v1:
+> >> > - don't link IMA trusted keyring to user keyring
+> >> >
+> >> > Changelog:
+> >> > - define stub integrity_init_keyring() function (reported-by Fengguang Wu)
+> >> > - differentiate between regular and trusted keyring names.
+> >> > - replace printk with pr_info (D. Kasatkin)
+> >> > - only make the IMA keyring a trusted keyring (reported-by D. Kastatkin)
+> >> > - define stub integrity_init_keyring() definition based on
+> >> >   CONFIG_INTEGRITY_SIGNATURE, not CONFIG_INTEGRITY_ASYMMETRIC_KEYS.
+> >> >   (reported-by Jim Davis)
+> >> >
+> >> > Signed-off-by: Mimi Zohar<zohar@linux.vnet.ibm.com>
+> >> > ---
+> >> >  security/integrity/digsig.c           | 26 +++++++++++++++++++++++++-
+> >> >  security/integrity/ima/Kconfig        |  8 ++++++++
+> >> >  security/integrity/ima/ima_appraise.c | 11 +++++++++++
+> >> >  security/integrity/integrity.h        |  5 +++++
+> >> >  4 files changed, 49 insertions(+), 1 deletion(-)
+> >> >
+> >> > diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
+> >> > index b4af4eb..7da5f9c 100644
+> >> > --- a/security/integrity/digsig.c
+> >> > +++ b/security/integrity/digsig.c
+> >> > @@ -13,7 +13,9 @@
+> >> >  #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> >> >
+> >> >  #include <linux/err.h>
+> >> > +#include <linux/sched.h>
+> >> >  #include <linux/rbtree.h>
+> >> > +#include <linux/cred.h>
+> >> >  #include <linux/key-type.h>
+> >> >  #include <linux/digsig.h>
+> >> >
+> >> > @@ -24,7 +26,11 @@ static struct key *keyring[INTEGRITY_KEYRING_MAX];
+> >> >  static const char *keyring_name[INTEGRITY_KEYRING_MAX] = {
+> >> >         "_evm",
+> >> >         "_module",
+> >> > +#ifndef CONFIG_IMA_TRUSTED_KEYRING
+> >> >         "_ima",
+> >> > +#else
+> >> > +       ".ima",
+> >> > +#endif
+> >> >  };
+> >> >
+> >> >  int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+> >> > @@ -35,7 +41,7 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+> >> >
+> >> >         if (!keyring[id]) {
+> >> >                 keyring[id] =
+> >> > -                       request_key(&key_type_keyring, keyring_name[id], NULL);
+> >> > +                   request_key(&key_type_keyring, keyring_name[id], NULL);
+> >> >                 if (IS_ERR(keyring[id])) {
+> >> >                         int err = PTR_ERR(keyring[id]);
+> >> >                         pr_err("no %s keyring: %d\n", keyring_name[id], err);
+> >> > @@ -56,3 +62,21 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+> >> >
+> >> >         return -EOPNOTSUPP;
+> >> >  }
+> >> > +
+> >> > +int integrity_init_keyring(const unsigned int id)
+> >> > +{
+> >> > +       const struct cred *cred = current_cred();
+> >> > +
+> >> > +       keyring[id] = keyring_alloc(keyring_name[id], KUIDT_INIT(0),
+> >> > +                                   KGIDT_INIT(0), cred,
+> >> > +                                   ((KEY_POS_ALL & ~KEY_POS_SETATTR) |
+> >> > +                                     KEY_USR_VIEW | KEY_USR_READ |
+> >> > +                                     KEY_USR_WRITE | KEY_USR_SEARCH),
+> >> > +                                   KEY_ALLOC_NOT_IN_QUOTA, NULL);
+> >>
+> >> Last parameter "destination" is NULL. It makes keyring "unsearchable"
+> >> from user space.
+> >> It prevents loading trusted keys from user-space, e.g. initramfs...
+> >>
+> >> Should it be "cred->user->uid_keyring"??
+> >
+> > David extended keyctl with the '%keyring' option.  For example,
+> > "keyctl show %keyring:.ima" returns the .ima keyring id with a list of
+> > all the keys.
+> >
+> 
+> That is not kernel feature, but keyctl feature as I can see.
+> It will not find keyring from user space..
+> 
+> keyutils.c 3.5.7 has this kind of thing
+> f = fopen("/proc/keys", "r");
+> 
+> But it would require CONFIG_PROC_KEYS to be enabled.
+> 
+> May be David may comment...
 
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
----
-This patch has a dependency on following patchset[1].
-- [1] https://lkml.org/lkml/2014/6/9/255
-  [PATCHv4 0/3] mfd: sec-core: Add support S2MPU02 PMIC device
+David commented on an prior patch set, which defined a new id for the
+system trusted keyring. For hjs comments, refer to
+http://marc.info/?l=linux-security-module&m=137829415530503&w=2
 
- drivers/mfd/sec-core.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+thanks,
 
-diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
-index 5e8784b..e3413d5 100644
---- a/drivers/mfd/sec-core.c
-+++ b/drivers/mfd/sec-core.c
-@@ -30,6 +30,7 @@
- #include <linux/mfd/samsung/s2mps14.h>
- #include <linux/mfd/samsung/s5m8763.h>
- #include <linux/mfd/samsung/s5m8767.h>
-+#include <linux/regulator/machine.h>
- #include <linux/regmap.h>
- 
- static const struct mfd_cell s5m8751_devs[] = {
-@@ -406,6 +407,13 @@ static int sec_pmic_suspend(struct device *dev)
- 	 */
- 	disable_irq(sec_pmic->irq);
- 
-+	switch (sec_pmic->device_type) {
-+	case S2MPS14X:
-+	case S2MPU02:
-+		regulator_suspend_prepare(PM_SUSPEND_MEM);
-+		break;
-+	};
-+
- 	return 0;
- }
- 
--- 
-1.8.0
+Mimi
 
