@@ -1,77 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754451AbaFIXny (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 19:43:54 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:40612 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754051AbaFIXnx (ORCPT
+	id S933736AbaFIXqO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 19:46:14 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:46587 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932990AbaFIXqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 19:43:53 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        sparclinux@vger.kernel.org,
+	Mon, 9 Jun 2014 19:46:13 -0400
+MIME-Version: 1.0
+In-Reply-To: <1402302011-23642-2-git-send-email-jiang.liu@linux.intel.com>
+References: <1402302011-23642-1-git-send-email-jiang.liu@linux.intel.com>
+	<1402302011-23642-2-git-send-email-jiang.liu@linux.intel.com>
+Date: Mon, 9 Jun 2014 16:46:11 -0700
+X-Google-Sender-Auth: YtB68J2bIeS9dzodSN2uggLvg_U
+Message-ID: <CAE9FiQXiZZG=FdafLVEBM_ENO50xxOZ19M3k5KwzsR7M0b2P=w@mail.gmail.com>
+Subject: Re: [Patch V4 01/42] x86, irq: update high address field when
+ updating affinity for MSI IRQ
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Grant Likely <grant.likely@linaro.org>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Seth Bollinger <sethb@digi.com>,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: On 06/09/2014 04:59 PM, Aaro Koskinen wrote:> Hi,
-Date: Mon,  9 Jun 2014 19:43:37 -0400
-Message-Id: <1402357417-20746-1-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <20140609205917.GA913@drone.musicnaut.iki.fi>
-References: <20140609205917.GA913@drone.musicnaut.iki.fi>
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for the report Aaro.
+On Mon, Jun 9, 2014 at 1:19 AM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
+> If x2apic is enabled, the MSI high address field should also be aslo
+> updated when setting affinity for MSI IRQ, otherwise the MSI IRQ may
+> target wrong APIC IDs.
 
-Looks like Seth's fix exposes some broken assumptions in the Sun
-serial drivers.
+Do you have any test case to reveal the problem?
 
-Can you test the patch below?
+>
+> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+> Cc: stable@vger.kernel.org
+> ---
+>  arch/x86/kernel/apic/io_apic.c |    4 ++++
+>  1 file changed, 4 insertions(+)
+>
+> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+> index 9d0a9795a0f8..2de992501a1b 100644
+> --- a/arch/x86/kernel/apic/io_apic.c
+> +++ b/arch/x86/kernel/apic/io_apic.c
+> @@ -3007,6 +3007,10 @@ msi_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
+>
+>         __get_cached_msi_msg(data->msi_desc, &msg);
+>
+> +       msg.address_hi = MSI_ADDR_BASE_HI;
+> +       if (x2apic_enabled())
+> +               msg.address_hi |= MSI_ADDR_EXT_DEST_ID(dest);
+> +
+>         msg.data &= ~MSI_DATA_VECTOR_MASK;
+>         msg.data |= MSI_DATA_VECTOR(cfg->vector);
+>         msg.address_lo &= ~MSI_ADDR_DEST_ID_MASK;
 
-Regards,
-Peter Hurley
+No. This change is not needed.
 
-PS - Do you have a way to test also your setup using hardware flow
-control, ie. CRTSCTS?  I ask because I would expect that to be broken
-even before Seth's patch.
+When x2apic is used, and apicid > 255, irq remapping is used.
 
---- %< ---
-From: Peter Hurley <peter@hurleysoftware.com>
-Date: Mon, 9 Jun 2014 19:21:43 -0400
-Subject: [PATCH] serial: sunsab: Test for no tx data on tx restart
+msi_chip.irq_set_affinity will be changed from msi_set_affinity to
+x86_io_apic_ops.set_affinity (aka intel_setup_ioapic_entry),  via
+irq_remap_modify_chip_defaults().
 
-Commit 717f3bbab3c7628736ef738fdbf3d9a28578c26c,
-'serial_core: Fix conditional start_tx on ring buffer not empty'
-exposes an incorrect assumption in sunsab's start_tx method; the
-tx ring buffer can, in fact, be empty when restarting tx when
-performing flow control.
+Thanks
 
-Test for empty tx ring buffer when in sunsab's start_tx method.
-
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/tty/serial/sunsab.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/drivers/tty/serial/sunsab.c b/drivers/tty/serial/sunsab.c
-index 5faa8e9..b99a4ea 100644
---- a/drivers/tty/serial/sunsab.c
-+++ b/drivers/tty/serial/sunsab.c
-@@ -427,6 +427,9 @@ static void sunsab_start_tx(struct uart_port *port)
- 	struct circ_buf *xmit = &up->port.state->xmit;
- 	int i;
- 
-+	if (uart_circ_empty(xmit))
-+		return;
-+
- 	up->interrupt_mask1 &= ~(SAB82532_IMR1_ALLS|SAB82532_IMR1_XPR);
- 	writeb(up->interrupt_mask1, &up->regs->w.imr1);
- 	
--- 
-2.0.0
-
+Yinghai
