@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754820AbaFINwI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 09:52:08 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:42926 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751611AbaFINwE (ORCPT
+	id S1755187AbaFINw3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 09:52:29 -0400
+Received: from qmta06.emeryville.ca.mail.comcast.net ([76.96.30.56]:37435 "EHLO
+	qmta06.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750956AbaFINw1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 09:52:04 -0400
-Message-ID: <5395BBFF.9070703@suse.cz>
-Date: Mon, 09 Jun 2014 15:51:59 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Johan Hedberg <johan.hedberg@intel.com>
-CC: stable@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marcel Holtmann <marcel@holtmann.org>
-Subject: Re: [PATCH 3.12 064/146] Bluetooth: Fix redundant encryption request
- for reauthentication
-References: <cover.1402303820.git.jslaby@suse.cz> <b4afe9c6a39ffb4011c025ea6ecc4a99111beedd.1402303821.git.jslaby@suse.cz> <20140609133302.GA10377@t440s.lan>
-In-Reply-To: <20140609133302.GA10377@t440s.lan>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 9 Jun 2014 09:52:27 -0400
+Date: Mon, 9 Jun 2014 08:52:24 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: Vladimir Davydov <vdavydov@parallels.com>
+cc: akpm@linux-foundation.org, iamjoonsoo.kim@lge.com, rientjes@google.com,
+        penberg@kernel.org, hannes@cmpxchg.org, mhocko@suse.cz,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH -mm v2 5/8] slub: make slab_free non-preemptable
+In-Reply-To: <20140609125211.GA32192@esperanza>
+Message-ID: <alpine.DEB.2.10.1406090850070.22191@gentwo.org>
+References: <cover.1402060096.git.vdavydov@parallels.com> <7cd6784a36ed997cc6631615d98e11e02e811b1b.1402060096.git.vdavydov@parallels.com> <alpine.DEB.2.10.1406060942160.32229@gentwo.org> <20140609125211.GA32192@esperanza>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/2014 03:33 PM, Johan Hedberg wrote:
-> Hi,
-> 
-> On Mon, Jun 09, 2014, Jiri Slaby wrote:
->> 3.12-stable review patch.  If anyone has any objections, please let me know.
->>
->> ===============
->>
->> commit 09da1f3463eb81d59685df723b1c5950b7570340 upstream.
->>
->> When we're performing reauthentication (in order to elevate the
->> security level from an unauthenticated key to an authenticated one) we
->> do not need to issue any encryption command once authentication
->> completes. Since the trigger for the encryption HCI command is the
->> ENCRYPT_PEND flag this flag should not be set in this scenario.
->> Instead, the REAUTH_PEND flag takes care of all necessary steps for
->> reauthentication.
->>
->> Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
->> Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
->> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
->> ---
->>  net/bluetooth/hci_conn.c | 9 ++++++---
->>  1 file changed, 6 insertions(+), 3 deletions(-)
-> 
-> This one seems to be causing a regression, so it's probably best to keep
-> it out of stable trees for now:
-> 
-> https://bugzilla.kernel.org/show_bug.cgi?id=77541
+On Mon, 9 Jun 2014, Vladimir Davydov wrote:
 
-Oh, thanks for letting me know. Now dropped.
+> The whole function (unfreeze_partials) is currently called with irqs
+> off, so this is effectively a no-op. I guess we can restore irqs here
+> though.
 
-thanks,
--- 
-js
-suse labs
+We could move the local_irq_save from put_cpu_partial() into
+unfreeze_partials().
+
+> If we just freed the last slab of the cache and then get preempted
+> (suppose we restored irqs above), nothing will prevent the cache from
+> destruction, which may result in use-after-free below. We need to be
+> more cautious if we want to call for page allocator with preemption and
+> irqs on.
+
+Hmmm. Ok.
+>
+> However, I still don't understand what's the point in it. We *already*
+> call discard_slab with irqs disabled, which is harder, and it haven't
+> caused any problems AFAIK. Moreover, even if we enabled preemption/irqs,
+> it wouldn't guarantee that discard_slab would always be called with
+> preemption/irqs on, because the whole function - I mean kmem_cache_free
+> - can be called with preemption/irqs disabled.
+>
+> So my point it would only complicate the code.
+
+Ok.
+
+Acked-by: Christoph Lameter <cl@linux.com>
+
