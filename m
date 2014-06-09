@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934824AbaFIXMN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 19:12:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56799 "EHLO
+	id S1754308AbaFIXML (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 19:12:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56749 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933323AbaFIWp3 (ORCPT
+	with ESMTP id S933400AbaFIWpa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:45:29 -0400
+	Mon, 9 Jun 2014 18:45:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
         Peter Zijlstra <peterz@infradead.org>,
-        Juri Lelli <juri.lelli@gmail.com>, Dario Faggioli <raistlin@linux.it>,
-        Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Gautham R. Shenoy" <ego@linux.vnet.ibm.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.14 35/78] sched/deadline: Restrict user params max value to 2^63 ns
-Date: Mon,  9 Jun 2014 15:48:15 -0700
-Message-Id: <20140609224814.471852470@linuxfoundation.org>
+        Michael wang <wangyun@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Toshi Kani <toshi.kani@hp.com>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.14 36/78] sched: Fix hotplug vs. set_cpus_allowed_ptr()
+Date: Mon,  9 Jun 2014 15:48:16 -0700
+Message-Id: <20140609224814.500436253@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140609224813.282275135@linuxfoundation.org>
 References: <20140609224813.282275135@linuxfoundation.org>
@@ -33,106 +37,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Juri Lelli <juri.lelli@gmail.com>
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-commit b0827819b0da4acfbc1df1e05edcf50efd07cbd1 upstream.
+commit 6acbfb96976fc3350e30d964acb1dbbdf876d55e upstream.
 
-Michael Kerrisk noticed that creating SCHED_DEADLINE reservations
-with certain parameters (e.g, a runtime of something near 2^64 ns)
-can cause a system freeze for some amount of time.
+Lai found that:
 
-The problem is that in the interface we have
+  WARNING: CPU: 1 PID: 13 at arch/x86/kernel/smp.c:124 native_smp_send_reschedule+0x2d/0x4b()
+  ...
+  migration_cpu_stop+0x1d/0x22
 
- u64 sched_runtime;
+was caused by set_cpus_allowed_ptr() assuming that cpu_active_mask is
+always a sub-set of cpu_online_mask.
 
-while internally we need to have a signed runtime (to cope with
-budget overruns)
+This isn't true since 5fbd036b552f ("sched: Cleanup cpu_active madness").
 
- s64 runtime;
+So set active and online at the same time to avoid this particular
+problem.
 
-At the time we setup a new dl_entity we copy the first value in
-the second. The cast turns out with negative values when
-sched_runtime is too big, and this causes the scheduler to go crazy
-right from the start.
-
-Moreover, considering how we deal with deadlines wraparound
-
- (s64)(a - b) < 0
-
-we also have to restrict acceptable values for sched_{deadline,period}.
-
-This patch fixes the thing checking that user parameters are always
-below 2^63 ns (still large enough for everyone).
-
-It also rewrites other conditions that we check, since in
-__checkparam_dl we don't have to deal with deadline wraparounds
-and what we have now erroneously fails when the difference between
-values is too big.
-
-Reported-by: Michael Kerrisk <mtk.manpages@gmail.com>
-Suggested-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
+Fixes: 5fbd036b552f ("sched: Cleanup cpu_active madness")
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Dario Faggioli<raistlin@linux.it>
-Cc: Dave Jones <davej@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Gautham R. Shenoy <ego@linux.vnet.ibm.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20140513141131.20d944f81633ee937f256385@gmail.com
+Cc: Michael wang <wangyun@linux.vnet.ibm.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Toshi Kani <toshi.kani@hp.com>
+Link: http://lkml.kernel.org/r/53758B12.8060609@cn.fujitsu.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sched/core.c |   37 ++++++++++++++++++++++++++++++-------
- 1 file changed, 30 insertions(+), 7 deletions(-)
+ kernel/cpu.c        |    6 ++++--
+ kernel/sched/core.c |    1 -
+ 2 files changed, 4 insertions(+), 3 deletions(-)
 
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3242,17 +3242,40 @@ __getparam_dl(struct task_struct *p, str
-  * We ask for the deadline not being zero, and greater or equal
-  * than the runtime, as well as the period of being zero or
-  * greater than deadline. Furthermore, we have to be sure that
-- * user parameters are above the internal resolution (1us); we
-- * check sched_runtime only since it is always the smaller one.
-+ * user parameters are above the internal resolution of 1us (we
-+ * check sched_runtime only since it is always the smaller one) and
-+ * below 2^63 ns (we have to check both sched_deadline and
-+ * sched_period, as the latter can be zero).
-  */
- static bool
- __checkparam_dl(const struct sched_attr *attr)
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -692,10 +692,12 @@ void set_cpu_present(unsigned int cpu, b
+ 
+ void set_cpu_online(unsigned int cpu, bool online)
  {
--	return attr && attr->sched_deadline != 0 &&
--		(attr->sched_period == 0 ||
--		(s64)(attr->sched_period   - attr->sched_deadline) >= 0) &&
--		(s64)(attr->sched_deadline - attr->sched_runtime ) >= 0  &&
--		attr->sched_runtime >= (2 << (DL_SCALE - 1));
-+	/* deadline != 0 */
-+	if (attr->sched_deadline == 0)
-+		return false;
-+
-+	/*
-+	 * Since we truncate DL_SCALE bits, make sure we're at least
-+	 * that big.
-+	 */
-+	if (attr->sched_runtime < (1ULL << DL_SCALE))
-+		return false;
-+
-+	/*
-+	 * Since we use the MSB for wrap-around and sign issues, make
-+	 * sure it's not set (mind that period can be equal to zero).
-+	 */
-+	if (attr->sched_deadline & (1ULL << 63) ||
-+	    attr->sched_period & (1ULL << 63))
-+		return false;
-+
-+	/* runtime <= deadline <= period (if period != 0) */
-+	if ((attr->sched_period != 0 &&
-+	     attr->sched_period < attr->sched_deadline) ||
-+	    attr->sched_deadline < attr->sched_runtime)
-+		return false;
-+
-+	return true;
+-	if (online)
++	if (online) {
+ 		cpumask_set_cpu(cpu, to_cpumask(cpu_online_bits));
+-	else
++		cpumask_set_cpu(cpu, to_cpumask(cpu_active_bits));
++	} else {
+ 		cpumask_clear_cpu(cpu, to_cpumask(cpu_online_bits));
++	}
  }
  
- /*
+ void set_cpu_active(unsigned int cpu, bool active)
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -5075,7 +5075,6 @@ static int sched_cpu_active(struct notif
+ 				      unsigned long action, void *hcpu)
+ {
+ 	switch (action & ~CPU_TASKS_FROZEN) {
+-	case CPU_STARTING:
+ 	case CPU_DOWN_FAILED:
+ 		set_cpu_active((long)hcpu, true);
+ 		return NOTIFY_OK;
 
 
