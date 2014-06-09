@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755699AbaFIJFS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 05:05:18 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58495 "EHLO
+	id S1755631AbaFIJFO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 05:05:14 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58509 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755102AbaFIIvZ (ORCPT
+	by vger.kernel.org with ESMTP id S1755130AbaFIIvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jun 2014 04:51:25 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 094/146] Input: synaptics - T540p - unify with other LEN0034 models
-Date: Mon,  9 Jun 2014 10:50:29 +0200
-Message-Id: <5f43d65d33e6da7941beb7e387c4211175eb7512.1402303821.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 072/146] ARM: mvebu: fix NOR bus-width in Armada XP GP Device Tree
+Date: Mon,  9 Jun 2014 10:50:07 +0200
+Message-Id: <59cd76b43802c877d3f48354764a0a86e709fe2d.1402303821.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
 References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
@@ -24,40 +24,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 6d396ede224dc596d92d7cab433713536e68916c upstream.
+commit 1a88f809ccb5db1509a7514b187c00b3a995fc82 upstream.
 
-The T540p has a touchpad with pnp-id LEN0034, all the models with this
-pnp-id have the same min/max values, except the T540p where the values are
-slightly off. Fix them to be identical.
+The mvebu-devbus driver had a serious bug, which lead to a 8 bits bus
+width declared in the Device Tree being considered as a 16 bits bus
+width when configuring the hardware.
 
-This is a preparation patch for simplifying the quirk table.
+This bug in mvebu-devbus driver was compensated by a symetric mistake
+in the Armada XP GP Device Tree: a 8 bits bus width was declared, even
+though the hardware actually has a 16 bits bus width connection with
+the NOR flash.
 
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Now that we have fixed the mvebu-devbus driver to behave according to
+its Device Tree binding, this commit fixes the problematic Device Tree
+files as well.
+
+This bug was introduced in commit
+da8d1b38356853c37116f9afa29f15648d7fb159 ('ARM: mvebu: Add support for
+NOR flash device on Armada XP-GP board') which was merged in v3.10.
+
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Link: https://lkml.kernel.org/r/1397489361-5833-3-git-send-email-thomas.petazzoni@free-electrons.com
+Fixes: da8d1b383568 ('ARM: mvebu: Add support for NOR flash device on Armada XP-GP board')
+Acked-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/input/mouse/synaptics.c | 2 +-
+ arch/arm/boot/dts/armada-xp-gp.dts | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-index fa1dee55d208..f6fbba53f5d5 100644
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -1552,7 +1552,7 @@ static const struct dmi_system_id min_max_dmi_table[] __initconst = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
- 			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T540"),
- 		},
--		.driver_data = (int []){1024, 5056, 2058, 4832},
-+		.driver_data = (int []){1024, 5112, 2024, 4832},
- 	},
- 	{
- 		/* Lenovo ThinkPad L540 */
+diff --git a/arch/arm/boot/dts/armada-xp-gp.dts b/arch/arm/boot/dts/armada-xp-gp.dts
+index 2298e4a910e2..e325e62909f9 100644
+--- a/arch/arm/boot/dts/armada-xp-gp.dts
++++ b/arch/arm/boot/dts/armada-xp-gp.dts
+@@ -49,7 +49,7 @@
+ 			/* Device Bus parameters are required */
+ 
+ 			/* Read parameters */
+-			devbus,bus-width    = <8>;
++			devbus,bus-width    = <16>;
+ 			devbus,turn-off-ps  = <60000>;
+ 			devbus,badr-skew-ps = <0>;
+ 			devbus,acc-first-ps = <124000>;
 -- 
 1.9.3
 
