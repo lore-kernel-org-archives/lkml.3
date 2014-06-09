@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934595AbaFIWx0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 18:53:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57179 "EHLO
+	id S932425AbaFIWxY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 18:53:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57183 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934293AbaFIWqH (ORCPT
+	with ESMTP id S934296AbaFIWqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:46:07 -0400
+	Mon, 9 Jun 2014 18:46:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Boot <crb@tiger-computing.co.uk>,
-        Philip Gaw <pgaw@darktech.org.uk>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.14 72/78] target: Fix alua_access_state attribute OOPs for un-configured devices
-Date: Mon,  9 Jun 2014 15:48:52 -0700
-Message-Id: <20140609224815.635120714@linuxfoundation.org>
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [PATCH 3.10 20/40] drm/i915: Only copy back the modified fields to userspace from execbuffer
+Date: Mon,  9 Jun 2014 15:48:51 -0700
+Message-Id: <20140609224839.845300849@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140609224813.282275135@linuxfoundation.org>
-References: <20140609224813.282275135@linuxfoundation.org>
+In-Reply-To: <20140609224839.127615063@linuxfoundation.org>
+References: <20140609224839.127615063@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,49 +25,115 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit f1453773514bb8b0bba0716301e8c8f17f8d39c7 upstream.
+commit 9aab8bff7aa3bee567213ad3c1fdfb217bb980a2 upstream.
 
-This patch fixes a OOPs where an attempt to write to the per-device
-alua_access_state configfs attribute at:
+We only want to modifiy a single field in the userspace view of the
+execbuffer command buffer, so explicitly change that rather than copy
+everything back again.
 
-  /sys/kernel/config/target/core/$HBA/$DEV/alua/$TG_PT_GP/alua_access_state
+This serves two purposes:
 
-results in an NULL pointer dereference when the backend device has not
-yet been configured.
+1. The single fields are much cheaper to copy (constant size so the
+copy uses special case code) and much smaller than the whole array.
 
-This patch adds an explicit check for DF_CONFIGURED, and fails with
--ENODEV to avoid this case.
+2. We modify the array for internal use that need to be masked from
+the user.
 
-Reported-by: Chris Boot <crb@tiger-computing.co.uk>
-Reported-by: Philip Gaw <pgaw@darktech.org.uk>
-Cc: Chris Boot <crb@tiger-computing.co.uk>
-Cc: Philip Gaw <pgaw@darktech.org.uk>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Note: We need this backported since without it the next bugfix will
+blow up when userspace recycles batchbuffers and relocations.
+
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_configfs.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c |   54 +++++++++++++++++------------
+ 1 file changed, 32 insertions(+), 22 deletions(-)
 
---- a/drivers/target/target_core_configfs.c
-+++ b/drivers/target/target_core_configfs.c
-@@ -2223,6 +2223,11 @@ static ssize_t target_core_alua_tg_pt_gp
- 			" tg_pt_gp ID: %hu\n", tg_pt_gp->tg_pt_gp_valid_id);
- 		return -EINVAL;
- 	}
-+	if (!(dev->dev_flags & DF_CONFIGURED)) {
-+		pr_err("Unable to set alua_access_state while device is"
-+		       " not configured\n");
-+		return -ENODEV;
-+	}
+--- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
++++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+@@ -635,9 +635,9 @@ i915_gem_execbuffer_relocate_slow(struct
+ 		 * relocations were valid.
+ 		 */
+ 		for (j = 0; j < exec[i].relocation_count; j++) {
+-			if (copy_to_user(&user_relocs[j].presumed_offset,
+-					 &invalid_offset,
+-					 sizeof(invalid_offset))) {
++			if (__copy_to_user(&user_relocs[j].presumed_offset,
++					   &invalid_offset,
++					   sizeof(invalid_offset))) {
+ 				ret = -EFAULT;
+ 				mutex_lock(&dev->struct_mutex);
+ 				goto err;
+@@ -1151,18 +1151,21 @@ i915_gem_execbuffer(struct drm_device *d
  
- 	ret = kstrtoul(page, 0, &tmp);
- 	if (ret < 0) {
+ 	ret = i915_gem_do_execbuffer(dev, data, file, &exec2, exec2_list);
+ 	if (!ret) {
++		struct drm_i915_gem_exec_object __user *user_exec_list =
++			to_user_ptr(args->buffers_ptr);
++
+ 		/* Copy the new buffer offsets back to the user's exec list. */
+-		for (i = 0; i < args->buffer_count; i++)
+-			exec_list[i].offset = exec2_list[i].offset;
+-		/* ... and back out to userspace */
+-		ret = copy_to_user(to_user_ptr(args->buffers_ptr),
+-				   exec_list,
+-				   sizeof(*exec_list) * args->buffer_count);
+-		if (ret) {
+-			ret = -EFAULT;
+-			DRM_DEBUG("failed to copy %d exec entries "
+-				  "back to user (%d)\n",
+-				  args->buffer_count, ret);
++		for (i = 0; i < args->buffer_count; i++) {
++			ret = __copy_to_user(&user_exec_list[i].offset,
++					     &exec2_list[i].offset,
++					     sizeof(user_exec_list[i].offset));
++			if (ret) {
++				ret = -EFAULT;
++				DRM_DEBUG("failed to copy %d exec entries "
++					  "back to user (%d)\n",
++					  args->buffer_count, ret);
++				break;
++			}
+ 		}
+ 	}
+ 
+@@ -1208,14 +1211,21 @@ i915_gem_execbuffer2(struct drm_device *
+ 	ret = i915_gem_do_execbuffer(dev, data, file, args, exec2_list);
+ 	if (!ret) {
+ 		/* Copy the new buffer offsets back to the user's exec list. */
+-		ret = copy_to_user(to_user_ptr(args->buffers_ptr),
+-				   exec2_list,
+-				   sizeof(*exec2_list) * args->buffer_count);
+-		if (ret) {
+-			ret = -EFAULT;
+-			DRM_DEBUG("failed to copy %d exec entries "
+-				  "back to user (%d)\n",
+-				  args->buffer_count, ret);
++		struct drm_i915_gem_exec_object2 *user_exec_list =
++				   to_user_ptr(args->buffers_ptr);
++		int i;
++
++		for (i = 0; i < args->buffer_count; i++) {
++			ret = __copy_to_user(&user_exec_list[i].offset,
++					     &exec2_list[i].offset,
++					     sizeof(user_exec_list[i].offset));
++			if (ret) {
++				ret = -EFAULT;
++				DRM_DEBUG("failed to copy %d exec entries "
++					  "back to user\n",
++					  args->buffer_count);
++				break;
++			}
+ 		}
+ 	}
+ 
 
 
