@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934931AbaFIXNr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 19:13:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56763 "EHLO
+	id S934865AbaFIXNp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 19:13:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56745 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933316AbaFIWpX (ORCPT
+	with ESMTP id S933121AbaFIWpX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jun 2014 18:45:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jean Delvare <jdelvare@suse.de>, Guenter Roeck <linux@roeck-us.net>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        Doug Anderson <dianders@chromium.org>
-Subject: [PATCH 3.14 10/78] hwmon: (ntc_thermistor) Fix OF device ID mapping
-Date: Mon,  9 Jun 2014 15:47:50 -0700
-Message-Id: <20140609224813.691170583@linuxfoundation.org>
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 07/78] mm/memory-failure.c: fix memory leak by race between poison and unpoison
+Date: Mon,  9 Jun 2014 15:47:47 -0700
+Message-Id: <20140609224813.592529993@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140609224813.282275135@linuxfoundation.org>
 References: <20140609224813.282275135@linuxfoundation.org>
@@ -30,63 +31,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <jdelvare@suse.de>
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-commit ead82d6792ef5c600d535bca6ec50a4da14ff7c7 upstream.
+commit 3e030ecc0fc7de10fd0da10c1c19939872a31717 upstream.
 
-The mapping from OF device IDs to platform device IDs is wrong.
-TYPE_NCPXXWB473 is 0, TYPE_NCPXXWL333 is 1, so
-ntc_thermistor_id[TYPE_NCPXXWB473] is { "ncp15wb473", TYPE_NCPXXWB473 }
-while
-ntc_thermistor_id[TYPE_NCPXXWL333] is { "ncp18wb473", TYPE_NCPXXWB473 }.
+When a memory error happens on an in-use page or (free and in-use)
+hugepage, the victim page is isolated with its refcount set to one.
 
-So the name is wrong for all but the "ntc,ncp15wb473" entry, and the
-type is wrong for the "ntc,ncp15wl333" entry.
+When you try to unpoison it later, unpoison_memory() calls put_page()
+for it twice in order to bring the page back to free page pool (buddy or
+free hugepage list).  However, if another memory error occurs on the
+page which we are unpoisoning, memory_failure() returns without
+releasing the refcount which was incremented in the same call at first,
+which results in memory leak and unconsistent num_poisoned_pages
+statistics.  This patch fixes it.
 
-So map the entries by index, it is neither elegant nor robust but at
-least it is correct.
-
-Signed-off-by: Jean Delvare <jdelvare@suse.de>
-Fixes: 9e8269de hwmon: (ntc_thermistor) Add DT with IIO support to NTC thermistor driver
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Cc: Doug Anderson <dianders@chromium.org>
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/ntc_thermistor.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ mm/memory-failure.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/hwmon/ntc_thermistor.c
-+++ b/drivers/hwmon/ntc_thermistor.c
-@@ -44,6 +44,7 @@ struct ntc_compensation {
- 	unsigned int	ohm;
- };
- 
-+/* Order matters, ntc_match references the entries by index */
- static const struct platform_device_id ntc_thermistor_id[] = {
- 	{ "ncp15wb473", TYPE_NCPXXWB473 },
- 	{ "ncp18wb473", TYPE_NCPXXWB473 },
-@@ -163,15 +164,15 @@ static int ntc_adc_iio_read(struct ntc_t
- 
- static const struct of_device_id ntc_match[] = {
- 	{ .compatible = "ntc,ncp15wb473",
--		.data = &ntc_thermistor_id[TYPE_NCPXXWB473] },
-+		.data = &ntc_thermistor_id[0] },
- 	{ .compatible = "ntc,ncp18wb473",
--		.data = &ntc_thermistor_id[TYPE_NCPXXWB473] },
-+		.data = &ntc_thermistor_id[1] },
- 	{ .compatible = "ntc,ncp21wb473",
--		.data = &ntc_thermistor_id[TYPE_NCPXXWB473] },
-+		.data = &ntc_thermistor_id[2] },
- 	{ .compatible = "ntc,ncp03wb473",
--		.data = &ntc_thermistor_id[TYPE_NCPXXWB473] },
-+		.data = &ntc_thermistor_id[3] },
- 	{ .compatible = "ntc,ncp15wl333",
--		.data = &ntc_thermistor_id[TYPE_NCPXXWL333] },
-+		.data = &ntc_thermistor_id[4] },
- 	{ },
- };
- MODULE_DEVICE_TABLE(of, ntc_match);
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1157,6 +1157,8 @@ int memory_failure(unsigned long pfn, in
+ 	 */
+ 	if (!PageHWPoison(p)) {
+ 		printk(KERN_ERR "MCE %#lx: just unpoisoned\n", pfn);
++		atomic_long_sub(nr_pages, &num_poisoned_pages);
++		put_page(hpage);
+ 		res = 0;
+ 		goto out;
+ 	}
 
 
