@@ -1,73 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936480AbaFIJ15 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 05:27:57 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:56894 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932462AbaFIJ1x (ORCPT
+	id S936454AbaFIJ1s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 05:27:48 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59137 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S936439AbaFIJ1k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 05:27:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <1402305825-3015-1-git-send-email-stfomichev@yandex-team.ru>
-References: <1402305825-3015-1-git-send-email-stfomichev@yandex-team.ru>
-Date: Mon, 9 Jun 2014 14:57:52 +0530
-Message-ID: <CAKohpo=HxqVnd6VejLZTiKsQ95K0Fxu6DLhAJr3ZR3BK+gGyDQ@mail.gmail.com>
-Subject: Re: [PATCH] hrtimers: conditionally lock/unlock spinlock in hrtimer_get_next_event
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Stanislav Fomichev <stfomichev@yandex-team.ru>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>, stuart.w.hayes@gmail.com,
-        david.vrabel@citrix.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 9 Jun 2014 05:27:40 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Andy Grover <agrover@redhat.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 118/146] target: Don't allow setting WC emulation if device doesn't support
+Date: Mon,  9 Jun 2014 10:50:53 +0200
+Message-Id: <86a063701078cb9b6037e0b627d448e5a53d1b7e.1402303821.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
+References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
+In-Reply-To: <cover.1402303820.git.jslaby@suse.cz>
+References: <cover.1402303820.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 June 2014 14:53, Stanislav Fomichev <stfomichev@yandex-team.ru> wrote:
-> In hrtimer_get_next_event we unconditionally lock/unlock spinlock, even if it's
-> not required (hrtimer_hres_active() != 0). This patch moves
-> locking/unlocking and mindelta range check inside the if clause,
-> so we don't execute unnecessary operations.
->
-> Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
-> ---
->  kernel/hrtimer.c | 13 +++++++------
->  1 file changed, 7 insertions(+), 6 deletions(-)
->
-> diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-> index 39f339dcbe93..ce21e5f6bcf0 100644
-> --- a/kernel/hrtimer.c
-> +++ b/kernel/hrtimer.c
-> @@ -1166,9 +1166,9 @@ ktime_t hrtimer_get_next_event(void)
->         unsigned long flags;
->         int i;
->
-> -       raw_spin_lock_irqsave(&cpu_base->lock, flags);
-> -
->         if (!hrtimer_hres_active()) {
-> +               raw_spin_lock_irqsave(&cpu_base->lock, flags);
-> +
->                 for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++, base++) {
->                         struct hrtimer *timer;
->                         struct timerqueue_node *next;
-> @@ -1183,12 +1183,13 @@ ktime_t hrtimer_get_next_event(void)
->                         if (delta.tv64 < mindelta.tv64)
->                                 mindelta.tv64 = delta.tv64;
->                 }
-> -       }
->
-> -       raw_spin_unlock_irqrestore(&cpu_base->lock, flags);
-> +               raw_spin_unlock_irqrestore(&cpu_base->lock, flags);
-> +
-> +               if (mindelta.tv64 < 0)
-> +                       mindelta.tv64 = 0;
-> +       }
->
-> -       if (mindelta.tv64 < 0)
-> -               mindelta.tv64 = 0;
->         return mindelta;
->  }
+From: Andy Grover <agrover@redhat.com>
 
-Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
+3.12-stable review patch.  If anyone has any objections, please let me know.
+
+===============
+
+commit 07b8dae38b09bcfede7e726f172e39b5ce8390d9 upstream.
+
+Just like for pSCSI, if the transport sets get_write_cache, then it is
+not valid to enable write cache emulation for it. Return an error.
+
+see https://bugzilla.redhat.com/show_bug.cgi?id=1082675
+
+Reviewed-by: Chris Leech <cleech@redhat.com>
+Signed-off-by: Andy Grover <agrover@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/target/target_core_device.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/target/target_core_device.c b/drivers/target/target_core_device.c
+index e5e39658034c..e31ec5cf0c36 100644
+--- a/drivers/target/target_core_device.c
++++ b/drivers/target/target_core_device.c
+@@ -799,10 +799,10 @@ int se_dev_set_emulate_write_cache(struct se_device *dev, int flag)
+ 		pr_err("emulate_write_cache not supported for pSCSI\n");
+ 		return -EINVAL;
+ 	}
+-	if (dev->transport->get_write_cache) {
+-		pr_warn("emulate_write_cache cannot be changed when underlying"
+-			" HW reports WriteCacheEnabled, ignoring request\n");
+-		return 0;
++	if (flag &&
++	    dev->transport->get_write_cache) {
++		pr_err("emulate_write_cache not supported for this device\n");
++		return -EINVAL;
+ 	}
+ 
+ 	dev->dev_attrib.emulate_write_cache = flag;
+-- 
+1.9.3
+
