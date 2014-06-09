@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932223AbaFIUEY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 16:04:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4398 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754562AbaFIUDF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 16:03:05 -0400
-From: Jiri Olsa <jolsa@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Don Zickus <dzickus@redhat.com>,
-        Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 13/15] perf tools: Add support to dynamically get cacheline size
-Date: Mon,  9 Jun 2014 22:02:28 +0200
-Message-Id: <1402344150-14860-14-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1402344150-14860-1-git-send-email-jolsa@kernel.org>
-References: <1402344150-14860-1-git-send-email-jolsa@kernel.org>
+	id S932388AbaFIUFW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 16:05:22 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:49222 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932333AbaFIUFS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 16:05:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <7htx7uq7k1.fsf@paris.lan>
+References: <1402090985-8061-1-git-send-email-dianders@chromium.org>
+	<1402096465-13218-1-git-send-email-dianders@chromium.org>
+	<7htx7uq7k1.fsf@paris.lan>
+Date: Mon, 9 Jun 2014 13:05:17 -0700
+X-Google-Sender-Auth: apyZNToQdjlgBWcuko729VyFpMY
+Message-ID: <CAL1qeaGv+hBCr8oqs-E2j_Qh0Z=ZTVEaM-gdyu286Snu4otbMA@mail.gmail.com>
+Subject: Re: [PATCH v2] ARM: EXYNOS: mcpm: Don't rely on firmware's secondary_cpu_start
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Kevin Hilman <khilman@linaro.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Doug Anderson <dianders@chromium.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Inderpal Singh <inderpal.s@samsung.com>,
+        Thomas Abraham <thomas.ab@samsung.com>,
+        Olof Johansson <olof@lixom.net>, Tushar Behera <trblinux@gmail.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Don Zickus <dzickus@redhat.com>
+> [1] While waiting for the forth-coming patch from Andrew to enable the
+>     CCI port for the boot cluster), I do this from u-boot before starting
+>     the kernel (based on earlier email from Doug):
+>
+>     mw.l 10d25000 3  # Enable CCI from U-Boot
 
-Different arches may have different cacheline sizes.  Look it up and set
-a global variable for reference.
+>From the other thread, it sounds like Nicolas wants enabling of the
+boot cluster's CCI port to be done unconditionally for all MCPM
+platforms.  Nicolas, are you preparing a patch for this or should I?
+The only issue I see with making the MCPM loopback generic is that
+although all current mainline MCPM platforms have the same cache flush
+procedure, a future platform could be different.
 
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-Link: http://lkml.kernel.org/r/1401480605-97442-1-git-send-email-dzickus@redhat.com
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
----
- tools/perf/perf.c      | 1 +
- tools/perf/util/util.c | 1 +
- tools/perf/util/util.h | 1 +
- 3 files changed, 3 insertions(+)
-
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index 78f7b92..95c58fc 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -458,6 +458,7 @@ int main(int argc, const char **argv)
- 
- 	/* The page_size is placed in util object. */
- 	page_size = sysconf(_SC_PAGE_SIZE);
-+	cacheline_size = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
- 
- 	cmd = perf_extract_argv0_path(argv[0]);
- 	if (!cmd)
-diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-index 7fff6be..95aefa7 100644
---- a/tools/perf/util/util.c
-+++ b/tools/perf/util/util.c
-@@ -17,6 +17,7 @@
-  * XXX We need to find a better place for these things...
-  */
- unsigned int page_size;
-+int cacheline_size;
- 
- bool test_attr__enabled;
- 
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index b03da44..6686436 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -304,6 +304,7 @@ char *rtrim(char *s);
- void dump_stack(void);
- 
- extern unsigned int page_size;
-+extern int cacheline_size;
- 
- void get_term_dimensions(struct winsize *ws);
- 
--- 
-1.8.3.1
-
+Thanks,
+Andrew
