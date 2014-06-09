@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934483AbaFIXKE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 19:10:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56773 "EHLO
+	id S934615AbaFIXKu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 19:10:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56763 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933509AbaFIWpd (ORCPT
+	with ESMTP id S933416AbaFIWpc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:45:33 -0400
+	Mon, 9 Jun 2014 18:45:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.14 32/78] sched: Disallow sched_attr::sched_policy < 0
-Date: Mon,  9 Jun 2014 15:48:12 -0700
-Message-Id: <20140609224814.372439472@linuxfoundation.org>
+        Heinz Mauelshagen <heinzm@redhat.com>, Joe Thornber <ejt@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.14 29/78] dm cache: always split discards on cache block boundaries
+Date: Mon,  9 Jun 2014 15:48:09 -0700
+Message-Id: <20140609224814.282942096@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140609224813.282275135@linuxfoundation.org>
 References: <20140609224813.282275135@linuxfoundation.org>
@@ -31,37 +29,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Heinz Mauelshagen <heinzm@redhat.com>
 
-commit dbdb22754fde671dc93d2fae06f8be113d47f2fb upstream.
+commit f1daa838e861ae1a0fb7cd9721a21258430fcc8c upstream.
 
-The scheduler uses policy=-1 to preserve the current policy state to
-implement sys_sched_setparam(), this got exposed to userspace by
-accident through sys_sched_setattr(), cure this.
+The DM cache target cannot cope with discards that span multiple cache
+blocks, so each discard bio that spans more than one cache block must
+get split by the DM core.
 
-Reported-by: Michael Kerrisk <mtk.manpages@gmail.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Acked-by: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20140509085311.GJ30445@twins.programming.kicks-ass.net
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Heinz Mauelshagen <heinzm@redhat.com>
+Acked-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sched/core.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/md/dm-cache-target.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3683,6 +3683,9 @@ SYSCALL_DEFINE3(sched_setattr, pid_t, pi
- 	if (sched_copy_attr(uattr, &attr))
- 		return -EFAULT;
+--- a/drivers/md/dm-cache-target.c
++++ b/drivers/md/dm-cache-target.c
+@@ -2195,6 +2195,8 @@ static int cache_create(struct cache_arg
+ 	ti->num_discard_bios = 1;
+ 	ti->discards_supported = true;
+ 	ti->discard_zeroes_data_unsupported = true;
++	/* Discard bios must be split on a block boundary */
++	ti->split_discard_bios = true;
  
-+	if (attr.sched_policy < 0)
-+		return -EINVAL;
-+
- 	rcu_read_lock();
- 	retval = -ESRCH;
- 	p = find_process_by_pid(pid);
+ 	cache->features = ca->features;
+ 	ti->per_bio_data_size = get_per_bio_data_size(cache);
 
 
