@@ -1,310 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936598AbaFIJeE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 05:34:04 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59137 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S936188AbaFIJ1A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 05:27:00 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Kees Cook <keescook@chromium.org>, Will Drewry <wad@chromium.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 146/146] futex: Make lookup_pi_state more robust
-Date: Mon,  9 Jun 2014 10:51:21 +0200
-Message-Id: <9a595ca308b4780d685d5b2267e47ffff3504fd3.1402303821.git.jslaby@suse.cz>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
-References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
-In-Reply-To: <cover.1402303820.git.jslaby@suse.cz>
-References: <cover.1402303820.git.jslaby@suse.cz>
+	id S936180AbaFIJ05 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 05:26:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32908 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932780AbaFIJ0f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 05:26:35 -0400
+From: Vlastimil Babka <vbabka@suse.cz>
+To: David Rientjes <rientjes@google.com>, linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>, Vlastimil Babka <vbabka@suse.cz>,
+        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: [PATCH 04/10] mm, compaction: skip rechecks when lock was already held
+Date: Mon,  9 Jun 2014 11:26:16 +0200
+Message-Id: <1402305982-6928-4-git-send-email-vbabka@suse.cz>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1402305982-6928-1-git-send-email-vbabka@suse.cz>
+References: <1402305982-6928-1-git-send-email-vbabka@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+Compaction scanners try to lock zone locks as late as possible by checking
+many page or pageblock properties opportunistically without lock and skipping
+them if not unsuitable. For pages that pass the initial checks, some properties
+have to be checked again safely under lock. However, if the lock was already
+held from a previous iteration in the initial checks, the rechecks are
+unnecessary.
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+This patch therefore skips the rechecks when the lock was already held. This is
+now possible to do, since we don't (potentially) drop and reacquire the lock
+between the initial checks and the safe rechecks anymore.
 
-===============
-
-commit 54a217887a7b658e2650c3feff22756ab80c7339 upstream.
-
-The current implementation of lookup_pi_state has ambigous handling of
-the TID value 0 in the user space futex.  We can get into the kernel
-even if the TID value is 0, because either there is a stale waiters bit
-or the owner died bit is set or we are called from the requeue_pi path
-or from user space just for fun.
-
-The current code avoids an explicit sanity check for pid = 0 in case
-that kernel internal state (waiters) are found for the user space
-address.  This can lead to state leakage and worse under some
-circumstances.
-
-Handle the cases explicit:
-
-       Waiter | pi_state | pi->owner | uTID      | uODIED | ?
-
-  [1]  NULL   | ---      | ---       | 0         | 0/1    | Valid
-  [2]  NULL   | ---      | ---       | >0        | 0/1    | Valid
-
-  [3]  Found  | NULL     | --        | Any       | 0/1    | Invalid
-
-  [4]  Found  | Found    | NULL      | 0         | 1      | Valid
-  [5]  Found  | Found    | NULL      | >0        | 1      | Invalid
-
-  [6]  Found  | Found    | task      | 0         | 1      | Valid
-
-  [7]  Found  | Found    | NULL      | Any       | 0      | Invalid
-
-  [8]  Found  | Found    | task      | ==taskTID | 0/1    | Valid
-  [9]  Found  | Found    | task      | 0         | 0      | Invalid
-  [10] Found  | Found    | task      | !=taskTID | 0/1    | Invalid
-
- [1] Indicates that the kernel can acquire the futex atomically. We
-     came came here due to a stale FUTEX_WAITERS/FUTEX_OWNER_DIED bit.
-
- [2] Valid, if TID does not belong to a kernel thread. If no matching
-     thread is found then it indicates that the owner TID has died.
-
- [3] Invalid. The waiter is queued on a non PI futex
-
- [4] Valid state after exit_robust_list(), which sets the user space
-     value to FUTEX_WAITERS | FUTEX_OWNER_DIED.
-
- [5] The user space value got manipulated between exit_robust_list()
-     and exit_pi_state_list()
-
- [6] Valid state after exit_pi_state_list() which sets the new owner in
-     the pi_state but cannot access the user space value.
-
- [7] pi_state->owner can only be NULL when the OWNER_DIED bit is set.
-
- [8] Owner and user space value match
-
- [9] There is no transient state which sets the user space TID to 0
-     except exit_robust_list(), but this is indicated by the
-     FUTEX_OWNER_DIED bit. See [4]
-
-[10] There is no transient state which leaves owner and user space
-     TID out of sync.
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Will Drewry <wad@chromium.org>
-Cc: Darren Hart <dvhart@linux.intel.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Michal Nazarewicz <mina86@mina86.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: David Rientjes <rientjes@google.com>
 ---
- kernel/futex.c | 134 +++++++++++++++++++++++++++++++++++++++++++++------------
- 1 file changed, 106 insertions(+), 28 deletions(-)
+V2: remove goto skip_recheck
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index e86dcf9303bd..f94695c9d38b 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -594,10 +594,58 @@ void exit_pi_state_list(struct task_struct *curr)
- 	raw_spin_unlock_irq(&curr->pi_lock);
- }
+ mm/compaction.c | 53 +++++++++++++++++++++++++++++++----------------------
+ 1 file changed, 31 insertions(+), 22 deletions(-)
+
+diff --git a/mm/compaction.c b/mm/compaction.c
+index e1a4283..83f72bd 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -334,22 +334,30 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+ 			goto isolate_fail;
  
-+/*
-+ * We need to check the following states:
-+ *
-+ *      Waiter | pi_state | pi->owner | uTID      | uODIED | ?
-+ *
-+ * [1]  NULL   | ---      | ---       | 0         | 0/1    | Valid
-+ * [2]  NULL   | ---      | ---       | >0        | 0/1    | Valid
-+ *
-+ * [3]  Found  | NULL     | --        | Any       | 0/1    | Invalid
-+ *
-+ * [4]  Found  | Found    | NULL      | 0         | 1      | Valid
-+ * [5]  Found  | Found    | NULL      | >0        | 1      | Invalid
-+ *
-+ * [6]  Found  | Found    | task      | 0         | 1      | Valid
-+ *
-+ * [7]  Found  | Found    | NULL      | Any       | 0      | Invalid
-+ *
-+ * [8]  Found  | Found    | task      | ==taskTID | 0/1    | Valid
-+ * [9]  Found  | Found    | task      | 0         | 0      | Invalid
-+ * [10] Found  | Found    | task      | !=taskTID | 0/1    | Invalid
-+ *
-+ * [1]	Indicates that the kernel can acquire the futex atomically. We
-+ *	came came here due to a stale FUTEX_WAITERS/FUTEX_OWNER_DIED bit.
-+ *
-+ * [2]	Valid, if TID does not belong to a kernel thread. If no matching
-+ *      thread is found then it indicates that the owner TID has died.
-+ *
-+ * [3]	Invalid. The waiter is queued on a non PI futex
-+ *
-+ * [4]	Valid state after exit_robust_list(), which sets the user space
-+ *	value to FUTEX_WAITERS | FUTEX_OWNER_DIED.
-+ *
-+ * [5]	The user space value got manipulated between exit_robust_list()
-+ *	and exit_pi_state_list()
-+ *
-+ * [6]	Valid state after exit_pi_state_list() which sets the new owner in
-+ *	the pi_state but cannot access the user space value.
-+ *
-+ * [7]	pi_state->owner can only be NULL when the OWNER_DIED bit is set.
-+ *
-+ * [8]	Owner and user space value match
-+ *
-+ * [9]	There is no transient state which sets the user space TID to 0
-+ *	except exit_robust_list(), but this is indicated by the
-+ *	FUTEX_OWNER_DIED bit. See [4]
-+ *
-+ * [10] There is no transient state which leaves owner and user space
-+ *	TID out of sync.
-+ */
- static int
- lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
--		union futex_key *key, struct futex_pi_state **ps,
--		struct task_struct *task)
-+		union futex_key *key, struct futex_pi_state **ps)
- {
- 	struct futex_pi_state *pi_state = NULL;
- 	struct futex_q *this, *next;
-@@ -610,12 +658,13 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
- 	plist_for_each_entry_safe(this, next, head, list) {
- 		if (match_futex(&this->key, key)) {
- 			/*
--			 * Another waiter already exists - bump up
--			 * the refcount and return its pi_state:
-+			 * Sanity check the waiter before increasing
-+			 * the refcount and attaching to it.
- 			 */
- 			pi_state = this->pi_state;
- 			/*
--			 * Userspace might have messed up non-PI and PI futexes
-+			 * Userspace might have messed up non-PI and
-+			 * PI futexes [3]
- 			 */
- 			if (unlikely(!pi_state))
- 				return -EINVAL;
-@@ -623,44 +672,70 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
- 			WARN_ON(!atomic_read(&pi_state->refcount));
+ 		/*
+-		 * The zone lock must be held to isolate freepages.
+-		 * Unfortunately this is a very coarse lock and can be
+-		 * heavily contended if there are parallel allocations
+-		 * or parallel compactions. For async compaction do not
+-		 * spin on the lock and we acquire the lock as late as
+-		 * possible.
++		 * If we already hold the lock, we can skip some rechecking.
++		 * Note that if we hold the lock now, checked_pageblock was
++		 * already set in some previous iteration (or strict is true),
++		 * so it is correct to skip the suitable migration target
++		 * recheck as well.
+ 		 */
+-		if (!locked)
++		if (!locked) {
++			/*
++			 * The zone lock must be held to isolate freepages.
++			 * Unfortunately this is a very coarse lock and can be
++			 * heavily contended if there are parallel allocations
++			 * or parallel compactions. For async compaction do not
++			 * spin on the lock and we acquire the lock as late as
++			 * possible.
++			 */
+ 			locked = compact_trylock_irqsave(&cc->zone->lock,
+ 								&flags, cc);
+-		if (!locked)
+-			break;
++			if (!locked)
++				break;
  
- 			/*
--			 * When pi_state->owner is NULL then the owner died
--			 * and another waiter is on the fly. pi_state->owner
--			 * is fixed up by the task which acquires
--			 * pi_state->rt_mutex.
--			 *
--			 * We do not check for pid == 0 which can happen when
--			 * the owner died and robust_list_exit() cleared the
--			 * TID.
-+			 * Handle the owner died case:
- 			 */
--			if (pid && pi_state->owner) {
-+			if (uval & FUTEX_OWNER_DIED) {
- 				/*
--				 * Bail out if user space manipulated the
--				 * futex value.
-+				 * exit_pi_state_list sets owner to NULL and
-+				 * wakes the topmost waiter. The task which
-+				 * acquires the pi_state->rt_mutex will fixup
-+				 * owner.
- 				 */
--				if (pid != task_pid_vnr(pi_state->owner))
-+				if (!pi_state->owner) {
-+					/*
-+					 * No pi state owner, but the user
-+					 * space TID is not 0. Inconsistent
-+					 * state. [5]
-+					 */
-+					if (pid)
-+						return -EINVAL;
-+					/*
-+					 * Take a ref on the state and
-+					 * return. [4]
-+					 */
-+					goto out_state;
-+				}
-+
-+				/*
-+				 * If TID is 0, then either the dying owner
-+				 * has not yet executed exit_pi_state_list()
-+				 * or some waiter acquired the rtmutex in the
-+				 * pi state, but did not yet fixup the TID in
-+				 * user space.
-+				 *
-+				 * Take a ref on the state and return. [6]
-+				 */
-+				if (!pid)
-+					goto out_state;
-+			} else {
-+				/*
-+				 * If the owner died bit is not set,
-+				 * then the pi_state must have an
-+				 * owner. [7]
-+				 */
-+				if (!pi_state->owner)
- 					return -EINVAL;
- 			}
+-		/* Recheck this is a buddy page under lock */
+-		if (!PageBuddy(page))
+-			goto isolate_fail;
++			/* Recheck this is a buddy page under lock */
++			if (!PageBuddy(page))
++				goto isolate_fail;
++		}
  
- 			/*
--			 * Protect against a corrupted uval. If uval
--			 * is 0x80000000 then pid is 0 and the waiter
--			 * bit is set. So the deadlock check in the
--			 * calling code has failed and we did not fall
--			 * into the check above due to !pid.
-+			 * Bail out if user space manipulated the
-+			 * futex value. If pi state exists then the
-+			 * owner TID must be the same as the user
-+			 * space TID. [9/10]
- 			 */
--			if (task && pi_state->owner == task)
--				return -EDEADLK;
-+			if (pid != task_pid_vnr(pi_state->owner))
-+				return -EINVAL;
+ 		/* Found a free page, break it into order-0 pages */
+ 		isolated = split_free_page(page);
+@@ -658,19 +666,20 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+ 		    page_count(page) > page_mapcount(page))
+ 			continue;
  
-+		out_state:
- 			atomic_inc(&pi_state->refcount);
- 			*ps = pi_state;
--
- 			return 0;
- 		}
- 	}
+-		/* If the lock is not held, try to take it */
+-		if (!locked)
++		/* If we already hold the lock, we can skip some rechecking */
++		if (!locked) {
+ 			locked = compact_trylock_irqsave(&zone->lru_lock,
+ 								&flags, cc);
+-		if (!locked)
+-			break;
++			if (!locked)
++				break;
  
- 	/*
- 	 * We are the first waiter - try to look up the real owner and attach
--	 * the new pi_state to it, but bail out when TID = 0
-+	 * the new pi_state to it, but bail out when TID = 0 [1]
- 	 */
- 	if (!pid)
- 		return -ESRCH;
-@@ -693,6 +768,9 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
- 		return ret;
- 	}
- 
-+	/*
-+	 * No existing pi state. First waiter. [2]
-+	 */
- 	pi_state = alloc_pi_state();
- 
- 	/*
-@@ -813,7 +891,7 @@ retry:
- 	 * We dont have the lock. Look up the PI state (or create it if
- 	 * we are the first waiter):
- 	 */
--	ret = lookup_pi_state(uval, hb, key, ps, task);
-+	ret = lookup_pi_state(uval, hb, key, ps);
- 
- 	if (unlikely(ret)) {
- 		switch (ret) {
-@@ -1416,7 +1494,7 @@ retry_private:
- 			 * rereading and handing potential crap to
- 			 * lookup_pi_state.
- 			 */
--			ret = lookup_pi_state(ret, hb2, &key2, &pi_state, NULL);
-+			ret = lookup_pi_state(ret, hb2, &key2, &pi_state);
+-		/* Recheck PageLRU and PageTransHuge under lock */
+-		if (!PageLRU(page))
+-			continue;
+-		if (PageTransHuge(page)) {
+-			low_pfn += (1 << compound_order(page)) - 1;
+-			continue;
++			/* Recheck PageLRU and PageTransHuge under lock */
++			if (!PageLRU(page))
++				continue;
++			if (PageTransHuge(page)) {
++				low_pfn += (1 << compound_order(page)) - 1;
++				continue;
++			}
  		}
  
- 		switch (ret) {
+ 		lruvec = mem_cgroup_page_lruvec(page, zone);
 -- 
-1.9.3
+1.8.4.5
 
