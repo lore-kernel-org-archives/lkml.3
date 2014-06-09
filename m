@@ -1,69 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936468AbaFIJ1w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 05:27:52 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59137 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932462AbaFIJ1m (ORCPT
+	id S936480AbaFIJ15 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 05:27:57 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:56894 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932462AbaFIJ1x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 05:27:42 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
-        Doug Anderson <dianders@chromium.org>,
-        Wolfram Sang <wsa@the-dreams.de>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 132/146] i2c: s3c2410: resume race fix
-Date: Mon,  9 Jun 2014 10:51:07 +0200
-Message-Id: <dce74b71d8793bb3d836372627e0a488b77794f0.1402303821.git.jslaby@suse.cz>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
-References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
-In-Reply-To: <cover.1402303820.git.jslaby@suse.cz>
-References: <cover.1402303820.git.jslaby@suse.cz>
+	Mon, 9 Jun 2014 05:27:53 -0400
+MIME-Version: 1.0
+In-Reply-To: <1402305825-3015-1-git-send-email-stfomichev@yandex-team.ru>
+References: <1402305825-3015-1-git-send-email-stfomichev@yandex-team.ru>
+Date: Mon, 9 Jun 2014 14:57:52 +0530
+Message-ID: <CAKohpo=HxqVnd6VejLZTiKsQ95K0Fxu6DLhAJr3ZR3BK+gGyDQ@mail.gmail.com>
+Subject: Re: [PATCH] hrtimers: conditionally lock/unlock spinlock in hrtimer_get_next_event
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Stanislav Fomichev <stfomichev@yandex-team.ru>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>, stuart.w.hayes@gmail.com,
+        david.vrabel@citrix.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Olof Johansson <olof@lixom.net>
+On 9 June 2014 14:53, Stanislav Fomichev <stfomichev@yandex-team.ru> wrote:
+> In hrtimer_get_next_event we unconditionally lock/unlock spinlock, even if it's
+> not required (hrtimer_hres_active() != 0). This patch moves
+> locking/unlocking and mindelta range check inside the if clause,
+> so we don't execute unnecessary operations.
+>
+> Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
+> ---
+>  kernel/hrtimer.c | 13 +++++++------
+>  1 file changed, 7 insertions(+), 6 deletions(-)
+>
+> diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+> index 39f339dcbe93..ce21e5f6bcf0 100644
+> --- a/kernel/hrtimer.c
+> +++ b/kernel/hrtimer.c
+> @@ -1166,9 +1166,9 @@ ktime_t hrtimer_get_next_event(void)
+>         unsigned long flags;
+>         int i;
+>
+> -       raw_spin_lock_irqsave(&cpu_base->lock, flags);
+> -
+>         if (!hrtimer_hres_active()) {
+> +               raw_spin_lock_irqsave(&cpu_base->lock, flags);
+> +
+>                 for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++, base++) {
+>                         struct hrtimer *timer;
+>                         struct timerqueue_node *next;
+> @@ -1183,12 +1183,13 @@ ktime_t hrtimer_get_next_event(void)
+>                         if (delta.tv64 < mindelta.tv64)
+>                                 mindelta.tv64 = delta.tv64;
+>                 }
+> -       }
+>
+> -       raw_spin_unlock_irqrestore(&cpu_base->lock, flags);
+> +               raw_spin_unlock_irqrestore(&cpu_base->lock, flags);
+> +
+> +               if (mindelta.tv64 < 0)
+> +                       mindelta.tv64 = 0;
+> +       }
+>
+> -       if (mindelta.tv64 < 0)
+> -               mindelta.tv64 = 0;
+>         return mindelta;
+>  }
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
-
-===============
-
-commit ce78cc071f5f541480e381cc0241d37590041a9d upstream.
-
-Don't unmark the device as suspended until after it's been re-setup.
-
-The main race would be w.r.t. an i2c driver that gets resumed at the same
-time (asyncronously), that is allowed to do a transfer since suspended
-is set to 0 before reinit, but really should have seen the -EIO return
-instead.
-
-Signed-off-by: Olof Johansson <olof@lixom.net>
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/i2c/busses/i2c-s3c2410.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-s3c2410.c
-index 3747b9bf67d6..f7d572363f6c 100644
---- a/drivers/i2c/busses/i2c-s3c2410.c
-+++ b/drivers/i2c/busses/i2c-s3c2410.c
-@@ -1200,10 +1200,10 @@ static int s3c24xx_i2c_resume(struct device *dev)
- 	struct platform_device *pdev = to_platform_device(dev);
- 	struct s3c24xx_i2c *i2c = platform_get_drvdata(pdev);
- 
--	i2c->suspended = 0;
- 	clk_prepare_enable(i2c->clk);
- 	s3c24xx_i2c_init(i2c);
- 	clk_disable_unprepare(i2c->clk);
-+	i2c->suspended = 0;
- 
- 	return 0;
- }
--- 
-1.9.3
-
+Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
