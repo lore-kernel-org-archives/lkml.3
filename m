@@ -1,152 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933609AbaFIWpe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 18:45:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56749 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932495AbaFIWp2 (ORCPT
+	id S934160AbaFIXJn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 19:09:43 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:49529 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932196AbaFIXJl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:45:28 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roger Quadros <rogerq@ti.com>, Kevin Hilman <khilman@linaro.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: [PATCH 3.14 21/78] ARM: OMAP4: Fix the boot regression with CPU_IDLE enabled
-Date: Mon,  9 Jun 2014 15:48:01 -0700
-Message-Id: <20140609224814.033264279@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140609224813.282275135@linuxfoundation.org>
-References: <20140609224813.282275135@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Mon, 9 Jun 2014 19:09:41 -0400
+Date: Mon, 9 Jun 2014 16:09:38 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Dave Jones <davej@redhat.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: rb_erase oops.
+In-Reply-To: <20140609223028.GA13109@redhat.com>
+Message-ID: <alpine.DEB.2.02.1406091606080.5271@chino.kir.corp.google.com>
+References: <20140609223028.GA13109@redhat.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+On Mon, 9 Jun 2014, Dave Jones wrote:
 
-------------------
+> Kernel based on v3.15-7257-g963649d735c8
+> 
+> 	Dave
+> 
+> Oops: 0000 [#1] PREEMPT SMP 
+> Modules linked in: dlci 8021q garp snd_seq_dummy bnep llc2 af_key bridge stp fuse tun scsi_transport_iscsi ipt_ULOG nfnetlink rfcomm can_raw hidp can_bcm nfc caif_socket caif af_802154 ieee802154 phonet af_rxrpc can pppoe pppox ppp_generic slhc irda crc_ccitt rds rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 coretemp cfg80211 hwmon x86_pkg_temp_thermal kvm_intel kvm snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_codec_generic btusb bluetooth snd_hda_intel xfs snd_hda_controller snd_hda_codec snd_hwdep snd_seq e1000e snd_seq_device crct10dif_pclmul crc32c_intel ghash_clmulni_intel snd_pcm snd_timer snd 6lowpan_iphc usb_debug rfkill libcrc32c ptp pps_core microcode shpchp pcspkr serio_raw soundcore
+> CPU: 3 PID: 2049 Comm: kworker/3:1 Not tainted 3.15.0+ #231
+> Workqueue: events free_work
+> task: ffff880100944260 ti: ffff88009ed9c000 task.ti: ffff88009ed9c000
+> RIP: 0010:[<ffffffff8a326619>]  [<ffffffff8a326619>] rb_erase+0xb9/0x380
+> RSP: 0000:ffff88009ed9fcc0  EFLAGS: 00010202
+> RAX: ffff8802396b0018 RBX: ffff88024176b008 RCX: 0000000000000000
+> RDX: ffffc90010fe1bf0 RSI: ffffffff8afb3178 RDI: 0000000000000001
+> RBP: ffff88009ed9fcc0 R08: ffff88023b122e58 R09: ffff88024176ae58
+> R10: 0000000000000000 R11: ffff880245801dc0 R12: ffff88024176b020
+> R13: ffff88009ed9fd80 R14: ffff88009ed9fd88 R15: ffff88024e397100
+> FS:  0000000000000000(0000) GS:ffff88024e380000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> CR2: 0000000000000001 CR3: 000000000ac10000 CR4: 00000000001407e0
+> DR0: 00000000024cc000 DR1: 00000000024c2000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
+> Stack:
+>  ffff88009ed9fce0 ffffffff8a195674 ffff88024176ae40 ffffffff8ac64260
+>  ffff88009ed9fd70 ffffffff8a19631d ffff88009ed9fd88 ffff88009ed9fd80
+>  ffff88009ed9fd10 ffff880244b93750 0000000000000000 ffff880244b93750
+> Call Trace:
+>  [<ffffffff8a195674>] __free_vmap_area+0x54/0xf0
+>  [<ffffffff8a19631d>] __purge_vmap_area_lazy+0x15d/0x4a0
+>  [<ffffffff8a1966e1>] free_vmap_area_noflush+0x81/0x90
+>  [<ffffffff8a197dae>] remove_vm_area+0x5e/0x70
+>  [<ffffffff8a197dee>] __vunmap+0x2e/0x100
+>  [<ffffffff8a197eed>] free_work+0x2d/0x40
+>  [<ffffffff8a08df11>] process_one_work+0x171/0x4d0
+>  [<ffffffff8a08eeac>] worker_thread+0x12c/0x3d0
+>  [<ffffffff8a0bc4b2>] ? complete+0x42/0x50
+>  [<ffffffff8a08ed80>] ? manage_workers.isra.25+0x2d0/0x2d0
+>  [<ffffffff8a095b3f>] kthread+0xff/0x120
+>  [<ffffffff8a095a40>] ? kthread_create_on_node+0x1c0/0x1c0
+>  [<ffffffff8a741eec>] ret_from_fork+0x7c/0xb0
+>  [<ffffffff8a095a40>] ? kthread_create_on_node+0x1c0/0x1c0
+> Code: 85 d2 74 0e 48 83 c8 01 48 89 0a 49 89 02 5d c3 66 90 48 8b 3a 48 89 0a 83 e7 01 74 f1 31 c9 eb 40 90 48 8b 7a 08 48 85 ff 74 09 <f6> 07 01 0f 84 a3 01 00 00 48 8b 4a 10 48 85 c9 74 09 f6 01 01 
+> RIP  [<ffffffff8a326619>] rb_erase+0xb9/0x380
+>  RSP <ffff88009ed9fcc0>
+> 
 
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Adding Joonsoo to the cc.
 
-commit 4b353a706a86598ba47307c47301c3c428b79e09 upstream.
-
-On OMAP4 panda board, there have been several bug reports about boot
-hang and lock-ups with CPU_IDLE enabled. The root cause of the issue
-is missing interrupts while in idle state. Commit cb7094e8 {cpuidle / omap4 :
-use CPUIDLE_FLAG_TIMER_STOP flag} moved the broadcast notifiers to common
-code for right reasons but on OMAP4 which suffers from a nasty ROM code
-bug with GIC, commit ff999b8a {ARM: OMAP4460: Workaround for ROM bug ..},
-we loose interrupts which leads to issues like lock-up, hangs etc.
-
-Patch reverts commit cb7094 {cpuidle / omap4 : use CPUIDLE_FLAG_TIMER_STOP
-flag} and 54769d6 {cpuidle: OMAP4: remove timer broadcast initialization} to
-avoid the issue. With this change, OMAP4 panda boards, the mentioned
-issues are getting fixed. We no longer loose interrupts which was the cause
-of the regression.
-
-Fixes: cb7094e8 (cpuidle / omap4 : use CPUIDLE_FLAG_TIMER_STOP flag)
-Fixes: ff999b8a (cpuidle: OMAP4: remove timer broadcast initialization)
-Cc: Roger Quadros <rogerq@ti.com>
-Cc: Kevin Hilman <khilman@linaro.org>
-Cc: Tony Lindgren <tony@atomide.com>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-Reported-tested-by: Roger Quadros <rogerq@ti.com>
-Reported-tested-by: Kevin Hilman <khilman@linaro.org>
-Tested-by: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/arm/mach-omap2/cpuidle44xx.c |   25 +++++++++++++++++++++----
- 1 file changed, 21 insertions(+), 4 deletions(-)
-
---- a/arch/arm/mach-omap2/cpuidle44xx.c
-+++ b/arch/arm/mach-omap2/cpuidle44xx.c
-@@ -14,6 +14,7 @@
- #include <linux/cpuidle.h>
- #include <linux/cpu_pm.h>
- #include <linux/export.h>
-+#include <linux/clockchips.h>
- 
- #include <asm/cpuidle.h>
- #include <asm/proc-fns.h>
-@@ -83,6 +84,7 @@ static int omap_enter_idle_coupled(struc
- {
- 	struct idle_statedata *cx = state_ptr + index;
- 	u32 mpuss_can_lose_context = 0;
-+	int cpu_id = smp_processor_id();
- 
- 	/*
- 	 * CPU0 has to wait and stay ON until CPU1 is OFF state.
-@@ -110,6 +112,8 @@ static int omap_enter_idle_coupled(struc
- 	mpuss_can_lose_context = (cx->mpu_state == PWRDM_POWER_RET) &&
- 				 (cx->mpu_logic_state == PWRDM_POWER_OFF);
- 
-+	clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &cpu_id);
-+
- 	/*
- 	 * Call idle CPU PM enter notifier chain so that
- 	 * VFP and per CPU interrupt context is saved.
-@@ -165,6 +169,8 @@ static int omap_enter_idle_coupled(struc
- 	if (dev->cpu == 0 && mpuss_can_lose_context)
- 		cpu_cluster_pm_exit();
- 
-+	clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu_id);
-+
- fail:
- 	cpuidle_coupled_parallel_barrier(dev, &abort_barrier);
- 	cpu_done[dev->cpu] = false;
-@@ -172,6 +178,16 @@ fail:
- 	return index;
- }
- 
-+/*
-+ * For each cpu, setup the broadcast timer because local timers
-+ * stops for the states above C1.
-+ */
-+static void omap_setup_broadcast_timer(void *arg)
-+{
-+	int cpu = smp_processor_id();
-+	clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ON, &cpu);
-+}
-+
- static struct cpuidle_driver omap4_idle_driver = {
- 	.name				= "omap4_idle",
- 	.owner				= THIS_MODULE,
-@@ -189,8 +205,7 @@ static struct cpuidle_driver omap4_idle_
- 			/* C2 - CPU0 OFF + CPU1 OFF + MPU CSWR */
- 			.exit_latency = 328 + 440,
- 			.target_residency = 960,
--			.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_COUPLED |
--			         CPUIDLE_FLAG_TIMER_STOP,
-+			.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_COUPLED,
- 			.enter = omap_enter_idle_coupled,
- 			.name = "C2",
- 			.desc = "CPUx OFF, MPUSS CSWR",
-@@ -199,8 +214,7 @@ static struct cpuidle_driver omap4_idle_
- 			/* C3 - CPU0 OFF + CPU1 OFF + MPU OSWR */
- 			.exit_latency = 460 + 518,
- 			.target_residency = 1100,
--			.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_COUPLED |
--			         CPUIDLE_FLAG_TIMER_STOP,
-+			.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_COUPLED,
- 			.enter = omap_enter_idle_coupled,
- 			.name = "C3",
- 			.desc = "CPUx OFF, MPUSS OSWR",
-@@ -231,5 +245,8 @@ int __init omap4_idle_init(void)
- 	if (!cpu_clkdm[0] || !cpu_clkdm[1])
- 		return -ENODEV;
- 
-+	/* Configure the broadcast timer on each cpu */
-+	on_each_cpu(omap_setup_broadcast_timer, NULL, 1);
-+
- 	return cpuidle_register(&omap4_idle_driver, cpu_online_mask);
- }
-
-
+I haven't looked very closely, and it may be unrelated, but perhaps this 
+is a race because of a failed radix_tree_preload() in new_vmap_block() and 
+this happens in low on memory conditions (and would be tough to reproduce 
+because of a race with the rcu-protected vmap_area_list iteration in
+__purge_vmap_area_lazy() and the actual freeing of the vmap_area under 
+vmap_area_lock).
