@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934412AbaFIWqh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 18:46:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57050 "EHLO
+	id S934397AbaFIWqe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 18:46:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57010 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933616AbaFIWpz (ORCPT
+	with ESMTP id S933966AbaFIWpw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:45:55 -0400
+	Mon, 9 Jun 2014 18:45:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kent Overstreet <kmo@daterainc.com>,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.14 62/78] percpu-refcount: fix usage of this_cpu_ops
-Date: Mon,  9 Jun 2014 15:48:42 -0700
-Message-Id: <20140609224815.333089363@linuxfoundation.org>
+        Sagi Grimberg <sagig@dev.mellanox.co.il>,
+        Or Gerlitz <ogerlitz@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.14 70/78] iser-target: Add missing target_put_sess_cmd for ImmedateData failure
+Date: Mon,  9 Jun 2014 15:48:50 -0700
+Message-Id: <20140609224815.578016722@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140609224813.282275135@linuxfoundation.org>
 References: <20140609224813.282275135@linuxfoundation.org>
@@ -30,68 +30,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Ott <sebott@linux.vnet.ibm.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 0c36b390a546055b6815d4b93a2c9fed4d980ffb upstream.
+commit 6cc44a6fb46e1ecc1c28125aa8fa34d317aa9ea7 upstream.
 
-The percpu-refcount infrastructure uses the underscore variants of
-this_cpu_ops in order to modify percpu reference counters.
-(e.g. __this_cpu_inc()).
+This patch addresses a bug where an early exception for SCSI WRITE
+with ImmediateData=Yes was missing the target_put_sess_cmd() call
+to drop the extra se_cmd->cmd_kref reference obtained during the
+normal iscsit_setup_scsi_cmd() codepath execution.
 
-However the underscore variants do not atomically update the percpu
-variable, instead they may be implemented using read-modify-write
-semantics (more than one instruction).  Therefore it is only safe to
-use the underscore variant if the context is always the same (process,
-softirq, or hardirq). Otherwise it is possible to lose updates.
+This bug was manifesting itself during session shutdown within
+isert_cq_rx_comp_err() where target_wait_for_sess_cmds() would
+end up waiting indefinately for the last se_cmd->cmd_kref put to
+occur for the failed SCSI WRITE + ImmediateData descriptors.
 
-This problem is something that Sebastian has seen within the aio
-subsystem which uses percpu refcounters both in process and softirq
-context leading to reference counts that never dropped to zeroes; even
-though the number of "get" and "put" calls matched.
+This fix follows what traditional iscsi-target code already does
+for the same failure case within iscsit_get_immediate_data().
 
-Fix this by using the non-underscore this_cpu_ops variant which
-provides correct per cpu atomic semantics and fixes the corrupted
-reference counts.
-
-Cc: Kent Overstreet <kmo@daterainc.com>
-Reported-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-References: http://lkml.kernel.org/g/alpine.LFD.2.11.1406041540520.21183@denkbrett
+Reported-by: Sagi Grimberg <sagig@dev.mellanox.co.il>
+Cc: Sagi Grimberg <sagig@dev.mellanox.co.il>
+Cc: Or Gerlitz <ogerlitz@mellanox.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/percpu-refcount.h |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/infiniband/ulp/isert/ib_isert.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/include/linux/percpu-refcount.h
-+++ b/include/linux/percpu-refcount.h
-@@ -110,7 +110,7 @@ static inline void percpu_ref_get(struct
- 	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
+--- a/drivers/infiniband/ulp/isert/ib_isert.c
++++ b/drivers/infiniband/ulp/isert/ib_isert.c
+@@ -1117,6 +1117,8 @@ sequence_cmd:
  
- 	if (likely(REF_STATUS(pcpu_count) == PCPU_REF_PTR))
--		__this_cpu_inc(*pcpu_count);
-+		this_cpu_inc(*pcpu_count);
- 	else
- 		atomic_inc(&ref->count);
+ 	if (!rc && dump_payload == false && unsol_data)
+ 		iscsit_set_unsoliticed_dataout(cmd);
++	else if (dump_payload && imm_data)
++		target_put_sess_cmd(conn->sess->se_sess, &cmd->se_cmd);
  
-@@ -139,7 +139,7 @@ static inline bool percpu_ref_tryget(str
- 	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
- 
- 	if (likely(REF_STATUS(pcpu_count) == PCPU_REF_PTR)) {
--		__this_cpu_inc(*pcpu_count);
-+		this_cpu_inc(*pcpu_count);
- 		ret = true;
- 	}
- 
-@@ -164,7 +164,7 @@ static inline void percpu_ref_put(struct
- 	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
- 
- 	if (likely(REF_STATUS(pcpu_count) == PCPU_REF_PTR))
--		__this_cpu_dec(*pcpu_count);
-+		this_cpu_dec(*pcpu_count);
- 	else if (unlikely(atomic_dec_and_test(&ref->count)))
- 		ref->release(ref);
- 
+ 	return 0;
+ }
 
 
