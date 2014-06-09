@@ -1,128 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755611AbaFINys (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 09:54:48 -0400
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:59879 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752118AbaFINyo (ORCPT
+	id S1755190AbaFIN6D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 09:58:03 -0400
+Received: from mga11.intel.com ([192.55.52.93]:24308 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750956AbaFIN6A convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 09:54:44 -0400
-Date: Mon, 9 Jun 2014 09:54:41 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>,
-        Roman Gushchin <klamm@yandex-team.ru>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: [PATCH 2/2] memcg: Allow hard guarantee mode for low limit
- reclaim
-Message-ID: <20140609135441.GA22540@htj.dyndns.org>
-References: <20140606144421.GE26253@dhcp22.suse.cz>
- <1402066010-25901-1-git-send-email-mhocko@suse.cz>
- <1402066010-25901-2-git-send-email-mhocko@suse.cz>
- <20140606152914.GA14001@htj.dyndns.org>
- <20140609083042.GB7144@dhcp22.suse.cz>
+	Mon, 9 Jun 2014 09:58:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,1002,1392192000"; 
+   d="scan'208";a="552659425"
+From: "Dalessandro, Dennis" <dennis.dalessandro@intel.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        infinipath <infinipath@intel.com>, Roland Dreier <roland@kernel.org>
+CC: "Hefty, Sean" <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] infiniband: hw: ipath: ipath_diag.c:  Cleaning up code
+ that is not handled properly.
+Thread-Topic: [PATCH] infiniband: hw: ipath: ipath_diag.c:  Cleaning up code
+ that is not handled properly.
+Thread-Index: AQHPgdwvFzIemVMCZ0WFIdvul6M50Zto0HKw
+Date: Mon, 9 Jun 2014 13:57:38 +0000
+Message-ID: <D2F193D21ECD8C45917AD3D5B26513301E43F7@CRSMSX101.amr.corp.intel.com>
+References: <1402096136-9919-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+In-Reply-To: <1402096136-9919-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.18.205.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140609083042.GB7144@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Mon, Jun 09, 2014 at 10:30:42AM +0200, Michal Hocko wrote:
-> On Fri 06-06-14 11:29:14, Tejun Heo wrote:
-> > Why is this necessary?
+> -----Original Message-----
+> From: linux-rdma-owner@vger.kernel.org [mailto:linux-rdma-
+> owner@vger.kernel.org] On Behalf Of Rickard Strandqvist
+> Sent: Friday, June 6, 2014 7:09 PM
+> To: infinipath; Roland Dreier
+> Cc: Rickard Strandqvist; Hefty, Sean; Hal Rosenstock; linux-
+> rdma@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: [PATCH] infiniband: hw: ipath: ipath_diag.c: Cleaning up code that is
+> not handled properly.
 > 
-> It allows user/admin to set the default behavior.
-
-By recomipling the kernel for something which can be trivially
-configured post-boot without any difference?  The only thing it'll
-achieve is confusing the hell out of people why different kernels show
-different behaviors without any userland differences while taxing the
-already constrained kernel configuration process more for no gain
-whatsoever.
-
-> How do you propose to tell the default then? Only at the runtime?
-> I really do not insist on the kconfig. I find it useful for a)
-> documentation purpose b) easy way to configure the default.
-
-Please don't ever add Kconfig options like this.  This is uttrely
-unnecessary and idiotic.  You don't add completely redundant Kconfig
-option for documentation purposes.
-
-> > * Are you sure soft and hard guarantees aren't useful when used in
-> >   combination?  If so, why would that be the case?
+> None of the code is adapted to handle a struct ipath_diag_pkt.
 > 
-> This was a call from Google to have per-memcg setup AFAIR. Using
-> different reclaim protection on the global case vs. limit reclaim makes
-> a lot of sense to me. If this is a major obstacle then I am OK to drop
-> it and only have a global setting for now.
-
-Isn't it obvious that what needs to be investigated is why we're
-trying to add an interface which is completely different for
-guarantees as compared to limits?  Why wouldn't they have a symmetric
-interface in the reverse direction as soft/hard limits?  If not, where
-does the asymmetry come from?  Thse are the *first* questions which
-should come to anyone's mind when [s]he is trying to add configs for a
-different type of threshholds and something which must be explicitly
-laid out as rationales for the design choices.
-
-> > * We have pressure monitoring interface which can be used for soft
-> >   limit pressure monitoring. 
+> This was partly found using a static code analysis program called cppcheck.
 > 
-> Which one is that? I only know about oom_control triggered by the hard
-> limit pressure.
-
-Weren't you guys planning to use vmpressre notification to find out
-about softlimit breach conditions?
-
-> >   How should breaching soft guarantee be
-> >   factored into that?  There doesn't seem to be any way of notifying
-> >   that at the moment?  Wouldn't we want that to be integrated into the
-> >   same mechanism?
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>  drivers/infiniband/hw/ipath/ipath_diag.c |    6 ------
+>  1 file changed, 6 deletions(-)
 > 
-> Yes, there is. We have a counter in memory.stat file which tells how
-> many times the limit has been breached.
+> diff --git a/drivers/infiniband/hw/ipath/ipath_diag.c
+> b/drivers/infiniband/hw/ipath/ipath_diag.c
+> index e2f9a51..39ba797 100644
+> --- a/drivers/infiniband/hw/ipath/ipath_diag.c
+> +++ b/drivers/infiniband/hw/ipath/ipath_diag.c
+> @@ -327,7 +327,6 @@ static ssize_t ipath_diagpkt_write(struct file *fp,  {
+>  	u32 __iomem *piobuf;
+>  	u32 plen, pbufn, maxlen_reserve;
+> -	struct ipath_diag_pkt odp;
+>  	struct ipath_diag_xpkt dp;
+>  	u32 *tmpbuf = NULL;
+>  	struct ipath_devdata *dd;
+> @@ -341,11 +340,6 @@ static ssize_t ipath_diagpkt_write(struct file *fp,
+>  			ret = -EFAULT;
+>  			goto bail;
+>  		}
+> -	} else if (count == sizeof(odp)) {
+> -		if (copy_from_user(&odp, data, sizeof(odp))) {
+> -			ret = -EFAULT;
+> -			goto bail;
+> -		}
+>  	} else {
+>  		ret = -EINVAL;
+>  		goto bail;
+> --
+> 1.7.10.4
 
-How does the userland find out?  By polling the file every frigging
-second?  Note that there actually is an actual asymmetry here which
-makes breaching soft guarantee a much more significant event than
-breaching soft limit - the former is violation of the configured
-objective, the latter is not.  You *need* a way to notify the event.
+Hi Rickard, 
 
-> > What scares me the most is that you don't even seem to have noticed
-> > the asymmetry and are proposing userland-facing interface without
-> > actually thinking things through.  This is exactly how we've been
-> > getting into trouble.
-> 
-> This has been discussed up and down for the last _two_ years. I have
-> considered other options how to provide a very _useful_ feature users
-> are calling for. There is even general consensus among developers that
+Please see commit 7e6d3e5c70f13874fb06e6b67696ed90ce79bd48 in Roland's for-next branch. I added the missed support for using odp already.
 
-AFAIR, there hasn't been much discussion about the details of the
-interface and the proposed one is almost laughable.  How is this
-acceptable as a userland visible API that we need to maintain for the
-future?  It's broken on delivery.
-
-> the feature is desirable and that the two modes (soft/hard) memory
-> protection are needed. Yet I would _really_ like to hear any
-> suggestion to get unstuck. It is far from useful to come and Nack this
-> _again_ without providing any alternative suggestions.
-
-I've pointed out two major points where the proposed interface is
-evidently deficient and told you why they're so and it's not like the
-said deficiencies are anything subtle.  If you can't figure out what
-to do next from there on, I don't think I can help you.
-
-Thanks.
-
--- 
-tejun
+Thanks
+-Denny
