@@ -1,377 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933217AbaFIWpQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 18:45:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56691 "EHLO
+	id S935629AbaFIXPr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 19:15:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56731 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932867AbaFIWpL (ORCPT
+	with ESMTP id S933137AbaFIWpO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:45:11 -0400
+	Mon, 9 Jun 2014 18:45:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: [PATCH 3.14 00/78] 3.14.7-stable review
-Date: Mon,  9 Jun 2014 15:47:40 -0700
-Message-Id: <20140609224813.282275135@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Vince Weaver <vincent.weaver@maine.edu>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.14 06/78] perf: Fix race in removing an event
+Date: Mon,  9 Jun 2014 15:47:46 -0700
+Message-Id: <20140609224813.563152130@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140609224813.282275135@linuxfoundation.org>
+References: <20140609224813.282275135@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.14.7 release.
-There are 78 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
-
-Responses should be made by Wed Jun 11 22:47:49 UTC 2014.
-Anything received after that time might be too late.
-
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.14.7-rc1.gz
-and the diffstat can be found below.
-
-thanks,
-
-greg k-h
-
--------------
-Pseudo-Shortlog of commits:
-
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.14.7-rc1
-
-David Woodhouse <dwmw2@infradead.org>
-    iommu/vt-d: Fix missing IOTLB flush in intel_iommu_unmap()
-
-Michael Welling <mwelling@ieee.org>
-    gpio: mcp23s08: Bug fix of SPI device tree registration.
-
-Imre Deak <imre.deak@intel.com>
-    drm/i915: dp: fix order of dp aux i2c device cleanup
-
-Imre Deak <imre.deak@intel.com>
-    drm/i915: add unregister callback to connector
-
-Denys Fedoryshchenko <nuclearcat@nuclearcat.com>
-    netfilter: nfnetlink: Fix use after free when it fails to process batch
-
-Sergey Popovich <popovich_sergei@mail.ru>
-    netfilter: Fix potential use after free in ip6_route_me_harder()
-
-Nicholas Bellinger <nab@linux-iscsi.org>
-    target: Fix alua_access_state attribute OOPs for un-configured devices
-
-Roland Dreier <roland@purestorage.com>
-    iscsi-target: Fix wrong buffer / buffer overrun in iscsi_change_param_value()
-
-Nicholas Bellinger <nab@linux-iscsi.org>
-    iser-target: Add missing target_put_sess_cmd for ImmedateData failure
-
-Andrey Ryabinin <a.ryabinin@samsung.com>
-    mm: rmap: fix use-after-free in __put_anon_vma
-
-Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-    mm: add !pte_present() check on existing hugetlb_entry callbacks
-
-Doug Smythies <dsmythies@telus.net>
-    intel_pstate: Improve initial busy calculation
-
-Dirk Brandewie <dirk.j.brandewie@intel.com>
-    intel_pstate: add sample time scaling
-
-Dirk Brandewie <dirk.j.brandewie@intel.com>
-    intel_pstate: Correct rounding in busy calculation
-
-Dirk Brandewie <dirk.j.brandewie@intel.com>
-    intel_pstate: Remove C0 tracking
-
-Dirk Brandewie <dirk.j.brandewie@intel.com>
-    intel_pstate: remove unneeded sample buffers
-
-Sebastian Ott <sebott@linux.vnet.ibm.com>
-    percpu-refcount: fix usage of this_cpu_ops
-
-Alan Stern <stern@rowland.harvard.edu>
-    USB: Avoid runtime suspend loops for HCDs that can't handle suspend/resume
-
-Mathias Nyman <mathias.nyman@linux.intel.com>
-    usb: pci-quirks: Prevent Sony VAIO t-series from switching usb ports
-
-Johan Hovold <jhovold@gmail.com>
-    USB: io_ti: fix firmware download on big-endian machines (part 2)
-
-Alexej Starschenko <starschenko@gmail.com>
-    USB: serial: option: add support for Novatel E371 PCIe card
-
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    USB: cdc-wdm: properly include types.h
-
-Bjørn Mork <bjorn@mork.no>
-    usb: cdc-wdm: export cdc-wdm uapi header
-
-George McCollister <george.mccollister@gmail.com>
-    USB: ftdi_sio: add NovaTech OrionLXm product ID
-
-Takashi Iwai <tiwai@suse.de>
-    ALSA: hda/realtek - Fix COEF widget NID for ALC260 replacer fixup
-
-Ronan Marquet <ronan.marquet@orange.fr>
-    ALSA: hda/realtek - Correction of fixup codes for PB V7900 laptop
-
-Takashi Iwai <tiwai@suse.de>
-    ALSA: hda/analog - Fix silent output on ASUS A8JN
-
-Samuel Ortiz <sameo@linux.intel.com>
-    Bluetooth: Fix L2CAP LE debugfs entries permissions
-
-Sean MacLennan <seanm@seanm.ca>
-    staging: r8192e_pci: fix htons error
-
-Ben Hutchings <ben@decadent.org.uk>
-    Staging: speakup: Update __speakup_paste_selection() tty (ab)usage to match vt
-
-Ian Abbott <abbotti@mev.co.uk>
-    staging: comedi: ni_daq_700: add mux settling delay
-
-Ben Hutchings <ben@decadent.org.uk>
-    Staging: speakup: Move pasting into a work item
-
-Mathias Nyman <mathias.nyman@linux.intel.com>
-    xhci: delete endpoints from bandwidth list before freeing whole device
-
-NeilBrown <neilb@suse.de>
-    md: always set MD_RECOVERY_INTR when interrupting a reshape thread.
-
-NeilBrown <neilb@suse.de>
-    md: always set MD_RECOVERY_INTR when aborting a reshape or other "resync".
-
-Richard Weinberger <richard@nod.at>
-    sched: Fix sched_policy < 0 comparison
-
-Martin K. Petersen <martin.petersen@oracle.com>
-    libata: Blacklist queued trim for Crucial M500
-
-Christian König <christian.koenig@amd.com>
-    drm/radeon: use the CP DMA on CIK
-
-Alex Deucher <alexdeucher@gmail.com>
-    drm/radeon/dpm: resume fixes for some systems
-
-Chris Wilson <chris@chris-wilson.co.uk>
-    drm/i915: Only copy back the modified fields to userspace from execbuffer
-
-Christian König <christian.koenig@amd.com>
-    drm/radeon: avoid crash if VM command submission isn't available
-
-Kirill Tkhai <tkhai@yandex.ru>
-    sched/dl: Fix race in dl_task_timer()
-
-Lai Jiangshan <laijs@cn.fujitsu.com>
-    sched: Fix hotplug vs. set_cpus_allowed_ptr()
-
-Juri Lelli <juri.lelli@gmail.com>
-    sched/deadline: Restrict user params max value to 2^63 ns
-
-Peter Zijlstra <peterz@infradead.org>
-    sched/deadline: Change sched_getparam() behaviour vs SCHED_DEADLINE
-
-Michael Kerrisk <mtk.manpages@gmail.com>
-    sched: Make sched_setattr() correctly return -EFBIG
-
-Peter Zijlstra <peterz@infradead.org>
-    sched: Disallow sched_attr::sched_policy < 0
-
-Ming Lei <tom.leiming@gmail.com>
-    virtio_blk: fix race between start and stop queue
-
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Revert "revert "mm: vmscan: do not swap anon pages just because free+file is low""
-
-Heinz Mauelshagen <heinzm@redhat.com>
-    dm cache: always split discards on cache block boundaries
-
-Mike Snitzer <snitzer@redhat.com>
-    dm thin: add 'no_space_timeout' dm-thin-pool module param
-
-Markos Chandras <markos.chandras@imgtec.com>
-    MIPS: Fix typo when reporting cache and ftlb errors for ImgTec cores
-
-Stefan Richter <stefanr@s5r6.in-berlin.de>
-    firewire: revert to 4 GB RDMA, fix protocols using Memory Space
-
-Bibek Basu <bbasu@nvidia.com>
-    cpufreq: remove race while accessing cur_policy
-
-Lucas Stach <l.stach@pengutronix.de>
-    cpufreq: cpu0: drop wrong devm usage
-
-Rabin Vincent <rabin@rab.in>
-    ARM: 8064/1: fix v7-M signal return
-
-Andrey Ryabinin <a.ryabinin@samsung.com>
-    ARM: 8051/1: put_user: fix possible data corruption in put_user
-
-Santosh Shilimkar <santosh.shilimkar@ti.com>
-    ARM: OMAP4: Fix the boot regression with CPU_IDLE enabled
-
-Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-    ARM: OMAP3: clock: Back-propagate rate change from cam_mclk to dpll4_m5 on all OMAP3 platforms
-
-Roger Quadros <rogerq@ti.com>
-    ARM: OMAP2+: nand: Fix NAND on OMAP2 and OMAP3 boards
-
-Peter Ujfalusi <peter.ujfalusi@ti.com>
-    ARM: omap5: hwmod_data: Correct IDLEMODE for McPDM
-
-Emil Goode <emilgoode@gmail.com>
-    ARM: imx: fix error handling in ipu device registration
-
-Joe Lawrence <joe.lawrence@stratus.com>
-    SCSI: scsi_transport_sas: move bsg destructor into sas_rphy_remove
-
-Alex Deucher <alexdeucher@gmail.com>
-    drm/radeon/pm: don't allow debugfs/sysfs access when PX card is off (v2)
-
-Alex Deucher <alexdeucher@gmail.com>
-    drm/radeon: handle non-VGA class pci devices with ATRM
-
-Christian König <christian.koenig@amd.com>
-    drm/radeon: also try GART for CPU accessed buffers
-
-Alex Deucher <alexdeucher@gmail.com>
-    drm/radeon: fix register typo on si
-
-Ben Skeggs <bskeggs@redhat.com>
-    drm/gf119-/disp: fix nasty bug which can clobber SOR0's clock setup
-
-Jean Delvare <jdelvare@suse.de>
-    hwmon: (ntc_thermistor) Fix OF device ID mapping
-
-Jean Delvare <jdelvare@suse.de>
-    hwmon: (ntc_thermistor) Fix dependencies
-
-Johannes Berg <johannes.berg@intel.com>
-    Documentation: fix DOCBOOKS=... building
-
-Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-    mm/memory-failure.c: fix memory leak by race between poison and unpoison
-
-Peter Zijlstra <peterz@infradead.org>
-    perf: Fix race in removing an event
-
-Peter Zijlstra <peterz@infradead.org>
-    perf: Limit perf_event_attr::sample_period to 63 bits
-
-Jiri Olsa <jolsa@redhat.com>
-    perf: Prevent false warning in perf_swevent_add
-
-Thomas Gleixner <tglx@linutronix.de>
-    sched: Sanitize irq accounting madness
-
-Li Zefan <lizefan@huawei.com>
-    sched/deadline: Fix memory leak
-
-Steven Rostedt (Red Hat) <rostedt@goodmis.org>
-    sched: Use CPUPRI_NR_PRIORITIES instead of MAX_RT_PRIO in cpupri check
-
-
--------------
-
-Diffstat:
-
- Documentation/DocBook/media/Makefile              |  2 +-
- Documentation/debugging-via-ohci1394.txt          | 13 ++--
- Documentation/device-mapper/thin-provisioning.txt |  5 +-
- Makefile                                          |  4 +-
- arch/arm/include/asm/uaccess.h                    |  3 +-
- arch/arm/kernel/entry-header.S                    |  4 ++
- arch/arm/mach-imx/devices/platform-ipu-core.c     |  2 +-
- arch/arm/mach-omap2/board-flash.c                 |  2 +-
- arch/arm/mach-omap2/cclock3xxx_data.c             |  3 +-
- arch/arm/mach-omap2/cpuidle44xx.c                 | 25 ++++++--
- arch/arm/mach-omap2/omap_hwmod_54xx_data.c        |  2 +-
- arch/mips/kernel/traps.c                          |  4 +-
- drivers/ata/libata-core.c                         |  8 +--
- drivers/block/virtio_blk.c                        |  4 +-
- drivers/cpufreq/cpufreq-cpu0.c                    | 16 +++--
- drivers/cpufreq/cpufreq_governor.c                |  6 ++
- drivers/cpufreq/intel_pstate.c                    | 72 +++++++++++++----------
- drivers/firewire/core.h                           |  4 +-
- drivers/firewire/ohci.c                           |  2 +-
- drivers/gpio/gpio-mcp23s08.c                      | 11 ++--
- drivers/gpu/drm/i915/i915_drv.h                   |  1 +
- drivers/gpu/drm/i915/i915_gem_execbuffer.c        | 54 ++++++++++-------
- drivers/gpu/drm/i915/intel_crt.c                  |  1 +
- drivers/gpu/drm/i915/intel_display.c              | 14 ++++-
- drivers/gpu/drm/i915/intel_dp.c                   | 23 +++++++-
- drivers/gpu/drm/i915/intel_drv.h                  |  8 +++
- drivers/gpu/drm/i915/intel_dsi.c                  |  1 +
- drivers/gpu/drm/i915/intel_dvo.c                  |  1 +
- drivers/gpu/drm/i915/intel_hdmi.c                 |  1 +
- drivers/gpu/drm/i915/intel_lvds.c                 |  1 +
- drivers/gpu/drm/i915/intel_sdvo.c                 |  1 +
- drivers/gpu/drm/i915/intel_tv.c                   |  1 +
- drivers/gpu/drm/nouveau/core/engine/disp/nvd0.c   |  2 +-
- drivers/gpu/drm/radeon/atombios_crtc.c            |  6 +-
- drivers/gpu/drm/radeon/radeon_asic.c              |  4 +-
- drivers/gpu/drm/radeon/radeon_bios.c              | 14 +++++
- drivers/gpu/drm/radeon/radeon_cs.c                | 15 +++--
- drivers/gpu/drm/radeon/radeon_device.c            |  4 ++
- drivers/gpu/drm/radeon/radeon_object.c            | 38 +++++++-----
- drivers/gpu/drm/radeon/radeon_pm.c                | 43 +++++++++++++-
- drivers/gpu/drm/radeon/sid.h                      |  4 +-
- drivers/hwmon/Kconfig                             |  2 +-
- drivers/hwmon/ntc_thermistor.c                    | 15 +++--
- drivers/infiniband/ulp/isert/ib_isert.c           |  2 +
- drivers/iommu/intel-iommu.c                       | 18 +++++-
- drivers/md/dm-cache-target.c                      |  2 +
- drivers/md/dm-thin.c                              | 12 +++-
- drivers/md/md.c                                   |  5 +-
- drivers/scsi/scsi_transport_sas.c                 |  3 +-
- drivers/staging/comedi/drivers/ni_daq_700.c       |  2 +
- drivers/staging/rtl8192e/rtllib_tx.c              |  2 +-
- drivers/staging/speakup/main.c                    |  1 +
- drivers/staging/speakup/selection.c               | 52 +++++++++++++---
- drivers/staging/speakup/speakup.h                 |  1 +
- drivers/target/iscsi/iscsi_target_login.c         | 57 +++++++++---------
- drivers/target/target_core_configfs.c             |  5 ++
- drivers/tty/tty_buffer.c                          |  2 +
- drivers/usb/core/driver.c                         |  9 ++-
- drivers/usb/core/hub.c                            | 15 ++++-
- drivers/usb/host/pci-quirks.c                     |  7 +++
- drivers/usb/host/xhci-mem.c                       | 20 +++----
- drivers/usb/serial/ftdi_sio.c                     |  2 +
- drivers/usb/serial/ftdi_sio_ids.h                 |  5 ++
- drivers/usb/serial/io_ti.c                        |  2 +-
- drivers/usb/serial/io_usbvend.h                   |  2 +-
- drivers/usb/serial/option.c                       |  2 +
- fs/proc/task_mmu.c                                |  2 +-
- include/linux/percpu-refcount.h                   |  6 +-
- include/uapi/linux/usb/Kbuild                     |  1 +
- include/uapi/linux/usb/cdc-wdm.h                  |  2 +
- kernel/cpu.c                                      |  6 +-
- kernel/events/core.c                              | 63 +++++++++++++-------
- kernel/sched/core.c                               | 55 ++++++++++++-----
- kernel/sched/cpudeadline.c                        |  4 +-
- kernel/sched/cpupri.c                             |  3 +-
- kernel/sched/cputime.c                            | 32 +++++-----
- kernel/sched/deadline.c                           | 10 +++-
- mm/memory-failure.c                               |  2 +
- mm/mempolicy.c                                    |  6 +-
- mm/rmap.c                                         |  3 +-
- mm/vmscan.c                                       | 18 ------
- net/bluetooth/l2cap_core.c                        |  4 +-
- net/ipv6/netfilter.c                              |  6 +-
- net/netfilter/nfnetlink.c                         |  8 +--
- sound/pci/hda/patch_analog.c                      |  1 +
- sound/pci/hda/patch_realtek.c                     | 10 ++--
- 86 files changed, 620 insertions(+), 296 deletions(-)
+3.14-stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Peter Zijlstra <peterz@infradead.org>
+
+commit 46ce0fe97a6be7532ce6126bb26ce89fed81528c upstream.
+
+When removing a (sibling) event we do:
+
+	raw_spin_lock_irq(&ctx->lock);
+	perf_group_detach(event);
+	raw_spin_unlock_irq(&ctx->lock);
+
+	<hole>
+
+	perf_remove_from_context(event);
+		raw_spin_lock_irq(&ctx->lock);
+		...
+		raw_spin_unlock_irq(&ctx->lock);
+
+Now, assuming the event is a sibling, it will be 'unreachable' for
+things like ctx_sched_out() because that iterates the
+groups->siblings, and we just unhooked the sibling.
+
+So, if during <hole> we get ctx_sched_out(), it will miss the event
+and not call event_sched_out() on it, leaving it programmed on the
+PMU.
+
+The subsequent perf_remove_from_context() call will find the ctx is
+inactive and only call list_del_event() to remove the event from all
+other lists.
+
+Hereafter we can proceed to free the event; while still programmed!
+
+Close this hole by moving perf_group_detach() inside the same
+ctx->lock region(s) perf_remove_from_context() has.
+
+The condition on inherited events only in __perf_event_exit_task() is
+likely complete crap because non-inherited events are part of groups
+too and we're tearing down just the same. But leave that for another
+patch.
+
+Most-likely-Fixes: e03a9a55b4e ("perf: Change close() semantics for group events")
+Reported-by: Vince Weaver <vincent.weaver@maine.edu>
+Tested-by: Vince Weaver <vincent.weaver@maine.edu>
+Much-staring-at-traces-by: Vince Weaver <vincent.weaver@maine.edu>
+Much-staring-at-traces-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20140505093124.GN17778@laptop.programming.kicks-ass.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ kernel/events/core.c |   47 ++++++++++++++++++++++++++---------------------
+ 1 file changed, 26 insertions(+), 21 deletions(-)
+
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -1439,6 +1439,11 @@ group_sched_out(struct perf_event *group
+ 		cpuctx->exclusive = 0;
+ }
+ 
++struct remove_event {
++	struct perf_event *event;
++	bool detach_group;
++};
++
+ /*
+  * Cross CPU call to remove a performance event
+  *
+@@ -1447,12 +1452,15 @@ group_sched_out(struct perf_event *group
+  */
+ static int __perf_remove_from_context(void *info)
+ {
+-	struct perf_event *event = info;
++	struct remove_event *re = info;
++	struct perf_event *event = re->event;
+ 	struct perf_event_context *ctx = event->ctx;
+ 	struct perf_cpu_context *cpuctx = __get_cpu_context(ctx);
+ 
+ 	raw_spin_lock(&ctx->lock);
+ 	event_sched_out(event, cpuctx, ctx);
++	if (re->detach_group)
++		perf_group_detach(event);
+ 	list_del_event(event, ctx);
+ 	if (!ctx->nr_events && cpuctx->task_ctx == ctx) {
+ 		ctx->is_active = 0;
+@@ -1477,10 +1485,14 @@ static int __perf_remove_from_context(vo
+  * When called from perf_event_exit_task, it's OK because the
+  * context has been detached from its task.
+  */
+-static void perf_remove_from_context(struct perf_event *event)
++static void perf_remove_from_context(struct perf_event *event, bool detach_group)
+ {
+ 	struct perf_event_context *ctx = event->ctx;
+ 	struct task_struct *task = ctx->task;
++	struct remove_event re = {
++		.event = event,
++		.detach_group = detach_group,
++	};
+ 
+ 	lockdep_assert_held(&ctx->mutex);
+ 
+@@ -1489,12 +1501,12 @@ static void perf_remove_from_context(str
+ 		 * Per cpu events are removed via an smp call and
+ 		 * the removal is always successful.
+ 		 */
+-		cpu_function_call(event->cpu, __perf_remove_from_context, event);
++		cpu_function_call(event->cpu, __perf_remove_from_context, &re);
+ 		return;
+ 	}
+ 
+ retry:
+-	if (!task_function_call(task, __perf_remove_from_context, event))
++	if (!task_function_call(task, __perf_remove_from_context, &re))
+ 		return;
+ 
+ 	raw_spin_lock_irq(&ctx->lock);
+@@ -1511,6 +1523,8 @@ retry:
+ 	 * Since the task isn't running, its safe to remove the event, us
+ 	 * holding the ctx->lock ensures the task won't get scheduled in.
+ 	 */
++	if (detach_group)
++		perf_group_detach(event);
+ 	list_del_event(event, ctx);
+ 	raw_spin_unlock_irq(&ctx->lock);
+ }
+@@ -3279,10 +3293,7 @@ int perf_event_release_kernel(struct per
+ 	 *     to trigger the AB-BA case.
+ 	 */
+ 	mutex_lock_nested(&ctx->mutex, SINGLE_DEPTH_NESTING);
+-	raw_spin_lock_irq(&ctx->lock);
+-	perf_group_detach(event);
+-	raw_spin_unlock_irq(&ctx->lock);
+-	perf_remove_from_context(event);
++	perf_remove_from_context(event, true);
+ 	mutex_unlock(&ctx->mutex);
+ 
+ 	free_event(event);
+@@ -7175,7 +7186,7 @@ SYSCALL_DEFINE5(perf_event_open,
+ 		struct perf_event_context *gctx = group_leader->ctx;
+ 
+ 		mutex_lock(&gctx->mutex);
+-		perf_remove_from_context(group_leader);
++		perf_remove_from_context(group_leader, false);
+ 
+ 		/*
+ 		 * Removing from the context ends up with disabled
+@@ -7185,7 +7196,7 @@ SYSCALL_DEFINE5(perf_event_open,
+ 		perf_event__state_init(group_leader);
+ 		list_for_each_entry(sibling, &group_leader->sibling_list,
+ 				    group_entry) {
+-			perf_remove_from_context(sibling);
++			perf_remove_from_context(sibling, false);
+ 			perf_event__state_init(sibling);
+ 			put_ctx(gctx);
+ 		}
+@@ -7315,7 +7326,7 @@ void perf_pmu_migrate_context(struct pmu
+ 	mutex_lock(&src_ctx->mutex);
+ 	list_for_each_entry_safe(event, tmp, &src_ctx->event_list,
+ 				 event_entry) {
+-		perf_remove_from_context(event);
++		perf_remove_from_context(event, false);
+ 		unaccount_event_cpu(event, src_cpu);
+ 		put_ctx(src_ctx);
+ 		list_add(&event->migrate_entry, &events);
+@@ -7377,13 +7388,7 @@ __perf_event_exit_task(struct perf_event
+ 			 struct perf_event_context *child_ctx,
+ 			 struct task_struct *child)
+ {
+-	if (child_event->parent) {
+-		raw_spin_lock_irq(&child_ctx->lock);
+-		perf_group_detach(child_event);
+-		raw_spin_unlock_irq(&child_ctx->lock);
+-	}
+-
+-	perf_remove_from_context(child_event);
++	perf_remove_from_context(child_event, !!child_event->parent);
+ 
+ 	/*
+ 	 * It can happen that the parent exits first, and has events
+@@ -7868,14 +7873,14 @@ static void perf_pmu_rotate_stop(struct
+ 
+ static void __perf_event_exit_context(void *__info)
+ {
++	struct remove_event re = { .detach_group = false };
+ 	struct perf_event_context *ctx = __info;
+-	struct perf_event *event;
+ 
+ 	perf_pmu_rotate_stop(ctx->pmu);
+ 
+ 	rcu_read_lock();
+-	list_for_each_entry_rcu(event, &ctx->event_list, event_entry)
+-		__perf_remove_from_context(event);
++	list_for_each_entry_rcu(re.event, &ctx->event_list, event_entry)
++		__perf_remove_from_context(&re);
+ 	rcu_read_unlock();
+ }
+ 
 
 
