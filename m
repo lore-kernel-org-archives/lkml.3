@@ -1,40 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932337AbaFIR4c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 13:56:32 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:50945 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753901AbaFIR4a (ORCPT
+	id S1753847AbaFISBt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 14:01:49 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:45919 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753256AbaFISBr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 13:56:30 -0400
-Message-ID: <5395F54C.3080806@codeaurora.org>
-Date: Mon, 09 Jun 2014 10:56:28 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Mon, 9 Jun 2014 14:01:47 -0400
+Date: Mon, 9 Jun 2014 20:01:45 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>, jolsa@redhat.com,
+        linux-kernel@vger.kernel.org, acme@infradead.org
+Subject: Re: perf: Add support for full Intel event lists v5
+Message-ID: <20140609180145.GU25366@two.firstfloor.org>
+References: <1401486615-21374-1-git-send-email-andi@firstfloor.org>
+ <878up6d3sd.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-To: Stephane Viau <sviau@codeaurora.org>
-CC: robdclark@gmail.com, dri-devel@lists.freedesktop.org,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drm/msm/hdmi: set hdp clock rate before prepare_enable
- call
-References: <1402063412-10407-1-git-send-email-sviau@codeaurora.org>
-In-Reply-To: <1402063412-10407-1-git-send-email-sviau@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <878up6d3sd.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/14 07:03, Stephane Viau wrote:
-> The clock driver usually complains when a clock is being prepared
-> before setting its rate. It is the case here for "core_clk" which
-> needs to be set at 19.2 MHz before we attempt a prepare_enable().
+> So I played with this patchset for a little while, and it's mostly good
+> and I left comments for each patch I have concerns.  With that change,
+> 
+> Acked-by: Namhyung Kim <namhyung@kernel.org>
 
-That's only true in the downstream vendor kernel. Upstream we detect all
-rates when clocks are registered. Given that 19.2Mhz is the default rate
-out of reset for this clock this patch is fairly useless.
+Thanks for the review.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+-Andi
