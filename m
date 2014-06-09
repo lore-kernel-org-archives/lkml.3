@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934256AbaFIWqB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 18:46:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56763 "EHLO
+	id S934483AbaFIW4m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 18:56:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57103 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933829AbaFIWpn (ORCPT
+	with ESMTP id S934243AbaFIWqA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:45:43 -0400
+	Mon, 9 Jun 2014 18:46:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        kbuild test robot <fengguang.wu@intel.com>,
-        Ludovic Drolez <ldrolez@debian.org>, Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.14 59/78] USB: io_ti: fix firmware download on big-endian machines (part 2)
-Date: Mon,  9 Jun 2014 15:48:39 -0700
-Message-Id: <20140609224815.236681950@linuxfoundation.org>
+        Michael Welling <mwelling@ieee.org>,
+        Peter Korsgaard <peter@korsgaard.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3.14 77/78] gpio: mcp23s08: Bug fix of SPI device tree registration.
+Date: Mon,  9 Jun 2014 15:48:57 -0700
+Message-Id: <20140609224815.787303692@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140609224813.282275135@linuxfoundation.org>
 References: <20140609224813.282275135@linuxfoundation.org>
@@ -29,57 +30,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Michael Welling <mwelling@ieee.org>
 
-commit c03890ff5e24a4bf59059f2d179f427559b7330a upstream.
+commit 99e4b98dbe3ad1fe38a74d12c3b8d44a55930de4 upstream.
 
-A recent patch that purported to fix firmware download on big-endian
-machines failed to add the corresponding sparse annotation to the
-i2c-header. This was reported by the kbuild test robot.
+The chips variable needs to be incremented for each chip that is
+found in the spi_present_mask when registering via device tree.
+Without this and the checking a negative index is passed to the
+data->chip array in a subsequent loop.
 
-Adding the appropriate annotation revealed another endianess bug related
-to the i2c-header Size-field in a code path that is exercised when the
-firmware is actually being downloaded (and not just verified and left
-untouched unless older than the firmware at hand).
-
-This patch adds the required sparse annotation to the i2c-header and
-makes sure that the Size-field is sent in little-endian byte order
-during firmware download also on big-endian machines.
-
-Note that this patch is only compile-tested, but that there is no
-functional change for little-endian systems.
-
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-Cc: Ludovic Drolez <ldrolez@debian.org>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Michael Welling <mwelling@ieee.org>
+Acked-by: Peter Korsgaard <peter@korsgaard.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/io_ti.c      |    2 +-
- drivers/usb/serial/io_usbvend.h |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpio/gpio-mcp23s08.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
---- a/drivers/usb/serial/io_ti.c
-+++ b/drivers/usb/serial/io_ti.c
-@@ -821,7 +821,7 @@ static int build_i2c_fw_hdr(__u8 *header
- 	firmware_rec =  (struct ti_i2c_firmware_rec*)i2c_header->Data;
+--- a/drivers/gpio/gpio-mcp23s08.c
++++ b/drivers/gpio/gpio-mcp23s08.c
+@@ -895,8 +895,11 @@ static int mcp23s08_probe(struct spi_dev
+ 			return -ENODEV;
+ 		}
  
- 	i2c_header->Type	= I2C_DESC_TYPE_FIRMWARE_BLANK;
--	i2c_header->Size	= (__u16)buffer_size;
-+	i2c_header->Size	= cpu_to_le16(buffer_size);
- 	i2c_header->CheckSum	= cs;
- 	firmware_rec->Ver_Major	= OperationalMajorVersion;
- 	firmware_rec->Ver_Minor	= OperationalMinorVersion;
---- a/drivers/usb/serial/io_usbvend.h
-+++ b/drivers/usb/serial/io_usbvend.h
-@@ -594,7 +594,7 @@ struct edge_boot_descriptor {
+-		for (addr = 0; addr < ARRAY_SIZE(pdata->chip); addr++)
++		for (addr = 0; addr < ARRAY_SIZE(pdata->chip); addr++) {
+ 			pullups[addr] = 0;
++			if (spi_present_mask & (1 << addr))
++				chips++;
++		}
+ 	} else {
+ 		type = spi_get_device_id(spi)->driver_data;
+ 		pdata = dev_get_platdata(&spi->dev);
+@@ -919,12 +922,12 @@ static int mcp23s08_probe(struct spi_dev
+ 			pullups[addr] = pdata->chip[addr].pullups;
+ 		}
  
- struct ti_i2c_desc {
- 	__u8	Type;			// Type of descriptor
--	__u16	Size;			// Size of data only not including header
-+	__le16	Size;			// Size of data only not including header
- 	__u8	CheckSum;		// Checksum (8 bit sum of data only)
- 	__u8	Data[0];		// Data starts here
- } __attribute__((packed));
+-		if (!chips)
+-			return -ENODEV;
+-
+ 		base = pdata->base;
+ 	}
+ 
++	if (!chips)
++		return -ENODEV;
++
+ 	data = kzalloc(sizeof *data + chips * sizeof(struct mcp23s08),
+ 			GFP_KERNEL);
+ 	if (!data)
 
 
