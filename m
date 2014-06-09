@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933713AbaFIP4g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 11:56:36 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:42575 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752880AbaFIPz7 (ORCPT
+	id S933870AbaFIP5B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 11:57:01 -0400
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:52689 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933716AbaFIP45 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 11:55:59 -0400
-From: Pranith Kumar <bobby.prani@gmail.com>
-To: trivial@kernel.org, Harry Wei <harryxiyou@gmail.com>,
-        linux-kernel@zh-kernel.org (moderated list:CHINESE DOCUMENTA...),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH 6/6] remove dead link, kerneltrap.org no longer works
-Date: Mon,  9 Jun 2014 11:55:26 -0400
-Message-Id: <1402329327-6766-6-git-send-email-bobby.prani@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1402329327-6766-1-git-send-email-bobby.prani@gmail.com>
-References: <1402329327-6766-1-git-send-email-bobby.prani@gmail.com>
+	Mon, 9 Jun 2014 11:56:57 -0400
+Message-ID: <5395D9D6.3080101@fb.com>
+Date: Mon, 9 Jun 2014 11:59:18 -0400
+From: Chris Mason <clm@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Sasha Levin <sasha.levin@oracle.com>, <jbacik@fb.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        <linux-btrfs@vger.kernel.org>
+Subject: Re: btrfs: hang on boot due to tests
+References: <5395CFE6.10804@oracle.com>
+In-Reply-To: <5395CFE6.10804@oracle.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-06-09_03:2014-06-09,2014-06-09,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=1.46926359967381e-11 kscore.compositescore=0
+ circleOfTrustscore=198.888439154703 compositescore=0.998981209195878
+ urlsuspect_oldscore=0.998981209195878 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=64355
+ rbsscore=0.998981209195878 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1406090207
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kerneltrap.org no longer works, remove dead reference
+On 06/09/2014 11:16 AM, Sasha Levin wrote:
+> Hi all,
+> 
+> It seems that some recent changes to btrfs tests make it hang during boot:
+> 
+> [   49.730033] NMI watchdog: BUG: soft lockup - CPU#34 stuck for 23s! [swapper/0:1]
+> [   49.730033] Modules linked in:
+> [   49.730033] hardirqs last enabled at (6389143): restore_args (arch/x86/kernel/entry_64.S:829)
+> [   49.730033] hardirqs last disabled at (6389144): apic_timer_interrupt (arch/x86/kernel/entry_64.S:1021)
+> [   49.730033] softirqs last enabled at (6389142): __do_softirq (./arch/x86/include/asm/preempt.h:22 kernel/softirq.c:296)
+> [   49.730033] softirqs last disabled at (6389139): irq_exit (kernel/softirq.c:346 kernel/softirq.c:387)
+> [   49.730033] CPU: 34 PID: 1 Comm: swapper/0 Not tainted 3.15.0-rc8-next-20140606-sasha-00021-ga9d3a0b-dirty #597
 
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
----
- Documentation/zh_CN/SubmittingDrivers | 4 ----
- 1 file changed, 4 deletions(-)
 
-diff --git a/Documentation/zh_CN/SubmittingDrivers b/Documentation/zh_CN/SubmittingDrivers
-index 5889f8d..d313f5d 100644
---- a/Documentation/zh_CN/SubmittingDrivers
-+++ b/Documentation/zh_CN/SubmittingDrivers
-@@ -150,10 +150,6 @@ LWN.net:
- 	将旧版内核的驱动程序移植到 2.6 版：
- 		http://lwn.net/Articles/driver-porting/
- 
--KernelTrap：
--	Linux 内核的最新动态以及开发者访谈
--	http://kerneltrap.org/
--
- 内核新手(KernelNewbies):
- 	为新的内核开发者提供文档和帮助
- 	http://kernelnewbies.org/
--- 
-1.9.1
+This is 3.15-rc8 + linux-next?  I'll try to reproduce here, but the
+tests were working for me.
 
+-chris
