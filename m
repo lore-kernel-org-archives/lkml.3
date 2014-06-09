@@ -1,119 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936244AbaFIJ1B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 05:27:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32949 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933207AbaFIJ0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 05:26:37 -0400
-From: Vlastimil Babka <vbabka@suse.cz>
-To: David Rientjes <rientjes@google.com>, linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>, Vlastimil Babka <vbabka@suse.cz>,
-        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: [PATCH 07/10] mm: rename allocflags_to_migratetype for clarity
-Date: Mon,  9 Jun 2014 11:26:19 +0200
-Message-Id: <1402305982-6928-7-git-send-email-vbabka@suse.cz>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1402305982-6928-1-git-send-email-vbabka@suse.cz>
-References: <1402305982-6928-1-git-send-email-vbabka@suse.cz>
+	id S936294AbaFIJ1O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 05:27:14 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59137 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932780AbaFIJ06 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 05:26:58 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Chris Wilson <chris@chris-wilson.co.uk>,
+        Ben Widawsky <ben@bwidawsk.net>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 121/146] drm/i915: Fix unsafe loop iteration over vma whilst unbinding them
+Date: Mon,  9 Jun 2014 10:50:56 +0200
+Message-Id: <431b636f4cb9a5592f607ee68bf2e83612cbf182.1402303821.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
+References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
+In-Reply-To: <cover.1402303820.git.jslaby@suse.cz>
+References: <cover.1402303820.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Rientjes <rientjes@google.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-The page allocator has gfp flags (like __GFP_WAIT) and alloc flags (like
-ALLOC_CPUSET) that have separate semantics.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-The function allocflags_to_migratetype() actually takes gfp flags, not alloc
-flags, and returns a migratetype.  Rename it to gfpflags_to_migratetype().
+===============
 
-Signed-off-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Rik van Riel <riel@redhat.com>
+This is commit df6f783a4ef6790780a67c491897ac upstream.
+
+On non-LLC platforms, when changing the cache level of an object, we may
+need to unbind it so that prefetching across page boundaries does not
+cross into a different memory domain. This requires us to unbind
+conflicting vma, but we did so iterating over the objects vma in an
+unsafe manner (as the list was being modified as we iterated).
+
+The regression was introduced in
+commit 3089c6f239d7d2c4cb2dd5c353e8984cf79af1d7
+Author: Ben Widawsky <ben@bwidawsk.net>
+Date:   Wed Jul 31 17:00:03 2013 -0700
+
+    drm/i915: make caching operate on all address spaces
+apparently as far back as v3.12-rc1, but it has only just begun to
+trigger real world bug reports.
+
+Reported-and-tested-by: Nikolay Martynov <mar.kolya@gmail.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=76384
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Ben Widawsky <ben@bwidawsk.net>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- include/linux/gfp.h | 2 +-
- mm/compaction.c     | 4 ++--
- mm/page_alloc.c     | 6 +++---
- 3 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/i915/i915_gem.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-index 6eb1fb3..ed9627e 100644
---- a/include/linux/gfp.h
-+++ b/include/linux/gfp.h
-@@ -156,7 +156,7 @@ struct vm_area_struct;
- #define GFP_DMA32	__GFP_DMA32
- 
- /* Convert GFP flags to their corresponding migrate type */
--static inline int allocflags_to_migratetype(gfp_t gfp_flags)
-+static inline int gfpflags_to_migratetype(const gfp_t gfp_flags)
+diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+index b00b32c992b0..35066a9b535f 100644
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -3419,7 +3419,7 @@ int i915_gem_object_set_cache_level(struct drm_i915_gem_object *obj,
  {
- 	WARN_ON((gfp_flags & GFP_MOVABLE_MASK) == GFP_MOVABLE_MASK);
+ 	struct drm_device *dev = obj->base.dev;
+ 	drm_i915_private_t *dev_priv = dev->dev_private;
+-	struct i915_vma *vma;
++	struct i915_vma *vma, *next;
+ 	int ret;
  
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 11c0926..c339ccd 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -1178,7 +1178,7 @@ static unsigned long compact_zone_order(struct zone *zone, int order,
- 		.nr_freepages = 0,
- 		.nr_migratepages = 0,
- 		.order = order,
--		.migratetype = allocflags_to_migratetype(gfp_mask),
-+		.migratetype = gfpflags_to_migratetype(gfp_mask),
- 		.zone = zone,
- 		.mode = mode,
- 	};
-@@ -1228,7 +1228,7 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 	count_compact_event(COMPACTSTALL);
- 
- #ifdef CONFIG_CMA
--	if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
-+	if (gfpflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
- 		alloc_flags |= ALLOC_CMA;
- #endif
- 	/* Compact each zone in the list */
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 4f59fa2..cc0b687 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2473,7 +2473,7 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
- 			alloc_flags |= ALLOC_NO_WATERMARKS;
+ 	if (obj->cache_level == cache_level)
+@@ -3430,7 +3430,7 @@ int i915_gem_object_set_cache_level(struct drm_i915_gem_object *obj,
+ 		return -EBUSY;
  	}
- #ifdef CONFIG_CMA
--	if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
-+	if (gfpflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
- 		alloc_flags |= ALLOC_CMA;
- #endif
- 	return alloc_flags;
-@@ -2716,7 +2716,7 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
- 	struct zone *preferred_zone;
- 	struct zoneref *preferred_zoneref;
- 	struct page *page = NULL;
--	int migratetype = allocflags_to_migratetype(gfp_mask);
-+	int migratetype = gfpflags_to_migratetype(gfp_mask);
- 	unsigned int cpuset_mems_cookie;
- 	int alloc_flags = ALLOC_WMARK_LOW|ALLOC_CPUSET|ALLOC_FAIR;
- 	int classzone_idx;
-@@ -2750,7 +2750,7 @@ retry_cpuset:
- 	classzone_idx = zonelist_zone_idx(preferred_zoneref);
  
- #ifdef CONFIG_CMA
--	if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
-+	if (gfpflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
- 		alloc_flags |= ALLOC_CMA;
- #endif
- retry:
+-	list_for_each_entry(vma, &obj->vma_list, vma_link) {
++	list_for_each_entry_safe(vma, next, &obj->vma_list, vma_link) {
+ 		if (!i915_gem_valid_gtt_space(dev, &vma->node, cache_level)) {
+ 			ret = i915_vma_unbind(vma);
+ 			if (ret)
 -- 
-1.8.4.5
+1.9.3
 
