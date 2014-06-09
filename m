@@ -1,71 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754787AbaFIKJI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 06:09:08 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:56581 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754670AbaFIKJE (ORCPT
+	id S1754733AbaFIKMH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 06:12:07 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:51101 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752808AbaFIKME (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 06:09:04 -0400
-X-IronPort-AV: E=Sophos;i="4.98,1001,1392134400"; 
-   d="scan'208";a="31649858"
-Message-ID: <53958539.1070904@cn.fujitsu.com>
-Date: Mon, 9 Jun 2014 17:58:17 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        <linux-mm@kvack.org>, Cgroups <cgroups@vger.kernel.org>,
-        <stable@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH] mm/mempolicy: fix sleeping function called from invalid
- context
-References: <53902A44.50005@cn.fujitsu.com> <20140605132339.ddf6df4a0cf5c14d17eb8691@linux-foundation.org> <539192F1.7050308@cn.fujitsu.com> <alpine.DEB.2.02.1406081539140.21744@chino.kir.corp.google.com> <539574F1.2060701@cn.fujitsu.com> <alpine.DEB.2.02.1406090209460.24247@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1406090209460.24247@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Mon, 9 Jun 2014 06:12:04 -0400
+Message-ID: <5395886D.9090606@gmail.com>
+Date: Mon, 09 Jun 2014 12:11:57 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+To: Jisheng Zhang <jszhang@marvell.com>
+CC: =?ISO-8859-1?Q?Antoine_T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        "balbi@ti.com" <balbi@ti.com>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        "thomas.petazzoni@free-electrons.com" 
+	<thomas.petazzoni@free-electrons.com>,
+        Jimmy Xu <zmxu@marvell.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/9] usb: phy: add the Berlin USB PHY driver
+References: <1401983326-19205-1-git-send-email-antoine.tenart@free-electrons.com> <1401983326-19205-5-git-send-email-antoine.tenart@free-electrons.com> <53919DCE.1050708@gmail.com> <20140609162631.76bd2ad7@xhacker>
+In-Reply-To: <20140609162631.76bd2ad7@xhacker>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.100]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
-
-On 06/09/2014 05:13 PM, David Rientjes wrote:
-
-> On Mon, 9 Jun 2014, Gu Zheng wrote:
+On 06/09/2014 10:26 AM, Jisheng Zhang wrote:
+> Dear Sebastian and Antoine,
 > 
->>> I think your patch addresses the problem that you're reporting but misses 
->>> the larger problem with cpuset.mems rebinding on fork().  When the 
->>> forker's task_struct is duplicated (which includes ->mems_allowed) and it 
->>> races with an update to cpuset_being_rebound in update_tasks_nodemask() 
->>> then the task's mems_allowed doesn't get updated.
+> On Fri, 6 Jun 2014 03:54:06 -0700
+> Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> wrote:
+> 
+>>> +
+>>> +#define to_berlin_phy_priv(p)	container_of((p), struct
+>>> berlin_phy_priv, phy) +
+>>> +struct berlin_phy_priv {
+>>> +	void __iomem		*base;
+>>> +	struct usb_phy		phy;
+>>> +	struct reset_control	*rst_ctrl;
+>>> +	int			pwr_gpio;
 >>
->> Yes, you are right, this patch just wants to address the bug reported above.
->> The race condition you mentioned above inherently exists there, but it is yet
->> another issue, the rcu lock here makes no sense to it, and I think we need
->> additional sync-mechanisms if want to fix it.
+>> Is the GPIO used for USB power? If so, we should not rely on
 > 
-> Yes, the rcu lock is not providing protection for any critical section 
-> here that requires (1) the forker's cpuset to be stored in 
-> cpuset_being_rebound or (2) the forked thread's cpuset to be rebound by 
-> the cpuset nodemask update, and no race involving the two.
-> 
->> But thinking more, though the current implementation has flaw, but I worry
->> about the negative effect if we really want to fix it. Or maybe the fear
->> is unnecessary.:) 
+> The GPIO is used for vbus. Sorry for using the confusing "pwr". Do we still
+> need to use regulator API?
+
+Yes, I guess using regulator is still the way to go. Also, I think
+it should be up to the controller to power on/off the device. That
+way, we could make use of the dual role controller features on BG2
+and BG2CD.
+
+>> GPIO at all but use regulator API. Thinking of Chromecast which
+>> is externally powered over USB, there will be no regulator nor
+>> GPIO at all.
 >>
+>>> +};
+>>> +
+>>> +static int berlin_phy_init(struct usb_phy *phy)
+>>> +{
+>>> +	struct berlin_phy_priv *priv = to_berlin_phy_priv(phy);
+>>> +	int ret;
+>>> +
+>>> +	reset_control_reset(priv->rst_ctrl);
+>>> +
+>>> +	writel(CLK_REF_DIV(0xc) | FEEDBACK_CLK_DIV(0x54),
+>>> +	       priv->base + USB_PHY_PLL);
+>>
+>> @Jisheng: IIRC the dividers above are different for BG2? Can you please
+>> evaluate?
 > 
-> It needs to be slightly rewritten to work properly without negatively 
-> impacting the latency of fork().  Do you have the cycles to do it?
+> Yes, BG2 uses different refdiv and fbdiv. Is there any suggestions about how to
+> handle this difference? The value is chosen after carefully tunning
+
+I guess it depends on how many different div values you expect for
+berlin2 usb PHYs. If it is just the two, we can go with different
+compatibles for e.g. "berlin2-usb-phy" and "berlin2cd-usb-phy".
+
+If you know of more PHYs with different div, a corresponding vendor-
+specific property should do the trick, e.g.
+marvell,pll-divider = <0x54c0>;
+
+I am fine with both.
+
+>>
+>>> +	writel(CLK_STABLE | PLL_CTRL_REG | PHASE_OFF_TOL_250 |
+>>> KVC0_REG_CTRL |
+>>> +	       CLK_BLK_EN, priv->base + USB_PHY_PLL_CONTROL);
+>>> +	writel(V2I_VCO_RATIO(0x5) | R_ROTATE_0 | ANA_TEST_DC_CTRL(0x5),
+>>> +	       priv->base + USB_PHY_ANALOG);
+>>> +	writel(PHASE_FREEZE_DLY_4_CL | ACK_LENGTH_16_CL | SQ_LENGTH_12 |
+>>> +	       DISCON_THRESHOLD_260 | SQ_THRESHOLD(0xa) | LPF_COEF(0x2) |
+>>> +	       INTPL_CUR_30, priv->base + USB_PHY_RX_CTRL);
+>>> +
+>>> +	writel(TX_VDD12_13 | TX_OUT_AMP(0x3), priv->base +
+>>> USB_PHY_TX_CTRL1);
+>>> +	writel(EXT_HS_RCAL_EN | IMPCAL_VTH_DIV(0x3) |
+>>> EXT_RS_RCAL_DIV(0x4),
+>>> +	       priv->base + USB_PHY_TX_CTRL0);
+>>> +
+>>> +	writel(EXT_HS_RCAL_EN | IMPCAL_VTH_DIV(0x3) |
+>>> EXT_RS_RCAL_DIV(0x4) |
+>>> +	       EXT_FS_RCAL_DIV(0x2), priv->base + USB_PHY_TX_CTRL0);
+>>> +
+>>> +	writel(EXT_HS_RCAL_EN | IMPCAL_VTH_DIV(0x3) |
+>>> EXT_RS_RCAL_DIV(0x4),
+>>> +	       priv->base + USB_PHY_TX_CTRL0);
+>>> +	writel(TX_CHAN_CTRL_REG(0xf) | DRV_SLEWRATE(0x3) |
+>>> IMP_CAL_FS_HS_DLY_3 |
+>>> +	       FS_DRV_EN_MASK(0xd), priv->base + USB_PHY_TX_CTRL2);
+>>> +
+>>> +	ret = gpio_direction_output(priv->pwr_gpio, 0);
+>>
+>> As mentioned above, this should be using regulator API. And also, if
+>> there is no dummy regulator allowed, it should be optional.
+>>
+>>> +	if (ret)
+>>> +		return ret;
+>>> +
+>>> +	gpio_set_value(priv->pwr_gpio, 1);
+>>> +
+>>> +	return 0;
+>>> +}
+>>> +
+>>> +static void berlin_phy_shutdown(struct usb_phy *phy)
+>>> +{
+>>> +	struct berlin_phy_priv *priv = to_berlin_phy_priv(phy);
+>>> +
+>>> +	gpio_set_value(priv->pwr_gpio, 0);
+>>> +}
+>>> +
+>>> +static int berlin_phy_probe(struct platform_device *pdev)
+>>> +{
+>>> +	struct device_node *np = pdev->dev.of_node;
+>>> +	struct berlin_phy_priv *priv;
+>>> +	struct resource *res;
+>>> +	int ret, gpio;
+>>> +
+>>> +	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
+>>> +	if (!priv)
+>>> +		return -ENOMEM;
+>>> +
+>>> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>>> +	priv->base = devm_ioremap_resource(&pdev->dev, res);
+>>> +	if (IS_ERR(priv->base))
+>>> +		return PTR_ERR(priv->base);
+>>> +
+>>> +	priv->rst_ctrl = devm_reset_control_get(&pdev->dev, NULL);
+>>> +	if (IS_ERR(priv->rst_ctrl)) {
+>>> +		ret = PTR_ERR(priv->rst_ctrl);
+>>> +		dev_err(&pdev->dev, "cannot get reset controller: %d\n",
+>>> ret);
+>>
+>> Hmm, considering a non arch_init call registered reset driver, it does
+>> also spit out an error for -EPROBE_DEFER, does it?
+>>
+>>> +		return ret;
+>>> +	}
+>>> +
+>>> +	gpio = of_get_named_gpio(np, "power-gpio", 0);
+>>> +	if (!gpio_is_valid(gpio))
+>>> +		return gpio;
 > 
+> Some BG2Q boards hardwired the vbus to be always powered on, we should continue
+> the probe if vbus gpio is missing.
 
-To be honest, I'm busy with other schedule. And if you(or other
-guys) have proper proposal, please go ahead.
+Yeah, the same applies for regulators. But with the comments above, it
+should move to the controller stub instead.
 
-To Tejun, Li and Andrew:
-Any comment? Or could you apply this *bug fix* first?
+Sebastian
 
-Regards,
-Gu
