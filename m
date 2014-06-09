@@ -1,112 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753918AbaFISvN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 14:51:13 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:49743 "EHLO
+	id S1753794AbaFIS5C (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 14:57:02 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:46750 "EHLO
 	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751009AbaFISvK (ORCPT
+	with ESMTP id S1751202AbaFIS47 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 14:51:10 -0400
+	Mon, 9 Jun 2014 14:56:59 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140609142956.3d79e9d1@gandalf.local.home>
-References: <20140603130233.658a6a3c@gandalf.local.home>
-	<20140603172632.GA27956@redhat.com>
-	<CA+55aFzT5CGv_T60voAqR+4PfiMmJmsDZLid2DZ4=+X8uvF+ig@mail.gmail.com>
-	<20140603200125.GB1105@redhat.com>
-	<20140606203350.GU4581@linux.vnet.ibm.com>
-	<20140608130718.GA11129@redhat.com>
-	<20140609162613.GE4581@linux.vnet.ibm.com>
-	<20140609181553.GA13681@redhat.com>
-	<20140609142956.3d79e9d1@gandalf.local.home>
-Date: Mon, 9 Jun 2014 11:51:09 -0700
-X-Google-Sender-Auth: EJI__8ySFAcDA7y17KScMwdzc9A
-Message-ID: <CA+55aFyO8bb7fS3AaQzfMq7geERQ1JpSdcRZ9Fbs5-tZP0oRXg@mail.gmail.com>
-Subject: Re: safety of *mutex_unlock() (Was: [BUG] signal: sighand unprotected
- when accessed by /proc)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>
+In-Reply-To: <20140606234155.10062.58609@quantum>
+References: <1401467562-5585-1-git-send-email-dianders@chromium.org>
+	<1402000514-30752-1-git-send-email-dianders@chromium.org>
+	<5390EE97.9020702@gmail.com>
+	<20140606234155.10062.58609@quantum>
+Date: Mon, 9 Jun 2014 11:56:58 -0700
+X-Google-Sender-Auth: rzGCRA-yiBLfp5SNsJZBurGo3i0
+Message-ID: <CAD=FV=UZape0qnV0wfYUdtS-spkOAQxt1s1vrmG96H+WpyhW6Q@mail.gmail.com>
+Subject: Re: [PATCH v3] clk: exynos5420: Remove aclk66_peric from the clock
+ tree description
+From: Doug Anderson <dianders@chromium.org>
+To: Tomasz Figa <tomasz.figa@gmail.com>, Tomasz Figa <t.figa@samsung.com>,
+        Mike Turquette <mturquette@linaro.org>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Shaik Ameer Basha <shaik.ameer@samsung.com>,
+        Arun Kumar <arun.kk@samsung.com>,
+        Alim Akhtar <alim.akhtar@samsung.com>, a.hajda@samsung.com,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 9, 2014 at 11:29 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+Tomasz,
+
+On Fri, Jun 6, 2014 at 4:41 PM, Mike Turquette <mturquette@linaro.org> wrote:
+> Quoting Tomasz Figa (2014-06-05 15:26:31)
+>> On 05.06.2014 22:35, Doug Anderson wrote:
+>> > The "aclk66_peric" clock is a gate clock with a whole bunch of gates
+>> > underneath it.  This big gate isn't very useful to include in our
+>> > clock tree.  If any of the children need to be turned on then the big
+>> > gate will need to be on anyway.  ...and there are plenty of other "big
+>> > gates" that aren't described in our clock tree, some of which shut off
+>> > collections of clocks that have no relationship in the hierarchy so
+>> > are hard to model.
+>> >
+>> > "aclk66_peric" is causing earlyprintk problems since it gets disabled
+>> > as part of the boot process, so let's just remove it.
+>> >
+>> > Strangely (and for no good reason) this clock is exported as part of
+>> > the common clock bindings.  Remove it since there are no in-kernel
+>> > device trees using it and no reason anyone out of tree should refer to
+>> > it either.
+>> >
+>> > Signed-off-by: Doug Anderson <dianders@chromium.org>
+>> > ---
+>> > Changes in v3:
+>> > - Now just remove aclk66_peric from the tree as suggested by Tomasz.
+>> >
+>> > Changes in v2:
+>> > - Use GATE_A and clk_get().  Save the clock for putting later.
+>> > - Return 0 from exynos5420_clk_late_init().
+>> >
+>> >  drivers/clk/samsung/clk-exynos5420.c   | 85 ++++++++++++++++++++++------------
+>> >  include/dt-bindings/clock/exynos5420.h |  1 -
+>> >  2 files changed, 55 insertions(+), 31 deletions(-)
+>> >
 >>
->> And once again, note that the normal mutex is already unsafe (unless I missed
->> something).
+>> Mike, I can take this patch to my tree as a fix for 3.16-rc, or if still
+>> possible and you don't mind, feel free to apply it directly with my ACK:
+>>
+>> Acked-by: Tomasz Figa <t.figa@samsung.com>
 >
-> Is it unsafe?
->
-> This thread was started because of a bug we triggered in -rt, which
-> ended up being a change specific to -rt that modified the way slub
-> handled SLAB_DESTROY_BY_RCU. What else was wrong with it?
+> I'll send a second PR next week that includes this.
 
-There's a different issue with freeing of mutexes, which is not a bug,
-but "by design". Namely that mutexes aren't truly "atomic". They are
-complex data structures, and they have issues that a spinlock does not
-have.
+This doesn't apply cleanly to Mike's tree.  Can you add it to your
+tree and send it out for 3.16?  Mike said you should add his Ack and
+I've confirmed that the patch applies cleanly to the most recent
+linuxnext (next-20140606) as well as to the top of your
+'samsung-clk-next' tree (2ce16c5 clk: samsung: exynos3250: Add clocks
+using common clock framework).
 
-When unlocking a mutex, the thread doing the unlocking will still
-touch the mutex itself _after_ another thread could already have
-successfully acquired the mutex. This is not a problem in any normal
-use. since all of this is perfectly coherent in general, but it means
-that code sequences like:
+Thanks!
 
-  mutex_lock(mem->mutex);
-  kill_it = !--mem->refcount;
-  mutex_unlock(mem->mutex);
-  if (kill_it)
-     free(mem);
-
-are fundamentally buggy.
-
-Note that if you think of mutexes as truly indivisible atomic
-operations, the above is "obviously correct": the last person who got
-the mutex marked it for killing. But the fact is, the *next-to-last*
-mutex acquirer may still actively be in the *non-indivisible*
-mutex_unlock() when the last person frees it, resulting in a
-use-after-free. And yes, we've had this bug, and as far as I know it's
-possible that the RT code *introduces* this bug when it changes
-spinlocks into mutexes. Because we do exactly the above code sequence
-with spinlocks. So just replacing spinlocks with mutexes is a very
-subtly buggy thing to do in general.
-
-Another example of this kind of situation is using a mutex as a
-completion event: that's simply buggy. Again, it's because mutexes are
-complex data structures, and you have a very similar use-after-free
-issue. It's why the fundamental data structure for a "struct
-completion" is a spinlock, not a mutex.
-
-Again, in *theory*, a completion could be just a mutex that starts out
-locked, and then the completer completes it by just unlocking it. The
-person who waits for a completion does so by just asking for a lock.
-Obvious, simple, and trivial, right? Not so, because of the *exact*
-same issue above: the completer (who does an "unlock") may still be
-accessing the completion data structure when the completion waiter has
-successfully gotten the lock. So the standard thing of the completer
-freeing the underlying completion memory (which is often on the stack,
-so "freeing" is just he act of going out of scope of the liveness of
-the completion data structure) would not work if the completion was a
-mutex.
-
-This is subtle, and it is basically unavoidable. If a mutex (or
-counting semaphore) has a fast-path - and a mutex/semaphore without a
-fast-path is shit - then this issue will exist. Exactly because the
-fast-path will depend on just one part of the whole big mutex
-structure, and the slow-path will have other pieces to it.
-
-There might be reasonable ways to avoid this issue (having the
-fastpath locking field share memory with the slow-path locking, for
-example), but it's not how our semaphores and mutexes work, and I
-suspect it cannot be the case in general (because it limits you too
-badly in how to implement the mutex). As a result, this is all "by
-design" as opposed to being a bug.
-
-                Linus
+-Doug
