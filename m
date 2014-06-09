@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755888AbaFIJFi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 05:05:38 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58468 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755050AbaFIIvZ (ORCPT
+	id S933569AbaFIJGY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 05:06:24 -0400
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:64178 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932316AbaFIJGV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 04:51:25 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Alex Deucher <alexdeucher@gmail.com>,
-        Alex Deucher <alexander.deucher@amd.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 043/146] drm/radeon: disable mclk dpm on R7 260X
-Date: Mon,  9 Jun 2014 10:49:38 +0200
-Message-Id: <efa019ee9d25f383acea1c15e3fa6b0fa314e1ad.1402303820.git.jslaby@suse.cz>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
-References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
-In-Reply-To: <cover.1402303820.git.jslaby@suse.cz>
-References: <cover.1402303820.git.jslaby@suse.cz>
+	Mon, 9 Jun 2014 05:06:21 -0400
+Date: Mon, 9 Jun 2014 02:06:17 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Vlastimil Babka <vbabka@suse.cz>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [RFC PATCH 6/6] mm, compaction: don't migrate in blocks that
+ cannot be fully compacted in async direct compaction
+In-Reply-To: <53916EE7.9000806@suse.cz>
+Message-ID: <alpine.DEB.2.02.1406090156340.24247@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1405211954410.13243@chino.kir.corp.google.com> <1401898310-14525-1-git-send-email-vbabka@suse.cz> <1401898310-14525-6-git-send-email-vbabka@suse.cz> <alpine.DEB.2.02.1406041705140.22536@chino.kir.corp.google.com> <53908F10.4020603@suse.cz>
+ <alpine.DEB.2.02.1406051431030.18119@chino.kir.corp.google.com> <53916EE7.9000806@suse.cz>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alex Deucher <alexdeucher@gmail.com>
+On Fri, 6 Jun 2014, Vlastimil Babka wrote:
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+> > Agreed.  I was thinking higher than 1GB would be possible once we have 
+> > your series that does the pageblock skip for thp, I think the expense 
+> > would be constant because we won't needlessly be migrating pages unless it 
+> > has a good chance at succeeding.
+> 
+> Looks like a counter of iterations actually done in scanners, maintained in
+> compact_control, would work better than any memory size based limit? It could
+> better reflect the actual work done and thus latency. Maybe increase the counter
+> also for migrations, with a higher cost than for a scanner iteration.
+> 
 
-===============
+I'm not sure we can expose that to be configurable by userspace in any 
+meaningful way.  We'll want to be able to tune this depending on the size 
+of the machine if we are to truly remove the need_resched() heuristic and 
+give it a sane default.  I was thinking it would be similar to 
+khugepaged's pages_to_scan value that it uses on each wakeup.
 
-commit 57700ad1f2f21d5d7ab7ee0e58d11b5954852434 upstream.
+> > This does beg the question about parallel direct compactors, though, that 
+> > will be contending on the same coarse zone->lru_lock locks and immediately 
+> > aborting and falling back to PAGE_SIZE pages for thp faults that will be 
+> > more likely if your patch to grab the high-order page and return it to the 
+> > page allocator is merged.
+> 
+> Hm can you explain how the page capturing makes this worse? I don't see it.
+> 
 
-Setting higher mclks seems to cause stability issues
-on some R7 260X boards.  Disable it for now for stability
-until we find a proper fix.
+I was expecting that your patch to capture the high-order page made a 
+difference because the zone watermark check doesn't imply the high-order 
+page will be allocatable after we return to the page allocator to allocate 
+it.  In that case, we terminated compaction prematurely.  If that's true, 
+then it seems like no parallel thp allocator will be able to allocate 
+memory that another direct compactor has freed without entering compaction 
+itself on a fragmented machine, and thus an increase in zone->lru_lock 
+contention if there's migratable memory.
 
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=75992
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/gpu/drm/radeon/ci_dpm.c | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/drivers/gpu/drm/radeon/ci_dpm.c b/drivers/gpu/drm/radeon/ci_dpm.c
-index 51e947a97edf..79682ff51b63 100644
---- a/drivers/gpu/drm/radeon/ci_dpm.c
-+++ b/drivers/gpu/drm/radeon/ci_dpm.c
-@@ -5098,6 +5098,10 @@ int ci_dpm_init(struct radeon_device *rdev)
- 	pi->mclk_dpm_key_disabled = 0;
- 	pi->pcie_dpm_key_disabled = 0;
- 
-+	/* mclk dpm is unstable on some R7 260X cards */
-+	if (rdev->pdev->device == 0x6658)
-+		pi->mclk_dpm_key_disabled = 1;
-+
- 	pi->caps_sclk_ds = true;
- 
- 	pi->mclk_strobe_mode_threshold = 40000;
--- 
-1.9.3
-
+Having 32 cpus fault thp memory and all entering compaction and contending 
+(and aborting because of contention, currently) on zone->lru_lock is a 
+really bad situation.
