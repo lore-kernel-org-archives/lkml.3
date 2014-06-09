@@ -1,24 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964888AbaFIJDA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 05:03:00 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58524 "EHLO
+	id S964872AbaFIJC4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 05:02:56 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58528 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755190AbaFIIv0 (ORCPT
+	by vger.kernel.org with ESMTP id S1755256AbaFIIv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jun 2014 04:51:26 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@redhat.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 005/146] mm, oom: prefer thread group leaders for display purposes
-Date: Mon,  9 Jun 2014 10:49:00 +0200
-Message-Id: <863fb410b57a2d7ac8ab066efbc840d5d4e621ae.1402303820.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 101/146] nfsd4: remove lockowner when removing lock stateid
+Date: Mon,  9 Jun 2014 10:50:36 +0200
+Message-Id: <c9e1bfbeccfbbd8720f12c1f43ed088e2cf3f19e.1402303821.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
 References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
@@ -28,89 +23,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Rientjes <rientjes@google.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit d49ad9355420c743c736bfd1dee9eaa5b1a7722a upstream.
+commit a1b8ff4c97b4375d21b6d6c45d75877303f61b3b upstream.
 
-When two threads have the same badness score, it's preferable to kill
-the thread group leader so that the actual process name is printed to
-the kernel log rather than the thread group name which may be shared
-amongst several processes.
+The nfsv4 state code has always assumed a one-to-one correspondance
+between lock stateid's and lockowners even if it appears not to in some
+places.
 
-This was the behavior when select_bad_process() used to do
-for_each_process(), but it now iterates threads instead and leads to
-ambiguity.
+We may actually change that, but for now when FREE_STATEID releases a
+lock stateid it also needs to release the parent lockowner.
 
-Signed-off-by: David Rientjes <rientjes@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Greg Thelen <gthelen@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Symptoms were a subsequent LOCK crashing in find_lockowner_str when it
+calls same_lockowner_ino on a lockowner that unexpectedly has an empty
+so_stateids list.
+
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- mm/memcontrol.c | 19 ++++++++++++-------
- mm/oom_kill.c   | 12 ++++++++----
- 2 files changed, 20 insertions(+), 11 deletions(-)
+ fs/nfsd/nfs4state.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 15429b92ff98..213d1b4aafd7 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1820,13 +1820,18 @@ static void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
- 				break;
- 			};
- 			points = oom_badness(task, memcg, NULL, totalpages);
--			if (points > chosen_points) {
--				if (chosen)
--					put_task_struct(chosen);
--				chosen = task;
--				chosen_points = points;
--				get_task_struct(chosen);
--			}
-+			if (!points || points < chosen_points)
-+				continue;
-+			/* Prefer thread group leaders for display purposes */
-+			if (points == chosen_points &&
-+			    thread_group_leader(chosen))
-+				continue;
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index 6f1250c14606..ded7af3c45e1 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -3696,9 +3696,16 @@ out:
+ static __be32
+ nfsd4_free_lock_stateid(struct nfs4_ol_stateid *stp)
+ {
+-	if (check_for_locks(stp->st_file, lockowner(stp->st_stateowner)))
++	struct nfs4_lockowner *lo = lockowner(stp->st_stateowner);
 +
-+			if (chosen)
-+				put_task_struct(chosen);
-+			chosen = task;
-+			chosen_points = points;
-+			get_task_struct(chosen);
- 		}
- 		css_task_iter_end(&it);
- 	}
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index f5bed7f17463..a9b5b7ffc476 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -327,10 +327,14 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
- 			break;
- 		};
- 		points = oom_badness(p, NULL, nodemask, totalpages);
--		if (points > chosen_points) {
--			chosen = p;
--			chosen_points = points;
--		}
-+		if (!points || points < chosen_points)
-+			continue;
-+		/* Prefer thread group leaders for display purposes */
-+		if (points == chosen_points && thread_group_leader(chosen))
-+			continue;
-+
-+		chosen = p;
-+		chosen_points = points;
- 	}
- 	if (chosen)
- 		get_task_struct(chosen);
++	if (check_for_locks(stp->st_file, lo))
+ 		return nfserr_locks_held;
+-	release_lock_stateid(stp);
++	/*
++	 * Currently there's a 1-1 lock stateid<->lockowner
++	 * correspondance, and we have to delete the lockowner when we
++	 * delete the lock stateid:
++	 */
++	unhash_lockowner(lo);
+ 	return nfs_ok;
+ }
+ 
 -- 
 1.9.3
 
