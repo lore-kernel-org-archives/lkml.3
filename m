@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934384AbaFIWqa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 18:46:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57010 "EHLO
+	id S964898AbaFIWq5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 18:46:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57195 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933964AbaFIWpv (ORCPT
+	with ESMTP id S934313AbaFIWqM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:45:51 -0400
+	Mon, 9 Jun 2014 18:46:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Andrey Ryabinin <a.ryabinin@samsung.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 69/78] mm: rmap: fix use-after-free in __put_anon_vma
-Date: Mon,  9 Jun 2014 15:48:49 -0700
-Message-Id: <20140609224815.548589111@linuxfoundation.org>
+Subject: [PATCH 3.10 34/40] mm: rmap: fix use-after-free in __put_anon_vma
+Date: Mon,  9 Jun 2014 15:49:05 -0700
+Message-Id: <20140609224840.299507085@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140609224813.282275135@linuxfoundation.org>
-References: <20140609224813.282275135@linuxfoundation.org>
+In-Reply-To: <20140609224839.127615063@linuxfoundation.org>
+References: <20140609224839.127615063@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,7 +26,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
@@ -55,7 +55,7 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 --- a/mm/rmap.c
 +++ b/mm/rmap.c
-@@ -1554,10 +1554,9 @@ void __put_anon_vma(struct anon_vma *ano
+@@ -1675,10 +1675,9 @@ void __put_anon_vma(struct anon_vma *ano
  {
  	struct anon_vma *root = anon_vma->root;
  
@@ -66,6 +66,6 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 -	anon_vma_free(anon_vma);
  }
  
- static struct anon_vma *rmap_walk_anon_lock(struct page *page,
+ #ifdef CONFIG_MIGRATION
 
 
