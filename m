@@ -1,66 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755113AbaFIOC1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 10:02:27 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:49022 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933523AbaFIOCU (ORCPT
+	id S932771AbaFIOGI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 10:06:08 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:57834 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750720AbaFIOGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 10:02:20 -0400
-Date: Mon, 9 Jun 2014 16:02:15 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Sitsofe Wheeler <sitsofe@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Igor Mammedov <imammedo@redhat.com>, Toshi Kani <toshi.kani@hp.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [BISECTED][REGRESSION] Kernel does not boot on EeePC
-Message-ID: <20140609140215.GA1579@gmail.com>
-References: <20140608090223.GA8703@sucs.org>
- <20140608094517.GB12736@gmail.com>
- <5394A260.8000900@zytor.com>
+	Mon, 9 Jun 2014 10:06:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5394A260.8000900@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CACE9dm8VNFa5Hf2po1kYgAhnfJC7eZGp67-MDc1t66vg6HVYTQ@mail.gmail.com>
+References: <1401818318-15780-1-git-send-email-zohar@linux.vnet.ibm.com>
+	<1401818318-15780-5-git-send-email-zohar@linux.vnet.ibm.com>
+	<5395A4F9.1020205@samsung.com>
+	<1402318294.7064.19.camel@dhcp-9-2-203-236.watson.ibm.com>
+	<5395B125.8010503@samsung.com>
+	<1402321691.7064.31.camel@dhcp-9-2-203-236.watson.ibm.com>
+	<CACE9dm8VNFa5Hf2po1kYgAhnfJC7eZGp67-MDc1t66vg6HVYTQ@mail.gmail.com>
+Date: Mon, 9 Jun 2014 17:06:02 +0300
+Message-ID: <CACE9dm8C6Z8QkU=q6NnyTMYv91cTs5eH2WoALOo0ONtiTGCTnA@mail.gmail.com>
+Subject: Re: [RFC PATCH v5 4/4] KEYS: define an owner trusted keyring
+From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>, Josh Boyer <jwboyer@redhat.com>,
+        keyrings <keyrings@linux-nfs.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 9 June 2014 16:58, Dmitry Kasatkin <dmitry.kasatkin@gmail.com> wrote:
+> On 9 June 2014 16:48, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+>> On Mon, 2014-06-09 at 16:05 +0300, Dmitry Kasatkin wrote:
+>>> On 09/06/14 15:51, Mimi Zohar wrote:
+>>> > On Mon, 2014-06-09 at 15:13 +0300, Dmitry Kasatkin wrote:
+>>> >> On 03/06/14 20:58, Mimi Zohar wrote:
+>>> >>> Instead of allowing public keys, with certificates signed by any
+>>> >>> key on the system trusted keyring, to be added to a trusted
+>>> >>> keyring, this patch further restricts the certificates to those
+>>> >>> signed by a particular key on the system keyring.
+>>> >>>
+>>> >>> When the UEFI secure boot keys are added to the system keyring, the
+>>> >>> platform owner will be able to load their key in one of the UEFI DBs
+>>> >>> (eg. Machine Owner Key(MOK) list) and select their key, without
+>>> >>> having to rebuild the kernel.
+>>> >>>
+>>> >>> This patch defines an owner trusted keyring, a new boot command
+>>> >>> line option 'keys_ownerid=', and defines a new function
+>>> >>> get_system_or_owner_trusted_keyring().
+>>> >> Hello,
+>>> >>
+>>> >> The functionality of this entire patch can be replaced by only ~2 lines
+>>> >> of code in x509_request_asymmetric_key()
+>>> >>
+>>> >> if (keys_ownerid || strcmp(keys_ownerid, id))
+>>> >>      return -EPERM;
+>>> >>
+>>> >> Right?
+>>> > Are you suggesting only add the one matching key to the system keyring?
+>>>
+>>> No. I am not suggesting this.
+>>>
+>>> All built in keys are allocated with KEY_ALLOC_TRUSTED flag and
+>>> prep.trusted is set to "true".
+>>>
+>>> So  the following statement has no effect.
+>>
+>> Ok, so it has no affect on adding builtin keys to the system keyring.
+>>
+>>>
+>>> #ifdef CONFIG_SYSTEM_TRUSTED_KEYRING
+>>>         ret = x509_validate_trust(cert, system_trusted_keyring);
+>>>         if (!ret)
+>>>             prep->trusted = 1;
+>>> #endif
+>>
+>> The last patch set changes the test to:
+>>      ret = x509_validate_trust(cert, get_system_or_owner_trusted_keyring());
+>>
+>
+> It does not really mater. I just copied original code to my response.
+>
+>>> Keys which come from user-space will check for
+>>>
+>>> if (keys_ownerid && strcmp(keys_ownerid, id))
+>>>      return -EPERM;
+>>>
+>>>
+>>> So 2 lines patch works fine..
+>>
+>> It works based on the assumption, that you would ever only want a single
+>> key on the 'owner' keyring, which is probably not the case.
+>>
+>
+> There is no any assumption here. I am discussing functionality of this patch.
+> That is exactly what this patch does - loads single key on the owners keyring.
+>
+> There is no need for additional keyring for a single key. That is just
+> enough to limit verification to the owners key id.
+>
+> - Dmitry
+>
+>
 
-* H. Peter Anvin <hpa@zytor.com> wrote:
+There is no reason to have advanced bloated implementation for unsure,
+may be never coming use-cases.
 
-> On 06/08/2014 02:45 AM, Ingo Molnar wrote:
-> > 
-> > * Sitsofe Wheeler <sitsofe@gmail.com> wrote:
-> > 
-> >> Hi,
-> >>
-> >> The latest kernel (c593e8978722f7f4a12932733cfeed6c0c74fbaa) refuses to
-> >> boot on my EeePC - after grub is finished the screen just remains black
-> >> and the only thing that does something is pressing the power button. The
-> >> problem commit seems to be:
-> >>
-> >> commit 3e1a878b7ccdb31da6d9d2b855c72ad87afeba3f
-> >> Author: Igor Mammedov <imammedo@redhat.com>
-> >> Date:   Thu Jun 5 15:42:45 2014 +0200
-> >>
-> >>     x86/smpboot: Initialize secondary CPU only if master CPU will wait for it
-> > 
-> > Argh, and have read this just a minute after expressing my hope that 
-> > the hotplug fix is correct :-/
-> > 
-> > Linus, please revert commit 3e1a878b7ccdb.
-> > 
-> >   Acked-by: Ingo Molnar <mingo@kernel.org>
-> > 
-> 
-> I really want to say *THANK YOU* to Sitsofe for a very timely and 
-> complete report.  You really saved us some highly valuable time.
+It is always very easy to make new patches for the future cases.
 
-Seconded!
+- Dmitry
 
-Thanks,
-
-	Ingo
+>> Mimi
+>>
