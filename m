@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934336AbaFIWqO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 18:46:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56799 "EHLO
+	id S934020AbaFIWuA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 18:50:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57190 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933896AbaFIWpq (ORCPT
+	with ESMTP id S934323AbaFIWqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:45:46 -0400
+	Mon, 9 Jun 2014 18:46:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.10 01/40] sched: Use CPUPRI_NR_PRIORITIES instead of MAX_RT_PRIO in cpupri check
-Date: Mon,  9 Jun 2014 15:48:32 -0700
-Message-Id: <20140609224839.244392950@linuxfoundation.org>
+        Stephane Eranian <eranian@google.com>, peterz@infradead.org,
+        dave.hansen@linux.intel.com, ak@linux.intel.com, jolsa@redhat.com,
+        Ingo Molnar <mingo@kernel.org>,
+        Weng Meiling <wengmeiling.weng@huawei.com>
+Subject: [PATCH 3.10 37/40] perf: Fix interrupt handler timing harness
+Date: Mon,  9 Jun 2014 15:49:08 -0700
+Message-Id: <20140609224840.422698465@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140609224839.127615063@linuxfoundation.org>
 References: <20140609224839.127615063@linuxfoundation.org>
@@ -30,41 +31,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Stephane Eranian <eranian@google.com>
 
-commit 6227cb00cc120f9a43ce8313bb0475ddabcb7d01 upstream.
+commit e5302920da9ef23f9d19d4e9ac85704cc25bee7a upstream.
 
-The check at the beginning of cpupri_find() makes sure that the task_pri
-variable does not exceed the cp->pri_to_cpu array length. But that length
-is CPUPRI_NR_PRIORITIES not MAX_RT_PRIO, where it will miss the last two
-priorities in that array.
+This patch fixes a serious bug in:
 
-As task_pri is computed from convert_prio() which should never be bigger
-than CPUPRI_NR_PRIORITIES, if the check should cause a panic if it is
-hit.
+  14c63f17b1fd perf: Drop sample rate when sampling is too slow
 
-Reported-by: Mike Galbraith <umgwanakikbuti@gmail.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1397015410.5212.13.camel@marge.simpson.net
+There was an misunderstanding on the API of the do_div()
+macro. It returns the remainder of the division and this
+was not what the function expected leading to disabling the
+interrupt latency watchdog.
+
+This patch also remove a duplicate assignment in
+perf_sample_event_took().
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Cc: peterz@infradead.org
+Cc: dave.hansen@linux.intel.com
+Cc: ak@linux.intel.com
+Cc: jolsa@redhat.com
+Link: http://lkml.kernel.org/r/20130704223010.GA30625@quad
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Weng Meiling <wengmeiling.weng@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sched/cpupri.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ kernel/events/core.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/kernel/sched/cpupri.c
-+++ b/kernel/sched/cpupri.c
-@@ -70,8 +70,7 @@ int cpupri_find(struct cpupri *cp, struc
- 	int idx = 0;
- 	int task_pri = convert_prio(p->prio);
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -182,7 +182,7 @@ void update_perf_cpu_limits(void)
+ 	u64 tmp = perf_sample_period_ns;
  
--	if (task_pri >= MAX_RT_PRIO)
--		return 0;
-+	BUG_ON(task_pri >= CPUPRI_NR_PRIORITIES);
+ 	tmp *= sysctl_perf_cpu_time_max_percent;
+-	tmp = do_div(tmp, 100);
++	do_div(tmp, 100);
+ 	atomic_set(&perf_sample_allowed_ns, tmp);
+ }
  
- 	for (idx = 0; idx < task_pri; idx++) {
- 		struct cpupri_vec *vec  = &cp->pri_to_cpu[idx];
+@@ -230,7 +230,7 @@ DEFINE_PER_CPU(u64, running_sample_lengt
+ void perf_sample_event_took(u64 sample_len_ns)
+ {
+ 	u64 avg_local_sample_len;
+-	u64 local_samples_len = __get_cpu_var(running_sample_length);
++	u64 local_samples_len;
+ 
+ 	if (atomic_read(&perf_sample_allowed_ns) == 0)
+ 		return;
 
 
