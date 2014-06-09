@@ -1,138 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755387AbaFIPmB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 11:42:01 -0400
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:54882 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755089AbaFIPl6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 11:41:58 -0400
-Date: Mon, 9 Jun 2014 11:41:55 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux-foundation.org>,
-        Kent Overstreet <kmo@daterainc.com>
-Subject: [GIT PULL] percpu changes for v3.16-rc1
-Message-ID: <20140609154155.GB22540@htj.dyndns.org>
+	id S1755595AbaFIPmW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 11:42:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37551 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755089AbaFIPmU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 11:42:20 -0400
+Date: Mon, 9 Jun 2014 11:41:37 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: WANG Chao <chaowang@redhat.com>
+Cc: Dave Young <dyoung@redhat.com>, mjg59@srcf.ucam.org, bhe@redhat.com,
+        jkosina@suse.cz, greg@kroah.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, bp@alien8.de, ebiederm@xmission.com,
+        hpa@zytor.com, akpm@linux-foundation.org
+Subject: Re: [PATCH 07/13] kexec: Implementation of new syscall
+ kexec_file_load
+Message-ID: <20140609154137.GD22049@redhat.com>
+References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
+ <1401800822-27425-8-git-send-email-vgoyal@redhat.com>
+ <20140606065605.GE2785@dhcp-17-89.nay.redhat.com>
+ <20140606181859.GK1526@redhat.com>
+ <20140609021122.GB1924@darkstar.nay.redhat.com>
+ <20140609053538.GA2874@dhcp-17-89.nay.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140609053538.GA2874@dhcp-17-89.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+On Mon, Jun 09, 2014 at 01:35:38PM +0800, WANG Chao wrote:
 
-Nothing too exciting.  percpu_ref is going through some interface
-changes and getting new features with more changes in the pipeline but
-given its young age and few users, it's very low impact.
+[..]
+> > > What's the upper length of vzalloc(). I think if it is too big to alloc,
+> > > then vzalloc() should return me an error?
+> 
+> When allocating too large, eg. vzalloc(-1), kernel spits:
+> 
+> [  457.407579] vmalloc: allocation failure: 18446744073709551606 bytes
+> [  457.413854] kexec: page allocation failure: order:0, mode:0x80d2
+> [  457.419853] CPU: 3 PID: 2058 Comm: kexec Not tainted
+> 3.15.0-rc8-00096-g3dc85e8 #10
+> [  457.427408] Hardware name: Dell Inc. OptiPlex 760
+> /0M860N, BIOS A12 05/23/2011
+> [  457.435999]  ffffffff81a2f678 ffff8800bfb03db0 ffffffff816944fd
+> 00000000000080d2
+> [  457.443422]  ffff8800bfb03e38 ffffffff8118a31a ffffffff81a2f678
+> ffff8800bfb03dd0
+> [  457.450851]  ffff880100000018 ffff8800bfb03e48 ffff8800bfb03de8
+> ffff8800bfb03e10
+> [  457.458278] Call Trace:
+> [  457.460731]  [<ffffffff816944fd>] dump_stack+0x45/0x56
+> [  457.465865]  [<ffffffff8118a31a>] warn_alloc_failed+0xda/0x140
+> [  457.471693]  [<ffffffff811f56d1>] ? kernel_read+0x41/0x60
+> [  457.477085]  [<ffffffff811bf466>] __vmalloc_node_range+0x1b6/0x270
+> [  457.483256]  [<ffffffff811bf5bb>] vzalloc+0x4b/0x50
+> [  457.488132]  [<ffffffff81121815>] ?
+> kimage_file_prepare_segments.part.10+0x85/0x140
+> [  457.495774]  [<ffffffff81121815>]
+> kimage_file_prepare_segments.part.10+0x85/0x140
+> [  457.503244]  [<ffffffff8112301a>] SyS_kexec_file_load+0x38a/0x690
+> [  457.509330]  [<ffffffff816a2f29>] system_call_fastpath+0x16/0x1b
+> [..]
+> 
+> I think it's better to do some sane check to prevent such warning when
+> taking arbitrary argument from user space.
 
-Thanks.
+Hmm.., I did not know that memory allocation failures had to dump stack
+trace.
 
-The following changes since commit 0c36b390a546055b6815d4b93a2c9fed4d980ffb:
+Anyway, I think I can implement another function which calls into image
+loader and query the maximum command length size they will support and
+use that number as uppper limit. It is little more code and one extra
+call. Hopefully it is worth it.
 
-  percpu-refcount: fix usage of this_cpu_ops (2014-06-04 12:12:29 -0400)
+> 
+ > 
+> > function __vmalloc_node_range:
+> >         if (!size || (size >> PAGE_SHIFT) > totalram_pages)
+> >                 goto fail;
+> > 
+> > So I think only checking cmdline_len == 0 is enough.
+> > 
+> > For the upper length shouldn't it be stripped to COMMAND_LINE_SIZE?
+> 
+> Yes, COMMAND_LINE_SIZE
 
-are available in the git repository at:
+IIUC, COMMAND_LINE_SIZE gives max limits of running kernel and it does
+not tell us anything about command line size supported by kernel being
+loaded.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git for-3.16
-
-for you to fetch changes up to 315c5554c406fdad404a99dfefc931db0df80692:
-
-  Merge branch 'for-3.15-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git into for-3.16 (2014-06-04 12:50:47 -0400)
-
-----------------------------------------------------------------
-
-Christoph Lameter (1):
-      percpu: Replace __get_cpu_var with this_cpu_ptr
-
-Tejun Heo (3):
-      percpu-refcount: rename percpu_ref_tryget() to percpu_ref_tryget_live()
-      percpu-refcount: implement percpu_ref_tryget()
-      Merge branch 'for-3.15-fixes' of git://git.kernel.org/.../tj/percpu.git into for-3.16
-
- include/linux/cgroup.h          |  2 +-
- include/linux/percpu-refcount.h | 34 +++++++++++++++++++++++++++++++++-
- include/linux/percpu.h          |  2 +-
- 3 files changed, 35 insertions(+), 3 deletions(-)
-
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index c251585..549aed8 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -101,7 +101,7 @@ static inline bool css_tryget(struct cgroup_subsys_state *css)
- {
- 	if (css->flags & CSS_ROOT)
- 		return true;
--	return percpu_ref_tryget(&css->refcnt);
-+	return percpu_ref_tryget_live(&css->refcnt);
- }
- 
- /**
-diff --git a/include/linux/percpu-refcount.h b/include/linux/percpu-refcount.h
-index 0afb48f..5d8920e 100644
---- a/include/linux/percpu-refcount.h
-+++ b/include/linux/percpu-refcount.h
-@@ -121,6 +121,36 @@ static inline void percpu_ref_get(struct percpu_ref *ref)
-  * percpu_ref_tryget - try to increment a percpu refcount
-  * @ref: percpu_ref to try-get
-  *
-+ * Increment a percpu refcount unless its count already reached zero.
-+ * Returns %true on success; %false on failure.
-+ *
-+ * The caller is responsible for ensuring that @ref stays accessible.
-+ */
-+static inline bool percpu_ref_tryget(struct percpu_ref *ref)
-+{
-+	unsigned __percpu *pcpu_count;
-+	int ret = false;
-+
-+	rcu_read_lock_sched();
-+
-+	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
-+
-+	if (likely(REF_STATUS(pcpu_count) == PCPU_REF_PTR)) {
-+		this_cpu_inc(*pcpu_count);
-+		ret = true;
-+	} else {
-+		ret = atomic_inc_not_zero(&ref->count);
-+	}
-+
-+	rcu_read_unlock_sched();
-+
-+	return ret;
-+}
-+
-+/**
-+ * percpu_ref_tryget_live - try to increment a live percpu refcount
-+ * @ref: percpu_ref to try-get
-+ *
-  * Increment a percpu refcount unless it has already been killed.  Returns
-  * %true on success; %false on failure.
-  *
-@@ -128,8 +158,10 @@ static inline void percpu_ref_get(struct percpu_ref *ref)
-  * will fail.  For such guarantee, percpu_ref_kill_and_confirm() should be
-  * used.  After the confirm_kill callback is invoked, it's guaranteed that
-  * no new reference will be given out by percpu_ref_tryget().
-+ *
-+ * The caller is responsible for ensuring that @ref stays accessible.
-  */
--static inline bool percpu_ref_tryget(struct percpu_ref *ref)
-+static inline bool percpu_ref_tryget_live(struct percpu_ref *ref)
- {
- 	unsigned __percpu *pcpu_count;
- 	int ret = false;
-diff --git a/include/linux/percpu.h b/include/linux/percpu.h
-index e7a0b95..539b3ca 100644
---- a/include/linux/percpu.h
-+++ b/include/linux/percpu.h
-@@ -29,7 +29,7 @@
-  */
- #define get_cpu_var(var) (*({				\
- 	preempt_disable();				\
--	&__get_cpu_var(var); }))
-+	this_cpu_ptr(&var); }))
- 
- /*
-  * The weird & is necessary because sparse considers (void)(var) to be
+Thanks
+Vivek
