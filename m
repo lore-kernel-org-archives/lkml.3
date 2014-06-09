@@ -1,199 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932731AbaFIKVZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 06:21:25 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:62049 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932611AbaFIKVV convert rfc822-to-8bit (ORCPT
+	id S1754817AbaFIKVx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 06:21:53 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:61950 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932954AbaFIKVq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 06:21:21 -0400
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Krzysztof Opasiak <k.opasiak@samsung.com>, "'Felipe Balbi'" <balbi@ti.com>,
-        Krzysztof Opasiak <k.opasiak@samsung.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCHv3] tools: ffs-test: add compatibility code for old kernels
-In-Reply-To: <006601cf83bc$66197b30$324c7190$%opasiak@samsung.com>
-Organization: http://mina86.com/
-References: <1402045976-26580-1-git-send-email-mina86@mina86.com> <1402045976-26580-5-git-send-email-mina86@mina86.com> <006601cf83bc$66197b30$324c7190$%opasiak@samsung.com>
-User-Agent: Notmuch/0.17+15~gb65ca8e (http://notmuchmail.org) Emacs/24.4.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-X-Hashcash: 1:20:140609:linux-kernel@vger.kernel.org::NdvQ/8Rcwq5a+WwI:0000000000000000000000000000000000J8Y
-X-Hashcash: 1:20:140609:linux-usb@vger.kernel.org::SS1iUDRxQzcej5Ii:0000000000000000000000000000000000000cMb
-X-Hashcash: 1:20:140609:k.opasiak@samsung.com::sOsEE42SXQn6+rnD:00000000000000000000000000000000000000001T3r
-X-Hashcash: 1:20:140609:k.opasiak@samsung.com::u5juzVCc9uCMzQDW:00000000000000000000000000000000000000004Ncd
-X-Hashcash: 1:20:140609:balbi@ti.com::qW6q+dzDy/TXBP14:000005kP3
-Date: Mon, 09 Jun 2014 12:21:15 +0200
-Message-ID: <xa1tsinee63o.fsf@mina86.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 9 Jun 2014 06:21:46 -0400
+X-AuditID: cbfee690-b7fb56d000003439-b2-53958ab7b70a
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: lee.jones@linaro.org, broonie@kernel.org, sbkim73@samsung.com,
+        sameo@linux.intel.com, lgirdwood@gmail.com,
+        linux-kernel@vger.kernel.org
+Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        jonghwa3.lee@samsung.com, k.kozlowski@samsung.com,
+        Chanwoo Choi <cw00.choi@samsung.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>, Mark Brown <broonie@linaro.org>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Subject: [PATCHv4 3/3] dt-bindings: mfd: s2mps11: Add support S2MPU02 PMIC
+Date: Mon, 09 Jun 2014 19:21:39 +0900
+Message-id: <1402309299-7805-4-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.8.0
+In-reply-to: <1402309299-7805-1-git-send-email-cw00.choi@samsung.com>
+References: <1402309299-7805-1-git-send-email-cw00.choi@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNIsWRmVeSWpSXmKPExsWyRsSkUHd719Rgg/b/UhZTHz5hs9h0/Tqr
+	xfUvz1kt5h85x2rR/2Yhq8W5VysZLTrPPmG2eP3C0OJs0xt2i/tfjzJafLvSwWSxsG0Ji8Xl
+	XXPYLJZev8hkcbtxBZvFhOlrWSze3pnOYtG69wi7xck/vYwWp7tZLS6u+MJksX7GaxaLOdPf
+	MTmIe6yZt4bR43JfL5PHzll32T1WLv/C5rF5hZbHplWdbB53ru1h85h3MtCjb8sqRo/Pm+QC
+	uKK4bFJSczLLUov07RK4Mub//M9ccFioYuakT4wNjIv4uxg5OSQETCR2rp3BBGGLSVy4t56t
+	i5GLQ0hgKaPEmYZPrF2MHGBF66bHQcQXMUq0Pe5ihXCamCRavqwD62YT0JLY/+IGWLeIQC+j
+	xJv+aWAJZoHzLBJ/PqiB2MICXhJ3ft5hA5nKIqAqcaJPFyTMK+Ai0f73FDvEFXISH/Y8ArM5
+	BVwlPp0+xApiCwHVTHnWBjZfQmAHh8S3tl9g81kEBCS+TT7EAnGprMSmA8wQcyQlDq64wTKB
+	UXgBI8MqRtHUguSC4qT0IhO94sTc4tK8dL3k/NxNjMCIPf3v2YQdjPcOWB9iTAYaN5FZSjQ5
+	HxjxeSXxhsZmRhamJqbGRuaWZqQJK4nzqj1KChISSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXA
+	WCroyyNty2b+aZpGzMb/TvvfKj5dfTFz88sgPplnTdr1m148Crr/yvvKT9PyPzPa4oPSJOOK
+	T333yn3kx3CQqdSd7+8uDW3e1C9uV/a4bc6pWvi8+am8amK9+5vcpNZ8E++rCp9mpP2YaD33
+	3nRHPwv2qyeUrKUmcLjtmdXnbNahnfut9q6xEktxRqKhFnNRcSIAaiSdCe4CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBKsWRmVeSWpSXmKPExsVy+t9jAd3tXVODDRYuELSY+vAJm8Wm69dZ
+	La5/ec5qMf/IOVaL/jcLWS3OvVrJaNF59gmzxesXhhZnm96wW9z/epTR4tuVDiaLhW1LWCwu
+	75rDZrH0+kUmi9uNK9gsJkxfy2Lx9s50FovWvUfYLU7+6WW0ON3NanFxxRcmi/UzXrNYzJn+
+	jslB3GPNvDWMHpf7epk8ds66y+6xcvkXNo/NK7Q8Nq3qZPO4c20Pm8e8k4EefVtWMXp83iQX
+	wBXVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA/Ss
+	kkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMDNJCwhjFj/s//zAWHhSpmTvrE2MC4
+	iL+LkYNDQsBEYt30uC5GTiBTTOLCvfVsXYxcHEICixgl2h53sUI4TUwSLV/WMYFUsQloSex/
+	cQOsSkSgl1HiTf80sASzwHkWiT8f1EBsYQEviTs/77CBbGARUJU40acLEuYVcJFo/3uKHWKb
+	nMSHPY/AbE4BV4lPpw+xgthCQDVTnrWxTWDkXcDIsIpRNLUguaA4KT3XUK84Mbe4NC9dLzk/
+	dxMjOB08k9rBuLLB4hCjAAejEg9vxO8pwUKsiWXFlbmHGCU4mJVEeH1ypgYL8aYkVlalFuXH
+	F5XmpBYfYkwGOmois5Rocj4wVeWVxBsam5gZWRqZG1oYGZuTJqwkznug1TpQSCA9sSQ1OzW1
+	ILUIZgsTB6dUAyPj7mA+1pTNwcs1ix7ulH15L9b4dPDp5p59/AJP2Ve/9l2Sb7JLOi+gn9+g
+	xn45k6+5ruecF3sWzs9iPrpMZ9kBWcc80eQVmae7nhzl93yWa7TtvP5TF+P0C7bVR1ZnMO64
+	tVqlRuXHVWbOWq6lt8Ur9j6ZdiVlCZOju47ur5UbBZ13f5B6b6zEUpyRaKjFXFScCADXAoJI
+	SwMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If ffs-test is used with a kernel prior to 3.14, which do not
-support the new descriptors format, it will fail when trying to
-write the descriptors.  Add a function that converts the new
-descriptors to the legacy ones and use it to retry writing the
-descriptors using the legacy format.
+This patch add documentation for S2MPU02 PMIC device. S2MPU02 has a little
+difference from S2MPS11/S2MPS14 PMIC and has LDO[1-28]/Buck[1-7].
 
-Also add “-l” flag to ffs-test which will cause the tool to
-never try the new format and instead immediatelly try the
-legacy one.  This should be useful to test whether parsing
-of the old format still works on given 3.14+ kernel.
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+Cc: Kumar Gala <galak@codeaurora.org>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Lee Jones <lee.jones@linaro.org>
+Cc: Mark Brown <broonie@linaro.org>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Yadwinder Singh Brar <yadi.brar@samsung.com>
+Cc: Tomasz Figa <t.figa@samsung.com>
+Cc: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: devicetree@vger.kernel.org
+Cc: linux-doc@vger.kernel.org
 ---
- tools/usb/ffs-test.c | 105 ++++++++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 100 insertions(+), 5 deletions(-)
+ Documentation/devicetree/bindings/mfd/s2mps11.txt | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/tools/usb/ffs-test.c b/tools/usb/ffs-test.c
-index 708d317..afd69ea 100644
---- a/tools/usb/ffs-test.c
-+++ b/tools/usb/ffs-test.c
-@@ -29,6 +29,7 @@
- #include <fcntl.h>
- #include <pthread.h>
- #include <stdarg.h>
-+#include <stdbool.h>
- #include <stdio.h>
- #include <stdlib.h>
- #include <string.h>
-@@ -172,6 +173,82 @@ static const struct {
- 	},
- };
+diff --git a/Documentation/devicetree/bindings/mfd/s2mps11.txt b/Documentation/devicetree/bindings/mfd/s2mps11.txt
+index d81ba30..f7c9180 100644
+--- a/Documentation/devicetree/bindings/mfd/s2mps11.txt
++++ b/Documentation/devicetree/bindings/mfd/s2mps11.txt
+@@ -1,5 +1,5 @@
  
-+static size_t descs_to_legacy(void **legacy, const void *descriptors) {
-+	__u32 length, flags, fs_count = 0, hs_count = 0, count;
-+	const unsigned char *descs, *usb_descs;
-+
-+	/* Read v2 header */
-+	{
-+		const struct usb_functionfs_descs_head_v2 *head = descriptors;
-+
-+		if (le32_to_cpu(head->magic) !=
-+		    FUNCTIONFS_DESCRIPTORS_MAGIC_V2)
-+			return 0;
-+		length = le32_to_cpu(head->length);
-+		if (length <= sizeof *head)
-+			return 0;
-+		flags = le32_to_cpu(head->flags);
-+		descs = (const void *)(head + 1);
-+		length -= sizeof *head;
-+	}
-+
-+	/* Read v2 counts */
-+#define GET_LE32(ret) do {					\
-+		if (length < 4)					\
-+			return 0;				\
-+		ret = le32_to_cpu(*(const __le32 *)descs);	\
-+		descs += 4;					\
-+		length -= 4;					\
-+	} while (0)
-+
-+	if (flags & FUNCTIONFS_HAS_FS_DESC)
-+		GET_LE32(fs_count);
-+	if (flags & FUNCTIONFS_HAS_HS_DESC)
-+		GET_LE32(hs_count);
-+	if (!fs_count && !hs_count)
-+		return 0;
-+	if (flags & FUNCTIONFS_HAS_SS_DESC)
-+		/* Legacy does not support SS so this is ignored. */
-+		GET_LE32(count);
-+	if (flags & ~(FUNCTIONFS_HAS_FS_DESC | FUNCTIONFS_HAS_HS_DESC |
-+		      FUNCTIONFS_HAS_SS_DESC))
-+		return 0;
-+
-+#undef GET_LE32
-+
-+	/*
-+	 * Find the end of FS and HS USB descriptors.  SS descriptors
-+	 * are ignored since legacy format does not support them.
-+	 */
-+	count = fs_count + hs_count;
-+	usb_descs = descs;
-+	do {
-+		if (length < *descs)
-+			return 0;
-+		length -= *descs;
-+		descs += *descs;
-+	} while (--count);
-+
-+	/* Allocate legacy descriptors and copy the data. */
-+	{
-+#pragma GCC diagnostic push
-+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-+		struct usb_functionfs_descs_head *head;
-+#pragma GCC diagnostic pop
-+
-+		length = sizeof *head + (descs - usb_descs);
-+		head = malloc(length);
-+		head->magic = cpu_to_le32(FUNCTIONFS_DESCRIPTORS_MAGIC);
-+		head->length = cpu_to_le32(length);
-+		head->fs_count = cpu_to_le32(fs_count);
-+		head->hs_count = cpu_to_le32(hs_count);
-+		memcpy(head + 1, usb_descs, descs - usb_descs);
-+		*legacy = head;
-+	}
-+
-+	return length;
-+}
-+
+-* Samsung S2MPS11 and S2MPS14 Voltage and Current Regulator
++* Samsung S2MPS11, S2MPS14 and S2MPU02 Voltage and Current Regulator
  
- #define STR_INTERFACE_ "Source/Sink"
+ The Samsung S2MPS11 is a multi-function device which includes voltage and
+ current regulators, RTC, charger controller and other sub-blocks. It is
+@@ -7,7 +7,8 @@ interfaced to the host controller using an I2C interface. Each sub-block is
+ addressed by the host system using different I2C slave addresses.
  
-@@ -491,12 +568,29 @@ ep0_consume(struct thread *ignore, const void *buf, size_t nbytes)
- 	return nbytes;
- }
+ Required properties:
+-- compatible: Should be "samsung,s2mps11-pmic" or "samsung,s2mps14-pmic".
++- compatible: Should be "samsung,s2mps11-pmic" or "samsung,s2mps14-pmic"
++              or "samsung,s2mpu02-pmic".
+ - reg: Specifies the I2C slave address of the pmic block. It should be 0x66.
  
--static void ep0_init(struct thread *t)
-+static void ep0_init(struct thread *t, bool legacy_descriptors)
- {
-+	void *legacy;
- 	ssize_t ret;
-+	size_t len;
-+
-+	if (legacy_descriptors) {
-+		info("%s: writing descriptors\n", t->filename);
-+		goto legacy;
-+	}
+ Optional properties:
+@@ -81,11 +82,13 @@ as per the datasheet of s2mps11.
+ 		  - valid values for n are:
+ 			- S2MPS11: 1 to 38
+ 			- S2MPS14: 1 to 25
++			- S2MPU02: 1 to 28
+ 		  - Example: LDO1, LD02, LDO28
+ 	- BUCKn
+ 		  - valid values for n are:
+ 			- S2MPS11: 1 to 10
+ 			- S2MPS14: 1 to 5
++			- S2MPU02: 1 to 7
+ 		  - Example: BUCK1, BUCK2, BUCK9
  
--	info("%s: writing descriptors\n", t->filename);
-+	info("%s: writing descriptors (in v2 format)\n", t->filename);
- 	ret = write(t->fd, &descriptors, sizeof descriptors);
-+
-+	if (ret < 0 && errno == EINVAL) {
-+		warn("%s: new format rejected, trying legacy\n", t->filename);
-+legacy:
-+		len = descs_to_legacy(&legacy, &descriptors);
-+		if (len) {
-+			ret = write(t->fd, legacy, len);
-+			free(legacy);
-+		}
-+	}
- 	die_on(ret < 0, "%s: write: descriptors", t->filename);
- 
- 	info("%s: writing strings\n", t->filename);
-@@ -507,14 +601,15 @@ static void ep0_init(struct thread *t)
- 
- /******************** Main **************************************************/
- 
--int main(void)
-+int main(int argc, char **argv)
- {
-+	bool legacy_descriptors;
- 	unsigned i;
- 
--	/* XXX TODO: Argument parsing missing */
-+	legacy_descriptors = argc > 2 && !strcmp(argv[1], "-l");
- 
- 	init_thread(threads);
--	ep0_init(threads);
-+	ep0_init(threads, legacy_descriptors);
- 
- 	for (i = 1; i < sizeof threads / sizeof *threads; ++i)
- 		init_thread(threads + i);
+ Example:
 -- 
-2.0.0.526.g5318336
+1.8.0
 
