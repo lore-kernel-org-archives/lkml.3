@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754204AbaFIGQE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 02:16:04 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:52451 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751061AbaFIGP6 (ORCPT
+	id S1752961AbaFIGQA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 02:16:00 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:60893 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750890AbaFIGP4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 02:15:58 -0400
-X-AuditID: cbfee690-b7fb56d000003439-ef-5395511871a9
+	Mon, 9 Jun 2014 02:15:56 -0400
+X-AuditID: cbfee691-b7f2f6d0000040c4-e4-539551199639
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: lee.jones@linaro.org, broonie@kernel.org, sbkim73@samsung.com,
         sameo@linux.intel.com, lgirdwood@gmail.com,
         linux-kernel@vger.kernel.org
 Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
         jonghwa3.lee@samsung.com, k.kozlowski@samsung.com,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCHv3 2/3] regulator: s2mps11: Add support S2MPU02 regulator device
-Date: Mon, 09 Jun 2014 15:15:47 +0900
-Message-id: <1402294548-10380-3-git-send-email-cw00.choi@samsung.com>
+        Chanwoo Choi <cw00.choi@samsung.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>, Mark Brown <broonie@linaro.org>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Subject: [PATCHv3 3/3] dt-bindings: mfd: s2mps11: Add support S2MPU02 PMIC
+Date: Mon, 09 Jun 2014 15:15:48 +0900
+Message-id: <1402294548-10380-4-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.0
 In-reply-to: <1402294548-10380-1-git-send-email-cw00.choi@samsung.com>
 References: <1402294548-10380-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAIsWRmVeSWpSXmKPExsWyRsSkSFcycGqwwZ1pjBZTHz5hs7j+5Tmr
-	RefZJ8wWr18YWpxtesNucf/rUUaLb1c6mCwu75rDZnG7cQWbxeluVouLK74wOXB77Jx1l91j
-	06pONo871/awecw7GejRt2UVo8fnTXIBbFFcNimpOZllqUX6dglcGetOtzMX7F/JWNG6+iZL
-	A+OKXsYuRg4OCQETif0njLoYOYFMMYkL99azdTFycQgJLGWUuLKulwUiYSLx/+gvJojEdEaJ
-	07va2SGcJiaJE9PWg1WxCWhJ7H9xA6xdRKCXUeJN/zSwFmaBKYwSHzub2ECqhAX8JRY9mQTW
-	wSKgKvH3+1ywOK+Aq8TPa28ZIfbJSXzY84gdxOYUcJN41DEDrEYIqObD8c+MIEMlBA6xS2zb
-	eooRYpCAxLfJh1ggHpKV2HSAGWKOpMTBFTdYJjAKL2BkWMUomlqQXFCclF5kolecmFtcmpeu
-	l5yfu4kRGBun/z2bsIPx3gHrQ4zJQOMmMkuJJucDYyuvJN7Q2MzIwtTE1NjI3NKMNGElcV61
-	R0lBQgLpiSWp2ampBalF8UWlOanFhxiZODilGhh59vJou1y8OeVW9xq7htXPHnSH17D9ja8p
-	Pn/V47O98ff+V0u/VG82nX+Rk81qS/W3pDm3/0uf38Ga1Xgz/O6MiMun7aNVArr3RwoFWDn1
-	vNCV1g+P6iq24wn53dPSJfLxoIQj19XSybF9LtpXc+cnLei+v7Yx69EG+X+TTu+rv1j/7Nat
-	aU5KLMUZiYZazEXFiQAE9blhowIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrHIsWRmVeSWpSXmKPExsVy+t9jQV2JwKnBBpd/GlhMffiEzeL6l+es
-	Fp1nnzBbvH5haHG26Q27xf2vRxktvl3pYLK4vGsOm8XtxhVsFqe7WS0urvjC5MDtsXPWXXaP
-	Tas62TzuXNvD5jHvZKBH35ZVjB6fN8kFsEU1MNpkpCampBYppOYl56dk5qXbKnkHxzvHm5oZ
-	GOoaWlqYKynkJeam2iq5+AToumXmAF2npFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3JAiu
-	x8gADSSsYcxYd7qduWD/SsaK1tU3WRoYV/QydjFyckgImEj8P/qLCcIWk7hwbz1bFyMXh5DA
-	dEaJ07va2SGcJiaJE9PWs4BUsQloSex/cQOsSkSgl1HiTf80JhCHWWAKo8THziY2kCphAX+J
-	RU8mgXWwCKhK/P0+FyzOK+Aq8fPaW6jdchIf9jxiB7E5BdwkHnXMAKsRAqr5cPwz4wRG3gWM
-	DKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxgmPvmfQOxlUNFocYBTgYlXh4I35PCRZiTSwr
-	rsw9xCjBwawkwmtgNTVYiDclsbIqtSg/vqg0J7X4EGMy0FUTmaVEk/OBaSGvJN7Q2MTMyNLI
-	3NDCyNicNGElcd6DrdaBQgLpiSWp2ampBalFMFuYODilGhhrq08nTA+dLhZ70nhO/l6R40EG
-	5SJ+dSf3x9slayy69alotY6M3tozKnsmxa6cru/5ad9umYcHlt54/fWR+J/a81ue/JwTPC3J
-	9iv/F69EScuKq/cXKq549y3B+ujhE0q5Gp3O7muW5+pULDsT+oGX7/hd8emmkzc8O9786BPT
-	lfKENWvPHTW3VGIpzkg01GIuKk4EAHnd14MBAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLIsWRmVeSWpSXmKPExsWyRsSkSFcycGqwQU+3usXUh0/YLDZdv85q
+	cf3Lc1aL+UfOsVr0v1nIanHu1UpGi86zT5gtXr8wtDjb9Ibd4v7Xo4wW3650MFksbFvCYnF5
+	1xw2i6XXLzJZ3G5cwWYxYfpaFou3d6azWLTuPcJucfJPL6PF6W5Wi4srvjBZrJ/xmsVizvR3
+	TA7iHmvmrWH0uNzXy+Sxc9Zddo+Vy7+weWxeoeWxaVUnm8eda3vYPOadDPTo27KK0ePzJrkA
+	rigum5TUnMyy1CJ9uwSujPk//zMXHBaqmDnpE2MD4yL+LkZODgkBE4m/ix+wQdhiEhfurQey
+	uTiEBJYySsydfJkVpqj9zkuoxHRGiflnWtkhnCYmiT/zF7OAVLEJaEnsf3EDrEpEoJdR4k3/
+	NCaQBLPAeRaJPx/UQGxhAS+Jb0c/g8VZBFQlHt9dBrabV8BVYsqVj1Dr5CQ+7HnEDmJzCrhJ
+	POqYAVYjBFTz4fhnRpAFEgJbOCT2XtrHBjFIQOLb5ENAV3AAJWQlNh1ghpgjKXFwxQ2WCYzC
+	CxgZVjGKphYkFxQnpReZ6hUn5haX5qXrJefnbmIERu3pf88m7mC8f8D6EGMy0LiJzFKiyfnA
+	qM8riTc0NjOyMDUxNTYytzQjTVhJnDf9UVKQkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBkYL
+	ts0TY97V5X05dOX9w786b7RuRT+oM9gWKj03p/VI78GawwGrnigeXdD35oBP8UqLzM15D/9U
+	TZU0m+nuYGU3h+XijZe33MV/vK69OK9Tl0lj25wo55mbVxvXbnwV846t6ciTEI2+868EvbRf
+	Ot1/sUF4/ko2rUxtjd5vm9zrLE7mnxQqe39JiaU4I9FQi7moOBEAtuMumPACAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFKsWRmVeSWpSXmKPExsVy+t9jQV3JwKnBBidvyFhMffiEzWLT9eus
+	Fte/PGe1mH/kHKtF/5uFrBbnXq1ktOg8+4TZ4vULQ4uzTW/YLe5/Pcpo8e1KB5PFwrYlLBaX
+	d81hs1h6/SKTxe3GFWwWE6avZbF4e2c6i0Xr3iPsFif/9DJanO5mtbi44guTxfoZr1ks5kx/
+	x+Qg7rFm3hpGj8t9vUweO2fdZfdYufwLm8fmFVoem1Z1snncubaHzWPeyUCPvi2rGD0+b5IL
+	4IpqYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAXpW
+	SaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYw5gx/+d/5oLDQhUzJ31ibGBc
+	xN/FyMkhIWAi0X7nJRuELSZx4d56IJuLQ0hgOqPE/DOt7BBOE5PEn/mLWUCq2AS0JPa/uAFW
+	JSLQyyjxpn8aE0iCWeA8i8SfD2ogtrCAl8S3o5/B4iwCqhKP7y4DW8Er4Cox5cpHVoh1chIf
+	9jxiB7E5BdwkHnXMAKsRAqr5cPwz4wRG3gWMDKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcx
+	glPCM+kdjKsaLA4xCnAwKvHwRvyeEizEmlhWXJl7iFGCg1lJhNfAamqwEG9KYmVValF+fFFp
+	TmrxIcZkoKsmMkuJJucD01VeSbyhsYmZkaWRuaGFkbE5acJK4rwHW60DhQTSE0tSs1NTC1KL
+	YLYwcXBKNTDOthWQFHhXpqKpVOz7UjrvclO/E8u9t50NZj6nTe64LsjffXrPRYvMDe/eHbhy
+	r5a177fraiV12981D9eaBYcVXYv/sLnBhPvC2j0u9zKSSm/XXXx7/8Fv6/irW9QPqMlaR20U
+	ahWzcU4MP6dpFB81/fStx1+k0l5X8TS+i75QlrPa8LC7cr0SS3FGoqEWc1FxIgCmcKcNTQMA	AA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -53,688 +63,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add S2MPU02 regulator device to existing S2MPS11 device driver
-because of little difference between S2MPS1x and S2MPU02. The S2MPU02
-regulator device includes LDO[1-28] and BUCK[1-7].
+This patch add documentation for S2MPU02 PMIC device. S2MPU02 has a little
+difference from S2MPS11/S2MPS14 PMIC and has LDO[1-28]/Buck[1-7].
 
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-[Add missing linear_min_sel of S2MPU02 LDO regulators by Jonghwa Lee]
-Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
 Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Acked-by: Mark Brown <broonie@linaro.org>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+Cc: Kumar Gala <galak@codeaurora.org>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Lee Jones <lee.jones@linaro.org>
+Cc: Mark Brown <broonie@linaro.org>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Yadwinder Singh Brar <yadi.brar@samsung.com>
+Cc: Tomasz Figa <t.figa@samsung.com>
+Cc: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: devicetree@vger.kernel.org
+Cc: linux-doc@vger.kernel.org
 ---
- drivers/mfd/sec-core.c              |  25 +++
- drivers/regulator/s2mps11.c         | 311 +++++++++++++++++++++++++++++++++---
- include/linux/mfd/samsung/s2mpu02.h | 200 +++++++++++++++++++++++
- 3 files changed, 517 insertions(+), 19 deletions(-)
- create mode 100644 include/linux/mfd/samsung/s2mpu02.h
+ Documentation/devicetree/bindings/mfd/s2mps11.txt | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
-index 5e8784b..9eae5ab 100644
---- a/drivers/mfd/sec-core.c
-+++ b/drivers/mfd/sec-core.c
-@@ -28,6 +28,7 @@
- #include <linux/mfd/samsung/s2mpa01.h>
- #include <linux/mfd/samsung/s2mps11.h>
- #include <linux/mfd/samsung/s2mps14.h>
-+#include <linux/mfd/samsung/s2mpu02.h>
- #include <linux/mfd/samsung/s5m8763.h>
- #include <linux/mfd/samsung/s5m8767.h>
- #include <linux/regmap.h>
-@@ -146,6 +147,18 @@ static bool s2mps11_volatile(struct device *dev, unsigned int reg)
- 	}
- }
+diff --git a/Documentation/devicetree/bindings/mfd/s2mps11.txt b/Documentation/devicetree/bindings/mfd/s2mps11.txt
+index d81ba30..f7c9180 100644
+--- a/Documentation/devicetree/bindings/mfd/s2mps11.txt
++++ b/Documentation/devicetree/bindings/mfd/s2mps11.txt
+@@ -1,5 +1,5 @@
  
-+static bool s2mpu02_volatile(struct device *dev, unsigned int reg)
-+{
-+	switch (reg) {
-+	case S2MPU02_REG_INT1M:
-+	case S2MPU02_REG_INT2M:
-+	case S2MPU02_REG_INT3M:
-+		return false;
-+	default:
-+		return true;
-+	}
-+}
-+
- static bool s5m8763_volatile(struct device *dev, unsigned int reg)
- {
- 	switch (reg) {
-@@ -191,6 +204,15 @@ static const struct regmap_config s2mps14_regmap_config = {
- 	.cache_type = REGCACHE_FLAT,
- };
+-* Samsung S2MPS11 and S2MPS14 Voltage and Current Regulator
++* Samsung S2MPS11, S2MPS14 and S2MPU02 Voltage and Current Regulator
  
-+static const struct regmap_config s2mpu02_regmap_config = {
-+	.reg_bits = 8,
-+	.val_bits = 8,
-+
-+	.max_register = S2MPU02_REG_DVSDATA,
-+	.volatile_reg = s2mpu02_volatile,
-+	.cache_type = REGCACHE_FLAT,
-+};
-+
- static const struct regmap_config s5m8763_regmap_config = {
- 	.reg_bits = 8,
- 	.val_bits = 8,
-@@ -311,6 +333,9 @@ static int sec_pmic_probe(struct i2c_client *i2c,
- 	case S5M8767X:
- 		regmap = &s5m8767_regmap_config;
- 		break;
-+	case S2MPU02:
-+		regmap = &s2mpu02_regmap_config;
-+		break;
- 	default:
- 		regmap = &sec_regmap_config;
- 		break;
-diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
-index 02e2fb2..c52d4ac 100644
---- a/drivers/regulator/s2mps11.c
-+++ b/drivers/regulator/s2mps11.c
-@@ -31,6 +31,7 @@
- #include <linux/mfd/samsung/core.h>
- #include <linux/mfd/samsung/s2mps11.h>
- #include <linux/mfd/samsung/s2mps14.h>
-+#include <linux/mfd/samsung/s2mpu02.h>
+ The Samsung S2MPS11 is a multi-function device which includes voltage and
+ current regulators, RTC, charger controller and other sub-blocks. It is
+@@ -7,7 +7,8 @@ interfaced to the host controller using an I2C interface. Each sub-block is
+ addressed by the host system using different I2C slave addresses.
  
- struct s2mps11_info {
- 	unsigned int rdev_num;
-@@ -40,11 +41,15 @@ struct s2mps11_info {
- 	int ramp_delay16;
- 	int ramp_delay7810;
- 	int ramp_delay9;
-+
-+	enum sec_device_type dev_type;
-+
- 	/*
--	 * One bit for each S2MPS14 regulator whether the suspend mode
-+	 * One bit for each S2MPS14/S2MPU02 regulator whether the suspend mode
- 	 * was enabled.
- 	 */
--	unsigned int s2mps14_suspend_state:30;
-+	unsigned long long s2mps14_suspend_state:35;
-+
- 	/* Array of size rdev_num with GPIO-s for external sleep control */
- 	int *ext_control_gpio;
- };
-@@ -415,12 +420,24 @@ static int s2mps14_regulator_enable(struct regulator_dev *rdev)
- 	struct s2mps11_info *s2mps11 = rdev_get_drvdata(rdev);
- 	unsigned int val;
+ Required properties:
+-- compatible: Should be "samsung,s2mps11-pmic" or "samsung,s2mps14-pmic".
++- compatible: Should be "samsung,s2mps11-pmic" or "samsung,s2mps14-pmic"
++              or "samsung,s2mpu02-pmic".
+ - reg: Specifies the I2C slave address of the pmic block. It should be 0x66.
  
--	if (s2mps11->s2mps14_suspend_state & (1 << rdev_get_id(rdev)))
--		val = S2MPS14_ENABLE_SUSPEND;
--	else if (gpio_is_valid(s2mps11->ext_control_gpio[rdev_get_id(rdev)]))
--		val = S2MPS14_ENABLE_EXT_CONTROL;
--	else
--		val = rdev->desc->enable_mask;
-+	switch (s2mps11->dev_type) {
-+	case S2MPS14X:
-+		if (s2mps11->s2mps14_suspend_state & (1 << rdev_get_id(rdev)))
-+			val = S2MPS14_ENABLE_SUSPEND;
-+		else if (gpio_is_valid(s2mps11->ext_control_gpio[rdev_get_id(rdev)]))
-+			val = S2MPS14_ENABLE_EXT_CONTROL;
-+		else
-+			val = rdev->desc->enable_mask;
-+		break;
-+	case S2MPU02:
-+		if (s2mps11->s2mps14_suspend_state & (1 << rdev_get_id(rdev)))
-+			val = S2MPU02_ENABLE_SUSPEND;
-+		else
-+			val = rdev->desc->enable_mask;
-+		break;
-+	default:
-+		return -EINVAL;
-+	};
+ Optional properties:
+@@ -81,11 +82,13 @@ as per the datasheet of s2mps11.
+ 		  - valid values for n are:
+ 			- S2MPS11: 1 to 38
+ 			- S2MPS14: 1 to 25
++			- S2MPU02: 1 to 28
+ 		  - Example: LDO1, LD02, LDO28
+ 	- BUCKn
+ 		  - valid values for n are:
+ 			- S2MPS11: 1 to 10
+ 			- S2MPS14: 1 to 5
++			- S2MPU02: 1 to 7
+ 		  - Example: BUCK1, BUCK2, BUCK9
  
- 	return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
- 			rdev->desc->enable_mask, val);
-@@ -431,10 +448,30 @@ static int s2mps14_regulator_set_suspend_disable(struct regulator_dev *rdev)
- 	int ret;
- 	unsigned int val;
- 	struct s2mps11_info *s2mps11 = rdev_get_drvdata(rdev);
-+	int rdev_id = rdev_get_id(rdev);
- 
--	/* LDO3 should be always on and does not support suspend mode */
--	if (rdev_get_id(rdev) == S2MPS14_LDO3)
--		return 0;
-+	/* Below LDO should be always on or does not support suspend mode. */
-+	switch (s2mps11->dev_type) {
-+	case S2MPS14X:
-+		switch (rdev_id) {
-+		case S2MPS14_LDO3:
-+			return 0;
-+		};
-+		break;
-+	case S2MPU02:
-+		switch (rdev_id) {
-+		case S2MPU02_LDO13:
-+		case S2MPU02_LDO14:
-+		case S2MPU02_LDO15:
-+		case S2MPU02_LDO16:
-+		case S2MPU02_LDO17:
-+		case S2MPU02_BUCK7:
-+			return 0;
-+		};
-+		break;
-+	default:
-+		return -EINVAL;
-+	};
- 
- 	ret = regmap_read(rdev->regmap, rdev->desc->enable_reg, &val);
- 	if (ret < 0)
-@@ -605,8 +642,7 @@ static void s2mps14_pmic_dt_parse_ext_control_gpio(struct platform_device *pdev,
- }
- 
- static int s2mps11_pmic_dt_parse(struct platform_device *pdev,
--		struct of_regulator_match *rdata, struct s2mps11_info *s2mps11,
--		enum sec_device_type dev_type)
-+		struct of_regulator_match *rdata, struct s2mps11_info *s2mps11)
- {
- 	struct device_node *reg_np;
- 
-@@ -617,7 +653,7 @@ static int s2mps11_pmic_dt_parse(struct platform_device *pdev,
- 	}
- 
- 	of_regulator_match(&pdev->dev, reg_np, rdata, s2mps11->rdev_num);
--	if (dev_type == S2MPS14X)
-+	if (s2mps11->dev_type == S2MPS14X)
- 		s2mps14_pmic_dt_parse_ext_control_gpio(pdev, rdata, s2mps11);
- 
- 	of_node_put(reg_np);
-@@ -625,6 +661,238 @@ static int s2mps11_pmic_dt_parse(struct platform_device *pdev,
- 	return 0;
- }
- 
-+static int s2mpu02_set_ramp_delay(struct regulator_dev *rdev, int ramp_delay)
-+{
-+	unsigned int ramp_val, ramp_shift, ramp_reg;
-+
-+	switch (rdev_get_id(rdev)) {
-+	case S2MPU02_BUCK1:
-+		ramp_shift = S2MPU02_BUCK1_RAMP_SHIFT;
-+		break;
-+	case S2MPU02_BUCK2:
-+		ramp_shift = S2MPU02_BUCK2_RAMP_SHIFT;
-+		break;
-+	case S2MPU02_BUCK3:
-+		ramp_shift = S2MPU02_BUCK3_RAMP_SHIFT;
-+		break;
-+	case S2MPU02_BUCK4:
-+		ramp_shift = S2MPU02_BUCK4_RAMP_SHIFT;
-+		break;
-+	default:
-+		return 0;
-+	}
-+	ramp_reg = S2MPU02_REG_RAMP1;
-+	ramp_val = get_ramp_delay(ramp_delay);
-+
-+	return regmap_update_bits(rdev->regmap, ramp_reg,
-+				  S2MPU02_BUCK1234_RAMP_MASK << ramp_shift,
-+				  ramp_val << ramp_shift);
-+}
-+
-+static struct regulator_ops s2mpu02_ldo_ops = {
-+	.list_voltage		= regulator_list_voltage_linear,
-+	.map_voltage		= regulator_map_voltage_linear,
-+	.is_enabled		= regulator_is_enabled_regmap,
-+	.enable			= s2mps14_regulator_enable,
-+	.disable		= regulator_disable_regmap,
-+	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
-+	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
-+	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
-+	.set_suspend_disable	= s2mps14_regulator_set_suspend_disable,
-+};
-+
-+static struct regulator_ops s2mpu02_buck_ops = {
-+	.list_voltage		= regulator_list_voltage_linear,
-+	.map_voltage		= regulator_map_voltage_linear,
-+	.is_enabled		= regulator_is_enabled_regmap,
-+	.enable			= s2mps14_regulator_enable,
-+	.disable		= regulator_disable_regmap,
-+	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
-+	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
-+	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
-+	.set_suspend_disable	= s2mps14_regulator_set_suspend_disable,
-+	.set_ramp_delay		= s2mpu02_set_ramp_delay,
-+};
-+
-+#define regulator_desc_s2mpu02_ldo1(num) {		\
-+	.name		= "LDO"#num,			\
-+	.id		= S2MPU02_LDO##num,		\
-+	.ops		= &s2mpu02_ldo_ops,		\
-+	.type		= REGULATOR_VOLTAGE,		\
-+	.owner		= THIS_MODULE,			\
-+	.min_uV		= S2MPU02_LDO_MIN_900MV,	\
-+	.uV_step	= S2MPU02_LDO_STEP_12_5MV,	\
-+	.linear_min_sel	= S2MPU02_LDO_GROUP1_START_SEL,	\
-+	.n_voltages	= S2MPU02_LDO_N_VOLTAGES,	\
-+	.vsel_reg	= S2MPU02_REG_L1CTRL,		\
-+	.vsel_mask	= S2MPU02_LDO_VSEL_MASK,	\
-+	.enable_reg	= S2MPU02_REG_L1CTRL,		\
-+	.enable_mask	= S2MPU02_ENABLE_MASK		\
-+}
-+#define regulator_desc_s2mpu02_ldo2(num) {		\
-+	.name		= "LDO"#num,			\
-+	.id		= S2MPU02_LDO##num,		\
-+	.ops		= &s2mpu02_ldo_ops,		\
-+	.type		= REGULATOR_VOLTAGE,		\
-+	.owner		= THIS_MODULE,			\
-+	.min_uV		= S2MPU02_LDO_MIN_1050MV,	\
-+	.uV_step	= S2MPU02_LDO_STEP_25MV,	\
-+	.linear_min_sel	= S2MPU02_LDO_GROUP2_START_SEL,	\
-+	.n_voltages	= S2MPU02_LDO_N_VOLTAGES,	\
-+	.vsel_reg	= S2MPU02_REG_L2CTRL1,		\
-+	.vsel_mask	= S2MPU02_LDO_VSEL_MASK,	\
-+	.enable_reg	= S2MPU02_REG_L2CTRL1,		\
-+	.enable_mask	= S2MPU02_ENABLE_MASK		\
-+}
-+#define regulator_desc_s2mpu02_ldo3(num) {		\
-+	.name		= "LDO"#num,			\
-+	.id		= S2MPU02_LDO##num,		\
-+	.ops		= &s2mpu02_ldo_ops,		\
-+	.type		= REGULATOR_VOLTAGE,		\
-+	.owner		= THIS_MODULE,			\
-+	.min_uV		= S2MPU02_LDO_MIN_900MV,	\
-+	.uV_step	= S2MPU02_LDO_STEP_12_5MV,	\
-+	.linear_min_sel	= S2MPU02_LDO_GROUP1_START_SEL,	\
-+	.n_voltages	= S2MPU02_LDO_N_VOLTAGES,	\
-+	.vsel_reg	= S2MPU02_REG_L3CTRL + num - 3,	\
-+	.vsel_mask	= S2MPU02_LDO_VSEL_MASK,	\
-+	.enable_reg	= S2MPU02_REG_L3CTRL + num - 3,	\
-+	.enable_mask	= S2MPU02_ENABLE_MASK		\
-+}
-+#define regulator_desc_s2mpu02_ldo4(num) {		\
-+	.name		= "LDO"#num,			\
-+	.id		= S2MPU02_LDO##num,		\
-+	.ops		= &s2mpu02_ldo_ops,		\
-+	.type		= REGULATOR_VOLTAGE,		\
-+	.owner		= THIS_MODULE,			\
-+	.min_uV		= S2MPU02_LDO_MIN_1050MV,	\
-+	.uV_step	= S2MPU02_LDO_STEP_25MV,	\
-+	.linear_min_sel	= S2MPU02_LDO_GROUP2_START_SEL,	\
-+	.n_voltages	= S2MPU02_LDO_N_VOLTAGES,	\
-+	.vsel_reg	= S2MPU02_REG_L3CTRL + num - 3,	\
-+	.vsel_mask	= S2MPU02_LDO_VSEL_MASK,	\
-+	.enable_reg	= S2MPU02_REG_L3CTRL + num - 3,	\
-+	.enable_mask	= S2MPU02_ENABLE_MASK		\
-+}
-+#define regulator_desc_s2mpu02_ldo5(num) {		\
-+	.name		= "LDO"#num,			\
-+	.id		= S2MPU02_LDO##num,		\
-+	.ops		= &s2mpu02_ldo_ops,		\
-+	.type		= REGULATOR_VOLTAGE,		\
-+	.owner		= THIS_MODULE,			\
-+	.min_uV		= S2MPU02_LDO_MIN_1600MV,	\
-+	.uV_step	= S2MPU02_LDO_STEP_50MV,	\
-+	.linear_min_sel	= S2MPU02_LDO_GROUP3_START_SEL,	\
-+	.n_voltages	= S2MPU02_LDO_N_VOLTAGES,	\
-+	.vsel_reg	= S2MPU02_REG_L3CTRL + num - 3,	\
-+	.vsel_mask	= S2MPU02_LDO_VSEL_MASK,	\
-+	.enable_reg	= S2MPU02_REG_L3CTRL + num - 3,	\
-+	.enable_mask	= S2MPU02_ENABLE_MASK		\
-+}
-+
-+#define regulator_desc_s2mpu02_buck1234(num) {			\
-+	.name		= "BUCK"#num,				\
-+	.id		= S2MPU02_BUCK##num,			\
-+	.ops		= &s2mpu02_buck_ops,			\
-+	.type		= REGULATOR_VOLTAGE,			\
-+	.owner		= THIS_MODULE,				\
-+	.min_uV		= S2MPU02_BUCK1234_MIN_600MV,		\
-+	.uV_step	= S2MPU02_BUCK1234_STEP_6_25MV,		\
-+	.n_voltages	= S2MPU02_BUCK_N_VOLTAGES,		\
-+	.linear_min_sel = S2MPU02_BUCK1234_START_SEL,		\
-+	.ramp_delay	= S2MPU02_BUCK_RAMP_DELAY,		\
-+	.vsel_reg	= S2MPU02_REG_B1CTRL2 + (num - 1) * 2,	\
-+	.vsel_mask	= S2MPU02_BUCK_VSEL_MASK,		\
-+	.enable_reg	= S2MPU02_REG_B1CTRL1 + (num - 1) * 2,	\
-+	.enable_mask	= S2MPU02_ENABLE_MASK			\
-+}
-+#define regulator_desc_s2mpu02_buck5(num) {			\
-+	.name		= "BUCK"#num,				\
-+	.id		= S2MPU02_BUCK##num,			\
-+	.ops		= &s2mpu02_ldo_ops,			\
-+	.type		= REGULATOR_VOLTAGE,			\
-+	.owner		= THIS_MODULE,				\
-+	.min_uV		= S2MPU02_BUCK5_MIN_1081_25MV,		\
-+	.uV_step	= S2MPU02_BUCK5_STEP_6_25MV,		\
-+	.n_voltages	= S2MPU02_BUCK_N_VOLTAGES,		\
-+	.linear_min_sel = S2MPU02_BUCK5_START_SEL,		\
-+	.ramp_delay	= S2MPU02_BUCK_RAMP_DELAY,		\
-+	.vsel_reg	= S2MPU02_REG_B5CTRL2,			\
-+	.vsel_mask	= S2MPU02_BUCK_VSEL_MASK,		\
-+	.enable_reg	= S2MPU02_REG_B5CTRL1,			\
-+	.enable_mask	= S2MPU02_ENABLE_MASK			\
-+}
-+#define regulator_desc_s2mpu02_buck6(num) {			\
-+	.name		= "BUCK"#num,				\
-+	.id		= S2MPU02_BUCK##num,			\
-+	.ops		= &s2mpu02_ldo_ops,			\
-+	.type		= REGULATOR_VOLTAGE,			\
-+	.owner		= THIS_MODULE,				\
-+	.min_uV		= S2MPU02_BUCK6_MIN_1700MV,		\
-+	.uV_step	= S2MPU02_BUCK6_STEP_2_50MV,		\
-+	.n_voltages	= S2MPU02_BUCK_N_VOLTAGES,		\
-+	.linear_min_sel = S2MPU02_BUCK6_START_SEL,		\
-+	.ramp_delay	= S2MPU02_BUCK_RAMP_DELAY,		\
-+	.vsel_reg	= S2MPU02_REG_B6CTRL2,			\
-+	.vsel_mask	= S2MPU02_BUCK_VSEL_MASK,		\
-+	.enable_reg	= S2MPU02_REG_B6CTRL1,			\
-+	.enable_mask	= S2MPU02_ENABLE_MASK			\
-+}
-+#define regulator_desc_s2mpu02_buck7(num) {			\
-+	.name		= "BUCK"#num,				\
-+	.id		= S2MPU02_BUCK##num,			\
-+	.ops		= &s2mpu02_ldo_ops,			\
-+	.type		= REGULATOR_VOLTAGE,			\
-+	.owner		= THIS_MODULE,				\
-+	.min_uV		= S2MPU02_BUCK7_MIN_900MV,		\
-+	.uV_step	= S2MPU02_BUCK7_STEP_6_25MV,		\
-+	.n_voltages	= S2MPU02_BUCK_N_VOLTAGES,		\
-+	.linear_min_sel = S2MPU02_BUCK7_START_SEL,		\
-+	.ramp_delay	= S2MPU02_BUCK_RAMP_DELAY,		\
-+	.vsel_reg	= S2MPU02_REG_B7CTRL2,			\
-+	.vsel_mask	= S2MPU02_BUCK_VSEL_MASK,		\
-+	.enable_reg	= S2MPU02_REG_B7CTRL1,			\
-+	.enable_mask	= S2MPU02_ENABLE_MASK			\
-+}
-+
-+static const struct regulator_desc s2mpu02_regulators[] = {
-+	regulator_desc_s2mpu02_ldo1(1),
-+	regulator_desc_s2mpu02_ldo2(2),
-+	regulator_desc_s2mpu02_ldo4(3),
-+	regulator_desc_s2mpu02_ldo5(4),
-+	regulator_desc_s2mpu02_ldo4(5),
-+	regulator_desc_s2mpu02_ldo3(6),
-+	regulator_desc_s2mpu02_ldo3(7),
-+	regulator_desc_s2mpu02_ldo4(8),
-+	regulator_desc_s2mpu02_ldo5(9),
-+	regulator_desc_s2mpu02_ldo3(10),
-+	regulator_desc_s2mpu02_ldo4(11),
-+	regulator_desc_s2mpu02_ldo5(12),
-+	regulator_desc_s2mpu02_ldo5(13),
-+	regulator_desc_s2mpu02_ldo5(14),
-+	regulator_desc_s2mpu02_ldo5(15),
-+	regulator_desc_s2mpu02_ldo5(16),
-+	regulator_desc_s2mpu02_ldo4(17),
-+	regulator_desc_s2mpu02_ldo5(18),
-+	regulator_desc_s2mpu02_ldo3(19),
-+	regulator_desc_s2mpu02_ldo4(20),
-+	regulator_desc_s2mpu02_ldo5(21),
-+	regulator_desc_s2mpu02_ldo5(22),
-+	regulator_desc_s2mpu02_ldo5(23),
-+	regulator_desc_s2mpu02_ldo4(24),
-+	regulator_desc_s2mpu02_ldo5(25),
-+	regulator_desc_s2mpu02_ldo4(26),
-+	regulator_desc_s2mpu02_ldo5(27),
-+	regulator_desc_s2mpu02_ldo5(28),
-+	regulator_desc_s2mpu02_buck1234(1),
-+	regulator_desc_s2mpu02_buck1234(2),
-+	regulator_desc_s2mpu02_buck1234(3),
-+	regulator_desc_s2mpu02_buck1234(4),
-+	regulator_desc_s2mpu02_buck5(5),
-+	regulator_desc_s2mpu02_buck6(6),
-+	regulator_desc_s2mpu02_buck7(7),
-+};
-+
- static int s2mps11_pmic_probe(struct platform_device *pdev)
- {
- 	struct sec_pmic_dev *iodev = dev_get_drvdata(pdev->dev.parent);
-@@ -634,15 +902,14 @@ static int s2mps11_pmic_probe(struct platform_device *pdev)
- 	struct s2mps11_info *s2mps11;
- 	int i, ret = 0;
- 	const struct regulator_desc *regulators;
--	enum sec_device_type dev_type;
- 
- 	s2mps11 = devm_kzalloc(&pdev->dev, sizeof(struct s2mps11_info),
- 				GFP_KERNEL);
- 	if (!s2mps11)
- 		return -ENOMEM;
- 
--	dev_type = platform_get_device_id(pdev)->driver_data;
--	switch (dev_type) {
-+	s2mps11->dev_type = platform_get_device_id(pdev)->driver_data;
-+	switch (s2mps11->dev_type) {
- 	case S2MPS11X:
- 		s2mps11->rdev_num = ARRAY_SIZE(s2mps11_regulators);
- 		regulators = s2mps11_regulators;
-@@ -651,8 +918,13 @@ static int s2mps11_pmic_probe(struct platform_device *pdev)
- 		s2mps11->rdev_num = ARRAY_SIZE(s2mps14_regulators);
- 		regulators = s2mps14_regulators;
- 		break;
-+	case S2MPU02:
-+		s2mps11->rdev_num = ARRAY_SIZE(s2mpu02_regulators);
-+		regulators = s2mpu02_regulators;
-+		break;
- 	default:
--		dev_err(&pdev->dev, "Invalid device type: %u\n", dev_type);
-+		dev_err(&pdev->dev, "Invalid device type: %u\n",
-+				    s2mps11->dev_type);
- 		return -EINVAL;
- 	};
- 
-@@ -686,7 +958,7 @@ static int s2mps11_pmic_probe(struct platform_device *pdev)
- 	for (i = 0; i < s2mps11->rdev_num; i++)
- 		rdata[i].name = regulators[i].name;
- 
--	ret = s2mps11_pmic_dt_parse(pdev, rdata, s2mps11, dev_type);
-+	ret = s2mps11_pmic_dt_parse(pdev, rdata, s2mps11);
- 	if (ret)
- 		goto out;
- 
-@@ -739,6 +1011,7 @@ out:
- static const struct platform_device_id s2mps11_pmic_id[] = {
- 	{ "s2mps11-pmic", S2MPS11X},
- 	{ "s2mps14-pmic", S2MPS14X},
-+	{ "s2mpu02-pmic", S2MPU02},
- 	{ },
- };
- MODULE_DEVICE_TABLE(platform, s2mps11_pmic_id);
-diff --git a/include/linux/mfd/samsung/s2mpu02.h b/include/linux/mfd/samsung/s2mpu02.h
-new file mode 100644
-index 0000000..434eb87
---- /dev/null
-+++ b/include/linux/mfd/samsung/s2mpu02.h
-@@ -0,0 +1,200 @@
-+/*
-+ * s2mpu02.h
-+ *
-+ * Copyright (c) 2014 Samsung Electronics Co., Ltd
-+ *              http://www.samsung.com
-+ *
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#ifndef __LINUX_MFD_S2MPU02_H
-+#define __LINUX_MFD_S2MPU02_H
-+
-+/* S2MPU02 registers */
-+enum S2MPU02_reg {
-+	S2MPU02_REG_ID,
-+	S2MPU02_REG_INT1,
-+	S2MPU02_REG_INT2,
-+	S2MPU02_REG_INT3,
-+	S2MPU02_REG_INT1M,
-+	S2MPU02_REG_INT2M,
-+	S2MPU02_REG_INT3M,
-+	S2MPU02_REG_ST1,
-+	S2MPU02_REG_ST2,
-+	S2MPU02_REG_PWRONSRC,
-+	S2MPU02_REG_OFFSRC,
-+	S2MPU02_REG_BU_CHG,
-+	S2MPU02_REG_RTCCTRL,
-+	S2MPU02_REG_PMCTRL1,
-+	S2MPU02_REG_RSVD1,
-+	S2MPU02_REG_RSVD2,
-+	S2MPU02_REG_RSVD3,
-+	S2MPU02_REG_RSVD4,
-+	S2MPU02_REG_RSVD5,
-+	S2MPU02_REG_RSVD6,
-+	S2MPU02_REG_RSVD7,
-+	S2MPU02_REG_WRSTEN,
-+	S2MPU02_REG_RSVD8,
-+	S2MPU02_REG_RSVD9,
-+	S2MPU02_REG_RSVD10,
-+	S2MPU02_REG_B1CTRL1,
-+	S2MPU02_REG_B1CTRL2,
-+	S2MPU02_REG_B2CTRL1,
-+	S2MPU02_REG_B2CTRL2,
-+	S2MPU02_REG_B3CTRL1,
-+	S2MPU02_REG_B3CTRL2,
-+	S2MPU02_REG_B4CTRL1,
-+	S2MPU02_REG_B4CTRL2,
-+	S2MPU02_REG_B5CTRL1,
-+	S2MPU02_REG_B5CTRL2,
-+	S2MPU02_REG_B5CTRL3,
-+	S2MPU02_REG_B5CTRL4,
-+	S2MPU02_REG_B5CTRL5,
-+	S2MPU02_REG_B6CTRL1,
-+	S2MPU02_REG_B6CTRL2,
-+	S2MPU02_REG_B7CTRL1,
-+	S2MPU02_REG_B7CTRL2,
-+	S2MPU02_REG_RAMP1,
-+	S2MPU02_REG_RAMP2,
-+	S2MPU02_REG_L1CTRL,
-+	S2MPU02_REG_L2CTRL1,
-+	S2MPU02_REG_L2CTRL2,
-+	S2MPU02_REG_L2CTRL3,
-+	S2MPU02_REG_L2CTRL4,
-+	S2MPU02_REG_L3CTRL,
-+	S2MPU02_REG_L4CTRL,
-+	S2MPU02_REG_L5CTRL,
-+	S2MPU02_REG_L6CTRL,
-+	S2MPU02_REG_L7CTRL,
-+	S2MPU02_REG_L8CTRL,
-+	S2MPU02_REG_L9CTRL,
-+	S2MPU02_REG_L10CTRL,
-+	S2MPU02_REG_L11CTRL,
-+	S2MPU02_REG_L12CTRL,
-+	S2MPU02_REG_L13CTRL,
-+	S2MPU02_REG_L14CTRL,
-+	S2MPU02_REG_L15CTRL,
-+	S2MPU02_REG_L16CTRL,
-+	S2MPU02_REG_L17CTRL,
-+	S2MPU02_REG_L18CTRL,
-+	S2MPU02_REG_L19CTRL,
-+	S2MPU02_REG_L20CTRL,
-+	S2MPU02_REG_L21CTRL,
-+	S2MPU02_REG_L22CTRL,
-+	S2MPU02_REG_L23CTRL,
-+	S2MPU02_REG_L24CTRL,
-+	S2MPU02_REG_L25CTRL,
-+	S2MPU02_REG_L26CTRL,
-+	S2MPU02_REG_L27CTRL,
-+	S2MPU02_REG_L28CTRL,
-+	S2MPU02_REG_LDODSCH1,
-+	S2MPU02_REG_LDODSCH2,
-+	S2MPU02_REG_LDODSCH3,
-+	S2MPU02_REG_LDODSCH4,
-+	S2MPU02_REG_SELMIF,
-+	S2MPU02_REG_RSVD11,
-+	S2MPU02_REG_RSVD12,
-+	S2MPU02_REG_RSVD13,
-+	S2MPU02_REG_DVSSEL,
-+	S2MPU02_REG_DVSPTR,
-+	S2MPU02_REG_DVSDATA,
-+};
-+
-+/* S2MPU02 regulator ids */
-+enum S2MPU02_regulators {
-+	S2MPU02_LDO1,
-+	S2MPU02_LDO2,
-+	S2MPU02_LDO3,
-+	S2MPU02_LDO4,
-+	S2MPU02_LDO5,
-+	S2MPU02_LDO6,
-+	S2MPU02_LDO7,
-+	S2MPU02_LDO8,
-+	S2MPU02_LDO9,
-+	S2MPU02_LDO10,
-+	S2MPU02_LDO11,
-+	S2MPU02_LDO12,
-+	S2MPU02_LDO13,
-+	S2MPU02_LDO14,
-+	S2MPU02_LDO15,
-+	S2MPU02_LDO16,
-+	S2MPU02_LDO17,
-+	S2MPU02_LDO18,
-+	S2MPU02_LDO19,
-+	S2MPU02_LDO20,
-+	S2MPU02_LDO21,
-+	S2MPU02_LDO22,
-+	S2MPU02_LDO23,
-+	S2MPU02_LDO24,
-+	S2MPU02_LDO25,
-+	S2MPU02_LDO26,
-+	S2MPU02_LDO27,
-+	S2MPU02_LDO28,
-+	S2MPU02_BUCK1,
-+	S2MPU02_BUCK2,
-+	S2MPU02_BUCK3,
-+	S2MPU02_BUCK4,
-+	S2MPU02_BUCK5,
-+	S2MPU02_BUCK6,
-+	S2MPU02_BUCK7,
-+
-+	S2MPU02_REGULATOR_MAX,
-+};
-+
-+/* Regulator constraints for BUCKx */
-+#define S2MPU02_BUCK1234_MIN_600MV	600000
-+#define S2MPU02_BUCK5_MIN_1081_25MV	1081250
-+#define S2MPU02_BUCK6_MIN_1700MV	1700000
-+#define S2MPU02_BUCK7_MIN_900MV		900000
-+
-+#define S2MPU02_BUCK1234_STEP_6_25MV	6250
-+#define S2MPU02_BUCK5_STEP_6_25MV	6250
-+#define S2MPU02_BUCK6_STEP_2_50MV	2500
-+#define S2MPU02_BUCK7_STEP_6_25MV	6250
-+
-+#define S2MPU02_BUCK1234_START_SEL	0x00
-+#define S2MPU02_BUCK5_START_SEL		0x4D
-+#define S2MPU02_BUCK6_START_SEL		0x28
-+#define S2MPU02_BUCK7_START_SEL		0x30
-+
-+#define S2MPU02_BUCK_RAMP_DELAY		12500
-+
-+/* Regulator constraints for different types of LDOx */
-+#define S2MPU02_LDO_MIN_900MV		900000
-+#define S2MPU02_LDO_MIN_1050MV		1050000
-+#define S2MPU02_LDO_MIN_1600MV		1600000
-+#define S2MPU02_LDO_STEP_12_5MV		12500
-+#define S2MPU02_LDO_STEP_25MV		25000
-+#define S2MPU02_LDO_STEP_50MV		50000
-+
-+#define S2MPU02_LDO_GROUP1_START_SEL	0x8
-+#define S2MPU02_LDO_GROUP2_START_SEL	0xA
-+#define S2MPU02_LDO_GROUP3_START_SEL	0x10
-+
-+#define S2MPU02_LDO_VSEL_MASK		0x3F
-+#define S2MPU02_BUCK_VSEL_MASK		0xFF
-+#define S2MPU02_ENABLE_MASK		(0x03 << S2MPU02_ENABLE_SHIFT)
-+#define S2MPU02_ENABLE_SHIFT		6
-+
-+/* On/Off controlled by PWREN */
-+#define S2MPU02_ENABLE_SUSPEND		(0x01 << S2MPU02_ENABLE_SHIFT)
-+#define S2MPU02_LDO_N_VOLTAGES		(S2MPU02_LDO_VSEL_MASK + 1)
-+#define S2MPU02_BUCK_N_VOLTAGES		(S2MPU02_BUCK_VSEL_MASK + 1)
-+
-+/* RAMP delay for BUCK1234*/
-+#define S2MPU02_BUCK1_RAMP_SHIFT	6
-+#define S2MPU02_BUCK2_RAMP_SHIFT	4
-+#define S2MPU02_BUCK3_RAMP_SHIFT	2
-+#define S2MPU02_BUCK4_RAMP_SHIFT	0
-+#define S2MPU02_BUCK1234_RAMP_MASK	0x3
-+
-+#endif /*  __LINUX_MFD_S2MPU02_H */
+ Example:
 -- 
 1.8.0
 
