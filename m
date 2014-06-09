@@ -1,141 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933388AbaFILfw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 07:35:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34569 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933236AbaFILft (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 07:35:49 -0400
-Message-ID: <53959C11.2000305@suse.cz>
-Date: Mon, 09 Jun 2014 13:35:45 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
+	id S933473AbaFILge (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 07:36:34 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:42939 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933407AbaFILgc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 07:36:32 -0400
+Message-ID: <53959C3B.3010000@redhat.com>
+Date: Mon, 09 Jun 2014 13:36:27 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [RFC PATCH 4/6] mm, compaction: skip buddy pages by their order
- in the migrate scanner
-References: <alpine.DEB.2.02.1405211954410.13243@chino.kir.corp.google.com> <1401898310-14525-1-git-send-email-vbabka@suse.cz> <1401898310-14525-4-git-send-email-vbabka@suse.cz> <alpine.DEB.2.02.1406041656400.22536@chino.kir.corp.google.com> <5390374E.5080708@suse.cz> <alpine.DEB.2.02.1406051428360.18119@chino.kir.corp.google.com> <53916BB0.3070001@suse.cz> <alpine.DEB.2.02.1406090207300.24247@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1406090207300.24247@chino.kir.corp.google.com>
+To: Nadav Amit <namit@cs.technion.ac.il>
+CC: gleb@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        x86@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH kvm-unit-tests1/2] x86: emulator: additional smsw test-case
+References: <53908C66.20600@redhat.com> <1402012613-29891-1-git-send-email-namit@cs.technion.ac.il> <1402012613-29891-2-git-send-email-namit@cs.technion.ac.il>
+In-Reply-To: <1402012613-29891-2-git-send-email-namit@cs.technion.ac.il>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/2014 11:09 AM, David Rientjes wrote:
-> On Fri, 6 Jun 2014, Vlastimil Babka wrote:
+Il 06/06/2014 01:56, Nadav Amit ha scritto:
+> An additional test case for the emulator was added to test smsw which is
+> trapped by the emulator.  The other existing test-cases occur in the guest (at
+> least on VMX), since the values are read directly from the CR0 read shadow.
 >
->>>>>> diff --git a/mm/internal.h b/mm/internal.h
->>>>>> index 1a8a0d4..6aa1f74 100644
->>>>>> --- a/mm/internal.h
->>>>>> +++ b/mm/internal.h
->>>>>> @@ -164,7 +164,8 @@ isolate_migratepages_range(struct zone *zone, struct
->>>>>> compact_control *cc,
->>>>>>     * general, page_zone(page)->lock must be held by the caller to prevent
->>>>>> the
->>>>>>     * page from being allocated in parallel and returning garbage as the
->>>>>> order.
->>>>>>     * If a caller does not hold page_zone(page)->lock, it must guarantee
->>>>>> that the
->>>>>> - * page cannot be allocated or merged in parallel.
->>>>>> + * page cannot be allocated or merged in parallel. Alternatively, it must
->>>>>> + * handle invalid values gracefully, and use page_order_unsafe() below.
->>>>>>     */
->>>>>>    static inline unsigned long page_order(struct page *page)
->>>>>>    {
->>>>>> @@ -172,6 +173,23 @@ static inline unsigned long page_order(struct page
->>>>>> *page)
->>>>>>    	return page_private(page);
->>>>>>    }
->>>>>>
->>>>>> +/*
->>>>>> + * Like page_order(), but for callers who cannot afford to hold the zone
->>>>>> lock,
->>>>>> + * and handle invalid values gracefully. ACCESS_ONCE is used so that if
->>>>>> the
->>>>>> + * caller assigns the result into a local variable and e.g. tests it for
->>>>>> valid
->>>>>> + * range  before using, the compiler cannot decide to remove the variable
->>>>>> and
->>>>>> + * inline the function multiple times, potentially observing different
->>>>>> values
->>>>>> + * in the tests and the actual use of the result.
->>>>>> + */
->>>>>> +static inline unsigned long page_order_unsafe(struct page *page)
->>>>>> +{
->>>>>> +	/*
->>>>>> +	 * PageBuddy() should be checked by the caller to minimize race
->>>>>> window,
->>>>>> +	 * and invalid values must be handled gracefully.
->>>>>> +	 */
->>>>>> +	return ACCESS_ONCE(page_private(page));
->>>>>> +}
->>>>>> +
->>>>>>    /* mm/util.c */
->>>>>>    void __vma_link_list(struct mm_struct *mm, struct vm_area_struct *vma,
->>>>>>    		struct vm_area_struct *prev, struct rb_node *rb_parent);
->>>>>
->>>>> I don't like this change at all, I don't think we should have header
->>>>> functions that imply the context in which the function will be called.  I
->>>>> think it would make much more sense to just do
->>>>> ACCESS_ONCE(page_order(page)) in the migration scanner with a comment.
->>>>
->>>> But that won't compile. It would have to be converted to a #define, unless
->>>> there's some trick I don't know. Sure I would hope this could be done cleaner
->>>> somehow.
->>>>
->>>
->>> Sorry, I meant ACCESS_ONCE(page_private(page)) in the migration scanner
->>
->> Hm but that's breaking the abstraction of page_order(). I don't know if it's
->> worse to create a new variant of page_order() or to do this. BTW, seems like
->> next_active_pageblock() in memory-hotplug.c should use this variant too.
->>
+> Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
+> ---
+>  x86/emulator.c | 10 ++++++++--
+>  1 file changed, 8 insertions(+), 2 deletions(-)
 >
-> The compiler seems free to disregard the access of a volatile object above
-> because the return value of the inline function is unsigned long.  What's
-> the difference between unsigned long order = page_order_unsafe(page) and
-> unsigned long order = (unsigned long)ACCESS_ONCE(page_private(page)) and
-
-I think there's none functionally, but one is abstraction layer 
-violation and the other imply the context of usage as you say (but is 
-that so uncommon?).
-
-> the compiler being able to reaccess page_private() because the result is
-> no longer volatile qualified?
-
-You think it will reaccess? That would defeat all current ACCESS_ONCE 
-usages, no?
-
-What I'm trying to prevent is that this code:
-
-unsigned long freepage_order = page_order(page);
-
-if (freepage_order > 0 && freepage_order < MAX_ORDER)
-	low_pfn += (1UL << freepage_order) - 1;
-
-could be effectively changed (AFAIK legal for the compiler to do) to:
-
-if (page_order(page) > 0 && page_order(page) < MAX_ORDER)
-	low_pfn += (1UL << page_order(page)) - 1;
-
-And thus check a different value than it's in the end used to bump low_pfn.
-
-I believe that even though freepage_order itself is not volatile, the 
-fact it was assigned through a volatile cast means the compiler won't be 
-able to do this anymore.
-
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> diff --git a/x86/emulator.c b/x86/emulator.c
+> index 20e3a45..033f246 100644
+> --- a/x86/emulator.c
+> +++ b/x86/emulator.c
+> @@ -336,7 +336,7 @@ void test_incdecnotneg(void *mem)
+>      report("lock notb", *mb == vb);
+>  }
+>
+> -void test_smsw(void)
+> +void test_smsw(uint64_t *h_mem)
+>  {
+>  	char mem[16];
+>  	unsigned short msw, msw_orig, *pmsw;
+> @@ -355,6 +355,12 @@ void test_smsw(void)
+>  		if (i != 4 && pmsw[i])
+>  			zero = 0;
+>  	report("smsw (2)", msw == pmsw[4] && zero);
+> +
+> +	/* Trigger exit on smsw */
+> +	*h_mem = 0x12345678abcdeful;
+> +	asm volatile("smsw %0" : "=m"(*h_mem));
+> +	report("smsw (3)", msw == (unsigned short)*h_mem &&
+> +		(*h_mem & ~0xfffful) == 0x12345678ab0000ul);
+>  }
+>
+>  void test_lmsw(void)
+> @@ -998,7 +1004,7 @@ int main()
+>
+>  	test_cr8();
+>
+> -	test_smsw();
+> +	test_smsw(mem);
+>  	test_lmsw();
+>  	test_ljmp(mem);
+>  	test_stringio();
 >
 
+Thanks, applying all after the end of the merge window.
+
+Paolo
