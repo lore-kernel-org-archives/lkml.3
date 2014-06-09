@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933267AbaFIWpS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 18:45:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56697 "EHLO
+	id S933379AbaFIWp0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 18:45:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56749 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933119AbaFIWpM (ORCPT
+	with ESMTP id S933287AbaFIWpW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:45:12 -0400
+	Mon, 9 Jun 2014 18:45:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>, Juri Lelli <juri.lelli@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.14 02/78] sched/deadline: Fix memory leak
-Date: Mon,  9 Jun 2014 15:47:42 -0700
-Message-Id: <20140609224813.434767088@linuxfoundation.org>
+        Johannes Berg <johannes.berg@intel.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 08/78] Documentation: fix DOCBOOKS=... building
+Date: Mon,  9 Jun 2014 15:47:48 -0700
+Message-Id: <20140609224813.627455721@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140609224813.282275135@linuxfoundation.org>
 References: <20140609224813.282275135@linuxfoundation.org>
@@ -29,33 +32,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Zefan <lizefan@huawei.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 6a7cd273dc4bc3246f37ebe874754a54ccb29141 upstream.
+commit e60cbeedc48d80689c249ab5dcc3c31ad0452dea upstream.
 
-Free cpudl->free_cpus allocated in cpudl_init().
+Prior to commit 4266129964b8 ("[media] DocBook: Move all media docbook
+stuff into its own directory") it was possible to build only a single
+(or more) book(s) by calling, for example
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Acked-by: Juri Lelli <juri.lelli@gmail.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/534F36CE.2000409@huawei.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+    make htmldocs DOCBOOKS=80211.xml
+
+This now fails:
+
+    cp: target `.../Documentation/DocBook//media_api' is not a directory
+
+Ignore errors from that copy to make this possible again.
+
+Fixes: 4266129964b8 ("[media] DocBook: Move all media docbook stuff into its own directory")
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sched/cpudeadline.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ Documentation/DocBook/media/Makefile |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/sched/cpudeadline.c
-+++ b/kernel/sched/cpudeadline.c
-@@ -210,7 +210,5 @@ int cpudl_init(struct cpudl *cp)
-  */
- void cpudl_cleanup(struct cpudl *cp)
- {
--	/*
--	 * nothing to do for the moment
--	 */
-+	free_cpumask_var(cp->free_cpus);
- }
+--- a/Documentation/DocBook/media/Makefile
++++ b/Documentation/DocBook/media/Makefile
+@@ -195,7 +195,7 @@ DVB_DOCUMENTED = \
+ #
+ 
+ install_media_images = \
+-	$(Q)cp $(OBJIMGFILES) $(MEDIA_SRC_DIR)/v4l/*.svg $(MEDIA_OBJ_DIR)/media_api
++	$(Q)-cp $(OBJIMGFILES) $(MEDIA_SRC_DIR)/v4l/*.svg $(MEDIA_OBJ_DIR)/media_api
+ 
+ $(MEDIA_OBJ_DIR)/%: $(MEDIA_SRC_DIR)/%.b64
+ 	$(Q)base64 -d $< >$@
 
 
