@@ -1,86 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933415AbaFIPY3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 11:24:29 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:58657 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932675AbaFIPYX (ORCPT
+	id S933329AbaFIP2J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 11:28:09 -0400
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:16226 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752169AbaFIP2E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 11:24:23 -0400
-Date: Mon, 9 Jun 2014 08:24:16 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mikael Pettersson <mikpelinux@gmail.com>
-Cc: Greg Ungerer <gerg@uclinux.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        Linux/m68k <linux-m68k@vger.kernel.org>
-Subject: Re: rcu alignment warning tripping on m68k
-Message-ID: <20140609152415.GA4581@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <538696A0.5090601@uclinux.org>
- <20140529141151.21ed6f95@alan.etchedpixels.co.uk>
- <5387DF05.1020103@uclinux.org>
- <20140606184605.GT4581@linux.vnet.ibm.com>
- <21395.4324.692609.399604@gargle.gargle.HOWL>
+	Mon, 9 Jun 2014 11:28:04 -0400
+Message-ID: <5395D24D.9000306@fb.com>
+Date: Mon, 9 Jun 2014 09:27:09 -0600
+From: Jens Axboe <axboe@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <21395.4324.692609.399604@gargle.gargle.HOWL>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14060915-1542-0000-0000-000002712198
+To: Christoph Hellwig <hch@infradead.org>
+CC: Ming Lei <tom.leiming@gmail.com>, Matias Bj??rling <m@bjorling.me>,
+        <willy@linux.intel.com>, <keith.busch@intel.com>,
+        <sbradshaw@micron.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        <linux-nvme@lists.infradead.org>
+Subject: Re: [PATCH v6] NVMe: conversion to blk-mq
+References: <1402057225-7312-1-git-send-email-m@bjorling.me> <1402057225-7312-2-git-send-email-m@bjorling.me> <CACVXFVOieM2cT4FFJhD9MecfCLBtE3AwjCpOeGGRUcmWnN=B=A@mail.gmail.com> <5395BFF2.2080402@fb.com> <20140609145944.GA30626@infradead.org>
+In-Reply-To: <20140609145944.GA30626@infradead.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-06-09_03:2014-06-09,2014-06-09,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=9.99200722162641e-16 kscore.compositescore=0
+ circleOfTrustscore=0 compositescore=0.324642340081358
+ urlsuspect_oldscore=0.324642340081358 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=2524143
+ rbsscore=0.324642340081358 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1406090199
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 07, 2014 at 03:17:24PM +0200, Mikael Pettersson wrote:
-> Paul E. McKenney writes:
->  > On Fri, May 30, 2014 at 11:29:41AM +1000, Greg Ungerer wrote:
->  > > On 29/05/14 23:11, One Thousand Gnomes wrote:
->  > > > On Thu, 29 May 2014 12:08:32 +1000
->  > > > Greg Ungerer <gerg@uclinux.org> wrote:
->  > > > 
->  > > >> Hi All,
->  > > >>
->  > > >> Inside kernel/rcy/tree.c in __call_rcu() it does an alignment check on
->  > > >> the head pointer passed in. This trips on m68k systems, because they only
->  > > >> need alignment of 32bit quantities to 16bit boundaries.
->  > > > 
->  > > > __alignof perhaps ?
->  > > 
->  > > That might do. Change then becomes something like:
->  > > 
->  > > --- a/kernel/rcu/tree.c
->  > > +++ b/kernel/rcu/tree.c
->  > > @@ -2467,7 +2467,7 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_
->  > >         unsigned long flags;
->  > >         struct rcu_data *rdp;
->  > > 
->  > > -       WARN_ON_ONCE((unsigned long)head & 0x3); /* Misaligned rcu_head! */
->  > > +       WARN_ON_ONCE((unsigned long)head & (__alignof__(head) - 1)); /* Misaligned rcu_head! */
->  > 
->  > Hmmm...  The purpose of the check is to reserve the low-order bits to
->  > allow RCU to classify callbacks as being time-critical or not.  RCU
->  > can probably live with a single bit, but if there is some architecture
->  > out there that simply refuses to do alignment, I need to know about it.
->  > 
->  > (See "git show 0bb7b59d6e2b8" for more info.)
->  > 
->  > So how about this instead?
->  > 
->  >  -       WARN_ON_ONCE((unsigned long)head & 0x1); /* Misaligned rcu_head! */
->  > 
->  > (Trying to remember if I have seen Linux kernel code that uses both
->  > the lower bits...)
-> 
-> As stated above, m68k-linux aligns to 16-bit boundaries by default, so you'd
-> get one bit but not necessarily more.  If you want more free low bits, why
-> not attach an explicit attribute aligned to the rcu_head type declaration?
+On 2014-06-09 08:59, Christoph Hellwig wrote:
+> On Mon, Jun 09, 2014 at 08:08:50AM -0600, Jens Axboe wrote:
+>>> [  487.704074] nvme 0000:00:07.0: Cancelling I/O 202 QID 1
+>>> [  487.717881] nvme 0000:00:07.0: Aborting I/O 202 QID 1
+>>> [  487.736093] end_request: I/O error, dev nvme0n1, sector 91532352
+>>> [  487.747378] nvme 0000:00:07.0: completed id 0 twice on queue 0
+>>>
+>>>
+>>> when running fio randread(libaio, iodepth:64) with more than 3 jobs.
+>>>
+>>> And looks no such failure when jobs is 1 or 2.
+>>
+>> It's a known issue, make sure you have this patch:
+>>
+>> https://urldefense.proofpoint.com/v1/url?u=http://git.kernel.dk/?p%3Dlinux-block.git%3Ba%3Dcommit%3Bh%3Df6be4fb4bcb396fc3b1c134b7863351972de081f&k=ZVNjlDMF0FElm4dQtryO4A%3D%3D%0A&r=3JMVyziIyZtZ5cv9eWNLwQ%3D%3D%0A&m=MKK7A%2B9AnXXwtMV9YPSFEprXId0z0WLtd2JQPxnaNVc%3D%0A&s=45425e5d17390ae912457035ff081b95a7084725706ffe91166a1bdb25d8bf3d
+>
+> So without this patch we can get duplicate completions?  That could
+> explain the issues that Robert sees with scsi-mq and hpsa..
 
-One bit should do it for the time being, but yes, if I ever need two bits,
-your suggestion of explicitly aligning the rcu_head type declaration
-sounds like a very good one.
+I don't see how that would happen in general, except if the timeout
+part was buggy.
 
-								Thanx, Paul
+-- 
+Jens Axboe
 
