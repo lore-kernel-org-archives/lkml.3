@@ -1,148 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936260AbaFIJ1E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 05:27:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32910 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932777AbaFIJ0f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 05:26:35 -0400
-From: Vlastimil Babka <vbabka@suse.cz>
-To: David Rientjes <rientjes@google.com>, linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>, Vlastimil Babka <vbabka@suse.cz>,
-        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: [PATCH 05/10] mm, compaction: remember position within pageblock in free pages scanner
-Date: Mon,  9 Jun 2014 11:26:17 +0200
-Message-Id: <1402305982-6928-5-git-send-email-vbabka@suse.cz>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1402305982-6928-1-git-send-email-vbabka@suse.cz>
-References: <1402305982-6928-1-git-send-email-vbabka@suse.cz>
+	id S936122AbaFIJdt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 05:33:49 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59137 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S936243AbaFIJ1C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 05:27:02 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        Mark Brown <broonie@linaro.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 109/146] ASoC: wm8962: Update register CLASS_D_CONTROL_1 to be non-volatile
+Date: Mon,  9 Jun 2014 10:50:44 +0200
+Message-Id: <54fba4664fc90aa354713c203978b7cc4eec296e.1402303821.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
+References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
+In-Reply-To: <cover.1402303820.git.jslaby@suse.cz>
+References: <cover.1402303820.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unlike the migration scanner, the free scanner remembers the beginning of the
-last scanned pageblock in cc->free_pfn. It might be therefore rescanning pages
-uselessly when called several times during single compaction. This might have
-been useful when pages were returned to the buddy allocator after a failed
-migration, but this is no longer the case.
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 
-This patch changes the meaning of cc->free_pfn so that if it points to a
-middle of a pageblock, that pageblock is scanned only from cc->free_pfn to the
-end. isolate_freepages_block() will record the pfn of the last page it looked
-at, which is then used to update cc->free_pfn.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-In the mmtests stress-highalloc benchmark, this has resulted in lowering the
-ratio between pages scanned by both scanners, from 2.5 free pages per migrate
-page, to 2.25 free pages per migrate page, without affecting success rates.
+===============
 
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: David Rientjes <rientjes@google.com>
+commit 44330ab516c15dda8a1e660eeaf0003f84e43e3f upstream.
+
+The register CLASS_D_CONTROL_1 is marked as volatile because it contains
+a bit, DAC_MUTE, which is also mirrored in the ADC_DAC_CONTROL_1
+register. This causes problems for the "Speaker Switch" control, which
+will report an error if the CODEC is suspended because it relies on a
+volatile register.
+
+To resolve this issue mark CLASS_D_CONTROL_1 as non-volatile and
+manually keep the register cache in sync by updating both bits when
+changing the mute status.
+
+Reported-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Tested-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- mm/compaction.c | 33 ++++++++++++++++++++++++++++-----
- 1 file changed, 28 insertions(+), 5 deletions(-)
+ sound/soc/codecs/wm8962.c | 15 ++++++++++++---
+ sound/soc/codecs/wm8962.h |  4 ++++
+ 2 files changed, 16 insertions(+), 3 deletions(-)
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 83f72bd..58dfaaa 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -297,7 +297,7 @@ static bool suitable_migration_target(struct page *page)
-  * (even though it may still end up isolating some pages).
-  */
- static unsigned long isolate_freepages_block(struct compact_control *cc,
--				unsigned long blockpfn,
-+				unsigned long *start_pfn,
- 				unsigned long end_pfn,
- 				struct list_head *freelist,
- 				bool strict)
-@@ -306,6 +306,7 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
- 	struct page *cursor, *valid_page = NULL;
- 	unsigned long flags;
- 	bool locked = false;
-+	unsigned long blockpfn = *start_pfn;
+diff --git a/sound/soc/codecs/wm8962.c b/sound/soc/codecs/wm8962.c
+index 871f8518626f..ea16dc456352 100644
+--- a/sound/soc/codecs/wm8962.c
++++ b/sound/soc/codecs/wm8962.c
+@@ -154,6 +154,7 @@ static struct reg_default wm8962_reg[] = {
+ 	{ 40, 0x0000 },   /* R40    - SPKOUTL volume */
+ 	{ 41, 0x0000 },   /* R41    - SPKOUTR volume */
  
- 	cursor = pfn_to_page(blockpfn);
++	{ 49, 0x0010 },   /* R49    - Class D Control 1 */
+ 	{ 51, 0x0003 },   /* R51    - Class D Control 2 */
  
-@@ -314,6 +315,9 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
- 		int isolated, i;
- 		struct page *page = cursor;
+ 	{ 56, 0x0506 },   /* R56    - Clocking 4 */
+@@ -795,7 +796,6 @@ static bool wm8962_volatile_register(struct device *dev, unsigned int reg)
+ 	case WM8962_ALC2:
+ 	case WM8962_THERMAL_SHUTDOWN_STATUS:
+ 	case WM8962_ADDITIONAL_CONTROL_4:
+-	case WM8962_CLASS_D_CONTROL_1:
+ 	case WM8962_DC_SERVO_6:
+ 	case WM8962_INTERRUPT_STATUS_1:
+ 	case WM8962_INTERRUPT_STATUS_2:
+@@ -2901,13 +2901,22 @@ static int wm8962_set_fll(struct snd_soc_codec *codec, int fll_id, int source,
+ static int wm8962_mute(struct snd_soc_dai *dai, int mute)
+ {
+ 	struct snd_soc_codec *codec = dai->codec;
+-	int val;
++	int val, ret;
  
-+		/* Record how far we have got within the block */
-+		*start_pfn = blockpfn;
+ 	if (mute)
+-		val = WM8962_DAC_MUTE;
++		val = WM8962_DAC_MUTE | WM8962_DAC_MUTE_ALT;
+ 	else
+ 		val = 0;
+ 
++	/**
++	 * The DAC mute bit is mirrored in two registers, update both to keep
++	 * the register cache consistent.
++	 */
++	ret = snd_soc_update_bits(codec, WM8962_CLASS_D_CONTROL_1,
++				  WM8962_DAC_MUTE_ALT, val);
++	if (ret < 0)
++		return ret;
 +
- 		/*
- 		 * Periodically drop the lock (if held) regardless of its
- 		 * contention, to give chance to IRQs. Abort async compaction
-@@ -424,6 +428,9 @@ isolate_freepages_range(struct compact_control *cc,
- 	LIST_HEAD(freelist);
- 
- 	for (pfn = start_pfn; pfn < end_pfn; pfn += isolated) {
-+		/* Protect pfn from changing by isolate_freepages_block */
-+		unsigned long isolate_start_pfn = pfn;
-+
- 		if (!pfn_valid(pfn) || cc->zone != page_zone(pfn_to_page(pfn)))
- 			break;
- 
-@@ -434,8 +441,8 @@ isolate_freepages_range(struct compact_control *cc,
- 		block_end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
- 		block_end_pfn = min(block_end_pfn, end_pfn);
- 
--		isolated = isolate_freepages_block(cc, pfn, block_end_pfn,
--						   &freelist, true);
-+		isolated = isolate_freepages_block(cc, &isolate_start_pfn,
-+						block_end_pfn, &freelist, true);
- 
- 		/*
- 		 * In strict mode, isolate_freepages_block() returns 0 if
-@@ -774,6 +781,7 @@ static void isolate_freepages(struct zone *zone,
- 				block_end_pfn = block_start_pfn,
- 				block_start_pfn -= pageblock_nr_pages) {
- 		unsigned long isolated;
-+		unsigned long isolate_start_pfn;
- 
- 		/*
- 		 * This can iterate a massively long zone without finding any
-@@ -807,12 +815,27 @@ static void isolate_freepages(struct zone *zone,
- 			continue;
- 
- 		/* Found a block suitable for isolating free pages from */
--		cc->free_pfn = block_start_pfn;
--		isolated = isolate_freepages_block(cc, block_start_pfn,
-+		isolate_start_pfn = block_start_pfn;
-+
-+		/*
-+		 * If we are restarting the free scanner in this block, do not
-+		 * rescan the beginning of the block
-+		 */
-+		if (cc->free_pfn < block_end_pfn)
-+			isolate_start_pfn = cc->free_pfn;
-+
-+		isolated = isolate_freepages_block(cc, &isolate_start_pfn,
- 					block_end_pfn, freelist, false);
- 		nr_freepages += isolated;
- 
- 		/*
-+		 * Remember where the free scanner should restart next time.
-+		 * This will point to the last page of pageblock we just
-+		 * scanned, if we scanned it fully.
-+		 */
-+		cc->free_pfn = isolate_start_pfn;
-+
-+		/*
- 		 * Set a flag that we successfully isolated in this pageblock.
- 		 * In the next loop iteration, zone->compact_cached_free_pfn
- 		 * will not be updated and thus it will effectively contain the
+ 	return snd_soc_update_bits(codec, WM8962_ADC_DAC_CONTROL_1,
+ 				   WM8962_DAC_MUTE, val);
+ }
+diff --git a/sound/soc/codecs/wm8962.h b/sound/soc/codecs/wm8962.h
+index a1a5d5294c19..910aafd09d21 100644
+--- a/sound/soc/codecs/wm8962.h
++++ b/sound/soc/codecs/wm8962.h
+@@ -1954,6 +1954,10 @@
+ #define WM8962_SPKOUTL_ENA_MASK                 0x0040  /* SPKOUTL_ENA */
+ #define WM8962_SPKOUTL_ENA_SHIFT                     6  /* SPKOUTL_ENA */
+ #define WM8962_SPKOUTL_ENA_WIDTH                     1  /* SPKOUTL_ENA */
++#define WM8962_DAC_MUTE_ALT                     0x0010  /* DAC_MUTE */
++#define WM8962_DAC_MUTE_ALT_MASK                0x0010  /* DAC_MUTE */
++#define WM8962_DAC_MUTE_ALT_SHIFT                    4  /* DAC_MUTE */
++#define WM8962_DAC_MUTE_ALT_WIDTH                    1  /* DAC_MUTE */
+ #define WM8962_SPKOUTL_PGA_MUTE                 0x0002  /* SPKOUTL_PGA_MUTE */
+ #define WM8962_SPKOUTL_PGA_MUTE_MASK            0x0002  /* SPKOUTL_PGA_MUTE */
+ #define WM8962_SPKOUTL_PGA_MUTE_SHIFT                1  /* SPKOUTL_PGA_MUTE */
 -- 
-1.8.4.5
+1.9.3
 
