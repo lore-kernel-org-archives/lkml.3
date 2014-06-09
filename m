@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933308AbaFIOPU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 10:15:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44669 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754000AbaFIOPR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 10:15:17 -0400
-Date: Mon, 9 Jun 2014 10:15:12 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-efi@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>,
-        Dave Young <dyoung@redhat.com>
-Subject: Re: [PATCH] x86/boot: EFI_MIXED should not prohibit loading above 4G
-Message-ID: <20140609141512.GA22049@redhat.com>
-References: <1402140380-15377-1-git-send-email-matt@console-pimps.org>
- <20140609125427.GA16256@redhat.com>
- <CADknwL7Jeh82W3=rEqGqh=37zpqhmMuP1jy+DDq9vb2gQ+9hzg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CADknwL7Jeh82W3=rEqGqh=37zpqhmMuP1jy+DDq9vb2gQ+9hzg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933179AbaFIOVs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 10:21:48 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:52898 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754045AbaFIOVp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 10:21:45 -0400
+Message-ID: <1402323702.11505.18.camel@umadbro>
+Subject: Re: [RFC 1/4] cfg80211: Add channel flags limiting availability to
+ OCB mode only
+From: Rostislav Lisovy <lisovy@gmail.com>
+To: "Luis R. Rodriguez" <mcgrof@suse.com>
+Cc: Johannes Berg <johannes@sipsolutions.net>,
+        Liraz Perelmooter <liraz.perelmooter@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michal Sojka <sojkam1@fel.cvut.cz>, s.sander@nordsys.de,
+        jan-niklas.meier@volkswagen.de,
+        Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>,
+        wireless-regdb@lists.infradead.org, green@qti.qualcomm.com
+Date: Mon, 09 Jun 2014 16:21:42 +0200
+In-Reply-To: <20140603221837.GU26450@wotan.suse.de>
+References: <1401468984-24575-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
+	 <1401468984-24575-2-git-send-email-rostislav.lisovy@fel.cvut.cz>
+	 <1401825693.4157.44.camel@jlt4.sipsolutions.net>
+	 <20140603221837.GU26450@wotan.suse.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 09, 2014 at 02:18:54PM +0100, Matt Fleming wrote:
-> On 9 June 2014 13:54, Vivek Goyal <vgoyal@redhat.com> wrote:
-> > Hi Matt,
-> >
-> > So with new kexec syscall I have written 64bit bzImage loader. For now
-> > I would like to detect this situation and disable loading and once
-> > 32bit loader gets implemented it can take care of loading bzImage below
-> > 4G.
-> 
-> What situation do you want to detect? You want to detect when it's
-> impossible to load a kernel above 4G in the kexec path because you're
-> booting with 32-bit EFI firmware?
+Dear Luis;
+Thank you for the introduction in the wireless-regdb mailing-list.
 
-Yes.
+On Wed, 2014-06-04 at 00:18 +0200, Luis R. Rodriguez wrote:
+> Rostislav, can you provide documentation references which would
+> clarify
+> the stance on 802.11p and restrictions for only allowing  OCB mode?
 
-> 
-> > So how do I find out if EFI is 32bit.
-> 
-> efi_enabled(EFI_64BIT) will tell you that, but you probably also want
-> to check that EFI runtime services are actually usable with
-> efi_enabled(EFI_RUNTIME_SERVICES) since if they're not, you'll never
-> call into the firmware so it doesn't matter where you load the kernel
-> (this may happen with "noefi" kernel parameter).
+If I may cite the 802.11-2012 standard:
+-- 1st Quote
+4.3.11 STA transmission of data frames outside the context of a BSS
 
-Ok, thanks. Or I can check whether EFI run time map is there or not. I am
-assuming that efi runtime services are not enabled, then run time map
-will not be there either.
+Communication of data frames when dot11OCBActivated is true might take
+place in a frequency band that is dedicated for its use, and such a band
+might require licensing depending on the regulatory domain. A STA for
+which dot11OCBActivated is true initially transmits and receives on a
+channel known in advance, either through regulatory designation or some
+other out-of-band communication.
+-- End of quote
 
-Thanks
-Vivek
+-- 2nd Quote
+Annex E (normative) Country elements and operating classes
+E.2.3 5.9 GHz band in the United States (5.850–5.925 GHz)
+...
+STAs shall have dot11OCBActivated set to true.
+
+E.2.4 5.9 GHz band in Europe (5.855–5.925 GHz)
+STAs shall have dot11OCBActivated set to true.
+-- end of quote
+
+Regards;
+Rostislav
+
