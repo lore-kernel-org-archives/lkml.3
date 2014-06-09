@@ -1,69 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933529AbaFINbM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 09:31:12 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:33439 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932222AbaFINbK convert rfc822-to-8bit (ORCPT
+	id S933576AbaFINcb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 09:32:31 -0400
+Received: from smtprelay4.synopsys.com ([198.182.44.111]:53533 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932933AbaFINc2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 09:31:10 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Jim Davis <jim.epost@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
-Subject: Re: randconfig build error with next-20140604, in drivers/i2c/muxes/i2c-mux-pca954x.c
-Date: Mon, 09 Jun 2014 15:31:40 +0200
-Message-ID: <14609786.lXROpz1lS8@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.12.20-gentoo; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CACRpkdZO_vE1VnJ6=gEdX8P-qNADsskJkMOdaRDg-TabTSySCQ@mail.gmail.com>
-References: <CA+r1Zhi9Qd4aZ2WJ02K4Gv=zg7QvG+r=t2VpiXRKXcYRc1vt=A@mail.gmail.com> <CACRpkdZO_vE1VnJ6=gEdX8P-qNADsskJkMOdaRDg-TabTSySCQ@mail.gmail.com>
-MIME-Version: 1.0
+	Mon, 9 Jun 2014 09:32:28 -0400
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: linus Torvalds <torvalds@linux-foundation.org>
+CC: lkml <linux-kernel@vger.kernel.org>,
+        "arc-linux-dev@synopsys.com" <arc-linux-dev@synopsys.com>,
+        Terence Eden <github.com@shkspr.mobi>
+Subject: [GIT PULL] ARC updates for 3.16 rc1
+Thread-Topic: [GIT PULL] ARC updates for 3.16 rc1
+Thread-Index: Ac+D5z4Z1t6Edbn5Q1yuyo3bhKCcZg==
+Date: Mon, 9 Jun 2014 13:32:22 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA230751A6B6CF1@IN01WEMBXA.internal.synopsys.com>
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.12.196.93]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 09 June 2014 15:12:01 Linus Walleij wrote:
-> On Wed, Jun 4, 2014 at 6:44 PM, Jim Davis <jim.epost@gmail.com> wrote:
-> > Building with the attached random configuration file,
-> > 
-> > drivers/i2c/muxes/i2c-mux-pca954x.c: In function ‘pca954x_probe’:
-> > drivers/i2c/muxes/i2c-mux-pca954x.c:204:2: error: implicit declaration
-> > of function ‘devm_gpiod_get’ [-Werror=implicit-function-declaration]
-> > 
-> >   gpio = devm_gpiod_get(&client->dev, "reset");
-> >   ^
-> > 
-> > drivers/i2c/muxes/i2c-mux-pca954x.c:204:7: warning: assignment makes
-> > pointer from integer without a cast [enabled by default]
-> > 
-> >   gpio = devm_gpiod_get(&client->dev, "reset");
-> >   
-> >        ^
-> > 
-> > drivers/i2c/muxes/i2c-mux-pca954x.c:206:3: error: implicit declaration
-> > of function ‘gpiod_direction_output’
-> > [-Werror=implicit-function-declaration]
-> > 
-> >    gpiod_direction_output(gpio, 0);
-> >    ^
-> > 
-> > cc1: some warnings being treated as errors
-> > make[3]: *** [drivers/i2c/muxes/i2c-mux-pca954x.o] Error 1
-> 
-> I've sent a patch for this to Wolfram and the i2c discuss list.
+Hi Linus,
 
-https://git.kernel.org/cgit/linux/kernel/git/wsa/linux.git/commit/?h=i2c/for-next&id=642653d16a0f8e78b7a25d930b62aa771ebc939c
+Please pull ARC changes for 3.16 merge window.
 
--- 
-Regards,
+Thx,
+-Vineet
 
-Laurent Pinchart
+----------------->
+The following changes since commit 89ca3b881987f5a4be4c5dbaa7f0df12bbdde2fd:
 
+  Linux 3.15-rc4 (2014-05-04 18:14:42 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/vgupta/arc.git/ tags/arc-v3.16-rc1
+
+for you to fetch changes up to ef680cdc24376f394841a3f19b3a7ef6d57a009d:
+
+  ARC: Disable caches in early boot if so configured (2014-06-03 15:14:48 +0530)
+
+----------------------------------------------------------------
+Nothing too exciting here, just minor fixes/cleanup. Only noteworthy ones are:
+
+* Moving cache disabling to early boot
+* ARC UART enabled only if earlyprintk setup in cmdline
+
+----------------------------------------------------------------
+Terence Eden (1):
+      ARC: Fixed spelling errors within comments
+
+Vineet Gupta (8):
+      ARC: [SMP] ISS SMP extension bitrot
+      ARC: fix mmuv2 warning
+      ARC: make start_thread() out-of-line
+      ARC: arc_local_timer_setup() need not pass own cpu id
+      ARC: remove duplicate header exports
+      ARC: [arcfpga] Get rid of legacy BVCI latency unit support
+      ARC: [arcfpga] Early ARC UART to be only activated by cmdline
+      ARC: Disable caches in early boot if so configured
+
+ arch/arc/boot/dts/angel4.dts     |   2 +-
+ arch/arc/include/asm/cache.h     |  27 ++++++++++
+ arch/arc/include/asm/irq.h       |   4 +-
+ arch/arc/include/asm/processor.h |  29 ++---------
+ arch/arc/include/uapi/asm/Kbuild |   7 ---
+ arch/arc/kernel/entry.S          |  12 ++---
+ arch/arc/kernel/head.S           |  38 ++++++++++++--
+ arch/arc/kernel/irq.c            |  18 -------
+ arch/arc/kernel/process.c        |  23 ++++++++
+ arch/arc/kernel/smp.c            |   2 +-
+ arch/arc/kernel/time.c           |  11 ++--
+ arch/arc/mm/cache_arc700.c       | 110 +++++++++++----------------------------
+ arch/arc/plat-arcfpga/Kconfig    |  32 ------------
+ arch/arc/plat-arcfpga/Makefile   |   2 +-
+ arch/arc/plat-arcfpga/platform.c |  72 +++----------------------
+ arch/arc/plat-arcfpga/smp.c      |  18 +++++++
+ 16 files changed, 158 insertions(+), 249 deletions(-)
