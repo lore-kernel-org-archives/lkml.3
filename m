@@ -1,39 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969AbaFIA2b (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jun 2014 20:28:31 -0400
-Received: from ns.horizon.com ([71.41.210.147]:39277 "HELO ns.horizon.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753098AbaFIA22 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jun 2014 20:28:28 -0400
-Date: 8 Jun 2014 20:28:25 -0400
-Message-ID: <20140609002825.20757.qmail@ns.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: dborkman@redhat.com, hannes@stressinduktion.org
-Subject: Re: [PATCH 5/7] lib/random32.c: Make prandom_u32_max efficient for powers of 2
-Cc: davem@davemloft.net, linux-kernel@vger.kernel.org, linux@horizon.com,
-        shemminger@osdl.org, tytso@mit.edu
-In-Reply-To: <5394C15D.3020507@redhat.com>
+	id S1753689AbaFIBPH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jun 2014 21:15:07 -0400
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:60487 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753458AbaFIBPC (ORCPT
+	<rfc822;Linux-Kernel@vger.kernel.org>);
+	Sun, 8 Jun 2014 21:15:02 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAPM=9tz4oumjPD=bzBoJKkmhRA956a-FaNw2G+_zaO4kzWSEAQ@mail.gmail.com>
+References: <53935504.1080903@symas.com>
+	<CAPM=9tz4oumjPD=bzBoJKkmhRA956a-FaNw2G+_zaO4kzWSEAQ@mail.gmail.com>
+Date: Sun, 8 Jun 2014 21:15:01 -0400
+Message-ID: <CADnq5_NVZRpjpEGc1=mBDDs8bXEKaFkM93PCs-cQeHPDcyFRcg@mail.gmail.com>
+Subject: Re: 3.12.9 kern.log spam from vgaswitcheroo
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Howard Chu <hyc@symas.com>,
+        Linux Kernel Mailing List <Linux-Kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel Borkmann wrote:
-> On 06/08/2014 07:34 PM, Hannes Frederic Sowa wrote:
->> Please check this as it makes the code more complicated and I doubt it is worth it.
+On Sat, Jun 7, 2014 at 4:18 PM, Dave Airlie <airlied@gmail.com> wrote:
+> cc'ing list
 >
-> Agreed.
+> On 8 June 2014 04:08, Howard Chu <hyc@symas.com> wrote:
+>> On Asus NP56D, if you use vgaswitcheroo to turn off the discrete GPU, the
+>> kernel starts spewing these messages endlessly, until /var/log partition
+>> fills up:
+>>
+>> Jun  7 17:40:27 gamba kernel: [470008.702322] [drm:radeon_cs_parser_init]
+>> *ERROR* VM not ac
+>> tive on asic!
+>> Jun  7 17:40:27 gamba kernel: [470008.702325] [drm:radeon_cs_ioctl] *ERROR*
+>> Failed to initi
+>> alize parser !
+>> Jun  7 17:40:27 gamba kernel: [470008.702385] [drm:radeon_cs_parser_init]
+>> *ERROR* VM not ac
+>> tive on asic!
+>> Jun  7 17:40:27 gamba kernel: [470008.702389] [drm:radeon_cs_ioctl] *ERROR*
+>> Failed to initi
+>> alize parser !
+>>
+>> Turning the discrete GPU back on stops the stream of messages.
 
-Just to clarify, the goal is to be able to replace "prandom_u32() %
-range" all over the kernel with "prandom_u32_max(range)" and promise
-people that it's guaranteed to be just as good.
+Something is trying to access the GPU while it's off.  Make sure your
+version of mesa has this patch:
+http://cgit.freedesktop.org/mesa/mesa/commit/?id=cf0172d46ab940a691da6516057c81f28961482f
 
-My goal is a one-time cleanup to eliminate "prandom_u32() % range" so
-people will stop cutting and pasting it into new code.
+Alex
 
-(FIXME: Add a kdoc update on the subject.)
 
-It uglifies the random32 code for sure, but by encapsulating the cleverness
-it lets all the call sites be simpler and reduces arguments about the change.
-
-E.g. have a look at all the prandom_u32 calls in net/core/pktgen.c.
+>> --
+>>   -- Howard Chu
+>>   CTO, Symas Corp.           http://www.symas.com
+>>   Director, Highland Sun     http://highlandsun.com/hyc/
+>>   Chief Architect, OpenLDAP  http://www.openldap.org/project/
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
