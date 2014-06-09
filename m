@@ -1,90 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936581AbaFIJdT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 05:33:19 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59137 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S936263AbaFIJ1G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 05:27:06 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Mikulas Patocka <mpatocka@redhat.com>,
-        James Hogan <james.hogan@imgtec.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 110/146] metag: fix memory barriers
-Date: Mon,  9 Jun 2014 10:50:45 +0200
-Message-Id: <2578456a5961b2976892a51a165dab44b1114921.1402303821.git.jslaby@suse.cz>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
-References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
-In-Reply-To: <cover.1402303820.git.jslaby@suse.cz>
-References: <cover.1402303820.git.jslaby@suse.cz>
+	id S936260AbaFIJ1E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 05:27:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32910 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932777AbaFIJ0f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 05:26:35 -0400
+From: Vlastimil Babka <vbabka@suse.cz>
+To: David Rientjes <rientjes@google.com>, linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>, Vlastimil Babka <vbabka@suse.cz>,
+        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: [PATCH 05/10] mm, compaction: remember position within pageblock in free pages scanner
+Date: Mon,  9 Jun 2014 11:26:17 +0200
+Message-Id: <1402305982-6928-5-git-send-email-vbabka@suse.cz>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1402305982-6928-1-git-send-email-vbabka@suse.cz>
+References: <1402305982-6928-1-git-send-email-vbabka@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+Unlike the migration scanner, the free scanner remembers the beginning of the
+last scanned pageblock in cc->free_pfn. It might be therefore rescanning pages
+uselessly when called several times during single compaction. This might have
+been useful when pages were returned to the buddy allocator after a failed
+migration, but this is no longer the case.
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+This patch changes the meaning of cc->free_pfn so that if it points to a
+middle of a pageblock, that pageblock is scanned only from cc->free_pfn to the
+end. isolate_freepages_block() will record the pfn of the last page it looked
+at, which is then used to update cc->free_pfn.
 
-===============
+In the mmtests stress-highalloc benchmark, this has resulted in lowering the
+ratio between pages scanned by both scanners, from 2.5 free pages per migrate
+page, to 2.25 free pages per migrate page, without affecting success rates.
 
-commit 2425ce84026c385b73ae72039f90d042d49e0394 upstream.
-
-Volatile access doesn't really imply the compiler barrier. Volatile access
-is only ordered with respect to other volatile accesses, it isn't ordered
-with respect to general memory accesses. Gcc may reorder memory accesses
-around volatile access, as we can see in this simple example (if we
-compile it with optimization, both increments of *b will be collapsed to
-just one):
-
-void fn(volatile int *a, long *b)
-{
-	(*b)++;
-	*a = 10;
-	(*b)++;
-}
-
-Consequently, we need the compiler barrier after a write to the volatile
-variable, to make sure that the compiler doesn't reorder the volatile
-write with something else.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Acked-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: David Rientjes <rientjes@google.com>
 ---
- arch/metag/include/asm/barrier.h | 3 +++
- 1 file changed, 3 insertions(+)
+ mm/compaction.c | 33 ++++++++++++++++++++++++++++-----
+ 1 file changed, 28 insertions(+), 5 deletions(-)
 
-diff --git a/arch/metag/include/asm/barrier.h b/arch/metag/include/asm/barrier.h
-index c90bfc6bf648..e355a4c10968 100644
---- a/arch/metag/include/asm/barrier.h
-+++ b/arch/metag/include/asm/barrier.h
-@@ -15,6 +15,7 @@ static inline void wr_fence(void)
- 	volatile int *flushptr = (volatile int *) LINSYSEVENT_WR_FENCE;
- 	barrier();
- 	*flushptr = 0;
-+	barrier();
- }
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 83f72bd..58dfaaa 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -297,7 +297,7 @@ static bool suitable_migration_target(struct page *page)
+  * (even though it may still end up isolating some pages).
+  */
+ static unsigned long isolate_freepages_block(struct compact_control *cc,
+-				unsigned long blockpfn,
++				unsigned long *start_pfn,
+ 				unsigned long end_pfn,
+ 				struct list_head *freelist,
+ 				bool strict)
+@@ -306,6 +306,7 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+ 	struct page *cursor, *valid_page = NULL;
+ 	unsigned long flags;
+ 	bool locked = false;
++	unsigned long blockpfn = *start_pfn;
  
- #else /* CONFIG_METAG_META21 */
-@@ -35,6 +36,7 @@ static inline void wr_fence(void)
- 	*flushptr = 0;
- 	*flushptr = 0;
- 	*flushptr = 0;
-+	barrier();
- }
+ 	cursor = pfn_to_page(blockpfn);
  
- #endif /* !CONFIG_METAG_META21 */
-@@ -68,6 +70,7 @@ static inline void fence(void)
- 	volatile int *flushptr = (volatile int *) LINSYSEVENT_WR_ATOMIC_UNLOCK;
- 	barrier();
- 	*flushptr = 0;
-+	barrier();
- }
- #define smp_mb()        fence()
- #define smp_rmb()       fence()
+@@ -314,6 +315,9 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+ 		int isolated, i;
+ 		struct page *page = cursor;
+ 
++		/* Record how far we have got within the block */
++		*start_pfn = blockpfn;
++
+ 		/*
+ 		 * Periodically drop the lock (if held) regardless of its
+ 		 * contention, to give chance to IRQs. Abort async compaction
+@@ -424,6 +428,9 @@ isolate_freepages_range(struct compact_control *cc,
+ 	LIST_HEAD(freelist);
+ 
+ 	for (pfn = start_pfn; pfn < end_pfn; pfn += isolated) {
++		/* Protect pfn from changing by isolate_freepages_block */
++		unsigned long isolate_start_pfn = pfn;
++
+ 		if (!pfn_valid(pfn) || cc->zone != page_zone(pfn_to_page(pfn)))
+ 			break;
+ 
+@@ -434,8 +441,8 @@ isolate_freepages_range(struct compact_control *cc,
+ 		block_end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
+ 		block_end_pfn = min(block_end_pfn, end_pfn);
+ 
+-		isolated = isolate_freepages_block(cc, pfn, block_end_pfn,
+-						   &freelist, true);
++		isolated = isolate_freepages_block(cc, &isolate_start_pfn,
++						block_end_pfn, &freelist, true);
+ 
+ 		/*
+ 		 * In strict mode, isolate_freepages_block() returns 0 if
+@@ -774,6 +781,7 @@ static void isolate_freepages(struct zone *zone,
+ 				block_end_pfn = block_start_pfn,
+ 				block_start_pfn -= pageblock_nr_pages) {
+ 		unsigned long isolated;
++		unsigned long isolate_start_pfn;
+ 
+ 		/*
+ 		 * This can iterate a massively long zone without finding any
+@@ -807,12 +815,27 @@ static void isolate_freepages(struct zone *zone,
+ 			continue;
+ 
+ 		/* Found a block suitable for isolating free pages from */
+-		cc->free_pfn = block_start_pfn;
+-		isolated = isolate_freepages_block(cc, block_start_pfn,
++		isolate_start_pfn = block_start_pfn;
++
++		/*
++		 * If we are restarting the free scanner in this block, do not
++		 * rescan the beginning of the block
++		 */
++		if (cc->free_pfn < block_end_pfn)
++			isolate_start_pfn = cc->free_pfn;
++
++		isolated = isolate_freepages_block(cc, &isolate_start_pfn,
+ 					block_end_pfn, freelist, false);
+ 		nr_freepages += isolated;
+ 
+ 		/*
++		 * Remember where the free scanner should restart next time.
++		 * This will point to the last page of pageblock we just
++		 * scanned, if we scanned it fully.
++		 */
++		cc->free_pfn = isolate_start_pfn;
++
++		/*
+ 		 * Set a flag that we successfully isolated in this pageblock.
+ 		 * In the next loop iteration, zone->compact_cached_free_pfn
+ 		 * will not be updated and thus it will effectively contain the
 -- 
-1.9.3
+1.8.4.5
 
