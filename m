@@ -1,150 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754188AbaFIIMH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 04:12:07 -0400
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:44527 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753057AbaFIIME (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 04:12:04 -0400
-X-Sasl-enc: foq+wWgiG4z9xbNwvR5nizZcxVUBwM9ibBwOo63+dy6C 1402301522
-Message-ID: <1402301519.2775.47.camel@perseus.fritz.box>
-Subject: Re: [PATCH 2/2] fs: proc/stat: use usual seq_file ops rather than
- single_open
-From: Ian Kent <raven@themaw.net>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Righi <andrea@betterlinux.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org,
-        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
-        Thorsten Diehl <thorsten.diehl@de.ibm.com>,
-        "Elliott, Robert (Server Storage)" <Elliott@hp.com>
-Date: Mon, 09 Jun 2014 16:11:59 +0800
-In-Reply-To: <20140528153704.b2a3f46dc39ebf8f681d528a@linux-foundation.org>
-References: <20140521122521.GB7471@osiris>
-	 <20140521143229.GA32011@infradead.org> <20140528085841.GA4219@osiris>
-	 <20140528090153.GC4219@osiris>
-	 <20140528153704.b2a3f46dc39ebf8f681d528a@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754257AbaFIIRJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 04:17:09 -0400
+Received: from mga14.intel.com ([192.55.52.115]:35659 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752475AbaFIIRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 04:17:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="352319391"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Grant Likely <grant.likely@linaro.org>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: [Patch V4 00/42] use irqdomain to dynamically allocate IRQ for IOAPIC
+Date: Mon,  9 Jun 2014 16:19:29 +0800
+Message-Id: <1402302011-23642-1-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-05-28 at 15:37 -0700, Andrew Morton wrote:
-> On Wed, 28 May 2014 11:01:53 +0200 Heiko Carstens <heiko.carstens@de.ibm.com> wrote:
-> 
-> > Now, /proc/stat uses single_open() for showing information. This means
-> > the all data will be gathered and buffered once to a (big) buf.
-> > 
-> > Now, /proc/stat shows stats per cpu and stats per IRQs. To get information
-> > in once-shot, it allocates a big buffer (until KMALLOC_MAX_SIZE).
-> > 
-> > Eric Dumazet reported that the bufsize calculation doesn't take
-> > the numner of IRQ into account and the information cannot be
-> > got in one-shot. (By this, seq_read() will allocate buffer again
-> > and read the whole data gain...)
-> > 
-> > This patch changes /proc/stat to use seq_open() rather than single_open()
-> > and provides  ->start(), ->next(), ->stop(), ->show().
-> > 
-> > By this, /proc/stat will not need to take care of size of buffer.
-> > 
-> > [heiko.carstens@de.ibm.com]: This is the forward port of a patch
-> > from KAMEZAWA Hiroyuki (https://lkml.org/lkml/2012/1/23/41).
-> > I added a couple of simple changes like e.g. that the cpu iterator
-> > handles 32 cpus in a batch to avoid lots of iterations.
-> > 
-> > With this patch it should not happen anymore that reading /proc/stat
-> > fails because of a failing high order memory allocation.
-> 
-> So this deletes the problematic allocation which [1/2] kind-of fixed,
-> yes?
-> 
-> I agree with Ian - there's a hotplugging race.  And [1/2] doesn't do
-> anything to address the worst-case allocation size.  So I think we may
-> as well do this all in a single patch.
-> 
-> Without having looked closely at the code I worry a bit about the
-> effects.  /proc/pid/stat is a complex thing and its contents will vary
-> in strange ways as the things it is reporting on undergo concurrent
-> changes.  This patch will presumably replace one set of bizarre
-> behaviour with a new set of bizarre behaviour and there may be
-> unforseen consequences to established userspace.
-> 
-> So we're going to need a lot of testing and a lot of testing time to
-> identify issues and weed them out.
-> 
-> So..  can we take this up for 3.16-rc1?  See if we can get some careful
-> review done then and test it for a couple of months?
-> 
-> Meanwhile, the changelog looks a bit hastily thrown together - some
-> smoothing would be nice, and perhaps some work spent identifying
-> possible behavioural changes.  Timing changes, locking canges, effects
-> of concurrent fork/exit activity etc?
-> 
+On x86 platforms, IRQ number are statically allocated to IOAPIC pins at boot.
+There are two issues with this design. First it causes trouble to IOAPIC
+hotplug because we need to allocate a block of IRQ numbers for each IOAPIC.
+Second it may waste IRQ nubmers even if some IOAPIC pins are not used because
+IRQ numbers are statically assigned.
 
-Umm ... I didn't expect this to turn into such a rant, apologies in
-advance.
- 
-Certainly using the usual seq_file ops is desirable in the long run and
-that change should be worked on by those that maintain this area of code
-but, as Andrew says, it's too large a change to put in without
-considerable testing.
+This patchset tries to enable dynamic IRQ number allocation for IOAPIC
+by adopting the irqdomain framework, it solves the two issues mentioned
+above. It also simplifies the IOAPIC driver by consolidating ways to
+program IOAPIC pins with the irqdomain map interface.
 
-Now the problem has been exposed by a change which sets the number of
-CPUs to the maximum number the architecture (s390) can have, 256, when
-no value has been specified and the kernel default configuration is used
-rather than 32 when hotplug is not set or 64 when it is.
+We will enhance the IOAPIC driver core to support ACPI based IOAPIC hotplug
+once the IOAPIC driver has been converted to irqdomain.
 
-The allocation problem doesn't occur when the number of CPUs is set to
-the previous default of 64, even for low end systems with 2 CPUs and 2G
-RAM (like the one for which this problem was reported), but becomes a
-problem when the number of CPUs is set to 256 on these systems.
+This patchset applies to tip/irq/core and you may pull from
+https://github.com/jiangliu/linux.git ioapic/irqdomain_v4
 
-Also, I believe the s390 maintainers are committed to keeping the the
-default configured number of CPUs at 256.
+The patchset has been tested on a two socket 64 bit Intel platforms with:
+1) ACPI and mpparse enabled (boot successfully)
+2) Mpparse enabled with ACPI disabled (boot successfully)
+3) ACPI enabled with Mpparse disabled (boot successfully)
+4) boot parameter "pci=nomsi"
+5) boot parameter "acpi=noirq"
+6) boot parameter "pci=noacpi"
+7) UP mode (SMP disabled)
 
-So the actual problem is the heuristic used to calculate a initial
-buffer size not accounting for a configured number of CPUs much greater
-than the hardware can sensibly accommodate.
+It has also been tested on an one socket laptop with 32bit Ubuntu with:
+1) ACPI and mpparse enabled (boot successfully)
+2) Mpparse enabled with ACPI disabled (boot successfully)
+3) ACPI enabled with Mpparse disabled (boot successfully)
+4) boot parameter "pci=nomsi"
+5) boot parameter "acpi=noirq"
+6) boot parameter "pci=noacpi"
+7) UP mode (SMP disabled)
+8) UP mode with IOAPIC disabled
 
-If we assume that the current implementation functions correctly when
-the buffer overflows, ie. doubles the allocation size and restarts, then
-an interim solution to the problem comes down to not much more than what
-is in patch 1 above.
+It also builds successfully (but without booting due to hardware resource
+constraints) for 32 bit platforms with following configuraitons:
+1) SFI enabled
+2) devicetree (CE4100) enabled
 
-Looking at the current heuristic allocation sizes, without taking the
-allocation for irqs into account we get:
-cpus: 32      size: 5k
-cpus: 64      size: 9k
-cpus: 128     size: 17k
-cpus: 256     size: 33k
+V3->V4
+1) simplify interfaces/implementation to enable irqdomain for IOAPIC
+2) clean up usage of NR_IRQS_LEGACY
+3) refine support of CE4100
+4) address review comments from last round of review
 
-I don't know how many irqs need to be accounted for or if that will make
-a difference to my comments below. Someone else will need to comment on
-that.
+V2->V3
+1) Implement irqdomain unmap() interface and free IRQ when it's not used
+2) Fix posssible conflicts with native and PV Xen IRQ management
+3) Fix build errors on CE4100
+4) Code quality and readability improvement
 
-We know (from the order 4 allocation fail) that with 256 CPUs kmalloc()
-is looking for a 64k slab chunk IIUC and on low memory systems will
-frequently fail to get it.
+V1->V2
+1) Rebase to tip/irq/core
+2) reorder patches to put bugfixes at the head
+3) fix bug in handling shared ISA IRQs
+4) refine commit messages
 
-And for the previous default of 64 CPUs kmalloc() would be looking for a
-16k slab which we have no evidence it doesn't always get even on low end
-systems.
+Patch 1 is simple bugfix for MSI.
 
-So why even use a heuristic calculation, since it can be quite wasteful
-anyway or, as in this case badly wrong, why not just allocate 8k or 16k
-in the open every time knowing that if the actual number of CPUs is
-large we can reasonably expect the system RAM to be correspondingly
-large which should avoid allocation failures upon a read retry.
+Patch 2-20 are trivial code improvements, bugfixes and preparation.
 
-Comments please?
+Patch 21-28 enable basic irqdomain support and IRQ number dynamic
+allocation.
 
-Ian
+Patch 29-33 consoldate the way to program IOAPIC pins by using
+irqdomain map() interface.
+
+Patch 34-35 cleans up unused interfaces and functions in IOAPIC driver.
+
+Patch 36-41 implement irqdoamin unmap() interfaces and free IRQ when
+it's not used
+
+Patch 42 is a simple clean up
+
+Tests and comments are warmly welcomed!
+
+Jiang Liu (42):
+  x86, irq: update high address field when updating affinity for MSI
+    IRQ
+  x86, mpparse: use pr_lvl() helper utilities to replace
+    printk(KERN_LVL)
+  x86, mpparse: simplify arch/x86/include/asm/mpspec.h
+  x86, acpi: reorganize code to avoid forward declaration in boot.c
+  x86, PCI, ACPI: use kmalloc_node() to optimize for performance
+  x86, acpi, irq: kill static function irq_to_gsi()
+  x86, ACPI, trivial: minor improvements to arch/x86/kernel/acpi/boot.c
+  x86, ACPI, irq: enhance error handling in function
+    acpi_register_gsi()
+  x86, ACPI, irq: fix possible eror in GSI to IRQ mapping for legacy
+    IRQ
+  x86, irq, trivial: minor improvements of IRQ related code
+  x86, ioapic: kill unused global variable timer_through_8259
+  x86, ioapic: kill static variable nr_irqs_gsi
+  x86, ioapic: introduce helper utilities to walk ioapics and pins
+  x86, ioapic: use irq_cfg() instead of irq_get_chip_data() for better
+    readability
+  x86, irq: reorganize IO_APIC_get_PCI_irq_vector() to prepare for
+    irqdomain
+  x86, irq: introduce some helper utilities to improve readability
+  ce4100, irq: make CE4100 depend on CONFIG_X86_IO_APIC
+  ce4100, irq: do not set legacy_pic to null_legacy_pic
+  x86, irq: count legacy IRQs by legacy_pic->nr_legacy_irqs instead of
+    NR_IRQS_LEGACY
+  x86, irq: simplify arch_early_irq_init()
+  x86, ACPI, irq: consolidate algorithm of mapping (ioapic, pin) to IRQ
+    number
+  x86, irq, ACPI: change __acpi_register_gsi to return IRQ number
+    instead of GSI
+  x86, irq: introduce mechanisms to support dynamically allocate IRQ
+    for IOAPIC
+  x86, irq: enhance mp_register_ioapic() to support irqdomain
+  x86, ACPI, irq: provide basic irqdomain support
+  x86, mpparse, irq: provide basic irqdomain support
+  x86, SFI, irq: provide basic irqdomain support
+  x86, devicetree, irq: use common mechanism to support irqdomain
+  x86, irq: introduce two helper functions to support irqdomain map
+    operation
+  x86, irq, ACPI: use common irqdomain map interface to program IOAPIC
+    pins
+  x86, irq, mpparse: use common irqdomain map interface to program
+    IOAPIC pins
+  x86, irq, SFI: use common irqdomain map interface to program IOAPIC
+    pins
+  x86, irq, devicetree: use common irqdomain map interface to program
+    IOAPIC pins
+  x86, irq: clean up unused IOAPIC interface
+  x86, irq: simplify the way to handle ISA IRQ
+  genirq: export irq_domain_disassociate() to architecture interrupt
+    drivers
+  x86, irq: introduce helper functions to release IOAPIC pin
+  x86, irq, ACPI: release IOAPIC pin when PCI device is disabled
+  x86, irq, mpparse: release IOAPIC pin when PCI device is disabled
+  x86, irq, SFI: release IOAPIC pin when PCI device is disabled
+  x86, irq, devicetree: release IOAPIC pin when PCI device is disabled
+  x86, irq: clean up irqdomain transition code
+
+ arch/x86/Kconfig                  |    2 +
+ arch/x86/include/asm/apic.h       |    4 +-
+ arch/x86/include/asm/hardirq.h    |    3 -
+ arch/x86/include/asm/i8259.h      |    5 +
+ arch/x86/include/asm/io_apic.h    |   56 +--
+ arch/x86/include/asm/mpspec.h     |   13 -
+ arch/x86/include/asm/prom.h       |    2 -
+ arch/x86/kernel/acpi/boot.c       |  400 +++++++++----------
+ arch/x86/kernel/apic/apic.c       |    2 +-
+ arch/x86/kernel/apic/io_apic.c    |  779 +++++++++++++++++++++++--------------
+ arch/x86/kernel/devicetree.c      |  211 ++++------
+ arch/x86/kernel/irqinit.c         |   12 +-
+ arch/x86/kernel/mpparse.c         |  108 ++---
+ arch/x86/pci/acpi.c               |    6 +-
+ arch/x86/pci/intel_mid_pci.c      |   27 +-
+ arch/x86/pci/irq.c                |   15 +-
+ arch/x86/pci/xen.c                |    7 +-
+ arch/x86/platform/ce4100/ce4100.c |   11 +-
+ arch/x86/platform/intel-mid/sfi.c |   56 ++-
+ arch/x86/platform/sfi/sfi.c       |   10 +-
+ drivers/acpi/pci_irq.c            |    3 +-
+ include/linux/irqdomain.h         |    2 +
+ kernel/irq/irqdomain.c            |    2 +-
+ 23 files changed, 919 insertions(+), 817 deletions(-)
+
+-- 
+1.7.10.4
 
