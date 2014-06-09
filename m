@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964913AbaFIWrH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 18:47:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57256 "EHLO
+	id S934461AbaFIWrD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 18:47:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57187 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933896AbaFIWqP (ORCPT
+	with ESMTP id S934332AbaFIWqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:46:15 -0400
+	Mon, 9 Jun 2014 18:46:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sergey Popovich <popovich_sergei@mail.ru>,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [PATCH 3.10 40/40] netfilter: Fix potential use after free in ip6_route_me_harder()
-Date: Mon,  9 Jun 2014 15:49:11 -0700
-Message-Id: <20140609224840.511030550@linuxfoundation.org>
+        Robert Richter <rric@kernel.org>, Will Deacon <will.deacon@arm.com>,
+        Weng Meiling <wengmeiling.weng@huawei.com>
+Subject: [PATCH 3.10 39/40] ARM: perf: hook up perf_sample_event_took around pmu irq handling
+Date: Mon,  9 Jun 2014 15:49:10 -0700
+Message-Id: <20140609224840.483198765@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140609224839.127615063@linuxfoundation.org>
 References: <20140609224839.127615063@linuxfoundation.org>
@@ -29,42 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sergey Popovich <popovich_sergei@mail.ru>
+From: Will Deacon <will.deacon@arm.com>
 
-commit a8951d5814e1373807a94f79f7ccec7041325470 upstream.
+commit 5f5092e72cc25a6a5785308270e0085b2b2772cc upstream.
 
-Dst is released one line before we access it again with dst->error.
+Since we indirect all of our PMU IRQ handling through a dispatcher, it's
+trivial to hook up perf_sample_event_took to prevent applications such
+as oprofile from generating interrupt storms due to an unrealisticly
+low sample period.
 
-Fixes: 58e35d147128 netfilter: ipv6: propagate routing errors from
-ip6_route_me_harder()
-
-Signed-off-by: Sergey Popovich <popovich_sergei@mail.ru>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Reported-by: Robert Richter <rric@kernel.org>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Cc: Weng Meiling <wengmeiling.weng@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/ipv6/netfilter.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ arch/arm/kernel/perf_event.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
---- a/net/ipv6/netfilter.c
-+++ b/net/ipv6/netfilter.c
-@@ -30,13 +30,15 @@ int ip6_route_me_harder(struct sk_buff *
- 		.daddr = iph->daddr,
- 		.saddr = iph->saddr,
- 	};
-+	int err;
+--- a/arch/arm/kernel/perf_event.c
++++ b/arch/arm/kernel/perf_event.c
+@@ -303,11 +303,18 @@ static irqreturn_t armpmu_dispatch_irq(i
+ 	struct arm_pmu *armpmu = (struct arm_pmu *) dev;
+ 	struct platform_device *plat_device = armpmu->plat_device;
+ 	struct arm_pmu_platdata *plat = dev_get_platdata(&plat_device->dev);
++	int ret;
++	u64 start_clock, finish_clock;
  
- 	dst = ip6_route_output(net, skb->sk, &fl6);
--	if (dst->error) {
-+	err = dst->error;
-+	if (err) {
- 		IP6_INC_STATS(net, ip6_dst_idev(dst), IPSTATS_MIB_OUTNOROUTES);
- 		LIMIT_NETDEBUG(KERN_DEBUG "ip6_route_me_harder: No more route.\n");
- 		dst_release(dst);
--		return dst->error;
-+		return err;
- 	}
++	start_clock = sched_clock();
+ 	if (plat && plat->handle_irq)
+-		return plat->handle_irq(irq, dev, armpmu->handle_irq);
++		ret = plat->handle_irq(irq, dev, armpmu->handle_irq);
+ 	else
+-		return armpmu->handle_irq(irq, dev);
++		ret = armpmu->handle_irq(irq, dev);
++	finish_clock = sched_clock();
++
++	perf_sample_event_took(finish_clock - start_clock);
++	return ret;
+ }
  
- 	/* Drop old route. */
+ static void
 
 
