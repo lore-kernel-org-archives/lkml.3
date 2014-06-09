@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934366AbaFIWqZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 18:46:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56884 "EHLO
+	id S934384AbaFIWqa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 18:46:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57010 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933885AbaFIWpq (ORCPT
+	with ESMTP id S933964AbaFIWpv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:45:46 -0400
+	Mon, 9 Jun 2014 18:45:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.14 54/78] ALSA: hda/realtek - Fix COEF widget NID for ALC260 replacer fixup
-Date: Mon,  9 Jun 2014 15:48:34 -0700
-Message-Id: <20140609224815.087084000@linuxfoundation.org>
+        Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 69/78] mm: rmap: fix use-after-free in __put_anon_vma
+Date: Mon,  9 Jun 2014 15:48:49 -0700
+Message-Id: <20140609224815.548589111@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140609224813.282275135@linuxfoundation.org>
 References: <20140609224813.282275135@linuxfoundation.org>
@@ -28,35 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
 
-commit 192a98e280e560510a62aca8cfa83b4ae7c095bb upstream.
+commit 624483f3ea82598ab0f62f1bdb9177f531ab1892 upstream.
 
-The conversion to a fixup table for Replacer model with ALC260 in
-commit 20f7d928 took the wrong widget NID for COEF setups.  Namely,
-NID 0x1a should have been used instead of NID 0x20, which is the
-common node for all Realtek codecs but ALC260.
+While working address sanitizer for kernel I've discovered
+use-after-free bug in __put_anon_vma.
 
-Fixes: 20f7d928fa6e ('ALSA: hda/realtek - Replace ALC260 model=replacer with the auto-parser')
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+For the last anon_vma, anon_vma->root freed before child anon_vma.
+Later in anon_vma_free(anon_vma) we are referencing to already freed
+anon_vma->root to check rwsem.
+
+This fixes it by freeing the child anon_vma before freeing
+anon_vma->root.
+
+Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ mm/rmap.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -1664,8 +1664,8 @@ static const struct hda_fixup alc260_fix
- 	[ALC260_FIXUP_REPLACER] = {
- 		.type = HDA_FIXUP_VERBS,
- 		.v.verbs = (const struct hda_verb[]) {
--			{ 0x20, AC_VERB_SET_COEF_INDEX, 0x07 },
--			{ 0x20, AC_VERB_SET_PROC_COEF,  0x3050 },
-+			{ 0x1a, AC_VERB_SET_COEF_INDEX, 0x07 },
-+			{ 0x1a, AC_VERB_SET_PROC_COEF,  0x3050 },
- 			{ }
- 		},
- 		.chained = true,
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -1554,10 +1554,9 @@ void __put_anon_vma(struct anon_vma *ano
+ {
+ 	struct anon_vma *root = anon_vma->root;
+ 
++	anon_vma_free(anon_vma);
+ 	if (root != anon_vma && atomic_dec_and_test(&root->refcount))
+ 		anon_vma_free(root);
+-
+-	anon_vma_free(anon_vma);
+ }
+ 
+ static struct anon_vma *rmap_walk_anon_lock(struct page *page,
 
 
