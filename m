@@ -1,134 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932530AbaFIIax (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 04:30:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60129 "EHLO mx2.suse.de"
+	id S1754903AbaFIISq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 04:18:46 -0400
+Received: from mga11.intel.com ([192.55.52.93]:14069 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932311AbaFIIaq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 04:30:46 -0400
-Date: Mon, 9 Jun 2014 10:30:42 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+	id S1754845AbaFIISY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 04:18:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="352319863"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Grant Likely <grant.likely@linaro.org>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        x86@kernel.org
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>,
-        Roman Gushchin <klamm@yandex-team.ru>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: [PATCH 2/2] memcg: Allow hard guarantee mode for low limit
- reclaim
-Message-ID: <20140609083042.GB7144@dhcp22.suse.cz>
-References: <20140606144421.GE26253@dhcp22.suse.cz>
- <1402066010-25901-1-git-send-email-mhocko@suse.cz>
- <1402066010-25901-2-git-send-email-mhocko@suse.cz>
- <20140606152914.GA14001@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140606152914.GA14001@htj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: [Patch V4 09/42] x86, ACPI, irq: fix possible eror in GSI to IRQ mapping for legacy IRQ
+Date: Mon,  9 Jun 2014 16:19:38 +0800
+Message-Id: <1402302011-23642-10-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1402302011-23642-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1402302011-23642-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 06-06-14 11:29:14, Tejun Heo wrote:
-> Hello, Michal.
-> 
-> On Fri, Jun 06, 2014 at 04:46:50PM +0200, Michal Hocko wrote:
-> > +choice
-> > +	prompt "Memory Resource Controller reclaim protection"
-> > +	depends on MEMCG
-> > +	help
-> 
-> Why is this necessary?
+A default identity mapping between GSI and IRQ is built for legacy IRQs.
+So when overriding the default identity mapping for legacy IRQs,
+we should also invalidate isa_irq_to_gsi[gsi] when setting
+isa_irq_to_gsi[irq] = gsi.  Otherwise there may be two entries with the
+same GSI in the isa_irq_to_gsi array, and acpi_isa_irq_to_gsi() may give
+wrong result.
 
-It allows user/admin to set the default behavior.
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ arch/x86/kernel/acpi/boot.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-> - This doesn't affect boot.
-> 
-> - memcg requires runtime config *anyway*.
-> 
-> - The config is inherited from the parent, so the default flipping
->   isn't exactly difficult.
-> 
-> Please drop the kconfig option.
-
-How do you propose to tell the default then? Only at the runtime?
-I really do not insist on the kconfig. I find it useful for a)
-documentation purpose b) easy way to configure the default.
-
-> > +static int mem_cgroup_write_reclaim_strategy(struct cgroup_subsys_state *css, struct cftype *cft,
-> > +			    char *buffer)
-> > +{
-> > +	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
-> > +	int ret = 0;
-> > +
-> > +	if (!strncmp(buffer, "low_limit_guarantee",
-> > +				sizeof("low_limit_guarantee"))) {
-> > +		memcg->hard_low_limit = true;
-> > +	} else if (!strncmp(buffer, "low_limit_best_effort",
-> > +				sizeof("low_limit_best_effort"))) {
-> > +		memcg->hard_low_limit = false;
-> > +	} else
-> > +		ret = -EINVAL;
-> > +
-> > +	return ret;
-> > +}
-> 
-> So, ummm, this raises a big red flag for me.  You're now implementing
-> two behaviors in a mostly symmetric manner to soft/hard limits but
-> choosing a completely different scheme in how they're configured
-> without any rationale.
-
-So what is your suggestion then? Using a global setting? Using a
-separate knob? Something completely different?
-
-> * Are you sure soft and hard guarantees aren't useful when used in
->   combination?  If so, why would that be the case?
-
-This was a call from Google to have per-memcg setup AFAIR. Using
-different reclaim protection on the global case vs. limit reclaim makes
-a lot of sense to me. If this is a major obstacle then I am OK to drop
-it and only have a global setting for now.
-
-> * We have pressure monitoring interface which can be used for soft
->   limit pressure monitoring. 
-
-Which one is that? I only know about oom_control triggered by the hard
-limit pressure.
-
->   How should breaching soft guarantee be
->   factored into that?  There doesn't seem to be any way of notifying
->   that at the moment?  Wouldn't we want that to be integrated into the
->   same mechanism?
-
-Yes, there is. We have a counter in memory.stat file which tells how
-many times the limit has been breached.
-
-> What scares me the most is that you don't even seem to have noticed
-> the asymmetry and are proposing userland-facing interface without
-> actually thinking things through.  This is exactly how we've been
-> getting into trouble.
-
-This has been discussed up and down for the last _two_ years. I have
-considered other options how to provide a very _useful_ feature users
-are calling for. There is even general consensus among developers that
-the feature is desirable and that the two modes (soft/hard) memory
-protection are needed. Yet I would _really_ like to hear any
-suggestion to get unstuck. It is far from useful to come and Nack this
-_again_ without providing any alternative suggestions.
-
-> For now, for everything.
-> 
->  Nacked-by: Tejun Heo <tj@kernel.org>
-> 
-> Thanks.
-> 
-> -- 
-> tejun
-
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index f201579cd0df..d6493863bd4b 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -366,6 +366,13 @@ static void __init mp_override_legacy_irq(u8 bus_irq, u8 polarity, u8 trigger,
+ 
+ 	mp_save_irq(&mp_irq);
+ 
++	/*
++	 * Reset default identity mapping if gsi is also an legacy IRQ,
++	 * otherwise there will be more than one entry with the same GSI
++	 * and acpi_isa_irq_to_gsi() may give wrong result.
++	 */
++	if (gsi < NR_IRQS_LEGACY && isa_irq_to_gsi[gsi] == gsi)
++		isa_irq_to_gsi[gsi] = ACPI_INVALID_GSI;
+ 	isa_irq_to_gsi[bus_irq] = gsi;
+ }
+ 
+@@ -621,7 +628,8 @@ EXPORT_SYMBOL_GPL(acpi_gsi_to_irq);
+ 
+ int acpi_isa_irq_to_gsi(unsigned isa_irq, u32 *gsi)
+ {
+-	if (isa_irq < NR_IRQS_LEGACY) {
++	if (isa_irq < NR_IRQS_LEGACY &&
++	    isa_irq_to_gsi[isa_irq] != ACPI_INVALID_GSI) {
+ 		*gsi = isa_irq_to_gsi[isa_irq];
+ 		return 0;
+ 	}
 -- 
-Michal Hocko
-SUSE Labs
+1.7.10.4
+
