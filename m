@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932200AbaFIVuu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 17:50:50 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:37283 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932143AbaFIVuo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 17:50:44 -0400
-Message-ID: <53962C32.2040003@codeaurora.org>
-Date: Mon, 09 Jun 2014 14:50:42 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S932129AbaFIV4M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 17:56:12 -0400
+Received: from mga14.intel.com ([192.55.52.115]:59528 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751388AbaFIV4K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 17:56:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="352713536"
+Message-ID: <53962C4D.30600@intel.com>
+Date: Mon, 09 Jun 2014 14:51:09 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Michal Marek <mmarek@suse.cz>
-CC: Julia Lawall <julia.lawall@lip6.fr>, linux-kernel@vger.kernel.org,
-        Mitchel Humpherys <mitchelh@codeaurora.org>,
-        Gilles Muller <Gilles.Muller@lip6.fr>,
-        Nicolas Palix <nicolas.palix@imag.fr>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
-Subject: Re: [PATCH v2] coccinelle: Check for missing NULL terminators in
- of_device_id tables
-References: <1401213858-31950-1-git-send-email-sboyd@codeaurora.org> <alpine.DEB.2.02.1406031208380.2036@localhost6.localdomain6> <538E09C1.30200@codeaurora.org> <alpine.DEB.2.02.1406032013150.2009@localhost6.localdomain6> <538E119D.8010304@codeaurora.org> <alpine.DEB.2.02.1406032022540.2009@localhost6.localdomain6> <53962B54.8030909@suse.cz>
-In-Reply-To: <53962B54.8030909@suse.cz>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+CC: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/7] mm/pagewalk: replace mm_walk->skip with more general
+ mm_walk->control
+References: <1402095520-10109-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1402095520-10109-3-git-send-email-n-horiguchi@ah.jp.nec.com> <539612A8.8080303@intel.com> <1402349339-n9udlcv2@n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1402349339-n9udlcv2@n-horiguchi@ah.jp.nec.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/14 14:47, Michal Marek wrote:
-> Dne 3.6.2014 20:25, Julia Lawall napsal(a):
->> From: Stephen Boyd <sboyd@codeaurora.org>
->>
->> Failure to terminate an of_device_id table can lead to confusing
->> failures depending on where the compiler places the array. Add a
->> check to make sure these tables are terminated. Thanks to Mitchel
->> Humpherys for coming up with the pattern initially.
->>
->> Cc: Mitchel Humpherys <mitchelh@codeaurora.org>
->> Cc: Julia Lawall <Julia.Lawall@lip6.fr>
->> Cc: Gilles Muller <Gilles.Muller@lip6.fr>
->> Cc: Nicolas Palix <nicolas.palix@imag.fr>
->> Cc: Grant Likely <grant.likely@linaro.org>
->> Cc: Rob Herring <robh+dt@kernel.org>
->> Cc: devicetree@vger.kernel.org
->> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
->> Acked-by: Grant Likely <grant.likely@linaro.org>
->> Signed-off-by: Julia Lawall <julia.lawall@lip6.fr>
->>
->> ---
->>
->> v3: Removed unneeded rule bad_of_table.  Placed * in context rule on the 
->> closing brace; putting it on the field caused all fields to be marked.
->>
->> v4: corrected authorship
->>
->>  scripts/coccinelle/misc/of_table.cocci |   62 +++++++++++++++++++++++++++++++++
->>  1 file changed, 62 insertions(+)
-> Applied to kbuild.git#misc, thanks. BTW, what is so special about of
-> device drivers? Shouldn't we check for missing sentinels in all kinds of
-> device tables?
->
+On 06/09/2014 02:29 PM, Naoya Horiguchi wrote:
+>   static int subpage_walk_pmd_entry(pmd_t *pmd, unsigned long addr,
+>                                    unsigned long end, struct mm_walk *walk)
+>   {
+>          struct vm_area_struct *vma = walk->vma;
+> +        spin_unlock(walk->ptl);
+>          split_huge_page_pmd(vma, addr, pmd);
+> +        spin_lock(walk->ptl);
+>          return 0;
+>   }
+> 
+> I thought it's straightforward but dirty, but my workaround in this patch
+> was dirty too. So I'm fine to give up the control stuff and take this one.
 
-Yes the rule should probably be expanded to cover more tables. I guess
-this is just more noticeable because a driver may match some device that
-it isn't supposed to match and start writing random bits to registers it
-shouldn't be, causing the system to hang.
+I think there's essentially no way to fix this with the current
+handlers.  This needs the locks to not be held, and everything else
+needs them held so that they don't have to do it themselves.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Instead of a flag to control the walk directly, we could have one that
+controls whether the locks are held, although that seems quite prone to
+breakage.
 
+I think this is rare-enough code that we can live with the hack that
+you've got above, although we need to run it by the ppc folks.
