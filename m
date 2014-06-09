@@ -1,134 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932431AbaFIM6Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 08:58:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36282 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752679AbaFIM6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 08:58:14 -0400
-Date: Mon, 9 Jun 2014 13:58:06 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: zhdxzx@sina.com, Felipe Contreras <felipe.contreras@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>, dhillf <dhillf@gmail.com>,
-        "hillf.zj" <hillf.zj@alibaba-inc.com>
-Subject: Re: Interactivity regression since v3.11 in mm/vmscan.c
-Message-ID: <20140609125806.GN10819@suse.de>
-References: <20140607123518.88983301D2@webmail.sinamail.sina.com.cn>
- <CA+55aFzRWZNt2AqdVzQpCChB1UJh12oBAof8UiKsvNGSMUe9BA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzRWZNt2AqdVzQpCChB1UJh12oBAof8UiKsvNGSMUe9BA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932772AbaFIM7W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 08:59:22 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:39449 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752679AbaFIM7U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 08:59:20 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: bdas@redhat.com, gleb@kernel.org
+Subject: [PATCH 00/25] KVM: x86: Speed up emulation of invalid state
+Date: Mon,  9 Jun 2014 14:58:48 +0200
+Message-Id: <1402318753-23362-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 07, 2014 at 11:24:56AM -0700, Linus Torvalds wrote:
-> So we very recently (as in this merge window) merged a change to this
-> very area, but that change was very specific to one case.
-> 
-> Hillf's patch (below) apparently fixes the problem Felipe sees, and I
-> have to say, his problem sounds a *lot* like the kind of horrible
-> performance I've seen with writing to USB devices. I blamed
-> non-working per-bdi throttling, but this implies it is more generic
-> than that. The fact that the very same code also made nfsd very
-> unhappy makes me think that the code is just fundamentally broken.
-> 
-> And quite frankly, the whole logic is a bit questionable. That
-> 
->   "nr_unqueued_dirty == nr_taken"
-> 
-> test is claimed to be "implies that flushers are not keeping up", but
-> that's not actually true at all. It just means that
-> 
->  (a) all the pages we isolated are dirty
->  (b) .. and none of them are under writeback
-> 
-> and it's very possible that none of them are under writeback because
-> nobody has even decided to start writeback on them yet, because nobody
-> has even walked through the list yet, so they were all still marked as
-> referenced. I guess you could say that "flushers are not keeping up",
-> but *we're* one of the flushers, and it's not that we aren't keeping
-> up, it's that we haven't even scanned things yet.
-> 
-> So what do we do when we haven't scanned the list enough to see any
-> non-referenced pages? Do we scan it a bit more? No. We decide to
-> congestion-wait.
-> 
-> That sounds completely and utterly stupid and broken. Does it make any
-> sense at all? No it doesn't. It just seems to delay starting any
-> writeback at all.
-> 
+This series, done in collaboration with Bandan Das, speeds up
+emulation of invalid state by approximately a factor of 4
+(as measured by realmode.flat).  It brings together patches sent
+as RFC in the past 3 months, and adds a few more on top.
 
-The original intent was moving away from direct reclaimers and kswapd just
-blocking on congestion for the sake of it and avoiding excessive swapping
-during IO. That was not a smooth road.
+The total speedup achieved is around 3x.  Some changes shave a constant
+number of cycles from all instructions; others only affect more complex
+instructions that take more clock cycles to run.  Together, these two
+different effects make the speedup nicely homogeneous across various kinds
+of instructions.  Here are rough numbers (expressed in clock cycles on a
+Sandy Bridge Xeon machine, with unrestricted_guest=0) at various points
+of the series:
 
-> I suspect the code comes from "let's not spend too much time scanning
-> the dirty lists when everything is dirty", and is trying to avoid CPU
-> use.
+    jump  move  arith load  store RMW
+    2300  2600  2500  2800  2800  3200
+    1650  1950  1900  2150  2150  2600   KVM: vmx: speed up emulation of invalid guest state
+    900   1250  1050  1350  1300  1700   KVM: x86: avoid useless set of KVM_REQ_EVENT after emulation
+    900   1050  1050  1350  1300  1700   KVM: emulate: speed up emulated moves
+    900   1050  1050  1300  1250  1400   KVM: emulate: extend memory access optimization to stores
+    825   1000  1000  1250  1200  1350   KVM: emulate: do not initialize memopp
+    750   950   950   1150  1050  1200   KVM: emulate: avoid per-byte copying in instruction fetches
+    720   850   850   1075  1000  1100   KVM: x86: use kvm_read_guest_page for emulator accesses
 
-Yes. At the time we moved away from calling congestion_wait() for all
-sorts of reasons there were a number of bugs with different root causes
-but looked like kswapd using 99% of CPU during heavy IO.
+The above only lists the patches where the improvement on kvm-unit-tests
+became consistently identifiable and reproducible.  Take these with a
+grain of salt, since all the rounding here was done by hand, no stddev
+is provided, etc.
 
-> But what it seems to do is actually to avoid even starting
-> writeback in the first place, and just "congestion-waiting" even when
-> nothing is being written back (here "nothing" is not absolute - we're
-> only looking at a part of the dirty pages, obviously, but we're
-> looking at the *old* dirty pages, so it's a fairly important part of
-> it).
-> 
-> So I really get the feeling that this code is broken, and that the
-> patch to remove that "nr_unqueued_dirty == nr_taken" is correct.
-> 
+I tried to be quite strict and limited this series to patches that obey
+the following criteria:
 
-I cannot think of a reason to disagree with that. It was a mistake because
-it also failed to take into account that writeback might not have delayed
-because the dirty expire limit had not been reached.
+* either the patch is by itself a measurable improvement
+(example: patch 6)
 
-> In particular, doesn't that congestion wait - which is supposed to
-> wait for kswapd - end up waiting even when the process in question
-> *is* kswapd?
-> 
-> So it's not just processes like nfsd that got throttled down (which no
-> longer happens because of the recent commit 399ba0b95670), it seems
-> like kswapd itself gets throttled down because of this test.
-> 
-> So at the *very* least I feel like the new current_may_throttle()
-> needs to say that "kswapd must not be throttled", but I wonder if that
-> whole thing just needs to go.
-> 
-> And maybe that recent commit 399ba0b95670 is actually broken, and
-> wanted to fix just this part too. Maybe it *should* wait for the
-> "nr_immediate" case, which is the one that is currently aimed at
-> *only* throttling down kswapd itself. Maybe we should remove the
-> "current_is_kswapd()" test in the nr_immediate code instead, and make
-> everybody throttle when they hit the actual _real_ congestion case of
-> the whole zone being under writeback?
-> 
-> Comments? Mel, this code is mostly attributed to you, I'd like to hear
-> what you think in particular.
-> 
+* or the patch is a really really obvious improvement (example:
+patch 17), the compiler must really screw up for this not to be the
+case
 
-I've no problem with your patch so lets go with it with the caveat that there
-are three bugs to watch out for. The first is excessive CPU usage during
-reclaim by direct reclaimers or kswapd which should still be controlled
-but worth watching for anyway. The second is excessive writeback from
-kswapd context resulting in poor IO efficiency which is harder to measure a
-performance impact for but looks like high counts for nr_vmscan_write. The
-third is excessive swapping during IO as the file LRUs are being scanned
-with mostly dirty pages and the reclaimer swaps anonymous pages instead
-which will look like interactivity stalls due to swapping during heavy IO. I
-can keep an eye out for all three when my regression tests pick up 3.16-rc1.
+* or the patch is just preparatory for a subsequent measurable
+improvement.
 
-Thanks.
+Quite a few functions disappear from the profile, and others have their
+cost cut by a pretty large factor:
+
+   61643         [kvm_intel]       vmx_segment_access_rights
+   47504         [kvm]             vcpu_enter_guest
+   34610         [kvm_intel]       rmode_segment_valid
+   30312  7119   [kvm_intel]       vmx_get_segment
+   27371 23363   [kvm]             x86_decode_insn
+   20924 21185   [kernel.kallsyms] copy_user_generic_string
+   18775  3614   [kvm_intel]       vmx_read_guest_seg_selector
+   18040  9580   [kvm]             emulator_get_segment
+   16061  5791   [kvm]             do_insn_fetch (__do_insn_fetch_bytes after patches)
+   15834  5530   [kvm]             kvm_read_guest (kvm_fetch_guest_virt after patches)
+   15721         [kernel.kallsyms] __srcu_read_lock
+   15439  4115   [kvm]             init_emulate_ctxt
+   14421 11692   [kvm]             x86_emulate_instruction
+   12498         [kernel.kallsyms] __srcu_read_unlock
+   12385 11779   [kvm]             __linearize
+   12385 13194   [kvm]             decode_operand
+    7408  5574   [kvm]             x86_emulate_insn
+    6447         [kvm]             kvm_lapic_find_highest_irr
+    6390         [kvm_intel]       vmx_handle_exit
+    5598  3418   [kvm_intel]       vmx_interrupt_allowed
+
+Honorable mentions among things that I tried and didn't have the effect
+I hoped for: using __get_user/__put_user to read memory operands, and
+simplifying linearize.
+
+
+Patches 1-6 are various low-hanging fruit, which alone provide a
+2-2.5x speedup (higher on simpler instructions).
+
+Patches 7-12 make the emulator cache the host virtual address of memory
+operands, thus avoid walking the page table twice.
+
+Patch 13-18 avoid wasting time unnecessarily in the memset call of
+x86_emulate_ctxt.
+
+Patches 19-22 speed up operand fetching.
+
+Patches 23-25 are the loose ends.
+
+Bandan Das (6):
+  KVM: emulate: move init_decode_cache to emulate.c
+  KVM: emulate: Remove ctxt->intercept and ctxt->check_perm checks
+  KVM: emulate: cleanup decode_modrm
+  KVM: emulate: clean up initializations in init_decode_cache
+  KVM: emulate: rework seg_override
+  KVM: emulate: do not initialize memopp
+
+Paolo Bonzini (19):
+  KVM: vmx: speed up emulation of invalid guest state
+  KVM: x86: return all bits from get_interrupt_shadow
+  KVM: x86: avoid useless set of KVM_REQ_EVENT after emulation
+  KVM: emulate: move around some checks
+  KVM: emulate: protect checks on ctxt->d by a common "if (unlikely())"
+  KVM: emulate: speed up emulated moves
+  KVM: emulate: simplify writeback
+  KVM: emulate: abstract handling of memory operands
+  KVM: export mark_page_dirty_in_slot
+  KVM: emulate: introduce memory_prepare callback to speed up memory access
+  KVM: emulate: activate memory access optimization
+  KVM: emulate: extend memory access optimization to stores
+  KVM: emulate: speed up do_insn_fetch
+  KVM: emulate: avoid repeated calls to do_insn_fetch_bytes
+  KVM: emulate: avoid per-byte copying in instruction fetches
+  KVM: emulate: put pointers in the fetch_cache
+  KVM: x86: use kvm_read_guest_page for emulator accesses
+  KVM: emulate: simplify BitOp handling
+  KVM: emulate: fix harmless typo in MMX decoding
+
+ arch/x86/include/asm/kvm_emulate.h |  59 ++++-
+ arch/x86/include/asm/kvm_host.h    |   2 +-
+ arch/x86/kvm/emulate.c             | 481 ++++++++++++++++++++++---------------
+ arch/x86/kvm/svm.c                 |   6 +-
+ arch/x86/kvm/trace.h               |   6 +-
+ arch/x86/kvm/vmx.c                 |   9 +-
+ arch/x86/kvm/x86.c                 | 147 +++++++++---
+ include/linux/kvm_host.h           |   6 +
+ virt/kvm/kvm_main.c                |  17 +-
+ 9 files changed, 473 insertions(+), 260 deletions(-)
 
 -- 
-Mel Gorman
-SUSE Labs
+1.8.3.1
+
