@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934053AbaFIQHk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 12:07:40 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:50364 "EHLO
+	id S936163AbaFIQJD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 12:09:03 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:50347 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933567AbaFIQEd (ORCPT
+	with ESMTP id S933446AbaFIQEb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 12:04:33 -0400
+	Mon, 9 Jun 2014 12:04:31 -0400
 From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 To: Thierry Reding <thierry.reding@gmail.com>,
         Nicolas Ferre <nicolas.ferre@atmel.com>,
@@ -20,9 +20,9 @@ Cc: Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
         linux-kernel@vger.kernel.org, linux-pwm@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, dri-devel@lists.freedesktop.org,
         Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v2 7/7] ARM: at91/dt: enable the LCD panel on sama5d3xek boards
-Date: Mon,  9 Jun 2014 18:04:20 +0200
-Message-Id: <1402329860-27520-8-git-send-email-boris.brezillon@free-electrons.com>
+Subject: [PATCH v2 5/7] ARM: at91/dt: define the HLCDC node available on sama5d3 SoCs
+Date: Mon,  9 Jun 2014 18:04:18 +0200
+Message-Id: <1402329860-27520-6-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1402329860-27520-1-git-send-email-boris.brezillon@free-electrons.com>
 References: <1402329860-27520-1-git-send-email-boris.brezillon@free-electrons.com>
@@ -30,180 +30,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable LCD related nodes and reference panel node in the hlcdc (High
-LCD Controller) controller on sama5d3xek boards.
+Define the HLCDC (High LCD Controller) IP available on some sama5d3 SoCs
+(i.e. sama5d31, sama5d33, sama5d34 and sama5d36).
 
 Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
 ---
- arch/arm/boot/dts/sama5d31ek.dts | 24 ++++++++++++++++++++++++
- arch/arm/boot/dts/sama5d33ek.dts | 24 ++++++++++++++++++++++++
- arch/arm/boot/dts/sama5d34ek.dts | 24 ++++++++++++++++++++++++
- arch/arm/boot/dts/sama5d36ek.dts | 24 ++++++++++++++++++++++++
- 4 files changed, 96 insertions(+)
+ arch/arm/boot/dts/sama5d3_lcd.dtsi | 26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
 
-diff --git a/arch/arm/boot/dts/sama5d31ek.dts b/arch/arm/boot/dts/sama5d31ek.dts
-index 04eec0d..338f4c3 100644
---- a/arch/arm/boot/dts/sama5d31ek.dts
-+++ b/arch/arm/boot/dts/sama5d31ek.dts
-@@ -33,6 +33,14 @@
- 				status = "okay";
+diff --git a/arch/arm/boot/dts/sama5d3_lcd.dtsi b/arch/arm/boot/dts/sama5d3_lcd.dtsi
+index 2186b89..02a7012 100644
+--- a/arch/arm/boot/dts/sama5d3_lcd.dtsi
++++ b/arch/arm/boot/dts/sama5d3_lcd.dtsi
+@@ -116,6 +116,32 @@
+ 				};
  			};
  
 +			hlcdc: hlcdc@f0030000 {
-+				status = "okay";
++				compatible = "atmel,sama5d3-hlcdc";
++				reg = <0xf0030000 0x2000>;
++				clocks = <&lcdc_clk>, <&lcdck>, <&clk32k>;
++				clock-names = "periph_clk","sys_clk", "slow_clk";
++				status = "disabled";
 +
 +				hlcdc-display-controller {
-+					atmel,panel = <&panel 3 0>;
++					compatible = "atmel,hlcdc-dc";
++					interrupts = <36 IRQ_TYPE_LEVEL_HIGH 0>;
++					pinctrl-names = "default", "rgb-444", "rgb-565", "rgb-666", "rgb-888";
++					pinctrl-0 = <&pinctrl_lcd_base>;
++					pinctrl-1 = <&pinctrl_lcd_base &pinctrl_lcd_rgb444>;
++					pinctrl-2 = <&pinctrl_lcd_base &pinctrl_lcd_rgb565>;
++					pinctrl-3 = <&pinctrl_lcd_base &pinctrl_lcd_rgb666>;
++					pinctrl-4 = <&pinctrl_lcd_base &pinctrl_lcd_rgb888>;
++				};
++
++				hlcdc_pwm: hlcdc-pwm {
++					compatible = "atmel,hlcdc-pwm";
++					pinctrl-names = "default";
++					pinctrl-0 = <&pinctrl_lcd_pwm>;
++					#pwm-cells = <3>;
 +				};
 +			};
 +
- 			macb1: ethernet@f802c000 {
- 				status = "okay";
- 			};
-@@ -46,6 +54,22 @@
- 		};
- 	};
- 
-+	bl_reg: backlight_regulator {
-+		status = "okay";
-+	};
-+
-+	panel_reg: panel_regulator {
-+		status = "okay";
-+	};
-+
-+	backlight: backlight {
-+		status = "okay";
-+	};
-+
-+	panel: panel {
-+		status = "okay";
-+	};
-+
- 	sound {
- 		status = "okay";
- 	};
-diff --git a/arch/arm/boot/dts/sama5d33ek.dts b/arch/arm/boot/dts/sama5d33ek.dts
-index cbd6a3f..f2ab41d 100644
---- a/arch/arm/boot/dts/sama5d33ek.dts
-+++ b/arch/arm/boot/dts/sama5d33ek.dts
-@@ -36,9 +36,33 @@
- 			macb0: ethernet@f0028000 {
- 				status = "okay";
- 			};
-+
-+			hlcdc: hlcdc@f0030000 {
-+				status = "okay";
-+
-+				hlcdc-display-controller {
-+					atmel,panel = <&panel 3 0>;
-+				};
-+			};
- 		};
- 	};
- 
-+	bl_reg: backlight_regulator {
-+		status = "okay";
-+	};
-+
-+	panel_reg: panel_regulator {
-+		status = "okay";
-+	};
-+
-+	backlight: backlight {
-+		status = "okay";
-+	};
-+
-+	panel: panel {
-+		status = "okay";
-+	};
-+
- 	sound {
- 		status = "okay";
- 	};
-diff --git a/arch/arm/boot/dts/sama5d34ek.dts b/arch/arm/boot/dts/sama5d34ek.dts
-index 878aa16..0d0049c 100644
---- a/arch/arm/boot/dts/sama5d34ek.dts
-+++ b/arch/arm/boot/dts/sama5d34ek.dts
-@@ -46,6 +46,14 @@
- 			macb0: ethernet@f0028000 {
- 				status = "okay";
- 			};
-+
-+			hlcdc: hlcdc@f0030000 {
-+				status = "okay";
-+
-+				hlcdc-display-controller {
-+					atmel,panel = <&panel 3 0>;
-+				};
-+			};
- 		};
- 	};
- 
-@@ -56,6 +64,22 @@
- 		};
- 	};
- 
-+	bl_reg: backlight_regulator {
-+		status = "okay";
-+	};
-+
-+	panel_reg: panel_regulator {
-+		status = "okay";
-+	};
-+
-+	backlight: backlight {
-+		status = "okay";
-+	};
-+
-+	panel: panel {
-+		status = "okay";
-+	};
-+
- 	sound {
- 		status = "okay";
- 	};
-diff --git a/arch/arm/boot/dts/sama5d36ek.dts b/arch/arm/boot/dts/sama5d36ek.dts
-index 59576c6..8350358 100644
---- a/arch/arm/boot/dts/sama5d36ek.dts
-+++ b/arch/arm/boot/dts/sama5d36ek.dts
-@@ -41,12 +41,36 @@
- 				status = "okay";
- 			};
- 
-+			hlcdc: hlcdc@f0030000 {
-+				status = "okay";
-+
-+				hlcdc-display-controller {
-+					atmel,panel = <&panel 3 0>;
-+				};
-+			};
-+
- 			macb1: ethernet@f802c000 {
- 				status = "okay";
- 			};
- 		};
- 	};
- 
-+	bl_reg: backlight_regulator {
-+		status = "okay";
-+	};
-+
-+	panel_reg: panel_regulator {
-+		status = "okay";
-+	};
-+
-+	backlight: backlight {
-+		status = "okay";
-+	};
-+
-+	panel: panel {
-+		status = "okay";
-+	};
-+
- 	sound {
- 		status = "okay";
- 	};
+ 			pmc: pmc@fffffc00 {
+ 				periphck {
+ 					lcdc_clk: lcdc_clk {
 -- 
 1.8.3.2
 
