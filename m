@@ -1,70 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964834AbaFIWwt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 18:52:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57187 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934298AbaFIWqI (ORCPT
+	id S934584AbaFIWw5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 18:52:57 -0400
+Received: from mail-ve0-f201.google.com ([209.85.128.201]:41543 "EHLO
+	mail-ve0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754140AbaFIWwy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:46:08 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sergey Popovich <popovich_sergei@mail.ru>,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [PATCH 3.14 73/78] netfilter: Fix potential use after free in ip6_route_me_harder()
-Date: Mon,  9 Jun 2014 15:48:53 -0700
-Message-Id: <20140609224815.664111567@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140609224813.282275135@linuxfoundation.org>
-References: <20140609224813.282275135@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Mon, 9 Jun 2014 18:52:54 -0400
+References: <20140606144421.GE26253@dhcp22.suse.cz> <1402066010-25901-1-git-send-email-mhocko@suse.cz> <1402066010-25901-2-git-send-email-mhocko@suse.cz>
+User-agent: mu4e 0.9.9.6pre2; emacs 24.3.1
+From: Greg Thelen <gthelen@google.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Michel Lespinasse <walken@google.com>, Tejun Heo <tj@kernel.org>,
+        Roman Gushchin <klamm@yandex-team.ru>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH 2/2] memcg: Allow hard guarantee mode for low limit reclaim
+In-reply-to: <1402066010-25901-2-git-send-email-mhocko@suse.cz>
+Date: Mon, 09 Jun 2014 15:52:51 -0700
+Message-ID: <xr934mzt4rwc.fsf@gthelen.mtv.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+On Fri, Jun 06 2014, Michal Hocko <mhocko@suse.cz> wrote:
 
-From: Sergey Popovich <popovich_sergei@mail.ru>
+> Some users (e.g. Google) would like to have stronger semantic than low
+> limit offers currently. The fallback mode is not desirable and they
+> prefer hitting OOM killer rather than ignoring low limit for protected
+> groups. There are other possible usecases which can benefit from hard
+> guarantees. I can imagine workloads where setting low_limit to the same
+> value as hard_limit to prevent from any reclaim at all makes a lot of
+> sense because reclaim is much more disrupting than restart of the load.
+>
+> This patch adds a new per memcg memory.reclaim_strategy knob which
+> tells what to do in a situation when memory reclaim cannot do any
+> progress because all groups in the reclaimed hierarchy are within their
+> low_limit. There are two options available:
+> 	- low_limit_best_effort - the current mode when reclaim falls
+> 	  back to the even reclaim of all groups in the reclaimed
+> 	  hierarchy
+> 	- low_limit_guarantee - groups within low_limit are never
+> 	  reclaimed and OOM killer is triggered instead. OOM message
+> 	  will mention the fact that the OOM was triggered due to
+> 	  low_limit reclaim protection.
 
-commit a8951d5814e1373807a94f79f7ccec7041325470 upstream.
+To (a) be consistent with existing hard and soft limits APIs and (b)
+allow use of both best effort and guarantee memory limits, I wonder if
+it's best to offer three per memcg limits, rather than two limits (hard,
+low_limit) and a related reclaim_strategy knob.  The three limits I'm
+thinking about are:
 
-Dst is released one line before we access it again with dst->error.
+1) hard_limit (aka the existing limit_in_bytes cgroupfs file).  No
+   change needed here.  This is an upper bound on a memcg hierarchy's
+   memory consumption (assuming use_hierarchy=1).
 
-Fixes: 58e35d147128 netfilter: ipv6: propagate routing errors from
-ip6_route_me_harder()
+2) best_effort_limit (aka desired working set).  This allow an
+   application or administrator to provide a hint to the kernel about
+   desired working set size.  Before oom'ing the kernel is allowed to
+   reclaim below this limit.  I think the current soft_limit_in_bytes
+   claims to provide this.  If we prefer to deprecate
+   soft_limit_in_bytes, then a new desired_working_set_in_bytes (or a
+   hopefully better named) API seems reasonable.
 
-Signed-off-by: Sergey Popovich <popovich_sergei@mail.ru>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+3) low_limit_guarantee which is a lower bound of memory usage.  A memcg
+   would prefer to be oom killed rather than operate below this
+   threshold.  Default value is zero to preserve compatibility with
+   existing apps.
 
----
- net/ipv6/netfilter.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
---- a/net/ipv6/netfilter.c
-+++ b/net/ipv6/netfilter.c
-@@ -30,13 +30,15 @@ int ip6_route_me_harder(struct sk_buff *
- 		.daddr = iph->daddr,
- 		.saddr = iph->saddr,
- 	};
-+	int err;
- 
- 	dst = ip6_route_output(net, skb->sk, &fl6);
--	if (dst->error) {
-+	err = dst->error;
-+	if (err) {
- 		IP6_INC_STATS(net, ip6_dst_idev(dst), IPSTATS_MIB_OUTNOROUTES);
- 		LIMIT_NETDEBUG(KERN_DEBUG "ip6_route_me_harder: No more route.\n");
- 		dst_release(dst);
--		return dst->error;
-+		return err;
- 	}
- 
- 	/* Drop old route. */
-
-
+Logically hard_limit >= best_effort_limit >= low_limit_guarantee.
