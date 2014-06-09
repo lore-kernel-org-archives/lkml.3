@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936148AbaFIJSD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 05:18:03 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58375 "EHLO
+	id S1755799AbaFIJSM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 05:18:12 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58382 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754817AbaFIIvX (ORCPT
+	by vger.kernel.org with ESMTP id S1754702AbaFIIvX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jun 2014 04:51:23 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
+Cc: linux-kernel@vger.kernel.org, Chen Yucong <slaoub@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 021/146] mm: make fixup_user_fault() check the vma access rights too
-Date: Mon,  9 Jun 2014 10:49:16 +0200
-Message-Id: <d214ff2381dcbe76574026cb1f8dd49910216bfe.1402303820.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 032/146] hwpoison, hugetlb: lock_page/unlock_page does not match for handling a free hugepage
+Date: Mon,  9 Jun 2014 10:49:27 +0200
+Message-Id: <62e9f1db76bbf65753ad64f66dabce32438488c9.1402303820.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
 References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
@@ -24,61 +25,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Chen Yucong <slaoub@gmail.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 1b17844b29ae042576bea588164f2f1e9590a8bc upstream.
+commit b985194c8c0a130ed155b71662e39f7eaea4876f upstream.
 
-fixup_user_fault() is used by the futex code when the direct user access
-fails, and the futex code wants it to either map in the page in a usable
-form or return an error.  It relied on handle_mm_fault() to map the
-page, and correctly checked the error return from that, but while that
-does map the page, it doesn't actually guarantee that the page will be
-mapped with sufficient permissions to be then accessed.
+For handling a free hugepage in memory failure, the race will happen if
+another thread hwpoisoned this hugepage concurrently.  So we need to
+check PageHWPoison instead of !PageHWPoison.
 
-So do the appropriate tests of the vma access rights by hand.
+If hwpoison_filter(p) returns true or a race happens, then we need to
+unlock_page(hpage).
 
-[ Side note: arguably handle_mm_fault() could just do that itself, but
-  we have traditionally done it in the caller, because some callers -
-  notably get_user_pages() - have been able to access pages even when
-  they are mapped with PROT_NONE.  Maybe we should re-visit that design
-  decision, but in the meantime this is the minimal patch. ]
-
-Found by Dave Jones running his trinity tool.
-
-Reported-by: Dave Jones <davej@redhat.com>
-Acked-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Chen Yucong <slaoub@gmail.com>
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Tested-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reviewed-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- mm/memory.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ mm/memory-failure.c | 15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
-diff --git a/mm/memory.c b/mm/memory.c
-index 22e67a2c955b..99fe3aa1035c 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1929,12 +1929,17 @@ int fixup_user_fault(struct task_struct *tsk, struct mm_struct *mm,
- 		     unsigned long address, unsigned int fault_flags)
- {
- 	struct vm_area_struct *vma;
-+	vm_flags_t vm_flags;
- 	int ret;
- 
- 	vma = find_extend_vma(mm, address);
- 	if (!vma || address < vma->vm_start)
- 		return -EFAULT;
- 
-+	vm_flags = (fault_flags & FAULT_FLAG_WRITE) ? VM_WRITE : VM_READ;
-+	if (!(vm_flags & vma->vm_flags))
-+		return -EFAULT;
-+
- 	ret = handle_mm_fault(mm, vma, address, fault_flags);
- 	if (ret & VM_FAULT_ERROR) {
- 		if (ret & VM_FAULT_OOM)
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 5ea3cf734138..9f1b0ff6cb65 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1085,15 +1085,16 @@ int memory_failure(unsigned long pfn, int trapno, int flags)
+ 			return 0;
+ 		} else if (PageHuge(hpage)) {
+ 			/*
+-			 * Check "just unpoisoned", "filter hit", and
+-			 * "race with other subpage."
++			 * Check "filter hit" and "race with other subpage."
+ 			 */
+ 			lock_page(hpage);
+-			if (!PageHWPoison(hpage)
+-			    || (hwpoison_filter(p) && TestClearPageHWPoison(p))
+-			    || (p != hpage && TestSetPageHWPoison(hpage))) {
+-				atomic_long_sub(nr_pages, &num_poisoned_pages);
+-				return 0;
++			if (PageHWPoison(hpage)) {
++				if ((hwpoison_filter(p) && TestClearPageHWPoison(p))
++				    || (p != hpage && TestSetPageHWPoison(hpage))) {
++					atomic_long_sub(nr_pages, &num_poisoned_pages);
++					unlock_page(hpage);
++					return 0;
++				}
+ 			}
+ 			set_page_hwpoison_huge_page(hpage);
+ 			res = dequeue_hwpoisoned_huge_page(hpage);
 -- 
 1.9.3
 
