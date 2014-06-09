@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936706AbaFIJkn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 05:40:43 -0400
+	id S932312AbaFIJ03 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 05:26:29 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59137 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932416AbaFIJ0b (ORCPT
+	by vger.kernel.org with ESMTP id S1755410AbaFIJ0V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 05:26:31 -0400
+	Mon, 9 Jun 2014 05:26:21 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Ian Kent <raven@themaw.net>,
-        Al Viro <viro@zeniv.linux.org.uk>,
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Will Drewry <wad@chromium.org>, Kees Cook <keescook@chromium.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 089/146] autofs: fix lockref lookup
-Date: Mon,  9 Jun 2014 10:50:24 +0200
-Message-Id: <cc6467cd8a22525bda2625beb8dfa6d849197685.1402303821.git.jslaby@suse.cz>
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 143/146] futex-prevent-requeue-pi-on-same-futex.patch futex: Forbid uaddr == uaddr2 in futex_requeue(..., requeue_pi=1)
+Date: Mon,  9 Jun 2014 10:51:18 +0200
+Message-Id: <5d1df1c4e508cd3ce714dfc4416c800e7061201e.1402303821.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
 References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
@@ -25,59 +25,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ian Kent <raven@themaw.net>
+From: Thomas Gleixner <tglx@linutronix.de>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 6b6751f7feba68d8f5c72b72cc69a1c5a625529c upstream.
+commit e9c243a5a6de0be8e584c604d353412584b592f8 upstream.
 
-autofs needs to be able to see private data dentry flags for its dentrys
-that are being created but not yet hashed and for its dentrys that have
-been rmdir()ed but not yet freed.  It needs to do this so it can block
-processes in these states until a status has been returned to indicate
-the given operation is complete.
+If uaddr == uaddr2, then we have broken the rule of only requeueing from
+a non-pi futex to a pi futex with this call.  If we attempt this, then
+dangling pointers may be left for rt_waiter resulting in an exploitable
+condition.
 
-It does this by keeping two lists, active and expring, of dentrys in
-this state and uses ->d_release() to keep them stable while it checks
-the reference count to determine if they should be used.
+This change brings futex_requeue() in line with futex_wait_requeue_pi()
+which performs the same check as per commit 6f7b0a2a5c0f ("futex: Forbid
+uaddr == uaddr2 in futex_wait_requeue_pi()")
 
-But with the recent lockref changes dentrys being freed sometimes don't
-transition to a reference count of 0 before being freed so autofs can
-occassionally use a dentry that is invalid which can lead to a panic.
+[ tglx: Compare the resulting keys as well, as uaddrs might be
+  	different depending on the mapping ]
 
-Signed-off-by: Ian Kent <raven@themaw.net>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Fixes CVE-2014-3153.
+
+Reported-by: Pinkie Pie
+Signed-off-by: Will Drewry <wad@chromium.org>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reviewed-by: Darren Hart <dvhart@linux.intel.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/autofs4/root.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/futex.c | 25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
 
-diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
-index 92ef341ba0cf..2a69bde8c61d 100644
---- a/fs/autofs4/root.c
-+++ b/fs/autofs4/root.c
-@@ -179,7 +179,7 @@ static struct dentry *autofs4_lookup_active(struct dentry *dentry)
- 		spin_lock(&active->d_lock);
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 6c7975b3f291..ab207d65c55f 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -1295,6 +1295,13 @@ static int futex_requeue(u32 __user *uaddr1, unsigned int flags,
  
- 		/* Already gone? */
--		if (!d_count(active))
-+		if ((int) d_count(active) <= 0)
- 			goto next;
+ 	if (requeue_pi) {
+ 		/*
++		 * Requeue PI only works on two distinct uaddrs. This
++		 * check is only valid for private futexes. See below.
++		 */
++		if (uaddr1 == uaddr2)
++			return -EINVAL;
++
++		/*
+ 		 * requeue_pi requires a pi_state, try to allocate it now
+ 		 * without any locks in case it fails.
+ 		 */
+@@ -1332,6 +1339,15 @@ retry:
+ 	if (unlikely(ret != 0))
+ 		goto out_put_key1;
  
- 		qstr = &active->d_name;
-@@ -230,7 +230,7 @@ static struct dentry *autofs4_lookup_expiring(struct dentry *dentry)
++	/*
++	 * The check above which compares uaddrs is not sufficient for
++	 * shared futexes. We need to compare the keys:
++	 */
++	if (requeue_pi && match_futex(&key1, &key2)) {
++		ret = -EINVAL;
++		goto out_put_keys;
++	}
++
+ 	hb1 = hash_futex(&key1);
+ 	hb2 = hash_futex(&key2);
  
- 		spin_lock(&expiring->d_lock);
+@@ -2362,6 +2378,15 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
+ 	if (ret)
+ 		goto out_key2;
  
--		/* Bad luck, we've already been dentry_iput */
-+		/* We've already been dentry_iput or unlinked */
- 		if (!expiring->d_inode)
- 			goto next;
++	/*
++	 * The check above which compares uaddrs is not sufficient for
++	 * shared futexes. We need to compare the keys:
++	 */
++	if (match_futex(&q.key, &key2)) {
++		ret = -EINVAL;
++		goto out_put_keys;
++	}
++
+ 	/* Queue the futex_q, drop the hb lock, wait for wakeup. */
+ 	futex_wait_queue_me(hb, &q, to);
  
 -- 
 1.9.3
