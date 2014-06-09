@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932402AbaFIWMc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 18:12:32 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:53614 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932299AbaFIWM3 convert rfc822-to-8bit (ORCPT
+	id S932427AbaFIWNo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 18:13:44 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:40092 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753759AbaFIWNm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:12:29 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Martin Steigerwald <Martin@lichtvoll.de>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [REGRESSION] 3.15: Seems to turbo mode Intel Sandybridge Dual Core without need, overheating CPU
-Date: Tue, 10 Jun 2014 00:29:52 +0200
-Message-ID: <2491989.M5MhllcFpf@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1773550.hda5I1At4Q@vostro.rjw.lan>
-References: <1996399.buoKlNI5nG@merkaba> <4677478.c1YrKzctMH@merkaba> <1773550.hda5I1At4Q@vostro.rjw.lan>
+	Mon, 9 Jun 2014 18:13:42 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <20140609150353.75eff02b@redhat.com>
+References: <20140608181436.17de69ac@redhat.com>
+	<CAE9FiQXpUbAOinEK-1PSFyGKqpC_FHN0sjP0xvD0ChrXR5GdAw@mail.gmail.com>
+	<20140609150353.75eff02b@redhat.com>
+Date: Mon, 9 Jun 2014 15:13:41 -0700
+X-Google-Sender-Auth: C-KYH50unMTaj6etn5aED6f8kZ0
+Message-ID: <CAE9FiQUWZxvCS82cH=n-NF+nhTQ83J+7M3gHdXGu2S1Qk3xL_g@mail.gmail.com>
+Subject: Re: [PATCH] x86: numa: drop ZONE_ALIGN
+From: Yinghai Lu <yinghai@kernel.org>
+To: Luiz Capitulino <lcapitulino@redhat.com>,
+        Christoph Lameter <cl@linux-foundation.org>, Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Linux MM <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, June 10, 2014 12:20:20 AM Rafael J. Wysocki wrote:
-> On Monday, June 09, 2014 11:41:40 PM Martin Steigerwald wrote:
-> > Am Montag, 9. Juni 2014, 23:33:43 schrieb Martin Steigerwald:
-> > > Hi!
-> > > 
-> > > Added linux-pm to Cc. Also reboots seems to fix up the condition:
-> > > 
-> > > merkaba:~> grep . /sys/devices/system/cpu/cpu[0-3]/cpufreq/cpuinfo_cur_freq
-> > > /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_cur_freq:830957
-> > > /sys/devices/system/cpu/cpu1/cpufreq/cpuinfo_cur_freq:819628
-> > > /sys/devices/system/cpu/cpu2/cpufreq/cpuinfo_cur_freq:800000
-> > > /sys/devices/system/cpu/cpu3/cpufreq/cpuinfo_cur_freq:813476
-> > > merkaba:~> sensors                                                         
-> > > acpitz-virtual-0
-> > > Adapter: Virtual device
-> > > temp1:        +71.0°C  (crit = +98.0°C)
-> > > 
-> > > coretemp-isa-0000
-> > > Adapter: ISA adapter
-> > > Physical id 0:  +71.0°C  (high = +86.0°C, crit = +100.0°C)
-> > > Core 0:         +70.0°C  (high = +86.0°C, crit = +100.0°C)
-> > > Core 1:         +71.0°C  (high = +86.0°C, crit = +100.0°C)
-> > > 
-> > > thinkpad-isa-0000
-> > > Adapter: ISA adapter
-> > > fan1:        3137 R
-> > > 
-> > > 
-> > > Still hot in here and after reboot and login into KDE session there is quite
-> > > some CPU activity for a while.
-> > > 
-> > > But way better than before.
-> > > 
-> > > I can test whether this also happens with ACPI cpufreq driver.
-> > > 
-> > > I think I didn´t see this with 3.14.
-> > 
-> > Its not just me:
-> > 
-> > Please change intel_pstate default to disable
-> > https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1188647
-> 
-> Did you test the 3.15-rc kernels?  If so, do they have this problem too?
+On Mon, Jun 9, 2014 at 12:03 PM, Luiz Capitulino <lcapitulino@redhat.com> wrote:
+> On Sun, 8 Jun 2014 18:29:11 -0700
+> Yinghai Lu <yinghai@kernel.org> wrote:
+>
+>> On Sun, Jun 8, 2014 at 3:14 PM, Luiz Capitulino <lcapitulino@redhat.com> wrote:
+> [    0.000000] e820: BIOS-provided physical RAM map:
+> [    0.000000] BIOS-e820: [mem 0x0000000000000000-0x000000000009fbff] usable
+> [    0.000000] BIOS-e820: [mem 0x000000000009fc00-0x000000000009ffff] reserved
+> [    0.000000] BIOS-e820: [mem 0x00000000000e0000-0x00000000000fffff] reserved
+> [    0.000000] BIOS-e820: [mem 0x0000000000100000-0x000000003ffeffff] usable
+> [    0.000000] BIOS-e820: [mem 0x000000003fff0000-0x000000003fffefff] ACPI data
+> [    0.000000] BIOS-e820: [mem 0x000000003ffff000-0x000000003fffffff] ACPI NVS
+> [    0.000000] BIOS-e820: [mem 0x0000000040200000-0x00000000801fffff] usable
+...
+> [    0.000000] SRAT: PXM 0 -> APIC 0x00 -> Node 0
+> [    0.000000] SRAT: PXM 0 -> APIC 0x01 -> Node 0
+> [    0.000000] SRAT: PXM 1 -> APIC 0x02 -> Node 1
+> [    0.000000] SRAT: PXM 1 -> APIC 0x03 -> Node 1
+> [    0.000000] SRAT: Node 0 PXM 0 [mem 0x00000000-0x3fffffff]
+> [    0.000000] SRAT: Node 1 PXM 1 [mem 0x40200000-0x801fffff]
+> [    0.000000] Initmem setup node 0 [mem 0x00000000-0x3fffffff]
+> [    0.000000]   NODE_DATA [mem 0x3ffec000-0x3ffeffff]
+> [    0.000000] Initmem setup node 1 [mem 0x40800000-0x801fffff]
+> [    0.000000]   NODE_DATA [mem 0x801fb000-0x801fefff]
 
-Or is that just you have tried intel_pstate for the first time?
+so node1 start is aligned to 8M from 2M
 
-Rafael
+node0: [0, 1G)
+node1: [1G+2M, 2G+2M)
 
+The zone should not cross the 8M boundary?
+
+In the case should we trim the memblock for numa to be 8M alignment ?
+
+Thanks
+
+Yinghai
