@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964848AbaFIXKG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 19:10:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56749 "EHLO
+	id S934483AbaFIXKE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 19:10:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56773 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933476AbaFIWpd (ORCPT
+	with ESMTP id S933509AbaFIWpd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jun 2014 18:45:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>, Rusty Russell <rusty@rustcorp.com.au>,
-        Ming Lei <tom.leiming@gmail.com>, Jens Axboe <axboe@fb.com>
-Subject: [PATCH 3.14 31/78] virtio_blk: fix race between start and stop queue
-Date: Mon,  9 Jun 2014 15:48:11 -0700
-Message-Id: <20140609224814.341955807@linuxfoundation.org>
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.14 32/78] sched: Disallow sched_attr::sched_policy < 0
+Date: Mon,  9 Jun 2014 15:48:12 -0700
+Message-Id: <20140609224814.372439472@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140609224813.282275135@linuxfoundation.org>
 References: <20140609224813.282275135@linuxfoundation.org>
@@ -29,59 +31,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ming Lei <tom.leiming@gmail.com>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit aa0818c6ee8d8e4772725a43550823347bc1ad30 upstream.
+commit dbdb22754fde671dc93d2fae06f8be113d47f2fb upstream.
 
-When there isn't enough vring descriptor for adding to vq,
-blk-mq will be put as stopped state until some of pending
-descriptors are completed & freed.
+The scheduler uses policy=-1 to preserve the current policy state to
+implement sys_sched_setparam(), this got exposed to userspace by
+accident through sys_sched_setattr(), cure this.
 
-Unfortunately, the vq's interrupt may come just before
-blk-mq's BLK_MQ_S_STOPPED flag is set, so the blk-mq will
-still be kept as stopped even though lots of descriptors
-are completed and freed in the interrupt handler. The worst
-case is that all pending descriptors are freed in the
-interrupt handler, and the queue is kept as stopped forever.
-
-This patch fixes the problem by starting/stopping blk-mq
-with holding vq_lock.
-
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Signed-off-by: Ming Lei <tom.leiming@gmail.com>
-Signed-off-by: Jens Axboe <axboe@fb.com>
+Reported-by: Michael Kerrisk <mtk.manpages@gmail.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Acked-by: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/20140509085311.GJ30445@twins.programming.kicks-ass.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/block/virtio_blk.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/sched/core.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/block/virtio_blk.c
-+++ b/drivers/block/virtio_blk.c
-@@ -144,11 +144,11 @@ static void virtblk_done(struct virtqueu
- 		if (unlikely(virtqueue_is_broken(vq)))
- 			break;
- 	} while (!virtqueue_enable_cb(vq));
--	spin_unlock_irqrestore(&vblk->vq_lock, flags);
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3683,6 +3683,9 @@ SYSCALL_DEFINE3(sched_setattr, pid_t, pi
+ 	if (sched_copy_attr(uattr, &attr))
+ 		return -EFAULT;
  
- 	/* In case queue is stopped waiting for more buffers. */
- 	if (req_done)
- 		blk_mq_start_stopped_hw_queues(vblk->disk->queue);
-+	spin_unlock_irqrestore(&vblk->vq_lock, flags);
- }
- 
- static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
-@@ -200,8 +200,8 @@ static int virtio_queue_rq(struct blk_mq
- 	spin_lock_irqsave(&vblk->vq_lock, flags);
- 	if (__virtblk_add_req(vblk->vq, vbr, vbr->sg, num) < 0) {
- 		virtqueue_kick(vblk->vq);
--		spin_unlock_irqrestore(&vblk->vq_lock, flags);
- 		blk_mq_stop_hw_queue(hctx);
-+		spin_unlock_irqrestore(&vblk->vq_lock, flags);
- 		return BLK_MQ_RQ_QUEUE_BUSY;
- 	}
- 
++	if (attr.sched_policy < 0)
++		return -EINVAL;
++
+ 	rcu_read_lock();
+ 	retval = -ESRCH;
+ 	p = find_process_by_pid(pid);
 
 
