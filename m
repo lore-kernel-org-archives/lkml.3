@@ -1,84 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964860AbaFIJhL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 05:37:11 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59137 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932771AbaFIJ0f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 05:26:35 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Tejun Heo <tj@kernel.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 019/146] pata_at91: fix ata_host_activate() failure handling
-Date: Mon,  9 Jun 2014 10:49:14 +0200
-Message-Id: <0bba38e7d849d5cb2c58fada1d5368ead19bf147.1402303820.git.jslaby@suse.cz>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
-References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
-In-Reply-To: <cover.1402303820.git.jslaby@suse.cz>
-References: <cover.1402303820.git.jslaby@suse.cz>
+	id S964836AbaFIJhH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 05:37:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32969 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933221AbaFIJ0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 05:26:38 -0400
+From: Vlastimil Babka <vbabka@suse.cz>
+To: David Rientjes <rientjes@google.com>, linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>, Vlastimil Babka <vbabka@suse.cz>,
+        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: [PATCH 08/10] mm, compaction: pass gfp mask to compact_control
+Date: Mon,  9 Jun 2014 11:26:20 +0200
+Message-Id: <1402305982-6928-8-git-send-email-vbabka@suse.cz>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1402305982-6928-1-git-send-email-vbabka@suse.cz>
+References: <1402305982-6928-1-git-send-email-vbabka@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+From: David Rientjes <rientjes@google.com>
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+struct compact_control currently converts the gfp mask to a migratetype, but we
+need the entire gfp mask in a follow-up patch.
 
-===============
+Pass the entire gfp mask as part of struct compact_control.
 
-commit 27aa64b9d1bd0d23fd692c91763a48309b694311 upstream.
-
-Add missing clk_put() call to ata_host_activate() failure path.
-
-Sergei says,
-
-  "Hm, I have once fixed that (see that *if* (!ret)) but looks like a
-   later commit 477c87e90853d136b188c50c0e4a93d01cad872e (ARM:
-   at91/pata: use gpio_is_valid to check the gpio) broke it again. :-(
-   Would be good if the changelog did mention that..."
-
-Cc: Andrew Victor <linux@maxim.org.za>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Rik van Riel <riel@redhat.com>
 ---
- drivers/ata/pata_at91.c | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ mm/compaction.c | 12 +++++++-----
+ mm/internal.h   |  2 +-
+ 2 files changed, 8 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/ata/pata_at91.c b/drivers/ata/pata_at91.c
-index d63ee8f41a4f..e3a49df958a3 100644
---- a/drivers/ata/pata_at91.c
-+++ b/drivers/ata/pata_at91.c
-@@ -408,12 +408,13 @@ static int pata_at91_probe(struct platform_device *pdev)
+diff --git a/mm/compaction.c b/mm/compaction.c
+index c339ccd..d1e30ba 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -965,8 +965,8 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+ 	return ISOLATE_SUCCESS;
+ }
  
- 	host->private_data = info;
+-static int compact_finished(struct zone *zone,
+-			    struct compact_control *cc)
++static int compact_finished(struct zone *zone, struct compact_control *cc,
++			    const int migratetype)
+ {
+ 	unsigned int order;
+ 	unsigned long watermark;
+@@ -1012,7 +1012,7 @@ static int compact_finished(struct zone *zone,
+ 		struct free_area *area = &zone->free_area[order];
  
--	return ata_host_activate(host, gpio_is_valid(irq) ? gpio_to_irq(irq) : 0,
--			gpio_is_valid(irq) ? ata_sff_interrupt : NULL,
--			irq_flags, &pata_at91_sht);
-+	ret = ata_host_activate(host, gpio_is_valid(irq) ? gpio_to_irq(irq) : 0,
-+				gpio_is_valid(irq) ? ata_sff_interrupt : NULL,
-+				irq_flags, &pata_at91_sht);
-+	if (ret)
-+		goto err_put;
+ 		/* Job done if page is free of the right migratetype */
+-		if (!list_empty(&area->free_list[cc->migratetype]))
++		if (!list_empty(&area->free_list[migratetype]))
+ 			return COMPACT_PARTIAL;
  
--	if (!ret)
--		return 0;
-+	return 0;
+ 		/* Job done if allocation would set block type */
+@@ -1078,6 +1078,7 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+ 	int ret;
+ 	unsigned long start_pfn = zone->zone_start_pfn;
+ 	unsigned long end_pfn = zone_end_pfn(zone);
++	const int migratetype = gfpflags_to_migratetype(cc->gfp_mask);
+ 	const bool sync = cc->mode != MIGRATE_ASYNC;
  
- err_put:
- 	clk_put(info->mck);
+ 	ret = compaction_suitable(zone, cc->order);
+@@ -1120,7 +1121,8 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+ 
+ 	migrate_prep_local();
+ 
+-	while ((ret = compact_finished(zone, cc)) == COMPACT_CONTINUE) {
++	while ((ret = compact_finished(zone, cc, migratetype)) ==
++						COMPACT_CONTINUE) {
+ 		int err;
+ 
+ 		switch (isolate_migratepages(zone, cc)) {
+@@ -1178,7 +1180,7 @@ static unsigned long compact_zone_order(struct zone *zone, int order,
+ 		.nr_freepages = 0,
+ 		.nr_migratepages = 0,
+ 		.order = order,
+-		.migratetype = gfpflags_to_migratetype(gfp_mask),
++		.gfp_mask = gfp_mask,
+ 		.zone = zone,
+ 		.mode = mode,
+ 	};
+diff --git a/mm/internal.h b/mm/internal.h
+index 584d04f..af15461 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -149,7 +149,7 @@ struct compact_control {
+ 	bool finished_update_migrate;
+ 
+ 	int order;			/* order a direct compactor needs */
+-	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
++	const gfp_t gfp_mask;		/* gfp mask of a direct compactor */
+ 	struct zone *zone;
+ 	enum compact_contended contended; /* Signal need_sched() or lock
+ 					   * contention detected during
 -- 
-1.9.3
+1.8.4.5
 
