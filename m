@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933379AbaFIWp0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 18:45:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56749 "EHLO
+	id S934077AbaFIWp6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 18:45:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56773 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933287AbaFIWpW (ORCPT
+	with ESMTP id S933755AbaFIWpj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:45:22 -0400
+	Mon, 9 Jun 2014 18:45:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 08/78] Documentation: fix DOCBOOKS=... building
-Date: Mon,  9 Jun 2014 15:47:48 -0700
-Message-Id: <20140609224813.627455721@linuxfoundation.org>
+        NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.14 45/78] md: always set MD_RECOVERY_INTR when interrupting a reshape thread.
+Date: Mon,  9 Jun 2014 15:48:25 -0700
+Message-Id: <20140609224814.799467914@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140609224813.282275135@linuxfoundation.org>
 References: <20140609224813.282275135@linuxfoundation.org>
@@ -32,44 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: NeilBrown <neilb@suse.de>
 
-commit e60cbeedc48d80689c249ab5dcc3c31ad0452dea upstream.
+commit 2ac295a544dcae9299cba13ce250419117ae7fd1 upstream.
 
-Prior to commit 4266129964b8 ("[media] DocBook: Move all media docbook
-stuff into its own directory") it was possible to build only a single
-(or more) book(s) by calling, for example
+Commit 8313b8e57f55b15e5b7f7fc5d1630bbf686a9a97
+   md: fix problem when adding device to read-only array with bitmap.
 
-    make htmldocs DOCBOOKS=80211.xml
+added a called to md_reap_sync_thread() which cause a reshape thread
+to be interrupted (in particular, it could cause md_thread() to never even
+call md_do_sync()).
+However it didn't set MD_RECOVERY_INTR so ->finish_reshape() would not
+know that the reshape didn't complete.
 
-This now fails:
+This only happens when mddev->ro is set and normally reshape threads
+don't run in that situation.  But raid5 and raid10 can start a reshape
+thread during "run" is the array is in the middle of a reshape.
+They do this even if ->ro is set.
 
-    cp: target `.../Documentation/DocBook//media_api' is not a directory
+So it is best to set MD_RECOVERY_INTR before abortingg the
+sync thread, just in case.
 
-Ignore errors from that copy to make this possible again.
+Though it rare for this to trigger a problem it can cause data corruption
+because the reshape isn't finished properly.
+So it is suitable for any stable which the offending commit was applied to.
+(3.2 or later)
 
-Fixes: 4266129964b8 ("[media] DocBook: Move all media docbook stuff into its own directory")
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Fixes: 8313b8e57f55b15e5b7f7fc5d1630bbf686a9a97
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/DocBook/media/Makefile |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/md.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/Documentation/DocBook/media/Makefile
-+++ b/Documentation/DocBook/media/Makefile
-@@ -195,7 +195,7 @@ DVB_DOCUMENTED = \
- #
- 
- install_media_images = \
--	$(Q)cp $(OBJIMGFILES) $(MEDIA_SRC_DIR)/v4l/*.svg $(MEDIA_OBJ_DIR)/media_api
-+	$(Q)-cp $(OBJIMGFILES) $(MEDIA_SRC_DIR)/v4l/*.svg $(MEDIA_OBJ_DIR)/media_api
- 
- $(MEDIA_OBJ_DIR)/%: $(MEDIA_SRC_DIR)/%.b64
- 	$(Q)base64 -d $< >$@
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -7840,6 +7840,7 @@ void md_check_recovery(struct mddev *mdd
+ 			/* There is no thread, but we need to call
+ 			 * ->spare_active and clear saved_raid_disk
+ 			 */
++			set_bit(MD_RECOVERY_INTR, &mddev->recovery);
+ 			md_reap_sync_thread(mddev);
+ 			clear_bit(MD_RECOVERY_NEEDED, &mddev->recovery);
+ 			goto unlock;
 
 
