@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933324AbaFILAR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 07:00:17 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:42445 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932126AbaFIK71 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 06:59:27 -0400
-From: LABBE Corentin <clabbe.montjoie@gmail.com>
-To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, maxime.ripard@free-electrons.com,
-        linux@arm.linux.org.uk, herbert@gondor.apana.org.au,
-        davem@davemloft.net, grant.likely@linaro.org
-Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        linux-sunxi@googlegroups.com,
-        LABBE Corentin <clabbe.montjoie@gmail.com>
-Subject: [PATCH v2 4/4] ARM: sunxi: dt: Add DT bindings documentation for SUNXI Security System
-Date: Mon,  9 Jun 2014 12:59:11 +0200
-Message-Id: <1402311551-19564-5-git-send-email-clabbe.montjoie@gmail.com>
-X-Mailer: git-send-email 1.8.5.5
-In-Reply-To: <1402311551-19564-1-git-send-email-clabbe.montjoie@gmail.com>
-References: <1402311551-19564-1-git-send-email-clabbe.montjoie@gmail.com>
+	id S933142AbaFILDg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 07:03:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34138 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754242AbaFILDe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 07:03:34 -0400
+Date: Mon, 9 Jun 2014 13:03:31 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Pavel Machek <pavel@ucw.cz>
+cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux-pm mailing list <linux-pm@lists.osdl.org>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>
+Subject: Re: 3.15-rc: regression in suspend
+In-Reply-To: <20140609102328.GA25332@amd.pavel.ucw.cz>
+Message-ID: <alpine.LNX.2.00.1406091302560.20782@pobox.suse.cz>
+References: <20140513163734.GA4602@amd.pavel.ucw.cz> <20140513214155.GA5087@amd.pavel.ucw.cz> <alpine.LRH.2.00.1405141435510.30793@twin.jikos.cz> <20140514155759.GB9723@amd.pavel.ucw.cz> <20140514182046.GA13342@amd.pavel.ucw.cz> <alpine.LNX.2.00.1405151727380.16459@pobox.suse.cz>
+ <CAKMK7uFEjDGSpdB0xDPL09GZ8N7aFrNA530HbRLyfTPx5SkLQw@mail.gmail.com> <20140607120614.GB5309@amd.pavel.ucw.cz> <20140607231124.GA3611@amd.pavel.ucw.cz> <CAKMK7uEALofLiEA3m-QKjygC=YZNjaEtUMfbpbXinMoim1ygkw@mail.gmail.com>
+ <20140609102328.GA25332@amd.pavel.ucw.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds documentation for Device-Tree bindings for the Security
-System cryptographic accelerator driver.
+On Mon, 9 Jun 2014, Pavel Machek wrote:
 
-Signed-off-by: LABBE Corentin <clabbe.montjoie@gmail.com>
----
- Documentation/devicetree/bindings/crypto/sunxi-ss.txt | 9 +++++++++
- 1 file changed, 9 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/crypto/sunxi-ss.txt
+> > > Strange. It seems 3.15 with the patch reverted only boots in 30% or so
+> > > cases... And I've seen resume failure, too, so maybe I was just lucky
+> > > that it worked for a while.
+> > 
+> > git bisect really likes 25f397a429dfa43f22c278d0119a60 - you're about
+> > the 5th report or so that claims this is the culprit but it's
+> > something else. The above code is definitely not used in i915 so bogus
+> > bisect result.
+> 
+> Note I did not do the bisect, I only attempted revert and test.
+> 
+> And did three boots of successful s2ram.. only to find out that it
+> does not really fix s2ram, I was just lucky :-(.
+> 
+> Unfortunately, this means my s2ram problem will be tricky/impossible
+> to bisect :-(.
 
-diff --git a/Documentation/devicetree/bindings/crypto/sunxi-ss.txt b/Documentation/devicetree/bindings/crypto/sunxi-ss.txt
-new file mode 100644
-index 0000000..a566803
---- /dev/null
-+++ b/Documentation/devicetree/bindings/crypto/sunxi-ss.txt
-@@ -0,0 +1,9 @@
-+* Allwinner Security System found on A20 SoC
-+
-+Required properties:
-+- compatible : Should be "allwinner,sun7i-a20-crypto".
-+- reg: Should contain the Security System register location and length.
-+- interrupts: Should contain the IRQ line for the Security System.
-+- clocks : A phandle to the functional clock node of the Security System module
-+- clock-names : Name of the functional clock, should be "ahb" and "mod".
-+
+Welcome to the situation I have been in for past several months.
+
 -- 
-1.8.5.5
-
+Jiri Kosina
+SUSE Labs
