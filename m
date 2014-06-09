@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936486AbaFIJ2d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 05:28:33 -0400
+	id S936490AbaFIJ25 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 05:28:57 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59137 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933579AbaFIJ1p (ORCPT
+	by vger.kernel.org with ESMTP id S936424AbaFIJ1h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 05:27:45 -0400
+	Mon, 9 Jun 2014 05:27:37 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 103/146] workqueue: fix a possible race condition between rescuer and pwq-release
-Date: Mon,  9 Jun 2014 10:50:38 +0200
-Message-Id: <faad6139a324ab020b9b1c4c82358d4ce6948fe1.1402303821.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Nicholas Bellinger <nab@linux-iscsi.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 117/146] iscsi-target: Change BUG_ON to REJECT in iscsit_process_nop_out
+Date: Mon,  9 Jun 2014 10:50:52 +0200
+Message-Id: <62f64757ef8f757a22e8fedcf5d4ee1e08dc5b79.1402303821.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
 References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
@@ -23,66 +23,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 77668c8b559e4fe2acf2a0749c7c83cde49a5025 upstream.
+commit 7cbfcc953789ff864c2bf8365a82a3fba4869649 upstream.
 
-There is a race condition between rescuer_thread() and
-pwq_unbound_release_workfn().
+This patch changes an incorrect use of BUG_ON to instead generate a
+REJECT + PROTOCOL_ERROR in iscsit_process_nop_out() code.  This case
+can occur with traditional TCP where a flood of zeros in the data
+stream can reach this block for what is presumed to be a NOP-OUT with
+a solicited reply, but without a valid iscsi_cmd pointer.
 
-Even after a pwq is scheduled for rescue, the associated work items
-may be consumed by any worker.  If all of them are consumed before the
-rescuer gets to them and the pwq's base ref was put due to attribute
-change, the pwq may be released while still being linked on
-@wq->maydays list making the rescuer dereference already freed pwq
-later.
+This incorrect BUG_ON was introduced during the v3.11-rc timeframe
+with the following commit:
 
-Make send_mayday() pin the target pwq until the rescuer is done with
-it.
+commit 778de368964c5b7e8100cde9f549992d521e9c89
+Author: Nicholas Bellinger <nab@linux-iscsi.org>
+Date:   Fri Jun 14 16:07:47 2013 -0700
 
-tj: Updated comment and patch description.
+    iscsi/isert-target: Refactor ISCSI_OP_NOOP RX handling
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Arshad Hussain <arshad.hussain@calsoftinc.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- kernel/workqueue.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ drivers/target/iscsi/iscsi_target.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 9ae0693ca520..c0b6eb1e0b83 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1901,6 +1901,12 @@ static void send_mayday(struct work_struct *work)
+diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
+index b47c2be1c427..004e484a71cd 100644
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -1579,7 +1579,9 @@ int iscsit_process_nop_out(struct iscsi_conn *conn, struct iscsi_cmd *cmd,
+ 	 * Initiator is expecting a NopIN ping reply..
+ 	 */
+ 	if (hdr->itt != RESERVED_ITT) {
+-		BUG_ON(!cmd);
++		if (!cmd)
++			return iscsit_add_reject(conn, ISCSI_REASON_PROTOCOL_ERROR,
++						(unsigned char *)hdr);
  
- 	/* mayday mayday mayday */
- 	if (list_empty(&pwq->mayday_node)) {
-+		/*
-+		 * If @pwq is for an unbound wq, its base ref may be put at
-+		 * any time due to an attribute change.  Pin @pwq until the
-+		 * rescuer is done with it.
-+		 */
-+		get_pwq(pwq);
- 		list_add_tail(&pwq->mayday_node, &wq->maydays);
- 		wake_up_process(wq->rescuer->task);
- 	}
-@@ -2430,6 +2436,12 @@ repeat:
- 		process_scheduled_works(rescuer);
- 
- 		/*
-+		 * Put the reference grabbed by send_mayday().  @pool won't
-+		 * go away while we're holding its lock.
-+		 */
-+		put_pwq(pwq);
-+
-+		/*
- 		 * Leave this pool.  If keep_working() is %true, notify a
- 		 * regular worker; otherwise, we end up with 0 concurrency
- 		 * and stalling the execution.
+ 		spin_lock_bh(&conn->cmd_lock);
+ 		list_add_tail(&cmd->i_conn_node, &conn->conn_cmd_list);
 -- 
 1.9.3
 
