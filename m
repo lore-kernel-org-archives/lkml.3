@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933583AbaFII60 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 04:58:26 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58564 "EHLO
+	id S933334AbaFII6Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 04:58:24 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58542 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932201AbaFIIv1 (ORCPT
+	by vger.kernel.org with ESMTP id S932206AbaFIIv1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jun 2014 04:51:27 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Russell King <rmk+kernel@arm.linux.org.uk>,
-        Bryan Wu <cooloney@gmail.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 082/146] leds: leds-pwm: properly clean up after probe failure
-Date: Mon,  9 Jun 2014 10:50:17 +0200
-Message-Id: <22e8818b7fbe6f9ffa854cf895352d027766690a.1402303821.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Anssi Hannula <anssi.hannula@iki.fi>,
+        Takashi Iwai <tiwai@suse.de>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 095/146] ALSA: hda - hdmi: Set converter channel count even without sink
+Date: Mon,  9 Jun 2014 10:50:30 +0200
+Message-Id: <33d531477c11345db670fe7f2d9c5910773a1789.1402303821.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
 References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
@@ -23,91 +23,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Anssi Hannula <anssi.hannula@iki.fi>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 392369019eb96e914234ea21eda806cb51a1073e upstream.
+commit f06ab794af7055d0949b09885f79f8b493deec64 upstream.
 
-When probing with DT, we add each LED one at a time.  If we find a LED
-without a PWM device (because it is not available yet) we fail the
-initialisation, unregister previous LEDs, and then by way of managed
-resources, we free the structure.
+Since commit 1df5a06a ("ALSA: hda - hdmi: Fix programmed active channel
+count") channel count is no longer being set if monitor_present is 0.
+This is because setting the count was moved after the CA value is
+determined, which is only after the monitor_present check in
+hdmi_setup_audio_infoframe().
 
-The problem with this is we may have a scheduled and active work_struct
-in this structure, and this results in a nasty kernel oops.
+Unfortunately, in some cases, such as with a non-spec-compliant codec or
+with a problematic video driver, monitor_present is always 0. As a
+specific example, this seems to happen with gen1 ATV (SiI1390 codec),
+causing left-channel-only stereo playback (multi-channel playback has
+apparently never worked with this codec despite it reporting 8 channels,
+reason unknown).
 
-We need to cancel this work_struct properly upon cleanup - and the
-cleanup we require is the same cleanup as we do when the LED platform
-device is removed.  Rather than writing this same code three times,
-move it into a separate function and use it in all three places.
+Simply setting converter channel count without setting the pin infoframe
+and channel mapping as well does not theoretically make much sense as
+this will just mean they are out-of-sync and multichannel playback will
+have a wrong channel mapping.
 
-Fixes: c971ff185f64 ("leds: leds-pwm: Defer led_pwm_set() if PWM can sleep")
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Bryan Wu <cooloney@gmail.com>
+However, adding back just setting the converter channel count even in
+no-monitor case is the safest change which at least fixes the stereo
+playback regression on SiI1390 codec. Do that.
+
+Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
+Reported-by: Stephan Raue <stephan@openelec.tv>
+Tested-by: Stephan Raue <stephan@openelec.tv>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/leds/leds-pwm.c | 23 +++++++++++++----------
- 1 file changed, 13 insertions(+), 10 deletions(-)
+ sound/pci/hda/patch_hdmi.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/leds/leds-pwm.c b/drivers/leds/leds-pwm.c
-index bb6f94898541..305e88a6f625 100644
---- a/drivers/leds/leds-pwm.c
-+++ b/drivers/leds/leds-pwm.c
-@@ -82,6 +82,15 @@ static inline size_t sizeof_pwm_leds_priv(int num_leds)
- 		      (sizeof(struct led_pwm_data) * num_leds);
- }
+diff --git a/sound/pci/hda/patch_hdmi.c b/sound/pci/hda/patch_hdmi.c
+index 23e0bc6d6568..2949c8d34d33 100644
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -1023,8 +1023,10 @@ static void hdmi_setup_audio_infoframe(struct hda_codec *codec,
+ 					    AMP_OUT_UNMUTE);
  
-+static void led_pwm_cleanup(struct led_pwm_priv *priv)
-+{
-+	while (priv->num_leds--) {
-+		led_classdev_unregister(&priv->leds[priv->num_leds].cdev);
-+		if (priv->leds[priv->num_leds].can_sleep)
-+			cancel_work_sync(&priv->leds[priv->num_leds].work);
+ 	eld = &per_pin->sink_eld;
+-	if (!eld->monitor_present)
++	if (!eld->monitor_present) {
++		hdmi_set_channel_count(codec, per_pin->cvt_nid, channels);
+ 		return;
 +	}
-+}
-+
- static struct led_pwm_priv *led_pwm_create_of(struct platform_device *pdev)
- {
- 	struct device_node *node = pdev->dev.of_node;
-@@ -139,8 +148,7 @@ static struct led_pwm_priv *led_pwm_create_of(struct platform_device *pdev)
  
- 	return priv;
- err:
--	while (priv->num_leds--)
--		led_classdev_unregister(&priv->leds[priv->num_leds].cdev);
-+	led_pwm_cleanup(priv);
- 
- 	return NULL;
- }
-@@ -200,8 +208,8 @@ static int led_pwm_probe(struct platform_device *pdev)
- 	return 0;
- 
- err:
--	while (i--)
--		led_classdev_unregister(&priv->leds[i].cdev);
-+	priv->num_leds = i;
-+	led_pwm_cleanup(priv);
- 
- 	return ret;
- }
-@@ -209,13 +217,8 @@ err:
- static int led_pwm_remove(struct platform_device *pdev)
- {
- 	struct led_pwm_priv *priv = platform_get_drvdata(pdev);
--	int i;
- 
--	for (i = 0; i < priv->num_leds; i++) {
--		led_classdev_unregister(&priv->leds[i].cdev);
--		if (priv->leds[i].can_sleep)
--			cancel_work_sync(&priv->leds[i].work);
--	}
-+	led_pwm_cleanup(priv);
- 
- 	return 0;
- }
+ 	if (!non_pcm && per_pin->chmap_set)
+ 		ca = hdmi_manual_channel_allocation(channels, per_pin->chmap);
 -- 
 1.9.3
 
