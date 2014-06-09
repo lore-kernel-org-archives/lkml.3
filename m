@@ -1,38 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754188AbaFIBus (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jun 2014 21:50:48 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:33466 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753512AbaFIBuj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jun 2014 21:50:39 -0400
-Message-ID: <539512ED.1000203@kernel.dk>
-Date: Sun, 08 Jun 2014 19:50:37 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1754062AbaFIB4U (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jun 2014 21:56:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20319 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753512AbaFIB4O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jun 2014 21:56:14 -0400
+Date: Mon, 9 Jun 2014 09:57:05 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
+        greg@kroah.com, bp@alien8.de, jkosina@suse.cz, chaowang@redhat.com,
+        bhe@redhat.com, akpm@linux-foundation.org
+Subject: Re: [RFC PATCH 00/13][V3] kexec: A new system call to allow in
+ kernel loading
+Message-ID: <20140609015705.GA1924@darkstar.nay.redhat.com>
+References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
+ <20140603131203.GA23395@redhat.com>
+ <20140605083134.GE3506@darkstar.nay.redhat.com>
+ <20140605150159.GA14083@redhat.com>
+ <20140606073748.GC3343@darkstar.nay.redhat.com>
+ <20140606200418.GN1526@redhat.com>
 MIME-Version: 1.0
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] block: blk-exec.c:  Cleaning up local variable address
- returnd
-References: <1402094247-7998-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-In-Reply-To: <1402094247-7998-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140606200418.GN1526@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-06-06 16:37, Rickard Strandqvist wrote:
-> Address of local variable assigned to a function parameter
->
-> This was partly found using a static code analysis program called cppcheck.
+On 06/06/14 at 04:04pm, Vivek Goyal wrote:
+> On Fri, Jun 06, 2014 at 03:37:48PM +0800, Dave Young wrote:
+> > On 06/05/14 at 11:01am, Vivek Goyal wrote:
+> > > On Thu, Jun 05, 2014 at 04:31:34PM +0800, Dave Young wrote:
+> > > 
+> > > [..]
+> > > > > +	ret = kexec_file_load(kernel_fd, info.initrd_fd, info.command_line,
+> > > > > +			info.command_line_len, info.kexec_flags);
+> > > > 
+> > > > Vivek,
+> > > > 
+> > > > I tried your patch on my uefi test machine, but kexec load fails like below:
+> > > > 
+> > > > [root@localhost ~]# kexec -l /boot/vmlinuz-3.15.0-rc8+ --use-kexec2-syscall
+> > > > Could not find a free area of memory of 0xa000 bytes ...
+> > > 
+> > > Hi Dave,
+> > > 
+> > > I think this message is coming from kexec-tools from old loading path. I
+> > > think somehow new path did not even kick in. I tried above and I got
+> > > -EBADF as I did not pass initrd. Can you run gdb on kexec and see if
+> > > you are getting to syscall or run strace.
+> > 
+> > Seems I can not reproduce the local hole fail issue but I'm sure it happens
+> > before the new syscall callback.
+> > 
+> > This time I got -ENOEXEC. It's caused by CONFIG_EFI_MIXED=y. In case EFI_MIXED
+> > 64bit kernel runs on 32bit efi firmware thus XLF_CAN_BE_LOADED_ABOVE_4G is not
+> > set thus bzImage probe will fail with NOEXEC.
+> 
+> Yep, current bzImage loader only supports loading 64bit image which can
+> be loaded above 4G.
+> 
+> I am wondering how user space implementation is taking care of it. I guess
+> we are falling back to 32bit implementation where we use 32bit entry and
+> assume that bzImage has to be below 4G.
+> 
+> We will have to do similar thing in kernel when 32bit loader comes in.
+> Compile that in for 64bit kernel and let it handle the case of bzImage
+> not being loadable above 4G.
 
-I'd be surprised if this was a real bug, but I agree on principle, we 
-should not leak stack data. The code is in place since for drivers that 
-rely on sense always being available. I will apply, thanks.
+Vivek, I think current implementation is ok to only handle XLF_CAN_BE_LOADED_ABOVE_4G
+bzImage.
 
--- 
-Jens Axboe
+Matt has sent a patch to revert the EFI_MIXED patch since 32bit loader never load
+kernel to above 4G space. So no worry about this issue any more.
 
+Thanks
+Dave 
