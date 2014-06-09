@@ -1,186 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755566AbaFINYg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 09:24:36 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:35748 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755089AbaFINYd (ORCPT
+	id S1755365AbaFIN2G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 09:28:06 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:50515 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752662AbaFIN2C convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 09:24:33 -0400
-Date: Mon, 9 Jun 2014 14:24:29 +0100
-From: Leif Lindholm <leif.lindholm@linaro.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: "msalter@redhat.com" <msalter@redhat.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "steve.capper@linaro.org" <steve.capper@linaro.org>
-Subject: Re: [PATCH] arm64: Add flush_cache_vmap call in __early_set_fixmap
-Message-ID: <20140609132429.GF4179@bivouac.eciton.net>
-References: <1402050590-23877-1-git-send-email-leif.lindholm@linaro.org>
- <1402065449.15402.2.camel@deneb.redhat.com>
- <20140606145324.GE4179@bivouac.eciton.net>
- <1402067373.15402.9.camel@deneb.redhat.com>
- <20140609110356.GD25590@arm.com>
+	Mon, 9 Jun 2014 09:28:02 -0400
+From: Michal Nazarewicz <mina86@mina86.com>
+To: Krzysztof Opasiak <k.opasiak@samsung.com>, "'Felipe Balbi'" <balbi@ti.com>,
+        Krzysztof Opasiak <k.opasiak@samsung.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 5/5] tools: ffs-test: add compatibility code for old kernels
+In-Reply-To: <006601cf83bc$66197b30$324c7190$%opasiak@samsung.com>
+Organization: http://mina86.com/
+References: <1402045976-26580-1-git-send-email-mina86@mina86.com> <1402045976-26580-5-git-send-email-mina86@mina86.com> <006601cf83bc$66197b30$324c7190$%opasiak@samsung.com>
+User-Agent: Notmuch/0.17+15~gb65ca8e (http://notmuchmail.org) Emacs/24.4.50.1 (x86_64-unknown-linux-gnu)
+X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
+X-PGP: 50751FF4
+X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
+X-Hashcash: 1:20:140609:k.opasiak@samsung.com::rFB4XWlvkXtls1oi:000000000000000000000000000000000000000008e6
+X-Hashcash: 1:20:140609:linux-kernel@vger.kernel.org::xv2DNXwNRA1w/jP0:0000000000000000000000000000000000Ql1
+X-Hashcash: 1:20:140609:k.opasiak@samsung.com::k/Awkd5L/3KXrzPI:00000000000000000000000000000000000000000aNV
+X-Hashcash: 1:20:140609:linux-usb@vger.kernel.org::AtM7jpvEZo3Muxcg:0000000000000000000000000000000000006oMh
+X-Hashcash: 1:20:140609:balbi@ti.com::BIX05Z3boJdYeHOl:00000994i
+Date: Mon, 09 Jun 2014 15:27:58 +0200
+Message-ID: <xa1tmwdmdxgh.fsf@mina86.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140609110356.GD25590@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 09, 2014 at 12:03:56PM +0100, Catalin Marinas wrote:
-> > > > > __early_set_fixmap does not do any synchronization when called to set a
-> > > > > fixmap entry. Add call to flush_vmap_cache().
-> 
-> Did you hit a problem or it was just for safety?
+On Mon, Jun 09 2014, Krzysztof Opasiak wrote:
+> As this is an example which will be copy-paste by many users maybe you
+> should you struct usb_functionfs_descs_head and struct
+> usb_functionfs_descs_head_v2 instead of direct operations using
+> hard-coded offsets to make this function more readable?
 
-This fixes an abort when accessing early UEFI configuration tables on
-a hardware platform. (The issue can not be triggered with the FVM Base
-Model, even with cache modelling enabled.)
+v3 uses usb_functionfs_descs_head{_v2,} instead of hard-coded offsets.
+I also started wondering if it would make sense to go one step further
+and define a temporary structure holding the headers.  Something like:
 
-> > > > I'm confused by the commit message mentioning synchronization but
-> > > > the code doing a cache flush. I see that arm64 implementation of
-> > > > flush_cache_vmap() is just a dsb(). If it is synchronization that
-> > > > we need here (and it certainly looks like we do), why not just add
-> > > > the dsb() directly to make that clear?
-> > > 
-> > > It needs this Linux-semantically for the same reason remap_page_range
-> > > needs it. From the ARM architectural point of view, the reason is that
-> > > the translation table walk is considered a separate observer from the
-> > > core data interface.
-> > > 
-> > > But since there is a common Linux semantic for this, I preferred
-> > > reusing that over just throwing in a dsb(). My interpretation of
-> > > flush_cache_vmap() was "flush mappings from cache, so they can be
-> > > picked up by table walk". While we don't technically need to flush the
-> > > cache here, the underlying requirement is the same.
-> > 
-> > But the range you are flushing is not a range seen by the table walk
-> > observer. I just think it is clearer to explicitly show that it is
-> > the pte write which we want the table walk to see rather than to
-> > rely on the implicit behavior of a cache flush routine.
-> 
-> I think that's a valid point. flush_cache_vmap() is used to remove any
-> cached entries for the ioremap/vmap'ed range. That's not the aim here.
-> 
-> As an optimisation, set_pte() doesn't have a dsb(). We do this on the
-> clearing/invalidating path via the TLB flushing routines but not on the
-> re-enabling path. Here we just added dsb() in the relevant functions
-> that were called from the generic code (flush_cache_vmap,
-> update_mmu_cache).
-> 
-> A quick grep through the kernel shows that we have other set_pte() calls
-> without additional dsb() like create_mapping(), I think kvm_set_pte() as
-> well.
-> 
-> So I'm proposing an alternative patch (which needs some benchmarking as
-> well to see if anything is affected, maybe application startup time).
+----------- >8 ---------------------------------------------------------
+	/* Read v2 header */
+	{
+		const struct {
+			const struct usb_functionfs_descs_head_v2 header;
+			const __le32 counts[];
+		} __attribute__((packed)) *const in = descriptors;
+		const __le32 *counts = in->counts;
+		__u32 flags;
 
-I'm happy for any fix which can be included in 3.16.
+		if (le32_to_cpu(in->header.magic) !=
+		    FUNCTIONFS_DESCRIPTORS_MAGIC_V2)
+			return 0;
+		length = le32_to_cpu(in->header.length);
+		if (length <= sizeof in->header)
+			return 0;
+		length -= sizeof in->header;
+		flags = le32_to_cpu(in->header.flags);
+		if (flags & ~(FUNCTIONFS_HAS_FS_DESC | FUNCTIONFS_HAS_HS_DESC |
+			      FUNCTIONFS_HAS_SS_DESC))
+			return 0;
 
-But is the dsb(ishst) sufficient? We need to also prevent reads from
-overtaking the set_pte(). i.e.:
+#define GET_NEXT_COUNT_IF_FLAG(ret, flg) do {		\
+			if (!(flags & (flg)))		\
+				break;			\
+			if (length < 4)			\
+				return 0;		\
+			ret = le32_to_cpu(*counts);	\
+			length -= 4;			\
+			++counts;			\
+		} while (0)
 
-ptr = early_ioremap(phys_addr, size);
-if (ptr && strcmp(ptr, "magic") == 0)
-   ...
+		GET_NEXT_COUNT_IF_FLAG(fs_count, FUNCTIONFS_HAS_FS_DESC);
+		GET_NEXT_COUNT_IF_FLAG(hs_count, FUNCTIONFS_HAS_HS_DESC);
+		GET_NEXT_COUNT_IF_FLAG(count, FUNCTIONFS_HAS_SS_DESC);
 
-Does it not require a dsb(ish)?
- 
-> ------------------8<-------------------------------
-> 
-> From b5cd0fff5cb044fa32cbaa4eebd2f00690922567 Mon Sep 17 00:00:00 2001
-> From: Catalin Marinas <catalin.marinas@arm.com>
-> Date: Mon, 9 Jun 2014 11:55:03 +0100
-> Subject: [PATCH] arm64: Use DSB after page table update
-> 
-> As an optimisation, set_pte() does not contain a DSB instruction to
-> ensure the observability of the page table update before subsequent
-> memory accesses or TLB maintenance. Such barrier is placed in the
-> flush_tlb_*() functions and flush_cache_vmap()/update_mmu_cache().
-> However, there are still places where this barrier is missed like
-> create_mapping().
-> 
-> This patch adds a dsb(ishst) call in set_pte() but only when the entry
-> being written is valid. For invalid entries, there is always a
-> subsequent TLB maintenance containing the DSB.
-> 
-> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Will Deacon <will.deacon@arm.com>
-> ---
->  arch/arm64/include/asm/cacheflush.h | 11 +----------
->  arch/arm64/include/asm/pgtable.h    |  8 ++++++++
->  arch/arm64/include/asm/tlbflush.h   |  5 -----
->  3 files changed, 9 insertions(+), 15 deletions(-)
-> 
-> diff --git a/arch/arm64/include/asm/cacheflush.h b/arch/arm64/include/asm/cacheflush.h
-> index a5176cf32dad..8fdf37d83014 100644
-> --- a/arch/arm64/include/asm/cacheflush.h
-> +++ b/arch/arm64/include/asm/cacheflush.h
-> @@ -138,19 +138,10 @@ static inline void __flush_icache_all(void)
->  #define flush_icache_page(vma,page)	do { } while (0)
->  
->  /*
-> - * flush_cache_vmap() is used when creating mappings (eg, via vmap,
-> - * vmalloc, ioremap etc) in kernel space for pages.  On non-VIPT
-> - * caches, since the direct-mappings of these pages may contain cached
-> - * data, we need to do a full cache flush to ensure that writebacks
-> - * don't corrupt data placed into these pages via the new mappings.
-> + * Not required on AArch64 with VIPT caches.
->   */
->  static inline void flush_cache_vmap(unsigned long start, unsigned long end)
->  {
-> -	/*
-> -	 * set_pte_at() called from vmap_pte_range() does not
-> -	 * have a DSB after cleaning the cache line.
-> -	 */
-> -	dsb(ish);
->  }
->  
->  static inline void flush_cache_vunmap(unsigned long start, unsigned long end)
-> diff --git a/arch/arm64/include/asm/pgtable.h b/arch/arm64/include/asm/pgtable.h
-> index aa150ed99f22..2d03af6a2225 100644
-> --- a/arch/arm64/include/asm/pgtable.h
-> +++ b/arch/arm64/include/asm/pgtable.h
-> @@ -136,6 +136,7 @@ extern struct page *empty_zero_page;
->  #define pte_write(pte)		(!!(pte_val(pte) & PTE_WRITE))
->  #define pte_exec(pte)		(!(pte_val(pte) & PTE_UXN))
->  
-> +#define pte_valid(pte)		(!!(pte_val(pte) & PTE_VALID))
->  #define pte_valid_user(pte) \
->  	((pte_val(pte) & (PTE_VALID | PTE_USER)) == (PTE_VALID | PTE_USER))
->  
-> @@ -184,6 +185,13 @@ static inline pte_t pte_mkspecial(pte_t pte)
->  static inline void set_pte(pte_t *ptep, pte_t pte)
->  {
->  	*ptep = pte;
-> +
-> +	/*
-> +	 * If !pte_valid(pte), the DSB is handled by the TLB invalidation
-> +	 * operation.
-> +	 */
-> +	if (pte_valid(pte))
-> +		dsb(ishst);
->  }
->  
->  extern void __sync_icache_dcache(pte_t pteval, unsigned long addr);
-> diff --git a/arch/arm64/include/asm/tlbflush.h b/arch/arm64/include/asm/tlbflush.h
-> index b9349c4513ea..b28b970123dc 100644
-> --- a/arch/arm64/include/asm/tlbflush.h
-> +++ b/arch/arm64/include/asm/tlbflush.h
-> @@ -130,11 +130,6 @@ static inline void flush_tlb_kernel_range(unsigned long start, unsigned long end
->  static inline void update_mmu_cache(struct vm_area_struct *vma,
->  				    unsigned long addr, pte_t *ptep)
->  {
-> -	/*
-> -	 * set_pte() does not have a DSB, so make sure that the page table
-> -	 * write is visible.
-> -	 */
-> -	dsb(ishst);
->  }
->  
->  #define update_mmu_cache_pmd(vma, address, pmd) do { } while (0)
+		count = fs_count + hs_count;
+		if (!count)
+			return 0;
+		descs_start = descs_end = (const void *)counts;
+
+#undef GET_NEXT_COUNT_IF_FLAG
+	}
+
+----------- >8 ---------------------------------------------------------
+
+	/* Allocate legacy descriptors and copy the data. */
+	{
+		struct {
+			struct usb_functionfs_descs_head header;
+			__u8 descriptors[];
+		} __attribute__((packed)) *out;
+
+		length = sizeof out->header + (descs_end - descs_start);
+		out = malloc(length);
+		out->header.magic = cpu_to_le32(FUNCTIONFS_DESCRIPTORS_MAGIC);
+		out->header.length = cpu_to_le32(length);
+		out->header.fs_count = cpu_to_le32(fs_count);
+		out->header.hs_count = cpu_to_le32(hs_count);
+		memcpy(out->descriptors, descs_start, descs_end - descs_start);
+		*legacy = out;
+	}
+----------- >8 ---------------------------------------------------------
+
+Thoughts?
+
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
