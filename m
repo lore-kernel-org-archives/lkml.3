@@ -1,133 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754051AbaFITlR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 15:41:17 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:42979 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750805AbaFITlQ (ORCPT
+	id S1753841AbaFIToo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 15:44:44 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:36126 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750878AbaFITol (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 15:41:16 -0400
-Date: Mon, 9 Jun 2014 15:41:14 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>
-Subject: Re: safety of *mutex_unlock() (Was: [BUG] signal: sighand
- unprotected when accessed by /proc)
-Message-ID: <20140609154114.20585056@gandalf.local.home>
-In-Reply-To: <CA+55aFyO8bb7fS3AaQzfMq7geERQ1JpSdcRZ9Fbs5-tZP0oRXg@mail.gmail.com>
-References: <20140603130233.658a6a3c@gandalf.local.home>
-	<20140603172632.GA27956@redhat.com>
-	<CA+55aFzT5CGv_T60voAqR+4PfiMmJmsDZLid2DZ4=+X8uvF+ig@mail.gmail.com>
-	<20140603200125.GB1105@redhat.com>
-	<20140606203350.GU4581@linux.vnet.ibm.com>
-	<20140608130718.GA11129@redhat.com>
-	<20140609162613.GE4581@linux.vnet.ibm.com>
-	<20140609181553.GA13681@redhat.com>
-	<20140609142956.3d79e9d1@gandalf.local.home>
-	<CA+55aFyO8bb7fS3AaQzfMq7geERQ1JpSdcRZ9Fbs5-tZP0oRXg@mail.gmail.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Mon, 9 Jun 2014 15:44:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+In-Reply-To: <CAG4TOxMbXJeq848LuzJvsz23th4Wh7NZ6qT9o+pdv4fOdu=o=Q@mail.gmail.com>
+References: <fc0ae2c3-2661-48ba-957a-66cbb0cfc33e@CMEXHTCAS1.ad.emulex.com>
+	<538F4B66.6080906@opengridcomputing.com>
+	<CAG4TOxMbXJeq848LuzJvsz23th4Wh7NZ6qT9o+pdv4fOdu=o=Q@mail.gmail.com>
+Date: Mon, 9 Jun 2014 22:44:40 +0300
+Message-ID: <CAJZOPZLqmq1XMoyjv0OMTv8iX0Otvo=bm-rrwa3EfupUYgyGKQ@mail.gmail.com>
+Subject: Re: [PATCH for-next 00/15] Bug fixes for ocrdma driver
+From: Or Gerlitz <or.gerlitz@gmail.com>
+To: Roland Dreier <roland@kernel.org>,
+        Selvin Xavier <selvin.xavier@emulex.com>
+Cc: Steve Wise <swise@opengridcomputing.com>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Jun 2014 11:51:09 -0700
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+On Wed, Jun 4, 2014 at 8:06 PM, Roland Dreier <roland@kernel.org> wrote:
+> On Wed, Jun 4, 2014 at 9:37 AM, Steve Wise <swise@opengridcomputing.com> wrote:
+>> Seems like the subject lines in each patch are getting truncated?
+> Yes, truncated in patchwork too -- for example:
+> https://patchwork.kernel.org/patch/4292461/
+>
+> Please fix and resend.
 
-> On Mon, Jun 9, 2014 at 11:29 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> >>
-> >> And once again, note that the normal mutex is already unsafe (unless I missed
-> >> something).
-> >
-> > Is it unsafe?
-> >
-> > This thread was started because of a bug we triggered in -rt, which
-> > ended up being a change specific to -rt that modified the way slub
-> > handled SLAB_DESTROY_BY_RCU. What else was wrong with it?
-> 
-> There's a different issue with freeing of mutexes, which is not a bug,
-> but "by design". Namely that mutexes aren't truly "atomic". They are
-> complex data structures, and they have issues that a spinlock does not
-> have.
-> 
-> When unlocking a mutex, the thread doing the unlocking will still
-> touch the mutex itself _after_ another thread could already have
-> successfully acquired the mutex. This is not a problem in any normal
-> use. since all of this is perfectly coherent in general, but it means
-> that code sequences like:
-> 
->   mutex_lock(mem->mutex);
->   kill_it = !--mem->refcount;
->   mutex_unlock(mem->mutex);
->   if (kill_it)
->      free(mem);
+Roland, from quick looking on this series of fifteen patches, only 1/3
+of them (4/5/12/14) have non-empty change-log. I would expect kernel
+work which goes upstream through linux-rdma to use a bit of higher
+standards, agree?
 
-Oh this again. I remember you having a discussion about it in the past.
-I'm trying to wrap my head around it so let me make sure I understand
-the spinlock (working) case, and then a bad mutex case.
+Selvin, can you sit down and come up with change-logs to your driver updates?
 
-For this to work, you have some item, lets say on a list. When it is
-created, the refcount is 1 and it's added to the list. To remove it,
-you remove it from the list and dec the refcount, and if it is zero
-then you can free it. The issue is that you don't know what may have
-seen it while its on the list and the last one to dec it to zero frees
-it. Is this a situation that is used?
-
-Because spinlocks are atomic, this is all fine, but if you have a
-mutex, then this is where you can have issues. I think rtmutex has an
-issue with it too. Specifically in the slow_unlock case:
-
-	if (!rt_mutex_has_waiters(lock)) {
-		lock->owner = NULL;
-		raw_spin_unlock(&lock->wait_lock);
-		return;
-	}
-
-That is, you can have:
-
-
-	CPU0				CPU1
-	----				----
-				[refcount = 1]
-				read foo from list
-				[refcount = 2]
-  [refcount 2]
-  remove foo from list
-
-  mutex_lock(foo->mutex);
-  kill_it = !--mem->refcount;
-  [refcount = 1]
-  [kill_it == 0]
-  mutex_unlock(foo->mutex)
-    lock->owner = NULL;
-
-				mutex_lock()
-				 [ owner == NULL, fast path!]
-				kill_it = !--mem->refcount;
-				 [refcount = 0]
-				 [kill_it = 1]
-				mutex_unlock()
-				 [ owner == current, fast path!]
-
-				if (kill_it)
-				   free(foo);
-
-  raw_spin_unlock(&lock->wait_lock);
-   [access freed foo's wait_lock, BUG!]
-
-Is this the problem? I'm just trying to visualize it, and maybe even
-visualize it for others that are reading this thread.
-
-Thanks,
-
--- Steve
+Or.
