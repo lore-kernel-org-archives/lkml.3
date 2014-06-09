@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933951AbaFIWpu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 18:45:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56895 "EHLO
+	id S934980AbaFIXBp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 19:01:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56998 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933705AbaFIWpi (ORCPT
+	with ESMTP id S933940AbaFIWpu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:45:38 -0400
+	Mon, 9 Jun 2014 18:45:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Tejun Heo <tj@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 42/78] libata: Blacklist queued trim for Crucial M500
-Date: Mon,  9 Jun 2014 15:48:22 -0700
-Message-Id: <20140609224814.710878695@linuxfoundation.org>
+        Doug Smythies <dsmythies@telus.net>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.14 67/78] intel_pstate: Improve initial busy calculation
+Date: Mon,  9 Jun 2014 15:48:47 -0700
+Message-Id: <20140609224815.487120037@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140609224813.282275135@linuxfoundation.org>
 References: <20140609224813.282275135@linuxfoundation.org>
@@ -30,49 +30,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
+From: Doug Smythies <dsmythies@telus.net>
 
-commit 3b8d2676d15d6b2326757adb66b70a9cd6650373 upstream.
+commit bf8102228a8bf053051f311e5486042fe0542894 upstream.
 
-Queued trim only works for some users with MU05 firmware.  Revert to
-blacklisting all firmware versions.
+This change makes the busy calculation using 64 bit math which prevents
+overflow for large values of aperf/mperf.
 
-Introduced by commit d121f7d0cbb8 ("libata: Update queued trim blacklist
-for M5x0 drives") which this effectively reverts, while retaining the
-blacklisting of M550.
-
-See
-
-    https://bugzilla.kernel.org/show_bug.cgi?id=71371
-
-for reports of trouble with MU05 firmware.
-
-Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Tejun Heo <tj@kernel.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Doug Smythies <dsmythies@telus.net>
+Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/libata-core.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/cpufreq/intel_pstate.c |   13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -4224,10 +4224,10 @@ static const struct ata_blacklist_entry
- 	{ "PIONEER DVD-RW  DVR-216D",	NULL,	ATA_HORKAGE_NOSETXFER },
+--- a/drivers/cpufreq/intel_pstate.c
++++ b/drivers/cpufreq/intel_pstate.c
+@@ -563,16 +563,19 @@ static void intel_pstate_get_cpu_pstates
+ static inline void intel_pstate_calc_busy(struct cpudata *cpu,
+ 					struct sample *sample)
+ {
+-	int32_t core_pct;
++	int64_t core_pct;
++	int32_t rem;
  
- 	/* devices that don't properly handle queued TRIM commands */
--	{ "Micron_M500*",		"MU0[1-4]*",	ATA_HORKAGE_NO_NCQ_TRIM, },
--	{ "Crucial_CT???M500SSD*",	"MU0[1-4]*",	ATA_HORKAGE_NO_NCQ_TRIM, },
--	{ "Micron_M550*",		NULL,		ATA_HORKAGE_NO_NCQ_TRIM, },
--	{ "Crucial_CT???M550SSD*",	NULL,		ATA_HORKAGE_NO_NCQ_TRIM, },
-+	{ "Micron_M500*",		NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
-+	{ "Crucial_CT???M500SSD*",	NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
-+	{ "Micron_M550*",		NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
-+	{ "Crucial_CT???M550SSD*",	NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
+-	core_pct = div_fp(int_tofp((sample->aperf)),
+-			int_tofp((sample->mperf)));
+-	core_pct = mul_fp(core_pct, int_tofp(100));
++	core_pct = int_tofp(sample->aperf) * int_tofp(100);
++	core_pct = div_u64_rem(core_pct, int_tofp(sample->mperf), &rem);
++
++	if ((rem << 1) >= int_tofp(sample->mperf))
++		core_pct += 1;
  
- 	/*
- 	 * Some WD SATA-I drives spin up and down erratically when the link
+ 	sample->freq = fp_toint(
+ 		mul_fp(int_tofp(cpu->pstate.max_pstate * 1000), core_pct));
+ 
+-	sample->core_pct_busy = core_pct;
++	sample->core_pct_busy = (int32_t)core_pct;
+ }
+ 
+ static inline void intel_pstate_sample(struct cpudata *cpu)
 
 
