@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932358AbaFIUE5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 16:04:57 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:37093 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932326AbaFIUEv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 16:04:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140609184157.17500.84469.stgit@bling.home>
-References: <20140609184157.17500.84469.stgit@bling.home>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 9 Jun 2014 14:04:30 -0600
-Message-ID: <CAErSpo5XNcw4sKdYrmg26N=qkvA9ysspy2kKf+bCv0KfKEGY8Q@mail.gmail.com>
-Subject: Re: [PATCH] PCI: Add bridge DMA alias quirk for ITE bridge
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        rwarsow@gmx.de
-Content-Type: text/plain; charset=UTF-8
+	id S932223AbaFIUEY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 16:04:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4398 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754562AbaFIUDF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 16:03:05 -0400
+From: Jiri Olsa <jolsa@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Don Zickus <dzickus@redhat.com>,
+        Jiri Olsa <jolsa@kernel.org>
+Subject: [PATCH 13/15] perf tools: Add support to dynamically get cacheline size
+Date: Mon,  9 Jun 2014 22:02:28 +0200
+Message-Id: <1402344150-14860-14-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1402344150-14860-1-git-send-email-jolsa@kernel.org>
+References: <1402344150-14860-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 9, 2014 at 12:43 PM, Alex Williamson
-<alex.williamson@redhat.com> wrote:
-> Link: https://bugzilla.kernel.org/show_bug.cgi?id=73551
-> Reported-by: rwarsow@gmx.de
-> Tested-by: rwarsow@gmx.de
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+From: Don Zickus <dzickus@redhat.com>
 
-Added to pci/iommu for v3.16, thanks!
+Different arches may have different cacheline sizes.  Look it up and set
+a global variable for reference.
 
-> ---
->
-> One more for the pci/iommu branch
->
->  drivers/pci/quirks.c |    2 ++
->  1 file changed, 2 insertions(+)
->
-> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-> index ab620ac..533cd0d 100644
-> --- a/drivers/pci/quirks.c
-> +++ b/drivers/pci/quirks.c
-> @@ -3407,6 +3407,8 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ASMEDIA, 0x1080,
->                          quirk_use_pcie_bridge_dma_alias);
->  /* Tundra 8113, https://bugzilla.kernel.org/show_bug.cgi?id=44881#c43 */
->  DECLARE_PCI_FIXUP_HEADER(0x10e3, 0x8113, quirk_use_pcie_bridge_dma_alias);
-> +/* ITE 8892, https://bugzilla.kernel.org/show_bug.cgi?id=73551 */
-> +DECLARE_PCI_FIXUP_HEADER(0x1283, 0x8892, quirk_use_pcie_bridge_dma_alias);
->
->  static struct pci_dev *pci_func_0_dma_source(struct pci_dev *dev)
->  {
->
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+Link: http://lkml.kernel.org/r/1401480605-97442-1-git-send-email-dzickus@redhat.com
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+---
+ tools/perf/perf.c      | 1 +
+ tools/perf/util/util.c | 1 +
+ tools/perf/util/util.h | 1 +
+ 3 files changed, 3 insertions(+)
+
+diff --git a/tools/perf/perf.c b/tools/perf/perf.c
+index 78f7b92..95c58fc 100644
+--- a/tools/perf/perf.c
++++ b/tools/perf/perf.c
+@@ -458,6 +458,7 @@ int main(int argc, const char **argv)
+ 
+ 	/* The page_size is placed in util object. */
+ 	page_size = sysconf(_SC_PAGE_SIZE);
++	cacheline_size = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
+ 
+ 	cmd = perf_extract_argv0_path(argv[0]);
+ 	if (!cmd)
+diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
+index 7fff6be..95aefa7 100644
+--- a/tools/perf/util/util.c
++++ b/tools/perf/util/util.c
+@@ -17,6 +17,7 @@
+  * XXX We need to find a better place for these things...
+  */
+ unsigned int page_size;
++int cacheline_size;
+ 
+ bool test_attr__enabled;
+ 
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index b03da44..6686436 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -304,6 +304,7 @@ char *rtrim(char *s);
+ void dump_stack(void);
+ 
+ extern unsigned int page_size;
++extern int cacheline_size;
+ 
+ void get_term_dimensions(struct winsize *ws);
+ 
+-- 
+1.8.3.1
+
