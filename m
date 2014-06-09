@@ -1,79 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754865AbaFIMTZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 08:19:25 -0400
-Received: from staff.gunadarma.ac.id ([202.125.94.79]:23730 "EHLO
-	staff.gunadarma.ac.id" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752917AbaFIMTX convert rfc822-to-8bit (ORCPT
+	id S1754767AbaFIMdU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 08:33:20 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:51185 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754217AbaFIMdQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 08:19:23 -0400
-X-Greylist: delayed 621 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 Jun 2014 08:19:22 EDT
-Date: Mon, 09 Jun 2014 19:08:18 +0700 (WIT)
-From: DIAMONDSWISS LOANSCOMPANY <jennie_k@staff.gunadarma.ac.id>
-Reply-To: " diamondsw_issloans@hotmail.com" <diamondsw_issloans@hotmail.com>
-Subject: lening bieden
-Message-ID: <0945411a-23f5-4454-800b-e126bae8e123@staff.gunadarma.ac.id>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 9 Jun 2014 08:33:16 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH] PM / Documentation: Update copyright in
+ suspend-and-cpuhotplug.txt
+To: rjw@rjwysocki.net
+Cc: rdunlap@infradead.org, viresh.kumar@linaro.org, linux-pm@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 09 Jun 2014 18:01:42 +0530
+Message-ID: <20140609123103.11086.12353.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-X-Originating-IP: [196.46.245.139]
-X-Mailer: Zimbra 7.1.3_GA_3346 (zclient/7.1.3_GA_3346)
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14060912-8256-0000-0000-00000DA5C357
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Extend the year to 2014 in the copyright.
 
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
 
+ Documentation/power/suspend-and-cpuhotplug.txt |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Goede dag, 
+diff --git a/Documentation/power/suspend-and-cpuhotplug.txt b/Documentation/power/suspend-and-cpuhotplug.txt
+index e13dafc..2850df3 100644
+--- a/Documentation/power/suspend-and-cpuhotplug.txt
++++ b/Documentation/power/suspend-and-cpuhotplug.txt
+@@ -1,6 +1,6 @@
+ Interaction of Suspend code (S3) with the CPU hotplug infrastructure
+ 
+-     (C) 2011 Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
++     (C) 2011 - 2014 Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+ 
+ 
+ I. How does the regular CPU hotplug code differ from how the Suspend-to-RAM
 
-
- We zijn Diamond Zwitserse lening bedrijf het geven van leningen per post advertentie. Wij bieden verschillende soorten leningen (korte en lange termijn leningen, persoonlijke leningen, leningen aan bedrijven, enz.) met 3% rente. Wij geven leningen aan mensen in nood niet, ongeacht hun locatie, geslacht, burgerlijke staat, opleiding, status van de taak, maar moet een wettelijke middelen van terugbetaling hebben. Onze leningen variëren tussen 5.000,00 tot 10.000.000,00 US Dollar of Euro of Pond met een maximale duur van 20 jaar. Als u geïnteresseerd bent in meer informatie, vul dan het onderstaande formulier in en stuur het naar ons e-mailadres: diamondsw_issloans@hotmail.com 
-Gelieve in te vullen: 
-
-
-naam: 
-
-
-adres: 
-
-
-Leeftijd: 
-
-
-Geslacht: 
-
-
-Contact-Phone: 
-
-
-Beroep: 
-
-
-Maandelijks inkomen: 
-
-
-Het benodigde bedrag van de lening: 
-
-
-Duur van de lening: 
-
-
-Het doel van de lening: 
-
-
-land: 
-
-
-Postcode: 
-
-
-
-
-"Wij tonen u een betere manier om uw financiële vrijheid" 
-
-
-Met vriendelijke groet, 
-Mr Diamond Peters (algemeen directeur). 
-De heer Bill Anthony (Marketing Manager).
