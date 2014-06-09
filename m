@@ -1,139 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754038AbaFITjw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 15:39:52 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:34310 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753703AbaFITju (ORCPT
+	id S1754051AbaFITlR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 15:41:17 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:42979 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750805AbaFITlQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 15:39:50 -0400
-Date: Mon, 9 Jun 2014 20:38:49 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
-        Daniel Stone <daniels@collabora.com>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20140609193849.GE5099@sirena.org.uk>
-References: <1402306670-17041-1-git-send-email-javier.martinez@collabora.co.uk>
- <1402306670-17041-3-git-send-email-javier.martinez@collabora.co.uk>
+	Mon, 9 Jun 2014 15:41:16 -0400
+Date: Mon, 9 Jun 2014 15:41:14 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>
+Subject: Re: safety of *mutex_unlock() (Was: [BUG] signal: sighand
+ unprotected when accessed by /proc)
+Message-ID: <20140609154114.20585056@gandalf.local.home>
+In-Reply-To: <CA+55aFyO8bb7fS3AaQzfMq7geERQ1JpSdcRZ9Fbs5-tZP0oRXg@mail.gmail.com>
+References: <20140603130233.658a6a3c@gandalf.local.home>
+	<20140603172632.GA27956@redhat.com>
+	<CA+55aFzT5CGv_T60voAqR+4PfiMmJmsDZLid2DZ4=+X8uvF+ig@mail.gmail.com>
+	<20140603200125.GB1105@redhat.com>
+	<20140606203350.GU4581@linux.vnet.ibm.com>
+	<20140608130718.GA11129@redhat.com>
+	<20140609162613.GE4581@linux.vnet.ibm.com>
+	<20140609181553.GA13681@redhat.com>
+	<20140609142956.3d79e9d1@gandalf.local.home>
+	<CA+55aFyO8bb7fS3AaQzfMq7geERQ1JpSdcRZ9Fbs5-tZP0oRXg@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wUMz9o/vfMbinXcu"
-Content-Disposition: inline
-In-Reply-To: <1402306670-17041-3-git-send-email-javier.martinez@collabora.co.uk>
-X-Cookie: Ditat Deus.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/5] regulator: Add driver for Maxim 77802 PMIC regulators
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 9 Jun 2014 11:51:09 -0700
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
---wUMz9o/vfMbinXcu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On Mon, Jun 9, 2014 at 11:29 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> >>
+> >> And once again, note that the normal mutex is already unsafe (unless I missed
+> >> something).
+> >
+> > Is it unsafe?
+> >
+> > This thread was started because of a bug we triggered in -rt, which
+> > ended up being a change specific to -rt that modified the way slub
+> > handled SLAB_DESTROY_BY_RCU. What else was wrong with it?
+> 
+> There's a different issue with freeing of mutexes, which is not a bug,
+> but "by design". Namely that mutexes aren't truly "atomic". They are
+> complex data structures, and they have issues that a spinlock does not
+> have.
+> 
+> When unlocking a mutex, the thread doing the unlocking will still
+> touch the mutex itself _after_ another thread could already have
+> successfully acquired the mutex. This is not a problem in any normal
+> use. since all of this is perfectly coherent in general, but it means
+> that code sequences like:
+> 
+>   mutex_lock(mem->mutex);
+>   kill_it = !--mem->refcount;
+>   mutex_unlock(mem->mutex);
+>   if (kill_it)
+>      free(mem);
 
-On Mon, Jun 09, 2014 at 11:37:47AM +0200, Javier Martinez Canillas wrote:
+Oh this again. I remember you having a discussion about it in the past.
+I'm trying to wrap my head around it so let me make sure I understand
+the spinlock (working) case, and then a bad mutex case.
 
-> +	case REGULATOR_MODE_STANDBY:			/* switch off */
-> +		if (id != MAX77802_LDO1 && id != MAX77802_LDO20 &&
-> +			id != MAX77802_LDO21 && id != MAX77802_LDO3) {
-> +			val = MAX77802_OPMODE_STANDBY;
-> +			break;
-> +		}
-> +		/* no break */
+For this to work, you have some item, lets say on a list. When it is
+created, the refcount is 1 and it's added to the list. To remove it,
+you remove it from the list and dec the refcount, and if it is zero
+then you can free it. The issue is that you don't know what may have
+seen it while its on the list and the last one to dec it to zero frees
+it. Is this a situation that is used?
 
-This sounds very broken...
+Because spinlocks are atomic, this is all fine, but if you have a
+mutex, then this is where you can have issues. I think rtmutex has an
+issue with it too. Specifically in the slow_unlock case:
 
-> +		/* OK if some GPIOs aren't defined */
-> +		if (!gpio_is_valid(gpio))
-> +			continue;
-> +
-> +		/* If a GPIO is valid, we'd better be able to claim it */
-> +		ret = devm_gpio_request_one(dev, gpio, GPIOF_OUT_INIT_HIGH,
-> +					    "max77802 selb");
-> +		if (ret) {
-> +			dev_err(dev, "can't claim gpio[%d]: %d\n", i, ret);
-> +			return ret;
-> +		}
+	if (!rt_mutex_has_waiters(lock)) {
+		lock->owner = NULL;
+		raw_spin_unlock(&lock->wait_lock);
+		return;
+	}
 
-Can this use the GPIO descriptor API?
+That is, you can have:
 
-> +static void max77802_copy_reg(struct device *dev, struct regmap *regmap,
-> +			      int from_reg, int to_reg)
-> +{
-> +	int val;
-> +	int ret;
-> +
-> +	if (from_reg == to_reg)
-> +		return;
-> +
-> +	ret = regmap_read(regmap, from_reg, &val);
-> +	if (!ret)
-> +		ret = regmap_write(regmap, to_reg, val);
-> +
-> +	if (ret)
-> +		dev_warn(dev, "Copy err %d => %d (%d)\n",
-> +			 from_reg, to_reg, ret);
-> +}
 
-This doesn't look at all device specific, better implement it in generic
-code.
+	CPU0				CPU1
+	----				----
+				[refcount = 1]
+				read foo from list
+				[refcount = 2]
+  [refcount 2]
+  remove foo from list
 
-> +	if (pdata->num_regulators != MAX77802_MAX_REGULATORS) {
-> +		dev_err(&pdev->dev,
-> +			"Invalid initial data for regulator's initialiation: " \
-> +			"expected %d, pdata/dt provided %d\n",
-> +			MAX77802_MAX_REGULATORS,
-> +			pdata->num_regulators);
-> +		return -EINVAL;
-> +	}
+  mutex_lock(foo->mutex);
+  kill_it = !--mem->refcount;
+  [refcount = 1]
+  [kill_it == 0]
+  mutex_unlock(foo->mutex)
+    lock->owner = NULL;
 
-Don't split log messages over multiple lines so people can find the log
-message in the kernel source with grep, though in any case checking for
-this is a bug - the driver should always be at least able to read the
-current state from the hardware.
+				mutex_lock()
+				 [ owner == NULL, fast path!]
+				kill_it = !--mem->refcount;
+				 [refcount = 0]
+				 [kill_it = 1]
+				mutex_unlock()
+				 [ owner == current, fast path!]
 
-> +static int __init max77802_pmic_init(void)
-> +{
-> +	return platform_driver_register(&max77802_pmic_driver);
-> +}
-> +subsys_initcall(max77802_pmic_init);
+				if (kill_it)
+				   free(foo);
 
-module_platform_driver().
+  raw_spin_unlock(&lock->wait_lock);
+   [access freed foo's wait_lock, BUG!]
 
---wUMz9o/vfMbinXcu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Is this the problem? I'm just trying to visualize it, and maybe even
+visualize it for others that are reading this thread.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Thanks,
 
-iQIcBAEBAgAGBQJTlg1GAAoJELSic+t+oim91rsP/REjU5VbMDkGIC/InQFkOIU4
-evhlm0UkJVsPUmShVahVbj7RPZ6nRllBT7neubpr5xriX/L9qPqv103o903gaDDz
-QGIVL2RMoMHDY3sbZG1iSzQfzcwHSOz2BFfSViAZfY0JjfEth68mORO9I9gTrdbQ
-ZJcjDpGEp5xv4kFYF4/4kElVYJLdgzRsEwx8JvZ7LuJo9XBenyWFy60A7OUeZjV6
-/o7spbsrF9sthwhxusnPznHxfylDCSNKFASYwrbw2IWC5tDbN7n9QzFZCPkeMzL0
-59cj8VP9t/+dhKf6qLwCoU4jGNVdeDQeNkZsHS6bb6MdwrThT/p+1DzYBaAzGYoN
-4/MyCeu1FyqYSGfScG0/e/bF+85Om8NftXbFb+joVRmVHqhz3R3YGevgGwr7CTOx
-XASvXeIP13O4YTuGBDN5pol8IfJIvuXUIGDfFl0n9pmLToLTdp+s10kEoMy1y2Ur
-Rh5eXJ0eG8cNomYAKYhUGo1sr3dwIpOgegLfGBF8bTFQtOYsemWgraNrT1qqOgJe
-SeQ+CEomtg9bFkjZz6wQ1gcPcuSxGMnj9B2HP57yT6b7zepg/wlJtOxH6XsHH+3m
-FL6RUOtiEHPl8F3U2H8VAp5/7Q7jhcaMUHofQ4plnFJc6e8NrvO/G6fmvGx/GnBb
-o/6fscw3L4Ldo6m8+fAL
-=KpTv
------END PGP SIGNATURE-----
-
---wUMz9o/vfMbinXcu--
+-- Steve
