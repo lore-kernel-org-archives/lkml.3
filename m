@@ -1,90 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933421AbaFIOmi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 10:42:38 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:45859 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720AbaFIOmg (ORCPT
+	id S1755340AbaFIOpO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 10:45:14 -0400
+Received: from www.linutronix.de ([62.245.132.108]:45119 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751587AbaFIOpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 10:42:36 -0400
-From: Kefeng Wang <wangkefeng.wang@huawei.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Johannes Thumshirn <johannes.thumshirn@men.de>,
-        Doug Thompson <dougthompson@xmission.com>
-CC: <linux-edac@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] cpc925_edac: Use module_platform_driver()
-Date: Mon, 9 Jun 2014 22:40:18 +0800
-Message-ID: <1402324818-12300-1-git-send-email-wangkefeng.wang@huawei.com>
-X-Mailer: git-send-email 1.8.3.msysgit.0
+	Mon, 9 Jun 2014 10:45:12 -0400
+Date: Mon, 9 Jun 2014 16:44:54 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Stanislav Fomichev <stfomichev@yandex-team.ru>
+cc: viresh.kumar@linaro.org, paul.gortmaker@windriver.com,
+        peterz@infradead.org, stuart.w.hayes@gmail.com,
+        david.vrabel@citrix.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] hrtimers: add fast path to hrtimer_get_next_event
+In-Reply-To: <20140609125931.GL26511@stfomichev-desktop.yandex.net>
+Message-ID: <alpine.DEB.2.10.1406091635080.3830@nanos>
+References: <1402305825-3015-1-git-send-email-stfomichev@yandex-team.ru> <alpine.DEB.2.10.1406091304140.3830@nanos> <20140609111115.GK26511@stfomichev-desktop.yandex.net> <20140609125931.GL26511@stfomichev-desktop.yandex.net>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.177.21.224]
-X-CFilter-Loop: Reflected
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move edac_op_state assignment operations to probe, then convert to
-module_platform_drive() to eliminate boilerplate code, and use
-cpc925_printk instead of printk.
+On Mon, 9 Jun 2014, Stanislav Fomichev wrote:
 
-Signed-off-by: Kefeng Wang <wangkefeng.wang@huawei.com>
----
- drivers/edac/cpc925_edac.c |   33 +++++++--------------------------
- 1 files changed, 7 insertions(+), 26 deletions(-)
+> In hrtimer_get_next_event we unconditionally lock/unlock spinlock, even if it's
+> not required (hrtimer_hres_active() != 0). This patch adds fast path
+> when highres is active so we don't execute unnecessary operations.
+> 
+> We can safely do lockless check because:
+> - hrtimer_get_next_event is always called with interrupts disabled;
+> - we may switch to hres only from softirq handler with disabled interrupts.
+> 
+> Because we only care about hres_active which may be changed only from
+> local CPU, we can use interrupt context for synchronization.
+> 
+> run_timer_softirq
+>   hrtimer_run_pending
+>     hrtimer_switch_to_hres
+>       local_irq_save <-
+>       base->hres_active = 0
+> 
+> tick_nohz_idle_enter
+>   local_irq_disable <-
+>   __tick_nohz_idle_enter
+>     tick_nohz_stop_sched_tick
+>       get_next_timer_interrupt
+>         cmp_next_hrtimer_event
+>           hrtimer_get_next_event
+>           check base->hres_active
+> 
+> irq_exit <- irq context
+>   tick_irq_exit
+>     tick_nohz_irq_exit
+>       tick_nohz_full_stop_tick
+>         tick_nohz_stop_sched_tick
+>             ... <see above>
+>       __tick_nohz_idle_enter
+>         ... <see above>
 
-diff --git a/drivers/edac/cpc925_edac.c b/drivers/edac/cpc925_edac.c
-index df6575f..8e3192a 100644
---- a/drivers/edac/cpc925_edac.c
-+++ b/drivers/edac/cpc925_edac.c
-@@ -944,6 +944,12 @@ static int cpc925_probe(struct platform_device *pdev)
- 
- 	edac_dbg(0, "%s platform device found!\n", pdev->name);
- 
-+	cpc925_printk(KERN_INFO, CPC925_EDAC_REVISION "\n");
-+	cpc925_printk(KERN_INFO, "\t(c) 2008 Wind River Systems, Inc\n");
-+
-+	/* Only support POLL mode so far */
-+	edac_op_state = EDAC_OPSTATE_POLL;
-+
- 	if (!devres_open_group(&pdev->dev, cpc925_probe, GFP_KERNEL)) {
- 		res = -ENOMEM;
- 		goto out;
-@@ -1065,32 +1071,7 @@ static struct platform_driver cpc925_edac_driver = {
- 	}
- };
- 
--static int __init cpc925_edac_init(void)
--{
--	int ret = 0;
--
--	printk(KERN_INFO "IBM CPC925 EDAC driver " CPC925_EDAC_REVISION "\n");
--	printk(KERN_INFO "\t(c) 2008 Wind River Systems, Inc\n");
--
--	/* Only support POLL mode so far */
--	edac_op_state = EDAC_OPSTATE_POLL;
--
--	ret = platform_driver_register(&cpc925_edac_driver);
--	if (ret) {
--		printk(KERN_WARNING "Failed to register %s\n",
--			CPC925_EDAC_MOD_STR);
--	}
--
--	return ret;
--}
--
--static void __exit cpc925_edac_exit(void)
--{
--	platform_driver_unregister(&cpc925_edac_driver);
--}
--
--module_init(cpc925_edac_init);
--module_exit(cpc925_edac_exit);
-+module_platform_driver(cpc925_edac_driver);
- 
- MODULE_LICENSE("GPL");
- MODULE_AUTHOR("Cao Qingtao <qingtao.cao@windriver.com>");
--- 
-1.7.1
+Sigh. Is anybody actually reading and trying to understand what I
+write in reviews?
 
+> Also the lockless check wants a comment why it is correct.
 
+Is it that hard? A comment is NOT a uberlenghty explanation in the
+changelog. A comment starts with /* and ends with */ and is in the
+code.
+
+	/*
+	 * Called with interrupts disabled and therefor
+	 * protected against a switch to high resolution mode.
+	 */
+ 
+That's a comment, right?
+
+Thanks,
+
+	tglx
