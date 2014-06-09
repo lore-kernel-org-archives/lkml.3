@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755907AbaFIJ00 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 05:26:26 -0400
+	id S936413AbaFIJln (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 05:41:43 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59137 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755187AbaFIJ0X (ORCPT
+	by vger.kernel.org with ESMTP id S1755712AbaFIJ0Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 05:26:23 -0400
+	Mon, 9 Jun 2014 05:26:24 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 140/146] media: fc2580: fix tuning failure on 32-bit arch
-Date: Mon,  9 Jun 2014 10:51:15 +0200
-Message-Id: <cd6cf23615d40bf7f2f54df2f42adddbd9a24792.1402303821.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        Wolfram Sang <wsa+renesas@sang-engineering.com>,
+        Wolfram Sang <wsa@the-dreams.de>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 130/146] i2c: rcar: bail out on zero length transfers
+Date: Mon,  9 Jun 2014 10:51:05 +0200
+Message-Id: <150864f49748bb66b7dda0cb9d5e036e745e088e.1402303821.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
 References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
@@ -24,65 +24,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Antti Palosaari <crope@iki.fi>
+From: Wolfram Sang <wsa+renesas@sang-engineering.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 8845cc6415ec28ef8d57b3fb81c75ef9bce69c5f upstream.
+commit d7653964c590ba846aa11a8f6edf409773cbc492 upstream.
 
-There was some frequency calculation overflows which caused tuning
-failure on 32-bit architecture. Use 64-bit numbers where needed in
-order to avoid calculation overflows.
+This hardware does not support zero length transfers. Instead, the
+driver does one (random) byte transfers currently with undefined results
+for the slaves. We now bail out.
 
-Thanks for the Finnish person, who asked remain anonymous, reporting,
-testing and suggesting the fix.
-
-Signed-off-by: Antti Palosaari <crope@iki.fi>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Wolfram Sang <wsa+renesas@sang-engineering.com>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/media/tuners/fc2580.c      | 6 +++---
- drivers/media/tuners/fc2580_priv.h | 1 +
- 2 files changed, 4 insertions(+), 3 deletions(-)
+ drivers/i2c/busses/i2c-rcar.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/media/tuners/fc2580.c b/drivers/media/tuners/fc2580.c
-index 3aecaf465094..f0c9c42867de 100644
---- a/drivers/media/tuners/fc2580.c
-+++ b/drivers/media/tuners/fc2580.c
-@@ -195,7 +195,7 @@ static int fc2580_set_params(struct dvb_frontend *fe)
+diff --git a/drivers/i2c/busses/i2c-rcar.c b/drivers/i2c/busses/i2c-rcar.c
+index d2fe11da5e82..c8a42602205b 100644
+--- a/drivers/i2c/busses/i2c-rcar.c
++++ b/drivers/i2c/busses/i2c-rcar.c
+@@ -560,6 +560,12 @@ static int rcar_i2c_master_xfer(struct i2c_adapter *adap,
  
- 	f_ref = 2UL * priv->cfg->clock / r_val;
- 	n_val = div_u64_rem(f_vco, f_ref, &k_val);
--	k_val_reg = 1UL * k_val * (1 << 20) / f_ref;
-+	k_val_reg = div_u64(1ULL * k_val * (1 << 20), f_ref);
+ 	ret = -EINVAL;
+ 	for (i = 0; i < num; i++) {
++		/* This HW can't send STOP after address phase */
++		if (msgs[i].len == 0) {
++			ret = -EOPNOTSUPP;
++			break;
++		}
++
+ 		/*-------------- spin lock -----------------*/
+ 		spin_lock_irqsave(&priv->lock, flags);
  
- 	ret = fc2580_wr_reg(priv, 0x18, r18_val | ((k_val_reg >> 16) & 0xff));
- 	if (ret < 0)
-@@ -348,8 +348,8 @@ static int fc2580_set_params(struct dvb_frontend *fe)
- 	if (ret < 0)
- 		goto err;
+@@ -624,7 +630,8 @@ static int rcar_i2c_master_xfer(struct i2c_adapter *adap,
  
--	ret = fc2580_wr_reg(priv, 0x37, 1UL * priv->cfg->clock * \
--			fc2580_if_filter_lut[i].mul / 1000000000);
-+	ret = fc2580_wr_reg(priv, 0x37, div_u64(1ULL * priv->cfg->clock *
-+			fc2580_if_filter_lut[i].mul, 1000000000));
- 	if (ret < 0)
- 		goto err;
+ static u32 rcar_i2c_func(struct i2c_adapter *adap)
+ {
+-	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
++	/* This HW can't do SMBUS_QUICK and NOSTART */
++	return I2C_FUNC_I2C | (I2C_FUNC_SMBUS_EMUL & ~I2C_FUNC_SMBUS_QUICK);
+ }
  
-diff --git a/drivers/media/tuners/fc2580_priv.h b/drivers/media/tuners/fc2580_priv.h
-index be38a9e637e0..646c99452136 100644
---- a/drivers/media/tuners/fc2580_priv.h
-+++ b/drivers/media/tuners/fc2580_priv.h
-@@ -22,6 +22,7 @@
- #define FC2580_PRIV_H
- 
- #include "fc2580.h"
-+#include <linux/math64.h>
- 
- struct fc2580_reg_val {
- 	u8 reg;
+ static const struct i2c_algorithm rcar_i2c_algo = {
 -- 
 1.9.3
 
