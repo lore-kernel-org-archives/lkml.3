@@ -1,92 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755274AbaFIMyf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 08:54:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11620 "EHLO mx1.redhat.com"
+	id S932431AbaFIM6Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 08:58:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36282 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752094AbaFIMyc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 08:54:32 -0400
-Date: Mon, 9 Jun 2014 08:54:27 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        linux-efi@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>,
-        Dave Young <dyoung@redhat.com>
-Subject: Re: [PATCH] x86/boot: EFI_MIXED should not prohibit loading above 4G
-Message-ID: <20140609125427.GA16256@redhat.com>
-References: <1402140380-15377-1-git-send-email-matt@console-pimps.org>
+	id S1752679AbaFIM6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 08:58:14 -0400
+Date: Mon, 9 Jun 2014 13:58:06 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: zhdxzx@sina.com, Felipe Contreras <felipe.contreras@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>, dhillf <dhillf@gmail.com>,
+        "hillf.zj" <hillf.zj@alibaba-inc.com>
+Subject: Re: Interactivity regression since v3.11 in mm/vmscan.c
+Message-ID: <20140609125806.GN10819@suse.de>
+References: <20140607123518.88983301D2@webmail.sinamail.sina.com.cn>
+ <CA+55aFzRWZNt2AqdVzQpCChB1UJh12oBAof8UiKsvNGSMUe9BA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1402140380-15377-1-git-send-email-matt@console-pimps.org>
+In-Reply-To: <CA+55aFzRWZNt2AqdVzQpCChB1UJh12oBAof8UiKsvNGSMUe9BA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 07, 2014 at 12:26:20PM +0100, Matt Fleming wrote:
-> From: Matt Fleming <matt.fleming@intel.com>
+On Sat, Jun 07, 2014 at 11:24:56AM -0700, Linus Torvalds wrote:
+> So we very recently (as in this merge window) merged a change to this
+> very area, but that change was very specific to one case.
 > 
-> commit 7d453eee36ae ("x86/efi: Wire up CONFIG_EFI_MIXED") introduced a
-> regression for the functionality to load kernels above 4G. The relevant
-> (incorrect) reasoning behind this change can be seen in the commit
-> message,
+> Hillf's patch (below) apparently fixes the problem Felipe sees, and I
+> have to say, his problem sounds a *lot* like the kind of horrible
+> performance I've seen with writing to USB devices. I blamed
+> non-working per-bdi throttling, but this implies it is more generic
+> than that. The fact that the very same code also made nfsd very
+> unhappy makes me think that the code is just fundamentally broken.
 > 
->   "The xloadflags field in the bzImage header is also updated to reflect
->   that the kernel supports both entry points by setting both of
->   XLF_EFI_HANDOVER_32 and XLF_EFI_HANDOVER_64 when CONFIG_EFI_MIXED=y.
->   XLF_CAN_BE_LOADED_ABOVE_4G is disabled so that the kernel text is
->   guaranteed to be addressable with 32-bits."
+> And quite frankly, the whole logic is a bit questionable. That
 > 
-> This is obviously bogus since 32-bit EFI loaders will never place the
-> kernel above the 4G mark. So this restriction is entirely unnecessary.
+>   "nr_unqueued_dirty == nr_taken"
+> 
+> test is claimed to be "implies that flushers are not keeping up", but
+> that's not actually true at all. It just means that
+> 
+>  (a) all the pages we isolated are dirty
+>  (b) .. and none of them are under writeback
+> 
+> and it's very possible that none of them are under writeback because
+> nobody has even decided to start writeback on them yet, because nobody
+> has even walked through the list yet, so they were all still marked as
+> referenced. I guess you could say that "flushers are not keeping up",
+> but *we're* one of the flushers, and it's not that we aren't keeping
+> up, it's that we haven't even scanned things yet.
+> 
+> So what do we do when we haven't scanned the list enough to see any
+> non-referenced pages? Do we scan it a bit more? No. We decide to
+> congestion-wait.
+> 
+> That sounds completely and utterly stupid and broken. Does it make any
+> sense at all? No it doesn't. It just seems to delay starting any
+> writeback at all.
+> 
 
-Hi Matt,
+The original intent was moving away from direct reclaimers and kswapd just
+blocking on congestion for the sake of it and avoiding excessive swapping
+during IO. That was not a smooth road.
 
-So with new kexec syscall I have written 64bit bzImage loader. For now
-I would like to detect this situation and disable loading and once
-32bit loader gets implemented it can take care of loading bzImage below
-4G.
+> I suspect the code comes from "let's not spend too much time scanning
+> the dirty lists when everything is dirty", and is trying to avoid CPU
+> use.
 
-So how do I find out if EFI is 32bit.
+Yes. At the time we moved away from calling congestion_wait() for all
+sorts of reasons there were a number of bugs with different root causes
+but looked like kswapd using 99% of CPU during heavy IO.
 
-Thanks
-Vivek
+> But what it seems to do is actually to avoid even starting
+> writeback in the first place, and just "congestion-waiting" even when
+> nothing is being written back (here "nothing" is not absolute - we're
+> only looking at a part of the dirty pages, obviously, but we're
+> looking at the *old* dirty pages, so it's a fairly important part of
+> it).
+> 
+> So I really get the feeling that this code is broken, and that the
+> patch to remove that "nr_unqueued_dirty == nr_taken" is correct.
+> 
 
+I cannot think of a reason to disagree with that. It was a mistake because
+it also failed to take into account that writeback might not have delayed
+because the dirty expire limit had not been reached.
+
+> In particular, doesn't that congestion wait - which is supposed to
+> wait for kswapd - end up waiting even when the process in question
+> *is* kswapd?
 > 
-> But things are worse than that - since we want to encourage people to
-> always compile with CONFIG_EFI_MIXED=y so that their kernels work out of
-> the box for both 32-bit and 64-bit firmware, commit 7d453eee36ae
-> effectively disables XLF_CAN_BE_LOADED_ABOVE_4G completely.
+> So it's not just processes like nfsd that got throttled down (which no
+> longer happens because of the recent commit 399ba0b95670), it seems
+> like kswapd itself gets throttled down because of this test.
 > 
-> Remove the overzealous and superfluous restriction and restore the
-> XLF_CAN_BE_LOADED_ABOVE_4G functionality.
+> So at the *very* least I feel like the new current_may_throttle()
+> needs to say that "kswapd must not be throttled", but I wonder if that
+> whole thing just needs to go.
 > 
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: Dave Young <dyoung@redhat.com>
-> Cc: Vivek Goyal <vgoyal@redhat.com>
-> Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-> ---
+> And maybe that recent commit 399ba0b95670 is actually broken, and
+> wanted to fix just this part too. Maybe it *should* wait for the
+> "nr_immediate" case, which is the one that is currently aimed at
+> *only* throttling down kswapd itself. Maybe we should remove the
+> "current_is_kswapd()" test in the nr_immediate code instead, and make
+> everybody throttle when they hit the actual _real_ congestion case of
+> the whole zone being under writeback?
 > 
-> Peter, I realise that we're right on the edge of the v3.15 release here,
-> so this probably needs marking for stable (it only affects v3.15).
+> Comments? Mel, this code is mostly attributed to you, I'd like to hear
+> what you think in particular.
 > 
->  arch/x86/boot/header.S | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/boot/header.S b/arch/x86/boot/header.S
-> index 0ca9a5c362bc..84c223479e3c 100644
-> --- a/arch/x86/boot/header.S
-> +++ b/arch/x86/boot/header.S
-> @@ -375,8 +375,7 @@ xloadflags:
->  # define XLF0 0
->  #endif
->  
-> -#if defined(CONFIG_RELOCATABLE) && defined(CONFIG_X86_64) && \
-> -	!defined(CONFIG_EFI_MIXED)
-> +#if defined(CONFIG_RELOCATABLE) && defined(CONFIG_X86_64)
->     /* kernel/boot_param/ramdisk could be loaded above 4g */
->  # define XLF1 XLF_CAN_BE_LOADED_ABOVE_4G
->  #else
-> -- 
-> 1.9.0
+
+I've no problem with your patch so lets go with it with the caveat that there
+are three bugs to watch out for. The first is excessive CPU usage during
+reclaim by direct reclaimers or kswapd which should still be controlled
+but worth watching for anyway. The second is excessive writeback from
+kswapd context resulting in poor IO efficiency which is harder to measure a
+performance impact for but looks like high counts for nr_vmscan_write. The
+third is excessive swapping during IO as the file LRUs are being scanned
+with mostly dirty pages and the reclaimer swaps anonymous pages instead
+which will look like interactivity stalls due to swapping during heavy IO. I
+can keep an eye out for all three when my regression tests pick up 3.16-rc1.
+
+Thanks.
+
+-- 
+Mel Gorman
+SUSE Labs
