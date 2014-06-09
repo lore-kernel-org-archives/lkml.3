@@ -1,116 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932709AbaFIN6u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 09:58:50 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:40963 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754873AbaFIN6s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 09:58:48 -0400
+	id S933254AbaFIN7y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 09:59:54 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:50160 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754000AbaFIN7w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 09:59:52 -0400
+Message-ID: <5395BDA7.3060507@ti.com>
+Date: Mon, 9 Jun 2014 09:59:03 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <1402321691.7064.31.camel@dhcp-9-2-203-236.watson.ibm.com>
-References: <1401818318-15780-1-git-send-email-zohar@linux.vnet.ibm.com>
-	<1401818318-15780-5-git-send-email-zohar@linux.vnet.ibm.com>
-	<5395A4F9.1020205@samsung.com>
-	<1402318294.7064.19.camel@dhcp-9-2-203-236.watson.ibm.com>
-	<5395B125.8010503@samsung.com>
-	<1402321691.7064.31.camel@dhcp-9-2-203-236.watson.ibm.com>
-Date: Mon, 9 Jun 2014 16:58:46 +0300
-Message-ID: <CACE9dm8VNFa5Hf2po1kYgAhnfJC7eZGp67-MDc1t66vg6HVYTQ@mail.gmail.com>
-Subject: Re: [RFC PATCH v5 4/4] KEYS: define an owner trusted keyring
-From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>, Josh Boyer <jwboyer@redhat.com>,
-        keyrings <keyrings@linux-nfs.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Fabio Estevam <festevam@gmail.com>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        <grygorii.strashko@ti.com>, Russell King <linux@arm.linux.org.uk>,
+        Pawel Moll <pawel.moll@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@freescale.com>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] dt/documentation: add specification of dma bus information
+References: <1401981720-6946-1-git-send-email-santosh.shilimkar@ti.com> <CAOMZO5Ceg9RpC8Lgt0BwGTuaz-Z2614Die2PrbtT_j4QYjL_sA@mail.gmail.com>
+In-Reply-To: <CAOMZO5Ceg9RpC8Lgt0BwGTuaz-Z2614Die2PrbtT_j4QYjL_sA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 June 2014 16:48, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> On Mon, 2014-06-09 at 16:05 +0300, Dmitry Kasatkin wrote:
->> On 09/06/14 15:51, Mimi Zohar wrote:
->> > On Mon, 2014-06-09 at 15:13 +0300, Dmitry Kasatkin wrote:
->> >> On 03/06/14 20:58, Mimi Zohar wrote:
->> >>> Instead of allowing public keys, with certificates signed by any
->> >>> key on the system trusted keyring, to be added to a trusted
->> >>> keyring, this patch further restricts the certificates to those
->> >>> signed by a particular key on the system keyring.
->> >>>
->> >>> When the UEFI secure boot keys are added to the system keyring, the
->> >>> platform owner will be able to load their key in one of the UEFI DBs
->> >>> (eg. Machine Owner Key(MOK) list) and select their key, without
->> >>> having to rebuild the kernel.
->> >>>
->> >>> This patch defines an owner trusted keyring, a new boot command
->> >>> line option 'keys_ownerid=', and defines a new function
->> >>> get_system_or_owner_trusted_keyring().
->> >> Hello,
->> >>
->> >> The functionality of this entire patch can be replaced by only ~2 lines
->> >> of code in x509_request_asymmetric_key()
->> >>
->> >> if (keys_ownerid || strcmp(keys_ownerid, id))
->> >>      return -EPERM;
->> >>
->> >> Right?
->> > Are you suggesting only add the one matching key to the system keyring?
+On Sunday 08 June 2014 10:13 PM, Fabio Estevam wrote:
+> On Thu, Jun 5, 2014 at 12:22 PM, Santosh Shilimkar
+> <santosh.shilimkar@ti.com> wrote:
+>> Recently we introduced the generic device tree infrastructure for couple of DMA
+>> bus parameter, dma-ranges and dma-coherent. Update the documentation so that
+>> its useful for future users.
 >>
->> No. I am not suggesting this.
+>> The "dma-ranges" property is intended to be used for describing the
+>> configuration of DMA bus RAM addresses and its offset w.r.t CPU addresses.
 >>
->> All built in keys are allocated with KEY_ALLOC_TRUSTED flag and
->> prep.trusted is set to "true".
+>> The "dma-coherent" property is intended to be used for identifying devices
+>> supported coherent DMA operations.
 >>
->> So  the following statement has no effect.
->
-> Ok, so it has no affect on adding builtin keys to the system keyring.
->
+>> Cc: Arnd Bergmann <arnd@arndb.de>
+>> Cc: Grant Likely <grant.likely@linaro.org>
+>> Cc: Rob Herring <robh+dt@kernel.org>
+>> Cc: Pawel Moll <pawel.moll@arm.com>
+>> Cc: Mark Rutland <mark.rutland@arm.com>
+>> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+>> Cc: Shawn Guo <shawn.guo@freescale.com>
+>> Cc: Kumar Gala <galak@codeaurora.org>
+>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+>> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> ---
+>>  Documentation/devicetree/booting-without-of.txt |   60 +++++++++++++++++++++++
+>>  1 file changed, 60 insertions(+)
 >>
->> #ifdef CONFIG_SYSTEM_TRUSTED_KEYRING
->>         ret = x509_validate_trust(cert, system_trusted_keyring);
->>         if (!ret)
->>             prep->trusted = 1;
->> #endif
->
-> The last patch set changes the test to:
->      ret = x509_validate_trust(cert, get_system_or_owner_trusted_keyring());
->
-
-It does not really mater. I just copied original code to my response.
-
->> Keys which come from user-space will check for
+>> diff --git a/Documentation/devicetree/booting-without-of.txt b/Documentation/devicetree/booting-without-of.txt
+>> index 1f013bd..f0120c1 100644
+>> --- a/Documentation/devicetree/booting-without-of.txt
+>> +++ b/Documentation/devicetree/booting-without-of.txt
+>> @@ -51,6 +51,8 @@ Table of Contents
 >>
->> if (keys_ownerid && strcmp(keys_ownerid, id))
->>      return -EPERM;
+>>    VIII - Specifying device power management information (sleep property)
 >>
->>
->> So 2 lines patch works fine..
->
-> It works based on the assumption, that you would ever only want a single
-> key on the 'owner' keyring, which is probably not the case.
->
+>> +  VIV - Specifying dma bus information
+> 
+> "9" in Roman numeral is "IX"
+> 
+Yeah.. Not sure what I was thinking...
 
-There is no any assumption here. I am discussing functionality of this patch.
-That is exactly what this patch does - loads single key on the owners keyring.
-
-There is no need for additional keyring for a single key. That is just
-enough to limit verification to the owners key id.
-
-- Dmitry
-
-
-> Mimi
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
-
--- 
-Thanks,
-Dmitry
+Regards,
+Santosh
