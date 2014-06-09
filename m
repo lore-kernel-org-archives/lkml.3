@@ -1,118 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934420AbaFIWxw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 18:53:52 -0400
-Received: from mout.perfora.net ([74.208.4.195]:51505 "EHLO mout.perfora.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932275AbaFIWxu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:53:50 -0400
-From: Marcel Ziswiler <marcel@ziswiler.com>
-To: swarren@wwwdotorg.org, thierry.reding@gmail.com
-Cc: linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, stefan@agner.ch,
-        Marcel Ziswiler <marcel@ziswiler.com>
-Subject: [PATCH v2 2/3] arm: tegra: enable igb, stmpe, i2c chardev, lm95245, pwm leds
-Date: Tue, 10 Jun 2014 00:52:45 +0200
-Message-Id: <dadd07f9ed693d6bcf541764b62a2caf4cc38630.1402353627.git.marcel@ziswiler.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Provags-ID: V02:K0:Kx/UqcKbj7uLVqtP+BvhD/POXF2kWEM1jr9fugNGCYs
- R5tiVCnz/eJ3hb94ejOMV1pywfOneagG6iMbqjAqzqEMvhdUMj
- hhsbjC9ubAwrIDfD7CRYo2hFqvBPFX/rRHykGGUMXFu7P13AyX
- Llv292pr84VjLoXDIxYL0QdCttVUcnA1iz2EvtnmiT+WwNWsNP
- p4GAftswaHzI6ig9O4iDFDhg++vi4EjKH38LwDX301eQeGEeqJ
- OqE6O4gkTDe0d1rVFD5BeOnCwrXh+6VCPQ6NEO4vQeUJxrsegV
- eks38mb1XRW6ptcIdcMW6Kyn7NXEcyc4bZQxMxEBJsSDboYGNC
- jqL43y6MHqbOuwfpfUzr08Ivtq876tY94ycYNnwEr/idHziN2I
- yCzTCkm7mo4IgHNOy+VFRXA0Cg9Tjf7CjN6lv122hfyx8Z1tW+
- J+TZ5JywoeZ044M4XDq9WqALxQg==
+	id S934616AbaFIWyg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 18:54:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57121 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933872AbaFIWqF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 18:46:05 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.10 27/40] ALSA: hda/realtek - Fix COEF widget NID for ALC260 replacer fixup
+Date: Mon,  9 Jun 2014 15:48:58 -0700
+Message-Id: <20140609224840.068932262@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140609224839.127615063@linuxfoundation.org>
+References: <20140609224839.127615063@linuxfoundation.org>
+User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The NVIDIA Tegra 3 based Apalis T30 module contains an Intel i210 resp.
-i211 gigabit Ethernet controller, an STMPE811 ADC/touch controller, I2C
-buses and PWM LEDs generically accessible from user space and an
-LM95245 temperature sensor chip. The later four can also be found on
-the Colibri T30 module.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-While at it move the PCA953x GPIO entry down to its proper place to
-have it all nicely ordered again.
+------------------
 
-Signed-off-by: Marcel Ziswiler <marcel@ziswiler.com>
+From: Takashi Iwai <tiwai@suse.de>
+
+commit 192a98e280e560510a62aca8cfa83b4ae7c095bb upstream.
+
+The conversion to a fixup table for Replacer model with ALC260 in
+commit 20f7d928 took the wrong widget NID for COEF setups.  Namely,
+NID 0x1a should have been used instead of NID 0x20, which is the
+common node for all Realtek codecs but ALC260.
+
+Fixes: 20f7d928fa6e ('ALSA: hda/realtek - Replace ALC260 model=replacer with the auto-parser')
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
-Changes since v1:
-- Forget about spidev for now.
+ sound/pci/hda/patch_realtek.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
- arch/arm/configs/tegra_defconfig |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -1608,8 +1608,8 @@ static const struct hda_fixup alc260_fix
+ 	[ALC260_FIXUP_REPLACER] = {
+ 		.type = HDA_FIXUP_VERBS,
+ 		.v.verbs = (const struct hda_verb[]) {
+-			{ 0x20, AC_VERB_SET_COEF_INDEX, 0x07 },
+-			{ 0x20, AC_VERB_SET_PROC_COEF,  0x3050 },
++			{ 0x1a, AC_VERB_SET_COEF_INDEX, 0x07 },
++			{ 0x1a, AC_VERB_SET_PROC_COEF,  0x3050 },
+ 			{ }
+ 		},
+ 		.chained = true,
 
-diff --git a/arch/arm/configs/tegra_defconfig b/arch/arm/configs/tegra_defconfig
-index fb25e29..d05eec8 100644
---- a/arch/arm/configs/tegra_defconfig
-+++ b/arch/arm/configs/tegra_defconfig
-@@ -23,7 +23,6 @@ CONFIG_MODULE_FORCE_UNLOAD=y
- CONFIG_PARTITION_ADVANCED=y
- # CONFIG_IOSCHED_DEADLINE is not set
- # CONFIG_IOSCHED_CFQ is not set
--CONFIG_GPIO_PCA953X=y
- CONFIG_ARCH_TEGRA=y
- CONFIG_ARCH_TEGRA_2x_SOC=y
- CONFIG_ARCH_TEGRA_3x_SOC=y
-@@ -111,6 +110,7 @@ CONFIG_SCSI_MULTI_LUN=y
- # CONFIG_SCSI_LOWLEVEL is not set
- CONFIG_NETDEVICES=y
- CONFIG_DUMMY=y
-+CONFIG_IGB=y
- CONFIG_R8169=y
- CONFIG_USB_PEGASUS=y
- CONFIG_USB_USBNET=y
-@@ -125,6 +125,8 @@ CONFIG_KEYBOARD_GPIO=y
- CONFIG_KEYBOARD_TEGRA=y
- CONFIG_KEYBOARD_CROS_EC=y
- CONFIG_MOUSE_PS2_ELANTECH=y
-+CONFIG_INPUT_TOUCHSCREEN=y
-+CONFIG_TOUCHSCREEN_STMPE=y
- CONFIG_INPUT_MISC=y
- CONFIG_INPUT_MPU3050=y
- # CONFIG_LEGACY_PTYS is not set
-@@ -135,6 +137,7 @@ CONFIG_SERIAL_TEGRA=y
- CONFIG_SERIAL_OF_PLATFORM=y
- # CONFIG_HW_RANDOM is not set
- # CONFIG_I2C_COMPAT is not set
-+CONFIG_I2C_CHARDEV=y
- CONFIG_I2C_MUX_PCA954x=y
- CONFIG_I2C_MUX_PINCTRL=y
- CONFIG_I2C_TEGRA=y
-@@ -144,6 +147,7 @@ CONFIG_SPI_TEGRA20_SFLASH=y
- CONFIG_SPI_TEGRA20_SLINK=y
- CONFIG_PINCTRL_AS3722=y
- CONFIG_PINCTRL_PALMAS=y
-+CONFIG_GPIO_PCA953X=y
- CONFIG_GPIO_PCA953X_IRQ=y
- CONFIG_GPIO_PALMAS=y
- CONFIG_GPIO_TPS6586X=y
-@@ -155,10 +159,12 @@ CONFIG_POWER_RESET=y
- CONFIG_POWER_RESET_AS3722=y
- CONFIG_POWER_RESET_GPIO=y
- CONFIG_SENSORS_LM90=y
-+CONFIG_SENSORS_LM95245=y
- CONFIG_MFD_AS3722=y
- CONFIG_MFD_CROS_EC=y
- CONFIG_MFD_CROS_EC_SPI=y
- CONFIG_MFD_MAX8907=y
-+CONFIG_MFD_STMPE=y
- CONFIG_MFD_PALMAS=y
- CONFIG_MFD_TPS65090=y
- CONFIG_MFD_TPS6586X=y
-@@ -221,6 +227,7 @@ CONFIG_MMC_SDHCI_TEGRA=y
- CONFIG_NEW_LEDS=y
- CONFIG_LEDS_CLASS=y
- CONFIG_LEDS_GPIO=y
-+CONFIG_LEDS_PWM=y
- CONFIG_LEDS_TRIGGERS=y
- CONFIG_LEDS_TRIGGER_TIMER=y
- CONFIG_LEDS_TRIGGER_ONESHOT=y
--- 
-1.7.9.5
 
