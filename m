@@ -1,68 +1,326 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933212AbaFILXX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 07:23:23 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51008 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932283AbaFILXV (ORCPT
+	id S933366AbaFILZY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 07:25:24 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:32797 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932253AbaFILZW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 07:23:21 -0400
-Date: Mon, 9 Jun 2014 13:23:11 +0200
-From: Philipp Zabel <pza@pengutronix.de>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        p.zabel@pengutronix.de, alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/9] reset: add the Berlin reset controller driver
-Message-ID: <20140609112311.GA22176@pengutronix.de>
-References: <1401983326-19205-1-git-send-email-antoine.tenart@free-electrons.com>
- <1401983326-19205-2-git-send-email-antoine.tenart@free-electrons.com>
- <53958D52.2050402@gmail.com>
+	Mon, 9 Jun 2014 07:25:22 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+Cc: linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
+        magnus.damm@gmail.com, horms+renesas@verge.net.au,
+        linux-sh@vger.kernel.org
+Subject: Re: [PATCH] pinctrl: sh-pfc: r8a7791: Add HSCIF pin support
+Date: Mon, 09 Jun 2014 13:25:53 +0200
+Message-ID: <2623425.GJLg6iuqD9@avalon>
+User-Agent: KMail/4.11.5 (Linux/3.12.20-gentoo; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1401324729-31863-1-git-send-email-nobuhiro.iwamatsu.yj@renesas.com>
+References: <1401324729-31863-1-git-send-email-nobuhiro.iwamatsu.yj@renesas.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53958D52.2050402@gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 13:12:02 up 47 days,  4:43, 31 users,  load average: 0,03, 0,10,
- 0,08
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
-X-SA-Exim-Mail-From: pza@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian,
+Hi Iwamatsu-san,
 
-On Mon, Jun 09, 2014 at 12:32:50PM +0200, Sebastian Hesselbarth wrote:
-> I currently have no way to look it up myself, but is reset API providing
-> a way to deal with phandle+specifier with more than one parameter?
+Thank you for the patch.
 
-You could provide a custom rcdev->of_xlate callback and encode
-multiple phandle args into the reset line "index".
+On Thursday 29 May 2014 09:52:09 Nobuhiro Iwamatsu wrote:
 
-static int of_reset_xlate(struct reset_controller_dev *rcdev,
-                          const struct of_phandle_args *reset_spec)
-{
-	return reset_spec->args[0] * 32 + reset_spec->args[1];
-}
+A commit message would be nice. You're also missing hscif2_data_d. That could 
+be added later though, so
 
-> Chip-ctrl has a bunch of other reset bits spread over the regset, having
-> the offset encoded in the specifier would save us some SoC specific
-> boiler plate, i.e.
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+
+> Signed-off-by: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+> ---
+>  drivers/pinctrl/sh-pfc/pfc-r8a7791.c | 241 ++++++++++++++++++++++++++++++++
+>  1 file changed, 241 insertions(+)
 > 
-> reset = <&chip 0x104 14>;
+> diff --git a/drivers/pinctrl/sh-pfc/pfc-r8a7791.c
+> b/drivers/pinctrl/sh-pfc/pfc-r8a7791.c index 2e688dc..bb32514 100644
+> --- a/drivers/pinctrl/sh-pfc/pfc-r8a7791.c
+> +++ b/drivers/pinctrl/sh-pfc/pfc-r8a7791.c
+> @@ -1867,6 +1867,185 @@ static const unsigned int eth_rmii_mux[] = {
+>  	ETH_RXD0_MARK, ETH_RXD1_MARK, ETH_RX_ER_MARK, ETH_CRS_DV_MARK,
+>  	ETH_TXD0_MARK, ETH_TXD1_MARK, ETH_TX_EN_MARK, ETH_REFCLK_MARK,
+>  };
+> +
+> +/* - HSCIF0
+> ----------------------------------------------------------------- */
+> +static const unsigned int hscif0_data_pins[] = {
+> +	/* RX, TX */
+> +	RCAR_GP_PIN(7, 3), RCAR_GP_PIN(7, 4),
+> +};
+> +static const unsigned int hscif0_data_mux[] = {
+> +	HRX0_MARK, HTX0_MARK,
+> +};
+> +static const unsigned int hscif0_clk_pins[] = {
+> +	/* SCK */
+> +	RCAR_GP_PIN(7, 2),
+> +};
+> +static const unsigned int hscif0_clk_mux[] = {
+> +	HSCK0_MARK,
+> +};
+> +static const unsigned int hscif0_ctrl_pins[] = {
+> +	/* RTS, CTS */
+> +	RCAR_GP_PIN(7, 1), RCAR_GP_PIN(7, 0),
+> +};
+> +static const unsigned int hscif0_ctrl_mux[] = {
+> +	HRTS0_N_MARK, HCTS0_N_MARK,
+> +};
+> +static const unsigned int hscif0_data_b_pins[] = {
+> +	/* RX, TX */
+> +	RCAR_GP_PIN(3, 12), RCAR_GP_PIN(3, 15),
+> +};
+> +static const unsigned int hscif0_data_b_mux[] = {
+> +	HRX0_B_MARK, HTX0_B_MARK,
+> +};
+> +static const unsigned int hscif0_ctrl_b_pins[] = {
+> +	/* RTS, CTS */
+> +	RCAR_GP_PIN(3, 14), RCAR_GP_PIN(3, 13),
+> +};
+> +static const unsigned int hscif0_ctrl_b_mux[] = {
+> +	HRTS0_N_B_MARK, HCTS0_N_B_MARK,
+> +};
+> +static const unsigned int hscif0_data_c_pins[] = {
+> +	/* RX, TX */
+> +	RCAR_GP_PIN(2, 0), RCAR_GP_PIN(2, 1),
+> +};
+> +static const unsigned int hscif0_data_c_mux[] = {
+> +	HRX0_C_MARK, HTX0_C_MARK,
+> +};
+> +static const unsigned int hscif0_clk_c_pins[] = {
+> +	/* SCK */
+> +	RCAR_GP_PIN(5, 31),
+> +};
+> +static const unsigned int hscif0_clk_c_mux[] = {
+> +	HSCK0_C_MARK,
+> +};
+> +/* - HSCIF1
+> ----------------------------------------------------------------- */
+> +static const unsigned int hscif1_data_pins[] = {
+> +	/* RX, TX */
+> +	RCAR_GP_PIN(7, 5), RCAR_GP_PIN(7, 6),
+> +};
+> +static const unsigned int hscif1_data_mux[] = {
+> +	HRX1_MARK, HTX1_MARK,
+> +};
+> +static const unsigned int hscif1_clk_pins[] = {
+> +	/* SCK */
+> +	RCAR_GP_PIN(7, 7),
+> +};
+> +static const unsigned int hscif1_clk_mux[] = {
+> +	HSCK1_MARK,
+> +};
+> +static const unsigned int hscif1_ctrl_pins[] = {
+> +	/* RTS, CTS */
+> +	RCAR_GP_PIN(7, 9), RCAR_GP_PIN(7, 8),
+> +};
+> +static const unsigned int hscif1_ctrl_mux[] = {
+> +	HRTS1_N_MARK, HCTS1_N_MARK,
+> +};
+> +static const unsigned int hscif1_data_b_pins[] = {
+> +	/* RX, TX */
+> +	RCAR_GP_PIN(1, 17), RCAR_GP_PIN(1, 18),
+> +};
+> +static const unsigned int hscif1_data_b_mux[] = {
+> +	HRX1_B_MARK, HTX1_B_MARK,
+> +};
+> +static const unsigned int hscif1_data_c_pins[] = {
+> +	/* RX, TX */
+> +	RCAR_GP_PIN(7, 14), RCAR_GP_PIN(7, 15),
+> +};
+> +static const unsigned int hscif1_data_c_mux[] = {
+> +	HRX1_C_MARK, HTX1_C_MARK,
+> +};
+> +static const unsigned int hscif1_clk_c_pins[] = {
+> +	/* SCK */
+> +	RCAR_GP_PIN(7, 16),
+> +};
+> +static const unsigned int hscif1_clk_c_mux[] = {
+> +	HSCK1_C_MARK,
+> +};
+> +static const unsigned int hscif1_ctrl_c_pins[] = {
+> +	/* RTS, CTS */
+> +	RCAR_GP_PIN(7, 18), RCAR_GP_PIN(7, 17),
+> +};
+> +static const unsigned int hscif1_ctrl_c_mux[] = {
+> +	HRTS1_N_C_MARK, HCTS1_N_C_MARK,
+> +};
+> +static const unsigned int hscif1_data_d_pins[] = {
+> +	/* RX, TX */
+> +	RCAR_GP_PIN(4, 28), RCAR_GP_PIN(4, 18),
+> +};
+> +static const unsigned int hscif1_data_d_mux[] = {
+> +	HRX1_D_MARK, HTX1_D_MARK,
+> +};
+> +static const unsigned int hscif1_data_e_pins[] = {
+> +	/* RX, TX */
+> +	RCAR_GP_PIN(7, 14), RCAR_GP_PIN(7, 15),
+> +};
+> +static const unsigned int hscif1_data_e_mux[] = {
+> +	HRX1_C_MARK, HTX1_C_MARK,
+> +};
+> +static const unsigned int hscif1_clk_e_pins[] = {
+> +	/* SCK */
+> +	RCAR_GP_PIN(2, 6),
+> +};
+> +static const unsigned int hscif1_clk_e_mux[] = {
+> +	HSCK1_E_MARK,
+> +};
+> +static const unsigned int hscif1_ctrl_e_pins[] = {
+> +	/* RTS, CTS */
+> +	RCAR_GP_PIN(2, 8), RCAR_GP_PIN(2, 7),
+> +};
+> +static const unsigned int hscif1_ctrl_e_mux[] = {
+> +	HRTS1_N_E_MARK, HCTS1_N_E_MARK,
+> +};
+> +/* - HSCIF2
+> ----------------------------------------------------------------- */
+> +static const unsigned int hscif2_data_pins[] = {
+> +	/* RX, TX */
+> +	RCAR_GP_PIN(4, 16), RCAR_GP_PIN(4, 17),
+> +};
+> +static const unsigned int hscif2_data_mux[] = {
+> +	HRX2_MARK, HTX2_MARK,
+> +};
+> +static const unsigned int hscif2_clk_pins[] = {
+> +	/* SCK */
+> +	RCAR_GP_PIN(4, 15),
+> +};
+> +static const unsigned int hscif2_clk_mux[] = {
+> +	HSCK2_MARK,
+> +};
+> +static const unsigned int hscif2_ctrl_pins[] = {
+> +	/* RTS, CTS */
+> +	RCAR_GP_PIN(4, 14), RCAR_GP_PIN(4, 13),
+> +};
+> +static const unsigned int hscif2_ctrl_mux[] = {
+> +	HRTS2_N_MARK, HCTS2_N_MARK,
+> +};
+> +static const unsigned int hscif2_data_b_pins[] = {
+> +	/* RX, TX */
+> +	RCAR_GP_PIN(1, 20), RCAR_GP_PIN(1, 22),
+> +};
+> +static const unsigned int hscif2_data_b_mux[] = {
+> +	HRX2_B_MARK, HTX2_B_MARK,
+> +};
+> +static const unsigned int hscif2_ctrl_b_pins[] = {
+> +	/* RTS, CTS */
+> +	RCAR_GP_PIN(1, 23), RCAR_GP_PIN(1, 21),
+> +};
+> +static const unsigned int hscif2_ctrl_b_mux[] = {
+> +	HRTS2_N_B_MARK, HCTS2_N_B_MARK,
+> +};
+> +static const unsigned int hscif2_data_c_pins[] = {
+> +	/* RX, TX */
+> +	RCAR_GP_PIN(2, 0), RCAR_GP_PIN(2, 1),
+> +};
+> +static const unsigned int hscif2_data_c_mux[] = {
+> +	HRX2_C_MARK, HTX2_C_MARK,
+> +};
+> +static const unsigned int hscif2_clk_c_pins[] = {
+> +	/* SCK */
+> +	RCAR_GP_PIN(5, 31),
+> +};
+> +static const unsigned int hscif2_clk_c_mux[] = {
+> +	HSCK2_C_MARK,
+> +};
+>  /* - I2C0
+> ------------------------------------------------------------------- */
+> static const unsigned int i2c0_pins[] = {
+>  	/* SCL, SDA */
+> @@ -3885,6 +4064,31 @@ static const struct sh_pfc_pin_group pinmux_groups[]
+> = { SH_PFC_PIN_GROUP(eth_magic),
+>  	SH_PFC_PIN_GROUP(eth_mdio),
+>  	SH_PFC_PIN_GROUP(eth_rmii),
+> +	SH_PFC_PIN_GROUP(hscif0_data),
+> +	SH_PFC_PIN_GROUP(hscif0_clk),
+> +	SH_PFC_PIN_GROUP(hscif0_ctrl),
+> +	SH_PFC_PIN_GROUP(hscif0_data_b),
+> +	SH_PFC_PIN_GROUP(hscif0_ctrl_b),
+> +	SH_PFC_PIN_GROUP(hscif0_data_c),
+> +	SH_PFC_PIN_GROUP(hscif0_clk_c),
+> +	SH_PFC_PIN_GROUP(hscif1_data),
+> +	SH_PFC_PIN_GROUP(hscif1_clk),
+> +	SH_PFC_PIN_GROUP(hscif1_ctrl),
+> +	SH_PFC_PIN_GROUP(hscif1_data_b),
+> +	SH_PFC_PIN_GROUP(hscif1_data_c),
+> +	SH_PFC_PIN_GROUP(hscif1_clk_c),
+> +	SH_PFC_PIN_GROUP(hscif1_ctrl_c),
+> +	SH_PFC_PIN_GROUP(hscif1_data_d),
+> +	SH_PFC_PIN_GROUP(hscif1_data_e),
+> +	SH_PFC_PIN_GROUP(hscif1_clk_e),
+> +	SH_PFC_PIN_GROUP(hscif1_ctrl_e),
+> +	SH_PFC_PIN_GROUP(hscif2_data),
+> +	SH_PFC_PIN_GROUP(hscif2_clk),
+> +	SH_PFC_PIN_GROUP(hscif2_ctrl),
+> +	SH_PFC_PIN_GROUP(hscif2_data_b),
+> +	SH_PFC_PIN_GROUP(hscif2_ctrl_b),
+> +	SH_PFC_PIN_GROUP(hscif2_data_c),
+> +	SH_PFC_PIN_GROUP(hscif2_clk_c),
+>  	SH_PFC_PIN_GROUP(i2c0),
+>  	SH_PFC_PIN_GROUP(i2c0_b),
+>  	SH_PFC_PIN_GROUP(i2c0_c),
+> @@ -4183,6 +4387,40 @@ static const char * const eth_groups[] = {
+>  	"eth_rmii",
+>  };
+> 
+> +static const char * const hscif0_groups[] = {
+> +	"hscif0_data",
+> +	"hscif0_clk",
+> +	"hscif0_ctrl",
+> +	"hscif0_data_b",
+> +	"hscif0_ctrl_b",
+> +	"hscif0_data_c",
+> +	"hscif0_clk_c",
+> +};
+> +
+> +static const char * const hscif1_groups[] = {
+> +	"hscif1_data",
+> +	"hscif1_clk",
+> +	"hscif1_ctrl",
+> +	"hscif1_data_b",
+> +	"hscif1_data_c",
+> +	"hscif1_clk_c",
+> +	"hscif1_ctrl_c",
+> +	"hscif1_data_d",
+> +	"hscif1_data_e",
+> +	"hscif1_clk_e",
+> +	"hscif1_ctrl_e",
+> +};
+> +
+> +static const char * const hscif2_groups[] = {
+> +	"hscif2_data",
+> +	"hscif2_clk",
+> +	"hscif2_ctrl",
+> +	"hscif2_data_b",
+> +	"hscif2_ctrl_b",
+> +	"hscif2_data_c",
+> +	"hscif2_clk_c",
+> +};
+> +
+>  static const char * const i2c0_groups[] = {
+>  	"i2c0",
+>  	"i2c0_b",
+> @@ -4547,6 +4785,9 @@ static const struct sh_pfc_function pinmux_functions[]
+> = { SH_PFC_FUNCTION(du0),
+>  	SH_PFC_FUNCTION(du1),
+>  	SH_PFC_FUNCTION(eth),
+> +	SH_PFC_FUNCTION(hscif0),
+> +	SH_PFC_FUNCTION(hscif1),
+> +	SH_PFC_FUNCTION(hscif2),
+>  	SH_PFC_FUNCTION(i2c0),
+>  	SH_PFC_FUNCTION(i2c1),
+>  	SH_PFC_FUNCTION(i2c2),
 
-That should be possible.
+-- 
+Regards,
 
-regards
-Philipp
+Laurent Pinchart
+
