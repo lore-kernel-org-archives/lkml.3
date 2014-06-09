@@ -1,350 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933699AbaFIQEk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 12:04:40 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:50312 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754136AbaFIQE1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 12:04:27 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Thierry Reding <thierry.reding@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        David Airlie <airlied@linux.ie>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>
-Cc: Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pwm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, dri-devel@lists.freedesktop.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v2 2/7] pwm: add support for atmel-hlcdc-pwm device
-Date: Mon,  9 Jun 2014 18:04:15 +0200
-Message-Id: <1402329860-27520-3-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1402329860-27520-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1402329860-27520-1-git-send-email-boris.brezillon@free-electrons.com>
+	id S933756AbaFIQEr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 12:04:47 -0400
+Received: from mga01.intel.com ([192.55.52.88]:13348 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933697AbaFIQEm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 12:04:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,1003,1392192000"; 
+   d="scan'208";a="552722802"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Cc: Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Vlastimil Babka <vbabka@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCH, RFC 09/10] futex, thp: remove special case for THP in get_futex_key
+Date: Mon,  9 Jun 2014 19:04:20 +0300
+Message-Id: <1402329861-7037-10-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 2.0.0.rc4
+In-Reply-To: <1402329861-7037-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1402329861-7037-1-git-send-email-kirill.shutemov@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The HLCDC IP available in some Atmel SoCs (i.e. sam9x5i.e. at91sam9n12,
-at91sam9x5 family or sama5d3 family) provide a PWM device.
+With new THP refcounting, we don't need tricks to stabilize huge page.
+If we've got reference to tail page, it can't split under us.
 
-This driver add support for this PWM device.
+This patch effectively reverts a5b338f2b0b1.
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- .../devicetree/bindings/pwm/atmel-hlcdc-pwm.txt    |  40 ++++
- drivers/pwm/Kconfig                                |   9 +
- drivers/pwm/Makefile                               |   1 +
- drivers/pwm/pwm-atmel-hlcdc.c                      | 216 +++++++++++++++++++++
- 4 files changed, 266 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/pwm/atmel-hlcdc-pwm.txt
- create mode 100644 drivers/pwm/pwm-atmel-hlcdc.c
+ kernel/futex.c | 62 ++++++++++++----------------------------------------------
+ 1 file changed, 13 insertions(+), 49 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/pwm/atmel-hlcdc-pwm.txt b/Documentation/devicetree/bindings/pwm/atmel-hlcdc-pwm.txt
-new file mode 100644
-index 0000000..5e2ba87
---- /dev/null
-+++ b/Documentation/devicetree/bindings/pwm/atmel-hlcdc-pwm.txt
-@@ -0,0 +1,40 @@
-+Device-Tree bindings for Atmel's HLCDC (High LCD Controller) PWM driver
-+
-+The Atmel HLCDC PWM is subdevice of the HLCDC MFD device.
-+See Documentation/devicetree/bindings/mfd/atmel-hlcdc.txt for more details.
-+
-+Required properties:
-+ - compatible: value should be one of the following:
-+   "atmel,hlcdc-pwm"
-+ - pinctr-names: the pin control state names. Should contain "default".
-+ - pinctrl-0: should contain the pinctrl states described by pinctrl
-+   default.
-+ - #pwm-cells: should be set to 3.
-+
-+Example:
-+
-+	hlcdc: hlcdc@f0030000 {
-+		compatible = "atmel,sama5d3-hlcdc";
-+		reg = <0xf0030000 0x2000>;
-+		clocks = <&lcdc_clk>, <&lcdck>, <&clk32k>;
-+		clock-names = "periph_clk","sys_clk", "slow_clk";
-+		status = "disabled";
-+
-+		hlcdc-display-controller {
-+			compatible = "atmel,hlcdc-dc";
-+			interrupts = <36 IRQ_TYPE_LEVEL_HIGH 0>;
-+			pinctrl-names = "default", "rgb-444", "rgb-565", "rgb-666", "rgb-888";
-+			pinctrl-0 = <&pinctrl_lcd_base>;
-+			pinctrl-1 = <&pinctrl_lcd_base &pinctrl_lcd_rgb444>;
-+			pinctrl-2 = <&pinctrl_lcd_base &pinctrl_lcd_rgb565>;
-+			pinctrl-3 = <&pinctrl_lcd_base &pinctrl_lcd_rgb666>;
-+			pinctrl-4 = <&pinctrl_lcd_base &pinctrl_lcd_rgb888>;
-+		};
-+
-+		hlcdc_pwm: hlcdc-pwm {
-+			compatible = "atmel,hlcdc-pwm";
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&pinctrl_lcd_pwm>;
-+			#pwm-cells = <3>;
-+		};
-+	};
-diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-index 5b34ff2..7186242 100644
---- a/drivers/pwm/Kconfig
-+++ b/drivers/pwm/Kconfig
-@@ -50,6 +50,15 @@ config PWM_ATMEL
- 	  To compile this driver as a module, choose M here: the module
- 	  will be called pwm-atmel.
+diff --git a/kernel/futex.c b/kernel/futex.c
+index b632b5f3f094..d13ad5e80ab9 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -391,7 +391,7 @@ get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key, int rw)
+ {
+ 	unsigned long address = (unsigned long)uaddr;
+ 	struct mm_struct *mm = current->mm;
+-	struct page *page, *page_head;
++	struct page *page;
+ 	int err, ro = 0;
  
-+config PWM_ATMEL_HLCDC_PWM
-+	tristate "Atmel HLCDC PWM support"
-+	depends on MFD_ATMEL_HLCDC
-+	help
-+	  Generic PWM framework driver for Atmel HLCDC PWM.
-+
-+	  To compile this driver as a module, choose M here: the module
-+	  will be called pwm-atmel.
-+
- config PWM_ATMEL_TCB
- 	tristate "Atmel TC Block PWM support"
- 	depends on ATMEL_TCLIB && OF
-diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-index e57d2c3..a245519 100644
---- a/drivers/pwm/Makefile
-+++ b/drivers/pwm/Makefile
-@@ -2,6 +2,7 @@ obj-$(CONFIG_PWM)		+= core.o
- obj-$(CONFIG_PWM_SYSFS)		+= sysfs.o
- obj-$(CONFIG_PWM_AB8500)	+= pwm-ab8500.o
- obj-$(CONFIG_PWM_ATMEL)		+= pwm-atmel.o
-+obj-$(CONFIG_PWM_ATMEL_HLCDC_PWM)	+= pwm-atmel-hlcdc.o
- obj-$(CONFIG_PWM_ATMEL_TCB)	+= pwm-atmel-tcb.o
- obj-$(CONFIG_PWM_BFIN)		+= pwm-bfin.o
- obj-$(CONFIG_PWM_CLPS711X)	+= pwm-clps711x.o
-diff --git a/drivers/pwm/pwm-atmel-hlcdc.c b/drivers/pwm/pwm-atmel-hlcdc.c
-new file mode 100644
-index 0000000..080e43e
---- /dev/null
-+++ b/drivers/pwm/pwm-atmel-hlcdc.c
-@@ -0,0 +1,216 @@
-+/*
-+ * Copyright (C) 2014 Free Electrons
-+ * Copyright (C) 2014 Atmel
-+ *
-+ * Author: Boris BREZILLON <boris.brezillon@free-electrons.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License version 2 as published by
-+ * the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#include <linux/mfd/atmel-hlcdc.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/pwm.h>
-+
-+#define ATMEL_HLCDC_PWMCVAL_MASK	(0xff << 8)
-+#define ATMEL_HLCDC_PWMCVAL(x)		(((x) & 0xff) << 8)
-+#define ATMEL_HLCDC_PWMPOL		BIT(4)
-+#define ATMEL_HLCDC_PWMPS_MASK		0x7
-+#define ATMEL_HLCDC_PWMPS_MAX		0x6
-+#define ATMEL_HLCDC_PWMPS(x)		((x) & 0x7)
-+
-+struct atmel_hlcdc_pwm_chip {
-+	struct pwm_chip chip;
-+	struct atmel_hlcdc *hlcdc;
-+	struct clk *cur_clk;
-+};
-+
-+static inline struct atmel_hlcdc_pwm_chip *
-+pwm_chip_to_atmel_hlcdc_pwm_chip(struct pwm_chip *chip)
-+{
-+	return container_of(chip, struct atmel_hlcdc_pwm_chip, chip);
-+}
-+
-+static int atmel_hlcdc_pwm_config(struct pwm_chip *c,
-+				  struct pwm_device *pwm,
-+				  int duty_ns, int period_ns)
-+{
-+	struct atmel_hlcdc_pwm_chip *chip =
-+				pwm_chip_to_atmel_hlcdc_pwm_chip(c);
-+	struct atmel_hlcdc *hlcdc = chip->hlcdc;
-+	struct clk *new_clk = hlcdc->slow_clk;
-+	u64 pwmcval = duty_ns * 256;
-+	unsigned long clk_freq;
-+	u64 clk_period_ns;
-+	u32 pwmcfg;
-+	int pres;
-+
-+	clk_freq = clk_get_rate(new_clk);
-+	clk_period_ns = 1000000000;
-+	clk_period_ns *= 256;
-+	do_div(clk_period_ns, clk_freq);
-+
-+	if (clk_period_ns > period_ns) {
-+		new_clk = hlcdc->sys_clk;
-+		clk_freq = clk_get_rate(new_clk);
-+		clk_period_ns = 1000000000;
-+		clk_period_ns *= 256;
-+		do_div(clk_period_ns, clk_freq);
-+	}
-+
-+	for (pres = ATMEL_HLCDC_PWMPS_MAX; pres >= 0; pres--) {
-+		if ((clk_period_ns << pres) <= period_ns)
-+			break;
-+	}
-+
-+	if (pres > ATMEL_HLCDC_PWMPS_MAX)
-+		return -EINVAL;
-+
-+	pwmcfg = ATMEL_HLCDC_PWMPS(pres);
-+
-+	if (new_clk != chip->cur_clk) {
-+		u32 gencfg = 0;
-+
-+		clk_prepare_enable(new_clk);
-+		clk_disable_unprepare(chip->cur_clk);
-+		chip->cur_clk = new_clk;
-+
-+		if (new_clk != hlcdc->slow_clk)
-+			gencfg = ATMEL_HLCDC_CLKPWMSEL;
-+		regmap_update_bits(hlcdc->regmap, ATMEL_HLCDC_CFG(0),
-+				   ATMEL_HLCDC_CLKPWMSEL, gencfg);
-+	}
-+
-+	do_div(pwmcval, period_ns);
-+	if (pwmcval > 255)
-+		pwmcval = 255;
-+
-+	pwmcfg |= ATMEL_HLCDC_PWMCVAL(pwmcval);
-+
-+	regmap_update_bits(hlcdc->regmap, ATMEL_HLCDC_CFG(6),
-+			   ATMEL_HLCDC_PWMCVAL_MASK | ATMEL_HLCDC_PWMPS_MASK,
-+			   pwmcfg);
-+
-+	return 0;
-+}
-+
-+static int atmel_hlcdc_pwm_set_polarity(struct pwm_chip *c,
-+					struct pwm_device *pwm,
-+					enum pwm_polarity polarity)
-+{
-+	struct atmel_hlcdc_pwm_chip *chip =
-+				pwm_chip_to_atmel_hlcdc_pwm_chip(c);
-+	struct atmel_hlcdc *hlcdc = chip->hlcdc;
-+	u32 cfg = 0;
-+
-+	if (polarity == PWM_POLARITY_NORMAL)
-+		cfg = ATMEL_HLCDC_PWMPOL;
-+
-+	regmap_update_bits(hlcdc->regmap, ATMEL_HLCDC_CFG(6),
-+			   ATMEL_HLCDC_PWMPOL, cfg);
-+
-+	return 0;
-+}
-+
-+static int atmel_hlcdc_pwm_enable(struct pwm_chip *c,
-+				  struct pwm_device *pwm)
-+{
-+	struct atmel_hlcdc_pwm_chip *chip =
-+				pwm_chip_to_atmel_hlcdc_pwm_chip(c);
-+	struct atmel_hlcdc *hlcdc = chip->hlcdc;
-+	u32 status;
-+
-+	regmap_write(hlcdc->regmap, ATMEL_HLCDC_EN, ATMEL_HLCDC_PWM);
-+	while (!regmap_read(hlcdc->regmap, ATMEL_HLCDC_SR, &status) &&
-+	       !(status & ATMEL_HLCDC_PWM))
-+		cpu_relax();
-+
-+	return 0;
-+}
-+
-+static void atmel_hlcdc_pwm_disable(struct pwm_chip *c,
-+				    struct pwm_device *pwm)
-+{
-+	struct atmel_hlcdc_pwm_chip *chip =
-+				pwm_chip_to_atmel_hlcdc_pwm_chip(c);
-+	struct atmel_hlcdc *hlcdc = chip->hlcdc;
-+	u32 status;
-+
-+	regmap_write(hlcdc->regmap, ATMEL_HLCDC_DIS, ATMEL_HLCDC_PWM);
-+	while (!regmap_read(hlcdc->regmap, ATMEL_HLCDC_SR, &status) &&
-+	       (status & ATMEL_HLCDC_PWM))
-+		cpu_relax();
-+}
-+
-+static const struct pwm_ops atmel_hlcdc_pwm_ops = {
-+	.config = atmel_hlcdc_pwm_config,
-+	.set_polarity = atmel_hlcdc_pwm_set_polarity,
-+	.enable = atmel_hlcdc_pwm_enable,
-+	.disable = atmel_hlcdc_pwm_disable,
-+	.owner = THIS_MODULE,
-+};
-+
-+static int atmel_hlcdc_pwm_probe(struct platform_device *pdev)
-+{
-+	struct atmel_hlcdc_pwm_chip *chip;
-+	struct device *dev = &pdev->dev;
-+	int ret;
-+
-+	chip = devm_kzalloc(dev, sizeof(*chip), GFP_KERNEL);
-+	if (!chip)
-+		return -ENOMEM;
-+
-+	chip->hlcdc = dev_get_drvdata(dev->parent);
-+	chip->chip.ops = &atmel_hlcdc_pwm_ops;
-+	chip->chip.dev = dev;
-+	chip->chip.base = -1;
-+	chip->chip.npwm = 1;
-+	chip->chip.of_xlate = of_pwm_xlate_with_flags;
-+	chip->chip.of_pwm_n_cells = 3;
-+	chip->chip.can_sleep = 1;
-+
-+	ret = pwmchip_add(&chip->chip);
-+	if (ret)
-+		return ret;
-+
-+	platform_set_drvdata(pdev, chip);
-+
-+	return 0;
-+}
-+
-+static int atmel_hlcdc_pwm_remove(struct platform_device *pdev)
-+{
-+	struct atmel_hlcdc_pwm_chip *chip = platform_get_drvdata(pdev);
-+
-+	return pwmchip_remove(&chip->chip);
-+}
-+
-+static const struct of_device_id atmel_hlcdc_pwm_dt_ids[] = {
-+	{ .compatible = "atmel,hlcdc-pwm" },
-+	{ /* sentinel */ },
-+};
-+
-+static struct platform_driver atmel_hlcdc_pwm_driver = {
-+	.driver = {
-+		.name = "atmel-hlcdc-pwm",
-+		.of_match_table = atmel_hlcdc_pwm_dt_ids,
-+	},
-+	.probe = atmel_hlcdc_pwm_probe,
-+	.remove = atmel_hlcdc_pwm_remove,
-+};
-+module_platform_driver(atmel_hlcdc_pwm_driver);
-+
-+MODULE_ALIAS("platform:atmel-hlcdc-pwm");
-+MODULE_AUTHOR("Boris Brezillon <boris.brezillon@free-electrons.com>");
-+MODULE_DESCRIPTION("Atmel HLCDC PWM driver");
-+MODULE_LICENSE("GPL");
+ 	/*
+@@ -434,46 +434,10 @@ again:
+ 	else
+ 		err = 0;
+ 
+-#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+-	page_head = page;
+-	if (unlikely(PageTail(page))) {
+-		put_page(page);
+-		/* serialize against __split_huge_page_splitting() */
+-		local_irq_disable();
+-		if (likely(__get_user_pages_fast(address, 1, !ro, &page) == 1)) {
+-			page_head = compound_head(page);
+-			/*
+-			 * page_head is valid pointer but we must pin
+-			 * it before taking the PG_lock and/or
+-			 * PG_compound_lock. The moment we re-enable
+-			 * irqs __split_huge_page_splitting() can
+-			 * return and the head page can be freed from
+-			 * under us. We can't take the PG_lock and/or
+-			 * PG_compound_lock on a page that could be
+-			 * freed from under us.
+-			 */
+-			if (page != page_head) {
+-				get_page(page_head);
+-				put_page(page);
+-			}
+-			local_irq_enable();
+-		} else {
+-			local_irq_enable();
+-			goto again;
+-		}
+-	}
+-#else
+-	page_head = compound_head(page);
+-	if (page != page_head) {
+-		get_page(page_head);
+-		put_page(page);
+-	}
+-#endif
+-
+-	lock_page(page_head);
+-
++	page = compound_head(page);
++	lock_page(page);
+ 	/*
+-	 * If page_head->mapping is NULL, then it cannot be a PageAnon
++	 * If page->mapping is NULL, then it cannot be a PageAnon
+ 	 * page; but it might be the ZERO_PAGE or in the gate area or
+ 	 * in a special mapping (all cases which we are happy to fail);
+ 	 * or it may have been a good file page when get_user_pages_fast
+@@ -485,12 +449,12 @@ again:
+ 	 *
+ 	 * The case we do have to guard against is when memory pressure made
+ 	 * shmem_writepage move it from filecache to swapcache beneath us:
+-	 * an unlikely race, but we do need to retry for page_head->mapping.
++	 * an unlikely race, but we do need to retry for page->mapping.
+ 	 */
+-	if (!page_head->mapping) {
+-		int shmem_swizzled = PageSwapCache(page_head);
+-		unlock_page(page_head);
+-		put_page(page_head);
++	if (!page->mapping) {
++		int shmem_swizzled = PageSwapCache(page);
++		unlock_page(page);
++		put_page(page);
+ 		if (shmem_swizzled)
+ 			goto again;
+ 		return -EFAULT;
+@@ -503,7 +467,7 @@ again:
+ 	 * it's a read-only handle, it's expected that futexes attach to
+ 	 * the object not the particular process.
+ 	 */
+-	if (PageAnon(page_head)) {
++	if (PageAnon(page)) {
+ 		/*
+ 		 * A RO anonymous page will never change and thus doesn't make
+ 		 * sense for futex operations.
+@@ -518,15 +482,15 @@ again:
+ 		key->private.address = address;
+ 	} else {
+ 		key->both.offset |= FUT_OFF_INODE; /* inode-based key */
+-		key->shared.inode = page_head->mapping->host;
++		key->shared.inode = page->mapping->host;
+ 		key->shared.pgoff = basepage_index(page);
+ 	}
+ 
+ 	get_futex_key_refs(key); /* implies MB (B) */
+ 
+ out:
+-	unlock_page(page_head);
+-	put_page(page_head);
++	unlock_page(page);
++	put_page(page);
+ 	return err;
+ }
+ 
 -- 
-1.8.3.2
+2.0.0.rc4
 
