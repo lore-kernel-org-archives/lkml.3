@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934461AbaFIWrD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 18:47:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57187 "EHLO
+	id S964879AbaFIWqy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 18:46:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57190 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934332AbaFIWqO (ORCPT
+	with ESMTP id S934309AbaFIWqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:46:14 -0400
+	Mon, 9 Jun 2014 18:46:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Robert Richter <rric@kernel.org>, Will Deacon <will.deacon@arm.com>,
-        Weng Meiling <wengmeiling.weng@huawei.com>
-Subject: [PATCH 3.10 39/40] ARM: perf: hook up perf_sample_event_took around pmu irq handling
-Date: Mon,  9 Jun 2014 15:49:10 -0700
-Message-Id: <20140609224840.483198765@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>,
+        Will Deacon <will.deacon@arm.com>
+Subject: [PATCH 3.10 33/40] USB: Avoid runtime suspend loops for HCDs that cant handle suspend/resume
+Date: Mon,  9 Jun 2014 15:49:04 -0700
+Message-Id: <20140609224840.262767830@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140609224839.127615063@linuxfoundation.org>
 References: <20140609224839.127615063@linuxfoundation.org>
@@ -29,46 +29,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 5f5092e72cc25a6a5785308270e0085b2b2772cc upstream.
+commit 8ef42ddd9a53b73e6fc3934278710c27f80f324f upstream.
 
-Since we indirect all of our PMU IRQ handling through a dispatcher, it's
-trivial to hook up perf_sample_event_took to prevent applications such
-as oprofile from generating interrupt storms due to an unrealisticly
-low sample period.
+Not all host controller drivers have bus-suspend and bus-resume
+methods.  When one doesn't, it will cause problems if runtime PM is
+enabled in the kernel.  The PM core will attempt to suspend the
+controller's root hub, the suspend will fail because there is no
+bus-suspend routine, and a -EBUSY error code will be returned to the
+PM core.  This will cause the suspend attempt to be repeated shortly
+thereafter, in a never-ending loop.
 
-Reported-by: Robert Richter <rric@kernel.org>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Cc: Weng Meiling <wengmeiling.weng@huawei.com>
+Part of the problem is that the original error code -ENOENT gets
+changed to -EBUSY in usb_runtime_suspend(), on the grounds that the PM
+core will interpret -ENOENT as meaning that the root hub has gotten
+into a runtime-PM error state.  While this change is appropriate for
+real USB devices, it's not such a good idea for a root hub.  In fact,
+considering the root hub to be in a runtime-PM error state would not
+be far from the truth.  Therefore this patch updates
+usb_runtime_suspend() so that it adjusts error codes only for
+non-root-hub devices.
+
+Furthermore, the patch attempts to prevent the problem from occurring
+in the first place by not enabling runtime PM by default for root hubs
+whose host controller driver doesn't have bus_suspend and bus_resume
+methods.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Will Deacon <will.deacon@arm.com>
+Tested-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/kernel/perf_event.c |   11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ drivers/usb/core/driver.c |    9 ++++++---
+ drivers/usb/core/hub.c    |   15 +++++++++++++--
+ 2 files changed, 19 insertions(+), 5 deletions(-)
 
---- a/arch/arm/kernel/perf_event.c
-+++ b/arch/arm/kernel/perf_event.c
-@@ -303,11 +303,18 @@ static irqreturn_t armpmu_dispatch_irq(i
- 	struct arm_pmu *armpmu = (struct arm_pmu *) dev;
- 	struct platform_device *plat_device = armpmu->plat_device;
- 	struct arm_pmu_platdata *plat = dev_get_platdata(&plat_device->dev);
-+	int ret;
-+	u64 start_clock, finish_clock;
+--- a/drivers/usb/core/driver.c
++++ b/drivers/usb/core/driver.c
+@@ -1754,10 +1754,13 @@ int usb_runtime_suspend(struct device *d
+ 	if (status == -EAGAIN || status == -EBUSY)
+ 		usb_mark_last_busy(udev);
  
-+	start_clock = sched_clock();
- 	if (plat && plat->handle_irq)
--		return plat->handle_irq(irq, dev, armpmu->handle_irq);
-+		ret = plat->handle_irq(irq, dev, armpmu->handle_irq);
- 	else
--		return armpmu->handle_irq(irq, dev);
-+		ret = armpmu->handle_irq(irq, dev);
-+	finish_clock = sched_clock();
-+
-+	perf_sample_event_took(finish_clock - start_clock);
-+	return ret;
+-	/* The PM core reacts badly unless the return code is 0,
+-	 * -EAGAIN, or -EBUSY, so always return -EBUSY on an error.
++	/*
++	 * The PM core reacts badly unless the return code is 0,
++	 * -EAGAIN, or -EBUSY, so always return -EBUSY on an error
++	 * (except for root hubs, because they don't suspend through
++	 * an upstream port like other USB devices).
+ 	 */
+-	if (status != 0)
++	if (status != 0 && udev->parent)
+ 		return -EBUSY;
+ 	return status;
  }
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -1683,8 +1683,19 @@ static int hub_probe(struct usb_interfac
+ 	 */
+ 	pm_runtime_set_autosuspend_delay(&hdev->dev, 0);
  
- static void
+-	/* Hubs have proper suspend/resume support. */
+-	usb_enable_autosuspend(hdev);
++	/*
++	 * Hubs have proper suspend/resume support, except for root hubs
++	 * where the controller driver doesn't have bus_suspend and
++	 * bus_resume methods.
++	 */
++	if (hdev->parent) {		/* normal device */
++		usb_enable_autosuspend(hdev);
++	} else {			/* root hub */
++		const struct hc_driver *drv = bus_to_hcd(hdev->bus)->driver;
++
++		if (drv->bus_suspend && drv->bus_resume)
++			usb_enable_autosuspend(hdev);
++	}
+ 
+ 	if (hdev->level == MAX_TOPO_LEVEL) {
+ 		dev_err(&intf->dev,
 
 
