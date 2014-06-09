@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964860AbaFIWqw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 18:46:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57198 "EHLO
+	id S964836AbaFIWqt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 18:46:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57187 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934307AbaFIWqL (ORCPT
+	with ESMTP id S932293AbaFIWqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jun 2014 18:46:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexej Starschenko <starschenko@gmail.com>,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.10 31/40] USB: serial: option: add support for Novatel E371 PCIe card
-Date: Mon,  9 Jun 2014 15:49:02 -0700
-Message-Id: <20140609224840.199276632@linuxfoundation.org>
+        kbuild test robot <fengguang.wu@intel.com>,
+        Ludovic Drolez <ldrolez@debian.org>, Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.10 32/40] USB: io_ti: fix firmware download on big-endian machines (part 2)
+Date: Mon,  9 Jun 2014 15:49:03 -0700
+Message-Id: <20140609224840.232144542@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140609224839.127615063@linuxfoundation.org>
 References: <20140609224839.127615063@linuxfoundation.org>
@@ -29,57 +29,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexej Starschenko <starschenko@gmail.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 8a61ba3a47ac39f660702aa66a172185dd605a86 upstream.
+commit c03890ff5e24a4bf59059f2d179f427559b7330a upstream.
 
-Adds product ID for the Novatel E371 PCI Express Mini Card.
+A recent patch that purported to fix firmware download on big-endian
+machines failed to add the corresponding sparse annotation to the
+i2c-header. This was reported by the kbuild test robot.
 
-$ lsusb
-Bus 001 Device 024: ID 1410:9011 Novatel Wireless
+Adding the appropriate annotation revealed another endianess bug related
+to the i2c-header Size-field in a code path that is exercised when the
+firmware is actually being downloaded (and not just verified and left
+untouched unless older than the firmware at hand).
 
-$ usb-devices
-T:  Bus=01 Lev=01 Prnt=01 Port=03 Cnt=01 Dev#= 24 Spd=480 MxCh= 0
-D:  Ver= 2.00 Cls=ef(misc ) Sub=02 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=1410 ProdID=9011 Rev=00.03
-S:  Manufacturer=Novatel Wireless, Inc.
-S:  Product=Novatel Wireless HSPA
-S:  SerialNumber=012773002115811
-C:  #Ifs= 6 Cfg#= 1 Atr=e0 MxPwr=500mA
-I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-I:  If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-I:  If#= 3 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-I:  If#= 6 Alt= 0 #EPs= 1 Cls=02(commc) Sub=06 Prot=00 Driver=cdc_ether
-I:  If#= 7 Alt= 1 #EPs= 2 Cls=0a(data ) Sub=00 Prot=00 Driver=cdc_ether
+This patch adds the required sparse annotation to the i2c-header and
+makes sure that the Size-field is sent in little-endian byte order
+during firmware download also on big-endian machines.
 
-Tested with kernel 3.2.0.
+Note that this patch is only compile-tested, but that there is no
+functional change for little-endian systems.
 
-Signed-off-by: Alexej Starschenko <starschenko@gmail.com>
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
+Cc: Ludovic Drolez <ldrolez@debian.org>
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/serial/io_ti.c      |    2 +-
+ drivers/usb/serial/io_usbvend.h |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -161,6 +161,7 @@ static void option_instat_callback(struc
- #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_FULLSPEED	0x9000
- #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_HIGHSPEED	0x9001
- #define NOVATELWIRELESS_PRODUCT_E362		0x9010
-+#define NOVATELWIRELESS_PRODUCT_E371		0x9011
- #define NOVATELWIRELESS_PRODUCT_G2		0xA010
- #define NOVATELWIRELESS_PRODUCT_MC551		0xB001
+--- a/drivers/usb/serial/io_ti.c
++++ b/drivers/usb/serial/io_ti.c
+@@ -835,7 +835,7 @@ static int build_i2c_fw_hdr(__u8 *header
+ 	firmware_rec =  (struct ti_i2c_firmware_rec*)i2c_header->Data;
  
-@@ -1012,6 +1013,7 @@ static const struct usb_device_id option
- 	/* Novatel Ovation MC551 a.k.a. Verizon USB551L */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_MC551, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_E362, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_E371, 0xff, 0xff, 0xff) },
+ 	i2c_header->Type	= I2C_DESC_TYPE_FIRMWARE_BLANK;
+-	i2c_header->Size	= (__u16)buffer_size;
++	i2c_header->Size	= cpu_to_le16(buffer_size);
+ 	i2c_header->CheckSum	= cs;
+ 	firmware_rec->Ver_Major	= OperationalMajorVersion;
+ 	firmware_rec->Ver_Minor	= OperationalMinorVersion;
+--- a/drivers/usb/serial/io_usbvend.h
++++ b/drivers/usb/serial/io_usbvend.h
+@@ -594,7 +594,7 @@ struct edge_boot_descriptor {
  
- 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_H01) },
- 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_H01A) },
+ struct ti_i2c_desc {
+ 	__u8	Type;			// Type of descriptor
+-	__u16	Size;			// Size of data only not including header
++	__le16	Size;			// Size of data only not including header
+ 	__u8	CheckSum;		// Checksum (8 bit sum of data only)
+ 	__u8	Data[0];		// Data starts here
+ } __attribute__((packed));
 
 
