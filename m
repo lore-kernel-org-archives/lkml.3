@@ -1,22 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934773AbaFIW6K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 18:58:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57062 "EHLO
+	id S934495AbaFIW6I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 18:58:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57087 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934082AbaFIWp6 (ORCPT
+	with ESMTP id S933755AbaFIWp7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:45:58 -0400
+	Mon, 9 Jun 2014 18:45:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andi Kleen <andi@firstfloor.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 07/40] mm/memory-failure.c: fix memory leak by race between poison and unpoison
-Date: Mon,  9 Jun 2014 15:48:38 -0700
-Message-Id: <20140609224839.448656697@linuxfoundation.org>
+        "Gautham R. Shenoy" <ego@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Michael wang <wangyun@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Toshi Kani <toshi.kani@hp.com>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.10 19/40] sched: Fix hotplug vs. set_cpus_allowed_ptr()
+Date: Mon,  9 Jun 2014 15:48:50 -0700
+Message-Id: <20140609224839.814100625@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140609224839.127615063@linuxfoundation.org>
 References: <20140609224839.127615063@linuxfoundation.org>
@@ -31,41 +37,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-commit 3e030ecc0fc7de10fd0da10c1c19939872a31717 upstream.
+commit 6acbfb96976fc3350e30d964acb1dbbdf876d55e upstream.
 
-When a memory error happens on an in-use page or (free and in-use)
-hugepage, the victim page is isolated with its refcount set to one.
+Lai found that:
 
-When you try to unpoison it later, unpoison_memory() calls put_page()
-for it twice in order to bring the page back to free page pool (buddy or
-free hugepage list).  However, if another memory error occurs on the
-page which we are unpoisoning, memory_failure() returns without
-releasing the refcount which was incremented in the same call at first,
-which results in memory leak and unconsistent num_poisoned_pages
-statistics.  This patch fixes it.
+  WARNING: CPU: 1 PID: 13 at arch/x86/kernel/smp.c:124 native_smp_send_reschedule+0x2d/0x4b()
+  ...
+  migration_cpu_stop+0x1d/0x22
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+was caused by set_cpus_allowed_ptr() assuming that cpu_active_mask is
+always a sub-set of cpu_online_mask.
+
+This isn't true since 5fbd036b552f ("sched: Cleanup cpu_active madness").
+
+So set active and online at the same time to avoid this particular
+problem.
+
+Fixes: 5fbd036b552f ("sched: Cleanup cpu_active madness")
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Gautham R. Shenoy <ego@linux.vnet.ibm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Michael wang <wangyun@linux.vnet.ibm.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Toshi Kani <toshi.kani@hp.com>
+Link: http://lkml.kernel.org/r/53758B12.8060609@cn.fujitsu.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/memory-failure.c |    2 ++
- 1 file changed, 2 insertions(+)
+ kernel/cpu.c        |    6 ++++--
+ kernel/sched/core.c |    1 -
+ 2 files changed, 4 insertions(+), 3 deletions(-)
 
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1153,6 +1153,8 @@ int memory_failure(unsigned long pfn, in
- 	 */
- 	if (!PageHWPoison(p)) {
- 		printk(KERN_ERR "MCE %#lx: just unpoisoned\n", pfn);
-+		atomic_long_sub(nr_pages, &num_poisoned_pages);
-+		put_page(hpage);
- 		res = 0;
- 		goto out;
- 	}
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -698,10 +698,12 @@ void set_cpu_present(unsigned int cpu, b
+ 
+ void set_cpu_online(unsigned int cpu, bool online)
+ {
+-	if (online)
++	if (online) {
+ 		cpumask_set_cpu(cpu, to_cpumask(cpu_online_bits));
+-	else
++		cpumask_set_cpu(cpu, to_cpumask(cpu_active_bits));
++	} else {
+ 		cpumask_clear_cpu(cpu, to_cpumask(cpu_online_bits));
++	}
+ }
+ 
+ void set_cpu_active(unsigned int cpu, bool active)
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -5270,7 +5270,6 @@ static int __cpuinit sched_cpu_active(st
+ 				      unsigned long action, void *hcpu)
+ {
+ 	switch (action & ~CPU_TASKS_FROZEN) {
+-	case CPU_STARTING:
+ 	case CPU_DOWN_FAILED:
+ 		set_cpu_active((long)hcpu, true);
+ 		return NOTIFY_OK;
 
 
