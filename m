@@ -1,62 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751143AbaFIFV5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 01:21:57 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:41566 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750756AbaFIFVz (ORCPT
+	id S1753953AbaFIFYz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 01:24:55 -0400
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:34357 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751252AbaFIFYw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 01:21:55 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@gmail.com>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>, jolsa@redhat.com,
-        linux-kernel@vger.kernel.org, acme@infradead.org, fweisbec@gmail.com
-Subject: Re: [PATCH 9/9] perf, tools, record: Always allow to overide default period v2
-References: <1401486615-21374-1-git-send-email-andi@firstfloor.org>
-	<1401486615-21374-10-git-send-email-andi@firstfloor.org>
-	<1401895987.1673.36.camel@leonhard>
-	<20140604165930.GH8876@tassilo.jf.intel.com>
-Date: Mon, 09 Jun 2014 14:21:52 +0900
-In-Reply-To: <20140604165930.GH8876@tassilo.jf.intel.com> (Andi Kleen's
-	message of "Wed, 4 Jun 2014 09:59:30 -0700")
-Message-ID: <87d2eid5e7.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 9 Jun 2014 01:24:52 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@rjwysocki.net
+Cc: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, arvind.chauhan@arm.com,
+        srivatsa.bhat@linux.vnet.ibm.com, svaidy@linux.vnet.ibm.com,
+        ego@linux.vnet.ibm.com, pavel@ucw.cz,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH] cpufreq: governor: remove copy_prev_load from 'struct cpu_dbs_common_info'
+Date: Mon,  9 Jun 2014 10:54:17 +0530
+Message-Id: <d4241c6ef57c901dde270380cce74e24effa4852.1402291351.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 2.0.0.rc2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Jun 2014 09:59:30 -0700, Andi Kleen wrote:
-> I saw samples.
->
-> Oh well we can just drop it. The only difference is that the 
-> event list cannot set a period then.
+'copy_prev_load' was recently added by commit: 18b46ab (cpufreq: governor: Be
+friendly towards latency-sensitive bursty workloads).
 
-I tested with a downloaded event, and it does have samples.  But the
-frequency could not be changed even with your patch.
+It actually is a bit redundant as we also have 'prev_load' which can store any
+integer value and can be used instead of 'copy_prev_load' by setting it to zero
+when we don't want to use previous load.
 
-  $ perf record -a -e uops_retired.all -F 4000 sleep 1
-  [ perf record: Woken up 1 times to write data ]
-  [ perf record: Captured and wrote 0.327 MB perf.data (~14281 samples) ]
+So, drop 'copy_prev_load' and use 'prev_load' instead.
 
-  $ perf evlist -F
-  cpu/uops_retired.all/: sample_freq=2000003
+Update comments as well to make it more clear.
 
+There is another change here which was probably missed by Srivatsa during the
+last version of updates he made. The unlikely in the 'if' statement was covering
+only half of the condition and the whole line should actually come under it.
 
->
-> It's as broken as before.
+Also checkpatch is made more silent as it was reporting this (--strict option):
 
-At least, it worked well for events don't have a default sample
-freq/period which means all but tracepoint events.  For tracepoint
-events, it makes little sense to change the default so I decided not to
-touch it.  
+CHECK: Alignment should match open parenthesis
++		if (unlikely(wall_time > (2 * sampling_rate) &&
++						j_cdbs->prev_load)) {
 
-But with your change, the downloaded events might have a default
-freq/period setting now.  So I'd like to make it right.  I'll send a fix
-for this right soon.
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/cpufreq/cpufreq_governor.c | 13 ++++++++-----
+ drivers/cpufreq/cpufreq_governor.h |  8 ++++----
+ 2 files changed, 12 insertions(+), 9 deletions(-)
 
-Thanks,
-Namhyung
+diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+index 9004450..a1ad804 100644
+--- a/drivers/cpufreq/cpufreq_governor.c
++++ b/drivers/cpufreq/cpufreq_governor.c
+@@ -132,14 +132,18 @@ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu)
+ 		 * an unusually large 'wall_time' (as compared to the sampling
+ 		 * rate) indicates this scenario.
+ 		 */
+-		if (unlikely(wall_time > (2 * sampling_rate)) &&
+-						j_cdbs->copy_prev_load) {
++		if (unlikely(wall_time > (2 * sampling_rate) &&
++			     j_cdbs->prev_load)) {
+ 			load = j_cdbs->prev_load;
+-			j_cdbs->copy_prev_load = false;
++
++			/*
++			 * Ensure that we copy the previous load only once, upon
++			 * the first wake-up from idle.
++			 */
++			j_cdbs->prev_load = 0;
+ 		} else {
+ 			load = 100 * (wall_time - idle_time) / wall_time;
+ 			j_cdbs->prev_load = load;
+-			j_cdbs->copy_prev_load = true;
+ 		}
+ 
+ 		if (load > max_load)
+@@ -373,7 +377,6 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+ 				(j_cdbs->prev_cpu_wall - j_cdbs->prev_cpu_idle);
+ 			j_cdbs->prev_load = 100 * prev_load /
+ 					(unsigned int) j_cdbs->prev_cpu_wall;
+-			j_cdbs->copy_prev_load = true;
+ 
+ 			if (ignore_nice)
+ 				j_cdbs->prev_cpu_nice =
+diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
+index c2a5b7e..d3082ee 100644
+--- a/drivers/cpufreq/cpufreq_governor.h
++++ b/drivers/cpufreq/cpufreq_governor.h
+@@ -134,12 +134,12 @@ struct cpu_dbs_common_info {
+ 	u64 prev_cpu_idle;
+ 	u64 prev_cpu_wall;
+ 	u64 prev_cpu_nice;
+-	unsigned int prev_load;
+ 	/*
+-	 * Flag to ensure that we copy the previous load only once, upon the
+-	 * first wake-up from idle.
++	 * Used to store system load before going into idle, when set to zero:
++	 * used as a flag to ensure that we copy the previous load only once,
++	 * upon the first wake-up from idle.
+ 	 */
+-	bool copy_prev_load;
++	unsigned int prev_load;
+ 	struct cpufreq_policy *cur_policy;
+ 	struct delayed_work work;
+ 	/*
+-- 
+2.0.0.rc2
+
