@@ -1,119 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933888AbaFINEM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 09:04:12 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:55880 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933225AbaFIM7b (ORCPT
+	id S933898AbaFINE3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 09:04:29 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:51129 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933225AbaFINE1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 08:59:31 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: bdas@redhat.com, gleb@kernel.org
-Subject: [PATCH 08/25] KVM: emulate: abstract handling of memory operands
-Date: Mon,  9 Jun 2014 14:58:56 +0200
-Message-Id: <1402318753-23362-9-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1402318753-23362-1-git-send-email-pbonzini@redhat.com>
-References: <1402318753-23362-1-git-send-email-pbonzini@redhat.com>
+	Mon, 9 Jun 2014 09:04:27 -0400
+Date: Mon, 9 Jun 2014 17:04:16 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Christoph Lameter <cl@gentwo.org>
+CC: <akpm@linux-foundation.org>, <iamjoonsoo.kim@lge.com>,
+        <rientjes@google.com>, <penberg@kernel.org>, <hannes@cmpxchg.org>,
+        <mhocko@suse.cz>, <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
+Subject: Re: [PATCH -mm v2 8/8] slab: make dead memcg caches discard free
+ slabs immediately
+Message-ID: <20140609130414.GB32192@esperanza>
+References: <cover.1402060096.git.vdavydov@parallels.com>
+ <27a202c6084d6bb19cc3e417793f05104b908ded.1402060096.git.vdavydov@parallels.com>
+ <alpine.DEB.2.10.1406060949430.32229@gentwo.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1406060949430.32229@gentwo.org>
+X-Originating-IP: [81.5.110.170]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Abstract the pre-execution processing and writeback of memory operands
-in new functions.  We will soon do some work before execution even for
-move destination, so call the function in that case too; but not for
-the memory operand of lea, invlpg etc.
+On Fri, Jun 06, 2014 at 09:52:17AM -0500, Christoph Lameter wrote:
+> On Fri, 6 Jun 2014, Vladimir Davydov wrote:
+> 
+> > @@ -740,7 +740,8 @@ static void start_cpu_timer(int cpu)
+> >  	}
+> >  }
+> >
+> > -static struct array_cache *alloc_arraycache(int node, int entries,
+> > +static struct array_cache *alloc_arraycache(struct kmem_cache *cachep,
+> > +					    int node, int entries,
+> >  					    int batchcount, gfp_t gfp)
+> >  {
+> >  	int memsize = sizeof(void *) * entries + sizeof(struct array_cache);
+> 
+> If you pass struct kmem_cache * into alloc_arraycache then we do not need
+> to pass entries or batchcount because they are available in struct
+> kmem_cache.
 
-Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- arch/x86/kvm/emulate.c | 43 ++++++++++++++++++++++++++++---------------
- 1 file changed, 28 insertions(+), 15 deletions(-)
+Seems you're right. Will rework.
 
-diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index a1daf52fae58..7e9dc2d6fd44 100644
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -1564,6 +1564,29 @@ static int load_segment_descriptor(struct x86_emulate_ctxt *ctxt,
- 	return __load_segment_descriptor(ctxt, selector, seg, cpl, false);
- }
- 
-+static int prepare_memory_operand(struct x86_emulate_ctxt *ctxt,
-+				  struct operand *op)
-+{
-+	return segmented_read(ctxt, op->addr.mem, &op->val, op->bytes);
-+}
-+
-+static int cmpxchg_memory_operand(struct x86_emulate_ctxt *ctxt,
-+				  struct operand *op)
-+{
-+	return segmented_cmpxchg(ctxt, op->addr.mem,
-+				 &op->orig_val,
-+				 &op->val,
-+				 op->bytes);
-+}
-+
-+static int write_memory_operand(struct x86_emulate_ctxt *ctxt,
-+				struct operand *op)
-+{
-+	return segmented_write(ctxt, op->addr.mem,
-+			       &op->val,
-+			       op->bytes);
-+}
-+
- static void write_register_operand(struct operand *op)
- {
- 	/* The 4-byte case *is* correct: in 64-bit mode we zero-extend. */
-@@ -1591,16 +1614,9 @@ static int writeback(struct x86_emulate_ctxt *ctxt, struct operand *op)
- 		break;
- 	case OP_MEM:
- 		if (ctxt->lock_prefix)
--			return segmented_cmpxchg(ctxt,
--						 op->addr.mem,
--						 &op->orig_val,
--						 &op->val,
--						 op->bytes);
-+			return cmpxchg_memory_operand(ctxt, op);
- 		else
--			return segmented_write(ctxt,
--					       op->addr.mem,
--					       &op->val,
--					       op->bytes);
-+			return write_memory_operand(ctxt, op);
- 		break;
- 	case OP_MEM_STR:
- 		return segmented_write(ctxt,
-@@ -4622,16 +4638,14 @@ int x86_emulate_insn(struct x86_emulate_ctxt *ctxt)
- 	}
- 
- 	if ((ctxt->src.type == OP_MEM) && !(ctxt->d & NoAccess)) {
--		rc = segmented_read(ctxt, ctxt->src.addr.mem,
--				    ctxt->src.valptr, ctxt->src.bytes);
-+		rc = prepare_memory_operand(ctxt, &ctxt->src);
- 		if (rc != X86EMUL_CONTINUE)
- 			goto done;
- 		ctxt->src.orig_val64 = ctxt->src.val64;
- 	}
- 
- 	if (ctxt->src2.type == OP_MEM) {
--		rc = segmented_read(ctxt, ctxt->src2.addr.mem,
--				    &ctxt->src2.val, ctxt->src2.bytes);
-+		rc = prepare_memory_operand(ctxt, &ctxt->src2);
- 		if (rc != X86EMUL_CONTINUE)
- 			goto done;
- 	}
-@@ -4642,8 +4656,7 @@ int x86_emulate_insn(struct x86_emulate_ctxt *ctxt)
- 
- 	if ((ctxt->dst.type == OP_MEM) && !(ctxt->d & Mov)) {
- 		/* optimisation - avoid slow emulated read if Mov */
--		rc = segmented_read(ctxt, ctxt->dst.addr.mem,
--				   &ctxt->dst.val, ctxt->dst.bytes);
-+		rc = prepare_memory_operand(ctxt, &ctxt->dst);
- 		if (rc != X86EMUL_CONTINUE)
- 			goto done;
- 	}
--- 
-1.8.3.1
+> Otherwise this patch looks a bit too large to me. Simplify a bit?
 
+Yeah, exactly. I will split it and resend.
 
+Thank you.
