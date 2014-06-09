@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934240AbaFIXFh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 19:05:37 -0400
+	id S934690AbaFIXGV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 19:06:21 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:56799 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933769AbaFIWpl (ORCPT
+	with ESMTP id S933723AbaFIWpi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:45:41 -0400
+	Mon, 9 Jun 2014 18:45:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.10 04/40] perf: Limit perf_event_attr::sample_period to 63 bits
-Date: Mon,  9 Jun 2014 15:48:35 -0700
-Message-Id: <20140609224839.356006219@linuxfoundation.org>
+        NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.14 44/78] md: always set MD_RECOVERY_INTR when aborting a reshape or other "resync".
+Date: Mon,  9 Jun 2014 15:48:24 -0700
+Message-Id: <20140609224814.769373885@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140609224839.127615063@linuxfoundation.org>
-References: <20140609224839.127615063@linuxfoundation.org>
+In-Reply-To: <20140609224813.282275135@linuxfoundation.org>
+References: <20140609224813.282275135@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,42 +24,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: NeilBrown <neilb@suse.de>
 
-commit 0819b2e30ccb93edf04876237b6205eef84ec8d2 upstream.
+commit 3991b31ea072b070081ca3bfa860a077eda67de5 upstream.
 
-Vince reported that using a large sample_period (one with bit 63 set)
-results in wreckage since while the sample_period is fundamentally
-unsigned (negative periods don't make sense) the way we implement
-things very much rely on signed logic.
+If mddev->ro is set, md_to_sync will (correctly) abort.
+However in that case MD_RECOVERY_INTR isn't set.
 
-So limit sample_period to 63 bits to avoid tripping over this.
+If a RESHAPE had been requested, then ->finish_reshape() will be
+called and it will think the reshape was successful even though
+nothing happened.
 
-Reported-by: Vince Weaver <vincent.weaver@maine.edu>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/n/tip-p25fhunibl4y3qi0zuqmyf4b@git.kernel.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Normally a resync will not be requested if ->ro is set, but if an
+array is stopped while a reshape is on-going, then when the array is
+started, the reshape will be restarted.  If the array is also set
+read-only at this point, the reshape will instantly appear to success,
+resulting in data corruption.
+
+Consequently, this patch is suitable for any -stable kernel.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/events/core.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/md/md.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -6590,6 +6590,9 @@ SYSCALL_DEFINE5(perf_event_open,
- 	if (attr.freq) {
- 		if (attr.sample_freq > sysctl_perf_event_sample_rate)
- 			return -EINVAL;
-+	} else {
-+		if (attr.sample_period & (1ULL << 63))
-+			return -EINVAL;
- 	}
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -7395,8 +7395,10 @@ void md_do_sync(struct md_thread *thread
+ 	/* just incase thread restarts... */
+ 	if (test_bit(MD_RECOVERY_DONE, &mddev->recovery))
+ 		return;
+-	if (mddev->ro) /* never try to sync a read-only array */
++	if (mddev->ro) {/* never try to sync a read-only array */
++		set_bit(MD_RECOVERY_INTR, &mddev->recovery);
+ 		return;
++	}
  
- 	/*
+ 	if (test_bit(MD_RECOVERY_SYNC, &mddev->recovery)) {
+ 		if (test_bit(MD_RECOVERY_CHECK, &mddev->recovery)) {
 
 
