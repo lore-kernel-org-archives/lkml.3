@@ -1,84 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936744AbaFIJmd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 05:42:33 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59137 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754893AbaFIJ0R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 05:26:17 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert+renesas@glider.be>,
-        Mark Brown <broonie@linaro.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 137/146] spi: core: Ignore unsupported Dual/Quad Transfer Mode bits
-Date: Mon,  9 Jun 2014 10:51:12 +0200
-Message-Id: <fe18843c6cd2860ac6981c6465315a9b49612e06.1402303821.git.jslaby@suse.cz>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
-References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
-In-Reply-To: <cover.1402303820.git.jslaby@suse.cz>
-References: <cover.1402303820.git.jslaby@suse.cz>
+	id S932283AbaFIJxU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 05:53:20 -0400
+Received: from mga01.intel.com ([192.55.52.88]:46334 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753058AbaFIJxR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 05:53:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,1001,1392192000"; 
+   d="scan'208";a="552558889"
+Message-ID: <1402307589.20454.49.camel@sauron.fi.intel.com>
+Subject: [GIT PULL] UBIFS changes for 3.16
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-mtd <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 09 Jun 2014 12:53:09 +0300
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Geert Uytterhoeven <geert+renesas@glider.be>
+Hi Linus,
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+the following changes since commit d6d211db37e75de2ddc3a4f979038c40df7cc79c:
 
-===============
+  Linux 3.15-rc5 (2014-05-09 13:10:52 -0700)
 
-commit 83596fbeb5d28e8cb8878786133945d4dc7c0090 upstream.
+are available in the git repository at:
 
-The availability of SPI Dual or Quad Transfer Mode as indicated by the
-"spi-tx-bus-width" and "spi-rx-bus-width" properties in the device tree is
-a hardware property of the SPI master, SPI slave, and board wiring.  Hence
-the SPI core should not reject an SPI slave because an SPI master driver
-doesn't (yet) support Dual or Quad Transfer Mode.
+  git://git.infradead.org/linux-ubifs.git tags/upstream-3.16-rc1
 
-Change the lack of Dual or Quad Transfer Mode support in the SPI master
-driver from an error condition to a warning condition, and ignore the
-unsupported mode bits, falling back to Single Transfer Mode, to avoid
-breakages when running old kernels with new device trees.
+for you to fetch changes up to 380347e9ca76828ee9bac63cfc338ca99cdee4f3:
 
-Fixes: f477b7fb13df (spi: DUAL and QUAD support)
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-Signed-off-by: Mark Brown <broonie@linaro.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/spi/spi.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+  UBIFS: Add an assertion for clean_zn_cnt (2014-06-03 11:16:51 +0300)
 
-diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index 9e039c60c068..d254477372b9 100644
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -1370,7 +1370,7 @@ EXPORT_SYMBOL_GPL(spi_busnum_to_master);
-  */
- int spi_setup(struct spi_device *spi)
- {
--	unsigned	bad_bits;
-+	unsigned	bad_bits, ugly_bits;
- 	int		status = 0;
- 
- 	/* check mode to prevent that DUAL and QUAD set at the same time
-@@ -1390,6 +1390,15 @@ int spi_setup(struct spi_device *spi)
- 	 * that aren't supported with their current master
- 	 */
- 	bad_bits = spi->mode & ~spi->master->mode_bits;
-+	ugly_bits = bad_bits &
-+		    (SPI_TX_DUAL | SPI_TX_QUAD | SPI_RX_DUAL | SPI_RX_QUAD);
-+	if (ugly_bits) {
-+		dev_warn(&spi->dev,
-+			 "setup: ignoring unsupported mode bits %x\n",
-+			 ugly_bits);
-+		spi->mode &= ~ugly_bits;
-+		bad_bits &= ~ugly_bits;
-+	}
- 	if (bad_bits) {
- 		dev_err(&spi->dev, "setup: unsupported mode bits %x\n",
- 			bad_bits);
+----------------------------------------------------------------
+condition between the mmap page fault path and fsync. The other
+just removes a bogus assertion from the UBIFS memory shrinker.
+
+UBIFS also started honoring the MS_SILENT mount flag, so now it won't print
+many I/O errors when user-space just tries to probe for the FS.
+
+Rest of the changes are rather minor UBI/UBIFS fixes, improvements, and
+clean-ups.
+
+----------------------------------------------------------------
+Artem Bityutskiy (1):
+      UBIFS: fix debugging check
+
+Daniel Golle (2):
+      UBIFS: add missing ui pointer in debugging code
+      UBIFS: respect MS_SILENT mount flag
+
+Ezequiel Garcia (1):
+      UBI: weaken the 'exclusive' constraint when opening volumes to rename
+
+Helmut Schaa (1):
+      UBI: block: Fix error path on alloc_workqueue failure
+
+Mike Snitzer (1):
+      UBI: fix rb_tree node comparison in add_map
+
+hujianyang (5):
+      UBIFS: fix an mmap and fsync race condition
+      UBIFS: Remove unused variables in ubifs_budget_space
+      UBIFS: Fix dump messages in ubifs_dump_lprops
+      UBIFS: Remove incorrect assertion in shrink_tnc()
+      UBIFS: Add an assertion for clean_zn_cnt
+
+ drivers/mtd/ubi/block.c   |  4 +++-
+ drivers/mtd/ubi/cdev.c    |  2 +-
+ drivers/mtd/ubi/fastmap.c |  4 ++--
+ fs/ubifs/budget.c         |  1 -
+ fs/ubifs/debug.c          |  4 +++-
+ fs/ubifs/file.c           |  6 +++---
+ fs/ubifs/io.c             | 18 ++++++++++--------
+ fs/ubifs/shrinker.c       |  1 -
+ fs/ubifs/super.c          |  5 +++++
+ fs/ubifs/tnc.c            |  5 +++--
+ fs/ubifs/ubifs.h          | 11 +++++++++++
+ 11 files changed, 41 insertions(+), 20 deletions(-)
+
 -- 
-1.9.3
+Best Regards,
+Artem Bityutskiy
 
