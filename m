@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932140AbaFISgo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 14:36:44 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:45663 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750878AbaFISgj (ORCPT
+	id S932185AbaFISgw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 14:36:52 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:38371 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753861AbaFISgt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 14:36:39 -0400
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        "Luis R. Rodriguez" <mcgrof@suse.com>, Borislav Petkov <bp@suse.de>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>, Michal Marek <mmarek@suse.cz>,
-        Randy Dunlap <rdunlap@infradead.org>, levinsasha928@gmail.com,
-        mtosatti@redhat.com, fengguang.wu@intel.com,
-        David Vrabel <david.vrabel@citrix.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        xen-devel@lists.xenproject.org
-Subject: [PATCH v2 2/3] x86, platform, xen, kconfig: clarify kvmconfig is for kvm
-Date: Mon,  9 Jun 2014 11:36:23 -0700
-Message-Id: <1402338984-9774-2-git-send-email-mcgrof@do-not-panic.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1402338984-9774-1-git-send-email-mcgrof@do-not-panic.com>
-References: <1402338984-9774-1-git-send-email-mcgrof@do-not-panic.com>
+	Mon, 9 Jun 2014 14:36:49 -0400
+Message-ID: <5395FEBF.3040608@cogentembedded.com>
+Date: Mon, 09 Jun 2014 22:36:47 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Sascha Silbe <x-linux@infra-silbe.de>
+CC: Johan Hovold <jhovold@gmail.com>, Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] USB: ftdi_sio: add GPIO support
+References: <1402320115-13171-1-git-send-email-x-linux@infra-silbe.de> <20140609152313.45f353d6@alan.etchedpixels.co.uk>
+In-Reply-To: <20140609152313.45f353d6@alan.etchedpixels.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
+Hello.
 
-We'll be adding options for xen as well.
+On 06/09/2014 06:23 PM, One Thousand Gnomes wrote:
 
-Cc: Borislav Petkov <bp@suse.de>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: penberg@kernel.org
-Cc: levinsasha928@gmail.com
-Cc: mtosatti@redhat.com
-Cc: fengguang.wu@intel.com
-Cc: David Vrabel <david.vrabel@citrix.com>
-Cc: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: xen-devel@lists.xenproject.org
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
----
- arch/x86/Makefile | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+>>   #include <linux/kernel.h>
+>>   #include <linux/errno.h>
+>> +#ifdef CONFIG_GPIOLIB
+>> +#include <linux/gpio.h>
+>> +#endif
 
-diff --git a/arch/x86/Makefile b/arch/x86/Makefile
-index c78747b..36eea65 100644
---- a/arch/x86/Makefile
-+++ b/arch/x86/Makefile
-@@ -273,5 +273,5 @@ define archhelp
-   echo  '                  bzdisk/fdimage*/isoimage also accept:'
-   echo  '                  FDARGS="..."  arguments for the booted kernel'
-   echo  '                  FDINITRD=file initrd for the booted kernel'
--  echo  '  kvmconfig	- Enable additional options for guest kernel support'
-+  echo  '  kvmconfig	- Enable additional options for kvm guest kernel support'
- endef
--- 
-2.0.0.rc3.18.g00a5b79
+> Please create a new struct, a new file and put all the GPIO stuff in
+> there rather than #if bombing the driver.
+
+> You can then declare blank methods for the gpio stuff if GPIO is not
+> compiled in - ie in the headers
+
+> #ifdef CONFIG_GPIOLIB
+> extern int ftdi_gpio_open(struct ftdi_private *priv);
+> etc...
+> #else
+> extern inline  int ftdi_gpio_open(struct ftdi_private *priv) { return 0 };
+
+    I guess you meant *static* instead of *extern* here?
+
+> #endif
+
+WBR, Sergei
 
