@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933872AbaFINDy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 09:03:54 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:44564 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932758AbaFIM7c (ORCPT
+	id S933888AbaFINEM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 09:04:12 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:55880 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933225AbaFIM7b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 08:59:32 -0400
+	Mon, 9 Jun 2014 08:59:31 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: bdas@redhat.com, gleb@kernel.org
-Subject: [PATCH 09/25] KVM: export mark_page_dirty_in_slot
-Date: Mon,  9 Jun 2014 14:58:57 +0200
-Message-Id: <1402318753-23362-10-git-send-email-pbonzini@redhat.com>
+Subject: [PATCH 08/25] KVM: emulate: abstract handling of memory operands
+Date: Mon,  9 Jun 2014 14:58:56 +0200
+Message-Id: <1402318753-23362-9-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1402318753-23362-1-git-send-email-pbonzini@redhat.com>
 References: <1402318753-23362-1-git-send-email-pbonzini@redhat.com>
@@ -20,75 +20,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Abstract the pre-execution processing and writeback of memory operands
+in new functions.  We will soon do some work before execution even for
+move destination, so call the function in that case too; but not for
+the memory operand of lea, invlpg etc.
+
 Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- include/linux/kvm_host.h |  1 +
- virt/kvm/kvm_main.c      | 12 +++++-------
- 2 files changed, 6 insertions(+), 7 deletions(-)
+ arch/x86/kvm/emulate.c | 43 ++++++++++++++++++++++++++++---------------
+ 1 file changed, 28 insertions(+), 15 deletions(-)
 
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index 970c68197c69..5be9805b0aeb 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -583,6 +583,7 @@ struct kvm_memory_slot *gfn_to_memslot(struct kvm *kvm, gfn_t gfn);
- int kvm_is_visible_gfn(struct kvm *kvm, gfn_t gfn);
- unsigned long kvm_host_page_size(struct kvm *kvm, gfn_t gfn);
- void mark_page_dirty(struct kvm *kvm, gfn_t gfn);
-+void mark_page_dirty_in_slot(struct kvm_memory_slot *memslot, gfn_t gfn);
- 
- void kvm_vcpu_block(struct kvm_vcpu *vcpu);
- void kvm_vcpu_kick(struct kvm_vcpu *vcpu);
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index c86be0f983db..2f9bc20ae2a7 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -99,8 +99,6 @@ static void update_memslots(struct kvm_memslots *slots,
- 			    struct kvm_memory_slot *new, u64 last_generation);
- 
- static void kvm_release_pfn_dirty(pfn_t pfn);
--static void mark_page_dirty_in_slot(struct kvm *kvm,
--				    struct kvm_memory_slot *memslot, gfn_t gfn);
- 
- __visible bool kvm_rebooting;
- EXPORT_SYMBOL_GPL(kvm_rebooting);
-@@ -1585,7 +1583,7 @@ int kvm_write_guest_cached(struct kvm *kvm, struct gfn_to_hva_cache *ghc,
- 	r = __copy_to_user((void __user *)ghc->hva, data, len);
- 	if (r)
- 		return -EFAULT;
--	mark_page_dirty_in_slot(kvm, ghc->memslot, ghc->gpa >> PAGE_SHIFT);
-+	mark_page_dirty_in_slot(ghc->memslot, ghc->gpa >> PAGE_SHIFT);
- 
- 	return 0;
+diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+index a1daf52fae58..7e9dc2d6fd44 100644
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -1564,6 +1564,29 @@ static int load_segment_descriptor(struct x86_emulate_ctxt *ctxt,
+ 	return __load_segment_descriptor(ctxt, selector, seg, cpl, false);
  }
-@@ -1643,9 +1641,8 @@ int kvm_clear_guest(struct kvm *kvm, gpa_t gpa, unsigned long len)
- }
- EXPORT_SYMBOL_GPL(kvm_clear_guest);
  
--static void mark_page_dirty_in_slot(struct kvm *kvm,
--				    struct kvm_memory_slot *memslot,
--				    gfn_t gfn)
-+void mark_page_dirty_in_slot(struct kvm_memory_slot *memslot,
-+			      gfn_t gfn)
++static int prepare_memory_operand(struct x86_emulate_ctxt *ctxt,
++				  struct operand *op)
++{
++	return segmented_read(ctxt, op->addr.mem, &op->val, op->bytes);
++}
++
++static int cmpxchg_memory_operand(struct x86_emulate_ctxt *ctxt,
++				  struct operand *op)
++{
++	return segmented_cmpxchg(ctxt, op->addr.mem,
++				 &op->orig_val,
++				 &op->val,
++				 op->bytes);
++}
++
++static int write_memory_operand(struct x86_emulate_ctxt *ctxt,
++				struct operand *op)
++{
++	return segmented_write(ctxt, op->addr.mem,
++			       &op->val,
++			       op->bytes);
++}
++
+ static void write_register_operand(struct operand *op)
  {
- 	if (memslot && memslot->dirty_bitmap) {
- 		unsigned long rel_gfn = gfn - memslot->base_gfn;
-@@ -1653,13 +1650,14 @@ static void mark_page_dirty_in_slot(struct kvm *kvm,
- 		set_bit_le(rel_gfn, memslot->dirty_bitmap);
+ 	/* The 4-byte case *is* correct: in 64-bit mode we zero-extend. */
+@@ -1591,16 +1614,9 @@ static int writeback(struct x86_emulate_ctxt *ctxt, struct operand *op)
+ 		break;
+ 	case OP_MEM:
+ 		if (ctxt->lock_prefix)
+-			return segmented_cmpxchg(ctxt,
+-						 op->addr.mem,
+-						 &op->orig_val,
+-						 &op->val,
+-						 op->bytes);
++			return cmpxchg_memory_operand(ctxt, op);
+ 		else
+-			return segmented_write(ctxt,
+-					       op->addr.mem,
+-					       &op->val,
+-					       op->bytes);
++			return write_memory_operand(ctxt, op);
+ 		break;
+ 	case OP_MEM_STR:
+ 		return segmented_write(ctxt,
+@@ -4622,16 +4638,14 @@ int x86_emulate_insn(struct x86_emulate_ctxt *ctxt)
  	}
- }
-+EXPORT_SYMBOL_GPL(mark_page_dirty_in_slot);
  
- void mark_page_dirty(struct kvm *kvm, gfn_t gfn)
- {
- 	struct kvm_memory_slot *memslot;
+ 	if ((ctxt->src.type == OP_MEM) && !(ctxt->d & NoAccess)) {
+-		rc = segmented_read(ctxt, ctxt->src.addr.mem,
+-				    ctxt->src.valptr, ctxt->src.bytes);
++		rc = prepare_memory_operand(ctxt, &ctxt->src);
+ 		if (rc != X86EMUL_CONTINUE)
+ 			goto done;
+ 		ctxt->src.orig_val64 = ctxt->src.val64;
+ 	}
  
- 	memslot = gfn_to_memslot(kvm, gfn);
--	mark_page_dirty_in_slot(kvm, memslot, gfn);
-+	mark_page_dirty_in_slot(memslot, gfn);
- }
- EXPORT_SYMBOL_GPL(mark_page_dirty);
+ 	if (ctxt->src2.type == OP_MEM) {
+-		rc = segmented_read(ctxt, ctxt->src2.addr.mem,
+-				    &ctxt->src2.val, ctxt->src2.bytes);
++		rc = prepare_memory_operand(ctxt, &ctxt->src2);
+ 		if (rc != X86EMUL_CONTINUE)
+ 			goto done;
+ 	}
+@@ -4642,8 +4656,7 @@ int x86_emulate_insn(struct x86_emulate_ctxt *ctxt)
  
+ 	if ((ctxt->dst.type == OP_MEM) && !(ctxt->d & Mov)) {
+ 		/* optimisation - avoid slow emulated read if Mov */
+-		rc = segmented_read(ctxt, ctxt->dst.addr.mem,
+-				   &ctxt->dst.val, ctxt->dst.bytes);
++		rc = prepare_memory_operand(ctxt, &ctxt->dst);
+ 		if (rc != X86EMUL_CONTINUE)
+ 			goto done;
+ 	}
 -- 
 1.8.3.1
 
