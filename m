@@ -1,82 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932801AbaFIIbp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 04:31:45 -0400
-Received: from mga14.intel.com ([192.55.52.115]:35824 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754778AbaFIIRz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 04:17:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="352319684"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@linaro.org>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        x86@kernel.org
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: [Patch V4 05/42] x86, PCI, ACPI: use kmalloc_node() to optimize for performance
-Date: Mon,  9 Jun 2014 16:19:34 +0800
-Message-Id: <1402302011-23642-6-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1402302011-23642-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1402302011-23642-1-git-send-email-jiang.liu@linux.intel.com>
+	id S933325AbaFIIcY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 04:32:24 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:7599 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932413AbaFIIcT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 04:32:19 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 09 Jun 2014 01:23:48 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <lee.jones@linaro.org>
+CC: <swarren@nvidia.com>, <mark.rutland@arm.com>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <dwillemsen@nvidia.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH] dt-binding: mfd: as3722: correct macro name
+Date: Mon, 9 Jun 2014 14:01:59 +0530
+Message-ID: <1402302719-9766-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use kmalloc_node() instead of kmalloc() when possible to optimize
-for performance on NUMA platforms.
+The macro name for enable3 pin is named as AS3722_EXT_CONTROL_PIN_ENABLE2
+which is conflict with the enable2 pin.
 
-Acked-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Correct this macro name to correctly reflect the enable pin i.e.
+AS3722_EXT_CONTROL_PIN_ENABLE3.
+
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+Reported-by: Dan Willemsen <dwillemsen@nvidia.com>
 ---
- arch/x86/pci/acpi.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ include/dt-bindings/mfd/as3722.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
-index 01edac6c5e18..91bef49df228 100644
---- a/arch/x86/pci/acpi.c
-+++ b/arch/x86/pci/acpi.c
-@@ -448,7 +448,7 @@ static void probe_pci_root_info(struct pci_root_info *info,
- 		return;
+diff --git a/include/dt-bindings/mfd/as3722.h b/include/dt-bindings/mfd/as3722.h
+index 0e69256..e66c089 100644
+--- a/include/dt-bindings/mfd/as3722.h
++++ b/include/dt-bindings/mfd/as3722.h
+@@ -13,7 +13,7 @@
+ /* External control pins */
+ #define AS3722_EXT_CONTROL_PIN_ENABLE1 1
+ #define AS3722_EXT_CONTROL_PIN_ENABLE2 2
+-#define AS3722_EXT_CONTROL_PIN_ENABLE2 3
++#define AS3722_EXT_CONTROL_PIN_ENABLE3 3
  
- 	size = sizeof(*info->res) * info->res_num;
--	info->res = kzalloc(size, GFP_KERNEL);
-+	info->res = kzalloc_node(size, GFP_KERNEL, info->sd.node);
- 	if (!info->res) {
- 		info->res_num = 0;
- 		return;
-@@ -456,7 +456,7 @@ static void probe_pci_root_info(struct pci_root_info *info,
- 
- 	size = sizeof(*info->res_offset) * info->res_num;
- 	info->res_num = 0;
--	info->res_offset = kzalloc(size, GFP_KERNEL);
-+	info->res_offset = kzalloc_node(size, GFP_KERNEL, info->sd.node);
- 	if (!info->res_offset) {
- 		kfree(info->res);
- 		info->res = NULL;
-@@ -495,7 +495,7 @@ struct pci_bus *pci_acpi_scan_root(struct acpi_pci_root *root)
- 	if (node != NUMA_NO_NODE && !node_online(node))
- 		node = NUMA_NO_NODE;
- 
--	info = kzalloc(sizeof(*info), GFP_KERNEL);
-+	info = kzalloc_node(sizeof(*info), GFP_KERNEL, node);
- 	if (!info) {
- 		printk(KERN_WARNING "pci_bus %04x:%02x: "
- 		       "ignored (out of memory)\n", domain, busnum);
+ /* Interrupt numbers for AS3722 */
+ #define AS3722_IRQ_LID			0
 -- 
-1.7.10.4
+1.8.1.5
 
