@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964784AbaFIJRp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 05:17:45 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58396 "EHLO
+	id S936148AbaFIJSD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 05:18:03 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58375 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754832AbaFIIvY (ORCPT
+	by vger.kernel.org with ESMTP id S1754817AbaFIIvX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 04:51:24 -0400
+	Mon, 9 Jun 2014 04:51:23 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Loic Poulain <loic.poulain@intel.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 023/146] 8250_core: Fix unwanted TX chars write
-Date: Mon,  9 Jun 2014 10:49:18 +0200
-Message-Id: <9ebff4b62caaf11ad6a701f8c4905411410b7728.1402303820.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 021/146] mm: make fixup_user_fault() check the vma access rights too
+Date: Mon,  9 Jun 2014 10:49:16 +0200
+Message-Id: <d214ff2381dcbe76574026cb1f8dd49910216bfe.1402303820.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
 References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
@@ -23,38 +24,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Loic Poulain <loic.poulain@intel.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit b08c9c317e3f7764a91d522cd031639ba42b98cc upstream.
+commit 1b17844b29ae042576bea588164f2f1e9590a8bc upstream.
 
-On transmit-hold-register empty, serial8250_tx_chars
-should be called only if we don't use DMA.
-DMA has its own tx cycle.
+fixup_user_fault() is used by the futex code when the direct user access
+fails, and the futex code wants it to either map in the page in a usable
+form or return an error.  It relied on handle_mm_fault() to map the
+page, and correctly checked the error return from that, but while that
+does map the page, it doesn't actually guarantee that the page will be
+mapped with sufficient permissions to be then accessed.
 
-Signed-off-by: Loic Poulain <loic.poulain@intel.com>
-Reviewed-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+So do the appropriate tests of the vma access rights by hand.
+
+[ Side note: arguably handle_mm_fault() could just do that itself, but
+  we have traditionally done it in the caller, because some callers -
+  notably get_user_pages() - have been able to access pages even when
+  they are mapped with PROT_NONE.  Maybe we should re-visit that design
+  decision, but in the meantime this is the minimal patch. ]
+
+Found by Dave Jones running his trinity tool.
+
+Reported-by: Dave Jones <davej@redhat.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/tty/serial/8250/8250_core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/memory.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
-index aa6db8f4ee18..bf9d2ac9c9ed 100644
---- a/drivers/tty/serial/8250/8250_core.c
-+++ b/drivers/tty/serial/8250/8250_core.c
-@@ -1520,7 +1520,7 @@ int serial8250_handle_irq(struct uart_port *port, unsigned int iir)
- 			status = serial8250_rx_chars(up, status);
- 	}
- 	serial8250_modem_status(up);
--	if (status & UART_LSR_THRE)
-+	if (!up->dma && (status & UART_LSR_THRE))
- 		serial8250_tx_chars(up);
+diff --git a/mm/memory.c b/mm/memory.c
+index 22e67a2c955b..99fe3aa1035c 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1929,12 +1929,17 @@ int fixup_user_fault(struct task_struct *tsk, struct mm_struct *mm,
+ 		     unsigned long address, unsigned int fault_flags)
+ {
+ 	struct vm_area_struct *vma;
++	vm_flags_t vm_flags;
+ 	int ret;
  
- 	spin_unlock_irqrestore(&port->lock, flags);
+ 	vma = find_extend_vma(mm, address);
+ 	if (!vma || address < vma->vm_start)
+ 		return -EFAULT;
+ 
++	vm_flags = (fault_flags & FAULT_FLAG_WRITE) ? VM_WRITE : VM_READ;
++	if (!(vm_flags & vma->vm_flags))
++		return -EFAULT;
++
+ 	ret = handle_mm_fault(mm, vma, address, fault_flags);
+ 	if (ret & VM_FAULT_ERROR) {
+ 		if (ret & VM_FAULT_OOM)
 -- 
 1.9.3
 
