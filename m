@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754401AbaFIXAB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 19:00:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57010 "EHLO
+	id S934295AbaFIXA2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 19:00:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57002 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933986AbaFIWpx (ORCPT
+	with ESMTP id S933978AbaFIWpx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jun 2014 18:45:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Santosh Kulkarni <santosh.kulkarni@calsoftinc.com>,
-        Roland Dreier <roland@purestorage.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.14 71/78] iscsi-target: Fix wrong buffer / buffer overrun in iscsi_change_param_value()
-Date: Mon,  9 Jun 2014 15:48:51 -0700
-Message-Id: <20140609224815.607055201@linuxfoundation.org>
+        Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Nicolas Pitre <nico@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.10 17/40] ARM: 8051/1: put_user: fix possible data corruption in put_user
+Date: Mon,  9 Jun 2014 15:48:48 -0700
+Message-Id: <20140609224839.755654275@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140609224813.282275135@linuxfoundation.org>
-References: <20140609224813.282275135@linuxfoundation.org>
+In-Reply-To: <20140609224839.127615063@linuxfoundation.org>
+References: <20140609224839.127615063@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,149 +26,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
 
-commit 79d59d08082dd0a0a18f8ceb78c99f9f321d72aa upstream.
+commit 537094b64b229bf3ad146042f83e74cf6abe59df upstream.
 
-In non-leading connection login, iscsi_login_non_zero_tsih_s1() calls
-iscsi_change_param_value() with the buffer it uses to hold the login
-PDU, not a temporary buffer.  This leads to the login header getting
-corrupted and login failing for non-leading connections in MC/S.
+According to arm procedure call standart r2 register is call-cloberred.
+So after the result of x expression was put into r2 any following
+function call in p may overwrite r2. To fix this, the result of p
+expression must be saved to the temporary variable before the
+assigment x expression to __r2.
 
-Fix this by adding a wrapper iscsi_change_param_sprintf() that handles
-the temporary buffer itself to avoid confusion.  Also handle sending a
-reject in case of failure in the wrapper, which lets the calling code
-get quite a bit smaller and easier to read.
-
-Finally, bump the size of the temporary buffer from 32 to 64 bytes to be
-safe, since "MaxRecvDataSegmentLength=" by itself is 25 bytes; with a
-trailing NUL, a value >= 1M will lead to a buffer overrun.  (This isn't
-the default but we don't need to run right at the ragged edge here)
-
-Reported-by: Santosh Kulkarni <santosh.kulkarni@calsoftinc.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+Reviewed-by: Nicolas Pitre <nico@linaro.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/iscsi/iscsi_target_login.c |   57 ++++++++++++++----------------
- 1 file changed, 28 insertions(+), 29 deletions(-)
+ arch/arm/include/asm/uaccess.h |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/target/iscsi/iscsi_target_login.c
-+++ b/drivers/target/iscsi/iscsi_target_login.c
-@@ -249,6 +249,28 @@ static void iscsi_login_set_conn_values(
- 	mutex_unlock(&auth_id_lock);
- }
- 
-+static __printf(2, 3) int iscsi_change_param_sprintf(
-+	struct iscsi_conn *conn,
-+	const char *fmt, ...)
-+{
-+	va_list args;
-+	unsigned char buf[64];
-+
-+	memset(buf, 0, sizeof buf);
-+
-+	va_start(args, fmt);
-+	vsnprintf(buf, sizeof buf, fmt, args);
-+	va_end(args);
-+
-+	if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
-+		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
-+				ISCSI_LOGIN_STATUS_NO_RESOURCES);
-+		return -1;
-+	}
-+
-+	return 0;
-+}
-+
- /*
-  *	This is the leading connection of a new session,
-  *	or session reinstatement.
-@@ -337,7 +359,6 @@ static int iscsi_login_zero_tsih_s2(
- {
- 	struct iscsi_node_attrib *na;
- 	struct iscsi_session *sess = conn->sess;
--	unsigned char buf[32];
- 	bool iser = false;
- 
- 	sess->tpg = conn->tpg;
-@@ -378,26 +399,16 @@ static int iscsi_login_zero_tsih_s2(
- 	 *
- 	 * In our case, we have already located the struct iscsi_tiqn at this point.
- 	 */
--	memset(buf, 0, 32);
--	sprintf(buf, "TargetPortalGroupTag=%hu", sess->tpg->tpgt);
--	if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
--		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
--				ISCSI_LOGIN_STATUS_NO_RESOURCES);
-+	if (iscsi_change_param_sprintf(conn, "TargetPortalGroupTag=%hu", sess->tpg->tpgt))
- 		return -1;
--	}
- 
- 	/*
- 	 * Workaround for Initiators that have broken connection recovery logic.
- 	 *
- 	 * "We would really like to get rid of this." Linux-iSCSI.org team
- 	 */
--	memset(buf, 0, 32);
--	sprintf(buf, "ErrorRecoveryLevel=%d", na->default_erl);
--	if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
--		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
--				ISCSI_LOGIN_STATUS_NO_RESOURCES);
-+	if (iscsi_change_param_sprintf(conn, "ErrorRecoveryLevel=%d", na->default_erl))
- 		return -1;
--	}
- 
- 	if (iscsi_login_disable_FIM_keys(conn->param_list, conn) < 0)
- 		return -1;
-@@ -409,12 +420,9 @@ static int iscsi_login_zero_tsih_s2(
- 		unsigned long mrdsl, off;
- 		int rc;
- 
--		sprintf(buf, "RDMAExtensions=Yes");
--		if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
--			iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
--				ISCSI_LOGIN_STATUS_NO_RESOURCES);
-+		if (iscsi_change_param_sprintf(conn, "RDMAExtensions=Yes"))
- 			return -1;
--		}
-+
- 		/*
- 		 * Make MaxRecvDataSegmentLength PAGE_SIZE aligned for
- 		 * Immediate Data + Unsolicitied Data-OUT if necessary..
-@@ -444,12 +452,8 @@ static int iscsi_login_zero_tsih_s2(
- 		pr_warn("Aligning ISER MaxRecvDataSegmentLength: %lu down"
- 			" to PAGE_SIZE\n", mrdsl);
- 
--		sprintf(buf, "MaxRecvDataSegmentLength=%lu\n", mrdsl);
--		if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
--			iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
--				ISCSI_LOGIN_STATUS_NO_RESOURCES);
-+		if (iscsi_change_param_sprintf(conn, "MaxRecvDataSegmentLength=%lu\n", mrdsl))
- 			return -1;
--		}
- 	}
- 
- 	return 0;
-@@ -591,13 +595,8 @@ static int iscsi_login_non_zero_tsih_s2(
- 	 *
- 	 * In our case, we have already located the struct iscsi_tiqn at this point.
- 	 */
--	memset(buf, 0, 32);
--	sprintf(buf, "TargetPortalGroupTag=%hu", sess->tpg->tpgt);
--	if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
--		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
--				ISCSI_LOGIN_STATUS_NO_RESOURCES);
-+	if (iscsi_change_param_sprintf(conn, "TargetPortalGroupTag=%hu", sess->tpg->tpgt))
- 		return -1;
--	}
- 
- 	return iscsi_login_disable_FIM_keys(conn->param_list, conn);
- }
+--- a/arch/arm/include/asm/uaccess.h
++++ b/arch/arm/include/asm/uaccess.h
+@@ -164,8 +164,9 @@ extern int __put_user_8(void *, unsigned
+ #define __put_user_check(x,p)							\
+ 	({								\
+ 		unsigned long __limit = current_thread_info()->addr_limit - 1; \
++		const typeof(*(p)) __user *__tmp_p = (p);		\
+ 		register const typeof(*(p)) __r2 asm("r2") = (x);	\
+-		register const typeof(*(p)) __user *__p asm("r0") = (p);\
++		register const typeof(*(p)) __user *__p asm("r0") = __tmp_p; \
+ 		register unsigned long __l asm("r1") = __limit;		\
+ 		register int __e asm("r0");				\
+ 		switch (sizeof(*(__p))) {				\
 
 
