@@ -1,145 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932537AbaFIKmD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 06:42:03 -0400
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:49950 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932330AbaFIKmB (ORCPT
+	id S1754836AbaFIKqM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 06:46:12 -0400
+Received: from relay.parallels.com ([195.214.232.42]:43386 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754701AbaFIKqK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 06:42:01 -0400
+	Mon, 9 Jun 2014 06:46:10 -0400
+Message-ID: <5395906F.3070903@parallels.com>
+Date: Mon, 9 Jun 2014 14:46:07 +0400
+From: Maxim Patlasov <mpatlasov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <1400491331.8467.8.camel@weser.hi.pengutronix.de>
-References: <1400483458-9648-1-git-send-email-acourbot@nvidia.com>
- <1400483458-9648-5-git-send-email-acourbot@nvidia.com> <20140519090202.GC7138@ulmo>
- <1400491331.8467.8.camel@weser.hi.pengutronix.de>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Mon, 9 Jun 2014 19:41:39 +0900
-Message-ID: <CAAVeFu+KZ9AqB5ji5-AA+qzEFDWd7y0=J1eSEPqQ-OyhmXufig@mail.gmail.com>
-Subject: Re: [PATCH 4/4] drm/nouveau: introduce CPU cache flushing macro
-To: Lucas Stach <l.stach@pengutronix.de>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: John Muir <john@jmuir.com>
+CC: Miklos Szeredi <miklos@szeredi.hu>,
+        fuse-devel <fuse-devel@lists.sourceforge.net>,
+        Linux List <linux-kernel@vger.kernel.org>
+Subject: Re: [fuse-devel] [PATCH 0/5] fuse: close file synchronously (v2)
+References: <20140606132541.30321.68679.stgit@localhost.localdomain> <E5474E5C-B6FC-459C-ACCE-F6871221D45E@jmuir.com> <53956730.1070302@parallels.com> <C6F7C8BC-7F62-45D9-AE9D-52CF096ACBC2@jmuir.com>
+In-Reply-To: <C6F7C8BC-7F62-45D9-AE9D-52CF096ACBC2@jmuir.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.24.252]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 19, 2014 at 6:22 PM, Lucas Stach <l.stach@pengutronix.de> wrote:
-> Am Montag, den 19.05.2014, 11:02 +0200 schrieb Thierry Reding:
->> On Mon, May 19, 2014 at 04:10:58PM +0900, Alexandre Courbot wrote:
->> > Some architectures (e.g. ARM) need the CPU buffers to be explicitely
->> > flushed for a memory write to take effect. Not doing so results in
->> > synchronization issues, especially after writing to BOs.
->>
->> It seems to me that the above is generally true for all architectures,
->> not just ARM.
->>
-> No, on PCI coherent arches, like x86 and some PowerPCs, the GPU will
-> snoop the CPU caches and therefore an explicit cache flush is not
-> required.
+On 06/09/2014 01:26 PM, John Muir wrote:
+> On 2014.06.09, at 9:50 , Maxim Patlasov <mpatlasov@parallels.com> wrote:
 >
->> Also: s/explicitely/explicitly/
+>> On 06/06/2014 05:51 PM, John Muir wrote:
+>>> On 2014.06.06, at 15:27 , Maxim Patlasov <mpatlasov@parallels.com> wrote:
+>>>
+>>>> The patch-set resolves the problem by making fuse_release synchronous:
+>>>> wait for ACK from userspace for FUSE_RELEASE if the feature is ON.
+>>> Why not make this feature per-file with a new flag bit in struct fuse_file_info rather than as a file-system global?
+>> I don't expect a great demand for such a granularity. File-system global "close_wait" conveys a general user expectation about filesystem behaviour in distributed environment: if you stopped using a file on given node, whether it means that the file is immediately accessible from another node.
 >>
->> > This patch introduces a macro that flushes the caches on ARM and
->> > translates to a no-op on other architectures, and uses it when
->> > writing to in-memory BOs. It will also be useful for implementations of
->> > instmem that access shared memory directly instead of going through
->> > PRAMIN.
->>
->> Presumably instmem can access shared memory on all architectures, so
->> this doesn't seem like a property of the architecture but rather of the
->> memory pool backing the instmem.
->>
->> In that case I wonder if this shouldn't be moved into an operation that
->> is implemented by the backing memory pool and be a noop where the cache
->> doesn't need explicit flushing.
->>
->> > diff --git a/drivers/gpu/drm/nouveau/core/os.h b/drivers/gpu/drm/nouveau/core/os.h
->> > index d0ced94ca54c..274b4460bb03 100644
->> > --- a/drivers/gpu/drm/nouveau/core/os.h
->> > +++ b/drivers/gpu/drm/nouveau/core/os.h
->> > @@ -38,4 +38,21 @@
->> >  #endif /* def __BIG_ENDIAN else */
->> >  #endif /* !ioread32_native */
->> >
->> > +#if defined(__arm__)
->> > +
->> > +#define nv_cpu_cache_flush_area(va, size)  \
->> > +do {                                               \
->> > +   phys_addr_t pa = virt_to_phys(va);      \
->> > +   __cpuc_flush_dcache_area(va, size);     \
->> > +   outer_flush_range(pa, pa + size);       \
->> > +} while (0)
->>
->> Couldn't this be a static inline function?
->>
->> > diff --git a/drivers/gpu/drm/nouveau/nouveau_bo.c b/drivers/gpu/drm/nouveau/nouveau_bo.c
->> [...]
->> > index 0886f47e5244..b9c9729c5733 100644
->> > --- a/drivers/gpu/drm/nouveau/nouveau_bo.c
->> > +++ b/drivers/gpu/drm/nouveau/nouveau_bo.c
->> > @@ -437,8 +437,10 @@ nouveau_bo_wr16(struct nouveau_bo *nvbo, unsigned index, u16 val)
->> >     mem = &mem[index];
->> >     if (is_iomem)
->> >             iowrite16_native(val, (void __force __iomem *)mem);
->> > -   else
->> > +   else {
->> >             *mem = val;
->> > +           nv_cpu_cache_flush_area(mem, 2);
->> > +   }
->> >  }
->> >
->> >  u32
->> > @@ -461,8 +463,10 @@ nouveau_bo_wr32(struct nouveau_bo *nvbo, unsigned index, u32 val)
->> >     mem = &mem[index];
->> >     if (is_iomem)
->> >             iowrite32_native(val, (void __force __iomem *)mem);
->> > -   else
->> > +   else {
->> >             *mem = val;
->> > +           nv_cpu_cache_flush_area(mem, 4);
->> > +   }
->>
->> This looks rather like a sledgehammer to me. Effectively this turns nvbo
->> into an uncached buffer. With additional overhead of constantly flushing
->> caches. Wouldn't it make more sense to locate the places where these are
->> called and flush the cache after all the writes have completed?
->>
-> I don't think the explicit flushing for those things makes sense. I
-> think it is a lot more effective to just map the BOs write-combined on
-> PCI non-coherent arches. This way any writes will be buffered. Reads
-> will be slow, but I don't think nouveau is reading back a lot from those
-> buffers.
-> Using the write-combining buffer doesn't need any additional
-> synchronization as it will get flushed on pushbuf kickoff anyways.
+> By user do you mean the end-user, or the implementor of the file-system? It seems to me that the end-user doesn't care, and just wants the file-system to work as expected. I don't think we're really talking about the end-user.
 
-I tried to go that way, and something interesting happened.
+No, this is exactly about end-user expectations. Imagine a complicated 
+heavy-loaded shared storage where handling FUSE_RELEASE in userspace may 
+take a few minutes. In close_wait=0 case, an end-user who has just 
+called close(2) has no idea when it's safe to access the file from 
+another node or even when it's OK to umount filesystem.
 
-What I did: remove this patch and instead set the following caching
-parameters for the TTM_PL_TT case in nouveau_bo_init_mem_type():
+>
+> The implementor of a file-system, on the other hand, might want the semantics for close_wait on some files, but not on others. Won't there be a performance impact? Some distributed file-systems might want this on specific files only. Implementing it as a flag on the struct fuse_file_info gives the flexibility to the file-system implementor.
 
-    man->available_caching = TTM_PL_FLAG_UNCACHED | TTM_PL_FLAG_WC;
-    man->default_caching = TTM_PL_FLAG_WC;
-
-What happened: no runtime errors as what happened when caching is
-enabled. However, many of the vertex and texture buffers seem to be
-partially corrupted. In glmark2 the 3d models had many vertices (but
-not all) at the wrong position. Note that not all the scenes ended up
-being corrupted - in particular, when two consecutive scenes used the
-same model, the second instance would be uncorrupted.
-
-Forcing the caching to TTM_PL_FLAG_UNCACHED led to the same result.
-What is interesting is that while data like vertices and textures got
-corrupted, pushbuffers and shader programs seem to be just fine, as I
-could not see any runtime error.
-
-I don't really understand what kind of caching behavior could lead to
-that. If anyone has any idea, I'd love to hear.
+fuse_file_info is an userspace structure, in-kernel fuse knows nothing 
+about it. In close_wait=1 case, nothing prevents a file-system 
+implementation from ACK-ing FUSE_RELEASE request immediately (for 
+specific files) and schedule actual handling for future processing.
 
 Thanks,
-Alex.
+Maxim
