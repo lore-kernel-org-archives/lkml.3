@@ -1,75 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755007AbaFIMvq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 08:51:46 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:45944 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752679AbaFIMvn (ORCPT
+	id S1755256AbaFIMw1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 08:52:27 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:36409 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754042AbaFIMwZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 08:51:43 -0400
-Message-ID: <1402318294.7064.19.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [RFC PATCH v5 4/4] KEYS: define an owner trusted keyring
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Dmitry Kasatkin <d.kasatkin@samsung.com>
-Cc: linux-security-module <linux-security-module@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>, Josh Boyer <jwboyer@redhat.com>,
-        keyrings <keyrings@linux-nfs.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Mon, 09 Jun 2014 08:51:34 -0400
-In-Reply-To: <5395A4F9.1020205@samsung.com>
-References: <1401818318-15780-1-git-send-email-zohar@linux.vnet.ibm.com>
-	 <1401818318-15780-5-git-send-email-zohar@linux.vnet.ibm.com>
-	 <5395A4F9.1020205@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14060912-7164-0000-0000-000002520226
+	Mon, 9 Jun 2014 08:52:25 -0400
+Date: Mon, 9 Jun 2014 16:52:13 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Christoph Lameter <cl@gentwo.org>
+CC: <akpm@linux-foundation.org>, <iamjoonsoo.kim@lge.com>,
+        <rientjes@google.com>, <penberg@kernel.org>, <hannes@cmpxchg.org>,
+        <mhocko@suse.cz>, <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
+Subject: Re: [PATCH -mm v2 5/8] slub: make slab_free non-preemptable
+Message-ID: <20140609125211.GA32192@esperanza>
+References: <cover.1402060096.git.vdavydov@parallels.com>
+ <7cd6784a36ed997cc6631615d98e11e02e811b1b.1402060096.git.vdavydov@parallels.com>
+ <alpine.DEB.2.10.1406060942160.32229@gentwo.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1406060942160.32229@gentwo.org>
+X-Originating-IP: [81.5.110.170]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-06-09 at 15:13 +0300, Dmitry Kasatkin wrote: 
-> On 03/06/14 20:58, Mimi Zohar wrote:
-> > Instead of allowing public keys, with certificates signed by any
-> > key on the system trusted keyring, to be added to a trusted
-> > keyring, this patch further restricts the certificates to those
-> > signed by a particular key on the system keyring.
-> >
-> > When the UEFI secure boot keys are added to the system keyring, the
-> > platform owner will be able to load their key in one of the UEFI DBs
-> > (eg. Machine Owner Key(MOK) list) and select their key, without
-> > having to rebuild the kernel.
-> >
-> > This patch defines an owner trusted keyring, a new boot command
-> > line option 'keys_ownerid=', and defines a new function
-> > get_system_or_owner_trusted_keyring().
+On Fri, Jun 06, 2014 at 09:46:57AM -0500, Christoph Lameter wrote:
+> On Fri, 6 Jun 2014, Vladimir Davydov wrote:
 > 
-> Hello,
+> > This patch makes SLUB's implementation of kmem_cache_free
+> > non-preemptable. As a result, synchronize_sched() will work as a barrier
+> > against kmem_cache_free's in flight, so that issuing it before cache
+> > destruction will protect us against the use-after-free.
 > 
-> The functionality of this entire patch can be replaced by only ~2 lines
-> of code in x509_request_asymmetric_key()
 > 
-> if (keys_ownerid || strcmp(keys_ownerid, id))
->      return -EPERM;
+> Subject: slub: reenable preemption before the freeing of slabs from slab_free
 > 
-> Right?
+> I would prefer to call the page allocator with preemption enabled if possible.
+> 
+> Signed-off-by: Christoph Lameter <cl@linux.com>
+> 
+> Index: linux/mm/slub.c
+> ===================================================================
+> --- linux.orig/mm/slub.c	2014-05-29 11:45:32.065859887 -0500
+> +++ linux/mm/slub.c	2014-06-06 09:45:12.822480834 -0500
+> @@ -1998,6 +1998,7 @@
+>  	if (n)
+>  		spin_unlock(&n->list_lock);
+> 
+> +	preempt_enable();
 
-Are you suggesting only add the one matching key to the system keyring?
+The whole function (unfreeze_partials) is currently called with irqs
+off, so this is effectively a no-op. I guess we can restore irqs here
+though.
 
-The original patch compared the builtin key being loaded onto the system
-keyring and, if it matched the requested key, also added the key to the
-owner keyring.  This version waits for all the builtin keys to be loaded
-onto the system keyring, and in the future the UEFI DB keys, before
-adding the matched key to the owner keyring.  In this version, the keys
-are already on the system keyring.  So no, your two lines would not
-work.
+>  	while (discard_page) {
+>  		page = discard_page;
+>  		discard_page = discard_page->next;
+> @@ -2006,6 +2007,7 @@
+>  		discard_slab(s, page);
 
-Mimi
+If we just freed the last slab of the cache and then get preempted
+(suppose we restored irqs above), nothing will prevent the cache from
+destruction, which may result in use-after-free below. We need to be
+more cautious if we want to call for page allocator with preemption and
+irqs on.
 
+However, I still don't understand what's the point in it. We *already*
+call discard_slab with irqs disabled, which is harder, and it haven't
+caused any problems AFAIK. Moreover, even if we enabled preemption/irqs,
+it wouldn't guarantee that discard_slab would always be called with
+preemption/irqs on, because the whole function - I mean kmem_cache_free
+- can be called with preemption/irqs disabled.
 
+So my point it would only complicate the code.
 
+Thanks.
 
-
+>  		stat(s, FREE_SLAB);
+>  	}
+> +	preempt_disable();
+>  #endif
+>  }
+> 
