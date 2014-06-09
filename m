@@ -1,449 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755879AbaFIIVL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 04:21:11 -0400
-Received: from mga14.intel.com ([192.55.52.115]:36430 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752475AbaFIIVG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 04:21:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="352320997"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@linaro.org>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        x86@kernel.org, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        linux-pm@vger.kernel.org
-Subject: [Patch V4 23/42] x86, irq: introduce mechanisms to support dynamically allocate IRQ for IOAPIC
-Date: Mon,  9 Jun 2014 16:19:52 +0800
-Message-Id: <1402302011-23642-24-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1402302011-23642-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1402302011-23642-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1755903AbaFIIVX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 04:21:23 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:38783 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752475AbaFIIVO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 04:21:14 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@gmail.com>
+To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ingo Molnar <mingo@redhat.com>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH ftrace/core V5] ftrace: Introduce saved_cmdlines_size file
+References: <20140605012427.22115.16173.stgit@yunodevel>
+Date: Mon, 09 Jun 2014 17:21:12 +0900
+In-Reply-To: <20140605012427.22115.16173.stgit@yunodevel> (Yoshihiro YUNOMAE's
+	message of "Thu, 05 Jun 2014 10:24:27 +0900")
+Message-ID: <871tuycx3b.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently x86 support identity mapping between GSI(IOAPIC pin) and IRQ
-number, so continous IRQs at low end are statically allocated to IOAPICs
-at boot time. This design causes trouble to support IOAPIC hotplug.
+Hi Yoshihiro,
 
-This patch implements basic mechanism to dynamically allocate IRQ on
-demand for IOAPIC pins by using irqdomain framework.
+Sorry for being late, but just wanna give you some (minor) feedbacks..
 
-It first adds several fields into struct ioapic to support irqdomain.
-Then it implements an algorithm to dynamically allocate IRQ number
-for IOAPIC pins on demand.
 
-Currently it supports three types of irqdomain:
-1) LEGACY: used to support IOAPIC hosting legacy IRQs and building
-   identity mapping for legacy IRQs. A speical case, we dynamically
-   allocate IRQ number for IOAPIC pin which has GSI number below
-   nr_legacy_irqs() but isn't legacy IRQ. This is for backward
-   compatibility and avoid regression.
-2) STRICT: build identity mapping between GSI and IRQ nubmer.
-3) DYNAMIC: dynamically allocate IRQ number for IOAPIC pin on demand.
+On Thu, 05 Jun 2014 10:24:27 +0900, Yoshihiro YUNOMAE wrote:
+> +static int trace_create_savedcmd(void)
+> +{
+> +	int ret;
+> +
+> +	savedcmd = kmalloc(sizeof(struct saved_cmdlines_buffer), GFP_KERNEL);
 
-Legacy(ISA) IRQs is not managed by irqdomain because there may be
-multiple pins sharing the same IRQ number and current irqdomain only
-supports 1:1 mapping between pins and IRQ.
+s/sizeof(struct saved_cmdlines_buffer)/sizeof(*savedcmd)/
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
- arch/x86/Kconfig               |    1 +
- arch/x86/include/asm/io_apic.h |   21 +++++-
- arch/x86/kernel/acpi/boot.c    |    8 +-
- arch/x86/kernel/apic/io_apic.c |  158 +++++++++++++++++++++++++++++++---------
- 4 files changed, 147 insertions(+), 41 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 55ec58b0b373..966f5111e213 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -833,6 +833,7 @@ config X86_IO_APIC
- 	def_bool y
- 	depends on X86_64 || SMP || X86_32_NON_STANDARD || X86_UP_IOAPIC || PCI_MSI
- 	select GENERIC_IRQ_LEGACY_ALLOC_HWIRQ
-+	select IRQ_DOMAIN
- 
- config X86_REROUTE_FOR_BROKEN_BOOT_IRQS
- 	bool "Reroute for broken boot IRQs"
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index 978e51fdcb59..64c6e344399b 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -98,6 +98,8 @@ struct IR_IO_APIC_route_entry {
- #define IOAPIC_AUTO     -1
- #define IOAPIC_EDGE     0
- #define IOAPIC_LEVEL    1
-+#define	IOAPIC_MAP_ALLOC		0x1
-+#define	IOAPIC_MAP_CHECK		0x2
- 
- #ifdef CONFIG_X86_IO_APIC
- 
-@@ -163,6 +165,21 @@ extern int restore_ioapic_entries(void);
- extern void setup_ioapic_ids_from_mpc(void);
- extern void setup_ioapic_ids_from_mpc_nocheck(void);
- 
-+enum ioapic_domain_type {
-+	IOAPIC_DOMAIN_INVALID,
-+	IOAPIC_DOMAIN_LEGACY,
-+	IOAPIC_DOMAIN_STRICT,
-+	IOAPIC_DOMAIN_DYNAMIC,
-+};
-+
-+struct device_node;
-+struct irq_domain_ops;
-+struct ioapic_domain_cfg {
-+	enum ioapic_domain_type		type;
-+	const struct irq_domain_ops	*ops;
-+	struct device_node		*dev;
-+};
-+
- struct mp_ioapic_gsi{
- 	u32 gsi_base;
- 	u32 gsi_end;
-@@ -172,7 +189,7 @@ extern u32 gsi_top;
- extern int mp_find_ioapic(u32 gsi);
- extern int mp_find_ioapic_pin(int ioapic, u32 gsi);
- extern u32 mp_pin_to_gsi(int ioapic, int pin);
--extern int mp_map_gsi_to_irq(u32 gsi);
-+extern int mp_map_gsi_to_irq(u32 gsi, unsigned int flags);
- extern void __init mp_register_ioapic(int id, u32 address, u32 gsi_base);
- extern void __init pre_init_apic_IRQ0(void);
- 
-@@ -215,7 +232,7 @@ static inline void ioapic_insert_resources(void) { }
- #define gsi_top (NR_IRQS_LEGACY)
- static inline int mp_find_ioapic(u32 gsi) { return 0; }
- static inline u32 mp_pin_to_gsi(int ioapic, int pin) { return UINT_MAX; }
--static inline int mp_map_gsi_to_irq(u32 gsi) { return gsi; }
-+static inline int mp_map_gsi_to_irq(u32 gsi, unsigned int flags) { return gsi; }
- 
- struct io_apic_irq_attr;
- static inline int io_apic_set_pci_routing(struct device *dev, int irq,
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 0c9dcf6824b6..96d8da83ed8b 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -100,7 +100,7 @@ static u32 isa_irq_to_gsi[NR_IRQS_LEGACY] __read_mostly = {
- 
- #define	ACPI_INVALID_GSI		INT_MIN
- 
--static int map_gsi_to_irq(unsigned int gsi)
-+static int map_gsi_to_irq(unsigned int gsi, unsigned int flags)
- {
- 	int i;
- 
-@@ -108,7 +108,7 @@ static int map_gsi_to_irq(unsigned int gsi)
- 		if (isa_irq_to_gsi[i] == gsi)
- 			return i;
- 
--	return mp_map_gsi_to_irq(gsi);
-+	return mp_map_gsi_to_irq(gsi, flags);
- }
- 
- /*
-@@ -417,7 +417,7 @@ static int mp_register_gsi(struct device *dev, u32 gsi, int trigger,
- 	if (acpi_gbl_FADT.sci_interrupt == gsi)
- 		return gsi;
- 
--	irq = map_gsi_to_irq(gsi);
-+	irq = map_gsi_to_irq(gsi, IOAPIC_MAP_ALLOC);
- 	if (irq < 0)
- 		return irq;
- 
-@@ -608,7 +608,7 @@ void __init acpi_pic_sci_set_trigger(unsigned int irq, u16 trigger)
- 
- int acpi_gsi_to_irq(u32 gsi, unsigned int *irqp)
- {
--	int irq = map_gsi_to_irq(gsi);
-+	int irq = map_gsi_to_irq(gsi, IOAPIC_MAP_ALLOC | IOAPIC_MAP_CHECK);
- 
- 	if (irq >= 0) {
- #ifdef CONFIG_X86_IO_APIC
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index ed159cd36971..9e5ca8edfccf 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -31,6 +31,7 @@
- #include <linux/acpi.h>
- #include <linux/module.h>
- #include <linux/syscore_ops.h>
-+#include <linux/irqdomain.h>
- #include <linux/msi.h>
- #include <linux/htirq.h>
- #include <linux/freezer.h>
-@@ -83,6 +84,7 @@ int sis_apic_bug = -1;
- 
- static DEFINE_RAW_SPINLOCK(ioapic_lock);
- static DEFINE_RAW_SPINLOCK(vector_lock);
-+static DEFINE_MUTEX(ioapic_mutex);
- 
- static struct ioapic {
- 	/*
-@@ -97,6 +99,8 @@ static struct ioapic {
- 	struct mpc_ioapic mp_config;
- 	/* IO APIC gsi routing info */
- 	struct mp_ioapic_gsi  gsi_config;
-+	struct ioapic_domain_cfg irqdomain_cfg;
-+	struct irq_domain *irqdomain;
- 	DECLARE_BITMAP(pin_programmed, MP_MAX_IOAPIC_PIN + 1);
- } ioapics[MAX_IO_APICS];
- 
-@@ -142,6 +146,11 @@ static inline int mp_init_irq_at_boot(int ioapic, int irq)
- 	return ioapic == 0 || (irq >= 0 && irq < nr_legacy_irqs());
- }
- 
-+static inline struct irq_domain *mp_ioapic_irqdomain(int ioapic)
-+{
-+	return ioapics[ioapic].irqdomain;
-+}
-+
- int nr_ioapics;
- 
- /* The one past the highest gsi number used */
-@@ -959,19 +968,79 @@ static int irq_trigger(int idx)
- 	return trigger;
- }
- 
--int mp_map_gsi_to_irq(u32 gsi)
-+static int alloc_irq_from_domain(struct irq_domain *domain, u32 gsi, int pin)
- {
-+	int irq = -1;
-+	int ioapic = (int)(long)domain->host_data;
-+	int type = ioapics[ioapic].irqdomain_cfg.type;
-+
-+	switch (type) {
-+	case IOAPIC_DOMAIN_LEGACY:
-+		/*
-+		 * Dynamically allocate IRQ number for non-ISA IRQs in the first 16
-+		 * GSIs on some weird platforms.
-+		 */
-+		if (gsi < nr_legacy_irqs())
-+			irq = irq_create_mapping(domain, pin);
-+		else if (irq_create_strict_mappings(domain, gsi, pin, 1) == 0)
-+			irq = gsi;
-+		break;
-+	case IOAPIC_DOMAIN_STRICT:
-+		if (irq_create_strict_mappings(domain, gsi, pin, 1) == 0)
-+			irq = gsi;
-+		break;
-+	case IOAPIC_DOMAIN_DYNAMIC:
-+		irq = irq_create_mapping(domain, pin);
-+		break;
-+	default:
-+		WARN(1, "ioapic: unknown irqdomain type %d\n", type);
-+		break;
-+	}
-+
-+	return irq > 0 ? irq : -1;
-+}
-+
-+static int mp_map_pin_to_irq(u32 gsi, int idx, int ioapic, int pin,
-+			     unsigned int flags)
-+{
-+	int irq;
-+	struct irq_domain *domain = mp_ioapic_irqdomain(ioapic);
-+
- 	/*
--	 * Provide an identity mapping of gsi == irq except on truly weird
--	 * platforms that have non isa irqs in the first 16 gsis.
-+	 * Don't use irqdomain to manage ISA IRQs because there may be
-+	 * multiple IOAPIC pins sharing the same ISA IRQ number and
-+	 * irqdomain only supports 1:1 mapping between IOAPIC pin and
-+	 * IRQ number. A typical IOAPIC has 24 pins, pin 0-15 are used
-+	 * for legacy IRQs and pin 16-23 are used for PCI IRQs (PIRQ A-H).
-+	 * When ACPI is disabled, only legacy IRQ numbers (IRQ0-15) are
-+	 * available, and some BIOSes may use MP Interrupt Source records
-+	 * to override IRQ numbers for PIRQs instead of reprogramming
-+	 * the interrupt routing logic. Thus there may be multiple pins
-+	 * sharing the same legacy IRQ number when ACPI is disabled.
- 	 */
--	return gsi >= nr_legacy_irqs() ? gsi : gsi_top + gsi;
-+	if (idx >= 0 && test_bit(mp_irqs[idx].srcbus, mp_bus_not_pci))
-+		return mp_irqs[idx].srcbusirq;
-+
-+	if (!domain) {
-+		/*
-+		 * Provide an identity mapping of gsi == irq except on truly
-+		 * weird platforms that have non isa irqs in the first 16 gsis.
-+		 */
-+		return gsi >= nr_legacy_irqs() ? gsi : gsi_top + gsi;
-+	}
-+
-+	mutex_lock(&ioapic_mutex);
-+	irq = irq_find_mapping(domain, pin);
-+	if (irq <= 0 && (flags & IOAPIC_MAP_ALLOC))
-+		irq = alloc_irq_from_domain(domain, gsi, pin);
-+	mutex_unlock(&ioapic_mutex);
-+
-+	return irq > 0 ? irq : -1;
- }
- 
--static int pin_2_irq(int idx, int apic, int pin)
-+static int pin_2_irq(int idx, int ioapic, int pin, unsigned int flags)
- {
--	int irq;
--	int bus = mp_irqs[idx].srcbus;
-+	u32 gsi = mp_pin_to_gsi(ioapic, pin);
- 
- 	/*
- 	 * Debugging check, we are in big trouble if this message pops up!
-@@ -989,7 +1058,7 @@ static int pin_2_irq(int idx, int apic, int pin)
- 				apic_printk(APIC_VERBOSE, KERN_DEBUG
- 						"disabling PIRQ%d\n", pin-16);
- 			} else {
--				irq = pirq_entries[pin-16];
-+				int irq = pirq_entries[pin-16];
- 				apic_printk(APIC_VERBOSE, KERN_DEBUG
- 						"using PIRQ%d -> IRQ %d\n",
- 						pin-16, irq);
-@@ -999,12 +1068,23 @@ static int pin_2_irq(int idx, int apic, int pin)
- 	}
- #endif
- 
--	if (test_bit(bus, mp_bus_not_pci))
--		irq = mp_irqs[idx].srcbusirq;
--	else
--		irq = mp_map_gsi_to_irq(mp_pin_to_gsi(apic, pin));
-+	return  mp_map_pin_to_irq(gsi, idx, ioapic, pin, flags);
-+}
- 
--	return irq;
-+int mp_map_gsi_to_irq(u32 gsi, unsigned int flags)
-+{
-+	int ioapic, pin, idx;
-+
-+	ioapic = mp_find_ioapic(gsi);
-+	if (ioapic < 0)
-+		return -1;
-+
-+	pin = mp_find_ioapic_pin(ioapic, gsi);
-+	idx = find_irq_entry(ioapic, pin, mp_INT);
-+	if ((flags & IOAPIC_MAP_CHECK) && idx < 0)
-+		return -1;
-+
-+	return mp_map_pin_to_irq(gsi, idx, ioapic, pin, flags);
- }
- 
- /*
-@@ -1014,7 +1094,7 @@ static int pin_2_irq(int idx, int apic, int pin)
- int IO_APIC_get_PCI_irq_vector(int bus, int slot, int pin,
- 				struct io_apic_irq_attr *irq_attr)
- {
--	int irq, i, best_guess = -1;
-+	int irq, i, best_ioapic = -1, best_idx = -1;
- 
- 	apic_printk(APIC_DEBUG,
- 		    "querying PCI -> IRQ mapping bus:%d, slot:%d, pin:%d.\n",
-@@ -1043,30 +1123,37 @@ int IO_APIC_get_PCI_irq_vector(int bus, int slot, int pin,
- 			continue;
- 
- 		/* Skip ISA IRQs */
--		irq = pin_2_irq(i, ioapic_idx, mp_irqs[i].dstirq);
--		if (ioapic_idx == 0 && !IO_APIC_IRQ(irq))
-+		irq = pin_2_irq(i, ioapic_idx, mp_irqs[i].dstirq, 0);
-+		if (irq > 0 && !IO_APIC_IRQ(irq))
- 			continue;
- 
- 		if (pin == (mp_irqs[i].srcbusirq & 3)) {
--			set_io_apic_irq_attr(irq_attr, ioapic_idx,
--					     mp_irqs[i].dstirq,
--					     irq_trigger(i),
--					     irq_polarity(i));
--			return irq;
-+			best_idx = i;
-+			best_ioapic = ioapic_idx;
-+			goto out;
- 		}
-+
- 		/*
- 		 * Use the first all-but-pin matching entry as a
- 		 * best-guess fuzzy result for broken mptables.
- 		 */
--		if (best_guess < 0) {
--			set_io_apic_irq_attr(irq_attr, ioapic_idx,
--					     mp_irqs[i].dstirq,
--					     irq_trigger(i),
--					     irq_polarity(i));
--			best_guess = irq;
-+		if (best_idx < 0) {
-+			best_idx = i;
-+			best_ioapic = ioapic_idx;
- 		}
- 	}
--	return best_guess;
-+	if (best_idx < 0)
-+		return -1;
-+
-+out:
-+	irq = pin_2_irq(best_idx, best_ioapic, mp_irqs[best_idx].dstirq,
-+			IOAPIC_MAP_ALLOC);
-+	if (irq > 0)
-+		set_io_apic_irq_attr(irq_attr, best_ioapic,
-+				     mp_irqs[best_idx].dstirq,
-+				     irq_trigger(best_idx),
-+				     irq_polarity(best_idx));
-+	return irq;
- }
- EXPORT_SYMBOL(IO_APIC_get_PCI_irq_vector);
- 
-@@ -1257,7 +1344,7 @@ static inline int IO_APIC_irq_trigger(int irq)
- 
- 	for_each_ioapic_pin(apic, pin) {
- 		idx = find_irq_entry(apic, pin, mp_INT);
--		if ((idx != -1) && (irq == pin_2_irq(idx, apic, pin)))
-+		if ((idx != -1) && (irq == pin_2_irq(idx, apic, pin, 0)))
- 			return irq_trigger(idx);
- 	}
- 	/*
-@@ -1383,8 +1470,9 @@ static void __init __io_apic_setup_irqs(unsigned int ioapic_idx)
- 		if (io_apic_pin_not_connected(idx, ioapic_idx, pin))
- 			continue;
- 
--		irq = pin_2_irq(idx, ioapic_idx, pin);
--		if (!mp_init_irq_at_boot(ioapic_idx, irq))
-+		irq = pin_2_irq(idx, ioapic_idx, pin,
-+				ioapic_idx ? 0 : IOAPIC_MAP_ALLOC);
-+		if (irq < 0 || !mp_init_irq_at_boot(ioapic_idx, irq))
- 			continue;
- 
- 		/*
-@@ -1434,8 +1522,8 @@ void setup_IO_APIC_irq_extra(u32 gsi)
- 	if (idx == -1)
- 		return;
- 
--	irq = pin_2_irq(idx, ioapic_idx, pin);
--	if (mp_init_irq_at_boot(ioapic_idx, irq))
-+	irq = pin_2_irq(idx, ioapic_idx, pin, IOAPIC_MAP_ALLOC);
-+	if (irq < 0 || mp_init_irq_at_boot(ioapic_idx, irq))
- 		return;
- 
- 	set_io_apic_irq_attr(&attr, ioapic_idx, pin, irq_trigger(idx),
-@@ -3539,8 +3627,8 @@ void __init setup_ioapic_dest(void)
- 		if (irq_entry == -1)
- 			continue;
- 
--		irq = pin_2_irq(irq_entry, ioapic, pin);
--		if (!mp_init_irq_at_boot(ioapic, irq))
-+		irq = pin_2_irq(irq_entry, ioapic, pin, 0);
-+		if (irq < 0 || !mp_init_irq_at_boot(ioapic, irq))
- 			continue;
- 
- 		idata = irq_get_irq_data(irq);
--- 
-1.7.10.4
+> +	if (!savedcmd)
+> +		return -ENOMEM;
+> +
+> +	ret = allocate_cmdlines_buffer(SAVED_CMDLINES_DEFAULT, savedcmd);
+> +	if (ret < 0) {
+> +		kfree(savedcmd);
+> +		savedcmd = NULL;
+> +		return -ENOMEM;
+> +	}
+> +
+> +	return 0;
+>  }
 
+[SNIP]
+>  static ssize_t
+> +tracing_saved_cmdlines_size_read(struct file *filp, char __user *ubuf,
+> +				 size_t cnt, loff_t *ppos)
+> +{
+> +	char buf[64];
+> +	int r;
+> +
+> +	arch_spin_lock(&trace_cmdline_lock);
+> +	r = sprintf(buf, "%u\n", savedcmd->cmdline_num);
+
+In general, it's better to use scnprintf() instead.
+
+
+> +	arch_spin_unlock(&trace_cmdline_lock);
+> +
+> +	return simple_read_from_buffer(ubuf, cnt, ppos, buf, r);
+> +}
+> +
+> +static void free_saved_cmdlines_buffer(struct saved_cmdlines_buffer *s)
+> +{
+> +	kfree(s->saved_cmdlines);
+> +	kfree(s->map_cmdline_to_pid);
+> +	kfree(s);
+> +}
+> +
+> +static int tracing_resize_saved_cmdlines(unsigned int val)
+> +{
+> +	struct saved_cmdlines_buffer *s, *savedcmd_temp;
+> +
+> +	s = kmalloc(sizeof(struct saved_cmdlines_buffer), GFP_KERNEL);
+
+s/sizeof(struct saved_cmdlines_buffer)/sizeof(*s)/
+
+Thanks,
+Namhyung
+
+
+> +	if (!s)
+> +		return -ENOMEM;
+> +
+> +	if (allocate_cmdlines_buffer(val, s) < 0) {
+> +		kfree(s);
+> +		return -ENOMEM;
+> +	}
+> +
+> +	arch_spin_lock(&trace_cmdline_lock);
+> +	savedcmd_temp = savedcmd;
+> +	savedcmd = s;
+> +	arch_spin_unlock(&trace_cmdline_lock);
+> +	free_saved_cmdlines_buffer(savedcmd_temp);
+> +
+> +	return 0;
+> +}
