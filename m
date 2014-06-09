@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933179AbaFIOVs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 10:21:48 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:52898 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754045AbaFIOVp (ORCPT
+	id S933345AbaFIOXs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 10:23:48 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:58396 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752662AbaFIOXo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 10:21:45 -0400
-Message-ID: <1402323702.11505.18.camel@umadbro>
-Subject: Re: [RFC 1/4] cfg80211: Add channel flags limiting availability to
- OCB mode only
-From: Rostislav Lisovy <lisovy@gmail.com>
-To: "Luis R. Rodriguez" <mcgrof@suse.com>
-Cc: Johannes Berg <johannes@sipsolutions.net>,
-        Liraz Perelmooter <liraz.perelmooter@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michal Sojka <sojkam1@fel.cvut.cz>, s.sander@nordsys.de,
-        jan-niklas.meier@volkswagen.de,
-        Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>,
-        wireless-regdb@lists.infradead.org, green@qti.qualcomm.com
-Date: Mon, 09 Jun 2014 16:21:42 +0200
-In-Reply-To: <20140603221837.GU26450@wotan.suse.de>
-References: <1401468984-24575-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
-	 <1401468984-24575-2-git-send-email-rostislav.lisovy@fel.cvut.cz>
-	 <1401825693.4157.44.camel@jlt4.sipsolutions.net>
-	 <20140603221837.GU26450@wotan.suse.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Mon, 9 Jun 2014 10:23:44 -0400
+Date: Mon, 9 Jun 2014 15:23:13 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Sascha Silbe <x-linux@infra-silbe.de>
+Cc: Johan Hovold <jhovold@gmail.com>, Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] USB: ftdi_sio: add GPIO support
+Message-ID: <20140609152313.45f353d6@alan.etchedpixels.co.uk>
+In-Reply-To: <1402320115-13171-1-git-send-email-x-linux@infra-silbe.de>
+References: <1402320115-13171-1-git-send-email-x-linux@infra-silbe.de>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Luis;
-Thank you for the introduction in the wireless-regdb mailing-list.
+>  #include <linux/kernel.h>
+>  #include <linux/errno.h>
+> +#ifdef CONFIG_GPIOLIB
+> +#include <linux/gpio.h>
+> +#endif
 
-On Wed, 2014-06-04 at 00:18 +0200, Luis R. Rodriguez wrote:
-> Rostislav, can you provide documentation references which would
-> clarify
-> the stance on 802.11p and restrictions for only allowing  OCB mode?
 
-If I may cite the 802.11-2012 standard:
--- 1st Quote
-4.3.11 STA transmission of data frames outside the context of a BSS
+Please create a new struct, a new file and put all the GPIO stuff in
+there rather than #if bombing the driver.
 
-Communication of data frames when dot11OCBActivated is true might take
-place in a frequency band that is dedicated for its use, and such a band
-might require licensing depending on the regulatory domain. A STA for
-which dot11OCBActivated is true initially transmits and receives on a
-channel known in advance, either through regulatory designation or some
-other out-of-band communication.
--- End of quote
+You can then declare blank methods for the gpio stuff if GPIO is not
+compiled in - ie in the headers
 
--- 2nd Quote
-Annex E (normative) Country elements and operating classes
-E.2.3 5.9 GHz band in the United States (5.850–5.925 GHz)
-...
-STAs shall have dot11OCBActivated set to true.
 
-E.2.4 5.9 GHz band in Europe (5.855–5.925 GHz)
-STAs shall have dot11OCBActivated set to true.
--- end of quote
+#ifdef CONFIG_GPIOLIB
+extern int ftdi_gpio_open(struct ftdi_private *priv);
+etc...
+#else
+extern inline  int ftdi_gpio_open(struct ftdi_private *priv) { return 0 };
+#endif
 
-Regards;
-Rostislav
 
+that keeps the code itself clean and easy to read and also ensures all
+the types are checked everywhere we want.
+
+Functionality wise nothing stands out as a problem. I would expect -EBUSY
+not -ENXIO if the port was being used for GPIO so could not be used for
+tty.
+
+I would favour the new config option.
+
+Alan
