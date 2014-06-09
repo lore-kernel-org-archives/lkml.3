@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752895AbaFIGhh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 02:37:37 -0400
-Received: from mga09.intel.com ([134.134.136.24]:42072 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752475AbaFIGhf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 02:37:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,1001,1392192000"; 
-   d="scan'208";a="525385257"
-Subject: [PATCH] ALSA: compress: Fix the mismatch size of struc between
- share lib(32bit) and kernel(64bit)
-From: "Wang, Xiaoming" <xiaoming.wang@intel.com>
-To: tiwai@suse.de, vinod.koul@intel.com, jeeja.kp@intel.com,
-        dhowells@redhat.com, arnd@arndb.de, tglx@linutronix.de,
-        mtk.manpages@gmail.com, paulmck@linux.vnet.ibm.com, davej@redhat.com,
-        linux-kernel@vger.kernel.org
-Cc: dongxing.zhang@intel.com, xiaoming.wang@intel.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 09 Jun 2014 16:46:32 -0400
-Message-ID: <1402346792.30956.17.camel@wxm-ubuntu>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1752793AbaFIHEG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 03:04:06 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:19471 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751088AbaFIHEE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 03:04:04 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Sun, 08 Jun 2014 23:58:49 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <lee.jones@linaro.org>
+CC: <robh+dt@kernel.org>, <swarren@nvidia.com>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <mark.rutland@arm.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH] Doc: mfd: as3722: Add details of optional missing property
+Date: Mon, 9 Jun 2014 12:33:37 +0530
+Message-ID: <1402297417-9338-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add details of following properties which are used on driver but
+not documented on DT binding document.
+- ams,enable-internal-int-pullup
+- ams,enable-internal-i2c-pullup
 
-The size of struct snd_compr_avail is 0x1c in 32bit kernel,
-while it is 0x20 in 64bit kernel 0x4 bytes added because of
-alignment. It is OK when 32bit kernel met 32bit user space.
-There exist stack corruption if 64bit kernel met 32bit user
-space, because the size of struct snd_compr_avail is 0x1c
-in 32bit user space which is smaller than it will get from
-kernel. The extra 4 bytes can corrupt the stack, and
-introduce unpredictable error.
-
-Signed-off-by: Zhang Dongxing <dongxing.zhang@intel.com>
-Signed-off-by: xiaoming wang <xiaoming.wang@intel.com>
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+Reported-by: Lee Jones <lee.jones@linaro.org>
 ---
- include/uapi/sound/compress_offload.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ Documentation/devicetree/bindings/mfd/as3722.txt | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/include/uapi/sound/compress_offload.h b/include/uapi/sound/compress_offload.h
-index 5759810..766b416 100644
---- a/include/uapi/sound/compress_offload.h
-+++ b/include/uapi/sound/compress_offload.h
-@@ -70,6 +70,7 @@ struct snd_compr_tstamp {
- 	__u32 pcm_frames;
- 	__u32 pcm_io_frames;
- 	__u32 sampling_rate;
-+	__u32 reserved[1];
- };
+diff --git a/Documentation/devicetree/bindings/mfd/as3722.txt b/Documentation/devicetree/bindings/mfd/as3722.txt
+index 8edcb9b..4f64b2a 100644
+--- a/Documentation/devicetree/bindings/mfd/as3722.txt
++++ b/Documentation/devicetree/bindings/mfd/as3722.txt
+@@ -13,6 +13,14 @@ Required properties:
+   The second cell is the flags, encoded as the trigger masks from binding document
+ 	interrupts.txt, using dt-bindings/irq.
  
- /**
++Optional properties:
++--------------------
++- ams,enable-internal-int-pullup: Boolean property, to enable internal pullup on
++	interrupt pin. Missing this will disable internal pullup on INT pin.
++- ams,enable-internal-i2c-pullup: Boolean property, to enable internal pullup on
++	i2c scl/sda pins. Missing this will disable internal pullup on i2c
++	scl/sda lines.
++
+ Optional submodule and their properties:
+ =======================================
+ 
 -- 
-1.7.1
+1.8.1.5
 
