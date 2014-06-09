@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934539AbaFIWv4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 18:51:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57195 "EHLO
+	id S934517AbaFIWvz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 18:51:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57198 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934304AbaFIWqJ (ORCPT
+	with ESMTP id S934306AbaFIWqJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jun 2014 18:46:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Denys Fedoryshchenko <nuclearcat@nuclearcat.com>,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [PATCH 3.14 74/78] netfilter: nfnetlink: Fix use after free when it fails to process batch
-Date: Mon,  9 Jun 2014 15:48:54 -0700
-Message-Id: <20140609224815.691922371@linuxfoundation.org>
+        NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.10 22/40] md: always set MD_RECOVERY_INTR when interrupting a reshape thread.
+Date: Mon,  9 Jun 2014 15:48:53 -0700
+Message-Id: <20140609224839.901370193@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140609224813.282275135@linuxfoundation.org>
-References: <20140609224813.282275135@linuxfoundation.org>
+In-Reply-To: <20140609224839.127615063@linuxfoundation.org>
+References: <20140609224839.127615063@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,74 +24,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Denys Fedoryshchenko <nuclearcat@nuclearcat.com>
+From: NeilBrown <neilb@suse.de>
 
-commit ecd15dd7e45f3683fa8142b9f2c015dfaa0c243d upstream.
+commit 2ac295a544dcae9299cba13ce250419117ae7fd1 upstream.
 
-This bug manifests when calling the nft command line tool without
-nf_tables kernel support.
+Commit 8313b8e57f55b15e5b7f7fc5d1630bbf686a9a97
+   md: fix problem when adding device to read-only array with bitmap.
 
-kernel message:
-[   44.071555] Netfilter messages via NETLINK v0.30.
-[   44.072253] BUG: unable to handle kernel NULL pointer dereference at 0000000000000119
-[   44.072264] IP: [<ffffffff8171db1f>] netlink_getsockbyportid+0xf/0x70
-[   44.072272] PGD 7f2b74067 PUD 7f2b73067 PMD 0
-[   44.072277] Oops: 0000 [#1] SMP
-[...]
-[   44.072369] Call Trace:
-[   44.072373]  [<ffffffff8171fd81>] netlink_unicast+0x91/0x200
-[   44.072377]  [<ffffffff817206c9>] netlink_ack+0x99/0x110
-[   44.072381]  [<ffffffffa004b951>] nfnetlink_rcv+0x3c1/0x408 [nfnetlink]
-[   44.072385]  [<ffffffff8171fde3>] netlink_unicast+0xf3/0x200
-[   44.072389]  [<ffffffff817201ef>] netlink_sendmsg+0x2ff/0x740
-[   44.072394]  [<ffffffff81044752>] ? __mmdrop+0x62/0x90
-[   44.072398]  [<ffffffff816dafdb>] sock_sendmsg+0x8b/0xc0
-[   44.072403]  [<ffffffff812f1af5>] ? copy_user_enhanced_fast_string+0x5/0x10
-[   44.072406]  [<ffffffff816dbb6c>] ? move_addr_to_kernel+0x2c/0x50
-[   44.072410]  [<ffffffff816db423>] ___sys_sendmsg+0x3c3/0x3d0
-[   44.072415]  [<ffffffff811301ba>] ? handle_mm_fault+0xa9a/0xc60
-[   44.072420]  [<ffffffff811362d6>] ? mmap_region+0x166/0x5a0
-[   44.072424]  [<ffffffff817da84c>] ? __do_page_fault+0x1dc/0x510
-[   44.072428]  [<ffffffff812b8b2c>] ? apparmor_capable+0x1c/0x60
-[   44.072435]  [<ffffffff817d6e9a>] ? _raw_spin_unlock_bh+0x1a/0x20
-[   44.072439]  [<ffffffff816dfc86>] ? release_sock+0x106/0x150
-[   44.072443]  [<ffffffff816dc212>] __sys_sendmsg+0x42/0x80
-[   44.072446]  [<ffffffff816dc262>] SyS_sendmsg+0x12/0x20
-[   44.072450]  [<ffffffff817df616>] system_call_fastpath+0x1a/0x1f
+added a called to md_reap_sync_thread() which cause a reshape thread
+to be interrupted (in particular, it could cause md_thread() to never even
+call md_do_sync()).
+However it didn't set MD_RECOVERY_INTR so ->finish_reshape() would not
+know that the reshape didn't complete.
 
-Signed-off-by: Denys Fedoryshchenko <nuclearcat@nuclearcat.com>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+This only happens when mddev->ro is set and normally reshape threads
+don't run in that situation.  But raid5 and raid10 can start a reshape
+thread during "run" is the array is in the middle of a reshape.
+They do this even if ->ro is set.
+
+So it is best to set MD_RECOVERY_INTR before abortingg the
+sync thread, just in case.
+
+Though it rare for this to trigger a problem it can cause data corruption
+because the reshape isn't finished properly.
+So it is suitable for any stable which the offending commit was applied to.
+(3.2 or later)
+
+Fixes: 8313b8e57f55b15e5b7f7fc5d1630bbf686a9a97
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/nfnetlink.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/md/md.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/netfilter/nfnetlink.c
-+++ b/net/netfilter/nfnetlink.c
-@@ -248,15 +248,15 @@ replay:
- #endif
- 		{
- 			nfnl_unlock(subsys_id);
--			kfree_skb(nskb);
--			return netlink_ack(skb, nlh, -EOPNOTSUPP);
-+			netlink_ack(skb, nlh, -EOPNOTSUPP);
-+			return kfree_skb(nskb);
- 		}
- 	}
- 
- 	if (!ss->commit || !ss->abort) {
- 		nfnl_unlock(subsys_id);
--		kfree_skb(nskb);
--		return netlink_ack(skb, nlh, -EOPNOTSUPP);
-+		netlink_ack(skb, nlh, -EOPNOTSUPP);
-+		return kfree_skb(skb);
- 	}
- 
- 	while (skb->len >= nlmsg_total_size(0)) {
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -7790,6 +7790,7 @@ void md_check_recovery(struct mddev *mdd
+ 			/* There is no thread, but we need to call
+ 			 * ->spare_active and clear saved_raid_disk
+ 			 */
++			set_bit(MD_RECOVERY_INTR, &mddev->recovery);
+ 			md_reap_sync_thread(mddev);
+ 			clear_bit(MD_RECOVERY_NEEDED, &mddev->recovery);
+ 			goto unlock;
 
 
