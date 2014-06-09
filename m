@@ -1,98 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752082AbaFIGUP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 02:20:15 -0400
-Received: from mail.windriver.com ([147.11.1.11]:35362 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750911AbaFIGUN (ORCPT
+	id S1752818AbaFIGWO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 02:22:14 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:40859 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750980AbaFIGWL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 02:20:13 -0400
-From: <Wei.Yang@windriver.com>
-To: <stern@rowland.harvard.edu>
-CC: <balbi@ti.com>, <mina86@mina86.com>, <andrzej.p@samsung.com>,
-        <wei.yang@windriver.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3] USB:gadget: Fix a warning while loading g_mass_storage
-Date: Mon, 9 Jun 2014 14:19:58 +0800
-Message-ID: <1402294798-27401-1-git-send-email-Wei.Yang@windriver.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1401856367-12553-1-git-send-email-Wei.Yang@windriver.com>
-References: <1401856367-12553-1-git-send-email-Wei.Yang@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 9 Jun 2014 02:22:11 -0400
+Message-ID: <1402294928.6316.38.camel@marge.simpson.net>
+Subject: Re: [RFC PATCH] rt/aio: fix rcu garbage collection might_sleep()
+ splat
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: RT <linux-rt-users@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Date: Mon, 09 Jun 2014 08:22:08 +0200
+In-Reply-To: <1402283822.5195.3.camel@marge.simpson.net>
+References: <1402216538.31630.7.camel@marge.simpson.net>
+	 <5395172E.4010007@cn.fujitsu.com>
+	 <1402283822.5195.3.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yang Wei <Wei.Yang@windriver.com>
+On Mon, 2014-06-09 at 05:17 +0200, Mike Galbraith wrote: 
+> On Mon, 2014-06-09 at 10:08 +0800, Lai Jiangshan wrote: 
+> > Hi, rt-people
+> > 
+> > I don't think it is the correct direction.
+> 
+> Yup, it's a band-aid, ergo RFC.
 
-While loading g_mass_storage module, the following warning
-is triggered.
+Making aio play by the rules is safe.  Another option is to bend the
+rules up a little.  With the below, ltp aio-stress testcases haven't yet
+griped or exploded either.. which somehow isn't quite as comforting as
+"is safe" :)
 
-WARNING: at drivers/usb/gadget/composite.c:
-usb_composite_setup_continue: Unexpected call
-Modules linked in: fat vfat minix nls_cp437 nls_iso8859_1 g_mass_storage
-[<800179cc>] (unwind_backtrace+0x0/0x104) from [<80619608>] (dump_stack+0x20/0x24)
-[<80619608>] (dump_stack+0x20/0x24) from [<80025100>] (warn_slowpath_common+0x64/0x74)
-[<80025100>] (warn_slowpath_common+0x64/0x74) from [<800251cc>] (warn_slowpath_fmt+0x40/0x48)
-[<800251cc>] (warn_slowpath_fmt+0x40/0x48) from [<7f047774>] (usb_composite_setup_continue+0xb4/0xbc [g_mass_storage])
-[<7f047774>] (usb_composite_setup_continue+0xb4/0xbc [g_mass_storage]) from [<7f047ad4>] (handle_exception+0x358/0x3e4 [g_mass_storage])
-[<7f047ad4>] (handle_exception+0x358/0x3e4 [g_mass_storage]) from [<7f048080>] (fsg_main_thread+0x520/0x157c [g_mass_storage])
-[<7f048080>] (fsg_main_thread+0x520/0x157c [g_mass_storage]) from [<8004bc90>] (kthread+0x98/0x9c)
-[<8004bc90>] (kthread+0x98/0x9c) from [<8000faec>] (kernel_thread_exit+0x0/0x8)
-
-The root cause is that the existing code fails to take into
-account the possibility that common->new_fsg can change while
-do_set_interface() is running, because the spinlock isn't held
-at this point.
-
-Signed-off-by: Yang Wei <Wei.Yang@windriver.com>
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
 ---
- drivers/usb/gadget/f_mass_storage.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ fs/aio.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-Hi Alan,
-
-Thanks for your review, there are a few changes in v3:
-
-1) Fix a coding style issue.
-2) Refine the commit log
-
-Regards
-Wei
-
-diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
-index b963939..0cd8f21 100644
---- a/drivers/usb/gadget/f_mass_storage.c
-+++ b/drivers/usb/gadget/f_mass_storage.c
-@@ -2342,6 +2342,7 @@ static void handle_exception(struct fsg_common *common)
- 	struct fsg_buffhd	*bh;
- 	enum fsg_state		old_state;
- 	struct fsg_lun		*curlun;
-+	struct fsg_dev		*new_fsg;
- 	unsigned int		exception_req_tag;
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -509,7 +509,9 @@ static void free_ioctx_reqs(struct percp
+ 	struct kioctx *ctx = container_of(ref, struct kioctx, reqs);
  
- 	/*
-@@ -2421,6 +2422,7 @@ static void handle_exception(struct fsg_common *common)
- 		}
- 		common->state = FSG_STATE_IDLE;
- 	}
-+	new_fsg = common->new_fsg;
- 	spin_unlock_irq(&common->lock);
+ 	INIT_WORK(&ctx->free_work, free_ioctx);
++	preempt_enable_rt();
+ 	schedule_work(&ctx->free_work);
++	preempt_disable_rt();
+ }
  
- 	/* Carry out any extra actions required for the exception */
-@@ -2460,8 +2462,8 @@ static void handle_exception(struct fsg_common *common)
- 		break;
+ /*
+@@ -522,7 +524,9 @@ static void free_ioctx_users(struct perc
+ 	struct kioctx *ctx = container_of(ref, struct kioctx, users);
+ 	struct kiocb *req;
  
- 	case FSG_STATE_CONFIG_CHANGE:
--		do_set_interface(common, common->new_fsg);
--		if (common->new_fsg)
-+		do_set_interface(common, new_fsg);
-+		if (new_fsg)
- 			usb_composite_setup_continue(common->cdev);
- 		break;
++	preempt_enable_rt();
+ 	spin_lock_irq(&ctx->ctx_lock);
++	local_irq_disable_rt();
  
--- 
-1.7.9.5
+ 	while (!list_empty(&ctx->active_reqs)) {
+ 		req = list_first_entry(&ctx->active_reqs,
+@@ -536,6 +540,8 @@ static void free_ioctx_users(struct perc
+ 
+ 	percpu_ref_kill(&ctx->reqs);
+ 	percpu_ref_put(&ctx->reqs);
++	preempt_disable_rt();
++	local_irq_enable_rt();
+ }
+ 
+ static int ioctx_add_table(struct kioctx *ctx, struct mm_struct *mm)
+
 
