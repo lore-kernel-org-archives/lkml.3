@@ -1,59 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932185AbaFISgw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 14:36:52 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:38371 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753861AbaFISgt (ORCPT
+	id S1754136AbaFIShR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 14:37:17 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:60529 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753930AbaFISgo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 14:36:49 -0400
-Message-ID: <5395FEBF.3040608@cogentembedded.com>
-Date: Mon, 09 Jun 2014 22:36:47 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Sascha Silbe <x-linux@infra-silbe.de>
-CC: Johan Hovold <jhovold@gmail.com>, Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-gpio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] USB: ftdi_sio: add GPIO support
-References: <1402320115-13171-1-git-send-email-x-linux@infra-silbe.de> <20140609152313.45f353d6@alan.etchedpixels.co.uk>
-In-Reply-To: <20140609152313.45f353d6@alan.etchedpixels.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 9 Jun 2014 14:36:44 -0400
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        "Luis R. Rodriguez" <mcgrof@suse.com>, Borislav Petkov <bp@suse.de>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, Michal Marek <mmarek@suse.cz>,
+        Randy Dunlap <rdunlap@infradead.org>, levinsasha928@gmail.com,
+        mtosatti@redhat.com, fengguang.wu@intel.com,
+        David Vrabel <david.vrabel@citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        xen-devel@lists.xenproject.org
+Subject: [PATCH v2 3/3] x86, platform, xen, kconfig: add xen defconfig helper
+Date: Mon,  9 Jun 2014 11:36:24 -0700
+Message-Id: <1402338984-9774-3-git-send-email-mcgrof@do-not-panic.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1402338984-9774-1-git-send-email-mcgrof@do-not-panic.com>
+References: <1402338984-9774-1-git-send-email-mcgrof@do-not-panic.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
 
-On 06/09/2014 06:23 PM, One Thousand Gnomes wrote:
+This lets you build a kernel which can support xen dom0
+or xen guests by just using:
 
->>   #include <linux/kernel.h>
->>   #include <linux/errno.h>
->> +#ifdef CONFIG_GPIOLIB
->> +#include <linux/gpio.h>
->> +#endif
+   make xenconfig
 
-> Please create a new struct, a new file and put all the GPIO stuff in
-> there rather than #if bombing the driver.
+Technically xen supports a dom0 kernel and also a guest
+kernel configuration but upon review with the xen team
+since we don't have many dom0 options its best to just
+combine these two into one.
 
-> You can then declare blank methods for the gpio stuff if GPIO is not
-> compiled in - ie in the headers
+Cc: Borislav Petkov <bp@suse.de>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: penberg@kernel.org
+Cc: levinsasha928@gmail.com
+Cc: mtosatti@redhat.com
+Cc: fengguang.wu@intel.com
+Cc: David Vrabel <david.vrabel@citrix.com>
+Cc: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: xen-devel@lists.xenproject.org
+Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+---
+ arch/x86/Makefile           |  5 +++++
+ arch/x86/configs/xen.config | 36 ++++++++++++++++++++++++++++++++++++
+ 2 files changed, 41 insertions(+)
+ create mode 100644 arch/x86/configs/xen.config
 
-> #ifdef CONFIG_GPIOLIB
-> extern int ftdi_gpio_open(struct ftdi_private *priv);
-> etc...
-> #else
-> extern inline  int ftdi_gpio_open(struct ftdi_private *priv) { return 0 };
-
-    I guess you meant *static* instead of *extern* here?
-
-> #endif
-
-WBR, Sergei
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index 36eea65..cbd9e06 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -260,6 +260,10 @@ PHONY += kvmconfig
+ kvmconfig:
+ 	$(call build-virtconfig,kvm_guest.config)
+ 
++PHONY += xenconfig
++xenconfig:
++	$(call build-virtconfig,xen.config)
++
+ define archhelp
+   echo  '* bzImage      - Compressed kernel image (arch/x86/boot/bzImage)'
+   echo  '  install      - Install kernel using'
+@@ -274,4 +278,5 @@ define archhelp
+   echo  '                  FDARGS="..."  arguments for the booted kernel'
+   echo  '                  FDINITRD=file initrd for the booted kernel'
+   echo  '  kvmconfig	- Enable additional options for kvm guest kernel support'
++  echo  '  xenconfig    - Enable additional options for xen dom0 and guest kernel support'
+ endef
+diff --git a/arch/x86/configs/xen.config b/arch/x86/configs/xen.config
+new file mode 100644
+index 0000000..fbfbe5c
+--- /dev/null
++++ b/arch/x86/configs/xen.config
+@@ -0,0 +1,36 @@
++CONFIG_XEN=y
++CONFIG_XEN_DOM0=y
++CONFIG_XEN_PVHVM=y
++CONFIG_XEN_MAX_DOMAIN_MEMORY=500
++CONFIG_XEN_SAVE_RESTORE=y
++# CONFIG_XEN_DEBUG_FS is not set
++CONFIG_XEN_PVH=y
++CONFIG_PCI_XEN=y
++CONFIG_XEN_PCIDEV_FRONTEND=m
++CONFIG_XEN_BLKDEV_FRONTEND=m
++CONFIG_XEN_BLKDEV_BACKEND=m
++CONFIG_XEN_NETDEV_FRONTEND=m
++CONFIG_XEN_NETDEV_BACKEND=m
++CONFIG_INPUT_XEN_KBDDEV_FRONTEND=y
++CONFIG_HVC_XEN=y
++CONFIG_HVC_XEN_FRONTEND=y
++CONFIG_TCG_XEN=m
++CONFIG_XEN_WDT=m
++CONFIG_XEN_FBDEV_FRONTEND=y
++CONFIG_XEN_BALLOON=y
++CONFIG_XEN_BALLOON_MEMORY_HOTPLUG=y
++CONFIG_XEN_SCRUB_PAGES=y
++CONFIG_XEN_DEV_EVTCHN=m
++CONFIG_XEN_BACKEND=y
++CONFIG_XENFS=m
++CONFIG_XEN_COMPAT_XENFS=y
++CONFIG_XEN_SYS_HYPERVISOR=y
++CONFIG_XEN_XENBUS_FRONTEND=y
++CONFIG_XEN_GNTDEV=m
++CONFIG_XEN_GRANT_DEV_ALLOC=m
++CONFIG_SWIOTLB_XEN=y
++CONFIG_XEN_PCIDEV_BACKEND=m
++CONFIG_XEN_PRIVCMD=m
++CONFIG_XEN_ACPI_PROCESSOR=m
++CONFIG_XEN_MCE_LOG=y
++CONFIG_XEN_HAVE_PVMMU=y
+-- 
+2.0.0.rc3.18.g00a5b79
 
