@@ -1,47 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753942AbaFISFM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 14:05:12 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:36037 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752520AbaFISFJ (ORCPT
+	id S1754008AbaFISGL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 14:06:11 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:47716 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753829AbaFISGJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 14:05:09 -0400
-From: Florian Fainelli <f.fainelli@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, jason@lakedaemon.net,
-        tglx@linutronix.de, Florian Fainelli <f.fainelli@gmail.com>
-Subject: [PATCH] irqchip: brcmstb-l2: Level-2 interrupts are edge sensitive
-Date: Mon,  9 Jun 2014 11:05:02 -0700
-Message-Id: <1402337102-19428-1-git-send-email-f.fainelli@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Mon, 9 Jun 2014 14:06:09 -0400
+Date: Mon, 9 Jun 2014 14:06:07 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [RFC][PATCH] debugfs: Fix corrupted loop in
+ debugfs_remove_recursive
+Message-ID: <20140609140607.3e3aae39@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver was configuring the interrupt handler for the Level-2
-interrupts to be "level" triggered while they are in fact "edge"
-triggered. Fix this by using the correct handler.
+[ I'm currently running my tests on it now, and so far, after a few
+ hours it has yet to blow up. I'll run it for 24 hours which it never
+ succeeded in the past. ]
 
-Reported-by: Brian Norris <computersforpeace@gmail.com>
-Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
+The tracing code has a way to make directories within the debugfs file
+system as well as deleting them using mkdir/rmdir in the instance
+directory. This is very limited in functionality, such as there is
+no renames, and the parent directory "instance" can not be modified.
+The tracing code creates the instance directory from the debugfs code
+and then replaces the dentry->d_inode->i_op with its own to allow
+for mkdir/rmdir to work.
+
+When these are called, the d_entry and inode locks need to be released
+to call the instance creation and deletion code. That code has its own
+accounting and locking to serialize everything to prevent multiple
+users from causing harm. As the parent "instance" directory can not
+be modified this simplifies things.
+
+I created a stress test that creates several threads that randomly
+creates and deletes directories thousands of times a second. The code
+stood up to this test and I submitted it a while ago.
+
+Recently I added a new test that adds readers to the mix. While the
+instance directories were being added and deleted, readers would read
+from these directories and even enable tracing within them. This test
+was able to trigger a bug:
+
+
+ general protection fault: 0000 [#1] PREEMPT SMP 
+ Modules linked in: ...
+ CPU: 3 PID: 17789 Comm: rmdir Tainted: G        W     3.15.0-rc2-test+ #41
+ Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M., BIOS SDBLI944.86P 05/08/2007
+ task: ffff88003786ca60 ti: ffff880077018000 task.ti: ffff880077018000
+ RIP: 0010:[<ffffffff811ed5eb>]  [<ffffffff811ed5eb>] debugfs_remove_recursive+0x1bd/0x367
+ RSP: 0018:ffff880077019df8  EFLAGS: 00010246
+ RAX: 0000000000000002 RBX: ffff88006f0fe490 RCX: 0000000000000000
+ RDX: dead000000100058 RSI: 0000000000000246 RDI: ffff88003786d454
+ RBP: ffff88006f0fe640 R08: 0000000000000628 R09: 0000000000000000
+ R10: 0000000000000628 R11: ffff8800795110a0 R12: ffff88006f0fe640
+ R13: ffff88006f0fe640 R14: ffffffff81817d0b R15: ffffffff818188b7
+ FS:  00007ff13ae24700(0000) GS:ffff88007d580000(0000) knlGS:0000000000000000
+ CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+ CR2: 0000003054ec7be0 CR3: 0000000076d51000 CR4: 00000000000007e0
+ Stack:
+  ffff88007a41ebe0 dead000000100058 00000000fffffffe ffff88006f0fe640
+  0000000000000000 ffff88006f0fe678 ffff88007a41ebe0 ffff88003793a000
+  00000000fffffffe ffffffff810bde82 ffff88006f0fe640 ffff88007a41eb28
+ Call Trace:
+  [<ffffffff810bde82>] ? instance_rmdir+0x15b/0x1de
+  [<ffffffff81132e2d>] ? vfs_rmdir+0x80/0xd3
+  [<ffffffff81132f51>] ? do_rmdir+0xd1/0x139
+  [<ffffffff8124ad9e>] ? trace_hardirqs_on_thunk+0x3a/0x3c
+  [<ffffffff814fea62>] ? system_call_fastpath+0x16/0x1b
+ Code: fe ff ff 48 8d 75 30 48 89 df e8 c9 fd ff ff 85 c0 75 13 48 c7 c6 b8 cc d2 81 48 c7 c7 b0 cc d2 81 e8 8c 7a f5 ff 48 8b 54 24 08 <48> 8b 82 a8 00 00 00 48 89 d3 48 2d a8 00 00 00 48 89 44 24 08 
+ RIP  [<ffffffff811ed5eb>] debugfs_remove_recursive+0x1bd/0x367
+  RSP <ffff880077019df8>
+
+It took a while, but every time it triggered, it was always in the
+same place:
+
+	list_for_each_entry_safe(child, next, &parent->d_subdirs, d_u.d_child) {
+
+Where the child->d_u.d_child seemed to be corrupted.  I added lots of
+trace_printk()s to see what was wrong, and sure enough, it was always
+the child's d_u.d_child field. I looked around to see what touches
+it and noticed that in __dentry_kill() which calls dentry_free():
+
+static void dentry_free(struct dentry *dentry)
+{
+	/* if dentry was never visible to RCU, immediate free is OK */
+	if (!(dentry->d_flags & DCACHE_RCUACCESS))
+		__d_free(&dentry->d_u.d_rcu);
+	else
+		call_rcu(&dentry->d_u.d_rcu, __d_free);
+}
+
+I also noticed that __dentry_kill() unlinks the child->d_u.child
+under the parent->d_lock spin_lock.
+
+Looking back at the loop in debugfs_remove_recursive() it never takes the
+parent->d_lock to do the list walk. Adding more tracing, I was able to
+prove this was the issue:
+
+ ftrace-t-15385   1.... 246662024us : dentry_kill <ffffffff81138b91>: free ffff88006d573600
+    rmdir-15409   2.... 246662024us : debugfs_remove_recursive <ffffffff811ec7e5>: child=ffff88006d573600 next=dead000000100058
+
+The dentry_kill freed ffff88006d573600 just as the remove recursive was walking
+it.
+
+In order to fix this, the list walk needs to be modified a bit to take
+the parent->d_lock. The safe version is no longer necessary, as every
+time we remove a child, the parent->d_lock must be released and the
+list walk must start over. Each time a child is removed, even though it
+may still be on the list, it should be skipped by the first check
+in the loop:
+
+		if (!debugfs_positive(child))
+			continue;
+
+Cc: stable@vger.kernel.org
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
 ---
- drivers/irqchip/irq-brcmstb-l2.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/debugfs/inode.c |   33 ++++++++++++++++++++++++++-------
+ 1 file changed, 26 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/irqchip/irq-brcmstb-l2.c b/drivers/irqchip/irq-brcmstb-l2.c
-index 8ee2a36d5840..c15c840987d2 100644
---- a/drivers/irqchip/irq-brcmstb-l2.c
-+++ b/drivers/irqchip/irq-brcmstb-l2.c
-@@ -150,7 +150,7 @@ int __init brcmstb_l2_intc_of_init(struct device_node *np,
+Index: linux-trace.git/fs/debugfs/inode.c
+===================================================================
+--- linux-trace.git.orig/fs/debugfs/inode.c	2014-06-09 10:34:13.010051075 -0400
++++ linux-trace.git/fs/debugfs/inode.c	2014-06-09 10:34:36.108811592 -0400
+@@ -534,7 +534,7 @@
+  */
+ void debugfs_remove_recursive(struct dentry *dentry)
+ {
+-	struct dentry *child, *next, *parent;
++	struct dentry *child, *parent;
  
- 	/* Allocate a single Generic IRQ chip for this node */
- 	ret = irq_alloc_domain_generic_chips(data->domain, 32, 1,
--				np->full_name, handle_level_irq, clr, 0, 0);
-+				np->full_name, handle_edge_irq, clr, 0, 0);
- 	if (ret) {
- 		pr_err("failed to allocate generic irq chip\n");
- 		goto out_free_domain;
--- 
-1.9.1
-
+ 	if (IS_ERR_OR_NULL(dentry))
+ 		return;
+@@ -546,30 +546,49 @@
+ 	parent = dentry;
+  down:
+ 	mutex_lock(&parent->d_inode->i_mutex);
+-	list_for_each_entry_safe(child, next, &parent->d_subdirs, d_u.d_child) {
++ loop:
++	/*
++	 * The parent->d_subdirs is protected by the d_lock. Outside that
++	 * lock, the child can be unlinked and set to be freed which can
++	 * use the d_u.d_child as the rcu head and corrupt this list.
++	 */
++	spin_lock(&parent->d_lock);
++	list_for_each_entry(child, &parent->d_subdirs, d_u.d_child) {
+ 		if (!debugfs_positive(child))
+ 			continue;
+ 
+ 		/* perhaps simple_empty(child) makes more sense */
+ 		if (!list_empty(&child->d_subdirs)) {
++			spin_unlock(&parent->d_lock);
+ 			mutex_unlock(&parent->d_inode->i_mutex);
+ 			parent = child;
+ 			goto down;
+ 		}
+- up:
++
++		spin_unlock(&parent->d_lock);
++
+ 		if (!__debugfs_remove(child, parent))
+ 			simple_release_fs(&debugfs_mount, &debugfs_mount_count);
++
++		/*
++		 * The parent->d_lock protects agaist child from unlinking
++		 * from d_subdirs. When releasing the parent->d_lock we can
++		 * no longer trust that the next pointer is valid.
++		 * Restart the loop. We'll skip this one with the
++		 * debugfs_positive() check.
++		 */
++		goto loop;
+ 	}
++	spin_unlock(&parent->d_lock);
+ 
+ 	mutex_unlock(&parent->d_inode->i_mutex);
+ 	child = parent;
+ 	parent = parent->d_parent;
+ 	mutex_lock(&parent->d_inode->i_mutex);
+ 
+-	if (child != dentry) {
+-		next = list_next_entry(child, d_u.d_child);
+-		goto up;
+-	}
++	if (child != dentry)
++		/* go up */
++		goto loop;
+ 
+ 	if (!__debugfs_remove(child, parent))
+ 		simple_release_fs(&debugfs_mount, &debugfs_mount_count);
