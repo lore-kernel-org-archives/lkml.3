@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932390AbaFIWfZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 18:35:25 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:58536 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751583AbaFIWfX (ORCPT
+	id S932605AbaFIWfn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 18:35:43 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:43719 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932184AbaFIWfl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:35:23 -0400
+	Mon, 9 Jun 2014 18:35:41 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140609223057.GB18475@kroah.com>
-References: <1401332999-15167-1-git-send-email-eparis@redhat.com> <20140609223057.GB18475@kroah.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 9 Jun 2014 15:35:02 -0700
-Message-ID: <CALCETrUD75vSwJUjFuxGCrZ_7DJhCc1KW2v_ndF6EHJ31fUMBg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] auditsc: audit_krule mask accesses need bounds checking
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Eric Paris <eparis@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-audit@redhat.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org
+In-Reply-To: <CA+8MBb+7f1bOnJjJWj1vxa0UNuQwz7OGRDR_QFTxOT=9cynabQ@mail.gmail.com>
+References: <1397859600-11507-1-git-send-email-robherring2@gmail.com>
+	<1397859600-11507-4-git-send-email-robherring2@gmail.com>
+	<CAE9FiQVrwypK4u5yTCt-AxMuBnOn7jv=V3d4Zb3cd9JDNEUVPw@mail.gmail.com>
+	<CAL_JsqKux+BTHeYo6XEzzQMAFJZHVjbURM973oHT=t698GbJbA@mail.gmail.com>
+	<20140503220731.GA10927@kroah.com>
+	<20140503221658.GA13403@kroah.com>
+	<CA+8MBb+7f1bOnJjJWj1vxa0UNuQwz7OGRDR_QFTxOT=9cynabQ@mail.gmail.com>
+Date: Mon, 9 Jun 2014 15:35:40 -0700
+Message-ID: <CA+8MBbKE1E2uq9LefiDAV9hv2Z8OTkjx9mkXjE6_--F_emRC8A@mail.gmail.com>
+Subject: Re: [PATCH v2 3/7] tty/serial: convert 8250 to generic earlycon
+From: Tony Luck <tony.luck@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Rob Herring <robherring2@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        Jiri Slaby <jslaby@suse.cz>, Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 9, 2014 at 3:30 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Wed, May 28, 2014 at 11:09:58PM -0400, Eric Paris wrote:
->> From: Andy Lutomirski <luto@amacapital.net>
->>
->> Fixes an easy DoS and possible information disclosure.
->>
->> This does nothing about the broken state of x32 auditing.
->>
->> eparis: If the admin has enabled auditd and has specifically loaded audit
->> rules.  This bug has been around since before git.  Wow...
->>
->> Cc: stable@vger.kernel.org
->> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->> Signed-off-by: Eric Paris <eparis@redhat.com>
->> ---
->>  kernel/auditsc.c | 27 ++++++++++++++++++---------
->>  1 file changed, 18 insertions(+), 9 deletions(-)
->
-> Did this patch get dropped somewhere?  Isn't it a valid bugfix, or did I
-> miss a later conversation about this?
+On Mon, Jun 9, 2014 at 3:25 PM, Tony Luck <tony.luck@gmail.com> wrote:
+> Linus' tree (HEAD=963649d735c8) is spitting out all sorts of garbage
+> on the serial console - as if the baud rate is being periodically set
+> to something weird, and then back to 112500.  I see over a dozen
+> blocks of junk interspersed with good output.
 
-Hmm.  It seems that it didn't make it into Linus' tree.  Crap.
+Ah - it seems that I need to be more specific on the cmdline
 
-IMO we need some kind of real tracking system for issues reported to
-security@.  This shouldn't have been possible (and if I'd realized
-that the patch got dropped, I wouldn't have publicly disclosed it).
+     console=uart8250,io,0x3f8,115200
 
-For whoever applies this: it's CVE-2014-3917.
+makes all the garbage disappear.
 
---Andy
+Do I need to update: Documentation/ia64/serial.txt
+which has the example of "console=uart,io,0x3f8"?
+
+-Tony
