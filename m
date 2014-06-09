@@ -1,159 +1,333 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933723AbaFIQtd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 12:49:33 -0400
-Received: from mail.kernel.org ([198.145.19.201]:57829 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932653AbaFIQt1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 12:49:27 -0400
-Date: Tue, 10 Jun 2014 01:49:23 +0900
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Linux FS DEV, Mailing List" <linux-fsdevel@vger.kernel.org>,
-        "Linux Kernel, Mailing List" <linux-kernel@vger.kernel.org>,
-        "Linux F2FS DEV, Mailing List" 
-	<linux-f2fs-devel@lists.sourceforge.net>
-Subject: [GIT PULL] f2fs updates for v3.16
-Message-ID: <20140609164923.GA65800@jmac.local>
-Reply-To: Jaegeuk Kim <jaegeuk@kernel.org>
+	id S933818AbaFIQu7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 12:50:59 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44824 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933395AbaFIQuy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 12:50:54 -0400
+Date: Mon, 9 Jun 2014 09:49:29 -0700
+From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
+Message-ID: <tip-82084984383babe728e6e3c9a8e5c46278091315@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        rostedt@goodmis.org, bmouring@ni.com, peterz@infradead.org,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        bmouring@ni.com, rostedt@goodmis.org, peterz@infradead.org,
+        tglx@linutronix.de
+In-Reply-To: <20140605152801.930031935@linutronix.de>
+References: <20140605152801.930031935@linutronix.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:locking/urgent] rtmutex: Detect changes in the pi lock chain
+Git-Commit-ID: 82084984383babe728e6e3c9a8e5c46278091315
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Commit-ID:  82084984383babe728e6e3c9a8e5c46278091315
+Gitweb:     http://git.kernel.org/tip/82084984383babe728e6e3c9a8e5c46278091315
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Thu, 5 Jun 2014 11:16:12 +0200
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Sat, 7 Jun 2014 14:55:40 +0200
 
-This is a pull request on f2fs updates for v3.16.
+rtmutex: Detect changes in the pi lock chain
 
-In this round, there is no special interesting feature, but we've investigated
-a couple of tuning points with respect to the I/O flow.
-Several major bug fixes and a bunch of clean-ups also have been made.
+When we walk the lock chain, we drop all locks after each step. So the
+lock chain can change under us before we reacquire the locks. That's
+harmless in principle as we just follow the wrong lock path. But it
+can lead to a false positive in the dead lock detection logic:
 
-Thank you very much.
+T0 holds L0
+T0 blocks on L1 held by T1
+T1 blocks on L2 held by T2
+T2 blocks on L3 held by T3
+T4 blocks on L4 held by T4
 
-The following changes since commit 38583f095c5a8138ae2a1c9173d0fd8a9f10e8aa:
+Now we walk the chain
 
-  Merge branch 'akpm' (incoming from Andrew) (2014-05-06 13:07:41 -0700)
+lock T1 -> lock L2 -> adjust L2 -> unlock T1 -> 
+     lock T2 ->  adjust T2 ->  drop locks
 
-are available in the git repository at:
+T2 times out and blocks on L0
 
+Now we continue:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jaegeuk/f2fs.git tags/for-f2fs-3.16
+lock T2 -> lock L0 -> deadlock detected, but it's not a deadlock at all.
 
-for you to fetch changes up to 9ab701349247368f9d57a993b95a5bb05bb37e10:
+Brad tried to work around that in the deadlock detection logic itself,
+but the more I looked at it the less I liked it, because it's crystal
+ball magic after the fact.
 
-  f2fs: support f2fs_fiemap (2014-06-08 08:56:49 +0900)
+We actually can detect a chain change very simple:
 
-----------------------------------------------------------------
-f2fs updates for v3.16
+lock T1 -> lock L2 -> adjust L2 -> unlock T1 -> lock T2 -> adjust T2 ->
 
-This patch-set includes the following major enhancement patches.
- o enhance wait_on_page_writeback
- o support SEEK_DATA and SEEK_HOLE
- o enhance readahead flows
- o enhance IO flushes
- o support fiemap
- o add some tracepoints
+     next_lock = T2->pi_blocked_on->lock;
 
-The other bug fixes are as follows.
- o fix to support a large volume > 2TB correctly
- o recovery bug fix with respect to the fallocated space
- o fix recursive lock on xattr operations
- o fix some erroneous cases on the remount flow
+drop locks
 
-And, there are a bunch of cleanups.
+T2 times out and blocks on L0
 
-----------------------------------------------------------------
-Changman Lee (1):
-      f2fs: large volume support
+Now we continue:
 
-Chao Yu (16):
-      f2fs: introduce raw_nat_from_node_info() to simplfy codes
-      f2fs: handle inline data independently in f2fs_bmap
-      f2fs: introduce help macro ADDRS_PER_PAGE()
-      f2fs: introduce f2fs_seek_block to support SEEK_{DATA, HOLE} in llseek
-      f2fs: set errno when f2fs_iget failed in recover_dentry
-      f2fs: readahead multi pages of directory for performance
-      f2fs: fix to truncate inline data in inode page when setattr
-      f2fs: add a tracepoint for f2fs_write_begin
-      f2fs: add a tracepoint for f2fs_write_end
-      f2fs: add a tracepoint for f2fs_write_{meta,node,data}_page
-      f2fs: add a tracepoint for f2fs_write_{meta,node,data}_pages
-      f2fs: add a tracepoint for f2fs_read_data_page
-      f2fs: avoid to use slab memory in f2fs_issue_flush for efficiency
-      f2fs: use inode_init_owner() to simplify codes
-      f2fs: avoid overflow when large directory feathure is enabled
-      f2fs: avoid crash when trace f2fs_submit_page_mbio event in ra_sum_pages
+lock T2 -> 
 
-Fabian Frederick (1):
-      f2fs: add static to get_max_meta_blks
+     if (next_lock != T2->pi_blocked_on->lock)
+     	   return;
 
-Gu Zheng (6):
-      f2fs: put the bio when issue_flush completed
-      f2fs: use __GFP_ZERO to avoid appending set-NULL
-      f2fs: enable flush_merge only in f2fs is not read-only
-      f2fs: add the flush_merge handle in the remount flow
-      f2fs: introduce struct flush_cmd_control to wrap the flush_merge fields
-      f2fs: introduce help function {create,destroy}_flush_cmd_control
+So if we detect that T2 is now blocked on a different lock we stop the
+chain walk. That's also correct in the following scenario:
 
-Jaegeuk Kim (25):
-      f2fs: avoid to conduct roll-forward due to the remained garbage blocks
-      f2fs: call redirty_page_for_writepage
-      f2fs: fix to unlock f2fs_lock at the omitted error case
-      f2fs: remove costly dirty_dir_inode operations
-      f2fs: add available_nids to fix handling max_nid correctly
-      f2fs: avoid BUG_ON when mouting corrupted image having garbage blocks
-      f2fs: adjust free mem size to flush dentry blocks
-      f2fs: clean up long variable names
-      f2fs: pass flags field to setxattr functions
-      f2fs: return errors right after checking them
-      f2fs: submit bio at the reclaim path
-      f2fs: return i_size if the hole is outside of i_size
-      f2fs: consider fallocated space for SEEK_DATA
-      f2fs: split grab_cache_page and wait_on_page_writeback for node pages
-      f2fs: avoid grab_cache_page_write_begin for data pages
-      f2fs: no need to wait on page writebck to meta pages
-      f2fs: decrease the lock granularity during write_begin
-      f2fs: deactivate inode page if the inode is evicted
-      MAINTAINERS: change the email address for f2fs
-      MAINTAINERS: add a co-maintainer from samsung for F2FS
-      f2fs: fix recursive lock by f2fs_setxattr
-      f2fs: fix to recover data written by dio
-      f2fs: recover fallocated space
-      f2fs: avoid not to call remove_dirty_inode
-      f2fs: support f2fs_fiemap
+lock T1 -> lock L2 -> adjust L2 -> unlock T1 -> lock T2 -> adjust T2 ->
 
-Jingoo Han (1):
-      f2fs: make recover_inline_xattr() static
+     next_lock = T2->pi_blocked_on->lock;
 
-Zhang Zhen (2):
-      f2fs: atomically set inode->i_flags in f2fs_set_inode_flags()
-      f2fs: fix checkpatch warning
+drop locks
 
- Documentation/filesystems/f2fs.txt |   8 +-
- MAINTAINERS                        |   3 +-
- fs/f2fs/acl.c                      |   2 +-
- fs/f2fs/checkpoint.c               | 118 ++++++++++++++++------------
- fs/f2fs/data.c                     |  63 +++++++++++----
- fs/f2fs/dir.c                      |  12 ++-
- fs/f2fs/f2fs.h                     |  49 +++++++++---
- fs/f2fs/file.c                     | 139 +++++++++++++++++++++++++++++++--
- fs/f2fs/inline.c                   |  40 ++++++++--
- fs/f2fs/inode.c                    |  18 +++--
- fs/f2fs/namei.c                    |  11 +--
- fs/f2fs/node.c                     | 154 ++++++++++++++++++++-----------------
- fs/f2fs/node.h                     |  19 +++--
- fs/f2fs/recovery.c                 |  35 +++++----
- fs/f2fs/segment.c                  | 134 ++++++++++++++++++++------------
- fs/f2fs/super.c                    |  32 +++++++-
- fs/f2fs/xattr.c                    | 110 ++++++++++++++------------
- fs/f2fs/xattr.h                    |   8 +-
- include/linux/f2fs_fs.h            |   8 ++
- include/trace/events/f2fs.h        | 146 ++++++++++++++++++++++++++++++++++-
- 20 files changed, 797 insertions(+), 312 deletions(-)
+T3 times out and drops L3
+T2 acquires L3 and blocks on L4 now
 
--- 
-Jaegeuk Kim
+Now we continue:
+
+lock T2 -> 
+
+     if (next_lock != T2->pi_blocked_on->lock)
+     	   return;
+
+We don't have to follow up the chain at that point, because T2
+propagated our priority up to T4 already.
+
+[ Folded a cleanup patch from peterz ]
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reported-by: Brad Mouring <bmouring@ni.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20140605152801.930031935@linutronix.de
+Cc: stable@vger.kernel.org
+---
+ kernel/locking/rtmutex.c | 95 ++++++++++++++++++++++++++++++++++++------------
+ 1 file changed, 71 insertions(+), 24 deletions(-)
+
+diff --git a/kernel/locking/rtmutex.c b/kernel/locking/rtmutex.c
+index eb7a463..a8a83a2 100644
+--- a/kernel/locking/rtmutex.c
++++ b/kernel/locking/rtmutex.c
+@@ -260,27 +260,36 @@ static void rt_mutex_adjust_prio(struct task_struct *task)
+  */
+ int max_lock_depth = 1024;
+ 
++static inline struct rt_mutex *task_blocked_on_lock(struct task_struct *p)
++{
++	return p->pi_blocked_on ? p->pi_blocked_on->lock : NULL;
++}
++
+ /*
+  * Adjust the priority chain. Also used for deadlock detection.
+  * Decreases task's usage by one - may thus free the task.
+  *
+- * @task: the task owning the mutex (owner) for which a chain walk is probably
+- *	  needed
++ * @task:	the task owning the mutex (owner) for which a chain walk is
++ *		probably needed
+  * @deadlock_detect: do we have to carry out deadlock detection?
+- * @orig_lock: the mutex (can be NULL if we are walking the chain to recheck
+- * 	       things for a task that has just got its priority adjusted, and
+- *	       is waiting on a mutex)
++ * @orig_lock:	the mutex (can be NULL if we are walking the chain to recheck
++ *		things for a task that has just got its priority adjusted, and
++ *		is waiting on a mutex)
++ * @next_lock:	the mutex on which the owner of @orig_lock was blocked before
++ *		we dropped its pi_lock. Is never dereferenced, only used for
++ *		comparison to detect lock chain changes.
+  * @orig_waiter: rt_mutex_waiter struct for the task that has just donated
+- *		 its priority to the mutex owner (can be NULL in the case
+- *		 depicted above or if the top waiter is gone away and we are
+- *		 actually deboosting the owner)
+- * @top_task: the current top waiter
++ *		its priority to the mutex owner (can be NULL in the case
++ *		depicted above or if the top waiter is gone away and we are
++ *		actually deboosting the owner)
++ * @top_task:	the current top waiter
+  *
+  * Returns 0 or -EDEADLK.
+  */
+ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
+ 				      int deadlock_detect,
+ 				      struct rt_mutex *orig_lock,
++				      struct rt_mutex *next_lock,
+ 				      struct rt_mutex_waiter *orig_waiter,
+ 				      struct task_struct *top_task)
+ {
+@@ -339,6 +348,18 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
+ 		goto out_unlock_pi;
+ 
+ 	/*
++	 * We dropped all locks after taking a refcount on @task, so
++	 * the task might have moved on in the lock chain or even left
++	 * the chain completely and blocks now on an unrelated lock or
++	 * on @orig_lock.
++	 *
++	 * We stored the lock on which @task was blocked in @next_lock,
++	 * so we can detect the chain change.
++	 */
++	if (next_lock != waiter->lock)
++		goto out_unlock_pi;
++
++	/*
+ 	 * Drop out, when the task has no waiters. Note,
+ 	 * top_waiter can be NULL, when we are in the deboosting
+ 	 * mode!
+@@ -422,11 +443,26 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
+ 		__rt_mutex_adjust_prio(task);
+ 	}
+ 
++	/*
++	 * Check whether the task which owns the current lock is pi
++	 * blocked itself. If yes we store a pointer to the lock for
++	 * the lock chain change detection above. After we dropped
++	 * task->pi_lock next_lock cannot be dereferenced anymore.
++	 */
++	next_lock = task_blocked_on_lock(task);
++
+ 	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+ 
+ 	top_waiter = rt_mutex_top_waiter(lock);
+ 	raw_spin_unlock(&lock->wait_lock);
+ 
++	/*
++	 * We reached the end of the lock chain. Stop right here. No
++	 * point to go back just to figure that out.
++	 */
++	if (!next_lock)
++		goto out_put_task;
++
+ 	if (!detect_deadlock && waiter != top_waiter)
+ 		goto out_put_task;
+ 
+@@ -536,8 +572,9 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
+ {
+ 	struct task_struct *owner = rt_mutex_owner(lock);
+ 	struct rt_mutex_waiter *top_waiter = waiter;
+-	unsigned long flags;
++	struct rt_mutex *next_lock;
+ 	int chain_walk = 0, res;
++	unsigned long flags;
+ 
+ 	/*
+ 	 * Early deadlock detection. We really don't want the task to
+@@ -569,20 +606,28 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
+ 	if (!owner)
+ 		return 0;
+ 
++	raw_spin_lock_irqsave(&owner->pi_lock, flags);
+ 	if (waiter == rt_mutex_top_waiter(lock)) {
+-		raw_spin_lock_irqsave(&owner->pi_lock, flags);
+ 		rt_mutex_dequeue_pi(owner, top_waiter);
+ 		rt_mutex_enqueue_pi(owner, waiter);
+ 
+ 		__rt_mutex_adjust_prio(owner);
+ 		if (owner->pi_blocked_on)
+ 			chain_walk = 1;
+-		raw_spin_unlock_irqrestore(&owner->pi_lock, flags);
+-	}
+-	else if (debug_rt_mutex_detect_deadlock(waiter, detect_deadlock))
++	} else if (debug_rt_mutex_detect_deadlock(waiter, detect_deadlock)) {
+ 		chain_walk = 1;
++	}
+ 
+-	if (!chain_walk)
++	/* Store the lock on which owner is blocked or NULL */
++	next_lock = task_blocked_on_lock(owner);
++
++	raw_spin_unlock_irqrestore(&owner->pi_lock, flags);
++	/*
++	 * Even if full deadlock detection is on, if the owner is not
++	 * blocked itself, we can avoid finding this out in the chain
++	 * walk.
++	 */
++	if (!chain_walk || !next_lock)
+ 		return 0;
+ 
+ 	/*
+@@ -594,8 +639,8 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
+ 
+ 	raw_spin_unlock(&lock->wait_lock);
+ 
+-	res = rt_mutex_adjust_prio_chain(owner, detect_deadlock, lock, waiter,
+-					 task);
++	res = rt_mutex_adjust_prio_chain(owner, detect_deadlock, lock,
++					 next_lock, waiter, task);
+ 
+ 	raw_spin_lock(&lock->wait_lock);
+ 
+@@ -644,8 +689,8 @@ static void remove_waiter(struct rt_mutex *lock,
+ {
+ 	int first = (waiter == rt_mutex_top_waiter(lock));
+ 	struct task_struct *owner = rt_mutex_owner(lock);
++	struct rt_mutex *next_lock = NULL;
+ 	unsigned long flags;
+-	int chain_walk = 0;
+ 
+ 	raw_spin_lock_irqsave(&current->pi_lock, flags);
+ 	rt_mutex_dequeue(lock, waiter);
+@@ -669,13 +714,13 @@ static void remove_waiter(struct rt_mutex *lock,
+ 		}
+ 		__rt_mutex_adjust_prio(owner);
+ 
+-		if (owner->pi_blocked_on)
+-			chain_walk = 1;
++		/* Store the lock on which owner is blocked or NULL */
++		next_lock = task_blocked_on_lock(owner);
+ 
+ 		raw_spin_unlock_irqrestore(&owner->pi_lock, flags);
+ 	}
+ 
+-	if (!chain_walk)
++	if (!next_lock)
+ 		return;
+ 
+ 	/* gets dropped in rt_mutex_adjust_prio_chain()! */
+@@ -683,7 +728,7 @@ static void remove_waiter(struct rt_mutex *lock,
+ 
+ 	raw_spin_unlock(&lock->wait_lock);
+ 
+-	rt_mutex_adjust_prio_chain(owner, 0, lock, NULL, current);
++	rt_mutex_adjust_prio_chain(owner, 0, lock, next_lock, NULL, current);
+ 
+ 	raw_spin_lock(&lock->wait_lock);
+ }
+@@ -696,6 +741,7 @@ static void remove_waiter(struct rt_mutex *lock,
+ void rt_mutex_adjust_pi(struct task_struct *task)
+ {
+ 	struct rt_mutex_waiter *waiter;
++	struct rt_mutex *next_lock;
+ 	unsigned long flags;
+ 
+ 	raw_spin_lock_irqsave(&task->pi_lock, flags);
+@@ -706,12 +752,13 @@ void rt_mutex_adjust_pi(struct task_struct *task)
+ 		raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+ 		return;
+ 	}
+-
++	next_lock = waiter->lock;
+ 	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+ 
+ 	/* gets dropped in rt_mutex_adjust_prio_chain()! */
+ 	get_task_struct(task);
+-	rt_mutex_adjust_prio_chain(task, 0, NULL, NULL, task);
++
++	rt_mutex_adjust_prio_chain(task, 0, NULL, next_lock, NULL, task);
+ }
+ 
+ /**
