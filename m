@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934747AbaFIXNb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 19:13:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56757 "EHLO
+	id S934931AbaFIXNr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 19:13:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56763 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933320AbaFIWpY (ORCPT
+	with ESMTP id S933316AbaFIWpX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:45:24 -0400
+	Mon, 9 Jun 2014 18:45:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lucas Stach <l.stach@pengutronix.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.14 24/78] cpufreq: cpu0: drop wrong devm usage
-Date: Mon,  9 Jun 2014 15:48:04 -0700
-Message-Id: <20140609224814.128964476@linuxfoundation.org>
+        Jean Delvare <jdelvare@suse.de>, Guenter Roeck <linux@roeck-us.net>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        Doug Anderson <dianders@chromium.org>
+Subject: [PATCH 3.14 10/78] hwmon: (ntc_thermistor) Fix OF device ID mapping
+Date: Mon,  9 Jun 2014 15:47:50 -0700
+Message-Id: <20140609224813.691170583@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140609224813.282275135@linuxfoundation.org>
 References: <20140609224813.282275135@linuxfoundation.org>
@@ -30,76 +30,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lucas Stach <l.stach@pengutronix.de>
+From: Jean Delvare <jdelvare@suse.de>
 
-commit e3beb0ac521d50d158a9d253373eae8421ac3998 upstream.
+commit ead82d6792ef5c600d535bca6ec50a4da14ff7c7 upstream.
 
-This driver is using devres managed calls incorrectly, giving the cpu0
-device as first parameter instead of the cpufreq platform device.
-This results in resources not being freed if the cpufreq platform device
-is unbound, for example if probing has to be deferred for a missing
-regulator.
+The mapping from OF device IDs to platform device IDs is wrong.
+TYPE_NCPXXWB473 is 0, TYPE_NCPXXWL333 is 1, so
+ntc_thermistor_id[TYPE_NCPXXWB473] is { "ncp15wb473", TYPE_NCPXXWB473 }
+while
+ntc_thermistor_id[TYPE_NCPXXWL333] is { "ncp18wb473", TYPE_NCPXXWB473 }.
 
-Signed-off-by: Lucas Stach <l.stach@pengutronix.de>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+So the name is wrong for all but the "ntc,ncp15wb473" entry, and the
+type is wrong for the "ntc,ncp15wl333" entry.
+
+So map the entries by index, it is neither elegant nor robust but at
+least it is correct.
+
+Signed-off-by: Jean Delvare <jdelvare@suse.de>
+Fixes: 9e8269de hwmon: (ntc_thermistor) Add DT with IIO support to NTC thermistor driver
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Cc: Doug Anderson <dianders@chromium.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/cpufreq-cpu0.c |   16 +++++++++++-----
- 1 file changed, 11 insertions(+), 5 deletions(-)
+ drivers/hwmon/ntc_thermistor.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/drivers/cpufreq/cpufreq-cpu0.c
-+++ b/drivers/cpufreq/cpufreq-cpu0.c
-@@ -131,7 +131,7 @@ static int cpu0_cpufreq_probe(struct pla
- 		return -ENOENT;
- 	}
+--- a/drivers/hwmon/ntc_thermistor.c
++++ b/drivers/hwmon/ntc_thermistor.c
+@@ -44,6 +44,7 @@ struct ntc_compensation {
+ 	unsigned int	ohm;
+ };
  
--	cpu_reg = devm_regulator_get_optional(cpu_dev, "cpu0");
-+	cpu_reg = regulator_get_optional(cpu_dev, "cpu0");
- 	if (IS_ERR(cpu_reg)) {
- 		/*
- 		 * If cpu0 regulator supply node is present, but regulator is
-@@ -146,23 +146,23 @@ static int cpu0_cpufreq_probe(struct pla
- 			PTR_ERR(cpu_reg));
- 	}
++/* Order matters, ntc_match references the entries by index */
+ static const struct platform_device_id ntc_thermistor_id[] = {
+ 	{ "ncp15wb473", TYPE_NCPXXWB473 },
+ 	{ "ncp18wb473", TYPE_NCPXXWB473 },
+@@ -163,15 +164,15 @@ static int ntc_adc_iio_read(struct ntc_t
  
--	cpu_clk = devm_clk_get(cpu_dev, NULL);
-+	cpu_clk = clk_get(cpu_dev, NULL);
- 	if (IS_ERR(cpu_clk)) {
- 		ret = PTR_ERR(cpu_clk);
- 		pr_err("failed to get cpu0 clock: %d\n", ret);
--		goto out_put_node;
-+		goto out_put_reg;
- 	}
- 
- 	ret = of_init_opp_table(cpu_dev);
- 	if (ret) {
- 		pr_err("failed to init OPP table: %d\n", ret);
--		goto out_put_node;
-+		goto out_put_clk;
- 	}
- 
- 	ret = dev_pm_opp_init_cpufreq_table(cpu_dev, &freq_table);
- 	if (ret) {
- 		pr_err("failed to init cpufreq table: %d\n", ret);
--		goto out_put_node;
-+		goto out_put_clk;
- 	}
- 
- 	of_property_read_u32(np, "voltage-tolerance", &voltage_tolerance);
-@@ -217,6 +217,12 @@ static int cpu0_cpufreq_probe(struct pla
- 
- out_free_table:
- 	dev_pm_opp_free_cpufreq_table(cpu_dev, &freq_table);
-+out_put_clk:
-+	if (!IS_ERR(cpu_clk))
-+		clk_put(cpu_clk);
-+out_put_reg:
-+	if (!IS_ERR(cpu_reg))
-+		regulator_put(cpu_reg);
- out_put_node:
- 	of_node_put(np);
- 	return ret;
+ static const struct of_device_id ntc_match[] = {
+ 	{ .compatible = "ntc,ncp15wb473",
+-		.data = &ntc_thermistor_id[TYPE_NCPXXWB473] },
++		.data = &ntc_thermistor_id[0] },
+ 	{ .compatible = "ntc,ncp18wb473",
+-		.data = &ntc_thermistor_id[TYPE_NCPXXWB473] },
++		.data = &ntc_thermistor_id[1] },
+ 	{ .compatible = "ntc,ncp21wb473",
+-		.data = &ntc_thermistor_id[TYPE_NCPXXWB473] },
++		.data = &ntc_thermistor_id[2] },
+ 	{ .compatible = "ntc,ncp03wb473",
+-		.data = &ntc_thermistor_id[TYPE_NCPXXWB473] },
++		.data = &ntc_thermistor_id[3] },
+ 	{ .compatible = "ntc,ncp15wl333",
+-		.data = &ntc_thermistor_id[TYPE_NCPXXWL333] },
++		.data = &ntc_thermistor_id[4] },
+ 	{ },
+ };
+ MODULE_DEVICE_TABLE(of, ntc_match);
 
 
