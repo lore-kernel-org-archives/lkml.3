@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936122AbaFIJdt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 05:33:49 -0400
+	id S936598AbaFIJeE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 05:34:04 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59137 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S936243AbaFIJ1C (ORCPT
+	by vger.kernel.org with ESMTP id S936188AbaFIJ1A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 05:27:02 -0400
+	Mon, 9 Jun 2014 05:27:00 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Mark Brown <broonie@linaro.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 109/146] ASoC: wm8962: Update register CLASS_D_CONTROL_1 to be non-volatile
-Date: Mon,  9 Jun 2014 10:50:44 +0200
-Message-Id: <54fba4664fc90aa354713c203978b7cc4eec296e.1402303821.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Kees Cook <keescook@chromium.org>, Will Drewry <wad@chromium.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 146/146] futex: Make lookup_pi_state more robust
+Date: Mon,  9 Jun 2014 10:51:21 +0200
+Message-Id: <9a595ca308b4780d685d5b2267e47ffff3504fd3.1402303821.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
 References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
@@ -24,94 +26,285 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 44330ab516c15dda8a1e660eeaf0003f84e43e3f upstream.
+commit 54a217887a7b658e2650c3feff22756ab80c7339 upstream.
 
-The register CLASS_D_CONTROL_1 is marked as volatile because it contains
-a bit, DAC_MUTE, which is also mirrored in the ADC_DAC_CONTROL_1
-register. This causes problems for the "Speaker Switch" control, which
-will report an error if the CODEC is suspended because it relies on a
-volatile register.
+The current implementation of lookup_pi_state has ambigous handling of
+the TID value 0 in the user space futex.  We can get into the kernel
+even if the TID value is 0, because either there is a stale waiters bit
+or the owner died bit is set or we are called from the requeue_pi path
+or from user space just for fun.
 
-To resolve this issue mark CLASS_D_CONTROL_1 as non-volatile and
-manually keep the register cache in sync by updating both bits when
-changing the mute status.
+The current code avoids an explicit sanity check for pid = 0 in case
+that kernel internal state (waiters) are found for the user space
+address.  This can lead to state leakage and worse under some
+circumstances.
 
-Reported-by: Shawn Guo <shawn.guo@linaro.org>
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Tested-by: Shawn Guo <shawn.guo@linaro.org>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Handle the cases explicit:
+
+       Waiter | pi_state | pi->owner | uTID      | uODIED | ?
+
+  [1]  NULL   | ---      | ---       | 0         | 0/1    | Valid
+  [2]  NULL   | ---      | ---       | >0        | 0/1    | Valid
+
+  [3]  Found  | NULL     | --        | Any       | 0/1    | Invalid
+
+  [4]  Found  | Found    | NULL      | 0         | 1      | Valid
+  [5]  Found  | Found    | NULL      | >0        | 1      | Invalid
+
+  [6]  Found  | Found    | task      | 0         | 1      | Valid
+
+  [7]  Found  | Found    | NULL      | Any       | 0      | Invalid
+
+  [8]  Found  | Found    | task      | ==taskTID | 0/1    | Valid
+  [9]  Found  | Found    | task      | 0         | 0      | Invalid
+  [10] Found  | Found    | task      | !=taskTID | 0/1    | Invalid
+
+ [1] Indicates that the kernel can acquire the futex atomically. We
+     came came here due to a stale FUTEX_WAITERS/FUTEX_OWNER_DIED bit.
+
+ [2] Valid, if TID does not belong to a kernel thread. If no matching
+     thread is found then it indicates that the owner TID has died.
+
+ [3] Invalid. The waiter is queued on a non PI futex
+
+ [4] Valid state after exit_robust_list(), which sets the user space
+     value to FUTEX_WAITERS | FUTEX_OWNER_DIED.
+
+ [5] The user space value got manipulated between exit_robust_list()
+     and exit_pi_state_list()
+
+ [6] Valid state after exit_pi_state_list() which sets the new owner in
+     the pi_state but cannot access the user space value.
+
+ [7] pi_state->owner can only be NULL when the OWNER_DIED bit is set.
+
+ [8] Owner and user space value match
+
+ [9] There is no transient state which sets the user space TID to 0
+     except exit_robust_list(), but this is indicated by the
+     FUTEX_OWNER_DIED bit. See [4]
+
+[10] There is no transient state which leaves owner and user space
+     TID out of sync.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Kees Cook <keescook@chromium.org>
+Cc: Will Drewry <wad@chromium.org>
+Cc: Darren Hart <dvhart@linux.intel.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- sound/soc/codecs/wm8962.c | 15 ++++++++++++---
- sound/soc/codecs/wm8962.h |  4 ++++
- 2 files changed, 16 insertions(+), 3 deletions(-)
+ kernel/futex.c | 134 +++++++++++++++++++++++++++++++++++++++++++++------------
+ 1 file changed, 106 insertions(+), 28 deletions(-)
 
-diff --git a/sound/soc/codecs/wm8962.c b/sound/soc/codecs/wm8962.c
-index 871f8518626f..ea16dc456352 100644
---- a/sound/soc/codecs/wm8962.c
-+++ b/sound/soc/codecs/wm8962.c
-@@ -154,6 +154,7 @@ static struct reg_default wm8962_reg[] = {
- 	{ 40, 0x0000 },   /* R40    - SPKOUTL volume */
- 	{ 41, 0x0000 },   /* R41    - SPKOUTR volume */
- 
-+	{ 49, 0x0010 },   /* R49    - Class D Control 1 */
- 	{ 51, 0x0003 },   /* R51    - Class D Control 2 */
- 
- 	{ 56, 0x0506 },   /* R56    - Clocking 4 */
-@@ -795,7 +796,6 @@ static bool wm8962_volatile_register(struct device *dev, unsigned int reg)
- 	case WM8962_ALC2:
- 	case WM8962_THERMAL_SHUTDOWN_STATUS:
- 	case WM8962_ADDITIONAL_CONTROL_4:
--	case WM8962_CLASS_D_CONTROL_1:
- 	case WM8962_DC_SERVO_6:
- 	case WM8962_INTERRUPT_STATUS_1:
- 	case WM8962_INTERRUPT_STATUS_2:
-@@ -2901,13 +2901,22 @@ static int wm8962_set_fll(struct snd_soc_codec *codec, int fll_id, int source,
- static int wm8962_mute(struct snd_soc_dai *dai, int mute)
- {
- 	struct snd_soc_codec *codec = dai->codec;
--	int val;
-+	int val, ret;
- 
- 	if (mute)
--		val = WM8962_DAC_MUTE;
-+		val = WM8962_DAC_MUTE | WM8962_DAC_MUTE_ALT;
- 	else
- 		val = 0;
- 
-+	/**
-+	 * The DAC mute bit is mirrored in two registers, update both to keep
-+	 * the register cache consistent.
-+	 */
-+	ret = snd_soc_update_bits(codec, WM8962_CLASS_D_CONTROL_1,
-+				  WM8962_DAC_MUTE_ALT, val);
-+	if (ret < 0)
-+		return ret;
-+
- 	return snd_soc_update_bits(codec, WM8962_ADC_DAC_CONTROL_1,
- 				   WM8962_DAC_MUTE, val);
+diff --git a/kernel/futex.c b/kernel/futex.c
+index e86dcf9303bd..f94695c9d38b 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -594,10 +594,58 @@ void exit_pi_state_list(struct task_struct *curr)
+ 	raw_spin_unlock_irq(&curr->pi_lock);
  }
-diff --git a/sound/soc/codecs/wm8962.h b/sound/soc/codecs/wm8962.h
-index a1a5d5294c19..910aafd09d21 100644
---- a/sound/soc/codecs/wm8962.h
-+++ b/sound/soc/codecs/wm8962.h
-@@ -1954,6 +1954,10 @@
- #define WM8962_SPKOUTL_ENA_MASK                 0x0040  /* SPKOUTL_ENA */
- #define WM8962_SPKOUTL_ENA_SHIFT                     6  /* SPKOUTL_ENA */
- #define WM8962_SPKOUTL_ENA_WIDTH                     1  /* SPKOUTL_ENA */
-+#define WM8962_DAC_MUTE_ALT                     0x0010  /* DAC_MUTE */
-+#define WM8962_DAC_MUTE_ALT_MASK                0x0010  /* DAC_MUTE */
-+#define WM8962_DAC_MUTE_ALT_SHIFT                    4  /* DAC_MUTE */
-+#define WM8962_DAC_MUTE_ALT_WIDTH                    1  /* DAC_MUTE */
- #define WM8962_SPKOUTL_PGA_MUTE                 0x0002  /* SPKOUTL_PGA_MUTE */
- #define WM8962_SPKOUTL_PGA_MUTE_MASK            0x0002  /* SPKOUTL_PGA_MUTE */
- #define WM8962_SPKOUTL_PGA_MUTE_SHIFT                1  /* SPKOUTL_PGA_MUTE */
+ 
++/*
++ * We need to check the following states:
++ *
++ *      Waiter | pi_state | pi->owner | uTID      | uODIED | ?
++ *
++ * [1]  NULL   | ---      | ---       | 0         | 0/1    | Valid
++ * [2]  NULL   | ---      | ---       | >0        | 0/1    | Valid
++ *
++ * [3]  Found  | NULL     | --        | Any       | 0/1    | Invalid
++ *
++ * [4]  Found  | Found    | NULL      | 0         | 1      | Valid
++ * [5]  Found  | Found    | NULL      | >0        | 1      | Invalid
++ *
++ * [6]  Found  | Found    | task      | 0         | 1      | Valid
++ *
++ * [7]  Found  | Found    | NULL      | Any       | 0      | Invalid
++ *
++ * [8]  Found  | Found    | task      | ==taskTID | 0/1    | Valid
++ * [9]  Found  | Found    | task      | 0         | 0      | Invalid
++ * [10] Found  | Found    | task      | !=taskTID | 0/1    | Invalid
++ *
++ * [1]	Indicates that the kernel can acquire the futex atomically. We
++ *	came came here due to a stale FUTEX_WAITERS/FUTEX_OWNER_DIED bit.
++ *
++ * [2]	Valid, if TID does not belong to a kernel thread. If no matching
++ *      thread is found then it indicates that the owner TID has died.
++ *
++ * [3]	Invalid. The waiter is queued on a non PI futex
++ *
++ * [4]	Valid state after exit_robust_list(), which sets the user space
++ *	value to FUTEX_WAITERS | FUTEX_OWNER_DIED.
++ *
++ * [5]	The user space value got manipulated between exit_robust_list()
++ *	and exit_pi_state_list()
++ *
++ * [6]	Valid state after exit_pi_state_list() which sets the new owner in
++ *	the pi_state but cannot access the user space value.
++ *
++ * [7]	pi_state->owner can only be NULL when the OWNER_DIED bit is set.
++ *
++ * [8]	Owner and user space value match
++ *
++ * [9]	There is no transient state which sets the user space TID to 0
++ *	except exit_robust_list(), but this is indicated by the
++ *	FUTEX_OWNER_DIED bit. See [4]
++ *
++ * [10] There is no transient state which leaves owner and user space
++ *	TID out of sync.
++ */
+ static int
+ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
+-		union futex_key *key, struct futex_pi_state **ps,
+-		struct task_struct *task)
++		union futex_key *key, struct futex_pi_state **ps)
+ {
+ 	struct futex_pi_state *pi_state = NULL;
+ 	struct futex_q *this, *next;
+@@ -610,12 +658,13 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
+ 	plist_for_each_entry_safe(this, next, head, list) {
+ 		if (match_futex(&this->key, key)) {
+ 			/*
+-			 * Another waiter already exists - bump up
+-			 * the refcount and return its pi_state:
++			 * Sanity check the waiter before increasing
++			 * the refcount and attaching to it.
+ 			 */
+ 			pi_state = this->pi_state;
+ 			/*
+-			 * Userspace might have messed up non-PI and PI futexes
++			 * Userspace might have messed up non-PI and
++			 * PI futexes [3]
+ 			 */
+ 			if (unlikely(!pi_state))
+ 				return -EINVAL;
+@@ -623,44 +672,70 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
+ 			WARN_ON(!atomic_read(&pi_state->refcount));
+ 
+ 			/*
+-			 * When pi_state->owner is NULL then the owner died
+-			 * and another waiter is on the fly. pi_state->owner
+-			 * is fixed up by the task which acquires
+-			 * pi_state->rt_mutex.
+-			 *
+-			 * We do not check for pid == 0 which can happen when
+-			 * the owner died and robust_list_exit() cleared the
+-			 * TID.
++			 * Handle the owner died case:
+ 			 */
+-			if (pid && pi_state->owner) {
++			if (uval & FUTEX_OWNER_DIED) {
+ 				/*
+-				 * Bail out if user space manipulated the
+-				 * futex value.
++				 * exit_pi_state_list sets owner to NULL and
++				 * wakes the topmost waiter. The task which
++				 * acquires the pi_state->rt_mutex will fixup
++				 * owner.
+ 				 */
+-				if (pid != task_pid_vnr(pi_state->owner))
++				if (!pi_state->owner) {
++					/*
++					 * No pi state owner, but the user
++					 * space TID is not 0. Inconsistent
++					 * state. [5]
++					 */
++					if (pid)
++						return -EINVAL;
++					/*
++					 * Take a ref on the state and
++					 * return. [4]
++					 */
++					goto out_state;
++				}
++
++				/*
++				 * If TID is 0, then either the dying owner
++				 * has not yet executed exit_pi_state_list()
++				 * or some waiter acquired the rtmutex in the
++				 * pi state, but did not yet fixup the TID in
++				 * user space.
++				 *
++				 * Take a ref on the state and return. [6]
++				 */
++				if (!pid)
++					goto out_state;
++			} else {
++				/*
++				 * If the owner died bit is not set,
++				 * then the pi_state must have an
++				 * owner. [7]
++				 */
++				if (!pi_state->owner)
+ 					return -EINVAL;
+ 			}
+ 
+ 			/*
+-			 * Protect against a corrupted uval. If uval
+-			 * is 0x80000000 then pid is 0 and the waiter
+-			 * bit is set. So the deadlock check in the
+-			 * calling code has failed and we did not fall
+-			 * into the check above due to !pid.
++			 * Bail out if user space manipulated the
++			 * futex value. If pi state exists then the
++			 * owner TID must be the same as the user
++			 * space TID. [9/10]
+ 			 */
+-			if (task && pi_state->owner == task)
+-				return -EDEADLK;
++			if (pid != task_pid_vnr(pi_state->owner))
++				return -EINVAL;
+ 
++		out_state:
+ 			atomic_inc(&pi_state->refcount);
+ 			*ps = pi_state;
+-
+ 			return 0;
+ 		}
+ 	}
+ 
+ 	/*
+ 	 * We are the first waiter - try to look up the real owner and attach
+-	 * the new pi_state to it, but bail out when TID = 0
++	 * the new pi_state to it, but bail out when TID = 0 [1]
+ 	 */
+ 	if (!pid)
+ 		return -ESRCH;
+@@ -693,6 +768,9 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
+ 		return ret;
+ 	}
+ 
++	/*
++	 * No existing pi state. First waiter. [2]
++	 */
+ 	pi_state = alloc_pi_state();
+ 
+ 	/*
+@@ -813,7 +891,7 @@ retry:
+ 	 * We dont have the lock. Look up the PI state (or create it if
+ 	 * we are the first waiter):
+ 	 */
+-	ret = lookup_pi_state(uval, hb, key, ps, task);
++	ret = lookup_pi_state(uval, hb, key, ps);
+ 
+ 	if (unlikely(ret)) {
+ 		switch (ret) {
+@@ -1416,7 +1494,7 @@ retry_private:
+ 			 * rereading and handing potential crap to
+ 			 * lookup_pi_state.
+ 			 */
+-			ret = lookup_pi_state(ret, hb2, &key2, &pi_state, NULL);
++			ret = lookup_pi_state(ret, hb2, &key2, &pi_state);
+ 		}
+ 
+ 		switch (ret) {
 -- 
 1.9.3
 
