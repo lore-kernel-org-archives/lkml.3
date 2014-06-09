@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755807AbaFIJFb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 05:05:31 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58476 "EHLO
+	id S933442AbaFIJF3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 05:05:29 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58494 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755077AbaFIIvZ (ORCPT
+	by vger.kernel.org with ESMTP id S1755025AbaFIIvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jun 2014 04:51:25 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Jason Cooper <jason@lakedaemon.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 070/146] ARM: dts: kirkwood: fix mislocated pcie-controller nodes
-Date: Mon,  9 Jun 2014 10:50:05 +0200
-Message-Id: <1df20d356228c49f021f1d3e17a150e2c1294db2.1402303821.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>,
+        Olof Johansson <olof@lixom.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 071/146] ARM: dts: i.MX53: Fix ipu register space size
+Date: Mon,  9 Jun 2014 10:50:06 +0200
+Message-Id: <8079469db8145e1d846f77151481f023b814ae11.1402303821.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
 References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
@@ -24,108 +23,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+From: Sascha Hauer <s.hauer@pengutronix.de>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 788296b2d19d16ec33aba0a5ad1544d50bb58601 upstream.
+commit 6d66da89bf4422c0a0693627fb3e25f74af50f92 upstream.
 
-Commit 54397d85349f
- ("ARM: kirkwood: Relocate PCIe device tree nodes")
+The IPU register space is 128MB, not 2GB.
 
-moved the pcie-controller nodes for the Kirkwood SoCs to the mbus
-bus node. For some reason, two boards were not properly converted
-and have their pci-controller nodes still in the ocp bus node.
-
-As the corresponding SoC pcie-controller does not exist anymore,
-it is likely that pcie is broken on those boards since above commit.
-Fix it by moving the pcie related nodes to the correct location.
-
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Fixes: 54397d85349f ("ARM: kirkwood: Relocate PCIe device tree nodes")
-Acked-by: Andrew Lunn <andrew@lunn.ch>
-Link: https://lkml.kernel.org/r/1398862602-29595-2-git-send-email-sebastian.hesselbarth@gmail.com
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Fixes: abed9a6bf2bb 'ARM i.MX53: Add IPU support'
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+Acked-by: Shawn Guo <shawn.guo@freescale.com>
+Signed-off-by: Olof Johansson <olof@lixom.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/arm/boot/dts/kirkwood-mv88f6281gtw-ge.dts | 18 ++++++++++--------
- arch/arm/boot/dts/kirkwood-nsa310-common.dtsi  | 18 ++++++++++--------
- 2 files changed, 20 insertions(+), 16 deletions(-)
+ arch/arm/boot/dts/imx53.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/kirkwood-mv88f6281gtw-ge.dts b/arch/arm/boot/dts/kirkwood-mv88f6281gtw-ge.dts
-index 6317e1d088b3..e650e35d120c 100644
---- a/arch/arm/boot/dts/kirkwood-mv88f6281gtw-ge.dts
-+++ b/arch/arm/boot/dts/kirkwood-mv88f6281gtw-ge.dts
-@@ -30,6 +30,16 @@
- 		bootargs = "console=ttyS0,115200n8 earlyprintk";
- 	};
- 
-+	mbus {
-+		pcie-controller {
-+			status = "okay";
-+
-+			pcie@1,0 {
-+				status = "okay";
-+			};
-+		};
-+        };
-+
- 	ocp@f1000000 {
- 		pinctrl@10000 {
- 			pmx_usb_led: pmx-usb-led {
-@@ -73,14 +83,6 @@
- 		ehci@50000 {
- 			status = "okay";
- 		};
--
--		pcie-controller {
--			status = "okay";
--
--			pcie@1,0 {
--				status = "okay";
--			};
--		};
- 	};
- 
- 	gpio-leds {
-diff --git a/arch/arm/boot/dts/kirkwood-nsa310-common.dtsi b/arch/arm/boot/dts/kirkwood-nsa310-common.dtsi
-index 06267a91de38..7c3f4bc4b7e4 100644
---- a/arch/arm/boot/dts/kirkwood-nsa310-common.dtsi
-+++ b/arch/arm/boot/dts/kirkwood-nsa310-common.dtsi
-@@ -4,6 +4,16 @@
- / {
- 	model = "ZyXEL NSA310";
- 
-+	mbus {
-+		pcie-controller {
-+			status = "okay";
-+
-+			pcie@1,0 {
-+				status = "okay";
-+			};
-+		};
-+	};
-+
- 	ocp@f1000000 {
- 		pinctrl: pinctrl@10000 {
- 
-@@ -69,14 +79,6 @@
- 				reg = <0x5040000 0x2fc0000>;
- 			};
- 		};
--
--		pcie-controller {
--			status = "okay";
--
--			pcie@1,0 {
--				status = "okay";
--			};
--		};
- 	};
- 
- 	gpio_poweroff {
+diff --git a/arch/arm/boot/dts/imx53.dtsi b/arch/arm/boot/dts/imx53.dtsi
+index 4307e80b2d2e..dc72353de0b3 100644
+--- a/arch/arm/boot/dts/imx53.dtsi
++++ b/arch/arm/boot/dts/imx53.dtsi
+@@ -87,7 +87,7 @@
+ 		ipu: ipu@18000000 {
+ 			#crtc-cells = <1>;
+ 			compatible = "fsl,imx53-ipu";
+-			reg = <0x18000000 0x080000000>;
++			reg = <0x18000000 0x08000000>;
+ 			interrupts = <11 10>;
+ 			clocks = <&clks 59>, <&clks 110>, <&clks 61>;
+ 			clock-names = "bus", "di0", "di1";
 -- 
 1.9.3
 
