@@ -1,218 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933917AbaFIX6T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 19:58:19 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:55107 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932425AbaFIX6S (ORCPT
+	id S933982AbaFIX7G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 19:59:06 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:60594 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753978AbaFIX7E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 19:58:18 -0400
-Date: Mon, 9 Jun 2014 16:58:15 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Vlastimil Babka <vbabka@suse.cz>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 03/10] mm, compaction: periodically drop lock and restore
- IRQs in scanners
-In-Reply-To: <1402305982-6928-3-git-send-email-vbabka@suse.cz>
-Message-ID: <alpine.DEB.2.02.1406091656340.17705@chino.kir.corp.google.com>
-References: <1402305982-6928-1-git-send-email-vbabka@suse.cz> <1402305982-6928-3-git-send-email-vbabka@suse.cz>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 9 Jun 2014 19:59:04 -0400
+X-AuditID: cbfee68e-b7fb96d000004bfc-44-53964a451394
+Message-id: <53964A45.3010108@samsung.com>
+Date: Tue, 10 Jun 2014 08:59:01 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Mark Brown <broonie@kernel.org>
+Cc: lgirdwood@gmail.com, grant.likely@linaro.org, robh+dt@kernel.org,
+        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH 1/2] regulator: of: Add support for parsing regulator_state
+ for suspend state
+References: <1402309780-8118-1-git-send-email-cw00.choi@samsung.com>
+ <1402309780-8118-2-git-send-email-cw00.choi@samsung.com>
+ <20140609192133.GD5099@sirena.org.uk>
+In-reply-to: <20140609192133.GD5099@sirena.org.uk>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMIsWRmVeSWpSXmKPExsWyRsSkRNfVa1qwwf4GA4upD5+wWcw/co7V
+	4sCfHYwWZ5vesFt8u9LBZHF51xw2i9uNK9gsWvceYXfg8Ng56y67x6ZVnWwed67tYfPo27KK
+	0ePzJrkA1igum5TUnMyy1CJ9uwSujO/9V9kLfrBXTN++m6WB8SBbFyMHh4SAiUTXFsUuRk4g
+	U0ziwr31QGEuDiGBpYwSk/6vYoZImEisnXKdGSKxiFFi+dUPjCAJIYHXjBJbHmSC2LwCWhLL
+	lyxgBbFZBFQllrxdygRiswHF97+4wQZiiwqESaycfoUFol5Q4sfke2C2iICyxNXve1lAFjAL
+	bGeU2L7jPthmYYFkic/PXrNCLFvOKHHsEDeIzSlgJPHk7E2wBcwCOhL7W6exQdjyEpvXvAW7
+	VELgGrvEzv8/GCEuEpD4NvkQC8TLshKbDkB9JilxcMUNlgmMYrOQ3DQLydhZSMYuYGRexSia
+	WpBcUJyUXmSkV5yYW1yal66XnJ+7iREYgaf/PevbwXjzgPUhxmSglROZpUST84ERnFcSb2hs
+	ZmRhamJqbGRuaUaasJI476KHSUFCAumJJanZqakFqUXxRaU5qcWHGJk4OKUaGFXntwu0XtAK
+	F3lx2y7yxpFkYZN1aYopS7MmzIxfURzmsWcfk9fFnBdFwotMebm8YsOsTu03jpjB533gd5eV
+	+4EH0zcK87l+nL7zw7UTjgs3GK7fkCv8L0Ky/lSz+q+mJQ1GszdFXak27fQMmrc/7vXCrH1P
+	Ptz1qUoK27GG++VntyuXeL9vUFFiKc5INNRiLipOBAAwV/NL1gIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrIKsWRmVeSWpSXmKPExsVy+t9jAV1Xr2nBBj8/a1hMffiEzWL+kXOs
+	Fgf+7GC0ONv0ht3i25UOJovLu+awWdxuXMFm0br3CLsDh8fOWXfZPTat6mTzuHNtD5tH35ZV
+	jB6fN8kFsEY1MNpkpCampBYppOYl56dk5qXbKnkHxzvHm5oZGOoaWlqYKynkJeam2iq5+ATo
+	umXmAB2jpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3JAiux8gADSSsYcz43n+VveAHe8X0
+	7btZGhgPsnUxcnJICJhIrJ1ynRnCFpO4cG89UJyLQ0hgEaPE8qsfGEESQgKvGSW2PMgEsXkF
+	tCSWL1nACmKzCKhKLHm7lAnEZgOK739xA2yoqECYxMrpV1gg6gUlfky+B2aLCChLXP2+lwVk
+	AbPAdkaJ7Tvug20WFkiW+PzsNSvEsuWMEscOcYPYnAJGEk/O3gRbwCygI7G/dRobhC0vsXnN
+	W+YJjAKzkOyYhaRsFpKyBYzMqxhFUwuSC4qT0nMN9YoTc4tL89L1kvNzNzGCI/yZ1A7GlQ0W
+	hxgFOBiVeHgtDkwNFmJNLCuuzD3EKMHBrCTCy/oRKMSbklhZlVqUH19UmpNafIgxGRgEE5ml
+	RJPzgcknryTe0NjEzMjSyNzQwsjYnDRhJXHeA63WgUIC6YklqdmpqQWpRTBbmDg4pYDxVdtz
+	O+RIFUfUohnbPfvmLLtpdfFa5gQGbaXaqh1cATM1XisYCm6b2nzLjqPrMevz7FWn9h4WX2C9
+	buIqqaUbpW0L866qPCuRqbPsMdNYlXh8DuvsZ1M0DIvEPytnlAvseeKovclvUkRpxtNU97/X
+	Y1NO679fcbhb9GjZmlTxX+z9Wt1X+ruUWIozEg21mIuKEwEK5BgvNAMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Jun 2014, Vlastimil Babka wrote:
+Hi Mark,
 
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index d37f4a8..e1a4283 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -185,54 +185,77 @@ static void update_pageblock_skip(struct compact_control *cc,
->  }
->  #endif /* CONFIG_COMPACTION */
->  
-> -enum compact_contended should_release_lock(spinlock_t *lock)
-> +/*
-> + * Compaction requires the taking of some coarse locks that are potentially
-> + * very heavily contended. For async compaction, back out if the lock cannot
-> + * be taken immediately. For sync compaction, spin on the lock if needed.
-> + *
-> + * Returns true if the lock is held
-> + * Returns false if the lock is not held and compaction should abort
-> + */
-> +static bool compact_trylock_irqsave(spinlock_t *lock,
-> +			unsigned long *flags, struct compact_control *cc)
->  {
-> -	if (need_resched())
-> -		return COMPACT_CONTENDED_SCHED;
-> -	else if (spin_is_contended(lock))
-> -		return COMPACT_CONTENDED_LOCK;
-> -	else
-> -		return COMPACT_CONTENDED_NONE;
-> +	if (cc->mode == MIGRATE_ASYNC) {
-> +		if (!spin_trylock_irqsave(lock, *flags)) {
-> +			cc->contended = COMPACT_CONTENDED_LOCK;
-> +			return false;
-> +		}
-> +	} else {
-> +		spin_lock_irqsave(lock, *flags);
-> +	}
-> +
-> +	return true;
->  }
->  
->  /*
->   * Compaction requires the taking of some coarse locks that are potentially
-> - * very heavily contended. Check if the process needs to be scheduled or
-> - * if the lock is contended. For async compaction, back out in the event
-> - * if contention is severe. For sync compaction, schedule.
-> + * very heavily contended. The lock should be periodically unlocked to avoid
-> + * having disabled IRQs for a long time, even when there is nobody waiting on
-> + * the lock. It might also be that allowing the IRQs will result in
-> + * need_resched() becoming true. If scheduling is needed, or somebody else
-> + * has taken the lock, async compaction aborts. Sync compaction schedules.
-> + * Either compaction type will also abort if a fatal signal is pending.
-> + * In either case if the lock was locked, it is dropped and not regained.
->   *
-> - * Returns true if the lock is held.
-> - * Returns false if the lock is released and compaction should abort
-> + * Returns true if compaction should abort due to fatal signal pending, or
-> + *		async compaction due to lock contention or need to schedule
-> + * Returns false when compaction can continue (sync compaction might have
-> + *		scheduled)
->   */
-> -static bool compact_checklock_irqsave(spinlock_t *lock, unsigned long *flags,
-> -				      bool locked, struct compact_control *cc)
-> +static bool compact_unlock_should_abort(spinlock_t *lock,
-> +		unsigned long flags, bool *locked, struct compact_control *cc)
->  {
-> -	enum compact_contended contended = should_release_lock(lock);
-> +	if (*locked) {
-> +		spin_unlock_irqrestore(lock, flags);
-> +		*locked = false;
-> +	}
->  
-> -	if (contended) {
-> -		if (locked) {
-> -			spin_unlock_irqrestore(lock, *flags);
-> -			locked = false;
-> -		}
-> +	if (fatal_signal_pending(current)) {
-> +		cc->contended = COMPACT_CONTENDED_SCHED;
-> +		return true;
-> +	}
->  
-> -		/* async aborts if taking too long or contended */
-> -		if (cc->mode == MIGRATE_ASYNC) {
-> -			cc->contended = contended;
-> -			return false;
-> +	if (cc->mode == MIGRATE_ASYNC) {
-> +		if (need_resched()) {
-> +			cc->contended = COMPACT_CONTENDED_SCHED;
-> +			return true;
->  		}
-> -
-> +		if (spin_is_locked(lock)) {
-> +			cc->contended = COMPACT_CONTENDED_LOCK;
-> +			return true;
-> +		}
+On 06/10/2014 04:21 AM, Mark Brown wrote:
+> On Mon, Jun 09, 2014 at 07:29:39PM +0900, Chanwoo Choi wrote:
+> 
+>> +		ret = of_property_read_u32(suspend_np, "regulator-mode", &pval);
+>> +		if (!ret)
+>> +			suspend_state->mode = pval;
+> 
+> If we're going to do that we'd need to define what modes mean in the DT
+> binding - currently there's no support for modes at all because it's
+> complicated to come up with sensible and meaningful generic defintions.
+> 
 
-Any reason to abort here?  If we need to do compact_trylock_irqsave() on 
-this lock again then we'll abort when we come to that point, but it seems 
-pointless to abort early if the lock isn't actually needed anymore or it 
-is dropped before trying to acquire it again.
+The 'regulator-mode' of this patch means following defined constant variable
+as following in include/linux/regulator/consumer.h:
+#define REGULATOR_MODE_FAST		0x1
+#define REGULATOR_MODE_NORMAL		0x2
+#define REGULATOR_MODE_IDLE		0x4
+#define REGULATOR_MODE_STANDBY		0x8
 
-> +	} else {
->  		cond_resched();
->  	}
->  
-> -	if (!locked)
-> -		spin_lock_irqsave(lock, *flags);
-> -	return true;
-> +	return false;
->  }
->  
->  /*
->   * Aside from avoiding lock contention, compaction also periodically checks
->   * need_resched() and either schedules in sync compaction or aborts async
-> - * compaction. This is similar to what compact_checklock_irqsave() does, but
-> + * compaction. This is similar to what compact_unlock_should_abort() does, but
->   * is used where no lock is concerned.
->   *
->   * Returns false when no scheduling was needed, or sync compaction scheduled.
-> @@ -291,6 +314,16 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
->  		int isolated, i;
->  		struct page *page = cursor;
->  
-> +		/*
-> +		 * Periodically drop the lock (if held) regardless of its
-> +		 * contention, to give chance to IRQs. Abort async compaction
-> +		 * if contended.
-> +		 */
-> +		if (!(blockpfn % SWAP_CLUSTER_MAX)
-> +		    && compact_unlock_should_abort(&cc->zone->lock, flags,
-> +								&locked, cc))
-> +			break;
-> +
->  		nr_scanned++;
->  		if (!pfn_valid_within(blockpfn))
->  			goto isolate_fail;
-> @@ -308,8 +341,9 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
->  		 * spin on the lock and we acquire the lock as late as
->  		 * possible.
->  		 */
-> -		locked = compact_checklock_irqsave(&cc->zone->lock, &flags,
-> -								locked, cc);
-> +		if (!locked)
-> +			locked = compact_trylock_irqsave(&cc->zone->lock,
-> +								&flags, cc);
->  		if (!locked)
->  			break;
->  
-> @@ -514,13 +548,15 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->  
->  	/* Time to isolate some pages for migration */
->  	for (; low_pfn < end_pfn; low_pfn++) {
-> -		/* give a chance to irqs before checking need_resched() */
-> -		if (locked && !(low_pfn % SWAP_CLUSTER_MAX)) {
-> -			if (should_release_lock(&zone->lru_lock)) {
-> -				spin_unlock_irqrestore(&zone->lru_lock, flags);
-> -				locked = false;
-> -			}
-> -		}
-> +		/*
-> +		 * Periodically drop the lock (if held) regardless of its
-> +		 * contention, to give chance to IRQs. Abort async compaction
-> +		 * if contended.
-> +		 */
-> +		if (!(low_pfn % SWAP_CLUSTER_MAX)
-> +		    && compact_unlock_should_abort(&zone->lru_lock, flags,
-> +								&locked, cc))
-> +			break;
->  
->  		/*
->  		 * migrate_pfn does not necessarily start aligned to a
-> @@ -622,10 +658,11 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->  		    page_count(page) > page_mapcount(page))
->  			continue;
->  
-> -		/* Check if it is ok to still hold the lock */
-> -		locked = compact_checklock_irqsave(&zone->lru_lock, &flags,
-> -								locked, cc);
-> -		if (!locked || fatal_signal_pending(current))
-> +		/* If the lock is not held, try to take it */
-> +		if (!locked)
-> +			locked = compact_trylock_irqsave(&zone->lru_lock,
-> +								&flags, cc);
-> +		if (!locked)
->  			break;
->  
->  		/* Recheck PageLRU and PageTransHuge under lock */
+If regulator consumer would use this mode('regulator-mode),
+specific regulator driver should implement rdev->desc->ops->set_suspend_mode function
+to control regulator state according to 'regulator-mode' in suspend state.
+
+Best Regards,
+Chanwoo CHoi
+
+
+
