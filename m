@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964872AbaFIJC4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 05:02:56 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58528 "EHLO
+	id S964856AbaFIJCx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 05:02:53 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58523 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755256AbaFIIv0 (ORCPT
+	by vger.kernel.org with ESMTP id S1755214AbaFIIv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jun 2014 04:51:26 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@redhat.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 101/146] nfsd4: remove lockowner when removing lock stateid
-Date: Mon,  9 Jun 2014 10:50:36 +0200
-Message-Id: <c9e1bfbeccfbbd8720f12c1f43ed088e2cf3f19e.1402303821.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 100/146] nfsd4: warn on finding lockowner without stateid's
+Date: Mon,  9 Jun 2014 10:50:35 +0200
+Message-Id: <5a6c860284149c6c35313a4f482d559f46afc0ab.1402303821.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
 References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
@@ -29,48 +29,32 @@ From: "J. Bruce Fields" <bfields@redhat.com>
 
 ===============
 
-commit a1b8ff4c97b4375d21b6d6c45d75877303f61b3b upstream.
+commit 27b11428b7de097c42f205beabb1764f4365443b upstream.
 
-The nfsv4 state code has always assumed a one-to-one correspondance
-between lock stateid's and lockowners even if it appears not to in some
-places.
-
-We may actually change that, but for now when FREE_STATEID releases a
-lock stateid it also needs to release the parent lockowner.
-
-Symptoms were a subsequent LOCK crashing in find_lockowner_str when it
-calls same_lockowner_ino on a lockowner that unexpectedly has an empty
-so_stateids list.
+The current code assumes a one-to-one lockowner<->lock stateid
+correspondance.
 
 Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/nfsd/nfs4state.c | 11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ fs/nfsd/nfs4state.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
 diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-index 6f1250c14606..ded7af3c45e1 100644
+index b21ed5e5b369..6f1250c14606 100644
 --- a/fs/nfsd/nfs4state.c
 +++ b/fs/nfsd/nfs4state.c
-@@ -3696,9 +3696,16 @@ out:
- static __be32
- nfsd4_free_lock_stateid(struct nfs4_ol_stateid *stp)
- {
--	if (check_for_locks(stp->st_file, lockowner(stp->st_stateowner)))
-+	struct nfs4_lockowner *lo = lockowner(stp->st_stateowner);
-+
-+	if (check_for_locks(stp->st_file, lo))
- 		return nfserr_locks_held;
--	release_lock_stateid(stp);
-+	/*
-+	 * Currently there's a 1-1 lock stateid<->lockowner
-+	 * correspondance, and we have to delete the lockowner when we
-+	 * delete the lock stateid:
-+	 */
-+	unhash_lockowner(lo);
- 	return nfs_ok;
- }
+@@ -4142,6 +4142,10 @@ static bool same_lockowner_ino(struct nfs4_lockowner *lo, struct inode *inode, c
  
+ 	if (!same_owner_str(&lo->lo_owner, owner, clid))
+ 		return false;
++	if (list_empty(&lo->lo_owner.so_stateids)) {
++		WARN_ON_ONCE(1);
++		return false;
++	}
+ 	lst = list_first_entry(&lo->lo_owner.so_stateids,
+ 			       struct nfs4_ol_stateid, st_perstateowner);
+ 	return lst->st_file->fi_inode == inode;
 -- 
 1.9.3
 
