@@ -1,80 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936160AbaFIQIX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 12:08:23 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:42540 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933116AbaFIQIV (ORCPT
+	id S934053AbaFIQHk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 12:07:40 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:50364 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933567AbaFIQEd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 12:08:21 -0400
-Date: Mon, 9 Jun 2014 09:08:16 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: trivial@rustcorp.com.au, Dipankar Sarma <dipankar@in.ibm.com>,
-        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/6] update reference, kerneltrap.org no longer works
-Message-ID: <20140609160816.GC4581@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1402329088-4802-1-git-send-email-bobby.prani@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402329088-4802-1-git-send-email-bobby.prani@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14060916-9332-0000-0000-0000010A54BD
+	Mon, 9 Jun 2014 12:04:33 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Thierry Reding <thierry.reding@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        David Airlie <airlied@linux.ie>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>
+Cc: Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-pwm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, dri-devel@lists.freedesktop.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH v2 7/7] ARM: at91/dt: enable the LCD panel on sama5d3xek boards
+Date: Mon,  9 Jun 2014 18:04:20 +0200
+Message-Id: <1402329860-27520-8-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1402329860-27520-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1402329860-27520-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 09, 2014 at 11:51:23AM -0400, Pranith Kumar wrote:
-> kerneltrap.org no longer works, update to a working reference
-> 
-> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+Enable LCD related nodes and reference panel node in the hlcdc (High
+LCD Controller) controller on sama5d3xek boards.
 
-Queued for 3.17, thank you!
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+---
+ arch/arm/boot/dts/sama5d31ek.dts | 24 ++++++++++++++++++++++++
+ arch/arm/boot/dts/sama5d33ek.dts | 24 ++++++++++++++++++++++++
+ arch/arm/boot/dts/sama5d34ek.dts | 24 ++++++++++++++++++++++++
+ arch/arm/boot/dts/sama5d36ek.dts | 24 ++++++++++++++++++++++++
+ 4 files changed, 96 insertions(+)
 
-FYI, I updated the commit message to read as follows:
-
-------------------------------------------------------------------------
-
-documentation: Update reference, kerneltrap.org no longer works
-
-The kerneltrap.org site no longer works, so this commit updates it to 
-a working reference, namely gmane.
-
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-
-------------------------------------------------------------------------
-
-I added the "documentation:" tag (as opposed to "rcu:" for core RCU code
-or "rcutorture:" for RCU stress-test code) and capitalized the first word
-of the subject line, and made a complete sentence out of the commit log.
-No worries if you would rather not do this, but just FYI.
-
-							Thanx, Paul
-
-> ---
->  Documentation/RCU/RTFP.txt | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/Documentation/RCU/RTFP.txt b/Documentation/RCU/RTFP.txt
-> index 2f0fcb2..f29bcbc 100644
-> --- a/Documentation/RCU/RTFP.txt
-> +++ b/Documentation/RCU/RTFP.txt
-> @@ -2451,8 +2451,8 @@ lot of {Linux} into your technology!!!"
->  ,month="February"
->  ,year="2010"
->  ,note="Available:
-> -\url{http://kerneltrap.com/mailarchive/linux-netdev/2010/2/26/6270589}
-> -[Viewed March 20, 2011]"
-> +\url{http://thread.gmane.org/gmane.linux.network/153338}
-> +[Viewed June 9, 2014]"
->  ,annotation={
->  	Use a pair of list_head structures to support RCU-protected
->  	resizable hash tables.
-> -- 
-> 1.9.1
-> 
+diff --git a/arch/arm/boot/dts/sama5d31ek.dts b/arch/arm/boot/dts/sama5d31ek.dts
+index 04eec0d..338f4c3 100644
+--- a/arch/arm/boot/dts/sama5d31ek.dts
++++ b/arch/arm/boot/dts/sama5d31ek.dts
+@@ -33,6 +33,14 @@
+ 				status = "okay";
+ 			};
+ 
++			hlcdc: hlcdc@f0030000 {
++				status = "okay";
++
++				hlcdc-display-controller {
++					atmel,panel = <&panel 3 0>;
++				};
++			};
++
+ 			macb1: ethernet@f802c000 {
+ 				status = "okay";
+ 			};
+@@ -46,6 +54,22 @@
+ 		};
+ 	};
+ 
++	bl_reg: backlight_regulator {
++		status = "okay";
++	};
++
++	panel_reg: panel_regulator {
++		status = "okay";
++	};
++
++	backlight: backlight {
++		status = "okay";
++	};
++
++	panel: panel {
++		status = "okay";
++	};
++
+ 	sound {
+ 		status = "okay";
+ 	};
+diff --git a/arch/arm/boot/dts/sama5d33ek.dts b/arch/arm/boot/dts/sama5d33ek.dts
+index cbd6a3f..f2ab41d 100644
+--- a/arch/arm/boot/dts/sama5d33ek.dts
++++ b/arch/arm/boot/dts/sama5d33ek.dts
+@@ -36,9 +36,33 @@
+ 			macb0: ethernet@f0028000 {
+ 				status = "okay";
+ 			};
++
++			hlcdc: hlcdc@f0030000 {
++				status = "okay";
++
++				hlcdc-display-controller {
++					atmel,panel = <&panel 3 0>;
++				};
++			};
+ 		};
+ 	};
+ 
++	bl_reg: backlight_regulator {
++		status = "okay";
++	};
++
++	panel_reg: panel_regulator {
++		status = "okay";
++	};
++
++	backlight: backlight {
++		status = "okay";
++	};
++
++	panel: panel {
++		status = "okay";
++	};
++
+ 	sound {
+ 		status = "okay";
+ 	};
+diff --git a/arch/arm/boot/dts/sama5d34ek.dts b/arch/arm/boot/dts/sama5d34ek.dts
+index 878aa16..0d0049c 100644
+--- a/arch/arm/boot/dts/sama5d34ek.dts
++++ b/arch/arm/boot/dts/sama5d34ek.dts
+@@ -46,6 +46,14 @@
+ 			macb0: ethernet@f0028000 {
+ 				status = "okay";
+ 			};
++
++			hlcdc: hlcdc@f0030000 {
++				status = "okay";
++
++				hlcdc-display-controller {
++					atmel,panel = <&panel 3 0>;
++				};
++			};
+ 		};
+ 	};
+ 
+@@ -56,6 +64,22 @@
+ 		};
+ 	};
+ 
++	bl_reg: backlight_regulator {
++		status = "okay";
++	};
++
++	panel_reg: panel_regulator {
++		status = "okay";
++	};
++
++	backlight: backlight {
++		status = "okay";
++	};
++
++	panel: panel {
++		status = "okay";
++	};
++
+ 	sound {
+ 		status = "okay";
+ 	};
+diff --git a/arch/arm/boot/dts/sama5d36ek.dts b/arch/arm/boot/dts/sama5d36ek.dts
+index 59576c6..8350358 100644
+--- a/arch/arm/boot/dts/sama5d36ek.dts
++++ b/arch/arm/boot/dts/sama5d36ek.dts
+@@ -41,12 +41,36 @@
+ 				status = "okay";
+ 			};
+ 
++			hlcdc: hlcdc@f0030000 {
++				status = "okay";
++
++				hlcdc-display-controller {
++					atmel,panel = <&panel 3 0>;
++				};
++			};
++
+ 			macb1: ethernet@f802c000 {
+ 				status = "okay";
+ 			};
+ 		};
+ 	};
+ 
++	bl_reg: backlight_regulator {
++		status = "okay";
++	};
++
++	panel_reg: panel_regulator {
++		status = "okay";
++	};
++
++	backlight: backlight {
++		status = "okay";
++	};
++
++	panel: panel {
++		status = "okay";
++	};
++
+ 	sound {
+ 		status = "okay";
+ 	};
+-- 
+1.8.3.2
 
