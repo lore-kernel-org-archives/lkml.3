@@ -1,79 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934988AbaFIXOB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 19:14:01 -0400
-Received: from mga02.intel.com ([134.134.136.20]:23194 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934855AbaFIXNp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 19:13:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,1005,1392192000"; 
-   d="scan'208";a="525892530"
-Message-ID: <5396409D.5000501@linux.intel.com>
-Date: Mon, 09 Jun 2014 16:17:49 -0700
-From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S935045AbaFIXOc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 19:14:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56757 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933299AbaFIWpW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 18:45:22 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jean Delvare <jdelvare@suse.de>, Guenter Roeck <linux@roeck-us.net>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        Doug Anderson <dianders@chromium.org>
+Subject: [PATCH 3.14 09/78] hwmon: (ntc_thermistor) Fix dependencies
+Date: Mon,  9 Jun 2014 15:47:49 -0700
+Message-Id: <20140609224813.662555147@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140609224813.282275135@linuxfoundation.org>
+References: <20140609224813.282275135@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: Alexander Holler <holler@ahsoftware.de>, linux-kernel@vger.kernel.org,
-        Reyad Attiyat <reyad.attiyat@gmail.com>
-Subject: Re: HID: hid-sensor-hub: fix sleeping function called from invalid
- context
-References: <53963364.4010104@ahsoftware.de> <alpine.LNX.2.00.1406100038150.2827@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1406100038150.2827@pobox.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/2014 03:40 PM, Jiri Kosina wrote:
-> On Tue, 10 Jun 2014, Alexander Holler wrote:
->
->> Hello,
->>
->> while rebasing the dozens (currently around 60) of refused, ignored or
->> similiar bugfixes and patches I need to use a Linux kernel, I've noticed that
->> Jiri Kosinas patch here
->>
->> https://lkml.org/lkml/2013/8/9/214
->>
->> doesn't apply anymore.
->>
->> Looking why, I've seen that a similiar patch from Srinivas Pandruvada named
->> like the topic ended up in the kernel.
->
-> Hi Alexander,
->
-> thanks for drawing this one from the boulevard of forgotten patches.
->
-> I am actually not aware of any patch by Srinivas that would conflict with
-> the one I've written -- could you please elaborate where you believe the
-> conflict is?
->
->> Looking at the differences, I wonder if not all spin_lock() calls in
->> hid-sensor-hub.c should be changed into spin_lock_irqsave() like the
->> patch from Jiri Kosina did.
->
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-There is a patch submitted by "reyad.attiyat@gmail.com"
-[PATCH] HID: hid-sensor-hub: Fix lockdep warning for dynamic callback locks.
+------------------
 
-Already doing this, what you suggested?
+From: Jean Delvare <jdelvare@suse.de>
 
-+Reyad
+commit 59cf4243e557aa64ab2ef51280454aa1f3828e14 upstream.
 
+In commit 9e8269de, support was added for ntc_thermistor devices being
+declared in the device tree and implemented on top of IIO. With that
+change, a dependency was added to the ntc_thermistor driver:
 
-Thanks,
-Srinivas
+	depends on (!OF && !IIO) || (OF && IIO)
 
+This construct has the drawback that the driver can no longer be
+selected when OF is set and IIO isn't, nor when IIO is set and OF is
+not. This is a regression for the original users of the driver.
 
-> Could you please give me your Tested-by:? I'll then be happily queuing the
-> fix. Thanks.
->
->> (sorry for the duplicate message, I've forgotten to add the
->> wanna-be-reviewer-school named lkml to the recipients)
->
-> You want to make it to LWN quotes of the week, don't you? :)
->
+As the new code depends on IIO and is useless without OF, include it
+only if both are enabled, and set the dependencies accordingly. This
+is clearer, more simple and more correct.
+
+Signed-off-by: Jean Delvare <jdelvare@suse.de>
+Fixes: 9e8269de hwmon: (ntc_thermistor) Add DT with IIO support to NTC thermistor driver
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Cc: Doug Anderson <dianders@chromium.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/hwmon/Kconfig          |    2 +-
+ drivers/hwmon/ntc_thermistor.c |    4 +++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+--- a/drivers/hwmon/Kconfig
++++ b/drivers/hwmon/Kconfig
+@@ -971,7 +971,7 @@ config SENSORS_NCT6775
+ 
+ config SENSORS_NTC_THERMISTOR
+ 	tristate "NTC thermistor support"
+-	depends on (!OF && !IIO) || (OF && IIO)
++	depends on !OF || IIO=n || IIO
+ 	help
+ 	  This driver supports NTC thermistors sensor reading and its
+ 	  interpretation. The driver can also monitor the temperature and
+--- a/drivers/hwmon/ntc_thermistor.c
++++ b/drivers/hwmon/ntc_thermistor.c
+@@ -141,7 +141,7 @@ struct ntc_data {
+ 	char name[PLATFORM_NAME_SIZE];
+ };
+ 
+-#ifdef CONFIG_OF
++#if defined(CONFIG_OF) && IS_ENABLED(CONFIG_IIO)
+ static int ntc_adc_iio_read(struct ntc_thermistor_platform_data *pdata)
+ {
+ 	struct iio_channel *channel = pdata->chan;
+@@ -223,6 +223,8 @@ ntc_thermistor_parse_dt(struct platform_
+ 	return NULL;
+ }
+ 
++#define ntc_match	NULL
++
+ static void ntc_iio_channel_release(struct ntc_thermistor_platform_data *pdata)
+ { }
+ #endif
+
 
