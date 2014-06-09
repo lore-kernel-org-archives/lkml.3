@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933856AbaFIND1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 09:03:27 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:58229 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933378AbaFIM7f (ORCPT
+	id S933365AbaFIM7e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 08:59:34 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:35198 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933180AbaFIM71 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 08:59:35 -0400
+	Mon, 9 Jun 2014 08:59:27 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: bdas@redhat.com, gleb@kernel.org
-Subject: [PATCH 11/25] KVM: emulate: activate memory access optimization
-Date: Mon,  9 Jun 2014 14:58:59 +0200
-Message-Id: <1402318753-23362-12-git-send-email-pbonzini@redhat.com>
+Subject: [PATCH 05/25] KVM: emulate: protect checks on ctxt->d by a common "if (unlikely())"
+Date: Mon,  9 Jun 2014 14:58:53 +0200
+Message-Id: <1402318753-23362-6-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1402318753-23362-1-git-send-email-pbonzini@redhat.com>
 References: <1402318753-23362-1-git-send-email-pbonzini@redhat.com>
@@ -20,152 +20,253 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-memory_prepare lets us replace segmented_read/segmented_write with direct
-calls to __copy_from_user/__copy_to_user.  For RMW instructions, we also
-avoid double walking of the page tables.
+There are several checks for "peculiar" aspects of instructions in both
+x86_decode_insn and x86_emulate_insn.  Group them together, and guard
+them with a single "if" that lets the processor quickly skip them all.
+Make this more effective by adding two more flag bits that say whether the
+.intercept and .check_perm fields are valid.  We will reuse these
+flags later to avoid initializing fields of the emulate_ctxt struct.
 
-This saves about 50 cycles (5%) on arithmetic with a memory source
-operand, and up to 300 cycles (20%) on arithmetic with a memory
-destination operand.
+This skims about 30 cycles for each emulated instructions, which is
+approximately a 3% improvement.
 
-Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- arch/x86/include/asm/kvm_emulate.h |  2 ++
- arch/x86/kvm/emulate.c             | 72 +++++++++++++++++++++++++++++++++++---
- 2 files changed, 69 insertions(+), 5 deletions(-)
+ arch/x86/kvm/emulate.c | 175 ++++++++++++++++++++++++++-----------------------
+ 1 file changed, 94 insertions(+), 81 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_emulate.h b/arch/x86/include/asm/kvm_emulate.h
-index 1aa2adf0bb1a..f596976a3ab2 100644
---- a/arch/x86/include/asm/kvm_emulate.h
-+++ b/arch/x86/include/asm/kvm_emulate.h
-@@ -263,6 +263,8 @@ struct operand {
- 		u64 mm_val;
- 		void *data;
- 	};
-+	unsigned long hva;
-+	void *opaque;
- };
- 
- struct fetch_cache {
 diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index 7e9dc2d6fd44..594cb560947c 100644
+index 63ba8bd82a36..4c2ae824e89e 100644
 --- a/arch/x86/kvm/emulate.c
 +++ b/arch/x86/kvm/emulate.c
-@@ -1260,6 +1260,29 @@ read_cached:
- 	return X86EMUL_CONTINUE;
+@@ -162,6 +162,8 @@
+ #define NoWrite     ((u64)1 << 45)  /* No writeback */
+ #define SrcWrite    ((u64)1 << 46)  /* Write back src operand */
+ #define NoMod	    ((u64)1 << 47)  /* Mod field is ignored */
++#define Intercept   ((u64)1 << 48)  /* Has valid intercept field */
++#define CheckPerm   ((u64)1 << 49)  /* Has valid check_perm field */
+ 
+ #define DstXacc     (DstAccLo | SrcAccHi | SrcWrite)
+ 
+@@ -3539,9 +3541,9 @@ static int check_perm_out(struct x86_emulate_ctxt *ctxt)
  }
  
-+static int read_from_user(struct x86_emulate_ctxt *ctxt,
-+			  unsigned long hva, void *dest, unsigned size)
-+{
-+	int rc;
-+	struct read_cache *mc = &ctxt->mem_read;
-+
-+	if (mc->pos < mc->end)
-+		goto read_cached;
-+
-+	WARN_ON((mc->end + size) >= sizeof(mc->data));
-+
-+	rc = __copy_from_user(mc->data + mc->end, (void __user *)hva, size);
-+	if (rc < 0)
-+		return X86EMUL_UNHANDLEABLE;
-+
-+	mc->end += size;
-+
-+read_cached:
-+	memcpy(dest, mc->data + mc->pos, size);
-+	mc->pos += size;
-+	return X86EMUL_CONTINUE;
-+}
-+
- static int segmented_read(struct x86_emulate_ctxt *ctxt,
- 			  struct segmented_address addr,
- 			  void *data,
-@@ -1565,9 +1588,36 @@ static int load_segment_descriptor(struct x86_emulate_ctxt *ctxt,
- }
+ #define D(_y) { .flags = (_y) }
+-#define DI(_y, _i) { .flags = (_y), .intercept = x86_intercept_##_i }
+-#define DIP(_y, _i, _p) { .flags = (_y), .intercept = x86_intercept_##_i, \
+-		      .check_perm = (_p) }
++#define DI(_y, _i) { .flags = (_y)|Intercept, .intercept = x86_intercept_##_i }
++#define DIP(_y, _i, _p) { .flags = (_y)|Intercept|CheckPerm, \
++		      .intercept = x86_intercept_##_i, .check_perm = (_p) }
+ #define N    D(NotImpl)
+ #define EXT(_f, _e) { .flags = ((_f) | RMExt), .u.group = (_e) }
+ #define G(_f, _g) { .flags = ((_f) | Group | ModRM), .u.group = (_g) }
+@@ -3550,10 +3552,10 @@ static int check_perm_out(struct x86_emulate_ctxt *ctxt)
+ #define I(_f, _e) { .flags = (_f), .u.execute = (_e) }
+ #define F(_f, _e) { .flags = (_f) | Fastop, .u.fastop = (_e) }
+ #define II(_f, _e, _i) \
+-	{ .flags = (_f), .u.execute = (_e), .intercept = x86_intercept_##_i }
++	{ .flags = (_f)|Intercept, .u.execute = (_e), .intercept = x86_intercept_##_i }
+ #define IIP(_f, _e, _i, _p) \
+-	{ .flags = (_f), .u.execute = (_e), .intercept = x86_intercept_##_i, \
+-	  .check_perm = (_p) }
++	{ .flags = (_f)|Intercept|CheckPerm, .u.execute = (_e), \
++	  .intercept = x86_intercept_##_i, .check_perm = (_p) }
+ #define GP(_f, _g) { .flags = ((_f) | Prefix), .u.gprefix = (_g) }
  
- static int prepare_memory_operand(struct x86_emulate_ctxt *ctxt,
--				  struct operand *op)
-+				  struct operand *op,
-+				  bool write)
- {
--	return segmented_read(ctxt, op->addr.mem, &op->val, op->bytes);
-+	int rc;
-+	unsigned long gva;
-+	unsigned int size = op->bytes;
+ #define D2bv(_f)      D((_f) | ByteOp), D(_f)
+@@ -4386,29 +4388,37 @@ done_prefixes:
+ 		return EMULATION_FAILED;
+ 
+ 	ctxt->execute = opcode.u.execute;
+-	ctxt->check_perm = opcode.check_perm;
+-	ctxt->intercept = opcode.intercept;
+ 
+-	if (ctxt->d & NotImpl)
+-		return EMULATION_FAILED;
++	if (unlikely(ctxt->d &
++		     (NotImpl|EmulateOnUD|Stack|Op3264|Sse|Mmx|Intercept|CheckPerm))) {
++		/*
++		 * These are copied unconditionally here, and checked unconditionally
++		 * in x86_emulate_insn.
++		 */
++		ctxt->check_perm = opcode.check_perm;
++		ctxt->intercept = opcode.intercept;
+ 
+-	if (!(ctxt->d & EmulateOnUD) && ctxt->ud)
+-		return EMULATION_FAILED;
++		if (ctxt->d & NotImpl)
++			return EMULATION_FAILED;
+ 
+-	if (mode == X86EMUL_MODE_PROT64 && (ctxt->d & Stack))
+-		ctxt->op_bytes = 8;
++		if (!(ctxt->d & EmulateOnUD) && ctxt->ud)
++			return EMULATION_FAILED;
+ 
+-	if (ctxt->d & Op3264) {
+-		if (mode == X86EMUL_MODE_PROT64)
++		if (mode == X86EMUL_MODE_PROT64 && (ctxt->d & Stack))
+ 			ctxt->op_bytes = 8;
+-		else
+-			ctxt->op_bytes = 4;
+-	}
+ 
+-	if (ctxt->d & Sse)
+-		ctxt->op_bytes = 16;
+-	else if (ctxt->d & Mmx)
+-		ctxt->op_bytes = 8;
++		if (ctxt->d & Op3264) {
++			if (mode == X86EMUL_MODE_PROT64)
++				ctxt->op_bytes = 8;
++			else
++				ctxt->op_bytes = 4;
++		}
 +
-+	rc = linearize(ctxt, op->addr.mem, size, write, &gva);
-+	if (rc != X86EMUL_CONTINUE)
-+		return rc;
-+
-+	rc = ctxt->ops->memory_prepare(ctxt, gva, size,
-+					&ctxt->exception, true,
-+					&op->opaque, &op->hva);
-+	if (rc != X86EMUL_CONTINUE)
-+		return rc;
-+
-+	if (likely(!kvm_is_error_hva(op->hva))) {
-+		rc = read_from_user(ctxt, op->hva, &op->val, size);
-+		if (!write)
-+			ctxt->ops->memory_finish(ctxt, op->opaque, op->hva);
-+
-+		if (likely(rc == X86EMUL_CONTINUE))
-+			return X86EMUL_CONTINUE;
-+
-+		/* Should not happen.  */
-+		op->hva = KVM_HVA_ERR_BAD;
++		if (ctxt->d & Sse)
++			ctxt->op_bytes = 16;
++		else if (ctxt->d & Mmx)
++			ctxt->op_bytes = 8;
 +	}
-+
-+	return read_emulated(ctxt, gva, &op->val, size);
- }
  
- static int cmpxchg_memory_operand(struct x86_emulate_ctxt *ctxt,
-@@ -1582,6 +1632,17 @@ static int cmpxchg_memory_operand(struct x86_emulate_ctxt *ctxt,
- static int write_memory_operand(struct x86_emulate_ctxt *ctxt,
- 				struct operand *op)
- {
-+	int rc;
-+
-+	if (likely(!kvm_is_error_hva(op->hva))) {
-+		rc = __copy_to_user((void __user *)op->hva, &op->val,
-+				    op->bytes);
-+		ctxt->ops->memory_finish(ctxt, op->opaque, op->hva);
-+
-+		if (likely(!rc))
-+			return X86EMUL_CONTINUE;
-+	}
-+
- 	return segmented_write(ctxt, op->addr.mem,
- 			       &op->val,
- 			       op->bytes);
-@@ -4638,14 +4699,14 @@ int x86_emulate_insn(struct x86_emulate_ctxt *ctxt)
+ 	/* ModRM and SIB bytes. */
+ 	if (ctxt->d & ModRM) {
+@@ -4542,75 +4552,78 @@ int x86_emulate_insn(struct x86_emulate_ctxt *ctxt)
+ 		goto done;
  	}
  
- 	if ((ctxt->src.type == OP_MEM) && !(ctxt->d & NoAccess)) {
--		rc = prepare_memory_operand(ctxt, &ctxt->src);
-+		rc = prepare_memory_operand(ctxt, &ctxt->src, false);
- 		if (rc != X86EMUL_CONTINUE)
+-	if ((ctxt->mode == X86EMUL_MODE_PROT64 && (ctxt->d & No64)) ||
+-			(ctxt->d & Undefined)) {
+-		rc = emulate_ud(ctxt);
+-		goto done;
+-	}
+-
+-	if (((ctxt->d & (Sse|Mmx)) && ((ops->get_cr(ctxt, 0) & X86_CR0_EM)))
+-	    || ((ctxt->d & Sse) && !(ops->get_cr(ctxt, 4) & X86_CR4_OSFXSR))) {
+-		rc = emulate_ud(ctxt);
+-		goto done;
+-	}
+-
+-	if ((ctxt->d & (Sse|Mmx)) && (ops->get_cr(ctxt, 0) & X86_CR0_TS)) {
+-		rc = emulate_nm(ctxt);
+-		goto done;
+-	}
++	if (unlikely(ctxt->d &
++		     (No64|Undefined|Sse|Mmx|Intercept|CheckPerm|Priv|Prot|String))) {
++		if ((ctxt->mode == X86EMUL_MODE_PROT64 && (ctxt->d & No64)) ||
++				(ctxt->d & Undefined)) {
++			rc = emulate_ud(ctxt);
++			goto done;
++		}
+ 
+-	if (ctxt->d & Mmx) {
+-		rc = flush_pending_x87_faults(ctxt);
+-		if (rc != X86EMUL_CONTINUE)
++		if (((ctxt->d & (Sse|Mmx)) && ((ops->get_cr(ctxt, 0) & X86_CR0_EM)))
++		    || ((ctxt->d & Sse) && !(ops->get_cr(ctxt, 4) & X86_CR4_OSFXSR))) {
++			rc = emulate_ud(ctxt);
  			goto done;
- 		ctxt->src.orig_val64 = ctxt->src.val64;
+-		/*
+-		 * Now that we know the fpu is exception safe, we can fetch
+-		 * operands from it.
+-		 */
+-		fetch_possible_mmx_operand(ctxt, &ctxt->src);
+-		fetch_possible_mmx_operand(ctxt, &ctxt->src2);
+-		if (!(ctxt->d & Mov))
+-			fetch_possible_mmx_operand(ctxt, &ctxt->dst);
+-	}
++		}
+ 
+-	if (unlikely(ctxt->guest_mode) && ctxt->intercept) {
+-		rc = emulator_check_intercept(ctxt, ctxt->intercept,
+-					      X86_ICPT_PRE_EXCEPT);
+-		if (rc != X86EMUL_CONTINUE)
++		if ((ctxt->d & (Sse|Mmx)) && (ops->get_cr(ctxt, 0) & X86_CR0_TS)) {
++			rc = emulate_nm(ctxt);
+ 			goto done;
+-	}
++		}
+ 
+-	/* Privileged instruction can be executed only in CPL=0 */
+-	if ((ctxt->d & Priv) && ops->cpl(ctxt)) {
+-		rc = emulate_gp(ctxt, 0);
+-		goto done;
+-	}
++		if (ctxt->d & Mmx) {
++			rc = flush_pending_x87_faults(ctxt);
++			if (rc != X86EMUL_CONTINUE)
++				goto done;
++			/*
++			 * Now that we know the fpu is exception safe, we can fetch
++			 * operands from it.
++			 */
++			fetch_possible_mmx_operand(ctxt, &ctxt->src);
++			fetch_possible_mmx_operand(ctxt, &ctxt->src2);
++			if (!(ctxt->d & Mov))
++				fetch_possible_mmx_operand(ctxt, &ctxt->dst);
++		}
+ 
+-	/* Instruction can only be executed in protected mode */
+-	if ((ctxt->d & Prot) && ctxt->mode < X86EMUL_MODE_PROT16) {
+-		rc = emulate_ud(ctxt);
+-		goto done;
+-	}
++		if (unlikely(ctxt->guest_mode) && ctxt->intercept) {
++			rc = emulator_check_intercept(ctxt, ctxt->intercept,
++						      X86_ICPT_PRE_EXCEPT);
++			if (rc != X86EMUL_CONTINUE)
++				goto done;
++		}
+ 
+-	/* Do instruction specific permission checks */
+-	if (ctxt->check_perm) {
+-		rc = ctxt->check_perm(ctxt);
+-		if (rc != X86EMUL_CONTINUE)
++		/* Privileged instruction can be executed only in CPL=0 */
++		if ((ctxt->d & Priv) && ops->cpl(ctxt)) {
++			rc = emulate_gp(ctxt, 0);
+ 			goto done;
+-	}
++		}
+ 
+-	if (unlikely(ctxt->guest_mode) && ctxt->intercept) {
+-		rc = emulator_check_intercept(ctxt, ctxt->intercept,
+-					      X86_ICPT_POST_EXCEPT);
+-		if (rc != X86EMUL_CONTINUE)
++		/* Instruction can only be executed in protected mode */
++		if ((ctxt->d & Prot) && ctxt->mode < X86EMUL_MODE_PROT16) {
++			rc = emulate_ud(ctxt);
+ 			goto done;
+-	}
++		}
+ 
+-	if (ctxt->rep_prefix && (ctxt->d & String)) {
+-		/* All REP prefixes have the same first termination condition */
+-		if (address_mask(ctxt, reg_read(ctxt, VCPU_REGS_RCX)) == 0) {
+-			ctxt->eip = ctxt->_eip;
+-			goto done;
++		/* Do instruction specific permission checks */
++		if (ctxt->check_perm) {
++			rc = ctxt->check_perm(ctxt);
++			if (rc != X86EMUL_CONTINUE)
++				goto done;
++		}
++
++		if (unlikely(ctxt->guest_mode) && ctxt->intercept) {
++			rc = emulator_check_intercept(ctxt, ctxt->intercept,
++						      X86_ICPT_POST_EXCEPT);
++			if (rc != X86EMUL_CONTINUE)
++				goto done;
++		}
++
++		if (ctxt->rep_prefix && (ctxt->d & String)) {
++			/* All REP prefixes have the same first termination condition */
++			if (address_mask(ctxt, reg_read(ctxt, VCPU_REGS_RCX)) == 0) {
++				ctxt->eip = ctxt->_eip;
++				goto done;
++			}
+ 		}
  	}
  
- 	if (ctxt->src2.type == OP_MEM) {
--		rc = prepare_memory_operand(ctxt, &ctxt->src2);
-+		rc = prepare_memory_operand(ctxt, &ctxt->src2, false);
- 		if (rc != X86EMUL_CONTINUE)
- 			goto done;
- 	}
-@@ -4656,7 +4717,8 @@ int x86_emulate_insn(struct x86_emulate_ctxt *ctxt)
- 
- 	if ((ctxt->dst.type == OP_MEM) && !(ctxt->d & Mov)) {
- 		/* optimisation - avoid slow emulated read if Mov */
--		rc = prepare_memory_operand(ctxt, &ctxt->dst);
-+		rc = prepare_memory_operand(ctxt, &ctxt->dst,
-+					    !(ctxt->d & NoWrite));
- 		if (rc != X86EMUL_CONTINUE)
- 			goto done;
- 	}
 -- 
 1.8.3.1
 
