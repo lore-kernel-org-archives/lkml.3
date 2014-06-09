@@ -1,111 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932173AbaFICLF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jun 2014 22:11:05 -0400
-Received: from ns.horizon.com ([71.41.210.147]:31760 "HELO ns.horizon.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754207AbaFICK4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jun 2014 22:10:56 -0400
-Date: 8 Jun 2014 22:10:54 -0400
-Message-ID: <20140609021054.1614.qmail@ns.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: linux@horizon.com, tytso@mit.edu
-Subject: Re: [RFC PATCH] drivers/char/random.c: Is reducing locking range like this safe?
-Cc: hpa@linux.intel.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
-        price@mit.edu
-In-Reply-To: <20140609013553.GA1167@thunk.org>
+	id S932201AbaFICNg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jun 2014 22:13:36 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:36169 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753903AbaFICNa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jun 2014 22:13:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <1401981720-6946-1-git-send-email-santosh.shilimkar@ti.com>
+References: <1401981720-6946-1-git-send-email-santosh.shilimkar@ti.com>
+Date: Sun, 8 Jun 2014 23:13:29 -0300
+Message-ID: <CAOMZO5Ceg9RpC8Lgt0BwGTuaz-Z2614Die2PrbtT_j4QYjL_sA@mail.gmail.com>
+Subject: Re: [PATCH] dt/documentation: add specification of dma bus information
+From: Fabio Estevam <festevam@gmail.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        grygorii.strashko@ti.com, Russell King <linux@arm.linux.org.uk>,
+        Pawel Moll <pawel.moll@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@freescale.com>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Which writer are you worried about, specifically?  A userspace write
-> to /dev/random from rgnd?
+On Thu, Jun 5, 2014 at 12:22 PM, Santosh Shilimkar
+<santosh.shilimkar@ti.com> wrote:
+> Recently we introduced the generic device tree infrastructure for couple of DMA
+> bus parameter, dma-ranges and dma-coherent. Update the documentation so that
+> its useful for future users.
+>
+> The "dma-ranges" property is intended to be used for describing the
+> configuration of DMA bus RAM addresses and its offset w.r.t CPU addresses.
+>
+> The "dma-coherent" property is intended to be used for identifying devices
+> supported coherent DMA operations.
+>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: Rob Herring <robh+dt@kernel.org>
+> Cc: Pawel Moll <pawel.moll@arm.com>
+> Cc: Mark Rutland <mark.rutland@arm.com>
+> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+> Cc: Shawn Guo <shawn.guo@freescale.com>
+> Cc: Kumar Gala <galak@codeaurora.org>
+> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> ---
+>  Documentation/devicetree/booting-without-of.txt |   60 +++++++++++++++++++++++
+>  1 file changed, 60 insertions(+)
+>
+> diff --git a/Documentation/devicetree/booting-without-of.txt b/Documentation/devicetree/booting-without-of.txt
+> index 1f013bd..f0120c1 100644
+> --- a/Documentation/devicetree/booting-without-of.txt
+> +++ b/Documentation/devicetree/booting-without-of.txt
+> @@ -51,6 +51,8 @@ Table of Contents
+>
+>    VIII - Specifying device power management information (sleep property)
+>
+> +  VIV - Specifying dma bus information
 
-Actually, the part I'm actually worried about is latency in
-add_interrupt_randomness.
-
-But I may have not understood how the locking works.  There's a per-CPU
-fast pool which isn't locked at all, which feeds the input_pool, and
-the add to the input pool would be slow if it were locked, but it
-seems hard for user space to force a lot of locking activity on
-the input_pool.
-
-A bulk read will drain the secondary pool, but random_min_urandom_seed
-will prevent reseeding, so lock contention on input_pool will be
-almost nil.
-
-Maybe I need to turn this into a documentation patch explaining all of this.
-
-> And have you measured this to be something significant, or is this a
-> theoretical concern.  If you've measured it, what's the conditions
-> where this is stalling an entropy mixer a significant amount of time?
-
-It's a theoretical extrapolation from timing of user-space writes.
-Some time comparisons (on a multicore machine so the two threads should run
-on separate processors, and with scaling_governor = performance):
-
-$ dd if=/dev/zero of=/dev/random count=65536
-65536+0 records in
-65536+0 records out
-33554432 bytes (34 MB) copied, 0.356898 s, 94.0 MB/s
-$ dd if=/dev/zero of=/dev/random count=65536
-65536+0 records in
-65536+0 records out
-33554432 bytes (34 MB) copied, 0.357693 s, 93.8 MB/s
-
-$ dd if=/dev/urandom of=/dev/null count=16384 & dd if=/dev/zero of=/dev/random count=65536 ; sleep 4
-65536+0 records in
-65536+0 records out
-33554432 bytes (34 MB) copied, 0.505941 s, 66.3 MB/s
-16384+0 records in
-16384+0 records out
-8388608 bytes (8.4 MB) copied, 0.715132 s, 11.7 MB/s
-$ dd if=/dev/urandom of=/dev/null count=16384 & dd if=/dev/zero of=/dev/random count=65536 ; sleep 4
-65536+0 records in
-65536+0 records out
-33554432 bytes (34 MB) copied, 0.509075 s, 65.9 MB/s
-16384+0 records in
-16384+0 records out
-8388608 bytes (8.4 MB) copied, 0.734479 s, 11.4 MB/s
-
-$ dd if=/dev/urandom of=/dev/null count=16384 & dd if=/dev/urandom of=/dev/null count=16384 & dd if=/dev/zero of=/dev/random count=65536
-65536+0 records in
-65536+0 records out
-33554432 bytes (34 MB) copied, 0.66224 s, 50.7 MB/s
-16384+0 records in
-16384+0 records out
-8388608 bytes (8.4 MB) copied, 0.894693 s, 9.4 MB/s
-16384+0 records in
-16384+0 records out
-8388608 bytes (8.4 MB) copied, 0.895628 s, 9.4 MB/s
-$ dd if=/dev/urandom of=/dev/null count=16384 & dd if=/dev/urandom of=/dev/null count=16384 & dd if=/dev/zero of=/dev/random count=65536 ; sleep 4
-65536+0 records in
-65536+0 records out
-33554432 bytes (34 MB) copied, 0.657055 s, 51.1 MB/s
-16384+0 records in
-16384+0 records out
-8388608 bytes (8.4 MB) copied, 0.908407 s, 9.2 MB/s
-16384+0 records in
-16384+0 records out
-8388608 bytes (8.4 MB) copied, 0.908989 s, 9.2 MB/s
-
-Summarizing that, time to feed in 32 MiB of zeros (from user-space):
-
-0 concurrent reads:  0.356898 0.357693
-1 concurrent read:   0.505941 0.509075	(+42%)
-2 concurrent reads:  0.662240 0.657055	(+84%)
-
-... so it seems like there are some noticeable contention effects.
-
-
-And then I started thinking, and realized that the out[] parameter wasn't
-doing anything useful at all, and even if we don't change anything else
-at all, maybe it should be deleted and de-clutter the code?
-
-It dates back to the days when entropy adding tried to be lockless,
-but that was a long time ago.  And once you have locking, it no longer
-serves any function.
-
-It's a bit of meandering stream of consciousness, sorry.  The latency
-issue is where I started, but the general uselessness of out[] is what
-I felt really needed discussing before I proposed a patch to dike it out.
+"9" in Roman numeral is "IX"
