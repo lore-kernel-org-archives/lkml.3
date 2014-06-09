@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932460AbaFIU3L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 16:29:11 -0400
-Received: from www.linutronix.de ([62.245.132.108]:46593 "EHLO
+	id S932573AbaFIU3r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 16:29:47 -0400
+Received: from www.linutronix.de ([62.245.132.108]:46582 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932085AbaFIU2M (ORCPT
+	with ESMTP id S1754082AbaFIU2L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 16:28:12 -0400
-Message-Id: <20140609202336.506044876@linutronix.de>
+	Mon, 9 Jun 2014 16:28:11 -0400
+Message-Id: <20140609202336.338874430@linutronix.de>
 User-Agent: quilt/0.63-1
-Date: Mon, 09 Jun 2014 20:28:10 -0000
+Date: Mon, 09 Jun 2014 20:28:09 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>,
         Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
         Lai Jiangshan <laijs@cn.fujitsu.com>, Jason Low <jason.low2@hp.com>,
         Brad Mouring <bmouring@ni.com>
-Subject: [patch V3 7/7] rtmutex: Avoid pointless requeueing in the deadlock
- detection chain walk
+Subject: [patch V3 5/7] rtmutex: Confine deadlock logic to futex
 References: <20140609201118.387571774@linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Disposition: inline;
- filename=rtmutex-avoid-pointless-requeueing-in-the-deadlock-detection-chain-walk.patch
+ filename=rtmutex-confine-deadlock-logic-to-futex.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -30,112 +29,237 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In case the dead lock detector is enabled we follow the lock chain to
-the end in rt_mutex_adjust_prio_chain, even if we could stop earlier
-due to the priority/waiter constellation.
+The deadlock logic is only required for futexes.
 
-But once we are not longer the top priority waiter in a certain step
-or the task holding the lock has already the same priority then there
-is no point in dequeing and enqueing along the lock chain as there is
-no change at all.
-
-So stop the requeueing at this point.
+Remove the extra arguments for the public functions and also for the
+futex specific ones which get always called with deadlock detection
+enabled.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/locking/rtmutex.c |   61 +++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 54 insertions(+), 7 deletions(-)
+ include/linux/rtmutex.h         |    6 +---
+ kernel/futex.c                  |   10 +++---
+ kernel/locking/rtmutex.c        |   59 ++++++++++++++++++++--------------------
+ kernel/locking/rtmutex_common.h |    7 ++--
+ 4 files changed, 40 insertions(+), 42 deletions(-)
 
+Index: tip/include/linux/rtmutex.h
+===================================================================
+--- tip.orig/include/linux/rtmutex.h
++++ tip/include/linux/rtmutex.h
+@@ -90,11 +90,9 @@ extern void __rt_mutex_init(struct rt_mu
+ extern void rt_mutex_destroy(struct rt_mutex *lock);
+ 
+ extern void rt_mutex_lock(struct rt_mutex *lock);
+-extern int rt_mutex_lock_interruptible(struct rt_mutex *lock,
+-						int detect_deadlock);
++extern int rt_mutex_lock_interruptible(struct rt_mutex *lock);
+ extern int rt_mutex_timed_lock(struct rt_mutex *lock,
+-					struct hrtimer_sleeper *timeout,
+-					int detect_deadlock);
++			       struct hrtimer_sleeper *timeout);
+ 
+ extern int rt_mutex_trylock(struct rt_mutex *lock);
+ 
+Index: tip/kernel/futex.c
+===================================================================
+--- tip.orig/kernel/futex.c
++++ tip/kernel/futex.c
+@@ -1718,7 +1718,7 @@ retry_private:
+ 			this->pi_state = pi_state;
+ 			ret = rt_mutex_start_proxy_lock(&pi_state->pi_mutex,
+ 							this->rt_waiter,
+-							this->task, 1);
++							this->task);
+ 			if (ret == 1) {
+ 				/* We got the lock. */
+ 				requeue_pi_wake_futex(this, &key2, hb2);
+@@ -2337,9 +2337,9 @@ retry_private:
+ 	/*
+ 	 * Block on the PI mutex:
+ 	 */
+-	if (!trylock)
+-		ret = rt_mutex_timed_lock(&q.pi_state->pi_mutex, to, 1);
+-	else {
++	if (!trylock) {
++		ret = __rt_mutex_timed_lock(&q.pi_state->pi_mutex, to);
++	} else {
+ 		ret = rt_mutex_trylock(&q.pi_state->pi_mutex);
+ 		/* Fixup the trylock return value: */
+ 		ret = ret ? 0 : -EWOULDBLOCK;
+@@ -2669,7 +2669,7 @@ static int futex_wait_requeue_pi(u32 __u
+ 		 */
+ 		WARN_ON(!q.pi_state);
+ 		pi_mutex = &q.pi_state->pi_mutex;
+-		ret = rt_mutex_finish_proxy_lock(pi_mutex, to, &rt_waiter, 1);
++		ret = rt_mutex_finish_proxy_lock(pi_mutex, to, &rt_waiter);
+ 		debug_rt_mutex_free_waiter(&rt_waiter);
+ 
+ 		spin_lock(q.lock_ptr);
 Index: tip/kernel/locking/rtmutex.c
 ===================================================================
 --- tip.orig/kernel/locking/rtmutex.c
 +++ tip/kernel/locking/rtmutex.c
-@@ -359,6 +359,7 @@ static int rt_mutex_adjust_prio_chain(st
- 	struct rt_mutex *lock;
- 	bool detect_deadlock;
- 	unsigned long flags;
-+	bool requeue = true;
+@@ -1035,16 +1035,15 @@ rt_mutex_slowunlock(struct rt_mutex *loc
+  */
+ static inline int
+ rt_mutex_fastlock(struct rt_mutex *lock, int state,
+-		  int detect_deadlock,
+ 		  int (*slowfn)(struct rt_mutex *lock, int state,
+ 				struct hrtimer_sleeper *timeout,
+ 				int detect_deadlock))
+ {
+-	if (!detect_deadlock && likely(rt_mutex_cmpxchg(lock, NULL, current))) {
++	if (likely(rt_mutex_cmpxchg(lock, NULL, current))) {
+ 		rt_mutex_deadlock_account_lock(lock, current);
+ 		return 0;
+ 	} else
+-		return slowfn(lock, state, NULL, detect_deadlock);
++		return slowfn(lock, state, NULL, 0);
+ }
  
- 	detect_deadlock = rt_mutex_cond_detect_deadlock(orig_waiter, chwalk);
+ static inline int
+@@ -1091,54 +1090,59 @@ void __sched rt_mutex_lock(struct rt_mut
+ {
+ 	might_sleep();
  
-@@ -436,18 +437,31 @@ static int rt_mutex_adjust_prio_chain(st
- 			goto out_unlock_pi;
- 		/*
- 		 * If deadlock detection is off, we stop here if we
--		 * are not the top pi waiter of the task.
-+		 * are not the top pi waiter of the task. If deadlock
-+		 * detection is enabled we continue, but stop the
-+		 * requeueing in the chain walk.
- 		 */
--		if (!detect_deadlock && top_waiter != task_top_pi_waiter(task))
--			goto out_unlock_pi;
-+		if (top_waiter != task_top_pi_waiter(task)) {
-+			if (!detect_deadlock)
-+				goto out_unlock_pi;
-+			else
-+				requeue = false;
-+		}
- 	}
+-	rt_mutex_fastlock(lock, TASK_UNINTERRUPTIBLE, 0, rt_mutex_slowlock);
++	rt_mutex_fastlock(lock, TASK_UNINTERRUPTIBLE, rt_mutex_slowlock);
+ }
+ EXPORT_SYMBOL_GPL(rt_mutex_lock);
  
- 	/*
--	 * When deadlock detection is off then we check, if further
--	 * priority adjustment is necessary.
-+	 * If the waiter priority is the same as the task priority
-+	 * then there is no further priority adjustment necessary.  If
-+	 * deadlock detection is off, we stop the chain walk. If its
-+	 * enabled we continue, but stop the requeueing in the chain
-+	 * walk.
- 	 */
--	if (!detect_deadlock && waiter->prio == task->prio)
--		goto out_unlock_pi;
-+	if (waiter->prio == task->prio) {
-+		if (!detect_deadlock)
-+			goto out_unlock_pi;
-+		else
-+			requeue = false;
-+	}
+ /**
+  * rt_mutex_lock_interruptible - lock a rt_mutex interruptible
+  *
+- * @lock: 		the rt_mutex to be locked
+- * @detect_deadlock:	deadlock detection on/off
++ * @lock:		the rt_mutex to be locked
+  *
+  * Returns:
+- *  0 		on success
+- * -EINTR 	when interrupted by a signal
+- * -EDEADLK	when the lock would deadlock (when deadlock detection is on)
++ *  0		on success
++ * -EINTR	when interrupted by a signal
+  */
+-int __sched rt_mutex_lock_interruptible(struct rt_mutex *lock,
+-						 int detect_deadlock)
++int __sched rt_mutex_lock_interruptible(struct rt_mutex *lock)
+ {
+ 	might_sleep();
  
- 	/*
- 	 * We need to trylock here as we are holding task->pi_lock,
-@@ -475,6 +489,39 @@ static int rt_mutex_adjust_prio_chain(st
- 	}
+-	return rt_mutex_fastlock(lock, TASK_INTERRUPTIBLE,
+-				 detect_deadlock, rt_mutex_slowlock);
++	return rt_mutex_fastlock(lock, TASK_INTERRUPTIBLE, rt_mutex_slowlock);
+ }
+ EXPORT_SYMBOL_GPL(rt_mutex_lock_interruptible);
  
- 	/*
-+	 * If we just follow the lock chain for deadlock detection, no
-+	 * need to do all the requeue operations. We avoid a truckload
-+	 * of conditinals around the various places below and just do
-+	 * the minimum chain walk checks here.
-+	 */
-+	if (!requeue) {
-+		/* Release the task */
-+		raw_spin_unlock_irqrestore(&task->pi_lock, flags);
-+		put_task_struct(task);
++/*
++ * Futex variant to allow full deadlock detection.
++ */
++int __rt_mutex_timed_lock(struct rt_mutex *lock,
++			  struct hrtimer_sleeper *timeout)
++{
++	might_sleep();
 +
-+		/* If there is no owner of the lock, end of chain. */
-+		if (!rt_mutex_owner(lock)) {
-+			raw_spin_unlock(&lock->wait_lock);
-+			return 0;
-+		}
++	return rt_mutex_timed_fastlock(lock, TASK_INTERRUPTIBLE, timeout, 0,
++				       rt_mutex_slowlock);
++}
 +
-+		/* Grab the next task, i.e. owner of @lock */
-+		task = rt_mutex_owner(lock);
-+		get_task_struct(task);
-+		raw_spin_lock_irqsave(&task->pi_lock, flags);
-+
-+		/* Store whether owner is blocked itself and drop locks */
-+		next_lock = task_blocked_on(task);
-+		raw_spin_unlock_irqrestore(&task->pi_lock, flags);
-+		raw_spin_unlock(&lock->wait_lock);
-+
-+		/* If owner is not blocked, end of chain. */
-+		if (!next_lock)
-+			goto out_put_task;
-+		goto again;
-+	}
-+
-+	/*
- 	 * Store the current top waiter before doing the requeue
- 	 * operation on @lock. We need it for the boost/deboost
- 	 * decision below.
+ /**
+  * rt_mutex_timed_lock - lock a rt_mutex interruptible
+  *			the timeout structure is provided
+  *			by the caller
+  *
+- * @lock: 		the rt_mutex to be locked
++ * @lock:		the rt_mutex to be locked
+  * @timeout:		timeout structure or NULL (no timeout)
+- * @detect_deadlock:	deadlock detection on/off
+  *
+  * Returns:
+- *  0 		on success
+- * -EINTR 	when interrupted by a signal
++ *  0		on success
++ * -EINTR	when interrupted by a signal
+  * -ETIMEDOUT	when the timeout expired
+- * -EDEADLK	when the lock would deadlock (when deadlock detection is on)
+  */
+ int
+-rt_mutex_timed_lock(struct rt_mutex *lock, struct hrtimer_sleeper *timeout,
+-		    int detect_deadlock)
++rt_mutex_timed_lock(struct rt_mutex *lock, struct hrtimer_sleeper *timeout)
+ {
+ 	might_sleep();
+ 
+-	return rt_mutex_timed_fastlock(lock, TASK_INTERRUPTIBLE, timeout,
+-				       detect_deadlock, rt_mutex_slowlock);
++	return rt_mutex_timed_fastlock(lock, TASK_INTERRUPTIBLE, timeout, 0,
++				       rt_mutex_slowlock);
+ }
+ EXPORT_SYMBOL_GPL(rt_mutex_timed_lock);
+ 
+@@ -1244,7 +1248,6 @@ void rt_mutex_proxy_unlock(struct rt_mut
+  * @lock:		the rt_mutex to take
+  * @waiter:		the pre-initialized rt_mutex_waiter
+  * @task:		the task to prepare
+- * @detect_deadlock:	perform deadlock detection (1) or not (0)
+  *
+  * Returns:
+  *  0 - task blocked on lock
+@@ -1255,7 +1258,7 @@ void rt_mutex_proxy_unlock(struct rt_mut
+  */
+ int rt_mutex_start_proxy_lock(struct rt_mutex *lock,
+ 			      struct rt_mutex_waiter *waiter,
+-			      struct task_struct *task, int detect_deadlock)
++			      struct task_struct *task)
+ {
+ 	int ret;
+ 
+@@ -1313,22 +1316,20 @@ struct task_struct *rt_mutex_next_owner(
+  * rt_mutex_finish_proxy_lock() - Complete lock acquisition
+  * @lock:		the rt_mutex we were woken on
+  * @to:			the timeout, null if none. hrtimer should already have
+- * 			been started.
++ *			been started.
+  * @waiter:		the pre-initialized rt_mutex_waiter
+- * @detect_deadlock:	perform deadlock detection (1) or not (0)
+  *
+  * Complete the lock acquisition started our behalf by another thread.
+  *
+  * Returns:
+  *  0 - success
+- * <0 - error, one of -EINTR, -ETIMEDOUT, or -EDEADLK
++ * <0 - error, one of -EINTR, -ETIMEDOUT
+  *
+  * Special API call for PI-futex requeue support
+  */
+ int rt_mutex_finish_proxy_lock(struct rt_mutex *lock,
+ 			       struct hrtimer_sleeper *to,
+-			       struct rt_mutex_waiter *waiter,
+-			       int detect_deadlock)
++			       struct rt_mutex_waiter *waiter)
+ {
+ 	int ret;
+ 
+Index: tip/kernel/locking/rtmutex_common.h
+===================================================================
+--- tip.orig/kernel/locking/rtmutex_common.h
++++ tip/kernel/locking/rtmutex_common.h
+@@ -111,12 +111,11 @@ extern void rt_mutex_proxy_unlock(struct
+ 				  struct task_struct *proxy_owner);
+ extern int rt_mutex_start_proxy_lock(struct rt_mutex *lock,
+ 				     struct rt_mutex_waiter *waiter,
+-				     struct task_struct *task,
+-				     int detect_deadlock);
++				     struct task_struct *task);
+ extern int rt_mutex_finish_proxy_lock(struct rt_mutex *lock,
+ 				      struct hrtimer_sleeper *to,
+-				      struct rt_mutex_waiter *waiter,
+-				      int detect_deadlock);
++				      struct rt_mutex_waiter *waiter);
++extern int __rt_mutex_timed_lock(struct rt_mutex *l, struct hrtimer_sleeper *to);
+ 
+ #ifdef CONFIG_DEBUG_RT_MUTEXES
+ # include "rtmutex-debug.h"
 
 
