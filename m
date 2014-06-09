@@ -1,121 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754741AbaFIIRe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 04:17:34 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:25615 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754672AbaFIIRb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 04:17:31 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-1b-53956d986972
-Message-id: <53956D84.5050100@samsung.com>
-Date: Mon, 09 Jun 2014 11:17:08 +0300
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.5.0
-MIME-version: 1.0
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-Cc: linux-security-module <linux-security-module@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>, Josh Boyer <jwboyer@redhat.com>,
-        keyrings <keyrings@linux-nfs.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH v5 1/4] KEYS: special dot prefixed keyring name bug fix
-References: <1401818318-15780-1-git-send-email-zohar@linux.vnet.ibm.com>
- <1401818318-15780-2-git-send-email-zohar@linux.vnet.ibm.com>
- <CACE9dm909SGRBOybkh8z8jNiGPc_ksKHzsMuvNB+ro9furQ_tQ@mail.gmail.com>
- <1402092031.11626.35.camel@dhcp-9-2-203-236.watson.ibm.com>
- <539568B6.2070603@samsung.com>
-In-reply-to: <539568B6.2070603@samsung.com>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Originating-IP: [106.122.1.121]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrELMWRmVeSWpSXmKPExsVy+t/xK7ozcqcGG0xYY2rxruk3i8WXpXUW
-	B949YbGYveshi8XlXXPYLD70PGKz+LRiErMDu8fOWXfZPaadWMbi8eDQZhaP9/uusnl83iQX
-	wBrFZZOSmpNZllqkb5fAldHx8xJTQaNoRcvGQ+wNjOv4uxg5OSQETCSe3P7DDmGLSVy4t56t
-	i5GLQ0hgKaPEhEdzWCGcRiaJOQ2H2SGcWYwSv9vPg7XwCmhJPNp2A6iFg4NFQFXi8vVakDCb
-	gJ7EhuYf7CBhUYEIiccXhCCqBSV+TL7HAmKLAIUP7TnFAjKSWeA2o8TLg4fZQBLCAv4SPdNW
-	Ql2xlkni6Z7bTCAJTgFtiZO3DzOD2MwC6hKT5i2CsuUlNq95C2YLAd3QvXYtG8Q7ihKnJ59j
-	nsAoPAvJ8llI2mchaV/AyLyKUTS1NLmgOCk911CvODG3uDQvXS85P3cTIyRevuxgXHzM6hCj
-	AAejEg9vBufUYCHWxLLiytxDjBIczEoivD45QCHelMTKqtSi/Pii0pzU4kOMTBycUg2Mft8d
-	d3jOelnrarpvupCoVKxIsaDJhvjlBn9e9TKE6M0ta0yL67NKPXc8aHFXxY2kW5P+BgfI7Ex9
-	9eyU0Ddb+6gTd3nLNlscWTuPQ8vph0HLbB5bPo/uY0HXam5N6K3jdE5l8G4Rs1TNk1v3e9Oz
-	K/s/2Ce3nVji4KPUqMcWHbRwm+5iYQclluKMREMt5qLiRACg4erZdQIAAA==
+	id S1754771AbaFIIRw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 04:17:52 -0400
+Received: from mga01.intel.com ([192.55.52.88]:52842 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752948AbaFIIRo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 04:17:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="352319615"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Grant Likely <grant.likely@linaro.org>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        x86@kernel.org, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, David Rientjes <rientjes@google.com>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Richard Weinberger <richard@nod.at>, Andi Kleen <ak@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, linux-pm@vger.kernel.org
+Subject: [Patch V4 03/42] x86, mpparse: simplify arch/x86/include/asm/mpspec.h
+Date: Mon,  9 Jun 2014 16:19:32 +0800
+Message-Id: <1402302011-23642-4-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1402302011-23642-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1402302011-23642-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/06/14 10:56, Dmitry Kasatkin wrote:
-> On 07/06/14 01:00, Mimi Zohar wrote:
->> On Sat, 2014-06-07 at 00:48 +0300, Dmitry Kasatkin wrote: 
->>> On 3 June 2014 20:58, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
->>>> Dot prefixed keyring names are supposed to be reserved for the
->>>> kernel, but add_key() calls key_get_type_from_user(), which
->>>> incorrectly verifies the 'type' field, not the 'description' field.
->>>> This patch verifies the 'description' field isn't dot prefixed,
->>>> when creating a new keyring, and removes the dot prefix test in
->>>> key_get_type_from_user().
->>>>
->>>> Changelog v5:
->>>> - Only prevent userspace from creating a dot prefixed keyring, not
->>>>   regular keys  - Dmitry
->>>>
->>>> Reported-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
->>>> Cc: David Howells <dhowells@redhat.com>
->>>> Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
->>>> ---
->>>>  security/keys/keyctl.c | 6 ++++--
->>>>  1 file changed, 4 insertions(+), 2 deletions(-)
->>>>
->>>> diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
->>>> index cd5bd0c..62a9952 100644
->>>> --- a/security/keys/keyctl.c
->>>> +++ b/security/keys/keyctl.c
->>>> @@ -37,8 +37,6 @@ static int key_get_type_from_user(char *type,
->>>>                 return ret;
->>>>         if (ret == 0 || ret >= len)
->>>>                 return -EINVAL;
->>>> -       if (type[0] == '.')
->>>> -               return -EPERM;
->>>>         type[len - 1] = '\0';
->>>>         return 0;
->>>>  }
->>>> @@ -86,6 +84,10 @@ SYSCALL_DEFINE5(add_key, const char __user *, _type,
->>>>                 if (!*description) {
->>>>                         kfree(description);
->>>>                         description = NULL;
->>>> +               } else if ((description[0] == '.') &&
->>>> +                          (strncmp(type, "keyring", 7) == 0)) {
+Simplify arch/x86/include/asm/mpspec.h by
+1) Change max_physical_apicid to static as it's only used in apic.c.
+2) Kill declaration of mpc_default_type, it's never defined.
+3) Delete default_acpi_madt_oem_check(), it has already been declared
+   in apic.h.
+4) Make default_acpi_madt_oem_check() depends on CONFIG_X86_LOCAL_APIC
+   instead of CONFIG_X86_64 to support i386.
+5) Change mp_override_legacy_irq(), mp_config_acpi_legacy_irqs() and
+   mp_register_gsi() as static because they are only used in acpi/boot.c.
 
-BTW. using strcmp is good enough here. string constants are always NULL
-terminated.
-Comparison will terminate after no more than 7 bytes.
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ arch/x86/include/asm/apic.h    |    4 ++--
+ arch/x86/include/asm/io_apic.h |    3 ---
+ arch/x86/include/asm/mpspec.h  |   13 -------------
+ arch/x86/kernel/acpi/boot.c    |   12 +++++++++---
+ arch/x86/kernel/apic/apic.c    |    2 +-
+ 5 files changed, 12 insertions(+), 22 deletions(-)
 
-
->>>> +                               ret = -EPERM;
->>>> +                               goto error2;
->>>>                 }
->>>>         }
->>> I think it does not another problem...
->>> It is not only prevent creating new keyring with ".abc" name but also
->>> prevent adding new key...
->>>
->>> this is wrong...
->> Seems to prevent creating a dot prefixed keyring, but permits creating a
->> dot prefixed key.  Do you have an example?
-> I think by mistake I was checking old patch in the thread because I have
-> not noticed strncmp(type, "keyring", 7).
-> This patch definitely should do the job.
->
-> - Dmitry
->
->
->> thanks,
->>
->> Mimi
->>
->> Mimi
->>
->>
->>
+diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
+index 19b0ebafcd3e..69ed79aa9085 100644
+--- a/arch/x86/include/asm/apic.h
++++ b/arch/x86/include/asm/apic.h
+@@ -502,8 +502,6 @@ static inline unsigned default_get_apic_id(unsigned long x)
+ #define DEFAULT_TRAMPOLINE_PHYS_HIGH		0x469
+ 
+ #ifdef CONFIG_X86_64
+-extern int default_acpi_madt_oem_check(char *, char *);
+-
+ extern void apic_send_IPI_self(int vector);
+ 
+ DECLARE_PER_CPU(int, x2apic_extra_bits);
+@@ -552,6 +550,8 @@ static inline int default_apic_id_valid(int apicid)
+ 	return (apicid < 255);
+ }
+ 
++extern int default_acpi_madt_oem_check(char *, char *);
++
+ extern void default_setup_apic_routing(void);
+ 
+ extern struct apic apic_noop;
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index 90f97b4b9347..9121abbc8c8f 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -118,9 +118,6 @@ extern int mp_irq_entries;
+ /* MP IRQ source entries */
+ extern struct mpc_intsrc mp_irqs[MAX_IRQ_SOURCES];
+ 
+-/* non-0 if default (table-less) MP configuration */
+-extern int mpc_default_type;
+-
+ /* Older SiS APIC requires we rewrite the index register */
+ extern int sis_apic_bug;
+ 
+diff --git a/arch/x86/include/asm/mpspec.h b/arch/x86/include/asm/mpspec.h
+index f5a617956735..7bef40a01a1d 100644
+--- a/arch/x86/include/asm/mpspec.h
++++ b/arch/x86/include/asm/mpspec.h
+@@ -40,8 +40,6 @@ extern int mp_bus_id_to_type[MAX_MP_BUSSES];
+ extern DECLARE_BITMAP(mp_bus_not_pci, MAX_MP_BUSSES);
+ 
+ extern unsigned int boot_cpu_physical_apicid;
+-extern unsigned int max_physical_apicid;
+-extern int mpc_default_type;
+ extern unsigned long mp_lapic_addr;
+ 
+ #ifdef CONFIG_X86_LOCAL_APIC
+@@ -88,15 +86,6 @@ static inline void early_reserve_e820_mpc_new(void) { }
+ #endif
+ 
+ int generic_processor_info(int apicid, int version);
+-#ifdef CONFIG_ACPI
+-extern void mp_register_ioapic(int id, u32 address, u32 gsi_base);
+-extern void mp_override_legacy_irq(u8 bus_irq, u8 polarity, u8 trigger,
+-				   u32 gsi);
+-extern void mp_config_acpi_legacy_irqs(void);
+-struct device;
+-extern int mp_register_gsi(struct device *dev, u32 gsi, int edge_level,
+-				 int active_high_low);
+-#endif /* CONFIG_ACPI */
+ 
+ #define PHYSID_ARRAY_SIZE	BITS_TO_LONGS(MAX_LOCAL_APIC)
+ 
+@@ -163,6 +152,4 @@ extern physid_mask_t phys_cpu_present_map;
+ 
+ extern int generic_mps_oem_check(struct mpc_table *, char *, char *);
+ 
+-extern int default_acpi_madt_oem_check(char *, char *);
+-
+ #endif /* _ASM_X86_MPSPEC_H */
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index 86281ffb96d6..b41b47021f53 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -345,6 +345,10 @@ acpi_parse_lapic_nmi(struct acpi_subtable_header * header, const unsigned long e
+ #endif				/*CONFIG_X86_LOCAL_APIC */
+ 
+ #ifdef CONFIG_X86_IO_APIC
++static void  mp_override_legacy_irq(u8 bus_irq, u8 polarity, u8 trigger,
++				    u32 gsi);
++static int mp_register_gsi(struct device *dev, u32 gsi, int trigger,
++			   int polarity);
+ 
+ static int __init
+ acpi_parse_ioapic(struct acpi_subtable_header * header, const unsigned long end)
+@@ -903,7 +907,8 @@ static int __init acpi_parse_madt_lapic_entries(void)
+ #ifdef	CONFIG_X86_IO_APIC
+ #define MP_ISA_BUS		0
+ 
+-void __init mp_override_legacy_irq(u8 bus_irq, u8 polarity, u8 trigger, u32 gsi)
++static void __init mp_override_legacy_irq(u8 bus_irq, u8 polarity, u8 trigger,
++					  u32 gsi)
+ {
+ 	int ioapic;
+ 	int pin;
+@@ -938,7 +943,7 @@ void __init mp_override_legacy_irq(u8 bus_irq, u8 polarity, u8 trigger, u32 gsi)
+ 	isa_irq_to_gsi[bus_irq] = gsi;
+ }
+ 
+-void __init mp_config_acpi_legacy_irqs(void)
++static void __init mp_config_acpi_legacy_irqs(void)
+ {
+ 	int i;
+ 	struct mpc_intsrc mp_irq;
+@@ -1040,7 +1045,8 @@ static int mp_config_acpi_gsi(struct device *dev, u32 gsi, int trigger,
+ 	return 0;
+ }
+ 
+-int mp_register_gsi(struct device *dev, u32 gsi, int trigger, int polarity)
++static int mp_register_gsi(struct device *dev, u32 gsi, int trigger,
++			   int polarity)
+ {
+ 	int ioapic;
+ 	int ioapic_pin;
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index ad28db7e6bde..ca1bd75e3de2 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -67,7 +67,7 @@ EXPORT_SYMBOL_GPL(boot_cpu_physical_apicid);
+ /*
+  * The highest APIC ID seen during enumeration.
+  */
+-unsigned int max_physical_apicid;
++static unsigned int max_physical_apicid;
+ 
+ /*
+  * Bitmask of physically existing CPUs:
+-- 
+1.7.10.4
 
