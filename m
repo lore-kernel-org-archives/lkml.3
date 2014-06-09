@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935621AbaFIXEK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 19:04:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56749 "EHLO
+	id S933798AbaFIWpn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 18:45:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56745 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933387AbaFIWpo (ORCPT
+	with ESMTP id S933387AbaFIWp2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:45:44 -0400
+	Mon, 9 Jun 2014 18:45:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jorge <xxopxe@gmail.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: [PATCH 3.14 60/78] usb: pci-quirks: Prevent Sony VAIO t-series from switching usb ports
-Date: Mon,  9 Jun 2014 15:48:40 -0700
-Message-Id: <20140609224815.271899989@linuxfoundation.org>
+        Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Nicolas Pitre <nico@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.14 22/78] ARM: 8051/1: put_user: fix possible data corruption in put_user
+Date: Mon,  9 Jun 2014 15:48:02 -0700
+Message-Id: <20140609224814.062407653@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140609224813.282275135@linuxfoundation.org>
 References: <20140609224813.282275135@linuxfoundation.org>
@@ -29,42 +30,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
 
-commit b38f09ccc3fd453180e96273bf3f34083c30809a upstream.
+commit 537094b64b229bf3ad146042f83e74cf6abe59df upstream.
 
-Sony VAIO t-series machines are not capable of switching usb2 ports over
-from Intel EHCI to xHCI controller. If tried the USB2 port will be left
-unconnected and unusable.
+According to arm procedure call standart r2 register is call-cloberred.
+So after the result of x expression was put into r2 any following
+function call in p may overwrite r2. To fix this, the result of p
+expression must be saved to the temporary variable before the
+assigment x expression to __r2.
 
-This patch should be backported to stable kernels as old as 3.12,
-that contain the commit 26b76798e0507429506b93cd49f8c4cfdab06896
-"Intel xhci: refactor EHCI/xHCI port switching"
-
-Reported-by: Jorge <xxopxe@gmail.com>
-Tested-by: Jorge <xxopxe@gmail.com>
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+Reviewed-by: Nicolas Pitre <nico@linaro.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/pci-quirks.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ arch/arm/include/asm/uaccess.h |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -847,6 +847,13 @@ void usb_enable_intel_xhci_ports(struct
- 	bool		ehci_found = false;
- 	struct pci_dev	*companion = NULL;
- 
-+	/* Sony VAIO t-series with subsystem device ID 90a8 is not capable of
-+	 * switching ports from EHCI to xHCI
-+	 */
-+	if (xhci_pdev->subsystem_vendor == PCI_VENDOR_ID_SONY &&
-+	    xhci_pdev->subsystem_device == 0x90a8)
-+		return;
-+
- 	/* make sure an intel EHCI controller exists */
- 	for_each_pci_dev(companion) {
- 		if (companion->class == PCI_CLASS_SERIAL_USB_EHCI &&
+--- a/arch/arm/include/asm/uaccess.h
++++ b/arch/arm/include/asm/uaccess.h
+@@ -171,8 +171,9 @@ extern int __put_user_8(void *, unsigned
+ #define __put_user_check(x,p)							\
+ 	({								\
+ 		unsigned long __limit = current_thread_info()->addr_limit - 1; \
++		const typeof(*(p)) __user *__tmp_p = (p);		\
+ 		register const typeof(*(p)) __r2 asm("r2") = (x);	\
+-		register const typeof(*(p)) __user *__p asm("r0") = (p);\
++		register const typeof(*(p)) __user *__p asm("r0") = __tmp_p; \
+ 		register unsigned long __l asm("r1") = __limit;		\
+ 		register int __e asm("r0");				\
+ 		switch (sizeof(*(__p))) {				\
 
 
