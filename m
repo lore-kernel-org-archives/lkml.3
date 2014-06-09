@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935629AbaFIXPr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 19:15:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56731 "EHLO
+	id S934893AbaFIXPq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 19:15:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56732 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933137AbaFIWpO (ORCPT
+	with ESMTP id S933138AbaFIWpO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jun 2014 18:45:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
         Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.14 06/78] perf: Fix race in removing an event
-Date: Mon,  9 Jun 2014 15:47:46 -0700
-Message-Id: <20140609224813.563152130@linuxfoundation.org>
+Subject: [PATCH 3.14 01/78] sched: Use CPUPRI_NR_PRIORITIES instead of MAX_RT_PRIO in cpupri check
+Date: Mon,  9 Jun 2014 15:47:41 -0700
+Message-Id: <20140609224813.403895349@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140609224813.282275135@linuxfoundation.org>
 References: <20140609224813.282275135@linuxfoundation.org>
@@ -31,203 +30,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 46ce0fe97a6be7532ce6126bb26ce89fed81528c upstream.
+commit 6227cb00cc120f9a43ce8313bb0475ddabcb7d01 upstream.
 
-When removing a (sibling) event we do:
+The check at the beginning of cpupri_find() makes sure that the task_pri
+variable does not exceed the cp->pri_to_cpu array length. But that length
+is CPUPRI_NR_PRIORITIES not MAX_RT_PRIO, where it will miss the last two
+priorities in that array.
 
-	raw_spin_lock_irq(&ctx->lock);
-	perf_group_detach(event);
-	raw_spin_unlock_irq(&ctx->lock);
+As task_pri is computed from convert_prio() which should never be bigger
+than CPUPRI_NR_PRIORITIES, if the check should cause a panic if it is
+hit.
 
-	<hole>
-
-	perf_remove_from_context(event);
-		raw_spin_lock_irq(&ctx->lock);
-		...
-		raw_spin_unlock_irq(&ctx->lock);
-
-Now, assuming the event is a sibling, it will be 'unreachable' for
-things like ctx_sched_out() because that iterates the
-groups->siblings, and we just unhooked the sibling.
-
-So, if during <hole> we get ctx_sched_out(), it will miss the event
-and not call event_sched_out() on it, leaving it programmed on the
-PMU.
-
-The subsequent perf_remove_from_context() call will find the ctx is
-inactive and only call list_del_event() to remove the event from all
-other lists.
-
-Hereafter we can proceed to free the event; while still programmed!
-
-Close this hole by moving perf_group_detach() inside the same
-ctx->lock region(s) perf_remove_from_context() has.
-
-The condition on inherited events only in __perf_event_exit_task() is
-likely complete crap because non-inherited events are part of groups
-too and we're tearing down just the same. But leave that for another
-patch.
-
-Most-likely-Fixes: e03a9a55b4e ("perf: Change close() semantics for group events")
-Reported-by: Vince Weaver <vincent.weaver@maine.edu>
-Tested-by: Vince Weaver <vincent.weaver@maine.edu>
-Much-staring-at-traces-by: Vince Weaver <vincent.weaver@maine.edu>
-Much-staring-at-traces-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Mike Galbraith <umgwanakikbuti@gmail.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20140505093124.GN17778@laptop.programming.kicks-ass.net
+Link: http://lkml.kernel.org/r/1397015410.5212.13.camel@marge.simpson.net
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/events/core.c |   47 ++++++++++++++++++++++++++---------------------
- 1 file changed, 26 insertions(+), 21 deletions(-)
+ kernel/sched/cpupri.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -1439,6 +1439,11 @@ group_sched_out(struct perf_event *group
- 		cpuctx->exclusive = 0;
- }
+--- a/kernel/sched/cpupri.c
++++ b/kernel/sched/cpupri.c
+@@ -70,8 +70,7 @@ int cpupri_find(struct cpupri *cp, struc
+ 	int idx = 0;
+ 	int task_pri = convert_prio(p->prio);
  
-+struct remove_event {
-+	struct perf_event *event;
-+	bool detach_group;
-+};
-+
- /*
-  * Cross CPU call to remove a performance event
-  *
-@@ -1447,12 +1452,15 @@ group_sched_out(struct perf_event *group
-  */
- static int __perf_remove_from_context(void *info)
- {
--	struct perf_event *event = info;
-+	struct remove_event *re = info;
-+	struct perf_event *event = re->event;
- 	struct perf_event_context *ctx = event->ctx;
- 	struct perf_cpu_context *cpuctx = __get_cpu_context(ctx);
+-	if (task_pri >= MAX_RT_PRIO)
+-		return 0;
++	BUG_ON(task_pri >= CPUPRI_NR_PRIORITIES);
  
- 	raw_spin_lock(&ctx->lock);
- 	event_sched_out(event, cpuctx, ctx);
-+	if (re->detach_group)
-+		perf_group_detach(event);
- 	list_del_event(event, ctx);
- 	if (!ctx->nr_events && cpuctx->task_ctx == ctx) {
- 		ctx->is_active = 0;
-@@ -1477,10 +1485,14 @@ static int __perf_remove_from_context(vo
-  * When called from perf_event_exit_task, it's OK because the
-  * context has been detached from its task.
-  */
--static void perf_remove_from_context(struct perf_event *event)
-+static void perf_remove_from_context(struct perf_event *event, bool detach_group)
- {
- 	struct perf_event_context *ctx = event->ctx;
- 	struct task_struct *task = ctx->task;
-+	struct remove_event re = {
-+		.event = event,
-+		.detach_group = detach_group,
-+	};
- 
- 	lockdep_assert_held(&ctx->mutex);
- 
-@@ -1489,12 +1501,12 @@ static void perf_remove_from_context(str
- 		 * Per cpu events are removed via an smp call and
- 		 * the removal is always successful.
- 		 */
--		cpu_function_call(event->cpu, __perf_remove_from_context, event);
-+		cpu_function_call(event->cpu, __perf_remove_from_context, &re);
- 		return;
- 	}
- 
- retry:
--	if (!task_function_call(task, __perf_remove_from_context, event))
-+	if (!task_function_call(task, __perf_remove_from_context, &re))
- 		return;
- 
- 	raw_spin_lock_irq(&ctx->lock);
-@@ -1511,6 +1523,8 @@ retry:
- 	 * Since the task isn't running, its safe to remove the event, us
- 	 * holding the ctx->lock ensures the task won't get scheduled in.
- 	 */
-+	if (detach_group)
-+		perf_group_detach(event);
- 	list_del_event(event, ctx);
- 	raw_spin_unlock_irq(&ctx->lock);
- }
-@@ -3279,10 +3293,7 @@ int perf_event_release_kernel(struct per
- 	 *     to trigger the AB-BA case.
- 	 */
- 	mutex_lock_nested(&ctx->mutex, SINGLE_DEPTH_NESTING);
--	raw_spin_lock_irq(&ctx->lock);
--	perf_group_detach(event);
--	raw_spin_unlock_irq(&ctx->lock);
--	perf_remove_from_context(event);
-+	perf_remove_from_context(event, true);
- 	mutex_unlock(&ctx->mutex);
- 
- 	free_event(event);
-@@ -7175,7 +7186,7 @@ SYSCALL_DEFINE5(perf_event_open,
- 		struct perf_event_context *gctx = group_leader->ctx;
- 
- 		mutex_lock(&gctx->mutex);
--		perf_remove_from_context(group_leader);
-+		perf_remove_from_context(group_leader, false);
- 
- 		/*
- 		 * Removing from the context ends up with disabled
-@@ -7185,7 +7196,7 @@ SYSCALL_DEFINE5(perf_event_open,
- 		perf_event__state_init(group_leader);
- 		list_for_each_entry(sibling, &group_leader->sibling_list,
- 				    group_entry) {
--			perf_remove_from_context(sibling);
-+			perf_remove_from_context(sibling, false);
- 			perf_event__state_init(sibling);
- 			put_ctx(gctx);
- 		}
-@@ -7315,7 +7326,7 @@ void perf_pmu_migrate_context(struct pmu
- 	mutex_lock(&src_ctx->mutex);
- 	list_for_each_entry_safe(event, tmp, &src_ctx->event_list,
- 				 event_entry) {
--		perf_remove_from_context(event);
-+		perf_remove_from_context(event, false);
- 		unaccount_event_cpu(event, src_cpu);
- 		put_ctx(src_ctx);
- 		list_add(&event->migrate_entry, &events);
-@@ -7377,13 +7388,7 @@ __perf_event_exit_task(struct perf_event
- 			 struct perf_event_context *child_ctx,
- 			 struct task_struct *child)
- {
--	if (child_event->parent) {
--		raw_spin_lock_irq(&child_ctx->lock);
--		perf_group_detach(child_event);
--		raw_spin_unlock_irq(&child_ctx->lock);
--	}
--
--	perf_remove_from_context(child_event);
-+	perf_remove_from_context(child_event, !!child_event->parent);
- 
- 	/*
- 	 * It can happen that the parent exits first, and has events
-@@ -7868,14 +7873,14 @@ static void perf_pmu_rotate_stop(struct
- 
- static void __perf_event_exit_context(void *__info)
- {
-+	struct remove_event re = { .detach_group = false };
- 	struct perf_event_context *ctx = __info;
--	struct perf_event *event;
- 
- 	perf_pmu_rotate_stop(ctx->pmu);
- 
- 	rcu_read_lock();
--	list_for_each_entry_rcu(event, &ctx->event_list, event_entry)
--		__perf_remove_from_context(event);
-+	list_for_each_entry_rcu(re.event, &ctx->event_list, event_entry)
-+		__perf_remove_from_context(&re);
- 	rcu_read_unlock();
- }
- 
+ 	for (idx = 0; idx < task_pri; idx++) {
+ 		struct cpupri_vec *vec  = &cp->pri_to_cpu[idx];
 
 
