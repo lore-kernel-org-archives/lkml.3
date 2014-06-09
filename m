@@ -1,83 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933167AbaFIKad (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 06:30:33 -0400
-Received: from new1-smtp.messagingengine.com ([66.111.4.221]:53590 "EHLO
-	new1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932201AbaFIKa2 (ORCPT
+	id S1755010AbaFIKc3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 06:32:29 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:44151 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753750AbaFIKc2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 06:30:28 -0400
-Message-Id: <1402309827.7242.126672901.053EFD6E@webmail.messagingengine.com>
-X-Sasl-Enc: GXDC2DATxSd8Ef8wS8Q7kXge/D/GOcbNjz2Ffh/Yxrse 1402309827
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: George Spelvin <linux@horizon.com>, davem@davemloft.net,
-        dborkman@redhat.com, shemminger@osdl.org, tytso@mit.edu
-Cc: linux-kernel@vger.kernel.org
+	Mon, 9 Jun 2014 06:32:28 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain
-X-Mailer: MessagingEngine.com Webmail Interface - ajax-037d6a32
-In-Reply-To: <20140608204800.7610.qmail@ns.horizon.com>
-References: <20140608204800.7610.qmail@ns.horizon.com>
-Subject: Re: [PATCH 5/7] lib/random32.c: Make prandom_u32_max efficient for
- powers of 2
-Date: Mon, 09 Jun 2014 03:30:27 -0700
+In-Reply-To: <20140609102426.26530.15670.stgit@srivatsabhat.in.ibm.com>
+References: <20140609102426.26530.15670.stgit@srivatsabhat.in.ibm.com>
+Date: Mon, 9 Jun 2014 16:02:27 +0530
+Message-ID: <CAKohpongn3qi+nKXtqdaZNyrLD=DB8p=V7Fi30OE8aDAC+RwfA@mail.gmail.com>
+Subject: Re: [PATCH] PM / Documentation: Update Srivatsa S. Bhat's email address
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "Srivatsa S. Bhat" <srivatsa@mit.edu>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for your detailed explanation!
+On 9 June 2014 15:54, Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> My @linux.vnet.ibm.com email address is going to disappear soon, as I will be
+> beginning my M.S./PhD studies at MIT in a few months. So update my email
+> address in the documentation.
 
-On Sun, Jun 8, 2014, at 13:48, George Spelvin wrote:
-> Thank you for your comments!
-> 
-> > Have you checked assembler output if this helps anything at all? Constant
-> > propagation in the compiler should be able to figure that out all by
-> > itself. The only places I use __builtin_constant_p today are where I
-> > also make use of inline assembler.
-> 
-> Yes, I did.  (I'll expand the commit comment for v2; my bad.)
-> 
-> It seems that GCC isn't smart enough to reduce this to a single shift.
-> With the multiply and reduce, the code looks like:
->         call    prandom_u32
->         xorl    %edx, %edx
->         shldl   $4, %eax, %edx
->         movl    %edx, %eax
-> 
-> Instead of the hoped-for
->         call    prandom_u32
-> 	shrl	$28, %eax
+Congratulations once again buddy!! We will surely miss you specially for
+discussions around cpufreq stuff :( ..
 
-On x86_64 I get the above result. Seems like gcc doesn't see the downcast to u32 far enough ahead and stays in DI mode on i386, thus the shldl. It shouldn't matter that much... ;)
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> Signed-off-by: Srivatsa S. Bhat <srivatsa@mit.edu>
+> ---
+>
+>  Documentation/power/suspend-and-cpuhotplug.txt |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-> Converting to a single mask is something the compiler can't do,
-> because it doesn't understand that using the lsbits instead of the
-> msbits is okay.
+That's it ? I am not sure if you are planning to send few more
+mails like this, but these can all go as a single commit via
+Andrew Morton...
 
-Yep, sure.
+Also see if you wanna update .mailmap
 
-> With the mask, it turns into the spectacularly simple:
->         call    prandom_u32
->         andl    $15, %eax
-> 
-> An interesting question is which is preferred in general.
-> 
-> The AND allows non-constant powers of 2 without requiring CLZ.  But I
-> don't recall seeing that actually happen anywhere.  And the shift allows
-> a smaller encoding (8-bit rather than 32-bit immediate constant) when
-> the power of 2 is known at compile time and is larger than 128 (for
-> example, PAGE_SIZE).
+Here is how I moved, 10d8935 :)
 
-I actually don't know if folding logic in gcc is so enhanced to see that coming. ;)
-Would be interesting tough, maybe I'll try that later.
-
-> Me, I thought it was in the noise and not worth stressing about,
-> but I also understand the hackers's urge for maximum tweaking.
-
-Totally ok. ;)
-
-I don't have any problems with the patch, although such a detailed changelog would be nice + some approx. numbers of how many times we run into the new optimization.
-
-Bye,
-Hannes
+I hope you don't need my Ack here :)
