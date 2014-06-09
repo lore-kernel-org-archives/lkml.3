@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934305AbaFIWqJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 18:46:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56836 "EHLO
+	id S934539AbaFIWv4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 18:51:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57195 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933368AbaFIWpr (ORCPT
+	with ESMTP id S934304AbaFIWqJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 18:45:47 -0400
+	Mon, 9 Jun 2014 18:46:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        George McCollister <george.mccollister@gmail.com>,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.14 55/78] USB: ftdi_sio: add NovaTech OrionLXm product ID
-Date: Mon,  9 Jun 2014 15:48:35 -0700
-Message-Id: <20140609224815.120408266@linuxfoundation.org>
+        Denys Fedoryshchenko <nuclearcat@nuclearcat.com>,
+        Pablo Neira Ayuso <pablo@netfilter.org>
+Subject: [PATCH 3.14 74/78] netfilter: nfnetlink: Fix use after free when it fails to process batch
+Date: Mon,  9 Jun 2014 15:48:54 -0700
+Message-Id: <20140609224815.691922371@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140609224813.282275135@linuxfoundation.org>
 References: <20140609224813.282275135@linuxfoundation.org>
@@ -29,50 +29,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: George McCollister <george.mccollister@gmail.com>
+From: Denys Fedoryshchenko <nuclearcat@nuclearcat.com>
 
-commit d0839d757e6294921c31b1c4ca4f1dcc5df63bcd upstream.
+commit ecd15dd7e45f3683fa8142b9f2c015dfaa0c243d upstream.
 
-The NovaTech OrionLXm uses an onboard FTDI serial converter for JTAG and
-console access.
+This bug manifests when calling the nft command line tool without
+nf_tables kernel support.
 
-Here is the lsusb output:
-Bus 004 Device 123: ID 0403:7c90 Future Technology Devices
-International, Ltd
+kernel message:
+[   44.071555] Netfilter messages via NETLINK v0.30.
+[   44.072253] BUG: unable to handle kernel NULL pointer dereference at 0000000000000119
+[   44.072264] IP: [<ffffffff8171db1f>] netlink_getsockbyportid+0xf/0x70
+[   44.072272] PGD 7f2b74067 PUD 7f2b73067 PMD 0
+[   44.072277] Oops: 0000 [#1] SMP
+[...]
+[   44.072369] Call Trace:
+[   44.072373]  [<ffffffff8171fd81>] netlink_unicast+0x91/0x200
+[   44.072377]  [<ffffffff817206c9>] netlink_ack+0x99/0x110
+[   44.072381]  [<ffffffffa004b951>] nfnetlink_rcv+0x3c1/0x408 [nfnetlink]
+[   44.072385]  [<ffffffff8171fde3>] netlink_unicast+0xf3/0x200
+[   44.072389]  [<ffffffff817201ef>] netlink_sendmsg+0x2ff/0x740
+[   44.072394]  [<ffffffff81044752>] ? __mmdrop+0x62/0x90
+[   44.072398]  [<ffffffff816dafdb>] sock_sendmsg+0x8b/0xc0
+[   44.072403]  [<ffffffff812f1af5>] ? copy_user_enhanced_fast_string+0x5/0x10
+[   44.072406]  [<ffffffff816dbb6c>] ? move_addr_to_kernel+0x2c/0x50
+[   44.072410]  [<ffffffff816db423>] ___sys_sendmsg+0x3c3/0x3d0
+[   44.072415]  [<ffffffff811301ba>] ? handle_mm_fault+0xa9a/0xc60
+[   44.072420]  [<ffffffff811362d6>] ? mmap_region+0x166/0x5a0
+[   44.072424]  [<ffffffff817da84c>] ? __do_page_fault+0x1dc/0x510
+[   44.072428]  [<ffffffff812b8b2c>] ? apparmor_capable+0x1c/0x60
+[   44.072435]  [<ffffffff817d6e9a>] ? _raw_spin_unlock_bh+0x1a/0x20
+[   44.072439]  [<ffffffff816dfc86>] ? release_sock+0x106/0x150
+[   44.072443]  [<ffffffff816dc212>] __sys_sendmsg+0x42/0x80
+[   44.072446]  [<ffffffff816dc262>] SyS_sendmsg+0x12/0x20
+[   44.072450]  [<ffffffff817df616>] system_call_fastpath+0x1a/0x1f
 
-Signed-off-by: George McCollister <george.mccollister@gmail.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Denys Fedoryshchenko <nuclearcat@nuclearcat.com>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    2 ++
- drivers/usb/serial/ftdi_sio_ids.h |    5 +++++
- 2 files changed, 7 insertions(+)
+ net/netfilter/nfnetlink.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -580,6 +580,8 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(FTDI_VID, FTDI_TAVIR_STK500_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_TIAO_UMPA_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
-+	{ USB_DEVICE(FTDI_VID, FTDI_NT_ORIONLXM_PID),
-+		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
- 	/*
- 	 * ELV devices:
- 	 */
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -538,6 +538,11 @@
-  */
- #define FTDI_TIAO_UMPA_PID	0x8a98	/* TIAO/DIYGADGET USB Multi-Protocol Adapter */
+--- a/net/netfilter/nfnetlink.c
++++ b/net/netfilter/nfnetlink.c
+@@ -248,15 +248,15 @@ replay:
+ #endif
+ 		{
+ 			nfnl_unlock(subsys_id);
+-			kfree_skb(nskb);
+-			return netlink_ack(skb, nlh, -EOPNOTSUPP);
++			netlink_ack(skb, nlh, -EOPNOTSUPP);
++			return kfree_skb(nskb);
+ 		}
+ 	}
  
-+/*
-+ * NovaTech product ids (FTDI_VID)
-+ */
-+#define FTDI_NT_ORIONLXM_PID	0x7c90	/* OrionLXm Substation Automation Platform */
-+
+ 	if (!ss->commit || !ss->abort) {
+ 		nfnl_unlock(subsys_id);
+-		kfree_skb(nskb);
+-		return netlink_ack(skb, nlh, -EOPNOTSUPP);
++		netlink_ack(skb, nlh, -EOPNOTSUPP);
++		return kfree_skb(skb);
+ 	}
  
- /********************************/
- /** third-party VID/PID combos **/
+ 	while (skb->len >= nlmsg_total_size(0)) {
 
 
