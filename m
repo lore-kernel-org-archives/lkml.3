@@ -1,119 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933732AbaFII7w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 04:59:52 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:51058 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932502AbaFII7p (ORCPT
+	id S933762AbaFII77 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 04:59:59 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:29393 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932502AbaFII7y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 04:59:45 -0400
-X-IronPort-AV: E=Sophos;i="4.98,1001,1392134400"; 
-   d="scan'208";a="31645141"
-Message-ID: <539574F1.2060701@cn.fujitsu.com>
-Date: Mon, 9 Jun 2014 16:48:49 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	Mon, 9 Jun 2014 04:59:54 -0400
+Date: Mon, 9 Jun 2014 09:59:52 +0100
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: Yuyang Du <yuyang.du@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "jacob.jun.pan@linux.intel.com" <jacob.jun.pan@linux.intel.com>
+Subject: Re: [RFC PATCH 06/16] arm: topology: Define TC2 sched energy and
+ provide it to scheduler
+Message-ID: <20140609085952.GZ29593@e103034-lin>
+References: <20140604160230.GS29593@e103034-lin>
+ <20140604172712.GJ13930@laptop.programming.kicks-ass.net>
+ <2484761.vkWavnsDx3@vostro.rjw.lan>
+ <20140605065205.GA3213@twins.programming.kicks-ass.net>
+ <539086B3.2010804@gmail.com>
+ <20140605202930.GA15484@intel.com>
+ <20140606080543.GR6758@twins.programming.kicks-ass.net>
+ <20140606003520.GB22261@intel.com>
+ <20140606105036.GQ3213@twins.programming.kicks-ass.net>
+ <20140607232628.GC22261@intel.com>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        <linux-mm@kvack.org>, Cgroups <cgroups@vger.kernel.org>,
-        <stable@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH] mm/mempolicy: fix sleeping function called from invalid
- context
-References: <53902A44.50005@cn.fujitsu.com> <20140605132339.ddf6df4a0cf5c14d17eb8691@linux-foundation.org> <539192F1.7050308@cn.fujitsu.com> <alpine.DEB.2.02.1406081539140.21744@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1406081539140.21744@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.100]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140607232628.GC22261@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
-
-On 06/09/2014 06:47 AM, David Rientjes wrote:
-
-> On Fri, 6 Jun 2014, Gu Zheng wrote:
+On Sun, Jun 08, 2014 at 12:26:29AM +0100, Yuyang Du wrote:
+> On Fri, Jun 06, 2014 at 12:50:36PM +0200, Peter Zijlstra wrote:
+> > > Voltage is combined with frequency, roughly, voltage is proportional
+> > > to freuquecy, so roughly, power is proportionaly to voltage^3. You
+> > 
+> > P ~ V^2, last time I checked.
+> > 
+> > > can't say which is more important, or there is no reason to raise
+> > > voltage without raising frequency.
+> > 
+> > Well, some chips have far fewer voltage steps than freq steps; or,
+> > differently put, they have multiple freq steps for a single voltage
+> > level.
+> > 
+> > And since the power (Watts) is proportional to Voltage squared, its the
+> > biggest term.
+> > 
+> > If you have a distinct voltage level for each freq, it all doesn't
+> > matter.
+> > 
 > 
->>>> When running with the kernel(3.15-rc7+), the follow bug occurs:
->>>> [ 9969.258987] BUG: sleeping function called from invalid context at kernel/locking/mutex.c:586
->>>> [ 9969.359906] in_atomic(): 1, irqs_disabled(): 0, pid: 160655, name: python
->>>> [ 9969.441175] INFO: lockdep is turned off.
->>>> [ 9969.488184] CPU: 26 PID: 160655 Comm: python Tainted: G       A      3.15.0-rc7+ #85
->>>> [ 9969.581032] Hardware name: FUJITSU-SV PRIMEQUEST 1800E/SB, BIOS PRIMEQUEST 1000 Series BIOS Version 1.39 11/16/2012
->>>> [ 9969.706052]  ffffffff81a20e60 ffff8803e941fbd0 ffffffff8162f523 ffff8803e941fd18
->>>> [ 9969.795323]  ffff8803e941fbe0 ffffffff8109995a ffff8803e941fc58 ffffffff81633e6c
->>>> [ 9969.884710]  ffffffff811ba5dc ffff880405c6b480 ffff88041fdd90a0 0000000000002000
->>>> [ 9969.974071] Call Trace:
->>>> [ 9970.003403]  [<ffffffff8162f523>] dump_stack+0x4d/0x66
->>>> [ 9970.065074]  [<ffffffff8109995a>] __might_sleep+0xfa/0x130
->>>> [ 9970.130743]  [<ffffffff81633e6c>] mutex_lock_nested+0x3c/0x4f0
->>>> [ 9970.200638]  [<ffffffff811ba5dc>] ? kmem_cache_alloc+0x1bc/0x210
->>>> [ 9970.272610]  [<ffffffff81105807>] cpuset_mems_allowed+0x27/0x140
->>>> [ 9970.344584]  [<ffffffff811b1303>] ? __mpol_dup+0x63/0x150
->>>> [ 9970.409282]  [<ffffffff811b1385>] __mpol_dup+0xe5/0x150
->>>> [ 9970.471897]  [<ffffffff811b1303>] ? __mpol_dup+0x63/0x150
->>>> [ 9970.536585]  [<ffffffff81068c86>] ? copy_process.part.23+0x606/0x1d40
->>>> [ 9970.613763]  [<ffffffff810bf28d>] ? trace_hardirqs_on+0xd/0x10
->>>> [ 9970.683660]  [<ffffffff810ddddf>] ? monotonic_to_bootbased+0x2f/0x50
->>>> [ 9970.759795]  [<ffffffff81068cf0>] copy_process.part.23+0x670/0x1d40
->>>> [ 9970.834885]  [<ffffffff8106a598>] do_fork+0xd8/0x380
->>>> [ 9970.894375]  [<ffffffff81110e4c>] ? __audit_syscall_entry+0x9c/0xf0
->>>> [ 9970.969470]  [<ffffffff8106a8c6>] SyS_clone+0x16/0x20
->>>> [ 9971.030011]  [<ffffffff81642009>] stub_clone+0x69/0x90
->>>> [ 9971.091573]  [<ffffffff81641c29>] ? system_call_fastpath+0x16/0x1b
->>>>
->>>> The cause is that cpuset_mems_allowed() try to take mutex_lock(&callback_mutex)
->>>> under the rcu_read_lock(which was hold in __mpol_dup()). And in cpuset_mems_allowed(),
->>>> the access to cpuset is under rcu_read_lock, so in __mpol_dup, we can reduce the
->>>> rcu_read_lock protection region to protect the access to cpuset only in
->>>> current_cpuset_is_being_rebound(). So that we can avoid this bug.
->>>>
->>>> ...
->>>>
->>>> --- a/kernel/cpuset.c
->>>> +++ b/kernel/cpuset.c
->>>> @@ -1188,7 +1188,13 @@ done:
->>>>  
->>>>  int current_cpuset_is_being_rebound(void)
->>>>  {
->>>> -	return task_cs(current) == cpuset_being_rebound;
->>>> +	int ret;
->>>> +
->>>> +	rcu_read_lock();
->>>> +	ret = task_cs(current) == cpuset_being_rebound;
->>>> +	rcu_read_unlock();
->>>> +
->>>> +	return ret;
->>>>  }
->>>
->>> Looks fishy to me.  If the rcu_read_lock() stabilizes
->>> cpuset_being_rebound then cpuset_being_rebound can change immediately
->>> after rcu_read_unlock() and `ret' is now wrong.
->>
->> IMO, whether cpuset_being_rebound changed or not is immaterial here, we
->> just want to know whether the cpuset is being rebound at that point.
->>
+> Ok. I think we understand each other. But one more thing, I said P ~ V^3,
+> because P ~ V^2*f and f ~ V, so P ~ V^3. Maybe some frequencies share the same
+> voltage, but you can still safely assume V changes with f in general, and it
+> will be more and more so, since we do need finer control over power consumption.
+
+Agreed. Voltage typically changes with frequency.
+
 > 
-> I think your patch addresses the problem that you're reporting but misses 
-> the larger problem with cpuset.mems rebinding on fork().  When the 
-> forker's task_struct is duplicated (which includes ->mems_allowed) and it 
-> races with an update to cpuset_being_rebound in update_tasks_nodemask() 
-> then the task's mems_allowed doesn't get updated.
-
-Yes, you are right, this patch just wants to address the bug reported above.
-The race condition you mentioned above inherently exists there, but it is yet
-another issue, the rcu lock here makes no sense to it, and I think we need
-additional sync-mechanisms if want to fix it.
-But thinking more, though the current implementation has flaw, but I worry
-about the negative effect if we really want to fix it. Or maybe the fear
-is unnecessary.:) 
-
-Thanks,
-Gu 
-
-> .
+> > Sure, but realize that we must fully understand this governor and
+> > integrate it in the scheduler if we're to attain the goal of IPC/watt
+> > optimized scheduling behaviour.
+> > 
 > 
+> Attain the goal of IPC/watt optimized?
+> 
+> I don't see how it can be done like this. As I said, what is unknown for
+> prediction is perf scaling *and* changing workload. So the challenge for pstate
+> control is in both. But I see more chanllenge in the changing workload than
+> in the performance scaling or the resulting IPC impact (if workload is
+> fixed).
 
+IMHO, the per-entity load-tracking does a fair job representing the task
+compute capacity requirements. Sure it isn't perfect, particularly not
+for memory bound tasks, but it is way better than not having any task
+history at all, which was the case before.
 
+The story is more or less the same for performance scaling. It is not
+taken into account at all in the scheduler at the moment. cpufreq is
+actually messing up load-balancing decisions after task load-tracking
+was introduced. Adding performance scaling awareness should only make
+things better even if predictions are not accurate for all workloads. I
+don't see why it shouldn't given the current state of energy-awareness
+in the scheduler.
+
+> Currently, all freq governors take CPU utilization (load%) as the indicator
+> (target), which can server both: workload and perf scaling.
+
+With a bunch of hacks on top to make it more reactive because the
+current cpu utilization metric is not responsive enough to deal with
+workload changes. That is at least the case for ondemand and interactive
+(in Android).
+
+> As for IPC/watt optimized, I don't see how it can be practical. Too micro to
+> be used for the general well-being?
+
+That is why I propose to have a platform specific energy model. You tell
+the scheduler enough about your platform that it understands the most
+basic power/performance trade-offs of your platform and thereby enable
+the scheduler to make better decisions.
