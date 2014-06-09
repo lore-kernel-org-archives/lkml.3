@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933458AbaFIJCa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 05:02:30 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58499 "EHLO
+	id S964796AbaFIJFm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 05:05:42 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58484 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932123AbaFIIv0 (ORCPT
+	by vger.kernel.org with ESMTP id S1755026AbaFIIvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 04:51:26 -0400
+	Mon, 9 Jun 2014 04:51:25 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 092/146] Input: elantech - fix touchpad initialization on Gigabyte U2442
-Date: Mon,  9 Jun 2014 10:50:27 +0200
-Message-Id: <0ba39fe6868f1f239cf7d1cc525db88095295de5.1402303821.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 061/146] rt2x00: fix beaconing on USB
+Date: Mon,  9 Jun 2014 10:49:56 +0200
+Message-Id: <07aac1cd8fa963f5ee0519106b46a2c955ad2f18.1402303821.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
 References: <ebe219e45dcf94c1a34281167427cff4d742faef.1402303820.git.jslaby@suse.cz>
@@ -24,127 +24,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 36189cc3cd57ab0f1cd75241f93fe01de928ac06 upstream.
+commit 8834d3608cc516f13e2e510f4057c263f3d2ce42 upstream.
 
-The hw_version 3 Elantech touchpad on the Gigabyte U2442 does not accept
-0x0b as initialization value for r10, this stand-alone version of the
-driver: http://planet76.com/drivers/elantech/psmouse-elantech-v6.tar.bz2
+When disable beaconing we clear register with beacon and newer set it
+back, what make we stop send beacons infinitely.
 
-Uses 0x03 which does work, so this means not setting bit 3 of r10 which
-sets: "Enable Real H/W Resolution In Absolute mode"
-
-Which will result in half the x and y resolution we get with that bit set,
-so simply not setting it everywhere is not a solution. We've been unable to
-find a way to identify touchpads where setting the bit will fail, so this
-patch uses a dmi based blacklist for this.
-
-https://bugzilla.kernel.org/show_bug.cgi?id=61151
-
-Reported-by: Philipp Wolfer <ph.wolfer@gmail.com>
-Tested-by: Philipp Wolfer <ph.wolfer@gmail.com>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- Documentation/input/elantech.txt |  5 ++++-
- drivers/input/mouse/elantech.c   | 26 +++++++++++++++++++++++++-
- drivers/input/mouse/elantech.h   |  1 +
- 3 files changed, 30 insertions(+), 2 deletions(-)
+ drivers/net/wireless/rt2x00/rt2x00mac.c | 22 ++++++++++++----------
+ 1 file changed, 12 insertions(+), 10 deletions(-)
 
-diff --git a/Documentation/input/elantech.txt b/Documentation/input/elantech.txt
-index 5602eb71ad5d..e1ae127ed099 100644
---- a/Documentation/input/elantech.txt
-+++ b/Documentation/input/elantech.txt
-@@ -504,9 +504,12 @@ byte 5:
- * reg_10
+diff --git a/drivers/net/wireless/rt2x00/rt2x00mac.c b/drivers/net/wireless/rt2x00/rt2x00mac.c
+index f8cff1f0b6b7..2b724fc4e306 100644
+--- a/drivers/net/wireless/rt2x00/rt2x00mac.c
++++ b/drivers/net/wireless/rt2x00/rt2x00mac.c
+@@ -623,20 +623,18 @@ void rt2x00mac_bss_info_changed(struct ieee80211_hw *hw,
+ 				      bss_conf->bssid);
  
-    bit   7   6   5   4   3   2   1   0
--         0   0   0   0   0   0   0   A
-+         0   0   0   0   R   F   T   A
- 
-          A: 1 = enable absolute tracking
-+         T: 1 = enable two finger mode auto correct
-+         F: 1 = disable ABS Position Filter
-+         R: 1 = enable real hardware resolution
- 
- 6.2 Native absolute mode 6 byte packet format
-     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
-index ef1cf52f8bb9..230cdcf8e6fe 100644
---- a/drivers/input/mouse/elantech.c
-+++ b/drivers/input/mouse/elantech.c
-@@ -11,6 +11,7 @@
-  */
- 
- #include <linux/delay.h>
-+#include <linux/dmi.h>
- #include <linux/slab.h>
- #include <linux/module.h>
- #include <linux/input.h>
-@@ -831,7 +832,11 @@ static int elantech_set_absolute_mode(struct psmouse *psmouse)
- 		break;
- 
- 	case 3:
--		etd->reg_10 = 0x0b;
-+		if (etd->set_hw_resolution)
-+			etd->reg_10 = 0x0b;
-+		else
-+			etd->reg_10 = 0x03;
-+
- 		if (elantech_write_reg(psmouse, 0x10, etd->reg_10))
- 			rc = -1;
- 
-@@ -1331,6 +1336,22 @@ static int elantech_reconnect(struct psmouse *psmouse)
- }
- 
- /*
-+ * Some hw_version 3 models go into error state when we try to set bit 3 of r10
-+ */
-+static const struct dmi_system_id no_hw_res_dmi_table[] = {
-+#if defined(CONFIG_DMI) && defined(CONFIG_X86)
-+	{
-+		/* Gigabyte U2442 */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "GIGABYTE"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "U2442"),
-+		},
-+	},
-+#endif
-+	{ }
-+};
-+
-+/*
-  * determine hardware version and set some properties according to it.
-  */
- static int elantech_set_properties(struct elantech_data *etd)
-@@ -1389,6 +1410,9 @@ static int elantech_set_properties(struct elantech_data *etd)
+ 	/*
+-	 * Update the beacon. This is only required on USB devices. PCI
+-	 * devices fetch beacons periodically.
+-	 */
+-	if (changes & BSS_CHANGED_BEACON && rt2x00_is_usb(rt2x00dev))
+-		rt2x00queue_update_beacon(rt2x00dev, vif);
+-
+-	/*
+ 	 * Start/stop beaconing.
  	 */
- 	etd->crc_enabled = ((etd->fw_version & 0x4000) == 0x4000);
+ 	if (changes & BSS_CHANGED_BEACON_ENABLED) {
+ 		if (!bss_conf->enable_beacon && intf->enable_beacon) {
+-			rt2x00queue_clear_beacon(rt2x00dev, vif);
+ 			rt2x00dev->intf_beaconing--;
+ 			intf->enable_beacon = false;
++			/*
++			 * Clear beacon in the H/W for this vif. This is needed
++			 * to disable beaconing on this particular interface
++			 * and keep it running on other interfaces.
++			 */
++			rt2x00queue_clear_beacon(rt2x00dev, vif);
  
-+	/* Enable real hardware resolution on hw_version 3 ? */
-+	etd->set_hw_resolution = !dmi_check_system(no_hw_res_dmi_table);
-+
- 	return 0;
- }
+ 			if (rt2x00dev->intf_beaconing == 0) {
+ 				/*
+@@ -647,11 +645,15 @@ void rt2x00mac_bss_info_changed(struct ieee80211_hw *hw,
+ 				rt2x00queue_stop_queue(rt2x00dev->bcn);
+ 				mutex_unlock(&intf->beacon_skb_mutex);
+ 			}
+-
+-
+ 		} else if (bss_conf->enable_beacon && !intf->enable_beacon) {
+ 			rt2x00dev->intf_beaconing++;
+ 			intf->enable_beacon = true;
++			/*
++			 * Upload beacon to the H/W. This is only required on
++			 * USB devices. PCI devices fetch beacons periodically.
++			 */
++			if (rt2x00_is_usb(rt2x00dev))
++				rt2x00queue_update_beacon(rt2x00dev, vif);
  
-diff --git a/drivers/input/mouse/elantech.h b/drivers/input/mouse/elantech.h
-index 036a04abaef7..9e0e2a1f340d 100644
---- a/drivers/input/mouse/elantech.h
-+++ b/drivers/input/mouse/elantech.h
-@@ -130,6 +130,7 @@ struct elantech_data {
- 	bool jumpy_cursor;
- 	bool reports_pressure;
- 	bool crc_enabled;
-+	bool set_hw_resolution;
- 	unsigned char hw_version;
- 	unsigned int fw_version;
- 	unsigned int single_finger_reports;
+ 			if (rt2x00dev->intf_beaconing == 1) {
+ 				/*
 -- 
 1.9.3
 
