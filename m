@@ -1,60 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933870AbaFIP5B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 11:57:01 -0400
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:52689 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933716AbaFIP45 (ORCPT
+	id S933268AbaFIQEH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 12:04:07 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:63898 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752662AbaFIQEE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 11:56:57 -0400
-Message-ID: <5395D9D6.3080101@fb.com>
-Date: Mon, 9 Jun 2014 11:59:18 -0400
-From: Chris Mason <clm@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 9 Jun 2014 12:04:04 -0400
 MIME-Version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>, <jbacik@fb.com>
-CC: LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        <linux-btrfs@vger.kernel.org>
-Subject: Re: btrfs: hang on boot due to tests
-References: <5395CFE6.10804@oracle.com>
-In-Reply-To: <5395CFE6.10804@oracle.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-06-09_03:2014-06-09,2014-06-09,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=1.46926359967381e-11 kscore.compositescore=0
- circleOfTrustscore=198.888439154703 compositescore=0.998981209195878
- urlsuspect_oldscore=0.998981209195878 suspectscore=0
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=64355
- rbsscore=0.998981209195878 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1406090207
-X-FB-Internal: deliver
+In-Reply-To: <1402309011.17650.9.camel@AMDC1943>
+References: <1402306670-17041-1-git-send-email-javier.martinez@collabora.co.uk>
+	<1402309011.17650.9.camel@AMDC1943>
+Date: Mon, 9 Jun 2014 09:04:02 -0700
+X-Google-Sender-Auth: d62kEJ9OThEQE8-6xyXOxgS1biU
+Message-ID: <CAD=FV=U2zPJ=NohDjGvJKfmwJzQhphtVMefM0p_hvFVoReauhQ@mail.gmail.com>
+Subject: Re: [PATCH 0/5] Add Maxim 77802 PMIC support
+From: Doug Anderson <dianders@chromium.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Lee Jones <lee.jones@linaro.org>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
+        Mark Brown <broonie@kernel.org>, Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Daniel Stone <daniels@collabora.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/2014 11:16 AM, Sasha Levin wrote:
-> Hi all,
-> 
-> It seems that some recent changes to btrfs tests make it hang during boot:
-> 
-> [   49.730033] NMI watchdog: BUG: soft lockup - CPU#34 stuck for 23s! [swapper/0:1]
-> [   49.730033] Modules linked in:
-> [   49.730033] hardirqs last enabled at (6389143): restore_args (arch/x86/kernel/entry_64.S:829)
-> [   49.730033] hardirqs last disabled at (6389144): apic_timer_interrupt (arch/x86/kernel/entry_64.S:1021)
-> [   49.730033] softirqs last enabled at (6389142): __do_softirq (./arch/x86/include/asm/preempt.h:22 kernel/softirq.c:296)
-> [   49.730033] softirqs last disabled at (6389139): irq_exit (kernel/softirq.c:346 kernel/softirq.c:387)
-> [   49.730033] CPU: 34 PID: 1 Comm: swapper/0 Not tainted 3.15.0-rc8-next-20140606-sasha-00021-ga9d3a0b-dirty #597
+Krzystof,
+
+On Mon, Jun 9, 2014 at 3:16 AM, Krzysztof Kozlowski
+<k.kozlowski@samsung.com> wrote:
+> On pon, 2014-06-09 at 11:37 +0200, Javier Martinez Canillas wrote:
+>> MAX77802 is a PMIC that contains 10 high efficiency Buck regulators,
+>> 32 Low-dropout (LDO) regulators, two 32kHz buffered clock outputs,
+>> a Real-Time-Clock (RTC) and a I2C interface to program the individual
+>> regulators, clocks and the RTC.
+>>
+>> This series are based on drivers added by Simon Glass to the Chrome OS
+>> kernel and adds support for the Maxim 77802 Power Management IC, their
+>> regulators, clocks, RTC and I2C interface. It is composed of patches:
+>>
+>> [PATCH 1/5] mfd: Add driver for Maxim 77802 Power Management IC
+>> [PATCH 2/5] regulator: Add driver for Maxim 77802 PMIC regulators
+>> [PATCH 3/5] clk: Add driver for Maxim 77802 PMIC clocks
+>> [PATCH 4/5] rtc: Add driver for Maxim 77802 PMIC Real-Time-Clock
+>> [PATCH 5/5] ARM: dts: Add max77802 device node for exynos5420-peach-pit
+>>
+>> Patches 1-4 add support for the different devices and Patch 5 enables
+>> the MAX77802 PMIC on the Exynos5420 based Peach pit board.
+>
+>
+> Hi,
+>
+> The main mfd, mfd irq, clk and rtc drivers look very similar to max77686
+> drivers. I haven't checked other Maxim drivers but I think there will be
+> a lot of similarities with them also. It is almost common for Maxim
+> chipsets to share components between each other.
+>
+> I think there is no need in duplicating all that stuff once again in new
+> driver for another Maxim-almost-the-same-as-others-XYZ chipset. Just
+> merge it with max77686 (or other better candidate).
+>
+> The only difference is in regulator driver. I am not sure whether this
+> is a result of differences in chip or differences in driver design.
+
+Yes, we thought the same thing when we added support for the max77802
+in the ChromeOS tree.  Unfortunately it didn't work out half as well
+as we thought it would.  When Javier was asking advice about sending
+things upstream we suggested that perhaps he should split the two up.
 
 
-This is 3.15-rc8 + linux-next?  I'll try to reproduce here, but the
-tests were working for me.
+You can see the result of the combined driver the ChromeOS tree (the
+code there is older, probably misnamed as max77xxx, and doesn't have
+the proper clock pieces, but you can get the gist):
 
--chris
+https://chromium.googlesource.com/chromiumos/third_party/kernel/+/chromeos-3.8/drivers/regulator/max77xxx-regulator.c
+https://chromium.googlesource.com/chromiumos/third_party/kernel/+/chromeos-3.8/drivers/rtc/rtc-max77xxx.c
+
+
+Specific problems that made it ugly to have a combined driver:
+
+* The RTC has many subtle differences between the 77686 and 77802.
+They expanded it to handle a 200 year timeframe instead of 100 and
+that meant that they had to shuffle the bits around everywhere.  They
+also moved it to have the same i2c address as the main PMIC so all
+addresses are different (see max77686_map in the RTC link above).
+
+* The regulator itself has similar concepts between the two, but the
+list of bucks / ldos and how they behave is quite different.  Trying
+to understand the complex tables in
+<https://chromium.googlesource.com/chromiumos/third_party/kernel/+/chromeos-3.8/drivers/regulator/max77xxx-regulator.c>
+was not easy.
+
+
+If we really need to write a single driver it certainly can be done,
+but please look at the above to be sure this is what you want.
+
+
+NOTE: it's possible that things could be more sane with more driver
+redesign, possibly making things more data driven.  The thing that
+would be really nice to do would be to avoid all of the crazy
+"regulator_zzz_desc_zzz" macros, maybe?  I'd have to actually try
+doing it to be sure it's cleaner, though...
+
+
+-Doug
