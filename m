@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935577AbaFJAl7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:41:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58239 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933920AbaFJAWD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933932AbaFJAWD (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 9 Jun 2014 20:22:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58173 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932881AbaFJAV5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 20:21:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yevgeniy Melnichuk <yevgeniy.melnichuk@googlemail.com>,
-        Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
+        Jaganath Kanakkassery <jaganath.k@samsung.com>,
+        Chan-Yeol Park <chanyeol.park@samsung.com>,
+        Johan Hedberg <johan.hedberg@intel.com>,
         Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
-        Ben Hutchings <ben@decadent.org.uk>, Jianguo Wu <wujianguo@huawei.com>
-Subject: [PATCH 3.4 24/88] Bluetooth: Add support for Sony Vaio T-Series
-Date: Mon,  9 Jun 2014 17:24:34 -0700
-Message-Id: <20140610002425.322068276@linuxfoundation.org>
+        Jianguo Wu <wujianguo@huawei.com>
+Subject: [PATCH 3.4 19/88] Bluetooth: Fix invalid length check in l2cap_information_rsp()
+Date: Mon,  9 Jun 2014 17:24:29 -0700
+Message-Id: <20140610002425.164224690@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
 References: <20140610002424.500996570@linuxfoundation.org>
@@ -32,85 +32,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yevgeniy Melnichuk <yevgeniy.melnichuk@googlemail.com>
+From: Jaganath Kanakkassery <jaganath.k@samsung.com>
 
-commit bc21fde2d549d1cb1ebef04016eb7affa43bb5c1 upstream.
+commit 3f6fa3d489e127ca5a5b298eabac3ff5dbe0e112 upstream.
 
-Add Sony Vaio T-Series Bluetooth Module( 0x489:0xE036) to
-the blacklist of btusb module and add it to the ath3k module.
+The length check is invalid since the length varies with type of
+info response.
 
-output of cat /sys/kernel/debug/usb/devices
+This was introduced by the commit cb3b3152b2f5939d67005cff841a1ca748b19888
 
-T:  Bus=01 Lev=02 Prnt=02 Port=01 Cnt=01 Dev#=  5 Spd=12   MxCh= 0
-D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=0489 ProdID=e036 Rev= 0.02
-S:  Manufacturer=Atheros Communications
-S:  Product=Bluetooth USB Host Controller
-S:  SerialNumber=Alaska Day 2006
-C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
-I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
-E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
-I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
-I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+Because of this, l2cap info rsp is not handled and command reject is sent.
 
-Signed-off-by: Yevgeniy Melnichuk <yevgeniy.melnichuk@googlemail.com>
-Signed-off-by: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
-Acked-by: Marcel Holtmann <marcel@holtmann.org>
+> ACL data: handle 11 flags 0x02 dlen 16
+        L2CAP(s): Info rsp: type 2 result 0
+          Extended feature mask 0x00b8
+            Enhanced Retransmission mode
+            Streaming mode
+            FCS Option
+            Fixed Channels
+< ACL data: handle 11 flags 0x00 dlen 10
+        L2CAP(s): Command rej: reason 0
+          Command not understood
+
+Cc: stable@vger.kernel.org
+Signed-off-by: Jaganath Kanakkassery <jaganath.k@samsung.com>
+Signed-off-by: Chan-Yeol Park <chanyeol.park@samsung.com>
+Acked-by: Johan Hedberg <johan.hedberg@intel.com>
 Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Jianguo Wu <wujianguo@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/bluetooth/ath3k.c |    2 ++
- drivers/bluetooth/btusb.c |    1 +
- 2 files changed, 3 insertions(+)
+ net/bluetooth/l2cap_core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/bluetooth/ath3k.c
-+++ b/drivers/bluetooth/ath3k.c
-@@ -89,6 +89,7 @@ static struct usb_device_id ath3k_table[
+--- a/net/bluetooth/l2cap_core.c
++++ b/net/bluetooth/l2cap_core.c
+@@ -3445,7 +3445,7 @@ static inline int l2cap_move_channel_con
+ 	struct l2cap_move_chan_cfm_rsp *rsp = data;
+ 	u16 icid;
  
- 	/* Atheros AR5BBU22 with sflash firmware */
- 	{ USB_DEVICE(0x0489, 0xE03C) },
-+	{ USB_DEVICE(0x0489, 0xE036) },
+-	if (cmd_len != sizeof(*rsp))
++	if (cmd_len < sizeof(*rsp))
+ 		return -EPROTO;
  
- 	{ }	/* Terminating entry */
- };
-@@ -114,6 +115,7 @@ static struct usb_device_id ath3k_blist_
- 
- 	/* Atheros AR5BBU22 with sflash firmware */
- 	{ USB_DEVICE(0x0489, 0xE03C), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x0489, 0xE036), .driver_info = BTUSB_ATH3012 },
- 
- 	{ }	/* Terminating entry */
- };
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -153,6 +153,7 @@ static struct usb_device_id blacklist_ta
- 
- 	/* Atheros AR5BBU12 with sflash firmware */
- 	{ USB_DEVICE(0x0489, 0xe03c), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x0489, 0xe036), .driver_info = BTUSB_ATH3012 },
- 
- 	/* Broadcom BCM2035 */
- 	{ USB_DEVICE(0x0a5c, 0x2035), .driver_info = BTUSB_WRONG_SCO_MTU },
+ 	icid = le16_to_cpu(rsp->icid);
 
 
