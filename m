@@ -1,73 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751812AbaFJJpQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 05:45:16 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:48725 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751088AbaFJJpN (ORCPT
+	id S1752100AbaFJJqx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 05:46:53 -0400
+Received: from forward-corp1g.mail.yandex.net ([95.108.253.251]:60424 "EHLO
+	forward-corp1g.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750836AbaFJJqu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 05:45:13 -0400
-From: Juergen Borleis <jbe@pengutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, kernel@pengutronix.de
-Subject: [PATCH 4/7] bq27425: the DesignCapacity register is at a different offset
-Date: Tue, 10 Jun 2014 11:44:50 +0200
-Message-Id: <1402393493-3559-5-git-send-email-jbe@pengutronix.de>
-X-Mailer: git-send-email 2.0.0.rc2
-In-Reply-To: <1402393493-3559-1-git-send-email-jbe@pengutronix.de>
-References: <1402393493-3559-1-git-send-email-jbe@pengutronix.de>
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:a236:9fff:fe00:814
-X-SA-Exim-Mail-From: jbe@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 10 Jun 2014 05:46:50 -0400
+X-Yandex-Uniq: db93db32-e48e-4545-bc17-eb7bc0de3d83
+Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+Date: Tue, 10 Jun 2014 13:46:45 +0400
+From: Stanislav Fomichev <stfomichev@yandex-team.ru>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: viresh.kumar@linaro.org, paul.gortmaker@windriver.com,
+        peterz@infradead.org, stuart.w.hayes@gmail.com,
+        david.vrabel@citrix.com, linux-kernel@vger.kernel.org
+Subject: [PATCH v3] hrtimers: add fast path to hrtimer_get_next_event
+Message-ID: <20140610094645.GN26511@stfomichev-desktop.yandex.net>
+References: <1402305825-3015-1-git-send-email-stfomichev@yandex-team.ru>
+ <alpine.DEB.2.10.1406091304140.3830@nanos>
+ <20140609111115.GK26511@stfomichev-desktop.yandex.net>
+ <20140609125931.GL26511@stfomichev-desktop.yandex.net>
+ <alpine.DEB.2.10.1406091635080.3830@nanos>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1406091635080.3830@nanos>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For the BQ27425-g1 this register does not exists at all.
-For the BQ27425-g2a this register is at offset 0x3C.
+> Sigh. Is anybody actually reading and trying to understand what I
+> write in reviews?
+> 
+> > Also the lockless check wants a comment why it is correct.
+> 
+> Is it that hard? A comment is NOT a uberlenghty explanation in the
+> changelog. A comment starts with /* and ends with */ and is in the
+> code.
+> 
+> 	/*
+> 	 * Called with interrupts disabled and therefor
+> 	 * protected against a switch to high resolution mode.
+> 	 */
+>  
+> That's a comment, right?
+Duh, I honestly thought you were talking about more details in the
+changelog. How come you didn't like it? Piece of art :-)
 
-Signed-off-by: Juergen Borleis <jbe@pengutronix.de>
+Anyway, here is another respin of the patch.
+Btw, maybe it also makes sense to convert _irqsave spinlocks to non-irq
+ones? If we now have a comment telling we are called with interrupts
+disabled, there is no way we need irq safe locks, right?
+
+--
+
+In hrtimer_get_next_event we unconditionally lock/unlock spinlock, even if it's
+not required (hrtimer_hres_active() != 0). This patch adds fast path
+when highres is active so we don't execute unnecessary operations.
+
+Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
 ---
- drivers/power/bq27x00_battery.c | 17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
+ kernel/hrtimer.c | 31 ++++++++++++++++++-------------
+ 1 file changed, 18 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/power/bq27x00_battery.c b/drivers/power/bq27x00_battery.c
-index 39b5194..a5a88f1 100644
---- a/drivers/power/bq27x00_battery.c
-+++ b/drivers/power/bq27x00_battery.c
-@@ -78,6 +78,9 @@
- #define BQ27425_REG_OFFSET		0x04
- #define BQ27425_REG_SOC			0x20 /* Register address plus offset */
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index ba340739c701..245c90e5626b 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -1167,23 +1167,28 @@ ktime_t hrtimer_get_next_event(void)
+ 	unsigned long flags;
+ 	int i;
  
-+/* register offsets above 0x20 are DEVICE_TYPE 0x0425 specifc */
-+#define BQ27425_REG_DCAP		0x40 /* Design capacity plus offset */
++	/*
++	 * Called with interrupts disabled and therefore
++	 * protected against a switch to high resolution mode.
++	 */
++	if (hrtimer_hres_active())
++		return mindelta;
 +
- #define BQ27000_RS			20 /* Resistor sense */
- #define BQ27x00_POWER_CONSTANT		(256 * 29200 / 1000)
+ 	raw_spin_lock_irqsave(&cpu_base->lock, flags);
  
-@@ -265,9 +268,17 @@ static int bq27x00_battery_read_ilmd(struct bq27x00_device_info *di)
- {
- 	int ilmd;
+-	if (!hrtimer_hres_active()) {
+-		for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++, base++) {
+-			struct hrtimer *timer;
+-			struct timerqueue_node *next;
++	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++, base++) {
++		struct hrtimer *timer;
++		struct timerqueue_node *next;
  
--	if (bq27xxx_is_chip_version_higher(di))
--		ilmd = bq27x00_read(di, BQ27500_REG_DCAP, false);
--	else
-+	if (bq27xxx_is_chip_version_higher(di)) {
-+		if (di->chip == BQ27425) {
-+			if (di->chip_type == BQ27425_g2a)
-+				ilmd = bq27x00_read(di, BQ27425_REG_DCAP,
-+							false);
-+			else
-+				ilmd = -ENODATA;
-+		} else {
-+			ilmd = bq27x00_read(di, BQ27500_REG_DCAP, false);
-+		}
-+	} else
- 		ilmd = bq27x00_read(di, BQ27000_REG_ILMD, true);
+-			next = timerqueue_getnext(&base->active);
+-			if (!next)
+-				continue;
++		next = timerqueue_getnext(&base->active);
++		if (!next)
++			continue;
  
- 	if (ilmd < 0) {
+-			timer = container_of(next, struct hrtimer, node);
+-			delta.tv64 = hrtimer_get_expires_tv64(timer);
+-			delta = ktime_sub(delta, base->get_time());
+-			if (delta.tv64 < mindelta.tv64)
+-				mindelta.tv64 = delta.tv64;
+-		}
++		timer = container_of(next, struct hrtimer, node);
++		delta.tv64 = hrtimer_get_expires_tv64(timer);
++		delta = ktime_sub(delta, base->get_time());
++		if (delta.tv64 < mindelta.tv64)
++			mindelta.tv64 = delta.tv64;
+ 	}
+ 
+ 	raw_spin_unlock_irqrestore(&cpu_base->lock, flags);
 -- 
-2.0.0.rc2
+1.8.3.2
 
