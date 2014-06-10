@@ -1,168 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752553AbaFJPio (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 11:38:44 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:44403 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751063AbaFJPim (ORCPT
+	id S1752603AbaFJPjp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 11:39:45 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:57054 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751174AbaFJPjo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 11:38:42 -0400
-Message-ID: <5397267E.4060306@hybridcluster.com>
-Date: Tue, 10 Jun 2014 18:38:38 +0300
-From: Andriy Gapon <andriy.gapon@hybridcluster.com>
-User-Agent: Mozilla/5.0 (X11; FreeBSD amd64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 10 Jun 2014 11:39:44 -0400
 MIME-Version: 1.0
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Luke Marsden <luke@hybridcluster.com>
-Subject: kernel BUG at /build/buildd/linux-3.13.0/fs/namei.c:2987!
-Content-Type: text/plain; charset=X-VIET-VPS
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <20140610143344.GA15699@redhat.com>
+References: <20140606193128.CB477660FB4@gitolite.kernel.org>
+	<20140610143344.GA15699@redhat.com>
+Date: Tue, 10 Jun 2014 08:39:40 -0700
+X-Google-Sender-Auth: KMd1t1D87ln9hH5ZVZZsICIhFH8
+Message-ID: <CAD=FV=Wx2kuEHSebDQcrZs19o+7OAVo_WNNROoTwEkFc6xpqzQ@mail.gmail.com>
+Subject: Re: i2c: ChromeOS EC tunnel driver
+From: Doug Anderson <dianders@chromium.org>
+To: Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Douglas Anderson <dianders@chromium.org>,
+        Lee Jones <lee.jones@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dave,
 
-During filesystem stress testing we've run into the following problem:
-kernel BUG at /build/buildd/linux-3.13.0/fs/namei.c:2987!
+On Tue, Jun 10, 2014 at 7:33 AM, Dave Jones <davej@redhat.com> wrote:
+> On Fri, Jun 06, 2014 at 07:31:28PM +0000, Linux Kernel wrote:
+>  > Gitweb:     http://git.kernel.org/linus/;a=commit;h=9d230c9e4f4e67cb1c1cb9e0f6142da16b0f2796
+>  > Commit:     9d230c9e4f4e67cb1c1cb9e0f6142da16b0f2796
+>  > Parent:     5271db29d7199fe0ffb303ca4bbbb1485bba28c3
+>  > Refname:    refs/heads/next
+>  > Author:     Doug Anderson <dianders@chromium.org>
+>  > AuthorDate: Wed Apr 30 10:44:09 2014 -0700
+>  > Committer:  Lee Jones <lee.jones@linaro.org>
+>  > CommitDate: Tue Jun 3 08:11:49 2014 +0100
+>
+>  > +static int ec_i2c_construct_message(u8 *buf, const struct i2c_msg i2c_msgs[],
+>  > +                                int num, u16 bus_num)
+>  > +{
+>  > +    struct ec_params_i2c_passthru *params;
+>  > +    u8 *out_data;
+>  > +    int i;
+>  > +
+>  > +    out_data = buf + sizeof(struct ec_params_i2c_passthru) +
+>  > +               num * sizeof(struct ec_params_i2c_passthru_msg);
+>  > +
+>  > +    params = (struct ec_params_i2c_passthru *)buf;
+>  > +    params->port = bus_num;
+>  > +    params->num_msgs = num;
+>  > +    for (i = 0; i < num; i++) {
+>  > +            const struct i2c_msg *i2c_msg = &i2c_msgs[i];
+>  > +            struct ec_params_i2c_passthru_msg *msg = &params->msg[i];
+>  > +
+>  > +            msg->len = i2c_msg->len;
+>  > +            msg->addr_flags = i2c_msg->addr;
+>  > +
+>  > +            if (i2c_msg->flags & I2C_M_TEN)
+>  > +                    msg->addr_flags |= EC_I2C_FLAG_10BIT;
+>
+> This is a fun bug. EC_I2C_FLAG_10BIT is 1<<16, but msg->addr_flags is only a uint16.
 
-The line corresponds to line 2989 here:
-http://lxr.free-electrons.com/source/fs/namei.c?v=3.13
+Good catch.  Luckily we have no actual 10-bit devices on the other
+end, but it sure makes this bit of the tunnel pretty stupid.
 
-I have a crash dump and after playing a little bit with 'crash' utility it seems
-that path->dentry->d_inode != NULL while inode == NULL.
-Looking at the surrounding code I wonder what ensures that dentry->d_inode stays
-immutable between lines 2973 and 2989.  I do not see any lock protecting the
-dentry.  And, IMHO, it could be possible that the dentry could originally be a
-negative entry which is then concurrently morphed into a normal entry before a
-check at line 2977 is performed.
+The correct fix is to fix the master 'ec_commands.h' in the ChromeOS
+EC project, then pull the change over to the kernel.  I've filed a bug
+against our EC team at http://crbug.com/382944
 
-What do you think? Thanks!
-
-Some debug data follows. We will gladly provide any additional data that could
-be of use.
-
-crash> bt
-PID: 4438   TASK: ffff8803fcde97f0  CPU: 2   COMMAND: "python"
- #0 [ffff8804083919e8] machine_kexec at ffffffff8104a732
- #1 [ffff880408391a38] crash_kexec at ffffffff810e6ab3
- #2 [ffff880408391b00] oops_end at ffffffff8171efe8
- #3 [ffff880408391b28] die at ffffffff810171cb
- #4 [ffff880408391b58] do_trap at ffffffff8171e6e0
- #5 [ffff880408391ba8] do_invalid_op at ffffffff81014512
- #6 [ffff880408391c50] invalid_op at ffffffff81727cde
-    [exception RIP: do_last+4231]
-    RIP: ffffffff811c7787  RSP: ffff880408391d08  RFLAGS: 00010286
-    RAX: 0000000000000000  RBX: ffff880408391f2c  RCX: 0000000000000000
-    RDX: 0000000000300000  RSI: ffff8801ab856780  RDI: ffff8801ab856780
-    RBP: ffff880408391d98   R8: 0000000000000102   R9: ffff880408391ccc
-    R10: ffff880405e47020  R11: 0000000000000001  R12: 0000000000018800
-    R13: ffff880408391de8  R14: ffff880408391f2c  R15: ffff880408391e40
-    ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
- #7 [ffff880408391d00] do_last at ffffffff811c67a7
- #8 [ffff880408391da0] path_openat at ffffffff811c8d7b
- #9 [ffff880408391e38] do_filp_open at ffffffff811ca13a
-#10 [ffff880408391f08] do_sys_open at ffffffff811b8859
-#11 [ffff880408391f70] sys_openat at ffffffff811b89e4
-#12 [ffff880408391f80] tracesys at ffffffff817266bf (via system_call)
-    RIP: 00007f88c4cd3550  RSP: 00007fffe824cc08  RFLAGS: 00000246
-    RAX: ffffffffffffffda  RBX: ffffffff817266bf  RCX: ffffffffffffffff
-    RDX: 0000000000090800  RSI: 0000000000a62060  RDI: ffffffffffffff9c
-    RBP: 00007f88c397c9d0   R8: 00007f88c5227000   R9: 00000000009e4ff0
-    R10: 0000000000000000  R11: 0000000000000246  R12: ffffffff811b89e4
-    R13: ffff880408391f78  R14: 00007f88c52a03e3  R15: 0000000000a32028
-    ORIG_RAX: 0000000000000101  CS: 0033  SS: 002b
-
-crash> disassemble do_last
-Dump of assembler code for function do_last:
-...
-   0xffffffff811c773b <+4155>:  mov    0x60(%rsp),%rax
-   0xffffffff811c7740 <+4160>:  cmp    %rax,0x30(%rsi)
-   0xffffffff811c7744 <+4164>:  jne    0xffffffff811c7787 <do_last+4231>
-...
-   0xffffffff811c7787 <+4231>:  ud2
-
-crash> rd ffff880408391d68
-ffff880408391d68:  0000000000000000                    ........
-
-crash> rd ffff8801ab8567b0
-ffff8801ab8567b0:  ffff880077a9b078                    x..w....
-
-crash> struct dentry ffff8801ab856780
-struct dentry {
-  d_flags = 3670212,
-  d_seq = {
-    sequence = 4
-  },
-  d_hash = {
-    next = 0xffff880290e6c788,
-    pprev = 0xffffc90000f28cd0
-  },
-  d_parent = 0xffff8803e7933a80,
-  d_name = {
-    {
-      {
-        hash = 52,
-        len = 1
-      },
-      hash_len = 4294967348
-    },
-    name = 0xffff8801ab8567b8 "4"
-  },
-  d_inode = 0xffff880077a9b078,
-  d_iname =
-"4\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000",
-
-  d_lockref = {
-    {
-      lock_count = 4313317656,
-      {
-        lock = {
-          {
-            rlock = {
-              raw_lock = {
-                {
-                  head_tail = 18350360,
-                  tickets = {
-                    head = 280,
-                    tail = 280
-                  }
-                }
-              }
-            }
-          }
-        },
-        count = 1
-      }
-    }
-  },
-  d_op = 0xffffffffa089cc40,
-  d_sb = 0xffff880405e0a800,
-  d_time = 4781725256,
-  d_fsdata = 0x0,
-  d_lru = {
-    next = 0xffff8802320ee500,
-    prev = 0xffff8801ab856740
-  },
-  d_u = {
-    d_child = {
-      next = 0xffff8801ab856750,
-      prev = 0xffff8802320ee510
-    },
-    d_rcu = {
-      next = 0xffff8801ab856750,
-      func = 0xffff8802320ee510
-    }
-  },
-  d_subdirs = {
-    next = 0xffff8801ab856820,
-    prev = 0xffff8801ab856820
-  },
-  d_alias = {
-    next = 0x0,
-    pprev = 0xffff880077a9b190
-  }
-}
-
--- 
-Andriy Gapon
+-Doug
