@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932623AbaFJTyS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 15:54:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35609 "EHLO
+	id S932642AbaFJTy1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 15:54:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35624 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932604AbaFJTyM (ORCPT
+	with ESMTP id S1753761AbaFJTyR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:54:12 -0400
+	Tue, 10 Jun 2014 15:54:17 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Richard Farina <sidhayn@gmail.com>, Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 025/160] Revert "USB: serial: add usbid for dell wwan card to sierra.c"
-Date: Tue, 10 Jun 2014 12:44:25 -0700
-Message-Id: <1402429600-20477-26-git-send-email-kamal@canonical.com>
+Cc: Christoph Hellwig <hch@lst.de>, Chuck Lever <chuck.lever@oracle.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 155/160] posix_acl: handle NULL ACL in posix_acl_equiv_mode
+Date: Tue, 10 Jun 2014 12:46:35 -0700
+Message-Id: <1402429600-20477-156-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -28,35 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Christoph Hellwig <hch@lst.de>
 
-commit 2e01280d2801c72878cf3a7119eac30077b463d5 upstream.
+commit 50c6e282bdf5e8dabf8d7cf7b162545a55645fd9 upstream.
 
-This reverts commit 1ebca9dad5abe8b2ed4dbd186cd657fb47c1f321.
+Various filesystems don't bother checking for a NULL ACL in
+posix_acl_equiv_mode, and thus can dereference a NULL pointer when it
+gets passed one. This usually happens from the NFS server, as the ACL tools
+never pass a NULL ACL, but instead of one representing the mode bits.
 
-This device was erroneously added to the sierra driver even though it's
-not a Sierra device and was already handled by the option driver.
+Instead of adding boilerplat to all filesystems put this check into one place,
+which will allow us to remove the check from other filesystems as well later
+on.
 
-Cc: Richard Farina <sidhayn@gmail.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Reported-by: Ben Greear <greearb@candelatech.com>
+Reported-by: Marco Munderloh <munderl@tnt.uni-hannover.de>,
+Cc: Chuck Lever <chuck.lever@oracle.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/sierra.c | 1 -
- 1 file changed, 1 deletion(-)
+ fs/posix_acl.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/usb/serial/sierra.c b/drivers/usb/serial/sierra.c
-index de958c5..b6910b7 100644
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -291,7 +291,6 @@ static const struct usb_device_id id_table[] = {
- 	{ USB_DEVICE(0x0f3d, 0x68A3), 	/* Airprime/Sierra Wireless Direct IP modems */
- 	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
- 	},
--       { USB_DEVICE(0x413C, 0x08133) }, /* Dell Computer Corp. Wireless 5720 VZW Mobile Broadband (EVDO Rev-A) Minicard GPS Port */
+diff --git a/fs/posix_acl.c b/fs/posix_acl.c
+index 8bd2135..3542f1f 100644
+--- a/fs/posix_acl.c
++++ b/fs/posix_acl.c
+@@ -158,6 +158,12 @@ posix_acl_equiv_mode(const struct posix_acl *acl, umode_t *mode_p)
+ 	umode_t mode = 0;
+ 	int not_equiv = 0;
  
- 	{ }
- };
++	/*
++	 * A null ACL can always be presented as mode bits.
++	 */
++	if (!acl)
++		return 0;
++
+ 	FOREACH_ACL_ENTRY(pa, acl, pe) {
+ 		switch (pa->e_tag) {
+ 			case ACL_USER_OBJ:
 -- 
 1.9.1
 
