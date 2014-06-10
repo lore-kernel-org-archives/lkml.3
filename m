@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964835AbaFJAgT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:36:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58480 "EHLO
+	id S964891AbaFJAgm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:36:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58469 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934391AbaFJAWd (ORCPT
+	with ESMTP id S934010AbaFJAWc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 20:22:33 -0400
+	Mon, 9 Jun 2014 20:22:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        Asias He <asias@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
+        Asias He <asias@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
         Ben Hutchings <ben@decadent.org.uk>,
         Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH 3.4 45/88] virtio-blk: Call del_gendisk() before disable guest kick
-Date: Mon,  9 Jun 2014 17:24:55 -0700
-Message-Id: <20140610002426.025251054@linuxfoundation.org>
+Subject: [PATCH 3.4 43/88] virtio_blk: Drop unused request tracking list
+Date: Mon,  9 Jun 2014 17:24:53 -0700
+Message-Id: <20140610002425.965039310@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
 References: <20140610002424.500996570@linuxfoundation.org>
@@ -34,65 +32,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Asias He <asias@redhat.com>
 
-commit 02e2b124943648fba0a2ccee5c3656a5653e0151 upstream.
+commit f65ca1dc6a8c81c6bd72297d4399ec5f4c1f3a01 upstream.
 
-del_gendisk() might not return due to failing to remove the
-/sys/block/vda/serial sysfs entry when another thread (udev) is
-trying to read it.
+Benchmark shows small performance improvement on fusion io device.
 
-virtblk_remove()
-  vdev->config->reset() : guest will not kick us through interrupt
-    del_gendisk()
-      device_del()
-        kobject_del(): got stuck, sysfs entry ref count non zero
+Before:
+  seq-read : io=1,024MB, bw=19,982KB/s, iops=39,964, runt= 52475msec
+  seq-write: io=1,024MB, bw=20,321KB/s, iops=40,641, runt= 51601msec
+  rnd-read : io=1,024MB, bw=15,404KB/s, iops=30,808, runt= 68070msec
+  rnd-write: io=1,024MB, bw=14,776KB/s, iops=29,552, runt= 70963msec
 
-sysfs_open_file(): user space process read /sys/block/vda/serial
-   sysfs_get_active() : got sysfs entry ref count
-      dev_attr_show()
-        virtblk_serial_show()
-           blk_execute_rq() : got stuck, interrupt is disabled
-                              request cannot be finished
+After:
+  seq-read : io=1,024MB, bw=20,343KB/s, iops=40,685, runt= 51546msec
+  seq-write: io=1,024MB, bw=20,803KB/s, iops=41,606, runt= 50404msec
+  rnd-read : io=1,024MB, bw=16,221KB/s, iops=32,442, runt= 64642msec
+  rnd-write: io=1,024MB, bw=15,199KB/s, iops=30,397, runt= 68991msec
 
-This patch fixes it by calling del_gendisk() before we disable guest's
-interrupt so that the request sent in virtblk_serial_show() will be
-finished and del_gendisk() will success.
-
-This fixes another race in hot-unplug process.
-
-It is save to call del_gendisk(vblk->disk) before
-flush_work(&vblk->config_work) which might access vblk->disk, because
-vblk->disk is not freed until put_disk(vblk->disk).
-
-Cc: virtualization@lists.linux-foundation.org
-Cc: kvm@vger.kernel.org
 Signed-off-by: Asias He <asias@redhat.com>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
 Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Yijing Wang <wangyijing@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/virtio_blk.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/block/virtio_blk.c |   10 ----------
+ 1 file changed, 10 deletions(-)
 
 --- a/drivers/block/virtio_blk.c
 +++ b/drivers/block/virtio_blk.c
-@@ -581,13 +581,13 @@ static void __devexit virtblk_remove(str
+@@ -27,9 +27,6 @@ struct virtio_blk
+ 	/* The disk structure for the kernel. */
+ 	struct gendisk *disk;
+ 
+-	/* Request tracking. */
+-	struct list_head reqs;
+-
+ 	mempool_t *pool;
+ 
+ 	/* Process context for config space updates */
+@@ -53,7 +50,6 @@ struct virtio_blk
+ 
+ struct virtblk_req
+ {
+-	struct list_head list;
+ 	struct request *req;
+ 	struct virtio_blk_outhdr out_hdr;
+ 	struct virtio_scsi_inhdr in_hdr;
+@@ -97,7 +93,6 @@ static void blk_done(struct virtqueue *v
+ 		}
+ 
+ 		__blk_end_request_all(vbr->req, error);
+-		list_del(&vbr->list);
+ 		mempool_free(vbr, vblk->pool);
+ 	}
+ 	/* In case queue is stopped waiting for more buffers. */
+@@ -182,7 +177,6 @@ static bool do_req(struct request_queue
+ 		return false;
+ 	}
+ 
+-	list_add_tail(&vbr->list, &vblk->reqs);
+ 	return true;
+ }
+ 
+@@ -435,7 +429,6 @@ static int __devinit virtblk_probe(struc
+ 		goto out_free_index;
+ 	}
+ 
+-	INIT_LIST_HEAD(&vblk->reqs);
+ 	vblk->vdev = vdev;
+ 	vblk->sg_elems = sg_elems;
+ 	sg_init_table(vblk->sg, vblk->sg_elems);
+@@ -586,9 +579,6 @@ static void __devexit virtblk_remove(str
  	vblk->config_enable = false;
  	mutex_unlock(&vblk->config_lock);
  
-+	del_gendisk(vblk->disk);
-+
+-	/* Nothing should be pending. */
+-	BUG_ON(!list_empty(&vblk->reqs));
+-
  	/* Stop all the virtqueues. */
  	vdev->config->reset(vdev);
  
- 	flush_work(&vblk->config_work);
- 
--	del_gendisk(vblk->disk);
--
- 	/* Abort requests dispatched to driver. */
- 	spin_lock_irqsave(&vblk->lock, flags);
- 	while ((vbr = virtqueue_detach_unused_buf(vblk->vq))) {
 
 
