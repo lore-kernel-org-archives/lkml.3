@@ -1,76 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752557AbaFJPIT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 11:08:19 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49960 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752018AbaFJPIA (ORCPT
+	id S1752524AbaFJPJE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 11:09:04 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:41327 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750808AbaFJPJB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 11:08:00 -0400
-Date: Tue, 10 Jun 2014 17:07:55 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-kernel@vger.kernel.org, mgorman@suse.de, mingo@kernel.org
-Subject: Re: [PATCH] sched,numa: always try to migrate to preferred node at
- task_numa_placement time
-Message-ID: <20140610150755.GK6758@twins.programming.kicks-ass.net>
-References: <20140604163315.1dbc7b56@cuia.bos.redhat.com>
- <20140606171801.GE11371@laptop.programming.kicks-ass.net>
- <5392072D.6040605@redhat.com>
+	Tue, 10 Jun 2014 11:09:01 -0400
+Date: Tue, 10 Jun 2014 16:08:48 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Dmitry Kasatkin <d.kasatkin@samsung.com>
+Cc: Josh Boyer <jwboyer@redhat.com>, zohar@linux.vnet.ibm.com,
+        dhowells@redhat.com, keyrings@linux-nfs.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmitry.kasatkin@gmail.com
+Subject: Re: [PATCH 0/4] KEYS: validate key trust with owner and builtin keys
+ only
+Message-ID: <20140610150848.GB7551@srcf.ucam.org>
+References: <1402331614.7064.60.camel@dhcp-9-2-203-236.watson.ibm.com>
+ <cover.1402387862.git.d.kasatkin@samsung.com>
+ <20140610122008.GA31944@hansolo.jdub.homelinux.org>
+ <5397010E.2080903@samsung.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="g5OIygP5QP1fC/+Y"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5392072D.6040605@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <5397010E.2080903@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jun 10, 2014 at 03:58:54PM +0300, Dmitry Kasatkin wrote:
 
---g5OIygP5QP1fC/+Y
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> It is tricky issue. But yes and no... If I forced to trust MS key to run
+> SHIM, it does not mean
+> that I want to trust MS key to run kernel and load modules or use MS key
+> to valid other keys on system keyring.
 
-On Fri, Jun 06, 2014 at 02:23:41PM -0400, Rik van Riel wrote:
-> On 06/06/2014 01:18 PM, Peter Zijlstra wrote:
+A kernel parameter that refuses to trust the contents of DB would be 
+acceptable, but DBX needs to be used unconditionally.
 
-> > Clearly the retry thing didn't work, what happened? We got to the
-> > preferred nid, disabled the retry and got moved away again?
-> >=20
-> > Do we want to remove the retry logic in favour of this more aggressive
-> > form?
->=20
-> I think we want both. When we have fresh statistics, and we discover
-> that we are not running on our preferred nid, is there any reason
-> not to relocate to a better node?
-
-I got confused on the exact details, I thought we ended up calling
-task_numa_placement() far often than we actually do (well, we do call it
-as often, but bail early).
-
-Yes this makes sense.
-
---g5OIygP5QP1fC/+Y
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTlx9LAAoJEHZH4aRLwOS6AKYP+gM8IBoxnjUcbHRSytbX+I5W
-PiKpY5NSB1CFAu//Bhj23P1JzRZroBYLuWUwvDK2APZ9zU8GHCIqV5bR4e6tiR/+
-iEbe06tuyTYDfVt4KLh3bya1YzEsYqtb7TZHmkpvcqg2A3ZeyMG/5sEV3xE9/GHS
-qMVnoUAP374kKfETHvVg+qic5N1mAVWY/l8QsGEuR3KNjvFdmO1sPutv4H/eMUZ3
-D7yshC/BR0wJIyT7La6ktEj7WUeikbOpXl11V6dGgRDvjYuMvQcVnzl3/ylBtw9Y
-RVMqByAV1YPzsK4qeCc9Hfz4gq5DnwA1qYe0YuAMMJqEWA5E0HzBXRiOuNk+q0Ol
-LsH7VQq7F8XgKCmtC96T+Dj8sht0jXFgxNK5qPILgPjP2+aDCK9ZtIZ/7sEX67Pl
-20vYXV+j355+0qgCVTwgqZFgNon79Me1uuapAoQlswqAfzoqN3muvY1bF1futtUQ
-T8euIgPNUCPjrpt54j7zSU8Lz4+9CO5B/b0QgCsSQGuDHoJkNE20e1FeVIPr7NFS
-L8T/abBC+qpqtsvxUhehVRSoozBn38WRfEnxmkOuD6u7b+ZIRmp+AmfaDLxmTJNX
-sP5n3ZsryMAoV91XQ0HeCPUUFwkmoCpc0sczs6xPjBFIIf6i2rpqVtWZ2xMZ8Qhe
-7mDT1vBkupiFyNANSHkO
-=5wjy
------END PGP SIGNATURE-----
-
---g5OIygP5QP1fC/+Y--
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
