@@ -1,159 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752836AbaFJQTt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 12:19:49 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:51957 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752570AbaFJQTp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 12:19:45 -0400
-From: Milos Vyletel <milos.vyletel@gmail.com>
-To: davem@davemloft.net, amwang@redhat.com, netdev@vger.kernel.org
-Cc: Milos Vyletel <milos.vyletel@gmail.com>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Eric Dumazet <edumazet@google.com>,
-        Florent Fourcot <florent.fourcot@enst-bretagne.fr>,
-        Paul Durrant <Paul.Durrant@citrix.com>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [patch net-next 5/5] ipv6: copy default config values to interfaces
-Date: Tue, 10 Jun 2014 12:19:13 -0400
-Message-Id: <1402417153-2551-6-git-send-email-milos.vyletel@gmail.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1402417153-2551-1-git-send-email-milos.vyletel@gmail.com>
-References: <1402417153-2551-1-git-send-email-milos.vyletel@gmail.com>
+	id S1752864AbaFJQUW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 12:20:22 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:11651 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752128AbaFJQUU convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 12:20:20 -0400
+From: Jens Axboe <axboe@fb.com>
+To: Keith Busch <keith.busch@intel.com>
+CC: =?iso-8859-1?Q?Matias_Bj=F8rling?= <m@bjorling.me>,
+        "willy@linux.intel.com" <willy@linux.intel.com>,
+        "sbradshaw@micron.com" <sbradshaw@micron.com>,
+        "tom.leiming@gmail.com" <tom.leiming@gmail.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-nvme@lists.infradead.org" <linux-nvme@lists.infradead.org>
+Subject: Re: [PATCH v7] NVMe: conversion to blk-mq
+Thread-Topic: [PATCH v7] NVMe: conversion to blk-mq
+Thread-Index: AQHPhI1k5o6fCfFYrUyl/19F7HUL0ptq8/wA//+SX2A=
+Date: Tue, 10 Jun 2014 16:19:18 +0000
+Message-ID: <A52B97CC-6D77-468B-9A9B-A5888AE63580@fb.com>
+References: <1402392038-5268-1-git-send-email-m@bjorling.me>
+ <1402392038-5268-2-git-send-email-m@bjorling.me>,<alpine.LRH.2.03.1406100945250.4699@AMR>
+In-Reply-To: <alpine.LRH.2.03.1406100945250.4699@AMR>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-06-10_05:2014-06-10,2014-06-10,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=8.28226376370367e-13 kscore.compositescore=0
+ circleOfTrustscore=0 compositescore=0.324642340081358
+ urlsuspect_oldscore=0.324642340081358 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=2524143
+ rbsscore=0.324642340081358 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1406100196
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Propagate changes to default sysctl values to all interfaces if they
-were not previously configured and interface was not up before. This is
-usually only true during boot when we apply /etc/sysctl.conf values
-before network is brought up.
 
-Signed-off-by: Milos Vyletel <milos.vyletel@gmail.com>
----
- include/linux/ipv6.h |  2 ++
- include/net/ipv6.h   |  6 ++++++
- net/ipv6/addrconf.c  | 39 +++++++++++++++++++++++++++++++++++++--
- 3 files changed, 45 insertions(+), 2 deletions(-)
+> On Jun 10, 2014, at 9:52 AM, Keith Busch <keith.busch@intel.com> wrote:
+> 
+>> On Tue, 10 Jun 2014, Matias Bjørling wrote:
+>> This converts the current NVMe driver to utilize the blk-mq layer.
+> 
+> I'd like to run xfstests on this, but it is failing mkfs.xfs. I honestly
+> don't know much about this area, but I think this may be from the recent
+> chunk sectors patch causing a __bio_add_page to reject adding a new page.
 
-diff --git a/include/linux/ipv6.h b/include/linux/ipv6.h
-index fe8d38d..e356905 100644
---- a/include/linux/ipv6.h
-+++ b/include/linux/ipv6.h
-@@ -1,6 +1,7 @@
- #ifndef _IPV6_H
- #define _IPV6_H
- 
-+#include <linux/bitmap.h>
- #include <uapi/linux/ipv6.h>
- 
- #define ipv6_optlen(p)  (((p)->hdrlen+1) << 3)
-@@ -11,6 +12,7 @@
- struct ipv6_devconf {
- 	void	*sysctl;
- 	__s32	data[IPV6_DEVCONF_MAX];
-+	DECLARE_BITMAP(state, IPV6_DEVCONF_MAX);
- };
- 
- struct ipv6_params {
-diff --git a/include/net/ipv6.h b/include/net/ipv6.h
-index 1ee39a5..eb4e911 100644
---- a/include/net/ipv6.h
-+++ b/include/net/ipv6.h
-@@ -302,9 +302,15 @@ static inline int ipv6_devconf_get(struct inet6_dev *idev, int index)
- static inline void ipv6_devconf_set(struct inet6_dev *idev, int index,
- 				    int val)
- {
-+	set_bit(index, idev->cnf.state);
- 	idev->cnf.data[index] = val;
- }
- 
-+static inline void ipv6_devconf_setall(struct inet6_dev *idev)
-+{
-+	bitmap_fill(idev->cnf.state, IPV6_DEVCONF_MAX);
-+}
-+
- #define IN6_DEV_CONF_GET(idev, attr) \
- 	ipv6_devconf_get((idev), IPV6_DEVCONF_ ## attr)
- #define IN6_DEV_CONF_SET(idev, attr, val) \
-diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
-index 5b1b578..5218978 100644
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -40,6 +40,7 @@
- 
- #define pr_fmt(fmt) "IPv6: " fmt
- 
-+#include <linux/bitmap.h>
- #include <linux/errno.h>
- #include <linux/types.h>
- #include <linux/kernel.h>
-@@ -852,6 +853,7 @@ ipv6_add_addr(struct inet6_dev *idev, const struct in6_addr *addr,
- 		goto out;
- 	}
- 
-+	ipv6_devconf_setall(idev);
- 	neigh_parms_data_state_setall(idev->nd_parms);
- 
- 	ifa->addr = *addr;
-@@ -4897,6 +4899,39 @@ int addrconf_sysctl_proxy_ndp(struct ctl_table *ctl, int write,
- 	return ret;
- }
- 
-+static void addrconf_copy_dflt_conf(struct net *net, int i)
-+{
-+	struct net_device *dev;
-+
-+	rcu_read_lock();
-+	for_each_netdev_rcu(net, dev) {
-+		struct inet6_dev *idev = __in6_dev_get(dev);
-+
-+		if (idev && !test_bit(i, idev->cnf.state))
-+			idev->cnf.data[i] = net->ipv6.devconf_dflt->data[i];
-+	}
-+	rcu_read_unlock();
-+}
-+
-+static int addrconf_sysctl_proc(struct ctl_table *ctl, int write,
-+				void __user *buffer, size_t *lenp, loff_t *ppos)
-+{
-+	int ret = proc_dointvec(ctl, write, buffer, lenp, ppos);
-+
-+	if (write) {
-+		struct ipv6_devconf *cnf = ctl->extra1;
-+		struct net *net = ctl->extra2;
-+		int i = (int *)ctl->data - cnf->data;
-+
-+		set_bit(i, cnf->state);
-+
-+		if (cnf == net->ipv6.devconf_dflt)
-+			addrconf_copy_dflt_conf(net, i);
-+	}
-+
-+	return ret;
-+}
-+
- #define ADDRCONF_SYSCTL_ENTRY(attr, name, mval, proc) \
- 	{ \
- 		.procname	= #name, \
-@@ -4909,10 +4944,10 @@ int addrconf_sysctl_proxy_ndp(struct ctl_table *ctl, int write,
- 	}
- 
- #define ADDRCONF_SYSCTL_RW_ENTRY(attr, name) \
--	ADDRCONF_SYSCTL_ENTRY(attr, name, 0644, proc_dointvec)
-+	ADDRCONF_SYSCTL_ENTRY(attr, name, 0644, addrconf_sysctl_proc)
- 
- #define ADDRCONF_SYSCTL_RO_ENTRY(attr, name) \
--	ADDRCONF_SYSCTL_ENTRY(attr, name, 0444, proc_dointvec)
-+	ADDRCONF_SYSCTL_ENTRY(attr, name, 0444, addrconf_sysctl_proc)
- 
- #define ADDRCONF_SYSCTL_COMPLEX_ENTRY(attr, name, proc) \
- 	ADDRCONF_SYSCTL_ENTRY(attr, name, 0644, proc)
--- 
-1.9.0
+Gah, yes that's a bug in the chunk patch. It must always allow a single page at any offset. I'll test and send out a fix. 
+
 
