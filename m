@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590AbaFJRIl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 13:08:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53025 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752030AbaFJRIk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 13:08:40 -0400
-Date: Tue, 10 Jun 2014 19:07:16 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>
-Subject: Re: safety of *mutex_unlock() (Was: [BUG] signal: sighand
-	unprotected when accessed by /proc)
-Message-ID: <20140610170716.GA7629@redhat.com>
-References: <CA+55aFzT5CGv_T60voAqR+4PfiMmJmsDZLid2DZ4=+X8uvF+ig@mail.gmail.com> <20140603200125.GB1105@redhat.com> <20140606203350.GU4581@linux.vnet.ibm.com> <20140608130718.GA11129@redhat.com> <20140609162613.GE4581@linux.vnet.ibm.com> <20140609181553.GA13681@redhat.com> <20140609142956.3d79e9d1@gandalf.local.home> <CA+55aFyO8bb7fS3AaQzfMq7geERQ1JpSdcRZ9Fbs5-tZP0oRXg@mail.gmail.com> <20140609154114.20585056@gandalf.local.home> <alpine.DEB.2.10.1406101051210.3830@nanos>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1406101051210.3830@nanos>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752472AbaFJRKy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 13:10:54 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:48781 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751851AbaFJRKx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 13:10:53 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-f7-53973c1a30e9
+Message-id: <53973C0B.2000903@samsung.com>
+Date: Tue, 10 Jun 2014 19:10:35 +0200
+From: Tomasz Figa <t.figa@samsung.com>
+Organization: Samsung R&D Institute Poland
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.5.0
+MIME-version: 1.0
+To: Pankaj Dubey <pankaj.dubey@samsung.com>, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: kgene.kim@samsung.com, linux@arm.linux.org.uk, chow.kim@samsung.com,
+        yg1004.jang@samsung.com, vikas.sajjan@samsung.com
+Subject: Re: [PATCH v4 06/11] ARM: EXYNOS: Add support for mapping PMU base
+ address via DT
+References: <1399704998-13321-1-git-send-email-pankaj.dubey@samsung.com>
+ <1399704998-13321-7-git-send-email-pankaj.dubey@samsung.com>
+In-reply-to: <1399704998-13321-7-git-send-email-pankaj.dubey@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHLMWRmVeSWpSXmKPExsVy+t/xy7pSNtODDS79ZLFYNukum0Xvgqts
+	FpseX2O1uLxrDpvFjPP7mCxuX+a1WLT1C7vFzWfbmSx2tKxmceD0aGnuYfPYvKTeo2/LKkaP
+	z5vkAliiuGxSUnMyy1KL9O0SuDLe/7nPVnCMo2LC3pNsDYzf2LoYOTkkBEwkLix/wQhhi0lc
+	uLceKM7FISSwlFHiz65VLBDOZ0aJ07O2glXxCmhJzJl7nBXEZhFQlZg34z8LiM0moCbxueER
+	2FR+oJo1TdeB4hwcogIREo8vCEG0Ckr8mHwPbKaIwBRGiYs9y8BmMgvUSCzo3Aw2R1ggRuLg
+	/n+sEIvbGSUONF0DW8Yp4Cnx7+YTZogGHYn9rdPYIGx5ic1r3jJPYBSchWTJLCRls5CULWBk
+	XsUomlqaXFCclJ5rqFecmFtcmpeul5yfu4kREgdfdjAuPmZ1iFGAg1GJh5dDZ1qwEGtiWXFl
+	7iFGCQ5mJRHetr9AId6UxMqq1KL8+KLSnNTiQ4xMHJxSDYyVkXf3vHk27/Rpr2dKUjtTHG/G
+	NRV+kv2tf0pvYaPLw/OFOZO9jS9sPXP7tleJjPgW97nHUx3rnmSUPbwUcDJwM4fJnGWaU9ey
+	zOfTf33r4WPWowmT+XiXqp5pmnE8puPv/LUq255xcgqI72TjKesK2KTuv7v53JWSg9oLOAL/
+	2lR8vHIspT5DiaU4I9FQi7moOBEA7mIAbWECAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10, Thomas Gleixner wrote:
->
-> +static inline bool unlock_rt_mutex_safe(struct rt_mutex *lock)
-> +	__releases(lock->wait_lock)
-> +{
-> +	unsigned long owner, *p = (unsigned long *) &lock->owner;
-> +
-> +	owner = (unsigned long) rt_mutex_owner(lock);
-> +	clear_rt_mutex_waiters(lock);
-> +	raw_spin_unlock(&lock->wait_lock);
-> +	/*
-> +	 * If a new waiter comes in between the unlock and the cmpxchg
-> +	 * we have two situations:
-> +	 *
-> +	 * unlock(wait_lock);
-> +	 *					lock(wait_lock);
-> +	 * cmpxchg(p, owner, 0) == owner
-> +	 *					mark_rt_mutex_waiters(lock);
-> +	 *					acquire(lock);
-> +	 * or:
-> +	 *
-> +	 * unlock(wait_lock);
-> +	 *					lock(wait_lock);
-> +	 *					mark_rt_mutex_waiters(lock);
-> +	 *
-> +	 * cmpxchg(p, owner, 0) != owner
-> +	 *					enqueue_waiter();
-> +	 *					unlock(wait_lock);
-> +	 * lock(wait_lock);
-> +	 * wake waiter();
-> +	 * unlock(wait_lock);
-> +	 *					lock(wait_lock);
-> +	 *					acquire(lock);
-> +	 */
-> +	return rt_mutex_cmpxchg(p, owner, 0);
+Hi,
 
-Wait, but this looks like a typo. rt_mutex_cmpxchg() needs "struct rt_mutex *",
-not "long *". It seems that you should simply kill "*p" above.
+On 10.05.2014 08:56, Pankaj Dubey wrote:
+> From: Young-Gun Jang <yg1004.jang@samsung.com>
+> 
+> Add support for mapping Samsung Power Management Unit (PMU)
+> base address from device tree. This patch also adds helper
+> function as "get_exynos_pmuregmap". This function can be used
+> by other machine files such as "pm.c", "hotplug.c" for accessing
+> PMU regmap handle.
+> 
 
-Oleg.
+I don't think there is a need to use regmap to provide access to PMU to
+such low level code such as pm.c or hotplug.c. Moreover, I believe that
+it might be undesirable in some cases, e.g. very low level code running
+at early resume or late suspend.
 
+IMHO, based on what we now have for SYSRAM, you could simply map PMU
+from device tree one time, before SMP init, and keep the address in some
+globally accessible variable, like those for SYSRAM we have right now
+(sysram_base_addr, sysram_ns_base_addr -> pmu_base_addr).
+
+Then, registration of the normal syscon would happen through standard
+platform driver mechanisms and no special early handling would be necessary.
+
+Best regards,
+Tomasz
