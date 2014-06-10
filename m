@@ -1,69 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751851AbaFJSKc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 14:10:32 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:60498 "EHLO smtp.outflux.net"
+	id S1752748AbaFJSK6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 14:10:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39174 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750735AbaFJSKb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 14:10:31 -0400
-Date: Tue, 10 Jun 2014 11:10:03 -0700
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Gulsah Kose <gulsah.1004@gmail.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        devel@driverdev.osuosl.org
-Subject: [PATCH] staging: r8192ee: avoid leaking format string
-Message-ID: <20140610181003.GA17732@www.outflux.net>
+	id S1752316AbaFJSK4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 14:10:56 -0400
+Date: Tue, 10 Jun 2014 20:10:54 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Martin Jambor <mjambor@suse.cz>, Petr Mladek <pmladek@suse.cz>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Subject: Re: [PATCH] tell gcc optimizer to never introduce new data races
+In-Reply-To: <CA+55aFyY7_=3xt-0KE=-fmb+kLurxkBmh8TZWgDZMi_RVpKBpg@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1406101959580.1321@pobox.suse.cz>
+References: <alpine.LNX.2.00.1406101517300.9378@pobox.suse.cz> <CA+55aFyY7_=3xt-0KE=-fmb+kLurxkBmh8TZWgDZMi_RVpKBpg@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This makes sure a format string cannot leak into the work queue name nor
-the printk buffer.
+On Tue, 10 Jun 2014, Linus Torvalds wrote:
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- drivers/staging/rtl8192ee/base.c                   |    2 +-
- drivers/staging/rtl8192ee/btcoexist/halbtcoutsrc.h |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+> > We have been chasing a memory corruption bug, which turned out to be
+> > caused by very old gcc (4.3.4), which happily turned conditional load into
+> > a non-conditional one, and that broke correctness (the condition was met
+> > only if lock was held) and corrupted memory.
+> 
+> Just out of interest, can you point to the particular kernel code that
+> caused this? I think that's more interesting than the example program
+> you show - which I'm sure is really nice for gcc developers as an
+> example, but from a kernel standpoint I think it's more important to
+> show the particular problems this caused for the kernel?
 
-diff --git a/drivers/staging/rtl8192ee/base.c b/drivers/staging/rtl8192ee/base.c
-index 64ade216a153..a7c69f704623 100644
---- a/drivers/staging/rtl8192ee/base.c
-+++ b/drivers/staging/rtl8192ee/base.c
-@@ -469,7 +469,7 @@ static void _rtl_init_deferred_work(struct ieee80211_hw *hw)
- 		    rtl92e_easy_concurrent_retrytimer_callback, (unsigned long)hw);
- 	/* <2> work queue */
- 	rtlpriv->works.hw = hw;
--	rtlpriv->works.rtl_wq = alloc_workqueue(rtlpriv->cfg->name, 0, 0);
-+	rtlpriv->works.rtl_wq = alloc_workqueue("%s", 0, 0, rtlpriv->cfg->name);
- 	INIT_DELAYED_WORK(&rtlpriv->works.watchdog_wq,
- 			  (void *)rtl92e_watchdog_wq_callback);
- 	INIT_DELAYED_WORK(&rtlpriv->works.ips_nic_off_wq,
-diff --git a/drivers/staging/rtl8192ee/btcoexist/halbtcoutsrc.h b/drivers/staging/rtl8192ee/btcoexist/halbtcoutsrc.h
-index c0a4286430a5..1231b16205f2 100644
---- a/drivers/staging/rtl8192ee/btcoexist/halbtcoutsrc.h
-+++ b/drivers/staging/rtl8192ee/btcoexist/halbtcoutsrc.h
-@@ -94,7 +94,7 @@ extern u32 btc_92edbg_type[];
- 
- 
- #define	CL_SPRINTF	snprintf
--#define	CL_PRINTF	printk
-+#define	CL_PRINTF(buf)	printk("%s", buf)
- 
- #define	BTC_PRINT(dbgtype, dbgflag, printstr, ...)		\
- 	do {							\
+Well, as I said, that was with gcc 4.3.4, and GCC people expressed 
+themselves that that was a slightly different optimization. It made me 
+nervous enough though to ask whether it's absolutely positively not going 
+to happen with newer gccs, and the code snippet quoted in the original 
+mail came back as a response.
+
+The code in question was out-of-tree printk-in-NMI (yeah, surprise 
+suprise, once again) patch written by Petr Mladek, let me quote his 
+comment from our internal bugzilla:
+
+===
+I have spent few days investigating inconsistent state of kernel ring buffer.
+It went out that it was caused by speculative store generated by 
+gcc-4.3.4.
+
+The problem is in assembly generated for make_free_space(). The functions is
+called the following way:
+
++ vprintk_emit();
+    + log = MAIN_LOG; // with logbuf_lock
+       or
+       log = NMI_LOG; // with nmi_logbuf_lock
+       cont_add(log, ...);
+        + cont_flush(log, ...);
+            + log_store(log, ...);
+                  + log_make_free_space(log, ...);
+
+If called with log = NMI_LOG then only nmi_log_* global variables are safe to
+modify but the generated code does store also into (main_)log_* global 
+variables:
+
+
+<log_make_free_space>:
+       55                      push   %rbp
+       89 f6                   mov    %esi,%esi
+
+       48 8b 05 03 99 51 01    mov    0x1519903(%rip),%rax       # ffffffff82620868 <nmi_log_next_id>
+       44 8b 1d ec 98 51 01    mov    0x15198ec(%rip),%r11d      # ffffffff82620858 <log_next_idx>
+       8b 35 36 60 14 01       mov    0x1146036(%rip),%esi       # ffffffff8224cfa8 <log_buf_len>
+       44 8b 35 33 60 14 01    mov    0x1146033(%rip),%r14d      # ffffffff8224cfac <nmi_log_buf_len>
+       4c 8b 2d d0 98 51 01    mov    0x15198d0(%rip),%r13       # ffffffff82620850 <log_next_seq>
+       4c 8b 25 11 61 14 01    mov    0x1146111(%rip),%r12       # ffffffff8224d098 <log_buf>
+       49 89 c2                mov    %rax,%r10
+       48 21 c2                and    %rax,%rdx
+       48 8b 1d 0c 99 55 01    mov    0x155990c(%rip),%rbx       # ffffffff826608a0 <nmi_log_buf>
+       49 c1 ea 20             shr    $0x20,%r10
+       48 89 55 d0             mov    %rdx,-0x30(%rbp)
+       44 29 de                sub    %r11d,%esi
+       45 29 d6                sub    %r10d,%r14d
+       4c 8b 0d 97 98 51 01    mov    0x1519897(%rip),%r9	# ffffffff82620840 <log_first_seq>
+       eb 7e                   jmp    ffffffff81107029	<log_make_free_space+0xe9>
+[...]
+       85 ff                   test   %edi,%edi                  # edi = 1 for NMI_LOG
+       4c 89 e8                mov    %r13,%rax
+       4c 89 ca                mov    %r9,%rdx
+       74 0a                   je     ffffffff8110703d	<log_make_free_space+0xfd>
+       8b 15 27 98 51 01       mov    0x1519827(%rip),%edx       # ffffffff82620860 <nmi_log_first_id>
+       48 8b 45 d0             mov    -0x30(%rbp),%rax
+       48 39 c2                cmp    %rax,%rdx                  # end of loop 
+       0f 84 da 00 00 00       je     ffffffff81107120 <log_make_free_space+0x1e0>
+[...]
+       85 ff                   test   %edi,%edi                  # edi = 1 for NMI_LOG
+       4c 89 0d 17 97 51 01    mov    %r9,0x1519717(%rip)        # ffffffff82620840 <log_first_seq>
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+                               KABOOOM
+       74 35                   je     ffffffff81107160		 <log_make_free_space+0x220>
+
+
+It stores log_first_seq when edi == NMI_LOG. This instructions are used also
+when edi == MAIN_LOG but the store is done speculatively before the condition
+is decided.  It is unsafe because we do not have "logbuf_lock" in NMI context
+and some other process migh modify "log_first_seq" in parallel.
+===
+
+I believe that the best course of action is both
+
+- building kernel (and anything multi-threaded, I guess) with that 
+  optimization turned off
+- persuade gcc folks to change the default for future releases
+
+Thanks,
+
 -- 
-1.7.9.5
-
-
--- 
-Kees Cook
-Chrome OS Security
+Jiri Kosina
+SUSE Labs
