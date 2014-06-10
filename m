@@ -1,101 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794AbaFJFZY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 01:25:24 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:52948 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751113AbaFJFZX (ORCPT
+	id S1754922AbaFJF1K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 01:27:10 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:46887 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754714AbaFJF1H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 01:25:23 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Subject: Re: [for-next][PATCH 6/6] tracing: Fix leak of ring buffer data when new instances creation fails
-References: <20140606163034.516780857@goodmis.org>
-	<20140606172105.000489056@goodmis.org>
-Date: Tue, 10 Jun 2014 14:25:21 +0900
-In-Reply-To: <20140606172105.000489056@goodmis.org> (Steven Rostedt's message
-	of "Fri, 06 Jun 2014 12:30:40 -0400")
-Message-ID: <87k38pbake.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 10 Jun 2014 01:27:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <5396207D.7030704@semaphore.gr>
+References: <5396207D.7030704@semaphore.gr>
+Date: Tue, 10 Jun 2014 10:57:06 +0530
+Message-ID: <CAKohpokYB4oKxrEwHH888T5hg=zrpb0PCs_QKTLS0bd-_fqeTA@mail.gmail.com>
+Subject: Re: [PATCH 4/7] cpufreq: intel_pstate: Simplify code in intel_pstate_adjust_busy_pstate
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Stratos Karafotis <stratosk@semaphore.gr>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 06 Jun 2014 12:30:40 -0400, Steven Rostedt wrote:
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+On 10 June 2014 02:30, Stratos Karafotis <stratosk@semaphore.gr> wrote:
+> Simplify the code by removing the inline functions
+> pstate_increase and pstate_decrease and use directly the
+> intel_pstate_set_pstate.
 >
-> Yoshihiro Yunomae reported that the ring buffer data for a trace
-> instance does not get properly cleaned up when it fails. He proposed
-> a patch that manually cleaned the data up and addad a bunch of labels.
-> The labels are not needed because all trace array is allocated with
-> a kzalloc which initializes it to 0 and all kfree()s can take a NULL
-> pointer and will ignore it.
->
-> Adding a new helper function free_trace_buffers() that can also take
-> null buffers to free the buffers that were allocated by
-> allocate_trace_buffers().
->
-> Link: http://lkml.kernel.org/r/20140605223522.32311.31664.stgit@yunodevel
->
-> Reported-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
 > ---
->  kernel/trace/trace.c | 22 ++++++++++++++++++++--
->  1 file changed, 20 insertions(+), 2 deletions(-)
+>  drivers/cpufreq/intel_pstate.c | 26 +++-----------------------
+>  1 file changed, 3 insertions(+), 23 deletions(-)
 >
-> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-> index e29edee1542a..26cfff38e2ab 100644
-> --- a/kernel/trace/trace.c
-> +++ b/kernel/trace/trace.c
-> @@ -6232,6 +6232,25 @@ static int allocate_trace_buffers(struct trace_array *tr, int size)
->  	return 0;
+> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+> index 3a49269..26a0262 100644
+> --- a/drivers/cpufreq/intel_pstate.c
+> +++ b/drivers/cpufreq/intel_pstate.c
+> @@ -588,21 +588,6 @@ static void intel_pstate_set_pstate(struct cpudata *cpu, int pstate)
+>         pstate_funcs.set(cpu, pstate);
 >  }
->  
-> +static void free_trace_buffers(struct trace_array *tr)
-> +{
-> +	if (!tr)
-> +		return;
-> +
-> +	if (tr->trace_buffer.buffer) {
-> +		ring_buffer_free(tr->trace_buffer.buffer);
-> +		tr->trace_buffer.buffer = NULL;
-> +		free_percpu(tr->trace_buffer.data);
-> +	}
-> +
-> +#ifdef CONFIG_TRACER_MAX_TRACE
-> +	if (tr->max_buffer.buffer) {
-> +		ring_buffer_free(tr->max_buffer.buffer);
-> +		tr->max_buffer.buffer = NULL;
-
-Hmm.. why doesn't it free tr->max_buffer.data here?  And I think it's
-better to reset *_buffer.data to NULL also - maybe by adding another
-helper function free_trace_buffer()..
-
-Thanks,
-Namhyung
-
-
-> +	}
-> +#endif
-> +}
-> +
->  static int new_instance_create(const char *name)
+>
+> -static inline void intel_pstate_pstate_increase(struct cpudata *cpu, int steps)
+> -{
+> -       int target;
+> -       target = cpu->pstate.current_pstate + steps;
+> -
+> -       intel_pstate_set_pstate(cpu, target);
+> -}
+> -
+> -static inline void intel_pstate_pstate_decrease(struct cpudata *cpu, int steps)
+> -{
+> -       int target;
+> -       target = cpu->pstate.current_pstate - steps;
+> -       intel_pstate_set_pstate(cpu, target);
+> -}
+> -
+>  static void intel_pstate_get_cpu_pstates(struct cpudata *cpu)
 >  {
->  	struct trace_array *tr;
-> @@ -6290,8 +6309,7 @@ static int new_instance_create(const char *name)
->  	return 0;
->  
->   out_free_tr:
-> -	if (tr->trace_buffer.buffer)
-> -		ring_buffer_free(tr->trace_buffer.buffer);
-> +	free_trace_buffers(tr);
->  	free_cpumask_var(tr->tracing_cpumask);
->  	kfree(tr->name);
->  	kfree(tr);
+>         cpu->pstate.min_pstate = pstate_funcs.get_min();
+> @@ -695,20 +680,15 @@ static inline void intel_pstate_calc_scaled_busy(struct cpudata *cpu)
+>  static inline void intel_pstate_adjust_busy_pstate(struct cpudata *cpu)
+>  {
+>         struct _pid *pid;
+> -       signed int ctl = 0;
+> -       int steps;
+> +       signed int ctl;
+>
+>         pid = &cpu->pid;
+>         intel_pstate_calc_scaled_busy(cpu);
+>
+>         ctl = pid_calc(pid, cpu->sample.busy_scaled);
+>
+> -       steps = abs(ctl);
+> -
+> -       if (ctl < 0)
+> -               intel_pstate_pstate_increase(cpu, steps);
+> -       else
+> -               intel_pstate_pstate_decrease(cpu, steps);
+> +       /* Negative values of ctl increase the pstate and vice versa */
+> +       intel_pstate_set_pstate(cpu, cpu->pstate.current_pstate - ctl);
+>  }
+
+I am not very good at this driver but there is some obvious functional
+change here. Earlier we used to pass
+'cpu->pstate.current_pstate {-|+} steps' and now you are doing '-ctl' only
