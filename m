@@ -1,75 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933217AbaFJUR1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 16:17:27 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:54043 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932413AbaFJURZ (ORCPT
+	id S1755004AbaFJTve (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 15:51:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35279 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753556AbaFJTvb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 16:17:25 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3][update] PM / sleep: Introduce command line argument for sleep state enumeration
-Date: Tue, 10 Jun 2014 22:34:49 +0200
-Message-ID: <1771964.SepbTGNdtD@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140610195905.GA6805@amd.pavel.ucw.cz>
-References: <1817539.9KW2IGGbDV@vostro.rjw.lan> <1848200.GDD9x0Rptb@vostro.rjw.lan> <20140610195905.GA6805@amd.pavel.ucw.cz>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Tue, 10 Jun 2014 15:51:31 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Jani Nikula <jani.nikula@linux.intel.com>, Egbert Eich <eich@suse.de>,
+        bitlord <bitlord0xff@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 108/160] drm/i915: Don't WARN nor handle unexpected hpd interrupts on gmch platforms
+Date: Tue, 10 Jun 2014 12:45:48 -0700
+Message-Id: <1402429600-20477-109-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
+References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, June 10, 2014 09:59:05 PM Pavel Machek wrote:
-> On Tue 2014-06-10 17:23:24, Rafael J. Wysocki wrote:
-> > On Tuesday, June 10, 2014 03:12:06 PM Pavel Machek wrote:
-> > > Hi!
-> > > 
-> > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > > 
-> > > > On some systems the platform doesn't support neither
-> > > > PM_SUSPEND_MEM nor PM_SUSPEND_STANDBY, so PM_SUSPEND_FREEZE is the
-> > > > only available system sleep state.  However, some user space frameworks
-> > > > only use the "mem" and (sometimes) "standby" sleep state labels, so
-> > > > the users of those systems need to modify user space in order to be
-> > > > able to use system suspend at all and that is not always possible.
-> > > 
-> > > I'd say we should fix the frameworks, not add option to change kernel
-> > > interfaces.
-> > > 
-> > > Because, as you mentioned, if we add this, we are probably going to
-> > > get stuck with it forever :-(.
-> > 
-> > Unfortunately, fixing the frameworks is rather less than realistic in any
-> > reasonable time frame, since  Android. :-)
-> 
-> Actually, you still have the sources from android, and this issue
-> sounds almost simple enough for binary patch.
-> 
-> Android misuses /proc/sys/vm/drop_caches, too, IIRC. Are we going to
-> change interface to match their expectations? They have binder and
-> wakelocks. Are we going to apply those patches just because Android
-> wants that?
+3.13.11.3 -stable review patch.  If anyone has any objections, please let me know.
 
-That depends on which versions of Android you're talking about.  The
-newest ones use the power management interfaces we have upstream.
+------------------
 
-> Android people usually patch their kernels, anyway, so why not add
-> this one, too?
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-I'm not talking about Android kernels, but about Android user space.
+commit 3ff04a160a891e56cdcee5c198d4c764d1c8c78b upstream.
 
-And this is not only about Android, other distros also have user space that
-uses "mem" only, because nobody has used anything else for a long time anyway.
-For the users of those distros, if they don't want to modify user space,
-having a kernel command line like this is actually helpful.
+The status bits are unconditionally set, the control bits only enable
+the actual interrupt generation. Which means if we get some random
+other interrupts we'll bogusly complain about them.
 
-So I'm really not sure what's the problem?  Do you think it's wrong to be
-helpful to users or something?
+So restrict the WARN to platforms with a sane hotplug interrupt
+handling scheme. And even more important also don't attempt to process
+the hpd bit since we've detected a storm already. Instead just clear
+the bit silently.
 
-Rafael
+This WARN has been introduced in
+
+commit b8f102e8bf71cacf33326360fdf9dcfd1a63925b
+Author: Egbert Eich <eich@suse.de>
+Date:   Fri Jul 26 14:14:24 2013 +0200
+
+    drm/i915: Add messages useful for HPD storm detection debugging (v2)
+
+before that we silently handled the hpd event and so partially
+defeated the storm detection.
+
+v2: Pimp commit message (Jani)
+
+Cc: Jani Nikula <jani.nikula@linux.intel.com>
+Cc: Egbert Eich <eich@suse.de>
+Cc: bitlord <bitlord0xff@gmail.com>
+Reported-by: bitlord <bitlord0xff@gmail.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+[ kamal: backport to 3.13-stable: context ]
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/gpu/drm/i915/i915_irq.c | 17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/i915_irq.c b/drivers/gpu/drm/i915/i915_irq.c
+index 9702704..4ad5cc5 100644
+--- a/drivers/gpu/drm/i915/i915_irq.c
++++ b/drivers/gpu/drm/i915/i915_irq.c
+@@ -1234,9 +1234,20 @@ static inline void intel_hpd_irq_handler(struct drm_device *dev,
+ 	spin_lock(&dev_priv->irq_lock);
+ 	for (i = 1; i < HPD_NUM_PINS; i++) {
+ 
+-		WARN(((hpd[i] & hotplug_trigger) &&
+-		      dev_priv->hpd_stats[i].hpd_mark != HPD_ENABLED),
+-		     "Received HPD interrupt although disabled\n");
++		if (hpd[i] & hotplug_trigger &&
++		    dev_priv->hpd_stats[i].hpd_mark == HPD_DISABLED) {
++			/*
++			 * On GMCH platforms the interrupt mask bits only
++			 * prevent irq generation, not the setting of the
++			 * hotplug bits itself. So only WARN about unexpected
++			 * interrupts on saner platforms.
++			 */
++			WARN_ONCE(INTEL_INFO(dev)->gen >= 5 && !IS_VALLEYVIEW(dev),
++				  "Received HPD interrupt (0x%08x) on pin %d (0x%08x) although disabled\n",
++				  hotplug_trigger, i, hpd[i]);
++
++			continue;
++		}
+ 
+ 		if (!(hpd[i] & hotplug_trigger) ||
+ 		    dev_priv->hpd_stats[i].hpd_mark != HPD_ENABLED)
+-- 
+1.9.1
 
