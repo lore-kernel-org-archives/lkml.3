@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754116AbaFJUwM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 16:52:12 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:62187 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753038AbaFJUwJ (ORCPT
+	id S1753866AbaFJU55 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 16:57:57 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:52602 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753000AbaFJU54 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 16:52:09 -0400
+	Tue, 10 Jun 2014 16:57:56 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, arvind.chauhan@arm.com,
+        swarren@nvidia.com, dianders@chromium.org
+Subject: Re: [PATCH Resend] cpufreq: tegra: update comment for clarity
+Date: Tue, 10 Jun 2014 23:15:20 +0200
+Message-ID: <2122590.Au0hJVo2lP@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <3eb9a48877bbb208f3c1f3e121f8d78b1d306bd9.1402376112.git.viresh.kumar@linaro.org>
+References: <594cf0e6982c471eb314fe4a00647bfaf59a3456.1402029512.git.viresh.kumar@linaro.org> <3eb9a48877bbb208f3c1f3e121f8d78b1d306bd9.1402376112.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <CAL_JsqKvoO9acX==-LdD6boO=B3xr=ijra_G0uqRZGzACZZUJg@mail.gmail.com>
-References: <1397859600-11507-1-git-send-email-robherring2@gmail.com>
-	<1397859600-11507-4-git-send-email-robherring2@gmail.com>
-	<CAE9FiQVrwypK4u5yTCt-AxMuBnOn7jv=V3d4Zb3cd9JDNEUVPw@mail.gmail.com>
-	<CAL_JsqKux+BTHeYo6XEzzQMAFJZHVjbURM973oHT=t698GbJbA@mail.gmail.com>
-	<20140503220731.GA10927@kroah.com>
-	<20140503221658.GA13403@kroah.com>
-	<CA+8MBb+7f1bOnJjJWj1vxa0UNuQwz7OGRDR_QFTxOT=9cynabQ@mail.gmail.com>
-	<CA+8MBbKE1E2uq9LefiDAV9hv2Z8OTkjx9mkXjE6_--F_emRC8A@mail.gmail.com>
-	<CAL_JsqKvoO9acX==-LdD6boO=B3xr=ijra_G0uqRZGzACZZUJg@mail.gmail.com>
-Date: Tue, 10 Jun 2014 13:52:08 -0700
-Message-ID: <CA+8MBbLooWm9xys+gYa5uL1eVTH-qzaR+RaZgsrqV-8XkqGadQ@mail.gmail.com>
-Subject: Re: [PATCH v2 3/7] tty/serial: convert 8250 to generic earlycon
-From: Tony Luck <tony.luck@gmail.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        Jiri Slaby <jslaby@suse.cz>, Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 9, 2014 at 4:18 PM, Rob Herring <robherring2@gmail.com> wrote:
-> It should do auto detect of the baud-rate if it is not specified which
-> for 8250 is just reading the baud-rate divider and calculating the
-> baud-rate using the uart clock. It should just reprogram the divider
-> with the same divider value. I don't see anything obvious why this
-> would have broken.
+On Tuesday, June 10, 2014 10:27:12 AM Viresh Kumar wrote:
+> Tegra's driver got updated a bit (00917dd cpufreq: Tegra: implement intermediate
+> frequency callbacks) and implements new 'intermediate freq' infrastructure of
+> core. Above commit updated comments about when to call
+> clk_prepare_enable(pll_x_clk) and Doug wasn't satisfied with those comments and
+> said this:
+> 
+> > The "Though when target-freq is intermediate freq, we don't need to
+> > take this reference." makes me think that this function is actually
+> > called when target-freq is intermediate freq.  I don't think it is,
+> > right?
+> 
+> For better clarity just make that comment more explicit about when we call
+> tegra_target_intermediate().
+> 
+> Reviewed-by: Stephen Warren <swarren@nvidia.com>
+> Reported-and-reviewed-by: Doug Anderson <dianders@chromium.org>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+> Resend: Improved comment as suggested by Stephen.
 
-Something very weird is happening.  Output is good so long as I put the
-trailing ",115200" on the command line.
+Applied to bleeding-edge, thanks!
 
-But I made early_serial8250_setup() printk() the return value it got
-from probe_baud() - in case is was somehow getting 115201 or some
-other silly value ... nope. Exactly 115200.
-
-I also can't explain why the "noise" comes and goes a dozen
-times during boot,
-
-Does some other place in the kernel look at the "uart..." command
-line argument?
-
--Tony
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
