@@ -1,99 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753123AbaFJILD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 04:11:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51824 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751875AbaFJIK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 04:10:59 -0400
-Message-ID: <5396BD90.4060104@suse.cz>
-Date: Tue, 10 Jun 2014 10:10:56 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S934502AbaFJILu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 04:11:50 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56173 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932502AbaFJILr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 04:11:47 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@gmail.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH -tip 4/4] perf/probe: Improve error messages with --line option
+References: <20140606071338.6788.799.stgit@kbuild-fedora.novalocal>
+	<20140606071406.6788.47850.stgit@kbuild-fedora.novalocal>
+Date: Tue, 10 Jun 2014 17:11:45 +0900
+In-Reply-To: <20140606071406.6788.47850.stgit@kbuild-fedora.novalocal> (Masami
+	Hiramatsu's message of "Fri, 06 Jun 2014 07:14:06 +0000")
+Message-ID: <87y4x59oam.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>
-CC: Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH, RFC 00/10] THP refcounting redesign
-References: <1402329861-7037-1-git-send-email-kirill.shutemov@linux.intel.com>
-In-Reply-To: <1402329861-7037-1-git-send-email-kirill.shutemov@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/2014 06:04 PM, Kirill A. Shutemov wrote:
-> Hello everybody,
->
-> We've discussed few times that is would be nice to allow huge pages to be
-> mapped with 4k pages too. Here's my first attempt to actually implement
-> this. It's early prototype and not stabilized yet, but I want to share it
-> to discuss any potential show stoppers early.
->
-> The main reason why we can't map THP with 4k is how refcounting on THP
-> designed. It built around two requirements:
->
->    - split of huge page should never fail;
->    - we can't change interface of get_user_page();
->
-> To be able to split huge page at any point we have to track which tail
-> page was pinned. It leads to tricky and expensive get_page() on tail pages
-> and also occupy tail_page->_mapcount.
->
-> Most split_huge_page*() users want PMD to be split into table of PTEs and
-> don't care whether compound page is going to be split or not.
->
-> The plan is:
->
->   - allow split_huge_page() to fail if the page is pinned. It's trivial to
->     split non-pinned page and it doesn't require tail page refcounting, so
->     tail_page->_mapcount is free to be reused.
->
->   - introduce new routine -- split_huge_pmd() -- to split PMD into table of
->     PTEs. It splits only one PMD, not touching other PMDs the page is
->     mapped with or underlying compound page. Unlike new split_huge_page(),
->     split_huge_pmd() never fails.
->
-> Fortunately, we have only few places where split_huge_page() is needed:
-> swap out, memory failure, migration, KSM. And all of them can handle
-> split_huge_page() fail.
->
-> In new scheme we use tail_page->_mapcount is used to account how many time
-> the tail page is mapped. head_page->_mapcount is used for both PMD mapping
-> of whole huge page and PTE mapping of the firt 4k page of the compound
-> page. It seems work fine, except the fact that we don't have a cheap way
-> to check whether the page mapped with PMDs or not.
->
-> Introducing split_huge_pmd() effectively allows THP to be mapped with 4k.
-> It can break some kernel expectations. I.e. VMA now can start and end in
-> middle of compound page. IIUC, it will break compactation and probably
-> something else (any hints?).
+Hi Masami,
 
-I don't think compaction cares at all about VMA's. Unless the underlying 
-page migration does. What will break is munlock due to 
-VM_BUG_ON(PageTail(page)) in the PageTransHuge() check.
-
-> Also munmap() on part of huge page will not split and free unmapped part
-> immediately. We need to be careful here to keep memory footprint under
-> control.
-
-So who will take care of it, if it's not done immediately?
-
-> As side effect we don't need to mark PMD splitting since we have
-> split_huge_pmd(). get_page()/put_page() on tail of THP is cheaper (and
-> cleaner) now.
-
-But per patch 2, PageAnon() is more expensive. Also there are no side 
-effects to this change?
-
-> I will continue with stabilizing this. The patchset also available on
-> git[1].
+On Fri, 06 Jun 2014 07:14:06 +0000, Masami Hiramatsu wrote:
+> Improve error messages of perf probe --line mode. Current
+> perf probe shows "Debuginfo analysis failed" error with an
+> error code when the given symbol is not found as below.
 >
-> Any commemnt?
+>   -----
+>   # perf probe -L page_cgroup_init_flatmem
+>   Debuginfo analysis failed. (-2)
+>     Error: Failed to show lines.
+>   -----
 >
-> [1] git://git.kernel.org/pub/scm/linux/kernel/git/kas/linux.git thp/refcounting/v1
+> But -2 (-ENOMEM) means that the given source line or function
+
+s/ENOMEM/ENOENT/
+
+Thanks,
+Namhyung
+
+
+> is not found. With this patch, perf probe shows correct error
+> message as below.
 >
+>   -----
+>   # perf probe -L page_cgroup_init_flatmem
+>   Specified source line is not found.
+>     Error: Failed to show lines.
+>   -----
+>
+> There is also another debug error code is shown in the same
+> function after get_real_path(). This removes that too.
+>
+> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+> ---
+>  tools/perf/util/probe-event.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+> index 44c7141..9a0a183 100644
+> --- a/tools/perf/util/probe-event.c
+> +++ b/tools/perf/util/probe-event.c
+> @@ -628,11 +628,11 @@ static int __show_line_range(struct line_range *lr, const char *module)
+>  
+>  	ret = debuginfo__find_line_range(dinfo, lr);
+>  	debuginfo__delete(dinfo);
+> -	if (ret == 0) {
+> +	if (ret == 0 || ret == -ENOENT) {
+>  		pr_warning("Specified source line is not found.\n");
+>  		return -ENOENT;
+>  	} else if (ret < 0) {
+> -		pr_warning("Debuginfo analysis failed. (%d)\n", ret);
+> +		pr_warning("Debuginfo analysis failed.\n");
+>  		return ret;
+>  	}
+>  
+> @@ -641,7 +641,7 @@ static int __show_line_range(struct line_range *lr, const char *module)
+>  	ret = get_real_path(tmp, lr->comp_dir, &lr->path);
+>  	free(tmp);	/* Free old path */
+>  	if (ret < 0) {
+> -		pr_warning("Failed to find source file. (%d)\n", ret);
+> +		pr_warning("Failed to find source file path.\n");
+>  		return ret;
+>  	}
+>  
