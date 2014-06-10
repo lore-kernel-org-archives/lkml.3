@@ -1,116 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752100AbaFJJqx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 05:46:53 -0400
-Received: from forward-corp1g.mail.yandex.net ([95.108.253.251]:60424 "EHLO
-	forward-corp1g.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750836AbaFJJqu (ORCPT
+	id S1751812AbaFJJwW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 05:52:22 -0400
+Received: from forward-corp1f.mail.yandex.net ([95.108.130.40]:39115 "EHLO
+	forward-corp1f.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750717AbaFJJwV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 05:46:50 -0400
-X-Yandex-Uniq: db93db32-e48e-4545-bc17-eb7bc0de3d83
+	Tue, 10 Jun 2014 05:52:21 -0400
+X-Yandex-Uniq: 17db2de1-14a0-4728-865f-bdacfcff944b
 Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
-Date: Tue, 10 Jun 2014 13:46:45 +0400
+Date: Tue, 10 Jun 2014 13:52:16 +0400
 From: Stanislav Fomichev <stfomichev@yandex-team.ru>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: viresh.kumar@linaro.org, paul.gortmaker@windriver.com,
-        peterz@infradead.org, stuart.w.hayes@gmail.com,
-        david.vrabel@citrix.com, linux-kernel@vger.kernel.org
-Subject: [PATCH v3] hrtimers: add fast path to hrtimer_get_next_event
-Message-ID: <20140610094645.GN26511@stfomichev-desktop.yandex.net>
-References: <1402305825-3015-1-git-send-email-stfomichev@yandex-team.ru>
- <alpine.DEB.2.10.1406091304140.3830@nanos>
- <20140609111115.GK26511@stfomichev-desktop.yandex.net>
- <20140609125931.GL26511@stfomichev-desktop.yandex.net>
- <alpine.DEB.2.10.1406091635080.3830@nanos>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: acme@kernel.org, artagnon@gmail.com, jolsa@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2 v2] perf timechart: fix documentation
+Message-ID: <20140610095216.GO26511@stfomichev-desktop.yandex.net>
+References: <1402305672-2630-1-git-send-email-stfomichev@yandex-team.ru>
+ <1402305672-2630-2-git-send-email-stfomichev@yandex-team.ru>
+ <87bnu1b5hp.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1406091635080.3830@nanos>
+In-Reply-To: <87bnu1b5hp.fsf@sejong.aot.lge.com>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Sigh. Is anybody actually reading and trying to understand what I
-> write in reviews?
-> 
-> > Also the lockless check wants a comment why it is correct.
-> 
-> Is it that hard? A comment is NOT a uberlenghty explanation in the
-> changelog. A comment starts with /* and ends with */ and is in the
-> code.
-> 
-> 	/*
-> 	 * Called with interrupts disabled and therefor
-> 	 * protected against a switch to high resolution mode.
-> 	 */
->  
-> That's a comment, right?
-Duh, I honestly thought you were talking about more details in the
-changelog. How come you didn't like it? Piece of art :-)
-
-Anyway, here is another respin of the patch.
-Btw, maybe it also makes sense to convert _irqsave spinlocks to non-irq
-ones? If we now have a comment telling we are called with interrupts
-disabled, there is no way we need irq safe locks, right?
-
---
-
-In hrtimer_get_next_event we unconditionally lock/unlock spinlock, even if it's
-not required (hrtimer_hres_active() != 0). This patch adds fast path
-when highres is active so we don't execute unnecessary operations.
+Move options away from examples.
 
 Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
 ---
- kernel/hrtimer.c | 31 ++++++++++++++++++-------------
- 1 file changed, 18 insertions(+), 13 deletions(-)
+ tools/perf/Documentation/perf-timechart.txt | 41 ++++++++++++++---------------
+ 1 file changed, 20 insertions(+), 21 deletions(-)
 
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index ba340739c701..245c90e5626b 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1167,23 +1167,28 @@ ktime_t hrtimer_get_next_event(void)
- 	unsigned long flags;
- 	int i;
+diff --git a/tools/perf/Documentation/perf-timechart.txt b/tools/perf/Documentation/perf-timechart.txt
+index bc5990c33dc0..5e0f986dff38 100644
+--- a/tools/perf/Documentation/perf-timechart.txt
++++ b/tools/perf/Documentation/perf-timechart.txt
+@@ -43,27 +43,6 @@ TIMECHART OPTIONS
  
-+	/*
-+	 * Called with interrupts disabled and therefore
-+	 * protected against a switch to high resolution mode.
-+	 */
-+	if (hrtimer_hres_active())
-+		return mindelta;
+ --symfs=<directory>::
+         Look for files with symbols relative to this directory.
+-
+-EXAMPLES
+---------
+-
+-$ perf timechart record git pull
+-
+-  [ perf record: Woken up 13 times to write data ]
+-  [ perf record: Captured and wrote 4.253 MB perf.data (~185801 samples) ]
+-
+-$ perf timechart
+-
+-  Written 10.2 seconds of trace to output.svg.
+-
+-Record system-wide timechart:
+-
+-  $ perf timechart record
+-
+-  then generate timechart and highlight 'gcc' tasks:
+-
+-  $ perf timechart --highlight gcc
+-
+ -n::
+ --proc-num::
+         Print task info for at least given number of tasks.
+@@ -88,6 +67,26 @@ RECORD OPTIONS
+ --callchain::
+         Do call-graph (stack chain/backtrace) recording
+ 
++EXAMPLES
++--------
 +
- 	raw_spin_lock_irqsave(&cpu_base->lock, flags);
- 
--	if (!hrtimer_hres_active()) {
--		for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++, base++) {
--			struct hrtimer *timer;
--			struct timerqueue_node *next;
-+	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++, base++) {
-+		struct hrtimer *timer;
-+		struct timerqueue_node *next;
- 
--			next = timerqueue_getnext(&base->active);
--			if (!next)
--				continue;
-+		next = timerqueue_getnext(&base->active);
-+		if (!next)
-+			continue;
- 
--			timer = container_of(next, struct hrtimer, node);
--			delta.tv64 = hrtimer_get_expires_tv64(timer);
--			delta = ktime_sub(delta, base->get_time());
--			if (delta.tv64 < mindelta.tv64)
--				mindelta.tv64 = delta.tv64;
--		}
-+		timer = container_of(next, struct hrtimer, node);
-+		delta.tv64 = hrtimer_get_expires_tv64(timer);
-+		delta = ktime_sub(delta, base->get_time());
-+		if (delta.tv64 < mindelta.tv64)
-+			mindelta.tv64 = delta.tv64;
- 	}
- 
- 	raw_spin_unlock_irqrestore(&cpu_base->lock, flags);
++$ perf timechart record git pull
++
++  [ perf record: Woken up 13 times to write data ]
++  [ perf record: Captured and wrote 4.253 MB perf.data (~185801 samples) ]
++
++$ perf timechart
++
++  Written 10.2 seconds of trace to output.svg.
++
++Record system-wide timechart:
++
++  $ perf timechart record
++
++  then generate timechart and highlight 'gcc' tasks:
++
++  $ perf timechart --highlight gcc
++
+ SEE ALSO
+ --------
+ linkperf:perf-record[1]
 -- 
 1.8.3.2
 
