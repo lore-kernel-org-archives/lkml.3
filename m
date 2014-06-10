@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755290AbaFJTxG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 15:53:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35456 "EHLO
+	id S932428AbaFJTxD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 15:53:03 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35457 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932403AbaFJTw5 (ORCPT
+	with ESMTP id S1753799AbaFJTw5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 10 Jun 2014 15:52:57 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alexander Gordeev <agordeev@redhat.com>, Tejun Heo <tj@kernel.org>,
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Jonathan Cameron <jic23@kernel.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 065/160] ahci: do not request irq for dummy port
-Date: Tue, 10 Jun 2014 12:45:05 -0700
-Message-Id: <1402429600-20477-66-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 054/160] iio: cm36651: Fix i2c client leak and possible NULL pointer dereference
+Date: Tue, 10 Jun 2014 12:44:54 -0700
+Message-Id: <1402429600-20477-55-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -27,137 +28,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Milburn <dmilburn@redhat.com>
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit 9ae794ac5e407d3bc3fec785db481d5a2c0fa275 upstream.
+commit d0a588a57c2b0748df8307a0865a1bbbf1624c53 upstream.
 
-System may crash in ahci_hw_interrupt() or ahci_thread_fn() when
-accessing the interrupt status in a port's private_data if the port is
-actually a DUMMY port.
+During probe the driver allocates dummy I2C devices (i2c_new_dummy())
+but they aren't unregistered during driver remove or probe failure.
 
-00:1f.2 SATA controller: Intel Corporation 82801JI (ICH10 Family) SATA AHCI Controller
+Additionally driver does not check the return value of i2c_new_dummy().
+In case of error (i2c_new_device(): memory allocation failure or I2C
+address cannot be used) this function returns NULL which is later
+dereferenced by i2c_smbus_{read,write}_data() functions.
 
-<snip console output for linux-3.15-rc1>
-[    9.352080] ahci 0000:00:1f.2: AHCI 0001.0200 32 slots 6 ports 3 Gbps 0x1 impl SATA mode
-[    9.352084] ahci 0000:00:1f.2: flags: 64bit ncq sntf pm led clo pio slum part ccc
-[    9.368155] Console: switching to colour frame buffer device 128x48
-[    9.439759] mgag200 0000:11:00.0: fb0: mgadrmfb frame buffer device
-[    9.446765] mgag200 0000:11:00.0: registered panic notifier
-[    9.470166] scsi1 : ahci
-[    9.479166] scsi2 : ahci
-[    9.488172] scsi3 : ahci
-[    9.497174] scsi4 : ahci
-[    9.506175] scsi5 : ahci
-[    9.515174] scsi6 : ahci
-[    9.518181] ata1: SATA max UDMA/133 abar m2048@0x95c00000 port 0x95c00100 irq 91
-[    9.526448] ata2: DUMMY
-[    9.529182] ata3: DUMMY
-[    9.531916] ata4: DUMMY
-[    9.534650] ata5: DUMMY
-[    9.537382] ata6: DUMMY
-[    9.576196] [drm] Initialized mgag200 1.0.0 20110418 for 0000:11:00.0 on minor 0
-[    9.845257] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
-[    9.865161] ata1.00: ATAPI: Optiarc DVD RW AD-7580S, FX04, max UDMA/100
-[    9.891407] ata1.00: configured for UDMA/100
-[    9.900525] scsi 1:0:0:0: CD-ROM            Optiarc  DVD RW AD-7580S  FX04 PQ: 0 ANSI: 5
-[   10.247399] iTCO_vendor_support: vendor-support=0
-[   10.261572] iTCO_wdt: Intel TCO WatchDog Timer Driver v1.11
-[   10.269764] iTCO_wdt: unable to reset NO_REBOOT flag, device disabled by hardware/BIOS
-[   10.301932] sd 0:2:0:0: [sda] 570310656 512-byte logical blocks: (291 GB/271 GiB)
-[   10.317085] sd 0:2:0:0: [sda] Write Protect is off
-[   10.328326] sd 0:2:0:0: [sda] Write cache: disabled, read cache: disabled, supports DPO and FUA
-[   10.375452] BUG: unable to handle kernel NULL pointer dereference at 000000000000003c
-[   10.384217] IP: [<ffffffffa0133df0>] ahci_hw_interrupt+0x100/0x130 [libahci]
-[   10.392101] PGD 0
-[   10.394353] Oops: 0000 [#1] SMP
-[   10.397978] Modules linked in: sr_mod(+) cdrom sd_mod iTCO_wdt crc_t10dif iTCO_vendor_support crct10dif_common ahci libahci libata lpc_ich mfd_core mgag200 syscopyarea sysfillrect sysimgblt i2c_algo_bit drm_kms_helper ttm drm i2c_core megaraid_sas dm_mirror dm_region_hash
-dm_log dm_mod
-[   10.426499] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.15.0-rc1 #1
-[   10.433495] Hardware name: QCI QSSC-S4R/QSSC-S4R, BIOS QSSC-S4R.QCI.01.00.S013.032920111005 03/29/2011
-[   10.443886] task: ffffffff81906460 ti: ffffffff818f0000 task.ti: ffffffff818f0000
-[   10.452239] RIP: 0010:[<ffffffffa0133df0>]  [<ffffffffa0133df0>] ahci_hw_interrupt+0x100/0x130 [libahci]
-[   10.462838] RSP: 0018:ffff880033c03d98  EFLAGS: 00010046
-[   10.468767] RAX: 0000000000a400a4 RBX: ffff880029a6bc18 RCX: 00000000fffffffa
-[   10.476731] RDX: 00000000000000a4 RSI: ffff880029bb0000 RDI: ffff880029a6bc18
-[   10.484696] RBP: ffff880033c03dc8 R08: 0000000000000000 R09: ffff88002f800490
-[   10.492661] R10: 0000000000000000 R11: 0000000000000005 R12: 0000000000000000
-[   10.500625] R13: ffff880029a6bd98 R14: 0000000000000000 R15: ffffc90000194000
-[   10.508590] FS:  0000000000000000(0000) GS:ffff880033c00000(0000) knlGS:0000000000000000
-[   10.517623] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[   10.524035] CR2: 000000000000003c CR3: 00000000328ff000 CR4: 00000000000007b0
-[   10.531999] Stack:
-[   10.534241]  0000000000000017 ffff880031ba7d00 000000000000005c ffff880031ba7d00
-[   10.542535]  0000000000000000 000000000000005c ffff880033c03e10 ffffffff810c2a1e
-[   10.550827]  ffff880031ae2900 000000008108fb4f ffff880031ae2900 ffff880031ae2984
-[   10.559121] Call Trace:
-[   10.561849]  <IRQ>
-[   10.563994]  [<ffffffff810c2a1e>] handle_irq_event_percpu+0x3e/0x1a0
-[   10.571309]  [<ffffffff810c2bbd>] handle_irq_event+0x3d/0x60
-[   10.577631]  [<ffffffff810c4fdd>] try_one_irq.isra.6+0x8d/0xf0
-[   10.584142]  [<ffffffff810c5313>] note_interrupt+0x173/0x1f0
-[   10.590460]  [<ffffffff810c2a8e>] handle_irq_event_percpu+0xae/0x1a0
-[   10.597554]  [<ffffffff810c2bbd>] handle_irq_event+0x3d/0x60
-[   10.603872]  [<ffffffff810c5727>] handle_edge_irq+0x77/0x130
-[   10.610199]  [<ffffffff81014b8f>] handle_irq+0xbf/0x150
-[   10.616040]  [<ffffffff8109ff4e>] ? vtime_account_idle+0xe/0x50
-[   10.622654]  [<ffffffff815fca1a>] ? atomic_notifier_call_chain+0x1a/0x20
-[   10.630140]  [<ffffffff816038cf>] do_IRQ+0x4f/0xf0
-[   10.635490]  [<ffffffff815f8aed>] common_interrupt+0x6d/0x6d
-[   10.641805]  <EOI>
-[   10.643950]  [<ffffffff8149ca9f>] ? cpuidle_enter_state+0x4f/0xc0
-[   10.650972]  [<ffffffff8149ca98>] ? cpuidle_enter_state+0x48/0xc0
-[   10.657775]  [<ffffffff8149cb47>] cpuidle_enter+0x17/0x20
-[   10.663807]  [<ffffffff810b0070>] cpu_startup_entry+0x2c0/0x3d0
-[   10.670423]  [<ffffffff815dfcc7>] rest_init+0x77/0x80
-[   10.676065]  [<ffffffff81a60f47>] start_kernel+0x40f/0x41a
-[   10.682190]  [<ffffffff81a60941>] ? repair_env_string+0x5c/0x5c
-[   10.688799]  [<ffffffff81a60120>] ? early_idt_handlers+0x120/0x120
-[   10.695699]  [<ffffffff81a605ee>] x86_64_start_reservations+0x2a/0x2c
-[   10.702889]  [<ffffffff81a60733>] x86_64_start_kernel+0x143/0x152
-[   10.709689] Code: a0 fc ff 85 c0 8b 4d d4 74 c3 48 8b 7b 08 89 ca 48 c7 c6 60 66 13 a0 31 c0 e8 9d 70 28 e1 8b 4d d4 eb aa 0f 1f 84 00 00 00 00 00 <45> 8b 64 24 3c 48 89 df e8 23 47 4c e1 41 83 fc 01 19 c0 48 83
-[   10.731470] RIP  [<ffffffffa0133df0>] ahci_hw_interrupt+0x100/0x130 [libahci]
-[   10.739441]  RSP <ffff880033c03d98>
-[   10.743333] CR2: 000000000000003c
-[   10.747032] ---[ end trace b6e82636970e2690 ]---
-[   10.760190] Kernel panic - not syncing: Fatal exception in interrupt
-[   10.767291] Kernel Offset: 0x0 from 0xffffffff81000000 (relocation range: 0xffffffff80000000-0xffffffff9fffffff)
+Fix issues by properly checking for i2c_new_dummy() return value and
+unregistering I2C devices on driver remove or probe failure.
 
-Cc: Alexander Gordeev <agordeev@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>
-Signed-of-by: David Milburn <dmilburn@redhat.com>
-Fixes: 5ca72c4f7c41 ("AHCI: Support multiple MSIs")
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Acked-by: Beomho Seo <beomho.seo@samsung.com>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/ata/ahci.c | 12 ++++--------
- 1 file changed, 4 insertions(+), 8 deletions(-)
+ drivers/iio/light/cm36651.c | 22 ++++++++++++++++++++--
+ 1 file changed, 20 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 2ecf42f..337d126 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -1169,18 +1169,14 @@ int ahci_host_activate(struct ata_host *host, int irq, unsigned int n_msis)
- 		return rc;
- 
- 	for (i = 0; i < host->n_ports; i++) {
--		const char* desc;
- 		struct ahci_port_priv *pp = host->ports[i]->private_data;
- 
- 		/* pp is NULL for dummy ports */
- 		if (pp)
--			desc = pp->irq_desc;
--		else
--			desc = dev_driver_string(host->dev);
--
--		rc = devm_request_threaded_irq(host->dev,
--			irq + i, ahci_hw_interrupt, ahci_thread_fn, IRQF_SHARED,
--			desc, host->ports[i]);
-+			rc = devm_request_threaded_irq(host->dev,
-+						       irq + i, ahci_hw_interrupt,
-+						       ahci_thread_fn, IRQF_SHARED,
-+						       pp->irq_desc, host->ports[i]);
- 		if (rc)
- 			goto out_free_irqs;
+diff --git a/drivers/iio/light/cm36651.c b/drivers/iio/light/cm36651.c
+index 0922e39..203883c 100644
+--- a/drivers/iio/light/cm36651.c
++++ b/drivers/iio/light/cm36651.c
+@@ -628,7 +628,19 @@ static int cm36651_probe(struct i2c_client *client,
+ 	cm36651->client = client;
+ 	cm36651->ps_client = i2c_new_dummy(client->adapter,
+ 						     CM36651_I2C_ADDR_PS);
++	if (!cm36651->ps_client) {
++		dev_err(&client->dev, "%s: new i2c device failed\n", __func__);
++		ret = -ENODEV;
++		goto error_disable_reg;
++	}
++
+ 	cm36651->ara_client = i2c_new_dummy(client->adapter, CM36651_ARA);
++	if (!cm36651->ara_client) {
++		dev_err(&client->dev, "%s: new i2c device failed\n", __func__);
++		ret = -ENODEV;
++		goto error_i2c_unregister_ps;
++	}
++
+ 	mutex_init(&cm36651->lock);
+ 	indio_dev->dev.parent = &client->dev;
+ 	indio_dev->channels = cm36651_channels;
+@@ -640,7 +652,7 @@ static int cm36651_probe(struct i2c_client *client,
+ 	ret = cm36651_setup_reg(cm36651);
+ 	if (ret) {
+ 		dev_err(&client->dev, "%s: register setup failed\n", __func__);
+-		goto error_disable_reg;
++		goto error_i2c_unregister_ara;
  	}
+ 
+ 	ret = request_threaded_irq(client->irq, NULL, cm36651_irq_handler,
+@@ -648,7 +660,7 @@ static int cm36651_probe(struct i2c_client *client,
+ 							"cm36651", indio_dev);
+ 	if (ret) {
+ 		dev_err(&client->dev, "%s: request irq failed\n", __func__);
+-		goto error_disable_reg;
++		goto error_i2c_unregister_ara;
+ 	}
+ 
+ 	ret = iio_device_register(indio_dev);
+@@ -661,6 +673,10 @@ static int cm36651_probe(struct i2c_client *client,
+ 
+ error_free_irq:
+ 	free_irq(client->irq, indio_dev);
++error_i2c_unregister_ara:
++	i2c_unregister_device(cm36651->ara_client);
++error_i2c_unregister_ps:
++	i2c_unregister_device(cm36651->ps_client);
+ error_disable_reg:
+ 	regulator_disable(cm36651->vled_reg);
+ 	return ret;
+@@ -674,6 +690,8 @@ static int cm36651_remove(struct i2c_client *client)
+ 	iio_device_unregister(indio_dev);
+ 	regulator_disable(cm36651->vled_reg);
+ 	free_irq(client->irq, indio_dev);
++	i2c_unregister_device(cm36651->ps_client);
++	i2c_unregister_device(cm36651->ara_client);
+ 
+ 	return 0;
+ }
 -- 
 1.9.1
 
