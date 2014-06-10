@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753641AbaFJVZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 17:25:29 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:47704 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752876AbaFJVZ2 (ORCPT
+	id S1753801AbaFJV0x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 17:26:53 -0400
+Received: from smtprelay0115.hostedemail.com ([216.40.44.115]:47038 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752715AbaFJV0w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 17:25:28 -0400
-Date: Tue, 10 Jun 2014 22:25:16 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-Cc: Josh Boyer <jwboyer@redhat.com>, David Howells <dhowells@redhat.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        keyrings <keyrings@linux-nfs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH 0/4] KEYS: validate key trust with owner and builtin keys
- only
-Message-ID: <20140610212516.GB10614@srcf.ucam.org>
-References: <1402331614.7064.60.camel@dhcp-9-2-203-236.watson.ibm.com>
- <cover.1402387862.git.d.kasatkin@samsung.com>
- <20140610122008.GA31944@hansolo.jdub.homelinux.org>
- <CACE9dm9Ff6b3J=05QfcgBv-c_y=5qGNq1-ZSfo4smtj34i1e-A@mail.gmail.com>
- <20140610204021.GA8916@srcf.ucam.org>
- <CACE9dm9ma=XRZkoCiefva-dKL+LYw-s8QB4xUTkRUZH=5XM9ew@mail.gmail.com>
- <CACE9dm8zxVXx2zRcfDYUFjqvQYT4MbLevp5U13tfH9Hb6USSJw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACE9dm8zxVXx2zRcfDYUFjqvQYT4MbLevp5U13tfH9Hb6USSJw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Tue, 10 Jun 2014 17:26:52 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:3874:4321:5007:7652:7775:7903:7904:10004:10400:10848:11232:11658:11914:12517:12519:12663:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: crown95_587af8c6bfb11
+X-Filterd-Recvd-Size: 1721
+Message-ID: <1402435605.4082.3.camel@joe-AO725>
+Subject: Re: [PATCH 6/7] cpufreq: intel_pstate: Trivial code cleanup
+From: Joe Perches <joe@perches.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Stratos Karafotis <stratosk@semaphore.gr>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>, dirk.j.brandewie@intel.com,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 10 Jun 2014 14:26:45 -0700
+In-Reply-To: <1894836.tjrHdJ7Duz@vostro.rjw.lan>
+References: <5396208F.6070400@semaphore.gr>
+	 <1875587.zmLYOIAyby@vostro.rjw.lan> <53977251.2090804@semaphore.gr>
+	 <1894836.tjrHdJ7Duz@vostro.rjw.lan>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 11, 2014 at 12:17:53AM +0300, Dmitry Kasatkin wrote:
+On Tue, 2014-06-10 at 23:38 +0200, Rafael J. Wysocki wrote:
 
-> It is probably just a paranoia...
-> Kconfig MODULE_SIG_UEFI should tell about threat of loading kernel
-> modules from NSA or Lenovo signed by MS or Lenovo keys..
->
-> This hole is opened without warning...
+> > > is.  And the result of (a * 100) / b may generally be different from
+> > > a * 100 / b for integers (if the division is carried out first).
+> > 
+> > I thought that (a * 100) / b is always equivalent to a * 100 / b.
+> 
+> I'm not actually sure if that's guaranteed by C standards.
 
-It's not typically a hole. If an attacker has root they can just replace 
-your bootloader with one signed by a trusted key and then have that 
-modify the kernel before booting it.
+It is.  left to right, same precedence.
 
-If you're using a TPM then you can mitigate this, but if you have a TPM 
-then you're already performing some extra steps during the boot process. 
-Just add a sysfs knob that lets you drop the db keys and incorporate 
-that into the TPM management code.
+> It surely
+> wasn't some time ago (when there was no formal C standard).
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+c89 is 25 years ago now.
+
+> Either way, in my opinion it's better to put the parens into the expression
+> in this particular case to clearly state the intention.
+
+I don't think so.
+
+
