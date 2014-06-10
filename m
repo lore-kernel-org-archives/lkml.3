@@ -1,126 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752748AbaFJSK6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 14:10:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39174 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752316AbaFJSK4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 14:10:56 -0400
-Date: Tue, 10 Jun 2014 20:10:54 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	id S1752678AbaFJSNL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 14:13:11 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:28667 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750897AbaFJSNJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 14:13:09 -0400
+Date: Tue, 10 Jun 2014 14:13:06 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Martin Jambor <mjambor@suse.cz>, Petr Mladek <pmladek@suse.cz>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Subject: Re: [PATCH] tell gcc optimizer to never introduce new data races
-In-Reply-To: <CA+55aFyY7_=3xt-0KE=-fmb+kLurxkBmh8TZWgDZMi_RVpKBpg@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1406101959580.1321@pobox.suse.cz>
-References: <alpine.LNX.2.00.1406101517300.9378@pobox.suse.cz> <CA+55aFyY7_=3xt-0KE=-fmb+kLurxkBmh8TZWgDZMi_RVpKBpg@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>
+Subject: Re: safety of *mutex_unlock() (Was: [BUG] signal: sighand
+ unprotected when accessed by /proc)
+Message-ID: <20140610141306.04a4bcf3@gandalf.local.home>
+In-Reply-To: <alpine.DEB.2.10.1406101959420.5170@nanos>
+References: <CA+55aFzT5CGv_T60voAqR+4PfiMmJmsDZLid2DZ4=+X8uvF+ig@mail.gmail.com>
+	<20140603200125.GB1105@redhat.com>
+	<20140606203350.GU4581@linux.vnet.ibm.com>
+	<20140608130718.GA11129@redhat.com>
+	<20140609162613.GE4581@linux.vnet.ibm.com>
+	<20140609181553.GA13681@redhat.com>
+	<20140609142956.3d79e9d1@gandalf.local.home>
+	<CA+55aFyO8bb7fS3AaQzfMq7geERQ1JpSdcRZ9Fbs5-tZP0oRXg@mail.gmail.com>
+	<20140609154114.20585056@gandalf.local.home>
+	<alpine.DEB.2.10.1406101051210.3830@nanos>
+	<20140610165704.GA3110@redhat.com>
+	<alpine.DEB.2.10.1406101959420.5170@nanos>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Jun 2014, Linus Torvalds wrote:
+On Tue, 10 Jun 2014 20:08:37 +0200 (CEST)
+Thomas Gleixner <tglx@linutronix.de> wrote:
 
-> > We have been chasing a memory corruption bug, which turned out to be
-> > caused by very old gcc (4.3.4), which happily turned conditional load into
-> > a non-conditional one, and that broke correctness (the condition was met
-> > only if lock was held) and corrupted memory.
+
+> > Perhaps it could simply do ->owner = RT_MUTEX_HAS_WAITERS to make this more
+> > clear...
 > 
-> Just out of interest, can you point to the particular kernel code that
-> caused this? I think that's more interesting than the example program
-> you show - which I'm sure is really nice for gcc developers as an
-> example, but from a kernel standpoint I think it's more important to
-> show the particular problems this caused for the kernel?
+> Good point. The new owner can cleanup the mess.
+>  
 
-Well, as I said, that was with gcc 4.3.4, and GCC people expressed 
-themselves that that was a slightly different optimization. It made me 
-nervous enough though to ask whether it's absolutely positively not going 
-to happen with newer gccs, and the code snippet quoted in the original 
-mail came back as a response.
+I thought about this too. It should work with the added overhead that
+every time we go into the unlock slow path, we guarantee that the next
+lock will go into the lock slowpath.
 
-The code in question was out-of-tree printk-in-NMI (yeah, surprise 
-suprise, once again) patch written by Petr Mladek, let me quote his 
-comment from our internal bugzilla:
+As long as the new acquired lock does a fast unlock, then we get out of
+this spiral.
 
-===
-I have spent few days investigating inconsistent state of kernel ring buffer.
-It went out that it was caused by speculative store generated by 
-gcc-4.3.4.
-
-The problem is in assembly generated for make_free_space(). The functions is
-called the following way:
-
-+ vprintk_emit();
-    + log = MAIN_LOG; // with logbuf_lock
-       or
-       log = NMI_LOG; // with nmi_logbuf_lock
-       cont_add(log, ...);
-        + cont_flush(log, ...);
-            + log_store(log, ...);
-                  + log_make_free_space(log, ...);
-
-If called with log = NMI_LOG then only nmi_log_* global variables are safe to
-modify but the generated code does store also into (main_)log_* global 
-variables:
-
-
-<log_make_free_space>:
-       55                      push   %rbp
-       89 f6                   mov    %esi,%esi
-
-       48 8b 05 03 99 51 01    mov    0x1519903(%rip),%rax       # ffffffff82620868 <nmi_log_next_id>
-       44 8b 1d ec 98 51 01    mov    0x15198ec(%rip),%r11d      # ffffffff82620858 <log_next_idx>
-       8b 35 36 60 14 01       mov    0x1146036(%rip),%esi       # ffffffff8224cfa8 <log_buf_len>
-       44 8b 35 33 60 14 01    mov    0x1146033(%rip),%r14d      # ffffffff8224cfac <nmi_log_buf_len>
-       4c 8b 2d d0 98 51 01    mov    0x15198d0(%rip),%r13       # ffffffff82620850 <log_next_seq>
-       4c 8b 25 11 61 14 01    mov    0x1146111(%rip),%r12       # ffffffff8224d098 <log_buf>
-       49 89 c2                mov    %rax,%r10
-       48 21 c2                and    %rax,%rdx
-       48 8b 1d 0c 99 55 01    mov    0x155990c(%rip),%rbx       # ffffffff826608a0 <nmi_log_buf>
-       49 c1 ea 20             shr    $0x20,%r10
-       48 89 55 d0             mov    %rdx,-0x30(%rbp)
-       44 29 de                sub    %r11d,%esi
-       45 29 d6                sub    %r10d,%r14d
-       4c 8b 0d 97 98 51 01    mov    0x1519897(%rip),%r9	# ffffffff82620840 <log_first_seq>
-       eb 7e                   jmp    ffffffff81107029	<log_make_free_space+0xe9>
-[...]
-       85 ff                   test   %edi,%edi                  # edi = 1 for NMI_LOG
-       4c 89 e8                mov    %r13,%rax
-       4c 89 ca                mov    %r9,%rdx
-       74 0a                   je     ffffffff8110703d	<log_make_free_space+0xfd>
-       8b 15 27 98 51 01       mov    0x1519827(%rip),%edx       # ffffffff82620860 <nmi_log_first_id>
-       48 8b 45 d0             mov    -0x30(%rbp),%rax
-       48 39 c2                cmp    %rax,%rdx                  # end of loop 
-       0f 84 da 00 00 00       je     ffffffff81107120 <log_make_free_space+0x1e0>
-[...]
-       85 ff                   test   %edi,%edi                  # edi = 1 for NMI_LOG
-       4c 89 0d 17 97 51 01    mov    %r9,0x1519717(%rip)        # ffffffff82620840 <log_first_seq>
-                               ^^^^^^^^^^^^^^^^^^^^^^^^^^
-                               KABOOOM
-       74 35                   je     ffffffff81107160		 <log_make_free_space+0x220>
-
-
-It stores log_first_seq when edi == NMI_LOG. This instructions are used also
-when edi == MAIN_LOG but the store is done speculatively before the condition
-is decided.  It is unsafe because we do not have "logbuf_lock" in NMI context
-and some other process migh modify "log_first_seq" in parallel.
-===
-
-I believe that the best course of action is both
-
-- building kernel (and anything multi-threaded, I guess) with that 
-  optimization turned off
-- persuade gcc folks to change the default for future releases
-
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
+-- Steve
