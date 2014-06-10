@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932573AbaFJTyB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 15:54:01 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35591 "EHLO
+	id S932600AbaFJTyI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 15:54:08 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35603 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755438AbaFJTx4 (ORCPT
+	with ESMTP id S1753520AbaFJTyC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:53:56 -0400
+	Tue, 10 Jun 2014 15:54:02 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ian Kent <raven@themaw.net>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Peter Foley <pefoley2@pefoley.com>, David Howells <dhowells@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 159/160] autofs: fix lockref lookup
-Date: Tue, 10 Jun 2014 12:46:39 -0700
-Message-Id: <1402429600-20477-160-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 042/160] init/Kconfig: move the trusted keyring config option to general setup
+Date: Tue, 10 Jun 2014 12:44:42 -0700
+Message-Id: <1402429600-20477-43-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -29,56 +29,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Kent <raven@themaw.net>
+From: Peter Foley <pefoley2@pefoley.com>
 
-commit 6b6751f7feba68d8f5c72b72cc69a1c5a625529c upstream.
+commit 82c04ff89eba09d0e46e3f3649c6d3aa18e764a0 upstream.
 
-autofs needs to be able to see private data dentry flags for its dentrys
-that are being created but not yet hashed and for its dentrys that have
-been rmdir()ed but not yet freed.  It needs to do this so it can block
-processes in these states until a status has been returned to indicate
-the given operation is complete.
+The SYSTEM_TRUSTED_KEYRING config option is not in any menu, causing it
+to show up in the toplevel of the kernel configuration.  Fix this by
+moving it under the General Setup menu.
 
-It does this by keeping two lists, active and expring, of dentrys in
-this state and uses ->d_release() to keep them stable while it checks
-the reference count to determine if they should be used.
-
-But with the recent lockref changes dentrys being freed sometimes don't
-transition to a reference count of 0 before being freed so autofs can
-occassionally use a dentry that is invalid which can lead to a panic.
-
-Signed-off-by: Ian Kent <raven@themaw.net>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Peter Foley <pefoley2@pefoley.com>
+Cc: David Howells <dhowells@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/autofs4/root.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ init/Kconfig | 24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
-index 92ef341..2a69bde 100644
---- a/fs/autofs4/root.c
-+++ b/fs/autofs4/root.c
-@@ -179,7 +179,7 @@ static struct dentry *autofs4_lookup_active(struct dentry *dentry)
- 		spin_lock(&active->d_lock);
+diff --git a/init/Kconfig b/init/Kconfig
+index 66e6759..c3a1d7c 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1633,6 +1633,18 @@ config MMAP_ALLOW_UNINITIALIZED
  
- 		/* Already gone? */
--		if (!d_count(active))
-+		if ((int) d_count(active) <= 0)
- 			goto next;
+ 	  See Documentation/nommu-mmap.txt for more information.
  
- 		qstr = &active->d_name;
-@@ -230,7 +230,7 @@ static struct dentry *autofs4_lookup_expiring(struct dentry *dentry)
++config SYSTEM_TRUSTED_KEYRING
++	bool "Provide system-wide ring of trusted keys"
++	depends on KEYS
++	help
++	  Provide a system keyring to which trusted keys can be added.  Keys in
++	  the keyring are considered to be trusted.  Keys may be added at will
++	  by the kernel from compiled-in data and from hardware key stores, but
++	  userspace may only add extra keys if those keys can be verified by
++	  keys already in the keyring.
++
++	  Keys in this keyring are used by module signature checking.
++
+ config PROFILING
+ 	bool "Profiling support"
+ 	help
+@@ -1668,18 +1680,6 @@ config BASE_SMALL
+ 	default 0 if BASE_FULL
+ 	default 1 if !BASE_FULL
  
- 		spin_lock(&expiring->d_lock);
- 
--		/* Bad luck, we've already been dentry_iput */
-+		/* We've already been dentry_iput or unlinked */
- 		if (!expiring->d_inode)
- 			goto next;
- 
+-config SYSTEM_TRUSTED_KEYRING
+-	bool "Provide system-wide ring of trusted keys"
+-	depends on KEYS
+-	help
+-	  Provide a system keyring to which trusted keys can be added.  Keys in
+-	  the keyring are considered to be trusted.  Keys may be added at will
+-	  by the kernel from compiled-in data and from hardware key stores, but
+-	  userspace may only add extra keys if those keys can be verified by
+-	  keys already in the keyring.
+-
+-	  Keys in this keyring are used by module signature checking.
+-
+ menuconfig MODULES
+ 	bool "Enable loadable module support"
+ 	option modules
 -- 
 1.9.1
 
