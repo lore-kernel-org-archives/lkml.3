@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752572AbaFJOqj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 10:46:39 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53747 "EHLO mail.kernel.org"
+	id S1752597AbaFJOqm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 10:46:42 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53762 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752553AbaFJOqg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 10:46:36 -0400
+	id S1752553AbaFJOqj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 10:46:39 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Jiri Olsa <jolsa@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 5/7] perf probe: Improve an error message of perf probe --vars mode
-Date: Tue, 10 Jun 2014 11:46:02 -0300
-Message-Id: <1402411564-3303-6-git-send-email-acme@infradead.org>
+Subject: [PATCH 6/7] perf probe: Improve error messages in --line option
+Date: Tue, 10 Jun 2014 11:46:03 -0300
+Message-Id: <1402411564-3303-7-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1402411564-3303-1-git-send-email-acme@infradead.org>
 References: <1402411564-3303-1-git-send-email-acme@infradead.org>
@@ -26,80 +26,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-Fix an error message when failed to find given address in --vars
-mode.
+Improve error messages of 'perf probe --line' mode.
 
-Without this fix, perf probe -V doesn't show the final "Error"
-message if it fails to find given source line. Moreover, it
-tells it fails to find "variables" instead of the source line.
-  -----
-  # perf probe -V foo@bar
-  Failed to find variables at foo@bar (0)
-  -----
-The result also shows mysterious error code. Actually the error
-returns 0 or -ENOENT means that it just fails to find the address
-of given source line. (0 means there is no matching address,
-and -ENOENT means there is an entry(DIE) but it has no instance,
-e.g. an empty inlined function)
+Currently 'perf probe' shows the "Debuginfo analysis failed" message with
+an error code when the given symbol is not found:
 
-This fixes it to show what happened and the final error message
-as below.
   -----
-  # perf probe -V foo@bar
-  Failed to find the address of foo@bar
-    Error: Failed to show vars.
+  # perf probe -L page_cgroup_init_flatmem
+  Debuginfo analysis failed. (-2)
+    Error: Failed to show lines.
   -----
+
+But -2 (-ENOENT) means that the given source line or function was not
+found. With this patch, 'perf probe' shows the correct error message:
+
+  -----
+  # perf probe -L page_cgroup_init_flatmem
+  Specified source line is not found.
+    Error: Failed to show lines.
+  -----
+
+There is also another debug error code is shown in the same function
+after get_real_path(). This removes that too.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Jiri Olsa <jolsa@kernel.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20140606071359.6788.84716.stgit@kbuild-fedora.novalocal
+Link: http://lkml.kernel.org/r/20140606071406.6788.47850.stgit@kbuild-fedora.novalocal
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/probe-event.c  | 7 ++++++-
- tools/perf/util/probe-finder.c | 6 +++++-
- 2 files changed, 11 insertions(+), 2 deletions(-)
+ tools/perf/util/probe-event.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 0d1542f33d87..44c71417262f 100644
+index 44c71417262f..9a0a1839a377 100644
 --- a/tools/perf/util/probe-event.c
 +++ b/tools/perf/util/probe-event.c
-@@ -721,9 +721,14 @@ static int show_available_vars_at(struct debuginfo *dinfo,
- 	ret = debuginfo__find_available_vars_at(dinfo, pev, &vls,
- 						max_vls, externs);
- 	if (ret <= 0) {
--		pr_err("Failed to find variables at %s (%d)\n", buf, ret);
-+		if (ret == 0 || ret == -ENOENT) {
-+			pr_err("Failed to find the address of %s\n", buf);
-+			ret = -ENOENT;
-+		} else
-+			pr_warning("Debuginfo analysis failed.\n");
- 		goto end;
- 	}
-+
- 	/* Some variables are found */
- 	fprintf(stdout, "Available variables at %s\n", buf);
- 	for (i = 0; i < ret; i++) {
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index ce8faf47691a..98e304766416 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -1280,7 +1280,11 @@ out:
- 	return ret;
- }
+@@ -628,11 +628,11 @@ static int __show_line_range(struct line_range *lr, const char *module)
  
--/* Find available variables at given probe point */
-+/*
-+ * Find available variables at given probe point
-+ * Return the number of found probe points. Return 0 if there is no
-+ * matched probe point. Return <0 if an error occurs.
-+ */
- int debuginfo__find_available_vars_at(struct debuginfo *dbg,
- 				      struct perf_probe_event *pev,
- 				      struct variable_list **vls,
+ 	ret = debuginfo__find_line_range(dinfo, lr);
+ 	debuginfo__delete(dinfo);
+-	if (ret == 0) {
++	if (ret == 0 || ret == -ENOENT) {
+ 		pr_warning("Specified source line is not found.\n");
+ 		return -ENOENT;
+ 	} else if (ret < 0) {
+-		pr_warning("Debuginfo analysis failed. (%d)\n", ret);
++		pr_warning("Debuginfo analysis failed.\n");
+ 		return ret;
+ 	}
+ 
+@@ -641,7 +641,7 @@ static int __show_line_range(struct line_range *lr, const char *module)
+ 	ret = get_real_path(tmp, lr->comp_dir, &lr->path);
+ 	free(tmp);	/* Free old path */
+ 	if (ret < 0) {
+-		pr_warning("Failed to find source file. (%d)\n", ret);
++		pr_warning("Failed to find source file path.\n");
+ 		return ret;
+ 	}
+ 
 -- 
 1.9.3
 
