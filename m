@@ -1,26 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932766AbaFJT5D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 15:57:03 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35686 "EHLO
+	id S1755739AbaFJT5B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 15:57:01 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35690 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754323AbaFJTyp (ORCPT
+	with ESMTP id S1755587AbaFJTyp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 10 Jun 2014 15:54:45 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Bob Liu <lliubbo@gmail.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Michel Lespinasse <walken@google.com>, Dave Jones <davej@redhat.com>,
-        Vlastimil Babka <vbabka@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Michele Baldessari <michele@acksyn.org>, Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 044/160] thp: close race between split and zap huge pages
-Date: Tue, 10 Jun 2014 12:44:44 -0700
-Message-Id: <1402429600-20477-45-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 024/160] USB: serial: ftdi_sio: add id for Brainboxes serial cards
+Date: Tue, 10 Jun 2014 12:44:24 -0700
+Message-Id: <1402429600-20477-25-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -33,139 +28,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+From: Michele Baldessari <michele@acksyn.org>
 
-commit b5a8cad376eebbd8598642697e92a27983aee802 upstream.
+commit efe26e16b1d93ac0085e69178cc18811629e8fc5 upstream.
 
-Sasha Levin has reported two THP BUGs[1][2].  I believe both of them
-have the same root cause.  Let's look to them one by one.
+Custom VID/PIDs for Brainboxes cards as reported in
+https://bugzilla.redhat.com/show_bug.cgi?id=1071914
 
-The first bug[1] is "kernel BUG at mm/huge_memory.c:1829!".  It's
-BUG_ON(mapcount != page_mapcount(page)) in __split_huge_page().  From my
-testing I see that page_mapcount() is higher than mapcount here.
-
-I think it happens due to race between zap_huge_pmd() and
-page_check_address_pmd().  page_check_address_pmd() misses PMD which is
-under zap:
-
-	CPU0						CPU1
-						zap_huge_pmd()
-						  pmdp_get_and_clear()
-__split_huge_page()
-  anon_vma_interval_tree_foreach()
-    __split_huge_page_splitting()
-      page_check_address_pmd()
-        mm_find_pmd()
-	  /*
-	   * We check if PMD present without taking ptl: no
-	   * serialization against zap_huge_pmd(). We miss this PMD,
-	   * it's not accounted to 'mapcount' in __split_huge_page().
-	   */
-	  pmd_present(pmd) == 0
-
-  BUG_ON(mapcount != page_mapcount(page)) // CRASH!!!
-
-						  page_remove_rmap(page)
-						    atomic_add_negative(-1, &page->_mapcount)
-
-The second bug[2] is "kernel BUG at mm/huge_memory.c:1371!".
-It's VM_BUG_ON_PAGE(!PageHead(page), page) in zap_huge_pmd().
-
-This happens in similar way:
-
-	CPU0						CPU1
-						zap_huge_pmd()
-						  pmdp_get_and_clear()
-						  page_remove_rmap(page)
-						    atomic_add_negative(-1, &page->_mapcount)
-__split_huge_page()
-  anon_vma_interval_tree_foreach()
-    __split_huge_page_splitting()
-      page_check_address_pmd()
-        mm_find_pmd()
-	  pmd_present(pmd) == 0	/* The same comment as above */
-  /*
-   * No crash this time since we already decremented page->_mapcount in
-   * zap_huge_pmd().
-   */
-  BUG_ON(mapcount != page_mapcount(page))
-
-  /*
-   * We split the compound page here into small pages without
-   * serialization against zap_huge_pmd()
-   */
-  __split_huge_page_refcount()
-						VM_BUG_ON_PAGE(!PageHead(page), page); // CRASH!!!
-
-So my understanding the problem is pmd_present() check in mm_find_pmd()
-without taking page table lock.
-
-The bug was introduced by me commit with commit 117b0791ac42. Sorry for
-that. :(
-
-Let's open code mm_find_pmd() in page_check_address_pmd() and do the
-check under page table lock.
-
-Note that __page_check_address() does the same for PTE entires
-if sync != 0.
-
-I've stress tested split and zap code paths for 36+ hours by now and
-don't see crashes with the patch applied. Before it took <20 min to
-trigger the first bug and few hours for second one (if we ignore
-first).
-
-[1] https://lkml.kernel.org/g/<53440991.9090001@oracle.com>
-[2] https://lkml.kernel.org/g/<5310C56C.60709@oracle.com>
-
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Tested-by: Sasha Levin <sasha.levin@oracle.com>
-Cc: Bob Liu <lliubbo@gmail.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Vlastimil Babka <vbabka@suse.cz>
-
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Michele Baldessari <michele@acksyn.org>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/huge_memory.c | 13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     | 33 +++++++++++++++++++++++++++++++++
+ drivers/usb/serial/ftdi_sio_ids.h | 37 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 70 insertions(+)
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 39c8e2e..a2256e0 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1610,16 +1610,23 @@ pmd_t *page_check_address_pmd(struct page *page,
- 			      enum page_check_address_pmd_flag flag,
- 			      spinlock_t **ptl)
- {
-+	pgd_t *pgd;
-+	pud_t *pud;
- 	pmd_t *pmd;
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index 2d7d12f..ae49336 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -910,6 +910,39 @@ static struct usb_device_id id_table_combined [] = {
+ 	{ USB_DEVICE(FTDI_VID, FTDI_Z3X_PID) },
+ 	/* Cressi Devices */
+ 	{ USB_DEVICE(FTDI_VID, FTDI_CRESSI_PID) },
++	/* Brainboxes Devices */
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_001_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_012_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_023_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_034_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_101_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_1_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_2_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_3_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_4_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_5_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_6_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_7_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_8_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_257_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_279_1_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_279_2_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_279_3_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_279_4_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_313_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_324_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_346_1_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_346_2_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_357_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_606_1_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_606_2_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_606_3_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_701_1_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_701_2_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_1_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_2_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_3_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_4_PID) },
+ 	{ }					/* Terminating entry */
+ };
  
- 	if (address & ~HPAGE_PMD_MASK)
- 		return NULL;
- 
--	pmd = mm_find_pmd(mm, address);
--	if (!pmd)
-+	pgd = pgd_offset(mm, address);
-+	if (!pgd_present(*pgd))
- 		return NULL;
-+	pud = pud_offset(pgd, address);
-+	if (!pud_present(*pud))
-+		return NULL;
-+	pmd = pmd_offset(pud, address);
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index e599fbf..993c93d 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -1326,3 +1326,40 @@
+  * Manufacturer: Cressi
+  */
+ #define FTDI_CRESSI_PID		0x87d0
 +
- 	*ptl = pmd_lock(mm, pmd);
--	if (pmd_none(*pmd))
-+	if (!pmd_present(*pmd))
- 		goto unlock;
- 	if (pmd_page(*pmd) != page)
- 		goto unlock;
++/*
++ * Brainboxes devices
++ */
++#define BRAINBOXES_VID			0x05d1
++#define BRAINBOXES_VX_001_PID		0x1001 /* VX-001 ExpressCard 1 Port RS232 */
++#define BRAINBOXES_VX_012_PID		0x1002 /* VX-012 ExpressCard 2 Port RS232 */
++#define BRAINBOXES_VX_023_PID		0x1003 /* VX-023 ExpressCard 1 Port RS422/485 */
++#define BRAINBOXES_VX_034_PID		0x1004 /* VX-034 ExpressCard 2 Port RS422/485 */
++#define BRAINBOXES_US_101_PID		0x1011 /* US-101 1xRS232 */
++#define BRAINBOXES_US_324_PID		0x1013 /* US-324 1xRS422/485 1Mbaud */
++#define BRAINBOXES_US_606_1_PID		0x2001 /* US-606 6 Port RS232 Serial Port 1 and 2 */
++#define BRAINBOXES_US_606_2_PID		0x2002 /* US-606 6 Port RS232 Serial Port 3 and 4 */
++#define BRAINBOXES_US_606_3_PID		0x2003 /* US-606 6 Port RS232 Serial Port 4 and 6 */
++#define BRAINBOXES_US_701_1_PID		0x2011 /* US-701 4xRS232 1Mbaud Port 1 and 2 */
++#define BRAINBOXES_US_701_2_PID		0x2012 /* US-701 4xRS422 1Mbaud Port 3 and 4 */
++#define BRAINBOXES_US_279_1_PID		0x2021 /* US-279 8xRS422 1Mbaud Port 1 and 2 */
++#define BRAINBOXES_US_279_2_PID		0x2022 /* US-279 8xRS422 1Mbaud Port 3 and 4 */
++#define BRAINBOXES_US_279_3_PID		0x2023 /* US-279 8xRS422 1Mbaud Port 5 and 6 */
++#define BRAINBOXES_US_279_4_PID		0x2024 /* US-279 8xRS422 1Mbaud Port 7 and 8 */
++#define BRAINBOXES_US_346_1_PID		0x3011 /* US-346 4xRS422/485 1Mbaud Port 1 and 2 */
++#define BRAINBOXES_US_346_2_PID		0x3012 /* US-346 4xRS422/485 1Mbaud Port 3 and 4 */
++#define BRAINBOXES_US_257_PID		0x5001 /* US-257 2xRS232 1Mbaud */
++#define BRAINBOXES_US_313_PID		0x6001 /* US-313 2xRS422/485 1Mbaud */
++#define BRAINBOXES_US_357_PID		0x7001 /* US_357 1xRS232/422/485 */
++#define BRAINBOXES_US_842_1_PID		0x8001 /* US-842 8xRS422/485 1Mbaud Port 1 and 2 */
++#define BRAINBOXES_US_842_2_PID		0x8002 /* US-842 8xRS422/485 1Mbaud Port 3 and 4 */
++#define BRAINBOXES_US_842_3_PID		0x8003 /* US-842 8xRS422/485 1Mbaud Port 5 and 6 */
++#define BRAINBOXES_US_842_4_PID		0x8004 /* US-842 8xRS422/485 1Mbaud Port 7 and 8 */
++#define BRAINBOXES_US_160_1_PID		0x9001 /* US-160 16xRS232 1Mbaud Port 1 and 2 */
++#define BRAINBOXES_US_160_2_PID		0x9002 /* US-160 16xRS232 1Mbaud Port 3 and 4 */
++#define BRAINBOXES_US_160_3_PID		0x9003 /* US-160 16xRS232 1Mbaud Port 5 and 6 */
++#define BRAINBOXES_US_160_4_PID		0x9004 /* US-160 16xRS232 1Mbaud Port 7 and 8 */
++#define BRAINBOXES_US_160_5_PID		0x9005 /* US-160 16xRS232 1Mbaud Port 9 and 10 */
++#define BRAINBOXES_US_160_6_PID		0x9006 /* US-160 16xRS232 1Mbaud Port 11 and 12 */
++#define BRAINBOXES_US_160_7_PID		0x9007 /* US-160 16xRS232 1Mbaud Port 13 and 14 */
++#define BRAINBOXES_US_160_8_PID		0x9008 /* US-160 16xRS232 1Mbaud Port 15 and 16 */
 -- 
 1.9.1
 
