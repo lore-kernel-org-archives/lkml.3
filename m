@@ -1,27 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933395AbaFJUe5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 16:34:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34917 "EHLO
+	id S1753565AbaFJTrD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 15:47:03 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34808 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753296AbaFJTrL (ORCPT
+	with ESMTP id S1753155AbaFJTqz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:47:11 -0400
+	Tue, 10 Jun 2014 15:46:55 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 067/160] irqchip: Gic: Support forced affinity setting
-Date: Tue, 10 Jun 2014 12:45:07 -0700
-Message-Id: <1402429600-20477-68-git-send-email-kamal@canonical.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 002/160] HID: core: do not scan constant input report
+Date: Tue, 10 Jun 2014 12:44:02 -0700
+Message-Id: <1402429600-20477-3-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -34,54 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 
-commit ffde1de64012c406dfdda8690918248b472f24e4 upstream.
+commit e24d0d399b2fce71b627043e900ef28283850482 upstream.
 
-To support the affinity setting of per cpu timers in the early startup
-of a not yet online cpu, implement the force logic, which disables the
-cpu online check.
+The Microsoft Surface Type/Touch Cover 2 is a fancy device which advertised
+itself as a multitouch device but with constant input reports.
+This way, hid_scan_report() gives the group MULTITOUCH to it, but
+hid-multitouch can not handle it due to the constant collection ignored
+by hid-input.
 
-Tagged for stable to allow a simple fix of the affected SoC clock
-event drivers.
+To prevent such crap in the future, and while we do not fix this particular
+device, make the scan_report coherent with hid-input.c, and ignore constant
+input reports.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Tested-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Tomasz Figa <t.figa@samsung.com>,
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-Link: http://lkml.kernel.org/r/20140416143315.916984416@linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/irqchip/irq-gic.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/hid/hid-core.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index 341c601..ac2d41b 100644
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -246,10 +246,14 @@ static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val,
- 			    bool force)
- {
- 	void __iomem *reg = gic_dist_base(d) + GIC_DIST_TARGET + (gic_irq(d) & ~3);
--	unsigned int shift = (gic_irq(d) % 4) * 8;
--	unsigned int cpu = cpumask_any_and(mask_val, cpu_online_mask);
-+	unsigned int cpu, shift = (gic_irq(d) % 4) * 8;
- 	u32 val, mask, bit;
- 
-+	if (!force)
-+		cpu = cpumask_any_and(mask_val, cpu_online_mask);
-+	else
-+		cpu = cpumask_first(mask_val);
-+
- 	if (cpu >= NR_GIC_CPU_IF || cpu >= nr_cpu_ids)
- 		return -EINVAL;
- 
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index 253fe23..12f1a45 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -718,6 +718,9 @@ static int hid_scan_main(struct hid_parser *parser, struct hid_item *item)
+ 	case HID_MAIN_ITEM_TAG_END_COLLECTION:
+ 		break;
+ 	case HID_MAIN_ITEM_TAG_INPUT:
++		/* ignore constant inputs, they will be ignored by hid-input */
++		if (data & HID_MAIN_ITEM_CONSTANT)
++			break;
+ 		for (i = 0; i < parser->local.usage_index; i++)
+ 			hid_scan_input_usage(parser, parser->local.usage[i]);
+ 		break;
 -- 
 1.9.1
 
