@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933993AbaFJAbi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:31:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58620 "EHLO
+	id S936213AbaFJAbz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:31:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58627 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934566AbaFJAWq (ORCPT
+	with ESMTP id S934550AbaFJAWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jun 2014 20:22:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        "J. Bruce Fields" <bfields@redhat.com>,
-        Weng Meiling <wengmeiling.weng@huawei.com>
-Subject: [PATCH 3.4 54/88] nfsd: pass net to nfsd_init_socks()
-Date: Mon,  9 Jun 2014 17:25:04 -0700
-Message-Id: <20140610002426.302802697@linuxfoundation.org>
+        FuXiangChun <xfu@redhat.com>, Amit Shah <amit.shah@redhat.com>,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>, Asias He <asias@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Yijing Wang <wangyijing@huawei.com>
+Subject: [PATCH 3.4 53/88] virtio: console: add locking around c_ovq operations
+Date: Mon,  9 Jun 2014 17:25:03 -0700
+Message-Id: <20140610002426.274754437@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
 References: <20140610002424.500996570@linuxfoundation.org>
@@ -30,65 +32,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+From: Amit Shah <amit.shah@redhat.com>
 
-commit db6e182c17cb1a7069f7f8924721ce58ac05d9a3 upstream.
+commit 9ba5c80b1aea8648a3efe5f22dc1f7cacdfbeeb8 upstream.
 
-Precursor patch. Hard-coded "init_net" will be replaced by proper one in
-future.
+When multiple ovq operations are being performed (lots of open/close
+operations on virtio_console fds), the __send_control_msg() function can
+get confused without locking.
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-[wengmeiling: backport to 3.4:
- - adjust context
- - one more parameter(int port) for nfsd_init_socks()
- - net initialization in nfsd_startup()]
-Signed-off-by: Weng Meiling <wengmeiling.weng@huawei.com>
+A simple recipe to cause badness is:
+* create a QEMU VM with two virtio-serial ports
+* in the guest, do
+  while true;do echo abc >/dev/vport0p1;done
+  while true;do echo edf >/dev/vport0p2;done
+
+In one run, this caused a panic in __send_control_msg().  In another, I
+got
+
+   virtio_console virtio0: control-o:id 0 is not a head!
+
+This also results repeated messages similar to these on the host:
+
+  qemu-kvm: virtio-serial-bus: Unexpected port id 478762112 for device virtio-serial-bus.0
+  qemu-kvm: virtio-serial-bus: Unexpected port id 478762368 for device virtio-serial-bus.0
+
+Reported-by: FuXiangChun <xfu@redhat.com>
+Signed-off-by: Amit Shah <amit.shah@redhat.com>
+Reviewed-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Reviewed-by: Asias He <asias@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+[wyj: Backported to 3.4: adjust context]
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- fs/nfsd/nfssvc.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ drivers/char/virtio_console.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/fs/nfsd/nfssvc.c
-+++ b/fs/nfsd/nfssvc.c
-@@ -182,18 +182,18 @@ int nfsd_nrthreads(void)
- 	return rv;
+--- a/drivers/char/virtio_console.c
++++ b/drivers/char/virtio_console.c
+@@ -132,6 +132,7 @@ struct ports_device {
+ 
+ 	/* To protect the vq operations for the control channel */
+ 	spinlock_t c_ivq_lock;
++	spinlock_t c_ovq_lock;
+ 
+ 	/* The current config space is stored here */
+ 	struct virtio_console_config config;
+@@ -460,11 +461,14 @@ static ssize_t __send_control_msg(struct
+ 	vq = portdev->c_ovq;
+ 
+ 	sg_init_one(sg, &cpkt, sizeof(cpkt));
++
++	spin_lock(&portdev->c_ovq_lock);
+ 	if (virtqueue_add_buf(vq, sg, 1, 0, &cpkt, GFP_ATOMIC) >= 0) {
+ 		virtqueue_kick(vq);
+ 		while (!virtqueue_get_buf(vq, &len))
+ 			cpu_relax();
+ 	}
++	spin_unlock(&portdev->c_ovq_lock);
+ 	return 0;
  }
  
--static int nfsd_init_socks(int port)
-+static int nfsd_init_socks(int port, struct net *net)
- {
- 	int error;
- 	if (!list_empty(&nfsd_serv->sv_permsocks))
- 		return 0;
+@@ -1752,6 +1756,7 @@ static int __devinit virtcons_probe(stru
+ 		unsigned int nr_added_bufs;
  
--	error = svc_create_xprt(nfsd_serv, "udp", &init_net, PF_INET, port,
-+	error = svc_create_xprt(nfsd_serv, "udp", net, PF_INET, port,
- 					SVC_SOCK_DEFAULTS);
- 	if (error < 0)
- 		return error;
+ 		spin_lock_init(&portdev->c_ivq_lock);
++		spin_lock_init(&portdev->c_ovq_lock);
+ 		INIT_WORK(&portdev->control_work, &control_work_handler);
  
--	error = svc_create_xprt(nfsd_serv, "tcp", &init_net, PF_INET, port,
-+	error = svc_create_xprt(nfsd_serv, "tcp", net, PF_INET, port,
- 					SVC_SOCK_DEFAULTS);
- 	if (error < 0)
- 		return error;
-@@ -206,6 +206,7 @@ static bool nfsd_up = false;
- static int nfsd_startup(unsigned short port, int nrservs)
- {
- 	int ret;
-+	struct net *net = &init_net;
- 
- 	if (nfsd_up)
- 		return 0;
-@@ -217,7 +218,7 @@ static int nfsd_startup(unsigned short p
- 	ret = nfsd_racache_init(2*nrservs);
- 	if (ret)
- 		return ret;
--	ret = nfsd_init_socks(port);
-+	ret = nfsd_init_socks(port, net);
- 	if (ret)
- 		goto out_racache;
- 	ret = lockd_up(&init_net);
+ 		nr_added_bufs = fill_queue(portdev->c_ivq,
 
 
