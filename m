@@ -1,95 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933876AbaFJCzJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 22:55:09 -0400
-Received: from mga01.intel.com ([192.55.52.88]:28478 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754382AbaFJCzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 22:55:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,1006,1392192000"; 
-   d="scan'208";a="552982482"
-Message-ID: <53967383.1000908@linux.intel.com>
-Date: Tue, 10 Jun 2014 10:54:59 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S934357AbaFJC4I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 22:56:08 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:9004 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S934053AbaFJC4H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 22:56:07 -0400
+X-IronPort-AV: E=Sophos;i="4.98,1006,1392134400"; 
+   d="scan'208";a="31686012"
+Message-ID: <539674DA.6060005@cn.fujitsu.com>
+Date: Tue, 10 Jun 2014 11:00:42 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@linaro.org>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [Patch V4 01/42] x86, irq: update high address field when updating
- affinity for MSI IRQ
-References: <1402302011-23642-1-git-send-email-jiang.liu@linux.intel.com>	<1402302011-23642-2-git-send-email-jiang.liu@linux.intel.com> <CAE9FiQXiZZG=FdafLVEBM_ENO50xxOZ19M3k5KwzsR7M0b2P=w@mail.gmail.com>
-In-Reply-To: <CAE9FiQXiZZG=FdafLVEBM_ENO50xxOZ19M3k5KwzsR7M0b2P=w@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Jason Low <jason.low2@hp.com>, Brad Mouring <bmouring@ni.com>
+Subject: Re: [patch V3 0/7] rtmutex: Code clarification and optimization
+References: <20140609201118.387571774@linutronix.de>	<20140609202713.32e649ea@gandalf.local.home> <20140609203522.1a339d7c@gandalf.local.home>
+In-Reply-To: <20140609203522.1a339d7c@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/10/2014 08:35 AM, Steven Rostedt wrote:
+> On Mon, 9 Jun 2014 20:27:13 -0400
+> Steven Rostedt <rostedt@goodmis.org> wrote:
+> 
+> 
+>> So what branch do these apply to? I tried latest Linus master and it
+>> didn't apply.
+> 
+> OK, they seem to be on tip/locking/urgent. Not yet in mainline.
 
 
-On 2014/6/10 7:46, Yinghai Lu wrote:
-> On Mon, Jun 9, 2014 at 1:19 AM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
->> If x2apic is enabled, the MSI high address field should also be aslo
->> updated when setting affinity for MSI IRQ, otherwise the MSI IRQ may
->> target wrong APIC IDs.
-> 
-> Do you have any test case to reveal the problem?
-Just by code inspection.
+Thank you for share it, I'm trying to review the patches.
+
+Lai
 
 > 
->>
->> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
->> Cc: stable@vger.kernel.org
->> ---
->>  arch/x86/kernel/apic/io_apic.c |    4 ++++
->>  1 file changed, 4 insertions(+)
->>
->> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
->> index 9d0a9795a0f8..2de992501a1b 100644
->> --- a/arch/x86/kernel/apic/io_apic.c
->> +++ b/arch/x86/kernel/apic/io_apic.c
->> @@ -3007,6 +3007,10 @@ msi_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
->>
->>         __get_cached_msi_msg(data->msi_desc, &msg);
->>
->> +       msg.address_hi = MSI_ADDR_BASE_HI;
->> +       if (x2apic_enabled())
->> +               msg.address_hi |= MSI_ADDR_EXT_DEST_ID(dest);
->> +
->>         msg.data &= ~MSI_DATA_VECTOR_MASK;
->>         msg.data |= MSI_DATA_VECTOR(cfg->vector);
->>         msg.address_lo &= ~MSI_ADDR_DEST_ID_MASK;
+> -- Steve
+> .
 > 
-> No. This change is not needed.
-> 
-> When x2apic is used, and apicid > 255, irq remapping is used.
-> 
-> msi_chip.irq_set_affinity will be changed from msi_set_affinity to
-> x86_io_apic_ops.set_affinity (aka intel_setup_ioapic_entry),  via
-> irq_remap_modify_chip_defaults().
-Thanks for explanation, will drop this patch.
-Gerry
-> 
-> Thanks
-> 
-> Yinghai
-> 
+
