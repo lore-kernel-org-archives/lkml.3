@@ -1,87 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755572AbaFJUWh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 16:22:37 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:47472 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755460AbaFJUWe (ORCPT
+	id S932561AbaFJUXH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 16:23:07 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:52462 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753981AbaFJUXF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 16:22:34 -0400
-Date: Wed, 11 Jun 2014 00:22:26 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrey Vagin <avagin@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>, vdavydov@parallels.com,
-        Linux API <linux-api@vger.kernel.org>
-Subject: Re: [patch 3/3] timerfd: Implement write method
-Message-ID: <20140610202226.GG2243@moon>
-References: <20140428212517.200264067@openvz.org>
- <20140428213301.507657833@openvz.org>
- <alpine.DEB.2.02.1405220643170.9695@ionos.tec.linutronix.de>
- <alpine.DEB.2.02.1405220656130.9695@ionos.tec.linutronix.de>
- <20140610163530.GF2243@moon>
- <CAKgNAkiR2xt7xnkgGDg5zKfGRoPtveWG8Jjh5=aD76L6jK7C8w@mail.gmail.com>
- <CALCETrV5augTv4bXFmfnifiAGZGw2DfNHrpBUYAp_bBsJvWRBQ@mail.gmail.com>
+	Tue, 10 Jun 2014 16:23:05 -0400
+Date: Tue, 10 Jun 2014 16:22:56 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC][PATCH] debugfs: Fix corrupted loop in
+ debugfs_remove_recursive
+Message-ID: <20140610162256.7a29771b@gandalf.local.home>
+In-Reply-To: <20140610202302.GB20499@kroah.com>
+References: <20140609140607.3e3aae39@gandalf.local.home>
+	<20140610093357.7ef3792b@gandalf.local.home>
+	<20140610202302.GB20499@kroah.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrV5augTv4bXFmfnifiAGZGw2DfNHrpBUYAp_bBsJvWRBQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 10, 2014 at 01:05:22PM -0700, Andy Lutomirski wrote:
-> On Tue, Jun 10, 2014 at 1:03 PM, Michael Kerrisk (man-pages)
-> <mtk.manpages@gmail.com> wrote:
-> > [CC += linux-api@]
+On Tue, 10 Jun 2014 13:23:02 -0700
+Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
 
-Thanks Michael!
 
-> > On Tue, Jun 10, 2014 at 6:35 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> >> On Thu, May 22, 2014 at 06:58:19AM +0900, Thomas Gleixner wrote:
-> >>> >
-> >>> > So what wakes a potential waiter in read/poll?
-> >>>
-> >>> And who is updating timerfd_create(2) ?
-> >>
-> >> Thomas, could you please take a look if the approach below is acceptable?
-> >> If it will be fine I update manpage then.
-> >> ---
-> >> From: Cyrill Gorcunov <gorcunov@openvz.org>
-> >> Subject: timerfd: Implement timerfd_ioctl method to restore timerfd_ctx::ticks
-> >>
-> >> The read() of timerfd files allows to fetch the number of timer ticks
-> >> while there is no way to set it back from userspace.
-> >>
-> >> To restore the timer's state as it was at checkpoint moment we need
-> >> a path to bring @ticks back. Initially I thought about writing ticks
-> >> back via write() interface but it seems such API is somehow obscure.
-> >>
-> >> Instead implement timerfd_ioctl() method with TFD_IOC_SET_TICKS
-> >> command which requires CAP_SYS_RESOURCE capability to be able to
-> >> set @ticks into arbitrary value. Note this command doesn't wake
-> >> up readers/waiters and its purpose only to serve C/R needs
-> >> (for same sake I wrapped code with CONFIG_CHECKPOINT_RESTORE).
-> >> Still if needed the ioctl may be extended for new commands
-> >> and CONFIG_CHECKPOINT_RESTORE dropped off.
+> > Note, the tests expect debugfs to be mounted at /debug.
 > 
-> Why does this need CAP_SYS_RESOURCE?
+> Well, those are some broken tests :)
 
-  Because I think this interface should not be used by a regular
-applications, the only purpose is to restore the @ticks after
-checkpoint. Requiring CAP_SYS_RESOURCE means that at least
-program which use it knows what it's doing.
+And that's part of the reason why I haven't pushed them to be included
+in mainline's tools/testing/ directory.
 
-  Still if someone has a scenarion where we might need this
-intarface out of this cap requirement -- we always can
-drop it of without breaking existing users, but not the
-reverse.
-
-P.S. I remember Thomas' words about existence of the other
-word out of c/r, still I treat this ioctl as exception
-(as in prctl codes we use for c/r).
+-- Steve
