@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754760AbaFJFR6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 01:17:58 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:33682 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752379AbaFJFR4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 01:17:56 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [for-next][PATCH 3/6] tracing: Only calculate stats of tracepoint benchmarks for 2^32 times
-References: <20140606163034.516780857@goodmis.org>
-	<20140606172104.552734596@goodmis.org>
-Date: Tue, 10 Jun 2014 14:17:54 +0900
-In-Reply-To: <20140606172104.552734596@goodmis.org> (Steven Rostedt's message
-	of "Fri, 06 Jun 2014 12:30:37 -0400")
-Message-ID: <87sindbawt.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1754850AbaFJFTB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 01:19:01 -0400
+Received: from tundra.namei.org ([65.99.196.166]:36757 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753400AbaFJFTA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 01:19:00 -0400
+Date: Tue, 10 Jun 2014 15:20:15 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: Re: Change in security maintainer for a few weeks
+In-Reply-To: <20140605183050.GA5054@kroah.com>
+Message-ID: <alpine.LRH.2.02.1406101517350.31746@tundra.namei.org>
+References: <20140605183050.GA5054@kroah.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steve,
+On Thu, 5 Jun 2014, Greg KH wrote:
 
-On Fri, 06 Jun 2014 12:30:37 -0400, Steven Rostedt wrote:
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
->
-> When calculating the average and standard deviation, it is required that
-> the count be less than UINT_MAX, otherwise the do_div() will get
-> undefined results. After 2^32 counts of data, the average and standard
-> deviation should pretty much be set anyway.
+> Hi all,
+> 
+> James has had to step back from doing kernel work for a few weeks, so
+> I've offered to step up and handle the security patches to get shuttled
+> to Linus for merging for a while.
+> 
+> I'll take his git tree on kernel.org and push those to Linus for
+> 3.16-rc1, as those look like they have had proper testing in linux-next.
+> 
+> But there only seems to be 14 patches in there.  Are there pending
+> patches that people have been sending and need to get in besides those?
+> 
 
-[SNIP]
->  	if (bm_cnt > 1) {
->  		/*
->  		 * Apply Welford's method to calculate standard deviation:
->  		 * s^2 = 1 / (n * (n-1)) * (n * \Sum (x_i)^2 - (\Sum x_i)^2)
->  		 */
->  		stddev = (u64)bm_cnt * bm_totalsq - bm_total * bm_total;
-> -		do_div(stddev, bm_cnt);
-> -		do_div(stddev, bm_cnt - 1);
-> +		do_div(stddev, (u32)bm_cnt);
-> +		do_div(stddev, (u32)bm_cnt - 1);
->  	} else
->  		stddev = 0;
+Thanks for stepping up.
 
-I also think that this if-else can go as it checks bm_cnt == 1 above.
+I had to take urgent leave and was unable to access email until this week.
 
-Thanks,
-Namhyung
+We really should have a co-maintainer for the security subsystem -- please 
+feel free to nominate someone.
+
+There are several good candidates, including Serge, Kees and Paul Moore.
+
+
+- James
+-- 
+James Morris
+<jmorris@namei.org>
