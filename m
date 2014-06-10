@@ -1,128 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964891AbaFJGNV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 02:13:21 -0400
-Received: from mga09.intel.com ([134.134.136.24]:64455 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754584AbaFJGNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 02:13:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,1007,1392192000"; 
-   d="scan'208";a="526031018"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@linaro.org>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        x86@kernel.org
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: [Patch V4 38/42] x86, irq, ACPI: release IOAPIC pin when PCI device is disabled
-Date: Tue, 10 Jun 2014 14:16:27 +0800
-Message-Id: <1402380987-32577-1-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1402302011-23642-39-git-send-email-jiang.liu@linux.intel.com>
-References: <1402302011-23642-39-git-send-email-jiang.liu@linux.intel.com>
+	id S1754903AbaFJGTt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 02:19:49 -0400
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:38634 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751048AbaFJGTs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 02:19:48 -0400
+MIME-Version: 1.0
+In-Reply-To: <1400164995-8652-1-git-send-email-meltedpianoman@gmail.com>
+References: <1400164995-8652-1-git-send-email-meltedpianoman@gmail.com>
+Date: Tue, 10 Jun 2014 08:19:47 +0200
+Message-ID: <CAMSQXEE9ZgE8wuXz_qu5ndbfFne7zjhN24R44trPE11e02hmWQ@mail.gmail.com>
+Subject: Re: [PATCH] [checkpatch.pl] ctx_statement_block #if/#else/#endif fix
+From: Ivo Sieben <meltedpianoman@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>, Andy Whitcroft <apw@canonical.com>,
+        Joe Perches <joe@perches.com>
+Cc: Ivo Sieben <meltedpianoman@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Release IOAPIC pin associated with PCI device when the PCI device
-is disabled.
+Andy, Joe,
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
-Minor change, simplify usage of function pointer.
----
- arch/x86/kernel/acpi/boot.c |   27 +++++++++++++++++++++++++++
- drivers/acpi/pci_irq.c      |    3 ++-
- 2 files changed, 29 insertions(+), 1 deletion(-)
+What do you think about my patchset below?
 
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index fd4b6d2e436c..8c28023924bf 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -421,8 +421,24 @@ static int mp_register_gsi(struct device *dev, u32 gsi, int trigger,
- 	return irq;
- }
- 
-+static void mp_unregister_gsi(u32 gsi)
-+{
-+	int irq;
-+
-+	if (acpi_irq_model != ACPI_IRQ_MODEL_IOAPIC)
-+		return;
-+
-+	if (acpi_gbl_FADT.sci_interrupt == gsi)
-+		return;
-+
-+	irq = mp_map_gsi_to_irq(gsi, 0);
-+	if (irq > 0)
-+		mp_unmap_irq(irq);
-+}
-+
- static struct irq_domain_ops acpi_irqdomain_ops = {
- 	.map = mp_irqdomain_map,
-+	.unmap = mp_irqdomain_unmap,
- };
- 
- static int __init
-@@ -640,8 +656,16 @@ static int acpi_register_gsi_ioapic(struct device *dev, u32 gsi,
- 	return irq;
- }
- 
-+static void acpi_unregister_gsi_ioapic(u32 gsi)
-+{
-+#ifdef CONFIG_X86_IO_APIC
-+	mp_unregister_gsi(gsi);
-+#endif
-+}
-+
- int (*__acpi_register_gsi)(struct device *dev, u32 gsi,
- 			   int trigger, int polarity) = acpi_register_gsi_pic;
-+void (*__acpi_unregister_gsi)(u32 gsi) = NULL;
- 
- #ifdef CONFIG_ACPI_SLEEP
- int (*acpi_suspend_lowlevel)(void) = x86_acpi_suspend_lowlevel;
-@@ -661,6 +685,8 @@ EXPORT_SYMBOL_GPL(acpi_register_gsi);
- 
- void acpi_unregister_gsi(u32 gsi)
- {
-+	if (__acpi_unregister_gsi)
-+		__acpi_unregister_gsi(gsi);
- }
- EXPORT_SYMBOL_GPL(acpi_unregister_gsi);
- 
-@@ -668,6 +694,7 @@ static void __init acpi_set_irq_model_ioapic(void)
- {
- 	acpi_irq_model = ACPI_IRQ_MODEL_IOAPIC;
- 	__acpi_register_gsi = acpi_register_gsi_ioapic;
-+	__acpi_unregister_gsi = acpi_unregister_gsi_ioapic;
- 	acpi_ioapic = 1;
- }
- 
-diff --git a/drivers/acpi/pci_irq.c b/drivers/acpi/pci_irq.c
-index 9c62340c2360..6ba463ceccc6 100644
---- a/drivers/acpi/pci_irq.c
-+++ b/drivers/acpi/pci_irq.c
-@@ -498,5 +498,6 @@ void acpi_pci_irq_disable(struct pci_dev *dev)
- 	 */
- 
- 	dev_dbg(&dev->dev, "PCI INT %c disabled\n", pin_name(pin));
--	acpi_unregister_gsi(gsi);
-+	if (gsi >= 0 && dev->irq > 0)
-+		acpi_unregister_gsi(gsi);
- }
--- 
-1.7.10.4
+Regards,
+Ivo Sieben
 
+2014-05-15 16:43 GMT+02:00 Ivo Sieben <meltedpianoman@gmail.com>:
+> When picking up a complete statement block #if/#else/#endif prepocesor
+> boundaries are taken into account by pushing current level & type on a stack.
+> But on an #else the level was read from stack again (without actually popping it
+> from stack) causing the statement block to end too early on the next ';'.
+> Fixed this.
+>
+> For example the following code:
+>
+>         if (!test()) {
+>  #ifdef NEVER
+>                 foo();
+>                 bar();
+>  #else
+>                 bar();
+>                 foo();
+>  #endif
+>         }
+>
+> Results in statement block:
+>
+>  STATEMENT<+    if (!test()) {
+>  +#ifdef NEVER
+>  +              foo();
+>  +              bar();
+>  +#else
+>  +              bar();>
+>  CONDITION<+    if (!test())>
+>
+> While you would expect:
+>
+>  STATEMENT<+    if (!test()) {
+>  +#ifdef NEVER
+>  +              foo();
+>  +              bar();
+>  +#else
+>  +              bar();
+>  +              foo();
+>  +#endif
+>  +       }>
+>  CONDITION<+     if (!test())>
+>
+> Signed-off-by: Ivo Sieben <meltedpianoman@gmail.com>
+> ---
+>
+> Request for comments:
+> I think I fixed a problem here that I encountered while I was working on another
+> changeset in which I check the statement block after a condition.
+> Somehow the statement block did not contain everything I expected.
+>
+>  scripts/checkpatch.pl |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index 34eb216..e7bca89 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -878,7 +878,7 @@ sub ctx_statement_block {
+>                 if ($remainder =~ /^#\s*(?:ifndef|ifdef|if)\s/) {
+>                         push(@stack, [ $type, $level ]);
+>                 } elsif ($remainder =~ /^#\s*(?:else|elif)\b/) {
+> -                       ($type, $level) = @{$stack[$#stack - 1]};
+> +                       # no changes to stack: type & level remain the same
+>                 } elsif ($remainder =~ /^#\s*endif\b/) {
+>                         ($type, $level) = @{pop(@stack)};
+>                 }
+> @@ -1050,7 +1050,7 @@ sub ctx_block_get {
+>                 if ($lines[$line] =~ /^.\s*#\s*(?:ifndef|ifdef|if)\s/) {
+>                         push(@stack, $level);
+>                 } elsif ($lines[$line] =~ /^.\s*#\s*(?:else|elif)\b/) {
+> -                       $level = $stack[$#stack - 1];
+> +                       # no changes to stack: type & level remain the same
+>                 } elsif ($lines[$line] =~ /^.\s*#\s*endif\b/) {
+>                         $level = pop(@stack);
+>                 }
+> --
+> 1.7.9.5
+>
