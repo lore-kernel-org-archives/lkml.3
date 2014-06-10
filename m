@@ -1,150 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753776AbaFJTwT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 15:52:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35400 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753853AbaFJTwP (ORCPT
+	id S1755631AbaFJUJG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 16:09:06 -0400
+Received: from qmta14.emeryville.ca.mail.comcast.net ([76.96.27.212]:38939
+	"EHLO qmta14.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755196AbaFJTwS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:52:15 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 154/160] Input: elantech - fix touchpad initialization on Gigabyte U2442
-Date: Tue, 10 Jun 2014 12:46:34 -0700
-Message-Id: <1402429600-20477-155-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
-References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Tue, 10 Jun 2014 15:52:18 -0400
+Date: Tue, 10 Jun 2014 14:52:15 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: Joe Lawrence <joe.lawrence@stratus.com>
+cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: docker crashes rcuos in __blkg_release_rcu
+In-Reply-To: <alpine.DEB.2.02.1406081816540.17948@jlaw-desktop.mno.stratus.com>
+Message-ID: <alpine.DEB.2.10.1406101449150.18982@gentwo.org>
+References: <alpine.DEB.2.02.1406081816540.17948@jlaw-desktop.mno.stratus.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.3 -stable review patch.  If anyone has any objections, please let me know.
+On Sun, 8 Jun 2014, Joe Lawrence wrote:
 
-------------------
+>
+> .tickets is offset 0 from arch_spinlock_t, so RDI should be the
+> arch_spinlock_t lock:
+> RDI: 6b6b6b6b6b6b6b6b
 
-From: Hans de Goede <hdegoede@redhat.com>
+Slub has overwritten the object when it was freed with 0x6b.
+So this is an access after free.
 
-commit 36189cc3cd57ab0f1cd75241f93fe01de928ac06 upstream.
-
-The hw_version 3 Elantech touchpad on the Gigabyte U2442 does not accept
-0x0b as initialization value for r10, this stand-alone version of the
-driver: http://planet76.com/drivers/elantech/psmouse-elantech-v6.tar.bz2
-
-Uses 0x03 which does work, so this means not setting bit 3 of r10 which
-sets: "Enable Real H/W Resolution In Absolute mode"
-
-Which will result in half the x and y resolution we get with that bit set,
-so simply not setting it everywhere is not a solution. We've been unable to
-find a way to identify touchpads where setting the bit will fail, so this
-patch uses a dmi based blacklist for this.
-
-https://bugzilla.kernel.org/show_bug.cgi?id=61151
-
-Reported-by: Philipp Wolfer <ph.wolfer@gmail.com>
-Tested-by: Philipp Wolfer <ph.wolfer@gmail.com>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- Documentation/input/elantech.txt |  5 ++++-
- drivers/input/mouse/elantech.c   | 26 +++++++++++++++++++++++++-
- drivers/input/mouse/elantech.h   |  1 +
- 3 files changed, 30 insertions(+), 2 deletions(-)
-
-diff --git a/Documentation/input/elantech.txt b/Documentation/input/elantech.txt
-index 5602eb7..e1ae127 100644
---- a/Documentation/input/elantech.txt
-+++ b/Documentation/input/elantech.txt
-@@ -504,9 +504,12 @@ byte 5:
- * reg_10
- 
-    bit   7   6   5   4   3   2   1   0
--         0   0   0   0   0   0   0   A
-+         0   0   0   0   R   F   T   A
- 
-          A: 1 = enable absolute tracking
-+         T: 1 = enable two finger mode auto correct
-+         F: 1 = disable ABS Position Filter
-+         R: 1 = enable real hardware resolution
- 
- 6.2 Native absolute mode 6 byte packet format
-     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
-index ef1cf52..230cdcf 100644
---- a/drivers/input/mouse/elantech.c
-+++ b/drivers/input/mouse/elantech.c
-@@ -11,6 +11,7 @@
-  */
- 
- #include <linux/delay.h>
-+#include <linux/dmi.h>
- #include <linux/slab.h>
- #include <linux/module.h>
- #include <linux/input.h>
-@@ -831,7 +832,11 @@ static int elantech_set_absolute_mode(struct psmouse *psmouse)
- 		break;
- 
- 	case 3:
--		etd->reg_10 = 0x0b;
-+		if (etd->set_hw_resolution)
-+			etd->reg_10 = 0x0b;
-+		else
-+			etd->reg_10 = 0x03;
-+
- 		if (elantech_write_reg(psmouse, 0x10, etd->reg_10))
- 			rc = -1;
- 
-@@ -1331,6 +1336,22 @@ static int elantech_reconnect(struct psmouse *psmouse)
- }
- 
- /*
-+ * Some hw_version 3 models go into error state when we try to set bit 3 of r10
-+ */
-+static const struct dmi_system_id no_hw_res_dmi_table[] = {
-+#if defined(CONFIG_DMI) && defined(CONFIG_X86)
-+	{
-+		/* Gigabyte U2442 */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "GIGABYTE"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "U2442"),
-+		},
-+	},
-+#endif
-+	{ }
-+};
-+
-+/*
-  * determine hardware version and set some properties according to it.
-  */
- static int elantech_set_properties(struct elantech_data *etd)
-@@ -1389,6 +1410,9 @@ static int elantech_set_properties(struct elantech_data *etd)
- 	 */
- 	etd->crc_enabled = ((etd->fw_version & 0x4000) == 0x4000);
- 
-+	/* Enable real hardware resolution on hw_version 3 ? */
-+	etd->set_hw_resolution = !dmi_check_system(no_hw_res_dmi_table);
-+
- 	return 0;
- }
- 
-diff --git a/drivers/input/mouse/elantech.h b/drivers/input/mouse/elantech.h
-index 036a04a..9e0e2a1 100644
---- a/drivers/input/mouse/elantech.h
-+++ b/drivers/input/mouse/elantech.h
-@@ -130,6 +130,7 @@ struct elantech_data {
- 	bool jumpy_cursor;
- 	bool reports_pressure;
- 	bool crc_enabled;
-+	bool set_hw_resolution;
- 	unsigned char hw_version;
- 	unsigned int fw_version;
- 	unsigned int single_finger_reports;
--- 
-1.9.1
+It works without debug because the object may still linger around (but
+there is no guarantee that the memory has not been reused).
 
