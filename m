@@ -1,75 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751316AbaFJJhr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 05:37:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43679 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750837AbaFJJhp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 05:37:45 -0400
-Date: Tue, 10 Jun 2014 12:38:06 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Nicholas Bellinger <nab@linux-iscsi.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the vhost tree
-Message-ID: <20140610093806.GB7423@redhat.com>
-References: <20140610141217.50d98cd6@canb.auug.org.au>
+	id S1751783AbaFJJjz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 05:39:55 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:33222 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717AbaFJJjx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 05:39:53 -0400
+Date: Tue, 10 Jun 2014 11:39:43 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+Cc: Henrik Austad <henrik@austad.us>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        Dietmar Eggemann <Dietmar.Eggemann@arm.com>
+Subject: Re: [RFC PATCH 02/16] sched: Introduce CONFIG_SCHED_ENERGY
+Message-ID: <20140610093943.GA6758@twins.programming.kicks-ass.net>
+References: <1400869003-27769-1-git-send-email-morten.rasmussen@arm.com>
+ <1400869003-27769-3-git-send-email-morten.rasmussen@arm.com>
+ <20140608060316.GA18179@austad.us>
+ <20140609102027.GA29593@e103034-lin>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fU5tsrXreH0/dVH0"
 Content-Disposition: inline
-In-Reply-To: <20140610141217.50d98cd6@canb.auug.org.au>
+In-Reply-To: <20140609102027.GA29593@e103034-lin>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 10, 2014 at 02:12:17PM +1000, Stephen Rothwell wrote:
-> Hi Michael,
-> 
-> After merging the vhost tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
-> 
-> drivers/vhost/scsi.c: In function 'vhost_scsi_handle_vq':
-> drivers/vhost/scsi.c:1043:14: error: 'struct vhost_dev' has no member named 'acked_features'
->    if (vs->dev.acked_features & VIRTIO_SCSI_F_T10_PI) {
->               ^
-> 
-> Commit 95e7c4341b8e ("vhost/scsi: Enable T10 PI IOV -> SGL memory
-> mapping") from the target-updates tree interacting with commit
-> 10350a292160 ("vhost: move acked_features to VQs") from the vhost tree.
-> 
-> I applied the following patch which seems right, but may not be.
-> 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Tue, 10 Jun 2014 14:08:21 +1000
-> Subject: [PATCH] vhost/scsi: fixup for acked_features move
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 
-This is exactly the correct resolution of this conflict.
-ACK
+--fU5tsrXreH0/dVH0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> ---
->  drivers/vhost/scsi.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/vhost/scsi.c b/drivers/vhost/scsi.c
-> index 78ff1f64d759..6d7dd85365fe 100644
-> --- a/drivers/vhost/scsi.c
-> +++ b/drivers/vhost/scsi.c
-> @@ -1040,7 +1040,7 @@ vhost_scsi_handle_vq(struct vhost_scsi *vs, struct vhost_virtqueue *vq)
->  			break;
->  		}
->  
-> -		if (vs->dev.acked_features & VIRTIO_SCSI_F_T10_PI) {
-> +		if (vhost_has_feature(vq, VIRTIO_SCSI_F_T10_PI)) {
->  			req = &v_req_pi;
->  			lunp = &v_req_pi.lun[0];
->  			target = &v_req_pi.lun[1];
-> -- 
-> 2.0.0
-> 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+On Mon, Jun 09, 2014 at 11:20:27AM +0100, Morten Rasmussen wrote:
+> On Sun, Jun 08, 2014 at 07:03:16AM +0100, Henrik Austad wrote:
+> > On Fri, May 23, 2014 at 07:16:29PM +0100, Morten Rasmussen wrote:
+> > > The Energy-aware scheduler implementation is guarded by
+> > > CONFIG_SCHED_ENERGY.
+> > >=20
+> > > Signed-off-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
+> > > Signed-off-by: Morten Rasmussen <morten.rasmussen@arm.com>
+> > > ---
+> > >  arch/arm/Kconfig |    5 +++++
+> > >  1 file changed, 5 insertions(+)
+> > >=20
+> > > diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> > > index ab438cb..bfc3a85 100644
+> > > --- a/arch/arm/Kconfig
+> > > +++ b/arch/arm/Kconfig
+> >=20
+> > Is this going to be duplicate for each architecture enabling this? Why
+> > not make a kernel/Kconfig.energy and link to that from those
+> > architectures using it?
+>=20
+> kernel/Kconfig.energy is better I think.
 
+Well, strictly speaking I'd prefer to not have more sched CONFIG knobs.
 
+Do we really need to have this CONFIG guarded?
+
+--fU5tsrXreH0/dVH0
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTltJfAAoJEHZH4aRLwOS6Z5kP/iiodeBs2kI+pKiL/FVQkZZP
+t3eNRtxiNSbqwEuBD5BcDPGVDug5tWQPOEw4ct+EKtzm5wRuqBG51Lad3PBtL4Hk
+GZ3b0ldXWRBtaZp1HE139RYklPhynXvuPcUlA5QjsL1DRa/i01bdEM4h26BifesM
+5/JgKzanwT06+5Nmk7LS9K3cw7z20cClgcCg8P1kXD86XibbzjUS80gMKtUdVxEx
+MiERFpkn5P2KNlojHYsTsmdykiJpslLoLfiuedT41f1DnTp6VugQzTIj96BU0ZPH
+Lkk+qjaILjA/Nc5oliarBzmGwYkKvLgCUOcBlBRejr3A7jraQ4oqVL//gWaueJkW
+mogpY0NvLejcmJmwyUD4r6EVPzHhifLAgV4Qsf/YbIRZo0RGkhaHyCXeI4NsInTJ
+JArOxCYS7qHdC53Gdd0Fo4xCJI7yYPmKw1E4RjpZIv2/llt5U1ibQXVE8m3xGabJ
+YfOKNeeyfUQzWBnuGNEgriZUyw/WgEZG+D/ET8hy3mnystiXkt3fa+Cuagx1U8kV
+8p/01yBjJurJWbilhmXSHzVDOk8PRVW0jyML78pW7+uUDpvN2wxiZtis2j3TBo4d
+6YkC/+uDtK+wmmDLtbuUyF+AcI1IvYMrcMa9F9jNWYNF2nnbkwTauulclo0uY+Yv
+5TXIUSkjBfK3duuykZhi
+=0qL6
+-----END PGP SIGNATURE-----
+
+--fU5tsrXreH0/dVH0--
