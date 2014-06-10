@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755074AbaFJTvq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 15:51:46 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35321 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932193AbaFJTvo (ORCPT
+	id S933149AbaFJUPB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 16:15:01 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:58134 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933132AbaFJUO5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:51:44 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Michael Welling <mwelling@ieee.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 147/160] tty: serial: 8250_core.c Bug fix for Exar chips.
-Date: Tue, 10 Jun 2014 12:46:27 -0700
-Message-Id: <1402429600-20477-148-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
-References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
+	Tue, 10 Jun 2014 16:14:57 -0400
+Message-ID: <5397673D.8010200@semaphore.gr>
+Date: Tue, 10 Jun 2014 23:14:53 +0300
+From: Stratos Karafotis <stratosk@semaphore.gr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>
+CC: dirk.j.brandewie@intel.com, Viresh Kumar <viresh.kumar@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/7] cpufreq: intel_pstate: Trivial code cleanup
+References: <5396208F.6070400@semaphore.gr> <1447217.dTmMAkaUnF@vostro.rjw.lan> <53973FD4.7090904@intel.com> <5753346.hxK14sqO5y@vostro.rjw.lan>
+In-Reply-To: <5753346.hxK14sqO5y@vostro.rjw.lan>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.3 -stable review patch.  If anyone has any objections, please let me know.
+On 10/06/2014 11:17 μμ, Rafael J. Wysocki wrote:
+> On Tuesday, June 10, 2014 10:26:44 AM Dirk Brandewie wrote:
+>> On 06/10/2014 08:31 AM, Rafael J. Wysocki wrote:
+>>> On Tuesday, June 10, 2014 08:12:48 AM Dirk Brandewie wrote:
+>>>> On 06/09/2014 02:01 PM, Stratos Karafotis wrote:
+>>>>> Remove unnecessary blank lines.
+>>>>> Remove unnecessary parentheses.
+>>>>> Remove unnecessary braces.
+>>>>> Put the code in one line where possible.
+>>>>> Add blank lines after variable declarations.
+>>>>> Alignment to open parenthesis.
+>>>>>
+>>>>
+>>>> I don't have an issue with this patch in general but I would rather
+>>>> the cleanup be done when there is a functional change in the given
+>>>> hunk of code otherwise you are setting up a fence for stable/backporters
+>>>> of functional changes in the future.
+>>>
+>>> I actually prefer separate cleanups so as to avoid doing multiple things
+>>> in one patch.
+>>>
+>>> Rafael
+>>>
+>> I don't have strong feelings either way I was just trying to be kind
+>> to the maintainers of distro kernels.
+> 
+> And mixing fixes with cleanups in one patch doesn't do any good to them.
+> 
+> Trust me, I used to work for a distro. :-)
+> 
 
-------------------
+So, should I proceed and split the patch or drop it? :)
 
-From: Michael Welling <mwelling@ieee.org>
+Stratos
 
-commit b790f210fe8423eff881b2a8a93ba5dbc45534d0 upstream.
-
-The sleep function was updated to put the serial port to sleep only when necessary.
-This appears to resolve the errant behavior of the driver as described in
-Kernel Bug 61961 – "My Exar Corp. XR17C/D152 Dual PCI UART modem does not
-work with 3.8.0".
-
-Signed-off-by: Michael Welling <mwelling@ieee.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/tty/serial/8250/8250_core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
-index 922d5bc..78abb19 100644
---- a/drivers/tty/serial/8250/8250_core.c
-+++ b/drivers/tty/serial/8250/8250_core.c
-@@ -555,7 +555,7 @@ static void serial8250_set_sleep(struct uart_8250_port *p, int sleep)
- 	 */
- 	if ((p->port.type == PORT_XR17V35X) ||
- 	   (p->port.type == PORT_XR17D15X)) {
--		serial_out(p, UART_EXAR_SLEEP, 0xff);
-+		serial_out(p, UART_EXAR_SLEEP, sleep ? 0xff : 0);
- 		return;
- 	}
- 
--- 
-1.9.1
 
