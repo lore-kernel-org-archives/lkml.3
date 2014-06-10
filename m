@@ -1,27 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932987AbaFJUbO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 16:31:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35010 "EHLO
+	id S1755549AbaFJUbw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 16:31:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35001 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753723AbaFJTrO (ORCPT
+	with ESMTP id S1753634AbaFJTrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:47:14 -0400
+	Tue, 10 Jun 2014 15:47:13 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 068/160] clocksource: Exynos_mct: Use irq_force_affinity() in cpu bringup
-Date: Tue, 10 Jun 2014 12:45:08 -0700
-Message-Id: <1402429600-20477-69-git-send-email-kamal@canonical.com>
+Cc: Andrea Adami <andrea.adami@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 083/160] ARM: pxa: hx4700.h: include "irqs.h" for PXA_NR_BUILTIN_GPIO
+Date: Tue, 10 Jun 2014 12:45:23 -0700
+Message-Id: <1402429600-20477-84-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -34,66 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Andrea Adami <andrea.adami@gmail.com>
 
-commit 30ccf03b4a6a2102a2219058bdc6d779dc637dd7 upstream.
+commit c02b50e90be9f41d6802049a1a08246e9eb1a22c upstream.
 
-The starting cpu is not yet in the online mask so irq_set_affinity()
-fails which results in per cpu timers for this cpu ending up on some
-other online cpu, ususally cpu 0.
+hx4700 needs the same fix as in
+9705e74671f0e4f994d86b00cecf441917c64a66
+"ARM: pxa: fix various compilation problems"
 
-Use irq_force_affinity() which disables the online mask check and
-makes things work.
+Fix build errors. Initial one is:
+/linux/arch/arm/mach-pxa/include/mach/hx4700.h:18:32: error:
+ 'PXA_NR_BUILTIN_GPIO' undeclared here (not in a function)
+|  #define HX4700_ASIC3_GPIO_BASE PXA_NR_BUILTIN_GPIO
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Tested-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Tomasz Figa <t.figa@samsung.com>,
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-Link: http://lkml.kernel.org/r/20140416143316.106665251@linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Andrea Adami <andrea.adami@gmail.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/clocksource/exynos_mct.c | 8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
+ arch/arm/mach-pxa/include/mach/hx4700.h | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/clocksource/exynos_mct.c b/drivers/clocksource/exynos_mct.c
-index 62b0de6..b17b3e0 100644
---- a/drivers/clocksource/exynos_mct.c
-+++ b/drivers/clocksource/exynos_mct.c
-@@ -428,6 +428,7 @@ static int exynos4_local_timer_setup(struct clock_event_device *evt)
- 				evt->irq);
- 			return -EIO;
- 		}
-+		irq_force_affinity(mct_irqs[MCT_L0_IRQ + cpu], cpumask_of(cpu));
- 	} else {
- 		enable_percpu_irq(mct_irqs[MCT_L0_IRQ], 0);
- 	}
-@@ -448,7 +449,6 @@ static int exynos4_mct_cpu_notify(struct notifier_block *self,
- 					   unsigned long action, void *hcpu)
- {
- 	struct mct_clock_event_device *mevt;
--	unsigned int cpu;
+diff --git a/arch/arm/mach-pxa/include/mach/hx4700.h b/arch/arm/mach-pxa/include/mach/hx4700.h
+index 8bc0291..0e1bb46 100644
+--- a/arch/arm/mach-pxa/include/mach/hx4700.h
++++ b/arch/arm/mach-pxa/include/mach/hx4700.h
+@@ -14,6 +14,7 @@
  
- 	/*
- 	 * Grab cpu pointer in each case to avoid spurious
-@@ -459,12 +459,6 @@ static int exynos4_mct_cpu_notify(struct notifier_block *self,
- 		mevt = this_cpu_ptr(&percpu_mct_tick);
- 		exynos4_local_timer_setup(&mevt->evt);
- 		break;
--	case CPU_ONLINE:
--		cpu = (unsigned long)hcpu;
--		if (mct_int_type == MCT_INT_SPI)
--			irq_set_affinity(mct_irqs[MCT_L0_IRQ + cpu],
--						cpumask_of(cpu));
--		break;
- 	case CPU_DYING:
- 		mevt = this_cpu_ptr(&percpu_mct_tick);
- 		exynos4_local_timer_stop(&mevt->evt);
+ #include <linux/gpio.h>
+ #include <linux/mfd/asic3.h>
++#include "irqs.h" /* PXA_NR_BUILTIN_GPIO */
+ 
+ #define HX4700_ASIC3_GPIO_BASE	PXA_NR_BUILTIN_GPIO
+ #define HX4700_EGPIO_BASE	(HX4700_ASIC3_GPIO_BASE + ASIC3_NUM_GPIOS)
 -- 
 1.9.1
 
