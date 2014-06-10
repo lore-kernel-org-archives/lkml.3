@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754030AbaFJUuy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 16:50:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39734 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753844AbaFJUux (ORCPT
+	id S1754116AbaFJUwM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 16:52:12 -0400
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:62187 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753038AbaFJUwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 16:50:53 -0400
-Date: Tue, 10 Jun 2014 13:50:51 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: mingo@kernel.org, hpa@zytor.com, luto@amacapital.net,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        tglx@linutronix.de, hpa@linux.intel.com
-Cc: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>,
-        linux-tip-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        luto@amacapital.net, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com
-Subject: Re: [tip:x86/vdso] x86, vdso: Use <tools/le_byteshift.h> for
- littleendian access
-Message-Id: <20140610135051.c3c34165f73d67d218b62bd9@linux-foundation.org>
-In-Reply-To: <tip-bdfb9bcc25005d06a9c301830bdeb7ca5a0b6ef7@git.kernel.org>
-References: <20140606140017.afb7f91142f66cb3dd13c186@linux-foundation.org>
-	<tip-bdfb9bcc25005d06a9c301830bdeb7ca5a0b6ef7@git.kernel.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 10 Jun 2014 16:52:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAL_JsqKvoO9acX==-LdD6boO=B3xr=ijra_G0uqRZGzACZZUJg@mail.gmail.com>
+References: <1397859600-11507-1-git-send-email-robherring2@gmail.com>
+	<1397859600-11507-4-git-send-email-robherring2@gmail.com>
+	<CAE9FiQVrwypK4u5yTCt-AxMuBnOn7jv=V3d4Zb3cd9JDNEUVPw@mail.gmail.com>
+	<CAL_JsqKux+BTHeYo6XEzzQMAFJZHVjbURM973oHT=t698GbJbA@mail.gmail.com>
+	<20140503220731.GA10927@kroah.com>
+	<20140503221658.GA13403@kroah.com>
+	<CA+8MBb+7f1bOnJjJWj1vxa0UNuQwz7OGRDR_QFTxOT=9cynabQ@mail.gmail.com>
+	<CA+8MBbKE1E2uq9LefiDAV9hv2Z8OTkjx9mkXjE6_--F_emRC8A@mail.gmail.com>
+	<CAL_JsqKvoO9acX==-LdD6boO=B3xr=ijra_G0uqRZGzACZZUJg@mail.gmail.com>
+Date: Tue, 10 Jun 2014 13:52:08 -0700
+Message-ID: <CA+8MBbLooWm9xys+gYa5uL1eVTH-qzaR+RaZgsrqV-8XkqGadQ@mail.gmail.com>
+Subject: Re: [PATCH v2 3/7] tty/serial: convert 8250 to generic earlycon
+From: Tony Luck <tony.luck@gmail.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yinghai Lu <yinghai@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        Jiri Slaby <jslaby@suse.cz>, Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 6 Jun 2014 15:00:29 -0700 "tip-bot for H. Peter Anvin" <tipbot@zytor.com> wrote:
+On Mon, Jun 9, 2014 at 4:18 PM, Rob Herring <robherring2@gmail.com> wrote:
+> It should do auto detect of the baud-rate if it is not specified which
+> for 8250 is just reading the baud-rate divider and calculating the
+> baud-rate using the uart clock. It should just reprogram the divider
+> with the same divider value. I don't see anything obvious why this
+> would have broken.
 
-> Commit-ID:  bdfb9bcc25005d06a9c301830bdeb7ca5a0b6ef7
-> Gitweb:     http://git.kernel.org/tip/bdfb9bcc25005d06a9c301830bdeb7ca5a0b6ef7
-> Author:     H. Peter Anvin <hpa@linux.intel.com>
-> AuthorDate: Fri, 6 Jun 2014 14:30:37 -0700
-> Committer:  H. Peter Anvin <hpa@linux.intel.com>
-> CommitDate: Fri, 6 Jun 2014 14:54:54 -0700
-> 
-> x86, vdso: Use <tools/le_byteshift.h> for littleendian access
+Something very weird is happening.  Output is good so long as I put the
+trailing ",115200" on the command line.
 
-Getting closer.
+But I made early_serial8250_setup() printk() the return value it got
+from probe_baud() - in case is was somehow getting 115201 or some
+other silly value ... nope. Exactly 115200.
 
-In file included from arch/x86/vdso/vdso2c.c:80:
-arch/x86/vdso/vdso2c.h: In function 'go64':
-arch/x86/vdso/vdso2c.h:119: warning: implicit declaration of function 'htole16'
-/tmp/cc04m2KE.o: In function `go':
-vdso2c.c:(.text+0xf69): undefined reference to `htole16'
-vdso2c.c:(.text+0x12e6): undefined reference to `htole16'
+I also can't explain why the "noise" comes and goes a dozen
+times during boot,
+
+Does some other place in the kernel look at the "uart..." command
+line argument?
+
+-Tony
