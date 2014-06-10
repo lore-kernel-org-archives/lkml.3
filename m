@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933853AbaFJUki (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 16:40:38 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:47196 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933803AbaFJUke (ORCPT
+	id S1755798AbaFJUkQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 16:40:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34838 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753429AbaFJTqz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 16:40:34 -0400
-Date: Tue, 10 Jun 2014 21:40:21 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-Cc: Josh Boyer <jwboyer@redhat.com>, David Howells <dhowells@redhat.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>, keyrings@linux-nfs.org,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: Re: [PATCH 0/4] KEYS: validate key trust with owner and builtin keys
- only
-Message-ID: <20140610204021.GA8916@srcf.ucam.org>
-References: <1402331614.7064.60.camel@dhcp-9-2-203-236.watson.ibm.com>
- <cover.1402387862.git.d.kasatkin@samsung.com>
- <20140610122008.GA31944@hansolo.jdub.homelinux.org>
- <CACE9dm9Ff6b3J=05QfcgBv-c_y=5qGNq1-ZSfo4smtj34i1e-A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACE9dm9Ff6b3J=05QfcgBv-c_y=5qGNq1-ZSfo4smtj34i1e-A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Tue, 10 Jun 2014 15:46:55 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 008/160] iwlwifi: add MODULE_FIRMWARE for 7265
+Date: Tue, 10 Jun 2014 12:44:08 -0700
+Message-Id: <1402429600-20477-9-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
+References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 10, 2014 at 11:34:17PM +0300, Dmitry Kasatkin wrote:
+3.13.11.3 -stable review patch.  If anyone has any objections, please let me know.
 
-> Preventing loading keys from uefi except dbx by default actually improves
-> security. Adding kernel parameter to read db we make system more
-> vulnerable.
+------------------
 
-It only adds security if you're performing a measured boot and remote 
-attestation. Otherwise you implicitly trust that key anyway. In almost 
-all cases refusing to trust db gives you a false sense of security 
-without any real improvement. I don't think it's obvious it should be 
-the default.
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
+commit 08a732f4e4a842f0101e5ea03d79e9d613ffadbe upstream.
+
+It was missing.
+
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/net/wireless/iwlwifi/iwl-7000.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/net/wireless/iwlwifi/iwl-7000.c b/drivers/net/wireless/iwlwifi/iwl-7000.c
+index 3c34a72..ee02c3b 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-7000.c
++++ b/drivers/net/wireless/iwlwifi/iwl-7000.c
+@@ -223,3 +223,4 @@ const struct iwl_cfg iwl7265_n_cfg = {
+ 
+ MODULE_FIRMWARE(IWL7260_MODULE_FIRMWARE(IWL7260_UCODE_API_OK));
+ MODULE_FIRMWARE(IWL3160_MODULE_FIRMWARE(IWL3160_UCODE_API_OK));
++MODULE_FIRMWARE(IWL7265_MODULE_FIRMWARE(IWL7260_UCODE_API_OK));
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+1.9.1
+
