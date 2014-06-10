@@ -1,99 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751812AbaFJJwW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 05:52:22 -0400
-Received: from forward-corp1f.mail.yandex.net ([95.108.130.40]:39115 "EHLO
-	forward-corp1f.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750717AbaFJJwV (ORCPT
+	id S1751924AbaFJJwm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 05:52:42 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:45978 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751847AbaFJJwj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 05:52:21 -0400
-X-Yandex-Uniq: 17db2de1-14a0-4728-865f-bdacfcff944b
-Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
-Date: Tue, 10 Jun 2014 13:52:16 +0400
-From: Stanislav Fomichev <stfomichev@yandex-team.ru>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: acme@kernel.org, artagnon@gmail.com, jolsa@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2 v2] perf timechart: fix documentation
-Message-ID: <20140610095216.GO26511@stfomichev-desktop.yandex.net>
-References: <1402305672-2630-1-git-send-email-stfomichev@yandex-team.ru>
- <1402305672-2630-2-git-send-email-stfomichev@yandex-team.ru>
- <87bnu1b5hp.fsf@sejong.aot.lge.com>
+	Tue, 10 Jun 2014 05:52:39 -0400
+Message-ID: <5396D529.308@linaro.org>
+Date: Tue, 10 Jun 2014 17:51:37 +0800
+From: "kefeng.wang" <kefeng.wang@linaro.org>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87bnu1b5hp.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Tejun Heo <tj@kernel.org>
+CC: Hans de Goede <hdegoede@redhat.com>,
+        Zhangfei Gao <zhangfei.gao@linaro.org>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, wangkefeng.wang@huawei.com,
+        xuwei5@hisilicon.com
+Subject: [PATCH] ahci: disable ncq feature for hisilicon sata
+References: <1398416351-30567-1-git-send-email-kefeng.wang@linaro.org> <20140514170757.GD15690@htj.dyndns.org>
+In-Reply-To: <20140514170757.GD15690@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move options away from examples.
+NCQ feature is unsupported on hisilicon sata controller, so disable it.
+This version of IP is used by hip04 and hix5hd2 soc.
 
-Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
+Signed-off-by: Kefeng Wang <kefeng.wang@linaro.org>
 ---
- tools/perf/Documentation/perf-timechart.txt | 41 ++++++++++++++---------------
- 1 file changed, 20 insertions(+), 21 deletions(-)
+ drivers/ata/ahci_platform.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/Documentation/perf-timechart.txt b/tools/perf/Documentation/perf-timechart.txt
-index bc5990c33dc0..5e0f986dff38 100644
---- a/tools/perf/Documentation/perf-timechart.txt
-+++ b/tools/perf/Documentation/perf-timechart.txt
-@@ -43,27 +43,6 @@ TIMECHART OPTIONS
- 
- --symfs=<directory>::
-         Look for files with symbols relative to this directory.
--
--EXAMPLES
----------
--
--$ perf timechart record git pull
--
--  [ perf record: Woken up 13 times to write data ]
--  [ perf record: Captured and wrote 4.253 MB perf.data (~185801 samples) ]
--
--$ perf timechart
--
--  Written 10.2 seconds of trace to output.svg.
--
--Record system-wide timechart:
--
--  $ perf timechart record
--
--  then generate timechart and highlight 'gcc' tasks:
--
--  $ perf timechart --highlight gcc
--
- -n::
- --proc-num::
-         Print task info for at least given number of tasks.
-@@ -88,6 +67,26 @@ RECORD OPTIONS
- --callchain::
-         Do call-graph (stack chain/backtrace) recording
- 
-+EXAMPLES
-+--------
-+
-+$ perf timechart record git pull
-+
-+  [ perf record: Woken up 13 times to write data ]
-+  [ perf record: Captured and wrote 4.253 MB perf.data (~185801 samples) ]
-+
-+$ perf timechart
-+
-+  Written 10.2 seconds of trace to output.svg.
-+
-+Record system-wide timechart:
-+
-+  $ perf timechart record
-+
-+  then generate timechart and highlight 'gcc' tasks:
-+
-+  $ perf timechart --highlight gcc
-+
- SEE ALSO
- --------
- linkperf:perf-record[1]
+diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
+index ebe505c..0cfda8b 100644
+--- a/drivers/ata/ahci_platform.c
++++ b/drivers/ata/ahci_platform.c
+@@ -58,7 +58,7 @@ static int ahci_probe(struct platform_device *pdev)
+        }
+
+        if (of_device_is_compatible(dev->of_node, "hisilicon,hisi-ahci"))
+-               hflags |= AHCI_HFLAG_NO_FBS;
++               hflags = AHCI_HFLAG_NO_FBS | AHCI_HFLAG_NO_NCQ;
+
+        rc = ahci_platform_init_host(pdev, hpriv, &ahci_port_info,
+                                     hflags, 0, 0);
 -- 
-1.8.3.2
-
+1.7.9.5
