@@ -1,107 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041AbaFJLwG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 07:52:06 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:37016 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751241AbaFJLwE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 07:52:04 -0400
-Message-ID: <5396F166.1030401@arm.com>
-Date: Tue, 10 Jun 2014 12:52:06 +0100
-From: Dietmar Eggemann <dietmar.eggemann@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752114AbaFJLw6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 07:52:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56116 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751101AbaFJLw5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 07:52:57 -0400
+Date: Tue, 10 Jun 2014 13:52:54 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Marian Marinov <mm@1h.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org
+Subject: Re: [RFC] oom, memcg: handle sysctl oom_kill_allocating_task while
+ memcg oom happening
+Message-ID: <20140610115254.GA25631@dhcp22.suse.cz>
+References: <5396ED66.7090401@1h.com>
 MIME-Version: 1.0
-To: Yuyang Du <yuyang.du@intel.com>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Subject: Re: [RFC PATCH 07/16 v3] Init Workload Consolidation flags in sched_domain
-References: <1401431772-14320-1-git-send-email-yuyang.du@intel.com> <1401431772-14320-8-git-send-email-yuyang.du@intel.com> <20140603121416.GH30445@twins.programming.kicks-ass.net> <5395F541.60604@arm.com> <20140609211820.GA5361@intel.com>
-In-Reply-To: <20140609211820.GA5361@intel.com>
-X-OriginalArrivalTime: 10 Jun 2014 11:51:56.0548 (UTC) FILETIME=[6116B440:01CF84A2]
-X-MC-Unique: 114061012520102901
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5396ED66.7090401@1h.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/06/14 22:18, Yuyang Du wrote:
-> On Mon, Jun 09, 2014 at 06:56:17PM +0100, Dietmar Eggemann wrote:
+[More people to CC]
+On Tue 10-06-14 14:35:02, Marian Marinov wrote:
+> -----BEGIN PGP SIGNED MESSAGE-----
+> Hash: SHA1
 > 
-> Thanks, Dietmar.
-> 
->> I'm running these patches on my ARM TC2 on top of
->> kernel/git/torvalds/linux.git (v3.15-rc7-79-gfe45736f4134). There're
->> considerable changes in the area of sched domain setup since Vincent's
->> patchset 'rework sched_domain topology description' (destined for v3.16)
->> which you can find on kernel/git/tip/tip.git .
->>
-> 
-> Yeah, PeterZ pointed it out. It was on top of mainline not tip.
-> 
->> Why did you make SD_WORKLOAD_CONSOLIDATION controllable via sysctl? All
->> the other SD flags are set during setup.
->>
-> 
-> I don't understand. Any flag or parameter in sched_domain can be modified
-> on-the-fly after booting via sysctl. The SD_XXX_INIT is a template to make
-> the sched_domain initialization easier, IIUC.
+> Hello,
 
-Technically true but since the sysctrl stuff is per-cpu and you want to
-change per-domain data, you have to be extremely careful that each cpu
-still sees the same data.
+Hi,
 
-Another counter example, if I delete the SD_SHARE_PKG_RESOURCES flag on
-my ARM TC2 system for all CPU's on domain0 (MC level) via sysctl, the
-scheduler still has sd_llc assigned to the struct sched_domain for the
-MC level of the CPU.
+> a while back in 2012 there was a request for this functionality.
+>   oom, memcg: handle sysctl oom_kill_allocating_task while memcg oom
+>   happening
+>
+> This is the thread: https://lkml.org/lkml/2012/10/16/168
+>
+> Now we run a several machines with around 10k processes on each
+> machine, using containers.
+>
+> Regularly we see OOM from within a container that causes performance
+> degradation.
 
+What kind of performance degradation and which parts of the system are
+affected?
+
+memcg oom killer happens outside of any locks currently so the only
+bottleneck I can see is the per-cgroup container which iterates all
+tasks in the group. Is this what is going on here?
+
+> We are running 3.12.20 with the following OOM configuration and memcg
+> oom enabled:
 > 
-> Yes, I should not unconditionally enable SD_WORKLOAD_CONSOLIDATION in MC
-> and CPU domain (pointed out by PeterZ), but I did so for the purpose of
-> testing this patchset at this moment. Eventually, this flag should not be
-> turned on for any domain by default for many reasons, not to mention CPU
-> topology is getting more diverse/complex.
-
-But isn't this the point to show how and under which conditions you
-would set this flag in the existing code? Since I guess it's a scheduler
-behavioural (not a topology related one) flag, it has to be integrated
-nicely into sd_init() etc.
-
+> vm.oom_dump_tasks = 0
+> vm.oom_kill_allocating_task = 1
+> vm.panic_on_oom = 0
 > 
-> I just checked Vincent's "rework sched_domain topology description". The
-> general picture for init sched_domain does not change. If you work on top
-> of tip tree, you can simply skip this patch (0007), and after booting
-> enable SD_WORKLOAD_CONSOLIDATION by:
-> 
-> sysctl -w kernel.sched_domain.cpuX.domainY.flags += 0x8000
-> sysctl -w kernel.sched_domain.cpu0.domain1.consolidating_coeff=180
-> sysctl -w kernel.sched_cc_wakeup_threshold=80
-> 
->> Your top_flag_domain() function
->> takes care of figuring out what is the highest sd level this is set on
->> during load-balance but I can't find any good reason to do it this way
->> other then for testing purposes?
-> 
-> Any flag is used for testing whether it is set on or not when encountering
-> it, including the flags in sched_domain for load balancing, this is why flag
-> is called flag. My flag is any excpetion?
+> When OOM occurs we see very high numbers for the loadavg and the
+> overall responsiveness of the machine degrades.
 
-Not in this sense but there is no functionality in the scheduler right
-now to check constantly if an sd flag has been set/unset via sysctl.
-IMHO, there's only sd_init and (highest/lowest)_flag_domain to cache
-pointers to special sd's and both are called during start-up or cpu
-hotplug
-((init/partition_sched_domains()->build_sched_domains()->{build_sched_domain()->sd_init(),
-cpu_attach_domain()-> update_top_cache_domain())}
+What is the system waiting for?
 
--- Dietmar
+> During these OOM states the load of the machine gradualy increases
+> from 25 up to 120 in the interval of 10minutes.
+>
+> Once we manually bring down the memory usage of a container(killing
+> some tasks) the load drops down to 25 within 5 to 7 minutes.
 
-> 
-> Thanks,
-> Yuyang
-> 
+So the OOM killer is not able to find a victim to kill?
 
+> I read the whole thread from 2012 but I do not see the expected
+> behavior that is described by the people that commented the issue.
 
+Why do you think that killing the allocating task would be helpful in
+your case?
+
+> In this case, with real usage for this patch, would it be considered
+> for inclusion?
+
+I would still prefer to fix the real issue which is not clear from your
+description yet.
+
+-- 
+Michal Hocko
+SUSE Labs
