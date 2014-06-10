@@ -1,98 +1,317 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934325AbaFJCa2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 22:30:28 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:31718 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932778AbaFJCa0 (ORCPT
+	id S933300AbaFJCh0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 22:37:26 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:64072 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753838AbaFJChY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 22:30:26 -0400
-From: Junxiao Bi <junxiao.bi@oracle.com>
-To: axboe@kernel.dk
-Cc: andi@lisas.de, linux-kernel@vger.kernel.org
-Subject: [PATCH V2] block: make nr_requests tunable for loop
-Date: Tue, 10 Jun 2014 10:31:00 +0800
-Message-Id: <1402367460-5305-1-git-send-email-junxiao.bi@oracle.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Mon, 9 Jun 2014 22:37:24 -0400
+From: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+To: linus.walleij@linaro.org
+Cc: linux-kernel@vger.kernel.org, magnus.damm@gmail.com,
+        horms+renesas@verge.net.au, linux-sh@vger.kernel.org,
+        laurent.pinchart@ideasonboard.com,
+        Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+Subject: [PATCH v2] pinctrl: sh-pfc: r8a7791: Add HSCIF pin support
+Date: Tue, 10 Jun 2014 11:37:15 +0900
+Message-Id: <1402367835-21295-1-git-send-email-nobuhiro.iwamatsu.yj@renesas.com>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 7b5a3522 (loop: Limit the number of requests in the bio list) limit
-the request number in loop queue to not over 128. Since the "request_fn" of
-loop device is null, the requests number is not allowed tuned. Make it tunable
-from sysfs can improve performance.
-
-The following test is done on a machine with 512M memory. The backend of
-/dev/loop1 is a nfs file.
-
-[root@bijx mnt]# cat /sys/block/loop0/queue/nr_requests
-128
-[root@bijx mnt]# dd if=/dev/zero of=/dev/loop0 bs=1M count=5000
-5000+0 records in
-5000+0 records out
-5242880000 bytes (5.2 GB) copied, 501.572 s, 10.5 MB/s
-[root@bijx mnt]#
-[root@bijx mnt]# echo 1024 > /sys/block/loop0/queue/nr_requests
-[root@bijx mnt]# cat /sys/block/loop0/queue/nr_requests
-1024
-[root@bijx mnt]# dd if=/dev/zero of=/dev/loop0 bs=1M count=5000
-5000+0 records in
-5000+0 records out
-5242880000 bytes (5.2 GB) copied, 464.481 s, 11.3 MB/s
-
-Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+Signed-off-by: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 ---
- block/blk-core.c  |    6 ++++++
- block/blk-sysfs.c |    9 +++------
- 2 files changed, 9 insertions(+), 6 deletions(-)
+ V2: - Add pin map for hscif2_data_d.
+     - Add Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 40d6548..58c4bd4 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -851,6 +851,12 @@ int blk_update_nr_requests(struct request_queue *q, unsigned int nr)
- 	q->nr_requests = nr;
- 	blk_queue_congestion_threshold(q);
- 
-+	/* for loop device, return after set its nr_requests */
-+	if (!q->request_fn) {
-+		spin_unlock_irq(q->queue_lock);
-+		return 0;
-+	}
+ drivers/pinctrl/sh-pfc/pfc-r8a7791.c | 250 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 250 insertions(+)
+
+diff --git a/drivers/pinctrl/sh-pfc/pfc-r8a7791.c b/drivers/pinctrl/sh-pfc/pfc-r8a7791.c
+index 7868bf3..482a805 100644
+--- a/drivers/pinctrl/sh-pfc/pfc-r8a7791.c
++++ b/drivers/pinctrl/sh-pfc/pfc-r8a7791.c
+@@ -1807,6 +1807,192 @@ static const unsigned int eth_rmii_mux[] = {
+ 	ETH_RXD0_MARK, ETH_RXD1_MARK, ETH_RX_ER_MARK, ETH_CRS_DV_MARK,
+ 	ETH_TXD0_MARK, ETH_TXD1_MARK, ETH_TX_EN_MARK, ETH_REFCLK_MARK,
+ };
 +
- 	/* congestion isn't cgroup aware and follows root blkcg for now */
- 	rl = &q->root_rl;
++/* - HSCIF0 ----------------------------------------------------------------- */
++static const unsigned int hscif0_data_pins[] = {
++	/* RX, TX */
++	RCAR_GP_PIN(7, 3), RCAR_GP_PIN(7, 4),
++};
++static const unsigned int hscif0_data_mux[] = {
++	HRX0_MARK, HTX0_MARK,
++};
++static const unsigned int hscif0_clk_pins[] = {
++	/* SCK */
++	RCAR_GP_PIN(7, 2),
++};
++static const unsigned int hscif0_clk_mux[] = {
++	HSCK0_MARK,
++};
++static const unsigned int hscif0_ctrl_pins[] = {
++	/* RTS, CTS */
++	RCAR_GP_PIN(7, 1), RCAR_GP_PIN(7, 0),
++};
++static const unsigned int hscif0_ctrl_mux[] = {
++	HRTS0_N_MARK, HCTS0_N_MARK,
++};
++static const unsigned int hscif0_data_b_pins[] = {
++	/* RX, TX */
++	RCAR_GP_PIN(3, 12), RCAR_GP_PIN(3, 15),
++};
++static const unsigned int hscif0_data_b_mux[] = {
++	HRX0_B_MARK, HTX0_B_MARK,
++};
++static const unsigned int hscif0_ctrl_b_pins[] = {
++	/* RTS, CTS */
++	RCAR_GP_PIN(3, 14), RCAR_GP_PIN(3, 13),
++};
++static const unsigned int hscif0_ctrl_b_mux[] = {
++	HRTS0_N_B_MARK, HCTS0_N_B_MARK,
++};
++static const unsigned int hscif0_data_c_pins[] = {
++	/* RX, TX */
++	RCAR_GP_PIN(2, 0), RCAR_GP_PIN(2, 1),
++};
++static const unsigned int hscif0_data_c_mux[] = {
++	HRX0_C_MARK, HTX0_C_MARK,
++};
++static const unsigned int hscif0_clk_c_pins[] = {
++	/* SCK */
++	RCAR_GP_PIN(5, 31),
++};
++static const unsigned int hscif0_clk_c_mux[] = {
++	HSCK0_C_MARK,
++};
++/* - HSCIF1 ----------------------------------------------------------------- */
++static const unsigned int hscif1_data_pins[] = {
++	/* RX, TX */
++	RCAR_GP_PIN(7, 5), RCAR_GP_PIN(7, 6),
++};
++static const unsigned int hscif1_data_mux[] = {
++	HRX1_MARK, HTX1_MARK,
++};
++static const unsigned int hscif1_clk_pins[] = {
++	/* SCK */
++	RCAR_GP_PIN(7, 7),
++};
++static const unsigned int hscif1_clk_mux[] = {
++	HSCK1_MARK,
++};
++static const unsigned int hscif1_ctrl_pins[] = {
++	/* RTS, CTS */
++	RCAR_GP_PIN(7, 9), RCAR_GP_PIN(7, 8),
++};
++static const unsigned int hscif1_ctrl_mux[] = {
++	HRTS1_N_MARK, HCTS1_N_MARK,
++};
++static const unsigned int hscif1_data_b_pins[] = {
++	/* RX, TX */
++	RCAR_GP_PIN(1, 17), RCAR_GP_PIN(1, 18),
++};
++static const unsigned int hscif1_data_b_mux[] = {
++	HRX1_B_MARK, HTX1_B_MARK,
++};
++static const unsigned int hscif1_data_c_pins[] = {
++	/* RX, TX */
++	RCAR_GP_PIN(7, 14), RCAR_GP_PIN(7, 15),
++};
++static const unsigned int hscif1_data_c_mux[] = {
++	HRX1_C_MARK, HTX1_C_MARK,
++};
++static const unsigned int hscif1_clk_c_pins[] = {
++	/* SCK */
++	RCAR_GP_PIN(7, 16),
++};
++static const unsigned int hscif1_clk_c_mux[] = {
++	HSCK1_C_MARK,
++};
++static const unsigned int hscif1_ctrl_c_pins[] = {
++	/* RTS, CTS */
++	RCAR_GP_PIN(7, 18), RCAR_GP_PIN(7, 17),
++};
++static const unsigned int hscif1_ctrl_c_mux[] = {
++	HRTS1_N_C_MARK, HCTS1_N_C_MARK,
++};
++static const unsigned int hscif1_data_d_pins[] = {
++	/* RX, TX */
++	RCAR_GP_PIN(4, 28), RCAR_GP_PIN(4, 18),
++};
++static const unsigned int hscif1_data_d_mux[] = {
++	HRX1_D_MARK, HTX1_D_MARK,
++};
++static const unsigned int hscif1_data_e_pins[] = {
++	/* RX, TX */
++	RCAR_GP_PIN(7, 14), RCAR_GP_PIN(7, 15),
++};
++static const unsigned int hscif1_data_e_mux[] = {
++	HRX1_C_MARK, HTX1_C_MARK,
++};
++static const unsigned int hscif1_clk_e_pins[] = {
++	/* SCK */
++	RCAR_GP_PIN(2, 6),
++};
++static const unsigned int hscif1_clk_e_mux[] = {
++	HSCK1_E_MARK,
++};
++static const unsigned int hscif1_ctrl_e_pins[] = {
++	/* RTS, CTS */
++	RCAR_GP_PIN(2, 8), RCAR_GP_PIN(2, 7),
++};
++static const unsigned int hscif1_ctrl_e_mux[] = {
++	HRTS1_N_E_MARK, HCTS1_N_E_MARK,
++};
++/* - HSCIF2 ----------------------------------------------------------------- */
++static const unsigned int hscif2_data_pins[] = {
++	/* RX, TX */
++	RCAR_GP_PIN(4, 16), RCAR_GP_PIN(4, 17),
++};
++static const unsigned int hscif2_data_mux[] = {
++	HRX2_MARK, HTX2_MARK,
++};
++static const unsigned int hscif2_clk_pins[] = {
++	/* SCK */
++	RCAR_GP_PIN(4, 15),
++};
++static const unsigned int hscif2_clk_mux[] = {
++	HSCK2_MARK,
++};
++static const unsigned int hscif2_ctrl_pins[] = {
++	/* RTS, CTS */
++	RCAR_GP_PIN(4, 14), RCAR_GP_PIN(4, 13),
++};
++static const unsigned int hscif2_ctrl_mux[] = {
++	HRTS2_N_MARK, HCTS2_N_MARK,
++};
++static const unsigned int hscif2_data_b_pins[] = {
++	/* RX, TX */
++	RCAR_GP_PIN(1, 20), RCAR_GP_PIN(1, 22),
++};
++static const unsigned int hscif2_data_b_mux[] = {
++	HRX2_B_MARK, HTX2_B_MARK,
++};
++static const unsigned int hscif2_ctrl_b_pins[] = {
++	/* RTS, CTS */
++	RCAR_GP_PIN(1, 23), RCAR_GP_PIN(1, 21),
++};
++static const unsigned int hscif2_ctrl_b_mux[] = {
++	HRTS2_N_B_MARK, HCTS2_N_B_MARK,
++};
++static const unsigned int hscif2_data_c_pins[] = {
++	/* RX, TX */
++	RCAR_GP_PIN(2, 0), RCAR_GP_PIN(2, 1),
++};
++static const unsigned int hscif2_data_c_mux[] = {
++	HRX2_C_MARK, HTX2_C_MARK,
++};
++static const unsigned int hscif2_clk_c_pins[] = {
++	/* SCK */
++	RCAR_GP_PIN(5, 31),
++};
++static const unsigned int hscif2_clk_c_mux[] = {
++	HSCK2_C_MARK,
++};
++static const unsigned int hscif2_data_d_pins[] = {
++	/* RX, TX */
++	RCAR_GP_PIN(1, 20), RCAR_GP_PIN(5, 31),
++};
++static const unsigned int hscif2_data_d_mux[] = {
++	HRX2_B_MARK, HTX2_D_MARK,
++};
+ /* - I2C0 ------------------------------------------------------------------- */
+ static const unsigned int i2c0_pins[] = {
+ 	/* SCL, SDA */
+@@ -3564,6 +3750,32 @@ static const struct sh_pfc_pin_group pinmux_groups[] = {
+ 	SH_PFC_PIN_GROUP(eth_magic),
+ 	SH_PFC_PIN_GROUP(eth_mdio),
+ 	SH_PFC_PIN_GROUP(eth_rmii),
++	SH_PFC_PIN_GROUP(hscif0_data),
++	SH_PFC_PIN_GROUP(hscif0_clk),
++	SH_PFC_PIN_GROUP(hscif0_ctrl),
++	SH_PFC_PIN_GROUP(hscif0_data_b),
++	SH_PFC_PIN_GROUP(hscif0_ctrl_b),
++	SH_PFC_PIN_GROUP(hscif0_data_c),
++	SH_PFC_PIN_GROUP(hscif0_clk_c),
++	SH_PFC_PIN_GROUP(hscif1_data),
++	SH_PFC_PIN_GROUP(hscif1_clk),
++	SH_PFC_PIN_GROUP(hscif1_ctrl),
++	SH_PFC_PIN_GROUP(hscif1_data_b),
++	SH_PFC_PIN_GROUP(hscif1_data_c),
++	SH_PFC_PIN_GROUP(hscif1_clk_c),
++	SH_PFC_PIN_GROUP(hscif1_ctrl_c),
++	SH_PFC_PIN_GROUP(hscif1_data_d),
++	SH_PFC_PIN_GROUP(hscif1_data_e),
++	SH_PFC_PIN_GROUP(hscif1_clk_e),
++	SH_PFC_PIN_GROUP(hscif1_ctrl_e),
++	SH_PFC_PIN_GROUP(hscif2_data),
++	SH_PFC_PIN_GROUP(hscif2_clk),
++	SH_PFC_PIN_GROUP(hscif2_ctrl),
++	SH_PFC_PIN_GROUP(hscif2_data_b),
++	SH_PFC_PIN_GROUP(hscif2_ctrl_b),
++	SH_PFC_PIN_GROUP(hscif2_data_c),
++	SH_PFC_PIN_GROUP(hscif2_clk_c),
++	SH_PFC_PIN_GROUP(hscif2_data_d),
+ 	SH_PFC_PIN_GROUP(i2c0),
+ 	SH_PFC_PIN_GROUP(i2c0_b),
+ 	SH_PFC_PIN_GROUP(i2c0_c),
+@@ -3824,6 +4036,41 @@ static const char * const eth_groups[] = {
+ 	"eth_rmii",
+ };
  
-diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
-index 23321fb..c5456a5 100644
---- a/block/blk-sysfs.c
-+++ b/block/blk-sysfs.c
-@@ -51,9 +51,6 @@ queue_requests_store(struct request_queue *q, const char *page, size_t count)
- 	unsigned long nr;
- 	int ret, err;
- 
--	if (!q->request_fn && !q->mq_ops)
--		return -EINVAL;
--
- 	ret = queue_var_store(&nr, page, count);
- 	if (ret < 0)
- 		return ret;
-@@ -61,10 +58,10 @@ queue_requests_store(struct request_queue *q, const char *page, size_t count)
- 	if (nr < BLKDEV_MIN_RQ)
- 		nr = BLKDEV_MIN_RQ;
- 
--	if (q->request_fn)
--		err = blk_update_nr_requests(q, nr);
--	else
-+	if (q->mq_ops)
- 		err = blk_mq_update_nr_requests(q, nr);
-+	else
-+		err = blk_update_nr_requests(q, nr);
- 
- 	if (err)
- 		return err;
++static const char * const hscif0_groups[] = {
++	"hscif0_data",
++	"hscif0_clk",
++	"hscif0_ctrl",
++	"hscif0_data_b",
++	"hscif0_ctrl_b",
++	"hscif0_data_c",
++	"hscif0_clk_c",
++};
++
++static const char * const hscif1_groups[] = {
++	"hscif1_data",
++	"hscif1_clk",
++	"hscif1_ctrl",
++	"hscif1_data_b",
++	"hscif1_data_c",
++	"hscif1_clk_c",
++	"hscif1_ctrl_c",
++	"hscif1_data_d",
++	"hscif1_data_e",
++	"hscif1_clk_e",
++	"hscif1_ctrl_e",
++};
++
++static const char * const hscif2_groups[] = {
++	"hscif2_data",
++	"hscif2_clk",
++	"hscif2_ctrl",
++	"hscif2_data_b",
++	"hscif2_ctrl_b",
++	"hscif2_data_c",
++	"hscif2_clk_c",
++	"hscif2_data_d",
++};
++
+ static const char * const i2c0_groups[] = {
+ 	"i2c0",
+ 	"i2c0_b",
+@@ -4156,6 +4403,9 @@ static const struct sh_pfc_function pinmux_functions[] = {
+ 	SH_PFC_FUNCTION(du0),
+ 	SH_PFC_FUNCTION(du1),
+ 	SH_PFC_FUNCTION(eth),
++	SH_PFC_FUNCTION(hscif0),
++	SH_PFC_FUNCTION(hscif1),
++	SH_PFC_FUNCTION(hscif2),
+ 	SH_PFC_FUNCTION(i2c0),
+ 	SH_PFC_FUNCTION(i2c1),
+ 	SH_PFC_FUNCTION(i2c2),
 -- 
-1.7.9.5
+2.0.0
 
