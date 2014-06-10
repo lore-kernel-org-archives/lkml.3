@@ -1,48 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752040AbaFJPFO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 11:05:14 -0400
-Received: from forward-corp1f.mail.yandex.net ([95.108.130.40]:49668 "EHLO
-	forward-corp1f.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750808AbaFJPFG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 11:05:06 -0400
-X-Yandex-Uniq: bab4ba8f-3c61-4892-8c8a-e9112e55a493
-Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
-From: Stanislav Fomichev <stfomichev@yandex-team.ru>
-To: acme@kernel.org, namhyung@kernel.org, artagnon@gmail.com, jolsa@redhat.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH v2 0/3] perf timechart io mode
-Date: Tue, 10 Jun 2014 19:04:51 +0400
-Message-Id: <1402412694-5996-1-git-send-email-stfomichev@yandex-team.ru>
-X-Mailer: git-send-email 1.8.3.2
+	id S1752160AbaFJPFe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 11:05:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45218 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750808AbaFJPFb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 11:05:31 -0400
+Date: Tue, 10 Jun 2014 17:04:55 +0200
+From: Marek Polacek <polacek@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Jiri Kosina <jkosina@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Martin Jambor <mjambor@suse.cz>, Petr Mladek <pmladek@suse.cz>,
+        linux-kernel@vger.kernel.org, gcc@gcc.gnu.org
+Subject: Re: [PATCH] tell gcc optimizer to never introduce new data races
+Message-ID: <20140610150455.GC7335@redhat.com>
+References: <alpine.LNX.2.00.1406101517300.9378@pobox.suse.cz>
+ <20140610145327.GJ6758@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140610145327.GJ6758@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset adds IO mode: instead of process time we record io syscalls
-and then draw timechart of writes/reads/tx/rx/polls.
+On Tue, Jun 10, 2014 at 04:53:27PM +0200, Peter Zijlstra wrote:
+> On Tue, Jun 10, 2014 at 03:23:36PM +0200, Jiri Kosina wrote:
+> > +# Tell gcc to never replace conditional load with a non-conditional one
+> > +KBUILD_CFLAGS	+= $(call cc-option,--param allow-store-data-races=0)
+> > +
+> 
+> Why do we not want: -fmemory-model=safe? And should we not at the very
+> least also disable packed-store-data-races?
 
-v2:
-  - separated start_time fix into distinct commit
-  - separated --io-xyz options into distinct commit
-  - fixed 'error' shadowing
-  - initialized variables in declaration when possible
-  - removed assert usage
-  - fprintf -> pr_err
-  - removed wrongly placed __maybe_unused
+Note that the option does not exist, even though it is mentioned in the
+documentation.
 
-Stanislav Fomichev (3):
-  perf timechart: implement IO mode
-  perf timechart: conditionally update start_time on fork
-  perf timechart: add more options to IO mode
-
- tools/perf/Documentation/perf-timechart.txt |  34 +-
- tools/perf/builtin-timechart.c              | 654 +++++++++++++++++++++++++++-
- tools/perf/util/svghelper.c                 |  98 ++++-
- tools/perf/util/svghelper.h                 |   6 +-
- 4 files changed, 767 insertions(+), 25 deletions(-)
-
--- 
-1.8.3.2
-
+	Marek
