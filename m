@@ -1,61 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936284AbaFJIWT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 04:22:19 -0400
-Received: from casper.infradead.org ([85.118.1.10]:47867 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932209AbaFJIWL (ORCPT
+	id S1755075AbaFJI1R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 04:27:17 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:45479 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754522AbaFJI1O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 04:22:11 -0400
-Date: Tue, 10 Jun 2014 10:22:02 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Zhouyi Zhou <zhouzhouyi@gmail.com>
-Cc: paulus@samba.org, mingo@redhat.com, acme@kernel.org, tglx@linutronix.de,
-        hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org,
-        Zhouyi Zhou <yizhouzhou@ict.ac.cn>
-Subject: Re: [PATCH 1/1] perf/amd: NULL return of kzalloc_node should be
- handled
-Message-ID: <20140610082202.GX3213@twins.programming.kicks-ass.net>
-References: <1402385858-23181-1-git-send-email-zhouzhouyi@gmail.com>
+	Tue, 10 Jun 2014 04:27:14 -0400
+Date: Tue, 10 Jun 2014 11:26:55 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Remi Pommarel <repk@triplefau.lt>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: rtl8821ae: use kmalloc instead of variable
+ length stack arrays
+Message-ID: <20140610082539.GK5500@mwanda>
+References: <1401903945-21094-1-git-send-email-repk@triplefau.lt>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4PR/+zdSfVlxyWed"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1402385858-23181-1-git-send-email-zhouzhouyi@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1401903945-21094-1-git-send-email-repk@triplefau.lt>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 04, 2014 at 07:45:45PM +0200, Remi Pommarel wrote:
+> This removes stack arrays of variable length and use kmalloc() instead, thus
+> removing the sparse warnings "Variable length array is used".
+> 
+> Signed-off-by: Remi Pommarel <repk@triplefau.lt>
+> ---
+>  drivers/staging/rtl8821ae/efuse.c | 38 +++++++++++++++++++++++++++++++-------
+>  1 file changed, 31 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/staging/rtl8821ae/efuse.c b/drivers/staging/rtl8821ae/efuse.c
+> index 206012c..a41aa84 100644
+> --- a/drivers/staging/rtl8821ae/efuse.c
+> +++ b/drivers/staging/rtl8821ae/efuse.c
+> @@ -232,7 +232,7 @@ void read_efuse(struct ieee80211_hw *hw, u16 _offset, u16 _size_byte, u8 *pbuf)
+>  {
+>  	struct rtl_priv *rtlpriv = rtl_priv(hw);
+>  	struct rtl_efuse *rtlefuse = rtl_efuse(rtl_priv(hw));
+> -	u8 efuse_tbl[rtlpriv->cfg->maps[EFUSE_HWSET_MAX_SIZE]];
+> +	u8 *efuse_tbl;
+>  	u8 rtemp8[1];
+>  	u16 efuse_addr = 0;
+>  	u8 offset, wren;
+> @@ -243,7 +243,7 @@ void read_efuse(struct ieee80211_hw *hw, u16 _offset, u16 _size_byte, u8 *pbuf)
+>  		rtlpriv->cfg->maps[EFUSE_MAX_SECTION_MAP];
+>  	const u32 efuse_real_content_len =
+>  		rtlpriv->cfg->maps[EFUSE_REAL_CONTENT_SIZE];
+> -	u16 efuse_word[efuse_max_section][EFUSE_MAX_WORD_UNIT];
+> +	u16 **efuse_word;
+>  	u16 efuse_utilized = 0;
+>  	u8 efuse_usage;
+>  
+> @@ -254,9 +254,26 @@ void read_efuse(struct ieee80211_hw *hw, u16 _offset, u16 _size_byte, u8 *pbuf)
+>  		return;
+>  	}
+>  
+> +	efuse_tbl = kmalloc(rtlpriv->cfg->maps[EFUSE_HWSET_MAX_SIZE] *
+> +			sizeof(*efuse_tbl), GFP_ATOMIC);
 
---4PR/+zdSfVlxyWed
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+sizeof(*efuse_tbl) is a complicated way to say 1.  Just say:
 
-On Tue, Jun 10, 2014 at 03:37:38PM +0800, Zhouyi Zhou wrote:
+	efuse_tbl = kmalloc(rtlpriv->cfg->maps[EFUSE_HWSET_MAX_SIZE], GFP_ATOMIC);
 
-Less typing more thinking, this is wrong. You should fail when the
-allocation fails.
+Why is it GFP_ATOMIC btw?  That wasn't immediately clear to me and I
+didn't spend a lot of time looking.
 
---4PR/+zdSfVlxyWed
-Content-Type: application/pgp-signature
+> +	if (efuse_tbl == NULL)
+> +		return;
+> +
+> +	efuse_word = kcalloc(EFUSE_MAX_WORD_UNIT, sizeof(*efuse_word),
+> +			GFP_ATOMIC);
+> +	if (efuse_word == NULL)
+> +		goto out;
+> +
+> +	for (i = 0; i < EFUSE_MAX_WORD_UNIT; i++) {
+> +		efuse_word[i] = kmalloc(efuse_max_section *
+> +				sizeof(**efuse_word), GFP_ATOMIC);
+> +		if (efuse_word[i] == NULL)
+> +			goto done;
+> +	}
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTlsAqAAoJEHZH4aRLwOS6kSQP/1cMdq2ixjf+HMLx23oB++ah
-g0yhCodAzvnCzVi9tJFHiIeO/x0pegBxF1Rimw8tehjs9djFjFsziKM6MwKUiCT6
-BMf1l9nJdFMqA25YV4/DMGwVpbuaAh82e1we8c0w8MJrKHRe4G/lm8NWr5BTN31e
-kMGP7gtK07s0j9v+/7dmpabvpQ6aoAAfTAHw5hEErkRSBdOY+F/cxSFVvPGicxei
-wZ/JzkYjHEBDUeQUyD5JG39kxE0OOSPl250vmQFfg9U+dRPqPvyNexXrsUNztgus
-uuQQKfgCznUE8xK46h6HWJ6aXX7cKvVVL5DdLWwp6aNYcfvrzrJvKtrWmBxrC8Em
-DX4/y/wDI4ZRNAgwqS+sVry2uAHxohwoFocmx+zKSRsj4DrLupeXBk24YntPzCDN
-ezjBfA+ENjpKUnBxxzNkU1ooEIvpat/q8nffoswvlSUN0yHrsZrleuwJNnZEoArG
-mf13ckk9R9g3e1pdkDYAShUozclo/0ke0WrxSVQm1aenwdB0os5ooCKZqX/acKQK
-xTTw43x3bG2KTUkwB9o3HjKWH/Hd0Gx2IDhW/i+9BXyLzrNqJ7kBTU35t32z5uSG
-Z0+mJ0Js5kUk/a0AtdydQ23UE71OzssMB7IFuC9tJCV2JkXQN4/lqpzNrv1aaITL
-g1OFVz74fKXboCS7lfNR
-=GkMk
------END PGP SIGNATURE-----
+Why is this so complicated?  Why not just:
 
---4PR/+zdSfVlxyWed--
+	efuse_word = kmalloc(sizeof(*efuse_word) * efuse_max_section *
+			     EFUSE_MAX_WORD_UNIT, GFP_ATOMIC);
+
+
+> +
+>  	for (i = 0; i < efuse_max_section; i++)
+>  		for (j = 0; j < EFUSE_MAX_WORD_UNIT; j++)
+> -			efuse_word[i][j] = 0xFFFF;
+> +			efuse_word[j][i] = 0xFFFF;
+
+Why are you re-ordering things here?
+
+regards,
+dan carpenter
+
