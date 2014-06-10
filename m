@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934673AbaFJAWv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:22:51 -0400
+	id S935561AbaFJAYs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:24:48 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:58627 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934514AbaFJAWr (ORCPT
+	with ESMTP id S934667AbaFJAWv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 20:22:47 -0400
+	Mon, 9 Jun 2014 20:22:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        "J. Bruce Fields" <bfields@redhat.com>,
-        Weng Meiling <wengmeiling.weng@huawei.com>
-Subject: [PATCH 3.4 56/88] nfsd: pass net to nfsd_create_serv()
-Date: Mon,  9 Jun 2014 17:25:06 -0700
-Message-Id: <20140610002426.369738208@linuxfoundation.org>
+        Ley Foon Tan <lftan@altera.com>, Rui Xiang <rui.xiang@huawei.com>
+Subject: [PATCH 3.4 77/88] tty/serial: Add support for Altera serial port
+Date: Mon,  9 Jun 2014 17:25:27 -0700
+Message-Id: <20140610002427.013862734@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
 References: <20140610002424.500996570@linuxfoundation.org>
@@ -30,77 +28,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+From: Ley Foon Tan <lftan@altera.com>
 
-commit 6777436b0f072fb20a025a73e9b67a35ad8a5451 upstream.
+commit e06c93cacb82dd147266fd1bdb2d0a0bd45ff2c1 upstream.
 
-Precursor patch. Hard-coded "init_net" will be replaced by proper one in
-future.
+Add support for Altera 8250/16550 compatible serial port.
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-[wengmeiling: backport to 3.4: adjust context]
-Signed-off-by: Weng Meiling <wengmeiling.weng@huawei.com>
+Signed-off-by: Ley Foon Tan <lftan@altera.com>
+[xr: Backported to 3.4: adjust filenames, context]
+Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- fs/nfsd/nfsctl.c |    4 ++--
- fs/nfsd/nfsd.h   |    2 +-
- fs/nfsd/nfssvc.c |    5 ++---
- 3 files changed, 5 insertions(+), 6 deletions(-)
+ Documentation/devicetree/bindings/tty/serial/of-serial.txt |    3 +
+ drivers/tty/serial/8250/8250.c                             |   21 +++++++++++++
+ drivers/tty/serial/of_serial.c                             |    6 +++
+ include/linux/serial_core.h                                |    5 ++-
+ 4 files changed, 34 insertions(+), 1 deletion(-)
 
---- a/fs/nfsd/nfsctl.c
-+++ b/fs/nfsd/nfsctl.c
-@@ -657,7 +657,7 @@ static ssize_t __write_ports_addfd(char
- 	if (err != 0 || fd < 0)
- 		return -EINVAL;
+--- a/Documentation/devicetree/bindings/tty/serial/of-serial.txt
++++ b/Documentation/devicetree/bindings/tty/serial/of-serial.txt
+@@ -10,6 +10,9 @@ Required properties:
+ 	- "ns16850"
+ 	- "nvidia,tegra20-uart"
+ 	- "ibm,qpace-nwp-serial"
++	- "altr,16550-FIFO32"
++	- "altr,16550-FIFO64"
++	- "altr,16550-FIFO128"
+ 	- "serial" if the port type is unknown.
+ - reg : offset and length of the register set for the device.
+ - interrupts : should contain uart interrupt.
+--- a/drivers/tty/serial/8250/8250.c
++++ b/drivers/tty/serial/8250/8250.c
+@@ -288,6 +288,27 @@ static const struct serial8250_config ua
+ 		.tx_loadsz	= 1024,
+ 		.flags		= UART_CAP_HFIFO,
+ 	},
++	[PORT_ALTR_16550_F32] = {
++		.name		= "Altera 16550 FIFO32",
++		.fifo_size	= 32,
++		.tx_loadsz	= 32,
++		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
++		.flags		= UART_CAP_FIFO | UART_CAP_AFE,
++	},
++	[PORT_ALTR_16550_F64] = {
++		.name		= "Altera 16550 FIFO64",
++		.fifo_size	= 64,
++		.tx_loadsz	= 64,
++		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
++		.flags		= UART_CAP_FIFO | UART_CAP_AFE,
++	},
++	[PORT_ALTR_16550_F128] = {
++		.name		= "Altera 16550 FIFO128",
++		.fifo_size	= 128,
++		.tx_loadsz	= 128,
++		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
++		.flags		= UART_CAP_FIFO | UART_CAP_AFE,
++	},
+ };
  
--	err = nfsd_create_serv();
-+	err = nfsd_create_serv(net);
- 	if (err != 0)
- 		return err;
+ #if defined(CONFIG_MIPS_ALCHEMY)
+--- a/drivers/tty/serial/of_serial.c
++++ b/drivers/tty/serial/of_serial.c
+@@ -182,6 +182,12 @@ static struct of_device_id __devinitdata
+ 	{ .compatible = "ns16750",  .data = (void *)PORT_16750, },
+ 	{ .compatible = "ns16850",  .data = (void *)PORT_16850, },
+ 	{ .compatible = "nvidia,tegra20-uart", .data = (void *)PORT_TEGRA, },
++	{ .compatible = "altr,16550-FIFO32",
++		.data = (void *)PORT_ALTR_16550_F32, },
++	{ .compatible = "altr,16550-FIFO64",
++		.data = (void *)PORT_ALTR_16550_F64, },
++	{ .compatible = "altr,16550-FIFO128",
++		.data = (void *)PORT_ALTR_16550_F128, },
+ #ifdef CONFIG_SERIAL_OF_PLATFORM_NWPSERIAL
+ 	{ .compatible = "ibm,qpace-nwp-serial",
+ 		.data = (void *)PORT_NWPSERIAL, },
+--- a/include/linux/serial_core.h
++++ b/include/linux/serial_core.h
+@@ -48,7 +48,10 @@
+ #define PORT_TEGRA	20	/* NVIDIA Tegra internal UART */
+ #define PORT_XR17D15X	21	/* Exar XR17D15x UART */
+ #define PORT_BRCM_TRUMANAGE	25
+-#define PORT_MAX_8250	25	/* max port ID */
++#define PORT_ALTR_16550_F32 26 /* Altera 16550 UART with 32 FIFOs */
++#define PORT_ALTR_16550_F64 27 /* Altera 16550 UART with 64 FIFOs */
++#define PORT_ALTR_16550_F128 28 /* Altera 16550 UART with 128 FIFOs */
++#define PORT_MAX_8250	28	/* max port ID */
  
-@@ -708,7 +708,7 @@ static ssize_t __write_ports_addxprt(cha
- 	if (port < 1 || port > USHRT_MAX)
- 		return -EINVAL;
- 
--	err = nfsd_create_serv();
-+	err = nfsd_create_serv(net);
- 	if (err != 0)
- 		return err;
- 
---- a/fs/nfsd/nfsd.h
-+++ b/fs/nfsd/nfsd.h
-@@ -101,7 +101,7 @@ enum vers_op {NFSD_SET, NFSD_CLEAR, NFSD
- int nfsd_vers(int vers, enum vers_op change);
- int nfsd_minorversion(u32 minorversion, enum vers_op change);
- void nfsd_reset_versions(void);
--int nfsd_create_serv(void);
-+int nfsd_create_serv(struct net *net);
- 
- extern int nfsd_max_blksize;
- 
---- a/fs/nfsd/nfssvc.c
-+++ b/fs/nfsd/nfssvc.c
-@@ -326,10 +326,9 @@ static int nfsd_get_default_max_blksize(
- 	return ret;
- }
- 
--int nfsd_create_serv(void)
-+int nfsd_create_serv(struct net *net)
- {
- 	int error;
--	struct net *net = &init_net;
- 
- 	WARN_ON(!mutex_is_locked(&nfsd_mutex));
- 	if (nfsd_serv) {
-@@ -451,7 +450,7 @@ nfsd_svc(unsigned short port, int nrserv
- 	if (nrservs == 0 && nfsd_serv == NULL)
- 		goto out;
- 
--	error = nfsd_create_serv();
-+	error = nfsd_create_serv(net);
- 	if (error)
- 		goto out;
- 
+ /*
+  * ARM specific type numbers.  These are not currently guaranteed
 
 
