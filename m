@@ -1,137 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751627AbaFJQff (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 12:35:35 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:63173 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750969AbaFJQfe (ORCPT
+	id S1752040AbaFJQgD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 12:36:03 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:37591 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751888AbaFJQgA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 12:35:34 -0400
-Date: Tue, 10 Jun 2014 20:35:30 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, avagin@openvz.org,
-        xemul@parallels.com, vdavydov@parallels.com,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: Re: [patch 3/3] timerfd: Implement write method
-Message-ID: <20140610163530.GF2243@moon>
-References: <20140428212517.200264067@openvz.org>
- <20140428213301.507657833@openvz.org>
- <alpine.DEB.2.02.1405220643170.9695@ionos.tec.linutronix.de>
- <alpine.DEB.2.02.1405220656130.9695@ionos.tec.linutronix.de>
+	Tue, 10 Jun 2014 12:36:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1405220656130.9695@ionos.tec.linutronix.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1402101088-14731-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1402101088-14731-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Tue, 10 Jun 2014 17:35:28 +0100
+Message-ID: <CA+V-a8sBuxk9iEe-3O7cCF6NJrbE1svv0BqVw1Yu2HAncxB0MQ@mail.gmail.com>
+Subject: Re: [PATCH] media: v4l2-core: v4l2-dv-timings.c: Cleaning up code
+ that putting values to the same variable twice
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Martin Bugge <marbugge@cisco.com>,
+        linux-media <linux-media@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 22, 2014 at 06:58:19AM +0900, Thomas Gleixner wrote:
-> > 
-> > So what wakes a potential waiter in read/poll?
-> 
-> And who is updating timerfd_create(2) ?
+Hi Rickard,
 
-Thomas, could you please take a look if the approach below is acceptable?
-If it will be fine I update manpage then.
----
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: timerfd: Implement timerfd_ioctl method to restore timerfd_ctx::ticks
+Thanks for the patch.
 
-The read() of timerfd files allows to fetch the number of timer ticks
-while there is no way to set it back from userspace.
+On Sat, Jun 7, 2014 at 1:31 AM, Rickard Strandqvist
+<rickard_strandqvist@spectrumdigital.se> wrote:
+> Instead of putting the same variable twice,
+> was rather intended to set this value to two different variable.
+>
+> This was partly found using a static code analysis program called cppcheck.
+>
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 
-To restore the timer's state as it was at checkpoint moment we need
-a path to bring @ticks back. Initially I thought about writing ticks
-back via write() interface but it seems such API is somehow obscure.
+The commit message and header needs to be improved, apart from that rest of the
+patch looks good.
 
-Instead implement timerfd_ioctl() method with TFD_IOC_SET_TICKS
-command which requires CAP_SYS_RESOURCE capability to be able to
-set @ticks into arbitrary value. Note this command doesn't wake
-up readers/waiters and its purpose only to serve C/R needs
-(for same sake I wrapped code with CONFIG_CHECKPOINT_RESTORE).
-Still if needed the ioctl may be extended for new commands
-and CONFIG_CHECKPOINT_RESTORE dropped off.
+Acked-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Andrey Vagin <avagin@openvz.org>
-CC: Pavel Emelyanov <xemul@parallels.com>
-CC: Vladimir Davydov <vdavydov@parallels.com>
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
----
- fs/timerfd.c            |   31 +++++++++++++++++++++++++++++++
- include/linux/timerfd.h |    5 +++++
- 2 files changed, 36 insertions(+)
+Regards,
+--Prabhakar Lad
 
-Index: linux-2.6.git/fs/timerfd.c
-===================================================================
---- linux-2.6.git.orig/fs/timerfd.c
-+++ linux-2.6.git/fs/timerfd.c
-@@ -313,11 +313,42 @@ static int timerfd_show(struct seq_file
- }
- #endif
- 
-+#ifdef CONFIG_CHECKPOINT_RESTORE
-+static long timerfd_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-+{
-+	struct timerfd_ctx *ctx = file->private_data;
-+	int ret = 0;
-+
-+	switch (cmd) {
-+	case TFD_IOC_SET_TICKS: {
-+		u64 ticks;
-+
-+		if (!capable(CAP_SYS_RESOURCE))
-+			return -EPERM;
-+		if (get_user(ticks, (u64 __user *)arg))
-+			return -EFAULT;
-+		spin_lock_irq(&ctx->wqh.lock);
-+		ctx->ticks = ticks;
-+		spin_unlock_irq(&ctx->wqh.lock);
-+		break;
-+	}
-+	default:
-+		ret = -ENOTTY;
-+		break;
-+	}
-+
-+	return ret;
-+}
-+#endif
-+
- static const struct file_operations timerfd_fops = {
- 	.release	= timerfd_release,
- 	.poll		= timerfd_poll,
- 	.read		= timerfd_read,
- 	.llseek		= noop_llseek,
-+#ifdef CONFIG_CHECKPOINT_RESTORE
-+	.unlocked_ioctl	= timerfd_ioctl,
-+#endif
- #ifdef CONFIG_PROC_FS
- 	.show_fdinfo	= timerfd_show,
- #endif
-Index: linux-2.6.git/include/linux/timerfd.h
-===================================================================
---- linux-2.6.git.orig/include/linux/timerfd.h
-+++ linux-2.6.git/include/linux/timerfd.h
-@@ -11,6 +11,9 @@
- /* For O_CLOEXEC and O_NONBLOCK */
- #include <linux/fcntl.h>
- 
-+/* For _IO helpers */
-+#include <linux/ioctl.h>
-+
- /*
-  * CAREFUL: Check include/asm-generic/fcntl.h when defining
-  * new flags, since they might collide with O_* ones. We want
-@@ -29,4 +32,6 @@
- /* Flags for timerfd_settime.  */
- #define TFD_SETTIME_FLAGS (TFD_TIMER_ABSTIME | TFD_TIMER_CANCEL_ON_SET)
- 
-+#define TFD_IOC_SET_TICKS	_IOW('T', 0, u64)
-+
- #endif /* _LINUX_TIMERFD_H */
+> ---
+>  drivers/media/v4l2-core/v4l2-dv-timings.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/media/v4l2-core/v4l2-dv-timings.c b/drivers/media/v4l2-core/v4l2-dv-timings.c
+> index 48b20df..eb3850c 100644
+> --- a/drivers/media/v4l2-core/v4l2-dv-timings.c
+> +++ b/drivers/media/v4l2-core/v4l2-dv-timings.c
+> @@ -599,10 +599,10 @@ struct v4l2_fract v4l2_calc_aspect_ratio(u8 hor_landscape, u8 vert_portrait)
+>                 aspect.denominator = 9;
+>         } else if (ratio == 34) {
+>                 aspect.numerator = 4;
+> -               aspect.numerator = 3;
+> +               aspect.denominator = 3;
+>         } else if (ratio == 68) {
+>                 aspect.numerator = 15;
+> -               aspect.numerator = 9;
+> +               aspect.denominator = 9;
+>         } else {
+>                 aspect.numerator = hor_landscape + 99;
+>                 aspect.denominator = 100;
+> --
+> 1.7.10.4
+>
