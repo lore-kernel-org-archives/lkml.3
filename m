@@ -1,65 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751680AbaFJLYG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 07:24:06 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:26409 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751038AbaFJLYE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 07:24:04 -0400
-Date: Tue, 10 Jun 2014 12:24:03 +0100
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Henrik Austad <henrik@austad.us>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        Dietmar Eggemann <Dietmar.Eggemann@arm.com>
-Subject: Re: [RFC PATCH 02/16] sched: Introduce CONFIG_SCHED_ENERGY
-Message-ID: <20140610112403.GC1581@e103034-lin>
-References: <1400869003-27769-1-git-send-email-morten.rasmussen@arm.com>
- <1400869003-27769-3-git-send-email-morten.rasmussen@arm.com>
- <20140608060316.GA18179@austad.us>
- <20140609102027.GA29593@e103034-lin>
- <20140610093943.GA6758@twins.programming.kicks-ass.net>
- <20140610100641.GB1581@e103034-lin>
- <20140610102353.GC6758@twins.programming.kicks-ass.net>
+	id S1751871AbaFJLYz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 07:24:55 -0400
+Received: from mx0a-0016ce01.pphosted.com ([67.231.148.157]:25663 "EHLO
+	mx0a-0016ce01.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750840AbaFJLYy convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 07:24:54 -0400
+From: Sudarsana Kalluru <Sudarsana.Kalluru@qlogic.com>
+To: Peter Senna Tschudin <peter.senna@gmail.com>,
+        Anil Gurumurthy <Anil.Gurumurthy@qlogic.com>
+CC: "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 5/11] drivers/scsi/bfa/bfad_bsg.c: Remove useless return
+ variables
+Thread-Topic: [PATCH 5/11] drivers/scsi/bfa/bfad_bsg.c: Remove useless
+ return variables
+Thread-Index: AQHPfNLOOzBy0epErECQOzz3CjNwbptqQ1rA
+Date: Tue, 10 Jun 2014 11:24:46 +0000
+Message-ID: <C08020CBD5BE83488A998B4818797E8414288A@avmb3.qlogic.org>
+References: <1401542051-3174-5-git-send-email-peter.senna@gmail.com>
+In-Reply-To: <1401542051-3174-5-git-send-email-peter.senna@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.1.4.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140610102353.GC6758@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Proofpoint-Virus-Version: vendor=nai engine=5600 definitions=7464 signatures=670465
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=0 phishscore=0
+ adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=7.0.1-1402240000 definitions=main-1406100134
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 10, 2014 at 11:23:53AM +0100, Peter Zijlstra wrote:
-> On Tue, Jun 10, 2014 at 11:06:41AM +0100, Morten Rasmussen wrote:
-> > How would you like to disable the energy stuff for users for whom
-> > latency is everything?
-> > 
-> > I mean, we are adding some extra load/utilization tracking. While I
-> > think we should do everything possible to minimize the overhead, I think
-> > it is unrealistic to assume that it will be zero. Is a some extra 'if
-> > (energy_enabled)' acceptable?
-> > 
-> > I'm open for other suggestions.
-> 
-> We have the jump-label stuff to do self modifying code ;-) The only
-> thing we need to be careful with is data-layout.
+Thanks for the patch.
+Acked-by: Sudarsana Kalluru <Sudarsana.Kalluru@qlogic.com>
 
-Thanks. I can see that it is already used in for various bit in
-kernel/sched/*. I didn't catch anything in Documentation/static-keys.txt
-related to data-layout caveats. Is there some other
-documentation/patches I should read before messing everything up? ;-)
+-----Original Message-----
+From: linux-scsi-owner@vger.kernel.org [mailto:linux-scsi-owner@vger.kernel.org] On Behalf Of Peter Senna Tschudin
+Sent: 31 May 2014 18:44
+To: Anil Gurumurthy
+Cc: kernel-janitors@vger.kernel.org; Sudarsana Kalluru; James E.J. Bottomley; linux-scsi; linux-kernel
+Subject: [PATCH 5/11] drivers/scsi/bfa/bfad_bsg.c: Remove useless return variables
 
-> So I'm _hoping_ we can do all this without more CONFIG knobs, because
-> {PREEMPT*SMP*CGROUP^3*NUMA^2} is already entirely annoying to
-> build and run test, not to mention that distro builds will have no other
-> option than to enable everything anyhow.
+This patch remove variables that are initialized with a constant, are never updated, and are only used as parameter of return.
+Return the constant instead of using a variable.
 
-Fair enough.
+Verified by compilation only.
+
+The coccinelle script that find and fixes this issue is:
+// <smpl>
+@@
+type T;
+constant C;
+identifier ret;
+@@
+- T ret = C;
+... when != ret
+    when strict
+return
+- ret
++ C
+;
+// </smpl>
+
+Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+
+---
+ drivers/scsi/bfa/bfad_bsg.c |   10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/scsi/bfa/bfad_bsg.c b/drivers/scsi/bfa/bfad_bsg.c index 8994fb8..a6ee1cf 100644
+--- a/drivers/scsi/bfa/bfad_bsg.c
++++ b/drivers/scsi/bfa/bfad_bsg.c
+@@ -26,7 +26,6 @@ int
+ bfad_iocmd_ioc_enable(struct bfad_s *bfad, void *cmd)  {
+        struct bfa_bsg_gen_s *iocmd = (struct bfa_bsg_gen_s *)cmd;
+-       int     rc = 0;
+        unsigned long   flags;
+
+        spin_lock_irqsave(&bfad->bfad_lock, flags); @@ -34,7 +33,7 @@ bfad_iocmd_ioc_enable(struct bfad_s *bfad, void *cmd)
+        if (!bfa_ioc_is_disabled(&bfad->bfa.ioc)) {
+                spin_unlock_irqrestore(&bfad->bfad_lock, flags);
+                iocmd->status = BFA_STATUS_OK;
+-               return rc;
++               return 0;
+        }
+
+        init_completion(&bfad->enable_comp);
+@@ -43,21 +42,20 @@ bfad_iocmd_ioc_enable(struct bfad_s *bfad, void *cmd)
+        spin_unlock_irqrestore(&bfad->bfad_lock, flags);
+        wait_for_completion(&bfad->enable_comp);
+
+-       return rc;
++       return 0;
+ }
+
+ int
+ bfad_iocmd_ioc_disable(struct bfad_s *bfad, void *cmd)  {
+        struct bfa_bsg_gen_s *iocmd = (struct bfa_bsg_gen_s *)cmd;
+-       int     rc = 0;
+        unsigned long   flags;
+
+        spin_lock_irqsave(&bfad->bfad_lock, flags);
+        if (bfa_ioc_is_disabled(&bfad->bfa.ioc)) {
+                spin_unlock_irqrestore(&bfad->bfad_lock, flags);
+                iocmd->status = BFA_STATUS_OK;
+-               return rc;
++               return 0;
+        }
+
+        if (bfad->disable_active) {
+@@ -74,7 +72,7 @@ bfad_iocmd_ioc_disable(struct bfad_s *bfad, void *cmd)
+        bfad->disable_active = BFA_FALSE;
+        iocmd->status = BFA_STATUS_OK;
+
+-       return rc;
++       return 0;
+ }
+
+ static int
+
+--
+To unsubscribe from this list: send the line "unsubscribe linux-scsi" in the body of a message to majordomo@vger.kernel.org More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+________________________________
+
+This message and any attached documents contain information from QLogic Corporation or its wholly-owned subsidiaries that may be confidential. If you are not the intended recipient, you may not read, copy, distribute, or use this information. If you have received this transmission in error, please notify the sender immediately by reply e-mail and then delete this message.
