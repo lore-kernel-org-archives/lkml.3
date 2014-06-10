@@ -1,389 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755686AbaFJUM1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 16:12:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35359 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932270AbaFJTv7 (ORCPT
+	id S932272AbaFJTv6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 15:51:58 -0400
+Received: from void.printf.net ([89.145.121.20]:60735 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932228AbaFJTvy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:51:59 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 138/160] drm/radeon: use pflip irq on R600+ v2
-Date: Tue, 10 Jun 2014 12:46:18 -0700
-Message-Id: <1402429600-20477-139-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
-References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
+	Tue, 10 Jun 2014 15:51:54 -0400
+From: Chris Ball <chris@printf.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
+Subject: [GIT PULL] MMC updates for 3.16-rc1
+Date: Tue, 10 Jun 2014 20:51:51 +0100
+Message-ID: <86ha3so84o.fsf@void.printf.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Extended-Stable: 3.13
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.3 -stable review patch.  If anyone has any objections, please let me know.
+Hi Linus,
 
-------------------
+Please pull from:
 
-From: =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>
+  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git tags/mmc-updates-for-3.16-rc1
 
-commit f5d636d2a74b755879feec35e14a259de52ccc07 upstream.
+to receive the MMC merge for 3.16.  These patches have been tested in
+linux-next, and there are three minor conflicts which I've resolved on
+my mmc-updates-for-3.16-rc1-merged branch.  Thanks.
 
-Testing the update pending bit directly after issuing an
-update is nonsense cause depending on the pixel clock the
-CRTC needs a bit of time to execute the flip even when we
-are in the VBLANK period.
 
-This is just a non invasive patch to solve the problem at
-hand, a more complete and cleaner solution should follow
-in the next merge window.
+The following changes since commit a798c10faf62a505d24e5f6213fbaf904a39623f:
 
-Fixes: https://bugs.freedesktop.org/show_bug.cgi?id=76564
+  Linux 3.15-rc2 (2014-04-20 11:08:50 -0700)
 
-v2: fix source IDs for CRTC2-6
+are available in the git repository at:
 
-Signed-off-by: Christian König <christian.koenig@amd.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/gpu/drm/radeon/cik.c            | 76 +++++++++++++++++++++++++++++++++
- drivers/gpu/drm/radeon/cikd.h           |  9 ++++
- drivers/gpu/drm/radeon/evergreen.c      | 28 +++++++++---
- drivers/gpu/drm/radeon/r600.c           | 13 ++++--
- drivers/gpu/drm/radeon/radeon.h         |  6 +++
- drivers/gpu/drm/radeon/radeon_display.c |  4 ++
- drivers/gpu/drm/radeon/si.c             | 28 +++++++++---
- 7 files changed, 147 insertions(+), 17 deletions(-)
+  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git tags/mmc-updates-for-3.16-rc1
 
-diff --git a/drivers/gpu/drm/radeon/cik.c b/drivers/gpu/drm/radeon/cik.c
-index c8dc6d1..bc5fad4 100644
---- a/drivers/gpu/drm/radeon/cik.c
-+++ b/drivers/gpu/drm/radeon/cik.c
-@@ -6469,6 +6469,19 @@ static void cik_disable_interrupt_state(struct radeon_device *rdev)
- 		WREG32(LB_INTERRUPT_MASK + EVERGREEN_CRTC4_REGISTER_OFFSET, 0);
- 		WREG32(LB_INTERRUPT_MASK + EVERGREEN_CRTC5_REGISTER_OFFSET, 0);
- 	}
-+	/* pflip */
-+	if (rdev->num_crtc >= 2) {
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET, 0);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET, 0);
-+	}
-+	if (rdev->num_crtc >= 4) {
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET, 0);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET, 0);
-+	}
-+	if (rdev->num_crtc >= 6) {
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET, 0);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET, 0);
-+	}
- 
- 	/* dac hotplug */
- 	WREG32(DAC_AUTODETECT_INT_CONTROL, 0);
-@@ -6825,6 +6838,25 @@ int cik_irq_set(struct radeon_device *rdev)
- 		WREG32(LB_INTERRUPT_MASK + EVERGREEN_CRTC5_REGISTER_OFFSET, crtc6);
- 	}
- 
-+	if (rdev->num_crtc >= 2) {
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
-+	}
-+	if (rdev->num_crtc >= 4) {
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
-+	}
-+	if (rdev->num_crtc >= 6) {
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
-+	}
-+
- 	WREG32(DC_HPD1_INT_CONTROL, hpd1);
- 	WREG32(DC_HPD2_INT_CONTROL, hpd2);
- 	WREG32(DC_HPD3_INT_CONTROL, hpd3);
-@@ -6861,6 +6893,29 @@ static inline void cik_irq_ack(struct radeon_device *rdev)
- 	rdev->irq.stat_regs.cik.disp_int_cont5 = RREG32(DISP_INTERRUPT_STATUS_CONTINUE5);
- 	rdev->irq.stat_regs.cik.disp_int_cont6 = RREG32(DISP_INTERRUPT_STATUS_CONTINUE6);
- 
-+	rdev->irq.stat_regs.cik.d1grph_int = RREG32(GRPH_INT_STATUS +
-+		EVERGREEN_CRTC0_REGISTER_OFFSET);
-+	rdev->irq.stat_regs.cik.d2grph_int = RREG32(GRPH_INT_STATUS +
-+		EVERGREEN_CRTC1_REGISTER_OFFSET);
-+	if (rdev->num_crtc >= 4) {
-+		rdev->irq.stat_regs.cik.d3grph_int = RREG32(GRPH_INT_STATUS +
-+			EVERGREEN_CRTC2_REGISTER_OFFSET);
-+		rdev->irq.stat_regs.cik.d4grph_int = RREG32(GRPH_INT_STATUS +
-+			EVERGREEN_CRTC3_REGISTER_OFFSET);
-+	}
-+	if (rdev->num_crtc >= 6) {
-+		rdev->irq.stat_regs.cik.d5grph_int = RREG32(GRPH_INT_STATUS +
-+			EVERGREEN_CRTC4_REGISTER_OFFSET);
-+		rdev->irq.stat_regs.cik.d6grph_int = RREG32(GRPH_INT_STATUS +
-+			EVERGREEN_CRTC5_REGISTER_OFFSET);
-+	}
-+
-+	if (rdev->irq.stat_regs.cik.d1grph_int & GRPH_PFLIP_INT_OCCURRED)
-+		WREG32(GRPH_INT_STATUS + EVERGREEN_CRTC0_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_CLEAR);
-+	if (rdev->irq.stat_regs.cik.d2grph_int & GRPH_PFLIP_INT_OCCURRED)
-+		WREG32(GRPH_INT_STATUS + EVERGREEN_CRTC1_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_CLEAR);
- 	if (rdev->irq.stat_regs.cik.disp_int & LB_D1_VBLANK_INTERRUPT)
- 		WREG32(LB_VBLANK_STATUS + EVERGREEN_CRTC0_REGISTER_OFFSET, VBLANK_ACK);
- 	if (rdev->irq.stat_regs.cik.disp_int & LB_D1_VLINE_INTERRUPT)
-@@ -6871,6 +6926,12 @@ static inline void cik_irq_ack(struct radeon_device *rdev)
- 		WREG32(LB_VLINE_STATUS + EVERGREEN_CRTC1_REGISTER_OFFSET, VLINE_ACK);
- 
- 	if (rdev->num_crtc >= 4) {
-+		if (rdev->irq.stat_regs.cik.d3grph_int & GRPH_PFLIP_INT_OCCURRED)
-+			WREG32(GRPH_INT_STATUS + EVERGREEN_CRTC2_REGISTER_OFFSET,
-+			       GRPH_PFLIP_INT_CLEAR);
-+		if (rdev->irq.stat_regs.cik.d4grph_int & GRPH_PFLIP_INT_OCCURRED)
-+			WREG32(GRPH_INT_STATUS + EVERGREEN_CRTC3_REGISTER_OFFSET,
-+			       GRPH_PFLIP_INT_CLEAR);
- 		if (rdev->irq.stat_regs.cik.disp_int_cont2 & LB_D3_VBLANK_INTERRUPT)
- 			WREG32(LB_VBLANK_STATUS + EVERGREEN_CRTC2_REGISTER_OFFSET, VBLANK_ACK);
- 		if (rdev->irq.stat_regs.cik.disp_int_cont2 & LB_D3_VLINE_INTERRUPT)
-@@ -6882,6 +6943,12 @@ static inline void cik_irq_ack(struct radeon_device *rdev)
- 	}
- 
- 	if (rdev->num_crtc >= 6) {
-+		if (rdev->irq.stat_regs.cik.d5grph_int & GRPH_PFLIP_INT_OCCURRED)
-+			WREG32(GRPH_INT_STATUS + EVERGREEN_CRTC4_REGISTER_OFFSET,
-+			       GRPH_PFLIP_INT_CLEAR);
-+		if (rdev->irq.stat_regs.cik.d6grph_int & GRPH_PFLIP_INT_OCCURRED)
-+			WREG32(GRPH_INT_STATUS + EVERGREEN_CRTC5_REGISTER_OFFSET,
-+			       GRPH_PFLIP_INT_CLEAR);
- 		if (rdev->irq.stat_regs.cik.disp_int_cont4 & LB_D5_VBLANK_INTERRUPT)
- 			WREG32(LB_VBLANK_STATUS + EVERGREEN_CRTC4_REGISTER_OFFSET, VBLANK_ACK);
- 		if (rdev->irq.stat_regs.cik.disp_int_cont4 & LB_D5_VLINE_INTERRUPT)
-@@ -7233,6 +7300,15 @@ restart_ih:
- 				break;
- 			}
- 			break;
-+		case 8: /* D1 page flip */
-+		case 10: /* D2 page flip */
-+		case 12: /* D3 page flip */
-+		case 14: /* D4 page flip */
-+		case 16: /* D5 page flip */
-+		case 18: /* D6 page flip */
-+			DRM_DEBUG("IH: D%d flip\n", ((src_id - 8) >> 1) + 1);
-+			radeon_crtc_handle_flip(rdev, (src_id - 8) >> 1);
-+			break;
- 		case 42: /* HPD hotplug */
- 			switch (src_data) {
- 			case 0:
-diff --git a/drivers/gpu/drm/radeon/cikd.h b/drivers/gpu/drm/radeon/cikd.h
-index 5964af5..e33f8d1 100644
---- a/drivers/gpu/drm/radeon/cikd.h
-+++ b/drivers/gpu/drm/radeon/cikd.h
-@@ -871,6 +871,15 @@
- #       define DC_HPD6_RX_INTERRUPT                     (1 << 18)
- #define DISP_INTERRUPT_STATUS_CONTINUE6                 0x6780
- 
-+/* 0x6858, 0x7458, 0x10058, 0x10c58, 0x11858, 0x12458 */
-+#define GRPH_INT_STATUS                                 0x6858
-+#       define GRPH_PFLIP_INT_OCCURRED                  (1 << 0)
-+#       define GRPH_PFLIP_INT_CLEAR                     (1 << 8)
-+/* 0x685c, 0x745c, 0x1005c, 0x10c5c, 0x1185c, 0x1245c */
-+#define GRPH_INT_CONTROL                                0x685c
-+#       define GRPH_PFLIP_INT_MASK                      (1 << 0)
-+#       define GRPH_PFLIP_INT_TYPE                      (1 << 8)
-+
- #define	DAC_AUTODETECT_INT_CONTROL			0x67c8
- 
- #define DC_HPD1_INT_STATUS                              0x601c
-diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
-index 6d27faf..4c84deb 100644
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -4325,7 +4325,6 @@ int evergreen_irq_set(struct radeon_device *rdev)
- 	u32 crtc1 = 0, crtc2 = 0, crtc3 = 0, crtc4 = 0, crtc5 = 0, crtc6 = 0;
- 	u32 hpd1, hpd2, hpd3, hpd4, hpd5, hpd6;
- 	u32 grbm_int_cntl = 0;
--	u32 grph1 = 0, grph2 = 0, grph3 = 0, grph4 = 0, grph5 = 0, grph6 = 0;
- 	u32 afmt1 = 0, afmt2 = 0, afmt3 = 0, afmt4 = 0, afmt5 = 0, afmt6 = 0;
- 	u32 dma_cntl, dma_cntl1 = 0;
- 	u32 thermal_int = 0;
-@@ -4508,15 +4507,21 @@ int evergreen_irq_set(struct radeon_device *rdev)
- 		WREG32(INT_MASK + EVERGREEN_CRTC5_REGISTER_OFFSET, crtc6);
- 	}
- 
--	WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET, grph1);
--	WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET, grph2);
-+	WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET,
-+	       GRPH_PFLIP_INT_MASK);
-+	WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET,
-+	       GRPH_PFLIP_INT_MASK);
- 	if (rdev->num_crtc >= 4) {
--		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET, grph3);
--		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET, grph4);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
- 	}
- 	if (rdev->num_crtc >= 6) {
--		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET, grph5);
--		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET, grph6);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
- 	}
- 
- 	WREG32(DC_HPD1_INT_CONTROL, hpd1);
-@@ -4905,6 +4910,15 @@ restart_ih:
- 				break;
- 			}
- 			break;
-+		case 8: /* D1 page flip */
-+		case 10: /* D2 page flip */
-+		case 12: /* D3 page flip */
-+		case 14: /* D4 page flip */
-+		case 16: /* D5 page flip */
-+		case 18: /* D6 page flip */
-+			DRM_DEBUG("IH: D%d flip\n", ((src_id - 8) >> 1) + 1);
-+			radeon_crtc_handle_flip(rdev, (src_id - 8) >> 1);
-+			break;
- 		case 42: /* HPD hotplug */
- 			switch (src_data) {
- 			case 0:
-diff --git a/drivers/gpu/drm/radeon/r600.c b/drivers/gpu/drm/radeon/r600.c
-index 2d75542..3a55ae4 100644
---- a/drivers/gpu/drm/radeon/r600.c
-+++ b/drivers/gpu/drm/radeon/r600.c
-@@ -3421,7 +3421,6 @@ int r600_irq_set(struct radeon_device *rdev)
- 	u32 hpd1, hpd2, hpd3, hpd4 = 0, hpd5 = 0, hpd6 = 0;
- 	u32 grbm_int_cntl = 0;
- 	u32 hdmi0, hdmi1;
--	u32 d1grph = 0, d2grph = 0;
- 	u32 dma_cntl;
- 	u32 thermal_int = 0;
- 
-@@ -3530,8 +3529,8 @@ int r600_irq_set(struct radeon_device *rdev)
- 	WREG32(CP_INT_CNTL, cp_int_cntl);
- 	WREG32(DMA_CNTL, dma_cntl);
- 	WREG32(DxMODE_INT_MASK, mode_int);
--	WREG32(D1GRPH_INTERRUPT_CONTROL, d1grph);
--	WREG32(D2GRPH_INTERRUPT_CONTROL, d2grph);
-+	WREG32(D1GRPH_INTERRUPT_CONTROL, DxGRPH_PFLIP_INT_MASK);
-+	WREG32(D2GRPH_INTERRUPT_CONTROL, DxGRPH_PFLIP_INT_MASK);
- 	WREG32(GRBM_INT_CNTL, grbm_int_cntl);
- 	if (ASIC_IS_DCE3(rdev)) {
- 		WREG32(DC_HPD1_INT_CONTROL, hpd1);
-@@ -3834,6 +3833,14 @@ restart_ih:
- 				break;
- 			}
- 			break;
-+		case 9: /* D1 pflip */
-+			DRM_DEBUG("IH: D1 flip\n");
-+			radeon_crtc_handle_flip(rdev, 0);
-+			break;
-+		case 11: /* D2 pflip */
-+			DRM_DEBUG("IH: D2 flip\n");
-+			radeon_crtc_handle_flip(rdev, 1);
-+			break;
- 		case 19: /* HPD/DAC hotplug */
- 			switch (src_data) {
- 			case 0:
-diff --git a/drivers/gpu/drm/radeon/radeon.h b/drivers/gpu/drm/radeon/radeon.h
-index 319bd81..68b29d9 100644
---- a/drivers/gpu/drm/radeon/radeon.h
-+++ b/drivers/gpu/drm/radeon/radeon.h
-@@ -723,6 +723,12 @@ struct cik_irq_stat_regs {
- 	u32 disp_int_cont4;
- 	u32 disp_int_cont5;
- 	u32 disp_int_cont6;
-+	u32 d1grph_int;
-+	u32 d2grph_int;
-+	u32 d3grph_int;
-+	u32 d4grph_int;
-+	u32 d5grph_int;
-+	u32 d6grph_int;
- };
- 
- union radeon_irq_stat_regs {
-diff --git a/drivers/gpu/drm/radeon/radeon_display.c b/drivers/gpu/drm/radeon/radeon_display.c
-index 0ec48ea..f3514ea 100644
---- a/drivers/gpu/drm/radeon/radeon_display.c
-+++ b/drivers/gpu/drm/radeon/radeon_display.c
-@@ -282,6 +282,10 @@ void radeon_crtc_handle_flip(struct radeon_device *rdev, int crtc_id)
- 	u32 update_pending;
- 	int vpos, hpos;
- 
-+	/* can happen during initialization */
-+	if (radeon_crtc == NULL)
-+		return;
-+
- 	spin_lock_irqsave(&rdev->ddev->event_lock, flags);
- 	work = radeon_crtc->unpin_work;
- 	if (work == NULL ||
-diff --git a/drivers/gpu/drm/radeon/si.c b/drivers/gpu/drm/radeon/si.c
-index c6cfa44..d9d8e55 100644
---- a/drivers/gpu/drm/radeon/si.c
-+++ b/drivers/gpu/drm/radeon/si.c
-@@ -5672,7 +5672,6 @@ int si_irq_set(struct radeon_device *rdev)
- 	u32 crtc1 = 0, crtc2 = 0, crtc3 = 0, crtc4 = 0, crtc5 = 0, crtc6 = 0;
- 	u32 hpd1 = 0, hpd2 = 0, hpd3 = 0, hpd4 = 0, hpd5 = 0, hpd6 = 0;
- 	u32 grbm_int_cntl = 0;
--	u32 grph1 = 0, grph2 = 0, grph3 = 0, grph4 = 0, grph5 = 0, grph6 = 0;
- 	u32 dma_cntl, dma_cntl1;
- 	u32 thermal_int = 0;
- 
-@@ -5811,16 +5810,22 @@ int si_irq_set(struct radeon_device *rdev)
- 	}
- 
- 	if (rdev->num_crtc >= 2) {
--		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET, grph1);
--		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET, grph2);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
- 	}
- 	if (rdev->num_crtc >= 4) {
--		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET, grph3);
--		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET, grph4);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
- 	}
- 	if (rdev->num_crtc >= 6) {
--		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET, grph5);
--		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET, grph6);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
- 	}
- 
- 	if (!ASIC_IS_NODCE(rdev)) {
-@@ -6184,6 +6189,15 @@ restart_ih:
- 				break;
- 			}
- 			break;
-+		case 8: /* D1 page flip */
-+		case 10: /* D2 page flip */
-+		case 12: /* D3 page flip */
-+		case 14: /* D4 page flip */
-+		case 16: /* D5 page flip */
-+		case 18: /* D6 page flip */
-+			DRM_DEBUG("IH: D%d flip\n", ((src_id - 8) >> 1) + 1);
-+			radeon_crtc_handle_flip(rdev, (src_id - 8) >> 1);
-+			break;
- 		case 42: /* HPD hotplug */
- 			switch (src_data) {
- 			case 0:
+for you to fetch changes up to 11bc9381b277a65ea4b3fe994e658f4a78512139:
+
+  mmc: sdhci-s3c: use mmc_of_parse and remove the card_tasklet (2014-06-04 18:59:12 -0400)
+
+----------------------------------------------------------------
+MMC highlights for 3.16:
+
+Core:
+ - support HS400 mode of eMMC 5.0, via DT bindings mmc-hs400-1_{2,8}v
+ - if card init at 3.3v doesn't work, try 1.8v and 1.2v too
+
+Drivers:
+ - moxart: New driver for MOXA ART SoCs
+ - rtsx_usb_sdmmc: New driver for Realtek USB card readers
+ - sdhci: Large rework around IRQ/regulator handling, remove card_tasklet
+ - sdhci-pci-o2micro: Add SeaBird SeaEagle SD3 support
+ - sunxi: New driver for Allwinner sunxi SoCs
+ - usdhi6rol0: New driver for Renesas SD/SDIO controller
+
+----------------------------------------------------------------
+Aisheng Dong (1):
+      mmc: sdhci-esdhc-imx: fix mmc ddr mode regression issue
+
+Al Cooper (1):
+      mmc: sdhci: SD tuning is broken for some controllers
+
+Alex Smith (1):
+      mmc: jz4740: don't wait for PRG_DONE after stop command with R1 response
+
+Alexander Shiyan (3):
+      mmc: mxcmmc: Convert to devm-* API
+      mmc: mxcmmc: Convert to SIMPLE_DEV_PM_OPS
+      mmc: mxcmmc: Use mmc_regulator_get_supply() API
+
+Alexandre Belloni (1):
+      mmc: atmel: don't test host->data
+
+Andrew Bresticker (2):
+      mmc: tegra: disable UHS modes
+      mmc: tegra: fix reporting of base clock frequency
+
+Arnd Bergmann (1):
+      mmc: rtsx: fix possible linking error if built-in
+
+Axel Lin (4):
+      mmc: Convert to use ATTRIBUTE_GROUPS
+      mmc: sdhci-s3c: Remove unused define for NUM_GPIOS
+      mmc: omap: Use DIV_ROUND_UP instead of open coded
+      mmc: wmt-sdmmc: Use GFP_KERNEL instead of hard-coded value
+
+Balaji T K (6):
+      mmc: omap_hsmmc: use devm_clk_get
+      mmc: omap_hsmmc: use devm_request_irq
+      mmc: omap_hsmmc: use devm_request_threaded_irq
+      mmc: omap_hsmmc: use devm_ioremap_resource
+      mmc: omap_hsmmc: fix cmd23 multiblock read/write
+      mmc: omap_hsmmc: split omap-dma header file
+
+Daniel Willmann (1):
+      mmc: mxs: fix card detection function for broken card detect
+
+David Lanzendörfer (1):
+      mmc: sunxi: Add driver for SD/MMC hosts found on Allwinner sunxi SoCs
+
+Doug Anderson (1):
+      mmc: dw_mmc: Don't print data errors
+
+Fabio Estevam (1):
+      mmc: card.h: Use NULL instead of 0 for END_FIXUP
+
+Guennadi Liakhovetski (1):
+      mmc: add a driver for the Renesas usdhi6rol0 SD/SDIO host controller
+
+Jaehoon Chung (8):
+      mmc: dw_mmc: use the mmc_of_parse() instead of local parser
+      mmc: dw_mmc: replace the bus_hz checking point
+      mmc: dw_mmc: remove unused member variable.
+      mmc: dw_mmc: fix minor coding style.
+      mmc: dw_mmc: remove unnecessary function.
+      mmc: dw_mmc: remove dw_mci_of_cd_gpio/wp_gpio()
+      mmc: dw_mmc: restore the card-present checking point
+      mmc: sdhci-s3c: use mmc_of_parse and remove the card_tasklet
+
+Jonas Jensen (1):
+      mmc: moxart: Add MOXA ART SD/MMC driver
+
+Markus Mayer (1):
+      mmc: Delay the card_event callback into the mmc_rescan worker
+
+Micky Ching (1):
+      mmc: rtsx: add R1-no-CRC mmc command type handle
+
+Nick Sanders (1):
+      mmc: sdhci: remove mdelay in eMMC tuning
+
+Peter Guo (1):
+      mmc: sdhci-pci-o2micro: Add SeaBird SeaEagle SD3 support
+
+Roger Tseng (1):
+      mmc: Add realtek USB sdmmc host driver
+
+Russell King (31):
+      mmc: sdio_irq: rework sdio irq handling
+      mmc: sdhci: clean up interrupt handling
+      mmc: sdhci: clean up sdio interrupt enable handling
+      mmc: sdhci: convert to new SDIO IRQ handling
+      mmc: sdhci: push card_tasklet into threaded irq handler
+      mmc: sdhci: allow sdio interrupts while sdhci runtime suspended
+      mmc: sdhci: more efficient interrupt enable register handling
+      mmc: sdhci: plug hole in disabling card detection interrupts
+      mmc: sdhci: convert generic bus width setup to library function
+      mmc: sdhci: convert reset into a library function
+      mmc: sdhci: move FSL ESDHC reset handling quirk into esdhc code
+      mmc: sdhci: avoid sync'ing the SG if there's no misalignment
+      mmc: sdhci: convert ADMA descriptors to a coherent allocation
+      mmc: sdhci: clean up sdhci_update_clock()/sdhci_set_clock()
+      mmc: sdhci: move setting host->clock into sdhci_do_set_ios()
+      mmc: sdhci: move setting mmc->actual_clock into set_clock handlers
+      mmc: sdhci: convert sdhci_set_clock() into a library function
+      mmc: sdhci-esdhc-imx: avoid DMA to kernel stack
+      mmc: sdhci-esdhc-imx: comment runtime_pm_get_sync() in esdhc_prepare_tuning()
+      mmc: sdhci-esdhc-imx: fix lockdep splat upon tuning
+      mmc: sdhci: set_uhs_signaling() need not return a value
+      mmc: sdhci: convert sdhci_set_uhs_signaling() into a library function
+      mmc: sdhci: cache timing information locally
+      mmc: sdhci: clean up sdhci_execute_tuning() decision
+      mmc: sdhci-esdhc-imx: remove emulation of uhs_mode
+      mmc: sdhci-of-esdhc: remove platform_suspend/platform_resume callbacks
+      mmc: sdhci: remove platform_suspend/platform_resume callbacks
+      mmc: sdhci-tegra: get rid of special PRESENT_STATE register handling
+      mmc: sdhci: move regulator handling into sdhci_set_power()
+      mmc: sdhci: move remaining power handling into sdhci_set_power()
+      mmc: sdhci: track whether preset mode is currently enabled in hardware
+
+Sachin Kamat (1):
+      mmc: dw_mmc: exynos: Staticize dw_mci_exynos_pmops
+
+Sebastian Hesselbarth (4):
+      mmc: mvsdio: silence card detect notice
+      mmc: mvsdio: workaround for spurious irqs
+      mmc: dove: fix missing MACH_DOVE dependency
+      mmc: sdhci-dove: use mmc_of_parse() and remove card_tasklet CD handler
+
+Seungwon Jeon (13):
+      mmc: clarify DDR timing mode between SD-UHS and eMMC
+      mmc: mmci: clarify DDR timing mode between SD-UHS and eMMC
+      mmc: omap: clarify DDR timing mode between SD-UHS and eMMC
+      mmc: sh_mmcif: clarify DDR timing mode between SD-UHS and eMMC
+      mmc: rtsx: clarify DDR timing mode between SD-UHS and eMMC
+      mmc: dw_mmc: clarify DDR timing mode between SD-UHS and eMMC
+      mmc: sdhci: clarify DDR timing mode between SD-UHS and eMMC
+      mmc: drop the speed mode of card's state
+      mmc: identify available device type to select
+      mmc: step power class after final selection of bus mode
+      mmc: rework selection of bus speed mode
+      mmc: add support for HS400 mode of eMMC5.0
+      mmc: core: add DT bindings for eMMC HS400 1.8/1.2V
+
+Stefan Wahren (1):
+      mmc: core: Use maximum timeout values in case TACC field is zero
+
+Tim Kryger (2):
+      mmc: core: Try other signal levels during power up
+      mmc: core: Improve support for deferred regulators
+
+Ulf Hansson (4):
+      mmc: core: Invoke sdio func driver's PM callbacks from the sdio bus
+      MAINTAINERS: mmc: Update email for host driver maintainer
+      MAINTAINERS: mmc: Add path to git tree
+      mmc: sdhci-of-esdhc: Fixup compile error
+
+ Documentation/devicetree/bindings/mmc/mmc.txt      |    2 +
+ .../devicetree/bindings/mmc/moxa,moxart-mmc.txt    |   30 +
+ .../devicetree/bindings/mmc/sunxi-mmc.txt          |   43 +
+ .../devicetree/bindings/mmc/synopsys-dw-mshc.txt   |    5 -
+ .../devicetree/bindings/mmc/usdhi6rol0.txt         |   33 +
+ MAINTAINERS                                        |    3 +-
+ drivers/mmc/core/bus.c                             |    9 +-
+ drivers/mmc/core/core.c                            |   52 +-
+ drivers/mmc/core/debugfs.c                         |    8 +-
+ drivers/mmc/core/host.c                            |    4 +
+ drivers/mmc/core/mmc.c                             |  678 ++++---
+ drivers/mmc/core/sd.c                              |   28 +-
+ drivers/mmc/core/sd.h                              |    1 -
+ drivers/mmc/core/sdio.c                            |   53 +-
+ drivers/mmc/core/sdio_bus.c                        |   14 +-
+ drivers/mmc/core/sdio_irq.c                        |   41 +-
+ drivers/mmc/core/slot-gpio.c                       |    4 +-
+ drivers/mmc/host/Kconfig                           |   31 +-
+ drivers/mmc/host/Makefile                          |    4 +
+ drivers/mmc/host/atmel-mci.c                       |   13 +-
+ drivers/mmc/host/dw_mmc-exynos.c                   |    7 +-
+ drivers/mmc/host/dw_mmc.c                          |  180 +-
+ drivers/mmc/host/dw_mmc.h                          |    2 -
+ drivers/mmc/host/jz4740_mmc.c                      |   11 +-
+ drivers/mmc/host/mmci.c                            |    6 +-
+ drivers/mmc/host/moxart-mmc.c                      |  730 ++++++++
+ drivers/mmc/host/mvsdio.c                          |   20 +-
+ drivers/mmc/host/mxcmmc.c                          |  140 +-
+ drivers/mmc/host/mxs-mmc.c                         |    7 +
+ drivers/mmc/host/omap.c                            |   10 +-
+ drivers/mmc/host/omap_hsmmc.c                      |   61 +-
+ drivers/mmc/host/rtsx_pci_sdmmc.c                  |    5 +
+ drivers/mmc/host/rtsx_usb_sdmmc.c                  | 1456 +++++++++++++++
+ drivers/mmc/host/sdhci-acpi.c                      |    8 +
+ drivers/mmc/host/sdhci-bcm-kona.c                  |    4 +
+ drivers/mmc/host/sdhci-bcm2835.c                   |    4 +
+ drivers/mmc/host/sdhci-cns3xxx.c                   |   13 +-
+ drivers/mmc/host/sdhci-dove.c                      |   78 +-
+ drivers/mmc/host/sdhci-esdhc-imx.c                 |   83 +-
+ drivers/mmc/host/sdhci-esdhc.h                     |    4 +-
+ drivers/mmc/host/sdhci-of-arasan.c                 |    4 +
+ drivers/mmc/host/sdhci-of-esdhc.c                  |   70 +-
+ drivers/mmc/host/sdhci-of-hlwd.c                   |    4 +
+ drivers/mmc/host/sdhci-pci-o2micro.c               |   78 +-
+ drivers/mmc/host/sdhci-pci-o2micro.h               |    3 +
+ drivers/mmc/host/sdhci-pci.c                       |    9 +-
+ drivers/mmc/host/sdhci-pltfm.c                     |    4 +
+ drivers/mmc/host/sdhci-pxav2.c                     |   14 +-
+ drivers/mmc/host/sdhci-pxav3.c                     |   13 +-
+ drivers/mmc/host/sdhci-s3c.c                       |  138 +-
+ drivers/mmc/host/sdhci-sirf.c                      |    4 +
+ drivers/mmc/host/sdhci-spear.c                     |    5 +-
+ drivers/mmc/host/sdhci-tegra.c                     |   67 +-
+ drivers/mmc/host/sdhci.c                           |  749 ++++----
+ drivers/mmc/host/sdhci.h                           |   20 +-
+ drivers/mmc/host/sh_mmcif.c                        |    9 +-
+ drivers/mmc/host/sunxi-mmc.c                       | 1049 +++++++++++
+ drivers/mmc/host/usdhi6rol0.c                      | 1847 ++++++++++++++++++++
+ drivers/mmc/host/wmt-sdmmc.c                       |    2 +-
+ drivers/net/wireless/rsi/rsi_91x_sdio.c            |    4 +-
+ include/linux/mmc/card.h                           |   29 +-
+ include/linux/mmc/dw_mmc.h                         |   14 -
+ include/linux/mmc/host.h                           |   59 +-
+ include/linux/mmc/mmc.h                            |   23 +-
+ include/linux/mmc/sdhci.h                          |   15 +-
+ include/linux/omap-dma.h                           |   19 +-
+ include/linux/omap-dmaengine.h                     |   21 +
+ 67 files changed, 6668 insertions(+), 1490 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mmc/moxa,moxart-mmc.txt
+ create mode 100644 Documentation/devicetree/bindings/mmc/sunxi-mmc.txt
+ create mode 100644 Documentation/devicetree/bindings/mmc/usdhi6rol0.txt
+ create mode 100644 drivers/mmc/host/moxart-mmc.c
+ create mode 100644 drivers/mmc/host/rtsx_usb_sdmmc.c
+ create mode 100644 drivers/mmc/host/sunxi-mmc.c
+ create mode 100644 drivers/mmc/host/usdhi6rol0.c
+ create mode 100644 include/linux/omap-dmaengine.h
+
 -- 
-1.9.1
-
+Chris Ball   <http://printf.net/>
