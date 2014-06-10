@@ -1,137 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751851AbaFJOmU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 10:42:20 -0400
-Received: from mail.siteground.com ([67.19.240.234]:53067 "EHLO
-	mail.siteground.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751061AbaFJOmR (ORCPT
+	id S1751566AbaFJOnA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 10:43:00 -0400
+Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:40145 "EHLO
+	ducie-dc1.codethink.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750740AbaFJOm7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 10:42:17 -0400
-Message-ID: <5397194B.9010606@1h.com>
-Date: Tue, 10 Jun 2014 17:42:19 +0300
-From: Marian Marinov <mm@1h.com>
-Organization: 1H Ltd.
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org
-Subject: Re: [RFC] oom, memcg: handle sysctl oom_kill_allocating_task while
- memcg oom happening
-References: <5396ED66.7090401@1h.com> <20140610115254.GA25631@dhcp22.suse.cz>
-In-Reply-To: <20140610115254.GA25631@dhcp22.suse.cz>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - mail.siteground.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - 1h.com
-X-Get-Message-Sender-Via: mail.siteground.com: none
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Tue, 10 Jun 2014 10:42:59 -0400
+From: Rob Jones <rob.jones@codethink.co.uk>
+To: linus.walleij@linaro.org, gnurou@gmail.com
+Cc: lgirdwood@gmail.com, broonie@kernel.org, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ian.molton@codethink.co.uk,
+        ben.dooks@codethink.co.uk, heiko@sntech.de, rob.jones@codethink.co.uk
+Subject: [PATCH 1/3] drivers/gpio: devres.c: allow gpio array requests for managed devices
+Date: Tue, 10 Jun 2014 15:41:46 +0100
+Message-Id: <1402411308-14182-2-git-send-email-rob.jones@codethink.co.uk>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1402411308-14182-1-git-send-email-rob.jones@codethink.co.uk>
+References: <1402411308-14182-1-git-send-email-rob.jones@codethink.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+Add functions devm_gpio_request_array() and devm_gpio_free_array()
+which are exactly analogous to the equivalent non-managed device
+functions gpio_request_array() and gpio_free_array(), which can be
+found in module gpiolib.c.
 
-On 06/10/2014 02:52 PM, Michal Hocko wrote:
-> [More people to CC] On Tue 10-06-14 14:35:02, Marian Marinov wrote:
->> -----BEGIN PGP SIGNED MESSAGE----- Hash: SHA1
->> 
->> Hello,
-> 
-> Hi,
-> 
->> a while back in 2012 there was a request for this functionality. oom, memcg: handle sysctl
->> oom_kill_allocating_task while memcg oom happening
->> 
->> This is the thread: https://lkml.org/lkml/2012/10/16/168
->> 
->> Now we run a several machines with around 10k processes on each machine, using containers.
->> 
->> Regularly we see OOM from within a container that causes performance degradation.
-> 
-> What kind of performance degradation and which parts of the system are affected?
+Note that if devm_gpio_request_array() fails, no gpios are obtained.
+No indication is provided as to which particular request failed.
 
-The responsiveness to SSH terminals and DB queries on the host machine is significantly slowed.
-I'm still unsure what exactly to measure.
+Reviewed-by: Ian Molton <ian.molton@codethink.co.uk>
+Signed-off-by: Rob Jones <rob.jones@codethink.co.uk>
+---
+ drivers/gpio/devres.c |   57 +++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/gpio.h  |    4 ++++
+ 2 files changed, 61 insertions(+)
 
-> 
-> memcg oom killer happens outside of any locks currently so the only bottleneck I can see is the per-cgroup
-> container which iterates all tasks in the group. Is this what is going on here?
+diff --git a/drivers/gpio/devres.c b/drivers/gpio/devres.c
+index 307464f..fd95240d 100644
+--- a/drivers/gpio/devres.c
++++ b/drivers/gpio/devres.c
+@@ -186,6 +186,63 @@ int devm_gpio_request_one(struct device *dev, unsigned gpio,
+ EXPORT_SYMBOL(devm_gpio_request_one);
+ 
+ /**
++ * devm_gpio_request_array - request multiple GPIOs in a single call
++ *			     for a managed device
++ * @dev:	device requesting the gpio
++ * @array:      array of the 'struct gpio'
++ * @num:        how many GPIOs in the array
++ *
++ * Except for the extra @dev argument, this function takes the
++ * same arguments and performs the same function as
++ * gpio_request().  GPIOs requested with this function will be
++ * automatically freed on driver detach.
++ *
++ * If GPIOs allocated with this function need to be freed separately,
++ * devm_gpio_free_array() or devm_gpio_free() must be used.
++ */
++int devm_gpio_request_array(struct device *dev,
++			    const struct gpio *array,
++			    size_t num)
++{
++	int i, err = 0;
++
++	for (i = 0; i < num; i++, array++) {
++		err = devm_gpio_request_one(dev,
++					    array->gpio,
++					    array->flags,
++					    array->label);
++		if (err) {
++			while (i--)
++				devm_gpio_free(dev, (--array)->gpio);
++		}
++	}
++
++	return err;
++}
++EXPORT_SYMBOL(devm_gpio_request_array);
++
++/**
++ * devm_gpio_free_array - release multiple GPIOs in a single call
++ *			  for a managed device
++ * @dev:	device requesting the gpio
++ * @array:      array of the 'struct gpio'
++ * @num:        how many GPIOs in the array
++ *
++ * Except for the extra @dev argument, this function takes the
++ * same arguments and performs the same function as gpio_free_array().
++ * This function instead of gpio_free_array() should be used to
++ * manually free GPIOs allocated with devm_gpio_request().
++ */
++void devm_gpio_free_array(struct device *dev,
++			  const struct gpio *array,
++			  size_t num)
++{
++	while (num--)
++		devm_gpio_free(dev, (array++)->gpio);
++}
++EXPORT_SYMBOL(devm_gpio_free_array);
++
++/**
+  *      devm_gpio_free - free a GPIO
+  *      @dev: device to free GPIO for
+  *      @gpio: GPIO to free
+diff --git a/include/linux/gpio.h b/include/linux/gpio.h
+index 85aa5d0..12d5648 100644
+--- a/include/linux/gpio.h
++++ b/include/linux/gpio.h
+@@ -84,6 +84,10 @@ struct device;
+ int devm_gpio_request(struct device *dev, unsigned gpio, const char *label);
+ int devm_gpio_request_one(struct device *dev, unsigned gpio,
+ 			  unsigned long flags, const char *label);
++int devm_gpio_request_array(struct device *dev, const struct gpio *array,
++			    size_t num);
++void devm_gpio_free_array(struct device *dev, const struct gpio *array,
++			 size_t num);
+ void devm_gpio_free(struct device *dev, unsigned int gpio);
+ 
+ #else /* ! CONFIG_GPIOLIB */
+-- 
+1.7.10.4
 
-When the container has 1000s of processes it seams that there is a problem. But I'm not sure, and will be happy to put
-some diagnostic lines of code there.
-
-> 
->> We are running 3.12.20 with the following OOM configuration and memcg oom enabled:
->> 
->> vm.oom_dump_tasks = 0 vm.oom_kill_allocating_task = 1 vm.panic_on_oom = 0
->> 
->> When OOM occurs we see very high numbers for the loadavg and the overall responsiveness of the machine degrades.
-> 
-> What is the system waiting for?
-
-I don't know, since I was not the one to actually handle the case. However, my guys are instructed to collect iostat
-and vmstat information from the machines, the next time this happens.
-
-> 
->> During these OOM states the load of the machine gradualy increases from 25 up to 120 in the interval of
->> 10minutes.
->> 
->> Once we manually bring down the memory usage of a container(killing some tasks) the load drops down to 25 within
->> 5 to 7 minutes.
-> 
-> So the OOM killer is not able to find a victim to kill?
-
-It was constantly killing tasks. 245 oom invocations in less then 6min for that particular cgroup. With top 61 oom
-invocations in one minute.
-
-It was killing... In that particular case, the problem was a web server that was under attack. New php processes was
-spawned very often and instead of killing each newly created process(which is allocating memory) the kernel tries to
-find more suitable task. Which in this case was not desired.
-
-> 
->> I read the whole thread from 2012 but I do not see the expected behavior that is described by the people that
->> commented the issue.
-> 
-> Why do you think that killing the allocating task would be helpful in your case?
-
-As mentioned above, the usual case with the hosting companies is that, the allocating task should not be allowed to
-run. So killing it is the proper solution there.
-
-Essentially we solved the issue by setting a process limit to that particular cgroup using the task-limit patches of
-Dwight Engen.
-
-> 
->> In this case, with real usage for this patch, would it be considered for inclusion?
-> 
-> I would still prefer to fix the real issue which is not clear from your description yet.
-
-I would love to have a better way to solve the issue.
-
-Marian
-
-
-
-- -- 
-Marian Marinov
-Founder & CEO of 1H Ltd.
-Jabber/GTalk: hackman@jabber.org
-ICQ: 7556201
-Mobile: +359 886 660 270
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iEYEARECAAYFAlOXGUsACgkQ4mt9JeIbjJR1YACgysnzxg9IPzcwQRmBZVVV6cp3
-N4YAoKygaqbqcuz6dkmtMfI/pu2Br5H/
-=3pZj
------END PGP SIGNATURE-----
