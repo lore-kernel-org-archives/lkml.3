@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751273AbaFJSEO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 14:04:14 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:63139 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750735AbaFJSEN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 14:04:13 -0400
+	id S1752509AbaFJSFx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 14:05:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48064 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750740AbaFJSFw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 14:05:52 -0400
+Date: Tue, 10 Jun 2014 15:04:48 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: peterz@infradead.org, gleb@kernel.org, pbonzini@redhat.com,
+        eranian@google.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 4/4] kvm: Implement PEBS virtualization
+Message-ID: <20140610180448.GA9485@amt.cnet>
+References: <1401412327-14810-1-git-send-email-andi@firstfloor.org>
+ <1401412327-14810-5-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFyY7_=3xt-0KE=-fmb+kLurxkBmh8TZWgDZMi_RVpKBpg@mail.gmail.com>
-References: <alpine.LNX.2.00.1406101517300.9378@pobox.suse.cz>
-	<CA+55aFyY7_=3xt-0KE=-fmb+kLurxkBmh8TZWgDZMi_RVpKBpg@mail.gmail.com>
-Date: Tue, 10 Jun 2014 11:04:13 -0700
-Message-ID: <CAKbGBLi1hRxe03EB70HOYRTuVhHkAyTnhfv8HFXEwatP6Qn8tA@mail.gmail.com>
-Subject: Re: [PATCH] tell gcc optimizer to never introduce new data races
-From: Steven Noonan <steven@uplinklabs.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Martin Jambor <mjambor@suse.cz>, Petr Mladek <pmladek@suse.cz>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401412327-14810-5-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 10, 2014 at 10:46 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Tue, Jun 10, 2014 at 6:23 AM, Jiri Kosina <jkosina@suse.cz> wrote:
->> We have been chasing a memory corruption bug, which turned out to be
->> caused by very old gcc (4.3.4), which happily turned conditional load into
->> a non-conditional one, and that broke correctness (the condition was met
->> only if lock was held) and corrupted memory.
->
-> Just out of interest, can you point to the particular kernel code that
-> caused this? I think that's more interesting than the example program
-> you show - which I'm sure is really nice for gcc developers as an
-> example, but from a kernel standpoint I think it's more important to
-> show the particular problems this caused for the kernel?
->
+On Thu, May 29, 2014 at 06:12:07PM -0700, Andi Kleen wrote:
+>  {
+>  	struct kvm_pmu *pmu = &vcpu->arch.pmu;
+> @@ -407,6 +551,20 @@ int kvm_pmu_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
+>  			return 0;
+>  		}
+>  		break;
+> +	case MSR_IA32_DS_AREA:
+> +		pmu->ds_area = data;
+> +		return 0;
+> +	case MSR_IA32_PEBS_ENABLE:
+> +		if (data & ~0xf0000000fULL)
+> +			break;
 
-Jiri, is there a workaround for compilers that don't support '--param
-allow-store-data-races=0'? For example:
+Bit 63 == PS_ENABLE ?
 
-$ gcc-4.5 -O2 -o cond_store cond_store.c && ./cond_store
-Segmentation fault (core dumped)
+>  void kvm_handle_pmu_event(struct kvm_vcpu *vcpu)
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> index 33e8c02..4f39917 100644
+> --- a/arch/x86/kvm/vmx.c
+> +++ b/arch/x86/kvm/vmx.c
+> @@ -7288,6 +7288,12 @@ static void __noclone vmx_vcpu_run(struct kvm_vcpu *vcpu)
+>  	atomic_switch_perf_msrs(vmx);
+>  	debugctlmsr = get_debugctlmsr();
+>  
+> +	/* Move this somewhere else? */
 
-$ gcc-4.5 -O2 --param allow-store-data-races=0 -o cond_store
-cond_store.c && ./cond_store
-cc1: error: invalid parameter ‘allow-store-data-races’
+Unless you hook into vcpu->arch.pmu.ds_area and perf_get_ds_area()
+writers, it has to be at every vcpu entry.
 
-$ gcc-4.5 -v
-Using built-in specs.
-COLLECT_GCC=gcc-4.5
-COLLECT_LTO_WRAPPER=/usr/lib/gcc/x86_64-unknown-linux-gnu/4.5.4/lto-wrapper
-Target: x86_64-unknown-linux-gnu
-Configured with: ../configure --prefix=/usr --mandir=/usr/share/man
---infodir=/usr/share/info --libdir=/usr/lib --libexecdir=/usr/lib
---program-suffix=-4.5 --enable-shared
---enable-languages=c,c++,fortran,objc,obj-c++ --enable-__cxa_atexit
---disable-libstdcxx-pch --disable-multilib --disable-libgomp
---disable-libmudflap --disable-libssp --enable-clocale=gnu
---with-tune=generic --with-cloog --with-ppl --with-system-zlib
-Thread model: posix
-gcc version 4.5.4 (GCC)
+Could compare values in MSR save area to avoid switch.
+
+> +	if (vcpu->arch.pmu.ds_area)
+> +		add_atomic_switch_msr(vmx, MSR_IA32_DS_AREA,
+> +				      vcpu->arch.pmu.ds_area,
+> +				      perf_get_ds_area());
+
+Should clear_atomic_switch_msr before 
+add_atomic_switch_msr.
+
