@@ -1,291 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936256AbaFJCiN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 22:38:13 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:34537 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934357AbaFJCiK (ORCPT
+	id S933226AbaFJClh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 22:41:37 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:43052 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932349AbaFJClf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 22:38:10 -0400
-X-Original-SENDERIP: 10.177.220.145
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Tue, 10 Jun 2014 11:41:57 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Michal Nazarewicz <mina86@mina86.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Alexander Graf <agraf@suse.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [RFC PATCH 1/3] CMA: generalize CMA reserved area management
- functionality
-Message-ID: <20140610024157.GA19036@js1304-P5Q-DELUXE>
-References: <1401757919-30018-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1401757919-30018-2-git-send-email-iamjoonsoo.kim@lge.com>
- <xa1tzjhujxbz.fsf@mina86.com>
+	Mon, 9 Jun 2014 22:41:35 -0400
+Message-ID: <5396705D.5020507@kernel.dk>
+Date: Mon, 09 Jun 2014 20:41:33 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <xa1tzjhujxbz.fsf@mina86.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Junxiao Bi <junxiao.bi@oracle.com>
+CC: andi@lisas.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] block: make nr_requests tunable for loop
+References: <1402367460-5305-1-git-send-email-junxiao.bi@oracle.com>
+In-Reply-To: <1402367460-5305-1-git-send-email-junxiao.bi@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 03, 2014 at 08:56:00AM +0200, Michal Nazarewicz wrote:
-> On Tue, Jun 03 2014, Joonsoo Kim wrote:
-> > Currently, there are two users on CMA functionality, one is the DMA
-> > subsystem and the other is the kvm on powerpc. They have their own code
-> > to manage CMA reserved area even if they looks really similar.
-> > From my guess, it is caused by some needs on bitmap management. Kvm side
-> > wants to maintain bitmap not for 1 page, but for more size. Eventually it
-> > use bitmap where one bit represents 64 pages.
-> >
-> > When I implement CMA related patches, I should change those two places
-> > to apply my change and it seem to be painful to me. I want to change
-> > this situation and reduce future code management overhead through
-> > this patch.
-> >
-> > This change could also help developer who want to use CMA in their
-> > new feature development, since they can use CMA easily without
-> > copying & pasting this reserved area management code.
-> >
-> > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> 
-> Some small comments below, but in general
-> 
-> Acked-by: Michal Nazarewicz <mina86@mina86.com>
-
-Hello, Michal.
-
-Thanks!
-
-> 
-> >
-> > diff --git a/include/linux/cma.h b/include/linux/cma.h
-> > new file mode 100644
-> > index 0000000..60ba06f
-> > --- /dev/null
-> > +++ b/include/linux/cma.h
-> > @@ -0,0 +1,28 @@
-> > +/*
-> > + * Contiguous Memory Allocator
-> > + *
-> > + * Copyright LG Electronics Inc., 2014
-> > + * Written by:
-> > + *	Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> > + *
-> > + * This program is free software; you can redistribute it and/or
-> > + * modify it under the terms of the GNU General Public License as
-> > + * published by the Free Software Foundation; either version 2 of the
-> > + * License or (at your optional) any later version of the license.
-> > + *
-> 
-> Superfluous empty comment line.
-> 
-> Also, I'm not certain whether this copyright notice is appropriate here,
-> but that's another story.
-
-Yeah, I will remove copyright notice in .h file.
-
-> 
-> > + */
-> > +
-> > +#ifndef __CMA_H__
-> > +#define __CMA_H__
-> > +
-> > +struct cma;
-> > +
-> > +extern struct page *cma_alloc(struct cma *cma, unsigned long count,
-> > +				unsigned long align);
-> > +extern bool cma_release(struct cma *cma, struct page *pages,
-> > +				unsigned long count);
-> > +extern int __init cma_declare_contiguous(phys_addr_t size, phys_addr_t base,
-> > +				phys_addr_t limit, phys_addr_t alignment,
-> > +				unsigned long bitmap_shift, bool fixed,
-> > +				struct cma **res_cma);
-> > +#endif
-> 
-> > diff --git a/mm/cma.c b/mm/cma.c
-> > new file mode 100644
-> > index 0000000..0dae88d
-> > --- /dev/null
-> > +++ b/mm/cma.c
-> > @@ -0,0 +1,329 @@
-> 
-> > +static int __init cma_activate_area(struct cma *cma)
-> > +{
-> > +	int max_bitmapno = cma_bitmap_max_no(cma);
-> > +	int bitmap_size = BITS_TO_LONGS(max_bitmapno) * sizeof(long);
-> > +	unsigned long base_pfn = cma->base_pfn, pfn = base_pfn;
-> > +	unsigned i = cma->count >> pageblock_order;
-> > +	struct zone *zone;
-> > +
-> > +	pr_debug("%s()\n", __func__);
-> > +	if (!cma->count)
-> > +		return 0;
-> 
-> Alternatively:
-> 
-> +	if (!i)
+On 2014-06-09 20:31, Junxiao Bi wrote:
+> commit 7b5a3522 (loop: Limit the number of requests in the bio list) limit
+> the request number in loop queue to not over 128. Since the "request_fn" of
+> loop device is null, the requests number is not allowed tuned. Make it tunable
+> from sysfs can improve performance.
+>
+> The following test is done on a machine with 512M memory. The backend of
+> /dev/loop1 is a nfs file.
+>
+> [root@bijx mnt]# cat /sys/block/loop0/queue/nr_requests
+> 128
+> [root@bijx mnt]# dd if=/dev/zero of=/dev/loop0 bs=1M count=5000
+> 5000+0 records in
+> 5000+0 records out
+> 5242880000 bytes (5.2 GB) copied, 501.572 s, 10.5 MB/s
+> [root@bijx mnt]#
+> [root@bijx mnt]# echo 1024 > /sys/block/loop0/queue/nr_requests
+> [root@bijx mnt]# cat /sys/block/loop0/queue/nr_requests
+> 1024
+> [root@bijx mnt]# dd if=/dev/zero of=/dev/loop0 bs=1M count=5000
+> 5000+0 records in
+> 5000+0 records out
+> 5242880000 bytes (5.2 GB) copied, 464.481 s, 11.3 MB/s
+>
+> Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+> ---
+>   block/blk-core.c  |    6 ++++++
+>   block/blk-sysfs.c |    9 +++------
+>   2 files changed, 9 insertions(+), 6 deletions(-)
+>
+> diff --git a/block/blk-core.c b/block/blk-core.c
+> index 40d6548..58c4bd4 100644
+> --- a/block/blk-core.c
+> +++ b/block/blk-core.c
+> @@ -851,6 +851,12 @@ int blk_update_nr_requests(struct request_queue *q, unsigned int nr)
+>   	q->nr_requests = nr;
+>   	blk_queue_congestion_threshold(q);
+>
+> +	/* for loop device, return after set its nr_requests */
+> +	if (!q->request_fn) {
+> +		spin_unlock_irq(q->queue_lock);
 > +		return 0;
+> +	}
 
-I prefer cma->count than i, since it represents what it does itself.
+It'd be prettier to split this differently - something ala:
 
-> > +
-> > +	cma->bitmap = kzalloc(bitmap_size, GFP_KERNEL);
-> > +	if (!cma->bitmap)
-> > +		return -ENOMEM;
-> > +
-> > +	WARN_ON_ONCE(!pfn_valid(pfn));
-> > +	zone = page_zone(pfn_to_page(pfn));
-> > +
-> > +	do {
-> > +		unsigned j;
-> > +
-> > +		base_pfn = pfn;
-> > +		for (j = pageblock_nr_pages; j; --j, pfn++) {
-> > +			WARN_ON_ONCE(!pfn_valid(pfn));
-> > +			/*
-> > +			 * alloc_contig_range requires the pfn range
-> > +			 * specified to be in the same zone. Make this
-> > +			 * simple by forcing the entire CMA resv range
-> > +			 * to be in the same zone.
-> > +			 */
-> > +			if (page_zone(pfn_to_page(pfn)) != zone)
-> > +				goto err;
-> > +		}
-> > +		init_cma_reserved_pageblock(pfn_to_page(base_pfn));
-> > +	} while (--i);
-> > +
-> > +	mutex_init(&cma->lock);
-> > +	return 0;
-> > +
-> > +err:
-> > +	kfree(cma->bitmap);
-> > +	return -EINVAL;
-> > +}
-> 
-> > +static int __init cma_init_reserved_areas(void)
-> > +{
-> > +	int i;
-> > +
-> > +	for (i = 0; i < cma_area_count; i++) {
-> > +		int ret = cma_activate_area(&cma_areas[i]);
-> > +
-> > +		if (ret)
-> > +			return ret;
-> > +	}
-> > +
-> > +	return 0;
-> > +}
-> 
-> Or even:
-> 
-> static int __init cma_init_reserved_areas(void)
-> {
-> 	int i, ret = 0;
-> 	for (i = 0; !ret && i < cma_area_count; ++i)
-> 		ret = cma_activate_area(&cma_areas[i]);
-> 	return ret;
-> }
+if (request_fn)
+         blk_update_congestion_thresholds(q);
 
-I think that originial implementation is better, since it seems
-more readable to me.
+But I think you have a larger issue here... For the request lists, we 
+update the congestion thresholds and wakeup anyone waiting, if we need 
+to. There's no way to do that for loop, since the waitqueue is internal 
+to loop.
 
-> > +int __init cma_declare_contiguous(phys_addr_t size, phys_addr_t base,
-> > +				phys_addr_t limit, phys_addr_t alignment,
-> > +				unsigned long bitmap_shift, bool fixed,
-> > +				struct cma **res_cma)
-> > +{
-> > +	struct cma *cma = &cma_areas[cma_area_count];
-> 
-> Perhaps it would make sense to move this initialisation to the far end
-> of this function?
+-- 
+Jens Axboe
 
-Yes, I will move it down.
-
-> > +	int ret = 0;
-> > +
-> > +	pr_debug("%s(size %lx, base %08lx, limit %08lx, alignment %08lx)\n",
-> > +			__func__, (unsigned long)size, (unsigned long)base,
-> > +			(unsigned long)limit, (unsigned long)alignment);
-> > +
-> > +	/* Sanity checks */
-> > +	if (cma_area_count == ARRAY_SIZE(cma_areas)) {
-> > +		pr_err("Not enough slots for CMA reserved regions!\n");
-> > +		return -ENOSPC;
-> > +	}
-> > +
-> > +	if (!size)
-> > +		return -EINVAL;
-> > +
-> > +	/*
-> > +	 * Sanitise input arguments.
-> > +	 * CMA area should be at least MAX_ORDER - 1 aligned. Otherwise,
-> > +	 * CMA area could be merged into other MIGRATE_TYPE by buddy mechanism
-> > +	 * and CMA property will be broken.
-> > +	 */
-> > +	alignment >>= PAGE_SHIFT;
-> > +	alignment = PAGE_SIZE << max3(MAX_ORDER - 1, pageblock_order,
-> > +						(int)alignment);
-> > +	base = ALIGN(base, alignment);
-> > +	size = ALIGN(size, alignment);
-> > +	limit &= ~(alignment - 1);
-> > +	/* size should be aligned with bitmap_shift */
-> > +	BUG_ON(!IS_ALIGNED(size >> PAGE_SHIFT, 1 << cma->bitmap_shift));
-> 
-> cma->bitmap_shift is not yet initialised thus the above line should be:
-> 
-> 	BUG_ON(!IS_ALIGNED(size >> PAGE_SHIFT, 1 << bitmap_shift));
-
-Yes, I will fix it.
-
-> > +
-> > +	/* Reserve memory */
-> > +	if (base && fixed) {
-> > +		if (memblock_is_region_reserved(base, size) ||
-> > +		    memblock_reserve(base, size) < 0) {
-> > +			ret = -EBUSY;
-> > +			goto err;
-> > +		}
-> > +	} else {
-> > +		phys_addr_t addr = memblock_alloc_range(size, alignment, base,
-> > +							limit);
-> > +		if (!addr) {
-> > +			ret = -ENOMEM;
-> > +			goto err;
-> > +		} else {
-> > +			base = addr;
-> > +		}
-> > +	}
-> > +
-> > +	/*
-> > +	 * Each reserved area must be initialised later, when more kernel
-> > +	 * subsystems (like slab allocator) are available.
-> > +	 */
-> > +	cma->base_pfn = PFN_DOWN(base);
-> > +	cma->count = size >> PAGE_SHIFT;
-> > +	cma->bitmap_shift = bitmap_shift;
-> > +	*res_cma = cma;
-> > +	cma_area_count++;
-> > +
-> > +	pr_info("CMA: reserved %ld MiB at %08lx\n", (unsigned long)size / SZ_1M,
-> > +		(unsigned long)base);
-> 
-> Doesn't this message end up being: “cma: CMA: reserved …”? pr_fmt adds
-> “cma:” at the beginning, doesn't it?  So we should probably drop “CMA:”
-> here.
-
-Okay. Will do.
-
-Thanks.
