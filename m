@@ -1,27 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755475AbaFJTxp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 15:53:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35550 "EHLO
+	id S1755498AbaFJTxu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 15:53:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35565 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755438AbaFJTxm (ORCPT
+	with ESMTP id S1755438AbaFJTxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:53:42 -0400
+	Tue, 10 Jun 2014 15:53:47 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Vlastimil Babka <vbabka@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Dongjun Shin <d.j.shin@samsung.com>,
-        Sunghwan Yun <sunghwan.yun@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Seth Forshee <seth.forshee@canonical.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 158/160] mm/compaction: make isolate_freepages start at pageblock boundary
-Date: Tue, 10 Jun 2014 12:46:38 -0700
-Message-Id: <1402429600-20477-159-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 047/160] iwlwifi: mvm: disable beacon filtering
+Date: Tue, 10 Jun 2014 12:44:47 -0700
+Message-Id: <1402429600-20477-48-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -34,104 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlastimil Babka <vbabka@suse.cz>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 49e068f0b73dd042c186ffa9b420a9943e90389a upstream.
+commit 7bacc782270ff7db3b9f29fa5d24ad2ee1e8e81d upstream.
 
-The compaction freepage scanner implementation in isolate_freepages()
-starts by taking the current cc->free_pfn value as the first pfn.  In a
-for loop, it scans from this first pfn to the end of the pageblock, and
-then subtracts pageblock_nr_pages from the first pfn to obtain the first
-pfn for the next for loop iteration.
+This feature has been causing trouble - disable it for now.
 
-This means that when cc->free_pfn starts at offset X rather than being
-aligned on pageblock boundary, the scanner will start at offset X in all
-scanned pageblock, ignoring potentially many free pages.  Currently this
-can happen when
-
- a) zone's end pfn is not pageblock aligned, or
-
- b) through zone->compact_cached_free_pfn with CONFIG_HOLES_IN_ZONE
-    enabled and a hole spanning the beginning of a pageblock
-
-This patch fixes the problem by aligning the initial pfn in
-isolate_freepages() to pageblock boundary.  This also permits replacing
-the end-of-pageblock alignment within the for loop with a simple
-pageblock_nr_pages increment.
-
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Reported-by: Heesub Shin <heesub.shin@samsung.com>
-Acked-by: Minchan Kim <minchan@kernel.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Acked-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Christoph Lameter <cl@linux.com>
-Acked-by: Rik van Riel <riel@redhat.com>
-Cc: Dongjun Shin <d.j.shin@samsung.com>
-Cc: Sunghwan Yun <sunghwan.yun@samsung.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Cc: Seth Forshee <seth.forshee@canonical.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/compaction.c | 22 ++++++++++++----------
- 1 file changed, 12 insertions(+), 10 deletions(-)
+ drivers/net/wireless/iwlwifi/mvm/mac80211.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 0d3ab2c..1b99ee9 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -656,16 +656,20 @@ static void isolate_freepages(struct zone *zone,
- 				struct compact_control *cc)
- {
- 	struct page *page;
--	unsigned long high_pfn, low_pfn, pfn, z_end_pfn, end_pfn;
-+	unsigned long high_pfn, low_pfn, pfn, z_end_pfn;
- 	int nr_freepages = cc->nr_freepages;
- 	struct list_head *freelist = &cc->freepages;
+diff --git a/drivers/net/wireless/iwlwifi/mvm/mac80211.c b/drivers/net/wireless/iwlwifi/mvm/mac80211.c
+index c68e4ae..b3338b1 100644
+--- a/drivers/net/wireless/iwlwifi/mvm/mac80211.c
++++ b/drivers/net/wireless/iwlwifi/mvm/mac80211.c
+@@ -619,7 +619,7 @@ static int iwl_mvm_mac_add_interface(struct ieee80211_hw *hw,
+ 	if (ret)
+ 		goto out_remove_mac;
  
- 	/*
- 	 * Initialise the free scanner. The starting point is where we last
--	 * scanned from (or the end of the zone if starting). The low point
--	 * is the end of the pageblock the migration scanner is using.
-+	 * successfully isolated from, zone-cached value, or the end of the
-+	 * zone when isolating for the first time. We need this aligned to
-+	 * the pageblock boundary, because we do pfn -= pageblock_nr_pages
-+	 * in the for loop.
-+	 * The low boundary is the end of the pageblock the migration scanner
-+	 * is using.
- 	 */
--	pfn = cc->free_pfn;
-+	pfn = cc->free_pfn & ~(pageblock_nr_pages-1);
- 	low_pfn = ALIGN(cc->migrate_pfn + 1, pageblock_nr_pages);
- 
- 	/*
-@@ -685,6 +689,7 @@ static void isolate_freepages(struct zone *zone,
- 	for (; pfn >= low_pfn && cc->nr_migratepages > nr_freepages;
- 					pfn -= pageblock_nr_pages) {
- 		unsigned long isolated;
-+		unsigned long end_pfn;
- 
- 		/*
- 		 * This can iterate a massively long zone without finding any
-@@ -719,13 +724,10 @@ static void isolate_freepages(struct zone *zone,
- 		isolated = 0;
- 
- 		/*
--		 * As pfn may not start aligned, pfn+pageblock_nr_page
--		 * may cross a MAX_ORDER_NR_PAGES boundary and miss
--		 * a pfn_valid check. Ensure isolate_freepages_block()
--		 * only scans within a pageblock
-+		 * Take care when isolating in last pageblock of a zone which
-+		 * ends in the middle of a pageblock.
- 		 */
--		end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
--		end_pfn = min(end_pfn, z_end_pfn);
-+		end_pfn = min(pfn + pageblock_nr_pages, z_end_pfn);
- 		isolated = isolate_freepages_block(cc, pfn, end_pfn,
- 						   freelist, false);
- 		nr_freepages += isolated;
+-	if (!mvm->bf_allowed_vif &&
++	if (!mvm->bf_allowed_vif && false &&
+ 	    vif->type == NL80211_IFTYPE_STATION && !vif->p2p &&
+ 	    mvm->fw->ucode_capa.flags & IWL_UCODE_TLV_FLAGS_BF_UPDATED){
+ 		mvm->bf_allowed_vif = mvmvif;
 -- 
 1.9.1
 
