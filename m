@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933084AbaFJUbs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 16:31:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35006 "EHLO
+	id S1755687AbaFJUdA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 16:33:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34971 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753716AbaFJTrN (ORCPT
+	with ESMTP id S1753686AbaFJTrM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:47:13 -0400
+	Tue, 10 Jun 2014 15:47:12 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alexander Gordeev <agordeev@redhat.com>, Tejun Heo <tj@kernel.org>,
-        linux-ide@vger.kernel.org, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 071/160] ahci: Do not receive interrupts sent by dummy ports
-Date: Tue, 10 Jun 2014 12:45:11 -0700
-Message-Id: <1402429600-20477-72-git-send-email-kamal@canonical.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 080/160] mm: make fixup_user_fault() check the vma access rights too
+Date: Tue, 10 Jun 2014 12:45:20 -0700
+Message-Id: <1402429600-20477-81-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -27,63 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Gordeev <agordeev@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 2cf532f5e67c0cfe38c8c100e49280cdadacd2be upstream.
+commit 1b17844b29ae042576bea588164f2f1e9590a8bc upstream.
 
-In multiple MSI mode all AHCI ports (including dummy) get assigned
-separate MSI vectors and (as result of execution
-pci_enable_msi_exact() function) separate IRQ numbers, (mapped to the
-MSI vectors).
+fixup_user_fault() is used by the futex code when the direct user access
+fails, and the futex code wants it to either map in the page in a usable
+form or return an error.  It relied on handle_mm_fault() to map the
+page, and correctly checked the error return from that, but while that
+does map the page, it doesn't actually guarantee that the page will be
+mapped with sufficient permissions to be then accessed.
 
-Therefore, although interrupts from dummy ports are not desired they
-are still enabled. We do not request IRQs for dummy ports, but that
-only means we do not assign AHCI-specific ISRs to corresponding IRQ
-numbers.
+So do the appropriate tests of the vma access rights by hand.
 
-As result, dummy port interrupts still could come and traverse all the
-way from the PCI device to the kernel, causing unnecessary overhead.
+[ Side note: arguably handle_mm_fault() could just do that itself, but
+  we have traditionally done it in the caller, because some callers -
+  notably get_user_pages() - have been able to access pages even when
+  they are mapped with PROT_NONE.  Maybe we should re-visit that design
+  decision, but in the meantime this is the minimal patch. ]
 
-This update disables IRQs for dummy ports and prevents the described
-issue.
+Found by Dave Jones running his trinity tool.
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Tested-by: David Milburn <dmilburn@redhat.com>
-Cc: linux-ide@vger.kernel.org
-Fixes: 5ca72c4f7c41 ("AHCI: Support multiple MSIs")
+Reported-by: Dave Jones <davej@redhat.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/ata/ahci.c | 16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+ mm/memory.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 337d126..bc5579e 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -1171,12 +1171,16 @@ int ahci_host_activate(struct ata_host *host, int irq, unsigned int n_msis)
- 	for (i = 0; i < host->n_ports; i++) {
- 		struct ahci_port_priv *pp = host->ports[i]->private_data;
+diff --git a/mm/memory.c b/mm/memory.c
+index 95257f5..d411f0d 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1928,12 +1928,17 @@ int fixup_user_fault(struct task_struct *tsk, struct mm_struct *mm,
+ 		     unsigned long address, unsigned int fault_flags)
+ {
+ 	struct vm_area_struct *vma;
++	vm_flags_t vm_flags;
+ 	int ret;
  
--		/* pp is NULL for dummy ports */
--		if (pp)
--			rc = devm_request_threaded_irq(host->dev,
--						       irq + i, ahci_hw_interrupt,
--						       ahci_thread_fn, IRQF_SHARED,
--						       pp->irq_desc, host->ports[i]);
-+		/* Do not receive interrupts sent by dummy ports */
-+		if (!pp) {
-+			disable_irq(irq + i);
-+			continue;
-+		}
+ 	vma = find_extend_vma(mm, address);
+ 	if (!vma || address < vma->vm_start)
+ 		return -EFAULT;
+ 
++	vm_flags = (fault_flags & FAULT_FLAG_WRITE) ? VM_WRITE : VM_READ;
++	if (!(vm_flags & vma->vm_flags))
++		return -EFAULT;
 +
-+		rc = devm_request_threaded_irq(host->dev, irq + i,
-+					       ahci_hw_interrupt,
-+					       ahci_thread_fn, IRQF_SHARED,
-+					       pp->irq_desc, host->ports[i]);
- 		if (rc)
- 			goto out_free_irqs;
- 	}
+ 	ret = handle_mm_fault(mm, vma, address, fault_flags);
+ 	if (ret & VM_FAULT_ERROR) {
+ 		if (ret & VM_FAULT_OOM)
 -- 
 1.9.1
 
