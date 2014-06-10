@@ -1,91 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933377AbaFJB47 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 21:56:59 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:35993 "EHLO
+	id S934317AbaFJB5o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 21:57:44 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:36010 "EHLO
 	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932349AbaFJB45 (ORCPT
+	with ESMTP id S933917AbaFJB5m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 21:56:57 -0400
-Date: Tue, 10 Jun 2014 10:56:54 +0900
+	Mon, 9 Jun 2014 21:57:42 -0400
+Date: Tue, 10 Jun 2014 10:57:39 +0900
 From: Simon Horman <horms@verge.net.au>
 To: Magnus Damm <magnus.damm@gmail.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+Cc: Greg KH <gregkh@linuxfoundation.org>,
         linux-kernel <linux-kernel@vger.kernel.org>,
-        devel <devel@driverdev.osuosl.org>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
+        driverdevel <devel@driverdev.osuosl.org>,
+        Paul Bolle <pebolle@tiscali.nl>, SH-Linux <linux-sh@vger.kernel.org>,
         Geert Uytterhoeven <geert@linux-m68k.org>,
         Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v2 04/05] staging: board: Initial board staging support
-Message-ID: <20140610015650.GG30874@verge.net.au>
-References: <20140529131650.2329.3197.sendpatchset@w520>
- <20140529131732.2329.50630.sendpatchset@w520>
- <20140529132034.GB15585@mwanda>
- <CANqRtoTzOn5d9qB85sXvmLYhoTDMDtbjSkLbz9V4FRmzFM3ycQ@mail.gmail.com>
- <20140529231001.GC2353@verge.net.au>
- <CANqRtoTLznzU1mJRJMjNgr0pAY8fY__-12qE77Dz97n47FekhQ@mail.gmail.com>
+        Olof Johansson <olof@lixom.net>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: Re: [PATCH v3 00/05] staging: Emma Mobile USB driver and KZM9D board
+ code V3
+Message-ID: <20140610015736.GH30874@verge.net.au>
+References: <20140606104408.4423.36098.sendpatchset@w520>
+ <20140606153949.GB13961@kroah.com>
+ <CANqRtoSiYGjkR=sXvGcx1JrT6gx37ZcxDHY+ixkK_=e1GPB-DA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CANqRtoTLznzU1mJRJMjNgr0pAY8fY__-12qE77Dz97n47FekhQ@mail.gmail.com>
+In-Reply-To: <CANqRtoSiYGjkR=sXvGcx1JrT6gx37ZcxDHY+ixkK_=e1GPB-DA@mail.gmail.com>
 Organisation: Horms Solutions Ltd.
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 06, 2014 at 09:07:44PM +0900, Magnus Damm wrote:
-> On Fri, May 30, 2014 at 8:10 AM, Simon Horman <horms@verge.net.au> wrote:
-> > On Thu, May 29, 2014 at 10:27:30PM +0900, Magnus Damm wrote:
-> >> Hi Dan,
+On Mon, Jun 09, 2014 at 02:14:38PM +0900, Magnus Damm wrote:
+> On Sat, Jun 7, 2014 at 12:39 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > On Fri, Jun 06, 2014 at 07:44:08PM +0900, Magnus Damm wrote:
+> >> staging: Emma Mobile USB driver and KZM9D board code V3
 > >>
-> >> On Thu, May 29, 2014 at 10:20 PM, Dan Carpenter
-> >> <dan.carpenter@oracle.com> wrote:
-> >> > On Thu, May 29, 2014 at 10:17:32PM +0900, Magnus Damm wrote:
-> >> >> --- /dev/null
-> >> >> +++ work/drivers/staging/board/Kconfig        2014-05-29 21:40:41.000000000 +0900
-> >> >> @@ -0,0 +1,7 @@
-> >> >> +config STAGING_BOARD
-> >> >> +     boolean "Staging Board Support"
-> >> >> +     help
-> >> >> +       Select to enable per-board staging support code.
-> >> >> +
-> >> >> +       If in doubt, say N here.
-> >> >> +
-> >> >
-> >> > Actually, you're probably going to need to add a bunch of dependencies
-> >> > here or it will break "make randconfig" right away.  Sorry that I forgot
-> >> > about this in the first review.
+> >> [PATCH v3 01/05] staging: emxx_udc: Add Emma Mobile USB Gadget driver
+> >> [PATCH v3 02/05] staging: emxx_udc: I/O memory and IRQ resource support
+> >> [PATCH v3 03/05] staging: emxx_udc: Add TODO file
+> >> [PATCH v3 04/05] staging: board: Initial board staging support
+> >> [PATCH v3 05/05] staging: board: kzm9d: Board staging support for emxx_udc
 > >>
-> >> Good point, thanks for checking. I will have a look at this and add
-> >> dependencies to make sure it builds on a wide range of platforms.
+> >> This patch series is V3 of the old USB Gadget driver for Emma Mobile
+> >> that gets slightly adjusted to make use of the platform device interface
+> >> which in turn is used to add USB Gadget support to the KZM9D board.
+> >>
+> >> Two separate staging components are included in this series:
+> >> 1) the emxx_udc driver - from out-of-tree Android 2.6.35.7
+> >> 2) board staging support for KZM9D - platform device for DT-only KZM9D
+> >>
+> >> The two components above will be used to continously improve the driver
+> >> and board integration code until the driver can be moved out of staging
+> >> and/or DT bindings are available so the board staging platform device code
+> >> can be replaced with a DT node.
+> >>
+> >> Changes since V2:
+> >> - Added CONFIG_OF_ADDRESS dependency for the board staging bits
+> >>
+> >> Changes since V1:
+> >> - Added TODO file for emxx_udc
+> >> - Broke out board staging base support, included TODO file
+> >> - Added code to avoid registering platform device if DT node exists
+> >> - Modified KZM9D board code build condition to use SoC Kconfig entry
+> >>
+> >> Many thanks to Dan Carpenter, Geert Uytterhoeven, Greg KH and
+> >> Paul Bolle for feedback!
+> >>
+> >> Please let me know if you would like me to rebase this code somehow.
 > >
-> > Hi Magnus,
-> >
-> > let me know if you would like me to perform some build-testing.
+> > At quick glance, this looks good.  I'll queue it up after 3.16-rc1 is
+> > out as it's too late for this merge window.
 > 
-> Hey Simon,
-> 
-> Thanks for the offer. When you have time, can you please feed V3 into
-> your build test setup?
-> 
-> [PATCH v3 00/05] staging: Emma Mobile USB driver and KZM9D board code V3
-> [PATCH v3 01/05] staging: emxx_udc: Add Emma Mobile USB Gadget driver
-> [PATCH v3 02/05] staging: emxx_udc: I/O memory and IRQ resource support
-> [PATCH v3 03/05] staging: emxx_udc: Add TODO file
-> [PATCH v3 04/05] staging: board: Initial board staging support
-> [PATCH v3 05/05] staging: board: kzm9d: Board staging support for emxx_udc
+> Thanks, Greg! This sounds perfect to me!
 
-Hi Magnus,
+FWIW,
 
-my test was less exciting as I had hoped as STAGING is not widely
-enabled in defconfigs.
+Acked-by: Simon Horman <horms+renesas@verge.net.au>
 
-I compiled v3.15-rc8 with the patches above applied using
-the defconfigs and allmodconfigs for a wide range of architectures.
-The result was that all of the configs that built for v3.15-rc8
-also built with your patches applied.
-
-In other words, I did not find a problem.
