@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934705AbaFJAWx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:22:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58624 "EHLO
+	id S934474AbaFJAWj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:22:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58537 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934578AbaFJAWr (ORCPT
+	with ESMTP id S934447AbaFJAWi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 20:22:47 -0400
+	Mon, 9 Jun 2014 20:22:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        "J. Bruce Fields" <bfields@redhat.com>,
-        Weng Meiling <wengmeiling.weng@huawei.com>
-Subject: [PATCH 3.4 58/88] nfsd: pass net to nfsd_set_nrthreads()
-Date: Mon,  9 Jun 2014 17:25:08 -0700
-Message-Id: <20140610002426.433855395@linuxfoundation.org>
+        Daniel Kiper <daniel.kiper@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 3.4 81/88] xen/p2m: An early bootup variant of set_phys_to_machine
+Date: Mon,  9 Jun 2014 17:25:31 -0700
+Message-Id: <20140610002427.162653560@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
 References: <20140610002424.500996570@linuxfoundation.org>
@@ -30,69 +29,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit 3938a0d5eb5effcc89c6909741403f4e6a37252d upstream.
+commit 940713bb2ce3033f468a220094a07250a2f69bdd upstream.
 
-Precursor patch. Hard-coded "init_net" will be replaced by proper one in
-future.
+During early bootup we can't use alloc_page, so to allocate
+leaf pages in the P2M we need to use extend_brk. For that
+we are utilizing the early_alloc_p2m and early_alloc_p2m_middle
+functions to do the job for us. This function follows the
+same logic as set_phys_to_machine.
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-[wengmeiling: backport to 3.4: adjust context]
-Signed-off-by: Weng Meiling <wengmeiling.weng@huawei.com>
+Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- fs/nfsd/nfsctl.c |    3 ++-
- fs/nfsd/nfsd.h   |    2 +-
- fs/nfsd/nfssvc.c |    3 +--
- 3 files changed, 4 insertions(+), 4 deletions(-)
 
---- a/fs/nfsd/nfsctl.c
-+++ b/fs/nfsd/nfsctl.c
-@@ -440,6 +440,7 @@ static ssize_t write_pool_threads(struct
- 	int len;
- 	int npools;
- 	int *nthreads;
-+	struct net *net = &init_net;
+---
+ arch/x86/include/asm/xen/page.h |    1 +
+ arch/x86/xen/p2m.c              |   15 +++++++++++++++
+ 2 files changed, 16 insertions(+)
+
+--- a/arch/x86/include/asm/xen/page.h
++++ b/arch/x86/include/asm/xen/page.h
+@@ -44,6 +44,7 @@ extern unsigned long  machine_to_phys_nr
  
- 	mutex_lock(&nfsd_mutex);
- 	npools = nfsd_nrpools();
-@@ -470,7 +471,7 @@ static ssize_t write_pool_threads(struct
- 			if (nthreads[i] < 0)
- 				goto out_free;
- 		}
--		rv = nfsd_set_nrthreads(i, nthreads);
-+		rv = nfsd_set_nrthreads(i, nthreads, net);
- 		if (rv)
- 			goto out_free;
+ extern unsigned long get_phys_to_machine(unsigned long pfn);
+ extern bool set_phys_to_machine(unsigned long pfn, unsigned long mfn);
++extern bool __init early_set_phys_to_machine(unsigned long pfn, unsigned long mfn);
+ extern bool __set_phys_to_machine(unsigned long pfn, unsigned long mfn);
+ extern unsigned long set_phys_range_identity(unsigned long pfn_s,
+ 					     unsigned long pfn_e);
+--- a/arch/x86/xen/p2m.c
++++ b/arch/x86/xen/p2m.c
+@@ -570,6 +570,21 @@ static bool __init early_alloc_p2m(unsig
  	}
---- a/fs/nfsd/nfsd.h
-+++ b/fs/nfsd/nfsd.h
-@@ -71,7 +71,7 @@ int		nfsd_dispatch(struct svc_rqst *rqst
- int		nfsd_nrthreads(void);
- int		nfsd_nrpools(void);
- int		nfsd_get_nrthreads(int n, int *);
--int		nfsd_set_nrthreads(int n, int *);
-+int		nfsd_set_nrthreads(int n, int *, struct net *);
- 
- static inline void nfsd_destroy(struct net *net)
- {
---- a/fs/nfsd/nfssvc.c
-+++ b/fs/nfsd/nfssvc.c
-@@ -374,12 +374,11 @@ int nfsd_get_nrthreads(int n, int *nthre
- 	return 0;
+ 	return true;
  }
- 
--int nfsd_set_nrthreads(int n, int *nthreads)
-+int nfsd_set_nrthreads(int n, int *nthreads, struct net *net)
++bool __init early_set_phys_to_machine(unsigned long pfn, unsigned long mfn)
++{
++	if (unlikely(!__set_phys_to_machine(pfn, mfn)))  {
++		if (!early_alloc_p2m(pfn))
++			return false;
++
++		if (!early_alloc_p2m_middle(pfn, false /* boundary crossover OK!*/))
++			return false;
++
++		if (!__set_phys_to_machine(pfn, mfn))
++			return false;
++	}
++
++	return true;
++}
+ unsigned long __init set_phys_range_identity(unsigned long pfn_s,
+ 				      unsigned long pfn_e)
  {
- 	int i = 0;
- 	int tot = 0;
- 	int err = 0;
--	struct net *net = &init_net;
- 
- 	WARN_ON(!mutex_is_locked(&nfsd_mutex));
- 
 
 
