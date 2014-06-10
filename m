@@ -1,38 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753951AbaFJW4V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 18:56:21 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:60200 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752756AbaFJW4U (ORCPT
+	id S1753749AbaFJW55 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 18:57:57 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38530 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751538AbaFJW54 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 18:56:20 -0400
-Date: Tue, 10 Jun 2014 15:56:18 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Fabian Frederick <fabf@skynet.be>
-cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH 1/1] mm/readahead.c: remove unused file_ra_state from
- count_history_pages
-In-Reply-To: <1402424846-9652-1-git-send-email-fabf@skynet.be>
-Message-ID: <alpine.DEB.2.02.1406101556080.32203@chino.kir.corp.google.com>
-References: <1402424846-9652-1-git-send-email-fabf@skynet.be>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 10 Jun 2014 18:57:56 -0400
+Date: Tue, 10 Jun 2014 15:57:29 -0700
+From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
+Message-ID: <tip-4d048b0255e3dd4fb001c5f1f609fb67463d04d6@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, luto@amacapital.net, hpa@zytor.com,
+        mingo@kernel.org, akpm@linux-foundation.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, luto@amacapital.net,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        tglx@linutronix.de
+In-Reply-To: <20140610135051.c3c34165f73d67d218b62bd9@linux-foundation.org>
+References: <20140610135051.c3c34165f73d67d218b62bd9@linux-foundation.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/vdso] x86, vdso: Remove one final use of htole16()
+Git-Commit-ID: 4d048b0255e3dd4fb001c5f1f609fb67463d04d6
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Jun 2014, Fabian Frederick wrote:
+Commit-ID:  4d048b0255e3dd4fb001c5f1f609fb67463d04d6
+Gitweb:     http://git.kernel.org/tip/4d048b0255e3dd4fb001c5f1f609fb67463d04d6
+Author:     H. Peter Anvin <hpa@zytor.com>
+AuthorDate: Tue, 10 Jun 2014 14:25:26 -0700
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Tue, 10 Jun 2014 15:55:05 -0700
 
-> count_history_pages does only call page_cache_prev_hole in rcu_lock
-> context using address_space mapping. There's no need to have file_ra_state
-> here.
-> 
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Fengguang Wu <fengguang.wu@intel.com>
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+x86, vdso: Remove one final use of htole16()
 
-Acked-by: David Rientjes <rientjes@google.com>
+One final use of the macros from <endian.h> which are not available on
+older system.  In this case we had one sole case of *writing* a
+littleendian number, but the number is SHN_UNDEF which is the constant
+zero, so rather than dealing with the general case of littleendian
+puts here, just document that the constant is zero and be done with
+it.
+
+Reported-and-Tested-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Cc: Andy Lutomirski <luto@amacapital.net>
+Link: http://lkml.kernel.org/r/20140610135051.c3c34165f73d67d218b62bd9@linux-foundation.org
+---
+ arch/x86/vdso/vdso2c.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/x86/vdso/vdso2c.h b/arch/x86/vdso/vdso2c.h
+index 8a07463..d9f6f61 100644
+--- a/arch/x86/vdso/vdso2c.h
++++ b/arch/x86/vdso/vdso2c.h
+@@ -116,7 +116,7 @@ static void GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
+ 	hdr->e_shoff = 0;
+ 	hdr->e_shentsize = 0;
+ 	hdr->e_shnum = 0;
+-	hdr->e_shstrndx = htole16(SHN_UNDEF);
++	hdr->e_shstrndx = SHN_UNDEF; /* SHN_UNDEF == 0 */
+ 
+ 	if (!name) {
+ 		fwrite(addr, load_size, 1, outfile);
