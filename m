@@ -1,86 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754339AbaFJIFv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 04:05:51 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:55013 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751164AbaFJIFr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 04:05:47 -0400
-X-Original-SENDERIP: 10.177.220.145
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Tue, 10 Jun 2014 17:09:35 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: akpm@linux-foundation.org, cl@linux.com, rientjes@google.com,
-        penberg@kernel.org, hannes@cmpxchg.org, mhocko@suse.cz,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH -mm v2 7/8] slub: make dead memcg caches discard free
- slabs immediately
-Message-ID: <20140610080935.GG19036@js1304-P5Q-DELUXE>
-References: <cover.1402060096.git.vdavydov@parallels.com>
- <3b53266b76556dd042bbf6147207c70473572a7e.1402060096.git.vdavydov@parallels.com>
+	id S934287AbaFJIGV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 04:06:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51719 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932502AbaFJIGT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 04:06:19 -0400
+Date: Tue, 10 Jun 2014 10:03:00 +0200
+From: Borislav Petkov <bp@suse.de>
+To: Alex Thorlton <athorlton@sgi.com>
+Cc: Linux EFI <linux-efi@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Matt Fleming <matt@console-pimps.org>, Russ Anderson <rja@sgi.com>
+Subject: Re: [RFC] Best place/method to determine BIOS version?
+Message-ID: <20140610080300.GA28607@pd.tnic>
+References: <20140609200017.GD2700@sgi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <3b53266b76556dd042bbf6147207c70473572a7e.1402060096.git.vdavydov@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140609200017.GD2700@sgi.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 06, 2014 at 05:22:44PM +0400, Vladimir Davydov wrote:
-> Since a dead memcg cache is destroyed only after the last slab allocated
-> to it is freed, we must disable caching of empty slabs for such caches,
-> otherwise they will be hanging around forever.
+On Mon, Jun 09, 2014 at 03:00:17PM -0500, Alex Thorlton wrote:
+> Hi guys,
 > 
-> This patch makes SLUB discard dead memcg caches' slabs as soon as they
-> become empty. To achieve that, it disables per cpu partial lists for
-> dead caches (see put_cpu_partial) and forbids keeping empty slabs on per
-> node partial lists by setting cache's min_partial to 0 on
-> kmem_cache_shrink, which is always called on memcg offline (see
-> memcg_unregister_all_caches).
+> We recently ran into/corrected a bug in our BIOS that was exposed by the
+> recent updates to the way that the EFI code maps in memory during boot.
+> Discussion here:
 > 
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-> Thanks-to: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> ---
->  mm/slub.c |   20 ++++++++++++++++++++
->  1 file changed, 20 insertions(+)
+> http://comments.gmane.org/gmane.linux.kernel/1638074
 > 
-> diff --git a/mm/slub.c b/mm/slub.c
-> index e46d6abe8a68..1dad7e2c586a 100644
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -2015,6 +2015,8 @@ static void unfreeze_partials(struct kmem_cache *s,
->  #endif
->  }
->  
-> +static void flush_all(struct kmem_cache *s);
-> +
->  /*
->   * Put a page that was just frozen (in __slab_free) into a partial page
->   * slot if available. This is done without interrupts disabled and without
-> @@ -2064,6 +2066,21 @@ static void put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
->  
->  	} while (this_cpu_cmpxchg(s->cpu_slab->partial, oldpage, page)
->  								!= oldpage);
-> +
-> +	if (memcg_cache_dead(s)) {
-> +               bool done = false;
-> +               unsigned long flags;
-> +
-> +               local_irq_save(flags);
-> +               if (this_cpu_read(s->cpu_slab->partial) == page) {
-> +                       unfreeze_partials(s, this_cpu_ptr(s->cpu_slab));
-> +                       done = true;
-> +               }
-> +               local_irq_restore(flags);
-> +
-> +               if (!done)
-> +                       flush_all(s);
-> +	}
+> Anyways, we now need to find a way to determine the BIOS version before
+> efi_apply_memmap_quirks is called, so that we know whether or not the
+> BIOS we're running requires the quirk.  We have a function in one of our
+> EFI runtime services that provides this information, but I'm having a
+> lot of trouble calling this function early enough in boot.
+> 
+> It seems that all the necessary function pointers are available well
+> before efi_apply_memmap_quirks is called, but when trying to use
+> efi_call_phys6 to call our function,
 
-Now, slab_free() is non-preemptable so flush_all() isn't needed.
+Why not use DMI instead of EFI for getting the BIOS version? I see
+dmi_scan_machine() called earlier than efi_apply_memmap_quirks() in
+setup_arch()...?
 
-Thanks.
+-- 
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
