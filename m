@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752553AbaFJRTZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 13:19:25 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:56476 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751162AbaFJRTY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 13:19:24 -0400
-Message-ID: <53973E19.1080107@gmail.com>
-Date: Tue, 10 Jun 2014 10:19:21 -0700
-From: Dirk Brandewie <dirk.brandewie@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752610AbaFJRVz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 13:21:55 -0400
+Received: from fourcot.fr ([217.70.191.14]:43877 "EHLO olfflo.fourcot.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751135AbaFJRVx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 13:21:53 -0400
+X-Greylist: delayed 364 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 Jun 2014 13:21:52 EDT
+Message-ID: <53973D42.4010209@enst-bretagne.fr>
+Date: Tue, 10 Jun 2014 19:15:46 +0200
+From: Florent Fourcot <florent.fourcot@enst-bretagne.fr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-To: Stratos Karafotis <stratosk@semaphore.gr>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>
-CC: dirk.brandewie@gmail.com,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 7/7] cpufreq: intel_pstate: Make intel_pstate_kobject
- local
-References: <53962096.1060202@semaphore.gr>
-In-Reply-To: <53962096.1060202@semaphore.gr>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Milos Vyletel <milos.vyletel@gmail.com>, davem@davemloft.net,
+        amwang@redhat.com, netdev@vger.kernel.org
+CC: Oliver Neukum <oliver@neukum.org>, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        stephen hemminger <stephen@networkplumber.org>,
+        Pravin B Shelar <pshelar@nicira.com>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Mike Rapoport <mike.rapoport@ravellosystems.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Or Gerlitz <ogerlitz@mellanox.com>, Tom Herbert <therbert@google.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Eric Dumazet <edumazet@google.com>,
+        Paul Durrant <Paul.Durrant@citrix.com>,
+        "open list:USB CDC ETHERNET..." <linux-usb@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [patch net-next 3/5] ipv6: consider net.ipv6.conf.all sysctls
+ when making decisions
+References: <1402417153-2551-1-git-send-email-milos.vyletel@gmail.com> <1402417153-2551-4-git-send-email-milos.vyletel@gmail.com>
+In-Reply-To: <1402417153-2551-4-git-send-email-milos.vyletel@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/2014 02:01 PM, Stratos Karafotis wrote:
-> Since we never remove sysfs entry, we can make the intel_pstate_kobject
-> local.
->
-> Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
-Acked-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+Hello,
 
->   drivers/cpufreq/intel_pstate.c | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-> index fa44f0f..9533fff 100644
-> --- a/drivers/cpufreq/intel_pstate.c
-> +++ b/drivers/cpufreq/intel_pstate.c
-> @@ -387,10 +387,10 @@ static struct attribute *intel_pstate_attributes[] = {
->   static struct attribute_group intel_pstate_attr_group = {
->   	.attrs = intel_pstate_attributes,
->   };
-> -static struct kobject *intel_pstate_kobject;
->
->   static void intel_pstate_sysfs_expose_params(void)
->   {
-> +	struct kobject *intel_pstate_kobject;
->   	int rc;
->
->   	intel_pstate_kobject = kobject_create_and_add("intel_pstate",
->
+> 
+> IN6_DEV_MAXCONF
+> 	IN6_DEV_HOPLIMIT
+> 	IN6_DEV_MTU
 
+I'm a little bit surprise to set the MTU as the maximum of all/dev
+value. Since the default for "all" is IPV6_MIN_MTU, it is probably
+harmless, but it could be a little bit surprising for administrators.
+
+>  IN6_DEV_USE_TEMPADDR
+
+For this one, the default is zero, except for point-to-point and
+loopback, with -1. I didn't see any difference between 0 and -1 in the
+current kernel code, but if I missed something, it could be a little
+problem.
