@@ -1,158 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598AbaFJNyE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 09:54:04 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:49128 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752068AbaFJNyB (ORCPT
+	id S1752494AbaFJNz2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 09:55:28 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:56557 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751335AbaFJNz0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 09:54:01 -0400
-Subject: Re: [PATCH ftrace/core  2/2] ftrace, kprobes: Support IPMODIFY
- flag to find IP modify conflict
-From: Namhyung Kim <namhyung@kernel.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Josh Poimboeuf <jpoimboe@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-In-Reply-To: <20140610105014.8732.43086.stgit@kbuild-fedora.novalocal>
-References: <20140610105001.8732.93502.stgit@kbuild-fedora.novalocal>
-	 <20140610105014.8732.43086.stgit@kbuild-fedora.novalocal>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 10 Jun 2014 22:53:55 +0900
-Message-ID: <1402408435.1676.13.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Tue, 10 Jun 2014 09:55:26 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-8b-53970e4c30ed
+Message-id: <53970E3D.9080501@samsung.com>
+Date: Tue, 10 Jun 2014 15:55:09 +0200
+From: Tomasz Figa <t.figa@samsung.com>
+Organization: Samsung R&D Institute Poland
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.5.0
+MIME-version: 1.0
+To: Pankaj Dubey <pankaj.dubey@samsung.com>, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: kgene.kim@samsung.com, arnd@arndb.de,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Abraham <thomas.abraham@linaro.org>
+Subject: Re: [PATCH v3 3/6] ARM: EXYNOS: Remove soc_is_exynos4/5 from exynos.c
+References: <1399706287-13919-1-git-send-email-y@samsung.com>
+ <1399706419-13976-1-git-send-email-pankaj.dubey@samsung.com>
+ <1399706419-13976-4-git-send-email-pankaj.dubey@samsung.com>
+In-reply-to: <1399706419-13976-4-git-send-email-pankaj.dubey@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsVy+t/xq7o+fNODDTqfc1n8nXSM3aJ3wVU2
+	i02Pr7FaXN41h81ixvl9TBa3L/NaLNr6hd3i2IwljA4cHi3NPWwev39NYvS4c20Pm8fmJfUe
+	fVtWMXp83iQXwBbFZZOSmpNZllqkb5fAlbF0xnymgpVsFWtPXWRrYJzK2sXIySEhYCLx8XUv
+	lC0mceHeejYQW0hgKaPE979ANheQ/ZlR4vHC1WBFvAJaEi9e7QMrYhFQlfhypwEsziagJvG5
+	4RFYnB+oZk3TdZYuRg4OUYEIiccXhCBaBSV+TL7HAjJTRGAKo8TFnmWMIAlmgXqJ3hV/wXqF
+	Bfwkfl34yAixeDfQ4tcvmUASnAKeEm39C9kgGnQk9rdOg7LlJTavecs8gVFwFpIls5CUzUJS
+	toCReRWjaGppckFxUnqukV5xYm5xaV66XnJ+7iZGSDx83cG49JjVIUYBDkYlHl4D/2nBQqyJ
+	ZcWVuYcYJTiYlUR42/4ChXhTEiurUovy44tKc1KLDzEycXBKNTBKzFbl9ptt6WPL9vjtg93H
+	36jOM1h0ddXVX5tXfF/46v+Oows8z2/5KLut6+MLPqVbJV+363TdfuRyem+8WE+baTNTYOvO
+	U3wsW06/kWMtNVsQLMef+nH93T9fJTZpG38v5i8+N7W+5ZftnGctq/fbVh5ovnpi0bfvMS0s
+	a+8fvS6+MG69s5j2bCWW4oxEQy3mouJEAKI5fU1lAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Masami,
-
-2014-06-10 (화), 10:50 +0000, Masami Hiramatsu:
-> Introduce FTRACE_OPS_FL_IPMODIFY to avoid conflict among
-> ftrace users who may modify regs->ip to change the execution
-> path. This also adds the flag to kprobe_ftrace_ops, since
-> ftrace-based kprobes already modifies regs->ip. Thus, if
-> another user modifies the regs->ip on the same function entry,
-> one of them will be broken. So both should add IPMODIFY flag
-> and make sure that ftrace_set_filter_ip() succeeds.
+On 10.05.2014 09:20, Pankaj Dubey wrote:
+> This patch removes usage of soc_is_exynos4/5 from exynos.c.
+> For this we need to separate machine descriptors for exynos4
+> and exynos5. While doing this patch does some consolidation also.
 > 
-> Note that currently conflicts of IPMODIFY are detected on the
-> filter hash. It does NOT care about the notrace hash. This means
-> that if you set filter hash all functions and notrace(mask)
-> some of them, the IPMODIFY flag will be applied to all
-> functions.
+> CC: Russell King <linux@arm.linux.org.uk>
+> CC: Thomas Abraham <thomas.abraham@linaro.org>
+> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+> ---
+>  arch/arm/mach-exynos/exynos.c            |   52 +++++++++++++++++++-----------
+>  arch/arm/plat-samsung/include/plat/cpu.h |    3 --
+>  2 files changed, 33 insertions(+), 22 deletions(-)
 > 
 
-[SNIP]
-> +static int __ftrace_hash_update_ipmodify(struct ftrace_ops *ops,
-> +					 struct ftrace_hash *old_hash,
-> +					 struct ftrace_hash *new_hash)
-> +{
-> +	struct ftrace_page *pg;
-> +	struct dyn_ftrace *rec, *end = NULL;
-> +	int in_old, in_new;
-> +
-> +	/* Only update if the ops has been registered */
-> +	if (!(ops->flags & FTRACE_OPS_FL_ENABLED))
-> +		return 0;
-> +
-> +	if (!(ops->flags & FTRACE_OPS_FL_SAVE_REGS) ||
-> +	    !(ops->flags & FTRACE_OPS_FL_IPMODIFY))
-> +		return 0;
-> +
-> +	/* Update rec->flags */
-> +	do_for_each_ftrace_rec(pg, rec) {
-> +		/* We need to update only differences of filter_hash */
-> +		in_old = !old_hash || ftrace_lookup_ip(old_hash, rec->ip);
-> +		in_new = !new_hash || ftrace_lookup_ip(new_hash, rec->ip);
+I don't think this is needed. All those static mappings should just go
+away, which will also eliminate the need to have separate machine
+descriptor or soc_is_exynos{4,5}() macros.
 
-Why not use ftrace_hash_empty() here instead of checking NULL?  Also
-return value of ftrace_lookup_ip is not boolean..  maybe you need to
-add !! or convert type of the in_{old,new} to bool.
-
-
-> +		if (in_old == in_new)
-> +			continue;
-> +
-> +		if (in_new) {
-> +			/* New entries must ensure no others are using it */
-> +			if (rec->flags & FTRACE_FL_IPMODIFY)
-> +				goto rollback;
-> +			rec->flags |= FTRACE_FL_IPMODIFY;
-> +		} else /* Removed entry */
-> +			rec->flags &= ~FTRACE_FL_IPMODIFY;
-> +	} while_for_each_ftrace_rec();
-> +
-> +	return 0;
-> +
-> +rollback:
-> +	end = rec;
-> +
-> +	/* Roll back what we did above */
-> +	do_for_each_ftrace_rec(pg, rec) {
-> +		if (rec == end)
-> +			goto err_out;
-> +
-> +		in_old = !old_hash || ftrace_lookup_ip(old_hash, rec->ip);
-> +		in_new = !new_hash || ftrace_lookup_ip(new_hash, rec->ip);
-> +		if (in_old == in_new)
-> +			continue;
-> +
-> +		if (in_new)
-> +			rec->flags &= ~FTRACE_FL_IPMODIFY;
-> +		else
-> +			rec->flags |= FTRACE_FL_IPMODIFY;
-> +	} while_for_each_ftrace_rec();
-> +
-> +err_out:
-> +	return -EBUSY;
-> +}
-> +
-> +static int ftrace_hash_ipmodify_enable(struct ftrace_ops *ops)
-> +{
-> +	struct ftrace_hash *hash = ops->filter_hash;
-> +
-> +	if (ftrace_hash_empty(hash))
-> +		hash = NULL;
-> +
-> +	return __ftrace_hash_update_ipmodify(ops, EMPTY_HASH, hash);
-> +}
-
-Please see above comment.  You can pass an empty hash as is, or pass
-NULL as second arg.  The same goes to below...
-
-Thanks,
-Namhyung
-
-
-> +
-> +/* Disabling always succeeds */
-> +static void ftrace_hash_ipmodify_disable(struct ftrace_ops *ops)
-> +{
-> +	struct ftrace_hash *hash = ops->filter_hash;
-> +
-> +	if (ftrace_hash_empty(hash))
-> +		hash = NULL;
-> +
-> +	__ftrace_hash_update_ipmodify(ops, hash, EMPTY_HASH);
-> +}
-> +
-> +static int ftrace_hash_ipmodify_update(struct ftrace_ops *ops,
-> +				       struct ftrace_hash *new_hash)
-> +{
-> +	struct ftrace_hash *old_hash = ops->filter_hash;
-> +
-> +	if (ftrace_hash_empty(old_hash))
-> +		old_hash = NULL;
-> +
-> +	if (ftrace_hash_empty(new_hash))
-> +		new_hash = NULL;
-> +
-> +	return __ftrace_hash_update_ipmodify(ops, old_hash, new_hash);
-> +}
-> +
-
-
+Best regards,
+Tomasz
