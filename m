@@ -1,94 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936074AbaFJAeE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:34:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58819 "EHLO
+	id S934521AbaFJAWn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:22:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58576 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934447AbaFJAeB (ORCPT
+	with ESMTP id S934447AbaFJAWk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 20:34:01 -0400
-Date: Mon, 9 Jun 2014 17:37:47 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Eric Paris <eparis@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-audit@redhat.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [PATCH 1/2] auditsc: audit_krule mask accesses need bounds
- checking
-Message-ID: <20140610003747.GA21233@kroah.com>
-References: <1401332999-15167-1-git-send-email-eparis@redhat.com>
- <20140609223057.GB18475@kroah.com>
- <CALCETrUD75vSwJUjFuxGCrZ_7DJhCc1KW2v_ndF6EHJ31fUMBg@mail.gmail.com>
- <20140609224645.GA8113@kroah.com>
- <CALCETrWb9HsaUWaQA+1ga6sH2_yUT=NEg-oKx=zFUQ5AZUqPaA@mail.gmail.com>
- <20140610003234.GB20728@kroah.com>
- <CALCETrXpUZsUOoFgG4GRvStjLkWCn5=pNDFPTm-t5g=8HRaDhw@mail.gmail.com>
+	Mon, 9 Jun 2014 20:22:40 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        "J. Bruce Fields" <bfields@redhat.com>,
+        Weng Meiling <wengmeiling.weng@huawei.com>
+Subject: [PATCH 3.4 61/88] nfsd: containerize NFSd filesystem
+Date: Mon,  9 Jun 2014 17:25:11 -0700
+Message-Id: <20140610002426.521041812@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
+References: <20140610002424.500996570@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrXpUZsUOoFgG4GRvStjLkWCn5=pNDFPTm-t5g=8HRaDhw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 09, 2014 at 05:30:19PM -0700, Andy Lutomirski wrote:
-> On Mon, Jun 9, 2014 at 5:32 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Mon, Jun 09, 2014 at 03:55:20PM -0700, Andy Lutomirski wrote:
-> >> On Mon, Jun 9, 2014 at 3:46 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> >> > On Mon, Jun 09, 2014 at 03:35:02PM -0700, Andy Lutomirski wrote:
-> >> >> On Mon, Jun 9, 2014 at 3:30 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> >> >> > On Wed, May 28, 2014 at 11:09:58PM -0400, Eric Paris wrote:
-> >> >> >> From: Andy Lutomirski <luto@amacapital.net>
-> >> >> >>
-> >> >> >> Fixes an easy DoS and possible information disclosure.
-> >> >> >>
-> >> >> >> This does nothing about the broken state of x32 auditing.
-> >> >> >>
-> >> >> >> eparis: If the admin has enabled auditd and has specifically loaded audit
-> >> >> >> rules.  This bug has been around since before git.  Wow...
-> >> >> >>
-> >> >> >> Cc: stable@vger.kernel.org
-> >> >> >> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> >> >> >> Signed-off-by: Eric Paris <eparis@redhat.com>
-> >> >> >> ---
-> >> >> >>  kernel/auditsc.c | 27 ++++++++++++++++++---------
-> >> >> >>  1 file changed, 18 insertions(+), 9 deletions(-)
-> >> >> >
-> >> >> > Did this patch get dropped somewhere?  Isn't it a valid bugfix, or did I
-> >> >> > miss a later conversation about this?
-> >> >>
-> >> >> Hmm.  It seems that it didn't make it into Linus' tree.  Crap.
-> >> >>
-> >> >> IMO we need some kind of real tracking system for issues reported to
-> >> >> security@.
-> >> >
-> >> > That seems to be my mbox at times :)
-> >> >
-> >> > But yes, having something "real" might be good if the load gets higher,
-> >> > right now it's so low that my "sweep pending security patches" task
-> >> > usually catches anything pending, which is rare.
-> >> >
-> >>
-> >> There are currently at least two issues that I reported that are stuck
-> >> in limbo: this one and the (not-yet-public) vfs thing.
-> >
-> > That was next on my list to poke people about...
-> >
-> >> And there's the CVE-2014-0181 regression fix that almost got
-> >> forgotten, but that isn't really a security issue.
-> >
-> > What is that, where was that reported?
-> 
-> commit 2d7a85f4b06e9c27ff629f07a524c48074f07f81
-> Author: Eric W. Biederman <ebiederm@xmission.com>
-> Date:   Fri May 30 11:04:00 2014 -0700
-> 
->     netlink: Only check file credentials for implicit destinations
-> 
-> 
-> The security issue got fixed quickly, but the fix turned out to be problematic.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Ah, thanks, I rely on Dave to send me networking stable patches, I'm
-sure he's on this...
+------------------
+
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+
+note: this backport is just for the null pointer problem when
+start nfsd in none init netns. The nfsd is still not containerized.
+
+commit 11f779421a39b86da8a523d97e5fd3477878d44f upstream.
+
+This patch makes NFSD file system superblock to be created per net.
+This makes possible to get proper network namespace from superblock instead of
+using hard-coded "init_net".
+
+Note: NFSd fs super-block holds network namespace. This garantees, that
+network namespace won't disappear from underneath of it.
+This, obviously, means, that in case of kill of a container's "init" (which is not a mount
+namespace, but network namespace creator) netowrk namespace won't be
+destroyed.
+
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+[wengmeiling: backport to 3.4:
+ - export cache not per netns
+ - NFSD service structure not per netns]
+Signed-off-by: Weng Meiling <wengmeiling.weng@huawei.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ fs/nfsd/nfsctl.c |   30 +++++++++++++++++++++++-------
+ fs/nfsd/nfssvc.c |    2 +-
+ 2 files changed, 24 insertions(+), 8 deletions(-)
+
+--- a/fs/nfsd/nfsctl.c
++++ b/fs/nfsd/nfsctl.c
+@@ -213,6 +213,7 @@ static ssize_t write_unlock_ip(struct fi
+ 	struct sockaddr *sap = (struct sockaddr *)&address;
+ 	size_t salen = sizeof(address);
+ 	char *fo_path;
++	struct net *net = file->f_dentry->d_sb->s_fs_info;
+ 
+ 	/* sanity check */
+ 	if (size == 0)
+@@ -225,7 +226,7 @@ static ssize_t write_unlock_ip(struct fi
+ 	if (qword_get(&buf, fo_path, size) < 0)
+ 		return -EINVAL;
+ 
+-	if (rpc_pton(&init_net, fo_path, size, sap, salen) == 0)
++	if (rpc_pton(net, fo_path, size, sap, salen) == 0)
+ 		return -EINVAL;
+ 
+ 	return nlmsvc_unlock_all_by_ip(sap);
+@@ -389,7 +390,7 @@ static ssize_t write_threads(struct file
+ {
+ 	char *mesg = buf;
+ 	int rv;
+-	struct net *net = &init_net;
++	struct net *net = file->f_dentry->d_sb->s_fs_info;
+ 
+ 	if (size > 0) {
+ 		int newthreads;
+@@ -440,7 +441,7 @@ static ssize_t write_pool_threads(struct
+ 	int len;
+ 	int npools;
+ 	int *nthreads;
+-	struct net *net = &init_net;
++	struct net *net = file->f_dentry->d_sb->s_fs_info;
+ 
+ 	mutex_lock(&nfsd_mutex);
+ 	npools = nfsd_nrpools();
+@@ -857,7 +858,7 @@ static ssize_t __write_ports(struct file
+ static ssize_t write_ports(struct file *file, char *buf, size_t size)
+ {
+ 	ssize_t rv;
+-	struct net *net = &init_net;
++	struct net *net = file->f_dentry->d_sb->s_fs_info;
+ 
+ 	mutex_lock(&nfsd_mutex);
+ 	rv = __write_ports(file, buf, size, net);
+@@ -1095,20 +1096,35 @@ static int nfsd_fill_super(struct super_
+ #endif
+ 		/* last one */ {""}
+ 	};
+-	return simple_fill_super(sb, 0x6e667364, nfsd_files);
++	struct net *net = data;
++	int ret;
++
++	ret = simple_fill_super(sb, 0x6e667364, nfsd_files);
++	if (ret)
++		return ret;
++	sb->s_fs_info = get_net(net);
++	return 0;
+ }
+ 
+ static struct dentry *nfsd_mount(struct file_system_type *fs_type,
+ 	int flags, const char *dev_name, void *data)
+ {
+-	return mount_single(fs_type, flags, data, nfsd_fill_super);
++	return mount_ns(fs_type, flags, current->nsproxy->net_ns, nfsd_fill_super);
++}
++
++static void nfsd_umount(struct super_block *sb)
++{
++	struct net *net = sb->s_fs_info;
++
++	kill_litter_super(sb);
++	put_net(net);
+ }
+ 
+ static struct file_system_type nfsd_fs_type = {
+ 	.owner		= THIS_MODULE,
+ 	.name		= "nfsd",
+ 	.mount		= nfsd_mount,
+-	.kill_sb	= kill_litter_super,
++	.kill_sb	= nfsd_umount,
+ };
+ 
+ #ifdef CONFIG_PROC_FS
+--- a/fs/nfsd/nfssvc.c
++++ b/fs/nfsd/nfssvc.c
+@@ -670,7 +670,7 @@ int nfsd_pool_stats_open(struct inode *i
+ int nfsd_pool_stats_release(struct inode *inode, struct file *file)
+ {
+ 	int ret = seq_release(inode, file);
+-	struct net *net = &init_net;
++	struct net *net = inode->i_sb->s_fs_info;
+ 
+ 	mutex_lock(&nfsd_mutex);
+ 	/* this function really, really should have been called svc_put() */
+
+
