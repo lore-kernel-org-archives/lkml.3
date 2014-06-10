@@ -1,180 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936082AbaFJA1N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:27:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58620 "EHLO
+	id S934882AbaFJA15 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:27:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58788 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934572AbaFJAWu (ORCPT
+	with ESMTP id S932422AbaFJA1y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 20:22:50 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Daniel Kiper <daniel.kiper@oracle.com>
-Subject: [PATCH 3.4 83/88] xen/setup: Combine the two hypercall functions - since they are quite similar.
-Date: Mon,  9 Jun 2014 17:25:33 -0700
-Message-Id: <20140610002427.234369132@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
-References: <20140610002424.500996570@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Mon, 9 Jun 2014 20:27:54 -0400
+Date: Mon, 9 Jun 2014 17:31:42 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Andy Lutomirski <luto@amacapital.net>, Eric Paris <eparis@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-audit@redhat.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: [PATCH 1/2] auditsc: audit_krule mask accesses need bounds
+ checking
+Message-ID: <20140610003142.GA20728@kroah.com>
+References: <1401332999-15167-1-git-send-email-eparis@redhat.com>
+ <20140609223057.GB18475@kroah.com>
+ <CALCETrUD75vSwJUjFuxGCrZ_7DJhCc1KW2v_ndF6EHJ31fUMBg@mail.gmail.com>
+ <20140609224645.GA8113@kroah.com>
+ <CA+5PVA6dHu-0qi1fx5Vq4QynJDJ=dG0feJjwoCHA3GaUSHp-FQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+5PVA6dHu-0qi1fx5Vq4QynJDJ=dG0feJjwoCHA3GaUSHp-FQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Mon, Jun 09, 2014 at 07:35:57PM -0400, Josh Boyer wrote:
+> On Mon, Jun 9, 2014 at 6:46 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > On Mon, Jun 09, 2014 at 03:35:02PM -0700, Andy Lutomirski wrote:
+> >> On Mon, Jun 9, 2014 at 3:30 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> >> > On Wed, May 28, 2014 at 11:09:58PM -0400, Eric Paris wrote:
+> >> >> From: Andy Lutomirski <luto@amacapital.net>
+> >> >>
+> >> >> Fixes an easy DoS and possible information disclosure.
+> >> >>
+> >> >> This does nothing about the broken state of x32 auditing.
+> >> >>
+> >> >> eparis: If the admin has enabled auditd and has specifically loaded audit
+> >> >> rules.  This bug has been around since before git.  Wow...
+> >> >>
+> >> >> Cc: stable@vger.kernel.org
+> >> >> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> >> >> Signed-off-by: Eric Paris <eparis@redhat.com>
+> >> >> ---
+> >> >>  kernel/auditsc.c | 27 ++++++++++++++++++---------
+> >> >>  1 file changed, 18 insertions(+), 9 deletions(-)
+> >> >
+> >> > Did this patch get dropped somewhere?  Isn't it a valid bugfix, or did I
+> >> > miss a later conversation about this?
+> >>
+> >> Hmm.  It seems that it didn't make it into Linus' tree.  Crap.
+> >>
+> >> IMO we need some kind of real tracking system for issues reported to
+> >> security@.
+> >
+> > That seems to be my mbox at times :)
+> >
+> > But yes, having something "real" might be good if the load gets higher,
+> > right now it's so low that my "sweep pending security patches" task
+> > usually catches anything pending, which is rare.
+> 
+> How does one get added to the security@ alias?  We've been carrying
+> this patch in Fedora for a bit now.  I'd be happy to help track things
+> given we get distro security bug reports and such.
 
-------------------
+Just ask on the security@ alias to be added and we can take it from
+there.
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+thanks,
 
-commit 96dc08b35c4af8cb5810450602590706f2593a5f upstream.
-
-They use the same set of arguments, so it is just the matter
-of using the proper hypercall.
-
-Acked-by: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
-Tested-by: Daniel Kiper <daniel.kiper@oracle.com>
-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-
----
- arch/x86/xen/setup.c |   80 +++++++++++++++++++--------------------------------
- 1 file changed, 30 insertions(+), 50 deletions(-)
-
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -91,8 +91,8 @@ static void __init xen_add_extra_mem(u64
- 	}
- }
- 
--static unsigned long __init xen_release_chunk(unsigned long start,
--					      unsigned long end)
-+static unsigned long __init xen_do_chunk(unsigned long start,
-+					 unsigned long end, bool release)
- {
- 	struct xen_memory_reservation reservation = {
- 		.address_bits = 0,
-@@ -103,59 +103,36 @@ static unsigned long __init xen_release_
- 	unsigned long pfn;
- 	int ret;
- 
--	for(pfn = start; pfn < end; pfn++) {
--		unsigned long mfn = pfn_to_mfn(pfn);
--
--		/* Make sure pfn exists to start with */
--		if (mfn == INVALID_P2M_ENTRY || mfn_to_pfn(mfn) != pfn)
--			continue;
--
--		set_xen_guest_handle(reservation.extent_start, &mfn);
--		reservation.nr_extents = 1;
--
--		ret = HYPERVISOR_memory_op(XENMEM_decrease_reservation,
--					   &reservation);
--		WARN(ret != 1, "Failed to release pfn %lx err=%d\n", pfn, ret);
--		if (ret == 1) {
--			__set_phys_to_machine(pfn, INVALID_P2M_ENTRY);
--			len++;
--		}
--	}
--	printk(KERN_INFO "Freeing  %lx-%lx pfn range: %lu pages freed\n",
--	       start, end, len);
--
--	return len;
--}
--static unsigned long __init xen_populate_physmap(unsigned long start,
--						 unsigned long end)
--{
--	struct xen_memory_reservation reservation = {
--		.address_bits = 0,
--		.extent_order = 0,
--		.domid        = DOMID_SELF
--	};
--	unsigned long len = 0;
--	int ret;
--
- 	for (pfn = start; pfn < end; pfn++) {
- 		unsigned long frame;
-+		unsigned long mfn = pfn_to_mfn(pfn);
- 
--		/* Make sure pfn does not exists to start with */
--		if (pfn_to_mfn(pfn) != INVALID_P2M_ENTRY)
--			continue;
--
--		frame = pfn;
-+		if (release) {
-+			/* Make sure pfn exists to start with */
-+			if (mfn == INVALID_P2M_ENTRY || mfn_to_pfn(mfn) != pfn)
-+				continue;
-+			frame = mfn;
-+		} else {
-+			if (mfn != INVALID_P2M_ENTRY)
-+				continue;
-+			frame = pfn;
-+		}
- 		set_xen_guest_handle(reservation.extent_start, &frame);
- 		reservation.nr_extents = 1;
- 
--		ret = HYPERVISOR_memory_op(XENMEM_populate_physmap, &reservation);
--		WARN(ret != 1, "Failed to populate pfn %lx err=%d\n", pfn, ret);
-+		ret = HYPERVISOR_memory_op(release ? XENMEM_decrease_reservation : XENMEM_populate_physmap,
-+					   &reservation);
-+		WARN(ret != 1, "Failed to %s pfn %lx err=%d\n",
-+		     release ? "release" : "populate", pfn, ret);
-+
- 		if (ret == 1) {
--			if (!early_set_phys_to_machine(pfn, frame)) {
-+			if (!early_set_phys_to_machine(pfn, release ? INVALID_P2M_ENTRY : frame)) {
-+				if (release)
-+					break;
- 				set_xen_guest_handle(reservation.extent_start, &frame);
- 				reservation.nr_extents = 1;
- 				ret = HYPERVISOR_memory_op(XENMEM_decrease_reservation,
--							&reservation);
-+							   &reservation);
- 				break;
- 			}
- 			len++;
-@@ -163,8 +140,11 @@ static unsigned long __init xen_populate
- 			break;
- 	}
- 	if (len)
--		printk(KERN_INFO "Populated %lx-%lx pfn range: %lu pages added\n",
--		       start, end, len);
-+		printk(KERN_INFO "%s %lx-%lx pfn range: %lu pages %s\n",
-+		       release ? "Freeing" : "Populating",
-+		       start, end, len,
-+		       release ? "freed" : "added");
-+
- 	return len;
- }
- static unsigned long __init xen_populate_chunk(
-@@ -218,7 +198,7 @@ static unsigned long __init xen_populate
- 		if (credits > capacity)
- 			credits = capacity;
- 
--		pfns = xen_populate_physmap(dest_pfn, dest_pfn + credits);
-+		pfns = xen_do_chunk(dest_pfn, dest_pfn + credits, false);
- 		done += pfns;
- 		credits_left -= pfns;
- 		*last_pfn = (dest_pfn + pfns);
-@@ -256,8 +236,8 @@ static unsigned long __init xen_set_iden
- 
- 			if (start_pfn < end_pfn) {
- 				if (start_pfn < nr_pages)
--					released += xen_release_chunk(
--						start_pfn, min(end_pfn, nr_pages));
-+					released += xen_do_chunk(
-+						start_pfn, min(end_pfn, nr_pages), true);
- 
- 				identity += set_phys_range_identity(
- 					start_pfn, end_pfn);
-
-
+greg k-h
