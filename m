@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934474AbaFJAWj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:22:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58537 "EHLO
+	id S934734AbaFJAXI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:23:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58678 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934447AbaFJAWi (ORCPT
+	with ESMTP id S934682AbaFJAWw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 20:22:38 -0400
+	Mon, 9 Jun 2014 20:22:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Zhenzhong Duan <zhenzhong.duan@oracle.com>,
         Daniel Kiper <daniel.kiper@oracle.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 3.4 81/88] xen/p2m: An early bootup variant of set_phys_to_machine
-Date: Mon,  9 Jun 2014 17:25:31 -0700
-Message-Id: <20140610002427.162653560@linuxfoundation.org>
+Subject: [PATCH 3.4 86/88] xen: populate correct number of pages when across mem boundary (v2)
+Date: Mon,  9 Jun 2014 17:25:36 -0700
+Message-Id: <20140610002427.329153953@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
 References: <20140610002424.500996570@linuxfoundation.org>
@@ -29,58 +30,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: "zhenzhong.duan" <zhenzhong.duan@oracle.com>
 
-commit 940713bb2ce3033f468a220094a07250a2f69bdd upstream.
+commit c3d93f880197953f86ab90d9da4744e926b38e33 upstream.
 
-During early bootup we can't use alloc_page, so to allocate
-leaf pages in the P2M we need to use extend_brk. For that
-we are utilizing the early_alloc_p2m and early_alloc_p2m_middle
-functions to do the job for us. This function follows the
-same logic as set_phys_to_machine.
+When populate pages across a mem boundary at bootup, the page count
+populated isn't correct. This is due to mem populated to non-mem
+region and ignored.
 
+Pfn range is also wrongly aligned when mem boundary isn't page aligned.
+
+For a dom0 booted with dom_mem=3368952K(0xcd9ff000-4k) dmesg diff is:
+ [    0.000000] Freeing 9e-100 pfn range: 98 pages freed
+ [    0.000000] 1-1 mapping on 9e->100
+ [    0.000000] 1-1 mapping on cd9ff->100000
+ [    0.000000] Released 98 pages of unused memory
+ [    0.000000] Set 206435 page(s) to 1-1 mapping
+-[    0.000000] Populating cd9fe-cda00 pfn range: 1 pages added
++[    0.000000] Populating cd9fe-cd9ff pfn range: 1 pages added
++[    0.000000] Populating 100000-100061 pfn range: 97 pages added
+ [    0.000000] BIOS-provided physical RAM map:
+ [    0.000000] Xen: 0000000000000000 - 000000000009e000 (usable)
+ [    0.000000] Xen: 00000000000a0000 - 0000000000100000 (reserved)
+ [    0.000000] Xen: 0000000000100000 - 00000000cd9ff000 (usable)
+ [    0.000000] Xen: 00000000cd9ffc00 - 00000000cda53c00 (ACPI NVS)
+...
+ [    0.000000] Xen: 0000000100000000 - 0000000100061000 (usable)
+ [    0.000000] Xen: 0000000100061000 - 000000012c000000 (unusable)
+...
+ [    0.000000] MEMBLOCK configuration:
+...
+-[    0.000000]  reserved[0x4]       [0x000000cd9ff000-0x000000cd9ffbff], 0xc00 bytes
+-[    0.000000]  reserved[0x5]       [0x00000100000000-0x00000100060fff], 0x61000 bytes
+
+Related xen memory layout:
+(XEN) Xen-e820 RAM map:
+(XEN)  0000000000000000 - 000000000009ec00 (usable)
+(XEN)  00000000000f0000 - 0000000000100000 (reserved)
+(XEN)  0000000000100000 - 00000000cd9ffc00 (usable)
+
+Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+[v2: If xen_do_chunk fail(populate), abort this chunk and any others]
+Suggested by David, thanks.
 Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/xen/page.h |    1 +
- arch/x86/xen/p2m.c              |   15 +++++++++++++++
- 2 files changed, 16 insertions(+)
+ arch/x86/xen/setup.c |   23 +++++++++--------------
+ 1 file changed, 9 insertions(+), 14 deletions(-)
 
---- a/arch/x86/include/asm/xen/page.h
-+++ b/arch/x86/include/asm/xen/page.h
-@@ -44,6 +44,7 @@ extern unsigned long  machine_to_phys_nr
+--- a/arch/x86/xen/setup.c
++++ b/arch/x86/xen/setup.c
+@@ -165,25 +165,24 @@ static unsigned long __init xen_populate
+ 	unsigned long dest_pfn;
  
- extern unsigned long get_phys_to_machine(unsigned long pfn);
- extern bool set_phys_to_machine(unsigned long pfn, unsigned long mfn);
-+extern bool __init early_set_phys_to_machine(unsigned long pfn, unsigned long mfn);
- extern bool __set_phys_to_machine(unsigned long pfn, unsigned long mfn);
- extern unsigned long set_phys_range_identity(unsigned long pfn_s,
- 					     unsigned long pfn_e);
---- a/arch/x86/xen/p2m.c
-+++ b/arch/x86/xen/p2m.c
-@@ -570,6 +570,21 @@ static bool __init early_alloc_p2m(unsig
+ 	for (i = 0, entry = list; i < map_size; i++, entry++) {
+-		unsigned long credits = credits_left;
+ 		unsigned long s_pfn;
+ 		unsigned long e_pfn;
+ 		unsigned long pfns;
+ 		long capacity;
+ 
+-		if (credits <= 0)
++		if (credits_left <= 0)
+ 			break;
+ 
+ 		if (entry->type != E820_RAM)
+ 			continue;
+ 
+-		e_pfn = PFN_UP(entry->addr + entry->size);
++		e_pfn = PFN_DOWN(entry->addr + entry->size);
+ 
+ 		/* We only care about E820 after the xen_start_info->nr_pages */
+ 		if (e_pfn <= max_pfn)
+ 			continue;
+ 
+-		s_pfn = PFN_DOWN(entry->addr);
++		s_pfn = PFN_UP(entry->addr);
+ 		/* If the E820 falls within the nr_pages, we want to start
+ 		 * at the nr_pages PFN.
+ 		 * If that would mean going past the E820 entry, skip it
+@@ -192,23 +191,19 @@ static unsigned long __init xen_populate
+ 			capacity = e_pfn - max_pfn;
+ 			dest_pfn = max_pfn;
+ 		} else {
+-			/* last_pfn MUST be within E820_RAM regions */
+-			if (*last_pfn && e_pfn >= *last_pfn)
+-				s_pfn = *last_pfn;
+ 			capacity = e_pfn - s_pfn;
+ 			dest_pfn = s_pfn;
+ 		}
+-		/* If we had filled this E820_RAM entry, go to the next one. */
+-		if (capacity <= 0)
+-			continue;
+ 
+-		if (credits > capacity)
+-			credits = capacity;
++		if (credits_left < capacity)
++			capacity = credits_left;
+ 
+-		pfns = xen_do_chunk(dest_pfn, dest_pfn + credits, false);
++		pfns = xen_do_chunk(dest_pfn, dest_pfn + capacity, false);
+ 		done += pfns;
+-		credits_left -= pfns;
+ 		*last_pfn = (dest_pfn + pfns);
++		if (pfns < capacity)
++			break;
++		credits_left -= pfns;
  	}
- 	return true;
+ 	return done;
  }
-+bool __init early_set_phys_to_machine(unsigned long pfn, unsigned long mfn)
-+{
-+	if (unlikely(!__set_phys_to_machine(pfn, mfn)))  {
-+		if (!early_alloc_p2m(pfn))
-+			return false;
-+
-+		if (!early_alloc_p2m_middle(pfn, false /* boundary crossover OK!*/))
-+			return false;
-+
-+		if (!__set_phys_to_machine(pfn, mfn))
-+			return false;
-+	}
-+
-+	return true;
-+}
- unsigned long __init set_phys_range_identity(unsigned long pfn_s,
- 				      unsigned long pfn_e)
- {
 
 
