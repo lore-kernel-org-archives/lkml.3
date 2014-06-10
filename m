@@ -1,70 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752821AbaFJSQo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 14:16:44 -0400
-Received: from mail.kernel.org ([198.145.19.201]:35487 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752607AbaFJSQn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 14:16:43 -0400
-Date: Tue, 10 Jun 2014 15:16:36 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Kyle McMartin <kyle@mcmartin.ca>
-Subject: perf tools: MULTILIB install issues. was Re: [PATCH 1/2] perf tools:
- Emit more precise message for missing glibc static library
-Message-ID: <20140610181636.GA2794@kernel.org>
-References: <1402063909-13859-1-git-send-email-acme@kernel.org>
- <1402063909-13859-2-git-send-email-acme@kernel.org>
- <20140610155031.GS177152@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140610155031.GS177152@redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752040AbaFJSUP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 14:20:15 -0400
+Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:50482 "EHLO
+	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751003AbaFJSUO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 14:20:14 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AsQNAOZLl1NbskA7/2dsb2JhbABZgw2sFAEBBpkSgQgXdYRgI4EaN4hGAcx2F4VWiHMdhCsEj12KR4soiB2DPjs
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] BLOCK/BLK-CGROUP: add __init to blkcg_policy_register
+Date: Tue, 10 Jun 2014 20:18:36 +0200
+Message-Id: <1402424316-8933-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Jun 10, 2014 at 11:50:31AM -0400, Don Zickus escreveu:
-> I am hijacking your thread for another Makefile problem.  It seems like
-> you were doing some cleanups here, so I wanted to throw another problem at
-> you. :-)
+blkcg_policy_register is only called by
+__init functions:
 
-Yeah, I skimmed that discussion about our home grown autoconf
-replacement 8-)
+__init cfq_init
+__init throtl_init
+
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ block/blk-cgroup.c | 2 +-
+ block/blk-cgroup.h | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index 9f5bce3..069bc20 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -1093,7 +1093,7 @@ EXPORT_SYMBOL_GPL(blkcg_deactivate_policy);
+  * Register @pol with blkcg core.  Might sleep and @pol may be modified on
+  * successful registration.  Returns 0 on success and -errno on failure.
+  */
+-int blkcg_policy_register(struct blkcg_policy *pol)
++int __init blkcg_policy_register(struct blkcg_policy *pol)
+ {
+ 	int i, ret;
  
-> It seems the fedora-kernel guys found a multilib packaging problem and
-> posted a patch to clean it up.  It is from Kyle McMartin
-> (copy-n-pasted).
+diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
+index d692b29..cbb7f94 100644
+--- a/block/blk-cgroup.h
++++ b/block/blk-cgroup.h
+@@ -145,7 +145,7 @@ void blkcg_drain_queue(struct request_queue *q);
+ void blkcg_exit_queue(struct request_queue *q);
  
-> +++ b/tools/perf/config/Makefile
-> @@ -621,8 +621,12 @@ endif
->  ifeq ($(IS_X86_64),1)
->  lib = lib64
->  else
-> +ifdef MULTILIBDIR
-> +lib = $(MULTILIBDIR)
-> +else
->  lib = lib
->  endif
-> +endif
->  libdir = $(prefix)/$(lib)
- 
->  # Shell quote (do not use $(call) to accommodate ancient setups);
+ /* Blkio controller policy registration */
+-int blkcg_policy_register(struct blkcg_policy *pol);
++int __init blkcg_policy_register(struct blkcg_policy *pol);
+ void blkcg_policy_unregister(struct blkcg_policy *pol);
+ int blkcg_activate_policy(struct request_queue *q,
+ 			  const struct blkcg_policy *pol);
+@@ -580,7 +580,7 @@ static inline struct blkcg_gq *blkg_lookup(struct blkcg *blkcg, void *key) { ret
+ static inline int blkcg_init_queue(struct request_queue *q) { return 0; }
+ static inline void blkcg_drain_queue(struct request_queue *q) { }
+ static inline void blkcg_exit_queue(struct request_queue *q) { }
+-static inline int blkcg_policy_register(struct blkcg_policy *pol) { return 0; }
++static inline int __init blkcg_policy_register(struct blkcg_policy *pol) { return 0; }
+ static inline void blkcg_policy_unregister(struct blkcg_policy *pol) { }
+ static inline int blkcg_activate_policy(struct request_queue *q,
+ 					const struct blkcg_policy *pol) { return 0; }
+-- 
+1.8.4.5
 
-> Not sure if this is the right way to do this or if you had a better
-> solution.
-
-I'm unsure as well, but it looks like something that suits the needs of
-distros, right? Anyone?
-
-- Arnaldo
