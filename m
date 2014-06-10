@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934322AbaFJAWP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:22:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58245 "EHLO
+	id S934296AbaFJAWO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:22:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58239 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934016AbaFJAWH (ORCPT
+	with ESMTP id S1754347AbaFJAWI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 20:22:07 -0400
+	Mon, 9 Jun 2014 20:22:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Graf <agraf@suse.de>, Rusty Russell <rusty@rustcorp.com.au>,
         Ben Hutchings <ben@decadent.org.uk>,
         Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH 3.4 47/88] mm: add kmap_to_page()
-Date: Mon,  9 Jun 2014 17:24:57 -0700
-Message-Id: <20140610002426.089246636@linuxfoundation.org>
+Subject: [PATCH 3.4 50/88] virtio-blk: Dont free ida when disk is in use
+Date: Mon,  9 Jun 2014 17:25:00 -0700
+Message-Id: <20140610002426.188652816@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
 References: <20140610002424.500996570@linuxfoundation.org>
@@ -31,68 +30,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Alexander Graf <agraf@suse.de>
 
-commit fcb8996728fb59eddf84678df7cb213b2c9a2e26 upstream.
+commit f4953fe6c4aeada2d5cafd78aa97587a46d2d8f9 upstream.
 
-This is extracted from Mel Gorman's commit 5a178119b0fb ('mm: add
-support for direct_IO to highmem pages') upstream.
+When a file system is mounted on a virtio-blk disk, we then remove it
+and then reattach it, the reattached disk gets the same disk name and
+ids as the hot removed one.
 
-Required to backport commit b9cdc88df8e6 ('virtio: 9p: correctly pass
-physical address to userspace for high pages').
+This leads to very nasty effects - mostly rendering the newly attached
+device completely unusable.
 
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+Trying what happens when I do the same thing with a USB device, I saw
+that the sd node simply doesn't get free'd when a device gets forcefully
+removed.
+
+Imitate the same behavior for vd devices. This way broken vd devices
+simply are never free'd and newly attached ones keep working just fine.
+
+Signed-off-by: Alexander Graf <agraf@suse.de>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Yijing Wang <wangyijing@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/highmem.h |    7 +++++++
- mm/highmem.c            |   12 ++++++++++++
- 2 files changed, 19 insertions(+)
+ drivers/block/virtio_blk.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/include/linux/highmem.h
-+++ b/include/linux/highmem.h
-@@ -39,10 +39,17 @@ extern unsigned long totalhigh_pages;
- 
- void kmap_flush_unused(void);
- 
-+struct page *kmap_to_page(void *addr);
-+
- #else /* CONFIG_HIGHMEM */
- 
- static inline unsigned int nr_free_highpages(void) { return 0; }
- 
-+static inline struct page *kmap_to_page(void *addr)
-+{
-+	return virt_to_page(addr);
-+}
-+
- #define totalhigh_pages 0UL
- 
- #ifndef ARCH_HAS_KMAP
---- a/mm/highmem.c
-+++ b/mm/highmem.c
-@@ -94,6 +94,18 @@ static DECLARE_WAIT_QUEUE_HEAD(pkmap_map
- 		do { spin_unlock(&kmap_lock); (void)(flags); } while (0)
- #endif
- 
-+struct page *kmap_to_page(void *vaddr)
-+{
-+	unsigned long addr = (unsigned long)vaddr;
-+
-+	if (addr >= PKMAP_ADDR(0) && addr <= PKMAP_ADDR(LAST_PKMAP)) {
-+		int i = (addr - PKMAP_ADDR(0)) >> PAGE_SHIFT;
-+		return pte_page(pkmap_page_table[i]);
-+	}
-+
-+	return virt_to_page(addr);
-+}
-+
- static void flush_all_zero_pkmaps(void)
+--- a/drivers/block/virtio_blk.c
++++ b/drivers/block/virtio_blk.c
+@@ -573,6 +573,7 @@ static void __devexit virtblk_remove(str
  {
- 	int i;
+ 	struct virtio_blk *vblk = vdev->priv;
+ 	int index = vblk->index;
++	int refc;
+ 
+ 	/* Prevent config work handler from accessing the device. */
+ 	mutex_lock(&vblk->config_lock);
+@@ -587,11 +588,15 @@ static void __devexit virtblk_remove(str
+ 
+ 	flush_work(&vblk->config_work);
+ 
++	refc = atomic_read(&disk_to_dev(vblk->disk)->kobj.kref.refcount);
+ 	put_disk(vblk->disk);
+ 	mempool_destroy(vblk->pool);
+ 	vdev->config->del_vqs(vdev);
+ 	kfree(vblk);
+-	ida_simple_remove(&vd_index_ida, index);
++
++	/* Only free device id if we don't have any users */
++	if (refc == 1)
++		ida_simple_remove(&vd_index_ida, index);
+ }
+ 
+ #ifdef CONFIG_PM
 
 
