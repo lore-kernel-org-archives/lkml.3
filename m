@@ -1,75 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754756AbaFJTuw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 15:50:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35202 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752302AbaFJTus (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:50:48 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 109/160] module: remove warning about waiting module removal.
-Date: Tue, 10 Jun 2014 12:45:49 -0700
-Message-Id: <1402429600-20477-110-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
-References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	id S1755382AbaFJUVp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 16:21:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41043 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753618AbaFJUVn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 16:21:43 -0400
+Date: Tue, 10 Jun 2014 22:18:23 +0200
+From: Borislav Petkov <bp@suse.de>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, jroedel@suse.de
+Subject: Re: [PATCH] x86: be more helpful with SMEP faults
+Message-ID: <20140610201823.GA29302@pd.tnic>
+References: <alpine.LNX.2.00.1406102102030.1321@pobox.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1406102102030.1321@pobox.suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.3 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, Jun 10, 2014 at 09:08:21PM +0200, Jiri Kosina wrote:
+> If pagefault happens due to SMEP triggering, it can't be really easily 
+> distinguished from any other oops-causing pagefault, which might lead to 
+> quite some confusion when trying to understand the reason for the oops.
+> 
+> Print an explanatory message in case the fault happened during instruction 
+> fetch for _PAGE_USER page which is present and executable on SMEP-enabled 
+> CPUs.
+> 
+> This is consistent with what we are doing for NX already; in addition to 
+> immediately seeing from the oops what might be happening, it can even 
+> easily give a good indication to sysadmins who are carefully monitoring 
+> their kernel logs that someone might be trying to pwn them.
+> 
+> Tested-by: Libor Pechacek <lpechacek@suse.cz>
+> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+> ---
+>  arch/x86/mm/fault.c | 7 +++++++
+>  1 file changed, 7 insertions(+)
+> 
+> diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+> index 8e57229..2466ced 100644
+> --- a/arch/x86/mm/fault.c
+> +++ b/arch/x86/mm/fault.c
+> @@ -574,6 +574,8 @@ static int is_f00f_bug(struct pt_regs *regs, unsigned long address)
+>  
+>  static const char nx_warning[] = KERN_CRIT
+>  "kernel tried to execute NX-protected page - exploit attempt? (uid: %d)\n";
+> +static const char smep_warning[] = KERN_CRIT
+> +"unable to execute userspace code (SMEP?) (uid: %d)\n";
+>  
+>  static void
+>  show_fault_oops(struct pt_regs *regs, unsigned long error_code,
+> @@ -594,6 +596,11 @@ show_fault_oops(struct pt_regs *regs, unsigned long error_code,
+>  
+>  		if (pte && pte_present(*pte) && !pte_exec(*pte))
+>  			printk(nx_warning, from_kuid(&init_user_ns, current_uid()));
+> +		if (pte && pte_present(*pte) && pte_exec(*pte) &&
+> +				(pgd_flags(*pgd) & _PAGE_USER) &&
+> +				static_cpu_has(X86_FEATURE_SMEP) &&
 
-------------------
+Btw, we could probably save us this line as CR4 reserved bits should be
+Must-Be-Zero and setting any of those should #GP. And I'm talking about
+pre-SMEP Intel, and AMD machines.
 
-From: Rusty Russell <rusty@rustcorp.com.au>
+IOW, if CR4.SMEP is set, it definitely means SMEP is present and
+enabled.
 
-commit 79465d2fd48e68940c2bdecddbdecd45bbba06fe upstream.
+hpa, that true?
 
-We remove the waiting module removal in commit 3f2b9c9cdf38 (September
-2013), but it turns out that modprobe in kmod (< version 16) was
-asking for waiting module removal.  No one noticed since modprobe would
-check for 0 usage immediately before trying to remove the module, and
-the race is unlikely.
+> +				(read_cr4() & X86_CR4_SMEP))
+> +			printk(smep_warning, from_kuid(&init_user_ns, current_uid()));
+>  	}
 
-However, it means that anyone running old (but not ancient) kmod
-versions is hitting the printk designed to see if anyone was running
-"rmmod -w".  All reports so far have been false positives, so remove
-the warning.
-
-Fixes: 3f2b9c9cdf389e303b2273679af08aab5f153517
-Reported-by: Valerio Vanni <valerio.vanni@inwind.it>
-Cc: Elliott, Robert (Server Storage) <Elliott@hp.com>
-Acked-by: Lucas De Marchi <lucas.de.marchi@gmail.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-[ kamal: backport to 3.13: context ]
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- kernel/module.c | 5 -----
- 1 file changed, 5 deletions(-)
-
-diff --git a/kernel/module.c b/kernel/module.c
-index f5a3b1e..6b931bd 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -815,11 +815,6 @@ SYSCALL_DEFINE2(delete_module, const char __user *, name_user,
- 		return -EFAULT;
- 	name[MODULE_NAME_LEN-1] = '\0';
- 
--	if (!(flags & O_NONBLOCK)) {
--		printk(KERN_WARNING
--		       "waiting module removal not supported: please upgrade");
--	}
--
- 	if (mutex_lock_interruptible(&module_mutex) != 0)
- 		return -EINTR;
- 
 -- 
-1.9.1
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
