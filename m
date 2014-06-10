@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934724AbaFJAlF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:41:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58173 "EHLO
+	id S934830AbaFJAlZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:41:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58169 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933961AbaFJAWE (ORCPT
+	with ESMTP id S932881AbaFJAWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jun 2014 20:22:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jeff Cook <jeff@deserettechnology.com>,
+        "Cho, Yu-Chen" <acho@suse.com>,
         Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
         Ben Hutchings <ben@decadent.org.uk>, Jianguo Wu <wujianguo@huawei.com>
-Subject: [PATCH 3.4 27/88] Bluetooth: Add support for BCM20702A0 [0b05, 17b5]
-Date: Mon,  9 Jun 2014 17:24:37 -0700
-Message-Id: <20140610002425.419698545@linuxfoundation.org>
+Subject: [PATCH 3.4 26/88] Bluetooth: Add support for BCM20702A0 [04ca, 2003]
+Date: Mon,  9 Jun 2014 17:24:36 -0700
+Message-Id: <20140610002425.388906009@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
 References: <20140610002424.500996570@linuxfoundation.org>
@@ -30,27 +30,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Cook <jeff@deserettechnology.com>
+From: Jaroslav Resler <resler@cs.cas.cz>
 
-commit 1ee3ff6110c16acfc915a79b1e3feb5013c41e75 upstream.
+commit 0c1abbd1aa0416258881c303a88e618cbca0759c upstream.
 
-Vendor-specific ID for BCM20702A0.
-Support for bluetooth over Asus Wi-Fi GO!, included with Asus P8Z77-V
-Deluxe.
+Add another vendor specific ID for BCM20702A0.
 
-T:  Bus=07 Lev=02 Prnt=02 Port=00 Cnt=01 Dev#=  3 Spd=12  MxCh= 0
+output of usb-devices:
+T:  Bus=01 Lev=02 Prnt=02 Port=03 Cnt=02 Dev#=  4 Spd=12   MxCh= 0
 D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=0b05 ProdID=17b5 Rev=01.12
+P:  Vendor=04ca ProdID=2003 Rev= 1.12
 S:  Manufacturer=Broadcom Corp
 S:  Product=BCM20702A0
-S:  SerialNumber=94DBC98AC113
-C:  #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
-I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
-I:  If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
-I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-I:  If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
+S:  SerialNumber=446D57861623
+C:* #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=  0mA
+I:* If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
+E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+I:* If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+I:  If#= 1 Alt= 1 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+I:  If#= 1 Alt= 2 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+I:  If#= 1 Alt= 3 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+I:  If#= 1 Alt= 4 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+I:  If#= 1 Alt= 5 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+I:* If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+E:  Ad=84(I) Atr=02(Bulk) MxPS=  32 Ivl=0ms
+E:  Ad=04(O) Atr=02(Bulk) MxPS=  32 Ivl=0ms
+I:* If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
 
-Signed-off-by: Jeff Cook <jeff@deserettechnology.com>
+Signed-off-by: Cho, Yu-Chen <acho@suse.com>
 Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Jianguo Wu <wujianguo@huawei.com>
@@ -66,9 +87,9 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
  	{ USB_DEVICE(0x0c10, 0x0000) },
  
  	/* Broadcom BCM20702A0 */
-+	{ USB_DEVICE(0x0b05, 0x17b5) },
- 	{ USB_DEVICE(0x04ca, 0x2003) },
++	{ USB_DEVICE(0x04ca, 0x2003) },
  	{ USB_DEVICE(0x0489, 0xe042) },
  	{ USB_DEVICE(0x413c, 0x8197) },
+ 
 
 
