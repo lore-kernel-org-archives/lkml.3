@@ -1,69 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933821AbaFJDKU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 23:10:20 -0400
-Received: from ns.horizon.com ([71.41.210.147]:62854 "HELO ns.horizon.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S932844AbaFJDKT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 23:10:19 -0400
-Date: 9 Jun 2014 23:10:17 -0400
-Message-ID: <20140610031017.9893.qmail@ns.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: linux@horizon.com, tytso@mit.edu
-Subject: Re: drivers/char/random.c: more ruminations
-Cc: hpa@linux.intel.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
-        price@mit.edu
-In-Reply-To: <20140610012036.GA8092@thunk.org>
+	id S936231AbaFJDMU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 23:12:20 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:47848 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932844AbaFJDMT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 23:12:19 -0400
+Message-ID: <5396778F.7010805@kernel.dk>
+Date: Mon, 09 Jun 2014 21:12:15 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Junxiao Bi <junxiao.bi@oracle.com>
+CC: andi@lisas.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] block: make nr_requests tunable for loop
+References: <1402367460-5305-1-git-send-email-junxiao.bi@oracle.com> <5396705D.5020507@kernel.dk> <5396727C.9010600@oracle.com>
+In-Reply-To: <5396727C.9010600@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> I have an idea for a patch to change _xfer_secondary_pool
->> to use extract_buf rather than extract_entropy; is all that
->> FIPS stuff needed for purely internal transfers?
+On 2014-06-09 20:50, Junxiao Bi wrote:
+> On 06/10/2014 10:41 AM, Jens Axboe wrote:
+>> On 2014-06-09 20:31, Junxiao Bi wrote:
+>>> commit 7b5a3522 (loop: Limit the number of requests in the bio list)
+>>> limit
+>>> the request number in loop queue to not over 128. Since the
+>>> "request_fn" of
+>>> loop device is null, the requests number is not allowed tuned. Make
+>>> it tunable
+>>> from sysfs can improve performance.
+>>>
+>>> The following test is done on a machine with 512M memory. The backend of
+>>> /dev/loop1 is a nfs file.
+>>>
+>>> [root@bijx mnt]# cat /sys/block/loop0/queue/nr_requests
+>>> 128
+>>> [root@bijx mnt]# dd if=/dev/zero of=/dev/loop0 bs=1M count=5000
+>>> 5000+0 records in
+>>> 5000+0 records out
+>>> 5242880000 bytes (5.2 GB) copied, 501.572 s, 10.5 MB/s
+>>> [root@bijx mnt]#
+>>> [root@bijx mnt]# echo 1024 > /sys/block/loop0/queue/nr_requests
+>>> [root@bijx mnt]# cat /sys/block/loop0/queue/nr_requests
+>>> 1024
+>>> [root@bijx mnt]# dd if=/dev/zero of=/dev/loop0 bs=1M count=5000
+>>> 5000+0 records in
+>>> 5000+0 records out
+>>> 5242880000 bytes (5.2 GB) copied, 464.481 s, 11.3 MB/s
+>>>
+>>> Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+>>> ---
+>>>    block/blk-core.c  |    6 ++++++
+>>>    block/blk-sysfs.c |    9 +++------
+>>>    2 files changed, 9 insertions(+), 6 deletions(-)
+>>>
+>>> diff --git a/block/blk-core.c b/block/blk-core.c
+>>> index 40d6548..58c4bd4 100644
+>>> --- a/block/blk-core.c
+>>> +++ b/block/blk-core.c
+>>> @@ -851,6 +851,12 @@ int blk_update_nr_requests(struct request_queue
+>>> *q, unsigned int nr)
+>>>        q->nr_requests = nr;
+>>>        blk_queue_congestion_threshold(q);
+>>>
+>>> +    /* for loop device, return after set its nr_requests */
+>>> +    if (!q->request_fn) {
+>>> +        spin_unlock_irq(q->queue_lock);
+>>> +        return 0;
+>>> +    }
+>>
+>> It'd be prettier to split this differently - something ala:
+>>
+>> if (request_fn)
+>>          blk_update_congestion_thresholds(q);
+> The congestion threshholds is needed in commit 7b5a3522 (loop: Limit the
+> number of requests in the bio list). So I think it needs be set even
+> request_fn is null.
 
-> That's not the part of extract_entropy() which is critical.  What's
-> critical is the control over only transfering entropy when there is at
-> least a certain minimum amount of entropy.  This provides the
-> Yarrow-like avalanche property which is required to provide recovery
-> after the internal state of the entropy pools have been exposed.
+I mean the request list thresholds, the part below where you currently 
+just exit.
 
-I do understand the importance of catastrophic reseeding, but
-I don't see that implemented in extract_entropy().
+>> But I think you have a larger issue here... For the request lists, we
+>> update the congestion thresholds and wakeup anyone waiting, if we need
+>> to. There's no way to do that for loop, since the waitqueue is
+>> internal to loop.
+> Loop do the congestion control by itself, in loop_make_request() /
+> loop_thread().
 
-Extract_entropy() itself contains a call to xfer_secondary_pool, but
-that is a no-op in the case I'm considering (when it's called from
-_xfer_secondary_pool) because in that case, r is the the input_pool,
-which doesn't have an r->pull pool.
+Yes, that is my point! You update nr_congestion_off, but you don't wake 
+anyone currently sitting in wait_event_lock_irq() on that value. See 
+what the code below where you just exit does for request list based devices.
 
-The number of bytes transferred is adjusted by account(), but
-it's only adjusted downward.  (If it were adjusted up, that would be
-a buffer overrun.)
+-- 
+Jens Axboe
 
-Normal reads seem to ask for a reseed equal in size to read itself,
-which is "ctastrophic" enough.
-
-The only *minimum* reseed transfer size I can see is enforced in
-_xfer_secondary_pool and push_to_pool, which use random_read_wakeup_bits
-(default 64) as a minimum reseed.  (Prehaps increase this?)
-standards, IMHO.)
-
-
-Now, having said all that, I'll try to avoid embarrassing myself
-in public again and ask... what am I missing?
-
-
-
-On other matters...
-
-If I play around with getting the entropy locking right, do you
-have a strong preference for the single-lock or two-lock design?
-I can't decide which to start with.
-
-The latter is an extensive core code change, but I can easily convince
-myself there are no deadlock issues.  That's the one I described
-with separate adder and extractor locks and code paths, two "amount
-of entropy ever added" variables, ane one "amont of entropy ever removed".
-
-The single-lock design is hopefully less code, but (to me, at least) less
-obviously deadlock-free.
