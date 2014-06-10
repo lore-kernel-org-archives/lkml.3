@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755778AbaFJT7l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 15:59:41 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:9059 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755093AbaFJT7j (ORCPT
+	id S932523AbaFJTx6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 15:53:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35589 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755518AbaFJTxz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:59:39 -0400
-Message-ID: <5397636F.9050209@fb.com>
-Date: Tue, 10 Jun 2014 13:58:39 -0600
-From: Jens Axboe <axboe@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Keith Busch <keith.busch@intel.com>
-CC: =?ISO-8859-1?Q?Matias_Bj=F8rling?= <m@bjorling.me>,
-        "willy@linux.intel.com" <willy@linux.intel.com>,
-        "sbradshaw@micron.com" <sbradshaw@micron.com>,
-        "tom.leiming@gmail.com" <tom.leiming@gmail.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-nvme@lists.infradead.org" <linux-nvme@lists.infradead.org>
-Subject: Re: [PATCH v7] NVMe: conversion to blk-mq
-References: <1402392038-5268-1-git-send-email-m@bjorling.me> <1402392038-5268-2-git-send-email-m@bjorling.me>,<alpine.LRH.2.03.1406100945250.4699@AMR> <A52B97CC-6D77-468B-9A9B-A5888AE63580@fb.com> <alpine.LRH.2.03.1406101140490.4699@AMR>
-In-Reply-To: <alpine.LRH.2.03.1406101140490.4699@AMR>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-06-10_05:2014-06-10,2014-06-10,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 spamscore=0
- suspectscore=0 phishscore=0 adultscore=0 bulkscore=0 classifier=spam
- adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1406100241
-X-FB-Internal: deliver
+	Tue, 10 Jun 2014 15:53:55 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Daniele Palmas <dnlplm@gmail.com>, Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 026/160] usb: option driver, add support for Telit UE910v2
+Date: Tue, 10 Jun 2014 12:44:26 -0700
+Message-Id: <1402429600-20477-27-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
+References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2014 01:29 PM, Keith Busch wrote:
-> On Tue, 10 Jun 2014, Jens Axboe wrote:
->>> On Jun 10, 2014, at 9:52 AM, Keith Busch <keith.busch@intel.com> wrote:
->>>
->>>> On Tue, 10 Jun 2014, Matias Bjørling wrote:
->>>> This converts the current NVMe driver to utilize the blk-mq layer.
->>>
->>> I'd like to run xfstests on this, but it is failing mkfs.xfs. I honestly
->>> don't know much about this area, but I think this may be from the recent
->>> chunk sectors patch causing a __bio_add_page to reject adding a new
->>> page.
->>
->> Gah, yes that's a bug in the chunk patch. It must always allow a
->> single page
->> at any offset. I'll test and send out a fix.
-> 
-> I have two devices, one formatted 4k, the other 512. The 4k is used as
-> the TEST_DEV and 512 is used as SCRATCH_DEV. I'm always hitting a BUG when
-> unmounting the scratch dev in xfstests generic/068. The bug looks like
-> nvme was trying to use an SGL that doesn't map correctly to a PRP.
+3.13.11.3 -stable review patch.  If anyone has any objections, please let me know.
 
-I'm guessing it's some of the coalescing settings, since the driver is
-now using the generic block rq mapping.
+------------------
 
-> Also, it doesn't look like this driver can recover from an unresponsive
-> device, leaving tasks in uniterruptible sleep state forever. Still looking
-> into that one though; as far as I can tell the device is perfectly fine,
-> but lots of "Cancelling I/O"  messages are getting logged.
+From: Daniele Palmas <dnlplm@gmail.com>
 
-If the task is still stuck, some of the IOs must not be getting cancelled.
+commit d6de486bc22255779bd54b0fceb4c240962bf146 upstream.
 
+option driver, added VID/PID for Telit UE910v2 modem
+
+Signed-off-by: Daniele Palmas <dnlplm@gmail.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/usb/serial/option.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index 68fc9fe..367c7f0 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -243,6 +243,7 @@ static void option_instat_callback(struct urb *urb);
+ #define TELIT_PRODUCT_CC864_DUAL		0x1005
+ #define TELIT_PRODUCT_CC864_SINGLE		0x1006
+ #define TELIT_PRODUCT_DE910_DUAL		0x1010
++#define TELIT_PRODUCT_UE910_V2			0x1012
+ #define TELIT_PRODUCT_LE920			0x1200
+ 
+ /* ZTE PRODUCTS */
+@@ -1041,6 +1042,7 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_CC864_DUAL) },
+ 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_CC864_SINGLE) },
+ 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_DE910_DUAL) },
++	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_UE910_V2) },
+ 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_LE920),
+ 		.driver_info = (kernel_ulong_t)&telit_le920_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MF622, 0xff, 0xff, 0xff) }, /* ZTE WCDMA products */
+-- 
+1.9.1
 
