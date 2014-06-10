@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936213AbaFJAbz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:31:55 -0400
+	id S936105AbaFJAcW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:32:22 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:58627 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934550AbaFJAWq (ORCPT
+	with ESMTP id S934533AbaFJAWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 20:22:46 -0400
+	Mon, 9 Jun 2014 20:22:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        FuXiangChun <xfu@redhat.com>, Amit Shah <amit.shah@redhat.com>,
-        Wanlong Gao <gaowanlong@cn.fujitsu.com>, Asias He <asias@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH 3.4 53/88] virtio: console: add locking around c_ovq operations
-Date: Mon,  9 Jun 2014 17:25:03 -0700
-Message-Id: <20140610002426.274754437@linuxfoundation.org>
+        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Ben Hutchings <ben@decadent.org.uk>, Rui Xiang <rui.xiang@huawei.com>
+Subject: [PATCH 3.4 65/88] mpt2sas: Fix for issue Missing delay not getting set during system bootup
+Date: Mon,  9 Jun 2014 17:25:15 -0700
+Message-Id: <20140610002426.647354389@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
 References: <20140610002424.500996570@linuxfoundation.org>
@@ -32,76 +30,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amit Shah <amit.shah@redhat.com>
+From: "Reddy, Sreekanth" <Sreekanth.Reddy@lsi.com>
 
-commit 9ba5c80b1aea8648a3efe5f22dc1f7cacdfbeeb8 upstream.
+commit 93cfcb8c998e3fe2c075fa61ab28f7b018e5049a upstream.
 
-When multiple ovq operations are being performed (lots of open/close
-operations on virtio_console fds), the __send_control_msg() function can
-get confused without locking.
+commit b0df96a0068daee4f9c2189c29b9053eb6e46b17 upstream.
 
-A simple recipe to cause badness is:
-* create a QEMU VM with two virtio-serial ports
-* in the guest, do
-  while true;do echo abc >/dev/vport0p1;done
-  while true;do echo edf >/dev/vport0p2;done
+Missing delay is not getting set properly. The reason is that it is not
+defined in the same file from where it is being invoked.  The fix is to move
+the missing delay module parameter from mpt2sas_base.c to mpt2sas_scsh.c.
 
-In one run, this caused a panic in __send_control_msg().  In another, I
-got
-
-   virtio_console virtio0: control-o:id 0 is not a head!
-
-This also results repeated messages similar to these on the host:
-
-  qemu-kvm: virtio-serial-bus: Unexpected port id 478762112 for device virtio-serial-bus.0
-  qemu-kvm: virtio-serial-bus: Unexpected port id 478762368 for device virtio-serial-bus.0
-
-Reported-by: FuXiangChun <xfu@redhat.com>
-Signed-off-by: Amit Shah <amit.shah@redhat.com>
-Reviewed-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Reviewed-by: Asias He <asias@redhat.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 [bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-[wyj: Backported to 3.4: adjust context]
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+Cc: Rui Xiang <rui.xiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/char/virtio_console.c |    5 +++++
- 1 file changed, 5 insertions(+)
 
---- a/drivers/char/virtio_console.c
-+++ b/drivers/char/virtio_console.c
-@@ -132,6 +132,7 @@ struct ports_device {
+---
+ drivers/scsi/mpt2sas/mpt2sas_base.c  |   13 +++----------
+ drivers/scsi/mpt2sas/mpt2sas_base.h  |    3 +++
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c |    8 +++++++-
+ 3 files changed, 13 insertions(+), 11 deletions(-)
+
+--- a/drivers/scsi/mpt2sas/mpt2sas_base.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
+@@ -80,10 +80,6 @@ static int msix_disable = -1;
+ module_param(msix_disable, int, 0);
+ MODULE_PARM_DESC(msix_disable, " disable msix routed interrupts (default=0)");
  
- 	/* To protect the vq operations for the control channel */
- 	spinlock_t c_ivq_lock;
-+	spinlock_t c_ovq_lock;
- 
- 	/* The current config space is stored here */
- 	struct virtio_console_config config;
-@@ -460,11 +461,14 @@ static ssize_t __send_control_msg(struct
- 	vq = portdev->c_ovq;
- 
- 	sg_init_one(sg, &cpkt, sizeof(cpkt));
-+
-+	spin_lock(&portdev->c_ovq_lock);
- 	if (virtqueue_add_buf(vq, sg, 1, 0, &cpkt, GFP_ATOMIC) >= 0) {
- 		virtqueue_kick(vq);
- 		while (!virtqueue_get_buf(vq, &len))
- 			cpu_relax();
- 	}
-+	spin_unlock(&portdev->c_ovq_lock);
- 	return 0;
+-static int missing_delay[2] = {-1, -1};
+-module_param_array(missing_delay, int, NULL, 0);
+-MODULE_PARM_DESC(missing_delay, " device missing delay , io missing delay");
+-
+ static int mpt2sas_fwfault_debug;
+ MODULE_PARM_DESC(mpt2sas_fwfault_debug, " enable detection of firmware fault "
+ 	"and halt firmware - (default=0)");
+@@ -2168,7 +2164,7 @@ _base_display_ioc_capabilities(struct MP
  }
  
-@@ -1752,6 +1756,7 @@ static int __devinit virtcons_probe(stru
- 		unsigned int nr_added_bufs;
+ /**
+- * _base_update_missing_delay - change the missing delay timers
++ * mpt2sas_base_update_missing_delay - change the missing delay timers
+  * @ioc: per adapter object
+  * @device_missing_delay: amount of time till device is reported missing
+  * @io_missing_delay: interval IO is returned when there is a missing device
+@@ -2179,8 +2175,8 @@ _base_display_ioc_capabilities(struct MP
+  * delay, as well as the io missing delay. This should be called at driver
+  * load time.
+  */
+-static void
+-_base_update_missing_delay(struct MPT2SAS_ADAPTER *ioc,
++void
++mpt2sas_base_update_missing_delay(struct MPT2SAS_ADAPTER *ioc,
+ 	u16 device_missing_delay, u8 io_missing_delay)
+ {
+ 	u16 dmd, dmd_new, dmd_orignal;
+@@ -4371,9 +4367,6 @@ mpt2sas_base_attach(struct MPT2SAS_ADAPT
+ 	if (r)
+ 		goto out_free_resources;
  
- 		spin_lock_init(&portdev->c_ivq_lock);
-+		spin_lock_init(&portdev->c_ovq_lock);
- 		INIT_WORK(&portdev->control_work, &control_work_handler);
+-	if (missing_delay[0] != -1 && missing_delay[1] != -1)
+-		_base_update_missing_delay(ioc, missing_delay[0],
+-		    missing_delay[1]);
  
- 		nr_added_bufs = fill_queue(portdev->c_ivq,
+ 	return 0;
+ 
+--- a/drivers/scsi/mpt2sas/mpt2sas_base.h
++++ b/drivers/scsi/mpt2sas/mpt2sas_base.h
+@@ -1047,6 +1047,9 @@ void mpt2sas_base_validate_event_type(st
+ 
+ void mpt2sas_halt_firmware(struct MPT2SAS_ADAPTER *ioc);
+ 
++void mpt2sas_base_update_missing_delay(struct MPT2SAS_ADAPTER *ioc,
++	u16 device_missing_delay, u8 io_missing_delay);
++
+ int mpt2sas_port_enable(struct MPT2SAS_ADAPTER *ioc);
+ 
+ /* scsih shared API */
+--- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+@@ -101,6 +101,10 @@ static ushort max_sectors = 0xFFFF;
+ module_param(max_sectors, ushort, 0);
+ MODULE_PARM_DESC(max_sectors, "max sectors, range 64 to 32767  default=32767");
+ 
++static int missing_delay[2] = {-1, -1};
++module_param_array(missing_delay, int, NULL, 0);
++MODULE_PARM_DESC(missing_delay, " device missing delay , io missing delay");
++
+ /* scsi-mid layer global parmeter is max_report_luns, which is 511 */
+ #define MPT2SAS_MAX_LUN (16895)
+ static int max_lun = MPT2SAS_MAX_LUN;
+@@ -7351,7 +7355,9 @@ _firmware_event_work(struct work_struct
+ 	case MPT2SAS_PORT_ENABLE_COMPLETE:
+ 		ioc->start_scan = 0;
+ 
+-
++		if (missing_delay[0] != -1 && missing_delay[1] != -1)
++			mpt2sas_base_update_missing_delay(ioc, missing_delay[0],
++				missing_delay[1]);
+ 
+ 		dewtprintk(ioc, printk(MPT2SAS_INFO_FMT "port enable: complete "
+ 		    "from worker thread\n", ioc->name));
 
 
