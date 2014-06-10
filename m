@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935561AbaFJAYs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:24:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58627 "EHLO
+	id S935008AbaFJAYq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:24:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58620 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934667AbaFJAWv (ORCPT
+	with ESMTP id S934670AbaFJAWv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jun 2014 20:22:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ley Foon Tan <lftan@altera.com>, Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 3.4 77/88] tty/serial: Add support for Altera serial port
-Date: Mon,  9 Jun 2014 17:25:27 -0700
-Message-Id: <20140610002427.013862734@linuxfoundation.org>
+        Daniel Kiper <daniel.kiper@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 3.4 78/88] xen/p2m: Move code around to allow for better re-usage.
+Date: Mon,  9 Jun 2014 17:25:28 -0700
+Message-Id: <20140610002427.061204528@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
 References: <20140610002424.500996570@linuxfoundation.org>
@@ -28,93 +29,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ley Foon Tan <lftan@altera.com>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit e06c93cacb82dd147266fd1bdb2d0a0bd45ff2c1 upstream.
+commit 3f3aaea29ff7ee2d43b430338427f30ba7f60ff9 upstream.
 
-Add support for Altera 8250/16550 compatible serial port.
+We are going to be using the early_alloc_p2m (and
+early_alloc_p2m_middle) code in follow up patches which
+are not related to setting identity pages.
 
-Signed-off-by: Ley Foon Tan <lftan@altera.com>
-[xr: Backported to 3.4: adjust filenames, context]
-Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
+Hence lets move the code out in its own function and
+rename them as appropiate.
+
+Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- Documentation/devicetree/bindings/tty/serial/of-serial.txt |    3 +
- drivers/tty/serial/8250/8250.c                             |   21 +++++++++++++
- drivers/tty/serial/of_serial.c                             |    6 +++
- include/linux/serial_core.h                                |    5 ++-
- 4 files changed, 34 insertions(+), 1 deletion(-)
 
---- a/Documentation/devicetree/bindings/tty/serial/of-serial.txt
-+++ b/Documentation/devicetree/bindings/tty/serial/of-serial.txt
-@@ -10,6 +10,9 @@ Required properties:
- 	- "ns16850"
- 	- "nvidia,tegra20-uart"
- 	- "ibm,qpace-nwp-serial"
-+	- "altr,16550-FIFO32"
-+	- "altr,16550-FIFO64"
-+	- "altr,16550-FIFO128"
- 	- "serial" if the port type is unknown.
- - reg : offset and length of the register set for the device.
- - interrupts : should contain uart interrupt.
---- a/drivers/tty/serial/8250/8250.c
-+++ b/drivers/tty/serial/8250/8250.c
-@@ -288,6 +288,27 @@ static const struct serial8250_config ua
- 		.tx_loadsz	= 1024,
- 		.flags		= UART_CAP_HFIFO,
- 	},
-+	[PORT_ALTR_16550_F32] = {
-+		.name		= "Altera 16550 FIFO32",
-+		.fifo_size	= 32,
-+		.tx_loadsz	= 32,
-+		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
-+		.flags		= UART_CAP_FIFO | UART_CAP_AFE,
-+	},
-+	[PORT_ALTR_16550_F64] = {
-+		.name		= "Altera 16550 FIFO64",
-+		.fifo_size	= 64,
-+		.tx_loadsz	= 64,
-+		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
-+		.flags		= UART_CAP_FIFO | UART_CAP_AFE,
-+	},
-+	[PORT_ALTR_16550_F128] = {
-+		.name		= "Altera 16550 FIFO128",
-+		.fifo_size	= 128,
-+		.tx_loadsz	= 128,
-+		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
-+		.flags		= UART_CAP_FIFO | UART_CAP_AFE,
-+	},
- };
+---
+ arch/x86/xen/p2m.c |   62 +++++++++++++++++++++++++++++------------------------
+ 1 file changed, 34 insertions(+), 28 deletions(-)
+
+--- a/arch/x86/xen/p2m.c
++++ b/arch/x86/xen/p2m.c
+@@ -499,7 +499,7 @@ static bool alloc_p2m(unsigned long pfn)
+ 	return true;
+ }
  
- #if defined(CONFIG_MIPS_ALCHEMY)
---- a/drivers/tty/serial/of_serial.c
-+++ b/drivers/tty/serial/of_serial.c
-@@ -182,6 +182,12 @@ static struct of_device_id __devinitdata
- 	{ .compatible = "ns16750",  .data = (void *)PORT_16750, },
- 	{ .compatible = "ns16850",  .data = (void *)PORT_16850, },
- 	{ .compatible = "nvidia,tegra20-uart", .data = (void *)PORT_TEGRA, },
-+	{ .compatible = "altr,16550-FIFO32",
-+		.data = (void *)PORT_ALTR_16550_F32, },
-+	{ .compatible = "altr,16550-FIFO64",
-+		.data = (void *)PORT_ALTR_16550_F64, },
-+	{ .compatible = "altr,16550-FIFO128",
-+		.data = (void *)PORT_ALTR_16550_F128, },
- #ifdef CONFIG_SERIAL_OF_PLATFORM_NWPSERIAL
- 	{ .compatible = "ibm,qpace-nwp-serial",
- 		.data = (void *)PORT_NWPSERIAL, },
---- a/include/linux/serial_core.h
-+++ b/include/linux/serial_core.h
-@@ -48,7 +48,10 @@
- #define PORT_TEGRA	20	/* NVIDIA Tegra internal UART */
- #define PORT_XR17D15X	21	/* Exar XR17D15x UART */
- #define PORT_BRCM_TRUMANAGE	25
--#define PORT_MAX_8250	25	/* max port ID */
-+#define PORT_ALTR_16550_F32 26 /* Altera 16550 UART with 32 FIFOs */
-+#define PORT_ALTR_16550_F64 27 /* Altera 16550 UART with 64 FIFOs */
-+#define PORT_ALTR_16550_F128 28 /* Altera 16550 UART with 128 FIFOs */
-+#define PORT_MAX_8250	28	/* max port ID */
+-static bool __init __early_alloc_p2m(unsigned long pfn)
++static bool __init early_alloc_p2m_middle(unsigned long pfn)
+ {
+ 	unsigned topidx, mididx, idx;
  
- /*
-  * ARM specific type numbers.  These are not currently guaranteed
+@@ -541,6 +541,36 @@ static bool __init __early_alloc_p2m(uns
+ 	}
+ 	return idx != 0;
+ }
++
++static bool __init early_alloc_p2m(unsigned long pfn)
++{
++	unsigned topidx = p2m_top_index(pfn);
++	unsigned long *mid_mfn_p;
++	unsigned long **mid;
++
++	mid = p2m_top[topidx];
++	mid_mfn_p = p2m_top_mfn_p[topidx];
++	if (mid == p2m_mid_missing) {
++		mid = extend_brk(PAGE_SIZE, PAGE_SIZE);
++
++		p2m_mid_init(mid);
++
++		p2m_top[topidx] = mid;
++
++		BUG_ON(mid_mfn_p != p2m_mid_missing_mfn);
++	}
++	/* And the save/restore P2M tables.. */
++	if (mid_mfn_p == p2m_mid_missing_mfn) {
++		mid_mfn_p = extend_brk(PAGE_SIZE, PAGE_SIZE);
++		p2m_mid_mfn_init(mid_mfn_p);
++
++		p2m_top_mfn_p[topidx] = mid_mfn_p;
++		p2m_top_mfn[topidx] = virt_to_mfn(mid_mfn_p);
++		/* Note: we don't set mid_mfn_p[midix] here,
++		 * look in early_alloc_p2m_middle */
++	}
++	return true;
++}
+ unsigned long __init set_phys_range_identity(unsigned long pfn_s,
+ 				      unsigned long pfn_e)
+ {
+@@ -559,35 +589,11 @@ unsigned long __init set_phys_range_iden
+ 		pfn < ALIGN(pfn_e, (P2M_MID_PER_PAGE * P2M_PER_PAGE));
+ 		pfn += P2M_MID_PER_PAGE * P2M_PER_PAGE)
+ 	{
+-		unsigned topidx = p2m_top_index(pfn);
+-		unsigned long *mid_mfn_p;
+-		unsigned long **mid;
+-
+-		mid = p2m_top[topidx];
+-		mid_mfn_p = p2m_top_mfn_p[topidx];
+-		if (mid == p2m_mid_missing) {
+-			mid = extend_brk(PAGE_SIZE, PAGE_SIZE);
+-
+-			p2m_mid_init(mid);
+-
+-			p2m_top[topidx] = mid;
+-
+-			BUG_ON(mid_mfn_p != p2m_mid_missing_mfn);
+-		}
+-		/* And the save/restore P2M tables.. */
+-		if (mid_mfn_p == p2m_mid_missing_mfn) {
+-			mid_mfn_p = extend_brk(PAGE_SIZE, PAGE_SIZE);
+-			p2m_mid_mfn_init(mid_mfn_p);
+-
+-			p2m_top_mfn_p[topidx] = mid_mfn_p;
+-			p2m_top_mfn[topidx] = virt_to_mfn(mid_mfn_p);
+-			/* Note: we don't set mid_mfn_p[midix] here,
+-		 	 * look in __early_alloc_p2m */
+-		}
++		WARN_ON(!early_alloc_p2m(pfn));
+ 	}
+ 
+-	__early_alloc_p2m(pfn_s);
+-	__early_alloc_p2m(pfn_e);
++	early_alloc_p2m_middle(pfn_s);
++	early_alloc_p2m_middle(pfn_e);
+ 
+ 	for (pfn = pfn_s; pfn < pfn_e; pfn++)
+ 		if (!__set_phys_to_machine(pfn, IDENTITY_FRAME(pfn)))
 
 
