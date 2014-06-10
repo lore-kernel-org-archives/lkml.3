@@ -1,240 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934359AbaFJBay (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 21:30:54 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:42679 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932415AbaFJB2L (ORCPT
+	id S934762AbaFJBcd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 21:32:33 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:30385 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934646AbaFJBcT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 21:28:11 -0400
-From: Chao Xie <chao.xie@marvell.com>
-To: <haojian.zhuang@gmail.com>, <mturquette@linaro.org>,
-        <chao.xie@marvell.com>, <xiechao_mail@163.com>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH 06/12] clk: mmp: add mmp private gate clock
-Date: Tue, 10 Jun 2014 09:27:42 +0800
-Message-ID: <1402363668-25806-7-git-send-email-chao.xie@marvell.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1402363668-25806-1-git-send-email-chao.xie@marvell.com>
-References: <1402363668-25806-1-git-send-email-chao.xie@marvell.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-06-10_01:2014-06-09,2014-06-10,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1406100017
+	Mon, 9 Jun 2014 21:32:19 -0400
+X-AuditID: cbfee68f-b7fef6d000003970-94-53966020b563
+Message-id: <53966020.9020600@samsung.com>
+Date: Tue, 10 Jun 2014 10:32:16 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Mark Brown <broonie@kernel.org>
+Cc: lee.jones@linaro.org, sbkim73@samsung.com, sameo@linux.intel.com,
+        lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
+        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        jonghwa3.lee@samsung.com, k.kozlowski@samsung.com
+Subject: Re: [PATCHv3 2/3] regulator: s2mps11: Add support S2MPU02 regulator
+ device
+References: <1402294548-10380-1-git-send-email-cw00.choi@samsung.com>
+ <1402294548-10380-3-git-send-email-cw00.choi@samsung.com>
+ <20140609195543.GK5099@sirena.org.uk>
+In-reply-to: <20140609195543.GK5099@sirena.org.uk>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrIIsWRmVeSWpSXmKPExsWyRsSkWFchYVqwwexuM4upD5+wWXSefcJs
+	8fqFocXZpjfsFve/HmW0+Halg8ni8q45bBa3G1ewWZzuZrW4uOILkwOXx85Zd9k9Nq3qZPO4
+	c20Pm8e8k4EefVtWMXp83iQXwBbFZZOSmpNZllqkb5fAlbGq8wtzwTXWiqk/jzE1MG5i6WLk
+	5JAQMJHoXtnJDmGLSVy4t56ti5GLQ0hgKaPEvwMrmGGKelreQSWmM0p8mHgcrENI4DWjxL47
+	PCA2r4CWxJoDu9lAbBYBVYl326eB2WxA8f0vboDZogJhEiunX2GBqBeU+DH5HpgtIqAscfX7
+	XhaQBcwCjxklZv1dxAqSEBYIlZh8eTIjxOaVjBInuraBJTgFjCT2fj7OCGIzC+hI7G+F2MYs
+	IC+xec1bZpAGCYGX7BLHTj5mhjhJQOLb5ENAKziAErISmw5AvSYpcXDFDZYJjGKzkBw1C8nY
+	WUjGLmBkXsUomlqQXFCclF5krFecmFtcmpeul5yfu4kRGJ2n/z3r38F494D1IcZkoJUTmaVE
+	k/OB0Z1XEm9obGZkYWpiamxkbmlGmrCSOO/9h0lBQgLpiSWp2ampBalF8UWlOanFhxiZODil
+	Ghg5utkaxNSui18pvbPGm+E6++WF3cd3zrdW9uAumn1bPmDanBRZlhjlqDV9Ngd/pJYsVn9a
+	F/Rkqdq3Ow5VxjsOR8RZHMtyV78R+Nj2Q9Izn31n26dbr3NfVN8rtW694YxZcgbSpvH5rDN8
+	lyV3/tix9EnhK4H7Ky/3BmfcbJBbPc84a9aCw65KLMUZiYZazEXFiQDB6fJj5AIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHKsWRmVeSWpSXmKPExsVy+t9jQV2FhGnBBn++6llMffiEzaLz7BNm
+	i9cvDC3ONr1ht7j/9SijxbcrHUwWl3fNYbO43biCzeJ0N6vFxRVfmBy4PHbOusvusWlVJ5vH
+	nWt72DzmnQz06NuyitHj8ya5ALaoBkabjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sL
+	cyWFvMTcVFslF58AXbfMHKDDlBTKEnNKgUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGE
+	NYwZqzq/MBdcY62Y+vMYUwPjJpYuRk4OCQETiZ6Wd2wQtpjEhXvrgWwuDiGB6YwSHyYeZwdJ
+	CAm8ZpTYd4cHxOYV0JJYc2A3WAOLgKrEu+3TwGw2oPj+FzfAbFGBMImV06+wQNQLSvyYfA/M
+	FhFQlrj6fS8LyAJmgceMErP+LmIFSQgLhEpMvjyZEWLzSkaJE13bwBKcAkYSez8fZwSxmQV0
+	JPa3QmxjFpCX2LzmLfMERoFZSJbMQlI2C0nZAkbmVYyiqQXJBcVJ6blGesWJucWleel6yfm5
+	mxjBsf9MegfjqgaLQ4wCHIxKPLwWB6YGC7EmlhVX5h5ilOBgVhLhZf0IFOJNSaysSi3Kjy8q
+	zUktPsSYDAyDicxSosn5wLSUVxJvaGxiZmRpZG5oYWRsTpqwkjjvwVbrQCGB9MSS1OzU1ILU
+	IpgtTBycUg2MnJIfq6Ra/Hf+dfpsl8m9anvr7An7O9ZK1M/9Z2Am7bgjf3/4c8lPRZekdHZ3
+	v390ZoXItfV/y786RSYHSswJnV9/UfZmn/VThjubZZfJFy21yjOe4+B+LULB8qzm27szi4Iu
+	9okbySS0xJ2fuqC4JcP59K4zxxdadnO1KRdd/Vio+2q/cL+MEktxRqKhFnNRcSIAtrT8pEED	AAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chao Xie <chao.xie@marvell.com>
+Hi Mark,
 
-Some SOCes have this kind of the gate clock
-1. There are some bits to control the gate not only one bit.
-2. Some clocks has operations of "out of reset" and "enable".
-   To enable clock, we need do "out of reset" and "enable".
-   To disable clock, we may not need "set to reset". It depends
-   on the SOCes' design.
-3. It is not always that "1" is to enable while "0" is to disable
-   when write register.
+On 06/10/2014 04:55 AM, Mark Brown wrote:
+> On Mon, Jun 09, 2014 at 03:15:47PM +0900, Chanwoo Choi wrote:
+>> This patch add S2MPU02 regulator device to existing S2MPS11 device driver
+>> because of little difference between S2MPS1x and S2MPU02. The S2MPU02
+>> regulator device includes LDO[1-28] and BUCK[1-7].
+> 
+> Acked-by: Mark Brown <broonie@linaro.org>
+> 
+> but a few nits:
+> 
+>> +	case S2MPS14X:
+>> +		switch (rdev_id) {
+>> +		case S2MPS14_LDO3:
+>> +			return 0;
+>> +		};
+> 
+> Extra ; here, and a missing default case here and in the rest of the
+> switches.  The default cases have no effect but are better style.
+> 
 
-So we have to define the "mask", "enable_val", "disable_val" for
-this kind of gate clock.
+OK, I'll add 'default' case statement.
 
-Signed-off-by: Chao Xie <chao.xie@marvell.com>
----
- drivers/clk/mmp/Makefile   |   2 +-
- drivers/clk/mmp/clk-gate.c | 133 +++++++++++++++++++++++++++++++++++++++++++++
- drivers/clk/mmp/clk.h      |  21 +++++++
- 3 files changed, 155 insertions(+), 1 deletion(-)
- create mode 100644 drivers/clk/mmp/clk-gate.c
-
-diff --git a/drivers/clk/mmp/Makefile b/drivers/clk/mmp/Makefile
-index 8bfee860..2855f7b 100644
---- a/drivers/clk/mmp/Makefile
-+++ b/drivers/clk/mmp/Makefile
-@@ -2,7 +2,7 @@
- # Makefile for mmp specific clk
- #
- 
--obj-y += clk-apbc.o clk-apmu.o clk-frac.o clk-mix.o
-+obj-y += clk-apbc.o clk-apmu.o clk-frac.o clk-mix.o clk-gate.o
- 
- obj-$(CONFIG_CPU_PXA168) += clk-pxa168.o
- obj-$(CONFIG_CPU_PXA910) += clk-pxa910.o
-diff --git a/drivers/clk/mmp/clk-gate.c b/drivers/clk/mmp/clk-gate.c
-new file mode 100644
-index 0000000..adbd9d6
---- /dev/null
-+++ b/drivers/clk/mmp/clk-gate.c
-@@ -0,0 +1,133 @@
-+/*
-+ * mmp gate clock operation source file
-+ *
-+ * Copyright (C) 2014 Marvell
-+ * Chao Xie <chao.xie@marvell.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2. This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <linux/clk-provider.h>
-+#include <linux/slab.h>
-+#include <linux/io.h>
-+#include <linux/err.h>
-+#include <linux/delay.h>
-+
-+#include "clk.h"
-+
-+/*
-+ * Some clocks will have mutiple bits to enable the clocks, and
-+ * the bits to disable the clock is not same as enabling bits.
-+ */
-+
-+#define to_clk_mmp_gate(hw)	container_of(hw, struct mmp_clk_gate, hw)
-+
-+static int mmp_clk_gate_enable(struct clk_hw *hw)
-+{
-+	struct mmp_clk_gate *gate = to_clk_mmp_gate(hw);
-+	struct clk *clk = hw->clk;
-+	unsigned long flags = 0;
-+	unsigned long rate;
-+	u32 tmp;
-+
-+	if (gate->lock)
-+		spin_lock_irqsave(gate->lock, flags);
-+
-+	tmp = readl(gate->reg);
-+	tmp &= ~gate->mask;
-+	tmp |= gate->val_enable;
-+	writel(tmp, gate->reg);
-+
-+	if (gate->lock)
-+		spin_unlock_irqrestore(gate->lock, flags);
-+
-+	if (gate->flags & MMP_CLK_GATE_NEED_DELAY) {
-+		rate = __clk_get_rate(clk);
-+		/* Need delay 2 cycles. */
-+		udelay(2000000/rate);
-+	}
-+
-+	return 0;
-+}
-+
-+static void mmp_clk_gate_disable(struct clk_hw *hw)
-+{
-+	struct mmp_clk_gate *gate = to_clk_mmp_gate(hw);
-+	unsigned long flags = 0;
-+	u32 tmp;
-+
-+	if (gate->lock)
-+		spin_lock_irqsave(gate->lock, flags);
-+
-+	tmp = readl(gate->reg);
-+	tmp &= ~gate->mask;
-+	tmp |= gate->val_disable;
-+	writel(tmp, gate->reg);
-+
-+	if (gate->lock)
-+		spin_unlock_irqrestore(gate->lock, flags);
-+}
-+
-+static int mmp_clk_gate_is_enabled(struct clk_hw *hw)
-+{
-+	struct mmp_clk_gate *gate = to_clk_mmp_gate(hw);
-+	unsigned long flags = 0;
-+	u32 tmp;
-+
-+	if (gate->lock)
-+		spin_lock_irqsave(gate->lock, flags);
-+
-+	tmp = readl(gate->reg);
-+
-+	if (gate->lock)
-+		spin_unlock_irqrestore(gate->lock, flags);
-+
-+	return (tmp & gate->mask) == gate->val_enable;
-+}
-+
-+const struct clk_ops mmp_clk_gate_ops = {
-+	.enable = mmp_clk_gate_enable,
-+	.disable = mmp_clk_gate_disable,
-+	.is_enabled = mmp_clk_gate_is_enabled,
-+};
-+
-+struct clk *mmp_clk_register_gate(struct device *dev, const char *name,
-+		const char *parent_name, unsigned long flags,
-+		void __iomem *reg, u32 mask, u32 val_enable, u32 val_disable,
-+		unsigned int gate_flags, spinlock_t *lock)
-+{
-+	struct mmp_clk_gate *gate;
-+	struct clk *clk;
-+	struct clk_init_data init;
-+
-+	/* allocate the gate */
-+	gate = kzalloc(sizeof(*gate), GFP_KERNEL);
-+	if (!gate) {
-+		pr_err("%s:%s could not allocate gate clk\n", __func__, name);
-+		return ERR_PTR(-ENOMEM);
-+	}
-+
-+	init.name = name;
-+	init.ops = &mmp_clk_gate_ops;
-+	init.flags = flags | CLK_IS_BASIC;
-+	init.parent_names = (parent_name ? &parent_name : NULL);
-+	init.num_parents = (parent_name ? 1 : 0);
-+
-+	/* struct clk_gate assignments */
-+	gate->reg = reg;
-+	gate->mask = mask;
-+	gate->val_enable = val_enable;
-+	gate->val_disable = val_disable;
-+	gate->flags = gate_flags;
-+	gate->lock = lock;
-+	gate->hw.init = &init;
-+
-+	clk = clk_register(dev, &gate->hw);
-+
-+	if (IS_ERR(clk))
-+		kfree(gate);
-+
-+	return clk;
-+}
-diff --git a/drivers/clk/mmp/clk.h b/drivers/clk/mmp/clk.h
-index 426616b..9096f0a 100644
---- a/drivers/clk/mmp/clk.h
-+++ b/drivers/clk/mmp/clk.h
-@@ -99,6 +99,27 @@ extern struct clk *mmp_clk_register_mix(struct device *dev,
- 					spinlock_t *lock);
- 
- 
-+/* Clock type "gate". MMP private gate */
-+#define MMP_CLK_GATE_NEED_DELAY		BIT(0)
-+
-+struct mmp_clk_gate {
-+	struct clk_hw hw;
-+	void __iomem *reg;
-+	u32 mask;
-+	u32 val_enable;
-+	u32 val_disable;
-+	unsigned int flags;
-+	spinlock_t *lock;
-+};
-+
-+extern const struct clk_ops mmp_clk_gate_ops;
-+extern struct clk *mmp_clk_register_gate(struct device *dev, const char *name,
-+			const char *parent_name, unsigned long flags,
-+			void __iomem *reg, u32 mask, u32 val_enable,
-+			u32 val_disable, unsigned int gate_flags,
-+			spinlock_t *lock);
-+
-+
- extern struct clk *mmp_clk_register_pll2(const char *name,
- 		const char *parent_name, unsigned long flags);
- extern struct clk *mmp_clk_register_apbc(const char *name,
--- 
-1.8.3.2
-
+Best Regards,
+Chanwoo Choi
