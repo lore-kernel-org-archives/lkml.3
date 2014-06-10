@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754726AbaFJTup (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 15:50:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35196 "EHLO
+	id S1754789AbaFJTuz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 15:50:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35209 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752302AbaFJTul (ORCPT
+	with ESMTP id S1754739AbaFJTuw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:50:41 -0400
+	Tue, 10 Jun 2014 15:50:52 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Rob Herring <robh@kernel.org>, Tony Lindgren <tony@atomide.com>,
+        Grant Likely <grant.likely@linaro.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 095/160] usb: option: add Olivetti Olicard 500
-Date: Tue, 10 Jun 2014 12:45:35 -0700
-Message-Id: <1402429600-20477-96-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 106/160] of/irq: do irq resolution in platform_get_irq
+Date: Tue, 10 Jun 2014 12:45:46 -0700
+Message-Id: <1402429600-20477-107-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,47 +28,152 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+From: Rob Herring <robh@kernel.org>
 
-commit 533b3994610f316e5cd61b56d0c4daa15c830f89 upstream.
+commit 9ec36cafe43bf835f8f29273597a5b0cbc8267ef upstream.
 
-Device interface layout:
-0: ff/ff/ff - serial
-1: ff/ff/ff - serial AT+PPP
-2: 08/06/50 - storage
-3: ff/ff/ff - serial
-4: ff/ff/ff - QMI/wwan
+Currently we get the following kind of errors if we try to use interrupt
+phandles to irqchips that have not yet initialized:
 
-Reported-by: Julio Araujo <julio.araujo@wllctel.com.br>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+irq: no irq domain found for /ocp/pinmux@48002030 !
+------------[ cut here ]------------
+WARNING: CPU: 0 PID: 1 at drivers/of/platform.c:171 of_device_alloc+0x144/0x184()
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.12.0-00038-g42a9708 #1012
+(show_stack+0x14/0x1c)
+(dump_stack+0x6c/0xa0)
+(warn_slowpath_common+0x64/0x84)
+(warn_slowpath_null+0x1c/0x24)
+(of_device_alloc+0x144/0x184)
+(of_platform_device_create_pdata+0x44/0x9c)
+(of_platform_bus_create+0xd0/0x170)
+(of_platform_bus_create+0x12c/0x170)
+(of_platform_populate+0x60/0x98)
+
+This is because we're wrongly trying to populate resources that are not
+yet available. It's perfectly valid to create irqchips dynamically, so
+let's fix up the issue by resolving the interrupt resources when
+platform_get_irq is called.
+
+And then we also need to accept the fact that some irqdomains do not
+exist that early on, and only get initialized later on. So we can
+make the current WARN_ON into just into a pr_debug().
+
+We still attempt to populate irq resources when we create the devices.
+This allows current drivers which don't use platform_get_irq to continue
+to function. Once all drivers are fixed, this code can be removed.
+
+Suggested-by: Russell King <linux@arm.linux.org.uk>
+Signed-off-by: Rob Herring <robh@kernel.org>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+Tested-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Grant Likely <grant.likely@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/option.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/base/platform.c |  7 ++++++-
+ drivers/of/irq.c        | 26 ++++++++++++++++++++++++++
+ drivers/of/platform.c   |  4 +++-
+ include/linux/of_irq.h  |  5 +++++
+ 4 files changed, 40 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index 367c7f0..6335222 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -349,6 +349,7 @@ static void option_instat_callback(struct urb *urb);
- #define OLIVETTI_PRODUCT_OLICARD100		0xc000
- #define OLIVETTI_PRODUCT_OLICARD145		0xc003
- #define OLIVETTI_PRODUCT_OLICARD200		0xc005
-+#define OLIVETTI_PRODUCT_OLICARD500		0xc00b
+diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+index 3a94b79..39d2f6b 100644
+--- a/drivers/base/platform.c
++++ b/drivers/base/platform.c
+@@ -13,6 +13,7 @@
+ #include <linux/string.h>
+ #include <linux/platform_device.h>
+ #include <linux/of_device.h>
++#include <linux/of_irq.h>
+ #include <linux/module.h>
+ #include <linux/init.h>
+ #include <linux/dma-mapping.h>
+@@ -87,7 +88,11 @@ int platform_get_irq(struct platform_device *dev, unsigned int num)
+ 		return -ENXIO;
+ 	return dev->archdata.irqs[num];
+ #else
+-	struct resource *r = platform_get_resource(dev, IORESOURCE_IRQ, num);
++	struct resource *r;
++	if (IS_ENABLED(CONFIG_OF_IRQ) && dev->dev.of_node)
++		return of_irq_get(dev->dev.of_node, num);
++
++	r = platform_get_resource(dev, IORESOURCE_IRQ, num);
  
- /* Celot products */
- #define CELOT_VENDOR_ID				0x211f
-@@ -1545,6 +1546,9 @@ static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD200),
- 		.driver_info = (kernel_ulong_t)&net_intf6_blacklist
- 	},
-+	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD500),
-+		.driver_info = (kernel_ulong_t)&net_intf4_blacklist
-+	},
- 	{ USB_DEVICE(CELOT_VENDOR_ID, CELOT_PRODUCT_CT680M) }, /* CT-650 CDMA 450 1xEVDO modem */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(SAMSUNG_VENDOR_ID, SAMSUNG_PRODUCT_GT_B3730, USB_CLASS_CDC_DATA, 0x00, 0x00) }, /* Samsung GT-B3730 LTE USB modem.*/
- 	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CEM600) },
+ 	return r ? r->start : -ENXIO;
+ #endif
+diff --git a/drivers/of/irq.c b/drivers/of/irq.c
+index 2721240..11c7f73 100644
+--- a/drivers/of/irq.c
++++ b/drivers/of/irq.c
+@@ -377,6 +377,32 @@ int of_irq_to_resource(struct device_node *dev, int index, struct resource *r)
+ EXPORT_SYMBOL_GPL(of_irq_to_resource);
+ 
+ /**
++ * of_irq_get - Decode a node's IRQ and return it as a Linux irq number
++ * @dev: pointer to device tree node
++ * @index: zero-based index of the irq
++ *
++ * Returns Linux irq number on success, or -EPROBE_DEFER if the irq domain
++ * is not yet created.
++ *
++ */
++int of_irq_get(struct device_node *dev, int index)
++{
++	int rc;
++	struct of_phandle_args oirq;
++	struct irq_domain *domain;
++
++	rc = of_irq_parse_one(dev, index, &oirq);
++	if (rc)
++		return rc;
++
++	domain = irq_find_host(oirq.np);
++	if (!domain)
++		return -EPROBE_DEFER;
++
++	return irq_create_of_mapping(&oirq);
++}
++
++/**
+  * of_irq_count - Count the number of IRQs a node uses
+  * @dev: pointer to device tree node
+  */
+diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+index 404d1da..bd47fbc 100644
+--- a/drivers/of/platform.c
++++ b/drivers/of/platform.c
+@@ -168,7 +168,9 @@ struct platform_device *of_device_alloc(struct device_node *np,
+ 			rc = of_address_to_resource(np, i, res);
+ 			WARN_ON(rc);
+ 		}
+-		WARN_ON(of_irq_to_resource_table(np, res, num_irq) != num_irq);
++		if (of_irq_to_resource_table(np, res, num_irq) != num_irq)
++			pr_debug("not all legacy IRQ resources mapped for %s\n",
++				 np->name);
+ 	}
+ 
+ 	dev->dev.of_node = of_node_get(np);
+diff --git a/include/linux/of_irq.h b/include/linux/of_irq.h
+index 3f23b44..6404253 100644
+--- a/include/linux/of_irq.h
++++ b/include/linux/of_irq.h
+@@ -44,11 +44,16 @@ extern void of_irq_init(const struct of_device_id *matches);
+ 
+ #ifdef CONFIG_OF_IRQ
+ extern int of_irq_count(struct device_node *dev);
++extern int of_irq_get(struct device_node *dev, int index);
+ #else
+ static inline int of_irq_count(struct device_node *dev)
+ {
+ 	return 0;
+ }
++static inline int of_irq_get(struct device_node *dev, int index)
++{
++	return 0;
++}
+ #endif
+ 
+ #if defined(CONFIG_OF)
 -- 
 1.9.1
 
