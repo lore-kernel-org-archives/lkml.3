@@ -1,85 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752962AbaFJPTR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 11:19:17 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:55924 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752494AbaFJPTP (ORCPT
+	id S1753038AbaFJPTq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 11:19:46 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:5823 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753009AbaFJPTp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 11:19:15 -0400
-Date: Tue, 10 Jun 2014 17:19:13 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Robert Hodaszi <robert.hodaszi@digi.com>
-Cc: jic23@kernel.org, linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, marex@denx.de, jbe@pengutronix.de,
-        hector.palacios@digi.com, fabio.estevam@freescale.com, lars@metafoo.de
-Subject: Re: [PATCH 1/2] iio: mxs-lradc: fix divider
-Message-ID: <20140610151912.GA3429@piout.net>
-References: <1402407695-2984-1-git-send-email-robert.hodaszi@digi.com>
- <1402407695-2984-2-git-send-email-robert.hodaszi@digi.com>
+	Tue, 10 Jun 2014 11:19:45 -0400
+Date: Tue, 10 Jun 2014 11:19:42 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "Brad Mouring" <bmouring@ni.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Jason Low <jason.low2@hp.com>
+Subject: Re: [patch V3 7/7] rtmutex: Avoid pointless requeueing in the
+ deadlock detection chain walk
+Message-ID: <20140610111942.668d4058@gandalf.local.home>
+In-Reply-To: <20140610145725.GA29976@linuxgetsreal>
+References: <20140609201118.387571774@linutronix.de>
+	<20140609202336.506044876@linutronix.de>
+	<20140610145725.GA29976@linuxgetsreal>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402407695-2984-2-git-send-email-robert.hodaszi@digi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/06/2014 at 15:41:34 +0200, Robert Hodaszi wrote :
-> All channels' single measurement are happening on CH 0. So enabling / disabling
-> the divider once is not enough, because it has impact on all channels.
-> 
-> Set only a flag, then check this on each measurement, and enable / disable the
-> divider as required.
-> 
-> Signed-off-by: Robert Hodaszi <robert.hodaszi@digi.com>
+On Tue, 10 Jun 2014 09:57:25 -0500
+"Brad Mouring" <bmouring@ni.com> wrote:
 
-It makes perfect sense.
 
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> > +		/* Store whether owner is blocked itself and drop locks */
+> > +		next_lock = task_blocked_on(task);
+> task_blocked_on(task) is not clear to me, the recipient of the
+> return is the only clue that hints at what the function does.
 
-> ---
->  drivers/staging/iio/adc/mxs-lradc.c | 12 ++++++++----
->  1 file changed, 8 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/staging/iio/adc/mxs-lradc.c b/drivers/staging/iio/adc/mxs-lradc.c
-> index dae8d1a..52d7517 100644
-> --- a/drivers/staging/iio/adc/mxs-lradc.c
-> +++ b/drivers/staging/iio/adc/mxs-lradc.c
-> @@ -846,6 +846,14 @@ static int mxs_lradc_read_single(struct iio_dev *iio_dev, int chan, int *val)
->  			LRADC_CTRL1);
->  	mxs_lradc_reg_clear(lradc, 0xff, LRADC_CTRL0);
->  
-> +	/* Enable / disable the divider per requirement */
-> +	if (test_bit(chan, &lradc->is_divided))
-> +		mxs_lradc_reg_set(lradc, 1 << LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET,
-> +			LRADC_CTRL2);
-> +	else
-> +		mxs_lradc_reg_clear(lradc,
-> +			1 << LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET, LRADC_CTRL2);
-> +
->  	/* Clean the slot's previous content, then set new one. */
->  	mxs_lradc_reg_clear(lradc, LRADC_CTRL4_LRADCSELECT_MASK(0),
->  			LRADC_CTRL4);
-> @@ -961,15 +969,11 @@ static int mxs_lradc_write_raw(struct iio_dev *iio_dev,
->  		if (val == scale_avail[MXS_LRADC_DIV_DISABLED].integer &&
->  		    val2 == scale_avail[MXS_LRADC_DIV_DISABLED].nano) {
->  			/* divider by two disabled */
-> -			writel(1 << LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET,
-> -			       lradc->base + LRADC_CTRL2 + STMP_OFFSET_REG_CLR);
->  			clear_bit(chan->channel, &lradc->is_divided);
->  			ret = 0;
->  		} else if (val == scale_avail[MXS_LRADC_DIV_ENABLED].integer &&
->  			   val2 == scale_avail[MXS_LRADC_DIV_ENABLED].nano) {
->  			/* divider by two enabled */
-> -			writel(1 << LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET,
-> -			       lradc->base + LRADC_CTRL2 + STMP_OFFSET_REG_SET);
->  			set_bit(chan->channel, &lradc->is_divided);
->  			ret = 0;
->  		}
+Well, this is more than confusing, it's the only user, all other users
+are task_blocked_on_lock(), and this causes the code not to compile.
 
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+-- Steve
+
+
+> > +		raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+> > +		raw_spin_unlock(&lock->wait_lock);
+> > +
+> > +		/* If owner is not blocked, end of chain. */
+> > +		if (!next_lock)
+> > +			goto out_put_task;
+> > +		goto again;
+> > +	}
+> > +
+> > +	/*
+> >  	 * Store the current top waiter before doing the requeue
+> >  	 * operation on @lock. We need it for the boost/deboost
+> >  	 * decision below.
+> > 
+> > 
+
