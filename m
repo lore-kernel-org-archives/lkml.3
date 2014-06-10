@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932597AbaFJAVA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:21:00 -0400
-Received: from ns.horizon.com ([71.41.210.147]:42334 "HELO ns.horizon.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753727AbaFJAU7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 20:20:59 -0400
-Date: 9 Jun 2014 20:20:57 -0400
-Message-ID: <20140610002057.21845.qmail@ns.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: linux@horizon.com, tytso@mit.edu
-Subject: drivers/char/random.c: more ruminations
-Cc: hpa@linux.intel.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
-        price@mit.edu
-In-Reply-To: <20140609155046.GA8993@thunk.org>
+	id S933292AbaFJAV4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:21:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58153 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932880AbaFJAVw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 20:21:52 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.4 01/88] sched: Use CPUPRI_NR_PRIORITIES instead of MAX_RT_PRIO in cpupri check
+Date: Mon,  9 Jun 2014 17:24:11 -0700
+Message-Id: <20140610002424.603068573@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
+References: <20140610002424.500996570@linuxfoundation.org>
+User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My original reason for writing turned into a never mind...
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-I came up with a clever and intricate algorithm for preventing
-a bulk writer from DoSing add_interrupt_randomness via the proposed
-additional locking on the input_pool.
+------------------
 
-Then I re-checked the code and saw that only the (trusted) RNDADDENTROPY
-call is allowed to write to the input_pool.  A plain write(2) is copied
-to the two output pools.
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-And writing to the input_pool can never try to take a lock on an
-output pool; spilling is done in a workqueue.
+commit 6227cb00cc120f9a43ce8313bb0475ddabcb7d01 upstream.
+
+The check at the beginning of cpupri_find() makes sure that the task_pri
+variable does not exceed the cp->pri_to_cpu array length. But that length
+is CPUPRI_NR_PRIORITIES not MAX_RT_PRIO, where it will miss the last two
+priorities in that array.
+
+As task_pri is computed from convert_prio() which should never be bigger
+than CPUPRI_NR_PRIORITIES, if the check should cause a panic if it is
+hit.
+
+Reported-by: Mike Galbraith <umgwanakikbuti@gmail.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1397015410.5212.13.camel@marge.simpson.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ kernel/sched/cpupri.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+--- a/kernel/sched/cpupri.c
++++ b/kernel/sched/cpupri.c
+@@ -68,8 +68,7 @@ int cpupri_find(struct cpupri *cp, struc
+ 	int                  idx      = 0;
+ 	int                  task_pri = convert_prio(p->prio);
+ 
+-	if (task_pri >= MAX_RT_PRIO)
+-		return 0;
++	BUG_ON(task_pri >= CPUPRI_NR_PRIORITIES);
+ 
+ 	for (idx = 0; idx < task_pri; idx++) {
+ 		struct cpupri_vec *vec  = &cp->pri_to_cpu[idx];
 
 
-I'm getting to a dangerous place: I think I'm starting to understand this.
-I should probably turn that into a doc patch.
-
-
-I have an idea for a patch to change _xfer_secondary_pool
-to use extract_buf rather than extract_entropy; is all that
-FIPS stuff needed for purely internal transfers?
-
-
-Also, shouldn't the r->last_pulled holdoff in xfer_secondary_pool be
-really limited to actual transfers?  I.e. reorder the conditions as:
-
-static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
-{
-	if (!r->pull ||
-	    r->entropy_count >= (nbytes << (ENTROPY_SHIFT + 3)) ||
-	    r->entropy_count >= r->poolinfo->poolfracbits)
-		return;
-
-	if (r->limit == 0 && random_min_urandom_seed) {
-		unsigned long now = jiffies;
-
-		if (time_before(now,
-				r->last_pulled + random_min_urandom_seed * HZ))
-			return;
-		r->last_pulled = now;
-	}
-	_xfer_secondary_pool(r, nbytes);
-}
