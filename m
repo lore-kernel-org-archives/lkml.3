@@ -1,78 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934882AbaFJA15 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:27:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58788 "EHLO
+	id S936065AbaFJA1L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:27:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58624 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932422AbaFJA1y (ORCPT
+	with ESMTP id S934636AbaFJAWu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 20:27:54 -0400
-Date: Mon, 9 Jun 2014 17:31:42 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: Andy Lutomirski <luto@amacapital.net>, Eric Paris <eparis@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-audit@redhat.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: Re: [PATCH 1/2] auditsc: audit_krule mask accesses need bounds
- checking
-Message-ID: <20140610003142.GA20728@kroah.com>
-References: <1401332999-15167-1-git-send-email-eparis@redhat.com>
- <20140609223057.GB18475@kroah.com>
- <CALCETrUD75vSwJUjFuxGCrZ_7DJhCc1KW2v_ndF6EHJ31fUMBg@mail.gmail.com>
- <20140609224645.GA8113@kroah.com>
- <CA+5PVA6dHu-0qi1fx5Vq4QynJDJ=dG0feJjwoCHA3GaUSHp-FQ@mail.gmail.com>
+	Mon, 9 Jun 2014 20:22:50 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Daniel Kiper <daniel.kiper@oracle.com>
+Subject: [PATCH 3.4 84/88] xen/setup: update VA mapping when releasing memory during setup
+Date: Mon,  9 Jun 2014 17:25:34 -0700
+Message-Id: <20140610002427.269562206@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
+References: <20140610002424.500996570@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+5PVA6dHu-0qi1fx5Vq4QynJDJ=dG0feJjwoCHA3GaUSHp-FQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 09, 2014 at 07:35:57PM -0400, Josh Boyer wrote:
-> On Mon, Jun 9, 2014 at 6:46 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Mon, Jun 09, 2014 at 03:35:02PM -0700, Andy Lutomirski wrote:
-> >> On Mon, Jun 9, 2014 at 3:30 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> >> > On Wed, May 28, 2014 at 11:09:58PM -0400, Eric Paris wrote:
-> >> >> From: Andy Lutomirski <luto@amacapital.net>
-> >> >>
-> >> >> Fixes an easy DoS and possible information disclosure.
-> >> >>
-> >> >> This does nothing about the broken state of x32 auditing.
-> >> >>
-> >> >> eparis: If the admin has enabled auditd and has specifically loaded audit
-> >> >> rules.  This bug has been around since before git.  Wow...
-> >> >>
-> >> >> Cc: stable@vger.kernel.org
-> >> >> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> >> >> Signed-off-by: Eric Paris <eparis@redhat.com>
-> >> >> ---
-> >> >>  kernel/auditsc.c | 27 ++++++++++++++++++---------
-> >> >>  1 file changed, 18 insertions(+), 9 deletions(-)
-> >> >
-> >> > Did this patch get dropped somewhere?  Isn't it a valid bugfix, or did I
-> >> > miss a later conversation about this?
-> >>
-> >> Hmm.  It seems that it didn't make it into Linus' tree.  Crap.
-> >>
-> >> IMO we need some kind of real tracking system for issues reported to
-> >> security@.
-> >
-> > That seems to be my mbox at times :)
-> >
-> > But yes, having something "real" might be good if the load gets higher,
-> > right now it's so low that my "sweep pending security patches" task
-> > usually catches anything pending, which is rare.
-> 
-> How does one get added to the security@ alias?  We've been carrying
-> this patch in Fedora for a bit now.  I'd be happy to help track things
-> given we get distro security bug reports and such.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Just ask on the security@ alias to be added and we can take it from
-there.
+------------------
 
-thanks,
+From: David Vrabel <dvrabel@cantab.net>
 
-greg k-h
+commit 83d51ab473dddde7df858015070ed22b84ebe9a9 upstream.
+
+In xen_memory_setup(), if a page that is being released has a VA
+mapping this must also be updated.  Otherwise, the page will be not
+released completely -- it will still be referenced in Xen and won't be
+freed util the mapping is removed and this prevents it from being
+reallocated at a different PFN.
+
+This was already being done for the ISA memory region in
+xen_ident_map_ISA() but on many systems this was omitting a few pages
+as many systems marked a few pages below the ISA memory region as
+reserved in the e820 map.
+
+This fixes errors such as:
+
+(XEN) page_alloc.c:1148:d0 Over-allocation for domain 0: 2097153 > 2097152
+(XEN) memory.c:133:d0 Could not allocate order=0 extent: id=0 memflags=0 (0 of 17)
+
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/x86/xen/enlighten.c |    1 -
+ arch/x86/xen/mmu.c       |   23 -----------------------
+ arch/x86/xen/setup.c     |   43 +++++++++++++++++++++++++++++++++++--------
+ arch/x86/xen/xen-ops.h   |    1 -
+ 4 files changed, 35 insertions(+), 33 deletions(-)
+
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1390,7 +1390,6 @@ asmlinkage void __init xen_start_kernel(
+ 
+ 	xen_raw_console_write("mapping kernel into physical memory\n");
+ 	pgd = xen_setup_kernel_pagetable(pgd, xen_start_info->nr_pages);
+-	xen_ident_map_ISA();
+ 
+ 	/* Allocate and initialize top and mid mfn levels for p2m structure */
+ 	xen_build_mfn_list_list();
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -1953,29 +1953,6 @@ static void xen_set_fixmap(unsigned idx,
+ #endif
+ }
+ 
+-void __init xen_ident_map_ISA(void)
+-{
+-	unsigned long pa;
+-
+-	/*
+-	 * If we're dom0, then linear map the ISA machine addresses into
+-	 * the kernel's address space.
+-	 */
+-	if (!xen_initial_domain())
+-		return;
+-
+-	xen_raw_printk("Xen: setup ISA identity maps\n");
+-
+-	for (pa = ISA_START_ADDRESS; pa < ISA_END_ADDRESS; pa += PAGE_SIZE) {
+-		pte_t pte = mfn_pte(PFN_DOWN(pa), PAGE_KERNEL_IO);
+-
+-		if (HYPERVISOR_update_va_mapping(PAGE_OFFSET + pa, pte, 0))
+-			BUG();
+-	}
+-
+-	xen_flush_tlb();
+-}
+-
+ static void __init xen_post_allocator_init(void)
+ {
+ 	pv_mmu_ops.set_pte = xen_set_pte;
+--- a/arch/x86/xen/setup.c
++++ b/arch/x86/xen/setup.c
+@@ -147,6 +147,13 @@ static unsigned long __init xen_do_chunk
+ 
+ 	return len;
+ }
++
++static unsigned long __init xen_release_chunk(unsigned long start,
++					      unsigned long end)
++{
++	return xen_do_chunk(start, end, true);
++}
++
+ static unsigned long __init xen_populate_chunk(
+ 	const struct e820entry *list, size_t map_size,
+ 	unsigned long max_pfn, unsigned long *last_pfn,
+@@ -205,6 +212,29 @@ static unsigned long __init xen_populate
+ 	}
+ 	return done;
+ }
++
++static void __init xen_set_identity_and_release_chunk(
++	unsigned long start_pfn, unsigned long end_pfn, unsigned long nr_pages,
++	unsigned long *released, unsigned long *identity)
++{
++	unsigned long pfn;
++
++	/*
++	 * If the PFNs are currently mapped, the VA mapping also needs
++	 * to be updated to be 1:1.
++	 */
++	for (pfn = start_pfn; pfn <= max_pfn_mapped && pfn < end_pfn; pfn++)
++		(void)HYPERVISOR_update_va_mapping(
++			(unsigned long)__va(pfn << PAGE_SHIFT),
++			mfn_pte(pfn, PAGE_KERNEL_IO), 0);
++
++	if (start_pfn < nr_pages)
++		*released += xen_release_chunk(
++			start_pfn, min(end_pfn, nr_pages));
++
++	*identity += set_phys_range_identity(start_pfn, end_pfn);
++}
++
+ static unsigned long __init xen_set_identity_and_release(
+ 	const struct e820entry *list, size_t map_size, unsigned long nr_pages)
+ {
+@@ -234,14 +264,11 @@ static unsigned long __init xen_set_iden
+ 			if (entry->type == E820_RAM)
+ 				end_pfn = PFN_UP(entry->addr);
+ 
+-			if (start_pfn < end_pfn) {
+-				if (start_pfn < nr_pages)
+-					released += xen_do_chunk(
+-						start_pfn, min(end_pfn, nr_pages), true);
+-
+-				identity += set_phys_range_identity(
+-					start_pfn, end_pfn);
+-			}
++			if (start_pfn < end_pfn)
++				xen_set_identity_and_release_chunk(
++					start_pfn, end_pfn, nr_pages,
++					&released, &identity);
++
+ 			start = end;
+ 		}
+ 	}
+--- a/arch/x86/xen/xen-ops.h
++++ b/arch/x86/xen/xen-ops.h
+@@ -28,7 +28,6 @@ void xen_setup_shared_info(void);
+ void xen_build_mfn_list_list(void);
+ void xen_setup_machphys_mapping(void);
+ pgd_t *xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn);
+-void xen_ident_map_ISA(void);
+ void xen_reserve_top(void);
+ extern unsigned long xen_max_p2m_pfn;
+ 
+
+
