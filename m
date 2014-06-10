@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936065AbaFJA1L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:27:11 -0400
+	id S934628AbaFJAWt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:22:49 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:58624 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934636AbaFJAWu (ORCPT
+	with ESMTP id S934572AbaFJAWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 20:22:50 -0400
+	Mon, 9 Jun 2014 20:22:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Daniel Kiper <daniel.kiper@oracle.com>
-Subject: [PATCH 3.4 84/88] xen/setup: update VA mapping when releasing memory during setup
-Date: Mon,  9 Jun 2014 17:25:34 -0700
-Message-Id: <20140610002427.269562206@linuxfoundation.org>
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        "J. Bruce Fields" <bfields@redhat.com>,
+        Weng Meiling <wengmeiling.weng@huawei.com>
+Subject: [PATCH 3.4 55/88] nfsd: pass net to nfsd_startup() and nfsd_shutdown()
+Date: Mon,  9 Jun 2014 17:25:05 -0700
+Message-Id: <20140610002426.336262670@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
 References: <20140610002424.500996570@linuxfoundation.org>
@@ -30,155 +30,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <dvrabel@cantab.net>
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-commit 83d51ab473dddde7df858015070ed22b84ebe9a9 upstream.
+commit db42d1a76a8dfcaba7a2dc9c591fa4e231db22b3 upstream.
 
-In xen_memory_setup(), if a page that is being released has a VA
-mapping this must also be updated.  Otherwise, the page will be not
-released completely -- it will still be referenced in Xen and won't be
-freed util the mapping is removed and this prevents it from being
-reallocated at a different PFN.
+Precursor patch. Hard-coded "init_net" will be replaced by proper one in
+future.
 
-This was already being done for the ISA memory region in
-xen_ident_map_ISA() but on many systems this was omitting a few pages
-as many systems marked a few pages below the ISA memory region as
-reserved in the e820 map.
-
-This fixes errors such as:
-
-(XEN) page_alloc.c:1148:d0 Over-allocation for domain 0: 2097153 > 2097152
-(XEN) memory.c:133:d0 Could not allocate order=0 extent: id=0 memflags=0 (0 of 17)
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+[wengmeiling: backport to 3.4:
+ - adjust context
+ - one more parameter(int port) for nfsd_startup()
+ - no net ns initialization in nfsd_shutdown()
+ - pass @net to lockd_up() in nfsd_startup()
+ - pass @net to lockd_down() in nfsd_shutdown()]
+Signed-off-by: Weng Meiling <wengmeiling.weng@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/x86/xen/enlighten.c |    1 -
- arch/x86/xen/mmu.c       |   23 -----------------------
- arch/x86/xen/setup.c     |   43 +++++++++++++++++++++++++++++++++++--------
- arch/x86/xen/xen-ops.h   |    1 -
- 4 files changed, 35 insertions(+), 33 deletions(-)
+ fs/nfsd/nfssvc.c |   17 ++++++++---------
+ 1 file changed, 8 insertions(+), 9 deletions(-)
 
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1390,7 +1390,6 @@ asmlinkage void __init xen_start_kernel(
+--- a/fs/nfsd/nfssvc.c
++++ b/fs/nfsd/nfssvc.c
+@@ -203,10 +203,9 @@ static int nfsd_init_socks(int port, str
  
- 	xen_raw_console_write("mapping kernel into physical memory\n");
- 	pgd = xen_setup_kernel_pagetable(pgd, xen_start_info->nr_pages);
--	xen_ident_map_ISA();
+ static bool nfsd_up = false;
  
- 	/* Allocate and initialize top and mid mfn levels for p2m structure */
- 	xen_build_mfn_list_list();
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -1953,29 +1953,6 @@ static void xen_set_fixmap(unsigned idx,
- #endif
- }
- 
--void __init xen_ident_map_ISA(void)
--{
--	unsigned long pa;
--
--	/*
--	 * If we're dom0, then linear map the ISA machine addresses into
--	 * the kernel's address space.
--	 */
--	if (!xen_initial_domain())
--		return;
--
--	xen_raw_printk("Xen: setup ISA identity maps\n");
--
--	for (pa = ISA_START_ADDRESS; pa < ISA_END_ADDRESS; pa += PAGE_SIZE) {
--		pte_t pte = mfn_pte(PFN_DOWN(pa), PAGE_KERNEL_IO);
--
--		if (HYPERVISOR_update_va_mapping(PAGE_OFFSET + pa, pte, 0))
--			BUG();
--	}
--
--	xen_flush_tlb();
--}
--
- static void __init xen_post_allocator_init(void)
+-static int nfsd_startup(unsigned short port, int nrservs)
++static int nfsd_startup(unsigned short port, int nrservs, struct net *net)
  {
- 	pv_mmu_ops.set_pte = xen_set_pte;
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -147,6 +147,13 @@ static unsigned long __init xen_do_chunk
+ 	int ret;
+-	struct net *net = &init_net;
  
- 	return len;
+ 	if (nfsd_up)
+ 		return 0;
+@@ -221,7 +220,7 @@ static int nfsd_startup(unsigned short p
+ 	ret = nfsd_init_socks(port, net);
+ 	if (ret)
+ 		goto out_racache;
+-	ret = lockd_up(&init_net);
++	ret = lockd_up(net);
+ 	if (ret)
+ 		goto out_racache;
+ 	ret = nfs4_state_start();
+@@ -230,13 +229,13 @@ static int nfsd_startup(unsigned short p
+ 	nfsd_up = true;
+ 	return 0;
+ out_lockd:
+-	lockd_down(&init_net);
++	lockd_down(net);
+ out_racache:
+ 	nfsd_racache_shutdown();
+ 	return ret;
  }
-+
-+static unsigned long __init xen_release_chunk(unsigned long start,
-+					      unsigned long end)
-+{
-+	return xen_do_chunk(start, end, true);
-+}
-+
- static unsigned long __init xen_populate_chunk(
- 	const struct e820entry *list, size_t map_size,
- 	unsigned long max_pfn, unsigned long *last_pfn,
-@@ -205,6 +212,29 @@ static unsigned long __init xen_populate
- 	}
- 	return done;
- }
-+
-+static void __init xen_set_identity_and_release_chunk(
-+	unsigned long start_pfn, unsigned long end_pfn, unsigned long nr_pages,
-+	unsigned long *released, unsigned long *identity)
-+{
-+	unsigned long pfn;
-+
-+	/*
-+	 * If the PFNs are currently mapped, the VA mapping also needs
-+	 * to be updated to be 1:1.
-+	 */
-+	for (pfn = start_pfn; pfn <= max_pfn_mapped && pfn < end_pfn; pfn++)
-+		(void)HYPERVISOR_update_va_mapping(
-+			(unsigned long)__va(pfn << PAGE_SHIFT),
-+			mfn_pte(pfn, PAGE_KERNEL_IO), 0);
-+
-+	if (start_pfn < nr_pages)
-+		*released += xen_release_chunk(
-+			start_pfn, min(end_pfn, nr_pages));
-+
-+	*identity += set_phys_range_identity(start_pfn, end_pfn);
-+}
-+
- static unsigned long __init xen_set_identity_and_release(
- 	const struct e820entry *list, size_t map_size, unsigned long nr_pages)
+ 
+-static void nfsd_shutdown(void)
++static void nfsd_shutdown(struct net *net)
  {
-@@ -234,14 +264,11 @@ static unsigned long __init xen_set_iden
- 			if (entry->type == E820_RAM)
- 				end_pfn = PFN_UP(entry->addr);
+ 	/*
+ 	 * write_ports can create the server without actually starting
+@@ -247,14 +246,14 @@ static void nfsd_shutdown(void)
+ 	if (!nfsd_up)
+ 		return;
+ 	nfs4_state_shutdown();
+-	lockd_down(&init_net);
++	lockd_down(net);
+ 	nfsd_racache_shutdown();
+ 	nfsd_up = false;
+ }
  
--			if (start_pfn < end_pfn) {
--				if (start_pfn < nr_pages)
--					released += xen_do_chunk(
--						start_pfn, min(end_pfn, nr_pages), true);
--
--				identity += set_phys_range_identity(
--					start_pfn, end_pfn);
--			}
-+			if (start_pfn < end_pfn)
-+				xen_set_identity_and_release_chunk(
-+					start_pfn, end_pfn, nr_pages,
-+					&released, &identity);
-+
- 			start = end;
- 		}
- 	}
---- a/arch/x86/xen/xen-ops.h
-+++ b/arch/x86/xen/xen-ops.h
-@@ -28,7 +28,6 @@ void xen_setup_shared_info(void);
- void xen_build_mfn_list_list(void);
- void xen_setup_machphys_mapping(void);
- pgd_t *xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn);
--void xen_ident_map_ISA(void);
- void xen_reserve_top(void);
- extern unsigned long xen_max_p2m_pfn;
+ static void nfsd_last_thread(struct svc_serv *serv, struct net *net)
+ {
+-	nfsd_shutdown();
++	nfsd_shutdown(net);
  
+ 	svc_rpcb_cleanup(serv, net);
+ 
+@@ -458,7 +457,7 @@ nfsd_svc(unsigned short port, int nrserv
+ 
+ 	nfsd_up_before = nfsd_up;
+ 
+-	error = nfsd_startup(port, nrservs);
++	error = nfsd_startup(port, nrservs, net);
+ 	if (error)
+ 		goto out_destroy;
+ 	error = svc_set_num_threads(nfsd_serv, NULL, nrservs);
+@@ -471,7 +470,7 @@ nfsd_svc(unsigned short port, int nrserv
+ 	error = nfsd_serv->sv_nrthreads - 1;
+ out_shutdown:
+ 	if (error < 0 && !nfsd_up_before)
+-		nfsd_shutdown();
++		nfsd_shutdown(net);
+ out_destroy:
+ 	nfsd_destroy(net);		/* Release server */
+ out:
 
 
