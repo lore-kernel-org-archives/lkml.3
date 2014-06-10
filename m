@@ -1,106 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753700AbaFJV2y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 17:28:54 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37402 "EHLO mail.zytor.com"
+	id S1753542AbaFJVdg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 17:33:36 -0400
+Received: from mga11.intel.com ([192.55.52.93]:18255 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753058AbaFJV2x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 17:28:53 -0400
-Message-ID: <53977885.8010709@zytor.com>
-Date: Tue, 10 Jun 2014 14:28:37 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1753109AbaFJVdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 17:33:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="353256278"
+Date: Tue, 10 Jun 2014 17:33:33 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Keith Busch <keith.busch@intel.com>
+Cc: Jens Axboe <axboe@fb.com>,
+        Matias =?iso-8859-1?Q?Bj=F8rling?= <m@bjorling.me>,
+        "sbradshaw@micron.com" <sbradshaw@micron.com>,
+        "tom.leiming@gmail.com" <tom.leiming@gmail.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-nvme@lists.infradead.org" <linux-nvme@lists.infradead.org>
+Subject: Re: [PATCH v7] NVMe: conversion to blk-mq
+Message-ID: <20140610213333.GA10055@linux.intel.com>
+References: <1402392038-5268-1-git-send-email-m@bjorling.me>
+ <1402392038-5268-2-git-send-email-m@bjorling.me>
+ <alpine.LRH.2.03.1406100945250.4699@AMR>
+ <A52B97CC-6D77-468B-9A9B-A5888AE63580@fb.com>
+ <alpine.LRH.2.03.1406101140490.4699@AMR>
+ <5397636F.9050209@fb.com>
+ <alpine.LRH.2.03.1406101458470.4699@AMR>
+ <5397753B.2020009@fb.com>
+ <alpine.LRH.2.03.1406101515430.4699@AMR>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>, mingo@kernel.org,
-        luto@amacapital.net, linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        hpa@linux.intel.com
-CC: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/vdso] x86, vdso: Use <tools/le_byteshift.h> for littleendian
- access
-References: <20140606140017.afb7f91142f66cb3dd13c186@linux-foundation.org>	<tip-bdfb9bcc25005d06a9c301830bdeb7ca5a0b6ef7@git.kernel.org> <20140610135051.c3c34165f73d67d218b62bd9@linux-foundation.org>
-In-Reply-To: <20140610135051.c3c34165f73d67d218b62bd9@linux-foundation.org>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/mixed;
- boundary="------------020308000302040409010808"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LRH.2.03.1406101515430.4699@AMR>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------020308000302040409010808
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-
-On 06/10/2014 01:50 PM, Andrew Morton wrote:
-> On Fri, 6 Jun 2014 15:00:29 -0700 "tip-bot for H. Peter Anvin" <tipbot@zytor.com> wrote:
+On Tue, Jun 10, 2014 at 03:21:18PM -0600, Keith Busch wrote:
+> Yeah, nvme_setup_prps is probably the least readable code in this driver.
+> Maybe some comments are in order here...
 > 
->> Commit-ID:  bdfb9bcc25005d06a9c301830bdeb7ca5a0b6ef7
->> Gitweb:     http://git.kernel.org/tip/bdfb9bcc25005d06a9c301830bdeb7ca5a0b6ef7
->> Author:     H. Peter Anvin <hpa@linux.intel.com>
->> AuthorDate: Fri, 6 Jun 2014 14:30:37 -0700
->> Committer:  H. Peter Anvin <hpa@linux.intel.com>
->> CommitDate: Fri, 6 Jun 2014 14:54:54 -0700
->>
->> x86, vdso: Use <tools/le_byteshift.h> for littleendian access
+> There are two rules for an SGL to be mappable to a PRP:
 > 
-> Getting closer.
+> 1. Every element must have zero page offset, except the first.
 > 
-> In file included from arch/x86/vdso/vdso2c.c:80:
-> arch/x86/vdso/vdso2c.h: In function 'go64':
-> arch/x86/vdso/vdso2c.h:119: warning: implicit declaration of function 'htole16'
-> /tmp/cc04m2KE.o: In function `go':
-> vdso2c.c:(.text+0xf69): undefined reference to `htole16'
-> vdso2c.c:(.text+0x12e6): undefined reference to `htole16'
-> 
+> 2. Every element must end on a page boundary, except the last.
 
-Want to test this patch before I commit it?
+Or to put it another way, NVMe PRPs only support I/Os that describe a
+single range of virtual memory.
 
-	-hpa
-
-
---------------020308000302040409010808
-Content-Type: text/x-patch;
- name="0001-x86-vdso-Remove-one-final-use-of-htole16.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="0001-x86-vdso-Remove-one-final-use-of-htole16.patch"
-
->From 15ea1a528e08c6bc322f10686ec8d73ba413b941 Mon Sep 17 00:00:00 2001
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Tue, 10 Jun 2014 14:25:26 -0700
-Subject: [PATCH] x86, vdso: Remove one final use of htole16()
-
-One final use of the macros from <endian.h> which are not available on
-older system.  In this case we had one sole case of *writing* a
-littleendian number, but the number is SHN_UNDEF which is the constant
-zero, so rather than dealing with the general case of littleendian
-puts here, just document that the constant is zero and be done with
-it.
-
-Reported-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Cc: Andy Lutomirski <luto@amacapital.net>
-Link: http://lkml.kernel.org/r/20140610135051.c3c34165f73d67d218b62bd9@linux-foundation.org
----
- arch/x86/vdso/vdso2c.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/x86/vdso/vdso2c.h b/arch/x86/vdso/vdso2c.h
-index 8a074637a576..d9f6f61aef1c 100644
---- a/arch/x86/vdso/vdso2c.h
-+++ b/arch/x86/vdso/vdso2c.h
-@@ -116,7 +116,7 @@ static void GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
- 	hdr->e_shoff = 0;
- 	hdr->e_shentsize = 0;
- 	hdr->e_shnum = 0;
--	hdr->e_shstrndx = htole16(SHN_UNDEF);
-+	hdr->e_shstrndx = SHN_UNDEF; /* SHN_UNDEF == 0 */
- 
- 	if (!name) {
- 		fwrite(addr, load_size, 1, outfile);
--- 
-1.9.3
-
-
---------------020308000302040409010808--
