@@ -1,54 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754025AbaFJVf6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 17:35:58 -0400
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:41627 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753247AbaFJVf4 (ORCPT
+	id S1754086AbaFJVh1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 17:37:27 -0400
+Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:50855 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752302AbaFJVh0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 17:35:56 -0400
-From: Brian Norris <computersforpeace@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Brian Norris <computersforpeace@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-input@vger.kernel.org
-Subject: [PATCH] HID: drop remove Unicode non-breaking space from Kconfig
-Date: Tue, 10 Jun 2014 14:35:36 -0700
-Message-Id: <1402436136-17918-1-git-send-email-computersforpeace@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Tue, 10 Jun 2014 17:37:26 -0400
+Date: Tue, 10 Jun 2014 23:37:22 +0200
+From: Florian Westphal <fw@strlen.de>
+To: Alexei Starovoitov <alexei.starovoitov@gmail.com>
+Cc: =?iso-8859-15?Q?Egerv=E1ry?= Gergely <gergely@egervary.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>, stable@kernel.org
+Subject: Re: 3.4.92 MTU issues
+Message-ID: <20140610213722.GE1970@breakpoint.cc>
+References: <53975FF9.5070803@egervary.hu>
+ <CAADnVQ+q3wFf=j0TY57d6Ux4GyGLr0bVCFHDgA45n9rXiEEzjg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAADnVQ+q3wFf=j0TY57d6Ux4GyGLr0bVCFHDgA45n9rXiEEzjg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a UTF-8 non-breaking space character (0xc2 0xa0) after the "Y"
-in "Say Y here". This is probably not intentional. Replace it with a
-standard ASCII space (0x20).
+Alexei Starovoitov <alexei.starovoitov@gmail.com> wrote:
 
-If you can't see a difference here, I don't blame you :)
+[ Cc'ing stable team since its stable specific regression ]
 
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
-Cc: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-input@vger.kernel.org
----
- drivers/hid/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> On Tue, Jun 10, 2014 at 12:43 PM, Egerváry Gergely <gergely@egervary.hu> wrote:
+> > Hi,
+> >
+> > we have just upgraded our systems from 3.4.91 (longterm) to 3.4.92.
+> > Since then we are experiencing dozens of MTU-related network timeout
+> > issues. Reverting back to 3.4.91 fixes all of these problems.
+> >
+> > Both kernel versions are built from vanilla sources with the same
+> > .config. These can be highly reproduced over VPN tunnels or even over
+> > simple ethernet connections when using DNAT. (TCP port forward) It
+> > looks like MTU path discovery is somehow affected.
+> >
+> > ICMP is not filtered in our network. (For testing, we flushed all
+> > iptables rules, set all policies to ACCEPT, and problem still exists.)
+> > We do not use any special sysctl settings. Was there any changes
+> > related to packet forwarding or MTU discovery?
 
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index 800c8b60f7a2..08c9693e6f83 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -785,7 +785,7 @@ config HID_XINMO
- 	depends on HID
- 	---help---
- 	Support for Xin-Mo devices that are not fully compliant with the HID
--	standard. Currently only supports the Xin-Mo Dual Arcade. Say YÂ here
-+	standard. Currently only supports the Xin-Mo Dual Arcade. Say Y here
- 	if you have a Xin-Mo Dual Arcade controller.
- 
- config HID_ZEROPLUS
--- 
-1.9.1
+These were in earlier releases than 3.4.92.
 
+> some combination of old kernel and backport of ("net: ipv4:
+> ip_forward: fix inverted local_df test") ?
+> just guessing
+
+Excellent guess.  Yes, this is the culprit.
+
+Quoting that patch changelog:
+
+'This wasn't noticed earlier [..] because netfilter ip defrag did not set local_df
+until couple of days ago.'
+
+-stable lacks commit 895162b1101b3ea5db08ca6822ae9672717efec0, so
+netfilter never sets ->local_df.  Thus all defragmented packets
+that go over the mtu are refused to be forwarded.
+
+Gergely, please either revert
+
+commit bd91cb56f951a7b0da8c3098ea9cd56854ece66c
+Author: Florian Westphal <fw@strlen.de>
+net: ipv4: ip_forward: fix inverted local_df test
+[ Upstream commit ca6c5d4ad216d5942ae544bbf02503041bd802aa ]
+
+Or, alternatively, also apply upstream commit 895162b1101b3ea5db08ca6822ae9672717efec0
+Author: Florian Westphal <fw@strlen.de>
+Date:   Fri May 2 15:32:16 2014 +0200
+netfilter: ipv4: defrag: set local_df flag on defragmented skb
+
+on top of your 3.4.92 kernel.
+
+(The latter might be a better option since it will also fix the
+ long-standing issue where netfilter sends bogus frag-needed message
+ under very rare circumstances).
+
+Thanks for reporting, and sorry for not noticing during stable review
+cycle 8-(
