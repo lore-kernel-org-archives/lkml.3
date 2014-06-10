@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753539AbaFJXrn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 19:47:43 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:37025 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752030AbaFJXrl convert rfc822-to-8bit (ORCPT
+	id S1753864AbaFJXsc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 19:48:32 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51795 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753009AbaFJXsa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 19:47:41 -0400
-Content-Type: text/plain; charset="utf-8"
+	Tue, 10 Jun 2014 19:48:30 -0400
+Date: Tue, 10 Jun 2014 16:48:26 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Florian Fainelli <f.fainelli@gmail.com>, Tony Lindgren <tony@atomide.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Jason Cooper <jason@lakedaemon.net>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [RFC] irqchip: gic: always mask interrupts during suspend
+Message-ID: <20140610234826.GK3599@ld-irv-0074>
+References: <1402442098-21093-1-git-send-email-computersforpeace@gmail.com>
+ <alpine.DEB.2.10.1406110129270.5170@nanos>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Chris Ball" <chris@printf.net>, "Lee Jones" <lee.jones@linaro.org>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <CA+55aFxBwteZeUHG+Z-cdLU_YCO4f8TDuYvGmXc0-v9M1H11+g@mail.gmail.com>
-Cc: "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        linux-mmc@vger.kernel.org
-References: <86ha3so84o.fsf@void.printf.net>
- <CA+55aFxBwteZeUHG+Z-cdLU_YCO4f8TDuYvGmXc0-v9M1H11+g@mail.gmail.com>
-Message-ID: <20140610234737.6562.43399@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [GIT PULL] MMC updates for 3.16-rc1
-Date: Tue, 10 Jun 2014 16:47:37 -0700
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1406110129270.5170@nanos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Linus Torvalds (2014-06-10 14:50:59)
-> On Tue, Jun 10, 2014 at 12:51 PM, Chris Ball <chris@printf.net> wrote:
-> >
-> >  These patches have been tested in
-> > linux-next, and there are three minor conflicts which I've resolved on
-> > my mmc-updates-for-3.16-rc1-merged branch.
+On Wed, Jun 11, 2014 at 01:34:39AM +0200, Thomas Gleixner wrote:
+> On Tue, 10 Jun 2014, Brian Norris wrote:
+> > Other random thought: it seems like any irqchip driver which does lazy IRQ
+> > masking ought to use IRQCHIP_MASK_ON_SUSPEND. So maybe the IRQ core should just
+> > do something like:
+> > 
+> > 	if (!chip->irq_disable)
+> > 		chip->flags |= IRQCHIP_MASK_ON_SUSPEND;
 > 
-> Your merged branch is incorrect as far as I can tell, and dropped
-> commit a8246fedacad ("dmaengine: omap: hide filter_fn for built-in
-> drivers").
-> 
-> And I'm not sure why the sunxi driver (by David Lanzendörfer) and the
-> Realtek driver (by Roger Tseng) got merged in two different trees.
-> It's clearly the same patches and drivers, but I got them first
-> through the MFD tree (Realtek) and the clock tree (sunxi) trees and
-> now the MMC tree.
+> No. Lazy irq disable and the suspend logic are different beasts.
 
-Bummer. The sunxi mmc driver came through the clock tree to handle a
-linux-next merge issue. Pics or it didn't happen:
+OK, fair enough. Drop that random thought then. It's not in the patch
+content anyway.
 
-https://lkml.org/lkml/2014/6/2/696
+> That's up to the platform to decide this. Just for the record: there
+> is a world outside of ARM...
 
-Regards,
-Mike
+OK. But GIC is ARM-specific, so we can still constrain this patch and
+related topics to the world of ARM.
 
+> But that brings me to a different question:
 > 
-> Don't you guys talk to each other? The Realtek driver is even marked
-> as Acked-by Chris Ball in the MFD tree.
-> 
-> Also, that new drivers/mmc/host/usdhi6rol0.c driver is one f*cking
-> noisy compile, and knisr certainly has never been tested in a 64-bit
-> environment. Please either fix it, or make it depend on BROKEN.
-> 
-> Grr.
-> 
-> Anyway, pulled, merged correctly, and pushed out..
-> 
->                 Linus
+>     Why are you not putting that customization into the device tree
+>     instead of trying to add this to some random arch/arm/mach-foo
+>     files?
+
+I'm not adding customization to arch/arm/mach-foo files. I'm trying to
+remove it.
+
+This property could be added to device tree, if there was really a valid
+use case for a GIC which leaves its interrupts unmasked for suspend. My
+question in this patch is essentially: does such a use case exist?
+
+Brian
