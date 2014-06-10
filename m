@@ -1,45 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752850AbaFJRnV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 13:43:21 -0400
-Received: from www.linutronix.de ([62.245.132.108]:54342 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752817AbaFJRnT (ORCPT
+	id S1752726AbaFJRpj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 13:45:39 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:57634 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751983AbaFJRph (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 13:43:19 -0400
-Date: Tue, 10 Jun 2014 19:43:16 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: Brad Mouring <bmouring@ni.com>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Jason Low <jason.low2@hp.com>
-Subject: Re: [patch V3 7/7] rtmutex: Avoid pointless requeueing in the deadlock
- detection chain walk
-In-Reply-To: <20140610111942.668d4058@gandalf.local.home>
-Message-ID: <alpine.DEB.2.10.1406101943000.5170@nanos>
-References: <20140609201118.387571774@linutronix.de> <20140609202336.506044876@linutronix.de> <20140610145725.GA29976@linuxgetsreal> <20140610111942.668d4058@gandalf.local.home>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Tue, 10 Jun 2014 13:45:37 -0400
+Message-ID: <5397443E.3070208@semaphore.gr>
+Date: Tue, 10 Jun 2014 20:45:34 +0300
+From: Stratos Karafotis <stratosk@semaphore.gr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Dirk Brandewie <dirk.brandewie@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>
+CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/7] cpufreq: intel_pstate: Add debugfs file stats
+References: <53962072.6010702@semaphore.gr> <53972883.7070707@gmail.com> <53973078.6040907@semaphore.gr> <53973ABE.300@gmail.com>
+In-Reply-To: <53973ABE.300@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Jun 2014, Steven Rostedt wrote:
+On 10/06/2014 08:05 μμ, Dirk Brandewie wrote:
+> On 06/10/2014 09:21 AM, Stratos Karafotis wrote:
+>> On 10/06/2014 06:47 μμ, Dirk Brandewie wrote:
+>>> On 06/09/2014 02:00 PM, Stratos Karafotis wrote:
+>>>> Add stats file in debugfs under driver's parent directory
+>>>> (pstate_snb) which counts the time in nsecs per requested
+>>>> P state and the number of times the specific state
+>>>> was requested.
+>>>>
+>>>> The file presents the statistics per logical CPU in the
+>>>> following format. The time is displayed in msecs:
+>>>>
+>>>
+>>> NAK
+>>>
+>>> This adds significantly to the memory footprint to gather information
+>>> that is available by post processing the perf tracepoint information.
+>>> The increase isn't horrible on single socket desktop processor machines
+>>> but gets big with server class machines.  One vendor I have talked to considers
+>>> a machine with 1024 cpus to be a SMALL machine.
+>>>
+>>
+>> If I am not wrong the sizeof pstate_stat is 20B. On my CPU with 20 P states, we
+>> need 400B per logical CPU (3200B total in my desktop) plus 64B for stats pointers.
+>>
+>> In your example this would need about 400KB - 500KB?
+>> Is it too much for 1024 a CPUs system?
+> 
+> For something that will likely not be used IMO yes.
+> 
+>>
+>> I think it's a useful piece of info that we can have it directly without
+>> post processing tracepoint.
+>> Is it acceptable to conditionally compile it with a new CONFIG option?
+> 
+> 
+> I can see where the information could be useful but the set of people
+> that would find it useful is very small.  Having information about residency 
+> since boot is interesting but just barely.  This file will encourage people
+> to build tools/scripts that rely on this file and they will complain bitterly
+> if/when it changes or goes away so you would be creating a defacto ABI in
+> debugfs.
+> 
+> 
+> This functionality will *not* be supportable in up coming processors where HWP
+> is being used.  See section 14.4 of the current SDM vol. 3 
+> http://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-system-programming-manual-325384.pdf
+> 
 
-> On Tue, 10 Jun 2014 09:57:25 -0500
-> "Brad Mouring" <bmouring@ni.com> wrote:
-> 
-> 
-> > > +		/* Store whether owner is blocked itself and drop locks */
-> > > +		next_lock = task_blocked_on(task);
-> > task_blocked_on(task) is not clear to me, the recipient of the
-> > return is the only clue that hints at what the function does.
-> 
-> Well, this is more than confusing, it's the only user, all other users
-> are task_blocked_on_lock(), and this causes the code not to compile.
+I will drop this patch in v2.
+Thanks a lot for your comments and your time!
 
-Grr, yes.
+Stratos
+
