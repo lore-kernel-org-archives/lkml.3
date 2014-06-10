@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752987AbaFJWhT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 18:37:19 -0400
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:53652 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751333AbaFJWhR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 18:37:17 -0400
-Date: Tue, 10 Jun 2014 15:37:14 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Marian Marinov <mm@1h.com>
-cc: Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+	id S1753404AbaFJWht (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 18:37:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54780 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750822AbaFJWhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 18:37:48 -0400
+Date: Wed, 11 Jun 2014 00:37:34 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Christoph Lameter <cl@gentwo.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Vlastimil Babka <vbabka@suse.cz>, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: Re: [RFC] oom, memcg: handle sysctl oom_kill_allocating_task while
- memcg oom happening
-In-Reply-To: <5397194B.9010606@1h.com>
-Message-ID: <alpine.DEB.2.02.1406101530100.32203@chino.kir.corp.google.com>
-References: <5396ED66.7090401@1h.com> <20140610115254.GA25631@dhcp22.suse.cz> <5397194B.9010606@1h.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+Subject: Re: [PATCH, RFC 00/10] THP refcounting redesign
+Message-ID: <20140610223734.GH19660@redhat.com>
+References: <1402329861-7037-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <alpine.DEB.2.10.1406101518510.19364@gentwo.org>
+ <20140610204640.GA9594@node.dhcp.inet.fi>
+ <20140610220451.GG19660@redhat.com>
+ <20140610221431.GA10634@node.dhcp.inet.fi>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140610221431.GA10634@node.dhcp.inet.fi>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Jun 2014, Marian Marinov wrote:
-
-> >> During these OOM states the load of the machine gradualy increases from 25 up to 120 in the interval of
-> >> 10minutes.
-> >> 
-> >> Once we manually bring down the memory usage of a container(killing some tasks) the load drops down to 25 within
-> >> 5 to 7 minutes.
+On Wed, Jun 11, 2014 at 01:14:31AM +0300, Kirill A. Shutemov wrote:
+> On Wed, Jun 11, 2014 at 12:04:51AM +0200, Andrea Arcangeli wrote:
+> > On Tue, Jun 10, 2014 at 11:46:40PM +0300, Kirill A. Shutemov wrote:
+> > > Agreed. The patchset drops tail page refcounting.
 > > 
-> > So the OOM killer is not able to find a victim to kill?
+> > Very possibly I misread something or a later patch fixes this up, I
+> > just did a basic code review, but from the new code of split_huge_page
+> > it looks like it returns -EBUSY after checking the individual tail
+> > page refcounts, so it's not clear how that defines as "dropped".
 > 
-> It was constantly killing tasks. 245 oom invocations in less then 6min for that particular cgroup. With top 61 oom
-> invocations in one minute.
-> 
-> It was killing... In that particular case, the problem was a web server that was under attack. New php processes was
-> spawned very often and instead of killing each newly created process(which is allocating memory) the kernel tries to
-> find more suitable task. Which in this case was not desired.
-> 
+> page_mapcount() here is really mapcount: how many times the page is
+> mapped, not pins on tail pages as we have it now.
 
-This is a forkbomb problem, then, that causes processes to constantly be 
-reforked and the memcg go out of memory immediately after another process 
-has been killed for the same reason.
+Ok then I may suggest to rename the variable from tail_count to
+tail_mapcount to make it more self explanatory... of course then it is
+compared to the head page count, which means the tail pins have to be
+in the head already, but calling it tail_mapcount would be more clear
+if you're used to the current semantics of mapcount on tail pages. I
+was confused myself what the benefits were... if it didn't drop the
+tail page refcounting.
 
-Enabling oom_kill_allocating_task (or its identical behavior targeted for 
-a specific memcg or memcg hierarchy) would result in random kills of your 
-processes, whichever process is the unlucky one to be allocating at the 
-time would get killed as long as it wasn't oom disabled.  The only benefit 
-in this case would be that the oom killer wouldn't need to iterate 
-processes, but there's nothing to suggest that your problem -- the fact 
-that you're under a forkbomb -- would be fixed.
+The other suggestions on doing split_huge_page inside split_huge_pmd
+(not required to succeed) and fix it up later in khugepaged so the
+leak of memory is not permanent, and the accounting issues it creates
+with malicious apps sounds like the two things left to address to make
+this design change an interesting tradeoff.
 
-If, once the oom killer has killed something, another process is 
-immediately forked, charges the memory that was just freed by the oom 
-killer, and hits the limit again, then that's outside the scope of the oom 
-killer.
-
-> >> I read the whole thread from 2012 but I do not see the expected behavior that is described by the people that
-> >> commented the issue.
 > > 
-> > Why do you think that killing the allocating task would be helpful in your case?
+> > +       for (i = 0; i < HPAGE_PMD_NR; i++)
+> > +               tail_count += page_mapcount(page + i);
+> > +       if (tail_count != page_count(page) - 1) {
+> > +               BUG_ON(tail_count > page_count(page) - 1);
+> > +               compound_unlock(page);
+> > +               spin_unlock_irq(&zone->lru_lock);
+> > +               return -EBUSY;
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
 > 
-> As mentioned above, the usual case with the hosting companies is that, the allocating task should not be allowed to
-> run. So killing it is the proper solution there.
+> -- 
+>  Kirill A. Shutemov
 > 
-
-That's not what the oom killer does: it finds the process that is using 
-the most amount of memory and is eligible for kill and it is killed.  That 
-prevents memory leakers from killing everything else attached to the memcg 
-or on the system and results in one process being killed instead of many 
-processes.  Userspace can tune the selection of processes with 
-/proc/pid/oom_score_adj.
