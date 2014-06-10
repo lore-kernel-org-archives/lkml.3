@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752931AbaFJRrs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 13:47:48 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:6243 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752690AbaFJRrr (ORCPT
+	id S1752975AbaFJRss (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 13:48:48 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:57655 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751002AbaFJRsq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 13:47:47 -0400
-Date: Tue, 10 Jun 2014 13:47:45 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Jason Low <jason.low2@hp.com>, Brad Mouring <bmouring@ni.com>
-Subject: Re: [patch V3 7/7] rtmutex: Avoid pointless requeueing in the
- deadlock detection chain walk
-Message-ID: <20140610134745.668c8a4e@gandalf.local.home>
-In-Reply-To: <alpine.DEB.2.10.1406101630350.31315@nanos>
-References: <20140609201118.387571774@linutronix.de>
-	<20140609202336.506044876@linutronix.de>
-	<20140609212033.1cff0999@gandalf.local.home>
-	<alpine.DEB.2.10.1406101630350.31315@nanos>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Tue, 10 Jun 2014 13:48:46 -0400
+Message-ID: <539744FB.1000307@semaphore.gr>
+Date: Tue, 10 Jun 2014 20:48:43 +0300
+From: Stratos Karafotis <stratosk@semaphore.gr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+To: Dirk Brandewie <dirk.brandewie@gmail.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/7] cpufreq: intel_pstate: Simplify code in intel_pstate_adjust_busy_pstate
+References: <5396207D.7030704@semaphore.gr> <CAKohpokYB4oKxrEwHH888T5hg=zrpb0PCs_QKTLS0bd-_fqeTA@mail.gmail.com> <53971B8E.4040302@semaphore.gr> <53973B67.5020802@gmail.com>
+In-Reply-To: <53973B67.5020802@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Jun 2014 19:41:39 +0200 (CEST)
-Thomas Gleixner <tglx@linutronix.de> wrote:
-
- 
-> > On the loop back around, have something like:
-> > 
-> > 	if (top_waiter) {
-> > 		if (!task_has_pi_waiters(task))
-> > 			goto out_unlock_pi;
+On 10/06/2014 08:07 μμ, Dirk Brandewie wrote:
+> On 06/10/2014 07:51 AM, Stratos Karafotis wrote:
+>> On 10/06/2014 08:27 πμ, Viresh Kumar wrote:
+>>> On 10 June 2014 02:30, Stratos Karafotis <stratosk@semaphore.gr> wrote:
+>>>> Simplify the code by removing the inline functions
+>>>> pstate_increase and pstate_decrease and use directly the
+>>>> intel_pstate_set_pstate.
+>>>>
 > 
-> 	The task has at least one pi waiter.
->  
-> > 		if (!requeue &&
-> > 		    top_waiter != task_top_pi_waiter(task)) {
-> > 			if (!detect_deadlock)
-> > 				goto out_unlock_pi;
-> > 			else
-> > 				requeue = false;
-> > 		}
+> Doesn't apply without your scaled_busy change spin this patch with
+> out the scaled_busy change and explain the change more fully in the
+> commit message to cover Viresh's question and I am good with this change.
 > 
-> 	Errm? if requeue is off we are in deadlock detection chainwalk
-> 	mode. So all we care about is whether task is blocked on
-> 	next_lock or not.
+> 
 
-Actually that was a typo on my part. That should have been:
+OK, I will.
 
-	if (requeue &&
-		...
-
-As we don't need to read the task_top_pi_waiter() again.
-
--- Steve
+Thanks,
+Stratos
 
