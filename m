@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936235AbaFJAor (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:44:47 -0400
+	id S936280AbaFJApH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:45:07 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:58169 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933566AbaFJAV7 (ORCPT
+	with ESMTP id S933476AbaFJAV7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jun 2014 20:21:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexej Starschenko <starschenko@gmail.com>,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.4 14/88] USB: serial: option: add support for Novatel E371 PCIe card
-Date: Mon,  9 Jun 2014 17:24:24 -0700
-Message-Id: <20140610002425.005501363@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.4 12/88] ALSA: hda/realtek - Fix COEF widget NID for ALC260 replacer fixup
+Date: Mon,  9 Jun 2014 17:24:22 -0700
+Message-Id: <20140610002424.946652771@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
 References: <20140610002424.500996570@linuxfoundation.org>
@@ -29,57 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexej Starschenko <starschenko@gmail.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 8a61ba3a47ac39f660702aa66a172185dd605a86 upstream.
+commit 192a98e280e560510a62aca8cfa83b4ae7c095bb upstream.
 
-Adds product ID for the Novatel E371 PCI Express Mini Card.
+The conversion to a fixup table for Replacer model with ALC260 in
+commit 20f7d928 took the wrong widget NID for COEF setups.  Namely,
+NID 0x1a should have been used instead of NID 0x20, which is the
+common node for all Realtek codecs but ALC260.
 
-$ lsusb
-Bus 001 Device 024: ID 1410:9011 Novatel Wireless
-
-$ usb-devices
-T:  Bus=01 Lev=01 Prnt=01 Port=03 Cnt=01 Dev#= 24 Spd=480 MxCh= 0
-D:  Ver= 2.00 Cls=ef(misc ) Sub=02 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=1410 ProdID=9011 Rev=00.03
-S:  Manufacturer=Novatel Wireless, Inc.
-S:  Product=Novatel Wireless HSPA
-S:  SerialNumber=012773002115811
-C:  #Ifs= 6 Cfg#= 1 Atr=e0 MxPwr=500mA
-I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-I:  If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-I:  If#= 3 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-I:  If#= 6 Alt= 0 #EPs= 1 Cls=02(commc) Sub=06 Prot=00 Driver=cdc_ether
-I:  If#= 7 Alt= 1 #EPs= 2 Cls=0a(data ) Sub=00 Prot=00 Driver=cdc_ether
-
-Tested with kernel 3.2.0.
-
-Signed-off-by: Alexej Starschenko <starschenko@gmail.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Fixes: 20f7d928fa6e ('ALSA: hda/realtek - Replace ALC260 model=replacer with the auto-parser')
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    2 ++
- 1 file changed, 2 insertions(+)
+ sound/pci/hda/patch_realtek.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -161,6 +161,7 @@ static void option_instat_callback(struc
- #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_FULLSPEED	0x9000
- #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_HIGHSPEED	0x9001
- #define NOVATELWIRELESS_PRODUCT_E362		0x9010
-+#define NOVATELWIRELESS_PRODUCT_E371		0x9011
- #define NOVATELWIRELESS_PRODUCT_G2		0xA010
- #define NOVATELWIRELESS_PRODUCT_MC551		0xB001
- 
-@@ -1025,6 +1026,7 @@ static const struct usb_device_id option
- 	/* Novatel Ovation MC551 a.k.a. Verizon USB551L */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_MC551, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_E362, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_E371, 0xff, 0xff, 0xff) },
- 
- 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_H01) },
- 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_H01A) },
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -4969,8 +4969,8 @@ static const struct alc_fixup alc260_fix
+ 	[ALC260_FIXUP_REPLACER] = {
+ 		.type = ALC_FIXUP_VERBS,
+ 		.v.verbs = (const struct hda_verb[]) {
+-			{ 0x20, AC_VERB_SET_COEF_INDEX, 0x07 },
+-			{ 0x20, AC_VERB_SET_PROC_COEF,  0x3050 },
++			{ 0x1a, AC_VERB_SET_COEF_INDEX, 0x07 },
++			{ 0x1a, AC_VERB_SET_PROC_COEF,  0x3050 },
+ 			{ }
+ 		},
+ 		.chained = true,
 
 
