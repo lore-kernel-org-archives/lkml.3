@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754665AbaFJTuf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 15:50:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35175 "EHLO
+	id S1754698AbaFJTuk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 15:50:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35184 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752302AbaFJTuc (ORCPT
+	with ESMTP id S1752302AbaFJTuh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:50:32 -0400
+	Tue, 10 Jun 2014 15:50:37 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+Cc: David Henningsson <david.henningsson@canonical.com>,
+        Hui Wang <hui.wang@canonical.com>, Takashi Iwai <tiwai@suse.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 089/160] xhci: For streams the css flag most be read from the stream-ctx on ep stop
-Date: Tue, 10 Jun 2014 12:45:29 -0700
-Message-Id: <1402429600-20477-90-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 110/160] ALSA: hda - add headset mic detect quirk for a Dell laptop
+Date: Tue, 10 Jun 2014 12:45:50 -0700
+Message-Id: <1402429600-20477-111-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -28,51 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Hui Wang <hui.wang@canonical.com>
 
-commit c4bedb77ec4cb42f37cae4cbfddda8283161f7c8 upstream.
+commit e32dfbed8cc06aac72528e2bb53067ce02262413 upstream.
 
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+When we plug a 3-ring headset on the Dell machine (VID: 0x10ec0255,
+SID: 0x10280674), the headset mic can't be detected, after apply this
+patch, the headset mic can work well.
+
+BugLink: https://bugs.launchpad.net/bugs/1297581
+Cc: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Hui Wang <hui.wang@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/host/xhci-ring.c | 14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+ sound/pci/hda/patch_realtek.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
-index 1e2f3f4..fb6df2c 100644
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -552,9 +552,9 @@ void xhci_find_new_dequeue_state(struct xhci_hcd *xhci,
- 		struct xhci_dequeue_state *state)
- {
- 	struct xhci_virt_device *dev = xhci->devs[slot_id];
-+	struct xhci_virt_ep *ep = &dev->eps[ep_index];
- 	struct xhci_ring *ep_ring;
- 	struct xhci_generic_trb *trb;
--	struct xhci_ep_ctx *ep_ctx;
- 	dma_addr_t addr;
- 
- 	ep_ring = xhci_triad_to_transfer_ring(xhci, slot_id,
-@@ -579,8 +579,16 @@ void xhci_find_new_dequeue_state(struct xhci_hcd *xhci,
- 	/* Dig out the cycle state saved by the xHC during the stop ep cmd */
- 	xhci_dbg_trace(xhci, trace_xhci_dbg_cancel_urb,
- 			"Finding endpoint context");
--	ep_ctx = xhci_get_ep_ctx(xhci, dev->out_ctx, ep_index);
--	state->new_cycle_state = 0x1 & le64_to_cpu(ep_ctx->deq);
-+	/* 4.6.9 the css flag is written to the stream context for streams */
-+	if (ep->ep_state & EP_HAS_STREAMS) {
-+		struct xhci_stream_ctx *ctx =
-+			&ep->stream_info->stream_ctx_array[stream_id];
-+		state->new_cycle_state = 0x1 & le64_to_cpu(ctx->stream_ring);
-+	} else {
-+		struct xhci_ep_ctx *ep_ctx
-+			= xhci_get_ep_ctx(xhci, dev->out_ctx, ep_index);
-+		state->new_cycle_state = 0x1 & le64_to_cpu(ep_ctx->deq);
-+	}
- 
- 	state->new_deq_ptr = cur_td->last_trb;
- 	xhci_dbg_trace(xhci, trace_xhci_dbg_cancel_urb,
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index b88e912..cee8c88 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -4409,6 +4409,7 @@ static const struct snd_pci_quirk alc269_fixup_tbl[] = {
+ 	SND_PCI_QUIRK(0x1028, 0x065f, "Dell", ALC255_FIXUP_DELL1_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x0662, "Dell", ALC255_FIXUP_DELL1_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x0667, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
++	SND_PCI_QUIRK(0x1028, 0x0674, "Dell", ALC255_FIXUP_DELL1_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x067f, "Dell", ALC255_FIXUP_DELL1_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x15cc, "Dell X5 Precision", ALC269_FIXUP_DELL2_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x15cd, "Dell X5 Precision", ALC269_FIXUP_DELL2_MIC_NO_PRESENCE),
 -- 
 1.9.1
 
