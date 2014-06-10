@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754732AbaFJUrg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 16:47:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41426 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754513AbaFJUre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 16:47:34 -0400
-Date: Tue, 10 Jun 2014 22:44:14 +0200
-From: Borislav Petkov <bp@suse.de>
-To: Alex Thorlton <athorlton@sgi.com>
-Cc: Linux EFI <linux-efi@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Matt Fleming <matt@console-pimps.org>, Russ Anderson <rja@sgi.com>
-Subject: efi_call on SGI
-Message-ID: <20140610204414.GB29302@pd.tnic>
-References: <20140609200017.GD2700@sgi.com>
- <20140610080300.GA28607@pd.tnic>
+	id S1754497AbaFJUsi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 16:48:38 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:57511 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753219AbaFJUsh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 16:48:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140610080300.GA28607@pd.tnic>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140610065735.GF5500@mwanda>
+References: <1401917989-3427-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	<20140610065735.GF5500@mwanda>
+Date: Tue, 10 Jun 2014 22:48:35 +0200
+Message-ID: <CAFo99gY9ROmVS56PeeAPxw6GgBnjLai3az0ABnE=1xcryDCRuA@mail.gmail.com>
+Subject: Re: [PATCH] staging: usbip: stub_main.c: Cleaning up missing
+ null-terminate after strncpy call
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Valentina Manea <valentina.manea.m@gmail.com>,
+        devel@driverdev.osuosl.org, linux-usb@vger.kernel.org,
+        navin patidar <navinp@cdac.in>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Btw,
+Hi
 
-while we're at it, I see uv_bios_call is sometimes done with preemption
-disabled around it and sometimes it is not (at least I don't see it)...
+True!
+Sorry  :-(
 
-In any case, if SGI uses the EFI pagetable now too, you probably would
-want to do the efi calls like the rest of x86 does them - see the 64-bit
-version of efi_call_virt() in arch/x86/include/asm/efi.h for an example
-what I mean.
+But then one would either operate strcpy outright.
 
-Now, you could either copy that macro or you could accomodate it to
-serve everyone's needs - depends on what you'd prefer.
+Or use strlcpy then the code would be:
 
-I'm just saying - I had stumbled across this while the debugging session
-was going on and wanted to point that out but it wasn't too important at
-the time so...
+    /* strlcpy() handles not include \0 */
+    len = strlcpy(busid, buf + 4, BUSID_SIZE);
 
-HTH.
+    /* busid needs to include \0 termination */
+    if (!(len < BUSID_SIZE))
+        return -EINVAL;
 
--- 
-Regards/Gruss,
-    Boris.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Or should we just let it be, perhaps?
+
+
+Kind regards
+Rickard Strandqvist
+
+
+2014-06-10 8:57 GMT+02:00 Dan Carpenter <dan.carpenter@oracle.com>:
+> On Wed, Jun 04, 2014 at 11:39:49PM +0200, Rickard Strandqvist wrote:
+>> Added a guaranteed null-terminate after call to strncpy.
+>>
+>> This was partly found using a static code analysis program called cppcheck.
+>>
+>
+> We already knew that the string was NUL terminated because we checked
+> strnlen() on the lines before.
+>
+> regards,
+> dan carpenter
+>
