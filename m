@@ -1,80 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755507AbaFJUWd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 16:22:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35190 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753863AbaFJTuj (ORCPT
+	id S1755572AbaFJUWh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 16:22:37 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:47472 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755460AbaFJUWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:50:39 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 101/160] irqchip: armada-370-xp: implement the ->check_device() msi_chip operation
-Date: Tue, 10 Jun 2014 12:45:41 -0700
-Message-Id: <1402429600-20477-102-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
-References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Tue, 10 Jun 2014 16:22:34 -0400
+Date: Wed, 11 Jun 2014 00:22:26 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrey Vagin <avagin@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>, vdavydov@parallels.com,
+        Linux API <linux-api@vger.kernel.org>
+Subject: Re: [patch 3/3] timerfd: Implement write method
+Message-ID: <20140610202226.GG2243@moon>
+References: <20140428212517.200264067@openvz.org>
+ <20140428213301.507657833@openvz.org>
+ <alpine.DEB.2.02.1405220643170.9695@ionos.tec.linutronix.de>
+ <alpine.DEB.2.02.1405220656130.9695@ionos.tec.linutronix.de>
+ <20140610163530.GF2243@moon>
+ <CAKgNAkiR2xt7xnkgGDg5zKfGRoPtveWG8Jjh5=aD76L6jK7C8w@mail.gmail.com>
+ <CALCETrV5augTv4bXFmfnifiAGZGw2DfNHrpBUYAp_bBsJvWRBQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrV5augTv4bXFmfnifiAGZGw2DfNHrpBUYAp_bBsJvWRBQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.3 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, Jun 10, 2014 at 01:05:22PM -0700, Andy Lutomirski wrote:
+> On Tue, Jun 10, 2014 at 1:03 PM, Michael Kerrisk (man-pages)
+> <mtk.manpages@gmail.com> wrote:
+> > [CC += linux-api@]
 
-------------------
+Thanks Michael!
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> > On Tue, Jun 10, 2014 at 6:35 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+> >> On Thu, May 22, 2014 at 06:58:19AM +0900, Thomas Gleixner wrote:
+> >>> >
+> >>> > So what wakes a potential waiter in read/poll?
+> >>>
+> >>> And who is updating timerfd_create(2) ?
+> >>
+> >> Thomas, could you please take a look if the approach below is acceptable?
+> >> If it will be fine I update manpage then.
+> >> ---
+> >> From: Cyrill Gorcunov <gorcunov@openvz.org>
+> >> Subject: timerfd: Implement timerfd_ioctl method to restore timerfd_ctx::ticks
+> >>
+> >> The read() of timerfd files allows to fetch the number of timer ticks
+> >> while there is no way to set it back from userspace.
+> >>
+> >> To restore the timer's state as it was at checkpoint moment we need
+> >> a path to bring @ticks back. Initially I thought about writing ticks
+> >> back via write() interface but it seems such API is somehow obscure.
+> >>
+> >> Instead implement timerfd_ioctl() method with TFD_IOC_SET_TICKS
+> >> command which requires CAP_SYS_RESOURCE capability to be able to
+> >> set @ticks into arbitrary value. Note this command doesn't wake
+> >> up readers/waiters and its purpose only to serve C/R needs
+> >> (for same sake I wrapped code with CONFIG_CHECKPOINT_RESTORE).
+> >> Still if needed the ioctl may be extended for new commands
+> >> and CONFIG_CHECKPOINT_RESTORE dropped off.
+> 
+> Why does this need CAP_SYS_RESOURCE?
 
-commit 830cbe4b7a918613276aa3d3b28d24410623f92c upstream.
+  Because I think this interface should not be used by a regular
+applications, the only purpose is to restore the @ticks after
+checkpoint. Requiring CAP_SYS_RESOURCE means that at least
+program which use it knows what it's doing.
 
-Until now, we were leaving the ->check_device() msi_chip operation
-empty, which leads the PCI core to believe that we support both MSI
-and MSI-X. In fact, we do not support MSI-X, so we have to tell this
-to the PCI core by providing an implementation of this operation.
+  Still if someone has a scenarion where we might need this
+intarface out of this cap requirement -- we always can
+drop it of without breaking existing users, but not the
+reverse.
 
-Fixes: 31f614edb726fcc4d5aa0f2895fbdec9b04a3ca4 ('irqchip: armada-370-xp: implement MSI support')
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Link: https://lkml.kernel.org/r/1397823593-1932-3-git-send-email-thomas.petazzoni@free-electrons.com
-Tested-by: Neil Greatorex <neil@fatboyfat.co.uk>
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/irqchip/irq-armada-370-xp.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
-
-diff --git a/drivers/irqchip/irq-armada-370-xp.c b/drivers/irqchip/irq-armada-370-xp.c
-index 79eb0d1..6cb87c4 100644
---- a/drivers/irqchip/irq-armada-370-xp.c
-+++ b/drivers/irqchip/irq-armada-370-xp.c
-@@ -162,6 +162,15 @@ static void armada_370_xp_teardown_msi_irq(struct msi_chip *chip,
- 	armada_370_xp_free_msi(d->hwirq);
- }
- 
-+static int armada_370_xp_check_msi_device(struct msi_chip *chip, struct pci_dev *dev,
-+					  int nvec, int type)
-+{
-+	/* We support MSI, but not MSI-X */
-+	if (type == PCI_CAP_ID_MSI)
-+		return 0;
-+	return -EINVAL;
-+}
-+
- static struct irq_chip armada_370_xp_msi_irq_chip = {
- 	.name = "armada_370_xp_msi_irq",
- 	.irq_enable = unmask_msi_irq,
-@@ -200,6 +209,7 @@ static int armada_370_xp_msi_init(struct device_node *node,
- 
- 	msi_chip->setup_irq = armada_370_xp_setup_msi_irq;
- 	msi_chip->teardown_irq = armada_370_xp_teardown_msi_irq;
-+	msi_chip->check_device = armada_370_xp_check_msi_device;
- 	msi_chip->of_node = node;
- 
- 	armada_370_xp_msi_domain =
--- 
-1.9.1
-
+P.S. I remember Thomas' words about existence of the other
+word out of c/r, still I treat this ioctl as exception
+(as in prctl codes we use for c/r).
