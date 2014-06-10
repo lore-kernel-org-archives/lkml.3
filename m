@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934031AbaFJB21 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 21:28:27 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:47539 "EHLO
+	id S934252AbaFJB2f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 21:28:35 -0400
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:48161 "EHLO
 	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754537AbaFJB2X (ORCPT
+	by vger.kernel.org with ESMTP id S933917AbaFJB20 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 21:28:23 -0400
+	Mon, 9 Jun 2014 21:28:26 -0400
 From: Chao Xie <chao.xie@marvell.com>
 To: <haojian.zhuang@gmail.com>, <mturquette@linaro.org>,
         <chao.xie@marvell.com>, <xiechao_mail@163.com>,
         <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH 12/12] arm: mmp: support clock device tree for mmp platforms
-Date: Tue, 10 Jun 2014 09:27:48 +0800
-Message-ID: <1402363668-25806-13-git-send-email-chao.xie@marvell.com>
+Subject: [PATCH 11/12] clk: mmp: add device tree support for clocks.
+Date: Tue, 10 Jun 2014 09:27:47 +0800
+Message-ID: <1402363668-25806-12-git-send-email-chao.xie@marvell.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1402363668-25806-1-git-send-email-chao.xie@marvell.com>
 References: <1402363668-25806-1-git-send-email-chao.xie@marvell.com>
@@ -31,1850 +31,923 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Chao Xie <chao.xie@marvell.com>
 
-The platforms including pxa168/pxa910/mmp2.
-
-After add clock device tree support. There is no need
-to maintain mmp2-dt.c because it is same as mmp-dt.c now.
-The file will be removed.
-
-Compiling test for pxa168 because of lacking of platform.
-The platform is too old.
-
-Functonality test for pxa910 and mmp2.
+For MMP series SOC, it will use some types of clock.
+Add the device tree support for these kind of clocks.
+It includes mux/div/mix/gate/factor clock.
 
 Signed-off-by: Chao Xie <chao.xie@marvell.com>
----
- arch/arm/boot/dts/mmp2-clock.dtsi   | 575 ++++++++++++++++++++++++++++++++++++
- arch/arm/boot/dts/mmp2.dtsi         |  11 +
- arch/arm/boot/dts/pxa168-clock.dtsi | 443 +++++++++++++++++++++++++++
- arch/arm/boot/dts/pxa168.dtsi       |  10 +
- arch/arm/boot/dts/pxa910-clock.dtsi | 388 ++++++++++++++++++++++++
- arch/arm/boot/dts/pxa910.dtsi       |  10 +
- arch/arm/mach-mmp/Kconfig           |   7 +-
- arch/arm/mach-mmp/Makefile          |   2 +-
- arch/arm/mach-mmp/common.h          |   1 +
- arch/arm/mach-mmp/mmp-dt.c          |  57 ++--
- arch/arm/mach-mmp/mmp2-dt.c         |  50 ----
- 11 files changed, 1462 insertions(+), 92 deletions(-)
- create mode 100644 arch/arm/boot/dts/mmp2-clock.dtsi
- create mode 100644 arch/arm/boot/dts/pxa168-clock.dtsi
- create mode 100644 arch/arm/boot/dts/pxa910-clock.dtsi
- delete mode 100644 arch/arm/mach-mmp/mmp2-dt.c
 
-diff --git a/arch/arm/boot/dts/mmp2-clock.dtsi b/arch/arm/boot/dts/mmp2-clock.dtsi
+Conflicts:
+	drivers/clk/mmp/Makefile
+---
+ .../devicetree/bindings/clock/mmp/clk-div          |  28 +
+ .../devicetree/bindings/clock/mmp/clk-factor       |  28 +
+ .../devicetree/bindings/clock/mmp/clk-gate         |  41 ++
+ .../devicetree/bindings/clock/mmp/clk-mix          |  38 ++
+ .../devicetree/bindings/clock/mmp/clk-mux          |  20 +
+ drivers/clk/mmp/Makefile                           |   2 +-
+ drivers/clk/mmp/clk-of.c                           | 689 +++++++++++++++++++++
+ 7 files changed, 845 insertions(+), 1 deletion(-)
+ create mode 100644 Documentation/devicetree/bindings/clock/mmp/clk-div
+ create mode 100644 Documentation/devicetree/bindings/clock/mmp/clk-factor
+ create mode 100644 Documentation/devicetree/bindings/clock/mmp/clk-gate
+ create mode 100644 Documentation/devicetree/bindings/clock/mmp/clk-mix
+ create mode 100644 Documentation/devicetree/bindings/clock/mmp/clk-mux
+ create mode 100644 drivers/clk/mmp/clk-of.c
+
+diff --git a/Documentation/devicetree/bindings/clock/mmp/clk-div b/Documentation/devicetree/bindings/clock/mmp/clk-div
 new file mode 100644
-index 0000000..89f2279
+index 0000000..62eb7d5
 --- /dev/null
-+++ b/arch/arm/boot/dts/mmp2-clock.dtsi
-@@ -0,0 +1,575 @@
-+&soc_clocks {
-+	#address-cells = <1>;
-+	#size-cells = <1>;
-+	ranges;
-+	fixed_clocks: fixed_clocks {
-+		compatible = "marvell,mmp-clk-master";
-+		clk32: clk32 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-clock";
-+			clock-frequency = <32768>;
-+		};
-+		vctcxo: vctcxo {
-+			#clock-cells = <0>;
-+			compatible = "fixed-clock";
-+			clock-frequency = <26000000>;
-+		};
-+		vctcxo_2: vctcxo_2 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&vctcxo>;
-+			clock-div = <2>;
-+			clock-mult = <1>;
-+		};
-+		vctcxo_4: vctcxo_4 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&vctcxo_2>;
-+			clock-div = <2>;
-+			clock-mult = <1>;
-+		};
-+		usb_pll: usb_pll {
-+			#clock-cells = <0>;
-+			compatible = "fixed-clock";
-+			clock-frequency = <480000000>;
-+		};
-+		pll1: pll1 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-clock";
-+			clock-frequency = <624000000>;
-+		};
-+		pll1_2: pll1_2 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll1>;
-+			clock-div = <2>;
-+			clock-mult = <1>;
-+		};
-+		pll1_4: pll1_4 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll1_2>;
-+			clock-div = <2>;
-+			clock-mult = <1>;
-+		};
-+		pll1_8: pll1_8 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll1_4>;
-+			clock-div = <2>;
-+			clock-mult = <1>;
-+		};
-+		pll1_16: pll1_16 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll1_8>;
-+			clock-div = <2>;
-+			clock-mult = <1>;
-+		};
-+		pll1_20: pll1_20 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll1_4>;
-+			clock-div = <5>;
-+			clock-mult = <1>;
-+		};
-+		pll1_3: pll1_3 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll1>;
-+			clock-div = <3>;
-+			clock-mult = <1>;
-+		};
-+		pll1_6: pll1_6 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll1_3>;
-+			clock-div = <3>;
-+			clock-mult = <1>;
-+		};
-+		pll1_12: pll1_12 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll1_6>;
-+			clock-div = <2>;
-+			clock-mult = <1>;
-+		};
-+		pll2: pll2 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-clock";
-+			clock-frequency = <960000000>;
-+		};
-+		pll2_2: pll2_2 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll2>;
-+			clock-div = <2>;
-+			clock-mult = <1>;
-+		};
-+		pll2_4: pll2_4 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll2_2>;
-+			clock-div = <2>;
-+			clock-mult = <1>;
-+		};
-+		pll2_8: pll2_8 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll2_4>;
-+			clock-div = <2>;
-+			clock-mult = <1>;
-+		};
-+		pll2_16: pll2_16 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll2_8>;
-+			clock-div = <2>;
-+			clock-mult = <1>;
-+		};
-+		pll2_20: pll2_20 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll2_4>;
-+			clock-div = <5>;
-+			clock-mult = <1>;
-+		};
-+		pll2_3: pll2_3 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll2>;
-+			clock-div = <3>;
-+			clock-mult = <1>;
-+		};
-+		pll2_6: pll2_6 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll2_3>;
-+			clock-div = <3>;
-+			clock-mult = <1>;
-+		};
-+		pll2_12: pll2_12 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll2_6>;
-+			clock-div = <2>;
-+			clock-mult = <1>;
-+		};
-+	};
-+	mpmu_clocks: mpmu_clocks {
-+		compatible = "marvell,mmp-clk-master";
-+		reg = <0xd4050000 0x1000>;
-+		uart_pll: uart_pll {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-factor";
-+			clocks = <&pll1_4>;
-+			marvell,reg-offset = <0 0x14>;
-+			marvell,mmp-clk-factor-factor = <2>;
-+			marvell,mmp-clk-factor-bits-den = <13 0>;
-+			marvell,mmp-clk-factor-bits-num = <13 16>;
-+			marvell,mmp-clk-factor-table = <14634 2165>,
-+						       <3521 689>,
-+						       <9679 5728>,
-+						       <15859 9451>;
-+		};
-+	};
-+	apbc_clocks: apbc_clocks {
-+		compatible = "marvell,mmp-clk-master";
-+		reg = <0xd4015000 0x1000>;
-+		twsi0_clock: twsi0_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&vctcxo>;
-+			marvell,reg-offset = <0 0x4>;
-+			marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+		};
-+		twsi1_clock: twsi1_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&vctcxo>;
-+			marvell,reg-offset = <0 0x8>;
-+			marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+		};
-+		twsi2_clock: twsi2_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&vctcxo>;
-+			marvell,reg-offset = <0 0xc>;
-+			marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+		};
-+		twsi3_clock: twsi3_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&vctcxo>;
-+			marvell,reg-offset = <0 0x10>;
-+			marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+		};
-+		twsi4_clock: twsi4_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&vctcxo>;
-+			marvell,reg-offset = <0 0x7c>;
-+			marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+		};
-+		twsi5_clock: twsi5_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&vctcxo>;
-+			marvell,reg-offset = <0 0x80>;
-+			marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+		};
-+		gpio_clock: gpio_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&vctcxo>;
-+			marvell,reg-offset = <0 0x38>;
-+			marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+		};
-+		kpc_clock: kpc_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&clk32>;
-+			marvell,reg-offset = <0 0x18>;
-+			marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+			marvell,mmp-clk-gate-need-delay;
-+		};
-+		rtc_clock: rtc_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&clk32>;
-+			marvell,reg-offset = <0 0x0>;
-+			marvell,mmp-clk-mask = <0x87 0x83 0x4>;
-+			marvell,mmp-clk-gate-need-delay;
-+		};
-+		pwm0_clock: pwm0_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&vctcxo>;
-+			marvell,reg-offset = <0 0x3c>;
-+			marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+		};
-+		pwm1_clock: pwm1_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&vctcxo>;
-+			marvell,reg-offset = <0 0x40>;
-+			marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+		};
-+		pwm2_clock: pwm2_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&vctcxo>;
-+			marvell,reg-offset = <0 0x44>;
-+			marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+		};
-+		pwm3_clock: pwm3_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&vctcxo>;
-+			marvell,reg-offset = <0 0x48>;
-+			marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+		};
-+		uart0_clock: uart0_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-general-composite";
-+			uart0_mux: uart0_mux {
-+				#clock-cells = <0>;
-+				compatible = "marvell,mmp-clk-mux";
-+				clocks = <&uart_pll &vctcxo>;
-+				marvell,reg-offset = <0 0x2c>;
-+				marvell,mmp-clk-bits-mux = <1 4>;
-+			};
-+			uart0_gate: uart0_gate {
-+				compatible = "marvell,mmp-clk-gate";
-+				marvell,reg-offset = <0 0x2c>;
-+				marvell,mmp-clk-mask = <0x7 0x3 0x0>;
-+			};
-+		};
-+		uart1_clock: uart1_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-general-composite";
-+			uart1_mux: uart1_mux {
-+				#clock-cells = <0>;
-+				compatible = "marvell,mmp-clk-mux";
-+				clocks = <&uart_pll &vctcxo>;
-+				marvell,reg-offset = <0 0x30>;
-+				marvell,mmp-clk-bits-mux = <1 4>;
-+			};
-+			uart1_gate: uart1_gate {
-+				compatible = "marvell,mmp-clk-gate";
-+				marvell,reg-offset = <0 0x30>;
-+				marvell,mmp-clk-mask = <0x7 0x3 0x0>;
-+			};
-+		};
-+		uart2_clock: uart2_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-general-composite";
-+			uart2_mux: uart2_mux {
-+				#clock-cells = <0>;
-+				compatible = "marvell,mmp-clk-mux";
-+				clocks = <&uart_pll &vctcxo>;
-+				marvell,reg-offset = <0 0x34>;
-+				marvell,mmp-clk-bits-mux = <1 4>;
-+			};
-+			uart2_gate: uart2_gate {
-+				compatible = "marvell,mmp-clk-gate";
-+				marvell,reg-offset = <0 0x34>;
-+				marvell,mmp-clk-mask = <0x7 0x3 0x0>;
-+			};
-+		};
-+		uart3_clock: uart3_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-general-composite";
-+			uart3_mux: uart3_mux {
-+				#clock-cells = <0>;
-+				compatible = "marvell,mmp-clk-mux";
-+				clocks = <&uart_pll &vctcxo>;
-+				marvell,reg-offset = <0 0x88>;
-+				marvell,mmp-clk-bits-mux = <1 4>;
-+			};
-+			uart3_gate: uart3_gate {
-+				compatible = "marvell,mmp-clk-gate";
-+				marvell,reg-offset = <0 0x88>;
-+				marvell,mmp-clk-mask = <0x7 0x3 0x0>;
-+			};
-+		};
++++ b/Documentation/devicetree/bindings/clock/mmp/clk-div
+@@ -0,0 +1,28 @@
++Binding for div type clock
 +
-+		ssp0_clock: ssp0_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-general-composite";
-+			ssp0_mux: ssp0_mux {
-+				#clock-cells = <0>;
-+				compatible = "marvell,mmp-clk-mux";
-+				clocks = <&vctcxo_4 &vctcxo_2 &vctcxo &pll1_16>;
-+				marvell,reg-offset = <0 0x50>;
-+				marvell,mmp-clk-bits-mux = <3 4>;
-+			};
-+			ssp0_gate: ssp0_gate {
-+				compatible = "marvell,mmp-clk-gate";
-+				marvell,reg-offset = <0 0x50>;
-+				marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+			};
-+		};
-+		ssp1_clock: ssp1_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-general-composite";
-+			ssp1_mux: ssp1_mux {
-+				#clock-cells = <0>;
-+				compatible = "marvell,mmp-clk-mux";
-+				clocks = <&vctcxo_4 &vctcxo_2 &vctcxo &pll1_16>;
-+				marvell,reg-offset = <0 0x54>;
-+				marvell,mmp-clk-bits-mux = <3 4>;
-+			};
-+			ssp1_gate: ssp1_gate {
-+				compatible = "marvell,mmp-clk-gate";
-+				marvell,reg-offset = <0 0x54>;
-+				marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+			};
-+		};
-+		ssp2_clock: ssp2_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-general-composite";
-+			ssp2_mux: ssp2_mux {
-+				#clock-cells = <0>;
-+				compatible = "marvell,mmp-clk-mux";
-+				clocks = <&vctcxo_4 &vctcxo_2 &vctcxo &pll1_16>;
-+				marvell,reg-offset = <0 0x58>;
-+				marvell,mmp-clk-bits-mux = <3 4>;
-+			};
-+			ssp2_gate: ssp2_gate {
-+				compatible = "marvell,mmp-clk-gate";
-+				marvell,reg-offset = <0 0x58>;
-+				marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+			};
-+		};
-+		ssp3_clock: ssp3_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-general-composite";
-+			ssp3_mux: ssp3_mux {
-+				#clock-cells = <0>;
-+				compatible = "marvell,mmp-clk-mux";
-+				clocks = <&vctcxo_4 &vctcxo_2 &vctcxo &pll1_16>;
-+				marvell,reg-offset = <0 0x5c>;
-+				marvell,mmp-clk-bits-mux = <3 4>;
-+			};
-+			ssp3_gate: ssp3_gate {
-+				compatible = "marvell,mmp-clk-gate";
-+				marvell,reg-offset = <0 0x5c>;
-+				marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+			};
-+		};
-+	};
-+	apmu_clocks: apmu_clocks {
-+		compatible = "marvell,mmp-clk-master";
-+		reg = <0xd4282800 0x1000>;
-+		sdh_mix: sdh_mix {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-mix";
-+			clocks = <&pll1_4 &pll2 &usb_pll &pll1>;
-+			marvell,reg-offset = <0 0x54>;
-+			marvell,mmp-clk-bits-mux = <2 8>;
-+			marvell,mmp-clk-bits-div = <4 10>;
-+			marvell,mmp-clk-div-one-based;
-+		};
-+		sdh0_clock: sdh0_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&sdh_mix>;
-+			marvell,reg-offset = <0 0x54>;
-+			marvell,mmp-clk-mask = <0x1b 0x1b 0x0>;
-+		};
-+		sdh1_clock: sdh1_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&sdh_mix>;
-+			marvell,reg-offset = <0 0x58>;
-+			marvell,mmp-clk-mask = <0x1b 0x1b 0x0>;
-+		};
-+		sdh2_clock: sdh2_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&sdh_mix>;
-+			marvell,reg-offset = <0 0xe8>;
-+			marvell,mmp-clk-mask = <0x1b 0x1b 0x0>;
-+		};
-+		sdh3_clock: sdh3_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&sdh_mix>;
-+			marvell,reg-offset = <0 0xec>;
-+			marvell,mmp-clk-mask = <0x1b 0x1b 0x0>;
-+		};
-+		usb_clock: usb_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			marvell,reg-offset = <0 0x5c>;
-+			marvell,mmp-clk-mask = <0x9 0x9 0x0>;
-+		};
-+		disp0_mux: disp0_mux {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-mux";
-+			marvell,reg-offset = <0 0x4c>;
-+			clocks = <&pll1 &pll1_16 &pll2 &vctcxo>;
-+			marvell,mmp-clk-bits-mux = <2 6>;
-+		};
-+		disp0_clock: disp0_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-general-composite";
-+			disp0_div: disp0_div {
-+				compatible = "marvell,mmp-clk-div";
-+				marvell,reg-offset = <0 0x4c>;
-+				clocks = <&disp0_mux>;
-+				marvell,mmp-clk-bits-div = <4 8>;
-+				marvell,mmp-clk-div-one-based;
-+			};
-+			disp0_gate: disp0_gate {
-+				compatible = "marvell,mmp-clk-gate";
-+				marvell,reg-offset = <0 0x4c>;
-+				marvell,mmp-clk-mask = <0x1b 0x1b 0x0>;
-+			};
-+		};
-+		disp1_clock: disp1_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-general-composite";
-+			disp1_mix: disp1_mix {
-+				compatible = "marvell,mmp-clk-mix";
-+				marvell,reg-offset = <0 0x110>;
-+				clocks = <&pll1 &pll1_16 &pll2 &vctcxo>;
-+				marvell,mmp-clk-bits-mux = <2 6>;
-+				marvell,mmp-clk-bits-div = <4 8>;
-+				marvell,mmp-clk-div-one-based;
-+			};
-+			disp1_gate: disp1_gate {
-+				compatible = "marvell,mmp-clk-gate";
-+				marvell,reg-offset = <0 0x110>;
-+				marvell,mmp-clk-mask = <0x1b 0x1b 0x0>;
-+			};
-+		};
-+		ccic_arbiter: ccic_arbiter {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&vctcxo>;
-+			marvell,reg-offset = <0 0x50>;
-+			marvell,mmp-clk-mask = <0x1800 0x1800 0x0>;
-+		};
-+		ccic0_mix: ccic0_mix {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-mux";
-+			clocks = <&pll1_2 &pll1_16 &vctcxo>;
-+			marvell,reg-offset = <0 0x50>;
-+			marvell,mmp-clk-bits-mux = <2 6>;
-+			marvell,mmp-clk-bits-div = <4 17>;
-+			marvell,mmp-clk-div-one-based;
-+		};
-+		ccic0_clock: ccic0_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&ccic0_mix>;
-+			marvell,reg-offset = <0 0x50>;
-+			marvell,mmp-clk-mask = <0x1b 0x1b 0x0>;
-+		};
-+		ccic0_phy_clock: ccic0_phy_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&ccic0_mix>;
-+			marvell,reg-offset = <0 0x50>;
-+			marvell,mmp-clk-mask = <0x24 0x24 0x0>;
-+		};
-+		ccic0_sphy_clock: ccic0_sphy_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-general-composite";
-+			ccic0_sphy_div: ccic0_sphy_div {
-+				#clock-cells = <0>;
-+				compatible = "marvell,mmp-clk-div";
-+				clocks = <&ccic0_mix>;
-+				marvell,reg-offset = <0 0x50>;
-+				marvell,mmp-clk-bits-div = <5 10>;
-+			};
-+			ccic0_sphy_gate: ccic0_sphy_gate {
-+				compatible = "marvell,mmp-clk-gate";
-+				marvell,reg-offset = <0 0x50>;
-+				marvell,mmp-clk-mask = <0x300 0x300 0x0>;
-+			};
-+		};
-+		ccic1_mix: ccic1_mix {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-mux";
-+			clocks = <&pll1_2 &pll1_16 &vctcxo>;
-+			marvell,reg-offset = <0 0xf4>;
-+			marvell,mmp-clk-bits-mux = <2 6>;
-+			marvell,mmp-clk-bits-div = <4 16>;
-+			marvell,mmp-clk-div-one-based;
-+		};
-+		ccic1_clock: ccic1_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&ccic1_mix>;
-+			marvell,reg-offset = <0 0xf4>;
-+			marvell,mmp-clk-mask = <0x1b 0x1b 0x0>;
-+		};
-+		ccic1_phy_clock: ccic1_phy_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&ccic1_mix>;
-+			marvell,reg-offset = <0 0xf4>;
-+			marvell,mmp-clk-mask = <0x24 0x24 0x0>;
-+		};
-+		ccic1_sphy_clock: ccic1_sphy_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-general-composite";
-+			ccic1_sphy_div: ccic1_sphy_div {
-+				#clock-cells = <0>;
-+				compatible = "marvell,mmp-clk-div";
-+				clocks = <&ccic1_mix>;
-+				marvell,reg-offset = <0 0xf4>;
-+				marvell,mmp-clk-bits-div = <5 10>;
-+			};
-+			ccic1_sphy_gate: ccic1_sphy_gate {
-+				compatible = "marvell,mmp-clk-gate";
-+				marvell,reg-offset = <0 0xf4>;
-+				marvell,mmp-clk-mask = <0x300 0x300 0x0>;
-+			};
-+		};
++The div clock is defined as common clock.
 +
++
++Required properties
++- compatible : It should be "marvell,mmp-clk-div".
++- clocks : The parents of the clock.
++- marvell,mmp-clk-bits-div : The width and shift of divider bits.
++
++Optional properties:
++- marvell,mmp-clk-div-power-of-two : The value of divider is a power of two.
++- marvell,mmp-clk-div-one-based : The value of divider starts from 1.
++- marvell,mmp-clk-div-table : The value of divider is not continous, and need
++                              a table to record it.
++
++
++Examples
++apmu_clk {
++	compatible = "marvell,mmp-clk-master";
++	reg = <0xd4282800 0x1000>;
++	dsi_phy_slow_div: dsi_phy_slow_div {
++		compatible = "marvell,mmp-clk-div";
++		marvell,reg-offset = <0 0x44>;
++		clocks = <&vctcxo>;
++		marvell,mmp-clk-bits-div = <5 6>;
 +	};
 +};
-diff --git a/arch/arm/boot/dts/mmp2.dtsi b/arch/arm/boot/dts/mmp2.dtsi
-index 4e8b08c..66bc8db 100644
---- a/arch/arm/boot/dts/mmp2.dtsi
-+++ b/arch/arm/boot/dts/mmp2.dtsi
-@@ -135,6 +135,7 @@
- 				compatible = "mrvl,mmp-uart";
- 				reg = <0xd4030000 0x1000>;
- 				interrupts = <27>;
-+				clocks = <&uart0_clock>;
- 				status = "disabled";
- 			};
- 
-@@ -142,6 +143,7 @@
- 				compatible = "mrvl,mmp-uart";
- 				reg = <0xd4017000 0x1000>;
- 				interrupts = <28>;
-+				clocks = <&uart1_clock>;
- 				status = "disabled";
- 			};
- 
-@@ -149,6 +151,7 @@
- 				compatible = "mrvl,mmp-uart";
- 				reg = <0xd4018000 0x1000>;
- 				interrupts = <24>;
-+				clocks = <&uart2_clock>;
- 				status = "disabled";
- 			};
- 
-@@ -156,6 +159,7 @@
- 				compatible = "mrvl,mmp-uart";
- 				reg = <0xd4016000 0x1000>;
- 				interrupts = <46>;
-+				clocks = <&uart3_clock>;
- 				status = "disabled";
- 			};
- 
-@@ -164,6 +168,7 @@
- 				#address-cells = <1>;
- 				#size-cells = <1>;
- 				reg = <0xd4019000 0x1000>;
-+				clocks = <&gpio_clock>;
- 				gpio-controller;
- 				#gpio-cells = <2>;
- 				interrupts = <49>;
-@@ -201,6 +206,7 @@
- 				compatible = "mrvl,mmp-twsi";
- 				reg = <0xd4011000 0x1000>;
- 				interrupts = <7>;
-+				clocks = <&twsi0_clock>;
- 				#address-cells = <1>;
- 				#size-cells = <0>;
- 				mrvl,i2c-fast-mode;
-@@ -211,6 +217,7 @@
- 				compatible = "mrvl,mmp-twsi";
- 				reg = <0xd4025000 0x1000>;
- 				interrupts = <58>;
-+				clocks = <&twsi1_clock>;
- 				status = "disabled";
- 			};
- 
-@@ -220,8 +227,12 @@
- 				interrupts = <1 0>;
- 				interrupt-names = "rtc 1Hz", "rtc alarm";
- 				interrupt-parent = <&intcmux5>;
-+				clocks = <&rtc_clock>;
- 				status = "disabled";
- 			};
- 		};
-+		soc_clocks: clocks{
-+		};
- 	};
- };
-+/include/ "mmp2-clock.dtsi"
-diff --git a/arch/arm/boot/dts/pxa168-clock.dtsi b/arch/arm/boot/dts/pxa168-clock.dtsi
+diff --git a/Documentation/devicetree/bindings/clock/mmp/clk-factor b/Documentation/devicetree/bindings/clock/mmp/clk-factor
 new file mode 100644
-index 0000000..8bd331e
+index 0000000..9e1816c
 --- /dev/null
-+++ b/arch/arm/boot/dts/pxa168-clock.dtsi
-@@ -0,0 +1,443 @@
-+&soc_clocks {
-+	#address-cells = <1>;
-+	#size-cells = <1>;
-+	ranges;
-+	fixed_clocks: fixed_clocks {
-+		compatible = "marvell,mmp-clk-master";
-+		clk32: clk32 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-clock";
-+			clock-frequency = <32768>;
-+		};
-+		vctcxo: vctcxo {
-+			#clock-cells = <0>;
-+			compatible = "fixed-clock";
-+			clock-frequency = <26000000>;
-+		};
-+		pll1: pll1 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-clock";
-+			clock-frequency = <624000000>;
-+		};
-+		pll1_2: pll1_2 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll1>;
-+			clock-div = <2>;
-+			clock-mult = <1>;
-+		};
-+		pll1_4: pll1_4 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll1_2>;
-+			clock-div = <2>;
-+			clock-mult = <1>;
-+		};
-+		pll1_8: pll1_8 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll1_4>;
-+			clock-div = <2>;
-+			clock-mult = <1>;
-+		};
-+		pll1_16: pll1_16 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll1_8>;
-+			clock-div = <2>;
-+			clock-mult = <1>;
-+		};
-+		pll1_6: pll1_6 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll1_2>;
-+			clock-div = <3>;
-+			clock-mult = <1>;
-+		};
-+		pll1_12: pll1_12 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll1_6>;
-+			clock-div = <2>;
-+			clock-mult = <1>;
-+		};
-+		pll1_24: pll1_24 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll1_12>;
-+			clock-div = <2>;
-+			clock-mult = <1>;
-+		};
-+		pll1_48: pll1_48 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll1_24>;
-+			clock-div = <2>;
-+			clock-mult = <1>;
-+		};
-+		pll1_96: pll1_96 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll1_48>;
-+			clock-div = <2>;
-+			clock-mult = <1>;
-+		};
-+		pll1_13: pll1_13 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll1>;
-+			clock-div = <13>;
-+			clock-mult = <1>;
-+		};
-+		pll1_13_1_5: pll1_13_1_5 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll1_13>;
-+			clock-div = <3>;
-+			clock-mult = <2>;
-+		};
-+		pll1_2_1_5: pll1_2_1_5 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll1>;
-+			clock-div = <3>;
-+			clock-mult = <2>;
-+		};
-+		pll1_3_16: pll1_3_16 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll1>;
-+			clock-div = <16>;
-+			clock-mult = <3>;
-+		};
-+	};
-+	mpmu_clocks: mpmu_clocks {
-+		compatible = "marvell,mmp-clk-master";
-+		reg = <0xd4050000 0x1000>;
-+		uart_pll: uart_pll {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-factor";
-+			clocks = <&pll1_4>;
-+			marvell,reg-offset = <0 0x14>;
-+			marvell,mmp-clk-factor-factor = <2>;
-+			marvell,mmp-clk-factor-bits-den = <13 0>;
-+			marvell,mmp-clk-factor-bits-num = <13 16>;
-+			marvell,mmp-clk-factor-table = <8125 1536>;
-+		};
-+	};
-+	apbc_clocks: apbc_clocks {
-+		compatible = "marvell,mmp-clk-master";
-+		reg = <0xd4015000 0x1000>;
-+		twsi0_clock: twsi0_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&pll1_13_1_5>;
-+			marvell,reg-offset = <0 0x2c>;
-+			marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+		};
-+		twsi1_clock: twsi1_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&pll1_13_1_5>;
-+			marvell,reg-offset = <0 0x6c>;
-+			marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+		};
-+		gpio_clock: gpio_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&vctcxo>;
-+			marvell,reg-offset = <0 0x8>;
-+			marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+		};
-+		kpc_clock: kpc_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&clk32>;
-+			marvell,reg-offset = <0 0x30>;
-+			marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+			marvell,mmp-clk-gate-need-delay;
-+		};
-+		rtc_clock: rtc_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&clk32>;
-+			marvell,reg-offset = <0 0x28>;
-+			marvell,mmp-clk-mask = <0x87 0x83 0x4>;
-+			marvell,mmp-clk-gate-need-delay;
-+		};
-+		pwm0_clock: pwm0_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&pll1_48>;
-+			marvell,reg-offset = <0 0xc>;
-+			marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+		};
-+		pwm1_clock: pwm1_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&pll1_48>;
-+			marvell,reg-offset = <0 0x10>;
-+			marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+		};
-+		pwm2_clock: pwm2_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&pll1_48>;
-+			marvell,reg-offset = <0 0x14>;
-+			marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+		};
-+		pwm3_clock: pwm3_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&pll1_48>;
-+			marvell,reg-offset = <0 0x18>;
-+			marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+		};
-+		uart0_clock: uart0_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-general-composite";
-+			uart0_mux: uart0_mux {
-+				#clock-cells = <0>;
-+				compatible = "marvell,mmp-clk-mux";
-+				clocks = <&pll1_3_16 &uart_pll>;
-+				marvell,reg-offset = <0 0x0>;
-+				marvell,mmp-clk-bits-mux = <1 4>;
-+			};
-+			uart0_gate: uart0_gate {
-+				compatible = "marvell,mmp-clk-gate";
-+				marvell,reg-offset = <0 0x0>;
-+				marvell,mmp-clk-mask = <0x7 0x3 0x0>;
-+			};
-+		};
-+		uart1_clock: uart1_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-general-composite";
-+			uart1_mux: uart1_mux {
-+				#clock-cells = <0>;
-+				compatible = "marvell,mmp-clk-mux";
-+				clocks = <&pll1_3_16 &uart_pll>;
-+				marvell,reg-offset = <0 0x4>;
-+				marvell,mmp-clk-bits-mux = <1 4>;
-+			};
-+			uart1_gate: uart1_gate {
-+				compatible = "marvell,mmp-clk-gate";
-+				marvell,reg-offset = <0 0x4>;
-+				marvell,mmp-clk-mask = <0x7 0x3 0x0>;
-+			};
-+		};
-+		uart2_clock: uart2_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-general-composite";
-+			uart2_mux: uart2_mux {
-+				#clock-cells = <0>;
-+				compatible = "marvell,mmp-clk-mux";
-+				clocks = <&pll1_3_16 &uart_pll>;
-+				marvell,reg-offset = <0 0x70>;
-+				marvell,mmp-clk-bits-mux = <1 4>;
-+			};
-+			uart2_gate: uart2_gate {
-+				compatible = "marvell,mmp-clk-gate";
-+				marvell,reg-offset = <0 0x4>;
-+				marvell,mmp-clk-mask = <0x7 0x3 0x0>;
-+			};
-+		};
-+		ssp0_clock: ssp0_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-general-composite";
-+			ssp0_mux: ssp0_mux {
-+				#clock-cells = <0>;
-+				compatible = "marvell,mmp-clk-mux";
-+				clocks = <&pll1_96 &pll1_48 &pll1_24 &pll1_12>;
-+				marvell,reg-offset = <0 0x81c>;
-+				marvell,mmp-clk-bits-mux = <3 4>;
-+			};
-+			ssp0_gate: ssp0_gate {
-+				compatible = "marvell,mmp-clk-gate";
-+				marvell,reg-offset = <0 0x81c>;
-+				marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+			};
-+		};
-+		ssp1_clock: ssp1_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-general-composite";
-+			ssp1_mux: ssp1_mux {
-+				#clock-cells = <0>;
-+				compatible = "marvell,mmp-clk-mux";
-+				clocks = <&pll1_96 &pll1_48 &pll1_24 &pll1_12>;
-+				marvell,reg-offset = <0 0x820>;
-+				marvell,mmp-clk-bits-mux = <3 4>;
-+			};
-+			ssp1_gate: ssp1_gate {
-+				compatible = "marvell,mmp-clk-gate";
-+				marvell,reg-offset = <0 0x820>;
-+				marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+			};
-+		};
-+		ssp2_clock: ssp2_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-general-composite";
-+			ssp2_mux: ssp2_mux {
-+				#clock-cells = <0>;
-+				compatible = "marvell,mmp-clk-mux";
-+				clocks = <&pll1_96 &pll1_48 &pll1_24 &pll1_12>;
-+				marvell,reg-offset = <0 0x84c>;
-+				marvell,mmp-clk-bits-mux = <3 4>;
-+			};
-+			ssp2_gate: ssp2_gate {
-+				compatible = "marvell,mmp-clk-gate";
-+				marvell,reg-offset = <0 0x84c>;
-+				marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+			};
-+		};
-+		ssp3_clock: ssp3_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-general-composite";
-+			ssp3_mux: ssp3_mux {
-+				#clock-cells = <0>;
-+				compatible = "marvell,mmp-clk-mux";
-+				clocks = <&pll1_96 &pll1_48 &pll1_24 &pll1_12>;
-+				marvell,reg-offset = <0 0x858>;
-+				marvell,mmp-clk-bits-mux = <3 4>;
-+			};
-+			ssp3_gate: ssp3_gate {
-+				compatible = "marvell,mmp-clk-gate";
-+				marvell,reg-offset = <0 0x858>;
-+				marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+			};
-+		};
-+		ssp4_clock: ssp4_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-general-composite";
-+			ssp4_mux: ssp4_mux {
-+				#clock-cells = <0>;
-+				compatible = "marvell,mmp-clk-mux";
-+				clocks = <&pll1_96 &pll1_48 &pll1_24 &pll1_12>;
-+				marvell,reg-offset = <0 0x85c>;
-+				marvell,mmp-clk-bits-mux = <3 4>;
-+			};
-+			ssp4_gate: ssp4_gate {
-+				compatible = "marvell,mmp-clk-gate";
-+				marvell,reg-offset = <0 0x85c>;
-+				marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+			};
-+		};
-+	};
-+	apmu_clocks: apmu_clocks {
-+		compatible = "marvell,mmp-clk-master";
-+		reg = <0xd4282800 0x1000>;
-+		dfc_clock: dfc_clock {
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&pll1_4>;
-+			marvell,reg-offset = <0 0x60>;
-+			marvell,mmp-clk-mask = <0x19b 0x19b 0x0>;
-+		};
-+		sdh0_clock: sdh0_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-general-composite";
-+			sdh0_mux: sdh0_mux {
-+				#clock-cells = <0>;
-+				compatible = "marvell,mmp-clk-mux";
-+				clocks = <&pll1_12 &pll1_13>;
-+				marvell,reg-offset = <0 0x54>;
-+				marvell,mmp-clk-bits-mux = <1 6>;
-+			};
-+			sdh0_gate: sdh0_gate {
-+				compatible = "marvell,mmp-clk-gate";
-+				marvell,reg-offset = <0 0x54>;
-+				marvell,mmp-clk-mask = <0x1b 0x1b 0x0>;
-+			};
-+		};
-+		sdh1_clock: sdh1_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-general-composite";
-+			sdh1_mux: sdh1_mux {
-+				#clock-cells = <0>;
-+				compatible = "marvell,mmp-clk-mux";
-+				clocks = <&pll1_12 &pll1_13>;
-+				marvell,reg-offset = <0 0x58>;
-+				marvell,mmp-clk-bits-mux = <1 6>;
-+			};
-+			sdh1_gate: sdh1_gate {
-+				compatible = "marvell,mmp-clk-gate";
-+				marvell,reg-offset = <0 0x58>;
-+				marvell,mmp-clk-mask = <0x1b 0x1b 0x0>;
-+			};
-+		};
-+		usb_clock: usb_clock {
-+			compatible = "marvell,mmp-clk-gate";
-+			marvell,reg-offset = <0 0x5c>;
-+			marvell,mmp-clk-mask = <0x9 0x9 0x0>;
-+		};
-+		sph_clock: sph_clock {
-+			compatible = "marvell,mmp-clk-gate";
-+			marvell,reg-offset = <0 0x5c>;
-+			marvell,mmp-clk-mask = <0x12 0x12 0x0>;
-+		};
-+		disp0_clock: disp0_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-general-composite";
-+			disp0_mux: disp0_mux {
-+				compatible = "marvell,mmp-clk-mux";
-+				marvell,reg-offset = <0 0x4c>;
-+				clocks = <&pll1_2 &pll1_12>;
-+				marvell,mmp-clk-bits-mux = <1 6>;
-+			};
-+			disp0_gate: disp0_gate {
-+				compatible = "marvell,mmp-clk-gate";
-+				marvell,reg-offset = <0 0x4c>;
-+				marvell,mmp-clk-mask = <0x1b 0x1b 0x0>;
-+			};
-+		};
-+		disp0_h_clock: disp0_h_clock {
-+			compatible = "marvell,mmp-clk-gate";
-+			marvell,reg-offset = <0 0x4c>;
-+			marvell,mmp-clk-mask = <0x24 0x24 0x0>;
-+		};
-+		ccic0_mux: ccic0_mux {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-mux";
-+			clocks = <&pll1_2 &pll1_12>;
-+			marvell,reg-offset = <0 0x50>;
-+			marvell,mmp-clk-bits-mux = <1 6>;
-+		};
-+		ccic0_clock: ccic0_clock {
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&ccic0_mux>;
-+			marvell,reg-offset = <0 0x50>;
-+			marvell,mmp-clk-mask = <0x1b 0x1b 0x0>;
-+		};
-+		ccic0_phy_clock: ccic0_phy_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-composite";
-+			ccic0_phy_mux: ccic0_phy_mux {
-+				#clock-cells = <0>;
-+				compatible = "marvell,mmp-clk-mux";
-+				clocks = <&pll1_2 &pll1_12>;
-+				marvell,reg-offset = <0 0x50>;
-+				marvell,mmp-clk-bits-mux = <1 7>;
-+			};
-+			ccic0_phy_gate: ccic0_phy_gate {
-+				compatible = "marvell,mmp-clk-gate";
-+				marvell,reg-offset = <0 0x50>;
-+				marvell,mmp-clk-mask = <0x24 0x24 0x0>;
-+			};
-+		};
-+		ccic0_sphy_clock: ccic0_sphy_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-composite";
-+			ccic0_sphy_div: ccic0_sphy_div {
-+				#clock-cells = <0>;
-+				compatible = "marvell,mmp-clk-div";
-+				clocks = <&ccic0_mux>;
-+				marvell,reg-offset = <0 0x50>;
-+				marvell,mmp-clk-bits-div = <5 10>;
-+			};
-+			ccic0_sphy_gate: ccic0_sphy_gate {
-+				compatible = "marvell,mmp-clk-gate";
-+				marvell,reg-offset = <0 0x50>;
-+				marvell,mmp-clk-mask = <0x300 0x300 0x0>;
-+			};
-+		};
++++ b/Documentation/devicetree/bindings/clock/mmp/clk-factor
+@@ -0,0 +1,28 @@
++Binding for Marvell MMP series factor clock
 +
++The factor clock is calculated by
++  Fout = (Fin * (den / num)) / factor;
++
++Required properties
++- compatible : It should be "marvell,mmp-clk-factor";
++- clock: The parent of the clock.
++- marvell,mmp-clk-factor-factor : The "factor" of the clock.
++- marvell,mmp-clk-factor-bits-num : The width and shift of bits for "num".
++- marvell,mmp-clk-factor-bits-den : The width and shift of bits for "dev".
++- marvell,mmp-clk-factor-table : The table of (num, den) for the clock.
++
++Examples
++mpmu_clocks: mpmu_clocks {
++	compatible = "marvell,mmp-clk-master";
++	reg = <0xd4050000 0x1000>;
++	uart_pll: uart_pll {
++		compatible = "marvell,mmp-clk-factor";
++		clocks = <&pll1_4>;
++		marvell,reg-offset = <0 0x14>;
++		marvell,mmp-clk-factor-factor = <2>;
++		marvell,mmp-clk-factor-bits-den = <13 0>;
++		marvell,mmp-clk-factor-bits-num = <13 16>;
++		marvell,mmp-clk-factor-table = <8125 1536>;
 +	};
 +};
-diff --git a/arch/arm/boot/dts/pxa168.dtsi b/arch/arm/boot/dts/pxa168.dtsi
-index 975dad2..d16aa1b 100644
---- a/arch/arm/boot/dts/pxa168.dtsi
-+++ b/arch/arm/boot/dts/pxa168.dtsi
-@@ -59,6 +59,7 @@
- 				compatible = "mrvl,mmp-uart";
- 				reg = <0xd4017000 0x1000>;
- 				interrupts = <27>;
-+				clocks = <&uart0_clock>;
- 				status = "disabled";
- 			};
- 
-@@ -66,6 +67,7 @@
- 				compatible = "mrvl,mmp-uart";
- 				reg = <0xd4018000 0x1000>;
- 				interrupts = <28>;
-+				clocks = <&uart1_clock>;
- 				status = "disabled";
- 			};
- 
-@@ -73,6 +75,7 @@
- 				compatible = "mrvl,mmp-uart";
- 				reg = <0xd4026000 0x1000>;
- 				interrupts = <29>;
-+				clocks = <&uart2_clock>;
- 				status = "disabled";
- 			};
- 
-@@ -81,6 +84,7 @@
- 				#address-cells = <1>;
- 				#size-cells = <1>;
- 				reg = <0xd4019000 0x1000>;
-+				clocks = <&gpio_clock>;
- 				gpio-controller;
- 				#gpio-cells = <2>;
- 				interrupts = <49>;
-@@ -110,6 +114,7 @@
- 				compatible = "mrvl,mmp-twsi";
- 				reg = <0xd4011000 0x1000>;
- 				interrupts = <7>;
-+				clocks = <&twsi0_clock>;
- 				mrvl,i2c-fast-mode;
- 				status = "disabled";
- 			};
-@@ -118,6 +123,7 @@
- 				compatible = "mrvl,mmp-twsi";
- 				reg = <0xd4025000 0x1000>;
- 				interrupts = <58>;
-+				clocks = <&twsi1_clock>;
- 				status = "disabled";
- 			};
- 
-@@ -126,8 +132,12 @@
- 				reg = <0xd4010000 0x1000>;
- 				interrupts = <5 6>;
- 				interrupt-names = "rtc 1Hz", "rtc alarm";
-+				clocks = <&rtc_clock>;
- 				status = "disabled";
- 			};
- 		};
-+		soc_clocks: clocks{
-+		};
- 	};
- };
-+/include/ "pxa168-clock.dtsi"
-diff --git a/arch/arm/boot/dts/pxa910-clock.dtsi b/arch/arm/boot/dts/pxa910-clock.dtsi
+++
+diff --git a/Documentation/devicetree/bindings/clock/mmp/clk-gate b/Documentation/devicetree/bindings/clock/mmp/clk-gate
 new file mode 100644
-index 0000000..e9c58e2
+index 0000000..5da6c63
 --- /dev/null
-+++ b/arch/arm/boot/dts/pxa910-clock.dtsi
-@@ -0,0 +1,388 @@
-+&soc_clocks {
-+	#address-cells = <1>;
-+	#size-cells = <1>;
-+	ranges;
-+	fixed_clocks: fixed_clocks {
-+		compatible = "marvell,mmp-clk-master";
-+		clk32: clk32 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-clock";
-+			clock-frequency = <32768>;
-+		};
-+		vctcxo: vctcxo {
-+			#clock-cells = <0>;
-+			compatible = "fixed-clock";
-+			clock-frequency = <26000000>;
-+		};
-+		pll1: pll1 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-clock";
-+			clock-frequency = <624000000>;
-+		};
-+		pll1_2: pll1_2 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll1>;
-+			clock-div = <2>;
-+			clock-mult = <1>;
-+		};
-+		pll1_4: pll1_4 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll1_2>;
-+			clock-div = <2>;
-+			clock-mult = <1>;
-+		};
-+		pll1_8: pll1_8 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll1_4>;
-+			clock-div = <2>;
-+			clock-mult = <1>;
-+		};
-+		pll1_16: pll1_16 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll1_8>;
-+			clock-div = <2>;
-+			clock-mult = <1>;
-+		};
-+		pll1_6: pll1_6 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll1_2>;
-+			clock-div = <3>;
-+			clock-mult = <1>;
-+		};
-+		pll1_12: pll1_12 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll1_6>;
-+			clock-div = <2>;
-+			clock-mult = <1>;
-+		};
-+		pll1_24: pll1_24 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll1_12>;
-+			clock-div = <2>;
-+			clock-mult = <1>;
-+		};
-+		pll1_48: pll1_48 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll1_24>;
-+			clock-div = <2>;
-+			clock-mult = <1>;
-+		};
-+		pll1_96: pll1_96 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll1_48>;
-+			clock-div = <2>;
-+			clock-mult = <1>;
-+		};
-+		pll1_13: pll1_13 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll1>;
-+			clock-div = <13>;
-+			clock-mult = <1>;
-+		};
-+		pll1_13_1_5: pll1_13_1_5 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll1_13>;
-+			clock-div = <3>;
-+			clock-mult = <2>;
-+		};
-+		pll1_2_1_5: pll1_2_1_5 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll1>;
-+			clock-div = <3>;
-+			clock-mult = <2>;
-+		};
-+		pll1_3_16: pll1_3_16 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-factor-clock";
-+			clocks = <&pll1>;
-+			clock-div = <16>;
-+			clock-mult = <3>;
-+		};
-+	};
-+	mpmu_clocks: mpmu_clocks {
-+		compatible = "marvell,mmp-clk-master";
-+		reg = <0xd4050000 0x1000>;
-+		uart_pll: uart_pll {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-factor";
-+			clocks = <&pll1_4>;
-+			marvell,reg-offset = <0 0x14>;
-+			marvell,mmp-clk-factor-factor = <2>;
-+			marvell,mmp-clk-factor-bits-den = <13 0>;
-+			marvell,mmp-clk-factor-bits-num = <13 16>;
-+			marvell,mmp-clk-factor-table = <8125 1536>;
-+		};
-+	};
-+	apbc_clocks: apbc_clocks {
-+		compatible = "marvell,mmp-clk-master";
-+		reg = <0xd4015000 0x1000>;
-+		twsi0_clock: twsi0_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&pll1_13_1_5>;
-+			marvell,reg-offset = <0 0x2c>;
-+			marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+		};
-+		gpio_clock: gpio_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&vctcxo>;
-+			marvell,reg-offset = <0 0x8>;
-+			marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+		};
-+		kpc_clock: kpc_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&clk32>;
-+			marvell,reg-offset = <0 0x30>;
-+			marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+			marvell,mmp-clk-gate-need-delay;
-+		};
-+		rtc_clock: rtc_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&clk32>;
-+			marvell,reg-offset = <0 0x28>;
-+			marvell,mmp-clk-mask = <0x87 0x83 0x4>;
-+			marvell,mmp-clk-gate-need-delay;
-+		};
-+		pwm0_clock: pwm0_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&pll1_48>;
-+			marvell,reg-offset = <0 0xc>;
-+			marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+		};
-+		pwm1_clock: pwm1_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&pll1_48>;
-+			marvell,reg-offset = <0 0x10>;
-+			marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+		};
-+		pwm2_clock: pwm2_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&pll1_48>;
-+			marvell,reg-offset = <0 0x14>;
-+			marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+		};
-+		pwm3_clock: pwm3_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&pll1_48>;
-+			marvell,reg-offset = <0 0x18>;
-+			marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+		};
-+		uart0_clock: uart0_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-general-composite";
-+			uart0_mux: uart0_mux {
-+				#clock-cells = <0>;
-+				compatible = "marvell,mmp-clk-mux";
-+				clocks = <&pll1_3_16 &uart_pll>;
-+				marvell,reg-offset = <0 0x0>;
-+				marvell,mmp-clk-bits-mux = <1 4>;
-+			};
-+			uart0_gate: uart0_gate {
-+				compatible = "marvell,mmp-clk-gate";
-+				marvell,reg-offset = <0 0x0>;
-+				marvell,mmp-clk-mask = <0x7 0x3 0x0>;
-+			};
-+		};
-+		uart1_clock: uart1_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-general-composite";
-+			uart1_mux: uart1_mux {
-+				#clock-cells = <0>;
-+				compatible = "marvell,mmp-clk-mux";
-+				clocks = <&pll1_3_16 &uart_pll>;
-+				marvell,reg-offset = <0 0x4>;
-+				marvell,mmp-clk-bits-mux = <1 4>;
-+			};
-+			uart1_gate: uart1_gate {
-+				compatible = "marvell,mmp-clk-gate";
-+				marvell,reg-offset = <0 0x4>;
-+				marvell,mmp-clk-mask = <0x7 0x3 0x0>;
-+			};
-+		};
-+		ssp0_clock: ssp0_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-general-composite";
-+			ssp0_mux: ssp0_mux {
-+				#clock-cells = <0>;
-+				compatible = "marvell,mmp-clk-mux";
-+				clocks = <&pll1_96 &pll1_48 &pll1_24 &pll1_12>;
-+				marvell,reg-offset = <0 0x81c>;
-+				marvell,mmp-clk-bits-mux = <3 4>;
-+			};
-+			ssp0_gate: ssp0_gate {
-+				compatible = "marvell,mmp-clk-gate";
-+				marvell,reg-offset = <0 0x81c>;
-+				marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+			};
-+		};
-+		ssp1_clock: ssp1_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-general-composite";
-+			ssp1_mux: ssp1_mux {
-+				#clock-cells = <0>;
-+				compatible = "marvell,mmp-clk-mux";
-+				clocks = <&pll1_96 &pll1_48 &pll1_24 &pll1_12>;
-+				marvell,reg-offset = <0 0x820>;
-+				marvell,mmp-clk-bits-mux = <3 4>;
-+			};
-+			ssp1_gate: ssp1_gate {
-+				compatible = "marvell,mmp-clk-gate";
-+				marvell,reg-offset = <0 0x820>;
-+				marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+			};
-+		};
-+	};
-+	apbcp_clock: apbcp_clock {
-+		compatible = "marvell,mmp-clk-master";
-+		reg = <0xd403b000 0x1000>;
-+		uart2_clock: uart2_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-general-composite";
-+			uart2_mux: uart2_mux {
-+				#clock-cells = <0>;
-+				compatible = "marvell,mmp-clk-mux";
-+				clocks = <&pll1_3_16 &uart_pll>;
-+				marvell,reg-offset = <0 0x70>;
-+				marvell,mmp-clk-bits-mux = <1 4>;
-+			};
-+			uart2_gate: uart2_gate {
-+				compatible = "marvell,mmp-clk-gate";
-+				marvell,reg-offset = <0 0x4>;
-+				marvell,mmp-clk-mask = <0x7 0x3 0x0>;
-+			};
-+		};
-+		twsi1_clock: twsi1_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&pll1_13_1_5>;
-+			marvell,reg-offset = <0 0x28>;
-+			marvell,mmp-clk-mask = <0x7 0x3 0x4>;
-+		};
-+	};
-+	apmu_clocks: apmu_clocks {
-+		compatible = "marvell,mmp-clk-master";
-+		reg = <0xd4282800 0x1000>;
-+		sdh0_clock: sdh0_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-general-composite";
-+			sdh0_mux: sdh0_mux {
-+				#clock-cells = <0>;
-+				compatible = "marvell,mmp-clk-mux";
-+				clocks = <&pll1_12 &pll1_13>;
-+				marvell,reg-offset = <0 0x54>;
-+				marvell,mmp-clk-bits-mux = <1 6>;
-+			};
-+			sdh0_gate: sdh0_gate {
-+				compatible = "marvell,mmp-clk-gate";
-+				marvell,reg-offset = <0 0x54>;
-+				marvell,mmp-clk-mask = <0x1b 0x1b 0x0>;
-+			};
-+		};
-+		sdh1_clock: sdh1_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-general-composite";
-+			sdh1_mux: sdh1_mux {
-+				#clock-cells = <0>;
-+				compatible = "marvell,mmp-clk-mux";
-+				clocks = <&pll1_12 &pll1_13>;
-+				marvell,reg-offset = <0 0x58>;
-+				marvell,mmp-clk-bits-mux = <1 6>;
-+			};
-+			sdh1_gate: sdh1_gate {
-+				compatible = "marvell,mmp-clk-gate";
-+				marvell,reg-offset = <0 0x58>;
-+				marvell,mmp-clk-mask = <0x1b 0x1b 0x0>;
-+			};
-+		};
-+		usb_clock: usb_clock {
-+			compatible = "marvell,mmp-clk-gate";
-+			marvell,reg-offset = <0 0x5c>;
-+			marvell,mmp-clk-mask = <0x9 0x9 0x0>;
-+		};
-+		sph_clock: sph_clock {
-+			compatible = "marvell,mmp-clk-gate";
-+			marvell,reg-offset = <0 0x5c>;
-+			marvell,mmp-clk-mask = <0x12 0x12 0x0>;
-+		};
-+		disp0_clock: disp0_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-general-composite";
-+			disp0_mux: disp0_mux {
-+				compatible = "marvell,mmp-clk-mux";
-+				marvell,reg-offset = <0 0x4c>;
-+				clocks = <&pll1_2 &pll1_12>;
-+				marvell,mmp-clk-bits-mux = <1 6>;
-+			};
-+			disp0_gate: disp0_gate {
-+				compatible = "marvell,mmp-clk-gate";
-+				marvell,reg-offset = <0 0x4c>;
-+				marvell,mmp-clk-mask = <0x1b 0x1b 0x0>;
-+			};
-+		};
-+		ccic0_mux: ccic0_mux {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-mux";
-+			clocks = <&pll1_2 &pll1_12>;
-+			marvell,reg-offset = <0 0x50>;
-+			marvell,mmp-clk-bits-mux = <1 6>;
-+		};
-+		ccic0_clock: ccic0_clock {
-+			compatible = "marvell,mmp-clk-gate";
-+			clocks = <&ccic0_mux>;
-+			marvell,reg-offset = <0 0x50>;
-+			marvell,mmp-clk-mask = <0x1b 0x1b 0x0>;
-+		};
-+		ccic0_phy_clock: ccic0_phy_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-general-composite";
-+			ccic0_phy_mux: ccic0_phy_mux {
-+				#clock-cells = <0>;
-+				compatible = "marvell,mmp-clk-mux";
-+				clocks = <&pll1_2 &pll1_12>;
-+				marvell,reg-offset = <0 0x50>;
-+				marvell,mmp-clk-bits-mux = <1 7>;
-+			};
-+			ccic0_phy_gate: ccic0_phy_gate {
-+				compatible = "marvell,mmp-clk-gate";
-+				marvell,reg-offset = <0 0x50>;
-+				marvell,mmp-clk-mask = <0x24 0x24 0x0>;
-+			};
-+		};
-+		ccic0_sphy_clock: ccic0_sphy_clock {
-+			#clock-cells = <0>;
-+			compatible = "marvell,mmp-clk-general-composite";
-+			ccic0_sphy_div: ccic0_sphy_div {
-+				#clock-cells = <0>;
-+				compatible = "marvell,mmp-clk-div";
-+				clocks = <&ccic0_mux>;
-+				marvell,reg-offset = <0 0x50>;
-+				marvell,mmp-clk-bits-div = <5 10>;
-+			};
-+			ccic0_sphy_gate: ccic0_sphy_gate {
-+				compatible = "marvell,mmp-clk-gate";
-+				marvell,reg-offset = <0 0x50>;
-+				marvell,mmp-clk-mask = <0x300 0x300 0x0>;
-+			};
-+		};
++++ b/Documentation/devicetree/bindings/clock/mmp/clk-gate
+@@ -0,0 +1,41 @@
++Binding for Marvell MMP series gate clock and common gate clock
 +
++There two type of gate clock used by Marvell MMP series SOC.
++The common gate clock and the gate clock defined for MMP series SOC.
++
++For common gate clock
++
++Required properties
++- compatible : It should be "marvell,mmp-clk-general-gate";
++- clock : The parent of the clock.
++- marvell,mmp-clk-bit-gate : The offset of the bit control the gate.
++
++Examples
++apmu_clocks: apmu_clocks {
++	compatible = "marvell,mmp-clk-master";
++	reg = <0xd4282800 0x1000>;
++	pll1_416_gate: pll1_416_gate {
++		compatible = "marvell,mmp-clk-general-gate";
++		clocks = <&pll1_416m>;
++		marvell,reg-offset = <0 0x40>;
++		marvell,mmp-clk-bit-gate = <27>;
 +	};
 +};
-diff --git a/arch/arm/boot/dts/pxa910.dtsi b/arch/arm/boot/dts/pxa910.dtsi
-index 0247c62..cc06c5d 100644
---- a/arch/arm/boot/dts/pxa910.dtsi
-+++ b/arch/arm/boot/dts/pxa910.dtsi
-@@ -71,6 +71,7 @@
- 				compatible = "mrvl,mmp-uart";
- 				reg = <0xd4017000 0x1000>;
- 				interrupts = <27>;
-+				clocks = <&uart0_clock>;
- 				status = "disabled";
- 			};
++
++For MMP series gate clock
++
++Required properties
++- compatible : It should be "marvell,mmp-clk-gate";
++- clock : The parent of the clock.
++- marvell,mmp-clk-mask : The (mask, val_enable, val_disable) for the clock.
++
++Examples
++apmu_clocks: apmu_clocks {
++	compatible = "marvell,mmp-clk-master";
++	reg = <0xd4282800 0x1000>;
++	usb_clock: usb_clock {
++		compatible = "marvell,mmp-clk-gate";
++		marvell,reg-offset = <0 0x5c>;
++		marvell,mmp-clk-mask = <0x9 0x9 0x1>;
++	};
++};
+diff --git a/Documentation/devicetree/bindings/clock/mmp/clk-mix b/Documentation/devicetree/bindings/clock/mmp/clk-mix
+new file mode 100644
+index 0000000..8cf9b38
+--- /dev/null
++++ b/Documentation/devicetree/bindings/clock/mmp/clk-mix
+@@ -0,0 +1,38 @@
++Binding for Marvell MMP series mix clock
++
++The mix clock is a combination of mux and div clock. It need to
++change the bits of mux and div together.
++
++
++Required properties
++- compatible : It should be "marvell,mmp-clk-mix".
++- clocks : The parents of the clock.
++- marvell,mmp-clk-bits-div : The width and shift of divider bits.
++- marvell,mmp-clk-bits-mux : The width and shift of divider bits.
++- marvell,mmp-clk-bit-fc : The offset of the frequency change bit.
++- marvell,mmp-clk-mix-table : The array of (rate, parent_index). The rate
++                              means the clock's rate, and parent_index means
++                              the suggested parent index from user.
++
++Optional properties:
++- marvell,mmp-clk-div-power-of-two : The value of divider is a power of two.
++- marvell,mmp-clk-div-one-based : The value of divider starts from 1.
++- marvell,mmp-clk-div-table : The value of divider is not continous, and need
++                              a table to record it.
++
++
++Exampels
++
++apmu_clk {
++	compatible = "marvell,mmp-clk-master";
++	reg = <0xd4282800 0x1000>;
++	lcd_clk {
++		compatible = "marvell,mmp-clk-mix";
++		clocks = <&pll1_416m &pll1_624 &pll2 &pll2p>;
++		marvell,reg-offset = <0 0x4c>;
++		marvell,mmp-clk-bits-mux = <2 17>;
++		marvell,mmp-clk-bits-div = <3 19>;
++		marvell,mmp-clk-bit-fc = <22>;
++	};
++};
++
+diff --git a/Documentation/devicetree/bindings/clock/mmp/clk-mux b/Documentation/devicetree/bindings/clock/mmp/clk-mux
+new file mode 100644
+index 0000000..f5bb4dd
+--- /dev/null
++++ b/Documentation/devicetree/bindings/clock/mmp/clk-mux
+@@ -0,0 +1,20 @@
++Binding for mux type clock
++
++The mux clock is defined as common clock.
++
++Required properties
++- compatible : It should be "marvell,mmp-clk-mux".
++- clocks : The parents of the clock.
++- marvell,mmp-clk-bits-mux : The width and shift of mux bits.
++
++Examples
++apmu_clk {
++	compatible = "marvell,mmp-clk-master";
++	reg = <0xd4282800 0x1000>;
++	dsi_phy_esc_mux: dsi_phy_esc_mux {
++		compatible = "marvell,mmp-clk-mux";
++		marvell,reg-offset = <0 0x44>;
++		clocks = <&pll1_12 &pll1_13 &vctcxo &pll1_8>;
++		marvell,mmp-clk-bits-mux = <2 0>;
++	};
++};
+diff --git a/drivers/clk/mmp/Makefile b/drivers/clk/mmp/Makefile
+index 84dce78..e29c6f1 100644
+--- a/drivers/clk/mmp/Makefile
++++ b/drivers/clk/mmp/Makefile
+@@ -6,7 +6,7 @@ obj-y += clk-apbc.o clk-apmu.o clk-frac.o clk-mix.o clk-gate.o	\
+ 	 clk-mix-composite.o
  
-@@ -78,6 +79,7 @@
- 				compatible = "mrvl,mmp-uart";
- 				reg = <0xd4018000 0x1000>;
- 				interrupts = <28>;
-+				clocks = <&uart1_clock>;
- 				status = "disabled";
- 			};
+ ifneq ($(CONFIG_OF),)
+-obj-y += clk-master-node.o lock.o clk-of-composite.o
++obj-y += clk-master-node.o lock.o clk-of-composite.o clk-of.o
+ endif
  
-@@ -85,6 +87,7 @@
- 				compatible = "mrvl,mmp-uart";
- 				reg = <0xd4036000 0x1000>;
- 				interrupts = <59>;
-+				clocks = <&uart2_clock>;
- 				status = "disabled";
- 			};
- 
-@@ -93,6 +96,7 @@
- 				#address-cells = <1>;
- 				#size-cells = <1>;
- 				reg = <0xd4019000 0x1000>;
-+				clocks = <&gpio_clock>;
- 				gpio-controller;
- 				#gpio-cells = <2>;
- 				interrupts = <49>;
-@@ -124,6 +128,7 @@
- 				#size-cells = <0>;
- 				reg = <0xd4011000 0x1000>;
- 				interrupts = <7>;
-+				clocks = <&twsi0_clock>;
- 				mrvl,i2c-fast-mode;
- 				status = "disabled";
- 			};
-@@ -134,6 +139,7 @@
- 				#size-cells = <0>;
- 				reg = <0xd4037000 0x1000>;
- 				interrupts = <54>;
-+				clocks = <&twsi1_clock>;
- 				status = "disabled";
- 			};
- 
-@@ -142,8 +148,12 @@
- 				reg = <0xd4010000 0x1000>;
- 				interrupts = <5 6>;
- 				interrupt-names = "rtc 1Hz", "rtc alarm";
-+				clocks = <&rtc_clock>;
- 				status = "disabled";
- 			};
- 		};
-+		soc_clocks: clocks{
-+		};
- 	};
- };
-+/include/ "pxa910-clock.dtsi"
-diff --git a/arch/arm/mach-mmp/Kconfig b/arch/arm/mach-mmp/Kconfig
-index ebdba87..ce15826 100644
---- a/arch/arm/mach-mmp/Kconfig
-+++ b/arch/arm/mach-mmp/Kconfig
-@@ -86,8 +86,8 @@ config MACH_GPLUGD
- 
- config MACH_MMP_DT
- 	bool "Support MMP (ARMv5) platforms from device tree"
--	select CPU_PXA168
--	select CPU_PXA910
-+	select COMMON_CLK
-+	select CPU_MOHAWK
- 	select USE_OF
- 	select PINCTRL
- 	select PINCTRL_SINGLE
-@@ -99,7 +99,8 @@ config MACH_MMP_DT
- config MACH_MMP2_DT
- 	bool "Support MMP2 (ARMv7) platforms from device tree"
- 	depends on !CPU_MOHAWK
--	select CPU_MMP2
-+	select COMMON_CLK
-+	select CPU_PJ4
- 	select USE_OF
- 	select PINCTRL
- 	select PINCTRL_SINGLE
-diff --git a/arch/arm/mach-mmp/Makefile b/arch/arm/mach-mmp/Makefile
-index 98f0f63..ab54ff3 100644
---- a/arch/arm/mach-mmp/Makefile
-+++ b/arch/arm/mach-mmp/Makefile
-@@ -31,6 +31,6 @@ obj-$(CONFIG_MACH_BROWNSTONE)	+= brownstone.o
- obj-$(CONFIG_MACH_FLINT)	+= flint.o
- obj-$(CONFIG_MACH_MARVELL_JASPER) += jasper.o
- obj-$(CONFIG_MACH_MMP_DT)	+= mmp-dt.o
--obj-$(CONFIG_MACH_MMP2_DT)	+= mmp2-dt.o
-+obj-$(CONFIG_MACH_MMP2_DT)	+= mmp-dt.o
- obj-$(CONFIG_MACH_TETON_BGA)	+= teton_bga.o
- obj-$(CONFIG_MACH_GPLUGD)	+= gplugd.o
-diff --git a/arch/arm/mach-mmp/common.h b/arch/arm/mach-mmp/common.h
-index cf445ba..9dcf19c 100644
---- a/arch/arm/mach-mmp/common.h
-+++ b/arch/arm/mach-mmp/common.h
-@@ -8,3 +8,4 @@ extern void mmp_restart(enum reboot_mode, const char *);
- extern void __init pxa168_clk_init(void);
- extern void __init pxa910_clk_init(void);
- extern void __init mmp2_clk_init(void);
-+extern void mmp_clk_of_init(void);
-diff --git a/arch/arm/mach-mmp/mmp-dt.c b/arch/arm/mach-mmp/mmp-dt.c
-index cca529c..714735e 100644
---- a/arch/arm/mach-mmp/mmp-dt.c
-+++ b/arch/arm/mach-mmp/mmp-dt.c
-@@ -13,61 +13,42 @@
- #include <linux/of_platform.h>
- #include <asm/mach/arch.h>
- #include <asm/mach/time.h>
-+#include <asm/hardware/cache-tauros2.h>
- 
- #include "common.h"
- 
- extern void __init mmp_dt_init_timer(void);
- 
--static const struct of_dev_auxdata pxa168_auxdata_lookup[] __initconst = {
--	OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4017000, "pxa2xx-uart.0", NULL),
--	OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4018000, "pxa2xx-uart.1", NULL),
--	OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4026000, "pxa2xx-uart.2", NULL),
--	OF_DEV_AUXDATA("mrvl,mmp-twsi", 0xd4011000, "pxa2xx-i2c.0", NULL),
--	OF_DEV_AUXDATA("mrvl,mmp-twsi", 0xd4025000, "pxa2xx-i2c.1", NULL),
--	OF_DEV_AUXDATA("marvell,mmp-gpio", 0xd4019000, "mmp-gpio", NULL),
--	OF_DEV_AUXDATA("mrvl,mmp-rtc", 0xd4010000, "sa1100-rtc", NULL),
--	{}
--};
--
--static const struct of_dev_auxdata pxa910_auxdata_lookup[] __initconst = {
--	OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4017000, "pxa2xx-uart.0", NULL),
--	OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4018000, "pxa2xx-uart.1", NULL),
--	OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4036000, "pxa2xx-uart.2", NULL),
--	OF_DEV_AUXDATA("mrvl,mmp-twsi", 0xd4011000, "pxa2xx-i2c.0", NULL),
--	OF_DEV_AUXDATA("mrvl,mmp-twsi", 0xd4037000, "pxa2xx-i2c.1", NULL),
--	OF_DEV_AUXDATA("marvell,mmp-gpio", 0xd4019000, "mmp-gpio", NULL),
--	OF_DEV_AUXDATA("mrvl,mmp-rtc", 0xd4010000, "sa1100-rtc", NULL),
--	{}
--};
--
--static void __init pxa168_dt_init(void)
--{
--	of_platform_populate(NULL, of_default_bus_match_table,
--			     pxa168_auxdata_lookup, NULL);
--}
--
--static void __init pxa910_dt_init(void)
--{
--	of_platform_populate(NULL, of_default_bus_match_table,
--			     pxa910_auxdata_lookup, NULL);
--}
--
- static const char *mmp_dt_board_compat[] __initdata = {
- 	"mrvl,pxa168-aspenite",
- 	"mrvl,pxa910-dkb",
-+	"mrvl,mmp2-brownstone",
- 	NULL,
- };
- 
-+void __init mmp_init_timer(void)
+ obj-$(CONFIG_CPU_PXA168) += clk-pxa168.o
+diff --git a/drivers/clk/mmp/clk-of.c b/drivers/clk/mmp/clk-of.c
+new file mode 100644
+index 0000000..2bba7ee
+--- /dev/null
++++ b/drivers/clk/mmp/clk-of.c
+@@ -0,0 +1,689 @@
++/*
++ * mmp mix(div and mux) clock operation source file
++ *
++ * Copyright (C) 2014 Marvell
++ * Chao Xie <chao.xie@marvell.com>
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2. This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
++
++#include <linux/clk.h>
++#include <linux/clk-provider.h>
++#include <linux/err.h>
++#include <linux/slab.h>
++#include <linux/list.h>
++#include <linux/of.h>
++
++#include "clk.h"
++
++static int of_mmp_clk_get_flags(struct device_node *np,
++				unsigned long *flags)
 +{
-+#ifdef CONFIG_CACHE_TAUROS2
-+	tauros2_init(0);
-+#endif
-+	mmp_clk_of_init();
-+	mmp_dt_init_timer();
++	*flags = 0;
++
++	return 0;
 +}
 +
- DT_MACHINE_START(PXA168_DT, "Marvell PXA168 (Device Tree Support)")
- 	.map_io		= mmp_map_io,
--	.init_time	= mmp_dt_init_timer,
--	.init_machine	= pxa168_dt_init,
-+	.init_time	= mmp_init_timer,
- 	.dt_compat	= mmp_dt_board_compat,
- MACHINE_END
- 
- DT_MACHINE_START(PXA910_DT, "Marvell PXA910 (Device Tree Support)")
- 	.map_io		= mmp_map_io,
--	.init_time	= mmp_dt_init_timer,
--	.init_machine	= pxa910_dt_init,
-+	.init_time	= mmp_init_timer,
-+	.dt_compat	= mmp_dt_board_compat,
-+MACHINE_END
++static int of_mmp_clk_get_bits(struct device_node *np, const char *name,
++				u8 *width, u8 *shift)
++{
++	int ret;
++	u32 tmp[2];
 +
-+DT_MACHINE_START(MMP2_DT, "Marvell MMP2 (Device Tree Support)")
-+	.map_io		= mmp_map_io,
-+	.init_time	= mmp_init_timer,
- 	.dt_compat	= mmp_dt_board_compat,
- MACHINE_END
-diff --git a/arch/arm/mach-mmp/mmp2-dt.c b/arch/arm/mach-mmp/mmp2-dt.c
-deleted file mode 100644
-index 023cb45..0000000
---- a/arch/arm/mach-mmp/mmp2-dt.c
-+++ /dev/null
-@@ -1,50 +0,0 @@
--/*
-- *  linux/arch/arm/mach-mmp/mmp2-dt.c
-- *
-- *  Copyright (C) 2012 Marvell Technology Group Ltd.
-- *  Author: Haojian Zhuang <haojian.zhuang@marvell.com>
-- *
-- *  This program is free software; you can redistribute it and/or modify
-- *  it under the terms of the GNU General Public License version 2 as
-- *  publishhed by the Free Software Foundation.
-- */
--
--#include <linux/io.h>
--#include <linux/irqchip.h>
--#include <linux/of_platform.h>
--#include <asm/mach/arch.h>
--#include <asm/mach/time.h>
--
--#include "common.h"
--
--extern void __init mmp_dt_init_timer(void);
--
--static const struct of_dev_auxdata mmp2_auxdata_lookup[] __initconst = {
--	OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4030000, "pxa2xx-uart.0", NULL),
--	OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4017000, "pxa2xx-uart.1", NULL),
--	OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4018000, "pxa2xx-uart.2", NULL),
--	OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4016000, "pxa2xx-uart.3", NULL),
--	OF_DEV_AUXDATA("mrvl,mmp-twsi", 0xd4011000, "pxa2xx-i2c.0", NULL),
--	OF_DEV_AUXDATA("mrvl,mmp-twsi", 0xd4025000, "pxa2xx-i2c.1", NULL),
--	OF_DEV_AUXDATA("marvell,mmp-gpio", 0xd4019000, "mmp2-gpio", NULL),
--	OF_DEV_AUXDATA("mrvl,mmp-rtc", 0xd4010000, "sa1100-rtc", NULL),
--	{}
--};
--
--static void __init mmp2_dt_init(void)
--{
--	of_platform_populate(NULL, of_default_bus_match_table,
--			     mmp2_auxdata_lookup, NULL);
--}
--
--static const char *mmp2_dt_board_compat[] __initdata = {
--	"mrvl,mmp2-brownstone",
--	NULL,
--};
--
--DT_MACHINE_START(MMP2_DT, "Marvell MMP2 (Device Tree Support)")
--	.map_io		= mmp_map_io,
--	.init_time	= mmp_dt_init_timer,
--	.init_machine	= mmp2_dt_init,
--	.dt_compat	= mmp2_dt_board_compat,
--MACHINE_END
++	ret = of_property_read_u32_array(np, name, tmp, 2);
++	if (ret) {
++		pr_err("%s:%s failed to read bits %s\n",
++			__func__, np->name, name);
++		return -EINVAL;
++	}
++
++	*width = tmp[0];
++	*shift = tmp[1];
++
++	return 0;
++}
++
++static int of_mmp_clk_div_dt_parse(struct device_node *np, u8 *shift,
++					u8 *width,
++					struct clk_div_table **ptable,
++					u8 *div_flags)
++{
++	int i, ret;
++	const __be32 *prop;
++	unsigned int proplen;
++	struct clk_div_table *table;
++	unsigned int size;
++
++	ret = of_mmp_clk_get_bits(np, "marvell,mmp-clk-bits-div",
++				width, shift);
++	if (ret)
++		return ret;
++
++	*div_flags = 0;
++	if (of_property_read_bool(np, "marvell,mmp-clk-div-power-of-two"))
++		*div_flags |= CLK_DIVIDER_POWER_OF_TWO;
++	else if (of_property_read_bool(np, "marvell,mmp-clk-div-one-based"))
++		*div_flags |= CLK_DIVIDER_ONE_BASED;
++
++	if (ptable)
++		*ptable = NULL;
++
++	prop = of_get_property(np, "marvell,mmp-clk-div-table", &proplen);
++	if (prop) {
++		if (!ptable)
++			return -EINVAL;
++
++		size = proplen / sizeof(u32);
++		if ((proplen % sizeof(u32)) || size % 2) {
++			pr_err("%s:%s marvell,mmp-clk-mix-table wrong value\n",
++				__func__, np->name);
++			return -EINVAL;
++		}
++		table = kzalloc(sizeof(*table) * (size / 2 + 1), GFP_KERNEL);
++		if (!table) {
++			pr_err("%s:%s failed to allocate table\n",
++				__func__, np->name);
++			return -EINVAL;
++		}
++
++		for (i = 0; i < size; i += 2) {
++			table[i / 2].val = be32_to_cpup(prop + i);
++			table[i / 2].div = be32_to_cpup(prop + i + 1);
++		}
++		/* For safe. */
++		table[i / 2].val = 0;
++		table[i / 2].div = 0;
++
++		*ptable = table;
++	}
++
++	return 0;
++}
++
++static int of_mmp_clk_mux_dt_parse(struct device_node *np, u8 *shift,
++					u8 *width, u8 *mux_flags)
++{
++	int ret;
++
++	ret = of_mmp_clk_get_bits(np, "marvell,mmp-clk-bits-mux",
++				width, shift);
++	if (ret)
++		return ret;
++
++	*mux_flags = 0;
++
++	return 0;
++}
++
++static int of_mmp_clk_general_gate_dt_parse(struct device_node *np,
++					u8 *bit_idx, u8 *gate_flags)
++{
++	int ret;
++	u32 tmp;
++
++	ret = of_property_read_u32(np, "marvell,mmp-clk-bit-gate", &tmp);
++	if (ret) {
++		pr_err("%s:%s can not find marvell,mmp-clk-bit-gate\n",
++			__func__, np->name);
++		return -EINVAL;
++	}
++	*bit_idx = tmp;
++
++	*gate_flags = 0;
++
++	return 0;
++}
++
++static int of_mmp_clk_gate_dt_parse(struct device_node *np,
++				u32 *mask, u32 *val_enable, u32 *val_disable,
++				unsigned int *gate_flags)
++{
++	int ret;
++	u32 tmp[3];
++
++	ret = of_property_read_u32_array(np, "marvell,mmp-clk-mask", tmp, 3);
++	if (ret) {
++		pr_err("%s:%s can not find marvell,mmp-clk-mask\n",
++			__func__, np->name);
++		return -EINVAL;
++	}
++	*mask = tmp[0];
++	*val_enable = tmp[1];
++	*val_disable = tmp[2];
++
++	*gate_flags = 0;
++	if (of_property_read_bool(np, "marvell,mmp-clk-gate-need-delay"))
++		*gate_flags |= MMP_CLK_GATE_NEED_DELAY;
++
++	return 0;
++}
++
++
++static int of_mmp_clk_mix_dt_parse(struct device_node *np,
++					struct mmp_clk_mix_config *config,
++					spinlock_t **plock)
++{
++	struct mmp_clk_mix_reg_info *ri;
++	struct mmp_clk_mix_clk_table *table;
++	int i, ret, size;
++	u32 tmp;
++	spinlock_t *lock;
++	void __iomem *reg;
++	unsigned int reg_phys;
++	const __be32 *prop;
++	unsigned int proplen;
++
++	ri = &config->reg_info;
++	ret = of_mmp_clk_div_dt_parse(np, &ri->shift_div, &ri->width_div,
++					NULL, &config->div_flags);
++	if (ret)
++		return ret;
++
++	ret = of_mmp_clk_mux_dt_parse(np, &ri->shift_mux, &ri->width_mux,
++					&config->mux_flags);
++	if (ret)
++		return ret;
++
++	ret = of_property_read_u32(np, "marvell,mmp-clk-bit-fc", &tmp);
++	if (ret)
++		ri->bit_fc = (u8)-1;
++	else
++		ri->bit_fc = tmp;
++
++	reg = of_mmp_clk_get_reg(np, 0, &reg_phys);
++	if (!reg)
++		return -EINVAL;
++	ri->reg_clk_ctrl = reg;
++
++	lock = of_mmp_clk_get_spinlock(np, reg_phys);
++	if (!lock)
++		return -EINVAL;
++
++	*plock = lock;
++	reg = of_mmp_clk_get_reg(np, 1, &reg_phys);
++	if (reg)
++		ri->reg_clk_sel = reg;
++
++	prop = of_get_property(np, "marvell,mmp-clk-mix-table", &proplen);
++	if (prop) {
++		size = proplen / sizeof(u32);
++		if ((proplen % sizeof(u32)) || size % 2) {
++			pr_err("%s:%s marvell,mmp-clk-mix-table wrong value\n",
++				__func__, np->name);
++			return -EINVAL;
++		}
++		table = kzalloc(sizeof(*table) * (size / 2), GFP_KERNEL);
++		if (!table) {
++			pr_err("%s:%s failed to allocate table\n",
++				__func__, np->name);
++			return -EINVAL;
++		}
++
++		for (i = 0; i < size; i += 2) {
++			table[i / 2].rate = be32_to_cpup(prop + i);
++			table[i / 2].parent_index = be32_to_cpup(prop + i + 1);
++		}
++		config->table = table;
++		config->table_size = size / 2;
++	} else {
++		config->table = NULL;
++		config->table_size = 0;
++	}
++
++	return 0;
++}
++
++static int of_mmp_clk_factor_dt_parse(struct device_node *np,
++					struct mmp_clk_factor_masks **pmasks,
++					struct mmp_clk_factor_tbl **pftbl,
++					unsigned int *pftbl_cnt)
++{
++	struct mmp_clk_factor_masks *masks;
++	struct mmp_clk_factor_tbl *table;
++	u8 width, shift;
++	int i, ret, size;
++	u32 tmp;
++	const __be32 *prop;
++	unsigned int proplen;
++
++	masks = kzalloc(sizeof(*masks), GFP_KERNEL);
++	if (!masks) {
++		pr_err("%s:%s failed to allocate factor masks\n",
++			__func__, np->name);
++		return -ENOMEM;
++	}
++
++	ret = of_property_read_u32(np, "marvell,mmp-clk-factor-factor", &tmp);
++	if (ret) {
++		pr_err("%s:%s can not find marvell,mmp-clk-factor-num\n",
++			__func__, np->name);
++		return -EINVAL;
++	}
++	masks->factor = tmp;
++
++	ret = of_mmp_clk_get_bits(np, "marvell,mmp-clk-factor-bits-num",
++				&width, &shift);
++	if (ret)
++		return ret;
++	masks->num_mask = BIT(width) - 1;
++	masks->num_shift = shift;
++
++	ret = of_mmp_clk_get_bits(np, "marvell,mmp-clk-factor-bits-den",
++				&width, &shift);
++	if (ret)
++		return ret;
++	masks->den_mask = BIT(width) - 1;
++	masks->den_shift = shift;
++	*pmasks = masks;
++
++	prop = of_get_property(np, "marvell,mmp-clk-factor-table", &proplen);
++	if (!prop) {
++		pr_err("%s:%s failed to get marvell,mmp-clk-factor-table\n",
++			__func__, np->name);
++		return -EINVAL;
++	}
++
++	size = proplen / sizeof(u32);
++	if ((proplen % sizeof(u32)) || size % 2) {
++		pr_err("%s:%s marvell,mmp-clk-factor-table wrong value\n",
++			__func__, np->name);
++		return -EINVAL;
++	}
++	table = kzalloc(sizeof(*table) * (size / 2), GFP_KERNEL);
++	if (!table) {
++		pr_err("%s:%s failed to allocate table\n",
++			__func__, np->name);
++		return -EINVAL;
++	}
++
++	for (i = 0; i < size; i += 2) {
++		table[i / 2].num = be32_to_cpup(prop + i);
++		table[i / 2].den = be32_to_cpup(prop + i + 1);
++	}
++	*pftbl = table;
++	*pftbl_cnt = size / 2;
++
++	return 0;
++}
++
++static void of_mmp_clk_mix_setup(struct device_node *np)
++{
++	struct mmp_clk_mix *mix;
++	struct mmp_clk_mix_config config;
++	struct clk *clk;
++	spinlock_t *lock;
++	unsigned int num_parents;
++	const char **parent_names;
++	int i, ret;
++
++	ret = of_mmp_clk_mix_dt_parse(np, &config, &lock);
++	if (ret)
++		return;
++
++	if (of_mmp_clk_is_composite(np)) {
++		mix = kzalloc(sizeof(*mix), GFP_KERNEL);
++		if (!mix) {
++			pr_err("%s:%s failed to allocate clk\n",
++				__func__, np->name);
++			return;
++		}
++		memcpy(&mix->reg_info, &config.reg_info,
++			sizeof(config.reg_info));
++		mix->div_flags = config.div_flags;
++		mix->mux_flags = config.mux_flags;
++		mix->lock = lock;
++		if (config.table) {
++			mix->table = config.table;
++			mix->table_size = config.table_size;
++		}
++
++		of_mmp_clk_composite_add_member(np, &mix->hw, &mmp_clk_mix_ops,
++					MMP_CLK_COMPOSITE_TYPE_MUXMIX);
++	} else {
++		num_parents = of_clk_get_parent_count(np);
++		parent_names = kcalloc(num_parents, sizeof(char *),
++					GFP_KERNEL);
++		if (!parent_names) {
++			pr_err("%s:%s failed to allocate parent_names\n",
++				__func__, np->name);
++			return;
++		}
++		for (i = 0; i < num_parents; i++)
++			parent_names[i] = of_clk_get_parent_name(np, i);
++
++		clk = mmp_clk_register_mix(NULL, np->name, num_parents,
++					parent_names, 0, &config, lock);
++
++		if (IS_ERR(clk)) {
++			kfree(parent_names);
++
++			pr_err("%s:%s failed to register clk\n",
++				__func__, np->name);
++			return;
++		}
++
++		of_clk_add_provider(np, of_clk_src_simple_get, clk);
++	}
++}
++CLK_OF_DECLARE(mmp_clk_mix, "marvell,mmp-clk-mix",
++		of_mmp_clk_mix_setup);
++
++static void of_mmp_clk_div_setup(struct device_node *np)
++{
++	struct clk_divider *div;
++	void __iomem *reg;
++	u8 width, shift, div_flags;
++	struct clk_div_table *table;
++	unsigned long flags;
++	const char *parent_name;
++	struct clk *clk;
++	unsigned int reg_phys;
++	spinlock_t *lock;
++	int ret;
++
++	reg = of_mmp_clk_get_reg(np, 0, &reg_phys);
++	if (!reg)
++		return;
++
++	ret = of_mmp_clk_div_dt_parse(np, &shift, &width, &table, &div_flags);
++	if (ret)
++		return;
++
++	ret = of_mmp_clk_get_flags(np, &flags);
++	if (ret)
++		return;
++
++	lock = of_mmp_clk_get_spinlock(np, reg_phys);
++	if (!lock)
++		return;
++
++	if (of_mmp_clk_is_composite(np)) {
++		div = kzalloc(sizeof(*div), GFP_KERNEL);
++		if (!div) {
++			pr_err("%s:%s failed to allocate clk\n",
++				__func__, np->name);
++			return;
++		}
++		div->shift = shift;
++		div->width = width;
++		div->table = table;
++		div->flags = div_flags;
++		div->lock = lock;
++		div->reg = reg;
++
++		of_mmp_clk_composite_add_member(np, &div->hw, &clk_divider_ops,
++					MMP_CLK_COMPOSITE_TYPE_DIV);
++	} else {
++		parent_name = of_clk_get_parent_name(np, 0);
++
++		if (!table)
++			clk = clk_register_divider(NULL, np->name, parent_name,
++					flags, reg, shift, width, div_flags,
++					lock);
++		else
++			clk = clk_register_divider_table(NULL, np->name,
++					parent_name, flags, reg, shift, width,
++					div_flags, table, lock);
++		if (IS_ERR(clk)) {
++			pr_err("%s:%s failed to register clk\n",
++				__func__, np->name);
++			return;
++		}
++
++		of_clk_add_provider(np, of_clk_src_simple_get, clk);
++	}
++}
++CLK_OF_DECLARE(mmp_clk_div, "marvell,mmp-clk-div",
++		of_mmp_clk_div_setup);
++
++static void of_mmp_clk_mux_setup(struct device_node *np)
++{
++	struct clk_mux *mux;
++	void __iomem *reg;
++	u8 width, shift, mux_flags;
++	unsigned long flags;
++	spinlock_t *lock;
++	unsigned int num_parents;
++	const char **parent_names;
++	struct clk *clk;
++	unsigned int reg_phys;
++	int i, ret;
++
++	reg = of_mmp_clk_get_reg(np, 0, &reg_phys);
++	if (!reg)
++		return;
++
++	ret = of_mmp_clk_mux_dt_parse(np, &shift, &width, &mux_flags);
++	if (ret)
++		return;
++
++	ret = of_mmp_clk_get_flags(np, &flags);
++	if (ret)
++		return;
++
++	lock = of_mmp_clk_get_spinlock(np, reg_phys);
++	if (!lock)
++		return;
++
++	if (of_mmp_clk_is_composite(np)) {
++		mux = kzalloc(sizeof(*mux), GFP_KERNEL);
++		if (!mux) {
++			pr_err("%s:%s failed to allocate clk\n",
++				__func__, np->name);
++			return;
++		}
++
++		mux->reg = reg;
++		mux->mask = BIT(width) - 1;
++		mux->shift = shift;
++		mux->lock = lock;
++		mux->flags = mux_flags;
++		of_mmp_clk_composite_add_member(np, &mux->hw, &clk_mux_ops,
++					MMP_CLK_COMPOSITE_TYPE_MUXMIX);
++	} else {
++		num_parents = of_clk_get_parent_count(np);
++		parent_names = kcalloc(num_parents, sizeof(char *),
++					GFP_KERNEL);
++		if (!parent_names) {
++			pr_err("%s:%s failed to allocate parent_names\n",
++				__func__, np->name);
++			return;
++		}
++		for (i = 0; i < num_parents; i++)
++			parent_names[i] = of_clk_get_parent_name(np, i);
++
++		clk = clk_register_mux(NULL, np->name, parent_names,
++					num_parents, flags,
++					reg, shift, width, mux_flags, lock);
++		if (IS_ERR(clk)) {
++			pr_err("%s:%s failed to register clk\n",
++				__func__, np->name);
++			return;
++		}
++
++		of_clk_add_provider(np, of_clk_src_simple_get, clk);
++	}
++}
++CLK_OF_DECLARE(mmp_clk_mux, "marvell,mmp-clk-mux",
++		of_mmp_clk_mux_setup);
++
++static void of_mmp_clk_general_gate_setup(struct device_node *np)
++{
++	struct clk_gate *gate;
++	void __iomem *reg;
++	u8 bit_idx, gate_flags;
++	unsigned long flags;
++	spinlock_t *lock;
++	const char *parent_name;
++	struct clk *clk;
++	unsigned int reg_phys;
++	int ret;
++
++	reg = of_mmp_clk_get_reg(np, 0, &reg_phys);
++	if (!reg)
++		return;
++
++	ret = of_mmp_clk_general_gate_dt_parse(np, &bit_idx, &gate_flags);
++	if (ret)
++		return;
++
++	ret = of_mmp_clk_get_flags(np, &flags);
++	if (ret)
++		return;
++
++	lock = of_mmp_clk_get_spinlock(np, reg_phys);
++	if (!lock)
++		return;
++
++	if (of_mmp_clk_is_composite(np)) {
++		gate = kzalloc(sizeof(*gate), GFP_KERNEL);
++		if (!gate) {
++			pr_err("%s:%s failed to allocate clk\n",
++				__func__, np->name);
++			return;
++		}
++		gate->bit_idx = bit_idx;
++		gate->flags = gate_flags;
++		gate->reg = reg;
++		gate->lock = lock;
++		of_mmp_clk_composite_add_member(np, &gate->hw, &clk_gate_ops,
++					MMP_CLK_COMPOSITE_TYPE_GATE);
++	} else {
++		parent_name = of_clk_get_parent_name(np, 0);
++
++		clk = clk_register_gate(NULL, np->name, parent_name, flags,
++					reg, bit_idx, gate_flags, lock);
++		if (IS_ERR(clk)) {
++			pr_err("%s:%s failed to register clk\n",
++				__func__, np->name);
++			return;
++		}
++
++		of_clk_add_provider(np, of_clk_src_simple_get, clk);
++	}
++}
++CLK_OF_DECLARE(mmp_clk_general_gate, "marvell,mmp-clk-general-gate",
++		of_mmp_clk_general_gate_setup);
++
++static void of_mmp_clk_gate_setup(struct device_node *np)
++{
++	struct mmp_clk_gate *gate;
++	void __iomem *reg;
++	u32 mask, val_enable, val_disable;
++	unsigned int gate_flags;
++	unsigned long flags;
++	spinlock_t *lock;
++	const char *parent_name;
++	struct clk *clk;
++	unsigned int reg_phys;
++	int ret;
++
++	reg = of_mmp_clk_get_reg(np, 0, &reg_phys);
++	if (!reg)
++		return;
++
++	ret = of_mmp_clk_gate_dt_parse(np, &mask, &val_enable, &val_disable,
++					&gate_flags);
++	if (ret)
++		return;
++
++	ret = of_mmp_clk_get_flags(np, &flags);
++	if (ret)
++		return;
++
++	lock = of_mmp_clk_get_spinlock(np, reg_phys);
++	if (!lock)
++		return;
++
++	if (of_mmp_clk_is_composite(np)) {
++		gate = kzalloc(sizeof(*gate), GFP_KERNEL);
++		if (!gate) {
++			pr_err("%s:%s failed to allocate clk\n",
++				__func__, np->name);
++			return;
++		}
++
++		gate->flags = gate_flags;
++		gate->mask = mask;
++		gate->val_enable = val_enable;
++		gate->val_disable = val_disable;
++		gate->reg = reg;
++		gate->lock = lock;
++		of_mmp_clk_composite_add_member(np, &gate->hw,
++				&mmp_clk_gate_ops,
++				MMP_CLK_COMPOSITE_TYPE_GATE);
++	} else {
++		parent_name = of_clk_get_parent_name(np, 0);
++
++		clk = mmp_clk_register_gate(NULL, np->name, parent_name, flags,
++					reg, mask, val_enable, val_disable,
++					gate_flags, lock);
++		if (IS_ERR(clk)) {
++			pr_err("%s:%s failed to register clk\n",
++				__func__, np->name);
++			return;
++		}
++
++		of_clk_add_provider(np, of_clk_src_simple_get, clk);
++	}
++}
++CLK_OF_DECLARE(mmp_clk_gate, "marvell,mmp-clk-gate",
++		of_mmp_clk_gate_setup);
++
++static void of_mmp_clk_factor_setup(struct device_node *np)
++{
++	void __iomem *reg;
++	struct mmp_clk_factor_masks *masks;
++	struct mmp_clk_factor_tbl *table;
++	unsigned int table_size;
++	unsigned long flags;
++	spinlock_t *lock;
++	const char *parent_name;
++	struct clk *clk;
++	unsigned int reg_phys;
++	int ret;
++
++	reg = of_mmp_clk_get_reg(np, 0, &reg_phys);
++	if (!reg)
++		return;
++
++	ret = of_mmp_clk_factor_dt_parse(np, &masks, &table, &table_size);
++	if (ret)
++		return;
++
++	ret = of_mmp_clk_get_flags(np, &flags);
++	if (ret)
++		return;
++
++	lock = of_mmp_clk_get_spinlock(np, reg_phys);
++	if (!lock)
++		return;
++
++	parent_name = of_clk_get_parent_name(np, 0);
++
++	clk = mmp_clk_register_factor(np->name, parent_name, flags,
++					reg, masks, table, table_size,
++					lock);
++	if (IS_ERR(clk)) {
++		pr_err("%s:%s failed to register clk\n", __func__, np->name);
++		return;
++	}
++
++	of_clk_add_provider(np, of_clk_src_simple_get, clk);
++
++}
++CLK_OF_DECLARE(mmp_clk_factor,
++		"marvell,mmp-clk-factor",
++		of_mmp_clk_factor_setup);
++
++void mmp_clk_of_init(void)
++{
++	struct device_node *next;
++
++	next = NULL;
++	do {
++		next = of_mmp_clk_master_init(next);
++	} while (next);
++}
 -- 
 1.8.3.2
 
