@@ -1,67 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751333AbaFJP64 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 11:58:56 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:34918 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750740AbaFJP6z (ORCPT
+	id S1752108AbaFJP73 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 11:59:29 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:60617 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751711AbaFJP72 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 11:58:55 -0400
-Date: Tue, 10 Jun 2014 11:58:52 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Subject: Re: [for-next][PATCH 6/6] tracing: Fix leak of ring buffer data
- when new instances creation fails
-Message-ID: <20140610115852.0034a678@gandalf.local.home>
-In-Reply-To: <87k38pbake.fsf@sejong.aot.lge.com>
-References: <20140606163034.516780857@goodmis.org>
-	<20140606172105.000489056@goodmis.org>
-	<87k38pbake.fsf@sejong.aot.lge.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Tue, 10 Jun 2014 11:59:28 -0400
+Message-ID: <53972B5C.5020605@hurleysoftware.com>
+Date: Tue, 10 Jun 2014 11:59:24 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Sasha Levin <sasha.levin@oracle.com>, Jan Kara <jack@suse.cz>
+CC: pmladek@suse.cz, Andrew Morton <akpm@linux-foundation.org>,
+        Jet Chen <jet.chen@intel.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: console: lockup on boot
+References: <5388838B.8070802@oracle.com> <53888E76.5040101@hurleysoftware.com> <20140530140757.GC2419@quack.suse.cz> <53921116.5050804@oracle.com>
+In-Reply-To: <53921116.5050804@oracle.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Jun 2014 14:25:21 +0900
-Namhyung Kim <namhyung@gmail.com> wrote:
+On 06/06/2014 03:05 PM, Sasha Levin wrote:
+> On 05/30/2014 10:07 AM, Jan Kara wrote:
+>> On Fri 30-05-14 09:58:14, Peter Hurley wrote:
+>>>> On 05/30/2014 09:11 AM, Sasha Levin wrote:
+>>>>>> Hi all,
+>>>>>>
+>>>>>> I sometime see lockups when booting my KVM guest with the latest -next kernel,
+>>>>>> it basically hangs right when it should start 'init', and after a while I get
+>>>>>> the following spew:
+>>>>>>
+>>>>>> [   30.790833] BUG: spinlock lockup suspected on CPU#1, swapper/1/0
+>>>>
+>>>> Maybe related to this report: https://lkml.org/lkml/2014/5/30/26
+>>>> from Jet Chen which was bisected to
+>>>>
+>>>> commit bafe980f5afc7ccc693fd8c81c8aa5a02fbb5ae0
+>>>> Author:     Jan Kara <jack@suse.cz>
+>>>> AuthorDate: Thu May 22 10:43:35 2014 +1000
+>>>> Commit:     Stephen Rothwell <sfr@canb.auug.org.au>
+>>>> CommitDate: Thu May 22 10:43:35 2014 +1000
+>>>>
+>>>>      printk: enable interrupts before calling console_trylock_for_printk()
+>>>>          We need interrupts disabled when calling console_trylock_for_printk() only
+>>>>      so that cpu id we pass to can_use_console() remains valid (for other
+>>>>      things console_sem provides all the exclusion we need and deadlocks on
+>>>>      console_sem due to interrupts are impossible because we use
+>>>>      down_trylock()).  However if we are rescheduled, we are guaranteed to run
+>>>>      on an online cpu so we can easily just get the cpu id in
+>>>>      can_use_console().
+>>>>          We can lose a bit of performance when we enable interrupts in
+>>>>      vprintk_emit() and then disable them again in console_unlock() but OTOH it
+>>>>      can somewhat reduce interrupt latency caused by console_unlock()
+>>>>      especially since later in the patch series we will want to spin on
+>>>>      console_sem in console_trylock_for_printk().
+>>>>          Signed-off-by: Jan Kara <jack@suse.cz>
+>>>>      Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+>>>>
+>>>> ?
+>>    Yeah, very likely. I think I see the problem, I'll send the fix shortly.
+>
+> Hi Jan,
+>
+> It seems that the issue I'm seeing is different from the "[prink]  BUG: spinlock
+> lockup suspected on CPU#0, swapper/1".
+>
+> Is there anything else I could try here? The issue is very common during testing.
 
- 
-> > +static void free_trace_buffers(struct trace_array *tr)
-> > +{
-> > +	if (!tr)
-> > +		return;
-> > +
-> > +	if (tr->trace_buffer.buffer) {
-> > +		ring_buffer_free(tr->trace_buffer.buffer);
-> > +		tr->trace_buffer.buffer = NULL;
-> > +		free_percpu(tr->trace_buffer.data);
-> > +	}
-> > +
-> > +#ifdef CONFIG_TRACER_MAX_TRACE
-> > +	if (tr->max_buffer.buffer) {
-> > +		ring_buffer_free(tr->max_buffer.buffer);
-> > +		tr->max_buffer.buffer = NULL;
-> 
-> Hmm.. why doesn't it free tr->max_buffer.data here?  And I think it's
-> better to reset *_buffer.data to NULL also - maybe by adding another
-> helper function free_trace_buffer()..
-> 
+Sasha,
 
-Originally, instances didn't need them. But I'm looking now and yes
-they do allocate. I guess this doesn't trigger kmem-leak checks, as I
-ran creation and deletions with that running and it didn't report any
-leaks.
+Is this bisectable? Maybe that's the best way forward here.
 
-I'll update,
+Regards,
+Peter Hurley
 
-Thanks!
-
--- Steve
