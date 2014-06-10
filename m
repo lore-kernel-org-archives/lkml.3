@@ -1,86 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754724AbaFJGGy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 02:06:54 -0400
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:8967 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751273AbaFJGGw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 02:06:52 -0400
-Date: Mon, 9 Jun 2014 23:06:42 -0700
-From: Martin Lau <kafai@fb.com>
-To: <rostedt@goodmis.org>
-CC: <linux-kernel@vger.kernel.org>, <clm@fb.com>
-Subject: [PATCH] ring-buffer: Fix polling on trace_pipe
-Message-ID: <20140610060637.GA14045@devbig242.prn2.facebook.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-06-10_03:2014-06-09,2014-06-10,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=2.66864308429149e-12 kscore.compositescore=0
- circleOfTrustscore=22.4078557653337 compositescore=0.997695897463551
- urlsuspect_oldscore=0.997695897463551 suspectscore=1
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=62764
- rbsscore=0.997695897463551 spamscore=0
- recipient_to_sender_domain_totalscore=6 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1406100083
-X-FB-Internal: deliver
+	id S1754978AbaFJGIQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 02:08:16 -0400
+Received: from mga01.intel.com ([192.55.52.88]:25622 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750843AbaFJGIP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 02:08:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="352846529"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Grant Likely <grant.likely@linaro.org>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        x86@kernel.org
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: [Patch V4 08/42] x86, ACPI, irq: enhance error handling in function acpi_register_gsi()
+Date: Tue, 10 Jun 2014 14:11:23 +0800
+Message-Id: <1402380683-32345-1-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <alpine.DEB.2.10.1406100113070.3830@nanos>
+References: <alpine.DEB.2.10.1406100113070.3830@nanos>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ring_buffer_poll_wait() should always put the poll_table to its wait_queue
-even there is immediate data available.  Otherwise, the following epoll and
-read sequence will eventually hang forever:
+Function mp_register_gsi() may return error code when failed to look up
+or program corresponding IOAPIC pin for GSI, so enhance acpi_register_gsi()
+to handle possible error cases.
 
-1. Put some data to make the trace_pipe ring_buffer read ready first
-2. epoll_ctl(efd, EPOLL_CTL_ADD, trace_pipe_fd, ee)
-3. epoll_wait()
-4. read(trace_pipe_fd) till EAGAIN
-5. Add some more data to the trace_pipe ring_buffer
-6. epoll_wait() -> this epoll_wait() will block forever
-
-~ During the epoll_ctl(efd, EPOLL_CTL_ADD,...) call in step 2,
-  ring_buffer_poll_wait() returns immediately without adding poll_table,
-  which has poll_table->_qproc pointing to ep_poll_callback(), to its
-  wait_queue.
-~ During the epoll_wait() call in step 3 and step 6,
-  ring_buffer_poll_wait() cannot add ep_poll_callback() to its wait_queue
-  because the poll_table->_qproc is NULL and it is how epoll works.
-~ When there is new data available in step 6, ring_buffer does not know
-  it has to call ep_poll_callback() because it is not in its wait queue.
-  Hence, block forever.
-
-Other poll implementation seems to call poll_wait() unconditionally as the very
-first thing to do.  For example, tcp_poll() in tcp.c.
-
-Signed-off-by: Martin Lau <kafai@fb.com>
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- kernel/trace/ring_buffer.c | 4 ----
- 1 file changed, 4 deletions(-)
+Minor changes according to review comments:
+1) kill useless assignment to plat_gsi.
+2) simplify usage of function pointer
+---
+ arch/x86/kernel/acpi/boot.c |   14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index fd12cc5..a6e64e8 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -613,10 +613,6 @@ int ring_buffer_poll_wait(struct ring_buffer *buffer, int cpu,
- 	struct ring_buffer_per_cpu *cpu_buffer;
- 	struct rb_irq_work *work;
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index 392360c607dc..298f79616f1c 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -97,6 +97,8 @@ static u32 isa_irq_to_gsi[NR_IRQS_LEGACY] __read_mostly = {
+ 	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+ };
  
--	if ((cpu == RING_BUFFER_ALL_CPUS && !ring_buffer_empty(buffer)) ||
--	    (cpu != RING_BUFFER_ALL_CPUS && !ring_buffer_empty_cpu(buffer, cpu)))
--		return POLLIN | POLLRDNORM;
--
- 	if (cpu == RING_BUFFER_ALL_CPUS)
- 		work = &buffer->irq_work;
- 	else {
++#define	ACPI_INVALID_GSI		INT_MIN
++
+ static unsigned int gsi_to_irq(unsigned int gsi)
+ {
+ 	unsigned int irq = gsi + NR_IRQS_LEGACY;
+@@ -441,7 +443,7 @@ static int mp_register_gsi(struct device *dev, u32 gsi, int trigger,
+ 			     polarity == ACPI_ACTIVE_HIGH ? 0 : 1);
+ 	ret = io_apic_set_pci_routing(dev, gsi_to_irq(gsi), &irq_attr);
+ 	if (ret < 0)
+-		gsi = INT_MIN;
++		gsi = ACPI_INVALID_GSI;
+ 
+ 	return gsi;
+ }
+@@ -666,13 +668,13 @@ int (*acpi_suspend_lowlevel)(void);
+  */
+ int acpi_register_gsi(struct device *dev, u32 gsi, int trigger, int polarity)
+ {
+-	unsigned int irq;
+-	unsigned int plat_gsi = gsi;
++	unsigned int plat_gsi;
+ 
+-	plat_gsi = (*__acpi_register_gsi)(dev, gsi, trigger, polarity);
+-	irq = gsi_to_irq(plat_gsi);
++	plat_gsi = __acpi_register_gsi(dev, gsi, trigger, polarity);
++	if (plat_gsi != ACPI_INVALID_GSI)
++		return gsi_to_irq(plat_gsi);
+ 
+-	return irq;
++	return -1;
+ }
+ EXPORT_SYMBOL_GPL(acpi_register_gsi);
+ 
 -- 
-1.8.1
+1.7.10.4
 
