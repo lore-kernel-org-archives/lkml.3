@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936105AbaFJAcW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:32:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58627 "EHLO
+	id S936239AbaFJAcU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:32:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58620 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934533AbaFJAWp (ORCPT
+	with ESMTP id S934535AbaFJAWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jun 2014 20:22:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>,
         James Bottomley <JBottomley@Parallels.com>,
         Ben Hutchings <ben@decadent.org.uk>, Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 3.4 65/88] mpt2sas: Fix for issue Missing delay not getting set during system bootup
-Date: Mon,  9 Jun 2014 17:25:15 -0700
-Message-Id: <20140610002426.647354389@linuxfoundation.org>
+Subject: [PATCH 3.4 66/88] hpsa: gen8plus Smart Array IDs
+Date: Mon,  9 Jun 2014 17:25:16 -0700
+Message-Id: <20140610002426.678899803@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
 References: <20140610002424.500996570@linuxfoundation.org>
@@ -30,107 +29,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Reddy, Sreekanth" <Sreekanth.Reddy@lsi.com>
+From: Mike Miller <mike.miller@hp.com>
 
-commit 93cfcb8c998e3fe2c075fa61ab28f7b018e5049a upstream.
+commit fe0c9610bb68dd0aad1017456f5e3c31264d70c2 upstream.
 
-commit b0df96a0068daee4f9c2189c29b9053eb6e46b17 upstream.
-
-Missing delay is not getting set properly. The reason is that it is not
-defined in the same file from where it is being invoked.  The fix is to move
-the missing delay module parameter from mpt2sas_base.c to mpt2sas_scsh.c.
-
-Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Rui Xiang <rui.xiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/mpt2sas/mpt2sas_base.c  |   13 +++----------
- drivers/scsi/mpt2sas/mpt2sas_base.h  |    3 +++
- drivers/scsi/mpt2sas/mpt2sas_scsih.c |    8 +++++++-
- 3 files changed, 13 insertions(+), 11 deletions(-)
+ drivers/scsi/hpsa.c     |   32 +++++++++++++++++++++++++-------
+ include/linux/pci_ids.h |    1 +
+ 2 files changed, 26 insertions(+), 7 deletions(-)
 
---- a/drivers/scsi/mpt2sas/mpt2sas_base.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
-@@ -80,10 +80,6 @@ static int msix_disable = -1;
- module_param(msix_disable, int, 0);
- MODULE_PARM_DESC(msix_disable, " disable msix routed interrupts (default=0)");
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -99,6 +99,15 @@ static const struct pci_device_id hpsa_p
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3354},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3355},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3356},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1920},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1921},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1922},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1923},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1924},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1925},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1926},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1928},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x334d},
+ 	{PCI_VENDOR_ID_HP,     PCI_ANY_ID,	PCI_ANY_ID, PCI_ANY_ID,
+ 		PCI_CLASS_STORAGE_RAID << 8, 0xffff << 8, 0},
+ 	{0,}
+@@ -118,13 +127,22 @@ static struct board_type products[] = {
+ 	{0x3249103C, "Smart Array P812", &SA5_access},
+ 	{0x324a103C, "Smart Array P712m", &SA5_access},
+ 	{0x324b103C, "Smart Array P711m", &SA5_access},
+-	{0x3350103C, "Smart Array", &SA5_access},
+-	{0x3351103C, "Smart Array", &SA5_access},
+-	{0x3352103C, "Smart Array", &SA5_access},
+-	{0x3353103C, "Smart Array", &SA5_access},
+-	{0x3354103C, "Smart Array", &SA5_access},
+-	{0x3355103C, "Smart Array", &SA5_access},
+-	{0x3356103C, "Smart Array", &SA5_access},
++	{0x3350103C, "Smart Array P222", &SA5_access},
++	{0x3351103C, "Smart Array P420", &SA5_access},
++	{0x3352103C, "Smart Array P421", &SA5_access},
++	{0x3353103C, "Smart Array P822", &SA5_access},
++	{0x3354103C, "Smart Array P420i", &SA5_access},
++	{0x3355103C, "Smart Array P220i", &SA5_access},
++	{0x3356103C, "Smart Array P721m", &SA5_access},
++	{0x1920103C, "Smart Array", &SA5_access},
++	{0x1921103C, "Smart Array", &SA5_access},
++	{0x1922103C, "Smart Array", &SA5_access},
++	{0x1923103C, "Smart Array", &SA5_access},
++	{0x1924103C, "Smart Array", &SA5_access},
++	{0x1925103C, "Smart Array", &SA5_access},
++	{0x1926103C, "Smart Array", &SA5_access},
++	{0x1928103C, "Smart Array", &SA5_access},
++	{0x334d103C, "Smart Array P822se", &SA5_access},
+ 	{0xFFFF103C, "Unknown Smart Array", &SA5_access},
+ };
  
--static int missing_delay[2] = {-1, -1};
--module_param_array(missing_delay, int, NULL, 0);
--MODULE_PARM_DESC(missing_delay, " device missing delay , io missing delay");
--
- static int mpt2sas_fwfault_debug;
- MODULE_PARM_DESC(mpt2sas_fwfault_debug, " enable detection of firmware fault "
- 	"and halt firmware - (default=0)");
-@@ -2168,7 +2164,7 @@ _base_display_ioc_capabilities(struct MP
- }
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -752,6 +752,7 @@
+ #define PCI_DEVICE_ID_HP_CISSD		0x3238
+ #define PCI_DEVICE_ID_HP_CISSE		0x323a
+ #define PCI_DEVICE_ID_HP_CISSF		0x323b
++#define PCI_DEVICE_ID_HP_CISSH		0x323c
+ #define PCI_DEVICE_ID_HP_ZX2_IOC	0x4031
  
- /**
-- * _base_update_missing_delay - change the missing delay timers
-+ * mpt2sas_base_update_missing_delay - change the missing delay timers
-  * @ioc: per adapter object
-  * @device_missing_delay: amount of time till device is reported missing
-  * @io_missing_delay: interval IO is returned when there is a missing device
-@@ -2179,8 +2175,8 @@ _base_display_ioc_capabilities(struct MP
-  * delay, as well as the io missing delay. This should be called at driver
-  * load time.
-  */
--static void
--_base_update_missing_delay(struct MPT2SAS_ADAPTER *ioc,
-+void
-+mpt2sas_base_update_missing_delay(struct MPT2SAS_ADAPTER *ioc,
- 	u16 device_missing_delay, u8 io_missing_delay)
- {
- 	u16 dmd, dmd_new, dmd_orignal;
-@@ -4371,9 +4367,6 @@ mpt2sas_base_attach(struct MPT2SAS_ADAPT
- 	if (r)
- 		goto out_free_resources;
- 
--	if (missing_delay[0] != -1 && missing_delay[1] != -1)
--		_base_update_missing_delay(ioc, missing_delay[0],
--		    missing_delay[1]);
- 
- 	return 0;
- 
---- a/drivers/scsi/mpt2sas/mpt2sas_base.h
-+++ b/drivers/scsi/mpt2sas/mpt2sas_base.h
-@@ -1047,6 +1047,9 @@ void mpt2sas_base_validate_event_type(st
- 
- void mpt2sas_halt_firmware(struct MPT2SAS_ADAPTER *ioc);
- 
-+void mpt2sas_base_update_missing_delay(struct MPT2SAS_ADAPTER *ioc,
-+	u16 device_missing_delay, u8 io_missing_delay);
-+
- int mpt2sas_port_enable(struct MPT2SAS_ADAPTER *ioc);
- 
- /* scsih shared API */
---- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-@@ -101,6 +101,10 @@ static ushort max_sectors = 0xFFFF;
- module_param(max_sectors, ushort, 0);
- MODULE_PARM_DESC(max_sectors, "max sectors, range 64 to 32767  default=32767");
- 
-+static int missing_delay[2] = {-1, -1};
-+module_param_array(missing_delay, int, NULL, 0);
-+MODULE_PARM_DESC(missing_delay, " device missing delay , io missing delay");
-+
- /* scsi-mid layer global parmeter is max_report_luns, which is 511 */
- #define MPT2SAS_MAX_LUN (16895)
- static int max_lun = MPT2SAS_MAX_LUN;
-@@ -7351,7 +7355,9 @@ _firmware_event_work(struct work_struct
- 	case MPT2SAS_PORT_ENABLE_COMPLETE:
- 		ioc->start_scan = 0;
- 
--
-+		if (missing_delay[0] != -1 && missing_delay[1] != -1)
-+			mpt2sas_base_update_missing_delay(ioc, missing_delay[0],
-+				missing_delay[1]);
- 
- 		dewtprintk(ioc, printk(MPT2SAS_INFO_FMT "port enable: complete "
- 		    "from worker thread\n", ioc->name));
+ #define PCI_VENDOR_ID_PCTECH		0x1042
 
 
