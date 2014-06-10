@@ -1,87 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752087AbaFJOxw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 10:53:52 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:54446 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751856AbaFJOxt (ORCPT
+	id S1751237AbaFJO5Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 10:57:16 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:57858 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750743AbaFJO5O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 10:53:49 -0400
-Message-ID: <1402412021.5350.53.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [PATCH 0/4] KEYS: validate key trust with owner and builtin
- keys only
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>, dhowells@redhat.com,
-        keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dmitry.kasatkin@gmail.com,
-        mjg59@srcf.ucam.org
-Date: Tue, 10 Jun 2014 10:53:41 -0400
-In-Reply-To: <20140610132918.GD31944@hansolo.jdub.homelinux.org>
-References: <1402331614.7064.60.camel@dhcp-9-2-203-236.watson.ibm.com>
-	 <cover.1402387862.git.d.kasatkin@samsung.com>
-	 <20140610122008.GA31944@hansolo.jdub.homelinux.org>
-	 <1402404750.5350.7.camel@dhcp-9-2-203-236.watson.ibm.com>
-	 <53970660.4030101@samsung.com>
-	 <20140610132918.GD31944@hansolo.jdub.homelinux.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061014-1542-0000-0000-00000278773A
+	Tue, 10 Jun 2014 10:57:14 -0400
+From: Roman Pen <r.peniaev@gmail.com>
+Cc: Roman Pen <r.peniaev@gmail.com>, Chris Ball <chris@printf.net>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Ulf Hansson <ulf.hansson@linaro.org>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] mmc: mxs: fix card detection in case of 'broken-cd' flag set
+Date: Tue, 10 Jun 2014 23:57:02 +0900
+Message-Id: <1402412222-18020-1-git-send-email-r.peniaev@gmail.com>
+X-Mailer: git-send-email 1.9.1
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-06-10 at 09:29 -0400, Josh Boyer wrote: 
-> On Tue, Jun 10, 2014 at 04:21:36PM +0300, Dmitry Kasatkin wrote:
-> > On 10/06/14 15:52, Mimi Zohar wrote:
-> > > On Tue, 2014-06-10 at 08:20 -0400, Josh Boyer wrote: 
-> > >> On Tue, Jun 10, 2014 at 11:48:14AM +0300, Dmitry Kasatkin wrote:
-> > >>> Also I want to discuss here Fedora UEFI patches as they are the reason for
-> > >>> the these original patchset.
-> > >>>
-> > >>> http://pkgs.fedoraproject.org/cgit/kernel.git/tree/modsign-uefi.patch
-> > >>>
-> > >>> They provide functionality to specify MokIgnoreDb variable to limit loading of
-> > >>> UEFI keys only from MOK List, while ignoring DB. This is certainly a good
-> > >>> functionality. But once MODULE_SIG_UEFI is enabled, it looks there is no way
-> > >>> to prevent loading keys from UEFI at all. And this might not be a good default
-> > >>> functionality. Someone might want not allow loading of keys from UEFI unless
-> > >>> kernel parameter is specified to allow it without recompiling the kernel
-> > >>> and disabling MODULE_SIG_UEFI.
-> > >>>
-> > >>> Josh, why such design decision was made?
-> > >> IIRC, it's because kernel parameters can be added programmatically from a
-> > >> remote user if they gain root access.  Having a kernel parameter to
-> > >> disable a key piece of secure boot isn't all that great.  We disable
-> > >> other kernel parameters like acpi_rspd as well.
-> > > In this case, there shouldn't be a problem as the kernel parameters
-> > > would further limit the keys usage.
-> > >
-> > > Mimi
-> > 
-> > Josh probably means that it can be removed and restriction is lifted..
-> > And after reboot, all keys come to the keyring..
-> 
-> Right.  Or if we went with your suggestion of the default being "do not
-> load UEFI keys", then they could conversely add the parameter instead.
-> This might not be an immediate threat to the SB attack vector itself
-> (thought it could be if I thought about it harder), but it's certainly
-> a change in system behavior that would catch a user unaware.
+In case of reboot my olinuxino imx23 board does not see
+mmc card any more. mmc_rescan is being called by delayed
+work in loop, but mxs_mmc_get_cd always returns 0, so we
+will never pass the card detection check and will not do
+further card inition.
 
-Agreed, it could catch the user unaware of the change, but always
-allowing all the UEFI keys, is not a better alternative.  Perhaps,
-requiring the option, would at least prevent the user from being unaware
-of the change.
+This patch is just an attempt to partially revert the patch
+a91fe279ae of Sascha Hauer, where it is claimed that upper
+layer will handle broken card detection using the polling
+logic and MMC_CAP_NEEDS_POLL capability, but seems it is not
+true, because upper logic still expects 1 from 'get_cd'.
 
-Mimi
+So, here we always return 1 (card present) in case of
+MMC_CAP_NEEDS_POLL capability set.
 
-> At any rate, I'm likely not the best person to weigh in on this aspect.
-> Matthew has certainly done more thinking about these kinds of problems.
-> 
-> josh
+Signed-off-by: Roman Pen <r.peniaev@gmail.com>
+CC: Chris Ball <chris@printf.net>
+CC: Sascha Hauer <s.hauer@pengutronix.de>
+CC: Fabio Estevam <fabio.estevam@freescale.com>
+CC: Shawn Guo <shawn.guo@linaro.org>
+CC: Ulf Hansson <ulf.hansson@linaro.org>
+CC: linux-mmc@vger.kernel.org
+CC: linux-kernel@vger.kernel.org
+---
+ drivers/mmc/host/mxs-mmc.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
+diff --git a/drivers/mmc/host/mxs-mmc.c b/drivers/mmc/host/mxs-mmc.c
+index 073e871..9187ce1 100644
+--- a/drivers/mmc/host/mxs-mmc.c
++++ b/drivers/mmc/host/mxs-mmc.c
+@@ -82,7 +82,8 @@ static int mxs_mmc_get_cd(struct mmc_host *mmc)
+ 	if (ret >= 0)
+ 		return ret;
+ 
+-	present = !(readl(ssp->base + HW_SSP_STATUS(ssp)) &
++	present = mmc->caps & MMC_CAP_NEEDS_POLL ||
++		!(readl(ssp->base + HW_SSP_STATUS(ssp)) &
+ 			BM_SSP_STATUS_CARD_DETECT);
+ 
+ 	if (mmc->caps2 & MMC_CAP2_CD_ACTIVE_HIGH)
+-- 
+1.9.1
 
