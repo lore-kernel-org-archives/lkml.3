@@ -1,303 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751986AbaFJLut (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 07:50:49 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:60919 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751241AbaFJLur (ORCPT
+	id S1752041AbaFJLwG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 07:52:06 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:37016 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751241AbaFJLwE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 07:50:47 -0400
-Date: Tue, 10 Jun 2014 13:50:45 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux-pm mailing list <linux-pm@lists.osdl.org>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>
-Subject: Bisecting the heisenbugs (was Re: 3.15-rc: regression in suspend)
-Message-ID: <20140610115045.GA6019@amd.pavel.ucw.cz>
-References: <alpine.LRH.2.00.1405141435510.30793@twin.jikos.cz>
- <20140514155759.GB9723@amd.pavel.ucw.cz>
- <20140514182046.GA13342@amd.pavel.ucw.cz>
- <alpine.LNX.2.00.1405151727380.16459@pobox.suse.cz>
- <CAKMK7uFEjDGSpdB0xDPL09GZ8N7aFrNA530HbRLyfTPx5SkLQw@mail.gmail.com>
- <20140607120614.GB5309@amd.pavel.ucw.cz>
- <20140607231124.GA3611@amd.pavel.ucw.cz>
- <CAKMK7uEALofLiEA3m-QKjygC=YZNjaEtUMfbpbXinMoim1ygkw@mail.gmail.com>
- <20140609102328.GA25332@amd.pavel.ucw.cz>
- <alpine.LNX.2.00.1406091302560.20782@pobox.suse.cz>
+	Tue, 10 Jun 2014 07:52:04 -0400
+Message-ID: <5396F166.1030401@arm.com>
+Date: Tue, 10 Jun 2014 12:52:06 +0100
+From: Dietmar Eggemann <dietmar.eggemann@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="k+w/mQv8wyuph6w0"
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1406091302560.20782@pobox.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Yuyang Du <yuyang.du@intel.com>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Subject: Re: [RFC PATCH 07/16 v3] Init Workload Consolidation flags in sched_domain
+References: <1401431772-14320-1-git-send-email-yuyang.du@intel.com> <1401431772-14320-8-git-send-email-yuyang.du@intel.com> <20140603121416.GH30445@twins.programming.kicks-ass.net> <5395F541.60604@arm.com> <20140609211820.GA5361@intel.com>
+In-Reply-To: <20140609211820.GA5361@intel.com>
+X-OriginalArrivalTime: 10 Jun 2014 11:51:56.0548 (UTC) FILETIME=[6116B440:01CF84A2]
+X-MC-Unique: 114061012520102901
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---k+w/mQv8wyuph6w0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Mon 2014-06-09 13:03:31, Jiri Kosina wrote:
-> On Mon, 9 Jun 2014, Pavel Machek wrote:
+On 09/06/14 22:18, Yuyang Du wrote:
+> On Mon, Jun 09, 2014 at 06:56:17PM +0100, Dietmar Eggemann wrote:
 > 
-> > > > Strange. It seems 3.15 with the patch reverted only boots in 30% or so
-> > > > cases... And I've seen resume failure, too, so maybe I was just lucky
-> > > > that it worked for a while.
-> > > 
-> > > git bisect really likes 25f397a429dfa43f22c278d0119a60 - you're about
-> > > the 5th report or so that claims this is the culprit but it's
-> > > something else. The above code is definitely not used in i915 so bogus
-> > > bisect result.
-> > 
-> > Note I did not do the bisect, I only attempted revert and test.
-> > 
-> > And did three boots of successful s2ram.. only to find out that it
-> > does not really fix s2ram, I was just lucky :-(.
-> > 
-> > Unfortunately, this means my s2ram problem will be tricky/impossible
-> > to bisect :-(.
+> Thanks, Dietmar.
 > 
-> Welcome to the situation I have been in for past several months.
+>> I'm running these patches on my ARM TC2 on top of
+>> kernel/git/torvalds/linux.git (v3.15-rc7-79-gfe45736f4134). There're
+>> considerable changes in the area of sched domain setup since Vincent's
+>> patchset 'rework sched_domain topology description' (destined for v3.16)
+>> which you can find on kernel/git/tip/tip.git .
+>>
+> 
+> Yeah, PeterZ pointed it out. It was on top of mainline not tip.
+> 
+>> Why did you make SD_WORKLOAD_CONSOLIDATION controllable via sysctl? All
+>> the other SD flags are set during setup.
+>>
+> 
+> I don't understand. Any flag or parameter in sched_domain can be modified
+> on-the-fly after booting via sysctl. The SD_XXX_INIT is a template to make
+> the sched_domain initialization easier, IIUC.
 
-I attempted to do some analysis. It should be possible to bisect when
-tests are not reliable, but it will take time and it will be almost
-neccessary to have the bisection automated.
+Technically true but since the sysctrl stuff is per-cpu and you want to
+change per-domain data, you have to be extremely careful that each cpu
+still sees the same data.
 
-How long does the testing take for you to get to 50% test reliability?
+Another counter example, if I delete the SD_SHARE_PKG_RESOURCES flag on
+my ARM TC2 system for all CPU's on domain0 (MC level) via sysctl, the
+scheduler still has sd_llc assigned to the struct sched_domain for the
+MC level of the CPU.
 
-It seems to be one minute here.
+> 
+> Yes, I should not unconditionally enable SD_WORKLOAD_CONSOLIDATION in MC
+> and CPU domain (pointed out by PeterZ), but I did so for the purpose of
+> testing this patchset at this moment. Eventually, this flag should not be
+> turned on for any domain by default for many reasons, not to mention CPU
+> topology is getting more diverse/complex.
 
-Trivial strategy is to repeat each test to get to 99% test
-reliability. That should make the test about 2x longer.
+But isn't this the point to show how and under which conditions you
+would set this flag in the existing code? Since I guess it's a scheduler
+behavioural (not a topology related one) flag, it has to be integrated
+nicely into sd_init() etc.
 
-There are other strategies possible -- like selecting bisect points
-closer to the "bad" end, and tricky "lets compute probabilities for
-each point", that work well for some parameter settings. There is
-probably even better strategy possible... if you have an idea, you can
-try it below.
+> 
+> I just checked Vincent's "rework sched_domain topology description". The
+> general picture for init sched_domain does not change. If you work on top
+> of tip tree, you can simply skip this patch (0007), and after booting
+> enable SD_WORKLOAD_CONSOLIDATION by:
+> 
+> sysctl -w kernel.sched_domain.cpuX.domainY.flags += 0x8000
+> sysctl -w kernel.sched_domain.cpu0.domain1.consolidating_coeff=180
+> sysctl -w kernel.sched_cc_wakeup_threshold=80
+> 
+>> Your top_flag_domain() function
+>> takes care of figuring out what is the highest sd level this is set on
+>> during load-balance but I can't find any good reason to do it this way
+>> other then for testing purposes?
+> 
+> Any flag is used for testing whether it is set on or not when encountering
+> it, including the flags in sched_domain for load balancing, this is why flag
+> is called flag. My flag is any excpetion?
 
-Monte carlo simulation is attached. 
+Not in this sense but there is no functionality in the scheduler right
+now to check constantly if an sd flag has been set/unset via sysctl.
+IMHO, there's only sd_init and (highest/lowest)_flag_domain to cache
+pointers to special sd's and both are called during start-up or cpu
+hotplug
+((init/partition_sched_domains()->build_sched_domains()->{build_sched_domain()->sd_init(),
+cpu_attach_domain()-> update_top_cache_domain())}
 
-Bisector on reliable bug
------
-1024 versions bug with probability of  0  false success, monte carlo
-of  30000  tries
-Assume compilation takes  6 minutes and test takes 1 minutes
-Average cost  71.0522 minutes
-Average tests  9.99793333333
-Bisector
------
-1024 versions bug with probability of  0.5  false success, monte carlo
-of  30000  tries
-Assume compilation takes  6 minutes and test takes 1 minutes
-Average cost  143.393933333 minutes
-Average tests  44.5374666667
-Trisector
------
-1024 versions bug with probability of  0.5  false success, monte carlo
-of  30000  tries
-Assume compilation takes  6 minutes and test takes 1 minutes
-Average cost  160.554 minutes
-Average tests  39.9552666667
-Strange
------
-1024 versions bug with probability of  0.5  false success, monte carlo
-of  3000  tries
-Assume compilation takes  6 minutes and test takes 1 minutes
-Average cost  246.658 minutes
-Average tests  38.412
-pavel@amd:~/WWW$ 
+-- Dietmar
 
-
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
-
---k+w/mQv8wyuph6w0
-Content-Type: text/x-python; charset=us-ascii
-Content-Disposition: attachment; filename="tricky_bisect.py"
-
-#!/usr/bin/python
-
-import random
-import numpy
-
-class Devil:
-    def init(m):
-        m.versions = 1024
-        # Costs in minutes
-        m.cost_compile = 6
-        m.cost_test = 1
-        # Penalty for wrongly identifying a commit.
-        m.cost_failure = 1000
-        # 0. == nicely behaved bug which always triggers
-        m.p_false_success = .5
-        m.verbose = 2
-
-    def init_run(m):
-        m.broken = random.randint(0, m.versions-1)
-        m.tests = 0
-        m.last_ver = -1
-        m.cost = 0
-
-    def test_failed(m, ver):
-        m.tests += 1
-        if ver != m.last_ver:
-            m.cost += m.cost_compile
-        m.cost += m.cost_test
-        m.last_ver = ver
-        if m.verbose > 1:
-            print "   testing version ", ver, "(tests %d, cost %d)" % (m.tests, m.cost),
-        if ver >= m.broken:
-            if m.verbose > 1:
-                print "(bad)",
-            if random.random() > m.p_false_success:
-                if m.verbose > 1:
-                    print "FAIL"
-                return 1
-        if m.verbose > 1:
-            print "pass"
-        return 0
-
-    def evaluate(m):
-        ver = m.run()
-        if ver == m.broken:
-            if m.verbose:
-                print "success"
-        else:
-            if m.verbose:
-                print "FAILURE"
-            m.cost += m.cost_failure
-
-class Bisector(Devil):
-    def init_run(m):
-        Devil.init_run(m)
-        m.good = 0
-        m.bad = m.versions-1
-
-    def run(m):
-        while m.good+1 < m.bad:
-            ver = (m.good + m.bad) / 2
-            p_bad = 1
-            failed = 0
-            while p_bad > .01:
-                if m.test_failed(ver):
-                    m.bad = ver
-                    failed = 1
-                    break
-                p_bad *= m.p_false_success
-            if not failed:
-                m.good = ver
-        return m.bad
-
-class Trisector(Devil):
-    def init_run(m):
-        Devil.init_run(m)
-        m.good = 0
-        m.bad = m.versions-1
-
-    def run(m):
-        while m.good+1 < m.bad:
-            ver = (m.good*6 + m.bad*14) / 20
-            p_bad = 1
-            failed = 0
-            while p_bad > .01:
-                if m.test_failed(ver):
-                    m.bad = ver
-                    failed = 1
-                    break
-                p_bad *= m.p_false_success
-            if not failed:
-                m.good = ver
-        return m.bad
+> 
+> Thanks,
+> Yuyang
+> 
 
 
-class Strange(Devil):
-    def init_run(m):
-        Devil.init_run(m)
-        m.good = 0
-        m.bad = m.versions-1
-        m.prob_bad = numpy.zeros([m.versions], float)
-        m.prob_bad[:m.versions] = .9
-
-    def ask_for(m, ver):
-        if m.test_failed(ver):
-            m.bad = ver
-            m.prob_bad[:ver+1] /= m.prob_bad[ver]
-            m.prob_bad[ver:] = 1
-            return
-
-        m.prob_bad[:ver+1] *= m.p_false_success
-        m.good = ver
-
-    def last_good(m, prob):
-        g = 0
-        for i in range(m.bad):
-            if m.prob_bad[i] <= prob:
-                g = i
-        return g
-
-    def run(m):
-
-        while m.last_good(.01)+1 < m.bad:
-            if m.verbose > 1:
-                print m.prob_bad
-            m.good = m.last_good(.5)
-            ver = (m.good*10 + m.bad*10) / 20
-            m.ask_for(ver)
-            m.good = m.last_good(.1)
-            ver = (m.good*10 + m.bad*10) / 20
-            m.ask_for(ver)
-
-
-        return m.bad
-
-def monte_carlo(bis, tries = 30000):
-    total_cost = 0.
-    total_tests = 0.
-    for i in range(tries):
-        bis.init_run()
-        if tries > 500:
-            bis.verbose = 0
-        bis.evaluate()
-        total_cost += bis.cost
-        total_tests += bis.tests
-
-    print "-----"
-    print bis.versions, "versions bug with probability of ", bis.p_false_success, " false success, monte carlo of ", tries, " tries"
-    print "Assume compilation takes ", bis.cost_compile, "minutes and test takes", bis.cost_test, "minutes"
-    print "Average cost ", total_cost / tries, "minutes"
-    print "Average tests ", total_tests / tries
-
-print "Bisector on reliable bug"
-bis = Bisector()
-bis.init()
-bis.p_false_success = 0
-monte_carlo(bis)
-
-print "Bisector"
-bis = Bisector()
-bis.init()
-monte_carlo(bis)
-
-print "Trisector"
-bis = Trisector()
-bis.init()
-monte_carlo(bis)
-
-print "Strange"
-bis = Strange()
-bis.init()
-monte_carlo(bis, 3000)
-
-
-
-
-
---k+w/mQv8wyuph6w0--
