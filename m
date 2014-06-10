@@ -1,104 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752120AbaFJM04 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 08:26:56 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49209 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750888AbaFJM0z (ORCPT
+	id S1751948AbaFJMau (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 08:30:50 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:46031 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750888AbaFJMas (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 08:26:55 -0400
-Date: Tue, 10 Jun 2014 14:26:49 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>,
-        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
-Subject: Re: [PATCH 4/9] perf/x86: add cross-HT counter exclusion
- infrastructure
-Message-ID: <20140610122649.GH6758@twins.programming.kicks-ass.net>
-References: <1401917658-26065-1-git-send-email-eranian@google.com>
- <1401917658-26065-5-git-send-email-eranian@google.com>
- <20140605082935.GI3213@twins.programming.kicks-ass.net>
- <CABPqkBQG=SMvtdvpBMnZx4Etf5rRoy3=K81RLNRcPEgBh7Yqdg@mail.gmail.com>
+	Tue, 10 Jun 2014 08:30:48 -0400
+Message-ID: <5396FA75.8020400@hurleysoftware.com>
+Date: Tue, 10 Jun 2014 08:30:45 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="nCRcqX7cEx7rr7Pe"
-Content-Disposition: inline
-In-Reply-To: <CABPqkBQG=SMvtdvpBMnZx4Etf5rRoy3=K81RLNRcPEgBh7Yqdg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Valerio Vanni <valerio.vanni@inwind.it>
+Subject: Re: [PATCH 1/2] serial: core: Don't drop DTR if system console
+References: <7EC4C3FDEFF6492F91DEE16AEE0831E6@vanni.it>	<1401891371-4946-1-git-send-email-peter@hurleysoftware.com>	<20140609140823.6013838d@alan.etchedpixels.co.uk>	<53965D53.3010107@hurleysoftware.com> <20140610120136.2c2cb881@alan.etchedpixels.co.uk>
+In-Reply-To: <20140610120136.2c2cb881@alan.etchedpixels.co.uk>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/10/2014 07:01 AM, One Thousand Gnomes wrote:
+>> This patch only affects the line state if the last tty reference is closed
+>> or the tty is hung up by software (like on controlling process exit).
+>> In this case, any login session is already dying, and it would not be possible
+>> to hijack a live session. A successful re-login is still required.
+>
+> It breaks the other direction - yes sorry.
+>
+>> Notwithstanding what I wrote above, this patch does change behavior
+>> with remote consoles, which may be unacceptable.
+>
+>> For example, if the remote user logs out, the current behavior hangs up
+>> the modem (if HUPCL), whereas the patch behavior just presents a new
+>> login prompt.
+>
+> which means the modem will probably no longer answer calls.
 
---nCRcqX7cEx7rr7Pe
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I would expect the vast majority of modems to be configured to hang-up
+after carrier loss (when the remote user hangs up).
 
-On Tue, Jun 10, 2014 at 01:53:45PM +0200, Stephane Eranian wrote:
-> On Thu, Jun 5, 2014 at 10:29 AM, Peter Zijlstra <peterz@infradead.org> wr=
-ote:
-> > On Wed, Jun 04, 2014 at 11:34:13PM +0200, Stephane Eranian wrote:
-> >> @@ -2020,12 +2050,29 @@ static void intel_pmu_cpu_starting(int cpu)
-> >>
-> >>       if (x86_pmu.lbr_sel_map)
-> >>               cpuc->lbr_sel =3D &cpuc->shared_regs->regs[EXTRA_REG_LBR=
-];
-> >> +
-> >> +     if (x86_pmu.flags & PMU_FL_EXCL_CNTRS) {
-> >> +             for_each_cpu(i, topology_thread_cpumask(cpu)) {
-> >> +                     struct intel_excl_cntrs *c;
-> >> +
-> >> +                     c =3D per_cpu(cpu_hw_events, i).excl_cntrs;
-> >> +                     if (c && c->core_id =3D=3D core_id) {
-> >> +                             cpuc->kfree_on_online[1] =3D cpuc->excl_=
-cntrs;
-> >> +                             cpuc->excl_cntrs =3D c;
-> >> +                             cpuc->excl_thread_id =3D 1;
-> >> +                             break;
-> >> +                     }
-> >> +             }
-> >> +             cpuc->excl_cntrs->core_id =3D core_id;
-> >> +             cpuc->excl_cntrs->refcnt++;
-> >> +     }
-> >>  }
-> >
-> > This hard assumes theres only ever 2 threads, which is true and I
-> > suppose more in arch/x86 will come apart the moment Intel makes a chip
-> > with more, still, do we have topology_thread_id() or so to cure this?
->=20
-> I assume your comment is relative to kfree_on_online[].
-> This code is specific to the HT bug, so yes, it assumes 2 threads and that
-> only one entry of the two excl_cntrs structs needs to be freed.
-> Doing otherwise, would require a list and will never be used to its full
-> potential.
+I think the more significant impact is that killing the login process
+(by the sysadmin) wouldn't disconnect a malicious user (but would still
+force the re-login). I see this as more nuisance value than any
+realistic DoS.
 
-That and ->excl_thread_id =3D 1, I was thinking that if we'd somehow have
-4 threads, some of them need to have =3D [23] in there.
+>> So yeah, I agree; this patch should be dropped.
+>
+> Possibly we should also fix this the other way in tty_port_shutdown,
+> which does wrongly skip dtr/rts handling of consoles.
+>
+> As far as I can see providing HUPCL is clear the desired console
+> behaviour for most situations with a remote console link is obtained.
 
+I agree that serial core and tty port should handle the console
+identically, so if the serial core defaults are the expected behavior,
+then, yes, tty_port_shutdown() should not skip dropping dtr/rts.
 
+However, a console on USB tty is much more likely to be local, rather
+than remote, so changing dtr/rts handling could impact these setups.
 
---nCRcqX7cEx7rr7Pe
-Content-Type: application/pgp-signature
+Since the termios c_cflag is inherited from the console, what about adding
+new flow control flag decodes to uart_set_options(); eg.,
+  'r'     =  CRTSCTS |  HUPCL  /* existing */
+  'R'     =  CRTSCTS | !HUPCL
+  default = !CRTSCTS |  HUPCL
+  'd'     = !CRTSCTS | !HUPCL
+?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Regards,
+Peter Hurley
 
-iQIcBAEBAgAGBQJTlvmJAAoJEHZH4aRLwOS6+hsP/RMQ/GKOz9mjs+X665aeSr+6
-TwTWcaTpXB/G1S0rYKHzpTk80mDZbbwL3Fmbhb4kUIVYlgWmzjeqfbHc2JYOIJGy
-nEfpRSCGov2IrfnJ+OWk7gBGsh9MSjK4EyURGlos8gZKIYbF+eZdGCtjnq+NeJrp
-PgtWvVTfKDv2T+Nwba59hvcnoDsGsakDgdlxCi0BXFfhCDZf1dm7Jo22w/CKwwRX
-6f3Z8emyg9cRRnOMjS++7T5XNpfwI6jvnsm3ueMEdA/qcyrflwWBhggVkMEYqmgg
-EZsxAZfaxSZae+HYqbEtQ6WZOTSF/Chad4zgh4dPopraaNO0w73gCY2LkHUAZmiH
-IeBQbPokXRPUviHwqpvEKZconYP6t53v+ArN+PPB4VPxqkpgVsU/TCLfla9Eitu7
-wcG4Prp3ylIFUhrVItcMxxCIViTt7CBAhO5rojq9WR2hAb2qujqknieMfAl9SJv+
-lZ6sQuCVqDVczAzzqm/GUXC7mELmTu3yv62N7fszlse66NU6zzz1Dmm0I5bmflvW
-3oHlb+3VQ9o/WGm/JlEXWjq+8SgXAGIR9Ro2buLyg2oGHm5YQFr743+/Q5mb0qFd
-vMVKXQS3qrWrpzIG3SnWmjFXYGjN3pjZT8EuWRQyV9r9BAaO+78G8XQR+55wSE/O
-bvESCi61nOqdHUoHM96C
-=mm8W
------END PGP SIGNATURE-----
-
---nCRcqX7cEx7rr7Pe--
