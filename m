@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934569AbaFJAWq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:22:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58612 "EHLO
+	id S933993AbaFJAbi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:31:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58620 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934514AbaFJAWn (ORCPT
+	with ESMTP id S934566AbaFJAWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 20:22:43 -0400
+	Mon, 9 Jun 2014 20:22:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Amit Shah <amit.shah@redhat.com>, Asias He <asias@redhat.com>,
-        Wanlong Gao <gaowanlong@cn.fujitsu.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH 3.4 52/88] virtio: console: rename cvq_lock to c_ivq_lock
-Date: Mon,  9 Jun 2014 17:25:02 -0700
-Message-Id: <20140610002426.245911758@linuxfoundation.org>
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        "J. Bruce Fields" <bfields@redhat.com>,
+        Weng Meiling <wengmeiling.weng@huawei.com>
+Subject: [PATCH 3.4 54/88] nfsd: pass net to nfsd_init_socks()
+Date: Mon,  9 Jun 2014 17:25:04 -0700
+Message-Id: <20140610002426.302802697@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
 References: <20140610002424.500996570@linuxfoundation.org>
@@ -32,93 +30,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amit Shah <amit.shah@redhat.com>
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-commit 165b1b8bbc17c9469b053bab78b11b7cbce6d161 upstream.
+commit db6e182c17cb1a7069f7f8924721ce58ac05d9a3 upstream.
 
-The cvq_lock was taken for the c_ivq.  Rename the lock to make that
-obvious.
+Precursor patch. Hard-coded "init_net" will be replaced by proper one in
+future.
 
-We'll also add a lock around the c_ovq in the next commit, so there's no
-ambiguity.
-
-Signed-off-by: Amit Shah <amit.shah@redhat.com>
-Reviewed-by: Asias He <asias@redhat.com>
-Reviewed-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-[bwh: Backported to 3.2:
- - Adjust context
- - Drop change to virtcons_restore()]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-[wyj: Backported to 3.4:
- - pick change to virtcons_restore() from upsteam patch]
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+[wengmeiling: backport to 3.4:
+ - adjust context
+ - one more parameter(int port) for nfsd_init_socks()
+ - net initialization in nfsd_startup()]
+Signed-off-by: Weng Meiling <wengmeiling.weng@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/char/virtio_console.c |   17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+ fs/nfsd/nfssvc.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
---- a/drivers/char/virtio_console.c
-+++ b/drivers/char/virtio_console.c
-@@ -131,7 +131,7 @@ struct ports_device {
- 	spinlock_t ports_lock;
- 
- 	/* To protect the vq operations for the control channel */
--	spinlock_t cvq_lock;
-+	spinlock_t c_ivq_lock;
- 
- 	/* The current config space is stored here */
- 	struct virtio_console_config config;
-@@ -1474,23 +1474,23 @@ static void control_work_handler(struct
- 	portdev = container_of(work, struct ports_device, control_work);
- 	vq = portdev->c_ivq;
- 
--	spin_lock(&portdev->cvq_lock);
-+	spin_lock(&portdev->c_ivq_lock);
- 	while ((buf = virtqueue_get_buf(vq, &len))) {
--		spin_unlock(&portdev->cvq_lock);
-+		spin_unlock(&portdev->c_ivq_lock);
- 
- 		buf->len = len;
- 		buf->offset = 0;
- 
- 		handle_control_message(portdev, buf);
- 
--		spin_lock(&portdev->cvq_lock);
-+		spin_lock(&portdev->c_ivq_lock);
- 		if (add_inbuf(portdev->c_ivq, buf) < 0) {
- 			dev_warn(&portdev->vdev->dev,
- 				 "Error adding buffer to queue\n");
- 			free_buf(buf);
- 		}
- 	}
--	spin_unlock(&portdev->cvq_lock);
-+	spin_unlock(&portdev->c_ivq_lock);
+--- a/fs/nfsd/nfssvc.c
++++ b/fs/nfsd/nfssvc.c
+@@ -182,18 +182,18 @@ int nfsd_nrthreads(void)
+ 	return rv;
  }
  
- static void out_intr(struct virtqueue *vq)
-@@ -1751,10 +1751,11 @@ static int __devinit virtcons_probe(stru
- 	if (multiport) {
- 		unsigned int nr_added_bufs;
+-static int nfsd_init_socks(int port)
++static int nfsd_init_socks(int port, struct net *net)
+ {
+ 	int error;
+ 	if (!list_empty(&nfsd_serv->sv_permsocks))
+ 		return 0;
  
--		spin_lock_init(&portdev->cvq_lock);
-+		spin_lock_init(&portdev->c_ivq_lock);
- 		INIT_WORK(&portdev->control_work, &control_work_handler);
+-	error = svc_create_xprt(nfsd_serv, "udp", &init_net, PF_INET, port,
++	error = svc_create_xprt(nfsd_serv, "udp", net, PF_INET, port,
+ 					SVC_SOCK_DEFAULTS);
+ 	if (error < 0)
+ 		return error;
  
--		nr_added_bufs = fill_queue(portdev->c_ivq, &portdev->cvq_lock);
-+		nr_added_bufs = fill_queue(portdev->c_ivq,
-+					   &portdev->c_ivq_lock);
- 		if (!nr_added_bufs) {
- 			dev_err(&vdev->dev,
- 				"Error allocating buffers for control queue\n");
-@@ -1895,7 +1896,7 @@ static int virtcons_restore(struct virti
+-	error = svc_create_xprt(nfsd_serv, "tcp", &init_net, PF_INET, port,
++	error = svc_create_xprt(nfsd_serv, "tcp", net, PF_INET, port,
+ 					SVC_SOCK_DEFAULTS);
+ 	if (error < 0)
+ 		return error;
+@@ -206,6 +206,7 @@ static bool nfsd_up = false;
+ static int nfsd_startup(unsigned short port, int nrservs)
+ {
+ 	int ret;
++	struct net *net = &init_net;
+ 
+ 	if (nfsd_up)
+ 		return 0;
+@@ -217,7 +218,7 @@ static int nfsd_startup(unsigned short p
+ 	ret = nfsd_racache_init(2*nrservs);
+ 	if (ret)
  		return ret;
- 
- 	if (use_multiport(portdev))
--		fill_queue(portdev->c_ivq, &portdev->cvq_lock);
-+		fill_queue(portdev->c_ivq, &portdev->c_ivq_lock);
- 
- 	list_for_each_entry(port, &portdev->ports, list) {
- 		port->in_vq = portdev->in_vqs[port->id];
+-	ret = nfsd_init_socks(port);
++	ret = nfsd_init_socks(port, net);
+ 	if (ret)
+ 		goto out_racache;
+ 	ret = lockd_up(&init_net);
 
 
