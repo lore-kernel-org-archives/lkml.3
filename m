@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755091AbaFJHj3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 03:39:29 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:46729 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754903AbaFJHj2 (ORCPT
+	id S936325AbaFJHka (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 03:40:30 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:57606 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933993AbaFJHk2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 03:39:28 -0400
-X-Original-SENDERIP: 10.177.220.145
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Tue, 10 Jun 2014 16:43:17 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: akpm@linux-foundation.org, cl@linux.com, rientjes@google.com,
-        penberg@kernel.org, hannes@cmpxchg.org, mhocko@suse.cz,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH -mm v2 8/8] slab: make dead memcg caches discard free
- slabs immediately
-Message-ID: <20140610074317.GE19036@js1304-P5Q-DELUXE>
-References: <cover.1402060096.git.vdavydov@parallels.com>
- <27a202c6084d6bb19cc3e417793f05104b908ded.1402060096.git.vdavydov@parallels.com>
+	Tue, 10 Jun 2014 03:40:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <27a202c6084d6bb19cc3e417793f05104b908ded.1402060096.git.vdavydov@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140605155614.GA18376@sepie.suse.cz>
+References: <1399639944-20551-1-git-send-email-mmarek@suse.cz>
+	<1399639944-20551-4-git-send-email-mmarek@suse.cz>
+	<CAFLxGvyz-aX8rTveo9W3mqsQxPeg8cb7Oq59UiC1kMz4qTiYwg@mail.gmail.com>
+	<538EEA3D.1080105@suse.cz>
+	<538F1B41.3060904@suse.cz>
+	<20140605155614.GA18376@sepie.suse.cz>
+Date: Tue, 10 Jun 2014 09:40:26 +0200
+X-Google-Sender-Auth: 6ddnFs6XYagfM5M8JL-AYbqTbuA
+Message-ID: <CAMuHMdU0PQsKkYuFpxca1u7+tPbkxQsnNJ1b5-L-aJG9ZCyyEA@mail.gmail.com>
+Subject: Re: [PATCH v2 3/5] kbuild: Use relative path for $(objtree)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Richard Weinberger <richard.weinberger@gmail.com>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Sam Ravnborg <sam@ravnborg.org>,
+        Randy Dunlap <rdunlap@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 06, 2014 at 05:22:45PM +0400, Vladimir Davydov wrote:
-> Since a dead memcg cache is destroyed only after the last slab allocated
-> to it is freed, we must disable caching of empty slabs for such caches,
-> otherwise they will be hanging around forever.
-> 
-> This patch makes SLAB discard dead memcg caches' slabs as soon as they
-> become empty. To achieve that, it disables per cpu free object arrays by
-> setting array_cache->limit to 0 on each cpu and sets per node free_limit
-> to 0 in order to zap slabs_free lists. This is done on kmem_cache_shrink
-> (in do_drain, drain_array, drain_alien_cache, and drain_freelist to be
-> more exact), which is always called on memcg offline (see
-> memcg_unregister_all_caches)
-> 
-> Note, since array_cache->limit and kmem_cache_node->free_limit are per
-> cpu/node and, as a result, they may be updated on cpu/node
-> online/offline, we have to patch every place where the limits are
-> initialized.
+Hi Michael,
 
-Hello,
+On Thu, Jun 5, 2014 at 5:56 PM, Michal Marek <mmarek@suse.cz> wrote:
+> --- a/arch/um/Makefile
+> +++ b/arch/um/Makefile
+> @@ -111,8 +111,7 @@ endef
+>  KBUILD_KCONFIG := $(HOST_DIR)/um/Kconfig
+>
+>  archheaders:
+> -       $(Q)$(MAKE) -C '$(srctree)' KBUILD_SRC= \
+> -               ARCH=$(HEADER_ARCH) O='$(objtree)' archheaders
+> +       $(Q)$(MAKE) KBUILD_SRC= ARCH=$(HEADER_ARCH) archheaders
 
-You mentioned that disabling per cpu arrays would degrade performance.
-But, this patch is implemented to disable per cpu arrays. Is there any
-reason to do like this? How about not disabling per cpu arrays and
-others? Leaving it as is makes the patch less intrusive and has low
-impact on performance. I guess that amount of reclaimed memory has no
-big difference between both approaches.
+Should the logic in https://lkml.org/lkml/2014/6/1/17 be changed as well?
 
-Thanks.
+Gr{oetje,eeting}s,
 
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
