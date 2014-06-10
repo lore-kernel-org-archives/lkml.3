@@ -1,51 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978AbaFJWGE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 18:06:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40375 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753616AbaFJWGC (ORCPT
+	id S1753565AbaFJWKI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 18:10:08 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:41850 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752633AbaFJWKF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 18:06:02 -0400
-Date: Tue, 10 Jun 2014 15:06:00 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: mingo@kernel.org, luto@amacapital.net, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com,
-        "tip-bot for H. Peter Anvin" <tipbot@zytor.com>,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/vdso] x86, vdso: Use <tools/le_byteshift.h> for
- littleendian access
-Message-Id: <20140610150600.af0649ca26db602d51fe8899@linux-foundation.org>
-In-Reply-To: <53977885.8010709@zytor.com>
-References: <20140606140017.afb7f91142f66cb3dd13c186@linux-foundation.org>
-	<tip-bdfb9bcc25005d06a9c301830bdeb7ca5a0b6ef7@git.kernel.org>
-	<20140610135051.c3c34165f73d67d218b62bd9@linux-foundation.org>
-	<53977885.8010709@zytor.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 10 Jun 2014 18:10:05 -0400
+Date: Tue, 10 Jun 2014 15:10:01 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Luiz Capitulino <lcapitulino@redhat.com>
+cc: akpm@linux-foundation.org, andi@firstfloor.org, riel@redhat.com,
+        yinghai@kernel.org, isimatu.yasuaki@jp.fujitsu.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH] x86: numa: drop ZONE_ALIGN
+In-Reply-To: <20140609231920.08a1b0f9@redhat.com>
+Message-ID: <alpine.DEB.2.02.1406101506290.32203@chino.kir.corp.google.com>
+References: <20140608181436.17de69ac@redhat.com> <alpine.DEB.2.02.1406081524580.21744@chino.kir.corp.google.com> <20140609144355.63a91968@redhat.com> <alpine.DEB.2.02.1406091453570.5271@chino.kir.corp.google.com> <20140609231920.08a1b0f9@redhat.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Jun 2014 14:28:37 -0700 "H. Peter Anvin" <hpa@zytor.com> wrote:
+On Mon, 9 Jun 2014, Luiz Capitulino wrote:
 
-> Want to test this patch before I commit it?
+> > > > > diff --git a/arch/x86/include/asm/numa.h b/arch/x86/include/asm/numa.h
+> > > > > index 4064aca..01b493e 100644
+> > > > > --- a/arch/x86/include/asm/numa.h
+> > > > > +++ b/arch/x86/include/asm/numa.h
+> > > > > @@ -9,7 +9,6 @@
+> > > > >  #ifdef CONFIG_NUMA
+> > > > >  
+> > > > >  #define NR_NODE_MEMBLKS		(MAX_NUMNODES*2)
+> > > > > -#define ZONE_ALIGN (1UL << (MAX_ORDER+PAGE_SHIFT))
+> > > > >  
+> > > > >  /*
+> > > > >   * Too small node sizes may confuse the VM badly. Usually they
+> > > > > diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+> > > > > index 1d045f9..69f6362 100644
+> > > > > --- a/arch/x86/mm/numa.c
+> > > > > +++ b/arch/x86/mm/numa.c
+> > > > > @@ -200,8 +200,6 @@ static void __init setup_node_data(int nid, u64 start, u64 end)
+> > > > >  	if (end && (end - start) < NODE_MIN_SIZE)
+> > > > >  		return;
+> > > > >  
+> > > > > -	start = roundup(start, ZONE_ALIGN);
+> > > > > -
+> > > > >  	printk(KERN_INFO "Initmem setup node %d [mem %#010Lx-%#010Lx]\n",
+> > > > >  	       nid, start, end - 1);
+> > > > >  
+> > > > 
+> > > > What ensures this start address is page aligned from the BIOS?
+> > > 
+> > > To which start address do you refer to?
+> > 
+> > The start address displayed in the dmesg is not page aligned anymore with 
+> > your change, correct?  
 > 
-> ...
->
-> >From 15ea1a528e08c6bc322f10686ec8d73ba413b941 Mon Sep 17 00:00:00 2001
-> From: "H. Peter Anvin" <hpa@zytor.com>
-> Date: Tue, 10 Jun 2014 14:25:26 -0700
-> Subject: [PATCH] x86, vdso: Remove one final use of htole16()
+> I have to check that but I don't expect this to happen because my
+> understanding of the code is that what's rounded up here is just discarded
+> in free_area_init_node(). Am I wrong?
 > 
-> One final use of the macros from <endian.h> which are not available on
-> older system.  In this case we had one sole case of *writing* a
-> littleendian number, but the number is SHN_UNDEF which is the constant
-> zero, so rather than dealing with the general case of littleendian
-> puts here, just document that the constant is zero and be done with
-> it.
 
-Compiles and boots, thanks.
+NODE_DATA(nid)->node_start_pfn needs to be accurate if 
+node_set_online(nid).  Since there is no guarantee about page alignment 
+from the ACPI spec, removing the roundup() entirely could cause the 
+address shift >> PAGE_SIZE to be off by one.  I, like you, do not see the 
+need for the ZONE_ALIGN above, but I think we agree that it should be 
+replaced with PAGE_SIZE instead.
