@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754255AbaFJTtZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 15:49:25 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35102 "EHLO
+	id S1754191AbaFJTtU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 15:49:20 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35091 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753398AbaFJTtW (ORCPT
+	with ESMTP id S1754113AbaFJTtQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:49:22 -0400
+	Tue, 10 Jun 2014 15:49:16 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hedberg <johan.hedberg@intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 130/160] Bluetooth: Fix triggering BR/EDR L2CAP Connect too early
-Date: Tue, 10 Jun 2014 12:46:10 -0700
-Message-Id: <1402429600-20477-131-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 125/160] net: Fix ns_capable check in sock_diag_put_filterinfo
+Date: Tue, 10 Jun 2014 12:46:05 -0700
+Message-Id: <1402429600-20477-126-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -28,42 +28,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hedberg <johan.hedberg@intel.com>
+From: Andrew Lutomirski <luto@amacapital.net>
 
-commit 9eb1fbfa0a737fd4d3a6d12d71c5ea9af622b887 upstream.
+commit 78541c1dc60b65ecfce5a6a096fc260219d6784e upstream.
 
-Commit 1c2e004183178 introduced an event handler for the encryption key
-refresh complete event with the intent of fixing some LE/SMP cases.
-However, this event is shared with BR/EDR and there we actually want to
-act only on the auth_complete event (which comes after the key refresh).
+The caller needs capabilities on the namespace being queried, not on
+their own namespace.  This is a security bug, although it likely has
+only a minor impact.
 
-If we do not do this we may trigger an L2CAP Connect Request too early
-and cause the remote side to return a security block error.
-
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Acked-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/bluetooth/hci_event.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ include/linux/sock_diag.h | 2 +-
+ net/core/sock_diag.c      | 4 ++--
+ net/packet/diag.c         | 2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
-index 75d34d1..e70a426 100644
---- a/net/bluetooth/hci_event.c
-+++ b/net/bluetooth/hci_event.c
-@@ -3012,6 +3012,12 @@ static void hci_key_refresh_complete_evt(struct hci_dev *hdev,
- 	if (!conn)
- 		goto unlock;
+diff --git a/include/linux/sock_diag.h b/include/linux/sock_diag.h
+index 54f91d3..302ab80 100644
+--- a/include/linux/sock_diag.h
++++ b/include/linux/sock_diag.h
+@@ -23,7 +23,7 @@ int sock_diag_check_cookie(void *sk, __u32 *cookie);
+ void sock_diag_save_cookie(void *sk, __u32 *cookie);
  
-+	/* For BR/EDR the necessary steps are taken through the
-+	 * auth_complete event.
-+	 */
-+	if (conn->type != LE_LINK)
-+		goto unlock;
-+
- 	if (!ev->status)
- 		conn->sec_level = conn->pending_sec_level;
+ int sock_diag_put_meminfo(struct sock *sk, struct sk_buff *skb, int attr);
+-int sock_diag_put_filterinfo(struct user_namespace *user_ns, struct sock *sk,
++int sock_diag_put_filterinfo(struct sock *sk,
+ 			     struct sk_buff *skb, int attrtype);
  
+ #endif
+diff --git a/net/core/sock_diag.c b/net/core/sock_diag.c
+index a0e9cf6..6a7fae2 100644
+--- a/net/core/sock_diag.c
++++ b/net/core/sock_diag.c
+@@ -49,7 +49,7 @@ int sock_diag_put_meminfo(struct sock *sk, struct sk_buff *skb, int attrtype)
+ }
+ EXPORT_SYMBOL_GPL(sock_diag_put_meminfo);
+ 
+-int sock_diag_put_filterinfo(struct user_namespace *user_ns, struct sock *sk,
++int sock_diag_put_filterinfo(struct sock *sk,
+ 			     struct sk_buff *skb, int attrtype)
+ {
+ 	struct nlattr *attr;
+@@ -57,7 +57,7 @@ int sock_diag_put_filterinfo(struct user_namespace *user_ns, struct sock *sk,
+ 	unsigned int len;
+ 	int err = 0;
+ 
+-	if (!ns_capable(user_ns, CAP_NET_ADMIN)) {
++	if (!ns_capable(sock_net(sk)->user_ns, CAP_NET_ADMIN)) {
+ 		nla_reserve(skb, attrtype, 0);
+ 		return 0;
+ 	}
+diff --git a/net/packet/diag.c b/net/packet/diag.c
+index a9584a2..ec8b6e8 100644
+--- a/net/packet/diag.c
++++ b/net/packet/diag.c
+@@ -171,7 +171,7 @@ static int sk_diag_fill(struct sock *sk, struct sk_buff *skb,
+ 		goto out_nlmsg_trim;
+ 
+ 	if ((req->pdiag_show & PACKET_SHOW_FILTER) &&
+-	    sock_diag_put_filterinfo(user_ns, sk, skb, PACKET_DIAG_FILTER))
++	    sock_diag_put_filterinfo(sk, skb, PACKET_DIAG_FILTER))
+ 		goto out_nlmsg_trim;
+ 
+ 	return nlmsg_end(skb, nlh);
 -- 
 1.9.1
 
