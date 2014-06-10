@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933795AbaFJAWA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:22:00 -0400
+	id S936235AbaFJAor (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:44:47 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:58169 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933417AbaFJAV6 (ORCPT
+	with ESMTP id S933566AbaFJAV7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 20:21:58 -0400
+	Mon, 9 Jun 2014 20:21:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Gevers <elbrus@debian.org>, Ben Hutchings <ben@decadent.org.uk>
-Subject: [PATCH 3.4 10/88] Staging: speakup: Move pasting into a work item
-Date: Mon,  9 Jun 2014 17:24:20 -0700
-Message-Id: <20140610002424.882040362@linuxfoundation.org>
+        Alexej Starschenko <starschenko@gmail.com>,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.4 14/88] USB: serial: option: add support for Novatel E371 PCIe card
+Date: Mon,  9 Jun 2014 17:24:24 -0700
+Message-Id: <20140610002425.005501363@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
 References: <20140610002424.500996570@linuxfoundation.org>
@@ -28,123 +29,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Alexej Starschenko <starschenko@gmail.com>
 
-commit d7500135802ca55b3f4e01a16544e8b34082f8c3 upstream.
+commit 8a61ba3a47ac39f660702aa66a172185dd605a86 upstream.
 
-Input is handled in softirq context, but when pasting we may
-need to sleep.  speakup_paste_selection() currently tries to
-bodge this by busy-waiting if in_atomic(), but that doesn't
-help because the ldisc may also sleep.
+Adds product ID for the Novatel E371 PCI Express Mini Card.
 
-For bonus breakage, speakup_paste_selection() changes the
-state of current, even though it's not running in process
-context.
+$ lsusb
+Bus 001 Device 024: ID 1410:9011 Novatel Wireless
 
-Move it into a work item and make sure to cancel it on exit.
+$ usb-devices
+T:  Bus=01 Lev=01 Prnt=01 Port=03 Cnt=01 Dev#= 24 Spd=480 MxCh= 0
+D:  Ver= 2.00 Cls=ef(misc ) Sub=02 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=1410 ProdID=9011 Rev=00.03
+S:  Manufacturer=Novatel Wireless, Inc.
+S:  Product=Novatel Wireless HSPA
+S:  SerialNumber=012773002115811
+C:  #Ifs= 6 Cfg#= 1 Atr=e0 MxPwr=500mA
+I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
+I:  If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
+I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
+I:  If#= 3 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
+I:  If#= 6 Alt= 0 #EPs= 1 Cls=02(commc) Sub=06 Prot=00 Driver=cdc_ether
+I:  If#= 7 Alt= 1 #EPs= 2 Cls=0a(data ) Sub=00 Prot=00 Driver=cdc_ether
 
-References: https://bugs.debian.org/735202
-References: https://bugs.debian.org/744015
-Reported-by: Paul Gevers <elbrus@debian.org>
-Reported-and-tested-by: Jarek Czekalski <jarekczek@poczta.onet.pl>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Tested with kernel 3.2.0.
+
+Signed-off-by: Alexej Starschenko <starschenko@gmail.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/speakup/main.c      |    1 
- drivers/staging/speakup/selection.c |   40 +++++++++++++++++++++++++++++-------
- drivers/staging/speakup/speakup.h   |    1 
- 3 files changed, 35 insertions(+), 7 deletions(-)
+ drivers/usb/serial/option.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/staging/speakup/main.c
-+++ b/drivers/staging/speakup/main.c
-@@ -2219,6 +2219,7 @@ static void __exit speakup_exit(void)
- 	unregister_keyboard_notifier(&keyboard_notifier_block);
- 	unregister_vt_notifier(&vt_notifier_block);
- 	speakup_unregister_devsynth();
-+	speakup_cancel_paste();
- 	del_timer(&cursor_timer);
- 	kthread_stop(speakup_task);
- 	speakup_task = NULL;
---- a/drivers/staging/speakup/selection.c
-+++ b/drivers/staging/speakup/selection.c
-@@ -3,6 +3,8 @@
- #include <linux/interrupt.h>
- #include <linux/sched.h>
- #include <linux/selection.h>
-+#include <linux/workqueue.h>
-+#include <asm/cmpxchg.h>
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -161,6 +161,7 @@ static void option_instat_callback(struc
+ #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_FULLSPEED	0x9000
+ #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_HIGHSPEED	0x9001
+ #define NOVATELWIRELESS_PRODUCT_E362		0x9010
++#define NOVATELWIRELESS_PRODUCT_E371		0x9011
+ #define NOVATELWIRELESS_PRODUCT_G2		0xA010
+ #define NOVATELWIRELESS_PRODUCT_MC551		0xB001
  
- #include "speakup.h"
+@@ -1025,6 +1026,7 @@ static const struct usb_device_id option
+ 	/* Novatel Ovation MC551 a.k.a. Verizon USB551L */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_MC551, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_E362, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_E371, 0xff, 0xff, 0xff) },
  
-@@ -121,20 +123,24 @@ int speakup_set_selection(struct tty_str
- 	return 0;
- }
- 
--/* TODO: move to some helper thread, probably.  That'd fix having to check for
-- * in_atomic().  */
--int speakup_paste_selection(struct tty_struct *tty)
--{
-+struct speakup_paste_work {
-+	struct work_struct work;
-+	struct tty_struct *tty;
-+};
-+
-+static void __speakup_paste_selection(struct work_struct *work)
-+{
-+	struct speakup_paste_work *spw =
-+		container_of(work, struct speakup_paste_work, work);
-+	struct tty_struct *tty = xchg(&spw->tty, NULL);
- 	struct vc_data *vc = (struct vc_data *) tty->driver_data;
- 	int pasted = 0, count;
- 	DECLARE_WAITQUEUE(wait, current);
-+
- 	add_wait_queue(&vc->paste_wait, &wait);
- 	while (sel_buffer && sel_buffer_lth > pasted) {
- 		set_current_state(TASK_INTERRUPTIBLE);
- 		if (test_bit(TTY_THROTTLED, &tty->flags)) {
--			if (in_atomic())
--				/* if we are in an interrupt handler, abort */
--				break;
- 			schedule();
- 			continue;
- 		}
-@@ -146,6 +152,26 @@ int speakup_paste_selection(struct tty_s
- 	}
- 	remove_wait_queue(&vc->paste_wait, &wait);
- 	current->state = TASK_RUNNING;
-+	tty_kref_put(tty);
-+}
-+
-+static struct speakup_paste_work speakup_paste_work = {
-+	.work = __WORK_INITIALIZER(speakup_paste_work.work,
-+				   __speakup_paste_selection)
-+};
-+
-+int speakup_paste_selection(struct tty_struct *tty)
-+{
-+	if (cmpxchg(&speakup_paste_work.tty, NULL, tty) != NULL)
-+		return -EBUSY;
-+
-+	tty_kref_get(tty);
-+	schedule_work_on(WORK_CPU_UNBOUND, &speakup_paste_work.work);
- 	return 0;
- }
- 
-+void speakup_cancel_paste(void)
-+{
-+	cancel_work_sync(&speakup_paste_work.work);
-+	tty_kref_put(speakup_paste_work.tty);
-+}
---- a/drivers/staging/speakup/speakup.h
-+++ b/drivers/staging/speakup/speakup.h
-@@ -84,6 +84,7 @@ extern void synth_buffer_clear(void);
- extern void speakup_clear_selection(void);
- extern int speakup_set_selection(struct tty_struct *tty);
- extern int speakup_paste_selection(struct tty_struct *tty);
-+extern void speakup_cancel_paste(void);
- extern void speakup_register_devsynth(void);
- extern void speakup_unregister_devsynth(void);
- extern void synth_write(const char *buf, size_t count);
+ 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_H01) },
+ 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_H01A) },
 
 
