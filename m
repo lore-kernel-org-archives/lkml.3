@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752040AbaFJQgD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 12:36:03 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:37591 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751888AbaFJQgA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 12:36:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <1402101088-14731-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1402101088-14731-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Tue, 10 Jun 2014 17:35:28 +0100
-Message-ID: <CA+V-a8sBuxk9iEe-3O7cCF6NJrbE1svv0BqVw1Yu2HAncxB0MQ@mail.gmail.com>
-Subject: Re: [PATCH] media: v4l2-core: v4l2-dv-timings.c: Cleaning up code
- that putting values to the same variable twice
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Martin Bugge <marbugge@cisco.com>,
-        linux-media <linux-media@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1751888AbaFJQna (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 12:43:30 -0400
+Received: from s3.sipsolutions.net ([5.9.151.49]:56143 "EHLO sipsolutions.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751135AbaFJQn1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 12:43:27 -0400
+Message-ID: <1402418588.4152.0.camel@jlt4.sipsolutions.net>
+Subject: Re: [RFC 0/4 v2] cfg80211/mac80211: Add new interface type for OCB
+ (Outside the Context of a BSS) mode
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Rostislav Lisovy <lisovy@gmail.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michal Sojka <sojkam1@fel.cvut.cz>, s.sander@nordsys.de,
+        jan-niklas.meier@volkswagen.de,
+        Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
+Date: Tue, 10 Jun 2014 18:43:08 +0200
+In-Reply-To: <1402322954.11505.10.camel@umadbro> (sfid-20140609_160917_275820_58731C2F)
+References: <1401468984-24575-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
+	 (sfid-20140530_185636_416967_38B72FDB) <1401826536.4157.54.camel@jlt4.sipsolutions.net>
+	 <1402322954.11505.10.camel@umadbro> (sfid-20140609_160917_275820_58731C2F)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rickard,
+On Mon, 2014-06-09 at 16:09 +0200, Rostislav Lisovy wrote:
+> On Tue, 2014-06-03 at 22:15 +0200, Johannes Berg wrote:
+> > it's unclear to me how the bitrate is
+> > selected, are there even different bitrates?
+> 
+> My understanding is that since we are using OFDM we have to support at
+> least 3, 6, 12 Mb/s data rates (says 802.11-2012, Chapter 18.1.1, second
+> paragraph). How to choose it when transmitting? That should probably be
+> defined in some standard built on top of "802.11p" -- the European
+> "Intelligent Transport System" standard ETSI EN 302 663 defines
+> different channels in 5.9 Ghz band along with the "default data
+> rate" (Table 2, Chapter 4.3). For example Control Channel (nr. 180) has
+> data rate 6 Mb/s, while Service Channel 2 (nr. 178) has data rate 12
+> Mb/s.
 
-Thanks for the patch.
+But that probably means then that you have to select the rate in the
+join command.
 
-On Sat, Jun 7, 2014 at 1:31 AM, Rickard Strandqvist
-<rickard_strandqvist@spectrumdigital.se> wrote:
-> Instead of putting the same variable twice,
-> was rather intended to set this value to two different variable.
->
-> This was partly found using a static code analysis program called cppcheck.
->
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+johannes
 
-The commit message and header needs to be improved, apart from that rest of the
-patch looks good.
-
-Acked-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-
-Regards,
---Prabhakar Lad
-
-> ---
->  drivers/media/v4l2-core/v4l2-dv-timings.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/media/v4l2-core/v4l2-dv-timings.c b/drivers/media/v4l2-core/v4l2-dv-timings.c
-> index 48b20df..eb3850c 100644
-> --- a/drivers/media/v4l2-core/v4l2-dv-timings.c
-> +++ b/drivers/media/v4l2-core/v4l2-dv-timings.c
-> @@ -599,10 +599,10 @@ struct v4l2_fract v4l2_calc_aspect_ratio(u8 hor_landscape, u8 vert_portrait)
->                 aspect.denominator = 9;
->         } else if (ratio == 34) {
->                 aspect.numerator = 4;
-> -               aspect.numerator = 3;
-> +               aspect.denominator = 3;
->         } else if (ratio == 68) {
->                 aspect.numerator = 15;
-> -               aspect.numerator = 9;
-> +               aspect.denominator = 9;
->         } else {
->                 aspect.numerator = hor_landscape + 99;
->                 aspect.denominator = 100;
-> --
-> 1.7.10.4
->
