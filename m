@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934734AbaFJAXI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:23:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58678 "EHLO
+	id S934798AbaFJAX3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:23:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58620 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934682AbaFJAWw (ORCPT
+	with ESMTP id S934514AbaFJAWw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jun 2014 20:22:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Zhenzhong Duan <zhenzhong.duan@oracle.com>,
         Daniel Kiper <daniel.kiper@oracle.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 3.4 86/88] xen: populate correct number of pages when across mem boundary (v2)
-Date: Mon,  9 Jun 2014 17:25:36 -0700
-Message-Id: <20140610002427.329153953@linuxfoundation.org>
+Subject: [PATCH 3.4 87/88] xen/p2m: Reserve 8MB of _brk space for P2M leafs when populating back.
+Date: Mon,  9 Jun 2014 17:25:37 -0700
+Message-Id: <20140610002427.364056728@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
 References: <20140610002424.500996570@linuxfoundation.org>
@@ -30,116 +29,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "zhenzhong.duan" <zhenzhong.duan@oracle.com>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit c3d93f880197953f86ab90d9da4744e926b38e33 upstream.
+commit 5bc6f9888db5739abfa0cae279b4b442e4db8049 upstream.
 
-When populate pages across a mem boundary at bootup, the page count
-populated isn't correct. This is due to mem populated to non-mem
-region and ignored.
+When we release pages back during bootup:
 
-Pfn range is also wrongly aligned when mem boundary isn't page aligned.
+Freeing  9d-100 pfn range: 99 pages freed
+Freeing  9cf36-9d0d2 pfn range: 412 pages freed
+Freeing  9f6bd-9f6bf pfn range: 2 pages freed
+Freeing  9f714-9f7bf pfn range: 171 pages freed
+Freeing  9f7e0-9f7ff pfn range: 31 pages freed
+Freeing  9f800-100000 pfn range: 395264 pages freed
+Released 395979 pages of unused memory
 
-For a dom0 booted with dom_mem=3368952K(0xcd9ff000-4k) dmesg diff is:
- [    0.000000] Freeing 9e-100 pfn range: 98 pages freed
- [    0.000000] 1-1 mapping on 9e->100
- [    0.000000] 1-1 mapping on cd9ff->100000
- [    0.000000] Released 98 pages of unused memory
- [    0.000000] Set 206435 page(s) to 1-1 mapping
--[    0.000000] Populating cd9fe-cda00 pfn range: 1 pages added
-+[    0.000000] Populating cd9fe-cd9ff pfn range: 1 pages added
-+[    0.000000] Populating 100000-100061 pfn range: 97 pages added
- [    0.000000] BIOS-provided physical RAM map:
- [    0.000000] Xen: 0000000000000000 - 000000000009e000 (usable)
- [    0.000000] Xen: 00000000000a0000 - 0000000000100000 (reserved)
- [    0.000000] Xen: 0000000000100000 - 00000000cd9ff000 (usable)
- [    0.000000] Xen: 00000000cd9ffc00 - 00000000cda53c00 (ACPI NVS)
-...
- [    0.000000] Xen: 0000000100000000 - 0000000100061000 (usable)
- [    0.000000] Xen: 0000000100061000 - 000000012c000000 (unusable)
-...
- [    0.000000] MEMBLOCK configuration:
-...
--[    0.000000]  reserved[0x4]       [0x000000cd9ff000-0x000000cd9ffbff], 0xc00 bytes
--[    0.000000]  reserved[0x5]       [0x00000100000000-0x00000100060fff], 0x61000 bytes
+We then try to populate those pages back. In the P2M tree however
+the space for those leafs must be reserved - as such we use extend_brk.
+We reserve 8MB of _brk space, which means we can fit over
+1048576 PFNs - which is more than we should ever need.
 
-Related xen memory layout:
-(XEN) Xen-e820 RAM map:
-(XEN)  0000000000000000 - 000000000009ec00 (usable)
-(XEN)  00000000000f0000 - 0000000000100000 (reserved)
-(XEN)  0000000000100000 - 00000000cd9ffc00 (usable)
+Without this, on certain compilation of the kernel we would hit:
 
-Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-[v2: If xen_do_chunk fail(populate), abort this chunk and any others]
-Suggested by David, thanks.
+(XEN) domain_crash_sync called from entry.S
+(XEN) CPU:    0
+(XEN) RIP:    e033:[<ffffffff818aad3b>]
+(XEN) RFLAGS: 0000000000000206   EM: 1   CONTEXT: pv guest
+(XEN) rax: ffffffff81a7c000   rbx: 000000000000003d   rcx: 0000000000001000
+(XEN) rdx: ffffffff81a7b000   rsi: 0000000000001000   rdi: 0000000000001000
+(XEN) rbp: ffffffff81801cd8   rsp: ffffffff81801c98   r8:  0000000000100000
+(XEN) r9:  ffffffff81a7a000   r10: 0000000000000001   r11: 0000000000000003
+(XEN) r12: 0000000000000004   r13: 0000000000000004   r14: 000000000000003d
+(XEN) r15: 00000000000001e8   cr0: 000000008005003b   cr4: 00000000000006f0
+(XEN) cr3: 0000000125803000   cr2: 0000000000000000
+(XEN) ds: 0000   es: 0000   fs: 0000   gs: 0000   ss: e02b   cs: e033
+(XEN) Guest stack trace from rsp=ffffffff81801c98:
+
+.. which is extend_brk hitting a BUG_ON.
+
+Interestingly enough, most of the time we are not going to hit this
+b/c the _brk space is quite large (v3.5):
+ ffffffff81a25000 B __brk_base
+ ffffffff81e43000 B __brk_limit
+= ~4MB.
+
+vs earlier kernels (with this back-ported), the space is smaller:
+ ffffffff81a25000 B __brk_base
+ ffffffff81a7b000 B __brk_limit
+= 344 kBytes.
+
+where we would certainly hit this and hit extend_brk.
+
+Note that git commit c3d93f880197953f86ab90d9da4744e926b38e33
+(xen: populate correct number of pages when across mem boundary (v2))
+exposed this bug).
+
+[v1: Made it 8MB of _brk space instead of 4MB per Jan's suggestion]
+
 Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/xen/setup.c |   23 +++++++++--------------
- 1 file changed, 9 insertions(+), 14 deletions(-)
+ arch/x86/xen/p2m.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -165,25 +165,24 @@ static unsigned long __init xen_populate
- 	unsigned long dest_pfn;
+--- a/arch/x86/xen/p2m.c
++++ b/arch/x86/xen/p2m.c
+@@ -194,6 +194,11 @@ RESERVE_BRK(p2m_mid_mfn, PAGE_SIZE * (MA
+  * boundary violation will require three middle nodes. */
+ RESERVE_BRK(p2m_mid_identity, PAGE_SIZE * 2 * 3);
  
- 	for (i = 0, entry = list; i < map_size; i++, entry++) {
--		unsigned long credits = credits_left;
- 		unsigned long s_pfn;
- 		unsigned long e_pfn;
- 		unsigned long pfns;
- 		long capacity;
- 
--		if (credits <= 0)
-+		if (credits_left <= 0)
- 			break;
- 
- 		if (entry->type != E820_RAM)
- 			continue;
- 
--		e_pfn = PFN_UP(entry->addr + entry->size);
-+		e_pfn = PFN_DOWN(entry->addr + entry->size);
- 
- 		/* We only care about E820 after the xen_start_info->nr_pages */
- 		if (e_pfn <= max_pfn)
- 			continue;
- 
--		s_pfn = PFN_DOWN(entry->addr);
-+		s_pfn = PFN_UP(entry->addr);
- 		/* If the E820 falls within the nr_pages, we want to start
- 		 * at the nr_pages PFN.
- 		 * If that would mean going past the E820 entry, skip it
-@@ -192,23 +191,19 @@ static unsigned long __init xen_populate
- 			capacity = e_pfn - max_pfn;
- 			dest_pfn = max_pfn;
- 		} else {
--			/* last_pfn MUST be within E820_RAM regions */
--			if (*last_pfn && e_pfn >= *last_pfn)
--				s_pfn = *last_pfn;
- 			capacity = e_pfn - s_pfn;
- 			dest_pfn = s_pfn;
- 		}
--		/* If we had filled this E820_RAM entry, go to the next one. */
--		if (capacity <= 0)
--			continue;
- 
--		if (credits > capacity)
--			credits = capacity;
-+		if (credits_left < capacity)
-+			capacity = credits_left;
- 
--		pfns = xen_do_chunk(dest_pfn, dest_pfn + credits, false);
-+		pfns = xen_do_chunk(dest_pfn, dest_pfn + capacity, false);
- 		done += pfns;
--		credits_left -= pfns;
- 		*last_pfn = (dest_pfn + pfns);
-+		if (pfns < capacity)
-+			break;
-+		credits_left -= pfns;
- 	}
- 	return done;
- }
++/* When we populate back during bootup, the amount of pages can vary. The
++ * max we have is seen is 395979, but that does not mean it can't be more.
++ * But some machines can have 3GB I/O holes even. So lets reserve enough
++ * for 4GB of I/O and E820 holes. */
++RESERVE_BRK(p2m_populated, PMD_SIZE * 4);
+ static inline unsigned p2m_top_index(unsigned long pfn)
+ {
+ 	BUG_ON(pfn >= MAX_P2M_PFN);
 
 
