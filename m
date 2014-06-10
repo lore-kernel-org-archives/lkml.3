@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753652AbaFJVYK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 17:24:10 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:55201 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751758AbaFJVYI (ORCPT
+	id S1753641AbaFJVZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 17:25:29 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:47704 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752876AbaFJVZ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 17:24:08 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: todd.e.brandt@linux.intel.com, rafael.j.wysocki@intel.com,
-        linux-pm@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] PM: trace events for device pm callbacks
-Date: Tue, 10 Jun 2014 23:41:33 +0200
-Message-ID: <1740847.aJcviUsT1q@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140610171716.694c8414@gandalf.local.home>
-References: <20140610143122.GA12851@linux.intel.com> <3737184.526pO4COlv@vostro.rjw.lan> <20140610171716.694c8414@gandalf.local.home>
+	Tue, 10 Jun 2014 17:25:28 -0400
+Date: Tue, 10 Jun 2014 22:25:16 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+Cc: Josh Boyer <jwboyer@redhat.com>, David Howells <dhowells@redhat.com>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        keyrings <keyrings@linux-nfs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH 0/4] KEYS: validate key trust with owner and builtin keys
+ only
+Message-ID: <20140610212516.GB10614@srcf.ucam.org>
+References: <1402331614.7064.60.camel@dhcp-9-2-203-236.watson.ibm.com>
+ <cover.1402387862.git.d.kasatkin@samsung.com>
+ <20140610122008.GA31944@hansolo.jdub.homelinux.org>
+ <CACE9dm9Ff6b3J=05QfcgBv-c_y=5qGNq1-ZSfo4smtj34i1e-A@mail.gmail.com>
+ <20140610204021.GA8916@srcf.ucam.org>
+ <CACE9dm9ma=XRZkoCiefva-dKL+LYw-s8QB4xUTkRUZH=5XM9ew@mail.gmail.com>
+ <CACE9dm8zxVXx2zRcfDYUFjqvQYT4MbLevp5U13tfH9Hb6USSJw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACE9dm8zxVXx2zRcfDYUFjqvQYT4MbLevp5U13tfH9Hb6USSJw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, June 10, 2014 05:17:16 PM Steven Rostedt wrote:
-> On Tue, 10 Jun 2014 23:17:46 +0200
-> "Rafael J. Wysocki" <rjw@rjwysocki.net> wrote:
-> 
-> > On Tuesday, June 10, 2014 07:31:22 AM Todd E Brandt wrote:
-> > > Adds two trace events which supply the same info that initcall_debug 
-> > > provides, but via ftrace instead of dmesg. The existing initcall_debug
-> > > calls require the pm_print_times_enabled var to be set (either via
-> > > sysfs or via the kernel cmd line). The new trace events provide all the
-> > > same info as the initcall_debug prints but with less overhead, and also
-> > > with coverage of device prepare and complete device callbacks.
-> > > 
-> > > These events replace the device_pm_report_time event (which has been
-> > > removed). device_pm_callback_start is called first and provides the device
-> > > and callback info. device_pm_callback_end is called after with the
-> > > device name and error info. The time and pid are gathered from the trace
-> > > data headers.
-> > > 
-> > > Signed-off-by: Todd Brandt <todd.e.brandt@intel.com>
-> > 
-> > Steve needs to see this (CCed).
-> 
-> The trace events look fine. Is there anything else you wanted me to
-> look at?
+On Wed, Jun 11, 2014 at 12:17:53AM +0300, Dmitry Kasatkin wrote:
 
-No, that's all, thanks!
+> It is probably just a paranoia...
+> Kconfig MODULE_SIG_UEFI should tell about threat of loading kernel
+> modules from NSA or Lenovo signed by MS or Lenovo keys..
+>
+> This hole is opened without warning...
 
-Rafael
+It's not typically a hole. If an attacker has root they can just replace 
+your bootloader with one signed by a trusted key and then have that 
+modify the kernel before booting it.
 
+If you're using a TPM then you can mitigate this, but if you have a TPM 
+then you're already performing some extra steps during the boot process. 
+Just add a sysfs knob that lets you drop the db keys and incorporate 
+that into the TPM management code.
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
