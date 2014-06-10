@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964891AbaFJAgm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:36:42 -0400
+	id S964868AbaFJAgk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:36:40 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:58469 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934010AbaFJAWc (ORCPT
+	with ESMTP id S934307AbaFJAWd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 20:22:32 -0400
+	Mon, 9 Jun 2014 20:22:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Asias He <asias@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
         Ben Hutchings <ben@decadent.org.uk>,
         Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH 3.4 43/88] virtio_blk: Drop unused request tracking list
-Date: Mon,  9 Jun 2014 17:24:53 -0700
-Message-Id: <20140610002425.965039310@linuxfoundation.org>
+Subject: [PATCH 3.4 44/88] virtio-blk: Fix hot-unplug race in remove method
+Date: Mon,  9 Jun 2014 17:24:54 -0700
+Message-Id: <20140610002425.995054794@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
 References: <20140610002424.500996570@linuxfoundation.org>
@@ -32,86 +32,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Asias He <asias@redhat.com>
 
-commit f65ca1dc6a8c81c6bd72297d4399ec5f4c1f3a01 upstream.
+commit b79d866c8b7014a51f611a64c40546109beaf24a upstream.
 
-Benchmark shows small performance improvement on fusion io device.
+If we reset the virtio-blk device before the requests already dispatched
+to the virtio-blk driver from the block layer are finised, we will stuck
+in blk_cleanup_queue() and the remove will fail.
 
-Before:
-  seq-read : io=1,024MB, bw=19,982KB/s, iops=39,964, runt= 52475msec
-  seq-write: io=1,024MB, bw=20,321KB/s, iops=40,641, runt= 51601msec
-  rnd-read : io=1,024MB, bw=15,404KB/s, iops=30,808, runt= 68070msec
-  rnd-write: io=1,024MB, bw=14,776KB/s, iops=29,552, runt= 70963msec
+blk_cleanup_queue() calls blk_drain_queue() to drain all requests queued
+before DEAD marking. However it will never success if the device is
+already stopped. We'll have q->in_flight[] > 0, so the drain will not
+finish.
 
-After:
-  seq-read : io=1,024MB, bw=20,343KB/s, iops=40,685, runt= 51546msec
-  seq-write: io=1,024MB, bw=20,803KB/s, iops=41,606, runt= 50404msec
-  rnd-read : io=1,024MB, bw=16,221KB/s, iops=32,442, runt= 64642msec
-  rnd-write: io=1,024MB, bw=15,199KB/s, iops=30,397, runt= 68991msec
+How to reproduce the race:
+1. hot-plug a virtio-blk device
+2. keep reading/writing the device in guest
+3. hot-unplug while the device is busy serving I/O
+
+Test:
+~1000 rounds of hot-plug/hot-unplug test passed with this patch.
+
+Changes in v3:
+- Drop blk_abort_queue and blk_abort_request
+- Use __blk_end_request_all to complete request dispatched to driver
+
+Changes in v2:
+- Drop req_in_flight
+- Use virtqueue_detach_unused_buf to get request dispatched to driver
 
 Signed-off-by: Asias He <asias@redhat.com>
 Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Yijing Wang <wangyijing@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/virtio_blk.c |   10 ----------
- 1 file changed, 10 deletions(-)
+ drivers/block/virtio_blk.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
 --- a/drivers/block/virtio_blk.c
 +++ b/drivers/block/virtio_blk.c
-@@ -27,9 +27,6 @@ struct virtio_blk
- 	/* The disk structure for the kernel. */
- 	struct gendisk *disk;
- 
--	/* Request tracking. */
--	struct list_head reqs;
--
- 	mempool_t *pool;
- 
- 	/* Process context for config space updates */
-@@ -53,7 +50,6 @@ struct virtio_blk
- 
- struct virtblk_req
+@@ -573,6 +573,8 @@ static void __devexit virtblk_remove(str
  {
--	struct list_head list;
- 	struct request *req;
- 	struct virtio_blk_outhdr out_hdr;
- 	struct virtio_scsi_inhdr in_hdr;
-@@ -97,7 +93,6 @@ static void blk_done(struct virtqueue *v
- 		}
+ 	struct virtio_blk *vblk = vdev->priv;
+ 	int index = vblk->index;
++	struct virtblk_req *vbr;
++	unsigned long flags;
  
- 		__blk_end_request_all(vbr->req, error);
--		list_del(&vbr->list);
- 		mempool_free(vbr, vblk->pool);
- 	}
- 	/* In case queue is stopped waiting for more buffers. */
-@@ -182,7 +177,6 @@ static bool do_req(struct request_queue
- 		return false;
- 	}
+ 	/* Prevent config work handler from accessing the device. */
+ 	mutex_lock(&vblk->config_lock);
+@@ -585,6 +587,15 @@ static void __devexit virtblk_remove(str
+ 	flush_work(&vblk->config_work);
  
--	list_add_tail(&vbr->list, &vblk->reqs);
- 	return true;
- }
- 
-@@ -435,7 +429,6 @@ static int __devinit virtblk_probe(struc
- 		goto out_free_index;
- 	}
- 
--	INIT_LIST_HEAD(&vblk->reqs);
- 	vblk->vdev = vdev;
- 	vblk->sg_elems = sg_elems;
- 	sg_init_table(vblk->sg, vblk->sg_elems);
-@@ -586,9 +579,6 @@ static void __devexit virtblk_remove(str
- 	vblk->config_enable = false;
- 	mutex_unlock(&vblk->config_lock);
- 
--	/* Nothing should be pending. */
--	BUG_ON(!list_empty(&vblk->reqs));
--
- 	/* Stop all the virtqueues. */
- 	vdev->config->reset(vdev);
- 
+ 	del_gendisk(vblk->disk);
++
++	/* Abort requests dispatched to driver. */
++	spin_lock_irqsave(&vblk->lock, flags);
++	while ((vbr = virtqueue_detach_unused_buf(vblk->vq))) {
++		__blk_end_request_all(vbr->req, -EIO);
++		mempool_free(vbr, vblk->pool);
++	}
++	spin_unlock_irqrestore(&vblk->lock, flags);
++
+ 	blk_cleanup_queue(vblk->disk->queue);
+ 	put_disk(vblk->disk);
+ 	mempool_destroy(vblk->pool);
 
 
