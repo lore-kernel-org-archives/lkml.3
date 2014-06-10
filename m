@@ -1,61 +1,363 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754820AbaFJFBJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 01:01:09 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:51012 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751225AbaFJFBH (ORCPT
+	id S1754727AbaFJFEt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 01:04:49 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:59622 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753448AbaFJFEs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 01:01:07 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@gmail.com>
+	Tue, 10 Jun 2014 01:04:48 -0400
+Date: Tue, 10 Jun 2014 07:04:43 +0200
+From: Ingo Molnar <mingo@kernel.org>
 To: Jiri Olsa <jolsa@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Paul Mackerras <paulus@samba.org>,
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCHv4 00/13] perf tools: Speedup DWARF unwind
-References: <1401892622-30848-1-git-send-email-jolsa@kernel.org>
-Date: Tue, 10 Jun 2014 14:01:05 +0900
-In-Reply-To: <1401892622-30848-1-git-send-email-jolsa@kernel.org> (Jiri Olsa's
-	message of "Wed, 4 Jun 2014 16:36:49 +0200")
-Message-ID: <87wqcpbbou.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+Subject: Re: [PATCH 15/15] perf tools: Support spark lines in perf stat
+Message-ID: <20140610050443.GA14522@gmail.com>
+References: <1402344150-14860-1-git-send-email-jolsa@kernel.org>
+ <1402344150-14860-16-git-send-email-jolsa@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1402344150-14860-16-git-send-email-jolsa@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
 
-On Wed,  4 Jun 2014 16:36:49 +0200, Jiri Olsa wrote:
-> hi,
-> trying to speedup DWARF unwind report code by factoring
-> related code:
->   - caching sample's registers access
->   - keep dso data file descriptor open for the
->     life of the dso object
->   - replace dso cache code by mapping dso data file
->     directly for the life of the dso object
->
-> The speedup is mainly for libunwind unwind. The libdw will benefit
-> mainly from cached registers access, because it handles dso data
-> accesses by itself.. and anyway it's still faster ;-).
->
-> On ~11GB perf data file with dwarf unwind data I've got
-> around 30% speed up.
->
-> I've also got possitive test feedback from Jean Pihet:
->   https://wiki.linaro.org/LEG/Engineering/TOOLS/perf-callstack-unwinding#Speed_improvement
+* Jiri Olsa <jolsa@kernel.org> wrote:
 
-For the series,
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> perf stat -rX prints the stddev for multiple measurements.
 
-Acked-by: Namhyung Kim <namhyung@kernel.org>
+Call it "--repeat X", that's how most people know it.
+
+> Just looking at the stddev for judging the quality of the data
+> is a bit dangerous The simplest sanity check is to just look
+
+"Dangerous?". Unexplained FUD. Also a missing perid.
+
+> at a simple plot. This patchs add a sparkline to the end
+> of the measurements to make it simple to judge the data.
+
+Should explain what a 'sparkline' is when it's first mentioned, not 2 
+sentences later.
+
+> The sparkline only uses UTF-8, so should be readable
+> in all modern tools and terminals.
+> 
+> The sparkline is between the minimum and maximum of the data,
+> so it's mainly a indicator of variance. To keep the code
+> simple and make the output not too wide only the first
+> 8 values are printed. If more values are there it adds '..'
+> 
+> The code is inspired by Zach Holman's spark shell script.
+
+Zach Holman should be on Cc:.
+
+> Example output (view in non-proportial font):
+> 
+>  Performance counter stats for 'true' (10 runs):
+> 
+>           0.175672      task-clock (msec)         #    0.555 CPUs utilized            ( +-  1.77% ) █▄▁▁▁▁▁▁..
+>                  0      context-switches          #    0.000 K/sec
+>                  0      cpu-migrations            #    0.000 K/sec
+>                114      page-faults               #    0.647 M/sec                    ( +-  0.14% ) ▁█▁▁████..
+>            520,798      cycles                    #    2.965 GHz                      ( +-  1.75% ) █▄▁▁▁▁▁▁..
+>            433,525      instructions              #    0.83  insns per cycle          ( +-  0.28% ) ▅▇▅▄▇█▁▆..
+>             83,012      branches                  #  472.537 M/sec                    ( +-  0.31% ) ▅▇▆▄▇█▁▆..
+>              3,157      branch-misses             #    3.80% of all branches          ( +-  2.55% ) ▇█▃▅▁▃▁▂..
+> 
+>        0.000316660 seconds time elapsed                                          ( +-  1.78% ) █▅▁▁▁▁▁▁..
+
+The noise data is not aligned vertically in the changelog - is it in 
+the real code? It should be.
+
+> As you can see even in the most simple run there are quite 
+> interesting patterns. The time sparkline suggests it would be also 
+> useful to have an option to throw the first measurement away.
+
+First two should be thrown away, probably, to reduce the resulting 
+stddev.
+
+> Known issues:
+> - Makes the perf stat output wider. Could be adjust by shrinking
+> some white space. Not done so far.
+> - No output for -A/--per-socket/--per-core with -rX. This code
+> is missing the basic noise detection code. Once it's added there
+> sparklines could be shown too.
+
+The feauture looks useful, but at minimum the second shortcoming 
+should be fixed first in a separate patch, before applying new 
+features and further complicating the code.
+
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> Link: http://lkml.kernel.org/r/1401838086-17750-1-git-send-email-andi@firstfloor.org
+> Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+> ---
+>  tools/perf/Documentation/perf-stat.txt |  4 ++++
+>  tools/perf/Makefile.perf               |  1 +
+>  tools/perf/builtin-stat.c              | 12 ++++++++++++
+>  tools/perf/util/spark.c                | 31 +++++++++++++++++++++++++++++++
+>  tools/perf/util/spark.h                |  4 ++++
+>  tools/perf/util/stat.c                 | 34 ++++++++++++++++++++++++++++++++++
+>  tools/perf/util/stat.h                 | 10 ++++++++++
+>  7 files changed, 96 insertions(+)
+>  create mode 100644 tools/perf/util/spark.c
+>  create mode 100644 tools/perf/util/spark.h
+> 
+> diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
+> index 29ee857..840c1db 100644
+> --- a/tools/perf/Documentation/perf-stat.txt
+> +++ b/tools/perf/Documentation/perf-stat.txt
+> @@ -53,6 +53,10 @@ OPTIONS
+>  -r::
+>  --repeat=<n>::
+>  	repeat command and print average + stddev (max: 100). 0 means forever.
+> +	In addition it prints a spark line (when not in CSV mode), which visualizes the
+> +	variance between minimum and maximum of the measurements. This allows a simple sanity
+> +	check of the measurements. Only 8 values are printed, when more are available
+> +	it adds ..
+>  
+>  -B::
+>  --big-num::
+> diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+> index 9670a16..90b3aa7 100644
+> --- a/tools/perf/Makefile.perf
+> +++ b/tools/perf/Makefile.perf
+> @@ -359,6 +359,7 @@ LIB_OBJS += $(OUTPUT)util/trace-event-scripting.o
+>  LIB_OBJS += $(OUTPUT)util/trace-event.o
+>  LIB_OBJS += $(OUTPUT)util/svghelper.o
+>  LIB_OBJS += $(OUTPUT)util/sort.o
+> +LIB_OBJS += $(OUTPUT)util/spark.o
+>  LIB_OBJS += $(OUTPUT)util/hist.o
+>  LIB_OBJS += $(OUTPUT)util/probe-event.o
+>  LIB_OBJS += $(OUTPUT)util/util.o
+> diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+> index 65a151e..cb0f7c5 100644
+> --- a/tools/perf/builtin-stat.c
+> +++ b/tools/perf/builtin-stat.c
+> @@ -1176,6 +1176,9 @@ static void print_aggr(char *prefix)
+>  				if (run != ena)
+>  					fprintf(output, "  (%.2f%%)",
+>  						100.0 * run / ena);
+> +
+> +				fputc(' ', output);
+> +				print_stat_spark(output, counter->priv);
+>  			}
+>  			fputc('\n', output);
+>  		}
+> @@ -1229,6 +1232,9 @@ static void print_counter_aggr(struct perf_evsel *counter, char *prefix)
+>  		return;
+>  	}
+>  
+> +	fputc(' ', output);
+> +	print_stat_spark(output, counter->priv);
+> +
+>  	if (scaled) {
+>  		double avg_enabled, avg_running;
+>  
+> @@ -1295,6 +1301,9 @@ static void print_counter(struct perf_evsel *counter, char *prefix)
+>  			if (run != ena)
+>  				fprintf(output, "  (%.2f%%)",
+>  					100.0 * run / ena);
+> +
+> +			fputc(' ', output);
+> +			print_stat_spark(output, counter->priv);
+>  		}
+>  		fputc('\n', output);
+>  	}
+> @@ -1355,6 +1364,9 @@ static void print_stat(int argc, const char **argv)
+>  			fprintf(output, "                                        ");
+>  			print_noise_pct(stddev_stats(&walltime_nsecs_stats),
+>  					avg_stats(&walltime_nsecs_stats));
+> +
+> +			fputc(' ', output);
+> +			print_stat_spark(output, &walltime_nsecs_stats);
+
+
+Why is that 2-line pattern repeated 4 times?
+
+>  		}
+>  		fprintf(output, "\n\n");
+>  	}
+> diff --git a/tools/perf/util/spark.c b/tools/perf/util/spark.c
+> new file mode 100644
+> index 0000000..5a1033f
+> --- /dev/null
+> +++ b/tools/perf/util/spark.c
+> @@ -0,0 +1,31 @@
+> +#include <stdio.h>
+> +#include <limits.h>
+> +#include "spark.h"
+> +
+> +#define NUM_SPARKS 8
+> +#define SPARK_SHIFT 8
+> +
+> +/* Print spark lines on outf for numval values in val. */
+> +void print_spark(FILE *outf, unsigned long long *val, int numval)
+
+The output file is called 'output' in the calling context, there's no 
+reason to randomly depart from that convention and introduce a random 
+new one: not a single existing line in tools/perf/ calls an output 
+file 'outf'.
+
+Also, I don't see 'numval' used anywhere in perf. The canonical naming 
+would be different.
+
+> +{
+> +	static const char *ticks[NUM_SPARKS] = {
+> +		"▁",  "▂", "▃", "▄", "▅", "▆", "▇", "█"
+> +	};
+> +	int i;
+> +	unsigned long long min = ULLONG_MAX, max = 0, f;
+
+min/max is a somewhat sloppy name as well (easy to confuse with 
+min()/max()), should be somehing like min_val/max_val, which is in 
+line .
+
+> +
+> +	for (i = 0; i < numval; i++) {
+> +		if (val[i] < min)
+> +			min = val[i];
+> +		if (val[i] > max)
+> +			max = val[i];
+> +	}
+> +	f = ((max - min) << SPARK_SHIFT) / (NUM_SPARKS - 1);
+> +	if (f < 1)
+> +		f = 1;
+> +	for (i = 0; i < numval; i++) {
+> +		int index = ((val[i] - min) << SPARK_SHIFT) / f;
+> +		if (index >= 0 && index < NUM_SPARKS)
+> +			fputs(ticks[index], outf);
+
+That's not primarily an 'index', it's an indexed 'variance' value. So 
+'variance_idx' or so.
+
+> +	}
+> +}
+> diff --git a/tools/perf/util/spark.h b/tools/perf/util/spark.h
+> new file mode 100644
+> index 0000000..d9ebc94
+> --- /dev/null
+> +++ b/tools/perf/util/spark.h
+> @@ -0,0 +1,4 @@
+> +#ifndef SPARK_H
+> +#define SPARK_H 1
+> +void print_spark(FILE *outf, unsigned long long *val, int numval);
+> +#endif
+> diff --git a/tools/perf/util/stat.c b/tools/perf/util/stat.c
+> index 6506b3d..a7c02c5 100644
+> --- a/tools/perf/util/stat.c
+> +++ b/tools/perf/util/stat.c
+> @@ -1,10 +1,16 @@
+>  #include <math.h>
+> +#include <stdio.h>
+>  
+>  #include "stat.h"
+> +#include "spark.h"
+>  
+>  void update_stats(struct stats *stats, u64 val)
+>  {
+>  	double delta;
+> +	int n = stats->n;
+> +
+> +	if (n < NUM_SPARK_VALS)
+> +		stats->svals[n] = val;
+>  
+>  	stats->n++;
+>  	delta = val - stats->mean;
+>	stats->mean += delta / stats->n;
+
+It is absolutely sloppy, potentially misleading and unrobust to put an 
+integer rounded value of 'double n' into a local variable named 'int 
+n' ...
+
+> @@ -61,3 +67,31 @@ double rel_stddev_stats(double stddev, double avg)
+>  
+>  	return pct;
+>  }
+> +
+> +static int all_zero(unsigned long long *vals, int len)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i < len; i++)
+> +		if (vals[i] != 0)
+> +			return 0;
+> +	return 1;
+> +}
+> +
+> +void print_stat_spark(FILE *f, struct stats *stat)
+> +{
+> +	int len;
+> +
+> +	if (stat->n <= 1)
+> +		return;
+> +
+> +	len = stat->n;
+> +	if (len > NUM_SPARK_VALS)
+> +		len = NUM_SPARK_VALS;
+> +	if (all_zero(stat->svals, len))
+> +		return;
+> +
+> +	print_spark(f, stat->svals, len);
+> +	if (stat->n > NUM_SPARK_VALS)
+> +		fputs("..", f);
+> +}
+> diff --git a/tools/perf/util/stat.h b/tools/perf/util/stat.h
+> index 5667fc3..a049f03 100644
+> --- a/tools/perf/util/stat.h
+> +++ b/tools/perf/util/stat.h
+> @@ -1,12 +1,16 @@
+>  #ifndef __PERF_STATS_H
+>  #define __PERF_STATS_H
+>  
+> +#include <stdio.h>
+>  #include <linux/types.h>
+>  
+> +#define NUM_SPARK_VALS 8 /* support spark line on first N items */
+> +
+>  struct stats
+>  {
+>  	double n, mean, M2;
+>  	u64 max, min;
+> +	unsigned long long svals[NUM_SPARK_VALS];
+>  };
+
+The structure's increasing size justifies proper vertical alignment.
+
+>  
+>  void update_stats(struct stats *stats, u64 val);
+> @@ -14,12 +18,18 @@ double avg_stats(struct stats *stats);
+>  double stddev_stats(struct stats *stats);
+>  double rel_stddev_stats(double stddev, double avg);
+>  
+> +void print_stat_spark(FILE *f, struct stats *stat);
+> +
+>  static inline void init_stats(struct stats *stats)
+>  {
+> +	int i;
+> +
+>  	stats->n    = 0.0;
+>  	stats->mean = 0.0;
+>  	stats->M2   = 0.0;
+>  	stats->min  = (u64) -1;
+>  	stats->max  = 0;
+> +	for (i = 0; i < NUM_SPARK_VALS; i++)
+> +		stats->svals[i] = 0;
+
+memset(), or introduce a new helper, memclear_struct():
+
+ #define memclear_struct(struct_ptr) memset(struct_ptr, 0, sizeof(*(struct_ptr)))
+
+Also, init_stats() should now probably move into util/stat.c. (in a 
+separate patch preparing these changes.)
 
 Thanks,
-Namhyung
+
+	Ingo
