@@ -1,23 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932665AbaFJUEY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 16:04:24 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35494 "EHLO
+	id S1755312AbaFJTxK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 15:53:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35474 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752736AbaFJTxP (ORCPT
+	with ESMTP id S1755289AbaFJTxG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:53:15 -0400
+	Tue, 10 Jun 2014 15:53:06 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
+Cc: Felix Fietkau <nbd@openwrt.org>,
+        Helmut Schaa <helmut.schaa@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        =?UTF-8?q?Fejes=20J=C3=B3zsef?= <jozsef.fejes@gmail.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 060/160] ext4: fix jbd2 warning under heavy xattr load
-Date: Tue, 10 Jun 2014 12:45:00 -0700
-Message-Id: <1402429600-20477-61-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 050/160] ath9k: Fix sequence number assignment for non-data frames
+Date: Tue, 10 Jun 2014 12:44:50 -0700
+Message-Id: <1402429600-20477-51-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,133 +33,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Helmut Schaa <helmut.schaa@googlemail.com>
 
-commit ec4cb1aa2b7bae18dd8164f2e9c7c51abcf61280 upstream.
+commit 5998be879719384af2014b79697eed6e38ee2706 upstream.
 
-When heavily exercising xattr code the assertion that
-jbd2_journal_dirty_metadata() shouldn't return error was triggered:
+Since commit 558ff225de80ac95b132d3a115ddadcd64498b4f (ath9k: fix
+ps-poll responses under a-mpdu sessions) non-data frames would have
+gotten a sequence number from a TIDs sequence counter instead of
+using the global sequence counter.
 
-WARNING: at /srv/autobuild-ceph/gitbuilder.git/build/fs/jbd2/transaction.c:1237
-jbd2_journal_dirty_metadata+0x1ba/0x260()
+This can lead to instable connections.
 
-CPU: 0 PID: 8877 Comm: ceph-osd Tainted: G    W 3.10.0-ceph-00049-g68d04c9 #1
-Hardware name: Dell Inc. PowerEdge R410/01V648, BIOS 1.6.3 02/07/2011
- ffffffff81a1d3c8 ffff880214469928 ffffffff816311b0 ffff880214469968
- ffffffff8103fae0 ffff880214469958 ffff880170a9dc30 ffff8802240fbe80
- 0000000000000000 ffff88020b366000 ffff8802256e7510 ffff880214469978
-Call Trace:
- [<ffffffff816311b0>] dump_stack+0x19/0x1b
- [<ffffffff8103fae0>] warn_slowpath_common+0x70/0xa0
- [<ffffffff8103fb2a>] warn_slowpath_null+0x1a/0x20
- [<ffffffff81267c2a>] jbd2_journal_dirty_metadata+0x1ba/0x260
- [<ffffffff81245093>] __ext4_handle_dirty_metadata+0xa3/0x140
- [<ffffffff812561f3>] ext4_xattr_release_block+0x103/0x1f0
- [<ffffffff81256680>] ext4_xattr_block_set+0x1e0/0x910
- [<ffffffff8125795b>] ext4_xattr_set_handle+0x38b/0x4a0
- [<ffffffff810a319d>] ? trace_hardirqs_on+0xd/0x10
- [<ffffffff81257b32>] ext4_xattr_set+0xc2/0x140
- [<ffffffff81258547>] ext4_xattr_user_set+0x47/0x50
- [<ffffffff811935ce>] generic_setxattr+0x6e/0x90
- [<ffffffff81193ecb>] __vfs_setxattr_noperm+0x7b/0x1c0
- [<ffffffff811940d4>] vfs_setxattr+0xc4/0xd0
- [<ffffffff8119421e>] setxattr+0x13e/0x1e0
- [<ffffffff811719c7>] ? __sb_start_write+0xe7/0x1b0
- [<ffffffff8118f2e8>] ? mnt_want_write_file+0x28/0x60
- [<ffffffff8118c65c>] ? fget_light+0x3c/0x130
- [<ffffffff8118f2e8>] ? mnt_want_write_file+0x28/0x60
- [<ffffffff8118f1f8>] ? __mnt_want_write+0x58/0x70
- [<ffffffff811946be>] SyS_fsetxattr+0xbe/0x100
- [<ffffffff816407c2>] system_call_fastpath+0x16/0x1b
+To fix this only select the correct TID if we are processing a
+data frame. Furthermore, prevent non-data frames to get a sequence
+number from a TID sequence counter by adding a check to
+ath_tx_setup_buffer.
 
-The reason for the warning is that buffer_head passed into
-jbd2_journal_dirty_metadata() didn't have journal_head attached. This is
-caused by the following race of two ext4_xattr_release_block() calls:
-
-CPU1                                CPU2
-ext4_xattr_release_block()          ext4_xattr_release_block()
-lock_buffer(bh);
-/* False */
-if (BHDR(bh)->h_refcount == cpu_to_le32(1))
-} else {
-  le32_add_cpu(&BHDR(bh)->h_refcount, -1);
-  unlock_buffer(bh);
-                                    lock_buffer(bh);
-                                    /* True */
-                                    if (BHDR(bh)->h_refcount == cpu_to_le32(1))
-                                      get_bh(bh);
-                                      ext4_free_blocks()
-                                        ...
-                                        jbd2_journal_forget()
-                                          jbd2_journal_unfile_buffer()
-                                          -> JH is gone
-  error = ext4_handle_dirty_xattr_block(handle, inode, bh);
-  -> triggers the warning
-
-We fix the problem by moving ext4_handle_dirty_xattr_block() under the
-buffer lock. Sadly this cannot be done in nojournal mode as that
-function can call sync_dirty_buffer() which would deadlock. Luckily in
-nojournal mode the race is harmless (we only dirty already freed buffer)
-and thus for nojournal mode we leave the dirtying outside of the buffer
-lock.
-
-Reported-by: Sage Weil <sage@inktank.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Helmut Schaa <helmut.schaa@googlemail.com>
+Acked-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Cc: Fejes József <jozsef.fejes@gmail.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/ext4/xattr.c | 23 +++++++++++++++++++----
- 1 file changed, 19 insertions(+), 4 deletions(-)
+ drivers/net/wireless/ath/ath9k/xmit.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/ext4/xattr.c b/fs/ext4/xattr.c
-index 1423c48..298e9c8 100644
---- a/fs/ext4/xattr.c
-+++ b/fs/ext4/xattr.c
-@@ -517,8 +517,8 @@ static void ext4_xattr_update_super_block(handle_t *handle,
- }
+diff --git a/drivers/net/wireless/ath/ath9k/xmit.c b/drivers/net/wireless/ath/ath9k/xmit.c
+index 0471c6a..6fa2d35 100644
+--- a/drivers/net/wireless/ath/ath9k/xmit.c
++++ b/drivers/net/wireless/ath/ath9k/xmit.c
+@@ -2074,7 +2074,7 @@ static struct ath_buf *ath_tx_setup_buffer(struct ath_softc *sc,
  
- /*
-- * Release the xattr block BH: If the reference count is > 1, decrement
-- * it; otherwise free the block.
-+ * Release the xattr block BH: If the reference count is > 1, decrement it;
-+ * otherwise free the block.
-  */
- static void
- ext4_xattr_release_block(handle_t *handle, struct inode *inode,
-@@ -538,16 +538,31 @@ ext4_xattr_release_block(handle_t *handle, struct inode *inode,
- 		if (ce)
- 			mb_cache_entry_free(ce);
- 		get_bh(bh);
-+		unlock_buffer(bh);
- 		ext4_free_blocks(handle, inode, bh, 0, 1,
- 				 EXT4_FREE_BLOCKS_METADATA |
- 				 EXT4_FREE_BLOCKS_FORGET);
--		unlock_buffer(bh);
- 	} else {
- 		le32_add_cpu(&BHDR(bh)->h_refcount, -1);
- 		if (ce)
- 			mb_cache_entry_release(ce);
-+		/*
-+		 * Beware of this ugliness: Releasing of xattr block references
-+		 * from different inodes can race and so we have to protect
-+		 * from a race where someone else frees the block (and releases
-+		 * its journal_head) before we are done dirtying the buffer. In
-+		 * nojournal mode this race is harmless and we actually cannot
-+		 * call ext4_handle_dirty_xattr_block() with locked buffer as
-+		 * that function can call sync_dirty_buffer() so for that case
-+		 * we handle the dirtying after unlocking the buffer.
-+		 */
-+		if (ext4_handle_valid(handle))
-+			error = ext4_handle_dirty_xattr_block(handle, inode,
-+							      bh);
- 		unlock_buffer(bh);
--		error = ext4_handle_dirty_xattr_block(handle, inode, bh);
-+		if (!ext4_handle_valid(handle))
-+			error = ext4_handle_dirty_xattr_block(handle, inode,
-+							      bh);
- 		if (IS_SYNC(inode))
- 			ext4_handle_sync(handle);
- 		dquot_free_block(inode, EXT4_C2B(EXT4_SB(inode->i_sb), 1));
+ 	ATH_TXBUF_RESET(bf);
+ 
+-	if (tid) {
++	if (tid && ieee80211_is_data_present(hdr->frame_control)) {
+ 		fragno = le16_to_cpu(hdr->seq_ctrl) & IEEE80211_SCTL_FRAG;
+ 		seqno = tid->seq_next;
+ 		hdr->seq_ctrl = cpu_to_le16(tid->seq_next << IEEE80211_SEQ_SEQ_SHIFT);
+@@ -2197,7 +2197,7 @@ int ath_tx_start(struct ieee80211_hw *hw, struct sk_buff *skb,
+ 		txq->stopped = true;
+ 	}
+ 
+-	if (txctl->an)
++	if (txctl->an && ieee80211_is_data_present(hdr->frame_control))
+ 		tid = ath_get_skb_tid(sc, txctl->an, skb);
+ 
+ 	if (info->flags & IEEE80211_TX_CTL_PS_RESPONSE) {
 -- 
 1.9.1
 
