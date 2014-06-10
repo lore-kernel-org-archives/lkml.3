@@ -1,368 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753240AbaFJSyA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 14:54:00 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:59026 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752956AbaFJSw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 14:52:56 -0400
-From: Murali Karicheri <m-karicheri2@ti.com>
-To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>
-CC: Murali Karicheri <m-karicheri2@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Mohit Kumar <mohit.kumar@st.com>,
-        Jingoo Han <jg1.han@samsung.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Pratyush Anand <pratyush.anand@st.com>,
-        Richard Zhu <r65037@freescale.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>, Marek Vasut <marex@denx.de>,
-        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>
-Subject: [PATCH v2 6/8] phy: Add serdes phy driver for keystone
-Date: Tue, 10 Jun 2014 14:51:25 -0400
-Message-ID: <1402426287-31157-7-git-send-email-m-karicheri2@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1402426287-31157-1-git-send-email-m-karicheri2@ti.com>
-References: <1402426287-31157-1-git-send-email-m-karicheri2@ti.com>
+	id S1753262AbaFJSyN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 14:54:13 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:58284 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750822AbaFJSyK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 14:54:10 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CAKbGBLi1hRxe03EB70HOYRTuVhHkAyTnhfv8HFXEwatP6Qn8tA@mail.gmail.com>
+References: <alpine.LNX.2.00.1406101517300.9378@pobox.suse.cz> <CA+55aFyY7_=3xt-0KE=-fmb+kLurxkBmh8TZWgDZMi_RVpKBpg@mail.gmail.com> <CAKbGBLi1hRxe03EB70HOYRTuVhHkAyTnhfv8HFXEwatP6Qn8tA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH] tell gcc optimizer to never introduce new data races
+From: Richard Biener <richard.guenther@gmail.com>
+Date: Tue, 10 Jun 2014 20:54:09 +0200
+To: Steven Noonan <steven@uplinklabs.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+CC: Jiri Kosina <jkosina@suse.cz>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Martin Jambor <mjambor@suse.cz>, Petr Mladek <pmladek@suse.cz>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Message-ID: <fb599019-daba-4d09-8524-fa692bd1f3a4@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This phy driver added to support keystone PCI driver. This is
-a generic phy driver and can work with multiple hardware IPs
-available on Keystone SoC. The hw vendor that provides the phy
-hw published only registers and their values. So this driver
-uses these hard coded values to initialize the phy.
+On June 10, 2014 8:04:13 PM CEST, Steven Noonan <steven@uplinklabs.net> wrote:
+>On Tue, Jun 10, 2014 at 10:46 AM, Linus Torvalds
+><torvalds@linux-foundation.org> wrote:
+>> On Tue, Jun 10, 2014 at 6:23 AM, Jiri Kosina <jkosina@suse.cz> wrote:
+>>> We have been chasing a memory corruption bug, which turned out to be
+>>> caused by very old gcc (4.3.4), which happily turned conditional
+>load into
+>>> a non-conditional one, and that broke correctness (the condition was
+>met
+>>> only if lock was held) and corrupted memory.
+>>
+>> Just out of interest, can you point to the particular kernel code
+>that
+>> caused this? I think that's more interesting than the example program
+>> you show - which I'm sure is really nice for gcc developers as an
+>> example, but from a kernel standpoint I think it's more important to
+>> show the particular problems this caused for the kernel?
+>>
+>
+>Jiri, is there a workaround for compilers that don't support '--param
+>allow-store-data-races=0'? For example:
 
-Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+The optimization that purposely performs the undesired transform is loop store motion which is part of the tree loop invariant motion optimization. You can disable that with -fno-tree-loop-im.
 
-CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
-CC: Russell King <linux@arm.linux.org.uk>
-CC: Grant Likely <grant.likely@linaro.org>
-CC: Rob Herring <robh+dt@kernel.org>
-CC: Mohit Kumar <mohit.kumar@st.com>
-CC: Jingoo Han <jg1.han@samsung.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>
-CC: Pratyush Anand <pratyush.anand@st.com>
-CC: Richard Zhu <r65037@freescale.com>
-CC: Kishon Vijay Abraham I <kishon@ti.com>
-CC: Marek Vasut <marex@denx.de>
-CC: Arnd Bergmann <arnd@arndb.de>
-CC: Pawel Moll <pawel.moll@arm.com>
-CC: Mark Rutland <mark.rutland@arm.com>
-CC: Ian Campbell <ijc+devicetree@hellion.org.uk>
-CC: Kumar Gala <galak@codeaurora.org>
-CC: Randy Dunlap <rdunlap@infradead.org>
-CC: Grant Likely <grant.likely@linaro.org> 
+That the bug didn't appear with newer compilers was due to lucky decisions to not inline a particular function.
 
----
- .../bindings/phy/phy-keystone-serdes.txt           |   25 +++
- drivers/phy/Kconfig                                |    6 +
- drivers/phy/Makefile                               |    1 +
- drivers/phy/phy-keystone-serdes.c                  |  230 ++++++++++++++++++++
- 4 files changed, 262 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/phy/phy-keystone-serdes.txt
- create mode 100644 drivers/phy/phy-keystone-serdes.c
+Richard.
 
-diff --git a/Documentation/devicetree/bindings/phy/phy-keystone-serdes.txt b/Documentation/devicetree/bindings/phy/phy-keystone-serdes.txt
-new file mode 100644
-index 0000000..612c7b5
---- /dev/null
-+++ b/Documentation/devicetree/bindings/phy/phy-keystone-serdes.txt
-@@ -0,0 +1,25 @@
-+TI Keystone SerDes Phy: DT documentation
-+=======================================
-+
-+Required properties:
-+ - compatible: should be "ti,keystone-serdes-phy";
-+ - reg: base address and length of the SerDes register set
-+ - reg-names: should be "reg_serdes", name of the reg SerDes register set
-+ - #phy-cells: from the generic phy bindings, must be 0;
-+
-+Exampel for Keystone PCIE,
-+
-+		pcie0_phy: serdes_phy@2320000 {
-+			#phy-cells = <0>;
-+			compatible = "ti,keystone-serdes-phy";
-+			reg = <0x02320000 0x4000>;
-+			reg-names = "reg_serdes";
-+		};
-+
-+
-+Then the PHY can be used in PCIe controller node as
-+
-+pcie@21800000 {
-+	phys = <&pcie0_phy>;
-+	phy-names = "pcie-phy";
-+};
-diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-index 4906c27..8b652a4 100644
---- a/drivers/phy/Kconfig
-+++ b/drivers/phy/Kconfig
-@@ -167,4 +167,10 @@ config PHY_XGENE
- 	help
- 	  This option enables support for APM X-Gene SoC multi-purpose PHY.
- 
-+config PHY_TI_KEYSTONE_SERDES
-+	bool "TI Keystone SerDes PHY support"
-+	depends on ARCH_KEYSTONE
-+	select GENERIC_PHY
-+	help
-+	  This option enables support for TI Keystone SerDes PHY.
- endmenu
-diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
-index 7728518..c9f2dd4 100644
---- a/drivers/phy/Makefile
-+++ b/drivers/phy/Makefile
-@@ -19,3 +19,4 @@ phy-exynos-usb2-$(CONFIG_PHY_EXYNOS4210_USB2)	+= phy-exynos4210-usb2.o
- phy-exynos-usb2-$(CONFIG_PHY_EXYNOS4X12_USB2)	+= phy-exynos4x12-usb2.o
- phy-exynos-usb2-$(CONFIG_PHY_EXYNOS5250_USB2)	+= phy-exynos5250-usb2.o
- obj-$(CONFIG_PHY_XGENE)			+= phy-xgene.o
-+obj-$(CONFIG_PHY_TI_KEYSTONE_SERDES)	+= phy-keystone-serdes.o
-diff --git a/drivers/phy/phy-keystone-serdes.c b/drivers/phy/phy-keystone-serdes.c
-new file mode 100644
-index 0000000..6d52ab4
---- /dev/null
-+++ b/drivers/phy/phy-keystone-serdes.c
-@@ -0,0 +1,230 @@
-+/*
-+ * Keystone SerDes Phy driver code
-+ *
-+ * Copyright (C) 2013-2014 Texas Instruments, Inc.
-+ *		http://www.ti.com
-+ *
-+ * Author: Murali Karicheri <m-karicheri2@ti.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/delay.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_platform.h>
-+#include <linux/phy/phy.h>
-+#include <linux/platform_device.h>
-+
-+#define reg_dump(addr, mask) \
-+		pr_debug("reg %p has value %x\n", (void *)addr, \
-+			(readl(addr) & ~mask))
-+
-+/* mask bits point to bits being modified */
-+#define reg_rmw(addr, value, mask) \
-+		writel(((readl(addr) & (~(mask))) | \
-+			(value & (mask))), (addr))
-+struct serdes_config {
-+	u32 reg;
-+	u32 val;
-+	u32 mask;
-+};
-+
-+struct ks_serdes_phy {
-+	struct device *dev;
-+	void __iomem *base;
-+};
-+
-+static struct serdes_config ks_100mhz_5gbps_serdes[] = {
-+	{0x0000, 0x00000800, 0x0000ff00},
-+	{0x0060, 0x00041c5c, 0x00ffffff},
-+	{0x0064, 0x0343c700, 0xffffff00},
-+	{0x006c, 0x00000012, 0x000000ff},
-+	{0x0068, 0x00070000, 0x00ff0000},
-+	{0x0078, 0x0000c000, 0x0000ff00},
-+
-+	{0x0200, 0x00000000, 0x000000ff},
-+	{0x0204, 0x5e000080, 0xff0000ff},
-+	{0x0208, 0x00000006, 0x000000ff},
-+	{0x0210, 0x00000023, 0x000000ff},
-+	{0x0214, 0x2e003060, 0xff00ffff},
-+	{0x0218, 0x76000000, 0xff000000},
-+	{0x022c, 0x00200002, 0x00ff00ff},
-+	{0x02a0, 0xffee0000, 0xffff0000},
-+	{0x02a4, 0x0000000f, 0x000000ff},
-+	{0x0204, 0x5e000000, 0xff000000},
-+	{0x0208, 0x00000006, 0x000000ff},
-+	{0x0278, 0x00002000, 0x0000ff00},
-+	{0x0280, 0x00280028, 0x00ff00ff},
-+	{0x0284, 0x2d0f0385, 0xffffffff},
-+	{0x0250, 0xd0000000, 0xff000000},
-+	{0x0284, 0x00000085, 0x000000ff},
-+	{0x0294, 0x20000000, 0xff000000},
-+
-+	{0x0400, 0x00000000, 0x000000ff},
-+	{0x0404, 0x5e000080, 0xff0000ff},
-+	{0x0408, 0x00000006, 0x000000ff},
-+	{0x0410, 0x00000023, 0x000000ff},
-+	{0x0414, 0x2e003060, 0xff00ffff},
-+	{0x0418, 0x76000000, 0xff000000},
-+	{0x042c, 0x00200002, 0x00ff00ff},
-+	{0x04a0, 0xffee0000, 0xffff0000},
-+	{0x04a4, 0x0000000f, 0x000000ff},
-+	{0x0404, 0x5e000000, 0xff000000},
-+	{0x0408, 0x00000006, 0x000000ff},
-+	{0x0478, 0x00002000, 0x0000ff00},
-+	{0x0480, 0x00280028, 0x00ff00ff},
-+	{0x0484, 0x2d0f0385, 0xffffffff},
-+	{0x0450, 0xd0000000, 0xff000000},
-+	{0x0494, 0x20000000, 0xff000000},
-+
-+	{0x0604, 0x00000080, 0x000000ff},
-+	{0x0600, 0x00000000, 0x000000ff},
-+	{0x0604, 0x5e000000, 0xff000000},
-+	{0x0608, 0x00000006, 0x000000ff},
-+	{0x0610, 0x00000023, 0x000000ff},
-+	{0x0614, 0x2e003060, 0xff00ffff},
-+	{0x0618, 0x76000000, 0xff000000},
-+	{0x062c, 0x00200002, 0x00ff00ff},
-+	{0x06a0, 0xffee0000, 0xffff0000},
-+	{0x06a4, 0x0000000f, 0x000000ff},
-+	{0x0604, 0x5e000000, 0xff000000},
-+	{0x0608, 0x00000006, 0x000000ff},
-+	{0x0678, 0x00002000, 0x0000ff00},
-+	{0x0680, 0x00280028, 0x00ff00ff},
-+	{0x0684, 0x2d0f0385, 0xffffffff},
-+	{0x0650, 0xd0000000, 0xff000000},
-+	{0x0694, 0x20000000, 0xff000000},
-+
-+	{0x0800, 0x00000000, 0x000000ff},
-+	{0x0804, 0x5e000080, 0xff0000ff},
-+	{0x0808, 0x00000006, 0x000000ff},
-+	{0x0810, 0x00000023, 0x000000ff},
-+	{0x0814, 0x2e003060, 0xff00ffff},
-+	{0x0818, 0x76000000, 0xff000000},
-+	{0x082c, 0x00200002, 0x00ff00ff},
-+	{0x08a0, 0xffee0000, 0xffff0000},
-+	{0x08a4, 0x0000000f, 0x000000ff},
-+	{0x0804, 0x5e000000, 0xff000000},
-+	{0x0808, 0x00000006, 0x000000ff},
-+	{0x0878, 0x00002000, 0x0000ff00},
-+	{0x0880, 0x00280028, 0x00ff00ff},
-+	{0x0884, 0x2d0f0385, 0xffffffff},
-+	{0x0850, 0xd0000000, 0xff000000},
-+	{0x0894, 0x20000000, 0xff000000},
-+
-+	{0x0a00, 0x00000100, 0x0000ff00},
-+	{0x0a08, 0x00e12c08, 0x00ffffff},
-+	{0x0a0c, 0x00000081, 0x000000ff},
-+	{0x0a18, 0x00e80000, 0x00ff0000},
-+	{0x0a30, 0x002f2f00, 0x00ffff00},
-+	{0x0a4c, 0xac820000, 0xffff0000},
-+	{0x0a54, 0xc0000000, 0xff000000},
-+	{0x0a58, 0x00001441, 0x0000ffff},
-+	{0x0a84, 0x00000301, 0x0000ffff},
-+
-+	{0x0a8c, 0x81030000, 0xffff0000},
-+	{0x0a90, 0x00006001, 0x0000ffff},
-+	{0x0a94, 0x01000000, 0xff000000},
-+	{0x0aa0, 0x81000000, 0xff000000},
-+	{0x0abc, 0xff000000, 0xff000000},
-+	{0x0ac0, 0x0000008b, 0x000000ff},
-+
-+	{0x0000, 0x00000003, 0x000000ff},
-+	{0x0a00, 0x0000009f, 0x000000ff},
-+
-+	{0x0a44, 0x5f733d00, 0xffffff00},
-+	{0x0a48, 0x00fdca00, 0x00ffff00},
-+	{0x0a5c, 0x00000000, 0xffff0000},
-+	{0x0a60, 0x00008000, 0xffffffff},
-+	{0x0a64, 0x0c581220, 0xffffffff},
-+	{0x0a68, 0xe13b0602, 0xffffffff},
-+	{0x0a6c, 0xb8074cc1, 0xffffffff},
-+	{0x0a70, 0x3f02e989, 0xffffffff},
-+	{0x0a74, 0x00000001, 0x000000ff},
-+	{0x0b14, 0x00370000, 0x00ff0000},
-+	{0x0b10, 0x37000000, 0xff000000},
-+	{0x0b14, 0x0000005d, 0x000000ff},
-+};
-+
-+static int ks_serdes_phy_init(struct phy *phy)
-+{
-+	struct serdes_config *p;
-+	struct ks_serdes_phy *ks_phy = phy_get_drvdata(phy);
-+
-+	int i;
-+
-+	for (i = 0, p = &ks_100mhz_5gbps_serdes[0];
-+		i < ARRAY_SIZE(ks_100mhz_5gbps_serdes);
-+		i++, p++) {
-+		reg_rmw((ks_phy->base + p->reg), p->val, p->mask);
-+		reg_dump((ks_phy->base + p->reg), p->mask);
-+	}
-+	msleep(20);
-+
-+	return 0;
-+}
-+
-+static struct phy_ops ks_serdes_phy_ops = {
-+	.init		= ks_serdes_phy_init,
-+	.owner		= THIS_MODULE,
-+};
-+
-+static int ks_serdes_phy_probe(struct platform_device *pdev)
-+{
-+	struct phy_provider *phy_provider;
-+	struct device *dev = &pdev->dev;
-+	struct ks_serdes_phy *ks_phy;
-+	struct phy *phy;
-+	struct resource *res;
-+
-+	ks_phy = devm_kzalloc(dev, sizeof(*ks_phy), GFP_KERNEL);
-+	if (!ks_phy)
-+		return -ENOMEM;
-+
-+	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "reg_serdes");
-+	ks_phy->base = devm_ioremap_resource(dev, res);
-+	if (IS_ERR(ks_phy->base))
-+		return PTR_ERR(ks_phy->base);
-+
-+	ks_phy->dev = dev;
-+	phy = devm_phy_create(dev, &ks_serdes_phy_ops, NULL);
-+	if (IS_ERR(phy))
-+		return PTR_ERR(phy);
-+
-+	phy_set_drvdata(phy, ks_phy);
-+	phy_provider = devm_of_phy_provider_register(ks_phy->dev,
-+				of_phy_simple_xlate);
-+
-+	if (IS_ERR(phy_provider))
-+		return PTR_ERR(phy_provider);
-+
-+	dev_info(dev, "Keystone SerDes phy initialized\n");
-+	return 0;
-+}
-+
-+static const struct of_device_id ks_serdes_phy_of_match[] = {
-+	{ .compatible = "ti,keystone-serdes-phy" },
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, ks_serdes_phy_of_match);
-+
-+static struct platform_driver ks_serdes_phy_driver = {
-+	.probe	= ks_serdes_phy_probe,
-+	.driver = {
-+		.of_match_table	= ks_serdes_phy_of_match,
-+		.name  = "ti,keystone-serdes-phy",
-+		.owner = THIS_MODULE,
-+	}
-+};
-+module_platform_driver(ks_serdes_phy_driver);
-+
-+MODULE_DESCRIPTION("TI Keystone SerDes PHY driver");
-+MODULE_LICENSE("GPL V2");
-+MODULE_AUTHOR("Murali Karicheri <m-karicheri2@ti.com>");
--- 
-1.7.9.5
+>$ gcc-4.5 -O2 -o cond_store cond_store.c && ./cond_store
+>Segmentation fault (core dumped)
+>
+>$ gcc-4.5 -O2 --param allow-store-data-races=0 -o cond_store
+>cond_store.c && ./cond_store
+>cc1: error: invalid parameter ‘allow-store-data-races’
+>
+>$ gcc-4.5 -v
+>Using built-in specs.
+>COLLECT_GCC=gcc-4.5
+>COLLECT_LTO_WRAPPER=/usr/lib/gcc/x86_64-unknown-linux-gnu/4.5.4/lto-wrapper
+>Target: x86_64-unknown-linux-gnu
+>Configured with: ../configure --prefix=/usr --mandir=/usr/share/man
+>--infodir=/usr/share/info --libdir=/usr/lib --libexecdir=/usr/lib
+>--program-suffix=-4.5 --enable-shared
+>--enable-languages=c,c++,fortran,objc,obj-c++ --enable-__cxa_atexit
+>--disable-libstdcxx-pch --disable-multilib --disable-libgomp
+>--disable-libmudflap --disable-libssp --enable-clocale=gnu
+>--with-tune=generic --with-cloog --with-ppl --with-system-zlib
+>Thread model: posix
+>gcc version 4.5.4 (GCC)
+
 
