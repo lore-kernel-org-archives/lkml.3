@@ -1,150 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755327AbaFJUTD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 16:19:03 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35241 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754898AbaFJTvK (ORCPT
+	id S933257AbaFJUTR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 16:19:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39441 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932316AbaFJUTO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:51:10 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 097/160] usb: option: add and update a number of CMOTech devices
-Date: Tue, 10 Jun 2014 12:45:37 -0700
-Message-Id: <1402429600-20477-98-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
-References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
+	Tue, 10 Jun 2014 16:19:14 -0400
+Date: Tue, 10 Jun 2014 13:23:02 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC][PATCH] debugfs: Fix corrupted loop in
+ debugfs_remove_recursive
+Message-ID: <20140610202302.GB20499@kroah.com>
+References: <20140609140607.3e3aae39@gandalf.local.home>
+ <20140610093357.7ef3792b@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Extended-Stable: 3.13
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140610093357.7ef3792b@gandalf.local.home>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.3 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, Jun 10, 2014 at 09:33:57AM -0400, Steven Rostedt wrote:
+> On Mon, 9 Jun 2014 14:06:07 -0400
+> Steven Rostedt <rostedt@goodmis.org> wrote:
+> 
+> > [ I'm currently running my tests on it now, and so far, after a few
+> >  hours it has yet to blow up. I'll run it for 24 hours which it never
+> >  succeeded in the past. ]
+> 
+> I ran with this patch on three boxes all night, one for 24 hours. No
+> problems. I stopped the tests, removed the patch, ran the test on the
+> same boxes and they all crashed within an hour.
+> 
+> This patch definitely fixes the bug.
+> 
+> The test I ran was:
+> 
+> while :; do
+>  ./ftrace-test-mkinstances || break
+>  ./ftrace-test-mkinstances-2 || break
+> done
+> 
+> Note, the tests expect debugfs to be mounted at /debug.
 
-------------------
+Well, those are some broken tests :)
 
-From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+Anyway, thanks for the patch, I'll queue it up after 3.16-rc1 is out.
 
-commit 34f972d6156fe9eea2ab7bb418c71f9d1d5c8e7b upstream.
-
-A number of older CMOTech modems are based on Qualcomm
-chips.  The blacklisted interfaces are QMI/wwan.
-
-Reported-by: Lars Melin <larsm17@gmail.com>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/usb/serial/option.c | 74 ++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 70 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index 776c86f..f213ee9 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -234,8 +234,31 @@ static void option_instat_callback(struct urb *urb);
- #define QUALCOMM_VENDOR_ID			0x05C6
- 
- #define CMOTECH_VENDOR_ID			0x16d8
--#define CMOTECH_PRODUCT_6008			0x6008
--#define CMOTECH_PRODUCT_6280			0x6280
-+#define CMOTECH_PRODUCT_6001			0x6001
-+#define CMOTECH_PRODUCT_CMU_300			0x6002
-+#define CMOTECH_PRODUCT_6003			0x6003
-+#define CMOTECH_PRODUCT_6004			0x6004
-+#define CMOTECH_PRODUCT_6005			0x6005
-+#define CMOTECH_PRODUCT_CGU_628A		0x6006
-+#define CMOTECH_PRODUCT_CHE_628S		0x6007
-+#define CMOTECH_PRODUCT_CMU_301			0x6008
-+#define CMOTECH_PRODUCT_CHU_628			0x6280
-+#define CMOTECH_PRODUCT_CHU_628S		0x6281
-+#define CMOTECH_PRODUCT_CDU_680			0x6803
-+#define CMOTECH_PRODUCT_CDU_685A		0x6804
-+#define CMOTECH_PRODUCT_CHU_720S		0x7001
-+#define CMOTECH_PRODUCT_7002			0x7002
-+#define CMOTECH_PRODUCT_CHU_629K		0x7003
-+#define CMOTECH_PRODUCT_7004			0x7004
-+#define CMOTECH_PRODUCT_7005			0x7005
-+#define CMOTECH_PRODUCT_CGU_629			0x7006
-+#define CMOTECH_PRODUCT_CHU_629S		0x700a
-+#define CMOTECH_PRODUCT_CHU_720I		0x7211
-+#define CMOTECH_PRODUCT_7212			0x7212
-+#define CMOTECH_PRODUCT_7213			0x7213
-+#define CMOTECH_PRODUCT_7251			0x7251
-+#define CMOTECH_PRODUCT_7252			0x7252
-+#define CMOTECH_PRODUCT_7253			0x7253
- 
- #define TELIT_VENDOR_ID				0x1bc7
- #define TELIT_PRODUCT_UC864E			0x1003
-@@ -504,6 +527,10 @@ static const struct option_blacklist_info huawei_cdc12_blacklist = {
- 	.reserved = BIT(1) | BIT(2),
- };
- 
-+static const struct option_blacklist_info net_intf0_blacklist = {
-+	.reserved = BIT(0),
-+};
-+
- static const struct option_blacklist_info net_intf1_blacklist = {
- 	.reserved = BIT(1),
- };
-@@ -1037,8 +1064,47 @@ static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6613)}, /* Onda H600/ZTE MF330 */
- 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x0023)}, /* ONYX 3G device */
- 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x9000)}, /* SIMCom SIM5218 */
--	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6280) }, /* BP3-USB & BP3-EXT HSDPA */
--	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6008) },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6001) },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CMU_300) },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6003),
-+	  .driver_info = (kernel_ulong_t)&net_intf0_blacklist },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6004) },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6005) },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CGU_628A) },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CHE_628S),
-+	  .driver_info = (kernel_ulong_t)&net_intf0_blacklist },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CMU_301),
-+	  .driver_info = (kernel_ulong_t)&net_intf0_blacklist },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CHU_628),
-+	  .driver_info = (kernel_ulong_t)&net_intf0_blacklist },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CHU_628S) },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CDU_680) },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CDU_685A) },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CHU_720S),
-+	  .driver_info = (kernel_ulong_t)&net_intf0_blacklist },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_7002),
-+	  .driver_info = (kernel_ulong_t)&net_intf0_blacklist },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CHU_629K),
-+	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_7004),
-+	  .driver_info = (kernel_ulong_t)&net_intf3_blacklist },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_7005) },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CGU_629),
-+	  .driver_info = (kernel_ulong_t)&net_intf5_blacklist },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CHU_629S),
-+	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CHU_720I),
-+	  .driver_info = (kernel_ulong_t)&net_intf0_blacklist },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_7212),
-+	  .driver_info = (kernel_ulong_t)&net_intf0_blacklist },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_7213),
-+	  .driver_info = (kernel_ulong_t)&net_intf0_blacklist },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_7251),
-+	  .driver_info = (kernel_ulong_t)&net_intf1_blacklist },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_7252),
-+	  .driver_info = (kernel_ulong_t)&net_intf1_blacklist },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_7253),
-+	  .driver_info = (kernel_ulong_t)&net_intf1_blacklist },
- 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_UC864E) },
- 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_UC864G) },
- 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_CC864_DUAL) },
--- 
-1.9.1
-
+greg k-h
