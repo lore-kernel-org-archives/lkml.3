@@ -1,37 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751609AbaFJL2c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 07:28:32 -0400
-Received: from verein.lst.de ([213.95.11.211]:39498 "EHLO newverein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751248AbaFJL2b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 07:28:31 -0400
-Date: Tue, 10 Jun 2014 13:28:27 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        Matias =?iso-8859-1?Q?Bj=F8rling?= <m@bjorling.me>,
-        Christoph Hellwig <hch@lst.de>
-Subject: Re: [PATCH] blk-mq: kick requeue list in blk_mq_requeue_request()
-Message-ID: <20140610112827.GA359@lst.de>
-References: <1402375925-21720-1-git-send-email-tom.leiming@gmail.com>
+	id S1751680AbaFJLd5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 07:33:57 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:54387 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751035AbaFJLdz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 07:33:55 -0400
+Date: Tue, 10 Jun 2014 07:33:42 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Xufeng Zhang <xufengzhang.main@gmail.com>
+Cc: Vlad Yasevich <vyasevich@gmail.com>,
+        linux-sctp <linux-sctp@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        xufeng zhang <xufeng.zhang@windriver.com>
+Subject: Re: sctp bug: sk_ack_backlog wrap-around problem
+Message-ID: <20140610113342.GC6275@hmsreliant.think-freely.org>
+References: <CA+=dFzg6gXDTXr6AusZ40_swrjQa-yoS1YLv3=SJAjKYgKzrbQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1402375925-21720-1-git-send-email-tom.leiming@gmail.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <CA+=dFzg6gXDTXr6AusZ40_swrjQa-yoS1YLv3=SJAjKYgKzrbQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 10, 2014 at 12:52:05PM +0800, Ming Lei wrote:
-> blk_mq_requeue_request() should kick off the requeue list so
-> that the request can be scheduled to queue finally.
+On Tue, Jun 10, 2014 at 02:27:07PM +0800, Xufeng Zhang wrote:
+> Hi Vlad and Neil,
 > 
-> In nvme conversion patch, blk_mq_requeue_request() is called
-> to requeue failed request from completion handler, this patch
-> fixes the issue and makes the block API working as expected.
+> I found a sk_ack_backlog wrap-around problem during handling received
+> COOKIE_ECHO.
+> 
+> Consider the scenario:
+> For a TCP-style socket, while processing the COOKIE_ECHO chunk in
+> sctp_sf_do_5_1D_ce(),
+> after it has passed a series of sanity check, a new association would
+> be created in
+> sctp_unpack_cookie(), but afterwards, some processing maybe failed,
+> and sctp_association_free()
+> will be called to free the previously allocated association, in
+> sctp_association_free(),
+> sk_ack_backlog value is decremented for this socket, since the initial
+> value for sk_ack_backlog is 0,
+> after the decrement, it will be 65535, a wrap-around problem happens,
+> and if we want to establish
+> new associations afterward in the same socket, ABORT would be
+> triggered since sctp deem the
+> accept queue as full.
+> 
+> Do you have any idea to fix such kind of issue?
+> 
 
-I've intentionally kepts the two separate so that we can batch operations
-and just do a single kick for multiple requeued commands.
+first thought would be to traverse the list of associations on the endpoint in
+sctp_association_free if its a tcp style socket, and then only decrement the
+backlog if we find the association being freed on the list.  By doing that we
+can be confident that we've increased the backlog via sctp_endpoint_add_asoc.
 
+Best
+Neil
+
+> Thanks a lot!
+> Xufeng
+> 
