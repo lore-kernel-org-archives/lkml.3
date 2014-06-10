@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934694AbaFJAsu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:48:50 -0400
+	id S936314AbaFJAtc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:49:32 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:58169 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933161AbaFJAVy (ORCPT
+	with ESMTP id S932989AbaFJAVx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 20:21:54 -0400
+	Mon, 9 Jun 2014 20:21:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrey Ryabinin <a.ryabinin@samsung.com>,
-        Nicolas Pitre <nico@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.4 06/88] ARM: 8051/1: put_user: fix possible data corruption in put_user
-Date: Mon,  9 Jun 2014 17:24:16 -0700
-Message-Id: <20140610002424.759690807@linuxfoundation.org>
+        Vince Weaver <vincent.weaver@maine.edu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.4 03/88] perf: Limit perf_event_attr::sample_period to 63 bits
+Date: Mon,  9 Jun 2014 17:24:13 -0700
+Message-Id: <20140610002424.661338095@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
 References: <20140610002424.500996570@linuxfoundation.org>
@@ -30,37 +30,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit 537094b64b229bf3ad146042f83e74cf6abe59df upstream.
+commit 0819b2e30ccb93edf04876237b6205eef84ec8d2 upstream.
 
-According to arm procedure call standart r2 register is call-cloberred.
-So after the result of x expression was put into r2 any following
-function call in p may overwrite r2. To fix this, the result of p
-expression must be saved to the temporary variable before the
-assigment x expression to __r2.
+Vince reported that using a large sample_period (one with bit 63 set)
+results in wreckage since while the sample_period is fundamentally
+unsigned (negative periods don't make sense) the way we implement
+things very much rely on signed logic.
 
-Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
-Reviewed-by: Nicolas Pitre <nico@linaro.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+So limit sample_period to 63 bits to avoid tripping over this.
+
+Reported-by: Vince Weaver <vincent.weaver@maine.edu>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/n/tip-p25fhunibl4y3qi0zuqmyf4b@git.kernel.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/include/asm/uaccess.h |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ kernel/events/core.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/arch/arm/include/asm/uaccess.h
-+++ b/arch/arm/include/asm/uaccess.h
-@@ -158,8 +158,9 @@ extern int __put_user_8(void *, unsigned
- #define put_user(x,p)							\
- 	({								\
- 		unsigned long __limit = current_thread_info()->addr_limit - 1; \
-+		const typeof(*(p)) __user *__tmp_p = (p);		\
- 		register const typeof(*(p)) __r2 asm("r2") = (x);	\
--		register const typeof(*(p)) __user *__p asm("r0") = (p);\
-+		register const typeof(*(p)) __user *__p asm("r0") = __tmp_p; \
- 		register unsigned long __l asm("r1") = __limit;		\
- 		register int __e asm("r0");				\
- 		switch (sizeof(*(__p))) {				\
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -6356,6 +6356,9 @@ SYSCALL_DEFINE5(perf_event_open,
+ 	if (attr.freq) {
+ 		if (attr.sample_freq > sysctl_perf_event_sample_rate)
+ 			return -EINVAL;
++	} else {
++		if (attr.sample_period & (1ULL << 63))
++			return -EINVAL;
+ 	}
+ 
+ 	/*
 
 
