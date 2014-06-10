@@ -1,27 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755532AbaFJTyf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 15:54:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35635 "EHLO
+	id S1755549AbaFJTyi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 15:54:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35642 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752945AbaFJTya (ORCPT
+	with ESMTP id S1752945AbaFJTyg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:54:30 -0400
+	Tue, 10 Jun 2014 15:54:36 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org, lwoodman@redhat.com,
-        dave.hansen@intel.com, Ingo Molnar <mingo@kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
+Cc: Aaron Sanders <aaron.sanders@hp.com>, Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 046/160] mm/numa: Remove BUG_ON() in __handle_mm_fault()
-Date: Tue, 10 Jun 2014 12:44:46 -0700
-Message-Id: <1402429600-20477-47-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 028/160] USB: pl2303: add ids for Hewlett-Packard HP POS pole displays
+Date: Tue, 10 Jun 2014 12:44:28 -0700
+Message-Id: <1402429600-20477-29-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -34,53 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rik van Riel <riel@redhat.com>
+From: Aaron Sanders <aaron.sanders@hp.com>
 
-commit 107437febd495a50e2cd09c81bbaa84d30e57b07 upstream.
+commit b16c02fbfb963fa2941b7517ebf1f8a21946775e upstream.
 
-Changing PTEs and PMDs to pte_numa & pmd_numa is done with the
-mmap_sem held for reading, which means a pmd can be instantiated
-and turned into a numa one while __handle_mm_fault() is examining
-the value of old_pmd.
+Add device ids to pl2303 for the Hewlett-Packard HP POS pole displays:
 
-If that happens, __handle_mm_fault() should just return and let
-the page fault retry, instead of throwing an oops. This is
-handled by the test for pmd_trans_huge(*pmd) below.
+LD960: 03f0:0B39
+LCM220: 03f0:3139
+LCM960: 03f0:3239
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Reported-by: Sunil Pandey <sunil.k.pandey@intel.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: linux-mm@kvack.org
-Cc: lwoodman@redhat.com
-Cc: dave.hansen@intel.com
-Link: http://lkml.kernel.org/r/20140429153615.2d72098e@annuminas.surriel.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+[ Johan: fix indentation and sort PIDs numerically ]
+
+Signed-off-by: Aaron Sanders <aaron.sanders@hp.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/memory.c | 3 ---
- 1 file changed, 3 deletions(-)
+ drivers/usb/serial/pl2303.c | 3 +++
+ drivers/usb/serial/pl2303.h | 5 ++++-
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/mm/memory.c b/mm/memory.c
-index dda27b9..95257f5 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3747,9 +3747,6 @@ static int __handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 		}
- 	}
+diff --git a/drivers/usb/serial/pl2303.c b/drivers/usb/serial/pl2303.c
+index beb8edc..6e09306 100644
+--- a/drivers/usb/serial/pl2303.c
++++ b/drivers/usb/serial/pl2303.c
+@@ -83,6 +83,9 @@ static const struct usb_device_id id_table[] = {
+ 	{ USB_DEVICE(YCCABLE_VENDOR_ID, YCCABLE_PRODUCT_ID) },
+ 	{ USB_DEVICE(SUPERIAL_VENDOR_ID, SUPERIAL_PRODUCT_ID) },
+ 	{ USB_DEVICE(HP_VENDOR_ID, HP_LD220_PRODUCT_ID) },
++	{ USB_DEVICE(HP_VENDOR_ID, HP_LD960_PRODUCT_ID) },
++	{ USB_DEVICE(HP_VENDOR_ID, HP_LCM220_PRODUCT_ID) },
++	{ USB_DEVICE(HP_VENDOR_ID, HP_LCM960_PRODUCT_ID) },
+ 	{ USB_DEVICE(CRESSI_VENDOR_ID, CRESSI_EDY_PRODUCT_ID) },
+ 	{ USB_DEVICE(ZEAGLE_VENDOR_ID, ZEAGLE_N2ITION3_PRODUCT_ID) },
+ 	{ USB_DEVICE(SONY_VENDOR_ID, SONY_QN3USB_PRODUCT_ID) },
+diff --git a/drivers/usb/serial/pl2303.h b/drivers/usb/serial/pl2303.h
+index c38b8c0..42bc082 100644
+--- a/drivers/usb/serial/pl2303.h
++++ b/drivers/usb/serial/pl2303.h
+@@ -121,8 +121,11 @@
+ #define SUPERIAL_VENDOR_ID	0x5372
+ #define SUPERIAL_PRODUCT_ID	0x2303
  
--	/* THP should already have been handled */
--	BUG_ON(pmd_numa(*pmd));
--
- 	/*
- 	 * Use __pte_alloc instead of pte_alloc_map, because we can't
- 	 * run pte_offset_map on the pmd, if an huge pmd could
+-/* Hewlett-Packard LD220-HP POS Pole Display */
++/* Hewlett-Packard POS Pole Displays */
+ #define HP_VENDOR_ID		0x03f0
++#define HP_LD960_PRODUCT_ID	0x0b39
++#define HP_LCM220_PRODUCT_ID	0x3139
++#define HP_LCM960_PRODUCT_ID	0x3239
+ #define HP_LD220_PRODUCT_ID	0x3524
+ 
+ /* Cressi Edy (diving computer) PC interface */
 -- 
 1.9.1
 
