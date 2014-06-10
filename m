@@ -1,97 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751182AbaFJEM1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 00:12:27 -0400
-Received: from ozlabs.org ([103.22.144.67]:48816 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750808AbaFJEM0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 00:12:26 -0400
-Date: Tue, 10 Jun 2014 14:12:17 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the vhost tree
-Message-ID: <20140610141217.50d98cd6@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1751484AbaFJEOD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 00:14:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60059 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750886AbaFJEOB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 00:14:01 -0400
+Date: Mon, 9 Jun 2014 21:14:00 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "security@kernel.org" <security@kernel.org>
+Subject: Re: [PATCH 1/2] auditsc: audit_krule mask accesses need bounds
+ checking
+Message-ID: <20140610041400.GA28020@kroah.com>
+References: <1401332999-15167-1-git-send-email-eparis@redhat.com>
+ <20140609223057.GB18475@kroah.com>
+ <CALCETrUD75vSwJUjFuxGCrZ_7DJhCc1KW2v_ndF6EHJ31fUMBg@mail.gmail.com>
+ <20140609224645.GA8113@kroah.com>
+ <CA+5PVA6dHu-0qi1fx5Vq4QynJDJ=dG0feJjwoCHA3GaUSHp-FQ@mail.gmail.com>
+ <20140610003142.GA20728@kroah.com>
+ <CALCETrWYvQR5QRg7_tG3ZFk7dy0X7Ji50Lgxt81aqjjsxS7gCg@mail.gmail.com>
+ <20140610025715.GA24314@kroah.com>
+ <CALCETrWzKCDezac4PHCXyZ8LJqitGiJJwNNL2tPNVLBCXOw9ZQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/.hS.3A+/XSbx.Xakvqxg/.E"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrWzKCDezac4PHCXyZ8LJqitGiJJwNNL2tPNVLBCXOw9ZQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/.hS.3A+/XSbx.Xakvqxg/.E
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Mon, Jun 09, 2014 at 09:04:16PM -0700, Andy Lutomirski wrote:
+> On Mon, Jun 9, 2014 at 7:57 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > On Mon, Jun 09, 2014 at 05:51:37PM -0700, Andy Lutomirski wrote:
+> >> [cc list trimmed, security@ added]
+> >>
+> >> On Mon, Jun 9, 2014 at 5:31 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> >> > On Mon, Jun 09, 2014 at 07:35:57PM -0400, Josh Boyer wrote:
+> >> >> On Mon, Jun 9, 2014 at 6:46 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> >> >> >
+> >> >> > But yes, having something "real" might be good if the load gets higher,
+> >> >> > right now it's so low that my "sweep pending security patches" task
+> >> >> > usually catches anything pending, which is rare.
+> >> >>
+> >> >> How does one get added to the security@ alias?  We've been carrying
+> >> >> this patch in Fedora for a bit now.  I'd be happy to help track things
+> >> >> given we get distro security bug reports and such.
+> >> >
+> >> > Just ask on the security@ alias to be added and we can take it from
+> >> > there.
+> >> >
+> >>
+> >> Would it make sense for there to be someone on the security list who
+> >> can assign CVE numbers?
+> >
+> > I'm pretty sure we have that already.
+> 
+> Let me rephrase the question:
+> 
+> Would it make sense for someone on the security list to assign CVE numbers?
 
-Hi Michael,
+If we cared about CVE numbers, maybe :)
 
-After merging the vhost tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+Seriously, there are people on the security alias that can get CVE
+numbers assigned if needed, so that should not be an issue.  It's
+happened in the past from what I can recall.
 
-drivers/vhost/scsi.c: In function 'vhost_scsi_handle_vq':
-drivers/vhost/scsi.c:1043:14: error: 'struct vhost_dev' has no member named=
- 'acked_features'
-   if (vs->dev.acked_features & VIRTIO_SCSI_F_T10_PI) {
-              ^
+thanks,
 
-Commit 95e7c4341b8e ("vhost/scsi: Enable T10 PI IOV -> SGL memory
-mapping") from the target-updates tree interacting with commit
-10350a292160 ("vhost: move acked_features to VQs") from the vhost tree.
-
-I applied the following patch which seems right, but may not be.
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 10 Jun 2014 14:08:21 +1000
-Subject: [PATCH] vhost/scsi: fixup for acked_features move
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/vhost/scsi.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/vhost/scsi.c b/drivers/vhost/scsi.c
-index 78ff1f64d759..6d7dd85365fe 100644
---- a/drivers/vhost/scsi.c
-+++ b/drivers/vhost/scsi.c
-@@ -1040,7 +1040,7 @@ vhost_scsi_handle_vq(struct vhost_scsi *vs, struct vh=
-ost_virtqueue *vq)
- 			break;
- 		}
-=20
--		if (vs->dev.acked_features & VIRTIO_SCSI_F_T10_PI) {
-+		if (vhost_has_feature(vq, VIRTIO_SCSI_F_T10_PI)) {
- 			req =3D &v_req_pi;
- 			lunp =3D &v_req_pi.lun[0];
- 			target =3D &v_req_pi.lun[1];
---=20
-2.0.0
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/.hS.3A+/XSbx.Xakvqxg/.E
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTloWmAAoJEMDTa8Ir7ZwVLc4P/igiMC6kuh5J/9PkwkPeZDG8
-h9zpH/ZaYcCaM9+Jnj6VMvfde5muAUd03BWSowjfsorc7Lfz7ByX1SReiESNyNvp
-Rg6cjVFR/LkJ9UFEReKxMb+BPNa49Cf5oVA/4rxPUf6FRFBl/jgz1zNMCZwDhQuZ
-Q4OeqDIWs9HqjuUhfwded0dR/86OsYez5EIO7o7BnIx49crG47fMild639P6ERGj
-pFeVFWLeH+iLFf+DPUstpSx2CmTF0DyUM0Tn2lD5Zkqvd1QJbRZ7Cju2MzErOpZe
-cEWNbuAHci6Lj7G1NNPM86VKsXOVxjcyW9MCbOwI4H48fs+tTF2C1nYXW9imeEiB
-mEp96t8Y1LLEp5oRFcQTrxngkNxZvQCcTyUAtfYGbM9E3cGA9IgCsi7ArOO2N62p
-9KrU2S1Sl0OEJZZ1CkBT85RLjrj/Hk8lDdWlRYPGjLBhysQ1nI0qxqTUvIcFCi0k
-Ph9DYYwbWhy0IR7Fy4/SWB64/J7Ab4SRd/vSvjAogic5UEJ+iTluWZgZUObhxgeY
-YSV1SIxmLcVBCmP5dIK4TavghsepLj4rzdHLecluSJdJhcVOJQ1stzq/hAclgjxy
-WGsRzEA+61NfEzsxauahH0zWZYPxkDMO6+biASEOeKSEcr2mkphb6LzrYJF53bzj
-2vLpQoD4qozM0GwLOVnu
-=mwWR
------END PGP SIGNATURE-----
-
---Sig_/.hS.3A+/XSbx.Xakvqxg/.E--
+greg k-h
