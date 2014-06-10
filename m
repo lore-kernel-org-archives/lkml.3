@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933117AbaFJUbt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 16:31:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35004 "EHLO
+	id S933084AbaFJUbs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 16:31:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35006 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753715AbaFJTrN (ORCPT
+	with ESMTP id S1753716AbaFJTrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 10 Jun 2014 15:47:13 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dave Jiang <dave.jiang@intel.com>,
-        Ed Ciechanowski <ed.ciechanowski@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>, Tejun Heo <tj@kernel.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 072/160] libata/ahci: accommodate tag ordered controllers
-Date: Tue, 10 Jun 2014 12:45:12 -0700
-Message-Id: <1402429600-20477-73-git-send-email-kamal@canonical.com>
+Cc: Alexander Gordeev <agordeev@redhat.com>, Tejun Heo <tj@kernel.org>,
+        linux-ide@vger.kernel.org, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 071/160] ahci: Do not receive interrupts sent by dummy ports
+Date: Tue, 10 Jun 2014 12:45:11 -0700
+Message-Id: <1402429600-20477-72-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -29,100 +27,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dan.j.williams@intel.com>
+From: Alexander Gordeev <agordeev@redhat.com>
 
-commit 8a4aeec8d2d6a3edeffbdfae451cdf05cbf0fefd upstream.
+commit 2cf532f5e67c0cfe38c8c100e49280cdadacd2be upstream.
 
-The AHCI spec allows implementations to issue commands in tag order
-rather than FIFO order:
+In multiple MSI mode all AHCI ports (including dummy) get assigned
+separate MSI vectors and (as result of execution
+pci_enable_msi_exact() function) separate IRQ numbers, (mapped to the
+MSI vectors).
 
-	5.3.2.12 P:SelectCmd
-	HBA sets pSlotLoc = (pSlotLoc + 1) mod (CAP.NCS + 1)
-	or HBA selects the command to issue that has had the
-	PxCI bit set to '1' longer than any other command
-	pending to be issued.
+Therefore, although interrupts from dummy ports are not desired they
+are still enabled. We do not request IRQs for dummy ports, but that
+only means we do not assign AHCI-specific ISRs to corresponding IRQ
+numbers.
 
-The result is that commands posted sequentially (time-wise) may play out
-of sequence when issued by hardware.
+As result, dummy port interrupts still could come and traverse all the
+way from the PCI device to the kernel, causing unnecessary overhead.
 
-This behavior has likely been hidden by drives that arrange for commands
-to complete in issue order.  However, it appears recent drives (two from
-different vendors that we have found so far) inflict out-of-order
-completions as a matter of course.  So, we need to take care to maintain
-ordered submission, otherwise we risk triggering a drive to fall out of
-sequential-io automation and back to random-io processing, which incurs
-large latency and degrades throughput.
+This update disables IRQs for dummy ports and prevents the described
+issue.
 
-This issue was found in simple benchmarks where QD=2 seq-write
-performance was 30-50% *greater* than QD=32 seq-write performance.
-
-Tagging for -stable and making the change globally since it has a low
-risk-to-reward ratio.  Also, word is that recent versions of an unnamed
-OS also does it this way now.  So, drives in the field are already
-experienced with this tag ordering scheme.
-
-Cc: Dave Jiang <dave.jiang@intel.com>
-Cc: Ed Ciechanowski <ed.ciechanowski@intel.com>
-Reviewed-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 Signed-off-by: Tejun Heo <tj@kernel.org>
+Tested-by: David Milburn <dmilburn@redhat.com>
+Cc: linux-ide@vger.kernel.org
+Fixes: 5ca72c4f7c41 ("AHCI: Support multiple MSIs")
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/ata/libata-core.c | 21 +++++++++++++--------
- include/linux/libata.h    |  1 +
- 2 files changed, 14 insertions(+), 8 deletions(-)
+ drivers/ata/ahci.c | 16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index 2897dbe..0a79c54 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -4794,21 +4794,26 @@ void swap_buf_le16(u16 *buf, unsigned int buf_words)
- static struct ata_queued_cmd *ata_qc_new(struct ata_port *ap)
- {
- 	struct ata_queued_cmd *qc = NULL;
--	unsigned int i;
-+	unsigned int i, tag;
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index 337d126..bc5579e 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -1171,12 +1171,16 @@ int ahci_host_activate(struct ata_host *host, int irq, unsigned int n_msis)
+ 	for (i = 0; i < host->n_ports; i++) {
+ 		struct ahci_port_priv *pp = host->ports[i]->private_data;
  
- 	/* no command while frozen */
- 	if (unlikely(ap->pflags & ATA_PFLAG_FROZEN))
- 		return NULL;
- 
--	/* the last tag is reserved for internal command. */
--	for (i = 0; i < ATA_MAX_QUEUE - 1; i++)
--		if (!test_and_set_bit(i, &ap->qc_allocated)) {
--			qc = __ata_qc_from_tag(ap, i);
-+	for (i = 0; i < ATA_MAX_QUEUE; i++) {
-+		tag = (i + ap->last_tag + 1) % ATA_MAX_QUEUE;
-+
-+		/* the last tag is reserved for internal command. */
-+		if (tag == ATA_TAG_INTERNAL)
+-		/* pp is NULL for dummy ports */
+-		if (pp)
+-			rc = devm_request_threaded_irq(host->dev,
+-						       irq + i, ahci_hw_interrupt,
+-						       ahci_thread_fn, IRQF_SHARED,
+-						       pp->irq_desc, host->ports[i]);
++		/* Do not receive interrupts sent by dummy ports */
++		if (!pp) {
++			disable_irq(irq + i);
 +			continue;
++		}
 +
-+		if (!test_and_set_bit(tag, &ap->qc_allocated)) {
-+			qc = __ata_qc_from_tag(ap, tag);
-+			qc->tag = tag;
-+			ap->last_tag = tag;
- 			break;
- 		}
--
--	if (qc)
--		qc->tag = i;
-+	}
- 
- 	return qc;
- }
-diff --git a/include/linux/libata.h b/include/linux/libata.h
-index bec6dbe..3fee55e 100644
---- a/include/linux/libata.h
-+++ b/include/linux/libata.h
-@@ -822,6 +822,7 @@ struct ata_port {
- 	unsigned long		qc_allocated;
- 	unsigned int		qc_active;
- 	int			nr_active_links; /* #links with active qcs */
-+	unsigned int		last_tag;	/* track next tag hw expects */
- 
- 	struct ata_link		link;		/* host default link */
- 	struct ata_link		*slave_link;	/* see ata_slave_link_init() */
++		rc = devm_request_threaded_irq(host->dev, irq + i,
++					       ahci_hw_interrupt,
++					       ahci_thread_fn, IRQF_SHARED,
++					       pp->irq_desc, host->ports[i]);
+ 		if (rc)
+ 			goto out_free_irqs;
+ 	}
 -- 
 1.9.1
 
