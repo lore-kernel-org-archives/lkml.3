@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754944AbaFJTvS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 15:51:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35247 "EHLO
+	id S932104AbaFJTv2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 15:51:28 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35265 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753256AbaFJTvO (ORCPT
+	with ESMTP id S1754951AbaFJTvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:51:14 -0400
+	Tue, 10 Jun 2014 15:51:25 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 099/160] s390/chsc: fix SEI usage on old FW levels
-Date: Tue, 10 Jun 2014 12:45:39 -0700
-Message-Id: <1402429600-20477-100-git-send-email-kamal@canonical.com>
+Cc: Jarkko Nikula <jarkko.nikula@linux.intel.com>,
+        Mark Brown <broonie@linaro.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 103/160] ASoC: dapm: Fix widget double free with auto-disable DAPM kcontrol
+Date: Tue, 10 Jun 2014 12:45:43 -0700
+Message-Id: <1402429600-20477-104-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -28,72 +27,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Ott <sebott@linux.vnet.ibm.com>
+From: Jarkko Nikula <jarkko.nikula@linux.intel.com>
 
-commit 06cd7a874ec6e09d151aeb1fa8600e14f1ff89f6 upstream.
+commit 2697e4fb9209dfe1d1b24c92d254158f63d4bc8e upstream.
 
-Using a notification type mask for the store event information chsc
-is unsupported on some firmware levels. Retry SEI with that mask set
-to zero (which is the old way of requesting only channel subsystem
-related events).
+Commit 9e1fda4ae158 ("ASoC: dapm: Implement mixer input auto-disable")
+is trying to free the widget it allocated by snd_soc_dapm_new_control()
+call in dapm_kcontrol_data_alloc() by adding kfree(data->widget) to
+dapm_kcontrol_free().
 
-Reported-and-tested-by: Stefan Haberland <stefan.haberland@de.ibm.com>
-Reviewed-by: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
-Signed-off-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+This is causing a widget double free with auto-disabled DAPM kcontrols
+in sound card unregistration because widgets are already freed before
+dapm_kcontrol_free() is called.
+
+Reason for that is all widgets are added into dapm->card->widgets list
+in snd_soc_dapm_new_control() and freed in dapm_free_widgets() during
+execution of snd_soc_dapm_free().
+
+Now snd_soc_dapm_free() calls for different DAPM contexts happens before
+snd_card_free() call from where the call chain to dapm_kcontrol_free()
+begins:
+
+soc_cleanup_card_resources()
+  soc_remove_dai_links()
+    soc_remove_link_dais()
+      snd_soc_dapm_free(&cpu_dai->dapm)
+    soc_remove_link_components()
+      soc_remove_platform()
+        snd_soc_dapm_free(&platform->dapm)
+      soc_remove_codec()
+        snd_soc_dapm_free(&codec->dapm)
+  snd_soc_dapm_free(&card->dapm)
+  snd_card_free()
+    snd_card_do_free()
+      snd_device_free_all()
+        snd_device_free()
+          snd_ctl_dev_free()
+            snd_ctl_remove()
+              snd_ctl_free_one()
+                dapm_kcontrol_free()
+
+This wasn't making harm with ordinary DAPM kcontrols since data->widget is NULL for
+them.
+
+Fixes: 9e1fda4ae158 (ASoC: dapm: Implement mixer input auto-disable)
+Signed-off-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/s390/cio/chsc.c | 22 +++++++++++++++++-----
- 1 file changed, 17 insertions(+), 5 deletions(-)
+ sound/soc/soc-dapm.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/s390/cio/chsc.c b/drivers/s390/cio/chsc.c
-index 13299f9..ec0951a 100644
---- a/drivers/s390/cio/chsc.c
-+++ b/drivers/s390/cio/chsc.c
-@@ -560,18 +560,27 @@ static void chsc_process_sei_nt0(struct chsc_sei_nt0_area *sei_area)
- 
- static void chsc_process_event_information(struct chsc_sei *sei, u64 ntsm)
+diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c
+index dcade13..2e6f4ec 100644
+--- a/sound/soc/soc-dapm.c
++++ b/sound/soc/soc-dapm.c
+@@ -251,7 +251,6 @@ static int dapm_kcontrol_data_alloc(struct snd_soc_dapm_widget *widget,
+ static void dapm_kcontrol_free(struct snd_kcontrol *kctl)
  {
--	do {
-+	static int ntsm_unsupported;
-+
-+	while (true) {
- 		memset(sei, 0, sizeof(*sei));
- 		sei->request.length = 0x0010;
- 		sei->request.code = 0x000e;
--		sei->ntsm = ntsm;
-+		if (!ntsm_unsupported)
-+			sei->ntsm = ntsm;
- 
- 		if (chsc(sei))
- 			break;
- 
- 		if (sei->response.code != 0x0001) {
--			CIO_CRW_EVENT(2, "chsc: sei failed (rc=%04x)\n",
--				      sei->response.code);
-+			CIO_CRW_EVENT(2, "chsc: sei failed (rc=%04x, ntsm=%llx)\n",
-+				      sei->response.code, sei->ntsm);
-+
-+			if (sei->response.code == 3 && sei->ntsm) {
-+				/* Fallback for old firmware. */
-+				ntsm_unsupported = 1;
-+				continue;
-+			}
- 			break;
- 		}
- 
-@@ -587,7 +596,10 @@ static void chsc_process_event_information(struct chsc_sei *sei, u64 ntsm)
- 			CIO_CRW_EVENT(2, "chsc: unhandled nt: %d\n", sei->nt);
- 			break;
- 		}
--	} while (sei->u.nt0_area.flags & 0x80);
-+
-+		if (!(sei->u.nt0_area.flags & 0x80))
-+			break;
-+	}
+ 	struct dapm_kcontrol_data *data = snd_kcontrol_chip(kctl);
+-	kfree(data->widget);
+ 	kfree(data->wlist);
+ 	kfree(data);
  }
- 
- /*
 -- 
 1.9.1
 
