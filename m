@@ -1,71 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753796AbaFJVed (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 17:34:33 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:35264 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753222AbaFJVe3 (ORCPT
+	id S1753968AbaFJVfb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 17:35:31 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:58383 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753830AbaFJVf3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 17:34:29 -0400
+	Tue, 10 Jun 2014 17:35:29 -0400
+Message-ID: <53977A1D.9010202@semaphore.gr>
+Date: Wed, 11 Jun 2014 00:35:25 +0300
+From: Stratos Karafotis <stratosk@semaphore.gr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <20140610212516.GB10614@srcf.ucam.org>
-References: <1402331614.7064.60.camel@dhcp-9-2-203-236.watson.ibm.com>
-	<cover.1402387862.git.d.kasatkin@samsung.com>
-	<20140610122008.GA31944@hansolo.jdub.homelinux.org>
-	<CACE9dm9Ff6b3J=05QfcgBv-c_y=5qGNq1-ZSfo4smtj34i1e-A@mail.gmail.com>
-	<20140610204021.GA8916@srcf.ucam.org>
-	<CACE9dm9ma=XRZkoCiefva-dKL+LYw-s8QB4xUTkRUZH=5XM9ew@mail.gmail.com>
-	<CACE9dm8zxVXx2zRcfDYUFjqvQYT4MbLevp5U13tfH9Hb6USSJw@mail.gmail.com>
-	<20140610212516.GB10614@srcf.ucam.org>
-Date: Wed, 11 Jun 2014 00:34:28 +0300
-Message-ID: <CACE9dm95RiGxuG-XaGKd3KqBRkk+wyj3CBbMhaCTJQaiiaj9wQ@mail.gmail.com>
-Subject: Re: [PATCH 0/4] KEYS: validate key trust with owner and builtin keys only
-From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Josh Boyer <jwboyer@redhat.com>, David Howells <dhowells@redhat.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        keyrings <keyrings@linux-nfs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Dirk Brandewie <dirk.brandewie@gmail.com>, dirk.j.brandewie@intel.com,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/7] cpufreq: intel_pstate: Trivial code cleanup
+References: <5396208F.6070400@semaphore.gr> <1875587.zmLYOIAyby@vostro.rjw.lan> <53977251.2090804@semaphore.gr> <1894836.tjrHdJ7Duz@vostro.rjw.lan>
+In-Reply-To: <1894836.tjrHdJ7Duz@vostro.rjw.lan>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 June 2014 00:25, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> On Wed, Jun 11, 2014 at 12:17:53AM +0300, Dmitry Kasatkin wrote:
->
->> It is probably just a paranoia...
->> Kconfig MODULE_SIG_UEFI should tell about threat of loading kernel
->> modules from NSA or Lenovo signed by MS or Lenovo keys..
+On 11/06/2014 12:38 πμ, Rafael J. Wysocki wrote:
+> On Wednesday, June 11, 2014 12:02:09 AM Stratos Karafotis wrote:
+>> On 10/06/2014 11:43 μμ, Rafael J. Wysocki wrote:
+>>> On Tuesday, June 10, 2014 11:14:53 PM Stratos Karafotis wrote:
+>>>> On 10/06/2014 11:17 μμ, Rafael J. Wysocki wrote:
+>>>>> On Tuesday, June 10, 2014 10:26:44 AM Dirk Brandewie wrote:
+>>>>>> On 06/10/2014 08:31 AM, Rafael J. Wysocki wrote:
+>>>>>>> On Tuesday, June 10, 2014 08:12:48 AM Dirk Brandewie wrote:
+>>>>>>>> On 06/09/2014 02:01 PM, Stratos Karafotis wrote:
+>>>>>>>>> Remove unnecessary blank lines.
+>>>>>>>>> Remove unnecessary parentheses.
+>>>>>>>>> Remove unnecessary braces.
+>>>>>>>>> Put the code in one line where possible.
+>>>>>>>>> Add blank lines after variable declarations.
+>>>>>>>>> Alignment to open parenthesis.
+>>>>>>>>>
+>>>>>>>>
+>>>>>>>> I don't have an issue with this patch in general but I would rather
+>>>>>>>> the cleanup be done when there is a functional change in the given
+>>>>>>>> hunk of code otherwise you are setting up a fence for stable/backporters
+>>>>>>>> of functional changes in the future.
+>>>>>>>
+>>>>>>> I actually prefer separate cleanups so as to avoid doing multiple things
+>>>>>>> in one patch.
+>>>>>>>
+>>>>>>> Rafael
+>>>>>>>
+>>>>>> I don't have strong feelings either way I was just trying to be kind
+>>>>>> to the maintainers of distro kernels.
+>>>>>
+>>>>> And mixing fixes with cleanups in one patch doesn't do any good to them.
+>>>>>
+>>>>> Trust me, I used to work for a distro. :-)
+>>>>>
+>>>>
+>>>> So, should I proceed and split the patch or drop it? :)
+>>>
+>>> I'm not sure why you'd want to split it?
 >>
->> This hole is opened without warning...
+>> Forgive me, but I'm totally confused. I asked because you mentioned that
+>> you prefer separate cleanups.
+> 
+> That was in a reply to Dirk who suggested doing cleanups along with
+> fixes (or at least I understood what he said this way).
+> 
+> I tried to explain why I didn't think that this was a good idea.
+> 
+>> So, my question was if you want me to separate this patch into more (one
+>> per change) or entirely drop it (because it would cause problems to backporters
+>> or maintainers).
+> 
+> Cleanups are generally OK, but it's better to do one kind of a cleanup
+> per patch.  Like whitespace fixes in one patch, cleanup of expressions in
+> another.
+> 
+
+OK, thanks for the clarification! I will do it in separate patches.
+
+>>
+>>> That said you're changing things that are intentional.  For example,
+>>> the
+>>>
+>>> 	if (acpi_disabled
+>>> 	    || ...)
+>>>
+>>> is.  And the result of (a * 100) / b may generally be different from
+>>> a * 100 / b for integers (if the division is carried out first).
+>>
+>> I thought that (a * 100) / b is always equivalent to a * 100 / b.
+> 
+> I'm not actually sure if that's guaranteed by C standards.  It surely
+> wasn't some time ago (when there was no formal C standard).
 >
-> It's not typically a hole. If an attacker has root they can just replace
-> your bootloader with one signed by a trusted key and then have that
-> modify the kernel before booting it.
->
-> If you're using a TPM then you can mitigate this, but if you have a TPM
-> then you're already performing some extra steps during the boot process.
-> Just add a sysfs knob that lets you drop the db keys and incorporate
-> that into the TPM management code.
->
-> --
-> Matthew Garrett | mjg59@srcf.ucam.org
 
-I was expecting this boot loader answer.
+I think it is, according to C precedence table.
+But, anyway my motivation to the specific cleanup was the different style
+in the same block code:
 
-Indeed, if system is design to prevent online modification of bootloader then
-kernel parameters are protected as well...
+        limits.min_perf_pct = (policy->min * 100) / policy->cpuinfo.max_freq;
+	...
+        limits.max_policy_pct = policy->max * 100 / policy->cpuinfo.max_freq;
 
-My statement is still valid. It is a hole...
-
-To prevent the hole it should be explained that one might follow
-certain instructions
-to take ownership of your PC. Generate your own keys and remove MS and
-Vendor ones...
-
-It is paranoia? May be not.
-
-- Dmitry
+Thanks again!
+Stratos
