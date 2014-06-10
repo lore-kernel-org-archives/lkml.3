@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219AbaFJVK6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 17:10:58 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:58653 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750740AbaFJVK4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 17:10:56 -0400
+	id S1753562AbaFJVL4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 17:11:56 -0400
+Received: from mga01.intel.com ([192.55.52.88]:44980 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752183AbaFJVLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 17:11:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="353241935"
+Date: Tue, 10 Jun 2014 15:10:16 -0600 (MDT)
+From: Keith Busch <keith.busch@intel.com>
+X-X-Sender: vmware@localhost.localdom
+To: Jens Axboe <axboe@fb.com>
+cc: Keith Busch <keith.busch@intel.com>,
+        =?ISO-8859-15?Q?Matias_Bj=F8rling?= <m@bjorling.me>,
+        "willy@linux.intel.com" <willy@linux.intel.com>,
+        "sbradshaw@micron.com" <sbradshaw@micron.com>,
+        "tom.leiming@gmail.com" <tom.leiming@gmail.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-nvme@lists.infradead.org" <linux-nvme@lists.infradead.org>
+Subject: Re: [PATCH v7] NVMe: conversion to blk-mq
+In-Reply-To: <5397636F.9050209@fb.com>
+Message-ID: <alpine.LRH.2.03.1406101458470.4699@AMR>
+References: <1402392038-5268-1-git-send-email-m@bjorling.me> <1402392038-5268-2-git-send-email-m@bjorling.me>,<alpine.LRH.2.03.1406100945250.4699@AMR> <A52B97CC-6D77-468B-9A9B-A5888AE63580@fb.com> <alpine.LRH.2.03.1406101140490.4699@AMR>
+ <5397636F.9050209@fb.com>
+User-Agent: Alpine 2.03 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20140609114222.GC9307@localhost>
-References: <1402003746-6354-1-git-send-email-janne.kanniainen@gmail.com>
-	<20140606094752.GB9307@localhost>
-	<CAEEjW04UAsi7yOdmF3FZ3sLE7m7B-VAH0prDPYjaMXarAfNwcw@mail.gmail.com>
-	<20140609114222.GC9307@localhost>
-Date: Wed, 11 Jun 2014 00:10:55 +0300
-Message-ID: <CAEEjW06BnCiLyDDL82fjhFtwg5LyaGzKP+swzLFNKKwmZcvViQ@mail.gmail.com>
-Subject: Re: [PATCH v2] leds: USB: Add support for MSI GT683R led panels
-From: Janne Kanniainen <janne.kanniainen@gmail.com>
-To: Johan Hovold <johan@kernel.org>
-Cc: Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
-        linux-kernel@vger.kernel.org, linux-leds@vger.kernel.org,
-        linux-usb@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
-        linux-input@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> > Where did you get these (HID report) values from by the way?
->>
->> I got them by reverse engineering.
+On Tue, 10 Jun 2014, Jens Axboe wrote:
+> On 06/10/2014 01:29 PM, Keith Busch wrote:
+>> I have two devices, one formatted 4k, the other 512. The 4k is used as
+>> the TEST_DEV and 512 is used as SCRATCH_DEV. I'm always hitting a BUG when
+>> unmounting the scratch dev in xfstests generic/068. The bug looks like
+>> nvme was trying to use an SGL that doesn't map correctly to a PRP.
 >
-> Traffic sniffing?
->
+> I'm guessing it's some of the coalescing settings, since the driver is
+> now using the generic block rq mapping.
 
-Yes.
+Ok, sounds right. I mentioned in a way earlier review it doesn't look
+like a request that doesn't conform to a PRP list would get split anymore,
+and this test seems to confirm that.
 
-
-> In fact, it seems you can get away with not adding any locking here.
-> Just do the (mutex) locking in gt683r_led_set (or gt683r_led_work).
-
-Ok I will fix it.
-
-Janne
+Can we create something that will allow a driver to add DMA constraints to
+a request queue with the rules of a PRP list?
