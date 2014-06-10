@@ -1,28 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753886AbaFJTs1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 15:48:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35024 "EHLO
+	id S1753904AbaFJTsi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 15:48:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35042 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753760AbaFJTrQ (ORCPT
+	with ESMTP id S1753047AbaFJTsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:47:16 -0400
+	Tue, 10 Jun 2014 15:48:35 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 069/160] clocksource: Exynos_mct: Register clock event after request_irq()
-Date: Tue, 10 Jun 2014 12:45:09 -0700
-Message-Id: <1402429600-20477-70-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 022/160] staging: r8712u: Fix case where ethtype was never obtained and always be checked against 0
+Date: Tue, 10 Jun 2014 12:44:22 -0700
+Message-Id: <1402429600-20477-23-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -35,57 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 8db6e5104b77de5d0b7002b95069da0992a34be9 upstream.
+commit f764cd68d9036498f08fe8834deb6a367b5c2542 upstream.
 
-After hotplugging CPU1 the first call of interrupt handler for CPU1
-oneshot timer was called on CPU0 because it fired before setting IRQ
-affinity. Affected are SoCs where Multi Core Timer interrupts are
-shared (SPI), e.g. Exynos 4210.
+Zero-initializing ether_type masked that the ether type would never be
+obtained for 8021x packets and the comparison against eapol_type
+would always fail.
 
-During setup of the MCT timers the clock event device should be
-registered after setting the affinity for interrupt. This will prevent
-starting the timer too early.
-
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Tomasz Figa <t.figa@samsung.com>,
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-Link: http://lkml.kernel.org/r/20140416143316.299247848@linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reported-by: Jes Sorensen <Jes.Sorensen@redhat.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/clocksource/exynos_mct.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/staging/rtl8712/rtl871x_recv.c | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/clocksource/exynos_mct.c b/drivers/clocksource/exynos_mct.c
-index b17b3e0..70f3a59 100644
---- a/drivers/clocksource/exynos_mct.c
-+++ b/drivers/clocksource/exynos_mct.c
-@@ -414,8 +414,6 @@ static int exynos4_local_timer_setup(struct clock_event_device *evt)
- 	evt->set_mode = exynos4_tick_set_mode;
- 	evt->features = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT;
- 	evt->rating = 450;
--	clockevents_config_and_register(evt, clk_rate / (TICK_BASE_CNT + 1),
--					0xf, 0x7fffffff);
+diff --git a/drivers/staging/rtl8712/rtl871x_recv.c b/drivers/staging/rtl8712/rtl871x_recv.c
+index 23ec684..274c359 100644
+--- a/drivers/staging/rtl8712/rtl871x_recv.c
++++ b/drivers/staging/rtl8712/rtl871x_recv.c
+@@ -254,7 +254,7 @@ union recv_frame *r8712_portctrl(struct _adapter *adapter,
+ 	struct sta_info *psta;
+ 	struct	sta_priv *pstapriv;
+ 	union recv_frame *prtnframe;
+-	u16 ether_type = 0;
++	u16 ether_type;
  
- 	exynos4_mct_write(TICK_BASE_CNT, mevt->base + MCT_L_TCNTB_OFFSET);
- 
-@@ -432,6 +430,8 @@ static int exynos4_local_timer_setup(struct clock_event_device *evt)
- 	} else {
- 		enable_percpu_irq(mct_irqs[MCT_L0_IRQ], 0);
- 	}
-+	clockevents_config_and_register(evt, clk_rate / (TICK_BASE_CNT + 1),
-+					0xf, 0x7fffffff);
- 
- 	return 0;
- }
+ 	pstapriv = &adapter->stapriv;
+ 	ptr = get_recvframe_data(precv_frame);
+@@ -263,15 +263,14 @@ union recv_frame *r8712_portctrl(struct _adapter *adapter,
+ 	psta = r8712_get_stainfo(pstapriv, psta_addr);
+ 	auth_alg = adapter->securitypriv.AuthAlgrthm;
+ 	if (auth_alg == 2) {
++		/* get ether_type */
++		ptr = ptr + pfhdr->attrib.hdrlen + LLC_HEADER_SIZE;
++		memcpy(&ether_type, ptr, 2);
++		ether_type = ntohs((unsigned short)ether_type);
++
+ 		if ((psta != NULL) && (psta->ieee8021x_blocked)) {
+ 			/* blocked
+ 			 * only accept EAPOL frame */
+-			prtnframe = precv_frame;
+-			/*get ether_type */
+-			ptr = ptr + pfhdr->attrib.hdrlen +
+-			      pfhdr->attrib.iv_len + LLC_HEADER_SIZE;
+-			memcpy(&ether_type, ptr, 2);
+-			ether_type = ntohs((unsigned short)ether_type);
+ 			if (ether_type == 0x888e)
+ 				prtnframe = precv_frame;
+ 			else {
 -- 
 1.9.1
 
