@@ -1,50 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935606AbaFJAe1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:34:27 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:47666 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934480AbaFJAWm (ORCPT
+	id S936038AbaFJAfF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:35:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58480 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934414AbaFJAWf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 20:22:42 -0400
-Date: Mon, 9 Jun 2014 17:22:37 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Jiang Liu <jiang.liu@linux.intel.com>
-cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@linaro.org>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        x86@kernel.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, stable@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [Patch V4 01/42] x86, irq: update high address field when updating
- affinity for MSI IRQ
-In-Reply-To: <1402302011-23642-2-git-send-email-jiang.liu@linux.intel.com>
-Message-ID: <alpine.DEB.2.02.1406091722260.17705@chino.kir.corp.google.com>
-References: <1402302011-23642-1-git-send-email-jiang.liu@linux.intel.com> <1402302011-23642-2-git-send-email-jiang.liu@linux.intel.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 9 Jun 2014 20:22:35 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Daniel Kiper <daniel.kiper@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 3.4 80/88] xen/p2m: Collapse early_alloc_p2m_middle redundant checks.
+Date: Mon,  9 Jun 2014 17:25:30 -0700
+Message-Id: <20140610002427.130321664@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
+References: <20140610002424.500996570@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Jun 2014, Jiang Liu wrote:
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-> If x2apic is enabled, the MSI high address field should also be aslo
-> updated when setting affinity for MSI IRQ, otherwise the MSI IRQ may
-> target wrong APIC IDs.
-> 
-> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-> Cc: stable@vger.kernel.org
+------------------
 
-Acked-by: David Rientjes <rientjes@google.com>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+
+commit d5096850b47424fb0f1c6a75b8f7184f7169319a upstream.
+
+At the start of the function we were checking for idx != 0
+and bailing out. And later calling extend_brk if idx != 0.
+
+That is unnecessary so remove that checks.
+
+Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/x86/xen/p2m.c |   25 ++++++++++++-------------
+ 1 file changed, 12 insertions(+), 13 deletions(-)
+
+--- a/arch/x86/xen/p2m.c
++++ b/arch/x86/xen/p2m.c
+@@ -502,6 +502,8 @@ static bool alloc_p2m(unsigned long pfn)
+ static bool __init early_alloc_p2m_middle(unsigned long pfn, bool check_boundary)
+ {
+ 	unsigned topidx, mididx, idx;
++	unsigned long *p2m;
++	unsigned long *mid_mfn_p;
+ 
+ 	topidx = p2m_top_index(pfn);
+ 	mididx = p2m_mid_index(pfn);
+@@ -522,24 +524,21 @@ static bool __init early_alloc_p2m_middl
+ 		return false;
+ 
+ 	/* Boundary cross-over for the edges: */
+-	if (idx) {
+-		unsigned long *p2m = extend_brk(PAGE_SIZE, PAGE_SIZE);
+-		unsigned long *mid_mfn_p;
++	p2m = extend_brk(PAGE_SIZE, PAGE_SIZE);
+ 
+-		p2m_init(p2m);
++	p2m_init(p2m);
+ 
+-		p2m_top[topidx][mididx] = p2m;
++	p2m_top[topidx][mididx] = p2m;
+ 
+-		/* For save/restore we need to MFN of the P2M saved */
++	/* For save/restore we need to MFN of the P2M saved */
+ 
+-		mid_mfn_p = p2m_top_mfn_p[topidx];
+-		WARN(mid_mfn_p[mididx] != virt_to_mfn(p2m_missing),
+-			"P2M_TOP_P[%d][%d] != MFN of p2m_missing!\n",
+-			topidx, mididx);
+-		mid_mfn_p[mididx] = virt_to_mfn(p2m);
++	mid_mfn_p = p2m_top_mfn_p[topidx];
++	WARN(mid_mfn_p[mididx] != virt_to_mfn(p2m_missing),
++		"P2M_TOP_P[%d][%d] != MFN of p2m_missing!\n",
++		topidx, mididx);
++	mid_mfn_p[mididx] = virt_to_mfn(p2m);
+ 
+-	}
+-	return idx != 0;
++	return true;
+ }
+ 
+ static bool __init early_alloc_p2m(unsigned long pfn)
+
+
