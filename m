@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751638AbaFJLnu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 07:43:50 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:39954 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751035AbaFJLns (ORCPT
+	id S1751888AbaFJLpt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 07:45:49 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:53353 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751248AbaFJLps (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 07:43:48 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-23-5396ef722a28
-Message-id: <5396EF63.8030506@samsung.com>
-Date: Tue, 10 Jun 2014 13:43:31 +0200
-From: Tomasz Figa <t.figa@samsung.com>
-Organization: Samsung R&D Institute Poland
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.5.0
-MIME-version: 1.0
-To: Pankaj Dubey <pankaj.dubey@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: kgene.kim@samsung.com, linux@arm.linux.org.uk, chow.kim@samsung.com,
-        yg1004.jang@samsung.com, vikas.sajjan@samsung.com
-Subject: Re: [PATCH v4 01/11] ARM: EXYNOS: Make exynos machine_ops as static
-References: <1399704998-13321-1-git-send-email-pankaj.dubey@samsung.com>
- <1399704998-13321-2-git-send-email-pankaj.dubey@samsung.com>
-In-reply-to: <1399704998-13321-2-git-send-email-pankaj.dubey@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLLMWRmVeSWpSXmKPExsVy+t/xa7pF76cFGxy9zWKxbNJdNoveBVfZ
-	LDY9vsZqcXnXHDaLGef3MVncvsxrsWjrF3aLm8+2M1nsaFnN4sDp0dLcw+axeUm9R9+WVYwe
-	nzfJBbBEcdmkpOZklqUW6dslcGVsXbaEveAzc8WZGVOYGxgnMHcxcnJICJhInOi/zQZhi0lc
-	uLceyObiEBJYyijx4PZWRpCEkMBnRol5r2RBbF4BLYmV006zgtgsAqoSx060g9lsAmoSnxse
-	gQ3iB6pZ03SdpYuRg0NUIELi8QUhiFZBiR+T77GAzBcRmMIocbFnGdh8ZoEaiQWdm1lAbGEB
-	H4lZbVNYII5oB9r7fQ3YAk4BT4nlR7tZIBp0JPa3TmODsOUlNq95yzyBUXAWkiWzkJTNQlK2
-	gJF5FaNoamlyQXFSeq6hXnFibnFpXrpecn7uJkZIFHzZwbj4mNUhRgEORiUeXg6dacFCrIll
-	xZW5hxglOJiVRHi/nAQK8aYkVlalFuXHF5XmpBYfYmTi4JRqYNR/88m8+GXrgS2RT62rTU18
-	m3sfPr74o3rRsU3t3GcY7jD5WeRZNl3Vrvct/lqxJaD5/MKzS5RqQzhN3j/4WFERZ/8oWeF9
-	Om/StN2sBXOfqX195fbn1a+Vy5ge7VPUUs37d6X29i8tLZtZ0mwnpaYdZX3mYJE+7/Hjo+Xp
-	tpnb4vSaXJUZ3yqxFGckGmoxFxUnAgCIrUCTYAIAAA==
+	Tue, 10 Jun 2014 07:45:48 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140610112827.GA359@lst.de>
+References: <1402375925-21720-1-git-send-email-tom.leiming@gmail.com>
+	<20140610112827.GA359@lst.de>
+Date: Tue, 10 Jun 2014 19:45:47 +0800
+Message-ID: <CACVXFVNxSh7ryy2vfnoNYpvmnjU0+TcipgdZxJ3tDbu-RBY=zA@mail.gmail.com>
+Subject: Re: [PATCH] blk-mq: kick requeue list in blk_mq_requeue_request()
+From: Ming Lei <tom.leiming@gmail.com>
+To: Christoph Hellwig <hch@lst.de>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        =?UTF-8?Q?Matias_Bj=C3=B8rling?= <m@bjorling.me>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pankaj,
+On Tue, Jun 10, 2014 at 7:28 PM, Christoph Hellwig <hch@lst.de> wrote:
+> On Tue, Jun 10, 2014 at 12:52:05PM +0800, Ming Lei wrote:
+>> blk_mq_requeue_request() should kick off the requeue list so
+>> that the request can be scheduled to queue finally.
+>>
+>> In nvme conversion patch, blk_mq_requeue_request() is called
+>> to requeue failed request from completion handler, this patch
+>> fixes the issue and makes the block API working as expected.
+>
+> I've intentionally kepts the two separate so that we can batch operations
+> and just do a single kick for multiple requeued commands.
+>
 
-On 10.05.2014 08:56, Pankaj Dubey wrote:
-> As machine function ops are used only in this file let's make
-> them static. Also remove unused and unwanted declarations from
-> common.h.
-> 
-> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-> ---
->  arch/arm/mach-exynos/common.h |    8 --------
->  arch/arm/mach-exynos/exynos.c |    6 +++---
->  2 files changed, 3 insertions(+), 11 deletions(-)
-> 
+OK, but the API name is a bit confusing, and that is easy to cause
+misuse, like in nvme.
 
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+Also requeue one request in completion handler may be a
+common case, so maybe it is better to let blk_mq_requeue_request()
+handle both adding to request list and kicking off, and introduce
+blk_mq_prep_requeue_req()(or better name) to batch operations.
 
-Best regards,
-Tomasz
+
+Thanks,
+-- 
+Ming Lei
