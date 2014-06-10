@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755278AbaFKCay (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 22:30:54 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:46418 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751643AbaFKCax (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 22:30:53 -0400
-From: Xufeng Zhang <xufeng.zhang@windriver.com>
-To: <vyasevich@gmail.com>, <nhorman@tuxdriver.com>, <davem@davemloft.net>
-CC: <linux-sctp@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] sctp: Fix sk_ack_backlog wrap-around problem
-Date: Wed, 11 Jun 2014 10:37:24 +0800
-Message-ID: <1402454244-8427-1-git-send-email-xufeng.zhang@windriver.com>
-X-Mailer: git-send-email 1.7.0.2
+	id S1755220AbaFKCjB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 22:39:01 -0400
+Received: from mga01.intel.com ([192.55.52.88]:44658 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751619AbaFKCi7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 22:38:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="353374253"
+Date: Wed, 11 Jun 2014 02:35:05 +0800
+From: Yuyang Du <yuyang.du@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Dirk Brandewie <dirk.brandewie@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        Dietmar Eggemann <Dietmar.Eggemann@arm.com>, len.brown@intel.com,
+        jacob.jun.pan@linux.intel.com
+Subject: Re: [RFC PATCH 06/16] arm: topology: Define TC2 sched energy and
+ provide it to scheduler
+Message-ID: <20140610183505.GC5487@intel.com>
+References: <20140604172712.GJ13930@laptop.programming.kicks-ass.net>
+ <2484761.vkWavnsDx3@vostro.rjw.lan>
+ <20140605065205.GA3213@twins.programming.kicks-ass.net>
+ <539086B3.2010804@gmail.com>
+ <20140605202930.GA15484@intel.com>
+ <20140606080543.GR6758@twins.programming.kicks-ass.net>
+ <20140606003520.GB22261@intel.com>
+ <20140606105036.GQ3213@twins.programming.kicks-ass.net>
+ <20140607232628.GC22261@intel.com>
+ <20140610101622.GB6758@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140610101622.GB6758@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Consider the scenario:
-For a TCP-style socket, while processing the COOKIE_ECHO chunk in
-sctp_sf_do_5_1D_ce(), after it has passed a series of sanity check,
-a new association would be created in sctp_unpack_cookie(), but afterwards,
-some processing maybe failed, and sctp_association_free() will be called to
-free the previously allocated association, in sctp_association_free(),
-sk_ack_backlog value is decremented for this socket, since the initial
-value for sk_ack_backlog is 0, after the decrement, it will be 65535,
-a wrap-around problem happens, and if we want to establish new associations
-afterward in the same socket, ABORT would be triggered since sctp deem the
-accept queue as full.
-Fix this issue by only decrementing sk_ack_backlog for associations in
-the endpoint's list.
+On Tue, Jun 10, 2014 at 12:16:22PM +0200, Peter Zijlstra wrote:
+> What other target would you optimize for? The purpose here is to build
+> an energy aware scheduler, one that schedules tasks so that the total
+> amount of energy, for the given amount of work, is minimal.
+> 
+> So we can't measure in Watt, since if we forced the CPU into the lowest
+> P-state (or even C-state for that matter) work would simply not
+> complete. So we need a complete energy term.
+> 
+> Now. IPC is instructions/cycle, Watt is Joule/second, so IPC/Watt is
+> 
+> instructions   second
+> ------------ * ------ ~ instructions / joule
+>   cycle        joule
+> 
+> Seeing how both cycles and seconds are time units.
+> 
+> So for any given amount of instructions, the work needs to be done, we
+> want the minimal amount of energy consumed, and IPC/Watt is the natural
+> metric to measure this over an entire workload.
 
-Fix-suggested-by: Neil Horman <nhorman@tuxdriver.com>
-Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
----
- net/sctp/associola.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Ok, I understand. Whether we take IPC/watt as an input metric in scheduler or
+as a goal for scheduler, we definitely need to try both.
 
-diff --git a/net/sctp/associola.c b/net/sctp/associola.c
-index 39579c3..60564f2 100644
---- a/net/sctp/associola.c
-+++ b/net/sctp/associola.c
-@@ -330,7 +330,7 @@ void sctp_association_free(struct sctp_association *asoc)
- 	/* Only real associations count against the endpoint, so
- 	 * don't bother for if this is a temporary association.
- 	 */
--	if (!asoc->temp) {
-+	if (!asoc->temp && !list_empty(&asoc->asocs)) {
- 		list_del(&asoc->asocs);
- 
- 		/* Decrement the backlog value for a TCP-style listening
--- 
-1.7.0.2
+Thanks, Peter.
 
+Yuyang
