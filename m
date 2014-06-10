@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933417AbaFJUhG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 16:37:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34880 "EHLO
+	id S933278AbaFJUhD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 16:37:03 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34881 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753463AbaFJTq5 (ORCPT
+	with ESMTP id S1753468AbaFJTq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 10 Jun 2014 15:46:57 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Joel Fernandes <joelf@ti.com>, Sekhar Nori <nsekhar@ti.com>,
-        Vinod Koul <vinod.koul@intel.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 010/160] dma: edma: fix incorrect SG list handling
-Date: Tue, 10 Jun 2014 12:44:10 -0700
-Message-Id: <1402429600-20477-11-git-send-email-kamal@canonical.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, linaro-kernel@lists.linaro.org,
+        fweisbec@gmail.com, Arvind.Chauhan@arm.com,
+        linaro-networking@linaro.org, Thomas Gleixner <tglx@linutronix.de>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 013/160] tick-common: Fix wrong check in tick_check_replacement()
+Date: Tue, 10 Jun 2014 12:44:13 -0700
+Message-Id: <1402429600-20477-14-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -27,63 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sekhar Nori <nsekhar@ti.com>
+From: Viresh Kumar <viresh.kumar@linaro.org>
 
-commit 5fc68a6cad658e45dca3e0a6607df3a8e5df4ef9 upstream.
+commit 521c42990e9d561ed5ed9f501f07639d0512b3c9 upstream.
 
-The code to handle any length SG lists calls edma_resume()
-even before edma_start() is called. This is incorrect
-because edma_resume() enables edma events on the channel
-after which CPU (in edma_start) cannot clear posted
-events by writing to ECR (per the EDMA user's guide).
+tick_check_replacement() returns if a replacement of clock_event_device is
+possible or not. It does this as the first check:
 
-Because of this EDMA transfers fail to start if due
-to some reason there is a pending EDMA event registered
-even before EDMA transfers are started. This can happen if
-an EDMA event is a byproduct of device initialization.
+	if (tick_check_percpu(curdev, newdev, smp_processor_id()))
+		return false;
 
-Fix this by calling edma_resume() only if it is not the
-first batch of MAX_NR_SG elements.
+Thats wrong. tick_check_percpu() returns true when the device is
+useable. Check for false instead.
 
-Without this patch, MMC/SD fails to function on DA850 EVM
-with DMA. The behaviour is triggered by specific IP and
-this can explain why the issue was not reported before
-(example with MMC/SD on AM335x).
+[ tglx: Massaged changelog ]
 
-Tested on DA850 EVM and AM335x EVM-SK using MMC/SD card.
-
-Cc: Joel Fernandes <joelf@ti.com>
-Acked-by: Joel Fernandes <joelf@ti.com>
-Tested-by: Jon Ringle <jringle@gridpoint.com>
-Tested-by: Alexander Holler <holler@ahsoftware.de>
-Reported-by: Jon Ringle <jringle@gridpoint.com>
-Signed-off-by: Sekhar Nori <nsekhar@ti.com>
-Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linaro-kernel@lists.linaro.org
+Cc: fweisbec@gmail.com
+Cc: Arvind.Chauhan@arm.com
+Cc: linaro-networking@linaro.org
+Link: http://lkml.kernel.org/r/486a02efe0246635aaba786e24b42d316438bf3b.1397537987.git.viresh.kumar@linaro.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/dma/edma.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ kernel/time/tick-common.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
-index 2539ea0..037443c 100644
---- a/drivers/dma/edma.c
-+++ b/drivers/dma/edma.c
-@@ -182,11 +182,13 @@ static void edma_execute(struct edma_chan *echan)
- 				  echan->ecc->dummy_slot);
- 	}
+diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
+index 162b03a..425bfae 100644
+--- a/kernel/time/tick-common.c
++++ b/kernel/time/tick-common.c
+@@ -275,7 +275,7 @@ static bool tick_check_preferred(struct clock_event_device *curdev,
+ bool tick_check_replacement(struct clock_event_device *curdev,
+ 			    struct clock_event_device *newdev)
+ {
+-	if (tick_check_percpu(curdev, newdev, smp_processor_id()))
++	if (!tick_check_percpu(curdev, newdev, smp_processor_id()))
+ 		return false;
  
--	edma_resume(echan->ch_num);
--
- 	if (edesc->processed <= MAX_NR_SG) {
- 		dev_dbg(dev, "first transfer starting %d\n", echan->ch_num);
- 		edma_start(echan->ch_num);
-+	} else {
-+		dev_dbg(dev, "chan: %d: completed %d elements, resuming\n",
-+			echan->ch_num, edesc->processed);
-+		edma_resume(echan->ch_num);
- 	}
- 
- 	/*
+ 	return tick_check_preferred(curdev, newdev);
 -- 
 1.9.1
 
