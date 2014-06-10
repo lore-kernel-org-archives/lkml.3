@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753465AbaFJSy4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 14:54:56 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:56447 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752453AbaFJSwt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752867AbaFJSwt (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 10 Jun 2014 14:52:49 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:54538 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752453AbaFJSwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 14:52:45 -0400
 From: Murali Karicheri <m-karicheri2@ti.com>
 To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         <linux-pci@vger.kernel.org>, <devicetree@vger.kernel.org>,
@@ -25,21 +24,18 @@ CC: Murali Karicheri <m-karicheri2@ti.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>,
         Randy Dunlap <rdunlap@infradead.org>
-Subject: [PATCH v2 8/8] ARM: keystone: add pcie related options
-Date: Tue, 10 Jun 2014 14:51:27 -0400
-Message-ID: <1402426287-31157-9-git-send-email-m-karicheri2@ti.com>
+Subject: [PATCH v2 0/8] Add Keystone PCIe controller driver
+Date: Tue, 10 Jun 2014 14:51:19 -0400
+Message-ID: <1402426287-31157-1-git-send-email-m-karicheri2@ti.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1402426287-31157-1-git-send-email-m-karicheri2@ti.com>
-References: <1402426287-31157-1-git-send-email-m-karicheri2@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add pcie related options by default for keystone architecture
-
-Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+This patch adds a PCIe controller driver for Keystone SoCs. This
+is based on v1 of the series posted to the mailing list.
 
 CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
 CC: Russell King <linux@arm.linux.org.uk>
@@ -60,22 +56,72 @@ CC: Kumar Gala <galak@codeaurora.org>
 CC: Randy Dunlap <rdunlap@infradead.org>
 CC: Grant Likely <grant.likely@linaro.org> 
 
----
- arch/arm/mach-keystone/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
 
-diff --git a/arch/arm/mach-keystone/Kconfig b/arch/arm/mach-keystone/Kconfig
-index f50bc93..8f06806 100644
---- a/arch/arm/mach-keystone/Kconfig
-+++ b/arch/arm/mach-keystone/Kconfig
-@@ -8,6 +8,7 @@ config ARCH_KEYSTONE
- 	select COMMON_CLK_KEYSTONE
- 	select ARCH_SUPPORTS_BIG_ENDIAN
- 	select ZONE_DMA if ARM_LPAE
-+	select MIGHT_HAVE_PCI
- 	help
- 	  Support for boards based on the Texas Instruments Keystone family of
- 	  SoCs.
+Changelog:
+
+V2
+ - Split the designware pcie enhancement patch to multiple
+   patches based on functionality added
+ - Remove the quirk code and add a patch to fix mps/mrss
+   tuning for ARM. Use kernel command line parameter
+   pci=pcie_bus_perf to work with Keystone PCI Controller.
+   Following patch addressed this.
+     [PATCH v1] ARM: pci: add call to pcie_bus_configure_settings()
+ - Add documentation for device tree bindings
+ - Add separate interrupt controller nodes for MSI and Legacy
+   IRQs and use irq map for legacy IRQ
+ - Use compatibility to identify v3.65 version of the DW hardware
+   and use it to customize the designware common code.
+ - Use reg property for configuration space instead of range
+ - Other minor updates based on code inspection. 
+
+V1
+ - Add an interrupt controller node for Legacy irq chip and use
+   interrupt map/map-mask property to map legacy IRQs A/B/C/D
+ - Add a Phy driver to replace the original serdes driver
+ - Move common application register handling code to a separate
+   file to allow re-use across other platforms that use older
+   DW PCIe h/w
+ - PCI quirk for maximum read request size. Check and override only
+   if the maximum is higher than what controller can handle.
+ - Converted to a module platform driver.
+
+
+Murali Karicheri (8):
+  PCI: designware: add rd[wr]_other_conf API
+  PCI: designware: refactor host init code to re-use on v3.65 DW pci hw
+  PCI: designware: update pcie core driver to work with dw hw version
+    3.65
+  PCI: designware: add msi controller functions for v3.65 hw
+  PCI: designware: add PCI controller functions for v3.65 DW hw
+  phy: Add serdes phy driver for keystone
+  PCI: keystone: add pcie driver based on designware core driver
+  ARM: keystone: add pcie related options
+
+ .../devicetree/bindings/pci/designware-pcie.txt    |   42 ++
+ .../devicetree/bindings/pci/pci-keystone.txt       |   56 +++
+ .../bindings/phy/phy-keystone-serdes.txt           |   25 ++
+ arch/arm/mach-keystone/Kconfig                     |    1 +
+ drivers/pci/host/Kconfig                           |   12 +
+ drivers/pci/host/Makefile                          |    2 +
+ drivers/pci/host/pci-dw-v3_65-msi.c                |  149 +++++++
+ drivers/pci/host/pci-dw-v3_65.c                    |  390 ++++++++++++++++++
+ drivers/pci/host/pci-dw-v3_65.h                    |   34 ++
+ drivers/pci/host/pci-keystone.c                    |  418 ++++++++++++++++++++
+ drivers/pci/host/pcie-designware.c                 |  175 +++++---
+ drivers/pci/host/pcie-designware.h                 |   42 +-
+ drivers/phy/Kconfig                                |    6 +
+ drivers/phy/Makefile                               |    1 +
+ drivers/phy/phy-keystone-serdes.c                  |  230 +++++++++++
+ 15 files changed, 1531 insertions(+), 52 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/pci/pci-keystone.txt
+ create mode 100644 Documentation/devicetree/bindings/phy/phy-keystone-serdes.txt
+ create mode 100644 drivers/pci/host/pci-dw-v3_65-msi.c
+ create mode 100644 drivers/pci/host/pci-dw-v3_65.c
+ create mode 100644 drivers/pci/host/pci-dw-v3_65.h
+ create mode 100644 drivers/pci/host/pci-keystone.c
+ create mode 100644 drivers/phy/phy-keystone-serdes.c
+
 -- 
 1.7.9.5
 
