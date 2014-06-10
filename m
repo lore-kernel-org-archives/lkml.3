@@ -1,60 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752161AbaFJOl0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 10:41:26 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:40463 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003AbaFJOlY (ORCPT
+	id S1751851AbaFJOmU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 10:42:20 -0400
+Received: from mail.siteground.com ([67.19.240.234]:53067 "EHLO
+	mail.siteground.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751061AbaFJOmR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 10:41:24 -0400
-Date: Tue, 10 Jun 2014 20:11:18 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: julia.lawall@lip6.fr
-Subject: [PATCH] fs/ext2/super.c: Drop memory allocation cast
-Message-ID: <20140610144118.GA3255@himangi-Dell>
+	Tue, 10 Jun 2014 10:42:17 -0400
+Message-ID: <5397194B.9010606@1h.com>
+Date: Tue, 10 Jun 2014 17:42:19 +0300
+From: Marian Marinov <mm@1h.com>
+Organization: 1H Ltd.
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michal Hocko <mhocko@suse.cz>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org
+Subject: Re: [RFC] oom, memcg: handle sysctl oom_kill_allocating_task while
+ memcg oom happening
+References: <5396ED66.7090401@1h.com> <20140610115254.GA25631@dhcp22.suse.cz>
+In-Reply-To: <20140610115254.GA25631@dhcp22.suse.cz>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - mail.siteground.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - 1h.com
+X-Get-Message-Sender-Via: mail.siteground.com: none
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Drop cast on the result of kmem_cache_alloc.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-The semantic patch that makes this change is as follows:
+On 06/10/2014 02:52 PM, Michal Hocko wrote:
+> [More people to CC] On Tue 10-06-14 14:35:02, Marian Marinov wrote:
+>> -----BEGIN PGP SIGNED MESSAGE----- Hash: SHA1
+>> 
+>> Hello,
+> 
+> Hi,
+> 
+>> a while back in 2012 there was a request for this functionality. oom, memcg: handle sysctl
+>> oom_kill_allocating_task while memcg oom happening
+>> 
+>> This is the thread: https://lkml.org/lkml/2012/10/16/168
+>> 
+>> Now we run a several machines with around 10k processes on each machine, using containers.
+>> 
+>> Regularly we see OOM from within a container that causes performance degradation.
+> 
+> What kind of performance degradation and which parts of the system are affected?
 
-// <smpl>
-@@
-type T;
-@@
+The responsiveness to SSH terminals and DB queries on the host machine is significantly slowed.
+I'm still unsure what exactly to measure.
 
-- (T *)
-  (\(kmalloc\|kzalloc\|kcalloc\|kmem_cache_alloc\|kmem_cache_zalloc\|
-   kmem_cache_alloc_node\|kmalloc_node\|kzalloc_node\)(...))
-// </smpl>
+> 
+> memcg oom killer happens outside of any locks currently so the only bottleneck I can see is the per-cgroup
+> container which iterates all tasks in the group. Is this what is going on here?
 
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
- fs/ext2/super.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+When the container has 1000s of processes it seams that there is a problem. But I'm not sure, and will be happy to put
+some diagnostic lines of code there.
 
-diff --git a/fs/ext2/super.c b/fs/ext2/super.c
-index 3750031..b88edc0 100644
---- a/fs/ext2/super.c
-+++ b/fs/ext2/super.c
-@@ -161,7 +161,7 @@ static struct kmem_cache * ext2_inode_cachep;
- static struct inode *ext2_alloc_inode(struct super_block *sb)
- {
- 	struct ext2_inode_info *ei;
--	ei = (struct ext2_inode_info *)kmem_cache_alloc(ext2_inode_cachep, GFP_KERNEL);
-+	ei = kmem_cache_alloc(ext2_inode_cachep, GFP_KERNEL);
- 	if (!ei)
- 		return NULL;
- 	ei->i_block_alloc_info = NULL;
--- 
-1.9.1
+> 
+>> We are running 3.12.20 with the following OOM configuration and memcg oom enabled:
+>> 
+>> vm.oom_dump_tasks = 0 vm.oom_kill_allocating_task = 1 vm.panic_on_oom = 0
+>> 
+>> When OOM occurs we see very high numbers for the loadavg and the overall responsiveness of the machine degrades.
+> 
+> What is the system waiting for?
 
+I don't know, since I was not the one to actually handle the case. However, my guys are instructed to collect iostat
+and vmstat information from the machines, the next time this happens.
+
+> 
+>> During these OOM states the load of the machine gradualy increases from 25 up to 120 in the interval of
+>> 10minutes.
+>> 
+>> Once we manually bring down the memory usage of a container(killing some tasks) the load drops down to 25 within
+>> 5 to 7 minutes.
+> 
+> So the OOM killer is not able to find a victim to kill?
+
+It was constantly killing tasks. 245 oom invocations in less then 6min for that particular cgroup. With top 61 oom
+invocations in one minute.
+
+It was killing... In that particular case, the problem was a web server that was under attack. New php processes was
+spawned very often and instead of killing each newly created process(which is allocating memory) the kernel tries to
+find more suitable task. Which in this case was not desired.
+
+> 
+>> I read the whole thread from 2012 but I do not see the expected behavior that is described by the people that
+>> commented the issue.
+> 
+> Why do you think that killing the allocating task would be helpful in your case?
+
+As mentioned above, the usual case with the hosting companies is that, the allocating task should not be allowed to
+run. So killing it is the proper solution there.
+
+Essentially we solved the issue by setting a process limit to that particular cgroup using the task-limit patches of
+Dwight Engen.
+
+> 
+>> In this case, with real usage for this patch, would it be considered for inclusion?
+> 
+> I would still prefer to fix the real issue which is not clear from your description yet.
+
+I would love to have a better way to solve the issue.
+
+Marian
+
+
+
+- -- 
+Marian Marinov
+Founder & CEO of 1H Ltd.
+Jabber/GTalk: hackman@jabber.org
+ICQ: 7556201
+Mobile: +359 886 660 270
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iEYEARECAAYFAlOXGUsACgkQ4mt9JeIbjJR1YACgysnzxg9IPzcwQRmBZVVV6cp3
+N4YAoKygaqbqcuz6dkmtMfI/pu2Br5H/
+=3pZj
+-----END PGP SIGNATURE-----
