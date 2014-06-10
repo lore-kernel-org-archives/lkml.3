@@ -1,88 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754731AbaFJF6u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 01:58:50 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:49960 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750959AbaFJF6t (ORCPT
+	id S1754724AbaFJGGy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 02:06:54 -0400
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:8967 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751273AbaFJGGw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 01:58:49 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: jolsa@redhat.com, linux-kernel@vger.kernel.org, acme@infradead.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 2/9] perf, tools: Add support for text descriptions of events and alias add
-References: <1401486615-21374-1-git-send-email-andi@firstfloor.org>
-	<1401486615-21374-3-git-send-email-andi@firstfloor.org>
-	<87ha3ud6ic.fsf@sejong.aot.lge.com>
-	<20140609165245.GR25366@two.firstfloor.org>
-Date: Tue, 10 Jun 2014 14:58:46 +0900
-In-Reply-To: <20140609165245.GR25366@two.firstfloor.org> (Andi Kleen's message
-	of "Mon, 9 Jun 2014 18:52:45 +0200")
-Message-ID: <87fvjdb90p.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 10 Jun 2014 02:06:52 -0400
+Date: Mon, 9 Jun 2014 23:06:42 -0700
+From: Martin Lau <kafai@fb.com>
+To: <rostedt@goodmis.org>
+CC: <linux-kernel@vger.kernel.org>, <clm@fb.com>
+Subject: [PATCH] ring-buffer: Fix polling on trace_pipe
+Message-ID: <20140610060637.GA14045@devbig242.prn2.facebook.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-06-10_03:2014-06-09,2014-06-10,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=2.66864308429149e-12 kscore.compositescore=0
+ circleOfTrustscore=22.4078557653337 compositescore=0.997695897463551
+ urlsuspect_oldscore=0.997695897463551 suspectscore=1
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=62764
+ rbsscore=0.997695897463551 spamscore=0
+ recipient_to_sender_domain_totalscore=6 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1406100083
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andi,
+ring_buffer_poll_wait() should always put the poll_table to its wait_queue
+even there is immediate data available.  Otherwise, the following epoll and
+read sequence will eventually hang forever:
 
-On Mon, 9 Jun 2014 18:52:45 +0200, Andi Kleen wrote:
->> Hmm.. this will print the description at right side and I think it'd be
->> better if it prints in another line(s) like below:
->
-> I think it's better to show the descriptions by default without 
-> an extra option. I suspect most people want to see them, or if they
-> need them they won't know about obscure -v options.
+1. Put some data to make the trace_pipe ring_buffer read ready first
+2. epoll_ctl(efd, EPOLL_CTL_ADD, trace_pipe_fd, ee)
+3. epoll_wait()
+4. read(trace_pipe_fd) till EAGAIN
+5. Add some more data to the trace_pipe ring_buffer
+6. epoll_wait() -> this epoll_wait() will block forever
 
-I partially agree, but I guess adding -v option to the command is not
-that hard for them. :)  Maybe we could add a message in order to advise
-users to use -v option for description like below:
+~ During the epoll_ctl(efd, EPOLL_CTL_ADD,...) call in step 2,
+  ring_buffer_poll_wait() returns immediately without adding poll_table,
+  which has poll_table->_qproc pointing to ep_poll_callback(), to its
+  wait_queue.
+~ During the epoll_wait() call in step 3 and step 6,
+  ring_buffer_poll_wait() cannot add ep_poll_callback() to its wait_queue
+  because the poll_table->_qproc is NULL and it is how epoll works.
+~ When there is new data available in step 6, ring_buffer does not know
+  it has to call ep_poll_callback() because it is not in its wait queue.
+  Hence, block forever.
 
-  $ perf list
-  # Use -v/--verbose to see event description (if exists)
-  ...
+Other poll implementation seems to call poll_wait() unconditionally as the very
+first thing to do.  For example, tcp_poll() in tcp.c.
 
->
->> 
->>   agu_bypass_cancel.count                            [Kernel PMU event]
->>         This event counts executed load operations with all the following
->>          traits: 1. addressing of the format [base + offset], 2. the offset
->>          is between 1 and 2047, 3. the address specified in the base register
->>          is in one page and the address [base+offset] is in an
->
-> The problem with this format is that it is not compatible, so it would
-> break existing parsers that look at perf list output.  That is why I ended up
-> with the right side format.
+Signed-off-by: Martin Lau <kafai@fb.com>
+---
+ kernel/trace/ring_buffer.c | 4 ----
+ 1 file changed, 4 deletions(-)
 
-Hmm.. I think existing parsers should not use -v option then.  The perf
-list was for listing only event names (and their types).
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index fd12cc5..a6e64e8 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -613,10 +613,6 @@ int ring_buffer_poll_wait(struct ring_buffer *buffer, int cpu,
+ 	struct ring_buffer_per_cpu *cpu_buffer;
+ 	struct rb_irq_work *work;
+ 
+-	if ((cpu == RING_BUFFER_ALL_CPUS && !ring_buffer_empty(buffer)) ||
+-	    (cpu != RING_BUFFER_ALL_CPUS && !ring_buffer_empty_cpu(buffer, cpu)))
+-		return POLLIN | POLLRDNORM;
+-
+ 	if (cpu == RING_BUFFER_ALL_CPUS)
+ 		work = &buffer->irq_work;
+ 	else {
+-- 
+1.8.1
 
-I think the main problem of the right side format is that it hurts
-readability especially on small screens/terminals.
-
-Thanks,
-Namhyung
-
->
->
->>   arith.fpu_div                                      [Kernel PMU event]
->>         Divide operations executed
->>   arith.fpu_div_active                               [Kernel PMU event]
->>         Cycles when divider is busy executing divide operations
->>   ...
->> 
->> 
->> I just tweaked it using -v option for perf list.  Below is the change I
->> made on top of your series.  What do you think?
->
-> I prefer not to apply that patch.
->
-> I guess what could make sense is a quiet option to not print
-> descriptions.
->
-> -Andi
