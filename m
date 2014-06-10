@@ -1,95 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753811AbaFJVjD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 17:39:03 -0400
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:57077 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753209AbaFJVjB (ORCPT
+	id S1754285AbaFJVkx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 17:40:53 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:38727 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753874AbaFJVkt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 17:39:01 -0400
-From: Jeff Layton <jlayton@poochiereds.net>
-To: linux-kernel@vger.kernel.org
-Cc: dan.carpenter@oracle.com, linux-sparse@vger.kernel.org,
-        Jeff Layton <jlayton@primarydata.com>
-Subject: [PATCH][RFC] err.h: silence sparse warning: dereference of noderef expression
-Date: Tue, 10 Jun 2014 17:38:49 -0400
-Message-Id: <1402436329-24750-1-git-send-email-jlayton@poochiereds.net>
-X-Mailer: git-send-email 1.9.3
+	Tue, 10 Jun 2014 17:40:49 -0400
+MIME-Version: 1.0
+In-Reply-To: <CACE9dm95RiGxuG-XaGKd3KqBRkk+wyj3CBbMhaCTJQaiiaj9wQ@mail.gmail.com>
+References: <1402331614.7064.60.camel@dhcp-9-2-203-236.watson.ibm.com>
+	<cover.1402387862.git.d.kasatkin@samsung.com>
+	<20140610122008.GA31944@hansolo.jdub.homelinux.org>
+	<CACE9dm9Ff6b3J=05QfcgBv-c_y=5qGNq1-ZSfo4smtj34i1e-A@mail.gmail.com>
+	<20140610204021.GA8916@srcf.ucam.org>
+	<CACE9dm9ma=XRZkoCiefva-dKL+LYw-s8QB4xUTkRUZH=5XM9ew@mail.gmail.com>
+	<CACE9dm8zxVXx2zRcfDYUFjqvQYT4MbLevp5U13tfH9Hb6USSJw@mail.gmail.com>
+	<20140610212516.GB10614@srcf.ucam.org>
+	<CACE9dm95RiGxuG-XaGKd3KqBRkk+wyj3CBbMhaCTJQaiiaj9wQ@mail.gmail.com>
+Date: Wed, 11 Jun 2014 00:40:48 +0300
+Message-ID: <CACE9dm8mfFvzS7qSHZFsodoiTHzba3AJF4kr2SrY20cNUiXrfQ@mail.gmail.com>
+Subject: Re: [PATCH 0/4] KEYS: validate key trust with owner and builtin keys only
+From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Josh Boyer <jwboyer@redhat.com>, David Howells <dhowells@redhat.com>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        keyrings <keyrings@linux-nfs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeff Layton <jlayton@primarydata.com>
+On 11 June 2014 00:34, Dmitry Kasatkin <dmitry.kasatkin@gmail.com> wrote:
+> On 11 June 2014 00:25, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+>> On Wed, Jun 11, 2014 at 12:17:53AM +0300, Dmitry Kasatkin wrote:
+>>
+>>> It is probably just a paranoia...
+>>> Kconfig MODULE_SIG_UEFI should tell about threat of loading kernel
+>>> modules from NSA or Lenovo signed by MS or Lenovo keys..
+>>>
+>>> This hole is opened without warning...
+>>
+>> It's not typically a hole. If an attacker has root they can just replace
+>> your bootloader with one signed by a trusted key and then have that
+>> modify the kernel before booting it.
+>>
+>> If you're using a TPM then you can mitigate this, but if you have a TPM
+>> then you're already performing some extra steps during the boot process.
+>> Just add a sysfs knob that lets you drop the db keys and incorporate
+>> that into the TPM management code.
+>>
+>> --
+>> Matthew Garrett | mjg59@srcf.ucam.org
+>
+> I was expecting this boot loader answer.
+>
+> Indeed, if system is design to prevent online modification of bootloader then
+> kernel parameters are protected as well...
+>
+> My statement is still valid. It is a hole...
+>
+> To prevent the hole it should be explained that one might follow
+> certain instructions
+> to take ownership of your PC. Generate your own keys and remove MS and
+> Vendor ones...
+>
+> It is paranoia? May be not.
+>
+> - Dmitry
 
-Lately, when I do a make with C=1, I get *tons* of these warnings:
+I must admit that bootloader replacement is not related to kernel...
 
-    include/linux/err.h:35:16: warning: dereference of noderef expression
-    include/linux/err.h:30:23: warning: dereference of noderef expression
+It is just paranoia...
 
-...so many that it's really driven down the signal to noise ratio. I've
-taken a look at what's driving these warnings and I really just don't
-get it. The pointers being passed in aren't being dereferenced as far
-as I can tell, so what is sparse complaining about?
-
-Even odder, just in playing around I've noticed that removing the
-__force directives seems to silence these warnings. This is really
-strange since all of the docs I see indicate that __force is supposed to
-help silence sparse warnings, not cause them.
-
-This patch just removes the __force directives on the err.h inlines and
-that silences the warnings for me. Dan originally added those in commit
-e7152b97f38f1 (err.h: IS_ERR() can accept __user pointers).
-
-I don't really consider this a serious proposal for inclusion, but
-rather just a starting point for discussion. What's the right way to fix
-this problem? Is this a bug in sparse?
-
-Signed-off-by: Jeff Layton <jlayton@primarydata.com>
----
- include/linux/err.h | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/include/linux/err.h b/include/linux/err.h
-index a729120644d5..284897f403b3 100644
---- a/include/linux/err.h
-+++ b/include/linux/err.h
-@@ -25,17 +25,17 @@ static inline void * __must_check ERR_PTR(long error)
- 	return (void *) error;
- }
- 
--static inline long __must_check PTR_ERR(__force const void *ptr)
-+static inline long __must_check PTR_ERR(const void *ptr)
- {
- 	return (long) ptr;
- }
- 
--static inline bool __must_check IS_ERR(__force const void *ptr)
-+static inline bool __must_check IS_ERR(const void *ptr)
- {
- 	return IS_ERR_VALUE((unsigned long)ptr);
- }
- 
--static inline bool __must_check IS_ERR_OR_NULL(__force const void *ptr)
-+static inline bool __must_check IS_ERR_OR_NULL(const void *ptr)
- {
- 	return !ptr || IS_ERR_VALUE((unsigned long)ptr);
- }
-@@ -47,13 +47,13 @@ static inline bool __must_check IS_ERR_OR_NULL(__force const void *ptr)
-  * Explicitly cast an error-valued pointer to another pointer type in such a
-  * way as to make it clear that's what's going on.
-  */
--static inline void * __must_check ERR_CAST(__force const void *ptr)
-+static inline void * __must_check ERR_CAST(const void *ptr)
- {
- 	/* cast away the const */
- 	return (void *) ptr;
- }
- 
--static inline int __must_check PTR_ERR_OR_ZERO(__force const void *ptr)
-+static inline int __must_check PTR_ERR_OR_ZERO(const void *ptr)
- {
- 	if (IS_ERR(ptr))
- 		return PTR_ERR(ptr);
--- 
-1.9.3
-
+- dmitry
