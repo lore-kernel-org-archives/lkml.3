@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754191AbaFJTtU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 15:49:20 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35091 "EHLO
+	id S1754330AbaFJTte (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 15:49:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35107 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754113AbaFJTtQ (ORCPT
+	with ESMTP id S1754213AbaFJTtY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:49:16 -0400
+	Tue, 10 Jun 2014 15:49:24 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Sheng-Liang Song <ssl@chromium.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 125/160] net: Fix ns_capable check in sock_diag_put_filterinfo
-Date: Tue, 10 Jun 2014 12:46:05 -0700
-Message-Id: <1402429600-20477-126-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 129/160] Input: atkbd - fix keyboard not working on some LG laptops
+Date: Tue, 10 Jun 2014 12:46:09 -0700
+Message-Id: <1402429600-20477-130-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -28,72 +28,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrew Lutomirski <luto@amacapital.net>
+From: Sheng-Liang Song <ssl@chromium.org>
 
-commit 78541c1dc60b65ecfce5a6a096fc260219d6784e upstream.
+commit 3d725caa9dcc78c3dc9e7ea0c04f626468edd9c9 upstream.
 
-The caller needs capabilities on the namespace being queried, not on
-their own namespace.  This is a security bug, although it likely has
-only a minor impact.
+After issuing ATKBD_CMD_RESET_DIS, keyboard on some LG laptops stops
+working. The workaround is to stop issuing ATKBD_CMD_RESET_DIS commands.
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Acked-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+In order to keep changes in atkbd driver to the minimum we check DMI
+signature and only skip ATKBD_CMD_RESET_DIS if we are running on LG
+LW25-B7HV or P1-J273B.
+
+Signed-off-by: Sheng-Liang Song <ssl@chromium.org>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/linux/sock_diag.h | 2 +-
- net/core/sock_diag.c      | 4 ++--
- net/packet/diag.c         | 2 +-
- 3 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/input/keyboard/atkbd.c | 29 ++++++++++++++++++++++++++++-
+ 1 file changed, 28 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/sock_diag.h b/include/linux/sock_diag.h
-index 54f91d3..302ab80 100644
---- a/include/linux/sock_diag.h
-+++ b/include/linux/sock_diag.h
-@@ -23,7 +23,7 @@ int sock_diag_check_cookie(void *sk, __u32 *cookie);
- void sock_diag_save_cookie(void *sk, __u32 *cookie);
+diff --git a/drivers/input/keyboard/atkbd.c b/drivers/input/keyboard/atkbd.c
+index 2626773..2dd1d0d 100644
+--- a/drivers/input/keyboard/atkbd.c
++++ b/drivers/input/keyboard/atkbd.c
+@@ -243,6 +243,12 @@ static void (*atkbd_platform_fixup)(struct atkbd *, const void *data);
+ static void *atkbd_platform_fixup_data;
+ static unsigned int (*atkbd_platform_scancode_fixup)(struct atkbd *, unsigned int);
  
- int sock_diag_put_meminfo(struct sock *sk, struct sk_buff *skb, int attr);
--int sock_diag_put_filterinfo(struct user_namespace *user_ns, struct sock *sk,
-+int sock_diag_put_filterinfo(struct sock *sk,
- 			     struct sk_buff *skb, int attrtype);
++/*
++ * Certain keyboards to not like ATKBD_CMD_RESET_DIS and stop responding
++ * to many commands until full reset (ATKBD_CMD_RESET_BAT) is performed.
++ */
++static bool atkbd_skip_deactivate;
++
+ static ssize_t atkbd_attr_show_helper(struct device *dev, char *buf,
+ 				ssize_t (*handler)(struct atkbd *, char *));
+ static ssize_t atkbd_attr_set_helper(struct device *dev, const char *buf, size_t count,
+@@ -768,7 +774,8 @@ static int atkbd_probe(struct atkbd *atkbd)
+  * Make sure nothing is coming from the keyboard and disturbs our
+  * internal state.
+  */
+-	atkbd_deactivate(atkbd);
++	if (!atkbd_skip_deactivate)
++		atkbd_deactivate(atkbd);
  
- #endif
-diff --git a/net/core/sock_diag.c b/net/core/sock_diag.c
-index a0e9cf6..6a7fae2 100644
---- a/net/core/sock_diag.c
-+++ b/net/core/sock_diag.c
-@@ -49,7 +49,7 @@ int sock_diag_put_meminfo(struct sock *sk, struct sk_buff *skb, int attrtype)
+ 	return 0;
  }
- EXPORT_SYMBOL_GPL(sock_diag_put_meminfo);
+@@ -1638,6 +1645,12 @@ static int __init atkbd_setup_scancode_fixup(const struct dmi_system_id *id)
+ 	return 1;
+ }
  
--int sock_diag_put_filterinfo(struct user_namespace *user_ns, struct sock *sk,
-+int sock_diag_put_filterinfo(struct sock *sk,
- 			     struct sk_buff *skb, int attrtype)
- {
- 	struct nlattr *attr;
-@@ -57,7 +57,7 @@ int sock_diag_put_filterinfo(struct user_namespace *user_ns, struct sock *sk,
- 	unsigned int len;
- 	int err = 0;
++static int __init atkbd_deactivate_fixup(const struct dmi_system_id *id)
++{
++	atkbd_skip_deactivate = true;
++	return 1;
++}
++
+ static const struct dmi_system_id atkbd_dmi_quirk_table[] __initconst = {
+ 	{
+ 		.matches = {
+@@ -1775,6 +1788,20 @@ static const struct dmi_system_id atkbd_dmi_quirk_table[] __initconst = {
+ 		.callback = atkbd_setup_scancode_fixup,
+ 		.driver_data = atkbd_oqo_01plus_scancode_fixup,
+ 	},
++	{
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LG Electronics"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "LW25-B7HV"),
++		},
++		.callback = atkbd_deactivate_fixup,
++	},
++	{
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LG Electronics"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "P1-J273B"),
++		},
++		.callback = atkbd_deactivate_fixup,
++	},
+ 	{ }
+ };
  
--	if (!ns_capable(user_ns, CAP_NET_ADMIN)) {
-+	if (!ns_capable(sock_net(sk)->user_ns, CAP_NET_ADMIN)) {
- 		nla_reserve(skb, attrtype, 0);
- 		return 0;
- 	}
-diff --git a/net/packet/diag.c b/net/packet/diag.c
-index a9584a2..ec8b6e8 100644
---- a/net/packet/diag.c
-+++ b/net/packet/diag.c
-@@ -171,7 +171,7 @@ static int sk_diag_fill(struct sock *sk, struct sk_buff *skb,
- 		goto out_nlmsg_trim;
- 
- 	if ((req->pdiag_show & PACKET_SHOW_FILTER) &&
--	    sock_diag_put_filterinfo(user_ns, sk, skb, PACKET_DIAG_FILTER))
-+	    sock_diag_put_filterinfo(sk, skb, PACKET_DIAG_FILTER))
- 		goto out_nlmsg_trim;
- 
- 	return nlmsg_end(skb, nlh);
 -- 
 1.9.1
 
