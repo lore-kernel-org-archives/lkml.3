@@ -1,62 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752931AbaFJPSq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 11:18:46 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:60291 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752578AbaFJPSo (ORCPT
+	id S1752962AbaFJPTR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 11:19:17 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:55924 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752494AbaFJPTP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 11:18:44 -0400
-Date: Tue, 10 Jun 2014 19:18:34 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Christoph Lameter <cl@gentwo.org>
-CC: Joonsoo Kim <iamjoonsoo.kim@lge.com>, <akpm@linux-foundation.org>,
-        <rientjes@google.com>, <penberg@kernel.org>, <hannes@cmpxchg.org>,
-        <mhocko@suse.cz>, <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: Re: [PATCH -mm v2 8/8] slab: make dead memcg caches discard free
- slabs immediately
-Message-ID: <20140610151830.GA8692@esperanza>
-References: <cover.1402060096.git.vdavydov@parallels.com>
- <27a202c6084d6bb19cc3e417793f05104b908ded.1402060096.git.vdavydov@parallels.com>
- <20140610074317.GE19036@js1304-P5Q-DELUXE>
- <20140610100313.GA6293@esperanza>
- <alpine.DEB.2.10.1406100925270.17142@gentwo.org>
+	Tue, 10 Jun 2014 11:19:15 -0400
+Date: Tue, 10 Jun 2014 17:19:13 +0200
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Robert Hodaszi <robert.hodaszi@digi.com>
+Cc: jic23@kernel.org, linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, marex@denx.de, jbe@pengutronix.de,
+        hector.palacios@digi.com, fabio.estevam@freescale.com, lars@metafoo.de
+Subject: Re: [PATCH 1/2] iio: mxs-lradc: fix divider
+Message-ID: <20140610151912.GA3429@piout.net>
+References: <1402407695-2984-1-git-send-email-robert.hodaszi@digi.com>
+ <1402407695-2984-2-git-send-email-robert.hodaszi@digi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1406100925270.17142@gentwo.org>
-X-Originating-IP: [81.5.110.170]
+In-Reply-To: <1402407695-2984-2-git-send-email-robert.hodaszi@digi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 10, 2014 at 09:26:19AM -0500, Christoph Lameter wrote:
-> On Tue, 10 Jun 2014, Vladimir Davydov wrote:
+On 10/06/2014 at 15:41:34 +0200, Robert Hodaszi wrote :
+> All channels' single measurement are happening on CH 0. So enabling / disabling
+> the divider once is not enough, because it has impact on all channels.
 > 
-> > Frankly, I incline to shrinking dead SLAB caches periodically from
-> > cache_reap too, because it looks neater and less intrusive to me. Also
-> > it has zero performance impact, which is nice.
-> >
-> > However, Christoph proposed to disable per cpu arrays for dead caches,
-> > similarly to SLUB, and I decided to give it a try, just to see the end
-> > code we'd have with it.
-> >
-> > I'm still not quite sure which way we should choose though...
+> Set only a flag, then check this on each measurement, and enable / disable the
+> divider as required.
 > 
-> Which one is cleaner?
+> Signed-off-by: Robert Hodaszi <robert.hodaszi@digi.com>
 
-To shrink dead caches aggressively, we only need to modify cache_reap
-(see https://lkml.org/lkml/2014/5/30/271).
+It makes perfect sense.
 
-To zap object arrays for dead caches (this is what this patch does), we
-have to:
- - set array_cache->limit to 0 for each per cpu, shared, and alien array
-   caches on kmem_cache_shrink;
- - make cpu/node hotplug paths init new array cache sizes to 0;
- - make free paths (__cache_free, cache_free_alien) handle zero array
-   cache size properly, because currently they doesn't.
+Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 
-So IMO the first one (reaping dead caches periodically) requires less
-modifications and therefore is cleaner.
+> ---
+>  drivers/staging/iio/adc/mxs-lradc.c | 12 ++++++++----
+>  1 file changed, 8 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/staging/iio/adc/mxs-lradc.c b/drivers/staging/iio/adc/mxs-lradc.c
+> index dae8d1a..52d7517 100644
+> --- a/drivers/staging/iio/adc/mxs-lradc.c
+> +++ b/drivers/staging/iio/adc/mxs-lradc.c
+> @@ -846,6 +846,14 @@ static int mxs_lradc_read_single(struct iio_dev *iio_dev, int chan, int *val)
+>  			LRADC_CTRL1);
+>  	mxs_lradc_reg_clear(lradc, 0xff, LRADC_CTRL0);
+>  
+> +	/* Enable / disable the divider per requirement */
+> +	if (test_bit(chan, &lradc->is_divided))
+> +		mxs_lradc_reg_set(lradc, 1 << LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET,
+> +			LRADC_CTRL2);
+> +	else
+> +		mxs_lradc_reg_clear(lradc,
+> +			1 << LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET, LRADC_CTRL2);
+> +
+>  	/* Clean the slot's previous content, then set new one. */
+>  	mxs_lradc_reg_clear(lradc, LRADC_CTRL4_LRADCSELECT_MASK(0),
+>  			LRADC_CTRL4);
+> @@ -961,15 +969,11 @@ static int mxs_lradc_write_raw(struct iio_dev *iio_dev,
+>  		if (val == scale_avail[MXS_LRADC_DIV_DISABLED].integer &&
+>  		    val2 == scale_avail[MXS_LRADC_DIV_DISABLED].nano) {
+>  			/* divider by two disabled */
+> -			writel(1 << LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET,
+> -			       lradc->base + LRADC_CTRL2 + STMP_OFFSET_REG_CLR);
+>  			clear_bit(chan->channel, &lradc->is_divided);
+>  			ret = 0;
+>  		} else if (val == scale_avail[MXS_LRADC_DIV_ENABLED].integer &&
+>  			   val2 == scale_avail[MXS_LRADC_DIV_ENABLED].nano) {
+>  			/* divider by two enabled */
+> -			writel(1 << LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET,
+> -			       lradc->base + LRADC_CTRL2 + STMP_OFFSET_REG_SET);
+>  			set_bit(chan->channel, &lradc->is_divided);
+>  			ret = 0;
+>  		}
 
-Thanks.
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
