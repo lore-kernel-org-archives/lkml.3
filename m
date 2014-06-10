@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934252AbaFJB2f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 21:28:35 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:48161 "EHLO
+	id S933882AbaFJB2T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 21:28:19 -0400
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:28627 "EHLO
 	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933917AbaFJB20 (ORCPT
+	by vger.kernel.org with ESMTP id S1754382AbaFJB2O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 21:28:26 -0400
+	Mon, 9 Jun 2014 21:28:14 -0400
 From: Chao Xie <chao.xie@marvell.com>
 To: <haojian.zhuang@gmail.com>, <mturquette@linaro.org>,
         <chao.xie@marvell.com>, <xiechao_mail@163.com>,
         <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH 11/12] clk: mmp: add device tree support for clocks.
-Date: Tue, 10 Jun 2014 09:27:47 +0800
-Message-ID: <1402363668-25806-12-git-send-email-chao.xie@marvell.com>
+Subject: [PATCH 09/12] clk: mmp: add spin lock automatic detection from device tree
+Date: Tue, 10 Jun 2014 09:27:45 +0800
+Message-ID: <1402363668-25806-10-git-send-email-chao.xie@marvell.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1402363668-25806-1-git-send-email-chao.xie@marvell.com>
 References: <1402363668-25806-1-git-send-email-chao.xie@marvell.com>
@@ -31,234 +31,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Chao Xie <chao.xie@marvell.com>
 
-For MMP series SOC, it will use some types of clock.
-Add the device tree support for these kind of clocks.
-It includes mux/div/mix/gate/factor clock.
+For Marvell MMP series SOC, many clocks share same register.
+In the operations of these clock, a spin lock is needed to avoid
+confilicts.
+When parse the clock from the device tree and register the clock,
+we do not know whether it share the register with others.
+So a common API is provided to get the spin lock for the clock based
+on device tree support.
+The general idea is record the node (clock device node, regsiter),
+and before register a new clock, search the node list based on
+register. If a node is found, return the shared spin lock, or create
+a new.
 
 Signed-off-by: Chao Xie <chao.xie@marvell.com>
 
 Conflicts:
 	drivers/clk/mmp/Makefile
 ---
- .../devicetree/bindings/clock/mmp/clk-div          |  28 +
- .../devicetree/bindings/clock/mmp/clk-factor       |  28 +
- .../devicetree/bindings/clock/mmp/clk-gate         |  41 ++
- .../devicetree/bindings/clock/mmp/clk-mix          |  38 ++
- .../devicetree/bindings/clock/mmp/clk-mux          |  20 +
- drivers/clk/mmp/Makefile                           |   2 +-
- drivers/clk/mmp/clk-of.c                           | 689 +++++++++++++++++++++
- 7 files changed, 845 insertions(+), 1 deletion(-)
- create mode 100644 Documentation/devicetree/bindings/clock/mmp/clk-div
- create mode 100644 Documentation/devicetree/bindings/clock/mmp/clk-factor
- create mode 100644 Documentation/devicetree/bindings/clock/mmp/clk-gate
- create mode 100644 Documentation/devicetree/bindings/clock/mmp/clk-mix
- create mode 100644 Documentation/devicetree/bindings/clock/mmp/clk-mux
- create mode 100644 drivers/clk/mmp/clk-of.c
+ Documentation/devicetree/bindings/clock/mmp/lock |  44 +++++++
+ drivers/clk/mmp/Makefile                         |   2 +-
+ drivers/clk/mmp/clk.h                            |   5 +
+ drivers/clk/mmp/lock.c                           | 159 +++++++++++++++++++++++
+ 4 files changed, 209 insertions(+), 1 deletion(-)
+ create mode 100644 Documentation/devicetree/bindings/clock/mmp/lock
+ create mode 100644 drivers/clk/mmp/lock.c
 
-diff --git a/Documentation/devicetree/bindings/clock/mmp/clk-div b/Documentation/devicetree/bindings/clock/mmp/clk-div
+diff --git a/Documentation/devicetree/bindings/clock/mmp/lock b/Documentation/devicetree/bindings/clock/mmp/lock
 new file mode 100644
-index 0000000..62eb7d5
+index 0000000..7e7b5bc
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/mmp/clk-div
-@@ -0,0 +1,28 @@
-+Binding for div type clock
++++ b/Documentation/devicetree/bindings/clock/mmp/lock
+@@ -0,0 +1,44 @@
++Binding of spin lock support for Marvell MMP series clock
 +
-+The div clock is defined as common clock.
++Because some clocks share same register, spinlock need to be used to avoid
++conflicts.
 +
-+
-+Required properties
-+- compatible : It should be "marvell,mmp-clk-div".
-+- clocks : The parents of the clock.
-+- marvell,mmp-clk-bits-div : The width and shift of divider bits.
++The spin lock sharing detection is based on regsiter address, and it is
++automatically. To support some clocks, the spin lock is not based on
++register address, some properies are provided.
++The properites are used as part of clock's properties in clock device tree
++files.
 +
 +Optional properties:
-+- marvell,mmp-clk-div-power-of-two : The value of divider is a power of two.
-+- marvell,mmp-clk-div-one-based : The value of divider starts from 1.
-+- marvell,mmp-clk-div-table : The value of divider is not continous, and need
-+                              a table to record it.
++marvell,mmp-clk-spinlock-new : Skip the automatic detection based on
++			       register address. Direclty create a new
++			       spin lock.
++marvell,mmp-clk-spinlock : It is handle. It points to the clock that share
++			   same spin lock.
 +
++Examples:
 +
-+Examples
-+apmu_clk {
-+	compatible = "marvell,mmp-clk-master";
-+	reg = <0xd4282800 0x1000>;
-+	dsi_phy_slow_div: dsi_phy_slow_div {
-+		compatible = "marvell,mmp-clk-div";
-+		marvell,reg-offset = <0 0x44>;
-+		clocks = <&vctcxo>;
-+		marvell,mmp-clk-bits-div = <5 6>;
-+	};
-+};
-diff --git a/Documentation/devicetree/bindings/clock/mmp/clk-factor b/Documentation/devicetree/bindings/clock/mmp/clk-factor
-new file mode 100644
-index 0000000..9e1816c
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/mmp/clk-factor
-@@ -0,0 +1,28 @@
-+Binding for Marvell MMP series factor clock
-+
-+The factor clock is calculated by
-+  Fout = (Fin * (den / num)) / factor;
-+
-+Required properties
-+- compatible : It should be "marvell,mmp-clk-factor";
-+- clock: The parent of the clock.
-+- marvell,mmp-clk-factor-factor : The "factor" of the clock.
-+- marvell,mmp-clk-factor-bits-num : The width and shift of bits for "num".
-+- marvell,mmp-clk-factor-bits-den : The width and shift of bits for "dev".
-+- marvell,mmp-clk-factor-table : The table of (num, den) for the clock.
-+
-+Examples
-+mpmu_clocks: mpmu_clocks {
-+	compatible = "marvell,mmp-clk-master";
-+	reg = <0xd4050000 0x1000>;
-+	uart_pll: uart_pll {
-+		compatible = "marvell,mmp-clk-factor";
-+		clocks = <&pll1_4>;
-+		marvell,reg-offset = <0 0x14>;
-+		marvell,mmp-clk-factor-factor = <2>;
-+		marvell,mmp-clk-factor-bits-den = <13 0>;
-+		marvell,mmp-clk-factor-bits-num = <13 16>;
-+		marvell,mmp-clk-factor-table = <8125 1536>;
-+	};
-+};
-++
-diff --git a/Documentation/devicetree/bindings/clock/mmp/clk-gate b/Documentation/devicetree/bindings/clock/mmp/clk-gate
-new file mode 100644
-index 0000000..5da6c63
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/mmp/clk-gate
-@@ -0,0 +1,41 @@
-+Binding for Marvell MMP series gate clock and common gate clock
-+
-+There two type of gate clock used by Marvell MMP series SOC.
-+The common gate clock and the gate clock defined for MMP series SOC.
-+
-+For common gate clock
-+
-+Required properties
-+- compatible : It should be "marvell,mmp-clk-general-gate";
-+- clock : The parent of the clock.
-+- marvell,mmp-clk-bit-gate : The offset of the bit control the gate.
-+
-+Examples
-+apmu_clocks: apmu_clocks {
-+	compatible = "marvell,mmp-clk-master";
-+	reg = <0xd4282800 0x1000>;
-+	pll1_416_gate: pll1_416_gate {
-+		compatible = "marvell,mmp-clk-general-gate";
-+		clocks = <&pll1_416m>;
-+		marvell,reg-offset = <0 0x40>;
-+		marvell,mmp-clk-bit-gate = <27>;
-+	};
-+};
-+
-+For MMP series gate clock
-+
-+Required properties
-+- compatible : It should be "marvell,mmp-clk-gate";
-+- clock : The parent of the clock.
-+- marvell,mmp-clk-mask : The (mask, val_enable, val_disable) for the clock.
-+
-+Examples
-+apmu_clocks: apmu_clocks {
-+	compatible = "marvell,mmp-clk-master";
-+	reg = <0xd4282800 0x1000>;
-+	usb_clock: usb_clock {
-+		compatible = "marvell,mmp-clk-gate";
-+		marvell,reg-offset = <0 0x5c>;
-+		marvell,mmp-clk-mask = <0x9 0x9 0x1>;
-+	};
-+};
-diff --git a/Documentation/devicetree/bindings/clock/mmp/clk-mix b/Documentation/devicetree/bindings/clock/mmp/clk-mix
-new file mode 100644
-index 0000000..8cf9b38
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/mmp/clk-mix
-@@ -0,0 +1,38 @@
-+Binding for Marvell MMP series mix clock
-+
-+The mix clock is a combination of mux and div clock. It need to
-+change the bits of mux and div together.
-+
-+
-+Required properties
-+- compatible : It should be "marvell,mmp-clk-mix".
-+- clocks : The parents of the clock.
-+- marvell,mmp-clk-bits-div : The width and shift of divider bits.
-+- marvell,mmp-clk-bits-mux : The width and shift of divider bits.
-+- marvell,mmp-clk-bit-fc : The offset of the frequency change bit.
-+- marvell,mmp-clk-mix-table : The array of (rate, parent_index). The rate
-+                              means the clock's rate, and parent_index means
-+                              the suggested parent index from user.
-+
-+Optional properties:
-+- marvell,mmp-clk-div-power-of-two : The value of divider is a power of two.
-+- marvell,mmp-clk-div-one-based : The value of divider starts from 1.
-+- marvell,mmp-clk-div-table : The value of divider is not continous, and need
-+                              a table to record it.
-+
-+
-+Exampels
++Assume that clk1, clk2, clk3 share same spin lock.
 +
 +apmu_clk {
 +	compatible = "marvell,mmp-clk-master";
-+	reg = <0xd4282800 0x1000>;
-+	lcd_clk {
-+		compatible = "marvell,mmp-clk-mix";
-+		clocks = <&pll1_416m &pll1_624 &pll2 &pll2p>;
-+		marvell,reg-offset = <0 0x4c>;
-+		marvell,mmp-clk-bits-mux = <2 17>;
-+		marvell,mmp-clk-bits-div = <3 19>;
-+		marvell,mmp-clk-bit-fc = <22>;
++	...
++
++	clk1 {
++		...
++		marvell,mmp-clk-spinlock-new;
++		...
 +	};
-+};
 +
-diff --git a/Documentation/devicetree/bindings/clock/mmp/clk-mux b/Documentation/devicetree/bindings/clock/mmp/clk-mux
-new file mode 100644
-index 0000000..f5bb4dd
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/mmp/clk-mux
-@@ -0,0 +1,20 @@
-+Binding for mux type clock
++	clk2 {
++		...
++		mmp-clk-spinlock = <&clk1>;
++		...
++	};
 +
-+The mux clock is defined as common clock.
-+
-+Required properties
-+- compatible : It should be "marvell,mmp-clk-mux".
-+- clocks : The parents of the clock.
-+- marvell,mmp-clk-bits-mux : The width and shift of mux bits.
-+
-+Examples
-+apmu_clk {
-+	compatible = "marvell,mmp-clk-master";
-+	reg = <0xd4282800 0x1000>;
-+	dsi_phy_esc_mux: dsi_phy_esc_mux {
-+		compatible = "marvell,mmp-clk-mux";
-+		marvell,reg-offset = <0 0x44>;
-+		clocks = <&pll1_12 &pll1_13 &vctcxo &pll1_8>;
-+		marvell,mmp-clk-bits-mux = <2 0>;
++	clk3 {
++		...
++		mmp-clk-spinlock = <&clk1>;
++		...
 +	};
 +};
 diff --git a/drivers/clk/mmp/Makefile b/drivers/clk/mmp/Makefile
-index 84dce78..e29c6f1 100644
+index 518931e..e8810b6 100644
 --- a/drivers/clk/mmp/Makefile
 +++ b/drivers/clk/mmp/Makefile
 @@ -6,7 +6,7 @@ obj-y += clk-apbc.o clk-apmu.o clk-frac.o clk-mix.o clk-gate.o	\
  	 clk-mix-composite.o
  
  ifneq ($(CONFIG_OF),)
--obj-y += clk-master-node.o lock.o clk-of-composite.o
-+obj-y += clk-master-node.o lock.o clk-of-composite.o clk-of.o
+-obj-y += clk-master-node.o
++obj-y += clk-master-node.o lock.o
  endif
  
  obj-$(CONFIG_CPU_PXA168) += clk-pxa168.o
-diff --git a/drivers/clk/mmp/clk-of.c b/drivers/clk/mmp/clk-of.c
+diff --git a/drivers/clk/mmp/clk.h b/drivers/clk/mmp/clk.h
+index 6d8c3b3..e06a228 100644
+--- a/drivers/clk/mmp/clk.h
++++ b/drivers/clk/mmp/clk.h
+@@ -147,6 +147,11 @@ extern void __iomem *of_mmp_clk_get_reg(struct device_node *np,
+ struct device_node *of_mmp_clk_master_init(struct device_node *from);
+ 
+ 
++/* spin lock sharing support. */
++extern spinlock_t *of_mmp_clk_get_spinlock(struct device_node *np,
++					   unsigned int reg_base);
++
++
+ extern struct clk *mmp_clk_register_pll2(const char *name,
+ 		const char *parent_name, unsigned long flags);
+ extern struct clk *mmp_clk_register_apbc(const char *name,
+diff --git a/drivers/clk/mmp/lock.c b/drivers/clk/mmp/lock.c
 new file mode 100644
-index 0000000..2bba7ee
+index 0000000..e2e246c
 --- /dev/null
-+++ b/drivers/clk/mmp/clk-of.c
-@@ -0,0 +1,689 @@
++++ b/drivers/clk/mmp/lock.c
+@@ -0,0 +1,159 @@
 +/*
 + * mmp mix(div and mux) clock operation source file
 + *
@@ -277,677 +159,147 @@ index 0000000..2bba7ee
 +#include <linux/list.h>
 +#include <linux/of.h>
 +
-+#include "clk.h"
++struct mmp_clk_spinlock_node {
++	struct device_node *share;
++	struct list_head node;
++};
 +
-+static int of_mmp_clk_get_flags(struct device_node *np,
-+				unsigned long *flags)
++struct mmp_clk_spinlock {
++	spinlock_t lock;
++	struct device_node *owner;
++	unsigned int reg_base;
++	struct list_head share_list;
++	struct list_head node;
++};
++
++static LIST_HEAD(lock_list);
++
++static DEFINE_MUTEX(lock_mutex);
++
++static struct mmp_clk_spinlock_node *create_lock_node(struct device_node *np)
 +{
-+	*flags = 0;
++	struct mmp_clk_spinlock_node *node;
 +
-+	return 0;
-+}
-+
-+static int of_mmp_clk_get_bits(struct device_node *np, const char *name,
-+				u8 *width, u8 *shift)
-+{
-+	int ret;
-+	u32 tmp[2];
-+
-+	ret = of_property_read_u32_array(np, name, tmp, 2);
-+	if (ret) {
-+		pr_err("%s:%s failed to read bits %s\n",
-+			__func__, np->name, name);
-+		return -EINVAL;
-+	}
-+
-+	*width = tmp[0];
-+	*shift = tmp[1];
-+
-+	return 0;
-+}
-+
-+static int of_mmp_clk_div_dt_parse(struct device_node *np, u8 *shift,
-+					u8 *width,
-+					struct clk_div_table **ptable,
-+					u8 *div_flags)
-+{
-+	int i, ret;
-+	const __be32 *prop;
-+	unsigned int proplen;
-+	struct clk_div_table *table;
-+	unsigned int size;
-+
-+	ret = of_mmp_clk_get_bits(np, "marvell,mmp-clk-bits-div",
-+				width, shift);
-+	if (ret)
-+		return ret;
-+
-+	*div_flags = 0;
-+	if (of_property_read_bool(np, "marvell,mmp-clk-div-power-of-two"))
-+		*div_flags |= CLK_DIVIDER_POWER_OF_TWO;
-+	else if (of_property_read_bool(np, "marvell,mmp-clk-div-one-based"))
-+		*div_flags |= CLK_DIVIDER_ONE_BASED;
-+
-+	if (ptable)
-+		*ptable = NULL;
-+
-+	prop = of_get_property(np, "marvell,mmp-clk-div-table", &proplen);
-+	if (prop) {
-+		if (!ptable)
-+			return -EINVAL;
-+
-+		size = proplen / sizeof(u32);
-+		if ((proplen % sizeof(u32)) || size % 2) {
-+			pr_err("%s:%s marvell,mmp-clk-mix-table wrong value\n",
-+				__func__, np->name);
-+			return -EINVAL;
-+		}
-+		table = kzalloc(sizeof(*table) * (size / 2 + 1), GFP_KERNEL);
-+		if (!table) {
-+			pr_err("%s:%s failed to allocate table\n",
-+				__func__, np->name);
-+			return -EINVAL;
-+		}
-+
-+		for (i = 0; i < size; i += 2) {
-+			table[i / 2].val = be32_to_cpup(prop + i);
-+			table[i / 2].div = be32_to_cpup(prop + i + 1);
-+		}
-+		/* For safe. */
-+		table[i / 2].val = 0;
-+		table[i / 2].div = 0;
-+
-+		*ptable = table;
-+	}
-+
-+	return 0;
-+}
-+
-+static int of_mmp_clk_mux_dt_parse(struct device_node *np, u8 *shift,
-+					u8 *width, u8 *mux_flags)
-+{
-+	int ret;
-+
-+	ret = of_mmp_clk_get_bits(np, "marvell,mmp-clk-bits-mux",
-+				width, shift);
-+	if (ret)
-+		return ret;
-+
-+	*mux_flags = 0;
-+
-+	return 0;
-+}
-+
-+static int of_mmp_clk_general_gate_dt_parse(struct device_node *np,
-+					u8 *bit_idx, u8 *gate_flags)
-+{
-+	int ret;
-+	u32 tmp;
-+
-+	ret = of_property_read_u32(np, "marvell,mmp-clk-bit-gate", &tmp);
-+	if (ret) {
-+		pr_err("%s:%s can not find marvell,mmp-clk-bit-gate\n",
++	node = kzalloc(sizeof(*node), GFP_KERNEL);
++	if (!node) {
++		pr_err("%s:%s failed to allocate spinlock node.\n",
 +			__func__, np->name);
-+		return -EINVAL;
++		return NULL;
 +	}
-+	*bit_idx = tmp;
 +
-+	*gate_flags = 0;
++	node->share = np;
 +
-+	return 0;
++	return node;
 +}
 +
-+static int of_mmp_clk_gate_dt_parse(struct device_node *np,
-+				u32 *mask, u32 *val_enable, u32 *val_disable,
-+				unsigned int *gate_flags)
++static struct mmp_clk_spinlock *create_lock(struct device_node *np,
++					    unsigned int reg_base)
 +{
-+	int ret;
-+	u32 tmp[3];
++	struct mmp_clk_spinlock *lock;
 +
-+	ret = of_property_read_u32_array(np, "marvell,mmp-clk-mask", tmp, 3);
-+	if (ret) {
-+		pr_err("%s:%s can not find marvell,mmp-clk-mask\n",
++	lock = kzalloc(sizeof(*lock), GFP_KERNEL);
++	if (!lock) {
++		pr_err("%s:%s failed to allocate spinlock.\n",
 +			__func__, np->name);
-+		return -EINVAL;
++		return NULL;
 +	}
-+	*mask = tmp[0];
-+	*val_enable = tmp[1];
-+	*val_disable = tmp[2];
 +
-+	*gate_flags = 0;
-+	if (of_property_read_bool(np, "marvell,mmp-clk-gate-need-delay"))
-+		*gate_flags |= MMP_CLK_GATE_NEED_DELAY;
++	lock->owner = np;
++	lock->reg_base = reg_base;
++	INIT_LIST_HEAD(&lock->node);
++	INIT_LIST_HEAD(&lock->share_list);
++	spin_lock_init(&lock->lock);
 +
-+	return 0;
++	return lock;
 +}
 +
-+
-+static int of_mmp_clk_mix_dt_parse(struct device_node *np,
-+					struct mmp_clk_mix_config *config,
-+					spinlock_t **plock)
++static struct mmp_clk_spinlock *find_lock_by_np(struct device_node *np)
 +{
-+	struct mmp_clk_mix_reg_info *ri;
-+	struct mmp_clk_mix_clk_table *table;
-+	int i, ret, size;
-+	u32 tmp;
-+	spinlock_t *lock;
-+	void __iomem *reg;
-+	unsigned int reg_phys;
-+	const __be32 *prop;
-+	unsigned int proplen;
++	struct mmp_clk_spinlock *lock;
 +
-+	ri = &config->reg_info;
-+	ret = of_mmp_clk_div_dt_parse(np, &ri->shift_div, &ri->width_div,
-+					NULL, &config->div_flags);
-+	if (ret)
-+		return ret;
++	list_for_each_entry(lock, &lock_list, node) {
++		if (lock->owner == np)
++			return lock;
++	}
 +
-+	ret = of_mmp_clk_mux_dt_parse(np, &ri->shift_mux, &ri->width_mux,
-+					&config->mux_flags);
-+	if (ret)
-+		return ret;
++	return NULL;
++}
 +
-+	ret = of_property_read_u32(np, "marvell,mmp-clk-bit-fc", &tmp);
-+	if (ret)
-+		ri->bit_fc = (u8)-1;
-+	else
-+		ri->bit_fc = tmp;
++static struct mmp_clk_spinlock *find_lock_by_reg_base(unsigned int reg_base)
++{
++	struct mmp_clk_spinlock *lock;
 +
-+	reg = of_mmp_clk_get_reg(np, 0, &reg_phys);
-+	if (!reg)
-+		return -EINVAL;
-+	ri->reg_clk_ctrl = reg;
++	list_for_each_entry(lock, &lock_list, node) {
++		if (lock->reg_base == reg_base)
++			return lock;
++	}
 +
-+	lock = of_mmp_clk_get_spinlock(np, reg_phys);
-+	if (!lock)
-+		return -EINVAL;
++	return NULL;
++}
 +
-+	*plock = lock;
-+	reg = of_mmp_clk_get_reg(np, 1, &reg_phys);
-+	if (reg)
-+		ri->reg_clk_sel = reg;
++spinlock_t *of_mmp_clk_get_spinlock(struct device_node *np,
++					unsigned int reg_base)
++{
++	struct mmp_clk_spinlock *lock;
++	struct mmp_clk_spinlock_node *node;
++	struct device_node *owner;
 +
-+	prop = of_get_property(np, "marvell,mmp-clk-mix-table", &proplen);
-+	if (prop) {
-+		size = proplen / sizeof(u32);
-+		if ((proplen % sizeof(u32)) || size % 2) {
-+			pr_err("%s:%s marvell,mmp-clk-mix-table wrong value\n",
-+				__func__, np->name);
-+			return -EINVAL;
-+		}
-+		table = kzalloc(sizeof(*table) * (size / 2), GFP_KERNEL);
-+		if (!table) {
-+			pr_err("%s:%s failed to allocate table\n",
-+				__func__, np->name);
-+			return -EINVAL;
++	if (of_property_read_bool(np, "marvell,mmp-clk-spinlock-new")) {
++
++		mutex_lock(&lock_mutex);
++
++		lock = find_lock_by_np(np);
++		if (!lock) {
++			lock = create_lock(np, reg_base);
++			if (lock)
++				list_add(&lock->node, &lock_list);
 +		}
 +
-+		for (i = 0; i < size; i += 2) {
-+			table[i / 2].rate = be32_to_cpup(prop + i);
-+			table[i / 2].parent_index = be32_to_cpup(prop + i + 1);
-+		}
-+		config->table = table;
-+		config->table_size = size / 2;
++		mutex_unlock(&lock_mutex);
++
++		return &lock->lock;
++	}
++
++	if (of_find_property(np, "marvell,mmp-clk-spinlock", NULL)) {
++
++		mutex_lock(&lock_mutex);
++
++		owner = of_parse_phandle(np, "marvell,mmp-clk-spinlock", 0);
++		lock = find_lock_by_np(owner);
 +	} else {
-+		config->table = NULL;
-+		config->table_size = 0;
++
++		mutex_lock(&lock_mutex);
++
++		lock = find_lock_by_reg_base(reg_base);
 +	}
 +
-+	return 0;
-+}
++	if (!lock) {
++		lock = create_lock(np, reg_base);
++		if (lock)
++			list_add(&lock->node, &lock_list);
++	}
 +
-+static int of_mmp_clk_factor_dt_parse(struct device_node *np,
-+					struct mmp_clk_factor_masks **pmasks,
-+					struct mmp_clk_factor_tbl **pftbl,
-+					unsigned int *pftbl_cnt)
-+{
-+	struct mmp_clk_factor_masks *masks;
-+	struct mmp_clk_factor_tbl *table;
-+	u8 width, shift;
-+	int i, ret, size;
-+	u32 tmp;
-+	const __be32 *prop;
-+	unsigned int proplen;
++	if (!lock) {
++		mutex_unlock(&lock_mutex);
++		pr_err("%s:%s failed to get spinlock\n", __func__, np->name);
++		return NULL;
++	}
 +
-+	masks = kzalloc(sizeof(*masks), GFP_KERNEL);
-+	if (!masks) {
-+		pr_err("%s:%s failed to allocate factor masks\n",
++	node = create_lock_node(np);
++	if (!node) {
++		mutex_unlock(&lock_mutex);
++		pr_err("%s:%s failed to create spinlock node\n",
 +			__func__, np->name);
-+		return -ENOMEM;
++		return NULL;
 +	}
++	node->share = np;
++	list_add(&node->node, &lock->share_list);
 +
-+	ret = of_property_read_u32(np, "marvell,mmp-clk-factor-factor", &tmp);
-+	if (ret) {
-+		pr_err("%s:%s can not find marvell,mmp-clk-factor-num\n",
-+			__func__, np->name);
-+		return -EINVAL;
-+	}
-+	masks->factor = tmp;
++	mutex_unlock(&lock_mutex);
 +
-+	ret = of_mmp_clk_get_bits(np, "marvell,mmp-clk-factor-bits-num",
-+				&width, &shift);
-+	if (ret)
-+		return ret;
-+	masks->num_mask = BIT(width) - 1;
-+	masks->num_shift = shift;
-+
-+	ret = of_mmp_clk_get_bits(np, "marvell,mmp-clk-factor-bits-den",
-+				&width, &shift);
-+	if (ret)
-+		return ret;
-+	masks->den_mask = BIT(width) - 1;
-+	masks->den_shift = shift;
-+	*pmasks = masks;
-+
-+	prop = of_get_property(np, "marvell,mmp-clk-factor-table", &proplen);
-+	if (!prop) {
-+		pr_err("%s:%s failed to get marvell,mmp-clk-factor-table\n",
-+			__func__, np->name);
-+		return -EINVAL;
-+	}
-+
-+	size = proplen / sizeof(u32);
-+	if ((proplen % sizeof(u32)) || size % 2) {
-+		pr_err("%s:%s marvell,mmp-clk-factor-table wrong value\n",
-+			__func__, np->name);
-+		return -EINVAL;
-+	}
-+	table = kzalloc(sizeof(*table) * (size / 2), GFP_KERNEL);
-+	if (!table) {
-+		pr_err("%s:%s failed to allocate table\n",
-+			__func__, np->name);
-+		return -EINVAL;
-+	}
-+
-+	for (i = 0; i < size; i += 2) {
-+		table[i / 2].num = be32_to_cpup(prop + i);
-+		table[i / 2].den = be32_to_cpup(prop + i + 1);
-+	}
-+	*pftbl = table;
-+	*pftbl_cnt = size / 2;
-+
-+	return 0;
++	return &lock->lock;
 +}
 +
-+static void of_mmp_clk_mix_setup(struct device_node *np)
-+{
-+	struct mmp_clk_mix *mix;
-+	struct mmp_clk_mix_config config;
-+	struct clk *clk;
-+	spinlock_t *lock;
-+	unsigned int num_parents;
-+	const char **parent_names;
-+	int i, ret;
-+
-+	ret = of_mmp_clk_mix_dt_parse(np, &config, &lock);
-+	if (ret)
-+		return;
-+
-+	if (of_mmp_clk_is_composite(np)) {
-+		mix = kzalloc(sizeof(*mix), GFP_KERNEL);
-+		if (!mix) {
-+			pr_err("%s:%s failed to allocate clk\n",
-+				__func__, np->name);
-+			return;
-+		}
-+		memcpy(&mix->reg_info, &config.reg_info,
-+			sizeof(config.reg_info));
-+		mix->div_flags = config.div_flags;
-+		mix->mux_flags = config.mux_flags;
-+		mix->lock = lock;
-+		if (config.table) {
-+			mix->table = config.table;
-+			mix->table_size = config.table_size;
-+		}
-+
-+		of_mmp_clk_composite_add_member(np, &mix->hw, &mmp_clk_mix_ops,
-+					MMP_CLK_COMPOSITE_TYPE_MUXMIX);
-+	} else {
-+		num_parents = of_clk_get_parent_count(np);
-+		parent_names = kcalloc(num_parents, sizeof(char *),
-+					GFP_KERNEL);
-+		if (!parent_names) {
-+			pr_err("%s:%s failed to allocate parent_names\n",
-+				__func__, np->name);
-+			return;
-+		}
-+		for (i = 0; i < num_parents; i++)
-+			parent_names[i] = of_clk_get_parent_name(np, i);
-+
-+		clk = mmp_clk_register_mix(NULL, np->name, num_parents,
-+					parent_names, 0, &config, lock);
-+
-+		if (IS_ERR(clk)) {
-+			kfree(parent_names);
-+
-+			pr_err("%s:%s failed to register clk\n",
-+				__func__, np->name);
-+			return;
-+		}
-+
-+		of_clk_add_provider(np, of_clk_src_simple_get, clk);
-+	}
-+}
-+CLK_OF_DECLARE(mmp_clk_mix, "marvell,mmp-clk-mix",
-+		of_mmp_clk_mix_setup);
-+
-+static void of_mmp_clk_div_setup(struct device_node *np)
-+{
-+	struct clk_divider *div;
-+	void __iomem *reg;
-+	u8 width, shift, div_flags;
-+	struct clk_div_table *table;
-+	unsigned long flags;
-+	const char *parent_name;
-+	struct clk *clk;
-+	unsigned int reg_phys;
-+	spinlock_t *lock;
-+	int ret;
-+
-+	reg = of_mmp_clk_get_reg(np, 0, &reg_phys);
-+	if (!reg)
-+		return;
-+
-+	ret = of_mmp_clk_div_dt_parse(np, &shift, &width, &table, &div_flags);
-+	if (ret)
-+		return;
-+
-+	ret = of_mmp_clk_get_flags(np, &flags);
-+	if (ret)
-+		return;
-+
-+	lock = of_mmp_clk_get_spinlock(np, reg_phys);
-+	if (!lock)
-+		return;
-+
-+	if (of_mmp_clk_is_composite(np)) {
-+		div = kzalloc(sizeof(*div), GFP_KERNEL);
-+		if (!div) {
-+			pr_err("%s:%s failed to allocate clk\n",
-+				__func__, np->name);
-+			return;
-+		}
-+		div->shift = shift;
-+		div->width = width;
-+		div->table = table;
-+		div->flags = div_flags;
-+		div->lock = lock;
-+		div->reg = reg;
-+
-+		of_mmp_clk_composite_add_member(np, &div->hw, &clk_divider_ops,
-+					MMP_CLK_COMPOSITE_TYPE_DIV);
-+	} else {
-+		parent_name = of_clk_get_parent_name(np, 0);
-+
-+		if (!table)
-+			clk = clk_register_divider(NULL, np->name, parent_name,
-+					flags, reg, shift, width, div_flags,
-+					lock);
-+		else
-+			clk = clk_register_divider_table(NULL, np->name,
-+					parent_name, flags, reg, shift, width,
-+					div_flags, table, lock);
-+		if (IS_ERR(clk)) {
-+			pr_err("%s:%s failed to register clk\n",
-+				__func__, np->name);
-+			return;
-+		}
-+
-+		of_clk_add_provider(np, of_clk_src_simple_get, clk);
-+	}
-+}
-+CLK_OF_DECLARE(mmp_clk_div, "marvell,mmp-clk-div",
-+		of_mmp_clk_div_setup);
-+
-+static void of_mmp_clk_mux_setup(struct device_node *np)
-+{
-+	struct clk_mux *mux;
-+	void __iomem *reg;
-+	u8 width, shift, mux_flags;
-+	unsigned long flags;
-+	spinlock_t *lock;
-+	unsigned int num_parents;
-+	const char **parent_names;
-+	struct clk *clk;
-+	unsigned int reg_phys;
-+	int i, ret;
-+
-+	reg = of_mmp_clk_get_reg(np, 0, &reg_phys);
-+	if (!reg)
-+		return;
-+
-+	ret = of_mmp_clk_mux_dt_parse(np, &shift, &width, &mux_flags);
-+	if (ret)
-+		return;
-+
-+	ret = of_mmp_clk_get_flags(np, &flags);
-+	if (ret)
-+		return;
-+
-+	lock = of_mmp_clk_get_spinlock(np, reg_phys);
-+	if (!lock)
-+		return;
-+
-+	if (of_mmp_clk_is_composite(np)) {
-+		mux = kzalloc(sizeof(*mux), GFP_KERNEL);
-+		if (!mux) {
-+			pr_err("%s:%s failed to allocate clk\n",
-+				__func__, np->name);
-+			return;
-+		}
-+
-+		mux->reg = reg;
-+		mux->mask = BIT(width) - 1;
-+		mux->shift = shift;
-+		mux->lock = lock;
-+		mux->flags = mux_flags;
-+		of_mmp_clk_composite_add_member(np, &mux->hw, &clk_mux_ops,
-+					MMP_CLK_COMPOSITE_TYPE_MUXMIX);
-+	} else {
-+		num_parents = of_clk_get_parent_count(np);
-+		parent_names = kcalloc(num_parents, sizeof(char *),
-+					GFP_KERNEL);
-+		if (!parent_names) {
-+			pr_err("%s:%s failed to allocate parent_names\n",
-+				__func__, np->name);
-+			return;
-+		}
-+		for (i = 0; i < num_parents; i++)
-+			parent_names[i] = of_clk_get_parent_name(np, i);
-+
-+		clk = clk_register_mux(NULL, np->name, parent_names,
-+					num_parents, flags,
-+					reg, shift, width, mux_flags, lock);
-+		if (IS_ERR(clk)) {
-+			pr_err("%s:%s failed to register clk\n",
-+				__func__, np->name);
-+			return;
-+		}
-+
-+		of_clk_add_provider(np, of_clk_src_simple_get, clk);
-+	}
-+}
-+CLK_OF_DECLARE(mmp_clk_mux, "marvell,mmp-clk-mux",
-+		of_mmp_clk_mux_setup);
-+
-+static void of_mmp_clk_general_gate_setup(struct device_node *np)
-+{
-+	struct clk_gate *gate;
-+	void __iomem *reg;
-+	u8 bit_idx, gate_flags;
-+	unsigned long flags;
-+	spinlock_t *lock;
-+	const char *parent_name;
-+	struct clk *clk;
-+	unsigned int reg_phys;
-+	int ret;
-+
-+	reg = of_mmp_clk_get_reg(np, 0, &reg_phys);
-+	if (!reg)
-+		return;
-+
-+	ret = of_mmp_clk_general_gate_dt_parse(np, &bit_idx, &gate_flags);
-+	if (ret)
-+		return;
-+
-+	ret = of_mmp_clk_get_flags(np, &flags);
-+	if (ret)
-+		return;
-+
-+	lock = of_mmp_clk_get_spinlock(np, reg_phys);
-+	if (!lock)
-+		return;
-+
-+	if (of_mmp_clk_is_composite(np)) {
-+		gate = kzalloc(sizeof(*gate), GFP_KERNEL);
-+		if (!gate) {
-+			pr_err("%s:%s failed to allocate clk\n",
-+				__func__, np->name);
-+			return;
-+		}
-+		gate->bit_idx = bit_idx;
-+		gate->flags = gate_flags;
-+		gate->reg = reg;
-+		gate->lock = lock;
-+		of_mmp_clk_composite_add_member(np, &gate->hw, &clk_gate_ops,
-+					MMP_CLK_COMPOSITE_TYPE_GATE);
-+	} else {
-+		parent_name = of_clk_get_parent_name(np, 0);
-+
-+		clk = clk_register_gate(NULL, np->name, parent_name, flags,
-+					reg, bit_idx, gate_flags, lock);
-+		if (IS_ERR(clk)) {
-+			pr_err("%s:%s failed to register clk\n",
-+				__func__, np->name);
-+			return;
-+		}
-+
-+		of_clk_add_provider(np, of_clk_src_simple_get, clk);
-+	}
-+}
-+CLK_OF_DECLARE(mmp_clk_general_gate, "marvell,mmp-clk-general-gate",
-+		of_mmp_clk_general_gate_setup);
-+
-+static void of_mmp_clk_gate_setup(struct device_node *np)
-+{
-+	struct mmp_clk_gate *gate;
-+	void __iomem *reg;
-+	u32 mask, val_enable, val_disable;
-+	unsigned int gate_flags;
-+	unsigned long flags;
-+	spinlock_t *lock;
-+	const char *parent_name;
-+	struct clk *clk;
-+	unsigned int reg_phys;
-+	int ret;
-+
-+	reg = of_mmp_clk_get_reg(np, 0, &reg_phys);
-+	if (!reg)
-+		return;
-+
-+	ret = of_mmp_clk_gate_dt_parse(np, &mask, &val_enable, &val_disable,
-+					&gate_flags);
-+	if (ret)
-+		return;
-+
-+	ret = of_mmp_clk_get_flags(np, &flags);
-+	if (ret)
-+		return;
-+
-+	lock = of_mmp_clk_get_spinlock(np, reg_phys);
-+	if (!lock)
-+		return;
-+
-+	if (of_mmp_clk_is_composite(np)) {
-+		gate = kzalloc(sizeof(*gate), GFP_KERNEL);
-+		if (!gate) {
-+			pr_err("%s:%s failed to allocate clk\n",
-+				__func__, np->name);
-+			return;
-+		}
-+
-+		gate->flags = gate_flags;
-+		gate->mask = mask;
-+		gate->val_enable = val_enable;
-+		gate->val_disable = val_disable;
-+		gate->reg = reg;
-+		gate->lock = lock;
-+		of_mmp_clk_composite_add_member(np, &gate->hw,
-+				&mmp_clk_gate_ops,
-+				MMP_CLK_COMPOSITE_TYPE_GATE);
-+	} else {
-+		parent_name = of_clk_get_parent_name(np, 0);
-+
-+		clk = mmp_clk_register_gate(NULL, np->name, parent_name, flags,
-+					reg, mask, val_enable, val_disable,
-+					gate_flags, lock);
-+		if (IS_ERR(clk)) {
-+			pr_err("%s:%s failed to register clk\n",
-+				__func__, np->name);
-+			return;
-+		}
-+
-+		of_clk_add_provider(np, of_clk_src_simple_get, clk);
-+	}
-+}
-+CLK_OF_DECLARE(mmp_clk_gate, "marvell,mmp-clk-gate",
-+		of_mmp_clk_gate_setup);
-+
-+static void of_mmp_clk_factor_setup(struct device_node *np)
-+{
-+	void __iomem *reg;
-+	struct mmp_clk_factor_masks *masks;
-+	struct mmp_clk_factor_tbl *table;
-+	unsigned int table_size;
-+	unsigned long flags;
-+	spinlock_t *lock;
-+	const char *parent_name;
-+	struct clk *clk;
-+	unsigned int reg_phys;
-+	int ret;
-+
-+	reg = of_mmp_clk_get_reg(np, 0, &reg_phys);
-+	if (!reg)
-+		return;
-+
-+	ret = of_mmp_clk_factor_dt_parse(np, &masks, &table, &table_size);
-+	if (ret)
-+		return;
-+
-+	ret = of_mmp_clk_get_flags(np, &flags);
-+	if (ret)
-+		return;
-+
-+	lock = of_mmp_clk_get_spinlock(np, reg_phys);
-+	if (!lock)
-+		return;
-+
-+	parent_name = of_clk_get_parent_name(np, 0);
-+
-+	clk = mmp_clk_register_factor(np->name, parent_name, flags,
-+					reg, masks, table, table_size,
-+					lock);
-+	if (IS_ERR(clk)) {
-+		pr_err("%s:%s failed to register clk\n", __func__, np->name);
-+		return;
-+	}
-+
-+	of_clk_add_provider(np, of_clk_src_simple_get, clk);
-+
-+}
-+CLK_OF_DECLARE(mmp_clk_factor,
-+		"marvell,mmp-clk-factor",
-+		of_mmp_clk_factor_setup);
-+
-+void mmp_clk_of_init(void)
-+{
-+	struct device_node *next;
-+
-+	next = NULL;
-+	do {
-+		next = of_mmp_clk_master_init(next);
-+	} while (next);
-+}
 -- 
 1.8.3.2
 
