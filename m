@@ -1,102 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933258AbaFJBGB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 21:06:01 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45474 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932990AbaFJBF7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 21:05:59 -0400
-Message-ID: <1402362352.23860.101.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH 3.4 76/88] 8250/16?50: Add support for Broadcom
- TruManage redirected serial port
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Stephen Hurd <shurd@broadcom.com>, Michael Chan <mchan@broadcom.com>,
-        Rui Xiang <rui.xiang@huawei.com>
-Date: Tue, 10 Jun 2014 02:05:52 +0100
-In-Reply-To: <20140610002426.983926719@linuxfoundation.org>
-References: <20140610002424.500996570@linuxfoundation.org>
-	 <20140610002426.983926719@linuxfoundation.org>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-YI6RYx6AautluNNt07sZ"
-X-Mailer: Evolution 3.12.2-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S933242AbaFJBQF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 21:16:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47778 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932989AbaFJBQB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 21:16:01 -0400
+Date: Tue, 10 Jun 2014 03:15:58 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Cameron Norman <camerontnorman@gmail.com>
+Cc: Lennart Poettering <mzxreary@0pointer.de>, luto@mit.edu,
+        Keir Fraser <keir@xen.org>, Ian Campbell <Ian.Campbell@citrix.com>,
+        Tim Deegan <tim@xen.org>, Ian Jackson <ian.jackson@eu.citrix.com>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        ebiederm@xmission.com, Jan Beulich <jbeulich@suse.com>,
+        xen-devel@lists.xenproject.org, systemd-devel@lists.freedesktop.org,
+        morgan@kernel.org
+Subject: Re: [systemd-devel] [PATCH v5 12/14] autoconf: xen: enable
+	explicit preference option for xenstored preference
+Message-ID: <20140610011558.GC6219@wotan.suse.de>
+References: <1400589095-3872-13-git-send-email-mcgrof@do-not-panic.com> <1400687040.7272.28.camel@kazak.uk.xensource.com> <20140521230233.GA13289@wotan.suse.de> <1400753147.14637.10.camel@kazak.uk.xensource.com> <20140523232031.GA26450@wotan.suse.de> <1401269449.24800.7.camel@kazak.uk.xensource.com> <20140529232918.GG26450@wotan.suse.de> <20140601061547.GC16257@tango.0pointer.de> <20140605003103.GB22052@wotan.suse.de> <CALZWFR+LQ3XK4RQ335CNqjr8zucWw4GieKwZS3N5m0w4yJXuBA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALZWFR+LQ3XK4RQ335CNqjr8zucWw4GieKwZS3N5m0w4yJXuBA@mail.gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 04, 2014 at 07:52:56PM -0700, Cameron Norman wrote:
+> On Wed, Jun 4, 2014 at 5:31 PM, Luis R. Rodriguez <mcgrof@suse.com> wrote:
+> > On Sun, Jun 01, 2014 at 08:15:47AM +0200, Lennart Poettering wrote:
+> >> On Fri, 30.05.14 01:29, Luis R. Rodriguez (mcgrof@suse.com) wrote:
+> >>
+> >> > I'm cc'ing a few security folks as I'd appreciate review on the ideas here,
+> >> > in particular that of a launcher idea on system to replace alternatives on the
+> >> > ExecStart= line of a systemd service unit file, alternative ideas are of
+> >> > course welcomed. I'm also Cc'ing systemd-devel as this subject was reviewed
+> >> > a little while ago with nothing concrete being recommended but instead a few
+> >> > options being now archived as possibilities. I'm looking for a bit wider
+> >> > review of the approaches and recomendations.
+> >> >
+> >> > Some general background for non xen folks: old xen requires the launch of
+> >> > a daemon which implements supports of the xenstore, which is the database
+> >> > that xen uses for information about guests / dom0. There are two supported
+> >> > daemons, xenstored (C version) and oxenstored (Ocaml version) but they do the
+> >> > same thing. Right now old init lets you override which one you pick through
+> >> > an environment variable on /etc/{sysconfig,default}/xencommons, the script
+> >> > will use the appropriate on there. Systemd doesn't let you use variables on
+> >> > the ExecStart line of a service unit file so alternatives are required.
+> >> >
+> >> > The reason I'm being very careful here this could set a precedent and at
+> >> > least for the launcher idea it'd require the usage of getenv() and execve(),
+> >> > and secure alternatives for these (secure_getenv(), execve_nosecurity())
+> >> > have either been merged or suggested before for Linux. The systemd discussion
+> >> > is only specific to Linux but if we have a launcher we could consider it for
+> >> > other supported OSes. All that said I'd like proper review of the security
+> >> > implications of *all* strategies but obviously in particular the launcher
+> >> > idea. I want to tread carefuly before setting precedents.
+> >>
+> >> You can also just invoke a shell script from ExecStart=. I mean, we try
+> >> to deemphesize them in the boot process, but there's nothing wrong with
+> >> using shell, if you need to parse shell configuraiton fragments and just
+> >> want to execute on ot another program...
+> >
+> > I tried this and it didn't work given that systemd expects sd_notify()
+> > to be called from the parent process, in this case the shell script.
+> 
+> Just use exec before the daemon command. I am pretty certain it can be
+> just like this:
+> 
+>     ExecStart=/bin/sh -c "exec $XENSTORED"
+> 
+> xenstored then has the same PID as the sh process, and $NOTIFY_SOCKET
+> works just fine.
 
---=-YI6RYx6AautluNNt07sZ
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Actually this does work on a test unit I just built. I'll proceed with
+this approach since I haven't heard back from others and I think
+this is the best approach now.
 
-On Mon, 2014-06-09 at 17:25 -0700, Greg Kroah-Hartman wrote:
-> 3.4-stable review patch.  If anyone has any objections, please let me kno=
-w.
->=20
-> ------------------
->=20
-> From: Stephen Hurd <shurd@broadcom.com>
->=20
-> commit ebebd49a8eab5e9aa1b1f8f1614ccc3c2120f886 upstream.
->=20
-> Add support for the UART device present in Broadcom TruManage capable
-> NetXtreme chips (ie: 5761m 5762, and 5725).
->=20
-> This implementation has a hidden transmit FIFO, so running in single-byte
-> interrupt mode results in too many interrupts.  The UART_CAP_HFIFO
-> capability was added to track this.  It continues to reload the THR as lo=
-ng
-> as the THRE and TSRE bits are set in the LSR up to a specified limit (102=
-4
-> is used here).
->=20
-> Signed-off-by: Stephen Hurd <shurd@broadcom.com>
-> Signed-off-by: Michael Chan <mchan@broadcom.com>
-> [xr: Backported to 3.4:
->  - Adjust filenames
->  - Adjust context
->  - PORT_BRCM_TRUMANAGE is 22 not 24]
-
-This last line isn't true any more.
-
-Ben.
-
-> Cc: Ben Hutchings <ben@decadent.org.uk>
-> Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[...]
-
---=20
-Ben Hutchings
-DNRC Motto:  I can please only one person per day.
-Today is not your day.  Tomorrow isn't looking good either.
-
---=-YI6RYx6AautluNNt07sZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIVAwUAU5ZZ8ee/yOyVhhEJAQrC6w//cKy02o0z4ZPVMz9GeRo83wVKoLxigh0O
-snL/teeb4Ul/5Mj2wrMeWTqDHgW/NdvC+02WtQC8Y8odVDraSub5lgu643uMwEwC
-F+W+SlKdew/4rrZirlrHDbyyUx1T0vaZNu2EZpOmqqo0wg4KsP/WccRiRivBIn9v
-opIcox6Z1S9Oyxkp8C+eCT5+bZeZZTJD3GThChtH2E6KZCBglQgym8gzFLAlRBNr
-+vTXEuxmbRW+HBcL+ZW70VzQJyEckr7tN5hPgorlsubewS8a+ccxpRL6bhYILeZb
-duUW5uJWXmAHzwBRwEZTHwMcXDdNmrddnK3mIMfL+o55Jsc0nXyjOJgzY14Lgw1i
-zd/2rQ3MD2W4POESlyq9NSoz/7AZ4zJF9Oj+9kL3/8Euq4+CnsI05XyGrl1pLqRl
-yYZdp+FulcxLJW0x5ZMC17dTil2oxzr/9N+tv7eQ5Ic9uPHq7pJM6BtQPtP6mbwi
-hLZq7lYFH9EHACI49NC2ZWH6hkV4E+n2d/kzKhVCQOtRt/OjFHK31hbQWR6ZKTek
-8UmQyyzc3COT+I6iuZLTzpHbVD7Ae26DG2LULrfBb/2f8GA9ojnjl6XKYG8bPjLa
-7z7CA7SyubyLsq0x94WldSz3CAeOnhXpYYW8J1U1OtJJ8ZT6qOweb/PegPc8fTuq
-soJIo4KY34Y=
-=auMZ
------END PGP SIGNATURE-----
-
---=-YI6RYx6AautluNNt07sZ--
+  Luis
