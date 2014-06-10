@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934271AbaFJAWN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:22:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58173 "EHLO
+	id S964925AbaFJAim (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:38:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58354 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754346AbaFJAWI (ORCPT
+	with ESMTP id S1754398AbaFJAWM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 20:22:08 -0400
+	Mon, 9 Jun 2014 20:22:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH 3.4 49/88] virtio: 9p: correctly pass physical address to userspace for high pages
-Date: Mon,  9 Jun 2014 17:24:59 -0700
-Message-Id: <20140610002426.158546523@linuxfoundation.org>
+        AceLan Kao <acelan.kao@canonical.com>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
+        Ben Hutchings <ben@decadent.org.uk>, Jianguo Wu <wujianguo@huawei.com>
+Subject: [PATCH 3.4 40/88] Bluetooth: Add support for Atheros [0cf3:e003]
+Date: Mon,  9 Jun 2014 17:24:50 -0700
+Message-Id: <20140610002425.876833705@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
 References: <20140610002424.500996570@linuxfoundation.org>
@@ -32,50 +30,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: AceLan Kao <acelan.kao@canonical.com>
 
-commit 30d395b124c51db66d9f3ba0611cd62021afc392 upstream.
+commit 1d5b569ef85d013a775560a90050dc630614c045 upstream.
 
-commit b9cdc88df8e63e81c723b82c286fc97f5d0dc325 upstream.
+Add support for the AR9462 chip
 
-When using a virtio transport, the 9p net device may pass the physical
-address of a kernel buffer to userspace via a scatterlist inside a
-virtqueue. If the kernel buffer is mapped outside of the linear mapping
-(e.g. highmem), then virt_to_page will return a bogus value and we will
-populate the scatterlist with junk.
+T:  Bus=02 Lev=02 Prnt=02 Port=04 Cnt=01 Dev#=  4 Spd=12  MxCh= 0
+D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=0cf3 ProdID=e003 Rev=00.02
+C:  #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+I:  If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+I:  If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
 
-This patch uses kmap_to_page when populating the page array for a kernel
-buffer.
-
-Cc: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: AceLan Kao <acelan.kao@canonical.com>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Yijing Wang <wangyijing@huawei.com>
+Cc: Jianguo Wu <wujianguo@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/9p/trans_virtio.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/bluetooth/ath3k.c |    2 ++
+ drivers/bluetooth/btusb.c |    1 +
+ 2 files changed, 3 insertions(+)
 
---- a/net/9p/trans_virtio.c
-+++ b/net/9p/trans_virtio.c
-@@ -39,6 +39,7 @@
- #include <linux/inet.h>
- #include <linux/idr.h>
- #include <linux/file.h>
-+#include <linux/highmem.h>
- #include <linux/slab.h>
- #include <net/9p/9p.h>
- #include <linux/parser.h>
-@@ -325,7 +326,7 @@ static int p9_get_mapped_pages(struct vi
- 		int count = nr_pages;
- 		while (nr_pages) {
- 			s = rest_of_page(data);
--			pages[index++] = virt_to_page(data);
-+			pages[index++] = kmap_to_page(data);
- 			data += s;
- 			nr_pages--;
- 		}
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -94,6 +94,7 @@ static struct usb_device_id ath3k_table[
+ 	{ USB_DEVICE(0x04c5, 0x1330) },
+ 	{ USB_DEVICE(0x13d3, 0x3402) },
+ 	{ USB_DEVICE(0x0cf3, 0x3121) },
++	{ USB_DEVICE(0x0cf3, 0xe003) },
+ 
+ 	/* Atheros AR5BBU12 with sflash firmware */
+ 	{ USB_DEVICE(0x0489, 0xE02C) },
+@@ -134,6 +135,7 @@ static struct usb_device_id ath3k_blist_
+ 	{ USB_DEVICE(0x04c5, 0x1330), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x3121), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x0cf3, 0xe003), .driver_info = BTUSB_ATH3012 },
+ 
+ 	/* Atheros AR5BBU22 with sflash firmware */
+ 	{ USB_DEVICE(0x0489, 0xE03C), .driver_info = BTUSB_ATH3012 },
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -163,6 +163,7 @@ static struct usb_device_id blacklist_ta
+ 	{ USB_DEVICE(0x04c5, 0x1330), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x3121), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x0cf3, 0xe003), .driver_info = BTUSB_ATH3012 },
+ 
+ 	/* Atheros AR5BBU12 with sflash firmware */
+ 	{ USB_DEVICE(0x0489, 0xe02c), .driver_info = BTUSB_IGNORE },
 
 
