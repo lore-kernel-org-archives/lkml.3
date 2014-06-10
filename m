@@ -1,364 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752667AbaFJQTd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 12:19:33 -0400
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:49725 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751879AbaFJQTa (ORCPT
+	id S1751541AbaFJQYN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 12:24:13 -0400
+Received: from smtprelay0091.hostedemail.com ([216.40.44.91]:52219 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750735AbaFJQYM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 12:19:30 -0400
-From: Milos Vyletel <milos.vyletel@gmail.com>
-To: davem@davemloft.net, amwang@redhat.com, netdev@vger.kernel.org
-Cc: Milos Vyletel <milos.vyletel@gmail.com>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [patch net-next 1/5] ipv6: align sysctl table creation code with ipv4
-Date: Tue, 10 Jun 2014 12:19:09 -0400
-Message-Id: <1402417153-2551-2-git-send-email-milos.vyletel@gmail.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1402417153-2551-1-git-send-email-milos.vyletel@gmail.com>
-References: <1402417153-2551-1-git-send-email-milos.vyletel@gmail.com>
+	Tue, 10 Jun 2014 12:24:12 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1543:1593:1594:1711:1730:1747:1777:1792:1801:2393:2559:2562:2689:2828:2890:3138:3139:3140:3141:3142:3355:3622:3865:3867:3868:3870:3872:3873:3874:4042:4321:4605:5007:7514:7652:7903:7974:10004:10400:10848:11026:11232:11658:11914:12043:12257:12295:12517:12519:12555:12740:13019,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: cave28_4123086e89b57
+X-Filterd-Recvd-Size: 4030
+Message-ID: <1402417441.30479.0.camel@joe-AO725>
+Subject: Re: [PATCH] [checkpatch.pl] ctx_statement_block #if/#else/#endif fix
+From: Joe Perches <joe@perches.com>
+To: Ivo Sieben <meltedpianoman@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Andy Whitcroft <apw@canonical.com>
+Date: Tue, 10 Jun 2014 09:24:01 -0700
+In-Reply-To: <CAMSQXEE9ZgE8wuXz_qu5ndbfFne7zjhN24R44trPE11e02hmWQ@mail.gmail.com>
+References: <1400164995-8652-1-git-send-email-meltedpianoman@gmail.com>
+	 <CAMSQXEE9ZgE8wuXz_qu5ndbfFne7zjhN24R44trPE11e02hmWQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use ADDRCONF_SYSCTL* macros to define sysctl table. This is first step
-to align ipv6 and ipv4 sysctl code.
+On Tue, 2014-06-10 at 08:19 +0200, Ivo Sieben wrote:
+> Andy, Joe,
+> 
+> What do you think about my patchset below?
 
-Signed-off-by: Milos Vyletel <milos.vyletel@gmail.com>
----
- net/ipv6/addrconf.c | 300 ++++++++++++----------------------------------------
- 1 file changed, 66 insertions(+), 234 deletions(-)
+Andy wrote that originally and I think he should respond.
 
-diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
-index 5667b30..dbacca4 100644
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -4917,6 +4917,27 @@ int addrconf_sysctl_proxy_ndp(struct ctl_table *ctl, int write,
- 	return ret;
- }
- 
-+#define ADDRCONF_SYSCTL_ENTRY(name, var, mval, proc) \
-+	{ \
-+		.procname	= #name, \
-+		.data		= (void *)&ipv6_devconf + \
-+				offsetof(struct ipv6_devconf, var), \
-+		.maxlen		= sizeof(int), \
-+		.mode		= mval, \
-+		.proc_handler	= proc, \
-+	}
-+
-+#define ADDRCONF_SYSCTL_RW_ENTRY(name) \
-+	ADDRCONF_SYSCTL_ENTRY(name, name, 0644, proc_dointvec)
-+
-+#define ADDRCONF_SYSCTL_RO_ENTRY(name) \
-+	ADDRCONF_SYSCTL_ENTRY(name, name, 0444, proc_dointvec)
-+
-+#define ADDRCONF_SYSCTL_COMPLEX_ENTRY(name, proc) \
-+	ADDRCONF_SYSCTL_ENTRY(name, name, 0644, proc)
-+
-+#define ADDRCONF_SYSCTL_CUSTOM_ENTRY(name, var, proc) \
-+	ADDRCONF_SYSCTL_ENTRY(name, var, 0644, proc)
- 
- static struct addrconf_sysctl_table
- {
-@@ -4925,248 +4946,59 @@ static struct addrconf_sysctl_table
- } addrconf_sysctl __read_mostly = {
- 	.sysctl_header = NULL,
- 	.addrconf_vars = {
--		{
--			.procname	= "forwarding",
--			.data		= &ipv6_devconf.forwarding,
--			.maxlen		= sizeof(int),
--			.mode		= 0644,
--			.proc_handler	= addrconf_sysctl_forward,
--		},
--		{
--			.procname	= "hop_limit",
--			.data		= &ipv6_devconf.hop_limit,
--			.maxlen		= sizeof(int),
--			.mode		= 0644,
--			.proc_handler	= proc_dointvec,
--		},
--		{
--			.procname	= "mtu",
--			.data		= &ipv6_devconf.mtu6,
--			.maxlen		= sizeof(int),
--			.mode		= 0644,
--			.proc_handler	= proc_dointvec,
--		},
--		{
--			.procname	= "accept_ra",
--			.data		= &ipv6_devconf.accept_ra,
--			.maxlen		= sizeof(int),
--			.mode		= 0644,
--			.proc_handler	= proc_dointvec,
--		},
--		{
--			.procname	= "accept_redirects",
--			.data		= &ipv6_devconf.accept_redirects,
--			.maxlen		= sizeof(int),
--			.mode		= 0644,
--			.proc_handler	= proc_dointvec,
--		},
--		{
--			.procname	= "autoconf",
--			.data		= &ipv6_devconf.autoconf,
--			.maxlen		= sizeof(int),
--			.mode		= 0644,
--			.proc_handler	= proc_dointvec,
--		},
--		{
--			.procname	= "dad_transmits",
--			.data		= &ipv6_devconf.dad_transmits,
--			.maxlen		= sizeof(int),
--			.mode		= 0644,
--			.proc_handler	= proc_dointvec,
--		},
--		{
--			.procname	= "router_solicitations",
--			.data		= &ipv6_devconf.rtr_solicits,
--			.maxlen		= sizeof(int),
--			.mode		= 0644,
--			.proc_handler	= proc_dointvec,
--		},
--		{
--			.procname	= "router_solicitation_interval",
--			.data		= &ipv6_devconf.rtr_solicit_interval,
--			.maxlen		= sizeof(int),
--			.mode		= 0644,
--			.proc_handler	= proc_dointvec_jiffies,
--		},
--		{
--			.procname	= "router_solicitation_delay",
--			.data		= &ipv6_devconf.rtr_solicit_delay,
--			.maxlen		= sizeof(int),
--			.mode		= 0644,
--			.proc_handler	= proc_dointvec_jiffies,
--		},
--		{
--			.procname	= "force_mld_version",
--			.data		= &ipv6_devconf.force_mld_version,
--			.maxlen		= sizeof(int),
--			.mode		= 0644,
--			.proc_handler	= proc_dointvec,
--		},
--		{
--			.procname	= "mldv1_unsolicited_report_interval",
--			.data		=
--				&ipv6_devconf.mldv1_unsolicited_report_interval,
--			.maxlen		= sizeof(int),
--			.mode		= 0644,
--			.proc_handler	= proc_dointvec_ms_jiffies,
--		},
--		{
--			.procname	= "mldv2_unsolicited_report_interval",
--			.data		=
--				&ipv6_devconf.mldv2_unsolicited_report_interval,
--			.maxlen		= sizeof(int),
--			.mode		= 0644,
--			.proc_handler	= proc_dointvec_ms_jiffies,
--		},
--		{
--			.procname	= "use_tempaddr",
--			.data		= &ipv6_devconf.use_tempaddr,
--			.maxlen		= sizeof(int),
--			.mode		= 0644,
--			.proc_handler	= proc_dointvec,
--		},
--		{
--			.procname	= "temp_valid_lft",
--			.data		= &ipv6_devconf.temp_valid_lft,
--			.maxlen		= sizeof(int),
--			.mode		= 0644,
--			.proc_handler	= proc_dointvec,
--		},
--		{
--			.procname	= "temp_prefered_lft",
--			.data		= &ipv6_devconf.temp_prefered_lft,
--			.maxlen		= sizeof(int),
--			.mode		= 0644,
--			.proc_handler	= proc_dointvec,
--		},
--		{
--			.procname	= "regen_max_retry",
--			.data		= &ipv6_devconf.regen_max_retry,
--			.maxlen		= sizeof(int),
--			.mode		= 0644,
--			.proc_handler	= proc_dointvec,
--		},
--		{
--			.procname	= "max_desync_factor",
--			.data		= &ipv6_devconf.max_desync_factor,
--			.maxlen		= sizeof(int),
--			.mode		= 0644,
--			.proc_handler	= proc_dointvec,
--		},
--		{
--			.procname	= "max_addresses",
--			.data		= &ipv6_devconf.max_addresses,
--			.maxlen		= sizeof(int),
--			.mode		= 0644,
--			.proc_handler	= proc_dointvec,
--		},
--		{
--			.procname	= "accept_ra_defrtr",
--			.data		= &ipv6_devconf.accept_ra_defrtr,
--			.maxlen		= sizeof(int),
--			.mode		= 0644,
--			.proc_handler	= proc_dointvec,
--		},
--		{
--			.procname	= "accept_ra_pinfo",
--			.data		= &ipv6_devconf.accept_ra_pinfo,
--			.maxlen		= sizeof(int),
--			.mode		= 0644,
--			.proc_handler	= proc_dointvec,
--		},
-+		ADDRCONF_SYSCTL_COMPLEX_ENTRY(forwarding,
-+					      addrconf_sysctl_forward),
-+		ADDRCONF_SYSCTL_RW_ENTRY(hop_limit),
-+		ADDRCONF_SYSCTL_CUSTOM_ENTRY(mtu, mtu6, proc_dointvec),
-+		ADDRCONF_SYSCTL_RW_ENTRY(accept_ra),
-+		ADDRCONF_SYSCTL_RW_ENTRY(accept_redirects),
-+		ADDRCONF_SYSCTL_RW_ENTRY(autoconf),
-+		ADDRCONF_SYSCTL_RW_ENTRY(dad_transmits),
-+		ADDRCONF_SYSCTL_CUSTOM_ENTRY(router_solicitations, rtr_solicits,
-+					     proc_dointvec),
-+		ADDRCONF_SYSCTL_CUSTOM_ENTRY(router_solicitation_interval,
-+					     rtr_solicit_interval,
-+					     proc_dointvec_jiffies),
-+		ADDRCONF_SYSCTL_CUSTOM_ENTRY(router_solicitation_delay,
-+					     rtr_solicit_delay,
-+					     proc_dointvec_jiffies),
-+		ADDRCONF_SYSCTL_RW_ENTRY(force_mld_version),
-+		ADDRCONF_SYSCTL_COMPLEX_ENTRY(mldv1_unsolicited_report_interval,
-+					      proc_dointvec_ms_jiffies),
-+		ADDRCONF_SYSCTL_COMPLEX_ENTRY(mldv2_unsolicited_report_interval,
-+					      proc_dointvec_ms_jiffies),
-+		ADDRCONF_SYSCTL_RW_ENTRY(use_tempaddr),
-+		ADDRCONF_SYSCTL_RW_ENTRY(temp_valid_lft),
-+		ADDRCONF_SYSCTL_RW_ENTRY(temp_prefered_lft),
-+		ADDRCONF_SYSCTL_RW_ENTRY(regen_max_retry),
-+		ADDRCONF_SYSCTL_RW_ENTRY(max_desync_factor),
-+		ADDRCONF_SYSCTL_RW_ENTRY(max_addresses),
-+		ADDRCONF_SYSCTL_RW_ENTRY(accept_ra_defrtr),
-+		ADDRCONF_SYSCTL_RW_ENTRY(accept_ra_pinfo),
- #ifdef CONFIG_IPV6_ROUTER_PREF
--		{
--			.procname	= "accept_ra_rtr_pref",
--			.data		= &ipv6_devconf.accept_ra_rtr_pref,
--			.maxlen		= sizeof(int),
--			.mode		= 0644,
--			.proc_handler	= proc_dointvec,
--		},
--		{
--			.procname	= "router_probe_interval",
--			.data		= &ipv6_devconf.rtr_probe_interval,
--			.maxlen		= sizeof(int),
--			.mode		= 0644,
--			.proc_handler	= proc_dointvec_jiffies,
--		},
-+		ADDRCONF_SYSCTL_RW_ENTRY(accept_ra_rtr_pref),
-+		ADDRCONF_SYSCTL_CUSTOM_ENTRY(router_probe_interval,
-+					     rtr_probe_interval,
-+					     proc_dointvec_jiffies),
- #ifdef CONFIG_IPV6_ROUTE_INFO
--		{
--			.procname	= "accept_ra_rt_info_max_plen",
--			.data		= &ipv6_devconf.accept_ra_rt_info_max_plen,
--			.maxlen		= sizeof(int),
--			.mode		= 0644,
--			.proc_handler	= proc_dointvec,
--		},
-+		ADDRCONF_SYSCTL_RW_ENTRY(accept_ra_rt_info_max_plen),
- #endif
- #endif
--		{
--			.procname	= "proxy_ndp",
--			.data		= &ipv6_devconf.proxy_ndp,
--			.maxlen		= sizeof(int),
--			.mode		= 0644,
--			.proc_handler	= addrconf_sysctl_proxy_ndp,
--		},
--		{
--			.procname	= "accept_source_route",
--			.data		= &ipv6_devconf.accept_source_route,
--			.maxlen		= sizeof(int),
--			.mode		= 0644,
--			.proc_handler	= proc_dointvec,
--		},
-+		ADDRCONF_SYSCTL_COMPLEX_ENTRY(proxy_ndp,
-+					      addrconf_sysctl_proxy_ndp),
-+		ADDRCONF_SYSCTL_RW_ENTRY(accept_source_route),
- #ifdef CONFIG_IPV6_OPTIMISTIC_DAD
--		{
--			.procname       = "optimistic_dad",
--			.data           = &ipv6_devconf.optimistic_dad,
--			.maxlen         = sizeof(int),
--			.mode           = 0644,
--			.proc_handler   = proc_dointvec,
--
--		},
-+		ADDRCONF_SYSCTL_RW_ENTRY(optimistic_dad),
- #endif
- #ifdef CONFIG_IPV6_MROUTE
--		{
--			.procname	= "mc_forwarding",
--			.data		= &ipv6_devconf.mc_forwarding,
--			.maxlen		= sizeof(int),
--			.mode		= 0444,
--			.proc_handler	= proc_dointvec,
--		},
-+		ADDRCONF_SYSCTL_RO_ENTRY(mc_forwarding),
- #endif
--		{
--			.procname	= "disable_ipv6",
--			.data		= &ipv6_devconf.disable_ipv6,
--			.maxlen		= sizeof(int),
--			.mode		= 0644,
--			.proc_handler	= addrconf_sysctl_disable,
--		},
--		{
--			.procname	= "accept_dad",
--			.data		= &ipv6_devconf.accept_dad,
--			.maxlen		= sizeof(int),
--			.mode		= 0644,
--			.proc_handler	= proc_dointvec,
--		},
--		{
--			.procname       = "force_tllao",
--			.data           = &ipv6_devconf.force_tllao,
--			.maxlen         = sizeof(int),
--			.mode           = 0644,
--			.proc_handler   = proc_dointvec
--		},
--		{
--			.procname       = "ndisc_notify",
--			.data           = &ipv6_devconf.ndisc_notify,
--			.maxlen         = sizeof(int),
--			.mode           = 0644,
--			.proc_handler   = proc_dointvec
--		},
--		{
--			.procname	= "suppress_frag_ndisc",
--			.data		= &ipv6_devconf.suppress_frag_ndisc,
--			.maxlen		= sizeof(int),
--			.mode		= 0644,
--			.proc_handler	= proc_dointvec
--		},
-+		ADDRCONF_SYSCTL_COMPLEX_ENTRY(disable_ipv6,
-+					      addrconf_sysctl_disable),
-+		ADDRCONF_SYSCTL_RW_ENTRY(accept_dad),
-+		ADDRCONF_SYSCTL_RW_ENTRY(force_tllao),
-+		ADDRCONF_SYSCTL_RW_ENTRY(ndisc_notify),
-+		ADDRCONF_SYSCTL_RW_ENTRY(suppress_frag_ndisc),
- 		{
- 			/* sentinel */
- 		}
--- 
-1.9.0
+> Regards,
+> Ivo Sieben
+> 
+> 2014-05-15 16:43 GMT+02:00 Ivo Sieben <meltedpianoman@gmail.com>:
+> > When picking up a complete statement block #if/#else/#endif prepocesor
+> > boundaries are taken into account by pushing current level & type on a stack.
+> > But on an #else the level was read from stack again (without actually popping it
+> > from stack) causing the statement block to end too early on the next ';'.
+> > Fixed this.
+> >
+> > For example the following code:
+> >
+> >         if (!test()) {
+> >  #ifdef NEVER
+> >                 foo();
+> >                 bar();
+> >  #else
+> >                 bar();
+> >                 foo();
+> >  #endif
+> >         }
+> >
+> > Results in statement block:
+> >
+> >  STATEMENT<+    if (!test()) {
+> >  +#ifdef NEVER
+> >  +              foo();
+> >  +              bar();
+> >  +#else
+> >  +              bar();>
+> >  CONDITION<+    if (!test())>
+> >
+> > While you would expect:
+> >
+> >  STATEMENT<+    if (!test()) {
+> >  +#ifdef NEVER
+> >  +              foo();
+> >  +              bar();
+> >  +#else
+> >  +              bar();
+> >  +              foo();
+> >  +#endif
+> >  +       }>
+> >  CONDITION<+     if (!test())>
+> >
+> > Signed-off-by: Ivo Sieben <meltedpianoman@gmail.com>
+> > ---
+> >
+> > Request for comments:
+> > I think I fixed a problem here that I encountered while I was working on another
+> > changeset in which I check the statement block after a condition.
+> > Somehow the statement block did not contain everything I expected.
+> >
+> >  scripts/checkpatch.pl |    4 ++--
+> >  1 file changed, 2 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> > index 34eb216..e7bca89 100755
+> > --- a/scripts/checkpatch.pl
+> > +++ b/scripts/checkpatch.pl
+> > @@ -878,7 +878,7 @@ sub ctx_statement_block {
+> >                 if ($remainder =~ /^#\s*(?:ifndef|ifdef|if)\s/) {
+> >                         push(@stack, [ $type, $level ]);
+> >                 } elsif ($remainder =~ /^#\s*(?:else|elif)\b/) {
+> > -                       ($type, $level) = @{$stack[$#stack - 1]};
+> > +                       # no changes to stack: type & level remain the same
+> >                 } elsif ($remainder =~ /^#\s*endif\b/) {
+> >                         ($type, $level) = @{pop(@stack)};
+> >                 }
+> > @@ -1050,7 +1050,7 @@ sub ctx_block_get {
+> >                 if ($lines[$line] =~ /^.\s*#\s*(?:ifndef|ifdef|if)\s/) {
+> >                         push(@stack, $level);
+> >                 } elsif ($lines[$line] =~ /^.\s*#\s*(?:else|elif)\b/) {
+> > -                       $level = $stack[$#stack - 1];
+> > +                       # no changes to stack: type & level remain the same
+> >                 } elsif ($lines[$line] =~ /^.\s*#\s*endif\b/) {
+> >                         $level = pop(@stack);
+> >                 }
+> > --
+> > 1.7.9.5
+> >
+
+
 
