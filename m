@@ -1,62 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936280AbaFJApH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:45:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58169 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933476AbaFJAV7 (ORCPT
+	id S936299AbaFJApU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:45:20 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:57733 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933476AbaFJApQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 20:21:59 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.4 12/88] ALSA: hda/realtek - Fix COEF widget NID for ALC260 replacer fixup
-Date: Mon,  9 Jun 2014 17:24:22 -0700
-Message-Id: <20140610002424.946652771@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
-References: <20140610002424.500996570@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Mon, 9 Jun 2014 20:45:16 -0400
+Date: Mon, 9 Jun 2014 20:45:14 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Jason Low <jason.low2@hp.com>, Brad Mouring <bmouring@ni.com>
+Subject: Re: [patch V3 3/7] rtmutex: Document pi chain walk
+Message-ID: <20140609204514.4a1e2da7@gandalf.local.home>
+In-Reply-To: <20140609202336.158034184@linutronix.de>
+References: <20140609201118.387571774@linutronix.de>
+	<20140609202336.158034184@linutronix.de>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Mon, 09 Jun 2014 20:28:08 -0000
+Thomas Gleixner <tglx@linutronix.de> wrote:
 
-------------------
+> Add commentry to document the chain walk and the protection mechanisms
+> and their scope.
+> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> ---
+>  kernel/locking/rtmutex.c |   52 +++++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 52 insertions(+)
+> 
+> Index: tip/kernel/locking/rtmutex.c
+> ===================================================================
+> --- tip.orig/kernel/locking/rtmutex.c
+> +++ tip/kernel/locking/rtmutex.c
+> @@ -285,6 +285,47 @@ static inline struct rt_mutex *task_bloc
+>   * @top_task:	the current top waiter
+>   *
+>   * Returns 0 or -EDEADLK.
+> + *
+> + * Chain walk basics and protection scope
+> + *
+> + * [A] refcount on task
+> + * [B] task->pi_lock held
+> + * [C] rtmutex->lock held
 
-From: Takashi Iwai <tiwai@suse.de>
+A,B, C is rather meaningless, and requires constant looking back up at
+the key. Perhaps [R],[P] and [L]
 
-commit 192a98e280e560510a62aca8cfa83b4ae7c095bb upstream.
+ [R] refcount on task (get_task_struct)
+ [P] task->pi_lock held
+ [L] rtmutex->lock held
 
-The conversion to a fixup table for Replacer model with ALC260 in
-commit 20f7d928 took the wrong widget NID for COEF setups.  Namely,
-NID 0x1a should have been used instead of NID 0x20, which is the
-common node for all Realtek codecs but ALC260.
 
-Fixes: 20f7d928fa6e ('ALSA: hda/realtek - Replace ALC260 model=replacer with the auto-parser')
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+That way we can associate R being refcount, P being pi_lock and L being
+lock. Easier to remember.
 
----
- sound/pci/hda/patch_realtek.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -4969,8 +4969,8 @@ static const struct alc_fixup alc260_fix
- 	[ALC260_FIXUP_REPLACER] = {
- 		.type = ALC_FIXUP_VERBS,
- 		.v.verbs = (const struct hda_verb[]) {
--			{ 0x20, AC_VERB_SET_COEF_INDEX, 0x07 },
--			{ 0x20, AC_VERB_SET_PROC_COEF,  0x3050 },
-+			{ 0x1a, AC_VERB_SET_COEF_INDEX, 0x07 },
-+			{ 0x1a, AC_VERB_SET_PROC_COEF,  0x3050 },
- 			{ }
- 		},
- 		.chained = true,
+> + *
+> + * call()					Protected by
 
+"call()"?
+
+> + *	@task					[A]
+> + *	@orig_lock if != NULL			@top_task is blocked on it
+> + *	@next_lock				Unprotected. Cannot be
+> + *						dereferenced. Only used for
+> + *						comparison.
+> + *	@orig_waiter if != NULL			@top_task is blocked on it
+> + *	@top_task				current, or in case of proxy
+> + *						locking protected by calling
+> + *						code
+> + * again:
+> + *	loop_sanity_check();
+> + * retry:
+> + *	lock(task->pi_lock);			[A] acquire [B]
+> + *	waiter = task->pi_blocked_on;		[B]
+> + *	check_exit_conditions();		[B]
+> + *	lock = waiter->lock;			[B]
+> + *	if (!try_lock(lock->wait_lock)) {	[B] try to acquire [C]
+> + *		unlock(task->pi_lock);		drop [B]
+> + *		goto retry;
+> + *	}
+> + *	check_exit_conditions();		[B] + [C]
+> + *	requeue_lock_waiter(lock, waiter);	[B] + [C]
+> + *	unlock(task->pi_lock);			drop [B]
+> + *	drop_task_ref(task);			drop [A]
+
+Maybe just state "put_task_struct()", less abstractions.
+
+> + *	check_exit_conditions();		[C]
+> + *	task = owner(lock);			[C]
+> + *	get_task_ref(task);			[C] acquire [A]
+
+get_task_struct()
+
+-- Steve
+
+> + *	lock(task->pi_lock);			[C] acquire [B]
+> + *	requeue_pi_waiter(task, waiters(lock));	[B] + [C]
+> + *	check_exit_conditions();		[B] + [C]
+> + *	unlock(task->pi_lock);			drop [B]
+> + *	unlock(lock->wait_lock);		drop [C]
+> + *	goto again;
+>   */
+>  static int rt_mutex_adjust_prio_chain(struct task_struct *task,
+>  				      int deadlock_detect,
+> @@ -326,6 +367,12 @@ static int rt_mutex_adjust_prio_chain(st
+>  
+>  		return -EDEADLK;
+>  	}
+> +
+> +	/*
+> +	 * We are fully preemptible here and only hold the refcount on
+> +	 * @task. So everything can have changed under us since the
+> +	 * caller or our own code below (goto retry) dropped all locks.
+> +	 */
+>   retry:
+>  	/*
+>  	 * Task can not go away as we did a get_task() before !
+> @@ -383,6 +430,11 @@ static int rt_mutex_adjust_prio_chain(st
+>  	if (!detect_deadlock && waiter->prio == task->prio)
+>  		goto out_unlock_pi;
+>  
+> +	/*
+> +	 * We need to trylock here as we are holding task->pi_lock,
+> +	 * which is the reverse lock order versus the other rtmutex
+> +	 * operations.
+> +	 */
+>  	lock = waiter->lock;
+>  	if (!raw_spin_trylock(&lock->wait_lock)) {
+>  		raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+> 
 
