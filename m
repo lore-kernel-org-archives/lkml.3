@@ -1,71 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933993AbaFJBhp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 21:37:45 -0400
-Received: from cmexedge2.ext.emulex.com ([138.239.224.100]:40577 "EHLO
-	CMEXEDGE2.ext.emulex.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932345AbaFJBhn (ORCPT
+	id S933377AbaFJB47 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 21:56:59 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:35993 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932349AbaFJB45 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 21:37:43 -0400
-From: Selvin Xavier <Selvin.Xavier@Emulex.Com>
-To: Or Gerlitz <or.gerlitz@gmail.com>, Roland Dreier <roland@kernel.org>
-CC: Steve Wise <swise@opengridcomputing.com>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH for-next 00/15] Bug fixes for ocrdma driver
-Thread-Topic: [PATCH for-next 00/15] Bug fixes for ocrdma driver
-Thread-Index: AQHPf9KzeEkbxR4r4UuBgehmOvuVRZthnGIAgAAH4QCACAfxAP//7Ccw
-Date: Tue, 10 Jun 2014 01:37:40 +0000
-Message-ID: <36AE2E863FF33A4F9FBBE296E34DBC8F3C2B9703@CMEXMB1.ad.emulex.com>
-References: <fc0ae2c3-2661-48ba-957a-66cbb0cfc33e@CMEXHTCAS1.ad.emulex.com>
-	<538F4B66.6080906@opengridcomputing.com>
-	<CAG4TOxMbXJeq848LuzJvsz23th4Wh7NZ6qT9o+pdv4fOdu=o=Q@mail.gmail.com>
- <CAJZOPZLqmq1XMoyjv0OMTv8iX0Otvo=bm-rrwa3EfupUYgyGKQ@mail.gmail.com>
-In-Reply-To: <CAJZOPZLqmq1XMoyjv0OMTv8iX0Otvo=bm-rrwa3EfupUYgyGKQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.226.252.118]
-Content-Type: text/plain; charset="utf-8"
+	Mon, 9 Jun 2014 21:56:57 -0400
+Date: Tue, 10 Jun 2014 10:56:54 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        devel <devel@driverdev.osuosl.org>,
+        SH-Linux <linux-sh@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v2 04/05] staging: board: Initial board staging support
+Message-ID: <20140610015650.GG30874@verge.net.au>
+References: <20140529131650.2329.3197.sendpatchset@w520>
+ <20140529131732.2329.50630.sendpatchset@w520>
+ <20140529132034.GB15585@mwanda>
+ <CANqRtoTzOn5d9qB85sXvmLYhoTDMDtbjSkLbz9V4FRmzFM3ycQ@mail.gmail.com>
+ <20140529231001.GC2353@verge.net.au>
+ <CANqRtoTLznzU1mJRJMjNgr0pAY8fY__-12qE77Dz97n47FekhQ@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANqRtoTLznzU1mJRJMjNgr0pAY8fY__-12qE77Dz97n47FekhQ@mail.gmail.com>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5A1bpde019186
 
-
-
-> -----Original Message-----
-> From: Or Gerlitz [mailto:or.gerlitz@gmail.com]
-> Sent: Tuesday, June 10, 2014 1:15 AM
-> To: Roland Dreier; Selvin Xavier
-> Cc: Steve Wise; linux-rdma@vger.kernel.org; linux-kernel
-> Subject: Re: [PATCH for-next 00/15] Bug fixes for ocrdma driver
-> 
-> On Wed, Jun 4, 2014 at 8:06 PM, Roland Dreier <roland@kernel.org> wrote:
-> > On Wed, Jun 4, 2014 at 9:37 AM, Steve Wise
-> <swise@opengridcomputing.com> wrote:
-> >> Seems like the subject lines in each patch are getting truncated?
-> > Yes, truncated in patchwork too -- for example:
-> > https://patchwork.kernel.org/patch/4292461/
+On Fri, Jun 06, 2014 at 09:07:44PM +0900, Magnus Damm wrote:
+> On Fri, May 30, 2014 at 8:10 AM, Simon Horman <horms@verge.net.au> wrote:
+> > On Thu, May 29, 2014 at 10:27:30PM +0900, Magnus Damm wrote:
+> >> Hi Dan,
+> >>
+> >> On Thu, May 29, 2014 at 10:20 PM, Dan Carpenter
+> >> <dan.carpenter@oracle.com> wrote:
+> >> > On Thu, May 29, 2014 at 10:17:32PM +0900, Magnus Damm wrote:
+> >> >> --- /dev/null
+> >> >> +++ work/drivers/staging/board/Kconfig        2014-05-29 21:40:41.000000000 +0900
+> >> >> @@ -0,0 +1,7 @@
+> >> >> +config STAGING_BOARD
+> >> >> +     boolean "Staging Board Support"
+> >> >> +     help
+> >> >> +       Select to enable per-board staging support code.
+> >> >> +
+> >> >> +       If in doubt, say N here.
+> >> >> +
+> >> >
+> >> > Actually, you're probably going to need to add a bunch of dependencies
+> >> > here or it will break "make randconfig" right away.  Sorry that I forgot
+> >> > about this in the first review.
+> >>
+> >> Good point, thanks for checking. I will have a look at this and add
+> >> dependencies to make sure it builds on a wide range of platforms.
 > >
-> > Please fix and resend.
+> > Hi Magnus,
+> >
+> > let me know if you would like me to perform some build-testing.
 > 
-> Roland, from quick looking on this series of fifteen patches, only 1/3 of them
-> (4/5/12/14) have non-empty change-log. I would expect kernel work which
-> goes upstream through linux-rdma to use a bit of higher standards, agree?
+> Hey Simon,
 > 
-> Selvin, can you sit down and come up with change-logs to your driver
-> updates?
+> Thanks for the offer. When you have time, can you please feed V3 into
+> your build test setup?
 > 
-> Or.
+> [PATCH v3 00/05] staging: Emma Mobile USB driver and KZM9D board code V3
+> [PATCH v3 01/05] staging: emxx_udc: Add Emma Mobile USB Gadget driver
+> [PATCH v3 02/05] staging: emxx_udc: I/O memory and IRQ resource support
+> [PATCH v3 03/05] staging: emxx_udc: Add TODO file
+> [PATCH v3 04/05] staging: board: Initial board staging support
+> [PATCH v3 05/05] staging: board: kzm9d: Board staging support for emxx_udc
 
-Or,
+Hi Magnus,
 
-Sure, I will post v1 patch set with proper change-logs.
+my test was less exciting as I had hoped as STAGING is not widely
+enabled in defconfigs.
 
-Thanks,
-Selvin Xavier
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I compiled v3.15-rc8 with the patches above applied using
+the defconfigs and allmodconfigs for a wide range of architectures.
+The result was that all of the configs that built for v3.15-rc8
+also built with your patches applied.
+
+In other words, I did not find a problem.
