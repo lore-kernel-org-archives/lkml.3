@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754047AbaFJTtK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 15:49:10 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35076 "EHLO
+	id S1755478AbaFJU2Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 16:28:25 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35080 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753166AbaFJTtI (ORCPT
+	with ESMTP id S1754019AbaFJTtK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:49:08 -0400
+	Tue, 10 Jun 2014 15:49:10 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Atilla Filiz <atilla.filiz@essensium.com>,
-        Jonathan Cameron <jic23@kernel.org>,
+Cc: Oleg Nesterov <oleg@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 133/160] iio:imu:mpu6050: Fixed segfault in Invensens MPU driver due to null dereference
-Date: Tue, 10 Jun 2014 12:46:13 -0700
-Message-Id: <1402429600-20477-134-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 113/160] KVM: async_pf: mm->mm_users can not pin apf->mm
+Date: Tue, 10 Jun 2014 12:45:53 -0700
+Message-Id: <1402429600-20477-114-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -28,47 +27,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Atilla Filiz <atilla.filiz@essensium.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit b9b3a41893c3f1be67b5aacfa525969914bea0e9 upstream.
+commit 41c22f626254b9dc0376928cae009e73d1b6a49a upstream.
 
-The driver segfaults when the kernel boots with device tree as the
-platform data is then not present and the pointer is deferenced without
-checking it is not null.  This patch introduces such a check avoiding the
-crash.
+get_user_pages(mm) is simply wrong if mm->mm_users == 0 and exit_mmap/etc
+was already called (or is in progress), mm->mm_count can only pin mm->pgd
+and mm_struct itself.
 
-Signed-off-by: Atilla Filiz <atilla.filiz@essensium.com>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Change kvm_setup_async_pf/async_pf_execute to inc/dec mm->mm_users.
+
+kvm_create_vm/kvm_destroy_vm play with ->mm_count too but this case looks
+fine at first glance, it seems that this ->mm is only used to verify that
+current->mm == kvm->mm.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/iio/imu/inv_mpu6050/inv_mpu_core.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ virt/kvm/async_pf.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/iio/imu/inv_mpu6050/inv_mpu_core.c b/drivers/iio/imu/inv_mpu6050/inv_mpu_core.c
-index df7f1e1..27a9176 100644
---- a/drivers/iio/imu/inv_mpu6050/inv_mpu_core.c
-+++ b/drivers/iio/imu/inv_mpu6050/inv_mpu_core.c
-@@ -661,6 +661,7 @@ static int inv_mpu_probe(struct i2c_client *client,
- {
- 	struct inv_mpu6050_state *st;
- 	struct iio_dev *indio_dev;
-+	struct inv_mpu6050_platform_data *pdata;
- 	int result;
+diff --git a/virt/kvm/async_pf.c b/virt/kvm/async_pf.c
+index 8631d9c..f2c80d5 100644
+--- a/virt/kvm/async_pf.c
++++ b/virt/kvm/async_pf.c
+@@ -85,7 +85,7 @@ static void async_pf_execute(struct work_struct *work)
+ 	if (waitqueue_active(&vcpu->wq))
+ 		wake_up_interruptible(&vcpu->wq);
  
- 	if (!i2c_check_functionality(client->adapter,
-@@ -673,8 +674,10 @@ static int inv_mpu_probe(struct i2c_client *client,
+-	mmdrop(mm);
++	mmput(mm);
+ 	kvm_put_kvm(vcpu->kvm);
+ }
  
- 	st = iio_priv(indio_dev);
- 	st->client = client;
--	st->plat_data = *(struct inv_mpu6050_platform_data
--				*)dev_get_platdata(&client->dev);
-+	pdata = (struct inv_mpu6050_platform_data
-+			*)dev_get_platdata(&client->dev);
-+	if (pdata)
-+		st->plat_data = *pdata;
- 	/* power is turned on inside check chip type*/
- 	result = inv_check_and_setup_chip(st, id);
- 	if (result)
+@@ -98,7 +98,7 @@ void kvm_clear_async_pf_completion_queue(struct kvm_vcpu *vcpu)
+ 				   typeof(*work), queue);
+ 		list_del(&work->queue);
+ 		if (cancel_work_sync(&work->work)) {
+-			mmdrop(work->mm);
++			mmput(work->mm);
+ 			kvm_put_kvm(vcpu->kvm); /* == work->vcpu->kvm */
+ 			kmem_cache_free(async_pf_cache, work);
+ 		}
+@@ -162,7 +162,7 @@ int kvm_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn,
+ 	work->addr = gfn_to_hva(vcpu->kvm, gfn);
+ 	work->arch = *arch;
+ 	work->mm = current->mm;
+-	atomic_inc(&work->mm->mm_count);
++	atomic_inc(&work->mm->mm_users);
+ 	kvm_get_kvm(work->vcpu->kvm);
+ 
+ 	/* this can't really happen otherwise gfn_to_pfn_async
+@@ -180,7 +180,7 @@ int kvm_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn,
+ 	return 1;
+ retry_sync:
+ 	kvm_put_kvm(work->vcpu->kvm);
+-	mmdrop(work->mm);
++	mmput(work->mm);
+ 	kmem_cache_free(async_pf_cache, work);
+ 	return 0;
+ }
 -- 
 1.9.1
 
