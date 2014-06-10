@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752806AbaFJRjp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 13:39:45 -0400
-Received: from www.linutronix.de ([62.245.132.108]:54300 "EHLO
+	id S1752544AbaFJRlo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 13:41:44 -0400
+Received: from www.linutronix.de ([62.245.132.108]:54317 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752068AbaFJRjo (ORCPT
+	with ESMTP id S1751820AbaFJRln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 13:39:44 -0400
-Date: Tue, 10 Jun 2014 19:39:39 +0200 (CEST)
+	Tue, 10 Jun 2014 13:41:43 -0400
+Date: Tue, 10 Jun 2014 19:41:39 +0200 (CEST)
 From: Thomas Gleixner <tglx@linutronix.de>
 To: Steven Rostedt <rostedt@goodmis.org>
 cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         Ingo Molnar <mingo@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
         Jason Low <jason.low2@hp.com>, Brad Mouring <bmouring@ni.com>
-Subject: Re: [patch V3 5/7] rtmutex: Confine deadlock logic to futex
-In-Reply-To: <20140609205908.521f7eba@gandalf.local.home>
-Message-ID: <alpine.DEB.2.10.1406101939100.5170@nanos>
-References: <20140609201118.387571774@linutronix.de> <20140609202336.338874430@linutronix.de> <20140609205908.521f7eba@gandalf.local.home>
+Subject: Re: [patch V3 7/7] rtmutex: Avoid pointless requeueing in the deadlock
+ detection chain walk
+In-Reply-To: <20140609212033.1cff0999@gandalf.local.home>
+Message-ID: <alpine.DEB.2.10.1406101630350.31315@nanos>
+References: <20140609201118.387571774@linutronix.de> <20140609202336.506044876@linutronix.de> <20140609212033.1cff0999@gandalf.local.home>
 User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -28,67 +29,71 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Mon, 9 Jun 2014, Steven Rostedt wrote:
-> On Mon, 09 Jun 2014 20:28:09 -0000
+> On Mon, 09 Jun 2014 20:28:10 -0000
 > Thomas Gleixner <tglx@linutronix.de> wrote:
->   
-> > +/*
-> > + * Futex variant to allow full deadlock detection.
-> > + */
-> > +int __rt_mutex_timed_lock(struct rt_mutex *lock,
-> > +			  struct hrtimer_sleeper *timeout)
-> > +{
-> > +	might_sleep();
-> > +
-> > +	return rt_mutex_timed_fastlock(lock, TASK_INTERRUPTIBLE, timeout, 0,
-> > +				       rt_mutex_slowlock);
-> > +}
-> > +
-> >  /**
-> >   * rt_mutex_timed_lock - lock a rt_mutex interruptible
-> >   *			the timeout structure is provided
-> >   *			by the caller
-> >   *
-> > - * @lock: 		the rt_mutex to be locked
-> > + * @lock:		the rt_mutex to be locked
-> >   * @timeout:		timeout structure or NULL (no timeout)
-> > - * @detect_deadlock:	deadlock detection on/off
-> >   *
-> >   * Returns:
-> > - *  0 		on success
-> > - * -EINTR 	when interrupted by a signal
-> > + *  0		on success
-> > + * -EINTR	when interrupted by a signal
-> >   * -ETIMEDOUT	when the timeout expired
-> > - * -EDEADLK	when the lock would deadlock (when deadlock detection is on)
-> >   */
-> >  int
-> > -rt_mutex_timed_lock(struct rt_mutex *lock, struct hrtimer_sleeper *timeout,
-> > -		    int detect_deadlock)
-> > +rt_mutex_timed_lock(struct rt_mutex *lock, struct hrtimer_sleeper *timeout)
-> >  {
-> >  	might_sleep();
-> >  
-> > -	return rt_mutex_timed_fastlock(lock, TASK_INTERRUPTIBLE, timeout,
-> > -				       detect_deadlock, rt_mutex_slowlock);
-> > +	return rt_mutex_timed_fastlock(lock, TASK_INTERRUPTIBLE, timeout, 0,
-> > +				       rt_mutex_slowlock);
-> >  }
-> >  EXPORT_SYMBOL_GPL(rt_mutex_timed_lock);
-> >  
+> >  	/*
+> > +	 * If we just follow the lock chain for deadlock detection, no
+> > +	 * need to do all the requeue operations. We avoid a truckload
 > 
-> I must be missing something. What's the difference between the above
-> and the futex variant one? They both do the exact same thing:
+> s/We/To/
 > 
 > 
-> int foo(struct rt_mutex *lock, struct hrtimer_sleeper *timeout)
-> {
-> 	might_sleep();
+> > +	 * of conditinals around the various places below and just do
 > 
-> 	return rt_mutex_timed_fastlock(lock, TASK_INTERRUPTIBLE, timout,
-> 				       0, rt_mutex_slowlock);
-> }
+> s/ and/, /
 
-Right. The one for futex must have s/0/1/. Fixed.
+Ok.
+ 
+> > +	 * the minimum chain walk checks here.
+> > +	 */
+> > +	if (!requeue) {
+> > +		/* Release the task */
+> > +		raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+> > +		put_task_struct(task);
+> > +
+> > +		/* If there is no owner of the lock, end of chain. */
+> > +		if (!rt_mutex_owner(lock)) {
+> > +			raw_spin_unlock(&lock->wait_lock);
+> > +			return 0;
+> > +		}
+> > +
+> > +		/* Grab the next task, i.e. owner of @lock */
+> > +		task = rt_mutex_owner(lock);
+> > +		get_task_struct(task);
+> > +		raw_spin_lock_irqsave(&task->pi_lock, flags);
+> > +
+> > +		/* Store whether owner is blocked itself and drop locks */
+> > +		next_lock = task_blocked_on(task);
+> > +		raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+> > +		raw_spin_unlock(&lock->wait_lock);
+> > +
+> > +		/* If owner is not blocked, end of chain. */
+> > +		if (!next_lock)
+> > +			goto out_put_task;
+> 
+> On the loop back around, have something like:
+> 
+> 	if (top_waiter) {
+> 		if (!task_has_pi_waiters(task))
+> 			goto out_unlock_pi;
+
+	The task has at least one pi waiter.
+ 
+> 		if (!requeue &&
+> 		    top_waiter != task_top_pi_waiter(task)) {
+> 			if (!detect_deadlock)
+> 				goto out_unlock_pi;
+> 			else
+> 				requeue = false;
+> 		}
+
+	Errm? if requeue is off we are in deadlock detection chainwalk
+	mode. So all we care about is whether task is blocked on
+	next_lock or not.
+
+What you actually missed is that we need to read out top_waiter for
+the current lock. Fixed already.
+    
 
 Thanks,
 
