@@ -1,88 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752657AbaFJPst (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 11:48:49 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:53478 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750841AbaFJPss (ORCPT
+	id S1751945AbaFJPtS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 11:49:18 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:5680 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750788AbaFJPtR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 11:48:48 -0400
-Date: Tue, 10 Jun 2014 17:48:39 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [PATCH 0/6] nohz: Move nohz kick out of scheduler IPI, v8
-Message-ID: <20140610154839.GF3213@twins.programming.kicks-ass.net>
-References: <1402413309-3415-1-git-send-email-fweisbec@gmail.com>
+	Tue, 10 Jun 2014 11:49:17 -0400
+Date: Tue, 10 Jun 2014 11:49:15 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Martin Lau <kafai@fb.com>
+Cc: <linux-kernel@vger.kernel.org>, <clm@fb.com>
+Subject: Re: [PATCH] ring-buffer: Fix polling on trace_pipe
+Message-ID: <20140610114915.5fe24841@gandalf.local.home>
+In-Reply-To: <20140610060637.GA14045@devbig242.prn2.facebook.com>
+References: <20140610060637.GA14045@devbig242.prn2.facebook.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Mjcb6KWfk+dITC8b"
-Content-Disposition: inline
-In-Reply-To: <1402413309-3415-1-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: multipart/mixed; boundary="MP_/aVeD2gm.TC5IfGvlSuPgUMy"
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---Mjcb6KWfk+dITC8b
-Content-Type: text/plain; charset=us-ascii
+--MP_/aVeD2gm.TC5IfGvlSuPgUMy
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Tue, Jun 10, 2014 at 05:15:03PM +0200, Frederic Weisbecker wrote:
-> So this set happens to have more changes than expected because I
-> found out that the timer list full nohz kick also relies on the scheduler
-> IPI. So I had to convert it as well, hence a few more change splitups.
->=20
-> Changes:
->=20
-> * Check also raised lists from irq_work_needs_cpu() (thanks Peterz)
->=20
-> * Comment on SMP functions priority in
->   generic_smp_call_function_single_interrupt() because IPI callbacks there
->   are often synchronous as opposed to irq works. (thanks Peterz)
->=20
-> * s/native_send_call_func_single_ipi/native_send_call_func_single_ipi
->   (thanks Eric Dumazet)
->=20
-> * Only build irq_work_queue_on() on CONFIG_SMP, fixes some broken builds
->=20
-> * Convert full nohz timer list kick
->=20
-> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-> 	timers/nohz-irq-work-v6
->=20
+On Mon, 9 Jun 2014 23:06:42 -0700
+Martin Lau <kafai@fb.com> wrote:
 
-I think you finally nailed it ;-)
+> ring_buffer_poll_wait() should always put the poll_table to its wait_queue
+> even there is immediate data available.  Otherwise, the following epoll and
+> read sequence will eventually hang forever:
+> 
+> 1. Put some data to make the trace_pipe ring_buffer read ready first
+> 2. epoll_ctl(efd, EPOLL_CTL_ADD, trace_pipe_fd, ee)
+> 3. epoll_wait()
+> 4. read(trace_pipe_fd) till EAGAIN
+> 5. Add some more data to the trace_pipe ring_buffer
+> 6. epoll_wait() -> this epoll_wait() will block forever
+> 
+> ~ During the epoll_ctl(efd, EPOLL_CTL_ADD,...) call in step 2,
+>   ring_buffer_poll_wait() returns immediately without adding poll_table,
+>   which has poll_table->_qproc pointing to ep_poll_callback(), to its
+>   wait_queue.
+> ~ During the epoll_wait() call in step 3 and step 6,
+>   ring_buffer_poll_wait() cannot add ep_poll_callback() to its wait_queue
+>   because the poll_table->_qproc is NULL and it is how epoll works.
+> ~ When there is new data available in step 6, ring_buffer does not know
+>   it has to call ep_poll_callback() because it is not in its wait queue.
+>   Hence, block forever.
+> 
+> Other poll implementation seems to call poll_wait() unconditionally as the very
+> first thing to do.  For example, tcp_poll() in tcp.c.
 
-Acked-by: Peter Zijlstra <peterz@infradead.org>
+I'm trying to see the effect of this bug, but can't seem to reproduce
+it. Maybe I did something wrong. Attached is a test program I wrote
+trying to follow your instructions. I don't use epoll, so perhaps I
+didn't use it correctly.
 
---Mjcb6KWfk+dITC8b
-Content-Type: application/pgp-signature
+Can you modify it to show me the problem this is trying to fix. That
+is, without this patch it hangs, but with the patch it does not.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Thanks!
 
-iQIcBAEBAgAGBQJTlyjXAAoJEHZH4aRLwOS6SpwP/12ncBudVYP32f06j89gO/Vx
-uwbJVUhozC1609qeSjE0zme9pL2+FpRBvTyMnDn9pgsi92Hly/4NYPwve6oQUqA0
-isxsSAyTU7Qjqm3x86Vg4b7FXwqXz35FfxmaBgYzJge/TwKIoZ39AinybE5aWOYt
-sa6fSiWcHM5xehaL4ifpBstVM9PlLC8bZuh2HhEvZ3PLkPLW3Mt648w6BNgLRKjC
-2q2sdU5RHCcrGThHAuFnHCPpeFUTmomqmbK3P3w+CVwsbSs/7GjU52ZIRqickGLh
-nzXPxdI3On8OIhdKgU+R9zAOEwbRFSOpGGo7PzYhCDw4dCnia4splzaZdrRMt+ta
-BdaolQaKfOSyq2rGMUfTf5z2qolgtVnFEE7MS/LRs1QrDAYpjCNx3AJWFAkKU67D
-7NfbEs1YfBXZjur6zbimwai4HUhYfVgXYAv10EgZiqXPa9x3lm+gBoaKS7otOk0w
-AHaiKkRYmIakarQ4KLa00NEvyISOn5TMzAjhy1nQBAn8D1r4DoDo5ZfArKTBZ0qb
-o7CWJtWT2f6txzbJydD4qdRLzEvhEqgsdlOoG3ETZj3KH59YkDMsbUl+IvGK7uzg
-Fa6zZwnwAvRAEmMB+MdMUvzWB6Wud4QMq4NiXrTam5yCg5nX6MZap6GrcQFvHONm
-dwItzdlddAoT1QDkC6aF
-=FKfl
------END PGP SIGNATURE-----
+-- Steve
 
---Mjcb6KWfk+dITC8b--
+> 
+> Signed-off-by: Martin Lau <kafai@fb.com>
+> ---
+>  kernel/trace/ring_buffer.c | 4 ----
+>  1 file changed, 4 deletions(-)
+> 
+> diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+> index fd12cc5..a6e64e8 100644
+> --- a/kernel/trace/ring_buffer.c
+> +++ b/kernel/trace/ring_buffer.c
+> @@ -613,10 +613,6 @@ int ring_buffer_poll_wait(struct ring_buffer *buffer, int cpu,
+>  	struct ring_buffer_per_cpu *cpu_buffer;
+>  	struct rb_irq_work *work;
+>  
+> -	if ((cpu == RING_BUFFER_ALL_CPUS && !ring_buffer_empty(buffer)) ||
+> -	    (cpu != RING_BUFFER_ALL_CPUS && !ring_buffer_empty_cpu(buffer, cpu)))
+> -		return POLLIN | POLLRDNORM;
+> -
+>  	if (cpu == RING_BUFFER_ALL_CPUS)
+>  		work = &buffer->irq_work;
+>  	else {
+
+
+--MP_/aVeD2gm.TC5IfGvlSuPgUMy
+Content-Type: text/x-c++src
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename=ftrace-test-epoll.c
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/epoll.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+static const char * debugfs_list[] = {
+	"/debug/tracing",
+	"/sys/kernel/debug/tracing",
+	"/d/tracing",
+	NULL,
+};
+
+static const char *debugfs;
+static int markfd;
+static int trace_pipe_fd;
+
+static const char *find_debugfs(void)
+{
+	struct stat st;
+	int i;
+	int r;
+
+	for (i = 0; debugfs_list[i]; i++) {
+		r = stat(debugfs_list[i], &st);
+		if (r < 0)
+			continue;
+		if (S_ISDIR(st.st_mode))
+			return debugfs_list[i];
+	}
+	return NULL;
+}
+
+static char * make_path(const char *file)
+{
+	char *path;
+	int size;
+
+	size = strlen(debugfs) + strlen(file) + 2;
+	path = malloc(size);
+	if (!path) {
+		perror("malloc");
+		exit(-1);
+	}
+	sprintf(path, "%s/%s", debugfs, file);
+	return path;
+}
+
+static void mark_write(const char *str)
+{
+	write(markfd, str, strlen(str));
+}
+
+static void read_trace_pipe(void)
+{
+	char buf[1024];
+	int r;
+
+	while ((r = read(trace_pipe_fd, buf, 1024)) > 0)
+		printf("%.*s", r, buf);
+
+}
+
+int main (int argc, char **argv)
+{
+	struct epoll_event ee;
+	char *marker;
+	char *pipe;
+	int efd;
+	int ret;
+
+	debugfs = find_debugfs();
+	if (!debugfs) {
+		fprintf(stderr, "Could not find debugfs\n");
+		exit(-1);
+	}
+
+	marker = make_path("trace_marker");
+	pipe = make_path("trace_pipe");
+
+	markfd = open(marker, O_WRONLY);
+	if (markfd < 0) {
+		perror("marker");
+		exit(-1);
+	}
+	trace_pipe_fd = open(pipe, O_RDONLY|O_NONBLOCK);
+	if (trace_pipe_fd < 0) {
+		perror("trace_pipe");
+		exit(-1);
+	}
+
+	efd = epoll_create(1);
+	if (efd < 0) {
+		perror("epoll_create");
+		exit(-1);
+	}
+
+	mark_write("some data");
+	ret = epoll_ctl(efd, EPOLL_CTL_ADD, trace_pipe_fd, &ee);
+	if (ret < 0) {
+		perror("epoll_ctl");
+		exit(-1);
+	}
+	epoll_wait(efd, &ee, 1, 0);
+	read_trace_pipe();
+	mark_write("more data");
+	epoll_wait(efd, &ee, 1, 0);
+	read_trace_pipe();
+
+	return 0;
+}
+
+--MP_/aVeD2gm.TC5IfGvlSuPgUMy--
