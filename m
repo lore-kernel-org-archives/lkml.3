@@ -1,174 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754480AbaFKCMK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 22:12:10 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:36225 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751633AbaFKCMJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 22:12:09 -0400
-X-Original-SENDERIP: 10.177.220.169
-X-Original-MAILFROM: minchan@kernel.org
-Date: Wed, 11 Jun 2014 11:12:13 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>, Mel Gorman <mgorman@suse.de>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 05/10] mm, compaction: remember position within pageblock
- in free pages scanner
-Message-ID: <20140611021213.GF15630@bbox>
-References: <1402305982-6928-1-git-send-email-vbabka@suse.cz>
- <1402305982-6928-5-git-send-email-vbabka@suse.cz>
+	id S1754781AbaFKCNn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 22:13:43 -0400
+Received: from mga09.intel.com ([134.134.136.24]:2825 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752916AbaFKCNl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 22:13:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,455,1400050800"; 
+   d="scan'208";a="526568821"
+Date: Wed, 11 Jun 2014 02:09:54 +0800
+From: Yuyang Du <yuyang.du@intel.com>
+To: Dietmar Eggemann <dietmar.eggemann@arm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Subject: Re: [RFC PATCH 07/16 v3] Init Workload Consolidation flags in
+ sched_domain
+Message-ID: <20140610180954.GB5487@intel.com>
+References: <1401431772-14320-1-git-send-email-yuyang.du@intel.com>
+ <1401431772-14320-8-git-send-email-yuyang.du@intel.com>
+ <20140603121416.GH30445@twins.programming.kicks-ass.net>
+ <5395F541.60604@arm.com>
+ <20140609211820.GA5361@intel.com>
+ <5396F166.1030401@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1402305982-6928-5-git-send-email-vbabka@suse.cz>
+In-Reply-To: <5396F166.1030401@arm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 09, 2014 at 11:26:17AM +0200, Vlastimil Babka wrote:
-> Unlike the migration scanner, the free scanner remembers the beginning of the
-> last scanned pageblock in cc->free_pfn. It might be therefore rescanning pages
-> uselessly when called several times during single compaction. This might have
-> been useful when pages were returned to the buddy allocator after a failed
-> migration, but this is no longer the case.
-> 
-> This patch changes the meaning of cc->free_pfn so that if it points to a
-> middle of a pageblock, that pageblock is scanned only from cc->free_pfn to the
-> end. isolate_freepages_block() will record the pfn of the last page it looked
-> at, which is then used to update cc->free_pfn.
-> 
-> In the mmtests stress-highalloc benchmark, this has resulted in lowering the
-> ratio between pages scanned by both scanners, from 2.5 free pages per migrate
-> page, to 2.25 free pages per migrate page, without affecting success rates.
-> 
-> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Reviewed-by: Minchan Kim <minchan@kernel.org>
+On Tue, Jun 10, 2014 at 12:52:06PM +0100, Dietmar Eggemann wrote:
 
-Below is a nitpick.
+Hi Dietmar,
 
-> Cc: Minchan Kim <minchan@kernel.org>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> Cc: Michal Nazarewicz <mina86@mina86.com>
-> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: David Rientjes <rientjes@google.com>
-> ---
->  mm/compaction.c | 33 ++++++++++++++++++++++++++++-----
->  1 file changed, 28 insertions(+), 5 deletions(-)
-> 
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index 83f72bd..58dfaaa 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -297,7 +297,7 @@ static bool suitable_migration_target(struct page *page)
->   * (even though it may still end up isolating some pages).
->   */
->  static unsigned long isolate_freepages_block(struct compact_control *cc,
-> -				unsigned long blockpfn,
-> +				unsigned long *start_pfn,
->  				unsigned long end_pfn,
->  				struct list_head *freelist,
->  				bool strict)
-> @@ -306,6 +306,7 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
->  	struct page *cursor, *valid_page = NULL;
->  	unsigned long flags;
->  	bool locked = false;
-> +	unsigned long blockpfn = *start_pfn;
->  
->  	cursor = pfn_to_page(blockpfn);
->  
-> @@ -314,6 +315,9 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
->  		int isolated, i;
->  		struct page *page = cursor;
->  
-> +		/* Record how far we have got within the block */
-> +		*start_pfn = blockpfn;
-> +
+> Not in this sense but there is no functionality in the scheduler right
+> now to check constantly if an sd flag has been set/unset via sysctl.
 
-Couldn't we move this out of the loop for just one store?
+Sorry, I still don't understand. There are many "if (sd->flags & SD_XXX)"
+in fair.c. What does it mean to you?
 
->  		/*
->  		 * Periodically drop the lock (if held) regardless of its
->  		 * contention, to give chance to IRQs. Abort async compaction
-> @@ -424,6 +428,9 @@ isolate_freepages_range(struct compact_control *cc,
->  	LIST_HEAD(freelist);
->  
->  	for (pfn = start_pfn; pfn < end_pfn; pfn += isolated) {
-> +		/* Protect pfn from changing by isolate_freepages_block */
-> +		unsigned long isolate_start_pfn = pfn;
-> +
->  		if (!pfn_valid(pfn) || cc->zone != page_zone(pfn_to_page(pfn)))
->  			break;
->  
-> @@ -434,8 +441,8 @@ isolate_freepages_range(struct compact_control *cc,
->  		block_end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
->  		block_end_pfn = min(block_end_pfn, end_pfn);
->  
-> -		isolated = isolate_freepages_block(cc, pfn, block_end_pfn,
-> -						   &freelist, true);
-> +		isolated = isolate_freepages_block(cc, &isolate_start_pfn,
-> +						block_end_pfn, &freelist, true);
->  
->  		/*
->  		 * In strict mode, isolate_freepages_block() returns 0 if
-> @@ -774,6 +781,7 @@ static void isolate_freepages(struct zone *zone,
->  				block_end_pfn = block_start_pfn,
->  				block_start_pfn -= pageblock_nr_pages) {
->  		unsigned long isolated;
-> +		unsigned long isolate_start_pfn;
->  
->  		/*
->  		 * This can iterate a massively long zone without finding any
-> @@ -807,12 +815,27 @@ static void isolate_freepages(struct zone *zone,
->  			continue;
->  
->  		/* Found a block suitable for isolating free pages from */
-> -		cc->free_pfn = block_start_pfn;
-> -		isolated = isolate_freepages_block(cc, block_start_pfn,
-> +		isolate_start_pfn = block_start_pfn;
-> +
-> +		/*
-> +		 * If we are restarting the free scanner in this block, do not
-> +		 * rescan the beginning of the block
-> +		 */
-> +		if (cc->free_pfn < block_end_pfn)
-> +			isolate_start_pfn = cc->free_pfn;
-> +
-> +		isolated = isolate_freepages_block(cc, &isolate_start_pfn,
->  					block_end_pfn, freelist, false);
->  		nr_freepages += isolated;
->  
->  		/*
-> +		 * Remember where the free scanner should restart next time.
-> +		 * This will point to the last page of pageblock we just
-> +		 * scanned, if we scanned it fully.
-> +		 */
-> +		cc->free_pfn = isolate_start_pfn;
-> +
-> +		/*
->  		 * Set a flag that we successfully isolated in this pageblock.
->  		 * In the next loop iteration, zone->compact_cached_free_pfn
->  		 * will not be updated and thus it will effectively contain the
-> -- 
-> 1.8.4.5
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Probably you mean the SD_XX should be fixed in init and never changed via sysctl
+thereafter. Ah... I don't know about this...
 
--- 
-Kind regards,
-Minchan Kim
+Overall, I think I should come up with a better way to implement the SD_WORKLOAD_CONSOLIDATION
+policy (enabled or disabled) in load balancing (as is also pointed out by PeterZ).
+But I just don't see the current implementation is any particular different than
+any other SD_XX's.
+
+Have you tried it on your platform?
+
+Thanks a lot,
+Yuyang
