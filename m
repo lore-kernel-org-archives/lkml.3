@@ -1,71 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936176AbaFJA3z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:29:55 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46475 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932524AbaFJA3x (ORCPT
+	id S936201AbaFJAa0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:30:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58627 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934584AbaFJAWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 20:29:53 -0400
-Message-ID: <5396517C.4070108@infradead.org>
-Date: Mon, 09 Jun 2014 17:29:48 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 9 Jun 2014 20:22:48 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        "J. Bruce Fields" <bfields@redhat.com>,
+        Weng Meiling <wengmeiling.weng@huawei.com>
+Subject: [PATCH 3.4 59/88] nfsd: pass net to __write_ports() and down
+Date: Mon,  9 Jun 2014 17:25:09 -0700
+Message-Id: <20140610002426.464191680@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
+References: <20140610002424.500996570@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-To: Warren Turkal <wt@penguintechs.org>, Sam Ravnborg <sam@ravnborg.org>
-CC: linux-doc@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, trivial@kernel.org
-Subject: Re: possible typo
-References: <539548E7.9070908@penguintechs.org> <20140609074630.GA15826@ravnborg.org> <53956B28.7040404@penguintechs.org>
-In-Reply-To: <53956B28.7040404@penguintechs.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/14 01:07, Warren Turkal wrote:
-> commit 4ce2f36b4b06b7df569b1875c7ab834270786882
-> Author: Warren Turkal <wt@penguintechs.org>
-> Date:   Sun Jun 8 22:19:29 2014 -0700
-> 
->     Fix a typo.
-> 
->     Signed-off-by: Warren Turkal <wt@penguintechs.org>
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
+------------------
 
-Thanks.
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-> diff --git a/Documentation/kbuild/modules.txt b/Documentation/kbuild/modules.txt
-> index 69372fb..3fb39e0 100644
-> --- a/Documentation/kbuild/modules.txt
-> +++ b/Documentation/kbuild/modules.txt
-> @@ -470,7 +470,7 @@ build.
-> 
->      Sometimes, an external module uses exported symbols from
->      another external module. kbuild needs to have full knowledge of
-> -    all symbols to avoid spliitting out warnings about undefined
-> +    all symbols to avoid spitting out warnings about undefined
->      symbols. Three solutions exist for this situation.
-> 
->      NOTE: The method with a top-level kbuild file is recommended
-> 
-> wt
-> 
-> On 06/09/2014 12:46 AM, Sam Ravnborg wrote:
->> On Sun, Jun 08, 2014 at 10:40:55PM -0700, Warren Turkal wrote:
->>> Hey,
->>>
->>> I think I found a typo in the kbuild docs. A one line commit can be pulled
->>> from the "fix_typo" branch from the git repo @ git@github.com:wt/linux.git.
->>>
->>> Can someone please take a look at this branch at some point?
->> No.
->> Please submit this as a regular patch - see Documentation/SubmittingPatches
->>
->>     Sam
+commit 081603520b25f7b35ef63a363376a17c36ef74ed upstream.
+
+Precursor patch. Hard-coded "init_net" will be replaced by proper one in
+future.
+
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+[wengmeiling: backport to 3.4:
+ - adjust context
+ - add net_ns parameter to __write_ports_delxprt()]
+Signed-off-by: Weng Meiling <wengmeiling.weng@huawei.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ fs/nfsd/nfsctl.c |   22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
+
+--- a/fs/nfsd/nfsctl.c
++++ b/fs/nfsd/nfsctl.c
+@@ -650,11 +650,10 @@ static ssize_t __write_ports_names(char
+  * a socket of a supported family/protocol, and we use it as an
+  * nfsd listener.
+  */
+-static ssize_t __write_ports_addfd(char *buf)
++static ssize_t __write_ports_addfd(char *buf, struct net *net)
+ {
+ 	char *mesg = buf;
+ 	int fd, err;
+-	struct net *net = &init_net;
+ 
+ 	err = get_int(&mesg, &fd);
+ 	if (err != 0 || fd < 0)
+@@ -698,12 +697,11 @@ static ssize_t __write_ports_delfd(char
+  * A transport listener is added by writing it's transport name and
+  * a port number.
+  */
+-static ssize_t __write_ports_addxprt(char *buf)
++static ssize_t __write_ports_addxprt(char *buf, struct net *net)
+ {
+ 	char transport[16];
+ 	struct svc_xprt *xprt;
+ 	int port, err;
+-	struct net *net = &init_net;
+ 
+ 	if (sscanf(buf, "%15s %4u", transport, &port) != 2)
+ 		return -EINVAL;
+@@ -743,7 +741,7 @@ out_err:
+  * A transport listener is removed by writing a "-", it's transport
+  * name, and it's port number.
+  */
+-static ssize_t __write_ports_delxprt(char *buf)
++static ssize_t __write_ports_delxprt(char *buf, struct net *net)
+ {
+ 	struct svc_xprt *xprt;
+ 	char transport[16];
+@@ -755,7 +753,7 @@ static ssize_t __write_ports_delxprt(cha
+ 	if (port < 1 || port > USHRT_MAX || nfsd_serv == NULL)
+ 		return -EINVAL;
+ 
+-	xprt = svc_find_xprt(nfsd_serv, transport, &init_net, AF_UNSPEC, port);
++	xprt = svc_find_xprt(nfsd_serv, transport, net, AF_UNSPEC, port);
+ 	if (xprt == NULL)
+ 		return -ENOTCONN;
+ 
+@@ -764,22 +762,23 @@ static ssize_t __write_ports_delxprt(cha
+ 	return 0;
+ }
+ 
+-static ssize_t __write_ports(struct file *file, char *buf, size_t size)
++static ssize_t __write_ports(struct file *file, char *buf, size_t size,
++				struct net *net)
+ {
+ 	if (size == 0)
+ 		return __write_ports_names(buf);
+ 
+ 	if (isdigit(buf[0]))
+-		return __write_ports_addfd(buf);
++		return __write_ports_addfd(buf, net);
+ 
+ 	if (buf[0] == '-' && isdigit(buf[1]))
+ 		return __write_ports_delfd(buf);
+ 
+ 	if (isalpha(buf[0]))
+-		return __write_ports_addxprt(buf);
++		return __write_ports_addxprt(buf, net);
+ 
+ 	if (buf[0] == '-' && isalpha(buf[1]))
+-		return __write_ports_delxprt(buf);
++		return __write_ports_delxprt(buf, net);
+ 
+ 	return -EINVAL;
+ }
+@@ -858,9 +857,10 @@ static ssize_t __write_ports(struct file
+ static ssize_t write_ports(struct file *file, char *buf, size_t size)
+ {
+ 	ssize_t rv;
++	struct net *net = &init_net;
+ 
+ 	mutex_lock(&nfsd_mutex);
+-	rv = __write_ports(file, buf, size);
++	rv = __write_ports(file, buf, size, net);
+ 	mutex_unlock(&nfsd_mutex);
+ 	return rv;
+ }
 
 
--- 
-~Randy
