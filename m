@@ -1,43 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752160AbaFJPFe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 11:05:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45218 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750808AbaFJPFb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 11:05:31 -0400
-Date: Tue, 10 Jun 2014 17:04:55 +0200
-From: Marek Polacek <polacek@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Martin Jambor <mjambor@suse.cz>, Petr Mladek <pmladek@suse.cz>,
-        linux-kernel@vger.kernel.org, gcc@gcc.gnu.org
-Subject: Re: [PATCH] tell gcc optimizer to never introduce new data races
-Message-ID: <20140610150455.GC7335@redhat.com>
-References: <alpine.LNX.2.00.1406101517300.9378@pobox.suse.cz>
- <20140610145327.GJ6758@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140610145327.GJ6758@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751872AbaFJPFL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 11:05:11 -0400
+Received: from forward-corp1f.mail.yandex.net ([95.108.130.40]:49667 "EHLO
+	forward-corp1f.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750801AbaFJPFG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 11:05:06 -0400
+X-Yandex-Uniq: 56db4a11-7d1a-4d43-9edf-502571a9f584
+Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+From: Stanislav Fomichev <stfomichev@yandex-team.ru>
+To: acme@kernel.org, namhyung@kernel.org, artagnon@gmail.com, jolsa@redhat.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 2/3] perf timechart: conditionally update start_time on fork
+Date: Tue, 10 Jun 2014 19:04:53 +0400
+Message-Id: <1402412694-5996-3-git-send-email-stfomichev@yandex-team.ru>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1402412694-5996-1-git-send-email-stfomichev@yandex-team.ru>
+References: <1402412694-5996-1-git-send-email-stfomichev@yandex-team.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 10, 2014 at 04:53:27PM +0200, Peter Zijlstra wrote:
-> On Tue, Jun 10, 2014 at 03:23:36PM +0200, Jiri Kosina wrote:
-> > +# Tell gcc to never replace conditional load with a non-conditional one
-> > +KBUILD_CFLAGS	+= $(call cc-option,--param allow-store-data-races=0)
-> > +
-> 
-> Why do we not want: -fmemory-model=safe? And should we not at the very
-> least also disable packed-store-data-races?
+We don't need to overwrite current task start_time on fork, so update it
+only if it's zero.
 
-Note that the option does not exist, even though it is mentioned in the
-documentation.
+Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
+---
+ tools/perf/builtin-timechart.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-	Marek
+diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
+index 447ef0a77f85..6941da0cb302 100644
+--- a/tools/perf/builtin-timechart.c
++++ b/tools/perf/builtin-timechart.c
+@@ -242,7 +242,7 @@ static void pid_fork(struct timechart *tchart, int pid, int ppid, u64 timestamp)
+ 		pid_set_comm(tchart, pid, pp->current->comm);
+ 
+ 	p->start_time = timestamp;
+-	if (p->current) {
++	if (p->current && !p->current->start_time) {
+ 		p->current->start_time = timestamp;
+ 		p->current->state_since = timestamp;
+ 	}
+-- 
+1.8.3.2
+
