@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754652AbaFJFJz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 01:09:55 -0400
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:52480 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146AbaFJFJx (ORCPT
+	id S1754760AbaFJFR6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 01:17:58 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:33682 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752379AbaFJFR4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 01:09:53 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@rjwysocki.net
-Cc: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arvind.chauhan@arm.com,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V2 Resend] cpufreq: cpufreq-cpu0: remove dependency on THERMAL and REGULATOR
-Date: Tue, 10 Jun 2014 10:39:46 +0530
-Message-Id: <8f87e99e52f1b1e15c71c02fb19b0df18e2ae6d7.1402376803.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 2.0.0.rc2
+	Tue, 10 Jun 2014 01:17:56 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [for-next][PATCH 3/6] tracing: Only calculate stats of tracepoint benchmarks for 2^32 times
+References: <20140606163034.516780857@goodmis.org>
+	<20140606172104.552734596@goodmis.org>
+Date: Tue, 10 Jun 2014 14:17:54 +0900
+In-Reply-To: <20140606172104.552734596@goodmis.org> (Steven Rostedt's message
+	of "Fri, 06 Jun 2014 12:30:37 -0400")
+Message-ID: <87sindbawt.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cpufreq-cpu0 uses thermal framework to register a cooling device, but doesn't
-depend on it as there are dummy calls provided by thermal layer when
-CONFIG_THERMAL=n. And when these calls fail, the driver is still usable.
+Hi Steve,
 
-Similar explanation is valid for regulators as well. We do have dummy calls
-available for regulator APIs and the driver can work even when those calls
-fail.
+On Fri, 06 Jun 2014 12:30:37 -0400, Steven Rostedt wrote:
+> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+>
+> When calculating the average and standard deviation, it is required that
+> the count be less than UINT_MAX, otherwise the do_div() will get
+> undefined results. After 2^32 counts of data, the average and standard
+> deviation should pretty much be set anyway.
 
-So, we don't really need to mention thermal and regulators as a dependency for
-cpufreq-cpu0 in Kconfig as platforms without support for thermal/regulator can
-also use this driver. Remove this dependency.
+[SNIP]
+>  	if (bm_cnt > 1) {
+>  		/*
+>  		 * Apply Welford's method to calculate standard deviation:
+>  		 * s^2 = 1 / (n * (n-1)) * (n * \Sum (x_i)^2 - (\Sum x_i)^2)
+>  		 */
+>  		stddev = (u64)bm_cnt * bm_totalsq - bm_total * bm_total;
+> -		do_div(stddev, bm_cnt);
+> -		do_div(stddev, bm_cnt - 1);
+> +		do_div(stddev, (u32)bm_cnt);
+> +		do_div(stddev, (u32)bm_cnt - 1);
+>  	} else
+>  		stddev = 0;
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
-Rafael,
+I also think that this if-else can go as it checks bm_cnt == 1 above.
 
-The dependency patches from regulators core are already pushed to Linus's tree
-and so this patch can go in now.
-
- drivers/cpufreq/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
-index 1fbe11f..e473d65 100644
---- a/drivers/cpufreq/Kconfig
-+++ b/drivers/cpufreq/Kconfig
-@@ -185,7 +185,7 @@ config CPU_FREQ_GOV_CONSERVATIVE
- 
- config GENERIC_CPUFREQ_CPU0
- 	tristate "Generic CPU0 cpufreq driver"
--	depends on HAVE_CLK && REGULATOR && OF && THERMAL && CPU_THERMAL
-+	depends on HAVE_CLK && OF
- 	select PM_OPP
- 	help
- 	  This adds a generic cpufreq driver for CPU0 frequency management.
--- 
-2.0.0.rc2
-
+Thanks,
+Namhyung
