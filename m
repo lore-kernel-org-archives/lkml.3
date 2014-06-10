@@ -1,100 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755114AbaFJGzn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 02:55:43 -0400
-Received: from mga11.intel.com ([192.55.52.93]:4565 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751273AbaFJGzl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 02:55:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="352860342"
-Message-ID: <1402383330.20454.56.camel@sauron.fi.intel.com>
-Subject: Re: [GIT PULL] UBIFS changes for 3.16
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-mtd <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 10 Jun 2014 09:55:30 +0300
-In-Reply-To: <CA+55aFwr9Gtgn1JssNJFUDTsvgxoDe9BAM4XLiv5g3wDqxfS_Q@mail.gmail.com>
-References: <1402307589.20454.49.camel@sauron.fi.intel.com>
-	 <CA+55aFwr9Gtgn1JssNJFUDTsvgxoDe9BAM4XLiv5g3wDqxfS_Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755158AbaFJG5s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 02:57:48 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:28328 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754591AbaFJG5n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 02:57:43 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-49-5396ac64b22a
+Message-id: <5396AC5C.2080108@samsung.com>
+Date: Tue, 10 Jun 2014 08:57:32 +0200
+From: Andrzej Hajda <a.hajda@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.5.0
+MIME-version: 1.0
+To: David Laight <David.Laight@ACULAB.COM>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Ben Dooks <ben@trinity.fluff.org>
+Cc: driverdevel <devel@driverdev.osuosl.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        "spear-devel@list.st.com" <spear-devel@list.st.com>,
+        David Daney <ddaney.cavm@gmail.com>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "patches@opensource.wolfsonmicro.com" 
+	<patches@opensource.wolfsonmicro.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "m@bues.ch" <m@bues.ch>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        linux-samsung-soc@vger.kernel.org
+Subject: Re: [PATCH 2/2] gpio: gpiolib: set gpiochip_remove retval to void
+References: <20140530094025.3b78301e@canb.auug.org.au>
+ <1401449454-30895-1-git-send-email-berthe.ab@gmail.com>
+ <1401449454-30895-2-git-send-email-berthe.ab@gmail.com>
+ <CAMuHMdV6AtjD2aqO3buzj8Eo7A7xc_+ROYnxEi2sdjMaqFiAuA@mail.gmail.com>
+ <5388C0F1.90503@gmail.com> <5388CB1B.3090802@metafoo.de>
+ <20140608231823.GB10112@trinity.fluff.org> <53959A93.7080308@metafoo.de>
+ <5395B379.2010706@samsung.com>
+ <063D6719AE5E284EB5DD2968C1650D6D17259A1F@AcuExch.aculab.com>
+In-reply-to: <063D6719AE5E284EB5DD2968C1650D6D17259A1F@AcuExch.aculab.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrCIsWRmVeSWpSXmKPExsVy+t/xy7opa6YFGzRN4bL42HWbxWLH0s1M
+	Fkf+vmK12HPmF7vFs1t7mSyWTJ7PajHlz3Imi02Pr7FabJ7/h9Hi5qdvrBaXd81hs5gwdRK7
+	xYzz+5gs5vyZwmzxZsUddotVc5+wWhxbIGax/O1/NovVe14wW8yZsZnVQcSjf/YUNo/Zxx+x
+	edzbd5jFY+esu+wed67tYfM4dLiD0ePoyrVMHicvnGTx2Lyk3mPJm0OsHi8n/mbz2H18HpPH
+	501yAbxRXDYpqTmZZalF+nYJXBkLl/1gLTjLX9HwvJW1gfEsTxcjJ4eEgInEipUdLBC2mMSF
+	e+vZuhi5OIQEljJK/Hy6Ccr5xCixo282M0gVr4CWxKWLbawgNouAqsS9k/OZQGw2AU2Jv5tv
+	AjVwcIgKREg8viAEUS4o8WPyPbAFIgKlEnf+/2cGmcksMINdovVPDztIQljAS2Lt9RawOUIC
+	N5glGlZzgMzhBIp3TZUFCTML6Ejsb53GBmHLS2xe85Z5AqPALCQrZiEpm4WkbAEj8ypG0dTS
+	5ILipPRcI73ixNzi0rx0veT83E2MkJj9uoNx6TGrQ4wCHIxKPLwG/tOChVgTy4orcw8xSnAw
+	K4nw/pwDFOJNSaysSi3Kjy8qzUktPsTIxMEp1cCo++m6jv8y9WvTzyY8lA1WC9aM5i4qvtvc
+	snBqR9TEuPc1X78dEdgTsSzsar5eWuXHv+dW/nu/VZbL4LDyVvP9G5Yn5Jz98/H4082/7yf/
+	npiw9MzEZ6cjbf8eq0zLvb9h7TKlyJbHrQlv9XNd4zjsdt9VVfJIdQtLt6mO4lUU9ehIKp2a
+	/2G5EktxRqKhFnNRcSIAt6YwY7cCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-06-09 at 09:53 -0700, Linus Torvalds wrote:
-> Mind re-sending the explanations in their full form?
+On 06/09/2014 03:43 PM, David Laight wrote:
+> From: Of Andrzej Hajda
+> ...
+>>> You can't error out on module unload, although that's not really relevant
+>>> here. gpiochip_remove() is typically called when the device that registered
+>>> the GPIO chip is unbound. And despite some remove() callbacks having a
+>>> return type of int you can not abort the removal of a device.
+>>
+>> It is a design flaw in many subsystems having providers and consumers,
+>> not only GPIO. The same situation is with clock providers, regulators,
+>> phys, drm_panels, ..., at least it was such last time I have tested it.
+>>
+>> The problem is that many frameworks assumes that lifetime of provider is
+>> always bigger than lifetime of its consumers, and this is wrong
+>> assumption - usually it is not possible to prevent unbinding driver from
+>> device, so if the device is a provider there is no way to inform
+>> consumers about his removal.
+>>
+>> Some solution for such problems is to use some kind of availability
+>> callbacks for requesting resources (gpios, clocks, regulators,...)
+>> instead of simple 'getters' (clk_get, gpiod_get). Callbacks should
+>> guarantee that the resource is always valid between callback reporting
+>> its availability and callback reporting its removal. Such approach seems
+>> to be complicated at the first sight but it should allow to make the
+>> code safe and as a bonus it will allow to avoid deferred probing.
+>> Btw I have send already RFC for such framework [1].
+> 
+> Callbacks for delete are generally a locking nightmare.
+> A two-way handshake is also usually needed to avoid problems
+> with concurrent disconnect requests.
 
-Hi Linus, I've created a new tag and now re-sending the pull request.
-Thanks for pointing to the copy-paste problem.
+The framework I have proposed is lock-less[1] and concurrent requests
+are serialized so both objections are invalid.
 
-The following changes since commit d6d211db37e75de2ddc3a4f979038c40df7cc79c:
+[1]: in fact the framework uses spinlock, but only to protect internal
+list simple operations, and even this could be converted to fully
+lock-less implementation.
 
-  Linux 3.15-rc5 (2014-05-09 13:10:52 -0700)
+Andrzej
 
-are available in the git repository at:
-
-  git://git.infradead.org/linux-ubifs.git tags/upstream-3.16-rc1-v2
-
-for you to fetch changes up to 380347e9ca76828ee9bac63cfc338ca99cdee4f3:
-
-  UBIFS: Add an assertion for clean_zn_cnt (2014-06-03 11:16:51 +0300)
-
-----------------------------------------------------------------
-This pull request contains several UBIFS fixes. One of them fixes a race
-condition between the mmap page fault path and fsync. Another just removes a
-bogus assertion from the UBIFS memory shrinker.
-
-UBIFS also started honoring the MS_SILENT mount flag, so now it won't print
-many I/O errors when user-space just tries to probe for the FS.
-
-Rest of the changes are rather minor UBI/UBIFS fixes, improvements, and
-clean-ups.
-
-----------------------------------------------------------------
-Artem Bityutskiy (1):
-      UBIFS: fix debugging check
-
-Daniel Golle (2):
-      UBIFS: add missing ui pointer in debugging code
-      UBIFS: respect MS_SILENT mount flag
-
-Ezequiel Garcia (1):
-      UBI: weaken the 'exclusive' constraint when opening volumes to rename
-
-Helmut Schaa (1):
-      UBI: block: Fix error path on alloc_workqueue failure
-
-Mike Snitzer (1):
-      UBI: fix rb_tree node comparison in add_map
-
-hujianyang (5):
-      UBIFS: fix an mmap and fsync race condition
-      UBIFS: Remove unused variables in ubifs_budget_space
-      UBIFS: Fix dump messages in ubifs_dump_lprops
-      UBIFS: Remove incorrect assertion in shrink_tnc()
-      UBIFS: Add an assertion for clean_zn_cnt
-
- drivers/mtd/ubi/block.c   |  4 +++-
- drivers/mtd/ubi/cdev.c    |  2 +-
- drivers/mtd/ubi/fastmap.c |  4 ++--
- fs/ubifs/budget.c         |  1 -
- fs/ubifs/debug.c          |  4 +++-
- fs/ubifs/file.c           |  6 +++---
- fs/ubifs/io.c             | 18 ++++++++++--------
- fs/ubifs/shrinker.c       |  1 -
- fs/ubifs/super.c          |  5 +++++
- fs/ubifs/tnc.c            |  5 +++--
- fs/ubifs/ubifs.h          | 11 +++++++++++
- 11 files changed, 41 insertions(+), 20 deletions(-)
-
--- 
-Best Regards,
-Artem Bityutskiy
+> 
+> 	David
+> 
 
