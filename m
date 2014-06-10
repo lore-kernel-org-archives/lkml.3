@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933999AbaFJAWF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:22:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58239 "EHLO
+	id S964979AbaFJAkB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:40:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58245 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933828AbaFJAWC (ORCPT
+	with ESMTP id S933982AbaFJAWF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 20:22:02 -0400
+	Mon, 9 Jun 2014 20:22:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sunguk Lee <d3m3vilurr@gmail.com>,
+        Daniel Schaal <farbing@web.de>,
         Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
         Ben Hutchings <ben@decadent.org.uk>, Jianguo Wu <wujianguo@huawei.com>
-Subject: [PATCH 3.4 34/88] Bluetooth: Device 0cf3:3008 should map AR 3012
-Date: Mon,  9 Jun 2014 17:24:44 -0700
-Message-Id: <20140610002425.672623962@linuxfoundation.org>
+Subject: [PATCH 3.4 29/88] Bluetooth: Add support for GC-WB300D PCIe [04ca:3006] to ath3k.
+Date: Mon,  9 Jun 2014 17:24:39 -0700
+Message-Id: <20140610002425.489199993@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
 References: <20140610002424.500996570@linuxfoundation.org>
@@ -30,16 +30,13 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sunguk Lee <d3m3vilurr@gmail.com>
+From: Daniel Schaal <farbing@web.de>
 
-commit 94a32d10f47b637ae24b78b1ddc7ef0e8396fda4 upstream.
+commit 2c262b2a5235b7f5b18d4d58394511f76371d7cb upstream.
 
-T:  Bus=01 Lev=02 Prnt=02 Port=00 Cnt=01 Dev#=  3 Spd=12   MxCh= 0
+T:  Bus=02 Lev=02 Prnt=02 Port=06 Cnt=01 Dev#=  4 Spd=12   MxCh= 0
 D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=0cf3 ProdID=3008 Rev= 0.01
-S:  Manufacturer=Atheros Communications
-S:  Product=Bluetooth USB Host Controller
-S:  SerialNumber=Alaska Day 2006
+P:  Vendor=04ca ProdID=3006 Rev= 0.02
 C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
 I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
 E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
@@ -64,7 +61,7 @@ I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
 E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
 E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
 
-Signed-off-by: Sunguk Lee <d3m3vilurr@gmail.com>
+Signed-off-by: Daniel Schaal <farbing@web.de>
 Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Jianguo Wu <wujianguo@huawei.com>
@@ -77,31 +74,31 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 --- a/drivers/bluetooth/ath3k.c
 +++ b/drivers/bluetooth/ath3k.c
-@@ -75,6 +75,7 @@ static struct usb_device_id ath3k_table[
- 	/* Atheros AR3012 with sflash firmware*/
- 	{ USB_DEVICE(0x0CF3, 0x0036) },
- 	{ USB_DEVICE(0x0CF3, 0x3004) },
-+	{ USB_DEVICE(0x0CF3, 0x3008) },
- 	{ USB_DEVICE(0x0CF3, 0x311D) },
+@@ -79,6 +79,7 @@ static struct usb_device_id ath3k_table[
  	{ USB_DEVICE(0x0CF3, 0x817a) },
  	{ USB_DEVICE(0x13d3, 0x3375) },
-@@ -110,6 +111,7 @@ static struct usb_device_id ath3k_blist_
- 	/* Atheros AR3012 with sflash firmware*/
- 	{ USB_DEVICE(0x0CF3, 0x0036), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x0cf3, 0x3008), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x311D), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04CA, 0x3005) },
++	{ USB_DEVICE(0x04CA, 0x3006) },
+ 	{ USB_DEVICE(0x13d3, 0x3362) },
+ 	{ USB_DEVICE(0x0CF3, 0xE004) },
+ 	{ USB_DEVICE(0x0930, 0x0219) },
+@@ -109,6 +110,7 @@ static struct usb_device_id ath3k_blist_
  	{ USB_DEVICE(0x0CF3, 0x817a), .driver_info = BTUSB_ATH3012 },
  	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04ca, 0x3005), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x04ca, 0x3006), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3362), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0xe004), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0930, 0x0219), .driver_info = BTUSB_ATH3012 },
 --- a/drivers/bluetooth/btusb.c
 +++ b/drivers/bluetooth/btusb.c
-@@ -141,6 +141,7 @@ static struct usb_device_id blacklist_ta
- 	/* Atheros 3012 with sflash firmware */
- 	{ USB_DEVICE(0x0cf3, 0x0036), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x0cf3, 0x3008), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x311d), .driver_info = BTUSB_ATH3012 },
+@@ -145,6 +145,7 @@ static struct usb_device_id blacklist_ta
  	{ USB_DEVICE(0x0cf3, 0x817a), .driver_info = BTUSB_ATH3012 },
  	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04ca, 0x3005), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x04ca, 0x3006), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3362), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0xe004), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0930, 0x0219), .driver_info = BTUSB_ATH3012 },
 
 
