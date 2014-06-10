@@ -1,87 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934287AbaFJHPD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 03:15:03 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56779 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933793AbaFJHPB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 03:15:01 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@gmail.com>
-To: Stanislav Fomichev <stfomichev@yandex-team.ru>
-Cc: acme@kernel.org, artagnon@gmail.com, jolsa@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] perf timechart: fix documentation
-References: <1402305672-2630-1-git-send-email-stfomichev@yandex-team.ru>
-	<1402305672-2630-2-git-send-email-stfomichev@yandex-team.ru>
-Date: Tue, 10 Jun 2014 16:14:58 +0900
-In-Reply-To: <1402305672-2630-2-git-send-email-stfomichev@yandex-team.ru>
-	(Stanislav Fomichev's message of "Mon, 9 Jun 2014 13:21:11 +0400")
-Message-ID: <87bnu1b5hp.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S934582AbaFJHP1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 03:15:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50930 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933793AbaFJHPY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 03:15:24 -0400
+Message-ID: <5396B08A.6090900@suse.cz>
+Date: Tue, 10 Jun 2014 09:15:22 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: David Rientjes <rientjes@google.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 03/10] mm, compaction: periodically drop lock and restore
+ IRQs in scanners
+References: <1402305982-6928-1-git-send-email-vbabka@suse.cz> <1402305982-6928-3-git-send-email-vbabka@suse.cz> <alpine.DEB.2.02.1406091656340.17705@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1406091656340.17705@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stanislav,
-
-On Mon,  9 Jun 2014 13:21:11 +0400, Stanislav Fomichev wrote:
-> Move options away from examples.
-
-I think it's better to move RECORD OPTIONS as well.
-
-Thanks,
-Namhyung
-
-
+On 06/10/2014 01:58 AM, David Rientjes wrote:
+> On Mon, 9 Jun 2014, Vlastimil Babka wrote:
 >
-> Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
-> ---
->  tools/perf/Documentation/perf-timechart.txt | 23 +++++++++++------------
->  1 file changed, 11 insertions(+), 12 deletions(-)
+>> diff --git a/mm/compaction.c b/mm/compaction.c
+>> index d37f4a8..e1a4283 100644
+>> --- a/mm/compaction.c
+>> +++ b/mm/compaction.c
+>> @@ -185,54 +185,77 @@ static void update_pageblock_skip(struct compact_control *cc,
+>>   }
+>>   #endif /* CONFIG_COMPACTION */
+>>
+>> -enum compact_contended should_release_lock(spinlock_t *lock)
+>> +/*
+>> + * Compaction requires the taking of some coarse locks that are potentially
+>> + * very heavily contended. For async compaction, back out if the lock cannot
+>> + * be taken immediately. For sync compaction, spin on the lock if needed.
+>> + *
+>> + * Returns true if the lock is held
+>> + * Returns false if the lock is not held and compaction should abort
+>> + */
+>> +static bool compact_trylock_irqsave(spinlock_t *lock,
+>> +			unsigned long *flags, struct compact_control *cc)
+>>   {
+>> -	if (need_resched())
+>> -		return COMPACT_CONTENDED_SCHED;
+>> -	else if (spin_is_contended(lock))
+>> -		return COMPACT_CONTENDED_LOCK;
+>> -	else
+>> -		return COMPACT_CONTENDED_NONE;
+>> +	if (cc->mode == MIGRATE_ASYNC) {
+>> +		if (!spin_trylock_irqsave(lock, *flags)) {
+>> +			cc->contended = COMPACT_CONTENDED_LOCK;
+>> +			return false;
+>> +		}
+>> +	} else {
+>> +		spin_lock_irqsave(lock, *flags);
+>> +	}
+>> +
+>> +	return true;
+>>   }
+>>
+>>   /*
+>>    * Compaction requires the taking of some coarse locks that are potentially
+>> - * very heavily contended. Check if the process needs to be scheduled or
+>> - * if the lock is contended. For async compaction, back out in the event
+>> - * if contention is severe. For sync compaction, schedule.
+>> + * very heavily contended. The lock should be periodically unlocked to avoid
+>> + * having disabled IRQs for a long time, even when there is nobody waiting on
+>> + * the lock. It might also be that allowing the IRQs will result in
+>> + * need_resched() becoming true. If scheduling is needed, or somebody else
+>> + * has taken the lock, async compaction aborts. Sync compaction schedules.
+>> + * Either compaction type will also abort if a fatal signal is pending.
+>> + * In either case if the lock was locked, it is dropped and not regained.
+>>    *
+>> - * Returns true if the lock is held.
+>> - * Returns false if the lock is released and compaction should abort
+>> + * Returns true if compaction should abort due to fatal signal pending, or
+>> + *		async compaction due to lock contention or need to schedule
+>> + * Returns false when compaction can continue (sync compaction might have
+>> + *		scheduled)
+>>    */
+>> -static bool compact_checklock_irqsave(spinlock_t *lock, unsigned long *flags,
+>> -				      bool locked, struct compact_control *cc)
+>> +static bool compact_unlock_should_abort(spinlock_t *lock,
+>> +		unsigned long flags, bool *locked, struct compact_control *cc)
+>>   {
+>> -	enum compact_contended contended = should_release_lock(lock);
+>> +	if (*locked) {
+>> +		spin_unlock_irqrestore(lock, flags);
+>> +		*locked = false;
+>> +	}
+>>
+>> -	if (contended) {
+>> -		if (locked) {
+>> -			spin_unlock_irqrestore(lock, *flags);
+>> -			locked = false;
+>> -		}
+>> +	if (fatal_signal_pending(current)) {
+>> +		cc->contended = COMPACT_CONTENDED_SCHED;
+>> +		return true;
+>> +	}
+>>
+>> -		/* async aborts if taking too long or contended */
+>> -		if (cc->mode == MIGRATE_ASYNC) {
+>> -			cc->contended = contended;
+>> -			return false;
+>> +	if (cc->mode == MIGRATE_ASYNC) {
+>> +		if (need_resched()) {
+>> +			cc->contended = COMPACT_CONTENDED_SCHED;
+>> +			return true;
+>>   		}
+>> -
+>> +		if (spin_is_locked(lock)) {
+>> +			cc->contended = COMPACT_CONTENDED_LOCK;
+>> +			return true;
+>> +		}
 >
-> diff --git a/tools/perf/Documentation/perf-timechart.txt b/tools/perf/Documentation/perf-timechart.txt
-> index bc5990c33dc0..fab20d4504d2 100644
-> --- a/tools/perf/Documentation/perf-timechart.txt
-> +++ b/tools/perf/Documentation/perf-timechart.txt
-> @@ -43,6 +43,17 @@ TIMECHART OPTIONS
->  
->  --symfs=<directory>::
->          Look for files with symbols relative to this directory.
-> +-n::
-> +--proc-num::
-> +        Print task info for at least given number of tasks.
-> +-t::
-> +--topology::
-> +        Sort CPUs according to topology.
-> +--highlight=<duration_nsecs|task_name>::
-> +	Highlight tasks (using different color) that run more than given
-> +	duration or tasks with given name. If number is given it's interpreted
-> +	as number of nanoseconds. If non-numeric string is given it's
-> +	interpreted as task name.
->  
->  EXAMPLES
->  --------
-> @@ -64,18 +75,6 @@ Record system-wide timechart:
->  
->    $ perf timechart --highlight gcc
->  
-> --n::
-> ---proc-num::
-> -        Print task info for at least given number of tasks.
-> --t::
-> ---topology::
-> -        Sort CPUs according to topology.
-> ---highlight=<duration_nsecs|task_name>::
-> -	Highlight tasks (using different color) that run more than given
-> -	duration or tasks with given name. If number is given it's interpreted
-> -	as number of nanoseconds. If non-numeric string is given it's
-> -	interpreted as task name.
-> -
->  RECORD OPTIONS
->  --------------
->  -P::
+> Any reason to abort here?  If we need to do compact_trylock_irqsave() on
+> this lock again then we'll abort when we come to that point, but it seems
+> pointless to abort early if the lock isn't actually needed anymore or it
+> is dropped before trying to acquire it again.
+
+spin_is_locked() true means somebody was most probably waiting for us to 
+unlock so maybe we should back off. But I'm not sure if that check can 
+actually succeed so early after unlock.
+
+>> +	} else {
+>>   		cond_resched();
+>>   	}
+>>
+>> -	if (!locked)
+>> -		spin_lock_irqsave(lock, *flags);
+>> -	return true;
+>> +	return false;
+>>   }
+>>
+>>   /*
+>>    * Aside from avoiding lock contention, compaction also periodically checks
+>>    * need_resched() and either schedules in sync compaction or aborts async
+>> - * compaction. This is similar to what compact_checklock_irqsave() does, but
+>> + * compaction. This is similar to what compact_unlock_should_abort() does, but
+>>    * is used where no lock is concerned.
+>>    *
+>>    * Returns false when no scheduling was needed, or sync compaction scheduled.
+>> @@ -291,6 +314,16 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+>>   		int isolated, i;
+>>   		struct page *page = cursor;
+>>
+>> +		/*
+>> +		 * Periodically drop the lock (if held) regardless of its
+>> +		 * contention, to give chance to IRQs. Abort async compaction
+>> +		 * if contended.
+>> +		 */
+>> +		if (!(blockpfn % SWAP_CLUSTER_MAX)
+>> +		    && compact_unlock_should_abort(&cc->zone->lock, flags,
+>> +								&locked, cc))
+>> +			break;
+>> +
+>>   		nr_scanned++;
+>>   		if (!pfn_valid_within(blockpfn))
+>>   			goto isolate_fail;
+>> @@ -308,8 +341,9 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+>>   		 * spin on the lock and we acquire the lock as late as
+>>   		 * possible.
+>>   		 */
+>> -		locked = compact_checklock_irqsave(&cc->zone->lock, &flags,
+>> -								locked, cc);
+>> +		if (!locked)
+>> +			locked = compact_trylock_irqsave(&cc->zone->lock,
+>> +								&flags, cc);
+>>   		if (!locked)
+>>   			break;
+>>
+>> @@ -514,13 +548,15 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+>>
+>>   	/* Time to isolate some pages for migration */
+>>   	for (; low_pfn < end_pfn; low_pfn++) {
+>> -		/* give a chance to irqs before checking need_resched() */
+>> -		if (locked && !(low_pfn % SWAP_CLUSTER_MAX)) {
+>> -			if (should_release_lock(&zone->lru_lock)) {
+>> -				spin_unlock_irqrestore(&zone->lru_lock, flags);
+>> -				locked = false;
+>> -			}
+>> -		}
+>> +		/*
+>> +		 * Periodically drop the lock (if held) regardless of its
+>> +		 * contention, to give chance to IRQs. Abort async compaction
+>> +		 * if contended.
+>> +		 */
+>> +		if (!(low_pfn % SWAP_CLUSTER_MAX)
+>> +		    && compact_unlock_should_abort(&zone->lru_lock, flags,
+>> +								&locked, cc))
+>> +			break;
+>>
+>>   		/*
+>>   		 * migrate_pfn does not necessarily start aligned to a
+>> @@ -622,10 +658,11 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+>>   		    page_count(page) > page_mapcount(page))
+>>   			continue;
+>>
+>> -		/* Check if it is ok to still hold the lock */
+>> -		locked = compact_checklock_irqsave(&zone->lru_lock, &flags,
+>> -								locked, cc);
+>> -		if (!locked || fatal_signal_pending(current))
+>> +		/* If the lock is not held, try to take it */
+>> +		if (!locked)
+>> +			locked = compact_trylock_irqsave(&zone->lru_lock,
+>> +								&flags, cc);
+>> +		if (!locked)
+>>   			break;
+>>
+>>   		/* Recheck PageLRU and PageTransHuge under lock */
+
