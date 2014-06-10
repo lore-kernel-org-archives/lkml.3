@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755336AbaFJTxL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 15:53:11 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35471 "EHLO
+	id S932498AbaFJTxb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 15:53:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35519 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755279AbaFJTxG (ORCPT
+	with ESMTP id S1755378AbaFJTx2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:53:06 -0400
+	Tue, 10 Jun 2014 15:53:28 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kieran Clancy <clancy.kieran@gmail.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 049/160] ACPI / EC: Process rather than discard events in acpi_ec_clear
-Date: Tue, 10 Jun 2014 12:44:49 -0700
-Message-Id: <1402429600-20477-50-git-send-email-kamal@canonical.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 061/160] ext4: move ext4_update_i_disksize() into mpage_map_and_submit_extent()
+Date: Tue, 10 Jun 2014 12:45:01 -0700
+Message-Id: <1402429600-20477-62-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -28,122 +26,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kieran Clancy <clancy.kieran@gmail.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 3eba563e280101209bad27d40bfc83ddf1489234 upstream.
+commit 622cad1325e404598fe3b148c3fa640dbaabc235 upstream.
 
-Address a regression caused by commit ad332c8a4533:
-(ACPI / EC: Clear stale EC events on Samsung systems)
+The function ext4_update_i_disksize() is used in only one place, in
+the function mpage_map_and_submit_extent().  Move its code to simplify
+the code paths, and also move the call to ext4_mark_inode_dirty() into
+the i_data_sem's critical region, to be consistent with all of the
+other places where we update i_disksize.  That way, we also keep the
+raw_inode's i_disksize protected, to avoid the following race:
 
-After the earlier patch, there was found to be a race condition on some
-earlier Samsung systems (N150/N210/N220). The function acpi_ec_clear was
-sometimes discarding a new EC event before its GPE was triggered by the
-system. In the case of these systems, this meant that the "lid open"
-event was not registered on resume if that was the cause of the wake,
-leading to problems when attempting to close the lid to suspend again.
+      CPU #1                                 CPU #2
 
-After testing on a number of Samsung systems, both those affected by the
-previous EC bug and those affected by the race condition, it seemed that
-the best course of action was to process rather than discard the events.
-On Samsung systems which accumulate stale EC events, there does not seem
-to be any adverse side-effects of running the associated _Q methods.
+   down_write(&i_data_sem)
+   Modify i_disk_size
+   up_write(&i_data_sem)
+                                        down_write(&i_data_sem)
+                                        Modify i_disk_size
+                                        Copy i_disk_size to on-disk inode
+                                        up_write(&i_data_sem)
+   Copy i_disk_size to on-disk inode
 
-This patch adds an argument to the static function acpi_ec_sync_query so
-that it may be used within the acpi_ec_clear loop in place of
-acpi_ec_query_unlocked which was used previously.
-
-With thanks to Stefan Biereigel for reporting the issue, and for all the
-people who helped test the new patch on affected systems.
-
-Fixes: ad332c8a4533 (ACPI / EC: Clear stale EC events on Samsung systems)
-References: https://lkml.kernel.org/r/532FE3B2.9060808@biereigel-wb.de
-References: https://bugzilla.kernel.org/show_bug.cgi?id=44161#c173
-Reported-by: Stefan Biereigel <stefan@biereigel.de>
-Signed-off-by: Kieran Clancy <clancy.kieran@gmail.com>
-Tested-by: Stefan Biereigel <stefan@biereigel.de>
-Tested-by: Dennis Jansen <dennis.jansen@web.de>
-Tested-by: Nicolas Porcel <nicolasporcel06@gmail.com>
-Tested-by: Maurizio D'Addona <mauritiusdadd@gmail.com>
-Tested-by: Juan Manuel Cabo <juanmanuel.cabo@gmail.com>
-Tested-by: Giannis Koutsou <giannis.koutsou@gmail.com>
-Tested-by: Kieran Clancy <clancy.kieran@gmail.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reviewed-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/acpi/ec.c | 21 ++++++++++++---------
- 1 file changed, 12 insertions(+), 9 deletions(-)
+ fs/ext4/ext4.h  | 17 -----------------
+ fs/ext4/inode.c | 16 +++++++++++++---
+ 2 files changed, 13 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
-index b4f15c6..98e9985 100644
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -211,13 +211,13 @@ unlock:
- 	spin_unlock_irqrestore(&ec->lock, flags);
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index d3a534f..3a603a8 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -2462,23 +2462,6 @@ static inline void ext4_update_i_disksize(struct inode *inode, loff_t newsize)
+ 	up_write(&EXT4_I(inode)->i_data_sem);
  }
  
--static int acpi_ec_sync_query(struct acpi_ec *ec);
-+static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data);
- 
- static int ec_check_sci_sync(struct acpi_ec *ec, u8 state)
- {
- 	if (state & ACPI_EC_FLAG_SCI) {
- 		if (!test_and_set_bit(EC_FLAGS_QUERY_PENDING, &ec->flags))
--			return acpi_ec_sync_query(ec);
-+			return acpi_ec_sync_query(ec, NULL);
- 	}
- 	return 0;
- }
-@@ -469,10 +469,8 @@ acpi_handle ec_get_handle(void)
- 
- EXPORT_SYMBOL(ec_get_handle);
- 
--static int acpi_ec_query_unlocked(struct acpi_ec *ec, u8 *data);
+-/*
+- * Update i_disksize after writeback has been started. Races with truncate
+- * are avoided by checking i_size under i_data_sem.
+- */
+-static inline void ext4_wb_update_i_disksize(struct inode *inode, loff_t newsize)
+-{
+-	loff_t i_size;
 -
- /*
-- * Clears stale _Q events that might have accumulated in the EC.
-+ * Process _Q events that might have accumulated in the EC.
-  * Run with locked ec mutex.
-  */
- static void acpi_ec_clear(struct acpi_ec *ec)
-@@ -481,7 +479,7 @@ static void acpi_ec_clear(struct acpi_ec *ec)
- 	u8 value = 0;
+-	down_write(&EXT4_I(inode)->i_data_sem);
+-	i_size = i_size_read(inode);
+-	if (newsize > i_size)
+-		newsize = i_size;
+-	if (newsize > EXT4_I(inode)->i_disksize)
+-		EXT4_I(inode)->i_disksize = newsize;
+-	up_write(&EXT4_I(inode)->i_data_sem);
+-}
+-
+ struct ext4_group_info {
+ 	unsigned long   bb_state;
+ 	struct rb_root  bb_free_root;
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index 8ccbe9a..4fafd09 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -2242,13 +2242,23 @@ static int mpage_map_and_submit_extent(handle_t *handle,
+ 			return err;
+ 	} while (map->m_len);
  
- 	for (i = 0; i < ACPI_EC_CLEAR_MAX; i++) {
--		status = acpi_ec_query_unlocked(ec, &value);
-+		status = acpi_ec_sync_query(ec, &value);
- 		if (status || !value)
- 			break;
- 	}
-@@ -608,13 +606,18 @@ static void acpi_ec_run(void *cxt)
- 	kfree(handler);
- }
- 
--static int acpi_ec_sync_query(struct acpi_ec *ec)
-+static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data)
- {
- 	u8 value = 0;
- 	int status;
- 	struct acpi_ec_query_handler *handler, *copy;
--	if ((status = acpi_ec_query_unlocked(ec, &value)))
+-	/* Update on-disk size after IO is submitted */
++	/*
++	 * Update on-disk size after IO is submitted.  Races with
++	 * truncate are avoided by checking i_size under i_data_sem.
++	 */
+ 	disksize = ((loff_t)mpd->first_page) << PAGE_CACHE_SHIFT;
+ 	if (disksize > EXT4_I(inode)->i_disksize) {
+ 		int err2;
+-
+-		ext4_wb_update_i_disksize(inode, disksize);
++		loff_t i_size;
 +
-+	status = acpi_ec_query_unlocked(ec, &value);
-+	if (data)
-+		*data = value;
-+	if (status)
- 		return status;
-+
- 	list_for_each_entry(handler, &ec->list, node) {
- 		if (value == handler->query_bit) {
- 			/* have custom handler for this bit */
-@@ -638,7 +641,7 @@ static void acpi_ec_gpe_query(void *ec_cxt)
- 	if (!ec)
- 		return;
- 	mutex_lock(&ec->mutex);
--	acpi_ec_sync_query(ec);
-+	acpi_ec_sync_query(ec, NULL);
- 	mutex_unlock(&ec->mutex);
- }
- 
++		down_write(&EXT4_I(inode)->i_data_sem);
++		i_size = i_size_read(inode);
++		if (disksize > i_size)
++			disksize = i_size;
++		if (disksize > EXT4_I(inode)->i_disksize)
++			EXT4_I(inode)->i_disksize = disksize;
+ 		err2 = ext4_mark_inode_dirty(handle, inode);
++		up_write(&EXT4_I(inode)->i_data_sem);
+ 		if (err2)
+ 			ext4_error(inode->i_sb,
+ 				   "Failed to mark inode %lu dirty",
 -- 
 1.9.1
 
