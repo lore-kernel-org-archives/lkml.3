@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933821AbaFJGME (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 02:12:04 -0400
-Received: from mga02.intel.com ([134.134.136.20]:14113 "EHLO mga02.intel.com"
+	id S964891AbaFJGNV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 02:13:21 -0400
+Received: from mga09.intel.com ([134.134.136.24]:64455 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932895AbaFJGMB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 02:12:01 -0400
+	id S1754584AbaFJGNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 02:13:20 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.98,1007,1392192000"; 
-   d="scan'208";a="526030379"
+   d="scan'208";a="526031018"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>,
@@ -27,94 +27,102 @@ Cc: Jiang Liu <jiang.liu@linux.intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: [Patch V4 22/42] x86, irq, ACPI: change __acpi_register_gsi to return IRQ number instead of GSI
-Date: Tue, 10 Jun 2014 14:14:47 +0800
-Message-Id: <1402380887-32512-1-git-send-email-jiang.liu@linux.intel.com>
+Subject: [Patch V4 38/42] x86, irq, ACPI: release IOAPIC pin when PCI device is disabled
+Date: Tue, 10 Jun 2014 14:16:27 +0800
+Message-Id: <1402380987-32577-1-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1402302011-23642-23-git-send-email-jiang.liu@linux.intel.com>
-References: <1402302011-23642-23-git-send-email-jiang.liu@linux.intel.com>
+In-Reply-To: <1402302011-23642-39-git-send-email-jiang.liu@linux.intel.com>
+References: <1402302011-23642-39-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently __acpi_register_gsi is defined to return GSI number and
-may be set to acpi_register_gsi_pic(), acpi_register_gsi_ioapic(),
-acpi_register_gsi_xen_hvm() and acpi_register_gsi_xen().
-
-Among which, acpi_register_gsi_ioapic() returns GSI number, but
-acpi_register_gsi_xen_hvm() and acpi_register_gsi_xen() actually
-returns IRQ number instead of GSI. And for acpi_register_gsi_pic(),
-GSI number equals to IRQ number.
-
-So change acpi_register_gsi_ioapic() to return IRQ number, it also
-simplifies the code.
+Release IOAPIC pin associated with PCI device when the PCI device
+is disabled.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
-Rebase due to change in patch 8.
+Minor change, simplify usage of function pointer.
 ---
- arch/x86/kernel/acpi/boot.c |   21 ++++++++-------------
- 1 file changed, 8 insertions(+), 13 deletions(-)
+ arch/x86/kernel/acpi/boot.c |   27 +++++++++++++++++++++++++++
+ drivers/acpi/pci_irq.c      |    3 ++-
+ 2 files changed, 29 insertions(+), 1 deletion(-)
 
 diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 9965afbd71ca..0cf311c72bce 100644
+index fd4b6d2e436c..8c28023924bf 100644
 --- a/arch/x86/kernel/acpi/boot.c
 +++ b/arch/x86/kernel/acpi/boot.c
-@@ -419,7 +419,7 @@ static int mp_register_gsi(struct device *dev, u32 gsi, int trigger,
- 
- 	irq = map_gsi_to_irq(gsi);
- 	if (irq < 0)
--		return ACPI_INVALID_GSI;
-+		return irq;
- 
- 	ioapic = mp_find_ioapic(gsi);
- 	if (ioapic < 0) {
-@@ -444,12 +444,11 @@ static int mp_register_gsi(struct device *dev, u32 gsi, int trigger,
- 			     polarity == ACPI_ACTIVE_HIGH ? 0 : 1);
- 	ret = io_apic_set_pci_routing(dev, irq, &irq_attr);
- 	if (ret < 0)
--		gsi = ACPI_INVALID_GSI;
-+		irq = -1;
- 
--	return gsi;
-+	return irq;
+@@ -421,8 +421,24 @@ static int mp_register_gsi(struct device *dev, u32 gsi, int trigger,
+ 	return irq;
  }
  
--
- static int __init
- acpi_parse_ioapic(struct acpi_subtable_header * header, const unsigned long end)
- {
-@@ -652,11 +651,13 @@ static int acpi_register_gsi_pic(struct device *dev, u32 gsi,
- static int acpi_register_gsi_ioapic(struct device *dev, u32 gsi,
- 				    int trigger, int polarity)
- {
-+	int irq = gsi;
++static void mp_unregister_gsi(u32 gsi)
++{
++	int irq;
 +
- #ifdef CONFIG_X86_IO_APIC
--	gsi = mp_register_gsi(dev, gsi, trigger, polarity);
-+	irq = mp_register_gsi(dev, gsi, trigger, polarity);
- #endif
++	if (acpi_irq_model != ACPI_IRQ_MODEL_IOAPIC)
++		return;
++
++	if (acpi_gbl_FADT.sci_interrupt == gsi)
++		return;
++
++	irq = mp_map_gsi_to_irq(gsi, 0);
++	if (irq > 0)
++		mp_unmap_irq(irq);
++}
++
+ static struct irq_domain_ops acpi_irqdomain_ops = {
+ 	.map = mp_irqdomain_map,
++	.unmap = mp_irqdomain_unmap,
+ };
  
--	return gsi;
-+	return irq;
+ static int __init
+@@ -640,8 +656,16 @@ static int acpi_register_gsi_ioapic(struct device *dev, u32 gsi,
+ 	return irq;
  }
  
++static void acpi_unregister_gsi_ioapic(u32 gsi)
++{
++#ifdef CONFIG_X86_IO_APIC
++	mp_unregister_gsi(gsi);
++#endif
++}
++
  int (*__acpi_register_gsi)(struct device *dev, u32 gsi,
-@@ -674,13 +675,7 @@ int (*acpi_suspend_lowlevel)(void);
-  */
- int acpi_register_gsi(struct device *dev, u32 gsi, int trigger, int polarity)
- {
--	unsigned int plat_gsi;
--
--	plat_gsi = __acpi_register_gsi(dev, gsi, trigger, polarity);
--	if (plat_gsi != ACPI_INVALID_GSI)
--		return map_gsi_to_irq(plat_gsi);
--
--	return -1;
-+	return __acpi_register_gsi(dev, gsi, trigger, polarity);
- }
- EXPORT_SYMBOL_GPL(acpi_register_gsi);
+ 			   int trigger, int polarity) = acpi_register_gsi_pic;
++void (*__acpi_unregister_gsi)(u32 gsi) = NULL;
  
+ #ifdef CONFIG_ACPI_SLEEP
+ int (*acpi_suspend_lowlevel)(void) = x86_acpi_suspend_lowlevel;
+@@ -661,6 +685,8 @@ EXPORT_SYMBOL_GPL(acpi_register_gsi);
+ 
+ void acpi_unregister_gsi(u32 gsi)
+ {
++	if (__acpi_unregister_gsi)
++		__acpi_unregister_gsi(gsi);
+ }
+ EXPORT_SYMBOL_GPL(acpi_unregister_gsi);
+ 
+@@ -668,6 +694,7 @@ static void __init acpi_set_irq_model_ioapic(void)
+ {
+ 	acpi_irq_model = ACPI_IRQ_MODEL_IOAPIC;
+ 	__acpi_register_gsi = acpi_register_gsi_ioapic;
++	__acpi_unregister_gsi = acpi_unregister_gsi_ioapic;
+ 	acpi_ioapic = 1;
+ }
+ 
+diff --git a/drivers/acpi/pci_irq.c b/drivers/acpi/pci_irq.c
+index 9c62340c2360..6ba463ceccc6 100644
+--- a/drivers/acpi/pci_irq.c
++++ b/drivers/acpi/pci_irq.c
+@@ -498,5 +498,6 @@ void acpi_pci_irq_disable(struct pci_dev *dev)
+ 	 */
+ 
+ 	dev_dbg(&dev->dev, "PCI INT %c disabled\n", pin_name(pin));
+-	acpi_unregister_gsi(gsi);
++	if (gsi >= 0 && dev->irq > 0)
++		acpi_unregister_gsi(gsi);
+ }
 -- 
 1.7.10.4
 
