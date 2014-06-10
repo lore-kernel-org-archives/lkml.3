@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755004AbaFJTve (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 15:51:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35279 "EHLO
+	id S933232AbaFJUR6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 16:17:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35271 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753556AbaFJTvb (ORCPT
+	with ESMTP id S932076AbaFJTv2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:51:31 -0400
+	Tue, 10 Jun 2014 15:51:28 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jani Nikula <jani.nikula@linux.intel.com>, Egbert Eich <eich@suse.de>,
-        bitlord <bitlord0xff@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@intel.com>,
+Cc: Victor Kamensky <victor.kamensky@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 108/160] drm/i915: Don't WARN nor handle unexpected hpd interrupts on gmch platforms
-Date: Tue, 10 Jun 2014 12:45:48 -0700
-Message-Id: <1402429600-20477-109-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 098/160] word-at-a-time: avoid undefined behaviour in zero_bytemask macro
+Date: Tue, 10 Jun 2014 12:45:38 -0700
+Message-Id: <1402429600-20477-99-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -30,72 +29,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 3ff04a160a891e56cdcee5c198d4c764d1c8c78b upstream.
+commit ec6931b281797b69e6cf109f9cc94d5a2bf994e0 upstream.
 
-The status bits are unconditionally set, the control bits only enable
-the actual interrupt generation. Which means if we get some random
-other interrupts we'll bogusly complain about them.
+The asm-generic, big-endian version of zero_bytemask creates a mask of
+bytes preceding the first zero-byte by left shifting ~0ul based on the
+position of the first zero byte.
 
-So restrict the WARN to platforms with a sane hotplug interrupt
-handling scheme. And even more important also don't attempt to process
-the hpd bit since we've detected a storm already. Instead just clear
-the bit silently.
+Unfortunately, if the first (top) byte is zero, the output of
+prep_zero_mask has only the top bit set, resulting in undefined C
+behaviour as we shift left by an amount equal to the width of the type.
+As it happens, GCC doesn't manage to spot this through the call to fls(),
+but the issue remains if architectures choose to implement their shift
+instructions differently.
 
-This WARN has been introduced in
+An example would be arch/arm/ (AArch32), where LSL Rd, Rn, #32 results
+in Rd == 0x0, whilst on arch/arm64 (AArch64) LSL Xd, Xn, #64 results in
+Xd == Xn.
 
-commit b8f102e8bf71cacf33326360fdf9dcfd1a63925b
-Author: Egbert Eich <eich@suse.de>
-Date:   Fri Jul 26 14:14:24 2013 +0200
+Rather than check explicitly for the problematic shift, this patch adds
+an extra shift by 1, replacing fls with __fls. Since zero_bytemask is
+never called with a zero argument (has_zero() is used to check the data
+first), we don't need to worry about calling __fls(0), which is
+undefined.
 
-    drm/i915: Add messages useful for HPD storm detection debugging (v2)
-
-before that we silently handled the hpd event and so partially
-defeated the storm detection.
-
-v2: Pimp commit message (Jani)
-
-Cc: Jani Nikula <jani.nikula@linux.intel.com>
-Cc: Egbert Eich <eich@suse.de>
-Cc: bitlord <bitlord0xff@gmail.com>
-Reported-by: bitlord <bitlord0xff@gmail.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-[ kamal: backport to 3.13-stable: context ]
+Cc: Victor Kamensky <victor.kamensky@linaro.org>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/i915/i915_irq.c | 17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
+ include/asm-generic/word-at-a-time.h | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_irq.c b/drivers/gpu/drm/i915/i915_irq.c
-index 9702704..4ad5cc5 100644
---- a/drivers/gpu/drm/i915/i915_irq.c
-+++ b/drivers/gpu/drm/i915/i915_irq.c
-@@ -1234,9 +1234,20 @@ static inline void intel_hpd_irq_handler(struct drm_device *dev,
- 	spin_lock(&dev_priv->irq_lock);
- 	for (i = 1; i < HPD_NUM_PINS; i++) {
+diff --git a/include/asm-generic/word-at-a-time.h b/include/asm-generic/word-at-a-time.h
+index d3909ef..d96deb4 100644
+--- a/include/asm-generic/word-at-a-time.h
++++ b/include/asm-generic/word-at-a-time.h
+@@ -50,11 +50,7 @@ static inline bool has_zero(unsigned long val, unsigned long *data, const struct
+ }
  
--		WARN(((hpd[i] & hotplug_trigger) &&
--		      dev_priv->hpd_stats[i].hpd_mark != HPD_ENABLED),
--		     "Received HPD interrupt although disabled\n");
-+		if (hpd[i] & hotplug_trigger &&
-+		    dev_priv->hpd_stats[i].hpd_mark == HPD_DISABLED) {
-+			/*
-+			 * On GMCH platforms the interrupt mask bits only
-+			 * prevent irq generation, not the setting of the
-+			 * hotplug bits itself. So only WARN about unexpected
-+			 * interrupts on saner platforms.
-+			 */
-+			WARN_ONCE(INTEL_INFO(dev)->gen >= 5 && !IS_VALLEYVIEW(dev),
-+				  "Received HPD interrupt (0x%08x) on pin %d (0x%08x) although disabled\n",
-+				  hotplug_trigger, i, hpd[i]);
-+
-+			continue;
-+		}
+ #ifndef zero_bytemask
+-#ifdef CONFIG_64BIT
+-#define zero_bytemask(mask)	(~0ul << fls64(mask))
+-#else
+-#define zero_bytemask(mask)	(~0ul << fls(mask))
+-#endif /* CONFIG_64BIT */
+-#endif /* zero_bytemask */
++#define zero_bytemask(mask) (~0ul << __fls(mask) << 1)
++#endif
  
- 		if (!(hpd[i] & hotplug_trigger) ||
- 		    dev_priv->hpd_stats[i].hpd_mark != HPD_ENABLED)
+ #endif /* _ASM_WORD_AT_A_TIME_H */
 -- 
 1.9.1
 
