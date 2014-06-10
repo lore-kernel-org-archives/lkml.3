@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754478AbaFJVwh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 17:52:37 -0400
-Received: from lekensteyn.nl ([178.21.112.251]:50241 "EHLO lekensteyn.nl"
+	id S1754518AbaFJVxw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 17:53:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50775 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753856AbaFJVwf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 17:52:35 -0400
-From: Peter Wu <peter@lekensteyn.nl>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>
-Subject: Re: [PATCH] net: wireless: rtlwifi: rtl8192de: hw.c: Cleaning up conjunction always evaluates to false
-Date: Tue, 10 Jun 2014 23:52:32 +0200
-Message-ID: <1846364.4CH2xgjm71@al>
-User-Agent: KMail/4.13.1 (Linux/3.15.0-rc8-custom-00058-gd2cfd31; KDE/4.13.1; x86_64; ; )
-In-Reply-To: <CAFo99gYCYkONL9dZYeHwuJKQTCgFQTmg1aAGZdFAOT=MNARh7Q@mail.gmail.com>
-References: <1402151419-18296-1-git-send-email-rickard_strandqvist@spectrumdigital.se> <CAFo99gZuPV=v1k90iPkAGVFrzVq-z=-h8UgD5a3VCN=wMDNU3w@mail.gmail.com> <CAFo99gYCYkONL9dZYeHwuJKQTCgFQTmg1aAGZdFAOT=MNARh7Q@mail.gmail.com>
+	id S1753194AbaFJVxv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 17:53:51 -0400
+Message-ID: <53977E79.2090000@redhat.com>
+Date: Tue, 10 Jun 2014 16:54:01 -0500
+From: David Milburn <dmilburn@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130912 Thunderbird/17.0.9
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Spam-Score: -0.0 (/)
+To: suravee.suthikulpanit@amd.com
+CC: tj@kernel.org, linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] ata: Check and set 64-bit DMA mask for platform AHCI
+ driver
+References: <1400866510-3130-1-git-send-email-suravee.suthikulpanit@amd.com>
+In-Reply-To: <1400866510-3130-1-git-send-email-suravee.suthikulpanit@amd.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 10 June 2014 23:31:37 Rickard Strandqvist wrote:
-> I guess it's ok to do the patches?
+On 05/23/2014 12:35 PM, suravee.suthikulpanit@amd.com wrote:
+> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+>
+> The current platform AHCI drier does not set the dma_mask correctly
+> for 64-bit DMA capable AHCI controller.  This patch checks the AHCI
+> capability bit and set the dma_mask and coherent_dma_mask accordingly.
+>
+> Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+> ---
+>   drivers/ata/libahci_platform.c | 9 +++++++++
+>   1 file changed, 9 insertions(+)
+>
+> diff --git a/drivers/ata/libahci_platform.c b/drivers/ata/libahci_platform.c
+> index 7cb3a85..85049ef 100644
+> --- a/drivers/ata/libahci_platform.c
+> +++ b/drivers/ata/libahci_platform.c
+> @@ -368,6 +368,15 @@ int ahci_platform_init_host(struct platform_device *pdev,
 
-Right, you got some feedback from me and another person. You can
-send patches whenever you like.
+Hi Suravee,
 
-> But then again, I will then send them one by one, with the cover
-> letter? +35 email?
+Would it be better to do the following before ahci_reset_controller()?
 
-Have you seen my other reply? Use git-format-patch --cover-letter.
-Why would you need 35 mails? A commit should logically group a
-change per driver. So, one commit probably touches rtlXXXX/reg.h
-and rtlXXXX/hw.c (perhaps others? grep for it!)
+         /* initialize adapter */
+         rc = ahci_configure_dma_masks(pdev, hpriv->cap & HOST_CAP_64);
+         if (rc)
+                	return rc;
 
-Be sure to manually check each change. Your last patchset included
-non-sensial commit messages and subjects.
 
-> Then the macro I should add in all the:
-> 
-> net/wireless/rtlwifi/rtl****se/reg.h
-> 
-> 
-> And in the:
-> drivers/staging/rtl8188eu/include/rtl8188e_spec.h
-> drivers/staging/rtl8192e/rtl8192e/r8192E_hw.h
-> drivers/staging/rtl8712/rtl871x_wlan_sme.h
-> drivers/staging/rtl8723au/include/rtl8723a_spec.h
-> drivers/staging/rtl8821ae/rtl8821ae/reg.h
+Thanks,
+David
 
-The staging drivers will be taken by Greg KH, see MAINTAINERS
-for the addresses for staging drivers.
 
-> And should I put it like:
-> #define MSR_MASK 0x03
-> 
-> Or is this more accurate:
-> #define MSR_MASK   (MSR_INFRA | MSR_ADHOC)
 
-Since the integer resulting from the mask is a decimal sequence rather
-than a bitmap, it makes more sense to use 0x03 instead. Please have a
-look at the drivers and be sure to understand why the changes are needed.
-
-Peter
-
-PS. please do not top-post. For driver discussions, you should keep
-the list cc'd too. That makes it more likely for someone to respond to
-such queries.
+>   	ahci_init_controller(host);
+>   	ahci_print_info(host, "platform");
+>
+> +	if (hpriv->cap & HOST_CAP_64) {
+> +		if (!dev->dma_mask)
+> +			dev->dma_mask = &dev->coherent_dma_mask;
+> +
+> +		rc = dma_set_mask_and_coherent(dev, DMA_BIT_MASK(64));
+> +		if (rc)
+> +			return rc;
+> +	}
+> +
+>   	return ata_host_activate(host, irq, ahci_interrupt, IRQF_SHARED,
+>   				 &ahci_platform_sht);
+>   }
+>
 
