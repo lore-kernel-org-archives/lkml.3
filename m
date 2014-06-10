@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755478AbaFJU2Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 16:28:25 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35080 "EHLO
+	id S932390AbaFJU3O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 16:29:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35054 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754019AbaFJTtK (ORCPT
+	with ESMTP id S1753911AbaFJTsv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:49:10 -0400
+	Tue, 10 Jun 2014 15:48:51 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oleg Nesterov <oleg@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+Cc: Jiri Bohac <jbohac@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 113/160] KVM: async_pf: mm->mm_users can not pin apf->mm
-Date: Tue, 10 Jun 2014 12:45:53 -0700
-Message-Id: <1402429600-20477-114-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 120/160] timer: Prevent overflow in apply_slack
+Date: Tue, 10 Jun 2014 12:46:00 -0700
+Message-Id: <1402429600-20477-121-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -27,67 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Jiri Bohac <jbohac@suse.cz>
 
-commit 41c22f626254b9dc0376928cae009e73d1b6a49a upstream.
+commit 98a01e779f3c66b0b11cd7e64d531c0e41c95762 upstream.
 
-get_user_pages(mm) is simply wrong if mm->mm_users == 0 and exit_mmap/etc
-was already called (or is in progress), mm->mm_count can only pin mm->pgd
-and mm_struct itself.
+On architectures with sizeof(int) < sizeof (long), the
+computation of mask inside apply_slack() can be undefined if the
+computed bit is > 32.
 
-Change kvm_setup_async_pf/async_pf_execute to inc/dec mm->mm_users.
+E.g. with: expires = 0xffffe6f5 and slack = 25, we get:
 
-kvm_create_vm/kvm_destroy_vm play with ->mm_count too but this case looks
-fine at first glance, it seems that this ->mm is only used to verify that
-current->mm == kvm->mm.
+expires_limit = 0x20000000e
+bit = 33
+mask = (1 << 33) - 1  /* undefined */
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+On x86, mask becomes 1 and and the slack is not applied properly.
+On s390, mask is -1, expires is set to 0 and the timer fires immediately.
+
+Use 1UL << bit to solve that issue.
+
+Suggested-by: Deborah Townsend <dstownse@us.ibm.com>
+Signed-off-by: Jiri Bohac <jbohac@suse.cz>
+Link: http://lkml.kernel.org/r/20140418152310.GA13654@midget.suse.cz
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- virt/kvm/async_pf.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ kernel/timer.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/virt/kvm/async_pf.c b/virt/kvm/async_pf.c
-index 8631d9c..f2c80d5 100644
---- a/virt/kvm/async_pf.c
-+++ b/virt/kvm/async_pf.c
-@@ -85,7 +85,7 @@ static void async_pf_execute(struct work_struct *work)
- 	if (waitqueue_active(&vcpu->wq))
- 		wake_up_interruptible(&vcpu->wq);
+diff --git a/kernel/timer.c b/kernel/timer.c
+index accfd24..38f0d40 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -822,7 +822,7 @@ unsigned long apply_slack(struct timer_list *timer, unsigned long expires)
  
--	mmdrop(mm);
-+	mmput(mm);
- 	kvm_put_kvm(vcpu->kvm);
- }
+ 	bit = find_last_bit(&mask, BITS_PER_LONG);
  
-@@ -98,7 +98,7 @@ void kvm_clear_async_pf_completion_queue(struct kvm_vcpu *vcpu)
- 				   typeof(*work), queue);
- 		list_del(&work->queue);
- 		if (cancel_work_sync(&work->work)) {
--			mmdrop(work->mm);
-+			mmput(work->mm);
- 			kvm_put_kvm(vcpu->kvm); /* == work->vcpu->kvm */
- 			kmem_cache_free(async_pf_cache, work);
- 		}
-@@ -162,7 +162,7 @@ int kvm_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn,
- 	work->addr = gfn_to_hva(vcpu->kvm, gfn);
- 	work->arch = *arch;
- 	work->mm = current->mm;
--	atomic_inc(&work->mm->mm_count);
-+	atomic_inc(&work->mm->mm_users);
- 	kvm_get_kvm(work->vcpu->kvm);
+-	mask = (1 << bit) - 1;
++	mask = (1UL << bit) - 1;
  
- 	/* this can't really happen otherwise gfn_to_pfn_async
-@@ -180,7 +180,7 @@ int kvm_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn,
- 	return 1;
- retry_sync:
- 	kvm_put_kvm(work->vcpu->kvm);
--	mmdrop(work->mm);
-+	mmput(work->mm);
- 	kmem_cache_free(async_pf_cache, work);
- 	return 0;
- }
+ 	expires_limit = expires_limit & ~(mask);
+ 
 -- 
 1.9.1
 
