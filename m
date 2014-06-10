@@ -1,46 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755064AbaFJGgn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 02:36:43 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754786AbaFJGgl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 02:36:41 -0400
-Message-ID: <5396A772.1060103@nod.at>
-Date: Tue, 10 Jun 2014 08:36:34 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: the arch/x86 maintainers <x86@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Out-of-bounds access in vread_hpet()
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+	id S1754721AbaFJGho (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 02:37:44 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:42324 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751273AbaFJGhn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 02:37:43 -0400
+From: Sachin Kamat <sachin.kamat@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: lgirdwood@gmail.com, broonie@kernel.org, spk.linux@gmail.com,
+        p.zabel@pengutronix.de
+Subject: [PATCH 1/1] regulator: ltc3589: Staticize ltc3589_reg_defaults
+Date: Tue, 10 Jun 2014 12:04:53 +0530
+Message-Id: <1402382093-27338-1-git-send-email-sachin.kamat@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-FYI:
-________________________________________________________________________________________________________
-*** CID 1222081:  Out-of-bounds access  (ARRAY_VS_SINGLETON)
-/arch/x86/vdso/vclock_gettime.c: 38 in vread_hpet()
-32     #ifdef CONFIG_HPET_TIMER
-33     extern u8 hpet_page
-34     	__attribute__((visibility("hidden")));
-35
-36     static notrace cycle_t vread_hpet(void)
-37     {
->>>     CID 1222081:  Out-of-bounds access  (ARRAY_VS_SINGLETON)
->>>     Using "&hpet_page" as an array.  This might corrupt or misinterpret adjacent memory locations.
-38     	return *(const volatile u32 *)(&hpet_page + HPET_COUNTER);
-39     }
-40     #endif
-41
-42     #ifndef BUILD_VDSO32
-43
+'ltc3589_reg_defaults' is local to this file. Make it static.
 
-Thanks,
-//richard
+Signed-off-by: Sachin Kamat <sachin.kamat@samsung.com>
+---
+ drivers/regulator/ltc3589.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/regulator/ltc3589.c b/drivers/regulator/ltc3589.c
+index 110a99e..217d10d6 100644
+--- a/drivers/regulator/ltc3589.c
++++ b/drivers/regulator/ltc3589.c
+@@ -377,7 +377,7 @@ static bool ltc3589_volatile_reg(struct device *dev, unsigned int reg)
+ 	return false;
+ }
+ 
+-struct reg_default ltc3589_reg_defaults[] = {
++static struct reg_default ltc3589_reg_defaults[] = {
+ 	{ LTC3589_SCR1,   0x00 },
+ 	{ LTC3589_OVEN,   0x00 },
+ 	{ LTC3589_SCR2,   0x00 },
+-- 
+1.7.9.5
+
