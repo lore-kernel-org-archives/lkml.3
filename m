@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753620AbaFJTrF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 15:47:05 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34835 "EHLO
+	id S1753837AbaFJTrW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 15:47:22 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34955 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753411AbaFJTqz (ORCPT
+	with ESMTP id S1753254AbaFJTrM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:46:55 -0400
+	Tue, 10 Jun 2014 15:47:12 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 009/160] Revert "net: mvneta: fix usage as a module on RGMII configurations"
-Date: Tue, 10 Jun 2014 12:44:09 -0700
-Message-Id: <1402429600-20477-10-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 076/160] drm/radeon: properly unregister hwmon interface (v2)
+Date: Tue, 10 Jun 2014 12:45:16 -0700
+Message-Id: <1402429600-20477-77-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -28,118 +27,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit cc6ca3023f2c2bbcd062e9d4cf6afc2ba2821ada upstream.
+commit cb3e4e7c59e4b43ac378631f6101f5c8de3a27a5 upstream.
 
-This reverts commit e3a8786c10e75903f1269474e21fe8cb49c3a670. While
-this commit allows to use the mvneta driver as a module on some
-configurations, it breaks other configurations even if mvneta is used
-built-in.
+Need to properly unregister the hwmon device on driver
+unload.
 
-This breakage is due to the fact that on some RGMII platforms, the PCS
-bit has to be set, and on some other platforms, it has to be
-cleared. At the moment, we lack informations to know exactly the
-significance of this bit (the datasheet only says "enables PCS"), and
-so we can't produce a patch that will work on all platforms at this
-point. And since this change is breaking the network completely for
-many users, it's much better to revert it for now. We'll come back
-later with a proper fix that takes into account all platforms.
+v2: minor clean up
 
-Basically:
+bug:
+https://bugzilla.kernel.org/show_bug.cgi?id=73931
 
- * Armada XP GP is configured as RGMII-ID, and needs the PCS bit to be
-   set.
- * Armada 370 Mirabox is configured as RGMII-ID, and needs the PCS bit
-   to be cleared.
-
-And at the moment, we don't know how to make the distinction between
-those two cases. One hint is that the Armada XP GP appears in fact to
-be using a QSGMII connection with the PHY (Quad-SGMII), but
-configuring it as SGMII doesn't work, while RGMII-ID works. This needs
-more investigation, but in the mean time, let's unbreak the network
-for all those users.
-
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Reported-by: Arnaud Ebalard <arno@natisbad.org>
-Reported-by: Alexander Reuter <Alexander.Reuter@gmx.net>
-Fixes: https://bugzilla.kernel.org/show_bug.cgi?id=73401
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/ethernet/marvell/mvneta.c | 41 ++++++++++++++++++++++++++++-------
- 1 file changed, 33 insertions(+), 8 deletions(-)
+ drivers/gpu/drm/radeon/radeon_pm.c | 21 +++++++++++++++------
+ 1 file changed, 15 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
-index bb2021e..d7aa22a 100644
---- a/drivers/net/ethernet/marvell/mvneta.c
-+++ b/drivers/net/ethernet/marvell/mvneta.c
-@@ -88,9 +88,8 @@
- #define      MVNETA_TX_IN_PRGRS                  BIT(1)
- #define      MVNETA_TX_FIFO_EMPTY                BIT(8)
- #define MVNETA_RX_MIN_FRAME_SIZE                 0x247c
--#define MVNETA_SERDES_CFG			 0x24A0
-+#define MVNETA_SGMII_SERDES_CFG			 0x24A0
- #define      MVNETA_SGMII_SERDES_PROTO		 0x0cc7
--#define      MVNETA_RGMII_SERDES_PROTO		 0x0667
- #define MVNETA_TYPE_PRIO                         0x24bc
- #define      MVNETA_FORCE_UNI                    BIT(21)
- #define MVNETA_TXQ_CMD_1                         0x24e4
-@@ -707,6 +706,35 @@ static void mvneta_rxq_bm_disable(struct mvneta_port *pp,
- 	mvreg_write(pp, MVNETA_RXQ_CONFIG_REG(rxq->id), val);
+diff --git a/drivers/gpu/drm/radeon/radeon_pm.c b/drivers/gpu/drm/radeon/radeon_pm.c
+index d7e631b..5ca7072 100644
+--- a/drivers/gpu/drm/radeon/radeon_pm.c
++++ b/drivers/gpu/drm/radeon/radeon_pm.c
+@@ -603,7 +603,6 @@ static const struct attribute_group *hwmon_groups[] = {
+ static int radeon_hwmon_init(struct radeon_device *rdev)
+ {
+ 	int err = 0;
+-	struct device *hwmon_dev;
+ 
+ 	switch (rdev->pm.int_thermal_type) {
+ 	case THERMAL_TYPE_RV6XX:
+@@ -616,11 +615,11 @@ static int radeon_hwmon_init(struct radeon_device *rdev)
+ 	case THERMAL_TYPE_KV:
+ 		if (rdev->asic->pm.get_temperature == NULL)
+ 			return err;
+-		hwmon_dev = hwmon_device_register_with_groups(rdev->dev,
+-							      "radeon", rdev,
+-							      hwmon_groups);
+-		if (IS_ERR(hwmon_dev)) {
+-			err = PTR_ERR(hwmon_dev);
++		rdev->pm.int_hwmon_dev = hwmon_device_register_with_groups(rdev->dev,
++									   "radeon", rdev,
++									   hwmon_groups);
++		if (IS_ERR(rdev->pm.int_hwmon_dev)) {
++			err = PTR_ERR(rdev->pm.int_hwmon_dev);
+ 			dev_err(rdev->dev,
+ 				"Unable to register hwmon device: %d\n", err);
+ 		}
+@@ -632,6 +631,12 @@ static int radeon_hwmon_init(struct radeon_device *rdev)
+ 	return err;
  }
  
-+
-+
-+/* Sets the RGMII Enable bit (RGMIIEn) in port MAC control register */
-+static void mvneta_gmac_rgmii_set(struct mvneta_port *pp, int enable)
++static void radeon_hwmon_fini(struct radeon_device *rdev)
 +{
-+	u32  val;
-+
-+	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
-+
-+	if (enable)
-+		val |= MVNETA_GMAC2_PORT_RGMII;
-+	else
-+		val &= ~MVNETA_GMAC2_PORT_RGMII;
-+
-+	mvreg_write(pp, MVNETA_GMAC_CTRL_2, val);
++	if (rdev->pm.int_hwmon_dev)
++		hwmon_device_unregister(rdev->pm.int_hwmon_dev);
 +}
 +
-+/* Config SGMII port */
-+static void mvneta_port_sgmii_config(struct mvneta_port *pp)
-+{
-+	u32 val;
-+
-+	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
-+	val |= MVNETA_GMAC2_PCS_ENABLE;
-+	mvreg_write(pp, MVNETA_GMAC_CTRL_2, val);
-+
-+	mvreg_write(pp, MVNETA_SGMII_SERDES_CFG, MVNETA_SGMII_SERDES_PROTO);
-+}
-+
- /* Start the Ethernet port RX and TX activity */
- static void mvneta_port_up(struct mvneta_port *pp)
+ static void radeon_dpm_thermal_work_handler(struct work_struct *work)
  {
-@@ -2701,15 +2729,12 @@ static void mvneta_port_power_up(struct mvneta_port *pp, int phy_mode)
- 	mvreg_write(pp, MVNETA_UNIT_INTR_CAUSE, 0);
+ 	struct radeon_device *rdev =
+@@ -1314,6 +1319,8 @@ static void radeon_pm_fini_old(struct radeon_device *rdev)
+ 		device_remove_file(rdev->dev, &dev_attr_power_method);
+ 	}
  
- 	if (phy_mode == PHY_INTERFACE_MODE_SGMII)
--		mvreg_write(pp, MVNETA_SERDES_CFG, MVNETA_SGMII_SERDES_PROTO);
--	else
--		mvreg_write(pp, MVNETA_SERDES_CFG, MVNETA_RGMII_SERDES_PROTO);
-+		mvneta_port_sgmii_config(pp);
++	radeon_hwmon_fini(rdev);
++
+ 	if (rdev->pm.power_state)
+ 		kfree(rdev->pm.power_state);
+ }
+@@ -1333,6 +1340,8 @@ static void radeon_pm_fini_dpm(struct radeon_device *rdev)
+ 	}
+ 	radeon_dpm_fini(rdev);
  
--	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
--
--	val |= MVNETA_GMAC2_PCS_ENABLE | MVNETA_GMAC2_PORT_RGMII;
-+	mvneta_gmac_rgmii_set(pp, 1);
- 
- 	/* Cancel Port Reset */
-+	val = mvreg_read(pp, MVNETA_GMAC_CTRL_2);
- 	val &= ~MVNETA_GMAC2_PORT_RESET;
- 	mvreg_write(pp, MVNETA_GMAC_CTRL_2, val);
- 
++	radeon_hwmon_fini(rdev);
++
+ 	if (rdev->pm.power_state)
+ 		kfree(rdev->pm.power_state);
+ }
 -- 
 1.9.1
 
