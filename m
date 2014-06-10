@@ -1,102 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751986AbaFJMU0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 08:20:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3327 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750993AbaFJMUW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 08:20:22 -0400
-Date: Tue, 10 Jun 2014 08:20:09 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Dmitry Kasatkin <d.kasatkin@samsung.com>
-Cc: zohar@linux.vnet.ibm.com, dhowells@redhat.com, keyrings@linux-nfs.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmitry.kasatkin@gmail.com, mjg59@srcf.ucam.org
-Subject: Re: [PATCH 0/4] KEYS: validate key trust with owner and builtin keys
- only
-Message-ID: <20140610122008.GA31944@hansolo.jdub.homelinux.org>
-References: <1402331614.7064.60.camel@dhcp-9-2-203-236.watson.ibm.com>
- <cover.1402387862.git.d.kasatkin@samsung.com>
+	id S1751921AbaFJMYm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 08:24:42 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49195 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993AbaFJMYk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 08:24:40 -0400
+Date: Tue, 10 Jun 2014 14:24:35 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+Cc: Henrik Austad <henrik@austad.us>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        Dietmar Eggemann <Dietmar.Eggemann@arm.com>
+Subject: Re: [RFC PATCH 02/16] sched: Introduce CONFIG_SCHED_ENERGY
+Message-ID: <20140610122435.GG6758@twins.programming.kicks-ass.net>
+References: <1400869003-27769-1-git-send-email-morten.rasmussen@arm.com>
+ <1400869003-27769-3-git-send-email-morten.rasmussen@arm.com>
+ <20140608060316.GA18179@austad.us>
+ <20140609102027.GA29593@e103034-lin>
+ <20140610093943.GA6758@twins.programming.kicks-ass.net>
+ <20140610100641.GB1581@e103034-lin>
+ <20140610102353.GC6758@twins.programming.kicks-ass.net>
+ <20140610112403.GC1581@e103034-lin>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gJgGjUUWrnN4mpen"
 Content-Disposition: inline
-In-Reply-To: <cover.1402387862.git.d.kasatkin@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140610112403.GC1581@e103034-lin>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 10, 2014 at 11:48:14AM +0300, Dmitry Kasatkin wrote:
-> Hi Mimi,
-> 
-> As you asked ofline , here is possible equivalent and simpler alternative
-> patches not requiring to have additional keyring.
-> 
-> First patch are irrelevant minor fixes.
-> 
-> Also I want to discuss here Fedora UEFI patches as they are the reason for
-> the these original patchset.
-> 
-> http://pkgs.fedoraproject.org/cgit/kernel.git/tree/modsign-uefi.patch
-> 
-> They provide functionality to specify MokIgnoreDb variable to limit loading of
-> UEFI keys only from MOK List, while ignoring DB. This is certainly a good
-> functionality. But once MODULE_SIG_UEFI is enabled, it looks there is no way
-> to prevent loading keys from UEFI at all. And this might not be a good default
-> functionality. Someone might want not allow loading of keys from UEFI unless
-> kernel parameter is specified to allow it without recompiling the kernel
-> and disabling MODULE_SIG_UEFI.
-> 
-> Josh, why such design decision was made?
 
-IIRC, it's because kernel parameters can be added programmatically from a
-remote user if they gain root access.  Having a kernel parameter to
-disable a key piece of secure boot isn't all that great.  We disable
-other kernel parameters like acpi_rspd as well.
+--gJgGjUUWrnN4mpen
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Why not to provide kernel parameter to have more fine-tune control over the
-> functionality? Unconfigured machines will not have MokIgnoreDb and will
-> allow to load kernel modules signed with certain undesired keys. In fact,
+On Tue, Jun 10, 2014 at 12:24:03PM +0100, Morten Rasmussen wrote:
+> On Tue, Jun 10, 2014 at 11:23:53AM +0100, Peter Zijlstra wrote:
+> > On Tue, Jun 10, 2014 at 11:06:41AM +0100, Morten Rasmussen wrote:
+> > > How would you like to disable the energy stuff for users for whom
+> > > latency is everything?
+> > >=20
+> > > I mean, we are adding some extra load/utilization tracking. While I
+> > > think we should do everything possible to minimize the overhead, I th=
+ink
+> > > it is unrealistic to assume that it will be zero. Is a some extra 'if
+> > > (energy_enabled)' acceptable?
+> > >=20
+> > > I'm open for other suggestions.
+> >=20
+> > We have the jump-label stuff to do self modifying code ;-) The only
+> > thing we need to be careful with is data-layout.
+>=20
+> Thanks. I can see that it is already used in for various bit in
+> kernel/sched/*. I didn't catch anything in Documentation/static-keys.txt
+> related to data-layout caveats. Is there some other
+> documentation/patches I should read before messing everything up? ;-)
 
-Undesired by whom?  If SB is enabled, your machine's firmware already
-trusts those keys.
+So the data-layout was mostly referring to things like making sure that
+struct sched_avg doesn't end up straddling a cacheline somewhere by
+accident.
 
-> I beleive, it should be default behavior of the kernel. Bootloader can
-> enable UEFI functionality by specifing it on the kernel command line.
+The most expensive part of the per-task accounting nonsense is the
+amount of memory we need to touch to do so, the actual instructions come
+second, unless of course we go put tons of divisions in there :-)
 
-If it was enabled via boot params, or done in the early setup code that
-might be possible.  I don't think a kernel parameter is the right
-solution though.  I've added Matthew on CC.
+BTW, are cachelines 64 bytes for you ARM people too?
 
-josh
 
-> Second patch allows to overcome keys coming from UEFI for key validation by
-> specifing owner key id and is an alternative for v5 4/4 patch.
-> 
-> It was also a good idea presented in Mimi's v4 4/4 patch to have possibility
-> to limit key trust valiation by only builtin keys. Third patch as an alternative.
-> It uses keys->flags to specify origin of the key, but any additional field could
-> be added as well.
-> 
-> Both key id and origin verification is done in x509_validate_trust().
-> 
-> Thanks,
-> Dmitry
-> 
-> Dmitry Kasatkin (3):
->   KEYS: fix couple of things
->   KEYS: validate key trust only with selected owner key
->   KEYS: validate key trust only with builtin keys
-> 
-> Mimi Zohar (1):
->   KEYS: define an owner trusted keyring
-> 
->  Documentation/kernel-parameters.txt      |  5 +++++
->  crypto/asymmetric_keys/x509_public_key.c | 35 +++++++++++++++++++++++++++++---
->  include/linux/key.h                      |  1 +
->  kernel/system_keyring.c                  |  1 +
->  4 files changed, 39 insertions(+), 3 deletions(-)
-> 
-> -- 
-> 1.9.1
-> 
+--gJgGjUUWrnN4mpen
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTlvkDAAoJEHZH4aRLwOS65qQP/RkQjZTvnviSG5PwG4lCiBgk
+W53tNIdEKmkqpX/Nv0jomq0JGrd+GaVifrj1iNxXJVZ7ZnLR8lGdJvbL59Kxesl2
+5mW6SyWXHil4M8ILHRDTWqtMsQVo6oMNTUYj+TfU6h1rsNk7kZDNL0tVTH/jsXTX
+uK6Q/zUz4BH3R+ohxOULbl15J+/YUFgVKi8e3R+07vHrh8M1ig+eBh4FtTZpBjVT
+J1Jgh3OxOraz3RQh1g0EC6vg04lw1QDOCMvy5DGGR8ZXYOsVEekDznzSosbLO19e
+j0aqMt2VPwZBqQKrj+xsg160cWbUPK+3pjIBRi5ZAu5wvpqJW7vZL3cXFgundU8d
+bFLFWh20aw0hOep2MTeVjbt8wlcJOUgyct7lFm4GP75iHWT6hB9AxaFEH+yjfrPP
+nzTnKH558n31Xgg8uHOvaQCjDZ0L+vmypuVP3CKVYaTBwpHLiWyKfJM9/OkW+kd8
+rM8sxDJW/BB62c1cFaV1gee7wFbYYVBWSwitA0FnSfgiRn2XBJgCNJ1DV6/5yKw5
+f6ifI3js93grHRkEWU3T04RFlMTKtoD1ABl2Y1MVAj+sr9oiqSdHi5l4iuZYkRbI
+IB+QBZqNMx+P9yptZC9MU2Uuxh/cYpRtYTdQ4sCg2pkNRb8fcHiRWAR+GLmK4Sp7
+vt4GOOBI02Kt/8WjAzbH
+=YZNU
+-----END PGP SIGNATURE-----
+
+--gJgGjUUWrnN4mpen--
