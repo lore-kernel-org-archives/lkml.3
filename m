@@ -1,182 +1,330 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752253AbaFJNfh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 09:35:37 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:55248 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751335AbaFJNfe (ORCPT
+	id S1751851AbaFJNkU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 09:40:20 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:55259 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750936AbaFJNkS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 09:35:34 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-3d-539709a28db9
-Message-id: <53970994.8010400@samsung.com>
-Date: Tue, 10 Jun 2014 15:35:16 +0200
-From: Tomasz Figa <t.figa@samsung.com>
-Organization: Samsung R&D Institute Poland
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.5.0
-MIME-version: 1.0
-To: Pankaj Dubey <pankaj.dubey@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: kgene.kim@samsung.com, arnd@arndb.de, Rob Herring <robh+dt@kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>, Wolfram Sang <wsa@the-dreams.de>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-i2c@vger.kernel.org
-Subject: Re: [PATCH v3 1/6] i2c: s3c2410: Handle i2c sys_cfg register in i2c
- driver
-References: <1399706287-13919-1-git-send-email-y@samsung.com>
- <1399706419-13976-1-git-send-email-pankaj.dubey@samsung.com>
- <1399706419-13976-2-git-send-email-pankaj.dubey@samsung.com>
-In-reply-to: <1399706419-13976-2-git-send-email-pankaj.dubey@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGLMWRmVeSWpSXmKPExsVy+t/xK7qLOacHGxxfxmjxd9Ixdov5R86x
-	WvQuuMpmsenxNVaLhW1LWCw6/n5htLi8aw6bxYzz+5gsbl/mtVi09Qu7xds701ksWvceYbdY
-	eWIWswOvR0tzD5vH71+TGD02r9Dy2LSqk81j85J6j74tqxg9Tp56wuLxeZNcAEcUl01Kak5m
-	WWqRvl0CV8bnm3tYC24qV8zZO5u5gXGDTBcjJ4eEgInE4uezGCFsMYkL99azdTFycQgJLGWU
-	eHD0FDuE85lR4lhjE1gVr4CWxNkjJ9lBbBYBVYlLHb9YQWw2ATWJzw2P2EBsfqCaNU3XWboY
-	OThEBSIkHl8QgmgVlPgx+R4LyEwRgSmMEhd7ljGCOMwCE5kk7kw9zgxSJSwQKtG7fSMrxObd
-	jBJHLs1nAUlwCnhKPP7zDmwbs4COxP7WaWwQtrzE5jVvmScwCs5CsmUWkrJZSMoWMDKvYhRN
-	LU0uKE5KzzXSK07MLS7NS9dLzs/dxAiJq687GJceszrEKMDBqMTDa+A/LViINbGsuDL3EKME
-	B7OSCG/bX6AQb0piZVVqUX58UWlOavEhRiYOTqkGRoFpQmmf/3RWM0lvOy6bpv9KueBdw9o7
-	57f8ZqpjKzsn3L3T9vpBnW1LKzuPnjqYsbnm2BTW4JmzX/78Gv7A+d+Go5fNn1xeemDynILf
-	ghEi6irvFqu2nwvmvqc7w1v1RfuZ076sSmwTSwQEzh6d57pXQ+TCeydn12hXliir1NDeiZ51
-	ScWuMUosxRmJhlrMRcWJAMUsiKaJAgAA
+	Tue, 10 Jun 2014 09:40:18 -0400
+Message-ID: <53970ABD.4030402@free-electrons.com>
+Date: Tue, 10 Jun 2014 15:40:13 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
+CC: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Carlo Caione <carlo@caione.org>, Shuge <shuge@allwinnertech.com>,
+        kevin@allwinnertech.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, dev@linux-sunxi.org
+Subject: Re: [PATCH v3 5/6] regulator: add support for regulator set registration
+References: <1401183535-31003-1-git-send-email-boris.brezillon@free-electrons.com> <1401183535-31003-6-git-send-email-boris.brezillon@free-electrons.com>
+In-Reply-To: <1401183535-31003-6-git-send-email-boris.brezillon@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pankaj,
+Hello Mark,
 
-On 10.05.2014 09:20, Pankaj Dubey wrote:
-> Let's handle i2c interrupt re-configuration in i2c driver. This will
-> help us in removing some soc specific checks from machine files.
-> Since only Exynos5250, and Exynos5420 need to do this, added syscon
-> based phandle to i2c device nodes of respective SoC DT files.
-> Also handle saving and restoring of SYS_I2C_CFG register during
-> suspend and resume of i2c driver. This will help in removing soc
-> specific check from mach-exynos/pm.c.
-> 
-> CC: Rob Herring <robh+dt@kernel.org>
-> CC: Randy Dunlap <rdunlap@infradead.org>
-> CC: Wolfram Sang <wsa@the-dreams.de>
-> CC: Russell King <linux@arm.linux.org.uk>
-> CC: devicetree@vger.kernel.org
-> CC: linux-doc@vger.kernel.org
-> CC: linux-i2c@vger.kernel.org
-> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+Did you have time to take a look at this patch ?
+
+I'd like to post a new version of this series addressing Lee's comments,
+but it would be great to have your feedback on this patch before posting
+a new version.
+
+Best Regards,
+
+Boris
+
+On 27/05/2014 11:38, Boris BREZILLON wrote:
+> PMIC devices often provide several regulators, and these regulators are
+> all using the same regmap and are all attached to the same device (the
+> PMIC device).
+>
+> Add helper functions (both simple and resource managed versions) to
+> register and unregister such kind of regulator set.
+>
+> This implementation handles self dependency issues where one regulator
+> provided the PMIC depends on another one provided by the same PMIC.
+>
+> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
 > ---
->  .../devicetree/bindings/arm/samsung/sysreg.txt     |    1 +
->  arch/arm/boot/dts/exynos5.dtsi                     |    5 +++
->  arch/arm/boot/dts/exynos5250.dtsi                  |    4 +++
->  arch/arm/boot/dts/exynos5420.dtsi                  |    4 +++
-
-What about Exynos5410 and Exynos5800?
-
->  drivers/i2c/busses/i2c-s3c2410.c                   |   32 ++++++++++++++++++++
->  5 files changed, 46 insertions(+)
-
-[snip]
-
-> diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-s3c2410.c
-> index ae44910..e707062 100644
-> --- a/drivers/i2c/busses/i2c-s3c2410.c
-> +++ b/drivers/i2c/busses/i2c-s3c2410.c
-> @@ -39,6 +39,8 @@
->  #include <linux/of.h>
->  #include <linux/of_gpio.h>
->  #include <linux/pinctrl/consumer.h>
-> +#include <linux/mfd/syscon.h>
-> +#include <linux/regmap.h>
+>  drivers/regulator/core.c         | 106 +++++++++++++++++++++++++++++++++++++++
+>  drivers/regulator/devres.c       |  68 +++++++++++++++++++++++++
+>  include/linux/regulator/driver.h |  51 +++++++++++++++++++
+>  3 files changed, 225 insertions(+)
+>
+> diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+> index 9a09f3c..7703853 100644
+> --- a/drivers/regulator/core.c
+> +++ b/drivers/regulator/core.c
+> @@ -3595,6 +3595,112 @@ void regulator_unregister(struct regulator_dev *rdev)
+>  EXPORT_SYMBOL_GPL(regulator_unregister);
 >  
->  #include <asm/irq.h>
->  
-> @@ -91,6 +93,9 @@
->  /* Max time to wait for bus to become idle after a xfer (in us) */
->  #define S3C2410_IDLE_TIMEOUT	5000
->  
-> +/* Exynos5 Sysreg offset */
-> +#define EXYNOS5_SYS_I2C_CFG	0x0234
+>  /**
+> + * regulator_set_register - register a set of regulators
+> + * @config: runtime configuration for regulator set
+> + *
+> + * Called by regulator drivers to register a set of regulators.
+> + * Returns a valid pointer to struct regulator_set on success
+> + * or an ERR_PTR() on error.
+> + */
+> +struct regulator_set *
+> +regulator_set_register(const struct regulator_set_config *config)
+> +{
+> +	struct regulator_set *rset;
+> +	int prev_nregistered = -1;
+> +	int nregistered = 0;
+> +	int ret;
+> +	int i;
 > +
->  /* i2c controller state */
->  enum s3c24xx_i2c_state {
->  	STATE_IDLE,
-> @@ -127,6 +132,8 @@ struct s3c24xx_i2c {
->  #if defined(CONFIG_ARM_S3C24XX_CPUFREQ)
->  	struct notifier_block	freq_transition;
->  #endif
-> +	struct regmap		*sysreg;
-> +	unsigned int		sys_i2s_cfg;
-
-typo: s/i2s/i2c/
-
+> +	if (!config->descs || !config->nregulators)
+> +		return ERR_PTR(-EINVAL);
+> +
+> +	rset = kzalloc(sizeof(*rset) +
+> +		       (config->nregulators * sizeof(struct regulator_dev *)),
+> +		       GFP_KERNEL);
+> +	if (!rset)
+> +		return ERR_PTR(-ENOMEM);
+> +
+> +	rset->nregulators = config->nregulators;
+> +
+> +	while (nregistered < config->nregulators &&
+> +	       prev_nregistered < nregistered) {
+> +
+> +		prev_nregistered = nregistered;
+> +
+> +		for (i = 0; i < config->nregulators; i++) {
+> +			struct regulator_config conf;
+> +			struct regulator_dev *regulator;
+> +
+> +			if (rset->regulators[i])
+> +				continue;
+> +
+> +			memset(&conf, 0, sizeof(conf));
+> +
+> +			conf.dev = config->dev;
+> +			conf.regmap = config->regmap;
+> +			conf.driver_data = config->driver_data;
+> +			if (config->matches && config->matches[i].init_data)
+> +				conf.init_data = config->matches[i].init_data;
+> +			else if (config->init_data)
+> +				conf.init_data = config->init_data[i];
+> +
+> +			if (config->matches)
+> +				conf.of_node = config->matches[i].of_node;
+> +
+> +			regulator = regulator_register(&config->descs[i],
+> +						       &conf);
+> +			if (IS_ERR(regulator)) {
+> +				ret = PTR_ERR(regulator);
+> +				if (ret == -EPROBE_DEFER)
+> +					continue;
+> +
+> +				goto err;
+> +			}
+> +
+> +			rset->regulators[i] = regulator;
+> +			nregistered++;
+> +		}
+> +	}
+> +
+> +	if (nregistered < config->nregulators) {
+> +		ret = -EPROBE_DEFER;
+> +		goto err;
+> +	}
+> +
+> +	return rset;
+> +
+> +err:
+> +	for (i = 0; i < config->nregulators; i++) {
+> +		if (rset->regulators[i])
+> +			regulator_unregister(rset->regulators[i]);
+> +	}
+> +
+> +	kfree(rset);
+> +
+> +	return ERR_PTR(ret);
+> +}
+> +EXPORT_SYMBOL_GPL(regulator_set_register);
+> +
+> +/**
+> + * regulator_set_unregister - unregister regulator set
+> + * @rset: regulator set to unregister
+> + *
+> + * Called by regulator drivers to unregister a regulator set.
+> + */
+> +void regulator_set_unregister(struct regulator_set *rset)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i < rset->nregulators; i++) {
+> +		if (rset->regulators[i])
+> +			regulator_unregister(rset->regulators[i]);
+> +	}
+> +
+> +	kfree(rset);
+> +}
+> +EXPORT_SYMBOL_GPL(regulator_set_unregister);
+> +
+> +/**
+>   * regulator_suspend_prepare - prepare regulators for system wide suspend
+>   * @state: system suspend state
+>   *
+> diff --git a/drivers/regulator/devres.c b/drivers/regulator/devres.c
+> index f44818b..a34f34c 100644
+> --- a/drivers/regulator/devres.c
+> +++ b/drivers/regulator/devres.c
+> @@ -251,6 +251,74 @@ void devm_regulator_unregister(struct device *dev, struct regulator_dev *rdev)
+>  }
+>  EXPORT_SYMBOL_GPL(devm_regulator_unregister);
+>  
+> +static void devm_rset_release(struct device *dev, void *res)
+> +{
+> +	regulator_set_unregister(*(struct regulator_set **)res);
+> +}
+> +
+> +/**
+> + * devm_regulator_set_register - Resource managed regulator_set_register()
+> + * @dev: device registering the regulator set
+> + * @config: runtime configuration for regulator set
+> + *
+> + * Called by regulator drivers to register a set of regulators.  Returns a
+> + * valid pointer to struct regulator_set on success or an ERR_PTR() on
+> + * error.  The regulator will automatically be released when the device
+> + * is unbound.
+> + */
+> +struct regulator_set *
+> +devm_regulator_set_register(struct device *dev,
+> +			    const struct regulator_set_config *config)
+> +{
+> +	struct regulator_set **ptr, *rset;
+> +
+> +	ptr = devres_alloc(devm_rset_release, sizeof(*ptr),
+> +			   GFP_KERNEL);
+> +	if (!ptr)
+> +		return ERR_PTR(-ENOMEM);
+> +
+> +	rset = regulator_set_register(config);
+> +	if (!IS_ERR(rset)) {
+> +		*ptr = rset;
+> +		devres_add(dev, ptr);
+> +	} else {
+> +		devres_free(ptr);
+> +	}
+> +
+> +	return rset;
+> +}
+> +EXPORT_SYMBOL_GPL(devm_regulator_set_register);
+> +
+> +static int devm_rset_match(struct device *dev, void *res, void *data)
+> +{
+> +	struct regulator_set **r = res;
+> +	if (!r || !*r) {
+> +		WARN_ON(!r || !*r);
+> +		return 0;
+> +	}
+> +	return *r == data;
+> +}
+> +
+> +/**
+> + * devm_regulator_set_unregister - Resource managed regulator_set_unregister()
+> + * @dev: device unregistering the regulator set
+> + * @rset: regulator set to release
+> + *
+> + * Unregister a regulator set registered with devm_regulator_set_register().
+> + * Normally this function will not need to be called and the resource
+> + * management code will ensure that the resource is freed.
+> + */
+> +void devm_regulator_set_unregister(struct device *dev,
+> +				   struct regulator_set *rset)
+> +{
+> +	int rc;
+> +
+> +	rc = devres_release(dev, devm_rdev_release, devm_rset_match, rset);
+> +	if (rc != 0)
+> +		WARN_ON(rc);
+> +}
+> +EXPORT_SYMBOL_GPL(devm_regulator_unregister);
+> +
+>  struct regulator_supply_alias_match {
+>  	struct device *dev;
+>  	const char *id;
+> diff --git a/include/linux/regulator/driver.h b/include/linux/regulator/driver.h
+> index bbe03a1..b683f68 100644
+> --- a/include/linux/regulator/driver.h
+> +++ b/include/linux/regulator/driver.h
+> @@ -350,6 +350,48 @@ struct regulator_dev {
+>  	unsigned int ena_gpio_state:1;
 >  };
 >  
->  static struct platform_device_id s3c24xx_driver_ids[] = {
-> @@ -1075,6 +1082,8 @@ static void
->  s3c24xx_i2c_parse_dt(struct device_node *np, struct s3c24xx_i2c *i2c)
->  {
->  	struct s3c2410_platform_i2c *pdata = i2c->pdata;
-> +	u32 val = 0;
-> +	int id;
->  
->  	if (!np)
->  		return;
-> @@ -1084,6 +1093,23 @@ s3c24xx_i2c_parse_dt(struct device_node *np, struct s3c24xx_i2c *i2c)
->  	of_property_read_u32(np, "samsung,i2c-slave-addr", &pdata->slave_addr);
->  	of_property_read_u32(np, "samsung,i2c-max-bus-freq",
->  				(u32 *)&pdata->frequency);
-> +	/*
-> +	 * Exynos5's legacy i2c controller and new high speed i2c
-> +	 * controller have muxed interrupt sources. By default the
-
-What do you mean by "by default"? Is it a setting from the bootloader or
-reset value?
-
-Probably to ensure that the mux is set correctly, same thing should be
-also added to hsi2c driver.
-
-> +	 * interrupts for 4-channel HS-I2C controller are enabled.
-> +	 * If node for first four channels of legacy i2c controller
-> +	 * are available then re-configure the interrupts via the
-> +	 * system register.
-> +	 */
-> +	id = of_alias_get_id(np, "i2c");
-> +	i2c->sysreg = syscon_regmap_lookup_by_phandle(np,
-> +			"samsung,syscon-phandle");
-> +	if (IS_ERR(i2c->sysreg)) {
-> +		/* As this is not compulsory do not return error */
-> +		pr_info("i2c-%d skipping re-configuration of interrutps\n", id);
-> +		return;
-> +	}
-> +	regmap_update_bits(i2c->sysreg, EXYNOS5_SYS_I2C_CFG, BIT(id), val);
-
-As Wolfram pointed, val can be replaced with immediate 0 here.
-
->  }
->  #else
->  static void
-> @@ -1268,6 +1294,9 @@ static int s3c24xx_i2c_suspend_noirq(struct device *dev)
->  
->  	i2c->suspended = 1;
->  
-> +	if (!IS_ERR(i2c->sysreg))
-> +		regmap_read(i2c->sysreg, EXYNOS5_SYS_I2C_CFG, &i2c->sys_i2s_cfg);
+> +/**
+> + * struct regulator_set_config - Dynamic regulator set descriptor
+> + *
+> + * This structure describe a regulator and each regulator in this set
+> + * will be registered using informations passed through regulator_desc
+> + * and of_regulator_match tables.
+> + *
+> + * @dev: struct device providing the regulator set.
+> + * @driver_data: private driver data for this regulator set.
+> + * @regmap: regmap to use for core regmap helpers if dev_get_regulator() is
+> + *          insufficient.
+> + * @descs: table of regulator descriptors.
+> + * @matches: table of DT regulator descriptors. This table should have
+> + *           been filled by the of_regulator_match function.
+> + * @init_data: a table of init_data in case matches is NULL or the init_data
+> + *             of the match entry is NULL.
+> + * @nregulators: number of regulators in the regulator set.
+> + */
+> +struct regulator_set_config {
+> +	struct device *dev;
+> +	void *driver_data;
+> +	struct regmap *regmap;
+> +	const struct regulator_desc *descs;
+> +	const struct of_regulator_match *matches;
+> +	const struct regulator_init_data **init_data;
+> +	int nregulators;
+> +};
 > +
->  	return 0;
->  }
+> +/*
+> + * struct regulator_set - Regulator set
+> + *
+> + * This structure stores a set of regulator devices provided by a single
+> + * device (e.g. a PMIC device).
+> + *
+> + * @nregulators: number of regulators in the set
+> + * @regulators: regulators table
+> + */
+> +struct regulator_set {
+> +	int nregulators;
+> +	struct regulator_dev *regulators[0];
+> +};
+> +
+>  struct regulator_dev *
+>  regulator_register(const struct regulator_desc *regulator_desc,
+>  		   const struct regulator_config *config);
+> @@ -360,6 +402,15 @@ devm_regulator_register(struct device *dev,
+>  void regulator_unregister(struct regulator_dev *rdev);
+>  void devm_regulator_unregister(struct device *dev, struct regulator_dev *rdev);
 >  
-> @@ -1276,6 +1305,9 @@ static int s3c24xx_i2c_resume(struct device *dev)
->  	struct platform_device *pdev = to_platform_device(dev);
->  	struct s3c24xx_i2c *i2c = platform_get_drvdata(pdev);
+> +struct regulator_set *
+> +regulator_set_register(const struct regulator_set_config *config);
+> +struct regulator_set *
+> +devm_regulator_set_register(struct device *dev,
+> +			    const struct regulator_set_config *config);
+> +void regulator_set_unregister(struct regulator_set *rset);
+> +void devm_regulator_set_unregister(struct device *dev,
+> +				   struct regulator_set *rset);
+> +
+>  int regulator_notifier_call_chain(struct regulator_dev *rdev,
+>  				  unsigned long event, void *data);
 >  
-> +	if (!IS_ERR(i2c->sysreg))
-> +		regmap_write(i2c->sysreg, i2c->sys_i2s_cfg, EXYNOS5_SYS_I2C_CFG);
 
-According to include/linux/regmap.h:
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
 
-int regmap_write(struct regmap *map, unsigned int reg, unsigned int val);
-
-So in your code reg is swapped with val.
-
-Best regards,
-Tomasz
