@@ -1,78 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610AbaFJPNf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 11:13:35 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49990 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752030AbaFJPNd (ORCPT
+	id S1752665AbaFJPNw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 11:13:52 -0400
+Received: from ausxippc101.us.dell.com ([143.166.85.207]:7547 "EHLO
+	ausxippc101.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750843AbaFJPNu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 11:13:33 -0400
-Date: Tue, 10 Jun 2014 17:13:29 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Marek Polacek <polacek@redhat.com>
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Martin Jambor <mjambor@suse.cz>, Petr Mladek <pmladek@suse.cz>,
-        linux-kernel@vger.kernel.org, gcc@gcc.gnu.org
-Subject: Re: [PATCH] tell gcc optimizer to never introduce new data races
-Message-ID: <20140610151329.GL6758@twins.programming.kicks-ass.net>
-References: <alpine.LNX.2.00.1406101517300.9378@pobox.suse.cz>
- <20140610145327.GJ6758@twins.programming.kicks-ass.net>
- <20140610150455.GC7335@redhat.com>
+	Tue, 10 Jun 2014 11:13:50 -0400
+X-LoopCount0: from 10.170.28.41
+X-IronPort-AV: E=Sophos;i="4.98,1009,1392184800"; 
+   d="scan'208";a="512553264"
+From: <B_B_Singh@DELL.com>
+To: <teg@jklm.no>
+CC: <linux-kernel@vger.kernel.org>, <ming.lei@canonical.com>,
+        <gregkh@linuxfoundation.org>, <Abhay_Salunke@DELL.com>, <sr@denx.de>,
+        <arnd@arndb.de>, <kay@vrfy.org>, <Matt_Domsch@DELL.com>,
+        <Srinivas_G_Gowda@DELL.com>, <Stuart_Hayes@DELL.com>
+Date: Tue, 10 Jun 2014 20:43:44 +0530
+Subject: RE: [PATCH] firmware loader: allow disabling of udev as firmware
+ loader
+Thread-Topic: [PATCH] firmware loader: allow disabling of udev as firmware
+ loader
+Thread-Index: Ac+D+qAxcokn2SjjSfCY2krbpdUX/gAwfJSg
+Message-ID: <8B2F6FFD0BD1E448853114367400A37306FCD2E22A@BLRX7MCDC203.AMER.DELL.COM>
+References: <8B2F6FFD0BD1E448853114367400A37306FCD2E023@BLRX7MCDC203.AMER.DELL.COM>
+ <CAG-2HqUDQ3e-cq4y3zgehz6J8E6LsTCUfqvMEqPEqG7aBmEeRg@mail.gmail.com>
+ <8B2F6FFD0BD1E448853114367400A37306FCD2E02A@BLRX7MCDC203.AMER.DELL.COM>
+ <CAG-2HqXBOfZTGi-S=AzjGYDyGWkh0ijz73_pUUtmFdmQkgxWVQ@mail.gmail.com>
+In-Reply-To: <CAG-2HqXBOfZTGi-S=AzjGYDyGWkh0ijz73_pUUtmFdmQkgxWVQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-titus-version: 3.5.29.3
+x-tituslabs-classifications-30: TLPropertyRoot=Dell;Classification=No
+ Restrictions;Sublabels=;
+x-tituslabs-classificationhash-30: VgNFIFU9Hx+/nZJb9Kg7IkiU+F178WdT0jfKBxULWaA/cMBTWLEh0ZXdCvZnZCD1UgSA1vsFP1X01xwEut6SdChzE2nj+IFVL5wFINa/zYUTggtPu2KfanVOQXJsajfBunZrJGE/XVNUDX98x9kd/LzgmUoV8pWgoLmJDZKE7Qt5aEJOPxvNMQF5PHdaiZYnjHXLzKoOEMc6HgnCcTPVlt9UipDnjg2ek+tcSnih8eG6I5M5mjAXwHaduRMRe7DxtuJKQAhnZn7WdpIBTz6K8A==
+x-titusconfig: 1.4AMER
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WI+ghjzd0JGVd6h/"
-Content-Disposition: inline
-In-Reply-To: <20140610150455.GC7335@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---WI+ghjzd0JGVd6h/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Tom,
 
-On Tue, Jun 10, 2014 at 05:04:55PM +0200, Marek Polacek wrote:
-> On Tue, Jun 10, 2014 at 04:53:27PM +0200, Peter Zijlstra wrote:
-> > On Tue, Jun 10, 2014 at 03:23:36PM +0200, Jiri Kosina wrote:
-> > > +# Tell gcc to never replace conditional load with a non-conditional =
-one
-> > > +KBUILD_CFLAGS	+=3D $(call cc-option,--param allow-store-data-races=
-=3D0)
-> > > +
-> >=20
-> > Why do we not want: -fmemory-model=3Dsafe? And should we not at the very
-> > least also disable packed-store-data-races?
->=20
-> Note that the option does not exist, even though it is mentioned in the
-> documentation.
+I see contradiction of drivers/base/Kconfig here i.e, If I configure DELL_RBU=y I cannot configure FW_LOADER_USER_HELPER=n. 
+with this patch https://lkml.org/lkml/2014/6/4/327 i cannot have FW_LOADER_USER_HELPER=n & DELL_RBU=y at the same time. 
+I'm using the latest stable upstream kernel-3.14.5.
 
-Urgh.. ok. Any word on the packed-store-data thing?
+Symbol: FW_LOADER_USER_HELPER [=y]
+Type     : boolean
+Defined at drivers/base/Kconfig:146
+Selected by: FW_LOADER_USER_HELPER_FALLBACK [=n] && FW_LOADER [=y] || DELL_RBU [=y] && X86 [=y]
 
---WI+ghjzd0JGVd6h/
-Content-Type: application/pgp-signature
+Regards
+Balaji Singh
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTlyCZAAoJEHZH4aRLwOS6COAQAIYdpteaqAxFZhbYzskF5GSQ
-tkWrWOm7HUhwWOsH5U41sSwX2kddgadftFfoiE9UZcOT/wmh+0sMJrQUS546vVXx
-9QFrKQ+OiIShJ+TNV5Dd4d4LVfIukD/LoBmK74/C4uXCuBAVGOI4mHB9wVMVTeSs
-BJ6txPoejlDXMGUguOKSgqH7wMC0QxAAjaddN6hir/5rfsDxKGiWKsWZaVacYs2+
-qOpBN+e7qJUiwBe6zcBNminVk8wFjNoMWutGIsZgHGWWkwJXuBB3gcV7+Om+wU/9
-w1j509FTc1RKlBe22LmH0OYGMKeLgbvhO2A7PNAdV/SvHvtGG4s/swjtB1qGLS9D
-12Mv/Sjedl2TwnbpjNqDgF6F7zUYHvPTNoStGeITxIBXfyZy+HHdPlyq/Gr4DC0R
-nOhO3vCthoU5WEJgprc+NhkW48zDNROwyCk2CP3hK4w8hs8VorBvn+4W7I/6WRx4
-59QAd4MYL7VaiVdBUUICQthT0s82M4cCAyVRJT+yWD/udnMop8tnZgXotutFZI5I
-HGkDIP4TRVMwfvEPyGaqjGg2d/zG3OZQCiOliccuogLtgjQwCxel2JvLV6/1HV3s
-VW03FdGrtdb9U3hpTBmpBY/yVa00Byv/SKgUhGQ78+sDTuTyOaVqj4qHUeBpcP3J
-d8VCxqIoQduOl+syt2XW
-=K8Fg
------END PGP SIGNATURE-----
+-----Original Message-----
+From: Tom Gundersen [mailto:teg@jklm.no]
+Sent: Monday, June 09, 2014 9:21 PM
+To: Singh, B B
+Cc: LKML; Ming Lei; Greg KH; Abhay Salunke; Stefan Roese; Arnd Bergmann; Kay Sievers; Domsch, Matt; Gowda, Srinivas G; Hayes, Stuart
+Subject: Re: [PATCH] firmware loader: allow disabling of udev as firmware loader
 
---WI+ghjzd0JGVd6h/--
+On Mon, Jun 9, 2014 at 4:01 PM, wrote:
+> Older userspace or existing DUP's doesn't work with your patch & CONFIG_FW_LOADER_USER_HELPER=n.
+>
+> I will give a try with https://lkml.org/lkml/2014/6/4/327 new patch & let you know ASAP.
+
+Thanks!
+
+Cheers,
+
+Tom
