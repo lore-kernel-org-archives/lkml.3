@@ -1,137 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933951AbaFJBRT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 21:17:19 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:36468 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754213AbaFJBRR (ORCPT
+	id S933025AbaFJBUY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 21:20:24 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:43628 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751388AbaFJBUX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 21:17:17 -0400
-Date: Mon, 9 Jun 2014 18:15:56 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Yijing Wang <wangyijing@huawei.com>, Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH 3.4 47/88] mm: add kmap_to_page()
-In-Reply-To: <20140610002426.089246636@linuxfoundation.org>
-Message-ID: <alpine.LSU.2.11.1406091806230.8481@eggly.anvils>
-References: <20140610002424.500996570@linuxfoundation.org> <20140610002426.089246636@linuxfoundation.org>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Mon, 9 Jun 2014 21:20:23 -0400
+Message-ID: <53965D53.3010107@hurleysoftware.com>
+Date: Mon, 09 Jun 2014 21:20:19 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Valerio Vanni <valerio.vanni@inwind.it>
+Subject: Re: [PATCH 1/2] serial: core: Don't drop DTR if system console
+References: <7EC4C3FDEFF6492F91DEE16AEE0831E6@vanni.it>	<1401891371-4946-1-git-send-email-peter@hurleysoftware.com> <20140609140823.6013838d@alan.etchedpixels.co.uk>
+In-Reply-To: <20140609140823.6013838d@alan.etchedpixels.co.uk>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Jun 2014, Greg Kroah-Hartman wrote:
+On 06/09/2014 09:08 AM, One Thousand Gnomes wrote:
+> On Wed,  4 Jun 2014 10:16:10 -0400
+> Peter Hurley <peter@hurleysoftware.com> wrote:
+>
+>> If a tty is opened on a serial console, don't drop DTR on
+>> last tty close, on tty hangup, or when resetting port hardware
+>> via TIOCSSERIAL and TIOCSERCONFIG ioctls.
+>>
+>> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+>
+> NAK
+>
+> This introduces a security flaw.
+>
+> If you have a system with a remote console you dial into then with this
+> patch applied a modem drop eg from a bad line will no longer drop any
+> live session and ensure a login is required as it was before.
 
-> 3.4-stable review patch.  If anyone has any objections, please let me know.
-> 
-> ------------------
-> 
-> From: Ben Hutchings <ben@decadent.org.uk>
-> 
-> commit fcb8996728fb59eddf84678df7cb213b2c9a2e26 upstream.
-> 
-> This is extracted from Mel Gorman's commit 5a178119b0fb ('mm: add
-> support for direct_IO to highmem pages') upstream.
-> 
-> Required to backport commit b9cdc88df8e6 ('virtio: 9p: correctly pass
-> physical address to userspace for high pages').
-> 
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> Cc: Yijing Wang <wangyijing@huawei.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> 
-> ---
->  include/linux/highmem.h |    7 +++++++
->  mm/highmem.c            |   12 ++++++++++++
->  2 files changed, 19 insertions(+)
-> 
-> --- a/include/linux/highmem.h
-> +++ b/include/linux/highmem.h
-> @@ -39,10 +39,17 @@ extern unsigned long totalhigh_pages;
->  
->  void kmap_flush_unused(void);
->  
-> +struct page *kmap_to_page(void *addr);
-> +
->  #else /* CONFIG_HIGHMEM */
->  
->  static inline unsigned int nr_free_highpages(void) { return 0; }
->  
-> +static inline struct page *kmap_to_page(void *addr)
-> +{
-> +	return virt_to_page(addr);
-> +}
-> +
->  #define totalhigh_pages 0UL
->  
->  #ifndef ARCH_HAS_KMAP
-> --- a/mm/highmem.c
-> +++ b/mm/highmem.c
-> @@ -94,6 +94,18 @@ static DECLARE_WAIT_QUEUE_HEAD(pkmap_map
->  		do { spin_unlock(&kmap_lock); (void)(flags); } while (0)
->  #endif
->  
-> +struct page *kmap_to_page(void *vaddr)
-> +{
-> +	unsigned long addr = (unsigned long)vaddr;
-> +
-> +	if (addr >= PKMAP_ADDR(0) && addr <= PKMAP_ADDR(LAST_PKMAP)) {
-> +		int i = (addr - PKMAP_ADDR(0)) >> PAGE_SHIFT;
-> +		return pte_page(pkmap_page_table[i]);
-> +	}
-> +
-> +	return virt_to_page(addr);
-> +}
-> +
->  static void flush_all_zero_pkmaps(void)
->  {
->  	int i;
+There's no security flaw here.
 
-I think this needs the following on top:
+The situation you're referring to above is managed by the CLOCAL termios
+setting (which by default does _not_ hangup the tty on carrier loss).
 
-commit 498c2280212327858e521e9d21345d4cc2637f54
-Author: Will Deacon <will.deacon@arm.com>
-Date:   Fri Nov 16 14:15:00 2012 -0800
+This patch only affects the line state if the last tty reference is closed
+or the tty is hung up by software (like on controlling process exit).
+In this case, any login session is already dying, and it would not be possible
+to hijack a live session. A successful re-login is still required.
 
-    mm: highmem: don't treat PKMAP_ADDR(LAST_PKMAP) as a highmem address
-    
-    kmap_to_page returns the corresponding struct page for a virtual address
-    of an arbitrary mapping.  This works by checking whether the address
-    falls in the pkmap region and using the pkmap page tables instead of the
-    linear mapping if appropriate.
-    
-    Unfortunately, the bounds checking means that PKMAP_ADDR(LAST_PKMAP) is
-    incorrectly treated as a highmem address and we can end up walking off
-    the end of pkmap_page_table and subsequently passing junk to pte_page.
-    
-    This patch fixes the bound check to stay within the pkmap tables.
-    
-    Signed-off-by: Will Deacon <will.deacon@arm.com>
-    Cc: Mel Gorman <mgorman@suse.de>
-    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> That's a pretty bad regression case.
+>
+> If you are running a serial console and want to leave DTR high either
+> wire the cable that way or don't set HUPCL in the first place. The
+> technology for fixing this problem already exists!
 
-diff --git a/mm/highmem.c b/mm/highmem.c
-index d517cd16a6eb..2da13a5c50e2 100644
---- a/mm/highmem.c
-+++ b/mm/highmem.c
-@@ -98,7 +98,7 @@ struct page *kmap_to_page(void *vaddr)
- {
- 	unsigned long addr = (unsigned long)vaddr;
- 
--	if (addr >= PKMAP_ADDR(0) && addr <= PKMAP_ADDR(LAST_PKMAP)) {
-+	if (addr >= PKMAP_ADDR(0) && addr < PKMAP_ADDR(LAST_PKMAP)) {
- 		int i = (addr - PKMAP_ADDR(0)) >> PAGE_SHIFT;
- 		return pte_page(pkmap_page_table[i]);
- 	}
+Notwithstanding what I wrote above, this patch does change behavior
+with remote consoles, which may be unacceptable.
 
+For example, if the remote user logs out, the current behavior hangs up
+the modem (if HUPCL), whereas the patch behavior just presents a new
+login prompt.
+
+So yeah, I agree; this patch should be dropped.
+
+Regards,
+Peter Hurley
