@@ -1,67 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751680AbaFJLd5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 07:33:57 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:54387 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751035AbaFJLdz (ORCPT
+	id S1751867AbaFJLe6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 07:34:58 -0400
+Received: from mail.siteground.com ([67.19.240.234]:52180 "EHLO
+	mail.siteground.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751279AbaFJLe5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 07:33:55 -0400
-Date: Tue, 10 Jun 2014 07:33:42 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Xufeng Zhang <xufengzhang.main@gmail.com>
-Cc: Vlad Yasevich <vyasevich@gmail.com>,
-        linux-sctp <linux-sctp@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        xufeng zhang <xufeng.zhang@windriver.com>
-Subject: Re: sctp bug: sk_ack_backlog wrap-around problem
-Message-ID: <20140610113342.GC6275@hmsreliant.think-freely.org>
-References: <CA+=dFzg6gXDTXr6AusZ40_swrjQa-yoS1YLv3=SJAjKYgKzrbQ@mail.gmail.com>
+	Tue, 10 Jun 2014 07:34:57 -0400
+Message-ID: <5396ED66.7090401@1h.com>
+Date: Tue, 10 Jun 2014 14:35:02 +0300
+From: Marian Marinov <mm@1h.com>
+Organization: 1H Ltd.
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+=dFzg6gXDTXr6AusZ40_swrjQa-yoS1YLv3=SJAjKYgKzrbQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Spam-Score: -2.9 (--)
+To: Michal Hocko <mhocko@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [RFC] oom, memcg: handle sysctl oom_kill_allocating_task while memcg
+ oom happening
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - mail.siteground.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - 1h.com
+X-Get-Message-Sender-Via: mail.siteground.com: none
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 10, 2014 at 02:27:07PM +0800, Xufeng Zhang wrote:
-> Hi Vlad and Neil,
-> 
-> I found a sk_ack_backlog wrap-around problem during handling received
-> COOKIE_ECHO.
-> 
-> Consider the scenario:
-> For a TCP-style socket, while processing the COOKIE_ECHO chunk in
-> sctp_sf_do_5_1D_ce(),
-> after it has passed a series of sanity check, a new association would
-> be created in
-> sctp_unpack_cookie(), but afterwards, some processing maybe failed,
-> and sctp_association_free()
-> will be called to free the previously allocated association, in
-> sctp_association_free(),
-> sk_ack_backlog value is decremented for this socket, since the initial
-> value for sk_ack_backlog is 0,
-> after the decrement, it will be 65535, a wrap-around problem happens,
-> and if we want to establish
-> new associations afterward in the same socket, ABORT would be
-> triggered since sctp deem the
-> accept queue as full.
-> 
-> Do you have any idea to fix such kind of issue?
-> 
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-first thought would be to traverse the list of associations on the endpoint in
-sctp_association_free if its a tcp style socket, and then only decrement the
-backlog if we find the association being freed on the list.  By doing that we
-can be confident that we've increased the backlog via sctp_endpoint_add_asoc.
+Hello,
+a while back in 2012 there was a request for this functionality.
+  oom, memcg: handle sysctl oom_kill_allocating_task while memcg oom happening
 
-Best
-Neil
+This is the thread:  https://lkml.org/lkml/2012/10/16/168
 
-> Thanks a lot!
-> Xufeng
-> 
+Now we run a several machines with around 10k processes on each machine, using containers.
+
+Regularly we see OOM from within a container that causes performance degradation.
+
+We are running 3.12.20 with the following OOM configuration and memcg oom enabled:
+
+vm.oom_dump_tasks = 0
+vm.oom_kill_allocating_task = 1
+vm.panic_on_oom = 0
+
+When OOM occurs we see very high numbers for the loadavg and the overall responsiveness of the machine degrades.
+
+During these OOM states the load of the machine gradualy increases from 25 up to 120 in the interval of 10minutes.
+
+Once we manually bring down the memory usage of a container(killing some tasks) the load drops down to 25 within 5 to
+7 minutes.
+
+I read the whole thread from 2012 but I do not see the expected behavior that is described by the people that
+commented the issue.
+
+In this case, with real usage for this patch, would it be considered for inclusion?
+
+Marian
+
+
+- -- 
+Marian Marinov
+Founder & CEO of 1H Ltd.
+Jabber/GTalk: hackman@jabber.org
+ICQ: 7556201
+Mobile: +359 886 660 270
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iEYEARECAAYFAlOW7WYACgkQ4mt9JeIbjJTZCACgj74t6T9GkCS5RlQEF6NkTbed
+xJwAoK93irH+FneDoNdSi2DBSnR7a76r
+=zl6k
+-----END PGP SIGNATURE-----
