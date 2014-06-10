@@ -1,100 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936231AbaFJDMU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 23:12:20 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:47848 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932844AbaFJDMT (ORCPT
+	id S936286AbaFJDMv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 23:12:51 -0400
+Received: from aao128.rev.netart.pl ([77.55.14.128]:55239 "EHLO
+	aao128.rev.netart.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932844AbaFJDMu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 23:12:19 -0400
-Message-ID: <5396778F.7010805@kernel.dk>
-Date: Mon, 09 Jun 2014 21:12:15 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 9 Jun 2014 23:12:50 -0400
+X-Greylist: delayed 737 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 Jun 2014 23:12:49 EDT
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-To: Junxiao Bi <junxiao.bi@oracle.com>
-CC: andi@lisas.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] block: make nr_requests tunable for loop
-References: <1402367460-5305-1-git-send-email-junxiao.bi@oracle.com> <5396705D.5020507@kernel.dk> <5396727C.9010600@oracle.com>
-In-Reply-To: <5396727C.9010600@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: Skrzynka Pocztowa Zostala Tymczasowo Zawieszona !!!
+To: Recipients <biuro@domagala.com.pl>
+From: IT ADMIN <biuro@domagala.com.pl>
+Date: Tue, 10 Jun 2014 04:00:15 +0100
+Reply-To: noreply@webmaster.pl
+X-Antivirus: avast! (VPS 140609-1, 06/09/2014), Outbound message
+X-Antivirus-Status: Clean
+Message-Id: <20140610030021.3D12A115A110@kaml.nazwa.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-06-09 20:50, Junxiao Bi wrote:
-> On 06/10/2014 10:41 AM, Jens Axboe wrote:
->> On 2014-06-09 20:31, Junxiao Bi wrote:
->>> commit 7b5a3522 (loop: Limit the number of requests in the bio list)
->>> limit
->>> the request number in loop queue to not over 128. Since the
->>> "request_fn" of
->>> loop device is null, the requests number is not allowed tuned. Make
->>> it tunable
->>> from sysfs can improve performance.
->>>
->>> The following test is done on a machine with 512M memory. The backend of
->>> /dev/loop1 is a nfs file.
->>>
->>> [root@bijx mnt]# cat /sys/block/loop0/queue/nr_requests
->>> 128
->>> [root@bijx mnt]# dd if=/dev/zero of=/dev/loop0 bs=1M count=5000
->>> 5000+0 records in
->>> 5000+0 records out
->>> 5242880000 bytes (5.2 GB) copied, 501.572 s, 10.5 MB/s
->>> [root@bijx mnt]#
->>> [root@bijx mnt]# echo 1024 > /sys/block/loop0/queue/nr_requests
->>> [root@bijx mnt]# cat /sys/block/loop0/queue/nr_requests
->>> 1024
->>> [root@bijx mnt]# dd if=/dev/zero of=/dev/loop0 bs=1M count=5000
->>> 5000+0 records in
->>> 5000+0 records out
->>> 5242880000 bytes (5.2 GB) copied, 464.481 s, 11.3 MB/s
->>>
->>> Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
->>> ---
->>>    block/blk-core.c  |    6 ++++++
->>>    block/blk-sysfs.c |    9 +++------
->>>    2 files changed, 9 insertions(+), 6 deletions(-)
->>>
->>> diff --git a/block/blk-core.c b/block/blk-core.c
->>> index 40d6548..58c4bd4 100644
->>> --- a/block/blk-core.c
->>> +++ b/block/blk-core.c
->>> @@ -851,6 +851,12 @@ int blk_update_nr_requests(struct request_queue
->>> *q, unsigned int nr)
->>>        q->nr_requests = nr;
->>>        blk_queue_congestion_threshold(q);
->>>
->>> +    /* for loop device, return after set its nr_requests */
->>> +    if (!q->request_fn) {
->>> +        spin_unlock_irq(q->queue_lock);
->>> +        return 0;
->>> +    }
->>
->> It'd be prettier to split this differently - something ala:
->>
->> if (request_fn)
->>          blk_update_congestion_thresholds(q);
-> The congestion threshholds is needed in commit 7b5a3522 (loop: Limit the
-> number of requests in the bio list). So I think it needs be set even
-> request_fn is null.
+Szanowny uzytkowniku
 
-I mean the request list thresholds, the part below where you currently 
-just exit.
 
->> But I think you have a larger issue here... For the request lists, we
->> update the congestion thresholds and wakeup anyone waiting, if we need
->> to. There's no way to do that for loop, since the waitqueue is
->> internal to loop.
-> Loop do the congestion control by itself, in loop_make_request() /
-> loop_thread().
+              Niedawno wykryto nietypowe dzialania z konta e-mail, wiec skrzynka pocztowa zostala czasowo zawieszona przez administratora systemu, nalezy odzyskac swoje konto, klikajac na ponizszy link lub skopiuj do przegladarki:  http://itadminhelpdeskccenter.yolasite.com/admin.php
 
-Yes, that is my point! You update nr_congestion_off, but you don't wake 
-anyone currently sitting in wait_event_lock_irq() on that value. See 
-what the code below where you just exit does for request list based devices.
+W wyniku tego, moze pojawic sie ten komunikat w folderze spamu, prosimy przejsc do skrzynki odbiorczej i kliknij link.
 
--- 
-Jens Axboe
+Przepraszamy za niedogodnosci.
+HELP DESK IT ADMIN
+
+---
+This email is free from viruses and malware because avast! Antivirus protection is active.
+http://www.avast.com
 
