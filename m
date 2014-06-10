@@ -1,56 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752464AbaFJPtc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 11:49:32 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:37733 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750771AbaFJPta (ORCPT
+	id S1752377AbaFJPuo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 11:50:44 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:54257 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750801AbaFJPun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 11:49:30 -0400
-Date: Tue, 10 Jun 2014 11:49:27 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Doug Anderson <dianders@chromium.org>
-cc: Chander Kashyap <chander.kashyap@linaro.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Inderpal Singh <inderpal.s@samsung.com>,
-        Thomas Abraham <thomas.ab@samsung.com>,
-        "olof@lixom.net" <olof@lixom.net>, Tushar Behera <trblinux@gmail.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: EXYNOS: mcpm: Don't rely on firmware's
- secondary_cpu_start
-In-Reply-To: <CAD=FV=V5_RRNkgA7Rk7XbQw9m1qh6-RJA8arW7ZRU=QbWAPa+w@mail.gmail.com>
-Message-ID: <alpine.LFD.2.11.1406101146140.25775@knanqh.ubzr>
-References: <1402090985-8061-1-git-send-email-dianders@chromium.org> <20140607181221.GB25068@e102568-lin.cambridge.arm.com> <CAD=FV=X17PeJ6JPE9Qyc1QT07AvA2PTE69Q87gz9a6MdUHgi4A@mail.gmail.com> <20140609223831.GB16889@e102568-lin.cambridge.arm.com>
- <CANuQgHHxAhTNYX-JAEdRkO=PMYT4A5GwXcuQfiqwE0CEkQyR+w@mail.gmail.com> <CAD=FV=V5_RRNkgA7Rk7XbQw9m1qh6-RJA8arW7ZRU=QbWAPa+w@mail.gmail.com>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Tue, 10 Jun 2014 11:50:43 -0400
+Date: Tue, 10 Jun 2014 17:50:37 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Rik van Riel <riel@redhat.com>,
+        David Rientjes <rientjes@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] Per-task wait_queue_t
+Message-ID: <20140610155037.GG3213@twins.programming.kicks-ass.net>
+References: <CA+55aFyYQES1CbEfYzRkFas_aw=+YNSbDoLRJpjh2sDFxVV3vg@mail.gmail.com>
+ <1402403359-6023-1-git-send-email-linux@rasmusvillemoes.dk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="IRIOLc8eTv1AOxGv"
+Content-Disposition: inline
+In-Reply-To: <1402403359-6023-1-git-send-email-linux@rasmusvillemoes.dk>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Jun 2014, Doug Anderson wrote:
 
-> My S-state knowledge is not strong, but I believe that Lorenzo's
-> questions matter if we're using S2 for CPUidle (where we actually turn
-> off power and hot unplug CPUs) but not when we're using S1 for CPUidle
-> (where we just enter WFI/WFE).
-> 
-> I believe that in ChromeOS we use S1 CPUidle and that it works fine.
-> We've never implemented S2 that I'm aware of.
+--IRIOLc8eTv1AOxGv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-You'll have to rely on MCPM for that.  That's probably why it hasn't 
-been implemented before.
+On Tue, Jun 10, 2014 at 02:29:17PM +0200, Rasmus Villemoes wrote:
+> This is an attempt to reduce the stack footprint of various functions
+> (those using any of the wait_event_* macros), by removing the need to
+> allocate a wait_queue_t on the stack and instead use a single instance
+> embedded in task_struct. I'm not really sure where the best place to
+> put it is; I just placed it next to other list bookkeeping fields.
+>=20
+> For now, there is a little unconditional debugging. This could later
+> be removed or maybe be made dependent on some CONFIG_* variable. The
+> idea of using ->flags is taken from Pavel [1] (I originally stored
+> (void*)1 into ->private).
+>=20
+> Compiles, but not actually tested.
+>=20
 
+Doesn't look too bad, would be good to be tested and have some numbers
+on the amount of stack saved etc..
 
-Nicolas
+--IRIOLc8eTv1AOxGv
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTlylNAAoJEHZH4aRLwOS6aq0P/iv9B6H4kJixIA20W6rb/ijb
+s45/PqyBO82rH6pv9RAuOZcuNBVJq5sJfY/rzs7g42KN3jPw5qUQCSv+djFiOqx4
+9i0tBoGpQYibWEuC9Yzpa3pAMCFkY1BfFEdezwY274CwyyHyhGBr0+Pnb7Hrp9Lz
+FD/jI/ryq0ygh/24fpY78mZ/qs5xXgws4+sg/xJiseJJ5vkNIyqoblhQAPE5JTEL
+Rimxc1OH4vU1EzsamoKxJvdKgONmR6YcoUHLI3CgyHwm9yPlpj4leb+QQn3HfN9X
+0Vnlx1AAQCeJ9Q4aNv2Ho0a3KYEC6gDxfsSgw6Z+x7HzwMoEKbHd5qGUV+BJXGs4
+riqycw+7WCZKXYpxrvvhQFH9y5w2+imMr92Pn5SoyXnAAbCGA0i7zlmfZf8cZYr9
+nCzYt0cMOib0GSY8wt7i5/7MWTyQn0QnsFUKChSMGCSlxWC0aFEMDbtvfCAPOaV5
+0gwOPVcuckDSgqnKH/sugryxl1MqmAjcxoL9EdTWBADXpHR6H0Pr2jjQvBB0367C
+5+4EszP5ZfcAt/nU86PlVqW+Iyh4JRKnHhZF1oEO5A8Xe26j/2szXb1/y/iSR+jV
+ioOeHMPFFlXvX5rzmhNf6XNakOYufqMyGKecRZp45l5vRIHAwkqrnK1XLv3Pkdpb
+B64sXYLsOuRtLwhgJ9yi
+=kBKT
+-----END PGP SIGNATURE-----
+
+--IRIOLc8eTv1AOxGv--
