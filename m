@@ -1,79 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754528AbaFJUrI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 16:47:08 -0400
-Received: from mta-out1.inet.fi ([62.71.2.199]:40098 "EHLO kirsi1.inet.fi"
+	id S1754732AbaFJUrg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 16:47:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41426 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754294AbaFJUrG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 16:47:06 -0400
-Date: Tue, 10 Jun 2014 23:46:40 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Christoph Lameter <cl@gentwo.org>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Vlastimil Babka <vbabka@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH, RFC 00/10] THP refcounting redesign
-Message-ID: <20140610204640.GA9594@node.dhcp.inet.fi>
-References: <1402329861-7037-1-git-send-email-kirill.shutemov@linux.intel.com>
- <alpine.DEB.2.10.1406101518510.19364@gentwo.org>
+	id S1754513AbaFJUre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 16:47:34 -0400
+Date: Tue, 10 Jun 2014 22:44:14 +0200
+From: Borislav Petkov <bp@suse.de>
+To: Alex Thorlton <athorlton@sgi.com>
+Cc: Linux EFI <linux-efi@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Matt Fleming <matt@console-pimps.org>, Russ Anderson <rja@sgi.com>
+Subject: efi_call on SGI
+Message-ID: <20140610204414.GB29302@pd.tnic>
+References: <20140609200017.GD2700@sgi.com>
+ <20140610080300.GA28607@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1406101518510.19364@gentwo.org>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <20140610080300.GA28607@pd.tnic>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 10, 2014 at 03:25:42PM -0500, Christoph Lameter wrote:
-> On Mon, 9 Jun 2014, Kirill A. Shutemov wrote:
-> 
-> > To be able to split huge page at any point we have to track which tail
-> > page was pinned. It leads to tricky and expensive get_page() on tail pages
-> > and also occupy tail_page->_mapcount.
-> 
-> Maybe we should give up the requirement to be able to split a huge page at
-> any point?
+Btw,
 
-Yes, that's what the patchset does: we don't allow to split the page if
-any sub-page is pinned.
+while we're at it, I see uv_bios_call is sometimes done with preemption
+disabled around it and sometimes it is not (at least I don't see it)...
 
-> This got us into the mess AFAICT. Instead we could use the locking
-> mechanisms that we have to stop all access to the page and then do the
-> conversion?
+In any case, if SGI uses the EFI pagetable now too, you probably would
+want to do the efi calls like the rest of x86 does them - see the 64-bit
+version of efi_call_virt() in arch/x86/include/asm/efi.h for an example
+what I mean.
 
-I end up with compound_lock to freeze page count. Not sure if it's the
-best option we have
+Now, you could either copy that macro or you could accomodate it to
+serve everyone's needs - depends on what you'd prefer.
 
-> Page migration can do that so it should be fine with refcounting for
-> huge pages exclusively in the head page exactly like a regular page.
+I'm just saying - I had stumbled across this while the debugging session
+was going on and wanted to point that out but it wasn't too important at
+the time so...
 
-We've discussed "split via migration" with Dave. I need to look more on
-how migration works.
+HTH.
 
-> The problem is then dealing with the locations where we now do rely on
-> the ability to split at "any point" (notion is weird in itself and
-> suggests issues with synchronization).
-
-As I said, we have only 4 places where we need to split the page (not only
-PMD): swap out, memory failure, KSM, migration. All of them can tolerate
-split failure.
-
-> Use the standard locking schemes for pages instead?
-
-Could you elaborate here?
-
-> I thought the idea was that we would modify the relevant code and
-> that at some point this requirement could go away?
-> 
-> Huge pages (and other larger order pages) will become increasingly
-> difficult to handle if relevant page state has to be maintained in tail
-> pages and if it differs significantly from regular pages.
-
-Agreed. The patchset drops tail page refcounting.
 -- 
- Kirill A. Shutemov
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
