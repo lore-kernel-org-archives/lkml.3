@@ -1,57 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933257AbaFJUTR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 16:19:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39441 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932316AbaFJUTO (ORCPT
+	id S933295AbaFJUTp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 16:19:45 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:33415 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932306AbaFJUTn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 16:19:14 -0400
-Date: Tue, 10 Jun 2014 13:23:02 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC][PATCH] debugfs: Fix corrupted loop in
- debugfs_remove_recursive
-Message-ID: <20140610202302.GB20499@kroah.com>
-References: <20140609140607.3e3aae39@gandalf.local.home>
- <20140610093357.7ef3792b@gandalf.local.home>
+	Tue, 10 Jun 2014 16:19:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140610093357.7ef3792b@gandalf.local.home>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1400603412-19406-1-git-send-email-ricardo.ribalda@gmail.com>
+References: <1400603412-19406-1-git-send-email-ricardo.ribalda@gmail.com>
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Date: Tue, 10 Jun 2014 22:19:23 +0200
+Message-ID: <CAPybu_29FPnRyJSJvnX+mosto+CF944PpREROeP282uqYb-FNw@mail.gmail.com>
+Subject: Re: [PATCH 00/10] net2280: Support for PLX USB338x and cleanout code
+To: "balbi@ti.com" <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        Joe Perches <joe@perches.com>,
+        Amit Uttamchandani <auttamchandani@logicube.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 10, 2014 at 09:33:57AM -0400, Steven Rostedt wrote:
-> On Mon, 9 Jun 2014 14:06:07 -0400
-> Steven Rostedt <rostedt@goodmis.org> wrote:
-> 
-> > [ I'm currently running my tests on it now, and so far, after a few
-> >  hours it has yet to blow up. I'll run it for 24 hours which it never
-> >  succeeded in the past. ]
-> 
-> I ran with this patch on three boxes all night, one for 24 hours. No
-> problems. I stopped the tests, removed the patch, ran the test on the
-> same boxes and they all crashed within an hour.
-> 
-> This patch definitely fixes the bug.
-> 
-> The test I ran was:
-> 
-> while :; do
->  ./ftrace-test-mkinstances || break
->  ./ftrace-test-mkinstances-2 || break
-> done
-> 
-> Note, the tests expect debugfs to be mounted at /debug.
+Ping...
 
-Well, those are some broken tests :)
+On Tue, May 20, 2014 at 6:30 PM, Ricardo Ribalda Delgado
+<ricardo.ribalda@gmail.com> wrote:
+> The USB 3380 is a PCI Express Gen 2 to USB 3.0 SuperSpeed Peripheral
+> Controller. It shares a lot functionatily with the net228x family.
+>
+> This series of patches includes some resend of previous patches.
+>
+> Please check the changelog for every patch. This time it has been placed
+> under the tear line
+>
+>
+>
+> Ricardo Ribalda Delgado (10):
+>   usb: gadget: net2280: Add support for PLX USB338X
+>   usb: gadget: net2280: Dont use magic numbers
+>   usb: gadget: net2280: Use BIT() macro
+>   usb: gadget: net2280: Use true/false instead of 1/0
+>   usb: gadget: net2280: Use module_pci_driver macro
+>   usb: gadget: net2280: Refactor queues_show
+>   usb: gadget: net2280: Pass checkpacth.pl test
+>   usb: gadget: net2280: Code Cleanup
+>   usb: gadget: net2280: Use pr_* function
+>   usb: gadget: net2280: Use quirks instead of pci id
+>
+>  drivers/usb/gadget/Kconfig   |   10 +-
+>  drivers/usb/gadget/net2280.c | 2752 ++++++++++++++++++++++++++++--------------
+>  drivers/usb/gadget/net2280.h |  285 +++--
+>  include/linux/usb/usb338x.h  |  199 +++
+>  4 files changed, 2235 insertions(+), 1011 deletions(-)
+>  create mode 100644 include/linux/usb/usb338x.h
+>
+> --
+> 2.0.0.rc2
+>
 
-Anyway, thanks for the patch, I'll queue it up after 3.16-rc1 is out.
 
-greg k-h
+
+-- 
+Ricardo Ribalda
