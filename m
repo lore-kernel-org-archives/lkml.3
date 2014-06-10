@@ -1,51 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751924AbaFJJwm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 05:52:42 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:45978 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751847AbaFJJwj (ORCPT
+	id S1751960AbaFJJ4t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 05:56:49 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:50740 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750788AbaFJJ4p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 05:52:39 -0400
-Message-ID: <5396D529.308@linaro.org>
-Date: Tue, 10 Jun 2014 17:51:37 +0800
-From: "kefeng.wang" <kefeng.wang@linaro.org>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 10 Jun 2014 05:56:45 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Dave Chinner <david@fromorbit.com>, hch@infradead.org,
+        linux-mtd@lists.infradead.org, logfs@logfs.org,
+        linux-afs@lists.infradead.org,
+        "Joseph S. Myers" <joseph@codesourcery.com>,
+        linux-arch@vger.kernel.org, linux-cifs@vger.kernel.org,
+        linux-scsi@vger.kernel.org, ceph-devel@vger.kernel.org,
+        cluster-devel@redhat.com, coda@cs.cmu.edu, geert@linux-m68k.org,
+        linux-ext4@vger.kernel.org, codalist@telemann.coda.cs.cmu.edu,
+        fuse-devel@lists.sourceforge.net, reiserfs-devel@vger.kernel.org,
+        xfs@oss.sgi.com, john.stultz@linaro.org, tglx@linutronix.de,
+        linux-nfs@vger.kernel.org, linux-ntfs-dev@lists.sourceforge.net,
+        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net, ocfs2-devel@oss.oracle.com,
+        linux-fsdevel@vger.kernel.org, lftan@altera.com,
+        linux-btrfs@vger.kernel.org
+Subject: Re: [RFC 00/32] making inode time stamps y2038 ready
+Date: Tue, 10 Jun 2014 11:54:14 +0200
+Message-ID: <10173877.4plnjUiyX8@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <538FB570.8000502@zytor.com>
+References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <8770583.6XeZxCxOY8@wuerfel> <538FB570.8000502@zytor.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Hans de Goede <hdegoede@redhat.com>,
-        Zhangfei Gao <zhangfei.gao@linaro.org>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, wangkefeng.wang@huawei.com,
-        xuwei5@hisilicon.com
-Subject: [PATCH] ahci: disable ncq feature for hisilicon sata
-References: <1398416351-30567-1-git-send-email-kefeng.wang@linaro.org> <20140514170757.GD15690@htj.dyndns.org>
-In-Reply-To: <20140514170757.GD15690@htj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:TrYIbdjEBc1IREw22dB8Te0hek5UG90XvAYj1rCy7zm
+ jjm1gOT0qyrVVNI1MCw3TR63lC4JryhopUhNRxd8LRssJGnio3
+ ZV0jkp4ZSvAJKcItG0SdRDQDBAhhfYl7jfVMWuUXXF3CyOMh+9
+ BvWlB2OwVg77yWi2HCKpG8z5hqKygK6l34yjvk2u2ZrRXKVLTS
+ sl1VAYzIa1W9ybfH2E1EX33MMeCGojjaMZtudG+wj45M81wVuY
+ kz3vJnKDYJPBEgqWuEkjhr4w5HaGAIpCn93Km8jXs3OY3OLtYg
+ j2KuSB/qhcGp1rbmd+4WtLVTD8+uc6t7e4rq1KMTbtbHYk3YHL
+ cx6duBcIXFHKFIHDwizY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NCQ feature is unsupported on hisilicon sata controller, so disable it.
-This version of IP is used by hip04 and hix5hd2 soc.
+On Wednesday 04 June 2014 17:10:24 H. Peter Anvin wrote:
+> On 06/04/2014 12:24 PM, Arnd Bergmann wrote:
+> > 
+> > For other timekeeping stuff in the kernel, I agree that using some
+> > 64-bit representation (nanoseconds, 32/32 unsigned seconds/nanoseconds,
+> > ...) has advantages, that's exactly the point I was making earlier
+> > against simply extending the internal time_t/timespec to 64-bit
+> > seconds for everything.
+> > 
+> 
+> How much of a performance issue is it to make time_t 64 bits, and for
+> the bits there are, how hard are they to fix?
 
-Signed-off-by: Kefeng Wang <kefeng.wang@linaro.org>
----
- drivers/ata/ahci_platform.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Probably very little overhead for most uses, it's more the regression
+potential in the less common parts of the kernel I'm worried about.
 
-diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
-index ebe505c..0cfda8b 100644
---- a/drivers/ata/ahci_platform.c
-+++ b/drivers/ata/ahci_platform.c
-@@ -58,7 +58,7 @@ static int ahci_probe(struct platform_device *pdev)
-        }
+There is a significant but not overwhelming number of uses of the
+main problematic types in the kernel:
 
-        if (of_device_is_compatible(dev->of_node, "hisilicon,hisi-ahci"))
--               hflags |= AHCI_HFLAG_NO_FBS;
-+               hflags = AHCI_HFLAG_NO_FBS | AHCI_HFLAG_NO_NCQ;
+arnd@wuerfel:~/arm-soc$ git grep -wl time_t | wc
+    188     188    5566
+arnd@wuerfel:~/arm-soc$ git grep -wl timeval | wc
+    320     320   10353
+arnd@wuerfel:~/arm-soc$ git grep -wl timespec | wc
+    406     406   10886
 
-        rc = ahci_platform_init_host(pdev, hpriv, &ahci_port_info,
-                                     hflags, 0, 0);
--- 
-1.7.9.5
+I believe we have to audit all of them anyway if we want to change
+the kernel to less problematic types and introduce new user
+interfaces.
+
+IMHO this work is helped if we change the uses to a new type
+as we find the problems. This lets us do the work one subsystem
+at a time and avoid accidental ABI changes. I don't care much what
+type that will be, and having a 96-bit type will certainly work
+well in a lot of cases, but I don't see a strong reason to use
+that over other types, especially when they can be more efficient.
+
+	Arnd
