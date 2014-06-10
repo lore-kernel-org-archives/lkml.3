@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932104AbaFJTv2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 15:51:28 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35265 "EHLO
+	id S1755107AbaFJTvt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 15:51:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35329 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754951AbaFJTvZ (ORCPT
+	with ESMTP id S1755054AbaFJTvq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:51:25 -0400
+	Tue, 10 Jun 2014 15:51:46 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jarkko Nikula <jarkko.nikula@linux.intel.com>,
-        Mark Brown <broonie@linaro.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 103/160] ASoC: dapm: Fix widget double free with auto-disable DAPM kcontrol
-Date: Tue, 10 Jun 2014 12:45:43 -0700
-Message-Id: <1402429600-20477-104-git-send-email-kamal@canonical.com>
+Cc: Daniele Forsi <dforsi@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 151/160] USB: Nokia 5300 should be treated as unusual dev
+Date: Tue, 10 Jun 2014 12:46:31 -0700
+Message-Id: <1402429600-20477-152-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -27,70 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+From: Daniele Forsi <dforsi@gmail.com>
 
-commit 2697e4fb9209dfe1d1b24c92d254158f63d4bc8e upstream.
+commit 6ed07d45d09bc2aa60e27b845543db9972e22a38 upstream.
 
-Commit 9e1fda4ae158 ("ASoC: dapm: Implement mixer input auto-disable")
-is trying to free the widget it allocated by snd_soc_dapm_new_control()
-call in dapm_kcontrol_data_alloc() by adding kfree(data->widget) to
-dapm_kcontrol_free().
-
-This is causing a widget double free with auto-disabled DAPM kcontrols
-in sound card unregistration because widgets are already freed before
-dapm_kcontrol_free() is called.
-
-Reason for that is all widgets are added into dapm->card->widgets list
-in snd_soc_dapm_new_control() and freed in dapm_free_widgets() during
-execution of snd_soc_dapm_free().
-
-Now snd_soc_dapm_free() calls for different DAPM contexts happens before
-snd_card_free() call from where the call chain to dapm_kcontrol_free()
-begins:
-
-soc_cleanup_card_resources()
-  soc_remove_dai_links()
-    soc_remove_link_dais()
-      snd_soc_dapm_free(&cpu_dai->dapm)
-    soc_remove_link_components()
-      soc_remove_platform()
-        snd_soc_dapm_free(&platform->dapm)
-      soc_remove_codec()
-        snd_soc_dapm_free(&codec->dapm)
-  snd_soc_dapm_free(&card->dapm)
-  snd_card_free()
-    snd_card_do_free()
-      snd_device_free_all()
-        snd_device_free()
-          snd_ctl_dev_free()
-            snd_ctl_remove()
-              snd_ctl_free_one()
-                dapm_kcontrol_free()
-
-This wasn't making harm with ordinary DAPM kcontrols since data->widget is NULL for
-them.
-
-Fixes: 9e1fda4ae158 (ASoC: dapm: Implement mixer input auto-disable)
-Signed-off-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Daniele Forsi <dforsi@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/soc/soc-dapm.c | 1 -
- 1 file changed, 1 deletion(-)
+ drivers/usb/storage/unusual_devs.h | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c
-index dcade13..2e6f4ec 100644
---- a/sound/soc/soc-dapm.c
-+++ b/sound/soc/soc-dapm.c
-@@ -251,7 +251,6 @@ static int dapm_kcontrol_data_alloc(struct snd_soc_dapm_widget *widget,
- static void dapm_kcontrol_free(struct snd_kcontrol *kctl)
- {
- 	struct dapm_kcontrol_data *data = snd_kcontrol_chip(kctl);
--	kfree(data->widget);
- 	kfree(data->wlist);
- 	kfree(data);
- }
+diff --git a/drivers/usb/storage/unusual_devs.h b/drivers/usb/storage/unusual_devs.h
+index 1010341..042c83b0 100644
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -234,6 +234,13 @@ UNUSUAL_DEV(  0x0421, 0x0495, 0x0370, 0x0370,
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+ 		US_FL_MAX_SECTORS_64 ),
+ 
++/* Reported by Daniele Forsi <dforsi@gmail.com> */
++UNUSUAL_DEV(  0x0421, 0x04b9, 0x0350, 0x0350,
++		"Nokia",
++		"5300",
++		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
++		US_FL_MAX_SECTORS_64 ),
++
+ /* Patch submitted by Victor A. Santos <victoraur.santos@gmail.com> */
+ UNUSUAL_DEV(  0x0421, 0x05af, 0x0742, 0x0742,
+ 		"Nokia",
 -- 
 1.9.1
 
