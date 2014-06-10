@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751566AbaFJOnA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 10:43:00 -0400
-Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:40145 "EHLO
+	id S1752279AbaFJOnL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 10:43:11 -0400
+Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:40183 "EHLO
 	ducie-dc1.codethink.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750740AbaFJOm7 (ORCPT
+	by vger.kernel.org with ESMTP id S1752246AbaFJOnI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 10:42:59 -0400
+	Tue, 10 Jun 2014 10:43:08 -0400
 From: Rob Jones <rob.jones@codethink.co.uk>
 To: linus.walleij@linaro.org, gnurou@gmail.com
 Cc: lgirdwood@gmail.com, broonie@kernel.org, linux-gpio@vger.kernel.org,
         linux-kernel@vger.kernel.org, ian.molton@codethink.co.uk,
         ben.dooks@codethink.co.uk, heiko@sntech.de, rob.jones@codethink.co.uk
-Subject: [PATCH 1/3] drivers/gpio: devres.c: allow gpio array requests for managed devices
-Date: Tue, 10 Jun 2014 15:41:46 +0100
-Message-Id: <1402411308-14182-2-git-send-email-rob.jones@codethink.co.uk>
+Subject: [PATCH 3/3] drivers/regulator: gpio-regulator.c: use managed resources for probe.
+Date: Tue, 10 Jun 2014 15:41:48 +0100
+Message-Id: <1402411308-14182-4-git-send-email-rob.jones@codethink.co.uk>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1402411308-14182-1-git-send-email-rob.jones@codethink.co.uk>
 References: <1402411308-14182-1-git-send-email-rob.jones@codethink.co.uk>
@@ -22,104 +22,145 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add functions devm_gpio_request_array() and devm_gpio_free_array()
-which are exactly analogous to the equivalent non-managed device
-functions gpio_request_array() and gpio_free_array(), which can be
-found in module gpiolib.c.
+Use managed resource functions for all resource allocations in
+gpio_regulator_probe().
 
-Note that if devm_gpio_request_array() fails, no gpios are obtained.
-No indication is provided as to which particular request failed.
+Remove gpio_regulator_remove() as it is now redundant.
 
 Reviewed-by: Ian Molton <ian.molton@codethink.co.uk>
 Signed-off-by: Rob Jones <rob.jones@codethink.co.uk>
 ---
- drivers/gpio/devres.c |   57 +++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/gpio.h  |    4 ++++
- 2 files changed, 61 insertions(+)
+ drivers/regulator/gpio-regulator.c |   71 ++++++++++++------------------------
+ 1 file changed, 24 insertions(+), 47 deletions(-)
 
-diff --git a/drivers/gpio/devres.c b/drivers/gpio/devres.c
-index 307464f..fd95240d 100644
---- a/drivers/gpio/devres.c
-+++ b/drivers/gpio/devres.c
-@@ -186,6 +186,63 @@ int devm_gpio_request_one(struct device *dev, unsigned gpio,
- EXPORT_SYMBOL(devm_gpio_request_one);
+diff --git a/drivers/regulator/gpio-regulator.c b/drivers/regulator/gpio-regulator.c
+index 989b23b..56341c3 100644
+--- a/drivers/regulator/gpio-regulator.c
++++ b/drivers/regulator/gpio-regulator.c
+@@ -254,30 +254,31 @@ static int gpio_regulator_probe(struct platform_device *pdev)
+ 	if (drvdata == NULL)
+ 		return -ENOMEM;
  
- /**
-+ * devm_gpio_request_array - request multiple GPIOs in a single call
-+ *			     for a managed device
-+ * @dev:	device requesting the gpio
-+ * @array:      array of the 'struct gpio'
-+ * @num:        how many GPIOs in the array
-+ *
-+ * Except for the extra @dev argument, this function takes the
-+ * same arguments and performs the same function as
-+ * gpio_request().  GPIOs requested with this function will be
-+ * automatically freed on driver detach.
-+ *
-+ * If GPIOs allocated with this function need to be freed separately,
-+ * devm_gpio_free_array() or devm_gpio_free() must be used.
-+ */
-+int devm_gpio_request_array(struct device *dev,
-+			    const struct gpio *array,
-+			    size_t num)
-+{
-+	int i, err = 0;
-+
-+	for (i = 0; i < num; i++, array++) {
-+		err = devm_gpio_request_one(dev,
-+					    array->gpio,
-+					    array->flags,
-+					    array->label);
-+		if (err) {
-+			while (i--)
-+				devm_gpio_free(dev, (--array)->gpio);
-+		}
-+	}
-+
-+	return err;
-+}
-+EXPORT_SYMBOL(devm_gpio_request_array);
-+
-+/**
-+ * devm_gpio_free_array - release multiple GPIOs in a single call
-+ *			  for a managed device
-+ * @dev:	device requesting the gpio
-+ * @array:      array of the 'struct gpio'
-+ * @num:        how many GPIOs in the array
-+ *
-+ * Except for the extra @dev argument, this function takes the
-+ * same arguments and performs the same function as gpio_free_array().
-+ * This function instead of gpio_free_array() should be used to
-+ * manually free GPIOs allocated with devm_gpio_request().
-+ */
-+void devm_gpio_free_array(struct device *dev,
-+			  const struct gpio *array,
-+			  size_t num)
-+{
-+	while (num--)
-+		devm_gpio_free(dev, (array++)->gpio);
-+}
-+EXPORT_SYMBOL(devm_gpio_free_array);
-+
-+/**
-  *      devm_gpio_free - free a GPIO
-  *      @dev: device to free GPIO for
-  *      @gpio: GPIO to free
-diff --git a/include/linux/gpio.h b/include/linux/gpio.h
-index 85aa5d0..12d5648 100644
---- a/include/linux/gpio.h
-+++ b/include/linux/gpio.h
-@@ -84,6 +84,10 @@ struct device;
- int devm_gpio_request(struct device *dev, unsigned gpio, const char *label);
- int devm_gpio_request_one(struct device *dev, unsigned gpio,
- 			  unsigned long flags, const char *label);
-+int devm_gpio_request_array(struct device *dev, const struct gpio *array,
-+			    size_t num);
-+void devm_gpio_free_array(struct device *dev, const struct gpio *array,
-+			 size_t num);
- void devm_gpio_free(struct device *dev, unsigned int gpio);
+-	drvdata->desc.name = kstrdup(config->supply_name, GFP_KERNEL);
++	drvdata->desc.name = devm_kstrdup(&pdev->dev,
++					  config->supply_name,
++					  GFP_KERNEL);
+ 	if (drvdata->desc.name == NULL) {
+ 		dev_err(&pdev->dev, "Failed to allocate supply name\n");
+-		ret = -ENOMEM;
+-		goto err;
++		return -ENOMEM;
+ 	}
  
- #else /* ! CONFIG_GPIOLIB */
+-	drvdata->gpios = kmemdup(config->gpios,
+-				 config->nr_gpios * sizeof(struct gpio),
+-				 GFP_KERNEL);
++	drvdata->gpios = devm_kmemdup(&pdev->dev,
++				      config->gpios,
++				      config->nr_gpios * sizeof(struct gpio),
++				      GFP_KERNEL);
+ 	if (drvdata->gpios == NULL) {
+ 		dev_err(&pdev->dev, "Failed to allocate gpio data\n");
+-		ret = -ENOMEM;
+-		goto err_name;
++		return -ENOMEM;
+ 	}
+ 
+-	drvdata->states = kmemdup(config->states,
+-				  config->nr_states *
++	drvdata->states = devm_kmemdup(&pdev->dev,
++				       config->states,
++				       config->nr_states *
+ 					 sizeof(struct gpio_regulator_state),
+-				  GFP_KERNEL);
++				       GFP_KERNEL);
+ 	if (drvdata->states == NULL) {
+ 		dev_err(&pdev->dev, "Failed to allocate state data\n");
+-		ret = -ENOMEM;
+-		goto err_memgpio;
++		return -ENOMEM;
+ 	}
+ 	drvdata->nr_states = config->nr_states;
+ 
+@@ -297,16 +298,17 @@ static int gpio_regulator_probe(struct platform_device *pdev)
+ 		break;
+ 	default:
+ 		dev_err(&pdev->dev, "No regulator type set\n");
+-		ret = -EINVAL;
+-		goto err_memgpio;
++		return -EINVAL;
+ 	}
+ 
+ 	drvdata->nr_gpios = config->nr_gpios;
+-	ret = gpio_request_array(drvdata->gpios, drvdata->nr_gpios);
++	ret = devm_gpio_request_array(&pdev->dev,
++				      drvdata->gpios,
++				      drvdata->nr_gpios);
+ 	if (ret) {
+ 		dev_err(&pdev->dev,
+ 		   "Could not obtain regulator setting GPIOs: %d\n", ret);
+-		goto err_memstate;
++		return ret;
+ 	}
+ 
+ 	/* build initial state from gpio init data. */
+@@ -337,43 +339,18 @@ static int gpio_regulator_probe(struct platform_device *pdev)
+ 			cfg.ena_gpio_flags |= GPIOF_OUT_INIT_HIGH;
+ 	}
+ 
+-	drvdata->dev = regulator_register(&drvdata->desc, &cfg);
++	drvdata->dev = devm_regulator_register(&pdev->dev,
++					       &drvdata->desc,
++					       &cfg);
+ 	if (IS_ERR(drvdata->dev)) {
+ 		ret = PTR_ERR(drvdata->dev);
+ 		dev_err(&pdev->dev, "Failed to register regulator: %d\n", ret);
+-		goto err_stategpio;
++		return ret;
+ 	}
+ 
+ 	platform_set_drvdata(pdev, drvdata);
+ 
+ 	return 0;
+-
+-err_stategpio:
+-	gpio_free_array(drvdata->gpios, drvdata->nr_gpios);
+-err_memstate:
+-	kfree(drvdata->states);
+-err_memgpio:
+-	kfree(drvdata->gpios);
+-err_name:
+-	kfree(drvdata->desc.name);
+-err:
+-	return ret;
+-}
+-
+-static int gpio_regulator_remove(struct platform_device *pdev)
+-{
+-	struct gpio_regulator_data *drvdata = platform_get_drvdata(pdev);
+-
+-	regulator_unregister(drvdata->dev);
+-
+-	gpio_free_array(drvdata->gpios, drvdata->nr_gpios);
+-
+-	kfree(drvdata->states);
+-	kfree(drvdata->gpios);
+-
+-	kfree(drvdata->desc.name);
+-
+-	return 0;
+ }
+ 
+ #if defined(CONFIG_OF)
+@@ -385,7 +362,7 @@ static const struct of_device_id regulator_gpio_of_match[] = {
+ 
+ static struct platform_driver gpio_regulator_driver = {
+ 	.probe		= gpio_regulator_probe,
+-	.remove		= gpio_regulator_remove,
++	.remove		= NULL,
+ 	.driver		= {
+ 		.name		= "gpio-regulator",
+ 		.owner		= THIS_MODULE,
 -- 
 1.7.10.4
 
