@@ -1,80 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752665AbaFJPNw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 11:13:52 -0400
-Received: from ausxippc101.us.dell.com ([143.166.85.207]:7547 "EHLO
-	ausxippc101.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750843AbaFJPNu convert rfc822-to-8bit (ORCPT
+	id S1752693AbaFJPOS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 11:14:18 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:60808 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750843AbaFJPOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 11:13:50 -0400
-X-LoopCount0: from 10.170.28.41
-X-IronPort-AV: E=Sophos;i="4.98,1009,1392184800"; 
-   d="scan'208";a="512553264"
-From: <B_B_Singh@DELL.com>
-To: <teg@jklm.no>
-CC: <linux-kernel@vger.kernel.org>, <ming.lei@canonical.com>,
-        <gregkh@linuxfoundation.org>, <Abhay_Salunke@DELL.com>, <sr@denx.de>,
-        <arnd@arndb.de>, <kay@vrfy.org>, <Matt_Domsch@DELL.com>,
-        <Srinivas_G_Gowda@DELL.com>, <Stuart_Hayes@DELL.com>
-Date: Tue, 10 Jun 2014 20:43:44 +0530
-Subject: RE: [PATCH] firmware loader: allow disabling of udev as firmware
- loader
-Thread-Topic: [PATCH] firmware loader: allow disabling of udev as firmware
- loader
-Thread-Index: Ac+D+qAxcokn2SjjSfCY2krbpdUX/gAwfJSg
-Message-ID: <8B2F6FFD0BD1E448853114367400A37306FCD2E22A@BLRX7MCDC203.AMER.DELL.COM>
-References: <8B2F6FFD0BD1E448853114367400A37306FCD2E023@BLRX7MCDC203.AMER.DELL.COM>
- <CAG-2HqUDQ3e-cq4y3zgehz6J8E6LsTCUfqvMEqPEqG7aBmEeRg@mail.gmail.com>
- <8B2F6FFD0BD1E448853114367400A37306FCD2E02A@BLRX7MCDC203.AMER.DELL.COM>
- <CAG-2HqXBOfZTGi-S=AzjGYDyGWkh0ijz73_pUUtmFdmQkgxWVQ@mail.gmail.com>
-In-Reply-To: <CAG-2HqXBOfZTGi-S=AzjGYDyGWkh0ijz73_pUUtmFdmQkgxWVQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-titus-version: 3.5.29.3
-x-tituslabs-classifications-30: TLPropertyRoot=Dell;Classification=No
- Restrictions;Sublabels=;
-x-tituslabs-classificationhash-30: VgNFIFU9Hx+/nZJb9Kg7IkiU+F178WdT0jfKBxULWaA/cMBTWLEh0ZXdCvZnZCD1UgSA1vsFP1X01xwEut6SdChzE2nj+IFVL5wFINa/zYUTggtPu2KfanVOQXJsajfBunZrJGE/XVNUDX98x9kd/LzgmUoV8pWgoLmJDZKE7Qt5aEJOPxvNMQF5PHdaiZYnjHXLzKoOEMc6HgnCcTPVlt9UipDnjg2ek+tcSnih8eG6I5M5mjAXwHaduRMRe7DxtuJKQAhnZn7WdpIBTz6K8A==
-x-titusconfig: 1.4AMER
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 10 Jun 2014 11:14:15 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Dirk Brandewie <dirk.brandewie@gmail.com>
+Cc: Stratos Karafotis <stratosk@semaphore.gr>,
+        Viresh Kumar <viresh.kumar@linaro.org>, dirk.j.brandewie@intel.com,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/7] cpufreq: intel_pstate: Trivial code cleanup
+Date: Tue, 10 Jun 2014 17:31:38 +0200
+Message-ID: <1447217.dTmMAkaUnF@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <53972070.3020608@intel.com>
+References: <5396208F.6070400@semaphore.gr> <53972070.3020608@intel.com>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday, June 10, 2014 08:12:48 AM Dirk Brandewie wrote:
+> On 06/09/2014 02:01 PM, Stratos Karafotis wrote:
+> > Remove unnecessary blank lines.
+> > Remove unnecessary parentheses.
+> > Remove unnecessary braces.
+> > Put the code in one line where possible.
+> > Add blank lines after variable declarations.
+> > Alignment to open parenthesis.
+> >
+> 
+> I don't have an issue with this patch in general but I would rather
+> the cleanup be done when there is a functional change in the given
+> hunk of code otherwise you are setting up a fence for stable/backporters
+> of functional changes in the future.
 
-Hi Tom,
+I actually prefer separate cleanups so as to avoid doing multiple things
+in one patch.
 
-I see contradiction of drivers/base/Kconfig here i.e, If I configure DELL_RBU=y I cannot configure FW_LOADER_USER_HELPER=n. 
-with this patch https://lkml.org/lkml/2014/6/4/327 i cannot have FW_LOADER_USER_HELPER=n & DELL_RBU=y at the same time. 
-I'm using the latest stable upstream kernel-3.14.5.
+Rafael
 
-Symbol: FW_LOADER_USER_HELPER [=y]
-Type     : boolean
-Defined at drivers/base/Kconfig:146
-Selected by: FW_LOADER_USER_HELPER_FALLBACK [=n] && FW_LOADER [=y] || DELL_RBU [=y] && X86 [=y]
-
-Regards
-Balaji Singh
-
-
------Original Message-----
-From: Tom Gundersen [mailto:teg@jklm.no]
-Sent: Monday, June 09, 2014 9:21 PM
-To: Singh, B B
-Cc: LKML; Ming Lei; Greg KH; Abhay Salunke; Stefan Roese; Arnd Bergmann; Kay Sievers; Domsch, Matt; Gowda, Srinivas G; Hayes, Stuart
-Subject: Re: [PATCH] firmware loader: allow disabling of udev as firmware loader
-
-On Mon, Jun 9, 2014 at 4:01 PM, wrote:
-> Older userspace or existing DUP's doesn't work with your patch & CONFIG_FW_LOADER_USER_HELPER=n.
->
-> I will give a try with https://lkml.org/lkml/2014/6/4/327 new patch & let you know ASAP.
-
-Thanks!
-
-Cheers,
-
-Tom
