@@ -1,67 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755124AbaFJIfp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 04:35:45 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:43169 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752205AbaFJIfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 04:35:42 -0400
-X-IronPort-AV: E=Sophos;i="4.98,1007,1392163200"; 
-   d="scan'208";a="141842881"
-Message-ID: <1402389339.29301.3.camel@kazak.uk.xensource.com>
-Subject: Re: [PATCH 3/3] x86, platform, kconfig: add virtconfig defconfig
- helper
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: "Luis R. Rodriguez" <mcgrof@suse.com>
-CC: Borislav Petkov <bp@suse.de>,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, <tglx@linutronix.de>,
-        <mingo@redhat.com>, <hpa@zytor.com>, <x86@kernel.org>,
-        <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>, Michal Marek <mmarek@suse.cz>,
-        Randy Dunlap <rdunlap@infradead.org>, <levinsasha928@gmail.com>,
-        <mtosatti@redhat.com>, <fengguang.wu@intel.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <xen-devel@lists.xenproject.org>
-Date: Tue, 10 Jun 2014 09:35:39 +0100
-In-Reply-To: <20140609171525.GL22052@wotan.suse.de>
-References: <1402096269-4512-1-git-send-email-mcgrof@do-not-panic.com>
-	 <1402096269-4512-3-git-send-email-mcgrof@do-not-panic.com>
-	 <20140607090430.GA27457@nazgul.tnic> <20140609171525.GL22052@wotan.suse.de>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2-1 
+	id S936247AbaFJIhn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 04:37:43 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:42348 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934267AbaFJIhj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 04:37:39 -0400
+Date: Tue, 10 Jun 2014 10:37:26 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>
+Subject: Re: safety of *mutex_unlock() (Was: [BUG] signal: sighand
+ unprotected when accessed by /proc)
+Message-ID: <20140610083726.GY3213@twins.programming.kicks-ass.net>
+References: <20140603130233.658a6a3c@gandalf.local.home>
+ <20140603172632.GA27956@redhat.com>
+ <CA+55aFzT5CGv_T60voAqR+4PfiMmJmsDZLid2DZ4=+X8uvF+ig@mail.gmail.com>
+ <20140603200125.GB1105@redhat.com>
+ <20140606203350.GU4581@linux.vnet.ibm.com>
+ <20140608130718.GA11129@redhat.com>
+ <20140609162613.GE4581@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.80]
-X-DLP: MIA2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ELMKpCVvjiB+uwRu"
+Content-Disposition: inline
+In-Reply-To: <20140609162613.GE4581@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-06-09 at 19:15 +0200, Luis R. Rodriguez wrote:
-> On Sat, Jun 07, 2014 at 11:04:30AM +0200, Borislav Petkov wrote:
-> > On Fri, Jun 06, 2014 at 04:11:09PM -0700, Luis R. Rodriguez wrote:
-> > > From: "Luis R. Rodriguez" <mcgrof@suse.com>
-> > > 
-> > > This lets you use:
-> > > 
-> > >    make virtconfig
-> > > 
-> > > to merge you current kernel configuration with options to
-> > > enable both kvm and xen (dom0 and guest) requirements.
-> > 
-> > What would be the use case for that?
-> 
-> This was based on a recommendation on xen-devel after review of
-> the xen RFC,
 
-Actually what I meant was to *replace* kvmconfig with virtconfig and
-then add the Xen stuff to it, i.e. to have a single thing to maintain
-for all virt platforms, rather than end up with all 3 options.
+--ELMKpCVvjiB+uwRu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I think the overhead of having some Xen stuff enabled in .config when
-running on KVM and vice versa is small.
+On Mon, Jun 09, 2014 at 09:26:13AM -0700, Paul E. McKenney wrote:
+> That would indeed be a bad thing, as it could potentially lead to
+> use-after-free bugs.  Though one could argue that any code that resulted
+> in use-after-free would be quite aggressive.  But still...
 
-Ian.
+Let me hijack this thread for yet another issue... So I had an RCU
+related use-after-free the other day, and while Sasha was able to
+trigger it quite easily, I had a multi-day struggle to reproduce.
 
+Once I figured out what the exact problem was it was also clear to me
+why it was so hard for me to reproduce.
+
+So normally its easier to trigger races on bigger machines, more cpus,
+more concurrency, more races, all good.
+
+_However_ with RCU the grace period machinery is slower the bigger the
+machine, so bigger machine, slower grace period, slower RCU free, less
+likely to hit use-after-free.
+
+So I was thinking, and I know you all will go kick me for this because
+the very last thing we need is what I'm about to propose: more RCU
+flavours :-).
+
+How about an rcu_read_unlock() reference counted RCU variant that's
+ultra aggressive in doing the callbacks in order to better trigger such
+issues?
+
+--ELMKpCVvjiB+uwRu
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTlsPGAAoJEHZH4aRLwOS6oDgQAKRpErHVpmoJrpOurClgfQrW
+xpYYupyKk8B4TNg9FfYfrlf4oafAFc+IxzwjxQriFtw1UPCAb8ju/GmscMXAfKJY
+z4uNFemZ8IxNszqkGj89wdQyfMWQf2lsli1SqjoXylSA6C+et51bI2Kk1Ib4MOqR
+zTX+cZcnxDLsQfXpT1u/re05/4WS0Mz35CcJZ4Xvlr6YnUrLozo7fy87XzGzqfGw
+1YcwduQ2n9X/e2CBiYuEtzT75p5x0gWcZkXWncKxEhOFR7V474uAveMzJE88gcdn
+/zeuvW1ipiYbGZ31pojK2RFrRX7AFF1sIb1q0djmahqhEua8k617fhUdfNSdTXJ0
+oSvfJ7scYZi2eHwJtlfTPr+zUxtPU7ZC0XSBsls6kCCyuIMLALqKye5gLFX7BjgB
+J1Ih0d+xHdEoYNTZd60AlgWeUB4JitJWZ3TQP4ZwY72mG09fy7hj6NBPOWzpU1Be
+g1cuqtpMji9qoFCfa1OqPFkN0dcbxEaQX686OM5BlWAK50uUjXXK+G8U29nXyFPa
+8JXJZTpLb5klUBwYBrypM7j2RWpHToi9gfUq1pd9ftvBZSHQQChKhbJX4O5+h6AH
+2m8HTyE9JzUKcaAFGWeun1PBNLX4//14zyNfglODMhlLmgdCqL/nDs7xYxSuM2VJ
+2WkhgGrdAepFYN7osQkr
+=xcbP
+-----END PGP SIGNATURE-----
+
+--ELMKpCVvjiB+uwRu--
