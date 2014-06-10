@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752096AbaFJKHt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 06:07:49 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:52088 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750763AbaFJKHr (ORCPT
+	id S1752122AbaFJKJi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 06:09:38 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:42914 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751611AbaFJKJh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 06:07:47 -0400
-Message-ID: <5396D8C9.6020607@linaro.org>
-Date: Tue, 10 Jun 2014 18:07:05 +0800
-From: "kefeng.wang" <kefeng.wang@linaro.org>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 10 Jun 2014 06:09:37 -0400
+Date: Tue, 10 Jun 2014 14:09:25 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: <akpm@linux-foundation.org>, <cl@linux.com>, <rientjes@google.com>,
+        <penberg@kernel.org>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
+Subject: Re: [PATCH -mm v2 7/8] slub: make dead memcg caches discard free
+ slabs immediately
+Message-ID: <20140610100924.GC6293@esperanza>
+References: <cover.1402060096.git.vdavydov@parallels.com>
+ <3b53266b76556dd042bbf6147207c70473572a7e.1402060096.git.vdavydov@parallels.com>
+ <20140610080935.GG19036@js1304-P5Q-DELUXE>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Hans de Goede <hdegoede@redhat.com>,
-        Zhangfei Gao <zhangfei.gao@linaro.org>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, wangkefeng.wang@huawei.com,
-        xuwei5@hisilicon.com
-Subject: Re: [PATCH] ahci: disable ncq feature for hisilicon sata
-References: <1398416351-30567-1-git-send-email-kefeng.wang@linaro.org> <20140514170757.GD15690@htj.dyndns.org> <5396D529.308@linaro.org>
-In-Reply-To: <5396D529.308@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140610080935.GG19036@js1304-P5Q-DELUXE>
+X-Originating-IP: [81.5.110.170]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+On Tue, Jun 10, 2014 at 05:09:35PM +0900, Joonsoo Kim wrote:
+> On Fri, Jun 06, 2014 at 05:22:44PM +0400, Vladimir Davydov wrote:
+> > @@ -2064,6 +2066,21 @@ static void put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
+> >  
+> >  	} while (this_cpu_cmpxchg(s->cpu_slab->partial, oldpage, page)
+> >  								!= oldpage);
+> > +
+> > +	if (memcg_cache_dead(s)) {
+> > +               bool done = false;
+> > +               unsigned long flags;
+> > +
+> > +               local_irq_save(flags);
+> > +               if (this_cpu_read(s->cpu_slab->partial) == page) {
+> > +                       unfreeze_partials(s, this_cpu_ptr(s->cpu_slab));
+> > +                       done = true;
+> > +               }
+> > +               local_irq_restore(flags);
+> > +
+> > +               if (!done)
+> > +                       flush_all(s);
+> > +	}
+> 
+> Now, slab_free() is non-preemptable so flush_all() isn't needed.
 
-I have a question, the hip04 and hix5hd2 soc use the old version of IP, but they
-also have a new version of IP which support FBS and NCQ, and now the new one is
-used by a new soc. How can I distinguish them, use "hisilicon,hisi-ahci-vX" or just
-add "generic-ahci" string for the IP which is conformant with spec and has
-no special customization and issue? Any advices, thanks.
+Right! Will fix.
 
-Regards,
-Kefeng
-
-On 2014-6-10 17:51, kefeng.wang wrote:
-> NCQ feature is unsupported on hisilicon sata controller, so disable it.
-> This version of IP is used by hip04 and hix5hd2 soc.
-> 
-> Signed-off-by: Kefeng Wang <kefeng.wang@linaro.org>
-> ---
->  drivers/ata/ahci_platform.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
-> index ebe505c..0cfda8b 100644
-> --- a/drivers/ata/ahci_platform.c
-> +++ b/drivers/ata/ahci_platform.c
-> @@ -58,7 +58,7 @@ static int ahci_probe(struct platform_device *pdev)
->         }
-> 
->         if (of_device_is_compatible(dev->of_node, "hisilicon,hisi-ahci"))
-> -               hflags |= AHCI_HFLAG_NO_FBS;
-> +               hflags = AHCI_HFLAG_NO_FBS | AHCI_HFLAG_NO_NCQ;
-> 
->         rc = ahci_platform_init_host(pdev, hpriv, &ahci_port_info,
->                                      hflags, 0, 0);
-> 
-
+Thanks.
