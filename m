@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753817AbaFJTrU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 15:47:20 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34972 "EHLO
+	id S1753792AbaFJTrT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 15:47:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34973 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753692AbaFJTrM (ORCPT
+	with ESMTP id S1753691AbaFJTrM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 10 Jun 2014 15:47:12 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Alex Deucher <alexander.deucher@amd.com>,
+        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 079/160] drm/radeon: don't allow runpm=1 on systems with out ATPX
-Date: Tue, 10 Jun 2014 12:45:19 -0700
-Message-Id: <1402429600-20477-80-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 075/160] drm/radeon: fix count in cik_sdma_ring_test()
+Date: Tue, 10 Jun 2014 12:45:15 -0700
+Message-Id: <1402429600-20477-76-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,39 +33,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexdeucher@gmail.com>
 
-commit 73acacc7397fe854ed2ab75f1c940fa00faaf15e upstream.
+commit 7e95cfb0b797678cd3493ca0322ef2675547a0bc upstream.
 
-vgaswitcheroo and the ATPX ACPI methods are required to
-power down the dGPU.
+Should be 5 rather than 4.
 
-bug:
-https://bugzilla.kernel.org/show_bug.cgi?id=73901
-
+Noticed-by: Mathias Fröhlich <Mathias.Froehlich@gmx.net>
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Christian König <christian.koenig@amd.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/radeon/radeon_kms.c | 8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ drivers/gpu/drm/radeon/cik_sdma.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_kms.c b/drivers/gpu/drm/radeon/radeon_kms.c
-index 9b2799c..e0315d2 100644
---- a/drivers/gpu/drm/radeon/radeon_kms.c
-+++ b/drivers/gpu/drm/radeon/radeon_kms.c
-@@ -107,11 +107,9 @@ int radeon_driver_load_kms(struct drm_device *dev, unsigned long flags)
- 		flags |= RADEON_IS_PCI;
- 	}
+diff --git a/drivers/gpu/drm/radeon/cik_sdma.c b/drivers/gpu/drm/radeon/cik_sdma.c
+index 2e0c7a8..d528dcf 100644
+--- a/drivers/gpu/drm/radeon/cik_sdma.c
++++ b/drivers/gpu/drm/radeon/cik_sdma.c
+@@ -526,7 +526,7 @@ int cik_sdma_ring_test(struct radeon_device *rdev,
+ 	tmp = 0xCAFEDEAD;
+ 	writel(tmp, ptr);
  
--	if (radeon_runtime_pm == 1)
--		flags |= RADEON_IS_PX;
--	else if ((radeon_runtime_pm == -1) &&
--		 radeon_has_atpx() &&
--		 ((flags & RADEON_IS_IGP) == 0))
-+	if ((radeon_runtime_pm != 0) &&
-+	    radeon_has_atpx() &&
-+	    ((flags & RADEON_IS_IGP) == 0))
- 		flags |= RADEON_IS_PX;
- 
- 	/* radeon_device_init should report only fatal error
+-	r = radeon_ring_lock(rdev, ring, 4);
++	r = radeon_ring_lock(rdev, ring, 5);
+ 	if (r) {
+ 		DRM_ERROR("radeon: dma failed to lock ring %d (%d).\n", ring->idx, r);
+ 		return r;
 -- 
 1.9.1
 
