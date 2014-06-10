@@ -1,139 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936201AbaFJAa0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:30:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58627 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934584AbaFJAWs (ORCPT
+	id S936208AbaFJAan (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:30:43 -0400
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:34517 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934584AbaFJAak (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 20:22:48 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        "J. Bruce Fields" <bfields@redhat.com>,
-        Weng Meiling <wengmeiling.weng@huawei.com>
-Subject: [PATCH 3.4 59/88] nfsd: pass net to __write_ports() and down
-Date: Mon,  9 Jun 2014 17:25:09 -0700
-Message-Id: <20140610002426.464191680@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
-References: <20140610002424.500996570@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Mon, 9 Jun 2014 20:30:40 -0400
 MIME-Version: 1.0
+In-Reply-To: <20140610003234.GB20728@kroah.com>
+References: <1401332999-15167-1-git-send-email-eparis@redhat.com>
+ <20140609223057.GB18475@kroah.com> <CALCETrUD75vSwJUjFuxGCrZ_7DJhCc1KW2v_ndF6EHJ31fUMBg@mail.gmail.com>
+ <20140609224645.GA8113@kroah.com> <CALCETrWb9HsaUWaQA+1ga6sH2_yUT=NEg-oKx=zFUQ5AZUqPaA@mail.gmail.com>
+ <20140610003234.GB20728@kroah.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 9 Jun 2014 17:30:19 -0700
+Message-ID: <CALCETrXpUZsUOoFgG4GRvStjLkWCn5=pNDFPTm-t5g=8HRaDhw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] auditsc: audit_krule mask accesses need bounds checking
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Eric Paris <eparis@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-audit@redhat.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Mon, Jun 9, 2014 at 5:32 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Mon, Jun 09, 2014 at 03:55:20PM -0700, Andy Lutomirski wrote:
+>> On Mon, Jun 9, 2014 at 3:46 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> > On Mon, Jun 09, 2014 at 03:35:02PM -0700, Andy Lutomirski wrote:
+>> >> On Mon, Jun 9, 2014 at 3:30 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> >> > On Wed, May 28, 2014 at 11:09:58PM -0400, Eric Paris wrote:
+>> >> >> From: Andy Lutomirski <luto@amacapital.net>
+>> >> >>
+>> >> >> Fixes an easy DoS and possible information disclosure.
+>> >> >>
+>> >> >> This does nothing about the broken state of x32 auditing.
+>> >> >>
+>> >> >> eparis: If the admin has enabled auditd and has specifically loaded audit
+>> >> >> rules.  This bug has been around since before git.  Wow...
+>> >> >>
+>> >> >> Cc: stable@vger.kernel.org
+>> >> >> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+>> >> >> Signed-off-by: Eric Paris <eparis@redhat.com>
+>> >> >> ---
+>> >> >>  kernel/auditsc.c | 27 ++++++++++++++++++---------
+>> >> >>  1 file changed, 18 insertions(+), 9 deletions(-)
+>> >> >
+>> >> > Did this patch get dropped somewhere?  Isn't it a valid bugfix, or did I
+>> >> > miss a later conversation about this?
+>> >>
+>> >> Hmm.  It seems that it didn't make it into Linus' tree.  Crap.
+>> >>
+>> >> IMO we need some kind of real tracking system for issues reported to
+>> >> security@.
+>> >
+>> > That seems to be my mbox at times :)
+>> >
+>> > But yes, having something "real" might be good if the load gets higher,
+>> > right now it's so low that my "sweep pending security patches" task
+>> > usually catches anything pending, which is rare.
+>> >
+>>
+>> There are currently at least two issues that I reported that are stuck
+>> in limbo: this one and the (not-yet-public) vfs thing.
+>
+> That was next on my list to poke people about...
+>
+>> And there's the CVE-2014-0181 regression fix that almost got
+>> forgotten, but that isn't really a security issue.
+>
+> What is that, where was that reported?
 
-------------------
+commit 2d7a85f4b06e9c27ff629f07a524c48074f07f81
+Author: Eric W. Biederman <ebiederm@xmission.com>
+Date:   Fri May 30 11:04:00 2014 -0700
 
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-
-commit 081603520b25f7b35ef63a363376a17c36ef74ed upstream.
-
-Precursor patch. Hard-coded "init_net" will be replaced by proper one in
-future.
-
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-[wengmeiling: backport to 3.4:
- - adjust context
- - add net_ns parameter to __write_ports_delxprt()]
-Signed-off-by: Weng Meiling <wengmeiling.weng@huawei.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- fs/nfsd/nfsctl.c |   22 +++++++++++-----------
- 1 file changed, 11 insertions(+), 11 deletions(-)
-
---- a/fs/nfsd/nfsctl.c
-+++ b/fs/nfsd/nfsctl.c
-@@ -650,11 +650,10 @@ static ssize_t __write_ports_names(char
-  * a socket of a supported family/protocol, and we use it as an
-  * nfsd listener.
-  */
--static ssize_t __write_ports_addfd(char *buf)
-+static ssize_t __write_ports_addfd(char *buf, struct net *net)
- {
- 	char *mesg = buf;
- 	int fd, err;
--	struct net *net = &init_net;
- 
- 	err = get_int(&mesg, &fd);
- 	if (err != 0 || fd < 0)
-@@ -698,12 +697,11 @@ static ssize_t __write_ports_delfd(char
-  * A transport listener is added by writing it's transport name and
-  * a port number.
-  */
--static ssize_t __write_ports_addxprt(char *buf)
-+static ssize_t __write_ports_addxprt(char *buf, struct net *net)
- {
- 	char transport[16];
- 	struct svc_xprt *xprt;
- 	int port, err;
--	struct net *net = &init_net;
- 
- 	if (sscanf(buf, "%15s %4u", transport, &port) != 2)
- 		return -EINVAL;
-@@ -743,7 +741,7 @@ out_err:
-  * A transport listener is removed by writing a "-", it's transport
-  * name, and it's port number.
-  */
--static ssize_t __write_ports_delxprt(char *buf)
-+static ssize_t __write_ports_delxprt(char *buf, struct net *net)
- {
- 	struct svc_xprt *xprt;
- 	char transport[16];
-@@ -755,7 +753,7 @@ static ssize_t __write_ports_delxprt(cha
- 	if (port < 1 || port > USHRT_MAX || nfsd_serv == NULL)
- 		return -EINVAL;
- 
--	xprt = svc_find_xprt(nfsd_serv, transport, &init_net, AF_UNSPEC, port);
-+	xprt = svc_find_xprt(nfsd_serv, transport, net, AF_UNSPEC, port);
- 	if (xprt == NULL)
- 		return -ENOTCONN;
- 
-@@ -764,22 +762,23 @@ static ssize_t __write_ports_delxprt(cha
- 	return 0;
- }
- 
--static ssize_t __write_ports(struct file *file, char *buf, size_t size)
-+static ssize_t __write_ports(struct file *file, char *buf, size_t size,
-+				struct net *net)
- {
- 	if (size == 0)
- 		return __write_ports_names(buf);
- 
- 	if (isdigit(buf[0]))
--		return __write_ports_addfd(buf);
-+		return __write_ports_addfd(buf, net);
- 
- 	if (buf[0] == '-' && isdigit(buf[1]))
- 		return __write_ports_delfd(buf);
- 
- 	if (isalpha(buf[0]))
--		return __write_ports_addxprt(buf);
-+		return __write_ports_addxprt(buf, net);
- 
- 	if (buf[0] == '-' && isalpha(buf[1]))
--		return __write_ports_delxprt(buf);
-+		return __write_ports_delxprt(buf, net);
- 
- 	return -EINVAL;
- }
-@@ -858,9 +857,10 @@ static ssize_t __write_ports(struct file
- static ssize_t write_ports(struct file *file, char *buf, size_t size)
- {
- 	ssize_t rv;
-+	struct net *net = &init_net;
- 
- 	mutex_lock(&nfsd_mutex);
--	rv = __write_ports(file, buf, size);
-+	rv = __write_ports(file, buf, size, net);
- 	mutex_unlock(&nfsd_mutex);
- 	return rv;
- }
+    netlink: Only check file credentials for implicit destinations
 
 
+The security issue got fixed quickly, but the fix turned out to be problematic.
+
+--Andy
