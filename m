@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932397AbaFJTwy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 15:52:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35431 "EHLO
+	id S1755336AbaFJTxL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 15:53:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35471 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755209AbaFJTwt (ORCPT
+	with ESMTP id S1755279AbaFJTxG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:52:49 -0400
+	Tue, 10 Jun 2014 15:53:06 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 057/160] ext4: avoid possible overflow in ext4_map_blocks()
-Date: Tue, 10 Jun 2014 12:44:57 -0700
-Message-Id: <1402429600-20477-58-git-send-email-kamal@canonical.com>
+Cc: Kieran Clancy <clancy.kieran@gmail.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 049/160] ACPI / EC: Process rather than discard events in acpi_ec_clear
+Date: Tue, 10 Jun 2014 12:44:49 -0700
+Message-Id: <1402429600-20477-50-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -26,65 +28,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Kieran Clancy <clancy.kieran@gmail.com>
 
-commit e861b5e9a47bd8c6a7491a2b9f6e9a230b1b8e86 upstream.
+commit 3eba563e280101209bad27d40bfc83ddf1489234 upstream.
 
-The ext4_map_blocks() function returns the number of blocks which
-satisfying the caller's request.  This number of blocks requested by
-the caller is specified by an unsigned integer, but the return value
-of ext4_map_blocks() is a signed integer (to accomodate error codes
-per the kernel's standard error signalling convention).
+Address a regression caused by commit ad332c8a4533:
+(ACPI / EC: Clear stale EC events on Samsung systems)
 
-Historically, overflows could never happen since mballoc() will refuse
-to allocate more than 2048 blocks at a time (which is something we
-should fix), and if the blocks were already allocated, the fact that
-there would be some number of intervening metadata blocks pretty much
-guaranteed that there could never be a contiguous region of data
-blocks that was greater than 2**31 blocks.
+After the earlier patch, there was found to be a race condition on some
+earlier Samsung systems (N150/N210/N220). The function acpi_ec_clear was
+sometimes discarding a new EC event before its GPE was triggered by the
+system. In the case of these systems, this meant that the "lid open"
+event was not registered on resume if that was the cause of the wake,
+leading to problems when attempting to close the lid to suspend again.
 
-However, this is now possible if there is a file system which is a bit
-bigger than 8TB, and is created using the new mke2fs hugeblock
-feature, which can create a perfectly contiguous file.  In that case,
-if a userspace program attempted to call fallocate() on this already
-fully allocated file, it's possible that ext4_map_blocks() could
-return a number large enough that it would overflow a signed integer,
-resulting in a ext4 thinking that the ext4_map_blocks() call had
-failed with some strange error code.
+After testing on a number of Samsung systems, both those affected by the
+previous EC bug and those affected by the race condition, it seemed that
+the best course of action was to process rather than discard the events.
+On Samsung systems which accumulate stale EC events, there does not seem
+to be any adverse side-effects of running the associated _Q methods.
 
-Since ext4_map_blocks() is always free to return a smaller number of
-blocks than what was requested by the caller, fix this by capping the
-number of blocks that ext4_map_blocks() will ever try to map to 2**31
-- 1.  In practice this should never get hit, except by someone
-deliberately trying to provke the above-described bug.
+This patch adds an argument to the static function acpi_ec_sync_query so
+that it may be used within the acpi_ec_clear loop in place of
+acpi_ec_query_unlocked which was used previously.
 
-Thanks to the PaX team for asking whethre this could possibly happen
-in some off-line discussions about using some static code checking
-technology they are developing to find bugs in kernel code.
+With thanks to Stefan Biereigel for reporting the issue, and for all the
+people who helped test the new patch on affected systems.
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Fixes: ad332c8a4533 (ACPI / EC: Clear stale EC events on Samsung systems)
+References: https://lkml.kernel.org/r/532FE3B2.9060808@biereigel-wb.de
+References: https://bugzilla.kernel.org/show_bug.cgi?id=44161#c173
+Reported-by: Stefan Biereigel <stefan@biereigel.de>
+Signed-off-by: Kieran Clancy <clancy.kieran@gmail.com>
+Tested-by: Stefan Biereigel <stefan@biereigel.de>
+Tested-by: Dennis Jansen <dennis.jansen@web.de>
+Tested-by: Nicolas Porcel <nicolasporcel06@gmail.com>
+Tested-by: Maurizio D'Addona <mauritiusdadd@gmail.com>
+Tested-by: Juan Manuel Cabo <juanmanuel.cabo@gmail.com>
+Tested-by: Giannis Koutsou <giannis.koutsou@gmail.com>
+Tested-by: Kieran Clancy <clancy.kieran@gmail.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/ext4/inode.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/acpi/ec.c | 21 ++++++++++++---------
+ 1 file changed, 12 insertions(+), 9 deletions(-)
 
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 3617e33..18e1871 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -515,6 +515,12 @@ int ext4_map_blocks(handle_t *handle, struct inode *inode,
- 		  "logical block %lu\n", inode->i_ino, flags, map->m_len,
- 		  (unsigned long) map->m_lblk);
+diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
+index b4f15c6..98e9985 100644
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -211,13 +211,13 @@ unlock:
+ 	spin_unlock_irqrestore(&ec->lock, flags);
+ }
  
-+	/*
-+	 * ext4_map_blocks returns an int, and m_len is an unsigned int
-+	 */
-+	if (unlikely(map->m_len > INT_MAX))
-+		map->m_len = INT_MAX;
+-static int acpi_ec_sync_query(struct acpi_ec *ec);
++static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data);
+ 
+ static int ec_check_sci_sync(struct acpi_ec *ec, u8 state)
+ {
+ 	if (state & ACPI_EC_FLAG_SCI) {
+ 		if (!test_and_set_bit(EC_FLAGS_QUERY_PENDING, &ec->flags))
+-			return acpi_ec_sync_query(ec);
++			return acpi_ec_sync_query(ec, NULL);
+ 	}
+ 	return 0;
+ }
+@@ -469,10 +469,8 @@ acpi_handle ec_get_handle(void)
+ 
+ EXPORT_SYMBOL(ec_get_handle);
+ 
+-static int acpi_ec_query_unlocked(struct acpi_ec *ec, u8 *data);
+-
+ /*
+- * Clears stale _Q events that might have accumulated in the EC.
++ * Process _Q events that might have accumulated in the EC.
+  * Run with locked ec mutex.
+  */
+ static void acpi_ec_clear(struct acpi_ec *ec)
+@@ -481,7 +479,7 @@ static void acpi_ec_clear(struct acpi_ec *ec)
+ 	u8 value = 0;
+ 
+ 	for (i = 0; i < ACPI_EC_CLEAR_MAX; i++) {
+-		status = acpi_ec_query_unlocked(ec, &value);
++		status = acpi_ec_sync_query(ec, &value);
+ 		if (status || !value)
+ 			break;
+ 	}
+@@ -608,13 +606,18 @@ static void acpi_ec_run(void *cxt)
+ 	kfree(handler);
+ }
+ 
+-static int acpi_ec_sync_query(struct acpi_ec *ec)
++static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data)
+ {
+ 	u8 value = 0;
+ 	int status;
+ 	struct acpi_ec_query_handler *handler, *copy;
+-	if ((status = acpi_ec_query_unlocked(ec, &value)))
 +
- 	/* Lookup extent status tree firstly */
- 	if (ext4_es_lookup_extent(inode, map->m_lblk, &es)) {
- 		ext4_es_lru_add(inode);
++	status = acpi_ec_query_unlocked(ec, &value);
++	if (data)
++		*data = value;
++	if (status)
+ 		return status;
++
+ 	list_for_each_entry(handler, &ec->list, node) {
+ 		if (value == handler->query_bit) {
+ 			/* have custom handler for this bit */
+@@ -638,7 +641,7 @@ static void acpi_ec_gpe_query(void *ec_cxt)
+ 	if (!ec)
+ 		return;
+ 	mutex_lock(&ec->mutex);
+-	acpi_ec_sync_query(ec);
++	acpi_ec_sync_query(ec, NULL);
+ 	mutex_unlock(&ec->mutex);
+ }
+ 
 -- 
 1.9.1
 
