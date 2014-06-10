@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936260AbaFJAdK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:33:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58624 "EHLO
+	id S936284AbaFJAdc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:33:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58616 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934529AbaFJAWp (ORCPT
+	with ESMTP id S934447AbaFJAWo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 20:22:45 -0400
+	Mon, 9 Jun 2014 20:22:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Ben Hutchings <ben@decadent.org.uk>, Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 3.4 64/88] mpt2sas: Fix for device scan following host reset could get stuck in a infinite loop
-Date: Mon,  9 Jun 2014 17:25:14 -0700
-Message-Id: <20140610002426.619398375@linuxfoundation.org>
+        Weng Meiling <wengmeiling.weng@huawei.com>,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.4 62/88] nfsd: check passed sockets net matches NFSd superblocks one
+Date: Mon,  9 Jun 2014 17:25:12 -0700
+Message-Id: <20140610002426.551668074@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
 References: <20140610002424.500996570@linuxfoundation.org>
@@ -30,244 +30,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-commit 6241f22ca12a26ee149cbe31b27bac97dbdc8bc4 upstream.
+commit 3064639423c48d6e0eb9ecc27c512a58e38c6c57 upstream.
 
-Modified device scan routine so each configuration page read breaks from the
-while loop when the ioc_status is not equal to MPI2_IOCSTATUS_SUCCESS.
+There could be a case, when NFSd file system is mounted in network, different
+to socket's one, like below:
 
-[jejb: checkpatch fixes]
-Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-[bwh: Backported to 3.2; adjust context]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Rui Xiang <rui.xiang@huawei.com>
+"ip netns exec" creates new network and mount namespace, which duplicates NFSd
+mount point, created in init_net context. And thus NFS server stop in nested
+network context leads to RPCBIND client destruction in init_net.
+Then, on NFSd start in nested network context, rpc.nfsd process creates socket
+in nested net and passes it into "write_ports", which leads to RPCBIND sockets
+creation in init_net context because of the same reason (NFSd monut point was
+created in init_net context). An attempt to register passed socket in nested
+net leads to panic, because no RPCBIND client present in nexted network
+namespace.
+
+This patch add check that passed socket's net matches NFSd superblock's one.
+And returns -EINVAL error to user psace otherwise.
+
+v2: Put socket on exit.
+
+Reported-by: Weng Meiling <wengmeiling.weng@huawei.com>
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+[wengmeiling: backport to 3.4: adjust context]
+Signed-off-by: Weng Meiling <wengmeiling.weng@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/scsi/mpt2sas/mpt2sas_scsih.c |  118 ++++++++++++++++++++++++++++++++++-
- 1 file changed, 115 insertions(+), 3 deletions(-)
+ fs/nfsd/nfsctl.c               |    5 +++++
+ include/linux/sunrpc/svcsock.h |    1 +
+ net/sunrpc/svcsock.c           |   16 ++++++++++++++++
+ 3 files changed, 22 insertions(+)
 
---- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-@@ -7039,11 +7039,14 @@ _scsih_scan_for_devices_after_reset(stru
- 	struct _sas_device *sas_device;
- 	struct _sas_node *expander_device;
- 	static struct _raid_device *raid_device;
-+	u8 retry_count;
+--- a/fs/nfsd/nfsctl.c
++++ b/fs/nfsd/nfsctl.c
+@@ -660,6 +660,11 @@ static ssize_t __write_ports_addfd(char
+ 	if (err != 0 || fd < 0)
+ 		return -EINVAL;
  
- 	printk(MPT2SAS_INFO_FMT "scan devices: start\n", ioc->name);
- 
- 	_scsih_sas_host_refresh(ioc);
- 
-+	printk(MPT2SAS_INFO_FMT "\tscan devices: expanders start\n",
-+		ioc->name);
- 	/* expanders */
- 	handle = 0xFFFF;
- 	while (!(mpt2sas_config_get_expander_pg0(ioc, &mpi_reply, &expander_pg0,
-@@ -7052,19 +7055,39 @@ _scsih_scan_for_devices_after_reset(stru
- 		    MPI2_IOCSTATUS_MASK;
- 		if (ioc_status == MPI2_IOCSTATUS_CONFIG_INVALID_PAGE)
- 			break;
-+		if (ioc_status != MPI2_IOCSTATUS_SUCCESS) {
-+			printk(MPT2SAS_INFO_FMT "\tbreak from expander scan: "
-+				"ioc_status(0x%04x), loginfo(0x%08x)\n",
-+				ioc->name, ioc_status,
-+				le32_to_cpu(mpi_reply.IOCLogInfo));
-+			break;
-+		}
- 		handle = le16_to_cpu(expander_pg0.DevHandle);
- 		expander_device = mpt2sas_scsih_expander_find_by_sas_address(
- 		    ioc, le64_to_cpu(expander_pg0.SASAddress));
- 		if (expander_device)
- 			_scsih_refresh_expander_links(ioc, expander_device,
- 			    handle);
--		else
-+		else {
-+			printk(MPT2SAS_INFO_FMT "\tBEFORE adding expander: "
-+				"handle (0x%04x), sas_addr(0x%016llx)\n",
-+				ioc->name, handle, (unsigned long long)
-+				le64_to_cpu(expander_pg0.SASAddress));
- 			_scsih_expander_add(ioc, handle);
-+			printk(MPT2SAS_INFO_FMT "\tAFTER adding expander: "
-+				"handle (0x%04x), sas_addr(0x%016llx)\n",
-+				ioc->name, handle, (unsigned long long)
-+				le64_to_cpu(expander_pg0.SASAddress));
-+		}
- 	}
- 
-+	printk(MPT2SAS_INFO_FMT "\tscan devices: expanders complete\n",
-+		ioc->name);
++	if (svc_alien_sock(net, fd)) {
++		printk(KERN_ERR "%s: socket net is different to NFSd's one\n", __func__);
++		return -EINVAL;
++	}
 +
- 	if (!ioc->ir_firmware)
- 		goto skip_to_sas;
- 
-+	printk(MPT2SAS_INFO_FMT "\tscan devices phys disk start\n", ioc->name);
- 	/* phys disk */
- 	phys_disk_num = 0xFF;
- 	while (!(mpt2sas_config_get_phys_disk_pg0(ioc, &mpi_reply,
-@@ -7074,6 +7097,13 @@ _scsih_scan_for_devices_after_reset(stru
- 		    MPI2_IOCSTATUS_MASK;
- 		if (ioc_status == MPI2_IOCSTATUS_CONFIG_INVALID_PAGE)
- 			break;
-+		if (ioc_status != MPI2_IOCSTATUS_SUCCESS) {
-+			printk(MPT2SAS_INFO_FMT "\tbreak from phys disk scan:"
-+				"ioc_status(0x%04x), loginfo(0x%08x)\n",
-+				ioc->name, ioc_status,
-+				le32_to_cpu(mpi_reply.IOCLogInfo));
-+			break;
-+		}
- 		phys_disk_num = pd_pg0.PhysDiskNum;
- 		handle = le16_to_cpu(pd_pg0.DevHandle);
- 		sas_device = _scsih_sas_device_find_by_handle(ioc, handle);
-@@ -7083,17 +7113,46 @@ _scsih_scan_for_devices_after_reset(stru
- 		    &sas_device_pg0, MPI2_SAS_DEVICE_PGAD_FORM_HANDLE,
- 		    handle) != 0)
- 			continue;
-+		ioc_status = le16_to_cpu(mpi_reply.IOCStatus) &
-+			MPI2_IOCSTATUS_MASK;
-+		if (ioc_status != MPI2_IOCSTATUS_SUCCESS) {
-+			printk(MPT2SAS_INFO_FMT "\tbreak from phys disk scan "
-+				"ioc_status(0x%04x), loginfo(0x%08x)\n",
-+				ioc->name, ioc_status,
-+				le32_to_cpu(mpi_reply.IOCLogInfo));
-+			break;
-+		}
- 		parent_handle = le16_to_cpu(sas_device_pg0.ParentDevHandle);
- 		if (!_scsih_get_sas_address(ioc, parent_handle,
- 		    &sas_address)) {
-+			printk(MPT2SAS_INFO_FMT "\tBEFORE adding phys disk: "
-+				" handle (0x%04x), sas_addr(0x%016llx)\n",
-+				ioc->name, handle, (unsigned long long)
-+				le64_to_cpu(sas_device_pg0.SASAddress));
- 			mpt2sas_transport_update_links(ioc, sas_address,
- 			    handle, sas_device_pg0.PhyNum,
- 			    MPI2_SAS_NEG_LINK_RATE_1_5);
- 			set_bit(handle, ioc->pd_handles);
--			_scsih_add_device(ioc, handle, 0, 1);
-+			retry_count = 0;
-+			/* This will retry adding the end device.
-+			* _scsih_add_device() will decide on retries and
-+			* return "1" when it should be retried
-+			*/
-+			while (_scsih_add_device(ioc, handle, retry_count++,
-+				1)) {
-+					ssleep(1);
-+			}
-+			printk(MPT2SAS_INFO_FMT "\tAFTER adding phys disk: "
-+				" handle (0x%04x), sas_addr(0x%016llx)\n",
-+				ioc->name, handle, (unsigned long long)
-+				le64_to_cpu(sas_device_pg0.SASAddress));
- 		}
- 	}
- 
-+	printk(MPT2SAS_INFO_FMT "\tscan devices: phys disk complete\n",
-+		ioc->name);
-+
-+	printk(MPT2SAS_INFO_FMT "\tscan devices: volumes start\n", ioc->name);
- 	/* volumes */
- 	handle = 0xFFFF;
- 	while (!(mpt2sas_config_get_raid_volume_pg1(ioc, &mpi_reply,
-@@ -7102,6 +7161,13 @@ _scsih_scan_for_devices_after_reset(stru
- 		    MPI2_IOCSTATUS_MASK;
- 		if (ioc_status == MPI2_IOCSTATUS_CONFIG_INVALID_PAGE)
- 			break;
-+		if (ioc_status != MPI2_IOCSTATUS_SUCCESS) {
-+			printk(MPT2SAS_INFO_FMT "\tbreak from volume scan: "
-+				"ioc_status(0x%04x), loginfo(0x%08x)\n",
-+				ioc->name, ioc_status,
-+				le32_to_cpu(mpi_reply.IOCLogInfo));
-+			break;
-+		}
- 		handle = le16_to_cpu(volume_pg1.DevHandle);
- 		raid_device = _scsih_raid_device_find_by_wwid(ioc,
- 		    le64_to_cpu(volume_pg1.WWID));
-@@ -7111,18 +7177,38 @@ _scsih_scan_for_devices_after_reset(stru
- 		    &volume_pg0, MPI2_RAID_VOLUME_PGAD_FORM_HANDLE, handle,
- 		     sizeof(Mpi2RaidVolPage0_t)))
- 			continue;
-+		ioc_status = le16_to_cpu(mpi_reply.IOCStatus) &
-+			MPI2_IOCSTATUS_MASK;
-+		if (ioc_status != MPI2_IOCSTATUS_SUCCESS) {
-+			printk(MPT2SAS_INFO_FMT "\tbreak from volume scan: "
-+				"ioc_status(0x%04x), loginfo(0x%08x)\n",
-+				ioc->name, ioc_status,
-+				le32_to_cpu(mpi_reply.IOCLogInfo));
-+			break;
-+		}
- 		if (volume_pg0.VolumeState == MPI2_RAID_VOL_STATE_OPTIMAL ||
- 		    volume_pg0.VolumeState == MPI2_RAID_VOL_STATE_ONLINE ||
- 		    volume_pg0.VolumeState == MPI2_RAID_VOL_STATE_DEGRADED) {
- 			memset(&element, 0, sizeof(Mpi2EventIrConfigElement_t));
- 			element.ReasonCode = MPI2_EVENT_IR_CHANGE_RC_ADDED;
- 			element.VolDevHandle = volume_pg1.DevHandle;
-+			printk(MPT2SAS_INFO_FMT "\tBEFORE adding volume: "
-+				" handle (0x%04x)\n", ioc->name,
-+				volume_pg1.DevHandle);
- 			_scsih_sas_volume_add(ioc, &element);
-+			printk(MPT2SAS_INFO_FMT "\tAFTER adding volume: "
-+				" handle (0x%04x)\n", ioc->name,
-+				volume_pg1.DevHandle);
- 		}
- 	}
- 
-+	printk(MPT2SAS_INFO_FMT "\tscan devices: volumes complete\n",
-+		ioc->name);
-+
-  skip_to_sas:
- 
-+	printk(MPT2SAS_INFO_FMT "\tscan devices: end devices start\n",
-+		ioc->name);
- 	/* sas devices */
- 	handle = 0xFFFF;
- 	while (!(mpt2sas_config_get_sas_device_pg0(ioc, &mpi_reply,
-@@ -7132,6 +7218,13 @@ _scsih_scan_for_devices_after_reset(stru
- 		    MPI2_IOCSTATUS_MASK;
- 		if (ioc_status == MPI2_IOCSTATUS_CONFIG_INVALID_PAGE)
- 			break;
-+		if (ioc_status != MPI2_IOCSTATUS_SUCCESS) {
-+			printk(MPT2SAS_INFO_FMT "\tbreak from end device scan:"
-+				" ioc_status(0x%04x), loginfo(0x%08x)\n",
-+				ioc->name, ioc_status,
-+				le32_to_cpu(mpi_reply.IOCLogInfo));
-+				break;
-+		}
- 		handle = le16_to_cpu(sas_device_pg0.DevHandle);
- 		if (!(_scsih_is_end_device(
- 		    le32_to_cpu(sas_device_pg0.DeviceInfo))))
-@@ -7142,12 +7235,31 @@ _scsih_scan_for_devices_after_reset(stru
- 			continue;
- 		parent_handle = le16_to_cpu(sas_device_pg0.ParentDevHandle);
- 		if (!_scsih_get_sas_address(ioc, parent_handle, &sas_address)) {
-+			printk(MPT2SAS_INFO_FMT "\tBEFORE adding end device: "
-+				"handle (0x%04x), sas_addr(0x%016llx)\n",
-+				ioc->name, handle, (unsigned long long)
-+				le64_to_cpu(sas_device_pg0.SASAddress));
- 			mpt2sas_transport_update_links(ioc, sas_address, handle,
- 			    sas_device_pg0.PhyNum, MPI2_SAS_NEG_LINK_RATE_1_5);
--			_scsih_add_device(ioc, handle, 0, 0);
-+			retry_count = 0;
-+			/* This will retry adding the end device.
-+			 * _scsih_add_device() will decide on retries and
-+			 * return "1" when it should be retried
-+			 */
-+			while (_scsih_add_device(ioc, handle, retry_count++,
-+				0)) {
-+					ssleep(1);
-+			}
-+			printk(MPT2SAS_INFO_FMT "\tAFTER adding end device: "
-+				"handle (0x%04x), sas_addr(0x%016llx)\n",
-+				ioc->name, handle, (unsigned long long)
-+				le64_to_cpu(sas_device_pg0.SASAddress));
- 		}
- 	}
- 
-+	printk(MPT2SAS_INFO_FMT "\tscan devices: end devices complete\n",
-+		ioc->name);
-+
- 	printk(MPT2SAS_INFO_FMT "scan devices: complete\n", ioc->name);
+ 	err = nfsd_create_serv(net);
+ 	if (err != 0)
+ 		return err;
+--- a/include/linux/sunrpc/svcsock.h
++++ b/include/linux/sunrpc/svcsock.h
+@@ -42,6 +42,7 @@ void		svc_sock_update_bufs(struct svc_se
+ int		svc_sock_names(struct svc_serv *serv, char *buf,
+ 					const size_t buflen,
+ 					const char *toclose);
++bool		svc_alien_sock(struct net *net, int fd);
+ int		svc_addsock(struct svc_serv *serv, const int fd,
+ 					char *name_return, const size_t len);
+ void		svc_init_xprt_sock(void);
+--- a/net/sunrpc/svcsock.c
++++ b/net/sunrpc/svcsock.c
+@@ -1441,6 +1441,22 @@ static struct svc_sock *svc_setup_socket
+ 	return svsk;
  }
  
++bool svc_alien_sock(struct net *net, int fd)
++{
++	int err;
++	struct socket *sock = sockfd_lookup(fd, &err);
++	bool ret = false;
++
++	if (!sock)
++		goto out;
++	if (sock_net(sock->sk) != net)
++		ret = true;
++	sockfd_put(sock);
++out:
++	return ret;
++}
++EXPORT_SYMBOL_GPL(svc_alien_sock);
++
+ /**
+  * svc_addsock - add a listener socket to an RPC service
+  * @serv: pointer to RPC service to which to add a new listener
 
 
