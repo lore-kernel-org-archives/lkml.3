@@ -1,68 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932880AbaFJUkL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 16:40:11 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34847 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753434AbaFJTq4 (ORCPT
+	id S1754482AbaFJUpS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 16:45:18 -0400
+Received: from www.linutronix.de ([62.245.132.108]:55340 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752736AbaFJUpP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:46:56 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Johannes Berg <johannes.berg@intel.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 004/160] mac80211: fix software remain-on-channel implementation
-Date: Tue, 10 Jun 2014 12:44:04 -0700
-Message-Id: <1402429600-20477-5-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
-References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Tue, 10 Jun 2014 16:45:15 -0400
+Date: Tue, 10 Jun 2014 22:45:11 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Jason Low <jason.low2@hp.com>, Brad Mouring <bmouring@ni.com>
+Subject: Re: [patch V3 7/7] rtmutex: Avoid pointless requeueing in the deadlock
+ detection chain walk
+In-Reply-To: <20140610134745.668c8a4e@gandalf.local.home>
+Message-ID: <alpine.DEB.2.10.1406102244080.5170@nanos>
+References: <20140609201118.387571774@linutronix.de> <20140609202336.506044876@linutronix.de> <20140609212033.1cff0999@gandalf.local.home> <alpine.DEB.2.10.1406101630350.31315@nanos> <20140610134745.668c8a4e@gandalf.local.home>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.3 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, 10 Jun 2014, Steven Rostedt wrote:
 
-------------------
+> On Tue, 10 Jun 2014 19:41:39 +0200 (CEST)
+> Thomas Gleixner <tglx@linutronix.de> wrote:
+> 
+>  
+> > > On the loop back around, have something like:
+> > > 
+> > > 	if (top_waiter) {
+> > > 		if (!task_has_pi_waiters(task))
+> > > 			goto out_unlock_pi;
+> > 
+> > 	The task has at least one pi waiter.
+> >  
+> > > 		if (!requeue &&
+> > > 		    top_waiter != task_top_pi_waiter(task)) {
+> > > 			if (!detect_deadlock)
+> > > 				goto out_unlock_pi;
+> > > 			else
+> > > 				requeue = false;
+> > > 		}
+> > 
+> > 	Errm? if requeue is off we are in deadlock detection chainwalk
+> > 	mode. So all we care about is whether task is blocked on
+> > 	next_lock or not.
+> 
+> Actually that was a typo on my part. That should have been:
+> 
+> 	if (requeue &&
+> 		...
+> 
+> As we don't need to read the task_top_pi_waiter() again.
 
-From: Johannes Berg <johannes.berg@intel.com>
+     if (requeue ...
 
-commit 115b943a6ea12656088fa1ff6634c0d30815e55b upstream.
+is completely pointless as the code you were talking about is in the
 
-Jouni reported that when doing off-channel transmissions mixed
-with on-channel transmissions, the on-channel ones ended up on
-the off-channel in some cases.
+   if (!requeue) {
 
-The reason for that is that during the refactoring of the off-
-channel code, I lost the part that stopped all activity and as
-a consequence the on-channel frames (including data frames)
-were no longer queued but would be transmitted on the temporary
-channel.
+branch. So what?
 
-Fix this by simply restoring the lost activity stop call.
+Thanks,
 
-Fixes: 2eb278e083549 ("mac80211: unify SW/offload remain-on-channel")
-Reported-by: Jouni Malinen <j@w1.fi>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- net/mac80211/offchannel.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/net/mac80211/offchannel.c b/net/mac80211/offchannel.c
-index 0c2a294..6fb3855 100644
---- a/net/mac80211/offchannel.c
-+++ b/net/mac80211/offchannel.c
-@@ -355,6 +355,7 @@ void ieee80211_sw_roc_work(struct work_struct *work)
- 		struct ieee80211_roc_work *dep;
- 
- 		/* start this ROC */
-+		ieee80211_offchannel_stop_vifs(local);
- 
- 		/* switch channel etc */
- 		ieee80211_recalc_idle(local);
--- 
-1.9.1
-
+	tglx
