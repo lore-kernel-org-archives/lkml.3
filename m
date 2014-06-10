@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474AbaFJWFJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 18:05:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59154 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751002AbaFJWFH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 18:05:07 -0400
-Date: Wed, 11 Jun 2014 00:04:51 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Christoph Lameter <cl@gentwo.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Vlastimil Babka <vbabka@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH, RFC 00/10] THP refcounting redesign
-Message-ID: <20140610220451.GG19660@redhat.com>
-References: <1402329861-7037-1-git-send-email-kirill.shutemov@linux.intel.com>
- <alpine.DEB.2.10.1406101518510.19364@gentwo.org>
- <20140610204640.GA9594@node.dhcp.inet.fi>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140610204640.GA9594@node.dhcp.inet.fi>
+	id S1753978AbaFJWGE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 18:06:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40375 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753616AbaFJWGC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 18:06:02 -0400
+Date: Tue, 10 Jun 2014 15:06:00 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: mingo@kernel.org, luto@amacapital.net, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com,
+        "tip-bot for H. Peter Anvin" <tipbot@zytor.com>,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/vdso] x86, vdso: Use <tools/le_byteshift.h> for
+ littleendian access
+Message-Id: <20140610150600.af0649ca26db602d51fe8899@linux-foundation.org>
+In-Reply-To: <53977885.8010709@zytor.com>
+References: <20140606140017.afb7f91142f66cb3dd13c186@linux-foundation.org>
+	<tip-bdfb9bcc25005d06a9c301830bdeb7ca5a0b6ef7@git.kernel.org>
+	<20140610135051.c3c34165f73d67d218b62bd9@linux-foundation.org>
+	<53977885.8010709@zytor.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 10, 2014 at 11:46:40PM +0300, Kirill A. Shutemov wrote:
-> Agreed. The patchset drops tail page refcounting.
+On Tue, 10 Jun 2014 14:28:37 -0700 "H. Peter Anvin" <hpa@zytor.com> wrote:
 
-Very possibly I misread something or a later patch fixes this up, I
-just did a basic code review, but from the new code of split_huge_page
-it looks like it returns -EBUSY after checking the individual tail
-page refcounts, so it's not clear how that defines as "dropped".
+> Want to test this patch before I commit it?
+> 
+> ...
+>
+> >From 15ea1a528e08c6bc322f10686ec8d73ba413b941 Mon Sep 17 00:00:00 2001
+> From: "H. Peter Anvin" <hpa@zytor.com>
+> Date: Tue, 10 Jun 2014 14:25:26 -0700
+> Subject: [PATCH] x86, vdso: Remove one final use of htole16()
+> 
+> One final use of the macros from <endian.h> which are not available on
+> older system.  In this case we had one sole case of *writing* a
+> littleendian number, but the number is SHN_UNDEF which is the constant
+> zero, so rather than dealing with the general case of littleendian
+> puts here, just document that the constant is zero and be done with
+> it.
 
-+       for (i = 0; i < HPAGE_PMD_NR; i++)
-+               tail_count += page_mapcount(page + i);
-+       if (tail_count != page_count(page) - 1) {
-+               BUG_ON(tail_count > page_count(page) - 1);
-+               compound_unlock(page);
-+               spin_unlock_irq(&zone->lru_lock);
-+               return -EBUSY;
+Compiles and boots, thanks.
