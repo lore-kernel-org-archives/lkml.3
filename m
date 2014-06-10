@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934584AbaFJBdg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 21:33:36 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:53808 "EHLO
+	id S964878AbaFJBdh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 21:33:37 -0400
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:21933 "EHLO
 	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932328AbaFJB2K (ORCPT
+	by vger.kernel.org with ESMTP id S932262AbaFJB2K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jun 2014 21:28:10 -0400
 From: Chao Xie <chao.xie@marvell.com>
@@ -12,10 +12,12 @@ To: <haojian.zhuang@gmail.com>, <mturquette@linaro.org>,
         <chao.xie@marvell.com>, <xiechao_mail@163.com>,
         <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH 00/12] clk: mmp: clock device tree support
-Date: Tue, 10 Jun 2014 09:27:36 +0800
-Message-ID: <1402363668-25806-1-git-send-email-chao.xie@marvell.com>
+Subject: [PATCH 01/12] clk: mmp: add prefix "mmp" for structures defined for clk-frac
+Date: Tue, 10 Jun 2014 09:27:37 +0800
+Message-ID: <1402363668-25806-2-git-send-email-chao.xie@marvell.com>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1402363668-25806-1-git-send-email-chao.xie@marvell.com>
+References: <1402363668-25806-1-git-send-email-chao.xie@marvell.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
@@ -29,100 +31,182 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Chao Xie <chao.xie@marvell.com>
 
-The patch set focuses at support device tree for clock.
+The structures defined for clk-frac will be used out side
+of clk-frac.c.
+To avoid conflicts, add prefix "mmp" for these structures'
+name.
 
-The first part of the patches
-  clk: mmp: add prefix "mmp" for structures defined for clk-frac
-  clk: mmp: add spin lock for clk-frac
-  clk: mmp: add init callback for clk-frac
-  clk: mmp: move definiton of mmp_clk_frac to clk.h
-It enhances the clk-frac.
+Signed-off-by: Chao Xie <chao.xie@marvell.com>
+---
+ drivers/clk/mmp/clk-frac.c   | 23 ++++++++++++-----------
+ drivers/clk/mmp/clk-mmp2.c   |  4 ++--
+ drivers/clk/mmp/clk-pxa168.c |  4 ++--
+ drivers/clk/mmp/clk-pxa910.c |  4 ++--
+ drivers/clk/mmp/clk.h        |  8 ++++----
+ 5 files changed, 22 insertions(+), 21 deletions(-)
 
-The second part of the patches
-  clk: mmp: add clock type mix
-  clk: mmp: add mmp private gate clock
-  clk: mmp: add clock type composite for mix
-It add three new types of clocks.
-
-The third part of the patches
-  clk: mmp: add clock type master
-  clk: mmp: add spin lock automatic detection from device tree
-  clk: mmp: add device tree support for composite type clock
-  clk: mmp: add device tree support for clocks.
-It add the device tree support. The whole clock tree is not
-defined in .c file, but be parsed from the device tree file.
-
-The final part of the patches
-  arm: mmp: support clock device tree for mmp platforms
-Change the mmp platform to use device tree to parse the clocks.
-
-Chao Xie (12):
-  clk: mmp: add prefix "mmp" for structures defined for clk-frac
-  clk: mmp: add spin lock for clk-frac
-  clk: mmp: add init callback for clk-frac
-  clk: mmp: move definiton of mmp_clk_frac to clk.h
-  clk: mmp: add clock type mix
-  clk: mmp: add mmp private gate clock
-  clk: mmp: add clock type composite for mix
-  clk: mmp: add clock type master
-  clk: mmp: add spin lock automatic detection from device tree
-  clk: mmp: add device tree support for composite type clock
-  clk: mmp: add device tree support for clocks.
-  arm: mmp: support clock device tree for mmp platforms
-
- .../devicetree/bindings/clock/mmp/clk-composite    |  58 ++
- .../devicetree/bindings/clock/mmp/clk-div          |  28 +
- .../devicetree/bindings/clock/mmp/clk-factor       |  28 +
- .../devicetree/bindings/clock/mmp/clk-gate         |  41 ++
- .../devicetree/bindings/clock/mmp/clk-master       |  47 ++
- .../devicetree/bindings/clock/mmp/clk-mix          |  38 ++
- .../devicetree/bindings/clock/mmp/clk-mux          |  20 +
- Documentation/devicetree/bindings/clock/mmp/lock   |  44 ++
- arch/arm/boot/dts/mmp2-clock.dtsi                  | 575 +++++++++++++++++
- arch/arm/boot/dts/mmp2.dtsi                        |  11 +
- arch/arm/boot/dts/pxa168-clock.dtsi                | 443 +++++++++++++
- arch/arm/boot/dts/pxa168.dtsi                      |  10 +
- arch/arm/boot/dts/pxa910-clock.dtsi                | 388 ++++++++++++
- arch/arm/boot/dts/pxa910.dtsi                      |  10 +
- arch/arm/mach-mmp/Kconfig                          |   7 +-
- arch/arm/mach-mmp/Makefile                         |   2 +-
- arch/arm/mach-mmp/common.h                         |   1 +
- arch/arm/mach-mmp/mmp-dt.c                         |  57 +-
- arch/arm/mach-mmp/mmp2-dt.c                        |  50 --
- drivers/clk/mmp/Makefile                           |   7 +-
- drivers/clk/mmp/clk-frac.c                         |  74 ++-
- drivers/clk/mmp/clk-gate.c                         | 133 ++++
- drivers/clk/mmp/clk-master-node.c                  | 195 ++++++
- drivers/clk/mmp/clk-mix-composite.c                | 195 ++++++
- drivers/clk/mmp/clk-mix.c                          | 419 +++++++++++++
- drivers/clk/mmp/clk-mmp2.c                         |   6 +-
- drivers/clk/mmp/clk-of-composite.c                 | 253 ++++++++
- drivers/clk/mmp/clk-of.c                           | 689 +++++++++++++++++++++
- drivers/clk/mmp/clk-pxa168.c                       |   6 +-
- drivers/clk/mmp/clk-pxa910.c                       |   6 +-
- drivers/clk/mmp/clk.h                              | 164 ++++-
- drivers/clk/mmp/lock.c                             | 159 +++++
- 32 files changed, 4035 insertions(+), 129 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/clock/mmp/clk-composite
- create mode 100644 Documentation/devicetree/bindings/clock/mmp/clk-div
- create mode 100644 Documentation/devicetree/bindings/clock/mmp/clk-factor
- create mode 100644 Documentation/devicetree/bindings/clock/mmp/clk-gate
- create mode 100644 Documentation/devicetree/bindings/clock/mmp/clk-master
- create mode 100644 Documentation/devicetree/bindings/clock/mmp/clk-mix
- create mode 100644 Documentation/devicetree/bindings/clock/mmp/clk-mux
- create mode 100644 Documentation/devicetree/bindings/clock/mmp/lock
- create mode 100644 arch/arm/boot/dts/mmp2-clock.dtsi
- create mode 100644 arch/arm/boot/dts/pxa168-clock.dtsi
- create mode 100644 arch/arm/boot/dts/pxa910-clock.dtsi
- delete mode 100644 arch/arm/mach-mmp/mmp2-dt.c
- create mode 100644 drivers/clk/mmp/clk-gate.c
- create mode 100644 drivers/clk/mmp/clk-master-node.c
- create mode 100644 drivers/clk/mmp/clk-mix-composite.c
- create mode 100644 drivers/clk/mmp/clk-mix.c
- create mode 100644 drivers/clk/mmp/clk-of-composite.c
- create mode 100644 drivers/clk/mmp/clk-of.c
- create mode 100644 drivers/clk/mmp/lock.c
-
+diff --git a/drivers/clk/mmp/clk-frac.c b/drivers/clk/mmp/clk-frac.c
+index 23a56f5..3fbc9ca 100644
+--- a/drivers/clk/mmp/clk-frac.c
++++ b/drivers/clk/mmp/clk-frac.c
+@@ -22,19 +22,19 @@
+  * numerator/denominator = Fin / (Fout * factor)
+  */
+ 
+-#define to_clk_factor(hw) container_of(hw, struct clk_factor, hw)
+-struct clk_factor {
++#define to_clk_factor(hw) container_of(hw, struct mmp_clk_factor, hw)
++struct mmp_clk_factor {
+ 	struct clk_hw		hw;
+ 	void __iomem		*base;
+-	struct clk_factor_masks	*masks;
+-	struct clk_factor_tbl	*ftbl;
++	struct mmp_clk_factor_masks	*masks;
++	struct mmp_clk_factor_tbl	*ftbl;
+ 	unsigned int		ftbl_cnt;
+ };
+ 
+ static long clk_factor_round_rate(struct clk_hw *hw, unsigned long drate,
+ 		unsigned long *prate)
+ {
+-	struct clk_factor *factor = to_clk_factor(hw);
++	struct mmp_clk_factor *factor = to_clk_factor(hw);
+ 	unsigned long rate = 0, prev_rate;
+ 	int i;
+ 
+@@ -58,8 +58,8 @@ static long clk_factor_round_rate(struct clk_hw *hw, unsigned long drate,
+ static unsigned long clk_factor_recalc_rate(struct clk_hw *hw,
+ 		unsigned long parent_rate)
+ {
+-	struct clk_factor *factor = to_clk_factor(hw);
+-	struct clk_factor_masks *masks = factor->masks;
++	struct mmp_clk_factor *factor = to_clk_factor(hw);
++	struct mmp_clk_factor_masks *masks = factor->masks;
+ 	unsigned int val, num, den;
+ 
+ 	val = readl_relaxed(factor->base);
+@@ -81,8 +81,8 @@ static unsigned long clk_factor_recalc_rate(struct clk_hw *hw,
+ static int clk_factor_set_rate(struct clk_hw *hw, unsigned long drate,
+ 				unsigned long prate)
+ {
+-	struct clk_factor *factor = to_clk_factor(hw);
+-	struct clk_factor_masks *masks = factor->masks;
++	struct mmp_clk_factor *factor = to_clk_factor(hw);
++	struct mmp_clk_factor_masks *masks = factor->masks;
+ 	int i;
+ 	unsigned long val;
+ 	unsigned long prev_rate, rate = 0;
+@@ -118,10 +118,11 @@ static struct clk_ops clk_factor_ops = {
+ 
+ struct clk *mmp_clk_register_factor(const char *name, const char *parent_name,
+ 		unsigned long flags, void __iomem *base,
+-		struct clk_factor_masks *masks, struct clk_factor_tbl *ftbl,
++		struct mmp_clk_factor_masks *masks,
++		struct mmp_clk_factor_tbl *ftbl,
+ 		unsigned int ftbl_cnt)
+ {
+-	struct clk_factor *factor;
++	struct mmp_clk_factor *factor;
+ 	struct clk_init_data init;
+ 	struct clk *clk;
+ 
+diff --git a/drivers/clk/mmp/clk-mmp2.c b/drivers/clk/mmp/clk-mmp2.c
+index b2721ca..7083f12 100644
+--- a/drivers/clk/mmp/clk-mmp2.c
++++ b/drivers/clk/mmp/clk-mmp2.c
+@@ -54,7 +54,7 @@
+ 
+ static DEFINE_SPINLOCK(clk_lock);
+ 
+-static struct clk_factor_masks uart_factor_masks = {
++static struct mmp_clk_factor_masks uart_factor_masks = {
+ 	.factor = 2,
+ 	.num_mask = 0x1fff,
+ 	.den_mask = 0x1fff,
+@@ -62,7 +62,7 @@ static struct clk_factor_masks uart_factor_masks = {
+ 	.den_shift = 0,
+ };
+ 
+-static struct clk_factor_tbl uart_factor_tbl[] = {
++static struct mmp_clk_factor_tbl uart_factor_tbl[] = {
+ 	{.num = 14634, .den = 2165},	/*14.745MHZ */
+ 	{.num = 3521, .den = 689},	/*19.23MHZ */
+ 	{.num = 9679, .den = 5728},	/*58.9824MHZ */
+diff --git a/drivers/clk/mmp/clk-pxa168.c b/drivers/clk/mmp/clk-pxa168.c
+index 014396b..75266ac 100644
+--- a/drivers/clk/mmp/clk-pxa168.c
++++ b/drivers/clk/mmp/clk-pxa168.c
+@@ -47,7 +47,7 @@
+ 
+ static DEFINE_SPINLOCK(clk_lock);
+ 
+-static struct clk_factor_masks uart_factor_masks = {
++static struct mmp_clk_factor_masks uart_factor_masks = {
+ 	.factor = 2,
+ 	.num_mask = 0x1fff,
+ 	.den_mask = 0x1fff,
+@@ -55,7 +55,7 @@ static struct clk_factor_masks uart_factor_masks = {
+ 	.den_shift = 0,
+ };
+ 
+-static struct clk_factor_tbl uart_factor_tbl[] = {
++static struct mmp_clk_factor_tbl uart_factor_tbl[] = {
+ 	{.num = 8125, .den = 1536},	/*14.745MHZ */
+ };
+ 
+diff --git a/drivers/clk/mmp/clk-pxa910.c b/drivers/clk/mmp/clk-pxa910.c
+index 9efc6a4..f817999 100644
+--- a/drivers/clk/mmp/clk-pxa910.c
++++ b/drivers/clk/mmp/clk-pxa910.c
+@@ -45,7 +45,7 @@
+ 
+ static DEFINE_SPINLOCK(clk_lock);
+ 
+-static struct clk_factor_masks uart_factor_masks = {
++static struct mmp_clk_factor_masks uart_factor_masks = {
+ 	.factor = 2,
+ 	.num_mask = 0x1fff,
+ 	.den_mask = 0x1fff,
+@@ -53,7 +53,7 @@ static struct clk_factor_masks uart_factor_masks = {
+ 	.den_shift = 0,
+ };
+ 
+-static struct clk_factor_tbl uart_factor_tbl[] = {
++static struct mmp_clk_factor_tbl uart_factor_tbl[] = {
+ 	{.num = 8125, .den = 1536},	/*14.745MHZ */
+ };
+ 
+diff --git a/drivers/clk/mmp/clk.h b/drivers/clk/mmp/clk.h
+index ab86dd4..3fe92be 100644
+--- a/drivers/clk/mmp/clk.h
++++ b/drivers/clk/mmp/clk.h
+@@ -7,7 +7,7 @@
+ #define APBC_NO_BUS_CTRL	BIT(0)
+ #define APBC_POWER_CTRL		BIT(1)
+ 
+-struct clk_factor_masks {
++struct mmp_clk_factor_masks {
+ 	unsigned int	factor;
+ 	unsigned int	num_mask;
+ 	unsigned int	den_mask;
+@@ -15,7 +15,7 @@ struct clk_factor_masks {
+ 	unsigned int	den_shift;
+ };
+ 
+-struct clk_factor_tbl {
++struct mmp_clk_factor_tbl {
+ 	unsigned int num;
+ 	unsigned int den;
+ };
+@@ -30,6 +30,6 @@ extern struct clk *mmp_clk_register_apmu(const char *name,
+ 		spinlock_t *lock);
+ extern struct clk *mmp_clk_register_factor(const char *name,
+ 		const char *parent_name, unsigned long flags,
+-		void __iomem *base, struct clk_factor_masks *masks,
+-		struct clk_factor_tbl *ftbl, unsigned int ftbl_cnt);
++		void __iomem *base, struct mmp_clk_factor_masks *masks,
++		struct mmp_clk_factor_tbl *ftbl, unsigned int ftbl_cnt);
+ #endif
 -- 
 1.8.3.2
 
