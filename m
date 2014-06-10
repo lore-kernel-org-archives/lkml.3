@@ -1,87 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086AbaFJVh1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 17:37:27 -0400
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:50855 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752302AbaFJVh0 (ORCPT
+	id S1753811AbaFJVjD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 17:39:03 -0400
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:57077 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753209AbaFJVjB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 17:37:26 -0400
-Date: Tue, 10 Jun 2014 23:37:22 +0200
-From: Florian Westphal <fw@strlen.de>
-To: Alexei Starovoitov <alexei.starovoitov@gmail.com>
-Cc: =?iso-8859-15?Q?Egerv=E1ry?= Gergely <gergely@egervary.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>, stable@kernel.org
-Subject: Re: 3.4.92 MTU issues
-Message-ID: <20140610213722.GE1970@breakpoint.cc>
-References: <53975FF9.5070803@egervary.hu>
- <CAADnVQ+q3wFf=j0TY57d6Ux4GyGLr0bVCFHDgA45n9rXiEEzjg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAADnVQ+q3wFf=j0TY57d6Ux4GyGLr0bVCFHDgA45n9rXiEEzjg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 10 Jun 2014 17:39:01 -0400
+From: Jeff Layton <jlayton@poochiereds.net>
+To: linux-kernel@vger.kernel.org
+Cc: dan.carpenter@oracle.com, linux-sparse@vger.kernel.org,
+        Jeff Layton <jlayton@primarydata.com>
+Subject: [PATCH][RFC] err.h: silence sparse warning: dereference of noderef expression
+Date: Tue, 10 Jun 2014 17:38:49 -0400
+Message-Id: <1402436329-24750-1-git-send-email-jlayton@poochiereds.net>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alexei Starovoitov <alexei.starovoitov@gmail.com> wrote:
+From: Jeff Layton <jlayton@primarydata.com>
 
-[ Cc'ing stable team since its stable specific regression ]
+Lately, when I do a make with C=1, I get *tons* of these warnings:
 
-> On Tue, Jun 10, 2014 at 12:43 PM, Egerváry Gergely <gergely@egervary.hu> wrote:
-> > Hi,
-> >
-> > we have just upgraded our systems from 3.4.91 (longterm) to 3.4.92.
-> > Since then we are experiencing dozens of MTU-related network timeout
-> > issues. Reverting back to 3.4.91 fixes all of these problems.
-> >
-> > Both kernel versions are built from vanilla sources with the same
-> > .config. These can be highly reproduced over VPN tunnels or even over
-> > simple ethernet connections when using DNAT. (TCP port forward) It
-> > looks like MTU path discovery is somehow affected.
-> >
-> > ICMP is not filtered in our network. (For testing, we flushed all
-> > iptables rules, set all policies to ACCEPT, and problem still exists.)
-> > We do not use any special sysctl settings. Was there any changes
-> > related to packet forwarding or MTU discovery?
+    include/linux/err.h:35:16: warning: dereference of noderef expression
+    include/linux/err.h:30:23: warning: dereference of noderef expression
 
-These were in earlier releases than 3.4.92.
+...so many that it's really driven down the signal to noise ratio. I've
+taken a look at what's driving these warnings and I really just don't
+get it. The pointers being passed in aren't being dereferenced as far
+as I can tell, so what is sparse complaining about?
 
-> some combination of old kernel and backport of ("net: ipv4:
-> ip_forward: fix inverted local_df test") ?
-> just guessing
+Even odder, just in playing around I've noticed that removing the
+__force directives seems to silence these warnings. This is really
+strange since all of the docs I see indicate that __force is supposed to
+help silence sparse warnings, not cause them.
 
-Excellent guess.  Yes, this is the culprit.
+This patch just removes the __force directives on the err.h inlines and
+that silences the warnings for me. Dan originally added those in commit
+e7152b97f38f1 (err.h: IS_ERR() can accept __user pointers).
 
-Quoting that patch changelog:
+I don't really consider this a serious proposal for inclusion, but
+rather just a starting point for discussion. What's the right way to fix
+this problem? Is this a bug in sparse?
 
-'This wasn't noticed earlier [..] because netfilter ip defrag did not set local_df
-until couple of days ago.'
+Signed-off-by: Jeff Layton <jlayton@primarydata.com>
+---
+ include/linux/err.h | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
--stable lacks commit 895162b1101b3ea5db08ca6822ae9672717efec0, so
-netfilter never sets ->local_df.  Thus all defragmented packets
-that go over the mtu are refused to be forwarded.
+diff --git a/include/linux/err.h b/include/linux/err.h
+index a729120644d5..284897f403b3 100644
+--- a/include/linux/err.h
++++ b/include/linux/err.h
+@@ -25,17 +25,17 @@ static inline void * __must_check ERR_PTR(long error)
+ 	return (void *) error;
+ }
+ 
+-static inline long __must_check PTR_ERR(__force const void *ptr)
++static inline long __must_check PTR_ERR(const void *ptr)
+ {
+ 	return (long) ptr;
+ }
+ 
+-static inline bool __must_check IS_ERR(__force const void *ptr)
++static inline bool __must_check IS_ERR(const void *ptr)
+ {
+ 	return IS_ERR_VALUE((unsigned long)ptr);
+ }
+ 
+-static inline bool __must_check IS_ERR_OR_NULL(__force const void *ptr)
++static inline bool __must_check IS_ERR_OR_NULL(const void *ptr)
+ {
+ 	return !ptr || IS_ERR_VALUE((unsigned long)ptr);
+ }
+@@ -47,13 +47,13 @@ static inline bool __must_check IS_ERR_OR_NULL(__force const void *ptr)
+  * Explicitly cast an error-valued pointer to another pointer type in such a
+  * way as to make it clear that's what's going on.
+  */
+-static inline void * __must_check ERR_CAST(__force const void *ptr)
++static inline void * __must_check ERR_CAST(const void *ptr)
+ {
+ 	/* cast away the const */
+ 	return (void *) ptr;
+ }
+ 
+-static inline int __must_check PTR_ERR_OR_ZERO(__force const void *ptr)
++static inline int __must_check PTR_ERR_OR_ZERO(const void *ptr)
+ {
+ 	if (IS_ERR(ptr))
+ 		return PTR_ERR(ptr);
+-- 
+1.9.3
 
-Gergely, please either revert
-
-commit bd91cb56f951a7b0da8c3098ea9cd56854ece66c
-Author: Florian Westphal <fw@strlen.de>
-net: ipv4: ip_forward: fix inverted local_df test
-[ Upstream commit ca6c5d4ad216d5942ae544bbf02503041bd802aa ]
-
-Or, alternatively, also apply upstream commit 895162b1101b3ea5db08ca6822ae9672717efec0
-Author: Florian Westphal <fw@strlen.de>
-Date:   Fri May 2 15:32:16 2014 +0200
-netfilter: ipv4: defrag: set local_df flag on defragmented skb
-
-on top of your 3.4.92 kernel.
-
-(The latter might be a better option since it will also fix the
- long-standing issue where netfilter sends bogus frag-needed message
- under very rare circumstances).
-
-Thanks for reporting, and sorry for not noticing during stable review
-cycle 8-(
