@@ -1,306 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751471AbaFJKuZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 06:50:25 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:51953 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751316AbaFJKuX (ORCPT
+	id S1751321AbaFJKyS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 06:54:18 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35252 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750716AbaFJKyQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 06:50:23 -0400
-Subject: [PATCH ftrace/core  2/2] ftrace,
- kprobes: Support IPMODIFY flag to find IP modify conflict
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-To: Steven Rostedt <rostedt@goodmis.org>, Josh Poimboeuf <jpoimboe@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Tue, 10 Jun 2014 10:50:14 +0000
-Message-ID: <20140610105014.8732.43086.stgit@kbuild-fedora.novalocal>
-In-Reply-To: <20140610105001.8732.93502.stgit@kbuild-fedora.novalocal>
-References: <20140610105001.8732.93502.stgit@kbuild-fedora.novalocal>
-User-Agent: StGit/0.17-dirty
+	Tue, 10 Jun 2014 06:54:16 -0400
+Date: Tue, 10 Jun 2014 11:53:34 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
+        Daniel Stone <daniels@collabora.com>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <20140610105334.GF5099@sirena.org.uk>
+References: <1402306670-17041-1-git-send-email-javier.martinez@collabora.co.uk>
+ <1402306670-17041-3-git-send-email-javier.martinez@collabora.co.uk>
+ <20140609193849.GE5099@sirena.org.uk>
+ <5396434D.3020402@collabora.co.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="k4P7DRXulMjuQ+XK"
+Content-Disposition: inline
+In-Reply-To: <5396434D.3020402@collabora.co.uk>
+X-Cookie: Ditat Deus.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/5] regulator: Add driver for Maxim 77802 PMIC regulators
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce FTRACE_OPS_FL_IPMODIFY to avoid conflict among
-ftrace users who may modify regs->ip to change the execution
-path. This also adds the flag to kprobe_ftrace_ops, since
-ftrace-based kprobes already modifies regs->ip. Thus, if
-another user modifies the regs->ip on the same function entry,
-one of them will be broken. So both should add IPMODIFY flag
-and make sure that ftrace_set_filter_ip() succeeds.
 
-Note that currently conflicts of IPMODIFY are detected on the
-filter hash. It does NOT care about the notrace hash. This means
-that if you set filter hash all functions and notrace(mask)
-some of them, the IPMODIFY flag will be applied to all
-functions.
+--k4P7DRXulMjuQ+XK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Josh Poimboeuf <jpoimboe@redhat.com>
----
- Documentation/trace/ftrace.txt |    5 ++
- include/linux/ftrace.h         |   10 +++
- kernel/kprobes.c               |    2 -
- kernel/trace/ftrace.c          |  121 +++++++++++++++++++++++++++++++++++++++-
- 4 files changed, 133 insertions(+), 5 deletions(-)
+On Tue, Jun 10, 2014 at 01:29:17AM +0200, Javier Martinez Canillas wrote:
+> On 06/09/2014 09:38 PM, Mark Brown wrote:
+> > On Mon, Jun 09, 2014 at 11:37:47AM +0200, Javier Martinez Canillas wrote:
 
-diff --git a/Documentation/trace/ftrace.txt b/Documentation/trace/ftrace.txt
-index 2479b2a..0fcad7d 100644
---- a/Documentation/trace/ftrace.txt
-+++ b/Documentation/trace/ftrace.txt
-@@ -234,6 +234,11 @@ of ftrace. Here is a list of some of the key files:
- 	will be displayed on the same line as the function that
- 	is returning registers.
- 
-+	If the callback registered to be traced by a function with
-+	the "ip modify" attribute (thus the regs->ip can be changed),
-+	a 'I' will be displayed on the same line as the function that
-+	can be overridden.
-+
-   function_profile_enabled:
- 
- 	When set it will enable all functions with either the function
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 3e6dfb3..517112a 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -90,6 +90,9 @@ typedef void (*ftrace_func_t)(unsigned long ip, unsigned long parent_ip,
-  * INITIALIZED - The ftrace_ops has already been initialized (first use time
-  *            register_ftrace_function() is called, it will initialized the ops)
-  * DELETED - The ops are being deleted, do not let them be registered again.
-+ * IPMODIFY - The ops can modify IP register. This must be set with SAVE_REGS
-+ *            and if the other ops has been set this on same function, filter
-+ *            update must be failed.
-  */
- enum {
- 	FTRACE_OPS_FL_ENABLED			= 1 << 0,
-@@ -101,6 +104,7 @@ enum {
- 	FTRACE_OPS_FL_STUB			= 1 << 6,
- 	FTRACE_OPS_FL_INITIALIZED		= 1 << 7,
- 	FTRACE_OPS_FL_DELETED			= 1 << 8,
-+	FTRACE_OPS_FL_IPMODIFY			= 1 << 9,
- };
- 
- /*
-@@ -306,6 +310,7 @@ extern int ftrace_nr_registered_ops(void);
-  * the dyn_ftrace descriptor represents.
-  *
-  * The second part is a mask:
-+ *  IPMODIFY - the record wants to change IP address.
-  *  ENABLED - the function is being traced
-  *  REGS    - the record wants the function to save regs
-  *  REGS_EN - the function is set up to save regs.
-@@ -317,13 +322,14 @@ extern int ftrace_nr_registered_ops(void);
-  * from tracing that function.
-  */
- enum {
-+	FTRACE_FL_IPMODIFY	= (1UL << 28),
- 	FTRACE_FL_ENABLED	= (1UL << 29),
- 	FTRACE_FL_REGS		= (1UL << 30),
- 	FTRACE_FL_REGS_EN	= (1UL << 31)
- };
- 
--#define FTRACE_FL_MASK		(0x7UL << 29)
--#define FTRACE_REF_MAX		((1UL << 29) - 1)
-+#define FTRACE_FL_MASK		(0xfUL << 28)
-+#define FTRACE_REF_MAX		((1UL << 28) - 1)
- 
- struct dyn_ftrace {
- 	unsigned long		ip; /* address of mcount call-site */
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index ceeadfc..3ff7dbd 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -926,7 +926,7 @@ static __kprobes struct kprobe *alloc_aggr_kprobe(struct kprobe *p)
- #ifdef CONFIG_KPROBES_ON_FTRACE
- static struct ftrace_ops kprobe_ftrace_ops __read_mostly = {
- 	.func = kprobe_ftrace_handler,
--	.flags = FTRACE_OPS_FL_SAVE_REGS,
-+	.flags = FTRACE_OPS_FL_SAVE_REGS | FTRACE_OPS_FL_IPMODIFY,
- };
- static int kprobe_ftrace_enabled;
- 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index e355b60..113770a 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -1293,6 +1293,9 @@ ftrace_hash_rec_disable(struct ftrace_ops *ops, int filter_hash);
- static void
- ftrace_hash_rec_enable(struct ftrace_ops *ops, int filter_hash);
- 
-+static int ftrace_hash_ipmodify_update(struct ftrace_ops *ops,
-+				       struct ftrace_hash *new_hash);
-+
- static int
- ftrace_hash_move(struct ftrace_ops *ops, int enable,
- 		 struct ftrace_hash **dst, struct ftrace_hash *src)
-@@ -1304,6 +1307,7 @@ ftrace_hash_move(struct ftrace_ops *ops, int enable,
- 	struct ftrace_hash *new_hash;
- 	int size = src->count;
- 	int bits = 0;
-+	int ret;
- 	int i;
- 
- 	/*
-@@ -1339,6 +1343,13 @@ ftrace_hash_move(struct ftrace_ops *ops, int enable,
- 	}
- 
- update:
-+	/* Before everything, make sure this can be applied */
-+	ret = ftrace_hash_ipmodify_update(ops, new_hash);
-+	if (ret < 0) {
-+		free_ftrace_hash(new_hash);
-+		return ret;
-+	}
-+
- 	/*
- 	 * Remove the current set, update the hash and add
- 	 * them back.
-@@ -1593,6 +1604,100 @@ static void ftrace_hash_rec_enable(struct ftrace_ops *ops,
- 	__ftrace_hash_rec_update(ops, filter_hash, 1);
- }
- 
-+static int __ftrace_hash_update_ipmodify(struct ftrace_ops *ops,
-+					 struct ftrace_hash *old_hash,
-+					 struct ftrace_hash *new_hash)
-+{
-+	struct ftrace_page *pg;
-+	struct dyn_ftrace *rec, *end = NULL;
-+	int in_old, in_new;
-+
-+	/* Only update if the ops has been registered */
-+	if (!(ops->flags & FTRACE_OPS_FL_ENABLED))
-+		return 0;
-+
-+	if (!(ops->flags & FTRACE_OPS_FL_SAVE_REGS) ||
-+	    !(ops->flags & FTRACE_OPS_FL_IPMODIFY))
-+		return 0;
-+
-+	/* Update rec->flags */
-+	do_for_each_ftrace_rec(pg, rec) {
-+		/* We need to update only differences of filter_hash */
-+		in_old = !old_hash || ftrace_lookup_ip(old_hash, rec->ip);
-+		in_new = !new_hash || ftrace_lookup_ip(new_hash, rec->ip);
-+		if (in_old == in_new)
-+			continue;
-+
-+		if (in_new) {
-+			/* New entries must ensure no others are using it */
-+			if (rec->flags & FTRACE_FL_IPMODIFY)
-+				goto rollback;
-+			rec->flags |= FTRACE_FL_IPMODIFY;
-+		} else /* Removed entry */
-+			rec->flags &= ~FTRACE_FL_IPMODIFY;
-+	} while_for_each_ftrace_rec();
-+
-+	return 0;
-+
-+rollback:
-+	end = rec;
-+
-+	/* Roll back what we did above */
-+	do_for_each_ftrace_rec(pg, rec) {
-+		if (rec == end)
-+			goto err_out;
-+
-+		in_old = !old_hash || ftrace_lookup_ip(old_hash, rec->ip);
-+		in_new = !new_hash || ftrace_lookup_ip(new_hash, rec->ip);
-+		if (in_old == in_new)
-+			continue;
-+
-+		if (in_new)
-+			rec->flags &= ~FTRACE_FL_IPMODIFY;
-+		else
-+			rec->flags |= FTRACE_FL_IPMODIFY;
-+	} while_for_each_ftrace_rec();
-+
-+err_out:
-+	return -EBUSY;
-+}
-+
-+static int ftrace_hash_ipmodify_enable(struct ftrace_ops *ops)
-+{
-+	struct ftrace_hash *hash = ops->filter_hash;
-+
-+	if (ftrace_hash_empty(hash))
-+		hash = NULL;
-+
-+	return __ftrace_hash_update_ipmodify(ops, EMPTY_HASH, hash);
-+}
-+
-+/* Disabling always succeeds */
-+static void ftrace_hash_ipmodify_disable(struct ftrace_ops *ops)
-+{
-+	struct ftrace_hash *hash = ops->filter_hash;
-+
-+	if (ftrace_hash_empty(hash))
-+		hash = NULL;
-+
-+	__ftrace_hash_update_ipmodify(ops, hash, EMPTY_HASH);
-+}
-+
-+static int ftrace_hash_ipmodify_update(struct ftrace_ops *ops,
-+				       struct ftrace_hash *new_hash)
-+{
-+	struct ftrace_hash *old_hash = ops->filter_hash;
-+
-+	if (ftrace_hash_empty(old_hash))
-+		old_hash = NULL;
-+
-+	if (ftrace_hash_empty(new_hash))
-+		new_hash = NULL;
-+
-+	return __ftrace_hash_update_ipmodify(ops, old_hash, new_hash);
-+}
-+
-+
- static void print_ip_ins(const char *fmt, unsigned char *p)
- {
- 	int i;
-@@ -2078,6 +2183,15 @@ static int ftrace_startup(struct ftrace_ops *ops, int command)
- 
- 	ops->flags |= FTRACE_OPS_FL_ENABLED;
- 
-+	ret = ftrace_hash_ipmodify_enable(ops);
-+	if (ret < 0) {
-+		/* Rollback registration process */
-+		ops->flags &= ~FTRACE_OPS_FL_ENABLED;
-+		ftrace_start_up--;
-+		__unregister_ftrace_function(ops);
-+		return ret;
-+	}
-+
- 	ftrace_hash_rec_enable(ops, 1);
- 
- 	ftrace_startup_enable(command);
-@@ -2104,6 +2218,8 @@ static int ftrace_shutdown(struct ftrace_ops *ops, int command)
- 	 */
- 	WARN_ON_ONCE(ftrace_start_up < 0);
- 
-+	/* Disabling ipmodify never be failed */
-+	ftrace_hash_ipmodify_disable(ops);
- 	ftrace_hash_rec_disable(ops, 1);
- 
- 	if (!global_start_up)
-@@ -2641,9 +2757,10 @@ static int t_show(struct seq_file *m, void *v)
- 
- 	seq_printf(m, "%ps", (void *)rec->ip);
- 	if (iter->flags & FTRACE_ITER_ENABLED)
--		seq_printf(m, " (%ld)%s",
-+		seq_printf(m, " (%ld)%s%s",
- 			   rec->flags & ~FTRACE_FL_MASK,
--			   rec->flags & FTRACE_FL_REGS ? " R" : "");
-+			   rec->flags & FTRACE_FL_REGS ? " R" : "",
-+			   rec->flags & FTRACE_FL_IPMODIFY ? " I" : "");
- 	seq_printf(m, "\n");
- 
- 	return 0;
+> >> +	case REGULATOR_MODE_STANDBY:			/* switch off */
+> >> +		if (id != MAX77802_LDO1 && id != MAX77802_LDO20 &&
+> >> +			id != MAX77802_LDO21 && id != MAX77802_LDO3) {
+> >> +			val = MAX77802_OPMODE_STANDBY;
+> >> +			break;
+> >> +		}
+> >> +		/* no break */
 
+> > This sounds very broken...
 
+> The problem is that not all regulators supports the same operational modes. For
+> instance regulators LDO 1, 20, 21 and 3 does not support REGULATOR_MODE_STANDBY
+> so if the condition is not met a break is not needed since the default case is
+> to warn that the mode is not supported.
+
+No, it's the "switch off" comment...
+
+> But I'll rework that logic on v2 to make it cleaner and have a break on each
+> case and don't rely on case cascading.
+
+...though you should also consider splitting things up so you have
+separate ops for separate regulators if they behave differently.
+
+--k4P7DRXulMjuQ+XK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJTluOrAAoJELSic+t+oim9UdsP/A2NV35f4BsE16AuepYtgcKm
+q8fkRqeDl95SmG+glxmMTPbCL1lDQW2n+mpvoComlcChOeVH5FfqaSDMbuHqEFQq
+O53RoZ5KWg38LLwoN0HF3IBg+jhppDejOgcGglgkjL9Uf2xfUQzKMZpQhAbNHj+W
+1GSMEIyGqOLWnkqAMbV55jYav5RONYr6l6HhK3ul9FthC6Rh55zyLTUp8M0PLVBG
+X7l/zA7Uxfg3NmOwgggB1UUt/VqOQU9MHrPJRfzju/8rjrMDNgJTpVH3C85Py9ck
+oJRASYDdxqxv6LDk7MxoDPAMRshTfFIglbi+JzI8SElkRkYRxipi+TTHlhFM9fWM
+qmxQ2/hQf1Ix/8xv6ozuT3XZvvvIYzTuH3TIUsz+pZ4seJBzSKl8caw1VvKhBwrJ
+6T1+WheVRJ54CPaKOnZeEiVm3NzW3+dvGQ2Sul9dvvu5tvEqFrMDjkRTH6bo1ihr
+wovMKBqwlhQPzh0EqRzLBmRZYO+rEOJOlNq4YU0umKdMWzKa1sBe49MJM1Ws3zZv
+1DXcRP2HfemOeeNWjfTcsNjd/1vzmope0YQo+vIqLOGHcCrHJSh+uChQA1bMtkR5
+/lCA1fyJpfWPIEGWJo/Qmh8f98T9/GtBUeGc4yq3bg1uJBkdeCIoL0dV4fWJA+bx
+fL+6IdzaOmZg+FxUiVuj
+=HzFx
+-----END PGP SIGNATURE-----
+
+--k4P7DRXulMjuQ+XK--
