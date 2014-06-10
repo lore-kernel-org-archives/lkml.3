@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932620AbaFJT7L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 15:59:11 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:60748 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754302AbaFJT7H (ORCPT
+	id S1755778AbaFJT7l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 15:59:41 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:9059 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755093AbaFJT7j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:59:07 -0400
-Date: Tue, 10 Jun 2014 21:59:05 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3][update] PM / sleep: Introduce command line
- argument for sleep state enumeration
-Message-ID: <20140610195905.GA6805@amd.pavel.ucw.cz>
-References: <1817539.9KW2IGGbDV@vostro.rjw.lan>
- <1579932.qSkFQPvI6f@vostro.rjw.lan>
- <20140610131206.GA7626@amd.pavel.ucw.cz>
- <1848200.GDD9x0Rptb@vostro.rjw.lan>
+	Tue, 10 Jun 2014 15:59:39 -0400
+Message-ID: <5397636F.9050209@fb.com>
+Date: Tue, 10 Jun 2014 13:58:39 -0600
+From: Jens Axboe <axboe@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1848200.GDD9x0Rptb@vostro.rjw.lan>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Keith Busch <keith.busch@intel.com>
+CC: =?ISO-8859-1?Q?Matias_Bj=F8rling?= <m@bjorling.me>,
+        "willy@linux.intel.com" <willy@linux.intel.com>,
+        "sbradshaw@micron.com" <sbradshaw@micron.com>,
+        "tom.leiming@gmail.com" <tom.leiming@gmail.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-nvme@lists.infradead.org" <linux-nvme@lists.infradead.org>
+Subject: Re: [PATCH v7] NVMe: conversion to blk-mq
+References: <1402392038-5268-1-git-send-email-m@bjorling.me> <1402392038-5268-2-git-send-email-m@bjorling.me>,<alpine.LRH.2.03.1406100945250.4699@AMR> <A52B97CC-6D77-468B-9A9B-A5888AE63580@fb.com> <alpine.LRH.2.03.1406101140490.4699@AMR>
+In-Reply-To: <alpine.LRH.2.03.1406101140490.4699@AMR>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-06-10_05:2014-06-10,2014-06-10,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 spamscore=0
+ suspectscore=0 phishscore=0 adultscore=0 bulkscore=0 classifier=spam
+ adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1406100241
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2014-06-10 17:23:24, Rafael J. Wysocki wrote:
-> On Tuesday, June 10, 2014 03:12:06 PM Pavel Machek wrote:
-> > Hi!
-> > 
-> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > 
-> > > On some systems the platform doesn't support neither
-> > > PM_SUSPEND_MEM nor PM_SUSPEND_STANDBY, so PM_SUSPEND_FREEZE is the
-> > > only available system sleep state.  However, some user space frameworks
-> > > only use the "mem" and (sometimes) "standby" sleep state labels, so
-> > > the users of those systems need to modify user space in order to be
-> > > able to use system suspend at all and that is not always possible.
-> > 
-> > I'd say we should fix the frameworks, not add option to change kernel
-> > interfaces.
-> > 
-> > Because, as you mentioned, if we add this, we are probably going to
-> > get stuck with it forever :-(.
+On 06/10/2014 01:29 PM, Keith Busch wrote:
+> On Tue, 10 Jun 2014, Jens Axboe wrote:
+>>> On Jun 10, 2014, at 9:52 AM, Keith Busch <keith.busch@intel.com> wrote:
+>>>
+>>>> On Tue, 10 Jun 2014, Matias Bjørling wrote:
+>>>> This converts the current NVMe driver to utilize the blk-mq layer.
+>>>
+>>> I'd like to run xfstests on this, but it is failing mkfs.xfs. I honestly
+>>> don't know much about this area, but I think this may be from the recent
+>>> chunk sectors patch causing a __bio_add_page to reject adding a new
+>>> page.
+>>
+>> Gah, yes that's a bug in the chunk patch. It must always allow a
+>> single page
+>> at any offset. I'll test and send out a fix.
 > 
-> Unfortunately, fixing the frameworks is rather less than realistic in any
-> reasonable time frame, since  Android. :-)
+> I have two devices, one formatted 4k, the other 512. The 4k is used as
+> the TEST_DEV and 512 is used as SCRATCH_DEV. I'm always hitting a BUG when
+> unmounting the scratch dev in xfstests generic/068. The bug looks like
+> nvme was trying to use an SGL that doesn't map correctly to a PRP.
 
-Actually, you still have the sources from android, and this issue
-sounds almost simple enough for binary patch.
+I'm guessing it's some of the coalescing settings, since the driver is
+now using the generic block rq mapping.
 
-Android misuses /proc/sys/vm/drop_caches, too, IIRC. Are we going to
-change interface to match their expectations? They have binder and
-wakelocks. Are we going to apply those patches just because Android
-wants that?
+> Also, it doesn't look like this driver can recover from an unresponsive
+> device, leaving tasks in uniterruptible sleep state forever. Still looking
+> into that one though; as far as I can tell the device is perfectly fine,
+> but lots of "Cancelling I/O"  messages are getting logged.
 
-Android people usually patch their kernels, anyway, so why not add
-this one, too?
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+If the task is still stuck, some of the IOs must not be getting cancelled.
+
+
