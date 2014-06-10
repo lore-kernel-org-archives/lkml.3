@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936125AbaFJAsv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:48:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58173 "EHLO
+	id S934694AbaFJAsu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:48:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58169 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933020AbaFJAVy (ORCPT
+	with ESMTP id S933161AbaFJAVy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jun 2014 20:21:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.4 04/88] perf: Fix race in removing an event
-Date: Mon,  9 Jun 2014 17:24:14 -0700
-Message-Id: <20140610002424.696752362@linuxfoundation.org>
+        Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Nicolas Pitre <nico@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.4 06/88] ARM: 8051/1: put_user: fix possible data corruption in put_user
+Date: Mon,  9 Jun 2014 17:24:16 -0700
+Message-Id: <20140610002424.759690807@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
 References: <20140610002424.500996570@linuxfoundation.org>
@@ -31,194 +30,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
 
-commit 46ce0fe97a6be7532ce6126bb26ce89fed81528c upstream.
+commit 537094b64b229bf3ad146042f83e74cf6abe59df upstream.
 
-When removing a (sibling) event we do:
+According to arm procedure call standart r2 register is call-cloberred.
+So after the result of x expression was put into r2 any following
+function call in p may overwrite r2. To fix this, the result of p
+expression must be saved to the temporary variable before the
+assigment x expression to __r2.
 
-	raw_spin_lock_irq(&ctx->lock);
-	perf_group_detach(event);
-	raw_spin_unlock_irq(&ctx->lock);
-
-	<hole>
-
-	perf_remove_from_context(event);
-		raw_spin_lock_irq(&ctx->lock);
-		...
-		raw_spin_unlock_irq(&ctx->lock);
-
-Now, assuming the event is a sibling, it will be 'unreachable' for
-things like ctx_sched_out() because that iterates the
-groups->siblings, and we just unhooked the sibling.
-
-So, if during <hole> we get ctx_sched_out(), it will miss the event
-and not call event_sched_out() on it, leaving it programmed on the
-PMU.
-
-The subsequent perf_remove_from_context() call will find the ctx is
-inactive and only call list_del_event() to remove the event from all
-other lists.
-
-Hereafter we can proceed to free the event; while still programmed!
-
-Close this hole by moving perf_group_detach() inside the same
-ctx->lock region(s) perf_remove_from_context() has.
-
-The condition on inherited events only in __perf_event_exit_task() is
-likely complete crap because non-inherited events are part of groups
-too and we're tearing down just the same. But leave that for another
-patch.
-
-Most-likely-Fixes: e03a9a55b4e ("perf: Change close() semantics for group events")
-Reported-by: Vince Weaver <vincent.weaver@maine.edu>
-Tested-by: Vince Weaver <vincent.weaver@maine.edu>
-Much-staring-at-traces-by: Vince Weaver <vincent.weaver@maine.edu>
-Much-staring-at-traces-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20140505093124.GN17778@laptop.programming.kicks-ass.net
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+Reviewed-by: Nicolas Pitre <nico@linaro.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/events/core.c |   45 +++++++++++++++++++++++++--------------------
- 1 file changed, 25 insertions(+), 20 deletions(-)
+ arch/arm/include/asm/uaccess.h |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -1196,6 +1196,11 @@ group_sched_out(struct perf_event *group
- 		cpuctx->exclusive = 0;
- }
- 
-+struct remove_event {
-+	struct perf_event *event;
-+	bool detach_group;
-+};
-+
- /*
-  * Cross CPU call to remove a performance event
-  *
-@@ -1204,12 +1209,15 @@ group_sched_out(struct perf_event *group
-  */
- static int __perf_remove_from_context(void *info)
- {
--	struct perf_event *event = info;
-+	struct remove_event *re = info;
-+	struct perf_event *event = re->event;
- 	struct perf_event_context *ctx = event->ctx;
- 	struct perf_cpu_context *cpuctx = __get_cpu_context(ctx);
- 
- 	raw_spin_lock(&ctx->lock);
- 	event_sched_out(event, cpuctx, ctx);
-+	if (re->detach_group)
-+		perf_group_detach(event);
- 	list_del_event(event, ctx);
- 	if (!ctx->nr_events && cpuctx->task_ctx == ctx) {
- 		ctx->is_active = 0;
-@@ -1234,10 +1242,14 @@ static int __perf_remove_from_context(vo
-  * When called from perf_event_exit_task, it's OK because the
-  * context has been detached from its task.
-  */
--static void perf_remove_from_context(struct perf_event *event)
-+static void perf_remove_from_context(struct perf_event *event, bool detach_group)
- {
- 	struct perf_event_context *ctx = event->ctx;
- 	struct task_struct *task = ctx->task;
-+	struct remove_event re = {
-+		.event = event,
-+		.detach_group = detach_group,
-+	};
- 
- 	lockdep_assert_held(&ctx->mutex);
- 
-@@ -1246,12 +1258,12 @@ static void perf_remove_from_context(str
- 		 * Per cpu events are removed via an smp call and
- 		 * the removal is always successful.
- 		 */
--		cpu_function_call(event->cpu, __perf_remove_from_context, event);
-+		cpu_function_call(event->cpu, __perf_remove_from_context, &re);
- 		return;
- 	}
- 
- retry:
--	if (!task_function_call(task, __perf_remove_from_context, event))
-+	if (!task_function_call(task, __perf_remove_from_context, &re))
- 		return;
- 
- 	raw_spin_lock_irq(&ctx->lock);
-@@ -1268,6 +1280,8 @@ retry:
- 	 * Since the task isn't running, its safe to remove the event, us
- 	 * holding the ctx->lock ensures the task won't get scheduled in.
- 	 */
-+	if (detach_group)
-+		perf_group_detach(event);
- 	list_del_event(event, ctx);
- 	raw_spin_unlock_irq(&ctx->lock);
- }
-@@ -2962,10 +2976,7 @@ int perf_event_release_kernel(struct per
- 	 *     to trigger the AB-BA case.
- 	 */
- 	mutex_lock_nested(&ctx->mutex, SINGLE_DEPTH_NESTING);
--	raw_spin_lock_irq(&ctx->lock);
--	perf_group_detach(event);
--	raw_spin_unlock_irq(&ctx->lock);
--	perf_remove_from_context(event);
-+	perf_remove_from_context(event, true);
- 	mutex_unlock(&ctx->mutex);
- 
- 	free_event(event);
-@@ -6505,7 +6516,7 @@ SYSCALL_DEFINE5(perf_event_open,
- 		struct perf_event_context *gctx = group_leader->ctx;
- 
- 		mutex_lock(&gctx->mutex);
--		perf_remove_from_context(group_leader);
-+		perf_remove_from_context(group_leader, false);
- 
- 		/*
- 		 * Removing from the context ends up with disabled
-@@ -6515,7 +6526,7 @@ SYSCALL_DEFINE5(perf_event_open,
- 		perf_event__state_init(group_leader);
- 		list_for_each_entry(sibling, &group_leader->sibling_list,
- 				    group_entry) {
--			perf_remove_from_context(sibling);
-+			perf_remove_from_context(sibling, false);
- 			perf_event__state_init(sibling);
- 			put_ctx(gctx);
- 		}
-@@ -6668,13 +6679,7 @@ __perf_event_exit_task(struct perf_event
- 			 struct perf_event_context *child_ctx,
- 			 struct task_struct *child)
- {
--	if (child_event->parent) {
--		raw_spin_lock_irq(&child_ctx->lock);
--		perf_group_detach(child_event);
--		raw_spin_unlock_irq(&child_ctx->lock);
--	}
--
--	perf_remove_from_context(child_event);
-+	perf_remove_from_context(child_event, !!child_event->parent);
- 
- 	/*
- 	 * It can happen that the parent exits first, and has events
-@@ -7159,14 +7164,14 @@ static void perf_pmu_rotate_stop(struct
- 
- static void __perf_event_exit_context(void *__info)
- {
-+	struct remove_event re = { .detach_group = false };
- 	struct perf_event_context *ctx = __info;
--	struct perf_event *event;
- 
- 	perf_pmu_rotate_stop(ctx->pmu);
- 
- 	rcu_read_lock();
--	list_for_each_entry_rcu(event, &ctx->event_list, event_entry)
--		__perf_remove_from_context(event);
-+	list_for_each_entry_rcu(re.event, &ctx->event_list, event_entry)
-+		__perf_remove_from_context(&re);
- 	rcu_read_unlock();
- }
- 
+--- a/arch/arm/include/asm/uaccess.h
++++ b/arch/arm/include/asm/uaccess.h
+@@ -158,8 +158,9 @@ extern int __put_user_8(void *, unsigned
+ #define put_user(x,p)							\
+ 	({								\
+ 		unsigned long __limit = current_thread_info()->addr_limit - 1; \
++		const typeof(*(p)) __user *__tmp_p = (p);		\
+ 		register const typeof(*(p)) __r2 asm("r2") = (x);	\
+-		register const typeof(*(p)) __user *__p asm("r0") = (p);\
++		register const typeof(*(p)) __user *__p asm("r0") = __tmp_p; \
+ 		register unsigned long __l asm("r1") = __limit;		\
+ 		register int __e asm("r0");				\
+ 		switch (sizeof(*(__p))) {				\
 
 
