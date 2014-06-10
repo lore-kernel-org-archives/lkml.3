@@ -1,61 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754623AbaFJUrK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 16:47:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39723 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754327AbaFJUrG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754528AbaFJUrI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 16:47:08 -0400
+Received: from mta-out1.inet.fi ([62.71.2.199]:40098 "EHLO kirsi1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754294AbaFJUrG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 10 Jun 2014 16:47:06 -0400
-Date: Tue, 10 Jun 2014 13:50:54 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
+Date: Tue, 10 Jun 2014 23:46:40 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Ben Hutchings <ben@decadent.org.uk>, Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH 3.4 47/88] mm: add kmap_to_page()
-Message-ID: <20140610205054.GA32325@kroah.com>
-References: <20140610002424.500996570@linuxfoundation.org>
- <20140610002426.089246636@linuxfoundation.org>
- <alpine.LSU.2.11.1406091806230.8481@eggly.anvils>
- <5396BC25.7040500@huawei.com>
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Vlastimil Babka <vbabka@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH, RFC 00/10] THP refcounting redesign
+Message-ID: <20140610204640.GA9594@node.dhcp.inet.fi>
+References: <1402329861-7037-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <alpine.DEB.2.10.1406101518510.19364@gentwo.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5396BC25.7040500@huawei.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <alpine.DEB.2.10.1406101518510.19364@gentwo.org>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 10, 2014 at 04:04:53PM +0800, Yijing Wang wrote:
-> >> +struct page *kmap_to_page(void *vaddr)
-> >> +{
-> >> +	unsigned long addr = (unsigned long)vaddr;
-> >> +
-> >> +	if (addr >= PKMAP_ADDR(0) && addr <= PKMAP_ADDR(LAST_PKMAP)) {
-> >> +		int i = (addr - PKMAP_ADDR(0)) >> PAGE_SHIFT;
-> >> +		return pte_page(pkmap_page_table[i]);
-> >> +	}
-> >> +
-> >> +	return virt_to_page(addr);
-> >> +}
-> >> +
-> >>  static void flush_all_zero_pkmaps(void)
-> >>  {
-> >>  	int i;
-> > 
-> > I think this needs the following on top:
-> > 
-> > commit 498c2280212327858e521e9d21345d4cc2637f54
-> > Author: Will Deacon <will.deacon@arm.com>
-> > Date:   Fri Nov 16 14:15:00 2012 -0800
-> > 
+On Tue, Jun 10, 2014 at 03:25:42PM -0500, Christoph Lameter wrote:
+> On Mon, 9 Jun 2014, Kirill A. Shutemov wrote:
 > 
-> Thanks Hugh. Hi Greg, please pick up this fix patch, Thanks a lot!
+> > To be able to split huge page at any point we have to track which tail
+> > page was pinned. It leads to tricky and expensive get_page() on tail pages
+> > and also occupy tail_page->_mapcount.
+> 
+> Maybe we should give up the requirement to be able to split a huge page at
+> any point?
 
-Now applied, thanks!
+Yes, that's what the patchset does: we don't allow to split the page if
+any sub-page is pinned.
 
-greg k-h
+> This got us into the mess AFAICT. Instead we could use the locking
+> mechanisms that we have to stop all access to the page and then do the
+> conversion?
+
+I end up with compound_lock to freeze page count. Not sure if it's the
+best option we have
+
+> Page migration can do that so it should be fine with refcounting for
+> huge pages exclusively in the head page exactly like a regular page.
+
+We've discussed "split via migration" with Dave. I need to look more on
+how migration works.
+
+> The problem is then dealing with the locations where we now do rely on
+> the ability to split at "any point" (notion is weird in itself and
+> suggests issues with synchronization).
+
+As I said, we have only 4 places where we need to split the page (not only
+PMD): swap out, memory failure, KSM, migration. All of them can tolerate
+split failure.
+
+> Use the standard locking schemes for pages instead?
+
+Could you elaborate here?
+
+> I thought the idea was that we would modify the relevant code and
+> that at some point this requirement could go away?
+> 
+> Huge pages (and other larger order pages) will become increasingly
+> difficult to handle if relevant page state has to be maintained in tail
+> pages and if it differs significantly from regular pages.
+
+Agreed. The patchset drops tail page refcounting.
+-- 
+ Kirill A. Shutemov
