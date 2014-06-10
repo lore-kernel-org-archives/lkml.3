@@ -1,158 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934801AbaFJBeG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 21:34:06 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:37053 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932145AbaFJB2K (ORCPT
+	id S933247AbaFJBfT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 21:35:19 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:18543 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932345AbaFJBfS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 21:28:10 -0400
-From: Chao Xie <chao.xie@marvell.com>
-To: <haojian.zhuang@gmail.com>, <mturquette@linaro.org>,
-        <chao.xie@marvell.com>, <xiechao_mail@163.com>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH 02/12] clk: mmp: add spin lock for clk-frac
-Date: Tue, 10 Jun 2014 09:27:38 +0800
-Message-ID: <1402363668-25806-3-git-send-email-chao.xie@marvell.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1402363668-25806-1-git-send-email-chao.xie@marvell.com>
-References: <1402363668-25806-1-git-send-email-chao.xie@marvell.com>
+	Mon, 9 Jun 2014 21:35:18 -0400
+Message-ID: <539660F9.9060408@oracle.com>
+Date: Tue, 10 Jun 2014 09:35:53 +0800
+From: Junxiao Bi <junxiao.bi@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-06-10_01:2014-06-09,2014-06-10,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1406100017
+To: Jens Axboe <axboe@kernel.dk>, Andreas Mohr <andi@lisas.de>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] block: make nr_requests tunable for loop
+References: <20140609072942.GA30728@rhlx01.hs-esslingen.de> <5395D88C.6070007@kernel.dk>
+In-Reply-To: <5395D88C.6070007@kernel.dk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chao Xie <chao.xie@marvell.com>
-
-The register used by clk-frac may be shared with
-other clocks.
-So it needs to use spin lock to protect the register
-access.
-
-Signed-off-by: Chao Xie <chao.xie@marvell.com>
----
- drivers/clk/mmp/clk-frac.c   | 11 ++++++++++-
- drivers/clk/mmp/clk-mmp2.c   |  2 +-
- drivers/clk/mmp/clk-pxa168.c |  2 +-
- drivers/clk/mmp/clk-pxa910.c |  2 +-
- drivers/clk/mmp/clk.h        |  3 ++-
- 5 files changed, 15 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/clk/mmp/clk-frac.c b/drivers/clk/mmp/clk-frac.c
-index 3fbc9ca..e29d006 100644
---- a/drivers/clk/mmp/clk-frac.c
-+++ b/drivers/clk/mmp/clk-frac.c
-@@ -29,6 +29,7 @@ struct mmp_clk_factor {
- 	struct mmp_clk_factor_masks	*masks;
- 	struct mmp_clk_factor_tbl	*ftbl;
- 	unsigned int		ftbl_cnt;
-+	spinlock_t *lock;
- };
- 
- static long clk_factor_round_rate(struct clk_hw *hw, unsigned long drate,
-@@ -86,6 +87,7 @@ static int clk_factor_set_rate(struct clk_hw *hw, unsigned long drate,
- 	int i;
- 	unsigned long val;
- 	unsigned long prev_rate, rate = 0;
-+	unsigned long flags = 0;
- 
- 	for (i = 0; i < factor->ftbl_cnt; i++) {
- 		prev_rate = rate;
-@@ -97,6 +99,9 @@ static int clk_factor_set_rate(struct clk_hw *hw, unsigned long drate,
- 	if (i > 0)
- 		i--;
- 
-+	if (factor->lock)
-+		spin_lock_irqsave(factor->lock, flags);
-+
- 	val = readl_relaxed(factor->base);
- 
- 	val &= ~(masks->num_mask << masks->num_shift);
-@@ -107,6 +112,9 @@ static int clk_factor_set_rate(struct clk_hw *hw, unsigned long drate,
- 
- 	writel_relaxed(val, factor->base);
- 
-+	if (factor->lock)
-+		spin_unlock_irqrestore(factor->lock, flags);
-+
- 	return 0;
- }
- 
-@@ -120,7 +128,7 @@ struct clk *mmp_clk_register_factor(const char *name, const char *parent_name,
- 		unsigned long flags, void __iomem *base,
- 		struct mmp_clk_factor_masks *masks,
- 		struct mmp_clk_factor_tbl *ftbl,
--		unsigned int ftbl_cnt)
-+		unsigned int ftbl_cnt, spinlock_t *lock)
- {
- 	struct mmp_clk_factor *factor;
- 	struct clk_init_data init;
-@@ -143,6 +151,7 @@ struct clk *mmp_clk_register_factor(const char *name, const char *parent_name,
- 	factor->ftbl = ftbl;
- 	factor->ftbl_cnt = ftbl_cnt;
- 	factor->hw.init = &init;
-+	factor->lock = lock;
- 
- 	init.name = name;
- 	init.ops = &clk_factor_ops;
-diff --git a/drivers/clk/mmp/clk-mmp2.c b/drivers/clk/mmp/clk-mmp2.c
-index 7083f12..5c90a42 100644
---- a/drivers/clk/mmp/clk-mmp2.c
-+++ b/drivers/clk/mmp/clk-mmp2.c
-@@ -191,7 +191,7 @@ void __init mmp2_clk_init(void)
- 	clk = mmp_clk_register_factor("uart_pll", "pll1_4", 0,
- 				mpmu_base + MPMU_UART_PLL,
- 				&uart_factor_masks, uart_factor_tbl,
--				ARRAY_SIZE(uart_factor_tbl));
-+				ARRAY_SIZE(uart_factor_tbl), &clk_lock);
- 	clk_set_rate(clk, 14745600);
- 	clk_register_clkdev(clk, "uart_pll", NULL);
- 
-diff --git a/drivers/clk/mmp/clk-pxa168.c b/drivers/clk/mmp/clk-pxa168.c
-index 75266ac..93e967c 100644
---- a/drivers/clk/mmp/clk-pxa168.c
-+++ b/drivers/clk/mmp/clk-pxa168.c
-@@ -158,7 +158,7 @@ void __init pxa168_clk_init(void)
- 	uart_pll = mmp_clk_register_factor("uart_pll", "pll1_4", 0,
- 				mpmu_base + MPMU_UART_PLL,
- 				&uart_factor_masks, uart_factor_tbl,
--				ARRAY_SIZE(uart_factor_tbl));
-+				ARRAY_SIZE(uart_factor_tbl), &clk_lock);
- 	clk_set_rate(uart_pll, 14745600);
- 	clk_register_clkdev(uart_pll, "uart_pll", NULL);
- 
-diff --git a/drivers/clk/mmp/clk-pxa910.c b/drivers/clk/mmp/clk-pxa910.c
-index f817999..993abcd 100644
---- a/drivers/clk/mmp/clk-pxa910.c
-+++ b/drivers/clk/mmp/clk-pxa910.c
-@@ -163,7 +163,7 @@ void __init pxa910_clk_init(void)
- 	uart_pll =  mmp_clk_register_factor("uart_pll", "pll1_4", 0,
- 				mpmu_base + MPMU_UART_PLL,
- 				&uart_factor_masks, uart_factor_tbl,
--				ARRAY_SIZE(uart_factor_tbl));
-+				ARRAY_SIZE(uart_factor_tbl), &clk_lock);
- 	clk_set_rate(uart_pll, 14745600);
- 	clk_register_clkdev(uart_pll, "uart_pll", NULL);
- 
-diff --git a/drivers/clk/mmp/clk.h b/drivers/clk/mmp/clk.h
-index 3fe92be..b71b717 100644
---- a/drivers/clk/mmp/clk.h
-+++ b/drivers/clk/mmp/clk.h
-@@ -31,5 +31,6 @@ extern struct clk *mmp_clk_register_apmu(const char *name,
- extern struct clk *mmp_clk_register_factor(const char *name,
- 		const char *parent_name, unsigned long flags,
- 		void __iomem *base, struct mmp_clk_factor_masks *masks,
--		struct mmp_clk_factor_tbl *ftbl, unsigned int ftbl_cnt);
-+		struct mmp_clk_factor_tbl *ftbl, unsigned int ftbl_cnt,
-+		spinlock_t *lock);
- #endif
--- 
-1.8.3.2
+On 06/09/2014 11:53 PM, Jens Axboe wrote:
+> On 2014-06-09 01:29, Andreas Mohr wrote:
+>> Hi,
+>>
+>> having had a look at current mainline sources,
+>> frankly I've (well, initially...) got trouble understanding
+>> what this patch is doing.
+>>
+>> It's replacing an aggressive error-type bail-out (-EINVAL) for NULL
+>> request_fn
+>> with an inoccuous-looking "return ret;", yet that ret content currently
+>> *implicitly* is a >= 0 value (resulting from processing by earlier code
+>> which may or may not get incomprehensibly rewritten in future).
+>> I don't understand the reasons for this huge change in return value
+>> handling
+>> (since it's now not assigning a specific return value
+>> for this modified bail-out case).
+>>
+>> OK, well... you could say that since all this function ever was
+>> interested in is the result value of queue_var_store()
+>> (except for error bail-out cases), doing an interim "return ret;"
+>> (which is exactly what the function tail is also doing)
+>> is exactly right.
+>>
+>> But still simple textual appearance of the resulting patch hunks
+>> seems strangely asymmetric
+>> which may easily be a canary for structurally wrong layering of this
+>> function.
+>> Not to mention the now required extra spin_unlock_irq()
+>> in interim return handler...
+>>
+>>
+>> Well, after further analysis I would come to the conclusion
+>> that in general queue_requests_store() does a LOT more than it should -
+>> since blk-sysfs.c's only (expected!) purpose is
+>> to do parameterization of request_queue behaviour as gathered
+>> from sysfs attribute space,
+>> all that function should ever be concerned with is parsing that sysfs
+>> value
+>> and then calling a blk helper for configuration of that very
+>> attribute value
+>> which would *internally* do all the strange internal queue magic
+>> that is currently being updated *open-coded*
+>> at this supposedly *sysfs*-specific place. Ugh.
+>> Main question here: what would one do if one decided to rip out sysfs
+>> and use something entirely different for parameterization?
+>> Yeah indeed - thought so...
+>>
+>>
+>> So yeah, I'd definitely say that that function is lacking some cleanup
+>> which would possibly then even lead (or: would have led ;)
+>> to a much more nicely symmetric textual appearance
+>> of the patch hunk of the small but quite likely useful change
+>> that you currently intend to have here.
+>
+> If you are done ranting, look at the current tree where it has been
+> split out. There was no reason to have it split before, since the
+> sysfs entry point was the only place where we updated nr_requests. If
+> that code has been duplicated, there would have been a justified
+> reason for writing two pages about it.
+Yes, agree, this is the only place updating nr_requests,  we can split
+it as a separated function if it needs updating at some other places in
+future.
 
