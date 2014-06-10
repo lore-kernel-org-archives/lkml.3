@@ -1,95 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751948AbaFJOqR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 10:46:17 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53627 "EHLO mail.kernel.org"
+	id S1752484AbaFJOq1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 10:46:27 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53680 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750798AbaFJOqQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 10:46:16 -0400
+	id S1752021AbaFJOqZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 10:46:25 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Adrian Hunter <adrian.hunter@intel.com>,
         David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Ramkumar Ramachandra <artagnon@gmail.com>,
-        Stanislav Fomichev <stfomichev@yandex-team.ru>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [GIT PULL 0/7] perf/core improvements
-Date: Tue, 10 Jun 2014 11:45:57 -0300
-Message-Id: <1402411564-3303-1-git-send-email-acme@infradead.org>
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 2/7] perf tests: Show the inner make output when an error happens
+Date: Tue, 10 Jun 2014 11:45:59 -0300
+Message-Id: <1402411564-3303-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1402411564-3303-1-git-send-email-acme@infradead.org>
+References: <1402411564-3303-1-git-send-email-acme@infradead.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Hi Ingo,
+Before:
 
-	Getting back at pushing some stuff, should not conflict with Jiri's
-perf/core and was branched from tip/perf/core.
+  [acme@zoo linux]$ make -C tools/perf -f tests/make make_static
+  make: Entering directory `/home/git/linux/tools/perf'
+  - make_static: cd . && make -f Makefile DESTDIR=/tmp/tmp.JcWuM4Zu9f LDFLAGS=-static
+  make: *** [make_static] Error 1
+  make: Leaving directory `/home/git/linux/tools/perf'
+  [acme@zoo linux]$
 
-	Please let me know if you find any issue,
+After:
 
-- Arnaldo
+  [acme@zoo linux]$ make -C tools/perf -f tests/make make_static
+  make: Entering directory `/home/git/linux/tools/perf'
+  - make_static: cd . && make -f Makefile DESTDIR=/tmp/tmp.X3su83i14u LDFLAGS=-static
+  cd . && make -f Makefile DESTDIR=/tmp/tmp.X3su83i14u LDFLAGS=-static
+    BUILD:   Doing 'make -j4' parallel build
+  config/Makefile:303: *** No static glibc found, please install glibc-static.  Stop.
+  make[1]: *** [all] Error 2
+    test: test -x ./perf
+  make: Leaving directory `/home/git/linux/tools/perf'
+  [acme@zoo linux]$
 
-The following changes since commit 82b897782d10fcc4930c9d4a15b175348fdd2871:
-
-  perf: Differentiate exec() and non-exec() comm events (2014-06-06 07:56:22 +0200)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git tags/perf-core-for-mingo
-
-for you to fetch changes up to f48e00cead1f7574147e6bd0d203c8331714d35b:
-
-  perf timechart: Reflow documentation (2014-06-10 10:03:18 -0300)
-
-----------------------------------------------------------------
-perf/core improvements:
-
-User visible:
-
-. Improve 'perf probe' error messages, moving some diagnostic messages to
-  only appear in --verbose mode and fixing up some error reporting related
-  to variables and struct members. (Masami Hiramatsu)
-
-. Reflow 'perf timechart' man page. (Stanislav Fomichev)
-
-Developer stuff:
-
-. Be more precise when reporting missing libraries in a static tool build.
-  (Arnaldo Carvalho de Melo)
-
-. Show error messages from the multiple make invoked from 'make build-test'.
-  (Arnaldo Carvalho de Melo)
-
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-h4kby5wyp6nfev3882rzm3r9@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/tests/make | 7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
-----------------------------------------------------------------
-Arnaldo Carvalho de Melo (2):
-      perf tools: Emit more precise message for missing glibc static library
-      perf tests: Show the inner make output when an error happens
+diff --git a/tools/perf/tests/make b/tools/perf/tests/make
+index 2f92d6e7ee00..69a71ff84e01 100644
+--- a/tools/perf/tests/make
++++ b/tools/perf/tests/make
+@@ -205,8 +205,7 @@ $(run):
+ 	( eval $$cmd ) >> $@ 2>&1; \
+ 	echo "  test: $(call test,$@)" >> $@ 2>&1; \
+ 	$(call test,$@) && \
+-	rm -f $@ \
+-	rm -rf $$TMP_DEST
++	rm -rf $@ $$TMP_DEST || (cat $@ ; false)
+ 
+ $(run_O):
+ 	$(call clean)
+@@ -217,9 +216,7 @@ $(run_O):
+ 	( eval $$cmd ) >> $@ 2>&1 && \
+ 	echo "  test: $(call test_O,$@)" >> $@ 2>&1; \
+ 	$(call test_O,$@) && \
+-	rm -f $@ && \
+-	rm -rf $$TMP_O \
+-	rm -rf $$TMP_DEST
++	rm -rf $@ $$TMP_O $$TMP_DEST || (cat $@ ; false)
+ 
+ tarpkg:
+ 	@cmd="$(PERF)/tests/perf-targz-src-pkg $(PERF)"; \
+-- 
+1.9.3
 
-Masami Hiramatsu (4):
-      perf probe: Improve error message for unknown member of data structure
-      perf probe: Show error code and description in verbose mode
-      perf probe: Improve an error message of perf probe --vars mode
-      perf probe: Improve error messages in --line option
-
-Stanislav Fomichev (1):
-      perf timechart: Reflow documentation
-
- tools/perf/Documentation/perf-timechart.txt | 41 ++++++++++++++---------------
- tools/perf/builtin-probe.c                  | 23 +++++++++-------
- tools/perf/config/Makefile                  |  6 ++++-
- tools/perf/tests/make                       |  7 ++---
- tools/perf/util/probe-event.c               | 13 ++++++---
- tools/perf/util/probe-finder.c              | 11 +++++---
- 6 files changed, 57 insertions(+), 44 deletions(-)
