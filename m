@@ -1,96 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753079AbaFJPUN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 11:20:13 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:46034 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752748AbaFJPUK (ORCPT
+	id S1752595AbaFJPWD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 11:22:03 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:34803 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752018AbaFJPWA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 11:20:10 -0400
-Date: Tue, 10 Jun 2014 08:20:06 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>
-Subject: Re: safety of *mutex_unlock() (Was: [BUG] signal: sighand
- unprotected when accessed by /proc)
-Message-ID: <20140610152006.GA30219@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140603172632.GA27956@redhat.com>
- <CA+55aFzT5CGv_T60voAqR+4PfiMmJmsDZLid2DZ4=+X8uvF+ig@mail.gmail.com>
- <20140603200125.GB1105@redhat.com>
- <20140606203350.GU4581@linux.vnet.ibm.com>
- <20140608130718.GA11129@redhat.com>
- <20140609162613.GE4581@linux.vnet.ibm.com>
- <20140610083726.GY3213@twins.programming.kicks-ass.net>
- <20140610125234.GI4581@linux.vnet.ibm.com>
- <20140610130138.GC3213@twins.programming.kicks-ass.net>
- <20140610143632.GM4581@linux.vnet.ibm.com>
+	Tue, 10 Jun 2014 11:22:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140610143632.GM4581@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061015-6688-0000-0000-00000277FB57
+In-Reply-To: <CANuQgHHxAhTNYX-JAEdRkO=PMYT4A5GwXcuQfiqwE0CEkQyR+w@mail.gmail.com>
+References: <1402090985-8061-1-git-send-email-dianders@chromium.org>
+	<20140607181221.GB25068@e102568-lin.cambridge.arm.com>
+	<CAD=FV=X17PeJ6JPE9Qyc1QT07AvA2PTE69Q87gz9a6MdUHgi4A@mail.gmail.com>
+	<20140609223831.GB16889@e102568-lin.cambridge.arm.com>
+	<CANuQgHHxAhTNYX-JAEdRkO=PMYT4A5GwXcuQfiqwE0CEkQyR+w@mail.gmail.com>
+Date: Tue, 10 Jun 2014 08:21:59 -0700
+X-Google-Sender-Auth: 7M0r-g7IrWEz20NDC3a76wKOTx8
+Message-ID: <CAD=FV=V5_RRNkgA7Rk7XbQw9m1qh6-RJA8arW7ZRU=QbWAPa+w@mail.gmail.com>
+Subject: Re: [PATCH] ARM: EXYNOS: mcpm: Don't rely on firmware's secondary_cpu_start
+From: Doug Anderson <dianders@chromium.org>
+To: Chander Kashyap <chander.kashyap@linaro.org>
+Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Inderpal Singh <inderpal.s@samsung.com>,
+        Thomas Abraham <thomas.ab@samsung.com>,
+        "olof@lixom.net" <olof@lixom.net>, Tushar Behera <trblinux@gmail.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 10, 2014 at 07:36:32AM -0700, Paul E. McKenney wrote:
-> On Tue, Jun 10, 2014 at 03:01:38PM +0200, Peter Zijlstra wrote:
-> > On Tue, Jun 10, 2014 at 05:52:35AM -0700, Paul E. McKenney wrote:
-> > > On Tue, Jun 10, 2014 at 10:37:26AM +0200, Peter Zijlstra wrote:
-> > > > On Mon, Jun 09, 2014 at 09:26:13AM -0700, Paul E. McKenney wrote:
-> > > > > That would indeed be a bad thing, as it could potentially lead to
-> > > > > use-after-free bugs.  Though one could argue that any code that resulted
-> > > > > in use-after-free would be quite aggressive.  But still...
-> > > > 
-> > > > Let me hijack this thread for yet another issue... So I had an RCU
-> > > > related use-after-free the other day, and while Sasha was able to
-> > > > trigger it quite easily, I had a multi-day struggle to reproduce.
-> > > > 
-> > > > Once I figured out what the exact problem was it was also clear to me
-> > > > why it was so hard for me to reproduce.
-> > > > 
-> > > > So normally its easier to trigger races on bigger machines, more cpus,
-> > > > more concurrency, more races, all good.
-> > > > 
-> > > > _However_ with RCU the grace period machinery is slower the bigger the
-> > > > machine, so bigger machine, slower grace period, slower RCU free, less
-> > > > likely to hit use-after-free.
-> > > > 
-> > > > So I was thinking, and I know you all will go kick me for this because
-> > > > the very last thing we need is what I'm about to propose: more RCU
-> > > > flavours :-).
-> > > > 
-> > > > How about an rcu_read_unlock() reference counted RCU variant that's
-> > > > ultra aggressive in doing the callbacks in order to better trigger such
-> > > > issues?
-> > > 
-> > > If you are using synchronize_rcu() for the update side, then I suggest
-> > > rcutorture.gp_exp=1 to force use expediting throughout.
-> > 
-> > No such luck, this was regular kfree() from call_rcu(). And the callback
-> > execution was typically delayed long enough to never 'see' the
-> > use-after-free.
-> 
-> Figures.  ;-)
-> 
-> Well, there is always the approach of booting your big systems with most
-> of the CPUs turned off.  Another approach would be to set HZ=10000 or
-> some such, assuming the kernel can actually survive that kind of abuse.
+Chander,
 
-And yet another approach is to have a pair of low-priority processes
-per CPU that context-switch back and forth to each other if that CPU
-has nothing else to do.  This should get rid of most of the increase in
-grace-period duration with increasing numbers of CPUs.
+On Tue, Jun 10, 2014 at 1:12 AM, Chander Kashyap
+<chander.kashyap@linaro.org> wrote:
+> On 10 June 2014 04:08, Lorenzo Pieralisi <lorenzo.pieralisi@arm.com> wrote:
+>> On Mon, Jun 09, 2014 at 06:03:31PM +0100, Doug Anderson wrote:
+>>
+>> [...]
+>>
+>>> Cold boot and resume from suspend are detected via various special
+>>> flags in various special locations.  Resume from suspend looks at
+>>> INFORM1 (0x10048004) for flags.  This register is 0 during a cold boot
+>>> and has special values set by the kernel at resume time.
+>>>
+>>> It also looks as if some code looks at 0x10040900 (PMU_SPARE0) to help
+>>> tell initial cold boot and secondary CPU bringup.
+>>
+>> Ok, thanks a lot. It looks like firmware paths should be ready to
+>> detect cold vs warm boot, and hopefully do not rely on a specific
+>> MPIDR to come up first out of power states.
+>>
+>>> > I am asking to check if on this platform CPUidle (where the notion of
+>>> > primary CPU disappears) has a chance to run properly.
+>>>
+>>> I believe it should be possible, but we don't have CPUidle implemented
+>>> in our current system.  Abhilash may be able to comment more.
+>>
+>
+> Cpuidle is implemented for exynos5420, and is tested on chromebook.
 
-							Thanx, Paul
+My S-state knowledge is not strong, but I believe that Lorenzo's
+questions matter if we're using S2 for CPUidle (where we actually turn
+off power and hot unplug CPUs) but not when we're using S1 for CPUidle
+(where we just enter WFI/WFE).
 
+I believe that in ChromeOS we use S1 CPUidle and that it works fine.
+We've never implemented S2 that I'm aware of.
+
+-Doug
