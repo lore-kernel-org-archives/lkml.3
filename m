@@ -1,104 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752782AbaFJR44 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 13:56:56 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:56429 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751888AbaFJR4x (ORCPT
+	id S1751273AbaFJSEO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 14:04:14 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:63139 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750735AbaFJSEN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 13:56:53 -0400
-Message-ID: <539746E0.6020505@colorfullife.com>
-Date: Tue, 10 Jun 2014 19:56:48 +0200
-From: Manfred Spraul <manfred@colorfullife.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 10 Jun 2014 14:04:13 -0400
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>,
+In-Reply-To: <CA+55aFyY7_=3xt-0KE=-fmb+kLurxkBmh8TZWgDZMi_RVpKBpg@mail.gmail.com>
+References: <alpine.LNX.2.00.1406101517300.9378@pobox.suse.cz>
+	<CA+55aFyY7_=3xt-0KE=-fmb+kLurxkBmh8TZWgDZMi_RVpKBpg@mail.gmail.com>
+Date: Tue, 10 Jun 2014 11:04:13 -0700
+Message-ID: <CAKbGBLi1hRxe03EB70HOYRTuVhHkAyTnhfv8HFXEwatP6Qn8tA@mail.gmail.com>
+Subject: Re: [PATCH] tell gcc optimizer to never introduce new data races
+From: Steven Noonan <steven@uplinklabs.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jiri Kosina <jkosina@suse.cz>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Martin Jambor <mjambor@suse.cz>, Petr Mladek <pmladek@suse.cz>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        davidlohr.bueso@hp.com
-Subject: Re: ipc/sem.c: change perform_atomic_semop parameters
-References: <20140606235006.342B5660FCD@gitolite.kernel.org> <20140610141933.GA16263@redhat.com>
-In-Reply-To: <20140610141933.GA16263@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
-
-On 06/10/2014 04:19 PM, Dave Jones wrote:
-> On Fri, Jun 06, 2014 at 11:50:06PM +0000, Linux Kernel wrote:
->   > Gitweb:     http://git.kernel.org/linus/;a=commit;h=d198cd6d6d02d0a335af2deacb60816ebb4719d1
->   > Commit:     d198cd6d6d02d0a335af2deacb60816ebb4719d1
->   > Parent:     2f2ed41dcaec34f2d6f224aa84efcc5a9dd8d5c3
->   > Refname:    refs/heads/next
->   > Author:     Manfred Spraul <manfred@colorfullife.com>
->   > AuthorDate: Fri Jun 6 14:37:49 2014 -0700
->   > Committer:  Linus Torvalds <torvalds@linux-foundation.org>
->   > CommitDate: Fri Jun 6 16:08:15 2014 -0700
->   >
->   >     ipc/sem.c: change perform_atomic_semop parameters
->   >
->   >     Right now, perform_atomic_semop gets the content of sem_queue as
->   >     individual fields.  Changes that, instead pass a pointer to sem_queue.
->   >
->   >     This is a preparation for the next patch: it uses sem_queue to store the
->   >     reason why a task must sleep.
->   >
->   >     Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
->   >     Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>
->   >     Cc: Michael Kerrisk <mtk.manpages@gmail.com>
->   >     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
->   >     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+On Tue, Jun 10, 2014 at 10:46 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Tue, Jun 10, 2014 at 6:23 AM, Jiri Kosina <jkosina@suse.cz> wrote:
+>> We have been chasing a memory corruption bug, which turned out to be
+>> caused by very old gcc (4.3.4), which happily turned conditional load into
+>> a non-conditional one, and that broke correctness (the condition was met
+>> only if lock was held) and corrupted memory.
 >
-> After this patch, coverity started complaining about a potential deref
-> after null check. (It may have been a problem before, but the code motion
-> causes a new 'event')
+> Just out of interest, can you point to the particular kernel code that
+> caused this? I think that's more interesting than the example program
+> you show - which I'm sure is really nice for gcc developers as an
+> example, but from a kernel standpoint I think it's more important to
+> show the particular problems this caused for the kernel?
 >
->      	33. var_compare_op: Comparing un to null implies that un might be null.
-> 1878        if (un && un->semid == -1)
-> 1879                goto out_unlock_free;
-> 1880
-> 1881        queue.sops = sops;
-> 1882        queue.nsops = nsops;
-Correct, un can be NULL.
 
-But only if sem_flg & SEM_UNDO is false for every operation:
-from semtimedop():
->>                if (sop->sem_flg & SEM_UNDO)
->>                         undos = 1;
->> [...]
->>         if (undos) {
->>                 /* On success, find_alloc_undo takes the 
->> rcu_read_lock */
->>                 un = find_alloc_undo(ns, semid);
->>                 if (IS_ERR(un)) {
->>                         error = PTR_ERR(un);
->>                         goto out_free;
->>                 }
->>         } else {
->>                 un = NULL;
->>                 rcu_read_lock();
->>         }
+Jiri, is there a workaround for compilers that don't support '--param
+allow-store-data-races=0'? For example:
 
+$ gcc-4.5 -O2 -o cond_store cond_store.c && ./cond_store
+Segmentation fault (core dumped)
 
->      	34. alias_transfer: Assigning: queue.undo = un.
-> 1883        queue.undo = un;
-> 1884        queue.pid = task_tgid_vnr(current);
-> 1885        queue.alter = alter;
-> 1886
-Correct.
->      	
-> CID 1222114 (#1 of 1): Dereference after null check (FORWARD_NULL)
-> 35. var_deref_model: Passing &queue to perform_atomic_semop, which dereferences null queue.undo. [show details]
-> 1887        error = perform_atomic_semop(sma, &queue);
-Passing &queue to perform_atomic_semop (correct),
-which dereferences null queue.undo: Incorrect. queue.undo is only 
-dereferenced if sem_flg&SEM_UNDO is true.
+$ gcc-4.5 -O2 --param allow-store-data-races=0 -o cond_store
+cond_store.c && ./cond_store
+cc1: error: invalid parameter ‘allow-store-data-races’
 
-Thus: As far as I can see it's a false alarm.
-
-And - even more simply: queue.un=NULL is the common case.
-
---
-     Manfred
+$ gcc-4.5 -v
+Using built-in specs.
+COLLECT_GCC=gcc-4.5
+COLLECT_LTO_WRAPPER=/usr/lib/gcc/x86_64-unknown-linux-gnu/4.5.4/lto-wrapper
+Target: x86_64-unknown-linux-gnu
+Configured with: ../configure --prefix=/usr --mandir=/usr/share/man
+--infodir=/usr/share/info --libdir=/usr/lib --libexecdir=/usr/lib
+--program-suffix=-4.5 --enable-shared
+--enable-languages=c,c++,fortran,objc,obj-c++ --enable-__cxa_atexit
+--disable-libstdcxx-pch --disable-multilib --disable-libgomp
+--disable-libmudflap --disable-libssp --enable-clocale=gnu
+--with-tune=generic --with-cloog --with-ppl --with-system-zlib
+Thread model: posix
+gcc version 4.5.4 (GCC)
