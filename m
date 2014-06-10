@@ -1,73 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752840AbaFJPQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 11:16:58 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:45460 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752199AbaFJPQz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 11:16:55 -0400
-From: "Javi Merino" <javi.merino@arm.com>
-Date: Tue, 10 Jun 2014 16:16:49 +0100
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>, Zhang Rui <rui.zhang@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH] tools/thermal: tmon: fix compilation errors when
- building statically
-Message-ID: <20140610151649.GB2798@e104805>
-References: <1401728897-25188-1-git-send-email-javi.merino@arm.com>
- <20140602045457.6b519e43@jacob-desktop>
+	id S1752886AbaFJPSR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 11:18:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13904 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751063AbaFJPSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 11:18:15 -0400
+Date: Tue, 10 Jun 2014 17:17:35 +0200
+From: Jakub Jelinek <jakub@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Marek Polacek <polacek@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Martin Jambor <mjambor@suse.cz>, Petr Mladek <pmladek@suse.cz>,
+        linux-kernel@vger.kernel.org, gcc@gcc.gnu.org
+Subject: Re: [PATCH] tell gcc optimizer to never introduce new data races
+Message-ID: <20140610151735.GH19001@tucnak.redhat.com>
+Reply-To: Jakub Jelinek <jakub@redhat.com>
+References: <alpine.LNX.2.00.1406101517300.9378@pobox.suse.cz>
+ <20140610145327.GJ6758@twins.programming.kicks-ass.net>
+ <20140610150455.GC7335@redhat.com>
+ <20140610151329.GL6758@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-In-Reply-To: <20140602045457.6b519e43@jacob-desktop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 10 Jun 2014 15:16:45.0440 (UTC) FILETIME=[FDD6D000:01CF84BE]
-X-MC-Unique: 114061016165306301
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20140610151329.GL6758@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rui,
-
-On Mon, Jun 02, 2014 at 12:54:57PM +0100, Jacob Pan wrote:
-> On Mon,  2 Jun 2014 18:08:17 +0100
-> "Javi Merino" <javi.merino@arm.com> wrote:
+On Tue, Jun 10, 2014 at 05:13:29PM +0200, Peter Zijlstra wrote:
+> On Tue, Jun 10, 2014 at 05:04:55PM +0200, Marek Polacek wrote:
+> > On Tue, Jun 10, 2014 at 04:53:27PM +0200, Peter Zijlstra wrote:
+> > > On Tue, Jun 10, 2014 at 03:23:36PM +0200, Jiri Kosina wrote:
+> > > > +# Tell gcc to never replace conditional load with a non-conditional one
+> > > > +KBUILD_CFLAGS	+= $(call cc-option,--param allow-store-data-races=0)
+> > > > +
+> > > 
+> > > Why do we not want: -fmemory-model=safe? And should we not at the very
+> > > least also disable packed-store-data-races?
+> > 
+> > Note that the option does not exist, even though it is mentioned in the
+> > documentation.
 > 
-> > tmon fails to build statically with the following error:
-> > 
-> > $ make LDFLAGS=-static
-> > gcc -O1 -Wall -Wshadow -W -Wformat -Wimplicit-function-declaration
-> > -Wimplicit-int -fstack-protector -D VERSION=\"1.0\" -static tmon.o
-> > tui.o sysfs.o pid.o   -o tmon -lm -lpanel -lncursesw  -lpthread
-> > tmon.o: In function `tmon_sig_handler': tmon.c:(.text+0x21):
-> > undefined reference to `stdscr' tmon.o: In function `tmon_cleanup':
-> > tmon.c:(.text+0xb9): undefined reference to `stdscr'
-> > tmon.c:(.text+0x11e): undefined reference to `stdscr'
-> > tmon.c:(.text+0x123): undefined reference to `keypad'
-> > tmon.c:(.text+0x12d): undefined reference to `nocbreak' tmon.o: In
-> > function `main': tmon.c:(.text+0x785): undefined reference to `stdscr'
-> > tmon.c:(.text+0x78a): undefined reference to `nodelay'
-> > tui.o: In function `setup_windows':
-> > tui.c:(.text+0x131): undefined reference to `stdscr'
-> > tui.c:(.text+0x176): undefined reference to `stdscr'
-> > tui.c:(.text+0x19f): undefined reference to `stdscr'
-> > tui.c:(.text+0x1cc): undefined reference to `stdscr'
-> > tui.c:(.text+0x1ff): undefined reference to `stdscr'
-> > tui.o:tui.c:(.text+0x229): more undefined references to `stdscr'
-> > follow tui.o: In function `show_cooling_device':
-> > [...]
-> > 
-> > stdscr() and friends are in libtinfo (part of ncurses) so add it to
-> > the libraries that are linked in when compiling tmon to fix it.
-> > 
-> Acked-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+> Urgh.. ok. Any word on the packed-store-data thing?
 
-Thanks!
+That is recognized, undocumented and never used in the compiler (not in 4.7
+or any later release till now).  Most of the spots in the compiler that
+could introduce data races were actually just changed, there is (already
+since 4.7) just a single conditional on the --param allow-store-data-races=X
+value.
 
-Rui, can you pick this up?
-
-Cheers,
-Javi
-
+	Jakub
