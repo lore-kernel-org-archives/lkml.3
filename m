@@ -1,76 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751484AbaFJEOD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 00:14:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60059 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750886AbaFJEOB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 00:14:01 -0400
-Date: Mon, 9 Jun 2014 21:14:00 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "security@kernel.org" <security@kernel.org>
-Subject: Re: [PATCH 1/2] auditsc: audit_krule mask accesses need bounds
- checking
-Message-ID: <20140610041400.GA28020@kroah.com>
-References: <1401332999-15167-1-git-send-email-eparis@redhat.com>
- <20140609223057.GB18475@kroah.com>
- <CALCETrUD75vSwJUjFuxGCrZ_7DJhCc1KW2v_ndF6EHJ31fUMBg@mail.gmail.com>
- <20140609224645.GA8113@kroah.com>
- <CA+5PVA6dHu-0qi1fx5Vq4QynJDJ=dG0feJjwoCHA3GaUSHp-FQ@mail.gmail.com>
- <20140610003142.GA20728@kroah.com>
- <CALCETrWYvQR5QRg7_tG3ZFk7dy0X7Ji50Lgxt81aqjjsxS7gCg@mail.gmail.com>
- <20140610025715.GA24314@kroah.com>
- <CALCETrWzKCDezac4PHCXyZ8LJqitGiJJwNNL2tPNVLBCXOw9ZQ@mail.gmail.com>
+	id S1751106AbaFJERj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 00:17:39 -0400
+Received: from mx1.scotdoyle.com ([69.85.92.149]:54723 "EHLO mx1.scotdoyle.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750814AbaFJERi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 00:17:38 -0400
+Date: Tue, 10 Jun 2014 06:17:35 +0100 (BST)
+From: Scot Doyle <lkml14@scotdoyle.com>
+To: Benson Leung <bleung@chromium.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Olof Johansson <olof@lixom.net>, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 1/1] platform/chrome: Probe multiple i2c adapters of the
+ same name
+In-Reply-To: <alpine.DEB.2.02.1406092332410.8274@scotdoyle.com>
+Message-ID: <alpine.DEB.2.02.1406100610220.8274@scotdoyle.com>
+References: <1401800524-28934-1-git-send-email-mika.westerberg@linux.intel.com> <CANLzEksLB1=+TePxgPRBhsGKpC-4tWB8JOh-Ey80Hj43LkVn=g@mail.gmail.com> <20140604083726.GN1730@lahna.fi.intel.com> <CANLzEkuAxGrRHtb=vFAm9AGws7Qyg3A_oQpAGGFaYEqP2A2g8g@mail.gmail.com>
+ <alpine.DEB.2.02.1406062259070.31301@scotdoyle.com> <alpine.DEB.2.02.1406062316230.32568@scotdoyle.com> <20140609124700.GJ1657@lahna.fi.intel.com> <alpine.DEB.2.02.1406092332410.8274@scotdoyle.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrWzKCDezac4PHCXyZ8LJqitGiJJwNNL2tPNVLBCXOw9ZQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 09, 2014 at 09:04:16PM -0700, Andy Lutomirski wrote:
-> On Mon, Jun 9, 2014 at 7:57 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Mon, Jun 09, 2014 at 05:51:37PM -0700, Andy Lutomirski wrote:
-> >> [cc list trimmed, security@ added]
-> >>
-> >> On Mon, Jun 9, 2014 at 5:31 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> >> > On Mon, Jun 09, 2014 at 07:35:57PM -0400, Josh Boyer wrote:
-> >> >> On Mon, Jun 9, 2014 at 6:46 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> >> >> >
-> >> >> > But yes, having something "real" might be good if the load gets higher,
-> >> >> > right now it's so low that my "sweep pending security patches" task
-> >> >> > usually catches anything pending, which is rare.
-> >> >>
-> >> >> How does one get added to the security@ alias?  We've been carrying
-> >> >> this patch in Fedora for a bit now.  I'd be happy to help track things
-> >> >> given we get distro security bug reports and such.
-> >> >
-> >> > Just ask on the security@ alias to be added and we can take it from
-> >> > there.
-> >> >
-> >>
-> >> Would it make sense for there to be someone on the security list who
-> >> can assign CVE numbers?
-> >
-> > I'm pretty sure we have that already.
-> 
-> Let me rephrase the question:
-> 
-> Would it make sense for someone on the security list to assign CVE numbers?
+The chromeos_laptop module probes the first i2c adapter with a specific 
+name for expected hardware. However, the Acer C720 Chromebook has two i2c 
+adapters with the same name. This patch probes each i2c adapter with a 
+specific name in turn, until locating the expected hardware.
 
-If we cared about CVE numbers, maybe :)
+Thanks to Mika Westerberg for identifying the need for unique bus 
+addresses within each set of identically-named adapters.
 
-Seriously, there are people on the security alias that can get CVE
-numbers assigned if needed, so that should not be an issue.  It's
-happened in the past from what I can recall.
+Signed-off-by: Scot Doyle <lkml14@scotdoyle.com>
+CC: Benson Leung <bleung@chromium.org>
+CC: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+diff --git a/drivers/platform/chrome/chromeos_laptop.c 
+b/drivers/platform/chrome/chromeos_laptop.c
+index 7f3aad0..8382315 100644
+--- a/drivers/platform/chrome/chromeos_laptop.c
++++ b/drivers/platform/chrome/chromeos_laptop.c
+@@ -29,6 +29,8 @@
+  #include <linux/module.h>
+  #include <linux/platform_device.h>
 
-thanks,
++/* Note: Bus addresses must be unique within each set of identically-named
++	 adapters on a board, otherwise device probing may fail. */
+  #define ATMEL_TP_I2C_ADDR	0x4b
+  #define ATMEL_TP_I2C_BL_ADDR	0x25
+  #define ATMEL_TS_I2C_ADDR	0x4a
+@@ -173,7 +175,7 @@ static struct i2c_client *__add_probed_i2c_device(
+  	/* add the i2c device */
+  	client = i2c_new_probed_device(adapter, info, addrs, NULL);
+  	if (!client)
+-		pr_err("%s failed to register device %d-%02x\n",
++		pr_debug("%s did not add i2c device %d-%02x\n",
+  		       __func__, bus, info->addr);
+  	else
+  		pr_debug("%s added i2c device %d-%02x\n",
+@@ -194,13 +196,14 @@ static int __find_i2c_adap(struct device *dev, void *data)
+  	return (strncmp(adapter->name, name, strlen(name)) == 0);
+  }
 
-greg k-h
+-static int find_i2c_adapter_num(enum i2c_adapter_type type)
++static int find_i2c_next_adapter_num(enum i2c_adapter_type type,
++				     struct device *start)
+  {
+  	struct device *dev = NULL;
+  	struct i2c_adapter *adapter;
+  	const char *name = i2c_adapter_names[type];
+-	/* find the adapter by name */
+-	dev = bus_find_device(&i2c_bus_type, NULL, (void *)name,
++	/* find the next adapter by name */
++	dev = bus_find_device(&i2c_bus_type, start, (void *)name,
+  			      __find_i2c_adap);
+  	if (!dev) {
+  		/* Adapters may appear later. Deferred probing will retry */
+@@ -226,10 +229,17 @@ static struct i2c_client *add_probed_i2c_device(
+  		struct i2c_board_info *info,
+  		const unsigned short *addrs)
+  {
+-	return __add_probed_i2c_device(name,
+-				       find_i2c_adapter_num(type),
+-				       info,
+-				       addrs);
++	struct i2c_client *client = NULL;
++	struct device *start = NULL;
++	int adapter_num = 0;
++	while (!client && adapter_num > -1) {
++		adapter_num = find_i2c_next_adapter_num(type, start);
++		client = __add_probed_i2c_device(name,
++						 adapter_num,
++						 info,
++						 addrs);
++	}
++	return client;
+  }
+
+  /*
+@@ -242,10 +252,10 @@ static struct i2c_client *add_i2c_device(const char *name,
+  						struct i2c_board_info *info)
+  {
+  	const unsigned short addr_list[] = { info->addr, I2C_CLIENT_END };
+-	return __add_probed_i2c_device(name,
+-				       find_i2c_adapter_num(type),
+-				       info,
+-				       addr_list);
++	return add_probed_i2c_device(name,
++				     type,
++				     info,
++				     addr_list);
+  }
+
+  static int setup_cyapa_tp(enum i2c_adapter_type type)
