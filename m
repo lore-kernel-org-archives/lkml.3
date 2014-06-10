@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751909AbaFJLgE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 07:36:04 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:35877 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750788AbaFJLgC (ORCPT
+	id S1751638AbaFJLnu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 07:43:50 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:39954 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751035AbaFJLns (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 07:36:02 -0400
-Date: Tue, 10 Jun 2014 04:35:40 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: Jens Axboe <axboe@fb.com>, Christoph Hellwig <hch@infradead.org>,
-        Matias Bj??rling <m@bjorling.me>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Keith Busch <keith.busch@intel.com>,
-        "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-nvme <linux-nvme@lists.infradead.org>
-Subject: Re: [PATCH v6] NVMe: conversion to blk-mq
-Message-ID: <20140610113540.GA26195@infradead.org>
-References: <1402057225-7312-1-git-send-email-m@bjorling.me>
- <1402057225-7312-2-git-send-email-m@bjorling.me>
- <CACVXFVOieM2cT4FFJhD9MecfCLBtE3AwjCpOeGGRUcmWnN=B=A@mail.gmail.com>
- <5395BFF2.2080402@fb.com>
- <20140609145944.GA30626@infradead.org>
- <5395D24D.9000306@fb.com>
- <CACVXFVNNm5PJ8g=QD5zm49kaqW_oKCM+utMz+qSd=3WfsE4U2g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACVXFVNNm5PJ8g=QD5zm49kaqW_oKCM+utMz+qSd=3WfsE4U2g@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 10 Jun 2014 07:43:48 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-23-5396ef722a28
+Message-id: <5396EF63.8030506@samsung.com>
+Date: Tue, 10 Jun 2014 13:43:31 +0200
+From: Tomasz Figa <t.figa@samsung.com>
+Organization: Samsung R&D Institute Poland
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.5.0
+MIME-version: 1.0
+To: Pankaj Dubey <pankaj.dubey@samsung.com>, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: kgene.kim@samsung.com, linux@arm.linux.org.uk, chow.kim@samsung.com,
+        yg1004.jang@samsung.com, vikas.sajjan@samsung.com
+Subject: Re: [PATCH v4 01/11] ARM: EXYNOS: Make exynos machine_ops as static
+References: <1399704998-13321-1-git-send-email-pankaj.dubey@samsung.com>
+ <1399704998-13321-2-git-send-email-pankaj.dubey@samsung.com>
+In-reply-to: <1399704998-13321-2-git-send-email-pankaj.dubey@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLLMWRmVeSWpSXmKPExsVy+t/xa7pF76cFGxy9zWKxbNJdNoveBVfZ
+	LDY9vsZqcXnXHDaLGef3MVncvsxrsWjrF3aLm8+2M1nsaFnN4sDp0dLcw+axeUm9R9+WVYwe
+	nzfJBbBEcdmkpOZklqUW6dslcGVsXbaEveAzc8WZGVOYGxgnMHcxcnJICJhInOi/zQZhi0lc
+	uLceyObiEBJYyijx4PZWRpCEkMBnRol5r2RBbF4BLYmV006zgtgsAqoSx060g9lsAmoSnxse
+	gQ3iB6pZ03SdpYuRg0NUIELi8QUhiFZBiR+T77GAzBcRmMIocbFnGdh8ZoEaiQWdm1lAbGEB
+	H4lZbVNYII5oB9r7fQ3YAk4BT4nlR7tZIBp0JPa3TmODsOUlNq95yzyBUXAWkiWzkJTNQlK2
+	gJF5FaNoamlyQXFSeq6hXnFibnFpXrpecn7uJkZIFHzZwbj4mNUhRgEORiUeXg6dacFCrIll
+	xZW5hxglOJiVRHi/nAQK8aYkVlalFuXHF5XmpBYfYmTi4JRqYNR/88m8+GXrgS2RT62rTU18
+	m3sfPr74o3rRsU3t3GcY7jD5WeRZNl3Vrvct/lqxJaD5/MKzS5RqQzhN3j/4WFERZ/8oWeF9
+	Om/StN2sBXOfqX195fbn1a+Vy5ge7VPUUs37d6X29i8tLZtZ0mwnpaYdZX3mYJE+7/Hjo+Xp
+	tpnb4vSaXJUZ3yqxFGckGmoxFxUnAgCIrUCTYAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 09, 2014 at 11:35:00PM +0800, Ming Lei wrote:
-> 
-> Use-after-free may cause duplicate completions.
-> 
-> BTW, is the scsi-mq patchset public now?
+Hi Pankaj,
 
-It always has been.  I've posted it fairly frequently to linux-scsi,
-and git://git.infradead.org/users/hch/scsi.git always has the latest
-code, with scsi-mq-wip.11 as the current iteration.
+On 10.05.2014 08:56, Pankaj Dubey wrote:
+> As machine function ops are used only in this file let's make
+> them static. Also remove unused and unwanted declarations from
+> common.h.
+> 
+> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+> ---
+>  arch/arm/mach-exynos/common.h |    8 --------
+>  arch/arm/mach-exynos/exynos.c |    6 +++---
+>  2 files changed, 3 insertions(+), 11 deletions(-)
+> 
+
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+
+Best regards,
+Tomasz
