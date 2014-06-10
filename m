@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936247AbaFJDAy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 23:00:54 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:4447 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754382AbaFJDAw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 23:00:52 -0400
-Message-ID: <53967465.7070908@huawei.com>
-Date: Tue, 10 Jun 2014 10:58:45 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Gu Zheng <guz.fnst@cn.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        <linux-mm@kvack.org>, Cgroups <cgroups@vger.kernel.org>,
-        <stable@vger.kernel.org>
-Subject: Re: [PATCH] mm/mempolicy: fix sleeping function called from invalid
- context
-References: <53902A44.50005@cn.fujitsu.com> <20140605132339.ddf6df4a0cf5c14d17eb8691@linux-foundation.org> <539192F1.7050308@cn.fujitsu.com> <alpine.DEB.2.02.1406081539140.21744@chino.kir.corp.google.com> <539574F1.2060701@cn.fujitsu.com> <alpine.DEB.2.02.1406090209460.24247@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1406090209460.24247@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+	id S933821AbaFJDKU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 23:10:20 -0400
+Received: from ns.horizon.com ([71.41.210.147]:62854 "HELO ns.horizon.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S932844AbaFJDKT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jun 2014 23:10:19 -0400
+Date: 9 Jun 2014 23:10:17 -0400
+Message-ID: <20140610031017.9893.qmail@ns.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux@horizon.com, tytso@mit.edu
+Subject: Re: drivers/char/random.c: more ruminations
+Cc: hpa@linux.intel.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
+        price@mit.edu
+In-Reply-To: <20140610012036.GA8092@thunk.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/6/9 17:13, David Rientjes wrote:
-> On Mon, 9 Jun 2014, Gu Zheng wrote:
-> 
->>> I think your patch addresses the problem that you're reporting but misses 
->>> the larger problem with cpuset.mems rebinding on fork().  When the 
->>> forker's task_struct is duplicated (which includes ->mems_allowed) and it 
->>> races with an update to cpuset_being_rebound in update_tasks_nodemask() 
->>> then the task's mems_allowed doesn't get updated.
->>
->> Yes, you are right, this patch just wants to address the bug reported above.
->> The race condition you mentioned above inherently exists there, but it is yet
->> another issue, the rcu lock here makes no sense to it, and I think we need
->> additional sync-mechanisms if want to fix it.
-> 
-> Yes, the rcu lock is not providing protection for any critical section 
-> here that requires (1) the forker's cpuset to be stored in 
-> cpuset_being_rebound or (2) the forked thread's cpuset to be rebound by 
-> the cpuset nodemask update, and no race involving the two.
->
+>> I have an idea for a patch to change _xfer_secondary_pool
+>> to use extract_buf rather than extract_entropy; is all that
+>> FIPS stuff needed for purely internal transfers?
 
-Yes, this is a long-standing issue. Besides the race you described, the child
-task's mems_allowed can be wrong if the cpuset's nodemask changes before the
-child has been added to the cgroup's tasklist.
+> That's not the part of extract_entropy() which is critical.  What's
+> critical is the control over only transfering entropy when there is at
+> least a certain minimum amount of entropy.  This provides the
+> Yarrow-like avalanche property which is required to provide recovery
+> after the internal state of the entropy pools have been exposed.
 
-I remember Tejun once said he wanted to disallow task migration between
-cgroups during fork, and that should fix this problem.
- 
->> But thinking more, though the current implementation has flaw, but I worry
->> about the negative effect if we really want to fix it. Or maybe the fear
->> is unnecessary.:) 
->>
-> 
-> It needs to be slightly rewritten to work properly without negatively 
-> impacting the latency of fork().  Do you have the cycles to do it?
-> 
+I do understand the importance of catastrophic reseeding, but
+I don't see that implemented in extract_entropy().
 
-Sounds you have other idea?
+Extract_entropy() itself contains a call to xfer_secondary_pool, but
+that is a no-op in the case I'm considering (when it's called from
+_xfer_secondary_pool) because in that case, r is the the input_pool,
+which doesn't have an r->pull pool.
 
+The number of bytes transferred is adjusted by account(), but
+it's only adjusted downward.  (If it were adjusted up, that would be
+a buffer overrun.)
+
+Normal reads seem to ask for a reseed equal in size to read itself,
+which is "ctastrophic" enough.
+
+The only *minimum* reseed transfer size I can see is enforced in
+_xfer_secondary_pool and push_to_pool, which use random_read_wakeup_bits
+(default 64) as a minimum reseed.  (Prehaps increase this?)
+standards, IMHO.)
+
+
+Now, having said all that, I'll try to avoid embarrassing myself
+in public again and ask... what am I missing?
+
+
+
+On other matters...
+
+If I play around with getting the entropy locking right, do you
+have a strong preference for the single-lock or two-lock design?
+I can't decide which to start with.
+
+The latter is an extensive core code change, but I can easily convince
+myself there are no deadlock issues.  That's the one I described
+with separate adder and extractor locks and code paths, two "amount
+of entropy ever added" variables, ane one "amont of entropy ever removed".
+
+The single-lock design is hopefully less code, but (to me, at least) less
+obviously deadlock-free.
