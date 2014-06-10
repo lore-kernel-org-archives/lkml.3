@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752494AbaFJNz2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 09:55:28 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:56557 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751335AbaFJNz0 (ORCPT
+	id S1752618AbaFJN4X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 09:56:23 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:65304 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752443AbaFJN4V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 09:55:26 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-8b-53970e4c30ed
-Message-id: <53970E3D.9080501@samsung.com>
-Date: Tue, 10 Jun 2014 15:55:09 +0200
-From: Tomasz Figa <t.figa@samsung.com>
-Organization: Samsung R&D Institute Poland
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.5.0
-MIME-version: 1.0
-To: Pankaj Dubey <pankaj.dubey@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: kgene.kim@samsung.com, arnd@arndb.de,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Abraham <thomas.abraham@linaro.org>
-Subject: Re: [PATCH v3 3/6] ARM: EXYNOS: Remove soc_is_exynos4/5 from exynos.c
-References: <1399706287-13919-1-git-send-email-y@samsung.com>
- <1399706419-13976-1-git-send-email-pankaj.dubey@samsung.com>
- <1399706419-13976-4-git-send-email-pankaj.dubey@samsung.com>
-In-reply-to: <1399706419-13976-4-git-send-email-pankaj.dubey@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsVy+t/xq7o+fNODDTqfc1n8nXSM3aJ3wVU2
-	i02Pr7FaXN41h81ixvl9TBa3L/NaLNr6hd3i2IwljA4cHi3NPWwev39NYvS4c20Pm8fmJfUe
-	fVtWMXp83iQXwBbFZZOSmpNZllqkb5fAlbF0xnymgpVsFWtPXWRrYJzK2sXIySEhYCLx8XUv
-	lC0mceHeejYQW0hgKaPE979ANheQ/ZlR4vHC1WBFvAJaEi9e7QMrYhFQlfhypwEsziagJvG5
-	4RFYnB+oZk3TdZYuRg4OUYEIiccXhCBaBSV+TL7HAjJTRGAKo8TFnmWMIAlmgXqJ3hV/wXqF
-	Bfwkfl34yAixeDfQ4tcvmUASnAKeEm39C9kgGnQk9rdOg7LlJTavecs8gVFwFpIls5CUzUJS
-	toCReRWjaGppckFxUnqukV5xYm5xaV66XnJ+7iZGSDx83cG49JjVIUYBDkYlHl4D/2nBQqyJ
-	ZcWVuYcYJTiYlUR42/4ChXhTEiurUovy44tKc1KLDzEycXBKNTBKzFbl9ptt6WPL9vjtg93H
-	36jOM1h0ddXVX5tXfF/46v+Oows8z2/5KLut6+MLPqVbJV+363TdfuRyem+8WE+baTNTYOvO
-	U3wsW06/kWMtNVsQLMef+nH93T9fJTZpG38v5i8+N7W+5ZftnGctq/fbVh5ovnpi0bfvMS0s
-	a+8fvS6+MG69s5j2bCWW4oxEQy3mouJEAKI5fU1lAgAA
+	Tue, 10 Jun 2014 09:56:21 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Randy Dunlap <rdunlap@infradead.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Hans de Goede <hdegoede@redhat.com>, Shuge <shuge@allwinnertech.com>,
+        kevin@allwinnertech.com, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH v5 2/2] i2c: sunxi: add P2WI (Push/Pull 2 Wire Interface) controller support
+Date: Tue, 10 Jun 2014 15:54:56 +0200
+Message-ID: <6454089.IP8IFVsofj@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1402408036-5235-3-git-send-email-boris.brezillon@free-electrons.com>
+References: <1402408036-5235-1-git-send-email-boris.brezillon@free-electrons.com> <1402408036-5235-3-git-send-email-boris.brezillon@free-electrons.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:IBAPqgjbsIyBQCHMyTdmoEFUX+vfux8YR+gekbCgiqd
+ 1lSLMqcypQa5tXvVaHx/Loz9nglczg+INorYk7PNGgvNrug2Q4
+ jhoGQvln0NUIf9YY5CrdnR9ApZJGM1LtEkpkKGS4hDKE4Sjg+G
+ zrAjnsGP93pw8GDDNgcIJGNv+oOUfn+E9GplK2MLH7xfymegGD
+ 5qBG1uOHwmOaMX8l+IpjmhHd32tqZMKM9pjgGfdSxM0Boubxbe
+ vQPZFjf4qcctcTq1jmmdwsWCMg0cJWw8O+X7+Jl+/NmSbGKhPc
+ 2wk3x5gjYIgyLgLn3iX8wcdDlipnAu7xD8fKEG+Qcya5KjYh4p
+ MTcNwDdtjKIzfshPIkk8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10.05.2014 09:20, Pankaj Dubey wrote:
-> This patch removes usage of soc_is_exynos4/5 from exynos.c.
-> For this we need to separate machine descriptors for exynos4
-> and exynos5. While doing this patch does some consolidation also.
+On Tuesday 10 June 2014 15:47:16 Boris BREZILLON wrote:
 > 
-> CC: Russell King <linux@arm.linux.org.uk>
-> CC: Thomas Abraham <thomas.abraham@linaro.org>
-> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-> ---
->  arch/arm/mach-exynos/exynos.c            |   52 +++++++++++++++++++-----------
->  arch/arm/plat-samsung/include/plat/cpu.h |    3 --
->  2 files changed, 33 insertions(+), 22 deletions(-)
-> 
+> +config I2C_SUN6I_P2WI
+> +       tristate "Allwinner sun6i internal P2WI controller"
+> +       depends on ARCH_SUNXI
+> +       help
+> +         If you say yes to this option, support will be included for the
+> +         P2WI (Push/Pull 2 Wire Interface) controller embedded in some sunxi
+> +         SOCs.
+> +         The P2WI looks like an SMBus controller (which supports only byte
+> +         accesses), except that it only supports one slave device.
+> +         This interface is used to connect to specific PMIC devices (like the
+> +         AXP221).
+> +
 
-I don't think this is needed. All those static mappings should just go
-away, which will also eliminate the need to have separate machine
-descriptor or soc_is_exynos{4,5}() macros.
+Sorry for the stupid question, but why is this an i2c driver if the
+hardware protocol is completely different?
 
-Best regards,
-Tomasz
+I understand that a lot of devices can be driven using either spi or
+i2c, and we have two sets of {directories,maintainers,bus_types,...}
+for them. Your description sounds like this is a separate option
+that isn't any closer to i2c than it is to spi.
+
+Would it perhaps be better to expose it only as a regmap rather than
+an i2c host?
+
+	Arnd
