@@ -1,153 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753715AbaFJXlt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 19:41:49 -0400
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:54300 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752290AbaFJXlr (ORCPT
+	id S1753780AbaFJXoy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 19:44:54 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:39304 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750740AbaFJXow (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 19:41:47 -0400
-Date: Tue, 10 Jun 2014 16:41:42 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Vlastimil Babka <vbabka@suse.cz>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 03/10] mm, compaction: periodically drop lock and restore
- IRQs in scanners
-In-Reply-To: <5396B08A.6090900@suse.cz>
-Message-ID: <alpine.DEB.2.02.1406101640510.32203@chino.kir.corp.google.com>
-References: <1402305982-6928-1-git-send-email-vbabka@suse.cz> <1402305982-6928-3-git-send-email-vbabka@suse.cz> <alpine.DEB.2.02.1406091656340.17705@chino.kir.corp.google.com> <5396B08A.6090900@suse.cz>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 10 Jun 2014 19:44:52 -0400
+X-AuditID: cbfee691-b7f2f6d0000040c4-d1-53979872daef
+Message-id: <53979871.2020903@samsung.com>
+Date: Wed, 11 Jun 2014 08:44:49 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: linux@arm.linux.org.uk, kgene.kim@samsung.com, t.figa@samsung.com,
+        kyungmin.park@samsung.com, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RESEND PATCH] ARM: EXYNOS: Fix the sequence of secondary CPU boot
+ for Exynos3250
+References: <1402442827-2321-1-git-send-email-cw00.choi@samsung.com>
+ <5397963F.30109@gmail.com>
+In-reply-to: <5397963F.30109@gmail.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrIIsWRmVeSWpSXmKPExsWyRsSkWLdoxvRgg5n/xC16F1xlszjb9Ibd
+	YtPja6wWl3fNYbOYcX4fk8Xty7wW62e8ZrFYtesPowOHR0tzD5vHzll32T02L6n36NuyitHj
+	8ya5ANYoLpuU1JzMstQifbsEroznSzayF3ziqbi6eTNrA+MTri5GTg4JAROJo6tms0PYYhIX
+	7q1n62Lk4hASWMoocbC/nwWm6Nmmt4wQiUWMEt8vL2CCcF4zSsw7eJYRpIpXQEtiyo13YB0s
+	AqoSHz9sBxvLBhTf/+IGG4gtKhAmsXL6FRaIekGJH5PvgdkiAuoS36b0s4MMZRY4zSix+P9h
+	1i5GDg5hgQSJzb1KIDVCAokSHe+us4CEOYHqV140BwkzC+hI7G+dxgZhy0tsXvOWGWSMhMA1
+	donDG5exQtwjIPFt8iGwXgkBWYlNB5ghHpOUOLjiBssERrFZSC6ahWTsLCRjFzAyr2IUTS1I
+	LihOSi8y1StOzC0uzUvXS87P3cQIjL7T/55N3MF4/4D1IcZkoJUTmaVEk/OB0ZtXEm9obGZk
+	YWpiamxkbmlGmrCSOG/6o6QgIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYxmzyxtGzKkT1cF
+	1j2V9Wt6wbh4I+vCWbZCFsYZhfJOrJucss+n3J3NvC3px3OTbPvdnoWJJ3a7y1Z9/b0i4OqK
+	N6uv6deYrFP9k/pkQ8KszlcZJW4fmRMnHzRuepZ0qZ+psS8yk1Psv+G8BzL65zs1hd0kDspe
+	EZrw6cFaqaWFjlMO+q8qnqrEUpyRaKjFXFScCACmYa+G1AIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHKsWRmVeSWpSXmKPExsVy+t9jAd2iGdODDZb/57foXXCVzeJs0xt2
+	i02Pr7FaXN41h81ixvl9TBa3L/NarJ/xmsVi1a4/jA4cHi3NPWweO2fdZffYvKTeo2/LKkaP
+	z5vkAlijGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0y
+	c4BOUVIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jBmPF+ykb3gE0/F1c2b
+	WRsYn3B1MXJySAiYSDzb9JYRwhaTuHBvPVsXIxeHkMAiRonvlxcwQTivGSXmHTwLVsUroCUx
+	5cY7FhCbRUBV4uOH7ewgNhtQfP+LG2wgtqhAmMTK6VdYIOoFJX5MvgdmiwioS3yb0s8OMpRZ
+	4DSjxOL/h1m7GDk4hAUSJDb3KoHUCAkkSnS8u84CEuYEql950RwkzCygI7G/dRobhC0vsXnN
+	W+YJjAKzkGyYhaRsFpKyBYzMqxhFUwuSC4qT0nMN9YoTc4tL89L1kvNzNzGCY/uZ1A7GlQ0W
+	hxgFOBiVeHgPSEwPFmJNLCuuzD3EKMHBrCTCa5MGFOJNSaysSi3Kjy8qzUktPsSYDAyAicxS
+	osn5wLSTVxJvaGxiZmRpZG5oYWRsTpqwkjjvgVbrQCGB9MSS1OzU1ILUIpgtTBycUsAE9ClC
+	7s26GF/lX653TJ4USlY9q+0J/7Y4Zj5P+PvvM6XE7O47rthUE+R1cjaH+q9j6g/5b3HODVmU
+	PIMtfofkj/X5PJfXlgdus+yd2nvlZvdBoyPWl5+3beArt+jt+n796NWFs5YEmLxfVmO4x+re
+	sW0nr5e8irxm1d2ofFv1l9BruePXFJvClFiKMxINtZiLihMBmfm1GzEDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Jun 2014, Vlastimil Babka wrote:
-
-> On 06/10/2014 01:58 AM, David Rientjes wrote:
-> > On Mon, 9 Jun 2014, Vlastimil Babka wrote:
-> > 
-> > > diff --git a/mm/compaction.c b/mm/compaction.c
-> > > index d37f4a8..e1a4283 100644
-> > > --- a/mm/compaction.c
-> > > +++ b/mm/compaction.c
-> > > @@ -185,54 +185,77 @@ static void update_pageblock_skip(struct
-> > > compact_control *cc,
-> > >   }
-> > >   #endif /* CONFIG_COMPACTION */
-> > > 
-> > > -enum compact_contended should_release_lock(spinlock_t *lock)
-> > > +/*
-> > > + * Compaction requires the taking of some coarse locks that are
-> > > potentially
-> > > + * very heavily contended. For async compaction, back out if the lock
-> > > cannot
-> > > + * be taken immediately. For sync compaction, spin on the lock if needed.
-> > > + *
-> > > + * Returns true if the lock is held
-> > > + * Returns false if the lock is not held and compaction should abort
-> > > + */
-> > > +static bool compact_trylock_irqsave(spinlock_t *lock,
-> > > +			unsigned long *flags, struct compact_control *cc)
-> > >   {
-> > > -	if (need_resched())
-> > > -		return COMPACT_CONTENDED_SCHED;
-> > > -	else if (spin_is_contended(lock))
-> > > -		return COMPACT_CONTENDED_LOCK;
-> > > -	else
-> > > -		return COMPACT_CONTENDED_NONE;
-> > > +	if (cc->mode == MIGRATE_ASYNC) {
-> > > +		if (!spin_trylock_irqsave(lock, *flags)) {
-> > > +			cc->contended = COMPACT_CONTENDED_LOCK;
-> > > +			return false;
-> > > +		}
-> > > +	} else {
-> > > +		spin_lock_irqsave(lock, *flags);
-> > > +	}
-> > > +
-> > > +	return true;
-> > >   }
-> > > 
-> > >   /*
-> > >    * Compaction requires the taking of some coarse locks that are
-> > > potentially
-> > > - * very heavily contended. Check if the process needs to be scheduled or
-> > > - * if the lock is contended. For async compaction, back out in the event
-> > > - * if contention is severe. For sync compaction, schedule.
-> > > + * very heavily contended. The lock should be periodically unlocked to
-> > > avoid
-> > > + * having disabled IRQs for a long time, even when there is nobody
-> > > waiting on
-> > > + * the lock. It might also be that allowing the IRQs will result in
-> > > + * need_resched() becoming true. If scheduling is needed, or somebody
-> > > else
-> > > + * has taken the lock, async compaction aborts. Sync compaction
-> > > schedules.
-> > > + * Either compaction type will also abort if a fatal signal is pending.
-> > > + * In either case if the lock was locked, it is dropped and not regained.
-> > >    *
-> > > - * Returns true if the lock is held.
-> > > - * Returns false if the lock is released and compaction should abort
-> > > + * Returns true if compaction should abort due to fatal signal pending,
-> > > or
-> > > + *		async compaction due to lock contention or need to schedule
-> > > + * Returns false when compaction can continue (sync compaction might have
-> > > + *		scheduled)
-> > >    */
-> > > -static bool compact_checklock_irqsave(spinlock_t *lock, unsigned long
-> > > *flags,
-> > > -				      bool locked, struct compact_control *cc)
-> > > +static bool compact_unlock_should_abort(spinlock_t *lock,
-> > > +		unsigned long flags, bool *locked, struct compact_control *cc)
-> > >   {
-> > > -	enum compact_contended contended = should_release_lock(lock);
-> > > +	if (*locked) {
-> > > +		spin_unlock_irqrestore(lock, flags);
-> > > +		*locked = false;
-> > > +	}
-> > > 
-> > > -	if (contended) {
-> > > -		if (locked) {
-> > > -			spin_unlock_irqrestore(lock, *flags);
-> > > -			locked = false;
-> > > -		}
-> > > +	if (fatal_signal_pending(current)) {
-> > > +		cc->contended = COMPACT_CONTENDED_SCHED;
-> > > +		return true;
-> > > +	}
-> > > 
-> > > -		/* async aborts if taking too long or contended */
-> > > -		if (cc->mode == MIGRATE_ASYNC) {
-> > > -			cc->contended = contended;
-> > > -			return false;
-> > > +	if (cc->mode == MIGRATE_ASYNC) {
-> > > +		if (need_resched()) {
-> > > +			cc->contended = COMPACT_CONTENDED_SCHED;
-> > > +			return true;
-> > >   		}
-> > > -
-> > > +		if (spin_is_locked(lock)) {
-> > > +			cc->contended = COMPACT_CONTENDED_LOCK;
-> > > +			return true;
-> > > +		}
-> > 
-> > Any reason to abort here?  If we need to do compact_trylock_irqsave() on
-> > this lock again then we'll abort when we come to that point, but it seems
-> > pointless to abort early if the lock isn't actually needed anymore or it
-> > is dropped before trying to acquire it again.
+On 06/11/2014 08:35 AM, Tomasz Figa wrote:
+> Hi Chanwoo,
 > 
-> spin_is_locked() true means somebody was most probably waiting for us to
-> unlock so maybe we should back off. But I'm not sure if that check can
-> actually succeed so early after unlock.
+> On 11.06.2014 01:27, Chanwoo Choi wrote:
+>> This patch set AUTOWAKEUP_EN bit to ARM_CORE_CONFIGURATION register
+>> because Exynos3250 removes WFE in secure mode so that turn on automatically
+>> after setting CORE_LOCAL_PWR_EN. Also, This patch use dbs_sev() macro
+>> to guarantee the data synchronization of command instead of IPI_WAKEUP
+>> because Exynos3250 don't have WFE mode in secue mode.
+>>
+>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+>> ---
+>>  arch/arm/mach-exynos/platsmp.c  | 9 ++++++++-
+>>  arch/arm/mach-exynos/pm.c       | 8 ++++++--
+>>  arch/arm/mach-exynos/regs-pmu.h | 4 ++++
+>>  3 files changed, 18 insertions(+), 3 deletions(-)
+>>
 > 
+> This patch seems to be unneeded with Krzysztof's patch send a while ago
+> [1]. As reported by Krzysztof, that patch apparently fixes SMP support
+> on Exynos3250 and is much smaller and less invasive.
+> 
+> [1] - http://thread.gmane.org/gmane.linux.kernel.samsung-soc/32809
 
-The fact remains, however, is that we may never actually need to grab that 
-specific lock again and this would cause us to terminate prematurely.  I 
-think the preemptive spin_is_locked() test should be removed here.
+OK,
+But Krzysztof's patch didn't include set S5P_CORE_AUTOWAKEUP_EN in EXYNOS_ARM_CORE_CONFIGURATION(cpu).
+and then use arch_send_wakeup_ipi_mask(cpumask_of(cpu)) command instead of dsb_sev(). Exynos3250 don't need
+send IPI message.
+
+I'll send next patch which include only S5P_CORE_AUTOWAKEUP_EN and without sending IPI message.
+
+Krzysztof's patch used of_machine_is_compatible("samsung,exynos3250") instead of soc_is_exynos3250().
+Did you agree? If you agree to use of_machine_is_compatible(), I'll use it on next patch(v2).
+
+Best Regards,
+Chanwoo Choi
+
