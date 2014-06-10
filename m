@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752515AbaFJOMG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 10:12:06 -0400
-Received: from skprod2.natinst.com ([130.164.80.23]:43178 "EHLO ni.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751058AbaFJOME (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 10:12:04 -0400
-From: "Brad Mouring" <bmouring@ni.com>
-Date: Tue, 10 Jun 2014 09:10:47 -0500
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Jason Low <jason.low2@hp.com>,
-        Brad Mouring <bmouring@ni.com>
-Subject: Re: [patch V3 4/7] rtmutex: Siplify remove_waiter()
-Message-ID: <20140610141047.GC28502@linuxgetsreal>
-References: <20140609201118.387571774@linutronix.de>
- <20140609202336.248536613@linutronix.de>
+	id S1752348AbaFJOSf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 10:18:35 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:25735 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750834AbaFJOSd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 10:18:33 -0400
+X-IronPort-AV: E=Sophos;i="4.98,1009,1392163200"; 
+   d="scan'208";a="141617922"
+Message-ID: <539713B2.1010506@citrix.com>
+Date: Tue, 10 Jun 2014 15:18:26 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <20140609202336.248536613@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-MIMETrack: Itemize by SMTP Server on US-AUS-MGWOut2/AUS/H/NIC(Release 8.5.3FP5|July 31, 2013) at
- 06/10/2014 09:10:48 AM,
-	Serialize by Router on US-AUS-MGWOut2/AUS/H/NIC(Release 8.5.3FP5|July 31, 2013) at
- 06/10/2014 09:10:48 AM,
-	Serialize complete at 06/10/2014 09:10:48 AM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-06-10_05:2014-06-10,2014-06-10,1970-01-01 signatures=0
+To: Jiang Liu <jiang.liu@linux.intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Grant Likely" <grant.likely@linaro.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Bjorn Helgaas" <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "Yinghai Lu" <yinghai@kernel.org>, <x86@kernel.org>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Rob Herring <rob.herring@calxeda.com>, Michal Simek <monstr@monstr.eu>,
+        "Tony Lindgren" <tony@atomide.com>
+CC: Tony Luck <tony.luck@intel.com>, <linux-acpi@vger.kernel.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Joerg Roedel <joro@8bytes.org>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        <linux-pci@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [Xen-devel] [Patch V4 19/42] x86, irq: count legacy IRQs by legacy_pic->nr_legacy_irqs
+ instead of NR_IRQS_LEGACY
+References: <1402302011-23642-1-git-send-email-jiang.liu@linux.intel.com> <1402302011-23642-20-git-send-email-jiang.liu@linux.intel.com>
+In-Reply-To: <1402302011-23642-20-git-send-email-jiang.liu@linux.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 09, 2014 at 08:28:08PM -0000, Thomas Gleixner wrote:
-> Exit right away, when the removed waiter was not the top prioriy
-> waiter on the lock. Get rid of the extra indent level.
+On 09/06/14 09:19, Jiang Liu wrote:
+> Some platforms, such as Intel MID and mshypv, do not support legacy
+> interrupt controllers. So count legacy IRQs by legacy_pic->nr_legacy_irqs
+> instead of hard-coded NR_IRQS_LEGACY.
 > 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> ---
->  kernel/locking/rtmutex.c |   26 ++++++++++----------------
->  1 file changed, 10 insertions(+), 16 deletions(-)
-> 
-> Index: tip/kernel/locking/rtmutex.c
-> ===================================================================
-> --- tip.orig/kernel/locking/rtmutex.c
-> +++ tip/kernel/locking/rtmutex.c
-> @@ -780,7 +780,7 @@ static void remove_waiter(struct rt_mute
->  {
->  	int first = (waiter == rt_mutex_top_waiter(lock));
+[...]
+> --- a/arch/x86/pci/xen.c
+> +++ b/arch/x86/pci/xen.c
 
-I agree that @first is ambiguous and would prefer something like
-@is_top_waiter
+Xen bits:
 
-Reviewed-by: Brad Mouring <brad.mouring@ni.com>
+Acked-by: David Vrabel <david.vrabel@citrix.com>
+
+David
