@@ -1,83 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752726AbaFJRpj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 13:45:39 -0400
-Received: from sema.semaphore.gr ([78.46.194.137]:57634 "EHLO
-	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751983AbaFJRph (ORCPT
+	id S1752863AbaFJRqY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 13:46:24 -0400
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:42320 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752509AbaFJRqX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 13:45:37 -0400
-Message-ID: <5397443E.3070208@semaphore.gr>
-Date: Tue, 10 Jun 2014 20:45:34 +0300
-From: Stratos Karafotis <stratosk@semaphore.gr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 10 Jun 2014 13:46:23 -0400
 MIME-Version: 1.0
-To: Dirk Brandewie <dirk.brandewie@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>
-CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/7] cpufreq: intel_pstate: Add debugfs file stats
-References: <53962072.6010702@semaphore.gr> <53972883.7070707@gmail.com> <53973078.6040907@semaphore.gr> <53973ABE.300@gmail.com>
-In-Reply-To: <53973ABE.300@gmail.com>
+In-Reply-To: <alpine.LNX.2.00.1406101517300.9378@pobox.suse.cz>
+References: <alpine.LNX.2.00.1406101517300.9378@pobox.suse.cz>
+Date: Tue, 10 Jun 2014 10:46:22 -0700
+X-Google-Sender-Auth: anoxhw8yRWJUiDh3-CHust6iPI8
+Message-ID: <CA+55aFyY7_=3xt-0KE=-fmb+kLurxkBmh8TZWgDZMi_RVpKBpg@mail.gmail.com>
+Subject: Re: [PATCH] tell gcc optimizer to never introduce new data races
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Martin Jambor <mjambor@suse.cz>, Petr Mladek <pmladek@suse.cz>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/06/2014 08:05 μμ, Dirk Brandewie wrote:
-> On 06/10/2014 09:21 AM, Stratos Karafotis wrote:
->> On 10/06/2014 06:47 μμ, Dirk Brandewie wrote:
->>> On 06/09/2014 02:00 PM, Stratos Karafotis wrote:
->>>> Add stats file in debugfs under driver's parent directory
->>>> (pstate_snb) which counts the time in nsecs per requested
->>>> P state and the number of times the specific state
->>>> was requested.
->>>>
->>>> The file presents the statistics per logical CPU in the
->>>> following format. The time is displayed in msecs:
->>>>
->>>
->>> NAK
->>>
->>> This adds significantly to the memory footprint to gather information
->>> that is available by post processing the perf tracepoint information.
->>> The increase isn't horrible on single socket desktop processor machines
->>> but gets big with server class machines.  One vendor I have talked to considers
->>> a machine with 1024 cpus to be a SMALL machine.
->>>
->>
->> If I am not wrong the sizeof pstate_stat is 20B. On my CPU with 20 P states, we
->> need 400B per logical CPU (3200B total in my desktop) plus 64B for stats pointers.
->>
->> In your example this would need about 400KB - 500KB?
->> Is it too much for 1024 a CPUs system?
-> 
-> For something that will likely not be used IMO yes.
-> 
->>
->> I think it's a useful piece of info that we can have it directly without
->> post processing tracepoint.
->> Is it acceptable to conditionally compile it with a new CONFIG option?
-> 
-> 
-> I can see where the information could be useful but the set of people
-> that would find it useful is very small.  Having information about residency 
-> since boot is interesting but just barely.  This file will encourage people
-> to build tools/scripts that rely on this file and they will complain bitterly
-> if/when it changes or goes away so you would be creating a defacto ABI in
-> debugfs.
-> 
-> 
-> This functionality will *not* be supportable in up coming processors where HWP
-> is being used.  See section 14.4 of the current SDM vol. 3 
-> http://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-system-programming-manual-325384.pdf
-> 
+On Tue, Jun 10, 2014 at 6:23 AM, Jiri Kosina <jkosina@suse.cz> wrote:
+> We have been chasing a memory corruption bug, which turned out to be
+> caused by very old gcc (4.3.4), which happily turned conditional load into
+> a non-conditional one, and that broke correctness (the condition was met
+> only if lock was held) and corrupted memory.
 
-I will drop this patch in v2.
-Thanks a lot for your comments and your time!
+Just out of interest, can you point to the particular kernel code that
+caused this? I think that's more interesting than the example program
+you show - which I'm sure is really nice for gcc developers as an
+example, but from a kernel standpoint I think it's more important to
+show the particular problems this caused for the kernel?
 
-Stratos
-
+            Linus
