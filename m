@@ -1,80 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752377AbaFJPuo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 11:50:44 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:54257 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750801AbaFJPun (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 11:50:43 -0400
-Date: Tue, 10 Jun 2014 17:50:37 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Rik van Riel <riel@redhat.com>,
-        David Rientjes <rientjes@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] Per-task wait_queue_t
-Message-ID: <20140610155037.GG3213@twins.programming.kicks-ass.net>
-References: <CA+55aFyYQES1CbEfYzRkFas_aw=+YNSbDoLRJpjh2sDFxVV3vg@mail.gmail.com>
- <1402403359-6023-1-git-send-email-linux@rasmusvillemoes.dk>
+	id S1752675AbaFJPvG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 11:51:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9727 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752494AbaFJPvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 11:51:04 -0400
+Date: Tue, 10 Jun 2014 11:50:31 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 1/2] perf tools: Emit more precise message for missing
+ glibc static library
+Message-ID: <20140610155031.GS177152@redhat.com>
+References: <1402063909-13859-1-git-send-email-acme@kernel.org>
+ <1402063909-13859-2-git-send-email-acme@kernel.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="IRIOLc8eTv1AOxGv"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1402403359-6023-1-git-send-email-linux@rasmusvillemoes.dk>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1402063909-13859-2-git-send-email-acme@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Arnaldo,
 
---IRIOLc8eTv1AOxGv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I am hijacking your thread for another Makefile problem.  It seems like
+you were doing some cleanups here, so I wanted to throw another problem at
+you. :-)
 
-On Tue, Jun 10, 2014 at 02:29:17PM +0200, Rasmus Villemoes wrote:
-> This is an attempt to reduce the stack footprint of various functions
-> (those using any of the wait_event_* macros), by removing the need to
-> allocate a wait_queue_t on the stack and instead use a single instance
-> embedded in task_struct. I'm not really sure where the best place to
-> put it is; I just placed it next to other list bookkeeping fields.
->=20
-> For now, there is a little unconditional debugging. This could later
-> be removed or maybe be made dependent on some CONFIG_* variable. The
-> idea of using ->flags is taken from Pavel [1] (I originally stored
-> (void*)1 into ->private).
->=20
-> Compiles, but not actually tested.
->=20
+It seems the fedora-kernel guys found a multilib packaging problem and
+posted a patch to clean it up.  It is from Kyle McMartin (copy-n-pasted).
 
-Doesn't look too bad, would be good to be tested and have some numbers
-on the amount of stack saved etc..
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 802cf54..7f30bfa 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -621,8 +621,12 @@ endif
+ ifeq ($(IS_X86_64),1)
+ lib = lib64
+ else
++ifdef MULTILIBDIR
++lib = $(MULTILIBDIR)
++else
+ lib = lib
+ endif
++endif
+ libdir = $(prefix)/$(lib)
 
---IRIOLc8eTv1AOxGv
-Content-Type: application/pgp-signature
+ # Shell quote (do not use $(call) to accommodate ancient setups);
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Not sure if this is the right way to do this or if you had a better
+solution.
 
-iQIcBAEBAgAGBQJTlylNAAoJEHZH4aRLwOS6aq0P/iv9B6H4kJixIA20W6rb/ijb
-s45/PqyBO82rH6pv9RAuOZcuNBVJq5sJfY/rzs7g42KN3jPw5qUQCSv+djFiOqx4
-9i0tBoGpQYibWEuC9Yzpa3pAMCFkY1BfFEdezwY274CwyyHyhGBr0+Pnb7Hrp9Lz
-FD/jI/ryq0ygh/24fpY78mZ/qs5xXgws4+sg/xJiseJJ5vkNIyqoblhQAPE5JTEL
-Rimxc1OH4vU1EzsamoKxJvdKgONmR6YcoUHLI3CgyHwm9yPlpj4leb+QQn3HfN9X
-0Vnlx1AAQCeJ9Q4aNv2Ho0a3KYEC6gDxfsSgw6Z+x7HzwMoEKbHd5qGUV+BJXGs4
-riqycw+7WCZKXYpxrvvhQFH9y5w2+imMr92Pn5SoyXnAAbCGA0i7zlmfZf8cZYr9
-nCzYt0cMOib0GSY8wt7i5/7MWTyQn0QnsFUKChSMGCSlxWC0aFEMDbtvfCAPOaV5
-0gwOPVcuckDSgqnKH/sugryxl1MqmAjcxoL9EdTWBADXpHR6H0Pr2jjQvBB0367C
-5+4EszP5ZfcAt/nU86PlVqW+Iyh4JRKnHhZF1oEO5A8Xe26j/2szXb1/y/iSR+jV
-ioOeHMPFFlXvX5rzmhNf6XNakOYufqMyGKecRZp45l5vRIHAwkqrnK1XLv3Pkdpb
-B64sXYLsOuRtLwhgJ9yi
-=kBKT
------END PGP SIGNATURE-----
+Cheers,
+Don
 
---IRIOLc8eTv1AOxGv--
