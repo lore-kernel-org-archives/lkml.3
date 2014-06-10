@@ -1,54 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542AbaFJVdg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 17:33:36 -0400
-Received: from mga11.intel.com ([192.55.52.93]:18255 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753109AbaFJVdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 17:33:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="353256278"
-Date: Tue, 10 Jun 2014 17:33:33 -0400
-From: Matthew Wilcox <willy@linux.intel.com>
-To: Keith Busch <keith.busch@intel.com>
-Cc: Jens Axboe <axboe@fb.com>,
-        Matias =?iso-8859-1?Q?Bj=F8rling?= <m@bjorling.me>,
-        "sbradshaw@micron.com" <sbradshaw@micron.com>,
-        "tom.leiming@gmail.com" <tom.leiming@gmail.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-nvme@lists.infradead.org" <linux-nvme@lists.infradead.org>
-Subject: Re: [PATCH v7] NVMe: conversion to blk-mq
-Message-ID: <20140610213333.GA10055@linux.intel.com>
-References: <1402392038-5268-1-git-send-email-m@bjorling.me>
- <1402392038-5268-2-git-send-email-m@bjorling.me>
- <alpine.LRH.2.03.1406100945250.4699@AMR>
- <A52B97CC-6D77-468B-9A9B-A5888AE63580@fb.com>
- <alpine.LRH.2.03.1406101140490.4699@AMR>
- <5397636F.9050209@fb.com>
- <alpine.LRH.2.03.1406101458470.4699@AMR>
- <5397753B.2020009@fb.com>
- <alpine.LRH.2.03.1406101515430.4699@AMR>
+	id S1753796AbaFJVed (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 17:34:33 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:35264 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753222AbaFJVe3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 17:34:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.03.1406101515430.4699@AMR>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140610212516.GB10614@srcf.ucam.org>
+References: <1402331614.7064.60.camel@dhcp-9-2-203-236.watson.ibm.com>
+	<cover.1402387862.git.d.kasatkin@samsung.com>
+	<20140610122008.GA31944@hansolo.jdub.homelinux.org>
+	<CACE9dm9Ff6b3J=05QfcgBv-c_y=5qGNq1-ZSfo4smtj34i1e-A@mail.gmail.com>
+	<20140610204021.GA8916@srcf.ucam.org>
+	<CACE9dm9ma=XRZkoCiefva-dKL+LYw-s8QB4xUTkRUZH=5XM9ew@mail.gmail.com>
+	<CACE9dm8zxVXx2zRcfDYUFjqvQYT4MbLevp5U13tfH9Hb6USSJw@mail.gmail.com>
+	<20140610212516.GB10614@srcf.ucam.org>
+Date: Wed, 11 Jun 2014 00:34:28 +0300
+Message-ID: <CACE9dm95RiGxuG-XaGKd3KqBRkk+wyj3CBbMhaCTJQaiiaj9wQ@mail.gmail.com>
+Subject: Re: [PATCH 0/4] KEYS: validate key trust with owner and builtin keys only
+From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Josh Boyer <jwboyer@redhat.com>, David Howells <dhowells@redhat.com>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        keyrings <keyrings@linux-nfs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 10, 2014 at 03:21:18PM -0600, Keith Busch wrote:
-> Yeah, nvme_setup_prps is probably the least readable code in this driver.
-> Maybe some comments are in order here...
-> 
-> There are two rules for an SGL to be mappable to a PRP:
-> 
-> 1. Every element must have zero page offset, except the first.
-> 
-> 2. Every element must end on a page boundary, except the last.
+On 11 June 2014 00:25, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> On Wed, Jun 11, 2014 at 12:17:53AM +0300, Dmitry Kasatkin wrote:
+>
+>> It is probably just a paranoia...
+>> Kconfig MODULE_SIG_UEFI should tell about threat of loading kernel
+>> modules from NSA or Lenovo signed by MS or Lenovo keys..
+>>
+>> This hole is opened without warning...
+>
+> It's not typically a hole. If an attacker has root they can just replace
+> your bootloader with one signed by a trusted key and then have that
+> modify the kernel before booting it.
+>
+> If you're using a TPM then you can mitigate this, but if you have a TPM
+> then you're already performing some extra steps during the boot process.
+> Just add a sysfs knob that lets you drop the db keys and incorporate
+> that into the TPM management code.
+>
+> --
+> Matthew Garrett | mjg59@srcf.ucam.org
 
-Or to put it another way, NVMe PRPs only support I/Os that describe a
-single range of virtual memory.
+I was expecting this boot loader answer.
 
+Indeed, if system is design to prevent online modification of bootloader then
+kernel parameters are protected as well...
+
+My statement is still valid. It is a hole...
+
+To prevent the hole it should be explained that one might follow
+certain instructions
+to take ownership of your PC. Generate your own keys and remove MS and
+Vendor ones...
+
+It is paranoia? May be not.
+
+- Dmitry
