@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964800AbaFJAf6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:35:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58469 "EHLO
+	id S964835AbaFJAgT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:36:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58480 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934396AbaFJAWe (ORCPT
+	with ESMTP id S934391AbaFJAWd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 20:22:34 -0400
+	Mon, 9 Jun 2014 20:22:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Cho, Yu-Chen" <acho@suse.com>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Ben Hutchings <ben@decadent.org.uk>, Jianguo Wu <wujianguo@huawei.com>
-Subject: [PATCH 3.4 36/88] Bluetooth: Add support for Mediatek Bluetooth device [0e8d:763f]
-Date: Mon,  9 Jun 2014 17:24:46 -0700
-Message-Id: <20140610002425.730464390@linuxfoundation.org>
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+        Asias He <asias@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Yijing Wang <wangyijing@huawei.com>
+Subject: [PATCH 3.4 45/88] virtio-blk: Call del_gendisk() before disable guest kick
+Date: Mon,  9 Jun 2014 17:24:55 -0700
+Message-Id: <20140610002426.025251054@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
 References: <20140610002424.500996570@linuxfoundation.org>
@@ -31,70 +32,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Cho, Yu-Chen" <acho@suse.com>
+From: Asias He <asias@redhat.com>
 
-commit ff98736cbbbeb9087d4e5d7cb89e05c3e8bd01d6 upstream.
+commit 02e2b124943648fba0a2ccee5c3656a5653e0151 upstream.
 
-commit 178c059e7640aa8e50213400c6f3dde00189d979 upstream.
+del_gendisk() might not return due to failing to remove the
+/sys/block/vda/serial sysfs entry when another thread (udev) is
+trying to read it.
 
-This patch adds support for Mediatek Bluetooth device
+virtblk_remove()
+  vdev->config->reset() : guest will not kick us through interrupt
+    del_gendisk()
+      device_del()
+        kobject_del(): got stuck, sysfs entry ref count non zero
 
-T:  Bus=02 Lev=01 Prnt=01 Port=03 Cnt=01 Dev#=  2 Spd=480  MxCh= 0
-D:  Ver= 2.01 Cls=ef(misc ) Sub=02 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=0e8d ProdID=763f Rev= 1.00
-S:  Manufacturer=MediaTek
-S:  Product=BT
-S:  SerialNumber=1.0
-C:* #Ifs= 2 Cfg#= 1 Atr=a0 MxPwr=450mA
-A:  FirstIf#= 0 IfCount= 2 Cls=ff(vend.) Sub=ff Prot=ff
-I:* If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=125us
-E:  Ad=02(O) Atr=02(Bulk) MxPS= 512 Ivl=125us
-E:  Ad=82(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-I:* If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-I:  If#= 1 Alt= 1 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-I:  If#= 1 Alt= 2 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-I:  If#= 1 Alt= 3 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
-I:  If#= 1 Alt= 4 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
-I:  If#= 1 Alt= 5 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
-I:  If#= 1 Alt= 6 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  63 Ivl=1ms
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  63 Ivl=1ms
+sysfs_open_file(): user space process read /sys/block/vda/serial
+   sysfs_get_active() : got sysfs entry ref count
+      dev_attr_show()
+        virtblk_serial_show()
+           blk_execute_rq() : got stuck, interrupt is disabled
+                              request cannot be finished
 
-Signed-off-by: Cho, Yu-Chen <acho@suse.com>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This patch fixes it by calling del_gendisk() before we disable guest's
+interrupt so that the request sent in virtblk_serial_show() will be
+finished and del_gendisk() will success.
+
+This fixes another race in hot-unplug process.
+
+It is save to call del_gendisk(vblk->disk) before
+flush_work(&vblk->config_work) which might access vblk->disk, because
+vblk->disk is not freed until put_disk(vblk->disk).
+
+Cc: virtualization@lists.linux-foundation.org
+Cc: kvm@vger.kernel.org
+Signed-off-by: Asias He <asias@redhat.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Jianguo Wu <wujianguo@huawei.com>
+Cc: Yijing Wang <wangyijing@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/bluetooth/btusb.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/block/virtio_blk.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -63,6 +63,9 @@ static struct usb_device_id btusb_table[
- 	/* Apple-specific (Broadcom) devices */
- 	{ USB_VENDOR_AND_INTERFACE_INFO(0x05ac, 0xff, 0x01, 0x01) },
+--- a/drivers/block/virtio_blk.c
++++ b/drivers/block/virtio_blk.c
+@@ -581,13 +581,13 @@ static void __devexit virtblk_remove(str
+ 	vblk->config_enable = false;
+ 	mutex_unlock(&vblk->config_lock);
  
-+	/* MediaTek MT76x0E */
-+	{ USB_DEVICE(0x0e8d, 0x763f) },
++	del_gendisk(vblk->disk);
 +
- 	/* Broadcom SoftSailing reporting vendor specific */
- 	{ USB_DEVICE(0x0a5c, 0x21e1) },
+ 	/* Stop all the virtqueues. */
+ 	vdev->config->reset(vdev);
  
+ 	flush_work(&vblk->config_work);
+ 
+-	del_gendisk(vblk->disk);
+-
+ 	/* Abort requests dispatched to driver. */
+ 	spin_lock_irqsave(&vblk->lock, flags);
+ 	while ((vbr = virtqueue_detach_unused_buf(vblk->vq))) {
 
 
