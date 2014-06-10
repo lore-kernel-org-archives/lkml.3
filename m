@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751888AbaFJLpt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 07:45:49 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:53353 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751248AbaFJLps (ORCPT
+	id S1751964AbaFJLqV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 07:46:21 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:40096 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751248AbaFJLqT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 07:45:48 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140610112827.GA359@lst.de>
-References: <1402375925-21720-1-git-send-email-tom.leiming@gmail.com>
-	<20140610112827.GA359@lst.de>
-Date: Tue, 10 Jun 2014 19:45:47 +0800
-Message-ID: <CACVXFVNxSh7ryy2vfnoNYpvmnjU0+TcipgdZxJ3tDbu-RBY=zA@mail.gmail.com>
-Subject: Re: [PATCH] blk-mq: kick requeue list in blk_mq_requeue_request()
-From: Ming Lei <tom.leiming@gmail.com>
-To: Christoph Hellwig <hch@lst.de>
-Cc: Jens Axboe <axboe@kernel.dk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        =?UTF-8?Q?Matias_Bj=C3=B8rling?= <m@bjorling.me>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 10 Jun 2014 07:46:19 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-41-5396f009a843
+Message-id: <5396EFFB.3040704@samsung.com>
+Date: Tue, 10 Jun 2014 13:46:03 +0200
+From: Tomasz Figa <t.figa@samsung.com>
+Organization: Samsung R&D Institute Poland
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.5.0
+MIME-version: 1.0
+To: Pankaj Dubey <pankaj.dubey@samsung.com>, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: kgene.kim@samsung.com, linux@arm.linux.org.uk, chow.kim@samsung.com,
+        yg1004.jang@samsung.com, vikas.sajjan@samsung.com
+Subject: Re: [PATCH v4 02/11] ARM: EXYNOS: Move cpufreq and cpuidle device
+ registration to init_machine
+References: <1399704998-13321-1-git-send-email-pankaj.dubey@samsung.com>
+ <1399704998-13321-3-git-send-email-pankaj.dubey@samsung.com>
+In-reply-to: <1399704998-13321-3-git-send-email-pankaj.dubey@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLLMWRmVeSWpSXmKPExsVy+t/xa7qcH6YFG1zo1rRYNukum0Xvgqts
+	FpseX2O1uLxrDpvFjPP7mCxuX+a1WLT1C7vFzWfbmSx2tKxmceD0aGnuYfPYvKTeo2/LKkaP
+	z5vkAliiuGxSUnMyy1KL9O0SuDKOb7jFWnCSreLBw0OMDYw7WbsYOTkkBEwkeqZvY4GwxSQu
+	3FvP1sXIxSEksJRR4tPzm0wQzmdGiWMnNwNVcXDwCmhJrHgiAdLAIqAq8ej+bmYQm01ATeJz
+	wyM2EJsfqGRN03WwclGBCInHF4RAwrwCghI/Jt9jARkpIjCFUeJizzJGkASzQI3Egs7NYEcI
+	C2RKdKybBrW3nVFi18vtYJdyCnhKbL/5lhmiQUdif+s0NghbXmLzmrfMExgFZyFZMgtJ2Swk
+	ZQsYmVcxiqaWJhcUJ6XnGukVJ+YWl+al6yXn525ihETB1x2MS49ZHWIU4GBU4uE18J8WLMSa
+	WFZcmXuIUYKDWUmE98tJoBBvSmJlVWpRfnxRaU5q8SFGJg5OqQZGTsG/C67+sCq4mx58pJf5
+	yJtMvckFiyV+NphIrbT49cqMY/ld3S7R7CbOX1+2JzCzdr9myY73Tk2zKp86odvG5LEJ26K2
+	hZ9nvRU9eebRnjBtxwC/CpceoXLDqb/vTfZrkn2cphu6bZHKKbmLDx7cft7z2DmkzIFj9q5a
+	IaWPTJUdJ76x7ZmsxFKckWioxVxUnAgANajeIGACAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 10, 2014 at 7:28 PM, Christoph Hellwig <hch@lst.de> wrote:
-> On Tue, Jun 10, 2014 at 12:52:05PM +0800, Ming Lei wrote:
->> blk_mq_requeue_request() should kick off the requeue list so
->> that the request can be scheduled to queue finally.
->>
->> In nvme conversion patch, blk_mq_requeue_request() is called
->> to requeue failed request from completion handler, this patch
->> fixes the issue and makes the block API working as expected.
->
-> I've intentionally kepts the two separate so that we can batch operations
-> and just do a single kick for multiple requeued commands.
->
+Hi Pankaj,
 
-OK, but the API name is a bit confusing, and that is easy to cause
-misuse, like in nvme.
+On 10.05.2014 08:56, Pankaj Dubey wrote:
+> As exynos_cpuidle_init and exynos_cpufreq_init function have just one lines
+> of code for registering platform devices. We can move these lines to
+> exynos_dt_machine_init and delete exynos_cpuidle_init and exynos_cpufreq_init
+> function. This will help in reducing lines of code in exynos.c, making it
+> more cleaner.
+> 
+> Suggested-by: Tomasz Figa <t.figa@samsung.com>
+> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+> ---
+>  arch/arm/mach-exynos/exynos.c |   19 ++++---------------
+>  1 file changed, 4 insertions(+), 15 deletions(-)
+> 
 
-Also requeue one request in completion handler may be a
-common case, so maybe it is better to let blk_mq_requeue_request()
-handle both adding to request list and kicking off, and introduce
-blk_mq_prep_requeue_req()(or better name) to batch operations.
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 
+Btw. This and other simple clean-up patches from this series could be
+applied separately, without re-spinning them every time with this series.
 
-Thanks,
--- 
-Ming Lei
+Best regards,
+Tomasz
