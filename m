@@ -1,82 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936130AbaFJA2t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:28:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58794 "EHLO
+	id S936140AbaFJA3H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:29:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58620 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934381AbaFJA2r (ORCPT
+	with ESMTP id S934609AbaFJAWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 20:28:47 -0400
-Date: Mon, 9 Jun 2014 17:32:34 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Eric Paris <eparis@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-audit@redhat.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 1/2] auditsc: audit_krule mask accesses need bounds
- checking
-Message-ID: <20140610003234.GB20728@kroah.com>
-References: <1401332999-15167-1-git-send-email-eparis@redhat.com>
- <20140609223057.GB18475@kroah.com>
- <CALCETrUD75vSwJUjFuxGCrZ_7DJhCc1KW2v_ndF6EHJ31fUMBg@mail.gmail.com>
- <20140609224645.GA8113@kroah.com>
- <CALCETrWb9HsaUWaQA+1ga6sH2_yUT=NEg-oKx=zFUQ5AZUqPaA@mail.gmail.com>
+	Mon, 9 Jun 2014 20:22:49 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Hannes Reinecke <hare@suse.de>, Rob Evers <revers@redhat.com>,
+        Christoph Hellwig <hch@lst.de>, Roland Dreier <roland@purestorage.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        Ben Hutchings <ben@decadent.org.uk>, Rui Xiang <rui.xiang@huawei.com>
+Subject: [PATCH 3.4 69/88] target: Fix MAINTENANCE_IN service action CDB checks to use lower 5 bits
+Date: Mon,  9 Jun 2014 17:25:19 -0700
+Message-Id: <20140610002426.770392814@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
+References: <20140610002424.500996570@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrWb9HsaUWaQA+1ga6sH2_yUT=NEg-oKx=zFUQ5AZUqPaA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 09, 2014 at 03:55:20PM -0700, Andy Lutomirski wrote:
-> On Mon, Jun 9, 2014 at 3:46 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Mon, Jun 09, 2014 at 03:35:02PM -0700, Andy Lutomirski wrote:
-> >> On Mon, Jun 9, 2014 at 3:30 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> >> > On Wed, May 28, 2014 at 11:09:58PM -0400, Eric Paris wrote:
-> >> >> From: Andy Lutomirski <luto@amacapital.net>
-> >> >>
-> >> >> Fixes an easy DoS and possible information disclosure.
-> >> >>
-> >> >> This does nothing about the broken state of x32 auditing.
-> >> >>
-> >> >> eparis: If the admin has enabled auditd and has specifically loaded audit
-> >> >> rules.  This bug has been around since before git.  Wow...
-> >> >>
-> >> >> Cc: stable@vger.kernel.org
-> >> >> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> >> >> Signed-off-by: Eric Paris <eparis@redhat.com>
-> >> >> ---
-> >> >>  kernel/auditsc.c | 27 ++++++++++++++++++---------
-> >> >>  1 file changed, 18 insertions(+), 9 deletions(-)
-> >> >
-> >> > Did this patch get dropped somewhere?  Isn't it a valid bugfix, or did I
-> >> > miss a later conversation about this?
-> >>
-> >> Hmm.  It seems that it didn't make it into Linus' tree.  Crap.
-> >>
-> >> IMO we need some kind of real tracking system for issues reported to
-> >> security@.
-> >
-> > That seems to be my mbox at times :)
-> >
-> > But yes, having something "real" might be good if the load gets higher,
-> > right now it's so low that my "sweep pending security patches" task
-> > usually catches anything pending, which is rare.
-> >
-> 
-> There are currently at least two issues that I reported that are stuck
-> in limbo: this one and the (not-yet-public) vfs thing.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-That was next on my list to poke people about...
+------------------
 
-> And there's the CVE-2014-0181 regression fix that almost got
-> forgotten, but that isn't really a security issue.
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-What is that, where was that reported?
+commit ba539743b70cd160c84bab1c82910d0789b820f8 upstream.
 
-thanks,
+This patch fixes the MAINTENANCE_IN service action type checks to only
+look at the proper lower 5 bits of cdb byte 1.  This addresses the case
+where MI_REPORT_TARGET_PGS w/ extended header using the upper three bits of
+cdb byte 1 was not processed correctly in transport_generic_cmd_sequencer,
+as well as the three cases for standby, unavailable, and transition ALUA
+primary access state checks.
 
-greg k-h
+Also add MAINTENANCE_IN to the excluded list in transport_generic_prepare_cdb()
+to prevent the PARAMETER DATA FORMAT bits from being cleared.
+
+Cc: Hannes Reinecke <hare@suse.de>
+Cc: Rob Evers <revers@redhat.com>
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: Rui Xiang <rui.xiang@huawei.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/target/target_core_alua.c      |    6 +++---
+ drivers/target/target_core_transport.c |    3 ++-
+ 2 files changed, 5 insertions(+), 4 deletions(-)
+
+--- a/drivers/target/target_core_alua.c
++++ b/drivers/target/target_core_alua.c
+@@ -394,7 +394,7 @@ static inline int core_alua_state_standb
+ 	case SEND_DIAGNOSTIC:
+ 		return 0;
+ 	case MAINTENANCE_IN:
+-		switch (cdb[1]) {
++		switch (cdb[1] & 0x1f) {
+ 		case MI_REPORT_TARGET_PGS:
+ 			return 0;
+ 		default:
+@@ -437,7 +437,7 @@ static inline int core_alua_state_unavai
+ 	case REPORT_LUNS:
+ 		return 0;
+ 	case MAINTENANCE_IN:
+-		switch (cdb[1]) {
++		switch (cdb[1] & 0x1f) {
+ 		case MI_REPORT_TARGET_PGS:
+ 			return 0;
+ 		default:
+@@ -478,7 +478,7 @@ static inline int core_alua_state_transi
+ 	case REPORT_LUNS:
+ 		return 0;
+ 	case MAINTENANCE_IN:
+-		switch (cdb[1]) {
++		switch (cdb[1] & 0x1f) {
+ 		case MI_REPORT_TARGET_PGS:
+ 			return 0;
+ 		default:
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -1458,6 +1458,7 @@ static inline void transport_generic_pre
+ 	case VERIFY_16: /* SBC - VRProtect */
+ 	case WRITE_VERIFY: /* SBC - VRProtect */
+ 	case WRITE_VERIFY_12: /* SBC - VRProtect */
++	case MAINTENANCE_IN: /* SPC - Parameter Data Format for SA RTPG */
+ 		break;
+ 	default:
+ 		cdb[1] &= 0x1f; /* clear logical unit number */
+@@ -2813,7 +2814,7 @@ static int transport_generic_cmd_sequenc
+ 			/*
+ 			 * Check for emulated MI_REPORT_TARGET_PGS.
+ 			 */
+-			if (cdb[1] == MI_REPORT_TARGET_PGS &&
++			if ((cdb[1] & 0x1f) == MI_REPORT_TARGET_PGS &&
+ 			    su_dev->t10_alua.alua_type == SPC3_ALUA_EMULATED) {
+ 				cmd->execute_task =
+ 					target_emulate_report_target_port_groups;
+
+
