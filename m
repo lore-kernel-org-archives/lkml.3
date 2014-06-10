@@ -1,42 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933917AbaFJG6U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 02:58:20 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:36385 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932895AbaFJG6S (ORCPT
+	id S1754992AbaFJHCg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 03:02:36 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:6876 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751131AbaFJHCf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 02:58:18 -0400
-Date: Tue, 10 Jun 2014 09:57:35 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Valentina Manea <valentina.manea.m@gmail.com>,
-        devel@driverdev.osuosl.org, linux-usb@vger.kernel.org,
-        navin patidar <navinp@cdac.in>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: usbip: stub_main.c: Cleaning up missing
- null-terminate after strncpy call
-Message-ID: <20140610065735.GF5500@mwanda>
-References: <1401917989-3427-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	Tue, 10 Jun 2014 03:02:35 -0400
+Message-ID: <5396ACF1.1020107@huawei.com>
+Date: Tue, 10 Jun 2014 15:00:01 +0800
+From: Wang Weidong <wangweidong1@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1401917989-3427-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: <linux@arm.linux.org.uk>
+CC: <will.deacon@arm.com>, <gregory.clement@free-electrons.com>,
+        <nico@linaro.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ARM: Thumb-2: Fix out-of-range offset for Thumb-2 in, proc-macros.S
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.75]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 04, 2014 at 11:39:49PM +0200, Rickard Strandqvist wrote:
-> Added a guaranteed null-terminate after call to strncpy.
-> 
-> This was partly found using a static code analysis program called cppcheck.
-> 
+The STR Instruction Encoding T4 points that the <imm> is in the
+range 0-255.So split the instruction into two for Thumb-2. Just
+like commit 874d5d3ccc("ARM: 6623/1: Thumb-2: Fix out-of-range
+offset for Thumb-2 in proc-v7.S").
 
-We already knew that the string was NUL terminated because we checked
-strnlen() on the lines before.
+Signed-off-by: Wang Weidong <wangweidong1@huawei.com>
+---
+ arch/arm/mm/proc-macros.S | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-regards,
-dan carpenter
+diff --git a/arch/arm/mm/proc-macros.S b/arch/arm/mm/proc-macros.S
+index ee1d805..63f710c 100644
+--- a/arch/arm/mm/proc-macros.S
++++ b/arch/arm/mm/proc-macros.S
+@@ -252,7 +252,9 @@
+ 	tst	r3, #L_PTE_PRESENT | L_PTE_YOUNG	@ present and young?
+ 	movne	r2, #0				@ no -> fault
+ 
+-	str	r2, [r0, #2048]!		@ hardware version
++ ARM(	str	r2, [r0, #2048]! 		) @ hardware version
++ THUMB( add	r0, r0, #2048 			)
++ THUMB( str	r2, [r0] 			)
+ 	mov	ip, #0
+ 	mcr	p15, 0, r0, c7, c10, 1		@ clean L1 D line
+ 	mcr	p15, 0, ip, c7, c10, 4		@ data write barrier
+-- 
+1.7.12
+
 
