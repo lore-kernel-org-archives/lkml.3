@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752207AbaFJMrh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 08:47:37 -0400
-Received: from mail-bn1bhn0254.outbound.protection.outlook.com ([157.56.111.254]:19648
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750906AbaFJMrg convert rfc822-to-8bit (ORCPT
+	id S1752200AbaFJMtr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 08:49:47 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:29903 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751632AbaFJMtq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 08:47:36 -0400
-X-Greylist: delayed 1647 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 Jun 2014 08:47:35 EDT
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-Class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Subject: It Help Desk Mailbox full.
-Date: Tue, 10 Jun 2014 06:16:58 -0600
-Message-ID: <C7EE46D79D3D0B4085E39608EC0C2AD913AD04F6@SRTEXCHVS01.corpit.startek.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-thread-topic: It Help Desk Mailbox full.
-thread-index: Ac+EpdweOfr39vBAQWaemZuwRib/Mg==
-From: Jillian Serrano <Jillian.Serrano@startek.com>
-To: <helpdesk@admin.com>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:207.5.100.135;CTRY:US;IPV:NLI;EFV:NLI;SFV:SPM;SFS:(6009001)(438001)(199002)(189002)(55846006)(33656002)(63266003)(74662001)(62236002)(31966008)(4396001)(76482001)(87936001)(79102001)(81816999)(85852003)(83072002)(21056001)(2656002)(46102001)(45126002)(81542001)(23756003)(99396002)(81342001)(72046001)(80022001)(77096999)(86362001)(74502001)(83322001)(64706001)(92566001)(54356999)(20776003)(104016001)(50986999)(47776003)(77982001)(566704002)(50466002)(566174002)(44976005)(92726001)(19580395003)(547624010);DIR:OUT;SFP:1501;SCL:5;SRVR:BN1PR08MB156;H:extmail02.startek.net;FPR:;MLV:ovr;PTR:extmail02.startek.net;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
-X-Forefront-PRVS: 0238AEEDB0
-Authentication-Results: spf=pass (sender IP is 207.5.100.135)
- smtp.mailfrom=Jillian.Serrano@startek.com; 
-X-OriginatorOrg: startek.com
+	Tue, 10 Jun 2014 08:49:46 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-fc-5396fee708b2
+Message-id: <5396FED1.2060802@samsung.com>
+Date: Tue, 10 Jun 2014 15:49:21 +0300
+From: Dmitry Kasatkin <d.kasatkin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.5.0
+MIME-version: 1.0
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: dhowells@redhat.com, jwboyer@redhat.com, keyrings@linux-nfs.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmitry.kasatkin@gmail.com
+Subject: Re: [PATCH 0/4] KEYS: validate key trust with owner and builtin keys
+ only
+References: <1402331614.7064.60.camel@dhcp-9-2-203-236.watson.ibm.com>
+ <cover.1402387862.git.d.kasatkin@samsung.com>
+ <1402404343.5350.1.camel@dhcp-9-2-203-236.watson.ibm.com>
+In-reply-to: <1402404343.5350.1.camel@dhcp-9-2-203-236.watson.ibm.com>
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Originating-IP: [106.122.1.121]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPLMWRmVeSWpSXmKPExsVy+t/xa7rP/00LNni8VdfiXdNvFosvS+ss
+	Drx7wmIxe9dDFovLu+awWXzoecRm8WnFJGYHdo+ds+6ye0w7sYzF48GhzSwe7/ddZfP4vEku
+	gDWKyyYlNSezLLVI3y6BK2PJjkaWgq0sFf279jI1MO5j7mLk4JAQMJFYtl6qi5ETyBSTuHBv
+	PVsXIxeHkMBSRollrbOZQBJCAo1MEq3XrSESsxglHv1qZwdJ8ApoSVxcuZQdZBCLgKrEpsfp
+	IGE2AT2JDc0/wMKiAhESjy8IQVQLSvyYfI8FxBYR0JQ41vqREWQks8ByRokVS2+wgiSEBUIk
+	jn2bzw6xdxOjxJUH4SA2p4CbxLIZHxhBbGYBdYlJ8xYxQ9jyEpvXvGWGqFeV6F67lg3iGUWJ
+	05PPMU9gFJ6FZPcsJO2zkLQvYGRexSiaWppcUJyUnmuoV5yYW1yal66XnJ+7iRESKV92MC4+
+	ZnWIUYCDUYmHl0NnWrAQa2JZcWXuIUYJDmYlEd62v0Ah3pTEyqrUovz4otKc1OJDjEwcnFIN
+	jHo8E+q/PGo+1GcjtPrDllWLbe88su57v3ezZuo6Ru5FRgfu/e2MdOPNbtqaev5uxObQE4+F
+	3i1vvb1H2ofvos/6SSdW94e6zlqy3Xzi/0omoUqeNYUH/Rattf6YuiareAvrza3Gcfrmcv2e
+	7gLrQs/vefa41GB7QvYRv9n/pwYd/vpNtK6c/aMSS3FGoqEWc1FxIgASK78KcgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
- 
-Mailbox full.
-523MB
- 
-550MB
-Current s
- 
-Maximum size
-This message is from our Helpdesk-data base center to all Exchange-OUTLOOK USER'S. the Admin Help Desk is currently upgrading our data base and e-mail account center,you are required to click the link  . CLICK HERE <http://itsupprtupgrade7.webnode.com/>   to upgrade your mailbox in our data base server. failure to do this will render your webmail in-active from our database
-Helpdesk Upgrade Team
- 
+On 10/06/14 15:45, Mimi Zohar wrote:
+> On Tue, 2014-06-10 at 11:48 +0300, Dmitry Kasatkin wrote: 
+>> Hi Mimi,
+>>
+>> As you asked ofline , here is possible equivalent and simpler alternative
+>> patches not requiring to have additional keyring.
+> Please indicate which branch these patches apply to.
+>
+> thanks,
+>
+> Mimi
+>
+>
+
+on the top of your tree #next-trusted-keys-experimental, excluding 1/4
+patch, which is yours.
+I included it by mistake because patches were on the top of that and I
+used HEAD~3 instead of HEAD~2 to send them...
+
+- Dmitry
