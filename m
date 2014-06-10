@@ -1,20 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753837AbaFJTrW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 15:47:22 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34955 "EHLO
+	id S1753860AbaFJTrg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 15:47:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35034 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753254AbaFJTrM (ORCPT
+	with ESMTP id S1752290AbaFJTrb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:47:12 -0400
+	Tue, 10 Jun 2014 15:47:31 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Mel Gorman <mgorman@suse.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Anvin <hpa@zytor.com>, Fengguang Wu <fengguang.wu@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Noonan <steven@uplinklabs.net>, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stefan Bader <stefan.bader@canonical.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 076/160] drm/radeon: properly unregister hwmon interface (v2)
-Date: Tue, 10 Jun 2014 12:45:16 -0700
-Message-Id: <1402429600-20477-77-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 001/160] mm: use paravirt friendly ops for NUMA hinting ptes
+Date: Tue, 10 Jun 2014 12:44:01 -0700
+Message-Id: <1402429600-20477-2-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -27,84 +37,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Mel Gorman <mgorman@suse.de>
 
-commit cb3e4e7c59e4b43ac378631f6101f5c8de3a27a5 upstream.
+commit 29c7787075c92ca8af353acd5301481e6f37082f upstream.
 
-Need to properly unregister the hwmon device on driver
-unload.
+David Vrabel identified a regression when using automatic NUMA balancing
+under Xen whereby page table entries were getting corrupted due to the
+use of native PTE operations.  Quoting him
 
-v2: minor clean up
+	Xen PV guest page tables require that their entries use machine
+	addresses if the preset bit (_PAGE_PRESENT) is set, and (for
+	successful migration) non-present PTEs must use pseudo-physical
+	addresses.  This is because on migration MFNs in present PTEs are
+	translated to PFNs (canonicalised) so they may be translated back
+	to the new MFN in the destination domain (uncanonicalised).
 
-bug:
-https://bugzilla.kernel.org/show_bug.cgi?id=73931
+	pte_mknonnuma(), pmd_mknonnuma(), pte_mknuma() and pmd_mknuma()
+	set and clear the _PAGE_PRESENT bit using pte_set_flags(),
+	pte_clear_flags(), etc.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+	In a Xen PV guest, these functions must translate MFNs to PFNs
+	when clearing _PAGE_PRESENT and translate PFNs to MFNs when setting
+	_PAGE_PRESENT.
+
+His suggested fix converted p[te|md]_[set|clear]_flags to using
+paravirt-friendly ops but this is overkill.  He suggested an alternative
+of using p[te|md]_modify in the NUMA page table operations but this is
+does more work than necessary and would require looking up a VMA for
+protections.
+
+This patch modifies the NUMA page table operations to use paravirt
+friendly operations to set/clear the flags of interest.  Unfortunately
+this will take a performance hit when updating the PTEs on
+CONFIG_PARAVIRT but I do not see a way around it that does not break
+Xen.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: David Vrabel <david.vrabel@citrix.com>
+Tested-by: David Vrabel <david.vrabel@citrix.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Anvin <hpa@zytor.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Steven Noonan <steven@uplinklabs.net>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Dave Hansen <dave.hansen@intel.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+BugLink: http://bugs.launchpad.net/bugs/1313450
+Cc: Stefan Bader <stefan.bader@canonical.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/radeon/radeon_pm.c | 21 +++++++++++++++------
- 1 file changed, 15 insertions(+), 6 deletions(-)
+ include/asm-generic/pgtable.h | 31 +++++++++++++++++++++++--------
+ 1 file changed, 23 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_pm.c b/drivers/gpu/drm/radeon/radeon_pm.c
-index d7e631b..5ca7072 100644
---- a/drivers/gpu/drm/radeon/radeon_pm.c
-+++ b/drivers/gpu/drm/radeon/radeon_pm.c
-@@ -603,7 +603,6 @@ static const struct attribute_group *hwmon_groups[] = {
- static int radeon_hwmon_init(struct radeon_device *rdev)
+diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
+index 8e4f41d..eaa0a65 100644
+--- a/include/asm-generic/pgtable.h
++++ b/include/asm-generic/pgtable.h
+@@ -680,32 +680,47 @@ static inline int pmd_numa(pmd_t pmd)
+ #ifndef pte_mknonnuma
+ static inline pte_t pte_mknonnuma(pte_t pte)
  {
- 	int err = 0;
--	struct device *hwmon_dev;
- 
- 	switch (rdev->pm.int_thermal_type) {
- 	case THERMAL_TYPE_RV6XX:
-@@ -616,11 +615,11 @@ static int radeon_hwmon_init(struct radeon_device *rdev)
- 	case THERMAL_TYPE_KV:
- 		if (rdev->asic->pm.get_temperature == NULL)
- 			return err;
--		hwmon_dev = hwmon_device_register_with_groups(rdev->dev,
--							      "radeon", rdev,
--							      hwmon_groups);
--		if (IS_ERR(hwmon_dev)) {
--			err = PTR_ERR(hwmon_dev);
-+		rdev->pm.int_hwmon_dev = hwmon_device_register_with_groups(rdev->dev,
-+									   "radeon", rdev,
-+									   hwmon_groups);
-+		if (IS_ERR(rdev->pm.int_hwmon_dev)) {
-+			err = PTR_ERR(rdev->pm.int_hwmon_dev);
- 			dev_err(rdev->dev,
- 				"Unable to register hwmon device: %d\n", err);
- 		}
-@@ -632,6 +631,12 @@ static int radeon_hwmon_init(struct radeon_device *rdev)
- 	return err;
- }
- 
-+static void radeon_hwmon_fini(struct radeon_device *rdev)
-+{
-+	if (rdev->pm.int_hwmon_dev)
-+		hwmon_device_unregister(rdev->pm.int_hwmon_dev);
-+}
+-	pte = pte_clear_flags(pte, _PAGE_NUMA);
+-	return pte_set_flags(pte, _PAGE_PRESENT|_PAGE_ACCESSED);
++	pteval_t val = pte_val(pte);
 +
- static void radeon_dpm_thermal_work_handler(struct work_struct *work)
++	val &= ~_PAGE_NUMA;
++	val |= (_PAGE_PRESENT|_PAGE_ACCESSED);
++	return __pte(val);
+ }
+ #endif
+ 
+ #ifndef pmd_mknonnuma
+ static inline pmd_t pmd_mknonnuma(pmd_t pmd)
  {
- 	struct radeon_device *rdev =
-@@ -1314,6 +1319,8 @@ static void radeon_pm_fini_old(struct radeon_device *rdev)
- 		device_remove_file(rdev->dev, &dev_attr_power_method);
- 	}
- 
-+	radeon_hwmon_fini(rdev);
+-	pmd = pmd_clear_flags(pmd, _PAGE_NUMA);
+-	return pmd_set_flags(pmd, _PAGE_PRESENT|_PAGE_ACCESSED);
++	pmdval_t val = pmd_val(pmd);
 +
- 	if (rdev->pm.power_state)
- 		kfree(rdev->pm.power_state);
- }
-@@ -1333,6 +1340,8 @@ static void radeon_pm_fini_dpm(struct radeon_device *rdev)
- 	}
- 	radeon_dpm_fini(rdev);
- 
-+	radeon_hwmon_fini(rdev);
++	val &= ~_PAGE_NUMA;
++	val |= (_PAGE_PRESENT|_PAGE_ACCESSED);
 +
- 	if (rdev->pm.power_state)
- 		kfree(rdev->pm.power_state);
++	return __pmd(val);
  }
+ #endif
+ 
+ #ifndef pte_mknuma
+ static inline pte_t pte_mknuma(pte_t pte)
+ {
+-	pte = pte_set_flags(pte, _PAGE_NUMA);
+-	return pte_clear_flags(pte, _PAGE_PRESENT);
++	pteval_t val = pte_val(pte);
++
++	val &= ~_PAGE_PRESENT;
++	val |= _PAGE_NUMA;
++
++	return __pte(val);
+ }
+ #endif
+ 
+ #ifndef pmd_mknuma
+ static inline pmd_t pmd_mknuma(pmd_t pmd)
+ {
+-	pmd = pmd_set_flags(pmd, _PAGE_NUMA);
+-	return pmd_clear_flags(pmd, _PAGE_PRESENT);
++	pmdval_t val = pmd_val(pmd);
++
++	val &= ~_PAGE_PRESENT;
++	val |= _PAGE_NUMA;
++
++	return __pmd(val);
+ }
+ #endif
+ #else
 -- 
 1.9.1
 
