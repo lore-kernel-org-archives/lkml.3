@@ -1,64 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933149AbaFJUPB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 16:15:01 -0400
-Received: from sema.semaphore.gr ([78.46.194.137]:58134 "EHLO
-	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933132AbaFJUO5 (ORCPT
+	id S932198AbaFJTvn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 15:51:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35316 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932178AbaFJTvl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 16:14:57 -0400
-Message-ID: <5397673D.8010200@semaphore.gr>
-Date: Tue, 10 Jun 2014 23:14:53 +0300
-From: Stratos Karafotis <stratosk@semaphore.gr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>
-CC: dirk.j.brandewie@intel.com, Viresh Kumar <viresh.kumar@linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/7] cpufreq: intel_pstate: Trivial code cleanup
-References: <5396208F.6070400@semaphore.gr> <1447217.dTmMAkaUnF@vostro.rjw.lan> <53973FD4.7090904@intel.com> <5753346.hxK14sqO5y@vostro.rjw.lan>
-In-Reply-To: <5753346.hxK14sqO5y@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Tue, 10 Jun 2014 15:51:41 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 142/160] ALSA: usb-audio: work around corrupted TEAC UD-H01 feedback data
+Date: Tue, 10 Jun 2014 12:46:22 -0700
+Message-Id: <1402429600-20477-143-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
+References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/06/2014 11:17 μμ, Rafael J. Wysocki wrote:
-> On Tuesday, June 10, 2014 10:26:44 AM Dirk Brandewie wrote:
->> On 06/10/2014 08:31 AM, Rafael J. Wysocki wrote:
->>> On Tuesday, June 10, 2014 08:12:48 AM Dirk Brandewie wrote:
->>>> On 06/09/2014 02:01 PM, Stratos Karafotis wrote:
->>>>> Remove unnecessary blank lines.
->>>>> Remove unnecessary parentheses.
->>>>> Remove unnecessary braces.
->>>>> Put the code in one line where possible.
->>>>> Add blank lines after variable declarations.
->>>>> Alignment to open parenthesis.
->>>>>
->>>>
->>>> I don't have an issue with this patch in general but I would rather
->>>> the cleanup be done when there is a functional change in the given
->>>> hunk of code otherwise you are setting up a fence for stable/backporters
->>>> of functional changes in the future.
->>>
->>> I actually prefer separate cleanups so as to avoid doing multiple things
->>> in one patch.
->>>
->>> Rafael
->>>
->> I don't have strong feelings either way I was just trying to be kind
->> to the maintainers of distro kernels.
-> 
-> And mixing fixes with cleanups in one patch doesn't do any good to them.
-> 
-> Trust me, I used to work for a distro. :-)
-> 
+3.13.11.3 -stable review patch.  If anyone has any objections, please let me know.
 
-So, should I proceed and split the patch or drop it? :)
+------------------
 
-Stratos
+From: Clemens Ladisch <clemens@ladisch.de>
 
+commit 7040b6d1febfdbd9c1595efb751d492cd2503f96 upstream.
+
+The TEAC UD-H01 firmware sends wrong feedback frequency values, thus
+causing the PC to send the samples at a wrong rate, which results in
+clicks and crackles in the output.
+
+Add a workaround to detect and fix the corruption.
+
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+[mick37@gmx.de: use sender->udh01_fb_quirk rather than
+ ep->udh01_fb_quirk in snd_usb_handle_sync_urb()]
+Reported-and-tested-by: Mick <mick37@gmx.de>
+Reported-and-tested-by: Andrea Messa <andr.messa@tiscali.it>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ sound/usb/card.h     |  1 +
+ sound/usb/endpoint.c | 15 ++++++++++++++-
+ 2 files changed, 15 insertions(+), 1 deletion(-)
+
+diff --git a/sound/usb/card.h b/sound/usb/card.h
+index 9867ab8..97acb90 100644
+--- a/sound/usb/card.h
++++ b/sound/usb/card.h
+@@ -92,6 +92,7 @@ struct snd_usb_endpoint {
+ 	unsigned int curframesize;      /* current packet size in frames (for capture) */
+ 	unsigned int syncmaxsize;	/* sync endpoint packet size */
+ 	unsigned int fill_max:1;	/* fill max packet size always */
++	unsigned int udh01_fb_quirk:1;	/* corrupted feedback data */
+ 	unsigned int datainterval;      /* log_2 of data packet interval */
+ 	unsigned int syncinterval;	/* P for adaptive mode, 0 otherwise */
+ 	unsigned char silence_value;
+diff --git a/sound/usb/endpoint.c b/sound/usb/endpoint.c
+index 83aabea2..814430f 100644
+--- a/sound/usb/endpoint.c
++++ b/sound/usb/endpoint.c
+@@ -469,6 +469,10 @@ struct snd_usb_endpoint *snd_usb_add_endpoint(struct snd_usb_audio *chip,
+ 			ep->syncinterval = 3;
+ 
+ 		ep->syncmaxsize = le16_to_cpu(get_endpoint(alts, 1)->wMaxPacketSize);
++
++		if (chip->usb_id == USB_ID(0x0644, 0x8038) /* TEAC UD-H01 */ &&
++		    ep->syncmaxsize == 4)
++			ep->udh01_fb_quirk = 1;
+ 	}
+ 
+ 	list_add_tail(&ep->list, &chip->ep_list);
+@@ -1099,7 +1103,16 @@ void snd_usb_handle_sync_urb(struct snd_usb_endpoint *ep,
+ 	if (f == 0)
+ 		return;
+ 
+-	if (unlikely(ep->freqshift == INT_MIN)) {
++	if (unlikely(sender->udh01_fb_quirk)) {
++		/*
++		 * The TEAC UD-H01 firmware sometimes changes the feedback value
++		 * by +/- 0x1.0000.
++		 */
++		if (f < ep->freqn - 0x8000)
++			f += 0x10000;
++		else if (f > ep->freqn + 0x8000)
++			f -= 0x10000;
++	} else if (unlikely(ep->freqshift == INT_MIN)) {
+ 		/*
+ 		 * The first time we see a feedback value, determine its format
+ 		 * by shifting it left or right until it matches the nominal
+-- 
+1.9.1
 
