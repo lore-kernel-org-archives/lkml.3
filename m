@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755423AbaFJTxj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 15:53:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35533 "EHLO
+	id S932478AbaFJTxY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 15:53:24 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35502 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932505AbaFJTxf (ORCPT
+	with ESMTP id S1753790AbaFJTxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:53:35 -0400
+	Tue, 10 Jun 2014 15:53:20 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Tejun Heo <tj@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, Jeff Layton <jlayton@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 160/160] libata: Blacklist queued trim for Crucial M500
-Date: Tue, 10 Jun 2014 12:46:40 -0700
-Message-Id: <1402429600-20477-161-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 063/160] locks: allow __break_lease to sleep even when break_time is 0
+Date: Tue, 10 Jun 2014 12:45:03 -0700
+Message-Id: <1402429600-20477-64-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -29,51 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit 3b8d2676d15d6b2326757adb66b70a9cd6650373 upstream.
+commit f1c6bb2cb8b81013e8979806f8e15e3d53efb96d upstream.
 
-Queued trim only works for some users with MU05 firmware.  Revert to
-blacklisting all firmware versions.
+A fl->fl_break_time of 0 has a special meaning to the lease break code
+that basically means "never break the lease". knfsd uses this to ensure
+that leases don't disappear out from under it.
 
-Introduced by commit d121f7d0cbb8 ("libata: Update queued trim blacklist
-for M5x0 drives") which this effectively reverts, while retaining the
-blacklisting of M550.
+Unfortunately, the code in __break_lease can end up passing this value
+to wait_event_interruptible as a timeout, which prevents it from going
+to sleep at all. This makes __break_lease to spin in a tight loop and
+causes soft lockups.
 
-See
+Fix this by ensuring that we pass a minimum value of 1 as a timeout
+instead.
 
-    https://bugzilla.kernel.org/show_bug.cgi?id=71371
-
-for reports of trouble with MU05 firmware.
-
-Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Tejun Heo <tj@kernel.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: J. Bruce Fields <bfields@fieldses.org>
+Reported-by: Terry Barnaby <terry1@beam.ltd.uk>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/ata/libata-core.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ fs/locks.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index 0a79c54..5ab4e3d 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -4224,10 +4224,10 @@ static const struct ata_blacklist_entry ata_device_blacklist [] = {
- 	{ "PIONEER DVD-RW  DVR-216D",	NULL,	ATA_HORKAGE_NOSETXFER },
+diff --git a/fs/locks.c b/fs/locks.c
+index 92a0f0a..4dd39b9 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -1376,11 +1376,10 @@ int __break_lease(struct inode *inode, unsigned int mode, unsigned int type)
  
- 	/* devices that don't properly handle queued TRIM commands */
--	{ "Micron_M500*",		"MU0[1-4]*",	ATA_HORKAGE_NO_NCQ_TRIM, },
--	{ "Crucial_CT???M500SSD*",	"MU0[1-4]*",	ATA_HORKAGE_NO_NCQ_TRIM, },
--	{ "Micron_M550*",		NULL,		ATA_HORKAGE_NO_NCQ_TRIM, },
--	{ "Crucial_CT???M550SSD*",	NULL,		ATA_HORKAGE_NO_NCQ_TRIM, },
-+	{ "Micron_M500*",		NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
-+	{ "Crucial_CT???M500SSD*",	NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
-+	{ "Micron_M550*",		NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
-+	{ "Crucial_CT???M550SSD*",	NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
- 
- 	/*
- 	 * Some WD SATA-I drives spin up and down erratically when the link
+ restart:
+ 	break_time = flock->fl_break_time;
+-	if (break_time != 0) {
++	if (break_time != 0)
+ 		break_time -= jiffies;
+-		if (break_time == 0)
+-			break_time++;
+-	}
++	if (break_time == 0)
++		break_time++;
+ 	locks_insert_block(flock, new_fl);
+ 	spin_unlock(&inode->i_lock);
+ 	error = wait_event_interruptible_timeout(new_fl->fl_wait,
 -- 
 1.9.1
 
