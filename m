@@ -1,41 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964907AbaFJAhS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:37:18 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:22836 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S934307AbaFJAhO (ORCPT
+	id S934364AbaFJAWT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:22:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58245 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933853AbaFJAWI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 20:37:14 -0400
-Date: Mon, 9 Jun 2014 20:37:12 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Jason Low <jason.low2@hp.com>, Brad Mouring <bmouring@ni.com>
-Subject: Re: [patch V3 2/7] rtmutex: Clarify the boost/deboost part
-Message-ID: <20140609203712.1edc58e8@gandalf.local.home>
-In-Reply-To: <20140609202336.068962483@linutronix.de>
-References: <20140609201118.387571774@linutronix.de>
-	<20140609202336.068962483@linutronix.de>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Mon, 9 Jun 2014 20:22:08 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Sujith Manoharan <sujith@msujith.org>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
+        Ben Hutchings <ben@decadent.org.uk>, Jianguo Wu <wujianguo@huawei.com>
+Subject: [PATCH 3.4 38/88] Bluetooth: ath3k: Add support for ID 0x13d3/0x3402
+Date: Mon,  9 Jun 2014 17:24:48 -0700
+Message-Id: <20140610002425.806172884@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
+References: <20140610002424.500996570@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 09 Jun 2014 20:28:07 -0000
-Thomas Gleixner <tglx@linutronix.de> wrote:
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-> Add a separate local variable for the boost/deboost logic to make the
-> code more readable. Add comments where appropriate.
-> 
+------------------
 
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+From: Sujith Manoharan <sujith@msujith.org>
 
--- Steve
+commit 5b77a1f3d7b7360dc2b7c6d2188d39b9f8432907 upstream.
+
+T:  Bus=01 Lev=02 Prnt=02 Port=00 Cnt=01 Dev#=  5 Spd=12   MxCh= 0
+D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=13d3 ProdID=3402 Rev= 0.02
+S:  Manufacturer=Atheros Communications
+S:  Product=Bluetooth USB Host Controller
+S:  SerialNumber=Alaska Day 2006
+C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+
+Bug: https://bugzilla.kernel.org/show_bug.cgi?id=59701
+
+Signed-off-by: Sujith Manoharan <sujith@msujith.org>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: Jianguo Wu <wujianguo@huawei.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/bluetooth/ath3k.c |    2 ++
+ drivers/bluetooth/btusb.c |    1 +
+ 2 files changed, 3 insertions(+)
+
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -92,6 +92,7 @@ static struct usb_device_id ath3k_table[
+ 	{ USB_DEVICE(0x0489, 0xe056) },
+ 	{ USB_DEVICE(0x0489, 0xe04d) },
+ 	{ USB_DEVICE(0x04c5, 0x1330) },
++	{ USB_DEVICE(0x13d3, 0x3402) },
+ 
+ 	/* Atheros AR5BBU12 with sflash firmware */
+ 	{ USB_DEVICE(0x0489, 0xE02C) },
+@@ -130,6 +131,7 @@ static struct usb_device_id ath3k_blist_
+ 	{ USB_DEVICE(0x0489, 0xe056), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0489, 0xe04d), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04c5, 0x1330), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
+ 
+ 	/* Atheros AR5BBU22 with sflash firmware */
+ 	{ USB_DEVICE(0x0489, 0xE03C), .driver_info = BTUSB_ATH3012 },
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -161,6 +161,7 @@ static struct usb_device_id blacklist_ta
+ 	{ USB_DEVICE(0x0489, 0xe056), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0489, 0xe04d), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04c5, 0x1330), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
+ 
+ 	/* Atheros AR5BBU12 with sflash firmware */
+ 	{ USB_DEVICE(0x0489, 0xe02c), .driver_info = BTUSB_IGNORE },
+
 
