@@ -1,104 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754575AbaFJD2j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 23:28:39 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:48956 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751413AbaFJD2i (ORCPT
+	id S934582AbaFJDbC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 23:31:02 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:50120 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933225AbaFJDbA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 23:28:38 -0400
-Message-ID: <53967B8B.2000901@oracle.com>
-Date: Tue, 10 Jun 2014 11:29:15 +0800
-From: Junxiao Bi <junxiao.bi@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 9 Jun 2014 23:31:00 -0400
+X-IronPort-AV: E=Sophos;i="4.98,1006,1392134400"; 
+   d="scan'208";a="31687424"
+Message-ID: <53967D01.5060600@cn.fujitsu.com>
+Date: Tue, 10 Jun 2014 11:35:29 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>
-CC: andi@lisas.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] block: make nr_requests tunable for loop
-References: <1402367460-5305-1-git-send-email-junxiao.bi@oracle.com> <5396705D.5020507@kernel.dk> <5396727C.9010600@oracle.com> <5396778F.7010805@kernel.dk>
-In-Reply-To: <5396778F.7010805@kernel.dk>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Jason Low <jason.low2@hp.com>, Brad Mouring <bmouring@ni.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: Re: [patch V3 4/7] rtmutex: Siplify remove_waiter()
+References: <20140609201118.387571774@linutronix.de>	<20140609202336.248536613@linutronix.de> <20140609205329.52b8c0d5@gandalf.local.home>
+In-Reply-To: <20140609205329.52b8c0d5@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2014 11:12 AM, Jens Axboe wrote:
-> On 2014-06-09 20:50, Junxiao Bi wrote:
->> On 06/10/2014 10:41 AM, Jens Axboe wrote:
->>> On 2014-06-09 20:31, Junxiao Bi wrote:
->>>> commit 7b5a3522 (loop: Limit the number of requests in the bio list)
->>>> limit
->>>> the request number in loop queue to not over 128. Since the
->>>> "request_fn" of
->>>> loop device is null, the requests number is not allowed tuned. Make
->>>> it tunable
->>>> from sysfs can improve performance.
->>>>
->>>> The following test is done on a machine with 512M memory. The
->>>> backend of
->>>> /dev/loop1 is a nfs file.
->>>>
->>>> [root@bijx mnt]# cat /sys/block/loop0/queue/nr_requests
->>>> 128
->>>> [root@bijx mnt]# dd if=/dev/zero of=/dev/loop0 bs=1M count=5000
->>>> 5000+0 records in
->>>> 5000+0 records out
->>>> 5242880000 bytes (5.2 GB) copied, 501.572 s, 10.5 MB/s
->>>> [root@bijx mnt]#
->>>> [root@bijx mnt]# echo 1024 > /sys/block/loop0/queue/nr_requests
->>>> [root@bijx mnt]# cat /sys/block/loop0/queue/nr_requests
->>>> 1024
->>>> [root@bijx mnt]# dd if=/dev/zero of=/dev/loop0 bs=1M count=5000
->>>> 5000+0 records in
->>>> 5000+0 records out
->>>> 5242880000 bytes (5.2 GB) copied, 464.481 s, 11.3 MB/s
->>>>
->>>> Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
->>>> ---
->>>>    block/blk-core.c  |    6 ++++++
->>>>    block/blk-sysfs.c |    9 +++------
->>>>    2 files changed, 9 insertions(+), 6 deletions(-)
->>>>
->>>> diff --git a/block/blk-core.c b/block/blk-core.c
->>>> index 40d6548..58c4bd4 100644
->>>> --- a/block/blk-core.c
->>>> +++ b/block/blk-core.c
->>>> @@ -851,6 +851,12 @@ int blk_update_nr_requests(struct request_queue
->>>> *q, unsigned int nr)
->>>>        q->nr_requests = nr;
->>>>        blk_queue_congestion_threshold(q);
->>>>
->>>> +    /* for loop device, return after set its nr_requests */
->>>> +    if (!q->request_fn) {
->>>> +        spin_unlock_irq(q->queue_lock);
->>>> +        return 0;
->>>> +    }
->>>
->>> It'd be prettier to split this differently - something ala:
->>>
->>> if (request_fn)
->>>          blk_update_congestion_thresholds(q);
->> The congestion threshholds is needed in commit 7b5a3522 (loop: Limit the
->> number of requests in the bio list). So I think it needs be set even
->> request_fn is null.
->
-> I mean the request list thresholds, the part below where you currently
-> just exit.
->
->>> But I think you have a larger issue here... For the request lists, we
->>> update the congestion thresholds and wakeup anyone waiting, if we need
->>> to. There's no way to do that for loop, since the waitqueue is
->>> internal to loop.
->> Loop do the congestion control by itself, in loop_make_request() /
->> loop_thread().
->
-> Yes, that is my point! You update nr_congestion_off, but you don't
-> wake anyone currently sitting in wait_event_lock_irq() on that value.
-> See what the code below where you just exit does for request list
-> based devices.
-Ah, i see. It can't be wake up once nr_congestion_off is updated. But
-after a little delay, loop_thread will consume the requests in list and
-wake up it. Is this OK?
+On 06/10/2014 08:53 AM, Steven Rostedt wrote:
+> On Mon, 09 Jun 2014 20:28:08 -0000
+> Thomas Gleixner <tglx@linutronix.de> wrote:
+> 
+>> Exit right away, when the removed waiter was not the top prioriy
+>> waiter on the lock. Get rid of the extra indent level.
+>>
+>> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+>> ---
+>>  kernel/locking/rtmutex.c |   26 ++++++++++----------------
+>>  1 file changed, 10 insertions(+), 16 deletions(-)
+>>
+>> Index: tip/kernel/locking/rtmutex.c
+>> ===================================================================
+>> --- tip.orig/kernel/locking/rtmutex.c
+>> +++ tip/kernel/locking/rtmutex.c
+>> @@ -780,7 +780,7 @@ static void remove_waiter(struct rt_mute
+>>  {
+>>  	int first = (waiter == rt_mutex_top_waiter(lock));
+>>  	struct task_struct *owner = rt_mutex_owner(lock);
+>> -	struct rt_mutex *next_lock = NULL;
+>> +	struct rt_mutex *next_lock;
+>>  	unsigned long flags;
+>>  
+>>  	raw_spin_lock_irqsave(&current->pi_lock, flags);
+>> @@ -788,28 +788,22 @@ static void remove_waiter(struct rt_mute
+>>  	current->pi_blocked_on = NULL;
+>>  	raw_spin_unlock_irqrestore(&current->pi_lock, flags);
+>>  
+> 
+> Add comment here, something like...
+> 
+> 	/*
+> 	 * Only update priority if this task was the highest priority
+> 	 * task waiting on the lock, and there is an owner to update.
+> 	 */
+> 
+> Rest looks good.
+> 
+> Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
 
+Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+
+Thanks,
+Lai
