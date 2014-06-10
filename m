@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755486AbaFJUZE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 16:25:04 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35322 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932501AbaFJUZB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 16:25:01 -0400
-Message-ID: <53976984.4030301@zytor.com>
-Date: Tue, 10 Jun 2014 13:24:36 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Borislav Petkov <bp@suse.de>, Jiri Kosina <jkosina@suse.cz>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org, jroedel@suse.de
-Subject: Re: [PATCH] x86: be more helpful with SMEP faults
-References: <alpine.LNX.2.00.1406102102030.1321@pobox.suse.cz> <20140610201823.GA29302@pd.tnic>
-In-Reply-To: <20140610201823.GA29302@pd.tnic>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1753725AbaFJUZr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 16:25:47 -0400
+Received: from qmta02.emeryville.ca.mail.comcast.net ([76.96.30.24]:47832 "EHLO
+	qmta02.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752607AbaFJUZq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 16:25:46 -0400
+Date: Tue, 10 Jun 2014 15:25:42 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Vlastimil Babka <vbabka@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH, RFC 00/10] THP refcounting redesign
+In-Reply-To: <1402329861-7037-1-git-send-email-kirill.shutemov@linux.intel.com>
+Message-ID: <alpine.DEB.2.10.1406101518510.19364@gentwo.org>
+References: <1402329861-7037-1-git-send-email-kirill.shutemov@linux.intel.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2014 01:18 PM, Borislav Petkov wrote:
->>  static void
->>  show_fault_oops(struct pt_regs *regs, unsigned long error_code,
->> @@ -594,6 +596,11 @@ show_fault_oops(struct pt_regs *regs, unsigned long error_code,
->>  
->>  		if (pte && pte_present(*pte) && !pte_exec(*pte))
->>  			printk(nx_warning, from_kuid(&init_user_ns, current_uid()));
->> +		if (pte && pte_present(*pte) && pte_exec(*pte) &&
->> +				(pgd_flags(*pgd) & _PAGE_USER) &&
->> +				static_cpu_has(X86_FEATURE_SMEP) &&
-> 
-> Btw, we could probably save us this line as CR4 reserved bits should be
-> Must-Be-Zero and setting any of those should #GP. And I'm talking about
-> pre-SMEP Intel, and AMD machines.
-> 
-> IOW, if CR4.SMEP is set, it definitely means SMEP is present and
-> enabled.
-> 
-> hpa, that true?
-> 
+On Mon, 9 Jun 2014, Kirill A. Shutemov wrote:
 
-Yes.  Also, the Linux kernel will set or clear X86_FEATURE_SMEP to
-match, so the two are redundant.
+> To be able to split huge page at any point we have to track which tail
+> page was pinned. It leads to tricky and expensive get_page() on tail pages
+> and also occupy tail_page->_mapcount.
 
-	-hpa
+Maybe we should give up the requirement to be able to split a huge page at
+any point? This got us into the mess AFAICT. Instead we could use the
+locking mechanisms that we have to stop all access to the page and then do
+the conversion? Page migration can do that so it should be fine with
+refcounting for huge pages exclusively in the head page exactly like a
+regular page.
 
+The problem is then dealing with the locations where we now do rely on
+the ability to split at "any point" (notion is weird in itself and
+suggests issues with synchronization). Use the standard locking schemes
+for pages instead?
+
+I thought the idea was that we would modify the relevant code and
+that at some point this requirement could go away?
+
+Huge pages (and other larger order pages) will become increasingly
+difficult to handle if relevant page state has to be maintained in tail
+pages and if it differs significantly from regular pages.
 
