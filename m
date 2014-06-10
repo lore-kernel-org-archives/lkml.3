@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933295AbaFJUTp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 16:19:45 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:33415 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932306AbaFJUTn (ORCPT
+	id S933324AbaFJUTw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 16:19:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39557 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932306AbaFJUTu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 16:19:43 -0400
+	Tue, 10 Jun 2014 16:19:50 -0400
+Date: Tue, 10 Jun 2014 13:23:38 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: James Morris <jmorris@namei.org>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: Re: Change in security maintainer for a few weeks
+Message-ID: <20140610202338.GC20499@kroah.com>
+References: <20140605183050.GA5054@kroah.com>
+ <alpine.LRH.2.02.1406101517350.31746@tundra.namei.org>
 MIME-Version: 1.0
-In-Reply-To: <1400603412-19406-1-git-send-email-ricardo.ribalda@gmail.com>
-References: <1400603412-19406-1-git-send-email-ricardo.ribalda@gmail.com>
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Date: Tue, 10 Jun 2014 22:19:23 +0200
-Message-ID: <CAPybu_29FPnRyJSJvnX+mosto+CF944PpREROeP282uqYb-FNw@mail.gmail.com>
-Subject: Re: [PATCH 00/10] net2280: Support for PLX USB338x and cleanout code
-To: "balbi@ti.com" <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        Joe Perches <joe@perches.com>,
-        Amit Uttamchandani <auttamchandani@logicube.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LRH.2.02.1406101517350.31746@tundra.namei.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping...
+On Tue, Jun 10, 2014 at 03:20:15PM +1000, James Morris wrote:
+> On Thu, 5 Jun 2014, Greg KH wrote:
+> 
+> > Hi all,
+> > 
+> > James has had to step back from doing kernel work for a few weeks, so
+> > I've offered to step up and handle the security patches to get shuttled
+> > to Linus for merging for a while.
+> > 
+> > I'll take his git tree on kernel.org and push those to Linus for
+> > 3.16-rc1, as those look like they have had proper testing in linux-next.
+> > 
+> > But there only seems to be 14 patches in there.  Are there pending
+> > patches that people have been sending and need to get in besides those?
+> > 
+> 
+> Thanks for stepping up.
+> 
+> I had to take urgent leave and was unable to access email until this week.
+> 
+> We really should have a co-maintainer for the security subsystem -- please 
+> feel free to nominate someone.
+> 
+> There are several good candidates, including Serge, Kees and Paul Moore.
 
-On Tue, May 20, 2014 at 6:30 PM, Ricardo Ribalda Delgado
-<ricardo.ribalda@gmail.com> wrote:
-> The USB 3380 is a PCI Express Gen 2 to USB 3.0 SuperSpeed Peripheral
-> Controller. It shares a lot functionatily with the net228x family.
->
-> This series of patches includes some resend of previous patches.
->
-> Please check the changelog for every patch. This time it has been placed
-> under the tear line
->
->
->
-> Ricardo Ribalda Delgado (10):
->   usb: gadget: net2280: Add support for PLX USB338X
->   usb: gadget: net2280: Dont use magic numbers
->   usb: gadget: net2280: Use BIT() macro
->   usb: gadget: net2280: Use true/false instead of 1/0
->   usb: gadget: net2280: Use module_pci_driver macro
->   usb: gadget: net2280: Refactor queues_show
->   usb: gadget: net2280: Pass checkpacth.pl test
->   usb: gadget: net2280: Code Cleanup
->   usb: gadget: net2280: Use pr_* function
->   usb: gadget: net2280: Use quirks instead of pci id
->
->  drivers/usb/gadget/Kconfig   |   10 +-
->  drivers/usb/gadget/net2280.c | 2752 ++++++++++++++++++++++++++++--------------
->  drivers/usb/gadget/net2280.h |  285 +++--
->  include/linux/usb/usb338x.h  |  199 +++
->  4 files changed, 2235 insertions(+), 1011 deletions(-)
->  create mode 100644 include/linux/usb/usb338x.h
->
-> --
-> 2.0.0.rc2
->
+As Serge has done it in the past when you are on vacation, I suggest he
+continue doing it.
 
+thanks,
 
-
--- 
-Ricardo Ribalda
+greg k-h
