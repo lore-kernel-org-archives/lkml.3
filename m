@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932308AbaFJTwf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 15:52:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35421 "EHLO
+	id S1753776AbaFJTwT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 15:52:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35400 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932307AbaFJTwd (ORCPT
+	with ESMTP id S1753853AbaFJTwP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:52:33 -0400
+	Tue, 10 Jun 2014 15:52:15 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tejun Heo <tj@kernel.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 056/160] pata_at91: fix ata_host_activate() failure handling
-Date: Tue, 10 Jun 2014 12:44:56 -0700
-Message-Id: <1402429600-20477-57-git-send-email-kamal@canonical.com>
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 154/160] Input: elantech - fix touchpad initialization on Gigabyte U2442
+Date: Tue, 10 Jun 2014 12:46:34 -0700
+Message-Id: <1402429600-20477-155-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -31,53 +28,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 27aa64b9d1bd0d23fd692c91763a48309b694311 upstream.
+commit 36189cc3cd57ab0f1cd75241f93fe01de928ac06 upstream.
 
-Add missing clk_put() call to ata_host_activate() failure path.
+The hw_version 3 Elantech touchpad on the Gigabyte U2442 does not accept
+0x0b as initialization value for r10, this stand-alone version of the
+driver: http://planet76.com/drivers/elantech/psmouse-elantech-v6.tar.bz2
 
-Sergei says,
+Uses 0x03 which does work, so this means not setting bit 3 of r10 which
+sets: "Enable Real H/W Resolution In Absolute mode"
 
-  "Hm, I have once fixed that (see that *if* (!ret)) but looks like a
-   later commit 477c87e90853d136b188c50c0e4a93d01cad872e (ARM:
-   at91/pata: use gpio_is_valid to check the gpio) broke it again. :-(
-   Would be good if the changelog did mention that..."
+Which will result in half the x and y resolution we get with that bit set,
+so simply not setting it everywhere is not a solution. We've been unable to
+find a way to identify touchpads where setting the bit will fail, so this
+patch uses a dmi based blacklist for this.
 
-Cc: Andrew Victor <linux@maxim.org.za>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+https://bugzilla.kernel.org/show_bug.cgi?id=61151
+
+Reported-by: Philipp Wolfer <ph.wolfer@gmail.com>
+Tested-by: Philipp Wolfer <ph.wolfer@gmail.com>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/ata/pata_at91.c | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ Documentation/input/elantech.txt |  5 ++++-
+ drivers/input/mouse/elantech.c   | 26 +++++++++++++++++++++++++-
+ drivers/input/mouse/elantech.h   |  1 +
+ 3 files changed, 30 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/ata/pata_at91.c b/drivers/ata/pata_at91.c
-index d63ee8f..e3a49df 100644
---- a/drivers/ata/pata_at91.c
-+++ b/drivers/ata/pata_at91.c
-@@ -408,12 +408,13 @@ static int pata_at91_probe(struct platform_device *pdev)
+diff --git a/Documentation/input/elantech.txt b/Documentation/input/elantech.txt
+index 5602eb7..e1ae127 100644
+--- a/Documentation/input/elantech.txt
++++ b/Documentation/input/elantech.txt
+@@ -504,9 +504,12 @@ byte 5:
+ * reg_10
  
- 	host->private_data = info;
+    bit   7   6   5   4   3   2   1   0
+-         0   0   0   0   0   0   0   A
++         0   0   0   0   R   F   T   A
  
--	return ata_host_activate(host, gpio_is_valid(irq) ? gpio_to_irq(irq) : 0,
--			gpio_is_valid(irq) ? ata_sff_interrupt : NULL,
--			irq_flags, &pata_at91_sht);
-+	ret = ata_host_activate(host, gpio_is_valid(irq) ? gpio_to_irq(irq) : 0,
-+				gpio_is_valid(irq) ? ata_sff_interrupt : NULL,
-+				irq_flags, &pata_at91_sht);
-+	if (ret)
-+		goto err_put;
+          A: 1 = enable absolute tracking
++         T: 1 = enable two finger mode auto correct
++         F: 1 = disable ABS Position Filter
++         R: 1 = enable real hardware resolution
  
--	if (!ret)
--		return 0;
-+	return 0;
+ 6.2 Native absolute mode 6 byte packet format
+     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
+index ef1cf52..230cdcf 100644
+--- a/drivers/input/mouse/elantech.c
++++ b/drivers/input/mouse/elantech.c
+@@ -11,6 +11,7 @@
+  */
  
- err_put:
- 	clk_put(info->mck);
+ #include <linux/delay.h>
++#include <linux/dmi.h>
+ #include <linux/slab.h>
+ #include <linux/module.h>
+ #include <linux/input.h>
+@@ -831,7 +832,11 @@ static int elantech_set_absolute_mode(struct psmouse *psmouse)
+ 		break;
+ 
+ 	case 3:
+-		etd->reg_10 = 0x0b;
++		if (etd->set_hw_resolution)
++			etd->reg_10 = 0x0b;
++		else
++			etd->reg_10 = 0x03;
++
+ 		if (elantech_write_reg(psmouse, 0x10, etd->reg_10))
+ 			rc = -1;
+ 
+@@ -1331,6 +1336,22 @@ static int elantech_reconnect(struct psmouse *psmouse)
+ }
+ 
+ /*
++ * Some hw_version 3 models go into error state when we try to set bit 3 of r10
++ */
++static const struct dmi_system_id no_hw_res_dmi_table[] = {
++#if defined(CONFIG_DMI) && defined(CONFIG_X86)
++	{
++		/* Gigabyte U2442 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "GIGABYTE"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "U2442"),
++		},
++	},
++#endif
++	{ }
++};
++
++/*
+  * determine hardware version and set some properties according to it.
+  */
+ static int elantech_set_properties(struct elantech_data *etd)
+@@ -1389,6 +1410,9 @@ static int elantech_set_properties(struct elantech_data *etd)
+ 	 */
+ 	etd->crc_enabled = ((etd->fw_version & 0x4000) == 0x4000);
+ 
++	/* Enable real hardware resolution on hw_version 3 ? */
++	etd->set_hw_resolution = !dmi_check_system(no_hw_res_dmi_table);
++
+ 	return 0;
+ }
+ 
+diff --git a/drivers/input/mouse/elantech.h b/drivers/input/mouse/elantech.h
+index 036a04a..9e0e2a1 100644
+--- a/drivers/input/mouse/elantech.h
++++ b/drivers/input/mouse/elantech.h
+@@ -130,6 +130,7 @@ struct elantech_data {
+ 	bool jumpy_cursor;
+ 	bool reports_pressure;
+ 	bool crc_enabled;
++	bool set_hw_resolution;
+ 	unsigned char hw_version;
+ 	unsigned int fw_version;
+ 	unsigned int single_finger_reports;
 -- 
 1.9.1
 
