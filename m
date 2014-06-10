@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755373AbaFJTxT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 15:53:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35496 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753777AbaFJTxQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755355AbaFJTxQ (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 10 Jun 2014 15:53:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35486 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755322AbaFJTxL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 15:53:11 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Chris Samuel <chris@csamuel.org>, Marc MERLIN <marc@merlins.org>,
-        Tejun Heo <tj@kernel.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 055/160] libata: Update queued trim blacklist for M5x0 drives
-Date: Tue, 10 Jun 2014 12:44:55 -0700
-Message-Id: <1402429600-20477-56-git-send-email-kamal@canonical.com>
+Cc: Denis Turischev <denis@compulab.co.il>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andy Whitcroft <apw@canonical.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 051/160] xhci: Switch Intel Lynx Point ports to EHCI on shutdown.
+Date: Tue, 10 Jun 2014 12:44:51 -0700
+Message-Id: <1402429600-20477-52-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -28,44 +30,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
+From: Denis Turischev <denis.turischev@compulab.co.il>
 
-commit d121f7d0cbb875abce249dbf7eb191f9bafe80b7 upstream.
+commit c09ec25d3684cad74d851c0f028a495999591279 upstream.
 
-Crucial/Micron M500 drives properly support queued DSM TRIM starting
-with firmware MU05. Update the blacklist so we only disable queued trim
-for older firmware releases.
+The same issue like with Panther Point chipsets. If the USB ports are
+switched to xHCI on shutdown, the xHCI host will send a spurious interrupt,
+which will wake the system. Some BIOS have work around for this, but not all.
+One example is Compulab's mini-desktop, the Intense-PC2.
 
-Early M550 series drives suffer from the same issue as M500. A bugfix
-firmware is in the pipeline but not ready yet. Until then, blacklist
-queued trim for M550.
+The bug can be avoided if the USB ports are switched back to EHCI on
+shutdown.
 
-Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
-Cc: Chris Samuel <chris@csamuel.org>
-Cc: Marc MERLIN <marc@merlins.org>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+This patch should be backported to stable kernels as old as 3.12,
+that contain the commit 638298dc66ea36623dbc2757a24fc2c4ab41b016
+"xhci: Fix spurious wakeups after S5 on Haswell"
+
+Signed-off-by: Denis Turischev <denis@compulab.co.il>
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Andy Whitcroft <apw@canonical.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/ata/libata-core.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/usb/host/xhci-pci.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index 8cb2522..2897dbe 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -4224,8 +4224,10 @@ static const struct ata_blacklist_entry ata_device_blacklist [] = {
- 	{ "PIONEER DVD-RW  DVR-216D",	NULL,	ATA_HORKAGE_NOSETXFER },
- 
- 	/* devices that don't properly handle queued TRIM commands */
--	{ "Micron_M500*",		NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
--	{ "Crucial_CT???M500SSD*",	NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
-+	{ "Micron_M500*",		"MU0[1-4]*",	ATA_HORKAGE_NO_NCQ_TRIM, },
-+	{ "Crucial_CT???M500SSD*",	"MU0[1-4]*",	ATA_HORKAGE_NO_NCQ_TRIM, },
-+	{ "Micron_M550*",		NULL,		ATA_HORKAGE_NO_NCQ_TRIM, },
-+	{ "Crucial_CT???M550SSD*",	NULL,		ATA_HORKAGE_NO_NCQ_TRIM, },
- 
- 	/*
- 	 * Some WD SATA-I drives spin up and down erratically when the link
+diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
+index d069224..67394da 100644
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -134,6 +134,8 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
+ 		 */
+ 		if (pdev->subsystem_vendor == PCI_VENDOR_ID_HP)
+ 			xhci->quirks |= XHCI_SPURIOUS_WAKEUP;
++
++		xhci->quirks |= XHCI_SPURIOUS_REBOOT;
+ 	}
+ 	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
+ 			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
 -- 
 1.9.1
 
