@@ -1,82 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751867AbaFJLe6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 07:34:58 -0400
-Received: from mail.siteground.com ([67.19.240.234]:52180 "EHLO
-	mail.siteground.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751279AbaFJLe5 (ORCPT
+	id S1751909AbaFJLgE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 07:36:04 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:35877 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750788AbaFJLgC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 07:34:57 -0400
-Message-ID: <5396ED66.7090401@1h.com>
-Date: Tue, 10 Jun 2014 14:35:02 +0300
-From: Marian Marinov <mm@1h.com>
-Organization: 1H Ltd.
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 10 Jun 2014 07:36:02 -0400
+Date: Tue, 10 Jun 2014 04:35:40 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: Jens Axboe <axboe@fb.com>, Christoph Hellwig <hch@infradead.org>,
+        Matias Bj??rling <m@bjorling.me>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Keith Busch <keith.busch@intel.com>,
+        "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-nvme <linux-nvme@lists.infradead.org>
+Subject: Re: [PATCH v6] NVMe: conversion to blk-mq
+Message-ID: <20140610113540.GA26195@infradead.org>
+References: <1402057225-7312-1-git-send-email-m@bjorling.me>
+ <1402057225-7312-2-git-send-email-m@bjorling.me>
+ <CACVXFVOieM2cT4FFJhD9MecfCLBtE3AwjCpOeGGRUcmWnN=B=A@mail.gmail.com>
+ <5395BFF2.2080402@fb.com>
+ <20140609145944.GA30626@infradead.org>
+ <5395D24D.9000306@fb.com>
+ <CACVXFVNNm5PJ8g=QD5zm49kaqW_oKCM+utMz+qSd=3WfsE4U2g@mail.gmail.com>
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [RFC] oom, memcg: handle sysctl oom_kill_allocating_task while memcg
- oom happening
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - mail.siteground.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - 1h.com
-X-Get-Message-Sender-Via: mail.siteground.com: none
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACVXFVNNm5PJ8g=QD5zm49kaqW_oKCM+utMz+qSd=3WfsE4U2g@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On Mon, Jun 09, 2014 at 11:35:00PM +0800, Ming Lei wrote:
+> 
+> Use-after-free may cause duplicate completions.
+> 
+> BTW, is the scsi-mq patchset public now?
 
-Hello,
-a while back in 2012 there was a request for this functionality.
-  oom, memcg: handle sysctl oom_kill_allocating_task while memcg oom happening
-
-This is the thread:  https://lkml.org/lkml/2012/10/16/168
-
-Now we run a several machines with around 10k processes on each machine, using containers.
-
-Regularly we see OOM from within a container that causes performance degradation.
-
-We are running 3.12.20 with the following OOM configuration and memcg oom enabled:
-
-vm.oom_dump_tasks = 0
-vm.oom_kill_allocating_task = 1
-vm.panic_on_oom = 0
-
-When OOM occurs we see very high numbers for the loadavg and the overall responsiveness of the machine degrades.
-
-During these OOM states the load of the machine gradualy increases from 25 up to 120 in the interval of 10minutes.
-
-Once we manually bring down the memory usage of a container(killing some tasks) the load drops down to 25 within 5 to
-7 minutes.
-
-I read the whole thread from 2012 but I do not see the expected behavior that is described by the people that
-commented the issue.
-
-In this case, with real usage for this patch, would it be considered for inclusion?
-
-Marian
-
-
-- -- 
-Marian Marinov
-Founder & CEO of 1H Ltd.
-Jabber/GTalk: hackman@jabber.org
-ICQ: 7556201
-Mobile: +359 886 660 270
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iEYEARECAAYFAlOW7WYACgkQ4mt9JeIbjJTZCACgj74t6T9GkCS5RlQEF6NkTbed
-xJwAoK93irH+FneDoNdSi2DBSnR7a76r
-=zl6k
------END PGP SIGNATURE-----
+It always has been.  I've posted it fairly frequently to linux-scsi,
+and git://git.infradead.org/users/hch/scsi.git always has the latest
+code, with scsi-mq-wip.11 as the current iteration.
