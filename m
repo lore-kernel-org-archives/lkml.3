@@ -1,43 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751668AbaFJJIW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 05:08:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52977 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750891AbaFJJIU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 05:08:20 -0400
-Date: Tue, 10 Jun 2014 11:08:16 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Alexander Holler <holler@ahsoftware.de>
-cc: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+	id S1751791AbaFJJIe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 05:08:34 -0400
+Received: from forward-corp1f.mail.yandex.net ([95.108.130.40]:37565 "EHLO
+	forward-corp1f.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750910AbaFJJIV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 05:08:21 -0400
+X-Yandex-Uniq: 891dcd13-be7f-44c5-871b-ff43953c4e91
+Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+Date: Tue, 10 Jun 2014 13:08:14 +0400
+From: Stanislav Fomichev <stfomichev@yandex-team.ru>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: acme@kernel.org, artagnon@gmail.com, jolsa@redhat.com,
         linux-kernel@vger.kernel.org
-Subject: Re: HID: hid-sensor-hub: fix sleeping function called from invalid
- context
-In-Reply-To: <5396BF5E.7070805@ahsoftware.de>
-Message-ID: <alpine.LNX.2.00.1406101107360.9378@pobox.suse.cz>
-References: <53963364.4010104@ahsoftware.de> <alpine.LNX.2.00.1406100038150.2827@pobox.suse.cz> <5396BF5E.7070805@ahsoftware.de>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+Subject: Re: [PATCH 2/2] perf timechart: implement IO mode
+Message-ID: <20140610090814.GM26511@stfomichev-desktop.yandex.net>
+References: <1402305672-2630-1-git-send-email-stfomichev@yandex-team.ru>
+ <1402305672-2630-3-git-send-email-stfomichev@yandex-team.ru>
+ <8738fdb3uc.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8738fdb3uc.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Jun 2014, Alexander Holler wrote:
-
-> >> Looking at the differences, I wonder if not all spin_lock() calls in 
-> >> hid-sensor-hub.c should be changed into spin_lock_irqsave() like the 
-> >> patch from Jiri Kosina did.
-> > 
-> > Could you please give me your Tested-by:? I'll then be happily queuing the 
-> > fix. Thanks.
-> 
-> Sure, but I already did that in the reply to your patch.
-
-I probably missed in all the other noise in that thread. I've now pushed 
-out the staged patch and will be pushing it to Linus for 3.16 still. 
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
+> Then I stopped to test/review.  I'll review if you send v2 with fixes.
+Oops, sorry, I've sent an old version. Will come back with v2 and
+will split --io-xyz options.
