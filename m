@@ -1,20 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932642AbaFJTy1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 15:54:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35624 "EHLO
+	id S1755532AbaFJTyf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 15:54:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35635 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753761AbaFJTyR (ORCPT
+	with ESMTP id S1752945AbaFJTya (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:54:17 -0400
+	Tue, 10 Jun 2014 15:54:30 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Christoph Hellwig <hch@lst.de>, Chuck Lever <chuck.lever@oracle.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 155/160] posix_acl: handle NULL ACL in posix_acl_equiv_mode
-Date: Tue, 10 Jun 2014 12:46:35 -0700
-Message-Id: <1402429600-20477-156-git-send-email-kamal@canonical.com>
+Cc: Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org, lwoodman@redhat.com,
+        dave.hansen@intel.com, Ingo Molnar <mingo@kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 046/160] mm/numa: Remove BUG_ON() in __handle_mm_fault()
+Date: Tue, 10 Jun 2014 12:44:46 -0700
+Message-Id: <1402429600-20477-47-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -27,46 +34,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Hellwig <hch@lst.de>
+From: Rik van Riel <riel@redhat.com>
 
-commit 50c6e282bdf5e8dabf8d7cf7b162545a55645fd9 upstream.
+commit 107437febd495a50e2cd09c81bbaa84d30e57b07 upstream.
 
-Various filesystems don't bother checking for a NULL ACL in
-posix_acl_equiv_mode, and thus can dereference a NULL pointer when it
-gets passed one. This usually happens from the NFS server, as the ACL tools
-never pass a NULL ACL, but instead of one representing the mode bits.
+Changing PTEs and PMDs to pte_numa & pmd_numa is done with the
+mmap_sem held for reading, which means a pmd can be instantiated
+and turned into a numa one while __handle_mm_fault() is examining
+the value of old_pmd.
 
-Instead of adding boilerplat to all filesystems put this check into one place,
-which will allow us to remove the check from other filesystems as well later
-on.
+If that happens, __handle_mm_fault() should just return and let
+the page fault retry, instead of throwing an oops. This is
+handled by the test for pmd_trans_huge(*pmd) below.
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Reported-by: Ben Greear <greearb@candelatech.com>
-Reported-by: Marco Munderloh <munderl@tnt.uni-hannover.de>,
-Cc: Chuck Lever <chuck.lever@oracle.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reported-by: Sunil Pandey <sunil.k.pandey@intel.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: linux-mm@kvack.org
+Cc: lwoodman@redhat.com
+Cc: dave.hansen@intel.com
+Link: http://lkml.kernel.org/r/20140429153615.2d72098e@annuminas.surriel.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/posix_acl.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ mm/memory.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
-diff --git a/fs/posix_acl.c b/fs/posix_acl.c
-index 8bd2135..3542f1f 100644
---- a/fs/posix_acl.c
-+++ b/fs/posix_acl.c
-@@ -158,6 +158,12 @@ posix_acl_equiv_mode(const struct posix_acl *acl, umode_t *mode_p)
- 	umode_t mode = 0;
- 	int not_equiv = 0;
+diff --git a/mm/memory.c b/mm/memory.c
+index dda27b9..95257f5 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3747,9 +3747,6 @@ static int __handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		}
+ 	}
  
-+	/*
-+	 * A null ACL can always be presented as mode bits.
-+	 */
-+	if (!acl)
-+		return 0;
-+
- 	FOREACH_ACL_ENTRY(pa, acl, pe) {
- 		switch (pa->e_tag) {
- 			case ACL_USER_OBJ:
+-	/* THP should already have been handled */
+-	BUG_ON(pmd_numa(*pmd));
+-
+ 	/*
+ 	 * Use __pte_alloc instead of pte_alloc_map, because we can't
+ 	 * run pte_offset_map on the pmd, if an huge pmd could
 -- 
 1.9.1
 
