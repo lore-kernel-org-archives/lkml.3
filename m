@@ -1,176 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754630AbaFJDsv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 23:48:51 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:59124 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754430AbaFJDsu (ORCPT
+	id S1754695AbaFJDvX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 23:51:23 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:55186 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754418AbaFJDvV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 23:48:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140609212033.1cff0999@gandalf.local.home>
-References: <20140609201118.387571774@linutronix.de>
-	<20140609202336.506044876@linutronix.de>
-	<20140609212033.1cff0999@gandalf.local.home>
-Date: Mon, 9 Jun 2014 20:48:49 -0700
-X-Google-Sender-Auth: LRGiHhgLo35BVs782OcF8AvE0CI
-Message-ID: <CAGQ1y=4wQzezg3PFC2M8EF9+f5K_8XTrFFVdzZ2Q1a12+3b5pA@mail.gmail.com>
-Subject: Re: [patch V3 7/7] rtmutex: Avoid pointless requeueing in the
- deadlock detection chain walk
-From: Jason Low <jason.low2@hp.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Jason Low <jason.low2@hp.com>,
-        Brad Mouring <bmouring@ni.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 9 Jun 2014 23:51:21 -0400
+X-Original-SENDERIP: 10.178.37.74
+X-Original-MAILFROM: neidhard.kim@lge.com
+From: Jongsung Kim <neidhard.kim@lge.com>
+To: netdev@vger.kernel.org
+Cc: r58129@freescale.com, linux-kernel@vger.kernel.org,
+        Jongsung Kim <neidhard.kim@lge.com>
+Subject: [PATCH] net: phy: realtek: register/unregister multiple drivers properly
+Date: Tue, 10 Jun 2014 12:50:12 +0900
+Message-Id: <1402372212-19553-1-git-send-email-neidhard.kim@lge.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 9, 2014 at 6:20 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Mon, 09 Jun 2014 20:28:10 -0000
-> Thomas Gleixner <tglx@linutronix.de> wrote:
->
->> In case the dead lock detector is enabled we follow the lock chain to
->> the end in rt_mutex_adjust_prio_chain, even if we could stop earlier
->> due to the priority/waiter constellation.
->>
->> But once we are not longer the top priority waiter in a certain step
->> or the task holding the lock has already the same priority then there
->> is no point in dequeing and enqueing along the lock chain as there is
->> no change at all.
->>
->> So stop the requeueing at this point.
->>
->> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
->> ---
->>  kernel/locking/rtmutex.c |   61 +++++++++++++++++++++++++++++++++++++++++------
->>  1 file changed, 54 insertions(+), 7 deletions(-)
->>
->> Index: tip/kernel/locking/rtmutex.c
->> ===================================================================
->> --- tip.orig/kernel/locking/rtmutex.c
->> +++ tip/kernel/locking/rtmutex.c
->> @@ -359,6 +359,7 @@ static int rt_mutex_adjust_prio_chain(st
->>       struct rt_mutex *lock;
->>       bool detect_deadlock;
->>       unsigned long flags;
->> +     bool requeue = true;
->>
->>       detect_deadlock = rt_mutex_cond_detect_deadlock(orig_waiter, chwalk);
->>
->> @@ -436,18 +437,31 @@ static int rt_mutex_adjust_prio_chain(st
->>                       goto out_unlock_pi;
->>               /*
->>                * If deadlock detection is off, we stop here if we
->> -              * are not the top pi waiter of the task.
->> +              * are not the top pi waiter of the task. If deadlock
->> +              * detection is enabled we continue, but stop the
->> +              * requeueing in the chain walk.
->>                */
->> -             if (!detect_deadlock && top_waiter != task_top_pi_waiter(task))
->> -                     goto out_unlock_pi;
->> +             if (top_waiter != task_top_pi_waiter(task)) {
->> +                     if (!detect_deadlock)
->> +                             goto out_unlock_pi;
->> +                     else
->> +                             requeue = false;
->> +             }
->>       }
->>
->>       /*
->> -      * When deadlock detection is off then we check, if further
->> -      * priority adjustment is necessary.
->> +      * If the waiter priority is the same as the task priority
->> +      * then there is no further priority adjustment necessary.  If
->> +      * deadlock detection is off, we stop the chain walk. If its
->> +      * enabled we continue, but stop the requeueing in the chain
->> +      * walk.
->>        */
->> -     if (!detect_deadlock && waiter->prio == task->prio)
->> -             goto out_unlock_pi;
->> +     if (waiter->prio == task->prio) {
->> +             if (!detect_deadlock)
->> +                     goto out_unlock_pi;
->> +             else
->> +                     requeue = false;
->> +     }
->>
->>       /*
->>        * We need to trylock here as we are holding task->pi_lock,
->> @@ -475,6 +489,39 @@ static int rt_mutex_adjust_prio_chain(st
->>       }
->>
->>       /*
->> +      * If we just follow the lock chain for deadlock detection, no
->> +      * need to do all the requeue operations. We avoid a truckload
->
-> s/We/To/
->
->
->> +      * of conditinals around the various places below and just do
->
-> s/ and/, /
+Using phy_drivers_register/_unregister functions is proper way to
+handle multiple PHY drivers registration. For Realtek PHY drivers
+module, it fixes incomplete current error-handlings up and adds
+missed unregistration for the RTL8201CP driver.
 
-And s/conditinals/conditionals/
+Signed-off-by: Jongsung Kim <neidhard.kim@lge.com>
+---
+ drivers/net/phy/realtek.c |   88 +++++++++++++++++++--------------------------
+ 1 files changed, 37 insertions(+), 51 deletions(-)
 
->> +      * the minimum chain walk checks here.
->> +      */
->> +     if (!requeue) {
->> +             /* Release the task */
->> +             raw_spin_unlock_irqrestore(&task->pi_lock, flags);
->> +             put_task_struct(task);
->> +
->> +             /* If there is no owner of the lock, end of chain. */
->> +             if (!rt_mutex_owner(lock)) {
->> +                     raw_spin_unlock(&lock->wait_lock);
->> +                     return 0;
->> +             }
->> +
->> +             /* Grab the next task, i.e. owner of @lock */
->> +             task = rt_mutex_owner(lock);
->> +             get_task_struct(task);
->> +             raw_spin_lock_irqsave(&task->pi_lock, flags);
->> +
->> +             /* Store whether owner is blocked itself and drop locks */
->> +             next_lock = task_blocked_on(task);
->> +             raw_spin_unlock_irqrestore(&task->pi_lock, flags);
->> +             raw_spin_unlock(&lock->wait_lock);
->> +
->> +             /* If owner is not blocked, end of chain. */
->> +             if (!next_lock)
->> +                     goto out_put_task;
->
-> On the loop back around, have something like:
->
->         if (top_waiter) {
->                 if (!task_has_pi_waiters(task))
->                         goto out_unlock_pi;
->
->                 if (!requeue &&
->                     top_waiter != task_top_pi_waiter(task)) {
->                         if (!detect_deadlock)
->                                 goto out_unlock_pi;
->                         else
->                                 requeue = false;
->                 }
->         }
->
-> ??
->
->
->> +             goto again;
->> +     }
->> +
->> +     /*
->>        * Store the current top waiter before doing the requeue
->>        * operation on @lock. We need it for the boost/deboost
->>        * decision below.
->>
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+diff --git a/drivers/net/phy/realtek.c b/drivers/net/phy/realtek.c
+index fa1d69a..45483fd 100644
+--- a/drivers/net/phy/realtek.c
++++ b/drivers/net/phy/realtek.c
+@@ -64,65 +64,51 @@ static int rtl8211e_config_intr(struct phy_device *phydev)
+ 	return err;
+ }
+ 
+-/* RTL8201CP */
+-static struct phy_driver rtl8201cp_driver = {
+-	.phy_id         = 0x00008201,
+-	.name           = "RTL8201CP Ethernet",
+-	.phy_id_mask    = 0x0000ffff,
+-	.features       = PHY_BASIC_FEATURES,
+-	.flags          = PHY_HAS_INTERRUPT,
+-	.config_aneg    = &genphy_config_aneg,
+-	.read_status    = &genphy_read_status,
+-	.driver         = { .owner = THIS_MODULE,},
+-};
+-
+-/* RTL8211B */
+-static struct phy_driver rtl8211b_driver = {
+-	.phy_id		= 0x001cc912,
+-	.name		= "RTL8211B Gigabit Ethernet",
+-	.phy_id_mask	= 0x001fffff,
+-	.features	= PHY_GBIT_FEATURES,
+-	.flags		= PHY_HAS_INTERRUPT,
+-	.config_aneg	= &genphy_config_aneg,
+-	.read_status	= &genphy_read_status,
+-	.ack_interrupt	= &rtl821x_ack_interrupt,
+-	.config_intr	= &rtl8211b_config_intr,
+-	.driver		= { .owner = THIS_MODULE,},
+-};
+-
+-/* RTL8211E */
+-static struct phy_driver rtl8211e_driver = {
+-	.phy_id		= 0x001cc915,
+-	.name		= "RTL8211E Gigabit Ethernet",
+-	.phy_id_mask	= 0x001fffff,
+-	.features	= PHY_GBIT_FEATURES,
+-	.flags		= PHY_HAS_INTERRUPT,
+-	.config_aneg	= &genphy_config_aneg,
+-	.read_status	= &genphy_read_status,
+-	.ack_interrupt	= &rtl821x_ack_interrupt,
+-	.config_intr	= &rtl8211e_config_intr,
+-	.suspend	= genphy_suspend,
+-	.resume		= genphy_resume,
+-	.driver		= { .owner = THIS_MODULE,},
++static struct phy_driver realtek_drvs[] = {
++	{
++		.phy_id         = 0x00008201,
++		.name           = "RTL8201CP Ethernet",
++		.phy_id_mask    = 0x0000ffff,
++		.features       = PHY_BASIC_FEATURES,
++		.flags          = PHY_HAS_INTERRUPT,
++		.config_aneg    = &genphy_config_aneg,
++		.read_status    = &genphy_read_status,
++		.driver         = { .owner = THIS_MODULE,},
++	}, {
++		.phy_id		= 0x001cc912,
++		.name		= "RTL8211B Gigabit Ethernet",
++		.phy_id_mask	= 0x001fffff,
++		.features	= PHY_GBIT_FEATURES,
++		.flags		= PHY_HAS_INTERRUPT,
++		.config_aneg	= &genphy_config_aneg,
++		.read_status	= &genphy_read_status,
++		.ack_interrupt	= &rtl821x_ack_interrupt,
++		.config_intr	= &rtl8211b_config_intr,
++		.driver		= { .owner = THIS_MODULE,},
++	}, {
++		.phy_id		= 0x001cc915,
++		.name		= "RTL8211E Gigabit Ethernet",
++		.phy_id_mask	= 0x001fffff,
++		.features	= PHY_GBIT_FEATURES,
++		.flags		= PHY_HAS_INTERRUPT,
++		.config_aneg	= &genphy_config_aneg,
++		.read_status	= &genphy_read_status,
++		.ack_interrupt	= &rtl821x_ack_interrupt,
++		.config_intr	= &rtl8211e_config_intr,
++		.suspend	= genphy_suspend,
++		.resume		= genphy_resume,
++		.driver		= { .owner = THIS_MODULE,},
++	},
+ };
+ 
+ static int __init realtek_init(void)
+ {
+-	int ret;
+-
+-	ret = phy_driver_register(&rtl8201cp_driver);
+-	if (ret < 0)
+-		return -ENODEV;
+-	ret = phy_driver_register(&rtl8211b_driver);
+-	if (ret < 0)
+-		return -ENODEV;
+-	return phy_driver_register(&rtl8211e_driver);
++	return phy_drivers_register(realtek_drvs, ARRAY_SIZE(realtek_drvs));
+ }
+ 
+ static void __exit realtek_exit(void)
+ {
+-	phy_driver_unregister(&rtl8211b_driver);
+-	phy_driver_unregister(&rtl8211e_driver);
++	phy_drivers_unregister(realtek_drvs, ARRAY_SIZE(realtek_drvs));
+ }
+ 
+ module_init(realtek_init);
+-- 
+1.7.1
+
