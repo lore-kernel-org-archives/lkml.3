@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752975AbaFJRss (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 13:48:48 -0400
-Received: from sema.semaphore.gr ([78.46.194.137]:57655 "EHLO
-	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751002AbaFJRsq (ORCPT
+	id S1753028AbaFJRtj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 13:49:39 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:38592 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751888AbaFJRth (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 13:48:46 -0400
-Message-ID: <539744FB.1000307@semaphore.gr>
-Date: Tue, 10 Jun 2014 20:48:43 +0300
-From: Stratos Karafotis <stratosk@semaphore.gr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 10 Jun 2014 13:49:37 -0400
 MIME-Version: 1.0
-To: Dirk Brandewie <dirk.brandewie@gmail.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/7] cpufreq: intel_pstate: Simplify code in intel_pstate_adjust_busy_pstate
-References: <5396207D.7030704@semaphore.gr> <CAKohpokYB4oKxrEwHH888T5hg=zrpb0PCs_QKTLS0bd-_fqeTA@mail.gmail.com> <53971B8E.4040302@semaphore.gr> <53973B67.5020802@gmail.com>
-In-Reply-To: <53973B67.5020802@gmail.com>
+In-Reply-To: <20140610101334.565bc484@nehalam.linuxnetplumber.net>
+References: <1402417153-2551-1-git-send-email-milos.vyletel@gmail.com>
+	<1402417153-2551-4-git-send-email-milos.vyletel@gmail.com>
+	<20140610101334.565bc484@nehalam.linuxnetplumber.net>
+Date: Tue, 10 Jun 2014 13:49:35 -0400
+Message-ID: <CAAFXRd1Stuyj2t8Oinr6SQysGbMJKPpY5qe=mO_m0xKR1eSjOQ@mail.gmail.com>
+Subject: Re: [patch net-next 3/5] ipv6: consider net.ipv6.conf.all sysctls
+ when making decisions
+From: Milos Vyletel <milos.vyletel@gmail.com>
+To: Stephen Hemminger <stephen@networkplumber.org>
+Cc: "David S. Miller" <davem@davemloft.net>, amwang@redhat.com,
+        netdev@vger.kernel.org, Oliver Neukum <oliver@neukum.org>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Pravin B Shelar <pshelar@nicira.com>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Mike Rapoport <mike.rapoport@ravellosystems.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Or Gerlitz <ogerlitz@mellanox.com>, Tom Herbert <therbert@google.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Florent Fourcot <florent.fourcot@enst-bretagne.fr>,
+        Eric Dumazet <edumazet@google.com>,
+        Paul Durrant <Paul.Durrant@citrix.com>,
+        "open list:USB CDC ETHERNET..." <linux-usb@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/06/2014 08:07 μμ, Dirk Brandewie wrote:
-> On 06/10/2014 07:51 AM, Stratos Karafotis wrote:
->> On 10/06/2014 08:27 πμ, Viresh Kumar wrote:
->>> On 10 June 2014 02:30, Stratos Karafotis <stratosk@semaphore.gr> wrote:
->>>> Simplify the code by removing the inline functions
->>>> pstate_increase and pstate_decrease and use directly the
->>>> intel_pstate_set_pstate.
->>>>
-> 
-> Doesn't apply without your scaled_busy change spin this patch with
-> out the scaled_busy change and explain the change more fully in the
-> commit message to cover Viresh's question and I am good with this change.
-> 
-> 
+On Tue, Jun 10, 2014 at 1:13 PM, Stephen Hemminger
+<stephen@networkplumber.org> wrote:
+> On Tue, 10 Jun 2014 12:19:11 -0400
+> Milos Vyletel <milos.vyletel@gmail.com> wrote:
+>
+>> As it is right now net.ipv6.conf.all.* are mostly ignored and instead
+>> we're only making decisions based on interface specific settings. These
+>> settings are coppied from net.ipv6.conf.default and changing either all
+>> or default settings have no effect.
+>
+> Although this is the right idea conceptually, it risks creating unhappy
+> users because it changes the semantics of the API. This will probably break
+> somebody's configuration.
 
-OK, I will.
+You're right but in this case I feel we are moving in the right
+direction. While the
+behavior will change in some cases this change is only adding well known ipv4
+behavior for ipv6 sysctls. In fact documentation briefly mentioned that
+net.ipv6.conf.all.* should change all the interface-specific settings
+but that was
+not the case until now.
 
-Thanks,
-Stratos
-
+Milos
