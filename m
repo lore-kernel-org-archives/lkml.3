@@ -1,87 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753846AbaFJVR4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 17:17:56 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:57366 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753510AbaFJVRz (ORCPT
+	id S1753299AbaFJVUJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 17:20:09 -0400
+Received: from granite.fifsource.com ([173.255.216.206]:48434 "EHLO
+	granite.fifsource.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751758AbaFJVUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 17:17:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <CACE9dm9ma=XRZkoCiefva-dKL+LYw-s8QB4xUTkRUZH=5XM9ew@mail.gmail.com>
-References: <1402331614.7064.60.camel@dhcp-9-2-203-236.watson.ibm.com>
-	<cover.1402387862.git.d.kasatkin@samsung.com>
-	<20140610122008.GA31944@hansolo.jdub.homelinux.org>
-	<CACE9dm9Ff6b3J=05QfcgBv-c_y=5qGNq1-ZSfo4smtj34i1e-A@mail.gmail.com>
-	<20140610204021.GA8916@srcf.ucam.org>
-	<CACE9dm9ma=XRZkoCiefva-dKL+LYw-s8QB4xUTkRUZH=5XM9ew@mail.gmail.com>
-Date: Wed, 11 Jun 2014 00:17:53 +0300
-Message-ID: <CACE9dm8zxVXx2zRcfDYUFjqvQYT4MbLevp5U13tfH9Hb6USSJw@mail.gmail.com>
-Subject: Re: [PATCH 0/4] KEYS: validate key trust with owner and builtin keys only
-From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Josh Boyer <jwboyer@redhat.com>, David Howells <dhowells@redhat.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        keyrings <keyrings@linux-nfs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 10 Jun 2014 17:20:07 -0400
+Message-ID: <1402435203.24047.9.camel@ceramic.home.fifi.org>
+Subject: Re: Phantom ACL-related xattrs on 3.14.4 NFS client
+From: Philippe Troin <phil@fifi.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
+Date: Tue, 10 Jun 2014 14:20:03 -0700
+In-Reply-To: <1402195701.12743.18.camel@ceramic.home.fifi.org>
+References: <1402082953.28220.7.camel@ceramic.home.fifi.org>
+	 <CAHQdGtS2BL9u4DV=FZ0HaXO-iTNPU4hTGVR--HubNa4A_6UNog@mail.gmail.com>
+	 <20140607140414.GA26534@infradead.org>
+	 <1402195701.12743.18.camel@ceramic.home.fifi.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 June 2014 00:00, Dmitry Kasatkin <dmitry.kasatkin@gmail.com> wrote:
-> On 10 June 2014 23:40, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
->> On Tue, Jun 10, 2014 at 11:34:17PM +0300, Dmitry Kasatkin wrote:
->>
->>> Preventing loading keys from uefi except dbx by default actually improves
->>> security. Adding kernel parameter to read db we make system more
->>> vulnerable.
->>
->> It only adds security if you're performing a measured boot and remote
->> attestation. Otherwise you implicitly trust that key anyway. In almost
->> all cases refusing to trust db gives you a false sense of security
->> without any real improvement. I don't think it's obvious it should be
->> the default.
->>
->> --
->> Matthew Garrett | mjg59@srcf.ucam.org
->
-> May be you are right... "in almost all cases"...
->
-> It does not mater if one trust DB or not... It's all about
-> distro/system configuration...
->
-> Normal user even will not know what is default behavior and what
-> kernel parameter disables or enables...
-> And distro will have it by default or will use kernel parameter... It
-> does not change anything...
->
-> I am just discussing kernel configuration...
-> Without kind of looking to it  I cannot be sure if UEFI keys will
-> appear on system keyring or not.
-> Now I have to be aware how kernel is compiled... If it is compiled
-> with CONFIG_KEYS_UEFI or so
-> I need to remember may be to supply addition kernel parameters to
-> limit key UEFI usage...
->
-> It is may be not a big deal...
->
-> --
-> Thanks,
-> Dmitry
+Trond, Christoph,
 
+Since my last email, I've been testing 3.14.6.
+Stock 3.14.6 is still broken, and Christoph's patch does help, but does
+not entirely cure the problem.
 
-It is probably just a paranoia...
-Kconfig MODULE_SIG_UEFI should tell about threat of loading kernel
-modules from NSA or Lenovo signed by MS or Lenovo keys..
+On Sat, 2014-06-07 at 19:48 -0700, Philippe Troin wrote:
+> It's still broken, but in a different way.
+> The phantom attrs are gone, but the attr/acl interaction is still
+> uncertain.
+> 
+> I have tested vanilla  3.14.5 + this patch on x86_64.
+> Mount options are the same as last time (NFSv3).
+> 
+> This is what I see on the client:
+> 
+>         nfsv3client% mkdir x
+>         nfsv3client% cd x
+>         nfsv3client% getfattr -m '.*' .
+>         nfsv3client% getfacl .
+>         # file: .
+>         # owner: phil
+>         # group: phil
+>         user::rwx
+>         group::rwx
+>         other::r-x
+> 
+> OK so far: no more phantom attrs.
+> This is where things get dodgy:
+>         
+>         nfsv3client% setfacl -m u:root:r .   
+>         nfsv3client% getfacl .
+>         # file: .
+>         # owner: phil
+>         # group: phil
+>         user::rwx
+>         user:root:r--
+>         group::rwx
+>         mask::rwx
+>         other::r-x
+>         
+>         nfsv3client% getfattr -m '.*' .
+>         [1]    2123 segmentation fault  getfattr -m '.*' .
+>         % strace getfattr -m '.*' . 2>&1 | tail -n 20
+>         fstat(3, {st_mode=S_IFREG|0644, st_size=26254, ...}) = 0
+>         mmap(NULL, 26254, PROT_READ, MAP_SHARED, 3, 0) = 0x7f46a1450000
+>         close(3)                                = 0
+>         getrlimit(RLIMIT_NOFILE, {rlim_cur=1024, rlim_max=4*1024}) = 0
+>         lstat(".", {st_mode=S_IFDIR|0775, st_size=4096, ...}) = 0
+>         listxattr(".", NULL, 0)                 = 23
+>         listxattr(".", "system.posix_acl_access", 256) = 23
+>         brk(0)                                  = 0x1138000
+>         brk(0x1178000)                          = 0x1178000
+>         brk(0)                                  = 0x1178000
+>         brk(0)                                  = 0x1178000
+>         brk(0x1159000)                          = 0x1159000
+>         brk(0)                                  = 0x1159000
+>         mmap(NULL, 266240, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f46a140f000
+>         brk(0)                                  = 0x1159000
+>         brk(0)                                  = 0x1159000
+>         brk(0x1139000)                          = 0x1139000
+>         brk(0)                                  = 0x1139000
+>         --- SIGSEGV {si_signo=SIGSEGV, si_code=SEGV_MAPERR, si_addr=0x11586e8} ---
+>         +++ killed by SIGSEGV +++
+>         [1]    2311 segmentation fault  strace getfattr -m '.*' . 2>&1
+>         | 
+>                2312 done                tail -n 20
 
-This hole is opened without warning...
+I have since discovered that getfattr crashes because on an NFSv3 mount,
+listxattr() does not NULL terminate the attribute strings.
 
-:)
+Compare a broken 3.14.6:
+        listxattr(".", NULL, 0)                 = 23
+        listxattr(".", "system.posix_acl_access", 256) = 23
+vs a working 3.13:
+        listxattr(".", NULL, 0)      = 24
+        listxattr(".", "system.posix_acl_access\0", 256) = 24
 
+The above behavior happens with or without Christoph's patch.
 
--- 
-Thanks,
-Dmitry
+Also, with Christoph's patch applied:
+
+> On Sat, 2014-06-07 at 07:04 -0700, Christoph Hellwig wrote:
+> > On Fri, Jun 06, 2014 at 04:37:03PM -0400, Trond Myklebust wrote:
+> > > Christoph, what is the intended interface for telling
+> > > posix_acl_xattr_list() that there are no acls on a particular file?
+> > > Should there perhaps be a call to get_acl()?
+> > 
+> > The interface is to not call posix_acl_xattr_list unless you have ACLs.
+> > Every implementation does this, except for generic_listxattr which is
+> > only used by NFS.
+> > 
+> > Philippe, can you test the patch below?
+> > 
+> > 
+> > diff --git a/fs/nfs/nfs3acl.c b/fs/nfs/nfs3acl.c
+> > index 871d6ed..e083827 100644
+> > --- a/fs/nfs/nfs3acl.c
+> > +++ b/fs/nfs/nfs3acl.c
+> > @@ -247,3 +247,45 @@ const struct xattr_handler *nfs3_xattr_handlers[] = {
+> >  	&posix_acl_default_xattr_handler,
+> >  	NULL,
+> >  };
+> > +
+> > +static int
+> > +nfs3_list_one_acl(struct inode *inode, int type, const char *name, void *data,
+> > +		size_t size, ssize_t *result)
+> > +{
+> > +	struct posix_acl *acl;
+> > +	char *p = data + *result;
+> > +
+> > +	acl = get_acl(inode, type);
+> > +	if (!acl)
+> > +		return 0;
+> > +
+> > +	posix_acl_release(acl);
+> > +
+> > +	*result += strlen(name);
+> > +	if (!size)
+> > +		return 0;
+> > +	if (*result > size)
+> > +		return -ERANGE;
+> > +
+> > +	strcpy(p, name);
+> > +	return 0;
+> > +}
+> > +
+> > +ssize_t
+> > +nfs3_listxattr(struct dentry *dentry, char *data, size_t size)
+> > +{
+> > +	struct inode *inode = dentry->d_inode;
+> > +	ssize_t result = 0;
+> > +	int error;
+> > +
+> > +	error = nfs3_list_one_acl(inode, ACL_TYPE_ACCESS,
+> > +			POSIX_ACL_XATTR_ACCESS, data, size, &result);
+> > +	if (error)
+> > +		return error;
+> > +
+> > +	error = nfs3_list_one_acl(inode, ACL_TYPE_DEFAULT,
+> > +			POSIX_ACL_XATTR_DEFAULT, data, size, &result);
+> > +	if (error)
+> > +		return error;
+> > +	return result;
+> > +}
+> > diff --git a/fs/nfs/nfs3proc.c b/fs/nfs/nfs3proc.c
+> > index db60149..0e2bb26 100644
+> > --- a/fs/nfs/nfs3proc.c
+> > +++ b/fs/nfs/nfs3proc.c
+> > @@ -891,7 +891,7 @@ static const struct inode_operations nfs3_dir_inode_operations = {
+> >  	.getattr	= nfs_getattr,
+> >  	.setattr	= nfs_setattr,
+> >  #ifdef CONFIG_NFS_V3_ACL
+> > -	.listxattr	= generic_listxattr,
+> > +	.listxattr	= nfs3_listxattr,
+> >  	.getxattr	= generic_getxattr,
+> >  	.setxattr	= generic_setxattr,
+> >  	.removexattr	= generic_removexattr,
+> > @@ -905,7 +905,7 @@ static const struct inode_operations nfs3_file_inode_operations = {
+> >  	.getattr	= nfs_getattr,
+> >  	.setattr	= nfs_setattr,
+> >  #ifdef CONFIG_NFS_V3_ACL
+> > -	.listxattr	= generic_listxattr,
+> > +	.listxattr	= nfs3_listxattr,
+> >  	.getxattr	= generic_getxattr,
+> >  	.setxattr	= generic_setxattr,
+> >  	.removexattr	= generic_removexattr,
+
+Now, if a file has no ACLs, there are no phantom xattrs appearing
+anymore.
+However, if ACLs are created, then removed, the ACL xattrs will stick
+after the ACL clearing.
+
+For example:
+
+  setfacl -m u:root:r .
+  setfacl -b .
+  getfattr -m '.*' .
+
+will still show a system.posix_acl_access xattr.
+
+Phil.
+
