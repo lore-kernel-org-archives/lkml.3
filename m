@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755687AbaFJUdA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 16:33:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34971 "EHLO
+	id S1755635AbaFJUc6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 16:32:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34992 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753686AbaFJTrM (ORCPT
+	with ESMTP id S1753704AbaFJTrM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 10 Jun 2014 15:47:12 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 080/160] mm: make fixup_user_fault() check the vma access rights too
-Date: Tue, 10 Jun 2014 12:45:20 -0700
-Message-Id: <1402429600-20477-81-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 074/160] Input: synaptics - add min/max quirk for ThinkPad T431s, L440, L540, S1 Yoga and X1
+Date: Tue, 10 Jun 2014 12:45:14 -0700
+Message-Id: <1402429600-20477-75-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -27,57 +29,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 1b17844b29ae042576bea588164f2f1e9590a8bc upstream.
+commit 46a2986ebbe18757c2d8c352f8fb6e0f4f0754e3 upstream.
 
-fixup_user_fault() is used by the futex code when the direct user access
-fails, and the futex code wants it to either map in the page in a usable
-form or return an error.  It relied on handle_mm_fault() to map the
-page, and correctly checked the error return from that, but while that
-does map the page, it doesn't actually guarantee that the page will be
-mapped with sufficient permissions to be then accessed.
+We expect that all the Haswell series will need such quirks, sigh.
 
-So do the appropriate tests of the vma access rights by hand.
+The T431s seems to be T430 hardware in a T440s case, using the T440s touchpad,
+with the same min/max issue.
 
-[ Side note: arguably handle_mm_fault() could just do that itself, but
-  we have traditionally done it in the caller, because some callers -
-  notably get_user_pages() - have been able to access pages even when
-  they are mapped with PROT_NONE.  Maybe we should re-visit that design
-  decision, but in the meantime this is the minimal patch. ]
+The X1 Carbon 3rd generation name says 2nd while it is a 3rd generation.
 
-Found by Dave Jones running his trinity tool.
+The X1 and T431s share a PnPID with the T540p, but the reported ranges are
+closer to those of the T440s.
 
-Reported-by: Dave Jones <davej@redhat.com>
-Acked-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+HdG: Squashed 5 quirk patches into one. T431s + L440 + L540 are written by me,
+S1 Yoga and X1 are written by Benjamin Tissoires.
+
+Hdg: Standardized S1 Yoga and X1 values, Yoga uses the same touchpad as the
+X240, X1 uses the same touchpad as the T440.
+
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/memory.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/input/mouse/synaptics.c | 42 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 42 insertions(+)
 
-diff --git a/mm/memory.c b/mm/memory.c
-index 95257f5..d411f0d 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1928,12 +1928,17 @@ int fixup_user_fault(struct task_struct *tsk, struct mm_struct *mm,
- 		     unsigned long address, unsigned int fault_flags)
- {
- 	struct vm_area_struct *vma;
-+	vm_flags_t vm_flags;
- 	int ret;
- 
- 	vma = find_extend_vma(mm, address);
- 	if (!vma || address < vma->vm_start)
- 		return -EFAULT;
- 
-+	vm_flags = (fault_flags & FAULT_FLAG_WRITE) ? VM_WRITE : VM_READ;
-+	if (!(vm_flags & vma->vm_flags))
-+		return -EFAULT;
-+
- 	ret = handle_mm_fault(mm, vma, address, fault_flags);
- 	if (ret & VM_FAULT_ERROR) {
- 		if (ret & VM_FAULT_OOM)
+diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+index d8d49d1..5048210 100644
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -1515,6 +1515,14 @@ static const struct dmi_system_id min_max_dmi_table[] __initconst = {
+ 		.driver_data = (int []){1232, 5710, 1156, 4696},
+ 	},
+ 	{
++		/* Lenovo ThinkPad T431s */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T431"),
++		},
++		.driver_data = (int []){1024, 5112, 2024, 4832},
++	},
++	{
+ 		/* Lenovo ThinkPad T440s */
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+@@ -1523,6 +1531,14 @@ static const struct dmi_system_id min_max_dmi_table[] __initconst = {
+ 		.driver_data = (int []){1024, 5112, 2024, 4832},
+ 	},
+ 	{
++		/* Lenovo ThinkPad L440 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad L440"),
++		},
++		.driver_data = (int []){1024, 5112, 2024, 4832},
++	},
++	{
+ 		/* Lenovo ThinkPad T540p */
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+@@ -1530,6 +1546,32 @@ static const struct dmi_system_id min_max_dmi_table[] __initconst = {
+ 		},
+ 		.driver_data = (int []){1024, 5056, 2058, 4832},
+ 	},
++	{
++		/* Lenovo ThinkPad L540 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad L540"),
++		},
++		.driver_data = (int []){1024, 5112, 2024, 4832},
++	},
++	{
++		/* Lenovo Yoga S1 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_EXACT_MATCH(DMI_PRODUCT_VERSION,
++					"ThinkPad S1 Yoga"),
++		},
++		.driver_data = (int []){1232, 5710, 1156, 4696},
++	},
++	{
++		/* Lenovo ThinkPad X1 Carbon Haswell (3rd generation) */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_VERSION,
++					"ThinkPad X1 Carbon 2nd"),
++		},
++		.driver_data = (int []){1024, 5112, 2024, 4832},
++	},
+ #endif
+ 	{ }
+ };
 -- 
 1.9.1
 
