@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755843AbaFJUC1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 16:02:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35548 "EHLO
+	id S1755423AbaFJTxj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 15:53:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35533 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755429AbaFJTxl (ORCPT
+	with ESMTP id S932505AbaFJTxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:53:41 -0400
+	Tue, 10 Jun 2014 15:53:35 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tristan Bruns <tristan@tristanbruns.de>, Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Tejun Heo <tj@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 027/160] USB: cp210x: Add 8281 (Nanotec Plug & Drive)
-Date: Tue, 10 Jun 2014 12:44:27 -0700
-Message-Id: <1402429600-20477-28-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 160/160] libata: Blacklist queued trim for Crucial M500
+Date: Tue, 10 Jun 2014 12:46:40 -0700
+Message-Id: <1402429600-20477-161-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -28,30 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tristan Bruns <tristan@tristanbruns.de>
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
 
-commit 72b3007951010ce1bbf950e23b19d9839fa905a5 upstream.
+commit 3b8d2676d15d6b2326757adb66b70a9cd6650373 upstream.
 
-Signed-off-by: Tristan Bruns <tristan@tristanbruns.de>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Queued trim only works for some users with MU05 firmware.  Revert to
+blacklisting all firmware versions.
+
+Introduced by commit d121f7d0cbb8 ("libata: Update queued trim blacklist
+for M5x0 drives") which this effectively reverts, while retaining the
+blacklisting of M550.
+
+See
+
+    https://bugzilla.kernel.org/show_bug.cgi?id=71371
+
+for reports of trouble with MU05 firmware.
+
+Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Tejun Heo <tj@kernel.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/cp210x.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/ata/libata-core.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
-index 6987b53..71873ca 100644
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -104,6 +104,7 @@ static const struct usb_device_id id_table[] = {
- 	{ USB_DEVICE(0x10C4, 0x8218) }, /* Lipowsky Industrie Elektronik GmbH, HARP-1 */
- 	{ USB_DEVICE(0x10C4, 0x822B) }, /* Modem EDGE(GSM) Comander 2 */
- 	{ USB_DEVICE(0x10C4, 0x826B) }, /* Cygnal Integrated Products, Inc., Fasttrax GPS demonstration module */
-+	{ USB_DEVICE(0x10C4, 0x8281) }, /* Nanotec Plug & Drive */
- 	{ USB_DEVICE(0x10C4, 0x8293) }, /* Telegesis ETRX2USB */
- 	{ USB_DEVICE(0x10C4, 0x82F9) }, /* Procyon AVS */
- 	{ USB_DEVICE(0x10C4, 0x8341) }, /* Siemens MC35PU GPRS Modem */
+diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+index 0a79c54..5ab4e3d 100644
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -4224,10 +4224,10 @@ static const struct ata_blacklist_entry ata_device_blacklist [] = {
+ 	{ "PIONEER DVD-RW  DVR-216D",	NULL,	ATA_HORKAGE_NOSETXFER },
+ 
+ 	/* devices that don't properly handle queued TRIM commands */
+-	{ "Micron_M500*",		"MU0[1-4]*",	ATA_HORKAGE_NO_NCQ_TRIM, },
+-	{ "Crucial_CT???M500SSD*",	"MU0[1-4]*",	ATA_HORKAGE_NO_NCQ_TRIM, },
+-	{ "Micron_M550*",		NULL,		ATA_HORKAGE_NO_NCQ_TRIM, },
+-	{ "Crucial_CT???M550SSD*",	NULL,		ATA_HORKAGE_NO_NCQ_TRIM, },
++	{ "Micron_M500*",		NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
++	{ "Crucial_CT???M500SSD*",	NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
++	{ "Micron_M550*",		NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
++	{ "Crucial_CT???M550SSD*",	NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
+ 
+ 	/*
+ 	 * Some WD SATA-I drives spin up and down erratically when the link
 -- 
 1.9.1
 
