@@ -1,92 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752114AbaFJLw6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 07:52:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56116 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751101AbaFJLw5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 07:52:57 -0400
-Date: Tue, 10 Jun 2014 13:52:54 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Marian Marinov <mm@1h.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org
-Subject: Re: [RFC] oom, memcg: handle sysctl oom_kill_allocating_task while
- memcg oom happening
-Message-ID: <20140610115254.GA25631@dhcp22.suse.cz>
-References: <5396ED66.7090401@1h.com>
+	id S1752129AbaFJLxs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 07:53:48 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:47932 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751101AbaFJLxq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 07:53:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5396ED66.7090401@1h.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140605082935.GI3213@twins.programming.kicks-ass.net>
+References: <1401917658-26065-1-git-send-email-eranian@google.com>
+	<1401917658-26065-5-git-send-email-eranian@google.com>
+	<20140605082935.GI3213@twins.programming.kicks-ass.net>
+Date: Tue, 10 Jun 2014 13:53:45 +0200
+Message-ID: <CABPqkBQG=SMvtdvpBMnZx4Etf5rRoy3=K81RLNRcPEgBh7Yqdg@mail.gmail.com>
+Subject: Re: [PATCH 4/9] perf/x86: add cross-HT counter exclusion infrastructure
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>,
+        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[More people to CC]
-On Tue 10-06-14 14:35:02, Marian Marinov wrote:
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA1
-> 
-> Hello,
-
-Hi,
-
-> a while back in 2012 there was a request for this functionality.
->   oom, memcg: handle sysctl oom_kill_allocating_task while memcg oom
->   happening
+On Thu, Jun 5, 2014 at 10:29 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, Jun 04, 2014 at 11:34:13PM +0200, Stephane Eranian wrote:
+>> @@ -2020,12 +2050,29 @@ static void intel_pmu_cpu_starting(int cpu)
+>>
+>>       if (x86_pmu.lbr_sel_map)
+>>               cpuc->lbr_sel = &cpuc->shared_regs->regs[EXTRA_REG_LBR];
+>> +
+>> +     if (x86_pmu.flags & PMU_FL_EXCL_CNTRS) {
+>> +             for_each_cpu(i, topology_thread_cpumask(cpu)) {
+>> +                     struct intel_excl_cntrs *c;
+>> +
+>> +                     c = per_cpu(cpu_hw_events, i).excl_cntrs;
+>> +                     if (c && c->core_id == core_id) {
+>> +                             cpuc->kfree_on_online[1] = cpuc->excl_cntrs;
+>> +                             cpuc->excl_cntrs = c;
+>> +                             cpuc->excl_thread_id = 1;
+>> +                             break;
+>> +                     }
+>> +             }
+>> +             cpuc->excl_cntrs->core_id = core_id;
+>> +             cpuc->excl_cntrs->refcnt++;
+>> +     }
+>>  }
 >
-> This is the thread: https://lkml.org/lkml/2012/10/16/168
->
-> Now we run a several machines with around 10k processes on each
-> machine, using containers.
->
-> Regularly we see OOM from within a container that causes performance
-> degradation.
+> This hard assumes theres only ever 2 threads, which is true and I
+> suppose more in arch/x86 will come apart the moment Intel makes a chip
+> with more, still, do we have topology_thread_id() or so to cure this?
 
-What kind of performance degradation and which parts of the system are
-affected?
-
-memcg oom killer happens outside of any locks currently so the only
-bottleneck I can see is the per-cgroup container which iterates all
-tasks in the group. Is this what is going on here?
-
-> We are running 3.12.20 with the following OOM configuration and memcg
-> oom enabled:
-> 
-> vm.oom_dump_tasks = 0
-> vm.oom_kill_allocating_task = 1
-> vm.panic_on_oom = 0
-> 
-> When OOM occurs we see very high numbers for the loadavg and the
-> overall responsiveness of the machine degrades.
-
-What is the system waiting for?
-
-> During these OOM states the load of the machine gradualy increases
-> from 25 up to 120 in the interval of 10minutes.
->
-> Once we manually bring down the memory usage of a container(killing
-> some tasks) the load drops down to 25 within 5 to 7 minutes.
-
-So the OOM killer is not able to find a victim to kill?
-
-> I read the whole thread from 2012 but I do not see the expected
-> behavior that is described by the people that commented the issue.
-
-Why do you think that killing the allocating task would be helpful in
-your case?
-
-> In this case, with real usage for this patch, would it be considered
-> for inclusion?
-
-I would still prefer to fix the real issue which is not clear from your
-description yet.
-
--- 
-Michal Hocko
-SUSE Labs
+I assume your comment is relative to kfree_on_online[].
+This code is specific to the HT bug, so yes, it assumes 2 threads and that
+only one entry of the two excl_cntrs structs needs to be freed.
+Doing otherwise, would require a list and will never be used to its full
+potential.
