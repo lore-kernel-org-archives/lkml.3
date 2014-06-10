@@ -1,100 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752417AbaFJIFh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 04:05:37 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:1864 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750742AbaFJIFc (ORCPT
+	id S1754339AbaFJIFv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 04:05:51 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:55013 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751164AbaFJIFr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 04:05:32 -0400
-Message-ID: <5396BC25.7040500@huawei.com>
-Date: Tue, 10 Jun 2014 16:04:53 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Tue, 10 Jun 2014 04:05:47 -0400
+X-Original-SENDERIP: 10.177.220.145
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Tue, 10 Jun 2014 17:09:35 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: akpm@linux-foundation.org, cl@linux.com, rientjes@google.com,
+        penberg@kernel.org, hannes@cmpxchg.org, mhocko@suse.cz,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH -mm v2 7/8] slub: make dead memcg caches discard free
+ slabs immediately
+Message-ID: <20140610080935.GG19036@js1304-P5Q-DELUXE>
+References: <cover.1402060096.git.vdavydov@parallels.com>
+ <3b53266b76556dd042bbf6147207c70473572a7e.1402060096.git.vdavydov@parallels.com>
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ben Hutchings <ben@decadent.org.uk>, Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH 3.4 47/88] mm: add kmap_to_page()
-References: <20140610002424.500996570@linuxfoundation.org> <20140610002426.089246636@linuxfoundation.org> <alpine.LSU.2.11.1406091806230.8481@eggly.anvils>
-In-Reply-To: <alpine.LSU.2.11.1406091806230.8481@eggly.anvils>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3b53266b76556dd042bbf6147207c70473572a7e.1402060096.git.vdavydov@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> +struct page *kmap_to_page(void *vaddr)
->> +{
->> +	unsigned long addr = (unsigned long)vaddr;
->> +
->> +	if (addr >= PKMAP_ADDR(0) && addr <= PKMAP_ADDR(LAST_PKMAP)) {
->> +		int i = (addr - PKMAP_ADDR(0)) >> PAGE_SHIFT;
->> +		return pte_page(pkmap_page_table[i]);
->> +	}
->> +
->> +	return virt_to_page(addr);
->> +}
->> +
->>  static void flush_all_zero_pkmaps(void)
->>  {
->>  	int i;
+On Fri, Jun 06, 2014 at 05:22:44PM +0400, Vladimir Davydov wrote:
+> Since a dead memcg cache is destroyed only after the last slab allocated
+> to it is freed, we must disable caching of empty slabs for such caches,
+> otherwise they will be hanging around forever.
 > 
-> I think this needs the following on top:
+> This patch makes SLUB discard dead memcg caches' slabs as soon as they
+> become empty. To achieve that, it disables per cpu partial lists for
+> dead caches (see put_cpu_partial) and forbids keeping empty slabs on per
+> node partial lists by setting cache's min_partial to 0 on
+> kmem_cache_shrink, which is always called on memcg offline (see
+> memcg_unregister_all_caches).
 > 
-> commit 498c2280212327858e521e9d21345d4cc2637f54
-> Author: Will Deacon <will.deacon@arm.com>
-> Date:   Fri Nov 16 14:15:00 2012 -0800
+> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+> Thanks-to: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> ---
+>  mm/slub.c |   20 ++++++++++++++++++++
+>  1 file changed, 20 insertions(+)
 > 
-
-Thanks Hugh. Hi Greg, please pick up this fix patch, Thanks a lot!
-
-Yijing.
-
-
->     mm: highmem: don't treat PKMAP_ADDR(LAST_PKMAP) as a highmem address
->     
->     kmap_to_page returns the corresponding struct page for a virtual address
->     of an arbitrary mapping.  This works by checking whether the address
->     falls in the pkmap region and using the pkmap page tables instead of the
->     linear mapping if appropriate.
->     
->     Unfortunately, the bounds checking means that PKMAP_ADDR(LAST_PKMAP) is
->     incorrectly treated as a highmem address and we can end up walking off
->     the end of pkmap_page_table and subsequently passing junk to pte_page.
->     
->     This patch fixes the bound check to stay within the pkmap tables.
->     
->     Signed-off-by: Will Deacon <will.deacon@arm.com>
->     Cc: Mel Gorman <mgorman@suse.de>
->     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
->     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> 
-> diff --git a/mm/highmem.c b/mm/highmem.c
-> index d517cd16a6eb..2da13a5c50e2 100644
-> --- a/mm/highmem.c
-> +++ b/mm/highmem.c
-> @@ -98,7 +98,7 @@ struct page *kmap_to_page(void *vaddr)
->  {
->  	unsigned long addr = (unsigned long)vaddr;
+> diff --git a/mm/slub.c b/mm/slub.c
+> index e46d6abe8a68..1dad7e2c586a 100644
+> --- a/mm/slub.c
+> +++ b/mm/slub.c
+> @@ -2015,6 +2015,8 @@ static void unfreeze_partials(struct kmem_cache *s,
+>  #endif
+>  }
 >  
-> -	if (addr >= PKMAP_ADDR(0) && addr <= PKMAP_ADDR(LAST_PKMAP)) {
-> +	if (addr >= PKMAP_ADDR(0) && addr < PKMAP_ADDR(LAST_PKMAP)) {
->  		int i = (addr - PKMAP_ADDR(0)) >> PAGE_SHIFT;
->  		return pte_page(pkmap_page_table[i]);
->  	}
-> 
-> 
-> .
-> 
+> +static void flush_all(struct kmem_cache *s);
+> +
+>  /*
+>   * Put a page that was just frozen (in __slab_free) into a partial page
+>   * slot if available. This is done without interrupts disabled and without
+> @@ -2064,6 +2066,21 @@ static void put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
+>  
+>  	} while (this_cpu_cmpxchg(s->cpu_slab->partial, oldpage, page)
+>  								!= oldpage);
+> +
+> +	if (memcg_cache_dead(s)) {
+> +               bool done = false;
+> +               unsigned long flags;
+> +
+> +               local_irq_save(flags);
+> +               if (this_cpu_read(s->cpu_slab->partial) == page) {
+> +                       unfreeze_partials(s, this_cpu_ptr(s->cpu_slab));
+> +                       done = true;
+> +               }
+> +               local_irq_restore(flags);
+> +
+> +               if (!done)
+> +                       flush_all(s);
+> +	}
 
+Now, slab_free() is non-preemptable so flush_all() isn't needed.
 
--- 
-Thanks!
-Yijing
+Thanks.
 
