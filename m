@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932992AbaFJUN1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 16:13:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35344 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932193AbaFJTvw (ORCPT
+	id S933075AbaFJUNi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 16:13:38 -0400
+Received: from www.linutronix.de ([62.245.132.108]:55140 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755359AbaFJUN1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:51:52 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Ilia Mirkin <imirkin@alum.mit.edu>, Ben Skeggs <bskeggs@redhat.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 140/160] drm/nouveau/acpi: allow non-optimus setups to load vbios from acpi
-Date: Tue, 10 Jun 2014 12:46:20 -0700
-Message-Id: <1402429600-20477-141-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
-References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Tue, 10 Jun 2014 16:13:27 -0400
+Date: Tue, 10 Jun 2014 22:13:20 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>
+Subject: Re: safety of *mutex_unlock() (Was: [BUG] signal: sighand unprotected
+ when accessed by /proc)
+In-Reply-To: <alpine.DEB.2.10.1406102203430.5170@nanos>
+Message-ID: <alpine.DEB.2.10.1406102210580.5170@nanos>
+References: <CA+55aFzT5CGv_T60voAqR+4PfiMmJmsDZLid2DZ4=+X8uvF+ig@mail.gmail.com> <20140603200125.GB1105@redhat.com> <20140606203350.GU4581@linux.vnet.ibm.com> <20140608130718.GA11129@redhat.com> <20140609162613.GE4581@linux.vnet.ibm.com> <20140609181553.GA13681@redhat.com>
+ <20140609142956.3d79e9d1@gandalf.local.home> <CA+55aFyO8bb7fS3AaQzfMq7geERQ1JpSdcRZ9Fbs5-tZP0oRXg@mail.gmail.com> <20140609154114.20585056@gandalf.local.home> <alpine.DEB.2.10.1406101051210.3830@nanos> <20140610165704.GA3110@redhat.com>
+ <alpine.DEB.2.10.1406101959420.5170@nanos> <20140610141306.04a4bcf3@gandalf.local.home> <alpine.DEB.2.10.1406102203430.5170@nanos>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.3 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, 10 Jun 2014, Thomas Gleixner wrote:
+> On Tue, 10 Jun 2014, Steven Rostedt wrote:
+> > On Tue, 10 Jun 2014 20:08:37 +0200 (CEST)
+> > Thomas Gleixner <tglx@linutronix.de> wrote:
+> > 
+> > 
+> > > > Perhaps it could simply do ->owner = RT_MUTEX_HAS_WAITERS to make this more
+> > > > clear...
+> > > 
+> > > Good point. The new owner can cleanup the mess.
+> > >  
+> > 
+> > I thought about this too. It should work with the added overhead that
+> > every time we go into the unlock slow path, we guarantee that the next
+> > lock will go into the lock slowpath.
+> > 
+> > As long as the new acquired lock does a fast unlock, then we get out of
+> > this spiral.
+> 
+> The alternative solution is to document WHY this is safe. I think I
+> prefer that one :)
 
-------------------
+And actually we keep the waiter bit set in wakeup_next_waiter()
+because we only dequeue the waiter from the lock owners pi waiter
+list, but not from the lock waiter list.
 
-From: Ilia Mirkin <imirkin@alum.mit.edu>
+rt_mutex_set_owner() sets the waiters bit if the lock has waiters. I
+agree with Oleg that this is not obvious from the code.
 
-commit a3d0b1218d351c6e6f3cea36abe22236a08cb246 upstream.
+So I add both a comment and open code it.
 
-There appear to be a crop of new hardware where the vbios is not
-available from PROM/PRAMIN, but there is a valid _ROM method in ACPI.
-The data read from PCIROM almost invariably contains invalid
-instructions (still has the x86 opcodes), which makes this a low-risk
-way to try to obtain a valid vbios image.
+Thanks,
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=76475
-Signed-off-by: Ilia Mirkin <imirkin@alum.mit.edu>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/gpu/drm/nouveau/nouveau_acpi.c | 3 ---
- 1 file changed, 3 deletions(-)
-
-diff --git a/drivers/gpu/drm/nouveau/nouveau_acpi.c b/drivers/gpu/drm/nouveau/nouveau_acpi.c
-index ba0183f..d3c7646 100644
---- a/drivers/gpu/drm/nouveau/nouveau_acpi.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_acpi.c
-@@ -423,9 +423,6 @@ bool nouveau_acpi_rom_supported(struct pci_dev *pdev)
- 	acpi_status status;
- 	acpi_handle dhandle, rom_handle;
- 
--	if (!nouveau_dsm_priv.dsm_detected && !nouveau_dsm_priv.optimus_detected)
--		return false;
--
- 	dhandle = ACPI_HANDLE(&pdev->dev);
- 	if (!dhandle)
- 		return false;
--- 
-1.9.1
-
+	tglx
