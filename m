@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933397AbaFJAV5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:21:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58164 "EHLO
+	id S965001AbaFJAqq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:46:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58173 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932881AbaFJAVx (ORCPT
+	with ESMTP id S933309AbaFJAV5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 20:21:53 -0400
+	Mon, 9 Jun 2014 20:21:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Fengguang Wu <fengguang.wu@intel.com>, Jiri Olsa <jolsa@redhat.com>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>,
         Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.4 02/88] perf: Prevent false warning in perf_swevent_add
-Date: Mon,  9 Jun 2014 17:24:12 -0700
-Message-Id: <20140610002424.632284294@linuxfoundation.org>
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.4 17/88] mm: rmap: fix use-after-free in __put_anon_vma
+Date: Mon,  9 Jun 2014 17:24:27 -0700
+Message-Id: <20140610002425.105821990@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
 References: <20140610002424.500996570@linuxfoundation.org>
@@ -34,121 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
 
-commit 39af6b1678afa5880dda7e375cf3f9d395087f6d upstream.
+commit 624483f3ea82598ab0f62f1bdb9177f531ab1892 upstream.
 
-The perf cpu offline callback takes down all cpu context
-events and releases swhash->swevent_hlist.
+While working address sanitizer for kernel I've discovered
+use-after-free bug in __put_anon_vma.
 
-This could race with task context software event being just
-scheduled on this cpu via perf_swevent_add while cpu hotplug
-code already cleaned up event's data.
+For the last anon_vma, anon_vma->root freed before child anon_vma.
+Later in anon_vma_free(anon_vma) we are referencing to already freed
+anon_vma->root to check rwsem.
 
-The race happens in the gap between the cpu notifier code
-and the cpu being actually taken down. Note that only cpu
-ctx events are terminated in the perf cpu hotplug code.
+This fixes it by freeing the child anon_vma before freeing
+anon_vma->root.
 
-It's easily reproduced with:
-  $ perf record -e faults perf bench sched pipe
-
-while putting one of the cpus offline:
-  # echo 0 > /sys/devices/system/cpu/cpu1/online
-
-Console emits following warning:
-  WARNING: CPU: 1 PID: 2845 at kernel/events/core.c:5672 perf_swevent_add+0x18d/0x1a0()
-  Modules linked in:
-  CPU: 1 PID: 2845 Comm: sched-pipe Tainted: G        W    3.14.0+ #256
-  Hardware name: Intel Corporation Montevina platform/To be filled by O.E.M., BIOS AMVACRB1.86C.0066.B00.0805070703 05/07/2008
-   0000000000000009 ffff880077233ab8 ffffffff81665a23 0000000000200005
-   0000000000000000 ffff880077233af8 ffffffff8104732c 0000000000000046
-   ffff88007467c800 0000000000000002 ffff88007a9cf2a0 0000000000000001
-  Call Trace:
-   [<ffffffff81665a23>] dump_stack+0x4f/0x7c
-   [<ffffffff8104732c>] warn_slowpath_common+0x8c/0xc0
-   [<ffffffff8104737a>] warn_slowpath_null+0x1a/0x20
-   [<ffffffff8110fb3d>] perf_swevent_add+0x18d/0x1a0
-   [<ffffffff811162ae>] event_sched_in.isra.75+0x9e/0x1f0
-   [<ffffffff8111646a>] group_sched_in+0x6a/0x1f0
-   [<ffffffff81083dd5>] ? sched_clock_local+0x25/0xa0
-   [<ffffffff811167e6>] ctx_sched_in+0x1f6/0x450
-   [<ffffffff8111757b>] perf_event_sched_in+0x6b/0xa0
-   [<ffffffff81117a4b>] perf_event_context_sched_in+0x7b/0xc0
-   [<ffffffff81117ece>] __perf_event_task_sched_in+0x43e/0x460
-   [<ffffffff81096f1e>] ? put_lock_stats.isra.18+0xe/0x30
-   [<ffffffff8107b3c8>] finish_task_switch+0xb8/0x100
-   [<ffffffff8166a7de>] __schedule+0x30e/0xad0
-   [<ffffffff81172dd2>] ? pipe_read+0x3e2/0x560
-   [<ffffffff8166b45e>] ? preempt_schedule_irq+0x3e/0x70
-   [<ffffffff8166b45e>] ? preempt_schedule_irq+0x3e/0x70
-   [<ffffffff8166b464>] preempt_schedule_irq+0x44/0x70
-   [<ffffffff816707f0>] retint_kernel+0x20/0x30
-   [<ffffffff8109e60a>] ? lockdep_sys_exit+0x1a/0x90
-   [<ffffffff812a4234>] lockdep_sys_exit_thunk+0x35/0x67
-   [<ffffffff81679321>] ? sysret_check+0x5/0x56
-
-Fixing this by tracking the cpu hotplug state and displaying
-the WARN only if current cpu is initialized properly.
-
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1396861448-10097-1-git-send-email-jolsa@redhat.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/events/core.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ mm/rmap.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -4854,6 +4854,9 @@ struct swevent_htable {
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -1721,10 +1721,9 @@ void __put_anon_vma(struct anon_vma *ano
+ {
+ 	struct anon_vma *root = anon_vma->root;
  
- 	/* Recursion avoidance in each contexts */
- 	int				recursion[PERF_NR_CONTEXTS];
-+
-+	/* Keeps track of cpu being initialized/exited */
-+	bool				online;
- };
- 
- static DEFINE_PER_CPU(struct swevent_htable, swevent_htable);
-@@ -5101,8 +5104,14 @@ static int perf_swevent_add(struct perf_
- 	hwc->state = !(flags & PERF_EF_START);
- 
- 	head = find_swevent_head(swhash, event);
--	if (WARN_ON_ONCE(!head))
-+	if (!head) {
-+		/*
-+		 * We can race with cpu hotplug code. Do not
-+		 * WARN if the cpu just got unplugged.
-+		 */
-+		WARN_ON_ONCE(swhash->online);
- 		return -EINVAL;
-+	}
- 
- 	hlist_add_head_rcu(&event->hlist_entry, head);
- 
-@@ -7124,6 +7133,7 @@ static void __cpuinit perf_event_init_cp
- 	struct swevent_htable *swhash = &per_cpu(swevent_htable, cpu);
- 
- 	mutex_lock(&swhash->hlist_mutex);
-+	swhash->online = true;
- 	if (swhash->hlist_refcount > 0) {
- 		struct swevent_hlist *hlist;
- 
-@@ -7181,6 +7191,7 @@ static void perf_event_exit_cpu(int cpu)
- 	perf_event_exit_cpu_context(cpu);
- 
- 	mutex_lock(&swhash->hlist_mutex);
-+	swhash->online = false;
- 	swevent_hlist_release(swhash);
- 	mutex_unlock(&swhash->hlist_mutex);
++	anon_vma_free(anon_vma);
+ 	if (root != anon_vma && atomic_dec_and_test(&root->refcount))
+ 		anon_vma_free(root);
+-
+-	anon_vma_free(anon_vma);
  }
+ 
+ #ifdef CONFIG_MIGRATION
 
 
