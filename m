@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935008AbaFJAYq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:24:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58620 "EHLO
+	id S964784AbaFJAZY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:25:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58624 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934670AbaFJAWv (ORCPT
+	with ESMTP id S934664AbaFJAWv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jun 2014 20:22:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Kiper <daniel.kiper@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 3.4 78/88] xen/p2m: Move code around to allow for better re-usage.
-Date: Mon,  9 Jun 2014 17:25:28 -0700
-Message-Id: <20140610002427.061204528@linuxfoundation.org>
+        Stephen Hurd <shurd@broadcom.com>, Michael Chan <mchan@broadcom.com>,
+        Ben Hutchings <ben@decadent.org.uk>, Rui Xiang <rui.xiang@huawei.com>
+Subject: [PATCH 3.4 76/88] 8250/16?50: Add support for Broadcom TruManage redirected serial port
+Date: Mon,  9 Jun 2014 17:25:26 -0700
+Message-Id: <20140610002426.983926719@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
 References: <20140610002424.500996570@linuxfoundation.org>
@@ -29,111 +29,183 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Stephen Hurd <shurd@broadcom.com>
 
-commit 3f3aaea29ff7ee2d43b430338427f30ba7f60ff9 upstream.
+commit ebebd49a8eab5e9aa1b1f8f1614ccc3c2120f886 upstream.
 
-We are going to be using the early_alloc_p2m (and
-early_alloc_p2m_middle) code in follow up patches which
-are not related to setting identity pages.
+Add support for the UART device present in Broadcom TruManage capable
+NetXtreme chips (ie: 5761m 5762, and 5725).
 
-Hence lets move the code out in its own function and
-rename them as appropiate.
+This implementation has a hidden transmit FIFO, so running in single-byte
+interrupt mode results in too many interrupts.  The UART_CAP_HFIFO
+capability was added to track this.  It continues to reload the THR as long
+as the THRE and TSRE bits are set in the LSR up to a specified limit (1024
+is used here).
 
-Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Stephen Hurd <shurd@broadcom.com>
+Signed-off-by: Michael Chan <mchan@broadcom.com>
+[xr: Backported to 3.4:
+ - Adjust filenames
+ - Adjust context
+ - PORT_BRCM_TRUMANAGE is 22 not 24]
+Cc: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/x86/xen/p2m.c |   62 +++++++++++++++++++++++++++++------------------------
- 1 file changed, 34 insertions(+), 28 deletions(-)
+ drivers/tty/serial/8250/8250.c     |   15 ++++++++++++--
+ drivers/tty/serial/8250/8250.h     |    1 
+ drivers/tty/serial/8250/8250_pci.c |   38 +++++++++++++++++++++++++++++++++++++
+ include/linux/serial_core.h        |    3 +-
+ 4 files changed, 54 insertions(+), 3 deletions(-)
 
---- a/arch/x86/xen/p2m.c
-+++ b/arch/x86/xen/p2m.c
-@@ -499,7 +499,7 @@ static bool alloc_p2m(unsigned long pfn)
- 	return true;
- }
+--- a/drivers/tty/serial/8250/8250.c
++++ b/drivers/tty/serial/8250/8250.c
+@@ -282,6 +282,12 @@ static const struct serial8250_config ua
+ 		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
+ 		.flags		= UART_CAP_FIFO | UART_CAP_AFE | UART_CAP_EFR,
+ 	},
++	[PORT_BRCM_TRUMANAGE] = {
++		.name		= "TruManage",
++		.fifo_size	= 1,
++		.tx_loadsz	= 1024,
++		.flags		= UART_CAP_HFIFO,
++	},
+ };
  
--static bool __init __early_alloc_p2m(unsigned long pfn)
-+static bool __init early_alloc_p2m_middle(unsigned long pfn)
+ #if defined(CONFIG_MIPS_ALCHEMY)
+@@ -1470,6 +1476,11 @@ void serial8250_tx_chars(struct uart_825
+ 		port->icount.tx++;
+ 		if (uart_circ_empty(xmit))
+ 			break;
++		if (up->capabilities & UART_CAP_HFIFO) {
++			if ((serial_port_in(port, UART_LSR) & BOTH_EMPTY) !=
++			    BOTH_EMPTY)
++				break;
++		}
+ 	} while (--count > 0);
+ 
+ 	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
+@@ -2641,7 +2652,7 @@ serial8250_verify_port(struct uart_port
+ 	if (ser->irq >= nr_irqs || ser->irq < 0 ||
+ 	    ser->baud_base < 9600 || ser->type < PORT_UNKNOWN ||
+ 	    ser->type >= ARRAY_SIZE(uart_config) || ser->type == PORT_CIRRUS ||
+-	    ser->type == PORT_STARTECH)
++	    ser->type == PORT_STARTECH || uart_config[ser->type].name == NULL)
+ 		return -EINVAL;
+ 	return 0;
+ }
+@@ -2651,7 +2662,7 @@ serial8250_type(struct uart_port *port)
  {
- 	unsigned topidx, mididx, idx;
+ 	int type = port->type;
  
-@@ -541,6 +541,36 @@ static bool __init __early_alloc_p2m(uns
- 	}
- 	return idx != 0;
+-	if (type >= ARRAY_SIZE(uart_config))
++	if (type >= ARRAY_SIZE(uart_config) || uart_config[type].name == NULL)
+ 		type = 0;
+ 	return uart_config[type].name;
  }
-+
-+static bool __init early_alloc_p2m(unsigned long pfn)
+--- a/drivers/tty/serial/8250/8250.h
++++ b/drivers/tty/serial/8250/8250.h
+@@ -69,6 +69,7 @@ struct serial8250_config {
+ #define UART_CAP_AFE	(1 << 11)	/* MCR-based hw flow control */
+ #define UART_CAP_UUE	(1 << 12)	/* UART needs IER bit 6 set (Xscale) */
+ #define UART_CAP_RTOIE	(1 << 13)	/* UART needs IER bit 4 set (Xscale, Tegra) */
++#define UART_CAP_HFIFO	(1 << 14)	/* UART has a "hidden" FIFO */
+ 
+ #define UART_BUG_QUOT	(1 << 0)	/* UART has buggy quot LSB */
+ #define UART_BUG_TXEN	(1 << 1)	/* UART has buggy TX IIR status */
+--- a/drivers/tty/serial/8250/8250_pci.c
++++ b/drivers/tty/serial/8250/8250_pci.c
+@@ -1077,6 +1077,18 @@ pci_omegapci_setup(struct serial_private
+ 	return setup_port(priv, port, 2, idx * 8, 0);
+ }
+ 
++static int
++pci_brcm_trumanage_setup(struct serial_private *priv,
++			 const struct pciserial_board *board,
++			 struct uart_8250_port *port, int idx)
 +{
-+	unsigned topidx = p2m_top_index(pfn);
-+	unsigned long *mid_mfn_p;
-+	unsigned long **mid;
++	int ret = pci_default_setup(priv, board, port, idx);
 +
-+	mid = p2m_top[topidx];
-+	mid_mfn_p = p2m_top_mfn_p[topidx];
-+	if (mid == p2m_mid_missing) {
-+		mid = extend_brk(PAGE_SIZE, PAGE_SIZE);
-+
-+		p2m_mid_init(mid);
-+
-+		p2m_top[topidx] = mid;
-+
-+		BUG_ON(mid_mfn_p != p2m_mid_missing_mfn);
-+	}
-+	/* And the save/restore P2M tables.. */
-+	if (mid_mfn_p == p2m_mid_missing_mfn) {
-+		mid_mfn_p = extend_brk(PAGE_SIZE, PAGE_SIZE);
-+		p2m_mid_mfn_init(mid_mfn_p);
-+
-+		p2m_top_mfn_p[topidx] = mid_mfn_p;
-+		p2m_top_mfn[topidx] = virt_to_mfn(mid_mfn_p);
-+		/* Note: we don't set mid_mfn_p[midix] here,
-+		 * look in early_alloc_p2m_middle */
-+	}
-+	return true;
++	port->port.type = PORT_BRCM_TRUMANAGE;
++	port->port.flags = (port->port.flags | UPF_FIXED_PORT | UPF_FIXED_TYPE);
++	return ret;
 +}
- unsigned long __init set_phys_range_identity(unsigned long pfn_s,
- 				      unsigned long pfn_e)
- {
-@@ -559,35 +589,11 @@ unsigned long __init set_phys_range_iden
- 		pfn < ALIGN(pfn_e, (P2M_MID_PER_PAGE * P2M_PER_PAGE));
- 		pfn += P2M_MID_PER_PAGE * P2M_PER_PAGE)
++
+ static int skip_tx_en_setup(struct serial_private *priv,
+ 			const struct pciserial_board *board,
+ 			struct uart_port *port, int idx)
+@@ -1151,6 +1163,7 @@ pci_xr17c154_setup(struct serial_private
+ #define PCIE_DEVICE_ID_NEO_2_OX_IBM	0x00F6
+ #define PCI_DEVICE_ID_PLX_CRONYX_OMEGA	0xc001
+ #define PCI_DEVICE_ID_INTEL_PATSBURG_KT 0x1d3d
++#define PCI_DEVICE_ID_BROADCOM_TRUMANAGE 0x160a
+ 
+ /* Unknown vendors/cards - this should not be in linux/pci_ids.h */
+ #define PCI_SUBDEVICE_ID_UNKNOWN_0x1584	0x1584
+@@ -1684,6 +1697,17 @@ static struct pci_serial_quirk pci_seria
+ 		.setup		= pci_omegapci_setup,
+ 	 },
+ 	/*
++	 * Broadcom TruManage (NetXtreme)
++	 */
++	{
++		.vendor		= PCI_VENDOR_ID_BROADCOM,
++		.device		= PCI_DEVICE_ID_BROADCOM_TRUMANAGE,
++		.subvendor	= PCI_ANY_ID,
++		.subdevice	= PCI_ANY_ID,
++		.setup		= pci_brcm_trumanage_setup,
++	},
++
++	/*
+ 	 * Default "match everything" terminator entry
+ 	 */
  	{
--		unsigned topidx = p2m_top_index(pfn);
--		unsigned long *mid_mfn_p;
--		unsigned long **mid;
--
--		mid = p2m_top[topidx];
--		mid_mfn_p = p2m_top_mfn_p[topidx];
--		if (mid == p2m_mid_missing) {
--			mid = extend_brk(PAGE_SIZE, PAGE_SIZE);
--
--			p2m_mid_init(mid);
--
--			p2m_top[topidx] = mid;
--
--			BUG_ON(mid_mfn_p != p2m_mid_missing_mfn);
--		}
--		/* And the save/restore P2M tables.. */
--		if (mid_mfn_p == p2m_mid_missing_mfn) {
--			mid_mfn_p = extend_brk(PAGE_SIZE, PAGE_SIZE);
--			p2m_mid_mfn_init(mid_mfn_p);
--
--			p2m_top_mfn_p[topidx] = mid_mfn_p;
--			p2m_top_mfn[topidx] = virt_to_mfn(mid_mfn_p);
--			/* Note: we don't set mid_mfn_p[midix] here,
--		 	 * look in __early_alloc_p2m */
--		}
-+		WARN_ON(!early_alloc_p2m(pfn));
- 	}
+@@ -1872,6 +1896,7 @@ enum pci_board_num_t {
+ 	pbn_ce4100_1_115200,
+ 	pbn_omegapci,
+ 	pbn_NETMOS9900_2s_115200,
++	pbn_brcm_trumanage,
+ };
  
--	__early_alloc_p2m(pfn_s);
--	__early_alloc_p2m(pfn_e);
-+	early_alloc_p2m_middle(pfn_s);
-+	early_alloc_p2m_middle(pfn_e);
+ /*
+@@ -2578,6 +2603,12 @@ static struct pciserial_board pci_boards
+ 		.num_ports	= 2,
+ 		.base_baud	= 115200,
+ 	},
++	[pbn_brcm_trumanage] = {
++		.flags		= FL_BASE0,
++		.num_ports	= 1,
++		.reg_shift	= 2,
++		.base_baud	= 115200,
++	},
+ };
  
- 	for (pfn = pfn_s; pfn < pfn_e; pfn++)
- 		if (!__set_phys_to_machine(pfn, IDENTITY_FRAME(pfn)))
+ static const struct pci_device_id softmodem_blacklist[] = {
+@@ -4140,6 +4171,13 @@ static struct pci_device_id serial_pci_t
+ 		pbn_omegapci },
+ 
+ 	/*
++	 * Broadcom TruManage
++	 */
++	{	PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_BROADCOM_TRUMANAGE,
++		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
++		pbn_brcm_trumanage },
++
++	/*
+ 	 * These entries match devices with class COMMUNICATION_SERIAL,
+ 	 * COMMUNICATION_MODEM or COMMUNICATION_MULTISERIAL
+ 	 */
+--- a/include/linux/serial_core.h
++++ b/include/linux/serial_core.h
+@@ -47,7 +47,8 @@
+ #define PORT_U6_16550A	19	/* ST-Ericsson U6xxx internal UART */
+ #define PORT_TEGRA	20	/* NVIDIA Tegra internal UART */
+ #define PORT_XR17D15X	21	/* Exar XR17D15x UART */
+-#define PORT_MAX_8250	21	/* max port ID */
++#define PORT_BRCM_TRUMANAGE	25
++#define PORT_MAX_8250	25	/* max port ID */
+ 
+ /*
+  * ARM specific type numbers.  These are not currently guaranteed
 
 
