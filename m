@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932085AbaFJUhA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 16:37:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34884 "EHLO
+	id S933630AbaFJUio (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 16:38:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34846 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753469AbaFJTq5 (ORCPT
+	with ESMTP id S1753436AbaFJTq4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:46:57 -0400
+	Tue, 10 Jun 2014 15:46:56 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Felix Fietkau <nbd@openwrt.org>, Johannes Berg <johannes.berg@intel.com>,
+Cc: Oren Givon <oren.givon@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 005/160] mac80211: exclude AP_VLAN interfaces from tx power calculation
-Date: Tue, 10 Jun 2014 12:44:05 -0700
-Message-Id: <1402429600-20477-6-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 006/160] iwlwifi: add new 7265 HW IDs
+Date: Tue, 10 Jun 2014 12:44:06 -0700
+Message-Id: <1402429600-20477-7-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -27,34 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Oren Givon <oren.givon@intel.com>
 
-commit 764152ff66f4a8be1f9d7981e542ffdaa5bd7aff upstream.
+commit 80f2679e589503bd6cbaaa1f9c1cd9dd7dfae032 upstream.
 
-Their power value is initialized to zero. This patch fixes an issue
-where the configured power drops to the minimum value when AP_VLAN
-interfaces are created/removed.
+Add 2 new HW IDs for the 7265 series.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Oren Givon <oren.givon@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/mac80211/main.c | 2 ++
+ drivers/net/wireless/iwlwifi/pcie/drv.c | 2 ++
  1 file changed, 2 insertions(+)
 
-diff --git a/net/mac80211/main.c b/net/mac80211/main.c
-index 7d1c3ac..8cec1ba 100644
---- a/net/mac80211/main.c
-+++ b/net/mac80211/main.c
-@@ -148,6 +148,8 @@ static u32 ieee80211_hw_conf_chan(struct ieee80211_local *local)
- 	list_for_each_entry_rcu(sdata, &local->interfaces, list) {
- 		if (!rcu_access_pointer(sdata->vif.chanctx_conf))
- 			continue;
-+		if (sdata->vif.type == NL80211_IFTYPE_AP_VLAN)
-+			continue;
- 		power = min(power, sdata->vif.bss_conf.txpower);
- 	}
- 	rcu_read_unlock();
+diff --git a/drivers/net/wireless/iwlwifi/pcie/drv.c b/drivers/net/wireless/iwlwifi/pcie/drv.c
+index db7c0c7..a9e3655 100644
+--- a/drivers/net/wireless/iwlwifi/pcie/drv.c
++++ b/drivers/net/wireless/iwlwifi/pcie/drv.c
+@@ -368,12 +368,14 @@ static DEFINE_PCI_DEVICE_TABLE(iwl_hw_card_ids) = {
+ 	{IWL_PCI_DEVICE(0x095A, 0x500A, iwl7265_2n_cfg)},
+ 	{IWL_PCI_DEVICE(0x095B, 0x5200, iwl7265_2n_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x5002, iwl7265_n_cfg)},
++	{IWL_PCI_DEVICE(0x095A, 0x5102, iwl7265_n_cfg)},
+ 	{IWL_PCI_DEVICE(0x095B, 0x5202, iwl7265_n_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x9010, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x9012, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x9110, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x9112, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x9210, iwl7265_2ac_cfg)},
++	{IWL_PCI_DEVICE(0x095A, 0x9200, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x9510, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x9310, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x9410, iwl7265_2ac_cfg)},
 -- 
 1.9.1
 
