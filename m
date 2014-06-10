@@ -1,86 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936208AbaFJAan (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:30:43 -0400
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:34517 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934584AbaFJAak (ORCPT
+	id S934434AbaFJAaY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:30:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58620 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934587AbaFJAWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 20:30:40 -0400
+	Mon, 9 Jun 2014 20:22:48 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        "J. Bruce Fields" <bfields@redhat.com>,
+        Weng Meiling <wengmeiling.weng@huawei.com>
+Subject: [PATCH 3.4 60/88] nfsd: pass proper net to nfsd_destroy() from NFSd kthreads
+Date: Mon,  9 Jun 2014 17:25:10 -0700
+Message-Id: <20140610002426.492757275@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
+References: <20140610002424.500996570@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-In-Reply-To: <20140610003234.GB20728@kroah.com>
-References: <1401332999-15167-1-git-send-email-eparis@redhat.com>
- <20140609223057.GB18475@kroah.com> <CALCETrUD75vSwJUjFuxGCrZ_7DJhCc1KW2v_ndF6EHJ31fUMBg@mail.gmail.com>
- <20140609224645.GA8113@kroah.com> <CALCETrWb9HsaUWaQA+1ga6sH2_yUT=NEg-oKx=zFUQ5AZUqPaA@mail.gmail.com>
- <20140610003234.GB20728@kroah.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 9 Jun 2014 17:30:19 -0700
-Message-ID: <CALCETrXpUZsUOoFgG4GRvStjLkWCn5=pNDFPTm-t5g=8HRaDhw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] auditsc: audit_krule mask accesses need bounds checking
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Eric Paris <eparis@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-audit@redhat.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 9, 2014 at 5:32 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Mon, Jun 09, 2014 at 03:55:20PM -0700, Andy Lutomirski wrote:
->> On Mon, Jun 9, 2014 at 3:46 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
->> > On Mon, Jun 09, 2014 at 03:35:02PM -0700, Andy Lutomirski wrote:
->> >> On Mon, Jun 9, 2014 at 3:30 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
->> >> > On Wed, May 28, 2014 at 11:09:58PM -0400, Eric Paris wrote:
->> >> >> From: Andy Lutomirski <luto@amacapital.net>
->> >> >>
->> >> >> Fixes an easy DoS and possible information disclosure.
->> >> >>
->> >> >> This does nothing about the broken state of x32 auditing.
->> >> >>
->> >> >> eparis: If the admin has enabled auditd and has specifically loaded audit
->> >> >> rules.  This bug has been around since before git.  Wow...
->> >> >>
->> >> >> Cc: stable@vger.kernel.org
->> >> >> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->> >> >> Signed-off-by: Eric Paris <eparis@redhat.com>
->> >> >> ---
->> >> >>  kernel/auditsc.c | 27 ++++++++++++++++++---------
->> >> >>  1 file changed, 18 insertions(+), 9 deletions(-)
->> >> >
->> >> > Did this patch get dropped somewhere?  Isn't it a valid bugfix, or did I
->> >> > miss a later conversation about this?
->> >>
->> >> Hmm.  It seems that it didn't make it into Linus' tree.  Crap.
->> >>
->> >> IMO we need some kind of real tracking system for issues reported to
->> >> security@.
->> >
->> > That seems to be my mbox at times :)
->> >
->> > But yes, having something "real" might be good if the load gets higher,
->> > right now it's so low that my "sweep pending security patches" task
->> > usually catches anything pending, which is rare.
->> >
->>
->> There are currently at least two issues that I reported that are stuck
->> in limbo: this one and the (not-yet-public) vfs thing.
->
-> That was next on my list to poke people about...
->
->> And there's the CVE-2014-0181 regression fix that almost got
->> forgotten, but that isn't really a security issue.
->
-> What is that, where was that reported?
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-commit 2d7a85f4b06e9c27ff629f07a524c48074f07f81
-Author: Eric W. Biederman <ebiederm@xmission.com>
-Date:   Fri May 30 11:04:00 2014 -0700
+------------------
 
-    netlink: Only check file credentials for implicit destinations
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+
+commit 88c47666171989ed4c5b1a5687df09511e8c5e35 upstream.
+
+Since NFSd service is per-net now, we have to pass proper network
+context in nfsd_shutdown() from NFSd kthreads.
+
+The simplest way I found is to get proper net from one of transports
+with permanent sockets.
+
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+[wengmeiling: backport to 3.4: adjust context]
+Signed-off-by: Weng Meiling <wengmeiling.weng@huawei.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ fs/nfsd/nfssvc.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+--- a/fs/nfsd/nfssvc.c
++++ b/fs/nfsd/nfssvc.c
+@@ -483,6 +483,8 @@ static int
+ nfsd(void *vrqstp)
+ {
+ 	struct svc_rqst *rqstp = (struct svc_rqst *) vrqstp;
++	struct svc_xprt *perm_sock = list_entry(rqstp->rq_server->sv_permsocks.next, typeof(struct svc_xprt), xpt_list);
++	struct net *net = perm_sock->xpt_net;
+ 	int err, preverr = 0;
+ 
+ 	/* Lock module and set up kernel thread */
+@@ -557,7 +559,7 @@ out:
+ 	/* Release the thread */
+ 	svc_exit_thread(rqstp);
+ 
+-	nfsd_destroy(&init_net);
++	nfsd_destroy(net);
+ 
+ 	/* Release module */
+ 	mutex_unlock(&nfsd_mutex);
 
 
-The security issue got fixed quickly, but the fix turned out to be problematic.
-
---Andy
