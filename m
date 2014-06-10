@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964878AbaFJBdh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 21:33:37 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:21933 "EHLO
+	id S934801AbaFJBeG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 21:34:06 -0400
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:37053 "EHLO
 	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932262AbaFJB2K (ORCPT
+	by vger.kernel.org with ESMTP id S932145AbaFJB2K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jun 2014 21:28:10 -0400
 From: Chao Xie <chao.xie@marvell.com>
@@ -12,9 +12,9 @@ To: <haojian.zhuang@gmail.com>, <mturquette@linaro.org>,
         <chao.xie@marvell.com>, <xiechao_mail@163.com>,
         <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH 01/12] clk: mmp: add prefix "mmp" for structures defined for clk-frac
-Date: Tue, 10 Jun 2014 09:27:37 +0800
-Message-ID: <1402363668-25806-2-git-send-email-chao.xie@marvell.com>
+Subject: [PATCH 02/12] clk: mmp: add spin lock for clk-frac
+Date: Tue, 10 Jun 2014 09:27:38 +0800
+Message-ID: <1402363668-25806-3-git-send-email-chao.xie@marvell.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1402363668-25806-1-git-send-email-chao.xie@marvell.com>
 References: <1402363668-25806-1-git-send-email-chao.xie@marvell.com>
@@ -31,181 +31,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Chao Xie <chao.xie@marvell.com>
 
-The structures defined for clk-frac will be used out side
-of clk-frac.c.
-To avoid conflicts, add prefix "mmp" for these structures'
-name.
+The register used by clk-frac may be shared with
+other clocks.
+So it needs to use spin lock to protect the register
+access.
 
 Signed-off-by: Chao Xie <chao.xie@marvell.com>
 ---
- drivers/clk/mmp/clk-frac.c   | 23 ++++++++++++-----------
- drivers/clk/mmp/clk-mmp2.c   |  4 ++--
- drivers/clk/mmp/clk-pxa168.c |  4 ++--
- drivers/clk/mmp/clk-pxa910.c |  4 ++--
- drivers/clk/mmp/clk.h        |  8 ++++----
- 5 files changed, 22 insertions(+), 21 deletions(-)
+ drivers/clk/mmp/clk-frac.c   | 11 ++++++++++-
+ drivers/clk/mmp/clk-mmp2.c   |  2 +-
+ drivers/clk/mmp/clk-pxa168.c |  2 +-
+ drivers/clk/mmp/clk-pxa910.c |  2 +-
+ drivers/clk/mmp/clk.h        |  3 ++-
+ 5 files changed, 15 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/clk/mmp/clk-frac.c b/drivers/clk/mmp/clk-frac.c
-index 23a56f5..3fbc9ca 100644
+index 3fbc9ca..e29d006 100644
 --- a/drivers/clk/mmp/clk-frac.c
 +++ b/drivers/clk/mmp/clk-frac.c
-@@ -22,19 +22,19 @@
-  * numerator/denominator = Fin / (Fout * factor)
-  */
- 
--#define to_clk_factor(hw) container_of(hw, struct clk_factor, hw)
--struct clk_factor {
-+#define to_clk_factor(hw) container_of(hw, struct mmp_clk_factor, hw)
-+struct mmp_clk_factor {
- 	struct clk_hw		hw;
- 	void __iomem		*base;
--	struct clk_factor_masks	*masks;
--	struct clk_factor_tbl	*ftbl;
-+	struct mmp_clk_factor_masks	*masks;
-+	struct mmp_clk_factor_tbl	*ftbl;
+@@ -29,6 +29,7 @@ struct mmp_clk_factor {
+ 	struct mmp_clk_factor_masks	*masks;
+ 	struct mmp_clk_factor_tbl	*ftbl;
  	unsigned int		ftbl_cnt;
++	spinlock_t *lock;
  };
  
  static long clk_factor_round_rate(struct clk_hw *hw, unsigned long drate,
- 		unsigned long *prate)
- {
--	struct clk_factor *factor = to_clk_factor(hw);
-+	struct mmp_clk_factor *factor = to_clk_factor(hw);
- 	unsigned long rate = 0, prev_rate;
- 	int i;
- 
-@@ -58,8 +58,8 @@ static long clk_factor_round_rate(struct clk_hw *hw, unsigned long drate,
- static unsigned long clk_factor_recalc_rate(struct clk_hw *hw,
- 		unsigned long parent_rate)
- {
--	struct clk_factor *factor = to_clk_factor(hw);
--	struct clk_factor_masks *masks = factor->masks;
-+	struct mmp_clk_factor *factor = to_clk_factor(hw);
-+	struct mmp_clk_factor_masks *masks = factor->masks;
- 	unsigned int val, num, den;
- 
- 	val = readl_relaxed(factor->base);
-@@ -81,8 +81,8 @@ static unsigned long clk_factor_recalc_rate(struct clk_hw *hw,
- static int clk_factor_set_rate(struct clk_hw *hw, unsigned long drate,
- 				unsigned long prate)
- {
--	struct clk_factor *factor = to_clk_factor(hw);
--	struct clk_factor_masks *masks = factor->masks;
-+	struct mmp_clk_factor *factor = to_clk_factor(hw);
-+	struct mmp_clk_factor_masks *masks = factor->masks;
+@@ -86,6 +87,7 @@ static int clk_factor_set_rate(struct clk_hw *hw, unsigned long drate,
  	int i;
  	unsigned long val;
  	unsigned long prev_rate, rate = 0;
-@@ -118,10 +118,11 @@ static struct clk_ops clk_factor_ops = {
++	unsigned long flags = 0;
  
- struct clk *mmp_clk_register_factor(const char *name, const char *parent_name,
+ 	for (i = 0; i < factor->ftbl_cnt; i++) {
+ 		prev_rate = rate;
+@@ -97,6 +99,9 @@ static int clk_factor_set_rate(struct clk_hw *hw, unsigned long drate,
+ 	if (i > 0)
+ 		i--;
+ 
++	if (factor->lock)
++		spin_lock_irqsave(factor->lock, flags);
++
+ 	val = readl_relaxed(factor->base);
+ 
+ 	val &= ~(masks->num_mask << masks->num_shift);
+@@ -107,6 +112,9 @@ static int clk_factor_set_rate(struct clk_hw *hw, unsigned long drate,
+ 
+ 	writel_relaxed(val, factor->base);
+ 
++	if (factor->lock)
++		spin_unlock_irqrestore(factor->lock, flags);
++
+ 	return 0;
+ }
+ 
+@@ -120,7 +128,7 @@ struct clk *mmp_clk_register_factor(const char *name, const char *parent_name,
  		unsigned long flags, void __iomem *base,
--		struct clk_factor_masks *masks, struct clk_factor_tbl *ftbl,
-+		struct mmp_clk_factor_masks *masks,
-+		struct mmp_clk_factor_tbl *ftbl,
- 		unsigned int ftbl_cnt)
+ 		struct mmp_clk_factor_masks *masks,
+ 		struct mmp_clk_factor_tbl *ftbl,
+-		unsigned int ftbl_cnt)
++		unsigned int ftbl_cnt, spinlock_t *lock)
  {
--	struct clk_factor *factor;
-+	struct mmp_clk_factor *factor;
+ 	struct mmp_clk_factor *factor;
  	struct clk_init_data init;
- 	struct clk *clk;
+@@ -143,6 +151,7 @@ struct clk *mmp_clk_register_factor(const char *name, const char *parent_name,
+ 	factor->ftbl = ftbl;
+ 	factor->ftbl_cnt = ftbl_cnt;
+ 	factor->hw.init = &init;
++	factor->lock = lock;
  
+ 	init.name = name;
+ 	init.ops = &clk_factor_ops;
 diff --git a/drivers/clk/mmp/clk-mmp2.c b/drivers/clk/mmp/clk-mmp2.c
-index b2721ca..7083f12 100644
+index 7083f12..5c90a42 100644
 --- a/drivers/clk/mmp/clk-mmp2.c
 +++ b/drivers/clk/mmp/clk-mmp2.c
-@@ -54,7 +54,7 @@
+@@ -191,7 +191,7 @@ void __init mmp2_clk_init(void)
+ 	clk = mmp_clk_register_factor("uart_pll", "pll1_4", 0,
+ 				mpmu_base + MPMU_UART_PLL,
+ 				&uart_factor_masks, uart_factor_tbl,
+-				ARRAY_SIZE(uart_factor_tbl));
++				ARRAY_SIZE(uart_factor_tbl), &clk_lock);
+ 	clk_set_rate(clk, 14745600);
+ 	clk_register_clkdev(clk, "uart_pll", NULL);
  
- static DEFINE_SPINLOCK(clk_lock);
- 
--static struct clk_factor_masks uart_factor_masks = {
-+static struct mmp_clk_factor_masks uart_factor_masks = {
- 	.factor = 2,
- 	.num_mask = 0x1fff,
- 	.den_mask = 0x1fff,
-@@ -62,7 +62,7 @@ static struct clk_factor_masks uart_factor_masks = {
- 	.den_shift = 0,
- };
- 
--static struct clk_factor_tbl uart_factor_tbl[] = {
-+static struct mmp_clk_factor_tbl uart_factor_tbl[] = {
- 	{.num = 14634, .den = 2165},	/*14.745MHZ */
- 	{.num = 3521, .den = 689},	/*19.23MHZ */
- 	{.num = 9679, .den = 5728},	/*58.9824MHZ */
 diff --git a/drivers/clk/mmp/clk-pxa168.c b/drivers/clk/mmp/clk-pxa168.c
-index 014396b..75266ac 100644
+index 75266ac..93e967c 100644
 --- a/drivers/clk/mmp/clk-pxa168.c
 +++ b/drivers/clk/mmp/clk-pxa168.c
-@@ -47,7 +47,7 @@
- 
- static DEFINE_SPINLOCK(clk_lock);
- 
--static struct clk_factor_masks uart_factor_masks = {
-+static struct mmp_clk_factor_masks uart_factor_masks = {
- 	.factor = 2,
- 	.num_mask = 0x1fff,
- 	.den_mask = 0x1fff,
-@@ -55,7 +55,7 @@ static struct clk_factor_masks uart_factor_masks = {
- 	.den_shift = 0,
- };
- 
--static struct clk_factor_tbl uart_factor_tbl[] = {
-+static struct mmp_clk_factor_tbl uart_factor_tbl[] = {
- 	{.num = 8125, .den = 1536},	/*14.745MHZ */
- };
+@@ -158,7 +158,7 @@ void __init pxa168_clk_init(void)
+ 	uart_pll = mmp_clk_register_factor("uart_pll", "pll1_4", 0,
+ 				mpmu_base + MPMU_UART_PLL,
+ 				&uart_factor_masks, uart_factor_tbl,
+-				ARRAY_SIZE(uart_factor_tbl));
++				ARRAY_SIZE(uart_factor_tbl), &clk_lock);
+ 	clk_set_rate(uart_pll, 14745600);
+ 	clk_register_clkdev(uart_pll, "uart_pll", NULL);
  
 diff --git a/drivers/clk/mmp/clk-pxa910.c b/drivers/clk/mmp/clk-pxa910.c
-index 9efc6a4..f817999 100644
+index f817999..993abcd 100644
 --- a/drivers/clk/mmp/clk-pxa910.c
 +++ b/drivers/clk/mmp/clk-pxa910.c
-@@ -45,7 +45,7 @@
- 
- static DEFINE_SPINLOCK(clk_lock);
- 
--static struct clk_factor_masks uart_factor_masks = {
-+static struct mmp_clk_factor_masks uart_factor_masks = {
- 	.factor = 2,
- 	.num_mask = 0x1fff,
- 	.den_mask = 0x1fff,
-@@ -53,7 +53,7 @@ static struct clk_factor_masks uart_factor_masks = {
- 	.den_shift = 0,
- };
- 
--static struct clk_factor_tbl uart_factor_tbl[] = {
-+static struct mmp_clk_factor_tbl uart_factor_tbl[] = {
- 	{.num = 8125, .den = 1536},	/*14.745MHZ */
- };
+@@ -163,7 +163,7 @@ void __init pxa910_clk_init(void)
+ 	uart_pll =  mmp_clk_register_factor("uart_pll", "pll1_4", 0,
+ 				mpmu_base + MPMU_UART_PLL,
+ 				&uart_factor_masks, uart_factor_tbl,
+-				ARRAY_SIZE(uart_factor_tbl));
++				ARRAY_SIZE(uart_factor_tbl), &clk_lock);
+ 	clk_set_rate(uart_pll, 14745600);
+ 	clk_register_clkdev(uart_pll, "uart_pll", NULL);
  
 diff --git a/drivers/clk/mmp/clk.h b/drivers/clk/mmp/clk.h
-index ab86dd4..3fe92be 100644
+index 3fe92be..b71b717 100644
 --- a/drivers/clk/mmp/clk.h
 +++ b/drivers/clk/mmp/clk.h
-@@ -7,7 +7,7 @@
- #define APBC_NO_BUS_CTRL	BIT(0)
- #define APBC_POWER_CTRL		BIT(1)
- 
--struct clk_factor_masks {
-+struct mmp_clk_factor_masks {
- 	unsigned int	factor;
- 	unsigned int	num_mask;
- 	unsigned int	den_mask;
-@@ -15,7 +15,7 @@ struct clk_factor_masks {
- 	unsigned int	den_shift;
- };
- 
--struct clk_factor_tbl {
-+struct mmp_clk_factor_tbl {
- 	unsigned int num;
- 	unsigned int den;
- };
-@@ -30,6 +30,6 @@ extern struct clk *mmp_clk_register_apmu(const char *name,
- 		spinlock_t *lock);
+@@ -31,5 +31,6 @@ extern struct clk *mmp_clk_register_apmu(const char *name,
  extern struct clk *mmp_clk_register_factor(const char *name,
  		const char *parent_name, unsigned long flags,
--		void __iomem *base, struct clk_factor_masks *masks,
--		struct clk_factor_tbl *ftbl, unsigned int ftbl_cnt);
-+		void __iomem *base, struct mmp_clk_factor_masks *masks,
-+		struct mmp_clk_factor_tbl *ftbl, unsigned int ftbl_cnt);
+ 		void __iomem *base, struct mmp_clk_factor_masks *masks,
+-		struct mmp_clk_factor_tbl *ftbl, unsigned int ftbl_cnt);
++		struct mmp_clk_factor_tbl *ftbl, unsigned int ftbl_cnt,
++		spinlock_t *lock);
  #endif
 -- 
 1.8.3.2
