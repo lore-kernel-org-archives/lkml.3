@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755774AbaFJUKj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 16:10:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35390 "EHLO
+	id S932942AbaFJUK6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 16:10:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35385 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753833AbaFJTwM (ORCPT
+	with ESMTP id S1753857AbaFJTwL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:52:12 -0400
+	Tue, 10 Jun 2014 15:52:11 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniele Forsi <dforsi@gmail.com>,
+Cc: Peter Hurley <peter@hurleysoftware.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 145/160] usb: storage: shuttle_usbat: fix discs being detected twice
-Date: Tue, 10 Jun 2014 12:46:25 -0700
-Message-Id: <1402429600-20477-146-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 149/160] tty: Fix lockless tty buffer race
+Date: Tue, 10 Jun 2014 12:46:29 -0700
+Message-Id: <1402429600-20477-150-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -28,35 +28,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniele Forsi <dforsi@gmail.com>
+From: Peter Hurley <peter@hurleysoftware.com>
 
-commit df602c2d2358f02c6e49cffc5b49b9daa16db033 upstream.
+commit 62a0d8d7c2b29f92850e4ee3c38e5dfd936e92b2 upstream.
 
-Even if the USB-to-ATAPI converter supported multiple LUNs, this
-driver would always detect the same physical device or media because
-it doesn't use srb->device->lun in any way.
-Tested with an Hewlett-Packard CD-Writer Plus 8200e.
+Commit 6a20dbd6caa2358716136144bf524331d70b1e03,
+"tty: Fix race condition between __tty_buffer_request_room and flush_to_ldisc"
+correctly identifies an unsafe race condition between
+__tty_buffer_request_room() and flush_to_ldisc(), where the consumer
+flush_to_ldisc() prematurely advances the head before consuming the
+last of the data committed. For example:
 
-Signed-off-by: Daniele Forsi <dforsi@gmail.com>
+           CPU 0                     |            CPU 1
+__tty_buffer_request_room            | flush_to_ldisc
+  ...                                |   ...
+                                     |   count = head->commit - head->read
+  n = tty_buffer_alloc()             |
+  b->commit = b->used                |
+  b->next = n                        |
+                                     |   if (!count)                /* T */
+                                     |     if (head->next == NULL)  /* F */
+                                     |     buf->head = head->next
+
+In this case, buf->head has been advanced but head->commit may have
+been updated with a new value.
+
+Instead of reintroducing an unnecessary lock, fix the race locklessly.
+Read the commit-next pair in the reverse order of writing, which guarantees
+the commit value read is the latest value written if the head is
+advancing.
+
+Reported-by: Manfred Schlaegl <manfred.schlaegl@gmx.at>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/storage/shuttle_usbat.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/tty/tty_buffer.c | 17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/usb/storage/shuttle_usbat.c b/drivers/usb/storage/shuttle_usbat.c
-index 4ef2a80..008d805 100644
---- a/drivers/usb/storage/shuttle_usbat.c
-+++ b/drivers/usb/storage/shuttle_usbat.c
-@@ -1851,7 +1851,7 @@ static int usbat_probe(struct usb_interface *intf,
- 	us->transport_name = "Shuttle USBAT";
- 	us->transport = usbat_flash_transport;
- 	us->transport_reset = usb_stor_CB_reset;
--	us->max_lun = 1;
-+	us->max_lun = 0;
+diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
+index 2b52d80..4847fc5 100644
+--- a/drivers/tty/tty_buffer.c
++++ b/drivers/tty/tty_buffer.c
+@@ -248,7 +248,11 @@ int tty_buffer_request_room(struct tty_port *port, size_t size)
+ 		if ((n = tty_buffer_alloc(port, size)) != NULL) {
+ 			buf->tail = n;
+ 			b->commit = b->used;
+-			smp_mb();
++			/* paired w/ barrier in flush_to_ldisc(); ensures the
++			 * latest commit value can be read before the head is
++			 * advanced to the next buffer
++			 */
++			smp_wmb();
+ 			b->next = n;
+ 		} else
+ 			size = left;
+@@ -449,17 +453,24 @@ static void flush_to_ldisc(struct work_struct *work)
  
- 	result = usb_stor_probe2(us);
- 	return result;
+ 	while (1) {
+ 		struct tty_buffer *head = buf->head;
++		struct tty_buffer *next;
+ 		int count;
+ 
+ 		/* Ldisc or user is trying to gain exclusive access */
+ 		if (atomic_read(&buf->priority))
+ 			break;
+ 
++		next = head->next;
++		/* paired w/ barrier in __tty_buffer_request_room();
++		 * ensures commit value read is not stale if the head
++		 * is advancing to the next buffer
++		 */
++		smp_rmb();
+ 		count = head->commit - head->read;
+ 		if (!count) {
+-			if (head->next == NULL)
++			if (next == NULL)
+ 				break;
+-			buf->head = head->next;
++			buf->head = next;
+ 			tty_buffer_free(port, head);
+ 			continue;
+ 		}
 -- 
 1.9.1
 
