@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750908AbaFJPPe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 11:15:34 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:44501 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752732AbaFJPPc (ORCPT
+	id S1752801AbaFJPQR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 11:16:17 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:32950 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752704AbaFJPPa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 11:15:32 -0400
+	Tue, 10 Jun 2014 11:15:30 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -16,9 +16,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 5/6] nohz: Use nohz own full kick on 2nd task enqueue
-Date: Tue, 10 Jun 2014 17:15:08 +0200
-Message-Id: <1402413309-3415-6-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 4/6] nohz: Switch to nohz full remote kick on timer enqueue
+Date: Tue, 10 Jun 2014 17:15:07 +0200
+Message-Id: <1402413309-3415-5-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1402413309-3415-1-git-send-email-fweisbec@gmail.com>
 References: <1402413309-3415-1-git-send-email-fweisbec@gmail.com>
@@ -26,11 +26,20 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we have a nohz full remote kick based on irq work, lets use
-it to notify a CPU that it's exiting single task mode.
+When a new timer is enqueued on a full dynticks target, that CPU must
+re-evaluate the next tick to handle the timer correctly.
 
-This unbloats a bit the scheduler IPI that the nohz code was abusing
-for its cool "callable anywhere/anytime" properties.
+This is currently performed through the scheduler IPI. Meanwhile this
+happens at the cost of off-topic workarounds in that fast path to make
+it call irq_exit().
+
+As we plan to remove this hack off the scheduler IPI, lets use
+the nohz full kick instead. Pretty much any IPI fits for that job
+as long at it calls irq_exit(). The nohz full kick just happens to be
+handy and readily available here.
+
+If it happens to be too much an overkill in the future, we can still
+turn that timer kick into an empty IPI.
 
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Ingo Molnar <mingo@kernel.org>
@@ -41,46 +50,31 @@ Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Viresh Kumar <viresh.kumar@linaro.org>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- kernel/sched/core.c  | 5 +----
- kernel/sched/sched.h | 2 +-
- 2 files changed, 2 insertions(+), 5 deletions(-)
+ kernel/sched/core.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 03dc7e9..5d25274 100644
+index d9d8ece..03dc7e9 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -1506,9 +1506,7 @@ void scheduler_ipi(void)
- 	 */
- 	preempt_fold_need_resched();
+@@ -620,10 +620,16 @@ static void wake_up_idle_cpu(int cpu)
  
--	if (llist_empty(&this_rq()->wake_list)
--			&& !tick_nohz_full_cpu(smp_processor_id())
--			&& !got_nohz_idle_kick())
-+	if (llist_empty(&this_rq()->wake_list) && !got_nohz_idle_kick())
- 		return;
+ static bool wake_up_full_nohz_cpu(int cpu)
+ {
++	/*
++	 * We just need the target to call irq_exit() and re-evaluate
++	 * the next tick. The nohz full kick at least implies that.
++	 * If needed we can still optimize that later with an
++	 * empty IRQ.
++	 */
+ 	if (tick_nohz_full_cpu(cpu)) {
+ 		if (cpu != smp_processor_id() ||
+ 		    tick_nohz_tick_stopped())
+-			smp_send_reschedule(cpu);
++			tick_nohz_full_kick_cpu(cpu);
+ 		return true;
+ 	}
  
- 	/*
-@@ -1525,7 +1523,6 @@ void scheduler_ipi(void)
- 	 * somewhat pessimize the simple resched case.
- 	 */
- 	irq_enter();
--	tick_nohz_full_check();
- 	sched_ttwu_pending();
- 
- 	/*
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 456e492..6089e00 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -1225,7 +1225,7 @@ static inline void inc_nr_running(struct rq *rq)
- 		if (tick_nohz_full_cpu(rq->cpu)) {
- 			/* Order rq->nr_running write against the IPI */
- 			smp_wmb();
--			smp_send_reschedule(rq->cpu);
-+			tick_nohz_full_kick_cpu(rq->cpu);
- 		}
-        }
- #endif
 -- 
 1.8.3.1
 
