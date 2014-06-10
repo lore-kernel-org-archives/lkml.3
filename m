@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933166AbaFJURA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 16:17:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35296 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755008AbaFJTvh (ORCPT
+	id S933217AbaFJUR1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 16:17:27 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:54043 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932413AbaFJURZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:51:37 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Tyler Stachecki <tstache1@binghamton.edu>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 115/160] [SCSI] mpt2sas: Don't disable device twice at suspend.
-Date: Tue, 10 Jun 2014 12:45:55 -0700
-Message-Id: <1402429600-20477-116-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
-References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Tue, 10 Jun 2014 16:17:25 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3][update] PM / sleep: Introduce command line argument for sleep state enumeration
+Date: Tue, 10 Jun 2014 22:34:49 +0200
+Message-ID: <1771964.SepbTGNdtD@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140610195905.GA6805@amd.pavel.ucw.cz>
+References: <1817539.9KW2IGGbDV@vostro.rjw.lan> <1848200.GDD9x0Rptb@vostro.rjw.lan> <20140610195905.GA6805@amd.pavel.ucw.cz>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.3 -stable review patch.  If anyone has any objections, please let me know.
+On Tuesday, June 10, 2014 09:59:05 PM Pavel Machek wrote:
+> On Tue 2014-06-10 17:23:24, Rafael J. Wysocki wrote:
+> > On Tuesday, June 10, 2014 03:12:06 PM Pavel Machek wrote:
+> > > Hi!
+> > > 
+> > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > > 
+> > > > On some systems the platform doesn't support neither
+> > > > PM_SUSPEND_MEM nor PM_SUSPEND_STANDBY, so PM_SUSPEND_FREEZE is the
+> > > > only available system sleep state.  However, some user space frameworks
+> > > > only use the "mem" and (sometimes) "standby" sleep state labels, so
+> > > > the users of those systems need to modify user space in order to be
+> > > > able to use system suspend at all and that is not always possible.
+> > > 
+> > > I'd say we should fix the frameworks, not add option to change kernel
+> > > interfaces.
+> > > 
+> > > Because, as you mentioned, if we add this, we are probably going to
+> > > get stuck with it forever :-(.
+> > 
+> > Unfortunately, fixing the frameworks is rather less than realistic in any
+> > reasonable time frame, since  Android. :-)
+> 
+> Actually, you still have the sources from android, and this issue
+> sounds almost simple enough for binary patch.
+> 
+> Android misuses /proc/sys/vm/drop_caches, too, IIRC. Are we going to
+> change interface to match their expectations? They have binder and
+> wakelocks. Are we going to apply those patches just because Android
+> wants that?
 
-------------------
+That depends on which versions of Android you're talking about.  The
+newest ones use the power management interfaces we have upstream.
 
-From: Tyler Stachecki <tstache1@binghamton.edu>
+> Android people usually patch their kernels, anyway, so why not add
+> this one, too?
 
-commit af61e27c3f77c7623b5335590ae24b6a5c323e22 upstream.
+I'm not talking about Android kernels, but about Android user space.
 
-On suspend, _scsih_suspend calls mpt2sas_base_free_resources, which
-in turn calls pci_disable_device if the device is enabled prior to
-suspending. However, _scsih_suspend also calls pci_disable_device
-itself.
+And this is not only about Android, other distros also have user space that
+uses "mem" only, because nobody has used anything else for a long time anyway.
+For the users of those distros, if they don't want to modify user space,
+having a kernel command line like this is actually helpful.
 
-Thus, in the event that the device is enabled prior to suspending,
-pci_disable_device will be called twice. This patch removes the
-duplicate call to pci_disable_device in _scsi_suspend as it is both
-unnecessary and results in a kernel oops.
+So I'm really not sure what's the problem?  Do you think it's wrong to be
+helpful to users or something?
 
-Signed-off-by: Tyler Stachecki <tstache1@binghamton.edu>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/scsi/mpt2sas/mpt2sas_scsih.c | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_scsih.c b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-index 7f0af4f..6fd7d40 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-@@ -8293,7 +8293,6 @@ _scsih_suspend(struct pci_dev *pdev, pm_message_t state)
- 
- 	mpt2sas_base_free_resources(ioc);
- 	pci_save_state(pdev);
--	pci_disable_device(pdev);
- 	pci_set_power_state(pdev, device_state);
- 	return 0;
- }
--- 
-1.9.1
+Rafael
 
