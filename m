@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932245AbaFJTvy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 15:51:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35338 "EHLO
+	id S932992AbaFJUN1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 16:13:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35344 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755094AbaFJTvt (ORCPT
+	with ESMTP id S932193AbaFJTvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:51:49 -0400
+	Tue, 10 Jun 2014 15:51:52 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tomoki Sekiyama <tomoki.sekiyama@hds.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Ilia Mirkin <imirkin@alum.mit.edu>, Ben Skeggs <bskeggs@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 148/160] drivers/tty/hvc: don't free hvc_console_setup after init
-Date: Tue, 10 Jun 2014 12:46:28 -0700
-Message-Id: <1402429600-20477-149-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 140/160] drm/nouveau/acpi: allow non-optimus setups to load vbios from acpi
+Date: Tue, 10 Jun 2014 12:46:20 -0700
+Message-Id: <1402429600-20477-141-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -28,36 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
+From: Ilia Mirkin <imirkin@alum.mit.edu>
 
-commit 501fed45b7e8836ee9373f4d31e2d85e3db6103a upstream.
+commit a3d0b1218d351c6e6f3cea36abe22236a08cb246 upstream.
 
-When 'console=hvc0' is specified to the kernel parameter in x86 KVM guest,
-hvc console is setup within a kthread. However, that will cause SEGV
-and the boot will fail when the driver is builtin to the kernel,
-because currently hvc_console_setup() is annotated with '__init'. This
-patch removes '__init' to boot the guest successfully with 'console=hvc0'.
+There appear to be a crop of new hardware where the vbios is not
+available from PROM/PRAMIN, but there is a valid _ROM method in ACPI.
+The data read from PCIROM almost invariably contains invalid
+instructions (still has the x86 opcodes), which makes this a low-risk
+way to try to obtain a valid vbios image.
 
-Signed-off-by: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=76475
+Signed-off-by: Ilia Mirkin <imirkin@alum.mit.edu>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/tty/hvc/hvc_console.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/nouveau/nouveau_acpi.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
-diff --git a/drivers/tty/hvc/hvc_console.c b/drivers/tty/hvc/hvc_console.c
-index 620da5f..e8e06d8 100644
---- a/drivers/tty/hvc/hvc_console.c
-+++ b/drivers/tty/hvc/hvc_console.c
-@@ -190,7 +190,7 @@ static struct tty_driver *hvc_console_device(struct console *c, int *index)
- 	return hvc_driver;
- }
+diff --git a/drivers/gpu/drm/nouveau/nouveau_acpi.c b/drivers/gpu/drm/nouveau/nouveau_acpi.c
+index ba0183f..d3c7646 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_acpi.c
++++ b/drivers/gpu/drm/nouveau/nouveau_acpi.c
+@@ -423,9 +423,6 @@ bool nouveau_acpi_rom_supported(struct pci_dev *pdev)
+ 	acpi_status status;
+ 	acpi_handle dhandle, rom_handle;
  
--static int __init hvc_console_setup(struct console *co, char *options)
-+static int hvc_console_setup(struct console *co, char *options)
- {	
- 	if (co->index < 0 || co->index >= MAX_NR_HVC_CONSOLES)
- 		return -ENODEV;
+-	if (!nouveau_dsm_priv.dsm_detected && !nouveau_dsm_priv.optimus_detected)
+-		return false;
+-
+ 	dhandle = ACPI_HANDLE(&pdev->dev);
+ 	if (!dhandle)
+ 		return false;
 -- 
 1.9.1
 
