@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603AbaFJPjp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 11:39:45 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:57054 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751174AbaFJPjo (ORCPT
+	id S1752021AbaFJPmy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 11:42:54 -0400
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:47414 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717AbaFJPmw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 11:39:44 -0400
+	Tue, 10 Jun 2014 11:42:52 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140610143344.GA15699@redhat.com>
-References: <20140606193128.CB477660FB4@gitolite.kernel.org>
-	<20140610143344.GA15699@redhat.com>
-Date: Tue, 10 Jun 2014 08:39:40 -0700
-X-Google-Sender-Auth: KMd1t1D87ln9hH5ZVZZsICIhFH8
-Message-ID: <CAD=FV=Wx2kuEHSebDQcrZs19o+7OAVo_WNNROoTwEkFc6xpqzQ@mail.gmail.com>
-Subject: Re: i2c: ChromeOS EC tunnel driver
-From: Doug Anderson <dianders@chromium.org>
-To: Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Douglas Anderson <dianders@chromium.org>,
-        Lee Jones <lee.jones@linaro.org>
+In-Reply-To: <1402404640.4456.4.camel@flatline.rdu.redhat.com>
+References: <1401332999-15167-1-git-send-email-eparis@redhat.com>
+	<20140609223057.GB18475@kroah.com>
+	<CALCETrUD75vSwJUjFuxGCrZ_7DJhCc1KW2v_ndF6EHJ31fUMBg@mail.gmail.com>
+	<CA+55aFwmajRnDOiBmZQf8rpVE-HigsDYy9oy-TsWLzn-vdyF+Q@mail.gmail.com>
+	<CALCETrXBSd4qKJE+yVp0YTPdrCDSfGf_SOxaZFgQpULg1bF3aA@mail.gmail.com>
+	<CA+55aFxAj5nA-fqTRE0Cotwxywf5LNCb-NnpWCHxZTn2GF3C4g@mail.gmail.com>
+	<1402404640.4456.4.camel@flatline.rdu.redhat.com>
+Date: Tue, 10 Jun 2014 08:42:52 -0700
+X-Google-Sender-Auth: wf01dXmHBxEvE2IH5iDNBvhATLQ
+Message-ID: <CA+55aFxzrJ6vBEJcByUO2+auO7k8AMJPTYH8t9K0xx=uxoqPOQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] auditsc: audit_krule mask accesses need bounds checking
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Eric Paris <eparis@redhat.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Greg KH <gregkh@linuxfoundation.org>, linux-audit@redhat.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave,
-
-On Tue, Jun 10, 2014 at 7:33 AM, Dave Jones <davej@redhat.com> wrote:
-> On Fri, Jun 06, 2014 at 07:31:28PM +0000, Linux Kernel wrote:
->  > Gitweb:     http://git.kernel.org/linus/;a=commit;h=9d230c9e4f4e67cb1c1cb9e0f6142da16b0f2796
->  > Commit:     9d230c9e4f4e67cb1c1cb9e0f6142da16b0f2796
->  > Parent:     5271db29d7199fe0ffb303ca4bbbb1485bba28c3
->  > Refname:    refs/heads/next
->  > Author:     Doug Anderson <dianders@chromium.org>
->  > AuthorDate: Wed Apr 30 10:44:09 2014 -0700
->  > Committer:  Lee Jones <lee.jones@linaro.org>
->  > CommitDate: Tue Jun 3 08:11:49 2014 +0100
+On Tue, Jun 10, 2014 at 5:50 AM, Eric Paris <eparis@redhat.com> wrote:
 >
->  > +static int ec_i2c_construct_message(u8 *buf, const struct i2c_msg i2c_msgs[],
->  > +                                int num, u16 bus_num)
->  > +{
->  > +    struct ec_params_i2c_passthru *params;
->  > +    u8 *out_data;
->  > +    int i;
->  > +
->  > +    out_data = buf + sizeof(struct ec_params_i2c_passthru) +
->  > +               num * sizeof(struct ec_params_i2c_passthru_msg);
->  > +
->  > +    params = (struct ec_params_i2c_passthru *)buf;
->  > +    params->port = bus_num;
->  > +    params->num_msgs = num;
->  > +    for (i = 0; i < num; i++) {
->  > +            const struct i2c_msg *i2c_msg = &i2c_msgs[i];
->  > +            struct ec_params_i2c_passthru_msg *msg = &params->msg[i];
->  > +
->  > +            msg->len = i2c_msg->len;
->  > +            msg->addr_flags = i2c_msg->addr;
->  > +
->  > +            if (i2c_msg->flags & I2C_M_TEN)
->  > +                    msg->addr_flags |= EC_I2C_FLAG_10BIT;
->
-> This is a fun bug. EC_I2C_FLAG_10BIT is 1<<16, but msg->addr_flags is only a uint16.
+> No, it's good to blame me.  I was trying to deal with it as fast as I
+> could since I was already trying to ignore my computer before I got
+> married last weekend and took the last week off.  I realized when I got
+> back yesterday you hadn't picked it up and it was on my list of things
+> to try to handle today.  I think both 1 and 2 are good to be applied to
+> your tree.  Although only #1 is really an absolutely critical issue.
 
-Good catch.  Luckily we have no actual 10-bit devices on the other
-end, but it sure makes this bit of the tunnel pretty stupid.
+Ok, I'll take your patch-series rather than the recent pull from Andy,
+and pick up #2 that way too.
 
-The correct fix is to fix the master 'ec_commands.h' in the ChromeOS
-EC project, then pull the change over to the kernel.  I've filed a bug
-against our EC team at http://crbug.com/382944
+I'll just take them from emails - it's not like I have to wait for a
+pull from you. It's just that I don't want to take them from emails
+_and_ then get them in a pull from you, which is why I tend to want to
+get explicit "please apply these directly" notification.
 
--Doug
+                Linus
