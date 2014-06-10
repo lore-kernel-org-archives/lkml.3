@@ -1,79 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752811AbaFJRmy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 13:42:54 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:39835 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751888AbaFJRmw (ORCPT
+	id S1752850AbaFJRnV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 13:43:21 -0400
+Received: from www.linutronix.de ([62.245.132.108]:54342 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752817AbaFJRnT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 13:42:52 -0400
+	Tue, 10 Jun 2014 13:43:19 -0400
+Date: Tue, 10 Jun 2014 19:43:16 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: Brad Mouring <bmouring@ni.com>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Jason Low <jason.low2@hp.com>
+Subject: Re: [patch V3 7/7] rtmutex: Avoid pointless requeueing in the deadlock
+ detection chain walk
+In-Reply-To: <20140610111942.668d4058@gandalf.local.home>
+Message-ID: <alpine.DEB.2.10.1406101943000.5170@nanos>
+References: <20140609201118.387571774@linutronix.de> <20140609202336.506044876@linutronix.de> <20140610145725.GA29976@linuxgetsreal> <20140610111942.668d4058@gandalf.local.home>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <53973D42.4010209@enst-bretagne.fr>
-References: <1402417153-2551-1-git-send-email-milos.vyletel@gmail.com>
-	<1402417153-2551-4-git-send-email-milos.vyletel@gmail.com>
-	<53973D42.4010209@enst-bretagne.fr>
-Date: Tue, 10 Jun 2014 13:42:51 -0400
-Message-ID: <CAAFXRd2QhXneN0RLe2+NZLTYVt9rq+COXyox91008QGuCzkd0w@mail.gmail.com>
-Subject: Re: [patch net-next 3/5] ipv6: consider net.ipv6.conf.all sysctls
- when making decisions
-From: Milos Vyletel <milos.vyletel@gmail.com>
-To: Florent Fourcot <florent.fourcot@enst-bretagne.fr>
-Cc: "David S. Miller" <davem@davemloft.net>, amwang@redhat.com,
-        netdev@vger.kernel.org, Oliver Neukum <oliver@neukum.org>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>,
-        stephen hemminger <stephen@networkplumber.org>,
-        Pravin B Shelar <pshelar@nicira.com>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        Mike Rapoport <mike.rapoport@ravellosystems.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Or Gerlitz <ogerlitz@mellanox.com>, Tom Herbert <therbert@google.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Eric Dumazet <edumazet@google.com>,
-        Paul Durrant <Paul.Durrant@citrix.com>,
-        "open list:USB CDC ETHERNET..." <linux-usb@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hello,
->
->>
->> IN6_DEV_MAXCONF
->>       IN6_DEV_HOPLIMIT
->>       IN6_DEV_MTU
->
-> I'm a little bit surprise to set the MTU as the maximum of all/dev
-> value. Since the default for "all" is IPV6_MIN_MTU, it is probably
-> harmless, but it could be a little bit surprising for administrators.
->
->>  IN6_DEV_USE_TEMPADDR
->
-> For this one, the default is zero, except for point-to-point and
-> loopback, with -1. I didn't see any difference between 0 and -1 in the
-> current kernel code, but if I missed something, it could be a little
-> problem.
+On Tue, 10 Jun 2014, Steven Rostedt wrote:
 
-Hi,
+> On Tue, 10 Jun 2014 09:57:25 -0500
+> "Brad Mouring" <bmouring@ni.com> wrote:
+> 
+> 
+> > > +		/* Store whether owner is blocked itself and drop locks */
+> > > +		next_lock = task_blocked_on(task);
+> > task_blocked_on(task) is not clear to me, the recipient of the
+> > return is the only clue that hints at what the function does.
+> 
+> Well, this is more than confusing, it's the only user, all other users
+> are task_blocked_on_lock(), and this causes the code not to compile.
 
-these are both valid points. It does not make too much sense to get
-max value for MTU and I'd say we should either get min or simply get
-interface setting and don't change the current behavior for this particular
-one.
-
-use_tempaddr will have special treatment too since it can range from:
-use_tempaddr - INTEGER
-    Preference for Privacy Extensions (RFC3041).
-      <= 0 : disable Privacy Extensions
-      == 1 : enable Privacy Extensions, but prefer public
-             addresses over temporary addresses.
-      >  1 : enable Privacy Extensions and prefer temporary
-             addresses over public addresses.
-    Default:  0 (for most devices)
-         -1 (for point-to-point devices and loopback devices)
-
-Milos
+Grr, yes.
