@@ -1,106 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755787AbaFJUAH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 16:00:07 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35596 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755523AbaFJTx6 (ORCPT
+	id S1755801AbaFJUAW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 16:00:22 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:56202 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753846AbaFJUAR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:53:58 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 029/160] USB: usb_wwan: fix handling of missing bulk endpoints
-Date: Tue, 10 Jun 2014 12:44:29 -0700
-Message-Id: <1402429600-20477-30-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
-References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
+	Tue, 10 Jun 2014 16:00:17 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Dirk Brandewie <dirk.brandewie@gmail.com>
+Cc: dirk.j.brandewie@intel.com, Stratos Karafotis <stratosk@semaphore.gr>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/7] cpufreq: intel_pstate: Trivial code cleanup
+Date: Tue, 10 Jun 2014 22:17:40 +0200
+Message-ID: <5753346.hxK14sqO5y@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <53973FD4.7090904@intel.com>
+References: <5396208F.6070400@semaphore.gr> <1447217.dTmMAkaUnF@vostro.rjw.lan> <53973FD4.7090904@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Extended-Stable: 3.13
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.3 -stable review patch.  If anyone has any objections, please let me know.
+On Tuesday, June 10, 2014 10:26:44 AM Dirk Brandewie wrote:
+> On 06/10/2014 08:31 AM, Rafael J. Wysocki wrote:
+> > On Tuesday, June 10, 2014 08:12:48 AM Dirk Brandewie wrote:
+> >> On 06/09/2014 02:01 PM, Stratos Karafotis wrote:
+> >>> Remove unnecessary blank lines.
+> >>> Remove unnecessary parentheses.
+> >>> Remove unnecessary braces.
+> >>> Put the code in one line where possible.
+> >>> Add blank lines after variable declarations.
+> >>> Alignment to open parenthesis.
+> >>>
+> >>
+> >> I don't have an issue with this patch in general but I would rather
+> >> the cleanup be done when there is a functional change in the given
+> >> hunk of code otherwise you are setting up a fence for stable/backporters
+> >> of functional changes in the future.
+> >
+> > I actually prefer separate cleanups so as to avoid doing multiple things
+> > in one patch.
+> >
+> > Rafael
+> >
+> I don't have strong feelings either way I was just trying to be kind
+> to the maintainers of distro kernels.
 
-------------------
+And mixing fixes with cleanups in one patch doesn't do any good to them.
 
-From: Johan Hovold <jhovold@gmail.com>
+Trust me, I used to work for a distro. :-)
 
-commit bd73bd8831696f189a479a0712ae95208e513d7e upstream.
-
-Fix regression introduced by commit 8e493ca1767d ("USB: usb_wwan: fix
-bulk-urb allocation") by making sure to require both bulk-in and out
-endpoints during port probe.
-
-The original option driver (which usb_wwan is based on) was written
-under the assumption that either endpoint could be missing, but
-evidently this cannot have been tested properly. Specifically, it would
-handle opening a device without bulk-in (but would blow up during resume
-which was implemented later), but not a missing bulk-out in write()
-(although it is handled in some places such as write_room()).
-
-Fortunately (?), the driver also got the test for missing endpoints
-wrong so the urbs were in fact always allocated, although they would be
-initialised using the wrong endpoint address (0) and any submission of
-such an urb would fail.
-
-The commit mentioned above fixed the test for missing endpoints but
-thereby exposed the other bugs which would now generate null-pointer
-exceptions rather than failed urb submissions.
-
-The regression was introduced in v3.7, but the offending commit was also
-marked for stable.
-
-Reported-by: Rafał Miłecki <zajec5@gmail.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Tested-by: Rafał Miłecki <zajec5@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/usb/serial/usb_wwan.c | 9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/usb/serial/usb_wwan.c b/drivers/usb/serial/usb_wwan.c
-index 8536578..6fa7836 100644
---- a/drivers/usb/serial/usb_wwan.c
-+++ b/drivers/usb/serial/usb_wwan.c
-@@ -470,6 +470,9 @@ int usb_wwan_port_probe(struct usb_serial_port *port)
- 	int err;
- 	int i;
- 
-+	if (!port->bulk_in_size || !port->bulk_out_size)
-+		return -ENODEV;
-+
- 	portdata = kzalloc(sizeof(*portdata), GFP_KERNEL);
- 	if (!portdata)
- 		return -ENOMEM;
-@@ -477,9 +480,6 @@ int usb_wwan_port_probe(struct usb_serial_port *port)
- 	init_usb_anchor(&portdata->delayed);
- 
- 	for (i = 0; i < N_IN_URB; i++) {
--		if (!port->bulk_in_size)
--			break;
--
- 		buffer = (u8 *)__get_free_page(GFP_KERNEL);
- 		if (!buffer)
- 			goto bail_out_error;
-@@ -493,9 +493,6 @@ int usb_wwan_port_probe(struct usb_serial_port *port)
- 	}
- 
- 	for (i = 0; i < N_OUT_URB; i++) {
--		if (!port->bulk_out_size)
--			break;
--
- 		buffer = kmalloc(OUT_BUFLEN, GFP_KERNEL);
- 		if (!buffer)
- 			goto bail_out_error2;
--- 
-1.9.1
+Rafael
 
