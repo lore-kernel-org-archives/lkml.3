@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936140AbaFJA3H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:29:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58620 "EHLO
+	id S936148AbaFJA31 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:29:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58627 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934609AbaFJAWt (ORCPT
+	with ESMTP id S934602AbaFJAWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 20:22:49 -0400
+	Mon, 9 Jun 2014 20:22:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hannes Reinecke <hare@suse.de>, Rob Evers <revers@redhat.com>,
-        Christoph Hellwig <hch@lst.de>, Roland Dreier <roland@purestorage.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
         Nicholas Bellinger <nab@linux-iscsi.org>,
         Ben Hutchings <ben@decadent.org.uk>, Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 3.4 69/88] target: Fix MAINTENANCE_IN service action CDB checks to use lower 5 bits
-Date: Mon,  9 Jun 2014 17:25:19 -0700
-Message-Id: <20140610002426.770392814@linuxfoundation.org>
+Subject: [PATCH 3.4 68/88] target/pscsi: fix return value check
+Date: Mon,  9 Jun 2014 17:25:18 -0700
+Message-Id: <20140610002426.736264092@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
 References: <20140610002424.500996570@linuxfoundation.org>
@@ -31,81 +30,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-commit ba539743b70cd160c84bab1c82910d0789b820f8 upstream.
+commit 58932e96e438cd78f75e765d7b87ef39d3533d15 upstream.
 
-This patch fixes the MAINTENANCE_IN service action type checks to only
-look at the proper lower 5 bits of cdb byte 1.  This addresses the case
-where MI_REPORT_TARGET_PGS w/ extended header using the upper three bits of
-cdb byte 1 was not processed correctly in transport_generic_cmd_sequencer,
-as well as the three cases for standby, unavailable, and transition ALUA
-primary access state checks.
+In case of error, the function scsi_host_lookup() returns NULL
+pointer not ERR_PTR(). The IS_ERR() test in the return value check
+should be replaced with NULL test.
 
-Also add MAINTENANCE_IN to the excluded list in transport_generic_prepare_cdb()
-to prevent the PARAMETER DATA FORMAT bits from being cleared.
-
-Cc: Hannes Reinecke <hare@suse.de>
-Cc: Rob Evers <revers@redhat.com>
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+[bwh: Backported to 3.2: pscsi_configure_device() returns a pointer]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Rui Xiang <rui.xiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_alua.c      |    6 +++---
- drivers/target/target_core_transport.c |    3 ++-
- 2 files changed, 5 insertions(+), 4 deletions(-)
+ drivers/target/target_core_pscsi.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/target/target_core_alua.c
-+++ b/drivers/target/target_core_alua.c
-@@ -394,7 +394,7 @@ static inline int core_alua_state_standb
- 	case SEND_DIAGNOSTIC:
- 		return 0;
- 	case MAINTENANCE_IN:
--		switch (cdb[1]) {
-+		switch (cdb[1] & 0x1f) {
- 		case MI_REPORT_TARGET_PGS:
- 			return 0;
- 		default:
-@@ -437,7 +437,7 @@ static inline int core_alua_state_unavai
- 	case REPORT_LUNS:
- 		return 0;
- 	case MAINTENANCE_IN:
--		switch (cdb[1]) {
-+		switch (cdb[1] & 0x1f) {
- 		case MI_REPORT_TARGET_PGS:
- 			return 0;
- 		default:
-@@ -478,7 +478,7 @@ static inline int core_alua_state_transi
- 	case REPORT_LUNS:
- 		return 0;
- 	case MAINTENANCE_IN:
--		switch (cdb[1]) {
-+		switch (cdb[1] & 0x1f) {
- 		case MI_REPORT_TARGET_PGS:
- 			return 0;
- 		default:
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -1458,6 +1458,7 @@ static inline void transport_generic_pre
- 	case VERIFY_16: /* SBC - VRProtect */
- 	case WRITE_VERIFY: /* SBC - VRProtect */
- 	case WRITE_VERIFY_12: /* SBC - VRProtect */
-+	case MAINTENANCE_IN: /* SPC - Parameter Data Format for SA RTPG */
- 		break;
- 	default:
- 		cdb[1] &= 0x1f; /* clear logical unit number */
-@@ -2813,7 +2814,7 @@ static int transport_generic_cmd_sequenc
- 			/*
- 			 * Check for emulated MI_REPORT_TARGET_PGS.
- 			 */
--			if (cdb[1] == MI_REPORT_TARGET_PGS &&
-+			if ((cdb[1] & 0x1f) == MI_REPORT_TARGET_PGS &&
- 			    su_dev->t10_alua.alua_type == SPC3_ALUA_EMULATED) {
- 				cmd->execute_task =
- 					target_emulate_report_target_port_groups;
+--- a/drivers/target/target_core_pscsi.c
++++ b/drivers/target/target_core_pscsi.c
+@@ -128,10 +128,10 @@ static int pscsi_pmode_enable_hba(struct
+ 	 * pSCSI Host ID and enable for phba mode
+ 	 */
+ 	sh = scsi_host_lookup(phv->phv_host_id);
+-	if (IS_ERR(sh)) {
++	if (!sh) {
+ 		pr_err("pSCSI: Unable to locate SCSI Host for"
+ 			" phv_host_id: %d\n", phv->phv_host_id);
+-		return PTR_ERR(sh);
++		return -EINVAL;
+ 	}
+ 
+ 	phv->phv_lld_host = sh;
+@@ -562,10 +562,10 @@ static struct se_device *pscsi_create_vi
+ 			sh = phv->phv_lld_host;
+ 		} else {
+ 			sh = scsi_host_lookup(pdv->pdv_host_id);
+-			if (IS_ERR(sh)) {
++			if (!sh) {
+ 				pr_err("pSCSI: Unable to locate"
+ 					" pdv_host_id: %d\n", pdv->pdv_host_id);
+-				return ERR_CAST(sh);
++				return ERR_PTR(-EINVAL);
+ 			}
+ 		}
+ 	} else {
 
 
