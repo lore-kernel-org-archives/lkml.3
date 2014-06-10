@@ -1,136 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751401AbaFJOwD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 10:52:03 -0400
-Received: from sema.semaphore.gr ([78.46.194.137]:57279 "EHLO
-	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750777AbaFJOwB (ORCPT
+	id S1751572AbaFJOxc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 10:53:32 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49866 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750800AbaFJOxb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 10:52:01 -0400
-Message-ID: <53971B8E.4040302@semaphore.gr>
-Date: Tue, 10 Jun 2014 17:51:58 +0300
-From: Stratos Karafotis <stratosk@semaphore.gr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 10 Jun 2014 10:53:31 -0400
+Date: Tue, 10 Jun 2014 16:53:27 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Martin Jambor <mjambor@suse.cz>, Petr Mladek <pmladek@suse.cz>,
+        linux-kernel@vger.kernel.org, gcc@gcc.gnu.org
+Subject: Re: [PATCH] tell gcc optimizer to never introduce new data races
+Message-ID: <20140610145327.GJ6758@twins.programming.kicks-ass.net>
+References: <alpine.LNX.2.00.1406101517300.9378@pobox.suse.cz>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/7] cpufreq: intel_pstate: Simplify code in intel_pstate_adjust_busy_pstate
-References: <5396207D.7030704@semaphore.gr> <CAKohpokYB4oKxrEwHH888T5hg=zrpb0PCs_QKTLS0bd-_fqeTA@mail.gmail.com>
-In-Reply-To: <CAKohpokYB4oKxrEwHH888T5hg=zrpb0PCs_QKTLS0bd-_fqeTA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="QFO1zB2dwAkGraMW"
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1406101517300.9378@pobox.suse.cz>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/06/2014 08:27 πμ, Viresh Kumar wrote:
-> On 10 June 2014 02:30, Stratos Karafotis <stratosk@semaphore.gr> wrote:
->> Simplify the code by removing the inline functions
->> pstate_increase and pstate_decrease and use directly the
->> intel_pstate_set_pstate.
->>
->> Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
->> ---
->>  drivers/cpufreq/intel_pstate.c | 26 +++-----------------------
->>  1 file changed, 3 insertions(+), 23 deletions(-)
->>
->> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
->> index 3a49269..26a0262 100644
->> --- a/drivers/cpufreq/intel_pstate.c
->> +++ b/drivers/cpufreq/intel_pstate.c
->> @@ -588,21 +588,6 @@ static void intel_pstate_set_pstate(struct cpudata *cpu, int pstate)
->>         pstate_funcs.set(cpu, pstate);
->>  }
->>
->> -static inline void intel_pstate_pstate_increase(struct cpudata *cpu, int steps)
->> -{
->> -       int target;
->> -       target = cpu->pstate.current_pstate + steps;
->> -
->> -       intel_pstate_set_pstate(cpu, target);
->> -}
->> -
->> -static inline void intel_pstate_pstate_decrease(struct cpudata *cpu, int steps)
->> -{
->> -       int target;
->> -       target = cpu->pstate.current_pstate - steps;
->> -       intel_pstate_set_pstate(cpu, target);
->> -}
->> -
->>  static void intel_pstate_get_cpu_pstates(struct cpudata *cpu)
->>  {
->>         cpu->pstate.min_pstate = pstate_funcs.get_min();
->> @@ -695,20 +680,15 @@ static inline void intel_pstate_calc_scaled_busy(struct cpudata *cpu)
->>  static inline void intel_pstate_adjust_busy_pstate(struct cpudata *cpu)
->>  {
->>         struct _pid *pid;
->> -       signed int ctl = 0;
->> -       int steps;
->> +       signed int ctl;
->>
->>         pid = &cpu->pid;
->>         intel_pstate_calc_scaled_busy(cpu);
->>
->>         ctl = pid_calc(pid, cpu->sample.busy_scaled);
->>
->> -       steps = abs(ctl);
->> -
->> -       if (ctl < 0)
->> -               intel_pstate_pstate_increase(cpu, steps);
->> -       else
->> -               intel_pstate_pstate_decrease(cpu, steps);
->> +       /* Negative values of ctl increase the pstate and vice versa */
->> +       intel_pstate_set_pstate(cpu, cpu->pstate.current_pstate - ctl);
->>  }
-> 
-> I am not very good at this driver but there is some obvious functional
-> change here. Earlier we used to pass
-> 'cpu->pstate.current_pstate {-|+} steps' and now you are doing '-ctl' only
-> 
 
-The original code is:	
+--QFO1zB2dwAkGraMW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-	if (ctl < 0)
-		intel_pstate_pstate_increase(cpu, steps);
-	else
-		intel_pstate_pstate_decrease(cpu, steps);
-		
-Without inlines functions intel_pstate_pstate_increase() and
-intel_pstate_pstate_decrease() we get:
+On Tue, Jun 10, 2014 at 03:23:36PM +0200, Jiri Kosina wrote:
+> +# Tell gcc to never replace conditional load with a non-conditional one
+> +KBUILD_CFLAGS	+= $(call cc-option,--param allow-store-data-races=0)
+> +
 
-	if (ctl < 0)
-		intel_pstate_set_pstate(cpu, cpu->pstate.current_pstate + steps);
-	else
-		intel_pstate_set_pstate(cpu, cpu->pstate.current_pstate - steps);
+Why do we not want: -fmemory-model=safe? And should we not at the very
+least also disable packed-store-data-races?
 
-	
-But steps = abs(ctl), so:
+--QFO1zB2dwAkGraMW
+Content-Type: application/pgp-signature
 
-	if (ctl < 0)
-		intel_pstate_set_pstate(cpu, cpu->pstate.current_pstate + abs(ctl));
-	else
-		intel_pstate_set_pstate(cpu, cpu->pstate.current_pstate - abs(ctl));
-	
-By definition, abs(ctl) = ctl if ctl >= 0, -ctl if ctl < 0. Thus:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-	if (ctl < 0)
-		intel_pstate_set_pstate(cpu, cpu->pstate.current_pstate + (-ctl));
-	else
-		intel_pstate_set_pstate(cpu, cpu->pstate.current_pstate - ctl);
+iQIcBAEBAgAGBQJTlxvnAAoJEHZH4aRLwOS6JxsP/jZrr6Lus3q5zzZ9GAGYUXBd
+0+8cxiiKPJ7+70Z5wc4X3QZvtUTLreHwgPi2KWqBe8JWsMl+lE6Q7mznb8Rv+tBa
+otbeOxgT4kwZBv8pvXrk7ggfBA4y+43njaO/dcCy4sVUJZOi5ixvwn8Bd+I6pIzh
+oktA0ZpVCySbtrj2iqRkehVMyQGAy/txObOqf8oE5rEeqE3pSlzjrozIT9xxWQhf
+uHFu8FQi5Qql0IguLY0kfjFsmZtO6nEZd8ObcT2XbNgESdnexCdiyZ72WUeV6MAx
+eGnog3MgfpWVkWUwc8IBMvHL7hdMy7QT35K1SihgbSRUOfQg90uuN0s04K4FWHRC
+U4Mt2Cd0RBqWi+HrBMXz+1IcTuY6tzS9pNGsbhfXQZfh9OUCknSs/oQoDtvqtdCn
+OK2swHGh/eIyH9QiZhZxi8MhiPf3Xwuqm8mU6UmqaybPrHuZ40RiEqnj/s2GGxgN
+iFfDTqVpLpkNc7Wv/gi3VH3nlMWZtD3aeFud3oSqWALEqAZzIXTds3ORBcUYwTsz
+Zx8KXMlYJTi8p478DOhLQmCoOyebNTq9+7eJbc1T9xTosFQs/3ODZHm3WHrXgp6h
+WsM2vvxSIalvvYXy2JKz5Wn/ffpEB3DBPcNZFkKwRYQ6sRuVud2M72mgCHAsk5jC
+UyPzr/yfkzxX+L/kO7Zd
+=gRyJ
+-----END PGP SIGNATURE-----
 
-And:
-	if (ctl < 0)
-		intel_pstate_set_pstate(cpu, cpu->pstate.current_pstate - ctl);
-	else
-		intel_pstate_set_pstate(cpu, cpu->pstate.current_pstate - ctl);
-
-Finally remove the unnecessary if statement.		
-	intel_pstate_set_pstate(cpu, cpu->pstate.current_pstate - ctl);
-
-So, this is equivalent with the original code.
-
-Thanks,
-Stratos
+--QFO1zB2dwAkGraMW--
