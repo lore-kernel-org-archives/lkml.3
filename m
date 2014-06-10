@@ -1,42 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751339AbaFJOWA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 10:22:00 -0400
-Received: from skprod3.natinst.com ([130.164.80.24]:37098 "EHLO ni.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750834AbaFJOV7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 10:21:59 -0400
-From: "Brad Mouring" <bmouring@ni.com>
-Date: Tue, 10 Jun 2014 09:21:15 -0500
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Jason Low <jason.low2@hp.com>,
-        Brad Mouring <bmouring@ni.com>
-Subject: Re: [patch V3 3/7] rtmutex: Document pi chain walk
-Message-ID: <20140610142115.GD28502@linuxgetsreal>
-References: <20140609201118.387571774@linutronix.de>
- <20140609202336.158034184@linutronix.de>
+	id S1751163AbaFJOYj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 10:24:39 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:43094 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717AbaFJOYh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 10:24:37 -0400
+Date: Tue, 10 Jun 2014 19:54:30 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Hannes Reinecke <hare@suse.de>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] aic7xxx/aic79xx : Use kstrdup
+Message-ID: <20140610142430.GA3048@himangi-Dell>
 MIME-Version: 1.0
-In-Reply-To: <20140609202336.158034184@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-MIMETrack: Itemize by SMTP Server on US-AUS-MGWOut1/AUS/H/NIC(Release 8.5.3FP5|July 31, 2013) at
- 06/10/2014 09:21:16 AM,
-	Serialize by Router on US-AUS-MGWOut1/AUS/H/NIC(Release 8.5.3FP5|July 31, 2013) at
- 06/10/2014 09:21:16 AM,
-	Serialize complete at 06/10/2014 09:21:16 AM
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-06-10_05:2014-06-10,2014-06-10,1970-01-01 signatures=0
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 09, 2014 at 08:28:08PM -0000, Thomas Gleixner wrote:
-> Add commentry to document the chain walk and the protection mechanisms
-> and their scope.
-> 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Use kstrdup when the goal of an allocation is copy a string into the
+allocated region.
 
-Reviewed-by: Brad Mouring <brad.mouring@ni.com>
+The semantic patch that makes this change is as follows:
+// <smpl>
+@@
+expression from,to;
+expression flag,E1,E2;
+statement S;
+@@
+
+-  to = kmalloc(strlen(from) + 1,flag);
++  to = kstrdup(from, flag);
+   ... when != \(from = E1 \| to = E1 \)
+   if (to==NULL || ...) S
+   ... when != \(from = E2 \| to = E2 \)
+-  strcpy(to, from);
+// </smpl>
+
+
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+---
+ drivers/scsi/aic7xxx/aic79xx_osm_pci.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/drivers/scsi/aic7xxx/aic79xx_osm_pci.c b/drivers/scsi/aic7xxx/aic79xx_osm_pci.c
+index 3c85873..8466aa7 100644
+--- a/drivers/scsi/aic7xxx/aic79xx_osm_pci.c
++++ b/drivers/scsi/aic7xxx/aic79xx_osm_pci.c
+@@ -178,10 +178,9 @@ ahd_linux_pci_dev_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 		ahd_get_pci_bus(pci),
+ 		ahd_get_pci_slot(pci),
+ 		ahd_get_pci_function(pci));
+-	name = kmalloc(strlen(buf) + 1, GFP_ATOMIC);
++	name = kstrdup(buf, GFP_ATOMIC);
+ 	if (name == NULL)
+ 		return (-ENOMEM);
+-	strcpy(name, buf);
+ 	ahd = ahd_alloc(NULL, name);
+ 	if (ahd == NULL)
+ 		return (-ENOMEM);
+-- 
+1.9.1
+
