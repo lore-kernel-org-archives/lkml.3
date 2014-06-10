@@ -1,79 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755080AbaFJITF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 04:19:05 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:55819 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751010AbaFJITB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 04:19:01 -0400
-Message-ID: <5396BF5E.7070805@ahsoftware.de>
-Date: Tue, 10 Jun 2014 10:18:38 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S934549AbaFJIT6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 04:19:58 -0400
+Received: from sauhun.de ([89.238.76.85]:33466 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932209AbaFJITz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 04:19:55 -0400
+Date: Tue, 10 Jun 2014 10:19:50 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Max Schwarz <max.schwarz@online.de>
+Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Heiko =?utf-8?Q?St=C3=BCbner?= <heiko@sntech.de>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: Re: [PATCH v4] i2c: add driver for Rockchip RK3xxx SoC I2C adapter
+Message-ID: <20140610081950.GA2620@katana>
+References: <5192968.EzcUiXba22@typ>
+ <1547619.upPdAXDT0W@typ>
+ <20140602120854.GA2654@katana>
+ <1468105.xYIQWVNzVZ@typ>
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: HID: hid-sensor-hub: fix sleeping function called from invalid
- context
-References: <53963364.4010104@ahsoftware.de> <alpine.LNX.2.00.1406100038150.2827@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1406100038150.2827@pobox.suse.cz>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6c2NcOVqGQ03X4Wi"
+Content-Disposition: inline
+In-Reply-To: <1468105.xYIQWVNzVZ@typ>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 10.06.2014 00:40, schrieb Jiri Kosina:
-> On Tue, 10 Jun 2014, Alexander Holler wrote:
-> 
->> Hello,
->>
->> while rebasing the dozens (currently around 60) of refused, ignored or
->> similiar bugfixes and patches I need to use a Linux kernel, I've noticed that
->> Jiri Kosinas patch here
->>
->> https://lkml.org/lkml/2013/8/9/214
->>
->> doesn't apply anymore.
->>
->> Looking why, I've seen that a similiar patch from Srinivas Pandruvada named
->> like the topic ended up in the kernel.
-> 
-> Hi Alexander,
-> 
-> thanks for drawing this one from the boulevard of forgotten patches.
-> 
-> I am actually not aware of any patch by Srinivas that would conflict with 
-> the one I've written -- could you please elaborate where you believe the 
-> conflict is?
 
-I actually don't rebase from main-version to main-version (that doesn't
-really work), but I'm using format-patch and git am. It's a bit more
-strict when that's ok. I haven't looked in deep which changes in 3.15 do
-conflict with the patch based on 3.14, but it't can't be that much.
+--6c2NcOVqGQ03X4Wi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->> Looking at the differences, I wonder if not all spin_lock() calls in 
->> hid-sensor-hub.c should be changed into spin_lock_irqsave() like the 
->> patch from Jiri Kosina did.
-> 
-> Could you please give me your Tested-by:? I'll then be happily queuing the 
-> fix. Thanks.
 
-Sure, but I already did that in the reply to your patch.
+> > > +	/* Synchronization & notification */
+> > > +	spinlock_t lock;
+> >=20
+> > Why the lock? The core has per-adapter locks anyhow.
+>=20
+> I'm using it to lock the rk3x_i2c struct during interrupts. It's needed t=
+here=20
+> because an operation can timeout, which means the interrupt can occur at =
+any=20
+> time and possibly conflict with the cleanup I do after a timeout.
+>=20
+> I looked around in i2c-exynos5.c, i2c-pxa.c and others, and they do it th=
+e=20
+> same way. Could you explain in more detail why it's not needed?
 
->> (sorry for the duplicate message, I've forgotten to add the
->> wanna-be-reviewer-school named lkml to the recipients)
-> 
-> You want to make it to LWN quotes of the week, don't you? :)
+I saw that you disable IRQs on timeout, so that shouldn't happen? You
+don't disable IRQs after a successful transfer, though, AFAICS.
 
-No, I'm just too often the object of their first steps and that's why I
-won't post any patches on lkml anymore. It might be fun for them to do
-reviews on patches from innocent people, but those victims usually don't
-share their view. Maybe I will choose full disclosure or similiar I ever
-will have an important patch poor Linux users should really have a need for.
+> > It looks to me that you STOP after every message? You should use
+> > REPEATED_START inbetween messages and only stop after the last message
+> > of a transfer.
+>=20
+> I had a fight with the hw today and finally got it to issue a REPEATED_ST=
+ART=20
+> for multiple "boring" messages. Will be included in the next version.
 
-Regards,
+Great.
 
-Alexander Holler
+> Actually, I wasn't aware that (len =3D=3D 0) is a valid case. The hw supp=
+orts it=20
+> in both modes, I just tested that. So the check is going away.
+
+Also good!
+
+
+--6c2NcOVqGQ03X4Wi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTlr+mAAoJEBQN5MwUoCm2E38QAIc0r1TB/LiT/wQnX8dUL+TC
+vWEM0bpIm5CIaHnrS08HbAflht0ZfLB0zqXnDbfylYLzO1a8fPary5wDVFRUq2Z7
+oCYx4mpKscRnInrozhrDVPgu0WaVRunPn4XzixEoNqo/EK0/jXfT+gDosm8eQwBU
+HkjV4cPdflzwmw6MkVu0pa9+ojEY/qa9jY4z67OQICvAor58JwXjAzhXkz7o9C5U
+dMmRFMUVxc60ukRx4BzlT8sqzdVc8n2bmdWtJxkibtObHDH/xfZK9UCkYunPwG3H
+HuvoFj73siBNe3Ukjk5k3yWBWUECE2TzMidyXU8bz0sxR4pWYfD8NOIlr8stecHD
+Ulc1iGzNvgZJ6NRZ4hw40lo0Nrb5XsrSbMp9TOptzNa5+kbmxT0Q+gnHAzqr9KQW
+j769QJ247gubRnFagbUPiSR3G5Q1vM51OT5Iye87fZ9D4ews2yxO4prVMCyT0zyy
+D3HVx6qLwB5S3XT87aivkXYBc4dtTHmpWus08RUDmtRndN8HJdISy2RXjZYXrxoE
+7DeF9dqaepMNpDSs2Xmeaq8gJca+D/EXb/XyAB3kC/M3I3Dd1EDXEaRAgxX/3iGt
+MwdaYjvJrcR94/mRc4sCfONdD+Wk9s9Qz4BDbHb/riGwfHeYppqFl3IzSLxXRhEc
+jAEwTAcGewT4mjs9Gyws
+=pzGX
+-----END PGP SIGNATURE-----
+
+--6c2NcOVqGQ03X4Wi--
