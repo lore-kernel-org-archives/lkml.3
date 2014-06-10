@@ -1,22 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932702AbaFJT4s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 15:56:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35693 "EHLO
+	id S932766AbaFJT5D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 15:57:03 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35686 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932656AbaFJTyq (ORCPT
+	with ESMTP id S1754323AbaFJTyp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:54:46 -0400
+	Tue, 10 Jun 2014 15:54:45 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>, Neil Horman <nhorman@tuxdriver.com>,
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Bob Liu <lliubbo@gmail.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Michel Lespinasse <walken@google.com>, Dave Jones <davej@redhat.com>,
+        Vlastimil Babka <vbabka@suse.cz>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 045/160] coredump: fix va_list corruption
-Date: Tue, 10 Jun 2014 12:44:45 -0700
-Message-Id: <1402429600-20477-46-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 044/160] thp: close race between split and zap huge pages
+Date: Tue, 10 Jun 2014 12:44:44 -0700
+Message-Id: <1402429600-20477-45-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -29,69 +33,139 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-commit 404ca80eb5c2727d78cd517d12108b040c522e12 upstream.
+commit b5a8cad376eebbd8598642697e92a27983aee802 upstream.
 
-A va_list needs to be copied in case it needs to be used twice.
+Sasha Levin has reported two THP BUGs[1][2].  I believe both of them
+have the same root cause.  Let's look to them one by one.
 
-Thanks to Hugh for debugging this issue, leading to various panics.
+The first bug[1] is "kernel BUG at mm/huge_memory.c:1829!".  It's
+BUG_ON(mapcount != page_mapcount(page)) in __split_huge_page().  From my
+testing I see that page_mapcount() is higher than mapcount here.
 
-Tested:
+I think it happens due to race between zap_huge_pmd() and
+page_check_address_pmd().  page_check_address_pmd() misses PMD which is
+under zap:
 
-  lpq84:~# echo "|/foobar12345 %h %h %h %h %h %h %h %h %h %h %h %h %h %h %h %h %h %h %h %h" >/proc/sys/kernel/core_pattern
+	CPU0						CPU1
+						zap_huge_pmd()
+						  pmdp_get_and_clear()
+__split_huge_page()
+  anon_vma_interval_tree_foreach()
+    __split_huge_page_splitting()
+      page_check_address_pmd()
+        mm_find_pmd()
+	  /*
+	   * We check if PMD present without taking ptl: no
+	   * serialization against zap_huge_pmd(). We miss this PMD,
+	   * it's not accounted to 'mapcount' in __split_huge_page().
+	   */
+	  pmd_present(pmd) == 0
 
-'produce_core' is simply : main() { *(int *)0 = 1;}
+  BUG_ON(mapcount != page_mapcount(page)) // CRASH!!!
 
-  lpq84:~# ./produce_core
-  Segmentation fault (core dumped)
-  lpq84:~# dmesg | tail -1
-  [  614.352947] Core dump to |/foobar12345 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 (null) pipe failed
+						  page_remove_rmap(page)
+						    atomic_add_negative(-1, &page->_mapcount)
 
-Notice the last argument was replaced by a NULL (we were lucky enough to
-not crash, but do not try this on your production machine !)
+The second bug[2] is "kernel BUG at mm/huge_memory.c:1371!".
+It's VM_BUG_ON_PAGE(!PageHead(page), page) in zap_huge_pmd().
 
-After fix :
+This happens in similar way:
 
-  lpq83:~# echo "|/foobar12345 %h %h %h %h %h %h %h %h %h %h %h %h %h %h %h %h %h %h %h %h" >/proc/sys/kernel/core_pattern
-  lpq83:~# ./produce_core
-  Segmentation fault
-  lpq83:~# dmesg | tail -1
-  [  740.800441] Core dump to |/foobar12345 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 pipe failed
+	CPU0						CPU1
+						zap_huge_pmd()
+						  pmdp_get_and_clear()
+						  page_remove_rmap(page)
+						    atomic_add_negative(-1, &page->_mapcount)
+__split_huge_page()
+  anon_vma_interval_tree_foreach()
+    __split_huge_page_splitting()
+      page_check_address_pmd()
+        mm_find_pmd()
+	  pmd_present(pmd) == 0	/* The same comment as above */
+  /*
+   * No crash this time since we already decremented page->_mapcount in
+   * zap_huge_pmd().
+   */
+  BUG_ON(mapcount != page_mapcount(page))
 
-Fixes: 5fe9d8ca21cc ("coredump: cn_vprintf() has no reason to call vsnprintf() twice")
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Diagnosed-by: Hugh Dickins <hughd@google.com>
-Acked-by: Oleg Nesterov <oleg@redhat.com>
-Cc: Neil Horman <nhorman@tuxdriver.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+  /*
+   * We split the compound page here into small pages without
+   * serialization against zap_huge_pmd()
+   */
+  __split_huge_page_refcount()
+						VM_BUG_ON_PAGE(!PageHead(page), page); // CRASH!!!
+
+So my understanding the problem is pmd_present() check in mm_find_pmd()
+without taking page table lock.
+
+The bug was introduced by me commit with commit 117b0791ac42. Sorry for
+that. :(
+
+Let's open code mm_find_pmd() in page_check_address_pmd() and do the
+check under page table lock.
+
+Note that __page_check_address() does the same for PTE entires
+if sync != 0.
+
+I've stress tested split and zap code paths for 36+ hours by now and
+don't see crashes with the patch applied. Before it took <20 min to
+trigger the first bug and few hours for second one (if we ignore
+first).
+
+[1] https://lkml.kernel.org/g/<53440991.9090001@oracle.com>
+[2] https://lkml.kernel.org/g/<5310C56C.60709@oracle.com>
+
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Tested-by: Sasha Levin <sasha.levin@oracle.com>
+Cc: Bob Liu <lliubbo@gmail.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Vlastimil Babka <vbabka@suse.cz>
+
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/coredump.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ mm/huge_memory.c | 13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
-diff --git a/fs/coredump.c b/fs/coredump.c
-index bc3fbcd..fab2568 100644
---- a/fs/coredump.c
-+++ b/fs/coredump.c
-@@ -74,10 +74,15 @@ static int expand_corename(struct core_name *cn, int size)
- static int cn_vprintf(struct core_name *cn, const char *fmt, va_list arg)
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 39c8e2e..a2256e0 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1610,16 +1610,23 @@ pmd_t *page_check_address_pmd(struct page *page,
+ 			      enum page_check_address_pmd_flag flag,
+ 			      spinlock_t **ptl)
  {
- 	int free, need;
-+	va_list arg_copy;
++	pgd_t *pgd;
++	pud_t *pud;
+ 	pmd_t *pmd;
  
- again:
- 	free = cn->size - cn->used;
--	need = vsnprintf(cn->corename + cn->used, free, fmt, arg);
+ 	if (address & ~HPAGE_PMD_MASK)
+ 		return NULL;
+ 
+-	pmd = mm_find_pmd(mm, address);
+-	if (!pmd)
++	pgd = pgd_offset(mm, address);
++	if (!pgd_present(*pgd))
+ 		return NULL;
++	pud = pud_offset(pgd, address);
++	if (!pud_present(*pud))
++		return NULL;
++	pmd = pmd_offset(pud, address);
 +
-+	va_copy(arg_copy, arg);
-+	need = vsnprintf(cn->corename + cn->used, free, fmt, arg_copy);
-+	va_end(arg_copy);
-+
- 	if (need < free) {
- 		cn->used += need;
- 		return 0;
+ 	*ptl = pmd_lock(mm, pmd);
+-	if (pmd_none(*pmd))
++	if (!pmd_present(*pmd))
+ 		goto unlock;
+ 	if (pmd_page(*pmd) != page)
+ 		goto unlock;
 -- 
 1.9.1
 
