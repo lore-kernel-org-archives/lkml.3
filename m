@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755827AbaFJUCE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 16:02:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35555 "EHLO
+	id S1755843AbaFJUC1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 16:02:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35548 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755452AbaFJTxn (ORCPT
+	with ESMTP id S1755429AbaFJTxl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:53:43 -0400
+	Tue, 10 Jun 2014 15:53:41 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Tristan Bruns <tristan@tristanbruns.de>, Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 034/160] drm/radeon: disable mclk dpm on R7 260X
-Date: Tue, 10 Jun 2014 12:44:34 -0700
-Message-Id: <1402429600-20477-35-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 027/160] USB: cp210x: Add 8281 (Nanotec Plug & Drive)
+Date: Tue, 10 Jun 2014 12:44:27 -0700
+Message-Id: <1402429600-20477-28-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -27,38 +28,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Tristan Bruns <tristan@tristanbruns.de>
 
-commit 57700ad1f2f21d5d7ab7ee0e58d11b5954852434 upstream.
+commit 72b3007951010ce1bbf950e23b19d9839fa905a5 upstream.
 
-Setting higher mclks seems to cause stability issues
-on some R7 260X boards.  Disable it for now for stability
-until we find a proper fix.
-
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=75992
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Tristan Bruns <tristan@tristanbruns.de>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/radeon/ci_dpm.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/serial/cp210x.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/gpu/drm/radeon/ci_dpm.c b/drivers/gpu/drm/radeon/ci_dpm.c
-index 1ed4799..d4ca530 100644
---- a/drivers/gpu/drm/radeon/ci_dpm.c
-+++ b/drivers/gpu/drm/radeon/ci_dpm.c
-@@ -5128,6 +5128,10 @@ int ci_dpm_init(struct radeon_device *rdev)
- 	pi->mclk_dpm_key_disabled = 0;
- 	pi->pcie_dpm_key_disabled = 0;
- 
-+	/* mclk dpm is unstable on some R7 260X cards */
-+	if (rdev->pdev->device == 0x6658)
-+		pi->mclk_dpm_key_disabled = 1;
-+
- 	pi->caps_sclk_ds = true;
- 
- 	pi->mclk_strobe_mode_threshold = 40000;
+diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
+index 6987b53..71873ca 100644
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -104,6 +104,7 @@ static const struct usb_device_id id_table[] = {
+ 	{ USB_DEVICE(0x10C4, 0x8218) }, /* Lipowsky Industrie Elektronik GmbH, HARP-1 */
+ 	{ USB_DEVICE(0x10C4, 0x822B) }, /* Modem EDGE(GSM) Comander 2 */
+ 	{ USB_DEVICE(0x10C4, 0x826B) }, /* Cygnal Integrated Products, Inc., Fasttrax GPS demonstration module */
++	{ USB_DEVICE(0x10C4, 0x8281) }, /* Nanotec Plug & Drive */
+ 	{ USB_DEVICE(0x10C4, 0x8293) }, /* Telegesis ETRX2USB */
+ 	{ USB_DEVICE(0x10C4, 0x82F9) }, /* Procyon AVS */
+ 	{ USB_DEVICE(0x10C4, 0x8341) }, /* Siemens MC35PU GPRS Modem */
 -- 
 1.9.1
 
