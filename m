@@ -1,159 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934521AbaFJAWn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:22:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58576 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934447AbaFJAWk (ORCPT
+	id S935606AbaFJAe1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:34:27 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:47666 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934480AbaFJAWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 20:22:40 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        "J. Bruce Fields" <bfields@redhat.com>,
-        Weng Meiling <wengmeiling.weng@huawei.com>
-Subject: [PATCH 3.4 61/88] nfsd: containerize NFSd filesystem
-Date: Mon,  9 Jun 2014 17:25:11 -0700
-Message-Id: <20140610002426.521041812@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
-References: <20140610002424.500996570@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Mon, 9 Jun 2014 20:22:42 -0400
+Date: Mon, 9 Jun 2014 17:22:37 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Jiang Liu <jiang.liu@linux.intel.com>
+cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Grant Likely <grant.likely@linaro.org>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        x86@kernel.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, stable@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [Patch V4 01/42] x86, irq: update high address field when updating
+ affinity for MSI IRQ
+In-Reply-To: <1402302011-23642-2-git-send-email-jiang.liu@linux.intel.com>
+Message-ID: <alpine.DEB.2.02.1406091722260.17705@chino.kir.corp.google.com>
+References: <1402302011-23642-1-git-send-email-jiang.liu@linux.intel.com> <1402302011-23642-2-git-send-email-jiang.liu@linux.intel.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Mon, 9 Jun 2014, Jiang Liu wrote:
 
-------------------
+> If x2apic is enabled, the MSI high address field should also be aslo
+> updated when setting affinity for MSI IRQ, otherwise the MSI IRQ may
+> target wrong APIC IDs.
+> 
+> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+> Cc: stable@vger.kernel.org
 
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-
-note: this backport is just for the null pointer problem when
-start nfsd in none init netns. The nfsd is still not containerized.
-
-commit 11f779421a39b86da8a523d97e5fd3477878d44f upstream.
-
-This patch makes NFSD file system superblock to be created per net.
-This makes possible to get proper network namespace from superblock instead of
-using hard-coded "init_net".
-
-Note: NFSd fs super-block holds network namespace. This garantees, that
-network namespace won't disappear from underneath of it.
-This, obviously, means, that in case of kill of a container's "init" (which is not a mount
-namespace, but network namespace creator) netowrk namespace won't be
-destroyed.
-
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-[wengmeiling: backport to 3.4:
- - export cache not per netns
- - NFSD service structure not per netns]
-Signed-off-by: Weng Meiling <wengmeiling.weng@huawei.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- fs/nfsd/nfsctl.c |   30 +++++++++++++++++++++++-------
- fs/nfsd/nfssvc.c |    2 +-
- 2 files changed, 24 insertions(+), 8 deletions(-)
-
---- a/fs/nfsd/nfsctl.c
-+++ b/fs/nfsd/nfsctl.c
-@@ -213,6 +213,7 @@ static ssize_t write_unlock_ip(struct fi
- 	struct sockaddr *sap = (struct sockaddr *)&address;
- 	size_t salen = sizeof(address);
- 	char *fo_path;
-+	struct net *net = file->f_dentry->d_sb->s_fs_info;
- 
- 	/* sanity check */
- 	if (size == 0)
-@@ -225,7 +226,7 @@ static ssize_t write_unlock_ip(struct fi
- 	if (qword_get(&buf, fo_path, size) < 0)
- 		return -EINVAL;
- 
--	if (rpc_pton(&init_net, fo_path, size, sap, salen) == 0)
-+	if (rpc_pton(net, fo_path, size, sap, salen) == 0)
- 		return -EINVAL;
- 
- 	return nlmsvc_unlock_all_by_ip(sap);
-@@ -389,7 +390,7 @@ static ssize_t write_threads(struct file
- {
- 	char *mesg = buf;
- 	int rv;
--	struct net *net = &init_net;
-+	struct net *net = file->f_dentry->d_sb->s_fs_info;
- 
- 	if (size > 0) {
- 		int newthreads;
-@@ -440,7 +441,7 @@ static ssize_t write_pool_threads(struct
- 	int len;
- 	int npools;
- 	int *nthreads;
--	struct net *net = &init_net;
-+	struct net *net = file->f_dentry->d_sb->s_fs_info;
- 
- 	mutex_lock(&nfsd_mutex);
- 	npools = nfsd_nrpools();
-@@ -857,7 +858,7 @@ static ssize_t __write_ports(struct file
- static ssize_t write_ports(struct file *file, char *buf, size_t size)
- {
- 	ssize_t rv;
--	struct net *net = &init_net;
-+	struct net *net = file->f_dentry->d_sb->s_fs_info;
- 
- 	mutex_lock(&nfsd_mutex);
- 	rv = __write_ports(file, buf, size, net);
-@@ -1095,20 +1096,35 @@ static int nfsd_fill_super(struct super_
- #endif
- 		/* last one */ {""}
- 	};
--	return simple_fill_super(sb, 0x6e667364, nfsd_files);
-+	struct net *net = data;
-+	int ret;
-+
-+	ret = simple_fill_super(sb, 0x6e667364, nfsd_files);
-+	if (ret)
-+		return ret;
-+	sb->s_fs_info = get_net(net);
-+	return 0;
- }
- 
- static struct dentry *nfsd_mount(struct file_system_type *fs_type,
- 	int flags, const char *dev_name, void *data)
- {
--	return mount_single(fs_type, flags, data, nfsd_fill_super);
-+	return mount_ns(fs_type, flags, current->nsproxy->net_ns, nfsd_fill_super);
-+}
-+
-+static void nfsd_umount(struct super_block *sb)
-+{
-+	struct net *net = sb->s_fs_info;
-+
-+	kill_litter_super(sb);
-+	put_net(net);
- }
- 
- static struct file_system_type nfsd_fs_type = {
- 	.owner		= THIS_MODULE,
- 	.name		= "nfsd",
- 	.mount		= nfsd_mount,
--	.kill_sb	= kill_litter_super,
-+	.kill_sb	= nfsd_umount,
- };
- 
- #ifdef CONFIG_PROC_FS
---- a/fs/nfsd/nfssvc.c
-+++ b/fs/nfsd/nfssvc.c
-@@ -670,7 +670,7 @@ int nfsd_pool_stats_open(struct inode *i
- int nfsd_pool_stats_release(struct inode *inode, struct file *file)
- {
- 	int ret = seq_release(inode, file);
--	struct net *net = &init_net;
-+	struct net *net = inode->i_sb->s_fs_info;
- 
- 	mutex_lock(&nfsd_mutex);
- 	/* this function really, really should have been called svc_put() */
-
-
+Acked-by: David Rientjes <rientjes@google.com>
