@@ -1,72 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936286AbaFJHmt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 03:42:49 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:57325 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933692AbaFJHms (ORCPT
+	id S964891AbaFJHov (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 03:44:51 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:39473 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751462AbaFJHou (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 03:42:48 -0400
-Date: Tue, 10 Jun 2014 09:42:42 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Stanislav Fomichev <stfomichev@yandex-team.ru>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Stuart Hayes <stuart.w.hayes@gmail.com>, david.vrabel@citrix.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] hrtimers: add fast path to hrtimer_get_next_event
-Message-ID: <20140610074242.GW3213@twins.programming.kicks-ass.net>
-References: <1402305825-3015-1-git-send-email-stfomichev@yandex-team.ru>
- <alpine.DEB.2.10.1406091304140.3830@nanos>
- <20140609111115.GK26511@stfomichev-desktop.yandex.net>
- <20140609125931.GL26511@stfomichev-desktop.yandex.net>
- <CAKohpon3s3P2WE8oGiKgw8BU-3zGCPPjq=Bo9gAG4+7vVhTfdw@mail.gmail.com>
+	Tue, 10 Jun 2014 03:44:50 -0400
+X-Original-SENDERIP: 10.177.220.145
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Tue, 10 Jun 2014 16:48:40 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: akpm@linux-foundation.org, cl@linux.com, rientjes@google.com,
+        penberg@kernel.org, hannes@cmpxchg.org, mhocko@suse.cz,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH -mm v2 3/8] memcg: mark caches that belong to offline
+ memcgs as dead
+Message-ID: <20140610074840.GF19036@js1304-P5Q-DELUXE>
+References: <cover.1402060096.git.vdavydov@parallels.com>
+ <9e6537847c22a5050f84bd2bf5633f7c022fb801.1402060096.git.vdavydov@parallels.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+1d8mk/W7pQzMfc7"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAKohpon3s3P2WE8oGiKgw8BU-3zGCPPjq=Bo9gAG4+7vVhTfdw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <9e6537847c22a5050f84bd2bf5633f7c022fb801.1402060096.git.vdavydov@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jun 06, 2014 at 05:22:40PM +0400, Vladimir Davydov wrote:
+> This will be used by the next patches.
+> 
+> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+> Acked-by: Christoph Lameter <cl@linux.com>
+> ---
+>  include/linux/slab.h |    2 ++
+>  mm/memcontrol.c      |    1 +
+>  mm/slab.h            |   10 ++++++++++
+>  3 files changed, 13 insertions(+)
+> 
+> diff --git a/include/linux/slab.h b/include/linux/slab.h
+> index d9716fdc8211..d99d5212b815 100644
+> --- a/include/linux/slab.h
+> +++ b/include/linux/slab.h
+> @@ -527,6 +527,7 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
+>   * @list: list_head for the list of all caches in this memcg
+>   * @root_cache: pointer to the global, root cache, this cache was derived from
+>   * @refcnt: reference counter
+> + * @dead: set to true when owner memcg is turned offline
+>   * @unregister_work: worker to destroy the cache
+>   */
+>  struct memcg_cache_params {
+> @@ -541,6 +542,7 @@ struct memcg_cache_params {
+>  			struct list_head list;
+>  			struct kmem_cache *root_cache;
+>  			atomic_long_t refcnt;
+> +			bool dead;
+>  			struct work_struct unregister_work;
+>  		};
+>  	};
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 886b5b414958..ed42fd1105a5 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -3294,6 +3294,7 @@ static void memcg_unregister_all_caches(struct mem_cgroup *memcg)
+>  	mutex_lock(&memcg_slab_mutex);
+>  	list_for_each_entry_safe(params, tmp, &memcg->memcg_slab_caches, list) {
+>  		cachep = memcg_params_to_cache(params);
+> +		cachep->memcg_params->dead = true;
 
---+1d8mk/W7pQzMfc7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I guess that this needs smp_wmb() and memcg_cache_dead() needs
+smp_rmb(), since we could call memcg_cache_dead() without holding any locks.
 
-On Mon, Jun 09, 2014 at 06:58:56PM +0530, Viresh Kumar wrote:
->=20
-> Even I was concerned about a bigger diff earlier and so didn't comment
-> to rewrite it this way :)
-
-WTF is wrong with you people? Who bloody cares how big diffs are? The
-clarity of the resulting code is _far_ more important.
-
-Please as to stop taking bong hits.
-
---+1d8mk/W7pQzMfc7
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTlrbyAAoJEHZH4aRLwOS6eYAQAJvn/+hweFmTbz3qF4jm3iX+
-Bti8R0Rc0Act+EqwTvuMHgpdN8CnvPvWSXB3ICor5A+/KW6F1XpaUP2bK27CErsd
-QQR7x/R0yCu+KnB4j9W3PgJ2StP8owwAbGQJmFbOg6tSlwnxxwSsOmM0piYa61T2
-KDpaeSpC0rgGZYYNqEWiCxPj69m4dFIQN3ryd0hsI/p47FcuNaXwiUSNKtgo0Uh9
-fAxFODRokbPC3PFzv1YcMRW2I5HpE2ivA+ejikY3UdJEj0iTorviwcsfMmCS1b1W
-TzC3MgnWfWZWJ9rlRkSfso0/ZX1TLwqZImYIEOglj5bRS1syDydJPfQsIO1IktPy
-9ChPslUIBoXRH7YRXZYY1UP6C0J69RuV+gYHNHxe8r6kfe80uVgmWdlfZJ5xGD/j
-ErxZwEyCxEUfXcJlu2G9dYFjoD2CUWOWP+AvKaH5NeoNv1pajaQPIDezOsJS0kM/
-dOurbx7+/9kNaEzCtA5GGQ/jUOubEM+5yc8Pmz44XA5o77lCJRm77u+aa2ON5Fhu
-WEfHhnhzAzL1SI2lR3n3r7s1vVX82K7nTTh4nyePRw5GBzOFeD2bVSrrh9xLEjIr
-4oR4PnmLubvG1Fmxp+T2XP/ZuhfSKbcJ88pPNatIHczghyOQaR5X9Fh9L7Q2+Njd
-149Dn+qpExvNTbh1ofuZ
-=kIWC
------END PGP SIGNATURE-----
-
---+1d8mk/W7pQzMfc7--
+Thanks.
