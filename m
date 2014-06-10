@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754431AbaFJTt7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 15:49:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35128 "EHLO
+	id S1754580AbaFJTuQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 15:50:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35141 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754387AbaFJTt4 (ORCPT
+	with ESMTP id S1754455AbaFJTuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:49:56 -0400
+	Tue, 10 Jun 2014 15:50:08 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Grant Likely <grant.likely@linaro.org>, Mark Brown <broonie@kernel.org>,
+Cc: Fam Zheng <famz@redhat.com>, James Bottomley <JBottomley@Parallels.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 117/160] drivercore: deferral race condition fix
-Date: Tue, 10 Jun 2014 12:45:57 -0700
-Message-Id: <1402429600-20477-118-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 116/160] [SCSI] virtio-scsi: Skip setting affinity on uninitialized vq
+Date: Tue, 10 Jun 2014 12:45:56 -0700
+Message-Id: <1402429600-20477-117-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -27,125 +27,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Grant Likely <grant.likely@linaro.org>
+From: Fam Zheng <famz@redhat.com>
 
-commit 58b116bce13612e5aa6fcd49ecbd4cf8bb59e835 upstream.
+commit 0c8482ac92db5ac15792caf23b7f7df9e4f48ae1 upstream.
 
-When the kernel is built with CONFIG_PREEMPT it is possible to reach a state
-when all modules loaded but some driver still stuck in the deferred list
-and there is a need for external event to kick the deferred queue to probe
-these drivers.
+virtscsi_init calls virtscsi_remove_vqs on err, even before initializing
+the vqs. The latter calls virtscsi_set_affinity, so let's check the
+pointer there before setting affinity on it.
 
-The issue has been observed on embedded systems with CONFIG_PREEMPT enabled,
-audio support built as modules and using nfsroot for root filesystem.
+This fixes a panic when setting device's num_queues=2 on RHEL 6.5:
 
-The following log fragment shows such sequence when all audio modules
-were loaded but the sound card is not present since the machine driver has
-failed to probe due to missing dependency during it's probe.
-The board is am335x-evmsk (McASP<->tlv320aic3106 codec) with davinci-evm
-machine driver:
+qemu-system-x86_64 ... \
+-device virtio-scsi-pci,id=scsi0,addr=0x13,...,num_queues=2 \
+-drive file=/stor/vm/dummy.raw,id=drive-scsi-disk,... \
+-device scsi-hd,drive=drive-scsi-disk,...
 
-...
-[   12.615118] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: ENTER
-[   12.719969] davinci_evm sound.3: davinci_evm_probe: ENTER
-[   12.725753] davinci_evm sound.3: davinci_evm_probe: snd_soc_register_card
-[   12.753846] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: snd_soc_register_component
-[   12.922051] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: snd_soc_register_component DONE
-[   12.950839] davinci_evm sound.3: ASoC: platform (null) not registered
-[   12.957898] davinci_evm sound.3: davinci_evm_probe: snd_soc_register_card DONE (-517)
-[   13.099026] davinci-mcasp 4803c000.mcasp: Kicking the deferred list
-[   13.177838] davinci-mcasp 4803c000.mcasp: really_probe: probe_count = 2
-[   13.194130] davinci_evm sound.3: snd_soc_register_card failed (-517)
-[   13.346755] davinci_mcasp_driver_init: LEAVE
-[   13.377446] platform sound.3: Driver davinci_evm requests probe deferral
-[   13.592527] platform sound.3: really_probe: probe_count = 0
+[    0.354734] scsi0 : Virtio SCSI HBA
+[    0.379504] BUG: unable to handle kernel NULL pointer dereference at 0000000000000020
+[    0.380141] IP: [<ffffffff814741ef>] __virtscsi_set_affinity+0x4f/0x120
+[    0.380141] PGD 0
+[    0.380141] Oops: 0000 [#1] SMP
+[    0.380141] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.14.0+ #5
+[    0.380141] Hardware name: Red Hat KVM, BIOS 0.5.1 01/01/2007
+[    0.380141] task: ffff88003c9f0000 ti: ffff88003c9f8000 task.ti: ffff88003c9f8000
+[    0.380141] RIP: 0010:[<ffffffff814741ef>]  [<ffffffff814741ef>] __virtscsi_set_affinity+0x4f/0x120
+[    0.380141] RSP: 0000:ffff88003c9f9c08  EFLAGS: 00010256
+[    0.380141] RAX: 0000000000000000 RBX: ffff88003c3a9d40 RCX: 0000000000001070
+[    0.380141] RDX: 0000000000000002 RSI: 0000000000000000 RDI: 0000000000000000
+[    0.380141] RBP: ffff88003c9f9c28 R08: 00000000000136c0 R09: ffff88003c801c00
+[    0.380141] R10: ffffffff81475229 R11: 0000000000000008 R12: 0000000000000000
+[    0.380141] R13: ffffffff81cc7ca8 R14: ffff88003cac3d40 R15: ffff88003cac37a0
+[    0.380141] FS:  0000000000000000(0000) GS:ffff88003e400000(0000) knlGS:0000000000000000
+[    0.380141] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[    0.380141] CR2: 0000000000000020 CR3: 0000000001c0e000 CR4: 00000000000006f0
+[    0.380141] Stack:
+[    0.380141]  ffff88003c3a9d40 0000000000000000 ffff88003cac3d80 ffff88003cac3d40
+[    0.380141]  ffff88003c9f9c48 ffffffff814742e8 ffff88003c26d000 ffff88003c26d000
+[    0.380141]  ffff88003c9f9c68 ffffffff81474321 ffff88003c26d000 ffff88003c3a9d40
+[    0.380141] Call Trace:
+[    0.380141]  [<ffffffff814742e8>] virtscsi_set_affinity+0x28/0x40
+[    0.380141]  [<ffffffff81474321>] virtscsi_remove_vqs+0x21/0x50
+[    0.380141]  [<ffffffff81475231>] virtscsi_init+0x91/0x240
+[    0.380141]  [<ffffffff81365290>] ? vp_get+0x50/0x70
+[    0.380141]  [<ffffffff81475544>] virtscsi_probe+0xf4/0x280
+[    0.380141]  [<ffffffff81363ea5>] virtio_dev_probe+0xe5/0x140
+[    0.380141]  [<ffffffff8144c669>] driver_probe_device+0x89/0x230
+[    0.380141]  [<ffffffff8144c8ab>] __driver_attach+0x9b/0xa0
+[    0.380141]  [<ffffffff8144c810>] ? driver_probe_device+0x230/0x230
+[    0.380141]  [<ffffffff8144c810>] ? driver_probe_device+0x230/0x230
+[    0.380141]  [<ffffffff8144ac1c>] bus_for_each_dev+0x8c/0xb0
+[    0.380141]  [<ffffffff8144c499>] driver_attach+0x19/0x20
+[    0.380141]  [<ffffffff8144bf28>] bus_add_driver+0x198/0x220
+[    0.380141]  [<ffffffff8144ce9f>] driver_register+0x5f/0xf0
+[    0.380141]  [<ffffffff81d27c91>] ? spi_transport_init+0x79/0x79
+[    0.380141]  [<ffffffff8136403b>] register_virtio_driver+0x1b/0x30
+[    0.380141]  [<ffffffff81d27d19>] init+0x88/0xd6
+[    0.380141]  [<ffffffff81d27c18>] ? scsi_init_procfs+0x5b/0x5b
+[    0.380141]  [<ffffffff81ce88a7>] do_one_initcall+0x7f/0x10a
+[    0.380141]  [<ffffffff81ce8aa7>] kernel_init_freeable+0x14a/0x1de
+[    0.380141]  [<ffffffff81ce8b3b>] ? kernel_init_freeable+0x1de/0x1de
+[    0.380141]  [<ffffffff817dec20>] ? rest_init+0x80/0x80
+[    0.380141]  [<ffffffff817dec29>] kernel_init+0x9/0xf0
+[    0.380141]  [<ffffffff817e68fc>] ret_from_fork+0x7c/0xb0
+[    0.380141]  [<ffffffff817dec20>] ? rest_init+0x80/0x80
+[    0.380141] RIP  [<ffffffff814741ef>] __virtscsi_set_affinity+0x4f/0x120
+[    0.380141]  RSP <ffff88003c9f9c08>
+[    0.380141] CR2: 0000000000000020
+[    0.380141] ---[ end trace 8074b70c3d5e1d73 ]---
+[    0.475018] Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000009
+[    0.475018]
+[    0.475068] Kernel Offset: 0x0 from 0xffffffff81000000 (relocation range: 0xffffffff80000000-0xffffffff9fffffff)
+[    0.475068] ---[ end Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000009
 
-In the log the machine driver enters it's probe at 12.719969 (this point it
-has been removed from the deferred lists). McASP driver already executing
-it's probing (since 12.615118).
-The machine driver tries to construct the sound card (12.950839) but did
-not found one of the components so it fails. After this McASP driver
-registers all the ASoC components (the machine driver still in it's probe
-function after it failed to construct the card) and the deferred work is
-prepared at 13.099026 (note that this time the machine driver is not in the
-lists so it is not going to be handled when the work is executing).
-Lastly the machine driver exit from it's probe and the core places it to
-the deferred list but there will be no other driver going to load and the
-deferred queue is not going to be kicked again - till we have external event
-like connecting USB stick, etc.
-
-The proposed solution is to try the deferred queue once more when the last
-driver is asking for deferring and we had drivers loaded while this last
-driver was probing.
-
-This way we can avoid drivers stuck in the deferred queue.
-
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
-Reviewed-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Tested-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Mark Brown <broonie@kernel.org>
+[jejb: checkpatch fixes]
+Signed-off-by: Fam Zheng <famz@redhat.com>
+Acked-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/base/dd.c | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ drivers/scsi/virtio_scsi.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/base/dd.c b/drivers/base/dd.c
-index 0605176..8a8d611 100644
---- a/drivers/base/dd.c
-+++ b/drivers/base/dd.c
-@@ -52,6 +52,7 @@ static DEFINE_MUTEX(deferred_probe_mutex);
- static LIST_HEAD(deferred_probe_pending_list);
- static LIST_HEAD(deferred_probe_active_list);
- static struct workqueue_struct *deferred_wq;
-+static atomic_t deferred_trigger_count = ATOMIC_INIT(0);
+diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+index 16bfd50..db3b494 100644
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@ -750,8 +750,12 @@ static void __virtscsi_set_affinity(struct virtio_scsi *vscsi, bool affinity)
  
- /**
-  * deferred_probe_work_func() - Retry probing devices in the active list.
-@@ -135,6 +136,17 @@ static bool driver_deferred_probe_enable = false;
-  * This functions moves all devices from the pending list to the active
-  * list and schedules the deferred probe workqueue to process them.  It
-  * should be called anytime a driver is successfully bound to a device.
-+ *
-+ * Note, there is a race condition in multi-threaded probe. In the case where
-+ * more than one device is probing at the same time, it is possible for one
-+ * probe to complete successfully while another is about to defer. If the second
-+ * depends on the first, then it will get put on the pending list after the
-+ * trigger event has already occured and will be stuck there.
-+ *
-+ * The atomic 'deferred_trigger_count' is used to determine if a successful
-+ * trigger has occurred in the midst of probing a driver. If the trigger count
-+ * changes in the midst of a probe, then deferred processing should be triggered
-+ * again.
-  */
- static void driver_deferred_probe_trigger(void)
- {
-@@ -147,6 +159,7 @@ static void driver_deferred_probe_trigger(void)
- 	 * into the active list so they can be retried by the workqueue
- 	 */
- 	mutex_lock(&deferred_probe_mutex);
-+	atomic_inc(&deferred_trigger_count);
- 	list_splice_tail_init(&deferred_probe_pending_list,
- 			      &deferred_probe_active_list);
- 	mutex_unlock(&deferred_probe_mutex);
-@@ -265,6 +278,7 @@ static DECLARE_WAIT_QUEUE_HEAD(probe_waitqueue);
- static int really_probe(struct device *dev, struct device_driver *drv)
- {
- 	int ret = 0;
-+	int local_trigger_count = atomic_read(&deferred_trigger_count);
+ 		vscsi->affinity_hint_set = true;
+ 	} else {
+-		for (i = 0; i < vscsi->num_queues; i++)
++		for (i = 0; i < vscsi->num_queues; i++) {
++			if (!vscsi->req_vqs[i].vq)
++				continue;
++
+ 			virtqueue_set_affinity(vscsi->req_vqs[i].vq, -1);
++		}
  
- 	atomic_inc(&probe_count);
- 	pr_debug("bus: '%s': %s: probing driver %s with device %s\n",
-@@ -310,6 +324,9 @@ probe_failed:
- 		/* Driver requested deferred probing */
- 		dev_info(dev, "Driver %s requests probe deferral\n", drv->name);
- 		driver_deferred_probe_add(dev);
-+		/* Did a trigger occur while probing? Need to re-trigger if yes */
-+		if (local_trigger_count != atomic_read(&deferred_trigger_count))
-+			driver_deferred_probe_trigger();
- 	} else if (ret != -ENODEV && ret != -ENXIO) {
- 		/* driver matched but the probe failed */
- 		printk(KERN_WARNING
+ 		vscsi->affinity_hint_set = false;
+ 	}
 -- 
 1.9.1
 
