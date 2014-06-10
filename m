@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936252AbaFJApF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:45:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58173 "EHLO
+	id S964992AbaFJAqF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:46:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58169 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933495AbaFJAV7 (ORCPT
+	with ESMTP id S933370AbaFJAV5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 20:21:59 -0400
+	Mon, 9 Jun 2014 20:21:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        George McCollister <george.mccollister@gmail.com>,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.4 13/88] USB: ftdi_sio: add NovaTech OrionLXm product ID
-Date: Mon,  9 Jun 2014 17:24:23 -0700
-Message-Id: <20140610002424.977158462@linuxfoundation.org>
+        Johan Hedberg <johan.hedberg@intel.com>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Ben Hutchings <ben@decadent.org.uk>, Jianguo Wu <wujianguo@huawei.com>
+Subject: [PATCH 3.4 18/88] Bluetooth: Fix missing length checks for L2CAP signalling PDUs
+Date: Mon,  9 Jun 2014 17:24:28 -0700
+Message-Id: <20140610002425.134510297@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
 References: <20140610002424.500996570@linuxfoundation.org>
@@ -29,50 +31,290 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: George McCollister <george.mccollister@gmail.com>
+From: Johan Hedberg <johan.hedberg@intel.com>
 
-commit d0839d757e6294921c31b1c4ca4f1dcc5df63bcd upstream.
+commit cb3b3152b2f5939d67005cff841a1ca748b19888 upstream.
 
-The NovaTech OrionLXm uses an onboard FTDI serial converter for JTAG and
-console access.
+There has been code in place to check that the L2CAP length header
+matches the amount of data received, but many PDU handlers have not been
+checking that the data received actually matches that expected by the
+specific PDU. This patch adds passing the length header to the specific
+handler functions and ensures that those functions fail cleanly in the
+case of an incorrect amount of data.
 
-Here is the lsusb output:
-Bus 004 Device 123: ID 0403:7c90 Future Technology Devices
-International, Ltd
-
-Signed-off-by: George McCollister <george.mccollister@gmail.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Move uses of *req below the new check in l2cap_connect_req]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+[wujg: Backported to 3.4:
+ - Adjust context
+ - Adjust l2cap_create_channel_rsp()'s parameters]
+Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/usb/serial/ftdi_sio.c     |    2 ++
- drivers/usb/serial/ftdi_sio_ids.h |    5 +++++
- 2 files changed, 7 insertions(+)
+ net/bluetooth/l2cap_core.c |   92 +++++++++++++++++++++++++++++++++------------
+ 1 file changed, 69 insertions(+), 23 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -591,6 +591,8 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_TAVIR_STK500_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_TIAO_UMPA_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
-+	{ USB_DEVICE(FTDI_VID, FTDI_NT_ORIONLXM_PID),
-+		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
- 	/*
- 	 * ELV devices:
- 	 */
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -538,6 +538,11 @@
-  */
- #define FTDI_TIAO_UMPA_PID	0x8a98	/* TIAO/DIYGADGET USB Multi-Protocol Adapter */
+--- a/net/bluetooth/l2cap_core.c
++++ b/net/bluetooth/l2cap_core.c
+@@ -2620,10 +2620,15 @@ done:
+ 	}
+ }
  
-+/*
-+ * NovaTech product ids (FTDI_VID)
-+ */
-+#define FTDI_NT_ORIONLXM_PID	0x7c90	/* OrionLXm Substation Automation Platform */
+-static inline int l2cap_command_rej(struct l2cap_conn *conn, struct l2cap_cmd_hdr *cmd, u8 *data)
++static inline int l2cap_command_rej(struct l2cap_conn *conn,
++				    struct l2cap_cmd_hdr *cmd, u16 cmd_len,
++				    u8 *data)
+ {
+ 	struct l2cap_cmd_rej_unk *rej = (struct l2cap_cmd_rej_unk *) data;
+ 
++	if (cmd_len < sizeof(*rej))
++		return -EPROTO;
 +
+ 	if (rej->reason != L2CAP_REJ_NOT_UNDERSTOOD)
+ 		return 0;
  
- /********************************/
- /** third-party VID/PID combos **/
+@@ -2640,7 +2645,8 @@ static inline int l2cap_command_rej(stru
+ 	return 0;
+ }
+ 
+-static inline int l2cap_connect_req(struct l2cap_conn *conn, struct l2cap_cmd_hdr *cmd, u8 *data)
++static int l2cap_connect_req(struct l2cap_conn *conn,
++			     struct l2cap_cmd_hdr *cmd, u16 cmd_len, u8 *data)
+ {
+ 	struct l2cap_conn_req *req = (struct l2cap_conn_req *) data;
+ 	struct l2cap_conn_rsp rsp;
+@@ -2648,8 +2654,14 @@ static inline int l2cap_connect_req(stru
+ 	struct sock *parent, *sk = NULL;
+ 	int result, status = L2CAP_CS_NO_INFO;
+ 
+-	u16 dcid = 0, scid = __le16_to_cpu(req->scid);
+-	__le16 psm = req->psm;
++	u16 dcid = 0, scid;
++	__le16 psm;
++
++	if (cmd_len < sizeof(struct l2cap_conn_req))
++		return -EPROTO;
++
++	scid = __le16_to_cpu(req->scid);
++	psm = req->psm;
+ 
+ 	BT_DBG("psm 0x%2.2x scid 0x%4.4x", psm, scid);
+ 
+@@ -2770,7 +2782,9 @@ sendresp:
+ 	return 0;
+ }
+ 
+-static inline int l2cap_connect_rsp(struct l2cap_conn *conn, struct l2cap_cmd_hdr *cmd, u8 *data)
++static int l2cap_connect_rsp(struct l2cap_conn *conn,
++			      struct l2cap_cmd_hdr *cmd, u16 cmd_len,
++			      u8 *data)
+ {
+ 	struct l2cap_conn_rsp *rsp = (struct l2cap_conn_rsp *) data;
+ 	u16 scid, dcid, result, status;
+@@ -2778,6 +2792,9 @@ static inline int l2cap_connect_rsp(stru
+ 	u8 req[128];
+ 	int err;
+ 
++	if (cmd_len < sizeof(*rsp))
++		return -EPROTO;
++
+ 	scid   = __le16_to_cpu(rsp->scid);
+ 	dcid   = __le16_to_cpu(rsp->dcid);
+ 	result = __le16_to_cpu(rsp->result);
+@@ -2857,6 +2874,9 @@ static inline int l2cap_config_req(struc
+ 	struct l2cap_chan *chan;
+ 	int len;
+ 
++	if (cmd_len < sizeof(*req))
++		return -EPROTO;
++
+ 	dcid  = __le16_to_cpu(req->dcid);
+ 	flags = __le16_to_cpu(req->flags);
+ 
+@@ -2882,7 +2902,7 @@ static inline int l2cap_config_req(struc
+ 
+ 	/* Reject if config buffer is too small. */
+ 	len = cmd_len - sizeof(*req);
+-	if (len < 0 || chan->conf_len + len > sizeof(chan->conf_req)) {
++	if (chan->conf_len + len > sizeof(chan->conf_req)) {
+ 		l2cap_send_cmd(conn, cmd->ident, L2CAP_CONF_RSP,
+ 				l2cap_build_conf_rsp(chan, rsp,
+ 					L2CAP_CONF_REJECT, flags), rsp);
+@@ -2959,12 +2979,17 @@ unlock:
+ 	return 0;
+ }
+ 
+-static inline int l2cap_config_rsp(struct l2cap_conn *conn, struct l2cap_cmd_hdr *cmd, u8 *data)
++static inline int l2cap_config_rsp(struct l2cap_conn *conn,
++				   struct l2cap_cmd_hdr *cmd, u16 cmd_len,
++				   u8 *data)
+ {
+ 	struct l2cap_conf_rsp *rsp = (struct l2cap_conf_rsp *)data;
+ 	u16 scid, flags, result;
+ 	struct l2cap_chan *chan;
+-	int len = cmd->len - sizeof(*rsp);
++	int len = cmd_len - sizeof(*rsp);
++
++	if (cmd_len < sizeof(*rsp))
++		return -EPROTO;
+ 
+ 	scid   = __le16_to_cpu(rsp->scid);
+ 	flags  = __le16_to_cpu(rsp->flags);
+@@ -3066,7 +3091,9 @@ done:
+ 	return 0;
+ }
+ 
+-static inline int l2cap_disconnect_req(struct l2cap_conn *conn, struct l2cap_cmd_hdr *cmd, u8 *data)
++static inline int l2cap_disconnect_req(struct l2cap_conn *conn,
++				       struct l2cap_cmd_hdr *cmd, u16 cmd_len,
++				       u8 *data)
+ {
+ 	struct l2cap_disconn_req *req = (struct l2cap_disconn_req *) data;
+ 	struct l2cap_disconn_rsp rsp;
+@@ -3074,6 +3101,9 @@ static inline int l2cap_disconnect_req(s
+ 	struct l2cap_chan *chan;
+ 	struct sock *sk;
+ 
++	if (cmd_len != sizeof(*req))
++		return -EPROTO;
++
+ 	scid = __le16_to_cpu(req->scid);
+ 	dcid = __le16_to_cpu(req->dcid);
+ 
+@@ -3110,12 +3140,17 @@ static inline int l2cap_disconnect_req(s
+ 	return 0;
+ }
+ 
+-static inline int l2cap_disconnect_rsp(struct l2cap_conn *conn, struct l2cap_cmd_hdr *cmd, u8 *data)
++static inline int l2cap_disconnect_rsp(struct l2cap_conn *conn,
++				       struct l2cap_cmd_hdr *cmd, u16 cmd_len,
++				       u8 *data)
+ {
+ 	struct l2cap_disconn_rsp *rsp = (struct l2cap_disconn_rsp *) data;
+ 	u16 dcid, scid;
+ 	struct l2cap_chan *chan;
+ 
++	if (cmd_len != sizeof(*rsp))
++		return -EPROTO;
++
+ 	scid = __le16_to_cpu(rsp->scid);
+ 	dcid = __le16_to_cpu(rsp->dcid);
+ 
+@@ -3142,11 +3177,16 @@ static inline int l2cap_disconnect_rsp(s
+ 	return 0;
+ }
+ 
+-static inline int l2cap_information_req(struct l2cap_conn *conn, struct l2cap_cmd_hdr *cmd, u8 *data)
++static inline int l2cap_information_req(struct l2cap_conn *conn,
++					struct l2cap_cmd_hdr *cmd, u16 cmd_len,
++					u8 *data)
+ {
+ 	struct l2cap_info_req *req = (struct l2cap_info_req *) data;
+ 	u16 type;
+ 
++	if (cmd_len != sizeof(*req))
++		return -EPROTO;
++
+ 	type = __le16_to_cpu(req->type);
+ 
+ 	BT_DBG("type 0x%4.4x", type);
+@@ -3192,11 +3232,16 @@ static inline int l2cap_information_req(
+ 	return 0;
+ }
+ 
+-static inline int l2cap_information_rsp(struct l2cap_conn *conn, struct l2cap_cmd_hdr *cmd, u8 *data)
++static inline int l2cap_information_rsp(struct l2cap_conn *conn,
++					struct l2cap_cmd_hdr *cmd, u16 cmd_len,
++					u8 *data)
+ {
+ 	struct l2cap_info_rsp *rsp = (struct l2cap_info_rsp *) data;
+ 	u16 type, result;
+ 
++	if (cmd_len != sizeof(*rsp))
++		return -EPROTO;
++
+ 	type   = __le16_to_cpu(rsp->type);
+ 	result = __le16_to_cpu(rsp->result);
+ 
+@@ -3282,11 +3327,12 @@ static inline int l2cap_create_channel_r
+ }
+ 
+ static inline int l2cap_create_channel_rsp(struct l2cap_conn *conn,
+-					struct l2cap_cmd_hdr *cmd, void *data)
++					struct l2cap_cmd_hdr *cmd, u16 cmd_len,
++					void *data)
+ {
+ 	BT_DBG("conn %p", conn);
+ 
+-	return l2cap_connect_rsp(conn, cmd, data);
++	return l2cap_connect_rsp(conn, cmd, cmd_len, data);
+ }
+ 
+ static void l2cap_send_move_chan_rsp(struct l2cap_conn *conn, u8 ident,
+@@ -3479,15 +3525,15 @@ static inline int l2cap_bredr_sig_cmd(st
+ 
+ 	switch (cmd->code) {
+ 	case L2CAP_COMMAND_REJ:
+-		l2cap_command_rej(conn, cmd, data);
++		l2cap_command_rej(conn, cmd, cmd_len, data);
+ 		break;
+ 
+ 	case L2CAP_CONN_REQ:
+-		err = l2cap_connect_req(conn, cmd, data);
++		err = l2cap_connect_req(conn, cmd, cmd_len, data);
+ 		break;
+ 
+ 	case L2CAP_CONN_RSP:
+-		err = l2cap_connect_rsp(conn, cmd, data);
++		err = l2cap_connect_rsp(conn, cmd, cmd_len, data);
+ 		break;
+ 
+ 	case L2CAP_CONF_REQ:
+@@ -3495,15 +3541,15 @@ static inline int l2cap_bredr_sig_cmd(st
+ 		break;
+ 
+ 	case L2CAP_CONF_RSP:
+-		err = l2cap_config_rsp(conn, cmd, data);
++		err = l2cap_config_rsp(conn, cmd, cmd_len, data);
+ 		break;
+ 
+ 	case L2CAP_DISCONN_REQ:
+-		err = l2cap_disconnect_req(conn, cmd, data);
++		err = l2cap_disconnect_req(conn, cmd, cmd_len, data);
+ 		break;
+ 
+ 	case L2CAP_DISCONN_RSP:
+-		err = l2cap_disconnect_rsp(conn, cmd, data);
++		err = l2cap_disconnect_rsp(conn, cmd, cmd_len, data);
+ 		break;
+ 
+ 	case L2CAP_ECHO_REQ:
+@@ -3514,11 +3560,11 @@ static inline int l2cap_bredr_sig_cmd(st
+ 		break;
+ 
+ 	case L2CAP_INFO_REQ:
+-		err = l2cap_information_req(conn, cmd, data);
++		err = l2cap_information_req(conn, cmd, cmd_len, data);
+ 		break;
+ 
+ 	case L2CAP_INFO_RSP:
+-		err = l2cap_information_rsp(conn, cmd, data);
++		err = l2cap_information_rsp(conn, cmd, cmd_len, data);
+ 		break;
+ 
+ 	case L2CAP_CREATE_CHAN_REQ:
+@@ -3526,7 +3572,7 @@ static inline int l2cap_bredr_sig_cmd(st
+ 		break;
+ 
+ 	case L2CAP_CREATE_CHAN_RSP:
+-		err = l2cap_create_channel_rsp(conn, cmd, data);
++		err = l2cap_create_channel_rsp(conn, cmd, cmd_len, data);
+ 		break;
+ 
+ 	case L2CAP_MOVE_CHAN_REQ:
 
 
