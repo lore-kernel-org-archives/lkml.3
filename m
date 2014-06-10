@@ -1,93 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752566AbaFJNxA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 09:53:00 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:56381 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752120AbaFJNw6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 09:52:58 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-03-53970db7793d
-Message-id: <53970DA9.1060904@samsung.com>
-Date: Tue, 10 Jun 2014 15:52:41 +0200
-From: Tomasz Figa <t.figa@samsung.com>
-Organization: Samsung R&D Institute Poland
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.5.0
-MIME-version: 1.0
-To: Pankaj Dubey <pankaj.dubey@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: kgene.kim@samsung.com, arnd@arndb.de,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v3 2/6] ARM: EXYNOS: Remove i2c sys configuration related
- code
-References: <1399706287-13919-1-git-send-email-y@samsung.com>
- <1399706419-13976-1-git-send-email-pankaj.dubey@samsung.com>
- <1399706419-13976-3-git-send-email-pankaj.dubey@samsung.com>
-In-reply-to: <1399706419-13976-3-git-send-email-pankaj.dubey@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKLMWRmVeSWpSXmKPExsVy+t/xy7rbeacHG0z5r27xd9IxdoveBVfZ
-	LDY9vsZqcXnXHDaLGef3MVncvsxrsWjrF3YHdo+W5h42j9+/JjF6bF5S79G3ZRWjx+dNcgGs
-	UVw2Kak5mWWpRfp2CVwZL9YJFtznqTi/op+pgXEmVxcjJ4eEgInEvT2HmCFsMYkL99azdTFy
-	cQgJLGWU2H9+AZTzmVFiwaslTCBVvAJaEm3XLgElODhYBFQlWvt9QcJsAmoSnxsesYHY/EAl
-	a5qus4CUiApESDy+IATRKSjxY/I9FpCRIgJTGCUu9ixjBEkwC/hLnLmyA+wIYYEQiVtb3rGD
-	2EICuxklzm9UBZnDKeApsXdeDkS5jsT+1mlsELa8xOY1b5knMArOQrJiFpKyWUjKFjAyr2IU
-	TS1NLihOSs810itOzC0uzUvXS87P3cQICfqvOxiXHrM6xCjAwajEw2vgPy1YiDWxrLgy9xCj
-	BAezkghv21+gEG9KYmVValF+fFFpTmrxIUYmDk6pBsZrHNfnRH5/ZmBdxpXA6yzpdvPsfjMZ
-	xedrXd8ITn4Yd2itYG78nA93pLee377tovvzZP4LYeX32Vw3fJD5elWg9Gv9m3P5cg33Od69
-	b/+zTyD0VOm6d38mOHPr6yxgkqxS+LnyjufcrJ43vIwXjBj++Vxl+jQt4Zuy1IR2Z4Nax88y
-	8fvWpD1WYinOSDTUYi4qTgQAqoX7eVgCAAA=
+	id S1752587AbaFJNxO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 09:53:14 -0400
+Received: from mta-out1.inet.fi ([62.71.2.199]:39574 "EHLO jenni2.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752027AbaFJNxM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 09:53:12 -0400
+Date: Tue, 10 Jun 2014 16:52:46 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH, RFC 00/10] THP refcounting redesign
+Message-ID: <20140610135246.GA3728@node.dhcp.inet.fi>
+References: <1402329861-7037-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <5396BD90.4060104@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5396BD90.4060104@suse.cz>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pankaj,
-
-On 10.05.2014 09:20, Pankaj Dubey wrote:
-> Since all these code has been moved into i2c driver, now we can
-> safely remove them from machine files.
+On Tue, Jun 10, 2014 at 10:10:56AM +0200, Vlastimil Babka wrote:
+> On 06/09/2014 06:04 PM, Kirill A. Shutemov wrote:
+> >Hello everybody,
+> >
+> >We've discussed few times that is would be nice to allow huge pages to be
+> >mapped with 4k pages too. Here's my first attempt to actually implement
+> >this. It's early prototype and not stabilized yet, but I want to share it
+> >to discuss any potential show stoppers early.
+> >
+> >The main reason why we can't map THP with 4k is how refcounting on THP
+> >designed. It built around two requirements:
+> >
+> >   - split of huge page should never fail;
+> >   - we can't change interface of get_user_page();
+> >
+> >To be able to split huge page at any point we have to track which tail
+> >page was pinned. It leads to tricky and expensive get_page() on tail pages
+> >and also occupy tail_page->_mapcount.
+> >
+> >Most split_huge_page*() users want PMD to be split into table of PTEs and
+> >don't care whether compound page is going to be split or not.
+> >
+> >The plan is:
+> >
+> >  - allow split_huge_page() to fail if the page is pinned. It's trivial to
+> >    split non-pinned page and it doesn't require tail page refcounting, so
+> >    tail_page->_mapcount is free to be reused.
+> >
+> >  - introduce new routine -- split_huge_pmd() -- to split PMD into table of
+> >    PTEs. It splits only one PMD, not touching other PMDs the page is
+> >    mapped with or underlying compound page. Unlike new split_huge_page(),
+> >    split_huge_pmd() never fails.
+> >
+> >Fortunately, we have only few places where split_huge_page() is needed:
+> >swap out, memory failure, migration, KSM. And all of them can handle
+> >split_huge_page() fail.
+> >
+> >In new scheme we use tail_page->_mapcount is used to account how many time
+> >the tail page is mapped. head_page->_mapcount is used for both PMD mapping
+> >of whole huge page and PTE mapping of the firt 4k page of the compound
+> >page. It seems work fine, except the fact that we don't have a cheap way
+> >to check whether the page mapped with PMDs or not.
+> >
+> >Introducing split_huge_pmd() effectively allows THP to be mapped with 4k.
+> >It can break some kernel expectations. I.e. VMA now can start and end in
+> >middle of compound page. IIUC, it will break compactation and probably
+> >something else (any hints?).
 > 
-> CC: Russell King <linux@arm.linux.org.uk>
-> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-> ---
->  arch/arm/mach-exynos/exynos.c           |   38 +------------------------------
->  arch/arm/mach-exynos/include/mach/map.h |    3 ---
->  arch/arm/mach-exynos/pm.c               |   10 --------
->  arch/arm/mach-exynos/regs-sys.h         |   22 ------------------
->  4 files changed, 1 insertion(+), 72 deletions(-)
->  delete mode 100644 arch/arm/mach-exynos/regs-sys.h
+> I don't think compaction cares at all about VMA's. Unless the underlying
+> page migration does. What will break is munlock due to
+> VM_BUG_ON(PageTail(page)) in the PageTransHuge() check.
+
+We have PageTransCompound() if caller doesn't care which part of THP the
+page is.
+
+> >Also munmap() on part of huge page will not split and free unmapped part
+> >immediately. We need to be careful here to keep memory footprint under
+> >control.
 > 
-> diff --git a/arch/arm/mach-exynos/exynos.c b/arch/arm/mach-exynos/exynos.c
-> index 59eb1f1..09063ee 100644
-> --- a/arch/arm/mach-exynos/exynos.c
-> +++ b/arch/arm/mach-exynos/exynos.c
-> @@ -29,11 +29,11 @@
->  #include <asm/memory.h>
->  
->  #include <plat/cpu.h>
-> +#include <mach/map.h>
->  
->  #include "common.h"
->  #include "mfc.h"
->  #include "regs-pmu.h"
-> -#include "regs-sys.h"
->  
->  #define L2_AUX_VAL 0x7C470001
->  #define L2_AUX_MASK 0xC200ffff
-> @@ -42,11 +42,6 @@ static struct regmap *exynos_pmu_regmap;
->  
->  static struct map_desc exynos4_iodesc[] __initdata = {
->  	{
-> -		.virtual	= (unsigned long)S3C_VA_SYS,
-> -		.pfn		= __phys_to_pfn(EXYNOS4_PA_SYSCON),
-> -		.length		= SZ_64K,
-> -		.type		= MT_DEVICE,
+> So who will take care of it, if it's not done immediately?
 
-Rest of this patch doesn't touch anything related to Exynos4, but I
-boot-tested removing this on Exynos4412-based Trats2 board and it works, so
+I mean the whole compound page will not be freed until the last part page
+is unmapped. It can lead to excessive memory overhead for some workloads.
+We can try to be smarter and call split_huge_page() instead of
+split_huge_pmd() if see that the huge page is not mapped as 2M or
+something. But we don't have a cheap way to check this...
 
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+> >As side effect we don't need to mark PMD splitting since we have
+> >split_huge_pmd(). get_page()/put_page() on tail of THP is cheaper (and
+> >cleaner) now.
+> 
+> But per patch 2, PageAnon() is more expensive.
 
-Best regards,
-Tomasz
+I don't think it's significant: for non-compound page it's probably
+near-free (page->flags is most likely hot). For compound page it costs
+additional cacheline. Not a big deal from my POV.
+
+For get_page()/put_page() on tail THP we saved one atomic operation and
+few checks. This is important because refcounting on tail pages is going to
+be more common, since they can be mapped individually now. Acctually, I'm
+not sure if these operation is cheap enough: we still use compound_lock
+there to serialize against splitting.
+
+> Also there are no side effects to this change?
+
+Of course there are :) That only what came to mind. The patchset is very
+early, I don't have whole picture yet. I expect more PageCompound() and
+compound_head() will be needed ;)
+
+-- 
+ Kirill A. Shutemov
