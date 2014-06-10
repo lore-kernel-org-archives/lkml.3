@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754378AbaFJWQP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 18:16:15 -0400
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:42945 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753714AbaFJWQN (ORCPT
+	id S1752987AbaFJWhT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 18:37:19 -0400
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:53652 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751333AbaFJWhR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 18:16:13 -0400
-Date: Tue, 10 Jun 2014 15:16:10 -0700 (PDT)
+	Tue, 10 Jun 2014 18:37:17 -0400
+Date: Tue, 10 Jun 2014 15:37:14 -0700 (PDT)
 From: David Rientjes <rientjes@google.com>
 X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Li Zefan <lizefan@huawei.com>
-cc: Gu Zheng <guz.fnst@cn.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        linux-mm@kvack.org, Cgroups <cgroups@vger.kernel.org>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] mm/mempolicy: fix sleeping function called from invalid
- context
-In-Reply-To: <53967465.7070908@huawei.com>
-Message-ID: <alpine.DEB.2.02.1406101512340.32203@chino.kir.corp.google.com>
-References: <53902A44.50005@cn.fujitsu.com> <20140605132339.ddf6df4a0cf5c14d17eb8691@linux-foundation.org> <539192F1.7050308@cn.fujitsu.com> <alpine.DEB.2.02.1406081539140.21744@chino.kir.corp.google.com> <539574F1.2060701@cn.fujitsu.com>
- <alpine.DEB.2.02.1406090209460.24247@chino.kir.corp.google.com> <53967465.7070908@huawei.com>
+To: Marian Marinov <mm@1h.com>
+cc: Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [RFC] oom, memcg: handle sysctl oom_kill_allocating_task while
+ memcg oom happening
+In-Reply-To: <5397194B.9010606@1h.com>
+Message-ID: <alpine.DEB.2.02.1406101530100.32203@chino.kir.corp.google.com>
+References: <5396ED66.7090401@1h.com> <20140610115254.GA25631@dhcp22.suse.cz> <5397194B.9010606@1h.com>
 User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -29,33 +28,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Jun 2014, Li Zefan wrote:
+On Tue, 10 Jun 2014, Marian Marinov wrote:
 
-> > Yes, the rcu lock is not providing protection for any critical section 
-> > here that requires (1) the forker's cpuset to be stored in 
-> > cpuset_being_rebound or (2) the forked thread's cpuset to be rebound by 
-> > the cpuset nodemask update, and no race involving the two.
-> >
-> 
-> Yes, this is a long-standing issue. Besides the race you described, the child
-> task's mems_allowed can be wrong if the cpuset's nodemask changes before the
-> child has been added to the cgroup's tasklist.
-> 
-> I remember Tejun once said he wanted to disallow task migration between
-> cgroups during fork, and that should fix this problem.
->  
-
-Ok, I don't want to fix it in cpusets if cgroups will eventually prevent 
-it, so I need an understanding of the long term plan.  Will cgroups 
-continue to allow migration during fork(), Tejun?
-
-> > It needs to be slightly rewritten to work properly without negatively 
-> > impacting the latency of fork().  Do you have the cycles to do it?
+> >> During these OOM states the load of the machine gradualy increases from 25 up to 120 in the interval of
+> >> 10minutes.
+> >> 
+> >> Once we manually bring down the memory usage of a container(killing some tasks) the load drops down to 25 within
+> >> 5 to 7 minutes.
 > > 
+> > So the OOM killer is not able to find a victim to kill?
 > 
-> Sounds you have other idea?
+> It was constantly killing tasks. 245 oom invocations in less then 6min for that particular cgroup. With top 61 oom
+> invocations in one minute.
+> 
+> It was killing... In that particular case, the problem was a web server that was under attack. New php processes was
+> spawned very often and instead of killing each newly created process(which is allocating memory) the kernel tries to
+> find more suitable task. Which in this case was not desired.
 > 
 
-It wouldn't be too difficult with a cgroup post fork callback into the 
-cpuset code to rebind the nodemask if it has changed, but with my above 
-concern those might be yanked out eventually :)
+This is a forkbomb problem, then, that causes processes to constantly be 
+reforked and the memcg go out of memory immediately after another process 
+has been killed for the same reason.
+
+Enabling oom_kill_allocating_task (or its identical behavior targeted for 
+a specific memcg or memcg hierarchy) would result in random kills of your 
+processes, whichever process is the unlucky one to be allocating at the 
+time would get killed as long as it wasn't oom disabled.  The only benefit 
+in this case would be that the oom killer wouldn't need to iterate 
+processes, but there's nothing to suggest that your problem -- the fact 
+that you're under a forkbomb -- would be fixed.
+
+If, once the oom killer has killed something, another process is 
+immediately forked, charges the memory that was just freed by the oom 
+killer, and hits the limit again, then that's outside the scope of the oom 
+killer.
+
+> >> I read the whole thread from 2012 but I do not see the expected behavior that is described by the people that
+> >> commented the issue.
+> > 
+> > Why do you think that killing the allocating task would be helpful in your case?
+> 
+> As mentioned above, the usual case with the hosting companies is that, the allocating task should not be allowed to
+> run. So killing it is the proper solution there.
+> 
+
+That's not what the oom killer does: it finds the process that is using 
+the most amount of memory and is eligible for kill and it is killed.  That 
+prevents memory leakers from killing everything else attached to the memcg 
+or on the system and results in one process being killed instead of many 
+processes.  Userspace can tune the selection of processes with 
+/proc/pid/oom_score_adj.
