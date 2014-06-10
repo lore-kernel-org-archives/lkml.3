@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754850AbaFJFTB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 01:19:01 -0400
-Received: from tundra.namei.org ([65.99.196.166]:36757 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753400AbaFJFTA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 01:19:00 -0400
-Date: Tue, 10 Jun 2014 15:20:15 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: Re: Change in security maintainer for a few weeks
-In-Reply-To: <20140605183050.GA5054@kroah.com>
-Message-ID: <alpine.LRH.2.02.1406101517350.31746@tundra.namei.org>
-References: <20140605183050.GA5054@kroah.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1754937AbaFJFUn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 01:20:43 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:35059 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751038AbaFJFUm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 01:20:42 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Subject: Re: [for-next][PATCH 4/6] tracing: Return error if ftrace_trace_arrays list is empty
+References: <20140606163034.516780857@goodmis.org>
+	<20140606172104.693665166@goodmis.org>
+Date: Tue, 10 Jun 2014 14:20:39 +0900
+In-Reply-To: <20140606172104.693665166@goodmis.org> (Steven Rostedt's message
+	of "Fri, 06 Jun 2014 12:30:38 -0400")
+Message-ID: <87oay1bas8.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 Jun 2014, Greg KH wrote:
+On Fri, 06 Jun 2014 12:30:38 -0400, Steven Rostedt wrote:
+> From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+>
+> ftrace_trace_arrays links global_trace.list. However, global_trace
+> is not added to ftrace_trace_arrays if trace_alloc_buffers() failed.
+> As the result, ftrace_trace_arrays becomes an empty list. If
+> ftrace_trace_arrays is an empty list, current top_trace_array() returns
+> an invalid pointer. As the result, the kernel can induce memory corruption
+> or panic.
+>
+> Current implementation does not check whether ftrace_trace_arrays is empty
+> list or not. So, in this patch, if ftrace_trace_arrays is empty list,
+> top_trace_array() returns NULL. Moreover, this patch makes all functions
+> calling top_trace_array() handle it appropriately.
 
-> Hi all,
-> 
-> James has had to step back from doing kernel work for a few weeks, so
-> I've offered to step up and handle the security patches to get shuttled
-> to Linus for merging for a while.
-> 
-> I'll take his git tree on kernel.org and push those to Linus for
-> 3.16-rc1, as those look like they have had proper testing in linux-next.
-> 
-> But there only seems to be 14 patches in there.  Are there pending
-> patches that people have been sending and need to get in besides those?
-> 
+[SNIP]
+> @@ -252,6 +252,9 @@ static inline struct trace_array *top_trace_array(void)
+>  {
+>  	struct trace_array *tr;
+>  
+> +	if (list_empty(ftrace_trace_arrays.prev))
+> +		return NULL;
 
-Thanks for stepping up.
+It looks weird to me.. why not checking "list_empty(&ftrace_trace_arrays)"?
 
-I had to take urgent leave and was unable to access email until this week.
+Thanks,
+Namhyung
 
-We really should have a co-maintainer for the security subsystem -- please 
-feel free to nominate someone.
-
-There are several good candidates, including Serge, Kees and Paul Moore.
-
-
-- James
--- 
-James Morris
-<jmorris@namei.org>
+> +
+>  	tr = list_entry(ftrace_trace_arrays.prev,
+>  			typeof(*tr), list);
+>  	WARN_ON(!(tr->flags & TRACE_ARRAY_FL_GLOBAL));
