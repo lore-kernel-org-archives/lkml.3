@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933278AbaFJUhD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 16:37:03 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34881 "EHLO
+	id S932085AbaFJUhA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 16:37:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34884 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753468AbaFJTq5 (ORCPT
+	with ESMTP id S1753469AbaFJTq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 10 Jun 2014 15:46:57 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, linaro-kernel@lists.linaro.org,
-        fweisbec@gmail.com, Arvind.Chauhan@arm.com,
-        linaro-networking@linaro.org, Thomas Gleixner <tglx@linutronix.de>,
+Cc: Felix Fietkau <nbd@openwrt.org>, Johannes Berg <johannes.berg@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 013/160] tick-common: Fix wrong check in tick_check_replacement()
-Date: Tue, 10 Jun 2014 12:44:13 -0700
-Message-Id: <1402429600-20477-14-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 005/160] mac80211: exclude AP_VLAN interfaces from tx power calculation
+Date: Tue, 10 Jun 2014 12:44:05 -0700
+Message-Id: <1402429600-20477-6-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -29,46 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Viresh Kumar <viresh.kumar@linaro.org>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 521c42990e9d561ed5ed9f501f07639d0512b3c9 upstream.
+commit 764152ff66f4a8be1f9d7981e542ffdaa5bd7aff upstream.
 
-tick_check_replacement() returns if a replacement of clock_event_device is
-possible or not. It does this as the first check:
+Their power value is initialized to zero. This patch fixes an issue
+where the configured power drops to the minimum value when AP_VLAN
+interfaces are created/removed.
 
-	if (tick_check_percpu(curdev, newdev, smp_processor_id()))
-		return false;
-
-Thats wrong. tick_check_percpu() returns true when the device is
-useable. Check for false instead.
-
-[ tglx: Massaged changelog ]
-
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linaro-kernel@lists.linaro.org
-Cc: fweisbec@gmail.com
-Cc: Arvind.Chauhan@arm.com
-Cc: linaro-networking@linaro.org
-Link: http://lkml.kernel.org/r/486a02efe0246635aaba786e24b42d316438bf3b.1397537987.git.viresh.kumar@linaro.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/time/tick-common.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/mac80211/main.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
-index 162b03a..425bfae 100644
---- a/kernel/time/tick-common.c
-+++ b/kernel/time/tick-common.c
-@@ -275,7 +275,7 @@ static bool tick_check_preferred(struct clock_event_device *curdev,
- bool tick_check_replacement(struct clock_event_device *curdev,
- 			    struct clock_event_device *newdev)
- {
--	if (tick_check_percpu(curdev, newdev, smp_processor_id()))
-+	if (!tick_check_percpu(curdev, newdev, smp_processor_id()))
- 		return false;
- 
- 	return tick_check_preferred(curdev, newdev);
+diff --git a/net/mac80211/main.c b/net/mac80211/main.c
+index 7d1c3ac..8cec1ba 100644
+--- a/net/mac80211/main.c
++++ b/net/mac80211/main.c
+@@ -148,6 +148,8 @@ static u32 ieee80211_hw_conf_chan(struct ieee80211_local *local)
+ 	list_for_each_entry_rcu(sdata, &local->interfaces, list) {
+ 		if (!rcu_access_pointer(sdata->vif.chanctx_conf))
+ 			continue;
++		if (sdata->vif.type == NL80211_IFTYPE_AP_VLAN)
++			continue;
+ 		power = min(power, sdata->vif.bss_conf.txpower);
+ 	}
+ 	rcu_read_unlock();
 -- 
 1.9.1
 
