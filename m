@@ -1,55 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751506AbaFJLO0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 07:14:26 -0400
-Received: from mail001.aei.ca ([206.123.6.130]:36698 "EHLO mail001.aei.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750985AbaFJLOZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 07:14:25 -0400
-From: Ed Tomlinson <edt@aei.ca>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Chris Mason <clm@fb.com>, jbacik@fb.com,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        linux-btrfs@vger.kernel.org
-Subject: Re: btrfs: hang on boot due to tests
-Date: Tue, 10 Jun 2014 07:14:17 -0400
-Message-ID: <3216820.JOp565CquS@grover>
-Organization: me
-User-Agent: KMail/4.13.1 (Linux/3.15.0-1-git; KDE/4.13.1; x86_64; ; )
-In-Reply-To: <5395DE2E.7080700@oracle.com>
-References: <5395CFE6.10804@oracle.com> <5395D9D6.3080101@fb.com> <5395DE2E.7080700@oracle.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1751901AbaFJLO7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 07:14:59 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:59056 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751174AbaFJLO4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 07:14:56 -0400
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Andrew Bresticker <abrestic@chromium.org>, devicetree@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 4/4] ARM: tegra: jetson-tk1: Add XUSB pad controller
+Date: Tue, 10 Jun 2014 13:11:48 +0200
+Message-Id: <1402398708-10722-4-git-send-email-thierry.reding@gmail.com>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <1402398708-10722-1-git-send-email-thierry.reding@gmail.com>
+References: <1402398708-10722-1-git-send-email-thierry.reding@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 09 June 2014 12:17:50 Sasha Levin wrote:
-> On 06/09/2014 11:59 AM, Chris Mason wrote:
-> > On 06/09/2014 11:16 AM, Sasha Levin wrote:
-> >> > Hi all,
-> >> > 
-> >> > It seems that some recent changes to btrfs tests make it hang during boot:
-> >> > 
-> >> > [   49.730033] NMI watchdog: BUG: soft lockup - CPU#34 stuck for 23s! [swapper/0:1]
-> >> > [   49.730033] Modules linked in:
-> >> > [   49.730033] hardirqs last enabled at (6389143): restore_args (arch/x86/kernel/entry_64.S:829)
-> >> > [   49.730033] hardirqs last disabled at (6389144): apic_timer_interrupt (arch/x86/kernel/entry_64.S:1021)
-> >> > [   49.730033] softirqs last enabled at (6389142): __do_softirq (./arch/x86/include/asm/preempt.h:22 kernel/softirq.c:296)
-> >> > [   49.730033] softirqs last disabled at (6389139): irq_exit (kernel/softirq.c:346 kernel/softirq.c:387)
-> >> > [   49.730033] CPU: 34 PID: 1 Comm: swapper/0 Not tainted 3.15.0-rc8-next-20140606-sasha-00021-ga9d3a0b-dirty #597
-> > 
-> > This is 3.15-rc8 + linux-next?  I'll try to reproduce here, but the
-> > tests were working for me.
-> 
-> Yes, it's the latest -next tree available.
-> 
-> Also note that it doesn't happen every time, so might be some sort of a race?
+From: Thierry Reding <treding@nvidia.com>
 
-I've noticed that with -rc8 and now .15 btrfs fails to automount (or mount) about 1 in 2 times requiring a reboot to get it to work.
-I have not seen anything in logs.  Might this be related?
+Assign lanes to the XUSB pads as used on the Jetson TK1.
 
-Thanks,
+Signed-off-by: Thierry Reding <treding@nvidia.com>
+---
+ arch/arm/boot/dts/tegra124-jetson-tk1.dts | 26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
 
-Ed Tomlinson
+diff --git a/arch/arm/boot/dts/tegra124-jetson-tk1.dts b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
+index e31fb61a81d3..38d30877057c 100644
+--- a/arch/arm/boot/dts/tegra124-jetson-tk1.dts
++++ b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
+@@ -1619,6 +1619,32 @@
+ 		nvidia,sys-clock-req-active-high;
+ 	};
+ 
++	padctl@0,7009f000 {
++		pinctrl-0 = <&padctl_default>;
++		pinctrl-names = "default";
++
++		padctl_default: pinmux {
++			usb3 {
++				nvidia,lanes = "pcie-0", "pcie-1";
++				nvidia,function = "usb3";
++				nvidia,iddq = <0>;
++			};
++
++			pcie {
++				nvidia,lanes = "pcie-2", "pcie-3",
++					       "pcie-4";
++				nvidia,function = "pcie";
++				nvidia,iddq = <0>;
++			};
++
++			sata {
++				nvidia,lanes = "sata-0";
++				nvidia,function = "sata";
++				nvidia,iddq = <0>;
++			};
++		};
++	};
++
+ 	/* SD card */
+ 	sdhci@0,700b0400 {
+ 		status = "okay";
+-- 
+1.9.2
+
