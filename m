@@ -1,115 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755315AbaFKGVb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 02:21:31 -0400
-Received: from ozlabs.org ([103.22.144.67]:59211 "EHLO ozlabs.org"
+	id S1755391AbaFKGZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 02:25:58 -0400
+Received: from mga01.intel.com ([192.55.52.88]:42517 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750825AbaFKGVa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 02:21:30 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Linus Torvalds" <torvalds@linux-foundation.org>
-Cc: "LKML" <linux-kernel@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ben Dooks <ben@simtec.co.uk>
-Cc: Brian W Hart <hartb@linux.vnet.ibm.com>
-Cc: Bruno =?utf-8?Q?Pr=C3=A9mont?= <bonbons@linux-vserver.org>
-Cc: Christian Engelmayer <cengelma@gmx.at>
-Cc: Christopher Brannon <chris@the-brannons.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Greg Kroah-Hartman <greg@kroah.com>
-Cc: James Bottomley <JBottomley@Parallels.com>
-Cc: Jiri Kosina <jkosina@suse.cz>
-Cc: Lindar Liu <lindar_liu@usish.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Robert Jarzmik <robert.jarzmik@free.fr>
-Cc: Samuel Thibault <samuel.thibault@ens-lyon.org>
-Cc: Simon Wood <simon@mungewell.org>
-Cc: Vincent Sanders <vince@simtec.co.uk>
-Subject: [PULL] modules-next
-User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Wed, 11 Jun 2014 15:03:47 +0930
-Message-ID: <877g4oau2s.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1750825AbaFKGZ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 02:25:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,456,1400050800"; 
+   d="scan'208";a="546119530"
+From: Lu Baolu <baolu.lu@linux.intel.com>
+To: Mathias Nyman <mathias.nyman@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lu Baolu <baolu.lu@linux.intel.com>
+Subject: [PATCH 1/1] xhci: clear root port wake on bits if controller isn't wake-up capable
+Date: Wed, 11 Jun 2014 06:25:20 +0800
+Message-Id: <1402439120-78151-1-git-send-email-baolu.lu@linux.intel.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit ec6931b281797b69e6cf109f9cc94d5a2bf994e0:
+When the xHCI PCI host is suspended, if do_wakeup is false in xhci_pci_suspend,
+xhci_bus_suspend needs to clear all root port wake on bits. Otherwise some Intel
+platform may get a spurious wakeup, even if PCI PME# is disabled.
 
-  word-at-a-time: avoid undefined behaviour in zero_bytemask macro (2014-04-27 15:20:05 -0700)
+http://marc.info/?l=linux-usb&m=138194006009255&w=2
 
-are available in the git repository at:
+Signed-off-by: Lu Baolu <baolu.lu@linux.intel.com>
+---
+ drivers/usb/host/xhci-hub.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux.git tags/modules-next-for-linus
+diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
+index 6231ce6..fb771bd 100644
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -22,6 +22,7 @@
+ 
+ 
+ #include <linux/slab.h>
++#include <linux/device.h>
+ #include <asm/unaligned.h>
+ 
+ #include "xhci.h"
+@@ -1139,7 +1140,9 @@ int xhci_bus_suspend(struct usb_hcd *hcd)
+ 		 * including the USB 3.0 roothub, but only if CONFIG_PM_RUNTIME
+ 		 * is enabled, so also enable remote wake here.
+ 		 */
+-		if (hcd->self.root_hub->do_remote_wakeup) {
++		if (hcd->self.root_hub->do_remote_wakeup
++				&& device_may_wakeup(hcd->self.controller)) {
++
+ 			if (t1 & PORT_CONNECT) {
+ 				t2 |= PORT_WKOC_E | PORT_WKDISC_E;
+ 				t2 &= ~PORT_WKCONN_E;
+-- 
+1.9.1
 
-for you to fetch changes up to 4982223e51e8ea9d09bb33c8323b5ec1877b2b51:
-
-  module: set nx before marking module MODULE_STATE_COMING. (2014-05-14 10:55:47 +0930)
-
-----------------------------------------------------------------
-Most of this is cleaning up various driver sysfs permissions so we can
-re-add the perm check (we unified the module param and sysfs checks, but
-the module ones were stronger so we weakened them temporarily).
-
-Param parsing gets documented, and also "--" now forces args to be
-handed to init (and ignored by the kernel).
-
-Module NX/RO protections get tightened: we now set them before calling
-parse_args().
-
-Cheers,
-Rusty.
-
-----------------------------------------------------------------
-Brian W Hart (1):
-      cpumask.h: silence warning with -Wsign-compare
-
-Christian Engelmayer (1):
-      modpost: Fix resource leak in read_dump()
-
-Rusty Russell (12):
-      param: hand arguments after -- straight to init
-      Documentation: Update kernel-parameters.tx
-      speakup: fix incorrect perms on speakup_acntsa.c
-      drivers/mtd/devices/docg3.c: avoid world-writable sysfs files.
-      drivers/video/fbdev/sm501fb.c: avoid world-writable sysfs files.
-      drivers/hid/hid-lg4ff.c: avoid world-writable sysfs files.
-      drivers/scsi/pm8001/pm8001_ctl.c: avoid world-writable sysfs files.
-      drivers/regulator/virtual: avoid world-writable sysfs files.
-      drivers/staging/speakup/: avoid world-writable sysfs files.
-      drivers/hid/hid-picolcd_fb: avoid world-writable sysfs files.
-      samples/kobject/: avoid world-writable sysfs files.
-      module: set nx before marking module MODULE_STATE_COMING.
-
- Documentation/kernel-parameters.txt      | 40 +++++++++++++--------
- drivers/hid/hid-lg4ff.c                  |  2 +-
- drivers/hid/hid-picolcd_fb.c             |  2 +-
- drivers/mtd/devices/docg3.c              |  4 +--
- drivers/regulator/virtual.c              | 10 +++---
- drivers/scsi/pm8001/pm8001_ctl.c         |  2 +-
- drivers/staging/speakup/kobjects.c       | 62 ++++++++++++++++----------------
- drivers/staging/speakup/speakup_acntpc.c | 14 ++++----
- drivers/staging/speakup/speakup_acntsa.c | 22 ++++++------
- drivers/staging/speakup/speakup_apollo.c | 16 ++++-----
- drivers/staging/speakup/speakup_audptr.c | 16 ++++-----
- drivers/staging/speakup/speakup_bns.c    | 14 ++++----
- drivers/staging/speakup/speakup_decext.c | 16 ++++-----
- drivers/staging/speakup/speakup_decpc.c  | 16 ++++-----
- drivers/staging/speakup/speakup_dectlk.c | 16 ++++-----
- drivers/staging/speakup/speakup_dtlk.c   | 20 +++++------
- drivers/staging/speakup/speakup_dummy.c  | 14 ++++----
- drivers/staging/speakup/speakup_keypc.c  | 10 +++---
- drivers/staging/speakup/speakup_ltlk.c   | 20 +++++------
- drivers/staging/speakup/speakup_soft.c   | 22 ++++++------
- drivers/staging/speakup/speakup_spkout.c | 16 ++++-----
- drivers/staging/speakup/speakup_txprt.c  | 14 ++++----
- drivers/video/fbdev/sm501fb.c            |  2 +-
- include/linux/cpumask.h                  |  2 +-
- include/linux/moduleparam.h              |  2 +-
- init/main.c                              | 33 ++++++++++++++---
- kernel/module.c                          | 44 +++++++++++++----------
- kernel/params.c                          | 25 +++++++------
- samples/kobject/kobject-example.c        |  7 ++--
- samples/kobject/kset-example.c           |  7 ++--
- scripts/mod/modpost.c                    |  2 ++
