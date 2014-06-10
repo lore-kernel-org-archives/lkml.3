@@ -1,68 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753130AbaFJTUP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 15:20:15 -0400
-Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:33044 "EHLO
-	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751758AbaFJTUO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:20:14 -0400
-Date: Tue, 10 Jun 2014 20:19:43 +0100
-From: Sitsofe Wheeler <sitsofe@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Igor Mammedov <imammedo@redhat.com>, Toshi Kani <toshi.kani@hp.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [BISECTED][REGRESSION] Kernel does not boot on EeePC
-Message-ID: <20140610191943.GA19896@sucs.org>
-References: <20140608090223.GA8703@sucs.org>
- <20140608094517.GB12736@gmail.com>
- <5394A260.8000900@zytor.com>
- <20140609140215.GA1579@gmail.com>
+	id S1753253AbaFJTWL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 15:22:11 -0400
+Received: from mga03.intel.com ([143.182.124.21]:33324 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750740AbaFJTWJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 15:22:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,1010,1392192000"; 
+   d="scan'208";a="443955098"
+Date: Tue, 10 Jun 2014 12:22:07 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, peterz@infradead.org, gleb@kernel.org,
+        pbonzini@redhat.com, eranian@google.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] kvm: Implement PEBS virtualization
+Message-ID: <20140610192207.GC8178@tassilo.jf.intel.com>
+References: <1401412327-14810-1-git-send-email-andi@firstfloor.org>
+ <1401412327-14810-5-git-send-email-andi@firstfloor.org>
+ <20140610180448.GA9485@amt.cnet>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140609140215.GA1579@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140610180448.GA9485@amt.cnet>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 09, 2014 at 04:02:15PM +0200, Ingo Molnar wrote:
+On Tue, Jun 10, 2014 at 03:04:48PM -0300, Marcelo Tosatti wrote:
+> On Thu, May 29, 2014 at 06:12:07PM -0700, Andi Kleen wrote:
+> >  {
+> >  	struct kvm_pmu *pmu = &vcpu->arch.pmu;
+> > @@ -407,6 +551,20 @@ int kvm_pmu_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
+> >  			return 0;
+> >  		}
+> >  		break;
+> > +	case MSR_IA32_DS_AREA:
+> > +		pmu->ds_area = data;
+> > +		return 0;
+> > +	case MSR_IA32_PEBS_ENABLE:
+> > +		if (data & ~0xf0000000fULL)
+> > +			break;
 > 
-> * H. Peter Anvin <hpa@zytor.com> wrote:
+> Bit 63 == PS_ENABLE ?
+
+PEBS_EN is [3:0] for each counter, but only one bit on Silvermont.
+LL_EN is [36:32], but currently unused.
+
 > 
-> > I really want to say *THANK YOU* to Sitsofe for a very timely and 
-> > complete report.  You really saved us some highly valuable time.
+> >  void kvm_handle_pmu_event(struct kvm_vcpu *vcpu)
+> > diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> > index 33e8c02..4f39917 100644
+> > --- a/arch/x86/kvm/vmx.c
+> > +++ b/arch/x86/kvm/vmx.c
+> > @@ -7288,6 +7288,12 @@ static void __noclone vmx_vcpu_run(struct kvm_vcpu *vcpu)
+> >  	atomic_switch_perf_msrs(vmx);
+> >  	debugctlmsr = get_debugctlmsr();
+> >  
+> > +	/* Move this somewhere else? */
 > 
-> Seconded!
+> Unless you hook into vcpu->arch.pmu.ds_area and perf_get_ds_area()
+> writers, it has to be at every vcpu entry.
+> 
+> Could compare values in MSR save area to avoid switch.
 
-You're welcome. For what it's worth these are the things that allowed
-this drive-by testing to occur:
+Ok.
 
-git bisect:
-Without this there would have been a generic complaint that would have
-only gone to the general kernel mailing list. I thought the issue was
-going to lie with the GPU drivers but just following the bisection and
-testing the final commit zoned in on the true cause.
+> 
+> > +	if (vcpu->arch.pmu.ds_area)
+> > +		add_atomic_switch_msr(vmx, MSR_IA32_DS_AREA,
+> > +				      vcpu->arch.pmu.ds_area,
+> > +				      perf_get_ds_area());
+> 
+> Should clear_atomic_switch_msr before 
+> add_atomic_switch_msr.
 
-Able to cut out most features:
-I tend to build cut down kernels which only supports my hardware because
-they take less time to compile and boot faster.
+Ok.
 
-Single file builds:
-I often do builds on Internet connected machines. Because I can 
-can build everything in I only have one file to copy at the end.
+BTW how about general PMU migration? As far as I can tell there 
+is no code to save/restore the state for that currently, right?
 
-Distro doesn't need initrd/initramfs:
-One less thing to setup because everything is built in but some distros
-seem dependent on having one these days.
-
-I guess the one nice thing to have in the future would be a make
-checkedconfig that automatically turned on all checking/verification
-features (e.g. slab debugging/memory poisoning) for the current config.
-This is would make it easier to get such kernels 
+-Andi
 
 -- 
-Sitsofe | http://sucs.org/~sits/
+ak@linux.intel.com -- Speaking for myself only
