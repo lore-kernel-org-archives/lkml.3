@@ -1,95 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932801AbaFJT60 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 15:58:26 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35664 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753009AbaFJTyl (ORCPT
+	id S932620AbaFJT7L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 15:59:11 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:60748 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754302AbaFJT7H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:54:41 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 032/160] Drivers: hv: vmbus: Negotiate version 3.0 when running on ws2012r2 hosts
-Date: Tue, 10 Jun 2014 12:44:32 -0700
-Message-Id: <1402429600-20477-33-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
-References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Tue, 10 Jun 2014 15:59:07 -0400
+Date: Tue, 10 Jun 2014 21:59:05 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3][update] PM / sleep: Introduce command line
+ argument for sleep state enumeration
+Message-ID: <20140610195905.GA6805@amd.pavel.ucw.cz>
+References: <1817539.9KW2IGGbDV@vostro.rjw.lan>
+ <1579932.qSkFQPvI6f@vostro.rjw.lan>
+ <20140610131206.GA7626@amd.pavel.ucw.cz>
+ <1848200.GDD9x0Rptb@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1848200.GDD9x0Rptb@vostro.rjw.lan>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.3 -stable review patch.  If anyone has any objections, please let me know.
+On Tue 2014-06-10 17:23:24, Rafael J. Wysocki wrote:
+> On Tuesday, June 10, 2014 03:12:06 PM Pavel Machek wrote:
+> > Hi!
+> > 
+> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > 
+> > > On some systems the platform doesn't support neither
+> > > PM_SUSPEND_MEM nor PM_SUSPEND_STANDBY, so PM_SUSPEND_FREEZE is the
+> > > only available system sleep state.  However, some user space frameworks
+> > > only use the "mem" and (sometimes) "standby" sleep state labels, so
+> > > the users of those systems need to modify user space in order to be
+> > > able to use system suspend at all and that is not always possible.
+> > 
+> > I'd say we should fix the frameworks, not add option to change kernel
+> > interfaces.
+> > 
+> > Because, as you mentioned, if we add this, we are probably going to
+> > get stuck with it forever :-(.
+> 
+> Unfortunately, fixing the frameworks is rather less than realistic in any
+> reasonable time frame, since  Android. :-)
 
-------------------
+Actually, you still have the sources from android, and this issue
+sounds almost simple enough for binary patch.
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+Android misuses /proc/sys/vm/drop_caches, too, IIRC. Are we going to
+change interface to match their expectations? They have binder and
+wakelocks. Are we going to apply those patches just because Android
+wants that?
 
-commit 03367ef5ea811475187a0732aada068919e14d61 upstream.
-
-Only ws2012r2 hosts support the ability to reconnect to the host on VMBUS. This functionality
-is needed by kexec in Linux. To use this functionality we need to negotiate version 3.0 of the
-VMBUS protocol.
-
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/hv/connection.c | 5 ++++-
- include/linux/hyperv.h  | 4 +++-
- 2 files changed, 7 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/hv/connection.c b/drivers/hv/connection.c
-index f2d7bf9..2e7801a 100644
---- a/drivers/hv/connection.c
-+++ b/drivers/hv/connection.c
-@@ -55,6 +55,9 @@ static __u32 vmbus_get_next_version(__u32 current_version)
- 	case (VERSION_WIN8):
- 		return VERSION_WIN7;
- 
-+	case (VERSION_WIN8_1):
-+		return VERSION_WIN8;
-+
- 	case (VERSION_WS2008):
- 	default:
- 		return VERSION_INVAL;
-@@ -77,7 +80,7 @@ static int vmbus_negotiate_version(struct vmbus_channel_msginfo *msginfo,
- 	msg->interrupt_page = virt_to_phys(vmbus_connection.int_page);
- 	msg->monitor_page1 = virt_to_phys(vmbus_connection.monitor_pages[0]);
- 	msg->monitor_page2 = virt_to_phys(vmbus_connection.monitor_pages[1]);
--	if (version == VERSION_WIN8)
-+	if (version == VERSION_WIN8_1)
- 		msg->target_vcpu = hv_context.vp_index[smp_processor_id()];
- 
- 	/*
-diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
-index 344883d..6088058 100644
---- a/include/linux/hyperv.h
-+++ b/include/linux/hyperv.h
-@@ -464,15 +464,17 @@ hv_get_ringbuffer_availbytes(struct hv_ring_buffer_info *rbi,
-  * 0 . 13 (Windows Server 2008)
-  * 1 . 1  (Windows 7)
-  * 2 . 4  (Windows 8)
-+ * 3 . 0  (Windows 8 R2)
-  */
- 
- #define VERSION_WS2008  ((0 << 16) | (13))
- #define VERSION_WIN7    ((1 << 16) | (1))
- #define VERSION_WIN8    ((2 << 16) | (4))
-+#define VERSION_WIN8_1    ((3 << 16) | (0))
- 
- #define VERSION_INVAL -1
- 
--#define VERSION_CURRENT VERSION_WIN8
-+#define VERSION_CURRENT VERSION_WIN8_1
- 
- /* Make maximum size of pipe payload of 16K */
- #define MAX_PIPE_DATA_PAYLOAD		(sizeof(u8) * 16384)
+Android people usually patch their kernels, anyway, so why not add
+this one, too?
+									Pavel
 -- 
-1.9.1
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
