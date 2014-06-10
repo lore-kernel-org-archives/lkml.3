@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754824AbaFJTvA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 15:51:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35220 "EHLO
+	id S1754756AbaFJTuw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 15:50:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35202 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753271AbaFJTu5 (ORCPT
+	with ESMTP id S1752302AbaFJTus (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:50:57 -0400
+	Tue, 10 Jun 2014 15:50:48 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Neil Greatorex <neil@fatboyfat.co.uk>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>,
+Cc: "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 102/160] irqchip: armada-370-xp: Fix releasing of MSIs
-Date: Tue, 10 Jun 2014 12:45:42 -0700
-Message-Id: <1402429600-20477-103-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 109/160] module: remove warning about waiting module removal.
+Date: Tue, 10 Jun 2014 12:45:49 -0700
+Message-Id: <1402429600-20477-110-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
 References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
@@ -29,41 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Greatorex <neil@fatboyfat.co.uk>
+From: Rusty Russell <rusty@rustcorp.com.au>
 
-commit ff3c664505bf8a8334bca5045e87b85cfe4d2277 upstream.
+commit 79465d2fd48e68940c2bdecddbdecd45bbba06fe upstream.
 
-Store the value of d->hwirq in a local variable as the real value is wiped out
-by calling irq_dispose_mapping. Without this patch, the armada_370_xp_free_msi
-function would always free MSI#0, no matter what was passed to it.
+We remove the waiting module removal in commit 3f2b9c9cdf38 (September
+2013), but it turns out that modprobe in kmod (< version 16) was
+asking for waiting module removal.  No one noticed since modprobe would
+check for 0 usage immediately before trying to remove the module, and
+the race is unlikely.
 
-Fixes: 31f614edb726fcc4d5aa0f2895fbdec9b04a3ca4 ('irqchip: armada-370-xp: implement MSI support')
-Signed-off-by: Neil Greatorex <neil@fatboyfat.co.uk>
-Link: https://lkml.kernel.org/r/1397823593-1932-4-git-send-email-thomas.petazzoni@free-electrons.com
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Link: https://lkml.kernel.org/r/1397823593-1932-4-git-send-email-thomas.petazzoni@free-electrons.com
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+However, it means that anyone running old (but not ancient) kmod
+versions is hitting the printk designed to see if anyone was running
+"rmmod -w".  All reports so far have been false positives, so remove
+the warning.
+
+Fixes: 3f2b9c9cdf389e303b2273679af08aab5f153517
+Reported-by: Valerio Vanni <valerio.vanni@inwind.it>
+Cc: Elliott, Robert (Server Storage) <Elliott@hp.com>
+Acked-by: Lucas De Marchi <lucas.de.marchi@gmail.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+[ kamal: backport to 3.13: context ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/irqchip/irq-armada-370-xp.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ kernel/module.c | 5 -----
+ 1 file changed, 5 deletions(-)
 
-diff --git a/drivers/irqchip/irq-armada-370-xp.c b/drivers/irqchip/irq-armada-370-xp.c
-index 6cb87c4..d9cd6df 100644
---- a/drivers/irqchip/irq-armada-370-xp.c
-+++ b/drivers/irqchip/irq-armada-370-xp.c
-@@ -158,8 +158,10 @@ static void armada_370_xp_teardown_msi_irq(struct msi_chip *chip,
- 					   unsigned int irq)
- {
- 	struct irq_data *d = irq_get_irq_data(irq);
-+	unsigned long hwirq = d->hwirq;
-+
- 	irq_dispose_mapping(irq);
--	armada_370_xp_free_msi(d->hwirq);
-+	armada_370_xp_free_msi(hwirq);
- }
+diff --git a/kernel/module.c b/kernel/module.c
+index f5a3b1e..6b931bd 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -815,11 +815,6 @@ SYSCALL_DEFINE2(delete_module, const char __user *, name_user,
+ 		return -EFAULT;
+ 	name[MODULE_NAME_LEN-1] = '\0';
  
- static int armada_370_xp_check_msi_device(struct msi_chip *chip, struct pci_dev *dev,
+-	if (!(flags & O_NONBLOCK)) {
+-		printk(KERN_WARNING
+-		       "waiting module removal not supported: please upgrade");
+-	}
+-
+ 	if (mutex_lock_interruptible(&module_mutex) != 0)
+ 		return -EINTR;
+ 
 -- 
 1.9.1
 
