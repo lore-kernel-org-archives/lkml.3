@@ -1,58 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754769AbaFJIRr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 04:17:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51944 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751279AbaFJIRp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 04:17:45 -0400
-Message-ID: <5396BF26.9040805@suse.cz>
-Date: Tue, 10 Jun 2014 10:17:42 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1755080AbaFJITF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 04:19:05 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:55819 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751010AbaFJITB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 04:19:01 -0400
+Message-ID: <5396BF5E.7070805@ahsoftware.de>
+Date: Tue, 10 Jun 2014 10:18:38 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Richard Weinberger <richard.weinberger@gmail.com>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Sam Ravnborg <sam@ravnborg.org>,
-        Randy Dunlap <rdunlap@infradead.org>
-Subject: Re: [PATCH v2 3/5] kbuild: Use relative path for $(objtree)
-References: <1399639944-20551-1-git-send-email-mmarek@suse.cz>	<1399639944-20551-4-git-send-email-mmarek@suse.cz>	<CAFLxGvyz-aX8rTveo9W3mqsQxPeg8cb7Oq59UiC1kMz4qTiYwg@mail.gmail.com>	<538EEA3D.1080105@suse.cz>	<538F1B41.3060904@suse.cz>	<20140605155614.GA18376@sepie.suse.cz> <CAMuHMdU0PQsKkYuFpxca1u7+tPbkxQsnNJ1b5-L-aJG9ZCyyEA@mail.gmail.com>
-In-Reply-To: <CAMuHMdU0PQsKkYuFpxca1u7+tPbkxQsnNJ1b5-L-aJG9ZCyyEA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Jiri Kosina <jkosina@suse.cz>
+CC: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: HID: hid-sensor-hub: fix sleeping function called from invalid
+ context
+References: <53963364.4010104@ahsoftware.de> <alpine.LNX.2.00.1406100038150.2827@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1406100038150.2827@pobox.suse.cz>
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-06-10 09:40, Geert Uytterhoeven wrote:
-> Hi Michael,
+Am 10.06.2014 00:40, schrieb Jiri Kosina:
+> On Tue, 10 Jun 2014, Alexander Holler wrote:
 > 
-> On Thu, Jun 5, 2014 at 5:56 PM, Michal Marek <mmarek@suse.cz> wrote:
->> --- a/arch/um/Makefile
->> +++ b/arch/um/Makefile
->> @@ -111,8 +111,7 @@ endef
->>  KBUILD_KCONFIG := $(HOST_DIR)/um/Kconfig
+>> Hello,
 >>
->>  archheaders:
->> -       $(Q)$(MAKE) -C '$(srctree)' KBUILD_SRC= \
->> -               ARCH=$(HEADER_ARCH) O='$(objtree)' archheaders
->> +       $(Q)$(MAKE) KBUILD_SRC= ARCH=$(HEADER_ARCH) archheaders
+>> while rebasing the dozens (currently around 60) of refused, ignored or
+>> similiar bugfixes and patches I need to use a Linux kernel, I've noticed that
+>> Jiri Kosinas patch here
+>>
+>> https://lkml.org/lkml/2013/8/9/214
+>>
+>> doesn't apply anymore.
+>>
+>> Looking why, I've seen that a similiar patch from Srinivas Pandruvada named
+>> like the topic ended up in the kernel.
 > 
-> Should the logic in https://lkml.org/lkml/2014/6/1/17 be changed as well?
+> Hi Alexander,
+> 
+> thanks for drawing this one from the boulevard of forgotten patches.
+> 
+> I am actually not aware of any patch by Srinivas that would conflict with 
+> the one I've written -- could you please elaborate where you believe the 
+> conflict is?
 
-I haven't tried it, but I don't see a problem with the added make
-invocations:
+I actually don't rebase from main-version to main-version (that doesn't
+really work), but I'm using format-patch and git am. It's a bit more
+strict when that's ok. I haven't looked in deep which changes in 3.15 do
+conflict with the patch based on 3.14, but it't can't be that much.
 
-+	$(Q)$(MAKE) -f $(srctree)/scripts/Makefile.asm-generic \
-+		    SRCARCH=$(HEADER_ARCH) src=asm \
-+		    obj=arch/$(HEADER_ARCH)/include/generated/asm
-+	$(Q)$(MAKE) -f $(srctree)/scripts/Makefile.asm-generic \
-+		    SRCARCH=$(HEADER_ARCH) src=uapi/asm \
-+		    obj=arch/$(HEADER_ARCH)/include/generated/uapi/asm
+>> Looking at the differences, I wonder if not all spin_lock() calls in 
+>> hid-sensor-hub.c should be changed into spin_lock_irqsave() like the 
+>> patch from Jiri Kosina did.
+> 
+> Could you please give me your Tested-by:? I'll then be happily queuing the 
+> fix. Thanks.
 
-The problem with the first make was the directory change (-C ...), which
-broke the relative paths. These two just spawn another make in the
-current directory, so it should be fine.
+Sure, but I already did that in the reply to your patch.
 
-Michal
+>> (sorry for the duplicate message, I've forgotten to add the
+>> wanna-be-reviewer-school named lkml to the recipients)
+> 
+> You want to make it to LWN quotes of the week, don't you? :)
+
+No, I'm just too often the object of their first steps and that's why I
+won't post any patches on lkml anymore. It might be fun for them to do
+reviews on patches from innocent people, but those victims usually don't
+share their view. Maybe I will choose full disclosure or similiar I ever
+will have an important patch poor Linux users should really have a need for.
+
+Regards,
+
+Alexander Holler
