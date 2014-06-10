@@ -1,86 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752689AbaFJSIn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 14:08:43 -0400
-Received: from www.linutronix.de ([62.245.132.108]:54502 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751002AbaFJSIm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 14:08:42 -0400
-Date: Tue, 10 Jun 2014 20:08:37 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Oleg Nesterov <oleg@redhat.com>
-cc: Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	id S1751851AbaFJSKc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 14:10:32 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:60498 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750735AbaFJSKb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 14:10:31 -0400
+Date: Tue, 10 Jun 2014 11:10:03 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Gulsah Kose <gulsah.1004@gmail.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>
-Subject: Re: safety of *mutex_unlock() (Was: [BUG] signal: sighand unprotected
- when accessed by /proc)
-In-Reply-To: <20140610165704.GA3110@redhat.com>
-Message-ID: <alpine.DEB.2.10.1406101959420.5170@nanos>
-References: <CA+55aFzT5CGv_T60voAqR+4PfiMmJmsDZLid2DZ4=+X8uvF+ig@mail.gmail.com> <20140603200125.GB1105@redhat.com> <20140606203350.GU4581@linux.vnet.ibm.com> <20140608130718.GA11129@redhat.com> <20140609162613.GE4581@linux.vnet.ibm.com> <20140609181553.GA13681@redhat.com>
- <20140609142956.3d79e9d1@gandalf.local.home> <CA+55aFyO8bb7fS3AaQzfMq7geERQ1JpSdcRZ9Fbs5-tZP0oRXg@mail.gmail.com> <20140609154114.20585056@gandalf.local.home> <alpine.DEB.2.10.1406101051210.3830@nanos> <20140610165704.GA3110@redhat.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+        "John W. Linville" <linville@tuxdriver.com>,
+        devel@driverdev.osuosl.org
+Subject: [PATCH] staging: r8192ee: avoid leaking format string
+Message-ID: <20140610181003.GA17732@www.outflux.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Jun 2014, Oleg Nesterov wrote:
+This makes sure a format string cannot leak into the work queue name nor
+the printk buffer.
 
-> On 06/10, Thomas Gleixner wrote:
-> >
-> > On Mon, 9 Jun 2014, Steven Rostedt wrote:
-> > > I think rtmutex has an
-> > > issue with it too. Specifically in the slow_unlock case:
-> > >
-> > > 	if (!rt_mutex_has_waiters(lock)) {
-> > > 		lock->owner = NULL;
-> > > 		raw_spin_unlock(&lock->wait_lock);
-> > > 		return;
-> > > 	}
-> >
-> > Indeed. If the fast path is enabled we have that issue. Fortunately
-> > there is a halfways reasonable solution for this.
-> 
-> Ah, yes, I missed that,
-> 
-> > +	while (!rt_mutex_has_waiters(lock)) {
-> > +		/* Drops lock->wait_lock ! */
-> > +		if (unlock_rt_mutex_safe(lock) == true)
-> > +			return;
-> > +		/* Relock the rtmutex and try again */
-> > +		raw_spin_lock(&lock->wait_lock);
-> >  	}
-> 
-> OK...
-> 
-> wakeup_next_waiter() does rt_mutex_set_owner(NULL) before we drop ->wait_lock,
-> but this looks fine: we know that rt_mutex_has_waiters() can not become false
-> until waiter->task takes this lock and does rt_mutex_dequeue(), so ->owner
-> can't be NULL, right?
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ drivers/staging/rtl8192ee/base.c                   |    2 +-
+ drivers/staging/rtl8192ee/btcoexist/halbtcoutsrc.h |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-Correct.
-
-> Perhaps it could simply do ->owner = RT_MUTEX_HAS_WAITERS to make this more
-> clear...
-
-Good point. The new owner can cleanup the mess.
+diff --git a/drivers/staging/rtl8192ee/base.c b/drivers/staging/rtl8192ee/base.c
+index 64ade216a153..a7c69f704623 100644
+--- a/drivers/staging/rtl8192ee/base.c
++++ b/drivers/staging/rtl8192ee/base.c
+@@ -469,7 +469,7 @@ static void _rtl_init_deferred_work(struct ieee80211_hw *hw)
+ 		    rtl92e_easy_concurrent_retrytimer_callback, (unsigned long)hw);
+ 	/* <2> work queue */
+ 	rtlpriv->works.hw = hw;
+-	rtlpriv->works.rtl_wq = alloc_workqueue(rtlpriv->cfg->name, 0, 0);
++	rtlpriv->works.rtl_wq = alloc_workqueue("%s", 0, 0, rtlpriv->cfg->name);
+ 	INIT_DELAYED_WORK(&rtlpriv->works.watchdog_wq,
+ 			  (void *)rtl92e_watchdog_wq_callback);
+ 	INIT_DELAYED_WORK(&rtlpriv->works.ips_nic_off_wq,
+diff --git a/drivers/staging/rtl8192ee/btcoexist/halbtcoutsrc.h b/drivers/staging/rtl8192ee/btcoexist/halbtcoutsrc.h
+index c0a4286430a5..1231b16205f2 100644
+--- a/drivers/staging/rtl8192ee/btcoexist/halbtcoutsrc.h
++++ b/drivers/staging/rtl8192ee/btcoexist/halbtcoutsrc.h
+@@ -94,7 +94,7 @@ extern u32 btc_92edbg_type[];
  
-> Off-topic question. I simply can't understand why rt_mutex_slowtrylock() checks
-> rt_mutex_owner(lock) != current. This looks pointless, try_to_take_rt_mutex()
-> always fails (correctly) if rt_mutex_owner() != NULL ? IOW, can't we simply
-> remove this check or turn it into "if (!rt_mutex_owner(lock))" ?
+ 
+ #define	CL_SPRINTF	snprintf
+-#define	CL_PRINTF	printk
++#define	CL_PRINTF(buf)	printk("%s", buf)
+ 
+ #define	BTC_PRINT(dbgtype, dbgflag, printstr, ...)		\
+ 	do {							\
+-- 
+1.7.9.5
 
-Indeed.
 
-Thanks,
-
-	tglx
+-- 
+Kees Cook
+Chrome OS Security
