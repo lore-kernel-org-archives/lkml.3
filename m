@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934387AbaFJAWW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jun 2014 20:22:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58173 "EHLO
+	id S934443AbaFJAWg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jun 2014 20:22:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58464 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934010AbaFJAWG (ORCPT
+	with ESMTP id S1754444AbaFJAWb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jun 2014 20:22:06 -0400
+	Mon, 9 Jun 2014 20:22:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Loo <tloo@saltstorm.net>,
+        Peng Chen <pengchen@qca.qualcomm.com>,
         Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
         Ben Hutchings <ben@decadent.org.uk>, Jianguo Wu <wujianguo@huawei.com>
-Subject: [PATCH 3.4 37/88] Bluetooth: ath3k: Add support for Fujitsu Lifebook UH5x2 [04c5:1330]
-Date: Mon,  9 Jun 2014 17:24:47 -0700
-Message-Id: <20140610002425.761532971@linuxfoundation.org>
+Subject: [PATCH 3.4 41/88] Bluetooth: Add a new PID/VID 0cf3/e005 for AR3012.
+Date: Mon,  9 Jun 2014 17:24:51 -0700
+Message-Id: <20140610002425.906820369@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140610002424.500996570@linuxfoundation.org>
 References: <20140610002424.500996570@linuxfoundation.org>
@@ -30,25 +30,25 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Loo <tloo@saltstorm.net>
+From: Peng Chen <pengchen@qti.qualcomm.com>
 
-commit fb2e4631a7e23c37b9e2e7b2fd776231bbfc39d4 upstream.
+commit 0a3658cccdf5326ea508efeb1879b0e2508bb0c3 upstream.
 
-commit 84eb2ae1807dd1467bf6f500fc69ae61f1907b75 upstream.
+usb device info:
 
-The Fujitsu Lifebook UH552/UH572 ships with a Qualcomm AR9462/AR3012
-WLAN/BT-Combo card.
-Add device ID to the ath3k driver to enable the bluetooth side of things.
-Patch against v3.10.
-
-T:  Bus=03 Lev=01 Prnt=01 Port=02 Cnt=01 Dev#=  3 Spd=12  MxCh= 0
+T:  Bus=06 Lev=01 Prnt=01 Port=01 Cnt=01 Dev#= 15 Spd=12   MxCh= 0
 D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=04c5 ProdID=1330 Rev=00.02
-C:  #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
-I:  If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-I:  If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+P:  Vendor=0cf3 ProdID=e005 Rev= 0.02
+C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
+E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
 
-Signed-off-by: Thomas Loo <tloo@saltstorm.net>
+Signed-off-by: Peng Chen <pengchen@qca.qualcomm.com>
 Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Jianguo Wu <wujianguo@huawei.com>
@@ -61,31 +61,31 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 --- a/drivers/bluetooth/ath3k.c
 +++ b/drivers/bluetooth/ath3k.c
-@@ -91,6 +91,7 @@ static struct usb_device_id ath3k_table[
- 	{ USB_DEVICE(0x0489, 0xe04e) },
- 	{ USB_DEVICE(0x0489, 0xe056) },
- 	{ USB_DEVICE(0x0489, 0xe04d) },
-+	{ USB_DEVICE(0x04c5, 0x1330) },
- 
- 	/* Atheros AR5BBU12 with sflash firmware */
- 	{ USB_DEVICE(0x0489, 0xE02C) },
-@@ -128,6 +129,7 @@ static struct usb_device_id ath3k_blist_
- 	{ USB_DEVICE(0x0489, 0xe04e), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0489, 0xe056), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0489, 0xe04d), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x04c5, 0x1330), .driver_info = BTUSB_ATH3012 },
- 
- 	/* Atheros AR5BBU22 with sflash firmware */
- 	{ USB_DEVICE(0x0489, 0xE03C), .driver_info = BTUSB_ATH3012 },
+@@ -85,6 +85,7 @@ static struct usb_device_id ath3k_table[
+ 	{ USB_DEVICE(0x04CA, 0x3008) },
+ 	{ USB_DEVICE(0x13d3, 0x3362) },
+ 	{ USB_DEVICE(0x0CF3, 0xE004) },
++	{ USB_DEVICE(0x0CF3, 0xE005) },
+ 	{ USB_DEVICE(0x0930, 0x0219) },
+ 	{ USB_DEVICE(0x0489, 0xe057) },
+ 	{ USB_DEVICE(0x13d3, 0x3393) },
+@@ -126,6 +127,7 @@ static struct usb_device_id ath3k_blist_
+ 	{ USB_DEVICE(0x04ca, 0x3008), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3362), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0xe004), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x0cf3, 0xe005), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0930, 0x0219), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0489, 0xe057), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3393), .driver_info = BTUSB_ATH3012 },
 --- a/drivers/bluetooth/btusb.c
 +++ b/drivers/bluetooth/btusb.c
-@@ -160,6 +160,7 @@ static struct usb_device_id blacklist_ta
- 	{ USB_DEVICE(0x0489, 0xe04e), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0489, 0xe056), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0489, 0xe04d), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x04c5, 0x1330), .driver_info = BTUSB_ATH3012 },
- 
- 	/* Atheros AR5BBU12 with sflash firmware */
- 	{ USB_DEVICE(0x0489, 0xe02c), .driver_info = BTUSB_IGNORE },
+@@ -154,6 +154,7 @@ static struct usb_device_id blacklist_ta
+ 	{ USB_DEVICE(0x04ca, 0x3008), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3362), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0xe004), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x0cf3, 0xe005), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0930, 0x0219), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0489, 0xe057), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3393), .driver_info = BTUSB_ATH3012 },
 
 
