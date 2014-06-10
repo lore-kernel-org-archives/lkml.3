@@ -1,49 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751339AbaFJIA3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 04:00:29 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:53505 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750742AbaFJIA2 (ORCPT
+	id S1752417AbaFJIFh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 04:05:37 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:1864 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750742AbaFJIFc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 04:00:28 -0400
-Date: Tue, 10 Jun 2014 16:00:19 +0800
-From: Wei Yang <weiyang@linux.vnet.ibm.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Wei Yang <weiyang@linux.vnet.ibm.com>, grant.likely@linaro.org,
-        xiaoguangrong@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivercore: refine commit 58b116b "drivercore: deferral
- race condition fix"
-Message-ID: <20140610080019.GA7200@richard>
-Reply-To: Wei Yang <weiyang@linux.vnet.ibm.com>
-References: <1399612799-12251-1-git-send-email-weiyang@linux.vnet.ibm.com>
- <20140521032143.GA8157@richard>
- <20140528205245.GC10468@kroah.com>
+	Tue, 10 Jun 2014 04:05:32 -0400
+Message-ID: <5396BC25.7040500@huawei.com>
+Date: Tue, 10 Jun 2014 16:04:53 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140528205245.GC10468@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061008-6102-0000-0000-000005BE4783
+To: Hugh Dickins <hughd@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>, Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH 3.4 47/88] mm: add kmap_to_page()
+References: <20140610002424.500996570@linuxfoundation.org> <20140610002426.089246636@linuxfoundation.org> <alpine.LSU.2.11.1406091806230.8481@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.11.1406091806230.8481@eggly.anvils>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.27.212]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 01:52:45PM -0700, Greg KH wrote:
->On Wed, May 21, 2014 at 11:21:43AM +0800, Wei Yang wrote:
->> Hi~
->> 
->> Is this fix reasonable?
->
->I'll leave this up to Grant...
+>> +struct page *kmap_to_page(void *vaddr)
+>> +{
+>> +	unsigned long addr = (unsigned long)vaddr;
+>> +
+>> +	if (addr >= PKMAP_ADDR(0) && addr <= PKMAP_ADDR(LAST_PKMAP)) {
+>> +		int i = (addr - PKMAP_ADDR(0)) >> PAGE_SHIFT;
+>> +		return pte_page(pkmap_page_table[i]);
+>> +	}
+>> +
+>> +	return virt_to_page(addr);
+>> +}
+>> +
+>>  static void flush_all_zero_pkmaps(void)
+>>  {
+>>  	int i;
+> 
+> I think this needs the following on top:
+> 
+> commit 498c2280212327858e521e9d21345d4cc2637f54
+> Author: Will Deacon <will.deacon@arm.com>
+> Date:   Fri Nov 16 14:15:00 2012 -0800
+> 
 
-Grant, 
+Thanks Hugh. Hi Greg, please pick up this fix patch, Thanks a lot!
 
-Do you have some comment?
+Yijing.
+
+
+>     mm: highmem: don't treat PKMAP_ADDR(LAST_PKMAP) as a highmem address
+>     
+>     kmap_to_page returns the corresponding struct page for a virtual address
+>     of an arbitrary mapping.  This works by checking whether the address
+>     falls in the pkmap region and using the pkmap page tables instead of the
+>     linear mapping if appropriate.
+>     
+>     Unfortunately, the bounds checking means that PKMAP_ADDR(LAST_PKMAP) is
+>     incorrectly treated as a highmem address and we can end up walking off
+>     the end of pkmap_page_table and subsequently passing junk to pte_page.
+>     
+>     This patch fixes the bound check to stay within the pkmap tables.
+>     
+>     Signed-off-by: Will Deacon <will.deacon@arm.com>
+>     Cc: Mel Gorman <mgorman@suse.de>
+>     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+>     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> 
+> diff --git a/mm/highmem.c b/mm/highmem.c
+> index d517cd16a6eb..2da13a5c50e2 100644
+> --- a/mm/highmem.c
+> +++ b/mm/highmem.c
+> @@ -98,7 +98,7 @@ struct page *kmap_to_page(void *vaddr)
+>  {
+>  	unsigned long addr = (unsigned long)vaddr;
+>  
+> -	if (addr >= PKMAP_ADDR(0) && addr <= PKMAP_ADDR(LAST_PKMAP)) {
+> +	if (addr >= PKMAP_ADDR(0) && addr < PKMAP_ADDR(LAST_PKMAP)) {
+>  		int i = (addr - PKMAP_ADDR(0)) >> PAGE_SHIFT;
+>  		return pte_page(pkmap_page_table[i]);
+>  	}
+> 
+> 
+> .
+> 
+
 
 -- 
-Richard Yang
-Help you, Help me
+Thanks!
+Yijing
 
