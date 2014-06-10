@@ -1,73 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755901AbaFJULo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 16:11:44 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35370 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755133AbaFJTwC (ORCPT
+	id S1755950AbaFJULx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 16:11:53 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:63422 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755924AbaFJULu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 15:52:02 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Hans de Goede <hdegoede@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 152/160] HID: add NO_INIT_REPORTS quirk for Synaptics Touch Pad V 103S
-Date: Tue, 10 Jun 2014 12:46:32 -0700
-Message-Id: <1402429600-20477-153-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1402429600-20477-1-git-send-email-kamal@canonical.com>
-References: <1402429600-20477-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Tue, 10 Jun 2014 16:11:50 -0400
+From: Reyad Attiyat <reyad.attiyat@gmail.com>
+To: linux-kernel@vger.kernel.org, srinivas.pandruvada@linux.intel.com,
+        jkosina@suse.cz, linux-input@vger.kernel.org
+Cc: Reyad Attiyat <reyad.attiyat@gmail.com>
+Subject: [PATCH] HID: hid-sensor-hub: Make all locks of dyn_callback_lock disable interrupts.
+Date: Tue, 10 Jun 2014 15:11:37 -0500
+Message-Id: <1402431097-3883-1-git-send-email-reyad.attiyat@gmail.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.3 -stable review patch.  If anyone has any objections, please let me know.
+The dynamic callback lock (dyn_callback_lock) must not be interrupted
+when locked because the lock is used in the interrupt handler function sensor_hub_raw_event().
 
-------------------
-
-From: Hans de Goede <hdegoede@redhat.com>
-
-commit 2f433083e854ec72c19dc9b0e1cebcc8e230fd75 upstream.
-
-This touchpad seriously dislikes init reports, not only timeing out, but
-also refusing to work after this.
-
-Reported-and-tested-by: Vincent Fortier <th0ma7@gmail.com>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+Signed-off-by: Reyad Attiyat <reyad.attiyat@gmail.com>
 ---
- drivers/hid/hid-ids.h           | 1 +
- drivers/hid/usbhid/hid-quirks.c | 1 +
- 2 files changed, 2 insertions(+)
+ drivers/hid/hid-sensor-hub.c | 31 ++++++++++++++++++-------------
+ 1 file changed, 18 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index f9304cb..0ef390e 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -809,6 +809,7 @@
- #define USB_DEVICE_ID_SYNAPTICS_DPAD	0x0013
- #define USB_DEVICE_ID_SYNAPTICS_LTS1	0x0af8
- #define USB_DEVICE_ID_SYNAPTICS_LTS2	0x1d10
-+#define USB_DEVICE_ID_SYNAPTICS_TP_V103	0x5710
+diff --git a/drivers/hid/hid-sensor-hub.c b/drivers/hid/hid-sensor-hub.c
+index a8d5c8f..6547138 100644
+--- a/drivers/hid/hid-sensor-hub.c
++++ b/drivers/hid/hid-sensor-hub.c
+@@ -133,10 +133,11 @@ static struct hid_sensor_hub_callbacks *sensor_hub_get_callback(
+ 					struct hid_sensor_hub_device **hsdev,
+ 					void **priv)
+ {
++	unsigned long flags;
+ 	struct hid_sensor_hub_callbacks_list *callback;
+ 	struct sensor_hub_data *pdata = hid_get_drvdata(hdev);
  
- #define USB_VENDOR_ID_THINGM		0x27b8
- #define USB_DEVICE_ID_BLINK1		0x01ed
-diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
-index 0db9a67..6489dd8 100644
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -115,6 +115,7 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_SYNAPTICS, USB_DEVICE_ID_SYNAPTICS_LTS1, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_SYNAPTICS, USB_DEVICE_ID_SYNAPTICS_LTS2, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_SIS, USB_DEVICE_ID_SIS_TS, HID_QUIRK_NO_INIT_REPORTS },
-+	{ USB_VENDOR_ID_SYNAPTICS, USB_DEVICE_ID_SYNAPTICS_TP_V103, HID_QUIRK_NO_INIT_REPORTS },
+-	spin_lock(&pdata->dyn_callback_lock);
++	spin_lock_irqsave(&pdata->dyn_callback_lock, flags);
+ 	list_for_each_entry(callback, &pdata->dyn_callback_list, list)
+ 		if (callback->usage_id == usage_id &&
+ 			(collection_index >=
+@@ -145,10 +146,10 @@ static struct hid_sensor_hub_callbacks *sensor_hub_get_callback(
+ 				callback->hsdev->end_collection_index)) {
+ 			*priv = callback->priv;
+ 			*hsdev = callback->hsdev;
+-			spin_unlock(&pdata->dyn_callback_lock);
++			spin_unlock_irqrestore(&pdata->dyn_callback_lock, flags);
+ 			return callback->usage_callback;
+ 		}
+-	spin_unlock(&pdata->dyn_callback_lock);
++	spin_unlock_irqrestore(&pdata->dyn_callback_lock, flags);
  
- 	{ 0, 0 }
- };
+ 	return NULL;
+ }
+@@ -157,19 +158,20 @@ int sensor_hub_register_callback(struct hid_sensor_hub_device *hsdev,
+ 			u32 usage_id,
+ 			struct hid_sensor_hub_callbacks *usage_callback)
+ {
++	unsigned long flags;
+ 	struct hid_sensor_hub_callbacks_list *callback;
+ 	struct sensor_hub_data *pdata = hid_get_drvdata(hsdev->hdev);
+ 
+-	spin_lock(&pdata->dyn_callback_lock);
++	spin_lock_irqsave(&pdata->dyn_callback_lock, flags);
+ 	list_for_each_entry(callback, &pdata->dyn_callback_list, list)
+ 		if (callback->usage_id == usage_id &&
+ 						callback->hsdev == hsdev) {
+-			spin_unlock(&pdata->dyn_callback_lock);
++			spin_unlock_irqrestore(&pdata->dyn_callback_lock, flags);
+ 			return -EINVAL;
+ 		}
+ 	callback = kzalloc(sizeof(*callback), GFP_ATOMIC);
+ 	if (!callback) {
+-		spin_unlock(&pdata->dyn_callback_lock);
++		spin_unlock_irqrestore(&pdata->dyn_callback_lock, flags);
+ 		return -ENOMEM;
+ 	}
+ 	callback->hsdev = hsdev;
+@@ -177,7 +179,7 @@ int sensor_hub_register_callback(struct hid_sensor_hub_device *hsdev,
+ 	callback->usage_id = usage_id;
+ 	callback->priv = NULL;
+ 	list_add_tail(&callback->list, &pdata->dyn_callback_list);
+-	spin_unlock(&pdata->dyn_callback_lock);
++	spin_unlock_irqrestore(&pdata->dyn_callback_lock, flags);
+ 
+ 	return 0;
+ }
+@@ -186,10 +188,11 @@ EXPORT_SYMBOL_GPL(sensor_hub_register_callback);
+ int sensor_hub_remove_callback(struct hid_sensor_hub_device *hsdev,
+ 				u32 usage_id)
+ {
++	unsigned long flags;
+ 	struct hid_sensor_hub_callbacks_list *callback;
+ 	struct sensor_hub_data *pdata = hid_get_drvdata(hsdev->hdev);
+ 
+-	spin_lock(&pdata->dyn_callback_lock);
++	spin_lock_irqsave(&pdata->dyn_callback_lock, flags);
+ 	list_for_each_entry(callback, &pdata->dyn_callback_list, list)
+ 		if (callback->usage_id == usage_id &&
+ 						callback->hsdev == hsdev) {
+@@ -197,7 +200,7 @@ int sensor_hub_remove_callback(struct hid_sensor_hub_device *hsdev,
+ 			kfree(callback);
+ 			break;
+ 		}
+-	spin_unlock(&pdata->dyn_callback_lock);
++	spin_unlock_irqrestore(&pdata->dyn_callback_lock, flags);
+ 
+ 	return 0;
+ }
+@@ -376,34 +379,36 @@ EXPORT_SYMBOL_GPL(sensor_hub_input_get_attribute_info);
+ #ifdef CONFIG_PM
+ static int sensor_hub_suspend(struct hid_device *hdev, pm_message_t message)
+ {
++	unsigned long flags;
+ 	struct sensor_hub_data *pdata = hid_get_drvdata(hdev);
+ 	struct hid_sensor_hub_callbacks_list *callback;
+ 
+ 	hid_dbg(hdev, " sensor_hub_suspend\n");
+-	spin_lock(&pdata->dyn_callback_lock);
++	spin_lock_irqsave(&pdata->dyn_callback_lock, flags);
+ 	list_for_each_entry(callback, &pdata->dyn_callback_list, list) {
+ 		if (callback->usage_callback->suspend)
+ 			callback->usage_callback->suspend(
+ 					callback->hsdev, callback->priv);
+ 	}
+-	spin_unlock(&pdata->dyn_callback_lock);
++	spin_unlock_irqrestore(&pdata->dyn_callback_lock, flags);
+ 
+ 	return 0;
+ }
+ 
+ static int sensor_hub_resume(struct hid_device *hdev)
+ {
++	unsigned long flags;
+ 	struct sensor_hub_data *pdata = hid_get_drvdata(hdev);
+ 	struct hid_sensor_hub_callbacks_list *callback;
+ 
+ 	hid_dbg(hdev, " sensor_hub_resume\n");
+-	spin_lock(&pdata->dyn_callback_lock);
++	spin_lock_irqsave(&pdata->dyn_callback_lock, flags);
+ 	list_for_each_entry(callback, &pdata->dyn_callback_list, list) {
+ 		if (callback->usage_callback->resume)
+ 			callback->usage_callback->resume(
+ 					callback->hsdev, callback->priv);
+ 	}
+-	spin_unlock(&pdata->dyn_callback_lock);
++	spin_unlock_irqrestore(&pdata->dyn_callback_lock, flags);
+ 
+ 	return 0;
+ }
 -- 
-1.9.1
+1.9.3
 
