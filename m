@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752348AbaFJOSf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 10:18:35 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:25735 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750834AbaFJOSd (ORCPT
+	id S1750954AbaFJOS4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 10:18:56 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:61113 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750771AbaFJOSy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 10:18:33 -0400
-X-IronPort-AV: E=Sophos;i="4.98,1009,1392163200"; 
-   d="scan'208";a="141617922"
-Message-ID: <539713B2.1010506@citrix.com>
-Date: Tue, 10 Jun 2014 15:18:26 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Tue, 10 Jun 2014 10:18:54 -0400
+Date: Tue, 10 Jun 2014 19:48:47 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Hannes Reinecke <hare@suse.de>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] aic7xxx: Use kstrdup
+Message-ID: <20140610141847.GA2965@himangi-Dell>
 MIME-Version: 1.0
-To: Jiang Liu <jiang.liu@linux.intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Grant Likely" <grant.likely@linaro.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "Bjorn Helgaas" <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "Yinghai Lu" <yinghai@kernel.org>, <x86@kernel.org>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Rob Herring <rob.herring@calxeda.com>, Michal Simek <monstr@monstr.eu>,
-        "Tony Lindgren" <tony@atomide.com>
-CC: Tony Luck <tony.luck@intel.com>, <linux-acpi@vger.kernel.org>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Joerg Roedel <joro@8bytes.org>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        <linux-pci@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [Xen-devel] [Patch V4 19/42] x86, irq: count legacy IRQs by legacy_pic->nr_legacy_irqs
- instead of NR_IRQS_LEGACY
-References: <1402302011-23642-1-git-send-email-jiang.liu@linux.intel.com> <1402302011-23642-20-git-send-email-jiang.liu@linux.intel.com>
-In-Reply-To: <1402302011-23642-20-git-send-email-jiang.liu@linux.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/06/14 09:19, Jiang Liu wrote:
-> Some platforms, such as Intel MID and mshypv, do not support legacy
-> interrupt controllers. So count legacy IRQs by legacy_pic->nr_legacy_irqs
-> instead of hard-coded NR_IRQS_LEGACY.
-> 
-[...]
-> --- a/arch/x86/pci/xen.c
-> +++ b/arch/x86/pci/xen.c
+Use kstrdup when the goal of an allocation is copy a string into the
+allocated region.
 
-Xen bits:
+The Coccinelle semantic patch that makes this change is as follows:
 
-Acked-by: David Vrabel <david.vrabel@citrix.com>
+// <smpl>
+@@
+expression from,to;
+expression flag,E1,E2;
+statement S;
+@@
 
-David
+-  to = kmalloc(strlen(from) + 1,flag);
++  to = kstrdup(from, flag);
+   ... when != \(from = E1 \| to = E1 \)
+   if (to==NULL || ...) S
+   ... when != \(from = E2 \| to = E2 \)
+-  strcpy(to, from);
+// </smpl>
+
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+---
+ drivers/scsi/aic7xxx/aic7xxx_osm_pci.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/drivers/scsi/aic7xxx/aic7xxx_osm_pci.c b/drivers/scsi/aic7xxx/aic7xxx_osm_pci.c
+index ee05e84..0fc14da 100644
+--- a/drivers/scsi/aic7xxx/aic7xxx_osm_pci.c
++++ b/drivers/scsi/aic7xxx/aic7xxx_osm_pci.c
+@@ -225,10 +225,9 @@ ahc_linux_pci_dev_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 		ahc_get_pci_bus(pci),
+ 		ahc_get_pci_slot(pci),
+ 		ahc_get_pci_function(pci));
+-	name = kmalloc(strlen(buf) + 1, GFP_ATOMIC);
++	name = kstrdup(buf, GFP_ATOMIC);
+ 	if (name == NULL)
+ 		return (-ENOMEM);
+-	strcpy(name, buf);
+ 	ahc = ahc_alloc(NULL, name);
+ 	if (ahc == NULL)
+ 		return (-ENOMEM);
+-- 
+1.9.1
+
