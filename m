@@ -1,52 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751174AbaFJJTW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 05:19:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53185 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750742AbaFJJTV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 05:19:21 -0400
-Date: Tue, 10 Jun 2014 11:16:00 +0200
-From: Borislav Petkov <bp@suse.de>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: "Luis R. Rodriguez" <mcgrof@suse.com>,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>, Michal Marek <mmarek@suse.cz>,
-        Randy Dunlap <rdunlap@infradead.org>, levinsasha928@gmail.com,
-        mtosatti@redhat.com, fengguang.wu@intel.com,
-        David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        xen-devel@lists.xenproject.org
-Subject: Re: [PATCH 3/3] x86, platform, kconfig: add virtconfig defconfig
- helper
-Message-ID: <20140610091600.GC28607@pd.tnic>
-References: <1402096269-4512-1-git-send-email-mcgrof@do-not-panic.com>
- <1402096269-4512-3-git-send-email-mcgrof@do-not-panic.com>
- <20140607090430.GA27457@nazgul.tnic>
- <20140609171525.GL22052@wotan.suse.de>
- <1402389339.29301.3.camel@kazak.uk.xensource.com>
- <20140610090125.GB28607@pd.tnic>
- <1402391628.29980.15.camel@kazak.uk.xensource.com>
+	id S1751494AbaFJJVh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 05:21:37 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:57229 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750771AbaFJJVg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 05:21:36 -0400
+From: =?UTF-8?q?Matias=20Bj=C3=B8rling?= <m@bjorling.me>
+To: willy@linux.intel.com, keith.busch@intel.com, sbradshaw@micron.com,
+        axboe@fb.com, tom.leiming@gmail.com, hch@infradead.org
+Cc: linux-kernel@vger.kernel.org, linux-nvme@lists.infradead.org,
+        =?UTF-8?q?Matias=20Bj=C3=B8rling?= <m@bjorling.me>
+Subject: [PATCH v7] conversion to blk-mq
+Date: Tue, 10 Jun 2014 11:20:37 +0200
+Message-Id: <1402392038-5268-1-git-send-email-m@bjorling.me>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1402391628.29980.15.camel@kazak.uk.xensource.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 10, 2014 at 10:13:48AM +0100, Ian Campbell wrote:
-> NB the overhead I meant was a few kbs of .text and modules, not
-> runtime overhead.
+Hi all,
 
-Whatever, no thanks.
+I've rebased the patch on top of Jens' for-linus and Matthew's master.
+The patch now applies cleanly when submitted upstream.
+
+The bug reports seem to have calmed down. Ming reported a double completion bug
+that is fixed in Jens' for-linus tree. We should be able to flesh out any
+outstanding bugs in the 3.16-rc cycles.
+
+Jens for-linus up to:
+
+  2b8393b43ec672bb263009cd74c056ab01d6ac17
+  blk-mq: add timer in blk_mq_start_request
+
+Matthew master up to:
+
+  bd67608a6127c994e897c49cc4f72d9095925301
+  NVMe: Rename io_timeout to nvme_io_timeout
+
+The merged trees with the patch on top is found here:
+
+  https://github.com/MatiasBjorling/linux-collab nvmemq_review
+
+Changes since v6:
+ * Rebased on top of Matthew's master and Jens' for-linus
+ * A couple of style fixups
+
+Changes since v5:
+ * Splits are now supported directly within blk-mq
+ * Remove nvme_queue->cpu_mask variable
+ * Remove unnecessary null check
+ * Style fixups
+
+Changes since v4:
+ * Fix timeout retries
+ * Fix naming in nvme_init_hctx
+ * Fix racy behavior of admin queue in nvme_dev_remove
+ * Fix wrong return values in nvme_queue_request
+ * Put cqe_seen back
+ * Introduce abort_completion for killing timed out I/Os
+ * Move locks outside of nvme_submit_iod
+ * Various renaming and style fixes
+
+Changes since v3:
+ * Added abortion logic
+ * Fixed possible race on abortion
+ * Removed req data with flush. Handled by by blk-mq
+ * Added safety check for submitting user rq to admin queue.
+ * Use dev->online_queues for nr_hw_queues
+ * Fix loop with initialization in nvme_create_io_queues
+ * Style fixups
+
+Changes since v2:
+  * rebased on top of current 3.16/core.
+  * use blk-mq queue management for spreading io queues
+  * removed rcu handling and allocated all io queues up front for mgmt by blk-mq
+  * removed the need for hotplugging notification
+  * fixed flush data handling
+  * fixed double free of spinlock
+  * various cleanup
+
+Matias Bjørling (1):
+  NVMe: conversion to blk-mq
+
+ drivers/block/nvme-core.c | 1199 ++++++++++++++++++---------------------------
+ drivers/block/nvme-scsi.c |    8 +-
+ include/linux/nvme.h      |   15 +-
+ 3 files changed, 494 insertions(+), 728 deletions(-)
 
 -- 
-Regards/Gruss,
-    Boris.
+1.9.1
 
-Sent from a fat crate under my desk. Formatting is fine.
---
