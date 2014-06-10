@@ -1,68 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755091AbaFJHLt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 03:11:49 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:51582 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755061AbaFJHLs (ORCPT
+	id S934287AbaFJHPD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 03:15:03 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56779 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933793AbaFJHPB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 03:11:48 -0400
+	Tue, 10 Jun 2014 03:15:01 -0400
 X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@kernel.org
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Subject: [PATCH] tracing: Cleanup saved_cmdlines_size changes
-Date: Tue, 10 Jun 2014 16:11:35 +0900
-Message-Id: <1402384295-23680-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 2.0.0
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@gmail.com>
+To: Stanislav Fomichev <stfomichev@yandex-team.ru>
+Cc: acme@kernel.org, artagnon@gmail.com, jolsa@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] perf timechart: fix documentation
+References: <1402305672-2630-1-git-send-email-stfomichev@yandex-team.ru>
+	<1402305672-2630-2-git-send-email-stfomichev@yandex-team.ru>
+Date: Tue, 10 Jun 2014 16:14:58 +0900
+In-Reply-To: <1402305672-2630-2-git-send-email-stfomichev@yandex-team.ru>
+	(Stanislav Fomichev's message of "Mon, 9 Jun 2014 13:21:11 +0400")
+Message-ID: <87bnu1b5hp.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The recent addition of saved_cmdlines_size file had some remaining
-(minor - mostly coding style) issues.  Fix them by passing pointer
-name to sizeof() and using scnprintf().
+Hi Stanislav,
 
-Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- kernel/trace/trace.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+On Mon,  9 Jun 2014 13:21:11 +0400, Stanislav Fomichev wrote:
+> Move options away from examples.
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 16f7038d1f4d..02f081a45b36 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -1338,7 +1338,7 @@ static int trace_create_savedcmd(void)
- {
- 	int ret;
- 
--	savedcmd = kmalloc(sizeof(struct saved_cmdlines_buffer), GFP_KERNEL);
-+	savedcmd = kmalloc(sizeof(*savedcmd), GFP_KERNEL);
- 	if (!savedcmd)
- 		return -ENOMEM;
- 
-@@ -3840,7 +3840,7 @@ tracing_saved_cmdlines_size_read(struct file *filp, char __user *ubuf,
- 	int r;
- 
- 	arch_spin_lock(&trace_cmdline_lock);
--	r = sprintf(buf, "%u\n", savedcmd->cmdline_num);
-+	r = scnprintf(buf, sizeof(buf), "%u\n", savedcmd->cmdline_num);
- 	arch_spin_unlock(&trace_cmdline_lock);
- 
- 	return simple_read_from_buffer(ubuf, cnt, ppos, buf, r);
-@@ -3857,7 +3857,7 @@ static int tracing_resize_saved_cmdlines(unsigned int val)
- {
- 	struct saved_cmdlines_buffer *s, *savedcmd_temp;
- 
--	s = kmalloc(sizeof(struct saved_cmdlines_buffer), GFP_KERNEL);
-+	s = kmalloc(sizeof(*s), GFP_KERNEL);
- 	if (!s)
- 		return -ENOMEM;
- 
--- 
-2.0.0
+I think it's better to move RECORD OPTIONS as well.
 
+Thanks,
+Namhyung
+
+
+>
+> Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
+> ---
+>  tools/perf/Documentation/perf-timechart.txt | 23 +++++++++++------------
+>  1 file changed, 11 insertions(+), 12 deletions(-)
+>
+> diff --git a/tools/perf/Documentation/perf-timechart.txt b/tools/perf/Documentation/perf-timechart.txt
+> index bc5990c33dc0..fab20d4504d2 100644
+> --- a/tools/perf/Documentation/perf-timechart.txt
+> +++ b/tools/perf/Documentation/perf-timechart.txt
+> @@ -43,6 +43,17 @@ TIMECHART OPTIONS
+>  
+>  --symfs=<directory>::
+>          Look for files with symbols relative to this directory.
+> +-n::
+> +--proc-num::
+> +        Print task info for at least given number of tasks.
+> +-t::
+> +--topology::
+> +        Sort CPUs according to topology.
+> +--highlight=<duration_nsecs|task_name>::
+> +	Highlight tasks (using different color) that run more than given
+> +	duration or tasks with given name. If number is given it's interpreted
+> +	as number of nanoseconds. If non-numeric string is given it's
+> +	interpreted as task name.
+>  
+>  EXAMPLES
+>  --------
+> @@ -64,18 +75,6 @@ Record system-wide timechart:
+>  
+>    $ perf timechart --highlight gcc
+>  
+> --n::
+> ---proc-num::
+> -        Print task info for at least given number of tasks.
+> --t::
+> ---topology::
+> -        Sort CPUs according to topology.
+> ---highlight=<duration_nsecs|task_name>::
+> -	Highlight tasks (using different color) that run more than given
+> -	duration or tasks with given name. If number is given it's interpreted
+> -	as number of nanoseconds. If non-numeric string is given it's
+> -	interpreted as task name.
+> -
+>  RECORD OPTIONS
+>  --------------
+>  -P::
