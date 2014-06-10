@@ -1,110 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752902AbaFJQUw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 12:20:52 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:61869 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752741AbaFJQTm (ORCPT
+	id S1752993AbaFJQVT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 12:21:19 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:57407 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752945AbaFJQVQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 12:19:42 -0400
-From: Milos Vyletel <milos.vyletel@gmail.com>
-To: davem@davemloft.net, amwang@redhat.com, netdev@vger.kernel.org
-Cc: Milos Vyletel <milos.vyletel@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Eric Dumazet <edumazet@google.com>,
-        Neal Cardwell <ncardwell@google.com>,
-        Yuchung Cheng <ycheng@google.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        linux-doc@vger.kernel.org (open list:DOCUMENTATION),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [patch net-next 4/5] Documentation: update ipv6 part of networking/ip-sysctl.txt
-Date: Tue, 10 Jun 2014 12:19:12 -0400
-Message-Id: <1402417153-2551-5-git-send-email-milos.vyletel@gmail.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1402417153-2551-1-git-send-email-milos.vyletel@gmail.com>
-References: <1402417153-2551-1-git-send-email-milos.vyletel@gmail.com>
+	Tue, 10 Jun 2014 12:21:16 -0400
+Message-ID: <53973078.6040907@semaphore.gr>
+Date: Tue, 10 Jun 2014 19:21:12 +0300
+From: Stratos Karafotis <stratosk@semaphore.gr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Dirk Brandewie <dirk.brandewie@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>
+CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/7] cpufreq: intel_pstate: Add debugfs file stats
+References: <53962072.6010702@semaphore.gr> <53972883.7070707@gmail.com>
+In-Reply-To: <53972883.7070707@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Documentation was updated with details how net.ipv6.conf.all settings are
-used and how they affect current behaviour and interface-specific settings.
+On 10/06/2014 06:47 μμ, Dirk Brandewie wrote:
+> On 06/09/2014 02:00 PM, Stratos Karafotis wrote:
+>> Add stats file in debugfs under driver's parent directory
+>> (pstate_snb) which counts the time in nsecs per requested
+>> P state and the number of times the specific state
+>> was requested.
+>>
+>> The file presents the statistics per logical CPU in the
+>> following format. The time is displayed in msecs:
+>>
+> 
+> NAK
+> 
+> This adds significantly to the memory footprint to gather information
+> that is available by post processing the perf tracepoint information.
+> The increase isn't horrible on single socket desktop processor machines
+> but gets big with server class machines.  One vendor I have talked to considers
+> a machine with 1024 cpus to be a SMALL machine.
+> 
 
-Signed-off-by: Milos Vyletel <milos.vyletel@gmail.com>
----
- Documentation/networking/ip-sysctl.txt | 48 ++++++++++++++++++++++++++++++----
- 1 file changed, 43 insertions(+), 5 deletions(-)
+If I am not wrong the sizeof pstate_stat is 20B. On my CPU with 20 P states, we
+need 400B per logical CPU (3200B total in my desktop) plus 64B for stats pointers.
 
-diff --git a/Documentation/networking/ip-sysctl.txt b/Documentation/networking/ip-sysctl.txt
-index ab42c95..f0406ff 100644
---- a/Documentation/networking/ip-sysctl.txt
-+++ b/Documentation/networking/ip-sysctl.txt
-@@ -1159,13 +1159,51 @@ ip6frag_secret_interval - INTEGER
- 	Default: 600
- 
- conf/default/*:
--	Change the interface-specific default settings.
-+	Change the interface-specific default settings. These settings are
-+	applied to all interfaces that have not been up and that did not have
-+	this settings set previously. This is usually only during boot before
-+	network is set up when sysctl settings are applied.
- 
- 
- conf/all/*:
--	Change all the interface-specific settings.
--
--	[XXX:  Other special features than forwarding?]
-+	Change all the interface-specific settings. Different settings have
-+	different effect. There are three different groups based on how they
-+	treat conf/all vs interface-specific settings. These groups are
-+
-+	Both conf/all and interface must enable this feature (andconf)
-+		- accept_ra_defrtr
-+		- accept_ra_pinfo
-+		- accept_ra_rtr_pref
-+		- accept_redirects
-+		- autoconf
-+		- force_tllao
-+		- mforward
-+		- ndisc_notify
-+		- suppress_frag_ndisc
-+
-+	Either conf/all or interface must enable this feature (orconf)
-+		- disable_ipv6
-+		- proxy_ndp
-+
-+	Maximum value of conf/all or interface will be used (maxconf)
-+		- accept_dad
-+		- accept_ra
-+		- accept_ra_rt_info_max_plen
-+		- accept_source_route
-+		- dad_transmits
-+		- hop_limit
-+		- max_addresses
-+		- max_desync_factor
-+		- mtu
-+		- optimistic_dad
-+		- regen_max_retry
-+		- router_probe_interval
-+		- router_solicitation_delay
-+		- router_solicitation_interval
-+		- router_solicitations
-+		- temp_prefered_lft
-+		- temp_valid_lft
-+		- use_tempaddr
- 
- conf/all/forwarding - BOOLEAN
- 	Enable global IPv6 forwarding between all interfaces.
-@@ -1414,7 +1452,7 @@ force_mld_version - INTEGER
- 	1 - Enforce to use MLD version 1
- 	2 - Enforce to use MLD version 2
- 
--suppress_frag_ndisc - INTEGER
-+suppress_frag_ndisc - BOOLEAN
- 	Control RFC 6980 (Security Implications of IPv6 Fragmentation
- 	with IPv6 Neighbor Discovery) behavior:
- 	1 - (default) discard fragmented neighbor discovery packets
--- 
-1.9.0
+In your example this would need about 400KB - 500KB?
+Is it too much for 1024 a CPUs system?
+
+I think it's a useful piece of info that we can have it directly without
+post processing tracepoint.
+Is it acceptable to conditionally compile it with a new CONFIG option?
+
+
+Thanks,
+Stratos
 
