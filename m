@@ -1,44 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932328AbaFKLdh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 07:33:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53167 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755310AbaFKLdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 07:33:35 -0400
-Message-ID: <53983E8C.80207@suse.cz>
-Date: Wed, 11 Jun 2014 13:33:32 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>, Mel Gorman <mgorman@suse.de>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 05/10] mm, compaction: remember position within pageblock
- in free pages scanner
-References: <1402305982-6928-1-git-send-email-vbabka@suse.cz> <1402305982-6928-5-git-send-email-vbabka@suse.cz> <20140611021213.GF15630@bbox>
-In-Reply-To: <20140611021213.GF15630@bbox>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755473AbaFKLdF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 07:33:05 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51742 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754908AbaFKLdB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 07:33:01 -0400
+From: Punit Agrawal <punit.agrawal@arm.com>
+To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: javi.merino@arm.com, Punit Agrawal <punit.agrawal@arm.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <edubezval@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: [RFC PATCH 2/3] thermal: trace: Trace when a cooling device's state is updated
+Date: Wed, 11 Jun 2014 12:31:43 +0100
+Message-Id: <1402486305-4017-3-git-send-email-punit.agrawal@arm.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1402486305-4017-1-git-send-email-punit.agrawal@arm.com>
+References: <1402486305-4017-1-git-send-email-punit.agrawal@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2014 04:12 AM, Minchan Kim wrote:
->> >@@ -314,6 +315,9 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
->> >  		int isolated, i;
->> >  		struct page *page = cursor;
->> >
->> >+		/* Record how far we have got within the block */
->> >+		*start_pfn = blockpfn;
->> >+
-> Couldn't we move this out of the loop for just one store?
+Introduce and use an event to trace when a cooling device's state is
+updated. This is useful to follow the effect of governor decisions on
+cooling devices.
 
-You mean using a local variable inside the loop, and assigning once, for 
-performance reasons (register vs memory access)?
+Cc: Zhang Rui <rui.zhang@intel.com>
+Cc: Eduardo Valentin <edubezval@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Signed-off-by: Punit Agrawal <punit.agrawal@arm.com>
+---
+ drivers/thermal/thermal_core.c |    1 +
+ include/trace/events/thermal.h |   19 +++++++++++++++++++
+ 2 files changed, 20 insertions(+)
+
+diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
+index 6b32391..c74c78d 100644
+--- a/drivers/thermal/thermal_core.c
++++ b/drivers/thermal/thermal_core.c
+@@ -1291,6 +1291,7 @@ void thermal_cdev_update(struct thermal_cooling_device *cdev)
+ 	mutex_unlock(&cdev->lock);
+ 	cdev->ops->set_cur_state(cdev, target);
+ 	cdev->updated = true;
++	trace_cdev_update(cdev, target);
+ 	dev_dbg(&cdev->device, "set to state %lu\n", target);
+ }
+ EXPORT_SYMBOL(thermal_cdev_update);
+diff --git a/include/trace/events/thermal.h b/include/trace/events/thermal.h
+index 8c5ca96..894a79e 100644
+--- a/include/trace/events/thermal.h
++++ b/include/trace/events/thermal.h
+@@ -32,6 +32,25 @@ TRACE_EVENT(thermal_temperature,
+ 		__entry->temp)
+ );
+ 
++TRACE_EVENT(cdev_update,
++
++	TP_PROTO(struct thermal_cooling_device *cdev, unsigned long target),
++
++	TP_ARGS(cdev, target),
++
++	TP_STRUCT__entry(
++		__string(type, cdev->type)
++		__field(unsigned long, target)
++	),
++
++	TP_fast_assign(
++		__assign_str(type, cdev->type);
++		__entry->target = target;
++	),
++
++	TP_printk("type=%s target=%lu", __get_str(type), __entry->target)
++);
++
+ #endif /* _TRACE_THERMAL_H */
+ 
+ /* This part must be outside protection */
+-- 
+1.7.10.4
+
