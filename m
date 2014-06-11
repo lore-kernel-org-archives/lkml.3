@@ -1,82 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932629AbaFKPT7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 11:19:59 -0400
-Received: from mail-ve0-f179.google.com ([209.85.128.179]:56884 "EHLO
-	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751905AbaFKPT6 (ORCPT
+	id S1755817AbaFKPUc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 11:20:32 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:51727 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752568AbaFKPUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 11:19:58 -0400
+	Wed, 11 Jun 2014 11:20:30 -0400
 MIME-Version: 1.0
-In-Reply-To: <CADWw7OjqK3MAuqCHuv-WS3Bb2+2Q-FXth+7hqtwFoyAP6pyYhA@mail.gmail.com>
-References: <1402090985-8061-1-git-send-email-dianders@chromium.org>
-	<20140607181221.GB25068@e102568-lin.cambridge.arm.com>
-	<CAD=FV=X17PeJ6JPE9Qyc1QT07AvA2PTE69Q87gz9a6MdUHgi4A@mail.gmail.com>
-	<20140609223831.GB16889@e102568-lin.cambridge.arm.com>
-	<CANuQgHHxAhTNYX-JAEdRkO=PMYT4A5GwXcuQfiqwE0CEkQyR+w@mail.gmail.com>
-	<CAD=FV=V5_RRNkgA7Rk7XbQw9m1qh6-RJA8arW7ZRU=QbWAPa+w@mail.gmail.com>
-	<alpine.LFD.2.11.1406101146140.25775@knanqh.ubzr>
-	<CADWw7OjqK3MAuqCHuv-WS3Bb2+2Q-FXth+7hqtwFoyAP6pyYhA@mail.gmail.com>
-Date: Wed, 11 Jun 2014 08:19:57 -0700
-X-Google-Sender-Auth: XjPr49JY_Yn0lVUv31wGaNgqf9E
-Message-ID: <CAD=FV=ULFx0GPp_mnEfouZF+m4h_RYE6WQu48N0WbFWrFv8-BA@mail.gmail.com>
-Subject: Re: [PATCH] ARM: EXYNOS: mcpm: Don't rely on firmware's secondary_cpu_start
-From: Doug Anderson <dianders@chromium.org>
-To: Chander Kashyap <k.chander@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Kevin Hilman <khilman@linaro.org>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Inderpal Singh <inderpal.s@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chander Kashyap <chander.kashyap@linaro.org>,
-        "olof@lixom.net" <olof@lixom.net>, Tushar Behera <trblinux@gmail.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Thomas Abraham <thomas.ab@samsung.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <5398732E.2060900@zytor.com>
+References: <CA+5PVA4srNrj2xqMYH40N13rV+jC-PbLdyNpoURomTq48cJNBA@mail.gmail.com>
+	<CA+5PVA7gL6T2eXAy6G4hGJzhKZ_8KHd0qauKqzuHAP4oTJ97QA@mail.gmail.com>
+	<5398732E.2060900@zytor.com>
+Date: Wed, 11 Jun 2014 11:20:30 -0400
+X-Google-Sender-Auth: AchHiDev9lmNcux-jgpJYfl-OUk
+Message-ID: <CA+5PVA4C4pvFyQyqiGLRpJqp=RF+3q7=aMs_KKnzS1=VU5ojsQ@mail.gmail.com>
+Subject: Re: vdso_install target broken post-3.15
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chander,
-
-On Tue, Jun 10, 2014 at 9:52 PM, Chander Kashyap <k.chander@samsung.com> wrote:
-> Hi Doug,
->
-> On Tue, Jun 10, 2014 at 9:19 PM, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
->> On Tue, 10 Jun 2014, Doug Anderson wrote:
->>
->>> My S-state knowledge is not strong, but I believe that Lorenzo's
->>> questions matter if we're using S2 for CPUidle (where we actually turn
->>> off power and hot unplug CPUs) but not when we're using S1 for CPUidle
->>> (where we just enter WFI/WFE).
+On Wed, Jun 11, 2014 at 11:18 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 06/11/2014 08:16 AM, Josh Boyer wrote:
+>> On Wed, Jun 11, 2014 at 10:14 AM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
+>>> Hi,
 >>>
+>>> I'm guessing commit 6f121e548f83674ab4920a4e60afb58d4f61b829 is what
+>>> broke the vdso_install target:
+>>>
+>>> + make -s ARCH=x86_64
+>>> INSTALL_MOD_PATH=/home/jwboyer/rpmbuild/BUILDROOT/kernel-3.16.0-0.rc0.git1.1.fc21.x86_64
+>>> vdso_install KERNELRELEASE=3.16.0-0.rc0.git1.1.fc21.x86_64
+>>> make[1]: *** No rule to make target `arch/x86/vdso/vdso.so.dbg',
+>>> needed by `vdso.so'.  Stop.
+>>> make: *** [vdso_install] Error 2
+>>>
+>>> The crazy Fedora versioning there corresponds to
+>>> 3f17ea6dea8ba5668873afa54628a91aaa3fb1c0 in Linus' tree.  I'll poke at
+>>> this some, but if you have some quick ideas I'd be happy to try them.
+>>
+>> OK, I'm stumped.  Looking at that commit, it removes all target
+>> invocations for vdso.so.  Which means even a simple 'make' in the vdso
+>> directory fails with:
+>>
+>> [jwboyer@vader vdso]$ make
+>> make: *** No rule to make target `/vdso.so', needed by `/vdso.o'.  Stop.
+>> [jwboyer@vader vdso]$
+>>
+>> So how was this commit build tested?
+>>
 >
-> No Its not plain WFI.
->
-> All cores in Exynos5420 can be powered off independently.
-> This functionality has been tested.
->
-> Below is the link for the posted patches.
->
-> https://lkml.org/lkml/2014/6/10/194
->
-> And as Nicolas wrote, these patches need MCPM for that.
+> Since when do we support "make" in a subdirectory?
 
-Most excellent!  I should have been more clear that I only knew about
-how CPUidle worked in our local production kernel.  There I'm pretty
-sure CPUidle is just WFI/WFE.  If you've got patches to do better then
-that's great!
+Dunno.  Since when do we break existing make targets that worked fine?
 
-...can you confirm that my patch doesn't interfere with your improved
-CPUidle?  It's been Acked by Nicolas (thanks!) so I'd imagine it will
-land shortly.  Kukjin: I assume you'll be taking this?
+Seriously, I'm just asking how this was build tested so I can try and
+duplicate that and then figure out how to fix the actual bug.
 
--Doug
+josh
