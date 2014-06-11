@@ -1,51 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363AbaFKCui (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 22:50:38 -0400
-Received: from smtprelay0168.hostedemail.com ([216.40.44.168]:60975 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751634AbaFKCuh (ORCPT
+	id S1754895AbaFKDIZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 23:08:25 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:60699 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751619AbaFKDIX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 22:50:37 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:967:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1567:1593:1594:1711:1714:1730:1747:1777:1792:1981:2194:2199:2393:2525:2560:2563:2682:2685:2693:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3622:3865:3866:3867:3868:3871:3872:3873:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:4321:5007:7652:8985:9025:10004:10400:10848:11232:11658:11914:12043:12517:12519:12679:12740:13069:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: drink48_527ca6b89944
-X-Filterd-Recvd-Size: 1605
-Message-ID: <1402455034.2719.3.camel@joe-AO725>
-Subject: Re: [PATCH] x86/tlb_uv: Fixing some memory allocation failure in
- x86 UV
-From: Joe Perches <joe@perches.com>
-To: Zhouyi Zhou <zhouzhouyi@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        mingo@redhat.com, x86@kernel.org,
-        Peter Zijlstra <peterz@infradead.org>, cpw@sgi.com,
+	Tue, 10 Jun 2014 23:08:23 -0400
+Message-ID: <1402456095.612.32.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [PATCH 0/4] KEYS: validate key trust with owner and builtin
+ keys only
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
+        Josh Boyer <jwboyer@redhat.com>, David Howells <dhowells@redhat.com>,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        keyrings <keyrings@linux-nfs.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Zhouyi Zhou <yizhouzhou@ict.ac.cn>
-Date: Tue, 10 Jun 2014 19:50:34 -0700
-In-Reply-To: <CAABZP2xD4zRX78HxK1DB+13s+1bo=Ai2x+uJDhtJjb+nkZ7epQ@mail.gmail.com>
-References: <1402385723-23138-1-git-send-email-zhouzhouyi@gmail.com>
-	 <53978E9F.1010003@zytor.com> <alpine.DEB.2.10.1406110111300.5170@nanos>
-	 <CAABZP2xD4zRX78HxK1DB+13s+1bo=Ai2x+uJDhtJjb+nkZ7epQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
+        linux-security-module <linux-security-module@vger.kernel.org>
+Date: Tue, 10 Jun 2014 23:08:15 -0400
+In-Reply-To: <20140611022222.GA2349@srcf.ucam.org>
+References: <cover.1402387862.git.d.kasatkin@samsung.com>
+	 <20140610122008.GA31944@hansolo.jdub.homelinux.org>
+	 <CACE9dm9Ff6b3J=05QfcgBv-c_y=5qGNq1-ZSfo4smtj34i1e-A@mail.gmail.com>
+	 <20140610204021.GA8916@srcf.ucam.org>
+	 <CACE9dm9ma=XRZkoCiefva-dKL+LYw-s8QB4xUTkRUZH=5XM9ew@mail.gmail.com>
+	 <CACE9dm8zxVXx2zRcfDYUFjqvQYT4MbLevp5U13tfH9Hb6USSJw@mail.gmail.com>
+	 <20140610212516.GB10614@srcf.ucam.org>
+	 <CACE9dm95RiGxuG-XaGKd3KqBRkk+wyj3CBbMhaCTJQaiiaj9wQ@mail.gmail.com>
+	 <20140610214038.GA13881@srcf.ucam.org>
+	 <1402449893.612.14.camel@dhcp-9-2-203-236.watson.ibm.com>
+	 <20140611022222.GA2349@srcf.ucam.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14061103-0928-0000-0000-0000029D8E73
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-06-11 at 09:46 +0800, Zhouyi Zhou wrote:
-> Thanks for reviewing, I will work on a new version
+On Wed, 2014-06-11 at 03:22 +0100, Matthew Garrett wrote: 
+> On Tue, Jun 10, 2014 at 09:24:53PM -0400, Mimi Zohar wrote:
+> > On Tue, 2014-06-10 at 22:40 +0100, Matthew Garrett wrote: 
+> > > The hole is that the system trusts keys that you don't trust. The 
+> > > appropriate thing to do is to remove that trust from the entire system, 
+> > > not just one layer of the system. If people gain the impression that 
+> > > they can simply pass a kernel parameter and avoid trusting the vendor 
+> > > keys, they'll be upset to discover that it's easily circumvented.
+> > 
+> > Assuming I remove all the keys I don't trust, there are still keys that
+> > are trusted while booting, but are not necessary afterwards.  We should
+> > be able to limit the scope of where and when keys are trusted.
+> 
+> Providing a userspace mechanism for selectively dropping keys from the 
+> kernel seems like a good thing?
 
-If you do, please remove the "out of memory" messages.
+No, patch "KEYS: verify a certificate is signed by a 'trusted' key" adds
+signed public keys.
 
-These messages are redundant to a generic OOM and
-stack dump from the memory subsystem.
-
-Less code is also makes it less likely to have an OOM.
-
-btw: I added a new checkpatch test based on your patch.
-
-https://lkml.org/lkml/2014/6/10/382
-
+Mimi
 
