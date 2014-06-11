@@ -1,55 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755506AbaFKNLo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 09:11:44 -0400
-Received: from imap.thunk.org ([74.207.234.97]:33381 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750929AbaFKNLn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 09:11:43 -0400
-Date: Wed, 11 Jun 2014 09:11:40 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: George Spelvin <linux@horizon.com>
-Cc: hpa@linux.intel.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
-        price@mit.edu
-Subject: Re: drivers/char/random.c: more ruminations
-Message-ID: <20140611131140.GD23110@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	George Spelvin <linux@horizon.com>, hpa@linux.intel.com,
-	linux-kernel@vger.kernel.org, mingo@kernel.org, price@mit.edu
-References: <20140611020835.GA23110@thunk.org>
- <20140611035806.9237.qmail@ns.horizon.com>
+	id S1755584AbaFKNMI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 09:12:08 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:50002 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750929AbaFKNMF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 09:12:05 -0400
+Date: Wed, 11 Jun 2014 16:11:46 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Jeff Layton <jlayton@poochiereds.net>
+Cc: linux-kernel@vger.kernel.org, linux-sparse@vger.kernel.org,
+        Jeff Layton <jlayton@primarydata.com>
+Subject: Re: [PATCH][RFC] err.h: silence sparse warning: dereference of
+ noderef expression
+Message-ID: <20140611131146.GS5500@mwanda>
+References: <1402436329-24750-1-git-send-email-jlayton@poochiereds.net>
+ <20140611052040.GM5500@mwanda>
+ <20140611070632.639e07ce@f20.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140611035806.9237.qmail@ns.horizon.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <20140611070632.639e07ce@f20.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 10, 2014 at 11:58:06PM -0400, George Spelvin wrote:
-> You can forbid underflows, but the code doesn't forbid overflows.
+On Wed, Jun 11, 2014 at 07:06:32AM -0400, Jeff Layton wrote:
+> $ rpm -q sparse
+> sparse-0.5.0-1.fc20.x86_64
+>
+> I see it all over the tree, but an easy example is fs/locks.c:
 > 
-> 1. Assume the entropy count starts at 512 bytes (input pool full)
-> 2. Random writer mixes in 20 bytes of entropy into the input pool.
-> 2a. Input pool entropy is, however, capped at 512 bytes.
-> 3. Random extractor extracts 32 bytes of entropy from the pool.
->    Succeeds because 32 < 512.  Pool is left with 480 bytes of
->    entropy.
-> 3a. Random extractor decrements pool entropy estimate to 480 bytes.
->     This is accurate.
-> 4. Random writer credits pool with 20 bytes of entropy.
-> 5. Input pool entropy is now 480 bytes, estimate is 500 bytes.
+> $ make fs/locks.o C=1
+> make[1]: Nothing to be done for `all'.
+> make[1]: Nothing to be done for `relocs'.
+>   CHK     include/config/kernel.release
+>   CHK     include/generated/uapi/linux/version.h
+>   CHK     include/generated/utsrelease.h
+>   CALL    scripts/checksyscalls.sh
+>   CHECK   fs/locks.c
+> include/linux/err.h:35:16: warning: dereference of noderef expression
+> include/linux/err.h:30:23: warning: dereference of noderef expression
+> include/linux/err.h:35:16: warning: dereference of noderef expression
+> include/linux/err.h:30:23: warning: dereference of noderef expression
+>   CC      fs/locks.o
+> 
+> It has two IS_ERR calls and two PTR_ERR calls, and each generates the
+> warning.
+>
 
-Good point, that's a potential problem, although messing up the
-accounting betewen 480 and 500 bytes is not nearly as bad as messing
-up 0 and 20.
+I downloaded the Fedora SRPM and built the binary but I still wasn't
+able to reproduce the bug.
 
-It's not something where if the changes required massive changes, that
-I'd necessarily feel the need to backport them to stable.  It's a
-certificational weakness, but it's a not disaster.
+dcarpenter@speke:~/progs/kernel/devel$ /tmp/sparse/sparse-0.5.0/sparse --version
+0.5.0
+dcarpenter@speke:~/progs/kernel/devel$ make C=2 CHECK=/tmp/sparse/sparse-0.5.0/sparse fs/locks.o
+  CHK     include/config/kernel.release
+  CHK     include/generated/uapi/linux/version.h
+  CHK     include/generated/utsrelease.h
+  CALL    scripts/checksyscalls.sh
+<stdin>:1226:2: warning: #warning syscall finit_module not implemented [-Wcpp]
+<stdin>:1229:2: warning: #warning syscall sched_setattr not implemented [-Wcpp]
+<stdin>:1232:2: warning: #warning syscall sched_getattr not implemented [-Wcpp]
+<stdin>:1235:2: warning: #warning syscall renameat2 not implemented [-Wcpp]
+  CHECK   scripts/mod/empty.c
+  CHECK   fs/locks.c
+dcarpenter@speke:~/progs/kernel/devel$
 
-						- Ted
+I'm on today's linux-next.  I can't think of a kernel configuration
+issue which would cause this...
+
+regards,
+dan carpenter
