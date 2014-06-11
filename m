@@ -1,83 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754551AbaFKWXI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 18:23:08 -0400
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:50218 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754481AbaFKWXC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 18:23:02 -0400
+	id S1754197AbaFKWZM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 18:25:12 -0400
+Received: from sauhun.de ([89.238.76.85]:47848 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751797AbaFKWZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 18:25:10 -0400
+Date: Thu, 12 Jun 2014 00:25:04 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Max Schwarz <max.schwarz@online.de>
+Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Heiko =?utf-8?Q?St=C3=BCbner?= <heiko@sntech.de>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>, kfx@rock-chips.com
+Subject: Re: [PATCH v6] i2c: add driver for Rockchip RK3xxx SoC I2C adapter
+Message-ID: <20140611222504.GC3109@katana>
+References: <5192968.EzcUiXba22@typ>
+ <1956748.HoDAyYWJMb@typ>
+ <8609129.ZdoNIueQ2G@typ>
 MIME-Version: 1.0
-In-Reply-To: <5398D59A.3030900@zytor.com>
-References: <cover.1402517933.git.luto@amacapital.net> <9e11cd988a0f120606e37b5e275019754e2774da.1402517933.git.luto@amacapital.net>
- <CAADnVQKt5FnShkZeQewbfnU1kHM-gLs3hCZMf5xcgFzyRDLX7A@mail.gmail.com>
- <CALCETrXoqqKC=T5Wvj+CDYQFte1s_=npDvQ2UYW0j=AanEgR1g@mail.gmail.com> <5398D59A.3030900@zytor.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 11 Jun 2014 15:22:40 -0700
-Message-ID: <CALCETrVMxkHcPXsEGtEc0Pr=Z80CzC0zWaQ9OdVdxi1CGuB4kQ@mail.gmail.com>
-Subject: Re: [RFC 5/5] x86,seccomp: Add a seccomp fastpath
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Alexei Starovoitov <alexei.starovoitov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>, Will Drewry <wad@chromium.org>,
-        Oleg Nesterov <oleg@redhat.com>, X86 ML <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gr/z0/N6AeWAPJVB"
+Content-Disposition: inline
+In-Reply-To: <8609129.ZdoNIueQ2G@typ>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 11, 2014 at 3:18 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 06/11/2014 02:56 PM, Andy Lutomirski wrote:
->>
->> 13ns is with the simplest nonempty filter.  I hope that empty filters
->> don't work.
->>
->
-> Why wouldn't they?
 
-Is it permissible to fall off the end of a BPF program?  I'm getting
-EINVAL trying to install an actual empty filter.  The filter I tested
-with was:
+--gr/z0/N6AeWAPJVB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-#include <unistd.h>
-#include <linux/filter.h>
-#include <linux/seccomp.h>
-#include <sys/syscall.h>
-#include <err.h>
-#include <sys/prctl.h>
-#include <stddef.h>
-#include <stdio.h>
+On Wed, Jun 11, 2014 at 10:34:37PM +0200, Max Schwarz wrote:
+> Driver for the native I2C adapter found in Rockchip RK3xxx SoCs.
+>=20
+> Configuration is only possible through devicetree. The driver is
+> interrupt driven and supports the I2C_M_IGNORE_NAK mangling bit.
+>=20
+> Signed-off-by: Max Schwarz <max.schwarz@online.de>
 
-int main(int argc, char **argv)
-{
-    int rc;
-
-    struct sock_filter filter[] = {
-        BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ALLOW),
-    };
-
-    struct sock_fprog prog = {
-        .len = (unsigned short)(sizeof(filter)/sizeof(filter[0])),
-        .filter = filter,
-    };
-
-    if (argc < 2) {
-        printf("Usage: null_seccomp PATH ARGS...\n");
-        return 1;
-    }
-
-    if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0))
-        err(1, "PR_SET_NO_NEW_PRIVS");
-    if (prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, &prog))
-        err(1, "PR_SET_SECCOMP");
-
-    execv(argv[1], argv + 1);
-    err(1, argv[1]);
-}
+Applied to for-next, thanks!
 
 
---Andy
+--gr/z0/N6AeWAPJVB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTmNdAAAoJEBQN5MwUoCm2SG8QAK/C13XA/UVf3pj3B5Bt1hxv
+7IZ5QndbVS6saU6mq8stfLKyi4CW04PD8Jktm+DkPKusgAYwpWmWz507sh+MSGAK
+gRSNU6eoBVenbhs2ueA6IPdfYVoQ5SN+J6UiPs/Y635WbYy3ZuCYiCXRbl7V4HFb
+sFIYiIV1ymRsvVFPezxwem8cGzk+T5mJmTQckJbxoB7FgJRvLEYg9MLg3JDVv6CN
+6V4wmWQCi4YqQEVJS6eQPWRgcKrlD6jwH0StHP5+CKMoVDNG08+ghxe4cQ9EnKEd
+0/l0FF88A9uNEiq7wHUdGuoVo9huYbHQjLbGoZyPDxC7xo4023LxWrGb2A3K6gAP
+6wT6jj0UXk3RX/jTJa6mgREP70GiWrBJx762vV1xYca3/xW6Ga3HO0K0nP27L5UY
+fGKMujOcL7SqtoSSt8BJWTyd2jO3Q3X4VuAkj4053rplVxmupxTrY1yXOseqNIR4
+NQYEf+PweFn/pSQjBWKgfmKgUs8Ih8zI0p1/GNBK6kd6A/y4MTZiELKLO3707haw
+KKA9dsJUKhbrigDNhDGEly60zlYqJTjxHI/olUf0BNT5JkJxrB+rvi+ua0yaLTxu
+Oak8HmZBWk5DZIiJt8/SIW9sU66xzSMna10+uR6AXVpaLoyYILS7IrfuBvA4/Lba
+uWxI62PIxsJ8O4uEFFlW
+=gCOe
+-----END PGP SIGNATURE-----
+
+--gr/z0/N6AeWAPJVB--
