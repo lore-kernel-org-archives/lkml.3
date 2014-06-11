@@ -1,58 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753936AbaFKTE6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 15:04:58 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:63066 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751273AbaFKTE4 (ORCPT
+	id S1752670AbaFKTG3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 15:06:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48844 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751002AbaFKTG1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 15:04:56 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Gabriel FERNANDEZ <gabriel.fernandez@st.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] Input: st-keyscan - Protect PM-only functions by #ifdef CONFIG_PM_SLEEP
-Date: Wed, 11 Jun 2014 21:04:53 +0200
-Message-Id: <1402513493-17613-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.9.1
+	Wed, 11 Jun 2014 15:06:27 -0400
+Date: Wed, 11 Jun 2014 12:10:17 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Peter Chen <peter.chen@freescale.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Disable bus's drivers_autoprobe before rootfs has mounted
+Message-ID: <20140611191017.GA15120@kroah.com>
+References: <20140611021439.GA25082@shlinux1.ap.freescale.net>
+ <20140611041000.GB15184@kroah.com>
+ <20140611032322.GB25082@shlinux1.ap.freescale.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140611032322.GB25082@shlinux1.ap.freescale.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If CONFIG_PM_SLEEP=n:
+On Wed, Jun 11, 2014 at 11:23:23AM +0800, Peter Chen wrote:
+> On Tue, Jun 10, 2014 at 09:10:00PM -0700, Greg KH wrote:
+> > On Wed, Jun 11, 2014 at 10:14:40AM +0800, Peter Chen wrote:
+> > > Hi Greg,
+> > > 
+> > > Currently, we can't disable auto probe function during booting
+> > > if both device and device driver register code are built in due
+> > > to .drivers_autoprobe is a private value for bus core and this
+> > > value can only be changed by sys entry.
+> > 
+> > Then don't build them into the kernel :)
+> > 
+> > > It causes we can't implement feature that the user can choose
+> > > manual binding and auto binding through module parameters.
+> > 
+> > Wait, you just asked about building the stuff into the kernel, not a
+> > module.
+> 
+> Yes, build the code into the kernel.
+> > 
+> > > Eg, the default binding is automatic, but the user can override
+> > > it by module parameter.
+> > 
+> > Do we do that for any other "bus" anywhere?
+> 
+> I don't know.
+> 
+> > 
+> > > Let's take USB peripheral as an example, there is a device for
+> > > udc, and a device driver for usb gadget driver, at default, we want
+> > > the device to be bound to driver automatically, this is what
+> > > we have done now. But if there are more than one udcs and gadget
+> > > drivers (eg one B port for mass storage, another B port for usb ethernet),
+> > > the user may want to have specific binding (eg, udc-0 -> mass storage,
+> > > udc-1 -> usb ethernet), so the binding will be established
+> > > after rootfs has mounted. (This feature is implementing)
+> > 
+> > Then there better be a way to describe this on the kernel command line
+> > (i.e. module paramaters), right?  Which is a total mess, why not just
+> > not bind anything in this case and let the user pick what they want?
+> 
+> If the user is used to do nothing at rootfs for current or earlier kernel,
+> Is it ok we change the driver's behaviour and a sys entry is mandatory
+> for user?
 
-drivers/input/keyboard/st-keyscan.c:219: warning: ‘keyscan_suspend’ defined but not used
-drivers/input/keyboard/st-keyscan.c:236: warning: ‘keyscan_resume’ defined but not used
+We can't break existing systems, so I don't understand the issue here.
+Just don't configure your kernel for a system you don't have / want,
+right?
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- drivers/input/keyboard/st-keyscan.c | 2 ++
- 1 file changed, 2 insertions(+)
+> > > From what I read code, we can't implement above feature, but I may
+> > > be wrong, if you have some solutions, give me some hints please.
+> > > If there is no solution for above feature, do we agree with exporting
+> > > .drivers_autoprobe for bus driver or something similar?
+> > 
+> > I don't understand what you mean by this, care to show me with code?
+> 
+> I mean the individual bus driver can't change bus->p->drivers_autoprobe?
+> bus->p->drivers_autoprobe is handled at drivers/base/bus.c.
+> 
+> If the individual bus driver can change bus->p->drivers_autoprobe, we
+> can disable autoprobe (auto-binding) during booting.
 
-diff --git a/drivers/input/keyboard/st-keyscan.c b/drivers/input/keyboard/st-keyscan.c
-index 758b48731415..668e3cf4b491 100644
---- a/drivers/input/keyboard/st-keyscan.c
-+++ b/drivers/input/keyboard/st-keyscan.c
-@@ -215,6 +215,7 @@ static int keyscan_probe(struct platform_device *pdev)
- 	return 0;
- }
- 
-+#ifdef CONFIG_PM_SLEEP
- static int keyscan_suspend(struct device *dev)
- {
- 	struct platform_device *pdev = to_platform_device(dev);
-@@ -249,6 +250,7 @@ static int keyscan_resume(struct device *dev)
- 	mutex_unlock(&input->mutex);
- 	return retval;
- }
-+#endif /* CONFIG_PM_SLEEP */
- 
- static SIMPLE_DEV_PM_OPS(keyscan_dev_pm_ops, keyscan_suspend, keyscan_resume);
- 
--- 
-1.9.1
+No, that's a core only thing.
 
+greg k-h
