@@ -1,98 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754002AbaFKVpP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 17:45:15 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:47955 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752377AbaFKVpO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 17:45:14 -0400
+	id S1754122AbaFKVrp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 17:47:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35670 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750958AbaFKVro (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 17:47:44 -0400
+Date: Wed, 11 Jun 2014 23:47:41 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>, Arun KS <arunks.linux@gmail.com>,
+        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>
+Subject: Re: [RFC] printk: allow increasing the ring buffer depending on
+	the number of CPUs
+Message-ID: <20140611214741.GH6042@wotan.suse.de>
+References: <1402448685-30634-1-git-send-email-mcgrof@do-not-panic.com> <20140611093447.GL7772@pathway.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <00b401cf85bd$b4851f10$1d8f5d30$@net>
-References: <1402490012-19969-1-git-send-email-stratosk@semaphore.gr>
-	<009b01cf857a$d5032090$7f0961b0$@net>
-	<539862DB.9060905@semaphore.gr>
-	<00a001cf8586$24eb5c70$6ec21550$@net>
-	<CAJZ5v0hEFp8sQH3iB6SUeVVEmdYA6ZK1kvc9NM+7sbS-LTW6nQ@mail.gmail.com>
-	<00b401cf85bd$b4851f10$1d8f5d30$@net>
-Date: Wed, 11 Jun 2014 23:45:13 +0200
-X-Google-Sender-Auth: TEmdUJxyuSCjxQ3eCqUuiWVaLPs
-Message-ID: <CAJZ5v0jPPkWCZBCTKazNJsK8m4aNB-1C6GKtUOmOUt+v_CV+WQ@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: intel_pstate: Fix rounding of core_pct
-From: "Rafael J. Wysocki" <rafael@kernel.org>
-To: Doug Smythies <dsmythies@telus.net>
-Cc: "Rafael J. Wysocki" <rafael@kernel.org>,
-        Stratos Karafotis <stratosk@semaphore.gr>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, viresh.kumar@linaro.org,
-        dirk.j.brandewie@intel.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="XWOWbaMNXpFDWE00"
+Content-Disposition: inline
+In-Reply-To: <20140611093447.GL7772@pathway.suse.cz>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 11, 2014 at 11:40 PM, Doug Smythies <dsmythies@telus.net> wrote:
->
->
-> -----Original Message-----
-> From: rjwysocki@gmail.com [mailto:rjwysocki@gmail.com] On Behalf Of Rafael J. Wysocki
-> Sent: June-11-2014 11:29
-> To: Doug Smythies
-> Cc: Stratos Karafotis; linux-pm@vger.kernel.org; Linux Kernel Mailing List; Rafael J. Wysocki; viresh.kumar@linaro.org; dirk.j.brandewie@intel.com
-> Subject: Re: [PATCH] cpufreq: intel_pstate: Fix rounding of core_pct
->
-> On 2014.06.11 11:29 Rafael J. Wysocki wrote:
->> On Wed, Jun 11, 2014 at 5:02 PM, Doug Smythies <dsmythies@telus.net> wrote:
->>> On 2104.06.11 07:08 Stratos Karafotis wrote:
->>>> On 11/06/2014 04:41 μμ, Doug Smythies wrote:
->>>>
->>>> No.
->>>>
->>>> The intent was only ever to round properly the pseudo floating point result of the divide.
->>>> It was much more important (ugh, well 4 times more) when FRACBITS was still 6, which also got changed to 8 in a recent patch.
->>>>
->>>
->>> Are you sure?
->>>
->>> Yes.
->>>
->>>> This rounding was very recently added.
->>>> As far as I can understand, I don't see the meaning of this rounding, as is.
->>>> Even if FRAC_BITS was 6, I think it would have almost no improvement in
->>>> calculations.
->>>
->>> Note: I had not seen this e-mail when I wrote a few minutes ago:
->>>
->>> You may be correct.
->>> If Dirk agrees, I will re-analyse the entire driver for rounding effects soon.
->
->> Well, can you please do it if that's not a problem?
->
-> Yes, of course, but it is a matter of priorities. All I meant by the above comment was that we might be able to forget about the remainder and just do a mindless divide, but leaving it as it is now does no harm in the meantime.
->
-> Myself, I consider the issue of excessive deferred timer times to be a much higher priority (see my on-list e-mail from Monday). Correct me if I am wrong.
-> Even without the "excessive" part, and for a 250 Hz kernel, the current kick in point can be hit routinely, unduly biasing the CPU frequency downwards.
-> A random example (250 Hz kernel): 23% load at 25 Hertz load / sleep frequency for 300 total seconds.
->
-> Duration histrogram:
->
-> Occurrences duration (seconds)
->      16 0.044
->      39 0.024
->      45 0.028
->      46 0.016
->      48 0.032
->      61 0.036
->     166 0.012
->     198 0.020
->    7166 0.040
->
-> Where you can see that the majority of the time the duration is such that the code will force the CPU frequency downwards. It runs at minimum pstate instead of maximum pstate where it should be.
 
-I see.
+--XWOWbaMNXpFDWE00
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-What would you suggest to do to address this problem, then?
+On Wed, Jun 11, 2014 at 11:34:47AM +0200, Petr Ml=E1dek wrote:
+> On Tue 2014-06-10 18:04:45, Luis R. Rodriguez wrote:
+> > From: "Luis R. Rodriguez" <mcgrof@suse.com>
+> > diff --git a/init/Kconfig b/init/Kconfig
+> > index 9d3585b..1814436 100644
+> > --- a/init/Kconfig
+> > +++ b/init/Kconfig
+> > @@ -806,6 +806,34 @@ config LOG_BUF_SHIFT
+> >  		     13 =3D>  8 KB
+> >  		     12 =3D>  4 KB
+> > =20
+> > +config LOG_CPU_BUF_SHIFT
+> > +	int "CPU kernel log buffer size contribution (13 =3D> 8 KB, 17 =3D> 1=
+28KB)"
+> > +	range 0 21
+> > +	default 0
+> > +	help
+> > +	  The kernel ring buffer will get additional data logged onto it
+> > +	  when multiple CPUs are supported. Typically the contributions is a
+> > +	  few lines when idle however under under load this can vary and in t=
+he
+> > +	  worst case it can mean loosing logging information. You can use this
+> > +	  to set the maximum expected mount of amount of logging contribution
+> > +	  under load by each CPU in the worst case scenerio. Select a size as
+> > +	  a power of 2. For example if LOG_BUF_SHIFT is 18 and if your
+> > +	  LOG_CPU_BUF_SHIFT is 12 your kernel ring buffer size will be as
+> > +	  follows having 16 CPUs as possible.
+> > +
+> > +	     ((1 << 18) + ((16 - 1) * (1 << 12))) / 1024 =3D 316 KB
+>=20
+> It might be better to use the CPU_NUM-specific value as a minimum of
+> the needed space. Linux distributions might want to distribute kernel
+> with non-zero value and still use the static "__log_buf" on reasonable
+> small systems.
 
-Rafael
+Not sure if I follow what you mean by CPU_NUM-specific, can you elaborate?
+The default in this patch is to ignore this, do you mean that upstream
+should probably default to a non-zero value here and then let distributions
+select 0 for some kernel builds ? If so then perhaps adding a sysctl
+override value might be good to allow only small systems to override
+this to 0?
+
+> > +	  Where as typically you'd only end up with 256 KB. This is disabled
+> > +	  by default with a value of 0.
+>=20
+> I would add:
+>=20
+> 	This value is ignored when "log_buf_len" commandline parameter
+> 	is used. It forces the exact size of the ring buffer.
+
+Good point, I've amended this in.
+
+> > +	  Examples:
+> > +		     17 =3D> 128 KB
+> > +		     16 =3D> 64 KB
+> > +	             15 =3D> 32 KB
+> > +	             14 =3D> 16 KB
+> > +		     13 =3D>  8 KB
+> > +		     12 =3D>  4 KB
+>=20
+> I think that we should make it more cleat that it is per-CPU here,
+> for example:
+>=20
+> 		17 =3D> 128 KB for each CPU
+> 		16 =3D>  64 KB for each CPU
+> 		15 =3D>  32 KB for each CPU
+> 		14 =3D>  16 KB for each CPU
+> 		13 =3D>   8 KB for each CPU
+> 		12 =3D>   4 KB for each CPU
+
+Thanks, amended as well.
+
+> > diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+> > index 7228258..2023424 100644
+> > --- a/kernel/printk/printk.c
+> > +++ b/kernel/printk/printk.c
+> > @@ -246,6 +246,7 @@ static u32 clear_idx;
+> >  #define LOG_ALIGN __alignof__(struct printk_log)
+> >  #endif
+> >  #define __LOG_BUF_LEN (1 << CONFIG_LOG_BUF_SHIFT)
+> > +#define __LOG_CPU_BUF_LEN (1 << CONFIG_LOG_CPU_BUF_SHIFT)
+> >  static char __log_buf[__LOG_BUF_LEN] __aligned(LOG_ALIGN);
+> >  static char *log_buf =3D __log_buf;
+> >  static u32 log_buf_len =3D __LOG_BUF_LEN;
+> > @@ -752,9 +753,10 @@ void __init setup_log_buf(int early)
+> >  	unsigned long flags;
+> >  	char *new_log_buf;
+> >  	int free;
+> > +	int cpu_extra =3D (num_possible_cpus() - 1) * __LOG_CPU_BUF_LEN;
+> > =20
+> > -	if (!new_log_buf_len)
+> > -		return;
+> > +	if (!new_log_buf_len && cpu_extra > 1)
+> > +		new_log_buf_len =3D __LOG_BUF_LEN + cpu_extra;
+>=20
+> We still should return when both new_log_buf_len and cpu_extra are
+> zero and call here:
+>=20
+> 	if (!new_log_buf_len)
+> 		return;
+
+The check for cpu_extra > 1 does that -- the default in the patch was 0
+and 1 << 0 is 1, so if in the case that the default is used we'd bail
+just like before. Or did I perhaps miss what you were saying here?
+
+> Also I would feel more comfortable if we somehow limit the maximum
+> size of cpu_extra.
+
+Michal had similar concerns and I thought up to limit it to 1024 max
+CPUs, but after my second implementation I did some math on the values
+that would be used if say LOG_CPU_BUF_SHIFT was 12, it turns out to not
+be *that* bad for even huge num_possible_cpus(). For example for 4096
+num_possible_cpus() this comes out to with LOG_BUF_SHIFT of 18:
+
+
+((1 << 18) + ((4096 - 1) * (1 << 12))) / 1024 =3D 16636 KB
+
+~16 MB doesn't seem that bad for such a monster box which I'd presume
+would have an insane amount of memory. If this logic however does
+seems unreasonable and we should cap it -- then by all means lets
+pick a sensible number, its just not clear to me what that number
+should be. Another reason why I stayed away from capping this was
+that we'd then likely end up capping this in the future, and I was
+trying to find a solution that would not require mucking as
+technology evolves. The reasoning above is also why I had opted to
+make the default to 0, only distributions would have a good sense
+of what might be reasonable, which I guess begs more for a sysctl
+value here.
+
+> I wonder if there might be a crazy setup with a lot
+> of possible CPUs and possible memory but with some minimal amount of
+> CPUs and memory at the boot time.
+
+When I tested disabling smp I saw the log was still amended to include
+information about the disabled CPUs, I however hadn't tested on a machine
+with hot pluggable CPUs and with tons of CPUs disabled, so not sure if
+that adds more info as well. This also though points more to this being
+more a system specific thing, which is another reason to perhaps keep this
+disabled and leave this instead as a system config?
+
+> The question is how to do it. I am still not much familiar with the
+> memory subsystem. I wonder if 10% of memory defined by the
+> "total_rampages" variable would be a reasonable limit.
+
+Not sure either, curious if Mel might have a suggestion?
+
+>=20
+> >  	if (early) {
+> >  		new_log_buf =3D
+> > --=20
+> > 2.0.0.rc3.18.g00a5b79
+> >=20
+>=20
+> >  LocalWords:  buf len cpu boottime
+
+What's this? :)
+
+  Luis
+
+--XWOWbaMNXpFDWE00
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.9 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTmM59AAoJEPep4JnvMe6zB58QAL1dw++v7CcMdMDixaFuFt3+
+07Yt/+8WV0r4hCYvmaVWltPfIzs7EKeyyiAtW8n3xc4uuE+3zmVFRKWmTliB0Fub
+3WVtzWSTDbyuPaTqLvzDQ4CT7jyqraxjFDiG62nBbB8Ytmhnbqe2ZEUVxY5IJOxp
+3q91AsvJGc8brXjjTy3XCwoeZzlDbouFjq4FjTvGvTDDohrx5yz/RqBqEafOXn5O
+9tuol0VJDPo3uUzM1oyLgQANukhgRJBOiMHB4+smSr7MzprR4p5dbLBHQubTJlkb
+JF9RDh/0W8/piIbT2/3gUMl5IWzBTM5Z+USgPrbAy2ZjhAfRV7gyt6VZsbD2E1L/
+jChraxox9vsGEOh6GlaE6XOoJcbO+ZpgcftBXmsbpqq3Td4p+ygUo8hvxwYRWpXI
+bRMhCwpXjN6s3/DuEbvKc5p4Me468THy5znUg0keU5dE49zgQ+MRXTFhLWXT+MPl
+p8jjQ/o3Nle18gtECD1Kux0OcT+hdIIhQ3DRFUqHkqFthmTZ6XEADGA71pn/5F8M
+33LuMAKA4JQxSs1XXNT00AHkyBx4hIMNmfNjSSBsY2v964NW03QCfSQHy8p0SuI7
+kuUj8/+/4ztTZsVswB0BXnUwuPRJK6V2GnwKkznN7zZIgTUp0fh1/c6YiBxh0k1b
+2wfvhD4olLMdC5e1UOqU
+=uhkt
+-----END PGP SIGNATURE-----
+
+--XWOWbaMNXpFDWE00--
