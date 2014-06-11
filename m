@@ -1,65 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753060AbaFKVXH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 17:23:07 -0400
-Received: from mx1.scotdoyle.com ([69.85.92.149]:54743 "EHLO mx1.scotdoyle.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752263AbaFKVXF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 17:23:05 -0400
-Date: Wed, 11 Jun 2014 23:23:02 +0100 (BST)
-From: Scot Doyle <lkml14@scotdoyle.com>
-To: Benson Leung <bleung@chromium.org>
-cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 1/1] platform/chrome: Probe multiple i2c adapters of
- the same name
-In-Reply-To: <CANLzEkuGWd9s1Ka32BrgGxrCF+gGqVA4=uKuGJMerWaz6NDMpA@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1406112148480.22470@scotdoyle.com>
-References: <1401800524-28934-1-git-send-email-mika.westerberg@linux.intel.com> <CANLzEksLB1=+TePxgPRBhsGKpC-4tWB8JOh-Ey80Hj43LkVn=g@mail.gmail.com> <20140604083726.GN1730@lahna.fi.intel.com> <CANLzEkuAxGrRHtb=vFAm9AGws7Qyg3A_oQpAGGFaYEqP2A2g8g@mail.gmail.com>
- <alpine.DEB.2.02.1406062259070.31301@scotdoyle.com> <alpine.DEB.2.02.1406062316230.32568@scotdoyle.com> <20140609124700.GJ1657@lahna.fi.intel.com> <alpine.DEB.2.02.1406092332410.8274@scotdoyle.com> <alpine.DEB.2.02.1406100610220.8274@scotdoyle.com>
- <20140611092309.GC1657@lahna.fi.intel.com> <alpine.DEB.2.02.1406111837030.21198@scotdoyle.com> <CANLzEkuGWd9s1Ka32BrgGxrCF+gGqVA4=uKuGJMerWaz6NDMpA@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753771AbaFKVYz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 17:24:55 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:41183 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752501AbaFKVYy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 17:24:54 -0400
+Date: Thu, 12 Jun 2014 01:24:34 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Christoph Lameter <cl@gentwo.org>
+CC: Joonsoo Kim <iamjoonsoo.kim@lge.com>, <akpm@linux-foundation.org>,
+        <rientjes@google.com>, <penberg@kernel.org>, <hannes@cmpxchg.org>,
+        <mhocko@suse.cz>, <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
+Subject: Re: [PATCH -mm v2 8/8] slab: make dead memcg caches discard free
+ slabs immediately
+Message-ID: <20140611212431.GA16589@esperanza>
+References: <cover.1402060096.git.vdavydov@parallels.com>
+ <27a202c6084d6bb19cc3e417793f05104b908ded.1402060096.git.vdavydov@parallels.com>
+ <20140610074317.GE19036@js1304-P5Q-DELUXE>
+ <20140610100313.GA6293@esperanza>
+ <alpine.DEB.2.10.1406100925270.17142@gentwo.org>
+ <20140610151830.GA8692@esperanza>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140610151830.GA8692@esperanza>
+X-Originating-IP: [81.5.110.170]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jun 10, 2014 at 07:18:34PM +0400, Vladimir Davydov wrote:
+> On Tue, Jun 10, 2014 at 09:26:19AM -0500, Christoph Lameter wrote:
+> > On Tue, 10 Jun 2014, Vladimir Davydov wrote:
+> > 
+> > > Frankly, I incline to shrinking dead SLAB caches periodically from
+> > > cache_reap too, because it looks neater and less intrusive to me. Also
+> > > it has zero performance impact, which is nice.
+> > >
+> > > However, Christoph proposed to disable per cpu arrays for dead caches,
+> > > similarly to SLUB, and I decided to give it a try, just to see the end
+> > > code we'd have with it.
+> > >
+> > > I'm still not quite sure which way we should choose though...
+> > 
+> > Which one is cleaner?
+> 
+> To shrink dead caches aggressively, we only need to modify cache_reap
+> (see https://lkml.org/lkml/2014/5/30/271).
 
-On Wed, 11 Jun 2014, Benson Leung wrote:
-> On Wed, Jun 11, 2014 at 10:51 AM, Scot Doyle <lkml14@scotdoyle.com> wrote:
->> The chromeos_laptop module probes the first i2c adapter with a specific name
->> for expected hardware. However, the Acer C720 Chromebook has two i2c
->> adapters with the same name. This patch probes each i2c adapter with a
->> specific name until locating the expected hardware.
->>
->> Thanks to Mika Westerberg for formatting tips and identifying the need for
->> unique bus addresses within each set of identically-named adapters.
->
-> Scot,
->
-> Is your intention with this patch to replace the one that Mika wrote
-> that specifically special cased the designware i2c busses? He already
-> solved this problem in this patch.
-> https://patchwork.kernel.org/patch/4288591/
->
-> I'm not sure about your approach here. It looks like if there's some
-> ambiguity in the names of the busses, you try to probe the device on
-> every bus with that name.
->
-> We know that bus 0 is going to have the touchpad, and we know that bus
-> 1 is going to have the touchscreen and light sensor. I'd prefer not to
-> send extra probes for all of the combination of devices that don't
-> exist.
+Hmm, reap_alien, which is called from cache_reap to shrink per node
+alien object arrays, only processes one node at a time. That means with
+the patch I gave a link to above it will take up to
+(REAPTIMEOUT_AC*nr_online_nodes) seconds to destroy a virtually empty
+dead cache, which may be quite long on large machines. Of course, we can
+make reap_alien walk over all alien caches of the current node, but that
+will probably hurt performance...
 
-In the case of the Acer C720, will the touchpad always be the first device 
-iterated by the bus_find_device function?
-
-My quite possibly incorrect understanding is that:
-- the i2c bus numbers assigned are dynamic
-- dynamic bus numbers depend on the order of device registration
-- there is no guarantee of the ordering of device registration
-- bus_find_device iterates by insertion order (as opposed to ascending pci 
-device id or ascending pci hardware address)
+> 
+> To zap object arrays for dead caches (this is what this patch does), we
+> have to:
+>  - set array_cache->limit to 0 for each per cpu, shared, and alien array
+>    caches on kmem_cache_shrink;
+>  - make cpu/node hotplug paths init new array cache sizes to 0;
+>  - make free paths (__cache_free, cache_free_alien) handle zero array
+>    cache size properly, because currently they doesn't.
+> 
+> So IMO the first one (reaping dead caches periodically) requires less
+> modifications and therefore is cleaner.
