@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755388AbaFKMpQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 08:45:16 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:58851 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753256AbaFKMpO (ORCPT
+	id S932160AbaFKMqN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 08:46:13 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:40952 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752649AbaFKMqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 08:45:14 -0400
+	Wed, 11 Jun 2014 08:46:11 -0400
 MIME-Version: 1.0
-In-Reply-To: <1401700128-11506-1-git-send-email-srinivas.kandagatla@linaro.org>
+In-Reply-To: <1401700137-11547-1-git-send-email-srinivas.kandagatla@linaro.org>
 References: <1401699818-11329-1-git-send-email-srinivas.kandagatla@linaro.org>
-	<1401700128-11506-1-git-send-email-srinivas.kandagatla@linaro.org>
-Date: Wed, 11 Jun 2014 14:45:13 +0200
-Message-ID: <CACRpkdZG15PUTTUZsL6ShNoRi7AQFeehj9Smt5O4=9cPNCk0qQ@mail.gmail.com>
-Subject: Re: [PATCH v6 02/12] mmc: mmci: Add Qualcomm specific register defines.
+	<1401700137-11547-1-git-send-email-srinivas.kandagatla@linaro.org>
+Date: Wed, 11 Jun 2014 14:46:10 +0200
+Message-ID: <CACRpkdb2=nhsaGksvArSJf8o0-CJH9uUXz7x53cJBCi_G7N-FA@mail.gmail.com>
+Subject: Re: [PATCH v6 03/12] mmc: mmci: Add enough delay between writes to
+ CMD register.
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 Cc: Russell King <linux@arm.linux.org.uk>,
@@ -31,9 +32,18 @@ On Mon, Jun 2, 2014 at 11:08 AM,  <srinivas.kandagatla@linaro.org> wrote:
 
 > From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 >
-> This patch adds a Qualcomm SD Card controller specific register variations
-> to header file. Qualcomm SDCC controller is pl180, with slight changes in
-> the register layout from standard pl180 register set.
+> On Qcom SD Card controller POWER, CLKCTRL, DATACTRL and COMMAND registers
+> should be updated in MCLK domain, and writes to these registers must be
+> separated by three MCLK cycles. This resitriction is not applicable for
+> other registers. Any subsequent writes to these register will be ignored
+> until 3 MCLK have passed.
+>
+> One usec delay between two CMD register writes is not sufficient in the
+> card identification phase where the CCLK is very low. This patch replaces
+> a static 1 usec delay to use mmci_reg_delay function which can provide
+> correct delay depending on the cclk frequency.
+>
+> Without this patch the card is not detected.
 >
 > Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 
