@@ -1,170 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752809AbaFKUyY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 16:54:24 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:35209 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751236AbaFKUyV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 16:54:21 -0400
-Message-ID: <5398C1D0.30808@ti.com>
-Date: Wed, 11 Jun 2014 16:53:36 -0400
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	id S1752952AbaFKU44 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 16:56:56 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:36830 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752628AbaFKU4y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 16:56:54 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: paulmck@linux.vnet.ibm.com
+Cc: Dave Chiluk <chiluk@canonical.com>,
+        Rafael Tinoco <rafael.tinoco@canonical.com>,
+        linux-kernel@vger.kernel.org, davem@davemloft.net,
+        Christopher Arges <chris.j.arges@canonical.com>,
+        Jay Vosburgh <jay.vosburgh@canonical.com>
+References: <CAJE_dJyfq5zWcs2y52siXRruCCA1Dk_=Ds=rZ8BrBZLa7FCbuQ@mail.gmail.com>
+	<20140611133919.GZ4581@linux.vnet.ibm.com>
+	<CAJE_dJwfaUkop=XZxD-BfDPwKDjnfF1bvmD6XWaqVA4Xt2E6bQ@mail.gmail.com>
+	<539879B8.4010204@canonical.com>
+	<20140611161857.GC4581@linux.vnet.ibm.com>
+	<53989F7B.6000004@canonical.com>
+	<20140611194832.GL4581@linux.vnet.ibm.com>
+Date: Wed, 11 Jun 2014 13:55:45 -0700
+In-Reply-To: <20140611194832.GL4581@linux.vnet.ibm.com> (Paul E. McKenney's
+	message of "Wed, 11 Jun 2014 12:48:32 -0700")
+Message-ID: <87r42v2mjy.fsf@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Dann Frazier <dann.frazier@canonical.com>
-CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Subject: Re: [PATCH v2] serial: uart: add hw flow control support configuration
-References: <1398971093-17164-1-git-send-email-m-karicheri2@ti.com> <CALdTtnvTtjKv6NQd=NCZATHnKLURKYMfnQaGR7MA=_kafBP=JQ@mail.gmail.com>
-In-Reply-To: <CALdTtnvTtjKv6NQd=NCZATHnKLURKYMfnQaGR7MA=_kafBP=JQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX18cZzwzRtHO78tX+O54wQC7VgH3OsS5/mU=
+X-SA-Exim-Connect-IP: 98.234.51.111
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
+	*      [score: 0.3640]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;paulmck@linux.vnet.ibm.com
+X-Spam-Relay-Country: 
+Subject: Re: Possible netns creation and execution performance/scalability regression since v3.8 due to rcu callbacks being offloaded to multiple cpus
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/28/2014 4:04 PM, Dann Frazier wrote:
-> On Thu, May 1, 2014 at 1:04 PM, Murali Karicheri <m-karicheri2@ti.com> wrote:
->> 8250 uart driver currently supports only software assisted hw flow
->> control. The software assisted hw flow control maintains a hw_stopped
->> flag in the tty structure to stop and start transmission and use modem
->> status interrupt for the event to drive the handshake signals. This is
->> not needed if hw has flow control capabilities. This patch adds a
->> DT attribute for enabling hw flow control for a uart port. Also skip
->> stop and start if this flag is present in flag field of the port
->> structure.
-> ubuntu@hwflow:~$ sudo stty -a --file /dev/ttyS0 |tr ' ' '\n' | grep crtscts
-> crtscts
-> ubuntu@hwflow:~$ ls /proc/device-tree/soc/serial@1c021000/has-hw-flow-control
-> /proc/device-tree/soc/serial@1c021000/has-hw-flow-control
-> ubuntu@hwflow:~$ python
-> Python 2.7.6 (default, Mar 22 2014, 22:58:30)
-> [GCC 4.8.2] on linux2
-> Type "help", "copyright", "credits" or "license" for more information.
->>>> UPF_HARDWARE_FLOW = 1 << 21
->>>> if 0xB9200000 & UPF_HARDWARE_FLOW:
-> ...     print "OK"
-> ...
-> OK
->
-> Hope that's a reasonable test case. Test fails when booted w/o
-> has-hw-flow-control attribute.
->
-> Tested-by: dann frazier <dann.frazier@canonical.com>
-What is the verdict? pass/fail? Ok/Not OK to merge?
+"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> writes:
 
-Murali
->> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
->>
->> CC: Rob Herring <robh+dt@kernel.org>
->> CC: Pawel Moll <pawel.moll@arm.com>
->> CC: Mark Rutland <mark.rutland@arm.com>
->> CC: Ian Campbell <ijc+devicetree@hellion.org.uk>
->> CC: Kumar Gala <galak@codeaurora.org>
->> CC: Randy Dunlap <rdunlap@infradead.org>
->> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> CC: Jiri Slaby <jslaby@suse.cz>
->> CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
->> ---
->>   .../devicetree/bindings/serial/of-serial.txt       |    1 +
->>   drivers/tty/serial/8250/8250_core.c                |    6 ++++--
->>   drivers/tty/serial/of_serial.c                     |    4 ++++
->>   drivers/tty/serial/serial_core.c                   |   12 +++++++++---
->>   4 files changed, 18 insertions(+), 5 deletions(-)
->>
->> diff --git a/Documentation/devicetree/bindings/serial/of-serial.txt b/Documentation/devicetree/bindings/serial/of-serial.txt
->> index 1928a3e..7705477 100644
->> --- a/Documentation/devicetree/bindings/serial/of-serial.txt
->> +++ b/Documentation/devicetree/bindings/serial/of-serial.txt
->> @@ -37,6 +37,7 @@ Optional properties:
->>   - auto-flow-control: one way to enable automatic flow control support. The
->>     driver is allowed to detect support for the capability even without this
->>     property.
->> +- has-hw-flow-control: the hardware has flow control capability.
->>
->>   Example:
->>
->> diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
->> index 0e1bf88..b69aff2 100644
->> --- a/drivers/tty/serial/8250/8250_core.c
->> +++ b/drivers/tty/serial/8250/8250_core.c
->> @@ -2338,9 +2338,11 @@ serial8250_do_set_termios(struct uart_port *port, struct ktermios *termios,
->>           * the trigger, or the MCR RTS bit is cleared.  In the case where
->>           * the remote UART is not using CTS auto flow control, we must
->>           * have sufficient FIFO entries for the latency of the remote
->> -        * UART to respond.  IOW, at least 32 bytes of FIFO.
->> +        * UART to respond.  IOW, at least 32 bytes of FIFO. Also enable
->> +        * AFE if hw flow control is supported
->>           */
->> -       if (up->capabilities & UART_CAP_AFE && port->fifosize >= 32) {
->> +       if ((up->capabilities & UART_CAP_AFE && (port->fifosize >= 32)) ||
->> +           (port->flags & UPF_HARD_FLOW)) {
->>                  up->mcr &= ~UART_MCR_AFE;
->>                  if (termios->c_cflag & CRTSCTS)
->>                          up->mcr |= UART_MCR_AFE;
->> diff --git a/drivers/tty/serial/of_serial.c b/drivers/tty/serial/of_serial.c
->> index 9924660..77ec6a1 100644
->> --- a/drivers/tty/serial/of_serial.c
->> +++ b/drivers/tty/serial/of_serial.c
->> @@ -182,6 +182,10 @@ static int of_platform_serial_probe(struct platform_device *ofdev)
->>                                            "auto-flow-control"))
->>                          port8250.capabilities |= UART_CAP_AFE;
->>
->> +               if (of_property_read_bool(ofdev->dev.of_node,
->> +                                         "has-hw-flow-control"))
->> +                       port8250.port.flags |= UPF_HARD_FLOW;
->> +
->>                  ret = serial8250_register_8250_port(&port8250);
->>                  break;
->>          }
->> diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
->> index b68550d..851707a 100644
->> --- a/drivers/tty/serial/serial_core.c
->> +++ b/drivers/tty/serial/serial_core.c
->> @@ -174,8 +174,12 @@ static int uart_port_startup(struct tty_struct *tty, struct uart_state *state,
->>                          if (tty->termios.c_cflag & CBAUD)
->>                                  uart_set_mctrl(uport, TIOCM_RTS | TIOCM_DTR);
->>                  }
->> -
->> -               if (tty_port_cts_enabled(port)) {
->> +               /*
->> +                * if hw support flow control without software intervention,
->> +                * then skip the below check
->> +                */
->> +               if (tty_port_cts_enabled(port) &&
->> +                   !(uport->flags & UPF_HARD_FLOW)) {
->>                          spin_lock_irq(&uport->lock);
->>                          if (!(uport->ops->get_mctrl(uport) & TIOCM_CTS))
->>                                  tty->hw_stopped = 1;
->> @@ -2772,7 +2776,9 @@ void uart_handle_cts_change(struct uart_port *uport, unsigned int status)
->>
->>          uport->icount.cts++;
->>
->> -       if (tty_port_cts_enabled(port)) {
->> +       /* skip below code if the hw flow control is supported */
->> +       if (tty_port_cts_enabled(port) &&
->> +           !(uport->flags & UPF_HARD_FLOW)) {
->>                  if (tty->hw_stopped) {
->>                          if (status) {
->>                                  tty->hw_stopped = 0;
->> --
->> 1.7.9.5
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
->>
+> On Wed, Jun 11, 2014 at 01:27:07PM -0500, Dave Chiluk wrote:
+>> On 06/11/2014 11:18 AM, Paul E. McKenney wrote:
+>> > On Wed, Jun 11, 2014 at 10:46:00AM -0500, David Chiluk wrote:
+>> >> Now think about what happens when a gateway goes down, the namespaces
+>> >> need to be migrated, or a new machine needs to be brought up to replace
+>> >> it.  When we're talking about 3000 namespaces, the amount of time it
+>> >> takes simply to recreate the namespaces becomes very significant.
+>> >>
+>> >> The script is a stripped down example of what exactly is being done on
+>> >> the neutron gateway in order to create namespaces.
+>> > 
+>> > Are the namespaces torn down and recreated one at a time, or is there some
+>> > syscall, ioctl(), or whatever that allows bulk tear down and recreating?
+>> > 
+>> > 							Thanx, Paul
+>> 
+>> In the normal running case, the namespaces are created one at a time, as
+>> new customers create a new set of VMs on the cloud.
+>> 
+>> However, in the case of failover to a new neutron gateway the namespaces
+>> are created all at once using the ip command (more or less serially).
+>> 
+>> As far as I know there is no syscall or ioctl that allows bulk tear down
+>> and recreation.  if such a beast exists that might be helpful.
+>
+> The solution might be to create such a beast.  I might be able to shave
+> a bit of time off of this benchmark, but at the cost of significant
+> increases in RCU's CPU consumption.  A bulk teardown/recreation API could
+> reduce the RCU grace-period overhead by several orders of magnitude by
+> having a single RCU grace period cover a few thousand changes.
+>
+> This is why other bulk-change syscalls exist.
+>
+> Just out of curiosity, what syscalls does the ip command use?
 
+You can look in iproute2 ip/ipnetns.c
+
+But rought ip netns add does:
+
+unshare(CLONE_NEWNET);
+mkdir /var/run/netns/<name>
+mount --bind /proc/self/ns/net /var/run/netns/<name>
+
+I don't know if there is any sensible way to batch that work.
+
+(The unshare gets you into copy_net_ns in net/core/net_namespace.c
+ and to find all of the code it can call you have to trace all
+ of the register_pernet_subsys and register_pernet_device calls).
+
+At least for creation I would like to see if we can make all of the
+rcu_callback synchronize_rcu calls go away.  That seems preferable
+to batching at creation time.
+
+Eric
