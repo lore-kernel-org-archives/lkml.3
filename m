@@ -1,57 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932924AbaFKQWk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 12:22:40 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:44982 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754908AbaFKQWj (ORCPT
+	id S1755896AbaFKQYd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 12:24:33 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:57877 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755738AbaFKQYc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 12:22:39 -0400
-Date: Wed, 11 Jun 2014 09:22:38 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Philippe Troin <phil@fifi.org>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: Phantom ACL-related xattrs on 3.14.4 NFS client
-Message-ID: <20140611162238.GA28340@infradead.org>
-References: <1402082953.28220.7.camel@ceramic.home.fifi.org>
- <CAHQdGtS2BL9u4DV=FZ0HaXO-iTNPU4hTGVR--HubNa4A_6UNog@mail.gmail.com>
- <20140607140414.GA26534@infradead.org>
- <1402195701.12743.18.camel@ceramic.home.fifi.org>
- <1402435203.24047.9.camel@ceramic.home.fifi.org>
- <20140611072402.GA2683@infradead.org>
- <1402503318.27314.12.camel@niobium.home.fifi.org>
+	Wed, 11 Jun 2014 12:24:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402503318.27314.12.camel@niobium.home.fifi.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <cover.1402503408.git.luto@amacapital.net>
+References: <5398749B.4090209@zytor.com>
+	<cover.1402503408.git.luto@amacapital.net>
+Date: Wed, 11 Jun 2014 12:24:31 -0400
+X-Google-Sender-Auth: K5UuVhxAiXEHhqKd3R8AeUpPDos
+Message-ID: <CA+5PVA5Yxq83or2usv-Wog-6AMf91c_bFvCHYc=H=L-k_oXfxA@mail.gmail.com>
+Subject: Re: [PATCH 0/2] x86,vdso,kbuild: Fix vdso_install
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        linux-kbuild@vger.kernel.org,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 11, 2014 at 09:15:18AM -0700, Philippe Troin wrote:
-> So, the only regression remaining between 3.13.11 and 3.14.6 + your
-> patch is the one where listxattr(2) and friends do not NUL-terminate the
-> xattr names they return.  This is detailed in
-> <1402435203.24047.9.camel@ceramic.home.fifi.org> I sent yesterday.
+On Wed, Jun 11, 2014 at 12:20 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> This changes kbuild slightly because I didn't want to fight with using
+> static pattern rules and extra obfuscated fake targets just to write a
+> loop.
+>
+> Better ideas / cleanups welcome.
+>
+> Andy Lutomirski (2):
+>   kbuild: Add recipe-cmd, an @-less cmd variant
+>   x86,vdso: Fix vdso_install
 
-Oh, that's a bug in my patch.  The following incremental patch should
-fix it:
+You won the race :).  I'll give these a spin shortly.
 
-diff --git a/fs/nfs/nfs3acl.c b/fs/nfs/nfs3acl.c
-index e083827..8f854dd 100644
---- a/fs/nfs/nfs3acl.c
-+++ b/fs/nfs/nfs3acl.c
-@@ -262,6 +262,7 @@ nfs3_list_one_acl(struct inode *inode, int type, const char *name, void *data,
- 	posix_acl_release(acl);
- 
- 	*result += strlen(name);
-+	*result += 1;
- 	if (!size)
- 		return 0;
- 	if (*result > size)
+josh
