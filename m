@@ -1,102 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755067AbaFKJZi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 05:25:38 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:37740 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750897AbaFKJZh (ORCPT
+	id S1753824AbaFKJ1d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 05:27:33 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:53116 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750861AbaFKJ1b convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 05:25:37 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Wed, 11 Jun 2014 11:25:25 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: linux1394-devel@lists.sourceforge.net
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] firewire: ohci: enable MSI for VIA VT6315 rev 1,
- drop cycle timer quirk
-Message-ID: <20140611112525.67b06fb4@kant>
-In-Reply-To: <20140416010808.2ab9d416@stein>
-References: <20140416010100.786a4c04@stein>
-	<20140416010808.2ab9d416@stein>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 11 Jun 2014 05:27:31 -0400
+Message-ID: <53982106.2050504@arm.com>
+Date: Wed, 11 Jun 2014 10:27:34 +0100
+From: Dietmar Eggemann <dietmar.eggemann@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Yuyang Du <yuyang.du@intel.com>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Subject: Re: [RFC PATCH 07/16 v3] Init Workload Consolidation flags in sched_domain
+References: <1401431772-14320-1-git-send-email-yuyang.du@intel.com> <1401431772-14320-8-git-send-email-yuyang.du@intel.com> <20140603121416.GH30445@twins.programming.kicks-ass.net> <5395F541.60604@arm.com> <20140609211820.GA5361@intel.com> <5396F166.1030401@arm.com> <20140610180954.GB5487@intel.com>
+In-Reply-To: <20140610180954.GB5487@intel.com>
+X-OriginalArrivalTime: 11 Jun 2014 09:27:23.0185 (UTC) FILETIME=[59C64A10:01CF8557]
+X-MC-Unique: 114061110272905601
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Apr 16 Stefan Richter wrote:
-> Commit af0cdf494781 "firewire: ohci: fix regression with VIA VT6315,
-> disable MSI" acted upon a report against VT6315 rev 0:
-> http://linux.derkeiler.com/Mailing-Lists/Kernel/2010-12/msg02301.html
-> $ lspci -nn
-> VIA Technologies, Inc. VT6315 Series Firewire Controller [1106:3403]
+On 10/06/14 19:09, Yuyang Du wrote:
+> On Tue, Jun 10, 2014 at 12:52:06PM +0100, Dietmar Eggemann wrote:
 > 
-> I now got a card with
-> $ lspci -nn
-> VIA Technologies, Inc. VT6315 Series Firewire Controller [1106:3403] (rev 01)
-> and this works fine with MSI enabled.
+> Hi Dietmar,
 > 
-> Second, I tested this VT6315 rev 1 without CYCLE_TIMER quirk flag using
-> http://me.in-berlin.de/~s5r6/linux1394/utils/test_cycle_time_v20100125.c
-> and found that this chip does in fact access the cycle timer atomically.
+>> Not in this sense but there is no functionality in the scheduler right
+>> now to check constantly if an sd flag has been set/unset via sysctl.
 > 
-> Things I can't test because I don't have the hardware:
->   - whether VT6315 rev 0 really needs QUIRK_CYCLE_TIMER,
->   - whether the VT6320 PCI device needs QUIRK_CYCLE_TIMER,
->   - whether the VT6325 and VT6330 PCIe devices need QUIRK_CYCLE_TIMER
->     and QUIRK_NO_MSI.
+> Sorry, I still don't understand. There are many "if (sd->flags & SD_XXX)"
+> in fair.c. What does it mean to you?
 > 
-> Hence, just add a whitelist entry specifically for VT6315 rev >= 1
-> without any quirk flags.  Before this entry we need an extra entry to
-> catch VT6315 rev <= 0 due to how our ID matching logic works.
-> 
-> Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+> Probably you mean the SD_XX should be fixed in init and never changed via sysctl
+> thereafter. Ah... I don't know about this...
 
-Nice -- yesterday, just a few days after this patch went into the
-mainline, this VT6315 card suddenly stopped to generate any interrupt
-while being in use with a soundcard and jackd.  Until then it ran
-perfectly for many days, with jackd+ffado's combined workload of
-AT/AR/IT/IR but also with SBP-2 workloads and one or another other
-application as well.
+yes :-) I'm referring to your top_flag_domain() function which you need
+to check what the highest sd level is where your flag is set. Existing
+code only relies on flag setup during startup and after cpu hotplug or
+on cached per-cpu sd pointers like sd_llc .
 
-Now I apparently need to run long-term tests with MSI switched off in order
-to find out whether this malfunction is MSI related.
+> 
+> Overall, I think I should come up with a better way to implement the SD_WORKLOAD_CONSOLIDATION
+> policy (enabled or disabled) in load balancing (as is also pointed out by PeterZ).
+> But I just don't see the current implementation is any particular different than
+> any other SD_XX's.
+> 
+> Have you tried it on your platform?
 
-> ---
-> v2: Oops, a table entry is applied if dev->revision <= table[i].revision.
+I'm running these patches on my ARM TC2 (2 clusters (2 CPUs, 3 CPUs)) on
+top of kernel/git/torvalds/linux.git (v3.15-rc7-79-gfe45736f4134). By
+default, on this platform CC is enabled on MC and CPU level. Overall
+workloads show very different behaviour (CC enabled on MC and CPU level
+as well as only enabled on MC level) compared to testruns wo/ CC but I
+do not have the time to analyse it further. BTW, I hot-plugged out the
+3rd CPU on the 2. cluster (there is this comment on top of
+__nonshielded_groups() 'every sched_group has the same weight').
+
+-- Dietmar
+
 > 
->  drivers/firewire/ohci.c |    7 +++++++
->  1 file changed, 7 insertions(+)
-> 
-> --- a/drivers/firewire/ohci.c
-> +++ b/drivers/firewire/ohci.c
-> @@ -282,6 +282,7 @@ static char ohci_driver_name[] = KBUILD_
->  #define PCI_DEVICE_ID_TI_TSB82AA2	0x8025
->  #define PCI_DEVICE_ID_VIA_VT630X	0x3044
->  #define PCI_REV_ID_VIA_VT6306		0x46
-> +#define PCI_DEVICE_ID_VIA_VT6315	0x3403
->  
->  #define QUIRK_CYCLE_TIMER		0x1
->  #define QUIRK_RESET_PACKET		0x2
-> @@ -334,6 +335,12 @@ static const struct {
->  	{PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_VT630X, PCI_REV_ID_VIA_VT6306,
->  		QUIRK_CYCLE_TIMER | QUIRK_IR_WAKE},
->  
-> +	{PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_VT6315, 0,
-> +		QUIRK_CYCLE_TIMER | QUIRK_NO_MSI},
-> +
-> +	{PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_VT6315, PCI_ANY_ID,
-> +		0},
-> +
->  	{PCI_VENDOR_ID_VIA, PCI_ANY_ID, PCI_ANY_ID,
->  		QUIRK_CYCLE_TIMER | QUIRK_NO_MSI},
->  };
-> 
+> Thanks a lot,
+> Yuyang
 > 
 
--- 
-Stefan Richter
--=====-====- -==- -=-==
-http://arcgraph.de/sr/
+
