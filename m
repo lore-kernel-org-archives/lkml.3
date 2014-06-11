@@ -1,123 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755477AbaFKLlo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 07:41:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53319 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751049AbaFKLln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 07:41:43 -0400
-Message-ID: <53984074.8010000@suse.cz>
-Date: Wed, 11 Jun 2014 13:41:40 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S932191AbaFKLmL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 07:42:11 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:42921 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751634AbaFKLmJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 07:42:09 -0400
+Date: Wed, 11 Jun 2014 12:42:18 +0100
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: Eduardo Valentin <edubezval@gmail.com>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Yuyang Du <yuyang.du@intel.com>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "jacob.jun.pan@linux.intel.com" <jacob.jun.pan@linux.intel.com>
+Subject: Re: [RFC PATCH 06/16] arm: topology: Define TC2 sched energy and
+ provide it to scheduler
+Message-ID: <20140611114218.GI1581@e103034-lin>
+References: <20140605202930.GA15484@intel.com>
+ <20140606080543.GR6758@twins.programming.kicks-ass.net>
+ <20140606003520.GB22261@intel.com>
+ <20140606105036.GQ3213@twins.programming.kicks-ass.net>
+ <20140606121305.GA8571@gmail.com>
+ <20140606122740.GA9318@gmail.com>
+ <alpine.LFD.2.11.1406062224090.25775@knanqh.ubzr>
+ <20140609082739.GY29593@e103034-lin>
+ <alpine.LFD.2.11.1406090920540.25775@knanqh.ubzr>
+ <20140611110251.GA6702@developer>
 MIME-Version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Minchan Kim <minchan@kernel.org>
-CC: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>, Mel Gorman <mgorman@suse.de>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 05/10] mm, compaction: remember position within pageblock
- in free pages scanner
-References: <1402305982-6928-1-git-send-email-vbabka@suse.cz> <1402305982-6928-5-git-send-email-vbabka@suse.cz> <20140611021213.GF15630@bbox> <20140611081606.GB28258@js1304-P5Q-DELUXE>
-In-Reply-To: <20140611081606.GB28258@js1304-P5Q-DELUXE>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140611110251.GA6702@developer>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2014 10:16 AM, Joonsoo Kim wrote:
-> On Wed, Jun 11, 2014 at 11:12:13AM +0900, Minchan Kim wrote:
->> On Mon, Jun 09, 2014 at 11:26:17AM +0200, Vlastimil Babka wrote:
->>> Unlike the migration scanner, the free scanner remembers the beginning of the
->>> last scanned pageblock in cc->free_pfn. It might be therefore rescanning pages
->>> uselessly when called several times during single compaction. This might have
->>> been useful when pages were returned to the buddy allocator after a failed
->>> migration, but this is no longer the case.
->>>
->>> This patch changes the meaning of cc->free_pfn so that if it points to a
->>> middle of a pageblock, that pageblock is scanned only from cc->free_pfn to the
->>> end. isolate_freepages_block() will record the pfn of the last page it looked
->>> at, which is then used to update cc->free_pfn.
->>>
->>> In the mmtests stress-highalloc benchmark, this has resulted in lowering the
->>> ratio between pages scanned by both scanners, from 2.5 free pages per migrate
->>> page, to 2.25 free pages per migrate page, without affecting success rates.
->>>
->>> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
->> Reviewed-by: Minchan Kim <minchan@kernel.org>
->>
->> Below is a nitpick.
->>
->>> Cc: Minchan Kim <minchan@kernel.org>
->>> Cc: Mel Gorman <mgorman@suse.de>
->>> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->>> Cc: Michal Nazarewicz <mina86@mina86.com>
->>> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
->>> Cc: Christoph Lameter <cl@linux.com>
->>> Cc: Rik van Riel <riel@redhat.com>
->>> Cc: David Rientjes <rientjes@google.com>
->>> ---
->>>   mm/compaction.c | 33 ++++++++++++++++++++++++++++-----
->>>   1 file changed, 28 insertions(+), 5 deletions(-)
->>>
->>> diff --git a/mm/compaction.c b/mm/compaction.c
->>> index 83f72bd..58dfaaa 100644
->>> --- a/mm/compaction.c
->>> +++ b/mm/compaction.c
->>> @@ -297,7 +297,7 @@ static bool suitable_migration_target(struct page *page)
->>>    * (even though it may still end up isolating some pages).
->>>    */
->>>   static unsigned long isolate_freepages_block(struct compact_control *cc,
->>> -				unsigned long blockpfn,
->>> +				unsigned long *start_pfn,
->>>   				unsigned long end_pfn,
->>>   				struct list_head *freelist,
->>>   				bool strict)
->>> @@ -306,6 +306,7 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
->>>   	struct page *cursor, *valid_page = NULL;
->>>   	unsigned long flags;
->>>   	bool locked = false;
->>> +	unsigned long blockpfn = *start_pfn;
->>>
->>>   	cursor = pfn_to_page(blockpfn);
->>>
->>> @@ -314,6 +315,9 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
->>>   		int isolated, i;
->>>   		struct page *page = cursor;
->>>
->>> +		/* Record how far we have got within the block */
->>> +		*start_pfn = blockpfn;
->>> +
->>
->> Couldn't we move this out of the loop for just one store?
+On Wed, Jun 11, 2014 at 12:02:51PM +0100, Eduardo Valentin wrote:
+> Hello,
+> 
+> On Mon, Jun 09, 2014 at 09:22:49AM -0400, Nicolas Pitre wrote:
+> > On Mon, 9 Jun 2014, Morten Rasmussen wrote:
+> > 
+> > > On Sat, Jun 07, 2014 at 03:33:58AM +0100, Nicolas Pitre wrote:
+> > > > On Fri, 6 Jun 2014, Ingo Molnar wrote:
+> > > > 
+> > > > > In any case, even with turbo frequencies, switching power use is 
+> > > > > probably an order of magnitude higher than leakage current power use, 
+> > > > > on any marketable chip, so we should concentrate on being able to 
+> > > > > cover this first order effect (P/work ~ V^2), before considering any 
+> > > > > second order effects (leakage current).
+> > > > 
+> > > > Just so that people are aware... We'll have to introduce thermal 
+> > > > constraint management into the scheduler mix as well at some point.  
+> > > > Right now what we have is an ad hoc subsystem that simply monitors 
+> > > > temperature and apply crude cooling strategies when some thresholds are 
+> > > > met. But a better strategy would imply thermal "provisioning".
+> > > 
+> > > There is already work going on to improve thermal management:
+> > > 
+> > > http://lwn.net/Articles/599598/
+> > > 
+> > > The proposal is based on power/energy models (too). The goal is to
+> 
+> Can you please point me to the other piece of code which is using
+> power/energy models too?  We are considering having these models within
+> the thermal software compoenents. But if we already have more than one
+> user, might be worth considering a separate API.
 
-Ah, I get it now. Ignore my previous reply.
+The link above is to the thermal management proposal which includes a
+power model. This one might work better:
 
-> Hello, Vlastimil.
->
-> Moreover, start_pfn can't be updated to end pfn with this approach.
-> Is it okay?
+http://article.gmane.org/gmane.linux.power-management.general/45000
 
-That's intentional, as end_pfn means the scanner would restart at the 
-beginning of next pageblock. So I want to record last pfn *inside* the 
-pageblock that was fully scanned. Note that there's a high change that 
-fully scanning pageblock means that I haven't isolated enough and 
-isolate_freepages() will advance to the previous pageblock anyway, and 
-the recorded value will be overwritten. But still it's better to prevent 
-this corner case.
+The power/energy model in this energy-aware scheduling proposal is
+different. An example of the model data is in patch 6 (the start of this
+thread) and the actual use of the model is in patch 11 and the following
+patches. As said below, the two proposals are independent, but there
+might be potential for merging the power/energy models once the
+proposals are more mature.
 
-So outside the loop, I would need to do:
+Morten
 
-*start_pfn = max(blockpfn, end_pfn - 1);
-
-It looks a bit tricky but probably better than multiple assignments.
-
-Thanks.
-
-> Thanks.
->
-
+>  
+> > > allocate power intelligently based on performance requirements.
+> > 
+> > Ah, great!  I missed that.
+> > 
+> > > While it is related to energy-aware scheduling and I fully agree that it
+> > > is something we need to consider, I think it is worth developing the two
+> > > ideas in parallel and look at sharing things like the power model later
+> > > once things mature. Energy-aware scheduling is complex enough on its
+> > > own to keep us entertained for a while :-)
+> > 
+> > Absolutely.  This is why I said "at some point".
+> > 
+> > 
+> > Nicolas
