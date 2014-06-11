@@ -1,78 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752706AbaFKTQP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 15:16:15 -0400
-Received: from asavdk4.altibox.net ([109.247.116.15]:37718 "EHLO
-	asavdk4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751471AbaFKTQO (ORCPT
+	id S1752748AbaFKTSx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 15:18:53 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:60953 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751002AbaFKTSw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 15:16:14 -0400
-Date: Wed, 11 Jun 2014 21:16:09 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Michal Marek <mmarek@suse.cz>,
-        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] x86,vdso: Fix vdso_install
-Message-ID: <20140611191609.GA16069@ravnborg.org>
-References: <5398749B.4090209@zytor.com>
- <cover.1402503408.git.luto@amacapital.net>
- <fe51e9f5c338d33b1a8b20813441538df5e17add.1402503408.git.luto@amacapital.net>
- <CA+5PVA5uPj0JiTLXJAtBt9b9e6aEcJh7ApFRbaCAP0=se89GKA@mail.gmail.com>
- <20140611185119.GA13412@ravnborg.org>
- <CALCETrXnGqrPh94zL91um+xC3Hdy1SQmBc6_pOkNBGEmX_2rVw@mail.gmail.com>
+	Wed, 11 Jun 2014 15:18:52 -0400
+Date: Thu, 12 Jun 2014 00:48:44 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Tony Prisk <linux@prisktech.co.nz>, Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH v2] uhci-platform: use devm_ioremap resource
+Message-ID: <20140611191844.GA13009@himangi-Dell>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALCETrXnGqrPh94zL91um+xC3Hdy1SQmBc6_pOkNBGEmX_2rVw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >
-> > Can we please fix this in a way where we do not need to add stuff to core kbuild.
-> > If the original approach was used then make took care of the looping
-> > and the foreach part was not needed.
-Following is my first quick approach.
-It reuses the old - a little complex logic to do the looping and copying.
-Thsi is only tested on my i386 box / build.
+This patch replaces the memory allocation using request_mem_region and
+the ioremap by a single call to managed interface devm_ioremap_reource.
+The corresponding calls to release_mem_region and iounmap in the probe
+and release functions are now unnecessary and are removed. Also a label
+is done away with and linux/device.h is added to make sure the devm_*()
+outine declarations are unambiguously available.
 
-	Sam
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+---
+v2: pass correct arguments to devm_ioremap_resource
+Not compile tested due to incompatible architecture.
 
+ drivers/usb/host/uhci-platform.c | 22 +++++-----------------
+ 1 file changed, 5 insertions(+), 17 deletions(-)
 
-diff --git a/arch/x86/vdso/Makefile b/arch/x86/vdso/Makefile
-index 9769df0..39fb152 100644
---- a/arch/x86/vdso/Makefile
-+++ b/arch/x86/vdso/Makefile
-@@ -9,11 +9,6 @@ VDSOX32-$(CONFIG_X86_X32_ABI)	:= y
- VDSO32-$(CONFIG_X86_32)		:= y
- VDSO32-$(CONFIG_COMPAT)		:= y
+diff --git a/drivers/usb/host/uhci-platform.c b/drivers/usb/host/uhci-platform.c
+index 01833ab..b987f1d 100644
+--- a/drivers/usb/host/uhci-platform.c
++++ b/drivers/usb/host/uhci-platform.c
+@@ -8,6 +8,7 @@
+  */
  
--vdso-install-$(VDSO64-y)	+= vdso.so
--vdso-install-$(VDSOX32-y)	+= vdsox32.so
--vdso-install-$(VDSO32-y)	+= $(vdso32-images)
+ #include <linux/of.h>
++#include <linux/device.h>
+ #include <linux/platform_device.h>
+ 
+ static int uhci_platform_init(struct usb_hcd *hcd)
+@@ -88,33 +89,22 @@ static int uhci_hcd_platform_probe(struct platform_device *pdev)
+ 	hcd->rsrc_start = res->start;
+ 	hcd->rsrc_len = resource_size(res);
+ 
+-	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len, hcd_name)) {
+-		pr_err("%s: request_mem_region failed\n", __func__);
+-		ret = -EBUSY;
++	hcd->regs = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(hcd->regs)) {
++		ret = PTR_ERR(hcd->regs);
+ 		goto err_rmr;
+ 	}
 -
--
- # files to link into the vdso
- vobjs-y := vdso-note.o vclock_gettime.o vgetcpu.o
+-	hcd->regs = ioremap(hcd->rsrc_start, hcd->rsrc_len);
+-	if (!hcd->regs) {
+-		pr_err("%s: ioremap failed\n", __func__);
+-		ret = -ENOMEM;
+-		goto err_irq;
+-	}
+ 	uhci = hcd_to_uhci(hcd);
  
-@@ -179,12 +174,12 @@ GCOV_PROFILE := n
- # Install the unstripped copy of vdso*.so listed in $(vdso-install-y).
- #
- quiet_cmd_vdso_install = INSTALL $@
--      cmd_vdso_install = cp $(obj)/$@.dbg $(MODLIB)/vdso/$@
--$(vdso-install-y): %.so: $(obj)/%.so.dbg FORCE
-+      cmd_vdso_install = cp $(obj)/$@ $(MODLIB)/vdso/$(@:.dbg=)
-+$(vdso_img_sodbg): %.so.dbg: $(obj)/%.so.dbg FORCE
- 	@mkdir -p $(MODLIB)/vdso
- 	$(call cmd,vdso_install)
+ 	uhci->regs = hcd->regs;
  
--PHONY += vdso_install $(vdso-install-y)
--vdso_install: $(vdso-install-y)
-+PHONY += vdso_install $(vdso_img_sodbg)
-+vdso_install: $(vdso_img_sodbg)
+ 	ret = usb_add_hcd(hcd, pdev->resource[1].start, IRQF_SHARED);
+ 	if (ret)
+-		goto err_uhci;
++		goto err_rmr;
  
- clean-files := vdso32-syscall* vdso32-sysenter* vdso32-int80*
+ 	device_wakeup_enable(hcd->self.controller);
+ 	return 0;
+ 
+-err_uhci:
+-	iounmap(hcd->regs);
+-err_irq:
+-	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
+ err_rmr:
+ 	usb_put_hcd(hcd);
+ 
+@@ -126,8 +116,6 @@ static int uhci_hcd_platform_remove(struct platform_device *pdev)
+ 	struct usb_hcd *hcd = platform_get_drvdata(pdev);
+ 
+ 	usb_remove_hcd(hcd);
+-	iounmap(hcd->regs);
+-	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
+ 	usb_put_hcd(hcd);
+ 
+ 	return 0;
+-- 
+1.9.1
 
