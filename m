@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755371AbaFKI50 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 04:57:26 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:59742 "EHLO arroyo.ext.ti.com"
+	id S1755701AbaFKJQq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 05:16:46 -0400
+Received: from mga09.intel.com ([134.134.136.24]:24181 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753672AbaFKI5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 04:57:23 -0400
-From: Roger Quadros <rogerq@ti.com>
-To: <tony@atomide.com>, <dwmw2@infradead.org>, <computersforpeace@gmail.com>
-CC: <kyungmin.park@samsung.com>, <pekon@ti.com>,
-        <ezequiel.garcia@free-electrons.com>, <javier@dowhile0.org>,
-        <nsekhar@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-mtd@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
-Subject: [PATCH 01/36] ARM: OMAP3: hwmod: Fix gpmc memory resource space
-Date: Wed, 11 Jun 2014 11:56:06 +0300
-Message-ID: <1402477001-31132-2-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1402477001-31132-1-git-send-email-rogerq@ti.com>
-References: <1402477001-31132-1-git-send-email-rogerq@ti.com>
+	id S1751209AbaFKJQm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 05:16:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,457,1400050800"; 
+   d="scan'208";a="555622211"
+Date: Wed, 11 Jun 2014 12:16:36 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH] ACPI / hotplug / PCI: Add hotplug contexts to PCI host
+ bridges
+Message-ID: <20140611091636.GB1657@lahna.fi.intel.com>
+References: <1986515.ZPZrccsmiq@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1986515.ZPZrccsmiq@vostro.rjw.lan>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
----
- arch/arm/mach-omap2/omap_hwmod_3xxx_data.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Tue, Jun 10, 2014 at 10:51:51PM +0200, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> After relatively recent changes in the ACPI-based PCI hotplug
+> (ACPIPHP) code, the acpiphp_check_host_bridge() executed for PCI
+> host bridges via acpi_pci_root_scan_dependent() doesn't do anything
+> useful, because those bridges do not have hotplug contexts.  That
+> happens by mistake, so fix it by making acpiphp_enumerate_slots()
+> add hotplug contexts to PCI host bridges too and modify
+> acpiphp_remove_slots() to drop those contexts for host bridges
+> as appropriate.
+> 
+> Link: https://bugzilla.kernel.org/show_bug.cgi?id=76901
+> Fixes: 2d8b1d566a5f (ACPI / hotplug / PCI: Get rid of check_sub_bridges())
+> Reported-and-tested-by: Gavin Guo <gavin.guo@canonical.com>
+> Cc: 3.15+ <stable@vger.kernel.org> # 3.15+
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-index 71ac7d5..f2848a8 100644
---- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-@@ -3426,7 +3426,7 @@ static struct omap_hwmod_addr_space omap3xxx_counter_32k_addrs[] = {
- static struct omap_hwmod_addr_space omap3xxx_gpmc_addrs[] = {
- 	{
- 		.pa_start	= 0x6e000000,
--		.pa_end		= 0x6e000fff,
-+		.pa_end		= 0x6e0002d4,
- 		.flags		= ADDR_TYPE_RT
- 	},
- 	{ }
--- 
-1.8.3.2
+Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 
+Thanks for taking care of this!
