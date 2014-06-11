@@ -1,949 +1,315 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752767AbaFKUez (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 16:34:55 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:49495 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752662AbaFKUex convert rfc822-to-8bit (ORCPT
+	id S1752164AbaFKUjn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 16:39:43 -0400
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:37582 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751050AbaFKUjl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 16:34:53 -0400
-From: Max Schwarz <max.schwarz@online.de>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>, kfx@rock-chips.com
-Subject: [PATCH v6] i2c: add driver for Rockchip RK3xxx SoC I2C adapter
-Date: Wed, 11 Jun 2014 22:34:37 +0200
-Message-ID: <8609129.ZdoNIueQ2G@typ>
-User-Agent: KMail/4.13.1 (Linux/3.13.0-29-generic; KDE/4.13.1; x86_64; ; )
-In-Reply-To: <1956748.HoDAyYWJMb@typ>
-References: <5192968.EzcUiXba22@typ> <1956748.HoDAyYWJMb@typ>
+	Wed, 11 Jun 2014 16:39:41 -0400
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: Dirk Brandewie <dirk.brandewie@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [REGRESSION] 3.15: Seems to turbo mode Intel Sandybridge Dual Core without need, overheating CPU
+Date: Wed, 11 Jun 2014 22:39:38 +0200
+Message-ID: <3140356.YJAN8cBJY0@merkaba>
+User-Agent: KMail/4.14 pre (Linux/3.15.0-tp520; KDE/4.13.1; x86_64; git-d280d4b; 2014-06-10)
+In-Reply-To: <53963275.5040909@gmail.com>
+References: <1996399.buoKlNI5nG@merkaba> <13232691.DxAv2jorp8@merkaba> <53963275.5040909@gmail.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8BIT
 Content-Type: text/plain; charset="iso-8859-1"
-X-Provags-ID: V02:K0:X9RNM1bgDmcUESOnvwhMugJJf3X4yLQCckcg6h9wKbU
- HWNTYQTw0myOgmIXGTgFnypVRIdct20iSPsFazAy+hxYJ7X0Zb
- UjpgtxduO4tIWla24Ghsg3vL9WOk0dzOad7lvXZdEvpk4GJMRJ
- rEtbRl1Fjpgy05Ypk9kMtTo9creNeCQKBTYs7b6WXe+gcBbqxe
- cO47BVn/JRAowEBGSc762qj51etU0KLwdYGEFXU6uKulScSr3w
- CIHZc7yOz8nI6sL8RkrTjP+qIYdR/dM6lE7Wlj3McShwQMsQ00
- t/Bex3UPjpGEFcH1fUa14twQHMErOk6rwKlXgRXt0ij8hLZBA=
- =
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Driver for the native I2C adapter found in Rockchip RK3xxx SoCs.
+Am Montag, 9. Juni 2014, 15:17:25 schrieb Dirk Brandewie:
 
-Configuration is only possible through devicetree. The driver is
-interrupt driven and supports the I2C_M_IGNORE_NAK mangling bit.
+> Hi Martin,
 
-Signed-off-by: Max Schwarz <max.schwarz@online.de>
----
+Hi Dirk,
 
-The driver cannot be used without a proper clock driver
-supporting rate calculation, such as Heiko Stübner's RK3xxx clock
-driver series [1].
+> Can you send the output of:
+>     turbostat sleep 10
+> and
+>     for i in 0 1 2 3; do rdmsr  -p $i -u -f15:8 0x198; done
+> 
+> For the normal and bad case please.
 
-Changes since v5:
-  - Found/suggested by Wolfram Sang:
-    * fixed style issues
-    * removed old includes
-    * reworded comment on REG_CON_LASTACK
+Normal case:
 
-Changes since v4:
-  - fixed a bug in message counting in rk3x_i2c_xfer()
-  - Found/suggested by Wolfram Sang:
-    * fixed style issues
-    * fixed sorting in Kconfig, Makefile
-    * removed unneeded fields from struct rk3x_i2c
-    * REPEATED_START between msgs of one transfer
-    * fixed wrong error code on NAK
-    * support for SMB_QUICK (len == 0)
-    * removed unneeded DT check & alias handling
-    * sanity check for clock-frequency
+merkaba:~> turbostat sleep 10
+    Core     CPU Avg_MHz   %Busy Bzy_MHz TSC_MHz     SMI  CPU%c1  CPU%c3  CPU%c6  CPU%c7 CoreTmp  PkgTmp Pkg%pc2 Pkg%pc3 Pkg%pc6 Pkg%pc7 PkgWatt CorWatt GFXWatt 
+       -       -      22    1.82    1217    2492       0    3.22    2.09    0.00   92.87      53      52    1.46    3.51    2.98   83.13    3.43    0.38    0.15
+       0       0      32    2.37    1335    2492       0    3.24    0.07    0.00   94.33      53      52    1.46    3.51    2.98   83.13    3.43    0.38    0.15
+       0       1      23    2.04    1127    2492       0    3.57
+       1       2      22    1.66    1328    2492       0    2.82    4.11    0.00   91.42      52
+       1       3      12    1.20     984    2492       0    3.27
+10.004021 sec
 
-Changes since v3:
-  - fixed style issues found by Maxime Ripard
-  - use dt alias id to calculate the bit offset in GRF,
-    as suggested by Maxime Ripard
-  - also use dt alias id for i2c_add_numbered_adapter()
+merkaba:~> for i in 0 1 2 3; do rdmsr  -p $i -u -f15:8 0x198; done
+10
+11
+11
+11
 
-Changes since v2:
-  - support for the new GRF syscon mapping by Heiko Stübner
-  - probe error handling improvements by Heiko Stübner
-  - fixed wrong remove() order found by Heiko Stübner
-  - removed unnecessary clk_enable() during probe
-  - removed switch back to old interface during remove
+merkaba:~> sensors
+acpitz-virtual-0
+Adapter: Virtual device
+temp1:        +68.0°C  (crit = +98.0°C)
 
-Changes since v1:
-  - dt property names "rockchip,*" suggested by Heiko Stübner
-  - fixed overly specific RK3188 comment (Heiko Stübner)
+coretemp-isa-0000
+Adapter: ISA adapter
+Physical id 0:  +59.0°C  (high = +86.0°C, crit = +100.0°C)
+Core 0:         +56.0°C  (high = +86.0°C, crit = +100.0°C)
+Core 1:         +59.0°C  (high = +86.0°C, crit = +100.0°C)
 
-The dts files needed for testing on Radxa Rock are in my tree at
+thinkpad-isa-0000
+Adapter: ISA adapter
+fan1:        2845 RPM
 
-https://github.com/xqms/linux.git topic/i2c-rk3x-clean-v4
 
-[1]: http://www.spinics.net/lists/arm-kernel/msg334495.html
 
- Documentation/devicetree/bindings/i2c/i2c-rk3x.txt |  42 ++
- drivers/i2c/busses/Kconfig                         |  10 +
- drivers/i2c/busses/Makefile                        |   1 +
- drivers/i2c/busses/i2c-rk3x.c                      | 762 +++++++++++++++++++++
- 4 files changed, 815 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/i2c/i2c-rk3x.txt
- create mode 100644 drivers/i2c/busses/i2c-rk3x.c
 
-diff --git a/Documentation/devicetree/bindings/i2c/i2c-rk3x.txt b/Documentation/devicetree/bindings/i2c/i2c-rk3x.txt
-new file mode 100644
-index 0000000..dde6c22
---- /dev/null
-+++ b/Documentation/devicetree/bindings/i2c/i2c-rk3x.txt
-@@ -0,0 +1,42 @@
-+* Rockchip RK3xxx I2C controller
-+
-+This driver interfaces with the native I2C controller present in Rockchip
-+RK3xxx SoCs.
-+
-+Required properties :
-+
-+ - reg : Offset and length of the register set for the device
-+ - compatible : should be "rockchip,rk3066-i2c", "rockchip,rk3188-i2c" or
-+		"rockchip,rk3288-i2c".
-+ - interrupts : interrupt number
-+ - clocks : parent clock
-+
-+Required on RK3066, RK3188 :
-+
-+ - rockchip,grf : the phandle of the syscon node for the general register
-+		  file (GRF)
-+ - on those SoCs an alias with the correct I2C bus ID (bit offset in the GRF)
-+   is also required.
-+
-+Optional properties :
-+
-+ - clock-frequency : SCL frequency to use (in Hz). If omitted, 100kHz is used.
-+
-+Example:
-+
-+aliases {
-+	i2c0 = &i2c0;
-+}
-+
-+i2c0: i2c@2002d000 {
-+	compatible = "rockchip,rk3188-i2c";
-+	reg = <0x2002d000 0x1000>;
-+	interrupts = <GIC_SPI 40 IRQ_TYPE_LEVEL_HIGH>;
-+	#address-cells = <1>;
-+	#size-cells = <0>;
-+
-+	rockchip,grf = <&grf>;
-+
-+	clock-names = "i2c";
-+	clocks = <&cru PCLK_I2C0>;
-+};
-diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
-index 7ccc51e..39307d0 100644
---- a/drivers/i2c/busses/Kconfig
-+++ b/drivers/i2c/busses/Kconfig
-@@ -676,6 +676,16 @@ config I2C_RIIC
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called i2c-riic.
- 
-+config I2C_RK3X
-+	tristate "Rockchip RK3xxx I2C adapter"
-+	depends on OF
-+	help
-+	  Say Y here to include support for the I2C adapter in Rockchip RK3xxx
-+	  SoCs.
-+
-+	  This driver can also be built as a module. If so, the module will
-+	  be called i2c-rk3x.
-+
- config HAVE_S3C2410_I2C
- 	bool
- 	help
-diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
-index 413d062..5582cf9 100644
---- a/drivers/i2c/busses/Makefile
-+++ b/drivers/i2c/busses/Makefile
-@@ -66,6 +66,7 @@ obj-$(CONFIG_I2C_PXA)		+= i2c-pxa.o
- obj-$(CONFIG_I2C_PXA_PCI)	+= i2c-pxa-pci.o
- obj-$(CONFIG_I2C_QUP)		+= i2c-qup.o
- obj-$(CONFIG_I2C_RIIC)		+= i2c-riic.o
-+obj-$(CONFIG_I2C_RK3X)		+= i2c-rk3x.o
- obj-$(CONFIG_I2C_S3C2410)	+= i2c-s3c2410.o
- obj-$(CONFIG_I2C_S6000)		+= i2c-s6000.o
- obj-$(CONFIG_I2C_SH7760)	+= i2c-sh7760.o
-diff --git a/drivers/i2c/busses/i2c-rk3x.c b/drivers/i2c/busses/i2c-rk3x.c
-new file mode 100644
-index 0000000..9e3084c
---- /dev/null
-+++ b/drivers/i2c/busses/i2c-rk3x.c
-@@ -0,0 +1,762 @@
-+/*
-+ * Driver for I2C adapter in Rockchip RK3xxx SoC
-+ *
-+ * Max Schwarz <max.schwarz@online.de>
-+ * based on the patches by Rockchip Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/i2c.h>
-+#include <linux/interrupt.h>
-+#include <linux/errno.h>
-+#include <linux/err.h>
-+#include <linux/platform_device.h>
-+#include <linux/io.h>
-+#include <linux/of_address.h>
-+#include <linux/of_irq.h>
-+#include <linux/spinlock.h>
-+#include <linux/clk.h>
-+#include <linux/wait.h>
-+#include <linux/mfd/syscon.h>
-+#include <linux/regmap.h>
-+
-+
-+/* Register Map */
-+#define REG_CON        0x00 /* control register */
-+#define REG_CLKDIV     0x04 /* clock divisor register */
-+#define REG_MRXADDR    0x08 /* slave address for REGISTER_TX */
-+#define REG_MRXRADDR   0x0c /* slave register address for REGISTER_TX */
-+#define REG_MTXCNT     0x10 /* number of bytes to be transmitted */
-+#define REG_MRXCNT     0x14 /* number of bytes to be received */
-+#define REG_IEN        0x18 /* interrupt enable */
-+#define REG_IPD        0x1c /* interrupt pending */
-+#define REG_FCNT       0x20 /* finished count */
-+
-+/* Data buffer offsets */
-+#define TXBUFFER_BASE 0x100
-+#define RXBUFFER_BASE 0x200
-+
-+/* REG_CON bits */
-+#define REG_CON_EN        BIT(0)
-+enum {
-+	REG_CON_MOD_TX = 0,      /* transmit data */
-+	REG_CON_MOD_REGISTER_TX, /* select register and restart */
-+	REG_CON_MOD_RX,          /* receive data */
-+	REG_CON_MOD_REGISTER_RX, /* broken: transmits read addr AND writes
-+				  * register addr */
-+};
-+#define REG_CON_MOD(mod)  ((mod) << 1)
-+#define REG_CON_MOD_MASK  (BIT(1) | BIT(2))
-+#define REG_CON_START     BIT(3)
-+#define REG_CON_STOP      BIT(4)
-+#define REG_CON_LASTACK   BIT(5) /* 1: send NACK after last received byte */
-+#define REG_CON_ACTACK    BIT(6) /* 1: stop if NACK is received */
-+
-+/* REG_MRXADDR bits */
-+#define REG_MRXADDR_VALID(x) BIT(24 + (x)) /* [x*8+7:x*8] of MRX[R]ADDR valid */
-+
-+/* REG_IEN/REG_IPD bits */
-+#define REG_INT_BTF       BIT(0) /* a byte was transmitted */
-+#define REG_INT_BRF       BIT(1) /* a byte was received */
-+#define REG_INT_MBTF      BIT(2) /* master data transmit finished */
-+#define REG_INT_MBRF      BIT(3) /* master data receive finished */
-+#define REG_INT_START     BIT(4) /* START condition generated */
-+#define REG_INT_STOP      BIT(5) /* STOP condition generated */
-+#define REG_INT_NAKRCV    BIT(6) /* NACK received */
-+#define REG_INT_ALL       0x7f
-+
-+/* Constants */
-+#define WAIT_TIMEOUT      200 /* ms */
-+#define DEFAULT_SCL_RATE  (100 * 1000) /* Hz */
-+
-+enum rk3x_i2c_state {
-+	STATE_IDLE,
-+	STATE_START,
-+	STATE_READ,
-+	STATE_WRITE,
-+	STATE_STOP
-+};
-+
-+/**
-+ * @grf_offset: offset inside the grf regmap for setting the i2c type
-+ */
-+struct rk3x_i2c_soc_data {
-+	int grf_offset;
-+};
-+
-+struct rk3x_i2c {
-+	struct i2c_adapter adap;
-+	struct device *dev;
-+	struct rk3x_i2c_soc_data *soc_data;
-+
-+	/* Hardware resources */
-+	void __iomem *regs;
-+	struct clk *clk;
-+
-+	/* Settings */
-+	unsigned int scl_frequency;
-+
-+	/* Synchronization & notification */
-+	spinlock_t lock;
-+	wait_queue_head_t wait;
-+	bool busy;
-+
-+	/* Current message */
-+	struct i2c_msg *msg;
-+	u8 addr;
-+	unsigned int mode;
-+	bool is_last_msg;
-+
-+	/* I2C state machine */
-+	enum rk3x_i2c_state state;
-+	unsigned int processed; /* sent/received bytes */
-+	int error;
-+};
-+
-+static inline void i2c_writel(struct rk3x_i2c *i2c, u32 value,
-+			      unsigned int offset)
-+{
-+	writel(value, i2c->regs + offset);
-+}
-+
-+static inline u32 i2c_readl(struct rk3x_i2c *i2c, unsigned int offset)
-+{
-+	return readl(i2c->regs + offset);
-+}
-+
-+/* Reset all interrupt pending bits */
-+static inline void rk3x_i2c_clean_ipd(struct rk3x_i2c *i2c)
-+{
-+	i2c_writel(i2c, REG_INT_ALL, REG_IPD);
-+}
-+
-+/**
-+ * Generate a START condition, which triggers a REG_INT_START interrupt.
-+ */
-+static void rk3x_i2c_start(struct rk3x_i2c *i2c)
-+{
-+	u32 val;
-+
-+	rk3x_i2c_clean_ipd(i2c);
-+	i2c_writel(i2c, REG_INT_START, REG_IEN);
-+
-+	/* enable adapter with correct mode, send START condition */
-+	val = REG_CON_EN | REG_CON_MOD(i2c->mode) | REG_CON_START;
-+
-+	/* if we want to react to NACK, set ACTACK bit */
-+	if (!(i2c->msg->flags & I2C_M_IGNORE_NAK))
-+		val |= REG_CON_ACTACK;
-+
-+	i2c_writel(i2c, val, REG_CON);
-+}
-+
-+/**
-+ * Generate a STOP condition, which triggers a REG_INT_STOP interrupt.
-+ *
-+ * @error: Error code to return in rk3x_i2c_xfer
-+ */
-+static void rk3x_i2c_stop(struct rk3x_i2c *i2c, int error)
-+{
-+	unsigned int ctrl;
-+
-+	i2c->processed = 0;
-+	i2c->msg = NULL;
-+	i2c->error = error;
-+
-+	if (i2c->is_last_msg) {
-+		/* Enable stop interrupt */
-+		i2c_writel(i2c, REG_INT_STOP, REG_IEN);
-+
-+		i2c->state = STATE_STOP;
-+
-+		ctrl = i2c_readl(i2c, REG_CON);
-+		ctrl |= REG_CON_STOP;
-+		i2c_writel(i2c, ctrl, REG_CON);
-+	} else {
-+		/* Signal rk3x_i2c_xfer to start the next message. */
-+		i2c->busy = false;
-+		i2c->state = STATE_IDLE;
-+
-+		/*
-+		 * The HW is actually not capable of REPEATED START. But we can
-+		 * get the intended effect by resetting its internal state
-+		 * and issuing an ordinary START.
-+		 */
-+		i2c_writel(i2c, 0, REG_CON);
-+
-+		/* signal that we are finished with the current msg */
-+		wake_up(&i2c->wait);
-+	}
-+}
-+
-+/**
-+ * Setup a read according to i2c->msg
-+ */
-+static void rk3x_i2c_prepare_read(struct rk3x_i2c *i2c)
-+{
-+	unsigned int len = i2c->msg->len - i2c->processed;
-+	u32 con;
-+
-+	con = i2c_readl(i2c, REG_CON);
-+
-+	/*
-+	 * The hw can read up to 32 bytes at a time. If we need more than one
-+	 * chunk, send an ACK after the last byte of the current chunk.
-+	 */
-+	if (unlikely(len > 32)) {
-+		len = 32;
-+		con &= ~REG_CON_LASTACK;
-+	} else {
-+		con |= REG_CON_LASTACK;
-+	}
-+
-+	/* make sure we are in plain RX mode if we read a second chunk */
-+	if (i2c->processed != 0) {
-+		con &= ~REG_CON_MOD_MASK;
-+		con |= REG_CON_MOD(REG_CON_MOD_RX);
-+	}
-+
-+	i2c_writel(i2c, con, REG_CON);
-+	i2c_writel(i2c, len, REG_MRXCNT);
-+}
-+
-+/**
-+ * Fill the transmit buffer with data from i2c->msg
-+ */
-+static void rk3x_i2c_fill_transmit_buf(struct rk3x_i2c *i2c)
-+{
-+	unsigned int i, j;
-+	u32 cnt = 0;
-+	u32 val;
-+	u8 byte;
-+
-+	for (i = 0; i < 8; ++i) {
-+		val = 0;
-+		for (j = 0; j < 4; ++j) {
-+			if (i2c->processed == i2c->msg->len)
-+				break;
-+
-+			if (i2c->processed == 0 && cnt == 0)
-+				byte = (i2c->addr & 0x7f) << 1;
-+			else
-+				byte = i2c->msg->buf[i2c->processed++];
-+
-+			val |= byte << (j * 8);
-+			cnt++;
-+		}
-+
-+		i2c_writel(i2c, val, TXBUFFER_BASE + 4 * i);
-+
-+		if (i2c->processed == i2c->msg->len)
-+			break;
-+	}
-+
-+	i2c_writel(i2c, cnt, REG_MTXCNT);
-+}
-+
-+
-+/* IRQ handlers for individual states */
-+
-+static void rk3x_i2c_handle_start(struct rk3x_i2c *i2c, unsigned int ipd)
-+{
-+	if (!(ipd & REG_INT_START)) {
-+		rk3x_i2c_stop(i2c, -EIO);
-+		dev_warn(i2c->dev, "unexpected irq in START: 0x%x\n", ipd);
-+		rk3x_i2c_clean_ipd(i2c);
-+		return;
-+	}
-+
-+	/* ack interrupt */
-+	i2c_writel(i2c, REG_INT_START, REG_IPD);
-+
-+	/* disable start bit */
-+	i2c_writel(i2c, i2c_readl(i2c, REG_CON) & ~REG_CON_START, REG_CON);
-+
-+	/* enable appropriate interrupts and transition */
-+	if (i2c->mode == REG_CON_MOD_TX) {
-+		i2c_writel(i2c, REG_INT_MBTF | REG_INT_NAKRCV, REG_IEN);
-+		i2c->state = STATE_WRITE;
-+		rk3x_i2c_fill_transmit_buf(i2c);
-+	} else {
-+		/* in any other case, we are going to be reading. */
-+		i2c_writel(i2c, REG_INT_MBRF | REG_INT_NAKRCV, REG_IEN);
-+		i2c->state = STATE_READ;
-+		rk3x_i2c_prepare_read(i2c);
-+	}
-+}
-+
-+static void rk3x_i2c_handle_write(struct rk3x_i2c *i2c, unsigned int ipd)
-+{
-+	if (!(ipd & REG_INT_MBTF)) {
-+		rk3x_i2c_stop(i2c, -EIO);
-+		dev_err(i2c->dev, "unexpected irq in WRITE: 0x%x\n", ipd);
-+		rk3x_i2c_clean_ipd(i2c);
-+		return;
-+	}
-+
-+	/* ack interrupt */
-+	i2c_writel(i2c, REG_INT_MBTF, REG_IPD);
-+
-+	/* are we finished? */
-+	if (i2c->processed == i2c->msg->len)
-+		rk3x_i2c_stop(i2c, i2c->error);
-+	else
-+		rk3x_i2c_fill_transmit_buf(i2c);
-+}
-+
-+static void rk3x_i2c_handle_read(struct rk3x_i2c *i2c, unsigned int ipd)
-+{
-+	unsigned int i;
-+	unsigned int len = i2c->msg->len - i2c->processed;
-+	u32 uninitialized_var(val);
-+	u8 byte;
-+
-+	/* we only care for MBRF here. */
-+	if (!(ipd & REG_INT_MBRF))
-+		return;
-+
-+	/* ack interrupt */
-+	i2c_writel(i2c, REG_INT_MBRF, REG_IPD);
-+
-+	/* read the data from receive buffer */
-+	for (i = 0; i < len; ++i) {
-+		if (i % 4 == 0)
-+			val = i2c_readl(i2c, RXBUFFER_BASE + (i / 4) * 4);
-+
-+		byte = (val >> ((i % 4) * 8)) & 0xff;
-+		i2c->msg->buf[i2c->processed++] = byte;
-+	}
-+
-+	/* are we finished? */
-+	if (i2c->processed == i2c->msg->len)
-+		rk3x_i2c_stop(i2c, i2c->error);
-+	else
-+		rk3x_i2c_prepare_read(i2c);
-+}
-+
-+static void rk3x_i2c_handle_stop(struct rk3x_i2c *i2c, unsigned int ipd)
-+{
-+	unsigned int con;
-+
-+	if (!(ipd & REG_INT_STOP)) {
-+		rk3x_i2c_stop(i2c, -EIO);
-+		dev_err(i2c->dev, "unexpected irq in STOP: 0x%x\n", ipd);
-+		rk3x_i2c_clean_ipd(i2c);
-+		return;
-+	}
-+
-+	/* ack interrupt */
-+	i2c_writel(i2c, REG_INT_STOP, REG_IPD);
-+
-+	/* disable STOP bit */
-+	con = i2c_readl(i2c, REG_CON);
-+	con &= ~REG_CON_STOP;
-+	i2c_writel(i2c, con, REG_CON);
-+
-+	i2c->busy = false;
-+	i2c->state = STATE_IDLE;
-+
-+	/* signal rk3x_i2c_xfer that we are finished */
-+	wake_up(&i2c->wait);
-+}
-+
-+static irqreturn_t rk3x_i2c_irq(int irqno, void *dev_id)
-+{
-+	struct rk3x_i2c *i2c = dev_id;
-+	unsigned int ipd;
-+
-+	spin_lock(&i2c->lock);
-+
-+	ipd = i2c_readl(i2c, REG_IPD);
-+	if (i2c->state == STATE_IDLE) {
-+		dev_warn(i2c->dev, "irq in STATE_IDLE, ipd = 0x%x\n", ipd);
-+		rk3x_i2c_clean_ipd(i2c);
-+		goto out;
-+	}
-+
-+	dev_dbg(i2c->dev, "IRQ: state %d, ipd: %x\n", i2c->state, ipd);
-+
-+	/* Clean interrupt bits we don't care about */
-+	ipd &= ~(REG_INT_BRF | REG_INT_BTF);
-+
-+	if (ipd & REG_INT_NAKRCV) {
-+		/*
-+		 * We got a NACK in the last operation. Depending on whether
-+		 * IGNORE_NAK is set, we have to stop the operation and report
-+		 * an error.
-+		 */
-+		i2c_writel(i2c, REG_INT_NAKRCV, REG_IPD);
-+
-+		ipd &= ~REG_INT_NAKRCV;
-+
-+		if (!(i2c->msg->flags & I2C_M_IGNORE_NAK))
-+			rk3x_i2c_stop(i2c, -ENXIO);
-+	}
-+
-+	/* is there anything left to handle? */
-+	if (unlikely(ipd == 0))
-+		goto out;
-+
-+	switch (i2c->state) {
-+	case STATE_START:
-+		rk3x_i2c_handle_start(i2c, ipd);
-+		break;
-+	case STATE_WRITE:
-+		rk3x_i2c_handle_write(i2c, ipd);
-+		break;
-+	case STATE_READ:
-+		rk3x_i2c_handle_read(i2c, ipd);
-+		break;
-+	case STATE_STOP:
-+		rk3x_i2c_handle_stop(i2c, ipd);
-+		break;
-+	case STATE_IDLE:
-+		break;
-+	}
-+
-+out:
-+	spin_unlock(&i2c->lock);
-+	return IRQ_HANDLED;
-+}
-+
-+static void rk3x_i2c_set_scl_rate(struct rk3x_i2c *i2c, unsigned long scl_rate)
-+{
-+	unsigned long i2c_rate = clk_get_rate(i2c->clk);
-+	unsigned int div;
-+
-+	/* SCL rate = (clk rate) / (8 * DIV) */
-+	div = DIV_ROUND_UP(i2c_rate, scl_rate * 8);
-+
-+	/* The lower and upper half of the CLKDIV reg describe the length of
-+	 * SCL low & high periods. */
-+	div = DIV_ROUND_UP(div, 2);
-+
-+	i2c_writel(i2c, (div << 16) | (div & 0xffff), REG_CLKDIV);
-+}
-+
-+/**
-+ * Setup I2C registers for an I2C operation specified by msgs, num.
-+ *
-+ * Must be called with i2c->lock held.
-+ *
-+ * @msgs: I2C msgs to process
-+ * @num: Number of msgs
-+ *
-+ * returns: Number of I2C msgs processed or negative in case of error
-+ */
-+static int rk3x_i2c_setup(struct rk3x_i2c *i2c, struct i2c_msg *msgs, int num)
-+{
-+	u32 addr = (msgs[0].addr & 0x7f) << 1;
-+	int ret = 0;
-+
-+	/*
-+	 * The I2C adapter can issue a small (len < 4) write packet before
-+	 * reading. This speeds up SMBus-style register reads.
-+	 * The MRXADDR/MRXRADDR hold the slave address and the slave register
-+	 * address in this case.
-+	 */
-+
-+	if (num >= 2 && msgs[0].len < 4 &&
-+	    !(msgs[0].flags & I2C_M_RD) && (msgs[1].flags & I2C_M_RD)) {
-+		u32 reg_addr = 0;
-+		int i;
-+
-+		dev_dbg(i2c->dev, "Combined write/read from addr 0x%x\n",
-+			addr >> 1);
-+
-+		/* Fill MRXRADDR with the register address(es) */
-+		for (i = 0; i < msgs[0].len; ++i) {
-+			reg_addr |= msgs[0].buf[i] << (i * 8);
-+			reg_addr |= REG_MRXADDR_VALID(i);
-+		}
-+
-+		/* msgs[0] is handled by hw. */
-+		i2c->msg = &msgs[1];
-+
-+		i2c->mode = REG_CON_MOD_REGISTER_TX;
-+
-+		i2c_writel(i2c, addr | REG_MRXADDR_VALID(0), REG_MRXADDR);
-+		i2c_writel(i2c, reg_addr, REG_MRXRADDR);
-+
-+		ret = 2;
-+	} else {
-+		/*
-+		 * We'll have to do it the boring way and process the msgs
-+		 * one-by-one.
-+		 */
-+
-+		if (msgs[0].flags & I2C_M_RD) {
-+			addr |= 1; /* set read bit */
-+
-+			/*
-+			 * We have to transmit the slave addr first. Use
-+			 * MOD_REGISTER_TX for that purpose.
-+			 */
-+			i2c->mode = REG_CON_MOD_REGISTER_TX;
-+			i2c_writel(i2c, addr | REG_MRXADDR_VALID(0),
-+				   REG_MRXADDR);
-+			i2c_writel(i2c, 0, REG_MRXRADDR);
-+		} else {
-+			i2c->mode = REG_CON_MOD_TX;
-+		}
-+
-+		i2c->msg = &msgs[0];
-+
-+		ret = 1;
-+	}
-+
-+	i2c->addr = msgs[0].addr;
-+	i2c->busy = true;
-+	i2c->state = STATE_START;
-+	i2c->processed = 0;
-+	i2c->error = 0;
-+
-+	rk3x_i2c_clean_ipd(i2c);
-+
-+	return ret;
-+}
-+
-+static int rk3x_i2c_xfer(struct i2c_adapter *adap,
-+			 struct i2c_msg *msgs, int num)
-+{
-+	struct rk3x_i2c *i2c = (struct rk3x_i2c *)adap->algo_data;
-+	unsigned long timeout, flags;
-+	int ret = 0;
-+	int i;
-+
-+	spin_lock_irqsave(&i2c->lock, flags);
-+
-+	clk_enable(i2c->clk);
-+
-+	/* The clock rate might have changed, so setup the divider again */
-+	rk3x_i2c_set_scl_rate(i2c, i2c->scl_frequency);
-+
-+	i2c->is_last_msg = false;
-+
-+	/*
-+	 * Process msgs. We can handle more than one message at once (see
-+	 * rk3x_i2c_setup()).
-+	 */
-+	for (i = 0; i < num; i += ret) {
-+		ret = rk3x_i2c_setup(i2c, msgs + i, num - i);
-+
-+		if (ret < 0) {
-+			dev_err(i2c->dev, "rk3x_i2c_setup() failed\n");
-+			break;
-+		}
-+
-+		if (i + ret >= num)
-+			i2c->is_last_msg = true;
-+
-+		spin_unlock_irqrestore(&i2c->lock, flags);
-+
-+		rk3x_i2c_start(i2c);
-+
-+		timeout = wait_event_timeout(i2c->wait, !i2c->busy,
-+					     msecs_to_jiffies(WAIT_TIMEOUT));
-+
-+		spin_lock_irqsave(&i2c->lock, flags);
-+
-+		if (timeout == 0) {
-+			dev_err(i2c->dev, "timeout, ipd: 0x%02x, state: %d\n",
-+				i2c_readl(i2c, REG_IPD), i2c->state);
-+
-+			/* Force a STOP condition without interrupt */
-+			i2c_writel(i2c, 0, REG_IEN);
-+			i2c_writel(i2c, REG_CON_EN | REG_CON_STOP, REG_CON);
-+
-+			i2c->state = STATE_IDLE;
-+
-+			ret = -ETIMEDOUT;
-+			break;
-+		}
-+
-+		if (i2c->error) {
-+			ret = i2c->error;
-+			break;
-+		}
-+	}
-+
-+	clk_disable(i2c->clk);
-+	spin_unlock_irqrestore(&i2c->lock, flags);
-+
-+	return ret;
-+}
-+
-+static u32 rk3x_i2c_func(struct i2c_adapter *adap)
-+{
-+	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL | I2C_FUNC_PROTOCOL_MANGLING;
-+}
-+
-+static const struct i2c_algorithm rk3x_i2c_algorithm = {
-+	.master_xfer		= rk3x_i2c_xfer,
-+	.functionality		= rk3x_i2c_func,
-+};
-+
-+static struct rk3x_i2c_soc_data soc_data[3] = {
-+	{ .grf_offset = 0x154 }, /* rk3066 */
-+	{ .grf_offset = 0x0a4 }, /* rk3188 */
-+	{ .grf_offset = -1 },    /* no I2C switching needed */
-+};
-+
-+static const struct of_device_id rk3x_i2c_match[] = {
-+	{ .compatible = "rockchip,rk3066-i2c", .data = (void *)&soc_data[0] },
-+	{ .compatible = "rockchip,rk3188-i2c", .data = (void *)&soc_data[1] },
-+	{ .compatible = "rockchip,rk3288-i2c", .data = (void *)&soc_data[2] },
-+};
-+
-+static int rk3x_i2c_probe(struct platform_device *pdev)
-+{
-+	struct device_node *np = pdev->dev.of_node;
-+	const struct of_device_id *match;
-+	struct rk3x_i2c *i2c;
-+	struct resource *mem;
-+	int ret = 0;
-+	int bus_nr;
-+	u32 value;
-+	int irq;
-+
-+	i2c = devm_kzalloc(&pdev->dev, sizeof(struct rk3x_i2c), GFP_KERNEL);
-+	if (!i2c)
-+		return -ENOMEM;
-+
-+	match = of_match_node(rk3x_i2c_match, np);
-+	i2c->soc_data = (struct rk3x_i2c_soc_data *)match->data;
-+
-+	if (of_property_read_u32(pdev->dev.of_node, "clock-frequency",
-+				 &i2c->scl_frequency)) {
-+		dev_info(&pdev->dev, "using default SCL frequency: %d\n",
-+			 DEFAULT_SCL_RATE);
-+		i2c->scl_frequency = DEFAULT_SCL_RATE;
-+	}
-+
-+	if (i2c->scl_frequency == 0 || i2c->scl_frequency > 400 * 1000) {
-+		dev_warn(&pdev->dev, "invalid SCL frequency specified.\n");
-+		dev_warn(&pdev->dev, "using default SCL frequency: %d\n",
-+			 DEFAULT_SCL_RATE);
-+		i2c->scl_frequency = DEFAULT_SCL_RATE;
-+	}
-+
-+	strlcpy(i2c->adap.name, "rk3x-i2c", sizeof(i2c->adap.name));
-+	i2c->adap.owner = THIS_MODULE;
-+	i2c->adap.algo = &rk3x_i2c_algorithm;
-+	i2c->adap.retries = 3;
-+	i2c->adap.dev.of_node = np;
-+	i2c->adap.algo_data = i2c;
-+	i2c->adap.dev.parent = &pdev->dev;
-+
-+	i2c->dev = &pdev->dev;
-+
-+	spin_lock_init(&i2c->lock);
-+	init_waitqueue_head(&i2c->wait);
-+
-+	i2c->clk = devm_clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(i2c->clk)) {
-+		dev_err(&pdev->dev, "cannot get clock\n");
-+		return PTR_ERR(i2c->clk);
-+	}
-+
-+	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	i2c->regs = devm_ioremap_resource(&pdev->dev, mem);
-+	if (IS_ERR(i2c->regs))
-+		return PTR_ERR(i2c->regs);
-+
-+	/* Try to set the I2C adapter number from dt */
-+	bus_nr = of_alias_get_id(np, "i2c");
-+
-+	/*
-+	 * Switch to new interface if the SoC also offers the old one.
-+	 * The control bit is located in the GRF register space.
-+	 */
-+	if (i2c->soc_data->grf_offset >= 0) {
-+		struct regmap *grf;
-+
-+		grf = syscon_regmap_lookup_by_phandle(np, "rockchip,grf");
-+		if (IS_ERR(grf)) {
-+			dev_err(&pdev->dev,
-+				"rk3x-i2c needs 'rockchip,grf' property\n");
-+			return PTR_ERR(grf);
-+		}
-+
-+		if (bus_nr < 0) {
-+			dev_err(&pdev->dev, "rk3x-i2c needs i2cX alias");
-+			return -EINVAL;
-+		}
-+
-+		/* 27+i: write mask, 11+i: value */
-+		value = BIT(27 + bus_nr) | BIT(11 + bus_nr);
-+
-+		ret = regmap_write(grf, i2c->soc_data->grf_offset, value);
-+		if (ret != 0) {
-+			dev_err(i2c->dev, "Could not write to GRF: %d\n", ret);
-+			return ret;
-+		}
-+	}
-+
-+	/* IRQ setup */
-+	irq = platform_get_irq(pdev, 0);
-+	if (irq < 0) {
-+		dev_err(&pdev->dev, "cannot find rk3x IRQ\n");
-+		return irq;
-+	}
-+
-+	ret = devm_request_irq(&pdev->dev, irq, rk3x_i2c_irq,
-+			       0, dev_name(&pdev->dev), i2c);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "cannot request IRQ\n");
-+		return ret;
-+	}
-+
-+	platform_set_drvdata(pdev, i2c);
-+
-+	ret = clk_prepare(i2c->clk);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "Could not prepare clock\n");
-+		return ret;
-+	}
-+
-+	ret = i2c_add_adapter(&i2c->adap);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "Could not register adapter\n");
-+		goto err_clk;
-+	}
-+
-+	dev_info(&pdev->dev, "Initialized RK3xxx I2C bus at %p\n", i2c->regs);
-+
-+	return 0;
-+
-+err_clk:
-+	clk_unprepare(i2c->clk);
-+	return ret;
-+}
-+
-+static int rk3x_i2c_remove(struct platform_device *pdev)
-+{
-+	struct rk3x_i2c *i2c = platform_get_drvdata(pdev);
-+
-+	i2c_del_adapter(&i2c->adap);
-+	clk_unprepare(i2c->clk);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver rk3x_i2c_driver = {
-+	.probe   = rk3x_i2c_probe,
-+	.remove  = rk3x_i2c_remove,
-+	.driver  = {
-+		.owner = THIS_MODULE,
-+		.name  = "rk3x-i2c",
-+		.of_match_table = rk3x_i2c_match,
-+	},
-+};
-+
-+module_platform_driver(rk3x_i2c_driver);
-+
-+MODULE_DESCRIPTION("Rockchip RK3xxx I2C Bus driver");
-+MODULE_AUTHOR("Max Schwarz <max.schwarz@online.de>");
-+MODULE_LICENSE("GPL v2");
+Bad case:
+
+merkaba:~> turbostat sleep 10
+    Core     CPU Avg_MHz   %Busy Bzy_MHz TSC_MHz     SMI  CPU%c1  CPU%c3  CPU%c6  CPU%c7 CoreTmp  PkgTmp Pkg%pc2 Pkg%pc3 Pkg%pc6 Pkg%pc7 PkgWatt CorWatt GFXWatt 
+       -       -     505   16.18    3119    2492       0   24.45    1.33    0.14   57.90      89      92    0.00    0.00    0.00    0.00   24.29   11.68    9.31
+       0       0    1564   49.63    3151    2492       0   15.54    2.32    0.28   32.23      87      92    0.00    0.00    0.00    0.00   24.29   11.68    9.31
+       0       1     125    4.14    3024    2492       0   61.03
+       1       2     216    7.15    3021    2492       0    8.95    0.33    0.00   83.56      89
+       1       3     114    3.81    2987    2492       0   12.29
+10.001227 sec
+
+merkaba:~> for i in 0 1 2 3; do rdmsr  -p $i -u -f15:8 0x198; done
+32
+32
+30
+30
+
+merkaba:~> sensors
+acpitz-virtual-0
+Adapter: Virtual device
+temp1:        +91.0°C  (crit = +98.0°C)
+
+coretemp-isa-0000
+Adapter: ISA adapter
+Physical id 0:  +91.0°C  (high = +86.0°C, crit = +100.0°C)
+Core 0:         +91.0°C  (high = +86.0°C, crit = +100.0°C)
+Core 1:         +90.0°C  (high = +86.0°C, crit = +100.0°C)
+
+thinkpad-isa-0000
+Adapter: ISA adapter
+fan1:        3600 RP
+
+
+It throttled just once so far.
+
+Still 3.15 kernel. Only change: I upgraded from 8 GiB to 16 GiB of RAM.
+
+This may lower CPU usage due to handling page scanning or swapping a bit,
+as PlaneShift tends to take about 4 to 5 GiB RSS easily.
+
+Should I hit throttling temperatures I will try to capture this output
+once more.
+
+Thanks,
+Martin
+
+
+
+
+> 
+> --Dirk
+> 
+> On 06/09/2014 02:33 PM, Martin Steigerwald wrote:
+> > Hi!
+> >
+> > Added linux-pm to Cc. Also reboots seems to fix up the condition:
+> >
+> > merkaba:~> grep . /sys/devices/system/cpu/cpu[0-3]/cpufreq/cpuinfo_cur_freq
+> > /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_cur_freq:830957
+> > /sys/devices/system/cpu/cpu1/cpufreq/cpuinfo_cur_freq:819628
+> > /sys/devices/system/cpu/cpu2/cpufreq/cpuinfo_cur_freq:800000
+> > /sys/devices/system/cpu/cpu3/cpufreq/cpuinfo_cur_freq:813476
+> > merkaba:~> sensors
+> > acpitz-virtual-0
+> > Adapter: Virtual device
+> > temp1:        +71.0°C  (crit = +98.0°C)
+> >
+> > coretemp-isa-0000
+> > Adapter: ISA adapter
+> > Physical id 0:  +71.0°C  (high = +86.0°C, crit = +100.0°C)
+> > Core 0:         +70.0°C  (high = +86.0°C, crit = +100.0°C)
+> > Core 1:         +71.0°C  (high = +86.0°C, crit = +100.0°C)
+> >
+> > thinkpad-isa-0000
+> > Adapter: ISA adapter
+> > fan1:        3137 R
+> >
+> >
+> > Still hot in here and after reboot and login into KDE session there is quite
+> > some CPU activity for a while.
+> >
+> > But way better than before.
+> >
+> > I can test whether this also happens with ACPI cpufreq driver.
+> >
+> > I think I didn´t see this with 3.14.
+> >
+> >
+> >
+> > Am Montag, 9. Juni 2014, 23:24:54 schrieb Martin Steigerwald:
+> >> Hi!
+> >>
+> >> I get:
+> >>
+> >> Jun  9 22:41:32 merkaba kernel: [39978.006479] CPU0: Package temperature/speed normal
+> >> Jun  9 22:41:32 merkaba kernel: [39978.006481] CPU3: Package temperature/speed normal
+> >> Jun  9 22:41:32 merkaba kernel: [39978.006482] CPU2: Package temperature/speed normal
+> >> Jun  9 22:41:32 merkaba kernel: [39978.006487] CPU1: Package temperature/speed normal
+> >> Jun  9 22:44:02 merkaba kernel: [40127.673372] CPU2: Core temperature above threshold, cpu clock throttled (total events = 56554)
+> >> Jun  9 22:44:02 merkaba kernel: [40127.673383] CPU3: Core temperature above threshold, cpu clock throttled (total events = 56554)
+> >> Jun  9 22:44:02 merkaba kernel: [40127.674313] CPU3: Core temperature/speed normal
+> >> Jun  9 22:44:02 merkaba kernel: [40127.674352] CPU2: Core temperature/speed normal
+> >> Jun  9 22:45:21 merkaba kernel: [40207.302287] mce: [Hardware Error]: Machine check events logged
+> >> Jun  9 22:46:32 merkaba kernel: [40278.054568] CPU0: Package temperature/speed normal
+> >> Jun  9 22:46:32 merkaba kernel: [40278.054572] CPU3: Package temperature/speed normal
+> >> Jun  9 22:46:32 merkaba kernel: [40278.054574] CPU2: Package temperature/speed normal
+> >> Jun  9 22:46:32 merkaba kernel: [40278.054578] CPU1: Package temperature/speed normal
+> >> Jun  9 22:48:06 merkaba kernel: [40371.570654] perf interrupt took too long (19348 > 17857), lowering kernel.perf_event_max_sample_rate to 7000
+> >> Jun  9 22:51:32 merkaba kernel: [40578.103629] CPU3: Package temperature/speed normal
+> >> Jun  9 22:51:32 merkaba kernel: [40578.103633] CPU0: Package temperature/speed normal
+> >> Jun  9 22:51:32 merkaba kernel: [40578.103638] CPU2: Package temperature/speed normal
+> >> Jun  9 22:51:32 merkaba kernel: [40578.103639] CPU1: Package temperature/speed normal
+> >> Jun  9 22:56:32 merkaba kernel: [40878.174734] CPU1: Package temperature above threshold, cpu clock throttled (total events = 152620)
+> >> Jun  9 22:56:32 merkaba kernel: [40878.174737] CPU0: Package temperature above threshold, cpu clock throttled (total events = 152620)
+> >> Jun  9 22:56:32 merkaba kernel: [40878.174742] CPU3: Package temperature above threshold, cpu clock throttled (total events = 152620)
+> >> Jun  9 22:56:32 merkaba kernel: [40878.174744] CPU2: Package temperature above threshold, cpu clock throttled (total events = 152620)
+> >> Jun  9 22:56:32 merkaba kernel: [40878.176744] CPU3: Package temperature/speed normal
+> >> Jun  9 22:56:32 merkaba kernel: [40878.176746] CPU2: Package temperature/speed normal
+> >> Jun  9 22:56:32 merkaba kernel: [40878.176748] CPU1: Package temperature/speed normal
+> >> Jun  9 22:56:32 merkaba kernel: [40878.176749] CPU0: Package temperature/speed normal
+> >> Jun  9 22:59:11 merkaba kernel: [41037.278705] CPU3: Core temperature/speed normal
+> >> Jun  9 22:59:11 merkaba kernel: [41037.278707] CPU2: Core temperature/speed normal
+> >> Jun  9 23:01:32 merkaba kernel: [41178.225837] CPU2: Package temperature above threshold, cpu clock throttled (total events = 177343)
+> >> Jun  9 23:01:32 merkaba kernel: [41178.225841] CPU0: Package temperature above threshold, cpu clock throttled (total events = 177343)
+> >> Jun  9 23:01:32 merkaba kernel: [41178.225843] CPU3: Package temperature above threshold, cpu clock throttled (total events = 177343)
+> >> Jun  9 23:01:32 merkaba kernel: [41178.225845] CPU1: Package temperature above threshold, cpu clock throttled (total events = 177343)
+> >> Jun  9 23:01:32 merkaba kernel: [41178.237850] CPU1: Package temperature/speed normal
+> >> Jun  9 23:01:32 merkaba kernel: [41178.237853] CPU2: Package temperature/speed normal
+> >> Jun  9 23:01:32 merkaba kernel: [41178.237855] CPU0: Package temperature/speed normal
+> >> Jun  9 23:01:32 merkaba kernel: [41178.237856] CPU3: Package temperature/speed normal
+> >> Jun  9 23:01:36 merkaba kernel: [41182.452403] mce: [Hardware Error]: Machine check events logged
+> >> Jun  9 23:06:32 merkaba kernel: [41478.291923] CPU1: Package temperature above threshold, cpu clock throttled (total events = 204756)
+> >> Jun  9 23:06:32 merkaba kernel: [41478.291926] CPU0: Package temperature above threshold, cpu clock throttled (total events = 204756)
+> >> Jun  9 23:06:32 merkaba kernel: [41478.291946] CPU3: Package temperature above threshold, cpu clock throttled (total events = 204756)
+> >> Jun  9 23:06:32 merkaba kernel: [41478.291950] CPU2: Package temperature above threshold, cpu clock throttled (total events = 204756)
+> >> Jun  9 23:11:32 merkaba kernel: [41778.341992] CPU3: Package temperature/speed normal
+> >> Jun  9 23:11:32 merkaba kernel: [41778.341995] CPU0: Package temperature/speed normal
+> >> Jun  9 23:11:32 merkaba kernel: [41778.341996] CPU1: Package temperature/speed normal
+> >> Jun  9 23:11:32 merkaba kernel: [41778.341997] CPU2: Package temperature/speed normal
+> >>
+> >>
+> >> And this:
+> >>
+> >> merkaba:~> sensors
+> >> acpitz-virtual-0
+> >> Adapter: Virtual device
+> >> temp1:        +96.0°C  (crit = +98.0°C)
+> >>
+> >> coretemp-isa-0000
+> >> Adapter: ISA adapter
+> >> Physical id 0:  +98.0°C  (high = +86.0°C, crit = +100.0°C)
+> >> Core 0:         +96.0°C  (high = +86.0°C, crit = +100.0°C)
+> >> Core 1:         +96.0°C  (high = +86.0°C, crit = +100.0°C)
+> >>
+> >> thinkpad-isa-0000
+> >> Adapter: ISA adapter
+> >> fan1:        3580 RPM
+> >>
+> >> merkaba:~> acpi -t
+> >> Thermal 0: ok, 96.0 degrees C
+> >>
+> >>
+> >> On
+> >>
+> >> martin@merkaba:~> phoronix-test-suite system-info
+> >>
+> >> Phoronix Test Suite v4.8.3
+> >> System Information
+> >>
+> >> Hardware:
+> >> Processor: Intel Core i5-2520M @ 3.20GHz (4 Cores), Motherboard: LENOVO 42433WG, Chipset: Intel 2nd Generation Core Family DRAM, Memory: 8192MB, Disk: 300GB INTEL SSDSA2CW30 + 480GB Crucial_CT480M50, Graphics: Intel HD 3000 (1300MHz), Audio: Intel 6 /C200, Network: Intel 82579LM Gigabit Connection + Intel Centrino Advanced-N 6205
+> >>
+> >> Software:
+> >> OS: Debian unstable, Kernel: 3.15.0-tp520 (x86_64), Desktop: KDE 4.13.1, Display Server: X Server 1.15.1, Display Driver: intel 2.21.15, OpenGL: 3.1 Mesa 10.1.4, Compiler: GCC 4.8, File-System: btrfs, Screen Resolution: 1920x1080
+> >>
+> >>
+> >> during playing PlaneShift with Intel gfx.
+> >>
+> >>
+> >> I get the impression that Intel P-State driver turbo modes all of the cores
+> >> needlessly *and* permanently once this condition is triggered. Usually
+> >> temperature is just about 55-60 degree celsius. But not at maximum.
+> >>
+> >>
+> >> I see this:
+> >>
+> >> merkaba:/sys/devices/system/cpu> grep . cpu[0-3]/cpufreq/cpuinfo_cur_freq
+> >> cpu0/cpufreq/cpuinfo_cur_freq:3015917
+> >> cpu1/cpufreq/cpuinfo_cur_freq:3008984
+> >> cpu2/cpufreq/cpuinfo_cur_freq:3000000
+> >> cpu3/cpufreq/cpuinfo_cur_freq:3000000
+> >>
+> >>
+> >> Without that much work to do:
+> >>
+> >> merkaba:~> mpstat -P ALL 10
+> >> Linux 3.15.0-tp520 (merkaba)    09.06.2014      _x86_64_        (4 CPU)
+> >>
+> >> 23:21:42     CPU    %usr   %nice    %sys %iowait    %irq   %soft  %steal  %guest  %gnice   %idle
+> >> 23:21:52     all   15,61    0,00    2,68   10,33    0,15    0,00    0,00    0,00    0,00   71,23
+> >> 23:21:52       0   25,70    0,00    4,22   22,59    0,30    0,00    0,00    0,00    0,00   47,19
+> >> 23:21:52       1   20,02    0,00    1,80   14,71    0,10    0,00    0,00    0,00    0,00   63,36
+> >> 23:21:52       2   10,14    0,00    2,61    3,01    0,10    0,00    0,00    0,00    0,00   84,14
+> >> 23:21:52       3    6,63    0,00    2,11    0,80    0,10    0,00    0,00    0,00    0,00   90,36
+> >>
+> >> 23:21:52     CPU    %usr   %nice    %sys %iowait    %irq   %soft  %steal  %guest  %gnice   %idle
+> >> 23:22:02     all   14,19    0,00    2,26   10,93    0,13    0,00    0,00    0,00    0,00   72,50
+> >> 23:22:02       0   32,26    0,00    4,01   31,86    0,20    0,00    0,00    0,00    0,00   31,66
+> >> 23:22:02       1   12,11    0,00    1,30    8,51    0,10    0,00    0,00    0,00    0,00   77,98
+> >> 23:22:02       2    8,12    0,00    2,21    2,91    0,10    0,00    0,00    0,00    0,00   86,66
+> >> 23:22:02       3    4,31    0,00    1,60    0,40    0,10    0,00    0,00    0,00    0,00   93,59
+> >>
+> >> 23:22:02     CPU    %usr   %nice    %sys %iowait    %irq   %soft  %steal  %guest  %gnice   %idle
+> >> 23:22:12     all   25,33    0,03    2,63    9,00    0,15    0,00    0,00    0,00    0,00   62,87
+> >> 23:22:12       0   35,71    0,00    4,01   19,56    0,20    0,00    0,00    0,00    0,00   40,52
+> >> 23:22:12       1   27,43    0,00    1,90   10,61    0,20    0,00    0,00    0,00    0,00   59,86
+> >> 23:22:12       2   22,14    0,10    2,40    4,41    0,10    0,00    0,00    0,00    0,00   70,84
+> >> 23:22:12       3   15,96    0,10    2,21    1,41    0,10    0,00    0,00    0,00    0,00   80,22
+> >>
+> >> 23:22:12     CPU    %usr   %nice    %sys %iowait    %irq   %soft  %steal  %guest  %gnice   %idle
+> >> 23:22:22     all   27,90    0,03    3,94    8,87    0,33    0,00    0,00    0,00    0,00   58,94
+> >> 23:22:22       0   36,77    0,00    5,81   20,74    0,90    0,00    0,00    0,00    0,00   35,77
+> >> 23:22:22       1   28,99    0,00    2,41   10,13    0,10    0,00    0,00    0,00    0,00   58,38
+> >> 23:22:22       2   25,48    0,00    3,81    3,21    0,20    0,00    0,00    0,00    0,00   67,30
+> >> 23:22:22       3   20,34    0,00    3,71    1,40    0,20    0,00    0,00    0,00    0,00   74,35
+> >>
+> >>
+> >>
+> >> Will reboot now to see whether it resets that condition. Didn´t happen during the whole
+> >> day.
+> >>
+> >> But seems to happen after a while of playing PlaneShift.
+> >>
+> >> Any hints?
+> >
+> > Thanks,
+> >
+> 
+
 -- 
-1.9.1
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
