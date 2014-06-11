@@ -1,37 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754227AbaFKWkk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 18:40:40 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:47736 "EHLO
+	id S1754500AbaFKWlF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 18:41:05 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:47767 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753896AbaFKWki (ORCPT
+	with ESMTP id S1752858AbaFKWlD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 18:40:38 -0400
-Date: Wed, 11 Jun 2014 15:40:38 -0700 (PDT)
-Message-Id: <20140611.154038.2217975059059399377.davem@davemloft.net>
-To: varkabhadram@gmail.com
-Cc: netdev@vger.kernel.org, linux-zigbee-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, alex.bluesman.smirnov@gmail.com,
-        dbaryshkov@gmail.com, varkab@cdac.in
-Subject: Re: [net-next PATCH] mrf24j40: add device managed APIs
+	Wed, 11 Jun 2014 18:41:03 -0400
+Date: Wed, 11 Jun 2014 15:41:02 -0700 (PDT)
+Message-Id: <20140611.154102.358172856037880938.davem@davemloft.net>
+To: ixaphire@qrator.net
+Cc: steffen.klassert@secunet.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, trivial@kernel.org
+Subject: Re: [PATCH] ip_vti: fix sparse warnings for VTI_ISVTI
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1402461284-8435-1-git-send-email-varkab@cdac.in>
-References: <1402461284-8435-1-git-send-email-varkab@cdac.in>
+In-Reply-To: <20140611150914.c3cb48bb8a1a760564f5db6e@qrator.net>
+References: <20140611150914.c3cb48bb8a1a760564f5db6e@qrator.net>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 11 Jun 2014 15:40:38 -0700 (PDT)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 11 Jun 2014 15:41:03 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Varka Bhadram <varkabhadram@gmail.com>
-Date: Wed, 11 Jun 2014 10:04:44 +0530
+From: Dmitry Popov <ixaphire@qrator.net>
+Date: Wed, 11 Jun 2014 15:09:14 +0400
 
-> adds the device managed APIs so that no need worry about
-> freeing the resources.
+> This patch fixes the following sparse warnings:
 > 
-> Signed-off-by: Varka Bhadram <varkab@cdac.in>
+> net/ipv4/ip_tunnel.c:245:53: warning: restricted __be16 degrades to integer
+> net/ipv4/ip_vti.c:321:19: warning: incorrect type in assignment (different base types)
+> net/ipv4/ip_vti.c:321:19:    expected restricted __be16 [addressable] [assigned] [usertype] i_flags
+> net/ipv4/ip_vti.c:321:19:    got int
+> net/ipv4/ip_vti.c:447:24: warning: incorrect type in assignment (different base types)
+> net/ipv4/ip_vti.c:447:24:    expected restricted __be16 [usertype] i_flags
+> net/ipv4/ip_vti.c:447:24:    got int
+> 
+> Since VTI_ISVTI is always used with ip_tunnel_parm->i_flags (which is __be16),
+> we can __force cast VTI_ISVTI to __be16 in header file.
+> 
+> Signed-off-by: Dmitry Popov <ixaphire@qrator.net>
 
 Applied.
