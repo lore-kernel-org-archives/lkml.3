@@ -1,47 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755526AbaFKN64 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 09:58:56 -0400
-Received: from qmta10.emeryville.ca.mail.comcast.net ([76.96.30.17]:50022 "EHLO
-	qmta10.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752172AbaFKN6y (ORCPT
+	id S932427AbaFKODo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 10:03:44 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:37474 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751965AbaFKODn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 09:58:54 -0400
-Date: Wed, 11 Jun 2014 08:58:51 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: Luiz Capitulino <lcapitulino@redhat.com>
-cc: Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Linux MM <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: Re: [PATCH] x86: numa: drop ZONE_ALIGN
-In-Reply-To: <20140611092337.35794bc0@redhat.com>
-Message-ID: <alpine.DEB.2.10.1406110852280.7977@gentwo.org>
-References: <20140608181436.17de69ac@redhat.com> <CAE9FiQXpUbAOinEK-1PSFyGKqpC_FHN0sjP0xvD0ChrXR5GdAw@mail.gmail.com> <20140609150353.75eff02b@redhat.com> <CAE9FiQUWZxvCS82cH=n-NF+nhTQ83J+7M3gHdXGu2S1Qk3xL_g@mail.gmail.com>
- <20140611092337.35794bc0@redhat.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 11 Jun 2014 10:03:43 -0400
+Date: Wed, 11 Jun 2014 10:03:40 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 1/2] tracing: Fix memory leak on failure path in
+ ftrace_allocate_pages()
+Message-ID: <20140611100340.76b61805@gandalf.local.home>
+In-Reply-To: <1402474014-28655-1-git-send-email-namhyung@kernel.org>
+References: <1402474014-28655-1-git-send-email-namhyung@kernel.org>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Jun 2014, Luiz Capitulino wrote:
+On Wed, 11 Jun 2014 17:06:53 +0900
+Namhyung Kim <namhyung@kernel.org> wrote:
 
-> > The zone should not cross the 8M boundary?
->
-> Yes, but the question is: why?
+> As struct ftrace_page is managed in a single linked list, it should
+> free from the start page.
+> 
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  kernel/trace/ftrace.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+> index 5b372e3ed675..ddfda763ded7 100644
+> --- a/kernel/trace/ftrace.c
+> +++ b/kernel/trace/ftrace.c
+> @@ -2398,7 +2398,8 @@ ftrace_allocate_pages(unsigned long num_to_init)
+>  	return start_pg;
+>  
+>   free_pages:
+> -	while (start_pg) {
+> +	pg = start_pg;
+> +	while (pg) {
 
-zones need to be aligned so that the huge pages order and other page
-orders allocated from the page allocator are at their "natural alignment".
-Otherwise huge pages cannot be mapped properly and various I/O devices
-may encounter issues if they rely on the natural alignment.
+It works with just the added "pg = start_page", I would keep the
+while (start_pg) still.
 
-> My current thinking, after discussing this with David, is to just page
-> align the memory range. This should fix the hyperv-triggered bug in 2.6.32
-> and seems to be the right thing for upstream too.
+-- Steve
 
-You need to make sure that the page orders can be allocated at their
-proper boundaries.
+>  		order = get_count_order(pg->size / ENTRIES_PER_PAGE);
+>  		free_pages((unsigned long)pg->records, order);
+>  		start_pg = pg->next;
 
