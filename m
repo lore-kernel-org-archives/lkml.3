@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753079AbaFKVct (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 17:32:49 -0400
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:55725 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752377AbaFKVcs (ORCPT
+	id S1753813AbaFKVdu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 17:33:50 -0400
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:48339 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752572AbaFKVds (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 17:32:48 -0400
-Date: Wed, 11 Jun 2014 14:32:45 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Ralf Baechle <ralf@linux-mips.org>
-cc: Eunbong Song <eunb.song@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-mips@linux-mips.org
-Subject: Re: mips: math-emu: Fix compilation error ieee754.c
-In-Reply-To: <20140611171000.GD26335@linux-mips.org>
-Message-ID: <alpine.DEB.2.02.1406111427170.27885@chino.kir.corp.google.com>
-References: <2463243.264261402478691777.JavaMail.weblogic@epml26> <20140611171000.GD26335@linux-mips.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 11 Jun 2014 17:33:48 -0400
+Message-ID: <5398CB38.2000101@fb.com>
+Date: Wed, 11 Jun 2014 15:33:44 -0600
+From: Jens Axboe <axboe@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Mike Snitzer <snitzer@redhat.com>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] null_blk: fix name and description of 'queue_mode' module
+ parameter
+References: <1402521230-28330-1-git-send-email-snitzer@redhat.com>
+In-Reply-To: <1402521230-28330-1-git-send-email-snitzer@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-06-11_06:2014-06-11,2014-06-11,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=1.85851605771781e-08 kscore.compositescore=0
+ circleOfTrustscore=112.429318596174 compositescore=0.998981209195878
+ urlsuspect_oldscore=0.998981209195878 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=64355
+ rbsscore=0.998981209195878 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1406110273
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Jun 2014, Ralf Baechle wrote:
+On 06/11/2014 03:13 PM, Mike Snitzer wrote:
+> 'use_mq' is not the name of the module parameter, 'queue_mode' is.
 
-> On Wed, Jun 11, 2014 at 09:24:51AM +0000, Eunbong Song wrote:
-> 
-> > ieee754dp has bitfield member in struct without name. And this
-> > cause compilation error. This patch removes struct in ieee754dp
-> > declaration. So compilation error is fixed.
-> > Signed-off-by: Eunbong Song <eunb.song@samsung.com>
-> 
-> What gcc version are you using?
-> 
+Thanks Mike.
 
-make arch/mips/math-emu/ieee754.o for mips defconfig triggers the 
-following on linux-next 30 times:
 
-arch/mips/math-emu/ieee754.c:45:2: error: unknown field 'sign' specified in initializer
-arch/mips/math-emu/ieee754.c:45:2: warning: missing braces around initializer
-arch/mips/math-emu/ieee754.c:45:2: warning: (near initialization for '__ieee754dp_spcvals[0].<anonymous>')
-arch/mips/math-emu/ieee754.c:45:2: error: unknown field 'bexp' specified in initializer
-arch/mips/math-emu/ieee754.c:45:2: warning: excess elements in union initializer
-arch/mips/math-emu/ieee754.c:45:2: warning: (near initialization for '__ieee754dp_spcvals[0]')
-arch/mips/math-emu/ieee754.c:45:2: error: unknown field 'mant' specified in initializer
-arch/mips/math-emu/ieee754.c:45:2: warning: excess elements in union initializer
-arch/mips/math-emu/ieee754.c:45:2: warning: (near initialization for '__ieee754dp_spcvals[0]')
-
-I'm using gcc 4.5.1 for mips.  The patch makes all members part of the 
-union so it's probably not what you want to fix it, though.
