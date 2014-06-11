@@ -1,68 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932358AbaFKNom (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 09:44:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64375 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755679AbaFKNok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 09:44:40 -0400
-Date: Wed, 11 Jun 2014 16:44:47 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: nab@daterainc.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        sfr@canb.auug.org.au, linux-scsi@vger.kernel.org
-Subject: [PULL] vhost: infrastructure changes for 3.16
-Message-ID: <20140611134447.GA8208@redhat.com>
+	id S1754493AbaFKNvJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 09:51:09 -0400
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:41216 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751965AbaFKNvH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 09:51:07 -0400
+Date: Wed, 11 Jun 2014 09:51:02 -0400
+From: Jeff Layton <jlayton@poochiereds.net>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: linux-kernel@vger.kernel.org, linux-sparse@vger.kernel.org,
+        Jeff Layton <jlayton@primarydata.com>
+Subject: Re: [PATCH][RFC] err.h: silence sparse warning: dereference of
+ noderef expression
+Message-ID: <20140611095102.5bba1200@f20.localdomain>
+In-Reply-To: <20140611131146.GS5500@mwanda>
+References: <1402436329-24750-1-git-send-email-jlayton@poochiereds.net>
+	<20140611052040.GM5500@mwanda>
+	<20140611070632.639e07ce@f20.localdomain>
+	<20140611131146.GS5500@mwanda>
+X-Mailer: Claws Mail 3.10.0 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
-Please pull the following.
-Please note this needs to be merged before merging
-target-pending PULL which Nicholas will be sending
-out shortly.
+On Wed, 11 Jun 2014 16:11:46 +0300
+Dan Carpenter <dan.carpenter@oracle.com> wrote:
 
-Thanks!
+> On Wed, Jun 11, 2014 at 07:06:32AM -0400, Jeff Layton wrote:
+> > $ rpm -q sparse
+> > sparse-0.5.0-1.fc20.x86_64
+> >
+> > I see it all over the tree, but an easy example is fs/locks.c:
+> > 
+> > $ make fs/locks.o C=1
+> > make[1]: Nothing to be done for `all'.
+> > make[1]: Nothing to be done for `relocs'.
+> >   CHK     include/config/kernel.release
+> >   CHK     include/generated/uapi/linux/version.h
+> >   CHK     include/generated/utsrelease.h
+> >   CALL    scripts/checksyscalls.sh
+> >   CHECK   fs/locks.c
+> > include/linux/err.h:35:16: warning: dereference of noderef expression
+> > include/linux/err.h:30:23: warning: dereference of noderef expression
+> > include/linux/err.h:35:16: warning: dereference of noderef expression
+> > include/linux/err.h:30:23: warning: dereference of noderef expression
+> >   CC      fs/locks.o
+> > 
+> > It has two IS_ERR calls and two PTR_ERR calls, and each generates the
+> > warning.
+> >
+> 
+> I downloaded the Fedora SRPM and built the binary but I still wasn't
+> able to reproduce the bug.
+> 
+> dcarpenter@speke:~/progs/kernel/devel$ /tmp/sparse/sparse-0.5.0/sparse --version
+> 0.5.0
+> dcarpenter@speke:~/progs/kernel/devel$ make C=2 CHECK=/tmp/sparse/sparse-0.5.0/sparse fs/locks.o
+>   CHK     include/config/kernel.release
+>   CHK     include/generated/uapi/linux/version.h
+>   CHK     include/generated/utsrelease.h
+>   CALL    scripts/checksyscalls.sh
+> <stdin>:1226:2: warning: #warning syscall finit_module not implemented [-Wcpp]
+> <stdin>:1229:2: warning: #warning syscall sched_setattr not implemented [-Wcpp]
+> <stdin>:1232:2: warning: #warning syscall sched_getattr not implemented [-Wcpp]
+> <stdin>:1235:2: warning: #warning syscall renameat2 not implemented [-Wcpp]
+>   CHECK   scripts/mod/empty.c
+>   CHECK   fs/locks.c
+> dcarpenter@speke:~/progs/kernel/devel$
+> 
+> I'm on today's linux-next.  I can't think of a kernel configuration
+> issue which would cause this...
+> 
+> regards,
+> dan carpenter
 
-The following changes since commit 1860e379875dfe7271c649058aeddffe5afd9d0d:
+Could it be arch-specific then? What arch are you using? I'm on x86_64.
+I know that quite a few other people have mentioned seeing these
+warnings as well, so I'm pretty sure it's not just me.
 
-  Linux 3.15 (2014-06-08 11:19:54 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git tags/for_linus
-
-for you to fetch changes up to 47283bef7ed356629467d1fac61687756e48f254:
-
-  vhost: move memory pointer to VQs (2014-06-09 16:21:07 +0300)
-
-----------------------------------------------------------------
-vhost: infrastructure changes for 3.16
-
-This reworks vhost core dropping unnecessary RCU uses in favor of VQ mutexes
-which are used on fast path anyway.  This fixes worst-case latency for users
-which change the memory mappings a lot.
-Memory allocation for vhost-net now supports fallback on vmalloc (same as for
-vhost-scsi) this makes it possible to create the device on systems where memory
-is very fragmented, with slightly lower performance.
-
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-
-----------------------------------------------------------------
-Michael S. Tsirkin (4):
-      vhost-net: extend device allocation to vmalloc
-      vhost: replace rcu with mutex
-      vhost: move acked_features to VQs
-      vhost: move memory pointer to VQs
-
- drivers/vhost/vhost.h | 19 ++++------
- drivers/vhost/net.c   | 35 ++++++++++++-------
- drivers/vhost/scsi.c  | 26 ++++++++------
- drivers/vhost/test.c  | 11 +++---
- drivers/vhost/vhost.c | 97 ++++++++++++++++++++++++++-------------------------
- 5 files changed, 101 insertions(+), 87 deletions(-)
+-- 
+Jeff Layton <jlayton@poochiereds.net>
