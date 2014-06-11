@@ -1,80 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755571AbaFKLWO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 07:22:14 -0400
-Received: from mail1.bemta3.messagelabs.com ([195.245.230.169]:61714 "EHLO
-	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750817AbaFKLWM (ORCPT
+	id S1755049AbaFKLYX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 07:24:23 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:52157 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751049AbaFKLYV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 07:22:12 -0400
-X-Env-Sender: Adam.Thomson.Opensource@diasemi.com
-X-Msg-Ref: server-16.tower-38.messagelabs.com!1402485096!3045582!2
-X-Originating-IP: [82.210.246.133]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.3; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <d87d24fcc25658ef50360b69d3efc085ee3270a7.1402484954.git.Adam.Thomson.Opensource@diasemi.com>
-In-Reply-To: <cover.1402484954.git.Adam.Thomson.Opensource@diasemi.com>
-References: <cover.1402484954.git.Adam.Thomson.Opensource@diasemi.com>
-From: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
-Date: Wed, 11 Jun 2014 12:11:36 +0100
-Subject: [PATCH 7/8] power: da9150: Add DT binding documentation for charger
-To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Jonathan Cameron <jic23@kernel.org>, <linux-iio@vger.kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, <devicetree@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <support.opensource@diasemi.com>
+	Wed, 11 Jun 2014 07:24:21 -0400
+Date: Wed, 11 Jun 2014 16:54:11 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Kirill Tkhai <ktkhai@parallels.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, tkhai@yandex.ru
+Subject: Re: [PATCH 1/2] sched: Rework migrate_tasks()
+Message-ID: <20140611112411.GA21191@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20140611093417.27807.2288.stgit@tkhai>
+ <1402480330.32126.14.camel@tkhai>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1402480330.32126.14.camel@tkhai>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14061111-4790-0000-0000-000001F86667
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
----
- .../devicetree/bindings/power/da9150-charger.txt   | 29 ++++++++++++++++++++++
- 1 file changed, 29 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/power/da9150-charger.txt
+* Kirill Tkhai <ktkhai@parallels.com> [2014-06-11 13:52:10]:
 
-diff --git a/Documentation/devicetree/bindings/power/da9150-charger.txt b/Documentation/devicetree/bindings/power/da9150-charger.txt
-new file mode 100644
-index 0000000..079931b
---- /dev/null
-+++ b/Documentation/devicetree/bindings/power/da9150-charger.txt
-@@ -0,0 +1,29 @@
-+Dialog Semiconductor DA9150 Charger Power Supply bindings
-+
-+Required properties:
-+- compatible: "dlg,da9150-charger" for DA9150 Charger Power Supply
-+
-+Optional properties:
-+- io-channels: List of phandle and IIO specifier pairs
-+- io-channel-names: List of channel names used by charger
-+      ["CHAN_IBUS", "CHAN_VBUS", "CHAN_TJUNC", "CHAN_VBAT"]
-+  (See Documentation/devicetree/bindings/iio/iio-bindings.txt for further info)
-+- dlg,invalid-tbat: bool flag to indicate no valid TBAT pin provided in system.
-+
-+
-+Example:
-+
-+	da9150-charger {
-+		compatible = "dlg,da9150-charger";
-+
-+		io-channels = <&gpadc 0>,
-+			      <&gpadc 2>,
-+			      <&gpadc 8>,
-+			      <&gpadc 5>;
-+		io-channel-names = "CHAN_IBUS",
-+				   "CHAN_VBUS",
-+				   "CHAN_TJUNC",
-+				   "CHAN_VBAT";
-+
-+		dlg,invalid-tbat;
-+	};
---
-1.9.3
+> 
+> Currently migrate_tasks() skips throttled tasks,
+> because they are not pickable by pick_next_task().
+> 
+
+Before migrate_tasks() is called, we do call set_rq_offline(), in
+migration_call().
+
+Shouldnt this take care of unthrottling the tasks and making sure that
+they can be picked by pick_next_task().
+
+> These tasks stay on dead cpu even after they
+> becomes unthrottled. They are not schedulable
+> till user manually changes their affinity or till
+> cpu becomes alive again.
+> 
+
+If we are still seeing tasks not being picked by pick_next_task(), then
+can it probably mean that rq->rd was NULL?
+
+-- 
+Thanks and Regards
+Srikar Dronamraju
 
