@@ -1,600 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754078AbaFKTuG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 15:50:06 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:62227 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932210AbaFKTuA (ORCPT
+	id S1752444AbaFKTyI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 15:54:08 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:37726 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751335AbaFKTyF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 15:50:00 -0400
-Message-ID: <5398B2E3.8020808@suse.cz>
-Date: Wed, 11 Jun 2014 21:49:55 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 11 Jun 2014 15:54:05 -0400
+Date: Wed, 11 Jun 2014 13:54:09 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: =?iso-8859-1?B?Suly9G1l?= Carretero <cJ-ko@zougloub.eu>
+Cc: linux-pci@vger.kernel.org, Alex Williamson <alex.williamson@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] PCI: quirk dma_alias_devfn for HighPoint RocketRaid 642L
+ (Marvell 9235)
+Message-ID: <20140611195409.GC14357@google.com>
+References: <20140603154156.4f1b46c4@Vantage>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org
-CC: lwn@lwn.net
-Subject: Linux 3.12.22
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140603154156.4f1b46c4@Vantage>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
-
-I'm announcing the release of the 3.12.22 kernel.
-
-All users of the 3.12 kernel series must upgrade.
-
-The updated 3.12.y git tree can be found at:
-	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
-linux-3.12.y
-and can be browsed at the normal kernel.org git web browser:
-	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
-
-- ----------------------------------------------------------------
-Aaron Lu (1):
-      ACPI / video: Fix initial level validity test
-
-Alan Stern (1):
-      USB: OHCI: fix problem with global suspend on ATI controllers
-
-Alex Deucher (6):
-      drm/radeon: disable mclk dpm on R7 260X
-      drm/radeon: add support for newer mc ucode on SI (v2)
-      drm/radeon/si: make sure mc ucode is loaded before checking the size
-      drm/radeon: fix ATPX detection on non-VGA GPUs
-      drm/radeon/pm: don't walk the crtc list before it has been
-initialized (v2)
-      drm/radeon: fix count in cik_sdma_ring_test()
-
-Alex Williamson (1):
-      iommu/amd: Fix interrupt remapping for aliased devices
-
-Andy Grover (1):
-      target: Don't allow setting WC emulation if device doesn't support
-
-Andy Shevchenko (1):
-      dmaengine: dw: went back to plain {request,free}_irq() calls
-
-Anssi Hannula (1):
-      ALSA: hda - hdmi: Set converter channel count even without sink
-
-Anthony Iliopoulos (1):
-      x86, mm, hugetlb: Add missing TLB page invalidation for
-hugetlb_cow()
-
-Antti Palosaari (1):
-      media: fc2580: fix tuning failure on 32-bit arch
-
-Aristeu Rozanski (2):
-      device_cgroup: rework device access check and exception checking
-      device_cgroup: check if exception removal is allowed
-
-Arnd Bergmann (1):
-      genirq: Provide irq_force_affinity fallback for non-SMP
-
-Atilla Filiz (1):
-      iio:imu:mpu6050: Fixed segfault in Invensens MPU driver due to
-null dereference
-
-Bartlomiej Zolnierkiewicz (1):
-      pata_at91: fix ata_host_activate() failure handling
-
-Ben Hutchings (1):
-      rtl8192cu: Fix unbalanced irq enable in error path of
-rtl92cu_hw_init()
-
-Bjørn Mork (1):
-      usb: qcserial: add a number of Dell devices
-
-Charles Keepax (1):
-      ASoC: wm8962: Update register CLASS_D_CONTROL_1 to be non-volatile
-
-Chen Yucong (1):
-      hwpoison, hugetlb: lock_page/unlock_page does not match for
-handling a free hugepage
-
-Chris Wilson (1):
-      drm/i915: Fix unsafe loop iteration over vma whilst unbinding them
-
-Christian König (2):
-      drm/radeon/uvd: use lower clocks on old UVD to boot v2
-      drm/radeon: use pflip irq on R600+ v2
-
-Christoph Hellwig (1):
-      posix_acl: handle NULL ACL in posix_acl_equiv_mode
-
-Chunwei Chen (1):
-      libceph: fix corruption when using page_count 0 page in rbd
-
-Clemens Ladisch (1):
-      ALSA: usb-audio: work around corrupted TEAC UD-H01 feedback data
-
-Corey Minyard (1):
-      ipmi: Reset the KCS timeout when starting error recovery
-
-Daeseok Youn (1):
-      workqueue: fix bugs in wq_update_unbound_numa() failure path
-
-Dan Carpenter (1):
-      clk: vexpress: NULL dereference on error path
-
-Daniel Vetter (2):
-      drm/i915: Don't check gmch state on inherited configs
-      drm/i915: Disable self-refresh for untiled fbs on i915gm
-
-Daniele Forsi (2):
-      usb: storage: shuttle_usbat: fix discs being detected twice
-      USB: Nokia 5300 should be treated as unusual dev
-
-David Rientjes (1):
-      mm, oom: prefer thread group leaders for display purposes
-
-Du, Wenkai (1):
-      i2c: designware: Mask all interrupts during i2c controller enable
-
-Edward Lin (1):
-      ACPI: blacklist win8 OSI for Dell Inspiron 7737
-
-Egbert Eich (1):
-      drm/i915: Break encoder->crtc link separately in
-intel_sanitize_crtc()
-
-Eliad Peller (1):
-      cfg80211: free sme on connection failures
-
-Emmanuel Grumbach (1):
-      mac80211: fix suspend vs. association race
-
-Eric Dumazet (1):
-      coredump: fix va_list corruption
-
-Ezequiel Garcia (1):
-      dma: mv_xor: Flush descriptors before activating a channel
-
-Florian Westphal (1):
-      netfilter: ipv4: defrag: set local_df flag on defragmented skb
-
-Gavin Shan (1):
-      powerpc/powernv: Reset root port in firmware
-
-Geert Uytterhoeven (2):
-      Documentation: Update stable address in Chinese and Japanese
-translations
-      spi: core: Ignore unsupported Dual/Quad Transfer Mode bits
-
-Grant Likely (1):
-      drivercore: deferral race condition fix
-
-Guennadi Liakhovetski (2):
-      media: V4L2: ov7670: fix a wrong index, potentially Oopsing the
-kernel from user-space
-      media: V4L2: fix VIDIOC_CREATE_BUFS in 64- / 32-bit
-compatibility mode
-
-Guenter Roeck (1):
-      powerpc: Fix 64 bit builds with binutils 2.24
-
-Hans de Goede (4):
-      Input: elantech - fix touchpad initialization on Gigabyte U2442
-      Input: synaptics - add min/max quirk for the ThinkPad W540
-      Input: synaptics - T540p - unify with other LEN0034 models
-      ACPI / blacklist: Add dmi_enable_osi_linux quirk for Asus EEE PC
-1015PX
-
-Horia Geanta (1):
-      crypto: caam - add allocation failure handling in SPRINTFCAT macro
-
-Ian Kent (1):
-      autofs: fix lockref lookup
-
-Igor Mammedov (1):
-      ACPI / processor: do not mark present at boot but not onlined
-CPU as onlined
-
-Ilia Mirkin (1):
-      drm/nouveau/acpi: allow non-optimus setups to load vbios from acpi
-
-J. Bruce Fields (2):
-      nfsd4: warn on finding lockowner without stateid's
-      nfsd4: remove lockowner when removing lock stateid
-
-James Hogan (1):
-      metag: Reduce maximum stack size to 256MB
-
-Jani Nikula (2):
-      drm/i915/vlv: reset VLV media force wake request register
-      drm/i915: quirk invert brightness for Acer Aspire 5336
-
-Jean-Jacques Hiblot (1):
-      usb: gadget: at91-udc: fix irq and iomem resource retrieval
-
-Jianyu Zhan (1):
-      percpu: make pcpu_alloc_chunk() use pcpu_mem_free() instead of
-kfree()
-
-Jiri Bohac (1):
-      timer: Prevent overflow in apply_slack
-
-Jiri Slaby (1):
-      Linux 3.12.22
-
-Johan Hedberg (1):
-      Bluetooth: Fix triggering BR/EDR L2CAP Connect too early
-
-Johannes Berg (1):
-      mac80211: fix on-channel remain-on-channel
-
-Josef Gajdusek (2):
-      hwmon: (emc1403) fix inverted store_hyst()
-      hwmon: (emc1403) Support full range of known chip revision numbers
-
-Kinglong Mee (1):
-      NFSD: Call ->set_acl with a NULL ACL structure if no entries
-
-Kirill A. Shutemov (1):
-      mm, thp: close race between mremap() and split_huge_page()
-
-Krzysztof Kozlowski (1):
-      clocksource: Exynos_mct: Register clock event after request_irq()
-
-Lai Jiangshan (2):
-      workqueue: fix a possible race condition between rescuer and
-pwq-release
-      workqueue: make rescuer_thread() empty wq->maydays list before
-exiting
-
-Leif Lindholm (2):
-      mips: dts: Fix missing device_type="memory" property in memory nodes
-      arm: dts: Fix missing device_type="memory" for ste-ccu8540
-
-Leo Liu (1):
-      drm/radeon: check buffer relocation offset
-
-Leon Ma (1):
-      hrtimer: Prevent remote enqueue of leftmost timers
-
-Leon Yu (1):
-      aio: fix potential leak in aio_run_iocb().
-
-Levente Kurusa (1):
-      libata: clean up ZPODD when a port is detached
-
-Linus Torvalds (2):
-      mm: make fixup_user_fault() check the vma access rights too
-      x86-64, modify_ldt: Make support for 16-bit segments a runtime
-option
-
-Liu Hua (1):
-      ARM: 8012/1: kdump: Avoid overflow when converting pfn to physaddr
-
-Loic Poulain (2):
-      serial: 8250: Fix thread unsafe __dma_tx_complete function
-      8250_core: Fix unwanted TX chars write
-
-Maarten Lankhorst (1):
-      drm/nouveau: fix another lock unbalance in nouveau_crtc_page_flip
-
-Marcel Apfelbaum (1):
-      PCI: shpchp: Check bridge's secondary (not primary) bus speed
-
-Mark Salter (1):
-      arm64: fix pud_huge() for 2-level pagetables
-
-Martin Peres (1):
-      drm/nouveau/pm/fan: drop the fan lock in fan_update() before
-rescheduling
-
-Mikulas Patocka (3):
-      metag: fix memory barriers
-      target: fix memory leak on XCOPY
-      dm crypt: fix cpu hotplug crash by removing per-cpu structure
-
-Mohammed Habibulla (1):
-      Bluetooth: Add support for Lite-on [04ca:3007]
-
-NeilBrown (1):
-      md: avoid possible spinning md thread at shutdown.
-
-Nicholas Bellinger (1):
-      iscsi-target: Change BUG_ON to REJECT in iscsit_process_nop_out
-
-Nikita Yushchenko (1):
-      fsl-usb: do not test for PHY_CLK_VALID bit on controller version 1.6
-
-Oleg Nesterov (4):
-      introduce for_each_thread() to replace the buggy while_each_thread()
-      oom_kill: change oom_kill.c to use for_each_thread()
-      oom_kill: has_intersects_mems_allowed() needs rcu_read_lock()
-      oom_kill: add rcu_read_lock() into find_lock_task_mm()
-
-Olof Johansson (1):
-      i2c: s3c2410: resume race fix
-
-Peter De Schrijver (1):
-      clk: tegra: use pll_ref as the pll_e parent
-
-Rik van Riel (1):
-      mm/page-writeback.c: fix divide by zero in pos_ratio_polynom
-
-Romain Izard (1):
-      trace: module: Maintain a valid user count
-
-Russell King (1):
-      leds: leds-pwm: properly clean up after probe failure
-
-Sagi Grimberg (2):
-      Target/iser: Fix wrong connection requests list addition
-      Target/iser: Fix iscsit_accept_np and rdma_cm racy flow
-
-Salva Peiró (1):
-      media: media-device: fix infoleak in ioctl media_enum_entities()
-
-Sascha Hauer (1):
-      ARM: dts: i.MX53: Fix ipu register space size
-
-Sebastian Hesselbarth (1):
-      ARM: dts: kirkwood: fix mislocated pcie-controller nodes
-
-Sergey Popovich (1):
-      netfilter: Fix potential use after free in ip6_route_me_harder()
-
-Sheng-Liang Song (1):
-      Input: atkbd - fix keyboard not working on some LG laptops
-
-Srivatsa S. Bhat (1):
-      powerpc, kexec: Fix "Processor X is stuck" issue during kexec
-from ST mode
-
-Stanislaw Gruszka (1):
-      rt2x00: fix beaconing on USB
-
-Stephen Warren (1):
-      gpu: host1x: handle the correct # of syncpt regs
-
-Steven Rostedt (Red Hat) (1):
-      ftrace/module: Hardcode ftrace_module_init() call into load_module()
-
-Stuart Hayes (1):
-      hrtimer: Prevent all reprogramming if hang detected
-
-Takashi Iwai (1):
-      ALSA: hda - Fix onboard audio on Intel H97/Z97 chipsets
-
-Thierry Reding (1):
-      drm/tegra: Remove gratuitous pad field
-
-Thomas Gleixner (9):
-      futex: Add another early deadlock detection check
-      futex: Prevent attaching to kernel threads
-      irqchip: Gic: Support forced affinity setting
-      genirq: Allow forcing cpu affinity of interrupts
-      clocksource: Exynos_mct: Use irq_force_affinity() in cpu bringup
-      futex-prevent-requeue-pi-on-same-futex.patch futex: Forbid uaddr
-== uaddr2 in futex_requeue(..., requeue_pi=1)
-      futex: Validate atomic acquisition in futex_lock_pi_atomic()
-      futex: Always cleanup owner tid in unlock_pi
-      futex: Make lookup_pi_state more robust
-
-Thomas Petazzoni (6):
-      ARM: orion5x: fix target ID for crypto SRAM window
-      ARM: mvebu: fix NOR bus-width in Armada XP GP Device Tree
-      ARM: mvebu: fix NOR bus-width in Armada XP DB Device Tree
-      ARM: mvebu: fix NOR bus-width in Armada XP OpenBlocks AX3 Device
-Tree
-      memory: mvebu-devbus: fix the conversion of the bus width
-      bus: mvebu-mbus: allow several windows with the same
-target/attribute
-
-Tim Chen (1):
-      crypto: crypto_wq - Fix late crypto work queue initialization
-
-Trond Myklebust (2):
-      NFSd: Move default initialisers from create_client() to
-alloc_client()
-      NFSd: call rpc_destroy_wait_queue() from free_client()
-
-Tuomas Tynkkynen (1):
-      clk: tegra: Fix wrong value written to PLLE_AUX
-
-Victor A. Santos (1):
-      USB: Nokia 305 should be treated as unusual dev
-
-Viresh Kumar (1):
-      hrtimer: Set expiry time before switch_hrtimer_base()
-
-Willy Tarreau (1):
-      PCI: mvebu: fix off-by-one in the computed size of the mbus windows
-
-Wolfram Sang (1):
-      i2c: rcar: bail out on zero length transfers
-
- Documentation/input/elantech.txt             |   5 +-
- Documentation/ja_JP/HOWTO                    |   2 +-
- Documentation/ja_JP/stable_kernel_rules.txt  |   6 +-
- Documentation/zh_CN/HOWTO                    |   2 +-
- Documentation/zh_CN/stable_kernel_rules.txt  |   2 +-
- Makefile                                     |   2 +-
- arch/arm/boot/dts/armada-xp-db.dts           |   2 +-
- arch/arm/boot/dts/armada-xp-gp.dts           |   2 +-
- .../boot/dts/armada-xp-openblocks-ax3-4.dts  |   2 +-
- arch/arm/boot/dts/imx53.dtsi                 |   2 +-
- .../boot/dts/kirkwood-mv88f6281gtw-ge.dts    |  18 +-
- .../arm/boot/dts/kirkwood-nsa310-common.dtsi |  18 +-
- arch/arm/boot/dts/ste-ccu8540.dts            |   1 +
- arch/arm/kernel/crash_dump.c                 |   2 +-
- arch/arm/mach-orion5x/common.h               |   2 +-
- arch/arm64/mm/hugetlbpage.c                  |   4 +
- arch/metag/include/asm/barrier.h             |   3 +
- arch/metag/include/asm/processor.h           |   2 +
- arch/mips/cavium-octeon/octeon-irq.c         |   2 +-
- arch/mips/lantiq/dts/easy50712.dts           |   1 +
- arch/mips/ralink/dts/mt7620a_eval.dts        |   1 +
- arch/mips/ralink/dts/rt2880_eval.dts         |   1 +
- arch/mips/ralink/dts/rt3052_eval.dts         |   1 +
- arch/mips/ralink/dts/rt3883_eval.dts         |   1 +
- arch/parisc/include/asm/processor.h          |   2 +
- arch/powerpc/Makefile                        |   4 +-
- arch/powerpc/include/asm/ppc_asm.h           |   7 +-
- arch/powerpc/kernel/machine_kexec_64.c       |   2 +-
- arch/powerpc/platforms/powernv/eeh-ioda.c    |   3 +-
- arch/x86/include/asm/hugetlb.h               |   1 +
- arch/x86/kernel/ldt.c                        |   4 +-
- arch/x86/vdso/vdso32-setup.c                 |   8 +
- crypto/crypto_wq.c                           |   2 +-
- drivers/acpi/acpi_processor.c                |   1 -
- drivers/acpi/blacklist.c                     |  21 ++
- drivers/acpi/video.c                         |   2 +-
- drivers/ata/libata-core.c                    |   9 +
- drivers/ata/pata_at91.c                      |  11 +-
- drivers/base/dd.c                            |  17 ++
- drivers/bluetooth/ath3k.c                    |   2 +
- drivers/bluetooth/btusb.c                    |   1 +
- drivers/bus/mvebu-mbus.c                     |   6 -
- drivers/char/ipmi/ipmi_kcs_sm.c              |   5 +-
- drivers/clk/tegra/clk-pll.c                  |  10 +-
- drivers/clk/tegra/clk-tegra114.c             |   3 +-
- drivers/clk/versatile/clk-vexpress-osc.c     |   2 +-
- drivers/clocksource/exynos_mct.c             |  12 +-
- drivers/crypto/caam/error.c                  |  10 +-
- drivers/dma/dw/core.c                        |  11 +-
- drivers/dma/mv_xor.c                         |   8 +-
- drivers/gpu/drm/i915/i915_gem.c              |   4 +-
- drivers/gpu/drm/i915/intel_display.c         |  52 ++--
- drivers/gpu/drm/i915/intel_drv.h             |   3 +-
- drivers/gpu/drm/i915/intel_pm.c              |  10 +
- drivers/gpu/drm/i915/intel_uncore.c          |   2 +
- .../gpu/drm/nouveau/core/subdev/therm/fan.c  |  19 +-
- drivers/gpu/drm/nouveau/nouveau_acpi.c       |   3 -
- drivers/gpu/drm/nouveau/nouveau_display.c    |   2 +-
- drivers/gpu/drm/radeon/ci_dpm.c              |   4 +
- drivers/gpu/drm/radeon/cik.c                 |  76 ++++++
- drivers/gpu/drm/radeon/cik_sdma.c            |   2 +-
- drivers/gpu/drm/radeon/cikd.h                |   9 +
- drivers/gpu/drm/radeon/evergreen.c           |  28 +-
- drivers/gpu/drm/radeon/r600.c                |  13 +-
- drivers/gpu/drm/radeon/r600_dpm.c            |  35 +--
- drivers/gpu/drm/radeon/radeon.h              |   6 +
- drivers/gpu/drm/radeon/radeon_atpx_handler.c |   7 +
- drivers/gpu/drm/radeon/radeon_display.c      |   4 +
- drivers/gpu/drm/radeon/radeon_pm.c           |  28 +-
- drivers/gpu/drm/radeon/radeon_ucode.h        |   3 +
- drivers/gpu/drm/radeon/radeon_uvd.c          |   4 +
- drivers/gpu/drm/radeon/si.c                  |  65 +++--
- drivers/gpu/drm/radeon/uvd_v1_0.c            |  10 +-
- drivers/gpu/host1x/hw/intr_hw.c              |   4 +-
- drivers/hwmon/emc1403.c                      |   4 +-
- drivers/i2c/busses/i2c-designware-core.c     |   3 +
- drivers/i2c/busses/i2c-rcar.c                |   9 +-
- drivers/i2c/busses/i2c-s3c2410.c             |   2 +-
- drivers/iio/imu/inv_mpu6050/inv_mpu_core.c   |   7 +-
- drivers/infiniband/ulp/isert/ib_isert.c      |  27 +-
- drivers/infiniband/ulp/isert/ib_isert.h      |   2 +-
- drivers/input/keyboard/atkbd.c               |  29 +-
- drivers/input/mouse/elantech.c               |  26 +-
- drivers/input/mouse/elantech.h               |   1 +
- drivers/input/mouse/synaptics.c              |  10 +-
- drivers/iommu/amd_iommu.c                    |   2 +-
- drivers/irqchip/irq-gic.c                    |   8 +-
- drivers/leds/leds-pwm.c                      |  23 +-
- drivers/md/dm-crypt.c                        |  61 +----
- drivers/md/md.c                              |   3 +-
- drivers/media/i2c/ov7670.c                   |   2 +-
- drivers/media/media-device.c                 |   1 +
- drivers/media/tuners/fc2580.c                |   6 +-
- drivers/media/tuners/fc2580_priv.h           |   1 +
- .../media/v4l2-core/v4l2-compat-ioctl32.c    |  12 +-
- drivers/memory/mvebu-devbus.c                |  15 +-
- drivers/net/wireless/rt2x00/rt2x00mac.c      |  22 +-
- drivers/net/wireless/rtlwifi/rtl8192cu/hw.c  |   2 +-
- drivers/pci/host/pci-mvebu.c                 |   4 +-
- drivers/pci/hotplug/shpchp_ctrl.c            |   4 +-
- drivers/spi/spi.c                            |  11 +-
- drivers/target/iscsi/iscsi_target.c          |   4 +-
- drivers/target/target_core_device.c          |   8 +-
- drivers/target/target_core_transport.c       |   2 +-
- drivers/tty/serial/8250/8250_core.c          |   2 +-
- drivers/tty/serial/8250/8250_dma.c           |   9 +-
- drivers/usb/gadget/at91_udc.c                |  10 -
- drivers/usb/host/ehci-fsl.c                  |   3 +-
- drivers/usb/host/ohci-hub.c                  |  18 ++
- drivers/usb/host/ohci-pci.c                  |   1 +
- drivers/usb/host/ohci.h                      |   2 +
- drivers/usb/serial/qcserial.c                |  15 ++
- drivers/usb/storage/shuttle_usbat.c          |   2 +-
- drivers/usb/storage/unusual_devs.h           |  14 +
- fs/aio.c                                     |   6 +-
- fs/autofs4/root.c                            |   4 +-
- fs/coredump.c                                |   7 +-
- fs/exec.c                                    |   6 +-
- fs/nfsd/nfs4acl.c                            |  17 +-
- fs/nfsd/nfs4state.c                          |  40 ++-
- fs/posix_acl.c                               |   6 +
- include/linux/ftrace.h                       |   2 +
- include/linux/init_task.h                    |   2 +
- include/linux/interrupt.h                    |  40 ++-
- include/linux/irq.h                          |   3 +-
- include/linux/sched.h                        |  12 +
- include/trace/events/module.h                |   2 +-
- include/uapi/drm/tegra_drm.h                 |   1 -
- kernel/exit.c                                |   1 +
- kernel/fork.c                                |   7 +
- kernel/futex.c                               | 239 +++++++++++++----
- kernel/hrtimer.c                             |  30 ++-
- kernel/irq/manage.c                          |  17 +-
- kernel/kexec.c                               |   8 +
- kernel/module.c                              |   3 +
- kernel/timer.c                               |   2 +-
- kernel/trace/ftrace.c                        |  27 +-
- kernel/workqueue.c                           |  36 ++-
- mm/memcontrol.c                              |  19 +-
- mm/memory-failure.c                          |  15 +-
- mm/memory.c                                  |   5 +
- mm/mremap.c                                  |   9 +-
- mm/oom_kill.c                                |  63 +++--
- mm/page-writeback.c                          |   6 +-
- mm/percpu.c                                  |   2 +-
- net/bluetooth/hci_event.c                    |   6 +
- net/ceph/messenger.c                         |  20 +-
- net/ipv4/netfilter/nf_defrag_ipv4.c          |   5 +-
- net/ipv6/netfilter.c                         |   6 +-
- net/mac80211/ieee80211_i.h                   |   1 +
- net/mac80211/mlme.c                          |  20 +-
- net/mac80211/offchannel.c                    |  27 +-
- net/wireless/sme.c                           |   2 +-
- security/device_cgroup.c                     | 203 +++++++++++---
- sound/pci/hda/hda_intel.c                    |   3 +
- sound/pci/hda/patch_hdmi.c                   |   4 +-
- sound/soc/codecs/wm8962.c                    |  15 +-
- sound/soc/codecs/wm8962.h                    |   4 +
- sound/usb/card.h                             |   1 +
- sound/usb/endpoint.c                         |  15 +-
- 160 files changed, 1436 insertions(+), 561 deletions(-)
-
-
-thanks,
-- -- 
-js
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJTmLLjAAoJEL0lsQQGtHBJb4IP/iCLXjDROP3Ozl3GVQaK6kay
-X56/r69NFe9cCaYy8rdbVMWXeDehQtYHm4YxHeqWqy9gihDUBtRxipcwl4ZszSLb
-WMVJ3cHGYEl/ZtB+d9uMnxIsv8wxJdJVUiVuxpe250koWqgEyeGEqEd6wszvbyVk
-byRdVRDu176W/gr4/jzL0lWMubi97iu/tx79jGIc66bppXBHs/j6yxIaDR/2VZQ5
-FqP6J69MKciH1iJ1m8zv+5yoAVHITakQ1/829xq1eKDphyFk6KUHlAyGOb8ZgVZl
-qV45A1bgidC7J8ArnLwRPtpC9vVzOymrm4VgK7mZIQo5mV6MvCx4KHUDuACmkH8Q
-fJtKYkXdh3UPsv1elRWxfl1YZWtAhLjbfrQKFpR0TzJKhgJ5kfl+rxNHYA4ipt4e
-vyqW4tFuljwNrqWh8UUo0O0MTT84LUSO4S+N2Iq6DCUXRcXCNMOcCJxvnCWcE8sh
-ypLfqKZX62EtxNeWAp6zDaTEfuJ5PmwecDXk3h4Zq/by6xXXVoixk3cmT6mC6g6A
-T+nE0ZECIGS5vrPrQjlcej+RMPp2tovU8L6+fpvBE4pWYCUyQ1xDDTvtRHstO19c
-x+MC086KDlW4vFGCjP+vhIsxwx5jvhHd/vZeprY6JfjyyesbeoCKmnfa0QDbFNPC
-9bXbs7OvBVBRxqCNRWXb
-=Zp6V
------END PGP SIGNATURE-----
+On Tue, Jun 03, 2014 at 03:41:56PM -0400, Jérôme Carretero wrote:
+> This vendor has similar boards based on the same Marvell 88SE9235 chipset,
+> but this patch was only tested with the 642L.
+> 
+> Tested on ASUS Sabertooth 990FX (AMD).
+> 
+> If you listen to the vendor support stating:
+> 
+>   Dear Customer,
+>   Sorry about that.
+>   Currently all our products' software package don't support IOMMU
+>   and we don't have plan to support that.
+> 
+> ... you'll think you also wasted your money, but it turns out that you
+> just lost a few hours of your valuable time talking to their support,
+> because the good people from the Internet made their board work,
+> with the regular AHCI driver, and even with IOMMU. Nice!
+> 
+> 
+> Signed-off-by: Jérôme Carretero <cJ-ko@zougloub.eu>
+
+Applied with Alex's ack to pci/iommu for v3.16, thanks!
+
+Note that I only have the PCI parts here.  There are several IOMMU patches
+required in addition, and I haven't heard the fate of those.
+
+> ---
+>  drivers/pci/quirks.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+> index f6a42bc..43c0ea0 100644
+> --- a/drivers/pci/quirks.c
+> +++ b/drivers/pci/quirks.c
+> @@ -3380,6 +3380,8 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_MARVELL_EXT, 0x91a0,
+>  /* https://bugzilla.kernel.org/show_bug.cgi?id=42679#c49 */
+>  DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_MARVELL_EXT, 0x9230,
+>  			 quirk_dma_func1_alias);
+> +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_TTI, 0x0642,
+> +			 quirk_dma_func1_alias);
+>  /* https://bugs.gentoo.org/show_bug.cgi?id=497630 */
+>  DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_JMICRON,
+>  			 PCI_DEVICE_ID_JMICRON_JMB388_ESD,
+> -- 
+> 2.0.0
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
