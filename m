@@ -1,83 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932682AbaFKQQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 12:16:58 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:59136 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754908AbaFKQQ5 (ORCPT
+	id S932958AbaFKQTF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 12:19:05 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:57384 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752143AbaFKQTD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 12:16:57 -0400
-Date: Wed, 11 Jun 2014 18:16:52 +0200
-From: Levente Kurusa <levex@linux.com>
-To: David Rientjes <rientjes@google.com>,
-        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Masanari Iida <standby24x7@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: rtl8821ae: rtl8821ae: hw.c:  Cleaning up if
- statement that always evaluates to false
-Message-ID: <20140611161652.GA23026@linux.com>
-References: <1402191812-26264-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <alpine.DEB.2.02.1406081336080.19183@chino.kir.corp.google.com>
+	Wed, 11 Jun 2014 12:19:03 -0400
+Date: Wed, 11 Jun 2014 09:18:57 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: chiluk@canonical.com
+Cc: Rafael Tinoco <rafael.tinoco@canonical.com>, linux-kernel@vger.kernel.org,
+        davem@davemloft.net, ebiederm@xmission.com,
+        Christopher Arges <chris.j.arges@canonical.com>,
+        Jay Vosburgh <jay.vosburgh@canonical.com>
+Subject: Re: Possible netns creation and execution performance/scalability
+ regression since v3.8 due to rcu callbacks being offloaded to multiple cpus
+Message-ID: <20140611161857.GC4581@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <CAJE_dJyfq5zWcs2y52siXRruCCA1Dk_=Ds=rZ8BrBZLa7FCbuQ@mail.gmail.com>
+ <20140611133919.GZ4581@linux.vnet.ibm.com>
+ <CAJE_dJwfaUkop=XZxD-BfDPwKDjnfF1bvmD6XWaqVA4Xt2E6bQ@mail.gmail.com>
+ <539879B8.4010204@canonical.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="TB36FDmn/VVEgNH/"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1406081336080.19183@chino.kir.corp.google.com>
+In-Reply-To: <539879B8.4010204@canonical.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14061116-6688-0000-0000-0000027F8942
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 11, 2014 at 10:46:00AM -0500, David Chiluk wrote:
+> On 06/11/2014 10:17 AM, Rafael Tinoco wrote:
+> > This script simulates a failure on a cloud infrastructure, for ex. As soon as
+> > one virtualization host fails all its network namespaces have to be migrated
+> > to other node. Creating thousands of netns in the shortest time possible
+> > is the objective here. This regression was observed trying to migrate from
+> > v3.5 to v3.8+.
+> > 
+> > Script creates up to 3000/4000 thousands network namespaces and places
+> > links on them. Every 250 mark (netns already created) we have a throughput
+> > average (how many were created per second up from last mark to this one).
+> 
+> Here's a little more background, and the "why it matters".
 
---TB36FDmn/VVEgNH/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thank you, this is quite helpful.
 
-On Sun, Jun 08, 2014 at 01:37:43PM -0700, David Rientjes wrote:
-> >  drivers/staging/rtl8821ae/rtl8821ae/hw.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> >=20
-> > diff --git a/drivers/staging/rtl8821ae/rtl8821ae/hw.c b/drivers/staging=
-/rtl8821ae/rtl8821ae/hw.c
-> > index 1b8583b..52322e3 100644
-> > --- a/drivers/staging/rtl8821ae/rtl8821ae/hw.c
-> > +++ b/drivers/staging/rtl8821ae/rtl8821ae/hw.c
-> > @@ -1623,7 +1623,7 @@ static int _rtl8821ae_set_media_status(struct iee=
-e80211_hw *hw,
-> > =20
-> >  	rtl_write_byte(rtlpriv, (MSR), bt_msr);
-> >  	rtlpriv->cfg->ops->led_control(hw, ledaction);
-> > -	if ((bt_msr & ~0xfc) =3D=3D MSR_AP)
-> > +	if ((bt_msr & MSR_AP) =3D=3D MSR_AP)
+> In an openstack cloud, neutron *(openstack's networking framework) keeps
+> all customers of the cloud separated via network namespaces.  On each
+> compute node this is not a big deal, since each compute node can only
+> handle at most a few hundred VMs.  However in order for neutron to route
+> a customer's network traffic between disparate compute hosts, it uses
+> the concept of a neutron gateway.  In order for customer A's vm on host
+> 1 to talk to customer A's vm on host 2, it must first go through a gre
+> tunnel to the neutron gateway.  The Neutron gateay then turns around and
+> routes the network traffic over another gre tunnel to host 2.  The
+> neutron gateway is where the problem is.
+> 
+> The neutron gateway must have a network namespace for every net
+> namespace in the cloud.  Granted this collection can be split up by
+> increasing the number of neutron gateways *(scaling out), but some
+> clouds have decided to run these gateways on very beefy machines.  As
+> you can see by the graph, there is a software limitation that prevents
+> these machines from hosting any more than a few thousand namespaces.
+> This makes the gateway's hardware severely under-utilized.
+> 
+> Now think about what happens when a gateway goes down, the namespaces
+> need to be migrated, or a new machine needs to be brought up to replace
+> it.  When we're talking about 3000 namespaces, the amount of time it
+> takes simply to recreate the namespaces becomes very significant.
+> 
+> The script is a stripped down example of what exactly is being done on
+> the neutron gateway in order to create namespaces.
 
-I changed this line from '0xfc' to '~0xfc', and looking at the defines
-it must have been the way your patch does, so:
+Are the namespaces torn down and recreated one at a time, or is there some
+syscall, ioctl(), or whatever that allows bulk tear down and recreating?
 
-Acked-by: Levente Kurusa <levex@linux.com>
+							Thanx, Paul
 
-if it wasn't applied yet, and you fix the problems David pointed out
-with the commit message.
-
-Thanks,
-    Levente Kurusa
-
---TB36FDmn/VVEgNH/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJTmIDzAAoJELBqK2lO9dZBvsgIAJ4MNOv1LbUdY96pkIqncIzV
-E0WkI+TSrY47GCqjOwsL9i3xI/xmmnyKBBW9bjYH1iD5/qDc7abR0HwN0AJVDI+d
-l6ExTxUXo+kTMNtINdFpKGkYcLT3sU8SzX0TCAz3XHmoCeUxZmThvPKkZ1XaowKV
-PUlLeqLz9lMB9e9wHeEW7SJyc8yIAp7+d1rN44gQfq3Ed5UWTdnj+oeSLy44Qszl
-sUoOylfIYdzAWgKk4hweQ/ykiltXsVwndKXtLPV/0HT+tQ9NZSqWAaTW4BQVogX5
-3BnaMYWUPaFT9XbE6yOBX7I91hYftJV5olgwtdm7eXrBnmAmUYnfusVSDk54gAY=
-=Rfoo
------END PGP SIGNATURE-----
-
---TB36FDmn/VVEgNH/--
