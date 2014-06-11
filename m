@@ -1,84 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755281AbaFKCVz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 22:21:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15158 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754155AbaFKCVv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 22:21:51 -0400
-Date: Tue, 10 Jun 2014 22:21:29 -0400
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: akpm@linux-foundation.org, andi@firstfloor.org, riel@redhat.com,
-        yinghai@kernel.org, isimatu.yasuaki@jp.fujitsu.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH] x86: numa: drop ZONE_ALIGN
-Message-ID: <20140610222129.1cf459e0@redhat.com>
-In-Reply-To: <alpine.DEB.2.02.1406101506290.32203@chino.kir.corp.google.com>
-References: <20140608181436.17de69ac@redhat.com>
-	<alpine.DEB.2.02.1406081524580.21744@chino.kir.corp.google.com>
-	<20140609144355.63a91968@redhat.com>
-	<alpine.DEB.2.02.1406091453570.5271@chino.kir.corp.google.com>
-	<20140609231920.08a1b0f9@redhat.com>
-	<alpine.DEB.2.02.1406101506290.32203@chino.kir.corp.google.com>
-Organization: Red Hat
+	id S1755292AbaFKCWf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 22:22:35 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:49513 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751937AbaFKCWd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 22:22:33 -0400
+Date: Wed, 11 Jun 2014 03:22:22 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
+        Josh Boyer <jwboyer@redhat.com>, David Howells <dhowells@redhat.com>,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        keyrings <keyrings@linux-nfs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH 0/4] KEYS: validate key trust with owner and builtin keys
+ only
+Message-ID: <20140611022222.GA2349@srcf.ucam.org>
+References: <cover.1402387862.git.d.kasatkin@samsung.com>
+ <20140610122008.GA31944@hansolo.jdub.homelinux.org>
+ <CACE9dm9Ff6b3J=05QfcgBv-c_y=5qGNq1-ZSfo4smtj34i1e-A@mail.gmail.com>
+ <20140610204021.GA8916@srcf.ucam.org>
+ <CACE9dm9ma=XRZkoCiefva-dKL+LYw-s8QB4xUTkRUZH=5XM9ew@mail.gmail.com>
+ <CACE9dm8zxVXx2zRcfDYUFjqvQYT4MbLevp5U13tfH9Hb6USSJw@mail.gmail.com>
+ <20140610212516.GB10614@srcf.ucam.org>
+ <CACE9dm95RiGxuG-XaGKd3KqBRkk+wyj3CBbMhaCTJQaiiaj9wQ@mail.gmail.com>
+ <20140610214038.GA13881@srcf.ucam.org>
+ <1402449893.612.14.camel@dhcp-9-2-203-236.watson.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402449893.612.14.camel@dhcp-9-2-203-236.watson.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Jun 2014 15:10:01 -0700 (PDT)
-David Rientjes <rientjes@google.com> wrote:
-
-> On Mon, 9 Jun 2014, Luiz Capitulino wrote:
+On Tue, Jun 10, 2014 at 09:24:53PM -0400, Mimi Zohar wrote:
+> On Tue, 2014-06-10 at 22:40 +0100, Matthew Garrett wrote: 
+> > The hole is that the system trusts keys that you don't trust. The 
+> > appropriate thing to do is to remove that trust from the entire system, 
+> > not just one layer of the system. If people gain the impression that 
+> > they can simply pass a kernel parameter and avoid trusting the vendor 
+> > keys, they'll be upset to discover that it's easily circumvented.
 > 
-> > > > > > diff --git a/arch/x86/include/asm/numa.h b/arch/x86/include/asm/numa.h
-> > > > > > index 4064aca..01b493e 100644
-> > > > > > --- a/arch/x86/include/asm/numa.h
-> > > > > > +++ b/arch/x86/include/asm/numa.h
-> > > > > > @@ -9,7 +9,6 @@
-> > > > > >  #ifdef CONFIG_NUMA
-> > > > > >  
-> > > > > >  #define NR_NODE_MEMBLKS		(MAX_NUMNODES*2)
-> > > > > > -#define ZONE_ALIGN (1UL << (MAX_ORDER+PAGE_SHIFT))
-> > > > > >  
-> > > > > >  /*
-> > > > > >   * Too small node sizes may confuse the VM badly. Usually they
-> > > > > > diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-> > > > > > index 1d045f9..69f6362 100644
-> > > > > > --- a/arch/x86/mm/numa.c
-> > > > > > +++ b/arch/x86/mm/numa.c
-> > > > > > @@ -200,8 +200,6 @@ static void __init setup_node_data(int nid, u64 start, u64 end)
-> > > > > >  	if (end && (end - start) < NODE_MIN_SIZE)
-> > > > > >  		return;
-> > > > > >  
-> > > > > > -	start = roundup(start, ZONE_ALIGN);
-> > > > > > -
-> > > > > >  	printk(KERN_INFO "Initmem setup node %d [mem %#010Lx-%#010Lx]\n",
-> > > > > >  	       nid, start, end - 1);
-> > > > > >  
-> > > > > 
-> > > > > What ensures this start address is page aligned from the BIOS?
-> > > > 
-> > > > To which start address do you refer to?
-> > > 
-> > > The start address displayed in the dmesg is not page aligned anymore with 
-> > > your change, correct?  
-> > 
-> > I have to check that but I don't expect this to happen because my
-> > understanding of the code is that what's rounded up here is just discarded
-> > in free_area_init_node(). Am I wrong?
-> > 
-> 
-> NODE_DATA(nid)->node_start_pfn needs to be accurate if 
-> node_set_online(nid).  Since there is no guarantee about page alignment 
-> from the ACPI spec, removing the roundup() entirely could cause the 
-> address shift >> PAGE_SIZE to be off by one.  I, like you, do not see the 
-> need for the ZONE_ALIGN above, but I think we agree that it should be 
-> replaced with PAGE_SIZE instead.
+> Assuming I remove all the keys I don't trust, there are still keys that
+> are trusted while booting, but are not necessary afterwards.  We should
+> be able to limit the scope of where and when keys are trusted.
 
-Agreed. I'm just not completely sure setup_node_data() is the best place
-for it, shouldn't we do it in acpi_numa_memory_affinity_init(), which is
-when the ranges are read off the SRAT table?
+Providing a userspace mechanism for selectively dropping keys from the 
+kernel seems like a good thing?
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
