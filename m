@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752462AbaFKTVR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 15:21:17 -0400
-Received: from asavdk3.altibox.net ([109.247.116.14]:41206 "EHLO
-	asavdk3.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750963AbaFKTVQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 15:21:16 -0400
-Date: Wed, 11 Jun 2014 21:21:11 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        linux-arch@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH RFC 00/10] tools: Revamp the unaligned endian access
- functions
-Message-ID: <20140611192111.GB16069@ravnborg.org>
-References: <1402441994-16780-1-git-send-email-hpa@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402441994-16780-1-git-send-email-hpa@zytor.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752618AbaFKTZG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 15:25:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17462 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751002AbaFKTZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 15:25:03 -0400
+Message-ID: <1402514702.14174.163.camel@ul30vt.home>
+Subject: Re: [PATCH] PCI: quirk dma_alias_devfn for HighPoint RocketRaid
+ 642L (Marvell 9235)
+From: Alex Williamson <alex.williamson@redhat.com>
+To: =?ISO-8859-1?Q?J=E9r=F4me?= Carretero <cJ-ko@zougloub.eu>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 11 Jun 2014 13:25:02 -0600
+In-Reply-To: <20140603154156.4f1b46c4@Vantage>
+References: <20140603154156.4f1b46c4@Vantage>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 10, 2014 at 04:13:04PM -0700, H. Peter Anvin wrote:
-> After a recent problem in the x86 tree, which seems to be the heaviest
-> but not the only user of these functions, I went through and did a
-> patchset to revamp the *user space* unaligned/endian accessor
-> functions.  As much as I think it is downright pathetic that this
-> functionality still isn't part of the C standard, that is life and we
-> have to deal with it.  Furthermore, although glibc has a pretty nice
-> set of functions for byte swapping in <endian.h>, taken from FreeBSD I
-> believe, some older systems don't support them.
+On Tue, 2014-06-03 at 15:41 -0400, Jérôme Carretero wrote:
+> This vendor has similar boards based on the same Marvell 88SE9235 chipset,
+> but this patch was only tested with the 642L.
 > 
-> This variant tries to fill in all the holes.  It assumes that
-> <endian.h> define the functions as macros if they exist, as I don't
-> know any other way of probing for them without reaching for autoconf,
-> but that should be valid enough of an assumption in this case.
+> Tested on ASUS Sabertooth 990FX (AMD).
 > 
-> The hope is that this should give reasonable, if not optimal, code
-> generation on most processors, and give a hook where arch maintainers
-> can add their own changes if needed.
+> If you listen to the vendor support stating:
+> 
+>   Dear Customer,
+>   Sorry about that.
+>   Currently all our products' software package don't support IOMMU
+>   and we don't have plan to support that.
+> 
+> ... you'll think you also wasted your money, but it turns out that you
+> just lost a few hours of your valuable time talking to their support,
+> because the good people from the Internet made their board work,
+> with the regular AHCI driver, and even with IOMMU. Nice!
+> 
+> 
+> Signed-off-by: Jérôme Carretero <cJ-ko@zougloub.eu>
 
-This looks like a very complex solution to a simple problem.
-We want a shared implementation of the *user space*
-unaligned/endian accessor functions.
-But do we really want *fast* versions for our use?
+Acked-by: Alex Williamson <alex.williamson@redhat.com>
 
-This is not a new libc that should generate optimal code,
-but only something were we want to provide e working
-implmentation for use in our user-space tools.
+> ---
+>  drivers/pci/quirks.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+> index f6a42bc..43c0ea0 100644
+> --- a/drivers/pci/quirks.c
+> +++ b/drivers/pci/quirks.c
+> @@ -3380,6 +3380,8 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_MARVELL_EXT, 0x91a0,
+>  /* https://bugzilla.kernel.org/show_bug.cgi?id=42679#c49 */
+>  DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_MARVELL_EXT, 0x9230,
+>  			 quirk_dma_func1_alias);
+> +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_TTI, 0x0642,
+> +			 quirk_dma_func1_alias);
+>  /* https://bugs.gentoo.org/show_bug.cgi?id=497630 */
+>  DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_JMICRON,
+>  			 PCI_DEVICE_ID_JMICRON_JMB388_ESD,
 
-A much simpler approach without any fallback to arch specific
-version etc. is everything we need.
 
-	Sam
 
