@@ -1,78 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932678AbaFKPUr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 11:20:47 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:34621 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932646AbaFKPUo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 11:20:44 -0400
-Date: Wed, 11 Jun 2014 11:20:30 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Michel Lespinasse <walken@google.com>, Tejun Heo <tj@kernel.org>,
-        Roman Gushchin <klamm@yandex-team.ru>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] mm, memcg: allow OOM if no memcg is eligible during
- direct reclaim
-Message-ID: <20140611152030.GB22516@cmpxchg.org>
-References: <20140611075729.GA4520@dhcp22.suse.cz>
- <1402473624-13827-1-git-send-email-mhocko@suse.cz>
+	id S932766AbaFKPVL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 11:21:11 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:55884 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754908AbaFKPVH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 11:21:07 -0400
+Date: Wed, 11 Jun 2014 16:20:55 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
+        Josh Boyer <jwboyer@redhat.com>, David Howells <dhowells@redhat.com>,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        keyrings <keyrings@linux-nfs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH 0/4] KEYS: validate key trust with owner and builtin keys
+ only
+Message-ID: <20140611152055.GB30253@srcf.ucam.org>
+References: <CACE9dm9ma=XRZkoCiefva-dKL+LYw-s8QB4xUTkRUZH=5XM9ew@mail.gmail.com>
+ <CACE9dm8zxVXx2zRcfDYUFjqvQYT4MbLevp5U13tfH9Hb6USSJw@mail.gmail.com>
+ <20140610212516.GB10614@srcf.ucam.org>
+ <CACE9dm95RiGxuG-XaGKd3KqBRkk+wyj3CBbMhaCTJQaiiaj9wQ@mail.gmail.com>
+ <20140610214038.GA13881@srcf.ucam.org>
+ <1402449893.612.14.camel@dhcp-9-2-203-236.watson.ibm.com>
+ <20140611022222.GA2349@srcf.ucam.org>
+ <1402456095.612.32.camel@dhcp-9-2-203-236.watson.ibm.com>
+ <20140611032355.GA6470@srcf.ucam.org>
+ <1402489820.612.58.camel@dhcp-9-2-203-236.watson.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1402473624-13827-1-git-send-email-mhocko@suse.cz>
+In-Reply-To: <1402489820.612.58.camel@dhcp-9-2-203-236.watson.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 11, 2014 at 10:00:23AM +0200, Michal Hocko wrote:
-> If there is no memcg eligible for reclaim because all groups under the
-> reclaimed hierarchy are within their guarantee then the global direct
-> reclaim would end up in the endless loop because zones in the zonelists
-> are not considered unreclaimable (as per all_unreclaimable) and so the
-> OOM killer would never fire and direct reclaim would be triggered
-> without no chance to reclaim anything.
+On Wed, Jun 11, 2014 at 08:30:20AM -0400, Mimi Zohar wrote:
+> On Wed, 2014-06-11 at 04:23 +0100, Matthew Garrett wrote: 
+> > Yes. Wouldn't having a mechanism to allow userspace to drop keys that 
+> > have otherwise been imported be a generally useful solution to the issue 
+> > you have with that?
 > 
-> This is not possible yet because reclaim falls back to ignore low_limit
-> when nobody is eligible for reclaim. Following patch will allow to set
-> the fallback mode to hard guarantee, though, so this is a preparatory
-> patch.
-> 
-> Memcg reclaim doesn't suffer from this because the OOM killer is
-> triggered after few unsuccessful attempts of the reclaim.
-> 
-> Fix this by checking the number of scanned pages which is obviously 0 if
-> nobody is eligible and also check that the whole tree hierarchy is not
-> eligible and tell OOM it can go ahead.
-> 
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> ---
->  mm/vmscan.c | 7 +++++++
->  1 file changed, 7 insertions(+)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 8041b0667673..99137aecd95f 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2570,6 +2570,13 @@ out:
->  	if (aborted_reclaim)
->  		return 1;
->  
-> +	/*
-> +	 * If the target memcg is not eligible for reclaim then we have no option
-> +	 * but OOM
-> +	 */
-> +	if (!sc->nr_scanned && mem_cgroup_all_within_guarantee(sc->target_mem_cgroup))
-> +		return 0;
+> There are issues removing a key from both the local system(eg. cache,
+> running apps) and the attestation server (eg. ima-sig template
+> verification) perspectives.  We would need to address these concerns
+> before supporting key removal.
 
-We can't just sprinkle `for each memcg in hierarchy` loops like this,
-they can get really expensive.
+For your use-case you'd want to do this before running any significant 
+quantity of userspace. The firmware keys are going to be hashed into PCR 
+7, so they're already part of your attestation.
 
-It's pretty stupid to not have a return value on shrink_zone(), which
-could easily indicate whether a zone was reclaimable, and instead have
-another iteration over the same zonelist and the same memcg hierarchy
-afterwards to figure out if shrink_zone() was successful or not.
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
