@@ -1,61 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752979AbaFKTqq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 15:46:46 -0400
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:36804 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751002AbaFKTqo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 15:46:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140611194452.GA25049@ravnborg.org>
-References: <37910a32e3d223a688a2743376bdde8fbdc8ef5c.1402515662.git.luto@amacapital.net>
- <20140611194452.GA25049@ravnborg.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 11 Jun 2014 12:46:23 -0700
-Message-ID: <CALCETrUsmvPkJ=FvU=UcZXwuoQMXcKA3fGoofsjZ3U-gZrDtJw@mail.gmail.com>
-Subject: Re: [PATCH] x86,build: Fix make -jN modules_install install
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
-        Michal Marek <mmarek@suse.cz>,
-        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1753247AbaFKTrK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 15:47:10 -0400
+Received: from 1wt.eu ([62.212.114.60]:41816 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752747AbaFKTrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 15:47:08 -0400
+Date: Wed, 11 Jun 2014 21:46:57 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Luis Henriques <luis.henriques@canonical.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Michal Tesar <mtesar@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [ 059/143] sysctl net: Keep tcp_syn_retries inside the boundary
+Message-ID: <20140611194657.GU28551@1wt.eu>
+References: <f07e5fe6d87f172fc73580b9c86ba9a2@local> <20140512003203.088027167@1wt.eu> <20140611184644.GA5442@hercules>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140611184644.GA5442@hercules>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 11, 2014 at 12:44 PM, Sam Ravnborg <sam@ravnborg.org> wrote:
-> On Wed, Jun 11, 2014 at 12:41:57PM -0700, Andy Lutomirski wrote:
->> Every few months, I forget why I type:
->>
->> $ sudo make -j12 modules_install && sudo make -j12 install
->>
->> instead of just:
->>
->> $ sudo make -j12 modules_install install
->>
->> I try the latter, it appears to work, and then my machine won't boot
->> because dracut got confused.  This fixes it once and for all: if you
->> ask make to install modules and a kernel, you almost certainly want
->> the modules installed *first* so that your initramfs scripts can
->> find the modules.
->
-> Is this problem x86 specific?
+Hi Luis,
 
-I don't know.  But I also don't want to have 'make modules_install
-install' on an arch without an install target appear to work, so I
-don't know how to do it in the kbuild core.  That is, I don't want to
-define an install target; I just want to add a dependency if the
-target is already there.
+On Wed, Jun 11, 2014 at 07:46:44PM +0100, Luis Henriques wrote:
+> Hi Willy,
+> 
+> On Mon, May 12, 2014 at 02:32:59AM +0200, Willy Tarreau wrote:
+> > 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
+> > 
+> 
+> During Ubuntu Lucid kernel regression testing, after the merge of
+> 2.6.32.62, we found problems with the following patches
+> 
+> [ 059/143] sysctl net: Keep tcp_syn_retries inside the boundary
+>            (Upstream commit 651e92716aaae60fc41b9652f54cb6803896e0da)
+> 
+> [ 065/143] net: check net.core.somaxconn sysctl values
+>            (Upstream commit 5f671d6b4ec3e6d66c2a868738af2cdea09e7509)
+> 
+> The following two stack traces were found in kernel logs:
 
-Also, this patch has a repeated ifneq.  I'll fix it in v2.
+Aie :-/
 
->
->         Sam
+> [    0.199908] sysctl table check failed: /net/core/somaxconn .3.1.18 Missing strategy
+> [    0.201100] Pid: 1, comm: swapper Not tainted 2.6.32-02063262-generic #201405200837
+> [    0.202173] Call Trace:
+(...)
+> and here's a bug link:
+> 
+> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1326473
 
+I think that Tyler's suggest is the right approach.
 
+> For the Ubuntu Lucid kernel, we ended up reverting the offending
+> commits.  Since I was able to reproduce this problem with a vanilla
+> 2.6.32.62, you may want to take a similar action for the next 2.6.32
+> release.
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+The initial bug is hard to debug on live systems. I've been hit myself
+and it took me a lot of time to find the root cause. The problem is that
+the backlog is stored on an unsigned short while the sysctl is stored
+on an int, and the value is naturally truncated, so when you use an
+somaxconn of N*65536 + just a few, you end up with just a few and drop
+a lot of SYNs even under moderate loads. Worse, the only people who
+touch these values are those who run under high loads and who are the
+most likely to face the issue.
+
+Thus if there's a quick way to check that Tyler's fix reliably addresses
+the issue, I think we should take it instead. Of course I understand that
+in the mean time the revert is better for you!
+
+Regards,
+Willy
+
