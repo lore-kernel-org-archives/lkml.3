@@ -1,90 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755458AbaFKHjS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 03:39:18 -0400
-Received: from fgwmail3.fujitsu.co.jp ([164.71.1.134]:52354 "EHLO
-	fgwmail4.fujitsu.co.jp" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751311AbaFKHjR (ORCPT
+	id S932097AbaFKHlH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 03:41:07 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:55615 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753257AbaFKHlG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 03:39:17 -0400
-X-Greylist: delayed 525 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 Jun 2014 03:39:16 EDT
-Subject: [PATCH] perf/x86/intel: ignore CondChgd bit to avoid false NMI
- handling
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-To: a.p.zijlstra@chello.nl, acme@kernel.org, mingo@redhat.com,
-        paulus@samba.org, hpa@zytor.com, tglx@linutronix.de
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 11 Jun 2014 16:30:28 +0900
-Message-ID: <20140611073028.9847.65622.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.17-dirty
+	Wed, 11 Jun 2014 03:41:06 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Josh Poimboeuf <jpoimboe@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH ftrace/core  2/2] ftrace, kprobes: Support IPMODIFY flag to find IP modify conflict
+References: <20140610105001.8732.93502.stgit@kbuild-fedora.novalocal>
+	<20140610105014.8732.43086.stgit@kbuild-fedora.novalocal>
+	<1402408435.1676.13.camel@leonhard> <5397B0A1.7060401@hitachi.com>
+Date: Wed, 11 Jun 2014 16:41:02 +0900
+In-Reply-To: <5397B0A1.7060401@hitachi.com> (Masami Hiramatsu's message of
+	"Wed, 11 Jun 2014 10:28:01 +0900")
+Message-ID: <87tx7rao6p.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, a NMI handler for NMI watchdog may falsely handle any NMI
-signaled for different purpose if CondChgd bit in
-MSR_CORE_PERF_GLOBAL_STATUS MSR is set.
+Hi Masami,
 
-This commit deals with the issue simply by ignoring CondChgd bit.
+On Wed, 11 Jun 2014 10:28:01 +0900, Masami Hiramatsu wrote:
+> (2014/06/10 22:53), Namhyung Kim wrote:
+>> Hi Masami,
+>> 
+>> 2014-06-10 (화), 10:50 +0000, Masami Hiramatsu:
+>>> Introduce FTRACE_OPS_FL_IPMODIFY to avoid conflict among
+>>> ftrace users who may modify regs->ip to change the execution
+>>> path. This also adds the flag to kprobe_ftrace_ops, since
+>>> ftrace-based kprobes already modifies regs->ip. Thus, if
+>>> another user modifies the regs->ip on the same function entry,
+>>> one of them will be broken. So both should add IPMODIFY flag
+>>> and make sure that ftrace_set_filter_ip() succeeds.
+>>>
+>>> Note that currently conflicts of IPMODIFY are detected on the
+>>> filter hash. It does NOT care about the notrace hash. This means
+>>> that if you set filter hash all functions and notrace(mask)
+>>> some of them, the IPMODIFY flag will be applied to all
+>>> functions.
+>>>
+>> 
+>> [SNIP]
+>>> +static int __ftrace_hash_update_ipmodify(struct ftrace_ops *ops,
+>>> +					 struct ftrace_hash *old_hash,
+>>> +					 struct ftrace_hash *new_hash)
+>>> +{
+>>> +	struct ftrace_page *pg;
+>>> +	struct dyn_ftrace *rec, *end = NULL;
+>>> +	int in_old, in_new;
+>>> +
+>>> +	/* Only update if the ops has been registered */
+>>> +	if (!(ops->flags & FTRACE_OPS_FL_ENABLED))
+>>> +		return 0;
+>>> +
+>>> +	if (!(ops->flags & FTRACE_OPS_FL_SAVE_REGS) ||
+>>> +	    !(ops->flags & FTRACE_OPS_FL_IPMODIFY))
+>>> +		return 0;
+>>> +
+>>> +	/* Update rec->flags */
+>>> +	do_for_each_ftrace_rec(pg, rec) {
+>>> +		/* We need to update only differences of filter_hash */
+>>> +		in_old = !old_hash || ftrace_lookup_ip(old_hash, rec->ip);
+>>> +		in_new = !new_hash || ftrace_lookup_ip(new_hash, rec->ip);
+>> 
+>> Why not use ftrace_hash_empty() here instead of checking NULL? 
+>
+> Ah, a trick is here. Since an empty filter_hash must hit all, we can not
+> enable/disable filter_hash if we use ftrace_hash_empty() here.
+>
+> To enabling the new_hash, old_hash must be EMPTY_HASH which means in_old
+> always be false. To disabling, new_hash is EMPTY_HASH too.
+> Please see ftrace_hash_ipmodify_enable/disable/update().
 
-Here is explanation in detail.
+I'm confused. 8-p  I guess what you want to do is checking records in
+either of the filter_hash, right?  If so, what about this?
 
-On x86 NMI watchdog uses performance monitoring feature to
-periodically signal NMI each time performance counter gets overflowed.
+	in_old = !ftrace_hash_empty(old_hash) && ftrace_lookup_ip(old_hash, rec->ip);
+	in_new = !ftrace_hash_empty(new_hash) && ftrace_lookup_ip(new_hash, rec->ip);
 
-intel_pmu_handle_irq() is called as a NMI_LOCAL handler from a NMI
-handler of NMI watchdog, perf_event_nmi_handler(). It identifies owner
-of a given NMI by looking at overflow status bits in
-MSR_CORE_PERF_GLOBAL_STATUS MSR. If some of the bits are set, then it
-handles the given NMI as its own NMI.
 
-The problem is that intel_pmu_handle_irq() doesn't distinguish
-CondChgd bit from other bits. Unlike the other status bits, CondChgd
-bit doesn't represent overflow status for performance counters. Thus,
-CondChgd bit cannot be thought of as a mark indicating a given NMI is
-NMI watchdog's.
+>
+>> Also
+>> return value of ftrace_lookup_ip is not boolean..  maybe you need to
+>> add !! or convert type of the in_{old,new} to bool.
+>
+> Yeah, I see. And there is '||' (logical OR) which evaluates the result
+> as boolean. :)
 
-I noticed this behavior on systems with Ivy Bridge processors: Intel
-Xeon CPU E5-2630 v2 and Intel Xeon CPU E7-8890 v2. On both systems,
-CondChgd bit in MSR_CORE_PERF_GLOBAL_STATUS MSR has already been set
-in the beginning at boot. (then the CondChgd bit is cleared by next
-wrmsr to MSR_CORE_PERF_GLOBAL_CTRL MSR and appears to remain 0.)
+Argh... you're right! :)
 
-On the other hand, on older processors such as Nehalem, CondChgd bit
-is not set in the beginning at boot.
+>
+>> 
+>> 
+>>> +		if (in_old == in_new)
+>>> +			continue;
+>>> +
+>>> +		if (in_new) {
+>>> +			/* New entries must ensure no others are using it */
+>>> +			if (rec->flags & FTRACE_FL_IPMODIFY)
+>>> +				goto rollback;
+>>> +			rec->flags |= FTRACE_FL_IPMODIFY;
+>>> +		} else /* Removed entry */
+>>> +			rec->flags &= ~FTRACE_FL_IPMODIFY;
+>>> +	} while_for_each_ftrace_rec();
+>>> +
+>>> +	return 0;
+>>> +
+>>> +rollback:
+>>> +	end = rec;
+>>> +
+>>> +	/* Roll back what we did above */
+>>> +	do_for_each_ftrace_rec(pg, rec) {
+>>> +		if (rec == end)
+>>> +			goto err_out;
+>>> +
+>>> +		in_old = !old_hash || ftrace_lookup_ip(old_hash, rec->ip);
+>>> +		in_new = !new_hash || ftrace_lookup_ip(new_hash, rec->ip);
+>>> +		if (in_old == in_new)
+>>> +			continue;
+>>> +
+>>> +		if (in_new)
+>>> +			rec->flags &= ~FTRACE_FL_IPMODIFY;
+>>> +		else
+>>> +			rec->flags |= FTRACE_FL_IPMODIFY;
+>>> +	} while_for_each_ftrace_rec();
+>>> +
+>>> +err_out:
+>>> +	return -EBUSY;
+>>> +}
+>>> +
+>>> +static int ftrace_hash_ipmodify_enable(struct ftrace_ops *ops)
+>>> +{
+>>> +	struct ftrace_hash *hash = ops->filter_hash;
+>>> +
+>>> +	if (ftrace_hash_empty(hash))
+>>> +		hash = NULL;
+>>> +
+>>> +	return __ftrace_hash_update_ipmodify(ops, EMPTY_HASH, hash);
+>>> +}
+>> 
+>> Please see above comment.  You can pass an empty hash as is, or pass
+>> NULL as second arg.  The same goes to below...
+>
+> As I said above, that is by design :). EMPTY_HASH means it hits nothing,
+> NULL means it hits all.
 
-I'm not sure about exact behavior of CondChgd bit, in particular when
-this bit is set. Although I read Intel System Programmer's Manual to
-figure out but I have yet completed that. At least, I think ignoring
-CondChgd bit should be enough for NMI watchdog perspective.
+But doesn't it make unrelated records also get the flag updated?  I'm
+curious when new_hash can be empty on _enable() case..
 
-Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
----
- arch/x86/kernel/cpu/perf_event_intel.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
-
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index adb02aa..07846d7 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1382,6 +1382,15 @@ again:
- 	intel_pmu_lbr_read();
- 
- 	/*
-+	 * CondChgd bit 63 doesn't mean any overflow status. Ignore
-+	 * and clear the bit.
-+	 */
-+	if (__test_and_clear_bit(63, (unsigned long *)&status)) {
-+		if (!status)
-+			goto done;
-+	}
-+
-+	/*
- 	 * PEBS overflow sets bit 62 in the global status register
- 	 */
- 	if (__test_and_clear_bit(62, (unsigned long *)&status)) {
-
+Thanks,
+Namhyung
