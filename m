@@ -1,61 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754461AbaFKWW7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 18:22:59 -0400
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:44238 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752657AbaFKWW5 (ORCPT
+	id S1754551AbaFKWXI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 18:23:08 -0400
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:50218 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754481AbaFKWXC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 18:22:57 -0400
+	Wed, 11 Jun 2014 18:23:02 -0400
 MIME-Version: 1.0
-X-Originating-IP: [80.196.35.44]
-In-Reply-To: <20140611170917.GA12025@linux.intel.com>
-References: <1402392038-5268-2-git-send-email-m@bjorling.me>
-	<alpine.LRH.2.03.1406100945250.4699@AMR>
-	<A52B97CC-6D77-468B-9A9B-A5888AE63580@fb.com>
-	<alpine.LRH.2.03.1406101140490.4699@AMR>
-	<5397636F.9050209@fb.com>
-	<alpine.LRH.2.03.1406101458470.4699@AMR>
-	<5397753B.2020009@fb.com>
-	<alpine.LRH.2.03.1406101515430.4699@AMR>
-	<20140610213333.GA10055@linux.intel.com>
-	<539889DC.7090704@fb.com>
-	<20140611170917.GA12025@linux.intel.com>
-Date: Thu, 12 Jun 2014 00:22:57 +0200
-Message-ID: <CAOu_J6kocZZ1mRQeSidyqJ_Ew0F_POS30v2kgUZX2wDOOnuExg@mail.gmail.com>
-Subject: Re: [PATCH v7] NVMe: conversion to blk-mq
-From: =?UTF-8?Q?Matias_Bj=C3=B8rling?= <m@bjorling.me>
-To: Matthew Wilcox <willy@linux.intel.com>
-Cc: Jens Axboe <axboe@fb.com>, Keith Busch <keith.busch@intel.com>,
-        "sbradshaw@micron.com" <sbradshaw@micron.com>,
-        "tom.leiming@gmail.com" <tom.leiming@gmail.com>,
-        "hch@infradead.org" <hch@infradead.org>,
+In-Reply-To: <5398D59A.3030900@zytor.com>
+References: <cover.1402517933.git.luto@amacapital.net> <9e11cd988a0f120606e37b5e275019754e2774da.1402517933.git.luto@amacapital.net>
+ <CAADnVQKt5FnShkZeQewbfnU1kHM-gLs3hCZMf5xcgFzyRDLX7A@mail.gmail.com>
+ <CALCETrXoqqKC=T5Wvj+CDYQFte1s_=npDvQ2UYW0j=AanEgR1g@mail.gmail.com> <5398D59A.3030900@zytor.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 11 Jun 2014 15:22:40 -0700
+Message-ID: <CALCETrVMxkHcPXsEGtEc0Pr=Z80CzC0zWaQ9OdVdxi1CGuB4kQ@mail.gmail.com>
+Subject: Re: [RFC 5/5] x86,seccomp: Add a seccomp fastpath
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Alexei Starovoitov <alexei.starovoitov@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-nvme@lists.infradead.org" <linux-nvme@lists.infradead.org>
+        Kees Cook <keescook@chromium.org>, Will Drewry <wad@chromium.org>,
+        Oleg Nesterov <oleg@redhat.com>, X86 ML <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 11, 2014 at 7:09 PM, Matthew Wilcox <willy@linux.intel.com> wrote:
-> On Wed, Jun 11, 2014 at 10:54:52AM -0600, Jens Axboe wrote:
->> OK, so essentially any single request must be a virtually contig piece
->> of memory. Is there any size limitations to how big this contig segment
->> can be?
+On Wed, Jun 11, 2014 at 3:18 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 06/11/2014 02:56 PM, Andy Lutomirski wrote:
+>>
+>> 13ns is with the simplest nonempty filter.  I hope that empty filters
+>> don't work.
+>>
 >
-> The maximum size of an I/O is 65536 sectors.  So on a 512-byte sector
-> device, that's 32MB, but on a 4k sector size device, that's 128MB.
->
->> I think this is unique requirement, at least I haven't seen other pieces
->> of hardware have it. But it would be pretty trivial to add a setting to
->> limit merges based on virtually contig, similarly to what is done for
->> number of physical segments.
->
-> I think there might be an FCoE device with that requirement too.
+> Why wouldn't they?
 
-I've rebased nvmemq_review and added two patches from Jens that add
-support for requests with single range virtual addresses.
+Is it permissible to fall off the end of a BPF program?  I'm getting
+EINVAL trying to install an actual empty filter.  The filter I tested
+with was:
 
-Keith, will you take it for a spin and see if it fixes 068 for you?
+#include <unistd.h>
+#include <linux/filter.h>
+#include <linux/seccomp.h>
+#include <sys/syscall.h>
+#include <err.h>
+#include <sys/prctl.h>
+#include <stddef.h>
+#include <stdio.h>
 
-There might still be a problem with some flushes, I'm looking into this.
+int main(int argc, char **argv)
+{
+    int rc;
+
+    struct sock_filter filter[] = {
+        BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ALLOW),
+    };
+
+    struct sock_fprog prog = {
+        .len = (unsigned short)(sizeof(filter)/sizeof(filter[0])),
+        .filter = filter,
+    };
+
+    if (argc < 2) {
+        printf("Usage: null_seccomp PATH ARGS...\n");
+        return 1;
+    }
+
+    if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0))
+        err(1, "PR_SET_NO_NEW_PRIVS");
+    if (prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, &prog))
+        err(1, "PR_SET_SECCOMP");
+
+    execv(argv[1], argv + 1);
+    err(1, argv[1]);
+}
+
+
+--Andy
