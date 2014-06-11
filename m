@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755954AbaFKRJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 13:09:26 -0400
-Received: from mga02.intel.com ([134.134.136.20]:38501 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751220AbaFKRJZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 13:09:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,459,1400050800"; 
-   d="scan'208";a="526938857"
-Date: Wed, 11 Jun 2014 13:09:17 -0400
-From: Matthew Wilcox <willy@linux.intel.com>
-To: Jens Axboe <axboe@fb.com>
-Cc: Keith Busch <keith.busch@intel.com>,
-        Matias =?iso-8859-1?Q?Bj=F8rling?= <m@bjorling.me>,
-        "sbradshaw@micron.com" <sbradshaw@micron.com>,
-        "tom.leiming@gmail.com" <tom.leiming@gmail.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-nvme@lists.infradead.org" <linux-nvme@lists.infradead.org>
-Subject: Re: [PATCH v7] NVMe: conversion to blk-mq
-Message-ID: <20140611170917.GA12025@linux.intel.com>
-References: <1402392038-5268-2-git-send-email-m@bjorling.me>
- <alpine.LRH.2.03.1406100945250.4699@AMR>
- <A52B97CC-6D77-468B-9A9B-A5888AE63580@fb.com>
- <alpine.LRH.2.03.1406101140490.4699@AMR>
- <5397636F.9050209@fb.com>
- <alpine.LRH.2.03.1406101458470.4699@AMR>
- <5397753B.2020009@fb.com>
- <alpine.LRH.2.03.1406101515430.4699@AMR>
- <20140610213333.GA10055@linux.intel.com>
- <539889DC.7090704@fb.com>
+	id S932471AbaFKRJa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 13:09:30 -0400
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:58736 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755956AbaFKRJ2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 13:09:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <539889DC.7090704@fb.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <alpine.DEB.2.02.1406111837030.21198@scotdoyle.com>
+References: <1401800524-28934-1-git-send-email-mika.westerberg@linux.intel.com>
+	<CANLzEksLB1=+TePxgPRBhsGKpC-4tWB8JOh-Ey80Hj43LkVn=g@mail.gmail.com>
+	<20140604083726.GN1730@lahna.fi.intel.com>
+	<CANLzEkuAxGrRHtb=vFAm9AGws7Qyg3A_oQpAGGFaYEqP2A2g8g@mail.gmail.com>
+	<alpine.DEB.2.02.1406062259070.31301@scotdoyle.com>
+	<alpine.DEB.2.02.1406062316230.32568@scotdoyle.com>
+	<20140609124700.GJ1657@lahna.fi.intel.com>
+	<alpine.DEB.2.02.1406092332410.8274@scotdoyle.com>
+	<alpine.DEB.2.02.1406100610220.8274@scotdoyle.com>
+	<20140611092309.GC1657@lahna.fi.intel.com>
+	<alpine.DEB.2.02.1406111837030.21198@scotdoyle.com>
+Date: Wed, 11 Jun 2014 10:09:26 -0700
+X-Google-Sender-Auth: 1MZJZ8et-8trqEBUupP2Dt4Q1-M
+Message-ID: <CANLzEkuGWd9s1Ka32BrgGxrCF+gGqVA4=uKuGJMerWaz6NDMpA@mail.gmail.com>
+Subject: Re: [PATCH v3 1/1] platform/chrome: Probe multiple i2c adapters of
+ the same name
+From: Benson Leung <bleung@chromium.org>
+To: Scot Doyle <lkml14@scotdoyle.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 11, 2014 at 10:54:52AM -0600, Jens Axboe wrote:
-> OK, so essentially any single request must be a virtually contig piece
-> of memory. Is there any size limitations to how big this contig segment
-> can be?
+On Wed, Jun 11, 2014 at 10:51 AM, Scot Doyle <lkml14@scotdoyle.com> wrote:
+> The chromeos_laptop module probes the first i2c adapter with a specific name
+> for expected hardware. However, the Acer C720 Chromebook has two i2c
+> adapters with the same name. This patch probes each i2c adapter with a
+> specific name until locating the expected hardware.
+>
+> Thanks to Mika Westerberg for formatting tips and identifying the need for
+> unique bus addresses within each set of identically-named adapters.
 
-The maximum size of an I/O is 65536 sectors.  So on a 512-byte sector
-device, that's 32MB, but on a 4k sector size device, that's 128MB.
 
-> I think this is unique requirement, at least I haven't seen other pieces
-> of hardware have it. But it would be pretty trivial to add a setting to
-> limit merges based on virtually contig, similarly to what is done for
-> number of physical segments.
+Scot,
 
-I think there might be an FCoE device with that requirement too.
+Is your intention with this patch to replace the one that Mika wrote
+that specifically special cased the designware i2c busses? He already
+solved this problem in this patch.
+https://patchwork.kernel.org/patch/4288591/
+
+I'm not sure about your approach here. It looks like if there's some
+ambiguity in the names of the busses, you try to probe the device on
+every bus with that name.
+
+We know that bus 0 is going to have the touchpad, and we know that bus
+1 is going to have the touchscreen and light sensor. I'd prefer not to
+send extra probes for all of the combination of devices that don't
+exist.
+
+-- 
+Benson Leung
+Software Engineer, Chrom* OS
+bleung@chromium.org
