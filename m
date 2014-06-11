@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754566AbaFKW5Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 18:57:24 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:63962 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751797AbaFKW5X (ORCPT
+	id S1754181AbaFKXCt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 19:02:49 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:47616 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751797AbaFKXCs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 18:57:23 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: todd.e.brandt@linux.intel.com
-Cc: Steven Rostedt <rostedt@goodmis.org>, rafael.j.wysocki@intel.com,
-        linux-pm@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] PM: trace events for device pm callbacks
-Date: Thu, 12 Jun 2014 01:14:48 +0200
-Message-ID: <11508767.lTNI5hDeGY@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140611204215.GA8988@linux.intel.com>
-References: <20140610143122.GA12851@linux.intel.com> <1740847.aJcviUsT1q@vostro.rjw.lan> <20140611204215.GA8988@linux.intel.com>
+	Wed, 11 Jun 2014 19:02:48 -0400
+Date: Thu, 12 Jun 2014 00:01:30 +0100
+From: John Whitmore <arigead@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: a.zummo@towertech.it
+Subject: rtc/hctosys.c Problem during kernel boot
+Message-ID: <20140611230127.GA28066@griso.site>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, June 11, 2014 01:42:16 PM Todd E Brandt wrote:
-> Is this accepted?
+I'm having a problem with a DS3234 SPI based RTC chip and rtc/hctosys.c on the
+3.10.29 kernel of the RaspberryPi. I'm not sure this is a bug or not but
+thought I'd ask. I've enabled the kernel config option for HCTOSYS which, on
+boot, should set the system's date/time to the value read from the RTC. I
+tried tihs but it would never happen on the RPi. I eventually found in syslog
+that the kernel boot is attempting to execute the hctosys functionality prior
+to the SPI being initialised. As a result of this when hctosys is attempted
+there is not /dev/rtc0 yet. A short time later the DS3234 RTC is initialised
+but by then it's too late.
 
-Yes, applied.  Thanks!
+Once the system has booted and I've logged in I can read and write to the RTC
+and all seems good but /sys/class/rtc/rtc0/hctosys is '0' indicating that the
+system time was not set on boot.
 
-> On Tue, Jun 10, 2014 at 11:41:33PM +0200, Rafael J. Wysocki wrote:
-> > On Tuesday, June 10, 2014 05:17:16 PM Steven Rostedt wrote:
-> > > On Tue, 10 Jun 2014 23:17:46 +0200
-> > > "Rafael J. Wysocki" <rjw@rjwysocki.net> wrote:
-> > > 
-> > > > On Tuesday, June 10, 2014 07:31:22 AM Todd E Brandt wrote:
-> > > > > Adds two trace events which supply the same info that initcall_debug 
-> > > > > provides, but via ftrace instead of dmesg. The existing initcall_debug
-> > > > > calls require the pm_print_times_enabled var to be set (either via
-> > > > > sysfs or via the kernel cmd line). The new trace events provide all the
-> > > > > same info as the initcall_debug prints but with less overhead, and also
-> > > > > with coverage of device prepare and complete device callbacks.
-> > > > > 
-> > > > > These events replace the device_pm_report_time event (which has been
-> > > > > removed). device_pm_callback_start is called first and provides the device
-> > > > > and callback info. device_pm_callback_end is called after with the
-> > > > > device name and error info. The time and pid are gathered from the trace
-> > > > > data headers.
-> > > > > 
-> > > > > Signed-off-by: Todd Brandt <todd.e.brandt@intel.com>
-> > > > 
-> > > > Steve needs to see this (CCed).
-> > > 
-> > > The trace events look fine. Is there anything else you wanted me to
-> > > look at?
-> > 
-> > No, that's all, thanks!
-> > 
-> > Rafael
-> > 
+There is a "deprecated" warning in the syslog coming from the spi of the board
+file so perhaps that is the cause. So is this a bug? And if so what can I do
+to resolve it. The hctosys is on a "late_initcall" so not sure of timing.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+I'll include the syslog from the failed call to hctosys:
+
+Jun 11 23:14:07 raspberrypi kernel: [    2.205432] drivers/rtc/hctosys.c: unable to open rtc device (rtc0)
+Jun 11 23:14:07 raspberrypi kernel: [    2.225179] mmcblk0: mmc0:0007 SD08G 7.42 GiB 
+Jun 11 23:14:07 raspberrypi kernel: [    2.234058]  mmcblk0: p1 p2
+Jun 11 23:14:07 raspberrypi kernel: [    2.364955] usb 1-1: new high-speed USB device number 2 using dwc_otg
+Jun 11 23:14:07 raspberrypi kernel: [    2.373061] Indeed it is in host mode hprt0 = 00001101
+Jun 11 23:14:07 raspberrypi kernel: [    2.575396] usb 1-1: New USB device found, idVendor=0424, idProduct=9512
+Jun 11 23:14:07 raspberrypi kernel: [    2.583608] usb 1-1: New USB device strings: Mfr=0, Product=0, SerialNumber=0
+Jun 11 23:14:07 raspberrypi kernel: [    2.593237] hub 1-1:1.0: USB hub found
+Jun 11 23:14:07 raspberrypi kernel: [    2.598772] hub 1-1:1.0: 3 ports detected
+Jun 11 23:14:07 raspberrypi kernel: [    2.885152] usb 1-1.1: new high-speed USB device number 3 using dwc_otg
+Jun 11 23:14:07 raspberrypi kernel: [    2.968801] EXT4-fs (mmcblk0p2): mounted filesystem with ordered data mode. Opts: (null)
+Jun 11 23:14:07 raspberrypi kernel: [    2.980068] VFS: Mounted root (ext4 filesystem) on device 179:2.
+Jun 11 23:14:07 raspberrypi kernel: [    2.991031] devtmpfs: mounted
+Jun 11 23:14:07 raspberrypi kernel: [    2.996101] Freeing unused kernel memory: 132K (c0545000 - c0566000)
+Jun 11 23:14:07 raspberrypi kernel: [    3.005575] usb 1-1.1: New USB device found, idVendor=0424, idProduct=ec00
+Jun 11 23:14:07 raspberrypi kernel: [    3.014147] usb 1-1.1: New USB device strings: Mfr=0, Product=0, SerialNumber=0
+Jun 11 23:14:07 raspberrypi kernel: [    3.027128] smsc95xx v1.0.4
+Jun 11 23:14:07 raspberrypi kernel: [    3.091322] smsc95xx 1-1.1:1.0 eth0: register 'smsc95xx' at usb-bcm2708_usb-1.1, smsc95xx USB 2.0 Ethernet, b8:27:eb:7b:7f:02
+Jun 11 23:14:07 raspberrypi kernel: [    5.635302] bcm2708_spi bcm2708_spi.0: master is unqueued, this is deprecated
+Jun 11 23:14:07 raspberrypi kernel: [    5.771144] ds3234 spi0.1: Control Reg: 0x1c
+Jun 11 23:14:07 raspberrypi kernel: [    5.850125] ds3234 spi0.1: Ctrl/Stat Reg: 0x88
+Jun 11 23:14:07 raspberrypi kernel: [    5.891108] rtc rtc0: ds3234: dev (254:0)
+Jun 11 23:14:07 raspberrypi kernel: [    5.891209] ds3234 spi0.1: rtc core: registered ds3234 as rtc0
+Jun 11 23:14:07 raspberrypi kernel: [    5.937290] bcm2708_spi bcm2708_spi.0: SPI Controller at 0x20204000 (irq 80)
+Jun 11 23:14:07 raspberrypi kernel: [    8.031796] mcp251x spi0.0: CANSTAT 0x80 CANCTRL 0x07
+Jun 11 23:14:07 raspberrypi kernel: [    8.034590] mcp251x spi0.0: probed
+ 
