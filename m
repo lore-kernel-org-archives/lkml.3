@@ -1,404 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755614AbaFKIDm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 04:03:42 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:63121 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751311AbaFKIDg (ORCPT
+	id S1755645AbaFKIHD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 04:07:03 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:52663 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754058AbaFKIG5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 04:03:36 -0400
-From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Matthew Garrett <matthew.garrett@nebula.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Pavel Machek <pavel@ucw.cz>,
-        Valdis Kletnieks <valdis.kletnieks@vt.edu>
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org,
-        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
-        Sonal Santan <sonal.santan@gmail.com>
-Subject: [PATCH v2] Documentation: Rename hpfall.c => freefall.c, fixes for Dell
-Date: Wed, 11 Jun 2014 10:02:07 +0200
-Message-Id: <1402473727-5464-1-git-send-email-pali.rohar@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1399114077-19314-3-git-send-email-pali.rohar@gmail.com>
-References: <1399114077-19314-3-git-send-email-pali.rohar@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Wed, 11 Jun 2014 04:06:57 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@kernel.org
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 2/2] tracing: Do not copy hash if O_TRUNC is set
+Date: Wed, 11 Jun 2014 17:06:54 +0900
+Message-Id: <1402474014-28655-2-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1402474014-28655-1-git-send-email-namhyung@kernel.org>
+References: <1402474014-28655-1-git-send-email-namhyung@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dell kernel driver dell-smo8800 provides same freefall interface as hp_accel so
-program hpfall.c works also on Dell laptops. So rename it to freefall.c.
+When a filter file is open for writing and O_TRUNC is set, there's no
+need to copy and free the filter entries.
 
-Dell driver does not provide hp::hddprotect led so make sure that freefall.c
-works also if hp::hddprotect does not exist in sysfs.
-
-Additionally write info to syslog.
-
-Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-Cc: Sonal Santan <sonal.santan@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
-Changes since v1:
-* Fixed warnings: Missing a blank line after declarations
----
- Documentation/laptops/00-INDEX   |    4 +-
- Documentation/laptops/freefall.c |  177 ++++++++++++++++++++++++++++++++++++++
- Documentation/laptops/hpfall.c   |  146 -------------------------------
- 3 files changed, 179 insertions(+), 148 deletions(-)
- create mode 100644 Documentation/laptops/freefall.c
- delete mode 100644 Documentation/laptops/hpfall.c
+ kernel/trace/ftrace.c | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/Documentation/laptops/00-INDEX b/Documentation/laptops/00-INDEX
-index d13b9a9..d399ae1 100644
---- a/Documentation/laptops/00-INDEX
-+++ b/Documentation/laptops/00-INDEX
-@@ -8,8 +8,8 @@ disk-shock-protection.txt
- 	- information on hard disk shock protection.
- dslm.c
- 	- Simple Disk Sleep Monitor program
--hpfall.c
--	- (HP) laptop accelerometer program for disk protection.
-+freefall.c
-+	- (HP/DELL) laptop accelerometer program for disk protection.
- laptop-mode.txt
- 	- how to conserve battery power using laptop-mode.
- sony-laptop.txt
-diff --git a/Documentation/laptops/freefall.c b/Documentation/laptops/freefall.c
-new file mode 100644
-index 0000000..aab2ff0
---- /dev/null
-+++ b/Documentation/laptops/freefall.c
-@@ -0,0 +1,177 @@
-+/* Disk protection for HP/DELL machines.
-+ *
-+ * Copyright 2008 Eric Piel
-+ * Copyright 2009 Pavel Machek <pavel@ucw.cz>
-+ * Copyright 2012 Sonal Santan
-+ * Copyright 2014 Pali Rohár <pali.rohar@gmail.com>
-+ *
-+ * GPLv2.
-+ */
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index ddfda763ded7..13885590a184 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -2759,7 +2759,13 @@ ftrace_regex_open(struct ftrace_ops *ops, int flag,
+ 		hash = ops->filter_hash;
+ 
+ 	if (file->f_mode & FMODE_WRITE) {
+-		iter->hash = alloc_and_copy_ftrace_hash(FTRACE_HASH_DEFAULT_BITS, hash);
++		const int size_bits = FTRACE_HASH_DEFAULT_BITS;
 +
-+#include <stdio.h>
-+#include <stdlib.h>
-+#include <unistd.h>
-+#include <fcntl.h>
-+#include <sys/stat.h>
-+#include <sys/types.h>
-+#include <string.h>
-+#include <stdint.h>
-+#include <errno.h>
-+#include <signal.h>
-+#include <sys/mman.h>
-+#include <sched.h>
-+#include <syslog.h>
-+
-+static int noled;
-+static char unload_heads_path[64];
-+static char device_path[32];
-+static const char app_name[] = "FREE FALL";
-+
-+static int set_unload_heads_path(char *device)
-+{
-+	char devname[64];
-+
-+	if (strlen(device) <= 5 || strncmp(device, "/dev/", 5) != 0)
-+		return -EINVAL;
-+	strncpy(devname, device + 5, sizeof(devname) - 1);
-+	strncpy(device_path, device, sizeof(device_path) - 1);
-+
-+	snprintf(unload_heads_path, sizeof(unload_heads_path) - 1,
-+				"/sys/block/%s/device/unload_heads", devname);
-+	return 0;
-+}
-+
-+static int valid_disk(void)
-+{
-+	int fd = open(unload_heads_path, O_RDONLY);
-+
-+	if (fd < 0) {
-+		perror(unload_heads_path);
-+		return 0;
-+	}
-+
-+	close(fd);
-+	return 1;
-+}
-+
-+static void write_int(char *path, int i)
-+{
-+	char buf[1024];
-+	int fd = open(path, O_RDWR);
-+
-+	if (fd < 0) {
-+		perror("open");
-+		exit(1);
-+	}
-+
-+	sprintf(buf, "%d", i);
-+
-+	if (write(fd, buf, strlen(buf)) != strlen(buf)) {
-+		perror("write");
-+		exit(1);
-+	}
-+
-+	close(fd);
-+}
-+
-+static void set_led(int on)
-+{
-+	if (noled)
-+		return;
-+	write_int("/sys/class/leds/hp::hddprotect/brightness", on);
-+}
-+
-+static void protect(int seconds)
-+{
-+	const char *str = (seconds == 0) ? "Unparked" : "Parked";
-+
-+	write_int(unload_heads_path, seconds*1000);
-+	syslog(LOG_INFO, "%s %s disk head\n", str, device_path);
-+}
-+
-+static int on_ac(void)
-+{
-+	/* /sys/class/power_supply/AC0/online */
-+	return 1;
-+}
-+
-+static int lid_open(void)
-+{
-+	/* /proc/acpi/button/lid/LID/state */
-+	return 1;
-+}
-+
-+static void ignore_me(int signum)
-+{
-+	protect(0);
-+	set_led(0);
-+}
-+
-+int main(int argc, char **argv)
-+{
-+	int fd, ret;
-+	struct stat st;
-+	struct sched_param param;
-+
-+	if (argc == 1)
-+		ret = set_unload_heads_path("/dev/sda");
-+	else if (argc == 2)
-+		ret = set_unload_heads_path(argv[1]);
-+	else
-+		ret = -EINVAL;
-+
-+	if (ret || !valid_disk()) {
-+		fprintf(stderr, "usage: %s <device> (default: /dev/sda)\n",
-+				argv[0]);
-+		exit(1);
-+	}
-+
-+	fd = open("/dev/freefall", O_RDONLY);
-+	if (fd < 0) {
-+		perror("/dev/freefall");
-+		return EXIT_FAILURE;
-+	}
-+
-+	if (stat("/sys/class/leds/hp::hddprotect/brightness", &st))
-+		noled = 1;
-+
-+	if (daemon(0, 0) != 0) {
-+		perror("daemon");
-+		return EXIT_FAILURE;
-+	}
-+
-+	openlog(app_name, LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
-+
-+	param.sched_priority = sched_get_priority_max(SCHED_FIFO);
-+	sched_setscheduler(0, SCHED_FIFO, &param);
-+	mlockall(MCL_CURRENT|MCL_FUTURE);
-+
-+	signal(SIGALRM, ignore_me);
-+
-+	for (;;) {
-+		unsigned char count;
-+
-+		ret = read(fd, &count, sizeof(count));
-+		alarm(0);
-+		if ((ret == -1) && (errno == EINTR)) {
-+			/* Alarm expired, time to unpark the heads */
-+			continue;
-+		}
-+
-+		if (ret != sizeof(count)) {
-+			perror("read");
-+			break;
-+		}
-+
-+		protect(21);
-+		set_led(1);
-+		if (1 || on_ac() || lid_open())
-+			alarm(2);
++		if (file->f_flags & O_TRUNC)
++			iter->hash = alloc_ftrace_hash(size_bits);
 +		else
-+			alarm(20);
-+	}
++			iter->hash = alloc_and_copy_ftrace_hash(size_bits, hash);
 +
-+	closelog();
-+	close(fd);
-+	return EXIT_SUCCESS;
-+}
-diff --git a/Documentation/laptops/hpfall.c b/Documentation/laptops/hpfall.c
-deleted file mode 100644
-index b85dbba..0000000
---- a/Documentation/laptops/hpfall.c
-+++ /dev/null
-@@ -1,146 +0,0 @@
--/* Disk protection for HP machines.
-- *
-- * Copyright 2008 Eric Piel
-- * Copyright 2009 Pavel Machek <pavel@ucw.cz>
-- *
-- * GPLv2.
-- */
+ 		if (!iter->hash) {
+ 			trace_parser_put(&iter->parser);
+ 			kfree(iter);
+@@ -2768,10 +2774,6 @@ ftrace_regex_open(struct ftrace_ops *ops, int flag,
+ 		}
+ 	}
+ 
+-	if ((file->f_mode & FMODE_WRITE) &&
+-	    (file->f_flags & O_TRUNC))
+-		ftrace_filter_reset(iter->hash);
 -
--#include <stdio.h>
--#include <stdlib.h>
--#include <unistd.h>
--#include <fcntl.h>
--#include <sys/stat.h>
--#include <sys/types.h>
--#include <string.h>
--#include <stdint.h>
--#include <errno.h>
--#include <signal.h>
--#include <sys/mman.h>
--#include <sched.h>
--
--char unload_heads_path[64];
--
--int set_unload_heads_path(char *device)
--{
--	char devname[64];
--
--	if (strlen(device) <= 5 || strncmp(device, "/dev/", 5) != 0)
--		return -EINVAL;
--	strncpy(devname, device + 5, sizeof(devname));
--
--	snprintf(unload_heads_path, sizeof(unload_heads_path) - 1,
--				"/sys/block/%s/device/unload_heads", devname);
--	return 0;
--}
--int valid_disk(void)
--{
--	int fd = open(unload_heads_path, O_RDONLY);
--	if (fd < 0) {
--		perror(unload_heads_path);
--		return 0;
--	}
--
--	close(fd);
--	return 1;
--}
--
--void write_int(char *path, int i)
--{
--	char buf[1024];
--	int fd = open(path, O_RDWR);
--	if (fd < 0) {
--		perror("open");
--		exit(1);
--	}
--	sprintf(buf, "%d", i);
--	if (write(fd, buf, strlen(buf)) != strlen(buf)) {
--		perror("write");
--		exit(1);
--	}
--	close(fd);
--}
--
--void set_led(int on)
--{
--	write_int("/sys/class/leds/hp::hddprotect/brightness", on);
--}
--
--void protect(int seconds)
--{
--	write_int(unload_heads_path, seconds*1000);
--}
--
--int on_ac(void)
--{
--//	/sys/class/power_supply/AC0/online
--}
--
--int lid_open(void)
--{
--//	/proc/acpi/button/lid/LID/state
--}
--
--void ignore_me(void)
--{
--	protect(0);
--	set_led(0);
--}
--
--int main(int argc, char **argv)
--{
--	int fd, ret;
--	struct sched_param param;
--
--	if (argc == 1)
--		ret = set_unload_heads_path("/dev/sda");
--	else if (argc == 2)
--		ret = set_unload_heads_path(argv[1]);
--	else
--		ret = -EINVAL;
--
--	if (ret || !valid_disk()) {
--		fprintf(stderr, "usage: %s <device> (default: /dev/sda)\n",
--				argv[0]);
--		exit(1);
--	}
--
--	fd = open("/dev/freefall", O_RDONLY);
--	if (fd < 0) {
--		perror("/dev/freefall");
--		return EXIT_FAILURE;
--	}
--
--	daemon(0, 0);
--	param.sched_priority = sched_get_priority_max(SCHED_FIFO);
--	sched_setscheduler(0, SCHED_FIFO, &param);
--	mlockall(MCL_CURRENT|MCL_FUTURE);
--
--	signal(SIGALRM, ignore_me);
--
--	for (;;) {
--		unsigned char count;
--
--		ret = read(fd, &count, sizeof(count));
--		alarm(0);
--		if ((ret == -1) && (errno == EINTR)) {
--			/* Alarm expired, time to unpark the heads */
--			continue;
--		}
--
--		if (ret != sizeof(count)) {
--			perror("read");
--			break;
--		}
--
--		protect(21);
--		set_led(1);
--		if (1 || on_ac() || lid_open())
--			alarm(2);
--		else
--			alarm(20);
--	}
--
--	close(fd);
--	return EXIT_SUCCESS;
--}
+ 	if (file->f_mode & FMODE_READ) {
+ 		iter->pg = ftrace_pages_start;
+ 
 -- 
-1.7.9.5
+2.0.0
 
