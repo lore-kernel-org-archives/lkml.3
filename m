@@ -1,58 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755661AbaFKPca (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 11:32:30 -0400
-Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:14157 "EHLO
-	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755748AbaFKPc2 (ORCPT
+	id S933100AbaFKPcu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 11:32:50 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:52789 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755302AbaFKPaf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 11:32:28 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArYKAGN0mFNbslCP/2dsb2JhbABagw2sBAUBAQEBAQEFAZkZgQYXdYRgI4EaN4hGAc8WhViIdB2EKwSPY4pKk0qDPjs
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Eric Paris <eparis@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] kernel/auditfilter.c: replace count*size kmalloc by kcalloc
-Date: Wed, 11 Jun 2014 17:31:07 +0200
-Message-Id: <1402500667-6831-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	Wed, 11 Jun 2014 11:30:35 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-5c-539876170749
+From: Tomasz Figa <t.figa@samsung.com>
+To: linux-samsung-soc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>, Robin Holt <holt@sgi.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Tomasz Figa <tomasz.figa@gmail.com>,
+        Tomasz Figa <t.figa@samsung.com>
+Subject: [PATCH 2/5] ARM: Get outer cache .write_sec callback from mach_desc
+ only if not NULL
+Date: Wed, 11 Jun 2014 17:30:09 +0200
+Message-id: <1402500612-4778-3-git-send-email-t.figa@samsung.com>
+X-Mailer: git-send-email 1.9.3
+In-reply-to: <1402500612-4778-1-git-send-email-t.figa@samsung.com>
+References: <1402500612-4778-1-git-send-email-t.figa@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFLMWRmVeSWpSXmKPExsVy+t/xy7riZTOCDX5MMrDon9bBatG74Cqb
+	xfbOGewWU/4sZ7LY9Pgaq8XlXXPYLGYv6WexmHF+H5PF7cu8Fq/71jBbrJ/xmsVi1a4/jBb7
+	r3g58Hq0NPeweXz7OonF43JfL5PHzll32T3uXNvD5rF5Sb1H35ZVjB53r79k8jh+YzuTx+dN
+	cgFcUVw2Kak5mWWpRfp2CVwZx/umsRd0c1Ys2nmCrYHxInsXIyeHhICJxOv+XjYIW0ziwr31
+	QDYXh5DAUkaJg3+3QTl9TBIndu5gAaliE1CT+NzwCKxDREBV4nPbAnaQImaBvcwSZ2bcYARJ
+	CAvES5w6eRxsBQtQ0aJjt4FsDg5eAUeJGTczILbJSfRue8MMYnMKOEk8vdwL1ioEVLJq/UXm
+	CYy8CxgZVjGKppYmFxQnpeca6hUn5haX5qXrJefnbmKEhO+XHYyLj1kdYhTgYFTi4eXQmRYs
+	xJpYVlyZe4hRgoNZSYS3oHBGsBBvSmJlVWpRfnxRaU5q8SFGJg5OqQbGbr8STgmrczyeYfcu
+	PZ9x0bjkxR+345t3HZqx/QiDWOnrNXuCA2/H9j8WfBsjxBgX3qiqIjZjV6Yim8WmKZutt8nc
+	nHvzy6u4qQsum1hujWB+sCWvfXqg85ZpTPZ67/U52qWtaly3q85w5VVfIzLR593sV1ErXknX
+	r5VtUMvYe0NfSuZL7j9fJZbijERDLeai4kQADBJWoT0CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kcalloc manages count*sizeof overflow.
+Certain platforms (i.e. Exynos) might need to set .write_sec callback
+from firmware initialization which is happenning in .init_early callback
+of machine descriptor. However current code will overwrite the pointer
+with whatever is present in machine descriptor, even though it can be
+already set earlier. This patch fixes this by making the assignment
+conditional, depending on whether current .write_sec callback is NULL.
 
-Cc: Eric Paris <eparis@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
+Signed-off-by: Tomasz Figa <t.figa@samsung.com>
 ---
- kernel/auditfilter.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/kernel/irq.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
-index 8e9bc9c..c447cd9 100644
---- a/kernel/auditfilter.c
-+++ b/kernel/auditfilter.c
-@@ -106,7 +106,7 @@ static inline struct audit_entry *audit_init_entry(u32 field_count)
- 	if (unlikely(!entry))
- 		return NULL;
+diff --git a/arch/arm/kernel/irq.c b/arch/arm/kernel/irq.c
+index 2c42576..e7383b9 100644
+--- a/arch/arm/kernel/irq.c
++++ b/arch/arm/kernel/irq.c
+@@ -125,7 +125,8 @@ void __init init_IRQ(void)
  
--	fields = kzalloc(sizeof(*fields) * field_count, GFP_KERNEL);
-+	fields = kcalloc(field_count, sizeof(*fields), GFP_KERNEL);
- 	if (unlikely(!fields)) {
- 		kfree(entry);
- 		return NULL;
-@@ -160,7 +160,7 @@ static __u32 *classes[AUDIT_SYSCALL_CLASSES];
- 
- int __init audit_register_class(int class, unsigned *list)
- {
--	__u32 *p = kzalloc(AUDIT_BITMASK_SIZE * sizeof(__u32), GFP_KERNEL);
-+	__u32 *p = kcalloc(AUDIT_BITMASK_SIZE, sizeof(__u32), GFP_KERNEL);
- 	if (!p)
- 		return -ENOMEM;
- 	while (*list != ~0U) {
+ 	if (IS_ENABLED(CONFIG_OF) && IS_ENABLED(CONFIG_CACHE_L2X0) &&
+ 	    (machine_desc->l2c_aux_mask || machine_desc->l2c_aux_val)) {
+-		outer_cache.write_sec = machine_desc->l2c_write_sec;
++		if (!outer_cache.write_sec)
++			outer_cache.write_sec = machine_desc->l2c_write_sec;
+ 		ret = l2x0_of_init(machine_desc->l2c_aux_val,
+ 				   machine_desc->l2c_aux_mask);
+ 		if (ret)
 -- 
-1.8.4.5
+1.9.3
 
