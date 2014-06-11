@@ -1,61 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932107AbaFKFrH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 01:47:07 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:42239 "EHLO
+	id S1755433AbaFKFrt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 01:47:49 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:42429 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751260AbaFKFrF (ORCPT
+	with ESMTP id S1751260AbaFKFrr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 01:47:05 -0400
-Date: Wed, 11 Jun 2014 08:45:04 +0300
+	Wed, 11 Jun 2014 01:47:47 -0400
+Date: Wed, 11 Jun 2014 08:45:18 +0300
 From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, navin patidar <navinp@cdac.in>,
-        Valentina Manea <valentina.manea.m@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging: usbip: stub_main.c: Cleaning up missing
- null-terminate after strncpy call
-Message-ID: <20140611053612.GN5015@mwanda>
-References: <1401917989-3427-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <20140610065735.GF5500@mwanda>
- <CAFo99gY9ROmVS56PeeAPxw6GgBnjLai3az0ABnE=1xcryDCRuA@mail.gmail.com>
+To: Jeff Layton <jlayton@poochiereds.net>
+Cc: linux-kernel@vger.kernel.org, linux-sparse@vger.kernel.org,
+        Jeff Layton <jlayton@primarydata.com>
+Subject: Re: [PATCH][RFC] err.h: silence sparse warning: dereference of
+ noderef expression
+Message-ID: <20140611052040.GM5500@mwanda>
+References: <1402436329-24750-1-git-send-email-jlayton@poochiereds.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAFo99gY9ROmVS56PeeAPxw6GgBnjLai3az0ABnE=1xcryDCRuA@mail.gmail.com>
+In-Reply-To: <1402436329-24750-1-git-send-email-jlayton@poochiereds.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 10, 2014 at 10:48:35PM +0200, Rickard Strandqvist wrote:
-> Hi
+On Tue, Jun 10, 2014 at 05:38:49PM -0400, Jeff Layton wrote:
+> From: Jeff Layton <jlayton@primarydata.com>
 > 
-> True!
-> Sorry  :-(
+> Lately, when I do a make with C=1, I get *tons* of these warnings:
 > 
-> But then one would either operate strcpy outright.
-> 
-> Or use strlcpy then the code would be:
-> 
->     /* strlcpy() handles not include \0 */
->     len = strlcpy(busid, buf + 4, BUSID_SIZE);
-> 
->     /* busid needs to include \0 termination */
->     if (!(len < BUSID_SIZE))
+>     include/linux/err.h:35:16: warning: dereference of noderef expression
+>     include/linux/err.h:30:23: warning: dereference of noderef expression
 
-I don't like this condition.  Just say (len >= BUSID_SIZE).  The
-comments here are obvious and could be left out.
+Which version of Sparse, which version of the kernel and which .c file
+can I compile to reproduce this?
 
->         return -EINVAL;
-
-I don't have strong feelings about a cleanup patch.  But I think that
-cppcheck is not being very sofisticated here with the NUL termination
-warning so we should not go out of our way to try to silence the
-warning.
+I built fs/cifs/ and I didn't see the sparse warning.
 
 regards,
 dan carpenter
