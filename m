@@ -1,81 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755353AbaFKEfb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 00:35:31 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:50479 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750848AbaFKEf3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 00:35:29 -0400
-Date: Tue, 10 Jun 2014 23:35:07 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Peter Chen <peter.chen@freescale.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Matt Porter <matt.porter@linaro.org>
-Subject: Re: Disable bus's drivers_autoprobe before rootfs has mounted
-Message-ID: <20140611043507.GA30126@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <20140611021439.GA25082@shlinux1.ap.freescale.net>
- <20140611041000.GB15184@kroah.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="YZ5djTAD1cGYuMQK"
-Content-Disposition: inline
-In-Reply-To: <20140611041000.GB15184@kroah.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1755384AbaFKEfq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 00:35:46 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:61682 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750848AbaFKEfo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 00:35:44 -0400
+From: Varka Bhadram <varkabhadram@gmail.com>
+X-Google-Original-From: Varka Bhadram <varkab@cdac.in>
+To: netdev@vger.kernel.org
+Cc: linux-zigbee-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        alex.bluesman.smirnov@gmail.com, dbaryshkov@gmail.com,
+        Varka Bhadram <varkab@cdac.in>
+Subject: [net-next PATCH] mrf24j40: add device managed APIs
+Date: Wed, 11 Jun 2014 10:04:44 +0530
+Message-Id: <1402461284-8435-1-git-send-email-varkab@cdac.in>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---YZ5djTAD1cGYuMQK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+adds the device managed APIs so that no need worry about
+freeing the resources.
 
-Hi,
+Signed-off-by: Varka Bhadram <varkab@cdac.in>
+---
+ drivers/net/ieee802154/mrf24j40.c |   33 +++++++++++++--------------------
+ 1 file changed, 13 insertions(+), 20 deletions(-)
 
-On Tue, Jun 10, 2014 at 09:10:00PM -0700, Greg KH wrote:
-> > Let's take USB peripheral as an example, there is a device for
-> > udc, and a device driver for usb gadget driver, at default, we want
-> > the device to be bound to driver automatically, this is what
-> > we have done now. But if there are more than one udcs and gadget
-> > drivers (eg one B port for mass storage, another B port for usb etherne=
-t),
-> > the user may want to have specific binding (eg, udc-0 -> mass storage,
-> > udc-1 -> usb ethernet), so the binding will be established
-> > after rootfs has mounted. (This feature is implementing)
->=20
-> Then there better be a way to describe this on the kernel command line
-> (i.e. module paramaters), right?  Which is a total mess, why not just
-> not bind anything in this case and let the user pick what they want?
+diff --git a/drivers/net/ieee802154/mrf24j40.c b/drivers/net/ieee802154/mrf24j40.c
+index 78a6552..4048062 100644
+--- a/drivers/net/ieee802154/mrf24j40.c
++++ b/drivers/net/ieee802154/mrf24j40.c
+@@ -618,12 +618,12 @@ static int mrf24j40_probe(struct spi_device *spi)
+ 
+ 	printk(KERN_INFO "mrf24j40: probe(). IRQ: %d\n", spi->irq);
+ 
+-	devrec = kzalloc(sizeof(struct mrf24j40), GFP_KERNEL);
++	devrec = devm_kzalloc(&spi->dev, sizeof(struct mrf24j40), GFP_KERNEL);
+ 	if (!devrec)
+-		goto err_devrec;
+-	devrec->buf = kzalloc(3, GFP_KERNEL);
++		goto err_ret;
++	devrec->buf = devm_kzalloc(&spi->dev, 3, GFP_KERNEL);
+ 	if (!devrec->buf)
+-		goto err_buf;
++		goto err_ret;
+ 
+ 	spi->mode = SPI_MODE_0; /* TODO: Is this appropriate for right here? */
+ 	if (spi->max_speed_hz > MAX_SPI_SPEED_HZ)
+@@ -638,7 +638,7 @@ static int mrf24j40_probe(struct spi_device *spi)
+ 
+ 	devrec->dev = ieee802154_alloc_device(0, &mrf24j40_ops);
+ 	if (!devrec->dev)
+-		goto err_alloc_dev;
++		goto err_ret;
+ 
+ 	devrec->dev->priv = devrec;
+ 	devrec->dev->parent = &devrec->spi->dev;
+@@ -676,12 +676,13 @@ static int mrf24j40_probe(struct spi_device *spi)
+ 	val &= ~0x3; /* Clear RX mode (normal) */
+ 	write_short_reg(devrec, REG_RXMCR, val);
+ 
+-	ret = request_threaded_irq(spi->irq,
+-				   NULL,
+-				   mrf24j40_isr,
+-				   IRQF_TRIGGER_LOW|IRQF_ONESHOT,
+-				   dev_name(&spi->dev),
+-				   devrec);
++	ret = devm_request_threaded_irq(&spi->dev,
++					spi->irq,
++					NULL,
++					mrf24j40_isr,
++					IRQF_TRIGGER_LOW|IRQF_ONESHOT,
++					dev_name(&spi->dev),
++					devrec);
+ 
+ 	if (ret) {
+ 		dev_err(printdev(devrec), "Unable to get IRQ");
+@@ -695,11 +696,7 @@ err_read_reg:
+ 	ieee802154_unregister_device(devrec->dev);
+ err_register_device:
+ 	ieee802154_free_device(devrec->dev);
+-err_alloc_dev:
+-	kfree(devrec->buf);
+-err_buf:
+-	kfree(devrec);
+-err_devrec:
++err_ret:
+ 	return ret;
+ }
+ 
+@@ -709,15 +706,11 @@ static int mrf24j40_remove(struct spi_device *spi)
+ 
+ 	dev_dbg(printdev(devrec), "remove\n");
+ 
+-	free_irq(spi->irq, devrec);
+ 	ieee802154_unregister_device(devrec->dev);
+ 	ieee802154_free_device(devrec->dev);
+ 	/* TODO: Will ieee802154_free_device() wait until ->xmit() is
+ 	 * complete? */
+ 
+-	/* Clean up the SPI stuff. */
+-	kfree(devrec->buf);
+-	kfree(devrec);
+ 	return 0;
+ }
+ 
+-- 
+1.7.9.5
 
-you can also blacklist all gadget drivers and manually probe them or -
-get this - you can refrain from using gadget drivers and use libusbg to
-build the gadget drivers out of raw usb functions, then bind them to the
-UDC of your liking.
-
---=20
-balbi
-
---YZ5djTAD1cGYuMQK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTl9x7AAoJEIaOsuA1yqRE190P/2k0kU9aLAtsBSmvlRVaPe89
-SgUk/HTG5QuW9CGQJiEqkQuZ130Mf/7Qj/VLwnswp0ZxycU64iNBFI142dcHHQE5
-rzM+wQRQWBo2PV8G1ZqOiDoEv78e03UClOEN2SEsY41U02n2sOFwDKNhi85Ky4cg
-vJexmiB26yKlHCSZPMIa0m4O5BBEZf5XbAtSty+8bv3qu/jlEb2og5bMduGbFu6J
-BC4+gau5VzYwJOkYMJS1R5s6/hUs/NZ61CLnWkycZkJwv2KAw6hCavDB1DowBzuR
-CCRb+K6W8dNuqoRpw+OrdV+975Ry26kPBXx3b69dYj0FMOXBXgGPYX2hTZw3IjEa
-yGu281ZmvKt4HnvbVNn4cahF6BCgAxtbn1C394/muRyHSmdlUO52WCZDCjnxdwsu
-8PuonsVLk/k+/KrETU7pdkD62FPVzuXpg3Jf/jTnAf1+rCOvRZUdOIJZvuiktQV8
-OWkdLuoHRz24ijY8UQneaCJQaeBnGm0OMAGjyw0UiebDw3lFo7Ad19hyetSNZbkX
-b3UBqPA8wL6GSqMr/MnkhpX5oGRdZY6qSfoZCym2uqlgU6fb7t/nBAxKpVbSEv/J
-YDVbdOPaLcDuAcgrLD5yBzsse47inIdaYw8Iwu4ssjuwNwGNs6i5cBJx3M6Sp/8I
-ZMHmqURmmBlPc+Hr6ee9
-=5I4q
------END PGP SIGNATURE-----
-
---YZ5djTAD1cGYuMQK--
