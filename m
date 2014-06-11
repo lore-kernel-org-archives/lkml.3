@@ -1,59 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932089AbaFKEmt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 00:42:49 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:48734 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751262AbaFKEmr (ORCPT
+	id S1751114AbaFKEsF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 00:48:05 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:51804 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750757AbaFKEsD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 00:42:47 -0400
-Date: Tue, 10 Jun 2014 21:42:42 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Dipankar Sarma <dipankar@in.ibm.com>,
-        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 1/1] kernel/rcu/tree.c: correct a check for grace
- period in progress
-Message-ID: <20140611044242.GY4581@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1402456819-30515-1-git-send-email-bobby.prani@gmail.com>
- <20140611041202.GX4581@linux.vnet.ibm.com>
- <CAJhHMCCgXBCe-deg7TtqA-azyc2ZvQRLKAiKVJ5OhL5GzLhH0w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJhHMCCgXBCe-deg7TtqA-azyc2ZvQRLKAiKVJ5OhL5GzLhH0w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061104-9332-0000-0000-0000010F0677
+	Wed, 11 Jun 2014 00:48:03 -0400
+From: A Raghavendra Rao <raghav3276@gmail.com>
+X-Google-Original-From: A Raghavendra Rao <arrao@cdac.in>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        A Raghavendra Rao <arrao@cdac.in>
+Subject: [PATCH] Staging: rtl8192e: dot11d: Fixed printk coding style issues
+Date: Wed, 11 Jun 2014 10:11:55 +0530
+Message-Id: <1402461715-15317-1-git-send-email-arrao@cdac.in>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 11, 2014 at 12:23:57AM -0400, Pranith Kumar wrote:
-> Hi Paul,
-> 
-> On Wed, Jun 11, 2014 at 12:12 AM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> >>       if (rnp->gpnum != rnp->completed ||
-> >> -         ACCESS_ONCE(rnp->gpnum) != ACCESS_ONCE(rnp->completed)) {
-> >> +         ACCESS_ONCE(rnp_root->gpnum) != ACCESS_ONCE(rnp_root->completed)) {
-> >
-> > At this point in the code, we are checking the current rcu_node structure,
-> > which might or might not be the root.  If it is not the root, we absolutely
-> > cannot compare against the root because we don't yet hold the root's lock.
-> >
-> 
-> I was a bit thrown by the double checking which is being done
-> (rnp->gpnum != rnp->complete) in that if condition. Once without
-> ACCESS_ONCE and one with. Is there any particular reason for this?
-> 
-> I now understand that we are comparing ->gpnum and ->completed of the
-> root node which might change from under us if we don't hold the root's
-> lock. I will keep looking :)
+Replaced 'printk' with 'netdev_' function
 
-Hmmm...  Now that you mention it, that does look a bit strange.
+Signed-off-by: A Raghavendra Rao <arrao@cdac.in>
+---
+ drivers/staging/rtl8192e/dot11d.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-							Thanx, Paul
+diff --git a/drivers/staging/rtl8192e/dot11d.c b/drivers/staging/rtl8192e/dot11d.c
+index 53da610..ef9da86 100644
+--- a/drivers/staging/rtl8192e/dot11d.c
++++ b/drivers/staging/rtl8192e/dot11d.c
+@@ -49,6 +49,7 @@ static struct channel_list ChannelPlan[] = {
+ void dot11d_init(struct rtllib_device *ieee)
+ {
+ 	struct rt_dot11d_info *pDot11dInfo = GET_DOT11D_INFO(ieee);
++
+ 	pDot11dInfo->bEnabled = false;
+ 
+ 	pDot11dInfo->State = DOT11D_STATE_NONE;
+@@ -133,12 +134,12 @@ void Dot11d_UpdateCountryIe(struct rtllib_device *dev, u8 *pTaddr,
+ 	pTriple = (struct chnl_txpow_triple *)(pCoutryIe + 3);
+ 	for (i = 0; i < NumTriples; i++) {
+ 		if (MaxChnlNum >= pTriple->FirstChnl) {
+-			printk(KERN_INFO "Dot11d_UpdateCountryIe(): Invalid country IE, skip it........1\n");
++			netdev_info(dev->dev, "Dot11d_UpdateCountryIe(): Invalid country IE, skip it........1\n");
+ 			return;
+ 		}
+ 		if (MAX_CHANNEL_NUMBER < (pTriple->FirstChnl +
+ 		    pTriple->NumChnls)) {
+-			printk(KERN_INFO "Dot11d_UpdateCountryIe(): Invalid country IE, skip it........2\n");
++			netdev_info(dev->dev, "Dot11d_UpdateCountryIe(): Invalid country IE, skip it........2\n");
+ 			return;
+ 		}
+ 
+@@ -165,7 +166,7 @@ u8 DOT11D_GetMaxTxPwrInDbm(struct rtllib_device *dev, u8 Channel)
+ 	u8 MaxTxPwrInDbm = 255;
+ 
+ 	if (MAX_CHANNEL_NUMBER < Channel) {
+-		printk(KERN_INFO "DOT11D_GetMaxTxPwrInDbm(): Invalid Channel\n");
++		netdev_info(dev->dev, "DOT11D_GetMaxTxPwrInDbm(): Invalid Channel\n");
+ 		return MaxTxPwrInDbm;
+ 	}
+ 	if (pDot11dInfo->channel_map[Channel])
+@@ -204,7 +205,7 @@ int ToLegalChannel(struct rtllib_device *dev, u8 channel)
+ 	}
+ 
+ 	if (MAX_CHANNEL_NUMBER < channel) {
+-		printk(KERN_ERR "%s(): Invalid Channel\n", __func__);
++		netdev_err(dev->dev, "%s(): Invalid Channel\n", __func__);
+ 		return default_chn;
+ 	}
+ 
+-- 
+1.7.9.5
 
