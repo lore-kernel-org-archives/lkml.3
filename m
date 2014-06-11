@@ -1,69 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755653AbaFKNiZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 09:38:25 -0400
-Received: from mail1.bemta3.messagelabs.com ([195.245.230.168]:50216 "EHLO
-	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754032AbaFKNiX (ORCPT
+	id S1755705AbaFKNiz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 09:38:55 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:54207 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754449AbaFKNix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 09:38:23 -0400
-X-Greylist: delayed 371 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 Jun 2014 09:38:23 EDT
-X-Env-Sender: Adam.Thomson@diasemi.com
-X-Msg-Ref: server-10.tower-38.messagelabs.com!1402493498!20613374!1
-X-Originating-IP: [94.185.165.51]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.3; banners=-,-,-
-X-VirusChecked: Checked
-From: Adam Thomson <Adam.Thomson@diasemi.com>
-To: "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>,
-        "Rob Herring" <robherring2@gmail.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Jonathan Cameron <jic23@kernel.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Support Opensource" <Support.Opensource@diasemi.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Subject: RE: [PATCH 8/8] DT: Add vendor prefix for Dialog Semiconductor Ltd.
-Thread-Topic: [PATCH 8/8] DT: Add vendor prefix for Dialog Semiconductor Ltd.
-Thread-Index: AQHPhWXsl+BblB/jGkWYvkOE3dcBh5trwFiAgAAJgQCAABmYMIAABE5g
-Date: Wed, 11 Jun 2014 13:31:37 +0000
-Message-ID: <2E89032DDAA8B9408CB92943514A0337A56F53EA@SW-EX-MBX01.diasemi.com>
-References: <cover.1402484954.git.Adam.Thomson.Opensource@diasemi.com>
-	<bf4b6d7b061e66d3ca7f3dd44319b9e26ae7103f.1402484954.git.Adam.Thomson.Opensource@diasemi.com>
-	<CAMuHMdWirVk+jrz40yw4=zAOFH6VTX9CXcpO01e0rK8S8VGGHw@mail.gmail.com>
- <CAL_JsqK0RqYuZ8YB1sBZK7hMXvp6oEPfAu11m95F61_kGV3Ptg@mail.gmail.com> 
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.20.26.15]
-Content-Type: text/plain; charset="utf-8"
+	Wed, 11 Jun 2014 09:38:53 -0400
 MIME-Version: 1.0
+In-Reply-To: <20140611092330.7930eff2@gandalf.local.home>
+References: <1394862048-28758-1-git-send-email-takahiro.akashi@linaro.org>
+	<1398851676-16389-1-git-send-email-takahiro.akashi@linaro.org>
+	<1398851676-16389-2-git-send-email-takahiro.akashi@linaro.org>
+	<CAMuHMdWs9i4pBNbn-RTpv_-K5W7YGED=KtEtFSci=7YHdNKpfw@mail.gmail.com>
+	<20140611092330.7930eff2@gandalf.local.home>
+Date: Wed, 11 Jun 2014 15:38:49 +0200
+X-Google-Sender-Auth: AMGVoCdtGEUyQolbjo7A4hnvLO8
+Message-ID: <CAMuHMdWm+hpumykRG2FudDPYSVODv1WoU6_tPv5D3HCPDQtDSw@mail.gmail.com>
+Subject: Re: [PATCH] arm/ftrace: Fix function_return_addr() to function_return_address()
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Will Deacon <will.deacon@arm.com>,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Tim Bird <tim.bird@sonymobile.com>, gkulkarni@caviumnetworks.com,
+        Deepak Saxena <dsaxena@linaro.org>, arndb@arndb.de,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5BDcUh6030523
 
-On Wed, Jun 11, 2014 at 14:17, Adam Thomson wrote:
+Hi Steven,
 
-> The intention is to update the other Dialog drivers after we've agreed this
-> prefix. With regards to da9055, what's the issue here as I believe that uses
-> the 'dlg' prefix already?
+On Wed, Jun 11, 2014 at 3:23 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> The clean up of CALLER_ADDR*() functions required the archs to either
+> use the default __builtin_return_address(X) (where X > 0) or override
+> it with something the arch can use. To override it, the arch would
+> define function_return_address(x).
 
-Never mind about my DA9055 question. Just spotted what you meant. Will
-make sure this is sorted.
-Legal Disclaimer: This e-mail communication (and any attachment/s) is confidential and contains proprietary information, some or all of which may be legally privileged. It is intended solely for the use of the individual or entity to which it is addressed. Access to this email by anyone else is unauthorized. If you are not the intended recipient, any disclosure, copying, distribution or any action taken or omitted to be taken in reliance on it, is prohibited and may be unlawful.
+ftrace_return_address(x)
 
-Please consider the environment before printing this e-mail
+> The arm architecture requires this to be redefined but instead of
+> defining function_return_address(x) it defined function_return_addr(x).
 
+ftrace_return_address(x) ... ftrace_return_address(x)
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+Nevertheless, your patch kills the warnings. Thanks!
+
+Tested-by: Geert Uytterhoeven <geert@linux-m68k.org>
+
+> ----
+> diff --git a/arch/arm/include/asm/ftrace.h b/arch/arm/include/asm/ftrace.h
+> index eb577f4..39eb16b 100644
+> --- a/arch/arm/include/asm/ftrace.h
+> +++ b/arch/arm/include/asm/ftrace.h
+> @@ -52,7 +52,7 @@ extern inline void *return_address(unsigned int level)
+>
+>  #endif
+>
+> -#define ftrace_return_addr(n) return_address(n)
+> +#define ftrace_return_address(n) return_address(n)
+>
+>  #endif /* ifndef __ASSEMBLY__ */
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
