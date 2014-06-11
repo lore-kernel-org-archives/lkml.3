@@ -1,278 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753833AbaFKFAL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 01:00:11 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:55617 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751203AbaFKFAI (ORCPT
+	id S1755248AbaFKFEo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 01:04:44 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:32157 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751154AbaFKFEn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 01:00:08 -0400
-X-AuditID: cbfee68f-b7fef6d000003970-fd-5397e25526c2
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        "'Thierry Reding'" <thierry.reding@gmail.com>,
-        "'David Airlie'" <airlied@linux.ie>, "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'Florian Fainelli'" <f.fainelli@gmail.com>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH] devres: remove devm_request_and_ioremap()
-Date: Wed, 11 Jun 2014 14:00:05 +0900
-Message-id: <000901cf8532$026e5d40$074b17c0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac+FMgI5uEAib4vAQpW9X+c119CU7A==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPIsWRmVeSWpSXmKPExsVy+t8zY93QR9ODDX69M7ToPXeSyeLvpGPs
-	Fr/eHWG3aF68ns3i8sJLrBaXd81hs/i5ax6LA7vH71+TGD12zrrL7rH92wNWj/1z17B79G1Z
-	xejxeZNcAFsUl01Kak5mWWqRvl0CV8baw0YF5wwq5v7rZGpg3KPexcjJISFgIjHv6RImCFtM
-	4sK99WxdjFwcQgLLGCVmHt3NClM09dYkVojEdEaJtq132CGc34wSlz5tYwOpYhNQk/jy5TA7
-	iC0iYCqx8f0URpAiZoEnjBJTzl9iBEkIC1hJ9De2gTWwCKhKvNnfzAJi8wrYSpzcfRLKFpT4
-	MfkemM0soCWxfudxJghbXmLzmrfMXYwcQCepSzz6qwuxS0/i4Zuf7BAlIhL7XrwD2yshcItd
-	oufMF3aIXQIS3yYfYoHolZXYdIAZ4jNJiYMrbrBMYBSbhWTzLCSbZyHZPAvJigWMLKsYRVML
-	kguKk9KLjPWKE3OLS/PS9ZLzczcxQiKzfwfj3QPWhxiTgdZPZJYSTc4HRnZeSbyhsZmRhamJ
-	qbGRuaUZacJK4rz3HyYFCQmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamDcKexZpXRsV9K5sAXf
-	+sz27N6aoHp7l3/5NGnzOqu1vMv8NrRzxDsvma6zvoqrgLXwR6zHY50Qn40+MaondFceYWVb
-	Uvt3eVnZuk9Pg9wzLpx+s0Jd7lSB62+hs0dVDCS1PvmWnTB8Md/I4Y9Qtbn6smfemntbNm02
-	jZFjFeDMmrnP9+brzLlKLMUZiYZazEXFiQAX+DaN4gIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDKsWRmVeSWpSXmKPExsVy+t9jQd3QR9ODDTZs1rHoPXeSyeLvpGPs
-	Fr/eHWG3aF68ns3i8sJLrBaXd81hs/i5ax6LA7vH71+TGD12zrrL7rH92wNWj/1z17B79G1Z
-	xejxeZNcAFtUA6NNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+A
-	rltmDtAxSgpliTmlQKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCOsaMtYeNCs4ZVMz9
-	18nUwLhHvYuRk0NCwERi6q1JrBC2mMSFe+vZuhi5OIQEpjNKtG29ww7h/GaUuPRpGxtIFZuA
-	msSXL4fZQWwRAVOJje+nMIIUMQs8YZSYcv4SI0hCWMBKor+xDayBRUBV4s3+ZhYQm1fAVuLk
-	7pNQtqDEj8n3wGxmAS2J9TuPM0HY8hKb17xl7mLkADpJXeLRX12IXXoSD9/8ZIcoEZHY9+Id
-	4wRGgVlIJs1CMmkWkkmzkLQsYGRZxSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iREc98+kdzCu
-	arA4xCjAwajEwyshPT1YiDWxrLgy9xCjBAezkgjv7eNAId6UxMqq1KL8+KLSnNTiQ4zJQI9O
-	ZJYSTc4HpqS8knhDYxMzI0sjMwsjE3Nz0oSVxHkPtloHCgmkJ5akZqemFqQWwWxh4uCUamDs
-	WBynzLgvYumSuDj9tVOeVP/8t3jKwljza9fU2G6t+cb+7q2+1jsfu71eHCeObHjYc+3EuSKT
-	eRrbQzdeuca558+pXwd2Mgb8PrbYeNpG2YtJG0peXP5m+bJS8dmS1LozR1wEDwX7arhUN/90
-	YxK6fr99yrRUtv+eJ2/+lMoIad+8PFGePWniRyWW4oxEQy3mouJEABQdA1w/AwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 11 Jun 2014 01:04:43 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH] x86: Find correct 64 bit ramdisk address for microcode early update
+Date: Tue, 10 Jun 2014 22:04:24 -0700
+Message-Id: <1402463064-31697-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.4.5
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-devm_request_and_ioremap() was obsoleted by the commit 7509657
-("lib: devres: Introduce devm_ioremap_resource()") and has been
-deprecated for a long time. So, let's remove this function.
-In addition, all usages of devm_request_and_ioremap() are also
-removed.
+When using kexec with 64bit kernel, bzImage and ramdisk could be
+loaded above 4G. We need this to get correct ramdisk adress.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+Make get_ramdisk_image() global and use it for early microcode updating.
+Also make it to take boot_params pointer for different usage.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
 ---
-Based-on the latest linux kernel
-(dfb9454 Merge git://www.linux-watchdog.org/linux-watchdog)
+ arch/x86/include/asm/setup.h                |    3 +++
+ arch/x86/kernel/cpu/microcode/amd_early.c   |   10 +++++-----
+ arch/x86/kernel/cpu/microcode/intel_early.c |    8 ++++----
+ arch/x86/kernel/setup.c                     |   28 ++++++++++++++--------------
+ 4 files changed, 26 insertions(+), 23 deletions(-)
 
- Documentation/driver-model/devres.txt              |    1 -
- drivers/bus/brcmstb_gisb.c                         |    6 +-
- drivers/gpu/drm/armada/armada_crtc.c               |    8 +-
- include/linux/device.h                             |    2 -
- lib/devres.c                                       |   28 ------
- scripts/coccinelle/api/devm_ioremap_resource.cocci |   90 --------------------
- 6 files changed, 6 insertions(+), 129 deletions(-)
- delete mode 100644 scripts/coccinelle/api/devm_ioremap_resource.cocci
-
-diff --git a/Documentation/driver-model/devres.txt b/Documentation/driver-model/devres.txt
-index 8947255..001740b 100644
---- a/Documentation/driver-model/devres.txt
-+++ b/Documentation/driver-model/devres.txt
-@@ -278,7 +278,6 @@ IOMAP
-   devm_ioremap_nocache()
-   devm_iounmap()
-   devm_ioremap_resource() : checks resource, requests memory region, ioremaps
--  devm_request_and_ioremap() : obsoleted by devm_ioremap_resource()
-   pcim_iomap()
-   pcim_iounmap()
-   pcim_iomap_table()	: array of mapped addresses indexed by BAR
-diff --git a/drivers/bus/brcmstb_gisb.c b/drivers/bus/brcmstb_gisb.c
-index 6159b77..f2cd6a2d 100644
---- a/drivers/bus/brcmstb_gisb.c
-+++ b/drivers/bus/brcmstb_gisb.c
-@@ -212,9 +212,9 @@ static int brcmstb_gisb_arb_probe(struct platform_device *pdev)
- 	mutex_init(&gdev->lock);
- 	INIT_LIST_HEAD(&gdev->next);
+Index: linux-2.6/arch/x86/include/asm/setup.h
+===================================================================
+--- linux-2.6.orig/arch/x86/include/asm/setup.h
++++ linux-2.6/arch/x86/include/asm/setup.h
+@@ -105,6 +105,9 @@ void *extend_brk(size_t size, size_t ali
+ 	RESERVE_BRK(name, sizeof(type) * entries)
  
--	gdev->base = devm_request_and_ioremap(&pdev->dev, r);
--	if (!gdev->base)
--		return -ENOMEM;
-+	gdev->base = devm_ioremap_resource(&pdev->dev, r);
-+	if (IS_ERR(gdev->base))
-+		return PTR_ERR(gdev->base);
+ extern void probe_roms(void);
++u64 get_ramdisk_image(struct boot_params *bp);
++u64 get_ramdisk_size(struct boot_params *bp);
++
+ #ifdef __i386__
  
- 	err = devm_request_irq(&pdev->dev, timeout_irq,
- 				brcmstb_gisb_timeout_handler, 0, pdev->name,
-diff --git a/drivers/gpu/drm/armada/armada_crtc.c b/drivers/gpu/drm/armada/armada_crtc.c
-index 81c34f9..3aedf9e 100644
---- a/drivers/gpu/drm/armada/armada_crtc.c
-+++ b/drivers/gpu/drm/armada/armada_crtc.c
-@@ -1039,11 +1039,9 @@ int armada_drm_crtc_create(struct drm_device *dev, unsigned num,
- 	if (ret)
- 		return ret;
+ asmlinkage void __init i386_start_kernel(void);
+Index: linux-2.6/arch/x86/kernel/cpu/microcode/amd_early.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/cpu/microcode/amd_early.c
++++ linux-2.6/arch/x86/kernel/cpu/microcode/amd_early.c
+@@ -51,12 +51,12 @@ static struct cpio_data __init find_ucod
+ 	 */
+ 	p       = (struct boot_params *)__pa_nodebug(&boot_params);
+ 	path    = (char *)__pa_nodebug(ucode_path);
+-	start   = (void *)p->hdr.ramdisk_image;
+-	size    = p->hdr.ramdisk_size;
++	start   = (void *)(unsigned long)get_ramdisk_image(p);
++	size    = get_ramdisk_size(p);
+ #else
+ 	path    = ucode_path;
+-	start   = (void *)(boot_params.hdr.ramdisk_image + PAGE_OFFSET);
+-	size    = boot_params.hdr.ramdisk_size;
++	start   = (void *)(get_ramdisk_image(&boot_params) + PAGE_OFFSET);
++	size    = get_ramdisk_size(&boot_params);
+ #endif
  
--	base = devm_request_and_ioremap(dev->dev, res);
--	if (!base) {
--		DRM_ERROR("failed to ioremap register\n");
--		return -ENOMEM;
--	}
-+	base = devm_ioremap_resource(dev->dev, res);
-+	if (IS_ERR(base))
-+		return PTR_ERR(base);
+ 	return find_cpio_data(path, start, size, &offset);
+@@ -371,7 +371,7 @@ int __init save_microcode_in_initrd_amd(
+ 	 */
+ 	if (relocated_ramdisk)
+ 		container = (u8 *)(__va(relocated_ramdisk) +
+-			     (cont - boot_params.hdr.ramdisk_image));
++			     (cont - get_ramdisk_size(&boot_params)));
  
- 	dcrtc = kzalloc(sizeof(*dcrtc), GFP_KERNEL);
- 	if (!dcrtc) {
-diff --git a/include/linux/device.h b/include/linux/device.h
-index af424ac..921fa0a 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -631,8 +631,6 @@ extern unsigned long devm_get_free_pages(struct device *dev,
- extern void devm_free_pages(struct device *dev, unsigned long addr);
+ 	if (ucode_new_rev)
+ 		pr_info("microcode: updated early to new patch_level=0x%08x\n",
+Index: linux-2.6/arch/x86/kernel/cpu/microcode/intel_early.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/cpu/microcode/intel_early.c
++++ linux-2.6/arch/x86/kernel/cpu/microcode/intel_early.c
+@@ -733,8 +733,8 @@ load_ucode_intel_bsp(void)
+ 	struct boot_params *boot_params_p;
  
- void __iomem *devm_ioremap_resource(struct device *dev, struct resource *res);
--void __iomem *devm_request_and_ioremap(struct device *dev,
--			struct resource *res);
+ 	boot_params_p = (struct boot_params *)__pa_nodebug(&boot_params);
+-	ramdisk_image = boot_params_p->hdr.ramdisk_image;
+-	ramdisk_size  = boot_params_p->hdr.ramdisk_size;
++	ramdisk_image = get_ramdisk_image(boot_params_p);
++	ramdisk_size  = get_ramdisk_size(boot_params_p);
+ 	initrd_start_early = ramdisk_image;
+ 	initrd_end_early = initrd_start_early + ramdisk_size;
  
- /* allows to add/remove a custom action to devres stack */
- int devm_add_action(struct device *dev, void (*action)(void *), void *data);
-diff --git a/lib/devres.c b/lib/devres.c
-index f562bf6..6a4aee8 100644
---- a/lib/devres.c
-+++ b/lib/devres.c
-@@ -142,34 +142,6 @@ void __iomem *devm_ioremap_resource(struct device *dev, struct resource *res)
+@@ -743,8 +743,8 @@ load_ucode_intel_bsp(void)
+ 		(unsigned long *)__pa_nodebug(&mc_saved_in_initrd),
+ 		initrd_start_early, initrd_end_early, &uci);
+ #else
+-	ramdisk_image = boot_params.hdr.ramdisk_image;
+-	ramdisk_size  = boot_params.hdr.ramdisk_size;
++	ramdisk_image = get_ramdisk_image(&boot_params);
++	ramdisk_size  = get_ramdisk_size(&boot_params);
+ 	initrd_start_early = ramdisk_image + PAGE_OFFSET;
+ 	initrd_end_early = initrd_start_early + ramdisk_size;
+ 
+Index: linux-2.6/arch/x86/kernel/setup.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/setup.c
++++ linux-2.6/arch/x86/kernel/setup.c
+@@ -299,19 +299,19 @@ u64 relocated_ramdisk;
+ 
+ #ifdef CONFIG_BLK_DEV_INITRD
+ 
+-static u64 __init get_ramdisk_image(void)
++u64 __init get_ramdisk_image(struct boot_params *bp)
+ {
+-	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
++	u64 ramdisk_image = bp->hdr.ramdisk_image;
+ 
+-	ramdisk_image |= (u64)boot_params.ext_ramdisk_image << 32;
++	ramdisk_image |= (u64)bp->ext_ramdisk_image << 32;
+ 
+ 	return ramdisk_image;
  }
- EXPORT_SYMBOL(devm_ioremap_resource);
+-static u64 __init get_ramdisk_size(void)
++u64 __init get_ramdisk_size(struct boot_params *bp)
+ {
+-	u64 ramdisk_size = boot_params.hdr.ramdisk_size;
++	u64 ramdisk_size = bp->hdr.ramdisk_size;
  
--/**
-- * devm_request_and_ioremap() - Check, request region, and ioremap resource
-- * @dev: Generic device to handle the resource for
-- * @res: resource to be handled
-- *
-- * Takes all necessary steps to ioremap a mem resource. Uses managed device, so
-- * everything is undone on driver detach. Checks arguments, so you can feed
-- * it the result from e.g. platform_get_resource() directly. Returns the
-- * remapped pointer or NULL on error. Usage example:
-- *
-- *	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-- *	base = devm_request_and_ioremap(&pdev->dev, res);
-- *	if (!base)
-- *		return -EADDRNOTAVAIL;
-- */
--void __iomem *devm_request_and_ioremap(struct device *dev,
--				       struct resource *res)
--{
--	void __iomem *dest_ptr;
--
--	dest_ptr = devm_ioremap_resource(dev, res);
--	if (IS_ERR(dest_ptr))
--		return NULL;
--
--	return dest_ptr;
--}
--EXPORT_SYMBOL(devm_request_and_ioremap);
--
- #ifdef CONFIG_HAS_IOPORT_MAP
- /*
-  * Generic iomap devres
-diff --git a/scripts/coccinelle/api/devm_ioremap_resource.cocci b/scripts/coccinelle/api/devm_ioremap_resource.cocci
-deleted file mode 100644
-index 495daa3..0000000
---- a/scripts/coccinelle/api/devm_ioremap_resource.cocci
-+++ /dev/null
-@@ -1,90 +0,0 @@
--virtual patch
--virtual report
--
--@depends on patch@
--expression base, dev, res;
--@@
--
---base = devm_request_and_ioremap(dev, res);
--+base = devm_ioremap_resource(dev, res);
-- ...
-- if (
---base == NULL
--+IS_ERR(base)
-- || ...) {
--<...
---	return ...;
--+	return PTR_ERR(base);
--...>
-- }
--
--@depends on patch@
--expression e, E, ret;
--identifier l;
--@@
--
-- e = devm_ioremap_resource(...);
-- ...
-- if (IS_ERR(e) || ...) {
-- 	... when any
---	ret = E;
--+	ret = PTR_ERR(e);
-- 	...
--(
-- 	return ret;
--|
-- 	goto l;
--)
-- }
--
--@depends on patch@
--expression e;
--@@
--
-- e = devm_ioremap_resource(...);
-- ...
-- if (IS_ERR(e) || ...) {
-- 	...
---	\(dev_dbg\|dev_err\|pr_debug\|pr_err\|DRM_ERROR\)(...);
-- 	...
-- }
--
--@depends on patch@
--expression e;
--identifier l;
--@@
--
-- e = devm_ioremap_resource(...);
-- ...
-- if (IS_ERR(e) || ...)
---{
--(
-- 	return ...;
--|
-- 	goto l;
--)
---}
--
--@r depends on report@
--expression e;
--identifier l;
--position p1;
--@@
--
--*e = devm_request_and_ioremap@p1(...);
-- ...
-- if (e == NULL || ...) {
-- 	...
--(
-- 	return ...;
--|
-- 	goto l;
--)
-- }
--
--@script:python depends on r@
--p1 << r.p1;
--@@
--
--msg = "ERROR: deprecated devm_request_and_ioremap() API used on line %s" % (p1[0].line)
--coccilib.report.print_report(p1[0], msg)
--- 
-1.7.10.4
-
-
+-	ramdisk_size |= (u64)boot_params.ext_ramdisk_size << 32;
++	ramdisk_size |= (u64)bp->ext_ramdisk_size << 32;
+ 
+ 	return ramdisk_size;
+ }
+@@ -320,8 +320,8 @@ static u64 __init get_ramdisk_size(void)
+ static void __init relocate_initrd(void)
+ {
+ 	/* Assume only end is not page aligned */
+-	u64 ramdisk_image = get_ramdisk_image();
+-	u64 ramdisk_size  = get_ramdisk_size();
++	u64 ramdisk_image = get_ramdisk_image(&boot_params);
++	u64 ramdisk_size  = get_ramdisk_size(&boot_params);
+ 	u64 area_size     = PAGE_ALIGN(ramdisk_size);
+ 	unsigned long slop, clen, mapaddr;
+ 	char *p, *q;
+@@ -359,8 +359,8 @@ static void __init relocate_initrd(void)
+ 		ramdisk_size  -= clen;
+ 	}
+ 
+-	ramdisk_image = get_ramdisk_image();
+-	ramdisk_size  = get_ramdisk_size();
++	ramdisk_image = get_ramdisk_image(&boot_params);
++	ramdisk_size  = get_ramdisk_size(&boot_params);
+ 	printk(KERN_INFO "Move RAMDISK from [mem %#010llx-%#010llx] to"
+ 		" [mem %#010llx-%#010llx]\n",
+ 		ramdisk_image, ramdisk_image + ramdisk_size - 1,
+@@ -370,8 +370,8 @@ static void __init relocate_initrd(void)
+ static void __init early_reserve_initrd(void)
+ {
+ 	/* Assume only end is not page aligned */
+-	u64 ramdisk_image = get_ramdisk_image();
+-	u64 ramdisk_size  = get_ramdisk_size();
++	u64 ramdisk_image = get_ramdisk_image(&boot_params);
++	u64 ramdisk_size  = get_ramdisk_size(&boot_params);
+ 	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
+ 
+ 	if (!boot_params.hdr.type_of_loader ||
+@@ -383,8 +383,8 @@ static void __init early_reserve_initrd(
+ static void __init reserve_initrd(void)
+ {
+ 	/* Assume only end is not page aligned */
+-	u64 ramdisk_image = get_ramdisk_image();
+-	u64 ramdisk_size  = get_ramdisk_size();
++	u64 ramdisk_image = get_ramdisk_image(&boot_params);
++	u64 ramdisk_size  = get_ramdisk_size(&boot_params);
+ 	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
+ 	u64 mapped_size;
+ 
