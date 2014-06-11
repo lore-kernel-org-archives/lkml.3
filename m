@@ -1,172 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754755AbaFKNfC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 09:35:02 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:51956 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751328AbaFKNe7 (ORCPT
+	id S1755546AbaFKNhH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 09:37:07 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:49236 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751510AbaFKNhF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 09:34:59 -0400
+	Wed, 11 Jun 2014 09:37:05 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        arm@kernel.org
+Subject: [GIT PULL 1/1] ARM: SoC updates for 3.16 (part 2)
+Date: Wed, 11 Jun 2014 15:36:56 +0200
+Message-ID: <6225322.NFUspysEqN@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-In-Reply-To: <20140611131500.GA19884@red-moon>
-References: <1402090985-8061-1-git-send-email-dianders@chromium.org>
-	<20140607181221.GB25068@e102568-lin.cambridge.arm.com>
-	<CAD=FV=X17PeJ6JPE9Qyc1QT07AvA2PTE69Q87gz9a6MdUHgi4A@mail.gmail.com>
-	<20140609223831.GB16889@e102568-lin.cambridge.arm.com>
-	<CANuQgHHxAhTNYX-JAEdRkO=PMYT4A5GwXcuQfiqwE0CEkQyR+w@mail.gmail.com>
-	<CAD=FV=V5_RRNkgA7Rk7XbQw9m1qh6-RJA8arW7ZRU=QbWAPa+w@mail.gmail.com>
-	<alpine.LFD.2.11.1406101146140.25775@knanqh.ubzr>
-	<CADWw7OjqK3MAuqCHuv-WS3Bb2+2Q-FXth+7hqtwFoyAP6pyYhA@mail.gmail.com>
-	<20140611101353.GA18781@e102568-lin.cambridge.arm.com>
-	<CADWw7OghkwkMbU=eZG=OhxVowNJy_12UOo_pNYnXbimF73Uwdw@mail.gmail.com>
-	<20140611131500.GA19884@red-moon>
-Date: Wed, 11 Jun 2014 19:04:58 +0530
-Message-ID: <CAM4voamzu1L2pF=zTbN7eUrq10-JHfrxwVmoXV__LnoTa8pCPA@mail.gmail.com>
-Subject: Re: [PATCH] ARM: EXYNOS: mcpm: Don't rely on firmware's secondary_cpu_start
-From: Abhilash Kesavan <kesavan.abhilash@gmail.com>
-To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Cc: Chander Kashyap <k.chander@samsung.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Doug Anderson <dianders@chromium.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Kevin Hilman <khilman@linaro.org>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Inderpal Singh <inderpal.s@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chander Kashyap <chander.kashyap@linaro.org>,
-        "olof@lixom.net" <olof@lixom.net>, Tushar Behera <trblinux@gmail.com>,
-        Thomas Abraham <thomas.ab@samsung.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:COFZsTIIPf1S398qe06rnuveF7cuGfS5y867b3XLUFJ
+ IEKLYfGEB3D9ZJGSZTddduxghNKwsi39Y3q/vNdcO6OcvQdRsL
+ e73JzWMbssGrYpahKHgUywCbnmS7ONNOjzlt8H1MmH8mIMQmnZ
+ l248bijDxVGwaTgI2a2qEkyBknvRGLuA6mP7QRZILbaI+dSZxJ
+ lj3N1jxllw7jLXnCP6+mfRbndn5r43dJdbKgvkDqpFaHZRCV+v
+ 6bTKFDheCnKOKvYVPu9mNzytqxZEZKH7QXZOoEzMUXOkAm3MtY
+ ufEC7pqvI9Iyr0V8gGFXGJKghOiVi5/nzvIYp2B7bBG0TeC+Vn
+ SpLORhz5cKR1A803MjF4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lorenzo and Chander,
+The following changes since commit 3c2580173e3bc820a8f8c0db968f757b8eca7fe5:
 
-On Wed, Jun 11, 2014 at 6:45 PM, Lorenzo Pieralisi
-<lorenzo.pieralisi@arm.com> wrote:
-> On Wed, Jun 11, 2014 at 01:14:21PM +0100, Chander Kashyap wrote:
->> On Wed, Jun 11, 2014 at 3:43 PM, Lorenzo Pieralisi
->> <lorenzo.pieralisi@arm.com> wrote:
->> > On Wed, Jun 11, 2014 at 05:52:10AM +0100, Chander Kashyap wrote:
->> >> Hi Doug,
->> >>
->> >> On Tue, Jun 10, 2014 at 9:19 PM, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
->> >> > On Tue, 10 Jun 2014, Doug Anderson wrote:
->> >> >
->> >> >> My S-state knowledge is not strong, but I believe that Lorenzo's
->> >> >> questions matter if we're using S2 for CPUidle (where we actually turn
->> >> >> off power and hot unplug CPUs) but not when we're using S1 for CPUidle
->> >> >> (where we just enter WFI/WFE).
->> >> >>
->> >>
->> >> No Its not plain WFI.
->> >>
->> >> All cores in Exynos5420 can be powered off independently.
->> >> This functionality has been tested.
->> >>
->> >> Below is the link for the posted patches.
->> >>
->> >> https://lkml.org/lkml/2014/6/10/194
->> >>
->> >> And as Nicolas wrote, these patches need MCPM for that.
->> >
->> > Chander, I cast a look into the code and I have a question
->> > (you also told me on CPUidle review that only core off
->> > is supported in CPUidle).
->> >
->> > When you say all cores can be powered off independently, do
->> > you also mean that clusters can be powered off (in CPUidle) ?
->> >
->> > I am pointing this out since in the MCPM backend I noticed:
->> >
->> > "/* TODO: Turn off the cluster here to save power. */"
-This is something that pends on me.
->> >
->> > I do not see any cluster power down request in the down path.
->> >
->> > If I am wrong, ignore my message, I am just writing to help.
->> >
->> > If you can only power down cores, but not the clusters on idle,
->> > please keep in mind that you are currently cleaning and invalidating
->> > the L2 when last man is running and this must not be taken
->> > lightly since, if L2 stays on, that's a massive energy waste
->> > for nothing.
->> >
->> > So, if clusters stay up, you _have_ to tweak the MCPM backend slightly
->> > to avoid cleaning L2, that's pivotal.
->>
->> Hi Lorenzo,
->> Cluster shutdown is in progress. Abhilash will add support for that.
->>
->> https://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg31104.html
->
-> Hi Chander,
->
-> thanks. So, as a heads-up:
->
-> 1) if you merge CPUidle support now, as it is it is at least suboptimal, may
->    even burn more energy than it saves. Latencies in the bL idle driver
->    are likely to be wrong, since they are for cluster shutdown and for
->    TC2, not core power gating that should require shorter target_residencies.
->    On top of that, L2 is cleaned and invalidated for nothing.
-> 2) when cluster support is merged, you might want to extend the CPUidle
->    driver to add an additional state (ie C1 core gating, C2 cluster
->    gating) and to do that you should extend the driver and the MCPM
->    back-end accordingly, I discussed that with Nico already some time ago
->    and actually it should be fairly easy to do but we have got to talk
->    about that.
+  Merge tag 'sunxi-core-for-3.16-2' of https://github.com/mripard/linux into next/soc (2014-05-23 21:57:23 +0200)
 
-I have already implemented the missing cluster power down code and
-tested it on an exynos5420 based chromebook. I plan to post the patch
-as soon as I am back in office, which should be early next week.
+are available in the git repository at:
 
-Regards,
-Abhilash
->
-> Thank you,
-> Lorenzo
->
->>
->>
->> >
->> > Lorenzo
->> >
->> >>
->> >> >> I believe that in ChromeOS we use S1 CPUidle and that it works fine.
->> >> >> We've never implemented S2 that I'm aware of.
->> >> >
->> >> > You'll have to rely on MCPM for that.  That's probably why it hasn't
->> >> > been implemented before.
->> >> >
->> >> >
->> >> > Nicolas
->> >> >
->> >> > _______________________________________________
->> >> > linux-arm-kernel mailing list
->> >> > linux-arm-kernel@lists.infradead.org
->> >> > http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
->> >> --
->> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> >> the body of a message to majordomo@vger.kernel.org
->> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> >> Please read the FAQ at  http://www.tux.org/lkml/
->> >>
->> >
->> > --
->> > To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
->> > the body of a message to majordomo@vger.kernel.org
->> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/soc2-for-3.16
+
+for you to fetch changes up to bbea06f3efbae5776e6c285fea59fd249eec44ff:
+
+  ARM: keystone: Drop use of meminfo since its not available anymore (2014-06-05 22:20:54 +0200)
+
+----------------------------------------------------------------
+ARM: SoC updates for 3.16 (part 2)
+
+This is a small follow-up to the larger ARM SoC updates merged
+last week, almost entirely for the keystone platform.
+
+The main change here is to use the new dma-ranges parsing code
+that came in through Russell's ARM tree. This allows the keystone
+platform to do cache-coherent DMA and to finally support all the
+available physical memory when LPAE is enabled.
+
+Aside from this, the keystone reset driver has been rewritten,
+and there is a small bug fix to allow building the orion5x platform
+again.
+
+----------------------------------------------------------------
+Arnd Bergmann (4):
+      Merge tag 'dt-dma-properties-for-arm' of git://git.kernel.org/.../ssantosh/linux-keystone into depends/dma-ranges
+      Merge branch 'depends/dma-ranges' into next/soc
+      Merge tag 'keystone-soc' of git://git.kernel.org/.../ssantosh/linux-keystone into next/soc
+      ARM: orion5x: fix mvebu_mbus_dt_init call
+
+Brian Norris (1):
+      ARM: configs: keystone: add MTD_SPI_NOR (new dependency for M25P80)
+
+Ivan Khoronzhuk (3):
+      ARM: keystone: remove redundant reset stuff
+      ARM: dts: keystone: update reset node to work with reset driver
+      ARM: configs: keystone: enable reset driver support
+
+Lad Prabhakar (1):
+      ARM: configs: keystone: drop CONFIG_COMMON_CLK_DEBUG
+
+Olof Johansson (1):
+      Merge tag 'keystone-soc-2' of git://git.kernel.org/.../ssantosh/linux-keystone into next/soc2
+
+Santosh Shilimkar (3):
+      ARM: keystone: Switch over to coherent memory address space
+      ARM: keystone: Update the dma offset for non-dt platform devices
+      ARM: keystone: Drop use of meminfo since its not available anymore
+
+ arch/arm/boot/dts/keystone.dtsi         |  14 +++-
+ arch/arm/configs/integrator_defconfig   |   1 -
+ arch/arm/configs/keystone_defconfig     |   5 +-
+ arch/arm/configs/sunxi_defconfig        |   1 -
+ arch/arm/configs/vt8500_v6_v7_defconfig |   1 -
+ arch/arm/include/asm/dma-mapping.h      |  25 +++++++-
+ arch/arm/mach-keystone/keystone.c       | 100 ++++++++++++++++++++---------
+ arch/arm/mach-keystone/memory.h         |  24 +++++++
+ arch/arm/mach-keystone/platsmp.c        |  18 +++++-
+ arch/arm/mach-orion5x/board-dt.c        |   2 +-
+ arch/arm/mm/dma-mapping.c               |   4 +-
+ drivers/of/address.c                    | 110 ++++++++++++++++++++++++++++++++
+ drivers/of/platform.c                   |  65 +++++++++++++++++--
+ include/linux/device.h                  |   2 +
+ include/linux/dma-mapping.h             |   7 ++
+ include/linux/of_address.h              |  14 ++++
+ 16 files changed, 347 insertions(+), 46 deletions(-)
+ create mode 100644 arch/arm/mach-keystone/memory.h
+
