@@ -1,40 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754156AbaFKRjA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 13:39:00 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:34851 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753038AbaFKRi7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 13:38:59 -0400
-Date: Wed, 11 Jun 2014 18:38:51 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Denis Kirjanov <kda@linux-powerpc.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: kmemleak: Unable to handle kernel paging request
-Message-ID: <20140611173851.GA5556@MacBook-Pro.local>
-References: <CAOJe8K3fy3XFxDdVc3y1hiMAqUCPmkUhECU7j5TT=E=gxwBqHg@mail.gmail.com>
+	id S1753134AbaFKRmB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 13:42:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60394 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751002AbaFKRmA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 13:42:00 -0400
+Date: Wed, 11 Jun 2014 19:41:56 +0200
+From: Jan Kara <jack@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL v2] Reiserfs & ext3 changes for 3.16-rc1
+Message-ID: <20140611174156.GB9511@quack.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAOJe8K3fy3XFxDdVc3y1hiMAqUCPmkUhECU7j5TT=E=gxwBqHg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 11, 2014 at 04:13:07PM +0400, Denis Kirjanov wrote:
-> I got a trace while running 3.15.0-08556-gdfb9454:
-> 
-> [  104.534026] Unable to handle kernel paging request for data at
-> address 0xc00000007f000000
+  Hello Linus,
 
-Were there any kmemleak messages prior to this, like "kmemleak
-disabled"? There could be a race when kmemleak is disabled because of
-some fatal (for kmemleak) error while the scanning is taking place
-(which needs some more thinking to fix properly).
+  could you please pull from
 
-Thanks.
+git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs.git for_linus
+
+to get big reiserfs cleanup from Jeff, an ext3 deadlock fix, and some small
+cleanups.
+
+Top of the tree is 19ef1229bc2e. The full shortlog is:
+
+Fabian Frederick (2):
+      reiserfs: remove obsolete __constant_cpu_to_le32
+      fs/jbd/revoke.c: replace shift loop by ilog2
+
+Jan Kara (2):
+      ext3: Fix deadlock in data=journal mode when fs is frozen
+      reiserfs: Fix compilation breakage with CONFIG_REISERFS_CHECK
+
+Jeff Mahoney (30):
+      reiserfs: use per-fs commit workqueues
+      reiserfs: cleanup, rename key and item accessors to more friendly names
+      reiserfs: cleanup, reformat comments to normal kernel style
+      reiserfs: cleanup, remove nblocks argument from journal_end
+      reiserfs: cleanup, remove sb argument from journal_end
+      reiserfs: cleanup, remove sb argument from journal_mark_dirty
+      reiserfs: cleanup, remove blocks arg from journal_join
+      reiserfs: cleanup, remove unnecessary parens in dirent creation
+      reiserfs: cleanup, remove leading whitespace from labels
+      reiserfs: cleanup, remove unnecessary parens
+      reiserfs: cleanup, make hash detection saner
+      reiserfs: balance_leaf refactor, reformat balance_leaf comments
+      reiserfs: balance_leaf refactor, move state variables into tree_balance
+      reiserfs: balance_leaf refactor, pull out balance_leaf_insert_left
+      reiserfs: balance_leaf refactor, pull out balance_leaf_paste_left
+      reiserfs: balance_leaf refactor, pull out balance_leaf_insert_right
+      reiserfs: balance_leaf refactor, pull out balance_leaf_paste_right
+      reiserfs: balance_leaf refactor, pull out balance_leaf_new_nodes_insert
+      reiserfs: balance_leaf refactor, pull out balance_leaf_new_nodes_paste
+      reiserfs: balance_leaf refactor pull out balance_leaf_finish_node_insert
+      reiserfs: balance_leaf refactor, pull out balance_leaf_finish_node_paste
+      reiserfs: balance_leaf refactor, pull out balance_leaf{left, right, new_nodes, finish_node}
+      reiserfs: balance_leaf refactor, format balance_leaf_insert_left
+      reiserfs: balance_leaf refactor, format balance_leaf_paste_left
+      reiserfs: balance_leaf refactor, format balance_leaf_insert_right
+      reiserfs: balance_leaf refactor, format balance_leaf_paste_right
+      reiserfs: balance_leaf refactor, format balance_leaf_new_nodes_paste
+      reiserfs: balance_leaf refactor, format balance_leaf_finish_node
+      reiserfs: balance_leaf refactor, split up balance_leaf_when_delete
+      reiserfs: call truncate_setsize under tailpack mutex
+
+The diffstat is
+
+ fs/ext3/inode.c               |   33 +-
+ fs/jbd/revoke.c               |   12 +-
+ fs/reiserfs/bitmap.c          |  259 +++--
+ fs/reiserfs/dir.c             |  156 +--
+ fs/reiserfs/do_balan.c        | 2449 +++++++++++++++++++++++------------------
+ fs/reiserfs/file.c            |   90 +-
+ fs/reiserfs/fix_node.c        | 1008 ++++++++++-------
+ fs/reiserfs/hashes.c          |   15 +-
+ fs/reiserfs/ibalance.c        |  271 +++--
+ fs/reiserfs/inode.c           | 1206 +++++++++++---------
+ fs/reiserfs/ioctl.c           |   27 +-
+ fs/reiserfs/item_ops.c        |  108 +-
+ fs/reiserfs/journal.c         | 1339 ++++++++++++----------
+ fs/reiserfs/lbalance.c        |  501 +++++----
+ fs/reiserfs/namei.c           |  513 +++++----
+ fs/reiserfs/objectid.c        |  101 +-
+ fs/reiserfs/prints.c          |  176 +--
+ fs/reiserfs/reiserfs.h        | 1921 ++++++++++++++++++++------------
+ fs/reiserfs/resize.c          |   75 +-
+ fs/reiserfs/stree.c           |  892 ++++++++-------
+ fs/reiserfs/super.c           |  552 ++++++----
+ fs/reiserfs/tail_conversion.c |  161 +--
+ fs/reiserfs/xattr.c           |   70 +-
+ fs/reiserfs/xattr.h           |    3 +-
+ fs/reiserfs/xattr_acl.c       |   38 +-
+ 25 files changed, 7056 insertions(+), 4920 deletions(-)
+
+							Thanks
+								Honza
 
 -- 
-Catalin
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
