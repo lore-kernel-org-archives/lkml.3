@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752713AbaFKTkV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 15:40:21 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:57968 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750963AbaFKTkU (ORCPT
+	id S1752766AbaFKTmF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 15:42:05 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:49131 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751715AbaFKTmD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 15:40:20 -0400
-X-IronPort-AV: E=Sophos;i="5.01,460,1400018400"; 
-   d="scan'208";a="79596536"
-Date: Wed, 11 Jun 2014 20:40:15 +0100 (BST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Alan Stern <stern@rowland.harvard.edu>
-cc: Himangi Saraogi <himangi774@gmail.com>, Tony Prisk <linux@prisktech.co.nz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] uhci-platform: use devm_ioremap resource
-In-Reply-To: <Pine.LNX.4.44L0.1406111528170.890-100000@iolanthe.rowland.org>
-Message-ID: <alpine.DEB.2.10.1406112038420.2576@hadrien>
-References: <Pine.LNX.4.44L0.1406111528170.890-100000@iolanthe.rowland.org>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-709298787-1402515617=:2576"
+	Wed, 11 Jun 2014 15:42:03 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH] x86,build: Fix make -jN modules_install install
+Date: Wed, 11 Jun 2014 12:41:57 -0700
+Message-Id: <37910a32e3d223a688a2743376bdde8fbdc8ef5c.1402515662.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Every few months, I forget why I type:
 
---8323329-709298787-1402515617=:2576
-Content-Type: TEXT/PLAIN; charset=ISO-8859-7
-Content-Transfer-Encoding: 8BIT
+$ sudo make -j12 modules_install && sudo make -j12 install
 
-> > v2: pass correct arguments to devm_ioremap_resource
-> > Not compile tested due to incompatible architecture.
->
-> uhci-platform is compatible with all architectures.  But you have to
-> add it to the .config file by hand.
+instead of just:
 
-What should one do exactly?  I added
+$ sudo make -j12 modules_install install
 
-CONFIG_USB_UHCI_PLATFORM=y
+I try the latter, it appears to work, and then my machine won't boot
+because dracut got confused.  This fixes it once and for all: if you
+ask make to install modules and a kernel, you almost certainly want
+the modules installed *first* so that your initramfs scripts can
+find the modules.
 
-to the end of my .config file, but then running make just overwrites it:
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
+ arch/x86/Makefile | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-> make drivers/usb/host/uhci-platform.o
-scripts/kconfig/conf --silentoldconfig Kconfig
-#
-# configuration written to .config
-#
-  CHK     include/config/kernel.release
-  CHK     include/generated/uapi/linux/version.h
-  CHK     include/generated/utsrelease.h
-  CALL    scripts/checksyscalls.sh
-  CC      drivers/usb/host/uhci-platform.o
-drivers/usb/host/uhci-platform.c:13:38: warning: ¡struct usb_hcd¢ declared
-inside parameter list [enabled by default]
- static int uhci_platform_init(struct usb_hcd *hcd)
-                                      ^
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index 33f71b0..7280d28 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -240,6 +240,15 @@ PHONY += install
+ install:
+ 	$(Q)$(MAKE) $(build)=$(boot) $@
+ 
++# If installing modules and a kernel, it's very likely that some initramfs
++# script associated with installing the kernel will reference the modules,
++# so make sure that modules are installed first.
++ifneq ($(filter modules_install,$(MAKECMDGOALS)),)
++  ifneq ($(filter modules_install,$(MAKECMDGOALS)),)
++    install: modules_install
++  endif
++endif
++
+ PHONY += vdso_install
+ vdso_install:
+ 	$(Q)$(MAKE) $(build)=arch/x86/vdso $@
+-- 
+1.9.3
 
-thanks,
-julia
---8323329-709298787-1402515617=:2576--
