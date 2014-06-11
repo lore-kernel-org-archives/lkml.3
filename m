@@ -1,171 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754877AbaFKCCF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 22:02:05 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:56912 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752290AbaFKCBM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 22:01:12 -0400
-Message-Id: <20140611020108.017240716@goodmis.org>
-User-Agent: quilt/0.63-1
-Date: Tue, 10 Jun 2014 21:59:49 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: [for-next][PATCH 1/4] ring-buffer: Check if buffer exists before polling
-References: <20140611015948.013451560@goodmis.org>
+	id S1754912AbaFKCDE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 22:03:04 -0400
+Received: from ozlabs.org ([103.22.144.67]:60510 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752290AbaFKCDD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 22:03:03 -0400
+Date: Wed, 11 Jun 2014 12:02:49 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ryan Desfosses <ryan@desfo.org>
+Subject: linux-next: build failure after merge of the pci tree
+Message-ID: <20140611120249.56a64953@canb.auug.org.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0000-ring-buffer-Check-if-buffer-exists-before-polling.patch
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/Hi/5dUDwwaz_YidG2sgYPqN"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+--Sig_/Hi/5dUDwwaz_YidG2sgYPqN
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-The per_cpu buffers are created one per possible CPU. But these do
-not mean that those CPUs are online, nor do they even exist.
+Hi Bjorn,
 
-With the addition of the ring buffer polling, it assumes that the
-caller polls on an existing buffer. But this is not the case if
-the user reads trace_pipe from a CPU that does not exist, and this
-causes the kernel to crash.
-
-Simple fix is to check the cpu against buffer bitmask against to see
-if the buffer was allocated or not and return -ENODEV if it is
-not.
-
-More updates were done to pass the -ENODEV back up to userspace.
-
-Link: http://lkml.kernel.org/r/5393DB61.6060707@oracle.com
-
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Cc: stable@vger.kernel.org # 3.10+
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- include/linux/ring_buffer.h |  2 +-
- kernel/trace/ring_buffer.c  |  5 ++++-
- kernel/trace/trace.c        | 22 ++++++++++++++++------
- 3 files changed, 21 insertions(+), 8 deletions(-)
-
-diff --git a/include/linux/ring_buffer.h b/include/linux/ring_buffer.h
-index d69cf637a15a..49a4d6f59108 100644
---- a/include/linux/ring_buffer.h
-+++ b/include/linux/ring_buffer.h
-@@ -97,7 +97,7 @@ __ring_buffer_alloc(unsigned long size, unsigned flags, struct lock_class_key *k
- 	__ring_buffer_alloc((size), (flags), &__key);	\
- })
- 
--void ring_buffer_wait(struct ring_buffer *buffer, int cpu);
-+int ring_buffer_wait(struct ring_buffer *buffer, int cpu);
- int ring_buffer_poll_wait(struct ring_buffer *buffer, int cpu,
- 			  struct file *filp, poll_table *poll_table);
- 
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index c634868c2921..7c56c3d06943 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -543,7 +543,7 @@ static void rb_wake_up_waiters(struct irq_work *work)
-  * as data is added to any of the @buffer's cpu buffers. Otherwise
-  * it will wait for data to be added to a specific cpu buffer.
-  */
--void ring_buffer_wait(struct ring_buffer *buffer, int cpu)
-+int ring_buffer_wait(struct ring_buffer *buffer, int cpu)
- {
- 	struct ring_buffer_per_cpu *cpu_buffer;
- 	DEFINE_WAIT(wait);
-@@ -557,6 +557,8 @@ void ring_buffer_wait(struct ring_buffer *buffer, int cpu)
- 	if (cpu == RING_BUFFER_ALL_CPUS)
- 		work = &buffer->irq_work;
- 	else {
-+		if (!cpumask_test_cpu(cpu, buffer->cpumask))
-+			return -ENODEV;
- 		cpu_buffer = buffer->buffers[cpu];
- 		work = &cpu_buffer->irq_work;
- 	}
-@@ -591,6 +593,7 @@ void ring_buffer_wait(struct ring_buffer *buffer, int cpu)
- 		schedule();
- 
- 	finish_wait(&work->waiters, &wait);
-+	return 0;
- }
- 
- /**
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 16f7038d1f4d..56422f1decba 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -1085,13 +1085,13 @@ update_max_tr_single(struct trace_array *tr, struct task_struct *tsk, int cpu)
- }
- #endif /* CONFIG_TRACER_MAX_TRACE */
- 
--static void wait_on_pipe(struct trace_iterator *iter)
-+static int wait_on_pipe(struct trace_iterator *iter)
- {
- 	/* Iterators are static, they should be filled or empty */
- 	if (trace_buffer_iter(iter, iter->cpu_file))
--		return;
-+		return 0;
- 
--	ring_buffer_wait(iter->trace_buffer->buffer, iter->cpu_file);
-+	return ring_buffer_wait(iter->trace_buffer->buffer, iter->cpu_file);
- }
- 
- #ifdef CONFIG_FTRACE_STARTUP_TEST
-@@ -4378,6 +4378,7 @@ tracing_poll_pipe(struct file *filp, poll_table *poll_table)
- static int tracing_wait_pipe(struct file *filp)
- {
- 	struct trace_iterator *iter = filp->private_data;
-+	int ret;
- 
- 	while (trace_empty(iter)) {
- 
-@@ -4399,10 +4400,13 @@ static int tracing_wait_pipe(struct file *filp)
- 
- 		mutex_unlock(&iter->mutex);
- 
--		wait_on_pipe(iter);
-+		ret = wait_on_pipe(iter);
- 
- 		mutex_lock(&iter->mutex);
- 
-+		if (ret)
-+			return ret;
-+
- 		if (signal_pending(current))
- 			return -EINTR;
- 	}
-@@ -5327,8 +5331,12 @@ tracing_buffers_read(struct file *filp, char __user *ubuf,
- 				goto out_unlock;
- 			}
- 			mutex_unlock(&trace_types_lock);
--			wait_on_pipe(iter);
-+			ret = wait_on_pipe(iter);
- 			mutex_lock(&trace_types_lock);
-+			if (ret) {
-+				size = ret;
-+				goto out_unlock;
-+			}
- 			if (signal_pending(current)) {
- 				size = -EINTR;
- 				goto out_unlock;
-@@ -5538,8 +5546,10 @@ tracing_buffers_splice_read(struct file *file, loff_t *ppos,
- 			goto out;
- 		}
- 		mutex_unlock(&trace_types_lock);
--		wait_on_pipe(iter);
-+		ret = wait_on_pipe(iter);
- 		mutex_lock(&trace_types_lock);
-+		if (ret)
-+			goto out;
- 		if (signal_pending(current)) {
- 			ret = -EINTR;
- 			goto out;
--- 
-2.0.0.rc2
+After merging the pci tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
 
+ERROR: ".pci_try_set_mwi" [drivers/scsi/qla2xxx/qla2xxx.ko] undefined!
+ERROR: ".pci_clear_mwi" [drivers/scsi/qla2xxx/qla2xxx.ko] undefined!
+ERROR: ".pci_try_set_mwi" [drivers/scsi/lpfc/lpfc.ko] undefined!
+
+Caused by commit 9259d755975f ("PCI: Move EXPORT_SYMBOL so it
+immediately follows function/variable").
+arch/powerpc/include/asm/pci.h defines PCI_DISABLE_MWI and there are
+two version of those functions depending on the setting of that symbol.
+
+I have used the pci tree from next-20140610 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/Hi/5dUDwwaz_YidG2sgYPqN
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJTl7jOAAoJEMDTa8Ir7ZwVjpIP/3pcxUMJwa3k1Q0soTvAC7gM
+JCf/dDV57bGp/7jWywObOA4Yp7Q0rUNWvxf+TgoUHXYQxCrR79/cVnz5iw77V4Pz
+4hsnZGn8LBAsJf839NvNSwnsxbUXL9i76T5QKiTjeOuBKNUxQG+HrR6bT+/kuhjQ
+cgX5OqFW33Z+9hOT9ZhbCnxEcitPLAVsBsZAKbGq58E9TNEqDt98o0HUM5BfNk0z
+2wfwA6MeFpAgBPTkgLNUcBvJY7B0EKSJDLOFRSNf3sMdPk8GrpA5F8V3oJwnghMu
+vs98nkIUHOCD/b/DHvrlGsLAquZDXvT/9rOziPz7LfQ1PNePlL/gSbkliC7ZoQK9
+ltU8S0DrhHcnc704fgL7L5bT/F/eLCnTBhCdt9U/yHAjx/0ts3uVPRbWxzsfINkU
+rh3rD3ncCZNjqfiGHXiK+UuP2u86gfaA3sTTAAlKKFzNBMHb+MP/KFf+X/cUfz0l
+JKMva7LrYLopO1rPJREKUSWzmlKxJ7SMPHhjr22Cx5vQJWJ8S6gNAxUwhQ1ezPp2
+1VnyopCC302kCWv2oLgzcSdlQdWHuZsS+T/vSOFwbl4U/4GhmH0DwVFMUzFL+xHM
+SYkpCtKZOasKCcR20jJRENP6UiD9P1VtF096iuq6uFgAn2/XILfZxgj763+yvGoo
+IpcgnF3v4bXJHJ7D998F
+=PPlQ
+-----END PGP SIGNATURE-----
+
+--Sig_/Hi/5dUDwwaz_YidG2sgYPqN--
