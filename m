@@ -1,107 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755632AbaFKIMQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 04:12:16 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:55220 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752718AbaFKIMN (ORCPT
+	id S932275AbaFKIOS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 04:14:18 -0400
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:50955 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932102AbaFKIOO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 04:12:13 -0400
-X-Original-SENDERIP: 10.177.220.145
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Wed, 11 Jun 2014 17:16:06 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Vlastimil Babka <vbabka@suse.cz>, David Rientjes <rientjes@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>, Mel Gorman <mgorman@suse.de>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 05/10] mm, compaction: remember position within pageblock
- in free pages scanner
-Message-ID: <20140611081606.GB28258@js1304-P5Q-DELUXE>
-References: <1402305982-6928-1-git-send-email-vbabka@suse.cz>
- <1402305982-6928-5-git-send-email-vbabka@suse.cz>
- <20140611021213.GF15630@bbox>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140611021213.GF15630@bbox>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 11 Jun 2014 04:14:14 -0400
+Message-ID: <1402474451.3798.44.camel@x220>
+Subject: Re: [tip:locking/core] x86, locking/rwlocks: Enable qrwlocks on x86
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Waiman Long <Waiman.Long@hp.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>
+Cc: hpa@zytor.com, konrad.wilk@oracle.com, torvalds@linux-foundation.org,
+        davej@redhat.com, jeremy@goop.org, paulmck@linux.vnet.ibm.com,
+        raghavendra.kt@linux.vnet.ibm.com, tglx@linutronix.de, oleg@redhat.com,
+        linux-kernel@vger.kernel.org
+Date: Wed, 11 Jun 2014 10:14:11 +0200
+In-Reply-To: <tip-r1xuzmdysvuhl3h86n5fbxi7@git.kernel.org>
+References: <tip-r1xuzmdysvuhl3h86n5fbxi7@git.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 11 Jun 2014 08:14:12.0025 (UTC) FILETIME=[20707290:01CF854D]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 11, 2014 at 11:12:13AM +0900, Minchan Kim wrote:
-> On Mon, Jun 09, 2014 at 11:26:17AM +0200, Vlastimil Babka wrote:
-> > Unlike the migration scanner, the free scanner remembers the beginning of the
-> > last scanned pageblock in cc->free_pfn. It might be therefore rescanning pages
-> > uselessly when called several times during single compaction. This might have
-> > been useful when pages were returned to the buddy allocator after a failed
-> > migration, but this is no longer the case.
-> > 
-> > This patch changes the meaning of cc->free_pfn so that if it points to a
-> > middle of a pageblock, that pageblock is scanned only from cc->free_pfn to the
-> > end. isolate_freepages_block() will record the pfn of the last page it looked
-> > at, which is then used to update cc->free_pfn.
-> > 
-> > In the mmtests stress-highalloc benchmark, this has resulted in lowering the
-> > ratio between pages scanned by both scanners, from 2.5 free pages per migrate
-> > page, to 2.25 free pages per migrate page, without affecting success rates.
-> > 
-> > Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-> Reviewed-by: Minchan Kim <minchan@kernel.org>
+On Fri, 2014-06-06 at 05:20 -0700, tip-bot for Waiman Long wrote:
+> Make x86 use the fair rwlock_t.
 > 
-> Below is a nitpick.
-> 
-> > Cc: Minchan Kim <minchan@kernel.org>
-> > Cc: Mel Gorman <mgorman@suse.de>
-> > Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> > Cc: Michal Nazarewicz <mina86@mina86.com>
-> > Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > Cc: Christoph Lameter <cl@linux.com>
-> > Cc: Rik van Riel <riel@redhat.com>
-> > Cc: David Rientjes <rientjes@google.com>
-> > ---
-> >  mm/compaction.c | 33 ++++++++++++++++++++++++++++-----
-> >  1 file changed, 28 insertions(+), 5 deletions(-)
-> > 
-> > diff --git a/mm/compaction.c b/mm/compaction.c
-> > index 83f72bd..58dfaaa 100644
-> > --- a/mm/compaction.c
-> > +++ b/mm/compaction.c
-> > @@ -297,7 +297,7 @@ static bool suitable_migration_target(struct page *page)
-> >   * (even though it may still end up isolating some pages).
-> >   */
-> >  static unsigned long isolate_freepages_block(struct compact_control *cc,
-> > -				unsigned long blockpfn,
-> > +				unsigned long *start_pfn,
-> >  				unsigned long end_pfn,
-> >  				struct list_head *freelist,
-> >  				bool strict)
-> > @@ -306,6 +306,7 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
-> >  	struct page *cursor, *valid_page = NULL;
-> >  	unsigned long flags;
-> >  	bool locked = false;
-> > +	unsigned long blockpfn = *start_pfn;
-> >  
-> >  	cursor = pfn_to_page(blockpfn);
-> >  
-> > @@ -314,6 +315,9 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
-> >  		int isolated, i;
-> >  		struct page *page = cursor;
-> >  
-> > +		/* Record how far we have got within the block */
-> > +		*start_pfn = blockpfn;
-> > +
-> 
-> Couldn't we move this out of the loop for just one store?
+> Implement the custom queue_write_unlock() for best performance.
 
-Hello, Vlastimil.
+This landed in linux-next yesterday (ie, next-20140610).
 
-Moreover, start_pfn can't be updated to end pfn with this approach.
-Is it okay?
+> Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+> [peterz: near complete rewrite]
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> Cc: Dave Jones <davej@redhat.com>
+> Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+> Cc: "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>
+> Cc: linux-kernel@vger.kernel.org
+> Cc: x86@kernel.org
+> Link: http://lkml.kernel.org/n/tip-r1xuzmdysvuhl3h86n5fbxi7@git.kernel.org
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+>[...]
+> diff --git a/arch/x86/include/asm/qrwlock.h b/arch/x86/include/asm/qrwlock.h
+> new file mode 100644
+> index 0000000..70f46f0
+> --- /dev/null
+> +++ b/arch/x86/include/asm/qrwlock.h
+> @@ -0,0 +1,17 @@
+> +#ifndef _ASM_X86_QRWLOCK_H
+> +#define _ASM_X86_QRWLOCK_H
+> +
+> +#include <asm-generic/qrwlock_types.h>
+> +
+> +#if !defined(CONFIG_X86_OOSTORE) && !defined(CONFIG_X86_PPRO_FENCE)
 
-Thanks.
+X86_OOSTORE was removed in v3.14, see commit 09df7c4c8097 ("x86: Remove
+CONFIG_X86_OOSTORE"). So the first test can be removed here, as it will
+always be true. Should I submit the trivial, but probably untested,
+patch to do that or do you prefer to do that yourself?
+
+> +#define queue_write_unlock queue_write_unlock
+> +static inline void queue_write_unlock(struct qrwlock *lock)
+> +{
+> +        barrier();
+> +        ACCESS_ONCE(*(u8 *)&lock->cnts) = 0;
+> +}
+> +#endif
+> +
+> +#include <asm-generic/qrwlock.h>
+> +
+> +#endif /* _ASM_X86_QRWLOCK_H */
+
+Thanks,
+
+
+Paul Bolle
+
