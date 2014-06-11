@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933015AbaFKPcJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 11:32:09 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:58184 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932956AbaFKPcE (ORCPT
+	id S1755661AbaFKPca (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 11:32:30 -0400
+Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:14157 "EHLO
+	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755748AbaFKPc2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 11:32:04 -0400
-Message-ID: <5398766D.1070900@wwwdotorg.org>
-Date: Wed, 11 Jun 2014 09:31:57 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Brian Norris <computersforpeace@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: Florian Fainelli <f.fainelli@gmail.com>, Tony Lindgren <tony@atomide.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Jason Cooper <jason@lakedaemon.net>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [RFC] irqchip: gic: always mask interrupts during suspend
-References: <1402442098-21093-1-git-send-email-computersforpeace@gmail.com> <alpine.DEB.2.10.1406110129270.5170@nanos> <20140610234826.GK3599@ld-irv-0074>
-In-Reply-To: <20140610234826.GK3599@ld-irv-0074>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 11 Jun 2014 11:32:28 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArYKAGN0mFNbslCP/2dsb2JhbABagw2sBAUBAQEBAQEFAZkZgQYXdYRgI4EaN4hGAc8WhViIdB2EKwSPY4pKk0qDPjs
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Eric Paris <eparis@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] kernel/auditfilter.c: replace count*size kmalloc by kcalloc
+Date: Wed, 11 Jun 2014 17:31:07 +0200
+Message-Id: <1402500667-6831-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2014 05:48 PM, Brian Norris wrote:
-> On Wed, Jun 11, 2014 at 01:34:39AM +0200, Thomas Gleixner wrote:
->> On Tue, 10 Jun 2014, Brian Norris wrote:
->>> Other random thought: it seems like any irqchip driver which does lazy IRQ
->>> masking ought to use IRQCHIP_MASK_ON_SUSPEND. So maybe the IRQ core should just
->>> do something like:
->>>
->>> 	if (!chip->irq_disable)
->>> 		chip->flags |= IRQCHIP_MASK_ON_SUSPEND;
->>
->> No. Lazy irq disable and the suspend logic are different beasts.
-> 
-> OK, fair enough. Drop that random thought then. It's not in the patch
-> content anyway.
-> 
->> That's up to the platform to decide this. Just for the record: there
->> is a world outside of ARM...
-> 
-> OK. But GIC is ARM-specific, so we can still constrain this patch and
-> related topics to the world of ARM.
-> 
->> But that brings me to a different question:
->>
->>     Why are you not putting that customization into the device tree
->>     instead of trying to add this to some random arch/arm/mach-foo
->>     files?
-> 
-> I'm not adding customization to arch/arm/mach-foo files. I'm trying to
-> remove it.
-> 
-> This property could be added to device tree, if there was really a valid
-> use case for a GIC which leaves its interrupts unmasked for suspend. My
-> question in this patch is essentially: does such a use case exist?
+kcalloc manages count*sizeof overflow.
 
-DT should genernally only contain data that's expected to vary between
-boards, or just possibly between SoCs. Anything that the kernel knows
-simply because it knows what HW model it's driving has no place in DT,
-since it just adds redundant work to parse the DT and end up with the
-same data.
+Cc: Eric Paris <eparis@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ kernel/auditfilter.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
+index 8e9bc9c..c447cd9 100644
+--- a/kernel/auditfilter.c
++++ b/kernel/auditfilter.c
+@@ -106,7 +106,7 @@ static inline struct audit_entry *audit_init_entry(u32 field_count)
+ 	if (unlikely(!entry))
+ 		return NULL;
+ 
+-	fields = kzalloc(sizeof(*fields) * field_count, GFP_KERNEL);
++	fields = kcalloc(field_count, sizeof(*fields), GFP_KERNEL);
+ 	if (unlikely(!fields)) {
+ 		kfree(entry);
+ 		return NULL;
+@@ -160,7 +160,7 @@ static __u32 *classes[AUDIT_SYSCALL_CLASSES];
+ 
+ int __init audit_register_class(int class, unsigned *list)
+ {
+-	__u32 *p = kzalloc(AUDIT_BITMASK_SIZE * sizeof(__u32), GFP_KERNEL);
++	__u32 *p = kcalloc(AUDIT_BITMASK_SIZE, sizeof(__u32), GFP_KERNEL);
+ 	if (!p)
+ 		return -ENOMEM;
+ 	while (*list != ~0U) {
+-- 
+1.8.4.5
 
