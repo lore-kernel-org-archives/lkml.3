@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755941AbaFKRYc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 13:24:32 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:52936 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751220AbaFKRY2 (ORCPT
+	id S933454AbaFKRYj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 13:24:39 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:37519 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751220AbaFKRYg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 13:24:28 -0400
+	Wed, 11 Jun 2014 13:24:36 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 21/22] staging: rtl8188eu: Move usb_[read,write]() declarations to usb_ops_linux.h
-Date: Wed, 11 Jun 2014 22:51:40 +0530
-Message-Id: <1402507301-3722-21-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 22/22] staging: rtl8188eu: Remove empty files rtw_io.[c,h]
+Date: Wed, 11 Jun 2014 22:51:41 +0530
+Message-Id: <1402507301-3722-22-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1402507301-3722-1-git-send-email-navin.patidar@gmail.com>
 References: <1402507301-3722-1-git-send-email-navin.patidar@gmail.com>
@@ -23,181 +23,165 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/core/rtw_debug.c        |    1 +
- drivers/staging/rtl8188eu/core/rtw_efuse.c        |    3 +--
- drivers/staging/rtl8188eu/core/rtw_mp.c           |    2 +-
- drivers/staging/rtl8188eu/core/rtw_mp_ioctl.c     |    2 +-
- drivers/staging/rtl8188eu/core/rtw_pwrctrl.c      |    1 +
- drivers/staging/rtl8188eu/core/rtw_sreset.c       |    1 +
- drivers/staging/rtl8188eu/hal/HalPwrSeqCmd.c      |    1 +
- drivers/staging/rtl8188eu/hal/rtl8188eu_led.c     |    1 +
- drivers/staging/rtl8188eu/include/odm_precomp.h   |    1 +
- drivers/staging/rtl8188eu/include/rtw_io.h        |   14 --------------
- drivers/staging/rtl8188eu/include/usb_ops_linux.h |   16 +++++++++++++---
- 11 files changed, 22 insertions(+), 21 deletions(-)
+ drivers/staging/rtl8188eu/Makefile               |    1 -
+ drivers/staging/rtl8188eu/core/rtw_io.c          |   53 ----------------------
+ drivers/staging/rtl8188eu/include/drv_types.h    |    1 -
+ drivers/staging/rtl8188eu/include/rtw_io.h       |   36 ---------------
+ drivers/staging/rtl8188eu/os_dep/os_intfs.c      |    1 +
+ drivers/staging/rtl8188eu/os_dep/osdep_service.c |    1 +
+ 6 files changed, 2 insertions(+), 91 deletions(-)
+ delete mode 100644 drivers/staging/rtl8188eu/core/rtw_io.c
+ delete mode 100644 drivers/staging/rtl8188eu/include/rtw_io.h
 
-diff --git a/drivers/staging/rtl8188eu/core/rtw_debug.c b/drivers/staging/rtl8188eu/core/rtw_debug.c
-index acd6d45..dd15163 100644
---- a/drivers/staging/rtl8188eu/core/rtw_debug.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_debug.c
-@@ -20,6 +20,7 @@
- #define _RTW_DEBUG_C_
- 
- #include <rtw_debug.h>
-+#include <usb_ops_linux.h>
- 
- int proc_get_drv_version(char *page, char **start,
- 			  off_t offset, int count,
-diff --git a/drivers/staging/rtl8188eu/core/rtw_efuse.c b/drivers/staging/rtl8188eu/core/rtw_efuse.c
-index 1da9d1e..31507e7 100644
---- a/drivers/staging/rtl8188eu/core/rtw_efuse.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_efuse.c
-@@ -22,8 +22,7 @@
- #include <osdep_service.h>
- #include <drv_types.h>
- #include <rtw_efuse.h>
+diff --git a/drivers/staging/rtl8188eu/Makefile b/drivers/staging/rtl8188eu/Makefile
+index 450394e..2654bf8 100644
+--- a/drivers/staging/rtl8188eu/Makefile
++++ b/drivers/staging/rtl8188eu/Makefile
+@@ -20,7 +20,6 @@ r8188eu-y :=				\
+ 		core/rtw_debug.o	\
+ 		core/rtw_efuse.o	\
+ 		core/rtw_ieee80211.o	\
+-		core/rtw_io.o		\
+ 		core/rtw_ioctl_set.o	\
+ 		core/rtw_iol.o		\
+ 		core/rtw_led.o		\
+diff --git a/drivers/staging/rtl8188eu/core/rtw_io.c b/drivers/staging/rtl8188eu/core/rtw_io.c
+deleted file mode 100644
+index dd56896..0000000
+--- a/drivers/staging/rtl8188eu/core/rtw_io.c
++++ /dev/null
+@@ -1,53 +0,0 @@
+-/******************************************************************************
+- *
+- * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
+- *
+- * This program is free software; you can redistribute it and/or modify it
+- * under the terms of version 2 of the GNU General Public License as
+- * published by the Free Software Foundation.
+- *
+- * This program is distributed in the hope that it will be useful, but WITHOUT
+- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+- * more details.
+- *
+- * You should have received a copy of the GNU General Public License along with
+- * this program; if not, write to the Free Software Foundation, Inc.,
+- * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
+- *
+- *
+- ******************************************************************************/
+-/*
+-
+-The purpose of rtw_io.c
+-
+-a. provides the API
+-
+-b. provides the protocol engine
+-
+-c. provides the software interface between caller and the hardware interface
 -
 -
-+#include <usb_ops_linux.h>
- 
- /*------------------------Define local variable------------------------------*/
- u8 fakeEfuseBank;
-diff --git a/drivers/staging/rtl8188eu/core/rtw_mp.c b/drivers/staging/rtl8188eu/core/rtw_mp.c
-index fa8704d..43765f8 100644
---- a/drivers/staging/rtl8188eu/core/rtw_mp.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_mp.c
-@@ -20,7 +20,7 @@
- #define _RTW_MP_C_
- 
- #include <drv_types.h>
+-Compiler Flag Option:
 -
-+#include <usb_ops_linux.h>
- #include "rtl8188e_hal.h"
- #include <linux/vmalloc.h>
- 
-diff --git a/drivers/staging/rtl8188eu/core/rtw_mp_ioctl.c b/drivers/staging/rtl8188eu/core/rtw_mp_ioctl.c
-index c06cd82..ad55994 100644
---- a/drivers/staging/rtl8188eu/core/rtw_mp_ioctl.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_mp_ioctl.c
-@@ -22,7 +22,7 @@
- #include <osdep_service.h>
- #include <drv_types.h>
- #include <mlme_osdep.h>
+-USB:
+-   a. USE_ASYNC_IRP: Both sync/async operations are provided.
 -
-+#include <usb_ops_linux.h>
- /* include <rtw_mp.h> */
- #include <rtw_mp_ioctl.h>
- 
-diff --git a/drivers/staging/rtl8188eu/core/rtw_pwrctrl.c b/drivers/staging/rtl8188eu/core/rtw_pwrctrl.c
-index 51b2468..9b80c8a 100644
---- a/drivers/staging/rtl8188eu/core/rtw_pwrctrl.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_pwrctrl.c
-@@ -22,6 +22,7 @@
- #include <osdep_service.h>
- #include <drv_types.h>
- #include <osdep_intf.h>
-+#include <usb_ops_linux.h>
- #include <linux/usb.h>
- #include <usb_osintf.h>
- 
-diff --git a/drivers/staging/rtl8188eu/core/rtw_sreset.c b/drivers/staging/rtl8188eu/core/rtw_sreset.c
-index 22a3512..cd4e344 100644
---- a/drivers/staging/rtl8188eu/core/rtw_sreset.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_sreset.c
-@@ -19,6 +19,7 @@
-  ******************************************************************************/
- 
- #include <rtw_sreset.h>
-+#include <usb_ops_linux.h>
- 
- void sreset_init_value(struct adapter *padapter)
- {
-diff --git a/drivers/staging/rtl8188eu/hal/HalPwrSeqCmd.c b/drivers/staging/rtl8188eu/hal/HalPwrSeqCmd.c
-index 1808d35..caca535 100644
---- a/drivers/staging/rtl8188eu/hal/HalPwrSeqCmd.c
-+++ b/drivers/staging/rtl8188eu/hal/HalPwrSeqCmd.c
-@@ -35,6 +35,7 @@ Major Change History:
- --*/
- 
- #include <HalPwrSeqCmd.h>
-+#include <usb_ops_linux.h>
- 
- /*	Description: */
- /*		This routine deals with the Power Configuration CMDs parsing
-diff --git a/drivers/staging/rtl8188eu/hal/rtl8188eu_led.c b/drivers/staging/rtl8188eu/hal/rtl8188eu_led.c
-index ab07a6c..81d691d 100644
---- a/drivers/staging/rtl8188eu/hal/rtl8188eu_led.c
-+++ b/drivers/staging/rtl8188eu/hal/rtl8188eu_led.c
-@@ -22,6 +22,7 @@
- #include <drv_types.h>
- #include <rtl8188e_hal.h>
- #include <rtl8188e_led.h>
-+#include <usb_ops_linux.h>
- 
- /*  LED object. */
- 
-diff --git a/drivers/staging/rtl8188eu/include/odm_precomp.h b/drivers/staging/rtl8188eu/include/odm_precomp.h
-index 3839463..df61892 100644
---- a/drivers/staging/rtl8188eu/include/odm_precomp.h
-+++ b/drivers/staging/rtl8188eu/include/odm_precomp.h
-@@ -30,6 +30,7 @@
- #include <osdep_service.h>
- #include <drv_types.h>
- #include <hal_intf.h>
-+#include <usb_ops_linux.h>
- 
- /* 2 OutSrc Header Files */
- 
+-Only sync read/rtw_write_mem operations are provided.
+-
+-jackson@realtek.com.tw
+-
+-*/
+-
+-#define _RTW_IO_C_
+-#include <osdep_service.h>
+-#include <drv_types.h>
+-#include <rtw_io.h>
+-#include <osdep_intf.h>
+-#include <usb_ops.h>
+-
+-#define rtw_le16_to_cpu(val)		le16_to_cpu(val)
+-#define rtw_le32_to_cpu(val)		le32_to_cpu(val)
+-#define rtw_cpu_to_le16(val)		cpu_to_le16(val)
+-#define rtw_cpu_to_le32(val)		cpu_to_le32(val)
+-
+diff --git a/drivers/staging/rtl8188eu/include/drv_types.h b/drivers/staging/rtl8188eu/include/drv_types.h
+index 8063caa..9c3f905 100644
+--- a/drivers/staging/rtl8188eu/include/drv_types.h
++++ b/drivers/staging/rtl8188eu/include/drv_types.h
+@@ -40,7 +40,6 @@
+ #include <rtw_qos.h>
+ #include <rtw_security.h>
+ #include <rtw_pwrctrl.h>
+-#include <rtw_io.h>
+ #include <rtw_eeprom.h>
+ #include <sta_info.h>
+ #include <rtw_mlme.h>
 diff --git a/drivers/staging/rtl8188eu/include/rtw_io.h b/drivers/staging/rtl8188eu/include/rtw_io.h
-index 41e3dd8..a9a6d19 100644
+deleted file mode 100644
+index a9a6d19..0000000
 --- a/drivers/staging/rtl8188eu/include/rtw_io.h
-+++ b/drivers/staging/rtl8188eu/include/rtw_io.h
-@@ -33,18 +33,4 @@
- #include <linux/usb.h>
- #include <linux/usb/ch9.h>
- 
--u8 usb_read8(struct adapter *adapter, u32 addr);
--u16 usb_read16(struct adapter *adapter, u32 addr);
--u32 usb_read32(struct adapter *adapter, u32 addr);
--u32 usb_read_port(struct adapter *adapter, u32 addr, u32 cnt, u8 *pmem);
--void usb_read_port_cancel(struct adapter *adapter);
++++ /dev/null
+@@ -1,36 +0,0 @@
+-/******************************************************************************
+- *
+- * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
+- *
+- * This program is free software; you can redistribute it and/or modify it
+- * under the terms of version 2 of the GNU General Public License as
+- * published by the Free Software Foundation.
+- *
+- * This program is distributed in the hope that it will be useful, but WITHOUT
+- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+- * more details.
+- *
+- * You should have received a copy of the GNU General Public License along with
+- * this program; if not, write to the Free Software Foundation, Inc.,
+- * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
+- *
+- *
+- ******************************************************************************/
 -
--int usb_write8(struct adapter *adapter, u32 addr, u8 val);
--int usb_write16(struct adapter *adapter, u32 addr, u16 val);
--int usb_write32(struct adapter *adapter, u32 addr, u32 val);
--int usb_writeN(struct adapter *adapter, u32 addr, u32 length, u8 *pdata);
+-#ifndef _RTW_IO_H_
+-#define _RTW_IO_H_
 -
--u32 usb_write_port(struct adapter *adapter, u32 addr, u32 cnt, u8 *pmem);
--void usb_write_port_cancel(struct adapter *adapter);
+-#include <osdep_service.h>
+-#include <osdep_intf.h>
 -
- #endif	/* _RTL8711_IO_H_ */
-diff --git a/drivers/staging/rtl8188eu/include/usb_ops_linux.h b/drivers/staging/rtl8188eu/include/usb_ops_linux.h
-index 0a6e5d0..5fc4247 100644
---- a/drivers/staging/rtl8188eu/include/usb_ops_linux.h
-+++ b/drivers/staging/rtl8188eu/include/usb_ops_linux.h
-@@ -44,9 +44,19 @@
+-#include <asm/byteorder.h>
+-#include <linux/semaphore.h>
+-#include <linux/list.h>
+-#include <linux/spinlock.h>
+-#include <linux/atomic.h>
+-
+-#include <linux/usb.h>
+-#include <linux/usb/ch9.h>
+-
+-#endif	/* _RTL8711_IO_H_ */
+diff --git a/drivers/staging/rtl8188eu/os_dep/os_intfs.c b/drivers/staging/rtl8188eu/os_dep/os_intfs.c
+index 1d961bd..34f7370 100644
+--- a/drivers/staging/rtl8188eu/os_dep/os_intfs.c
++++ b/drivers/staging/rtl8188eu/os_dep/os_intfs.c
+@@ -20,6 +20,7 @@
+ #define _OS_INTFS_C_
  
- unsigned int ffaddr2pipehdl(struct dvobj_priv *pdvobj, u32 addr);
+ #include <osdep_service.h>
++#include <osdep_intf.h>
+ #include <drv_types.h>
+ #include <xmit_osdep.h>
+ #include <recv_osdep.h>
+diff --git a/drivers/staging/rtl8188eu/os_dep/osdep_service.c b/drivers/staging/rtl8188eu/os_dep/osdep_service.c
+index 2579a40..9b76e08 100644
+--- a/drivers/staging/rtl8188eu/os_dep/osdep_service.c
++++ b/drivers/staging/rtl8188eu/os_dep/osdep_service.c
+@@ -22,6 +22,7 @@
+ #define _OSDEP_SERVICE_C_
  
--void usb_read_port_cancel(struct adapter *padapter);
-+u8 usb_read8(struct adapter *adapter, u32 addr);
-+u16 usb_read16(struct adapter *adapter, u32 addr);
-+u32 usb_read32(struct adapter *adapter, u32 addr);
- 
--u32 usb_write_port(struct adapter *padapter, u32 addr, u32 cnt, u8 *wmem);
--void usb_write_port_cancel(struct adapter *padapter);
-+u32 usb_read_port(struct adapter *adapter, u32 addr, u32 cnt, u8 *pmem);
-+void usb_read_port_cancel(struct adapter *adapter);
-+
-+int usb_write8(struct adapter *adapter, u32 addr, u8 val);
-+int usb_write16(struct adapter *adapter, u32 addr, u16 val);
-+int usb_write32(struct adapter *adapter, u32 addr, u32 val);
-+int usb_writeN(struct adapter *adapter, u32 addr, u32 length, u8 *pdata);
-+
-+u32 usb_write_port(struct adapter *adapter, u32 addr, u32 cnt, u8 *pmem);
-+void usb_write_port_cancel(struct adapter *adapter);
- 
- #endif
+ #include <osdep_service.h>
++#include <osdep_intf.h>
+ #include <drv_types.h>
+ #include <recv_osdep.h>
+ #include <linux/vmalloc.h>
 -- 
 1.7.10.4
 
