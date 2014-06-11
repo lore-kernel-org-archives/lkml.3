@@ -1,76 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932245AbaFKOaU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 10:30:20 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:57611 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752127AbaFKOaS (ORCPT
+	id S932299AbaFKObc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 10:31:32 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:39315 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752568AbaFKObb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 10:30:18 -0400
-Date: Wed, 11 Jun 2014 15:30:12 +0100
-From: Sitsofe Wheeler <sitsofe@gmail.com>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: Jani Nikula <jani.nikula@linux.intel.com>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: Mismatch in gmch_pfit.lvds_border_bits on EeePC 900
-Message-ID: <20140611143011.GA13391@sucs.org>
-References: <20140608213015.GA30713@sucs.org>
- <20140610062655.GA5821@phenom.ffwll.local>
- <20140611054640.GA31892@sucs.org>
- <20140611060339.GA6261@sucs.org>
- <20140611093229.GD5821@phenom.ffwll.local>
+	Wed, 11 Jun 2014 10:31:31 -0400
+Date: Wed, 11 Jun 2014 07:31:28 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Hannes Reinecke <hare@suse.de>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [ANNOUNCE] scsi patch queue tree
+Message-ID: <20140611143128.GA30904@infradead.org>
+References: <20140519140614.GA12183@infradead.org>
+ <20140611120143.GA26071@infradead.org>
+ <1402496254.2523.3.camel@dabdike.int.hansenpartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140611093229.GD5821@phenom.ffwll.local>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1402496254.2523.3.camel@dabdike.int.hansenpartnership.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 11, 2014 at 11:32:29AM +0200, Daniel Vetter wrote:
-> On Wed, Jun 11, 2014 at 07:03:39AM +0100, Sitsofe Wheeler wrote:
-> > 
-> > On Wed, Jun 11, 2014 at 06:46:40AM +0100, Sitsofe Wheeler wrote:
-> > > On Tue, Jun 10, 2014 at 08:26:55AM +0200, Daniel Vetter wrote:
-> > > > On Sun, Jun 08, 2014 at 10:30:15PM +0100, Sitsofe Wheeler wrote:
-> > > > > With a tree that is close to 3.15 final I'm regularly seeing the
-> > > > > following on my EeePC 900 when starting ioquake3:
-> > > > > 
-> > > > > [drm:intel_pipe_config_compare] *ERROR* mismatch in gmch_pfit.lvds_border_bits (expected 32768, found 0)
-> > > > 
-> > > > Hm, I've thought we've fixed that by now. Alas, no :(
-> > > > 
-> > > > Can you please add drm.debug=0xe to your kernel cmdline, reproduce the
-> > > > issue and attach the entire dmesg? Please make sure it contains everything
-> > > > since boot-up so that we can reconstruct the state properly (might need to
-> > > > grab it from logfiles if dmesg is cut off).
-> > > 
-> > > Please find kern.log.gz attached.
+On Wed, Jun 11, 2014 at 07:17:34AM -0700, James Bottomley wrote:
+> No, I was waiting to check if there was any reason to have them split,
+> but I think we've scope today or tomorrow.
 > 
-> Not in the resend and I didn't seem to receive your original mail somehow
-> at all. Can you please resend.
+> The only other outstanding thing is the fsync bug fix, which is waiting
+> Jens' investigation of the block issues it may cause, but I'm inclined
+> to send it anyway and fix up block later if there's a problem.
 
-Downloadable from http://sucs.org/~sits/test/eeepc-900/dmesg-20140611 .
+There's various fixes marked for stable from Paolos virtio_scsi update,
+which he asked to be considered for 3.16, including a core one:
 
-By the way, Mutt seems to be becoming upset when I group reply to your
-mails. I think it's because your address is in both the To: and the Cc:
-fields....
+  [PATCH v3 4/6] scsi_error: fix invalid setting of host byte
 
-> > > > Also, do you have any ideas when you reproduce this? Anything that changes
-> > > > the lvds output could be relevant ...
-> > > 
-> > > Doing
-> > > xrandr -s 800x600
-> > > xrandr -s 0
-> > > 
-> > > was enough to provoke the messages in the attached log.
-> 
-> Ok, makes sense. Smells a bit like leftover pfit state. Can you please
-> also try latest drm-intel-nightly?
+also
 
-The previous log is from drm-intel-nightly but there seem to be more
-warnings in it rather than less...
+  [PATCH] sd: bad return code of init_sd
 
--- 
-Sitsofe | http://sucs.org/~sits/
+seems like another candidate for 3.16.
+
