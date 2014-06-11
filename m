@@ -1,78 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753664AbaFKMa0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 08:30:26 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:53549 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750730AbaFKMaZ (ORCPT
+	id S1755079AbaFKMae (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 08:30:34 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:44905 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753971AbaFKMaa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 08:30:25 -0400
-Date: Wed, 11 Jun 2014 13:30:22 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: "J. R. Okajima" <hooanon05g@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.15 .. and continuation of merge window
-Message-ID: <20140611123022.GW18016@ZenIV.linux.org.uk>
-References: <CA+55aFw3A=ycq4kRpsDDoV4+rzg0z2kwfE9C9Bg1nSwiYfUpLw@mail.gmail.com>
- <13591.1402284634@jrobl>
- <20140611011036.GV18016@ZenIV.linux.org.uk>
- <26914.1402479178@jrobl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <26914.1402479178@jrobl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 11 Jun 2014 08:30:30 -0400
+Message-ID: <1402489820.612.58.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [PATCH 0/4] KEYS: validate key trust with owner and builtin
+ keys only
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
+        Josh Boyer <jwboyer@redhat.com>, David Howells <dhowells@redhat.com>,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        keyrings <keyrings@linux-nfs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Date: Wed, 11 Jun 2014 08:30:20 -0400
+In-Reply-To: <20140611032355.GA6470@srcf.ucam.org>
+References: <CACE9dm9Ff6b3J=05QfcgBv-c_y=5qGNq1-ZSfo4smtj34i1e-A@mail.gmail.com>
+	 <20140610204021.GA8916@srcf.ucam.org>
+	 <CACE9dm9ma=XRZkoCiefva-dKL+LYw-s8QB4xUTkRUZH=5XM9ew@mail.gmail.com>
+	 <CACE9dm8zxVXx2zRcfDYUFjqvQYT4MbLevp5U13tfH9Hb6USSJw@mail.gmail.com>
+	 <20140610212516.GB10614@srcf.ucam.org>
+	 <CACE9dm95RiGxuG-XaGKd3KqBRkk+wyj3CBbMhaCTJQaiiaj9wQ@mail.gmail.com>
+	 <20140610214038.GA13881@srcf.ucam.org>
+	 <1402449893.612.14.camel@dhcp-9-2-203-236.watson.ibm.com>
+	 <20140611022222.GA2349@srcf.ucam.org>
+	 <1402456095.612.32.camel@dhcp-9-2-203-236.watson.ibm.com>
+	 <20140611032355.GA6470@srcf.ucam.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14061112-3532-0000-0000-00000267103E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 11, 2014 at 06:32:58PM +0900, J. R. Okajima wrote:
-> 
-> Al Viro:
-> > So I suspect that the right fix is a bit trickier - in addition to check
-> > on the fast path (i.e. when trylock gets us the lock on parent), we need
-> > to
-> > 	* get rcu_read_lock() before dropping ->d_lock.
-> > 	* check if dentry is already doomed right after taking rcu_read_lock();
-> > if not, any value we might see in ->d_parent afterwards will point to object
-> > not freed until we drop rcu_read_lock.
-> >
-> > IOW, something like the delta below.  Comments?
-> 
-> I will try testing later.
-> For now, as a comment before testing, the patch looks weird for me. It
-> checks d_lockref.count twice during d_lockref.lock held. It must be the
-> same result, isn't it?
+On Wed, 2014-06-11 at 04:23 +0100, Matthew Garrett wrote: 
+> Yes. Wouldn't having a mechanism to allow userspace to drop keys that 
+> have otherwise been imported be a generally useful solution to the issue 
+> you have with that?
 
-Right you are.  So what we need is
-	* check that thing once, as in your variant (I'd still prefer to
-check ->d_lockref.count instead of ->d_flags, but it's the same thing being
-tested)
-	* ... and get rcu_read_lock() *before* dropping ->d_lock.
+There are issues removing a key from both the local system(eg. cache,
+running apps) and the attestation server (eg. ima-sig template
+verification) perspectives.  We would need to address these concerns
+before supporting key removal.
 
-The former guarantees that the address we are doing trylock on would be that
-of a live dentry.  The latter makes sure that anything assigned to 
-dentry->d_parent after we drop ->d_lock will not be freed until we drop
-rcu_read_lock.
+Mimi
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
----
-diff --git a/fs/dcache.c b/fs/dcache.c
-index be2bea8..e99c6f5 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -532,10 +532,12 @@ static inline struct dentry *lock_parent(struct dentry *dentry)
- 	struct dentry *parent = dentry->d_parent;
- 	if (IS_ROOT(dentry))
- 		return NULL;
-+	if (unlikely((int)dentry->d_lockref.count < 0))
-+		return NULL;
- 	if (likely(spin_trylock(&parent->d_lock)))
- 		return parent;
--	spin_unlock(&dentry->d_lock);
- 	rcu_read_lock();
-+	spin_unlock(&dentry->d_lock);
- again:
- 	parent = ACCESS_ONCE(dentry->d_parent);
- 	spin_lock(&parent->d_lock);
