@@ -1,116 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754783AbaFKJY4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 05:24:56 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:64985 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750763AbaFKJYy (ORCPT
+	id S1755067AbaFKJZi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 05:25:38 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:37740 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750897AbaFKJZh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 05:24:54 -0400
-X-AuditID: cbfee68e-b7fb96d000004bfc-c6-539820649a76
-Date: Wed, 11 Jun 2014 09:24:52 +0000 (GMT)
-From: Eunbong Song <eunb.song@samsung.com>
-Subject: mips: math-emu: Fix compilation error ieee754.c
-To: ralf@linux-mips.org
-Cc: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org
-Reply-to: eunb.song@samsung.com
-MIME-version: 1.0
-X-MTR: 20140611092245298@eunb.song
-Msgkey: 20140611092245298@eunb.song
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20140611092245298@eunb.song
-X-ParentMTR: 
-X-ArchiveUser: EV
-X-CPGSPASS: N
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <2463243.264261402478691777.JavaMail.weblogic@epml26>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCJsWRmVeSWpSXmKPExsVy+t8zPd0UhRnBBstOS1tc3jWHzYHR4/Mm
-	uQDGqAZGm8Si5IzMslSF1Lzk/JTMvHRbpdAQN10LJYWM/OISW6VoIwNjPSNTEz0jE3M9S4NY
-	KyNTJYW8xNxUW6UKXaheJYWi5AKg2tzKYqABOal6UHG94tS8FIes/FKQS/SKE3OLS/PS9ZLz
-	c5UUyhJzSoFGKOknTGXM6Jy/kq3gA0/FkS/n2BoYD/B0MXJyCAmoSLT8/84IYksImEjcX7WC
-	CcIWk7hwbz1bFyMXUM0yRokVi4+zwRT92P0aKjGHUeL1tlMsIAkWAVWJ+0t/g01iE9CW+HHg
-	KjOILSxgIfF+0kuwZhEBGYmln66A1TALuEucX7CDBeIKeYnJpy+zg9i8AoISJ2c+YYFYpiRx
-	tv8RG0RcWeJi6z9WiLiExKzpF6BsXokZ7U+h6uUkpn1dwwxhS0ucn7WBEeabxd8fQ8X5JY7d
-	3gH0JQdY75P7wTBjdm/+AvWjgMTUMwehWtUl/t7bBRXnk1iz8C3UKkGJ09e6mWF672+ZywTx
-	lqLElO6H7BC2lsSXH/vY0L3FK+Ao0TDjNuMERuVZSFKzkLTPQtKOrGYBI8sqRtHUguSC4qT0
-	IiPk2N7ECEmEfTsYbx6wPsS4nxEYJxOZpUST84GpNK8k3tDYzMjC1MTU2Mjc0oxCYRNTCwsT
-	I6oIK4nzLnqYFCQkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBcXUJ69v2Kpt46/gdh5N0GLo/
-	dRkdm3Ik3tf6z4Sdjodav2vKWzyULxA1lYlKKCrI/XXBQK3/wMqQtlidyXL9B7WEEho8ja7p
-	+xi+nLTm6cN4e8frZzfvXdR19aPYjinn5xT9/pQipHq1qfDEy/jXJfP+5V29cPLrDVPZo9Xu
-	U9dfaNO+zNlVr8RSnJFoqMVcVJwIAC7Ns3D3AwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpik+LIzCtJLcpLzFFi42I5/e92r26Kwoxgg6NHJSwu75rD5sDo8XmT
-	XABjVIZNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBQ
-	JYWyxJxSoFBAYnGxkr6dTVF+aUmqQkZ+cYmtUrSRgbGekamJnpGxgZ6JQayVoYGBkSlQVUJG
-	Ruf8lWwFH3gqjnw5x9bAeICni5GTQ0hARaLl/3dGEFtCwETix+7XbBC2mMSFe+uBbC6gmjmM
-	Eq+3nWIBSbAIqErcX/obrIFNQFvix4GrzCC2sICFxPtJL8GaRQRkJJZ+ugJWwyzgLnF+wQ4W
-	iGXyEpNPX2YHsXkFBCVOznzCArFMSeJs/yM2iLiyxMXWf6wQcQmJWdMvQNm8EjPan0LVy0lM
-	+7qGGcKWljg/awMjzNGLvz+GivNLHLu9g6mLkQOs98n9YJgxuzd/gfpRQGLqmYNQreoSf+/t
-	gorzSaxZ+BZqlaDE6WvdzDC997fMZYJ4S1FiSvdDdghbS+LLj31s6N7iFXCUaJhxm3ECo9ws
-	JKlZSNpnIWlHVrOAkWUVo2hqQXJBcVJ6hYlecWJucWleul5yfu4mRnCKerZkB2PDBetDjAIc
-	jEo8vAckpgcLsSaWFVfmHmKU4GBWEuHdKTwjWIg3JbGyKrUoP76oNCe1+BBjMjACJzJLiSbn
-	A9NnXkm8obGBsaGhpbmBqaGRBWnCSuK8C24lBQkJpCeWpGanphakFsFsYeLglGpgZL3PrVEr
-	yfXu7oJb805nOs5bdIT5/dQE7vs3eX2yG5fMDl5/ueDI5Fxr2765bM1/j5p1KjtaJDD7rz96
-	+HSdcbnXhgcWN2S9fztplFb+2PXAgW+HhoG87NWbS9JyPNa52nSffjX9iLvWOUdFLh7J2f8+
-	rer1W18/a8XlxJ6bwVKcn+/kBXB6KrEUZyQaajEXFScCAMpm9jmVAwAA
-DLP-Filter: Pass
-X-CFilter-Loop: Reflected
+	Wed, 11 Jun 2014 05:25:37 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Wed, 11 Jun 2014 11:25:25 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: linux1394-devel@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] firewire: ohci: enable MSI for VIA VT6315 rev 1,
+ drop cycle timer quirk
+Message-ID: <20140611112525.67b06fb4@kant>
+In-Reply-To: <20140416010808.2ab9d416@stein>
+References: <20140416010100.786a4c04@stein>
+	<20140416010808.2ab9d416@stein>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5B9P1Wp029100
 
+On Apr 16 Stefan Richter wrote:
+> Commit af0cdf494781 "firewire: ohci: fix regression with VIA VT6315,
+> disable MSI" acted upon a report against VT6315 rev 0:
+> http://linux.derkeiler.com/Mailing-Lists/Kernel/2010-12/msg02301.html
+> $ lspci -nn
+> VIA Technologies, Inc. VT6315 Series Firewire Controller [1106:3403]
+> 
+> I now got a card with
+> $ lspci -nn
+> VIA Technologies, Inc. VT6315 Series Firewire Controller [1106:3403] (rev 01)
+> and this works fine with MSI enabled.
+> 
+> Second, I tested this VT6315 rev 1 without CYCLE_TIMER quirk flag using
+> http://me.in-berlin.de/~s5r6/linux1394/utils/test_cycle_time_v20100125.c
+> and found that this chip does in fact access the cycle timer atomically.
+> 
+> Things I can't test because I don't have the hardware:
+>   - whether VT6315 rev 0 really needs QUIRK_CYCLE_TIMER,
+>   - whether the VT6320 PCI device needs QUIRK_CYCLE_TIMER,
+>   - whether the VT6325 and VT6330 PCIe devices need QUIRK_CYCLE_TIMER
+>     and QUIRK_NO_MSI.
+> 
+> Hence, just add a whitelist entry specifically for VT6315 rev >= 1
+> without any quirk flags.  Before this entry we need an extra entry to
+> catch VT6315 rev <= 0 due to how our ID matching logic works.
+> 
+> Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
 
-ieee754dp has bitfield member in struct without name. And this
-cause compilation error. This patch removes struct in ieee754dp
-declaration. So compilation error is fixed.
-Signed-off-by: Eunbong Song <eunb.song@samsung.com>
----
- arch/mips/math-emu/ieee754.h |   20 ++++++++------------
- 1 files changed, 8 insertions(+), 12 deletions(-)
-diff --git a/arch/mips/math-emu/ieee754.h b/arch/mips/math-emu/ieee754.h
-index 43c4fb5..c6e28b8 100644
---- a/arch/mips/math-emu/ieee754.h
-+++ b/arch/mips/math-emu/ieee754.h
-@@ -32,22 +32,18 @@
- #include <asm/bitfield.h>
- 
- union ieee754dp {
-- struct {
--  __BITFIELD_FIELD(unsigned int sign:1,
--  __BITFIELD_FIELD(unsigned int bexp:11,
--  __BITFIELD_FIELD(u64 mant:52,
--  ;)))
-- };
-+ __BITFIELD_FIELD(unsigned int sign:1,
-+ __BITFIELD_FIELD(unsigned int bexp:11,
-+ __BITFIELD_FIELD(u64 mant:52,
-+ ;)))
-  u64 bits;
- };
- 
- union ieee754sp {
-- struct {
--  __BITFIELD_FIELD(unsigned sign:1,
--  __BITFIELD_FIELD(unsigned bexp:8,
--  __BITFIELD_FIELD(unsigned mant:23,
--  ;)))
-- };
-+ __BITFIELD_FIELD(unsigned sign:1,
-+ __BITFIELD_FIELD(unsigned bexp:8,
-+ __BITFIELD_FIELD(unsigned mant:23,
-+ ;)))
-  u32 bits;
- };
- 
+Nice -- yesterday, just a few days after this patch went into the
+mainline, this VT6315 card suddenly stopped to generate any interrupt
+while being in use with a soundcard and jackd.  Until then it ran
+perfectly for many days, with jackd+ffado's combined workload of
+AT/AR/IT/IR but also with SBP-2 workloads and one or another other
+application as well.
+
+Now I apparently need to run long-term tests with MSI switched off in order
+to find out whether this malfunction is MSI related.
+
+> ---
+> v2: Oops, a table entry is applied if dev->revision <= table[i].revision.
+> 
+>  drivers/firewire/ohci.c |    7 +++++++
+>  1 file changed, 7 insertions(+)
+> 
+> --- a/drivers/firewire/ohci.c
+> +++ b/drivers/firewire/ohci.c
+> @@ -282,6 +282,7 @@ static char ohci_driver_name[] = KBUILD_
+>  #define PCI_DEVICE_ID_TI_TSB82AA2	0x8025
+>  #define PCI_DEVICE_ID_VIA_VT630X	0x3044
+>  #define PCI_REV_ID_VIA_VT6306		0x46
+> +#define PCI_DEVICE_ID_VIA_VT6315	0x3403
+>  
+>  #define QUIRK_CYCLE_TIMER		0x1
+>  #define QUIRK_RESET_PACKET		0x2
+> @@ -334,6 +335,12 @@ static const struct {
+>  	{PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_VT630X, PCI_REV_ID_VIA_VT6306,
+>  		QUIRK_CYCLE_TIMER | QUIRK_IR_WAKE},
+>  
+> +	{PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_VT6315, 0,
+> +		QUIRK_CYCLE_TIMER | QUIRK_NO_MSI},
+> +
+> +	{PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_VT6315, PCI_ANY_ID,
+> +		0},
+> +
+>  	{PCI_VENDOR_ID_VIA, PCI_ANY_ID, PCI_ANY_ID,
+>  		QUIRK_CYCLE_TIMER | QUIRK_NO_MSI},
+>  };
+> 
+> 
+
 -- 
-1.7.0.1ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Stefan Richter
+-=====-====- -==- -=-==
+http://arcgraph.de/sr/
