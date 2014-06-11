@@ -1,146 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932899AbaFKPec (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 11:34:32 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:58210 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932412AbaFKPeb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 11:34:31 -0400
-Message-ID: <53987704.3030703@hurleysoftware.com>
-Date: Wed, 11 Jun 2014 11:34:28 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1755729AbaFKPgq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 11:36:46 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:34632 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751049AbaFKPgo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 11:36:44 -0400
+Date: Wed, 11 Jun 2014 11:36:31 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Michel Lespinasse <walken@google.com>, Tejun Heo <tj@kernel.org>,
+        Roman Gushchin <klamm@yandex-team.ru>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] memcg: Allow guarantee reclaim
+Message-ID: <20140611153631.GH2878@cmpxchg.org>
+References: <20140611075729.GA4520@dhcp22.suse.cz>
+ <1402473624-13827-1-git-send-email-mhocko@suse.cz>
+ <1402473624-13827-2-git-send-email-mhocko@suse.cz>
 MIME-Version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>, Jan Kara <jack@suse.cz>
-CC: pmladek@suse.cz, Andrew Morton <akpm@linux-foundation.org>,
-        Jet Chen <jet.chen@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: console: lockup on boot
-References: <5388838B.8070802@oracle.com> <53888E76.5040101@hurleysoftware.com> <20140530140757.GC2419@quack.suse.cz> <53921116.5050804@oracle.com> <53972B5C.5020605@hurleysoftware.com> <53986DFB.9030006@oracle.com>
-In-Reply-To: <53986DFB.9030006@oracle.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402473624-13827-2-git-send-email-mhocko@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2014 10:55 AM, Sasha Levin wrote:
-> On 06/10/2014 11:59 AM, Peter Hurley wrote:
->> On 06/06/2014 03:05 PM, Sasha Levin wrote:
->>> On 05/30/2014 10:07 AM, Jan Kara wrote:
->>>> On Fri 30-05-14 09:58:14, Peter Hurley wrote:
->>>>>> On 05/30/2014 09:11 AM, Sasha Levin wrote:
->>>>>>>> Hi all,
->>>>>>>>
->>>>>>>> I sometime see lockups when booting my KVM guest with the latest -next kernel,
->>>>>>>> it basically hangs right when it should start 'init', and after a while I get
->>>>>>>> the following spew:
->>>>>>>>
->>>>>>>> [   30.790833] BUG: spinlock lockup suspected on CPU#1, swapper/1/0
->>>>>>
->>>>>> Maybe related to this report: https://lkml.org/lkml/2014/5/30/26
->>>>>> from Jet Chen which was bisected to
->>>>>>
->>>>>> commit bafe980f5afc7ccc693fd8c81c8aa5a02fbb5ae0
->>>>>> Author:     Jan Kara <jack@suse.cz>
->>>>>> AuthorDate: Thu May 22 10:43:35 2014 +1000
->>>>>> Commit:     Stephen Rothwell <sfr@canb.auug.org.au>
->>>>>> CommitDate: Thu May 22 10:43:35 2014 +1000
->>>>>>
->>>>>>       printk: enable interrupts before calling console_trylock_for_printk()
->>>>>>           We need interrupts disabled when calling console_trylock_for_printk() only
->>>>>>       so that cpu id we pass to can_use_console() remains valid (for other
->>>>>>       things console_sem provides all the exclusion we need and deadlocks on
->>>>>>       console_sem due to interrupts are impossible because we use
->>>>>>       down_trylock()).  However if we are rescheduled, we are guaranteed to run
->>>>>>       on an online cpu so we can easily just get the cpu id in
->>>>>>       can_use_console().
->>>>>>           We can lose a bit of performance when we enable interrupts in
->>>>>>       vprintk_emit() and then disable them again in console_unlock() but OTOH it
->>>>>>       can somewhat reduce interrupt latency caused by console_unlock()
->>>>>>       especially since later in the patch series we will want to spin on
->>>>>>       console_sem in console_trylock_for_printk().
->>>>>>           Signed-off-by: Jan Kara <jack@suse.cz>
->>>>>>       Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
->>>>>>
->>>>>> ?
->>>>     Yeah, very likely. I think I see the problem, I'll send the fix shortly.
->>>
->>> Hi Jan,
->>>
->>> It seems that the issue I'm seeing is different from the "[prink]  BUG: spinlock
->>> lockup suspected on CPU#0, swapper/1".
->>>
->>> Is there anything else I could try here? The issue is very common during testing.
->>
->> Sasha,
->>
->> Is this bisectable? Maybe that's the best way forward here.
->
-> I've ran a bisection again and ended up at the same commit as Jet Chen (the commit
-> unfortunately already made it to Linus's tree).
->
-> Note that I did try Jan's proposed fix and that didn't solve the issue for me, I
-> believe we're seeing different issues caused by the same commit.
->
->
-> 939f04bec1a4ef6ba4370b0f34b01decc844b1b1 is the first bad commit
-> commit 939f04bec1a4ef6ba4370b0f34b01decc844b1b1
-> Author: Jan Kara <jack@suse.cz>
-> Date:   Wed Jun 4 16:11:37 2014 -0700
->
->      printk: enable interrupts before calling console_trylock_for_printk()
->
->      We need interrupts disabled when calling console_trylock_for_printk()
->      only so that cpu id we pass to can_use_console() remains valid (for
->      other things console_sem provides all the exclusion we need and
->      deadlocks on console_sem due to interrupts are impossible because we use
->      down_trylock()).  However if we are rescheduled, we are guaranteed to
->      run on an online cpu so we can easily just get the cpu id in
->      can_use_console().
->
->      We can lose a bit of performance when we enable interrupts in
->      vprintk_emit() and then disable them again in console_unlock() but OTOH
->      it can somewhat reduce interrupt latency caused by console_unlock()
->      especially since later in the patch series we will want to spin on
->      console_sem in console_trylock_for_printk().
->
->      Signed-off-by: Jan Kara <jack@suse.cz>
->      Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
->      Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+On Wed, Jun 11, 2014 at 10:00:24AM +0200, Michal Hocko wrote:
+> Some users (e.g. Google) would like to have stronger semantic than low
+> limit offers currently. The fallback mode is not desirable and they
+> prefer hitting OOM killer rather than ignoring low limit for protected
+> groups.
+> 
+> There are other possible usecases which can benefit from hard
+> guarantees. There are loads which will simply start trashing if the
+> memory working set drops under certain level and it is more appropriate
+> to simply kill and restart such a load if the required memory cannot
+> be provided. Another usecase would be a hard memory isolation for
+> containers.
+> 
+> The min_limit is initialized to 0 and it has precedence over low_limit.
+> If the reclaim is not able to find any memcg in the reclaimed hierarchy
+> above min_limit then OOM killer is triggered to resolve the situation.
+> 
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> ---
 
-I apologize; I didn't look at the patch very closely, but now that I do, this
-sticks out:
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 99137aecd95f..8e844bd42c51 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2220,13 +2220,12 @@ static inline bool should_continue_reclaim(struct zone *zone,
+>   *
+>   * @zone: zone to shrink
+>   * @sc: scan control with additional reclaim parameters
+> - * @honor_memcg_guarantee: do not reclaim memcgs which are within their memory
+> - * guarantee
+> + * @soft_guarantee: Use soft guarantee reclaim target for memcg reclaim.
+>   *
+>   * Returns the number of reclaimed memcgs.
+>   */
+>  static unsigned __shrink_zone(struct zone *zone, struct scan_control *sc,
+> -		bool honor_memcg_guarantee)
+> +		bool soft_guarantee)
+>  {
+>  	unsigned long nr_reclaimed, nr_scanned;
+>  	unsigned nr_scanned_groups = 0;
+> @@ -2245,11 +2244,10 @@ static unsigned __shrink_zone(struct zone *zone, struct scan_control *sc,
+>  		memcg = mem_cgroup_iter(root, NULL, &reclaim);
+>  		do {
+>  			struct lruvec *lruvec;
+> -			bool within_guarantee;
+>  
+>  			/* Memcg might be protected from the reclaim */
+> -			within_guarantee = mem_cgroup_within_guarantee(memcg, root);
+> -			if (honor_memcg_guarantee && within_guarantee) {
+> +			if (mem_cgroup_within_guarantee(memcg, root,
+> +						soft_guarantee)) {
+>  				/*
+>  				 * It would be more optimal to skip the memcg
+>  				 * subtree now but we do not have a memcg iter
+> @@ -2259,8 +2257,8 @@ static unsigned __shrink_zone(struct zone *zone, struct scan_control *sc,
+>  				continue;
+>  			}
+>  
+> -			if (within_guarantee)
+> -				mem_cgroup_guarantee_breached(memcg);
+> +			if (!soft_guarantee)
+> +				mem_cgroup_soft_guarantee_breached(memcg);
+>  
+>  			lruvec = mem_cgroup_zone_lruvec(zone, memcg);
+>  			nr_scanned_groups++;
+> @@ -2297,20 +2295,27 @@ static unsigned __shrink_zone(struct zone *zone, struct scan_control *sc,
+>  
+>  static void shrink_zone(struct zone *zone, struct scan_control *sc)
+>  {
+> -	bool honor_guarantee = true;
+> +	bool soft_guarantee = true;
+>  
+> -	while (!__shrink_zone(zone, sc, honor_guarantee)) {
+> +	while (!__shrink_zone(zone, sc, soft_guarantee)) {
+>  		/*
+>  		 * The previous round of reclaim didn't find anything to scan
+>  		 * because
+> -		 * a) the whole reclaimed hierarchy is within guarantee so
+> -		 *    we fallback to ignore the guarantee because other option
+> -		 *    would be the OOM
+> +		 * a) the whole reclaimed hierarchy is within soft guarantee so
+> +		 *    we are switching to the hard guarantee reclaim target
+>  		 * b) multiple reclaimers are racing and so the first round
+>  		 *    should be retried
+>  		 */
+> -		if (mem_cgroup_all_within_guarantee(sc->target_mem_cgroup))
+> -			honor_guarantee = false;
+> +		if (mem_cgroup_all_within_guarantee(sc->target_mem_cgroup,
+> +					soft_guarantee)) {
+> +			/*
+> +			 * Nothing to reclaim even with hard guarantees so
+> +			 * we have to OOM
+> +			 */
+> +			if (!soft_guarantee)
+> +				break;
+> +			soft_guarantee = false;
+> +		}
+>  	}
+>  }
+>  
+> @@ -2574,7 +2579,8 @@ out:
+>  	 * If the target memcg is not eligible for reclaim then we have no option
+>  	 * but OOM
+>  	 */
+> -	if (!sc->nr_scanned && mem_cgroup_all_within_guarantee(sc->target_mem_cgroup))
+> +	if (!sc->nr_scanned &&
+> +			mem_cgroup_all_within_guarantee(sc->target_mem_cgroup, false))
+>  		return 0;
 
-@@ -1597,17 +1599,22 @@ asmlinkage int vprintk_emit(int facility, int level,
+This code is truly dreadful.
 
-  	logbuf_cpu = UINT_MAX;
-  	raw_spin_unlock(&logbuf_lock);
-+	lockdep_on();
-+	local_irq_restore(flags);
-+
+Don't call it guarantee when it doesn't guarantee anything.  I thought
+we agreed that min, low, high, max, is reasonable nomenclature, please
+use it consistently.
 
-What prevents cpu migration right here?
-If nothing, then logbuf_cpu is now stale and the recursion test at
-the top of vprintk_emit is doing nothing to prevent recursion.
+With my proposed cleanups and scalability fixes in the other mail, the
+vmscan.c changes to support the min watermark would be something like
+the following.
 
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 687076b7a1a6..cee19b6d04dc 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2259,7 +2259,7 @@ static void shrink_zone(struct zone *zone, struct scan_control *sc)
+ 				 */
+ 				if (priority < DEF_PRIORITY - 2)
+ 					break;
+-
++			case MEMCG_WMARK_MIN:
+ 				/* XXX: skip the whole subtree */
+ 				memcg = mem_cgroup_iter(root, memcg, &reclaim);
+ 				continue;
 
-+	/*
-+	 * Disable preemption to avoid being preempted while holding
-+	 * console_sem which would prevent anyone from printing to console
-+	 */
-+	preempt_disable();
-  	/*
-  	 * Try to acquire and then immediately release the console semaphore.
-  	 * The release will print out buffers and wake up /dev/kmsg and syslog()
-  	 * users.
-  	 */
--	if (console_trylock_for_printk(this_cpu))
-+	if (console_trylock_for_printk())
-  		console_unlock();
-
-Regards,
-Peter Hurley
