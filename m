@@ -1,90 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753849AbaFKBKk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 21:10:40 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:51804 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753735AbaFKBKj (ORCPT
+	id S1753672AbaFKBYg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 21:24:36 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:53493 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752634AbaFKBYe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 21:10:39 -0400
-Date: Wed, 11 Jun 2014 02:10:36 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: "J. R. Okajima" <hooanon05g@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.15 .. and continuation of merge window
-Message-ID: <20140611011036.GV18016@ZenIV.linux.org.uk>
-References: <CA+55aFw3A=ycq4kRpsDDoV4+rzg0z2kwfE9C9Bg1nSwiYfUpLw@mail.gmail.com>
- <13591.1402284634@jrobl>
+	Tue, 10 Jun 2014 21:24:34 -0400
+Message-ID: <5397AFCA.8030906@monstr.eu>
+Date: Wed, 11 Jun 2014 03:24:26 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <13591.1402284634@jrobl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Guenter Roeck <linux@roeck-us.net>, devicetree@vger.kernel.org
+CC: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        Michal Simek <monstr@monstr.eu>, linux-kernel@vger.kernel.org,
+        Michal Simek <michal.simek@xilinx.com>
+Subject: Re: [PATCH] of/platform: Fix microblaze build failure
+References: <1402426754-7328-1-git-send-email-linux@roeck-us.net>
+In-Reply-To: <1402426754-7328-1-git-send-email-linux@roeck-us.net>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="2HrTdjDTg60UKq4ECdDMmv3s1ekRQTvlm"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 09, 2014 at 12:30:34PM +0900, J. R. Okajima wrote:
-> 
-> Linus Torvalds:
-> > So I ended up doing an rc8 because I was a bit worried about some
-> > last-minute dcache fixes, but it turns out that nobody seemed to even
-> > notice those. We did have other issues during the week, though, so it
-> 	:::
-> 
-> I am afraid there is a problem in dcache. Please read
-> http://marc.info/?l=linux-fsdevel&m=140214911608925&w=2
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--2HrTdjDTg60UKq4ECdDMmv3s1ekRQTvlm
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-There is a problem, all right, but your fix doesn't really fix it - just
-narrows the race window ;-/  I would really like to detach the bugger
-as soon as __dentry_kill() removes it from the list of children, but
-unfortunately NFS wants it to be still valid in ->d_iput() (BTW,
-nfs_can_unlink() is doing something very odd -
-        parent = dget_parent(dentry);
-        if (parent == NULL)
-                goto out_free;
-is pointless, since dget_parent() never returns NULL; what was that
-check trying to accomplish?)
+On 06/10/2014 08:59 PM, Guenter Roeck wrote:
+> Commit bf5db2f (microblaze: Use generic device.h) removes the
+> microblaze specific pdev_archdata and dma_mask.
+>=20
+> At the same time, commit 591c1ee (of: configure the platform
+> device dma parameters) initializes the just removed field.
+> This causes all microblaze builds to fail.
+>=20
+> Drop the unnecessary initialization.
+>=20
+> Cc: Michal Simek <michal.simek@xilinx.com>
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> ---
+>  drivers/of/platform.c | 4 ----
+>  1 file changed, 4 deletions(-)
+>=20
+> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+> index 6c48d73..500436f 100644
+> --- a/drivers/of/platform.c
+> +++ b/drivers/of/platform.c
+> @@ -166,10 +166,6 @@ static void of_dma_configure(struct platform_devic=
+e *pdev)
+>  	int ret;
+>  	struct device *dev =3D &pdev->dev;
+> =20
+> -#if defined(CONFIG_MICROBLAZE)
+> -	pdev->archdata.dma_mask =3D 0xffffffffUL;
+> -#endif
+> -
+>  	/*
+>  	 * Set default dma-mask to 32 bit. Drivers are expected to setup
+>  	 * the correct supported dma_mask.
+>=20
 
-Your scenario isn't feasible as described, but something similar can
-happen with *two* shrinkers racing - dirB might've ended up on one list,
-with fileC looked up a bit later, ending up on another list right after
-that.  So the problem is real; unfortunately, DCACHE_DENTRY_KILLED might
-have appeared right after we'd dropped ->d_lock.
+Acked-by: Michal Simek <monstr@monstr.eu>
 
-So I suspect that the right fix is a bit trickier - in addition to check
-on the fast path (i.e. when trylock gets us the lock on parent), we need
-to
-	* get rcu_read_lock() before dropping ->d_lock.
-	* check if dentry is already doomed right after taking rcu_read_lock();
-if not, any value we might see in ->d_parent afterwards will point to object
-not freed until we drop rcu_read_lock.
+Thanks,
+Michal
 
-IOW, something like the delta below.  Comments?
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
-PS: apologies for being MIA; caught some crap, spent the last week being
-very unhappy ;-/  I'll send a pull request tomorrow morning.
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index be2bea8..65ec10f 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -532,10 +532,16 @@ static inline struct dentry *lock_parent(struct dentry *dentry)
- 	struct dentry *parent = dentry->d_parent;
- 	if (IS_ROOT(dentry))
- 		return NULL;
-+	if (unlikely((int)dentry->d_lockref.count < 0))
-+		return NULL;
- 	if (likely(spin_trylock(&parent->d_lock)))
- 		return parent;
--	spin_unlock(&dentry->d_lock);
- 	rcu_read_lock();
-+	if (unlikely((int)dentry->d_lockref.count < 0)) {
-+		rcu_read_unlock();
-+		return NULL;
-+	}
-+	spin_unlock(&dentry->d_lock);
- again:
- 	parent = ACCESS_ONCE(dentry->d_parent);
- 	spin_lock(&parent->d_lock);
+
+--2HrTdjDTg60UKq4ECdDMmv3s1ekRQTvlm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlOXr8oACgkQykllyylKDCGqJACfZaFqBpVivmJoPHRylgQF+vda
+wm8AnilL1Zm/vBguYBn/SCZA91HTFeiF
+=rzd9
+-----END PGP SIGNATURE-----
+
+--2HrTdjDTg60UKq4ECdDMmv3s1ekRQTvlm--
