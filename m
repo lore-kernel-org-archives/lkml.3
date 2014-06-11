@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932965AbaFKPYW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 11:24:22 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47468 "EHLO mail.zytor.com"
+	id S932978AbaFKPYg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 11:24:36 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47469 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932284AbaFKPYU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 11:24:20 -0400
-Message-ID: <53987499.2080704@zytor.com>
-Date: Wed, 11 Jun 2014 08:24:09 -0700
+	id S932317AbaFKPYV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 11:24:21 -0400
+Message-ID: <5398749B.4090209@zytor.com>
+Date: Wed, 11 Jun 2014 08:24:11 -0700
 From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Josh Boyer <jwboyer@fedoraproject.org>
-CC: Andy Lutomirski <luto@amacapital.net>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+To: Andy Lutomirski <luto@amacapital.net>,
+        Josh Boyer <jwboyer@fedoraproject.org>
+CC: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
 Subject: Re: vdso_install target broken post-3.15
-References: <CA+5PVA4srNrj2xqMYH40N13rV+jC-PbLdyNpoURomTq48cJNBA@mail.gmail.com>	<CA+5PVA7gL6T2eXAy6G4hGJzhKZ_8KHd0qauKqzuHAP4oTJ97QA@mail.gmail.com>	<5398732E.2060900@zytor.com> <CA+5PVA4C4pvFyQyqiGLRpJqp=RF+3q7=aMs_KKnzS1=VU5ojsQ@mail.gmail.com>
-In-Reply-To: <CA+5PVA4C4pvFyQyqiGLRpJqp=RF+3q7=aMs_KKnzS1=VU5ojsQ@mail.gmail.com>
+References: <CA+5PVA4srNrj2xqMYH40N13rV+jC-PbLdyNpoURomTq48cJNBA@mail.gmail.com> <CA+5PVA7gL6T2eXAy6G4hGJzhKZ_8KHd0qauKqzuHAP4oTJ97QA@mail.gmail.com> <CALCETrXG=752GrPhP8zKJUciiagCVRO0kenDOqL78eP73Y3ryA@mail.gmail.com>
+In-Reply-To: <CALCETrXG=752GrPhP8zKJUciiagCVRO0kenDOqL78eP73Y3ryA@mail.gmail.com>
 X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2014 08:20 AM, Josh Boyer wrote:
->>
->> Since when do we support "make" in a subdirectory?
+On 06/11/2014 08:20 AM, Andy Lutomirski wrote:
 > 
-> Dunno.  Since when do we break existing make targets that worked fine?
+> Is vdso_install supposed to install a .so file or just a .so.dbg file?
+>  I'm having trouble parsing this:
 > 
-> Seriously, I'm just asking how this was build tested so I can try and
-> duplicate that and then figure out how to fix the actual bug.
+> quiet_cmd_vdso_install = INSTALL $@
+>       cmd_vdso_install = cp $(obj)/$@.dbg $(MODLIB)/vdso/$@
+> $(vdso-install-y): %.so: $(obj)/%.so.dbg FORCE
+>         @mkdir -p $(MODLIB)/vdso
+>         $(call cmd,vdso_install)
+> 
+> This seems like a rather complicated way of saying that the .so.dbg is
+> installed with the .dbg at the end removed.  We can do that.  Let me
+> see if I can disentangle the makefile enough.
 > 
 
-Just building normally, from the top level.  The actual problem here is
-that "make vdso_install" (unstripped vdso*.so files) doesn't work, which
-is somewhat obscure (which is not to say unimportant - it isn't.)
+That is, indeed, what it says.
+
+> If we need real stripped .so files, vdso2c knows how to generate them,
+> but the makefile doesn't invoke it like that.  I don't see why we'd
+> want to install them, though.
+
+I don't think there is any point in that.
 
 	-hpa
 
