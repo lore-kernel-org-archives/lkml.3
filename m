@@ -1,52 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755701AbaFKJQq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 05:16:46 -0400
-Received: from mga09.intel.com ([134.134.136.24]:24181 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751209AbaFKJQm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 05:16:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,457,1400050800"; 
-   d="scan'208";a="555622211"
-Date: Wed, 11 Jun 2014 12:16:36 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH] ACPI / hotplug / PCI: Add hotplug contexts to PCI host
- bridges
-Message-ID: <20140611091636.GB1657@lahna.fi.intel.com>
-References: <1986515.ZPZrccsmiq@vostro.rjw.lan>
+	id S1755914AbaFKJQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 05:16:59 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:61058 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752219AbaFKJQo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 05:16:44 -0400
+Date: Wed, 11 Jun 2014 10:16:40 +0100
+From: Andy Whitcroft <apw@canonical.com>
+To: Ivo Sieben <meltedpianoman@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>
+Subject: Re: [PATCH] [checkpatch.pl] ctx_statement_block #if/#else/#endif fix
+Message-ID: <20140611091640.GK6819@bark>
+References: <1400164995-8652-1-git-send-email-meltedpianoman@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1986515.ZPZrccsmiq@vostro.rjw.lan>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1400164995-8652-1-git-send-email-meltedpianoman@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 10, 2014 at 10:51:51PM +0200, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Thu, May 15, 2014 at 04:43:15PM +0200, Ivo Sieben wrote:
+> When picking up a complete statement block #if/#else/#endif prepocesor
+> boundaries are taken into account by pushing current level & type on a stack.
+> But on an #else the level was read from stack again (without actually popping it
+> from stack) causing the statement block to end too early on the next ';'.
+> Fixed this.
 > 
-> After relatively recent changes in the ACPI-based PCI hotplug
-> (ACPIPHP) code, the acpiphp_check_host_bridge() executed for PCI
-> host bridges via acpi_pci_root_scan_dependent() doesn't do anything
-> useful, because those bridges do not have hotplug contexts.  That
-> happens by mistake, so fix it by making acpiphp_enumerate_slots()
-> add hotplug contexts to PCI host bridges too and modify
-> acpiphp_remove_slots() to drop those contexts for host bridges
-> as appropriate.
+> For example the following code:
 > 
-> Link: https://bugzilla.kernel.org/show_bug.cgi?id=76901
-> Fixes: 2d8b1d566a5f (ACPI / hotplug / PCI: Get rid of check_sub_bridges())
-> Reported-and-tested-by: Gavin Guo <gavin.guo@canonical.com>
-> Cc: 3.15+ <stable@vger.kernel.org> # 3.15+
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>  	if (!test()) {
+>  #ifdef NEVER
+>  		foo();
+>  		bar();
+>  #else
+>  		bar();
+>  		foo();
+>  #endif
+>  	}
+> 
+> Results in statement block:
+> 
+>  STATEMENT<+    if (!test()) {
+>  +#ifdef NEVER
+>  +              foo();
+>  +              bar();
+>  +#else
+>  +              bar();>
+>  CONDITION<+    if (!test())>
+> 
+> While you would expect:
+> 
+>  STATEMENT<+    if (!test()) {
+>  +#ifdef NEVER
+>  +              foo();
+>  +              bar();
+>  +#else
+>  +              bar();
+>  +              foo();
+>  +#endif
+>  +       }>
+>  CONDITION<+     if (!test())>
+> 
+> Signed-off-by: Ivo Sieben <meltedpianoman@gmail.com>
+> ---
+> 
+> Request for comments:
+> I think I fixed a problem here that I encountered while I was working on another
+> changeset in which I check the statement block after a condition.
+> Somehow the statement block did not contain everything I expected.
+> 
+>  scripts/checkpatch.pl |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index 34eb216..e7bca89 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -878,7 +878,7 @@ sub ctx_statement_block {
+>  		if ($remainder =~ /^#\s*(?:ifndef|ifdef|if)\s/) {
+>  			push(@stack, [ $type, $level ]);
+>  		} elsif ($remainder =~ /^#\s*(?:else|elif)\b/) {
+> -			($type, $level) = @{$stack[$#stack - 1]};
+> +			# no changes to stack: type & level remain the same
+>  		} elsif ($remainder =~ /^#\s*endif\b/) {
+>  			($type, $level) = @{pop(@stack)};
+>  		}
+> @@ -1050,7 +1050,7 @@ sub ctx_block_get {
+>  		if ($lines[$line] =~ /^.\s*#\s*(?:ifndef|ifdef|if)\s/) {
+>  			push(@stack, $level);
+>  		} elsif ($lines[$line] =~ /^.\s*#\s*(?:else|elif)\b/) {
+> -			$level = $stack[$#stack - 1];
+> +			# no changes to stack: type & level remain the same
+>  		} elsif ($lines[$line] =~ /^.\s*#\s*endif\b/) {
+>  			$level = pop(@stack);
+>  		}
+> -- 
+> 1.7.9.5
 
-Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+It doesn't seem right to remove the restore of the state.  If you
+consider the effect of an #if/#else/#endif combination the state of the
+statement parser should be reset to the state at #if at the #else as the
+code there is an alternative for the code in the other branch(s) of the
+preprocessor, either is a continuation of the statement in progress when
+reached.  This contrived example should make it clear we need to
+restore:
 
-Thanks for taking care of this!
+	c = (d +
+#if A
+	a)
+#else
+	b)
+#endif
+
+
+That said it appears to be doing something wrong in your example.
+
+/me will have a poke and get back to you.
+
+-apw
+
