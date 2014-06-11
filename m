@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755292AbaFKCWf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 22:22:35 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:49513 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751937AbaFKCWd (ORCPT
+	id S1755327AbaFKCYM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 22:24:12 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:46511 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753784AbaFKCYK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 22:22:33 -0400
-Date: Wed, 11 Jun 2014 03:22:22 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
-        Josh Boyer <jwboyer@redhat.com>, David Howells <dhowells@redhat.com>,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        keyrings <keyrings@linux-nfs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH 0/4] KEYS: validate key trust with owner and builtin keys
- only
-Message-ID: <20140611022222.GA2349@srcf.ucam.org>
-References: <cover.1402387862.git.d.kasatkin@samsung.com>
- <20140610122008.GA31944@hansolo.jdub.homelinux.org>
- <CACE9dm9Ff6b3J=05QfcgBv-c_y=5qGNq1-ZSfo4smtj34i1e-A@mail.gmail.com>
- <20140610204021.GA8916@srcf.ucam.org>
- <CACE9dm9ma=XRZkoCiefva-dKL+LYw-s8QB4xUTkRUZH=5XM9ew@mail.gmail.com>
- <CACE9dm8zxVXx2zRcfDYUFjqvQYT4MbLevp5U13tfH9Hb6USSJw@mail.gmail.com>
- <20140610212516.GB10614@srcf.ucam.org>
- <CACE9dm95RiGxuG-XaGKd3KqBRkk+wyj3CBbMhaCTJQaiiaj9wQ@mail.gmail.com>
- <20140610214038.GA13881@srcf.ucam.org>
- <1402449893.612.14.camel@dhcp-9-2-203-236.watson.ibm.com>
+	Tue, 10 Jun 2014 22:24:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402449893.612.14.camel@dhcp-9-2-203-236.watson.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20140611120249.56a64953@canb.auug.org.au>
+References: <20140611120249.56a64953@canb.auug.org.au>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 10 Jun 2014 20:23:49 -0600
+Message-ID: <CAErSpo6ZOQbnNugEAz=YGN6Dcc13Yj_8gfFrn0haw6OtP+zQKA@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the pci tree
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next list <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ryan Desfosses <ryan@desfo.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 10, 2014 at 09:24:53PM -0400, Mimi Zohar wrote:
-> On Tue, 2014-06-10 at 22:40 +0100, Matthew Garrett wrote: 
-> > The hole is that the system trusts keys that you don't trust. The 
-> > appropriate thing to do is to remove that trust from the entire system, 
-> > not just one layer of the system. If people gain the impression that 
-> > they can simply pass a kernel parameter and avoid trusting the vendor 
-> > keys, they'll be upset to discover that it's easily circumvented.
-> 
-> Assuming I remove all the keys I don't trust, there are still keys that
-> are trusted while booting, but are not necessary afterwards.  We should
-> be able to limit the scope of where and when keys are trusted.
+On Tue, Jun 10, 2014 at 8:02 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Bjorn,
+>
+> After merging the pci tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+>
+>
+> ERROR: ".pci_try_set_mwi" [drivers/scsi/qla2xxx/qla2xxx.ko] undefined!
+> ERROR: ".pci_clear_mwi" [drivers/scsi/qla2xxx/qla2xxx.ko] undefined!
+> ERROR: ".pci_try_set_mwi" [drivers/scsi/lpfc/lpfc.ko] undefined!
+>
+> Caused by commit 9259d755975f ("PCI: Move EXPORT_SYMBOL so it
+> immediately follows function/variable").
+> arch/powerpc/include/asm/pci.h defines PCI_DISABLE_MWI and there are
+> two version of those functions depending on the setting of that symbol.
+>
+> I have used the pci tree from next-20140610 for today.
 
-Providing a userspace mechanism for selectively dropping keys from the 
-kernel seems like a good thing?
+Thanks.  This is my fault, not Ryan's.  I made more similar changes,
+but didn't notice the #ifdefs around the definitions.  I fixed it and
+will update my "next" branch tomorrow, after Fengguang's buildbot
+confirms the fix.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Bjorn
