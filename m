@@ -1,87 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932214AbaFKMMT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 08:12:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53804 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750897AbaFKMMS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 08:12:18 -0400
-Date: Wed, 11 Jun 2014 14:12:14 +0200
-From: Jan Kara <jack@suse.cz>
-To: Weng Meiling <wengmeiling.weng@huawei.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        jack@suse.cz, akpm@linux-foundation.org, adilger.kernel@dilger.ca,
-        Jens Axboe <axboe@kernel.dk>, Li Zefan <lizefan@huawei.com>,
-        Huang Qiang <h.huangqiang@huawei.com>,
-        Zhao Hongjiang <zhaohongjiang@huawei.com>
-Subject: Re: [linux 3.4 question] reboot command stall when vdbench test
-Message-ID: <20140611121214.GD3661@quack.suse.cz>
-References: <5397FC71.8020403@huawei.com>
- <53981100.7030404@huawei.com>
+	id S932244AbaFKMNK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 08:13:10 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:49351 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751726AbaFKMNI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 08:13:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53981100.7030404@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [5.35.52.78]
+Date: Wed, 11 Jun 2014 16:13:07 +0400
+Message-ID: <CAOJe8K3fy3XFxDdVc3y1hiMAqUCPmkUhECU7j5TT=E=gxwBqHg@mail.gmail.com>
+Subject: kmemleak: Unable to handle kernel paging request
+From: Denis Kirjanov <kda@linux-powerpc.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello,
+Hi,
 
-On Wed 11-06-14 16:19:12, Weng Meiling wrote:
-> We run vdbench test in our suse system with kernel 3.4, the vdbench test
-> is about different block size seq and rand read/write. Before the vdbench
-  Hum, this looks like some relatively old (not supported anymore)
-openSUSE, right?
+I got a trace while running 3.15.0-08556-gdfb9454:
 
-> test, we had did some test about: disk message lookup, raid rebuild(note
-> we use hard raid: SAS2008 RAID).
-> 
-> we used nohup to run the vdbench test script:
-> 
-> #nohup ./vdbench_batch_test &
-> 
-> During test,  we cat the result file:
-> 
-> #cat nohup.out
-> 
-> at this time, the cat command stalled, then try to reboot, but the system
-> didn't reboot, and the reboot also stalled, shutdown gone to uninterruptible
-> sleep:
-  Yeah, looking at the logs from sysrq, the machine seems to be waiting for
-IO to complete which never happened. Most often I've seen this happening
-because of a bug in driver for the hardware raid sometimes also because of
-a bug in the firmware of the card itself. So I'd update the card firmware
-to the latest version and check changes to the driver since the kernel
-version you run.
+[  104.534026] Unable to handle kernel paging request for data at
+address 0xc00000007f000000
+[  104.534197] Faulting instruction address: 0xc00000000019cb50
+[  104.534204] Oops: Kernel access of bad area, sig: 11 [#1]
+[  104.534891] PREEMPT SMP NR_CPUS=4 NUMA PowerMac
+[  104.535550] Modules linked in: ipv6 bonding snd_aoa_codec_onyx
+snd_aoa snd soundcore uninorth_agp unix
+[  104.536940] CPU: 1 PID: 1241 Comm: kmemleak Not tainted
+3.15.0-08556-gdfb9454 #49
+[  104.537881] task: c0000001652cc000 ti: c000000165570000 task.ti:
+c000000165570000
+[  104.538819] NIP: c00000000019cb50 LR: c00000000019cb48 CTR: c0000000000d3e60
+[  104.539706] REGS: c000000165573740 TRAP: 0300   Not tainted
+(3.15.0-08556-gdfb9454)
+[  104.540676] MSR: 9000000000009032 <SF,HV,EE,ME,IR,DR,RI>  CR:
+48502542  XER: 00000000
+[  104.541887] DAR: c00000007f000000 DSISR: 40010000 SOFTE: 0
+GPR00: c00000000019cb48 c0000001655739c0 c0000000012f1858 0000000000000000
+GPR04: c00000007f001000 c00000017a024450 0000000000000000 0000000000000000
+GPR08: 0000000000000573 c000000165573d98 0000000000000001 0000000000000000
+GPR12: 0000000048500544 c00000000ffff400 c0000000000aa5e0 c000000166d43680
+GPR16: 0000000000000000 0000000000000000 0000000000000000 c000000002081858
+GPR20: 0000000000000100 c0000000020a1858 c0000000011b8ee0 c000000080000000
+GPR24: c0000000011c0a28 c0000000011c0b80 c000000000a0ab88 c0000000011c0a28
+GPR28: c00000017a024450 c00000007f000ff9 c00000007f000000 c00000017a024450
+[  104.550169] NIP [c00000000019cb50] .scan_block+0x70/0x170
+[  104.550852] LR [c00000000019cb48] .scan_block+0x68/0x170
+[  104.554164] Call Trace:
+[  104.557023] [c0000001655739c0] [c00000000019cb48]
+.scan_block+0x68/0x170 (unreliable)
+[  104.560578] [c000000165573a70] [c00000000019ce68] .scan_gray_list+0x218/0x270
+[  104.564030] [c000000165573b30] [c00000000019d240] .kmemleak_scan+0x380/0x740
+[  104.567491] [c000000165573c20] [c00000000019d67c]
+.kmemleak_scan_thread+0x7c/0x120
+[  104.571017] [c000000165573cb0] [c0000000000aa6e4] .kthread+0x104/0x130
+[  104.574365] [c000000165573e30] [c00000000000a428]
+.ret_from_kernel_thread+0x58/0xb0
+[  104.577772] Instruction dump:
+[  104.580634] 2e260000 409c00b8 3f62ffed 3f42ff72 3b7bf1d0 7cbc2b78
+3b5a9330 3b3b0158
+[  104.584274] 409200f0 4bffff2d 2fa30000 409e0090 <e87e0000> 38800001
+4bfff279 7c7f1b79
+[  104.587973] ---[ end trace 7905ecd9245ab244 ]---
 
-> root     21716  0.0  0.0   4276   556 ?        D    18:31   0:00 cat nohup.out
-> root     21726  0.0  0.0  17880  2876 ?        Ds   18:33   0:00 -bash
-> root     21868  0.0  0.0   8224   740 ?        D    19:03   0:00 shutdown -r 0 w
-> root     21892  0.0  0.0  17880  2884 ?        Ds   19:11   0:00 -bash
-> root     21967  0.0  0.0   8224   740 ?        D    19:19   0:00 shutdown -r 0 w
-> root     21970  0.0  0.0  86044  3680 ?        Ss   19:19   0:00 sshd: root@pts/4
-> root     21975  0.0  0.0  17880  2880 pts/4    Ss   19:19   0:00 -bash
-> root     22000  0.0  0.0  12932  1280 pts/4    T    19:20   0:00 top
-> 
-> after several hours the system gone to dead, all the ssh connect stalled,
-> we can't connect to this server any more. The status kept for a week,
-> finally we had to reboot the system by power key. After system reboot, we
-> done the same steps to try to reproduce the problem for more than a
-> month, but it didn't happen again.
-> 
-> We had analysed the code and lock information according the call trace,
-> also review linux 3.4+ mainline patch to find similar problem fix, but no
-> result.
-> 
-> Many others met the similar problem because use SAN/NFS/multipath devices, but we don't use none of these.
-> 
-> The attachments are our test program and dmesg information we get by
-> sysrq before system dead.  Does anyone met the problem before? Any
-> suggestion is appreciative. Thanks!
+[  104.593854] note: kmemleak[1241] exited with preempt_count 1
+[  104.597142] BUG: sleeping function called from invalid context at
+kernel/nsproxy.c:205
+[  104.600734] in_atomic(): 1, irqs_disabled(): 1, pid: 1241, name: kmemleak
+[  104.604230] INFO: lockdep is turned off.
+[  104.607417] irq event stamp: 7910916
+[  104.610567] hardirqs last  enabled at (7910915):
+[<c0000000007cfe24>] ._raw_spin_unlock_irqrestore+0x94/0xc0
+[  104.614561] hardirqs last disabled at (7910916):
+[<c0000000007cef64>] ._raw_spin_lock_irqsave+0x34/0xd0
+[  104.618507] softirqs last  enabled at (7910912):
+[<c000000000085a60>] .__do_softirq+0x300/0x3e0
+[  104.622411] softirqs last disabled at (7910893):
+[<c0000000000860a4>] .irq_exit+0x144/0x160
+[  104.626295] Preemption disabled at:[<          (null)>]           (null)
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+[  104.633121] CPU: 1 PID: 1241 Comm: kmemleak Tainted: G      D
+3.15.0-08556-gdfb9454 #49
+[  104.637132] Call Trace:
+[  104.640453] [c000000165573230] [c000000000016728]
+.show_stack+0x78/0x1e0 (unreliable)
+[  104.644535] [c000000165573300] [c0000000007d6590] .dump_stack+0x9c/0x108
+[  104.648492] [c000000165573390] [c0000000000b6870] .__might_sleep+0x160/0x1d0
+[  104.652511] [c000000165573410] [c0000000000afc34]
+.switch_task_namespaces+0x34/0xc0
+[  104.656597] [c0000001655734a0] [c000000000082cc4] .do_exit+0x334/0xa80
+[  104.660586] [c000000165573590] [c00000000001e424] .die+0x2f4/0x460
+[  104.664570] [c000000165573650] [c00000000003e1e4] .bad_page_fault+0xd4/0x130
+[  104.668680] [c0000001655736d0] [c000000000009584] handle_page_fault+0x2c/0x30
+[  104.672793] --- Exception: 300 at .scan_block+0x70/0x170
+    LR = .scan_block+0x68/0x170
+[  104.680471] [c000000165573a70] [c00000000019ce68] .scan_gray_list+0x218/0x270
+[  104.684682] [c000000165573b30] [c00000000019d240] .kmemleak_scan+0x380/0x740
+[  104.688924] [c000000165573c20] [c00000000019d67c]
+.kmemleak_scan_thread+0x7c/0x120
+[  104.693260] [c000000165573cb0] [c0000000000aa6e4] .kthread+0x104/0x130
+[  104.697503] [c000000165573e30] [c00000000000a428]
+.ret_from_kernel_thread+0x58/0xb0
