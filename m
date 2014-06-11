@@ -1,85 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753695AbaFKVQF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 17:16:05 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:54673 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753097AbaFKVQD (ORCPT
+	id S1752821AbaFKVWf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 17:22:35 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:10088 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752263AbaFKVWd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 17:16:03 -0400
+	Wed, 11 Jun 2014 17:22:33 -0400
+Message-ID: <5398C894.6040808@hp.com>
+Date: Wed, 11 Jun 2014 17:22:28 -0400
+From: "Long, Wai Man" <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <1402196538.23860.24.camel@deadeye.wl.decadent.org.uk>
-References: <20140604232347.966798903@linuxfoundation.org> <20140604232354.004988520@linuxfoundation.org>
- <1402196538.23860.24.camel@deadeye.wl.decadent.org.uk>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 11 Jun 2014 15:15:41 -0600
-Message-ID: <CAErSpo6UcObn6HVKpw82Ncfgr64w2Ws120P2WfSLqAqaROsDTw@mail.gmail.com>
-Subject: Re: [PATCH 3.14 186/228] PCI: Wrong register used to check pending traffic
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Gavin Shan <gwshan@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Alex Williamson <alex.williamson@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
+Subject: Re: [PATCH v11 06/16] qspinlock: prolong the stay in the pending
+ bit path
+References: <1401464642-33890-1-git-send-email-Waiman.Long@hp.com> <1401464642-33890-7-git-send-email-Waiman.Long@hp.com> <20140611102606.GK3213@twins.programming.kicks-ass.net>
+In-Reply-To: <20140611102606.GK3213@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 7, 2014 at 9:02 PM, Ben Hutchings <ben@decadent.org.uk> wrote:
-> On Wed, 2014-06-04 at 16:23 -0700, Greg Kroah-Hartman wrote:
->> 3.14-stable review patch.  If anyone has any objections, please let me know.
->>
->> ------------------
->>
->> From: Gavin Shan <gwshan@linux.vnet.ibm.com>
->>
->> commit d0b4cc4e32705ff00d90d32da7783c266c702c04 upstream.
->>
->> The incorrect register offset is passed to pci_wait_for_pending(), which is
->> caused by commit 157e876ffe ("PCI: Add pci_wait_for_pending() (refactor
->> pci_wait_for_pending_transaction())").
->>
->> Fixes: 157e876ffe ("PCI: Add pci_wait_for_pending() (refactor pci_wait_for_pending_transaction())
->> Signed-off-by: Gavin Shan <gwshan@linux.vnet.ibm.com>
->> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
->> Acked-by: Alex Williamson <alex.williamson@gmail.com>
->> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->>
+
+On 6/11/2014 6:26 AM, Peter Zijlstra wrote:
+> On Fri, May 30, 2014 at 11:43:52AM -0400, Waiman Long wrote:
 >> ---
->>  drivers/pci/pci.c |    5 +++--
->>  1 file changed, 3 insertions(+), 2 deletions(-)
+>>   kernel/locking/qspinlock.c |   18 ++++++++++++++++--
+>>   1 files changed, 16 insertions(+), 2 deletions(-)
 >>
->> --- a/drivers/pci/pci.c
->> +++ b/drivers/pci/pci.c
->> @@ -3043,7 +3043,8 @@ int pci_wait_for_pending_transaction(str
->>       if (!pci_is_pcie(dev))
->>               return 1;
->>
->> -     return pci_wait_for_pending(dev, PCI_EXP_DEVSTA, PCI_EXP_DEVSTA_TRPND);
->> +     return pci_wait_for_pending(dev, pci_pcie_cap(dev) + PCI_EXP_DEVSTA,
->> +                                 PCI_EXP_DEVSTA_TRPND);
->>  }
->>  EXPORT_SYMBOL(pci_wait_for_pending_transaction);
->>
->> @@ -3085,7 +3086,7 @@ static int pci_af_flr(struct pci_dev *de
->>               return 0;
->>
->>       /* Wait for Transaction Pending bit clean */
->> -     if (pci_wait_for_pending(dev, PCI_AF_STATUS, PCI_AF_STATUS_TP))
->> +     if (pci_wait_for_pending(dev, pos + PCI_AF_STATUS, PCI_AF_STATUS_TP))
->>               goto clear;
->>
->>       dev_err(&dev->dev, "transaction is not cleared; "
+>> diff --git a/kernel/locking/qspinlock.c b/kernel/locking/qspinlock.c
+>> index fc7fd8c..7f10758 100644
+>> --- a/kernel/locking/qspinlock.c
+>> +++ b/kernel/locking/qspinlock.c
+>> @@ -233,11 +233,25 @@ void queue_spin_lock_slowpath(struct qspinlock *lock, u32 val)
+>>   	 */
+>>   	for (;;) {
+>>   		/*
+>> -		 * If we observe any contention; queue.
+>> +		 * If we observe that the queue is not empty or both
+>> +		 * the pending and lock bits are set, queue
+>>   		 */
+>> -		if (val & ~_Q_LOCKED_MASK)
+>> +		if ((val & _Q_TAIL_MASK) ||
+>> +		    (val == (_Q_LOCKED_VAL|_Q_PENDING_VAL)))
+>>   			goto queue;
+>>   
+>> +		if (val == _Q_PENDING_VAL) {
+>> +			/*
+>> +			 * Pending bit is set, but not the lock bit.
+>> +			 * Assuming that the pending bit holder is going to
+>> +			 * set the lock bit and clear the pending bit soon,
+>> +			 * it is better to wait than to exit at this point.
+>> +			 */
+>> +			cpu_relax();
+>> +			val = atomic_read(&lock->val);
+>> +			continue;
+>> +		}
+>> +
+>>   		new = _Q_LOCKED_VAL;
+>>   		if (val == new)
+>>   			new |= _Q_PENDING_VAL;
 >
-> This still seems to be broken because pci_wait_for_pending() does
-> pci_read_config_word() but PCI_AF_STATUS is not word-aligned.
+> So, again, you just posted a new version without replying to the
+> previous discussion; so let me try again, what's wrong with the proposal
+> here:
+>
+>    lkml.kernel.org/r/20140417163640.GT11096@twins.programming.kicks-ass.net
+>
+>
 
-I agree; this does seem broken.  I think pci_read_config_word() will
-return PCIBIOS_BAD_REGISTER_NUMBER without updating the value
-returned, so I think we'll test garbage from the stack.
+I thought I had answered you before, maybe the message was lost or the 
+answer was not complete. Anyway, I will try to response to your question 
+again here.
 
-What do you think, Alex?
+> Wouldn't something like:
+>
+>	while (atomic_read(&lock->val) == _Q_PENDING_VAL)
+>		cpu_relax();
+>
+> before the cmpxchg loop have gotten you all this?
 
-Bjorn
+That is not exactly the same. The loop will exit if other bits are set or the pending
+bit cleared. In the case, we will need to do the same check at the beginning of the
+for loop in order to avoid doing an extra cmpxchg that is not necessary.
+
+
+> I just tried this on my code and I cannot see a difference.
+
+As I said before, I did see a difference with that change. I think it 
+depends on the CPU chip that we used for testing. I ran my test on a 
+10-core Westmere-EX chip. I run my microbench on different pairs of core 
+within the same chip. It produces different results that varies from 
+779.5ms to up to 1192ms. Without that patch, the lowest value I can get 
+is still close to 800ms, but the highest can be up to 1800ms or so. So I 
+believe it is just a matter of timing that you did not observed in your 
+test machine.
+
+-Longman
+
