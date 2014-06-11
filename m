@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932951AbaFKPba (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 11:31:30 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:52789 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755748AbaFKPag (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755832AbaFKPag (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 11 Jun 2014 11:30:36 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-3e-53987619f6dc
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:37896 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751049AbaFKPae (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 11:30:34 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-36-53987617feae
 From: Tomasz Figa <t.figa@samsung.com>
 To: linux-samsung-soc@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -18,76 +18,127 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Tony Lindgren <tony@atomide.com>, Tomasz Figa <tomasz.figa@gmail.com>,
         Tomasz Figa <t.figa@samsung.com>
-Subject: [PATCH 5/5] ARM: dts: exynos4: Add nodes for L2 cache controller
-Date: Wed, 11 Jun 2014 17:30:12 +0200
-Message-id: <1402500612-4778-6-git-send-email-t.figa@samsung.com>
+Subject: [PATCH 1/5] ARM: mm: cache-l2x0: Add base address argument to
+ write_sec callback
+Date: Wed, 11 Jun 2014 17:30:08 +0200
+Message-id: <1402500612-4778-2-git-send-email-t.figa@samsung.com>
 X-Mailer: git-send-email 1.9.3
 In-reply-to: <1402500612-4778-1-git-send-email-t.figa@samsung.com>
 References: <1402500612-4778-1-git-send-email-t.figa@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBLMWRmVeSWpSXmKPExsVy+t/xy7qSZTOCDZp+Klv0T+tgtehdcJXN
-	YnvnDHaLKX+WM1lsenyN1eLyrjlsFrOX9LNYzDi/j8ni9mVei9d9a5gt1s94zWKxatcfRov9
-	V7wceD1amnvYPL59ncTicbmvl8lj56y77B53ru1h89i8pN6jb8sqRo+7118yeRy/sZ3J4/Mm
-	uQCuKC6blNSczLLUIn27BK6MRTNYC6ZzV0yfc5yxgXEKZxcjJ4eEgInEjrsb2CBsMYkL99aD
-	2UICSxklth017mLkArL7mCQaLj9mAUmwCahJfG54BFYkIqAq8bltATtIEbPAXmaJMzNuMIIk
-	hAU8JZZd3cEEYrMAFU3fMR+omYODV8BRom1TEMQyOYnebW+YQWxOASeJp5d7GSEWO0qsWn+R
-	eQIj7wJGhlWMoqmlyQXFSem5RnrFibnFpXnpesn5uZsYIaH7dQfj0mNWhxgFOBiVeHgN/KcF
-	C7EmlhVX5h5ilOBgVhLhLSicESzEm5JYWZValB9fVJqTWnyIkYmDU6qBcdOaXVYKW1duMDiZ
-	tJDr6knjNBvLLyU/iyKWJkjzRobn/O1nXed3rMdp6cNDmzwulUe6VJysKrz6OPtUypo0YdOQ
-	jn6G5qeblA2Mo/aX2203iu1Zkbruoubbi7vjbIT+963Z0q4myCvybnpQlcxpuV+8BteCNjae
-	zj4/S4bthH5DbHRb5MpLSizFGYmGWsxFxYkAU+6iUDsCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFLMWRmVeSWpSXmKPExsVy+t/xy7riZTOCDS7c57Ton9bBatG74Cqb
+	xfbOGewWU/4sZ7LY9Pgaq8XlXXPYLGYv6WexmHF+H5PF7cu8Fq/71jBbrJ/xmsVi1a4/jBb7
+	r3g58Hq0NPeweXz7OonF43JfL5PHzll32T3uXNvD5rF5Sb1H35ZVjB53r79k8jh+YzuTx+dN
+	cgFcUVw2Kak5mWWpRfp2CVwZyz5OYiqYJVfR2n2atYFxnmQXIyeHhICJxNTpF5khbDGJC/fW
+	s4HYQgJLGSXmNft2MXIB2X1MEid27mABSbAJqEl8bngEViQioCrxuW0BO0gRs8BeZokzM24w
+	giSEBaIlDt35AjaVBajoxsdF7CA2r4CjxIvbe6C2yUn0bnsDZnMKOEk8vdzLCLHZUWLV+ovM
+	Exh5FzAyrGIUTS1NLihOSs810itOzC0uzUvXS87P3cQICd+vOxiXHrM6xCjAwajEw2vgPy1Y
+	iDWxrLgy9xCjBAezkghvQeGMYCHelMTKqtSi/Pii0pzU4kOMTBycUg2MV1/K3ZJcdOGecD/z
+	zT1cy6I/3K1bxDxthdkvhYDdQYHhrZz286vvrvx7qUB0ddzEpWzLjbXb5glq/L92aOajrS9r
+	Nu95cE89uKb86ariq+v0pAOfz+Y0Tjj7Qflm7Okv4UKsziGXGR4+WHzzzv5sJYazcxkK5prV
+	Nko7J+isW5NX1xySvtRovhJLcUaioRZzUXEiAKVtxDY9AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds device tree nodes for L2 cache controller present on
-Exynos4 SoCs.
+For certain platforms (e.g. Exynos) it is necessary to read back some
+values from registers before they can be written (i.e. SMC calls that
+set multiple registers per call), so base address of L2C controller is
+needed for .write_sec operation. This patch adds base argument to
+.write_sec callback so that its implementation can also access registers
+directly.
 
 Signed-off-by: Tomasz Figa <t.figa@samsung.com>
 ---
- arch/arm/boot/dts/exynos4210.dtsi | 9 +++++++++
- arch/arm/boot/dts/exynos4x12.dtsi | 9 +++++++++
- 2 files changed, 18 insertions(+)
+ arch/arm/include/asm/mach/arch.h   | 3 ++-
+ arch/arm/include/asm/outercache.h  | 2 +-
+ arch/arm/mach-highbank/highbank.c  | 3 ++-
+ arch/arm/mach-omap2/omap4-common.c | 3 ++-
+ arch/arm/mach-ux500/cache-l2x0.c   | 3 ++-
+ arch/arm/mm/cache-l2x0.c           | 2 +-
+ 6 files changed, 10 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/boot/dts/exynos4210.dtsi b/arch/arm/boot/dts/exynos4210.dtsi
-index ee3001f..99970ab 100644
---- a/arch/arm/boot/dts/exynos4210.dtsi
-+++ b/arch/arm/boot/dts/exynos4210.dtsi
-@@ -54,6 +54,15 @@
- 		reg = <0x10023CA0 0x20>;
- 	};
+diff --git a/arch/arm/include/asm/mach/arch.h b/arch/arm/include/asm/mach/arch.h
+index 060a75e..ddaebcd 100644
+--- a/arch/arm/include/asm/mach/arch.h
++++ b/arch/arm/include/asm/mach/arch.h
+@@ -46,7 +46,8 @@ struct machine_desc {
+ 	enum reboot_mode	reboot_mode;	/* default restart mode	*/
+ 	unsigned		l2c_aux_val;	/* L2 cache aux value	*/
+ 	unsigned		l2c_aux_mask;	/* L2 cache aux mask	*/
+-	void			(*l2c_write_sec)(unsigned long, unsigned);
++	void			(*l2c_write_sec)(void __iomem *,
++						 unsigned long, unsigned);
+ 	struct smp_operations	*smp;		/* SMP operations	*/
+ 	bool			(*smp_init)(void);
+ 	void			(*fixup)(struct tag *, char **);
+diff --git a/arch/arm/include/asm/outercache.h b/arch/arm/include/asm/outercache.h
+index 891a56b..5cc703b 100644
+--- a/arch/arm/include/asm/outercache.h
++++ b/arch/arm/include/asm/outercache.h
+@@ -35,7 +35,7 @@ struct outer_cache_fns {
+ 	void (*resume)(void);
  
-+	l2c: l2-cache-controller@10502000 {
-+		compatible = "arm,pl310-cache";
-+		reg = <0x10502000 0x1000>;
-+		cache-unified;
-+		cache-level = <2>;
-+		arm,tag-latency = <2 2 1>;
-+		arm,data-latency = <2 2 1>;
-+	};
-+
- 	gic: interrupt-controller@10490000 {
- 		cpu-offset = <0x8000>;
- 	};
-diff --git a/arch/arm/boot/dts/exynos4x12.dtsi b/arch/arm/boot/dts/exynos4x12.dtsi
-index c5a943d..9487f9c 100644
---- a/arch/arm/boot/dts/exynos4x12.dtsi
-+++ b/arch/arm/boot/dts/exynos4x12.dtsi
-@@ -60,6 +60,15 @@
- 		reg = <0x10023CA0 0x20>;
- 	};
+ 	/* This is an ARM L2C thing */
+-	void (*write_sec)(unsigned long, unsigned);
++	void (*write_sec)(void __iomem *, unsigned long, unsigned);
+ };
  
-+	l2c: l2-cache-controller@10502000 {
-+		compatible = "arm,pl310-cache";
-+		reg = <0x10502000 0x1000>;
-+		cache-unified;
-+		cache-level = <2>;
-+		arm,tag-latency = <2 2 1>;
-+		arm,data-latency = <3 2 1>;
-+	};
-+
- 	clock: clock-controller@10030000 {
- 		compatible = "samsung,exynos4412-clock";
- 		reg = <0x10030000 0x20000>;
+ extern struct outer_cache_fns outer_cache;
+diff --git a/arch/arm/mach-highbank/highbank.c b/arch/arm/mach-highbank/highbank.c
+index 8c35ae4..2bd3243 100644
+--- a/arch/arm/mach-highbank/highbank.c
++++ b/arch/arm/mach-highbank/highbank.c
+@@ -51,7 +51,8 @@ static void __init highbank_scu_map_io(void)
+ }
+ 
+ 
+-static void highbank_l2c310_write_sec(unsigned long val, unsigned reg)
++static void highbank_l2c310_write_sec(void __iomem *base,
++				      unsigned long val, unsigned reg)
+ {
+ 	if (reg == L2X0_CTRL)
+ 		highbank_smc1(0x102, val);
+diff --git a/arch/arm/mach-omap2/omap4-common.c b/arch/arm/mach-omap2/omap4-common.c
+index 326cd98..bdbe658 100644
+--- a/arch/arm/mach-omap2/omap4-common.c
++++ b/arch/arm/mach-omap2/omap4-common.c
+@@ -167,7 +167,8 @@ void __iomem *omap4_get_l2cache_base(void)
+ 	return l2cache_base;
+ }
+ 
+-static void omap4_l2c310_write_sec(unsigned long val, unsigned reg)
++static void omap4_l2c310_write_sec(void __iomem *base,
++				   unsigned long val, unsigned reg)
+ {
+ 	unsigned smc_op;
+ 
+diff --git a/arch/arm/mach-ux500/cache-l2x0.c b/arch/arm/mach-ux500/cache-l2x0.c
+index 842ebed..35c2623 100644
+--- a/arch/arm/mach-ux500/cache-l2x0.c
++++ b/arch/arm/mach-ux500/cache-l2x0.c
+@@ -35,7 +35,8 @@ static int __init ux500_l2x0_unlock(void)
+ 	return 0;
+ }
+ 
+-static void ux500_l2c310_write_sec(unsigned long val, unsigned reg)
++static void ux500_l2c310_write_sec(void __iomem *base,
++				   unsigned long val, unsigned reg)
+ {
+ 	/*
+ 	 * We can't write to secure registers as we are in non-secure
+diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
+index efc5cab..1695eab 100644
+--- a/arch/arm/mm/cache-l2x0.c
++++ b/arch/arm/mm/cache-l2x0.c
+@@ -72,7 +72,7 @@ static void l2c_write_sec(unsigned long val, void __iomem *base, unsigned reg)
+ 	if (val == readl_relaxed(base + reg))
+ 		return;
+ 	if (outer_cache.write_sec)
+-		outer_cache.write_sec(val, reg);
++		outer_cache.write_sec(base, val, reg);
+ 	else
+ 		writel_relaxed(val, base + reg);
+ }
 -- 
 1.9.3
 
