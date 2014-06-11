@@ -1,44 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932926AbaFKPWQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 11:22:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47168 "EHLO
+	id S932946AbaFKPXZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 11:23:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47172 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932123AbaFKPWO (ORCPT
+	with ESMTP id S1751898AbaFKPXY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 11:22:14 -0400
-Date: Wed, 11 Jun 2014 08:26:04 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Lu Baolu <baolu.lu@linux.intel.com>
-Cc: Mathias Nyman <mathias.nyman@intel.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] xhci: clear root port wake on bits if controller
- isn't wake-up capable
-Message-ID: <20140611152604.GA27630@kroah.com>
-References: <1402439120-78151-1-git-send-email-baolu.lu@linux.intel.com>
+	Wed, 11 Jun 2014 11:23:24 -0400
+Date: Wed, 11 Jun 2014 08:27:14 -0700
+From: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: linux-kernel@vger.kernel.org,
+        "'Thierry Reding'" <thierry.reding@gmail.com>,
+        "'David Airlie'" <airlied@linux.ie>, "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Florian Fainelli'" <f.fainelli@gmail.com>
+Subject: Re: [PATCH] devres: remove devm_request_and_ioremap()
+Message-ID: <20140611152714.GB27630@kroah.com>
+References: <000901cf8532$026e5d40$074b17c0$%han@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1402439120-78151-1-git-send-email-baolu.lu@linux.intel.com>
+In-Reply-To: <000901cf8532$026e5d40$074b17c0$%han@samsung.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 11, 2014 at 06:25:20AM +0800, Lu Baolu wrote:
-> When the xHCI PCI host is suspended, if do_wakeup is false in xhci_pci_suspend,
-> xhci_bus_suspend needs to clear all root port wake on bits. Otherwise some Intel
-> platform may get a spurious wakeup, even if PCI PME# is disabled.
+On Wed, Jun 11, 2014 at 02:00:05PM +0900, Jingoo Han wrote:
+> devm_request_and_ioremap() was obsoleted by the commit 7509657
+> ("lib: devres: Introduce devm_ioremap_resource()") and has been
+> deprecated for a long time. So, let's remove this function.
+> In addition, all usages of devm_request_and_ioremap() are also
+> removed.
 > 
-> http://marc.info/?l=linux-usb&m=138194006009255&w=2
-> 
-> Signed-off-by: Lu Baolu <baolu.lu@linux.intel.com>
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 > ---
->  drivers/usb/host/xhci-hub.c | 5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
+> Based-on the latest linux kernel
+> (dfb9454 Merge git://www.linux-watchdog.org/linux-watchdog)
+> 
+>  Documentation/driver-model/devres.txt              |    1 -
+>  drivers/bus/brcmstb_gisb.c                         |    6 +-
+>  drivers/gpu/drm/armada/armada_crtc.c               |    8 +-
+>  include/linux/device.h                             |    2 -
+>  lib/devres.c                                       |   28 ------
+>  scripts/coccinelle/api/devm_ioremap_resource.cocci |   90 --------------------
+>  6 files changed, 6 insertions(+), 129 deletions(-)
+>  delete mode 100644 scripts/coccinelle/api/devm_ioremap_resource.cocci
 
-Should this also be a stable kernel patch?  If so, how far back?
-
-thanks,
+Thanks, I'll queue it up after 3.16-rc1 is out.
 
 greg k-h
