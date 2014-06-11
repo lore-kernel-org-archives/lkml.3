@@ -1,353 +1,404 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932237AbaFKIA5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 04:00:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48317 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755542AbaFKIAz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 04:00:55 -0400
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Michel Lespinasse <walken@google.com>, Tejun Heo <tj@kernel.org>,
-        Roman Gushchin <klamm@yandex-team.ru>, <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] memcg: Allow guarantee reclaim
-Date: Wed, 11 Jun 2014 10:00:24 +0200
-Message-Id: <1402473624-13827-2-git-send-email-mhocko@suse.cz>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1402473624-13827-1-git-send-email-mhocko@suse.cz>
-References: <20140611075729.GA4520@dhcp22.suse.cz>
- <1402473624-13827-1-git-send-email-mhocko@suse.cz>
+	id S1755614AbaFKIDm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 04:03:42 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:63121 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751311AbaFKIDg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 04:03:36 -0400
+From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Matthew Garrett <matthew.garrett@nebula.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Pavel Machek <pavel@ucw.cz>,
+        Valdis Kletnieks <valdis.kletnieks@vt.edu>
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        platform-driver-x86@vger.kernel.org,
+        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
+        Sonal Santan <sonal.santan@gmail.com>
+Subject: [PATCH v2] Documentation: Rename hpfall.c => freefall.c, fixes for Dell
+Date: Wed, 11 Jun 2014 10:02:07 +0200
+Message-Id: <1402473727-5464-1-git-send-email-pali.rohar@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1399114077-19314-3-git-send-email-pali.rohar@gmail.com>
+References: <1399114077-19314-3-git-send-email-pali.rohar@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some users (e.g. Google) would like to have stronger semantic than low
-limit offers currently. The fallback mode is not desirable and they
-prefer hitting OOM killer rather than ignoring low limit for protected
-groups.
+Dell kernel driver dell-smo8800 provides same freefall interface as hp_accel so
+program hpfall.c works also on Dell laptops. So rename it to freefall.c.
 
-There are other possible usecases which can benefit from hard
-guarantees. There are loads which will simply start trashing if the
-memory working set drops under certain level and it is more appropriate
-to simply kill and restart such a load if the required memory cannot
-be provided. Another usecase would be a hard memory isolation for
-containers.
+Dell driver does not provide hp::hddprotect led so make sure that freefall.c
+works also if hp::hddprotect does not exist in sysfs.
 
-The min_limit is initialized to 0 and it has precedence over low_limit.
-If the reclaim is not able to find any memcg in the reclaimed hierarchy
-above min_limit then OOM killer is triggered to resolve the situation.
+Additionally write info to syslog.
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+Cc: Sonal Santan <sonal.santan@gmail.com>
 ---
- Documentation/cgroups/memory.txt | 26 ++++++++++++++++++--------
- include/linux/memcontrol.h       | 14 ++++++++------
- include/linux/res_counter.h      | 32 ++++++++++++++++++++++++++++++--
- mm/memcontrol.c                  | 18 +++++++++++-------
- mm/oom_kill.c                    |  6 ++++--
- mm/vmscan.c                      | 38 ++++++++++++++++++++++----------------
- 6 files changed, 93 insertions(+), 41 deletions(-)
+Changes since v1:
+* Fixed warnings: Missing a blank line after declarations
+---
+ Documentation/laptops/00-INDEX   |    4 +-
+ Documentation/laptops/freefall.c |  177 ++++++++++++++++++++++++++++++++++++++
+ Documentation/laptops/hpfall.c   |  146 -------------------------------
+ 3 files changed, 179 insertions(+), 148 deletions(-)
+ create mode 100644 Documentation/laptops/freefall.c
+ delete mode 100644 Documentation/laptops/hpfall.c
 
-diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-index bf895d7e1363..6929a06c9e5d 100644
---- a/Documentation/cgroups/memory.txt
-+++ b/Documentation/cgroups/memory.txt
-@@ -61,6 +61,7 @@ Brief summary of control files.
-  memory.low_limit_breached	 # number of times low_limit has been
- 				 # ignored and the cgroup reclaimed even
- 				 # when it was above the limit
-+ memory.min_limit_in_bytes	 # set/show min limit for memory reclaim
-  memory.memsw.limit_in_bytes	 # set/show limit of memory+Swap usage
-  memory.failcnt			 # show the number of memory usage hits limits
-  memory.memsw.failcnt		 # show the number of memory+Swap hits limits
-@@ -248,14 +249,23 @@ global VM. Cgroups can get reclaimed basically under two conditions
-    to select and kill the bulkiest task in the hiearchy. (See 10. OOM Control
-    below.)
- 
--Groups might be also protected from both global and limit reclaim by
--low_limit_in_bytes knob. If the limit is non-zero the reclaim logic
--doesn't include groups (and their subgroups - see 6. Hierarchy support)
--which are below the low limit if there is other eligible cgroup in the
--reclaimed hierarchy. If all groups which participate reclaim are under
--their low limits then all of them are reclaimed and the low limit is
--ignored. low_limit_breached counter in memory.stat file can be checked
--to see how many times such an event occurred.
-+Groups might be also protected from both global and limit reclaim
-+by low_limit_in_bytes and min_limit_in_bytes knobs. The first one
-+provides an optimistic reclaim protection while the later one provides
-+hard memory reclaim protection guarantee. Both limits are 0 by default
-+and min watermark has always precedence to low watermark.
-+
-+If the low limit is non-zero the reclaim logic doesn't include
-+groups (and their subgroups - see 6. Hierarchy support) which are
-+below low_limit if there is other eligible cgroup in the reclaimed
-+hierarchy. If all groups which participate reclaim are under their low
-+limits then all of them are reclaimed and the low limit is ignored.
-+low_limit_breached counter in memory.stat file can be checked to see how
-+many times such an event occurred.
-+
-+If, however, all the groups under reclaimed hierarchy are under their min
-+limits then no reclaim is done and OOM killer is triggered to resolve the
-+situation. In other words low_limit is never breached by the reclaim.
- 
- Note2: When panic_on_oom is set to "2", the whole system will panic.
- 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 5e2ca2163b12..ddb96729a6b6 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -93,10 +93,11 @@ bool task_in_mem_cgroup(struct task_struct *task,
- 			const struct mem_cgroup *memcg);
- 
- extern bool mem_cgroup_within_guarantee(struct mem_cgroup *memcg,
--		struct mem_cgroup *root);
-+		struct mem_cgroup *root, bool soft_guarantee);
- 
--extern void mem_cgroup_guarantee_breached(struct mem_cgroup *memcg);
--extern bool mem_cgroup_all_within_guarantee(struct mem_cgroup *root);
-+extern void mem_cgroup_soft_guarantee_breached(struct mem_cgroup *memcg);
-+extern bool mem_cgroup_all_within_guarantee(struct mem_cgroup *root,
-+		bool soft_guarantee);
- 
- extern struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page);
- extern struct mem_cgroup *mem_cgroup_from_task(struct task_struct *p);
-@@ -295,14 +296,15 @@ static inline struct lruvec *mem_cgroup_page_lruvec(struct page *page,
- }
- 
- static inline bool mem_cgroup_within_guarantee(struct mem_cgroup *memcg,
--		struct mem_cgroup *root)
-+		struct mem_cgroup *root, bool soft_guarantee)
- {
- 	return false;
- }
--static inline  void mem_cgroup_guarantee_breached(struct mem_cgroup *memcg)
-+static inline  void mem_cgroup_soft_guarantee_breached(struct mem_cgroup *memcg)
- {
- }
--static inline bool mem_cgroup_all_within_guarantee(struct mem_cgroup *root)
-+static inline bool mem_cgroup_all_within_guarantee(struct mem_cgroup *root,
-+		bool soft_guarantee)
- {
- 	return false;
- }
-diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
-index b810855024f9..21dff6507aa7 100644
---- a/include/linux/res_counter.h
-+++ b/include/linux/res_counter.h
-@@ -40,11 +40,17 @@ struct res_counter {
- 	 */
- 	unsigned long long soft_limit;
- 	/*
--	 * the limit under which the usage cannot be pushed
--	 * due to external pressure.
-+	 * the limit under which the usage shouldn't be pushed
-+	 * due to external pressure if it is possible.
- 	 */
- 	unsigned long long low_limit;
- 	/*
-+	 * the limit under with the usage cannot be pushed
-+	 * due to external pressure.
-+	 */
-+	unsigned long long min_limit;
-+
-+	/*
- 	 * the number of unsuccessful attempts to consume the resource
- 	 */
- 	unsigned long long failcnt;
-@@ -203,6 +209,28 @@ res_counter_low_limit_excess(struct res_counter *cnt)
- 	return excess;
- }
- 
-+/**
-+ * Get the difference between the usage and the min limit
-+ * @cnt: The counter
+diff --git a/Documentation/laptops/00-INDEX b/Documentation/laptops/00-INDEX
+index d13b9a9..d399ae1 100644
+--- a/Documentation/laptops/00-INDEX
++++ b/Documentation/laptops/00-INDEX
+@@ -8,8 +8,8 @@ disk-shock-protection.txt
+ 	- information on hard disk shock protection.
+ dslm.c
+ 	- Simple Disk Sleep Monitor program
+-hpfall.c
+-	- (HP) laptop accelerometer program for disk protection.
++freefall.c
++	- (HP/DELL) laptop accelerometer program for disk protection.
+ laptop-mode.txt
+ 	- how to conserve battery power using laptop-mode.
+ sony-laptop.txt
+diff --git a/Documentation/laptops/freefall.c b/Documentation/laptops/freefall.c
+new file mode 100644
+index 0000000..aab2ff0
+--- /dev/null
++++ b/Documentation/laptops/freefall.c
+@@ -0,0 +1,177 @@
++/* Disk protection for HP/DELL machines.
 + *
-+ * Returns 0 if usage is less than or equal to min limit
-+ * The difference between usage and min limit, otherwise.
++ * Copyright 2008 Eric Piel
++ * Copyright 2009 Pavel Machek <pavel@ucw.cz>
++ * Copyright 2012 Sonal Santan
++ * Copyright 2014 Pali Rohár <pali.rohar@gmail.com>
++ *
++ * GPLv2.
 + */
-+static inline unsigned long long
-+res_counter_min_limit_excess(struct res_counter *cnt)
-+{
-+	unsigned long long excess;
-+	unsigned long flags;
 +
-+	spin_lock_irqsave(&cnt->lock, flags);
-+	if (cnt->usage <= cnt->min_limit)
-+		excess = 0;
-+	else
-+		excess = cnt->usage - cnt->min_limit;
-+	spin_unlock_irqrestore(&cnt->lock, flags);
-+	return excess;
++#include <stdio.h>
++#include <stdlib.h>
++#include <unistd.h>
++#include <fcntl.h>
++#include <sys/stat.h>
++#include <sys/types.h>
++#include <string.h>
++#include <stdint.h>
++#include <errno.h>
++#include <signal.h>
++#include <sys/mman.h>
++#include <sched.h>
++#include <syslog.h>
++
++static int noled;
++static char unload_heads_path[64];
++static char device_path[32];
++static const char app_name[] = "FREE FALL";
++
++static int set_unload_heads_path(char *device)
++{
++	char devname[64];
++
++	if (strlen(device) <= 5 || strncmp(device, "/dev/", 5) != 0)
++		return -EINVAL;
++	strncpy(devname, device + 5, sizeof(devname) - 1);
++	strncpy(device_path, device, sizeof(device_path) - 1);
++
++	snprintf(unload_heads_path, sizeof(unload_heads_path) - 1,
++				"/sys/block/%s/device/unload_heads", devname);
++	return 0;
 +}
 +
- static inline void res_counter_reset_max(struct res_counter *cnt)
- {
- 	unsigned long flags;
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 7f62b6533f60..26f137175f1c 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2816,19 +2816,23 @@ static struct mem_cgroup *mem_cgroup_lookup(unsigned short id)
-  * memory guarantee
-  * @memcg: target memcg for the reclaim
-  * @root: root of the reclaim hierarchy (null for the global reclaim)
-+ * @soft_guarantee: is the guarantee soft (allows fallback).
-  *
-- * The given group is within its reclaim gurantee if it is below its low limit
-- * or the same applies for any parent up the hierarchy until root (including).
-+ * The given group is within its reclaim gurantee if it is below its min limit
-+ * and if soft_guarantee is true then also below its low limit.
-+ * Or the same applies for any parent up the hierarchy until root (including).
-  * Such a group might be excluded from the reclaim.
-  */
- bool mem_cgroup_within_guarantee(struct mem_cgroup *memcg,
--		struct mem_cgroup *root)
-+		struct mem_cgroup *root, bool soft_guarantee)
- {
- 	if (mem_cgroup_disabled())
- 		return false;
- 
- 	do {
--		if (!res_counter_low_limit_excess(&memcg->res))
-+		if (!res_counter_min_limit_excess(&memcg->res))
-+			return true;
-+		if (soft_guarantee && !res_counter_low_limit_excess(&memcg->res))
- 			return true;
- 		if (memcg == root)
- 			break;
-@@ -2838,17 +2842,17 @@ bool mem_cgroup_within_guarantee(struct mem_cgroup *memcg,
- 	return false;
- }
- 
--void mem_cgroup_guarantee_breached(struct mem_cgroup *memcg)
-+void mem_cgroup_soft_guarantee_breached(struct mem_cgroup *memcg)
- {
- 	this_cpu_inc(memcg->stat->events[MEM_CGROUP_EVENTS_LOW_LIMIT_FALLBACK]);
- }
- 
--bool mem_cgroup_all_within_guarantee(struct mem_cgroup *root)
-+bool mem_cgroup_all_within_guarantee(struct mem_cgroup *root, bool soft_guarantee)
- {
- 	struct mem_cgroup *iter;
- 
- 	for_each_mem_cgroup_tree(iter, root)
--		if (!mem_cgroup_within_guarantee(iter, root)) {
-+		if (!mem_cgroup_within_guarantee(iter, root, soft_guarantee)) {
- 			mem_cgroup_iter_break(root, iter);
- 			return false;
- 		}
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 3291e82d4352..e44b471af476 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -392,9 +392,11 @@ static void dump_header(struct task_struct *p, gfp_t gfp_mask, int order,
- {
- 	task_lock(current);
- 	pr_warning("%s invoked oom-killer: gfp_mask=0x%x, order=%d, "
--		"oom_score_adj=%hd\n",
-+		"oom_score_adj=%hd%s\n",
- 		current->comm, gfp_mask, order,
--		current->signal->oom_score_adj);
-+		current->signal->oom_score_adj,
-+		mem_cgroup_all_within_guarantee(memcg, false) ?
-+		" because all groups are withing min_limit guarantee":"");
- 	cpuset_print_task_mems_allowed(current);
- 	task_unlock(current);
- 	dump_stack();
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 99137aecd95f..8e844bd42c51 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2220,13 +2220,12 @@ static inline bool should_continue_reclaim(struct zone *zone,
-  *
-  * @zone: zone to shrink
-  * @sc: scan control with additional reclaim parameters
-- * @honor_memcg_guarantee: do not reclaim memcgs which are within their memory
-- * guarantee
-+ * @soft_guarantee: Use soft guarantee reclaim target for memcg reclaim.
-  *
-  * Returns the number of reclaimed memcgs.
-  */
- static unsigned __shrink_zone(struct zone *zone, struct scan_control *sc,
--		bool honor_memcg_guarantee)
-+		bool soft_guarantee)
- {
- 	unsigned long nr_reclaimed, nr_scanned;
- 	unsigned nr_scanned_groups = 0;
-@@ -2245,11 +2244,10 @@ static unsigned __shrink_zone(struct zone *zone, struct scan_control *sc,
- 		memcg = mem_cgroup_iter(root, NULL, &reclaim);
- 		do {
- 			struct lruvec *lruvec;
--			bool within_guarantee;
- 
- 			/* Memcg might be protected from the reclaim */
--			within_guarantee = mem_cgroup_within_guarantee(memcg, root);
--			if (honor_memcg_guarantee && within_guarantee) {
-+			if (mem_cgroup_within_guarantee(memcg, root,
-+						soft_guarantee)) {
- 				/*
- 				 * It would be more optimal to skip the memcg
- 				 * subtree now but we do not have a memcg iter
-@@ -2259,8 +2257,8 @@ static unsigned __shrink_zone(struct zone *zone, struct scan_control *sc,
- 				continue;
- 			}
- 
--			if (within_guarantee)
--				mem_cgroup_guarantee_breached(memcg);
-+			if (!soft_guarantee)
-+				mem_cgroup_soft_guarantee_breached(memcg);
- 
- 			lruvec = mem_cgroup_zone_lruvec(zone, memcg);
- 			nr_scanned_groups++;
-@@ -2297,20 +2295,27 @@ static unsigned __shrink_zone(struct zone *zone, struct scan_control *sc,
- 
- static void shrink_zone(struct zone *zone, struct scan_control *sc)
- {
--	bool honor_guarantee = true;
-+	bool soft_guarantee = true;
- 
--	while (!__shrink_zone(zone, sc, honor_guarantee)) {
-+	while (!__shrink_zone(zone, sc, soft_guarantee)) {
- 		/*
- 		 * The previous round of reclaim didn't find anything to scan
- 		 * because
--		 * a) the whole reclaimed hierarchy is within guarantee so
--		 *    we fallback to ignore the guarantee because other option
--		 *    would be the OOM
-+		 * a) the whole reclaimed hierarchy is within soft guarantee so
-+		 *    we are switching to the hard guarantee reclaim target
- 		 * b) multiple reclaimers are racing and so the first round
- 		 *    should be retried
- 		 */
--		if (mem_cgroup_all_within_guarantee(sc->target_mem_cgroup))
--			honor_guarantee = false;
-+		if (mem_cgroup_all_within_guarantee(sc->target_mem_cgroup,
-+					soft_guarantee)) {
-+			/*
-+			 * Nothing to reclaim even with hard guarantees so
-+			 * we have to OOM
-+			 */
-+			if (!soft_guarantee)
-+				break;
-+			soft_guarantee = false;
++static int valid_disk(void)
++{
++	int fd = open(unload_heads_path, O_RDONLY);
++
++	if (fd < 0) {
++		perror(unload_heads_path);
++		return 0;
++	}
++
++	close(fd);
++	return 1;
++}
++
++static void write_int(char *path, int i)
++{
++	char buf[1024];
++	int fd = open(path, O_RDWR);
++
++	if (fd < 0) {
++		perror("open");
++		exit(1);
++	}
++
++	sprintf(buf, "%d", i);
++
++	if (write(fd, buf, strlen(buf)) != strlen(buf)) {
++		perror("write");
++		exit(1);
++	}
++
++	close(fd);
++}
++
++static void set_led(int on)
++{
++	if (noled)
++		return;
++	write_int("/sys/class/leds/hp::hddprotect/brightness", on);
++}
++
++static void protect(int seconds)
++{
++	const char *str = (seconds == 0) ? "Unparked" : "Parked";
++
++	write_int(unload_heads_path, seconds*1000);
++	syslog(LOG_INFO, "%s %s disk head\n", str, device_path);
++}
++
++static int on_ac(void)
++{
++	/* /sys/class/power_supply/AC0/online */
++	return 1;
++}
++
++static int lid_open(void)
++{
++	/* /proc/acpi/button/lid/LID/state */
++	return 1;
++}
++
++static void ignore_me(int signum)
++{
++	protect(0);
++	set_led(0);
++}
++
++int main(int argc, char **argv)
++{
++	int fd, ret;
++	struct stat st;
++	struct sched_param param;
++
++	if (argc == 1)
++		ret = set_unload_heads_path("/dev/sda");
++	else if (argc == 2)
++		ret = set_unload_heads_path(argv[1]);
++	else
++		ret = -EINVAL;
++
++	if (ret || !valid_disk()) {
++		fprintf(stderr, "usage: %s <device> (default: /dev/sda)\n",
++				argv[0]);
++		exit(1);
++	}
++
++	fd = open("/dev/freefall", O_RDONLY);
++	if (fd < 0) {
++		perror("/dev/freefall");
++		return EXIT_FAILURE;
++	}
++
++	if (stat("/sys/class/leds/hp::hddprotect/brightness", &st))
++		noled = 1;
++
++	if (daemon(0, 0) != 0) {
++		perror("daemon");
++		return EXIT_FAILURE;
++	}
++
++	openlog(app_name, LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
++
++	param.sched_priority = sched_get_priority_max(SCHED_FIFO);
++	sched_setscheduler(0, SCHED_FIFO, &param);
++	mlockall(MCL_CURRENT|MCL_FUTURE);
++
++	signal(SIGALRM, ignore_me);
++
++	for (;;) {
++		unsigned char count;
++
++		ret = read(fd, &count, sizeof(count));
++		alarm(0);
++		if ((ret == -1) && (errno == EINTR)) {
++			/* Alarm expired, time to unpark the heads */
++			continue;
 +		}
- 	}
- }
- 
-@@ -2574,7 +2579,8 @@ out:
- 	 * If the target memcg is not eligible for reclaim then we have no option
- 	 * but OOM
- 	 */
--	if (!sc->nr_scanned && mem_cgroup_all_within_guarantee(sc->target_mem_cgroup))
-+	if (!sc->nr_scanned &&
-+			mem_cgroup_all_within_guarantee(sc->target_mem_cgroup, false))
- 		return 0;
- 
- 	/* top priority shrink_zones still had more to do? don't OOM, then */
++
++		if (ret != sizeof(count)) {
++			perror("read");
++			break;
++		}
++
++		protect(21);
++		set_led(1);
++		if (1 || on_ac() || lid_open())
++			alarm(2);
++		else
++			alarm(20);
++	}
++
++	closelog();
++	close(fd);
++	return EXIT_SUCCESS;
++}
+diff --git a/Documentation/laptops/hpfall.c b/Documentation/laptops/hpfall.c
+deleted file mode 100644
+index b85dbba..0000000
+--- a/Documentation/laptops/hpfall.c
++++ /dev/null
+@@ -1,146 +0,0 @@
+-/* Disk protection for HP machines.
+- *
+- * Copyright 2008 Eric Piel
+- * Copyright 2009 Pavel Machek <pavel@ucw.cz>
+- *
+- * GPLv2.
+- */
+-
+-#include <stdio.h>
+-#include <stdlib.h>
+-#include <unistd.h>
+-#include <fcntl.h>
+-#include <sys/stat.h>
+-#include <sys/types.h>
+-#include <string.h>
+-#include <stdint.h>
+-#include <errno.h>
+-#include <signal.h>
+-#include <sys/mman.h>
+-#include <sched.h>
+-
+-char unload_heads_path[64];
+-
+-int set_unload_heads_path(char *device)
+-{
+-	char devname[64];
+-
+-	if (strlen(device) <= 5 || strncmp(device, "/dev/", 5) != 0)
+-		return -EINVAL;
+-	strncpy(devname, device + 5, sizeof(devname));
+-
+-	snprintf(unload_heads_path, sizeof(unload_heads_path) - 1,
+-				"/sys/block/%s/device/unload_heads", devname);
+-	return 0;
+-}
+-int valid_disk(void)
+-{
+-	int fd = open(unload_heads_path, O_RDONLY);
+-	if (fd < 0) {
+-		perror(unload_heads_path);
+-		return 0;
+-	}
+-
+-	close(fd);
+-	return 1;
+-}
+-
+-void write_int(char *path, int i)
+-{
+-	char buf[1024];
+-	int fd = open(path, O_RDWR);
+-	if (fd < 0) {
+-		perror("open");
+-		exit(1);
+-	}
+-	sprintf(buf, "%d", i);
+-	if (write(fd, buf, strlen(buf)) != strlen(buf)) {
+-		perror("write");
+-		exit(1);
+-	}
+-	close(fd);
+-}
+-
+-void set_led(int on)
+-{
+-	write_int("/sys/class/leds/hp::hddprotect/brightness", on);
+-}
+-
+-void protect(int seconds)
+-{
+-	write_int(unload_heads_path, seconds*1000);
+-}
+-
+-int on_ac(void)
+-{
+-//	/sys/class/power_supply/AC0/online
+-}
+-
+-int lid_open(void)
+-{
+-//	/proc/acpi/button/lid/LID/state
+-}
+-
+-void ignore_me(void)
+-{
+-	protect(0);
+-	set_led(0);
+-}
+-
+-int main(int argc, char **argv)
+-{
+-	int fd, ret;
+-	struct sched_param param;
+-
+-	if (argc == 1)
+-		ret = set_unload_heads_path("/dev/sda");
+-	else if (argc == 2)
+-		ret = set_unload_heads_path(argv[1]);
+-	else
+-		ret = -EINVAL;
+-
+-	if (ret || !valid_disk()) {
+-		fprintf(stderr, "usage: %s <device> (default: /dev/sda)\n",
+-				argv[0]);
+-		exit(1);
+-	}
+-
+-	fd = open("/dev/freefall", O_RDONLY);
+-	if (fd < 0) {
+-		perror("/dev/freefall");
+-		return EXIT_FAILURE;
+-	}
+-
+-	daemon(0, 0);
+-	param.sched_priority = sched_get_priority_max(SCHED_FIFO);
+-	sched_setscheduler(0, SCHED_FIFO, &param);
+-	mlockall(MCL_CURRENT|MCL_FUTURE);
+-
+-	signal(SIGALRM, ignore_me);
+-
+-	for (;;) {
+-		unsigned char count;
+-
+-		ret = read(fd, &count, sizeof(count));
+-		alarm(0);
+-		if ((ret == -1) && (errno == EINTR)) {
+-			/* Alarm expired, time to unpark the heads */
+-			continue;
+-		}
+-
+-		if (ret != sizeof(count)) {
+-			perror("read");
+-			break;
+-		}
+-
+-		protect(21);
+-		set_led(1);
+-		if (1 || on_ac() || lid_open())
+-			alarm(2);
+-		else
+-			alarm(20);
+-	}
+-
+-	close(fd);
+-	return EXIT_SUCCESS;
+-}
 -- 
-2.0.0
+1.7.9.5
 
