@@ -1,50 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755909AbaFKQuo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 12:50:44 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:59565 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755686AbaFKQul (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 12:50:41 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Tushar Behera <tushar.b@samsung.com>
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, mturquette@linaro.org,
-        t.figa@samsung.com, linux@arm.linux.org.uk, galak@codeaurora.org,
-        ijc+devicetree@hellion.org.uk, mark.rutland@arm.com,
-        pawel.moll@arm.com, robh+dt@kernel.org, kgene.kim@samsung.com,
-        dianders@google.com, trblinux@gmail.com,
-        Shaik Ameer Basha <shaik.ameer@samsung.com>
-Subject: Re: [PATCH 1/3] clk: exynos-audss: Keep the parent of mout_audss always enabled
-References: <1402464739-19044-1-git-send-email-tushar.b@samsung.com>
-	<1402464739-19044-2-git-send-email-tushar.b@samsung.com>
-Date: Wed, 11 Jun 2014 09:50:38 -0700
-In-Reply-To: <1402464739-19044-2-git-send-email-tushar.b@samsung.com> (Tushar
-	Behera's message of "Wed, 11 Jun 2014 11:02:17 +0530")
-Message-ID: <7ha99jjspt.fsf@paris.lan>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
+	id S1755786AbaFKQwA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 12:52:00 -0400
+Received: from mx1.scotdoyle.com ([69.85.92.149]:54737 "EHLO mx1.scotdoyle.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751049AbaFKQv6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 12:51:58 -0400
+Date: Wed, 11 Jun 2014 18:51:56 +0100 (BST)
+From: Scot Doyle <lkml14@scotdoyle.com>
+To: Benson Leung <bleung@chromium.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Olof Johansson <olof@lixom.net>, linux-kernel@vger.kernel.org
+Subject: [PATCH v3 1/1] platform/chrome: Probe multiple i2c adapters of the
+ same name
+In-Reply-To: <20140611092309.GC1657@lahna.fi.intel.com>
+Message-ID: <alpine.DEB.2.02.1406111837030.21198@scotdoyle.com>
+References: <1401800524-28934-1-git-send-email-mika.westerberg@linux.intel.com> <CANLzEksLB1=+TePxgPRBhsGKpC-4tWB8JOh-Ey80Hj43LkVn=g@mail.gmail.com> <20140604083726.GN1730@lahna.fi.intel.com> <CANLzEkuAxGrRHtb=vFAm9AGws7Qyg3A_oQpAGGFaYEqP2A2g8g@mail.gmail.com>
+ <alpine.DEB.2.02.1406062259070.31301@scotdoyle.com> <alpine.DEB.2.02.1406062316230.32568@scotdoyle.com> <20140609124700.GJ1657@lahna.fi.intel.com> <alpine.DEB.2.02.1406092332410.8274@scotdoyle.com> <alpine.DEB.2.02.1406100610220.8274@scotdoyle.com>
+ <20140611092309.GC1657@lahna.fi.intel.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tushar Behera <tushar.b@samsung.com> writes:
+The chromeos_laptop module probes the first i2c adapter with a specific 
+name for expected hardware. However, the Acer C720 Chromebook has two i2c 
+adapters with the same name. This patch probes each i2c adapter with a 
+specific name until locating the expected hardware.
 
-> When the output clock of AUDSS mux is disabled, we are getting kernel
-> oops while doing a clk_get() on other clocks provided by AUDSS. 
->
-> Though user manual doesn't specify this dependency, we came across
-> this issue while disabling the parent of AUDSS mux clocks.
->
-> Keeping the parents of AUDSS mux always enabled fixes this issue.
+Thanks to Mika Westerberg for formatting tips and identifying the need for 
+unique bus addresses within each set of identically-named adapters.
 
-While this patch works (and fixes the boot problem for me), it seems
-like it's papering over the real problem.
+Signed-off-by: Scot Doyle <lkml14@scotdoyle.com>
+CC: Benson Leung <bleung@chromium.org>
+CC: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+diff --git a/drivers/platform/chrome/chromeos_laptop.c b/drivers/platform/chrome/chromeos_laptop.c
+index 7f3aad0..82ae5e7 100644
+--- a/drivers/platform/chrome/chromeos_laptop.c
++++ b/drivers/platform/chrome/chromeos_laptop.c
+@@ -29,6 +29,10 @@
+  #include <linux/module.h>
+  #include <linux/platform_device.h>
 
-Seems like the right fix is actually modelling the clocks properly so
-that enabling a child clock ensures that the parent is also enabled.
++/*
++ * Note: Bus addresses must be unique within each set of identically-named
++ *       adapters on a board, otherwise device probing may fail.
++ */
+  #define ATMEL_TP_I2C_ADDR	0x4b
+  #define ATMEL_TP_I2C_BL_ADDR	0x25
+  #define ATMEL_TS_I2C_ADDR	0x4a
+@@ -173,7 +177,7 @@ static struct i2c_client *__add_probed_i2c_device(
+  	/* add the i2c device */
+  	client = i2c_new_probed_device(adapter, info, addrs, NULL);
+  	if (!client)
+-		pr_err("%s failed to register device %d-%02x\n",
++		pr_debug("%s did not add i2c device %d-%02x\n",
+  		       __func__, bus, info->addr);
+  	else
+  		pr_debug("%s added i2c device %d-%02x\n",
+@@ -194,13 +198,14 @@ static int __find_i2c_adap(struct device *dev, void *data)
+  	return (strncmp(adapter->name, name, strlen(name)) == 0);
+  }
 
-Kevin
+-static int find_i2c_adapter_num(enum i2c_adapter_type type)
++static int find_i2c_next_adapter_num(enum i2c_adapter_type type,
++				     struct device *start)
+  {
+  	struct device *dev = NULL;
+  	struct i2c_adapter *adapter;
+  	const char *name = i2c_adapter_names[type];
+-	/* find the adapter by name */
+-	dev = bus_find_device(&i2c_bus_type, NULL, (void *)name,
++	/* find the next adapter by name */
++	dev = bus_find_device(&i2c_bus_type, start, (void *)name,
+  			      __find_i2c_adap);
+  	if (!dev) {
+  		/* Adapters may appear later. Deferred probing will retry */
+@@ -226,10 +231,15 @@ static struct i2c_client *add_probed_i2c_device(
+  		struct i2c_board_info *info,
+  		const unsigned short *addrs)
+  {
+-	return __add_probed_i2c_device(name,
+-				       find_i2c_adapter_num(type),
+-				       info,
+-				       addrs);
++	struct i2c_client *client = NULL;
++	struct device *start = NULL;
++	int num = 0;
++
++	while (!client && num > -1) {
++		num = find_i2c_next_adapter_num(type, start);
++		client = __add_probed_i2c_device(name, num, info, addrs);
++	}
++	return client;
+  }
+
+  /*
+@@ -242,10 +252,7 @@ static struct i2c_client *add_i2c_device(const char *name,
+  						struct i2c_board_info *info)
+  {
+  	const unsigned short addr_list[] = { info->addr, I2C_CLIENT_END };
+-	return __add_probed_i2c_device(name,
+-				       find_i2c_adapter_num(type),
+-				       info,
+-				       addr_list);
++	return add_probed_i2c_device(name, type, info, addr_list);
+  }
+
+  static int setup_cyapa_tp(enum i2c_adapter_type type)
