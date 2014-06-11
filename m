@@ -1,164 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755729AbaFKPgq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 11:36:46 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:34632 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751049AbaFKPgo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 11:36:44 -0400
-Date: Wed, 11 Jun 2014 11:36:31 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Michel Lespinasse <walken@google.com>, Tejun Heo <tj@kernel.org>,
-        Roman Gushchin <klamm@yandex-team.ru>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] memcg: Allow guarantee reclaim
-Message-ID: <20140611153631.GH2878@cmpxchg.org>
-References: <20140611075729.GA4520@dhcp22.suse.cz>
- <1402473624-13827-1-git-send-email-mhocko@suse.cz>
- <1402473624-13827-2-git-send-email-mhocko@suse.cz>
+	id S932502AbaFKPiK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 11:38:10 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:37232 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752003AbaFKPiI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 11:38:08 -0400
+Date: Wed, 11 Jun 2014 16:37:43 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Jassi Brar <jassisinghbrar@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>, Suman Anna <s-anna@ti.com>,
+        Loic Pallardy <loic.pallardy@st.com>,
+        LeyFoon Tan <lftan.linux@gmail.com>,
+        Craig McGeachie <slapdau@yahoo.com.au>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Rob Herring <robherring2@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Kumar Gala <galak@codeaurora.org>, Girish K S <ks.giri@samsung.com>,
+        Jassi Brar <jaswinder.singh@linaro.org>
+Message-ID: <20140611153743.GI5099@sirena.org.uk>
+References: <1400134105-3847-1-git-send-email-jaswinder.singh@linaro.org>
+ <1400134260-3962-1-git-send-email-jaswinder.singh@linaro.org>
+ <20140521172701.GV12304@sirena.org.uk>
+ <CABb+yY0G9Rn4mzA7Cn4__tR02WE4Q6-RQfQ06U6Kiiayey+RXA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="i8qr5UOnfIfOw794"
 Content-Disposition: inline
-In-Reply-To: <1402473624-13827-2-git-send-email-mhocko@suse.cz>
+In-Reply-To: <CABb+yY0G9Rn4mzA7Cn4__tR02WE4Q6-RQfQ06U6Kiiayey+RXA@mail.gmail.com>
+X-Cookie: Ditat Deus.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCHv5 2/4] mailbox: Introduce framework for mailbox
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 11, 2014 at 10:00:24AM +0200, Michal Hocko wrote:
-> Some users (e.g. Google) would like to have stronger semantic than low
-> limit offers currently. The fallback mode is not desirable and they
-> prefer hitting OOM killer rather than ignoring low limit for protected
-> groups.
-> 
-> There are other possible usecases which can benefit from hard
-> guarantees. There are loads which will simply start trashing if the
-> memory working set drops under certain level and it is more appropriate
-> to simply kill and restart such a load if the required memory cannot
-> be provided. Another usecase would be a hard memory isolation for
-> containers.
-> 
-> The min_limit is initialized to 0 and it has precedence over low_limit.
-> If the reclaim is not able to find any memcg in the reclaimed hierarchy
-> above min_limit then OOM killer is triggered to resolve the situation.
-> 
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> ---
 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 99137aecd95f..8e844bd42c51 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2220,13 +2220,12 @@ static inline bool should_continue_reclaim(struct zone *zone,
->   *
->   * @zone: zone to shrink
->   * @sc: scan control with additional reclaim parameters
-> - * @honor_memcg_guarantee: do not reclaim memcgs which are within their memory
-> - * guarantee
-> + * @soft_guarantee: Use soft guarantee reclaim target for memcg reclaim.
->   *
->   * Returns the number of reclaimed memcgs.
->   */
->  static unsigned __shrink_zone(struct zone *zone, struct scan_control *sc,
-> -		bool honor_memcg_guarantee)
-> +		bool soft_guarantee)
->  {
->  	unsigned long nr_reclaimed, nr_scanned;
->  	unsigned nr_scanned_groups = 0;
-> @@ -2245,11 +2244,10 @@ static unsigned __shrink_zone(struct zone *zone, struct scan_control *sc,
->  		memcg = mem_cgroup_iter(root, NULL, &reclaim);
->  		do {
->  			struct lruvec *lruvec;
-> -			bool within_guarantee;
->  
->  			/* Memcg might be protected from the reclaim */
-> -			within_guarantee = mem_cgroup_within_guarantee(memcg, root);
-> -			if (honor_memcg_guarantee && within_guarantee) {
-> +			if (mem_cgroup_within_guarantee(memcg, root,
-> +						soft_guarantee)) {
->  				/*
->  				 * It would be more optimal to skip the memcg
->  				 * subtree now but we do not have a memcg iter
-> @@ -2259,8 +2257,8 @@ static unsigned __shrink_zone(struct zone *zone, struct scan_control *sc,
->  				continue;
->  			}
->  
-> -			if (within_guarantee)
-> -				mem_cgroup_guarantee_breached(memcg);
-> +			if (!soft_guarantee)
-> +				mem_cgroup_soft_guarantee_breached(memcg);
->  
->  			lruvec = mem_cgroup_zone_lruvec(zone, memcg);
->  			nr_scanned_groups++;
-> @@ -2297,20 +2295,27 @@ static unsigned __shrink_zone(struct zone *zone, struct scan_control *sc,
->  
->  static void shrink_zone(struct zone *zone, struct scan_control *sc)
->  {
-> -	bool honor_guarantee = true;
-> +	bool soft_guarantee = true;
->  
-> -	while (!__shrink_zone(zone, sc, honor_guarantee)) {
-> +	while (!__shrink_zone(zone, sc, soft_guarantee)) {
->  		/*
->  		 * The previous round of reclaim didn't find anything to scan
->  		 * because
-> -		 * a) the whole reclaimed hierarchy is within guarantee so
-> -		 *    we fallback to ignore the guarantee because other option
-> -		 *    would be the OOM
-> +		 * a) the whole reclaimed hierarchy is within soft guarantee so
-> +		 *    we are switching to the hard guarantee reclaim target
->  		 * b) multiple reclaimers are racing and so the first round
->  		 *    should be retried
->  		 */
-> -		if (mem_cgroup_all_within_guarantee(sc->target_mem_cgroup))
-> -			honor_guarantee = false;
-> +		if (mem_cgroup_all_within_guarantee(sc->target_mem_cgroup,
-> +					soft_guarantee)) {
-> +			/*
-> +			 * Nothing to reclaim even with hard guarantees so
-> +			 * we have to OOM
-> +			 */
-> +			if (!soft_guarantee)
-> +				break;
-> +			soft_guarantee = false;
-> +		}
->  	}
->  }
->  
-> @@ -2574,7 +2579,8 @@ out:
->  	 * If the target memcg is not eligible for reclaim then we have no option
->  	 * but OOM
->  	 */
-> -	if (!sc->nr_scanned && mem_cgroup_all_within_guarantee(sc->target_mem_cgroup))
-> +	if (!sc->nr_scanned &&
-> +			mem_cgroup_all_within_guarantee(sc->target_mem_cgroup, false))
->  		return 0;
+--i8qr5UOnfIfOw794
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This code is truly dreadful.
+On Wed, May 28, 2014 at 09:50:21AM +0530, Jassi Brar wrote:
+> On Wed, May 21, 2014 at 10:57 PM, Mark Brown <broonie@kernel.org> wrote:
 
-Don't call it guarantee when it doesn't guarantee anything.  I thought
-we agreed that min, low, high, max, is reasonable nomenclature, please
-use it consistently.
+> >> +     if (!cl->tx_tout) /* wait for ever */
+> >> +             cl->tx_tout =3D msecs_to_jiffies(3600000);
+> >> +     else
+> >> +             cl->tx_tout =3D msecs_to_jiffies(cl->tx_tout);
 
-With my proposed cleanups and scalability fixes in the other mail, the
-vmscan.c changes to support the min watermark would be something like
-the following.
+> > Is the default wait for ever the best timeout - I'm not sure it's best
+> > from a defensiveness point of view.  It should be fine either way,
+> > it's just a matter of taste.
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 687076b7a1a6..cee19b6d04dc 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2259,7 +2259,7 @@ static void shrink_zone(struct zone *zone, struct scan_control *sc)
- 				 */
- 				if (priority < DEF_PRIORITY - 2)
- 					break;
--
-+			case MEMCG_WMARK_MIN:
- 				/* XXX: skip the whole subtree */
- 				memcg = mem_cgroup_iter(root, memcg, &reclaim);
- 				continue;
+> The client wants the call to be blocking. Out of 'zero', 'infinity'
+> and some 'valid' delay, it makes better sense to have 'infinity' than
+> zero or another value that might be valid for some platform. I assume
+> 1hr to be 'infinity', though I am open to better suggestions. Maybe
+> put a WARN() ?
 
+I think my inclination would be to have the client required to specify
+what it thinks is a sensible delay and complain loudly if nothing is
+specified.  Having zero default to wait for ever (as opposed to
+something like a negative number) means that if someone memset()s the
+struct (as people tend to) then if things go wrong the system will tend
+to run into long timeouts which tend to give an unpleasant experience if
+things go wrong. =20
+
+Forcing the user to think what a sensible delay is seems likely to
+ensure that sensible values are picked rather than people not thinking
+about it at all since if everything is working well and messages get
+answers it's OK.
+
+Sorry about the delay in replying here.
+
+--i8qr5UOnfIfOw794
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJTmHfEAAoJELSic+t+oim9KdsP/R+UD9Q0AWC5/SF8sai5/K3L
++kgmtBAqeaXg71CilDifIAtV4t303AcyHN/m2jKNsieFdTKN0bYbLzPB2+hQ1vBV
+gn4yphB5usKI2Vwv/MsAMuOXEhK+0ZUiu+xFFB73TV9FzvhemfXCIlXuseAp4HSB
+o6UoNLX/enRpnhDSFKIshWcjuY2FLd9Nugitz51F9ylBsfNDPCqxMwSMXnW03T9C
+oNv8B5RIBNhGVTX2VoNY0/P3zrpOcY72+EGJ0kp+hbbi31JQgZ4jzY8Aj7XreVGT
+worWbCWUHm32QvBaUtG6ekXl/jtQLbG5CkthmcC9TpOxuvfrx6I+JsoFgyYmukRv
+8tt27gICCXb/4WT0FHHh/P7nIV1wRQ/rPAEWaDcwIsjwpefWwpzStf6SuwCF3Hxe
+AT4i02maW3j9uuBRbStutKhtCI/Pu3442cL3DWVZOdBXYsGPnYLYKUnkVAnRhQv0
+v1x1bNyZVZln7R4mQda9P2pr7Sn2pDhbrPs7+0Ui+AhF+sxbH0Ken2f2dtytzN4i
+0OuGLr+QAlByqtr3MRW1IZ+AkxExShmmmr0dZBlsNFohXwDAzfDwXuvPOoaILXsk
+j48NKLGfBHKj2bN1Mf8dMkeWGAL/Hk6AihLTjTh+k/e+9WRIyhp1WUwv/+lEy057
+I5jbG/3UI2vGXEwYLkEN
+=6orh
+-----END PGP SIGNATURE-----
+
+--i8qr5UOnfIfOw794--
