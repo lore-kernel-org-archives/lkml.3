@@ -1,172 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932196AbaFKHlg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 03:41:36 -0400
-Received: from smtp205.alice.it ([82.57.200.101]:1524 "EHLO smtp205.alice.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751161AbaFKHle (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 03:41:34 -0400
-Date: Wed, 11 Jun 2014 09:41:18 +0200
-From: Antonio Ospite <ao2@ao2.it>
-To: Jamie Lentin <jm@lentin.co.uk>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] Loosen seams to allow support of other keyboards
-Message-Id: <20140611094118.5b057b389e639cfb7c46785b@ao2.it>
-In-Reply-To: <1402439094-25464-2-git-send-email-jm@lentin.co.uk>
-References: <1402439094-25464-1-git-send-email-jm@lentin.co.uk>
-	<1402439094-25464-2-git-send-email-jm@lentin.co.uk>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
- ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755531AbaFKHnG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 03:43:06 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:59333 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751311AbaFKHnD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 03:43:03 -0400
+Message-ID: <53980883.5030402@free-electrons.com>
+Date: Wed, 11 Jun 2014 09:42:59 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Wolfram Sang <wsa@the-dreams.de>
+CC: Randy Dunlap <rdunlap@infradead.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Hans de Goede <hdegoede@redhat.com>, Shuge <shuge@allwinnertech.com>,
+        kevin@allwinnertech.com, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH v5 2/2] i2c: sunxi: add P2WI (Push/Pull 2 Wire Interface)
+ controller support
+References: <1402408036-5235-1-git-send-email-boris.brezillon@free-electrons.com> <1402408036-5235-3-git-send-email-boris.brezillon@free-electrons.com> <20140610194511.GC3122@katana>
+In-Reply-To: <20140610194511.GC3122@katana>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jamie,
+Hello Wolfram,
 
-some few ideas in case there will be a v3, most of them are really just
-nitpicks.
-
-On Tue, 10 Jun 2014 23:24:53 +0100
-Jamie Lentin <jm@lentin.co.uk> wrote:
-
-> Signed-off-by: Jamie Lentin <jm@lentin.co.uk>
-> ---
->  drivers/hid/hid-lenovo-tpkbd.c | 33 ++++++++++++++++++++++++---------
->  1 file changed, 24 insertions(+), 9 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-lenovo-tpkbd.c b/drivers/hid/hid-lenovo-tpkbd.c
-> index 2d25b6c..3bec9f5 100644
-> --- a/drivers/hid/hid-lenovo-tpkbd.c
-> +++ b/drivers/hid/hid-lenovo-tpkbd.c
-> @@ -1,5 +1,6 @@
->  /*
-> - *  HID driver for Lenovo ThinkPad USB Keyboard with TrackPoint
-> + *  HID driver for Lenovo:-
-> + *  * ThinkPad USB Keyboard with TrackPoint
->   *
-
-Remove the - after the : and use the - as the bullet.
-The asterisk is used for the comment already.
-
->   *  Copyright (c) 2012 Bernhard Seibold
->   */
-> @@ -35,7 +36,7 @@ struct tpkbd_data_pointer {
->  
->  #define map_key_clear(c) hid_map_usage_clear(hi, usage, bit, max, EV_KEY, (c))
->  
-> -static int tpkbd_input_mapping(struct hid_device *hdev,
-> +static int tpkbd_input_mapping_tp(struct hid_device *hdev,
->  		struct hid_input *hi, struct hid_field *field,
->  		struct hid_usage *usage, unsigned long **bit, int *max)
->  {
-> @@ -48,6 +49,15 @@ static int tpkbd_input_mapping(struct hid_device *hdev,
->  	return 0;
->  }
->  
-> +static int tpkbd_input_mapping(struct hid_device *hdev,
-> +		struct hid_input *hi, struct hid_field *field,
-> +		struct hid_usage *usage, unsigned long **bit, int *max)
-> +{
-> +	if (hdev->product == USB_DEVICE_ID_LENOVO_TPKBD)
-> +		return tpkbd_input_mapping_tp(hdev, hi, field, usage, bit, max);
-> +	return 0;
-> +}
-> +
->  #undef map_key_clear
->  
->  static int tpkbd_features_set(struct hid_device *hdev)
-> @@ -338,6 +348,11 @@ static int tpkbd_probe_tp(struct hid_device *hdev)
->  	char *name_mute, *name_micmute;
->  	int i;
->  
-> +	/* Ignore unless tpkbd_input_mapping_tp marked it as a pointer */
-> +	if (!hid_get_drvdata(hdev))
-> +		return 0;
-> +	hid_set_drvdata(hdev, NULL);
-> +
-
-Maybe add a blank line before hid_set_drvdata().
-
-JFTR this logic, already in the original code, relies on the fact that
-the input_mapping callback is invoked before tpkbd_probe_tp():
-
-	hid_hw_start()
-		hid_connect()
-			hidinput_connect()
-				hidinput_configure_usage()
-					device->driver->input_mapping()
-	tpkbd_probe_tp()
-
-which was not completely trivial to an occasional reader like me.
-
->  	/* Validate required reports. */
->  	for (i = 0; i < 4; i++) {
->  		if (!hid_validate_values(hdev, HID_FEATURE_REPORT, 4, i, 1))
-> @@ -408,12 +423,9 @@ static int tpkbd_probe(struct hid_device *hdev,
->  		goto err;
->  	}
->  
-> -	if (hid_get_drvdata(hdev)) {
-> -		hid_set_drvdata(hdev, NULL);
-> -		ret = tpkbd_probe_tp(hdev);
-> -		if (ret)
-> -			goto err_hid;
-> -	}
-> +	if (hdev->product == USB_DEVICE_ID_LENOVO_TPKBD
-> +			&& tpkbd_probe_tp(hdev))
-> +		goto err_hid;
+On 10/06/2014 21:45, Wolfram Sang wrote:
+> Hi,
 >
+> compiling this driver gives me:
+>
+> drivers/i2c/busses/i2c-sun6i-p2wi.c: In function 'p2wi_probe':
+> drivers/i2c/busses/i2c-sun6i-p2wi.c:272:2: error: implicit declaration of function 'devm_reset_control_get' [-Werror=implicit-function-declaration]
+> drivers/i2c/busses/i2c-sun6i-p2wi.c:272:13: warning: assignment makes pointer from integer without a cast [enabled by default]
 
-I'd avoid calling functions in conditions, especially when mixed with
-other checks, but that's mostly personal taste. If you decide to call
-the function in the if body you also get that the hdev->product check
-will be exactly the same as in the symmetric one in tpkbd_remove().
+Yes, there's a missing "depends on RESET_CONTROLLER" in the Kconfig
+entry, which I didn't notice because this option was selected by the
+sun6i platform.
 
->  	return 0;
->  err_hid:
-> @@ -437,7 +449,10 @@ static void tpkbd_remove_tp(struct hid_device *hdev)
->  
->  static void tpkbd_remove(struct hid_device *hdev)
->  {
-> -	if (hid_get_drvdata(hdev))
-> +	if (!hid_get_drvdata(hdev))
-> +		return;
-> +
+>> diff --git a/drivers/i2c/busses/i2c-sun6i-p2wi.c b/drivers/i2c/busses/i2c-sun6i-p2wi.c
+>> new file mode 100644
+>> index 0000000..4f7b93f
+>> --- /dev/null
+>> +++ b/drivers/i2c/busses/i2c-sun6i-p2wi.c
+>> @@ -0,0 +1,356 @@
+>> +/*
+>> + * P2WI (Push-Pull Two Wire Interface) bus driver.
+>> + *
+>> + * Author: Boris BREZILLON <boris.brezillon@free-electrons.com>
+>> + *
+>> + * This file is licensed under the terms of the GNU General Public License
+>> + * version 2.  This program is licensed "as is" without any warranty of any
+>> + * kind, whether express or implied.
+>> + *
+>> + * The P2WI controller looks like an SMBus controller which only supports byte
+>> + * data transfers. But, it differs from standard SMBus protocol on several
+>> + * aspects:
+>> + * - it supports only one slave device, and thus drop the address field
+>> + * - it adds a parity bit every 8bits of data
+>> + * - only one read access is required to read a byte (instead of a write
+>> + *   followed by a read access in standard SMBus protocol)
+>> + * - there's no Ack bit after each byte transfer
+>> + *
+>> + * This means this bus cannot be used to interface with standard SMBus
+>> + * devices (the only known device to support this interface is the AXP221
+>> + * PMIC).
+>> + *
+>> + */
+>> +#include <linux/kernel.h>
+>> +#include <linux/slab.h>
+>> +#include <linux/module.h>
+>> +#include <linux/spinlock.h>
+> Unneeded. Please check other includes, too.
 
-I think this check can just become a:
+Okay, I'll clean it up.
+>
+>> +#include <linux/i2c.h>
+>> +#include <linux/interrupt.h>
+>> +#include <linux/platform_device.h>
+>> +#include <linux/io.h>
+>> +#include <linux/of.h>
+>> +#include <linux/of_device.h>
+>> +#include <linux/of_irq.h>
+>> +#include <linux/clk.h>
+>> +#include <linux/err.h>
+>> +#include <linux/delay.h>
+>> +#include <linux/clk.h>
+>> +#include <linux/reset.h>
+>> +
+> ...
+>
+>> +	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> +	p2wi->regs = devm_ioremap_resource(dev, r);
+>> +	if (IS_ERR(p2wi->regs)) {
+>> +		ret = PTR_ERR(p2wi->regs);
+>> +		return ret;
+>> +	}
+> return PTR_ERR(...)?
 
-	if (data_pointer == NULL)
-		return;
+Oops, some vestige of my previous dev_err call.
 
-early in tpkbd_remove_tp().
+>
+>> +
+>> +	snprintf(p2wi->adapter.name, sizeof(p2wi->adapter.name), pdev->name);
+>> +	irq = platform_get_irq(pdev, 0);
+>> +	if (irq < 0) {
+>> +		dev_err(dev, "failed to retrieve irq: %d\n", ret);
+>> +		return irq;
+>> +	}
+>> +
+>> +	p2wi->clk = devm_clk_get(dev, NULL);
+>> +	if (IS_ERR(p2wi->clk)) {
+>> +		ret = PTR_ERR(p2wi->clk);
+>> +		dev_err(dev, "failed to retrieve clk: %d\n",
+>> +			ret);
+> dangling ret.
 
-Also, I don't think you could just return in tpkbd_remove() like
-you are doing as hid_hw_stop() must be always called.
+I'll fix it.
 
-> +	if (hdev->product == USB_DEVICE_ID_LENOVO_TPKBD)
->  		tpkbd_remove_tp(hdev);
->  
->  	hid_hw_stop(hdev);
-> -- 
-> 2.0.0.rc2
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Thanks,
 
-Ciao Ciao,
-   Antonio
+Boris
 
 -- 
-Antonio Ospite
-http://ao2.it
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
 
-A: Because it messes up the order in which people normally read text.
-   See http://en.wikipedia.org/wiki/Posting_style
-Q: Why is top-posting such a bad thing?
