@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932978AbaFKPYg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 11:24:36 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47469 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932317AbaFKPYV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 11:24:21 -0400
-Message-ID: <5398749B.4090209@zytor.com>
-Date: Wed, 11 Jun 2014 08:24:11 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S932721AbaFKPZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 11:25:56 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:5183 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754908AbaFKPZz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 11:25:55 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 11 Jun 2014 08:20:37 -0700
+Date: Wed, 11 Jun 2014 18:25:51 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Mikko Perttunen <mperttunen@nvidia.com>
+CC: Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v7 3/5] misc: fuse: Add efuse driver for Tegra
+Message-ID: <20140611152551.GH5961@tbergstrom-lnx.Nvidia.com>
+References: <1401973754-19701-1-git-send-email-pdeschrijver@nvidia.com>
+ <1401973754-19701-4-git-send-email-pdeschrijver@nvidia.com>
+ <53984FE3.6010509@nvidia.com>
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>,
-        Josh Boyer <jwboyer@fedoraproject.org>
-CC: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Subject: Re: vdso_install target broken post-3.15
-References: <CA+5PVA4srNrj2xqMYH40N13rV+jC-PbLdyNpoURomTq48cJNBA@mail.gmail.com> <CA+5PVA7gL6T2eXAy6G4hGJzhKZ_8KHd0qauKqzuHAP4oTJ97QA@mail.gmail.com> <CALCETrXG=752GrPhP8zKJUciiagCVRO0kenDOqL78eP73Y3ryA@mail.gmail.com>
-In-Reply-To: <CALCETrXG=752GrPhP8zKJUciiagCVRO0kenDOqL78eP73Y3ryA@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <53984FE3.6010509@nvidia.com>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2014 08:20 AM, Andy Lutomirski wrote:
+On Wed, Jun 11, 2014 at 02:47:31PM +0200, Mikko Perttunen wrote:
+> On 05/06/14 16:09, Peter De Schrijver wrote:
+> ...
+> > +int tegra_fuse_readl(u32 offset, u32 *val)
+> > +{
+> > +       if (!fuse_readl)
+> > +               return -ENXIO;
+> > +
+> > +       *val = fuse_readl(offset);
+> > +
+> > +       return 0;
+> > +}
+> > +
 > 
-> Is vdso_install supposed to install a .so file or just a .so.dbg file?
->  I'm having trouble parsing this:
-> 
-> quiet_cmd_vdso_install = INSTALL $@
->       cmd_vdso_install = cp $(obj)/$@.dbg $(MODLIB)/vdso/$@
-> $(vdso-install-y): %.so: $(obj)/%.so.dbg FORCE
->         @mkdir -p $(MODLIB)/vdso
->         $(call cmd,vdso_install)
-> 
-> This seems like a rather complicated way of saying that the .so.dbg is
-> installed with the .dbg at the end removed.  We can do that.  Let me
-> see if I can disentangle the makefile enough.
-> 
+> -EPROBE_DEFER would be a better error value, so that drivers can work 
 
-That is, indeed, what it says.
+Ok.
 
-> If we need real stripped .so files, vdso2c knows how to generate them,
-> but the makefile doesn't invoke it like that.  I don't see why we'd
-> want to install them, though.
+> even if they are initially probed before the fuse driver. Of course, if 
+> the fuse initialization is moved into machine init then this is a non-issue.
 
-I don't think there is any point in that.
+The exported function will always be initialized later because on Tegra20 it
+requires APB DMA to be available. If you read the fuses directly, the system
+sometimes hangs.
 
-	-hpa
+Cheers,
 
+Peter.
