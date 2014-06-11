@@ -1,49 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755135AbaFKEY3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 00:24:29 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:64314 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236AbaFKEY2 (ORCPT
+	id S1751171AbaFKEaN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 00:30:13 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:51008 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750736AbaFKEaM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 00:24:28 -0400
+	Wed, 11 Jun 2014 00:30:12 -0400
+X-Original-SENDERIP: 10.177.220.145
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Wed, 11 Jun 2014 13:34:04 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Zhang Yanfei <zhangyanfei.yes@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Andi Kleen <andi@firstfloor.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Richard Yao <ryao@gentoo.org>, Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [PATCH v2] vmalloc: use rcu list iterator to reduce
+ vmap_area_lock contention
+Message-ID: <20140611043404.GA14728@js1304-P5Q-DELUXE>
+References: <1402453146-10057-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <5397CDC3.1050809@hurleysoftware.com>
 MIME-Version: 1.0
-In-Reply-To: <20140611041202.GX4581@linux.vnet.ibm.com>
-References: <1402456819-30515-1-git-send-email-bobby.prani@gmail.com> <20140611041202.GX4581@linux.vnet.ibm.com>
-From: Pranith Kumar <bobby.prani@gmail.com>
-Date: Wed, 11 Jun 2014 00:23:57 -0400
-Message-ID: <CAJhHMCCgXBCe-deg7TtqA-azyc2ZvQRLKAiKVJ5OhL5GzLhH0w@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/1] kernel/rcu/tree.c: correct a check for grace
- period in progress
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Dipankar Sarma <dipankar@in.ibm.com>,
-        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5397CDC3.1050809@hurleysoftware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+On Tue, Jun 10, 2014 at 11:32:19PM -0400, Peter Hurley wrote:
+> PF: none (google.com: peter@hurleysoftware.com does not designate permitted sender hosts) client-ip=216.70.64.70;
+> Received: from h96-61-95-138.cntcnh.dsl.dynamic.tds.net ([96.61.95.138]:55986 helo=[192.168.1.139])
+> 	by n23.mail01.mtsvc.net with esmtpsa (TLSv1:AES128-SHA:128)
+> 	(Exim 4.72)
+> 	(envelope-from <peter@hurleysoftware.com>)
+> 	id 1WuZGw-00064f-2L; Tue, 10 Jun 2014 23:32:22 -0400
+> Message-ID: <5397CDC3.1050809@hurleysoftware.com>
+> Date: Tue, 10 Jun 2014 23:32:19 -0400
+> From: Peter Hurley <peter@hurleysoftware.com>
+> User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+> MIME-Version: 1.0
+> To: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Andrew Morton
+> <akpm@linux-foundation.org>
+> CC: Zhang Yanfei <zhangyanfei.yes@gmail.com>, Johannes Weiner
+> <hannes@cmpxchg.org>,
+> Andi Kleen <andi@firstfloor.org>, linux-mm@kvack.org,
+> linux-kernel@vger.kernel.org, Richard Yao <ryao@gentoo.org>, Eric
+> Dumazet <eric.dumazet@gmail.com>
+> Subject: Re: [PATCH v2] vmalloc: use rcu list iterator to reduce vmap_area_lock
+> contention
+> References: <1402453146-10057-1-git-send-email-iamjoonsoo.kim@lge.com>
+> In-Reply-To: <1402453146-10057-1-git-send-email-iamjoonsoo.kim@lge.com>
+> Content-Type: text/plain; charset=UTF-8; format=flowed
+> Content-Transfer-Encoding: 7bit
+> X-Authenticated-User: 990527 peter@hurleysoftware.com
+> X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+> X-Bogosity: Ham, tests=bogofilter, spamicity=0.000000, version=1.2.4
+> Sender: owner-linux-mm@kvack.org
+> Precedence: bulk
+> X-Loop: owner-majordomo@kvack.org
+> List-ID: <linux-mm.kvack.org>
+> Status: O
+> Content-Length: 3338
+> Lines: 96
+> 
+> On 06/10/2014 10:19 PM, Joonsoo Kim wrote:
+> >Richard Yao reported a month ago that his system have a trouble
+> >with vmap_area_lock contention during performance analysis
+> >by /proc/meminfo. Andrew asked why his analysis checks /proc/meminfo
+> >stressfully, but he didn't answer it.
+> >
+> >https://lkml.org/lkml/2014/4/10/416
+> >
+> >Although I'm not sure that this is right usage or not, there is a solution
+> >reducing vmap_area_lock contention with no side-effect. That is just
+> >to use rcu list iterator in get_vmalloc_info().
+> >
+> >rcu can be used in this function because all RCU protocol is already
+> >respected by writers, since Nick Piggin commit db64fe02258f1507e13fe5
+> >("mm: rewrite vmap layer") back in linux-2.6.28
+> 
+> While rcu list traversal over the vmap_area_list is safe, this may
+> arrive at different results than the spinlocked version. The rcu list
+> traversal version will not be a 'snapshot' of a single, valid instant
+> of the entire vmap_area_list, but rather a potential amalgam of
+> different list states.
 
-On Wed, Jun 11, 2014 at 12:12 AM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
->>       if (rnp->gpnum != rnp->completed ||
->> -         ACCESS_ONCE(rnp->gpnum) != ACCESS_ONCE(rnp->completed)) {
->> +         ACCESS_ONCE(rnp_root->gpnum) != ACCESS_ONCE(rnp_root->completed)) {
->
-> At this point in the code, we are checking the current rcu_node structure,
-> which might or might not be the root.  If it is not the root, we absolutely
-> cannot compare against the root because we don't yet hold the root's lock.
->
+Hello,
 
-I was a bit thrown by the double checking which is being done
-(rnp->gpnum != rnp->complete) in that if condition. Once without
-ACCESS_ONCE and one with. Is there any particular reason for this?
+Yes, you are right, but I don't think that we should be strict here.
+Meminfo is already not a 'snapshot' at specific time. While we try to
+get certain stats, the other stats can change.
+And, although we may arrive at different results than the spinlocked
+version, the difference would not be large and would not make serious
+side-effect.
 
-I now understand that we are comparing ->gpnum and ->completed of the
-root node which might change from under us if we don't hold the root's
-lock. I will keep looking :)
-
-Thanks!
--- 
-Pranith
+Thanks.
