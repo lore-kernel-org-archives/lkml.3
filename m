@@ -1,165 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932097AbaFKHlH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 03:41:07 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:55615 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753257AbaFKHlG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 03:41:06 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Josh Poimboeuf <jpoimboe@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH ftrace/core  2/2] ftrace, kprobes: Support IPMODIFY flag to find IP modify conflict
-References: <20140610105001.8732.93502.stgit@kbuild-fedora.novalocal>
-	<20140610105014.8732.43086.stgit@kbuild-fedora.novalocal>
-	<1402408435.1676.13.camel@leonhard> <5397B0A1.7060401@hitachi.com>
-Date: Wed, 11 Jun 2014 16:41:02 +0900
-In-Reply-To: <5397B0A1.7060401@hitachi.com> (Masami Hiramatsu's message of
-	"Wed, 11 Jun 2014 10:28:01 +0900")
-Message-ID: <87tx7rao6p.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	id S932196AbaFKHlg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 03:41:36 -0400
+Received: from smtp205.alice.it ([82.57.200.101]:1524 "EHLO smtp205.alice.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751161AbaFKHle (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 03:41:34 -0400
+Date: Wed, 11 Jun 2014 09:41:18 +0200
+From: Antonio Ospite <ao2@ao2.it>
+To: Jamie Lentin <jm@lentin.co.uk>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] Loosen seams to allow support of other keyboards
+Message-Id: <20140611094118.5b057b389e639cfb7c46785b@ao2.it>
+In-Reply-To: <1402439094-25464-2-git-send-email-jm@lentin.co.uk>
+References: <1402439094-25464-1-git-send-email-jm@lentin.co.uk>
+	<1402439094-25464-2-git-send-email-jm@lentin.co.uk>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
+ ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Masami,
+Hi Jamie,
 
-On Wed, 11 Jun 2014 10:28:01 +0900, Masami Hiramatsu wrote:
-> (2014/06/10 22:53), Namhyung Kim wrote:
->> Hi Masami,
->> 
->> 2014-06-10 (화), 10:50 +0000, Masami Hiramatsu:
->>> Introduce FTRACE_OPS_FL_IPMODIFY to avoid conflict among
->>> ftrace users who may modify regs->ip to change the execution
->>> path. This also adds the flag to kprobe_ftrace_ops, since
->>> ftrace-based kprobes already modifies regs->ip. Thus, if
->>> another user modifies the regs->ip on the same function entry,
->>> one of them will be broken. So both should add IPMODIFY flag
->>> and make sure that ftrace_set_filter_ip() succeeds.
->>>
->>> Note that currently conflicts of IPMODIFY are detected on the
->>> filter hash. It does NOT care about the notrace hash. This means
->>> that if you set filter hash all functions and notrace(mask)
->>> some of them, the IPMODIFY flag will be applied to all
->>> functions.
->>>
->> 
->> [SNIP]
->>> +static int __ftrace_hash_update_ipmodify(struct ftrace_ops *ops,
->>> +					 struct ftrace_hash *old_hash,
->>> +					 struct ftrace_hash *new_hash)
->>> +{
->>> +	struct ftrace_page *pg;
->>> +	struct dyn_ftrace *rec, *end = NULL;
->>> +	int in_old, in_new;
->>> +
->>> +	/* Only update if the ops has been registered */
->>> +	if (!(ops->flags & FTRACE_OPS_FL_ENABLED))
->>> +		return 0;
->>> +
->>> +	if (!(ops->flags & FTRACE_OPS_FL_SAVE_REGS) ||
->>> +	    !(ops->flags & FTRACE_OPS_FL_IPMODIFY))
->>> +		return 0;
->>> +
->>> +	/* Update rec->flags */
->>> +	do_for_each_ftrace_rec(pg, rec) {
->>> +		/* We need to update only differences of filter_hash */
->>> +		in_old = !old_hash || ftrace_lookup_ip(old_hash, rec->ip);
->>> +		in_new = !new_hash || ftrace_lookup_ip(new_hash, rec->ip);
->> 
->> Why not use ftrace_hash_empty() here instead of checking NULL? 
+some few ideas in case there will be a v3, most of them are really just
+nitpicks.
+
+On Tue, 10 Jun 2014 23:24:53 +0100
+Jamie Lentin <jm@lentin.co.uk> wrote:
+
+> Signed-off-by: Jamie Lentin <jm@lentin.co.uk>
+> ---
+>  drivers/hid/hid-lenovo-tpkbd.c | 33 ++++++++++++++++++++++++---------
+>  1 file changed, 24 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/hid/hid-lenovo-tpkbd.c b/drivers/hid/hid-lenovo-tpkbd.c
+> index 2d25b6c..3bec9f5 100644
+> --- a/drivers/hid/hid-lenovo-tpkbd.c
+> +++ b/drivers/hid/hid-lenovo-tpkbd.c
+> @@ -1,5 +1,6 @@
+>  /*
+> - *  HID driver for Lenovo ThinkPad USB Keyboard with TrackPoint
+> + *  HID driver for Lenovo:-
+> + *  * ThinkPad USB Keyboard with TrackPoint
+>   *
+
+Remove the - after the : and use the - as the bullet.
+The asterisk is used for the comment already.
+
+>   *  Copyright (c) 2012 Bernhard Seibold
+>   */
+> @@ -35,7 +36,7 @@ struct tpkbd_data_pointer {
+>  
+>  #define map_key_clear(c) hid_map_usage_clear(hi, usage, bit, max, EV_KEY, (c))
+>  
+> -static int tpkbd_input_mapping(struct hid_device *hdev,
+> +static int tpkbd_input_mapping_tp(struct hid_device *hdev,
+>  		struct hid_input *hi, struct hid_field *field,
+>  		struct hid_usage *usage, unsigned long **bit, int *max)
+>  {
+> @@ -48,6 +49,15 @@ static int tpkbd_input_mapping(struct hid_device *hdev,
+>  	return 0;
+>  }
+>  
+> +static int tpkbd_input_mapping(struct hid_device *hdev,
+> +		struct hid_input *hi, struct hid_field *field,
+> +		struct hid_usage *usage, unsigned long **bit, int *max)
+> +{
+> +	if (hdev->product == USB_DEVICE_ID_LENOVO_TPKBD)
+> +		return tpkbd_input_mapping_tp(hdev, hi, field, usage, bit, max);
+> +	return 0;
+> +}
+> +
+>  #undef map_key_clear
+>  
+>  static int tpkbd_features_set(struct hid_device *hdev)
+> @@ -338,6 +348,11 @@ static int tpkbd_probe_tp(struct hid_device *hdev)
+>  	char *name_mute, *name_micmute;
+>  	int i;
+>  
+> +	/* Ignore unless tpkbd_input_mapping_tp marked it as a pointer */
+> +	if (!hid_get_drvdata(hdev))
+> +		return 0;
+> +	hid_set_drvdata(hdev, NULL);
+> +
+
+Maybe add a blank line before hid_set_drvdata().
+
+JFTR this logic, already in the original code, relies on the fact that
+the input_mapping callback is invoked before tpkbd_probe_tp():
+
+	hid_hw_start()
+		hid_connect()
+			hidinput_connect()
+				hidinput_configure_usage()
+					device->driver->input_mapping()
+	tpkbd_probe_tp()
+
+which was not completely trivial to an occasional reader like me.
+
+>  	/* Validate required reports. */
+>  	for (i = 0; i < 4; i++) {
+>  		if (!hid_validate_values(hdev, HID_FEATURE_REPORT, 4, i, 1))
+> @@ -408,12 +423,9 @@ static int tpkbd_probe(struct hid_device *hdev,
+>  		goto err;
+>  	}
+>  
+> -	if (hid_get_drvdata(hdev)) {
+> -		hid_set_drvdata(hdev, NULL);
+> -		ret = tpkbd_probe_tp(hdev);
+> -		if (ret)
+> -			goto err_hid;
+> -	}
+> +	if (hdev->product == USB_DEVICE_ID_LENOVO_TPKBD
+> +			&& tpkbd_probe_tp(hdev))
+> +		goto err_hid;
 >
-> Ah, a trick is here. Since an empty filter_hash must hit all, we can not
-> enable/disable filter_hash if we use ftrace_hash_empty() here.
->
-> To enabling the new_hash, old_hash must be EMPTY_HASH which means in_old
-> always be false. To disabling, new_hash is EMPTY_HASH too.
-> Please see ftrace_hash_ipmodify_enable/disable/update().
 
-I'm confused. 8-p  I guess what you want to do is checking records in
-either of the filter_hash, right?  If so, what about this?
+I'd avoid calling functions in conditions, especially when mixed with
+other checks, but that's mostly personal taste. If you decide to call
+the function in the if body you also get that the hdev->product check
+will be exactly the same as in the symmetric one in tpkbd_remove().
 
-	in_old = !ftrace_hash_empty(old_hash) && ftrace_lookup_ip(old_hash, rec->ip);
-	in_new = !ftrace_hash_empty(new_hash) && ftrace_lookup_ip(new_hash, rec->ip);
+>  	return 0;
+>  err_hid:
+> @@ -437,7 +449,10 @@ static void tpkbd_remove_tp(struct hid_device *hdev)
+>  
+>  static void tpkbd_remove(struct hid_device *hdev)
+>  {
+> -	if (hid_get_drvdata(hdev))
+> +	if (!hid_get_drvdata(hdev))
+> +		return;
+> +
 
+I think this check can just become a:
 
->
->> Also
->> return value of ftrace_lookup_ip is not boolean..  maybe you need to
->> add !! or convert type of the in_{old,new} to bool.
->
-> Yeah, I see. And there is '||' (logical OR) which evaluates the result
-> as boolean. :)
+	if (data_pointer == NULL)
+		return;
 
-Argh... you're right! :)
+early in tpkbd_remove_tp().
 
->
->> 
->> 
->>> +		if (in_old == in_new)
->>> +			continue;
->>> +
->>> +		if (in_new) {
->>> +			/* New entries must ensure no others are using it */
->>> +			if (rec->flags & FTRACE_FL_IPMODIFY)
->>> +				goto rollback;
->>> +			rec->flags |= FTRACE_FL_IPMODIFY;
->>> +		} else /* Removed entry */
->>> +			rec->flags &= ~FTRACE_FL_IPMODIFY;
->>> +	} while_for_each_ftrace_rec();
->>> +
->>> +	return 0;
->>> +
->>> +rollback:
->>> +	end = rec;
->>> +
->>> +	/* Roll back what we did above */
->>> +	do_for_each_ftrace_rec(pg, rec) {
->>> +		if (rec == end)
->>> +			goto err_out;
->>> +
->>> +		in_old = !old_hash || ftrace_lookup_ip(old_hash, rec->ip);
->>> +		in_new = !new_hash || ftrace_lookup_ip(new_hash, rec->ip);
->>> +		if (in_old == in_new)
->>> +			continue;
->>> +
->>> +		if (in_new)
->>> +			rec->flags &= ~FTRACE_FL_IPMODIFY;
->>> +		else
->>> +			rec->flags |= FTRACE_FL_IPMODIFY;
->>> +	} while_for_each_ftrace_rec();
->>> +
->>> +err_out:
->>> +	return -EBUSY;
->>> +}
->>> +
->>> +static int ftrace_hash_ipmodify_enable(struct ftrace_ops *ops)
->>> +{
->>> +	struct ftrace_hash *hash = ops->filter_hash;
->>> +
->>> +	if (ftrace_hash_empty(hash))
->>> +		hash = NULL;
->>> +
->>> +	return __ftrace_hash_update_ipmodify(ops, EMPTY_HASH, hash);
->>> +}
->> 
->> Please see above comment.  You can pass an empty hash as is, or pass
->> NULL as second arg.  The same goes to below...
->
-> As I said above, that is by design :). EMPTY_HASH means it hits nothing,
-> NULL means it hits all.
+Also, I don't think you could just return in tpkbd_remove() like
+you are doing as hid_hw_stop() must be always called.
 
-But doesn't it make unrelated records also get the flag updated?  I'm
-curious when new_hash can be empty on _enable() case..
+> +	if (hdev->product == USB_DEVICE_ID_LENOVO_TPKBD)
+>  		tpkbd_remove_tp(hdev);
+>  
+>  	hid_hw_stop(hdev);
+> -- 
+> 2.0.0.rc2
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Thanks,
-Namhyung
+Ciao Ciao,
+   Antonio
+
+-- 
+Antonio Ospite
+http://ao2.it
+
+A: Because it messes up the order in which people normally read text.
+   See http://en.wikipedia.org/wiki/Posting_style
+Q: Why is top-posting such a bad thing?
