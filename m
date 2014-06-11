@@ -1,71 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755588AbaFKLfy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 07:35:54 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:31363 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751049AbaFKLfw (ORCPT
+	id S1754817AbaFKLiv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 07:38:51 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54166 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752718AbaFKLit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 07:35:52 -0400
-X-Nat-Received: from [202.181.97.72]:20945 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1402486544.28741
-To: paulmck@linux.vnet.ibm.com, viro@ZenIV.linux.org.uk
-Cc: torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [pre 3.16-rc1] Oops at spin_trylock(&inode->i_lock)
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <201406102104.FAG04640.MVJFSQOHtOFOFL@I-love.SAKURA.ne.jp>
-	<20140610143425.GL4581@linux.vnet.ibm.com>
-In-Reply-To: <20140610143425.GL4581@linux.vnet.ibm.com>
-Message-Id: <201406112035.ADB51545.QFVMLJOtFOHSOF@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Wed, 11 Jun 2014 20:35:44 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 11062014 #8203652, status: clean
+	Wed, 11 Jun 2014 07:38:49 -0400
+Date: Wed, 11 Jun 2014 13:38:41 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
+Subject: Re: [PATCH v11 09/16] qspinlock, x86: Allow unfair spinlock in a
+ virtual guest
+Message-ID: <20140611113841.GD3588@twins.programming.kicks-ass.net>
+References: <1401464642-33890-1-git-send-email-Waiman.Long@hp.com>
+ <1401464642-33890-10-git-send-email-Waiman.Long@hp.com>
+ <20140611105402.GL3213@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="C+ts3FVlLX8+P6JN"
+Content-Disposition: inline
+In-Reply-To: <20140611105402.GL3213@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul E. McKenney wrote:
-> On Tue, Jun 10, 2014 at 09:04:51PM +0900, Tetsuo Handa wrote:
-> > Hello.
-> > 
-> > I noticed that commit 59a3d4c363 "Merge branch 'core-rcu-for-linus' of
-> > git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip into next" causes
-> > an oops when rebooting a system. Do you have any clue?
-> 
-> Can't say that I do.  However, the commits that might have made some
-> difference in how RCU operates are the following.  I have my doubts
-> (listed below) about their being the cause, but if the oops is reproducible,
-> why not try reverting each and see what happens?  Or just bisect within
-> the core-rcu-for-linus branches?
 
-Thank you. This oops seems to be 100% reproducible. I tried
+--C+ts3FVlLX8+P6JN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-for i in 365187fbc04f 48a7639ce80c 595f3900f6b4 495aa969dbae a381d757d93f 5057f55e543b becb41bfe054 fa07a58f71ee a5d6d3a1b00a
-do
-  git reset --hard $i; yes | make -sj4; make -s modules_install install
-  git reset --hard $i~1; yes | make -sj4; make -s modules_install install
-done
+On Wed, Jun 11, 2014 at 12:54:02PM +0200, Peter Zijlstra wrote:
+> > @@ -252,6 +260,18 @@ void queue_spin_lock_slowpath(struct qspinlock *lo=
+ck, u32 val)
+> > =20
+> >  	BUILD_BUG_ON(CONFIG_NR_CPUS >=3D (1U << _Q_TAIL_CPU_BITS));
+> > =20
+> > +#ifdef CONFIG_VIRT_UNFAIR_LOCKS
+> > +	/*
+> > +	 * A simple test and set unfair lock
+> > +	 */
+> > +	if (static_key_false(&virt_unfairlocks_enabled)) {
+> > +		cpu_relax();	/* Relax after a failed lock attempt */
+>=20
+> Meh, I don't think anybody can tell the difference if you put that in or
+> not, therefore don't.
+>=20
+> > +		while (!queue_spin_trylock(lock))
+> > +			cpu_relax();
+> > +		return;
+> > +	}
+> > +#endif /* CONFIG_VIRT_UNFAIR_LOCKS */
+>=20
+> If you're really worried about those upper 24bits, you can always clear
+> them when you get here.
 
-on tip/tip.git but none of them built the oops kernel.
+I don't think its a problem at all; flipping the static_key requires
+stop_machine, which guarantees us that there are no spinlocks held. So I
+think you can actually BUG_ON() the upper 24bits.
 
-I also confirmed that the command line which triggers this oops is
+--C+ts3FVlLX8+P6JN
+Content-Type: application/pgp-signature
 
-  mount -n -o ro,remount sysfs /sys
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-in /etc/init.d/halt script in CentOS 6.5.
-Manually executing the command line from login shell triggers this oops.
+iQIcBAEBAgAGBQJTmD/BAAoJEHZH4aRLwOS6CcQQALBCdTzxj+zytpwsKX0IPCTW
+Ng1BKqkzdBryfbh/vpcKmcyO8q2L6tSEls6ZPYutjVRi4foN1eef9dVWc0KUQZ9g
+yA/UOPi4nGXkHREUQIXfFluWyff/tpJ0MyGLM3ZzXrxdnYb1ULo+tg7YwuDna4uv
+sD6/Wf1aJetEHckWChxZY2C9Eg0JUbnvsSSj9OOP8J9UMqwjXHWAmy2UTppzKZS1
+ySNOyN86ekeYvWWGazpQB4CDhaeCBf3DlaFoe/PEsV+Q5BrvhHOuIrmmF77RfAC2
+O/h85QwEPceLVEPG4N+DOLKjj83S29ye2XMlb2h/+t2bjUei9ZABOSp32tDTKx4y
+x8D4idRs8nedqcbHw+FF4XgxommrnX7UQh0a7eJ+hT19jybkk9m2DfMk4hTPlIk/
+y4wbQ7NQNOVDPbC40E+Lax4xQBeQLtoFLnJiXnvI2g8XhJJVtvusV1xw6YnlBmXd
+8RmWzUI7M/hyqkCLGtIlYSBL6YEtxHYHaINpAVA3rPMDDDPGkWKtFyx8iD1mmJA8
+xMvU87CSJIV7EVFC+PXVgNj6xGdtgjWEa9ZY/LqWFzF7vYNFwptXXwmPZTaNNR/w
+B0SCWI4rUOQ3SxhuZIDfj/1IK18W1xRPob01nb20PNn7R4oPEHYoQbZ+MnEkAYmh
+s1/ZFeFTGneNQ6sEu0oO
+=Zf+L
+-----END PGP SIGNATURE-----
 
-I don't know why but commit 59a3d4c363 revealed a refcount bug
-in sysfs (or maybe in vfs)?
-
----------- quote from /etc/init.d/halt start ----------
-# Remount read only anything that's left mounted.
-# echo $"Remounting remaining filesystems readonly"
-mount | awk '{ print $1,$3 }' | while read dev dir; do
-    fstab-decode mount -n -o ro,remount $dev $dir
-done
----------- quote from /etc/init.d/halt end ----------
+--C+ts3FVlLX8+P6JN--
