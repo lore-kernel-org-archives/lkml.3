@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932816AbaFKP6f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 11:58:35 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:44260 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755686AbaFKP6c (ORCPT
+	id S932934AbaFKP6o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 11:58:44 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:54241 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755700AbaFKP6l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 11:58:32 -0400
-Message-ID: <53987CA4.4040506@wwwdotorg.org>
-Date: Wed, 11 Jun 2014 09:58:28 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
+	Wed, 11 Jun 2014 11:58:41 -0400
+Message-ID: <53987CAD.2010306@6wind.com>
+Date: Wed, 11 Jun 2014 17:58:37 +0200
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Reply-To: nicolas.dichtel@6wind.com
+Organization: 6WIND
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Mikko Perttunen <mperttunen@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v7 3/5] misc: fuse: Add efuse driver for Tegra
-References: <1401973754-19701-1-git-send-email-pdeschrijver@nvidia.com> <1401973754-19701-4-git-send-email-pdeschrijver@nvidia.com> <53984FE3.6010509@nvidia.com> <20140611152551.GH5961@tbergstrom-lnx.Nvidia.com>
-In-Reply-To: <20140611152551.GH5961@tbergstrom-lnx.Nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Stephen Hemminger <stephen@networkplumber.org>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [ANNOUNCE] iproute2 3.15.0 release
+References: <20140610103712.57d0b1ad@nehalam.linuxnetplumber.net>	<53986B68.5020401@6wind.com> <20140611083907.3a3cab96@nehalam.linuxnetplumber.net>
+In-Reply-To: <20140611083907.3a3cab96@nehalam.linuxnetplumber.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2014 09:25 AM, Peter De Schrijver wrote:
-> On Wed, Jun 11, 2014 at 02:47:31PM +0200, Mikko Perttunen wrote:
->> On 05/06/14 16:09, Peter De Schrijver wrote:
->> ...
->>> +int tegra_fuse_readl(u32 offset, u32 *val)
->>> +{
->>> +       if (!fuse_readl)
->>> +               return -ENXIO;
->>> +
->>> +       *val = fuse_readl(offset);
->>> +
->>> +       return 0;
->>> +}
->>> +
->>
->> -EPROBE_DEFER would be a better error value, so that drivers can work 
-> 
-> Ok.
-> 
->> even if they are initially probed before the fuse driver. Of course, if 
->> the fuse initialization is moved into machine init then this is a non-issue.
-> 
-> The exported function will always be initialized later because on Tegra20 it
-> requires APB DMA to be available. If you read the fuses directly, the system
-> sometimes hangs.
-
-That's not true in the current code. IIRC, the bug was that *if* an APB
-DMA access to anything and a CPU access to the fuses happen at the same
-time, then there can be a hang. As such, the current fuse code accesses
-the fuses directly (without potential for a hang) if the APB DMA driver
-is not available, but once the driver becomes available, it reads the
-fuses through DMA instead. Does the new code not do that?
-
+Le 11/06/2014 17:39, Stephen Hemminger a écrit :
+> On Wed, 11 Jun 2014 16:44:56 +0200
+> Nicolas Dichtel <nicolas.dichtel@6wind.com> wrote:
+>
+>> Le 10/06/2014 19:37, Stephen Hemminger a écrit :
+>>> Time for the release of iproute2 for 3.15
+>>>
+>>> The main new features are:
+>>>     * ss gets more attention
+>>>     * Support for HHF qdisc
+>>>     * Updates to bridge command
+>>>     * Lots of vxlan related changes
+>>>     * Lots of little corrections and build fixes
+>>>
+>>> Source:
+>>>     http://www.kernel.org/pub/linux/utils/net/iproute2/iproute2-3.15.0.tar.gz
+>>>
+>>> Repository:
+>>>     git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git
+>> It seems that you have pushed the tag, but not the tagged commit
+>> (ce7aff3b8d0bb55321af2dbaa2f911319fdcc76b). In fact, I don't see the tag in the
+>> branch master.
+>
+> try now
+>
+Works, thank you.
+You gave a shortlog in the announcement, it is done between which tags?
+If I run 'git shortlog v3.14.0..v3.15.0', the output is shorter than yours.
