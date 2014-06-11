@@ -1,80 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932295AbaFKMrf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 08:47:35 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:44278 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754985AbaFKMrd (ORCPT
+	id S932355AbaFKMrj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 08:47:39 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:17770 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932301AbaFKMrg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 08:47:33 -0400
-Date: Wed, 11 Jun 2014 05:47:31 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org, hch@lst.de,
-        JBottomley@Parallels.com, venkateshs@google.com
-Subject: Re: [PATCH v3 3/6] virtio-scsi: avoid cancelling uninitialized work
- items
-Message-ID: <20140611124731.GA16990@infradead.org>
-References: <1401881699-1456-1-git-send-email-pbonzini@redhat.com>
- <1401881699-1456-4-git-send-email-pbonzini@redhat.com>
+	Wed, 11 Jun 2014 08:47:36 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 11 Jun 2014 05:38:47 -0700
+Message-ID: <53984FE3.6010509@nvidia.com>
+Date: Wed, 11 Jun 2014 15:47:31 +0300
+From: Mikko Perttunen <mperttunen@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1401881699-1456-4-git-send-email-pbonzini@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v7 3/5] misc: fuse: Add efuse driver for Tegra
+References: <1401973754-19701-1-git-send-email-pdeschrijver@nvidia.com> <1401973754-19701-4-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1401973754-19701-4-git-send-email-pdeschrijver@nvidia.com>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Can I get a second review on this one from anyone?
-
-On Wed, Jun 04, 2014 at 01:34:56PM +0200, Paolo Bonzini wrote:
-> Calling the workqueue interface on uninitialized work items isn't a
-> good idea even if they're zeroed. It's not failing catastrophically only
-> through happy accidents.
-> 
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> ---
->  drivers/scsi/virtio_scsi.c | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-> index f0b4cdbfceb0..d66c4ee2c774 100644
-> --- a/drivers/scsi/virtio_scsi.c
-> +++ b/drivers/scsi/virtio_scsi.c
-> @@ -253,6 +253,8 @@ static void virtscsi_ctrl_done(struct virtqueue *vq)
->  	virtscsi_vq_done(vscsi, &vscsi->ctrl_vq, virtscsi_complete_free);
->  };
->  
-> +static void virtscsi_handle_event(struct work_struct *work);
+On 05/06/14 16:09, Peter De Schrijver wrote:
+...
+> +int tegra_fuse_readl(u32 offset, u32 *val)
+> +{
+> +       if (!fuse_readl)
+> +               return -ENXIO;
 > +
->  static int virtscsi_kick_event(struct virtio_scsi *vscsi,
->  			       struct virtio_scsi_event_node *event_node)
->  {
-> @@ -260,6 +262,7 @@ static int virtscsi_kick_event(struct virtio_scsi *vscsi,
->  	struct scatterlist sg;
->  	unsigned long flags;
->  
-> +	INIT_WORK(&event_node->work, virtscsi_handle_event);
->  	sg_init_one(&sg, &event_node->event, sizeof(struct virtio_scsi_event));
->  
->  	spin_lock_irqsave(&vscsi->event_vq.vq_lock, flags);
-> @@ -377,7 +380,6 @@ static void virtscsi_complete_event(struct virtio_scsi *vscsi, void *buf)
->  {
->  	struct virtio_scsi_event_node *event_node = buf;
->  
-> -	INIT_WORK(&event_node->work, virtscsi_handle_event);
->  	schedule_work(&event_node->work);
->  }
->  
-> -- 
-> 1.8.3.1
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
----end quoted text---
+> +       *val = fuse_readl(offset);
+> +
+> +       return 0;
+> +}
+> +
+
+-EPROBE_DEFER would be a better error value, so that drivers can work 
+even if they are initially probed before the fuse driver. Of course, if 
+the fuse initialization is moved into machine init then this is a non-issue.
