@@ -1,71 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753835AbaFKSPG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 14:15:06 -0400
-Received: from www.linutronix.de ([62.245.132.108]:34039 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752039AbaFKSPE (ORCPT
+	id S1753935AbaFKSSq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 14:18:46 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:59803 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752736AbaFKSSp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 14:15:04 -0400
-Date: Wed, 11 Jun 2014 20:14:02 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Matthias Brugger <matthias.bgg@gmail.com>
-cc: linux-kernel@vger.kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, rdunlap@infradead.org, linux@arm.linux.org.uk,
-        daniel.lezcano@linaro.org, grant.likely@linaro.org,
-        thierry.reding@gmail.com, florian.vaussard@epfl.ch, jic23@kernel.org,
-        jason@lakedaemon.net, andrew@lunn.ch, silvio.fricke@gmail.com,
-        heiko.stuebner@bq.com, olof@lixom.net, sebastian.hesselbarth@gmail.com,
-        sboyd@codeaurora.org, gregory.clement@free-electrons.com,
-        arnd@arndb.de, robherring2@gmail.com, marc.zyngier@arm.com,
-        maxime.ripard@free-electrons.com, soren.brinkmann@xilinx.com,
-        shawn.guo@freescale.com, anders.berg@lsi.com, linus.walleij@linaro.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v8 2/7] clocksource: Add support for the Mediatek SoCs
-In-Reply-To: <1402490055-15197-3-git-send-email-matthias.bgg@gmail.com>
-Message-ID: <alpine.DEB.2.10.1406112012460.5170@nanos>
-References: <1402490055-15197-1-git-send-email-matthias.bgg@gmail.com> <1402490055-15197-3-git-send-email-matthias.bgg@gmail.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Wed, 11 Jun 2014 14:18:45 -0400
+Date: Wed, 11 Jun 2014 11:18:40 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Dipankar Sarma <dipankar@in.ibm.com>,
+        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 1/1] kernel/rcu/tree.c: correct a check for grace
+ period in progress
+Message-ID: <20140611181840.GA26554@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1402456819-30515-1-git-send-email-bobby.prani@gmail.com>
+ <20140611041202.GX4581@linux.vnet.ibm.com>
+ <CAJhHMCCgXBCe-deg7TtqA-azyc2ZvQRLKAiKVJ5OhL5GzLhH0w@mail.gmail.com>
+ <20140611044242.GY4581@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140611044242.GY4581@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14061118-9332-0000-0000-00000110D966
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Jun 2014, Matthias Brugger wrote:
-> +static void mtk_clkevt_mode(enum clock_event_mode mode,
-> +				struct clock_event_device *clk)
-> +{
-> +	struct mtk_clock_event_device *evt = to_mtk_clk(clk);
-> +
-> +	mtk_clkevt_time_stop(evt, GPT_CLK_EVT);
-> +
-> +	switch (mode) {
-> +	case CLOCK_EVT_MODE_PERIODIC:
-> +		mtk_clkevt_time_setup(evt, evt->ticks_per_jiffy, GPT_CLK_EVT);
-> +		mtk_clkevt_time_start(evt, true, GPT_CLK_EVT);
-> +		break;
-> +	case CLOCK_EVT_MODE_ONESHOT:
-> +		mtk_clkevt_time_start(evt, false, GPT_CLK_EVT);
+On Tue, Jun 10, 2014 at 09:42:42PM -0700, Paul E. McKenney wrote:
+> On Wed, Jun 11, 2014 at 12:23:57AM -0400, Pranith Kumar wrote:
+> > Hi Paul,
+> > 
+> > On Wed, Jun 11, 2014 at 12:12 AM, Paul E. McKenney
+> > <paulmck@linux.vnet.ibm.com> wrote:
+> > >>       if (rnp->gpnum != rnp->completed ||
+> > >> -         ACCESS_ONCE(rnp->gpnum) != ACCESS_ONCE(rnp->completed)) {
+> > >> +         ACCESS_ONCE(rnp_root->gpnum) != ACCESS_ONCE(rnp_root->completed)) {
+> > >
+> > > At this point in the code, we are checking the current rcu_node structure,
+> > > which might or might not be the root.  If it is not the root, we absolutely
+> > > cannot compare against the root because we don't yet hold the root's lock.
+> > >
+> > 
+> > I was a bit thrown by the double checking which is being done
+> > (rnp->gpnum != rnp->complete) in that if condition. Once without
+> > ACCESS_ONCE and one with. Is there any particular reason for this?
+> > 
+> > I now understand that we are comparing ->gpnum and ->completed of the
+> > root node which might change from under us if we don't hold the root's
+> > lock. I will keep looking :)
+> 
+> Hmmm...  Now that you mention it, that does look a bit strange.
 
-Why start the timer here? The code will call set next event right away.
+And it turns out that you were right to begin with!  I queue your change,
+but with a full explanation in the commit log and with some additions to
+the comment.  Please see below.
 
-> +		break;
-> +	case CLOCK_EVT_MODE_UNUSED:
-> +	case CLOCK_EVT_MODE_SHUTDOWN:
-> +	default:
-> +		/* No more interrupts will occur as source is disabled */
-> +		break;
-> +	}
-> +}
+							Thanx, Paul
 
-Looks good otherwise.
+------------------------------------------------------------------------
 
-Thanks,
+rcu: Check both root and current rcu_node when setting up future grace period
 
-	tglx
+The rcu_start_future_gp() function checks the current rcu_node's ->gpnum
+and ->completed twice, once without ACCESS_ONCE() and once with it.
+Which is pointless because we hold that rcu_node's ->lock at that point.
+The intent was to check the current rcu_node structure and the root
+rcu_node structure, the latter locklessly with ACCESS_ONCE().  This
+commit therefore makes that change.
+
+The reason that it is safe to locklessly check the root rcu_nodes's
+->gpnum and ->completed fields is that we hold the current rcu_node's
+->lock, which constrains the root rcu_node's ability to change its
+->gpnum and ->completed fields.  Of course, if there is a single rcu_node
+structure, then rnp_root==rnp, and holding the lock prevents all changes.
+If there is more than one rcu_node structure, then the code updates the
+fields in the following order:
+
+1.	Increment rnp_root->gpnum to start new grace period.
+2.	Increment rnp->gpnum to initialize the current rcu_node,
+    	continuing initialization for the new grace period.
+3.	Increment rnp_root->completed to end the current grace period.
+4.	Increment rnp->completed to continue cleaning up after the
+    	old grace period.
+    
+So there are four possible combinations of relative values of these
+four fields:
+
+N   N   N   N:  RCU idle, new grace period must be initiated.
+    		Although rnp_root->gpnum might be incremented immediately
+    		after we check, that will just result in unnecessary work.
+    		The grace period already started, and we try to start it.
+    
+N+1 N   N   N:  RCU grace period just started.  No further change is
+    		possible because we hold rnp->lock, so the checks of
+    		rnp_root->gpnum and rnp_root->completed are stable.
+    		We know that our request for a future grace period will
+    		be seen during grace-period cleanup.
+    
+N+1 N   N+1 N:  RCU grace period is ongoing.  Because rnp->gpnum is
+    		different than rnp->completed, we won't even look at
+    		rnp_root->gpnum and rnp_root->completed, so the possible
+    		concurrent change to rnp_root->completed does not matter.
+    		We know that our request for a future grace period will
+    		be seen during grace-period cleanup, which cannot pass
+    		this rcu_node because we hold its ->lock.
+    
+N+1 N+1 N+1 N:  RCU grace period has ended, but not yet been cleaned up.
+    		Because rnp->gpnum is different than rnp->completed, we
+    		won't look at rnp_root->gpnum and rnp_root->completed, so
+    		the possible concurrent change to rnp_root->completed does
+    		not matter.  We know that our request for a future grace
+    		period will be seen during grace-period cleanup, which
+    		cannot pass this rcu_node because we hold its ->lock.
+    
+Therefore, despite initial appearances, the lockless check is safe.
+
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+[ paulmck: Update comment to say why the lockless check is safe. ]
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+index b14ea3693b79..ebafb08f2b2a 100644
+--- a/kernel/rcu/tree.c
++++ b/kernel/rcu/tree.c
+@@ -1224,10 +1224,16 @@ rcu_start_future_gp(struct rcu_node *rnp, struct rcu_data *rdp,
+ 	 * believe that a grace period is in progress, then we must wait
+ 	 * for the one following, which is in "c".  Because our request
+ 	 * will be noticed at the end of the current grace period, we don't
+-	 * need to explicitly start one.
++	 * need to explicitly start one.  We only do the lockless check
++	 * of rnp_root's fields if the current rcu_node structure thinks
++	 * there is no grace period in flight, and because we hold rnp->lock,
++	 * the only possible change is when rnp_root's two fields are
++	 * equal, in which case rnp_root->gpnum might be concurrently
++	 * incremented.  But that is OK, as it will just result in our
++	 * doing some extra useless work.
+ 	 */
+ 	if (rnp->gpnum != rnp->completed ||
+-	    ACCESS_ONCE(rnp->gpnum) != ACCESS_ONCE(rnp->completed)) {
++	    ACCESS_ONCE(rnp_root->gpnum) != ACCESS_ONCE(rnp_root->completed)) {
+ 		rnp->need_future_gp[c & 0x1]++;
+ 		trace_rcu_future_gp(rnp, rdp, c, TPS("Startedleaf"));
+ 		goto out;
+
