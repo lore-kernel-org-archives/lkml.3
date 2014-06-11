@@ -1,98 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754163AbaFKWHz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 18:07:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6155 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753042AbaFKWHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 18:07:54 -0400
-Message-ID: <1402524464.14174.186.camel@ul30vt.home>
-Subject: Re: [PATCH 3.14 186/228] PCI: Wrong register used to check pending
- traffic
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>,
-        Gavin Shan <gwshan@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Alex Williamson <alex.williamson@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci <linux-pci@vger.kernel.org>
-Date: Wed, 11 Jun 2014 16:07:44 -0600
-In-Reply-To: <CAErSpo6UcObn6HVKpw82Ncfgr64w2Ws120P2WfSLqAqaROsDTw@mail.gmail.com>
-References: <20140604232347.966798903@linuxfoundation.org>
-	 <20140604232354.004988520@linuxfoundation.org>
-	 <1402196538.23860.24.camel@deadeye.wl.decadent.org.uk>
-	 <CAErSpo6UcObn6HVKpw82Ncfgr64w2Ws120P2WfSLqAqaROsDTw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754281AbaFKWIo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 18:08:44 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:51357 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752811AbaFKWIm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 18:08:42 -0400
+Date: Wed, 11 Jun 2014 15:08:39 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Zhang Zhen <zhenzhang.zhang@huawei.com>
+cc: gregkh@linuxfoundation.org, laijs@cn.fujitsu.com,
+        sjenning@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Wang Nan <wangnan0@huawei.com>
+Subject: Re: Proposal to realize hot-add *several sections one time*
+In-Reply-To: <53981D81.5060708@huawei.com>
+Message-ID: <alpine.DEB.2.02.1406111503050.27885@chino.kir.corp.google.com>
+References: <53981D81.5060708@huawei.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-06-11 at 15:15 -0600, Bjorn Helgaas wrote:
-> On Sat, Jun 7, 2014 at 9:02 PM, Ben Hutchings <ben@decadent.org.uk> wrote:
-> > On Wed, 2014-06-04 at 16:23 -0700, Greg Kroah-Hartman wrote:
-> >> 3.14-stable review patch.  If anyone has any objections, please let me know.
-> >>
-> >> ------------------
-> >>
-> >> From: Gavin Shan <gwshan@linux.vnet.ibm.com>
-> >>
-> >> commit d0b4cc4e32705ff00d90d32da7783c266c702c04 upstream.
-> >>
-> >> The incorrect register offset is passed to pci_wait_for_pending(), which is
-> >> caused by commit 157e876ffe ("PCI: Add pci_wait_for_pending() (refactor
-> >> pci_wait_for_pending_transaction())").
-> >>
-> >> Fixes: 157e876ffe ("PCI: Add pci_wait_for_pending() (refactor pci_wait_for_pending_transaction())
-> >> Signed-off-by: Gavin Shan <gwshan@linux.vnet.ibm.com>
-> >> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-> >> Acked-by: Alex Williamson <alex.williamson@gmail.com>
-> >> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> >>
-> >> ---
-> >>  drivers/pci/pci.c |    5 +++--
-> >>  1 file changed, 3 insertions(+), 2 deletions(-)
-> >>
-> >> --- a/drivers/pci/pci.c
-> >> +++ b/drivers/pci/pci.c
-> >> @@ -3043,7 +3043,8 @@ int pci_wait_for_pending_transaction(str
-> >>       if (!pci_is_pcie(dev))
-> >>               return 1;
-> >>
-> >> -     return pci_wait_for_pending(dev, PCI_EXP_DEVSTA, PCI_EXP_DEVSTA_TRPND);
-> >> +     return pci_wait_for_pending(dev, pci_pcie_cap(dev) + PCI_EXP_DEVSTA,
-> >> +                                 PCI_EXP_DEVSTA_TRPND);
-> >>  }
-> >>  EXPORT_SYMBOL(pci_wait_for_pending_transaction);
-> >>
-> >> @@ -3085,7 +3086,7 @@ static int pci_af_flr(struct pci_dev *de
-> >>               return 0;
-> >>
-> >>       /* Wait for Transaction Pending bit clean */
-> >> -     if (pci_wait_for_pending(dev, PCI_AF_STATUS, PCI_AF_STATUS_TP))
-> >> +     if (pci_wait_for_pending(dev, pos + PCI_AF_STATUS, PCI_AF_STATUS_TP))
-> >>               goto clear;
-> >>
-> >>       dev_err(&dev->dev, "transaction is not cleared; "
-> >
-> > This still seems to be broken because pci_wait_for_pending() does
-> > pci_read_config_word() but PCI_AF_STATUS is not word-aligned.
+On Wed, 11 Jun 2014, Zhang Zhen wrote:
+
+> Hi,
 > 
-> I agree; this does seem broken.  I think pci_read_config_word() will
-> return PCIBIOS_BAD_REGISTER_NUMBER without updating the value
-> returned, so I think we'll test garbage from the stack.
+> Now we can hot-add memory by
 > 
-> What do you think, Alex?
+> % echo start_address_of_new_memory > /sys/devices/system/memory/probe
+> 
+> Then, [start_address_of_new_memory, start_address_of_new_memory +
+> memory_block_size] memory range is hot-added.
+> 
+> But we can only hot-add *one section one time* by this way.
+> Whether we can add an argument on behalf of the count of the sections to add ?
+> So we can can hot-add *several sections one time*. Just like:
+> 
 
-Yep, looks broken.  The simple fix would be to pass the AF control
-offset instead of status, shift the mask, and maybe add a BUG_ON(pos &
-1) to pci_read_config_word() to better enforce it.  Alternatively we
-could make the function take a width and use an appropriate accessor for
-the size.  I'm inclined to double-check the current users and take the
-first option unless anyone objects.  Thanks,
+Not necessarily true, it depends on sections_per_block.  Don't believe 
+Documentation/memory-hotplug.txt that suggests this is only for powerpc, 
+x86 and sh allow this interface as well.
 
-Alex
+> % echo start_address_of_new_memory count_of_sections > /sys/devices/system/memory/probe
+> 
+> Then, [start_address_of_new_memory, start_address_of_new_memory +
+> count_of_sections * memory_block_size] memory range is hot-added.
+> 
+> If this proposal is reasonable, i will send a patch to realize it.
+> 
 
+The problem is knowing how much memory is being onlined so that you can 
+definitively determine what count_of_sections should be.  The number of 
+pages per memory section depends on PAGE_SIZE and SECTION_SIZE_BITS which 
+differ depending on the architectures that support this interface.  So if 
+you support count_of_sections, it would return errno even though you have 
+onlined some sections.
