@@ -1,100 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755762AbaFKJLV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 05:11:21 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:56290 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932222AbaFKI57 (ORCPT
+	id S932422AbaFKJLx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 05:11:53 -0400
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:64551 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932130AbaFKI5w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 04:57:59 -0400
-From: Roger Quadros <rogerq@ti.com>
-To: <tony@atomide.com>, <dwmw2@infradead.org>, <computersforpeace@gmail.com>
-CC: <kyungmin.park@samsung.com>, <pekon@ti.com>,
-        <ezequiel.garcia@free-electrons.com>, <javier@dowhile0.org>,
-        <nsekhar@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-mtd@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
-Subject: [PATCH 12/36] ARM: dts: omap3-beagle: Add NAND device
-Date: Wed, 11 Jun 2014 11:56:17 +0300
-Message-ID: <1402477001-31132-13-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1402477001-31132-1-git-send-email-rogerq@ti.com>
-References: <1402477001-31132-1-git-send-email-rogerq@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 11 Jun 2014 04:57:52 -0400
+Message-ID: <1402477070.3798.54.camel@x220>
+Subject: [PATCH] ARC: remove checks for CONFIG_ARC_MMU_V4
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Wed, 11 Jun 2014 10:57:50 +0200
+In-Reply-To: <C2D7FE5348E1B147BCA15975FBA230751A6B701C@IN01WEMBXA.internal.synopsys.com>
+References: <1402475161.3798.49.camel@x220>
+	 <C2D7FE5348E1B147BCA15975FBA230751A6B701C@IN01WEMBXA.internal.synopsys.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 11 Jun 2014 08:57:50.0667 (UTC) FILETIME=[394581B0:01CF8553]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The beagle board contains a 16-bit NAND device connected to
-chip select 0 of the GPMC controller.
+There's no Kconfig symbol ARC_MMU_V4 so the checks for CONFIG_ARC_MMU_V4
+will always evaluate to false. Remove them.
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
- arch/arm/boot/dts/omap3-beagle.dts | 53 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 53 insertions(+)
+Entirely untested!
 
-diff --git a/arch/arm/boot/dts/omap3-beagle.dts b/arch/arm/boot/dts/omap3-beagle.dts
-index 3c3e6da..fafd229 100644
---- a/arch/arm/boot/dts/omap3-beagle.dts
-+++ b/arch/arm/boot/dts/omap3-beagle.dts
-@@ -350,3 +350,56 @@
- 		};
- 	};
- };
-+
-+&gpmc {
-+	ranges = <0 0 0x30000000 0x1000000	/* CS0 space, 16MB */
-+		  255 0 0x6e000000 0x02d4>;	/* register space */
-+
-+	/* Chip select 0 */
-+	nand@0,0 {
-+		compatible = "ti,omap2-nand";
-+		reg = <0 0 4		/* NAND I/O window, 4 bytes */
-+		       255 0 0x02d4>;	/* GPMC register space */
-+		interrupts = <20>;
-+		ti,nand-ecc-opt = "ham1";
-+		nand-bus-width = <16>;
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+
-+		gpmc,cs-on-ns = <0>;
-+		gpmc,cs-rd-off-ns = <36>;
-+		gpmc,cs-wr-off-ns = <36>;
-+		gpmc,adv-on-ns = <6>;
-+		gpmc,adv-rd-off-ns = <24>;
-+		gpmc,adv-wr-off-ns = <36>;
-+		gpmc,oe-on-ns = <6>;
-+		gpmc,oe-off-ns = <48>;
-+		gpmc,we-on-ns = <6>;
-+		gpmc,we-off-ns = <30>;
-+		gpmc,rd-cycle-ns = <72>;
-+		gpmc,wr-cycle-ns = <72>;
-+		gpmc,access-ns = <54>;
-+		gpmc,wr-access-ns = <30>;
-+
-+		partition@0 {
-+			label = "X-Loader";
-+			reg = <0 0x80000>;
-+		};
-+		partition@80000 {
-+			label = "U-Boot";
-+			reg = <0x80000 0x1e0000>;
-+		};
-+		partition@1c0000 {
-+			label = "U-Boot Env";
-+			reg = <0x260000 0x20000>;
-+		};
-+		partition@280000 {
-+			label = "Kernel";
-+			reg = <0x280000 0x400000>;
-+		};
-+		partition@780000 {
-+			label = "Filesystem";
-+			reg = <0x680000 0xf980000>;
-+		};
-+	};
-+};
+It would be nice if this could be squashed into commit ef680cdc2437
+("ARC: Disable caches in early boot if so configured"). But I guess the
+ARC tree that is included in linux-next cannot be rebased.
+
+ arch/arc/include/asm/cache.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arc/include/asm/cache.h b/arch/arc/include/asm/cache.h
+index c1d3d2da1191..b3c750979aa1 100644
+--- a/arch/arc/include/asm/cache.h
++++ b/arch/arc/include/asm/cache.h
+@@ -60,7 +60,7 @@ extern void read_decode_cache_bcr(void);
+ #define ARC_REG_IC_IVIC		0x10
+ #define ARC_REG_IC_CTRL		0x11
+ #define ARC_REG_IC_IVIL		0x19
+-#if defined(CONFIG_ARC_MMU_V3) || defined (CONFIG_ARC_MMU_V4)
++#if defined(CONFIG_ARC_MMU_V3)
+ #define ARC_REG_IC_PTAG		0x1E
+ #endif
+ 
+@@ -74,7 +74,7 @@ extern void read_decode_cache_bcr(void);
+ #define ARC_REG_DC_IVDL		0x4A
+ #define ARC_REG_DC_FLSH		0x4B
+ #define ARC_REG_DC_FLDL		0x4C
+-#if defined(CONFIG_ARC_MMU_V3) || defined (CONFIG_ARC_MMU_V4)
++#if defined(CONFIG_ARC_MMU_V3)
+ #define ARC_REG_DC_PTAG		0x5C
+ #endif
+ 
 -- 
-1.8.3.2
+1.9.3
 
