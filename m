@@ -1,87 +1,376 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753806AbaFKTDj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 15:03:39 -0400
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:44167 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752479AbaFKTDh (ORCPT
+	id S1753857AbaFKTEj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 15:04:39 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:57397 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751339AbaFKTEh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 15:03:37 -0400
+	Wed, 11 Jun 2014 15:04:37 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140611185119.GA13412@ravnborg.org>
-References: <5398749B.4090209@zytor.com> <cover.1402503408.git.luto@amacapital.net>
- <fe51e9f5c338d33b1a8b20813441538df5e17add.1402503408.git.luto@amacapital.net>
- <CA+5PVA5uPj0JiTLXJAtBt9b9e6aEcJh7ApFRbaCAP0=se89GKA@mail.gmail.com> <20140611185119.GA13412@ravnborg.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 11 Jun 2014 12:03:16 -0700
-Message-ID: <CALCETrXnGqrPh94zL91um+xC3Hdy1SQmBc6_pOkNBGEmX_2rVw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] x86,vdso: Fix vdso_install
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Michal Marek <mmarek@suse.cz>,
-        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1401345427-5299-10-git-send-email-benjamin.gaignard@linaro.org>
+References: <1401345427-5299-1-git-send-email-benjamin.gaignard@linaro.org>
+	<1401345427-5299-10-git-send-email-benjamin.gaignard@linaro.org>
+Date: Wed, 11 Jun 2014 15:04:36 -0400
+Message-ID: <CAF6AEGtbEpfuvcWX2o2FnEFHqZe6WAK1uGt93xmmDVLxtpiKVw@mail.gmail.com>
+Subject: Re: [PATCH v4 09/11] drm: sti: add Mixer
+From: Rob Clark <robdclark@gmail.com>
+To: Benjamin Gaignard <benjamin.gaignard@linaro.org>
+Cc: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        David Airlie <airlied@linux.ie>, Lee Jones <lee.jones@linaro.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 11, 2014 at 11:51 AM, Sam Ravnborg <sam@ravnborg.org> wrote:
-> On Wed, Jun 11, 2014 at 01:23:59PM -0400, Josh Boyer wrote:
->> On Wed, Jun 11, 2014 at 12:20 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> > Rather than monkeying with barely-comprehensible static pattern
->> > rules, just use an explicit loop.
->> >
->> > Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->> > ---
->> >  arch/x86/vdso/Makefile | 20 +++++++-------------
->> >  1 file changed, 7 insertions(+), 13 deletions(-)
->> >
->> > diff --git a/arch/x86/vdso/Makefile b/arch/x86/vdso/Makefile
->> > index 9769df0..b1c70cc 100644
->> > --- a/arch/x86/vdso/Makefile
->> > +++ b/arch/x86/vdso/Makefile
->> > @@ -9,11 +9,6 @@ VDSOX32-$(CONFIG_X86_X32_ABI)  := y
->> >  VDSO32-$(CONFIG_X86_32)                := y
->> >  VDSO32-$(CONFIG_COMPAT)                := y
->> >
->> > -vdso-install-$(VDSO64-y)       += vdso.so
->> > -vdso-install-$(VDSOX32-y)      += vdsox32.so
->> > -vdso-install-$(VDSO32-y)       += $(vdso32-images)
->> > -
->> > -
->> >  # files to link into the vdso
->> >  vobjs-y := vdso-note.o vclock_gettime.o vgetcpu.o
->> >
->> > @@ -176,15 +171,14 @@ VDSO_LDFLAGS = -fPIC -shared $(call cc-ldoption, -Wl$(comma)--hash-style=sysv) \
->> >  GCOV_PROFILE := n
->> >
->> >  #
->> > -# Install the unstripped copy of vdso*.so listed in $(vdso-install-y).
->> > +# Install the unstripped copies of vdso*.so listed in $(vdso-install-y).
->> >  #
->> > -quiet_cmd_vdso_install = INSTALL $@
->> > -      cmd_vdso_install = cp $(obj)/$@.dbg $(MODLIB)/vdso/$@
->> > -$(vdso-install-y): %.so: $(obj)/%.so.dbg FORCE
->> > -       @mkdir -p $(MODLIB)/vdso
->> > -       $(call cmd,vdso_install)
->> > +quiet_cmd_vdso_install = INSTALL $(sofile)
->> > +      cmd_vdso_install = cp $(obj)/$(sofile).dbg $(MODLIB)/vdso/$(sofile)
->> >
->> > -PHONY += vdso_install $(vdso-install-y)
->> > -vdso_install: $(vdso-install-y)
->> > +PHONY += vdso_install
->> > +vdso_install: $(vdso_img_sodbg:%=$(obj)/%) FORCE
->> > +       @mkdir -p $(MODLIB)/vdso
->> > +       @$(foreach sofile,$(vdso_img_sodbg:%.dbg=%),$(call recipe-cmd,vdso_install);)
+On Thu, May 29, 2014 at 2:37 AM, Benjamin Gaignard
+<benjamin.gaignard@linaro.org> wrote:
+> Mixer hardware IP is responsible of mixing the different inputs layers.
+> Z-order is managed by the mixer.
+> We could 2 mixers: one for main path and one for auxillary path
 >
-> Can we please fix this in a way where we do not need to add stuff to core kbuild.
-> If the original approach was used then make took care of the looping
-> and the foreach part was not needed.
+> Mixers are part of Compositor hardware block
+>
+> Signed-off-by: Benjamin Gaignard <benjamin.gaignard@linaro.org>
+> ---
+>  drivers/gpu/drm/sti/Makefile    |   1 +
+>  drivers/gpu/drm/sti/sti_mixer.c | 243 ++++++++++++++++++++++++++++++++++++++++
+>  drivers/gpu/drm/sti/sti_mixer.h |  52 +++++++++
+>  3 files changed, 296 insertions(+)
+>  create mode 100644 drivers/gpu/drm/sti/sti_mixer.c
+>  create mode 100644 drivers/gpu/drm/sti/sti_mixer.h
+>
+> diff --git a/drivers/gpu/drm/sti/Makefile b/drivers/gpu/drm/sti/Makefile
+> index bb0f6b3..ce03e15 100644
+> --- a/drivers/gpu/drm/sti/Makefile
+> +++ b/drivers/gpu/drm/sti/Makefile
+> @@ -6,5 +6,6 @@ obj-$(CONFIG_DRM_STI) += \
+>         sti_hdmi_tx3g4c28phy.o \
+>         sti_hda.o \
+>         sti_tvout.o \
+> +       sti_mixer.o \
+>         sti_gdp.o \
+>         sti_vid.o
+> \ No newline at end of file
+> diff --git a/drivers/gpu/drm/sti/sti_mixer.c b/drivers/gpu/drm/sti/sti_mixer.c
+> new file mode 100644
+> index 0000000..c812c68
+> --- /dev/null
+> +++ b/drivers/gpu/drm/sti/sti_mixer.c
+> @@ -0,0 +1,243 @@
+> +/*
+> + * Copyright (C) STMicroelectronics SA 2014
+> + * Authors: Benjamin Gaignard <benjamin.gaignard@st.com>
+> + *          Fabien Dessenne <fabien.dessenne@st.com>
+> + *          for STMicroelectronics.
+> + * License terms:  GNU General Public License (GPL), version 2
+> + */
+> +
+> +#include "sti_mixer.h"
+> +#include "sti_vtg.h"
+> +
+> +/* Identity: G=Y , B=Cb , R=Cr */
+> +static const u32 MixerColorSpaceMatIdentity[] = {
 
-Would expanding out the cmd macro here be okay?  Or is that too
-dependent on kbuild internals?
+minor nit: CamelCase..
 
-I can fiddle with static patterns again (ugh).
+BR,
+-R
 
---Andy
+> +       0x10000000, 0x00000000, 0x10000000, 0x00001000,
+> +       0x00000000, 0x00000000, 0x00000000, 0x00000000
+> +};
+> +
+> +/* regs offset */
+> +#define GAM_MIXER_CTL      0x00
+> +#define GAM_MIXER_BKC      0x04
+> +#define GAM_MIXER_BCO      0x0C
+> +#define GAM_MIXER_BCS      0x10
+> +#define GAM_MIXER_AVO      0x28
+> +#define GAM_MIXER_AVS      0x2C
+> +#define GAM_MIXER_CRB      0x34
+> +#define GAM_MIXER_ACT      0x38
+> +#define GAM_MIXER_MBP      0x3C
+> +#define GAM_MIXER_MX0      0x80
+> +
+> +/* id for depth of CRB reg */
+> +#define GAM_DEPTH_VID0_ID  1
+> +#define GAM_DEPTH_VID1_ID  2
+> +#define GAM_DEPTH_GDP0_ID  3
+> +#define GAM_DEPTH_GDP1_ID  4
+> +#define GAM_DEPTH_GDP2_ID  5
+> +#define GAM_DEPTH_GDP3_ID  6
+> +#define GAM_DEPTH_MASK_ID  7
+> +
+> +/* mask in CTL reg */
+> +#define GAM_CTL_BACK_MASK  BIT(0)
+> +#define GAM_CTL_VID0_MASK  BIT(1)
+> +#define GAM_CTL_VID1_MASK  BIT(2)
+> +#define GAM_CTL_GDP0_MASK  BIT(3)
+> +#define GAM_CTL_GDP1_MASK  BIT(4)
+> +#define GAM_CTL_GDP2_MASK  BIT(5)
+> +#define GAM_CTL_GDP3_MASK  BIT(6)
+> +
+> +const char *sti_mixer_to_str(struct sti_mixer *mixer)
+> +{
+> +       switch (mixer->id) {
+> +       case STI_MIXER_MAIN:
+> +               return "MAIN_MIXER";
+> +       case STI_MIXER_AUX:
+> +               return "AUX_MIXER";
+> +       default:
+> +               return "<UNKNOWN MIXER>";
+> +       }
+> +}
+> +
+> +static inline u32 sti_mixer_reg_read(struct sti_mixer *mixer, u32 reg_id)
+> +{
+> +       return readl(mixer->regs + reg_id);
+> +}
+> +
+> +static inline void sti_mixer_reg_write(struct sti_mixer *mixer,
+> +                                      u32 reg_id, u32 val)
+> +{
+> +       writel(val, mixer->regs + reg_id);
+> +}
+> +
+> +void sti_mixer_set_background_status(struct sti_mixer *mixer, bool enable)
+> +{
+> +       u32 val = sti_mixer_reg_read(mixer, GAM_MIXER_CTL);
+> +
+> +       val &= ~GAM_CTL_BACK_MASK;
+> +       val |= enable;
+> +       sti_mixer_reg_write(mixer, GAM_MIXER_CTL, val);
+> +}
+> +
+> +static void sti_mixer_set_background_color(struct sti_mixer *mixer,
+> +                                          u8 red, u8 green, u8 blue)
+> +{
+> +       u32 val = (red << 16) | (green << 8) | blue;
+> +
+> +       sti_mixer_reg_write(mixer, GAM_MIXER_BKC, val);
+> +}
+> +
+> +static void sti_mixer_set_background_area(struct sti_mixer *mixer,
+> +                                         struct drm_display_mode *mode)
+> +{
+> +       u32 ydo, xdo, yds, xds;
+> +
+> +       ydo = sti_vtg_get_line_number(*mode, 0);
+> +       yds = sti_vtg_get_line_number(*mode, mode->vdisplay - 1);
+> +       xdo = sti_vtg_get_pixel_number(*mode, 0);
+> +       xds = sti_vtg_get_pixel_number(*mode, mode->hdisplay - 1);
+> +
+> +       sti_mixer_reg_write(mixer, GAM_MIXER_BCO, ydo << 16 | xdo);
+> +       sti_mixer_reg_write(mixer, GAM_MIXER_BCS, yds << 16 | xds);
+> +}
+> +
+> +int sti_mixer_set_layer_depth(struct sti_mixer *mixer, struct sti_layer *layer)
+> +{
+> +       int layer_id = 0, depth = layer->zorder;
+> +       u32 mask, val;
+> +
+> +       if (depth >= GAM_MIXER_NB_DEPTH_LEVEL)
+> +               return 1;
+> +
+> +       switch (layer->desc) {
+> +       case STI_GDP_0:
+> +               layer_id = GAM_DEPTH_GDP0_ID;
+> +               break;
+> +       case STI_GDP_1:
+> +               layer_id = GAM_DEPTH_GDP1_ID;
+> +               break;
+> +       case STI_GDP_2:
+> +               layer_id = GAM_DEPTH_GDP2_ID;
+> +               break;
+> +       case STI_GDP_3:
+> +               layer_id = GAM_DEPTH_GDP3_ID;
+> +               break;
+> +       case STI_VID_0:
+> +               layer_id = GAM_DEPTH_VID0_ID;
+> +               break;
+> +       case STI_VID_1:
+> +               layer_id = GAM_DEPTH_VID1_ID;
+> +               break;
+> +       default:
+> +               DRM_ERROR("Unknown layer %d\n", layer->desc);
+> +               return 1;
+> +       }
+> +       mask = GAM_DEPTH_MASK_ID << (3 * depth);
+> +       layer_id = layer_id << (3 * depth);
+> +
+> +       dev_dbg(mixer->dev, "GAM_MIXER_CRB val 0x%x mask 0x%x\n",
+> +               layer_id, mask);
+> +
+> +       val = sti_mixer_reg_read(mixer, GAM_MIXER_CRB);
+> +       val &= ~mask;
+> +       val |= layer_id;
+> +       sti_mixer_reg_write(mixer, GAM_MIXER_CRB, val);
+> +
+> +       dev_dbg(mixer->dev, "Read GAM_MIXER_CRB 0x%x\n",
+> +               sti_mixer_reg_read(mixer, GAM_MIXER_CRB));
+> +       return 0;
+> +}
+> +
+> +int sti_mixer_active_video_area(struct sti_mixer *mixer,
+> +                               struct drm_display_mode *mode)
+> +{
+> +       u32 ydo, xdo, yds, xds;
+> +
+> +       ydo = sti_vtg_get_line_number(*mode, 0);
+> +       yds = sti_vtg_get_line_number(*mode, mode->vdisplay - 1);
+> +       xdo = sti_vtg_get_pixel_number(*mode, 0);
+> +       xds = sti_vtg_get_pixel_number(*mode, mode->hdisplay - 1);
+> +
+> +       DRM_DEBUG_DRIVER("%s active video area xdo:%d ydo:%d xds:%d yds:%d\n",
+> +                        sti_mixer_to_str(mixer), xdo, ydo, xds, yds);
+> +       sti_mixer_reg_write(mixer, GAM_MIXER_AVO, ydo << 16 | xdo);
+> +       sti_mixer_reg_write(mixer, GAM_MIXER_AVS, yds << 16 | xds);
+> +
+> +       sti_mixer_set_background_color(mixer, 0xFF, 0, 0);
+> +
+> +       sti_mixer_set_background_area(mixer, mode);
+> +       sti_mixer_set_background_status(mixer, true);
+> +       return 0;
+> +}
+> +
+> +static u32 sti_mixer_get_layer_mask(struct sti_layer *layer)
+> +{
+> +       switch (layer->desc) {
+> +       case STI_BACK:
+> +               return GAM_CTL_BACK_MASK;
+> +       case STI_GDP_0:
+> +               return GAM_CTL_GDP0_MASK;
+> +       case STI_GDP_1:
+> +               return GAM_CTL_GDP1_MASK;
+> +       case STI_GDP_2:
+> +               return GAM_CTL_GDP2_MASK;
+> +       case STI_GDP_3:
+> +               return GAM_CTL_GDP3_MASK;
+> +       case STI_VID_0:
+> +               return GAM_CTL_VID0_MASK;
+> +       case STI_VID_1:
+> +               return GAM_CTL_VID1_MASK;
+> +       default:
+> +               return 0;
+> +       }
+> +}
+> +
+> +int sti_mixer_set_layer_status(struct sti_mixer *mixer,
+> +                              struct sti_layer *layer, bool status)
+> +{
+> +       u32 mask, val;
+> +
+> +       mask = sti_mixer_get_layer_mask(layer);
+> +       if (!mask) {
+> +               DRM_ERROR("Can not find layer mask\n");
+> +               return -EINVAL;
+> +       }
+> +
+> +       val = sti_mixer_reg_read(mixer, GAM_MIXER_CTL);
+> +       val &= ~mask;
+> +       val |= status ? mask : 0;
+> +       sti_mixer_reg_write(mixer, GAM_MIXER_CTL, val);
+> +
+> +       return 0;
+> +}
+> +
+> +void sti_mixer_set_matrix(struct sti_mixer *mixer)
+> +{
+> +       unsigned int i;
+> +
+> +       for (i = 0; i < ARRAY_SIZE(MixerColorSpaceMatIdentity); i++)
+> +               sti_mixer_reg_write(mixer, GAM_MIXER_MX0 + (i * 4),
+> +                                   MixerColorSpaceMatIdentity[i]);
+> +}
+> +
+> +struct sti_mixer *sti_mixer_create(struct device *dev, int id,
+> +                                  void __iomem *baseaddr)
+> +{
+> +       struct sti_mixer *mixer = devm_kzalloc(dev, sizeof(*mixer), GFP_KERNEL);
+> +       struct device_node *np = dev->of_node;
+> +
+> +       dev_dbg(dev, "%s\n", __func__);
+> +       if (!mixer) {
+> +               DRM_ERROR("Failed to allocated memory for mixer\n");
+> +               return NULL;
+> +       }
+> +       mixer->regs = baseaddr;
+> +       mixer->dev = dev;
+> +       mixer->id = id;
+> +
+> +       if (of_device_is_compatible(np, "st,stih416-compositor"))
+> +               sti_mixer_set_matrix(mixer);
+> +
+> +       DRM_DEBUG_DRIVER("%s created. Regs=%p\n",
+> +                        sti_mixer_to_str(mixer), mixer->regs);
+> +
+> +       return mixer;
+> +}
+> diff --git a/drivers/gpu/drm/sti/sti_mixer.h b/drivers/gpu/drm/sti/sti_mixer.h
+> new file mode 100644
+> index 0000000..2d86378
+> --- /dev/null
+> +++ b/drivers/gpu/drm/sti/sti_mixer.h
+> @@ -0,0 +1,52 @@
+> +/*
+> + * Copyright (C) STMicroelectronics SA 2014
+> + * Authors: Benjamin Gaignard <benjamin.gaignard@st.com>
+> + *          Fabien Dessenne <fabien.dessenne@st.com>
+> + *          for STMicroelectronics.
+> + * License terms:  GNU General Public License (GPL), version 2
+> + */
+> +
+> +#ifndef _STI_MIXER_H_
+> +#define _STI_MIXER_H_
+> +
+> +#include <drm/drmP.h>
+> +
+> +#include "sti_layer.h"
+> +
+> +#define to_sti_mixer(x) container_of(x, struct sti_mixer, drm_crtc)
+> +
+> +/**
+> + * STI Mixer subdevice structure
+> + *
+> + * @dev: driver device
+> + * @regs: mixer registers
+> + * @id: id of the mixer
+> + * @drm_crtc: crtc object link to the mixer
+> + */
+> +struct sti_mixer {
+> +       struct device *dev;
+> +       void __iomem *regs;
+> +       int id;
+> +       struct drm_crtc drm_crtc;
+> +};
+> +
+> +const char *sti_mixer_to_str(struct sti_mixer *mixer);
+> +
+> +struct sti_mixer *sti_mixer_create(struct device *dev, int id,
+> +               void __iomem *baseaddr);
+> +
+> +int sti_mixer_set_layer_status(struct sti_mixer *mixer,
+> +               struct sti_layer *layer, bool status);
+> +int sti_mixer_set_layer_depth(struct sti_mixer *mixer, struct sti_layer *layer);
+> +int sti_mixer_active_video_area(struct sti_mixer *mixer,
+> +               struct drm_display_mode *mode);
+> +
+> +void sti_mixer_set_background_status(struct sti_mixer *mixer, bool enable);
+> +
+> +/* depth in Cross-bar control = z order */
+> +#define GAM_MIXER_NB_DEPTH_LEVEL 7
+> +
+> +#define STI_MIXER_MAIN 0
+> +#define STI_MIXER_AUX  1
+> +
+> +#endif
+> --
+> 1.9.1
+>
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
