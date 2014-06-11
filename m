@@ -1,87 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754583AbaFKWZV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 18:25:21 -0400
-Received: from sauhun.de ([89.238.76.85]:47854 "EHLO pokefinder.org"
+	id S1753749AbaFKW1o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 18:27:44 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53369 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751797AbaFKWZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 18:25:16 -0400
-Date: Thu, 12 Jun 2014 00:24:44 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Randy Dunlap <rdunlap@infradead.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Hans de Goede <hdegoede@redhat.com>, Shuge <shuge@allwinnertech.com>,
-        kevin@allwinnertech.com, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
-Subject: Re: [PATCH v7 0/2] i2c: sunxi: add P2WI controller support
-Message-ID: <20140611222444.GB3109@katana>
-References: <1402478250-7292-1-git-send-email-boris.brezillon@free-electrons.com>
+	id S1751800AbaFKW1n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 18:27:43 -0400
+Message-ID: <5398D7B4.5000303@zytor.com>
+Date: Wed, 11 Jun 2014 15:27:00 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="IrhDeMKUP4DT/M7F"
-Content-Disposition: inline
-In-Reply-To: <1402478250-7292-1-git-send-email-boris.brezillon@free-electrons.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Alexei Starovoitov <alexei.starovoitov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>, Will Drewry <wad@chromium.org>,
+        Oleg Nesterov <oleg@redhat.com>, X86 ML <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>
+Subject: Re: [RFC 5/5] x86,seccomp: Add a seccomp fastpath
+References: <cover.1402517933.git.luto@amacapital.net> <9e11cd988a0f120606e37b5e275019754e2774da.1402517933.git.luto@amacapital.net> <CAADnVQKt5FnShkZeQewbfnU1kHM-gLs3hCZMf5xcgFzyRDLX7A@mail.gmail.com> <CALCETrXoqqKC=T5Wvj+CDYQFte1s_=npDvQ2UYW0j=AanEgR1g@mail.gmail.com> <5398D59A.3030900@zytor.com> <CALCETrVMxkHcPXsEGtEc0Pr=Z80CzC0zWaQ9OdVdxi1CGuB4kQ@mail.gmail.com>
+In-Reply-To: <CALCETrVMxkHcPXsEGtEc0Pr=Z80CzC0zWaQ9OdVdxi1CGuB4kQ@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/11/2014 03:22 PM, Andy Lutomirski wrote:
+> On Wed, Jun 11, 2014 at 3:18 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 06/11/2014 02:56 PM, Andy Lutomirski wrote:
+>>>
+>>> 13ns is with the simplest nonempty filter.  I hope that empty filters
+>>> don't work.
+>>>
+>>
+>> Why wouldn't they?
+> 
+> Is it permissible to fall off the end of a BPF program?  I'm getting
+> EINVAL trying to install an actual empty filter.  The filter I tested
+> with was:
+> 
 
---IrhDeMKUP4DT/M7F
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+What I meant was that there has to be a well-defined behavior for the
+program falling off the end anyway, and that that should be preserved.
 
-On Wed, Jun 11, 2014 at 11:17:28AM +0200, Boris BREZILLON wrote:
-> Hello,
->=20
-> This series adds support for the P2WI block used by some Allwinner boards
-> to interface with the AXP221 PMIC.
->=20
-> The P2WI controller looks like an SMBus controller which only supports by=
-te
-> data transfers. But, it differs from standard SMBus protocol on several
-> aspects:
-> - it supports only one slave device, and thus drop the address field
-> - it adds a parity bit every 8bits of data
-> - only one read access is required to read a byte (instead of a write
->   followed by a read access in standard SMBus protocol)
-> - there's no Ack bit after each byte transfer
->=20
-> This means this bus cannot be used to interface with standard SMBus
-> devices (the only known device to support this interface is the AXP221
-> PMIC).
-> However the P2WI protocol is close enough to SMBus to be integrated in
-> the I2C subsystem (see this thread [1] for detailed reasons that led to
-> integrating this driver in the I2C subsystem).
->=20
-> [1] http://www.spinics.net/lists/linux-i2c/msg15066.html
+I guess it is possible to require that all code paths must provably
+reach a termination point.
 
-Applied to for-next, thanks!
+	-hpa
 
 
---IrhDeMKUP4DT/M7F
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTmNcrAAoJEBQN5MwUoCm2WokP/0s7/lQmKJce9e1SGgjfhSn2
-VeuDGa1n1wRApLc+BvP2EEeZzdqYNRzDEpH1Nxinye3C+ECdi3yI4hULumH4izep
-lvDQYPlRqdUDct2NUSHZzq0n8svPxL9jrtWwz9zSSlx6J9rxTJpqGMNiCcauPzGU
-qsF8jdBJtB62SEnPJ7zqE6w6gyPdA3+f7sCT99vGwZbyg6yeH5/QBQ92AZAFsvNV
-A/YnGNndYNG9wccOi1QKMhO1TtGE3+8TZ0dCS7T8SAVpX1OZ3hopHl9YY7NhWpXI
-0QMv2IRHbRab0xssISaNNoDW2Vv/aPXqdSJcCH9KejIRt/XiRWzjo/Hi86bG7a8s
-KtPGl5Z9Gpfs2V+TWF7YK4zccaaXy6BSil/Cgrxqh7dBpz3uqxhGWT1HVfoHbSlv
-Ygzh2RnXixF6kUxX6P/13hj38c0ck4hukxE0PCxl3Az08XThMBxcpNFmCXGjeoGB
-O1u/5woqBH+OUSEg7HlAWRioHXbZxbB/UbTrVfOKAX5pnN/eQquYupPJH4D7bHTP
-B7N8/ppJPI+3sE1Blhb9F22PNMMIWb1x7z5K1FfMGwl63qjjYUOijEu4sTIPk1DM
-oN4zca6rCU35qq4gpbvKa9hwoqJ1hsyWJ3a6zJR5NuFlNpnwoyM33s/PbISCEREi
-t/wA9oPEzHtWebFrw1Xf
-=MvHO
------END PGP SIGNATURE-----
-
---IrhDeMKUP4DT/M7F--
