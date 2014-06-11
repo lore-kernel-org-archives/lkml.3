@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753771AbaFKVYz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 17:24:55 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:41183 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752501AbaFKVYy (ORCPT
+	id S1753911AbaFKVZr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 17:25:47 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:51091 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751983AbaFKVZp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 17:24:54 -0400
-Date: Thu, 12 Jun 2014 01:24:34 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Christoph Lameter <cl@gentwo.org>
-CC: Joonsoo Kim <iamjoonsoo.kim@lge.com>, <akpm@linux-foundation.org>,
-        <rientjes@google.com>, <penberg@kernel.org>, <hannes@cmpxchg.org>,
-        <mhocko@suse.cz>, <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: Re: [PATCH -mm v2 8/8] slab: make dead memcg caches discard free
- slabs immediately
-Message-ID: <20140611212431.GA16589@esperanza>
-References: <cover.1402060096.git.vdavydov@parallels.com>
- <27a202c6084d6bb19cc3e417793f05104b908ded.1402060096.git.vdavydov@parallels.com>
- <20140610074317.GE19036@js1304-P5Q-DELUXE>
- <20140610100313.GA6293@esperanza>
- <alpine.DEB.2.10.1406100925270.17142@gentwo.org>
- <20140610151830.GA8692@esperanza>
+	Wed, 11 Jun 2014 17:25:45 -0400
+Date: Wed, 11 Jun 2014 14:25:40 -0700
+From: josh@joshtriplett.org
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 4/5] kernel/rcu/tree.c:3435 fix a sparse warning
+Message-ID: <20140611212540.GA16940@cloud>
+References: <1402519183-12752-1-git-send-email-bobby.prani@gmail.com>
+ <1402519183-12752-5-git-send-email-bobby.prani@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140610151830.GA8692@esperanza>
-X-Originating-IP: [81.5.110.170]
+In-Reply-To: <1402519183-12752-5-git-send-email-bobby.prani@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 10, 2014 at 07:18:34PM +0400, Vladimir Davydov wrote:
-> On Tue, Jun 10, 2014 at 09:26:19AM -0500, Christoph Lameter wrote:
-> > On Tue, 10 Jun 2014, Vladimir Davydov wrote:
-> > 
-> > > Frankly, I incline to shrinking dead SLAB caches periodically from
-> > > cache_reap too, because it looks neater and less intrusive to me. Also
-> > > it has zero performance impact, which is nice.
-> > >
-> > > However, Christoph proposed to disable per cpu arrays for dead caches,
-> > > similarly to SLUB, and I decided to give it a try, just to see the end
-> > > code we'd have with it.
-> > >
-> > > I'm still not quite sure which way we should choose though...
-> > 
-> > Which one is cleaner?
+On Wed, Jun 11, 2014 at 04:39:42PM -0400, Pranith Kumar wrote:
+> kernel/rcu/tree.c:3435:21: warning: incorrect type in argument 1 (different modifiers)
+> kernel/rcu/tree.c:3435:21:    expected int ( *threadfn )( ... )
+> kernel/rcu/tree.c:3435:21:    got int ( static [toplevel] [noreturn] *<noident> )( ... )
 > 
-> To shrink dead caches aggressively, we only need to modify cache_reap
-> (see https://lkml.org/lkml/2014/5/30/271).
+> by removing __noreturn attribute and adding unreachable() as suggested on the
+> mailing list: http://www.kernelhub.org/?p=2&msg=436683
+> 
+> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 
-Hmm, reap_alien, which is called from cache_reap to shrink per node
-alien object arrays, only processes one node at a time. That means with
-the patch I gave a link to above it will take up to
-(REAPTIMEOUT_AC*nr_online_nodes) seconds to destroy a virtually empty
-dead cache, which may be quite long on large machines. Of course, we can
-make reap_alien walk over all alien caches of the current node, but that
-will probably hurt performance...
+No, we should not do this.  And the mailing list post you point to seems
+to explicitly recommend using noreturn rather than unreachable.
 
+If sparse doesn't understand this, that's a bug in sparse, not in the
+kernel.  Sparse needs to understand that it's OK to drop noreturn from a
+function pointer type, just not OK to add it.
+
+Rationale: If you call a noreturn function through a non-noreturn
+function pointer, you might end up with unnecessary cleanup code, but
+the call will work.  If you call a non-noreturn function through a
+noreturn function pointer, the caller will not expect a return, and may
+crash; *that* should require a cast.
+
+>  kernel/rcu/tree.c | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
 > 
-> To zap object arrays for dead caches (this is what this patch does), we
-> have to:
->  - set array_cache->limit to 0 for each per cpu, shared, and alien array
->    caches on kmem_cache_shrink;
->  - make cpu/node hotplug paths init new array cache sizes to 0;
->  - make free paths (__cache_free, cache_free_alien) handle zero array
->    cache size properly, because currently they doesn't.
+> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+> index 9ab84d3..6029a2e 100644
+> --- a/kernel/rcu/tree.c
+> +++ b/kernel/rcu/tree.c
+> @@ -1689,7 +1689,7 @@ static void rcu_gp_cleanup(struct rcu_state *rsp)
+>  /*
+>   * Body of kthread that handles grace periods.
+>   */
+> -static int __noreturn rcu_gp_kthread(void *arg)
+> +static int rcu_gp_kthread(void *arg)
+>  {
+>  	int fqs_state;
+>  	int gf;
+> @@ -1777,6 +1777,9 @@ static int __noreturn rcu_gp_kthread(void *arg)
+>  		/* Handle grace-period end. */
+>  		rcu_gp_cleanup(rsp);
+>  	}
+> +
+> +	unreachable();
+> +	return 0;
+>  }
+>  
+>  /*
+> -- 
+> 1.9.1
 > 
-> So IMO the first one (reaping dead caches periodically) requires less
-> modifications and therefore is cleaner.
