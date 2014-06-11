@@ -1,202 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932306AbaFKDbI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 23:31:08 -0400
-Received: from imap.thunk.org ([74.207.234.97]:60943 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755399AbaFKDaZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 23:30:25 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: linux-kernel@vger.kernel.org
-Cc: "Theodore Ts'o" <tytso@mit.edu>, George Spelvin <linux@horizon.com>
-Subject: [PATCH 2/3] random: remove unneeded hash of a portion of the entropy pool
-Date: Tue, 10 Jun 2014 23:30:19 -0400
-Message-Id: <1402457420-2527-3-git-send-email-tytso@mit.edu>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1402457420-2527-1-git-send-email-tytso@mit.edu>
-References: <1402457420-2527-1-git-send-email-tytso@mit.edu>
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S932078AbaFKDcY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 23:32:24 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:47603 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751708AbaFKDcX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 23:32:23 -0400
+Message-ID: <5397CDC3.1050809@hurleysoftware.com>
+Date: Tue, 10 Jun 2014 23:32:19 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Andi Kleen <andi@firstfloor.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Richard Yao <ryao@gentoo.org>, Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [PATCH v2] vmalloc: use rcu list iterator to reduce vmap_area_lock
+ contention
+References: <1402453146-10057-1-git-send-email-iamjoonsoo.kim@lge.com>
+In-Reply-To: <1402453146-10057-1-git-send-email-iamjoonsoo.kim@lge.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We previously extracted a portion of the entropy pool in
-mix_pool_bytes() and hashed it in to avoid racing CPU's from returning
-duplicate random values.  Now that we are using a spinlock to prevent
-this from happening, this is no longer necessary.  So remove it, to
-simplify the code a bit.
+On 06/10/2014 10:19 PM, Joonsoo Kim wrote:
+> Richard Yao reported a month ago that his system have a trouble
+> with vmap_area_lock contention during performance analysis
+> by /proc/meminfo. Andrew asked why his analysis checks /proc/meminfo
+> stressfully, but he didn't answer it.
+>
+> https://lkml.org/lkml/2014/4/10/416
+>
+> Although I'm not sure that this is right usage or not, there is a solution
+> reducing vmap_area_lock contention with no side-effect. That is just
+> to use rcu list iterator in get_vmalloc_info().
+>
+> rcu can be used in this function because all RCU protocol is already
+> respected by writers, since Nick Piggin commit db64fe02258f1507e13fe5
+> ("mm: rewrite vmap layer") back in linux-2.6.28
 
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
-Cc: George Spelvin <linux@horizon.com>
----
- drivers/char/random.c | 51 ++++++++++++++++++++-------------------------------
- 1 file changed, 20 insertions(+), 31 deletions(-)
+While rcu list traversal over the vmap_area_list is safe, this may
+arrive at different results than the spinlocked version. The rcu list
+traversal version will not be a 'snapshot' of a single, valid instant
+of the entire vmap_area_list, but rather a potential amalgam of
+different list states.
 
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 76d2f53..97f390b 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -481,9 +481,9 @@ static __u32 const twist_table[8] = {
-  * the entropy is concentrated in the low-order bits.
-  */
- static void _mix_pool_bytes(struct entropy_store *r, const void *in,
--			    int nbytes, __u8 out[64])
-+			    int nbytes)
- {
--	unsigned long i, j, tap1, tap2, tap3, tap4, tap5;
-+	unsigned long i, tap1, tap2, tap3, tap4, tap5;
- 	int input_rotate;
- 	int wordmask = r->poolinfo->poolwords - 1;
- 	const char *bytes = in;
-@@ -525,27 +525,23 @@ static void _mix_pool_bytes(struct entropy_store *r, const void *in,
- 
- 	r->input_rotate = input_rotate;
- 	r->add_ptr = i;
--
--	if (out)
--		for (j = 0; j < 16; j++)
--			((__u32 *)out)[j] = r->pool[(i - j) & wordmask];
- }
- 
- static void __mix_pool_bytes(struct entropy_store *r, const void *in,
--			     int nbytes, __u8 out[64])
-+			     int nbytes)
- {
- 	trace_mix_pool_bytes_nolock(r->name, nbytes, _RET_IP_);
--	_mix_pool_bytes(r, in, nbytes, out);
-+	_mix_pool_bytes(r, in, nbytes);
- }
- 
- static void mix_pool_bytes(struct entropy_store *r, const void *in,
--			   int nbytes, __u8 out[64])
-+			   int nbytes)
- {
- 	unsigned long flags;
- 
- 	trace_mix_pool_bytes(r->name, nbytes, _RET_IP_);
- 	spin_lock_irqsave(&r->lock, flags);
--	_mix_pool_bytes(r, in, nbytes, out);
-+	_mix_pool_bytes(r, in, nbytes);
- 	spin_unlock_irqrestore(&r->lock, flags);
- }
- 
-@@ -737,13 +733,13 @@ void add_device_randomness(const void *buf, unsigned int size)
- 
- 	trace_add_device_randomness(size, _RET_IP_);
- 	spin_lock_irqsave(&input_pool.lock, flags);
--	_mix_pool_bytes(&input_pool, buf, size, NULL);
--	_mix_pool_bytes(&input_pool, &time, sizeof(time), NULL);
-+	_mix_pool_bytes(&input_pool, buf, size);
-+	_mix_pool_bytes(&input_pool, &time, sizeof(time));
- 	spin_unlock_irqrestore(&input_pool.lock, flags);
- 
- 	spin_lock_irqsave(&nonblocking_pool.lock, flags);
--	_mix_pool_bytes(&nonblocking_pool, buf, size, NULL);
--	_mix_pool_bytes(&nonblocking_pool, &time, sizeof(time), NULL);
-+	_mix_pool_bytes(&nonblocking_pool, buf, size);
-+	_mix_pool_bytes(&nonblocking_pool, &time, sizeof(time));
- 	spin_unlock_irqrestore(&nonblocking_pool.lock, flags);
- }
- EXPORT_SYMBOL(add_device_randomness);
-@@ -776,7 +772,7 @@ static void add_timer_randomness(struct timer_rand_state *state, unsigned num)
- 	sample.cycles = random_get_entropy();
- 	sample.num = num;
- 	r = nonblocking_pool.initialized ? &input_pool : &nonblocking_pool;
--	mix_pool_bytes(r, &sample, sizeof(sample), NULL);
-+	mix_pool_bytes(r, &sample, sizeof(sample));
- 
- 	/*
- 	 * Calculate number of bits of randomness we probably added.
-@@ -864,7 +860,7 @@ void add_interrupt_randomness(int irq, int irq_flags)
- 		return;
- 	}
- 	fast_pool->last = now;
--	__mix_pool_bytes(r, &fast_pool->pool, sizeof(fast_pool->pool), NULL);
-+	__mix_pool_bytes(r, &fast_pool->pool, sizeof(fast_pool->pool));
- 
- 	/*
- 	 * If we have architectural seed generator, produce a seed and
-@@ -873,7 +869,7 @@ void add_interrupt_randomness(int irq, int irq_flags)
- 	 */
- 	credit = 1;
- 	if (arch_get_random_seed_long(&seed)) {
--		__mix_pool_bytes(r, &seed, sizeof(seed), NULL);
-+		__mix_pool_bytes(r, &seed, sizeof(seed));
- 		credit += sizeof(seed) * 4;
- 	}
- 	spin_unlock(&r->lock);
-@@ -954,7 +950,7 @@ static void _xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
- 				  ENTROPY_BITS(r), ENTROPY_BITS(r->pull));
- 	bytes = extract_entropy(r->pull, tmp, bytes,
- 				random_read_wakeup_bits / 8, rsvd_bytes);
--	mix_pool_bytes(r, tmp, bytes, NULL);
-+	mix_pool_bytes(r, tmp, bytes);
- 	credit_entropy_bits(r, bytes*8);
- }
- 
-@@ -1029,7 +1025,6 @@ static void extract_buf(struct entropy_store *r, __u8 *out)
- 		unsigned long l[LONGS(20)];
- 	} hash;
- 	__u32 workspace[SHA_WORKSPACE_WORDS];
--	__u8 extract[64];
- 	unsigned long flags;
- 
- 	/*
-@@ -1058,15 +1053,9 @@ static void extract_buf(struct entropy_store *r, __u8 *out)
- 	 * brute-forcing the feedback as hard as brute-forcing the
- 	 * hash.
- 	 */
--	__mix_pool_bytes(r, hash.w, sizeof(hash.w), extract);
-+	__mix_pool_bytes(r, hash.w, sizeof(hash.w));
- 	spin_unlock_irqrestore(&r->lock, flags);
- 
--	/*
--	 * To avoid duplicates, we atomically extract a portion of the
--	 * pool while mixing, and hash one final time.
--	 */
--	sha_transform(hash.w, extract, workspace);
--	memset(extract, 0, sizeof(extract));
- 	memset(workspace, 0, sizeof(workspace));
- 
- 	/*
-@@ -1253,14 +1242,14 @@ static void init_std_data(struct entropy_store *r)
- 	unsigned long rv;
- 
- 	r->last_pulled = jiffies;
--	mix_pool_bytes(r, &now, sizeof(now), NULL);
-+	mix_pool_bytes(r, &now, sizeof(now));
- 	for (i = r->poolinfo->poolbytes; i > 0; i -= sizeof(rv)) {
- 		if (!arch_get_random_seed_long(&rv) &&
- 		    !arch_get_random_long(&rv))
- 			rv = random_get_entropy();
--		mix_pool_bytes(r, &rv, sizeof(rv), NULL);
-+		mix_pool_bytes(r, &rv, sizeof(rv));
- 	}
--	mix_pool_bytes(r, utsname(), sizeof(*(utsname())), NULL);
-+	mix_pool_bytes(r, utsname(), sizeof(*(utsname())));
- }
- 
- /*
-@@ -1323,7 +1312,7 @@ static int arch_random_refill(void)
- 	if (n) {
- 		unsigned int rand_bytes = n * sizeof(unsigned long);
- 
--		mix_pool_bytes(&input_pool, buf, rand_bytes, NULL);
-+		mix_pool_bytes(&input_pool, buf, rand_bytes);
- 		credit_entropy_bits(&input_pool, rand_bytes*4);
- 	}
- 
-@@ -1413,7 +1402,7 @@ write_pool(struct entropy_store *r, const char __user *buffer, size_t count)
- 		count -= bytes;
- 		p += bytes;
- 
--		mix_pool_bytes(r, buf, bytes, NULL);
-+		mix_pool_bytes(r, buf, bytes);
- 		cond_resched();
- 	}
- 
--- 
-2.0.0
+This is because the vmap_area_list can continue to change during
+list traversal.
+
+Regards,
+Peter Hurley
+
+> Specifically :
+>     insertions use list_add_rcu(),
+>     deletions use list_del_rcu() and kfree_rcu().
+>
+> Note the rb tree is not used from rcu reader (it would not be safe),
+> only the vmap_area_list has full RCU protection.
+>
+> Note that __purge_vmap_area_lazy() already uses this rcu protection.
+>
+>          rcu_read_lock();
+>          list_for_each_entry_rcu(va, &vmap_area_list, list) {
+>                  if (va->flags & VM_LAZY_FREE) {
+>                          if (va->va_start < *start)
+>                                  *start = va->va_start;
+>                          if (va->va_end > *end)
+>                                  *end = va->va_end;
+>                          nr += (va->va_end - va->va_start) >> PAGE_SHIFT;
+>                          list_add_tail(&va->purge_list, &valist);
+>                          va->flags |= VM_LAZY_FREEING;
+>                          va->flags &= ~VM_LAZY_FREE;
+>                  }
+>          }
+>          rcu_read_unlock();
+>
+> v2: add more commit description from Eric
+>
+> [edumazet@google.com: add more commit description]
+> Reported-by: Richard Yao <ryao@gentoo.org>
+> Acked-by: Eric Dumazet <edumazet@google.com>
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>
+> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+> index f64632b..fdbb116 100644
+> --- a/mm/vmalloc.c
+> +++ b/mm/vmalloc.c
+> @@ -2690,14 +2690,14 @@ void get_vmalloc_info(struct vmalloc_info *vmi)
+>
+>   	prev_end = VMALLOC_START;
+>
+> -	spin_lock(&vmap_area_lock);
+> +	rcu_read_lock();
+>
+>   	if (list_empty(&vmap_area_list)) {
+>   		vmi->largest_chunk = VMALLOC_TOTAL;
+>   		goto out;
+>   	}
+>
+> -	list_for_each_entry(va, &vmap_area_list, list) {
+> +	list_for_each_entry_rcu(va, &vmap_area_list, list) {
+>   		unsigned long addr = va->va_start;
+>
+>   		/*
+> @@ -2724,7 +2724,7 @@ void get_vmalloc_info(struct vmalloc_info *vmi)
+>   		vmi->largest_chunk = VMALLOC_END - prev_end;
+>
+>   out:
+> -	spin_unlock(&vmap_area_lock);
+> +	rcu_read_unlock();
+>   }
+>   #endif
+>
+>
 
