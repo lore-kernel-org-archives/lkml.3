@@ -1,98 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755845AbaFKSsR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 14:48:17 -0400
-Received: from www.linutronix.de ([62.245.132.108]:34277 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753152AbaFKSoH (ORCPT
+	id S1755879AbaFKSsY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 14:48:24 -0400
+Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:42679 "EHLO
+	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753152AbaFKSsU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 14:44:07 -0400
-Message-Id: <20140611183853.029651737@linutronix.de>
-User-Agent: quilt/0.63-1
-Date: Wed, 11 Jun 2014 18:44:04 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: [patch V4 02/10] rtmutex: Simplify rtmutex_slowtrylock()
-References: <20140611182944.108526809@linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=rtmutex-simplify-slow-trylock.patch
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Wed, 11 Jun 2014 14:48:20 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AugHAH2jmFNbslCP/2dsb2JhbABagw2rdAUBAQEBAQEFAZkbgQgXdYRgI4EaN4hGAdAqhVyIGWQdhCsEmi6TS4F8gUI7gTA
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Dimitri Sivanich <sivanich@sgi.com>
+Subject: [PATCH 1/1] drivers/misc/sgi-gru/grukdump.c: remove unnecessary test on unsigned int
+Date: Wed, 11 Jun 2014 20:47:02 +0200
+Message-Id: <1402512422-15990-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleg noticed that rtmutex_slowtrylock() has a pointless check for
-rt_mutex_owner(lock) != current.
+unsigned value is never < 0
 
-To avoid calling try_to_take_rtmutex() we really want to check whether
-the lock has an owner at all or whether the trylock failed because the
-owner is NULL, but the RT_MUTEX_HAS_WAITERS bit is set. This covers
-the lock is owned by caller situation as well.
-
-We can actually do this check lockless. trylock is taking a chance
-whether we take lock->wait_lock to do the check or not.
-
-Add comments to the function while at it.
-
-Reported-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Dimitri Sivanich <sivanich@sgi.com>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- kernel/locking/rtmutex.c |   32 +++++++++++++++++++++-----------
- 1 file changed, 21 insertions(+), 11 deletions(-)
+ drivers/misc/sgi-gru/grukdump.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Index: tip/kernel/locking/rtmutex.c
-===================================================================
---- tip.orig/kernel/locking/rtmutex.c
-+++ tip/kernel/locking/rtmutex.c
-@@ -963,22 +963,32 @@ rt_mutex_slowlock(struct rt_mutex *lock,
- /*
-  * Slow path try-lock function:
-  */
--static inline int
--rt_mutex_slowtrylock(struct rt_mutex *lock)
-+static inline int rt_mutex_slowtrylock(struct rt_mutex *lock)
- {
--	int ret = 0;
-+	int ret;
+diff --git a/drivers/misc/sgi-gru/grukdump.c b/drivers/misc/sgi-gru/grukdump.c
+index a3700a5..e0e0e7e 100644
+--- a/drivers/misc/sgi-gru/grukdump.c
++++ b/drivers/misc/sgi-gru/grukdump.c
+@@ -196,7 +196,7 @@ int gru_dump_chiplet_request(unsigned long arg)
+ 		return -EFAULT;
  
-+	/*
-+	 * trylock is taking a chance. So we dont have to take
-+	 * @lock->wait_lock to figure out whether @lock has a real or
-+	 * if @lock owner is NULL and the RT_MUTEX_HAS_WAITERS bit is
-+	 * set.
-+	 */
-+	if (rt_mutex_owner(lock))
-+		return 0;
-+
-+	/*
-+	 * The mutex has currently no owner. Lock the wait lock and
-+	 * try to acquire the lock.
-+	 */
- 	raw_spin_lock(&lock->wait_lock);
+ 	/* Currently, only dump by gid is implemented */
+-	if (req.gid >= gru_max_gids || req.gid < 0)
++	if (req.gid >= gru_max_gids)
+ 		return -EINVAL;
  
--	if (likely(rt_mutex_owner(lock) != current)) {
-+	ret = try_to_take_rt_mutex(lock, current, NULL);
- 
--		ret = try_to_take_rt_mutex(lock, current, NULL);
--		/*
--		 * try_to_take_rt_mutex() sets the lock waiters
--		 * bit unconditionally. Clean this up.
--		 */
--		fixup_rt_mutex_waiters(lock);
--	}
-+	/*
-+	 * try_to_take_rt_mutex() sets the lock waiters bit
-+	 * unconditionally. Clean this up.
-+	 */
-+	fixup_rt_mutex_waiters(lock);
- 
- 	raw_spin_unlock(&lock->wait_lock);
- 
-
+ 	gru = GID_TO_GRU(req.gid);
+-- 
+1.8.4.5
 
