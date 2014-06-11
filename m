@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755820AbaFKSsA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 14:48:00 -0400
-Received: from www.linutronix.de ([62.245.132.108]:34274 "EHLO
+	id S1755845AbaFKSsR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 14:48:17 -0400
+Received: from www.linutronix.de ([62.245.132.108]:34277 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752987AbaFKSoH (ORCPT
+	with ESMTP id S1753152AbaFKSoH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 11 Jun 2014 14:44:07 -0400
-Message-Id: <20140611183853.118544688@linutronix.de>
+Message-Id: <20140611183853.029651737@linutronix.de>
 User-Agent: quilt/0.63-1
-Date: Wed, 11 Jun 2014 18:44:05 -0000
+Date: Wed, 11 Jun 2014 18:44:04 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: [patch V4 03/10] rtmutex: Simplify and document try_to_take_rtmutex()
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: [patch V4 02/10] rtmutex: Simplify rtmutex_slowtrylock()
 References: <20140611182944.108526809@linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline;
- filename=rtmutx-simplify-and-document-try-to-take-rtmutex.patch
+Content-Disposition: inline; filename=rtmutex-simplify-slow-trylock.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -27,185 +27,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current implementation of try_to_take_rtmutex() is correct, but
-requires more than a single brain twist to understand the clever
-encoded conditionals.
+Oleg noticed that rtmutex_slowtrylock() has a pointless check for
+rt_mutex_owner(lock) != current.
 
-Untangle it and document the cases proper.
+To avoid calling try_to_take_rtmutex() we really want to check whether
+the lock has an owner at all or whether the trylock failed because the
+owner is NULL, but the RT_MUTEX_HAS_WAITERS bit is set. This covers
+the lock is owned by caller situation as well.
 
-Looks less efficient at the first glance, but actually reduces the
-binary code size on x8664 by 80 bytes.
+We can actually do this check lockless. trylock is taking a chance
+whether we take lock->wait_lock to do the check or not.
 
+Add comments to the function while at it.
+
+Reported-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/locking/rtmutex.c |  131 +++++++++++++++++++++++++++++++----------------
- 1 file changed, 87 insertions(+), 44 deletions(-)
+ kernel/locking/rtmutex.c |   32 +++++++++++++++++++++-----------
+ 1 file changed, 21 insertions(+), 11 deletions(-)
 
 Index: tip/kernel/locking/rtmutex.c
 ===================================================================
 --- tip.orig/kernel/locking/rtmutex.c
 +++ tip/kernel/locking/rtmutex.c
-@@ -535,74 +535,117 @@ static int rt_mutex_adjust_prio_chain(st
-  *
-  * @lock:   the lock to be acquired.
-  * @task:   the task which wants to acquire the lock
-- * @waiter: the waiter that is queued to the lock's wait list. (could be NULL)
-+ * @waiter: the waiter that is queued to the lock's wait list. (can be
-+ *	    NULL, if called due to trylock attempts from
-+ *	    rt_mutex_slowlock() or rt_mutex_slowtrylock().
+@@ -963,22 +963,32 @@ rt_mutex_slowlock(struct rt_mutex *lock,
+ /*
+  * Slow path try-lock function:
   */
- static int try_to_take_rt_mutex(struct rt_mutex *lock, struct task_struct *task,
--		struct rt_mutex_waiter *waiter)
-+				struct rt_mutex_waiter *waiter)
+-static inline int
+-rt_mutex_slowtrylock(struct rt_mutex *lock)
++static inline int rt_mutex_slowtrylock(struct rt_mutex *lock)
  {
-+	unsigned long flags;
-+
- 	/*
--	 * We have to be careful here if the atomic speedups are
--	 * enabled, such that, when
--	 *  - no other waiter is on the lock
--	 *  - the lock has been released since we did the cmpxchg
--	 * the lock can be released or taken while we are doing the
--	 * checks and marking the lock with RT_MUTEX_HAS_WAITERS.
-+	 * Before testing whether we can acquire @lock, we set the
-+	 * RT_MUTEX_HAS_WAITERS bit in @lock->owner. This forces all
-+	 * other tasks which try to modify @lock into the slow path
-+	 * and they serialize on @lock->wait_lock.
-+	 *
-+	 * The RT_MUTEX_HAS_WAITERS bit can have a transitional state
-+	 * as explained at the top of this file if and only if:
- 	 *
--	 * The atomic acquire/release aware variant of
--	 * mark_rt_mutex_waiters uses a cmpxchg loop. After setting
--	 * the WAITERS bit, the atomic release / acquire can not
--	 * happen anymore and lock->wait_lock protects us from the
--	 * non-atomic case.
-+	 * - There is a lock owner. The caller must fixup the
-+	 *   transient state if it does a trylock or leaves the lock
-+	 *   function due to a signal or timeout.
- 	 *
--	 * Note, that this might set lock->owner =
--	 * RT_MUTEX_HAS_WAITERS in the case the lock is not contended
--	 * any more. This is fixed up when we take the ownership.
--	 * This is the transitional state explained at the top of this file.
-+	 * - @task acquires the lock and there are no other
-+	 *   waiters. This is undone in rt_mutex_set_owner(@task) at
-+	 *   the end of this function.
- 	 */
- 	mark_rt_mutex_waiters(lock);
+-	int ret = 0;
++	int ret;
  
 +	/*
-+	 * If @lock has an owner, give up.
++	 * trylock is taking a chance. So we dont have to take
++	 * @lock->wait_lock to figure out whether @lock has a real or
++	 * if @lock owner is NULL and the RT_MUTEX_HAS_WAITERS bit is
++	 * set.
 +	 */
- 	if (rt_mutex_owner(lock))
- 		return 0;
++	if (rt_mutex_owner(lock))
++		return 0;
++
++	/*
++	 * The mutex has currently no owner. Lock the wait lock and
++	 * try to acquire the lock.
++	 */
+ 	raw_spin_lock(&lock->wait_lock);
  
- 	/*
--	 * It will get the lock because of one of these conditions:
--	 * 1) there is no waiter
--	 * 2) higher priority than waiters
--	 * 3) it is top waiter
--	 */
--	if (rt_mutex_has_waiters(lock)) {
--		if (task->prio >= rt_mutex_top_waiter(lock)->prio) {
--			if (!waiter || waiter != rt_mutex_top_waiter(lock))
--				return 0;
--		}
+-	if (likely(rt_mutex_owner(lock) != current)) {
++	ret = try_to_take_rt_mutex(lock, current, NULL);
+ 
+-		ret = try_to_take_rt_mutex(lock, current, NULL);
+-		/*
+-		 * try_to_take_rt_mutex() sets the lock waiters
+-		 * bit unconditionally. Clean this up.
+-		 */
+-		fixup_rt_mutex_waiters(lock);
 -	}
-+	 * If @waiter != NULL, @task has already enqueued the waiter
-+	 * into @lock waiter list. If @waiter == NULL then this is a
-+	 * trylock attempt.
-+	 */
-+	if (waiter) {
-+		/*
-+		 * If waiter is not the highest priority waiter of
-+		 * @lock, give up.
-+		 */
-+		if (waiter != rt_mutex_top_waiter(lock))
-+			return 0;
- 
--	if (waiter || rt_mutex_has_waiters(lock)) {
--		unsigned long flags;
--		struct rt_mutex_waiter *top;
--
--		raw_spin_lock_irqsave(&task->pi_lock, flags);
--
--		/* remove the queued waiter. */
--		if (waiter) {
--			rt_mutex_dequeue(lock, waiter);
--			task->pi_blocked_on = NULL;
--		}
-+		/*
-+		 * We can acquire the lock. Remove the waiter from the
-+		 * lock waiters list.
-+		 */
-+		rt_mutex_dequeue(lock, waiter);
- 
-+	} else {
- 		/*
--		 * We have to enqueue the top waiter(if it exists) into
--		 * task->pi_waiters list.
-+		 * If the lock has waiters already we check whether @task is
-+		 * eligible to take over the lock.
-+		 *
-+		 * If there are no other waiters, @task can acquire the lock.
-+		 * @task->pi_blocked_on is NULL
- 		 */
- 		if (rt_mutex_has_waiters(lock)) {
--			top = rt_mutex_top_waiter(lock);
--			rt_mutex_enqueue_pi(task, top);
-+			/*
-+			 * If @task->prio is greater than or equal to
-+			 * the top waiter priority (kernel view),
-+			 * @task lost.
-+			 */
-+			if (task->prio >= rt_mutex_top_waiter(lock)->prio)
-+				return 0;
-+
-+			/*
-+			 * The current top waiter stays enqueued. We
-+			 * don't have to change anything in the lock
-+			 * waiters order.
-+			 */
-+		} else {
-+			/*
-+			 * No waiters. Take the lock without the
-+			 * pi_lock dance.@task->pi_blocked_on is NULL
-+			 * and we have no waiters to enqueue in @task
-+			 * pi waiters list.
-+			 */
-+			goto takeit;
- 		}
--		raw_spin_unlock_irqrestore(&task->pi_lock, flags);
- 	}
- 
 +	/*
-+	 * Clear @task->pi_blocked_on. Requires protection by
-+	 * @task->pi_lock. Redundant operation for the @waiter == NULL
-+	 * case, but conditionals are more expensive than a redundant
-+	 * store.
++	 * try_to_take_rt_mutex() sets the lock waiters bit
++	 * unconditionally. Clean this up.
 +	 */
-+	raw_spin_lock_irqsave(&task->pi_lock, flags);
-+	task->pi_blocked_on = NULL;
-+	/*
-+	 * Finish the lock acquisition. @task is the new owner. If
-+	 * other waiters exist we have to insert the highest priority
-+	 * waiter into @task->pi_waiters list.
-+	 */
-+	if (rt_mutex_has_waiters(lock))
-+		rt_mutex_enqueue_pi(task, rt_mutex_top_waiter(lock));
-+	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
-+
-+takeit:
- 	/* We got the lock. */
- 	debug_rt_mutex_lock(lock);
++	fixup_rt_mutex_waiters(lock);
  
-+	/*
-+	 * This either preserves the RT_MUTEX_HAS_WAITERS bit if there
-+	 * are still waiters or clears it.
-+	 */
- 	rt_mutex_set_owner(lock, task);
+ 	raw_spin_unlock(&lock->wait_lock);
  
- 	rt_mutex_deadlock_account_lock(lock, task);
 
 
