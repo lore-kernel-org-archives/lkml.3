@@ -1,85 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755253AbaFKOWb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 10:22:31 -0400
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:38807 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751328AbaFKOW2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 10:22:28 -0400
+	id S1755484AbaFKO1S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 10:27:18 -0400
+Received: from cmta4.telus.net ([209.171.16.77]:35013 "EHLO cmta4.telus.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751965AbaFKO1Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 10:27:16 -0400
+X-Authority-Analysis: v=2.0 cv=CvthhAED c=1 sm=2
+ a=zJWegnE7BH9C0Gl4FFgQyA==:17 a=1chCufcSjPwA:10 a=LGgl8L9ij00A:10
+ a=kj9zAlcOel0A:10 a=aatUQebYAAAA:8 a=Pyq9K9CWowscuQLKlpiwfMBGOR0=:19
+ a=tzIYxfF5sNeoCbC1VJEA:9 a=CjuIK1q_8ugA:10 a=zJWegnE7BH9C0Gl4FFgQyA==:117
+X-Telus-Outbound-IP: 173.180.45.4
+From: "Doug Smythies" <dsmythies@telus.net>
+To: "'Stratos Karafotis'" <stratosk@semaphore.gr>
+Cc: <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <rjw@rjwysocki.net>, <viresh.kumar@linaro.org>,
+        <dirk.j.brandewie@intel.com>
+References: <1402490012-19969-1-git-send-email-stratosk@semaphore.gr> <009b01cf857a$d5032090$7f0961b0$@net>
+In-Reply-To: <009b01cf857a$d5032090$7f0961b0$@net>
+Subject: RE: [PATCH] cpufreq: intel_pstate: Fix rounding of core_pct
+Date: Wed, 11 Jun 2014 07:27:12 -0700
+Message-ID: <009c01cf8581$3d75a7f0$b860f7d0$@net>
 MIME-Version: 1.0
-In-Reply-To: <2E89032DDAA8B9408CB92943514A0337A56F53A6@SW-EX-MBX01.diasemi.com>
-References: <cover.1402484954.git.Adam.Thomson.Opensource@diasemi.com>
-	<bf4b6d7b061e66d3ca7f3dd44319b9e26ae7103f.1402484954.git.Adam.Thomson.Opensource@diasemi.com>
-	<CAMuHMdWirVk+jrz40yw4=zAOFH6VTX9CXcpO01e0rK8S8VGGHw@mail.gmail.com>
-	<CAL_JsqK0RqYuZ8YB1sBZK7hMXvp6oEPfAu11m95F61_kGV3Ptg@mail.gmail.com>
-	<2E89032DDAA8B9408CB92943514A0337A56F53A6@SW-EX-MBX01.diasemi.com>
-Date: Wed, 11 Jun 2014 09:22:27 -0500
-Message-ID: <CAL_JsqJJz2S4fn25pJK5UDG9j36JKnS++VQCMhbdxQd_4-2OFQ@mail.gmail.com>
-Subject: Re: [PATCH 8/8] DT: Add vendor prefix for Dialog Semiconductor Ltd.
-From: Rob Herring <robherring2@gmail.com>
-To: "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Jonathan Cameron <jic23@kernel.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Support Opensource <Support.Opensource@diasemi.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: Ac+FcWKntpCKBEuUQ+yLzmmcRrUg6gABuSLAAAFoncA=
+Content-Language: en-ca
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 11, 2014 at 8:17 AM, Opensource [Adam Thomson]
-<Adam.Thomson.Opensource@diasemi.com> wrote:
->> On Wed, Jun 11, 2014 at 13:43, Rob Herring wrote:
->>
->> dlg is the correct one and seems to be the most widely used, so we
->> should go with that and mark the others deprecated.
->>
->> diasemi is documented for the da9210, but not used anywhere.
->>
->> There appears to be 2 different da9053 bindings. I'd guess the dialog
->> variant used on 2 i.MX boards is not used. Other i.MX boards use the
->> dlg version. I'm not sure what is going on with da9055. Please sort
->> these out.
->>
->
-> The intention is to update the other Dialog drivers after we've agreed this
-> prefix. With regards to da9055, what's the issue here as I believe that uses
-> the 'dlg' prefix already?
 
-In documentation it does, but I'm not sure how these strings are used:
+On 2014.06.11 06:42 Doug Smythies wrote:
+On 2014.06.11 05:34 Stratos Karafotis wrote:
 
-drivers/mfd/da9055-core.c:              .of_compatible = "dialog,da9055-gpio",
-drivers/mfd/da9055-core.c:              .of_compatible =
-"dialog,da9055-regulator",
-drivers/mfd/da9055-core.c:              .of_compatible =
-"dialog,da9055-regulator",
-drivers/mfd/da9055-core.c:              .of_compatible =
-"dialog,da9055-regulator",
-drivers/mfd/da9055-core.c:              .of_compatible =
-"dialog,da9055-regulator",
-drivers/mfd/da9055-core.c:              .of_compatible =
-"dialog,da9055-regulator",
-drivers/mfd/da9055-core.c:              .of_compatible =
-"dialog,da9055-regulator",
-drivers/mfd/da9055-core.c:              .of_compatible =
-"dialog,da9055-regulator",
-drivers/mfd/da9055-core.c:              .of_compatible =
-"dialog,da9055-regulator",
-drivers/mfd/da9055-core.c:              .of_compatible = "dialog,da9055-onkey",
-drivers/mfd/da9055-core.c:              .of_compatible = "dialog,da9055-rtc",
-drivers/mfd/da9055-core.c:              .of_compatible = "dialog,da9055-hwmon",
-drivers/mfd/da9055-core.c:              .of_compatible =
-"dialog,da9055-watchdog",
+>> 	if ((rem << 1) >= int_tofp(sample->mperf))
+>> -		core_pct += 1;
+>> +		core_pct += int_tofp(1);
+>> 
+>> 	sample->freq = fp_toint(
+>> 		mul_fp(int_tofp(cpu->pstate.max_pstate * 1000), core_pct));
+>> -- 
+>> 1.9.3
 
-Rob
+> No.
+
+> The intent was only ever to round properly the pseudo floating
+> point result of the divide.
+> It was much more important (ugh, well 4 times more) when
+> FRACBITS was still 6, which also got changed to 8 in a recent
+> patch.
+
+I forgot to mention there are other related roundings that are being considered.
+I do not recall clearly, but I think Dirk and I agreed to hold off until
+the recent panics had settled.
+
+The analysis as to the importance needs to be re-done, as it was all done when FRACBITS was 6. Things were very "chunky" when
+FRACBITS was 6.
+
+These are what I was considering putting forward:
+
+static inline int32_t fp_toint(int32_t x)
+{
+        if (x >= 0)
+                x +=  (1 << (FRAC_BITS -1));
+         else
+                x -=  (1 << (FRAC_BITS -1));
+        return (x >> FRAC_BITS);
+}
+
+static inline int32_t mul_fp(int32_t x, int32_t y)
+{
+        int64_t temp;
+        temp = (int64_t)x * (int64_t)y;
+        if (temp >= 0)
+                temp +=  (1 << (FRAC_BITS -1));
+         else
+                temp -=  (1 << (FRAC_BITS -1));
+        return (temp >> FRAC_BITS);
+}
+
+static inline int32_t div_fp(int32_t x, int32_t y)
+{
+
+        /* currently, there are only positive numbers to worry about here */
+
+        int32_t rem;
+
+        x = div_s64_rem((int64_t)x << FRAC_BITS, (int64_t)y, &rem);
+        if((rem << 1) >= y) x++;
+        return(x);
+}
+
+
