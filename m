@@ -1,67 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752647AbaFKUUc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 16:20:32 -0400
-Received: from sema.semaphore.gr ([78.46.194.137]:32910 "EHLO
-	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751328AbaFKUUa (ORCPT
+	id S1752665AbaFKUWE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 16:22:04 -0400
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:63207 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750963AbaFKUWC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 16:20:30 -0400
-Message-ID: <5398BA0B.7070903@semaphore.gr>
-Date: Wed, 11 Jun 2014 23:20:27 +0300
-From: Stratos Karafotis <stratosk@semaphore.gr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 11 Jun 2014 16:22:02 -0400
 MIME-Version: 1.0
-To: Doug Smythies <dsmythies@telus.net>
-CC: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org, rjw@rjwysocki.net,
-        viresh.kumar@linaro.org, dirk.j.brandewie@intel.com
-Subject: Re: [PATCH] cpufreq: intel_pstate: Fix rounding of core_pct
-References: <1402490012-19969-1-git-send-email-stratosk@semaphore.gr> <009b01cf857a$d5032090$7f0961b0$@net> <539862DB.9060905@semaphore.gr> <00a001cf8586$24eb5c70$6ec21550$@net>
-In-Reply-To: <00a001cf8586$24eb5c70$6ec21550$@net>
+In-Reply-To: <CAF6AEGs2Y1G-8R5tDcgXKOh43nP3_-0SyebLugcF6QEUtkQNBQ@mail.gmail.com>
+References: <1401345427-5299-1-git-send-email-benjamin.gaignard@linaro.org>
+	<CAF6AEGs2Y1G-8R5tDcgXKOh43nP3_-0SyebLugcF6QEUtkQNBQ@mail.gmail.com>
+Date: Wed, 11 Jun 2014 16:22:00 -0400
+Message-ID: <CAF6AEGtgvjGkhBuOHuC1Mi1BPSsyte-vO7Wh1T=83cKfRfs0yQ@mail.gmail.com>
+Subject: Re: [PATCH v4 00/11] Add DRM for stih4xx platforms
+From: Rob Clark <robdclark@gmail.com>
+To: Benjamin Gaignard <benjamin.gaignard@linaro.org>
+Cc: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        David Airlie <airlied@linux.ie>, Lee Jones <lee.jones@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/2014 06:02 μμ, Doug Smythies wrote:
-> 
-> On 2104.06.11 07:08 Stratos Karafotis wrote:
->> On 11/06/2014 04:41 μμ, Doug Smythies wrote:
+On Wed, Jun 11, 2014 at 2:37 PM, Rob Clark <robdclark@gmail.com> wrote:
+> On Thu, May 29, 2014 at 2:36 AM, Benjamin Gaignard
+> <benjamin.gaignard@linaro.org> wrote:
+>> This series of patches add the support of DRM/KMS drivers for STMicroelectronics
+>> chipsets stih416 and stih407.
 >>
->> No.
+>> version 4:
+>>         - Remove depency between TVout it subdevices HDMI and HDA
+>>         - Rework and simplify VTG and VTAC code
+>>         - Fix numbers of typo and indentation
+>>         - Remove debug (will be push in separate patches)
+>>         - Fix remarks done in previous patcheset
 >>
->> The intent was only ever to round properly the pseudo floating point result of the divide.
->> It was much more important (ugh, well 4 times more) when FRACBITS was still 6, which also got changed to 8 in a recent patch.
+>>         patches could be found here: git://git.linaro.org/people/benjamin.gaignard/kernel.git
+>>         on branch: drm_kms_for_next-v4
 >>
-> 
-> Are you sure?
-> 
-> Yes.
-> 
->> This rounding was very recently added.
->> As far as I can understand, I don't see the meaning of this rounding, as is.
->> Even if FRAC_BITS was 6, I think it would have almost no improvement in
->> calculations.
-> 
-> Note: I had not seen this e-mail when I wrote a few minutes ago:
-> 
-> You may be correct.
-> If Dirk agrees, I will re-analyse the entire driver for rounding effects soon.
-> When FRACBITS was 6 there were subtle cases where the driver would get stuck, and not make a final pstate change, with the default PID gains.
-> Other things have changed, and the analysis needs to be re-done.
-> 
+>> version 3:
+>>         - Correctly split code between probe and bind funtions
+>>         - Squash some commits
+>>         - remove HQ-VDP device code to have a smaller patcheset,
+>>           we will introduce it later.
+>>
+>>         patches could be found here: git://git.linaro.org/people/benjamin.gaignard/kernel.git
+>>         on branch: drm_kms_for_next-v3
+>>
+>> version 2:
+>>         - Use componentized device instead of register sub-devices in master
+>>         driver probe function
+>>         - Fix Makefile and Kconfig to only allow built-in compilation
+>>
+>>         patches could be found here: git://git.linaro.org/people/benjamin.gaignard/kernel.git
+>>         on branch: drm_kms_for_next-v2
+>>
+>> version 1:
+>>         - First path submission
+>>
+>> Hardware is split in two main blocks: Compositor and TVout. Each of them
+>> includes specific hardware IPs and the display timing are controlled by a specific
+>> Video Timing Generator hardware IP (VTG).
+>>
+>> Compositor is made of the follow hardware IPs:
+>>  - GDP (Generic Display Pipeline) which is an entry point for graphic (RGB)
+>>    buffers
+>>  - VDP (Video Diplay Pipeline) which is an entry point for video (YUV) buffers
+>>  - HQVDP (High Quality Video Display Processor) that supports scaling,
+>>    deinterlacing and some miscellaneous image quality improvements.
+>>    It fetches the Video decoded buffers from memory, processes them and pushes
+>>    them to the Compositor through a HW dedicated bus.
+>>  - Mixer is responsible of mixing all the entries depending of their
+>>    respective z-order and layout
+>>
+>> TVout is divided in 3 parts:
+>>  - HDMI to generate HDMI signals, depending of chipset version HDMI phy can
+>>    change.
+>>  - HDA to generate signals for HD analog TV
+>>  - VIP to control/switch data path coming from Compositor
+>>
+>> On stih416 compositor and Tvout are on different dies so a Video Trafic Advance
+>> inter-die Communication mechanism (VTAC) is needed.
+>>
+>> +---------------------------------------------+   +----------------------------------------+
+>> | +-------------------------------+   +----+  |   |  +----+   +--------------------------+ |
+>> | |                               |   |    |  |   |  |    |   |  +---------+     +----+  | |
+>> | | +----+              +------+  |   |    |  |   |  |    |   |  | VIP     |---->|HDMI|  | |
+>> | | |GPD +------------->|      |  |   |    |  |   |  |    |   |  |         |     +----+  | |
+>> | | +----+              |Mixer |--|-->|    |  |   |  |    |---|->| switcher|             | |
+>> | |                     |      |  |   |    |  |   |  |    |   |  |         |     +----+  | |
+>> | |                     |      |  |   |    |  |   |  |    |   |  |         |---->|HDA |  | |
+>> | |                     +------+  |   |VTAC|========>|VTAC|   |  +---------+     +----+  | |
+>> | |                               |   |    |  |   |  |    |   |                          | |
+>> | |         Compositor            |   |    |  |   |  |    |   |           TVout          | |
+>> | +-------------------------------+   |    |  |   |  |    |   +--------------------------+ |
+>> |                      ^              |    |  |   |  |    |             ^                  |
+>> |                      |              |    |  |   |  |    |             |                  |
+>> |               +--------------+      |    |  |   |  |    |      +-------------+           |
+>> |               | VTG (master) |----->|    |  |   |  |    |----->| VTG (slave) |           |
+>> |               +--------------+      +----+  |   |  +----+      +-------------+           |
+>> |Digital die                                  |   |                              Analog Die|
+>> +---------------------------------------------+   +----------------------------------------+
+>>
+>> On stih407 Compositor and Tvout are on the same die
+>>
+>> +-----------------------------------------------------------------+
+>> | +-------------------------------+  +--------------------------+ |
+>> | |                               |  |  +---------+     +----+  | |
+>> | | +----+              +------+  |  |  | VIP     |---->|HDMI|  | |
+>> | | |GPD +------------->|      |  |  |  |         |     +----+  | |
+>> | | +----+              |Mixer |--|--|->| switcher|             | |
+>> | | +----+   +-----+    |      |  |  |  |         |     +----+  | |
+>> | | |VDP +-->+HQVDP+--->|      |  |  |  |         |---->|HDA |  | |
+>> | | +----+   +-----+    +------+  |  |  +---------+     +----+  | |
+>> | |                               |  |                          | |
+>> | |         Compositor            |  |           TVout          | |
+>> | +-------------------------------+  +--------------------------+ |
+>> |                              ^        ^                         |
+>> |                              |        |                         |
+>> |                           +--------------+                      |
+>> |                           |     VTG      |                      |
+>> |                           +--------------+                      |
+>> |Digital die                                                      |
+>> +-----------------------------------------------------------------+
+>>
+>> In addition of the drivers for the IPs listed before a thin I2C driver (hdmiddc) is used
+>> by HDMI driver to retrieve EDID for monitor.
+>>
+>> To unify interfaces of GDP and VDP we create a "layer" interface called by
+>> compositor to control both GPD and VDP.
+>
+> I think it would be helpful to describe how you map the hardware to
+> kms constructs (planes/crtcs/etc).
+>
+> Also, I kinda like sticking this sort of info (along w/ block diagrams
+> above, etc), in a notes/readme file.  Although I seem to be in the
+> minority about that.  But plenty of times when diving into other
+> drivers I've wished they had done the same :-)
+>
+> For msm I think I more or less copy/paste the cover-letter and drm/msm/NOTES..
 
-Could you please elaborate a little bit more what we need these 2 lines below?
+btw, Daniel started converting i915 over to docbook.. I probably
+should look at converting some/all of my NOTES over to docbook one of
+these days..
 
-        if ((rem << 1) >= int_tofp(sample->mperf))
-                core_pct += 1;
+Anyway, I think I mostly managed to cover the parts that Thierry did
+not get to yet.  Although you did seem to squash/drop/rearrange some
+parts, so hopefully I didn't miss something as a result.
 
-Because nothing is mentioned for them in commit's changelog.
-Do we need to round core_pct or not?
-Because if we try to round it, I think this patch should work.
+BR,
+-R
 
-Thanks,
-Stratos
-
-
+>
+> BR,
+> -R
+>
+>
+>> Hardware have memory contraints (alignment, contiguous) so we use CMA drm helpers functions
+>> to allocate frame buffer.
+>>
+>> File naming convention is:
+>>  - sti_* for IPs drivers
+>>  - sti_drm_* for drm functions implementation.
+>>
+>> Benjamin Gaignard (11):
+>>   drm: sti: add bindings for DRM driver
+>>   drm: sti: add VTG driver
+>>   drm: sti: add VTAC drivers
+>>   drm: sti: add HDMI driver
+>>   drm: sti: add HDA driver
+>>   drm: sti: add TVOut driver
+>>   drm: sti: add GDP layer
+>>   drm: sti: add VID layer
+>>   drm: sti: add Mixer
+>>   drm: sti: add Compositor
+>>   drm: sti: Add DRM driver itself
+>>
+>>  .../devicetree/bindings/gpu/st,stih4xx.txt         | 189 ++++++
+>>  drivers/gpu/drm/Kconfig                            |   2 +
+>>  drivers/gpu/drm/Makefile                           |   1 +
+>>  drivers/gpu/drm/sti/Kconfig                        |  14 +
+>>  drivers/gpu/drm/sti/Makefile                       |  19 +
+>>  drivers/gpu/drm/sti/sti_compositor.c               | 265 ++++++++
+>>  drivers/gpu/drm/sti/sti_compositor.h               |  90 +++
+>>  drivers/gpu/drm/sti/sti_drm_connector.c            | 114 ++++
+>>  drivers/gpu/drm/sti/sti_drm_connector.h            |  55 ++
+>>  drivers/gpu/drm/sti/sti_drm_crtc.c                 | 436 ++++++++++++
+>>  drivers/gpu/drm/sti/sti_drm_crtc.h                 |  21 +
+>>  drivers/gpu/drm/sti/sti_drm_drv.c                  | 229 +++++++
+>>  drivers/gpu/drm/sti/sti_drm_drv.h                  |  35 +
+>>  drivers/gpu/drm/sti/sti_drm_encoder.c              | 108 +++
+>>  drivers/gpu/drm/sti/sti_drm_encoder.h              |  17 +
+>>  drivers/gpu/drm/sti/sti_drm_plane.c                | 192 ++++++
+>>  drivers/gpu/drm/sti/sti_drm_plane.h                |  17 +
+>>  drivers/gpu/drm/sti/sti_gdp.c                      | 512 ++++++++++++++
+>>  drivers/gpu/drm/sti/sti_gdp.h                      |  73 ++
+>>  drivers/gpu/drm/sti/sti_hda.c                      | 727 ++++++++++++++++++++
+>>  drivers/gpu/drm/sti/sti_hdmi.c                     | 748 +++++++++++++++++++++
+>>  drivers/gpu/drm/sti/sti_hdmi.h                     |  88 +++
+>>  drivers/gpu/drm/sti/sti_hdmi_tx3g0c55phy.c         | 336 +++++++++
+>>  drivers/gpu/drm/sti/sti_hdmi_tx3g0c55phy.h         |  14 +
+>>  drivers/gpu/drm/sti/sti_hdmi_tx3g4c28phy.c         | 211 ++++++
+>>  drivers/gpu/drm/sti/sti_hdmi_tx3g4c28phy.h         |  14 +
+>>  drivers/gpu/drm/sti/sti_layer.c                    | 312 +++++++++
+>>  drivers/gpu/drm/sti/sti_layer.h                    | 114 ++++
+>>  drivers/gpu/drm/sti/sti_mixer.c                    | 249 +++++++
+>>  drivers/gpu/drm/sti/sti_mixer.h                    |  52 ++
+>>  drivers/gpu/drm/sti/sti_tvout.c                    | 687 +++++++++++++++++++
+>>  drivers/gpu/drm/sti/sti_tvout.h                    |  18 +
+>>  drivers/gpu/drm/sti/sti_vid.c                      | 145 ++++
+>>  drivers/gpu/drm/sti/sti_vid.h                      |  33 +
+>>  drivers/gpu/drm/sti/sti_vtac.c                     | 211 ++++++
+>>  drivers/gpu/drm/sti/sti_vtg.c                      | 356 ++++++++++
+>>  drivers/gpu/drm/sti/sti_vtg.h                      |  28 +
+>>  37 files changed, 6732 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/gpu/st,stih4xx.txt
+>>  create mode 100644 drivers/gpu/drm/sti/Kconfig
+>>  create mode 100644 drivers/gpu/drm/sti/Makefile
+>>  create mode 100644 drivers/gpu/drm/sti/sti_compositor.c
+>>  create mode 100644 drivers/gpu/drm/sti/sti_compositor.h
+>>  create mode 100644 drivers/gpu/drm/sti/sti_drm_connector.c
+>>  create mode 100644 drivers/gpu/drm/sti/sti_drm_connector.h
+>>  create mode 100644 drivers/gpu/drm/sti/sti_drm_crtc.c
+>>  create mode 100644 drivers/gpu/drm/sti/sti_drm_crtc.h
+>>  create mode 100644 drivers/gpu/drm/sti/sti_drm_drv.c
+>>  create mode 100644 drivers/gpu/drm/sti/sti_drm_drv.h
+>>  create mode 100644 drivers/gpu/drm/sti/sti_drm_encoder.c
+>>  create mode 100644 drivers/gpu/drm/sti/sti_drm_encoder.h
+>>  create mode 100644 drivers/gpu/drm/sti/sti_drm_plane.c
+>>  create mode 100644 drivers/gpu/drm/sti/sti_drm_plane.h
+>>  create mode 100644 drivers/gpu/drm/sti/sti_gdp.c
+>>  create mode 100644 drivers/gpu/drm/sti/sti_gdp.h
+>>  create mode 100644 drivers/gpu/drm/sti/sti_hda.c
+>>  create mode 100644 drivers/gpu/drm/sti/sti_hdmi.c
+>>  create mode 100644 drivers/gpu/drm/sti/sti_hdmi.h
+>>  create mode 100644 drivers/gpu/drm/sti/sti_hdmi_tx3g0c55phy.c
+>>  create mode 100644 drivers/gpu/drm/sti/sti_hdmi_tx3g0c55phy.h
+>>  create mode 100644 drivers/gpu/drm/sti/sti_hdmi_tx3g4c28phy.c
+>>  create mode 100644 drivers/gpu/drm/sti/sti_hdmi_tx3g4c28phy.h
+>>  create mode 100644 drivers/gpu/drm/sti/sti_layer.c
+>>  create mode 100644 drivers/gpu/drm/sti/sti_layer.h
+>>  create mode 100644 drivers/gpu/drm/sti/sti_mixer.c
+>>  create mode 100644 drivers/gpu/drm/sti/sti_mixer.h
+>>  create mode 100644 drivers/gpu/drm/sti/sti_tvout.c
+>>  create mode 100644 drivers/gpu/drm/sti/sti_tvout.h
+>>  create mode 100644 drivers/gpu/drm/sti/sti_vid.c
+>>  create mode 100644 drivers/gpu/drm/sti/sti_vid.h
+>>  create mode 100644 drivers/gpu/drm/sti/sti_vtac.c
+>>  create mode 100644 drivers/gpu/drm/sti/sti_vtg.c
+>>  create mode 100644 drivers/gpu/drm/sti/sti_vtg.h
+>>
+>> --
+>> 1.9.1
+>>
+>> _______________________________________________
+>> dri-devel mailing list
+>> dri-devel@lists.freedesktop.org
+>> http://lists.freedesktop.org/mailman/listinfo/dri-devel
