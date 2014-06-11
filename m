@@ -1,131 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753339AbaFKLt1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 07:49:27 -0400
-Received: from verein.lst.de ([213.95.11.211]:42427 "EHLO newverein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750735AbaFKLt0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 07:49:26 -0400
-Date: Wed, 11 Jun 2014 13:49:23 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] block: remove elv_abort_queue and blk_abort_flushes
-Message-ID: <20140611114923.GA21981@lst.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1755348AbaFKLti (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 07:49:38 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:37959 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752426AbaFKLtg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 07:49:36 -0400
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: [PATCH] dma-mapping: Provide write-combine allocations
+Date: Wed, 11 Jun 2014 13:46:36 +0200
+Message-Id: <1402487196-5433-1-git-send-email-thierry.reding@gmail.com>
+X-Mailer: git-send-email 1.9.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-elv_abort_queue has no callers, and blk_abort_flushes is only called by
-elv_abort_queue.
+From: Thierry Reding <treding@nvidia.com>
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+Provide an implementation for dma_{alloc,free,mmap}_writecombine() when
+the architecture supports DMA attributes.
 
-diff --git a/block/blk-flush.c b/block/blk-flush.c
-index 8ffee4b..3cb5e9e 100644
---- a/block/blk-flush.c
-+++ b/block/blk-flush.c
-@@ -422,44 +422,6 @@ void blk_insert_flush(struct request *rq)
- }
+Signed-off-by: Thierry Reding <treding@nvidia.com>
+---
+ arch/arm/include/asm/dma-mapping.h       | 16 ----------------
+ include/asm-generic/dma-mapping-common.h |  8 --------
+ include/linux/dma-mapping.h              | 26 ++++++++++++++++++++++++++
+ 3 files changed, 26 insertions(+), 24 deletions(-)
+
+diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
+index c45b61a4b4a5..85738b200023 100644
+--- a/arch/arm/include/asm/dma-mapping.h
++++ b/arch/arm/include/asm/dma-mapping.h
+@@ -265,22 +265,6 @@ extern int arm_dma_mmap(struct device *dev, struct vm_area_struct *vma,
+ 			void *cpu_addr, dma_addr_t dma_addr, size_t size,
+ 			struct dma_attrs *attrs);
  
- /**
-- * blk_abort_flushes - @q is being aborted, abort flush requests
-- * @q: request_queue being aborted
-- *
-- * To be called from elv_abort_queue().  @q is being aborted.  Prepare all
-- * FLUSH/FUA requests for abortion.
-- *
-- * CONTEXT:
-- * spin_lock_irq(q->queue_lock)
-- */
--void blk_abort_flushes(struct request_queue *q)
+-static inline void *dma_alloc_writecombine(struct device *dev, size_t size,
+-				       dma_addr_t *dma_handle, gfp_t flag)
 -{
--	struct request *rq, *n;
--	int i;
--
--	/*
--	 * Requests in flight for data are already owned by the dispatch
--	 * queue or the device driver.  Just restore for normal completion.
--	 */
--	list_for_each_entry_safe(rq, n, &q->flush_data_in_flight, flush.list) {
--		list_del_init(&rq->flush.list);
--		blk_flush_restore_request(rq);
--	}
--
--	/*
--	 * We need to give away requests on flush queues.  Restore for
--	 * normal completion and put them on the dispatch queue.
--	 */
--	for (i = 0; i < ARRAY_SIZE(q->flush_queue); i++) {
--		list_for_each_entry_safe(rq, n, &q->flush_queue[i],
--					 flush.list) {
--			list_del_init(&rq->flush.list);
--			blk_flush_restore_request(rq);
--			list_add_tail(&rq->queuelist, &q->queue_head);
--		}
--	}
+-	DEFINE_DMA_ATTRS(attrs);
+-	dma_set_attr(DMA_ATTR_WRITE_COMBINE, &attrs);
+-	return dma_alloc_attrs(dev, size, dma_handle, flag, &attrs);
 -}
 -
--/**
-  * blkdev_issue_flush - queue a flush
-  * @bdev:	blockdev to issue flush for
-  * @gfp_mask:	memory allocation flags (for bio_alloc)
-diff --git a/block/blk.h b/block/blk.h
-index 45385e9..6748c4f 100644
---- a/block/blk.h
-+++ b/block/blk.h
-@@ -84,7 +84,6 @@ static inline void blk_clear_rq_complete(struct request *rq)
- #define ELV_ON_HASH(rq) ((rq)->cmd_flags & REQ_HASHED)
- 
- void blk_insert_flush(struct request *rq);
--void blk_abort_flushes(struct request_queue *q);
- 
- static inline struct request *__elv_next_request(struct request_queue *q)
- {
-diff --git a/block/elevator.c b/block/elevator.c
-index 1e01b66..24c28b6 100644
---- a/block/elevator.c
-+++ b/block/elevator.c
-@@ -729,26 +729,6 @@ int elv_may_queue(struct request_queue *q, int rw)
- 	return ELV_MQUEUE_MAY;
- }
- 
--void elv_abort_queue(struct request_queue *q)
+-static inline void dma_free_writecombine(struct device *dev, size_t size,
+-				     void *cpu_addr, dma_addr_t dma_handle)
 -{
--	struct request *rq;
--
--	blk_abort_flushes(q);
--
--	while (!list_empty(&q->queue_head)) {
--		rq = list_entry_rq(q->queue_head.next);
--		rq->cmd_flags |= REQ_QUIET;
--		trace_block_rq_abort(q, rq);
--		/*
--		 * Mark this request as started so we don't trigger
--		 * any debug logic in the end I/O path.
--		 */
--		blk_start_request(rq);
--		__blk_end_request_all(rq, -EIO);
--	}
+-	DEFINE_DMA_ATTRS(attrs);
+-	dma_set_attr(DMA_ATTR_WRITE_COMBINE, &attrs);
+-	return dma_free_attrs(dev, size, cpu_addr, dma_handle, &attrs);
 -}
--EXPORT_SYMBOL(elv_abort_queue);
 -
- void elv_completed_request(struct request_queue *q, struct request *rq)
- {
- 	struct elevator_queue *e = q->elevator;
-diff --git a/include/linux/elevator.h b/include/linux/elevator.h
-index df63bd3..45a9147 100644
---- a/include/linux/elevator.h
-+++ b/include/linux/elevator.h
-@@ -133,7 +133,6 @@ extern struct request *elv_latter_request(struct request_queue *, struct request
- extern int elv_register_queue(struct request_queue *q);
- extern void elv_unregister_queue(struct request_queue *q);
- extern int elv_may_queue(struct request_queue *, int);
--extern void elv_abort_queue(struct request_queue *);
- extern void elv_completed_request(struct request_queue *, struct request *);
- extern int elv_set_request(struct request_queue *q, struct request *rq,
- 			   struct bio *bio, gfp_t gfp_mask);
+ /*
+  * This can be called during early boot to increase the size of the atomic
+  * coherent DMA pool above the default value of 256KiB. It must be called
+diff --git a/include/asm-generic/dma-mapping-common.h b/include/asm-generic/dma-mapping-common.h
+index de8bf89940f8..d137431bf26f 100644
+--- a/include/asm-generic/dma-mapping-common.h
++++ b/include/asm-generic/dma-mapping-common.h
+@@ -205,14 +205,6 @@ dma_mmap_attrs(struct device *dev, struct vm_area_struct *vma, void *cpu_addr,
+ 
+ #define dma_mmap_coherent(d, v, c, h, s) dma_mmap_attrs(d, v, c, h, s, NULL)
+ 
+-static inline int dma_mmap_writecombine(struct device *dev, struct vm_area_struct *vma,
+-		      void *cpu_addr, dma_addr_t dma_addr, size_t size)
+-{
+-	DEFINE_DMA_ATTRS(attrs);
+-	dma_set_attr(DMA_ATTR_WRITE_COMBINE, &attrs);
+-	return dma_mmap_attrs(dev, vma, cpu_addr, dma_addr, size, &attrs);
+-}
+-
+ int
+ dma_common_get_sgtable(struct device *dev, struct sg_table *sgt,
+ 		       void *cpu_addr, dma_addr_t dma_addr, size_t size);
+diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
+index 931b70986272..d5d388160f42 100644
+--- a/include/linux/dma-mapping.h
++++ b/include/linux/dma-mapping.h
+@@ -263,6 +263,32 @@ struct dma_attrs;
+ #define dma_unmap_sg_attrs(dev, sgl, nents, dir, attrs) \
+ 	dma_unmap_sg(dev, sgl, nents, dir)
+ 
++#else
++static inline void *dma_alloc_writecombine(struct device *dev, size_t size,
++					   dma_addr_t *dma_addr, gfp_t gfp)
++{
++	DEFINE_DMA_ATTRS(attrs);
++	dma_set_attr(DMA_ATTR_WRITE_COMBINE, &attrs);
++	return dma_alloc_attrs(dev, size, dma_addr, gfp, &attrs);
++}
++
++static inline void dma_free_writecombine(struct device *dev, size_t size,
++					 void *cpu_addr, dma_addr_t dma_addr)
++{
++	DEFINE_DMA_ATTRS(attrs);
++	dma_set_attr(DMA_ATTR_WRITE_COMBINE, &attrs);
++	return dma_free_attrs(dev, size, cpu_addr, dma_addr, &attrs);
++}
++
++static inline int dma_mmap_writecombine(struct device *dev,
++					struct vm_area_struct *vma,
++					void *cpu_addr, dma_addr_t dma_addr,
++					size_t size)
++{
++	DEFINE_DMA_ATTRS(attrs);
++	dma_set_attr(DMA_ATTR_WRITE_COMBINE, &attrs);
++	return dma_mmap_attrs(dev, vma, cpu_addr, dma_addr, size, &attrs);
++}
+ #endif /* CONFIG_HAVE_DMA_ATTRS */
+ 
+ #ifdef CONFIG_NEED_DMA_MAP_STATE
+-- 
+1.9.2
+
