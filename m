@@ -1,137 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755311AbaFKCsw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 22:48:52 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:52745 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751619AbaFKCsv (ORCPT
+	id S1755346AbaFKCtr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 22:49:47 -0400
+Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:45465
+	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751619AbaFKCtp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 22:48:51 -0400
-X-Original-SENDERIP: 10.177.220.169
-X-Original-MAILFROM: minchan@kernel.org
-Date: Wed, 11 Jun 2014 11:48:55 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>, Mel Gorman <mgorman@suse.de>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 08/10] mm, compaction: pass gfp mask to compact_control
-Message-ID: <20140611024855.GH15630@bbox>
-References: <1402305982-6928-1-git-send-email-vbabka@suse.cz>
- <1402305982-6928-8-git-send-email-vbabka@suse.cz>
+	Tue, 10 Jun 2014 22:49:45 -0400
+Date: Wed, 11 Jun 2014 04:49:43 +0200
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, James Morris <jmorris@namei.org>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: Re: Change in security maintainer for a few weeks
+Message-ID: <20140611024943.GA25981@mail.hallyn.com>
+References: <20140605183050.GA5054@kroah.com>
+ <alpine.LRH.2.02.1406101517350.31746@tundra.namei.org>
+ <20140610202338.GC20499@kroah.com>
+ <1402450480.612.18.camel@dhcp-9-2-203-236.watson.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1402305982-6928-8-git-send-email-vbabka@suse.cz>
+In-Reply-To: <1402450480.612.18.camel@dhcp-9-2-203-236.watson.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 09, 2014 at 11:26:20AM +0200, Vlastimil Babka wrote:
-> From: David Rientjes <rientjes@google.com>
+Quoting Mimi Zohar (zohar@linux.vnet.ibm.com):
+> On Tue, 2014-06-10 at 13:23 -0700, Greg KH wrote: 
+> > On Tue, Jun 10, 2014 at 03:20:15PM +1000, James Morris wrote:
+> > > On Thu, 5 Jun 2014, Greg KH wrote:
+> > > 
+> > > > Hi all,
+> > > > 
+> > > > James has had to step back from doing kernel work for a few weeks, so
+> > > > I've offered to step up and handle the security patches to get shuttled
+> > > > to Linus for merging for a while.
+> > > > 
+> > > > I'll take his git tree on kernel.org and push those to Linus for
+> > > > 3.16-rc1, as those look like they have had proper testing in linux-next.
+> > > > 
+> > > > But there only seems to be 14 patches in there.  Are there pending
+> > > > patches that people have been sending and need to get in besides those?
+> > > > 
+> > > 
+> > > Thanks for stepping up.
+> > > 
+> > > I had to take urgent leave and was unable to access email until this week.
+> > > 
+> > > We really should have a co-maintainer for the security subsystem -- please 
+> > > feel free to nominate someone.
+> > > 
+> > > There are several good candidates, including Serge, Kees and Paul Moore.
+> > 
+> > As Serge has done it in the past when you are on vacation, I suggest he
+> > continue doing it.
 > 
-> struct compact_control currently converts the gfp mask to a migratetype, but we
-> need the entire gfp mask in a follow-up patch.
-> 
-> Pass the entire gfp mask as part of struct compact_control.
-> 
-> Signed-off-by: David Rientjes <rientjes@google.com>
-> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-> Cc: Minchan Kim <minchan@kernel.org>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> Cc: Michal Nazarewicz <mina86@mina86.com>
-> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: Rik van Riel <riel@redhat.com>
-> ---
->  mm/compaction.c | 12 +++++++-----
->  mm/internal.h   |  2 +-
->  2 files changed, 8 insertions(+), 6 deletions(-)
-> 
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index c339ccd..d1e30ba 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -965,8 +965,8 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
->  	return ISOLATE_SUCCESS;
->  }
->  
-> -static int compact_finished(struct zone *zone,
-> -			    struct compact_control *cc)
-> +static int compact_finished(struct zone *zone, struct compact_control *cc,
-> +			    const int migratetype)
+> As long as Serge agrees, that sounds good.
 
-If we has gfp_mask, we could use gfpflags_to_migratetype from cc->gfp_mask.
-What's is your intention?
+Sure, happy to do help however I can.
 
->  {
->  	unsigned int order;
->  	unsigned long watermark;
-> @@ -1012,7 +1012,7 @@ static int compact_finished(struct zone *zone,
->  		struct free_area *area = &zone->free_area[order];
->  
->  		/* Job done if page is free of the right migratetype */
-> -		if (!list_empty(&area->free_list[cc->migratetype]))
-> +		if (!list_empty(&area->free_list[migratetype]))
->  			return COMPACT_PARTIAL;
->  
->  		/* Job done if allocation would set block type */
-> @@ -1078,6 +1078,7 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
->  	int ret;
->  	unsigned long start_pfn = zone->zone_start_pfn;
->  	unsigned long end_pfn = zone_end_pfn(zone);
-> +	const int migratetype = gfpflags_to_migratetype(cc->gfp_mask);
->  	const bool sync = cc->mode != MIGRATE_ASYNC;
->  
->  	ret = compaction_suitable(zone, cc->order);
-> @@ -1120,7 +1121,8 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
->  
->  	migrate_prep_local();
->  
-> -	while ((ret = compact_finished(zone, cc)) == COMPACT_CONTINUE) {
-> +	while ((ret = compact_finished(zone, cc, migratetype)) ==
-> +						COMPACT_CONTINUE) {
->  		int err;
->  
->  		switch (isolate_migratepages(zone, cc)) {
-> @@ -1178,7 +1180,7 @@ static unsigned long compact_zone_order(struct zone *zone, int order,
->  		.nr_freepages = 0,
->  		.nr_migratepages = 0,
->  		.order = order,
-> -		.migratetype = gfpflags_to_migratetype(gfp_mask),
-> +		.gfp_mask = gfp_mask,
->  		.zone = zone,
->  		.mode = mode,
->  	};
-> diff --git a/mm/internal.h b/mm/internal.h
-> index 584d04f..af15461 100644
-> --- a/mm/internal.h
-> +++ b/mm/internal.h
-> @@ -149,7 +149,7 @@ struct compact_control {
->  	bool finished_update_migrate;
->  
->  	int order;			/* order a direct compactor needs */
-> -	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
-> +	const gfp_t gfp_mask;		/* gfp mask of a direct compactor */
->  	struct zone *zone;
->  	enum compact_contended contended; /* Signal need_sched() or lock
->  					   * contention detected during
-> -- 
-> 1.8.4.5
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
+-serge
