@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755441AbaFKJEg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 05:04:36 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:59827 "EHLO arroyo.ext.ti.com"
+	id S932103AbaFKJFA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 05:05:00 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:59826 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755748AbaFKI6x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 04:58:53 -0400
+	id S1755747AbaFKI6w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 04:58:52 -0400
 From: Roger Quadros <rogerq@ti.com>
 To: <tony@atomide.com>, <dwmw2@infradead.org>, <computersforpeace@gmail.com>
 CC: <kyungmin.park@samsung.com>, <pekon@ti.com>,
@@ -13,9 +13,9 @@ CC: <kyungmin.park@samsung.com>, <pekon@ti.com>,
         <nsekhar@ti.com>, <linux-omap@vger.kernel.org>,
         <linux-mtd@lists.infradead.org>, <devicetree@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
-Subject: [PATCH 28/36] ARM: OMAP2+: nand: Update gpmc_nand_init() to use generic_gpmc_init()
-Date: Wed, 11 Jun 2014 11:56:33 +0300
-Message-ID: <1402477001-31132-29-git-send-email-rogerq@ti.com>
+Subject: [PATCH 26/36] ARM: OMAP2+: gpmc-smc91x: Get rid of retime() from omap_smc91x_platform_data
+Date: Wed, 11 Jun 2014 11:56:31 +0300
+Message-ID: <1402477001-31132-27-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1402477001-31132-1-git-send-email-rogerq@ti.com>
 References: <1402477001-31132-1-git-send-email-rogerq@ti.com>
@@ -25,165 +25,144 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function should only be called by board init code for
-legacy boot.
+The retime() function is not provided by board files so get rid of
+it from omap_smc91x_platform_data().
 
-Re-arrange init order so that gpmc device is created after
-the gpmc platform data is initialized by board files.
-i.e. move omap_gpmc_init() to subsys_initcall.
-
-Load gpmc platform driver later in the boot process.
-i.e. move gpmc_init() to module_initcall.
-
-NOTE: this will break legacy boot since they call gpmc_cs_*()
-functions before gpmc_mem_init() is called. They will eventually
-be fixed.
+Instead change it to smc91c96_get_device_timing() to get the device
+timings.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- arch/arm/mach-omap2/gpmc-nand.c | 51 ++++++++---------------------------------
- arch/arm/mach-omap2/gpmc.c      | 17 +++++++++-----
- 2 files changed, 21 insertions(+), 47 deletions(-)
+ arch/arm/mach-omap2/board-3430sdp.c |  8 ++++--
+ arch/arm/mach-omap2/gpmc-smc91x.c   | 55 ++++++++++++++-----------------------
+ arch/arm/mach-omap2/gpmc-smc91x.h   |  1 -
+ 3 files changed, 27 insertions(+), 37 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/gpmc-nand.c b/arch/arm/mach-omap2/gpmc-nand.c
-index f7491d0..42371e3 100644
---- a/arch/arm/mach-omap2/gpmc-nand.c
-+++ b/arch/arm/mach-omap2/gpmc-nand.c
-@@ -25,9 +25,12 @@
- #define	NAND_IO_SIZE	4
+diff --git a/arch/arm/mach-omap2/board-3430sdp.c b/arch/arm/mach-omap2/board-3430sdp.c
+index d95d0ef..b781090 100644
+--- a/arch/arm/mach-omap2/board-3430sdp.c
++++ b/arch/arm/mach-omap2/board-3430sdp.c
+@@ -411,8 +411,12 @@ static int __init omap3430_i2c_init(void)
  
- static struct resource gpmc_nand_resource[] = {
-+/* GPMC driver will fixup all the resources, see gpmc_probe_legacy () */
- 	{
- 		/* GPMC I/O space */
- 		.flags		= IORESOURCE_MEM,
-+		.start		= 0,
-+		.end		= NAND_IO_SIZE - 1,
- 	},
- 	{
- 		/* GPMC register space */
-@@ -95,61 +98,27 @@ int gpmc_nand_init(struct omap_nand_platform_data *gpmc_nand_data,
+ static struct omap_smc91x_platform_data board_smc91x_data = {
+ 	.cs		= 3,
+-	.flags		= GPMC_MUX_ADD_DATA | GPMC_TIMINGS_SMC91C96 |
+-				IORESOURCE_IRQ_LOWLEVEL,
++	/*
++	 * Don't use GPMC_TIMINGS_SMC91C96 flag here as generic
++	 * timing doesn't seem to have worked.
++	 * Leave bootloader timing intact.
++	 */
++	.flags		= GPMC_MUX_ADD_DATA | IORESOURCE_IRQ_LOWLEVEL,
+ };
+ 
+ static void __init board_smc91x_init(void)
+diff --git a/arch/arm/mach-omap2/gpmc-smc91x.c b/arch/arm/mach-omap2/gpmc-smc91x.c
+index 61a0635..7f5d84a 100644
+--- a/arch/arm/mach-omap2/gpmc-smc91x.c
++++ b/arch/arm/mach-omap2/gpmc-smc91x.c
+@@ -59,10 +59,8 @@ static struct gpmc_settings smc91x_settings = {
+  * http://www.smsc.com/main/catalog/lan91c96.html
+  * REVISIT: Level shifters can add at least to the access latency.
+  */
+-static int smc91c96_gpmc_retime(void)
++static void smc91c96_get_device_timing(struct gpmc_device_timings *dev_t)
  {
- 	int err	= 0;
- 	struct gpmc_settings s;
--	struct device *dev = &gpmc_nand_device.dev;
--	struct resource res;
+-	struct gpmc_timings t;
+-	struct gpmc_device_timings dev_t;
+ 	const int t3 = 10;	/* Figure 12.2 read and 12.4 write */
+ 	const int t4_r = 20;	/* Figure 12.2 read */
+ 	const int t4_w = 5;	/* Figure 12.4 write */
+@@ -72,33 +70,19 @@ static int smc91c96_gpmc_retime(void)
+ 	const int t8 = 5;	/* Figure 12.4 write */
+ 	const int t20 = 185;	/* Figure 12.2 read and 12.4 write */
  
- 	memset(&s, 0, sizeof(struct gpmc_settings));
+-	/*
+-	 * FIXME: Calculate the address and data bus muxed timings.
+-	 * Note that at least adv_rd_off needs to be changed according
+-	 * to omap3430 TRM Figure 11-11. Are the sdp boards using the
+-	 * FPGA in between smc91x and omap as the timings are different
+-	 * from above?
+-	 */
+-	if (gpmc_cfg->flags & GPMC_MUX_ADD_DATA)
+-		return 0;
+-
+-	memset(&dev_t, 0, sizeof(dev_t));
+-
+-	dev_t.t_oeasu = t3 * 1000;
+-	dev_t.t_oe = t5 * 1000;
+-	dev_t.t_cez_r = t4_r * 1000;
+-	dev_t.t_oez = t6 * 1000;
+-	dev_t.t_rd_cycle = (t20 - t3) * 1000;
++	memset(dev_t, 0, sizeof(*dev_t));
  
- 	gpmc_nand_device.dev.platform_data = gpmc_nand_data;
+-	dev_t.t_weasu = t3 * 1000;
+-	dev_t.t_wpl = t7 * 1000;
+-	dev_t.t_wph = t8 * 1000;
+-	dev_t.t_cez_w = t4_w * 1000;
+-	dev_t.t_wr_cycle = (t20 - t3) * 1000;
++	dev_t->t_oeasu = t3 * 1000;
++	dev_t->t_oe = t5 * 1000;
++	dev_t->t_cez_r = t4_r * 1000;
++	dev_t->t_oez = t6 * 1000;
++	dev_t->t_rd_cycle = (t20 - t3) * 1000;
  
--	err = gpmc_cs_request(gpmc_nand_data->cs, NAND_IO_SIZE,
--				(unsigned long *)&gpmc_nand_resource[0].start);
--	if (err < 0) {
--		dev_err(dev, "Cannot request GPMC CS %d, error %d\n",
--			gpmc_nand_data->cs, err);
--		return err;
--	}
+-	gpmc_calc_timings(&t, &smc91x_settings, &dev_t);
 -
--	gpmc_nand_resource[0].end = gpmc_nand_resource[0].start +
--							NAND_IO_SIZE - 1;
--
--	gpmc_get_mem_resource(&res);
--	gpmc_nand_resource[1].start = res.start;
--	gpmc_nand_resource[1].end = res.end;
--
--	gpmc_nand_resource[2].start = gpmc_get_irq();
--
--	if (gpmc_t) {
--		err = gpmc_cs_set_timings(gpmc_nand_data->cs, gpmc_t);
--		if (err < 0) {
--			dev_err(dev, "Unable to set gpmc timings: %d\n", err);
--			return err;
--		}
--	}
--
- 	gpmc_set_legacy(gpmc_nand_data, &s);
- 
- 	s.device_nand = true;
- 
--	err = gpmc_cs_program_settings(gpmc_nand_data->cs, &s);
--	if (err < 0)
--		goto out_free_cs;
--
- 	if (!gpmc_hwecc_bch_capable(gpmc_nand_data->ecc_opt)) {
--		dev_err(dev, "Unsupported NAND ECC scheme selected\n");
-+		pr_err("%s: Unsupported NAND ECC scheme selected\n", __func__);
- 		return -EINVAL;
- 	}
- 
--	err = platform_device_register(&gpmc_nand_device);
--	if (err < 0) {
--		dev_err(dev, "Unable to register NAND device\n");
--		goto out_free_cs;
-+	err = gpmc_generic_init(gpmc_nand_data->cs, true,
-+				&s, NULL, gpmc_t,
-+				&gpmc_nand_device, sizeof(*gpmc_nand_data));
-+	if (err) {
-+		pr_err("%s: gpmc_generic_init() failed %d\n", __func__, err);
-+		return err;
- 	}
- 
- 	return 0;
--
--out_free_cs:
--	gpmc_cs_free(gpmc_nand_data->cs);
--
--	return err;
+-	return gpmc_cs_set_timings(gpmc_cfg->cs, &t);
++	dev_t->t_weasu = t3 * 1000;
++	dev_t->t_wpl = t7 * 1000;
++	dev_t->t_wph = t8 * 1000;
++	dev_t->t_cez_w = t4_w * 1000;
++	dev_t->t_wr_cycle = (t20 - t3) * 1000;
  }
-diff --git a/arch/arm/mach-omap2/gpmc.c b/arch/arm/mach-omap2/gpmc.c
-index 34545ca..7a667ca 100644
---- a/arch/arm/mach-omap2/gpmc.c
-+++ b/arch/arm/mach-omap2/gpmc.c
-@@ -1401,9 +1401,6 @@ static void gpmc_probe_legacy(struct platform_device *pdev)
- 	gpmc_cs_num = GPMC_CS_NUM;
- 	gpmc_nr_waitpins = GPMC_NR_WAITPINS;
  
--	if (!gpmc_pdata)
--		return;
+ /*
+@@ -110,12 +94,10 @@ void __init gpmc_smc91x_init(struct omap_smc91x_platform_data *board_data)
+ {
+ 	unsigned long cs_mem_base;
+ 	int ret;
++	struct gpmc_device_timings dev_t;
+ 
+ 	gpmc_cfg = board_data;
+ 
+-	if (gpmc_cfg->flags & GPMC_TIMINGS_SMC91C96)
+-		gpmc_cfg->retime = smc91c96_gpmc_retime;
 -
- 	for (i = 0; i < GPMC_CS_NUM; i++) {
- 		cs = &gpmc_pdata->cs[i];
- 		if (!cs->valid)
-@@ -1609,6 +1606,12 @@ static int gpmc_probe(struct platform_device *pdev)
- 		}
- 	} else {
- 		/* Legacy probing based on platform data */
-+		if (!dev->platform_data) {
-+			dev_err(dev, "No platform data\n");
-+			rc = -EINVAL;
-+			goto error;
-+		}
+ 	if (gpmc_cs_request(gpmc_cfg->cs, SZ_16M, &cs_mem_base) < 0) {
+ 		printk(KERN_ERR "Failed to request GPMC mem for smc91x\n");
+ 		return;
+@@ -137,10 +119,15 @@ void __init gpmc_smc91x_init(struct omap_smc91x_platform_data *board_data)
+ 	if (ret < 0)
+ 		goto free1;
+ 
+-	if (gpmc_cfg->retime) {
+-		ret = gpmc_cfg->retime();
+-		if (ret != 0)
++	if (gpmc_cfg->flags & GPMC_TIMINGS_SMC91C96) {
++		struct gpmc_timings gpmc_t;
 +
- 		gpmc_probe_legacy(pdev);
++		smc91c96_get_device_timing(&dev_t);
++		gpmc_calc_timings(&gpmc_t, &smc91x_settings, &dev_t);
++		if (gpmc_cs_set_timings(gpmc_cfg->cs, &gpmc_t)) {
++			pr_err("%s: failed to set GPMC timings\n", __func__);
+ 			goto free1;
++		}
  	}
  
-@@ -1669,7 +1672,7 @@ static __exit void gpmc_exit(void)
+ 	if (gpio_request_one(gpmc_cfg->gpio_irq, GPIOF_IN, "SMC91X irq") < 0)
+diff --git a/arch/arm/mach-omap2/gpmc-smc91x.h b/arch/arm/mach-omap2/gpmc-smc91x.h
+index b64fbee..1da09a0 100644
+--- a/arch/arm/mach-omap2/gpmc-smc91x.h
++++ b/arch/arm/mach-omap2/gpmc-smc91x.h
+@@ -22,7 +22,6 @@ struct omap_smc91x_platform_data {
+ 	int	gpio_reset;
+ 	int	wait_pin;	/* Optional GPMC_CONFIG1_WAITPINSELECT */
+ 	u32	flags;
+-	int	(*retime)(void);
+ };
  
- }
- 
--omap_postcore_initcall(gpmc_init);
-+module_init(gpmc_init);
- module_exit(gpmc_exit);
- 
- static int __init omap_gpmc_init(void)
-@@ -1691,12 +1694,14 @@ static int __init omap_gpmc_init(void)
- 		return -ENODEV;
- 	}
- 
--	pdev = omap_device_build(DEVICE_NAME, -1, oh, NULL, 0);
-+	pdev = omap_device_build(DEVICE_NAME, -1, oh, (void *)&gpmc_pdata,
-+				 sizeof(gpmc_pdata));
- 	WARN(IS_ERR(pdev), "could not build omap_device for %s\n", oh_name);
- 
- 	return PTR_RET(pdev);
- }
--omap_postcore_initcall(omap_gpmc_init);
-+/* must run after machine_init code. i.e. arch_init */
-+omap_subsys_initcall(omap_gpmc_init);
- 
- /**
-  * gpmc_generic_init - Initialize platform data for a Chip Select
+ #if defined(CONFIG_SMC91X) || \
 -- 
 1.8.3.2
 
