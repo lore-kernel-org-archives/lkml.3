@@ -1,95 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755735AbaFKNl0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 09:41:26 -0400
-Received: from cmta9.telus.net ([209.171.16.82]:57559 "EHLO cmta9.telus.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752127AbaFKNlY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 09:41:24 -0400
-X-Authority-Analysis: v=2.0 cv=e77Yv9V/ c=1 sm=2
- a=zJWegnE7BH9C0Gl4FFgQyA==:17 a=1chCufcSjPwA:10 a=LGgl8L9ij00A:10
- a=kj9zAlcOel0A:10 a=aatUQebYAAAA:8 a=Pyq9K9CWowscuQLKlpiwfMBGOR0=:19
- a=W84XC_uD7tEjqk4Cj1sA:9 a=CjuIK1q_8ugA:10 a=zJWegnE7BH9C0Gl4FFgQyA==:117
-X-Telus-Outbound-IP: 173.180.45.4
-From: "Doug Smythies" <dsmythies@telus.net>
-To: "'Stratos Karafotis'" <stratosk@semaphore.gr>, <rjw@rjwysocki.net>,
-        <viresh.kumar@linaro.org>, <dirk.j.brandewie@intel.com>
-Cc: <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-References: <1402490012-19969-1-git-send-email-stratosk@semaphore.gr>
-In-Reply-To: <1402490012-19969-1-git-send-email-stratosk@semaphore.gr>
-Subject: RE: [PATCH] cpufreq: intel_pstate: Fix rounding of core_pct
-Date: Wed, 11 Jun 2014 06:41:20 -0700
-Message-ID: <009b01cf857a$d5032090$7f0961b0$@net>
+	id S1755515AbaFKNn5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 09:43:57 -0400
+Received: from forward4m.mail.yandex.net ([37.140.138.4]:49606 "EHLO
+	forward4m.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751328AbaFKNn4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 09:43:56 -0400
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Tkhai Kirill <ktkhai@parallels.com>
+In-Reply-To: <20140611131536.GB21191@linux.vnet.ibm.com>
+References: <20140611093417.27807.2288.stgit@tkhai>
+	 <1402480330.32126.14.camel@tkhai>
+	 <20140611112411.GA21191@linux.vnet.ibm.com>
+	 <3732251402489254@web2m.yandex.ru> <20140611131536.GB21191@linux.vnet.ibm.com>
+Subject: Re: [PATCH 1/2] sched: Rework migrate_tasks()
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Ac+FcWKntpCKBEuUQ+yLzmmcRrUg6gABuSLA
-Content-Language: en-ca
+Message-Id: <4032471402494232@web2m.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Wed, 11 Jun 2014 17:43:52 +0400
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=koi8-r
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On 2014.06.11 05:34 Stratos Karafotis wrote:
 
-> Local variable core_pct holds fixed point values.
-> When we round it we add "1" to core_pct. This has almost
-> no effect.
+11.06.2014, 17:15, "Srikar Dronamraju" <srikar@linux.vnet.ibm.com>:
+>>> š* Kirill Tkhai <ktkhai@parallels.com> [2014-06-11 13:52:10]:
+>>>> ššCurrently migrate_tasks() skips throttled tasks,
+>>>> ššbecause they are not pickable by pick_next_task().
+>>> šBefore migrate_tasks() is called, we do call set_rq_offline(), in
+>>> šmigration_call().
+>>>
+>>> šShouldnt this take care of unthrottling the tasks and making sure that
+>>> šthey can be picked by pick_next_task().
+>> šIf we do this separate for every class, we'll have to do this 3 times.
+>> šFurthermore, deadline class does not have a list of throttled tasks.
+>> šSo we'll have to the same as I did: to lock tasklist_lock and to iterate
+>> šthrow all of the tasks in the system just to found deadline tasks.
 >
-> So, add int_toftp(1) to core_pct when rounding.
+> I think you misread my comment.
 >
-> For example, in a given sample point (values taken from
-> tracepoint) with:
-> aperf = 5024
-> mperf = 10619
+> Currently migrate_task() gets called from migration_call() and in the
+> migration_call() before migrate_tasks(), set_rq_offline() should put
+> tasks back using unthrottle_cfs_rq().
 >
-> the core_pct is (before rounding):
-> core_pct = 12111
-> fp_toint(core_pct) = 47
+> So my question is: Why are these tasks not getting unthrottled
+> through we are calling set_rq_offline? To me set_rq_offline is
+> calling the actual sched class routines to do the needful.
 >
-> After rounding:
-> core_pct = 12112
-> fp_toint(core_pct) = 47
->
-> After rounding with int_toftp(1):
-> core_pct = 12367
-> fp_toint(core_pct) = 48
->
-> Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
-> ---
->
-> Hi Rafael,
->
-> I'm sorry for submitting again in merge window, but
-> I thought that maybe we need this fix for 3.16.
->
->
-> drivers/cpufreq/intel_pstate.c | 2 +-
-> 1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-> index 4e7f492..dd80aa2 100644
-> --- a/drivers/cpufreq/intel_pstate.c
-> +++ b/drivers/cpufreq/intel_pstate.c
-> @@ -564,7 +564,7 @@ static inline void intel_pstate_calc_busy(struct cpudata *cpu)
-> 	core_pct = div_u64_rem(core_pct, int_tofp(sample->mperf), &rem);
-> 
-> 	if ((rem << 1) >= int_tofp(sample->mperf))
-> -		core_pct += 1;
-> +		core_pct += int_tofp(1);
-> 
-> 	sample->freq = fp_toint(
-> 		mul_fp(int_tofp(cpu->pstate.max_pstate * 1000), core_pct));
-> -- 
-> 1.9.3
+> I can understand about deadline tasks, because we don't have a deadline
+> But thats the only tasks that we need to fix.
 
-No.
+Hm, I tested that on fair class tasks. They used to disappear from
+/proc/sched_debug and used to hang. I'll check all once again.
 
-The intent was only ever to round properly the pseudo floating point result of the divide.
-It was much more important (ugh, well 4 times more) when FRACBITS was still 6, which also got changed to 8 in a recent patch.
+I'm agree with you, if set_rq_offline() already presents, we should use it.
 
-... Doug
+/me went to clarify why it does not work in my test.
 
-
+>>>> ššThese tasks stay on dead cpu even after they
+>>>> ššbecomes unthrottled. They are not schedulable
+>>>> šštill user manually changes their affinity or till
+>>>> ššcpu becomes alive again.
+>>> šIf we are still seeing tasks not being picked by pick_next_task(), then
+>>> šcan it probably mean that rq->rd was NULL?
+>> šUnthrottle functions dl_task_timer() and unthrottle_cfs_rq() put tasks and
+>> šqueues back. They do not look at rq->rd.
+>
+> What I meant was only if rq->rd isn't set, then we don't call
+> set_rq_offline, which seems very reasonable.
+> --
+> Thanks and Regards
+> Srikar Dronamraju
