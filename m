@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932523AbaFKPtV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 11:49:21 -0400
-Received: from mga03.intel.com ([143.182.124.21]:12092 "EHLO mga03.intel.com"
+	id S932607AbaFKPvN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 11:51:13 -0400
+Received: from mga03.intel.com ([143.182.124.21]:12535 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755687AbaFKPtT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 11:49:19 -0400
+	id S1752649AbaFKPvM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 11:51:12 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,458,1400050800"; 
-   d="scan'208";a="444333013"
+   d="scan'208";a="444333871"
 From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
@@ -17,9 +17,9 @@ Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
         Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
         Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: [RFC v2 6/7] perf: add api for pmus to write to AUX space
-Date: Wed, 11 Jun 2014 18:41:49 +0300
-Message-Id: <1402501310-31940-7-git-send-email-alexander.shishkin@linux.intel.com>
+Subject: [RFC v2 7/7] perf: add AUX record
+Date: Wed, 11 Jun 2014 18:41:50 +0300
+Message-Id: <1402501310-31940-8-git-send-email-alexander.shishkin@linux.intel.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1402501310-31940-1-git-send-email-alexander.shishkin@linux.intel.com>
 References: <1402501310-31940-1-git-send-email-alexander.shishkin@linux.intel.com>
@@ -27,183 +27,118 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For pmus that wish to write data to AUX space, provide
-perf_aux_output_{begin,end}() calls to initiate/commit data writes,
-similarly to perf_output_{begin,end}. These also use the same output
-handle structure.
-
-After the perf_aux_output_begin() returns successfully, handle->size
-is set to the maximum amount of data that can be written wrt aux_tail
-pointer, so that no data that the user hasn't seen will be overwritten.
-
-PMU driver should pass the actual amount of data written as a parameter
-to perf_aux_output_end().
+When there's new data in the AUX space, output a record indicating its
+offset and size and weather it was truncated to fix in the ring buffer.
 
 Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 ---
- include/linux/perf_event.h  | 19 +++++++++++++++-
- kernel/events/core.c        |  5 ++---
- kernel/events/internal.h    |  3 +++
- kernel/events/ring_buffer.c | 53 +++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 76 insertions(+), 4 deletions(-)
+ include/uapi/linux/perf_event.h | 15 +++++++++++++++
+ kernel/events/core.c            | 38 ++++++++++++++++++++++++++++++++++++++
+ kernel/events/internal.h        |  3 +++
+ kernel/events/ring_buffer.c     |  1 +
+ 4 files changed, 57 insertions(+)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index b6f7408..e85d134 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -548,12 +548,20 @@ struct perf_output_handle {
- 	struct ring_buffer		*rb;
- 	unsigned long			wakeup;
- 	unsigned long			size;
--	void				*addr;
-+	union {
-+		void			*addr;
-+		unsigned long		head;
-+	};
- 	int				page;
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index dd10f16..7f8621f 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -726,6 +726,21 @@ enum perf_event_type {
+ 	 */
+ 	PERF_RECORD_MMAP2			= 10,
+ 
++	/*
++	 * Records that new data landed in the AUX buffer part.
++	 *
++	 * struct {
++	 * 	struct perf_event_header	header;
++	 *
++	 * 	u64				aux_offset;
++	 * 	u64				aux_size;
++	 *	u8				truncated;
++	 *	u64				id;
++	 *	u64				stream_id;
++	 * };
++	 */
++	PERF_RECORD_AUX				= 11,
++
+ 	PERF_RECORD_MAX,			/* non-ABI */
  };
  
- #ifdef CONFIG_PERF_EVENTS
- 
-+extern void *perf_aux_output_begin(struct perf_output_handle *handle,
-+				   struct perf_event *event);
-+extern void perf_aux_output_end(struct perf_output_handle *handle,
-+				unsigned long size, bool truncated);
-+extern void *perf_get_aux(struct perf_output_handle *handle);
- extern int perf_pmu_register(struct pmu *pmu, const char *name, int type);
- extern void perf_pmu_unregister(struct pmu *pmu);
- 
-@@ -802,6 +810,15 @@ extern void perf_event_disable(struct perf_event *event);
- extern int __perf_event_disable(void *info);
- extern void perf_event_task_tick(void);
- #else
-+static inline void *
-+perf_aux_output_begin(struct perf_output_handle *handle,
-+		      struct perf_event *event)				{ return NULL; }
-+static inline void
-+perf_aux_output_end(struct perf_output_handle *handle, unsigned long size,
-+		    bool truncated)					{ }
-+static inline void *
-+perf_get_aux(struct perf_output_handle *handle)				{ return NULL; }
-+
- static inline void
- perf_event_task_sched_in(struct task_struct *prev,
- 			 struct task_struct *task)			{ }
 diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 9783c60..44d6d01 100644
+index 44d6d01..cd64b75 100644
 --- a/kernel/events/core.c
 +++ b/kernel/events/core.c
-@@ -3194,7 +3194,6 @@ static void free_event_rcu(struct rcu_head *head)
- 	kfree(event);
+@@ -5394,6 +5394,44 @@ void perf_event_mmap(struct vm_area_struct *vma)
+ 	perf_event_mmap_event(&mmap_event);
  }
  
--static void ring_buffer_put(struct ring_buffer *rb);
- static void ring_buffer_detach(struct perf_event *event, struct ring_buffer *rb);
- 
- static void unaccount_event_cpu(struct perf_event *event, int cpu)
-@@ -3919,7 +3918,7 @@ static void rb_free_rcu(struct rcu_head *rcu_head)
- 	rb_free(rb);
- }
- 
--static struct ring_buffer *ring_buffer_get(struct perf_event *event)
-+struct ring_buffer *ring_buffer_get(struct perf_event *event)
- {
- 	struct ring_buffer *rb;
- 
-@@ -3934,7 +3933,7 @@ static struct ring_buffer *ring_buffer_get(struct perf_event *event)
- 	return rb;
- }
- 
--static void ring_buffer_put(struct ring_buffer *rb)
-+void ring_buffer_put(struct ring_buffer *rb)
- {
- 	if (!atomic_dec_and_test(&rb->refcount))
- 		return;
++void perf_event_aux_event(struct perf_event *event, unsigned long head,
++			  unsigned long size, bool truncated)
++{
++	struct perf_output_handle handle;
++	struct perf_sample_data sample;
++	struct perf_aux_event {
++		struct perf_event_header	header;
++		u64				offset;
++		u64				size;
++		u8				truncated;
++		u64				id;
++		u64				stream_id;
++	} rec = {
++		.header = {
++			.type = PERF_RECORD_AUX,
++			.misc = 0,
++			.size = sizeof(rec),
++		},
++		.offset		= head,
++		.size		= size,
++		.truncated	= truncated,
++		.id		= primary_event_id(event),
++		.stream_id	= event->id,
++	};
++	int ret;
++
++	perf_event_header__init_id(&rec.header, &sample, event);
++	ret = perf_output_begin(&handle, event, rec.header.size);
++
++	if (ret)
++		return;
++
++	perf_output_put(&handle, rec);
++	perf_event__output_id_sample(event, &handle, &sample);
++
++	perf_output_end(&handle);
++}
++
+ /*
+  * IRQ throttle logging
+  */
 diff --git a/kernel/events/internal.h b/kernel/events/internal.h
-index e537403..e20d073 100644
+index e20d073..8bc4547 100644
 --- a/kernel/events/internal.h
 +++ b/kernel/events/internal.h
-@@ -36,6 +36,7 @@ struct ring_buffer {
- 	struct user_struct		*mmap_user;
- 
- 	/* AUX area */
-+	local_t				aux_head;
- 	unsigned long			aux_pgoff;
- 	int				aux_nr_pages;
- 	atomic_t			aux_mmap_count;
-@@ -54,6 +55,8 @@ extern void perf_event_wakeup(struct perf_event *event);
- extern int rb_alloc_aux(struct ring_buffer *rb, struct perf_event *event,
- 			pgoff_t pgoff, int nr_pages, int flags);
- extern void rb_free_aux(struct ring_buffer *rb, struct perf_event *event);
-+extern struct ring_buffer *ring_buffer_get(struct perf_event *event);
-+extern void ring_buffer_put(struct ring_buffer *rb);
- 
- static inline bool rb_has_aux(struct ring_buffer *rb)
- {
-diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
-index 43571ac..8f76e5c 100644
---- a/kernel/events/ring_buffer.c
-+++ b/kernel/events/ring_buffer.c
-@@ -242,6 +242,59 @@ ring_buffer_init(struct ring_buffer *rb, long watermark, int flags)
- 	spin_lock_init(&rb->event_lock);
+@@ -63,6 +63,9 @@ static inline bool rb_has_aux(struct ring_buffer *rb)
+ 	return !!rb->aux_nr_pages;
  }
  
-+void *perf_aux_output_begin(struct perf_output_handle *handle,
-+			    struct perf_event *event)
-+{
-+	unsigned long aux_head, aux_tail;
-+	struct ring_buffer *rb;
++void perf_event_aux_event(struct perf_event *event, unsigned long head,
++			  unsigned long size, bool truncated);
 +
-+	rb = ring_buffer_get(event);
-+	if (!rb)
-+		return NULL;
-+
-+	aux_head = local_read(&rb->aux_head);
-+	aux_tail = ACCESS_ONCE(rb->user_page->aux_tail);
-+
-+	handle->rb = rb;
-+	handle->event = event;
-+	handle->head = aux_head;
-+	handle->size = CIRC_SPACE(aux_head, aux_tail, perf_aux_size(rb));
-+	if (!handle->size) {
-+		event->pending_disable = 1;
-+		event->hw.state = PERF_HES_STOPPED;
-+		perf_output_wakeup(handle);
-+		ring_buffer_put(rb);
-+		handle->event = NULL;
-+
-+		return NULL;
-+	}
-+
-+	return handle->rb->aux_priv;
-+}
-+
-+void perf_aux_output_end(struct perf_output_handle *handle, unsigned long size,
-+			 bool truncated)
-+{
-+	struct ring_buffer *rb = handle->rb;
-+	unsigned long aux_head;
-+
-+	aux_head = local_read(&rb->aux_head);
-+	local_add(size, &rb->aux_head);
-+
-+	rb->user_page->aux_head = local_read(&rb->aux_head);
-+	smp_wmb();
-+
-+	perf_output_wakeup(handle);
-+	handle->event = NULL;
-+
-+	ring_buffer_put(rb);
-+}
-+
-+void *perf_get_aux(struct perf_output_handle *handle)
-+{
-+	return handle->rb->aux_priv;
-+}
-+
- #define PERF_AUX_GFP	(GFP_KERNEL | __GFP_ZERO | __GFP_NOWARN | __GFP_NORETRY)
+ extern void
+ perf_event_header__init_id(struct perf_event_header *header,
+ 			   struct perf_sample_data *data,
+diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
+index 8f76e5c..4e6f815 100644
+--- a/kernel/events/ring_buffer.c
++++ b/kernel/events/ring_buffer.c
+@@ -280,6 +280,7 @@ void perf_aux_output_end(struct perf_output_handle *handle, unsigned long size,
  
- static struct page *rb_alloc_aux_page(int node, int order)
+ 	aux_head = local_read(&rb->aux_head);
+ 	local_add(size, &rb->aux_head);
++	perf_event_aux_event(handle->event, aux_head, size, truncated);
+ 
+ 	rb->user_page->aux_head = local_read(&rb->aux_head);
+ 	smp_wmb();
 -- 
 2.0.0
 
