@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755797AbaFKPSM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 11:18:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32273 "EHLO mx1.redhat.com"
+	id S932619AbaFKPST (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 11:18:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47403 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753807AbaFKPSK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 11:18:10 -0400
-Date: Wed, 11 Jun 2014 17:16:47 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] wait: Introduce per-task wait_queue_t
-Message-ID: <20140611151647.GA21158@redhat.com>
-References: <CA+55aFyYQES1CbEfYzRkFas_aw=+YNSbDoLRJpjh2sDFxVV3vg@mail.gmail.com> <1402403359-6023-1-git-send-email-linux@rasmusvillemoes.dk> <1402403359-6023-2-git-send-email-linux@rasmusvillemoes.dk>
+	id S932194AbaFKPSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 11:18:15 -0400
+Message-ID: <5398732E.2060900@zytor.com>
+Date: Wed, 11 Jun 2014 08:18:06 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402403359-6023-2-git-send-email-linux@rasmusvillemoes.dk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Josh Boyer <jwboyer@fedoraproject.org>,
+        Andy Lutomirski <luto@amacapital.net>
+CC: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Subject: Re: vdso_install target broken post-3.15
+References: <CA+5PVA4srNrj2xqMYH40N13rV+jC-PbLdyNpoURomTq48cJNBA@mail.gmail.com> <CA+5PVA7gL6T2eXAy6G4hGJzhKZ_8KHd0qauKqzuHAP4oTJ97QA@mail.gmail.com>
+In-Reply-To: <CA+5PVA7gL6T2eXAy6G4hGJzhKZ_8KHd0qauKqzuHAP4oTJ97QA@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10, Rasmus Villemoes wrote:
->
-> This introduces a single wait_queue_t into the task structure.
-> Functions which need to wait, but which do not call other functions
-> that might wait while on the wait queue, may use current->__wq
+On 06/11/2014 08:16 AM, Josh Boyer wrote:
+> On Wed, Jun 11, 2014 at 10:14 AM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
+>> Hi,
+>>
+>> I'm guessing commit 6f121e548f83674ab4920a4e60afb58d4f61b829 is what
+>> broke the vdso_install target:
+>>
+>> + make -s ARCH=x86_64
+>> INSTALL_MOD_PATH=/home/jwboyer/rpmbuild/BUILDROOT/kernel-3.16.0-0.rc0.git1.1.fc21.x86_64
+>> vdso_install KERNELRELEASE=3.16.0-0.rc0.git1.1.fc21.x86_64
+>> make[1]: *** No rule to make target `arch/x86/vdso/vdso.so.dbg',
+>> needed by `vdso.so'.  Stop.
+>> make: *** [vdso_install] Error 2
+>>
+>> The crazy Fedora versioning there corresponds to
+>> 3f17ea6dea8ba5668873afa54628a91aaa3fb1c0 in Linus' tree.  I'll poke at
+>> this some, but if you have some quick ideas I'd be happy to try them.
+> 
+> OK, I'm stumped.  Looking at that commit, it removes all target
+> invocations for vdso.so.  Which means even a simple 'make' in the vdso
+> directory fails with:
+> 
+> [jwboyer@vader vdso]$ make
+> make: *** No rule to make target `/vdso.so', needed by `/vdso.o'.  Stop.
+> [jwboyer@vader vdso]$
+> 
+> So how was this commit build tested?
+> 
 
-I am not going to argue, but I am not sure that wait_event() (changed
-by the next patch) meets this criteria...
+Since when do we support "make" in a subdirectory?
 
-wait_event(wq, something_nontrivial_which_uses_wait_event_too()) is
-legal currently although perhaps nobody does this.
+	-hpa
 
-> +static inline wait_queue_t *current_wq_get(void)
-> +{
-> +	wait_queue_t *wq = &current->__wq;
-> +	BUG_ON(wq->flags != WQ_FLAG_AVAILABLE);
-> +	wq->flags = 0;
-> +	return wq;
-> +}
-> +static inline void current_wq_put(wait_queue_t *wq)
-> +{
-> +	BUG_ON(wq != &current->__wq);
-> +	wq->flags = WQ_FLAG_AVAILABLE;
-> +}
-
-Or, perhaps, current_wq_get() can simply check list_empty(->task_list)
-initialized by copy_process().
-
-This way you do not need current_wq_put(), WQ_FLAG_AVAILABLE, and you
-can kill INIT_LIST_HEAD() in ___wait_event().
-
-Honestly, I am not sure about this patch... sizeof(wait_queue_t) is not
-that large, and otoh it is not good to have yet another "rarely used"
-member in the already huge task_struct. But again, I won't insist.
-
-Oleg.
 
