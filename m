@@ -1,23 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933696AbaFKR2G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 13:28:06 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49531 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932317AbaFKR2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 13:28:00 -0400
-Message-ID: <53989190.9010806@zytor.com>
-Date: Wed, 11 Jun 2014 10:27:44 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
+	id S933378AbaFKR3M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 13:29:12 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:58345 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751220AbaFKR3I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 13:29:08 -0400
+Message-ID: <539891D0.8090309@gmail.com>
+Date: Wed, 11 Jun 2014 19:28:48 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Josh Boyer <jwboyer@fedoraproject.org>,
-        Andy Lutomirski <luto@amacapital.net>
-CC: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] x86,vdso: Fix vdso_install
-References: <5398749B.4090209@zytor.com>	<cover.1402503408.git.luto@amacapital.net>	<fe51e9f5c338d33b1a8b20813441538df5e17add.1402503408.git.luto@amacapital.net> <CA+5PVA5uPj0JiTLXJAtBt9b9e6aEcJh7ApFRbaCAP0=se89GKA@mail.gmail.com>
-In-Reply-To: <CA+5PVA5uPj0JiTLXJAtBt9b9e6aEcJh7ApFRbaCAP0=se89GKA@mail.gmail.com>
+To: Tushar Behera <tushar.b@samsung.com>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+CC: mturquette@linaro.org, t.figa@samsung.com, linux@arm.linux.org.uk,
+        galak@codeaurora.org, ijc+devicetree@hellion.org.uk,
+        mark.rutland@arm.com, pawel.moll@arm.com, robh+dt@kernel.org,
+        kgene.kim@samsung.com, khilman@linaro.org, dianders@google.com,
+        trblinux@gmail.com, Shaik Ameer Basha <shaik.ameer@samsung.com>
+Subject: Re: [PATCH 1/3] clk: exynos-audss: Keep the parent of mout_audss
+ always enabled
+References: <1402464739-19044-1-git-send-email-tushar.b@samsung.com> <1402464739-19044-2-git-send-email-tushar.b@samsung.com>
+In-Reply-To: <1402464739-19044-2-git-send-email-tushar.b@samsung.com>
 X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -25,20 +31,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2014 10:23 AM, Josh Boyer wrote:
-> 
-> So this does fix the invocation of 'make vdso_install' and the
-> resulting files look to be accurate to me, with the glaring exception
-> that now we get e.g. vdso64.so on x86_64 as the installed file instead
-> of vdso.so.  How much that actually matters, I have no idea.
-> Plausibly fixed with a symlink if we really need to perhaps.
-> 
+Hi Tushar,
 
-You have that problem anyway, no?  After all, there are three different
-vdso images for 32 bits, and you can run 32-bit apps on 64-bit systems, too.
+On 11.06.2014 07:32, Tushar Behera wrote:
+> When the output clock of AUDSS mux is disabled, we are getting kernel
+> oops while doing a clk_get() on other clocks provided by AUDSS. Though
+> user manual doesn't specify this dependency, we came across this issue
+> while disabling the parent of AUDSS mux clocks.
 
-Is there realistically any way for the debugger to pick up the correct one?
+Could you provide more data about this oops? E.g. kernel log, platforms
+it affects (just peach-pit or also others), test case, extra patches
+applied on top of mainline (if any).
 
-	-hpa
+I don't like this solution, because keeping a clock always enabled is
+usually not desirable and this driver is also used on other platforms
+than peach-pit, so this change will affect all of them.
 
-
+Best regards,
+Tomasz
