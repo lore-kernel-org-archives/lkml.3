@@ -1,73 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932259AbaFKNRZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 09:17:25 -0400
-Received: from mail1.bemta3.messagelabs.com ([195.245.230.176]:49359 "EHLO
-	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752127AbaFKNRW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 09:17:22 -0400
-X-Env-Sender: Adam.Thomson.Opensource@diasemi.com
-X-Msg-Ref: server-3.tower-38.messagelabs.com!1402492637!23668566!1
-X-Originating-IP: [94.185.165.51]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.3; banners=-,-,-
-X-VirusChecked: Checked
-From: "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>
-To: Rob Herring <robherring2@gmail.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-CC: "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>,
-        "Lee Jones" <lee.jones@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "Jonathan Cameron" <jic23@kernel.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Support Opensource" <Support.Opensource@diasemi.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Subject: RE: [PATCH 8/8] DT: Add vendor prefix for Dialog Semiconductor Ltd.
-Thread-Topic: [PATCH 8/8] DT: Add vendor prefix for Dialog Semiconductor Ltd.
-Thread-Index: AQHPhWXsl+BblB/jGkWYvkOE3dcBh5trwFiAgAAJgQCAABmYMA==
-Date: Wed, 11 Jun 2014 13:17:15 +0000
-Message-ID: <2E89032DDAA8B9408CB92943514A0337A56F53A6@SW-EX-MBX01.diasemi.com>
-References: <cover.1402484954.git.Adam.Thomson.Opensource@diasemi.com>
-	<bf4b6d7b061e66d3ca7f3dd44319b9e26ae7103f.1402484954.git.Adam.Thomson.Opensource@diasemi.com>
-	<CAMuHMdWirVk+jrz40yw4=zAOFH6VTX9CXcpO01e0rK8S8VGGHw@mail.gmail.com>
- <CAL_JsqK0RqYuZ8YB1sBZK7hMXvp6oEPfAu11m95F61_kGV3Ptg@mail.gmail.com>
-In-Reply-To: <CAL_JsqK0RqYuZ8YB1sBZK7hMXvp6oEPfAu11m95F61_kGV3Ptg@mail.gmail.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.20.26.15]
-Content-Type: text/plain; charset="utf-8"
+	id S1755586AbaFKNTf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 09:19:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17999 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752187AbaFKNTd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 09:19:33 -0400
+Date: Wed, 11 Jun 2014 15:19:16 +0200
+From: Igor Mammedov <imammedo@redhat.com>
+To: Sitsofe Wheeler <sitsofe@gmail.com>
+Cc: Toshi Kani <toshi.kani@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [BISECTED][REGRESSION] Kernel does not boot on EeePC
+Message-ID: <20140611151916.00723f74@nial.usersys.redhat.com>
+In-Reply-To: <20140611130558.GA7173@sucs.org>
+References: <20140608090223.GA8703@sucs.org>
+	<20140609122616.124ebe43@thinkpad>
+	<20140611061624.GA12132@sucs.org>
+	<20140611144846.4a55410a@nial.usersys.redhat.com>
+	<20140611130558.GA7173@sucs.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5BDHUvo030408
 
-> On Wed, Jun 11, 2014 at 13:43, Rob Herring wrote:
-> 
-> dlg is the correct one and seems to be the most widely used, so we
-> should go with that and mark the others deprecated.
-> 
-> diasemi is documented for the da9210, but not used anywhere.
-> 
-> There appears to be 2 different da9053 bindings. I'd guess the dialog
-> variant used on 2 i.MX boards is not used. Other i.MX boards use the
-> dlg version. I'm not sure what is going on with da9055. Please sort
-> these out.
-> 
+On Wed, 11 Jun 2014 14:05:58 +0100
+Sitsofe Wheeler <sitsofe@gmail.com> wrote:
 
-The intention is to update the other Dialog drivers after we've agreed this
-prefix. With regards to da9055, what's the issue here as I believe that uses
-the 'dlg' prefix already?
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> On Wed, Jun 11, 2014 at 02:48:46PM +0200, Igor Mammedov wrote:
+> > On Wed, 11 Jun 2014 07:16:24 +0100
+> > Sitsofe Wheeler <sitsofe@gmail.com> wrote:
+> > 
+> > > It basically gives up just before Initializing CPU#0. The following is
+> > > an approximation of the boot messages that I see on the screen (the
+> > > early ones are gone before I can eyeball them so this is a blend of a
+> > > previous dmesg and what I see on the screen during a failure):
+> > Thanks for answer,
+> > 
+> > I've overlooked nonsmp case when testing where no one sets
+> > cpu_callout_mask for boot CPU and as result kernel hangs in cpu_init()
+> 
+> What gave you the tip off?
+Just that you were booting on 1 core CPU with custom config,
+then the only place where it could hang would be cpu_init().
+
