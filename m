@@ -1,95 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932183AbaFKHwM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 03:52:12 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:64497 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755279AbaFKHwK (ORCPT
+	id S1755559AbaFKHw5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 03:52:57 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:59399 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751328AbaFKHwz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 03:52:10 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfec7f5-b7f626d000004b39-1e-53980aa7fcfa
-Content-transfer-encoding: 8BIT
-Message-id: <1402473139.24049.6.camel@AMDC1943>
-Subject: Re: [RESEND PATCH] ARM: EXYNOS: Fix the sequence of secondary CPU boot
- for Exynos3250
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: Chanwoo Choi <cw00.choi@samsung.com>, linux@arm.linux.org.uk,
-        kgene.kim@samsung.com, t.figa@samsung.com, kyungmin.park@samsung.com,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 11 Jun 2014 09:52:19 +0200
-In-reply-to: <53979B52.5000902@gmail.com>
-References: <1402442827-2321-1-git-send-email-cw00.choi@samsung.com>
- <5397963F.30109@gmail.com> <53979871.2020903@samsung.com>
- <53979B52.5000902@gmail.com>
-X-Mailer: Evolution 3.10.4-0ubuntu1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCLMWRmVeSWpSXmKPExsVy+t/xy7rLuWYEG9zZI2xx/ctzVoveBVfZ
-	LM42vWG32PT4GqvF5V1z2CxmnN/HZHH7Mq/F+hmvWSxW7frD6MDp0dLcw+axc9Zddo/NS+o9
-	+rasYvT4vEkugDWKyyYlNSezLLVI3y6BK2ParCOsBS8EKw5N3c/SwHiBr4uRk0NCwETiw9mv
-	7BC2mMSFe+vZuhi5OIQEljJKfPx3kgkkwSsgKPFj8j2WLkYODmYBeYkjl7JBwswC6hKT5i1i
-	hqj/zCgx5cwqVoh6fYkbc9rZQeqFBRIkNvcqgYTZBIwlNi9fwgZiiwD1fpvSzw7SywzSe+/7
-	OrAjWARUJVrbtzOC9HIKaEpcPl4AMX8+o8ThLXeZIA5Vlpi3/xjTBEaBWUjOm4Vw3iwk5y1g
-	ZF7FKJpamlxQnJSea6RXnJhbXJqXrpecn7uJERLyX3cwLj1mdYhRgINRiYfXwH9asBBrYllx
-	Ze4hRgkOZiUR3r6304OFeFMSK6tSi/Lji0pzUosPMTJxcEo1MErE277qdbF5ohx39lZpkG2v
-	/ZvVWxIqJM9/8Dt3dv22pVNPnNKYFsH4K0BiQpNwZJTazYvWk7k8liZpTtrZcnxr+x2t2moN
-	ZpejpRJ+AsVxxTOf5TFem3Hvy5YDh4I2T7gQsZyVT/SRTI7Kymjb7Ju3/G9w7bD12hneb/za
-	q75718nncr6c25VYijMSDbWYi4oTAdoWSQFXAgAA
+	Wed, 11 Jun 2014 03:52:55 -0400
+Message-ID: <53980AD4.2080001@free-electrons.com>
+Date: Wed, 11 Jun 2014 09:52:52 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+CC: Wolfram Sang <wsa@the-dreams.de>, Randy Dunlap <rdunlap@infradead.org>,
+        Hans de Goede <hdegoede@redhat.com>, Shuge <shuge@allwinnertech.com>,
+        kevin@allwinnertech.com, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH v5 2/2] i2c: sunxi: add P2WI (Push/Pull 2 Wire Interface)
+ controller support
+References: <1402408036-5235-1-git-send-email-boris.brezillon@free-electrons.com> <6454089.IP8IFVsofj@wuerfel> <20140610143604.GC7054@lukather> <13219561.hrRmVFjmAv@wuerfel>
+In-Reply-To: <13219561.hrRmVFjmAv@wuerfel>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On śro, 2014-06-11 at 01:57 +0200, Tomasz Figa wrote:
-> On 11.06.2014 01:44, Chanwoo Choi wrote:
-> > On 06/11/2014 08:35 AM, Tomasz Figa wrote:
-> >> Hi Chanwoo,
-> >>
-> >> On 11.06.2014 01:27, Chanwoo Choi wrote:
-> >>> This patch set AUTOWAKEUP_EN bit to ARM_CORE_CONFIGURATION register
-> >>> because Exynos3250 removes WFE in secure mode so that turn on automatically
-> >>> after setting CORE_LOCAL_PWR_EN. Also, This patch use dbs_sev() macro
-> >>> to guarantee the data synchronization of command instead of IPI_WAKEUP
-> >>> because Exynos3250 don't have WFE mode in secue mode.
-> >>>
-> >>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> >>> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> >>> ---
-> >>>  arch/arm/mach-exynos/platsmp.c  | 9 ++++++++-
-> >>>  arch/arm/mach-exynos/pm.c       | 8 ++++++--
-> >>>  arch/arm/mach-exynos/regs-pmu.h | 4 ++++
-> >>>  3 files changed, 18 insertions(+), 3 deletions(-)
-> >>>
-> >>
-> >> This patch seems to be unneeded with Krzysztof's patch send a while ago
-> >> [1]. As reported by Krzysztof, that patch apparently fixes SMP support
-> >> on Exynos3250 and is much smaller and less invasive.
-> >>
-> >> [1] - http://thread.gmane.org/gmane.linux.kernel.samsung-soc/32809
-> > 
-> > OK,
-> > But Krzysztof's patch didn't include set S5P_CORE_AUTOWAKEUP_EN in EXYNOS_ARM_CORE_CONFIGURATION(cpu).
-> > and then use arch_send_wakeup_ipi_mask(cpumask_of(cpu)) command instead of dsb_sev(). Exynos3250 don't need
-> > send IPI message.
-> 
-> I don't know technical details about CPU boot-up on Exynos3250 as I
-> haven't worked too much with this platform. According to my conversation
-> with Krzysztof, he found S5P_CORE_AUTOWAKEUP_EN and dsb_sev() to be not
-> needed. Instead S5P_CORE_WAKEUP_FROM_LOCAL_CFG can be set in
-> EXYNOS_ARM_CORE1_STATUS and then normal arch_send_wakeup_ipi_mask()
-> used. He might be able to provide more details.
+Hello Arnd,
 
-I tried to avoid setting S5P_CORE_AUTOWAKEUP_EN because of simple
-reason: in my SoC documentation this field is not documented. The
-ARM_CORE_CONFIGURATION register has only "LOCAL_PWR_CFG" field and
-nothing more.
+On 10/06/2014 16:47, Arnd Bergmann wrote:
+> On Tuesday 10 June 2014 16:36:04 Maxime Ripard wrote:
+>> On Tue, Jun 10, 2014 at 03:54:56PM +0200, Arnd Bergmann wrote:
+>>> On Tuesday 10 June 2014 15:47:16 Boris BREZILLON wrote:
+>>>> +config I2C_SUN6I_P2WI
+>>>> +       tristate "Allwinner sun6i internal P2WI controller"
+>>>> +       depends on ARCH_SUNXI
+>>>> +       help
+>>>> +         If you say yes to this option, support will be included for the
+>>>> +         P2WI (Push/Pull 2 Wire Interface) controller embedded in some sunxi
+>>>> +         SOCs.
+>>>> +         The P2WI looks like an SMBus controller (which supports only byte
+>>>> +         accesses), except that it only supports one slave device.
+>>>> +         This interface is used to connect to specific PMIC devices (like the
+>>>> +         AXP221).
+>>>> +
+>>> Sorry for the stupid question, but why is this an i2c driver if the
+>>> hardware protocol is completely different?
+>> It's not completely different. It deviates, but still looks very
+>> similar to i2c, and to be precise, SMBus.
+>>
+>> You'll have the full discussion that led to do this in i2c here:
+>> http://www.spinics.net/lists/linux-i2c/msg15066.html
+>>
+>> Also, one significant thing to take into account is that the
+>> communication with a device starts as I2C, only to switch to this
+>> protocol after some initialization sequence.
+> Ok, sounds good.
+>
+>>> I understand that a lot of devices can be driven using either spi or
+>>> i2c, and we have two sets of {directories,maintainers,bus_types,...}
+>>> for them. Your description sounds like this is a separate option
+>>> that isn't any closer to i2c than it is to spi.
+>> That's not true. It's *much* closer from I2C than it is from SPI.
+> Ok.
+>
+>>> Would it perhaps be better to expose it only as a regmap rather than
+>>> an i2c host?
+>> That could be a solution, but is it a common practice to define a bus
+>> adapter driver in a regmap driver?
+> No, not yet.
+>
+> Maybe Boris can just put an explanation into the changeset description
+> of the driver so other people are able to find it more easily.
 
-As for the IPI wakeup - I think it makes code cleaner than adding 'if'
-statement for specific chipset.
+You mean in my commit message ?
+I thought it was already explaining the subtle differences between P2WI
+and the SMBus protocols.
 
-Best regards,
-Krzysztof
+What would you like me to add to this explanation ?
+Something about the I2C to P2WI initialization part ?
+
+Best Regards,
+
+Boris
 
 
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
 
