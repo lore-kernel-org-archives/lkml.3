@@ -1,78 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752555AbaFKUyQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 16:54:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50814 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751276AbaFKUyP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 16:54:15 -0400
-Date: Wed, 11 Jun 2014 13:54:13 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Olof Johansson <olof@lixom.net>, Kevin Hilman <khilman@linaro.org>
-Subject: Re: CONFIG_PREMPT vs. linux-next causes slub_debug=FZPUA errors
-Message-Id: <20140611135413.ecd77d52dcf1d4fd6671ac8c@linux-foundation.org>
-In-Reply-To: <CAD=FV=VX6QqL+jdEwk8Mp53FHBqj2v=w65zqBcbYWTtPZPmMVQ@mail.gmail.com>
-References: <CAD=FV=VX6QqL+jdEwk8Mp53FHBqj2v=w65zqBcbYWTtPZPmMVQ@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752809AbaFKUyY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 16:54:24 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:35209 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751236AbaFKUyV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 16:54:21 -0400
+Message-ID: <5398C1D0.30808@ti.com>
+Date: Wed, 11 Jun 2014 16:53:36 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Dann Frazier <dann.frazier@canonical.com>
+CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Subject: Re: [PATCH v2] serial: uart: add hw flow control support configuration
+References: <1398971093-17164-1-git-send-email-m-karicheri2@ti.com> <CALdTtnvTtjKv6NQd=NCZATHnKLURKYMfnQaGR7MA=_kafBP=JQ@mail.gmail.com>
+In-Reply-To: <CALdTtnvTtjKv6NQd=NCZATHnKLURKYMfnQaGR7MA=_kafBP=JQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Jun 2014 15:38:00 -0700 Doug Anderson <dianders@chromium.org> wrote:
+On 5/28/2014 4:04 PM, Dann Frazier wrote:
+> On Thu, May 1, 2014 at 1:04 PM, Murali Karicheri <m-karicheri2@ti.com> wrote:
+>> 8250 uart driver currently supports only software assisted hw flow
+>> control. The software assisted hw flow control maintains a hw_stopped
+>> flag in the tty structure to stop and start transmission and use modem
+>> status interrupt for the event to drive the handshake signals. This is
+>> not needed if hw has flow control capabilities. This patch adds a
+>> DT attribute for enabling hw flow control for a uart port. Also skip
+>> stop and start if this flag is present in flag field of the port
+>> structure.
+> ubuntu@hwflow:~$ sudo stty -a --file /dev/ttyS0 |tr ' ' '\n' | grep crtscts
+> crtscts
+> ubuntu@hwflow:~$ ls /proc/device-tree/soc/serial@1c021000/has-hw-flow-control
+> /proc/device-tree/soc/serial@1c021000/has-hw-flow-control
+> ubuntu@hwflow:~$ python
+> Python 2.7.6 (default, Mar 22 2014, 22:58:30)
+> [GCC 4.8.2] on linux2
+> Type "help", "copyright", "credits" or "license" for more information.
+>>>> UPF_HARDWARE_FLOW = 1 << 21
+>>>> if 0xB9200000 & UPF_HARDWARE_FLOW:
+> ...     print "OK"
+> ...
+> OK
+>
+> Hope that's a reasonable test case. Test fails when booted w/o
+> has-hw-flow-control attribute.
+>
+> Tested-by: dann frazier <dann.frazier@canonical.com>
+What is the verdict? pass/fail? Ok/Not OK to merge?
 
-> Hi,
-> 
-> Recently, both Andrew Bresticker (CCed) and I have noticed errors
-> reported by slub_debug when using linuxnext.  I'm still seeing them on
-> 20140606.
-> 
-> 
-> NOTES:
-> * errors only seem to be present when you've got CONFIG_PREMPT enabled.
-> 
-> * errors seem to happen most often when rebooting, but I've seen them
-> during other times as well.
-> 
-> * a quick guesstimate is that ~50% of my reboots show this problem.
-> 
-> * I'm testing on an exynos5250-based board and Andrew on an ARM board
-> with a different SoC.
-> 
-> * I don't see issues on a current fetch of "linux", AKA (5b174fd Merge
-> branch 'for-3.16' of git://linux-nfs.org/~bfields/linux)
-> 
-> 
-> I didn't do a full bisect, but I don't seem to see issues on 20140528.
-> On 20140530 I see almost constant slub errors (seems much worse than
-> 20140606)
-> 
-> An example error is below:
-> 
-> 
-> [   13.521842] =============================================================================
-> [   13.528566] BUG bio-1 (Not tainted): Poison overwritten
-> [   13.533765] -----------------------------------------------------------------------------
-> [   13.533765]
-> [   13.543394] Disabling lock debugging due to kernel taint
-> [   13.548685] INFO: 0xec495848-0xec49584f. First byte 0x80 instead of 0x6b
-> [   13.555378] INFO: Allocated in mempool_alloc_slab+0x24/0x28 age=28
-> cpu=5 pid=220
-> [   13.562741]  kmem_cache_alloc+0x90/0x1d0
-> [   13.566640]  mempool_alloc_slab+0x24/0x28
-> [   13.570631]  mempool_alloc+0x4c/0x144
-> [   13.574279]  bio_alloc_bioset+0xa4/0x1b0
-> [   13.578182]  __split_and_process_bio+0x33c/0x3f0
-> [   13.582778]  dm_request+0x1f0/0x204
-> [   13.586248]  generic_make_request+0xa4/0xdc
-> [   13.590411]  submit_bio+0x114/0x144
+Murali
+>> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+>>
+>> CC: Rob Herring <robh+dt@kernel.org>
+>> CC: Pawel Moll <pawel.moll@arm.com>
+>> CC: Mark Rutland <mark.rutland@arm.com>
+>> CC: Ian Campbell <ijc+devicetree@hellion.org.uk>
+>> CC: Kumar Gala <galak@codeaurora.org>
+>> CC: Randy Dunlap <rdunlap@infradead.org>
+>> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> CC: Jiri Slaby <jslaby@suse.cz>
+>> CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> ---
+>>   .../devicetree/bindings/serial/of-serial.txt       |    1 +
+>>   drivers/tty/serial/8250/8250_core.c                |    6 ++++--
+>>   drivers/tty/serial/of_serial.c                     |    4 ++++
+>>   drivers/tty/serial/serial_core.c                   |   12 +++++++++---
+>>   4 files changed, 18 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/Documentation/devicetree/bindings/serial/of-serial.txt b/Documentation/devicetree/bindings/serial/of-serial.txt
+>> index 1928a3e..7705477 100644
+>> --- a/Documentation/devicetree/bindings/serial/of-serial.txt
+>> +++ b/Documentation/devicetree/bindings/serial/of-serial.txt
+>> @@ -37,6 +37,7 @@ Optional properties:
+>>   - auto-flow-control: one way to enable automatic flow control support. The
+>>     driver is allowed to detect support for the capability even without this
+>>     property.
+>> +- has-hw-flow-control: the hardware has flow control capability.
+>>
+>>   Example:
+>>
+>> diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
+>> index 0e1bf88..b69aff2 100644
+>> --- a/drivers/tty/serial/8250/8250_core.c
+>> +++ b/drivers/tty/serial/8250/8250_core.c
+>> @@ -2338,9 +2338,11 @@ serial8250_do_set_termios(struct uart_port *port, struct ktermios *termios,
+>>           * the trigger, or the MCR RTS bit is cleared.  In the case where
+>>           * the remote UART is not using CTS auto flow control, we must
+>>           * have sufficient FIFO entries for the latency of the remote
+>> -        * UART to respond.  IOW, at least 32 bytes of FIFO.
+>> +        * UART to respond.  IOW, at least 32 bytes of FIFO. Also enable
+>> +        * AFE if hw flow control is supported
+>>           */
+>> -       if (up->capabilities & UART_CAP_AFE && port->fifosize >= 32) {
+>> +       if ((up->capabilities & UART_CAP_AFE && (port->fifosize >= 32)) ||
+>> +           (port->flags & UPF_HARD_FLOW)) {
+>>                  up->mcr &= ~UART_MCR_AFE;
+>>                  if (termios->c_cflag & CRTSCTS)
+>>                          up->mcr |= UART_MCR_AFE;
+>> diff --git a/drivers/tty/serial/of_serial.c b/drivers/tty/serial/of_serial.c
+>> index 9924660..77ec6a1 100644
+>> --- a/drivers/tty/serial/of_serial.c
+>> +++ b/drivers/tty/serial/of_serial.c
+>> @@ -182,6 +182,10 @@ static int of_platform_serial_probe(struct platform_device *ofdev)
+>>                                            "auto-flow-control"))
+>>                          port8250.capabilities |= UART_CAP_AFE;
+>>
+>> +               if (of_property_read_bool(ofdev->dev.of_node,
+>> +                                         "has-hw-flow-control"))
+>> +                       port8250.port.flags |= UPF_HARD_FLOW;
+>> +
+>>                  ret = serial8250_register_8250_port(&port8250);
+>>                  break;
+>>          }
+>> diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+>> index b68550d..851707a 100644
+>> --- a/drivers/tty/serial/serial_core.c
+>> +++ b/drivers/tty/serial/serial_core.c
+>> @@ -174,8 +174,12 @@ static int uart_port_startup(struct tty_struct *tty, struct uart_state *state,
+>>                          if (tty->termios.c_cflag & CBAUD)
+>>                                  uart_set_mctrl(uport, TIOCM_RTS | TIOCM_DTR);
+>>                  }
+>> -
+>> -               if (tty_port_cts_enabled(port)) {
+>> +               /*
+>> +                * if hw support flow control without software intervention,
+>> +                * then skip the below check
+>> +                */
+>> +               if (tty_port_cts_enabled(port) &&
+>> +                   !(uport->flags & UPF_HARD_FLOW)) {
+>>                          spin_lock_irq(&uport->lock);
+>>                          if (!(uport->ops->get_mctrl(uport) & TIOCM_CTS))
+>>                                  tty->hw_stopped = 1;
+>> @@ -2772,7 +2776,9 @@ void uart_handle_cts_change(struct uart_port *uport, unsigned int status)
+>>
+>>          uport->icount.cts++;
+>>
+>> -       if (tty_port_cts_enabled(port)) {
+>> +       /* skip below code if the hw flow control is supported */
+>> +       if (tty_port_cts_enabled(port) &&
+>> +           !(uport->flags & UPF_HARD_FLOW)) {
+>>                  if (tty->hw_stopped) {
+>>                          if (status) {
+>>                                  tty->hw_stopped = 0;
+>> --
+>> 1.7.9.5
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>>
 
-This one is possibly a bug in DM or the BIO layer.
-
-Do you have more examples?  I couldn't locate a report from Andrew.
