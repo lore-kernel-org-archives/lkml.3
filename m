@@ -1,78 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753654AbaFKCIm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 22:08:42 -0400
-Received: from imap.thunk.org ([74.207.234.97]:60846 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751633AbaFKCIk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 22:08:40 -0400
-Date: Tue, 10 Jun 2014 22:08:35 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: George Spelvin <linux@horizon.com>
-Cc: hpa@linux.intel.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
-        price@mit.edu
-Subject: Re: drivers/char/random.c: more ruminations
-Message-ID: <20140611020835.GA23110@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	George Spelvin <linux@horizon.com>, hpa@linux.intel.com,
-	linux-kernel@vger.kernel.org, mingo@kernel.org, price@mit.edu
-References: <20140610212032.GG12104@thunk.org>
- <20140611001003.12979.qmail@ns.horizon.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140611001003.12979.qmail@ns.horizon.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1754219AbaFKCKO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 22:10:14 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:47818 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753120AbaFKCKM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 22:10:12 -0400
+Message-ID: <1402452521.28433.26.camel@debian>
+Subject: Re: [PATCH] mm/vmscan.c: avoid recording the original scan targets
+ in shrink_lruvec()
+From: Chen Yucong <slaoub@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: mgorman@suse.de, mhocko@suse.cz, hannes@cmpxchg.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 11 Jun 2014 10:08:41 +0800
+In-Reply-To: <20140610163338.5b463c5884c4c7e3f1b948e2@linux-foundation.org>
+References: <1402320436-22270-1-git-send-email-slaoub@gmail.com>
+	 <20140610163338.5b463c5884c4c7e3f1b948e2@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 10, 2014 at 08:10:03PM -0400, George Spelvin wrote:
-> What I wanted to do was eliminate that huge tmp buffer from
-> _xfer_secondary_pool.  There's no good reason why it needs to be there.
-> and several reasons for getting rid of it.
-
-So have you actually instrumented the kernel to demonstrate that in
-fact we have super deep stack call paths where the 128 bytes worth of
-stack actually matters?
-
-Premature optimization being the root of all evil (not to mention
-wasting a lot of time of kernel developers) and all that....
-
-> I hadn't tested the patch when I mailed it to you (I prepared it in
-> order to reply to your e-mail, and it's annoying to reboot the machine
-> I'm composing an e-mail on), but I have since.  It works.
-
-As an aside, I'd strongly suggest that you use kvm to do your kernel
-testing.  It means you can do a lot more testing which is always a
-good thing....
-
-> The *fundamental* race, as I see it, is the one between modifying pools
-> and crediting entropy.
+On Tue, 2014-06-10 at 16:33 -0700, Andrew Morton wrote:
+> On Mon,  9 Jun 2014 21:27:16 +0800 Chen Yucong <slaoub@gmail.com> wrote:
 > 
-> As I noted, you can't safely do the credit either before *or* after modifying
-> the pool; you will always end up with the wrong answer in some situation.
+> > Via https://lkml.org/lkml/2013/4/10/334 , we can find that recording the
+> > original scan targets introduces extra 40 bytes on the stack. This patch
+> > is able to avoid this situation and the call to memcpy(). At the same time,
+> > it does not change the relative design idea.
+> > 
+> > ratio = original_nr_file / original_nr_anon;
+> > 
+> > If (nr_file > nr_anon), then ratio = (nr_file - x) / nr_anon.
+> >  x = nr_file - ratio * nr_anon;
+> > 
+> > if (nr_file <= nr_anon), then ratio = nr_file / (nr_anon - x).
+> >  x = nr_anon - nr_file / ratio;
+> > 
+> > ...
+> >
+> 
+> Are you sure this is an equivalent-to-before change?  If so, then I
+> can't immediately see why :(
+> 
+The relative design idea is to keep
 
-Actually, it's **fine**.  That's because RNDADDENTROPY adds the
-entropy to the input pool, which is has the limit flag set.  So we
-will never pull more entropy than the pool is credited as having.
-This means that race can't happen.  It ***is*** safe.
+   ratio
+	== scan_target[anon] : scan_target[file]
+              == really_scanned_num[anon] : really_scanned_num[file]
 
-1)  Assume the entropy count starts at 10 bytes.
+The original implementation is 
+   ratio 
+        == (scan_target[anon] * percentage_anon) / 
+           (scan_target[file] * percentage_file) 
 
-2)  Random writer mixes in 20 bytes of entropy into the entropy pool.
+To keep the original ratio, percentage_anon should equal to
+percentage_file. In other word, we need to calculate the difference
+value between percentage_anon and percentage_file, we also have to
+record the original scan targets for this.
 
-3)  Random extractor tries to extract 32 bytes of entropy.  Since the
-entropy count is still is 10, it will only get 10 bytes.  (And if we
-started with the entropy count started at zero, we wouldn't extract
-any entropy at all.)
+Instead, we can calculate the *ratio* at the beginning of
+shrink_lruvec(). As a result, this can avoid introducing the extra 40
+bytes.
 
-4) Random writer credit the entropy counter with the 20 bytes mixed in
-step #2.
+In short, we have the same goal: keep the same *ratio* from beginning to
+end.
 
-See? no problems!
+thx!
+cyc
+ 
+       
 
-					- Ted
