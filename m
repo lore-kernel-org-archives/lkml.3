@@ -1,62 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932498AbaFKShx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 14:37:53 -0400
-Received: from g2t1383g.austin.hp.com ([15.217.136.92]:8109 "EHLO
-	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755235AbaFKShv (ORCPT
+	id S932595AbaFKSie (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 14:38:34 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:36119 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754445AbaFKSib (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 14:37:51 -0400
-From: Jason Low <jason.low2@hp.com>
-To: mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, tim.c.chen@linux.intel.com,
-        paulmck@linux.vnet.ibm.com, rostedt@goodmis.org, davidlohr@hp.com,
-        Waiman.Long@hp.com, scott.norton@hp.com, aswin@hp.com,
-        jason.low2@hp.com
-Subject: [PATCH v2 4/4] mutex: Optimize mutex trylock slowpath
-Date: Wed, 11 Jun 2014 11:37:23 -0700
-Message-Id: <1402511843-4721-5-git-send-email-jason.low2@hp.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1402511843-4721-1-git-send-email-jason.low2@hp.com>
-References: <1402511843-4721-1-git-send-email-jason.low2@hp.com>
+	Wed, 11 Jun 2014 14:38:31 -0400
+Date: Thu, 12 Jun 2014 00:08:23 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jan Andersson <jan@gaisler.com>
+Cc: Andreas Larsson <andreas@gaisler.com>, julia.lawall@lip6.fr
+Subject: [PATCH v3] usb: host: uhci-grlib.c : use devm_ functions
+Message-ID: <20140611183823.GA10519@himangi-Dell>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mutex_trylock() function calls into __mutex_trylock_fastpath() when
-trying to obtain the mutex. On 32 bit x86, in the !__HAVE_ARCH_CMPXCHG
-case, __mutex_trylock_fastpath() calls directly into __mutex_trylock_slowpath()
-regardless of whether or not the mutex is locked.
+The various devm_ functions allocate memory that is released when a
+driver detaches. This patch uses devm_ioremap_resource for data
+that is allocated in the probe function of a platform device and
+is only freed in the remove function. The corresponding free functions
+are removed and two labels are done away with. Also, linux/device.h
+is added to make sure the devm_*() routine declarations are
+unambiguously available.
 
-In __mutex_trylock_slowpath(), we then acquire the wait_lock spinlock, xchg()
-lock->count with -1, then set lock->count back to 0 if there are no waiters,
-and return true if the prev lock count was 1.
-
-However, if the mutex is already locked, then there isn't much point
-in attempting all of the above expensive operations. In this patch, we only
-attempt the above trylock operations if the mutex is unlocked.
-
-Signed-off-by: Jason Low <jason.low2@hp.com>
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
 ---
- kernel/locking/mutex.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+Not compile tested due to incompatible architecture.
+v3: pass correct arguments to devm_ioremap_resource
 
-diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
-index e4d997b..11b103d 100644
---- a/kernel/locking/mutex.c
-+++ b/kernel/locking/mutex.c
-@@ -820,6 +820,10 @@ static inline int __mutex_trylock_slowpath(atomic_t *lock_count)
- 	unsigned long flags;
- 	int prev;
+ drivers/usb/host/uhci-grlib.c | 31 +++++++++----------------------
+ 1 file changed, 9 insertions(+), 22 deletions(-)
+
+diff --git a/drivers/usb/host/uhci-grlib.c b/drivers/usb/host/uhci-grlib.c
+index ab25dc3..05f57ff 100644
+--- a/drivers/usb/host/uhci-grlib.c
++++ b/drivers/usb/host/uhci-grlib.c
+@@ -17,6 +17,7 @@
+  * (C) Copyright 2004-2007 Alan Stern, stern@rowland.harvard.edu
+  */
  
-+	/* No need to trylock if the mutex is locked. */
-+	if (mutex_is_locked(lock))
-+		return 0;
-+
- 	spin_lock_mutex(&lock->wait_lock, flags);
++#include <linux/device.h>
+ #include <linux/of_irq.h>
+ #include <linux/of_address.h>
+ #include <linux/of_platform.h>
+@@ -113,24 +114,17 @@ static int uhci_hcd_grlib_probe(struct platform_device *op)
+ 	hcd->rsrc_start = res.start;
+ 	hcd->rsrc_len = resource_size(&res);
  
- 	prev = atomic_xchg(&lock->count, -1);
+-	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len, hcd_name)) {
+-		printk(KERN_ERR "%s: request_mem_region failed\n", __FILE__);
+-		rv = -EBUSY;
+-		goto err_rmr;
+-	}
+-
+ 	irq = irq_of_parse_and_map(dn, 0);
+ 	if (irq == NO_IRQ) {
+ 		printk(KERN_ERR "%s: irq_of_parse_and_map failed\n", __FILE__);
+ 		rv = -EBUSY;
+-		goto err_irq;
++		goto err_usb;
+ 	}
+ 
+-	hcd->regs = ioremap(hcd->rsrc_start, hcd->rsrc_len);
+-	if (!hcd->regs) {
+-		printk(KERN_ERR "%s: ioremap failed\n", __FILE__);
+-		rv = -ENOMEM;
+-		goto err_ioremap;
++	hcd->regs = devm_ioremap_resource(&op->dev, &res);
++	if (IS_ERR(hcd->regs)) {
++		rv = PTR_ERR(hcd->regs);
++		goto err_irq;
+ 	}
+ 
+ 	uhci = hcd_to_uhci(hcd);
+@@ -139,18 +133,14 @@ static int uhci_hcd_grlib_probe(struct platform_device *op)
+ 
+ 	rv = usb_add_hcd(hcd, irq, 0);
+ 	if (rv)
+-		goto err_uhci;
++		goto err_irq;
+ 
+ 	device_wakeup_enable(hcd->self.controller);
+ 	return 0;
+ 
+-err_uhci:
+-	iounmap(hcd->regs);
+-err_ioremap:
+-	irq_dispose_mapping(irq);
+ err_irq:
+-	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
+-err_rmr:
++	irq_dispose_mapping(irq);
++err_usb:
+ 	usb_put_hcd(hcd);
+ 
+ 	return rv;
+@@ -164,10 +154,7 @@ static int uhci_hcd_grlib_remove(struct platform_device *op)
+ 
+ 	usb_remove_hcd(hcd);
+ 
+-	iounmap(hcd->regs);
+ 	irq_dispose_mapping(hcd->irq);
+-	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
+-
+ 	usb_put_hcd(hcd);
+ 
+ 	return 0;
 -- 
-1.7.1
+1.9.1
 
