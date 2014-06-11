@@ -1,44 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755343AbaFKENZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 00:13:25 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:36839 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751138AbaFKENY (ORCPT
+	id S1751138AbaFKEWX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 00:22:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42547 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750736AbaFKEWW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 00:13:24 -0400
+	Wed, 11 Jun 2014 00:22:22 -0400
+Date: Tue, 10 Jun 2014 21:22:16 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: A Raghavendra Rao <raghav3276@gmail.com>
+Cc: devel@driverdev.osuosl.org, Raghavendra <arrao@cdac.in>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: rtl8192e: dot11d: Fixed coding style issues
+Message-ID: <20140611042216.GA15549@kroah.com>
+References: <1402458947-10214-1-git-send-email-arrao@cdac.in>
 MIME-Version: 1.0
-In-Reply-To: <20140610072824.GH5500@mwanda>
-References: <1402071320-14400-1-git-send-email-navin.patidar@gmail.com>
-	<1402071320-14400-5-git-send-email-navin.patidar@gmail.com>
-	<20140610072824.GH5500@mwanda>
-Date: Wed, 11 Jun 2014 09:43:23 +0530
-Message-ID: <CAPV97ycVfL7HLfQpPUx9jnhWn51MpdEt7xH=duKp60Fnv3kOyw@mail.gmail.com>
-Subject: Re: [PATCH 06/13] staging: rtl8188eu: Remove unused funtion _rtw_read_mem()
-From: navin patidar <navin.patidar@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Larry Finger <Larry.Finger@lwfinger.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402458947-10214-1-git-send-email-arrao@cdac.in>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-some times i get confused by one patch should do only one thing
-policy, for example this patch removes
-many other things along  _rtw_read_mem().
-But you are also right it's much easier to review when they are all
-folded together.
-I'm glad, i did it right this time. :)
+On Wed, Jun 11, 2014 at 09:25:47AM +0530, A Raghavendra Rao wrote:
+> From: Raghavendra <arrao@cdac.in>
+> 
+> Fixed coding style issues
 
-regards,
-navin patidar
+Which specific coding style issue?  Be exact please.
 
-On Tue, Jun 10, 2014 at 12:58 PM, Dan Carpenter
-<dan.carpenter@oracle.com> wrote:
-> Thanks.  This is much nicer to review when they are all folded together
-> like this.
->
-> regards,
-> dan carpenter
->
+And don't try to fix more than one type of coding style issue at a
+time...
+
+> 
+> Signed-off-by: A Raghavendra Rao <arrao@cdac.in>
+
+This name doesn't match the From: line :(
+
+thanks,
+
+greg k-h
