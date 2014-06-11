@@ -1,72 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753075AbaFKVxM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 17:53:12 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53095 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750958AbaFKVxJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 17:53:09 -0400
-Message-ID: <5398CFA4.60202@zytor.com>
-Date: Wed, 11 Jun 2014 14:52:36 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1753908AbaFKVya (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 17:54:30 -0400
+Received: from prod-mail-xrelay07.akamai.com ([72.246.2.115]:45883 "EHLO
+	prod-mail-xrelay07.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751898AbaFKVy3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 17:54:29 -0400
+Message-ID: <5398D014.9020900@akamai.com>
+Date: Wed, 11 Jun 2014 17:54:28 -0400
+From: Jason Baron <jbaron@akamai.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Sam Ravnborg <sam@ravnborg.org>
-CC: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        linux-arch@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH RFC 00/10] tools: Revamp the unaligned endian access functions
-References: <1402441994-16780-1-git-send-email-hpa@zytor.com> <20140611192111.GB16069@ravnborg.org>
-In-Reply-To: <20140611192111.GB16069@ravnborg.org>
-X-Enigmail-Version: 1.6
+To: "Luck, Tony" <tony.luck@intel.com>
+CC: Borislav Petkov <bp@alien8.de>, Aristeu Rozanski <aris@redhat.com>,
+        "hpa@zytor.com" <hpa@zytor.com>, "mingo@kernel.org" <mingo@kernel.org>,
+        "dougthompson@xmission.com" <dougthompson@xmission.com>,
+        "m.chehab@samsung.com" <m.chehab@samsung.com>,
+        "mitake@dcl.info.waseda.ac.jp" <mitake@dcl.info.waseda.ac.jp>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] ie31200_edac: Add driver
+References: <cover.1396645124.git.jbaron@akamai.com> <760765424abe31811027ff3efd078bc858b7d3ed.1396645124.git.jbaron@akamai.com> <20140409113552.GJ6529@pd.tnic> <20140409133433.GJ29214@redhat.com> <3908561D78D1C84285E8C5FCA982C28F31E22EAC@ORSMSX106.amr.corp.intel.com> <20140409173633.GN6529@pd.tnic> <5345980F.7070604@akamai.com> <20140409191454.GQ6529@pd.tnic> <5345A54D.2050808@akamai.com> <20140409201615.GS6529@pd.tnic> <3908561D78D1C84285E8C5FCA982C28F31E2358F@ORSMSX106.amr.corp.intel.com>
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F31E2358F@ORSMSX106.amr.corp.intel.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2014 12:21 PM, Sam Ravnborg wrote:
-> On Tue, Jun 10, 2014 at 04:13:04PM -0700, H. Peter Anvin wrote:
->> After a recent problem in the x86 tree, which seems to be the heaviest
->> but not the only user of these functions, I went through and did a
->> patchset to revamp the *user space* unaligned/endian accessor
->> functions.  As much as I think it is downright pathetic that this
->> functionality still isn't part of the C standard, that is life and we
->> have to deal with it.  Furthermore, although glibc has a pretty nice
->> set of functions for byte swapping in <endian.h>, taken from FreeBSD I
->> believe, some older systems don't support them.
->>
->> This variant tries to fill in all the holes.  It assumes that
->> <endian.h> define the functions as macros if they exist, as I don't
->> know any other way of probing for them without reaching for autoconf,
->> but that should be valid enough of an assumption in this case.
->>
->> The hope is that this should give reasonable, if not optimal, code
->> generation on most processors, and give a hook where arch maintainers
->> can add their own changes if needed.
+On 04/09/2014 05:33 PM, Luck, Tony wrote:
+>> Unfortunately, the box reporting the ue errors just went into transit (so
+>> that I can better examine this issue), so I will probably not be able to
+>> run this experiment on that specific box until next week.
 > 
-> This looks like a very complex solution to a simple problem.
-> We want a shared implementation of the *user space*
-> unaligned/endian accessor functions.
-> But do we really want *fast* versions for our use?
+> Do you have any other logs from this machine.  Is there something
+> logged in one (or more) of the machine check banks when your EDAC
+> driver says that there are uncorrected errors?
 > 
-> This is not a new libc that should generate optimal code,
-> but only something were we want to provide e working
-> implmentation for use in our user-space tools.
+> When the box is back  online again - I'd be interested to know if mcelog(8)
+> daemon reports any errors.   Grab the latest from mcelog.org, compile
+> and run as "mcelog --daemon".  Logs show up in /var/log/mcelog
 > 
-> A much simpler approach without any fallback to arch specific
-> version etc. is everything we need.
 
-It doesn't matter so much for things that are just done for the kernel
-compile, no, but there are some tools that are built to be used as
-standalone things, and it could matter there.
+I finally got the bad dimm in hand - running the latest version
+of mcelog, I don't see anything reported in the log. (I verified
+that mcelog was reporting events via mce-inject.)
 
-Please note that the code currently doesn't have any arch-specific bits
-at all... the code is somewhat complex in part because it is very
-generic and handles several levels of fallback.  It *can* get
-arch-specific overrides if it matters, but the intent is that it
-shouldn't be necessary in the vast majority of the cases.
 
-	-hpa
+>> # ./rdmsr 0x179
+>> c09
+> 
+> So this processor does support CMCI - next question is whether each
+> bank support it (and got enabled by Linux) [can run on any system ... don't
+> need to wait for the one to finish transit)]
+> 
+> # for I in `seq 0 8`
+> do
+>        ./rdmsr 0x28$i
+> done
+> 
+> will print the MCi_CTL2 registers from each bank. Bit 30 (0x40000000)
+> shows CMCI enabled.
+> 
+> On the name of the driver - can you throw in an underscore: ie3_12xx.c ?
+> 
+> Do you have systems from Sandy Bridge, Ivy Bridge and Haswell generations
+> (no suffix for Sandy Bridge, then v2 and v3) ... and does this driver work across all of
+> them?  If it is just for Haswell ... then "ie3_12xx_v3.c" might be a better name.
+> 
+
+So I've moved the dimm around to all three systems Sandy, Ivy Bridge and Haswell.
+And this driver is populating '/sys/devices/system/edac/mc/mc0/ue_count' correctly
+when a userspace memory scanning program also report errors. So the driver appears
+to be doing the right thing.
+
+I've tested:
+
+CPU E3-1270 v3 @ 3.50GHz : 8086:0c08 (haswell)
+CPU E3-1270 V2 @ 3.50GHz : 8086:0158 (ivy bridge)
+CPU E31270 @ 3.40GHz : 8086:0108 (sandy bridge)
+
+I still don't see any evidence of CMCI doing anything as the "THR" entry in
+/proc/interrupts doesn't budge off of 0.
+
+Let me know if you'd like me to look at anything else...
+
+Thanks,
+
+-Jason
+
+
+
+
+ 
 
