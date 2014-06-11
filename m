@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755504AbaFKI5e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 04:57:34 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:56259 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751238AbaFKI5a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 04:57:30 -0400
+	id S1755548AbaFKI5l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 04:57:41 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:33027 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755495AbaFKI5f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 04:57:35 -0400
 From: Roger Quadros <rogerq@ti.com>
 To: <tony@atomide.com>, <dwmw2@infradead.org>, <computersforpeace@gmail.com>
 CC: <kyungmin.park@samsung.com>, <pekon@ti.com>,
@@ -14,9 +13,9 @@ CC: <kyungmin.park@samsung.com>, <pekon@ti.com>,
         <nsekhar@ti.com>, <linux-omap@vger.kernel.org>,
         <linux-mtd@lists.infradead.org>, <devicetree@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
-Subject: [PATCH 03/36] ARM: OMAP2+: gpmc: Add platform data
-Date: Wed, 11 Jun 2014 11:56:08 +0300
-Message-ID: <1402477001-31132-4-git-send-email-rogerq@ti.com>
+Subject: [PATCH 04/36] ARM: OMAP2+: gpmc: Add gpmc timings and settings to platform data
+Date: Wed, 11 Jun 2014 11:56:09 +0300
+Message-ID: <1402477001-31132-5-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1402477001-31132-1-git-send-email-rogerq@ti.com>
 References: <1402477001-31132-1-git-send-email-rogerq@ti.com>
@@ -26,68 +25,314 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a platform data structure for GPMC. It contains all the necessary
-platform information that needs to be passed from platform init code
-to GPMC driver.
+Add device_timings, gpmc_timings and gpmc_setting to
+gpmc platform data.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- arch/arm/mach-omap2/gpmc.h              |  4 +---
- include/linux/platform_data/gpmc-omap.h | 30 ++++++++++++++++++++++++++++++
- 2 files changed, 31 insertions(+), 3 deletions(-)
- create mode 100644 include/linux/platform_data/gpmc-omap.h
+ arch/arm/mach-omap2/gpmc.h              | 134 ------------------------------
+ include/linux/platform_data/gpmc-omap.h | 139 ++++++++++++++++++++++++++++++++
+ 2 files changed, 139 insertions(+), 134 deletions(-)
 
 diff --git a/arch/arm/mach-omap2/gpmc.h b/arch/arm/mach-omap2/gpmc.h
-index 707f6d5..c476712 100644
+index c476712..13554e7 100644
 --- a/arch/arm/mach-omap2/gpmc.h
 +++ b/arch/arm/mach-omap2/gpmc.h
-@@ -12,9 +12,7 @@
- #define __OMAP2_GPMC_H
+@@ -71,140 +71,6 @@
+ #define GPMC_IRQ_FIFOEVENTENABLE	0x01
+ #define GPMC_IRQ_COUNT_EVENT		0x02
  
- #include <linux/platform_data/mtd-nand-omap2.h>
+-#define GPMC_BURST_4			4	/* 4 word burst */
+-#define GPMC_BURST_8			8	/* 8 word burst */
+-#define GPMC_BURST_16			16	/* 16 word burst */
+-#define GPMC_DEVWIDTH_8BIT		1	/* 8-bit device width */
+-#define GPMC_DEVWIDTH_16BIT		2	/* 16-bit device width */
+-#define GPMC_MUX_AAD			1	/* Addr-Addr-Data multiplex */
+-#define GPMC_MUX_AD			2	/* Addr-Data multiplex */
 -
--/* Maximum Number of Chip Selects */
--#define GPMC_CS_NUM		8
-+#include <linux/platform_data/gpmc-omap.h>
- 
- #define GPMC_CS_CONFIG1		0x00
- #define GPMC_CS_CONFIG2		0x04
+-/* bool type time settings */
+-struct gpmc_bool_timings {
+-	bool cycle2cyclediffcsen;
+-	bool cycle2cyclesamecsen;
+-	bool we_extra_delay;
+-	bool oe_extra_delay;
+-	bool adv_extra_delay;
+-	bool cs_extra_delay;
+-	bool time_para_granularity;
+-};
+-
+-/*
+- * Note that all values in this struct are in nanoseconds except sync_clk
+- * (which is in picoseconds), while the register values are in gpmc_fck cycles.
+- */
+-struct gpmc_timings {
+-	/* Minimum clock period for synchronous mode (in picoseconds) */
+-	u32 sync_clk;
+-
+-	/* Chip-select signal timings corresponding to GPMC_CS_CONFIG2 */
+-	u32 cs_on;		/* Assertion time */
+-	u32 cs_rd_off;		/* Read deassertion time */
+-	u32 cs_wr_off;		/* Write deassertion time */
+-
+-	/* ADV signal timings corresponding to GPMC_CONFIG3 */
+-	u32 adv_on;		/* Assertion time */
+-	u32 adv_rd_off;		/* Read deassertion time */
+-	u32 adv_wr_off;		/* Write deassertion time */
+-
+-	/* WE signals timings corresponding to GPMC_CONFIG4 */
+-	u32 we_on;		/* WE assertion time */
+-	u32 we_off;		/* WE deassertion time */
+-
+-	/* OE signals timings corresponding to GPMC_CONFIG4 */
+-	u32 oe_on;		/* OE assertion time */
+-	u32 oe_off;		/* OE deassertion time */
+-
+-	/* Access time and cycle time timings corresponding to GPMC_CONFIG5 */
+-	u32 page_burst_access;	/* Multiple access word delay */
+-	u32 access;		/* Start-cycle to first data valid delay */
+-	u32 rd_cycle;		/* Total read cycle time */
+-	u32 wr_cycle;		/* Total write cycle time */
+-
+-	u32 bus_turnaround;
+-	u32 cycle2cycle_delay;
+-
+-	u32 wait_monitoring;
+-	u32 clk_activation;
+-
+-	/* The following are only on OMAP3430 */
+-	u32 wr_access;		/* WRACCESSTIME */
+-	u32 wr_data_mux_bus;	/* WRDATAONADMUXBUS */
+-
+-	struct gpmc_bool_timings bool_timings;
+-};
+-
+-/* Device timings in picoseconds */
+-struct gpmc_device_timings {
+-	u32 t_ceasu;	/* address setup to CS valid */
+-	u32 t_avdasu;	/* address setup to ADV valid */
+-	/* XXX: try to combine t_avdp_r & t_avdp_w. Issue is
+-	 * of tusb using these timings even for sync whilst
+-	 * ideally for adv_rd/(wr)_off it should have considered
+-	 * t_avdh instead. This indirectly necessitates r/w
+-	 * variations of t_avdp as it is possible to have one
+-	 * sync & other async
+-	 */
+-	u32 t_avdp_r;	/* ADV low time (what about t_cer ?) */
+-	u32 t_avdp_w;
+-	u32 t_aavdh;	/* address hold time */
+-	u32 t_oeasu;	/* address setup to OE valid */
+-	u32 t_aa;	/* access time from ADV assertion */
+-	u32 t_iaa;	/* initial access time */
+-	u32 t_oe;	/* access time from OE assertion */
+-	u32 t_ce;	/* access time from CS asertion */
+-	u32 t_rd_cycle;	/* read cycle time */
+-	u32 t_cez_r;	/* read CS deassertion to high Z */
+-	u32 t_cez_w;	/* write CS deassertion to high Z */
+-	u32 t_oez;	/* OE deassertion to high Z */
+-	u32 t_weasu;	/* address setup to WE valid */
+-	u32 t_wpl;	/* write assertion time */
+-	u32 t_wph;	/* write deassertion time */
+-	u32 t_wr_cycle;	/* write cycle time */
+-
+-	u32 clk;
+-	u32 t_bacc;	/* burst access valid clock to output delay */
+-	u32 t_ces;	/* CS setup time to clk */
+-	u32 t_avds;	/* ADV setup time to clk */
+-	u32 t_avdh;	/* ADV hold time from clk */
+-	u32 t_ach;	/* address hold time from clk */
+-	u32 t_rdyo;	/* clk to ready valid */
+-
+-	u32 t_ce_rdyz;	/* XXX: description ?, or use t_cez instead */
+-	u32 t_ce_avd;	/* CS on to ADV on delay */
+-
+-	/* XXX: check the possibility of combining
+-	 * cyc_aavhd_oe & cyc_aavdh_we
+-	 */
+-	u8 cyc_aavdh_oe;/* read address hold time in cycles */
+-	u8 cyc_aavdh_we;/* write address hold time in cycles */
+-	u8 cyc_oe;	/* access time from OE assertion in cycles */
+-	u8 cyc_wpl;	/* write deassertion time in cycles */
+-	u32 cyc_iaa;	/* initial access time in cycles */
+-
+-	/* extra delays */
+-	bool ce_xdelay;
+-	bool avd_xdelay;
+-	bool oe_xdelay;
+-	bool we_xdelay;
+-};
+-
+-struct gpmc_settings {
+-	bool burst_wrap;	/* enables wrap bursting */
+-	bool burst_read;	/* enables read page/burst mode */
+-	bool burst_write;	/* enables write page/burst mode */
+-	bool device_nand;	/* device is NAND */
+-	bool sync_read;		/* enables synchronous reads */
+-	bool sync_write;	/* enables synchronous writes */
+-	bool wait_on_read;	/* monitor wait on reads */
+-	bool wait_on_write;	/* monitor wait on writes */
+-	u32 burst_len;		/* page/burst length */
+-	u32 device_width;	/* device bus width (8 or 16 bit) */
+-	u32 mux_add_data;	/* multiplex address & data */
+-	u32 wait_pin;		/* wait-pin to be used */
+-};
+-
+ extern int gpmc_calc_timings(struct gpmc_timings *gpmc_t,
+ 			     struct gpmc_settings *gpmc_s,
+ 			     struct gpmc_device_timings *dev_t);
 diff --git a/include/linux/platform_data/gpmc-omap.h b/include/linux/platform_data/gpmc-omap.h
-new file mode 100644
-index 0000000..d32d9de
---- /dev/null
+index d32d9de..e861112 100644
+--- a/include/linux/platform_data/gpmc-omap.h
 +++ b/include/linux/platform_data/gpmc-omap.h
-@@ -0,0 +1,30 @@
+@@ -15,10 +15,149 @@
+ /* Maximum Number of Chip Selects */
+ #define GPMC_CS_NUM		8
+ 
++/* bool type time settings */
++struct gpmc_bool_timings {
++	bool cycle2cyclediffcsen;
++	bool cycle2cyclesamecsen;
++	bool we_extra_delay;
++	bool oe_extra_delay;
++	bool adv_extra_delay;
++	bool cs_extra_delay;
++	bool time_para_granularity;
++};
++
 +/*
-+ * OMAP GPMC Platform data
-+ *
-+ * Copyright (C) 2014 Texas Instruments, Inc. - http://www.ti.com
-+ *	Roger Quadros <rogerq@ti.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
++ * Note that all values in this struct are in nanoseconds except sync_clk
++ * (which is in picoseconds), while the register values are in gpmc_fck cycles.
 + */
++struct gpmc_timings {
++	/* Minimum clock period for synchronous mode (in picoseconds) */
++	u32 sync_clk;
 +
-+#ifndef _GPMC_OMAP_H_
-+#define _GPMC_OMAP_H_
++	/* Chip-select signal timings corresponding to GPMC_CS_CONFIG2 */
++	u32 cs_on;		/* Assertion time */
++	u32 cs_rd_off;		/* Read deassertion time */
++	u32 cs_wr_off;		/* Write deassertion time */
 +
-+/* Maximum Number of Chip Selects */
-+#define GPMC_CS_NUM		8
++	/* ADV signal timings corresponding to GPMC_CONFIG3 */
++	u32 adv_on;		/* Assertion time */
++	u32 adv_rd_off;		/* Read deassertion time */
++	u32 adv_wr_off;		/* Write deassertion time */
 +
-+/* Data for each chip select */
-+struct gpmc_omap_cs_data {
-+	bool valid;			/* data is valid */
-+	bool is_nand;			/* device within this CS is NAND */
-+	struct platform_device *pdev;	/* device within this CS region */
-+	unsigned pdata_size;
++	/* WE signals timings corresponding to GPMC_CONFIG4 */
++	u32 we_on;		/* WE assertion time */
++	u32 we_off;		/* WE deassertion time */
++
++	/* OE signals timings corresponding to GPMC_CONFIG4 */
++	u32 oe_on;		/* OE assertion time */
++	u32 oe_off;		/* OE deassertion time */
++
++	/* Access time and cycle time timings corresponding to GPMC_CONFIG5 */
++	u32 page_burst_access;	/* Multiple access word delay */
++	u32 access;		/* Start-cycle to first data valid delay */
++	u32 rd_cycle;		/* Total read cycle time */
++	u32 wr_cycle;		/* Total write cycle time */
++
++	u32 bus_turnaround;
++	u32 cycle2cycle_delay;
++
++	u32 wait_monitoring;
++	u32 clk_activation;
++
++	/* The following are only on OMAP3430 */
++	u32 wr_access;		/* WRACCESSTIME */
++	u32 wr_data_mux_bus;	/* WRDATAONADMUXBUS */
++
++	struct gpmc_bool_timings bool_timings;
 +};
 +
-+struct gpmc_omap_platform_data {
-+	struct gpmc_omap_cs_data cs[GPMC_CS_NUM];
++
++/* Device timings in picoseconds */
++struct gpmc_device_timings {
++	u32 t_ceasu;	/* address setup to CS valid */
++	u32 t_avdasu;	/* address setup to ADV valid */
++	/* XXX: try to combine t_avdp_r & t_avdp_w. Issue is
++	 * of tusb using these timings even for sync whilst
++	 * ideally for adv_rd/(wr)_off it should have considered
++	 * t_avdh instead. This indirectly necessitates r/w
++	 * variations of t_avdp as it is possible to have one
++	 * sync & other async
++	 */
++	u32 t_avdp_r;	/* ADV low time (what about t_cer ?) */
++	u32 t_avdp_w;
++	u32 t_aavdh;	/* address hold time */
++	u32 t_oeasu;	/* address setup to OE valid */
++	u32 t_aa;	/* access time from ADV assertion */
++	u32 t_iaa;	/* initial access time */
++	u32 t_oe;	/* access time from OE assertion */
++	u32 t_ce;	/* access time from CS asertion */
++	u32 t_rd_cycle;	/* read cycle time */
++	u32 t_cez_r;	/* read CS deassertion to high Z */
++	u32 t_cez_w;	/* write CS deassertion to high Z */
++	u32 t_oez;	/* OE deassertion to high Z */
++	u32 t_weasu;	/* address setup to WE valid */
++	u32 t_wpl;	/* write assertion time */
++	u32 t_wph;	/* write deassertion time */
++	u32 t_wr_cycle;	/* write cycle time */
++
++	u32 clk;
++	u32 t_bacc;	/* burst access valid clock to output delay */
++	u32 t_ces;	/* CS setup time to clk */
++	u32 t_avds;	/* ADV setup time to clk */
++	u32 t_avdh;	/* ADV hold time from clk */
++	u32 t_ach;	/* address hold time from clk */
++	u32 t_rdyo;	/* clk to ready valid */
++
++	u32 t_ce_rdyz;	/* XXX: description ?, or use t_cez instead */
++	u32 t_ce_avd;	/* CS on to ADV on delay */
++
++	/* XXX: check the possibility of combining
++	 * cyc_aavhd_oe & cyc_aavdh_we
++	 */
++	u8 cyc_aavdh_oe;/* read address hold time in cycles */
++	u8 cyc_aavdh_we;/* write address hold time in cycles */
++	u8 cyc_oe;	/* access time from OE assertion in cycles */
++	u8 cyc_wpl;	/* write deassertion time in cycles */
++	u32 cyc_iaa;	/* initial access time in cycles */
++
++	/* extra delays */
++	bool ce_xdelay;
++	bool avd_xdelay;
++	bool oe_xdelay;
++	bool we_xdelay;
 +};
 +
-+#endif /* _GPMC_OMAP_H */
++#define GPMC_BURST_4			4	/* 4 word burst */
++#define GPMC_BURST_8			8	/* 8 word burst */
++#define GPMC_BURST_16			16	/* 16 word burst */
++#define GPMC_DEVWIDTH_8BIT		1	/* 8-bit device width */
++#define GPMC_DEVWIDTH_16BIT		2	/* 16-bit device width */
++#define GPMC_MUX_AAD			1	/* Addr-Addr-Data multiplex */
++#define GPMC_MUX_AD			2	/* Addr-Data multiplex */
++
++struct gpmc_settings {
++	bool burst_wrap;	/* enables wrap bursting */
++	bool burst_read;	/* enables read page/burst mode */
++	bool burst_write;	/* enables write page/burst mode */
++	bool device_nand;	/* device is NAND */
++	bool sync_read;		/* enables synchronous reads */
++	bool sync_write;	/* enables synchronous writes */
++	bool wait_on_read;	/* monitor wait on reads */
++	bool wait_on_write;	/* monitor wait on writes */
++	u32 burst_len;		/* page/burst length */
++	u32 device_width;	/* device bus width (8 or 16 bit) */
++	u32 mux_add_data;	/* multiplex address & data */
++	u32 wait_pin;		/* wait-pin to be used */
++};
++
++
+ /* Data for each chip select */
+ struct gpmc_omap_cs_data {
+ 	bool valid;			/* data is valid */
+ 	bool is_nand;			/* device within this CS is NAND */
++	struct gpmc_settings *settings;
++	struct gpmc_device_timings *device_timings;
++	struct gpmc_timings *gpmc_timings;
+ 	struct platform_device *pdev;	/* device within this CS region */
+ 	unsigned pdata_size;
+ };
 -- 
 1.8.3.2
 
