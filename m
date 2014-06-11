@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932209AbaFKMec (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 08:34:32 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:33693 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754424AbaFKMea (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755540AbaFKMea (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 11 Jun 2014 08:34:30 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:51017 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751726AbaFKMe1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 08:34:27 -0400
 From: Matthias Brugger <matthias.bgg@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
@@ -23,95 +23,159 @@ Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         shawn.guo@freescale.com, anders.berg@lsi.com, linus.walleij@linaro.org,
         devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v8 1/7] of: Provide function to request and map memory
-Date: Wed, 11 Jun 2014 14:34:09 +0200
-Message-Id: <1402490055-15197-2-git-send-email-matthias.bgg@gmail.com>
+Subject: [PATCH v8 0/7] arm: Add basic support for Mediatek Cortex-A7 SoCs
+Date: Wed, 11 Jun 2014 14:34:08 +0200
+Message-Id: <1402490055-15197-1-git-send-email-matthias.bgg@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1402490055-15197-1-git-send-email-matthias.bgg@gmail.com>
-References: <1402490055-15197-1-git-send-email-matthias.bgg@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A call to of_iomap does not request the memory region.
-This patch adds the function of_io_request_and_map which requests
-the memory region before mapping it.
+Eighth round for the Mediatek basic support patches.
+
+The biggest change are the DTS definition of the clocks.
+
+---
+This patch set adds basic support for the Mediatek Cortex-A7 SoCs.
+Support is quite basic, as the only component working up to now are the
+timers.
+
+The patch series is build against torvalds/master tree.
 
 Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
-Suggested-by: Thomas Gleixner <tglx@linutronix.de>
-Suggested-by: Rob Herring <robh@kernel.org>
-Acked-by: Grant Likely <grant.likely@linaro.org>
----
- drivers/of/address.c       |   29 +++++++++++++++++++++++++++++
- include/linux/of_address.h |    8 ++++++++
- 2 files changed, 37 insertions(+)
 
-diff --git a/drivers/of/address.c b/drivers/of/address.c
-index 5edfcb0..d6b2900 100644
---- a/drivers/of/address.c
-+++ b/drivers/of/address.c
-@@ -702,6 +702,35 @@ void __iomem *of_iomap(struct device_node *np, int index)
- }
- EXPORT_SYMBOL(of_iomap);
- 
-+/*
-+ * of_io_request_and_map - Requests a resource and maps the memory mapped IO
-+ *			   for a given device_node
-+ * @device:	the device whose io range will be mapped
-+ * @index:	index of the io range
-+ * @name:	name of the resource
-+ *
-+ * Returns a pointer to the requested and mapped memory
-+ */
-+void __iomem *of_io_request_and_map(struct device_node *np, int index,
-+					char *name)
-+{
-+	struct resource res;
-+	void __iomem *mem;
-+
-+	if (of_address_to_resource(np, index, &res))
-+		return NULL;
-+
-+	if (!request_mem_region(res.start, resource_size(&res), name))
-+		return NULL;
-+
-+	mem = ioremap(res.start, resource_size(&res));
-+	if (!mem)
-+		release_mem_region(res.start, resource_size(&res));
-+
-+	return mem;
-+}
-+EXPORT_SYMBOL(of_io_request_and_map);
-+
- /**
-  * of_dma_get_range - Get DMA range info
-  * @np:		device node to get DMA range info
-diff --git a/include/linux/of_address.h b/include/linux/of_address.h
-index c13b878..0a13482 100644
---- a/include/linux/of_address.h
-+++ b/include/linux/of_address.h
-@@ -109,6 +109,8 @@ static inline bool of_dma_is_coherent(struct device_node *np)
- extern int of_address_to_resource(struct device_node *dev, int index,
- 				  struct resource *r);
- void __iomem *of_iomap(struct device_node *node, int index);
-+void __iomem *of_io_request_and_map(struct device_node *device,
-+					int index, char *name);
- #else
- static inline int of_address_to_resource(struct device_node *dev, int index,
- 					 struct resource *r)
-@@ -120,6 +122,12 @@ static inline void __iomem *of_iomap(struct device_node *device, int index)
- {
- 	return NULL;
- }
-+
-+static inline void __iomem *of_io_request_and_map(struct device_node *device,
-+					int index, char *name)
-+{
-+	return NULL;
-+}
- #endif
- 
- #if defined(CONFIG_OF_ADDRESS) && defined(CONFIG_PCI)
+Changes for v8:
+1. OF address
+- fix style issue
+
+2. clocksource driver
+- fix style issue
+
+3. Basic SoC support
+- define the clock node as a simple-bus
+- delete unused clock-ranges
+
+
+Changes for v7:
+1. OF address
+- add of_io_request_and_map
+
+2. Clocksource timer
+- use pr_warnings and error handling instead of panic
+- fix macro parentheses
+- use of_io_request_and_map
+
+3. Others
+- rename SoC DT bindings to mediatek.txt
+- fixed typos
+
+
+Changes for v6:
+- fix compatible string of the timer
+- encapsulate timer setup in function
+- add more information to the timer commit message
+- add address in timer DTS bindings documentation
+
+
+Changes for v5:
+1. Clocksource timer
+- Change the compatible string to mt6577
+
+2. Timer DT bindings
+- Change compatible string to mt6577
+
+
+Changes for v4:
+1. Clocksource timer
+- use cpu_possible_mask
+
+2. Timer DT bindings
+- Delete comments about the frequency of the clocks
+- Add clock-names for the input clocks
+
+3. Basic SoC support
+- add clock-names for the timer
+- rename the label of the clocks nodes
+
+
+Changes for v3:
+1. Clocksource timer
+- Set cpu_mask_all and irq in clock_event_device
+- Use device private structure for driver specific values
+
+2. Timer DT bindings
+- Define order of the clock phandles
+- Fix typos
+
+3. Basic SoC support
+- DTS: set gic to a15-gic
+- DTS: order by physical address
+- Remove call to dt_init function
+
+
+Changes for v2:
+1. Clocksource timer
+- Delete unused parts for sched_clock_source
+- Use irq_request instead of setup_irq
+- Remove unused SMP parts
+- Fix some style issues
+- use of_address_to resource and request_mem_region
+- delete use of named clock
+- select CLKSRC_MMIO in driver Kconfig
+
+2. DT bindings
+- delete named clock bindings
+
+3. Basic SoC support
+- Clean-up Kconfig
+- Add documentation of the SoC compatible property 
+- DTS: rename SoC file to mt6589.dts
+- DTS: Delete not present cache controller
+- DTS: Add missing GICv2 properties
+- DTS: Change clock names
+- DTS: Add Aquaris5 board
+
+4. Add earlyprintk
+- patch droped until serial driver is available
+
+5. Add support for Aquaris5 mobile phone
+
+
+
+Matthias Brugger (7):
+  of: Provide function to request and map memory
+  clocksource: Add support for the Mediatek SoCs
+  dt-bindings: add mtk-timer bindings
+  vendor-prefixes: add prefix for Mediaktek Inc.
+  arm: add basic support for Mediatek MT6589 boards
+  dt-bindings: add documentation for Mediatek SoC
+  arm: mediatek: add dts for Aquaris5 mobile phone
+
+ Documentation/devicetree/bindings/arm/mediatek.txt |    8 +
+ .../bindings/timer/mediatek,mtk-timer.txt          |   18 ++
+ .../devicetree/bindings/vendor-prefixes.txt        |    1 +
+ arch/arm/Kconfig                                   |    2 +
+ arch/arm/Makefile                                  |    1 +
+ arch/arm/boot/dts/mt6589-aquaris5.dts              |   25 ++
+ arch/arm/boot/dts/mt6589.dtsi                      |   94 +++++++
+ arch/arm/mach-mediatek/Kconfig                     |    6 +
+ arch/arm/mach-mediatek/Makefile                    |    1 +
+ arch/arm/mach-mediatek/mediatek.c                  |   27 ++
+ drivers/clocksource/Kconfig                        |    5 +
+ drivers/clocksource/Makefile                       |    1 +
+ drivers/clocksource/mtk_timer.c                    |  261 ++++++++++++++++++++
+ drivers/of/address.c                               |   29 +++
+ include/linux/of_address.h                         |    8 +
+ 15 files changed, 487 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/mediatek.txt
+ create mode 100644 Documentation/devicetree/bindings/timer/mediatek,mtk-timer.txt
+ create mode 100644 arch/arm/boot/dts/mt6589-aquaris5.dts
+ create mode 100644 arch/arm/boot/dts/mt6589.dtsi
+ create mode 100644 arch/arm/mach-mediatek/Kconfig
+ create mode 100644 arch/arm/mach-mediatek/Makefile
+ create mode 100644 arch/arm/mach-mediatek/mediatek.c
+ create mode 100644 drivers/clocksource/mtk_timer.c
+
 -- 
 1.7.9.5
 
