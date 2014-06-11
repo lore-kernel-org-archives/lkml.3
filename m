@@ -1,119 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932447AbaFKRUZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 13:20:25 -0400
-Received: from mga02.intel.com ([134.134.136.20]:59247 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751049AbaFKRUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 13:20:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,459,1400050800"; 
-   d="scan'208";a="526945016"
-Date: Wed, 11 Jun 2014 10:18:54 -0700
-From: Jon Mason <jon.mason@intel.com>
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: NTB driver support in haswell platform?
-Message-ID: <20140611171854.GA3698@jonmason-lab>
-References: <53981B6A.40807@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53981B6A.40807@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932599AbaFKRWK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 13:22:10 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:42958 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932468AbaFKRWI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 13:22:08 -0400
+From: navin patidar <navin.patidar@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
+Subject: [PATCH 01/22] staging: rtl8188eu: rtw_io.c: Remove unused function _rtw_write8_async()
+Date: Wed, 11 Jun 2014 22:51:20 +0530
+Message-Id: <1402507301-3722-1-git-send-email-navin.patidar@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 11, 2014 at 05:03:38PM +0800, Yijing Wang wrote:
-> Hi Jon,
->    I have a Intel Haswell platform in hand, and our team want to use NTB in this platform.
-> I checked the current intel NTB driver in Linux kernel, I found the Haswell NTB pci device id
-> is not contained in ntb_pci_tbl[]. I want to know whether current kernel ntb driver can support
-> the ntb device in Haswell platform ?
+Signed-off-by: navin patidar <navin.patidar@gmail.com>
+---
+ drivers/staging/rtl8188eu/core/rtw_io.c    |   12 ------------
+ drivers/staging/rtl8188eu/include/rtw_io.h |    4 ----
+ 2 files changed, 16 deletions(-)
 
-Yes, it does support Haswell and the Device IDs are in there.
-PCI_DEVICE_ID_INTEL_NTB_B2B_HSX, PCI_DEVICE_ID_INTEL_NTB_PS_HSX, and
-PCI_DEVICE_ID_INTEL_NTB_SS_HSX are the relevant dev ids for Haswell.
+diff --git a/drivers/staging/rtl8188eu/core/rtw_io.c b/drivers/staging/rtl8188eu/core/rtw_io.c
+index 292b6a1..009dca5 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_io.c
++++ b/drivers/staging/rtl8188eu/core/rtw_io.c
+@@ -138,18 +138,6 @@ int _rtw_writeN(struct adapter *adapter, u32 addr , u32 length , u8 *pdata)
+ 
+ 	return RTW_STATUS_CODE(ret);
+ }
+-int _rtw_write8_async(struct adapter *adapter, u32 addr, u8 val)
+-{
+-	struct io_priv *pio_priv = &adapter->iopriv;
+-	struct	intf_hdl		*pintfhdl = &(pio_priv->intf);
+-	int (*_write8_async)(struct intf_hdl *pintfhdl, u32 addr, u8 val);
+-	int ret;
+-	_write8_async = pintfhdl->io_ops._write8_async;
+-
+-	ret = _write8_async(pintfhdl, addr, val);
+-
+-	return RTW_STATUS_CODE(ret);
+-}
+ 
+ int _rtw_write16_async(struct adapter *adapter, u32 addr, u16 val)
+ {
+diff --git a/drivers/staging/rtl8188eu/include/rtw_io.h b/drivers/staging/rtl8188eu/include/rtw_io.h
+index bc36129..5463164 100644
+--- a/drivers/staging/rtl8188eu/include/rtw_io.h
++++ b/drivers/staging/rtl8188eu/include/rtw_io.h
+@@ -52,7 +52,6 @@ struct _io_ops {
+ 	int (*_write32)(struct intf_hdl *pintfhdl, u32 addr, u32 val);
+ 	int (*_writeN)(struct intf_hdl *pintfhdl, u32 addr, u32 length,
+ 		       u8 *pdata);
+-	int (*_write8_async)(struct intf_hdl *pintfhdl, u32 addr, u8 val);
+ 	int (*_write16_async)(struct intf_hdl *pintfhdl, u32 addr, u16 val);
+ 	int (*_write32_async)(struct intf_hdl *pintfhdl, u32 addr, u32 val);
+ 	u32 (*_read_port)(struct intf_hdl *pintfhdl, u32 addr, u32 cnt,
+@@ -103,7 +102,6 @@ int _rtw_write16(struct adapter *adapter, u32 addr, u16 val);
+ int _rtw_write32(struct adapter *adapter, u32 addr, u32 val);
+ int _rtw_writeN(struct adapter *adapter, u32 addr, u32 length, u8 *pdata);
+ 
+-int _rtw_write8_async(struct adapter *adapter, u32 addr, u8 val);
+ int _rtw_write16_async(struct adapter *adapter, u32 addr, u16 val);
+ int _rtw_write32_async(struct adapter *adapter, u32 addr, u32 val);
+ 
+@@ -127,8 +125,6 @@ void _rtw_write_port_cancel(struct adapter *adapter);
+ 	_rtw_write32((adapter), (addr), (val))
+ #define  rtw_writeN(adapter, addr, length, data)			\
+ 	_rtw_writeN((adapter), (addr), (length), (data))
+-#define rtw_write8_async(adapter, addr, val)				\
+-	_rtw_write8_async((adapter), (addr), (val))
+ #define rtw_write16_async(adapter, addr, val)				\
+ 	_rtw_write16_async((adapter), (addr), (val))
+ #define rtw_write32_async(adapter, addr, val)				\
+-- 
+1.7.10.4
 
-> Haswell NTB device id:
-> 
-> From Haswell EDS 7.4.2
-> 
-> did
-> Bus: 0 Device: 3 Function: 0 Offset: 2
-> Bit Attr Default Description
-> 15:0 RO-V 2F08h Device_Identification_Number — Device ID values vary from function to function.
-> Bits 15:8 are equal to 0x2F. The following list is a breakdown of the function groups.
->   0x2F00 - 0x2F1F : PCI Express and DMI2
->   0x2F20 - 0x2F3F : Integrated I/O Features
->   0x2F40 - 0x2F5F : Performance Monitors
->   0x2F80 - 0x2F9F : Intel QPI
->   0x2FA0 - 0x2FBF : Home Agent/Memory Controller
->   0x2FC0 - 0x2FDF : Power Management
->   0x2FE0 - 0x2FFF : Cbo/Ring
-> Default value may vary based on bus, device, and function of this CSR location.
-> 
-> 
-> Current ntb_pci_tbl[] in Linux:
-> 
-> #define PCI_DEVICE_ID_INTEL_NTB_B2B_JSF		0x3725
-> #define PCI_DEVICE_ID_INTEL_NTB_PS_JSF		0x3726
-> #define PCI_DEVICE_ID_INTEL_NTB_SS_JSF		0x3727
-> #define PCI_DEVICE_ID_INTEL_NTB_B2B_SNB		0x3C0D
-> #define PCI_DEVICE_ID_INTEL_NTB_PS_SNB		0x3C0E
-> #define PCI_DEVICE_ID_INTEL_NTB_SS_SNB		0x3C0F
-> #define PCI_DEVICE_ID_INTEL_NTB_B2B_IVT		0x0E0D
-> #define PCI_DEVICE_ID_INTEL_NTB_PS_IVT		0x0E0E
-> #define PCI_DEVICE_ID_INTEL_NTB_SS_IVT		0x0E0F
-> #define PCI_DEVICE_ID_INTEL_NTB_B2B_HSX		0x2F0D
-> #define PCI_DEVICE_ID_INTEL_NTB_PS_HSX		0x2F0E
-> #define PCI_DEVICE_ID_INTEL_NTB_SS_HSX		0x2F0F
-> #define PCI_DEVICE_ID_INTEL_NTB_B2B_BWD		0x0C4E
-> 
-> So we should modify the default device id to 0x2F0D, 0x2F0E or 0x2F0F ?
-
-The device IDs are present above: PCI_DEVICE_ID_INTEL_NTB_B2B_HSX,
-PCI_DEVICE_ID_INTEL_NTB_PS_HSX, and PCI_DEVICE_ID_INTEL_NTB_SS_HSX.
-
-> What's the difference between them?
-
-The last 3 letters are the name of the CPU where NTB is found.  HSX is
-Haswell Xeon.  The 2-3 letters before that are the configuration type
-of the NTB device.  B2B is for "Back-to-back" configurations, aka
-"NTB-NTB". 
-
-B2B
-[CPU]---[NTB]===[NTB]---[CPU]
-
-PS/SS is for NTB-RP configurations.  PS is "Primary Side" and SS is
-"Secondary Side".
-
-[CPU]---[SS|PS]---[CPU]
-
-I have an NTB wiki on my github account
-(https://github.com/jonmason/ntb/wiki) describing the configuration,
-etc.  Also on the wiki is a link to a doc (not written by me, and
-contains references to a driver that was not made public) that has
-some graphics that might be useful.  Specifically, pages 10 and 17.
-To save time, the URL is
-http://download.intel.com/design/intarch/papers/323328.pdf
-
-Let me know if you have any questions or issues, and I'll be happy to
-walk you through it.
-
-Thanks,
-Jon
-
-> 
-> Thanks!
-> Yijing.
-> 
-> 
-> 
-> 
-> -- 
-> Thanks!
-> Yijing
-> 
