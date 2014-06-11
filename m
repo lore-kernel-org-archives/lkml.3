@@ -1,187 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933454AbaFKRYj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 13:24:39 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:37519 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751220AbaFKRYg (ORCPT
+	id S933542AbaFKRZK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 13:25:10 -0400
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:61909 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755957AbaFKRZF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 13:24:36 -0400
-From: navin patidar <navin.patidar@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 22/22] staging: rtl8188eu: Remove empty files rtw_io.[c,h]
-Date: Wed, 11 Jun 2014 22:51:41 +0530
-Message-Id: <1402507301-3722-22-git-send-email-navin.patidar@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1402507301-3722-1-git-send-email-navin.patidar@gmail.com>
-References: <1402507301-3722-1-git-send-email-navin.patidar@gmail.com>
+	Wed, 11 Jun 2014 13:25:05 -0400
+Date: Wed, 11 Jun 2014 11:25:08 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-pci@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pci/msi: fix memory leak in free_msi_irqs()
+Message-ID: <20140611172508.GA14357@google.com>
+References: <1401922190-25357-1-git-send-email-ast@plumgrid.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401922190-25357-1-git-send-email-ast@plumgrid.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: navin patidar <navin.patidar@gmail.com>
----
- drivers/staging/rtl8188eu/Makefile               |    1 -
- drivers/staging/rtl8188eu/core/rtw_io.c          |   53 ----------------------
- drivers/staging/rtl8188eu/include/drv_types.h    |    1 -
- drivers/staging/rtl8188eu/include/rtw_io.h       |   36 ---------------
- drivers/staging/rtl8188eu/os_dep/os_intfs.c      |    1 +
- drivers/staging/rtl8188eu/os_dep/osdep_service.c |    1 +
- 6 files changed, 2 insertions(+), 91 deletions(-)
- delete mode 100644 drivers/staging/rtl8188eu/core/rtw_io.c
- delete mode 100644 drivers/staging/rtl8188eu/include/rtw_io.h
+On Wed, Jun 04, 2014 at 03:49:50PM -0700, Alexei Starovoitov wrote:
+> free_msi_irqs() is leaking memory, since
+> list_for_each_entry(entry, &dev->msi_list, list) {...}
+> is never executed, because dev->msi_list is made empty by
+> the loop just above this one.
+> 
+> Fix it by relying on zero termination of attribute array like
+> populate_msi_sysfs() does.
+> 
+> Fixes: 1c51b50c2995 ("PCI/MSI: Export MSI mode using attributes, not kobjects")
+> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
 
-diff --git a/drivers/staging/rtl8188eu/Makefile b/drivers/staging/rtl8188eu/Makefile
-index 450394e..2654bf8 100644
---- a/drivers/staging/rtl8188eu/Makefile
-+++ b/drivers/staging/rtl8188eu/Makefile
-@@ -20,7 +20,6 @@ r8188eu-y :=				\
- 		core/rtw_debug.o	\
- 		core/rtw_efuse.o	\
- 		core/rtw_ieee80211.o	\
--		core/rtw_io.o		\
- 		core/rtw_ioctl_set.o	\
- 		core/rtw_iol.o		\
- 		core/rtw_led.o		\
-diff --git a/drivers/staging/rtl8188eu/core/rtw_io.c b/drivers/staging/rtl8188eu/core/rtw_io.c
-deleted file mode 100644
-index dd56896..0000000
---- a/drivers/staging/rtl8188eu/core/rtw_io.c
-+++ /dev/null
-@@ -1,53 +0,0 @@
--/******************************************************************************
-- *
-- * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
-- *
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms of version 2 of the GNU General Public License as
-- * published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful, but WITHOUT
-- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
-- * more details.
-- *
-- * You should have received a copy of the GNU General Public License along with
-- * this program; if not, write to the Free Software Foundation, Inc.,
-- * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
-- *
-- *
-- ******************************************************************************/
--/*
--
--The purpose of rtw_io.c
--
--a. provides the API
--
--b. provides the protocol engine
--
--c. provides the software interface between caller and the hardware interface
--
--
--Compiler Flag Option:
--
--USB:
--   a. USE_ASYNC_IRP: Both sync/async operations are provided.
--
--Only sync read/rtw_write_mem operations are provided.
--
--jackson@realtek.com.tw
--
--*/
--
--#define _RTW_IO_C_
--#include <osdep_service.h>
--#include <drv_types.h>
--#include <rtw_io.h>
--#include <osdep_intf.h>
--#include <usb_ops.h>
--
--#define rtw_le16_to_cpu(val)		le16_to_cpu(val)
--#define rtw_le32_to_cpu(val)		le32_to_cpu(val)
--#define rtw_cpu_to_le16(val)		cpu_to_le16(val)
--#define rtw_cpu_to_le32(val)		cpu_to_le32(val)
--
-diff --git a/drivers/staging/rtl8188eu/include/drv_types.h b/drivers/staging/rtl8188eu/include/drv_types.h
-index 8063caa..9c3f905 100644
---- a/drivers/staging/rtl8188eu/include/drv_types.h
-+++ b/drivers/staging/rtl8188eu/include/drv_types.h
-@@ -40,7 +40,6 @@
- #include <rtw_qos.h>
- #include <rtw_security.h>
- #include <rtw_pwrctrl.h>
--#include <rtw_io.h>
- #include <rtw_eeprom.h>
- #include <sta_info.h>
- #include <rtw_mlme.h>
-diff --git a/drivers/staging/rtl8188eu/include/rtw_io.h b/drivers/staging/rtl8188eu/include/rtw_io.h
-deleted file mode 100644
-index a9a6d19..0000000
---- a/drivers/staging/rtl8188eu/include/rtw_io.h
-+++ /dev/null
-@@ -1,36 +0,0 @@
--/******************************************************************************
-- *
-- * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
-- *
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms of version 2 of the GNU General Public License as
-- * published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful, but WITHOUT
-- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
-- * more details.
-- *
-- * You should have received a copy of the GNU General Public License along with
-- * this program; if not, write to the Free Software Foundation, Inc.,
-- * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
-- *
-- *
-- ******************************************************************************/
--
--#ifndef _RTW_IO_H_
--#define _RTW_IO_H_
--
--#include <osdep_service.h>
--#include <osdep_intf.h>
--
--#include <asm/byteorder.h>
--#include <linux/semaphore.h>
--#include <linux/list.h>
--#include <linux/spinlock.h>
--#include <linux/atomic.h>
--
--#include <linux/usb.h>
--#include <linux/usb/ch9.h>
--
--#endif	/* _RTL8711_IO_H_ */
-diff --git a/drivers/staging/rtl8188eu/os_dep/os_intfs.c b/drivers/staging/rtl8188eu/os_dep/os_intfs.c
-index 1d961bd..34f7370 100644
---- a/drivers/staging/rtl8188eu/os_dep/os_intfs.c
-+++ b/drivers/staging/rtl8188eu/os_dep/os_intfs.c
-@@ -20,6 +20,7 @@
- #define _OS_INTFS_C_
- 
- #include <osdep_service.h>
-+#include <osdep_intf.h>
- #include <drv_types.h>
- #include <xmit_osdep.h>
- #include <recv_osdep.h>
-diff --git a/drivers/staging/rtl8188eu/os_dep/osdep_service.c b/drivers/staging/rtl8188eu/os_dep/osdep_service.c
-index 2579a40..9b76e08 100644
---- a/drivers/staging/rtl8188eu/os_dep/osdep_service.c
-+++ b/drivers/staging/rtl8188eu/os_dep/osdep_service.c
-@@ -22,6 +22,7 @@
- #define _OSDEP_SERVICE_C_
- 
- #include <osdep_service.h>
-+#include <osdep_intf.h>
- #include <drv_types.h>
- #include <recv_osdep.h>
- #include <linux/vmalloc.h>
--- 
-1.7.10.4
+I added Neil and Greg's acks and a stable tag and will merge this for
+v3.16.  Thanks!
 
+> ---
+> 
+> This was found by kmemleak report:
+> unreferenced object 0xffff880808eda600 (size 64):
+>   comm "modprobe", pid 1526, jiffies 4294902299 (age 58422.716s)
+>   hex dump (first 32 bytes):
+>     20 c4 66 09 08 88 ff ff 24 01 00 00 00 00 00 00   .f.....$.......
+>     50 97 77 82 ff ff ff ff 00 00 00 00 00 00 00 00  P.w.............
+>   backtrace:
+>     [<ffffffff816e5fc8>] kmemleak_alloc+0x28/0x50
+>     [<ffffffff811b885e>] kmem_cache_alloc_trace+0xde/0x230
+>     [<ffffffff813aa286>] populate_msi_sysfs+0xc6/0x250
+>     [<ffffffff813aafdb>] pci_enable_msix+0x34b/0x430
+>     [<ffffffff813ab0ec>] pci_enable_msix_range+0x2c/0x70
+>     [<ffffffffa0034ade>] igb_init_interrupt_scheme+0x9e/0x420 [igb]
+>     [<ffffffffa003d668>] igb_probe+0x4a8/0x1250 [igb]
+>     [<ffffffff813930de>] local_pci_probe+0x4e/0xa0
+>     [<ffffffff813933e9>] pci_device_probe+0xd9/0x120
+>     [<ffffffff814697cd>] driver_probe_device+0x8d/0x250
+>     [<ffffffff81469a3b>] __driver_attach+0xab/0xb0
+>     [<ffffffff8146799d>] bus_for_each_dev+0x5d/0xa0
+>     [<ffffffff814691de>] driver_attach+0x1e/0x20
+>     [<ffffffff81468e57>] bus_add_driver+0x117/0x220
+>     [<ffffffff8146a104>] driver_register+0x64/0xf0
+>     [<ffffffff813923f4>] __pci_register_driver+0x64/0x70
+> 
+> IGB driver is calling pci_enable_msix_range() and immediately pci_disable_msix()
+> which leaks the memory.
+> Obviously the leak happens with any driver.
+> 
+>  drivers/pci/msi.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+> index 955ab7990c5b..fb02fc2fb034 100644
+> --- a/drivers/pci/msi.c
+> +++ b/drivers/pci/msi.c
+> @@ -414,7 +414,7 @@ static void free_msi_irqs(struct pci_dev *dev)
+>  	if (dev->msi_irq_groups) {
+>  		sysfs_remove_groups(&dev->dev.kobj, dev->msi_irq_groups);
+>  		msi_attrs = dev->msi_irq_groups[0]->attrs;
+> -		list_for_each_entry(entry, &dev->msi_list, list) {
+> +		while (msi_attrs[count]) {
+>  			dev_attr = container_of(msi_attrs[count],
+>  						struct device_attribute, attr);
+>  			kfree(dev_attr->attr.name);
+> -- 
+> 1.7.9.5
+> 
