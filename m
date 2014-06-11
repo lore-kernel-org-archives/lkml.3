@@ -1,70 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932270AbaFKM4G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 08:56:06 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:60925 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751630AbaFKM4E (ORCPT
+	id S1753842AbaFKNCH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 09:02:07 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:47870 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751510AbaFKNCE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 08:56:04 -0400
-Message-ID: <539851DF.3070808@gmail.com>
-Date: Wed, 11 Jun 2014 08:55:59 -0400
-From: Vlad Yasevich <vyasevich@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 11 Jun 2014 09:02:04 -0400
 MIME-Version: 1.0
-To: Xufeng Zhang <xufeng.zhang@windriver.com>, nhorman@tuxdriver.com,
-        davem@davemloft.net
-CC: linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sctp: Fix sk_ack_backlog wrap-around problem
-References: <1402454244-8427-1-git-send-email-xufeng.zhang@windriver.com>
-In-Reply-To: <1402454244-8427-1-git-send-email-xufeng.zhang@windriver.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAL_JsqK0RqYuZ8YB1sBZK7hMXvp6oEPfAu11m95F61_kGV3Ptg@mail.gmail.com>
+References: <cover.1402484954.git.Adam.Thomson.Opensource@diasemi.com>
+	<bf4b6d7b061e66d3ca7f3dd44319b9e26ae7103f.1402484954.git.Adam.Thomson.Opensource@diasemi.com>
+	<CAMuHMdWirVk+jrz40yw4=zAOFH6VTX9CXcpO01e0rK8S8VGGHw@mail.gmail.com>
+	<CAL_JsqK0RqYuZ8YB1sBZK7hMXvp6oEPfAu11m95F61_kGV3Ptg@mail.gmail.com>
+Date: Wed, 11 Jun 2014 15:01:57 +0200
+X-Google-Sender-Auth: V7lger-iGpnRHsTZpmaXPhRLTGQ
+Message-ID: <CAMuHMdVD1Rui6NL6AS2iAaw+bmXbU6juA9ugO1rFSw_5W-49tA@mail.gmail.com>
+Subject: Re: [PATCH 8/8] DT: Add vendor prefix for Dialog Semiconductor Ltd.
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>,
+        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        support.opensource@diasemi.com,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Simon Horman <horms@verge.net.au>,
+        Linux-sh list <linux-sh@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2014 10:37 PM, Xufeng Zhang wrote:
-> Consider the scenario:
-> For a TCP-style socket, while processing the COOKIE_ECHO chunk in
-> sctp_sf_do_5_1D_ce(), after it has passed a series of sanity check,
-> a new association would be created in sctp_unpack_cookie(), but afterwards,
-> some processing maybe failed, and sctp_association_free() will be called to
-> free the previously allocated association, in sctp_association_free(),
-> sk_ack_backlog value is decremented for this socket, since the initial
-> value for sk_ack_backlog is 0, after the decrement, it will be 65535,
-> a wrap-around problem happens, and if we want to establish new associations
-> afterward in the same socket, ABORT would be triggered since sctp deem the
-> accept queue as full.
-> Fix this issue by only decrementing sk_ack_backlog for associations in
-> the endpoint's list.
-> 
-> Fix-suggested-by: Neil Horman <nhorman@tuxdriver.com>
-> Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
-> ---
->  net/sctp/associola.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/net/sctp/associola.c b/net/sctp/associola.c
-> index 39579c3..60564f2 100644
-> --- a/net/sctp/associola.c
-> +++ b/net/sctp/associola.c
-> @@ -330,7 +330,7 @@ void sctp_association_free(struct sctp_association *asoc)
->  	/* Only real associations count against the endpoint, so
->  	 * don't bother for if this is a temporary association.
->  	 */
-> -	if (!asoc->temp) {
-> +	if (!asoc->temp && !list_empty(&asoc->asocs)) {
->  		list_del(&asoc->asocs);
->  
->  		/* Decrement the backlog value for a TCP-style listening
-> 
+On Wed, Jun 11, 2014 at 2:43 PM, Rob Herring <robherring2@gmail.com> wrote:
+> On Wed, Jun 11, 2014 at 7:09 AM, Geert Uytterhoeven
+> <geert@linux-m68k.org> wrote:
+>> On Wed, Jun 11, 2014 at 1:11 PM, Adam Thomson
+>> <Adam.Thomson.Opensource@diasemi.com> wrote:
+>>> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
+>>> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+>>> @@ -36,6 +36,7 @@ dallas        Maxim Integrated Products (formerly Dallas Semiconductor)
+>>>  davicom        DAVICOM Semiconductor, Inc.
+>>>  denx   Denx Software Engineering
+>>>  digi   Digi International Inc.
+>>> +dlg    Dialog Semiconductor Ltd.
+>>
+>> "diasemi" has been proposed before
+>> https://groups.google.com/forum/#!msg/linux.kernel/htUxLpV_Ng0/ClJVAxgK4e4J
+>>
+>> "dialog", "diasemi", and "dlg" all seem to be already in use...
+>
+> dlg is the correct one and seems to be the most widely used, so we
+> should go with that and mark the others deprecated.
+>
+> diasemi is documented for the da9210, but not used anywhere.
 
-I am not crazy about this patch.   It's been suggested before that may
-be duplicate cookie processing should really be creating a temporary
-association since that's is how that association is being used.  It
-might be nice at that approach.  It actually benefits us as the
-association destruction would happen immediately instead of being delayed.
+It users are queued in Simon's tree, for two Renesas boards.
 
--vlad
+> There appears to be 2 different da9053 bindings. I'd guess the dialog
+> variant used on 2 i.MX boards is not used. Other i.MX boards use the
+> dlg version. I'm not sure what is going on with da9055. Please sort
+> these out.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
