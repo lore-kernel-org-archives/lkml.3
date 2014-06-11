@@ -1,248 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932401AbaFKShm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 14:37:42 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:59858 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932175AbaFKShk (ORCPT
+	id S932121AbaFKShh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 14:37:37 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:18798 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755190AbaFKShf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 14:37:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <1401345427-5299-1-git-send-email-benjamin.gaignard@linaro.org>
-References: <1401345427-5299-1-git-send-email-benjamin.gaignard@linaro.org>
-Date: Wed, 11 Jun 2014 14:37:39 -0400
-Message-ID: <CAF6AEGs2Y1G-8R5tDcgXKOh43nP3_-0SyebLugcF6QEUtkQNBQ@mail.gmail.com>
-Subject: Re: [PATCH v4 00/11] Add DRM for stih4xx platforms
-From: Rob Clark <robdclark@gmail.com>
-To: Benjamin Gaignard <benjamin.gaignard@linaro.org>
-Cc: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        David Airlie <airlied@linux.ie>, lee.jones@linaro.org
-Content-Type: text/plain; charset=UTF-8
+	Wed, 11 Jun 2014 14:37:35 -0400
+From: Jason Low <jason.low2@hp.com>
+To: mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, tim.c.chen@linux.intel.com,
+        paulmck@linux.vnet.ibm.com, rostedt@goodmis.org, davidlohr@hp.com,
+        Waiman.Long@hp.com, scott.norton@hp.com, aswin@hp.com,
+        jason.low2@hp.com
+Subject: [PATCH v2 2/4] mutex: Delete the MUTEX_SHOW_NO_WAITER macro
+Date: Wed, 11 Jun 2014 11:37:21 -0700
+Message-Id: <1402511843-4721-3-git-send-email-jason.low2@hp.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1402511843-4721-1-git-send-email-jason.low2@hp.com>
+References: <1402511843-4721-1-git-send-email-jason.low2@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 2:36 AM, Benjamin Gaignard
-<benjamin.gaignard@linaro.org> wrote:
-> This series of patches add the support of DRM/KMS drivers for STMicroelectronics
-> chipsets stih416 and stih407.
->
-> version 4:
->         - Remove depency between TVout it subdevices HDMI and HDA
->         - Rework and simplify VTG and VTAC code
->         - Fix numbers of typo and indentation
->         - Remove debug (will be push in separate patches)
->         - Fix remarks done in previous patcheset
->
->         patches could be found here: git://git.linaro.org/people/benjamin.gaignard/kernel.git
->         on branch: drm_kms_for_next-v4
->
-> version 3:
->         - Correctly split code between probe and bind funtions
->         - Squash some commits
->         - remove HQ-VDP device code to have a smaller patcheset,
->           we will introduce it later.
->
->         patches could be found here: git://git.linaro.org/people/benjamin.gaignard/kernel.git
->         on branch: drm_kms_for_next-v3
->
-> version 2:
->         - Use componentized device instead of register sub-devices in master
->         driver probe function
->         - Fix Makefile and Kconfig to only allow built-in compilation
->
->         patches could be found here: git://git.linaro.org/people/benjamin.gaignard/kernel.git
->         on branch: drm_kms_for_next-v2
->
-> version 1:
->         - First path submission
->
-> Hardware is split in two main blocks: Compositor and TVout. Each of them
-> includes specific hardware IPs and the display timing are controlled by a specific
-> Video Timing Generator hardware IP (VTG).
->
-> Compositor is made of the follow hardware IPs:
->  - GDP (Generic Display Pipeline) which is an entry point for graphic (RGB)
->    buffers
->  - VDP (Video Diplay Pipeline) which is an entry point for video (YUV) buffers
->  - HQVDP (High Quality Video Display Processor) that supports scaling,
->    deinterlacing and some miscellaneous image quality improvements.
->    It fetches the Video decoded buffers from memory, processes them and pushes
->    them to the Compositor through a HW dedicated bus.
->  - Mixer is responsible of mixing all the entries depending of their
->    respective z-order and layout
->
-> TVout is divided in 3 parts:
->  - HDMI to generate HDMI signals, depending of chipset version HDMI phy can
->    change.
->  - HDA to generate signals for HD analog TV
->  - VIP to control/switch data path coming from Compositor
->
-> On stih416 compositor and Tvout are on different dies so a Video Trafic Advance
-> inter-die Communication mechanism (VTAC) is needed.
->
-> +---------------------------------------------+   +----------------------------------------+
-> | +-------------------------------+   +----+  |   |  +----+   +--------------------------+ |
-> | |                               |   |    |  |   |  |    |   |  +---------+     +----+  | |
-> | | +----+              +------+  |   |    |  |   |  |    |   |  | VIP     |---->|HDMI|  | |
-> | | |GPD +------------->|      |  |   |    |  |   |  |    |   |  |         |     +----+  | |
-> | | +----+              |Mixer |--|-->|    |  |   |  |    |---|->| switcher|             | |
-> | |                     |      |  |   |    |  |   |  |    |   |  |         |     +----+  | |
-> | |                     |      |  |   |    |  |   |  |    |   |  |         |---->|HDA |  | |
-> | |                     +------+  |   |VTAC|========>|VTAC|   |  +---------+     +----+  | |
-> | |                               |   |    |  |   |  |    |   |                          | |
-> | |         Compositor            |   |    |  |   |  |    |   |           TVout          | |
-> | +-------------------------------+   |    |  |   |  |    |   +--------------------------+ |
-> |                      ^              |    |  |   |  |    |             ^                  |
-> |                      |              |    |  |   |  |    |             |                  |
-> |               +--------------+      |    |  |   |  |    |      +-------------+           |
-> |               | VTG (master) |----->|    |  |   |  |    |----->| VTG (slave) |           |
-> |               +--------------+      +----+  |   |  +----+      +-------------+           |
-> |Digital die                                  |   |                              Analog Die|
-> +---------------------------------------------+   +----------------------------------------+
->
-> On stih407 Compositor and Tvout are on the same die
->
-> +-----------------------------------------------------------------+
-> | +-------------------------------+  +--------------------------+ |
-> | |                               |  |  +---------+     +----+  | |
-> | | +----+              +------+  |  |  | VIP     |---->|HDMI|  | |
-> | | |GPD +------------->|      |  |  |  |         |     +----+  | |
-> | | +----+              |Mixer |--|--|->| switcher|             | |
-> | | +----+   +-----+    |      |  |  |  |         |     +----+  | |
-> | | |VDP +-->+HQVDP+--->|      |  |  |  |         |---->|HDA |  | |
-> | | +----+   +-----+    +------+  |  |  +---------+     +----+  | |
-> | |                               |  |                          | |
-> | |         Compositor            |  |           TVout          | |
-> | +-------------------------------+  +--------------------------+ |
-> |                              ^        ^                         |
-> |                              |        |                         |
-> |                           +--------------+                      |
-> |                           |     VTG      |                      |
-> |                           +--------------+                      |
-> |Digital die                                                      |
-> +-----------------------------------------------------------------+
->
-> In addition of the drivers for the IPs listed before a thin I2C driver (hdmiddc) is used
-> by HDMI driver to retrieve EDID for monitor.
->
-> To unify interfaces of GDP and VDP we create a "layer" interface called by
-> compositor to control both GPD and VDP.
+v1->v2:
+- There were discussions in v1 about a possible mutex_has_waiters()
+  function. This patch didn't use that function because the places which
+  used MUTEX_SHOW_NO_WAITER requires checking for lock->count while an
+  actual mutex_has_waiters() should check for !list_empty(wait_list).
+  We'll just delete the macro and directly use atomic_read() + comments.
 
-I think it would be helpful to describe how you map the hardware to
-kms constructs (planes/crtcs/etc).
+MUTEX_SHOW_NO_WAITER() is a macro which checks for if there are
+"no waiters" on a mutex by checking if the lock count is non-negative.
+Based on feedback from the discussion in the earlier version of this
+patchset, the macro is not very readable.
+  
+Furthermore, checking lock->count isn't always the correct way to
+determine if there are "no waiters" on a mutex. For example, a negative
+count on a mutex really only means that there "potentially" are
+waiters. Likewise, there can be waiters on the mutex even if the count is
+non-negative. Thus, "MUTEX_SHOW_NO_WAITER" doesn't always do what the name
+of the macro suggests.
+ 
+So this patch deletes the MUTEX_SHOW_NO_WAITERS() macro, directly
+use atomic_read() instead of the macro, and adds comments which
+elaborate on how the extra atomic_read() checks can help reduce
+unnecessary xchg() operations.
 
-Also, I kinda like sticking this sort of info (along w/ block diagrams
-above, etc), in a notes/readme file.  Although I seem to be in the
-minority about that.  But plenty of times when diving into other
-drivers I've wished they had done the same :-)
+Signed-off-by: Jason Low <jason.low2@hp.com>
+---
+ kernel/locking/mutex.c |   18 ++++++++----------
+ 1 files changed, 8 insertions(+), 10 deletions(-)
 
-For msm I think I more or less copy/paste the cover-letter and drm/msm/NOTES..
+diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
+index dd26bf6..4bd9546 100644
+--- a/kernel/locking/mutex.c
++++ b/kernel/locking/mutex.c
+@@ -46,12 +46,6 @@
+ # include <asm/mutex.h>
+ #endif
+ 
+-/*
+- * A negative mutex count indicates that waiters are sleeping waiting for the
+- * mutex.
+- */
+-#define	MUTEX_SHOW_NO_WAITER(mutex)	(atomic_read(&(mutex)->count) >= 0)
+-
+ void
+ __mutex_init(struct mutex *lock, const char *name, struct lock_class_key *key)
+ {
+@@ -483,8 +477,11 @@ slowpath:
+ #endif
+ 	spin_lock_mutex(&lock->wait_lock, flags);
+ 
+-	/* once more, can we acquire the lock? */
+-	if (MUTEX_SHOW_NO_WAITER(lock) && (atomic_xchg(&lock->count, 0) == 1))
++	/*
++	 * Once more, try to acquire the lock. Only try-lock the mutex if
++	 * lock->count >= 0 to reduce unnecessary xchg operations.
++	 */
++	if (atomic_read(&lock->count) >= 0 && (atomic_xchg(&lock->count, 0) == 1))
+ 		goto skip_wait;
+ 
+ 	debug_mutex_lock_common(lock, &waiter);
+@@ -504,9 +501,10 @@ slowpath:
+ 		 * it's unlocked. Later on, if we sleep, this is the
+ 		 * operation that gives us the lock. We xchg it to -1, so
+ 		 * that when we release the lock, we properly wake up the
+-		 * other waiters:
++		 * other waiters. We only attempt the xchg if the count is
++		 * non-negative in order to avoid unnecessary xchg operations:
+ 		 */
+-		if (MUTEX_SHOW_NO_WAITER(lock) &&
++		if (atomic_read(&lock->count) >= 0 &&
+ 		    (atomic_xchg(&lock->count, -1) == 1))
+ 			break;
+ 
+-- 
+1.7.1
 
-BR,
--R
-
-
-> Hardware have memory contraints (alignment, contiguous) so we use CMA drm helpers functions
-> to allocate frame buffer.
->
-> File naming convention is:
->  - sti_* for IPs drivers
->  - sti_drm_* for drm functions implementation.
->
-> Benjamin Gaignard (11):
->   drm: sti: add bindings for DRM driver
->   drm: sti: add VTG driver
->   drm: sti: add VTAC drivers
->   drm: sti: add HDMI driver
->   drm: sti: add HDA driver
->   drm: sti: add TVOut driver
->   drm: sti: add GDP layer
->   drm: sti: add VID layer
->   drm: sti: add Mixer
->   drm: sti: add Compositor
->   drm: sti: Add DRM driver itself
->
->  .../devicetree/bindings/gpu/st,stih4xx.txt         | 189 ++++++
->  drivers/gpu/drm/Kconfig                            |   2 +
->  drivers/gpu/drm/Makefile                           |   1 +
->  drivers/gpu/drm/sti/Kconfig                        |  14 +
->  drivers/gpu/drm/sti/Makefile                       |  19 +
->  drivers/gpu/drm/sti/sti_compositor.c               | 265 ++++++++
->  drivers/gpu/drm/sti/sti_compositor.h               |  90 +++
->  drivers/gpu/drm/sti/sti_drm_connector.c            | 114 ++++
->  drivers/gpu/drm/sti/sti_drm_connector.h            |  55 ++
->  drivers/gpu/drm/sti/sti_drm_crtc.c                 | 436 ++++++++++++
->  drivers/gpu/drm/sti/sti_drm_crtc.h                 |  21 +
->  drivers/gpu/drm/sti/sti_drm_drv.c                  | 229 +++++++
->  drivers/gpu/drm/sti/sti_drm_drv.h                  |  35 +
->  drivers/gpu/drm/sti/sti_drm_encoder.c              | 108 +++
->  drivers/gpu/drm/sti/sti_drm_encoder.h              |  17 +
->  drivers/gpu/drm/sti/sti_drm_plane.c                | 192 ++++++
->  drivers/gpu/drm/sti/sti_drm_plane.h                |  17 +
->  drivers/gpu/drm/sti/sti_gdp.c                      | 512 ++++++++++++++
->  drivers/gpu/drm/sti/sti_gdp.h                      |  73 ++
->  drivers/gpu/drm/sti/sti_hda.c                      | 727 ++++++++++++++++++++
->  drivers/gpu/drm/sti/sti_hdmi.c                     | 748 +++++++++++++++++++++
->  drivers/gpu/drm/sti/sti_hdmi.h                     |  88 +++
->  drivers/gpu/drm/sti/sti_hdmi_tx3g0c55phy.c         | 336 +++++++++
->  drivers/gpu/drm/sti/sti_hdmi_tx3g0c55phy.h         |  14 +
->  drivers/gpu/drm/sti/sti_hdmi_tx3g4c28phy.c         | 211 ++++++
->  drivers/gpu/drm/sti/sti_hdmi_tx3g4c28phy.h         |  14 +
->  drivers/gpu/drm/sti/sti_layer.c                    | 312 +++++++++
->  drivers/gpu/drm/sti/sti_layer.h                    | 114 ++++
->  drivers/gpu/drm/sti/sti_mixer.c                    | 249 +++++++
->  drivers/gpu/drm/sti/sti_mixer.h                    |  52 ++
->  drivers/gpu/drm/sti/sti_tvout.c                    | 687 +++++++++++++++++++
->  drivers/gpu/drm/sti/sti_tvout.h                    |  18 +
->  drivers/gpu/drm/sti/sti_vid.c                      | 145 ++++
->  drivers/gpu/drm/sti/sti_vid.h                      |  33 +
->  drivers/gpu/drm/sti/sti_vtac.c                     | 211 ++++++
->  drivers/gpu/drm/sti/sti_vtg.c                      | 356 ++++++++++
->  drivers/gpu/drm/sti/sti_vtg.h                      |  28 +
->  37 files changed, 6732 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/gpu/st,stih4xx.txt
->  create mode 100644 drivers/gpu/drm/sti/Kconfig
->  create mode 100644 drivers/gpu/drm/sti/Makefile
->  create mode 100644 drivers/gpu/drm/sti/sti_compositor.c
->  create mode 100644 drivers/gpu/drm/sti/sti_compositor.h
->  create mode 100644 drivers/gpu/drm/sti/sti_drm_connector.c
->  create mode 100644 drivers/gpu/drm/sti/sti_drm_connector.h
->  create mode 100644 drivers/gpu/drm/sti/sti_drm_crtc.c
->  create mode 100644 drivers/gpu/drm/sti/sti_drm_crtc.h
->  create mode 100644 drivers/gpu/drm/sti/sti_drm_drv.c
->  create mode 100644 drivers/gpu/drm/sti/sti_drm_drv.h
->  create mode 100644 drivers/gpu/drm/sti/sti_drm_encoder.c
->  create mode 100644 drivers/gpu/drm/sti/sti_drm_encoder.h
->  create mode 100644 drivers/gpu/drm/sti/sti_drm_plane.c
->  create mode 100644 drivers/gpu/drm/sti/sti_drm_plane.h
->  create mode 100644 drivers/gpu/drm/sti/sti_gdp.c
->  create mode 100644 drivers/gpu/drm/sti/sti_gdp.h
->  create mode 100644 drivers/gpu/drm/sti/sti_hda.c
->  create mode 100644 drivers/gpu/drm/sti/sti_hdmi.c
->  create mode 100644 drivers/gpu/drm/sti/sti_hdmi.h
->  create mode 100644 drivers/gpu/drm/sti/sti_hdmi_tx3g0c55phy.c
->  create mode 100644 drivers/gpu/drm/sti/sti_hdmi_tx3g0c55phy.h
->  create mode 100644 drivers/gpu/drm/sti/sti_hdmi_tx3g4c28phy.c
->  create mode 100644 drivers/gpu/drm/sti/sti_hdmi_tx3g4c28phy.h
->  create mode 100644 drivers/gpu/drm/sti/sti_layer.c
->  create mode 100644 drivers/gpu/drm/sti/sti_layer.h
->  create mode 100644 drivers/gpu/drm/sti/sti_mixer.c
->  create mode 100644 drivers/gpu/drm/sti/sti_mixer.h
->  create mode 100644 drivers/gpu/drm/sti/sti_tvout.c
->  create mode 100644 drivers/gpu/drm/sti/sti_tvout.h
->  create mode 100644 drivers/gpu/drm/sti/sti_vid.c
->  create mode 100644 drivers/gpu/drm/sti/sti_vid.h
->  create mode 100644 drivers/gpu/drm/sti/sti_vtac.c
->  create mode 100644 drivers/gpu/drm/sti/sti_vtg.c
->  create mode 100644 drivers/gpu/drm/sti/sti_vtg.h
->
-> --
-> 1.9.1
->
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
