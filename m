@@ -1,146 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754116AbaFKJYL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 05:24:11 -0400
-Received: from mga09.intel.com ([134.134.136.24]:25521 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751208AbaFKJYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 05:24:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,457,1400050800"; 
-   d="scan'208";a="555625330"
-Date: Wed, 11 Jun 2014 12:24:04 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Scot Doyle <lkml14@scotdoyle.com>
-Cc: Benson Leung <bleung@chromium.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Olof Johansson <olof@lixom.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/1] platform/chrome: Probe multiple i2c adapters of
- the same name
-Message-ID: <20140611092309.GC1657@lahna.fi.intel.com>
-References: <1401800524-28934-1-git-send-email-mika.westerberg@linux.intel.com>
- <CANLzEksLB1=+TePxgPRBhsGKpC-4tWB8JOh-Ey80Hj43LkVn=g@mail.gmail.com>
- <20140604083726.GN1730@lahna.fi.intel.com>
- <CANLzEkuAxGrRHtb=vFAm9AGws7Qyg3A_oQpAGGFaYEqP2A2g8g@mail.gmail.com>
- <alpine.DEB.2.02.1406062259070.31301@scotdoyle.com>
- <alpine.DEB.2.02.1406062316230.32568@scotdoyle.com>
- <20140609124700.GJ1657@lahna.fi.intel.com>
- <alpine.DEB.2.02.1406092332410.8274@scotdoyle.com>
- <alpine.DEB.2.02.1406100610220.8274@scotdoyle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1406100610220.8274@scotdoyle.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754783AbaFKJY4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 05:24:56 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:64985 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750763AbaFKJYy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 05:24:54 -0400
+X-AuditID: cbfee68e-b7fb96d000004bfc-c6-539820649a76
+Date: Wed, 11 Jun 2014 09:24:52 +0000 (GMT)
+From: Eunbong Song <eunb.song@samsung.com>
+Subject: mips: math-emu: Fix compilation error ieee754.c
+To: ralf@linux-mips.org
+Cc: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org
+Reply-to: eunb.song@samsung.com
+MIME-version: 1.0
+X-MTR: 20140611092245298@eunb.song
+Msgkey: 20140611092245298@eunb.song
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20140611092245298@eunb.song
+X-ParentMTR: 
+X-ArchiveUser: EV
+X-CPGSPASS: N
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <2463243.264261402478691777.JavaMail.weblogic@epml26>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCJsWRmVeSWpSXmKPExsVy+t8zPd0UhRnBBstOS1tc3jWHzYHR4/Mm
+	uQDGqAZGm8Si5IzMslSF1Lzk/JTMvHRbpdAQN10LJYWM/OISW6VoIwNjPSNTEz0jE3M9S4NY
+	KyNTJYW8xNxUW6UKXaheJYWi5AKg2tzKYqABOal6UHG94tS8FIes/FKQS/SKE3OLS/PS9ZLz
+	c5UUyhJzSoFGKOknTGXM6Jy/kq3gA0/FkS/n2BoYD/B0MXJyCAmoSLT8/84IYksImEjcX7WC
+	CcIWk7hwbz1bFyMXUM0yRokVi4+zwRT92P0aKjGHUeL1tlMsIAkWAVWJ+0t/g01iE9CW+HHg
+	KjOILSxgIfF+0kuwZhEBGYmln66A1TALuEucX7CDBeIKeYnJpy+zg9i8AoISJ2c+YYFYpiRx
+	tv8RG0RcWeJi6z9WiLiExKzpF6BsXokZ7U+h6uUkpn1dwwxhS0ucn7WBEeabxd8fQ8X5JY7d
+	3gH0JQdY75P7wTBjdm/+AvWjgMTUMwehWtUl/t7bBRXnk1iz8C3UKkGJ09e6mWF672+ZywTx
+	lqLElO6H7BC2lsSXH/vY0L3FK+Ao0TDjNuMERuVZSFKzkLTPQtKOrGYBI8sqRtHUguSC4qT0
+	IiPk2N7ECEmEfTsYbx6wPsS4nxEYJxOZpUST84GpNK8k3tDYzMjC1MTU2Mjc0oxCYRNTCwsT
+	I6oIK4nzLnqYFCQkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBcXUJ69v2Kpt46/gdh5N0GLo/
+	dRkdm3Ik3tf6z4Sdjodav2vKWzyULxA1lYlKKCrI/XXBQK3/wMqQtlidyXL9B7WEEho8ja7p
+	+xi+nLTm6cN4e8frZzfvXdR19aPYjinn5xT9/pQipHq1qfDEy/jXJfP+5V29cPLrDVPZo9Xu
+	U9dfaNO+zNlVr8RSnJFoqMVcVJwIAC7Ns3D3AwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpik+LIzCtJLcpLzFFi42I5/e92r26Kwoxgg6NHJSwu75rD5sDo8XmT
+	XABjVIZNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBQ
+	JYWyxJxSoFBAYnGxkr6dTVF+aUmqQkZ+cYmtUrSRgbGekamJnpGxgZ6JQayVoYGBkSlQVUJG
+	Ruf8lWwFH3gqjnw5x9bAeICni5GTQ0hARaLl/3dGEFtCwETix+7XbBC2mMSFe+uBbC6gmjmM
+	Eq+3nWIBSbAIqErcX/obrIFNQFvix4GrzCC2sICFxPtJL8GaRQRkJJZ+ugJWwyzgLnF+wQ4W
+	iGXyEpNPX2YHsXkFBCVOznzCArFMSeJs/yM2iLiyxMXWf6wQcQmJWdMvQNm8EjPan0LVy0lM
+	+7qGGcKWljg/awMjzNGLvz+GivNLHLu9g6mLkQOs98n9YJgxuzd/gfpRQGLqmYNQreoSf+/t
+	gorzSaxZ+BZqlaDE6WvdzDC997fMZYJ4S1FiSvdDdghbS+LLj31s6N7iFXCUaJhxm3ECo9ws
+	JKlZSNpnIWlHVrOAkWUVo2hqQXJBcVJ6hYlecWJucWleul5yfu4mRnCKerZkB2PDBetDjAIc
+	jEo8vAckpgcLsSaWFVfmHmKU4GBWEuHdKTwjWIg3JbGyKrUoP76oNCe1+BBjMjACJzJLiSbn
+	A9NnXkm8obGBsaGhpbmBqaGRBWnCSuK8C24lBQkJpCeWpGanphakFsFsYeLglGpgZL3PrVEr
+	yfXu7oJb805nOs5bdIT5/dQE7vs3eX2yG5fMDl5/ueDI5Fxr2765bM1/j5p1KjtaJDD7rz96
+	+HSdcbnXhgcWN2S9fztplFb+2PXAgW+HhoG87NWbS9JyPNa52nSffjX9iLvWOUdFLh7J2f8+
+	rer1W18/a8XlxJ6bwVKcn+/kBXB6KrEUZyQaajEXFScCAMpm9jmVAwAA
+DLP-Filter: Pass
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5B9P1Wp029100
 
-On Tue, Jun 10, 2014 at 06:17:35AM +0100, Scot Doyle wrote:
-> The chromeos_laptop module probes the first i2c adapter with a specific name
-> for expected hardware. However, the Acer C720 Chromebook has two i2c
-> adapters with the same name. This patch probes each i2c adapter with a
-> specific name in turn, until locating the expected hardware.
-> 
-> Thanks to Mika Westerberg for identifying the need for unique bus addresses
-> within each set of identically-named adapters.
-> 
-> Signed-off-by: Scot Doyle <lkml14@scotdoyle.com>
-> CC: Benson Leung <bleung@chromium.org>
-> CC: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-Few comments about style:
-
-> ---
-> diff --git a/drivers/platform/chrome/chromeos_laptop.c
-> b/drivers/platform/chrome/chromeos_laptop.c
-> index 7f3aad0..8382315 100644
-> --- a/drivers/platform/chrome/chromeos_laptop.c
-> +++ b/drivers/platform/chrome/chromeos_laptop.c
-> @@ -29,6 +29,8 @@
->  #include <linux/module.h>
->  #include <linux/platform_device.h>
-> 
-> +/* Note: Bus addresses must be unique within each set of identically-named
-> +	 adapters on a board, otherwise device probing may fail. */
-
-Check Documentation/CodingStyle about format of block comments.
-
->  #define ATMEL_TP_I2C_ADDR	0x4b
->  #define ATMEL_TP_I2C_BL_ADDR	0x25
->  #define ATMEL_TS_I2C_ADDR	0x4a
-> @@ -173,7 +175,7 @@ static struct i2c_client *__add_probed_i2c_device(
->  	/* add the i2c device */
->  	client = i2c_new_probed_device(adapter, info, addrs, NULL);
->  	if (!client)
-> -		pr_err("%s failed to register device %d-%02x\n",
-> +		pr_debug("%s did not add i2c device %d-%02x\n",
->  		       __func__, bus, info->addr);
->  	else
->  		pr_debug("%s added i2c device %d-%02x\n",
-> @@ -194,13 +196,14 @@ static int __find_i2c_adap(struct device *dev, void *data)
->  	return (strncmp(adapter->name, name, strlen(name)) == 0);
->  }
-> 
-> -static int find_i2c_adapter_num(enum i2c_adapter_type type)
-> +static int find_i2c_next_adapter_num(enum i2c_adapter_type type,
-> +				     struct device *start)
->  {
->  	struct device *dev = NULL;
->  	struct i2c_adapter *adapter;
->  	const char *name = i2c_adapter_names[type];
-> -	/* find the adapter by name */
-> -	dev = bus_find_device(&i2c_bus_type, NULL, (void *)name,
-> +	/* find the next adapter by name */
-> +	dev = bus_find_device(&i2c_bus_type, start, (void *)name,
->  			      __find_i2c_adap);
->  	if (!dev) {
->  		/* Adapters may appear later. Deferred probing will retry */
-> @@ -226,10 +229,17 @@ static struct i2c_client *add_probed_i2c_device(
->  		struct i2c_board_info *info,
->  		const unsigned short *addrs)
->  {
-> -	return __add_probed_i2c_device(name,
-> -				       find_i2c_adapter_num(type),
-> -				       info,
-> -				       addrs);
-> +	struct i2c_client *client = NULL;
-> +	struct device *start = NULL;
-> +	int adapter_num = 0;
-
-Please add blank line here.
-
-> +	while (!client && adapter_num > -1) {
-> +		adapter_num = find_i2c_next_adapter_num(type, start);
-> +		client = __add_probed_i2c_device(name,
-> +						 adapter_num,
-> +						 info,
-> +						 addrs);
-
-Don't the above fit into one line, specifically if you call adapter_num
-just num or something like that.
-
-> +	}
-> +	return client;
->  }
-> 
->  /*
-> @@ -242,10 +252,10 @@ static struct i2c_client *add_i2c_device(const char *name,
->  						struct i2c_board_info *info)
->  {
->  	const unsigned short addr_list[] = { info->addr, I2C_CLIENT_END };
-> -	return __add_probed_i2c_device(name,
-> -				       find_i2c_adapter_num(type),
-> -				       info,
-> -				       addr_list);
-> +	return add_probed_i2c_device(name,
-> +				     type,
-> +				     info,
-> +				     addr_list);
-
-Same here.
-
->  }
-> 
->  static int setup_cyapa_tp(enum i2c_adapter_type type)
+ieee754dp has bitfield member in struct without name. And this
+cause compilation error. This patch removes struct in ieee754dp
+declaration. So compilation error is fixed.
+Signed-off-by: Eunbong Song <eunb.song@samsung.com>
+---
+ arch/mips/math-emu/ieee754.h |   20 ++++++++------------
+ 1 files changed, 8 insertions(+), 12 deletions(-)
+diff --git a/arch/mips/math-emu/ieee754.h b/arch/mips/math-emu/ieee754.h
+index 43c4fb5..c6e28b8 100644
+--- a/arch/mips/math-emu/ieee754.h
++++ b/arch/mips/math-emu/ieee754.h
+@@ -32,22 +32,18 @@
+ #include <asm/bitfield.h>
+ 
+ union ieee754dp {
+- struct {
+-  __BITFIELD_FIELD(unsigned int sign:1,
+-  __BITFIELD_FIELD(unsigned int bexp:11,
+-  __BITFIELD_FIELD(u64 mant:52,
+-  ;)))
+- };
++ __BITFIELD_FIELD(unsigned int sign:1,
++ __BITFIELD_FIELD(unsigned int bexp:11,
++ __BITFIELD_FIELD(u64 mant:52,
++ ;)))
+  u64 bits;
+ };
+ 
+ union ieee754sp {
+- struct {
+-  __BITFIELD_FIELD(unsigned sign:1,
+-  __BITFIELD_FIELD(unsigned bexp:8,
+-  __BITFIELD_FIELD(unsigned mant:23,
+-  ;)))
+- };
++ __BITFIELD_FIELD(unsigned sign:1,
++ __BITFIELD_FIELD(unsigned bexp:8,
++ __BITFIELD_FIELD(unsigned mant:23,
++ ;)))
+  u32 bits;
+ };
+ 
+-- 
+1.7.0.1ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
