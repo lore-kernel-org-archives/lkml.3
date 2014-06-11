@@ -1,87 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753796AbaFJX51 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 19:57:27 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:47572 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753257AbaFJX5Z (ORCPT
+	id S1753257AbaFKAGF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 20:06:05 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:50475 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751554AbaFKAGD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 19:57:25 -0400
-Message-ID: <53979B52.5000902@gmail.com>
-Date: Wed, 11 Jun 2014 01:57:06 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 10 Jun 2014 20:06:03 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Joe Perches <joe@perches.com>
+Cc: Stratos Karafotis <stratosk@semaphore.gr>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>, dirk.j.brandewie@intel.com,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/7] cpufreq: intel_pstate: Trivial code cleanup
+Date: Wed, 11 Jun 2014 02:23:27 +0200
+Message-ID: <2859027.TirvIA2s2c@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1402435605.4082.3.camel@joe-AO725>
+References: <5396208F.6070400@semaphore.gr> <1894836.tjrHdJ7Duz@vostro.rjw.lan> <1402435605.4082.3.camel@joe-AO725>
 MIME-Version: 1.0
-To: Chanwoo Choi <cw00.choi@samsung.com>
-CC: linux@arm.linux.org.uk, kgene.kim@samsung.com, t.figa@samsung.com,
-        kyungmin.park@samsung.com, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RESEND PATCH] ARM: EXYNOS: Fix the sequence of secondary CPU
- boot for Exynos3250
-References: <1402442827-2321-1-git-send-email-cw00.choi@samsung.com> <5397963F.30109@gmail.com> <53979871.2020903@samsung.com>
-In-Reply-To: <53979871.2020903@samsung.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11.06.2014 01:44, Chanwoo Choi wrote:
-> On 06/11/2014 08:35 AM, Tomasz Figa wrote:
->> Hi Chanwoo,
->>
->> On 11.06.2014 01:27, Chanwoo Choi wrote:
->>> This patch set AUTOWAKEUP_EN bit to ARM_CORE_CONFIGURATION register
->>> because Exynos3250 removes WFE in secure mode so that turn on automatically
->>> after setting CORE_LOCAL_PWR_EN. Also, This patch use dbs_sev() macro
->>> to guarantee the data synchronization of command instead of IPI_WAKEUP
->>> because Exynos3250 don't have WFE mode in secue mode.
->>>
->>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
->>> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
->>> ---
->>>  arch/arm/mach-exynos/platsmp.c  | 9 ++++++++-
->>>  arch/arm/mach-exynos/pm.c       | 8 ++++++--
->>>  arch/arm/mach-exynos/regs-pmu.h | 4 ++++
->>>  3 files changed, 18 insertions(+), 3 deletions(-)
->>>
->>
->> This patch seems to be unneeded with Krzysztof's patch send a while ago
->> [1]. As reported by Krzysztof, that patch apparently fixes SMP support
->> on Exynos3250 and is much smaller and less invasive.
->>
->> [1] - http://thread.gmane.org/gmane.linux.kernel.samsung-soc/32809
+On Tuesday, June 10, 2014 02:26:45 PM Joe Perches wrote:
+> On Tue, 2014-06-10 at 23:38 +0200, Rafael J. Wysocki wrote:
 > 
-> OK,
-> But Krzysztof's patch didn't include set S5P_CORE_AUTOWAKEUP_EN in EXYNOS_ARM_CORE_CONFIGURATION(cpu).
-> and then use arch_send_wakeup_ipi_mask(cpumask_of(cpu)) command instead of dsb_sev(). Exynos3250 don't need
-> send IPI message.
-
-I don't know technical details about CPU boot-up on Exynos3250 as I
-haven't worked too much with this platform. According to my conversation
-with Krzysztof, he found S5P_CORE_AUTOWAKEUP_EN and dsb_sev() to be not
-needed. Instead S5P_CORE_WAKEUP_FROM_LOCAL_CFG can be set in
-EXYNOS_ARM_CORE1_STATUS and then normal arch_send_wakeup_ipi_mask()
-used. He might be able to provide more details.
-
+> > > > is.  And the result of (a * 100) / b may generally be different from
+> > > > a * 100 / b for integers (if the division is carried out first).
+> > > 
+> > > I thought that (a * 100) / b is always equivalent to a * 100 / b.
+> > 
+> > I'm not actually sure if that's guaranteed by C standards.
 > 
-> I'll send next patch which include only S5P_CORE_AUTOWAKEUP_EN and without sending IPI message.
-
-I believe Krzysztof was first with this kind of patch and I'd prefer his
-approach as it introduces less changes. (First version posted on 15.05
-[1], with my comments addressed in v2.)
-
-[1] http://thread.gmane.org/gmane.linux.kernel.samsung-soc/31614
-
+> It is.  left to right, same precedence.
 > 
-> Krzysztof's patch used of_machine_is_compatible("samsung,exynos3250") instead of soc_is_exynos3250().
-> Did you agree? If you agree to use of_machine_is_compatible(), I'll use it on next patch(v2).
+> > It surely
+> > wasn't some time ago (when there was no formal C standard).
+> 
+> c89 is 25 years ago now.
 
-IMHO, there is no significant difference between those two. Both are
-bad, because they bind quirks to specific SoCs and it's hard to reuse
-them for new ones - every time a quirk is reused by a new SoC, a new (||
-soc_is_xxx() or || of_machine_is_compatible("xxx")) must be added.
+Apparently, I'm old.
 
-Best regards,
-Tomasz
+> > Either way, in my opinion it's better to put the parens into the expression
+> > in this particular case to clearly state the intention.
+> 
+> I don't think so.
+
+Of course, you're free to disagree, but I guess you'll admit that
+a * b / c is generally different from b / c * a and if you see something
+like this it is hard to say at first sight whether or not this is intentional
+or an expression ordering bug.
+
+Rafael
+
