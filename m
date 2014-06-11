@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932654AbaFKJHl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 05:07:41 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:56342 "EHLO
+	id S932677AbaFKJJN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 05:09:13 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:56311 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755736AbaFKI6f (ORCPT
+	with ESMTP id S1755628AbaFKI6K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 04:58:35 -0400
+	Wed, 11 Jun 2014 04:58:10 -0400
 From: Roger Quadros <rogerq@ti.com>
 To: <tony@atomide.com>, <dwmw2@infradead.org>, <computersforpeace@gmail.com>
 CC: <kyungmin.park@samsung.com>, <pekon@ti.com>,
@@ -14,9 +14,9 @@ CC: <kyungmin.park@samsung.com>, <pekon@ti.com>,
         <nsekhar@ti.com>, <linux-omap@vger.kernel.org>,
         <linux-mtd@lists.infradead.org>, <devicetree@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
-Subject: [PATCH 23/36] ARM: OMAP2+: gpmc: use platform data to configure CS space and poplulate device
-Date: Wed, 11 Jun 2014 11:56:28 +0300
-Message-ID: <1402477001-31132-24-git-send-email-rogerq@ti.com>
+Subject: [PATCH 16/36] mtd: onenand: omap: Remove regulator management code
+Date: Wed, 11 Jun 2014 11:56:21 +0300
+Message-ID: <1402477001-31132-17-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1402477001-31132-1-git-send-email-rogerq@ti.com>
 References: <1402477001-31132-1-git-send-email-rogerq@ti.com>
@@ -26,191 +26,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add gpmc_probe_legacy() that will be called for non DT boots. This function
-will use platform data to setup each chip select and populate the child
-platform device for each of the chip selects.
+None of the OMAP platforms are suppying the "regulator_can_sleep"
+parameter via platform data. Regulator management is generic
+enough to be done in onenand_base driver if required.
+
+Mark the "regulator_can_sleep" platform data parameter as deprecated.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- arch/arm/mach-omap2/gpmc.c | 129 ++++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 111 insertions(+), 18 deletions(-)
+ drivers/mtd/onenand/omap2.c                     | 42 +------------------------
+ include/linux/platform_data/mtd-onenand-omap2.h |  3 +-
+ 2 files changed, 3 insertions(+), 42 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/gpmc.c b/arch/arm/mach-omap2/gpmc.c
-index d3a64ed..c26ba3f 100644
---- a/arch/arm/mach-omap2/gpmc.c
-+++ b/arch/arm/mach-omap2/gpmc.c
-@@ -1302,11 +1302,6 @@ static int gpmc_probe_dt(struct platform_device *pdev)
- {
- 	int ret;
- 	struct device_node *child;
--	const struct of_device_id *of_id =
--		of_match_device(gpmc_dt_ids, &pdev->dev);
--
--	if (!of_id)
--		return 0;
+diff --git a/drivers/mtd/onenand/omap2.c b/drivers/mtd/onenand/omap2.c
+index d945473..a5f5ad8 100644
+--- a/drivers/mtd/onenand/omap2.c
++++ b/drivers/mtd/onenand/omap2.c
+@@ -34,7 +34,6 @@
+ #include <linux/dma-mapping.h>
+ #include <linux/io.h>
+ #include <linux/slab.h>
+-#include <linux/regulator/consumer.h>
  
- 	ret = of_property_read_u32(pdev->dev.of_node, "gpmc,num-cs",
- 				   &gpmc_cs_num);
-@@ -1355,11 +1350,106 @@ static int gpmc_probe_dt(struct platform_device *pdev)
+ #include <asm/mach/flash.h>
+ #include <linux/platform_data/mtd-onenand-omap2.h>
+@@ -59,7 +58,6 @@ struct omap2_onenand {
+ 	int dma_channel;
+ 	int freq;
+ 	int (*setup)(void __iomem *base, int *freq_ptr);
+-	struct regulator *regulator;
+ 	u8 flags;
+ };
+ 
+@@ -583,30 +581,6 @@ static void omap2_onenand_shutdown(struct platform_device *pdev)
+ 	memset((__force void *)c->onenand.base, 0, ONENAND_BUFRAM_SIZE);
  }
- #endif
  
-+static void gpmc_probe_legacy(struct platform_device *pdev)
-+{
-+	int i, rc;
-+	struct device *dev = &pdev->dev;
-+	struct gpmc_omap_platform_data *gpmc_pdata;
-+
-+	gpmc_pdata = dev->platform_data;
-+	gpmc_cs_num = GPMC_CS_NUM;
-+	gpmc_nr_waitpins = GPMC_NR_WAITPINS;
-+
-+	if (!gpmc_pdata)
-+		return;
-+
-+	for (i = 0; i < GPMC_CS_NUM; i++) {
-+		struct resource *mem_res;
-+		unsigned long cs_base;
-+		resource_size_t size;
-+		struct gpmc_timings gpmc_timings;
-+		struct gpmc_omap_cs_data *cs;
-+
-+		cs = &gpmc_pdata->cs[i];
-+		if (!cs->valid)
-+			continue;
-+
-+		/*
-+		 * Request a CS space. Use size from
-+		 * platform device's MEM resource
-+		 */
-+		if (!cs->pdev)
-+			goto skip_mem;
-+
-+		mem_res = cs->pdev->resource;
-+		if (cs->pdev->num_resources < 1 ||
-+		    resource_type(mem_res) != IORESOURCE_MEM) {
-+			dev_err(dev, "Invalid IOMEM resource for CS %d\n", i);
-+			continue;
-+		}
-+
-+		size = mem_res->end - mem_res->start + 1;
-+		if (gpmc_cs_request(i, size, &cs_base)) {
-+			dev_err(dev, "Couldn't request resource for CS %d\n",
-+				i);
-+			continue;
-+		}
-+
-+		mem_res->start = cs_base;
-+		mem_res->end = cs_base + size - 1;
-+
-+		/* FIXME: When do we need to call gpmc_cs_remap()? */
-+skip_mem:
-+
-+		if (cs->settings) {
-+			if (gpmc_cs_program_settings(i, cs->settings)) {
-+				dev_err(dev,
-+					"Couldn't program settings for CS %d\n",
-+					i);
-+				continue;
-+			}
-+		}
-+
-+		/* give device_timings priority over gpmc_timings */
-+		if (cs->device_timings) {
-+			gpmc_calc_timings(&gpmc_timings, cs->settings,
-+					  cs->device_timings);
-+
-+			if (gpmc_cs_set_timings(i, &gpmc_timings)) {
-+				dev_err(dev,
-+					"Couldn't program timings for CS %d\n",
-+					i);
-+				continue;
-+			}
-+		} else if (cs->gpmc_timings) {
-+			if (gpmc_cs_set_timings(i, cs->gpmc_timings)) {
-+				dev_err(dev,
-+					"Couldn't program timings for CS %d\n",
-+					i);
-+				continue;
-+			}
-+		}
-+
-+		if (!cs->pdev)
-+			continue;
-+
-+		cs->pdev->dev.parent = dev;
-+		rc = platform_device_register(cs->pdev);
-+		if (rc < 0) {
-+			dev_err(dev,
-+				"Failed to register device %s on CS %d\n",
-+				cs->pdev->name, i);
-+			continue;
-+		}
-+	}
-+}
-+
- static int gpmc_probe(struct platform_device *pdev)
- {
- 	int rc;
- 	u32 l;
- 	struct resource *res;
-+	struct device *dev = &pdev->dev;
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (res == NULL)
-@@ -1390,7 +1480,7 @@ static int gpmc_probe(struct platform_device *pdev)
- 	pm_runtime_enable(&pdev->dev);
- 	pm_runtime_get_sync(&pdev->dev);
- 
--	gpmc_dev = &pdev->dev;
-+	gpmc_dev = dev;
- 
- 	l = gpmc_read_reg(GPMC_REVISION);
- 
-@@ -1410,7 +1500,7 @@ static int gpmc_probe(struct platform_device *pdev)
- 		gpmc_capability = GPMC_HAS_WR_ACCESS | GPMC_HAS_WR_DATA_MUX_BUS;
- 	if (GPMC_REVISION_MAJOR(l) > 0x5)
- 		gpmc_capability |= GPMC_HAS_MUX_AAD;
--	dev_info(gpmc_dev, "GPMC revision %d.%d\n", GPMC_REVISION_MAJOR(l),
-+	dev_info(dev, "GPMC revision %d.%d\n", GPMC_REVISION_MAJOR(l),
- 		 GPMC_REVISION_MINOR(l));
- 
- 	gpmc_mem_init();
-@@ -1418,20 +1508,23 @@ static int gpmc_probe(struct platform_device *pdev)
- 	/* Now the GPMC is initialised, unreserve the chip-selects */
- 	gpmc_cs_map = 0;
- 
--	if (!pdev->dev.of_node) {
--		gpmc_cs_num	 = GPMC_CS_NUM;
--		gpmc_nr_waitpins = GPMC_NR_WAITPINS;
--	}
+-static int omap2_onenand_enable(struct mtd_info *mtd)
+-{
+-	int ret;
+-	struct omap2_onenand *c = container_of(mtd, struct omap2_onenand, mtd);
 -
--	rc = gpmc_probe_dt(pdev);
--	if (rc < 0) {
--		pm_runtime_put_sync(&pdev->dev);
--		clk_put(gpmc_l3_clk);
--		dev_err(gpmc_dev, "failed to probe DT parameters\n");
--		return rc;
-+	if (dev->of_node) {
-+		rc = gpmc_probe_dt(pdev);
-+		if (rc) {
-+			dev_err(dev, "gpmc_probe_dt() failed\n");
-+			goto error;
-+		}
-+	} else {
-+		/* Legacy probing based on platform data */
-+		gpmc_probe_legacy(pdev);
+-	ret = regulator_enable(c->regulator);
+-	if (ret != 0)
+-		dev_err(&c->pdev->dev, "can't enable regulator\n");
+-
+-	return ret;
+-}
+-
+-static int omap2_onenand_disable(struct mtd_info *mtd)
+-{
+-	int ret;
+-	struct omap2_onenand *c = container_of(mtd, struct omap2_onenand, mtd);
+-
+-	ret = regulator_disable(c->regulator);
+-	if (ret != 0)
+-		dev_err(&c->pdev->dev, "can't disable regulator\n");
+-
+-	return ret;
+-}
+-
+ static int omap2_onenand_probe(struct platform_device *pdev)
+ {
+ 	struct omap_onenand_platform_data *pdata;
+@@ -728,22 +702,11 @@ static int omap2_onenand_probe(struct platform_device *pdev)
+ 		}
  	}
  
- 	return 0;
-+
-+error:
-+	pm_runtime_put_sync(dev);
-+	clk_put(gpmc_l3_clk);
-+	return rc;
- }
+-	if (pdata->regulator_can_sleep) {
+-		c->regulator = regulator_get(&pdev->dev, "vonenand");
+-		if (IS_ERR(c->regulator)) {
+-			dev_err(&pdev->dev,  "Failed to get regulator\n");
+-			r = PTR_ERR(c->regulator);
+-			goto err_release_dma;
+-		}
+-		c->onenand.enable = omap2_onenand_enable;
+-		c->onenand.disable = omap2_onenand_disable;
+-	}
+-
+ 	if (pdata->skip_initial_unlocking)
+ 		this->options |= ONENAND_SKIP_INITIAL_UNLOCKING;
  
- static int gpmc_remove(struct platform_device *pdev)
+ 	if ((r = onenand_scan(&c->mtd, 1)) < 0)
+-		goto err_release_regulator;
++		goto err_release_dma;
+ 
+ 	ppdata.of_node = pdata->of_node;
+ 	r = mtd_device_parse_register(&c->mtd, NULL, &ppdata,
+@@ -758,8 +721,6 @@ static int omap2_onenand_probe(struct platform_device *pdev)
+ 
+ err_release_onenand:
+ 	onenand_release(&c->mtd);
+-err_release_regulator:
+-	regulator_put(c->regulator);
+ err_release_dma:
+ 	if (c->dma_channel != -1)
+ 		omap_free_dma(c->dma_channel);
+@@ -783,7 +744,6 @@ static int omap2_onenand_remove(struct platform_device *pdev)
+ 	struct omap2_onenand *c = dev_get_drvdata(&pdev->dev);
+ 
+ 	onenand_release(&c->mtd);
+-	regulator_put(c->regulator);
+ 	if (c->dma_channel != -1)
+ 		omap_free_dma(c->dma_channel);
+ 	omap2_onenand_shutdown(pdev);
+diff --git a/include/linux/platform_data/mtd-onenand-omap2.h b/include/linux/platform_data/mtd-onenand-omap2.h
+index 56ff0e6..445b41e 100644
+--- a/include/linux/platform_data/mtd-onenand-omap2.h
++++ b/include/linux/platform_data/mtd-onenand-omap2.h
+@@ -25,10 +25,11 @@ struct omap_onenand_platform_data {
+ 	int			(*onenand_setup)(void __iomem *, int *freq_ptr);
+ 	int			dma_channel;
+ 	u8			flags;
+-	u8			regulator_can_sleep;
+ 	u8			skip_initial_unlocking;
+ 
+ 	/* for passing the partitions */
+ 	struct device_node	*of_node;
++
++	u8			regulator_can_sleep;	/* deprecated */
+ };
+ #endif
 -- 
 1.8.3.2
 
