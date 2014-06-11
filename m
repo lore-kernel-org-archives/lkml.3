@@ -1,90 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752902AbaFKVD2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 17:03:28 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:7589 "EHLO
-	mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752377AbaFKVD0 (ORCPT
+	id S1753120AbaFKVF1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 17:05:27 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:41890 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751797AbaFKVFY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 17:03:26 -0400
-X-IronPort-AV: E=Sophos;i="5.01,460,1400018400"; 
-   d="scan'208";a="66789255"
-Date: Wed, 11 Jun 2014 22:03:02 +0100 (BST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Alan Stern <stern@rowland.harvard.edu>
-cc: Julia Lawall <julia.lawall@lip6.fr>,
-        Himangi Saraogi <himangi774@gmail.com>,
-        Tony Prisk <linux@prisktech.co.nz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] uhci-platform: use devm_ioremap resource
-In-Reply-To: <Pine.LNX.4.44L0.1406111639420.890-100000@iolanthe.rowland.org>
-Message-ID: <alpine.DEB.2.10.1406112202450.2576@hadrien>
-References: <Pine.LNX.4.44L0.1406111639420.890-100000@iolanthe.rowland.org>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Wed, 11 Jun 2014 17:05:24 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <5398C1D0.30808@ti.com>
+References: <1398971093-17164-1-git-send-email-m-karicheri2@ti.com>
+	<CALdTtnvTtjKv6NQd=NCZATHnKLURKYMfnQaGR7MA=_kafBP=JQ@mail.gmail.com>
+	<5398C1D0.30808@ti.com>
+Date: Wed, 11 Jun 2014 15:05:23 -0600
+Message-ID: <CALdTtntgsiOebewCPRMd4wty_rJhggbt13Y8F_YpLrrtQWar5g@mail.gmail.com>
+Subject: Re: [PATCH v2] serial: uart: add hw flow control support configuration
+From: Dann Frazier <dann.frazier@canonical.com>
+To: Murali Karicheri <m-karicheri2@ti.com>
+Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Jun 2014, Alan Stern wrote:
+On Wed, Jun 11, 2014 at 2:53 PM, Murali Karicheri <m-karicheri2@ti.com> wrote:
+> On 5/28/2014 4:04 PM, Dann Frazier wrote:
+>>
+>> On Thu, May 1, 2014 at 1:04 PM, Murali Karicheri <m-karicheri2@ti.com>
+>> wrote:
+>>>
+>>> 8250 uart driver currently supports only software assisted hw flow
+>>> control. The software assisted hw flow control maintains a hw_stopped
+>>> flag in the tty structure to stop and start transmission and use modem
+>>> status interrupt for the event to drive the handshake signals. This is
+>>> not needed if hw has flow control capabilities. This patch adds a
+>>> DT attribute for enabling hw flow control for a uart port. Also skip
+>>> stop and start if this flag is present in flag field of the port
+>>> structure.
+>>
+>> ubuntu@hwflow:~$ sudo stty -a --file /dev/ttyS0 |tr ' ' '\n' | grep
+>> crtscts
+>> crtscts
+>> ubuntu@hwflow:~$ ls
+>> /proc/device-tree/soc/serial@1c021000/has-hw-flow-control
+>> /proc/device-tree/soc/serial@1c021000/has-hw-flow-control
+>> ubuntu@hwflow:~$ python
+>> Python 2.7.6 (default, Mar 22 2014, 22:58:30)
+>> [GCC 4.8.2] on linux2
+>> Type "help", "copyright", "credits" or "license" for more information.
+>>>>>
+>>>>> UPF_HARDWARE_FLOW = 1 << 21
+>>>>> if 0xB9200000 & UPF_HARDWARE_FLOW:
+>>
+>> ...     print "OK"
+>> ...
+>> OK
+>>
+>> Hope that's a reasonable test case. Test fails when booted w/o
+>> has-hw-flow-control attribute.
+>>
+>> Tested-by: dann frazier <dann.frazier@canonical.com>
+>
+> What is the verdict? pass/fail? Ok/Not OK to merge?
 
-> On Wed, 11 Jun 2014, Julia Lawall wrote:
->
-> > > > v2: pass correct arguments to devm_ioremap_resource
-> > > > Not compile tested due to incompatible architecture.
-> > >
-> > > uhci-platform is compatible with all architectures.  But you have to
-> > > add it to the .config file by hand.
-> >
-> > What should one do exactly?  I added
-> >
-> > CONFIG_USB_UHCI_PLATFORM=y
-> >
-> > to the end of my .config file, but then running make just overwrites it:
->
-> By golly, you're right...  I didn't realize it would do that.
->
-> I guess you have to edit the drivers/usb/host/Kconfig file, changing
->
-> config USB_UHCI_PLATFORM
-> 	bool
-> 	default y if ARCH_VT8500
->
-> to
->
-> config USB_UHCI_PLATFORM
-> 	bool
-> 	default y
->
-> or something equivalent.
->
-> >
-> > > make drivers/usb/host/uhci-platform.o
-> > scripts/kconfig/conf --silentoldconfig Kconfig
-> > #
-> > # configuration written to .config
-> > #
-> >   CHK     include/config/kernel.release
-> >   CHK     include/generated/uapi/linux/version.h
-> >   CHK     include/generated/utsrelease.h
-> >   CALL    scripts/checksyscalls.sh
-> >   CC      drivers/usb/host/uhci-platform.o
-> > drivers/usb/host/uhci-platform.c:13:38: warning: ?struct usb_hcd? declared
-> > inside parameter list [enabled by default]
-> >  static int uhci_platform_init(struct usb_hcd *hcd)
->
-> Do
->
-> 	make drivers/usb/host/uhci-hcd.o
->
-> instead of
->
-> 	make drivers/usb/host/uhci-platform.o
+Murali,
 
-OK, thanks for the explanations.
+ It is working for me, and appears to already be Linus' tree.
 
-julia
+  -dann
+
+> Murali
+>
+>>> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+>>>
+>>> CC: Rob Herring <robh+dt@kernel.org>
+>>> CC: Pawel Moll <pawel.moll@arm.com>
+>>> CC: Mark Rutland <mark.rutland@arm.com>
+>>> CC: Ian Campbell <ijc+devicetree@hellion.org.uk>
+>>> CC: Kumar Gala <galak@codeaurora.org>
+>>> CC: Randy Dunlap <rdunlap@infradead.org>
+>>> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>>> CC: Jiri Slaby <jslaby@suse.cz>
+>>> CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>>> ---
+>>>   .../devicetree/bindings/serial/of-serial.txt       |    1 +
+>>>   drivers/tty/serial/8250/8250_core.c                |    6 ++++--
+>>>   drivers/tty/serial/of_serial.c                     |    4 ++++
+>>>   drivers/tty/serial/serial_core.c                   |   12 +++++++++---
+>>>   4 files changed, 18 insertions(+), 5 deletions(-)
+>>>
+>>> diff --git a/Documentation/devicetree/bindings/serial/of-serial.txt
+>>> b/Documentation/devicetree/bindings/serial/of-serial.txt
+>>> index 1928a3e..7705477 100644
+>>> --- a/Documentation/devicetree/bindings/serial/of-serial.txt
+>>> +++ b/Documentation/devicetree/bindings/serial/of-serial.txt
+>>> @@ -37,6 +37,7 @@ Optional properties:
+>>>   - auto-flow-control: one way to enable automatic flow control support.
+>>> The
+>>>     driver is allowed to detect support for the capability even without
+>>> this
+>>>     property.
+>>> +- has-hw-flow-control: the hardware has flow control capability.
+>>>
+>>>   Example:
+>>>
+>>> diff --git a/drivers/tty/serial/8250/8250_core.c
+>>> b/drivers/tty/serial/8250/8250_core.c
+>>> index 0e1bf88..b69aff2 100644
+>>> --- a/drivers/tty/serial/8250/8250_core.c
+>>> +++ b/drivers/tty/serial/8250/8250_core.c
+>>> @@ -2338,9 +2338,11 @@ serial8250_do_set_termios(struct uart_port *port,
+>>> struct ktermios *termios,
+>>>           * the trigger, or the MCR RTS bit is cleared.  In the case
+>>> where
+>>>           * the remote UART is not using CTS auto flow control, we must
+>>>           * have sufficient FIFO entries for the latency of the remote
+>>> -        * UART to respond.  IOW, at least 32 bytes of FIFO.
+>>> +        * UART to respond.  IOW, at least 32 bytes of FIFO. Also enable
+>>> +        * AFE if hw flow control is supported
+>>>           */
+>>> -       if (up->capabilities & UART_CAP_AFE && port->fifosize >= 32) {
+>>> +       if ((up->capabilities & UART_CAP_AFE && (port->fifosize >= 32))
+>>> ||
+>>> +           (port->flags & UPF_HARD_FLOW)) {
+>>>                  up->mcr &= ~UART_MCR_AFE;
+>>>                  if (termios->c_cflag & CRTSCTS)
+>>>                          up->mcr |= UART_MCR_AFE;
+>>> diff --git a/drivers/tty/serial/of_serial.c
+>>> b/drivers/tty/serial/of_serial.c
+>>> index 9924660..77ec6a1 100644
+>>> --- a/drivers/tty/serial/of_serial.c
+>>> +++ b/drivers/tty/serial/of_serial.c
+>>> @@ -182,6 +182,10 @@ static int of_platform_serial_probe(struct
+>>> platform_device *ofdev)
+>>>                                            "auto-flow-control"))
+>>>                          port8250.capabilities |= UART_CAP_AFE;
+>>>
+>>> +               if (of_property_read_bool(ofdev->dev.of_node,
+>>> +                                         "has-hw-flow-control"))
+>>> +                       port8250.port.flags |= UPF_HARD_FLOW;
+>>> +
+>>>                  ret = serial8250_register_8250_port(&port8250);
+>>>                  break;
+>>>          }
+>>> diff --git a/drivers/tty/serial/serial_core.c
+>>> b/drivers/tty/serial/serial_core.c
+>>> index b68550d..851707a 100644
+>>> --- a/drivers/tty/serial/serial_core.c
+>>> +++ b/drivers/tty/serial/serial_core.c
+>>> @@ -174,8 +174,12 @@ static int uart_port_startup(struct tty_struct *tty,
+>>> struct uart_state *state,
+>>>                          if (tty->termios.c_cflag & CBAUD)
+>>>                                  uart_set_mctrl(uport, TIOCM_RTS |
+>>> TIOCM_DTR);
+>>>                  }
+>>> -
+>>> -               if (tty_port_cts_enabled(port)) {
+>>> +               /*
+>>> +                * if hw support flow control without software
+>>> intervention,
+>>> +                * then skip the below check
+>>> +                */
+>>> +               if (tty_port_cts_enabled(port) &&
+>>> +                   !(uport->flags & UPF_HARD_FLOW)) {
+>>>                          spin_lock_irq(&uport->lock);
+>>>                          if (!(uport->ops->get_mctrl(uport) & TIOCM_CTS))
+>>>                                  tty->hw_stopped = 1;
+>>> @@ -2772,7 +2776,9 @@ void uart_handle_cts_change(struct uart_port
+>>> *uport, unsigned int status)
+>>>
+>>>          uport->icount.cts++;
+>>>
+>>> -       if (tty_port_cts_enabled(port)) {
+>>> +       /* skip below code if the hw flow control is supported */
+>>> +       if (tty_port_cts_enabled(port) &&
+>>> +           !(uport->flags & UPF_HARD_FLOW)) {
+>>>                  if (tty->hw_stopped) {
+>>>                          if (status) {
+>>>                                  tty->hw_stopped = 0;
+>>> --
+>>> 1.7.9.5
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+>>> in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>
+>>>
+>
