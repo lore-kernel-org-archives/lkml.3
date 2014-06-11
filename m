@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753270AbaFKI6n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 04:58:43 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:56333 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753620AbaFKI6b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 04:58:31 -0400
+	id S932513AbaFKI6y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 04:58:54 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:33115 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755735AbaFKI6s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 04:58:48 -0400
 From: Roger Quadros <rogerq@ti.com>
 To: <tony@atomide.com>, <dwmw2@infradead.org>, <computersforpeace@gmail.com>
 CC: <kyungmin.park@samsung.com>, <pekon@ti.com>,
@@ -14,9 +13,9 @@ CC: <kyungmin.park@samsung.com>, <pekon@ti.com>,
         <nsekhar@ti.com>, <linux-omap@vger.kernel.org>,
         <linux-mtd@lists.infradead.org>, <devicetree@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
-Subject: [PATCH 19/36] mtd: onenand: omap: Use devres managed resources
-Date: Wed, 11 Jun 2014 11:56:24 +0300
-Message-ID: <1402477001-31132-20-git-send-email-rogerq@ti.com>
+Subject: [PATCH 25/36] ARM: OMAP2+: gpmc: Support multiple Chip Selects per device
+Date: Wed, 11 Jun 2014 11:56:30 +0300
+Message-ID: <1402477001-31132-26-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1402477001-31132-1-git-send-email-rogerq@ti.com>
 References: <1402477001-31132-1-git-send-email-rogerq@ti.com>
@@ -26,180 +25,186 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devres managed resources for Memory, GPIO and Interrupt
-resources.
-
-0 is a valid gpio, so use gpio_is_valid() to check for
-valid gpio number.
+Some devices (e.g. tusb6010) need 2 chip selects to work with
+2 separate IOMEM resources. Allow such use case. The user just
+needs to call gpmc_generic_init() for as many chip selects
+with the same platform_device pointer. The GPMC driver will
+take care of fixing up the memory resources.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- drivers/mtd/onenand/omap2.c | 92 ++++++++++++++++-----------------------------
- 1 file changed, 33 insertions(+), 59 deletions(-)
+ arch/arm/mach-omap2/gpmc.c | 134 ++++++++++++++++++++++++++++++---------------
+ 1 file changed, 91 insertions(+), 43 deletions(-)
 
-diff --git a/drivers/mtd/onenand/omap2.c b/drivers/mtd/onenand/omap2.c
-index 238dd7a..b6a9ec0 100644
---- a/drivers/mtd/onenand/omap2.c
-+++ b/drivers/mtd/onenand/omap2.c
-@@ -38,8 +38,7 @@
- #include <asm/mach/flash.h>
- #include <linux/platform_data/mtd-onenand-omap2.h>
- #include <linux/platform_data/gpmc-omap.h>
--#include <asm/gpio.h>
+diff --git a/arch/arm/mach-omap2/gpmc.c b/arch/arm/mach-omap2/gpmc.c
+index 5563360..34545ca 100644
+--- a/arch/arm/mach-omap2/gpmc.c
++++ b/arch/arm/mach-omap2/gpmc.c
+@@ -1388,9 +1388,14 @@ static int gpmc_nand_setup(struct platform_device *parent_pdev,
+ 
+ static void gpmc_probe_legacy(struct platform_device *pdev)
+ {
+-	int i, rc;
++	int i, rc, j;
+ 	struct device *dev = &pdev->dev;
+ 	struct gpmc_omap_platform_data *gpmc_pdata;
++	struct resource *mem_res;
++	unsigned long cs_base;
++	resource_size_t size;
++	struct gpmc_timings gpmc_timings;
++	struct gpmc_omap_cs_data *cs;
+ 
+ 	gpmc_pdata = dev->platform_data;
+ 	gpmc_cs_num = GPMC_CS_NUM;
+@@ -1400,52 +1405,10 @@ static void gpmc_probe_legacy(struct platform_device *pdev)
+ 		return;
+ 
+ 	for (i = 0; i < GPMC_CS_NUM; i++) {
+-		struct resource *mem_res;
+-		unsigned long cs_base;
+-		resource_size_t size;
+-		struct gpmc_timings gpmc_timings;
+-		struct gpmc_omap_cs_data *cs;
 -
-+#include <linux/gpio.h>
- #include <linux/omap-dma.h>
+ 		cs = &gpmc_pdata->cs[i];
+ 		if (!cs->valid)
+ 			continue;
  
- #define DRIVER_NAME "omap2-onenand"
-@@ -835,6 +834,7 @@ static int omap2_onenand_probe(struct platform_device *pdev)
- 	int r;
- 	struct resource *res;
- 	struct mtd_part_parser_data ppdata = {};
-+	struct device *dev = &pdev->dev;
- 
- 	pdata = dev_get_platdata(&pdev->dev);
- 	if (pdata == NULL) {
-@@ -842,7 +842,7 @@ static int omap2_onenand_probe(struct platform_device *pdev)
- 		return -ENODEV;
- 	}
- 
--	c = kzalloc(sizeof(struct omap2_onenand), GFP_KERNEL);
-+	c = devm_kzalloc(dev, sizeof(struct omap2_onenand), GFP_KERNEL);
- 	if (!c)
- 		return -ENOMEM;
- 
-@@ -855,50 +855,40 @@ static int omap2_onenand_probe(struct platform_device *pdev)
- 	c->dma_channel = pdata->dma_channel;
- 	if (c->dma_channel < 0) {
- 		/* if -1, don't use DMA */
--		c->gpio_irq = 0;
-+		c->gpio_irq = -EINVAL;
- 	}
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (res == NULL) {
--		r = -EINVAL;
--		dev_err(&pdev->dev, "error getting memory resource\n");
--		goto err_kfree;
--	}
-+	c->onenand.base = devm_ioremap_resource(dev, res);
-+	if (IS_ERR(c->onenand.base))
-+		return PTR_ERR(c->onenand.base);
- 
- 	c->phys_base = res->start;
- 	c->mem_size = resource_size(res);
- 
--	if (request_mem_region(c->phys_base, c->mem_size,
--			       pdev->dev.driver->name) == NULL) {
--		dev_err(&pdev->dev, "Cannot reserve memory region at 0x%08lx, size: 0x%x\n",
--						c->phys_base, c->mem_size);
--		r = -EBUSY;
--		goto err_kfree;
--	}
--	c->onenand.base = ioremap(c->phys_base, c->mem_size);
--	if (c->onenand.base == NULL) {
--		r = -ENOMEM;
--		goto err_release_mem_region;
--	}
+-		/*
+-		 * Request a CS space. Use size from
+-		 * platform device's MEM resource
+-		 */
+-		if (!cs->pdev)
+-			goto skip_mem;
 -
- 	r = omap2_onenand_setup(c);
--	if (r < 0) {
--		dev_err(&pdev->dev, "setup failed:%d\n", r);
--		goto err_iounmap;
--	}
-+	if (r)
-+		return -ENODEV;
+-		mem_res = cs->pdev->resource;
+-		if (cs->pdev->num_resources < 1 ||
+-		    resource_type(mem_res) != IORESOURCE_MEM) {
+-			dev_err(dev, "Invalid IOMEM resource for CS %d\n", i);
+-			continue;
+-		}
+-
+-		size = mem_res->end - mem_res->start + 1;
+-		if (gpmc_cs_request(i, size, &cs_base)) {
+-			dev_err(dev, "Couldn't request resource for CS %d\n",
+-				i);
+-			continue;
+-		}
+-
+-		mem_res->start = cs_base;
+-		mem_res->end = cs_base + size - 1;
+-
+-		/* FIXME: When do we need to call gpmc_cs_remap()? */
+-skip_mem:
+-
+-		/* Customized NAND setup */
+-		if (cs->is_nand) {
+-			if (gpmc_nand_setup(pdev, cs)) {
+-				dev_err(dev, "Error setting up NAND on CS %d\n",
+-					i);
+-				continue;
+-			}
+-		}
+-
+ 		if (cs->settings) {
+ 			if (gpmc_cs_program_settings(i, cs->settings)) {
+ 				dev_err(dev,
+@@ -1474,10 +1437,95 @@ skip_mem:
+ 				continue;
+ 			}
+ 		}
++	}
++
++	/*
++	 * All Chip Selects must be configured before platform devices are
++	 * created as some devices (e.g. tusb6010) can use multiple
++	 * Chip selects.
++	 */
++
++	/* Fixup Memory resources */
++	for (i = 0; i < GPMC_CS_NUM; i++) {
++		int required_resources;
++
++		cs = &gpmc_pdata->cs[i];
++		if (!cs->valid)
++			continue;
  
--	if (c->gpio_irq) {
--		if ((r = gpio_request(c->gpio_irq, "OneNAND irq")) < 0) {
--			dev_err(&pdev->dev,  "Failed to request GPIO%d for "
--				"OneNAND\n", c->gpio_irq);
--			goto err_iounmap;
--	}
--	gpio_direction_input(c->gpio_irq);
-+	if (gpio_is_valid(c->gpio_irq)) {
-+		r = devm_gpio_request(dev, c->gpio_irq, "OneNAND irq");
-+		if (r) {
-+			dev_err(dev, "Failed to request GPIO %d",
-+				c->gpio_irq);
-+			return r;
+ 		if (!cs->pdev)
+ 			continue;
+ 
++		/* Customized NAND setup */
++		if (cs->is_nand) {
++			if (gpmc_nand_setup(pdev, cs)) {
++				dev_err(dev, "Error setting up NAND on CS %d\n",
++					i);
++				continue;
++			}
 +		}
 +
-+		gpio_direction_input(c->gpio_irq);
- 
--	if ((r = request_irq(gpio_to_irq(c->gpio_irq),
--			     omap2_onenand_interrupt, IRQF_TRIGGER_RISING,
--			     pdev->dev.driver->name, c)) < 0)
--		goto err_release_gpio;
-+		r = devm_request_irq(dev, gpio_to_irq(c->gpio_irq),
-+				     omap2_onenand_interrupt,
-+				     IRQF_TRIGGER_RISING,
-+				     pdev->dev.driver->name, c);
-+		if (r) {
-+			dev_err(dev, "failed to request IRQ %d:%d\n",
-+				c->gpio_irq, r);
-+			return r;
++		mem_res = cs->pdev->resource;
++
++		/*
++		 * If device is present multiple times, fix the subsequent
++		 * resources
++		 */
++		required_resources = 1;
++		for (j = 0; j < i; j++) {
++			if (gpmc_pdata->cs[j].pdev == cs->pdev) {
++				mem_res++;
++				required_resources++;
++			}
 +		}
- 	}
- 
- 	if (c->dma_channel >= 0) {
-@@ -915,9 +905,8 @@ static int omap2_onenand_probe(struct platform_device *pdev)
- 			omap_set_dma_dest_burst_mode(c->dma_channel,
- 						     OMAP_DMA_DATA_BURST_8);
- 		} else {
--			dev_info(&pdev->dev,
--				 "failed to allocate DMA for OneNAND, "
--				 "using PIO instead\n");
-+			dev_info(dev,
-+				 "failed to allocate DMA for OneNAND, using PIO instead\n");
- 			c->dma_channel = -1;
- 		}
- 	}
-@@ -947,8 +936,11 @@ static int omap2_onenand_probe(struct platform_device *pdev)
- 	if (pdata->skip_initial_unlocking)
- 		this->options |= ONENAND_SKIP_INITIAL_UNLOCKING;
- 
--	if ((r = onenand_scan(&c->mtd, 1)) < 0)
-+	r = onenand_scan(&c->mtd, 1);
-+	if (r) {
-+		dev_err(dev, "OneNAND scan failed :%d\n", r);
- 		goto err_release_dma;
++
++		if (cs->pdev->num_resources < required_resources ||
++		    resource_type(mem_res) != IORESOURCE_MEM) {
++			dev_err(dev, "Invalid IOMEM resource for CS %d\n", i);
++			continue;
++		}
++
++		/*
++		 * Request a CS space. Use size from
++		 * platform device's MEM resource
++		 */
++		size = mem_res->end - mem_res->start + 1;
++		if (gpmc_cs_request(i, size, &cs_base)) {
++			dev_err(dev, "Couldn't request resource for CS %d\n",
++				i);
++			continue;
++		}
++
++		mem_res->start = cs_base;
++		mem_res->end = cs_base + size - 1;
 +	}
- 
- 	ppdata.of_node = pdata->of_node;
- 	r = mtd_device_parse_register(&c->mtd, NULL, &ppdata,
-@@ -966,17 +958,6 @@ err_release_onenand:
- err_release_dma:
- 	if (c->dma_channel != -1)
- 		omap_free_dma(c->dma_channel);
--	if (c->gpio_irq)
--		free_irq(gpio_to_irq(c->gpio_irq), c);
--err_release_gpio:
--	if (c->gpio_irq)
--		gpio_free(c->gpio_irq);
--err_iounmap:
--	iounmap(c->onenand.base);
--err_release_mem_region:
--	release_mem_region(c->phys_base, c->mem_size);
--err_kfree:
--	kfree(c);
- 
- 	return r;
- }
-@@ -989,13 +970,6 @@ static int omap2_onenand_remove(struct platform_device *pdev)
- 	if (c->dma_channel != -1)
- 		omap_free_dma(c->dma_channel);
- 	omap2_onenand_shutdown(pdev);
--	if (c->gpio_irq) {
--		free_irq(gpio_to_irq(c->gpio_irq), c);
--		gpio_free(c->gpio_irq);
--	}
--	iounmap(c->onenand.base);
--	release_mem_region(c->phys_base, c->mem_size);
--	kfree(c);
- 
- 	return 0;
- }
++
++	/* create the platform devices */
++	for (i = 0; i < GPMC_CS_NUM; i++) {
++		bool registered;
++
++		cs = &gpmc_pdata->cs[i];
++		if (!cs->valid)
++			continue;
++
++		if (!cs->pdev)
++			continue;
++
++		/*
++		 * same device can be present on multiple CS, don't
++		 * register device more than once.
++		 */
++		registered = false;
++		for (j = 0; j < i; j++) {
++			if (gpmc_pdata->cs[j].pdev == cs->pdev) {
++				registered = true;
++				break;
++			}
++		}
++
++		if (registered)
++			continue;
++
+ 		cs->pdev->dev.parent = dev;
+ 		rc = platform_device_register(cs->pdev);
+ 		if (rc < 0) {
 -- 
 1.8.3.2
 
