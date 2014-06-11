@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752987AbaFKTCs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 15:02:48 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:45959 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752735AbaFKTCq (ORCPT
+	id S1753254AbaFKTDZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 15:03:25 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:47634 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751578AbaFKTDY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 15:02:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <1401731125-19780-1-git-send-email-emilgoode@gmail.com>
-References: <1401731125-19780-1-git-send-email-emilgoode@gmail.com>
-Date: Wed, 11 Jun 2014 21:02:44 +0200
-X-Google-Sender-Auth: E7PMw-5E27RT_X87Uw8TK87QEuM
-Message-ID: <CAMuHMdVwhtkoy4m6LzF_EZ6aZneHzELEufw7DYkebZp7n7c=dg@mail.gmail.com>
-Subject: Re: [PATCH] usb: usb5303: make use of uninitialized err variable
+	Wed, 11 Jun 2014 15:03:24 -0400
 From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Emil Goode <emilgoode@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Brown <broonie@linaro.org>, Olof Johansson <olof@lixom.net>,
-        Dongjin Kim <tobetter@gmail.com>, Julius Werner <jwerner@chromium.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        USB list <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] HID: rmi: Protect PM-only functions by #ifdef CONFIG_PM
+Date: Wed, 11 Jun 2014 21:03:18 +0200
+Message-Id: <1402513398-17546-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.9.1
+MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 2, 2014 at 7:45 PM, Emil Goode <emilgoode@gmail.com> wrote:
-> The variable err is not initialized here, this patch uses it
-> to store an eventual error value from devm_clk_get().
->
-> Signed-off-by: Emil Goode <emilgoode@gmail.com>
+If CONFIG_PM=n:
 
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+drivers/hid/hid-rmi.c:432: warning: ‘rmi_post_reset’ defined but not used
+drivers/hid/hid-rmi.c:437: warning: ‘rmi_post_resume’ defined but not used
 
-Gr{oetje,eeting}s,
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ drivers/hid/hid-rmi.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-                        Geert
+diff --git a/drivers/hid/hid-rmi.c b/drivers/hid/hid-rmi.c
+index 2451c7e5febd..578bbe65902b 100644
+--- a/drivers/hid/hid-rmi.c
++++ b/drivers/hid/hid-rmi.c
+@@ -428,6 +428,7 @@ static int rmi_raw_event(struct hid_device *hdev,
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_PM
+ static int rmi_post_reset(struct hid_device *hdev)
+ {
+ 	return rmi_set_mode(hdev, RMI_MODE_ATTN_REPORTS);
+@@ -437,6 +438,7 @@ static int rmi_post_resume(struct hid_device *hdev)
+ {
+ 	return rmi_set_mode(hdev, RMI_MODE_ATTN_REPORTS);
+ }
++#endif /* CONFIG_PM */
+ 
+ #define RMI4_MAX_PAGE 0xff
+ #define RMI4_PAGE_SIZE 0x0100
+-- 
+1.9.1
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
