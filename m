@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753809AbaFKBqN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 21:46:13 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:44991 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752087AbaFKBqM (ORCPT
+	id S1754068AbaFKBuS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 21:50:18 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:60534 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752718AbaFKBuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 21:46:12 -0400
+	Tue, 10 Jun 2014 21:50:16 -0400
+X-Original-SENDERIP: 10.177.220.169
+X-Original-MAILFROM: minchan@kernel.org
+Date: Wed, 11 Jun 2014 10:50:20 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>, Mel Gorman <mgorman@suse.de>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 04/10] mm, compaction: skip rechecks when lock was
+ already held
+Message-ID: <20140611015020.GE15630@bbox>
+References: <1402305982-6928-1-git-send-email-vbabka@suse.cz>
+ <1402305982-6928-4-git-send-email-vbabka@suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.10.1406110111300.5170@nanos>
-References: <1402385723-23138-1-git-send-email-zhouzhouyi@gmail.com>
-	<53978E9F.1010003@zytor.com>
-	<alpine.DEB.2.10.1406110111300.5170@nanos>
-Date: Wed, 11 Jun 2014 09:46:11 +0800
-Message-ID: <CAABZP2xD4zRX78HxK1DB+13s+1bo=Ai2x+uJDhtJjb+nkZ7epQ@mail.gmail.com>
-Subject: Re: [PATCH] x86/tlb_uv: Fixing some memory allocation failure in x86 UV
-From: Zhouyi Zhou <zhouzhouyi@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, mingo@redhat.com, x86@kernel.org,
-        Peter Zijlstra <peterz@infradead.org>, cpw@sgi.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Zhouyi Zhou <yizhouzhou@ict.ac.cn>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402305982-6928-4-git-send-email-vbabka@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for reviewing, I will work on a new version
+On Mon, Jun 09, 2014 at 11:26:16AM +0200, Vlastimil Babka wrote:
+> Compaction scanners try to lock zone locks as late as possible by checking
+> many page or pageblock properties opportunistically without lock and skipping
+> them if not unsuitable. For pages that pass the initial checks, some properties
+> have to be checked again safely under lock. However, if the lock was already
+> held from a previous iteration in the initial checks, the rechecks are
+> unnecessary.
+> 
+> This patch therefore skips the rechecks when the lock was already held. This is
+> now possible to do, since we don't (potentially) drop and reacquire the lock
+> between the initial checks and the safe rechecks anymore.
+> 
+> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+Acked-by: Minchan Kim <minchan@kernel.org>
 
-On Wed, Jun 11, 2014 at 7:28 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Tue, 10 Jun 2014, H. Peter Anvin wrote:
->
->> On 06/10/2014 12:35 AM, Zhouyi Zhou wrote:
->> > Fixing some memory allocation failure handling in x86 UV
->> >
->> > Signed-off-by: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
->>
->> Sorry, this really isn't enough description for this size of a patch.
->
-> Correction: This is not a proper description for any patch.
->
-> "some" is wrong to begin with.
->
-> Either we fix a particular issue or we address all of them, but "some"
-> means: We fixed a few, but we did not care about the rest.
->
-> Aside of that, I agree. The changelog is disjunct from the patch
-> itself.
->
-> Thanks,
->
->         tglx
->
->
+-- 
+Kind regards,
+Minchan Kim
