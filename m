@@ -1,180 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755248AbaFKFEo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 01:04:44 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:32157 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751154AbaFKFEn (ORCPT
+	id S1755361AbaFKFFR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 01:05:17 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:47959 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751154AbaFKFFQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 01:04:43 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH] x86: Find correct 64 bit ramdisk address for microcode early update
-Date: Tue, 10 Jun 2014 22:04:24 -0700
-Message-Id: <1402463064-31697-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.4.5
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Wed, 11 Jun 2014 01:05:16 -0400
+From: A Raghavendra Rao <raghav3276@gmail.com>
+X-Google-Original-From: A Raghavendra Rao <arrao@cdac.in>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        A Raghavendra Rao <arrao@cdac.in>
+Subject: [PATCH] Staging: rtl8192e: dot11d: Fixed printk coding style issues
+Date: Wed, 11 Jun 2014 10:28:58 +0530
+Message-Id: <1402462738-15969-1-git-send-email-arrao@cdac.in>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When using kexec with 64bit kernel, bzImage and ramdisk could be
-loaded above 4G. We need this to get correct ramdisk adress.
+Replaced 'printk' with 'netdev_' function
 
-Make get_ramdisk_image() global and use it for early microcode updating.
-Also make it to take boot_params pointer for different usage.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-
+Signed-off-by: A Raghavendra Rao <arrao@cdac.in>
 ---
- arch/x86/include/asm/setup.h                |    3 +++
- arch/x86/kernel/cpu/microcode/amd_early.c   |   10 +++++-----
- arch/x86/kernel/cpu/microcode/intel_early.c |    8 ++++----
- arch/x86/kernel/setup.c                     |   28 ++++++++++++++--------------
- 4 files changed, 26 insertions(+), 23 deletions(-)
+ drivers/staging/rtl8192e/dot11d.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-Index: linux-2.6/arch/x86/include/asm/setup.h
-===================================================================
---- linux-2.6.orig/arch/x86/include/asm/setup.h
-+++ linux-2.6/arch/x86/include/asm/setup.h
-@@ -105,6 +105,9 @@ void *extend_brk(size_t size, size_t ali
- 	RESERVE_BRK(name, sizeof(type) * entries)
+diff --git a/drivers/staging/rtl8192e/dot11d.c b/drivers/staging/rtl8192e/dot11d.c
+index 53da610..bfcc935 100644
+--- a/drivers/staging/rtl8192e/dot11d.c
++++ b/drivers/staging/rtl8192e/dot11d.c
+@@ -133,12 +133,12 @@ void Dot11d_UpdateCountryIe(struct rtllib_device *dev, u8 *pTaddr,
+ 	pTriple = (struct chnl_txpow_triple *)(pCoutryIe + 3);
+ 	for (i = 0; i < NumTriples; i++) {
+ 		if (MaxChnlNum >= pTriple->FirstChnl) {
+-			printk(KERN_INFO "Dot11d_UpdateCountryIe(): Invalid country IE, skip it........1\n");
++			netdev_info(dev->dev, "Dot11d_UpdateCountryIe(): Invalid country IE, skip it........1\n");
+ 			return;
+ 		}
+ 		if (MAX_CHANNEL_NUMBER < (pTriple->FirstChnl +
+ 		    pTriple->NumChnls)) {
+-			printk(KERN_INFO "Dot11d_UpdateCountryIe(): Invalid country IE, skip it........2\n");
++			netdev_info(dev->dev, "Dot11d_UpdateCountryIe(): Invalid country IE, skip it........2\n");
+ 			return;
+ 		}
  
- extern void probe_roms(void);
-+u64 get_ramdisk_image(struct boot_params *bp);
-+u64 get_ramdisk_size(struct boot_params *bp);
-+
- #ifdef __i386__
+@@ -165,7 +165,7 @@ u8 DOT11D_GetMaxTxPwrInDbm(struct rtllib_device *dev, u8 Channel)
+ 	u8 MaxTxPwrInDbm = 255;
  
- asmlinkage void __init i386_start_kernel(void);
-Index: linux-2.6/arch/x86/kernel/cpu/microcode/amd_early.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/cpu/microcode/amd_early.c
-+++ linux-2.6/arch/x86/kernel/cpu/microcode/amd_early.c
-@@ -51,12 +51,12 @@ static struct cpio_data __init find_ucod
- 	 */
- 	p       = (struct boot_params *)__pa_nodebug(&boot_params);
- 	path    = (char *)__pa_nodebug(ucode_path);
--	start   = (void *)p->hdr.ramdisk_image;
--	size    = p->hdr.ramdisk_size;
-+	start   = (void *)(unsigned long)get_ramdisk_image(p);
-+	size    = get_ramdisk_size(p);
- #else
- 	path    = ucode_path;
--	start   = (void *)(boot_params.hdr.ramdisk_image + PAGE_OFFSET);
--	size    = boot_params.hdr.ramdisk_size;
-+	start   = (void *)(get_ramdisk_image(&boot_params) + PAGE_OFFSET);
-+	size    = get_ramdisk_size(&boot_params);
- #endif
- 
- 	return find_cpio_data(path, start, size, &offset);
-@@ -371,7 +371,7 @@ int __init save_microcode_in_initrd_amd(
- 	 */
- 	if (relocated_ramdisk)
- 		container = (u8 *)(__va(relocated_ramdisk) +
--			     (cont - boot_params.hdr.ramdisk_image));
-+			     (cont - get_ramdisk_size(&boot_params)));
- 
- 	if (ucode_new_rev)
- 		pr_info("microcode: updated early to new patch_level=0x%08x\n",
-Index: linux-2.6/arch/x86/kernel/cpu/microcode/intel_early.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/cpu/microcode/intel_early.c
-+++ linux-2.6/arch/x86/kernel/cpu/microcode/intel_early.c
-@@ -733,8 +733,8 @@ load_ucode_intel_bsp(void)
- 	struct boot_params *boot_params_p;
- 
- 	boot_params_p = (struct boot_params *)__pa_nodebug(&boot_params);
--	ramdisk_image = boot_params_p->hdr.ramdisk_image;
--	ramdisk_size  = boot_params_p->hdr.ramdisk_size;
-+	ramdisk_image = get_ramdisk_image(boot_params_p);
-+	ramdisk_size  = get_ramdisk_size(boot_params_p);
- 	initrd_start_early = ramdisk_image;
- 	initrd_end_early = initrd_start_early + ramdisk_size;
- 
-@@ -743,8 +743,8 @@ load_ucode_intel_bsp(void)
- 		(unsigned long *)__pa_nodebug(&mc_saved_in_initrd),
- 		initrd_start_early, initrd_end_early, &uci);
- #else
--	ramdisk_image = boot_params.hdr.ramdisk_image;
--	ramdisk_size  = boot_params.hdr.ramdisk_size;
-+	ramdisk_image = get_ramdisk_image(&boot_params);
-+	ramdisk_size  = get_ramdisk_size(&boot_params);
- 	initrd_start_early = ramdisk_image + PAGE_OFFSET;
- 	initrd_end_early = initrd_start_early + ramdisk_size;
- 
-Index: linux-2.6/arch/x86/kernel/setup.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/setup.c
-+++ linux-2.6/arch/x86/kernel/setup.c
-@@ -299,19 +299,19 @@ u64 relocated_ramdisk;
- 
- #ifdef CONFIG_BLK_DEV_INITRD
- 
--static u64 __init get_ramdisk_image(void)
-+u64 __init get_ramdisk_image(struct boot_params *bp)
- {
--	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
-+	u64 ramdisk_image = bp->hdr.ramdisk_image;
- 
--	ramdisk_image |= (u64)boot_params.ext_ramdisk_image << 32;
-+	ramdisk_image |= (u64)bp->ext_ramdisk_image << 32;
- 
- 	return ramdisk_image;
- }
--static u64 __init get_ramdisk_size(void)
-+u64 __init get_ramdisk_size(struct boot_params *bp)
- {
--	u64 ramdisk_size = boot_params.hdr.ramdisk_size;
-+	u64 ramdisk_size = bp->hdr.ramdisk_size;
- 
--	ramdisk_size |= (u64)boot_params.ext_ramdisk_size << 32;
-+	ramdisk_size |= (u64)bp->ext_ramdisk_size << 32;
- 
- 	return ramdisk_size;
- }
-@@ -320,8 +320,8 @@ static u64 __init get_ramdisk_size(void)
- static void __init relocate_initrd(void)
- {
- 	/* Assume only end is not page aligned */
--	u64 ramdisk_image = get_ramdisk_image();
--	u64 ramdisk_size  = get_ramdisk_size();
-+	u64 ramdisk_image = get_ramdisk_image(&boot_params);
-+	u64 ramdisk_size  = get_ramdisk_size(&boot_params);
- 	u64 area_size     = PAGE_ALIGN(ramdisk_size);
- 	unsigned long slop, clen, mapaddr;
- 	char *p, *q;
-@@ -359,8 +359,8 @@ static void __init relocate_initrd(void)
- 		ramdisk_size  -= clen;
+ 	if (MAX_CHANNEL_NUMBER < Channel) {
+-		printk(KERN_INFO "DOT11D_GetMaxTxPwrInDbm(): Invalid Channel\n");
++		netdev_info(dev->dev, "DOT11D_GetMaxTxPwrInDbm(): Invalid Channel\n");
+ 		return MaxTxPwrInDbm;
+ 	}
+ 	if (pDot11dInfo->channel_map[Channel])
+@@ -204,7 +204,7 @@ int ToLegalChannel(struct rtllib_device *dev, u8 channel)
  	}
  
--	ramdisk_image = get_ramdisk_image();
--	ramdisk_size  = get_ramdisk_size();
-+	ramdisk_image = get_ramdisk_image(&boot_params);
-+	ramdisk_size  = get_ramdisk_size(&boot_params);
- 	printk(KERN_INFO "Move RAMDISK from [mem %#010llx-%#010llx] to"
- 		" [mem %#010llx-%#010llx]\n",
- 		ramdisk_image, ramdisk_image + ramdisk_size - 1,
-@@ -370,8 +370,8 @@ static void __init relocate_initrd(void)
- static void __init early_reserve_initrd(void)
- {
- 	/* Assume only end is not page aligned */
--	u64 ramdisk_image = get_ramdisk_image();
--	u64 ramdisk_size  = get_ramdisk_size();
-+	u64 ramdisk_image = get_ramdisk_image(&boot_params);
-+	u64 ramdisk_size  = get_ramdisk_size(&boot_params);
- 	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
+ 	if (MAX_CHANNEL_NUMBER < channel) {
+-		printk(KERN_ERR "%s(): Invalid Channel\n", __func__);
++		netdev_err(dev->dev, "%s(): Invalid Channel\n", __func__);
+ 		return default_chn;
+ 	}
  
- 	if (!boot_params.hdr.type_of_loader ||
-@@ -383,8 +383,8 @@ static void __init early_reserve_initrd(
- static void __init reserve_initrd(void)
- {
- 	/* Assume only end is not page aligned */
--	u64 ramdisk_image = get_ramdisk_image();
--	u64 ramdisk_size  = get_ramdisk_size();
-+	u64 ramdisk_image = get_ramdisk_image(&boot_params);
-+	u64 ramdisk_size  = get_ramdisk_size(&boot_params);
- 	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
- 	u64 mapped_size;
- 
+-- 
+1.7.9.5
+
