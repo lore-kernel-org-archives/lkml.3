@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754092AbaFKSyR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 14:54:17 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:42674 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753195AbaFKSyQ (ORCPT
+	id S1754546AbaFKSyW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 14:54:22 -0400
+Received: from mailrelay012.isp.belgacom.be ([195.238.6.179]:46498 "EHLO
+	mailrelay012.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754122AbaFKSyU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 14:54:16 -0400
-Date: Wed, 11 Jun 2014 14:54:15 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Himangi Saraogi <himangi774@gmail.com>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Jan Andersson <jan@gaisler.com>, Andreas Larsson <andreas@gaisler.com>,
-        <julia.lawall@lip6.fr>
-Subject: Re: [PATCH v3] usb: host: uhci-grlib.c : use devm_ functions
-In-Reply-To: <20140611183823.GA10519@himangi-Dell>
-Message-ID: <Pine.LNX.4.44L0.1406111453230.890-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 11 Jun 2014 14:54:20 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AugHAOakmFNbslCP/2dsb2JhbABagw2rdAUBAQEBAQEFAZkbgQgXdYQxLyOBGjeIRgHQFBeFXIgZZB2EKwSaLosqiCGBfIFCO4Ew
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Subject: [PATCH 1/1] drivers/xen/events/events_base.c:  remove unnecessary test on unsigned value
+Date: Wed, 11 Jun 2014 20:53:02 +0200
+Message-Id: <1402512782-17072-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Jun 2014, Himangi Saraogi wrote:
+unsigned value is never < 0
 
-> The various devm_ functions allocate memory that is released when a
-> driver detaches. This patch uses devm_ioremap_resource for data
-> that is allocated in the probe function of a platform device and
-> is only freed in the remove function. The corresponding free functions
-> are removed and two labels are done away with. Also, linux/device.h
-> is added to make sure the devm_*() routine declarations are
-> unambiguously available.
-> 
-> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-> ---
-> Not compile tested due to incompatible architecture.
-> v3: pass correct arguments to devm_ioremap_resource
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ drivers/xen/events/events_base.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-
-What happened to the corresponding patch for uhci-platform.c?
-
-Alan Stern
+diff --git a/drivers/xen/events/events_base.c b/drivers/xen/events/events_base.c
+index c919d3d..5b5c5ff 100644
+--- a/drivers/xen/events/events_base.c
++++ b/drivers/xen/events/events_base.c
+@@ -246,7 +246,7 @@ static void xen_irq_info_cleanup(struct irq_info *info)
+  */
+ unsigned int evtchn_from_irq(unsigned irq)
+ {
+-	if (unlikely(WARN(irq < 0 || irq >= nr_irqs, "Invalid irq %d!\n", irq)))
++	if (unlikely(WARN(irq >= nr_irqs, "Invalid irq %d!\n", irq)))
+ 		return 0;
+ 
+ 	return info_for_irq(irq)->evtchn;
+-- 
+1.8.4.5
 
