@@ -1,74 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755390AbaFKJwv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 05:52:51 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:45243 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755340AbaFKJwu (ORCPT
+	id S1753434AbaFKJ5Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 05:57:16 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:60073 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750763AbaFKJ5P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 05:52:50 -0400
-Date: Wed, 11 Jun 2014 13:52:46 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Andrew Vagin <avagin@parallels.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, avagin@openvz.org,
-        xemul@parallels.com, vdavydov@parallels.com,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: Re: [patch 3/3] timerfd: Implement write method
-Message-ID: <20140611095246.GJ2243@moon>
-References: <20140428212517.200264067@openvz.org>
- <20140428213301.507657833@openvz.org>
- <alpine.DEB.2.02.1405220643170.9695@ionos.tec.linutronix.de>
- <alpine.DEB.2.02.1405220656130.9695@ionos.tec.linutronix.de>
- <20140610163530.GF2243@moon>
- <20140611072743.GA10612@paralelels.com>
- <20140611075125.GI2243@moon>
- <20140611090914.GA12336@paralelels.com>
+	Wed, 11 Jun 2014 05:57:15 -0400
+Date: Wed, 11 Jun 2014 10:57:11 +0100
+From: Andy Whitcroft <apw@canonical.com>
+To: Ivo Sieben <meltedpianoman@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>
+Subject: Re: [PATCH] [checkpatch.pl] ctx_statement_block #if/#else/#endif fix
+Message-ID: <20140611095711.GL6819@bark>
+References: <1400164995-8652-1-git-send-email-meltedpianoman@gmail.com>
+ <20140611091640.GK6819@bark>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140611090914.GA12336@paralelels.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140611091640.GK6819@bark>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 11, 2014 at 01:09:15PM +0400, Andrew Vagin wrote:
-> On Wed, Jun 11, 2014 at 11:51:25AM +0400, Cyrill Gorcunov wrote:
-> > On Wed, Jun 11, 2014 at 11:27:43AM +0400, Andrew Vagin wrote:
+On Wed, Jun 11, 2014 at 10:16:40AM +0100, Andy Whitcroft wrote:
+
+> It doesn't seem right to remove the restore of the state.  If you
+> consider the effect of an #if/#else/#endif combination the state of the
+> statement parser should be reset to the state at #if at the #else as the
+> code there is an alternative for the code in the other branch(s) of the
+> preprocessor, either is a continuation of the statement in progress when
+> reached.  This contrived example should make it clear we need to
+> restore:
 > 
-> ...
+> 	c = (d +
+> #if A
+> 	a)
+> #else
+> 	b)
+> #endif
 > 
-> > +#ifdef CONFIG_CHECKPOINT_RESTORE
-> > +static long timerfd_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-> > +{
-> > +	struct timerfd_ctx *ctx = file->private_data;
-> > +	int ret = 0;
-> > +
-> > +	switch (cmd) {
-> > +	case TFD_IOC_SET_TICKS: {
-> > +		u64 ticks;
-> > +
-> > +		if (get_user(ticks, (u64 __user *)arg))
-> > +			return -EFAULT;
-> > +		spin_lock_irq(&ctx->wqh.lock);
-> > +		ctx->ticks = ticks;
-> > +		if (ticks)
-> > +			wake_up_locked(&ctx->wqh);
 > 
-> Setting ticks to zero is equivalent to timerfd_read(), isn't it?
-> So do we need to re-arme the timer, if it's periodic?
+> That said it appears to be doing something wrong in your example.
+> 
+> /me will have a poke and get back to you.
 
-I must admit I'm not really sure if we should rearm it in such
-case. In general @ticks are zeroified in case of timer-setup/cancel/read.
+Ok, the fundamental issue seems to have been an off by one thinko in the
+attempt to restore the state to the previous level ($@array is the index
+of the late element not the length of the array).  The patch below seems
+to sort out the issue.  Could you give it a try and confirm it covers
+your primary cases, and if so I will push it to akpm.
 
- - lets consider someone armed the timer it triggered but no read done
-   yet, instead ioctl called and @ticks are set to zero, then call for
-   read() and it returns zero to caller not rearming the timer (in
-   current patch approach and non-block read)
+Thanks.
 
- - in turn if we rearm timer on @ticks = 0 in ioctl this makes it
-   close to behaviour of read() function (which in turn look to
-   me as a duplication of read() interface).
+-apw
 
-That said, I'm not sure yet...
+>From b47b6f4934471bcc4d653b53be0950b9dc590c87 Mon Sep 17 00:00:00 2001
+From: Andy Whitcroft <apw@canonical.com>
+Date: Wed, 11 Jun 2014 10:51:13 +0100
+Subject: [PATCH] checkpatch: fix handling of stacked state for preprocessor if
+ branches
+
+When reaching an alternative branch of a preprocessor directive we need to
+reset statement state to that at the start of the if as this new segment
+is logically ajacent to it.  Currently we inadvertantly take the state
+for the containing block (read off by one error).  Pick the correct state.
+
+This fixes statement parsing for the below style constructs:
+
+    if (!test()) {
+    #ifdef NEVER
+	    foo();
+	    bar();
+    #else
+	    bar();
+	    foo();
+    #endif
+    }
+
+Signed-off-by: Andy Whitcroft <apw@canonical.com>
+---
+ scripts/checkpatch.pl | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 010b18e..d3c0126 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -885,7 +885,7 @@ sub ctx_statement_block {
+ 		if ($remainder =~ /^#\s*(?:ifndef|ifdef|if)\s/) {
+ 			push(@stack, [ $type, $level ]);
+ 		} elsif ($remainder =~ /^#\s*(?:else|elif)\b/) {
+-			($type, $level) = @{$stack[$#stack - 1]};
++			($type, $level) = @{$stack[$#stack]};
+ 		} elsif ($remainder =~ /^#\s*endif\b/) {
+ 			($type, $level) = @{pop(@stack)};
+ 		}
+@@ -1057,7 +1057,7 @@ sub ctx_block_get {
+ 		if ($lines[$line] =~ /^.\s*#\s*(?:ifndef|ifdef|if)\s/) {
+ 			push(@stack, $level);
+ 		} elsif ($lines[$line] =~ /^.\s*#\s*(?:else|elif)\b/) {
+-			$level = $stack[$#stack - 1];
++			$level = $stack[$#stack];
+ 		} elsif ($lines[$line] =~ /^.\s*#\s*endif\b/) {
+ 			$level = pop(@stack);
+ 		}
+-- 
+2.0.0
+
