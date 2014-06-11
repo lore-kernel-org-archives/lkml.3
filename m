@@ -1,90 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932208AbaFKIkn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 04:40:43 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:59705 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751058AbaFKIjp (ORCPT
+	id S1753444AbaFKInN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 04:43:13 -0400
+Received: from us01smtprelay-2.synopsys.com ([198.182.60.111]:59455 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751015AbaFKInK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 04:39:45 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Arnd Bergmann <arnd@arndb.de>, Randy Dunlap <rdunlap@infradead.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Hans de Goede <hdegoede@redhat.com>, Shuge <shuge@allwinnertech.com>,
-        kevin@allwinnertech.com, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v6 1/2] i2c: sunxi: add P2WI DT bindings documentation
-Date: Wed, 11 Jun 2014 10:39:39 +0200
-Message-Id: <1402475980-15513-2-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1402475980-15513-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1402475980-15513-1-git-send-email-boris.brezillon@free-electrons.com>
+	Wed, 11 Jun 2014 04:43:10 -0400
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: ARC: CONFIG_ARC_MMU_V4
+Thread-Topic: ARC: CONFIG_ARC_MMU_V4
+Thread-Index: AQHPhU7Maismt16vX0ugfypGeae+Ag==
+Date: Wed, 11 Jun 2014 08:43:03 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA230751A6B701C@IN01WEMBXA.internal.synopsys.com>
+References: <1402475161.3798.49.camel@x220>
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.12.196.93]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-P2WI (Push/Pull 2 Wire Interface) is an SMBus like bus used to communicate
-with some PMICs (like the AXP221).
+On Wednesday 11 June 2014 01:56 PM, Paul Bolle wrote:
+> Hi Vineet,
+>
+> Commit ef680cdc2437 ("ARC: Disable caches in early boot if so
+> configured") landed in linux-next yesterday (ie, next-20140610). It
+> includes two optional tests for CONFIG_ARC_MMU_V4. There's no Kconfig
+> symbol ARC_MMU_V4 in linux-next.
+>
+> I assume you've got that symbol queued somewhere. Is that correct?
 
-Document P2WI DT bindings which are pretty much the same as the one defined
-for the marvell's mv64xxx controller.
+My bad - MMU_V4 support is still in works, and not ready for mainline yet. If you
+wish you could submit a patch to nuke it.
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
----
- .../devicetree/bindings/i2c/i2c-sunxi-p2wi.txt     | 41 ++++++++++++++++++++++
- 1 file changed, 41 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/i2c/i2c-sunxi-p2wi.txt
-
-diff --git a/Documentation/devicetree/bindings/i2c/i2c-sunxi-p2wi.txt b/Documentation/devicetree/bindings/i2c/i2c-sunxi-p2wi.txt
-new file mode 100644
-index 0000000..6b76548
---- /dev/null
-+++ b/Documentation/devicetree/bindings/i2c/i2c-sunxi-p2wi.txt
-@@ -0,0 +1,41 @@
-+
-+* Allwinner P2WI (Push/Pull 2 Wire Interface) controller
-+
-+Required properties :
-+
-+ - reg             : Offset and length of the register set for the device.
-+ - compatible      : Should one of the following:
-+                     - "allwinner,sun6i-a31-p2wi"
-+ - interrupts      : The interrupt line connected to the P2WI peripheral.
-+ - clocks          : The gate clk connected to the P2WI peripheral.
-+ - resets          : The reset line connected to the P2WI peripheral.
-+
-+Optional properties :
-+
-+ - clock-frequency : Desired P2WI bus clock frequency in Hz. If not set the
-+default frequency is 100kHz
-+
-+A P2WI may contain one child node encoding a P2WI slave device.
-+
-+Slave device properties:
-+  Required properties:
-+   - reg           : the I2C slave address used during the initialization
-+                     process to switch from I2C to P2WI mode
-+
-+Example:
-+
-+	p2wi@01f03400 {
-+		compatible = "allwinner,sun6i-a31-p2wi";
-+		reg = <0x01f03400 0x400>;
-+		interrupts = <0 39 4>;
-+		clocks = <&apb0_gates 3>;
-+		clock-frequency = <6000000>;
-+		resets = <&apb0_rst 3>;
-+
-+		axp221: pmic@68 {
-+			compatible = "x-powers,axp221";
-+			reg = <0x68>;
-+
-+			/* ... */
-+		};
-+	};
--- 
-1.8.3.2
-
+Thx,
+-Vineet
