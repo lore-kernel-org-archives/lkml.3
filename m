@@ -1,41 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664AbaFKVNy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 17:13:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16051 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752263AbaFKVNw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 17:13:52 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: axboe@fb.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] null_blk: fix name and description of 'queue_mode' module parameter
-Date: Wed, 11 Jun 2014 17:13:50 -0400
-Message-Id: <1402521230-28330-1-git-send-email-snitzer@redhat.com>
+	id S1752816AbaFKVOv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 17:14:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42584 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752001AbaFKVOu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 17:14:50 -0400
+Message-ID: <5398C6C3.90405@canonical.com>
+Date: Wed, 11 Jun 2014 16:14:43 -0500
+From: Dave Chiluk <chiluk@canonical.com>
+Reply-To: chiluk@canonical.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: paulmck@linux.vnet.ibm.com, Rafael Tinoco <rafael.tinoco@canonical.com>,
+        linux-kernel@vger.kernel.org, davem@davemloft.net,
+        Christopher Arges <chris.j.arges@canonical.com>,
+        Jay Vosburgh <jay.vosburgh@canonical.com>
+Subject: Re: Possible netns creation and execution performance/scalability
+ regression since v3.8 due to rcu callbacks being offloaded to multiple cpus
+References: <CAJE_dJyfq5zWcs2y52siXRruCCA1Dk_=Ds=rZ8BrBZLa7FCbuQ@mail.gmail.com>	<20140611133919.GZ4581@linux.vnet.ibm.com>	<CAJE_dJwfaUkop=XZxD-BfDPwKDjnfF1bvmD6XWaqVA4Xt2E6bQ@mail.gmail.com>	<539879B8.4010204@canonical.com>	<20140611161857.GC4581@linux.vnet.ibm.com>	<53989F7B.6000004@canonical.com> <874mzr41kf.fsf@x220.int.ebiederm.org>
+In-Reply-To: <874mzr41kf.fsf@x220.int.ebiederm.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'use_mq' is not the name of the module parameter, 'queue_mode' is.
+On 06/11/2014 03:46 PM, Eric W. Biederman wrote:
+> ip netns add also performs a bind mount so we get into all of the vfs
+> level locking as well.
 
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
----
- drivers/block/null_blk.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/block/null_blk.c b/drivers/block/null_blk.c
-index 091b9ea..8c598f6 100644
---- a/drivers/block/null_blk.c
-+++ b/drivers/block/null_blk.c
-@@ -78,7 +78,7 @@ MODULE_PARM_DESC(home_node, "Home node for the device");
- 
- static int queue_mode = NULL_Q_MQ;
- module_param(queue_mode, int, S_IRUGO);
--MODULE_PARM_DESC(use_mq, "Use blk-mq interface (0=bio,1=rq,2=multiqueue)");
-+MODULE_PARM_DESC(queue_mode, "Block interface to use (0=bio,1=rq,2=multiqueue)");
- 
- static int gb = 250;
- module_param(gb, int, S_IRUGO);
--- 
-1.7.1
+It's actually quite a bit worse than that as ip netns exec creates a new
+mount namespace as well.  That being said, the vfs issues have been
+healthily mitigated by a number of recent patches by Al Viro to
+fs/namespace.c.
 
