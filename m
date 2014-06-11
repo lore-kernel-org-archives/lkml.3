@@ -1,54 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755238AbaFKKDw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 06:03:52 -0400
-Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:60994 "EHLO
-	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751133AbaFKKDv (ORCPT
+	id S1754813AbaFKKIQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 06:08:16 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:41422 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751310AbaFKKIO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 06:03:51 -0400
-Message-ID: <1402481029.3798.68.camel@x220>
-Subject: [PATCH] [TRIVIAL] SH: add proper prompt to SH_MAGIC_PANEL_R2_VERSION
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Date: Wed, 11 Jun 2014 12:03:49 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 11 Jun 2014 10:03:49.0680 (UTC) FILETIME=[7106F300:01CF855C]
-X-RcptDomain: vger.kernel.org
+	Wed, 11 Jun 2014 06:08:14 -0400
+Date: Wed, 11 Jun 2014 13:07:52 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Lee Jones <lee.jones@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
+Subject: Re: [patch] mfd: vexpress: use after free in
+ vexpress_syscfg_regmap_init()
+Message-ID: <20140611100752.GR5500@mwanda>
+References: <20140611060725.GC7569@mwanda>
+ <1402478542.3523.9.camel@hornet>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402478542.3523.9.camel@hornet>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Tested with make ARCH=sh menuconfig
+On Wed, Jun 11, 2014 at 10:22:22AM +0100, Pawel Moll wrote:
+> On Wed, 2014-06-11 at 07:07 +0100, Dan Carpenter wrote:
+> > We should return NULL if regmap_init() fails instead of continuing.
+> > 
+> > Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> > 
+> > diff --git a/drivers/misc/vexpress-syscfg.c b/drivers/misc/vexpress-syscfg.c
+> > index 73068e5..2c0ddb2 100644
+> > --- a/drivers/misc/vexpress-syscfg.c
+> > +++ b/drivers/misc/vexpress-syscfg.c
+> > @@ -231,10 +231,12 @@ static struct regmap *vexpress_syscfg_regmap_init(struct device *dev,
+> >  	func->regmap = regmap_init(dev, NULL, func,
+> >  			&vexpress_syscfg_regmap_config);
+> >  
+> > -	if (IS_ERR(func->regmap))
+> > +	if (IS_ERR(func->regmap)) {
+> >  		kfree(func);
+> > -	else
+> > -		list_add(&func->list, &syscfg->funcs);
+> > +		return NULL;
+> > +	}
+> > +
+> > +	list_add(&func->list, &syscfg->funcs);
+> >  
+> >  	return func->regmap;
+> >  }
+> 
+> Not really, no. What made you think so?
+> 
+> vexpress_config_bridge_ops.regmap_init should return an ERR_PTR in case
+> of troubles, not a NULL. See devm_regmap_init_vexpress_config() in
+> drivers/bus/vexpress-config.c:
+> 
+>         regmap = bridge->ops->regmap_init(dev, bridge->context);
+>         if (IS_ERR(regmap)) {
 
-The new prompt isn't very informative. But at least it's better than the
-current, well, self referential prompt. SuperH is orphaned, so chances
-are we'll never see anything better.
+Ah...  That was sloppy of me.  There is a similar bug earlier and I'll
+fix that as well.
 
-By the way: why do the kconfig tools allow unquoted prompts?
-
- arch/sh/boards/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/sh/boards/Kconfig b/arch/sh/boards/Kconfig
-index e331e5373b8e..89963d13f930 100644
---- a/arch/sh/boards/Kconfig
-+++ b/arch/sh/boards/Kconfig
-@@ -371,7 +371,7 @@ if SH_MAGIC_PANEL_R2
- menu "Magic Panel R2 options"
- 
- config SH_MAGIC_PANEL_R2_VERSION
--	int SH_MAGIC_PANEL_R2_VERSION
-+	int "Magic Panel R2 Version"
- 	default "3"
- 	help
- 	  Set the version of the Magic Panel R2
--- 
-1.9.3
+regards,
+dan carpenter
 
