@@ -1,77 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755647AbaFKPIb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 11:08:31 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:55073 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751810AbaFKPIa (ORCPT
+	id S1755756AbaFKPLs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 11:11:48 -0400
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:36721 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755711AbaFKPLp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 11:08:30 -0400
-Date: Wed, 11 Jun 2014 11:08:24 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Punit Agrawal <punit.agrawal@arm.com>
-Cc: "linux-pm\@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Javi Merino <Javi.Merino@arm.com>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <edubezval@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [RFC PATCH 3/3] thermal: trace: Trace when temperature is above
- a trip point
-Message-ID: <20140611110824.7aa2adc2@gandalf.local.home>
-In-Reply-To: <9hhfvjbebux.fsf@arm.com>
-References: <1402486305-4017-1-git-send-email-punit.agrawal@arm.com>
-	<1402486305-4017-4-git-send-email-punit.agrawal@arm.com>
-	<20140611084908.509a6950@gandalf.local.home>
-	<9hhk38nedu1.fsf@arm.com>
-	<20140611102006.27cc145e@gandalf.local.home>
-	<9hhfvjbebux.fsf@arm.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Wed, 11 Jun 2014 11:11:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+In-Reply-To: <1402483068.3798.82.camel@x220>
+References: <1398879850-9111-1-git-send-email-dianders@chromium.org>
+	<1398879850-9111-6-git-send-email-dianders@chromium.org>
+	<20140520084602.GF24991@lee--X1>
+	<1402483068.3798.82.camel@x220>
+Date: Wed, 11 Jun 2014 08:11:44 -0700
+X-Google-Sender-Auth: JQt_2xqJL4MHdef2NxPeLKTnBig
+Message-ID: <CAD=FV=XL9tnEqza8Zx8mt_Z7-bj8TCzdeyHMhnpewKp_1CR-ig@mail.gmail.com>
+Subject: Re: [PATCH v3 5/7] mfd: cros_ec: Sync to the latest
+ cros_ec_commands.h from EC sources
+From: Doug Anderson <dianders@chromium.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Bill Richardson <wfrichar@chromium.org>, Simon Glass <sjg@chromium.org>,
+        Lee Jones <lee.jones@linaro.org>, Stephen Warren <swarren@nvidia.com>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Dylan Reid <dgreid@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Jun 2014 15:53:42 +0100
-Punit Agrawal <punit.agrawal@arm.com> wrote:
+Paul,
+
+On Wed, Jun 11, 2014 at 3:37 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> On Tue, 2014-05-20 at 09:46 +0100, Lee Jones wrote:
+>> On Wed, 30 Apr 2014, Doug Anderson wrote:
+>> > From: Bill Richardson <wfrichar@chromium.org>
+>> >
+>> > This just updates include/linux/mfd/cros_ec_commands.h to match the
+>> > latest EC version (which is the One True Source for such things).  See
+>> > <https://chromium.googlesource.com/chromiumos/platform/ec>
+
+I believe most of your questions are answered by checking out the git
+tree referenced above.  ...but see below for details.  This header is
+a common interface between the kernel and the EC.
 
 
-> >
-> > /sys/kernel/debug/thermal/thermal_zone_trip/format
-> 
-> I don't have this file but found the following which seems to contain
-> the format.
+>> > [dianders: took today's ToT version from the Chromium OS EC; deleted
+>> > references to cros_ec_dev and cros_ec_lpc since those aren't upstream
+>> > yet]
+>> >
+>> > Signed-off-by: Bill Richardson <wfrichar@chromium.org>
+>> > Signed-off-by: Doug Anderson <dianders@chromium.org>
+>> > Acked-by: Lee Jones <lee.jones@linaro.org>
+>> > Reviewed-by: Simon Glass <sjg@chromium.org>
+>> > Tested-by: Andrew Bresticker <abrestic@chromium.org>
+>> > Tested-by: Stephen Warren <swarren@nvidia.com>
+>> > ---
+>> > Changes in v3: None
+>> > Changes in v2: None
+>> >
+>> >  drivers/mfd/cros_ec.c                |    2 +-
+>> >  include/linux/mfd/cros_ec.h          |    4 +-
+>> >  include/linux/mfd/cros_ec_commands.h | 1128 +++++++++++++++++++++++++++++++---
+>> >  3 files changed, 1059 insertions(+), 75 deletions(-)
+>>
+>> Applied, thanks.
+>
+> This patch is included in linux-next since next-20140521. I'm not sure
+> why I waited three weeks before sending this question...
+>
+>> > [...]
+>> > diff --git a/include/linux/mfd/cros_ec_commands.h b/include/linux/mfd/cros_ec_commands.h
+>> > index 86fd069..7853a64 100644
+>> > --- a/include/linux/mfd/cros_ec_commands.h
+>> > +++ b/include/linux/mfd/cros_ec_commands.h
+>>> [...]
+>> > @@ -1206,14 +1865,231 @@ struct ec_params_force_idle {
+>> > [...]
+>> > +/*
+>> > + * Known param numbers are defined here. Ranges are reserved for board-specific
+>> > + * params, which are handled by the particular implementations.
+>> > + */
+>> > +enum charge_state_params {
+>> > +   CS_PARAM_CHG_VOLTAGE,         /* charger voltage limit */
+>> > +   CS_PARAM_CHG_CURRENT,         /* charger current limit */
+>> > +   CS_PARAM_CHG_INPUT_CURRENT,   /* charger input current limit */
+>> > +   CS_PARAM_CHG_STATUS,          /* charger-specific status */
+>> > +   CS_PARAM_CHG_OPTION,          /* charger-specific options */
+>> > +   /* How many so far? */
+>> > +   CS_NUM_BASE_PARAMS,
+>> > +
+>> > +   /* Range for CONFIG_CHARGER_PROFILE_OVERRIDE params */
+>
+> CONFIG_CHARGER_PROFILE_OVERRIDE doesn't match anything in linux-next. Is
+> a Kconfig symbol CHARGER_PROFILE_OVERRIDE perhaps queued somewhere?
 
-Yeah, that was typed manually, forgot "tracing". I mount the debugfs
-system at /debug for easier typing. I hate the /sys/kernel/debug path.
-Too much typing.
+This is a config option on the ChromeOS EC
+<https://chromium.googlesource.com/chromiumos/platform/ec>.  Doing a
+grep there:
 
-> 
-> # pwd /sys/kernel/debug/tracing/events/thermal/thermal_zone_trip
-> # cat format
-> name: thermal_zone_trip
-> ID: 463
-> format:
->         field:unsigned short common_type;       offset:0;       size:2; signed:0;
->         field:unsigned char common_flags;       offset:2;       size:1; signed:0;
->         field:unsigned char common_preempt_count;       offset:3;       size:1; signed:0;
->         field:int common_pid;   offset:4;       size:4; signed:1;
-> 
->         field:__data_loc char[] thermal_zone;   offset:8;       size:4; signed:0;
->         field:int id;   offset:12;      size:4; signed:1;
->         field:int trip; offset:16;      size:4; signed:1;
->         field:enum thermal_trip_type trip_type; offset:20;      size:4; signed:0;
-> 
-> print fmt: "thermal_zone=%s id=%d trip=%d trip_type=%s", __get_str(thermal_zone), REC->id, REC->trip, __print_symbolic(REC->trip_type, { THERMAL_TRIP_ACTIVE, "active" }, { THERMAL_TRIP_PASSIVE, "passive" }, { THERMAL_TRIP_HOT, "hot" }, { THERMAL_TRIP_CRITICAL, "critical" })
-> 
+board/samus/board.h:#define CONFIG_CHARGER_PROFILE_OVERRIDE
+common/charge_state_v2.c:#ifdef CONFIG_CHARGER_PROFILE_OVERRIDE
+common/charge_state_v2.c:#ifdef CONFIG_CHARGER_PROFILE_OVERRIDE
+common/charge_state_v2.c:#ifdef CONFIG_CHARGER_PROFILE_OVERRIDE
+driver/battery/samus.c:#ifdef CONFIG_CHARGER_PROFILE_OVERRIDE
+driver/battery/samus.c:#endif   /* CONFIG_CHARGER_PROFILE_OVERRIDE */
+include/config.h:#undef CONFIG_CHARGER_PROFILE_OVERRIDE
+include/ec_commands.h:  /* Range for CONFIG_CHARGER_PROFILE_OVERRIDE params */
+test/test_config.h:#define CONFIG_CHARGER_PROFILE_OVERRIDE
 
-For it to work with trace-cmd (and perf) you'll need to add a plugin to
-define what those enums are. This is the file that trace-cmd uses to
-foramat. But it has no idea how to convert something like
-THERMAL_TRIP_PASSIVE into a number.
 
--- Steve
+>> > +   CS_PARAM_CUSTOM_PROFILE_MIN = 0x10000,
+>> > +   CS_PARAM_CUSTOM_PROFILE_MAX = 0x1ffff,
+>> > +
+>
+> I guess so, because these two constants aren't used anywhere.
+
+A grep from the EC sources:
+
+common/charge_state_v2.c:               if (in->get_param.param >=
+CS_PARAM_CUSTOM_PROFILE_MIN &&
+common/charge_state_v2.c:               if (in->set_param.param >=
+CS_PARAM_CUSTOM_PROFILE_MIN &&
+driver/battery/samus.c:#define PARAM_FASTCHARGE
+(CS_PARAM_CUSTOM_PROFILE_MIN + 0)
+include/ec_commands.h:  CS_PARAM_CUSTOM_PROFILE_MIN = 0x10000,
+test/sbs_charging_v2.c: if (param == CS_PARAM_CUSTOM_PROFILE_MIN) {
+test/sbs_charging_v2.c: if (param == CS_PARAM_CUSTOM_PROFILE_MIN) {
+test/sbs_charging_v2.c: params.get_param.param = CS_PARAM_CUSTOM_PROFILE_MIN;
+test/sbs_charging_v2.c: params.set_param.param = CS_PARAM_CUSTOM_PROFILE_MIN;
+util/ectool.c:          printf("  0x%x - 0x%x\n", CS_PARAM_CUSTOM_PROFILE_MIN,
+
+-Doug
