@@ -1,258 +1,455 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753881AbaFKWrr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 18:47:47 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:43776 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752689AbaFKWrq (ORCPT
+	id S1754269AbaFKWtX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 18:49:23 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:49184 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752757AbaFKWtU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 18:47:46 -0400
-Date: Wed, 11 Jun 2014 15:47:42 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: "Steven Miao (Steven Miao)" <realmz6@gmail.com>
-cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Jerome Marchand <jmarchan@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Jiang Liu <liuj97@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Davidlohr Bueso <davidlohr@hp.com>, Choi Gi-yong <yong@gnoy.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Chen Gang <gang.chen@asianux.com>,
-        Mitchel Humpherys <mitchelh@codeaurora.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: nommu: per-thread vma cache fix
-In-Reply-To: <1402396130-22368-1-git-send-email-realmz6@gmail.com>
-Message-ID: <alpine.DEB.2.02.1406111545170.27885@chino.kir.corp.google.com>
-References: <1402396130-22368-1-git-send-email-realmz6@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 11 Jun 2014 18:49:20 -0400
+From: Janne Kanniainen <janne.kanniainen@gmail.com>
+To: jkosina@suse.cz
+Cc: cooloney@gmail.com, johan@kernel.org, linux-kernel@vger.kernel.org,
+        linux-leds@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-input@vger.kernel.org,
+        Janne Kanniainen <janne.kanniainen@gmail.com>
+Subject: [PATCH v4] leds: USB: HID: Add support for MSI GT683R led panels
+Date: Thu, 12 Jun 2014 01:48:41 +0300
+Message-Id: <1402526921-1903-1-git-send-email-janne.kanniainen@gmail.com>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <20140611173416.GJ10256@localhost>
+References: <20140611173416.GJ10256@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Jun 2014, Steven Miao (Steven Miao) wrote:
+This driver adds support for USB controlled led panels that exists in MSI GT683R laptop
 
-> From: Steven Miao <realmz6@gmail.com>
-> 
-> mm could be removed from current task struct, using previous vma->vm_mm
-> 
-> It will crash on blackfin after updated to Linux 3.15. The commit "mm: per-thread vma caching" caused the crash.
-> mm could be removed from current task struct before 
-> mmput()->
-> 	exit_mmap()->
-> 		   delete_vma_from_mm()
-> 
-> the detailed booting log:
-> 
-> ## Booting kernel from Legacy Image at 01000000 ...
->    Image Name:   bf609-0.0-3.15.0-ADI-2014R1-pre-
->    Image Type:   Blackfin Linux Kernel Image (gzip compressed)
->    Data Size:    10293222 Bytes = 9.8 MiB
->    Load Address: 00001000
->    Entry Point:  002e796c
->    Verifying Checksum ... OK
->    Uncompressing Kernel Image ... OK
-> Starting Kernel at = 002e796c
-> Linux version 3.15.0-ADI-2014R1-pre-00345-gea9f446 (steven@steven-OptiPlex-390) (gcc version 4.3.5 (ADI-trunk/svn-5962) ) #25 Tue Jun 10 17:47:46 CST 2014
-> register early platform devices
-> bootconsole [early_shadow0] enabled
-> ERROR: Not running on ADSP-BF609: unknown CPUID 0x0000 Rev 0.0
-> bootconsole [early_BFuart0] enabled
-> early printk enabled on early_BFuart0
-> Board Memory: 128MB
-> Kernel Managed Memory: 128MB
-> Memory map:
->   fixedcode = 0x00000400-0x00000490
->   text      = 0x00001000-0x001fa910
->   rodata    = 0x001fa934-0x002a1ea8
->   bss       = 0x002a2000-0x002b9bc0
->   data      = 0x002b9bc0-0x002e4000
->     stack   = 0x002e2000-0x002e4000
->   init      = 0x002e4000-0x00b45000
->   available = 0x00b45000-0x07f00000
->   DMA Zone  = 0x07f00000-0x08000000
-> Hardware Trace active and enabled
-> Blackfin support (C) 2004-2010 Analog Devices, Inc.
-> Compiled for ADSP-BF609 Rev 0.0
-> Blackfin Linux support by http://blackfin.uclinux.org/
-> Processor Speed: 500 MHz core clock, 125 MHz SCLk, 125 MHz SCLK0, 125 MHz SCLK1 and 250 MHz DCLK
-> NOMPU: setting up cplb tables
-> Instruction Cache Enabled for CPU0
->   External memory: cacheable in instruction cache
->   L2 SRAM        : uncacheable in instruction cache
-> Data Cache Enabled for CPU0
->   External memory: cacheable (write-back) in data cache
->   L2 SRAM        : uncacheable in data cache
-> Built 1 zonelists in Zone order, mobility grouping off.  Total pages: 32258
-> Kernel command line: root=/dev/mtdblock0 rw clkin_hz=(25000000) earlyprintk=serial,uart0,57600 console=ttyBF0,57600 ip=10.99.24.159:10.99.24.86:10.99.24.1:255.255.255.0:"bf609-ezkit":eth0:off
-> PID hash table entries: 512 (order: -1, 2048 bytes)
-> Dentry cache hash table entries: 16384 (order: 4, 65536 bytes)
-> Inode-cache hash table entries: 8192 (order: 3, 32768 bytes)
-> Memory: 117340K/130048K available (2022K kernel code, 169K rwdata, 669K rodata, 8580K init, 94K bss, 12708K reserved, 1024K DMA)
-> NR_IRQS:291
-> Configuring Blackfin Priority Driven Interrupts
-> Console: colour dummy device 80x25
-> Calibrating delay loop... 995.32 BogoMIPS (lpj=1990656)
-> pid_max: default: 32768 minimum: 301
-> Mount-cache hash table entries: 1024 (order: 0, 4096 bytes)
-> Mountpoint-cache hash table entries: 1024 (order: 0, 4096 bytes)
-> devtmpfs: initialized
-> Blackfin Scratchpad data SRAM: 4 KB
-> Blackfin L1 Data A SRAM: 16 KB (9 KB free)
-> Blackfin L1 Data B SRAM: 16 KB (16 KB free)
-> Blackfin L1 Instruction SRAM: 64 KB (49 KB free)
-> Blackfin L2 SRAM: 256 KB (256 KB free)
-> pinctrl core: initialized pinctrl subsystem
-> NET: Registered protocol family 16
-> Blackfin DMA Controller
-> ezkit_init(): registering device resources
-> SCSI subsystem initialized
-> usbcore: registered new interface driver usbfs
-> usbcore: registered new interface driver hub
-> usbcore: registered new device driver usb
-> i2c-bfin-twi i2c-bfin-twi.0: Blackfin on-chip I2C TWI Contoller, regs_base@ffc01e00
-> i2c-bfin-twi i2c-bfin-twi.1: Blackfin on-chip I2C TWI Contoller, regs_base@ffc01f00
-> pps_core: LinuxPPS API ver. 1 registered
-> pps_core: Software ver. 5.3.6 - Copyright 2005-2007 Rodolfo Giometti <giometti@linux.it>
-> PTP clock support registered
-> NET: Registered protocol family 23
-> Switched to clocksource bfin_cs_cycles
-> NET: Registered protocol family 2
-> TCP established hash table entries: 1024 (order: 0, 4096 bytes)
-> TCP bind hash table entries: 1024 (order: 0, 4096 bytes)
-> TCP: Hash tables configured (established 1024 bind 1024)
-> TCP: reno registered
-> UDP hash table entries: 256 (order: 0, 4096 bytes)
-> UDP-Lite hash table entries: 256 (order: 0, 4096 bytes)
-> NET: Registered protocol family 1
-> msgmni has been set to 229
-> io scheduler noop registered (default)
-> bfin-uart: Blackfin serial driver
-> bfin-uart.0: ttyBF0 at MMIO 0xffc02000 (irq = 88, base_baud = 7812500) is a BFIN-UART
-> console [ttyBF0] enabled
-> console [ttyBF0] enabled
-> bootconsole [early_BFuart0] disabled
-> bootconsole [early_BFuart0] disabled
-> bootconsole [early_shadow0] disabled
-> CAN device driver interface
-> bfin_can bfin_can.0: bfin_can device registered(&reg_base=ffc00a00, rx_irq=47, tx_irq=48, err_irq=49, sclk=125000000)
-> stmmaceth stmmaceth.0: no reset control found
-> stmmac - user ID: 0x10, Synopsys ID: 0x36
->  Ring mode enabled
->  DMA HW capability register supported
->  Enhanced/Alternate descriptors
-> 	Enabled extended descriptors
->  RX Checksum Offload Engine supported (type 2)
->  Wake-Up On Lan supported
->  Enable RX Mitigation via HW Watchdog Timer
-> NULL pointer access
-> Kernel OOPS in progress
-> Deferred Exception context
-> CURRENT PROCESS:
-> COMM=modprobe PID=278  CPU=0
-> invalid mm
-> return address: [0x000531de]; contents of:
-> 0x000531b0:  c727  acea  0c42  181d  0000  0000  0000  a0a8 
-> 0x000531c0:  b090  acaa  0c42  1806  0000  0000  0000  a0e8 
-> 0x000531d0:  b0d0  e801  0000  05b3  0010  e522  0046 [a090]
-> 0x000531e0:  6408  b090  0c00  17cc  3042  e3ff  f37b  2fc8 
-> 
-> CPU: 0 PID: 278 Comm: modprobe Not tainted 3.15.0-ADI-2014R1-pre-00345-gea9f446 #25
-> task: 0572b720 ti: 0569e000 task.ti: 0569e000
-> Compiled for cpu family 0x27fe (Rev 0), but running on:0x0000 (Rev 0)
-> ADSP-BF609-0.0 500(MHz CCLK) 125(MHz SCLK) (mpu off)
-> Linux version 3.15.0-ADI-2014R1-pre-00345-gea9f446 (steven@steven-OptiPlex-390) (gcc version 4.3.5 (ADI-trunk/svn-5962) ) #25 Tue Jun 10 17:47:46 CST 2014
-> 
-> SEQUENCER STATUS:		Not tainted
->  SEQSTAT: 00000027  IPEND: 8008  IMASK: ffff  SYSCFG: 2806
->   EXCAUSE   : 0x27
->   physical IVG3 asserted : <0xffa00744> { _trap + 0x0 }
->   physical IVG15 asserted : <0xffa00d68> { _evt_system_call + 0x0 }
->   logical irq   6 mapped  : <0xffa003bc> { _bfin_coretmr_interrupt + 0x0 }
->   logical irq   7 mapped  : <0x00008828> { _bfin_fault_routine + 0x0 }
->   logical irq  11 mapped  : <0x00007724> { _l2_ecc_err + 0x0 }
->   logical irq  13 mapped  : <0x00008828> { _bfin_fault_routine + 0x0 }
->   logical irq  39 mapped  : <0x00150788> { _bfin_twi_interrupt_entry + 0x0 }
->   logical irq  40 mapped  : <0x00150788> { _bfin_twi_interrupt_entry + 0x0 }
->  RETE: <0x00000000> /* Maybe null pointer? */
->  RETN: <0x0569fe50> /* kernel dynamic memory (maybe user-space) */
->  RETX: <0x00000480> /* Maybe fixed code section */
->  RETS: <0x00053384> { _exit_mmap + 0x28 }
->  PC  : <0x000531de> { _delete_vma_from_mm + 0x92 }
-> DCPLB_FAULT_ADDR: <0x00000008> /* Maybe null pointer? */
-> ICPLB_FAULT_ADDR: <0x000531de> { _delete_vma_from_mm + 0x92 }
-> PROCESSOR STATE:
->  R0 : 00000004    R1 : 0569e000    R2 : 00bf3db4    R3 : 00000000
->  R4 : 057f9800    R5 : 00000001    R6 : 0569ddd0    R7 : 0572b720
->  P0 : 0572b854    P1 : 00000004    P2 : 00000000    P3 : 0569dda0
->  P4 : 0572b720    P5 : 0566c368    FP : 0569fe5c    SP : 0569fd74
->  LB0: 057f523f    LT0: 057f523e    LC0: 00000000
->  LB1: 0005317c    LT1: 00053172    LC1: 00000002
->  B0 : 00000000    L0 : 00000000    M0 : 0566f5bc    I0 : 00000000
->  B1 : 00000000    L1 : 00000000    M1 : 00000000    I1 : ffffffff
->  B2 : 00000001    L2 : 00000000    M2 : 00000000    I2 : 00000000
->  B3 : 00000000    L3 : 00000000    M3 : 00000000    I3 : 057f8000
-> A0.w: 00000000   A0.x: 00000000   A1.w: 00000000   A1.x: 00000000
-> USP : 056ffcf8  ASTAT: 02003024
-> 
-> Hardware Trace:
->    0 Target : <0x00003fb8> { _trap_c + 0x0 }
->      Source : <0xffa006d8> { _exception_to_level5 + 0xa0 } JUMP.L
->    1 Target : <0xffa00638> { _exception_to_level5 + 0x0 }
->      Source : <0xffa004f2> { _bfin_return_from_exception + 0x6 } RTX
->    2 Target : <0xffa004ec> { _bfin_return_from_exception + 0x0 }
->      Source : <0xffa00590> { _ex_trap_c + 0x70 } JUMP.S
->    3 Target : <0xffa00520> { _ex_trap_c + 0x0 }
->      Source : <0xffa0076e> { _trap + 0x2a } JUMP (P4)
->    4 Target : <0xffa00744> { _trap + 0x0 }
->       FAULT : <0x000531de> { _delete_vma_from_mm + 0x92 } P0 = W[P2 + 2]
->      Source : <0x000531da> { _delete_vma_from_mm + 0x8e } P2 = [P4 + 0x18]
->    5 Target : <0x000531da> { _delete_vma_from_mm + 0x8e }
->      Source : <0x00053176> { _delete_vma_from_mm + 0x2a } IF CC JUMP pcrel 
->    6 Target : <0x0005314c> { _delete_vma_from_mm + 0x0 }
->      Source : <0x00053380> { _exit_mmap + 0x24 } JUMP.L
->    7 Target : <0x00053378> { _exit_mmap + 0x1c }
->      Source : <0x00053394> { _exit_mmap + 0x38 } IF !CC JUMP pcrel (BP)
->    8 Target : <0x00053390> { _exit_mmap + 0x34 }
->      Source : <0xffa020e0> { __cond_resched + 0x20 } RTS
->    9 Target : <0xffa020c0> { __cond_resched + 0x0 }
->      Source : <0x0005338c> { _exit_mmap + 0x30 } JUMP.L
->   10 Target : <0x0005338c> { _exit_mmap + 0x30 }
->      Source : <0x0005333a> { _delete_vma + 0xb2 } RTS
->   11 Target : <0x00053334> { _delete_vma + 0xac }
->      Source : <0x0005507a> { _kmem_cache_free + 0xba } RTS
->   12 Target : <0x00055068> { _kmem_cache_free + 0xa8 }
->      Source : <0x0005505e> { _kmem_cache_free + 0x9e } IF !CC JUMP pcrel (BP)
->   13 Target : <0x00055052> { _kmem_cache_free + 0x92 }
->      Source : <0x0005501a> { _kmem_cache_free + 0x5a } IF CC JUMP pcrel 
->   14 Target : <0x00054ff4> { _kmem_cache_free + 0x34 }
->      Source : <0x00054fce> { _kmem_cache_free + 0xe } IF CC JUMP pcrel (BP)
->   15 Target : <0x00054fc0> { _kmem_cache_free + 0x0 }
->      Source : <0x00053330> { _delete_vma + 0xa8 } JUMP.L
-> Kernel Stack
-> Stack info:
->  SP: [0x0569ff24] <0x0569ff24> /* kernel dynamic memory (maybe user-space) */
->  Memory from 0x0569ff20 to 056a0000
-> 0569ff20: 00000001 [04e8da5a] 00008000  00000000  00000000  056a0000  04e8da5a  04e8da5a 
-> 0569ff40: 04eb9eea  ffa00dce  02003025  04ea09c5  057f523f  04ea09c4  057f523e  00000000 
-> 0569ff60: 00000000  00000000  00000000  00000000  00000000  00000000  00000001  00000000 
-> 0569ff80: 00000000  00000000  00000000  00000000  00000000  00000000  00000000  00000000 
-> 0569ffa0: 0566f5bc  057f8000  057f8000  00000001  04ec0170  056ffcf8  056ffd04  057f9800 
-> 0569ffc0: 04d1d498  057f9800  057f8fe4  057f8ef0  00000001  057f928c  00000001  00000001 
-> 0569ffe0: 057f9800  00000000  00000008  00000007  00000001  00000001  00000001 <00002806>
-> Return addresses in stack:
->     address : <0x00002806> { _show_cpuinfo + 0x2d2 }
-> Modules linked in:
-> Kernel panic - not syncing: Kernel exception
-> ---[ end Kernel panic - not syncing: Kernel exception
-> 
-> 
-> Signed-off-by: Steven Miao <realmz6@gmail.com>
+Signed-off-by: Janne Kanniainen <janne.kanniainen@gmail.com>
+---
+Changes in v2:
+        - sorted headers to alphabetic order
+        - using devm_kzalloc
+        - using BIT(n)
+        - using usb_control_msg instead of usb_submit_urb
+        - removing unneeded code
 
-Acked-by: David Rientjes <rientjes@google.com>
+Changes in v3:
+        - implemented as HID device
+        - some cleanups and bug fixes
 
-Not sure if there's going to be a 3.15 stable kernel or not, but if so, 
-this should be marked
+Changes in v4:
+	- more cleanups
+	- support for selecting leds
+	- support for selecting status
 
-Cc: stable@vger.kernel.org # 3.15
+ drivers/hid/Kconfig             |  11 ++
+ drivers/hid/Makefile            |   1 +
+ drivers/hid/hid-core.c          |   1 +
+ drivers/hid/hid-gt683r.c        | 320 ++++++++++++++++++++++++++++++++++++++++
+ drivers/hid/hid-ids.h           |   2 +-
+ drivers/hid/usbhid/hid-quirks.c |   2 +-
+ 6 files changed, 335 insertions(+), 2 deletions(-)
+ create mode 100644 drivers/hid/hid-gt683r.c
+
+diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+index 7af9d0b..d93e0ae 100644
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -261,6 +261,17 @@ config HOLTEK_FF
+ 	  Say Y here if you have a Holtek On Line Grip based game controller
+ 	  and want to have force feedback support for it.
+ 
++config HID_GT683R
++       tristate "MSI GT68xR LED support"
++       depends on LEDS_CLASS && USB_HID
++       ---help---
++       Say Y here if you want to enable support for the MSI GT68xR LEDS
++
++       This driver support following states normal, breathing and audio.
++       You can also select which leds you want to enable.
++       Currently the following devices are know to be supported:
++       - MSI GT683R
++
+ config HID_HUION
+ 	tristate "Huion tablets"
+ 	depends on USB_HID
+diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
+index fc712dd..7129311 100644
+--- a/drivers/hid/Makefile
++++ b/drivers/hid/Makefile
+@@ -48,6 +48,7 @@ obj-$(CONFIG_HID_EMS_FF)	+= hid-emsff.o
+ obj-$(CONFIG_HID_ELECOM)	+= hid-elecom.o
+ obj-$(CONFIG_HID_ELO)		+= hid-elo.o
+ obj-$(CONFIG_HID_EZKEY)		+= hid-ezkey.o
++obj-$(CONFIG_HID_GT683R)	+= hid-gt683r.o
+ obj-$(CONFIG_HID_GYRATION)	+= hid-gyration.o
+ obj-$(CONFIG_HID_HOLTEK)	+= hid-holtek-kbd.o
+ obj-$(CONFIG_HID_HOLTEK)	+= hid-holtek-mouse.o
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index da52279..ec88fdb 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1827,6 +1827,7 @@ static const struct hid_device_id hid_have_special_driver[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_WIRELESS_OPTICAL_DESKTOP_3_0) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_OFFICE_KB) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_MONTEREY, USB_DEVICE_ID_GENIUS_KB29E) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_MSI, USB_DEVICE_ID_MSI_GT683R_LED_PANEL) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_1) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_2) },
+diff --git a/drivers/hid/hid-gt683r.c b/drivers/hid/hid-gt683r.c
+new file mode 100644
+index 0000000..04e4cc2
+--- /dev/null
++++ b/drivers/hid/hid-gt683r.c
+@@ -0,0 +1,320 @@
++/*
++ * MSI GT683R led driver
++ *
++ * Copyright (c) 2014 Janne Kanniainen <janne.kanniainen@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#include <linux/device.h>
++#include <linux/hid.h>
++#include <linux/kernel.h>
++#include <linux/leds.h>
++#include <linux/module.h>
++
++#include "hid-ids.h"
++
++#define GT683R_LED_BACK				BIT(0)
++#define GT683R_LED_SIDE				BIT(1)
++#define GT683R_LED_FRONT			BIT(2)
++
++#define GT683R_BUFFER_SIZE			8
++
++/*
++ * GT683R_LED_OFF: all LEDs are off
++ * GT683R_LED_AUDIO: the status of LEDs depends
++ * on sound level
++ * GT683R_LED_BREATHING: LEDs brightness varies
++ * at human breathing rate
++ * GT683R_LED_NORMAL: LEDs are on
++ */
++enum gt683r_led_state {
++	GT683R_LED_OFF = 0,
++	GT683R_LED_AUDIO = 2,
++	GT683R_LED_BREATHING = 3,
++	GT683R_LED_NORMAL = 5
++};
++
++struct gt683r_led {
++	struct hid_device *hdev;
++	struct led_classdev led_dev_back;
++	struct led_classdev led_dev_side;
++	struct led_classdev led_dev_front;
++	struct mutex lock;
++	struct mutex state_lock;
++	struct work_struct work;
++	enum led_brightness brightness_back;
++	enum led_brightness brightness_side;
++	enum led_brightness brightness_front;
++	enum gt683r_led_state state;
++};
++
++static const struct hid_device_id gt683r_led_id[] = {
++	{ HID_USB_DEVICE(USB_VENDOR_ID_MSI, USB_DEVICE_ID_MSI_GT683R_LED_PANEL) },
++	{ }
++};
++
++#define GT683R_BRIGHTNESS_SET(name)					\
++static void gt683r_brightness_set_##name(struct led_classdev *led_cdev, \
++					enum led_brightness brightness)	\
++{									\
++	struct gt683r_led *led =					\
++			container_of(led_cdev, struct gt683r_led,	\
++				    led_dev_##name);			\
++									\
++	led->brightness_##name = brightness;				\
++									\
++	schedule_work(&led->work);					\
++}
++
++GT683R_BRIGHTNESS_SET(back);
++GT683R_BRIGHTNESS_SET(side);
++GT683R_BRIGHTNESS_SET(front);
++
++static ssize_t gt683r_show_state(struct device *dev,
++				struct device_attribute *attr,
++				char *buf)
++{
++	struct hid_device *hdev =
++		container_of(dev, struct hid_device, dev);
++	struct gt683r_led *led = hid_get_drvdata(hdev);
++
++	if (led->state == GT683R_LED_OFF)
++		return sprintf(buf, "off\n");
++	else if (led->state == GT683R_LED_AUDIO)
++		return sprintf(buf, "audio\n");
++	else if (led->state == GT683R_LED_BREATHING)
++		return sprintf(buf, "breathing\n");
++	else
++		return sprintf(buf, "normal\n");
++}
++
++static ssize_t gt683r_store_state(struct device *dev,
++				struct device_attribute *attr,
++				const char *buf, size_t count)
++{
++	struct hid_device *hdev =
++		container_of(dev, struct hid_device, dev);
++	struct gt683r_led *led = hid_get_drvdata(hdev);
++
++	mutex_lock(&led->state_lock);
++	if (!strncmp("off", buf, strlen("off"))) {
++		led->state = GT683R_LED_OFF;
++	} else if (!strncmp("audio", buf, strlen("audio"))) {
++		led->state = GT683R_LED_AUDIO;
++	} else if (!strncmp("breathing", buf, strlen("breathing"))) {
++		led->state = GT683R_LED_BREATHING;
++	} else if (!strncmp("normal", buf, strlen("normal"))) {
++		led->state = GT683R_LED_NORMAL;
++	} else {
++		count = -EINVAL;
++		goto fail;
++	}
++
++	schedule_work(&led->work);
++
++fail:
++	mutex_unlock(&led->state_lock);
++
++	return count;
++}
++
++static int gt683r_led_snd_msg(struct gt683r_led *led, char *msg)
++{
++	int ret;
++
++	ret = hid_hw_raw_request(led->hdev, msg[0], msg, GT683R_BUFFER_SIZE,
++				HID_FEATURE_REPORT, HID_REQ_SET_REPORT);
++	if (ret != GT683R_BUFFER_SIZE) {
++		hid_err(led->hdev,
++			"failed to send set report request: %i\n", ret);
++		return ret < 0 ? ret : -EIO;
++	}
++
++	return 0;
++}
++
++static void gt683r_led_set(struct gt683r_led *led, char leds, char state)
++{
++	char *buffer;
++
++	buffer = kzalloc(GT683R_BUFFER_SIZE, GFP_KERNEL);
++	if (!buffer)
++		return;
++
++	buffer[0] = 0x01;
++	buffer[1] = 0x02;
++	buffer[2] = 0x30;
++	buffer[3] = leds;
++	if (gt683r_led_snd_msg(led, buffer))
++		goto fail;
++
++	buffer[2] = 0x20;
++	buffer[3] = state;
++	buffer[4] = 0x01;
++	gt683r_led_snd_msg(led, buffer);
++
++fail:
++	kfree(buffer);
++}
++
++static void gt683r_led_work(struct work_struct *work)
++{
++	struct gt683r_led *led =
++			container_of(work, struct gt683r_led, work);
++	char leds = 0;
++
++	mutex_lock(&led->lock);
++
++	if (led->brightness_back)
++		leds |= GT683R_LED_BACK;
++
++	if (led->brightness_side)
++		leds |= GT683R_LED_SIDE;
++
++	if (led->brightness_front)
++		leds |= GT683R_LED_FRONT;
++
++	if (leds)
++		gt683r_led_set(led, leds, led->state);
++	else
++		gt683r_led_set(led, leds, GT683R_LED_OFF);
++
++	mutex_unlock(&led->lock);
++}
++
++static struct led_classdev gt683r_led_dev_back = {
++	.name = "gt683r-led:back",
++	.brightness_set = gt683r_brightness_set_back,
++	.max_brightness = 1,
++	.flags = LED_CORE_SUSPENDRESUME,
++};
++
++static struct led_classdev gt683r_led_dev_side = {
++	.name = "gt683r-led:side",
++	.brightness_set = gt683r_brightness_set_side,
++	.max_brightness = 1,
++	.flags = LED_CORE_SUSPENDRESUME,
++};
++
++static struct led_classdev gt683r_led_dev_front = {
++	.name = "gt683r-led:front",
++	.brightness_set = gt683r_brightness_set_front,
++	.max_brightness = 1,
++	.flags = LED_CORE_SUSPENDRESUME,
++};
++
++static struct device_attribute gt683r_led_state_attribute = {
++	.attr = {
++		.name = "state",
++		.mode = 0644,
++	},
++	.show = gt683r_show_state,
++	.store = gt683r_store_state,
++};
++
++static int gt683r_led_probe(struct hid_device *hdev,
++			const struct hid_device_id *id)
++{
++	int ret;
++	struct gt683r_led *led;
++
++	led = devm_kzalloc(&hdev->dev, sizeof(struct gt683r_led), GFP_KERNEL);
++	if (!led)
++		return -ENOMEM;
++
++	led->hdev = hdev;
++	hid_set_drvdata(hdev, led);
++
++	ret = hid_parse(hdev);
++	if (ret) {
++		hid_err(hdev, "hid parsing failed\n");
++		goto fail;
++	}
++
++	ret = hid_hw_start(hdev, HID_CONNECT_HIDRAW);
++	if (ret) {
++		hid_err(hdev, "hw start failed\n");
++		goto fail;
++	}
++
++	led->led_dev_back = gt683r_led_dev_back;
++	ret = led_classdev_register(&hdev->dev, &led->led_dev_back);
++	if (ret) {
++		hid_err(hdev, "could not register led device\n");
++		goto fail_back;
++	}
++
++	led->led_dev_side = gt683r_led_dev_side;
++	ret = led_classdev_register(&hdev->dev, &led->led_dev_side);
++	if (ret) {
++		hid_err(hdev, "could not register led device\n");
++		goto fail_side;
++	}
++
++	led->led_dev_front = gt683r_led_dev_front;
++	ret = led_classdev_register(&hdev->dev, &led->led_dev_front);
++	if (ret) {
++		hid_err(hdev, "could not register led device\n");
++		goto fail_front;
++	}
++
++	ret = device_create_file(&led->hdev->dev,
++				&gt683r_led_state_attribute);
++	if (ret) {
++		hid_err(hdev, "could not make state attribute file\n");
++		goto fail_create_file;
++	}
++
++	mutex_init(&led->lock);
++	mutex_init(&led->state_lock);
++	INIT_WORK(&led->work, gt683r_led_work);
++
++	return 0;
++
++fail_create_file:
++	led_classdev_unregister(&led->led_dev_front);
++fail_front:
++	led_classdev_unregister(&led->led_dev_side);
++fail_side:
++	led_classdev_unregister(&led->led_dev_back);
++fail_back:
++	hid_hw_stop(hdev);
++fail:
++	return ret;
++}
++
++static void gt683r_led_remove(struct hid_device *hdev)
++{
++	struct gt683r_led *led = hid_get_drvdata(hdev);
++
++	led_classdev_unregister(&led->led_dev_side);
++	led_classdev_unregister(&led->led_dev_back);
++	led_classdev_unregister(&led->led_dev_front);
++	cancel_work_sync(&led->work);
++	device_remove_file(&hdev->dev,
++			&gt683r_led_state_attribute);
++	hid_hw_stop(hdev);
++}
++
++static struct hid_driver gt683r_led_driver = {
++	.probe = gt683r_led_probe,
++	.remove = gt683r_led_remove,
++	.name = "gt683r_led",
++	.id_table = gt683r_led_id,
++};
++
++module_hid_driver(gt683r_led_driver);
++
++MODULE_AUTHOR("Janne Kanniainen");
++MODULE_DESCRIPTION("MSI GT683R led driver");
++MODULE_LICENSE("GPL");
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index 34bb220..3692d37 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -641,7 +641,7 @@
+ #define USB_DEVICE_ID_GENIUS_KB29E	0x3004
+ 
+ #define USB_VENDOR_ID_MSI		0x1770
+-#define USB_DEVICE_ID_MSI_GX680R_LED_PANEL	0xff00
++#define USB_DEVICE_ID_MSI_GT683R_LED_PANEL 0xff00
+ 
+ #define USB_VENDOR_ID_NATIONAL_SEMICONDUCTOR 0x0400
+ #define USB_DEVICE_ID_N_S_HARMONY	0xc359
+diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
+index 8e4ddb3..c640e1d 100644
+--- a/drivers/hid/usbhid/hid-quirks.c
++++ b/drivers/hid/usbhid/hid-quirks.c
+@@ -73,7 +73,7 @@ static const struct hid_blacklist {
+ 	{ USB_VENDOR_ID_FORMOSA, USB_DEVICE_ID_FORMOSA_IR_RECEIVER, HID_QUIRK_NO_INIT_REPORTS },
+ 	{ USB_VENDOR_ID_FREESCALE, USB_DEVICE_ID_FREESCALE_MX28, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_MGE, USB_DEVICE_ID_MGE_UPS, HID_QUIRK_NOGET },
+-	{ USB_VENDOR_ID_MSI, USB_DEVICE_ID_MSI_GX680R_LED_PANEL, HID_QUIRK_NO_INIT_REPORTS },
++	{ USB_VENDOR_ID_MSI, USB_DEVICE_ID_MSI_GT683R_LED_PANEL, HID_QUIRK_NO_INIT_REPORTS },
+ 	{ USB_VENDOR_ID_NEXIO, USB_DEVICE_ID_NEXIO_MULTITOUCH_PTI0750, HID_QUIRK_NO_INIT_REPORTS },
+ 	{ USB_VENDOR_ID_NOVATEK, USB_DEVICE_ID_NOVATEK_MOUSE, HID_QUIRK_NO_INIT_REPORTS },
+ 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN, HID_QUIRK_NO_INIT_REPORTS },
+-- 
+1.9.2
+
