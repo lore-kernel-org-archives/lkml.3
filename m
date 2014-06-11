@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933214AbaFKQU0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 12:20:26 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:44901 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933171AbaFKQUW (ORCPT
+	id S932924AbaFKQWk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 12:22:40 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:44982 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754908AbaFKQWj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 12:20:22 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: "H. Peter Anvin" <hpa@zytor.com>, Josh Boyer <jwboyer@fedoraproject.org>
-Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH 2/2] x86,vdso: Fix vdso_install
-Date: Wed, 11 Jun 2014 09:20:07 -0700
-Message-Id: <fe51e9f5c338d33b1a8b20813441538df5e17add.1402503408.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <cover.1402503408.git.luto@amacapital.net>
-References: <5398749B.4090209@zytor.com>
- <cover.1402503408.git.luto@amacapital.net>
-In-Reply-To: <cover.1402503408.git.luto@amacapital.net>
-References: <cover.1402503408.git.luto@amacapital.net>
+	Wed, 11 Jun 2014 12:22:39 -0400
+Date: Wed, 11 Jun 2014 09:22:38 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Philippe Troin <phil@fifi.org>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: Phantom ACL-related xattrs on 3.14.4 NFS client
+Message-ID: <20140611162238.GA28340@infradead.org>
+References: <1402082953.28220.7.camel@ceramic.home.fifi.org>
+ <CAHQdGtS2BL9u4DV=FZ0HaXO-iTNPU4hTGVR--HubNa4A_6UNog@mail.gmail.com>
+ <20140607140414.GA26534@infradead.org>
+ <1402195701.12743.18.camel@ceramic.home.fifi.org>
+ <1402435203.24047.9.camel@ceramic.home.fifi.org>
+ <20140611072402.GA2683@infradead.org>
+ <1402503318.27314.12.camel@niobium.home.fifi.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402503318.27314.12.camel@niobium.home.fifi.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rather than monkeying with barely-comprehensible static pattern
-rules, just use an explicit loop.
+On Wed, Jun 11, 2014 at 09:15:18AM -0700, Philippe Troin wrote:
+> So, the only regression remaining between 3.13.11 and 3.14.6 + your
+> patch is the one where listxattr(2) and friends do not NUL-terminate the
+> xattr names they return.  This is detailed in
+> <1402435203.24047.9.camel@ceramic.home.fifi.org> I sent yesterday.
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
- arch/x86/vdso/Makefile | 20 +++++++-------------
- 1 file changed, 7 insertions(+), 13 deletions(-)
+Oh, that's a bug in my patch.  The following incremental patch should
+fix it:
 
-diff --git a/arch/x86/vdso/Makefile b/arch/x86/vdso/Makefile
-index 9769df0..b1c70cc 100644
---- a/arch/x86/vdso/Makefile
-+++ b/arch/x86/vdso/Makefile
-@@ -9,11 +9,6 @@ VDSOX32-$(CONFIG_X86_X32_ABI)	:= y
- VDSO32-$(CONFIG_X86_32)		:= y
- VDSO32-$(CONFIG_COMPAT)		:= y
+diff --git a/fs/nfs/nfs3acl.c b/fs/nfs/nfs3acl.c
+index e083827..8f854dd 100644
+--- a/fs/nfs/nfs3acl.c
++++ b/fs/nfs/nfs3acl.c
+@@ -262,6 +262,7 @@ nfs3_list_one_acl(struct inode *inode, int type, const char *name, void *data,
+ 	posix_acl_release(acl);
  
--vdso-install-$(VDSO64-y)	+= vdso.so
--vdso-install-$(VDSOX32-y)	+= vdsox32.so
--vdso-install-$(VDSO32-y)	+= $(vdso32-images)
--
--
- # files to link into the vdso
- vobjs-y := vdso-note.o vclock_gettime.o vgetcpu.o
- 
-@@ -176,15 +171,14 @@ VDSO_LDFLAGS = -fPIC -shared $(call cc-ldoption, -Wl$(comma)--hash-style=sysv) \
- GCOV_PROFILE := n
- 
- #
--# Install the unstripped copy of vdso*.so listed in $(vdso-install-y).
-+# Install the unstripped copies of vdso*.so listed in $(vdso-install-y).
- #
--quiet_cmd_vdso_install = INSTALL $@
--      cmd_vdso_install = cp $(obj)/$@.dbg $(MODLIB)/vdso/$@
--$(vdso-install-y): %.so: $(obj)/%.so.dbg FORCE
--	@mkdir -p $(MODLIB)/vdso
--	$(call cmd,vdso_install)
-+quiet_cmd_vdso_install = INSTALL $(sofile)
-+      cmd_vdso_install = cp $(obj)/$(sofile).dbg $(MODLIB)/vdso/$(sofile)
- 
--PHONY += vdso_install $(vdso-install-y)
--vdso_install: $(vdso-install-y)
-+PHONY += vdso_install
-+vdso_install: $(vdso_img_sodbg:%=$(obj)/%) FORCE
-+	@mkdir -p $(MODLIB)/vdso
-+	@$(foreach sofile,$(vdso_img_sodbg:%.dbg=%),$(call recipe-cmd,vdso_install);)
- 
- clean-files := vdso32-syscall* vdso32-sysenter* vdso32-int80*
--- 
-1.9.3
-
+ 	*result += strlen(name);
++	*result += 1;
+ 	if (!size)
+ 		return 0;
+ 	if (*result > size)
