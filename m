@@ -1,52 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933260AbaFKRcg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 13:32:36 -0400
-Received: from relay2.sgi.com ([192.48.180.65]:53258 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751220AbaFKRce (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 13:32:34 -0400
-Date: Wed, 11 Jun 2014 12:32:33 -0500
-From: Alex Thorlton <athorlton@sgi.com>
-To: Borislav Petkov <bp@suse.de>
-Cc: Alex Thorlton <athorlton@sgi.com>, Linux EFI <linux-efi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Matt Fleming <matt@console-pimps.org>, Russ Anderson <rja@sgi.com>
-Subject: Re: efi_call on SGI
-Message-ID: <20140611173233.GE3275@sgi.com>
-References: <20140609200017.GD2700@sgi.com>
- <20140610080300.GA28607@pd.tnic>
- <20140610204414.GB29302@pd.tnic>
+	id S933341AbaFKRck (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 13:32:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:49568 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933274AbaFKRch (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 13:32:37 -0400
+Message-ID: <539892A7.2030200@zytor.com>
+Date: Wed, 11 Jun 2014 10:32:23 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140610204414.GB29302@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86: Find correct 64 bit ramdisk address for microcode
+ early update
+References: <1402463064-31697-1-git-send-email-yinghai@kernel.org>	<5397F24A.7020407@zytor.com> <CAE9FiQX3seRxbotg0OmLFm_WrtY-SoT9uupvZpbAqyur4Hq=aA@mail.gmail.com>
+In-Reply-To: <CAE9FiQX3seRxbotg0OmLFm_WrtY-SoT9uupvZpbAqyur4Hq=aA@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 10, 2014 at 10:44:14PM +0200, Borislav Petkov wrote:
-> Btw,
+On 06/11/2014 10:30 AM, Yinghai Lu wrote:
+> On Tue, Jun 10, 2014 at 11:08 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 06/10/2014 10:04 PM, Yinghai Lu wrote:
+>>> When using kexec with 64bit kernel, bzImage and ramdisk could be
+>>> loaded above 4G. We need this to get correct ramdisk adress.
+>>>
+>>> Make get_ramdisk_image() global and use it for early microcode
+>>> updating. Also make it to take boot_params pointer for different
+>>> usage.
+>>>
+>>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>>>
+>>
+>> Have you tested this with early microcode loading on a 32-bit kernel?
+>>
 > 
-> while we're at it, I see uv_bios_call is sometimes done with preemption
-> disabled around it and sometimes it is not (at least I don't see it)...
+> No, I did not test that on a 32bit kernel. We did not enabled ramdisk
+> loading high
+> above 4G, right?
 > 
-> In any case, if SGI uses the EFI pagetable now too, you probably would
-> want to do the efi calls like the rest of x86 does them - see the 64-bit
-> version of efi_call_virt() in arch/x86/include/asm/efi.h for an example
-> what I mean.
+> Do you want to me to drop changes for 32 bit path (under those MARCO)?
+> like:
+> +++ linux-2.6/arch/x86/kernel/cpu/
+> microcode/amd_early.c
+> @@ -51,12 +51,12 @@ static struct cpio_data __init find_ucod
+>          */
+>         p       = (struct boot_params *)__pa_nodebug(&boot_params);
+>         path    = (char *)__pa_nodebug(ucode_path);
+> -       start   = (void *)p->hdr.ramdisk_image;
+> -       size    = p->hdr.ramdisk_size;
+> +       start   = (void *)(unsigned long)get_ramdisk_image(p);
+> +       size    = get_ramdisk_size(p);
 > 
-> Now, you could either copy that macro or you could accomodate it to
-> serve everyone's needs - depends on what you'd prefer.
+> +++ linux-2.6/arch/x86/kernel/cpu/microcode/intel_early.c
 > 
-> I'm just saying - I had stumbled across this while the debugging session
-> was going on and wanted to point that out but it wasn't too important at
-> the time so...
+>         boot_params_p = (struct boot_params *)__pa_nodebug(&boot_params);
+> -       ramdisk_image = boot_params_p->hdr.ramdisk_
+> image;
+> -       ramdisk_size  = boot_params_p->hdr.ramdisk_size;
+> +       ramdisk_image = get_ramdisk_image(boot_params_p);
+> +       ramdisk_size  = get_ramdisk_size(boot_params_p);
+>         initrd_start_early = ramdisk_image;
+>         initrd_end_early = initrd_start_early + ramdisk_size;
+> 
+> BTW, Is there any 32bit bootloader that could load ramdisk above 4G?
+> 
 
-Thanks, Boris.  I'll take a look at that.  I'm not sure why we would've
-chosen to do things differently there; wouldn't have been around for
-that, but I'll see if we can fix things up so that we're doing
-everything the way that everyone else is.
+It is not about loading over 4G, it is that some kinds of code (in
+particular accessing global variables) from the early microcode loading
+code doesn't work on 32 bits, so it needs to be tested.
 
-- Alex
+	-hpa
+
