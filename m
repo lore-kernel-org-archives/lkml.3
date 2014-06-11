@@ -1,44 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754029AbaFKUlr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 16:41:47 -0400
-Received: from mga01.intel.com ([192.55.52.88]:3520 "EHLO mga01.intel.com"
+	id S1754145AbaFKUm1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 16:42:27 -0400
+Received: from mga02.intel.com ([134.134.136.20]:3831 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751220AbaFKUlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 16:41:46 -0400
+	id S1754062AbaFKUmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 16:42:25 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,460,1400050800"; 
-   d="scan'208";a="554016795"
-Message-ID: <5398BF08.5070005@linux.intel.com>
-Date: Wed, 11 Jun 2014 13:41:44 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+   d="scan'208";a="555937223"
+Date: Wed, 11 Jun 2014 13:42:16 -0700
+From: Todd E Brandt <todd.e.brandt@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Steven Rostedt <rostedt@goodmis.org>, rafael.j.wysocki@intel.com,
+        linux-pm@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] PM: trace events for device pm callbacks
+Message-ID: <20140611204215.GA8988@linux.intel.com>
+Reply-To: todd.e.brandt@linux.intel.com
+References: <20140610143122.GA12851@linux.intel.com>
+ <3737184.526pO4COlv@vostro.rjw.lan>
+ <20140610171716.694c8414@gandalf.local.home>
+ <1740847.aJcviUsT1q@vostro.rjw.lan>
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, George Spelvin <linux@horizon.com>,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, price@mit.edu
-Subject: Re: drivers/char/random.c: More futzing about
-References: <20140609013553.GA1167@thunk.org> <20140609131738.13625.qmail@ns.horizon.com> <20140611163818.GD27151@thunk.org> <5398885F.10206@linux.intel.com> <20140611192557.GE27151@thunk.org>
-In-Reply-To: <20140611192557.GE27151@thunk.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1740847.aJcviUsT1q@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2014 12:25 PM, Theodore Ts'o wrote:
-> On Wed, Jun 11, 2014 at 09:48:31AM -0700, H. Peter Anvin wrote:
->> While talking about performance, I did a quick prototype of random using
->> Skein instead of SHA-1, and it was measurably faster, in part because
->> Skein produces more output per hash.
+Is this accepted?
+
+On Tue, Jun 10, 2014 at 11:41:33PM +0200, Rafael J. Wysocki wrote:
+> On Tuesday, June 10, 2014 05:17:16 PM Steven Rostedt wrote:
+> > On Tue, 10 Jun 2014 23:17:46 +0200
+> > "Rafael J. Wysocki" <rjw@rjwysocki.net> wrote:
+> > 
+> > > On Tuesday, June 10, 2014 07:31:22 AM Todd E Brandt wrote:
+> > > > Adds two trace events which supply the same info that initcall_debug 
+> > > > provides, but via ftrace instead of dmesg. The existing initcall_debug
+> > > > calls require the pm_print_times_enabled var to be set (either via
+> > > > sysfs or via the kernel cmd line). The new trace events provide all the
+> > > > same info as the initcall_debug prints but with less overhead, and also
+> > > > with coverage of device prepare and complete device callbacks.
+> > > > 
+> > > > These events replace the device_pm_report_time event (which has been
+> > > > removed). device_pm_callback_start is called first and provides the device
+> > > > and callback info. device_pm_callback_end is called after with the
+> > > > device name and error info. The time and pid are gathered from the trace
+> > > > data headers.
+> > > > 
+> > > > Signed-off-by: Todd Brandt <todd.e.brandt@intel.com>
+> > > 
+> > > Steve needs to see this (CCed).
+> > 
+> > The trace events look fine. Is there anything else you wanted me to
+> > look at?
 > 
-> Which Skein parameters did you use, and how much stack space was
-> required for it?  Skein-512 is described as needing 200 bytes of
-> state, IIRC (which I assume most of which comes from Threefish key
-> schedule). 
+> No, that's all, thanks!
 > 
-
-I believe I used Skein-256, but I'd have to dig to find it again.
-
-	-hpa
-
-
+> Rafael
+> 
