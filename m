@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753073AbaFKUj6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 16:39:58 -0400
-Received: from mail-yh0-f54.google.com ([209.85.213.54]:65053 "EHLO
-	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752786AbaFKUj4 (ORCPT
+	id S1752981AbaFKUj5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 16:39:57 -0400
+Received: from mail-yh0-f47.google.com ([209.85.213.47]:54815 "EHLO
+	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752849AbaFKUjy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 16:39:56 -0400
+	Wed, 11 Jun 2014 16:39:54 -0400
 From: Pranith Kumar <bobby.prani@gmail.com>
 To: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
         Josh Triplett <josh@joshtriplett.org>
-Subject: [RFC PATCH 5/5] kernel/rcu/rcutorture.c:185 fix a sparse warning 
-Date: Wed, 11 Jun 2014 16:39:43 -0400
-Message-Id: <1402519183-12752-6-git-send-email-bobby.prani@gmail.com>
+Subject: [RFC PATCH 4/5] kernel/rcu/tree.c:3435 fix a sparse warning
+Date: Wed, 11 Jun 2014 16:39:42 -0400
+Message-Id: <1402519183-12752-5-git-send-email-bobby.prani@gmail.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402519183-12752-1-git-send-email-bobby.prani@gmail.com>
 References: <1402519183-12752-1-git-send-email-bobby.prani@gmail.com>
@@ -20,30 +20,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fix the following sparse warning
+kernel/rcu/tree.c:3435:21: warning: incorrect type in argument 1 (different modifiers)
+kernel/rcu/tree.c:3435:21:    expected int ( *threadfn )( ... )
+kernel/rcu/tree.c:3435:21:    got int ( static [toplevel] [noreturn] *<noident> )( ... )
 
-kernel/rcu/rcutorture.c:185:1: warning: symbol 'boost_mutex' was not declared. Should it be static?
-
-by marking boost_mutex as a static mutex
+by removing __noreturn attribute and adding unreachable() as suggested on the
+mailing list: http://www.kernelhub.org/?p=2&msg=436683
 
 Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 ---
- kernel/rcu/rcutorture.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/rcu/tree.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
-index 7fa34f8..1cd4b2d 100644
---- a/kernel/rcu/rcutorture.c
-+++ b/kernel/rcu/rcutorture.c
-@@ -182,7 +182,7 @@ static u64 notrace rcu_trace_clock_local(void)
- #endif /* #else #ifdef CONFIG_RCU_TRACE */
+diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+index 9ab84d3..6029a2e 100644
+--- a/kernel/rcu/tree.c
++++ b/kernel/rcu/tree.c
+@@ -1689,7 +1689,7 @@ static void rcu_gp_cleanup(struct rcu_state *rsp)
+ /*
+  * Body of kthread that handles grace periods.
+  */
+-static int __noreturn rcu_gp_kthread(void *arg)
++static int rcu_gp_kthread(void *arg)
+ {
+ 	int fqs_state;
+ 	int gf;
+@@ -1777,6 +1777,9 @@ static int __noreturn rcu_gp_kthread(void *arg)
+ 		/* Handle grace-period end. */
+ 		rcu_gp_cleanup(rsp);
+ 	}
++
++	unreachable();
++	return 0;
+ }
  
- static unsigned long boost_starttime;	/* jiffies of next boost test start. */
--DEFINE_MUTEX(boost_mutex);		/* protect setting boost_starttime */
-+static DEFINE_MUTEX(boost_mutex);		/* protect setting boost_starttime */
- 					/*  and boost task create/destroy. */
- static atomic_t barrier_cbs_count;	/* Barrier callbacks registered. */
- static bool barrier_phase;		/* Test phase. */
+ /*
 -- 
 1.9.1
 
