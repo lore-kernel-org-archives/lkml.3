@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752861AbaFKT0E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 15:26:04 -0400
-Received: from imap.thunk.org ([74.207.234.97]:34004 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752240AbaFKT0B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 15:26:01 -0400
-Date: Wed, 11 Jun 2014 15:25:57 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: George Spelvin <linux@horizon.com>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, price@mit.edu
-Subject: Re: drivers/char/random.c: More futzing about
-Message-ID: <20140611192557.GE27151@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	"H. Peter Anvin" <hpa@linux.intel.com>,
-	George Spelvin <linux@horizon.com>, linux-kernel@vger.kernel.org,
-	mingo@kernel.org, price@mit.edu
-References: <20140609013553.GA1167@thunk.org>
- <20140609131738.13625.qmail@ns.horizon.com>
- <20140611163818.GD27151@thunk.org>
- <5398885F.10206@linux.intel.com>
+	id S1752889AbaFKT1P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 15:27:15 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42700 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751335AbaFKT1O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 15:27:14 -0400
+Date: Wed, 11 Jun 2014 15:27:13 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Greg KH <gregkh@linuxfoundation.org>
+cc: Peter Chen <peter.chen@freescale.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: Disable bus's drivers_autoprobe before rootfs has mounted
+In-Reply-To: <20140611191017.GA15120@kroah.com>
+Message-ID: <Pine.LNX.4.44L0.1406111520270.890-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5398885F.10206@linux.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 11, 2014 at 09:48:31AM -0700, H. Peter Anvin wrote:
-> While talking about performance, I did a quick prototype of random using
-> Skein instead of SHA-1, and it was measurably faster, in part because
-> Skein produces more output per hash.
+On Wed, 11 Jun 2014, Greg KH wrote:
 
-Which Skein parameters did you use, and how much stack space was
-required for it?  Skein-512 is described as needing 200 bytes of
-state, IIRC (which I assume most of which comes from Threefish key
-schedule). 
+> We can't break existing systems, so I don't understand the issue here.
+> Just don't configure your kernel for a system you don't have / want,
+> right?
+> 
+> > > > From what I read code, we can't implement above feature, but I may
+> > > > be wrong, if you have some solutions, give me some hints please.
+> > > > If there is no solution for above feature, do we agree with exporting
+> > > > .drivers_autoprobe for bus driver or something similar?
+> > > 
+> > > I don't understand what you mean by this, care to show me with code?
+> > 
+> > I mean the individual bus driver can't change bus->p->drivers_autoprobe?
+> > bus->p->drivers_autoprobe is handled at drivers/base/bus.c.
+> > 
+> > If the individual bus driver can change bus->p->drivers_autoprobe, we
+> > can disable autoprobe (auto-binding) during booting.
+> 
+> No, that's a core only thing.
 
-						- Ted
+Peter, correct me if this is wrong.  It sounds like you want to have a 
+way for the user to control which gadget driver gets bound to which UDC 
+driver when everything is compiled into the kernel, nothing is built 
+as a separate module.  Is that the basic idea?
+
+This shouldn't be a problem if you use configfs or libusbg.
+
+Alan Stern
+
