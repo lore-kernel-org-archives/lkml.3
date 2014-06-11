@@ -1,133 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755334AbaFKLk0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 07:40:26 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:63118 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751050AbaFKLkY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 07:40:24 -0400
+	id S1755477AbaFKLlo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 07:41:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53319 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751049AbaFKLln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 07:41:43 -0400
+Message-ID: <53984074.8010000@suse.cz>
+Date: Wed, 11 Jun 2014 13:41:40 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Date: Wed, 11 Jun 2014 13:40:21 +0200
-X-Google-Sender-Auth: Cj-_oclb0JaJMZQsTUQ4DX26Sp4
-Message-ID: <CAMuHMdXm_fT251+ih2cJS+hRkrPuVQi3sMFgYe+k18xe-Wd21w@mail.gmail.com>
-Subject: BUG: Bad page state in process swapper pfn:00000
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Laura Abbott <lauraa@codeaurora.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Minchan Kim <minchan@kernel.org>
+CC: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>, Mel Gorman <mgorman@suse.de>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 05/10] mm, compaction: remember position within pageblock
+ in free pages scanner
+References: <1402305982-6928-1-git-send-email-vbabka@suse.cz> <1402305982-6928-5-git-send-email-vbabka@suse.cz> <20140611021213.GF15630@bbox> <20140611081606.GB28258@js1304-P5Q-DELUXE>
+In-Reply-To: <20140611081606.GB28258@js1304-P5Q-DELUXE>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With current mainline, I get an early crash on r8a7791/koelsch:
+On 06/11/2014 10:16 AM, Joonsoo Kim wrote:
+> On Wed, Jun 11, 2014 at 11:12:13AM +0900, Minchan Kim wrote:
+>> On Mon, Jun 09, 2014 at 11:26:17AM +0200, Vlastimil Babka wrote:
+>>> Unlike the migration scanner, the free scanner remembers the beginning of the
+>>> last scanned pageblock in cc->free_pfn. It might be therefore rescanning pages
+>>> uselessly when called several times during single compaction. This might have
+>>> been useful when pages were returned to the buddy allocator after a failed
+>>> migration, but this is no longer the case.
+>>>
+>>> This patch changes the meaning of cc->free_pfn so that if it points to a
+>>> middle of a pageblock, that pageblock is scanned only from cc->free_pfn to the
+>>> end. isolate_freepages_block() will record the pfn of the last page it looked
+>>> at, which is then used to update cc->free_pfn.
+>>>
+>>> In the mmtests stress-highalloc benchmark, this has resulted in lowering the
+>>> ratio between pages scanned by both scanners, from 2.5 free pages per migrate
+>>> page, to 2.25 free pages per migrate page, without affecting success rates.
+>>>
+>>> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+>> Reviewed-by: Minchan Kim <minchan@kernel.org>
+>>
+>> Below is a nitpick.
+>>
+>>> Cc: Minchan Kim <minchan@kernel.org>
+>>> Cc: Mel Gorman <mgorman@suse.de>
+>>> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>>> Cc: Michal Nazarewicz <mina86@mina86.com>
+>>> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+>>> Cc: Christoph Lameter <cl@linux.com>
+>>> Cc: Rik van Riel <riel@redhat.com>
+>>> Cc: David Rientjes <rientjes@google.com>
+>>> ---
+>>>   mm/compaction.c | 33 ++++++++++++++++++++++++++++-----
+>>>   1 file changed, 28 insertions(+), 5 deletions(-)
+>>>
+>>> diff --git a/mm/compaction.c b/mm/compaction.c
+>>> index 83f72bd..58dfaaa 100644
+>>> --- a/mm/compaction.c
+>>> +++ b/mm/compaction.c
+>>> @@ -297,7 +297,7 @@ static bool suitable_migration_target(struct page *page)
+>>>    * (even though it may still end up isolating some pages).
+>>>    */
+>>>   static unsigned long isolate_freepages_block(struct compact_control *cc,
+>>> -				unsigned long blockpfn,
+>>> +				unsigned long *start_pfn,
+>>>   				unsigned long end_pfn,
+>>>   				struct list_head *freelist,
+>>>   				bool strict)
+>>> @@ -306,6 +306,7 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+>>>   	struct page *cursor, *valid_page = NULL;
+>>>   	unsigned long flags;
+>>>   	bool locked = false;
+>>> +	unsigned long blockpfn = *start_pfn;
+>>>
+>>>   	cursor = pfn_to_page(blockpfn);
+>>>
+>>> @@ -314,6 +315,9 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+>>>   		int isolated, i;
+>>>   		struct page *page = cursor;
+>>>
+>>> +		/* Record how far we have got within the block */
+>>> +		*start_pfn = blockpfn;
+>>> +
+>>
+>> Couldn't we move this out of the loop for just one store?
 
-BUG: Bad page state in process swapper  pfn:00000
-page:ee20b000 count:0 mapcount:0 mapping:66756200 index:0x65726566
-page flags: 0x74656b63(locked|error|lru|active|owner_priv_1|arch_1|private|writeback|head|swapcache
-|reclaim|mlocked)
-page dumped because: PAGE_FLAGS_CHECK_AT_FREE flag(s) set
-bad because of flags:
-page flags: 0x212861(locked|lru|active|private|writeback|swapcache|mlocked)
+Ah, I get it now. Ignore my previous reply.
 
-I bisected it to
+> Hello, Vlastimil.
+>
+> Moreover, start_pfn can't be updated to end pfn with this approach.
+> Is it okay?
 
-commit 1c2f87c22566cd057bc8cde10c37ae9da1a1bb76
-Author: Laura Abbott <lauraa@codeaurora.org>
-Date:   Sun Apr 13 22:54:58 2014 +0100
+That's intentional, as end_pfn means the scanner would restart at the 
+beginning of next pageblock. So I want to record last pfn *inside* the 
+pageblock that was fully scanned. Note that there's a high change that 
+fully scanning pageblock means that I haven't isolated enough and 
+isolate_freepages() will advance to the previous pageblock anyway, and 
+the recorded value will be overwritten. But still it's better to prevent 
+this corner case.
 
-    ARM: 8025/1: Get rid of meminfo
+So outside the loop, I would need to do:
 
-    memblock is now fully integrated into the kernel and is the prefered
-    method for tracking memory. Rather than reinvent the wheel with
-    meminfo, migrate to using memblock directly instead of meminfo as
-    an intermediate.
+*start_pfn = max(blockpfn, end_pfn - 1);
 
-    Acked-by: Jason Cooper <jason@lakedaemon.net>
-    Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-    Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-    Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-    Tested-by: Marek Szyprowski <m.szyprowski@samsung.com>
-    Tested-by: Leif Lindholm <leif.lindholm@linaro.org>
-    Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
-    Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+It looks a bit tricky but probably better than multiple assignments.
 
-As this is a quite intrusive change, it cannot be reverted on top of mainline.
+Thanks.
 
-The commit before (1c8c3cf0b5239388e712508a85821f4718f4d889)
-does work. Dmesg difference between them:
+> Thanks.
+>
 
- Uncompressing Linux... done, booting the kernel.
- Booting Linux on physical CPU 0x0
--Linux version 3.15.0-rc1-koelsch-reference-00027-g1c8c3cf0b523-dirty
-(geert@ramsan) (gcc version 4.6.3 (GCC) ) #174 SMP Wed Jun 11 13:19:00
-CEST 2014
-+Linux version 3.15.0-rc1-koelsch-reference-00028-g1c2f87c22566-dirty
-(geert@ramsan) (gcc version 4.6.3 (GCC) ) #175 SMP Wed Jun 11 13:20:28
-CEST 2014
- CPU: ARMv7 Processor [413fc0f2] revision 2 (ARMv7), cr=10c5347d
- CPU: PIPT / VIPT nonaliasing data cache, PIPT instruction cache
--Ignoring memory at 0x200000000 outside 32-bit physical address space
- Machine model: Koelsch
- bootconsole [earlycon0] enabled
- debug: ignoring loglevel setting.
--Truncating RAM at 40000000-bfffffff to -6f7fffff (vmalloc region overlap).
-+Truncating RAM at 0x00000000-0xc0000000 to -0x6f800000
- Memory policy: Data cache writealloc
-+BUG: not creating mapping for 0x00000000 at 0x80000000 in user region
- BUG: mapping for 0xe6e60000 at 0xffe60000 out of vmalloc space
--On node 0 totalpages: 194560
--free_area_init_node: node 0, pgdat c04bf3c0, node_mem_map ef20b000
--  Normal zone: 1520 pages used for memmap
-+On node 0 totalpages: 456704
-+free_area_init_node: node 0, pgdat c04bf3c0, node_mem_map eea0b000
-+  Normal zone: 3568 pages used for memmap
-   Normal zone: 0 pages reserved
--  Normal zone: 194560 pages, LIFO batch:31
--PERCPU: Embedded 7 pages/cpu @ef1e7000 s7488 r8192 d12992 u32768
-+  Normal zone: 456704 pages, LIFO batch:31
-+PERCPU: Embedded 7 pages/cpu @ee9e4000 s7488 r8192 d12992 u32768
- pcpu-alloc: s7488 r8192 d12992 u32768 alloc=8*4096
- pcpu-alloc: [0] 0 [0] 1
--Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 193040
-+Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 453136
- Kernel command line: console=ttySC6,115200 earlyprintk
-ignore_loglevel ip=dhcp root=/dev/nfs
-nfsroot=192.168.97.21:/home/koelsch/debian-armhf
- PID hash table entries: 4096 (order: 2, 16384 bytes)
--Dentry cache hash table entries: 131072 (order: 7, 524288 bytes)
--Inode-cache hash table entries: 65536 (order: 6, 262144 bytes)
--Memory: 766112K/778240K available (3423K kernel code, 151K rwdata,
-1036K rodata, 215K init, 235K bss, 12128K reserved)
-+Dentry cache hash table entries: 262144 (order: 8, 1048576 bytes)
-+Inode-cache hash table entries: 131072 (order: 7, 524288 bytes)
-+BUG: Bad page state in process swapper  pfn:00000
-+page:ee20b000 count:0 mapcount:0 mapping:66756200 index:0x65726566
-+page flags: 0x74656b63(locked|error|lru|active|owner_priv_1|arch_1|private|writeback|head|swapcache|reclaim|mlocked)
-+page dumped because: PAGE_FLAGS_CHECK_AT_FREE flag(s) set
-+bad because of flags:
-+page flags: 0x212861(locked|lru|active|private|writeback|swapcache|mlocked)
-+Modules linked in:
-+CPU: 0 PID: 0 Comm: swapper Not tainted
-3.15.0-rc1-koelsch-reference-00028-g1c2f87c22566-dirty #175
-
-My tree is dirty due to the r8a7791-specific DEBUG_LL patch.
-
-Any suggestions before I dive deeper into this?
-
-Thanks!
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
