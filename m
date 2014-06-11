@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755183AbaFKSBI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 14:01:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8937 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754882AbaFKSBG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 14:01:06 -0400
-Date: Wed, 11 Jun 2014 19:59:34 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>
-Subject: Re: safety of *mutex_unlock() (Was: [BUG] signal: sighand
-	unprotected when accessed by /proc)
-Message-ID: <20140611175934.GA28912@redhat.com>
-References: <alpine.DEB.2.10.1406101051210.3830@nanos> <20140610165704.GA3110@redhat.com> <alpine.DEB.2.10.1406101959420.5170@nanos> <20140610141306.04a4bcf3@gandalf.local.home> <alpine.DEB.2.10.1406102203430.5170@nanos> <alpine.DEB.2.10.1406102210580.5170@nanos> <20140611155251.GA4581@linux.vnet.ibm.com> <20140611170705.GA26816@redhat.com> <20140611171734.GA27457@redhat.com> <20140611172958.GF4581@linux.vnet.ibm.com>
+	id S1753219AbaFKSIL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 14:08:11 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:65053 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751002AbaFKSIJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 14:08:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140611172958.GF4581@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CAErSpo5rpdb985tS91BOEGJePwU3OSzKp_KgrrZfRqaxKBgPMw@mail.gmail.com>
+References: <1986515.ZPZrccsmiq@vostro.rjw.lan>
+	<CAErSpo5rpdb985tS91BOEGJePwU3OSzKp_KgrrZfRqaxKBgPMw@mail.gmail.com>
+Date: Wed, 11 Jun 2014 20:08:08 +0200
+X-Google-Sender-Auth: lFDehEnCujmEWO7Em2_xrgYJCPo
+Message-ID: <CAJZ5v0gFVjUwDiCYM_qeU7jL5Ym50mgMZG186G92uMdzMQo8TQ@mail.gmail.com>
+Subject: Re: [PATCH] ACPI / hotplug / PCI: Add hotplug contexts to PCI host bridges
+From: "Rafael J. Wysocki" <rafael@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linux PCI <linux-pci@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11, Paul E. McKenney wrote:
+On Wed, Jun 11, 2014 at 4:29 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Tue, Jun 10, 2014 at 2:51 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+>> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>>
+>> After relatively recent changes in the ACPI-based PCI hotplug
+>> (ACPIPHP) code, the acpiphp_check_host_bridge() executed for PCI
+>> host bridges via acpi_pci_root_scan_dependent() doesn't do anything
+>> useful, because those bridges do not have hotplug contexts.  That
+>> happens by mistake, so fix it by making acpiphp_enumerate_slots()
+>> add hotplug contexts to PCI host bridges too and modify
+>> acpiphp_remove_slots() to drop those contexts for host bridges
+>> as appropriate.
+>>
+>> Link: https://bugzilla.kernel.org/show_bug.cgi?id=76901
+>> Fixes: 2d8b1d566a5f (ACPI / hotplug / PCI: Get rid of check_sub_bridges())
+>> Reported-and-tested-by: Gavin Guo <gavin.guo@canonical.com>
+>> Cc: 3.15+ <stable@vger.kernel.org> # 3.15+
+>> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 >
-> On Wed, Jun 11, 2014 at 07:17:34PM +0200, Oleg Nesterov wrote:
-> > On 06/11, Oleg Nesterov wrote:
-> > >
-> > > On 06/11, Paul E. McKenney wrote:
-> > >
-> > > >  	raw_spin_unlock_irqrestore(&rnp->lock, flags);
-> > > >  	rt_mutex_lock(&mtx);  /* Side effect: boosts task t's priority. */
-> > > >  	rt_mutex_unlock(&mtx);  /* Keep lockdep happy. */
-> > > >
-> > > > +	/* Wait until boostee is done accessing mtx before reinitializing. */
-> > > > +	wait_for_completion(&rnp->boost_completion);
-> > > > +
-> > >
-> > > I must have missed something, I dont understand why we need ->boost_completion.
-> > >
-> > > What if you simply move that rt_mutex into rcu_node ?
-> > >
-> > > Or. Given that rcu_boost_kthread() never exits, it can declare this mutex
-> > > on stack and pass the pointer to rcu_boost() ?
-> >
-> > Ah, please ignore, I forgot about init_proxy_locked(). Although perhaps this
-> > can be solved easily.
+> Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+
+Thanks!
+
+> Rafael, do you want to merge this via your tree, since you merged the
+> original acpiphp rework?
+
+Yes, I'll take care of this.
+
+> I do have a small cleanup of acpiphp_glue.c in my queue, but it won't
+> conflict with this.
 >
-> You beat me to it.  ;-)
->
-> I was thinking of ->boost_completion as the way to solve it easily, but
-> what did you have in mind?
+> Thanks a lot for fixing this!
 
-I meant, rcu_boost() could probably just do "mtx->owner = t", we know that
-it was unlocked by us and nobody else can use it until we set
-t->rcu_boost_mutex.
+You're very welcome. :-)
 
-And if we move it into rcu_node, then we can probably kill ->rcu_boost_mutex,
-rcu_read_unlock_special() could check rnp->boost_mutex->owner == current.
-
-But you know, I also think that the dentist removed the rest of my brains
-along my tooth, so I am not sure if I actually have something in mind.
-
-Oleg.
-
+Rafael
