@@ -1,38 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754362AbaFKHMT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 03:12:19 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:42942 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750740AbaFKHMS convert rfc822-to-8bit (ORCPT
+	id S1755446AbaFKHNL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 03:13:11 -0400
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:36131 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755347AbaFKHNJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 03:12:18 -0400
-Date: Wed, 11 Jun 2014 00:12:16 -0700 (PDT)
-Message-Id: <20140611.001216.1631681094950454220.davem@davemloft.net>
-To: manuel.schoelling@gmx.de
-Cc: jeffrey.t.kirsher@intel.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] dns_resolver: assure that dns_query() result is
- null-terminated
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1402178245-8076-1-git-send-email-manuel.schoelling@gmx.de>
-References: <1402167681-24676-1-git-send-email-manuel.schoelling@gmx.de>
-	<1402178245-8076-1-git-send-email-manuel.schoelling@gmx.de>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 11 Jun 2014 00:12:17 -0700 (PDT)
+	Wed, 11 Jun 2014 03:13:09 -0400
+Date: Wed, 11 Jun 2014 09:13:03 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux390@de.ibm.com, Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kent Overstreet <kmo@daterainc.com>, Tejun Heo <tj@kernel.org>,
+        Geoff Levand <geoff@infradead.org>, Stefan Weinhuber <wein@de.ibm.com>,
+        linux-s390@vger.kernel.org
+Subject: Re: [PATCH] s390: avoid format strings leaking into names
+Message-ID: <20140611071303.GA4296@osiris>
+References: <20140610174620.GA30139@www.outflux.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140610174620.GA30139@www.outflux.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14061107-3548-0000-0000-00000012E13C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Manuel Schölling <manuel.schoelling@gmx.de>
-Date: Sat,  7 Jun 2014 23:57:25 +0200
-
-> dns_query() credulously assumes that keys are null-terminated and
-> returns a copy of a memory block that is off by one.
+On Tue, Jun 10, 2014 at 10:46:20AM -0700, Kees Cook wrote:
+> This makes sure format strings can't accidentally leak into kernel
+> interface names.
 > 
-> Signed-off-by: Manuel Schölling <manuel.schoelling@gmx.de>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+>  drivers/s390/block/dcssblk.c     |    2 +-
+>  drivers/s390/char/vmlogrdr.c     |    2 +-
+>  drivers/s390/crypto/zcrypt_api.c |    2 +-
+>  3 files changed, 3 insertions(+), 3 deletions(-)
 
-Applied, thanks.
+Applied, thanks!
+
