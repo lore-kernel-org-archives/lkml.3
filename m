@@ -1,45 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755885AbaFKPkl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 11:40:41 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:33197 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752163AbaFKPkj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 11:40:39 -0400
-Date: Wed, 11 Jun 2014 08:40:36 -0700
-From: Stephen Hemminger <stephen@networkplumber.org>
-To: Dmitry Popov <ixaphire@qrator.net>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        trivial@kernel.org
-Subject: Re: [PATCH] ip_vti: fix sparse warnings for VTI_ISVTI
-Message-ID: <20140611084036.11f234f0@nehalam.linuxnetplumber.net>
-In-Reply-To: <20140611160215.7b0fbe7c4f42cf02b5496852@qrator.net>
-References: <20140611150914.c3cb48bb8a1a760564f5db6e@qrator.net>
-	<20140611160215.7b0fbe7c4f42cf02b5496852@qrator.net>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932658AbaFKPk6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 11:40:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58398 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932468AbaFKPk4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 11:40:56 -0400
+From: Michal Marek <mmarek@suse.cz>
+To: Mike Qiu <qiudayu@linux.vnet.ibm.com>
+Cc: linuxppc-dev@lists.ozlabs.org, Sam Ravnborg <sam@ravnborg.org>,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] powerpc: Avoid circular dependency with zImage.%
+Date: Wed, 11 Jun 2014 17:40:43 +0200
+Message-Id: <1402501243-28213-1-git-send-email-mmarek@suse.cz>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <53984D4F.6040808@linux.vnet.ibm.com>
+References: <53984D4F.6040808@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Jun 2014 16:02:15 +0400
-Dmitry Popov <ixaphire@qrator.net> wrote:
+The rule to create the final images uses a zImage.% pattern.
+Unfortunately, this also matches the names of the zImage.*.lds linker
+scripts, which appear as a dependency of the final images. This somehow
+worked when $(srctree) used to be an absolute path, but now the pattern
+matches too much. List only the images from $(image-y) as the target of
+the rule, to avoid the circular dependency.
 
-> On Wed, 11 Jun 2014 15:09:14 +0400
-> Dmitry Popov <ixaphire@qrator.net> wrote:
-> 
-> > 
-> > Since VTI_ISVTI is always used with ip_tunnel_parm->i_flags (which is __be16),
-> > we can __force cast VTI_ISVTI to __be16 in header file.
-> > 
-> 
-> If this patch is okay I will submit it to iproute2 too. if_tunnel.h has to be
-> synced.
+Signed-off-by: Michal Marek <mmarek@suse.cz>
+---
+v2:
+  - Filter out duplicates in the target list
+  - fix the platform argument to cmd_wrap
 
-don't bother with iproute2 patch. I periodically resync sanitized headers from
-kernel to iproute2.
+ arch/powerpc/boot/Makefile | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/powerpc/boot/Makefile b/arch/powerpc/boot/Makefile
+index 426dce7..ccc25ed 100644
+--- a/arch/powerpc/boot/Makefile
++++ b/arch/powerpc/boot/Makefile
+@@ -333,8 +333,8 @@ $(addprefix $(obj)/, $(initrd-y)): $(obj)/ramdisk.image.gz
+ $(obj)/zImage.initrd.%: vmlinux $(wrapperbits)
+ 	$(call if_changed,wrap,$*,,,$(obj)/ramdisk.image.gz)
+ 
+-$(obj)/zImage.%: vmlinux $(wrapperbits)
+-	$(call if_changed,wrap,$*)
++$(addprefix $(obj)/, $(sort $(filter zImage.%, $(image-y)))): vmlinux $(wrapperbits)
++	$(call if_changed,wrap,$(subst $(obj)/zImage.,,$@))
+ 
+ # dtbImage% - a dtbImage is a zImage with an embedded device tree blob
+ $(obj)/dtbImage.initrd.%: vmlinux $(wrapperbits) $(obj)/%.dtb
+-- 
+1.9.2
+
