@@ -1,47 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755879AbaFKSsY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 14:48:24 -0400
-Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:42679 "EHLO
-	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753152AbaFKSsU (ORCPT
+	id S1754168AbaFKSvZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 14:51:25 -0400
+Received: from asavdk4.altibox.net ([109.247.116.15]:37297 "EHLO
+	asavdk4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752640AbaFKSvX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 14:48:20 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AugHAH2jmFNbslCP/2dsb2JhbABagw2rdAUBAQEBAQEFAZkbgQgXdYRgI4EaN4hGAdAqhVyIGWQdhCsEmi6TS4F8gUI7gTA
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Dimitri Sivanich <sivanich@sgi.com>
-Subject: [PATCH 1/1] drivers/misc/sgi-gru/grukdump.c: remove unnecessary test on unsigned int
-Date: Wed, 11 Jun 2014 20:47:02 +0200
-Message-Id: <1402512422-15990-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	Wed, 11 Jun 2014 14:51:23 -0400
+Date: Wed, 11 Jun 2014 20:51:19 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Andy Lutomirski <luto@amacapital.net>, "H. Peter Anvin" <hpa@zytor.com>,
+        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] x86,vdso: Fix vdso_install
+Message-ID: <20140611185119.GA13412@ravnborg.org>
+References: <5398749B.4090209@zytor.com>
+ <cover.1402503408.git.luto@amacapital.net>
+ <fe51e9f5c338d33b1a8b20813441538df5e17add.1402503408.git.luto@amacapital.net>
+ <CA+5PVA5uPj0JiTLXJAtBt9b9e6aEcJh7ApFRbaCAP0=se89GKA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+5PVA5uPj0JiTLXJAtBt9b9e6aEcJh7ApFRbaCAP0=se89GKA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-unsigned value is never < 0
+On Wed, Jun 11, 2014 at 01:23:59PM -0400, Josh Boyer wrote:
+> On Wed, Jun 11, 2014 at 12:20 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> > Rather than monkeying with barely-comprehensible static pattern
+> > rules, just use an explicit loop.
+> >
+> > Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> > ---
+> >  arch/x86/vdso/Makefile | 20 +++++++-------------
+> >  1 file changed, 7 insertions(+), 13 deletions(-)
+> >
+> > diff --git a/arch/x86/vdso/Makefile b/arch/x86/vdso/Makefile
+> > index 9769df0..b1c70cc 100644
+> > --- a/arch/x86/vdso/Makefile
+> > +++ b/arch/x86/vdso/Makefile
+> > @@ -9,11 +9,6 @@ VDSOX32-$(CONFIG_X86_X32_ABI)  := y
+> >  VDSO32-$(CONFIG_X86_32)                := y
+> >  VDSO32-$(CONFIG_COMPAT)                := y
+> >
+> > -vdso-install-$(VDSO64-y)       += vdso.so
+> > -vdso-install-$(VDSOX32-y)      += vdsox32.so
+> > -vdso-install-$(VDSO32-y)       += $(vdso32-images)
+> > -
+> > -
+> >  # files to link into the vdso
+> >  vobjs-y := vdso-note.o vclock_gettime.o vgetcpu.o
+> >
+> > @@ -176,15 +171,14 @@ VDSO_LDFLAGS = -fPIC -shared $(call cc-ldoption, -Wl$(comma)--hash-style=sysv) \
+> >  GCOV_PROFILE := n
+> >
+> >  #
+> > -# Install the unstripped copy of vdso*.so listed in $(vdso-install-y).
+> > +# Install the unstripped copies of vdso*.so listed in $(vdso-install-y).
+> >  #
+> > -quiet_cmd_vdso_install = INSTALL $@
+> > -      cmd_vdso_install = cp $(obj)/$@.dbg $(MODLIB)/vdso/$@
+> > -$(vdso-install-y): %.so: $(obj)/%.so.dbg FORCE
+> > -       @mkdir -p $(MODLIB)/vdso
+> > -       $(call cmd,vdso_install)
+> > +quiet_cmd_vdso_install = INSTALL $(sofile)
+> > +      cmd_vdso_install = cp $(obj)/$(sofile).dbg $(MODLIB)/vdso/$(sofile)
+> >
+> > -PHONY += vdso_install $(vdso-install-y)
+> > -vdso_install: $(vdso-install-y)
+> > +PHONY += vdso_install
+> > +vdso_install: $(vdso_img_sodbg:%=$(obj)/%) FORCE
+> > +       @mkdir -p $(MODLIB)/vdso
+> > +       @$(foreach sofile,$(vdso_img_sodbg:%.dbg=%),$(call recipe-cmd,vdso_install);)
 
-Cc: Dimitri Sivanich <sivanich@sgi.com>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- drivers/misc/sgi-gru/grukdump.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Can we please fix this in a way where we do not need to add stuff to core kbuild.
+If the original approach was used then make took care of the looping
+and the foreach part was not needed.
 
-diff --git a/drivers/misc/sgi-gru/grukdump.c b/drivers/misc/sgi-gru/grukdump.c
-index a3700a5..e0e0e7e 100644
---- a/drivers/misc/sgi-gru/grukdump.c
-+++ b/drivers/misc/sgi-gru/grukdump.c
-@@ -196,7 +196,7 @@ int gru_dump_chiplet_request(unsigned long arg)
- 		return -EFAULT;
- 
- 	/* Currently, only dump by gid is implemented */
--	if (req.gid >= gru_max_gids || req.gid < 0)
-+	if (req.gid >= gru_max_gids)
- 		return -EINVAL;
- 
- 	gru = GID_TO_GRU(req.gid);
--- 
-1.8.4.5
 
+	Sam
