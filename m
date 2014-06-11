@@ -1,46 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754509AbaFKDUT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 23:20:19 -0400
-Received: from mail-yh0-f48.google.com ([209.85.213.48]:43372 "EHLO
-	mail-yh0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751619AbaFKDUR (ORCPT
+	id S1755282AbaFKDXF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 23:23:05 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:53950 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754961AbaFKDXD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 23:20:17 -0400
-From: Pranith Kumar <bobby.prani@gmail.com>
-To: Dipankar Sarma <dipankar@in.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org (open list:READ-COPY UPDATE...)
-Subject: [RFC PATCH 1/1] kernel/rcu/tree.c: correct a check for grace period in progress
-Date: Tue, 10 Jun 2014 23:20:19 -0400
-Message-Id: <1402456819-30515-1-git-send-email-bobby.prani@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Tue, 10 Jun 2014 23:23:03 -0400
+Message-ID: <1402456897.28433.46.camel@debian>
+Subject: Re: [PATCH] mm/vmscan.c: avoid recording the original scan targets
+ in shrink_lruvec()
+From: Chen Yucong <slaoub@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: mgorman@suse.de, mhocko@suse.cz, hannes@cmpxchg.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 11 Jun 2014 11:21:37 +0800
+In-Reply-To: <20140610163338.5b463c5884c4c7e3f1b948e2@linux-foundation.org>
+References: <1402320436-22270-1-git-send-email-slaoub@gmail.com>
+	 <20140610163338.5b463c5884c4c7e3f1b948e2@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The comment above the code says that we are checking both the current node and
-the parent node to see if a grace period is in progress. Change the code
-accordingly.
+On Tue, 2014-06-10 at 16:33 -0700, Andrew Morton wrote:
+> >                       break;
+> >  
+> >               if (nr_file > nr_anon) {
+> > -                     unsigned long scan_target =
+> targets[LRU_INACTIVE_ANON] +
+> >
+> -                                             targets[LRU_ACTIVE_ANON]
+> + 1;
+> > +                     nr_to_scan = nr_file - ratio * nr_anon;
+> > +                     percentage = nr[LRU_FILE] * 100 / nr_file;
+> 
+> here, nr_file and nr_anon are derived from the contents of nr[].  But
+> nr[] was modified in the for_each_evictable_lru() loop, so its
+> contents
+> now may differ from what was in targets[]? 
 
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
----
- kernel/rcu/tree.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+nr_to_scan is used for recording the number of pages that should be
+scanned to keep original *ratio*.
 
-diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-index f1ba773..b632189 100644
---- a/kernel/rcu/tree.c
-+++ b/kernel/rcu/tree.c
-@@ -1227,7 +1227,7 @@ rcu_start_future_gp(struct rcu_node *rnp, struct rcu_data *rdp,
- 	 * need to explicitly start one.
- 	 */
- 	if (rnp->gpnum != rnp->completed ||
--	    ACCESS_ONCE(rnp->gpnum) != ACCESS_ONCE(rnp->completed)) {
-+	    ACCESS_ONCE(rnp_root->gpnum) != ACCESS_ONCE(rnp_root->completed)) {
- 		rnp->need_future_gp[c & 0x1]++;
- 		trace_rcu_future_gp(rnp, rdp, c, TPS("Startedleaf"));
- 		goto out;
--- 
-1.9.1
+We can assume that the value of (nr_file > nr_anon) is true, nr_to_scan
+should be distribute to nr[LRU_ACTIVE_FILE] and nr[LRU_INACTIVE_FILE] in
+proportion.
+
+    nr_file = nr[LRU_ACTIVE_FILE] + nr[LRU_INACTIVE_FILE];
+    percentage = nr[LRU_FILE] / nr_file;
+
+Note that in comparison with *old* percentage, the "new" percentage has
+the different meaning. It is just used to divide nr_so_scan pages
+appropriately.
+
+thx!
+cyc     
 
