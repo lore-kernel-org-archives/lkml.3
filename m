@@ -1,95 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754282AbaFKVsI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 17:48:08 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:48876 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751800AbaFKVsG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 17:48:06 -0400
-Message-ID: <1402523283.4035.23.camel@j-VirtualBox>
-Subject: Re: [RFC PATCH 1/3] locking/mutex: Try to acquire mutex only if it
- is unlocked
-From: Jason Low <jason.low2@hp.com>
-To: "Long, Wai Man" <waiman.long@hp.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>, Peter Zijlstra <peterz@infradead.org>,
-        mingo@kernel.org, tglx@linutronix.de, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com,
-        tim.c.chen@linux.intel.com, hpa@zytor.com, aswin@hp.com,
-        scott.norton@hp.com, chegu_vinod@hp.com
-Date: Wed, 11 Jun 2014 14:48:03 -0700
-In-Reply-To: <5398C35B.5080301@hp.com>
-References: <1401908911-8947-1-git-send-email-jason.low2@hp.com>
-		 <1401908911-8947-2-git-send-email-jason.low2@hp.com>
-		 <20140604194322.GN13930@laptop.programming.kicks-ass.net>
-		 <1401915420.13877.20.camel@buesod1.americas.hpqcorp.net>
-		 <1401915499.13877.21.camel@buesod1.americas.hpqcorp.net>
-	 <1402335482.6071.36.camel@j-VirtualBox> <5398C35B.5080301@hp.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1753075AbaFKVxM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 17:53:12 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53095 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750958AbaFKVxJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 17:53:09 -0400
+Message-ID: <5398CFA4.60202@zytor.com>
+Date: Wed, 11 Jun 2014 14:52:36 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Sam Ravnborg <sam@ravnborg.org>
+CC: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        linux-arch@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH RFC 00/10] tools: Revamp the unaligned endian access functions
+References: <1402441994-16780-1-git-send-email-hpa@zytor.com> <20140611192111.GB16069@ravnborg.org>
+In-Reply-To: <20140611192111.GB16069@ravnborg.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-06-11 at 17:00 -0400, Long, Wai Man wrote:
-> On 6/9/2014 1:38 PM, Jason Low wrote:
-> > On Wed, 2014-06-04 at 13:58 -0700, Davidlohr Bueso wrote:
-> >> On Wed, 2014-06-04 at 13:57 -0700, Davidlohr Bueso wrote:
-> >>> In addition, how about the following helpers instead:
-> >>> - mutex_is_unlocked() : count > 0
-> >>> - mutex_has_waiters() : count < 0, or list_empty(->wait_list)
-> >>                                        ^ err, that's !list_empty()
-> > Between checking for (count < 0) or checking for !list_empty(wait_list)
-> > for waiters:
-> >
-> > Now that I think about it, I would expect a mutex_has_waiters() function
-> > to return !list_empty(wait_list) as that really tells whether or not
-> > there are waiters. For example, in highly contended cases, there can
-> > still be waiters on the mutex if count is 1.
-> >
-> > Likewise, in places where we currently use "MUTEX_SHOW_NO_WAITER", we
-> > need to check for (count < 0) to ensure lock->count is a negative value
-> > before the thread sleeps on the mutex.
-> >
-> > One option would be to still remove MUTEX_SHOW_NO_WAITER(), directly use
-> > atomic_read() in place of the macro, and just comment on why we have an
-> > extra atomic_read() that may "appear redundant". Another option could be
-> > to provide a function that checks for "potential waiters" on the mutex.
-> >
-> > Any thoughts?
-> >
+On 06/11/2014 12:21 PM, Sam Ravnborg wrote:
+> On Tue, Jun 10, 2014 at 04:13:04PM -0700, H. Peter Anvin wrote:
+>> After a recent problem in the x86 tree, which seems to be the heaviest
+>> but not the only user of these functions, I went through and did a
+>> patchset to revamp the *user space* unaligned/endian accessor
+>> functions.  As much as I think it is downright pathetic that this
+>> functionality still isn't part of the C standard, that is life and we
+>> have to deal with it.  Furthermore, although glibc has a pretty nice
+>> set of functions for byte swapping in <endian.h>, taken from FreeBSD I
+>> believe, some older systems don't support them.
+>>
+>> This variant tries to fill in all the holes.  It assumes that
+>> <endian.h> define the functions as macros if they exist, as I don't
+>> know any other way of probing for them without reaching for autoconf,
+>> but that should be valid enough of an assumption in this case.
+>>
+>> The hope is that this should give reasonable, if not optimal, code
+>> generation on most processors, and give a hook where arch maintainers
+>> can add their own changes if needed.
 > 
-> For the first MUTEX_SHOW_NO_WAITER() call site, you can replace it with 
-> a check for (count > 0).
-
-Yup, in my v2 patch, the first call site becomes !mutex_is_locked(lock)
-which is really a check for (count == 1).
-
-> The second call site within the for loop, 
-> however, is a bit more tricky. It has to serve 2 purposes:
+> This looks like a very complex solution to a simple problem.
+> We want a shared implementation of the *user space*
+> unaligned/endian accessor functions.
+> But do we really want *fast* versions for our use?
 > 
-> 1. Opportunistically get the lock
-> 2. Set the count value to -1 to indicate someone is waiting on the lock, 
-> that is why an xchg() operation has to be done even if its value is 0.
+> This is not a new libc that should generate optimal code,
+> but only something were we want to provide e working
+> implmentation for use in our user-space tools.
 > 
-> I do agree that the naming isn't that good. Maybe it can be changed to 
-> something like
-> 
-> static inline int mutex_value_has_waiters(mutex *lock)    { return 
-> lock->count < 0; }
+> A much simpler approach without any fallback to arch specific
+> version etc. is everything we need.
 
-So I can imagine that a mutex_value_has_waiters() function might still
-not be a great name, since the mutex can have waiters in the case that
-the value lock->count >= 0.
+It doesn't matter so much for things that are just done for the kernel
+compile, no, but there are some tools that are built to be used as
+standalone things, and it could matter there.
 
-In the second call site, do you think we should just do a direct
-atomic_read(lock->count) >= 0 and comment that we only do the xchg if
-the count is non-negative to avoid unnecessary xchg? That what I did in
-my v2 patch.
+Please note that the code currently doesn't have any arch-specific bits
+at all... the code is somewhat complex in part because it is very
+generic and handles several levels of fallback.  It *can* get
+arch-specific overrides if it matters, but the intent is that it
+shouldn't be necessary in the vast majority of the cases.
 
-Thanks,
-Jason
-
+	-hpa
 
