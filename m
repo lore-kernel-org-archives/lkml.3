@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754857AbaFKS2w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 14:28:52 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:39323 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752436AbaFKS2u convert rfc822-to-8bit (ORCPT
+	id S1755172AbaFKScx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 14:32:53 -0400
+Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:35006 "EHLO
+	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753665AbaFKScv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 14:28:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <00a001cf8586$24eb5c70$6ec21550$@net>
-References: <1402490012-19969-1-git-send-email-stratosk@semaphore.gr>
-	<009b01cf857a$d5032090$7f0961b0$@net>
-	<539862DB.9060905@semaphore.gr>
-	<00a001cf8586$24eb5c70$6ec21550$@net>
-Date: Wed, 11 Jun 2014 20:28:49 +0200
-X-Google-Sender-Auth: 6SoSUNIPPL56nyPmQjHzd4xNrkk
-Message-ID: <CAJZ5v0hEFp8sQH3iB6SUeVVEmdYA6ZK1kvc9NM+7sbS-LTW6nQ@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: intel_pstate: Fix rounding of core_pct
-From: "Rafael J. Wysocki" <rafael@kernel.org>
-To: Doug Smythies <dsmythies@telus.net>
-Cc: Stratos Karafotis <stratosk@semaphore.gr>, linux-pm@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, viresh.kumar@linaro.org,
-        dirk.j.brandewie@intel.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 11 Jun 2014 14:32:51 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AugHAP2fmFNbslCP/2dsb2JhbABagw2rcwUBAQEBAQEFAZkbgQgXdYQxLyOBGjeIRgHQLoVciH0dhCsEj2SKSpNLgz47
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, David Howells <dhowells@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] fs/cachefiles/bind.c: remove unnecessary assertions
+Date: Wed, 11 Jun 2014 20:31:28 +0200
+Message-Id: <1402511488-14334-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 11, 2014 at 5:02 PM, Doug Smythies <dsmythies@telus.net> wrote:
->
-> On 2104.06.11 07:08 Stratos Karafotis wrote:
->> On 11/06/2014 04:41 μμ, Doug Smythies wrote:
->>
->> No.
->>
->> The intent was only ever to round properly the pseudo floating point result of the divide.
->> It was much more important (ugh, well 4 times more) when FRACBITS was still 6, which also got changed to 8 in a recent patch.
->>
->
-> Are you sure?
->
-> Yes.
->
->> This rounding was very recently added.
->> As far as I can understand, I don't see the meaning of this rounding, as is.
->> Even if FRAC_BITS was 6, I think it would have almost no improvement in
->> calculations.
->
-> Note: I had not seen this e-mail when I wrote a few minutes ago:
->
-> You may be correct.
-> If Dirk agrees, I will re-analyse the entire driver for rounding effects soon.
+unsigned values are always >=0
 
-Well, can you please do it if that's not a problem?
+Cc: David Howells <dhowells@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/cachefiles/bind.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-Rafael
+diff --git a/fs/cachefiles/bind.c b/fs/cachefiles/bind.c
+index d749731..dd333a6 100644
+--- a/fs/cachefiles/bind.c
++++ b/fs/cachefiles/bind.c
+@@ -39,13 +39,11 @@ int cachefiles_daemon_bind(struct cachefiles_cache *cache, char *args)
+ 	       args);
+ 
+ 	/* start by checking things over */
+-	ASSERT(cache->fstop_percent >= 0 &&
+-	       cache->fstop_percent < cache->fcull_percent &&
++	ASSERT(cache->fstop_percent < cache->fcull_percent &&
+ 	       cache->fcull_percent < cache->frun_percent &&
+ 	       cache->frun_percent  < 100);
+ 
+-	ASSERT(cache->bstop_percent >= 0 &&
+-	       cache->bstop_percent < cache->bcull_percent &&
++	ASSERT(cache->bstop_percent < cache->bcull_percent &&
+ 	       cache->bcull_percent < cache->brun_percent &&
+ 	       cache->brun_percent  < 100);
+ 
+-- 
+1.8.4.5
+
