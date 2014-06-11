@@ -1,66 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754492AbaFKXx5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 19:53:57 -0400
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:65411 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754244AbaFKXxz (ORCPT
+	id S1754614AbaFKXyP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 19:54:15 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:39605 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753042AbaFKXyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 19:53:55 -0400
+	Wed, 11 Jun 2014 19:54:11 -0400
+Date: Wed, 11 Jun 2014 16:49:02 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: chiluk@canonical.com, Rafael Tinoco <rafael.tinoco@canonical.com>,
+        linux-kernel@vger.kernel.org, davem@davemloft.net,
+        Christopher Arges <chris.j.arges@canonical.com>,
+        Jay Vosburgh <jay.vosburgh@canonical.com>
+Subject: Re: Possible netns creation and execution performance/scalability
+ regression since v3.8 due to rcu callbacks being offloaded to multiple cpus
+Message-ID: <20140611234902.GQ4581@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <CAJE_dJyfq5zWcs2y52siXRruCCA1Dk_=Ds=rZ8BrBZLa7FCbuQ@mail.gmail.com>
+ <20140611133919.GZ4581@linux.vnet.ibm.com>
+ <CAJE_dJwfaUkop=XZxD-BfDPwKDjnfF1bvmD6XWaqVA4Xt2E6bQ@mail.gmail.com>
+ <539879B8.4010204@canonical.com>
+ <20140611161857.GC4581@linux.vnet.ibm.com>
+ <53989F7B.6000004@canonical.com>
+ <874mzr41kf.fsf@x220.int.ebiederm.org>
+ <20140611225228.GO4581@linux.vnet.ibm.com>
+ <87ioo7vy5s.fsf@x220.int.ebiederm.org>
 MIME-Version: 1.0
-In-Reply-To: <20140611230127.GA28066@griso.site>
-References: <20140611230127.GA28066@griso.site>
-Date: Wed, 11 Jun 2014 16:53:55 -0700
-X-Google-Sender-Auth: ppIIVQkZM-_E_i71Ye3uOl8zGo4
-Message-ID: <CANcMJZDqAmdFLYq2LW60zU_d05Pv8tcYE1Nb=ftZcj5UukxqaA@mail.gmail.com>
-Subject: Re: rtc/hctosys.c Problem during kernel boot
-From: John Stultz <john.stultz@linaro.org>
-To: John Whitmore <arigead@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alessandro Zummo <a.zummo@towertech.it>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87ioo7vy5s.fsf@x220.int.ebiederm.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14061123-3532-0000-0000-0000026B24C5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 11, 2014 at 4:01 PM, John Whitmore <arigead@gmail.com> wrote:
-> I'm having a problem with a DS3234 SPI based RTC chip and rtc/hctosys.c on the
-> 3.10.29 kernel of the RaspberryPi. I'm not sure this is a bug or not but
-> thought I'd ask. I've enabled the kernel config option for HCTOSYS which, on
-> boot, should set the system's date/time to the value read from the RTC. I
-> tried tihs but it would never happen on the RPi. I eventually found in syslog
-> that the kernel boot is attempting to execute the hctosys functionality prior
-> to the SPI being initialised. As a result of this when hctosys is attempted
-> there is not /dev/rtc0 yet. A short time later the DS3234 RTC is initialised
-> but by then it's too late.
->
-> Once the system has booted and I've logged in I can read and write to the RTC
-> and all seems good but /sys/class/rtc/rtc0/hctosys is '0' indicating that the
-> system time was not set on boot.
->
-> There is a "deprecated" warning in the syslog coming from the spi of the board
-> file so perhaps that is the cause. So is this a bug? And if so what can I do
-> to resolve it. The hctosys is on a "late_initcall" so not sure of timing.
+On Wed, Jun 11, 2014 at 04:12:15PM -0700, Eric W. Biederman wrote:
+> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> writes:
+> 
+> > On Wed, Jun 11, 2014 at 01:46:08PM -0700, Eric W. Biederman wrote:
+> >> On the chance it is dropping the old nsproxy which calls syncrhonize_rcu
+> >> in switch_task_namespaces that is causing you problems I have attached
+> >> a patch that changes from rcu_read_lock to task_lock for code that
+> >> calls task_nsproxy from a different task.  The code should be safe
+> >> and it should be an unquestions performance improvement but I have only
+> >> compile tested it.
+> >> 
+> >> If you can try the patch it will tell is if the problem is the rcu
+> >> access in switch_task_namespaces (the only one I am aware of network
+> >> namespace creation) or if the problem rcu case is somewhere else.
+> >> 
+> >> If nothing else knowing which rcu accesses are causing the slow down
+> >> seem important at the end of the day.
+> >> 
+> >> Eric
+> >> 
+> >
+> > If this is the culprit, another approach would be to use workqueues from
+> > RCU callbacks.  The following (untested, probably does not even build)
+> > patch illustrates one such approach.
+> 
+> For reference the only reason we are using rcu_lock today for nsproxy is
+> an old lock ordering problem that does not exist anymore.
+> 
+> I can say that in some workloads setns is a bit heavy today because of
+> the synchronize_rcu and setns is more important that I had previously
+> thought because pthreads break the classic unix ability to do things in
+> your process after fork() (sigh).
+> 
+> Today daemonize is gone, and notify the parent process with a signal
+> relies on task_active_pid_ns which does not use nsproxy.  So the old
+> lock ordering problem/race is gone.
+> 
+> The description of what was happening when the code switched from
+> task_lock to rcu_read_lock to protect nsproxy.
 
-Sigh. Yea, this issue was brought up previously, but we never got
-around to a solution that could be merged.
+OK, never mind, then!  ;-)
 
-Basically hctosys is late_init, but if the driver is a module, it
-might not be loaded in time. Adding hooks at module load time when
-RTCs are registered could be done, but then you have the issue that
-userspace might have set the clock via something like ntpdate, so
-HCTOSYS could then cause the clock to be less accurate.
+							Thanx, Paul
 
-So we need to make the HCTOSYS functionality happen at RTC register
-time, but it needs to set the clock only if nothing has set the clock
-already. This requires a new timekeeeping interface - something like
-timekeeping_set_time_if_unset(), which atomically would set the time
-if it has never been set.
+> commit cf7b708c8d1d7a27736771bcf4c457b332b0f818
+> Author: Pavel Emelyanov <xemul@openvz.org>
+> Date:   Thu Oct 18 23:39:54 2007 -0700
+> 
+>     Make access to task's nsproxy lighter
+>     
+>     When someone wants to deal with some other taks's namespaces it has to lock
+>     the task and then to get the desired namespace if the one exists.  This is
+>     slow on read-only paths and may be impossible in some cases.
+>     
+>     E.g.  Oleg recently noticed a race between unshare() and the (sent for
+>     review in cgroups) pid namespaces - when the task notifies the parent it
+>     has to know the parent's namespace, but taking the task_lock() is
+>     impossible there - the code is under write locked tasklist lock.
+>     
+>     On the other hand switching the namespace on task (daemonize) and releasing
+>     the namespace (after the last task exit) is rather rare operation and we
+>     can sacrifice its speed to solve the issues above.
+>     
+>     The access to other task namespaces is proposed to be performed
+>     like this:
+>     
+>          rcu_read_lock();
+>          nsproxy = task_nsproxy(tsk);
+>          if (nsproxy != NULL) {
+>                  / *
+>                    * work with the namespaces here
+>                    * e.g. get the reference on one of them
+>                    * /
+>          } / *
+>              * NULL task_nsproxy() means that this task is
+>              * almost dead (zombie)
+>              * /
+>          rcu_read_unlock();
+>     
+>     This patch has passed the review by Eric and Oleg :) and,
+>     of course, tested.
+>     
+>     [clg@fr.ibm.com: fix unshare()]
+>     [ebiederm@xmission.com: Update get_net_ns_by_pid]
+>     Signed-off-by: Pavel Emelyanov <xemul@openvz.org>
+>     Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+>     Cc: Oleg Nesterov <oleg@tv-sign.ru>
+>     Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>     Cc: Serge Hallyn <serue@us.ibm.com>
+>     Signed-off-by: Cedric Le Goater <clg@fr.ibm.com>
+>     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+>     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> 
+> Eric
+> 
 
-You can read some of the previous discussion here:
-https://lkml.org/lkml/2013/6/17/533
-
-I'd be very interested in patches to resolve this!
-
-thanks
--john
