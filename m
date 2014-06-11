@@ -1,283 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753909AbaFKXtk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 19:49:40 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:44167 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751898AbaFKXti (ORCPT
+	id S1754280AbaFKXxz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 19:53:55 -0400
+Received: from www.linutronix.de ([62.245.132.108]:35963 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752269AbaFKXxy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 19:49:38 -0400
-X-Original-SENDERIP: 10.177.220.169
-X-Original-MAILFROM: minchan@kernel.org
-Date: Thu, 12 Jun 2014 08:49:45 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>, Mel Gorman <mgorman@suse.de>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 02/10] mm, compaction: report compaction as contended
- only due to lock contention
-Message-ID: <20140611234944.GA12415@bbox>
-References: <1402305982-6928-1-git-send-email-vbabka@suse.cz>
- <1402305982-6928-2-git-send-email-vbabka@suse.cz>
- <20140611011019.GC15630@bbox>
- <53984A06.6020607@suse.cz>
+	Wed, 11 Jun 2014 19:53:54 -0400
+Date: Thu, 12 Jun 2014 01:53:49 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: John Stultz <john.stultz@linaro.org>
+cc: Sasha Levin <sasha.levin@oracle.com>, LKML <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: timekeeping: exiting task with held timekeeping locks
+In-Reply-To: <CALAqxLWa-ZrL48ZooecxqHRg91mPc4ju-5k5b3cQqqHdJp+ptA@mail.gmail.com>
+Message-ID: <alpine.DEB.2.10.1406120150360.5170@nanos>
+References: <5398E07C.6030107@oracle.com> <CALAqxLWa-ZrL48ZooecxqHRg91mPc4ju-5k5b3cQqqHdJp+ptA@mail.gmail.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53984A06.6020607@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 11, 2014 at 02:22:30PM +0200, Vlastimil Babka wrote:
-> On 06/11/2014 03:10 AM, Minchan Kim wrote:
-> >On Mon, Jun 09, 2014 at 11:26:14AM +0200, Vlastimil Babka wrote:
-> >>Async compaction aborts when it detects zone lock contention or need_resched()
-> >>is true. David Rientjes has reported that in practice, most direct async
-> >>compactions for THP allocation abort due to need_resched(). This means that a
-> >>second direct compaction is never attempted, which might be OK for a page
-> >>fault, but hugepaged is intended to attempt a sync compaction in such case and
-> >>in these cases it won't.
-> >>
-> >>This patch replaces "bool contended" in compact_control with an enum that
-> >>distinguieshes between aborting due to need_resched() and aborting due to lock
-> >>contention. This allows propagating the abort through all compaction functions
-> >>as before, but declaring the direct compaction as contended only when lock
-> >>contantion has been detected.
-> >>
-> >>As a result, hugepaged will proceed with second sync compaction as intended,
-> >>when the preceding async compaction aborted due to need_resched().
+On Wed, 11 Jun 2014, John Stultz wrote:
+> On Wed, Jun 11, 2014 at 4:04 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
+> > Hi all,
 > >
-> >You said "second direct compaction is never attempted, which might be OK
-> >for a page fault" and said "hugepagd is intented to attempt a sync compaction"
-> >so I feel you want to handle khugepaged so special unlike other direct compact
-> >(ex, page fault).
-> 
-> Well khugepaged is my primary concern, but I imagine there are other
-> direct compaction users besides THP page fault and khugepaged.
-> 
-> >By this patch, direct compaction take care only lock contention, not rescheduling
-> >so that pop questions.
+> > While fuzzing with trinity inside a KVM tools guest running the latest -next
+> > kernel I've stumbled on the following spew:
 > >
-> >Is it okay not to consider need_resched in direct compaction really?
+> > [ 3460.136058] =====================================
+> > [ 3460.138017] [ BUG: trinity-c70/27193 still has locks held! ]
+> > [ 3460.141491] 3.15.0-next-20140611-sasha-00022-g9466d2f-dirty #638 Not tainted
+> > [ 3460.143219] -------------------------------------
+> > [ 3460.167979] 2 locks held by trinity-c70/27193:
+> > [ 3460.169172] #0: (tick_broadcast_lock){-.-.-.}, at: tick_handle_periodic_broadcast (kernel/time/tick-broadcast.c:301)
+> > [ 3460.468004] #1: (timekeeper_lock){-.-.-.}, at: update_wall_time (kernel/time/timekeeping.c:1371)
+> > [ 3460.920025]
+> > [ 3460.920025] stack backtrace:
+> > [ 3460.928146] CPU: 0 PID: 27193 Comm: trinity-c70 Not tainted 3.15.0-next-20140611-sasha-00022-g9466d2f-dirty #638
+> > [ 3460.928648] can: request_module (can-proto-3) failed.
+> > [ 3460.943111]  ffff8800576ef4c8 ffff8800576efc88 ffffffffa551093c 0000000000000001
+> > [ 3460.962511]  ffff880056f9b000 ffff8800576efca8 ffffffffa21c6a43 ffff880056f9bbe8
+> > [ 3461.007184]  ffff880056f9bbe8 ffff8800576efd48
+> > [ 3461.017661] can: request_module (can-proto-0) failed.
+> > [ 3461.045536]  ffffffffa21636ea ffff8800576efcc8
+> > [ 3461.170992] Call Trace:
+> > [ 3461.174122] dump_stack (lib/dump_stack.c:52)
+> > [ 3461.558864] debug_check_no_locks_held (kernel/locking/lockdep.c:4107 kernel/locking/lockdep.c:4113)
+> > [ 3461.577066] do_exit (kernel/exit.c:796)
+> > [ 3461.592523] ? debug_smp_processor_id (lib/smp_processor_id.c:57)
+> > [ 3461.629067] ? _raw_spin_unlock_irq (./arch/x86/include/asm/paravirt.h:819 include/linux/spinlock_api_smp.h:168 kernel/locking/spinlock.c:199)
+> > [ 3461.671525] do_group_exit (kernel/exit.c:884)
+> > [ 3461.717091] get_signal_to_deliver (kernel/signal.c:2347)
+> > [ 3461.724142] ? vtime_account_user (kernel/sched/cputime.c:687)
+> > [ 3461.800505] do_signal (arch/x86/kernel/signal.c:698)
+> > [ 3461.808792] ? vtime_account_user (kernel/sched/cputime.c:687)
+> > [ 3461.812780] ? preempt_count_sub (kernel/sched/core.c:2602)
+> > [ 3461.824601] ? context_tracking_user_exit (./arch/x86/include/asm/paravirt.h:809 (discriminator 2) kernel/context_tracking.c:182 (discriminator 2))
+> > [ 3461.827619] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+> > [ 3461.831486] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2557 kernel/locking/lockdep.c:2599)
+> > [ 3461.841516] do_notify_resume (arch/x86/kernel/signal.c:751)
+> > [ 3461.847056] retint_signal (arch/x86/kernel/entry_64.S:921)
 > 
-> It still considers need_resched() to back of from async compaction.
-> It's only about signaling contended_compaction back to
-> __alloc_pages_slowpath(). There's this code executed after the
-> first, async compaction fails:
 > 
-> /*
->  * It can become very expensive to allocate transparent hugepages at
->  * fault, so use asynchronous memory compaction for THP unless it is
->  * khugepaged trying to collapse.
->  */
-> if (!(gfp_mask & __GFP_NO_KSWAPD) || (current->flags & PF_KTHREAD))
->         migration_mode = MIGRATE_SYNC_LIGHT;
+> Huh.. Got me.. I don't see how the task can get out of
+> update_wall_time() w/o releasing the timekeeper_lock. Same with the
+> tick_broadcast_lock.  Does this happen all the time or was this a
+> one-off?
 > 
-> /*
->  * If compaction is deferred for high-order allocations, it is because
->  * sync compaction recently failed. In this is the case and the caller
->  * requested a movable allocation that does not heavily disrupt the
->  * system then fail the allocation instead of entering direct reclaim.
->  */
-> if ((deferred_compaction || contended_compaction) &&
->                                         (gfp_mask & __GFP_NO_KSWAPD))
->         goto nopage;
-> 
-> Both THP page fault and khugepaged use __GFP_NO_KSWAPD. The first
-> if() decides whether the second attempt will be sync (for
-> khugepaged) or async (page fault). The second if() decides that if
-> compaction was contended, then there won't be any second attempt
-> (and reclaim) at all. Counting need_resched() as contended in this
-> case is bad for khugepaged. Even for page fault it means no direct
+> Peter/Ingo: Am I misinterpreting what this warning is saying?
 
-I agree khugepaged shouldn't count on need_resched, even lock contention
-because it was a result from admin's decision.
-If it hurts system performance, he should adjust knobs for khugepaged.
+Yuck. I have no idea how timekeeper_lock, which was acquired from
+update_wall_time can be held by a user space task.
 
-> reclaim and a second async compaction. David says need_resched()
-> occurs so often then it is a poor heuristic to decide this.
+update_wall_time is only called from timer interrupt context.
 
-But page fault is a bit different. Inherently, high-order allocation
-(ie, above PAGE_ALLOC_COSTLY_ORDER) is fragile so all of the caller
-shoud keep in mind that and prepare second plan(ex, 4K allocation)
-so direct reclaim/compaction should take care of latency rather than
-success ratio.
+Same for tick_broadcast_lock which was acquired from
+tick_handle_periodic_broadcast(). Broadcast timer interrupt context as
+well.
 
-If need_resched in second attempt(ie, synchronous compaction) is almost
-true, it means the process consumed his timeslice so it shouldn't be
-greedy and gives a CPU resource to others.
-I don't mean we should abort but the process could sleep and retry.
-The point is that we should give latency pain to the process request
-high-order alocation, not another random process.
+Confused
 
-IMHO, if we want to increase high-order alloc ratio in page fault,
-kswapd should be more aggressive than now via feedback loop from
-fail rate from direct compaction.
-
-> 
-> >We have taken care of it in direct reclaim path so why direct compaction is
-> >so special?
-> 
-> I admit I'm not that familiar with reclaim but I didn't quickly find
-> any need_resched() there? There's plenty of cond_resched() but that
-> doesn't mean it will abort? Could you explain for me?
-
-I meant cond_resched.
-
-> 
-> >Why does khugepaged give up easily if lock contention/need_resched happens?
-> >khugepaged is important for success ratio as I read your description so IMO,
-> >khugepaged should do synchronously without considering early bail out by
-> >lock/rescheduling.
-> 
-> Well a stupid answer is that's how __alloc_pages_slowpath() works :)
-> I don't think it's bad to try using first a more lightweight
-> approach before trying the heavyweight one. As long as the
-> heavyweight one is not skipped for khugepaged.
-
-I'm not saying current two-stage trying is bad. My stand is that we should
-take care of need_resched and shouldn't become a greedy but khugepaged would
-be okay.
-
-> 
-> >If it causes problems, user should increase scan_sleep_millisecs/alloc_sleep_millisecs,
-> >which is exactly the knob for that cases.
-> >
-> >So, my point is how about making khugepaged doing always dumb synchronous
-> >compaction thorough PG_KHUGEPAGED or GFP_SYNC_TRANSHUGE?
-> >
-> >>
-> >>Reported-by: David Rientjes <rientjes@google.com>
-> >>Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-> >>Cc: Minchan Kim <minchan@kernel.org>
-> >>Cc: Mel Gorman <mgorman@suse.de>
-> >>Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> >>Cc: Michal Nazarewicz <mina86@mina86.com>
-> >>Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> >>Cc: Christoph Lameter <cl@linux.com>
-> >>Cc: Rik van Riel <riel@redhat.com>
-> >>---
-> >>  mm/compaction.c | 20 ++++++++++++++------
-> >>  mm/internal.h   | 15 +++++++++++----
-> >>  2 files changed, 25 insertions(+), 10 deletions(-)
-> >>
-> >>diff --git a/mm/compaction.c b/mm/compaction.c
-> >>index b73b182..d37f4a8 100644
-> >>--- a/mm/compaction.c
-> >>+++ b/mm/compaction.c
-> >>@@ -185,9 +185,14 @@ static void update_pageblock_skip(struct compact_control *cc,
-> >>  }
-> >>  #endif /* CONFIG_COMPACTION */
-> >>
-> >>-static inline bool should_release_lock(spinlock_t *lock)
-> >>+enum compact_contended should_release_lock(spinlock_t *lock)
-> >>  {
-> >>-	return need_resched() || spin_is_contended(lock);
-> >>+	if (need_resched())
-> >>+		return COMPACT_CONTENDED_SCHED;
-> >>+	else if (spin_is_contended(lock))
-> >>+		return COMPACT_CONTENDED_LOCK;
-> >>+	else
-> >>+		return COMPACT_CONTENDED_NONE;
-> >>  }
-> >>
-> >>  /*
-> >>@@ -202,7 +207,9 @@ static inline bool should_release_lock(spinlock_t *lock)
-> >>  static bool compact_checklock_irqsave(spinlock_t *lock, unsigned long *flags,
-> >>  				      bool locked, struct compact_control *cc)
-> >>  {
-> >>-	if (should_release_lock(lock)) {
-> >>+	enum compact_contended contended = should_release_lock(lock);
-> >>+
-> >>+	if (contended) {
-> >>  		if (locked) {
-> >>  			spin_unlock_irqrestore(lock, *flags);
-> >>  			locked = false;
-> >>@@ -210,7 +217,7 @@ static bool compact_checklock_irqsave(spinlock_t *lock, unsigned long *flags,
-> >>
-> >>  		/* async aborts if taking too long or contended */
-> >>  		if (cc->mode == MIGRATE_ASYNC) {
-> >>-			cc->contended = true;
-> >>+			cc->contended = contended;
-> >>  			return false;
-> >>  		}
-> >>
-> >>@@ -236,7 +243,7 @@ static inline bool compact_should_abort(struct compact_control *cc)
-> >>  	/* async compaction aborts if contended */
-> >>  	if (need_resched()) {
-> >>  		if (cc->mode == MIGRATE_ASYNC) {
-> >>-			cc->contended = true;
-> >>+			cc->contended = COMPACT_CONTENDED_SCHED;
-> >>  			return true;
-> >>  		}
-> >>
-> >>@@ -1095,7 +1102,8 @@ static unsigned long compact_zone_order(struct zone *zone, int order,
-> >>  	VM_BUG_ON(!list_empty(&cc.freepages));
-> >>  	VM_BUG_ON(!list_empty(&cc.migratepages));
-> >>
-> >>-	*contended = cc.contended;
-> >>+	/* We only signal lock contention back to the allocator */
-> >>+	*contended = cc.contended == COMPACT_CONTENDED_LOCK;
-> >>  	return ret;
-> >>  }
-> >>
-> >>diff --git a/mm/internal.h b/mm/internal.h
-> >>index 7f22a11f..4659e8e 100644
-> >>--- a/mm/internal.h
-> >>+++ b/mm/internal.h
-> >>@@ -117,6 +117,13 @@ extern int user_min_free_kbytes;
-> >>
-> >>  #if defined CONFIG_COMPACTION || defined CONFIG_CMA
-> >>
-> >>+/* Used to signal whether compaction detected need_sched() or lock contention */
-> >>+enum compact_contended {
-> >>+	COMPACT_CONTENDED_NONE = 0, /* no contention detected */
-> >>+	COMPACT_CONTENDED_SCHED,    /* need_sched() was true */
-> >>+	COMPACT_CONTENDED_LOCK,     /* zone lock or lru_lock was contended */
-> >>+};
-> >>+
-> >>  /*
-> >>   * in mm/compaction.c
-> >>   */
-> >>@@ -144,10 +151,10 @@ struct compact_control {
-> >>  	int order;			/* order a direct compactor needs */
-> >>  	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
-> >>  	struct zone *zone;
-> >>-	bool contended;			/* True if a lock was contended, or
-> >>-					 * need_resched() true during async
-> >>-					 * compaction
-> >>-					 */
-> >>+	enum compact_contended contended; /* Signal need_sched() or lock
-> >>+					   * contention detected during
-> >>+					   * compaction
-> >>+					   */
-> >>  };
-> >>
-> >>  unsigned long
-> >>--
-> >>1.8.4.5
-> >>
-> >>--
-> >>To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> >>the body to majordomo@kvack.org.  For more info on Linux MM,
-> >>see: http://www.linux-mm.org/ .
-> >>Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> >
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
+	tglx
