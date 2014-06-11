@@ -1,45 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752840AbaFKTo6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 15:44:58 -0400
-Received: from asavdk3.altibox.net ([109.247.116.14]:41637 "EHLO
-	asavdk3.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751220AbaFKTo4 (ORCPT
+	id S1752880AbaFKTpd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 15:45:33 -0400
+Received: from asavdk4.altibox.net ([109.247.116.15]:38128 "EHLO
+	asavdk4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750963AbaFKTpc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 15:44:56 -0400
-Date: Wed, 11 Jun 2014 21:44:52 +0200
+	Wed, 11 Jun 2014 15:45:32 -0400
+Date: Wed, 11 Jun 2014 21:45:28 +0200
 From: Sam Ravnborg <sam@ravnborg.org>
 To: Andy Lutomirski <luto@amacapital.net>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Josh Boyer <jwboyer@fedoraproject.org>,
         Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
         "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86,build: Fix make -jN modules_install install
-Message-ID: <20140611194452.GA25049@ravnborg.org>
-References: <37910a32e3d223a688a2743376bdde8fbdc8ef5c.1402515662.git.luto@amacapital.net>
+Subject: Re: [PATCH v2] x86,vdso: Fix vdso_install
+Message-ID: <20140611194528.GB25049@ravnborg.org>
+References: <sam@ravnborg.org>
+ <5d5e221e59be20a3a7ceb99452e74e233383e7b4.1402514715.git.luto@amacapital.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <37910a32e3d223a688a2743376bdde8fbdc8ef5c.1402515662.git.luto@amacapital.net>
+In-Reply-To: <5d5e221e59be20a3a7ceb99452e74e233383e7b4.1402514715.git.luto@amacapital.net>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 11, 2014 at 12:41:57PM -0700, Andy Lutomirski wrote:
-> Every few months, I forget why I type:
+On Wed, Jun 11, 2014 at 12:25:29PM -0700, Andy Lutomirski wrote:
+> The filenames are different now.  Inspired by a patch from
+> Sam Ravnborg.
 > 
-> $ sudo make -j12 modules_install && sudo make -j12 install
-> 
-> instead of just:
-> 
-> $ sudo make -j12 modules_install install
-> 
-> I try the latter, it appears to work, and then my machine won't boot
-> because dracut got confused.  This fixes it once and for all: if you
-> ask make to install modules and a kernel, you almost certainly want
-> the modules installed *first* so that your initramfs scripts can
-> find the modules.
+> Reported-by: Josh Boyer <jwboyer@fedoraproject.org>
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 
-Is this problem x86 specific?
+Better than the first version - thanks!
+
+Acked-by: Sam Ravnborg <sam@ravnborg.org>
 
 	Sam
