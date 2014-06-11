@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755915AbaFKPq5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 11:46:57 -0400
-Received: from mga02.intel.com ([134.134.136.20]:61109 "EHLO mga02.intel.com"
+	id S1755943AbaFKPrG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 11:47:06 -0400
+Received: from mga03.intel.com ([143.182.124.21]:11606 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755761AbaFKPq4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 11:46:56 -0400
+	id S1755761AbaFKPrE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 11:47:04 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,458,1400050800"; 
-   d="scan'208";a="526892959"
+   d="scan'208";a="444332103"
 From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
@@ -17,9 +17,9 @@ Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
         Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
         Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: [RFC v2 4/7] perf: add a capability for AUX_NO_SG pmus to do software double buffering
-Date: Wed, 11 Jun 2014 18:41:47 +0300
-Message-Id: <1402501310-31940-5-git-send-email-alexander.shishkin@linux.intel.com>
+Subject: [RFC v2 3/7] perf: support high-order allocations for AUX space
+Date: Wed, 11 Jun 2014 18:41:46 +0300
+Message-Id: <1402501310-31940-4-git-send-email-alexander.shishkin@linux.intel.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1402501310-31940-1-git-send-email-alexander.shishkin@linux.intel.com>
 References: <1402501310-31940-1-git-send-email-alexander.shishkin@linux.intel.com>
@@ -27,57 +27,117 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For pmus that don't support scatter-gather for AUX data in hardware, it
-might still make sense to implement software double buffering to avoid
-losing data while the user is reading data out. For this purpose, add
-a pmu capability that guarantees multiple high-order chunks for AUX buffer,
-so that the pmu driver can do switchover tricks.
+Some pmus (such as BTS or Intel PT without multiple-entry ToPA capability)
+don't support scatter-gather and will prefer larger contiguous areas for
+their output regions.
+
+This patch adds a new pmu capability to request higher order allocations.
 
 Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 ---
  include/linux/perf_event.h  |  1 +
- kernel/events/ring_buffer.c | 14 +++++++++++++-
- 2 files changed, 14 insertions(+), 1 deletion(-)
+ kernel/events/ring_buffer.c | 51 +++++++++++++++++++++++++++++++++++++++------
+ 2 files changed, 46 insertions(+), 6 deletions(-)
 
 diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index b316971..3d68411 100644
+index 75b9e6d..b316971 100644
 --- a/include/linux/perf_event.h
 +++ b/include/linux/perf_event.h
-@@ -276,6 +276,7 @@ struct pmu {
+@@ -275,6 +275,7 @@ struct pmu {
+  * struct pmu::capabilities flags
   */
  #define PERF_PMU_CAP_NO_INTERRUPT	1
- #define PERF_PMU_CAP_AUX_NO_SG		2
-+#define PERF_PMU_CAP_AUX_SW_DOUBLEBUF	4
++#define PERF_PMU_CAP_AUX_NO_SG		2
  
  /**
   * enum perf_event_active_state - the states of a event
 diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
-index e66ed76..43571ac 100644
+index ed259a4..e66ed76 100644
 --- a/kernel/events/ring_buffer.c
 +++ b/kernel/events/ring_buffer.c
-@@ -286,9 +286,21 @@ int rb_alloc_aux(struct ring_buffer *rb, struct perf_event *event,
+@@ -242,29 +242,68 @@ ring_buffer_init(struct ring_buffer *rb, long watermark, int flags)
+ 	spin_lock_init(&rb->event_lock);
+ }
+ 
++#define PERF_AUX_GFP	(GFP_KERNEL | __GFP_ZERO | __GFP_NOWARN | __GFP_NORETRY)
++
++static struct page *rb_alloc_aux_page(int node, int order)
++{
++	struct page *page;
++
++	if (order > MAX_ORDER)
++		order = MAX_ORDER;
++
++	do {
++		page = alloc_pages_node(node, PERF_AUX_GFP, order);
++	} while (!page && order--);
++
++	if (page && order) {
++		/*
++		 * Communicate the allocation size to the driver
++		 */
++		split_page(page, order);
++		SetPagePrivate(page);
++		set_page_private(page, order);
++	}
++
++	return page;
++}
++
++static void rb_free_aux_page(struct ring_buffer *rb, int idx)
++{
++	struct page *page = virt_to_page(rb->aux_pages[idx]);
++
++	ClearPagePrivate(page);
++	page->mapping = NULL;
++	__free_page(page);
++}
++
+ int rb_alloc_aux(struct ring_buffer *rb, struct perf_event *event,
+ 		 pgoff_t pgoff, int nr_pages, int flags)
+ {
+ 	bool overwrite = !!(flags & RING_BUFFER_WRITABLE);
+ 	int node = (event->cpu == -1) ? -1 : cpu_to_node(event->cpu);
+-	int ret = -ENOMEM;
++	int ret = -ENOMEM, order = 0;
+ 
  	if (!has_aux(event))
  		return -ENOTSUPP;
  
--	if (event->pmu->capabilities & PERF_PMU_CAP_AUX_NO_SG)
-+	if (event->pmu->capabilities & PERF_PMU_CAP_AUX_NO_SG) {
- 		order = get_order(nr_pages * PAGE_SIZE);
- 
-+		/*
-+		 * PMU requests more than one contiguous chunks of memory
-+		 * for SW double buffering
-+		 */
-+		if (event->pmu->capabilities & PERF_PMU_CAP_AUX_SW_DOUBLEBUF) {
-+			if (!order)
-+				return -EINVAL;
-+
-+			order--;
-+		}
-+	}
++	if (event->pmu->capabilities & PERF_PMU_CAP_AUX_NO_SG)
++		order = get_order(nr_pages * PAGE_SIZE);
 +
  	rb->aux_pages = kzalloc_node(nr_pages * sizeof(void *), GFP_KERNEL, node);
  	if (!rb->aux_pages)
  		return -ENOMEM;
+ 
+-	for (rb->aux_nr_pages = 0; rb->aux_nr_pages < nr_pages;
+-	     rb->aux_nr_pages++) {
++	for (rb->aux_nr_pages = 0; rb->aux_nr_pages < nr_pages;) {
+ 		struct page *page;
++		int last;
+ 
+-		page = alloc_pages_node(node, GFP_KERNEL | __GFP_ZERO, 0);
++		page = rb_alloc_aux_page(node, order);
+ 		if (!page)
+ 			goto out;
+ 
+-		rb->aux_pages[rb->aux_nr_pages] = page_address(page);
++		for (last = rb->aux_nr_pages + (1 << page_private(page));
++		     last > rb->aux_nr_pages; rb->aux_nr_pages++)
++			rb->aux_pages[rb->aux_nr_pages] = page_address(page++);
+ 	}
+ 
+ 	rb->aux_priv = event->pmu->setup_aux(event->cpu, rb->aux_pages, nr_pages,
+@@ -289,7 +328,7 @@ void rb_free_aux(struct ring_buffer *rb, struct perf_event *event)
+ 		event->pmu->free_aux(rb->aux_priv);
+ 
+ 	for (pg = 0; pg < rb->aux_nr_pages; pg++)
+-		free_page((unsigned long)rb->aux_pages[pg]);
++		rb_free_aux_page(rb, pg);
+ 
+ 	kfree(rb->aux_pages);
+ 	rb->aux_nr_pages = 0;
 -- 
 2.0.0
 
