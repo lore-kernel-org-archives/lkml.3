@@ -1,49 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755868AbaFKPjN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 11:39:13 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:43190 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755297AbaFKPjL convert rfc822-to-8bit (ORCPT
+	id S1755885AbaFKPkl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 11:40:41 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:33197 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752163AbaFKPkj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 11:39:11 -0400
-Date: Wed, 11 Jun 2014 08:39:07 -0700
+	Wed, 11 Jun 2014 11:40:39 -0400
+Date: Wed, 11 Jun 2014 08:40:36 -0700
 From: Stephen Hemminger <stephen@networkplumber.org>
-To: nicolas.dichtel@6wind.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [ANNOUNCE] iproute2 3.15.0 release
-Message-ID: <20140611083907.3a3cab96@nehalam.linuxnetplumber.net>
-In-Reply-To: <53986B68.5020401@6wind.com>
-References: <20140610103712.57d0b1ad@nehalam.linuxnetplumber.net>
-	<53986B68.5020401@6wind.com>
+To: Dmitry Popov <ixaphire@qrator.net>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        trivial@kernel.org
+Subject: Re: [PATCH] ip_vti: fix sparse warnings for VTI_ISVTI
+Message-ID: <20140611084036.11f234f0@nehalam.linuxnetplumber.net>
+In-Reply-To: <20140611160215.7b0fbe7c4f42cf02b5496852@qrator.net>
+References: <20140611150914.c3cb48bb8a1a760564f5db6e@qrator.net>
+	<20140611160215.7b0fbe7c4f42cf02b5496852@qrator.net>
 X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Jun 2014 16:44:56 +0200
-Nicolas Dichtel <nicolas.dichtel@6wind.com> wrote:
+On Wed, 11 Jun 2014 16:02:15 +0400
+Dmitry Popov <ixaphire@qrator.net> wrote:
 
-> Le 10/06/2014 19:37, Stephen Hemminger a écrit :
-> > Time for the release of iproute2 for 3.15
-> >
-> > The main new features are:
-> >    * ss gets more attention
-> >    * Support for HHF qdisc
-> >    * Updates to bridge command
-> >    * Lots of vxlan related changes
-> >    * Lots of little corrections and build fixes
-> >
-> > Source:
-> >    http://www.kernel.org/pub/linux/utils/net/iproute2/iproute2-3.15.0.tar.gz
-> >
-> > Repository:
-> >    git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git
-> It seems that you have pushed the tag, but not the tagged commit
-> (ce7aff3b8d0bb55321af2dbaa2f911319fdcc76b). In fact, I don't see the tag in the
-> branch master.
+> On Wed, 11 Jun 2014 15:09:14 +0400
+> Dmitry Popov <ixaphire@qrator.net> wrote:
+> 
+> > 
+> > Since VTI_ISVTI is always used with ip_tunnel_parm->i_flags (which is __be16),
+> > we can __force cast VTI_ISVTI to __be16 in header file.
+> > 
+> 
+> If this patch is okay I will submit it to iproute2 too. if_tunnel.h has to be
+> synced.
 
-try now
+don't bother with iproute2 patch. I periodically resync sanitized headers from
+kernel to iproute2.
