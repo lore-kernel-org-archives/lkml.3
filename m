@@ -1,44 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755590AbaFKMw4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 08:52:56 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:37212 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753692AbaFKMwz (ORCPT
+	id S1755460AbaFKMz1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 08:55:27 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:56734 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750929AbaFKMzZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 08:52:55 -0400
+	Wed, 11 Jun 2014 08:55:25 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Pranith Kumar <pranith@gatech.edu>
+Subject: Re: [PATCH 1/1] define generic version of cmpxchg{64} only if not, previously defined
+Date: Wed, 11 Jun 2014 14:55:16 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <5390EAAC.5070601@gatech.edu>
+In-Reply-To: <5390EAAC.5070601@gatech.edu>
 MIME-Version: 1.0
-In-Reply-To: <1401700213-11917-1-git-send-email-srinivas.kandagatla@linaro.org>
-References: <1401699818-11329-1-git-send-email-srinivas.kandagatla@linaro.org>
-	<1401700213-11917-1-git-send-email-srinivas.kandagatla@linaro.org>
-Date: Wed, 11 Jun 2014 14:52:54 +0200
-Message-ID: <CACRpkdYwe7Tge2HsK=pDiG3s1HwJFmYvT0DXo6btMzxmBW+3gw@mail.gmail.com>
-Subject: Re: [PATCH v6 12/12] mmc: mmci: Add Qualcomm Id to amba id table
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Chris Ball <chris@printf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201406111455.16343.arnd@arndb.de>
+X-Provags-ID: V02:K0:BiJDs4JoosMAc6jtoa0hY0uakHVK6FaW3Zs1beErEuw
+ nRGNF5xtqu9IL1Bl3Tn0wWXuDFp/q52HdR6ucnN7CtxlHqByJJ
+ ohn2UvRtV0tDD37cY8Dz4OObqL4hNqnETWxFaY5BY1rVlcIZWA
+ 3aSK5GEpY2xloJRWknfE6zZf3B5Us3BwTco6LsLXpepX5uJ0Vw
+ 2AbgOZ4pIgntCL7k9ZBLbPgywLQsS1W96VwHbCpzMEP8IMe4aq
+ 1YDWLDxhaSRhIqpOpFcnSG5spB45XjVBvzOf8kKO/BKoGgKw9j
+ zrSyTpnk5XWczDlQCz3oNRL9Er/J+DmUCLjYCS7qGHh1M0UDjB
+ Z8A7JmT05hbQ+PsnhJxE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 2, 2014 at 11:10 AM,  <srinivas.kandagatla@linaro.org> wrote:
+On Friday 06 June 2014, Pranith Kumar wrote:
+> 
+> define generic versions of cmpxchg{64} only if not previously defined.
+> 
+> This makes these definition in-line to other definitions of generic versions
+> 
+> 
+> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 
-> From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
->
-> This patch adds a fake Qualcomm ID 0x00051180 to the amba_ids, as Qualcomm
-> SDCC controller is pl180, but amba id registers read 0x0's.
-> The plan is to remove SDCC driver totally and use mmci as the main SD
-> controller driver for Qualcomm SOCs.
->
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+I assume  you have a patch that depends on this. Please queue up this first
+patch in the same series as the one that needs it.
 
-Yours,
-Linus Walleij
+	Arnd
