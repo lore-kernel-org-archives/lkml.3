@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755361AbaFKFFR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 01:05:17 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:47959 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751154AbaFKFFQ (ORCPT
+	id S1755201AbaFKFJG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 01:09:06 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:50348 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750821AbaFKFJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 01:05:16 -0400
-From: A Raghavendra Rao <raghav3276@gmail.com>
-X-Google-Original-From: A Raghavendra Rao <arrao@cdac.in>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        A Raghavendra Rao <arrao@cdac.in>
-Subject: [PATCH] Staging: rtl8192e: dot11d: Fixed printk coding style issues
-Date: Wed, 11 Jun 2014 10:28:58 +0530
-Message-Id: <1402462738-15969-1-git-send-email-arrao@cdac.in>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 11 Jun 2014 01:09:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140611041243.GA1475@brightrain.aerifal.cx>
+References: <20140611041243.GA1475@brightrain.aerifal.cx>
+From: Michael Kerrisk <mtk.manpages@gmail.com>
+Date: Wed, 11 Jun 2014 07:08:43 +0200
+X-Google-Sender-Auth: Gruw7OwVcp1q87KCa4wM4g9OPRM
+Message-ID: <CAHO5Pa2WJJS0um6mVo-DaeR3rw7z_Ayc8ZYbyVdd-_dFc4zRgQ@mail.gmail.com>
+Subject: Re: recvmmsg/sendmmsg result types inconsistent, integer overflows?
+To: Rich Felker <dalias@libc.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, acme@kernel.org,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
+        Anton Blanchard <anton@samba.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replaced 'printk' with 'netdev_' function
+[adding developers of the two syscalls to CC; maybe they have some insights.]
 
-Signed-off-by: A Raghavendra Rao <arrao@cdac.in>
----
- drivers/staging/rtl8192e/dot11d.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+On Wed, Jun 11, 2014 at 6:12 AM, Rich Felker <dalias@libc.org> wrote:
+> While looking to add support for the recvmmsg and sendmmsg syscalls in
+> musl libc, I ran into some disturbing findings on the kernel side. In
+> the struct mmsghdr, the field where the result for each message is
+> stored has type int, which is inconsistent with the return type
+> ssize_t of recvmsg/sendmsg. So I tried to track down what happens when
+> the result is or would be larger than 2GB, and quickly found an
+> explanation for why the type in the structure was defined wrong:
+> internally, the kernel uses int as the return type for revcmsg and
+> sendmsg. Oops.
+>
+> A bit more RTFS'ing brought me to tcp_sendmsg in net/ipv4/tcp.c (I
+> figured let's look at a stream-based protocol, since datagrams can
+> likely never be that big for any existing protocol), and as far as I
+> can tell, it's haphazardly mixing int and size_t with no checks for
+> overflows. I looked for anywhere the kernel might try to verify before
+> starting that the sum of the lengths of all the iovec components
+> doesn't overflow INT_MAX or even SIZE_MAX, but didn't find any such
+> checks.
+>
+> Is there some magic that makes this all safe, or is this a big mess of
+> possibly-security-relevant bugs?
+>
+> Rich
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-diff --git a/drivers/staging/rtl8192e/dot11d.c b/drivers/staging/rtl8192e/dot11d.c
-index 53da610..bfcc935 100644
---- a/drivers/staging/rtl8192e/dot11d.c
-+++ b/drivers/staging/rtl8192e/dot11d.c
-@@ -133,12 +133,12 @@ void Dot11d_UpdateCountryIe(struct rtllib_device *dev, u8 *pTaddr,
- 	pTriple = (struct chnl_txpow_triple *)(pCoutryIe + 3);
- 	for (i = 0; i < NumTriples; i++) {
- 		if (MaxChnlNum >= pTriple->FirstChnl) {
--			printk(KERN_INFO "Dot11d_UpdateCountryIe(): Invalid country IE, skip it........1\n");
-+			netdev_info(dev->dev, "Dot11d_UpdateCountryIe(): Invalid country IE, skip it........1\n");
- 			return;
- 		}
- 		if (MAX_CHANNEL_NUMBER < (pTriple->FirstChnl +
- 		    pTriple->NumChnls)) {
--			printk(KERN_INFO "Dot11d_UpdateCountryIe(): Invalid country IE, skip it........2\n");
-+			netdev_info(dev->dev, "Dot11d_UpdateCountryIe(): Invalid country IE, skip it........2\n");
- 			return;
- 		}
- 
-@@ -165,7 +165,7 @@ u8 DOT11D_GetMaxTxPwrInDbm(struct rtllib_device *dev, u8 Channel)
- 	u8 MaxTxPwrInDbm = 255;
- 
- 	if (MAX_CHANNEL_NUMBER < Channel) {
--		printk(KERN_INFO "DOT11D_GetMaxTxPwrInDbm(): Invalid Channel\n");
-+		netdev_info(dev->dev, "DOT11D_GetMaxTxPwrInDbm(): Invalid Channel\n");
- 		return MaxTxPwrInDbm;
- 	}
- 	if (pDot11dInfo->channel_map[Channel])
-@@ -204,7 +204,7 @@ int ToLegalChannel(struct rtllib_device *dev, u8 channel)
- 	}
- 
- 	if (MAX_CHANNEL_NUMBER < channel) {
--		printk(KERN_ERR "%s(): Invalid Channel\n", __func__);
-+		netdev_err(dev->dev, "%s(): Invalid Channel\n", __func__);
- 		return default_chn;
- 	}
- 
+
+
 -- 
-1.7.9.5
-
+Michael Kerrisk Linux man-pages maintainer;
+http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface", http://blog.man7.org/
