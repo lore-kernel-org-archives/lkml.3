@@ -1,51 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933378AbaFKR3M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 13:29:12 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:58345 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751220AbaFKR3I (ORCPT
+	id S933438AbaFKRaJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 13:30:09 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:39237 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932778AbaFKRaH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 13:29:08 -0400
-Message-ID: <539891D0.8090309@gmail.com>
-Date: Wed, 11 Jun 2014 19:28:48 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 11 Jun 2014 13:30:07 -0400
+Date: Wed, 11 Jun 2014 10:29:58 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>
+Subject: Re: safety of *mutex_unlock() (Was: [BUG] signal: sighand
+	unprotected when accessed by /proc)
+Message-ID: <20140611172958.GF4581@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140609154114.20585056@gandalf.local.home>
+ <alpine.DEB.2.10.1406101051210.3830@nanos>
+ <20140610165704.GA3110@redhat.com>
+ <alpine.DEB.2.10.1406101959420.5170@nanos>
+ <20140610141306.04a4bcf3@gandalf.local.home>
+ <alpine.DEB.2.10.1406102203430.5170@nanos>
+ <alpine.DEB.2.10.1406102210580.5170@nanos>
+ <20140611155251.GA4581@linux.vnet.ibm.com>
+ <20140611170705.GA26816@redhat.com>
+ <20140611171734.GA27457@redhat.com>
 MIME-Version: 1.0
-To: Tushar Behera <tushar.b@samsung.com>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-CC: mturquette@linaro.org, t.figa@samsung.com, linux@arm.linux.org.uk,
-        galak@codeaurora.org, ijc+devicetree@hellion.org.uk,
-        mark.rutland@arm.com, pawel.moll@arm.com, robh+dt@kernel.org,
-        kgene.kim@samsung.com, khilman@linaro.org, dianders@google.com,
-        trblinux@gmail.com, Shaik Ameer Basha <shaik.ameer@samsung.com>
-Subject: Re: [PATCH 1/3] clk: exynos-audss: Keep the parent of mout_audss
- always enabled
-References: <1402464739-19044-1-git-send-email-tushar.b@samsung.com> <1402464739-19044-2-git-send-email-tushar.b@samsung.com>
-In-Reply-To: <1402464739-19044-2-git-send-email-tushar.b@samsung.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140611171734.GA27457@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14061117-3532-0000-0000-0000026928F0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tushar,
+On Wed, Jun 11, 2014 at 07:17:34PM +0200, Oleg Nesterov wrote:
+> On 06/11, Oleg Nesterov wrote:
+> >
+> > On 06/11, Paul E. McKenney wrote:
+> >
+> > >  	raw_spin_unlock_irqrestore(&rnp->lock, flags);
+> > >  	rt_mutex_lock(&mtx);  /* Side effect: boosts task t's priority. */
+> > >  	rt_mutex_unlock(&mtx);  /* Keep lockdep happy. */
+> > >
+> > > +	/* Wait until boostee is done accessing mtx before reinitializing. */
+> > > +	wait_for_completion(&rnp->boost_completion);
+> > > +
+> >
+> > I must have missed something, I dont understand why we need ->boost_completion.
+> >
+> > What if you simply move that rt_mutex into rcu_node ?
+> >
+> > Or. Given that rcu_boost_kthread() never exits, it can declare this mutex
+> > on stack and pass the pointer to rcu_boost() ?
+> 
+> Ah, please ignore, I forgot about init_proxy_locked(). Although perhaps this
+> can be solved easily.
 
-On 11.06.2014 07:32, Tushar Behera wrote:
-> When the output clock of AUDSS mux is disabled, we are getting kernel
-> oops while doing a clk_get() on other clocks provided by AUDSS. Though
-> user manual doesn't specify this dependency, we came across this issue
-> while disabling the parent of AUDSS mux clocks.
+You beat me to it.  ;-)
 
-Could you provide more data about this oops? E.g. kernel log, platforms
-it affects (just peach-pit or also others), test case, extra patches
-applied on top of mainline (if any).
+I was thinking of ->boost_completion as the way to solve it easily, but
+what did you have in mind?
 
-I don't like this solution, because keeping a clock always enabled is
-usually not desirable and this driver is also used on other platforms
-than peach-pit, so this change will affect all of them.
+							Thanx, Paul
 
-Best regards,
-Tomasz
