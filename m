@@ -1,183 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755498AbaFKGJA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 02:09:00 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:40033 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750976AbaFKGI6 (ORCPT
+	id S1755386AbaFKGN5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 02:13:57 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:48299 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751299AbaFKGN4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 02:08:58 -0400
-Date: Wed, 11 Jun 2014 08:05:58 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] pwm: Changes for v3.16-rc1
-Message-ID: <20140611060556.GA14677@ulmo>
+	Wed, 11 Jun 2014 02:13:56 -0400
+Message-ID: <5397F396.2060801@linux.vnet.ibm.com>
+Date: Wed, 11 Jun 2014 14:13:42 +0800
+From: Michael wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tThc/1wpZn/ma/RB"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Peter Zijlstra <peterz@infradead.org>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Alex Shi <alex.shi@linaro.org>,
+        Paul Turner <pjt@google.com>, Mel Gorman <mgorman@suse.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [ISSUE] sched/cgroup: Does cpu-cgroup still works fine nowadays?
+References: <20140515083531.GE30445@twins.programming.kicks-ass.net> <53747EE4.3020605@linux.vnet.ibm.com> <20140515090638.GI30445@twins.programming.kicks-ass.net> <53748A5D.6070605@linux.vnet.ibm.com> <20140515115751.GK30445@twins.programming.kicks-ass.net> <5375768F.1010000@linux.vnet.ibm.com> <1400208690.7133.11.camel@marge.simpson.net> <53759303.40409@linux.vnet.ibm.com> <20140516075421.GL11096@twins.programming.kicks-ass.net> <5396C82C.6060101@linux.vnet.ibm.com> <20140610121222.GE6758@twins.programming.kicks-ass.net>
+In-Reply-To: <20140610121222.GE6758@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14061106-1396-0000-0000-00000500C7C9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi, Peter
 
---tThc/1wpZn/ma/RB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Thanks for the reply :)
 
-Hi Linus,
+On 06/10/2014 08:12 PM, Peter Zijlstra wrote:
+[snip]
+>> Wake-affine for sure pull tasks together for workload like dbench, what make
+>> it difference when put dbench into a group one level deeper is the
+>> load-balance, which happened less.
+> 
+> We load-balance less (frequently) or we migrate less tasks due to
+> load-balancing ?
 
-The following changes since commit c9eaa447e77efe77b7fa4c953bd62de8297fd6c5:
+IMHO, when we put tasks one group deeper, in other word the totally
+weight of these tasks is 1024 (prev is 3072), the load become more
+balancing in root, which make bl-routine consider the system is
+balanced, which make we migrate less in lb-routine.
 
-  Linux 3.15-rc1 (2014-04-13 14:18:35 -0700)
+> 
+>> Usually, when system is busy, during the wakeup when we could not locate
+>> idle cpu, we pick the search point instead, whatever how busy it is since
+>> we count on the balance routine later to help balance the load.
+> 
+> But above you said that dbench usually triggers the wake-affine logic,
+> but now you say it doesn't and we rely on select_idle_sibling?
 
-are available in the git repository at:
+During wakeup, it triggered wake-affine, after that, go inside
+select_idle_sibling() and found no idle cpu, than pick the search point
+instead (curr cpu if wake-affine or prev cpu if not).
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/thierry.reding/linux-pwm.git tags/pwm/for-3.16-rc1
+> 
+> Note that the comparison isn't fair, running dbench on an idle system vs
+> running dbench on a busy system is the first step.
 
-for you to fetch changes up to 39fd3f99aba3f7683fc9b62e916e4c886a1cb6b0:
+Our comparison is based on the same busy-system, all the two cases have
+the same workload running, the only difference is that we put the same
+workload (dbench + stress) one group deeper, it's like:
 
-  pwm: fsl-ftm: set pwm_chip can_sleep flag (2014-05-23 09:11:21 +0200)
+Good case:
+		root
+		l1-A	l1-B	l1-C
+		dbench	stress	stress
 
-Thanks,
-Thierry
+	results:
+		dbench got around 300%
+		each stress got around 450%
 
-----------------------------------------------------------------
-pwm: Changes for v3.16-rc1
+Bad case:
+		root
+		l1
+		l2-A	l2-B	l2-C
+		dbench	stress	stress
 
-The majority of these changes are cleanups and fixes across all drivers.
-Redundant error messages are removed and more PWM controllers set the
-.can_sleep flag to signal that they can't be used in atomic context.
+	results:
+		dbench got around 100% (throughout dropped too)
+		each stress got around 550%
 
-Support is added for the Broadcom Kona family of SoCs and the Intel LPSS
-driver can now probe PCI devices in addition to ACPI devices. Upon shut-
-down, the pwm-backlight driver will now power off the backlight. It also
-uses the new descriptor-based GPIO API for more concise GPIO handling.
+Although the l1-group gain the same resources (1200%), it doesn't assign
+to l2-ABC correctly like the root-group did.
 
-A large chunk of these changes also converts platforms to use the lookup
-mechanism rather than relying on the global number space to reference
-PWM devices. This is largely in preparation for more unification and
-cleanups in future patches. Eventually it will allow the legacy PWM API
-to be removed.
+> 
+> The second is adding the cgroup crap on.
+> 
+>> However, in our cases the load balance could not help on that, since deeper
+>> the group is, less the load effect it means to root group.
+> 
+> But since all actual load is on the same depth, the relative threshold
+> (imbalance pct) should work the same, the size of the values don't
+> matter, the relative ratios do.
 
-----------------------------------------------------------------
-Ajay Kumar (1):
-      pwm: samsung: do not set manual update bit in pwm_samsung_config
+Exactly, however, when group is deep, the chance of it to make root
+imbalance reduced, in good case, gathered on cpu means 1024 load, while
+in bad case it dropped to 1024/3 ideally, that make it harder to trigger
+imbalance and gain help from the routine, please note that although
+dbench and stress are the only workload in system, there are still other
+tasks serve for the system need to be wakeup (some very actively since
+the dbench...), compared to them, deep group load means nothing...
 
-Alan Cox (1):
-      pwm: lpss: Add support for PCI devices
+> 
+>> By which means even tasks in deep group all gathered on one CPU, the load
+>> could still balanced from the view of root group, and the tasks lost the
+>> only chances (balance) to spread when they already on the same CPU...
+> 
+> Sure, but see above.
 
-Alexandre Belloni (12):
-      pwm: add period and polarity to struct pwm_lookup
-      ARM: shmobile: armadillo: initialize all struct pwm_lookup members
-      pwm: renesas-tpu: remove unused struct tpu_pwm_platform_data
-      ARM: OMAP3: Beagle: initialize all the struct pwm_lookup members
-      ARM: pxa: hx4700: initialize all the struct pwm_lookup members
-      pwm: modify PWM_LOOKUP to initialize all struct pwm_lookup members
-      ARM: OMAP3: Beagle: use PWM_LOOKUP to initialize struct pwm_lookup
-      ARM: shmobile: armadillo: use PWM_LOOKUP to initialize struct pwm_lookup
-      ARM: pxa: hx4700: use PWM_LOOKUP to initialize struct pwm_lookup
-      leds: leds-pwm: retrieve configured PWM period
-      pwm-backlight: retrieve configured PWM period
-      pwm: atmel: set pwm_chip can_sleep flag
+The lb-routine could not provide enough help for deep group, since the
+imbalance happened inside the group could not cause imbalance in root,
+ideally each l2-task will gain 1024/18 ~= 56 root-load, which could be
+easily ignored, but inside the l2-group, the gathered case could already
+means imbalance like (1024 * 5) : 1024.
 
-Alexandre Courbot (2):
-      ARM: SAMSUNG: remove GPIO flags in dev-backlight
-      pwm-backlight: switch to gpiod interface
+> 
+>> Furthermore, for tasks flip frequently like dbench, it'll become far more
+>> harder for load balance to help, it could even rarely catch them on rq.
+> 
+> And I suspect that is the main problem; so see what it does on a busy
+> system: !cgroup: nr_cpus busy loops + dbench, because that's your
+> benchmark for adding cgroups, the cgroup can only shift that behaviour
+> around.
 
-Axel Lin (4):
-      pwm: twl: Really disable twl6030 PWMs
-      pwm: lp3943: Set pwm_chip can_sleep flag
-      pwm: ab8500: Fix wrong value shift for disable/enable PWM
-      pwm: fsl-ftm: set pwm_chip can_sleep flag
+There are busy loops in good case too, and dbench behaviour in l1-groups
+should not changed after put them to l2-group, what make things worse is
+the chance for them to spread after gathered become less.
 
-Beniamino Galvani (1):
-      pwm: spear: fix check on pwmchip_add() return value
+> 
+[snip]
+>> Below patch has solved the problem during the testing, I'd like to do more
+>> testing on other benchmarks before send out the formal patch, any comments
+>> are welcomed ;-)
+> 
+> So I think that approach is wrong, select_idle_siblings() works because
+> we want to keep CPUs from being idle, but if they're not actually idle,
+> pretending like they are (in a cgroup) is actively wrong and can skew
+> load pretty bad.
 
-Jingoo Han (9):
-      pwm: ab8500: Remove unnecessary OOM messages
-      pwm: i.MX: Remove unnecessary OOM messages
-      pwm: pxa: Remove unnecessary OOM messages
-      pwm: renesas-tpu: Remove unnecessary OOM messages
-      pwm: spear: Remove unnecessary OOM messages
-      pwm: tegra: Remove unnecessary OOM messages
-      pwm: pwm-tiecap: Remove unnecessary OOM messages
-      pwm: tiehrpwm: Remove unnecessary OOM messages
-      pwm: vt8500: Remove unnecessary OOM messages
+We only choose the timing when no idle cpu located, and flips is
+somewhat high, also the group is deep.
 
-Shawn Guo (1):
-      pwm: mxs: set pwm_chip can_sleep flag
+In such cases, select_idle_siblings() doesn't works anyway, it return
+the target even it is very busy, we just check twice to prevent it from
+making some obviously bad decision ;-)
 
-Thierry Reding (3):
-      pwm: Document signal polarity convention
-      pwm-backlight: Disable backlight on shutdown
-      pwm: lpss: Fix const qualifier and sparse warnings
+> 
+> Furthermore, if as I expect, dbench sucks on a busy system, then the
+> proposed cgroup thing is wrong, as a cgroup isn't supposed to radically
+> alter behaviour like that.
 
-Tim Kryger (2):
-      Documentation: dt: Add Kona PWM binding
-      pwm: kona: Introduce Kona PWM controller support
+That's true and that's why we currently still need to shut down the
+GENTLE_FAIR_SLEEPERS feature, but that's another problem we need to
+solve later...
 
-Wolfram Sang (2):
-      pwm: tiehrpwm: don't build PM related functions when not needed
-      pwm: tiehrpwm: inline accessor functions
+What we currently expect is that the cgroup assign the resource
+according to the share, it works well in l1-groups, so we expect it to
+work the same well in l2-groups...
 
- .../devicetree/bindings/pwm/bcm-kona-pwm.txt       |  21 ++
- Documentation/pwm.txt                              |  10 +-
- arch/arm/mach-omap2/board-omap3beagle.c            |   3 +-
- arch/arm/mach-pxa/hx4700.c                         |   3 +-
- arch/arm/mach-shmobile/board-armadillo800eva.c     |  14 +-
- arch/arm/plat-samsung/dev-backlight.c              |   2 -
- drivers/leds/leds-pwm.c                            |   5 +-
- drivers/pwm/Kconfig                                |   9 +
- drivers/pwm/Makefile                               |   1 +
- drivers/pwm/core.c                                 |   8 +-
- drivers/pwm/pwm-ab8500.c                           |  13 +-
- drivers/pwm/pwm-atmel.c                            |   1 +
- drivers/pwm/pwm-bcm-kona.c                         | 318 +++++++++++++++++++++
- drivers/pwm/pwm-fsl-ftm.c                          |   1 +
- drivers/pwm/pwm-imx.c                              |   4 +-
- drivers/pwm/pwm-lp3943.c                           |   1 +
- drivers/pwm/pwm-lpss.c                             | 161 +++++++++--
- drivers/pwm/pwm-mxs.c                              |   1 +
- drivers/pwm/pwm-pxa.c                              |   4 +-
- drivers/pwm/pwm-renesas-tpu.c                      |  23 +-
- drivers/pwm/pwm-samsung.c                          |   3 -
- drivers/pwm/pwm-spear.c                            |   6 +-
- drivers/pwm/pwm-tegra.c                            |   4 +-
- drivers/pwm/pwm-tiecap.c                           |   4 +-
- drivers/pwm/pwm-tiehrpwm.c                         |  10 +-
- drivers/pwm/pwm-twl.c                              |   8 -
- drivers/pwm/pwm-vt8500.c                           |   4 +-
- drivers/video/backlight/pwm_bl.c                   |  87 +++---
- include/linux/platform_data/pwm-renesas-tpu.h      |  16 --
- include/linux/pwm.h                                |   6 +-
- include/linux/pwm_backlight.h                      |   5 +-
- 31 files changed, 578 insertions(+), 178 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/pwm/bcm-kona-pwm.txt
- create mode 100644 drivers/pwm/pwm-bcm-kona.c
- delete mode 100644 include/linux/platform_data/pwm-renesas-tpu.h
+> 
+> More so, I suspect that patch will tend to overload cpu0 (and lower cpu
+> numbers in general -- because its scanning in the same direction for
+> each cgroup) for other workloads. You can't just go pile more and more
+> work on cpu0 just because there's nothing running in this particular
+> cgroup.
 
---tThc/1wpZn/ma/RB
-Content-Type: application/pgp-signature
+That's a good point...
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+However during the testing, this doesn't happen on the 3 groups, tasks
+stay on high-cpu as often as low-cpu, IMHO the key point here is the
+lb-routine still works, although much less than before.
 
-iQIcBAEBAgAGBQJTl/HEAAoJEN0jrNd/PrOhbP8QAKBnuo59lBr4jlvEg1QWoten
-HXa4pRQWBUPV+Kssr5IuUKBKk3KAwog1kubzoi3u+JmGgZrBtOIjyiI7kSxUQI/I
-cAxgSdNFSrVaAcfUHAi/e+C274jqV11mfyLzVaTm1tRC8ROkUhy7vSR73N0ybLDU
-+I6DOs14ugOKfsEuQsgHyL5JejowTRRaMyBDFfma6jL1Wpc8y2jUzSwyUkaxjapl
-x9xEYUN7lJxzkVWeYYaLWEONeQYPBn9NoQc26Ma8HbwH3SAMS/E9cevgcKPxYPNf
-Dm+TmpGa1wM0LmqDtsPTCInBLjidpDyYK36EybpDJbOYxxCTe8+EwbnMSXJYJMWw
-sO1zkQhnCZ3Z9UIBiKORFQ2F2KlzpzDr69WlQZ5P1qH3QooB8Q3gRnTXuPtIfgTT
-M0Pa/MTneInnbwLQQz9PNVLpOMhhHrQxkPYrB0iu2FWzZ90qLCqvj8kVWuh9bqjx
-XnBKHEEdFB1gtlUtOq5gWy86i6oA/Zg63uc0uvwFP6EN/KutdldwEIoTtX+xy2jY
-jCB8q8w7HenbB0gE+b/bWVJcfzYFebvyCUlaJDbl+uYwX5/nqxjGa2xDNyMz+Ssn
-OsrNO6wpCTqjkQ9W1H2qa2shg+UIwh1eJmzcTs+ffOUaHjkA1QnZjuv5gH4NWq+d
-NJsZyw/a7xlPfeo26gMe
-=5j+N
------END PGP SIGNATURE-----
+So the fix just make the result of lb-routine effect longer, since the
+higher cpu it picked is usually idle in group (directly pick later), in
+other word, tasks on high-cpu is harder to be wake-affine to low-cpu
+than before.
 
---tThc/1wpZn/ma/RB--
+And when this apply to all the groups, each of them will be balanced
+both internally and externally, then we will see equal tasks on each cpu.
+
+select_idle_sibling() do pick low-cpu more often, and combined with
+wake-affine, without enough load-balance, the tasks will gathered on
+low-cpu more often, but our solution will make the less load-balance
+become more valuable (when they need to be), IMHO, it could even
+contribute to balance work in some cases...
+
+> 
+> So dbench is very sensitive to queueing, and select_idle_siblings()
+> avoids a lot of queueing on an idle system. I don't think that's
+> something we should fix with cgroups.
+
+It has to queue anyway after wakeup, isn't it? we just want a good
+candidate which won't make things too bad inside group, and only do this
+when select_idle_siblings() give up on searching...
+
+Regards,
+Michael Wang
+
+> 
+
