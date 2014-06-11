@@ -1,69 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932616AbaFKQzx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 12:55:53 -0400
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:63459 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932526AbaFKQzu (ORCPT
+	id S1755869AbaFKQ4w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 12:56:52 -0400
+Received: from mail1.bemta3.messagelabs.com ([195.245.230.162]:6110 "EHLO
+	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755742AbaFKQ4u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 12:55:50 -0400
-Message-ID: <539889DC.7090704@fb.com>
-Date: Wed, 11 Jun 2014 10:54:52 -0600
-From: Jens Axboe <axboe@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 11 Jun 2014 12:56:50 -0400
+X-Env-Sender: Adam.Thomson.Opensource@diasemi.com
+X-Msg-Ref: server-13.tower-39.messagelabs.com!1402505805!10999516!1
+X-Originating-IP: [94.185.165.51]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.3; banners=-,-,-
+X-VirusChecked: Checked
+From: "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>
+To: Jonathan Cameron <jic23@kernel.org>,
+        "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>,
+        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Support Opensource" <Support.Opensource@diasemi.com>
+Subject: RE: [PATCH 4/8] iio: Add support for DA9150 GPADC
+Thread-Topic: [PATCH 4/8] iio: Add support for DA9150 GPADC
+Thread-Index: AQHPhWXnsW9Hzw1urUGbXZZXqpSfwZtsCpYAgAAUd7A=
+Date: Wed, 11 Jun 2014 16:56:44 +0000
+Message-ID: <2E89032DDAA8B9408CB92943514A0337A56F5455@SW-EX-MBX01.diasemi.com>
+References: <cover.1402484954.git.Adam.Thomson.Opensource@diasemi.com>
+ <3c1a7551c7deaeccdca731fa95f4349c57e04249.1402484954.git.Adam.Thomson.Opensource@diasemi.com>
+ <ba29cc7f-7586-430c-8947-763510e04212@email.android.com>
+In-Reply-To: <ba29cc7f-7586-430c-8947-763510e04212@email.android.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.20.26.15]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Matthew Wilcox <willy@linux.intel.com>,
-        Keith Busch <keith.busch@intel.com>
-CC: =?ISO-8859-1?Q?Matias_Bj=F8rling?= <m@bjorling.me>,
-        "sbradshaw@micron.com" <sbradshaw@micron.com>,
-        "tom.leiming@gmail.com" <tom.leiming@gmail.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-nvme@lists.infradead.org" <linux-nvme@lists.infradead.org>
-Subject: Re: [PATCH v7] NVMe: conversion to blk-mq
-References: <1402392038-5268-1-git-send-email-m@bjorling.me> <1402392038-5268-2-git-send-email-m@bjorling.me> <alpine.LRH.2.03.1406100945250.4699@AMR> <A52B97CC-6D77-468B-9A9B-A5888AE63580@fb.com> <alpine.LRH.2.03.1406101140490.4699@AMR> <5397636F.9050209@fb.com> <alpine.LRH.2.03.1406101458470.4699@AMR> <5397753B.2020009@fb.com> <alpine.LRH.2.03.1406101515430.4699@AMR> <20140610213333.GA10055@linux.intel.com>
-In-Reply-To: <20140610213333.GA10055@linux.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-06-11_05:2014-06-11,2014-06-11,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=2.84907653580468e-08 kscore.compositescore=0
- circleOfTrustscore=0 compositescore=0.324642340081358
- urlsuspect_oldscore=0.324642340081358 suspectscore=0
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=2524143
- rbsscore=0.324642340081358 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1406110212
-X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5BGuuCX031898
 
-On 06/10/2014 03:33 PM, Matthew Wilcox wrote:
-> On Tue, Jun 10, 2014 at 03:21:18PM -0600, Keith Busch wrote:
->> Yeah, nvme_setup_prps is probably the least readable code in this driver.
->> Maybe some comments are in order here...
->>
->> There are two rules for an SGL to be mappable to a PRP:
->>
->> 1. Every element must have zero page offset, except the first.
->>
->> 2. Every element must end on a page boundary, except the last.
+On June 11, 2014 17:35, Jonathon Cameron wrote:
+
+> Hi Adam. Silly question but what are the _ channels?
 > 
-> Or to put it another way, NVMe PRPs only support I/Os that describe a
-> single range of virtual memory.
+> I have put in a perhaps optimistic data sheet request via the website, throwing in
+> your name. Hope you don't mind!
+> 
+> Jonathan
 
-OK, so essentially any single request must be a virtually contig piece
-of memory. Is there any size limitations to how big this contig segment
-can be?
+Hi Jonathon. Some of the _channels are a different representation of the reading
+(e.g. different scale - one would be 0-6V range, and one would be 0-21V for
+example). Others provide identical readings to the non _channel but have left
+those in to keep the channel numbering sane and easy to reference.
 
-I think this is unique requirement, at least I haven't seen other pieces
-of hardware have it. But it would be pretty trivial to add a setting to
-limit merges based on virtually contig, similarly to what is done for
-number of physical segments.
-
+No problem regarding the request.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
