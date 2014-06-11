@@ -1,83 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754908AbaFKXnJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 19:43:09 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:37671 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753694AbaFKXnG (ORCPT
+	id S1754349AbaFKXow (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 19:44:52 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:54338 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752625AbaFKXot (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 19:43:06 -0400
-Date: Thu, 12 Jun 2014 00:42:12 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Chew Chiau Ee <chiau.ee.chew@intel.com>
-Cc: Eric Miao <eric.y.miao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-spi@vger.kernel.org
-Message-ID: <20140611234212.GR5099@sirena.org.uk>
-References: <1402502222-19520-1-git-send-email-chiau.ee.chew@intel.com>
+	Wed, 11 Jun 2014 19:44:49 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="kwyOAufsvjrbDa1R"
-Content-Disposition: inline
-In-Reply-To: <1402502222-19520-1-git-send-email-chiau.ee.chew@intel.com>
-X-Cookie: Ditat Deus.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] spi/pxa2xx: fix incorrect SW mode chipselect setting for
- BayTrail LPSS SPI
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <539898C3.8090903@gmail.com>
+References: <1397859600-11507-1-git-send-email-robherring2@gmail.com>
+	<1397859600-11507-4-git-send-email-robherring2@gmail.com>
+	<CAE9FiQVrwypK4u5yTCt-AxMuBnOn7jv=V3d4Zb3cd9JDNEUVPw@mail.gmail.com>
+	<CAL_JsqKux+BTHeYo6XEzzQMAFJZHVjbURM973oHT=t698GbJbA@mail.gmail.com>
+	<20140503220731.GA10927@kroah.com>
+	<20140503221658.GA13403@kroah.com>
+	<CA+8MBb+7f1bOnJjJWj1vxa0UNuQwz7OGRDR_QFTxOT=9cynabQ@mail.gmail.com>
+	<CA+8MBbKE1E2uq9LefiDAV9hv2Z8OTkjx9mkXjE6_--F_emRC8A@mail.gmail.com>
+	<CAL_JsqKvoO9acX==-LdD6boO=B3xr=ijra_G0uqRZGzACZZUJg@mail.gmail.com>
+	<CA+8MBbLooWm9xys+gYa5uL1eVTH-qzaR+RaZgsrqV-8XkqGadQ@mail.gmail.com>
+	<539898C3.8090903@gmail.com>
+Date: Wed, 11 Jun 2014 16:44:48 -0700
+X-Google-Sender-Auth: uDAnx1E4IRcgpAMj_So3v7T6-8c
+Message-ID: <CAE9FiQWxghRU62OwGU6-nvxMdEakPKQY_yGWvcVa6vsQcA=-sg@mail.gmail.com>
+Subject: Re: [PATCH v2 3/7] tty/serial: convert 8250 to generic earlycon
+From: Yinghai Lu <yinghai@kernel.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Tony Luck <tony.luck@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        Jiri Slaby <jslaby@suse.cz>, Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 11, 2014 at 10:58 AM, Rob Herring <robherring2@gmail.com> wrote:
+> On 06/10/2014 03:52 PM, Tony Luck wrote:
+> I think I figured it out. The function
+> serial8250_find_port_for_earlycon is failing to match 'uart' console to
+> 'ttyS' console and transfer the options. It was also failing to create
+> an option string when the baud rate is probed. Can you try out the
+> below patch?
+>
+> Rob
+>
+> 8<-------------------------------------------------------------------
+> diff --git a/drivers/tty/serial/8250/8250_early.c b/drivers/tty/serial/8250/8250_early.c
+> index cfef801..4858b8a 100644
+> --- a/drivers/tty/serial/8250/8250_early.c
+> +++ b/drivers/tty/serial/8250/8250_early.c
+> @@ -144,8 +144,11 @@ static int __init early_serial8250_setup(struct earlycon_device *device,
+>         if (!(device->port.membase || device->port.iobase))
+>                 return 0;
+>
+> -       if (!device->baud)
+> +       if (!device->baud) {
+>                 device->baud = probe_baud(&device->port);
+> +               snprintf(device->options, sizeof(device->options), "%u",
+> +                        device->baud);
+> +       }
+>
+>         init_port(device);
+>
+> diff --git a/drivers/tty/serial/earlycon.c b/drivers/tty/serial/earlycon.c
+> index 5131b5e..d20e6d8 100644
+> --- a/drivers/tty/serial/earlycon.c
+> +++ b/drivers/tty/serial/earlycon.c
+> @@ -25,7 +25,7 @@
+>  #include <asm/serial.h>
+>
+>  static struct console early_con = {
+> -       .name =         "earlycon",
+> +       .name =         "uart",
+>         .flags =        CON_PRINTBUFFER | CON_BOOT,
+>         .index =        -1,
+>  };
+>
 
---kwyOAufsvjrbDa1R
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Yes, that is right fix.
 
-On Wed, Jun 11, 2014 at 11:57:02PM +0800, Chew Chiau Ee wrote:
+For the name in early_con with "uart", please add some comments that
+serial8250_find_port_for_earlycon() will look for "uart"...
 
-> It was observed that after module removal followed by insertion,
-> the SW mode chipselect is not properly set. Thus causing transfer
-> failure due to incorrect CS toggling.
+Thanks
 
-> -	value &= ~SPI_CS_CONTROL_SW_MODE;
-> +	orig = value &= ~SPI_CS_CONTROL_SW_MODE;
->  	writel(value, drv_data->ioaddr + offset + SPI_CS_CONTROL);
->  	value = readl(drv_data->ioaddr + offset + SPI_CS_CONTROL);
->  	if (value != orig) {
-
-This is a *really* non-obvious fix, I'd have expected the original value
-to be re-read from the hardware here rather than just tweaked, or at
-least some comment explaining what's going on.  Possibly also saving to
-a differently named temporary variable would do it but whatever I had to
-go look at the context to figure out what was happening and even there I
-was unclear.
-
---kwyOAufsvjrbDa1R
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTmOlQAAoJELSic+t+oim9Wv8P/1Gz0KrR669OKT2VF81LbZY9
-E4bFy442ARqHkro+hmUCOb+M2W5rah01S6e7GAzWlbWTnDoOQthFe3ei7t/yrhO3
-hGTqvyx6Sca5vreAy7hAQ6YUFJAhI1XxydsrlzdjMXHnwGwvp36D/uRMrG0JUQ+e
-TXiRfFZgRe2ezIsUa/R7rjaFGlCm0UBv3N5izVr2aifz5kvC1bqusx+XcmZDBuYu
-ODpSKNvxerzcqVio+vtMgPoQlszmRbh5f2pupqlgcYTsU66zWRfz9SIrgJGEzUcN
-Z1SKJAfQDb3LZUxO9YGlWYC0v6782Ol/FAnh2V3/9N0DxM0pgKb+ZhdTyCvF2/Fe
-1KLyLLtk063149XJqATk5lt2Vbi2gvrPxDBq/gHZGdOcFqfL0zYbIyPZRzFmLLwc
-Lnc0RR6hwzUZNdgXLkAQdcz6bY8zGOkVOgCJ436QSG14lJhtV4YZ/XkCogBBB9k6
-XZjYp0WQKyCBGDe3NISSgbudvGrjfTg+bF4Bohx/69nWfFtU0v/dXLy/iSiESCdO
-k4wUCKCJV1wqxoF6SXhzWdL8IYWcidArS9xKEYUh8ZbHqFCqzt09piNkccYaaKSy
-a+OQJEl4hm7AgBGf1vcT9GCiDZzfOujAm3jamRqHUuEVYEpmTp8m7jBRS/1DrSAD
-g4AoojhZtsg5mf0uaEuQ
-=tqR6
------END PGP SIGNATURE-----
-
---kwyOAufsvjrbDa1R--
+Yinghai
