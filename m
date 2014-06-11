@@ -1,47 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754135AbaFKWAZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 18:00:25 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:41365 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752862AbaFKWAX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 18:00:23 -0400
-Subject: Re: kmemleak: Unable to handle kernel paging request
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
-Content-Type: text/plain; charset=windows-1252
-From: Catalin Marinas <catalin.marinas@arm.com>
-In-Reply-To: <CAOJe8K1TgTDX5=LdE9r6c0ami7TRa7zr0hL_uu6YpiWrsePAgQ@mail.gmail.com>
-Date: Wed, 11 Jun 2014 23:00:18 +0100
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <B01EB0A1-992B-49F4-93AE-71E4BA707795@arm.com>
-References: <CAOJe8K3fy3XFxDdVc3y1hiMAqUCPmkUhECU7j5TT=E=gxwBqHg@mail.gmail.com> <20140611173851.GA5556@MacBook-Pro.local> <CAOJe8K1TgTDX5=LdE9r6c0ami7TRa7zr0hL_uu6YpiWrsePAgQ@mail.gmail.com>
-To: Denis Kirjanov <kda@linux-powerpc.org>
-X-Mailer: Apple Mail (2.1878.2)
+	id S1754163AbaFKWHz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 18:07:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6155 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753042AbaFKWHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 18:07:54 -0400
+Message-ID: <1402524464.14174.186.camel@ul30vt.home>
+Subject: Re: [PATCH 3.14 186/228] PCI: Wrong register used to check pending
+ traffic
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>,
+        Gavin Shan <gwshan@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Alex Williamson <alex.williamson@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci <linux-pci@vger.kernel.org>
+Date: Wed, 11 Jun 2014 16:07:44 -0600
+In-Reply-To: <CAErSpo6UcObn6HVKpw82Ncfgr64w2Ws120P2WfSLqAqaROsDTw@mail.gmail.com>
+References: <20140604232347.966798903@linuxfoundation.org>
+	 <20140604232354.004988520@linuxfoundation.org>
+	 <1402196538.23860.24.camel@deadeye.wl.decadent.org.uk>
+	 <CAErSpo6UcObn6HVKpw82Ncfgr64w2Ws120P2WfSLqAqaROsDTw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 Jun 2014, at 21:04, Denis Kirjanov <kda@linux-powerpc.org> wrote:
-> On 6/11/14, Catalin Marinas <catalin.marinas@arm.com> wrote:
->> On Wed, Jun 11, 2014 at 04:13:07PM +0400, Denis Kirjanov wrote:
->>> I got a trace while running 3.15.0-08556-gdfb9454:
->>> 
->>> [  104.534026] Unable to handle kernel paging request for data at
->>> address 0xc00000007f000000
->> 
->> Were there any kmemleak messages prior to this, like "kmemleak
->> disabled"? There could be a race when kmemleak is disabled because of
->> some fatal (for kmemleak) error while the scanning is taking place
->> (which needs some more thinking to fix properly).
+On Wed, 2014-06-11 at 15:15 -0600, Bjorn Helgaas wrote:
+> On Sat, Jun 7, 2014 at 9:02 PM, Ben Hutchings <ben@decadent.org.uk> wrote:
+> > On Wed, 2014-06-04 at 16:23 -0700, Greg Kroah-Hartman wrote:
+> >> 3.14-stable review patch.  If anyone has any objections, please let me know.
+> >>
+> >> ------------------
+> >>
+> >> From: Gavin Shan <gwshan@linux.vnet.ibm.com>
+> >>
+> >> commit d0b4cc4e32705ff00d90d32da7783c266c702c04 upstream.
+> >>
+> >> The incorrect register offset is passed to pci_wait_for_pending(), which is
+> >> caused by commit 157e876ffe ("PCI: Add pci_wait_for_pending() (refactor
+> >> pci_wait_for_pending_transaction())").
+> >>
+> >> Fixes: 157e876ffe ("PCI: Add pci_wait_for_pending() (refactor pci_wait_for_pending_transaction())
+> >> Signed-off-by: Gavin Shan <gwshan@linux.vnet.ibm.com>
+> >> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> >> Acked-by: Alex Williamson <alex.williamson@gmail.com>
+> >> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> >>
+> >> ---
+> >>  drivers/pci/pci.c |    5 +++--
+> >>  1 file changed, 3 insertions(+), 2 deletions(-)
+> >>
+> >> --- a/drivers/pci/pci.c
+> >> +++ b/drivers/pci/pci.c
+> >> @@ -3043,7 +3043,8 @@ int pci_wait_for_pending_transaction(str
+> >>       if (!pci_is_pcie(dev))
+> >>               return 1;
+> >>
+> >> -     return pci_wait_for_pending(dev, PCI_EXP_DEVSTA, PCI_EXP_DEVSTA_TRPND);
+> >> +     return pci_wait_for_pending(dev, pci_pcie_cap(dev) + PCI_EXP_DEVSTA,
+> >> +                                 PCI_EXP_DEVSTA_TRPND);
+> >>  }
+> >>  EXPORT_SYMBOL(pci_wait_for_pending_transaction);
+> >>
+> >> @@ -3085,7 +3086,7 @@ static int pci_af_flr(struct pci_dev *de
+> >>               return 0;
+> >>
+> >>       /* Wait for Transaction Pending bit clean */
+> >> -     if (pci_wait_for_pending(dev, PCI_AF_STATUS, PCI_AF_STATUS_TP))
+> >> +     if (pci_wait_for_pending(dev, pos + PCI_AF_STATUS, PCI_AF_STATUS_TP))
+> >>               goto clear;
+> >>
+> >>       dev_err(&dev->dev, "transaction is not cleared; "
+> >
+> > This still seems to be broken because pci_wait_for_pending() does
+> > pci_read_config_word() but PCI_AF_STATUS is not word-aligned.
 > 
-> No. I checked for the similar problem and didn't find anything relevant.
-> I'll try to bisect it.
+> I agree; this does seem broken.  I think pci_read_config_word() will
+> return PCIBIOS_BAD_REGISTER_NUMBER without updating the value
+> returned, so I think we'll test garbage from the stack.
+> 
+> What do you think, Alex?
 
-Does this happen soon after boot? I guess it’s the first scan
-(scheduled at around 1min after boot). Something seems to be telling
-kmemleak that there is a valid memory block at 0xc00000007f000000.
+Yep, looks broken.  The simple fix would be to pass the AF control
+offset instead of status, shift the mask, and maybe add a BUG_ON(pos &
+1) to pci_read_config_word() to better enforce it.  Alternatively we
+could make the function take a width and use an appropriate accessor for
+the size.  I'm inclined to double-check the current users and take the
+first option unless anyone objects.  Thanks,
 
-Catalin
+Alex
+
