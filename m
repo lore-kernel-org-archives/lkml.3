@@ -1,208 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755386AbaFKGN5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 02:13:57 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:48299 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751299AbaFKGN4 (ORCPT
+	id S1755428AbaFKGQj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 02:16:39 -0400
+Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:46356 "EHLO
+	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750976AbaFKGQi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 02:13:56 -0400
-Message-ID: <5397F396.2060801@linux.vnet.ibm.com>
-Date: Wed, 11 Jun 2014 14:13:42 +0800
-From: Michael wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 11 Jun 2014 02:16:38 -0400
+Date: Wed, 11 Jun 2014 07:16:24 +0100
+From: Sitsofe Wheeler <sitsofe@gmail.com>
+To: Igor Mammedov <imammedo@redhat.com>
+Cc: Toshi Kani <toshi.kani@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [BISECTED][REGRESSION] Kernel does not boot on EeePC
+Message-ID: <20140611061624.GA12132@sucs.org>
+References: <20140608090223.GA8703@sucs.org>
+ <20140609122616.124ebe43@thinkpad>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Alex Shi <alex.shi@linaro.org>,
-        Paul Turner <pjt@google.com>, Mel Gorman <mgorman@suse.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [ISSUE] sched/cgroup: Does cpu-cgroup still works fine nowadays?
-References: <20140515083531.GE30445@twins.programming.kicks-ass.net> <53747EE4.3020605@linux.vnet.ibm.com> <20140515090638.GI30445@twins.programming.kicks-ass.net> <53748A5D.6070605@linux.vnet.ibm.com> <20140515115751.GK30445@twins.programming.kicks-ass.net> <5375768F.1010000@linux.vnet.ibm.com> <1400208690.7133.11.camel@marge.simpson.net> <53759303.40409@linux.vnet.ibm.com> <20140516075421.GL11096@twins.programming.kicks-ass.net> <5396C82C.6060101@linux.vnet.ibm.com> <20140610121222.GE6758@twins.programming.kicks-ass.net>
-In-Reply-To: <20140610121222.GE6758@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061106-1396-0000-0000-00000500C7C9
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140609122616.124ebe43@thinkpad>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Peter
-
-Thanks for the reply :)
-
-On 06/10/2014 08:12 PM, Peter Zijlstra wrote:
-[snip]
->> Wake-affine for sure pull tasks together for workload like dbench, what make
->> it difference when put dbench into a group one level deeper is the
->> load-balance, which happened less.
+On Mon, Jun 09, 2014 at 12:26:16PM +0200, Igor Mammedov wrote:
+> On Sun, 8 Jun 2014 10:02:23 +0100
+> Sitsofe Wheeler <sitsofe@gmail.com> wrote:
 > 
-> We load-balance less (frequently) or we migrate less tasks due to
-> load-balancing ?
+> > The latest kernel (c593e8978722f7f4a12932733cfeed6c0c74fbaa) refuses to
+> > boot on my EeePC - after grub is finished the screen just remains black
+> > and the only thing that does something is pressing the power button. The
+> > problem commit seems to be:
+> I'm sorry for introducing mess, I don't have EeePC to test this on.
+> Could you help to track problem on it?
+> Is there any output if you boot affected kernel with
+> "earlyprintk=vga ignore_loglevel" options?
 
-IMHO, when we put tasks one group deeper, in other word the totally
-weight of these tasks is 1024 (prev is 3072), the load become more
-balancing in root, which make bl-routine consider the system is
-balanced, which make we migrate less in lb-routine.
+It basically gives up just before Initializing CPU#0. The following is
+an approximation of the boot messages that I see on the screen (the
+early ones are gone before I can eyeball them so this is a blend of a
+previous dmesg and what I see on the screen during a failure):
 
-> 
->> Usually, when system is busy, during the wakeup when we could not locate
->> idle cpu, we pick the search point instead, whatever how busy it is since
->> we count on the balance routine later to help balance the load.
-> 
-> But above you said that dbench usually triggers the wake-affine logic,
-> but now you say it doesn't and we rely on select_idle_sibling?
+[    0.000000] Linux version 3.15.0-0001-gd37cf73 (swheeler@eject) (gcc version 4.8.2 20131212 (Red Hat 4.8.2-7) (GCC) ) #52 Sun Jun 8 22:43:01 BST 2014
+[    0.000000] KERNEL supported cpus:
+[    0.000000]   Intel GenuineIntel
+[    0.000000] Disabled fast string operations
+[    0.000000] e820: BIOS-provided physical RAM map:
+[    0.000000] BIOS-e820: [mem 0x0000000000000000-0x000000000009fbff] usable
+[    0.000000] BIOS-e820: [mem 0x000000000009fc00-0x000000000009ffff] reserved
+[    0.000000] BIOS-e820: [mem 0x00000000000e4000-0x00000000000fffff] reserved
+[    0.000000] BIOS-e820: [mem 0x0000000000100000-0x000000003f77ffff] usable
+[    0.000000] BIOS-e820: [mem 0x000000003f780000-0x000000003f78ffff] ACPI data
+[    0.000000] BIOS-e820: [mem 0x000000003f790000-0x000000003f7cffff] ACPI NVS
+[    0.000000] BIOS-e820: [mem 0x000000003f7d0000-0x000000003f7ddfff] reserved
+[    0.000000] BIOS-e820: [mem 0x000000003f7e0000-0x000000003f7fffff] reserved
+[    0.000000] BIOS-e820: [mem 0x00000000fee00000-0x00000000fee00fff] reserved
+[    0.000000] BIOS-e820: [mem 0x00000000fff80000-0x00000000ffffffff] reserved
+[    0.000000] bootconsole [earlyvga0] enabled
+[    0.000000] Notice: NX (Execute Disable) protection cannot be enabled: non-PAE kernel!
+[    0.000000] SMBIOS 2.5 present.
+[    0.000000] DMI: ASUSTeK Computer INC. 900/900, BIOS 1006    03/03/2009
+[    0.000000] e820: update [mem 0x00000000-0x00000fff] usable ==> reserved
+[    0.000000] e820: remove [mem 0x000a0000-0x000fffff] usable
+[    0.000000] e820: last_pfn = 0x3f780 max_arch_pfn = 0x100000
+[    0.000000] MTRR default type: uncachable
+[    0.000000] MTRR fixed ranges enabled:
+[    0.000000]   00000-9FFFF write-back
+[    0.000000]   A0000-DFFFF uncachable
+[    0.000000]   E0000-EFFFF write-through
+[    0.000000]   F0000-FFFFF write-protect
+[    0.000000] MTRR variable ranges enabled:
+[    0.000000]   0 base 000000000 mask FC0000000 write-back
+[    0.000000]   1 base 03F800000 mask FFF800000 uncachable
+[    0.000000]   2 disabled
+[    0.000000]   3 disabled
+[    0.000000]   4 disabled
+[    0.000000]   5 disabled
+[    0.000000]   6 disabled
+[    0.000000]   7 disabled
+[    0.000000] initial memory mapped: [mem 0x00000000-0x00bfffff]
+[    0.000000] Base memory trampoline at [b009b000] 9b000 size 16384
+[    0.000000] init_memory_mapping: [mem 0x00000000-0x000fffff]
+[    0.000000]  [mem 0x00000000-0x000fffff] page 4k
+[    0.000000] init_memory_mapping: [mem 0x3f000000-0x3f3fffff]
+[    0.000000]  [mem 0x3f000000-0x3f3fffff] page 2M
+[    0.000000] init_memory_mapping: [mem 0x38000000-0x3effffff]
+[    0.000000]  [mem 0x38000000-0x3effffff] page 2M
+[    0.000000] init_memory_mapping: [mem 0x00100000-0x37ffffff]
+[    0.000000]  [mem 0x00100000-0x003fffff] page 4k
+[    0.000000]  [mem 0x00400000-0x37ffffff] page 2M
+[    0.000000] init_memory_mapping: [mem 0x3f400000-0x3f77ffff]
+[    0.000000]  [mem 0x3f400000-0x3f77ffff] page 4k
+[    0.000000] BRK [0x00667000, 0x00667fff] PGTABLE
+[    0.000000] ACPI: RSDP 0x000FBE90 000014 (v00 ACPIAM)
+[    0.000000] ACPI: RSDT 0x3F780000 000034 (v01 A M I  OEMRSDT  03000903 MSFT 00000097)
+[    0.000000] ACPI: FACP 0x3F780200 000081 (v01 A M I  OEMFACP  03000903 MSFT 00000097)
+[    0.000000] ACPI: DSDT 0x3F780400 0060FD (v01 A0979  A0979036 00000036 INTL 20060113)
+[    0.000000] ACPI: FACS 0x3F790000 000040
+[    0.000000] ACPI: APIC 0x3F780390 000068 (v01 A M I  OEMAPIC  03000903 MSFT 00000097)
+[    0.000000] ACPI: OEMB 0x3F790040 000046 (v01 A M I  AMI_OEM  03000903 MSFT 00000097)
+[    0.000000] ACPI: MCFG 0x3F786500 00003C (v01 A M I  OEMMCFG  03000903 MSFT 00000097)
+[    0.000000] ACPI: Local APIC address 0xfee00000
+[    0.000000] 1015MB LOWMEM available.
+[    0.000000]   mapped low ram: 0 - 3f780000
+[    0.000000]   low ram: 0 - 3f780000
+[    0.000000] Zone ranges:
+[    0.000000]   Normal   [mem 0x00001000-0x3f77ffff]
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x00001000-0x0009efff]
+[    0.000000]   node   0: [mem 0x00100000-0x3f77ffff]
+[    0.000000] On node 0 totalpages: 259870
+[    0.000000] free_area_init_node: node 0, pgdat b05e48c4, node_mem_map eef90020
+[    0.000000]   Normal zone: 2031 pages used for memmap
+[    0.000000]   Normal zone: 0 pages reserved
+[    0.000000]   Normal zone: 259870 pages, LIFO batch:31
+[    0.000000] Using APIC driver default
+[    0.000000] Reserving Intel graphics stolen memory at 0x3f800000-0x3fffffff
+[    0.000000] ACPI: PM-Timer IO Port: 0x808
+[    0.000000] ACPI: Local APIC address 0xfee00000
+[    0.000000] ACPI: LAPIC (acpi_id[0x01] lapic_id[0x00] enabled)
+[    0.000000] ACPI: IOAPIC (id[0x01] address[0xfec00000] gsi_base[0])
+[    0.000000] IOAPIC[0]: apic_id 1, version 32, address 0xfec00000, GSI 0-23
+[    0.000000] ACPI: INT_SRC_OVR (bus 0 bus_irq 0 global_irq 2 dfl dfl)
+[    0.000000] ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 9 high level)
+[    0.000000] ACPI: INT_SRC_OVR (bus 0 bus_irq 0 global_irq 2 dfl dfl)
+[    0.000000] ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 9 high level)
+[    0.000000] ACPI: IRQ0 used by override.
+[    0.000000] ACPI: IRQ2 used by override.
+[    0.000000] ACPI: IRQ9 used by override.
+[    0.000000] Using ACPI (MADT) for SMP configuration information
+[    0.000000] nr_irqs_gsi: 40
+[    0.000000] e820: [mem 0x40000000-0xfedfffff] available for PCI devices
+[    0.000000] pcpu-alloc: s0 r0 d32768 u32768 alloc=1*32768
+[    0.000000] pcpu-alloc: [0] 0 
+[    0.000000] Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 257839
+[    0.000000] Kernel command line: BOOT_IMAGE=/home/eeeuser/bzImage root=/dev/sdb2 ro rootfstype=ext4 usb_storage.delay_use=0 boot_delay=50 earlyprintk=vga ignore_loglevel
+[    0.000000] PID hash table entries: 4096 (order: 2, 16384 bytes)
+[    0.000000] Dentry cache hash table entries: 131072 (order: 7, 524288 bytes)
+[    0.000000] Inode-cache hash table entries: 65536 (order: 6, 262144 bytes)
 
-During wakeup, it triggered wake-affine, after that, go inside
-select_idle_sibling() and found no idle cpu, than pick the search point
-instead (curr cpu if wake-affine or prev cpu if not).
-
-> 
-> Note that the comparison isn't fair, running dbench on an idle system vs
-> running dbench on a busy system is the first step.
-
-Our comparison is based on the same busy-system, all the two cases have
-the same workload running, the only difference is that we put the same
-workload (dbench + stress) one group deeper, it's like:
-
-Good case:
-		root
-		l1-A	l1-B	l1-C
-		dbench	stress	stress
-
-	results:
-		dbench got around 300%
-		each stress got around 450%
-
-Bad case:
-		root
-		l1
-		l2-A	l2-B	l2-C
-		dbench	stress	stress
-
-	results:
-		dbench got around 100% (throughout dropped too)
-		each stress got around 550%
-
-Although the l1-group gain the same resources (1200%), it doesn't assign
-to l2-ABC correctly like the root-group did.
-
-> 
-> The second is adding the cgroup crap on.
-> 
->> However, in our cases the load balance could not help on that, since deeper
->> the group is, less the load effect it means to root group.
-> 
-> But since all actual load is on the same depth, the relative threshold
-> (imbalance pct) should work the same, the size of the values don't
-> matter, the relative ratios do.
-
-Exactly, however, when group is deep, the chance of it to make root
-imbalance reduced, in good case, gathered on cpu means 1024 load, while
-in bad case it dropped to 1024/3 ideally, that make it harder to trigger
-imbalance and gain help from the routine, please note that although
-dbench and stress are the only workload in system, there are still other
-tasks serve for the system need to be wakeup (some very actively since
-the dbench...), compared to them, deep group load means nothing...
-
-> 
->> By which means even tasks in deep group all gathered on one CPU, the load
->> could still balanced from the view of root group, and the tasks lost the
->> only chances (balance) to spread when they already on the same CPU...
-> 
-> Sure, but see above.
-
-The lb-routine could not provide enough help for deep group, since the
-imbalance happened inside the group could not cause imbalance in root,
-ideally each l2-task will gain 1024/18 ~= 56 root-load, which could be
-easily ignored, but inside the l2-group, the gathered case could already
-means imbalance like (1024 * 5) : 1024.
-
-> 
->> Furthermore, for tasks flip frequently like dbench, it'll become far more
->> harder for load balance to help, it could even rarely catch them on rq.
-> 
-> And I suspect that is the main problem; so see what it does on a busy
-> system: !cgroup: nr_cpus busy loops + dbench, because that's your
-> benchmark for adding cgroups, the cgroup can only shift that behaviour
-> around.
-
-There are busy loops in good case too, and dbench behaviour in l1-groups
-should not changed after put them to l2-group, what make things worse is
-the chance for them to spread after gathered become less.
-
-> 
-[snip]
->> Below patch has solved the problem during the testing, I'd like to do more
->> testing on other benchmarks before send out the formal patch, any comments
->> are welcomed ;-)
-> 
-> So I think that approach is wrong, select_idle_siblings() works because
-> we want to keep CPUs from being idle, but if they're not actually idle,
-> pretending like they are (in a cgroup) is actively wrong and can skew
-> load pretty bad.
-
-We only choose the timing when no idle cpu located, and flips is
-somewhat high, also the group is deep.
-
-In such cases, select_idle_siblings() doesn't works anyway, it return
-the target even it is very busy, we just check twice to prevent it from
-making some obviously bad decision ;-)
-
-> 
-> Furthermore, if as I expect, dbench sucks on a busy system, then the
-> proposed cgroup thing is wrong, as a cgroup isn't supposed to radically
-> alter behaviour like that.
-
-That's true and that's why we currently still need to shut down the
-GENTLE_FAIR_SLEEPERS feature, but that's another problem we need to
-solve later...
-
-What we currently expect is that the cgroup assign the resource
-according to the share, it works well in l1-groups, so we expect it to
-work the same well in l2-groups...
-
-> 
-> More so, I suspect that patch will tend to overload cpu0 (and lower cpu
-> numbers in general -- because its scanning in the same direction for
-> each cgroup) for other workloads. You can't just go pile more and more
-> work on cpu0 just because there's nothing running in this particular
-> cgroup.
-
-That's a good point...
-
-However during the testing, this doesn't happen on the 3 groups, tasks
-stay on high-cpu as often as low-cpu, IMHO the key point here is the
-lb-routine still works, although much less than before.
-
-So the fix just make the result of lb-routine effect longer, since the
-higher cpu it picked is usually idle in group (directly pick later), in
-other word, tasks on high-cpu is harder to be wake-affine to low-cpu
-than before.
-
-And when this apply to all the groups, each of them will be balanced
-both internally and externally, then we will see equal tasks on each cpu.
-
-select_idle_sibling() do pick low-cpu more often, and combined with
-wake-affine, without enough load-balance, the tasks will gathered on
-low-cpu more often, but our solution will make the less load-balance
-become more valuable (when they need to be), IMHO, it could even
-contribute to balance work in some cases...
-
-> 
-> So dbench is very sensitive to queueing, and select_idle_siblings()
-> avoids a lot of queueing on an idle system. I don't think that's
-> something we should fix with cgroups.
-
-It has to queue anyway after wakeup, isn't it? we just want a good
-candidate which won't make things too bad inside group, and only do this
-when select_idle_siblings() give up on searching...
-
-Regards,
-Michael Wang
-
-> 
-
+-- 
+Sitsofe | http://sucs.org/~sits/
