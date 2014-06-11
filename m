@@ -1,107 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932596AbaFKQPj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 12:15:39 -0400
-Received: from granite.fifsource.com ([173.255.216.206]:59377 "EHLO
-	granite.fifsource.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755744AbaFKQPi (ORCPT
+	id S932682AbaFKQQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 12:16:58 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:59136 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754908AbaFKQQ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 12:15:38 -0400
-Message-ID: <1402503318.27314.12.camel@niobium.home.fifi.org>
-Subject: Re: Phantom ACL-related xattrs on 3.14.4 NFS client
-From: Philippe Troin <phil@fifi.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
-Date: Wed, 11 Jun 2014 09:15:18 -0700
-In-Reply-To: <20140611072402.GA2683@infradead.org>
-References: <1402082953.28220.7.camel@ceramic.home.fifi.org>
-	 <CAHQdGtS2BL9u4DV=FZ0HaXO-iTNPU4hTGVR--HubNa4A_6UNog@mail.gmail.com>
-	 <20140607140414.GA26534@infradead.org>
-	 <1402195701.12743.18.camel@ceramic.home.fifi.org>
-	 <1402435203.24047.9.camel@ceramic.home.fifi.org>
-	 <20140611072402.GA2683@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 11 Jun 2014 12:16:57 -0400
+Date: Wed, 11 Jun 2014 18:16:52 +0200
+From: Levente Kurusa <levex@linux.com>
+To: David Rientjes <rientjes@google.com>,
+        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Masanari Iida <standby24x7@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: rtl8821ae: rtl8821ae: hw.c:  Cleaning up if
+ statement that always evaluates to false
+Message-ID: <20140611161652.GA23026@linux.com>
+References: <1402191812-26264-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <alpine.DEB.2.02.1406081336080.19183@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="TB36FDmn/VVEgNH/"
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1406081336080.19183@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph,
 
-On Wed, 2014-06-11 at 00:24 -0700, Christoph Hellwig wrote:
-> On Tue, Jun 10, 2014 at 02:20:03PM -0700, Philippe Troin wrote:
-> > Trond, Christoph,
-> > 
-> > Since my last email, I've been testing 3.14.6.
-> > Stock 3.14.6 is still broken, and Christoph's patch does help, but does
-> > not entirely cure the problem.
-> 
-> Can you send me the output of 
-> 
-> getfattr -n system.posix_acl_access -e hex <file>
-> 
-> for the working case, and the current kernel with my previous patch?
+--TB36FDmn/VVEgNH/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Here's the output on the broken kernel (vanilla 3.14.6 + your patch):
+On Sun, Jun 08, 2014 at 01:37:43PM -0700, David Rientjes wrote:
+> >  drivers/staging/rtl8821ae/rtl8821ae/hw.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >=20
+> > diff --git a/drivers/staging/rtl8821ae/rtl8821ae/hw.c b/drivers/staging=
+/rtl8821ae/rtl8821ae/hw.c
+> > index 1b8583b..52322e3 100644
+> > --- a/drivers/staging/rtl8821ae/rtl8821ae/hw.c
+> > +++ b/drivers/staging/rtl8821ae/rtl8821ae/hw.c
+> > @@ -1623,7 +1623,7 @@ static int _rtl8821ae_set_media_status(struct iee=
+e80211_hw *hw,
+> > =20
+> >  	rtl_write_byte(rtlpriv, (MSR), bt_msr);
+> >  	rtlpriv->cfg->ops->led_control(hw, ledaction);
+> > -	if ((bt_msr & ~0xfc) =3D=3D MSR_AP)
+> > +	if ((bt_msr & MSR_AP) =3D=3D MSR_AP)
 
-        % mkdir x
-        % cd x
-        % getfacl .                                   
-        # file: .
-        # owner: phil
-        # group: phil
-        user::rwx
-        group::rwx
-        other::r-x
-        
-        % getfattr -e hex -n system.posix_acl_access .
-        .: system.posix_acl_access: No such attribute
-        [2]    1901 exit 1     getfattr -e hex -n system.posix_acl_access .
-        % setfacl -m u:root:r .                       
-        % getfacl .                                   
-        # file: .
-        # owner: phil
-        # group: phil
-        user::rwx
-        user:root:r--
-        group::rwx
-        mask::rwx
-        other::r-x
-        
-        % getfattr -e hex -n system.posix_acl_access .
-        # file: .
-        system.posix_acl_access=0x0200000001000700ffffffff020004000000000004000700ffffffff10000700ffffffff20000500ffffffff
-        
-        % setfacl -b .                                
-        % getfacl .                                   
-        # file: .
-        # owner: phil
-        # group: phil
-        user::rwx
-        group::rwx
-        other::r-x
-        
-        % getfattr -e hex -n system.posix_acl_access .
-        # file: .
-        system.posix_acl_access=0x0200000001000700ffffffff04000700ffffffff20000500ffffffff
-        
-On a working system (3.13.11 + Fedora patches), the output is the same.
-So there's no regression here between 3.13.11 and 3.14.6 + your patch.
-I would argue that this behavior (system.posix_acl_access still present
-after clear the ACLs with setfacl -b) is wrong, and in fact there are no
-traces of this xattr on the server, but it's not new.
-I had missed that this counter-intuitive behavior was already in earlier
-kernels.  My apologies.
-Trond, what's your take on that one?
+I changed this line from '0xfc' to '~0xfc', and looking at the defines
+it must have been the way your patch does, so:
 
-So, the only regression remaining between 3.13.11 and 3.14.6 + your
-patch is the one where listxattr(2) and friends do not NUL-terminate the
-xattr names they return.  This is detailed in
-<1402435203.24047.9.camel@ceramic.home.fifi.org> I sent yesterday.
+Acked-by: Levente Kurusa <levex@linux.com>
 
-Phil.
+if it wasn't applied yet, and you fix the problems David pointed out
+with the commit message.
 
+Thanks,
+    Levente Kurusa
+
+--TB36FDmn/VVEgNH/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJTmIDzAAoJELBqK2lO9dZBvsgIAJ4MNOv1LbUdY96pkIqncIzV
+E0WkI+TSrY47GCqjOwsL9i3xI/xmmnyKBBW9bjYH1iD5/qDc7abR0HwN0AJVDI+d
+l6ExTxUXo+kTMNtINdFpKGkYcLT3sU8SzX0TCAz3XHmoCeUxZmThvPKkZ1XaowKV
+PUlLeqLz9lMB9e9wHeEW7SJyc8yIAp7+d1rN44gQfq3Ed5UWTdnj+oeSLy44Qszl
+sUoOylfIYdzAWgKk4hweQ/ykiltXsVwndKXtLPV/0HT+tQ9NZSqWAaTW4BQVogX5
+3BnaMYWUPaFT9XbE6yOBX7I91hYftJV5olgwtdm7eXrBnmAmUYnfusVSDk54gAY=
+=Rfoo
+-----END PGP SIGNATURE-----
+
+--TB36FDmn/VVEgNH/--
