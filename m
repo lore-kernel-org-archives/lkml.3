@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933153AbaFKQAo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 12:00:44 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:49638 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932520AbaFKQAl (ORCPT
+	id S933183AbaFKQBl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 12:01:41 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:53786 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753048AbaFKQBk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 12:00:41 -0400
+	Wed, 11 Jun 2014 12:01:40 -0400
+Date: Wed, 11 Jun 2014 17:01:33 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: paulmck@linux.vnet.ibm.com, torvalds@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [pre 3.16-rc1] Oops at spin_trylock(&inode->i_lock)
+Message-ID: <20140611160133.GX18016@ZenIV.linux.org.uk>
+References: <201406102104.FAG04640.MVJFSQOHtOFOFL@I-love.SAKURA.ne.jp>
+ <20140610143425.GL4581@linux.vnet.ibm.com>
+ <201406112035.ADB51545.QFVMLJOtFOHSOF@I-love.SAKURA.ne.jp>
 MIME-Version: 1.0
-In-Reply-To: <1402500612-4778-2-git-send-email-t.figa@samsung.com>
-References: <1402500612-4778-1-git-send-email-t.figa@samsung.com>
-	<1402500612-4778-2-git-send-email-t.figa@samsung.com>
-Date: Wed, 11 Jun 2014 11:00:40 -0500
-Message-ID: <CAJgR-BhgZ7k_Uk_Md79pkZKQXTZUjspqq0u9sa9D69Kixy7DhA@mail.gmail.com>
-Subject: Re: [PATCH 1/5] ARM: mm: cache-l2x0: Add base address argument to
- write_sec callback
-From: Jon Loeliger <loeliger@gmail.com>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: linux-samsung-soc@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
-        Laura Abbott <lauraa@codeaurora.org>, Tony Lindgren <tony@atomide.com>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Robin Holt <holt@sgi.com>, Russell King <linux@arm.linux.org.uk>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201406112035.ADB51545.QFVMLJOtFOHSOF@I-love.SAKURA.ne.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> diff --git a/arch/arm/include/asm/mach/arch.h b/arch/arm/include/asm/mach/arch.h
-> index 060a75e..ddaebcd 100644
-> --- a/arch/arm/include/asm/mach/arch.h
-> +++ b/arch/arm/include/asm/mach/arch.h
-> @@ -46,7 +46,8 @@ struct machine_desc {
->         enum reboot_mode        reboot_mode;    /* default restart mode */
->         unsigned                l2c_aux_val;    /* L2 cache aux value   */
->         unsigned                l2c_aux_mask;   /* L2 cache aux mask    */
-> -       void                    (*l2c_write_sec)(unsigned long, unsigned);
-> +       void                    (*l2c_write_sec)(void __iomem *,
-> +                                                unsigned long, unsigned);
->         struct smp_operations   *smp;           /* SMP operations       */
->         bool                    (*smp_init)(void);
->         void                    (*fixup)(struct tag *, char **);
+On Wed, Jun 11, 2014 at 08:35:44PM +0900, Tetsuo Handa wrote:
+> I also confirmed that the command line which triggers this oops is
+> 
+>   mount -n -o ro,remount sysfs /sys
+> 
+> in /etc/init.d/halt script in CentOS 6.5.
+> Manually executing the command line from login shell triggers this oops.
+> 
+> I don't know why but commit 59a3d4c363 revealed a refcount bug
+> in sysfs (or maybe in vfs)?
 
-> diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
-> index efc5cab..1695eab 100644
-> --- a/arch/arm/mm/cache-l2x0.c
-> +++ b/arch/arm/mm/cache-l2x0.c
-> @@ -72,7 +72,7 @@ static void l2c_write_sec(unsigned long val, void __iomem *base, unsigned reg)
->         if (val == readl_relaxed(base + reg))
->                 return;
->         if (outer_cache.write_sec)
-> -               outer_cache.write_sec(val, reg);
-> +               outer_cache.write_sec(base, val, reg);
->         else
->                 writel_relaxed(val, base + reg);
->  }
+Try to check if this helps:
 
-The parameter order (base, val, reg) seems very non-intuitive.
-Are you matching some existing prototype or adhering to some
-backwards compatibility issue?  If not wouldn't, say, (base, reg, val)
-or (val, base, reg) be more intuitive?
-
-Thanks,
-jdl
+diff --git a/fs/dcache.c b/fs/dcache.c
+index be2bea8..e99c6f5 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -532,10 +532,12 @@ static inline struct dentry *lock_parent(struct dentry *dentry)
+ 	struct dentry *parent = dentry->d_parent;
+ 	if (IS_ROOT(dentry))
+ 		return NULL;
++	if (unlikely((int)dentry->d_lockref.count < 0))
++		return NULL;
+ 	if (likely(spin_trylock(&parent->d_lock)))
+ 		return parent;
+-	spin_unlock(&dentry->d_lock);
+ 	rcu_read_lock();
++	spin_unlock(&dentry->d_lock);
+ again:
+ 	parent = ACCESS_ONCE(dentry->d_parent);
+ 	spin_lock(&parent->d_lock);
