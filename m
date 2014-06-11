@@ -1,111 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752490AbaFKTda (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 15:33:30 -0400
-Received: from forward4l.mail.yandex.net ([84.201.143.137]:34651 "EHLO
-	forward4l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751945AbaFKTd3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 15:33:29 -0400
-X-Yandex-Uniq: 29926c94-ffc9-4ebe-9523-f7edf44dc83e
-Authentication-Results: smtp9.mail.yandex.net; dkim=pass header.i=@yandex.ru
-Message-ID: <1402515194.10391.9.camel@localhost.localdomain>
-Subject: Re: [PATCH 1/2] sched: Rework migrate_tasks()
-From: Kirill Tkhai <tkhai@yandex.ru>
-Reply-To: tkhai@yandex.ru
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Tkhai Kirill <ktkhai@parallels.com>
-Date: Wed, 11 Jun 2014 23:33:14 +0400
-In-Reply-To: <4032471402494232@web2m.yandex.ru>
-References: <20140611093417.27807.2288.stgit@tkhai>
-	 <1402480330.32126.14.camel@tkhai>
-	 <20140611112411.GA21191@linux.vnet.ibm.com>
-	 <3732251402489254@web2m.yandex.ru>
-	 <20140611131536.GB21191@linux.vnet.ibm.com>
-	 <4032471402494232@web2m.yandex.ru>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1752626AbaFKTgu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 15:36:50 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:56221 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750963AbaFKTgt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 15:36:49 -0400
+Date: Wed, 11 Jun 2014 14:36:27 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Peter Chen <peter.chen@freescale.com>
+CC: Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Matt Porter <matt.porter@linaro.org>
+Subject: Re: Disable bus's drivers_autoprobe before rootfs has mounted
+Message-ID: <20140611193627.GA19366@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <20140611021439.GA25082@shlinux1.ap.freescale.net>
+ <20140611041000.GB15184@kroah.com>
+ <20140611043507.GA30126@saruman.home>
+ <20140611032956.GC25082@shlinux1.ap.freescale.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="WIyZ46R2i8wDzkSu"
+Content-Disposition: inline
+In-Reply-To: <20140611032956.GC25082@shlinux1.ap.freescale.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-В Ср, 11/06/2014 в 17:43 +0400, Kirill Tkhai пишет:
-> 
-> 11.06.2014, 17:15, "Srikar Dronamraju" <srikar@linux.vnet.ibm.com>:
-> >>>  * Kirill Tkhai <ktkhai@parallels.com> [2014-06-11 13:52:10]:
-> >>>>   Currently migrate_tasks() skips throttled tasks,
-> >>>>   because they are not pickable by pick_next_task().
-> >>>  Before migrate_tasks() is called, we do call set_rq_offline(), in
-> >>>  migration_call().
-> >>>
-> >>>  Shouldnt this take care of unthrottling the tasks and making sure that
-> >>>  they can be picked by pick_next_task().
-> >>  If we do this separate for every class, we'll have to do this 3 times.
-> >>  Furthermore, deadline class does not have a list of throttled tasks.
-> >>  So we'll have to the same as I did: to lock tasklist_lock and to iterate
-> >>  throw all of the tasks in the system just to found deadline tasks.
-> >
-> > I think you misread my comment.
-> >
-> > Currently migrate_task() gets called from migration_call() and in the
-> > migration_call() before migrate_tasks(), set_rq_offline() should put
-> > tasks back using unthrottle_cfs_rq().
-> >
-> > So my question is: Why are these tasks not getting unthrottled
-> > through we are calling set_rq_offline? To me set_rq_offline is
-> > calling the actual sched class routines to do the needful.
-> >
-> > I can understand about deadline tasks, because we don't have a deadline
-> > But thats the only tasks that we need to fix.
-> 
-> Hm, I tested that on fair class tasks. They used to disappear from
-> /proc/sched_debug and used to hang. I'll check all once again.
-> 
-> I'm agree with you, if set_rq_offline() already presents, we should use it.
-> 
-> /me went to clarify why it does not work in my test.
+--WIyZ46R2i8wDzkSu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Ok, it looks like the problem is that unthrottled cfs_rq may become throttled
-again ;)
+On Wed, Jun 11, 2014 at 11:29:57AM +0800, Peter Chen wrote:
+> On Tue, Jun 10, 2014 at 11:35:07PM -0500, Felipe Balbi wrote:
+> > Hi,
+> >=20
+> > On Tue, Jun 10, 2014 at 09:10:00PM -0700, Greg KH wrote:
+> > > > Let's take USB peripheral as an example, there is a device for
+> > > > udc, and a device driver for usb gadget driver, at default, we want
+> > > > the device to be bound to driver automatically, this is what
+> > > > we have done now. But if there are more than one udcs and gadget
+> > > > drivers (eg one B port for mass storage, another B port for usb eth=
+ernet),
+> > > > the user may want to have specific binding (eg, udc-0 -> mass stora=
+ge,
+> > > > udc-1 -> usb ethernet), so the binding will be established
+> > > > after rootfs has mounted. (This feature is implementing)
+> > >=20
+> > > Then there better be a way to describe this on the kernel command line
+> > > (i.e. module paramaters), right?  Which is a total mess, why not just
+> > > not bind anything in this case and let the user pick what they want?
+> >=20
+> > you can also blacklist all gadget drivers and manually probe them or -
+> > get this - you can refrain from using gadget drivers and use libusbg to
+> > build the gadget drivers out of raw usb functions, then bind them to the
+> > UDC of your liking.
+> >=20
+>=20
+> I am just worried if we change the behaviour of using gadget driver,
+> can it be accepted by user? If you think it can be accepted if we can
+> have some docs, we can implement manually binding for gadget driver
+> from now on.
 
-__migrate_task()->dequeue_task() calls update_rq_clock(), which throttles
-just unthrottle cfs_rq after a first picked task is moved.
+user shouldn't have to deal with direct module insertion/removal (unless
+he's a developer and actually *wants* to do that). Docs are already in
+tree. The entire configfs interface has been documented, it's based on
+those documents that Matt started writing libusbg.
 
-Hope, something like above helps, I'll check if there are no other problem
-and write again.
+--=20
+balbi
 
----
- kernel/sched/core.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index d0d1565..b5fd6f0 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4843,6 +4843,12 @@ static void migrate_tasks(unsigned int dead_cpu)
- 	 */
- 	update_rq_clock(rq);
- 
-+	/*
-+	 * Prevent rq->clock update from __migrate_task()->dequeue_task()
-+	 * to do not throttle sched_class queues and tasks.
-+	 */
-+	rq->skip_clock_update = 1;
-+
- 	for ( ; ; ) {
- 		/*
- 		 * There's this thread running, bail when that's the only
-@@ -4864,6 +4870,8 @@ static void migrate_tasks(unsigned int dead_cpu)
- 		raw_spin_lock(&rq->lock);
- 	}
- 
-+	rq->skip_clock_update = 0; /* Reset it back */
-+
- 	rq->stop = stop;
- }
- 
+--WIyZ46R2i8wDzkSu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
+iQIcBAEBAgAGBQJTmK+7AAoJEIaOsuA1yqREXr8P/3hdTGBTWJyPTNjxcPpL2WDe
+xukrXQmyKHlfgWrLFZNvRogqDCeSBYB0xzwF4G0WPkdjdDFZ38JkqjNudfvewM/M
+HdJWfWCHCOGF5nxKdAI7I/Dl/ResFCQ1SgNR/T9HVuLFO/d+c7yfdJR4fqWbKp3D
+RQy6Pn/EZKrpZ4IXKd1/RbpIz2Lr+6yl3UABtGOuFME3NIhj5A5oWGD8JZ3zSiwD
+IK+0tpvhaj3xN/6L4Xurmc7TxZaUIf3lbnmqZl4b4HAH3k8Whl+/kIVLeFrhQPSO
+1sPCLEhdgz8KUUr5pudNvNshJO10+CcHqUIeCirBPJJuXieDIZuppQOV3gzc7r//
+bipMX6FHxL2nJmU9DlsWyw4siXz/iXSYyLKFNnt05oREA7yHMjva4g3/x4EZGnEm
+DZJJoTPw4DK1li3l02zQ6wiSA23xGByEOdM5kvNRpo2yjL9zZoZz2g+g21A2mW3E
+UnoNWSZUTqo99/EIclfN4kxnwkO34grkZfWIh+vvsmmzxsuGsoBJ9Dw1/NymTBzZ
+XRk+yLa596QlTHN31DysGELXH3g7oNnKaFrjHNXVw6KyBtD2kkjWKze0Qlh8TrzF
+KAWObPBNkFdgnVGkJlqqbWj5wlm8xyMASBIm+cOqNMWfNPU004f5IqPqiPqyjUW3
+2I2awsX3UYFZ6NkAbpke
+=neq1
+-----END PGP SIGNATURE-----
+
+--WIyZ46R2i8wDzkSu--
