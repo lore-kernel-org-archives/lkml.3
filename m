@@ -1,185 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754570AbaFKXQn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 19:16:43 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:64085 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752092AbaFKXQl convert rfc822-to-8bit (ORCPT
+	id S1754139AbaFKXaP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 19:30:15 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:44032 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752671AbaFKXaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 19:16:41 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        =?ISO-8859-1?Q?=C9meric?= Maschino <emeric.maschino@gmail.com>
-Subject: [PATCH] ACPI / ia64 / sba_iommu: Restore the working initialization ordering
-Date: Thu, 12 Jun 2014 01:34:06 +0200
-Message-ID: <1484331.OIWg7ItM60@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+	Wed, 11 Jun 2014 19:30:14 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <5398E07C.6030107@oracle.com>
+References: <5398E07C.6030107@oracle.com>
+Date: Wed, 11 Jun 2014 16:30:12 -0700
+Message-ID: <CALAqxLWa-ZrL48ZooecxqHRg91mPc4ju-5k5b3cQqqHdJp+ptA@mail.gmail.com>
+Subject: Re: timekeeping: exiting task with held timekeeping locks
+From: John Stultz <john.stultz@linaro.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Dave Jones <davej@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Wed, Jun 11, 2014 at 4:04 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
+> Hi all,
+>
+> While fuzzing with trinity inside a KVM tools guest running the latest -next
+> kernel I've stumbled on the following spew:
+>
+> [ 3460.136058] =====================================
+> [ 3460.138017] [ BUG: trinity-c70/27193 still has locks held! ]
+> [ 3460.141491] 3.15.0-next-20140611-sasha-00022-g9466d2f-dirty #638 Not tainted
+> [ 3460.143219] -------------------------------------
+> [ 3460.167979] 2 locks held by trinity-c70/27193:
+> [ 3460.169172] #0: (tick_broadcast_lock){-.-.-.}, at: tick_handle_periodic_broadcast (kernel/time/tick-broadcast.c:301)
+> [ 3460.468004] #1: (timekeeper_lock){-.-.-.}, at: update_wall_time (kernel/time/timekeeping.c:1371)
+> [ 3460.920025]
+> [ 3460.920025] stack backtrace:
+> [ 3460.928146] CPU: 0 PID: 27193 Comm: trinity-c70 Not tainted 3.15.0-next-20140611-sasha-00022-g9466d2f-dirty #638
+> [ 3460.928648] can: request_module (can-proto-3) failed.
+> [ 3460.943111]  ffff8800576ef4c8 ffff8800576efc88 ffffffffa551093c 0000000000000001
+> [ 3460.962511]  ffff880056f9b000 ffff8800576efca8 ffffffffa21c6a43 ffff880056f9bbe8
+> [ 3461.007184]  ffff880056f9bbe8 ffff8800576efd48
+> [ 3461.017661] can: request_module (can-proto-0) failed.
+> [ 3461.045536]  ffffffffa21636ea ffff8800576efcc8
+> [ 3461.170992] Call Trace:
+> [ 3461.174122] dump_stack (lib/dump_stack.c:52)
+> [ 3461.558864] debug_check_no_locks_held (kernel/locking/lockdep.c:4107 kernel/locking/lockdep.c:4113)
+> [ 3461.577066] do_exit (kernel/exit.c:796)
+> [ 3461.592523] ? debug_smp_processor_id (lib/smp_processor_id.c:57)
+> [ 3461.629067] ? _raw_spin_unlock_irq (./arch/x86/include/asm/paravirt.h:819 include/linux/spinlock_api_smp.h:168 kernel/locking/spinlock.c:199)
+> [ 3461.671525] do_group_exit (kernel/exit.c:884)
+> [ 3461.717091] get_signal_to_deliver (kernel/signal.c:2347)
+> [ 3461.724142] ? vtime_account_user (kernel/sched/cputime.c:687)
+> [ 3461.800505] do_signal (arch/x86/kernel/signal.c:698)
+> [ 3461.808792] ? vtime_account_user (kernel/sched/cputime.c:687)
+> [ 3461.812780] ? preempt_count_sub (kernel/sched/core.c:2602)
+> [ 3461.824601] ? context_tracking_user_exit (./arch/x86/include/asm/paravirt.h:809 (discriminator 2) kernel/context_tracking.c:182 (discriminator 2))
+> [ 3461.827619] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+> [ 3461.831486] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2557 kernel/locking/lockdep.c:2599)
+> [ 3461.841516] do_notify_resume (arch/x86/kernel/signal.c:751)
+> [ 3461.847056] retint_signal (arch/x86/kernel/entry_64.S:921)
 
-Commit 66345d5f79fc (ACPI / ia64 / sba_iommu: Use ACPI scan handler
-for device discovery) changed the ordering of SBA (System Bus Adapter)
-IOMMU initialization with respect to the PCI host bridge initialization
-which broke things inadvertently, because the SBA IOMMU initialization
-code has to run after the PCI host bridge has been initialized.
 
-Fix that by reworking the SBA IOMMU ACPI scan handler so that it
-claims the discovered matching ACPI device objects without attempting
-to initialize anything and move the entire SBA IOMMU initialization
-to sba_init() that runs after the PCI bus has been enumerated.
+Huh.. Got me.. I don't see how the task can get out of
+update_wall_time() w/o releasing the timekeeper_lock. Same with the
+tick_broadcast_lock.  Does this happen all the time or was this a
+one-off?
 
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=76691
-Fixes: 66345d5f79fc (ACPI / ia64 / sba_iommu: Use ACPI scan handler for device discovery)
-Reported-and-tested-by: Émeric Maschino <emeric.maschino@gmail.com>
-Cc: 3.11+ <stable@vger.kernel.org> # 3.11+
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- arch/ia64/hp/common/sba_iommu.c |   64 +++++++++++++++++++++++-----------------
- 1 file changed, 37 insertions(+), 27 deletions(-)
+Peter/Ingo: Am I misinterpreting what this warning is saying?
 
-Index: linux-pm/arch/ia64/hp/common/sba_iommu.c
-===================================================================
---- linux-pm.orig/arch/ia64/hp/common/sba_iommu.c
-+++ linux-pm/arch/ia64/hp/common/sba_iommu.c
-@@ -242,7 +242,7 @@ struct ioc {
- 	struct pci_dev	*sac_only_dev;
- };
- 
--static struct ioc *ioc_list;
-+static struct ioc *ioc_list, *ioc_found;
- static int reserve_sba_gart = 1;
- 
- static SBA_INLINE void sba_mark_invalid(struct ioc *, dma_addr_t, size_t);
-@@ -1809,20 +1809,13 @@ static struct ioc_iommu ioc_iommu_info[]
- 	{ SX2000_IOC_ID, "sx2000", NULL },
- };
- 
--static struct ioc *
--ioc_init(unsigned long hpa, void *handle)
-+static void ioc_init(unsigned long hpa, struct ioc *ioc)
- {
--	struct ioc *ioc;
- 	struct ioc_iommu *info;
- 
--	ioc = kzalloc(sizeof(*ioc), GFP_KERNEL);
--	if (!ioc)
--		return NULL;
--
- 	ioc->next = ioc_list;
- 	ioc_list = ioc;
- 
--	ioc->handle = handle;
- 	ioc->ioc_hpa = ioremap(hpa, 0x1000);
- 
- 	ioc->func_id = READ_REG(ioc->ioc_hpa + IOC_FUNC_ID);
-@@ -1863,8 +1856,6 @@ ioc_init(unsigned long hpa, void *handle
- 		"%s %d.%d HPA 0x%lx IOVA space %dMb at 0x%lx\n",
- 		ioc->name, (ioc->rev >> 4) & 0xF, ioc->rev & 0xF,
- 		hpa, ioc->iov_size >> 20, ioc->ibase);
--
--	return ioc;
- }
- 
- 
-@@ -2031,22 +2022,21 @@ sba_map_ioc_to_node(struct ioc *ioc, acp
- #endif
- }
- 
--static int
--acpi_sba_ioc_add(struct acpi_device *device,
--		 const struct acpi_device_id *not_used)
-+static void acpi_sba_ioc_add(struct ioc *ioc)
- {
--	struct ioc *ioc;
-+	acpi_handle handle = ioc->handle;
- 	acpi_status status;
- 	u64 hpa, length;
- 	struct acpi_device_info *adi;
- 
--	status = hp_acpi_csr_space(device->handle, &hpa, &length);
-+	ioc_found = ioc->next;
-+	status = hp_acpi_csr_space(handle, &hpa, &length);
- 	if (ACPI_FAILURE(status))
--		return 1;
-+		goto err;
- 
--	status = acpi_get_object_info(device->handle, &adi);
-+	status = acpi_get_object_info(handle, &adi);
- 	if (ACPI_FAILURE(status))
--		return 1;
-+		goto err;
- 
- 	/*
- 	 * For HWP0001, only SBA appears in ACPI namespace.  It encloses the PCI
-@@ -2067,13 +2057,13 @@ acpi_sba_ioc_add(struct acpi_device *dev
- 	if (!iovp_shift)
- 		iovp_shift = 12;
- 
--	ioc = ioc_init(hpa, device->handle);
--	if (!ioc)
--		return 1;
--
-+	ioc_init(hpa, ioc);
- 	/* setup NUMA node association */
--	sba_map_ioc_to_node(ioc, device->handle);
--	return 0;
-+	sba_map_ioc_to_node(ioc, handle);
-+	return;
-+
-+ err:
-+	kfree(ioc);
- }
- 
- static const struct acpi_device_id hp_ioc_iommu_device_ids[] = {
-@@ -2081,9 +2071,26 @@ static const struct acpi_device_id hp_io
- 	{"HWP0004", 0},
- 	{"", 0},
- };
-+
-+static int acpi_sba_ioc_attach(struct acpi_device *device,
-+			       const struct acpi_device_id *not_used)
-+{
-+	struct ioc *ioc;
-+
-+	ioc = kzalloc(sizeof(*ioc), GFP_KERNEL);
-+	if (!ioc)
-+		return -ENOMEM;
-+
-+	ioc->next = ioc_found;
-+	ioc_found = ioc;
-+	ioc->handle = device->handle;
-+	return 1;
-+}
-+
-+
- static struct acpi_scan_handler acpi_sba_ioc_handler = {
- 	.ids	= hp_ioc_iommu_device_ids,
--	.attach	= acpi_sba_ioc_add,
-+	.attach	= acpi_sba_ioc_attach,
- };
- 
- static int __init acpi_sba_ioc_init_acpi(void)
-@@ -2118,9 +2125,12 @@ sba_init(void)
- #endif
- 
- 	/*
--	 * ioc_list should be populated by the acpi_sba_ioc_handler's .attach()
-+	 * ioc_found should be populated by the acpi_sba_ioc_handler's .attach()
- 	 * routine, but that only happens if acpi_scan_init() has already run.
- 	 */
-+	while (ioc_found)
-+		acpi_sba_ioc_add(ioc_found);
-+
- 	if (!ioc_list) {
- #ifdef CONFIG_IA64_GENERIC
- 		/*
-
+thanks
+-john
