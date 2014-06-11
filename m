@@ -1,134 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753533AbaFKBEw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 21:04:52 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:57071 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751937AbaFKBEv (ORCPT
+	id S1753500AbaFKBKR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 21:10:17 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:59289 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751633AbaFKBKP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 21:04:51 -0400
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-To: linux-kernel@vger.kernel.org
-Cc: "Luis R. Rodriguez" <mcgrof@suse.com>, Michal Hocko <mhocko@suse.cz>,
-        Petr Mladek <pmladek@suse.cz>,
+	Tue, 10 Jun 2014 21:10:15 -0400
+X-Original-SENDERIP: 10.177.220.169
+X-Original-MAILFROM: minchan@kernel.org
+Date: Wed, 11 Jun 2014 10:10:19 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>, Arun KS <arunks.linux@gmail.com>,
-        Kees Cook <keescook@chromium.org>
-Subject: [RFC] printk: allow increasing the ring buffer depending on the number of CPUs
-Date: Tue, 10 Jun 2014 18:04:45 -0700
-Message-Id: <1402448685-30634-1-git-send-email-mcgrof@do-not-panic.com>
-X-Mailer: git-send-email 1.9.1
+        Greg Thelen <gthelen@google.com>, Mel Gorman <mgorman@suse.de>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 02/10] mm, compaction: report compaction as contended
+ only due to lock contention
+Message-ID: <20140611011019.GC15630@bbox>
+References: <1402305982-6928-1-git-send-email-vbabka@suse.cz>
+ <1402305982-6928-2-git-send-email-vbabka@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402305982-6928-2-git-send-email-vbabka@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
+On Mon, Jun 09, 2014 at 11:26:14AM +0200, Vlastimil Babka wrote:
+> Async compaction aborts when it detects zone lock contention or need_resched()
+> is true. David Rientjes has reported that in practice, most direct async
+> compactions for THP allocation abort due to need_resched(). This means that a
+> second direct compaction is never attempted, which might be OK for a page
+> fault, but hugepaged is intended to attempt a sync compaction in such case and
+> in these cases it won't.
+> 
+> This patch replaces "bool contended" in compact_control with an enum that
+> distinguieshes between aborting due to need_resched() and aborting due to lock
+> contention. This allows propagating the abort through all compaction functions
+> as before, but declaring the direct compaction as contended only when lock
+> contantion has been detected.
+> 
+> As a result, hugepaged will proceed with second sync compaction as intended,
+> when the preceding async compaction aborted due to need_resched().
 
-The default size of the ring buffer is too small for machines
-with a large amount of CPUs under heavy load. What ends up
-happening when debugging is the ring buffer overlaps and chews
-up old messages making debugging impossible unless the size is
-passed as a kernel parameter. An idle system upon boot up will
-on average spew out only about one or two extra lines but where
-this really matters is on heavy load and that will vary widely
-depending on the system and environment.
+You said "second direct compaction is never attempted, which might be OK
+for a page fault" and said "hugepagd is intented to attempt a sync compaction"
+so I feel you want to handle khugepaged so special unlike other direct compact
+(ex, page fault).
 
-There are mechanisms to help increase the kernel ring buffer
-for tracing through debugfs, and those interfaces even allow growing
-the kernel ring buffer per CPU. We also have a static value which
-can be passed upon boot. Relying on debugfs however is not ideal
-for production, and relying on the value passed upon bootup is
-can only used *after* an issue has creeped up. Instead of being
-reactive this adds a proactive measure which lets you scale the
-amount of contributions you'd expect to the kernel ring buffer
-under load by each CPU in the worst case scenerio.
+By this patch, direct compaction take care only lock contention, not rescheduling
+so that pop questions.
 
-We use num_possible_cpus() to avoid complexities which could be
-introduced by dynamically changing the ring buffer size at run
-time, num_possible_cpus() lets us use the upper limit on possible
-number of CPUs therefore avoiding having to deal with hotplugging
-CPUs on and off. This option is diabled by default, and if used
-the kernel ring buffer size then can be computed as follows:
+Is it okay not to consider need_resched in direct compaction really?
+We have taken care of it in direct reclaim path so why direct compaction is
+so special?
 
-size = __LOG_BUF_LEN + (num_possible_cpus() - 1 ) *  __LOG_CPU_BUF_LEN
+Why does khugepaged give up easily if lock contention/need_resched happens?
+khugepaged is important for success ratio as I read your description so IMO,
+khugepaged should do synchronously without considering early bail out by
+lock/rescheduling.
 
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Petr Mladek <pmladek@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Joe Perches <joe@perches.com>
-Cc: Arun KS <arunks.linux@gmail.com>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
----
- init/Kconfig           | 28 ++++++++++++++++++++++++++++
- kernel/printk/printk.c |  6 ++++--
- 2 files changed, 32 insertions(+), 2 deletions(-)
+If it causes problems, user should increase scan_sleep_millisecs/alloc_sleep_millisecs,
+which is exactly the knob for that cases.
 
-diff --git a/init/Kconfig b/init/Kconfig
-index 9d3585b..1814436 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -806,6 +806,34 @@ config LOG_BUF_SHIFT
- 		     13 =>  8 KB
- 		     12 =>  4 KB
- 
-+config LOG_CPU_BUF_SHIFT
-+	int "CPU kernel log buffer size contribution (13 => 8 KB, 17 => 128KB)"
-+	range 0 21
-+	default 0
-+	help
-+	  The kernel ring buffer will get additional data logged onto it
-+	  when multiple CPUs are supported. Typically the contributions is a
-+	  few lines when idle however under under load this can vary and in the
-+	  worst case it can mean loosing logging information. You can use this
-+	  to set the maximum expected mount of amount of logging contribution
-+	  under load by each CPU in the worst case scenerio. Select a size as
-+	  a power of 2. For example if LOG_BUF_SHIFT is 18 and if your
-+	  LOG_CPU_BUF_SHIFT is 12 your kernel ring buffer size will be as
-+	  follows having 16 CPUs as possible.
-+
-+	     ((1 << 18) + ((16 - 1) * (1 << 12))) / 1024 = 316 KB
-+
-+	  Where as typically you'd only end up with 256 KB. This is disabled
-+	  by default with a value of 0.
-+
-+	  Examples:
-+		     17 => 128 KB
-+		     16 => 64 KB
-+	             15 => 32 KB
-+	             14 => 16 KB
-+		     13 =>  8 KB
-+		     12 =>  4 KB
-+
- #
- # Architectures with an unreliable sched_clock() should select this:
- #
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 7228258..2023424 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -246,6 +246,7 @@ static u32 clear_idx;
- #define LOG_ALIGN __alignof__(struct printk_log)
- #endif
- #define __LOG_BUF_LEN (1 << CONFIG_LOG_BUF_SHIFT)
-+#define __LOG_CPU_BUF_LEN (1 << CONFIG_LOG_CPU_BUF_SHIFT)
- static char __log_buf[__LOG_BUF_LEN] __aligned(LOG_ALIGN);
- static char *log_buf = __log_buf;
- static u32 log_buf_len = __LOG_BUF_LEN;
-@@ -752,9 +753,10 @@ void __init setup_log_buf(int early)
- 	unsigned long flags;
- 	char *new_log_buf;
- 	int free;
-+	int cpu_extra = (num_possible_cpus() - 1) * __LOG_CPU_BUF_LEN;
- 
--	if (!new_log_buf_len)
--		return;
-+	if (!new_log_buf_len && cpu_extra > 1)
-+		new_log_buf_len = __LOG_BUF_LEN + cpu_extra;
- 
- 	if (early) {
- 		new_log_buf =
+So, my point is how about making khugepaged doing always dumb synchronous
+compaction thorough PG_KHUGEPAGED or GFP_SYNC_TRANSHUGE?
+
+> 
+> Reported-by: David Rientjes <rientjes@google.com>
+> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+> Cc: Minchan Kim <minchan@kernel.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Cc: Michal Nazarewicz <mina86@mina86.com>
+> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> ---
+>  mm/compaction.c | 20 ++++++++++++++------
+>  mm/internal.h   | 15 +++++++++++----
+>  2 files changed, 25 insertions(+), 10 deletions(-)
+> 
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index b73b182..d37f4a8 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -185,9 +185,14 @@ static void update_pageblock_skip(struct compact_control *cc,
+>  }
+>  #endif /* CONFIG_COMPACTION */
+>  
+> -static inline bool should_release_lock(spinlock_t *lock)
+> +enum compact_contended should_release_lock(spinlock_t *lock)
+>  {
+> -	return need_resched() || spin_is_contended(lock);
+> +	if (need_resched())
+> +		return COMPACT_CONTENDED_SCHED;
+> +	else if (spin_is_contended(lock))
+> +		return COMPACT_CONTENDED_LOCK;
+> +	else
+> +		return COMPACT_CONTENDED_NONE;
+>  }
+>  
+>  /*
+> @@ -202,7 +207,9 @@ static inline bool should_release_lock(spinlock_t *lock)
+>  static bool compact_checklock_irqsave(spinlock_t *lock, unsigned long *flags,
+>  				      bool locked, struct compact_control *cc)
+>  {
+> -	if (should_release_lock(lock)) {
+> +	enum compact_contended contended = should_release_lock(lock);
+> +
+> +	if (contended) {
+>  		if (locked) {
+>  			spin_unlock_irqrestore(lock, *flags);
+>  			locked = false;
+> @@ -210,7 +217,7 @@ static bool compact_checklock_irqsave(spinlock_t *lock, unsigned long *flags,
+>  
+>  		/* async aborts if taking too long or contended */
+>  		if (cc->mode == MIGRATE_ASYNC) {
+> -			cc->contended = true;
+> +			cc->contended = contended;
+>  			return false;
+>  		}
+>  
+> @@ -236,7 +243,7 @@ static inline bool compact_should_abort(struct compact_control *cc)
+>  	/* async compaction aborts if contended */
+>  	if (need_resched()) {
+>  		if (cc->mode == MIGRATE_ASYNC) {
+> -			cc->contended = true;
+> +			cc->contended = COMPACT_CONTENDED_SCHED;
+>  			return true;
+>  		}
+>  
+> @@ -1095,7 +1102,8 @@ static unsigned long compact_zone_order(struct zone *zone, int order,
+>  	VM_BUG_ON(!list_empty(&cc.freepages));
+>  	VM_BUG_ON(!list_empty(&cc.migratepages));
+>  
+> -	*contended = cc.contended;
+> +	/* We only signal lock contention back to the allocator */
+> +	*contended = cc.contended == COMPACT_CONTENDED_LOCK;
+>  	return ret;
+>  }
+>  
+> diff --git a/mm/internal.h b/mm/internal.h
+> index 7f22a11f..4659e8e 100644
+> --- a/mm/internal.h
+> +++ b/mm/internal.h
+> @@ -117,6 +117,13 @@ extern int user_min_free_kbytes;
+>  
+>  #if defined CONFIG_COMPACTION || defined CONFIG_CMA
+>  
+> +/* Used to signal whether compaction detected need_sched() or lock contention */
+> +enum compact_contended {
+> +	COMPACT_CONTENDED_NONE = 0, /* no contention detected */
+> +	COMPACT_CONTENDED_SCHED,    /* need_sched() was true */
+> +	COMPACT_CONTENDED_LOCK,     /* zone lock or lru_lock was contended */
+> +};
+> +
+>  /*
+>   * in mm/compaction.c
+>   */
+> @@ -144,10 +151,10 @@ struct compact_control {
+>  	int order;			/* order a direct compactor needs */
+>  	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
+>  	struct zone *zone;
+> -	bool contended;			/* True if a lock was contended, or
+> -					 * need_resched() true during async
+> -					 * compaction
+> -					 */
+> +	enum compact_contended contended; /* Signal need_sched() or lock
+> +					   * contention detected during
+> +					   * compaction
+> +					   */
+>  };
+>  
+>  unsigned long
+> -- 
+> 1.8.4.5
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
 -- 
-2.0.0.rc3.18.g00a5b79
-
+Kind regards,
+Minchan Kim
