@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755419AbaFKSoh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 14:44:37 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:19427 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754092AbaFKSob (ORCPT
+	id S1755686AbaFKSom (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 14:44:42 -0400
+Received: from asavdk4.altibox.net ([109.247.116.15]:37188 "EHLO
+	asavdk4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754092AbaFKSok (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 14:44:31 -0400
-X-CheckPoint: {5398A38F-0-2100090A-C0000000}
-Message-ID: <5398A38E.8000800@tilera.com>
-Date: Wed, 11 Jun 2014 14:44:30 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 11 Jun 2014 14:44:40 -0400
+Date: Wed, 11 Jun 2014 20:44:22 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Andy Lutomirski <luto@amacapital.net>, "H. Peter Anvin" <hpa@zytor.com>,
+        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2] x86,vdso,kbuild: Fix vdso_install
+Message-ID: <20140611184422.GA13296@ravnborg.org>
+References: <5398749B.4090209@zytor.com>
+ <cover.1402503408.git.luto@amacapital.net>
+ <20140611163628.GA12685@ravnborg.org>
+ <CA+5PVA5hScqZ3=86aUqot_2ojHhBNa2PuUTyUZfcCH4nYxP2bg@mail.gmail.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] arch/tile changes for 3.16
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.9.0.23]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+5PVA5hScqZ3=86aUqot_2ojHhBNa2PuUTyUZfcCH4nYxP2bg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Wed, Jun 11, 2014 at 12:41:56PM -0400, Josh Boyer wrote:
+> On Wed, Jun 11, 2014 at 12:36 PM, Sam Ravnborg <sam@ravnborg.org> wrote:
+> > On Wed, Jun 11, 2014 at 09:20:05AM -0700, Andy Lutomirski wrote:
+> >> This changes kbuild slightly because I didn't want to fight with using
+> >> static pattern rules and extra obfuscated fake targets just to write a
+> >> loop.
+> >
+> > What are you trying to fix with this?
+> >
+> > On my box (32 bit Intel) "make MODLIB=~/mod vdso_install"
+> > works as expected.
+> > Two *.so files are installed as a copy of the so.dbg files.
+> 
+> With what tree?
+Linus latest - yes.
 
-Please pull the following changes for 3.16 from:
+>  With Linus' latest, I reported an error because
+> commit 6f121e548f83674ab4920a4e60afb58d4f61b829 breaks the
+> vdso_install target.
+This is your bug-report: http://marc.info/?l=linux-kernel&m=140249607823283&w=2
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git master
++ make -s ARCH=x86_64
+INSTALL_MOD_PATH=/home/jwboyer/rpmbuild/BUILDROOT/kernel-3.16.0-0.rc0.git1.1.fc21.x86_64
+vdso_install KERNELRELEASE=3.16.0-0.rc0.git1.1.fc21.x86_64
+make[1]: *** No rule to make target `arch/x86/vdso/vdso.so.dbg',
+needed by `vdso.so'.  Stop.
+make: *** [vdso_install] Error 2
 
-These mostly just address smaller issues reported to me.
+I am building for i386 which is why I do not see the bug.
 
-Thanks!
-
-Daniel Walter (1):
-       replace strict_strto* call with kstrto*
-
-Fabian Frederick (1):
-       drivers/tty/hvc/hvc_tile.c: use PTR_ERR_OR_ZERO
-
-Geert Uytterhoeven (1):
-       tile: Update comments for generic idle conversion
-
-Rickard Strandqvist (1):
-       arch: tile: kernel: unaligned.c: Cleaning up uninitialized variables
-
-Wang Sheng-Hui (2):
-       tile: use BOOTMEM_DEFAULT instead of magic number 0 for reserve_bootmem flags
-       tile: cleanup the comment in init_pgprot
-
-  arch/tile/include/asm/thread_info.h |  2 +-
-  arch/tile/kernel/setup.c            | 12 +++++-------
-  arch/tile/kernel/signal.c           |  7 +++----
-  arch/tile/kernel/traps.c            |  5 ++---
-  arch/tile/kernel/unaligned.c        | 15 ++-------------
-  arch/tile/mm/init.c                 |  8 ++++----
-  drivers/tty/hvc/hvc_tile.c          |  2 +-
-  7 files changed, 18 insertions(+), 33 deletions(-)
-
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
+	Sam
