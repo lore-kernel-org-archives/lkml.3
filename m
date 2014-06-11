@@ -1,109 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753134AbaFKRmB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 13:42:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60394 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751002AbaFKRmA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 13:42:00 -0400
-Date: Wed, 11 Jun 2014 19:41:56 +0200
-From: Jan Kara <jack@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL v2] Reiserfs & ext3 changes for 3.16-rc1
-Message-ID: <20140611174156.GB9511@quack.suse.cz>
+	id S1753682AbaFKRnO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 13:43:14 -0400
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:45170 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753221AbaFKRnL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 13:43:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+5PVA7_B20q6mzq9yrbcQZEw0Z785pOCFeuTjKo7_9tn4_EsA@mail.gmail.com>
+References: <5398749B.4090209@zytor.com> <cover.1402503408.git.luto@amacapital.net>
+ <fe51e9f5c338d33b1a8b20813441538df5e17add.1402503408.git.luto@amacapital.net>
+ <CA+5PVA5uPj0JiTLXJAtBt9b9e6aEcJh7ApFRbaCAP0=se89GKA@mail.gmail.com>
+ <53989190.9010806@zytor.com> <CA+5PVA7_B20q6mzq9yrbcQZEw0Z785pOCFeuTjKo7_9tn4_EsA@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 11 Jun 2014 10:42:50 -0700
+Message-ID: <CALCETrXNLTL_VGo-epSdGY9ApXsmo_HLx90ncSsG1o18SmGTMg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] x86,vdso: Fix vdso_install
+To: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello Linus,
+On Wed, Jun 11, 2014 at 10:33 AM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
+> On Wed, Jun 11, 2014 at 1:27 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 06/11/2014 10:23 AM, Josh Boyer wrote:
+>>>
+>>> So this does fix the invocation of 'make vdso_install' and the
+>>> resulting files look to be accurate to me, with the glaring exception
+>>> that now we get e.g. vdso64.so on x86_64 as the installed file instead
+>>> of vdso.so.  How much that actually matters, I have no idea.
+>>> Plausibly fixed with a symlink if we really need to perhaps.
+>>>
+>>
+>> You have that problem anyway, no?  After all, there are three different
+>> vdso images for 32 bits, and you can run 32-bit apps on 64-bit systems, too.
+>
+> Yeah, true.
+>
+>> Is there realistically any way for the debugger to pick up the correct one?
+>
+> Probably not.
 
-  could you please pull from
+Sure there is: build ids.  See /usr/lib/debug/.build-id.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs.git for_linus
+It would be great if we could teach the various debugging tools
+(libdw?  gdb?  I don't know what's responsible for the search path) to
+search both /usr/lib/debug/.build-id and /lib/modules/`uname
+-r`/build-id or something like that.
 
-to get big reiserfs cleanup from Jeff, an ext3 deadlock fix, and some small
-cleanups.
+>
+> I'm planning on pushing out our first 3.16 build with
+> these two patches with no symlink.  I very much doubt anyone is going
+> to complain.  It was just something I noticed.
 
-Top of the tree is 19ef1229bc2e. The full shortlog is:
+Does the Fedora RPM magic debuginfo script notice these files and
+symlink them into the .build-id directory?
 
-Fabian Frederick (2):
-      reiserfs: remove obsolete __constant_cpu_to_le32
-      fs/jbd/revoke.c: replace shift loop by ilog2
+Of course, we don't seem to be generating build ids right now.  I
+thought we were.  I'll see if I can fix it.
 
-Jan Kara (2):
-      ext3: Fix deadlock in data=journal mode when fs is frozen
-      reiserfs: Fix compilation breakage with CONFIG_REISERFS_CHECK
+--Andy
 
-Jeff Mahoney (30):
-      reiserfs: use per-fs commit workqueues
-      reiserfs: cleanup, rename key and item accessors to more friendly names
-      reiserfs: cleanup, reformat comments to normal kernel style
-      reiserfs: cleanup, remove nblocks argument from journal_end
-      reiserfs: cleanup, remove sb argument from journal_end
-      reiserfs: cleanup, remove sb argument from journal_mark_dirty
-      reiserfs: cleanup, remove blocks arg from journal_join
-      reiserfs: cleanup, remove unnecessary parens in dirent creation
-      reiserfs: cleanup, remove leading whitespace from labels
-      reiserfs: cleanup, remove unnecessary parens
-      reiserfs: cleanup, make hash detection saner
-      reiserfs: balance_leaf refactor, reformat balance_leaf comments
-      reiserfs: balance_leaf refactor, move state variables into tree_balance
-      reiserfs: balance_leaf refactor, pull out balance_leaf_insert_left
-      reiserfs: balance_leaf refactor, pull out balance_leaf_paste_left
-      reiserfs: balance_leaf refactor, pull out balance_leaf_insert_right
-      reiserfs: balance_leaf refactor, pull out balance_leaf_paste_right
-      reiserfs: balance_leaf refactor, pull out balance_leaf_new_nodes_insert
-      reiserfs: balance_leaf refactor, pull out balance_leaf_new_nodes_paste
-      reiserfs: balance_leaf refactor pull out balance_leaf_finish_node_insert
-      reiserfs: balance_leaf refactor, pull out balance_leaf_finish_node_paste
-      reiserfs: balance_leaf refactor, pull out balance_leaf{left, right, new_nodes, finish_node}
-      reiserfs: balance_leaf refactor, format balance_leaf_insert_left
-      reiserfs: balance_leaf refactor, format balance_leaf_paste_left
-      reiserfs: balance_leaf refactor, format balance_leaf_insert_right
-      reiserfs: balance_leaf refactor, format balance_leaf_paste_right
-      reiserfs: balance_leaf refactor, format balance_leaf_new_nodes_paste
-      reiserfs: balance_leaf refactor, format balance_leaf_finish_node
-      reiserfs: balance_leaf refactor, split up balance_leaf_when_delete
-      reiserfs: call truncate_setsize under tailpack mutex
+>
+> josh
 
-The diffstat is
 
- fs/ext3/inode.c               |   33 +-
- fs/jbd/revoke.c               |   12 +-
- fs/reiserfs/bitmap.c          |  259 +++--
- fs/reiserfs/dir.c             |  156 +--
- fs/reiserfs/do_balan.c        | 2449 +++++++++++++++++++++++------------------
- fs/reiserfs/file.c            |   90 +-
- fs/reiserfs/fix_node.c        | 1008 ++++++++++-------
- fs/reiserfs/hashes.c          |   15 +-
- fs/reiserfs/ibalance.c        |  271 +++--
- fs/reiserfs/inode.c           | 1206 +++++++++++---------
- fs/reiserfs/ioctl.c           |   27 +-
- fs/reiserfs/item_ops.c        |  108 +-
- fs/reiserfs/journal.c         | 1339 ++++++++++++----------
- fs/reiserfs/lbalance.c        |  501 +++++----
- fs/reiserfs/namei.c           |  513 +++++----
- fs/reiserfs/objectid.c        |  101 +-
- fs/reiserfs/prints.c          |  176 +--
- fs/reiserfs/reiserfs.h        | 1921 ++++++++++++++++++++------------
- fs/reiserfs/resize.c          |   75 +-
- fs/reiserfs/stree.c           |  892 ++++++++-------
- fs/reiserfs/super.c           |  552 ++++++----
- fs/reiserfs/tail_conversion.c |  161 +--
- fs/reiserfs/xattr.c           |   70 +-
- fs/reiserfs/xattr.h           |    3 +-
- fs/reiserfs/xattr_acl.c       |   38 +-
- 25 files changed, 7056 insertions(+), 4920 deletions(-)
-
-							Thanks
-								Honza
 
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Andy Lutomirski
+AMA Capital Management, LLC
