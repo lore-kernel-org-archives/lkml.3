@@ -1,95 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752927AbaFKUpX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 16:45:23 -0400
-Received: from smtp7.sms.unimo.it ([155.185.44.150]:43219 "EHLO
-	smtp7.sms.unimo.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751797AbaFKUpU convert rfc822-to-8bit (ORCPT
+	id S1754253AbaFKUps (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 16:45:48 -0400
+Received: from www.linutronix.de ([62.245.132.108]:34855 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752965AbaFKUpm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 16:45:20 -0400
-Subject: Re: BFQ speed tests [was Re: [PATCH RFC - TAKE TWO - 00/12] New version of the BFQ I/O Scheduler]
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
-Content-Type: text/plain; charset=windows-1252
-From: Paolo Valente <paolo.valente@unimore.it>
-In-Reply-To: <s5hsink3mxk.wl%tiwai@suse.de>
-Date: Wed, 11 Jun 2014 22:45:06 +0200
-Cc: Pavel Machek <pavel@ucw.cz>, Tejun Heo <tj@kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Li Zefan <lizefan@huawei.com>,
-        Fabio Checconi <fchecconi@gmail.com>,
-        Arianna Avanzini <avanzini.arianna@gmail.com>,
-        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <6A4905B2-ACAA-419D-9C83-659BE9A5B20B@unimore.it>
-References: <20140528221929.GG1419@htj.dyndns.org> <1401354343-5527-1-git-send-email-paolo.valente@unimore.it> <20140530160712.GG24871@htj.dyndns.org> <464F6CBE-A63E-46EF-A90D-BF8450430444@unimore.it> <20140530232804.GA5057@htj.dyndns.org> <20140602111432.GA3737@amd.pavel.ucw.cz> <20140602130226.GA14654@amd.pavel.ucw.cz> <FCFE0106-A4DD-4DEF-AAAE-040F3823A447@unimore.it> <20140604100358.GA4799@amd.pavel.ucw.cz> <4888F93F-D58D-48DD-81A6-A6D61C452D92@unimore.it> <s5hsink3mxk.wl%tiwai@suse.de>
-To: Takashi Iwai <tiwai@suse.de>
-X-Mailer: Apple Mail (2.1878.2)
-UNIMORE-X-SA-Score: -2.9
+	Wed, 11 Jun 2014 16:45:42 -0400
+Message-Id: <20140611204237.271300614@linutronix.de>
+User-Agent: quilt/0.63-1
+Date: Wed, 11 Jun 2014 20:45:40 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Darren Hart <darren@dvhart.com>,
+        Ingo Molnar <mingo@kernel.org>, Davidlohr Bueso <davidlohr@hp.com>,
+        Kees Cook <kees@outflux.net>, wad@chromium.org
+Subject: [patch 4/5] futex: Split out the first waiter attachment from
+ lookup_pi_state()
+References: <20140611202744.676528190@linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline; filename=futex-split-out-attach-to-owner.patch
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We want to be a bit more clever in futex_lock_pi_atomic() and separate
+the possible states. Split out the code which attaches the first
+waiter to the owner into a separate function. No functional change.
 
-Il giorno 04/giu/2014, alle ore 13:59, Takashi Iwai <tiwai@suse.de> ha scritto:
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/futex.c |   42 ++++++++++++++++++++++++++++--------------
+ 1 file changed, 28 insertions(+), 14 deletions(-)
 
-> […]
-> I've been using BFQ for a while and noticed also some obvious
-> regression in some operations, notably git, too.
-> For example, git grep regresses badly.
-> 
-> I ran "test git grep foo > /dev/null" on linux kernel repos on both
-> rotational disk and SSD.
-> […]
-> 
-> BFQ seems behaving bad when reading many small files.
-> 
+Index: linux/kernel/futex.c
+===================================================================
+--- linux.orig/kernel/futex.c
++++ linux/kernel/futex.c
+@@ -865,21 +865,16 @@ out_state:
+ 	return 0;
+ }
+ 
+-static int
+-lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
+-		union futex_key *key, struct futex_pi_state **ps)
++/*
++ * Lookup the task for the TID provided from user space and attach to
++ * it after doing proper sanity checks.
++ */
++static int attach_to_pi_owner(u32 uval, union futex_key *key,
++			      struct futex_pi_state **ps)
+ {
+-	struct futex_q *match = futex_top_waiter(hb, key);
+-	struct futex_pi_state *pi_state = NULL;
+-	struct task_struct *p;
+ 	pid_t pid = uval & FUTEX_TID_MASK;
+-
+-	/*
+-	 * If there is a waiter on that futex, validate it and
+-	 * attach to the pi_state when the validation succeeds.
+-	 */
+-	if (match)
+-		return attach_to_pi_state(uval, match->pi_state, ps);
++	struct futex_pi_state *pi_state;
++	struct task_struct *p;
+ 
+ 	/*
+ 	 * We are the first waiter - try to look up the real owner and attach
+@@ -922,7 +917,7 @@ lookup_pi_state(u32 uval, struct futex_h
+ 	pi_state = alloc_pi_state();
+ 
+ 	/*
+-	 * Initialize the pi_mutex in locked state and make 'p'
++	 * Initialize the pi_mutex in locked state and make @p
+ 	 * the owner of it:
+ 	 */
+ 	rt_mutex_init_proxy_locked(&pi_state->pi_mutex, p);
+@@ -942,6 +937,25 @@ lookup_pi_state(u32 uval, struct futex_h
+ 	return 0;
+ }
+ 
++static int lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
++			   union futex_key *key, struct futex_pi_state **ps)
++{
++	struct futex_q *match = futex_top_waiter(hb, key);
++
++	/*
++	 * If there is a waiter on that futex, validate it and
++	 * attach to the pi_state when the validation succeeds.
++	 */
++	if (match)
++		return attach_to_pi_state(uval, match->pi_state, ps);
++
++	/*
++	 * We are the first waiter - try to look up the owner based on
++	 * @uval and attach to it.
++	 */
++	return attach_to_pi_owner(uval, key, ps);
++}
++
+ /**
+  * futex_lock_pi_atomic() - Atomic work required to acquire a pi aware futex
+  * @uaddr:		the pi futex user address
 
-The fix I described in my last reply to Pavel's speed tests
-(https://lkml.org/lkml/2014/6/4/94) apparently solves also this problem.
-As I wrote in that reply, the new fixed version of bfq is here:
-http://algogroup.unimore.it/people/paolo/disk_sched/debugging-patches/3.16.0-rc0-v7rc5.tgz
 
-These are our results, for your test, with this fixed version of bfq.
-
-time git grep foo > /dev/null
-
-Rotational disk:
- CFQ:
-   2.86user 4.87system 0:29.51elapsed 26%CPU
-   2.87user 4.87system 0:30.30elapsed 25%CPU
-   2.82user 4.90system 0:29.13elapsed 26%CPU
-
- BFQ:
-   2.81user 4.97system 0:25.96elapsed 29%CPU
-   2.83user 5.02system 0:24.79elapsed 31%CPU
-   2.85user 4.95system 0:24.73elapsed 31%CPU
-
-SSD:
- CFQ:
-   2.04user 3.93system 0:03.88elapsed 153%CPU
-   2.12user 3.85system 0:03.89elapsed 153%CPU
-   2.05user 3.92system 0:03.89elapsed 153%CPU
-
- BFQ:
-   2.10user 3.86system 0:03.89elapsed 153%CPU
-   2.05user 3.90system 0:03.88elapsed 153%CPU
-   2.01user 3.95system 0:03.89elapsed 153%CPU
-
-time git grep foo HEAD > /dev/null
-
-SSD:
- CFQ:
-   5.11user 0.38system 0:06.71elapsed 81%CPU
-   5.21user 0.36system 0:06.78elapsed 82%CPU
-   5.05user 0.41system 0:06.69elapsed 81%CPU
-
- BFQ:
-   5.17user 0.39system 0:06.77elapsed 82%CPU
-   5.13user 0.37system 0:06.73elapsed 81%CPU
-   5.17user 0.37system 0:06.78elapsed 81%CPU
-
-Should you be willing to provide further feedback on this and other tests,
-we would of course really appreciate it.
-
-Thanks again for your report,
-Paolo
