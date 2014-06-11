@@ -1,41 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755521AbaFKLLu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 07:11:50 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:41247 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752183AbaFKLLt (ORCPT
+	id S1755381AbaFKLPp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 07:15:45 -0400
+Received: from relay.parallels.com ([195.214.232.42]:49229 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751619AbaFKLPo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 07:11:49 -0400
-Message-ID: <53983970.4050502@linaro.org>
-Date: Wed, 11 Jun 2014 12:11:44 +0100
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 11 Jun 2014 07:15:44 -0400
+Message-ID: <1402485337.32126.29.camel@tkhai>
+Subject: Re: [PATCH 1/2] sched: Rework migrate_tasks()
+From: Kirill Tkhai <ktkhai@parallels.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        <tkhai@yandex.ru>
+Date: Wed, 11 Jun 2014 15:15:37 +0400
+In-Reply-To: <20140611105733.GM6758@twins.programming.kicks-ass.net>
+References: <20140611093417.27807.2288.stgit@tkhai>
+	 <1402480330.32126.14.camel@tkhai>
+	 <20140611105733.GM6758@twins.programming.kicks-ass.net>
+Organization: Parallels
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
 MIME-Version: 1.0
-To: =?ISO-8859-15?Q?Andreas_F=E4rber?= <afaerber@suse.de>,
-        Stephen Boyd <sboyd@codeaurora.org>
-CC: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCH 1/2] clk: qcom: add clocks necessary for apq8064 sdcc
-References: <1402433906-19309-1-git-send-email-sboyd@codeaurora.org> <1402433906-19309-2-git-send-email-sboyd@codeaurora.org> <53981DE1.3070007@suse.de>
-In-Reply-To: <53981DE1.3070007@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.26.172]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+В Ср, 11/06/2014 в 12:57 +0200, Peter Zijlstra пишет:
+> On Wed, Jun 11, 2014 at 01:52:10PM +0400, Kirill Tkhai wrote:
+> > 
+> > Currently migrate_tasks() skips throttled tasks,
+> > because they are not pickable by pick_next_task().
+> > 
+> > These tasks stay on dead cpu even after they
+> > becomes unthrottled. They are not schedulable
+> > till user manually changes their affinity or till
+> > cpu becomes alive again.
+> > 
+> > But for user this looks completely untransparent:
+> > task hangs, but it's not obvious what he has to do,
+> > because kernel does not report any problem.
+> > 
+> > This situation may easily be triggered intentionally.
+> > Playing with extremely small cpu.cfs_quota_us causes
+> > it almost in 100% cases. In usual life it's very rare,
+> > but still possible for some unhappy user.
+> > 
+> 
+> How about fixing the unthrottle code to validate the affinity?
 
+I've begun that before, but found, it requires much more code
+(three classes need this fix).
 
-On 11/06/14 10:14, Andreas F�rber wrote:
->> This patch adds clocks necessary for SD card controller on apq8064 SOC.
->> >Without this patch the clocks are visible to the sdcc driver.
-> Was this maybe meant to read "invisible"?
+And this makes unthrottle code a little ugly (in my view).
 
-You are correct it was suposed to be not visible, will fix it.
+	Kirill
 
->
-> Regards,
-> Andreas
->
