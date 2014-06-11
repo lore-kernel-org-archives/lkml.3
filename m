@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932663AbaFKPmN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 11:42:13 -0400
+	id S932852AbaFKPmS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 11:42:18 -0400
 Received: from mga03.intel.com ([143.182.124.21]:10495 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755801AbaFKPmL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 11:42:11 -0400
+	id S1755738AbaFKPmQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 11:42:16 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,458,1400050800"; 
-   d="scan'208";a="444330413"
+   d="scan'208";a="444330484"
 From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
@@ -17,38 +17,66 @@ Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
         Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
         Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: [RFC v2 0/7] perf: perf: add AUX space to ring_buffer
-Date: Wed, 11 Jun 2014 18:41:43 +0300
-Message-Id: <1402501310-31940-1-git-send-email-alexander.shishkin@linux.intel.com>
+Subject: [RFC v2 1/7] perf: add data_{offset,size} to user_page
+Date: Wed, 11 Jun 2014 18:41:44 +0300
+Message-Id: <1402501310-31940-2-git-send-email-alexander.shishkin@linux.intel.com>
 X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1402501310-31940-1-git-send-email-alexander.shishkin@linux.intel.com>
+References: <1402501310-31940-1-git-send-email-alexander.shishkin@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+Currently, the actual perf ring buffer is one page into the mmap area,
+following the user page and the userspace follows this convention. This
+patch adds data_{offset,size} fields to user_page that can be used by
+userspace instead for locating perf data in the mmap area. This is also
+helpful when mapping existing or shared buffers if their size is not
+known in advance.
 
-Here's the 2nd go at the AUX area. This covers pretty much what I need
-for Intel PT buffer management.
+Right now, it is made to follow the existing convention that
 
-Alexander Shishkin (6):
-  perf: add data_{offset,size} to user_page
-  perf: support high-order allocations for AUX space
-  perf: add a capability for AUX_NO_SG pmus to do software double
-    buffering
-  perf: add a pmu capability for "exclusive" events
-  perf: add api for pmus to write to AUX space
-  perf: add AUX record
+	data_offset == PAGE_SIZE and
+	data_offset + data_size == mmap_size.
 
-Peter Zijlstra (1):
-  perf: add AUX area to ring buffer for raw data streams
+Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+---
+ include/uapi/linux/perf_event.h | 5 +++++
+ kernel/events/core.c            | 2 ++
+ 2 files changed, 7 insertions(+)
 
- include/linux/perf_event.h      |  39 ++++++-
- include/uapi/linux/perf_event.h |  36 +++++++
- kernel/events/core.c            | 225 ++++++++++++++++++++++++++++++++++------
- kernel/events/internal.h        |  27 +++++
- kernel/events/ring_buffer.c     | 182 +++++++++++++++++++++++++++++++-
- 5 files changed, 475 insertions(+), 34 deletions(-)
-
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 853bc1c..ef95af4 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -488,9 +488,14 @@ struct perf_event_mmap_page {
+ 	 * In this case the kernel will not over-write unread data.
+ 	 *
+ 	 * See perf_output_put_handle() for the data ordering.
++	 *
++	 * data_{offset,size} indicate the location and size of the perf record
++	 * buffer within the mmapped area.
+ 	 */
+ 	__u64   data_head;		/* head in the data section */
+ 	__u64	data_tail;		/* user-space written tail */
++	__u64	data_offset;		/* where the buffer starts */
++	__u64	data_size;		/* data buffer size */
+ };
+ 
+ #define PERF_RECORD_MISC_CPUMODE_MASK		(7 << 0)
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 2f9db66..6c1b030 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -3768,6 +3768,8 @@ static void perf_event_init_userpage(struct perf_event *event)
+ 	/* Allow new userspace to detect that bit 0 is deprecated */
+ 	userpg->cap_bit0_is_deprecated = 1;
+ 	userpg->size = offsetof(struct perf_event_mmap_page, __reserved);
++	userpg->data_offset = PAGE_SIZE;
++	userpg->data_size = perf_data_size(rb);
+ 
+ unlock:
+ 	rcu_read_unlock();
 -- 
 2.0.0
 
