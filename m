@@ -1,65 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219AbaFKSIL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 14:08:11 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:65053 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751002AbaFKSIJ (ORCPT
+	id S1753835AbaFKSPG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 14:15:06 -0400
+Received: from www.linutronix.de ([62.245.132.108]:34039 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752039AbaFKSPE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 14:08:09 -0400
+	Wed, 11 Jun 2014 14:15:04 -0400
+Date: Wed, 11 Jun 2014 20:14:02 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Matthias Brugger <matthias.bgg@gmail.com>
+cc: linux-kernel@vger.kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, rdunlap@infradead.org, linux@arm.linux.org.uk,
+        daniel.lezcano@linaro.org, grant.likely@linaro.org,
+        thierry.reding@gmail.com, florian.vaussard@epfl.ch, jic23@kernel.org,
+        jason@lakedaemon.net, andrew@lunn.ch, silvio.fricke@gmail.com,
+        heiko.stuebner@bq.com, olof@lixom.net, sebastian.hesselbarth@gmail.com,
+        sboyd@codeaurora.org, gregory.clement@free-electrons.com,
+        arnd@arndb.de, robherring2@gmail.com, marc.zyngier@arm.com,
+        maxime.ripard@free-electrons.com, soren.brinkmann@xilinx.com,
+        shawn.guo@freescale.com, anders.berg@lsi.com, linus.walleij@linaro.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v8 2/7] clocksource: Add support for the Mediatek SoCs
+In-Reply-To: <1402490055-15197-3-git-send-email-matthias.bgg@gmail.com>
+Message-ID: <alpine.DEB.2.10.1406112012460.5170@nanos>
+References: <1402490055-15197-1-git-send-email-matthias.bgg@gmail.com> <1402490055-15197-3-git-send-email-matthias.bgg@gmail.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo5rpdb985tS91BOEGJePwU3OSzKp_KgrrZfRqaxKBgPMw@mail.gmail.com>
-References: <1986515.ZPZrccsmiq@vostro.rjw.lan>
-	<CAErSpo5rpdb985tS91BOEGJePwU3OSzKp_KgrrZfRqaxKBgPMw@mail.gmail.com>
-Date: Wed, 11 Jun 2014 20:08:08 +0200
-X-Google-Sender-Auth: lFDehEnCujmEWO7Em2_xrgYJCPo
-Message-ID: <CAJZ5v0gFVjUwDiCYM_qeU7jL5Ym50mgMZG186G92uMdzMQo8TQ@mail.gmail.com>
-Subject: Re: [PATCH] ACPI / hotplug / PCI: Add hotplug contexts to PCI host bridges
-From: "Rafael J. Wysocki" <rafael@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linux PCI <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 11, 2014 at 4:29 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Tue, Jun 10, 2014 at 2:51 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
->> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->>
->> After relatively recent changes in the ACPI-based PCI hotplug
->> (ACPIPHP) code, the acpiphp_check_host_bridge() executed for PCI
->> host bridges via acpi_pci_root_scan_dependent() doesn't do anything
->> useful, because those bridges do not have hotplug contexts.  That
->> happens by mistake, so fix it by making acpiphp_enumerate_slots()
->> add hotplug contexts to PCI host bridges too and modify
->> acpiphp_remove_slots() to drop those contexts for host bridges
->> as appropriate.
->>
->> Link: https://bugzilla.kernel.org/show_bug.cgi?id=76901
->> Fixes: 2d8b1d566a5f (ACPI / hotplug / PCI: Get rid of check_sub_bridges())
->> Reported-and-tested-by: Gavin Guo <gavin.guo@canonical.com>
->> Cc: 3.15+ <stable@vger.kernel.org> # 3.15+
->> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->
-> Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+On Wed, 11 Jun 2014, Matthias Brugger wrote:
+> +static void mtk_clkevt_mode(enum clock_event_mode mode,
+> +				struct clock_event_device *clk)
+> +{
+> +	struct mtk_clock_event_device *evt = to_mtk_clk(clk);
+> +
+> +	mtk_clkevt_time_stop(evt, GPT_CLK_EVT);
+> +
+> +	switch (mode) {
+> +	case CLOCK_EVT_MODE_PERIODIC:
+> +		mtk_clkevt_time_setup(evt, evt->ticks_per_jiffy, GPT_CLK_EVT);
+> +		mtk_clkevt_time_start(evt, true, GPT_CLK_EVT);
+> +		break;
+> +	case CLOCK_EVT_MODE_ONESHOT:
+> +		mtk_clkevt_time_start(evt, false, GPT_CLK_EVT);
 
-Thanks!
+Why start the timer here? The code will call set next event right away.
 
-> Rafael, do you want to merge this via your tree, since you merged the
-> original acpiphp rework?
+> +		break;
+> +	case CLOCK_EVT_MODE_UNUSED:
+> +	case CLOCK_EVT_MODE_SHUTDOWN:
+> +	default:
+> +		/* No more interrupts will occur as source is disabled */
+> +		break;
+> +	}
+> +}
 
-Yes, I'll take care of this.
+Looks good otherwise.
 
-> I do have a small cleanup of acpiphp_glue.c in my queue, but it won't
-> conflict with this.
->
-> Thanks a lot for fixing this!
+Thanks,
 
-You're very welcome. :-)
-
-Rafael
+	tglx
