@@ -1,79 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755886AbaFKJD7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 05:03:59 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:25950 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755440AbaFKJD4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 05:03:56 -0400
-Message-ID: <53981B6A.40807@huawei.com>
-Date: Wed, 11 Jun 2014 17:03:38 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1755441AbaFKJEg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 05:04:36 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:59827 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755748AbaFKI6x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 04:58:53 -0400
+From: Roger Quadros <rogerq@ti.com>
+To: <tony@atomide.com>, <dwmw2@infradead.org>, <computersforpeace@gmail.com>
+CC: <kyungmin.park@samsung.com>, <pekon@ti.com>,
+        <ezequiel.garcia@free-electrons.com>, <javier@dowhile0.org>,
+        <nsekhar@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-mtd@lists.infradead.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
+Subject: [PATCH 28/36] ARM: OMAP2+: nand: Update gpmc_nand_init() to use generic_gpmc_init()
+Date: Wed, 11 Jun 2014 11:56:33 +0300
+Message-ID: <1402477001-31132-29-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1402477001-31132-1-git-send-email-rogerq@ti.com>
+References: <1402477001-31132-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-To: Jon Mason <jon.mason@intel.com>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: NTB driver support in haswell platform?
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jon,
-   I have a Intel Haswell platform in hand, and our team want to use NTB in this platform.
-I checked the current intel NTB driver in Linux kernel, I found the Haswell NTB pci device id
-is not contained in ntb_pci_tbl[]. I want to know whether current kernel ntb driver can support
-the ntb device in Haswell platform ?
+This function should only be called by board init code for
+legacy boot.
 
-Haswell NTB device id:
+Re-arrange init order so that gpmc device is created after
+the gpmc platform data is initialized by board files.
+i.e. move omap_gpmc_init() to subsys_initcall.
 
->From Haswell EDS 7.4.2
+Load gpmc platform driver later in the boot process.
+i.e. move gpmc_init() to module_initcall.
 
-did
-Bus: 0 Device: 3 Function: 0 Offset: 2
-Bit Attr Default Description
-15:0 RO-V 2F08h Device_Identification_Number — Device ID values vary from function to function.
-Bits 15:8 are equal to 0x2F. The following list is a breakdown of the function groups.
-  0x2F00 - 0x2F1F : PCI Express and DMI2
-  0x2F20 - 0x2F3F : Integrated I/O Features
-  0x2F40 - 0x2F5F : Performance Monitors
-  0x2F80 - 0x2F9F : Intel QPI
-  0x2FA0 - 0x2FBF : Home Agent/Memory Controller
-  0x2FC0 - 0x2FDF : Power Management
-  0x2FE0 - 0x2FFF : Cbo/Ring
-Default value may vary based on bus, device, and function of this CSR location.
+NOTE: this will break legacy boot since they call gpmc_cs_*()
+functions before gpmc_mem_init() is called. They will eventually
+be fixed.
 
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+---
+ arch/arm/mach-omap2/gpmc-nand.c | 51 ++++++++---------------------------------
+ arch/arm/mach-omap2/gpmc.c      | 17 +++++++++-----
+ 2 files changed, 21 insertions(+), 47 deletions(-)
 
-Current ntb_pci_tbl[] in Linux:
-
-#define PCI_DEVICE_ID_INTEL_NTB_B2B_JSF		0x3725
-#define PCI_DEVICE_ID_INTEL_NTB_PS_JSF		0x3726
-#define PCI_DEVICE_ID_INTEL_NTB_SS_JSF		0x3727
-#define PCI_DEVICE_ID_INTEL_NTB_B2B_SNB		0x3C0D
-#define PCI_DEVICE_ID_INTEL_NTB_PS_SNB		0x3C0E
-#define PCI_DEVICE_ID_INTEL_NTB_SS_SNB		0x3C0F
-#define PCI_DEVICE_ID_INTEL_NTB_B2B_IVT		0x0E0D
-#define PCI_DEVICE_ID_INTEL_NTB_PS_IVT		0x0E0E
-#define PCI_DEVICE_ID_INTEL_NTB_SS_IVT		0x0E0F
-#define PCI_DEVICE_ID_INTEL_NTB_B2B_HSX		0x2F0D
-#define PCI_DEVICE_ID_INTEL_NTB_PS_HSX		0x2F0E
-#define PCI_DEVICE_ID_INTEL_NTB_SS_HSX		0x2F0F
-#define PCI_DEVICE_ID_INTEL_NTB_B2B_BWD		0x0C4E
-
-So we should modify the default device id to 0x2F0D, 0x2F0E or 0x2F0F ?
-What's the difference between them?
-
-Thanks!
-Yijing.
-
-
-
-
+diff --git a/arch/arm/mach-omap2/gpmc-nand.c b/arch/arm/mach-omap2/gpmc-nand.c
+index f7491d0..42371e3 100644
+--- a/arch/arm/mach-omap2/gpmc-nand.c
++++ b/arch/arm/mach-omap2/gpmc-nand.c
+@@ -25,9 +25,12 @@
+ #define	NAND_IO_SIZE	4
+ 
+ static struct resource gpmc_nand_resource[] = {
++/* GPMC driver will fixup all the resources, see gpmc_probe_legacy () */
+ 	{
+ 		/* GPMC I/O space */
+ 		.flags		= IORESOURCE_MEM,
++		.start		= 0,
++		.end		= NAND_IO_SIZE - 1,
+ 	},
+ 	{
+ 		/* GPMC register space */
+@@ -95,61 +98,27 @@ int gpmc_nand_init(struct omap_nand_platform_data *gpmc_nand_data,
+ {
+ 	int err	= 0;
+ 	struct gpmc_settings s;
+-	struct device *dev = &gpmc_nand_device.dev;
+-	struct resource res;
+ 
+ 	memset(&s, 0, sizeof(struct gpmc_settings));
+ 
+ 	gpmc_nand_device.dev.platform_data = gpmc_nand_data;
+ 
+-	err = gpmc_cs_request(gpmc_nand_data->cs, NAND_IO_SIZE,
+-				(unsigned long *)&gpmc_nand_resource[0].start);
+-	if (err < 0) {
+-		dev_err(dev, "Cannot request GPMC CS %d, error %d\n",
+-			gpmc_nand_data->cs, err);
+-		return err;
+-	}
+-
+-	gpmc_nand_resource[0].end = gpmc_nand_resource[0].start +
+-							NAND_IO_SIZE - 1;
+-
+-	gpmc_get_mem_resource(&res);
+-	gpmc_nand_resource[1].start = res.start;
+-	gpmc_nand_resource[1].end = res.end;
+-
+-	gpmc_nand_resource[2].start = gpmc_get_irq();
+-
+-	if (gpmc_t) {
+-		err = gpmc_cs_set_timings(gpmc_nand_data->cs, gpmc_t);
+-		if (err < 0) {
+-			dev_err(dev, "Unable to set gpmc timings: %d\n", err);
+-			return err;
+-		}
+-	}
+-
+ 	gpmc_set_legacy(gpmc_nand_data, &s);
+ 
+ 	s.device_nand = true;
+ 
+-	err = gpmc_cs_program_settings(gpmc_nand_data->cs, &s);
+-	if (err < 0)
+-		goto out_free_cs;
+-
+ 	if (!gpmc_hwecc_bch_capable(gpmc_nand_data->ecc_opt)) {
+-		dev_err(dev, "Unsupported NAND ECC scheme selected\n");
++		pr_err("%s: Unsupported NAND ECC scheme selected\n", __func__);
+ 		return -EINVAL;
+ 	}
+ 
+-	err = platform_device_register(&gpmc_nand_device);
+-	if (err < 0) {
+-		dev_err(dev, "Unable to register NAND device\n");
+-		goto out_free_cs;
++	err = gpmc_generic_init(gpmc_nand_data->cs, true,
++				&s, NULL, gpmc_t,
++				&gpmc_nand_device, sizeof(*gpmc_nand_data));
++	if (err) {
++		pr_err("%s: gpmc_generic_init() failed %d\n", __func__, err);
++		return err;
+ 	}
+ 
+ 	return 0;
+-
+-out_free_cs:
+-	gpmc_cs_free(gpmc_nand_data->cs);
+-
+-	return err;
+ }
+diff --git a/arch/arm/mach-omap2/gpmc.c b/arch/arm/mach-omap2/gpmc.c
+index 34545ca..7a667ca 100644
+--- a/arch/arm/mach-omap2/gpmc.c
++++ b/arch/arm/mach-omap2/gpmc.c
+@@ -1401,9 +1401,6 @@ static void gpmc_probe_legacy(struct platform_device *pdev)
+ 	gpmc_cs_num = GPMC_CS_NUM;
+ 	gpmc_nr_waitpins = GPMC_NR_WAITPINS;
+ 
+-	if (!gpmc_pdata)
+-		return;
+-
+ 	for (i = 0; i < GPMC_CS_NUM; i++) {
+ 		cs = &gpmc_pdata->cs[i];
+ 		if (!cs->valid)
+@@ -1609,6 +1606,12 @@ static int gpmc_probe(struct platform_device *pdev)
+ 		}
+ 	} else {
+ 		/* Legacy probing based on platform data */
++		if (!dev->platform_data) {
++			dev_err(dev, "No platform data\n");
++			rc = -EINVAL;
++			goto error;
++		}
++
+ 		gpmc_probe_legacy(pdev);
+ 	}
+ 
+@@ -1669,7 +1672,7 @@ static __exit void gpmc_exit(void)
+ 
+ }
+ 
+-omap_postcore_initcall(gpmc_init);
++module_init(gpmc_init);
+ module_exit(gpmc_exit);
+ 
+ static int __init omap_gpmc_init(void)
+@@ -1691,12 +1694,14 @@ static int __init omap_gpmc_init(void)
+ 		return -ENODEV;
+ 	}
+ 
+-	pdev = omap_device_build(DEVICE_NAME, -1, oh, NULL, 0);
++	pdev = omap_device_build(DEVICE_NAME, -1, oh, (void *)&gpmc_pdata,
++				 sizeof(gpmc_pdata));
+ 	WARN(IS_ERR(pdev), "could not build omap_device for %s\n", oh_name);
+ 
+ 	return PTR_RET(pdev);
+ }
+-omap_postcore_initcall(omap_gpmc_init);
++/* must run after machine_init code. i.e. arch_init */
++omap_subsys_initcall(omap_gpmc_init);
+ 
+ /**
+  * gpmc_generic_init - Initialize platform data for a Chip Select
 -- 
-Thanks!
-Yijing
+1.8.3.2
 
