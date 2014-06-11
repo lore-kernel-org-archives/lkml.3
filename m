@@ -1,71 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755871AbaFKPqJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 11:46:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41083 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754908AbaFKPqH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 11:46:07 -0400
-Message-ID: <539879B8.4010204@canonical.com>
-Date: Wed, 11 Jun 2014 10:46:00 -0500
-From: David Chiluk <dave.chiluk@canonical.com>
-Reply-To: chiluk@canonical.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Rafael Tinoco <rafael.tinoco@canonical.com>, paulmck@linux.vnet.ibm.com
-CC: linux-kernel@vger.kernel.org, davem@davemloft.net, ebiederm@xmission.com,
-        Christopher Arges <chris.j.arges@canonical.com>,
-        Jay Vosburgh <jay.vosburgh@canonical.com>
-Subject: Re: Possible netns creation and execution performance/scalability
- regression since v3.8 due to rcu callbacks being offloaded to multiple cpus
-References: <CAJE_dJyfq5zWcs2y52siXRruCCA1Dk_=Ds=rZ8BrBZLa7FCbuQ@mail.gmail.com>	<20140611133919.GZ4581@linux.vnet.ibm.com> <CAJE_dJwfaUkop=XZxD-BfDPwKDjnfF1bvmD6XWaqVA4Xt2E6bQ@mail.gmail.com>
-In-Reply-To: <CAJE_dJwfaUkop=XZxD-BfDPwKDjnfF1bvmD6XWaqVA4Xt2E6bQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1755915AbaFKPq5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 11:46:57 -0400
+Received: from mga02.intel.com ([134.134.136.20]:61109 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755761AbaFKPq4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 11:46:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,458,1400050800"; 
+   d="scan'208";a="526892959"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Subject: [RFC v2 4/7] perf: add a capability for AUX_NO_SG pmus to do software double buffering
+Date: Wed, 11 Jun 2014 18:41:47 +0300
+Message-Id: <1402501310-31940-5-git-send-email-alexander.shishkin@linux.intel.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1402501310-31940-1-git-send-email-alexander.shishkin@linux.intel.com>
+References: <1402501310-31940-1-git-send-email-alexander.shishkin@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2014 10:17 AM, Rafael Tinoco wrote:
-> This script simulates a failure on a cloud infrastructure, for ex. As soon as
-> one virtualization host fails all its network namespaces have to be migrated
-> to other node. Creating thousands of netns in the shortest time possible
-> is the objective here. This regression was observed trying to migrate from
-> v3.5 to v3.8+.
-> 
-> Script creates up to 3000/4000 thousands network namespaces and places
-> links on them. Every 250 mark (netns already created) we have a throughput
-> average (how many were created per second up from last mark to this one).
+For pmus that don't support scatter-gather for AUX data in hardware, it
+might still make sense to implement software double buffering to avoid
+losing data while the user is reading data out. For this purpose, add
+a pmu capability that guarantees multiple high-order chunks for AUX buffer,
+so that the pmu driver can do switchover tricks.
 
-Here's a little more background, and the "why it matters".
+Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+---
+ include/linux/perf_event.h  |  1 +
+ kernel/events/ring_buffer.c | 14 +++++++++++++-
+ 2 files changed, 14 insertions(+), 1 deletion(-)
 
-In an openstack cloud, neutron *(openstack's networking framework) keeps
-all customers of the cloud separated via network namespaces.  On each
-compute node this is not a big deal, since each compute node can only
-handle at most a few hundred VMs.  However in order for neutron to route
-a customer's network traffic between disparate compute hosts, it uses
-the concept of a neutron gateway.  In order for customer A's vm on host
-1 to talk to customer A's vm on host 2, it must first go through a gre
-tunnel to the neutron gateway.  The Neutron gateay then turns around and
-routes the network traffic over another gre tunnel to host 2.  The
-neutron gateway is where the problem is.
-
-The neutron gateway must have a network namespace for every net
-namespace in the cloud.  Granted this collection can be split up by
-increasing the number of neutron gateways *(scaling out), but some
-clouds have decided to run these gateways on very beefy machines.  As
-you can see by the graph, there is a software limitation that prevents
-these machines from hosting any more than a few thousand namespaces.
-This makes the gateway's hardware severely under-utilized.
-
-Now think about what happens when a gateway goes down, the namespaces
-need to be migrated, or a new machine needs to be brought up to replace
-it.  When we're talking about 3000 namespaces, the amount of time it
-takes simply to recreate the namespaces becomes very significant.
-
-The script is a stripped down example of what exactly is being done on
-the neutron gateway in order to create namespaces.
-
-Dave.
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index b316971..3d68411 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -276,6 +276,7 @@ struct pmu {
+  */
+ #define PERF_PMU_CAP_NO_INTERRUPT	1
+ #define PERF_PMU_CAP_AUX_NO_SG		2
++#define PERF_PMU_CAP_AUX_SW_DOUBLEBUF	4
+ 
+ /**
+  * enum perf_event_active_state - the states of a event
+diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
+index e66ed76..43571ac 100644
+--- a/kernel/events/ring_buffer.c
++++ b/kernel/events/ring_buffer.c
+@@ -286,9 +286,21 @@ int rb_alloc_aux(struct ring_buffer *rb, struct perf_event *event,
+ 	if (!has_aux(event))
+ 		return -ENOTSUPP;
+ 
+-	if (event->pmu->capabilities & PERF_PMU_CAP_AUX_NO_SG)
++	if (event->pmu->capabilities & PERF_PMU_CAP_AUX_NO_SG) {
+ 		order = get_order(nr_pages * PAGE_SIZE);
+ 
++		/*
++		 * PMU requests more than one contiguous chunks of memory
++		 * for SW double buffering
++		 */
++		if (event->pmu->capabilities & PERF_PMU_CAP_AUX_SW_DOUBLEBUF) {
++			if (!order)
++				return -EINVAL;
++
++			order--;
++		}
++	}
++
+ 	rb->aux_pages = kzalloc_node(nr_pages * sizeof(void *), GFP_KERNEL, node);
+ 	if (!rb->aux_pages)
+ 		return -ENOMEM;
+-- 
+2.0.0
 
