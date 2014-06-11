@@ -1,53 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755288AbaFKD6J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 23:58:09 -0400
-Received: from ns.horizon.com ([71.41.210.147]:31466 "HELO ns.horizon.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751619AbaFKD6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 23:58:07 -0400
-Date: 10 Jun 2014 23:58:06 -0400
-Message-ID: <20140611035806.9237.qmail@ns.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: linux@horizon.com, tytso@mit.edu
-Subject: Re: drivers/char/random.c: more ruminations
-Cc: hpa@linux.intel.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
-        price@mit.edu
-In-Reply-To: <20140611020835.GA23110@thunk.org>
+	id S1750989AbaFKEBz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 00:01:55 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:59389 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750713AbaFKEBy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 00:01:54 -0400
+From: A Raghavendra Rao <raghav3276@gmail.com>
+X-Google-Original-From: A Raghavendra Rao <arrao@cdac.in>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Raghavendra <arrao@cdac.in>
+Subject: [PATCH] Staging: rtl8192e: dot11d: Fixed coding style issues
+Date: Wed, 11 Jun 2014 09:25:47 +0530
+Message-Id: <1402458947-10214-1-git-send-email-arrao@cdac.in>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Actually, it's **fine**.  That's because RNDADDENTROPY adds the
-> entropy to the input pool, which is has the limit flag set.  So we
-> will never pull more entropy than the pool is credited as having.
-> This means that race can't happen.  It ***is*** safe.
-> 
-> 1)  Assume the entropy count starts at 10 bytes.
-> 
-> 2)  Random writer mixes in 20 bytes of entropy into the entropy pool.
-> 
-> 3)  Random extractor tries to extract 32 bytes of entropy.  Since the
-> entropy count is still is 10, it will only get 10 bytes.  (And if we
-> started with the entropy count started at zero, we wouldn't extract
-> any entropy at all.)
-> 
-> 4) Random writer credit the entropy counter with the 20 bytes mixed in
-> step #2.
-> 
-> See? no problems!
+From: Raghavendra <arrao@cdac.in>
 
-You can forbid underflows, but the code doesn't forbid overflows.
+Fixed coding style issues
 
-1. Assume the entropy count starts at 512 bytes (input pool full)
-2. Random writer mixes in 20 bytes of entropy into the input pool.
-2a. Input pool entropy is, however, capped at 512 bytes.
-3. Random extractor extracts 32 bytes of entropy from the pool.
-   Succeeds because 32 < 512.  Pool is left with 480 bytes of
-   entropy.
-3a. Random extractor decrements pool entropy estimate to 480 bytes.
-    This is accurate.
-4. Random writer credits pool with 20 bytes of entropy.
-5. Input pool entropy is now 480 bytes, estimate is 500 bytes.
+Signed-off-by: A Raghavendra Rao <arrao@cdac.in>
+---
+ drivers/staging/rtl8192e/dot11d.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-Problem, no?
+diff --git a/drivers/staging/rtl8192e/dot11d.c b/drivers/staging/rtl8192e/dot11d.c
+index 53da610..ef9da86 100644
+--- a/drivers/staging/rtl8192e/dot11d.c
++++ b/drivers/staging/rtl8192e/dot11d.c
+@@ -49,6 +49,7 @@ static struct channel_list ChannelPlan[] = {
+ void dot11d_init(struct rtllib_device *ieee)
+ {
+ 	struct rt_dot11d_info *pDot11dInfo = GET_DOT11D_INFO(ieee);
++
+ 	pDot11dInfo->bEnabled = false;
+ 
+ 	pDot11dInfo->State = DOT11D_STATE_NONE;
+@@ -133,12 +134,12 @@ void Dot11d_UpdateCountryIe(struct rtllib_device *dev, u8 *pTaddr,
+ 	pTriple = (struct chnl_txpow_triple *)(pCoutryIe + 3);
+ 	for (i = 0; i < NumTriples; i++) {
+ 		if (MaxChnlNum >= pTriple->FirstChnl) {
+-			printk(KERN_INFO "Dot11d_UpdateCountryIe(): Invalid country IE, skip it........1\n");
++			netdev_info(dev->dev, "Dot11d_UpdateCountryIe(): Invalid country IE, skip it........1\n");
+ 			return;
+ 		}
+ 		if (MAX_CHANNEL_NUMBER < (pTriple->FirstChnl +
+ 		    pTriple->NumChnls)) {
+-			printk(KERN_INFO "Dot11d_UpdateCountryIe(): Invalid country IE, skip it........2\n");
++			netdev_info(dev->dev, "Dot11d_UpdateCountryIe(): Invalid country IE, skip it........2\n");
+ 			return;
+ 		}
+ 
+@@ -165,7 +166,7 @@ u8 DOT11D_GetMaxTxPwrInDbm(struct rtllib_device *dev, u8 Channel)
+ 	u8 MaxTxPwrInDbm = 255;
+ 
+ 	if (MAX_CHANNEL_NUMBER < Channel) {
+-		printk(KERN_INFO "DOT11D_GetMaxTxPwrInDbm(): Invalid Channel\n");
++		netdev_info(dev->dev, "DOT11D_GetMaxTxPwrInDbm(): Invalid Channel\n");
+ 		return MaxTxPwrInDbm;
+ 	}
+ 	if (pDot11dInfo->channel_map[Channel])
+@@ -204,7 +205,7 @@ int ToLegalChannel(struct rtllib_device *dev, u8 channel)
+ 	}
+ 
+ 	if (MAX_CHANNEL_NUMBER < channel) {
+-		printk(KERN_ERR "%s(): Invalid Channel\n", __func__);
++		netdev_err(dev->dev, "%s(): Invalid Channel\n", __func__);
+ 		return default_chn;
+ 	}
+ 
+-- 
+1.7.9.5
+
