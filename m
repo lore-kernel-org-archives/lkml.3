@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932934AbaFKP6o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 11:58:44 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:54241 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755700AbaFKP6l (ORCPT
+	id S932975AbaFKP67 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 11:58:59 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:58911 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932944AbaFKP65 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 11:58:41 -0400
-Message-ID: <53987CAD.2010306@6wind.com>
-Date: Wed, 11 Jun 2014 17:58:37 +0200
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Reply-To: nicolas.dichtel@6wind.com
-Organization: 6WIND
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 11 Jun 2014 11:58:57 -0400
 MIME-Version: 1.0
-To: Stephen Hemminger <stephen@networkplumber.org>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [ANNOUNCE] iproute2 3.15.0 release
-References: <20140610103712.57d0b1ad@nehalam.linuxnetplumber.net>	<53986B68.5020401@6wind.com> <20140611083907.3a3cab96@nehalam.linuxnetplumber.net>
-In-Reply-To: <20140611083907.3a3cab96@nehalam.linuxnetplumber.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+X-Originating-IP: [95.23.57.59]
+In-Reply-To: <1402464739-19044-3-git-send-email-tushar.b@samsung.com>
+References: <1402464739-19044-1-git-send-email-tushar.b@samsung.com>
+	<1402464739-19044-3-git-send-email-tushar.b@samsung.com>
+Date: Wed, 11 Jun 2014 17:58:55 +0200
+Message-ID: <CABxcv=kX07pNCd-YPYp6J8S5hHzG1rsoer1YRfdPE0g-xFqZnQ@mail.gmail.com>
+Subject: Re: [PATCH 2/3] ARM: dts: Update the parent for Audss clocks in Exynos5420
+From: Javier Martinez Canillas <javier@dowhile0.org>
+To: Tushar Behera <tushar.b@samsung.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-samsung-soc@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        mturquette@linaro.org, t.figa@samsung.com,
+        Russell King <linux@arm.linux.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Kevin Hilman <khilman@linaro.org>, dianders@google.com,
+        trblinux@gmail.com, Shaik Ameer Basha <shaik.ameer@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 11/06/2014 17:39, Stephen Hemminger a écrit :
-> On Wed, 11 Jun 2014 16:44:56 +0200
-> Nicolas Dichtel <nicolas.dichtel@6wind.com> wrote:
+On Wed, Jun 11, 2014 at 7:32 AM, Tushar Behera <tushar.b@samsung.com> wrote:
+> Currently CLK_FOUT_EPLL was set as one of the parents of AUDSS mux.
+> As per the user manual, it should be CLK_MAU_EPLL.
 >
->> Le 10/06/2014 19:37, Stephen Hemminger a écrit :
->>> Time for the release of iproute2 for 3.15
->>>
->>> The main new features are:
->>>     * ss gets more attention
->>>     * Support for HHF qdisc
->>>     * Updates to bridge command
->>>     * Lots of vxlan related changes
->>>     * Lots of little corrections and build fixes
->>>
->>> Source:
->>>     http://www.kernel.org/pub/linux/utils/net/iproute2/iproute2-3.15.0.tar.gz
->>>
->>> Repository:
->>>     git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git
->> It seems that you have pushed the tag, but not the tagged commit
->> (ce7aff3b8d0bb55321af2dbaa2f911319fdcc76b). In fact, I don't see the tag in the
->> branch master.
+> The problem surfaced when the bootloader in Peach-pit board set
+> the EPLL clock as the parent of AUDSS mux. While booting the kernel,
+> we used to get a system hang during late boot if CLK_MAU_EPLL was
+> disabled.
 >
-> try now
+> Signed-off-by: Tushar Behera <tushar.b@samsung.com>
+> Signed-off-by: Shaik Ameer Basha <shaik.ameer@samsung.com>
+> Reported-by: Kevin Hilman <khilman@linaro.org>
+> ---
+>  arch/arm/boot/dts/exynos5420.dtsi |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 >
-Works, thank you.
-You gave a shortlog in the announcement, it is done between which tags?
-If I run 'git shortlog v3.14.0..v3.15.0', the output is shorter than yours.
+> diff --git a/arch/arm/boot/dts/exynos5420.dtsi b/arch/arm/boot/dts/exynos5420.dtsi
+> index e385322..79e9119 100644
+> --- a/arch/arm/boot/dts/exynos5420.dtsi
+> +++ b/arch/arm/boot/dts/exynos5420.dtsi
+> @@ -167,7 +167,7 @@
+>                 compatible = "samsung,exynos5420-audss-clock";
+>                 reg = <0x03810000 0x0C>;
+>                 #clock-cells = <1>;
+> -               clocks = <&clock CLK_FIN_PLL>, <&clock CLK_FOUT_EPLL>,
+> +               clocks = <&clock CLK_FIN_PLL>, <&clock CLK_MAU_EPLL>,
+>                          <&clock CLK_SCLK_MAUDIO0>, <&clock CLK_SCLK_MAUPCM0>;
+>                 clock-names = "pll_ref", "pll_in", "sclk_audio", "sclk_pcm_in";
+>         };
+> --
+> 1.7.9.5
+>
+> --
+
+Tested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
