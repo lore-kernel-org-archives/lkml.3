@@ -1,223 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932459AbaFKOL2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 10:11:28 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51808 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932186AbaFKOLZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 10:11:25 -0400
-From: Punit Agrawal <punit.agrawal@arm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "linux-pm\@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Javi Merino <Javi.Merino@arm.com>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <edubezval@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [RFC PATCH 3/3] thermal: trace: Trace when temperature is above a trip point
-References: <1402486305-4017-1-git-send-email-punit.agrawal@arm.com>
-	<1402486305-4017-4-git-send-email-punit.agrawal@arm.com>
-	<20140611084908.509a6950@gandalf.local.home>
-Date: Wed, 11 Jun 2014 15:11:02 +0100
-In-Reply-To: <20140611084908.509a6950@gandalf.local.home> (Steven Rostedt's
-	message of "Wed, 11 Jun 2014 13:49:08 +0100")
-Message-ID: <9hhk38nedu1.fsf@arm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S932486AbaFKONY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 10:13:24 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:51851 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755646AbaFKONX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 10:13:23 -0400
+Date: Wed, 11 Jun 2014 16:13:20 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
+        greg@kroah.com, jkosina@suse.cz, dyoung@redhat.com,
+        chaowang@redhat.com, bhe@redhat.com, akpm@linux-foundation.org
+Subject: Re: [PATCH 07/13] kexec: Implementation of new syscall
+ kexec_file_load
+Message-ID: <20140611141320.GA30685@nazgul.tnic>
+References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
+ <1401800822-27425-8-git-send-email-vgoyal@redhat.com>
+ <20140605111535.GB16642@pd.tnic>
+ <20140605201732.GF14083@redhat.com>
+ <20140606021133.GB27257@pd.tnic>
+ <20140606180214.GH1526@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140606180214.GH1526@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for the quick response.
+On Fri, Jun 06, 2014 at 02:02:14PM -0400, Vivek Goyal wrote:
+> > If you want to make it more explicit, you could do
+> > 
+> > #define RES_OK		0
+> > #define RES_ERR		1
+> > #define RES_STOP	2
+> 
+> You are saying that called back function should return this to walk_*
+> functions? But then we lose the actual error code which should be
+> passed to parent function which actually called walk_* function.
 
-Steven Rostedt <rostedt@goodmis.org> writes:
+Well, RES_STOP could implicitly mean stop and no error. Also, if
+you really want to return back the retval, you could slice it into
+bitfields:
 
-> On Wed, 11 Jun 2014 12:31:44 +0100
-> Punit Agrawal <punit.agrawal@arm.com> wrote:
->
->> Create a new event to trace when the temperature is above a trip
->> point. Use the trace-point when handling non-critical and critical
->> trip pionts.
->> 
->> Cc: Zhang Rui <rui.zhang@intel.com>
->> Cc: Eduardo Valentin <edubezval@gmail.com>
->> Cc: Steven Rostedt <rostedt@goodmis.org>
->> Cc: Frederic Weisbecker <fweisbec@gmail.com>
->> Cc: Ingo Molnar <mingo@redhat.com>
->> Signed-off-by: Punit Agrawal <punit.agrawal@arm.com>
->> ---
->> Hi Steven,
->> 
->> I am facing an issue with partial trace being emitted when using
->> __print_symbolic in this patch. 
->> 
->> When the trip_type is THERMAL_TRIP_ACTIVE (i.e., the first value in
->> the symbol map), the emitted trace contains the corresponding string
->> ("active"). But for other values of trip_type an empty string is
->> emitted in the trace.
->> 
->> I've looked at other uses of __print_symbolic in the kernel and don't
->> see any difference in usage. Do you know what could be causing this or
->> alternately have any pointers on how to debug this behaviour?
->> 
->
-> If you can use trace-cmd to record your events then we can look at the
-> raw data too.
->
-> trace-cmd record -e thermal_zone_trip <some-command>
->
-> where <some-command> would trigger your tracepoint.
->
-> Then do: trace-cmd report -R
->
-> You should see the raw value of trip_type.
->
-> Make sure that it matches the enum values that you have listed.
->
+retval = [ ... 8 | 7 ... 0]
 
-I do indeed see the value of trip_type and it matches what's being
-traced.
+where [7:0] is the return value and bits from 8 onwards contain
+different flags like RES_STOP. I did it just for the fun of it and it
+looks like below. I honestly can't say that I'm crazy about it though.
 
-~# trace-cmd report | grep thermal_zone_trip | tail -n 5
-     kworker/2:2-1014  [002]   125.623213: thermal_zone_trip:    thermal_zone=soc_thermal id=0 trip=0 trip_type=
-     kworker/2:2-1014  [002]   125.743174: thermal_zone_trip:    thermal_zone=soc_thermal id=0 trip=0 trip_type=
-     kworker/2:2-1014  [002]   125.863196: thermal_zone_trip:    thermal_zone=soc_thermal id=0 trip=0 trip_type=
-     kworker/2:2-1014  [002]   125.983175: thermal_zone_trip:    thermal_zone=soc_thermal id=0 trip=0 trip_type=
-     kworker/2:2-1014  [002]   126.103173: thermal_zone_trip:    thermal_zone=soc_thermal id=0 trip=0 trip_type=
-~# trace-cmd report -R | grep thermal_zone_trip | tail -n 5
-     kworker/2:2-1014  [002]   125.623213: thermal_zone_trip:     thermal_zone=soc_thermal id=0 trip=0 trip_type=1
-     kworker/2:2-1014  [002]   125.743174: thermal_zone_trip:     thermal_zone=soc_thermal id=0 trip=0 trip_type=1
-     kworker/2:2-1014  [002]   125.863196: thermal_zone_trip:     thermal_zone=soc_thermal id=0 trip=0 trip_type=1
-     kworker/2:2-1014  [002]   125.983175: thermal_zone_trip:     thermal_zone=soc_thermal id=0 trip=0 trip_type=1
-     kworker/2:2-1014  [002]   126.103173: thermal_zone_trip:     thermal_zone=soc_thermal id=0 trip=0 trip_type=1
+--
+Index: b/kernel/resource.c
+===================================================================
+--- a/kernel/resource.c	2014-06-11 14:49:35.865426300 +0200
++++ b/kernel/resource.c	2014-06-11 15:37:50.050299684 +0200
+@@ -371,7 +371,7 @@ static int find_next_iomem_res(struct re
+ }
+ 
+ int walk_ram_res(char *name, unsigned long flags, u64 start, u64 end,
+-		void *arg, int (*func)(u64, u64, void *))
++		 void *arg, int (*func)(u64, u64, void *))
+ {
+ 	struct resource res;
+ 	u64 orig_end;
+@@ -384,12 +384,12 @@ int walk_ram_res(char *name, unsigned lo
+ 	while ((res.start < res.end) &&
+ 		(find_next_iomem_res(&res, name) >= 0)) {
+ 		ret = (*func)(res.start, res.end, arg);
+-		if (ret)
++		if (ret & RES_STOP)
+ 			break;
+ 		res.start = res.end + 1;
+ 		res.end = orig_end;
+ 	}
+-	return ret;
++	return RETVAL(ret);
+ }
+ 
+ /*
+@@ -441,7 +441,7 @@ static int find_next_system_ram(struct r
+  * with pfn can truncate ranges.
+  */
+ int walk_system_ram_res(u64 start, u64 end, void *arg,
+-				int (*func)(u64, u64, void *))
++			int (*func)(u64, u64, void *))
+ {
+ 	struct resource res;
+ 	u64 orig_end;
+@@ -454,12 +454,13 @@ int walk_system_ram_res(u64 start, u64 e
+ 	while ((res.start < res.end) &&
+ 		(find_next_system_ram(&res, "System RAM") >= 0)) {
+ 		ret = (*func)(res.start, res.end, arg);
+-		if (ret)
++		if (ret & RES_STOP)
+ 			break;
+ 		res.start = res.end + 1;
+ 		res.end = orig_end;
+ 	}
+-	return ret;
++
++	return RETVAL(ret);
+ }
+ 
+ #if !defined(CONFIG_ARCH_HAS_WALK_MEMORY)
+Index: b/kernel/kexec.c
+===================================================================
+--- a/kernel/kexec.c	2014-06-11 14:49:35.865426300 +0200
++++ b/kernel/kexec.c	2014-06-11 16:03:26.264232477 +0200
+@@ -2063,8 +2063,9 @@ static int __kexec_add_segment(struct ki
+ }
+ 
+ static int locate_mem_hole_top_down(unsigned long start, unsigned long end,
+-					struct kexec_buf *kbuf)
++				    struct kexec_buf *kbuf)
+ {
++	int ret = 0;
+ 	struct kimage *image = kbuf->image;
+ 	unsigned long temp_start, temp_end;
+ 
+@@ -2076,7 +2077,7 @@ static int locate_mem_hole_top_down(unsi
+ 		temp_start = temp_start & (~(kbuf->buf_align - 1));
+ 
+ 		if (temp_start < start || temp_start < kbuf->buf_min)
+-			return 0;
++			return EADDRNOTAVAIL;
+ 
+ 		temp_end = temp_start + kbuf->memsz - 1;
+ 
+@@ -2098,12 +2099,15 @@ static int locate_mem_hole_top_down(unsi
+ 				kbuf->memsz);
+ 
+ 	/* Stop navigating through remaining System RAM ranges */
+-	return 1;
++	ret |= RES_STOP;
++
++	return ret;
+ }
+ 
+ static int locate_mem_hole_bottom_up(unsigned long start, unsigned long end,
+-					struct kexec_buf *kbuf)
++				     struct kexec_buf *kbuf)
+ {
++	int ret = 0;
+ 	struct kimage *image = kbuf->image;
+ 	unsigned long temp_start, temp_end;
+ 
+@@ -2114,7 +2118,7 @@ static int locate_mem_hole_bottom_up(uns
+ 		temp_end = temp_start + kbuf->memsz - 1;
+ 
+ 		if (temp_end > end || temp_end > kbuf->buf_max)
+-			return 0;
++			return EADDRNOTAVAIL;
+ 		/*
+ 		 * Make sure this does not conflict with any of existing
+ 		 * segments
+@@ -2133,7 +2137,9 @@ static int locate_mem_hole_bottom_up(uns
+ 				kbuf->memsz);
+ 
+ 	/* Stop navigating through remaining System RAM ranges */
+-	return 1;
++	ret |= RES_STOP;
++
++	return ret;
+ }
+ 
+ static int walk_ram_range_callback(u64 start, u64 end, void *arg)
+@@ -2141,12 +2147,11 @@ static int walk_ram_range_callback(u64 s
+ 	struct kexec_buf *kbuf = (struct kexec_buf *)arg;
+ 	unsigned long sz = end - start + 1;
+ 
+-	/* Returning 0 will take to next memory range */
+ 	if (sz < kbuf->memsz)
+-		return 0;
++		return EADDRNOTAVAIL;
+ 
+ 	if (end < kbuf->buf_min || start > kbuf->buf_max)
+-		return 0;
++		return EADDRNOTAVAIL;
+ 
+ 	/*
+ 	 * Allocate memory top down with-in ram range. Otherwise bottom up
+@@ -2168,15 +2173,15 @@ int kexec_add_buffer(struct kimage *imag
+ 		unsigned long buf_max, bool top_down, unsigned long *load_addr)
+ {
+ 
+-	unsigned long nr_segments = image->nr_segments, new_nr_segments;
+ 	struct kexec_segment *ksegment;
+ 	struct kexec_buf buf, *kbuf;
++	int ret;
+ 
+ 	/* Currently adding segment this way is allowed only in file mode */
+ 	if (!image->file_mode)
+ 		return -EINVAL;
+ 
+-	if (nr_segments >= KEXEC_SEGMENT_MAX)
++	if (image->nr_segments >= KEXEC_SEGMENT_MAX)
+ 		return -EINVAL;
+ 
+ 	/*
+@@ -2208,25 +2213,18 @@ int kexec_add_buffer(struct kimage *imag
+ 
+ 	/* Walk the RAM ranges and allocate a suitable range for the buffer */
+ 	if (image->type == KEXEC_TYPE_CRASH)
+-		walk_ram_res("Crash kernel", IORESOURCE_MEM | IORESOURCE_BUSY,
+-				crashk_res.start, crashk_res.end, kbuf,
+-				walk_ram_range_callback);
++		ret = walk_ram_res("Crash kernel",
++				   IORESOURCE_MEM | IORESOURCE_BUSY,
++				   crashk_res.start, crashk_res.end, kbuf,
++				   walk_ram_range_callback);
+ 	else
+-		walk_system_ram_res(0, -1, kbuf, walk_ram_range_callback);
+-
+-	/*
+-	 * If range could be found successfully, it would have incremented
+-	 * the nr_segments value.
+-	 */
+-	new_nr_segments = image->nr_segments;
++		ret = walk_system_ram_res(0, -1, kbuf, walk_ram_range_callback);
+ 
+-	/* A suitable memory range could not be found for buffer */
+-	if (new_nr_segments == nr_segments)
++	if (ret)
+ 		return -EADDRNOTAVAIL;
+ 
+ 	/* Found a suitable memory range */
+-
+-	ksegment = &image->segment[new_nr_segments - 1];
++	ksegment = &image->segment[image->nr_segments - 1];
+ 	*load_addr = ksegment->mem;
+ 	return 0;
+ }
+Index: b/include/linux/ioport.h
+===================================================================
+--- a/include/linux/ioport.h	2014-06-11 14:49:35.865426300 +0200
++++ b/include/linux/ioport.h	2014-06-11 16:02:12.775235692 +0200
+@@ -237,6 +237,16 @@ extern int iomem_is_exclusive(u64 addr);
+ extern int
+ walk_system_ram_range(unsigned long start_pfn, unsigned long nr_pages,
+ 		void *arg, int (*func)(unsigned long, unsigned long, void *));
++
++#define RET_BITS	8
++#define RET_MASK	((1U << RET_BITS) - 1)
++#define RETVAL(r)	(-((r) & RET_MASK))
++
++#define RET_OK		0
++#define RET_ERR		1
++
++#define RES_STOP	BIT(0 + RET_BITS)
++
+ extern int
+ walk_system_ram_res(u64 start, u64 end, void *arg,
+ 				int (*func)(u64, u64, void *));
 
-Is there something I should be doing to enable the translation to the
-string representation when reporting using trace-cmd?
-
-Cheers,
-Punit
-
-> -- Steve
->
->
->> Thanks.
->> Punit
->> 
->>  drivers/thermal/fair_share.c   |    7 ++++++-
->>  drivers/thermal/step_wise.c    |    5 ++++-
->>  drivers/thermal/thermal_core.c |    2 ++
->>  include/trace/events/thermal.h |   30 ++++++++++++++++++++++++++++++
->>  4 files changed, 42 insertions(+), 2 deletions(-)
->> 
->> diff --git a/drivers/thermal/fair_share.c b/drivers/thermal/fair_share.c
->> index 944ba2f..2cddd68 100644
->> --- a/drivers/thermal/fair_share.c
->> +++ b/drivers/thermal/fair_share.c
->> @@ -23,6 +23,7 @@
->>   */
->>  
->>  #include <linux/thermal.h>
->> +#include <trace/events/thermal.h>
->>  
->>  #include "thermal_core.h"
->>  
->> @@ -34,14 +35,18 @@ static int get_trip_level(struct thermal_zone_device *tz)
->>  {
->>  	int count = 0;
->>  	unsigned long trip_temp;
->> +	enum thermal_trip_type trip_type;
->>  
->>  	if (tz->trips == 0 || !tz->ops->get_trip_temp)
->>  		return 0;
->>  
->>  	for (count = 0; count < tz->trips; count++) {
->>  		tz->ops->get_trip_temp(tz, count, &trip_temp);
->> -		if (tz->temperature < trip_temp)
->> +		if (tz->temperature < trip_temp) {
->> +			tz->ops->get_trip_type(tz, count, &trip_type);
->> +			trace_thermal_zone_trip(tz, count, trip_type);
->>  			break;
->> +		}
->>  	}
->>  	return count;
->>  }
->> diff --git a/drivers/thermal/step_wise.c b/drivers/thermal/step_wise.c
->> index f251521..3b54c2c 100644
->> --- a/drivers/thermal/step_wise.c
->> +++ b/drivers/thermal/step_wise.c
->> @@ -23,6 +23,7 @@
->>   */
->>  
->>  #include <linux/thermal.h>
->> +#include <trace/events/thermal.h>
->>  
->>  #include "thermal_core.h"
->>  
->> @@ -129,8 +130,10 @@ static void thermal_zone_trip_update(struct thermal_zone_device *tz, int trip)
->>  
->>  	trend = get_tz_trend(tz, trip);
->>  
->> -	if (tz->temperature >= trip_temp)
->> +	if (tz->temperature >= trip_temp) {
->>  		throttle = true;
->> +		trace_thermal_zone_trip(tz, trip, trip_type);
->> +	}
->>  
->>  	dev_dbg(&tz->device, "Trip%d[type=%d,temp=%ld]:trend=%d,throttle=%d\n",
->>  				trip, trip_type, trip_temp, trend, throttle);
->> diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
->> index c74c78d..454884a 100644
->> --- a/drivers/thermal/thermal_core.c
->> +++ b/drivers/thermal/thermal_core.c
->> @@ -371,6 +371,8 @@ static void handle_critical_trips(struct thermal_zone_device *tz,
->>  	if (tz->temperature < trip_temp)
->>  		return;
->>  
->> +	trace_thermal_zone_trip(tz, trip, trip_type);
->> +
->>  	if (tz->ops->notify)
->>  		tz->ops->notify(tz, trip, trip_type);
->>  
->> diff --git a/include/trace/events/thermal.h b/include/trace/events/thermal.h
->> index 894a79e..5eeb1e7 100644
->> --- a/include/trace/events/thermal.h
->> +++ b/include/trace/events/thermal.h
->> @@ -51,6 +51,36 @@ TRACE_EVENT(cdev_update,
->>  	TP_printk("type=%s target=%lu", __get_str(type), __entry->target)
->>  );
->>  
->> +TRACE_EVENT(,
->> +
->> +	TP_PROTO(struct thermal_zone_device *tz, int trip,
->> +		enum thermal_trip_type trip_type),
->> +
->> +	TP_ARGS(tz, trip, trip_type),
->> +
->> +	TP_STRUCT__entry(
->> +		__string(thermal_zone, tz->type)
->> +		__field(int, id)
->> +		__field(int, trip)
->> +		__field(enum thermal_trip_type, trip_type)
->> +	),
->> +
->> +	TP_fast_assign(
->> +		__assign_str(thermal_zone, tz->type);
->> +		__entry->id = tz->id;
->> +		__entry->trip = trip;
->> +		__entry->trip_type = trip_type;
->> +	),
->> +
->> +	TP_printk("thermal_zone=%s id=%d trip=%d trip_type=%s",
->> +		__get_str(thermal_zone), __entry->id, __entry->trip,
->> +		__print_symbolic(__entry->trip_type,
->> +				{ THERMAL_TRIP_ACTIVE, "active" },
->> +				{ THERMAL_TRIP_PASSIVE, "passive" },
->> +				{ THERMAL_TRIP_HOT, "hot" },
->> +				{ THERMAL_TRIP_CRITICAL, "critical" }))
->> +);
->> +
->>  #endif /* _TRACE_THERMAL_H */
->>  
->>  /* This part must be outside protection */
