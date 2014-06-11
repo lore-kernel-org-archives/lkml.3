@@ -1,46 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754490AbaFKWyI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 18:54:08 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:53830 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752858AbaFKWyG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 18:54:06 -0400
-Date: Wed, 11 Jun 2014 15:54:02 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Christoph Lameter <cl@gentwo.org>
-cc: Luiz Capitulino <lcapitulino@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Linux MM <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: Re: [PATCH] x86: numa: drop ZONE_ALIGN
-In-Reply-To: <alpine.DEB.2.10.1406110852280.7977@gentwo.org>
-Message-ID: <alpine.DEB.2.02.1406111553430.27885@chino.kir.corp.google.com>
-References: <20140608181436.17de69ac@redhat.com> <CAE9FiQXpUbAOinEK-1PSFyGKqpC_FHN0sjP0xvD0ChrXR5GdAw@mail.gmail.com> <20140609150353.75eff02b@redhat.com> <CAE9FiQUWZxvCS82cH=n-NF+nhTQ83J+7M3gHdXGu2S1Qk3xL_g@mail.gmail.com> <20140611092337.35794bc0@redhat.com>
- <alpine.DEB.2.10.1406110852280.7977@gentwo.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1754541AbaFKWzm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 18:55:42 -0400
+Received: from tundra.namei.org ([65.99.196.166]:47836 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752689AbaFKWzl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 18:55:41 -0400
+Date: Thu, 12 Jun 2014 08:57:01 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: linux-security-module@vger.kernel.org
+cc: lwn@lwn.net, linux-kernel@vger.kernel.org,
+        Linux Security Summit Program Committee 
+	<lss-pc@ext.namei.org>
+Subject: Re: [lss-pc] [ANNOUNCE] Linux Security Summit 2014 -- CFP
+In-Reply-To: <alpine.LRH.2.02.1404292106060.7667@tundra.namei.org>
+Message-ID: <alpine.LRH.2.02.1406120853110.20783@tundra.namei.org>
+References: <alpine.LRH.2.02.1404292106060.7667@tundra.namei.org>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Jun 2014, Christoph Lameter wrote:
+Hi Folks,
 
-> > > The zone should not cross the 8M boundary?
-> >
-> > Yes, but the question is: why?
+The CFP has been extended to the end of next week: 20th June, with speaker 
+notifications going out by the 27th.
+
+
+On Tue, 29 Apr 2014, James Morris wrote:
+
+> ==========================================================================
+>                  ANNOUNCEMENT AND CALL FOR PARTICIPATION
 > 
-> zones need to be aligned so that the huge pages order and other page
-> orders allocated from the page allocator are at their "natural alignment".
-> Otherwise huge pages cannot be mapped properly and various I/O devices
-> may encounter issues if they rely on the natural alignment.
+>                        LINUX SECURITY SUMMIT 2014
+>                              18-19 AUGUST
+>                            CHICAGO, IL, USA
+> ==========================================================================
+> 
+> 
+> DESCRIPTION
+> 
+>   The Linux Security Summit (LSS) is a technical forum for collaboration
+>   between Linux developers, researchers, and end users.  Its primary aim
+>   is to foster community efforts in analyzing and solving Linux security
+>   challenges.
+> 
+>   The format of the summit will be:
+>   
+>     * Refereed presentations
+>     * Discussion topics
+>     * Subsystem reports
+>     * Breakout development sessions 
+> 
+> 
+> WEB SITE
+> 
+>   http://kernsec.org/wiki/index.php/Linux_Security_Summit_2014
+> 
+> 
+> DATES / LOCATION
+> 
+>   The Linux Security Summit for 2014 will be held across 18 and 19 August
+>   in Chicago, IL, USA.  It will be co-located with LinuxCon, as well
+>   as the Linux Kernel Summit
+>  
+>   Note that Linux Security Summit attendees and speakers must be registered
+>   to attend LinuxCon.  See the LinuxCon site for details on registration,
+>   travel, and accommodation:
+>   
+>     https://events.linuxfoundation.org/events/linuxcon
+> 
+>   The Linux Security Summit CFP is now open, and will close on 6th June.
+>   
+>   Accepted speakers will be notified by 15th of June.
+> 
+> 
+> WHO SHOULD ATTEND
+> 
+>   The event is open to all registered LinuxCon attendees.
+>   
+>   You do not have to be a "security person" to attend -- we're seeking a
+>   diverse range of attendees, and welcome the participation of general
+>   developers, researchers, operations, and end-users.
+> 
+> 
+> CALL FOR PARTICIPATION
+> 
+>   The program committee currently seeks proposals for:
+> 
+>   * Refereed Presentations:
+>       45 minutes in length, including at least 10 minutes of discussion.
+>       Papers are encouraged.
+> 
+>   * Discussion Topics:
+>       30 minutes in length.
+>  
+>   Topic areas include, but are not limited to:
+>   
+>     * System hardening
+>     * Access control
+>     * Cryptography
+>     * Integrity control
+>     * Hardware security
+>     * Networking
+>     * Storage
+>     * Virtualization
+>     * Desktop
+>     * Tools
+>     * Management
+>     * Case studies
+>     * Emerging technologies, threats & techniques 
+>     
+>   Proposals should be submitted in plain text via email to the program
+>   committee at:  lss-pc (_at_) ext.namei.org
+> 
+>   Abstracts should be approximately 150 words in total.
+> 
+> 
+> PROGRAM COMMITTEE
+> 
+>   The Linux Security Summit for 2014 is organized by:
+> 
+>     * James Morris, Oracle
+>     * Serge Hallyn, Canonical
+>     * Paul Moore, Red Hat
+>     * Stephen Smalley, NSA
+>     * Joshua Brindle, Quark Security
+>     * Herbert Xu, Red Hat
+>     * John Johansen, Canonical
+>     * Kees Cook, Google
+>     * Casey Schaufler, Intel
+>     * Mimi Zohar, IBM
+> 
+>   The program committee may be contacted as a group via email:
+> 
+>      lss-pc (_at_) ext.namei.org
+>    
+> 
+> 
+> _______________________________________________
+> lss-pc mailing list
+> lss-pc@ext.namei.org
+> https://ext.namei.org/mailman/listinfo/lss-pc
 > 
 
-Any reason not to align to HUGETLB_PAGE_ORDER on x86 instead of 
-ZONE_ALIGN?
+-- 
+James Morris
+<jmorris@namei.org>
