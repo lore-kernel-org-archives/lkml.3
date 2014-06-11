@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933223AbaFKQBt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 12:01:49 -0400
-Received: from smtprelay0145.hostedemail.com ([216.40.44.145]:42956 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753048AbaFKQBq (ORCPT
+	id S1755796AbaFKQHm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 12:07:42 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:36631 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752649AbaFKQHk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 12:01:46 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2110:2393:2559:2562:2828:2908:3138:3139:3140:3141:3142:3352:3622:3653:3865:3866:3867:3868:3873:3874:4321:4362:5007:6120:7652:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13095:13161:13229:13255:13311:13357:13618,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: rat40_494100d035260
-X-Filterd-Recvd-Size: 1897
-Message-ID: <1402502500.6169.5.camel@joe-AO725>
-Subject: Re: [RFC PATCH] checkpatch: Attempt to find unnecessary 'out of
- memory' messages
-From: Joe Perches <joe@perches.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andy Whitcroft <apw@shadowen.org>, LKML <linux-kernel@vger.kernel.org>,
-        Julia Lawall <julia.lawall@lip6.fr>
-Date: Wed, 11 Jun 2014 09:01:40 -0700
-In-Reply-To: <20140611074704.GS5015@mwanda>
-References: <1402419340.30479.18.camel@joe-AO725>
-	 <20140611074704.GS5015@mwanda>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 11 Jun 2014 12:07:40 -0400
+Date: Wed, 11 Jun 2014 09:07:37 -0700
+From: Stephen Hemminger <stephen@networkplumber.org>
+To: nicolas.dichtel@6wind.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [ANNOUNCE] iproute2 3.15.0 release
+Message-ID: <20140611090737.5221c24c@nehalam.linuxnetplumber.net>
+In-Reply-To: <53987CAD.2010306@6wind.com>
+References: <20140610103712.57d0b1ad@nehalam.linuxnetplumber.net>
+	<53986B68.5020401@6wind.com>
+	<20140611083907.3a3cab96@nehalam.linuxnetplumber.net>
+	<53987CAD.2010306@6wind.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-06-11 at 10:47 +0300, Dan Carpenter wrote:
-> Acked-by: Dan Carpenter <dan.carpenter@oracle.com>
-> 
-> This check introduces 1849 new checkpatch.pl warnings.  I looked through
-> the first 70 warnings and there were no false positives.
+On Wed, 11 Jun 2014 17:58:37 +0200
+Nicolas Dichtel <nicolas.dichtel@6wind.com> wrote:
 
-Thanks for checking Dan.
+> Le 11/06/2014 17:39, Stephen Hemminger a écrit :
+> > On Wed, 11 Jun 2014 16:44:56 +0200
+> > Nicolas Dichtel <nicolas.dichtel@6wind.com> wrote:
+> >
+> >> Le 10/06/2014 19:37, Stephen Hemminger a écrit :
+> >>> Time for the release of iproute2 for 3.15
+> >>>
+> >>> The main new features are:
+> >>>     * ss gets more attention
+> >>>     * Support for HHF qdisc
+> >>>     * Updates to bridge command
+> >>>     * Lots of vxlan related changes
+> >>>     * Lots of little corrections and build fixes
+> >>>
+> >>> Source:
+> >>>     http://www.kernel.org/pub/linux/utils/net/iproute2/iproute2-3.15.0.tar.gz
+> >>>
+> >>> Repository:
+> >>>     git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git
+> >> It seems that you have pushed the tag, but not the tagged commit
+> >> (ce7aff3b8d0bb55321af2dbaa2f911319fdcc76b). In fact, I don't see the tag in the
+> >> branch master.
+> >
+> > try now
+> >
+> Works, thank you.
+> You gave a shortlog in the announcement, it is done between which tags?
+> If I run 'git shortlog v3.14.0..v3.15.0', the output is shorter than yours.
 
-As your systems are much faster than mine, perhaps you could publish
-the output of some script like:
-
-$ git ls-files -- "*.[ch]" | while read file ; do \
-	./scripts/checkpatch.pl -f --emacs --terse --no-summary --types=OOM_MESSAGE $file; \
-  done
-
-to someplace like kernel janitors.
-
-That might prompt someone to submit patch series for them.
-
-> Besides the bloat issue, I don't like these warnings because they make
-> the error handling harder to read.  They are sort of a mindless thing
-> that people feel they have to do for no particular reason.  Since
-> people aren't thinking when they write the error message then you get
-> NULL dereferences and so on.
-
-Yeah, that too.
-
-cheers, Joe
-
+Yes script does it but I think the merge branch from net-next confused
+git shortlog.
