@@ -1,95 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755816AbaFKQOf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 12:14:35 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:36200 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751683AbaFKQOe (ORCPT
+	id S932596AbaFKQPj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 12:15:39 -0400
+Received: from granite.fifsource.com ([173.255.216.206]:59377 "EHLO
+	granite.fifsource.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755744AbaFKQPi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 12:14:34 -0400
-Date: Wed, 11 Jun 2014 18:14:25 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Michel Lespinasse <walken@google.com>, Tejun Heo <tj@kernel.org>,
-        Roman Gushchin <klamm@yandex-team.ru>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] mm, memcg: allow OOM if no memcg is eligible during
- direct reclaim
-Message-ID: <20140611161425.GC23343@dhcp22.suse.cz>
-References: <20140611075729.GA4520@dhcp22.suse.cz>
- <1402473624-13827-1-git-send-email-mhocko@suse.cz>
- <20140611152030.GB22516@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140611152030.GB22516@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 11 Jun 2014 12:15:38 -0400
+Message-ID: <1402503318.27314.12.camel@niobium.home.fifi.org>
+Subject: Re: Phantom ACL-related xattrs on 3.14.4 NFS client
+From: Philippe Troin <phil@fifi.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
+Date: Wed, 11 Jun 2014 09:15:18 -0700
+In-Reply-To: <20140611072402.GA2683@infradead.org>
+References: <1402082953.28220.7.camel@ceramic.home.fifi.org>
+	 <CAHQdGtS2BL9u4DV=FZ0HaXO-iTNPU4hTGVR--HubNa4A_6UNog@mail.gmail.com>
+	 <20140607140414.GA26534@infradead.org>
+	 <1402195701.12743.18.camel@ceramic.home.fifi.org>
+	 <1402435203.24047.9.camel@ceramic.home.fifi.org>
+	 <20140611072402.GA2683@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 11-06-14 11:20:30, Johannes Weiner wrote:
-> On Wed, Jun 11, 2014 at 10:00:23AM +0200, Michal Hocko wrote:
-> > If there is no memcg eligible for reclaim because all groups under the
-> > reclaimed hierarchy are within their guarantee then the global direct
-> > reclaim would end up in the endless loop because zones in the zonelists
-> > are not considered unreclaimable (as per all_unreclaimable) and so the
-> > OOM killer would never fire and direct reclaim would be triggered
-> > without no chance to reclaim anything.
+Christoph,
+
+On Wed, 2014-06-11 at 00:24 -0700, Christoph Hellwig wrote:
+> On Tue, Jun 10, 2014 at 02:20:03PM -0700, Philippe Troin wrote:
+> > Trond, Christoph,
 > > 
-> > This is not possible yet because reclaim falls back to ignore low_limit
-> > when nobody is eligible for reclaim. Following patch will allow to set
-> > the fallback mode to hard guarantee, though, so this is a preparatory
-> > patch.
-> > 
-> > Memcg reclaim doesn't suffer from this because the OOM killer is
-> > triggered after few unsuccessful attempts of the reclaim.
-> > 
-> > Fix this by checking the number of scanned pages which is obviously 0 if
-> > nobody is eligible and also check that the whole tree hierarchy is not
-> > eligible and tell OOM it can go ahead.
-> > 
-> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> > ---
-> >  mm/vmscan.c | 7 +++++++
-> >  1 file changed, 7 insertions(+)
-> > 
-> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > index 8041b0667673..99137aecd95f 100644
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -2570,6 +2570,13 @@ out:
-> >  	if (aborted_reclaim)
-> >  		return 1;
-> >  
-> > +	/*
-> > +	 * If the target memcg is not eligible for reclaim then we have no option
-> > +	 * but OOM
-> > +	 */
-> > +	if (!sc->nr_scanned && mem_cgroup_all_within_guarantee(sc->target_mem_cgroup))
-> > +		return 0;
+> > Since my last email, I've been testing 3.14.6.
+> > Stock 3.14.6 is still broken, and Christoph's patch does help, but does
+> > not entirely cure the problem.
 > 
-> We can't just sprinkle `for each memcg in hierarchy` loops like this,
-> they can get really expensive.
+> Can you send me the output of 
+> 
+> getfattr -n system.posix_acl_access -e hex <file>
+> 
+> for the working case, and the current kernel with my previous patch?
 
-Yeah, I know. This one gets called only when nothing was scanned which
-shoudln't happen without the hard guarantee. And as said in other email
-we can optimize mem_cgroup_all_within_guarantee to skip all subtrees
-that are within their guarantee.
+Here's the output on the broken kernel (vanilla 3.14.6 + your patch):
 
-> It's pretty stupid to not have a return value on shrink_zone(), which
-> could easily indicate whether a zone was reclaimable, and instead have
-> another iteration over the same zonelist and the same memcg hierarchy
-> afterwards to figure out if shrink_zone() was successful or not.
+        % mkdir x
+        % cd x
+        % getfacl .                                   
+        # file: .
+        # owner: phil
+        # group: phil
+        user::rwx
+        group::rwx
+        other::r-x
+        
+        % getfattr -e hex -n system.posix_acl_access .
+        .: system.posix_acl_access: No such attribute
+        [2]    1901 exit 1     getfattr -e hex -n system.posix_acl_access .
+        % setfacl -m u:root:r .                       
+        % getfacl .                                   
+        # file: .
+        # owner: phil
+        # group: phil
+        user::rwx
+        user:root:r--
+        group::rwx
+        mask::rwx
+        other::r-x
+        
+        % getfattr -e hex -n system.posix_acl_access .
+        # file: .
+        system.posix_acl_access=0x0200000001000700ffffffff020004000000000004000700ffffffff10000700ffffffff20000500ffffffff
+        
+        % setfacl -b .                                
+        % getfacl .                                   
+        # file: .
+        # owner: phil
+        # group: phil
+        user::rwx
+        group::rwx
+        other::r-x
+        
+        % getfattr -e hex -n system.posix_acl_access .
+        # file: .
+        system.posix_acl_access=0x0200000001000700ffffffff04000700ffffffff20000500ffffffff
+        
+On a working system (3.13.11 + Fedora patches), the output is the same.
+So there's no regression here between 3.13.11 and 3.14.6 + your patch.
+I would argue that this behavior (system.posix_acl_access still present
+after clear the ACLs with setfacl -b) is wrong, and in fact there are no
+traces of this xattr on the server, but it's not new.
+I had missed that this counter-intuitive behavior was already in earlier
+kernels.  My apologies.
+Trond, what's your take on that one?
 
-I know it is stupid but this is the easiest way right now. We can/should
-refactor shrink_zones to forward that information. I was playing with
-sticking that infortmation into scan_control but that was even uglier.
+So, the only regression remaining between 3.13.11 and 3.14.6 + your
+patch is the one where listxattr(2) and friends do not NUL-terminate the
+xattr names they return.  This is detailed in
+<1402435203.24047.9.camel@ceramic.home.fifi.org> I sent yesterday.
 
--- 
-Michal Hocko
-SUSE Labs
+Phil.
+
