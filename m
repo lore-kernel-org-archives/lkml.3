@@ -1,54 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755299AbaFKEeS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 00:34:18 -0400
-Received: from ns.horizon.com ([71.41.210.147]:57131 "HELO ns.horizon.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1750757AbaFKEeR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 00:34:17 -0400
-Date: 11 Jun 2014 00:34:16 -0400
-Message-ID: <20140611043416.13875.qmail@ns.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: linux@horizon.com, tytso@mit.edu
-Subject: Re: drivers/char/random.c: more ruminations
-Cc: hpa@linux.intel.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
-        price@mit.edu
-In-Reply-To: <20140611020835.GA23110@thunk.org>
+	id S1755353AbaFKEfb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 00:35:31 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:50479 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750848AbaFKEf3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 00:35:29 -0400
+Date: Tue, 10 Jun 2014 23:35:07 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Peter Chen <peter.chen@freescale.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Matt Porter <matt.porter@linaro.org>
+Subject: Re: Disable bus's drivers_autoprobe before rootfs has mounted
+Message-ID: <20140611043507.GA30126@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <20140611021439.GA25082@shlinux1.ap.freescale.net>
+ <20140611041000.GB15184@kroah.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="YZ5djTAD1cGYuMQK"
+Content-Disposition: inline
+In-Reply-To: <20140611041000.GB15184@kroah.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> So have you actually instrumented the kernel to demonstrate that in
-> fact we have super deep stack call paths where the 128 bytes worth of
-> stack actually matters?
+--YZ5djTAD1cGYuMQK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I haven't got a specific call chain where 128 bytes pushes it
-over a limit.  But kernel stack usage is a perennial problem.
-Wasn't there some discussion about that just recenty?
-6538b8ea8: "x86_64: expand kernel stack to 16K"
+Hi,
 
-I agree a 128 byte stack frame is not one of the worst offenders,
-but it's enough to try to clean up if possible.
+On Tue, Jun 10, 2014 at 09:10:00PM -0700, Greg KH wrote:
+> > Let's take USB peripheral as an example, there is a device for
+> > udc, and a device driver for usb gadget driver, at default, we want
+> > the device to be bound to driver automatically, this is what
+> > we have done now. But if there are more than one udcs and gadget
+> > drivers (eg one B port for mass storage, another B port for usb etherne=
+t),
+> > the user may want to have specific binding (eg, udc-0 -> mass storage,
+> > udc-1 -> usb ethernet), so the binding will be established
+> > after rootfs has mounted. (This feature is implementing)
+>=20
+> Then there better be a way to describe this on the kernel command line
+> (i.e. module paramaters), right?  Which is a total mess, why not just
+> not bind anything in this case and let the user pick what they want?
 
-You can search LKML for a bunch of discussion of 176 bytes
-in __alloc_pages_slowpath().
+you can also blacklist all gadget drivers and manually probe them or -
+get this - you can refrain from using gadget drivers and use libusbg to
+build the gadget drivers out of raw usb functions, then bind them to the
+UDC of your liking.
 
-And in this case, it's so *easy*.  extract_buf() works 10 bytes at a
-time anyway, and _mix_pool_bytes is byte at a time.
+--=20
+balbi
 
->> I hadn't tested the patch when I mailed it to you (I prepared it in
->> order to reply to your e-mail, and it's annoying to reboot the machine
->> I'm composing an e-mail on), but I have since.  It works.
+--YZ5djTAD1cGYuMQK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> As an aside, I'd strongly suggest that you use kvm to do your kernel
-> testing.  It means you can do a lot more testing which is always a
-> good thing....
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-H'mmm. I need to learn what KVM *is*.  Apparently there's a second
-meaning other than "keyboard, video & mouse". :-)
+iQIcBAEBAgAGBQJTl9x7AAoJEIaOsuA1yqRE190P/2k0kU9aLAtsBSmvlRVaPe89
+SgUk/HTG5QuW9CGQJiEqkQuZ130Mf/7Qj/VLwnswp0ZxycU64iNBFI142dcHHQE5
+rzM+wQRQWBo2PV8G1ZqOiDoEv78e03UClOEN2SEsY41U02n2sOFwDKNhi85Ky4cg
+vJexmiB26yKlHCSZPMIa0m4O5BBEZf5XbAtSty+8bv3qu/jlEb2og5bMduGbFu6J
+BC4+gau5VzYwJOkYMJS1R5s6/hUs/NZ61CLnWkycZkJwv2KAw6hCavDB1DowBzuR
+CCRb+K6W8dNuqoRpw+OrdV+975Ry26kPBXx3b69dYj0FMOXBXgGPYX2hTZw3IjEa
+yGu281ZmvKt4HnvbVNn4cahF6BCgAxtbn1C394/muRyHSmdlUO52WCZDCjnxdwsu
+8PuonsVLk/k+/KrETU7pdkD62FPVzuXpg3Jf/jTnAf1+rCOvRZUdOIJZvuiktQV8
+OWkdLuoHRz24ijY8UQneaCJQaeBnGm0OMAGjyw0UiebDw3lFo7Ad19hyetSNZbkX
+b3UBqPA8wL6GSqMr/MnkhpX5oGRdZY6qSfoZCym2uqlgU6fb7t/nBAxKpVbSEv/J
+YDVbdOPaLcDuAcgrLD5yBzsse47inIdaYw8Iwu4ssjuwNwGNs6i5cBJx3M6Sp/8I
+ZMHmqURmmBlPc+Hr6ee9
+=5I4q
+-----END PGP SIGNATURE-----
 
-Normally, I just test using modules.  Especially when working on a
-driver for a hardware device, virtualization makes life difficult.
-But /dev/random is (for good reasons) not modularizable.
-
-(I can see how it'd be useful for filesystem development, however.)
+--YZ5djTAD1cGYuMQK--
