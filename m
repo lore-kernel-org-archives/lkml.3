@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754382AbaFKAda (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 20:33:30 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:57254 "EHLO
+	id S1753343AbaFKAld (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 20:41:33 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:58936 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754074AbaFKAd1 (ORCPT
+	with ESMTP id S1750822AbaFKAlb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 20:33:27 -0400
-X-AuditID: cbfee68f-b7fef6d000003970-c5-5397a3d47dd6
-From: Jonghwa Lee <jonghwa3.lee@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-pm@vger.kernel.org, rjw@rjwysocki.net, pavel@ucw.cz,
-        len.brown@intel.com, gregkh@linuxfoundation.org, cw00.choi@samsung.com,
-        myungjoo.ham@samsung.com, jy0922.shim@samsung.com,
-        inki.dae@samsung.com, Jonghwa Lee <jonghwa3.lee@samsung.com>
-Subject: [RFC PATCH] PM: Domain: Add flag to assure that device's runtime pm
- callback is called at once.
-Date: Wed, 11 Jun 2014 09:33:20 +0900
-Message-id: <1402446800-4043-1-git-send-email-jonghwa3.lee@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGLMWRmVeSWpSXmKPExsWyRsSkRPfK4unBBg/7BS2uf3nOatG8eD2b
-	xaT7E1gsOs8+YbZ4ce8ii8WsKXuZLC7vmsNm8bn3CKPF7cYVbBZ3Tx1lszhz+hKrA7fH4j0v
-	mTz2z13D7rHlajuLR9+WVYweK1Z/Z/f4vEkugC2KyyYlNSezLLVI3y6BK2PF4hWsBX+1Klad
-	mc7WwHhIuYuRk0NCwETi1rZXbBC2mMSFe+uBbC4OIYGljBJHGz+wwBTdu7gCKjGdUeJhfw8r
-	hNPGJNEy5xwrSBWbgI7E/3032UFsEQEFic29z8DizAJ/GCUuPksDsYUFsiQudX4HmsTBwSKg
-	KjHjbAhImFfAXeLBpKksIGEJoNY5k2xAxksILGOX6HzeB3YEi4CAxLfJh6BqZCU2HWCGuE1S
-	4uCKGywTGAUXMDKsYhRNLUguKE5KLzLWK07MLS7NS9dLzs/dxAgM89P/nvXvYLx7wPoQYzLQ
-	uInMUqLJ+cA4ySuJNzQ2M7IwNTE1NjK3NCNNWEmc9/7DpCAhgfTEktTs1NSC1KL4otKc1OJD
-	jEwcnFINjOWvbqoqmqtdkhX/U3fR40jCbY1bBpJ/TH7P/+Bw7qF6RU2c45rpb3nPZXkdtnYJ
-	NlAXZCmtT3mmu3mRVP2Ripv6cgvqfGYzc56a2dZW6B6ybp6C7A6Bmb/ak2qeVZ0oP1KhlDgj
-	s1lracxtUT97fhbGda5zGDtKom496ttwx3HaKnnT7d9uKLEUZyQaajEXFScCAH8fwPyJAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMIsWRmVeSWpSXmKPExsVy+t9jQd0ri6cHGzQfZLe4/uU5q0Xz4vVs
-	FpPuT2Cx6Dz7hNnixb2LLBazpuxlsri8aw6bxefeI4wWtxtXsFncPXWUzeLM6UusDtwei/e8
-	ZPLYP3cNu8eWq+0sHn1bVjF6rFj9nd3j8ya5ALaoBkabjNTElNQihdS85PyUzLx0WyXv4Hjn
-	eFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKADlRTKEnNKgUIBicXFSvp2mCaEhrjpWsA0Ruj6
-	hgTB9RgZoIGENYwZKxavYC34q1Wx6sx0tgbGQ8pdjJwcEgImEvcurmCDsMUkLtxbD2RzcQgJ
-	TGeUeNjfwwrhtDFJtMw5xwpSxSagI/F/3012EFtEQEFic+8zsDizwB9GiYvP0kBsYYEsiUud
-	34EmcXCwCKhKzDgbAhLmFXCXeDBpKgtIWAKodc4kmwmM3AsYGVYxiqYWJBcUJ6XnGukVJ+YW
-	l+al6yXn525iBEfRM+kdjKsaLA4xCnAwKvHwSkhPDxZiTSwrrsw9xCjBwawkwmuTBhTiTUms
-	rEotyo8vKs1JLT7EmAy0eyKzlGhyPjDC80riDY1NzIwsjcwNLYyMzUkTVhLnPdhqHSgkkJ5Y
-	kpqdmlqQWgSzhYmDU6qBsW5i+tOMnQEPf/OrM7u6z0mQZJzxQu+AVN8KZ6XSrT+P8T0y049v
-	WbH8uV7Hn6gPm9M/xiz4s111rZdBi5/ykxuJv3gjShOz2XW3s3sut3Doi/8mtNWxes2f74WW
-	B6IcU287c1y4rnP7fKDiPp/8hwIaVsYTM+tifGzd5Lrb9QMbOBkaLvoqsRRnJBpqMRcVJwIA
-	sQbLuOYCAAA=
+	Tue, 10 Jun 2014 20:41:31 -0400
+X-AuditID: cbfee690-b7fb56d000003439-b8-5397a5b9cc7b
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: broonie@kernel.org, lgirdwood@gmail.com, grant.likely@linaro.org,
+        robh+dt@kernel.org
+Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Subject: [PATCHv2 0/2] regulator: of: Add support for pasing regulator suspend
+ state
+Date: Wed, 11 Jun 2014 09:41:21 +0900
+Message-id: <1402447283-11356-1-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.8.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBLMWRmVeSWpSXmKPExsWyRsSkUHfn0unBBt93ylhMffiEzeL6l+es
+	FvOPnGO1OPBnB6PF2aY37BbfrnQwWVzeNYfN4nbjCjaL1r1H2B04PXbOusvusWlVJ5vHnWt7
+	2Dz6tqxi9Pi8SS6ANYrLJiU1J7MstUjfLoErY+6k/awFu3kqnjV9YW5g7OHqYuTkkBAwkbjZ
+	v5sJwhaTuHBvPVsXIxeHkMBSRomf554CJTjAimYd84OIT2eUWHZ3IROE08QkceDrJrBuNgEt
+	if0vbrCBNIgIREms7QCrYRaYzSjRcr6PGaRGWCBM4srmbWD1LAKqEn8PTQCL8wq4SrRs6GWB
+	uEJO4sOeR+wgzRIC/ewSq89tYoZoEJD4NvkQC8RFshKbDjBD1EtKHFxxg2UCo+ACRoZVjKKp
+	BckFxUnpRSZ6xYm5xaV56XrJ+bmbGIGhfPrfswk7GO8dsD7EmAw0biKzlGhyPjAW8kriDY3N
+	jCxMTUyNjcwtzUgTVhLnVXuUFCQkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBUVDganbm+4k2
+	L7bN/dvRazcnja9h/fe1jNZBy22KdsQe0vwkWSkluymmPK6zQPNCx85LjdzHJrO3RvRcTlyV
+	uPnsTo31h7Y//tBlO6fItOHZBYWeBXIriizfRHTXMtROOaE411PWSWq3fQ9neoJNg8ivmBaD
+	akZvoyrpFz7iYtfcTvAL/dunxFKckWioxVxUnAgAEdJPinsCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKIsWRmVeSWpSXmKPExsVy+t9jQd2dS6cHG8w5IGox9eETNovrX56z
+	Wsw/co7V4sCfHYwWZ5vesFt8u9LBZHF51xw2i9uNK9gsWvceYXfg9Ng56y67x6ZVnWwed67t
+	YfPo27KK0ePzJrkA1qgGRpuM1MSU1CKF1Lzk/JTMvHRbJe/geOd4UzMDQ11DSwtzJYW8xNxU
+	WyUXnwBdt8wcoIuUFMoSc0qBQgGJxcVK+naYJoSGuOlawDRG6PqGBMH1GBmggYQ1jBlzJ+1n
+	LdjNU/Gs6QtzA2MPVxcjB4eEgInErGN+XYycQKaYxIV769m6GLk4hASmM0osu7uQCcJpYpI4
+	8HUTE0gVm4CWxP4XN9hAmkUEoiTWdoDVMAvMZpRoOd/HDFIjLBAmcWXzNrB6FgFVib+HJoDF
+	eQVcJVo29LJAbJOT+LDnEfsERu4FjAyrGEVTC5ILipPScw31ihNzi0vz0vWS83M3MYIj5ZnU
+	DsaVDRaHGAU4GJV4eA9ITA8WYk0sK67MPcQowcGsJMJrkwYU4k1JrKxKLcqPLyrNSS0+xJgM
+	tH0is5Rocj4wivNK4g2NTcyMLI3MDS2MjM1JE1YS5z3Qah0oJJCeWJKanZpakFoEs4WJg1Oq
+	gXGJsrXVgiU7vMTe5nxWMP2fMq2ET6/12+6Jt5J0M4qDjswqNGXjq9q7plmpwYxb6OxCmZbk
+	K8HaZgc7+UN/nUsM3itZ+sDWd02gaPGhtHtBHac6v056HtEkMLWnv/Av15z8C1GncrSn9PyS
+	yUubGHKSw0PFdnKOEs+/VS++ZO3gyJWf3ibSq8RSnJFoqMVcVJwIAM2m89zYAgAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -50,152 +49,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When device uses generic pm domain, its own runtime suspend callback will be
-executed only when all devices in the same domain are suspended. However, some
-device needs sychronized runtime suspend and not to be deffered.
-For those devices, Generic pm domain adds new API for adding device with flag,
-which shows that it guerantees driver's runtime suspend will be executed right
-away not at the time domain is really powered off.
-Existed API, pm_genpd_add_device(), now adds device with flag representing this
-device is not needed sychrnoized callback. It will work as same as before.
+The regulators would set different state/mode according to the kind of suspend
+state. So regulation_constraints structure has already regulator suspend state filed.
+This patch parse regulator suspend state from devicetree file.
 
-Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
----
- drivers/base/power/domain.c |   17 ++++++++++++++---
- include/linux/pm_domain.h   |   19 ++++++++++++++++---
- 2 files changed, 30 insertions(+), 6 deletions(-)
+For example:
 
-diff --git a/drivers/base/power/domain.c b/drivers/base/power/domain.c
-index ae098a2..6c7a786 100644
---- a/drivers/base/power/domain.c
-+++ b/drivers/base/power/domain.c
-@@ -503,6 +503,9 @@ static int pm_genpd_poweroff(struct generic_pm_domain *genpd)
- 	genpd->poweroff_task = current;
- 
- 	list_for_each_entry_reverse(pdd, &genpd->dev_list, list_node) {
-+		if (dev_gpd_data(pdd->dev)->rpmflags & GENPD_RPM_SYNC)
-+			continue;
-+
- 		ret = atomic_read(&genpd->sd_count) == 0 ?
- 			__pm_genpd_save_device(pdd, genpd) : -EBUSY;
- 
-@@ -625,6 +628,9 @@ static int pm_genpd_runtime_suspend(struct device *dev)
- 	if (stop_ok && !stop_ok(dev))
- 		return -EBUSY;
- 
-+	if (dev_gpd_data(dev)->rpmflags & GENPD_RPM_SYNC)
-+		genpd_save_dev(genpd, dev);
-+
- 	ret = genpd_stop_dev(genpd, dev);
- 	if (ret)
- 		return ret;
-@@ -1416,7 +1422,7 @@ static void __pm_genpd_free_dev_data(struct device *dev,
-  * @td: Set of PM QoS timing parameters to attach to the device.
-  */
- int __pm_genpd_add_device(struct generic_pm_domain *genpd, struct device *dev,
--			  struct gpd_timing_data *td)
-+			  struct gpd_timing_data *td, enum genpd_rpmflags flags)
- {
- 	struct generic_pm_domain_data *gpd_data_new, *gpd_data = NULL;
- 	struct pm_domain_data *pdd;
-@@ -1472,6 +1478,7 @@ int __pm_genpd_add_device(struct generic_pm_domain *genpd, struct device *dev,
- 	gpd_data->need_restore = genpd->status == GPD_STATE_POWER_OFF;
- 	gpd_data->td.constraint_changed = true;
- 	gpd_data->td.effective_constraint_ns = -1;
-+	gpd_data->rpmflags = flags;
- 	mutex_unlock(&gpd_data->lock);
- 
-  out:
-@@ -1494,6 +1501,7 @@ int __pm_genpd_of_add_device(struct device_node *genpd_node, struct device *dev,
- 			     struct gpd_timing_data *td)
- {
- 	struct generic_pm_domain *genpd = NULL, *gpd;
-+	enum genpd_rpmflags rpmflags;
- 
- 	dev_dbg(dev, "%s()\n", __func__);
- 
-@@ -1512,7 +1520,9 @@ int __pm_genpd_of_add_device(struct device_node *genpd_node, struct device *dev,
- 	if (!genpd)
- 		return -EINVAL;
- 
--	return __pm_genpd_add_device(genpd, dev, td);
-+	rpmflags = of_property_read_bool(dev->of_node, "pm-genpd-rpmsync");
-+
-+	return __pm_genpd_add_device(genpd, dev, td, rpmflags);
- }
- 
- 
-@@ -1525,7 +1535,8 @@ int __pm_genpd_of_add_device(struct device_node *genpd_node, struct device *dev,
- int __pm_genpd_name_add_device(const char *domain_name, struct device *dev,
- 			       struct gpd_timing_data *td)
- {
--	return __pm_genpd_add_device(pm_genpd_lookup_name(domain_name), dev, td);
-+	struct generic_pm_domain *genpd = pm_genpd_lookup_name(domain_name);
-+	return __pm_genpd_add_device(genpd, dev, td, GENPD_RPM_ASYNC);
- }
- 
- /**
-diff --git a/include/linux/pm_domain.h b/include/linux/pm_domain.h
-index 7c1d252..d36e5cf 100644
---- a/include/linux/pm_domain.h
-+++ b/include/linux/pm_domain.h
-@@ -106,6 +106,11 @@ struct gpd_timing_data {
- 	bool cached_stop_ok;
- };
- 
-+enum genpd_rpmflags {
-+	GENPD_RPM_ASYNC = 0,
-+	GENPD_RPM_SYNC,
-+};
-+
- struct generic_pm_domain_data {
- 	struct pm_domain_data base;
- 	struct gpd_dev_ops ops;
-@@ -114,6 +119,7 @@ struct generic_pm_domain_data {
- 	struct mutex lock;
- 	unsigned int refcount;
- 	bool need_restore;
-+	enum genpd_rpmflags rpmflags;
- };
- 
- #ifdef CONFIG_PM_GENERIC_DOMAINS
-@@ -132,7 +138,8 @@ extern struct dev_power_governor simple_qos_governor;
- extern struct generic_pm_domain *dev_to_genpd(struct device *dev);
- extern int __pm_genpd_add_device(struct generic_pm_domain *genpd,
- 				 struct device *dev,
--				 struct gpd_timing_data *td);
-+				 struct gpd_timing_data *td,
-+				 enum genpd_rpmflags flags);
- 
- extern int __pm_genpd_of_add_device(struct device_node *genpd_node,
- 				    struct device *dev,
-@@ -180,7 +187,8 @@ static inline struct generic_pm_domain *dev_to_genpd(struct device *dev)
- }
- static inline int __pm_genpd_add_device(struct generic_pm_domain *genpd,
- 					struct device *dev,
--					struct gpd_timing_data *td)
-+					struct gpd_timing_data *td,
-+					enum genpd_rpmflags flags);
- {
- 	return -ENOSYS;
- }
-@@ -263,10 +271,15 @@ static inline bool default_stop_ok(struct device *dev)
- #define pm_domain_always_on_gov NULL
- #endif
- 
-+static inline int pm_genpd_add_device_rpmsync(struct generic_pm_domain *genpd,
-+				      struct device *dev)
-+{
-+	return __pm_genpd_add_device(genpd, dev, NULL, GENPD_RPM_SYNC);
-+}
- static inline int pm_genpd_add_device(struct generic_pm_domain *genpd,
- 				      struct device *dev)
- {
--	return __pm_genpd_add_device(genpd, dev, NULL);
-+	return __pm_genpd_add_device(genpd, dev, NULL, GENPD_RPM_ASYNC);
- }
- 
- static inline int pm_genpd_of_add_device(struct device_node *genpd_node,
+	ldoX_reg: LDOx {
+		regulator-name = "VAP_XXX_1.2V";
+		regulator-min-microvolt = <1200000>;
+		regulator-max-microvolt = <1200000>;
+		regulator-always-on;
+
+		regulator-initial-state = <3>;	/* PM_SUSPEND_MEM */
+		regulator-state-standby {
+			regulator-volt = <1200000>;
+			regulator-mode = <0x2>;	/* REGULATOR_MODE_NORMAL */
+		};
+
+		regulator-state-mem {
+			regulator-volt = <1200000>;
+			regulator-mode = <0x8>;	/* REGULATOR_MODE_STANDBY */
+			regulator-off-in-suspend;
+		};
+
+		regulator-state-disk {
+			regulator-volt = <1200000>;
+			regulator-mode = <0x2>;	/* REGULATOR_MODE_NORMAL */
+			regulator-on-in-suspend;
+		};
+	};
+
+Changes from v1:
+- Check whether regulator-initial-state and regulator-mode is correct or not
+- Add more detailed description about regulator-initial-state, regulator-mode
+  and regulator-state-[standby/mem/disk] for devicetree bindings
+- Modify example of regulator suspend state in bindings documentation
+
+Chanwoo Choi (2):
+  regulator: of: Add support for parsing regulator_state for suspend state
+  dt-bindings: regulator: Add regulator suspend state for PM state
+
+ .../devicetree/bindings/regulator/regulator.txt    | 32 +++++++++
+ drivers/regulator/of_regulator.c                   | 76 +++++++++++++++++++++-
+ 2 files changed, 106 insertions(+), 2 deletions(-)
+
 -- 
-1.7.9.5
+1.8.0
 
