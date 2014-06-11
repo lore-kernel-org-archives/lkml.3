@@ -1,77 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753849AbaFKKdX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 06:33:23 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:22466 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751634AbaFKKdW (ORCPT
+	id S1754330AbaFKKda (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 06:33:30 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:56430 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751634AbaFKKd1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 06:33:22 -0400
-X-AuditID: cbfee61a-b7fef6d00000200b-86-539830706404
-From: Chao Yu <chao2.yu@samsung.com>
-To: Jaegeuk Kim <jaegeuk@kernel.org>
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [f2fs-dev][PATCH] f2fs: remove unused variables in f2fs_sm_info
-Date: Wed, 11 Jun 2014 18:32:23 +0800
-Message-id: <006b01cf8560$91034920$b309db60$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac+FYEvJXvXLoiPBSzOwMYa0FDZeLg==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsVy+t9jAd0CgxnBBjubJC2erJ/FbHFpkbvF
-	nr0nWSwu75rD5sDisWlVJ5vH7gWfmTw+b5ILYI7isklJzcksSy3St0vgynh7vLzgHVfFgicy
-	DYxtnF2MnBwSAiYS79bPYYawxSQu3FvP1sXIxSEksIhRoqvvFzuE84NRYuerv+wgVWwCKhLL
-	O/4zgdgiQPahRZfB4swCmRL3mmaATRIW8JC49GEXI4jNIqAqMevwDLAaXgFLiUVznrFC2IIS
-	PybfY4Ho1ZLYvK2JFcKWl9i85i3URQoSO86+ZoTYpSdx4/NyZogacYmNR26xTGAUmIVk1Cwk
-	o2YhGTULScsCRpZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmbGMFh/ExqB+PKBotDjAIcjEo8
-	vAckpgcLsSaWFVfmHmKU4GBWEuG9pTgjWIg3JbGyKrUoP76oNCe1+BCjNAeLkjjvgVbrQCGB
-	9MSS1OzU1ILUIpgsEwenVAMj6/lqxQlLgm1n1/AmnV+Z0f7GuVje58Bqq09vRP2ZojdbPHs/
-	1+v7huaDa6bW1WZNqMz6uPZ4UPY8ZZX91X8t2i6eODyvdenl/63LInd4PL/LzqcePZ1bv22W
-	4VWD2lbzV1omM7c6ek8ysL1a5S7D0fzz97Gki+9iJOWLlJemJrjxaOyZ2FatxFKckWioxVxU
-	nAgAzOxOSV8CAAA=
+	Wed, 11 Jun 2014 06:33:27 -0400
+Message-ID: <1402482800.3523.20.camel@hornet>
+Subject: Re: [patch v2] mfd: vexpress: fix error handling
+ vexpress_syscfg_regmap_init()
+From: Pawel Moll <pawel.moll@arm.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
+Date: Wed, 11 Jun 2014 11:33:20 +0100
+In-Reply-To: <20140611101740.GA13148@mwanda>
+References: <20140611101740.GA13148@mwanda>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove unused variables in struct f2fs_sm_info.
+On Wed, 2014-06-11 at 11:17 +0100, Dan Carpenter wrote:
+> This function should be returning an ERR_PTR() on failure instead of
+> NULL.  Also there is a use after free bug if regmap_init() fails because
+> we free "func" and then dereference doing the return.
+> 
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> 
+> diff --git a/drivers/misc/vexpress-syscfg.c b/drivers/misc/vexpress-syscfg.c
+> index 73068e5..3250fc1 100644
+> --- a/drivers/misc/vexpress-syscfg.c
+> +++ b/drivers/misc/vexpress-syscfg.c
+> @@ -199,7 +199,7 @@ static struct regmap *vexpress_syscfg_regmap_init(struct device *dev,
+>  	func = kzalloc(sizeof(*func) + sizeof(*func->template) * num,
+>  			GFP_KERNEL);
+>  	if (!func)
+> -		return NULL;
+> +		return ERR_PTR(-ENOMEM);
+>  
+>  	func->syscfg = syscfg;
+>  	func->num_templates = num;
+> @@ -231,10 +231,14 @@ static struct regmap *vexpress_syscfg_regmap_init(struct device *dev,
+>  	func->regmap = regmap_init(dev, NULL, func,
+>  			&vexpress_syscfg_regmap_config);
+>  
+> -	if (IS_ERR(func->regmap))
+> +	if (IS_ERR(func->regmap)) {
+> +		void *err = func->regmap;
+> +
+>  		kfree(func);
+> -	else
+> -		list_add(&func->list, &syscfg->funcs);
+> +		return err;
+> +	}
+> +
+> +	list_add(&func->list, &syscfg->funcs);
+>  
+>  	return func->regmap;
+>  }
 
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
----
- fs/f2fs/f2fs.h    |    3 ---
- fs/f2fs/segment.c |    2 --
- 2 files changed, 5 deletions(-)
+Uh, right. Dereferencing a freed structure. My bad. Thanks for spotting
+this!
 
-diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index e51c732..7ef7acd 100644
---- a/fs/f2fs/f2fs.h
-+++ b/fs/f2fs/f2fs.h
-@@ -342,9 +342,6 @@ struct f2fs_sm_info {
- 	struct dirty_seglist_info *dirty_info;	/* dirty segment information */
- 	struct curseg_info *curseg_array;	/* active segment information */
- 
--	struct list_head wblist_head;	/* list of under-writeback pages */
--	spinlock_t wblist_lock;		/* lock for checkpoint */
--
- 	block_t seg0_blkaddr;		/* block address of 0'th segment */
- 	block_t main_blkaddr;		/* start block address of main area */
- 	block_t ssa_blkaddr;		/* start block address of SSA area */
-diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-index f25f0e0..b22d5a0 100644
---- a/fs/f2fs/segment.c
-+++ b/fs/f2fs/segment.c
-@@ -1885,8 +1885,6 @@ int build_segment_manager(struct f2fs_sb_info *sbi)
- 
- 	/* init sm info */
- 	sbi->sm_info = sm_info;
--	INIT_LIST_HEAD(&sm_info->wblist_head);
--	spin_lock_init(&sm_info->wblist_lock);
- 	sm_info->seg0_blkaddr = le32_to_cpu(raw_super->segment0_blkaddr);
- 	sm_info->main_blkaddr = le32_to_cpu(raw_super->main_blkaddr);
- 	sm_info->segment_count = le32_to_cpu(raw_super->segment_count);
--- 
-1.7.9.5
+Acked-by: Pawel Moll <pawel.moll@arm.com>
 
+(nit: the subject should be "misc: vexpress:" rather then "mfd:")
+
+Arnd, Olof, can you pick this one as an early fix or do you want me to
+queue it for rc1-based fixes branch?
+
+Paweł
 
