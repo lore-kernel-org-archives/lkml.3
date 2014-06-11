@@ -1,152 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753951AbaFKAKG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 20:10:06 -0400
-Received: from ns.horizon.com ([71.41.210.147]:19923 "HELO ns.horizon.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751554AbaFKAKE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 20:10:04 -0400
-Date: 10 Jun 2014 20:10:03 -0400
-Message-ID: <20140611001003.12979.qmail@ns.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: linux@horizon.com, tytso@mit.edu
-Subject: Re: drivers/char/random.c: more ruminations
-Cc: hpa@linux.intel.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
-        price@mit.edu
-In-Reply-To: <20140610212032.GG12104@thunk.org>
+	id S1754060AbaFKAMN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 20:12:13 -0400
+Received: from longford.logfs.org ([213.229.74.203]:43517 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751633AbaFKAMM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 20:12:12 -0400
+Date: Tue, 10 Jun 2014 20:10:09 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] random: mix all saved registers into entropy pool
+Message-ID: <20140611001009.GA24626@logfs.org>
+References: <20140519211719.GA14563@logfs.org>
+ <20140610161401.GC12104@thunk.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140610161401.GC12104@thunk.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> I don't care about the efficiency either; I just wanted to avoid the
->> stack usage of a "u32 tmp[OUTPUT_POOL_WORDS]" when the actual extraction
->> is done in EXTRACT_SIZE chunks anyhway.
-
-> Huh?  The FIPS wankery requires:
->
->      __u8 tmp[10];
->
-> not
->
->	u32 tmp[OUTPUT_POOL_WORDS];
-
-Sorry, we're still not communicating right.  You seem to think I'm trying
-to optimize the FIPS code, and nothing could be further from the truth.
-
-Please consider the merits of my patch as if the FIPS stuff weas
-#ifdefed out.  I don't care about it, I'm not trying to optimize it,
-it was just *in my way* when I was trying to do something else, and I
-only had to ask about it because it's a legal/regulatory requirement
-rather than a technical one I couldn't understand it by logic.
-
-What I wanted to do was eliminate that huge tmp buffer from
-_xfer_secondary_pool.  There's no good reason why it needs to be there.
-and several reasons for getting rid of it.
-
-A big one for me is auditability, a.k.a. the current code confused me
-when I was trying to understand it.  Based on static code analysis,
-extract_entropy and xfer_secondary_pool appear to be recursive; the fact
-that they're not in practice takes more insight.
-
-extract_entropy_user(&nonblocking_pool)
--> xfer_secondary_pool(&nonblocking_pool)
-   -> _xfer_secondary_pool(&nonblocking_pool)
-      -> extract_entropy(&input_pool)
-         -> xfer_secondary_pool(&input_pool)
-            recursion terminates because input_pool.pull == NULL
-
-> and when you replace the former with the latter, but still try to move 
+On Tue, 10 June 2014 12:14:01 -0400, Theodore Ts'o wrote:
+> On Mon, May 19, 2014 at 05:17:19PM -0400, Jörn Engel wrote:
+> > +/*
+> > + * Ratelimit to a steady state of about once per jiffy.  A naïve approach
+> > + * would be to return 1 every time jiffies changes.  But we want to avoid
+> > + * being closely coupled to the timer interrupt.  So instead we increment
+> > + * a counter on every call and shift it right every time jiffies changes.
+> > + * If the counter is a power of two, return false;
+> > + *
+> > + * Effect is that some time after a jiffies change and cutting the counter
+> > + * in half we reach another power of two and return false.  But the
+> > + * likelihood of this happening is about the same at any time within a
+> > + * jiffies interval.
+> > + */
+> > +static inline int ratelimited(struct fast_pool *p)
+> > +{
+> > +	int ret = !(p->regs_count == 0 || is_power_of_2(p->regs_count));
+> > +
+> > +	p->regs_count++;
+> > +	if (p->last_shift != (u32)jiffies) {
+> > +		p->regs_count >>= min(31u, (u32)jiffies - p->last_shift);
+> > +		p->last_shift = (u32)jiffies;
+> > +	}
+> > +	return ret;
+> > +}
 > 
-> The xfer_seconary_pool code does use OUTPUT_POOL_WORDS*sizeof(32), but
-> only declare tmp as a 10-byte char array, it looks like you're end up
-> overflowing the stack (have you actually tested your draft patch?)
+> I wasn't convinced this would do the right thing, so I wrote a quick
+> test program where the main loop was basically this:
+> 
+> 	for (i=0; i < 1024; i++) {
+> 		jiffies = i >> 2;
+> 		r = ratelimited(jiffies);
+> 		printf("%5u %5u %5u %d\n", i, jiffies, regs_count, r);
+> 	}
+> 
+> ... which basically simulated a very simple scheme where there were
+> four interrupts for each clock tick.  In the steady state ratelimited
+> returns true 75% of the time.  If this was as documented, we would
+> expect it to return true 25% of the time.  So I don't think this is
+> working quite right:
+> 
+>    20     5     3 1
+>    21     5     4 1
+>    22     5     5 0
+>    23     5     6 1
+>    24     6     3 1
+>    25     6     4 1
+>    26     6     5 0
+>    27     6     6 1
+>    28     7     3 1
+>    29     7     4 1
+>    30     7     5 0
+>    31     7     6 1
+>    32     8     3 1
 
-Please look again; it doesn't overflow.
+Doh!  Removing the "!" from "!(p->regs_count..." will fix that.  Shows
+I spent 100x more time testing the bootup entropy collection.
 
-I hadn't tested the patch when I mailed it to you (I prepared it in
-order to reply to your e-mail, and it's annoying to reboot the machine
-I'm composing an e-mail on), but I have since.  It works.
+> > +static void mix_regs(struct pt_regs *regs, struct fast_pool *fast_pool)
+> > +{
+> > +	struct entropy_store	*r;
+> > +	/* Two variables avoid decrementing by two without using atomics */
+> > +	static int boot_count = BOOT_IRQS;
+> > +	int in_boot = boot_count;
+> > +
+> > +	if (in_boot) {
+> > +		boot_count = in_boot - 1;
+> > +	} else if (ratelimited(fast_pool))
+> > +		return;
+> > +
+> > +	/* During bootup we alternately feed both pools */
+> > +	r = (in_boot & 1) ? &nonblocking_pool : &input_pool;
+> > +	__mix_pool_bytes(r, regs, sizeof(*regs), NULL);
+> > +}
+> 
+> I'm also concerned about how much overhead this might eat up.  I've
+> already had someone who was benchmarking a high performance storage
+> array where the increased interrupt latency before adding something
+> like this was something he noticed, and kvetched to me about.  The
+> pt_regs structure is going to be larger than the fast_pool (which is
+> only 16 bytes), and we're going to be doing it once every jiffy, which
+> means between 100 and 1000 times per second.
 
-> This is also why I objected to your change to use the stale stack
-> contents for the input array.  That does something different from the
-> rest of the changes in the patch.  I'm sorry if keep harping on this,
-> but this is critically important.  It also means that we can accept
-> the small, obviously correct changes, while we discuss the larger,
-> more invasive changes.  It also makes it easier to backport the
-> smaller and more important changes to stable kernels.
-[...]
-> In any case, this is another reason why I really request people to
-> send a series of git commits, where each one is small, easy to read,
-> and Obviously Correct.
-[...]
-> small patches really, REALLY, helps the review process.)
+Would that someone be me? ;)
 
-I'm very aware of this.  As I've said before on the git mailing list,
-the reason that git bisect is such a killer feature is due to an even
-more important, but also more subtle, killer feature of git: it makes
-it practical to use lots of small commits, so it can point you at a very
-small change.
+The reason I prefer doing it once every jiffy is that it doesn't
+change with interrupt load.  You get 10k interrupts per second?
+You pay once per jiffy.  100k interrupts per second?  Pay once per
+jiffy.
 
-If you had CVS-style weeks-in-preparation-and-testing "code drop"
-commits, it wouldn't be nearly as useful.
+I dislike the fact that HZ is anywhere between 100 and 1000.  We could
+sample every time jiffies has advanced by HZ/50, which gives a stable
+sample rate of 50Hz for every currently possible config.
 
-Indeed, if you look at some of the 10-patch series I've posted recently
-(I'm on a "clear my tree of private patches" binge), I think I'm doing
-fairly well.  If anything I worry about erring on the side of too minor.
-Does this meet with your approval:
+> If we do this only during boot up, I'd be much less concerned, but
+> doing it all the time is making me a bit nervous about the overhead.
+> 
+> If we knew which parts of the pt_regs were actually the "best" in
+> terms of entropy, we could xor that into the input[] array in
+> add_interrupt_randomness(), perhaps?  
+> 
+> 
+> > -	input[0] = cycles ^ j_high ^ irq;
+> > -	input[1] = now ^ c_high;
+> > +	input[0] ^= cycles ^ j_high ^ irq;
+> > +	input[1] ^= now ^ c_high;
+> 
+> This is an unrelated change, so if you want to do this, let's discuss
+> this on a separate commit.  We used to have something like this, but
+> it causes static code checkers to complain about our using stack
+> garbage, and people argued convincingly that it really did add as much
+> unpredictability, especially when correlated with the ip field.
 
-http://www.spinics.net/lists/linux-media/msg76435.html
+Will remove.
 
-But even I get annoyed when I have a 1-line comment typo fix and wonder
-if it really deserves its own commit or if I can just include it with
-the other changes I'm making to that file.
+> (And yes, I know that instruction_pointer(regs) doesn't work on all
+> platforms, and _RET_IP_ becomes largely static --- but this is why I'd
+> much rather have each architecture tell me which parts of regs were
+> actually the best, and use that as the initialized portions of the
+> input[] array.)
 
+What I like about my approach is quite the opposite.  The only thing
+an architecture maintainer can mess up is not saving registers on
+interrupts.  And if they mess that one up, they are very likely to
+notice.
 
-Anwyay, please stop wearing out your fingers and consider the point Made.
+Jörn
 
-I will do my utmost to divide things as finely as possible.
-
-The one problem is that too small a change can be Obviously Correct
-(to the extent that the overall code complexity allows *anything* to
-be obvious), but not Obviously Useful.
-
-Still, combining patches is a whole lot less effort than splitting them,
-so I'll err far on that side.
-
-> Sure, but you can put the deletion of the cmpxchg and the out[] array
-> in separate commits, where the tree remains building and secure at
-> each step.
-
-Definitely!  I'm going to produce as long as patch series as I possibly
-can.  But there's always an overall goal to the entire series, and
-that's what I'm trying to discuss beforehand.
-
-Looking back, I understand now how my words could lead to confusion.
-To me, the race in add_interrupt_randomness is fairly inconsequential
-and fixing it is a minor side effect of my overall goal of fixing *all*
-the races.
-
-The *fundamental* race, as I see it, is the one between modifying pools
-and crediting entropy.
-
-As I noted, you can't safely do the credit either before *or* after modifying
-the pool; you will always end up with the wrong answer in some situation.
-This is why the RNDADDENTROPY ioctl is required and the RNDADDTOENTCNT
-ioctl is old legacy cruft that should never be used.  (Note to self:
-add a warning if it's ever used, or even disable it entirely.)
-
-When I said "it's a lot bigger job than that" I was thinking about *my*
-agenda of the entire project, when I had just asked "which path do you
-think I should take?".  I wasn't trying to imply it would be one patch.
-
-I have half a dozen patches to random.c already waiting.  For example,
-one is a bulk conversion of __u8 and __u32 to u8 and u32.  The underscore
-versions are only intended for public header files where namespace
-pollution is a problem.
-
-But I have to think about ordering and how to present them; a patch like
-that is annoying to reorder with others.
-
-(Honestly, my personal preference is to the longer names from <stdint.h>
-just because they *are* standard and so very widely used.  But that's
-an issue for a maintainer's esthetic judgement.)
+--
+Victory in war is not repetitious.
+-- Sun Tzu
