@@ -1,108 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932244AbaFKMNK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 08:13:10 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:49351 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751726AbaFKMNI (ORCPT
+	id S1755475AbaFKMOY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 08:14:24 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:40360 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751510AbaFKMOW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 08:13:08 -0400
+	Wed, 11 Jun 2014 08:14:22 -0400
 MIME-Version: 1.0
-X-Originating-IP: [5.35.52.78]
-Date: Wed, 11 Jun 2014 16:13:07 +0400
-Message-ID: <CAOJe8K3fy3XFxDdVc3y1hiMAqUCPmkUhECU7j5TT=E=gxwBqHg@mail.gmail.com>
-Subject: kmemleak: Unable to handle kernel paging request
-From: Denis Kirjanov <kda@linux-powerpc.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org
+In-Reply-To: <20140611101353.GA18781@e102568-lin.cambridge.arm.com>
+References: <1402090985-8061-1-git-send-email-dianders@chromium.org>
+	<20140607181221.GB25068@e102568-lin.cambridge.arm.com>
+	<CAD=FV=X17PeJ6JPE9Qyc1QT07AvA2PTE69Q87gz9a6MdUHgi4A@mail.gmail.com>
+	<20140609223831.GB16889@e102568-lin.cambridge.arm.com>
+	<CANuQgHHxAhTNYX-JAEdRkO=PMYT4A5GwXcuQfiqwE0CEkQyR+w@mail.gmail.com>
+	<CAD=FV=V5_RRNkgA7Rk7XbQw9m1qh6-RJA8arW7ZRU=QbWAPa+w@mail.gmail.com>
+	<alpine.LFD.2.11.1406101146140.25775@knanqh.ubzr>
+	<CADWw7OjqK3MAuqCHuv-WS3Bb2+2Q-FXth+7hqtwFoyAP6pyYhA@mail.gmail.com>
+	<20140611101353.GA18781@e102568-lin.cambridge.arm.com>
+Date: Wed, 11 Jun 2014 17:44:21 +0530
+X-Google-Sender-Auth: czszka7Dj6QOuW4XnQ1KOYK9djM
+Message-ID: <CADWw7OghkwkMbU=eZG=OhxVowNJy_12UOo_pNYnXbimF73Uwdw@mail.gmail.com>
+Subject: Re: [PATCH] ARM: EXYNOS: mcpm: Don't rely on firmware's secondary_cpu_start
+From: Chander Kashyap <k.chander@samsung.com>
+To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Cc: Chander Kashyap <k.chander@samsung.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Doug Anderson <dianders@chromium.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Kevin Hilman <khilman@linaro.org>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Inderpal Singh <inderpal.s@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chander Kashyap <chander.kashyap@linaro.org>,
+        "olof@lixom.net" <olof@lixom.net>, Tushar Behera <trblinux@gmail.com>,
+        Thomas Abraham <thomas.ab@samsung.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Jun 11, 2014 at 3:43 PM, Lorenzo Pieralisi
+<lorenzo.pieralisi@arm.com> wrote:
+> On Wed, Jun 11, 2014 at 05:52:10AM +0100, Chander Kashyap wrote:
+>> Hi Doug,
+>>
+>> On Tue, Jun 10, 2014 at 9:19 PM, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+>> > On Tue, 10 Jun 2014, Doug Anderson wrote:
+>> >
+>> >> My S-state knowledge is not strong, but I believe that Lorenzo's
+>> >> questions matter if we're using S2 for CPUidle (where we actually turn
+>> >> off power and hot unplug CPUs) but not when we're using S1 for CPUidle
+>> >> (where we just enter WFI/WFE).
+>> >>
+>>
+>> No Its not plain WFI.
+>>
+>> All cores in Exynos5420 can be powered off independently.
+>> This functionality has been tested.
+>>
+>> Below is the link for the posted patches.
+>>
+>> https://lkml.org/lkml/2014/6/10/194
+>>
+>> And as Nicolas wrote, these patches need MCPM for that.
+>
+> Chander, I cast a look into the code and I have a question
+> (you also told me on CPUidle review that only core off
+> is supported in CPUidle).
+>
+> When you say all cores can be powered off independently, do
+> you also mean that clusters can be powered off (in CPUidle) ?
+>
+> I am pointing this out since in the MCPM backend I noticed:
+>
+> "/* TODO: Turn off the cluster here to save power. */"
+>
+> I do not see any cluster power down request in the down path.
+>
+> If I am wrong, ignore my message, I am just writing to help.
+>
+> If you can only power down cores, but not the clusters on idle,
+> please keep in mind that you are currently cleaning and invalidating
+> the L2 when last man is running and this must not be taken
+> lightly since, if L2 stays on, that's a massive energy waste
+> for nothing.
+>
+> So, if clusters stay up, you _have_ to tweak the MCPM backend slightly
+> to avoid cleaning L2, that's pivotal.
 
-I got a trace while running 3.15.0-08556-gdfb9454:
+Hi Lorenzo,
+Cluster shutdown is in progress. Abhilash will add support for that.
 
-[  104.534026] Unable to handle kernel paging request for data at
-address 0xc00000007f000000
-[  104.534197] Faulting instruction address: 0xc00000000019cb50
-[  104.534204] Oops: Kernel access of bad area, sig: 11 [#1]
-[  104.534891] PREEMPT SMP NR_CPUS=4 NUMA PowerMac
-[  104.535550] Modules linked in: ipv6 bonding snd_aoa_codec_onyx
-snd_aoa snd soundcore uninorth_agp unix
-[  104.536940] CPU: 1 PID: 1241 Comm: kmemleak Not tainted
-3.15.0-08556-gdfb9454 #49
-[  104.537881] task: c0000001652cc000 ti: c000000165570000 task.ti:
-c000000165570000
-[  104.538819] NIP: c00000000019cb50 LR: c00000000019cb48 CTR: c0000000000d3e60
-[  104.539706] REGS: c000000165573740 TRAP: 0300   Not tainted
-(3.15.0-08556-gdfb9454)
-[  104.540676] MSR: 9000000000009032 <SF,HV,EE,ME,IR,DR,RI>  CR:
-48502542  XER: 00000000
-[  104.541887] DAR: c00000007f000000 DSISR: 40010000 SOFTE: 0
-GPR00: c00000000019cb48 c0000001655739c0 c0000000012f1858 0000000000000000
-GPR04: c00000007f001000 c00000017a024450 0000000000000000 0000000000000000
-GPR08: 0000000000000573 c000000165573d98 0000000000000001 0000000000000000
-GPR12: 0000000048500544 c00000000ffff400 c0000000000aa5e0 c000000166d43680
-GPR16: 0000000000000000 0000000000000000 0000000000000000 c000000002081858
-GPR20: 0000000000000100 c0000000020a1858 c0000000011b8ee0 c000000080000000
-GPR24: c0000000011c0a28 c0000000011c0b80 c000000000a0ab88 c0000000011c0a28
-GPR28: c00000017a024450 c00000007f000ff9 c00000007f000000 c00000017a024450
-[  104.550169] NIP [c00000000019cb50] .scan_block+0x70/0x170
-[  104.550852] LR [c00000000019cb48] .scan_block+0x68/0x170
-[  104.554164] Call Trace:
-[  104.557023] [c0000001655739c0] [c00000000019cb48]
-.scan_block+0x68/0x170 (unreliable)
-[  104.560578] [c000000165573a70] [c00000000019ce68] .scan_gray_list+0x218/0x270
-[  104.564030] [c000000165573b30] [c00000000019d240] .kmemleak_scan+0x380/0x740
-[  104.567491] [c000000165573c20] [c00000000019d67c]
-.kmemleak_scan_thread+0x7c/0x120
-[  104.571017] [c000000165573cb0] [c0000000000aa6e4] .kthread+0x104/0x130
-[  104.574365] [c000000165573e30] [c00000000000a428]
-.ret_from_kernel_thread+0x58/0xb0
-[  104.577772] Instruction dump:
-[  104.580634] 2e260000 409c00b8 3f62ffed 3f42ff72 3b7bf1d0 7cbc2b78
-3b5a9330 3b3b0158
-[  104.584274] 409200f0 4bffff2d 2fa30000 409e0090 <e87e0000> 38800001
-4bfff279 7c7f1b79
-[  104.587973] ---[ end trace 7905ecd9245ab244 ]---
+https://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg31104.html
 
-[  104.593854] note: kmemleak[1241] exited with preempt_count 1
-[  104.597142] BUG: sleeping function called from invalid context at
-kernel/nsproxy.c:205
-[  104.600734] in_atomic(): 1, irqs_disabled(): 1, pid: 1241, name: kmemleak
-[  104.604230] INFO: lockdep is turned off.
-[  104.607417] irq event stamp: 7910916
-[  104.610567] hardirqs last  enabled at (7910915):
-[<c0000000007cfe24>] ._raw_spin_unlock_irqrestore+0x94/0xc0
-[  104.614561] hardirqs last disabled at (7910916):
-[<c0000000007cef64>] ._raw_spin_lock_irqsave+0x34/0xd0
-[  104.618507] softirqs last  enabled at (7910912):
-[<c000000000085a60>] .__do_softirq+0x300/0x3e0
-[  104.622411] softirqs last disabled at (7910893):
-[<c0000000000860a4>] .irq_exit+0x144/0x160
-[  104.626295] Preemption disabled at:[<          (null)>]           (null)
 
-[  104.633121] CPU: 1 PID: 1241 Comm: kmemleak Tainted: G      D
-3.15.0-08556-gdfb9454 #49
-[  104.637132] Call Trace:
-[  104.640453] [c000000165573230] [c000000000016728]
-.show_stack+0x78/0x1e0 (unreliable)
-[  104.644535] [c000000165573300] [c0000000007d6590] .dump_stack+0x9c/0x108
-[  104.648492] [c000000165573390] [c0000000000b6870] .__might_sleep+0x160/0x1d0
-[  104.652511] [c000000165573410] [c0000000000afc34]
-.switch_task_namespaces+0x34/0xc0
-[  104.656597] [c0000001655734a0] [c000000000082cc4] .do_exit+0x334/0xa80
-[  104.660586] [c000000165573590] [c00000000001e424] .die+0x2f4/0x460
-[  104.664570] [c000000165573650] [c00000000003e1e4] .bad_page_fault+0xd4/0x130
-[  104.668680] [c0000001655736d0] [c000000000009584] handle_page_fault+0x2c/0x30
-[  104.672793] --- Exception: 300 at .scan_block+0x70/0x170
-    LR = .scan_block+0x68/0x170
-[  104.680471] [c000000165573a70] [c00000000019ce68] .scan_gray_list+0x218/0x270
-[  104.684682] [c000000165573b30] [c00000000019d240] .kmemleak_scan+0x380/0x740
-[  104.688924] [c000000165573c20] [c00000000019d67c]
-.kmemleak_scan_thread+0x7c/0x120
-[  104.693260] [c000000165573cb0] [c0000000000aa6e4] .kthread+0x104/0x130
-[  104.697503] [c000000165573e30] [c00000000000a428]
-.ret_from_kernel_thread+0x58/0xb0
+>
+> Lorenzo
+>
+>>
+>> >> I believe that in ChromeOS we use S1 CPUidle and that it works fine.
+>> >> We've never implemented S2 that I'm aware of.
+>> >
+>> > You'll have to rely on MCPM for that.  That's probably why it hasn't
+>> > been implemented before.
+>> >
+>> >
+>> > Nicolas
+>> >
+>> > _______________________________________________
+>> > linux-arm-kernel mailing list
+>> > linux-arm-kernel@lists.infradead.org
+>> > http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
