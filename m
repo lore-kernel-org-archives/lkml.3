@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755079AbaFKMae (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 08:30:34 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:44905 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753971AbaFKMaa (ORCPT
+	id S1755495AbaFKMbO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 08:31:14 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:58192 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751965AbaFKMbM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 08:30:30 -0400
-Message-ID: <1402489820.612.58.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [PATCH 0/4] KEYS: validate key trust with owner and builtin
- keys only
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
-        Josh Boyer <jwboyer@redhat.com>, David Howells <dhowells@redhat.com>,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        keyrings <keyrings@linux-nfs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Date: Wed, 11 Jun 2014 08:30:20 -0400
-In-Reply-To: <20140611032355.GA6470@srcf.ucam.org>
-References: <CACE9dm9Ff6b3J=05QfcgBv-c_y=5qGNq1-ZSfo4smtj34i1e-A@mail.gmail.com>
-	 <20140610204021.GA8916@srcf.ucam.org>
-	 <CACE9dm9ma=XRZkoCiefva-dKL+LYw-s8QB4xUTkRUZH=5XM9ew@mail.gmail.com>
-	 <CACE9dm8zxVXx2zRcfDYUFjqvQYT4MbLevp5U13tfH9Hb6USSJw@mail.gmail.com>
-	 <20140610212516.GB10614@srcf.ucam.org>
-	 <CACE9dm95RiGxuG-XaGKd3KqBRkk+wyj3CBbMhaCTJQaiiaj9wQ@mail.gmail.com>
-	 <20140610214038.GA13881@srcf.ucam.org>
-	 <1402449893.612.14.camel@dhcp-9-2-203-236.watson.ibm.com>
-	 <20140611022222.GA2349@srcf.ucam.org>
-	 <1402456095.612.32.camel@dhcp-9-2-203-236.watson.ibm.com>
-	 <20140611032355.GA6470@srcf.ucam.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061112-3532-0000-0000-00000267103E
+	Wed, 11 Jun 2014 08:31:12 -0400
+Date: Wed, 11 Jun 2014 08:31:09 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Greg Thelen <gthelen@google.com>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Michel Lespinasse <walken@google.com>,
+        Roman Gushchin <klamm@yandex-team.ru>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH 2/2] memcg: Allow hard guarantee mode for low limit
+ reclaim
+Message-ID: <20140611123109.GA17777@htj.dyndns.org>
+References: <20140606144421.GE26253@dhcp22.suse.cz>
+ <1402066010-25901-1-git-send-email-mhocko@suse.cz>
+ <1402066010-25901-2-git-send-email-mhocko@suse.cz>
+ <xr934mzt4rwc.fsf@gthelen.mtv.corp.google.com>
+ <20140610165756.GG2878@cmpxchg.org>
+ <20140611075729.GA4520@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140611075729.GA4520@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-06-11 at 04:23 +0100, Matthew Garrett wrote: 
-> Yes. Wouldn't having a mechanism to allow userspace to drop keys that 
-> have otherwise been imported be a generally useful solution to the issue 
-> you have with that?
+Hello, Michal.
 
-There are issues removing a key from both the local system(eg. cache,
-running apps) and the attestation server (eg. ima-sig template
-verification) perspectives.  We would need to address these concerns
-before supporting key removal.
+On Wed, Jun 11, 2014 at 09:57:29AM +0200, Michal Hocko wrote:
+> Is this the kind of symmetry Tejun is asking for and that would make
+> change is Nack position? I am still not sure it satisfies his soft
 
-Mimi
+Yes, pretty much.  What primarily bothered me was the soft/hard
+guarantees being chosen by a toggle switch while the soft/hard limits
+can be configured separately and combined.
 
+> guarantee objections from other email.
+
+I was wondering about the usefulness of "low" itself in isolation and
+I still think it'd be less useful than "high", but as there seem to be
+use cases which can be served with that and especially as a part of a
+consistent control scheme, I have no objection.
+
+"low" definitely requires a notification mechanism tho.
+
+Thanks.
+
+-- 
+tejun
