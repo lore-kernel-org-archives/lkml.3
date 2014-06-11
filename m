@@ -1,252 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755301AbaFKF60 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 01:58:26 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:36821 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750821AbaFKF6Z (ORCPT
+	id S1755252AbaFKGDp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 02:03:45 -0400
+Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:46077 "EHLO
+	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750749AbaFKGDo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 01:58:25 -0400
-Date: Tue, 10 Jun 2014 22:58:14 -0700
-From: Martin Lau <kafai@fb.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: <linux-kernel@vger.kernel.org>, <clm@fb.com>
-Subject: Re: [PATCH] ring-buffer: Fix polling on trace_pipe
-Message-ID: <20140611055814.GA30265@devbig242.prn2.facebook.com>
-References: <20140610060637.GA14045@devbig242.prn2.facebook.com>
- <20140610114915.5fe24841@gandalf.local.home>
+	Wed, 11 Jun 2014 02:03:44 -0400
+Date: Wed, 11 Jun 2014 07:03:39 +0100
+From: Sitsofe Wheeler <sitsofe@gmail.com>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Jani Nikula <jani.nikula@linux.intel.com>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: Mismatch in gmch_pfit.lvds_border_bits on EeePC 900
+Message-ID: <20140611060339.GA6261@sucs.org>
+References: <20140608213015.GA30713@sucs.org>
+ <20140610062655.GA5821@phenom.ffwll.local>
+ <20140611054640.GA31892@sucs.org>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="Dxnq1zWXvFF0Q93v"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140610114915.5fe24841@gandalf.local.home>
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-06-11_02:2014-06-10,2014-06-11,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=8.53505146558575e-08 kscore.compositescore=0
- circleOfTrustscore=22.4078557653337 compositescore=0.997695897463551
- urlsuspect_oldscore=0.997695897463551 suspectscore=0
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=62764
- rbsscore=0.997695897463551 spamscore=0
- recipient_to_sender_domain_totalscore=6 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1406110081
-X-FB-Internal: deliver
+In-Reply-To: <20140611054640.GA31892@sucs.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Dxnq1zWXvFF0Q93v
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
+(resending because Daniel was dropped from the reply list - I don't know
+why)
 
-Hi Steve,
-
-Attached is the modified test program.  Here is the sample output:
-
-localhost ~ # ./ftrace-test-epoll-kafai
-           <...>-1857  [000] ...1   720.174295: tracing_mark_write: some data
-1857: waitting for more data......
-1858: written more data
-<block here>
-
-Thanks,
---Martin
-
-On Tue, Jun 10, 2014 at 11:49:15AM -0400, Steven Rostedt wrote:
-> On Mon, 9 Jun 2014 23:06:42 -0700
-> Martin Lau <kafai@fb.com> wrote:
-> 
-> > ring_buffer_poll_wait() should always put the poll_table to its wait_queue
-> > even there is immediate data available.  Otherwise, the following epoll and
-> > read sequence will eventually hang forever:
+On Wed, Jun 11, 2014 at 06:46:40AM +0100, Sitsofe Wheeler wrote:
+> On Tue, Jun 10, 2014 at 08:26:55AM +0200, Daniel Vetter wrote:
+> > On Sun, Jun 08, 2014 at 10:30:15PM +0100, Sitsofe Wheeler wrote:
+> > > With a tree that is close to 3.15 final I'm regularly seeing the
+> > > following on my EeePC 900 when starting ioquake3:
+> > > 
+> > > [drm:intel_pipe_config_compare] *ERROR* mismatch in gmch_pfit.lvds_border_bits (expected 32768, found 0)
 > > 
-> > 1. Put some data to make the trace_pipe ring_buffer read ready first
-> > 2. epoll_ctl(efd, EPOLL_CTL_ADD, trace_pipe_fd, ee)
-> > 3. epoll_wait()
-> > 4. read(trace_pipe_fd) till EAGAIN
-> > 5. Add some more data to the trace_pipe ring_buffer
-> > 6. epoll_wait() -> this epoll_wait() will block forever
+> > Hm, I've thought we've fixed that by now. Alas, no :(
 > > 
-> > ~ During the epoll_ctl(efd, EPOLL_CTL_ADD,...) call in step 2,
-> >   ring_buffer_poll_wait() returns immediately without adding poll_table,
-> >   which has poll_table->_qproc pointing to ep_poll_callback(), to its
-> >   wait_queue.
-> > ~ During the epoll_wait() call in step 3 and step 6,
-> >   ring_buffer_poll_wait() cannot add ep_poll_callback() to its wait_queue
-> >   because the poll_table->_qproc is NULL and it is how epoll works.
-> > ~ When there is new data available in step 6, ring_buffer does not know
-> >   it has to call ep_poll_callback() because it is not in its wait queue.
-> >   Hence, block forever.
-> > 
-> > Other poll implementation seems to call poll_wait() unconditionally as the very
-> > first thing to do.  For example, tcp_poll() in tcp.c.
+> > Can you please add drm.debug=0xe to your kernel cmdline, reproduce the
+> > issue and attach the entire dmesg? Please make sure it contains everything
+> > since boot-up so that we can reconstruct the state properly (might need to
+> > grab it from logfiles if dmesg is cut off).
 > 
-> I'm trying to see the effect of this bug, but can't seem to reproduce
-> it. Maybe I did something wrong. Attached is a test program I wrote
-> trying to follow your instructions. I don't use epoll, so perhaps I
-> didn't use it correctly.
+> Please find kern.log.gz attached.
 > 
-> Can you modify it to show me the problem this is trying to fix. That
-> is, without this patch it hangs, but with the patch it does not.
+> > Also, do you have any ideas when you reproduce this? Anything that changes
+> > the lvds output could be relevant ...
 > 
-> Thanks!
+> Doing
+> xrandr -s 800x600
+> xrandr -s 0
 > 
-> -- Steve
+> was enough to provoke the messages in the attached log.
 > 
-> > 
-> > Signed-off-by: Martin Lau <kafai@fb.com>
-> > ---
-> >  kernel/trace/ring_buffer.c | 4 ----
-> >  1 file changed, 4 deletions(-)
-> > 
-> > diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-> > index fd12cc5..a6e64e8 100644
-> > --- a/kernel/trace/ring_buffer.c
-> > +++ b/kernel/trace/ring_buffer.c
-> > @@ -613,10 +613,6 @@ int ring_buffer_poll_wait(struct ring_buffer *buffer, int cpu,
-> >  	struct ring_buffer_per_cpu *cpu_buffer;
-> >  	struct rb_irq_work *work;
-> >  
-> > -	if ((cpu == RING_BUFFER_ALL_CPUS && !ring_buffer_empty(buffer)) ||
-> > -	    (cpu != RING_BUFFER_ALL_CPUS && !ring_buffer_empty_cpu(buffer, cpu)))
-> > -		return POLLIN | POLLRDNORM;
-> > -
-> >  	if (cpu == RING_BUFFER_ALL_CPUS)
-> >  		work = &buffer->irq_work;
-> >  	else {
-> 
+> -- 
+> Sitsofe | http://sucs.org/~sits/
 
 
---Dxnq1zWXvFF0Q93v
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: attachment; filename="ftrace-test-epoll-kafai.c"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/epoll.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <assert.h>
-
-static const char * debugfs_list[] = {
-	"/debug/tracing",
-	"/sys/kernel/debug/tracing",
-	"/d/tracing",
-	NULL,
-};
-
-static const char *debugfs;
-static int markfd;
-static int trace_pipe_fd;
-
-static const char *find_debugfs(void)
-{
-	struct stat st;
-	int i;
-	int r;
-
-	for (i = 0; debugfs_list[i]; i++) {
-		r = stat(debugfs_list[i], &st);
-		if (r < 0)
-			continue;
-		if (S_ISDIR(st.st_mode))
-			return debugfs_list[i];
-	}
-	return NULL;
-}
-
-static char * make_path(const char *file)
-{
-	char *path;
-	int size;
-
-	size = strlen(debugfs) + strlen(file) + 2;
-	path = malloc(size);
-	if (!path) {
-		perror("malloc");
-		exit(-1);
-	}
-	sprintf(path, "%s/%s", debugfs, file);
-	return path;
-}
-
-static void mark_write(const char *str)
-{
-	write(markfd, str, strlen(str));
-}
-
-static void read_trace_pipe(void)
-{
-	char buf[1024];
-	int r;
-
-	while ((r = read(trace_pipe_fd, buf, 1024)) > 0)
-		printf("%.*s", r, buf);
-}
-
-int main (int argc, char **argv)
-{
-	struct epoll_event ee;
-	char *marker;
-	char *pipe;
-	int efd;
-	int ret;
-	pid_t dwrt_pid;
-
-	debugfs = find_debugfs();
-	if (!debugfs) {
-		fprintf(stderr, "Could not find debugfs\n");
-		exit(-1);
-	}
-
-	marker = make_path("trace_marker");
-	pipe = make_path("trace_pipe");
-
-	markfd = open(marker, O_WRONLY);
-	if (markfd < 0) {
-		perror("marker");
-		exit(-1);
-	}
-	trace_pipe_fd = open(pipe, O_RDONLY|O_NONBLOCK);
-	if (trace_pipe_fd < 0) {
-		perror("trace_pipe");
-		exit(-1);
-	}
-
-	efd = epoll_create(1);
-	if (efd < 0) {
-		perror("epoll_create");
-		exit(-1);
-	}
-
-	mark_write("some data");
-	ret = epoll_ctl(efd, EPOLL_CTL_ADD, trace_pipe_fd, &ee);
-	if (ret < 0) {
-		perror("epoll_ctl");
-		exit(-1);
-	}
-	epoll_wait(efd, &ee, 1, -1);
-	read_trace_pipe();
-	dwrt_pid = fork();
-	assert(dwrt_pid != -1);
-	if (dwrt_pid == 0) {
-		sleep(10);
-		mark_write("more data");
-		printf("%d: written more data\n", getpid());
-	} else {
-		printf("%d: waitting for more data......\n", getpid());
-		epoll_wait(efd, &ee, 1, -1);
-		printf("%d: got more data\n", getpid());
-		read_trace_pipe();
-	}
-	return 0;
-}
-
---Dxnq1zWXvFF0Q93v--
+-- 
+Sitsofe | http://sucs.org/~sits/
