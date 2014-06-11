@@ -1,40 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754155AbaFKIzx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 04:55:53 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:36160 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751302AbaFKIzu (ORCPT
+	id S1754686AbaFKI4A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 04:56:00 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:57548 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754319AbaFKIzz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 04:55:50 -0400
-Date: Wed, 11 Jun 2014 09:55:48 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Alex Thorlton <athorlton@sgi.com>
-Cc: Linux EFI <linux-efi@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>, Russ Anderson <rja@sgi.com>
-Subject: Re: [RFC] Best place/method to determine BIOS version?
-Message-ID: <20140611085548.GB26290@console-pimps.org>
-References: <20140609200017.GD2700@sgi.com>
+	Wed, 11 Jun 2014 04:55:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140609200017.GD2700@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1402238742.32652.1.camel@phoenix>
+References: <1402238742.32652.1.camel@phoenix>
+Date: Wed, 11 Jun 2014 10:55:54 +0200
+Message-ID: <CACRpkdacMw6Uhd-xPp0W_Rgbt4ZnMPhGTzSi+yuO2ooXcaWrxw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] regulator: ab8500: Remove ab8500_regulator_of_probe()
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Mark Brown <broonie@kernel.org>, Lee Jones <lee.jones@linaro.org>,
+        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 09 Jun, at 03:00:17PM, Alex Thorlton wrote:
-> 
-> I think the problem is that I really need to be doing this at a point
-> where I can directly use physical addressing (the function pointer that
-> we have stored in efi.uv_systab contains the physical address of our
-> function) - at least that's the idea I get from our BIOS guys, but I
-> really don't know what I'm talking about here :)
+On Sun, Jun 8, 2014 at 4:45 PM, Axel Lin <axel.lin@ingics.com> wrote:
 
-Can't you use either early_ioremap() or ioremap() (depending on when you
-want to access the physical address), perhaps coupled with
-efi_call_phys()?
+> Now this is a DT-only driver because non-devicetree probe path is removed,
+> so merge ab8500_regulator_of_probe() into ab8500_regulator_probe().
+>
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+
+Yours,
+Linus Walleij
