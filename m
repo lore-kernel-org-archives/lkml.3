@@ -1,105 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754455AbaFKCPR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 22:15:17 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:44405 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751633AbaFKCPP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jun 2014 22:15:15 -0400
-X-Original-SENDERIP: 10.177.220.145
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Andi Kleen <andi@firstfloor.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Richard Yao <ryao@gentoo.org>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v2] vmalloc: use rcu list iterator to reduce vmap_area_lock contention
-Date: Wed, 11 Jun 2014 11:19:06 +0900
-Message-Id: <1402453146-10057-1-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755226AbaFKCVh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 22:21:37 -0400
+Received: from imap.thunk.org ([74.207.234.97]:60867 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753791AbaFKCVe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jun 2014 22:21:34 -0400
+Date: Tue, 10 Jun 2014 22:21:28 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: George Spelvin <linux@horizon.com>
+Cc: hpa@linux.intel.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
+        price@mit.edu
+Subject: Re: drivers/char/random.c: more ruminations
+Message-ID: <20140611022128.GB23110@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	George Spelvin <linux@horizon.com>, hpa@linux.intel.com,
+	linux-kernel@vger.kernel.org, mingo@kernel.org, price@mit.edu
+References: <20140610212032.GG12104@thunk.org>
+ <20140611001003.12979.qmail@ns.horizon.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140611001003.12979.qmail@ns.horizon.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Richard Yao reported a month ago that his system have a trouble
-with vmap_area_lock contention during performance analysis
-by /proc/meminfo. Andrew asked why his analysis checks /proc/meminfo
-stressfully, but he didn't answer it.
+On Tue, Jun 10, 2014 at 08:10:03PM -0400, George Spelvin wrote:
+> 
+> But even I get annoyed when I have a 1-line comment typo fix and wonder
+> if it really deserves its own commit or if I can just include it with
+> the other changes I'm making to that file.
 
-https://lkml.org/lkml/2014/4/10/416
+Unless you're actually modifying that section of code, I usually
+recommend that people just not bother.  The fact that someone included
+a one-line comment fix caused a merge conflict with the ext4 pull in
+this merge window that Linus had to fix up.  Not that it's a big deal,
+but unless it's something that's really going to confuse the reader, I
+treat it as white space fixes; something that's only worth fixing if
+that particular function is being modified for a "real" change.
 
-Although I'm not sure that this is right usage or not, there is a solution
-reducing vmap_area_lock contention with no side-effect. That is just
-to use rcu list iterator in get_vmalloc_info().
+> I have half a dozen patches to random.c already waiting.  For example,
+> one is a bulk conversion of __u8 and __u32 to u8 and u32.  The underscore
+> versions are only intended for public header files where namespace
+> pollution is a problem.
 
-rcu can be used in this function because all RCU protocol is already
-respected by writers, since Nick Piggin commit db64fe02258f1507e13fe5
-("mm: rewrite vmap layer") back in linux-2.6.28
+And sorry, I consider this sort of thing is to be just code wankery.
+We use __u32 in a number of places in the kernel, and it doesn't
+really affect code readability.  A change like this almost guarantees
+that stable patches won't apply manually, and will have to be ported
+manually.  It's just not worth it.
 
-Specifically :
-   insertions use list_add_rcu(),
-   deletions use list_del_rcu() and kfree_rcu().
-
-Note the rb tree is not used from rcu reader (it would not be safe),
-only the vmap_area_list has full RCU protection.
-
-Note that __purge_vmap_area_lazy() already uses this rcu protection.
-
-        rcu_read_lock();
-        list_for_each_entry_rcu(va, &vmap_area_list, list) {
-                if (va->flags & VM_LAZY_FREE) {
-                        if (va->va_start < *start)
-                                *start = va->va_start;
-                        if (va->va_end > *end)
-                                *end = va->va_end;
-                        nr += (va->va_end - va->va_start) >> PAGE_SHIFT;
-                        list_add_tail(&va->purge_list, &valist);
-                        va->flags |= VM_LAZY_FREEING;
-                        va->flags &= ~VM_LAZY_FREE;
-                }
-        }
-        rcu_read_unlock();
-
-v2: add more commit description from Eric
-
-[edumazet@google.com: add more commit description]
-Reported-by: Richard Yao <ryao@gentoo.org>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index f64632b..fdbb116 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -2690,14 +2690,14 @@ void get_vmalloc_info(struct vmalloc_info *vmi)
- 
- 	prev_end = VMALLOC_START;
- 
--	spin_lock(&vmap_area_lock);
-+	rcu_read_lock();
- 
- 	if (list_empty(&vmap_area_list)) {
- 		vmi->largest_chunk = VMALLOC_TOTAL;
- 		goto out;
- 	}
- 
--	list_for_each_entry(va, &vmap_area_list, list) {
-+	list_for_each_entry_rcu(va, &vmap_area_list, list) {
- 		unsigned long addr = va->va_start;
- 
- 		/*
-@@ -2724,7 +2724,7 @@ void get_vmalloc_info(struct vmalloc_info *vmi)
- 		vmi->largest_chunk = VMALLOC_END - prev_end;
- 
- out:
--	spin_unlock(&vmap_area_lock);
-+	rcu_read_unlock();
- }
- #endif
- 
--- 
-1.7.9.5
-
+						- Ted
