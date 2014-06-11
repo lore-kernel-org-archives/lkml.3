@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932928AbaFKRWa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 13:22:30 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:39750 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755502AbaFKRW2 (ORCPT
+	id S932967AbaFKRWg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 13:22:36 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:62585 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932933AbaFKRWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 13:22:28 -0400
+	Wed, 11 Jun 2014 13:22:34 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 04/22] staging: rtl8188eu: rtw_io.c: Remove unused function _rtw_write_port_and_wait()
-Date: Wed, 11 Jun 2014 22:51:23 +0530
-Message-Id: <1402507301-3722-4-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 05/22] staging: rtl8188eu: rtw_io.h: Remove unused function declarations
+Date: Wed, 11 Jun 2014 22:51:24 +0530
+Message-Id: <1402507301-3722-5-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1402507301-3722-1-git-send-email-navin.patidar@gmail.com>
 References: <1402507301-3722-1-git-send-email-navin.patidar@gmail.com>
@@ -23,60 +23,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/core/rtw_io.c    |   17 -----------------
- drivers/staging/rtl8188eu/include/rtw_io.h |    4 ----
- 2 files changed, 21 deletions(-)
+ drivers/staging/rtl8188eu/include/rtw_io.h |   43 ----------------------------
+ 1 file changed, 43 deletions(-)
 
-diff --git a/drivers/staging/rtl8188eu/core/rtw_io.c b/drivers/staging/rtl8188eu/core/rtw_io.c
-index ed6cd2b..a0a31e6 100644
---- a/drivers/staging/rtl8188eu/core/rtw_io.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_io.c
-@@ -187,23 +187,6 @@ u32 _rtw_write_port(struct adapter *adapter, u32 addr, u32 cnt, u8 *pmem)
- 	return ret;
- }
- 
--u32 _rtw_write_port_and_wait(struct adapter *adapter, u32 addr, u32 cnt, u8 *pmem, int timeout_ms)
--{
--	int ret = _SUCCESS;
--	struct xmit_buf *pxmitbuf = (struct xmit_buf *)pmem;
--	struct submit_ctx sctx;
--
--	rtw_sctx_init(&sctx, timeout_ms);
--	pxmitbuf->sctx = &sctx;
--
--	ret = _rtw_write_port(adapter, addr, cnt, pmem);
--
--	if (ret == _SUCCESS)
--		ret = rtw_sctx_wait(&sctx);
--
--	return ret;
--}
--
- void _rtw_write_port_cancel(struct adapter *adapter)
- {
- 	void (*_write_port_cancel)(struct intf_hdl *pintfhdl);
 diff --git a/drivers/staging/rtl8188eu/include/rtw_io.h b/drivers/staging/rtl8188eu/include/rtw_io.h
-index e47d819..4c8a8c1 100644
+index 4c8a8c1..5c76815 100644
 --- a/drivers/staging/rtl8188eu/include/rtw_io.h
 +++ b/drivers/staging/rtl8188eu/include/rtw_io.h
-@@ -101,8 +101,6 @@ int _rtw_write32(struct adapter *adapter, u32 addr, u32 val);
- int _rtw_writeN(struct adapter *adapter, u32 addr, u32 length, u8 *pdata);
- 
- u32 _rtw_write_port(struct adapter *adapter, u32 addr, u32 cnt, u8 *pmem);
--u32 _rtw_write_port_and_wait(struct adapter *adapter, u32 addr, u32 cnt,
--			     u8 *pmem, int timeout_ms);
- void _rtw_write_port_cancel(struct adapter *adapter);
- 
- #define rtw_read8(adapter, addr) _rtw_read8((adapter), (addr))
-@@ -122,8 +120,6 @@ void _rtw_write_port_cancel(struct adapter *adapter);
- 	_rtw_writeN((adapter), (addr), (length), (data))
- #define rtw_write_port(adapter, addr, cnt, mem)				\
+@@ -122,51 +122,8 @@ void _rtw_write_port_cancel(struct adapter *adapter);
  	_rtw_write_port((adapter), (addr), (cnt), (mem))
--#define rtw_write_port_and_wait(adapter, addr, cnt, mem, timeout_ms)	\
--	_rtw_write_port_and_wait((adapter), (addr), (cnt), (mem), (timeout_ms))
  #define rtw_write_port_cancel(adapter) _rtw_write_port_cancel((adapter))
  
- void rtw_write_scsi(struct adapter *adapter, u32 cnt, u8 *pmem);
+-void rtw_write_scsi(struct adapter *adapter, u32 cnt, u8 *pmem);
+-
+-/* ioreq */
+-void ioreq_read8(struct adapter *adapter, u32 addr, u8 *pval);
+-void ioreq_read16(struct adapter *adapter, u32 addr, u16 *pval);
+-void ioreq_read32(struct adapter *adapter, u32 addr, u32 *pval);
+-void ioreq_write8(struct adapter *adapter, u32 addr, u8 val);
+-void ioreq_write16(struct adapter *adapter, u32 addr, u16 val);
+-void ioreq_write32(struct adapter *adapter, u32 addr, u32 val);
+-
+-uint async_read8(struct adapter *adapter, u32 addr, u8 *pbuff,
+-		 void (*_async_io_callback)(struct adapter *padater,
+-					    struct io_req *pio_req,
+-					    u8 *cnxt), u8 *cnxt);
+-uint async_read16(struct adapter *adapter, u32 addr,  u8 *pbuff,
+-		  void (*_async_io_callback)(struct adapter *padater,
+-					     struct io_req *pio_req,
+-					     u8 *cnxt), u8 *cnxt);
+-uint async_read32(struct adapter *adapter, u32 addr,  u8 *pbuff,
+-		  void (*_async_io_callback)(struct adapter *padater,
+-					     struct io_req *pio_req,
+-					     u8 *cnxt), u8 *cnxt);
+-
+-void async_read_mem(struct adapter *adapter, u32 addr, u32 cnt, u8 *pmem);
+-void async_read_port(struct adapter *adapter, u32 addr, u32 cnt, u8 *pmem);
+-
+-void async_write8(struct adapter *adapter, u32 addr, u8 val,
+-		  void (*_async_io_callback)(struct adapter *padater,
+-					     struct io_req *pio_req,
+-					     u8 *cnxt), u8 *cnxt);
+-void async_write16(struct adapter *adapter, u32 addr, u16 val,
+-		   void (*_async_io_callback)(struct adapter *padater,
+-					      struct io_req *pio_req,
+-					      u8 *cnxt), u8 *cnxt);
+-void async_write32(struct adapter *adapter, u32 addr, u32 val,
+-		   void (*_async_io_callback)(struct adapter *padater,
+-					      struct io_req *pio_req,
+-					      u8 *cnxt), u8 *cnxt);
+-
+-void async_write_mem(struct adapter *adapter, u32 addr, u32 cnt, u8 *pmem);
+-void async_write_port(struct adapter *adapter, u32 addr, u32 cnt, u8 *pmem);
+ 
+ int rtw_init_io_priv(struct adapter *padapter,
+ 		     void (*set_intf_ops)(struct _io_ops *pops));
+ 
+-void dev_power_down(struct adapter *Adapter, u8 bpwrup);
+-
+ #endif	/* _RTL8711_IO_H_ */
 -- 
 1.7.10.4
 
