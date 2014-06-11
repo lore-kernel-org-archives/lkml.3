@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754424AbaFKPCY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 11:02:24 -0400
-Received: from cmta18.telus.net ([209.171.16.91]:41975 "EHLO cmta18.telus.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751220AbaFKPCX convert rfc822-to-8bit (ORCPT
+	id S1755647AbaFKPIb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 11:08:31 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:55073 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751810AbaFKPIa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 11:02:23 -0400
-X-Authority-Analysis: v=2.0 cv=J7N0GnbS c=1 sm=2
- a=zJWegnE7BH9C0Gl4FFgQyA==:17 a=1chCufcSjPwA:10 a=LGgl8L9ij00A:10
- a=IkcTkHD0fZMA:10 a=aatUQebYAAAA:8 a=Pyq9K9CWowscuQLKlpiwfMBGOR0=:19
- a=ovYmyXPqdyD12iollKoA:9 a=QEXdDO2ut3YA:10 a=zJWegnE7BH9C0Gl4FFgQyA==:117
-X-Telus-Outbound-IP: 173.180.45.4
-From: "Doug Smythies" <dsmythies@telus.net>
-To: "'Stratos Karafotis'" <stratosk@semaphore.gr>
-Cc: <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <rjw@rjwysocki.net>, <viresh.kumar@linaro.org>,
-        <dirk.j.brandewie@intel.com>
-References: <1402490012-19969-1-git-send-email-stratosk@semaphore.gr> <009b01cf857a$d5032090$7f0961b0$@net> <539862DB.9060905@semaphore.gr>
-In-Reply-To: <539862DB.9060905@semaphore.gr>
-Subject: RE: [PATCH] cpufreq: intel_pstate: Fix rounding of core_pct
-Date: Wed, 11 Jun 2014 08:02:19 -0700
-Message-ID: <00a001cf8586$24eb5c70$6ec21550$@net>
+	Wed, 11 Jun 2014 11:08:30 -0400
+Date: Wed, 11 Jun 2014 11:08:24 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Punit Agrawal <punit.agrawal@arm.com>
+Cc: "linux-pm\@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Javi Merino <Javi.Merino@arm.com>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <edubezval@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [RFC PATCH 3/3] thermal: trace: Trace when temperature is above
+ a trip point
+Message-ID: <20140611110824.7aa2adc2@gandalf.local.home>
+In-Reply-To: <9hhfvjbebux.fsf@arm.com>
+References: <1402486305-4017-1-git-send-email-punit.agrawal@arm.com>
+	<1402486305-4017-4-git-send-email-punit.agrawal@arm.com>
+	<20140611084908.509a6950@gandalf.local.home>
+	<9hhk38nedu1.fsf@arm.com>
+	<20140611102006.27cc145e@gandalf.local.home>
+	<9hhfvjbebux.fsf@arm.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Ac+Ffp8uiblTdLQbQpWEddycSoZkJgAA4ZyA
-Content-Language: en-ca
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 11 Jun 2014 15:53:42 +0100
+Punit Agrawal <punit.agrawal@arm.com> wrote:
 
-On 2104.06.11 07:08 Stratos Karafotis wrote:
-> On 11/06/2014 04:41 μμ, Doug Smythies wrote:
+
+> >
+> > /sys/kernel/debug/thermal/thermal_zone_trip/format
 > 
-> No.
+> I don't have this file but found the following which seems to contain
+> the format.
+
+Yeah, that was typed manually, forgot "tracing". I mount the debugfs
+system at /debug for easier typing. I hate the /sys/kernel/debug path.
+Too much typing.
+
 > 
-> The intent was only ever to round properly the pseudo floating point result of the divide.
-> It was much more important (ugh, well 4 times more) when FRACBITS was still 6, which also got changed to 8 in a recent patch.
+> # pwd /sys/kernel/debug/tracing/events/thermal/thermal_zone_trip
+> # cat format
+> name: thermal_zone_trip
+> ID: 463
+> format:
+>         field:unsigned short common_type;       offset:0;       size:2; signed:0;
+>         field:unsigned char common_flags;       offset:2;       size:1; signed:0;
+>         field:unsigned char common_preempt_count;       offset:3;       size:1; signed:0;
+>         field:int common_pid;   offset:4;       size:4; signed:1;
+> 
+>         field:__data_loc char[] thermal_zone;   offset:8;       size:4; signed:0;
+>         field:int id;   offset:12;      size:4; signed:1;
+>         field:int trip; offset:16;      size:4; signed:1;
+>         field:enum thermal_trip_type trip_type; offset:20;      size:4; signed:0;
+> 
+> print fmt: "thermal_zone=%s id=%d trip=%d trip_type=%s", __get_str(thermal_zone), REC->id, REC->trip, __print_symbolic(REC->trip_type, { THERMAL_TRIP_ACTIVE, "active" }, { THERMAL_TRIP_PASSIVE, "passive" }, { THERMAL_TRIP_HOT, "hot" }, { THERMAL_TRIP_CRITICAL, "critical" })
 > 
 
-Are you sure?
+For it to work with trace-cmd (and perf) you'll need to add a plugin to
+define what those enums are. This is the file that trace-cmd uses to
+foramat. But it has no idea how to convert something like
+THERMAL_TRIP_PASSIVE into a number.
 
-Yes.
-
-> This rounding was very recently added.
-> As far as I can understand, I don't see the meaning of this rounding, as is.
-> Even if FRAC_BITS was 6, I think it would have almost no improvement in
-> calculations.
-
-Note: I had not seen this e-mail when I wrote a few minutes ago:
-
-You may be correct.
-If Dirk agrees, I will re-analyse the entire driver for rounding effects soon.
-When FRACBITS was 6 there were subtle cases where the driver would get stuck, and not make a final pstate change, with the default PID gains.
-Other things have changed, and the analysis needs to be re-done.
-
-... Doug
-
-
+-- Steve
