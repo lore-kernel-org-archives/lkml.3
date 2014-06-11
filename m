@@ -1,196 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755438AbaFKLwL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 07:52:11 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:44416 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751843AbaFKLwJ (ORCPT
+	id S1753257AbaFKLyW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 07:54:22 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54217 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750730AbaFKLyV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 07:52:09 -0400
+	Wed, 11 Jun 2014 07:54:21 -0400
+Date: Wed, 11 Jun 2014 13:54:13 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: acme@kernel.org, mingo@redhat.com, paulus@samba.org, hpa@zytor.com,
+        tglx@linutronix.de, x86@kernel.org, linux-kernel@vger.kernel.org,
+        matt@console-pimps.org
+Subject: Re: [PATCH] perf/x86/intel: ignore CondChgd bit to avoid false NMI
+ handling
+Message-ID: <20140611115413.GE3588@twins.programming.kicks-ass.net>
+References: <20140611073028.9847.65622.stgit@localhost6.localdomain6>
+ <20140611085448.GI3213@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-X-Originating-IP: [95.23.57.59]
-In-Reply-To: <1402477001-31132-1-git-send-email-rogerq@ti.com>
-References: <1402477001-31132-1-git-send-email-rogerq@ti.com>
-Date: Wed, 11 Jun 2014 13:52:07 +0200
-Message-ID: <CABxcv=mMAnnjd=F7itDWCt5QpVr=U5_mP=xhCW-oB5c2Doo75w@mail.gmail.com>
-Subject: Re: [PATCH 00/36] OMAP: GPMC: Restructure and move OMAP GPMC driver
- out of mach-omap2
-From: Javier Martinez Canillas <javier@dowhile0.org>
-To: Roger Quadros <rogerq@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>, David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>, kyungmin.park@samsung.com,
-        "Gupta, Pekon" <pekon@ti.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>, nsekhar@ti.com,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        linux-mtd@lists.infradead.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="xJK8B5Wah2CMJs8h"
+Content-Disposition: inline
+In-Reply-To: <20140611085448.GI3213@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Roger,
 
-What a great series!!
+--xJK8B5Wah2CMJs8h
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, Jun 11, 2014 at 10:56 AM, Roger Quadros <rogerq@ti.com> wrote:
-> Hi,
->
-> This is a complete functional set to get the gpmc driver out of mach-omap2
-> and into drivers/memory. The DT binding remains the same except for the
-> following minor changes
+On Wed, Jun 11, 2014 at 10:54:48AM +0200, Peter Zijlstra wrote:
+> > I'm not sure about exact behavior of CondChgd bit, in particular when
+> > this bit is set. Although I read Intel System Programmer's Manual to
+> > figure out but I have yet completed that. At least, I think ignoring
+> > CondChgd bit should be enough for NMI watchdog perspective.
+>=20
+> So yes, the SDM lists the bit as existing but never once mentions it
+> outside of that, and its been doing that at least back to 2008.
+>=20
+> Ooh, I found it:
+>=20
+>   "The IA32_PERF_GLOBAL_STATUS MSR also provides a =E2=80=98sticky bit=E2=
+=80=99 to
+> indicate changes to the state of performance monitoring hardware (see
+> Figure 18-29)."
+>=20
+> Which is of course completely useless, not to mention inconsistent with
+> the later CondChgd name.
+>=20
+> HPA, can you explain wtf that bit does and why hatayama-san's ivb feels
+> like having that set on boot?=20
 
-I probably won't have time to do a proper review until at least next
-week but doing a quick glance it looks very good to me.
+Matt found in the MSR listing for GLOBAL_STATUS:
 
-> - compatible property is required for NAND & OneNAND nodes
+63 CondChg: status bits of this register has changed.  If CPUID.0AH: EAX[7:=
+0] > 0
 
-This is a minor ABI breakage but I agree with you that it is wrong
-that these were not introduced in the first place and relied on the
-dev node so I think is not that bad to break it in this case.
+Which brings us to a grand total of 3 different names for this bit.
 
-> - Second register space and interrupts properties are required for
->   NAND controller node
-> - ti,onenand-sync-rw property added for OneNAND node.
->
-> The series does the following changes
-> - Move GPMC IRQ and NAND register handling to NAND driver.
->   The entire GPMC register space is made available to the NAND driver.
-> - Clean up NAND device tree handling. Don't rely on legacy platform device
->   i.e. don't call gpmc_nand_init()
-> - Add 2 public APIs omap_gpmc_retime() and omap_gpmc_get_clk_period()
->   omap_gpmc_retime() allows to reconfigure the GPMC settings and timings
->   for the specified Chip select region.
->   omap_gpmc_get_clk_period() allows to query the GPMC_CLK (external clock)
->   period, to perform timing calculations.
->   Both functions will be needed by the OneNAND driver since it calculates
->   device timings on the fly and needs to change from Asynchronous mode
->   to Synchronous mode.
-> - Setup OneNAND in Asynchronous mode by default and move Synchronous
->   setting code into OneNAND driver.
-> - Clean up OneNAND device tree handling. Don't rely on legacy platform device
->   i.e. don't call gpmc_onenand_init()
-> - Introduce gpmc_generic_init() that should be used by board files to specify
->   GPMC chip select setting/timing and platform device within that Chip Select.
-> - Stop using all gpmc*() that are meant to be private to GPMC driver.
-> - Move GPMC driver into drivers/memory
->
-> Tested on:
->
-> - beagleboard C4: NAND
-> - Nokia N900: OneNAND
->
+If it indeed does what it says on the tin, set every time the status
+changes its like the most useless bit ever and I wonder why people
+bothered to spend silicon on it.
 
-Do you have a tree somewhere that I can use it to test on the boards I
-maintain and post patches to update the DTS according the new binding?
+In any case, the proposed patch seems fine, just needs a better
+changelog.
 
-> Changelog:
->
-> [1] RFC patch - https://lkml.org/lkml/2014/5/21/218
->
-> cheers,
-> -roger
->
-> ---
-> Roger Quadros (36):
->   ARM: OMAP3: hwmod: Fix gpmc memory resource space
->   ARM: dts: OMAP2+: Fix GPMC register space size
->   ARM: OMAP2+: gpmc: Add platform data
->   ARM: OMAP2+: gpmc: Add gpmc timings and settings to platform data
->   mtd: nand: omap: Move IRQ handling from GPMC to NAND driver
->   mtd: nand: omap: Move gpmc_update_nand_reg to nand driver
->   mtd: nand: omap: Move NAND write protect code from GPMC to NAND driver
->   mtd: nand: omap: Copy platform data parameters to omap_nand_info data
->   mtd: nand: omap: Clean up device tree support
->   ARM: dts: OMAP2+: Fix NAND device nodes
->   mtd: nand: omap: Update DT binding documentation
->   ARM: dts: omap3-beagle: Add NAND device
->   ARM: OMAP2+: gpmc.c: sanity check bank-width DT property
->   ARM: OMAP2+: gpmc: Allow drivers to reconfigure GPMC settings &
->     timings
->   ARM: OMAP2+: gpmc: Allow drivers to query GPMC_CLK period
->   mtd: onenand: omap: Remove regulator management code
->   ARM: OMAP2+: gpmc-onenand: Use Async settings/timings by default
->   ARM: OMAP2+: gpmc-onenand: Move Synchronous setting code to drivers/
->   mtd: onenand: omap: Use devres managed resources
->   mtd: onenand: omap: Clean up device tree support
->   ARM: dts: OMAP2+: Fix OneNAND device nodes
->   ARM: OMAP2+: gmpc: add gpmc_generic_init()
->   ARM: OMAP2+: gpmc: use platform data to configure CS space and
->     poplulate device
->   ARM: OMAP2+: gpmc: add NAND specific setup
->   ARM: OMAP2+: gpmc: Support multiple Chip Selects per device
->   ARM: OMAP2+: gpmc-smc91x: Get rid of retime() from
->     omap_smc91x_platform_data
->   ARM: OMAP2+: usb-tusb6010: Use omap_gpmc_retime()
->   ARM: OMAP2+: nand: Update gpmc_nand_init() to use generic_gpmc_init()
->   ARM: OMAP2+: gpmc-smc91x: Use gpmc_generic_init()
->   ARM: OMAP2+: gpmc-smsc911x: Use gpmc_generic_init()
->   ARM: OMAP2: usb-tusb6010: Use gpmc_generic_init()
->   ARM: OMAP2+: onenand: Use gpmc_generic_init()
->   ARM: OMAP2+: board-flash: Use gpmc_generic_init() for NOR
->   ARM: OMAP2+: gpmc: Make externally unused functions/defines private
->   ARM: OMAP2+: gpmc: move GPMC driver into drivers/memory
->   ARM: OMAP2+: defconfig: Enable TI GPMC driver
->
->  .../devicetree/bindings/mtd/gpmc-nand.txt          |   16 +-
->  .../devicetree/bindings/mtd/gpmc-onenand.txt       |    4 +
->  arch/arm/boot/dts/am335x-evm.dts                   |    8 +-
->  arch/arm/boot/dts/am335x-igep0033.dtsi             |    8 +-
->  arch/arm/boot/dts/am33xx.dtsi                      |    2 +-
->  arch/arm/boot/dts/am4372.dtsi                      |    2 +-
->  arch/arm/boot/dts/am43x-epos-evm.dts               |    8 +-
->  arch/arm/boot/dts/omap2420-n8x0-common.dtsi        |    5 +-
->  arch/arm/boot/dts/omap2420.dtsi                    |    2 +-
->  arch/arm/boot/dts/omap2430.dtsi                    |    2 +-
->  arch/arm/boot/dts/omap3-beagle.dts                 |   53 +
->  arch/arm/boot/dts/omap3-devkit8000.dts             |    9 +-
->  arch/arm/boot/dts/omap3-evm-37xx.dts               |   10 +-
->  arch/arm/boot/dts/omap3-igep0020.dts               |   10 +-
->  arch/arm/boot/dts/omap3-igep0030.dts               |    8 +-
->  arch/arm/boot/dts/omap3-ldp.dts                    |   10 +-
->  arch/arm/boot/dts/omap3-lilly-a83x.dtsi            |   10 +-
->  arch/arm/boot/dts/omap3-lilly-dbb056.dts           |    7 +-
->  arch/arm/boot/dts/omap3-n900.dts                   |    6 +-
->  arch/arm/boot/dts/omap3-n950-n9.dtsi               |    6 +-
->  arch/arm/boot/dts/omap3.dtsi                       |    2 +-
->  arch/arm/boot/dts/omap3430-sdp.dts                 |   14 +-
->  arch/arm/boot/dts/omap4.dtsi                       |    2 +-
->  arch/arm/boot/dts/omap5.dtsi                       |    2 +-
->  arch/arm/configs/omap2plus_defconfig               |    2 +
->  arch/arm/mach-omap2/Makefile                       |    2 +-
->  arch/arm/mach-omap2/board-3430sdp.c                |    8 +-
->  arch/arm/mach-omap2/board-flash.c                  |   28 +-
->  arch/arm/mach-omap2/gpmc-nand.c                    |   66 +-
->  arch/arm/mach-omap2/gpmc-onenand.c                 |  351 +---
->  arch/arm/mach-omap2/gpmc-smc91x.c                  |   91 +-
->  arch/arm/mach-omap2/gpmc-smc91x.h                  |    1 -
->  arch/arm/mach-omap2/gpmc-smsc911x.c                |   76 +-
->  arch/arm/mach-omap2/gpmc.c                         | 1872 --------------------
->  arch/arm/mach-omap2/gpmc.h                         |  221 +--
->  arch/arm/mach-omap2/gpmc_legacy.c                  |  296 ++++
->  arch/arm/mach-omap2/omap_hwmod_3xxx_data.c         |    2 +-
->  arch/arm/mach-omap2/usb-tusb6010.c                 |  172 +-
->  drivers/memory/Kconfig                             |   10 +
->  drivers/memory/Makefile                            |    1 +
->  drivers/memory/ti-gpmc.c                           | 1829 +++++++++++++++++++
->  drivers/mtd/nand/Kconfig                           |    2 +-
->  drivers/mtd/nand/omap2.c                           |  364 +++-
->  drivers/mtd/onenand/Kconfig                        |    6 +-
->  drivers/mtd/onenand/omap2.c                        |  456 +++--
->  include/linux/platform_data/gpmc-omap.h            |  189 ++
->  include/linux/platform_data/mtd-nand-omap2.h       |   10 +-
->  include/linux/platform_data/mtd-onenand-omap2.h    |    7 +-
->  48 files changed, 3361 insertions(+), 2907 deletions(-)
->  delete mode 100644 arch/arm/mach-omap2/gpmc.c
->  create mode 100644 arch/arm/mach-omap2/gpmc_legacy.c
->  create mode 100644 drivers/memory/ti-gpmc.c
->  create mode 100644 include/linux/platform_data/gpmc-omap.h
->
-> --
-> 1.8.3.2
->
 
-Best regards,
-Javier
+--xJK8B5Wah2CMJs8h
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTmENlAAoJEHZH4aRLwOS6PtsP/iArjTACyo6vXjSyn4/EX71Y
+WO9IGp1ILvIFTurtrAjJ04P4Hqis0jEZSGh6JVq6BLeiRbdnbmxfdo+uTu1Scqsn
+Ov7XrOCi17TYhTLyP6dFT1j9J6cpOqD6XVTmniP0cpHjCwVSNiqM3OHhPMnzLa5I
+EeCzPDwfbnKGCBqxVREgupmbhHwDZnm66WY5/QLPOum/dPRUGalVL5+VjAcO3WL5
+cbqna3PrIb5vP1W62DGtH25X2fksaBDLdgywErMG87xzlWXWmzSyHvNVt7eTA8FC
+8pDEyiYgXYCDD/f10+FNdEu1xPAXthr77bQk0SoA0K+bQ1Qn+bf2U7gfHddQgVFq
+rOk8im50P6lhUF73CJ4oWy4lOix90yuOf4BXVUeJccUTrihwbPUYb28gwEu0XunJ
+9iynTSTiDt7j2Gr5dyoS/eMaWEKwudH34YqUV7gABWQetdh+GjNaV9mr+pvvEnrc
+ib6PfSm8bNNimaiGEJViqVVS+t7BirA9sCwTm88wxYo55x9jokcek8H24GBGvbBI
+e67/hV4PxRZSt376lff3RydT1BruS7Oi+XL7AukZ7WyXTAo5tElHQjh9vOPW9TLV
+OYC8a20OBn76dQdGiZ5rVA6vfuvK+YOrw3i9qHMT5WZegJgbDZk9l3MeGIWfxjEn
+KPtAskMHMCx3nVkKEMIT
+=MGcM
+-----END PGP SIGNATURE-----
+
+--xJK8B5Wah2CMJs8h--
