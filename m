@@ -1,42 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754152AbaFKWWP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 18:22:15 -0400
-Received: from mga09.intel.com ([134.134.136.24]:26131 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751800AbaFKWWO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 18:22:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,460,1400050800"; 
-   d="scan'208";a="555981221"
-Message-ID: <5398D691.7050202@intel.com>
-Date: Wed, 11 Jun 2014 15:22:09 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1754461AbaFKWW7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 18:22:59 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:44238 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752657AbaFKWW5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 18:22:57 -0400
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Zhang Zhen <zhenzhang.zhang@huawei.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, laijs@cn.fujitsu.com,
-        sjenning@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Wang Nan <wangnan0@huawei.com>
-Subject: Re: [patch] mm, hotplug: probe interface is available on several
- platforms
-References: <53981D81.5060708@huawei.com> <alpine.DEB.2.02.1406111503050.27885@chino.kir.corp.google.com> <alpine.DEB.2.02.1406111511450.27885@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1406111511450.27885@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [80.196.35.44]
+In-Reply-To: <20140611170917.GA12025@linux.intel.com>
+References: <1402392038-5268-2-git-send-email-m@bjorling.me>
+	<alpine.LRH.2.03.1406100945250.4699@AMR>
+	<A52B97CC-6D77-468B-9A9B-A5888AE63580@fb.com>
+	<alpine.LRH.2.03.1406101140490.4699@AMR>
+	<5397636F.9050209@fb.com>
+	<alpine.LRH.2.03.1406101458470.4699@AMR>
+	<5397753B.2020009@fb.com>
+	<alpine.LRH.2.03.1406101515430.4699@AMR>
+	<20140610213333.GA10055@linux.intel.com>
+	<539889DC.7090704@fb.com>
+	<20140611170917.GA12025@linux.intel.com>
+Date: Thu, 12 Jun 2014 00:22:57 +0200
+Message-ID: <CAOu_J6kocZZ1mRQeSidyqJ_Ew0F_POS30v2kgUZX2wDOOnuExg@mail.gmail.com>
+Subject: Re: [PATCH v7] NVMe: conversion to blk-mq
+From: =?UTF-8?Q?Matias_Bj=C3=B8rling?= <m@bjorling.me>
+To: Matthew Wilcox <willy@linux.intel.com>
+Cc: Jens Axboe <axboe@fb.com>, Keith Busch <keith.busch@intel.com>,
+        "sbradshaw@micron.com" <sbradshaw@micron.com>,
+        "tom.leiming@gmail.com" <tom.leiming@gmail.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-nvme@lists.infradead.org" <linux-nvme@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2014 03:15 PM, David Rientjes wrote:
-> +CONFIG_ARCH_MEMORY_PROBE and can be configured on powerpc, sh, and x86
-> +if hotplug is supported, although for x86 this should be handled by ACPI
-> +notification.
+On Wed, Jun 11, 2014 at 7:09 PM, Matthew Wilcox <willy@linux.intel.com> wrote:
+> On Wed, Jun 11, 2014 at 10:54:52AM -0600, Jens Axboe wrote:
+>> OK, so essentially any single request must be a virtually contig piece
+>> of memory. Is there any size limitations to how big this contig segment
+>> can be?
+>
+> The maximum size of an I/O is 65536 sectors.  So on a 512-byte sector
+> device, that's 32MB, but on a 4k sector size device, that's 128MB.
+>
+>> I think this is unique requirement, at least I haven't seen other pieces
+>> of hardware have it. But it would be pretty trivial to add a setting to
+>> limit merges based on virtually contig, similarly to what is done for
+>> number of physical segments.
+>
+> I think there might be an FCoE device with that requirement too.
 
-Looks like a good change, in general.
+I've rebased nvmemq_review and added two patches from Jens that add
+support for requests with single range virtual addresses.
 
-My only nit is that this implies that all hotplug on x86 is ACPI-based,
-which isn't true.  Xen, at least, has an extension to its ballooning
-that does hotplugs without ACPI.
+Keith, will you take it for a spin and see if it fixes 068 for you?
+
+There might still be a problem with some flushes, I'm looking into this.
