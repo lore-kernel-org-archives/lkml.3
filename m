@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754837AbaFKCBu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jun 2014 22:01:50 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:11842 "EHLO
+	id S1754877AbaFKCCF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jun 2014 22:02:05 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:56912 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752718AbaFKCBM (ORCPT
+	by vger.kernel.org with ESMTP id S1752290AbaFKCBM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 10 Jun 2014 22:01:12 -0400
-Message-Id: <20140611020108.600070226@goodmis.org>
+Message-Id: <20140611020108.017240716@goodmis.org>
 User-Agent: quilt/0.63-1
-Date: Tue, 10 Jun 2014 21:59:52 -0400
+Date: Tue, 10 Jun 2014 21:59:49 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Namhyung Kim <namhyung@gmail.com>
-Subject: [for-next][PATCH 4/4] tracing: Fix check of ftrace_trace_arrays list_empty() check
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: [for-next][PATCH 1/4] ring-buffer: Check if buffer exists before polling
 References: <20140611015948.013451560@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0003-tracing-Fix-check-of-ftrace_trace_arrays-list_empty-.patch
-X-RR-Connecting-IP: 107.14.168.142:25
+Content-Disposition: inline; filename=0000-ring-buffer-Check-if-buffer-exists-before-polling.patch
+X-RR-Connecting-IP: 107.14.168.118:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,39 +27,144 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-The check that tests if ftrace_trace_arrays is empty in
-top_trace_array(), uses the .prev pointer:
+The per_cpu buffers are created one per possible CPU. But these do
+not mean that those CPUs are online, nor do they even exist.
 
-  if (list_empty(ftrace_trace_arrays.prev))
+With the addition of the ring buffer polling, it assumes that the
+caller polls on an existing buffer. But this is not the case if
+the user reads trace_pipe from a CPU that does not exist, and this
+causes the kernel to crash.
 
-instead of testing the variable itself:
+Simple fix is to check the cpu against buffer bitmask against to see
+if the buffer was allocated or not and return -ENODEV if it is
+not.
 
-  if (list_empty(&ftrace_trace_arrays))
+More updates were done to pass the -ENODEV back up to userspace.
 
-Although it is technically correct, it is awkward and confusing.
-Use the proper method.
+Link: http://lkml.kernel.org/r/5393DB61.6060707@oracle.com
 
-Link: http://lkml.kernel.org/r/87oay1bas8.fsf@sejong.aot.lge.com
-
-Reported-by: Namhyung Kim <namhyung@gmail.com>
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Cc: stable@vger.kernel.org # 3.10+
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/ring_buffer.h |  2 +-
+ kernel/trace/ring_buffer.c  |  5 ++++-
+ kernel/trace/trace.c        | 22 ++++++++++++++++------
+ 3 files changed, 21 insertions(+), 8 deletions(-)
 
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 9e82551dd566..9258f5a815db 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -252,7 +252,7 @@ static inline struct trace_array *top_trace_array(void)
+diff --git a/include/linux/ring_buffer.h b/include/linux/ring_buffer.h
+index d69cf637a15a..49a4d6f59108 100644
+--- a/include/linux/ring_buffer.h
++++ b/include/linux/ring_buffer.h
+@@ -97,7 +97,7 @@ __ring_buffer_alloc(unsigned long size, unsigned flags, struct lock_class_key *k
+ 	__ring_buffer_alloc((size), (flags), &__key);	\
+ })
+ 
+-void ring_buffer_wait(struct ring_buffer *buffer, int cpu);
++int ring_buffer_wait(struct ring_buffer *buffer, int cpu);
+ int ring_buffer_poll_wait(struct ring_buffer *buffer, int cpu,
+ 			  struct file *filp, poll_table *poll_table);
+ 
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index c634868c2921..7c56c3d06943 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -543,7 +543,7 @@ static void rb_wake_up_waiters(struct irq_work *work)
+  * as data is added to any of the @buffer's cpu buffers. Otherwise
+  * it will wait for data to be added to a specific cpu buffer.
+  */
+-void ring_buffer_wait(struct ring_buffer *buffer, int cpu)
++int ring_buffer_wait(struct ring_buffer *buffer, int cpu)
  {
- 	struct trace_array *tr;
+ 	struct ring_buffer_per_cpu *cpu_buffer;
+ 	DEFINE_WAIT(wait);
+@@ -557,6 +557,8 @@ void ring_buffer_wait(struct ring_buffer *buffer, int cpu)
+ 	if (cpu == RING_BUFFER_ALL_CPUS)
+ 		work = &buffer->irq_work;
+ 	else {
++		if (!cpumask_test_cpu(cpu, buffer->cpumask))
++			return -ENODEV;
+ 		cpu_buffer = buffer->buffers[cpu];
+ 		work = &cpu_buffer->irq_work;
+ 	}
+@@ -591,6 +593,7 @@ void ring_buffer_wait(struct ring_buffer *buffer, int cpu)
+ 		schedule();
  
--	if (list_empty(ftrace_trace_arrays.prev))
-+	if (list_empty(&ftrace_trace_arrays))
- 		return NULL;
+ 	finish_wait(&work->waiters, &wait);
++	return 0;
+ }
  
- 	tr = list_entry(ftrace_trace_arrays.prev,
+ /**
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 16f7038d1f4d..56422f1decba 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -1085,13 +1085,13 @@ update_max_tr_single(struct trace_array *tr, struct task_struct *tsk, int cpu)
+ }
+ #endif /* CONFIG_TRACER_MAX_TRACE */
+ 
+-static void wait_on_pipe(struct trace_iterator *iter)
++static int wait_on_pipe(struct trace_iterator *iter)
+ {
+ 	/* Iterators are static, they should be filled or empty */
+ 	if (trace_buffer_iter(iter, iter->cpu_file))
+-		return;
++		return 0;
+ 
+-	ring_buffer_wait(iter->trace_buffer->buffer, iter->cpu_file);
++	return ring_buffer_wait(iter->trace_buffer->buffer, iter->cpu_file);
+ }
+ 
+ #ifdef CONFIG_FTRACE_STARTUP_TEST
+@@ -4378,6 +4378,7 @@ tracing_poll_pipe(struct file *filp, poll_table *poll_table)
+ static int tracing_wait_pipe(struct file *filp)
+ {
+ 	struct trace_iterator *iter = filp->private_data;
++	int ret;
+ 
+ 	while (trace_empty(iter)) {
+ 
+@@ -4399,10 +4400,13 @@ static int tracing_wait_pipe(struct file *filp)
+ 
+ 		mutex_unlock(&iter->mutex);
+ 
+-		wait_on_pipe(iter);
++		ret = wait_on_pipe(iter);
+ 
+ 		mutex_lock(&iter->mutex);
+ 
++		if (ret)
++			return ret;
++
+ 		if (signal_pending(current))
+ 			return -EINTR;
+ 	}
+@@ -5327,8 +5331,12 @@ tracing_buffers_read(struct file *filp, char __user *ubuf,
+ 				goto out_unlock;
+ 			}
+ 			mutex_unlock(&trace_types_lock);
+-			wait_on_pipe(iter);
++			ret = wait_on_pipe(iter);
+ 			mutex_lock(&trace_types_lock);
++			if (ret) {
++				size = ret;
++				goto out_unlock;
++			}
+ 			if (signal_pending(current)) {
+ 				size = -EINTR;
+ 				goto out_unlock;
+@@ -5538,8 +5546,10 @@ tracing_buffers_splice_read(struct file *file, loff_t *ppos,
+ 			goto out;
+ 		}
+ 		mutex_unlock(&trace_types_lock);
+-		wait_on_pipe(iter);
++		ret = wait_on_pipe(iter);
+ 		mutex_lock(&trace_types_lock);
++		if (ret)
++			goto out;
+ 		if (signal_pending(current)) {
+ 			ret = -EINTR;
+ 			goto out;
 -- 
 2.0.0.rc2
 
