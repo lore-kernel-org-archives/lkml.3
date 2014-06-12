@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933118AbaFLKDz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 06:03:55 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:51292 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932878AbaFLKDy (ORCPT
+	id S933148AbaFLKE0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 06:04:26 -0400
+Received: from vsp-authed02.binero.net ([195.74.38.226]:42528 "EHLO
+	vsp-authed-04-02.binero.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933128AbaFLKEY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 06:03:54 -0400
-Date: Thu, 12 Jun 2014 14:03:46 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-CC: <akpm@linux-foundation.org>, <cl@linux.com>, <rientjes@google.com>,
-        <penberg@kernel.org>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: Re: [PATCH -mm v2 5/8] slub: make slab_free non-preemptable
-Message-ID: <20140612100344.GB19221@esperanza>
-References: <cover.1402060096.git.vdavydov@parallels.com>
- <7cd6784a36ed997cc6631615d98e11e02e811b1b.1402060096.git.vdavydov@parallels.com>
- <20140612065842.GE19918@js1304-P5Q-DELUXE>
+	Thu, 12 Jun 2014 06:04:24 -0400
+Message-ID: <53997AF6.1040003@gaisler.com>
+Date: Thu, 12 Jun 2014 12:03:34 +0200
+From: Andreas Larsson <andreas@gaisler.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140612065842.GE19918@js1304-P5Q-DELUXE>
-X-Originating-IP: [81.5.110.170]
+To: nyushchenko@dev.rtsoft.ru, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, devicetree@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, lugovskoy@dev.rtsoft.ru,
+        sparclinux@vger.kernel.org, davem@davemloft.net
+Subject: Re: [PATCH 00/21] add and use devm_irq_of_parse_and_map()
+References: <1401880402-30091-1-git-send-email-nyushchenko@dev.rtsoft.ru>
+In-Reply-To: <1401880402-30091-1-git-send-email-nyushchenko@dev.rtsoft.ru>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 2014-06-04 13:13, nyushchenko@dev.rtsoft.ru wrote:
+> Currently many device tree aware drivers use irq_of_parse_and_map() to get
+> IRQ number and then devm_request_irq() to set up IRQ handler.
+>
+> This causes a problem for exit path and for error paths: undo action for
+> irq_of_parse_and_map() is irq_dispose_mapping() that must not be called
+> while IRQ handler is defined, but devres moves free_irq() out of driver
+> so driver does not have safe place to call irq_dispose_mapping().
+>
+> So many drivers do not call irq_dispose_mapping() at all, others call it
+> while IRQ handler is defined (which is incorrect and causes error messages
+> in logs), even others refuse to use devres for managing IRQ handlers.
+>
+> This patchset adds devres version of irq_of_parse_and_map(), and updates
+> in-tree users of both devres and irq_of_parse_and_map() to use
+> devm_irq_of_parse_and_map() instead.
 
-On Thu, Jun 12, 2014 at 03:58:42PM +0900, Joonsoo Kim wrote:
-> On Fri, Jun 06, 2014 at 05:22:42PM +0400, Vladimir Davydov wrote:
-> > @@ -2673,18 +2673,11 @@ static __always_inline void slab_free(struct kmem_cache *s,
-> >  
-> >  	slab_free_hook(s, x);
-> >  
-> > -redo:
-> > -	/*
-> > -	 * Determine the currently cpus per cpu slab.
-> > -	 * The cpu may change afterward. However that does not matter since
-> > -	 * data is retrieved via this pointer. If we are on the same cpu
-> > -	 * during the cmpxchg then the free will succedd.
-> > -	 */
-> >  	preempt_disable();
-> 
-> Could you add some code comment why this preempt_disable/enable() is
-> needed? We don't have any clue that kmemcg depends on these things
-> on code, so someone cannot understand why it is here.
-> 
-> If possible, please add similar code comment on slab_alloc in mm/slab.c.
 
-Sure.
+SPARC does not use OF_IRQ and has a different implementation of 
+irq_of_parse_and_map than the one in drivers/of/irq.c. All code 
+converted from irq_of_parse_and_map to devm_irq_of_parse_and_map in this 
+patch set will be unlinkable for SPARC. This includes SPI in general and 
+many drivers that are used for SPARC (of which several are currently 
+only used on SPARC platforms).
 
-Thanks.
+Best regards,
+Andreas Larsson
