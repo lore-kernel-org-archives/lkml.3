@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753739AbaFLUjA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 16:39:00 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:51748 "EHLO
+	id S1753705AbaFLUiy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 16:38:54 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:51569 "EHLO
 	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753212AbaFLUi6 (ORCPT
+	with ESMTP id S1753697AbaFLUiv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 16:38:58 -0400
+	Thu, 12 Jun 2014 16:38:51 -0400
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <akpm@linux-foundation.org>
 CC: <cl@linux.com>, <iamjoonsoo.kim@lge.com>, <rientjes@google.com>,
         <penberg@kernel.org>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
         <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: [PATCH -mm v3 8/8] slab: do not keep free objects/slabs on dead memcg caches
-Date: Fri, 13 Jun 2014 00:38:22 +0400
-Message-ID: <a985aec824cd35df381692fca83f7a8debc80305.1402602126.git.vdavydov@parallels.com>
+Subject: [PATCH -mm v3 6/8] memcg: wait for kfree's to finish before destroying cache
+Date: Fri, 13 Jun 2014 00:38:20 +0400
+Message-ID: <30123afe17ec55aeaa95ff4563bab6a01005b878.1402602126.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1402602126.git.vdavydov@parallels.com>
 References: <cover.1402602126.git.vdavydov@parallels.com>
@@ -25,109 +25,105 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since a dead memcg cache is destroyed only after the last slab allocated
-to it is freed, we must disable caching of free objects/slabs for such
-caches, otherwise they will be hanging around forever.
+kmem_cache_free doesn't expect that the cache can be destroyed as soon
+as the object is freed, e.g. SLUB's implementation may want to update
+cache stats after putting the object to the free list.
 
-For SLAB that means we must disable per cpu free object arrays and make
-free_block always discard empty slabs irrespective of node's free_limit.
-
-To disable per cpu arrays, we free them on kmem_cache_shrink (see
-drain_cpu_caches -> do_drain) and make __cache_free fall back to
-free_block if there is no per cpu array. Also, we have to disable
-allocation of per cpu arrays on cpu hotplug for dead caches (see
-cpuup_prepare, __do_tune_cpucache).
-
-After we disabled free objects/slabs caching, there is no need to reap
-those caches periodically. Moreover, it will only result in slowdown. So
-we also make cache_reap skip then.
+Therefore we should wait for all kmem_cache_free's to finish before
+proceeding to cache destruction. Since both SLAB and SLUB versions of
+kmem_cache_free are non-preemptable, we wait for rcu-sched grace period
+to elapse.
 
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 ---
- mm/slab.c |   31 ++++++++++++++++++++++++++++++-
- 1 file changed, 30 insertions(+), 1 deletion(-)
+ include/linux/slab.h |    6 ++----
+ mm/memcontrol.c      |   34 ++++++++++++++++++++++++++++++++--
+ 2 files changed, 34 insertions(+), 6 deletions(-)
 
-diff --git a/mm/slab.c b/mm/slab.c
-index b3af82419251..7e91f5f1341d 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -1210,6 +1210,9 @@ static int cpuup_prepare(long cpu)
- 		struct array_cache *shared = NULL;
- 		struct array_cache **alien = NULL;
- 
-+		if (memcg_cache_dead(cachep))
-+			continue;
-+
- 		nc = alloc_arraycache(node, cachep->limit,
- 					cachep->batchcount, GFP_KERNEL);
- 		if (!nc)
-@@ -2411,10 +2414,18 @@ static void do_drain(void *arg)
- 
- 	check_irq_off();
- 	ac = cpu_cache_get(cachep);
-+	if (!ac)
-+		return;
-+
- 	spin_lock(&cachep->node[node]->list_lock);
- 	free_block(cachep, ac->entry, ac->avail, node);
- 	spin_unlock(&cachep->node[node]->list_lock);
- 	ac->avail = 0;
-+
-+	if (memcg_cache_dead(cachep)) {
-+		cachep->array[smp_processor_id()] = NULL;
-+		kfree(ac);
-+	}
+diff --git a/include/linux/slab.h b/include/linux/slab.h
+index d99d5212b815..68b1feaba9d6 100644
+--- a/include/linux/slab.h
++++ b/include/linux/slab.h
+@@ -532,11 +532,9 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
+  */
+ struct memcg_cache_params {
+ 	bool is_root_cache;
++	struct rcu_head rcu_head;
+ 	union {
+-		struct {
+-			struct rcu_head rcu_head;
+-			struct kmem_cache *memcg_caches[0];
+-		};
++		struct kmem_cache *memcg_caches[0];
+ 		struct {
+ 			struct mem_cgroup *memcg;
+ 			struct list_head list;
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 8f08044d26a7..516964a11f5a 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3232,6 +3232,14 @@ static void memcg_unregister_cache_func(struct work_struct *work)
+ 	mutex_unlock(&memcg_slab_mutex);
  }
  
- static void drain_cpu_caches(struct kmem_cache *cachep)
-@@ -3368,7 +3379,8 @@ static void free_block(struct kmem_cache *cachep, void **objpp, int nr_objects,
- 
- 		/* fixup slab chains */
- 		if (page->active == 0) {
--			if (n->free_objects > n->free_limit) {
-+			if (n->free_objects > n->free_limit ||
-+			    memcg_cache_dead(cachep)) {
- 				n->free_objects -= cachep->num;
- 				/* No need to drop any previously held
- 				 * lock here, even if we have a off-slab slab
-@@ -3462,6 +3474,17 @@ static inline void __cache_free(struct kmem_cache *cachep, void *objp,
- 
- 	kmemcheck_slab_free(cachep, objp, cachep->object_size);
- 
-+#ifdef CONFIG_MEMCG_KMEM
-+	if (unlikely(!ac)) {
-+		int nodeid = page_to_nid(virt_to_page(objp));
++static void memcg_unregister_cache_rcu_func(struct rcu_head *rcu)
++{
++	struct memcg_cache_params *params =
++		container_of(rcu, struct memcg_cache_params, rcu_head);
 +
-+		spin_lock(&cachep->node[nodeid]->list_lock);
-+		free_block(cachep, &objp, 1, nodeid);
-+		spin_unlock(&cachep->node[nodeid]->list_lock);
-+		return;
++	schedule_work(&params->unregister_work);
++}
++
+ /*
+  * During the creation a new cache, we need to disable our accounting mechanism
+  * altogether. This is true even if we are not creating, but rather just
+@@ -3287,6 +3295,7 @@ static void memcg_unregister_all_caches(struct mem_cgroup *memcg)
+ {
+ 	struct kmem_cache *cachep;
+ 	struct memcg_cache_params *params, *tmp;
++	LIST_HEAD(empty_caches);
+ 
+ 	if (!memcg_kmem_is_active(memcg))
+ 		return;
+@@ -3299,7 +3308,26 @@ static void memcg_unregister_all_caches(struct mem_cgroup *memcg)
+ 		kmem_cache_shrink(cachep);
+ 
+ 		if (atomic_long_dec_and_test(&cachep->memcg_params->refcnt))
+-			memcg_unregister_cache(cachep);
++			list_move(&cachep->memcg_params->list, &empty_caches);
 +	}
-+#endif
 +
- 	/*
- 	 * Skip calling cache_free_alien() when the platform is not numa.
- 	 * This will avoid cache misses that happen while accessing slabp (which
-@@ -3803,6 +3826,9 @@ static int __do_tune_cpucache(struct kmem_cache *cachep, int limit,
- 	struct ccupdate_struct *new;
- 	int i;
++	/*
++	 * kmem_cache_free doesn't expect that the cache can be destroyed as
++	 * soon as the object is freed, e.g. SLUB's implementation may want to
++	 * update cache stats after putting the object to the free list.
++	 *
++	 * Therefore we should wait for all kmem_cache_free's to finish before
++	 * proceeding to cache destruction. Since both SLAB and SLUB versions
++	 * of kmem_cache_free are non-preemptable, we wait for rcu-sched grace
++	 * period to elapse.
++	 */
++	synchronize_sched();
++
++	while (!list_empty(&empty_caches)) {
++		params = list_first_entry(&empty_caches,
++					  struct memcg_cache_params, list);
++		cachep = memcg_params_to_cache(params);
++		memcg_unregister_cache(cachep);
+ 	}
+ 	mutex_unlock(&memcg_slab_mutex);
+ }
+@@ -3381,7 +3409,9 @@ void __memcg_uncharge_slab(struct kmem_cache *cachep, int order)
+ 	memcg_uncharge_kmem(cachep->memcg_params->memcg, PAGE_SIZE << order);
  
-+	if (memcg_cache_dead(cachep))
-+		return 0;
-+
- 	new = kzalloc(sizeof(*new) + nr_cpu_ids * sizeof(struct array_cache *),
- 		      gfp);
- 	if (!new)
-@@ -3988,6 +4014,9 @@ static void cache_reap(struct work_struct *w)
- 	list_for_each_entry(searchp, &slab_caches, list) {
- 		check_irq_on();
+ 	if (unlikely(atomic_long_dec_and_test(&cachep->memcg_params->refcnt)))
+-		schedule_work(&cachep->memcg_params->unregister_work);
++		/* see memcg_unregister_all_caches */
++		call_rcu_sched(&cachep->memcg_params->rcu_head,
++			       memcg_unregister_cache_rcu_func);
+ }
  
-+		if (memcg_cache_dead(searchp))
-+			continue;
-+
- 		/*
- 		 * We only take the node lock if absolutely necessary and we
- 		 * have established with reasonable certainty that
+ /*
 -- 
 1.7.10.4
 
