@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752333AbaFLX1O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 19:27:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37148 "EHLO
+	id S1752454AbaFLX1d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 19:27:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37145 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751746AbaFLXSL (ORCPT
+	with ESMTP id S1751872AbaFLXSK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 19:18:11 -0400
+	Thu, 12 Jun 2014 19:18:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Maxime Bizon <mbizon@freebox.fr>, Florian Westphal <fw@strlen.de>,
-        Pablo Neira Ayuso <pablo@netfilter.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.14 02/19] netfilter: ipv4: defrag: set local_df flag on defragmented skb
-Date: Thu, 12 Jun 2014 16:21:39 -0700
-Message-Id: <20140612232138.773549369@linuxfoundation.org>
+        Tomas Winkler <tomas.winkler@intel.com>,
+        Alexander Usyskin <alexander.usyskin@intel.com>
+Subject: [PATCH 3.14 11/19] mei: me: read H_CSR after asserting reset
+Date: Thu, 12 Jun 2014 16:21:48 -0700
+Message-Id: <20140612232139.072331283@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140612232138.561318739@linuxfoundation.org>
 References: <20140612232138.561318739@linuxfoundation.org>
@@ -29,58 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Westphal <fw@strlen.de>
+From: Tomas Winkler <tomas.winkler@intel.com>
 
-commit 895162b1101b3ea5db08ca6822ae9672717efec0 upstream.
+commit c40765d919d25d2d44d99c4ce39e48808f137e1e upstream.
 
-else we may fail to forward skb even if original fragments do fit
-outgoing link mtu:
+According the spec the host should read H_CSR again
+after asserting reset H_RST to ensure that reset was
+read by the firmware
 
-1. remote sends 2k packets in two 1000 byte frags, DF set
-2. we want to forward but only see '2k > mtu and DF set'
-3. we then send icmp error saying that outgoing link is 1500
-
-But original sender never sent a packet that would not fit
-the outgoing link.
-
-Setting local_df makes outgoing path test size vs.
-IPCB(skb)->frag_max_size, so we will still send the correct
-error in case the largest original size did not fit
-outgoing link mtu.
-
-Reported-by: Maxime Bizon <mbizon@freebox.fr>
-Suggested-by: Maxime Bizon <mbizon@freebox.fr>
-Fixes: 5f2d04f1f9 (ipv4: fix path MTU discovery with connection tracking)
-Signed-off-by: Florian Westphal <fw@strlen.de>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/ipv4/netfilter/nf_defrag_ipv4.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/misc/mei/hw-me.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
---- a/net/ipv4/netfilter/nf_defrag_ipv4.c
-+++ b/net/ipv4/netfilter/nf_defrag_ipv4.c
-@@ -22,7 +22,6 @@
- #endif
- #include <net/netfilter/nf_conntrack_zones.h>
+--- a/drivers/misc/mei/hw-me.c
++++ b/drivers/misc/mei/hw-me.c
+@@ -189,6 +189,18 @@ static int mei_me_hw_reset(struct mei_de
+ 	dev->recvd_hw_ready = false;
+ 	mei_me_reg_write(hw, H_CSR, hcsr);
  
--/* Returns new sk_buff, or NULL */
- static int nf_ct_ipv4_gather_frags(struct sk_buff *skb, u_int32_t user)
- {
- 	int err;
-@@ -33,8 +32,10 @@ static int nf_ct_ipv4_gather_frags(struc
- 	err = ip_defrag(skb, user);
- 	local_bh_enable();
++	/*
++	 * Host reads the H_CSR once to ensure that the
++	 * posted write to H_CSR completes.
++	 */
++	hcsr = mei_hcsr_read(hw);
++
++	if ((hcsr & H_RST) == 0)
++		dev_warn(&dev->pdev->dev, "H_RST is not set = 0x%08X", hcsr);
++
++	if ((hcsr & H_RDY) == H_RDY)
++		dev_warn(&dev->pdev->dev, "H_RDY is not cleared 0x%08X", hcsr);
++
+ 	if (intr_enable == false)
+ 		mei_me_hw_reset_release(dev);
  
--	if (!err)
-+	if (!err) {
- 		ip_send_check(ip_hdr(skb));
-+		skb->local_df = 1;
-+	}
- 
- 	return err;
- }
 
 
