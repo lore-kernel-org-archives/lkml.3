@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460AbaFLVQO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 17:16:14 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:47591 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752401AbaFLVQN (ORCPT
+	id S1753633AbaFLVRH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 17:17:07 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:45811 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752401AbaFLVRF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 17:16:13 -0400
-Subject: Re: [PATCH 1/1] Remove an extra operation: The ESR has been stored into x1, and should be directly pass to do_sp_pc_abort function
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
-Content-Type: text/plain; charset=windows-1252
-From: Catalin Marinas <catalin.marinas@arm.com>
-In-Reply-To: <1402587132-4853-1-git-send-email-andy.jhshiu@gmail.com>
-Date: Thu, 12 Jun 2014 22:16:09 +0100
-Cc: Will Deacon <Will.Deacon@arm.com>, Mark Brown <broonie@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Content-Transfer-Encoding: 7bit
-Message-Id: <BC9ADAC0-BD35-4A54-AEF2-CF4F9520D04A@arm.com>
-References: <1402587132-4853-1-git-send-email-andy.jhshiu@gmail.com>
-To: Andy Hsu <andy.jhshiu@gmail.com>
-X-Mailer: Apple Mail (2.1878.2)
+	Thu, 12 Jun 2014 17:17:05 -0400
+Date: Thu, 12 Jun 2014 14:17:02 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Lan Tianyu <tianyu.lan@intel.com>
+cc: rjw@rjwysocki.net, lenb@kernel.org, naszar@ya.ru,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] ACPI/Battery: Retry to get Battery information if failed
+ during probing
+In-Reply-To: <53996152.2000407@intel.com>
+Message-ID: <alpine.DEB.2.02.1406121415150.8305@chino.kir.corp.google.com>
+References: <1402552946-14704-1-git-send-email-tianyu.lan@intel.com> <alpine.DEB.2.02.1406112354070.23724@chino.kir.corp.google.com> <53995488.20308@intel.com> <alpine.DEB.2.02.1406120025050.23724@chino.kir.corp.google.com> <53996152.2000407@intel.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 Jun 2014, at 16:32, Andy Hsu <andy.jhshiu@gmail.com> wrote:
-> Signed-off-by: Andy Hsu <andy.jhshiu@gmail.com>
-> ---
-> arch/arm64/kernel/entry.S |    1 -
-> 1 files changed, 0 insertions(+), 1 deletions(-)
+On Thu, 12 Jun 2014, Lan Tianyu wrote:
+
+> The retry time is set by randomly and not accurate because don't know
+> when EC will work normally. Set the retry time to 5 just in order to
+> make sure battery driver probing sucessfully every time,
 > 
-> diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
-> index fa78916..56ef569 100644
-> --- a/arch/arm64/kernel/entry.S
-> +++ b/arch/arm64/kernel/entry.S
-> @@ -275,7 +275,6 @@ el1_sp_pc:
-> 	 * Stack or PC alignment exception handling
-> 	 */
-> 	mrs	x0, far_el1
-> -	mov	x1, x25
-> 	mov	x2, sp
-> 	b	do_sp_pc_abort
-> el1_undef:
 
-I got it already via a different channel but thanks anyway.
+Ok, I was hoping to avoid the excessive wait if it will never actually 
+succeed but I assume there's some evidence that it can succeed after 40ms, 
+60ms, etc.  Please consider the following instead:
 
-Catalin
+	for (i = 0; i < 5; i++) {
+		/* Comment on why we need a delay in between retries */
+		if (i)
+			msleep(20);
+		result = acpi_battery_update(battery, false);
+		if (!result)
+			break;
+	}
