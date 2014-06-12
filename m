@@ -1,113 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933165AbaFLNix (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 09:38:53 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:37992 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755866AbaFLNiv (ORCPT
+	id S933318AbaFLNjb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 09:39:31 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:64420 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755866AbaFLNj3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 09:38:51 -0400
+	Thu, 12 Jun 2014 09:39:29 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX193nWsfVt6NexwNW9wJkRvaI/snVo31I/w=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 21CD158DDE4
+Date: Thu, 12 Jun 2014 09:39:17 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sricharan R <r.sricharan@ti.com>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tony@atomide.com, santosh.shilimkar@ti.com, nm@ti.com, rnayak@ti.com,
+        linux@arm.linux.org.uk, tglx@linutronix.de
+Subject: Re: [PATCH V2 12/19] irqchip: crossbar: return proper error value
+Message-ID: <20140612133917.GY8664@titan.lakedaemon.net>
+References: <1402574007-13987-1-git-send-email-r.sricharan@ti.com>
+ <1402574007-13987-13-git-send-email-r.sricharan@ti.com>
 MIME-Version: 1.0
-Date: Thu, 12 Jun 2014 14:38:49 +0100
-Message-ID: <CAD8Lp46MbKZrCAMp+9T9LbWTB4uHRDdivhtjoQbkTyBbK48EgQ@mail.gmail.com>
-Subject: Re: [PATCH 0/5] Handle non-secure L2C initialization on Exynos4
-From: Daniel Drake <drake@endlessm.com>
-To: t.figa@samsung.com
-Cc: Kukjin Kim <kgene.kim@samsung.com>, Laura Abbott <lauraa@codeaurora.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Robin Holt <holt@sgi.com>, Russell King <linux@arm.linux.org.uk>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: multipart/mixed; boundary=089e010d870c50d6f304fba3ae9b
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402574007-13987-13-git-send-email-r.sricharan@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---089e010d870c50d6f304fba3ae9b
-Content-Type: text/plain; charset=UTF-8
+On Thu, Jun 12, 2014 at 05:23:20PM +0530, Sricharan R wrote:
+> From: Nishanth Menon <nm@ti.com>
+> 
+> crossbar_of_init always returns -ENOMEM in case of errors, return proper
+> error results in case of failures.
 
-Hi Tomasz,
+Please describe what the other possible failures are and how the changes
+are more correct.
 
-Thanks for working on this!
+> 
+> Signed-off-by: Nishanth Menon <nm@ti.com>
+> ---
+>  drivers/irqchip/irq-crossbar.c |   15 ++++++++++++---
+>  1 file changed, 12 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/irqchip/irq-crossbar.c b/drivers/irqchip/irq-crossbar.c
+> index fea3e5d..524e6e9 100644
+> --- a/drivers/irqchip/irq-crossbar.c
+> +++ b/drivers/irqchip/irq-crossbar.c
+> @@ -140,20 +140,26 @@ static const struct irq_domain_ops routable_irq_domain_ops = {
+>  static int __init crossbar_of_init(struct device_node *node,
+>  				   const struct crossbar_data *data)
+>  {
+> -	int i, size, max, reserved = 0, entry, safe_map;
+> +	int i, size, max = 0, reserved = 0, entry, safe_map;
+>  	const __be32 *irqsr;
+>  	const int *irqsk = NULL;
+> +	int ret = -ENOMEM;
+>  
+>  	cb = kzalloc(sizeof(*cb), GFP_KERNEL);
+>  
+>  	if (!cb)
+> -		return -ENOMEM;
+> +		return ret;
+>  
+>  	cb->crossbar_base = of_iomap(node, 0);
+>  	if (!cb->crossbar_base)
+>  		goto err1;
+>  
+>  	of_property_read_u32(node, "ti,max-irqs", &max);
+> +	if (!max) {
+> +		pr_err("missing 'ti,max-irqs' property\n");
+> +		ret = -EINVAL;
+> +		goto err2;
+> +	}
+>  	cb->irq_map = kcalloc(max, sizeof(int), GFP_KERNEL);
+>  	if (!cb->irq_map)
+>  		goto err2;
+> @@ -174,6 +180,7 @@ static int __init crossbar_of_init(struct device_node *node,
+>  						   i, &entry);
+>  			if (entry > max) {
+>  				pr_err("Invalid reserved entry\n");
+> +				ret = -EINVAL;
+>  				goto err3;
+>  			}
+>  			cb->irq_map[entry] = IRQ_RESERVED;
+> @@ -198,6 +205,7 @@ static int __init crossbar_of_init(struct device_node *node,
+>  		break;
+>  	default:
+>  		pr_err("Invalid reg-size property\n");
+> +		ret = -EINVAL;
+>  		goto err4;
+>  		break;
+>  	}
+> @@ -225,6 +233,7 @@ static int __init crossbar_of_init(struct device_node *node,
+>  
+>  			if (entry > max) {
+>  				pr_err("Invalid skip entry\n");
+> +				ret = -EINVAL;
+>  				goto err4;
+>  			}
+>  			cb->irq_map[entry] = IRQ_SKIP;
+> @@ -250,7 +259,7 @@ err2:
+>  	iounmap(cb->crossbar_base);
+>  err1:
+>  	kfree(cb);
+> -	return -ENOMEM;
+> +	return ret;
+>  }
 
-I have just tried this, against Linus master
-64b2d1fbbfda07765dae3f601862796a61b2c451.
-Added patch "ARM: dts: Initial ODROID U2 support" and booted on
-ODROID-U2. I believe this board has the security enabled.
+So, where is the change to the successful initialization?  Shouldn't it
+now set ret = 0?
 
-Unfortunately, it hangs during early boot. With earlyprintk the last
-messages seen are:
+This whole function seems to be a hodge-podge of different error
+handling styles, which led to the memory leak fixed earlier in this
+series.
 
-L2C: platform modifies aux control register: 0x02070000 -> 0x3e470001
-L2C: platform provided aux values permit register corruption.
-L2C: DT/platform modifies aux control register: 0x02070000 -> 0x3e470001
-L2C-310 enabling early BRESP for Cortex-A9
-L2C-310: enabling full line of zeros but not enabled in Cortex-A9
-L2C-310 ID prefetch enabled, offset 1 lines
-L2C-310 dynamic clock gating enabled, standby mode enabled
-L2C-310 cache controller enabled, 16 ways, 1024 kB
-L2C-310: CACHE_ID 0x4100c4c8, AUX_CTRL 0x7e470001
+Please go over this function, choose sane labels, and consolidate _all_
+returns to the end of the function.
 
-I then tried to go back to the earlier patch "ARM: EXYNOS: Add secure
-firmware support for l2x0 init" (attached, needed a rebase) but that
-one also now hangs at:
+thx,
 
-L2C: platform modifies aux control register: 0x02070000 -> 0x3e470001
-
-It did work on 3.14 though. Looking at the changelogs, many changes
-have been made to l2x0 recently. Can you confirm that you have tested
-your patches against a kernel with all of Russell King's recent
-changes?
-
-Thanks
-Daniel
-
---089e010d870c50d6f304fba3ae9b
-Content-Type: text/plain; charset=US-ASCII; 
-	name="0001-ARM-EXYNOS-Add-secure-firmware-support-for-l2x0-init.txt"
-Content-Disposition: attachment; 
-	filename="0001-ARM-EXYNOS-Add-secure-firmware-support-for-l2x0-init.txt"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hwc42yce0
-
-RnJvbSAyZTY3MjMxZjEwZWQwYjA1YzJiYWNmZGQwNTc3NGZlMjEzMTVkNmRhIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBHdTEgPGd1MUBhZXJveHRlYW0uZnI+CkRhdGU6IE1vbiwgMjEg
-SmFuIDIwMTMgMDQ6MTM6NTYgKzAxMDAKU3ViamVjdDogW1BBVENIXSBBUk06IEVYWU5PUzogQWRk
-IHNlY3VyZSBmaXJtd2FyZSBzdXBwb3J0IGZvciBsMngwIGluaXQKCkNvbmZsaWN0czoKCWFyY2gv
-YXJtL21tL2NhY2hlLWwyeDAuYwotLS0KIGFyY2gvYXJtL21hY2gtZXh5bm9zL2Zpcm13YXJlLmMg
-fCAxOSArKysrKysrKysrKysrKysrKysrCiBhcmNoL2FybS9tbS9jYWNoZS1sMngwLmMgICAgICAg
-IHwgIDMgKysrCiAyIGZpbGVzIGNoYW5nZWQsIDIyIGluc2VydGlvbnMoKykKCmRpZmYgLS1naXQg
-YS9hcmNoL2FybS9tYWNoLWV4eW5vcy9maXJtd2FyZS5jIGIvYXJjaC9hcm0vbWFjaC1leHlub3Mv
-ZmlybXdhcmUuYwppbmRleCBlYjkxZDIzLi5jMjAwZjc3IDEwMDY0NAotLS0gYS9hcmNoL2FybS9t
-YWNoLWV4eW5vcy9maXJtd2FyZS5jCisrKyBiL2FyY2gvYXJtL21hY2gtZXh5bm9zL2Zpcm13YXJl
-LmMKQEAgLTE2LDYgKzE2LDcgQEAKIAogI2luY2x1ZGUgPGFzbS9maXJtd2FyZS5oPgogCisjaW5j
-bHVkZSA8YXNtL2hhcmR3YXJlL2NhY2hlLWwyeDAuaD4KICNpbmNsdWRlIDxtYWNoL21hcC5oPgog
-CiAjaW5jbHVkZSAiY29tbW9uLmgiCkBAIC02NCwxMCArNjUsMjggQEAgc3RhdGljIGludCBleHlu
-b3Nfc2V0X2NwdV9ib290X2FkZHIoaW50IGNwdSwgdW5zaWduZWQgbG9uZyBib290X2FkZHIpCiAJ
-cmV0dXJuIDA7CiB9CiAKK2V4dGVybiBzdHJ1Y3QgbDJ4MF9yZWdzIGwyeDBfc2F2ZWRfcmVnczsK
-KyNkZWZpbmUgTDJfQVVYX1ZBTCAweDdDNDcwMDAxCisjZGVmaW5lIEwyX0FVWF9NQVNLIDB4QzIw
-MGZmZmYKKworc3RhdGljIGludCBleHlub3NfbDJ4MF9pbml0KHZvaWQpCit7CisJZXh5bm9zX3Nt
-YyhTTUNfQ01EX0wyWDBTRVRVUDEsIGwyeDBfc2F2ZWRfcmVncy50YWdfbGF0ZW5jeSwKKwkJCWwy
-eDBfc2F2ZWRfcmVncy5kYXRhX2xhdGVuY3ksCisJCQlsMngwX3NhdmVkX3JlZ3MucHJlZmV0Y2hf
-Y3RybCk7CisJZXh5bm9zX3NtYyhTTUNfQ01EX0wyWDBTRVRVUDIsIGwyeDBfc2F2ZWRfcmVncy5w
-d3JfY3RybCwKKwkJCUwyX0FVWF9WQUwsIEwyX0FVWF9NQVNLKTsKKwlleHlub3Nfc21jKFNNQ19D
-TURfTDJYMElOVkFMTCwgMCwgMCwgMCk7CisJZXh5bm9zX3NtYyhTTUNfQ01EX0wyWDBDVFJMLCAx
-LCAwLCAwKTsKKwlyZXR1cm4gMDsKK30KKworCiBzdGF0aWMgY29uc3Qgc3RydWN0IGZpcm13YXJl
-X29wcyBleHlub3NfZmlybXdhcmVfb3BzID0gewogCS5kb19pZGxlCQk9IGV4eW5vc19kb19pZGxl
-LAogCS5zZXRfY3B1X2Jvb3RfYWRkcgk9IGV4eW5vc19zZXRfY3B1X2Jvb3RfYWRkciwKIAkuY3B1
-X2Jvb3QJCT0gZXh5bm9zX2NwdV9ib290LAorCS5sMngwX2luaXQJCT0gZXh5bm9zX2wyeDBfaW5p
-dCwKIH07CiAKIHZvaWQgX19pbml0IGV4eW5vc19maXJtd2FyZV9pbml0KHZvaWQpCmRpZmYgLS1n
-aXQgYS9hcmNoL2FybS9tbS9jYWNoZS1sMngwLmMgYi9hcmNoL2FybS9tbS9jYWNoZS1sMngwLmMK
-aW5kZXggZWZjNWNhYi4uNzM2N2JlZiAxMDA2NDQKLS0tIGEvYXJjaC9hcm0vbW0vY2FjaGUtbDJ4
-MC5jCisrKyBiL2FyY2gvYXJtL21tL2NhY2hlLWwyeDAuYwpAQCAtMjksNiArMjksNyBAQAogI2lu
-Y2x1ZGUgPGFzbS9jcDE1Lmg+CiAjaW5jbHVkZSA8YXNtL2NwdXR5cGUuaD4KICNpbmNsdWRlIDxh
-c20vaGFyZHdhcmUvY2FjaGUtbDJ4MC5oPgorI2luY2x1ZGUgPGFzbS9maXJtd2FyZS5oPgogI2lu
-Y2x1ZGUgImNhY2hlLXRhdXJvczMuaCIKICNpbmNsdWRlICJjYWNoZS1hdXJvcmEtbDIuaCIKIApA
-QCAtMTUwNCw2ICsxNTA1LDggQEAgaW50IF9faW5pdCBsMngwX29mX2luaXQodTMyIGF1eF92YWws
-IHUzMiBhdXhfbWFzaykKIAkJaWYgKGRhdGEtPm9mX3BhcnNlKQogCQkJZGF0YS0+b2ZfcGFyc2Uo
-bnAsICZhdXhfdmFsLCAmYXV4X21hc2spOwogCisJY2FsbF9maXJtd2FyZV9vcChsMngwX2luaXQp
-OworCiAJaWYgKGNhY2hlX2lkX3BhcnRfbnVtYmVyX2Zyb21fZHQpCiAJCWNhY2hlX2lkID0gY2Fj
-aGVfaWRfcGFydF9udW1iZXJfZnJvbV9kdDsKIAllbHNlCi0tIAoxLjkuMQoK
---089e010d870c50d6f304fba3ae9b--
+Jason.
