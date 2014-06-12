@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752171AbaFLStm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 14:49:42 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:57315 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751624AbaFLStj (ORCPT
+	id S1752202AbaFLSty (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 14:49:54 -0400
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:1057 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750716AbaFLStw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 14:49:39 -0400
+	Thu, 12 Jun 2014 14:49:52 -0400
+X-IronPort-AV: E=Sophos;i="5.01,466,1400050800"; 
+   d="scan'208";a="33888273"
+From: Markus Mayer <markus.mayer@linaro.org>
+To: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>
+CC: Tim Kryger <tim.kryger@gmail.com>,
+        Mike Looijmans <mike.looijmans@topic.nl>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        "Linux MMC List" <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3 2/3] mmc: sdhci: Use existing mmc pointer calling mmc_regulator_set_ocr()
+Date: Thu, 12 Jun 2014 11:48:54 -0700
+Message-ID: <1402598935-3701-3-git-send-email-markus.mayer@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1402598935-3701-1-git-send-email-markus.mayer@linaro.org>
+References: <1402598935-3701-1-git-send-email-markus.mayer@linaro.org>
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <20140612180501.GB15795@redhat.com>
-References: <1398682853-7541-1-git-send-email-khandual@linux.vnet.ibm.com>
- <53625681.8010905@redhat.com> <53670F35.6010502@linux.vnet.ibm.com>
- <53725FF6.6060004@redhat.com> <537316DB.4060701@linux.vnet.ibm.com>
- <53734B7D.4010504@redhat.com> <53996A20.3030300@linux.vnet.ibm.com> <20140612180501.GB15795@redhat.com>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Thu, 12 Jun 2014 20:49:18 +0200
-Message-ID: <CAKgNAkjj=LnYSLrpteTjv+EcxVDQgObDkxCMgH-z4TQWZ=N3SQ@mail.gmail.com>
-Subject: Re: [PATCH v2] ptrace: Clarify PTRACE_GETREGSET/PTRACE_SETREGSET,
- documentation in uapi header
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Anshuman Khandual <khandual@linux.vnet.ibm.com>,
-        Pedro Alves <palves@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        suresh.b.siddha@intel.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 12, 2014 at 8:05 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 06/12, Anshuman Khandual wrote:
->>
->> > --- a/include/uapi/linux/ptrace.h
->> > +++ b/include/uapi/linux/ptrace.h
->> > @@ -39,12 +39,17 @@
->> >   * payload are exactly the same layout.
->> >   *
->> >   * This interface usage is as follows:
->> > - * struct iovec iov = { buf, len};
->> > + * struct iovec iov = { buf, len };
->> >   *
->> >   * ret = ptrace(PTRACE_GETREGSET/PTRACE_SETREGSET, pid, NT_XXX_TYPE, &iov);
->> >   *
->> > - * On the successful completion, iov.len will be updated by the kernel,
->> > - * specifying how much the kernel has written/read to/from the user's iov.buf.
->> > + * On entry, iov describes the buffer's address and length.  The buffer's length
->> > + * must be a multiple of the size of a single register in the register set.  The
->> > + * kernel never reads or writes more than iov.len, and caps the buffer length to
->> > + * the register set's size.  In other words, the kernel reads or writes
->> > + * min(iov.len, regset size).
->
-> I think this should be self-obvious ;) otherwise why do we need to pass
-> the length of the buffer?
->
-> But of course I won't argue with the additional documentation, perhaps you
-> can re-send this patch to akpm? Usually ptrace changes are routed via -mm
-> tree.
->
-> But if we update the kernel header, then probably it would be more important
-> to update the man-page. To me the description of GETREGSET looks good, but
-> probably it could also mention that buflen should be multiple of regsize (as
-> you did above). Add Michael.
+Use the existing "mmc" pointer rather than host->mmc as first argument
+to mmc_regulator_set_ocr().
 
-Can someone send a patch, then?
+Signed-off-by: Markus Mayer <markus.mayer@linaro.org>
+Reviewed-by: Matt Porter <mporter@linaro.org>
+---
+ drivers/mmc/host/sdhci.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Cheers,
-
-Michael
-
+diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+index ee524b0..f15720e 100644
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -1287,7 +1287,7 @@ static void sdhci_set_power(struct sdhci_host *host, unsigned char mode,
+ 
+ 	if (!IS_ERR(mmc->supply.vmmc)) {
+ 		spin_unlock_irq(&host->lock);
+-		mmc_regulator_set_ocr(host->mmc, mmc->supply.vmmc, vdd);
++		mmc_regulator_set_ocr(mmc, mmc->supply.vmmc, vdd);
+ 		spin_lock_irq(&host->lock);
+ 	}
+ }
+@@ -1449,7 +1449,7 @@ static void sdhci_do_set_ios(struct sdhci_host *host, struct mmc_ios *ios)
+ 		spin_unlock_irqrestore(&host->lock, flags);
+ 		if (!IS_ERR(mmc->supply.vmmc) &&
+ 		    ios->power_mode == MMC_POWER_OFF)
+-			mmc_regulator_set_ocr(host->mmc, mmc->supply.vmmc, 0);
++			mmc_regulator_set_ocr(mmc, mmc->supply.vmmc, 0);
+ 		return;
+ 	}
+ 
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+1.9.1
+
