@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756215AbaFLQ6K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 12:58:10 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:35315 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753017AbaFLQ6J (ORCPT
+	id S1756278AbaFLQ64 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 12:58:56 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:46115 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753164AbaFLQ6y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 12:58:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140612165530.GA14019@kroah.com>
-References: <1402569495-11308-1-git-send-email-pramod.gurav.etc@gmail.com>
-	<20140612165530.GA14019@kroah.com>
-Date: Thu, 12 Jun 2014 22:28:07 +0530
-Message-ID: <CAMf-jSmPquMo2woLtRn5JO6gU6p-G-O+o8NSsFWHaTRrHMCvHQ@mail.gmail.com>
-Subject: Re: [PATCH] staging: alarm-dev: Support to Compile as Module
-From: pramod gurav <pramod.gurav.etc@gmail.com>
-To: Greg Kroah-Hartman <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org, Brian Swetland <swetland@google.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 12 Jun 2014 12:58:54 -0400
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: devicetree@vger.kernel.org, mporter@linaro.org, patches@linaro.org,
+        bjorn@kryo.se, ashwin.chaugule@linaro.org, gregkh@linuxfoundation.org,
+        s-anna@ti.com, loic.pallardy@st.com, lftan.linux@gmail.com,
+        slapdau@yahoo.com.au, courtney.cavin@sonymobile.com,
+        pawel.moll@arm.com, robh+dt@kernel.org, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, arnd@arndb.de, joshc@codeaurora.org,
+        linus.walleij@linaro.org, galak@codeaurora.org, ks.giri@samsung.com
+Subject: [PATCHv7 0/5] Common Mailbox Framework
+Date: Thu, 12 Jun 2014 22:28:37 +0530
+Message-Id: <1402592317-7043-1-git-send-email-jaswinder.singh@linaro.org>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 12, 2014 at 10:25 PM, Greg Kroah-Hartman <greg@kroah.com> wrote:
-> On Thu, Jun 12, 2014 at 04:08:15PM +0530, pramod.gurav.etc@gmail.com wrote:
->> From: Pramod Gurav <pramod.gurav.etc@gmail.com>
->>
->> Currently this alarm-dev can be compiles only as built in
->> driver. This adds support to compile it as module as well.
->> This has dependancy on:
->> https://lkml.org/lkml/2014/6/12/180
->>
->> which exports symbol of alarmtimer function.
->>
->> CC: Greg Kroah-Hartman <greg@kroah.com>
->> CC: Brian Swetland <swetland@google.com>
->> Signed-off-by: Pramod Gurav <pramod.gurav.etc@gmail.com>
->> ---
->>  drivers/staging/android/Kconfig |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/staging/android/Kconfig b/drivers/staging/android/Kconfig
->> index 99e484f..c359317 100644
->> --- a/drivers/staging/android/Kconfig
->> +++ b/drivers/staging/android/Kconfig
->> @@ -76,7 +76,7 @@ config ANDROID_LOW_MEMORY_KILLER
->>         Registers processes to be killed when memory is low
->>
->>  config ANDROID_INTF_ALARM_DEV
->> -     bool "Android alarm driver"
->> +     tristate "Android alarm driver"
->>       depends on RTC_CLASS
->>       default n
->>       ---help---
->
-> Please resend the first patch (it's not a "trivial one") as part of this
-> patch series.
->
-Sure, Greg. will resend it.
-> And do you ever really want this code as a module?  What will auto-load
-> it if needed?
->
+Hello,
+  Here is the next revision of Mailbox framwork.
 
-The TODO of staging/android/ says 'make sure they all build well as
-modules'. So thought of build testing it. It failed and tried to fix
-it.
-> thanks,
->
-> greg k-h
+Changes since v6:
+ o Separate out generic DT bindings patch.
+ o Discard unnecessary aligned attributes.
 
+Changes since v5:
+ o Use standard error types instead of special type mbox_result.
+ o Constify client struct in request_channel
+ o Use reinit_completion instead of init_completion every time.
+ o Improve commentary in bindings and code.
 
+Changes since v4:
+ o Common DT binding for Controller and Client drivers
+    As a result, discard string based channel matching
+ o Provide for an atomic 'peek' api, that a client could
+    call to trigger the controller driver push data upwards.
+ o OMAP and Highbank conversion to new api is left out, which
+    can be converted later by the developers.
 
--- 
-Thanks and Regards
-Pramod
+Changes since v3:
+ o Change name of symbols from ipc to mbox
+ o Return real types instead of void *
+ o Align structures
+ o Change some symbol names
+	rxcb -> rx_callback
+	txcb -> tx_done
+ o Added kernel-doc for exported API
+ o Dropped the cl_id and use clients pointer for callbacks.
+ o Fixed locking of channel pool
+ o Return negative error code for unsuccessful ipc_send_message()
+ o Module referencing during mailbox assignment to a client.
+ o Made error code symbols specific to mailbox.
+
+Thanks
+Jassi
