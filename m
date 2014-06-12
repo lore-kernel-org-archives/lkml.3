@@ -1,46 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933224AbaFLKcv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 06:32:51 -0400
-Received: from mail.kernel.org ([198.145.19.201]:41241 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933111AbaFLKcp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 06:32:45 -0400
-Date: Thu, 12 Jun 2014 12:32:38 +0200
-From: Robert Richter <rric@kernel.org>
-To: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-Cc: rjw@rjwysocki.net, lenb@kernel.org, tony.luck@intel.com, bp@alien8.de,
-        m.chehab@samsung.com, bp@suse.de, linux-edac@vger.kernel.org,
-        x86@kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org
-Subject: Re: [PATCH v2 2/5] acpi, apei, ghes: Introduce ACPI_APEI_NMI to make
- NMI error notification a GHES feature.
-Message-ID: <20140612103238.GB22583@rric.localhost>
-References: <1401262770-25343-1-git-send-email-tomasz.nowicki@linaro.org>
- <1401262770-25343-3-git-send-email-tomasz.nowicki@linaro.org>
+	id S933162AbaFLKcr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 06:32:47 -0400
+Received: from us01smtprelay-2.synopsys.com ([198.182.44.111]:44019 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933102AbaFLKcm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 06:32:42 -0400
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Paul Bolle <pebolle@tiscali.nl>
+CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-serial@vger.kernel.org>, <Francois.Bedard@synopsys.com>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Subject: [PATCH 3/9] serial/arc: Remove the workaround for legacy ISS
+Date: Thu, 12 Jun 2014 16:01:33 +0530
+Message-ID: <1402569099-9900-4-git-send-email-vgupta@synopsys.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1402569099-9900-1-git-send-email-vgupta@synopsys.com>
+References: <1402569099-9900-1-git-send-email-vgupta@synopsys.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1401262770-25343-3-git-send-email-tomasz.nowicki@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-Originating-IP: [10.12.196.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28.05.14 09:39:27, Tomasz Nowicki wrote:
-> +config ACPI_APEI_NMI
-> +	bool "NMI error notification support"
-> +	default y
-> +	depends on ACPI_APEI_GHES && X86
-> +	help
-> +	  Firmware first mode can use NMI notification mechanism to report errors
-> +	  to operating system. This feature is currently supported by X86
-> +	  architecture only.
-> +
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+---
+ drivers/tty/serial/arc_uart.c | 14 --------------
+ 1 file changed, 14 deletions(-)
 
-This selection is not necessary. I don't see why one should select
-this at all. It's either there for an arch or not. Just use ARCH_HAS_
-style and and hard select ARCH_HAS_ACPI_APEI_NMI for x86. There is no
-need for the ACPI_APEI_GHES dependency then.
+diff --git a/drivers/tty/serial/arc_uart.c b/drivers/tty/serial/arc_uart.c
+index 4d971281e3d9..a6da10f84293 100644
+--- a/drivers/tty/serial/arc_uart.c
++++ b/drivers/tty/serial/arc_uart.c
+@@ -102,7 +102,6 @@
+ struct arc_uart_port {
+ 	struct uart_port port;
+ 	unsigned long baud;
+-	int is_emulated;	/* H/w vs. Instruction Set Simulator */
+ };
+ 
+ #define to_arc_port(uport)  container_of(uport, struct arc_uart_port, port)
+@@ -387,17 +386,6 @@ arc_serial_set_termios(struct uart_port *port, struct ktermios *new,
+ 	uartl = hw_val & 0xFF;
+ 	uarth = (hw_val >> 8) & 0xFF;
+ 
+-	/*
+-	 * UART ISS(Instruction Set simulator) emulation has a subtle bug:
+-	 * A existing value of Baudh = 0 is used as a indication to startup
+-	 * it's internal state machine.
+-	 * Thus if baudh is set to 0, 2 times, it chokes.
+-	 * This happens with BAUD=115200 and the formaula above
+-	 * Until that is fixed, when running on ISS, we will set baudh to !0
+-	 */
+-	if (uart->is_emulated)
+-		uarth = 1;
+-
+ 	spin_lock_irqsave(&port->lock, flags);
+ 
+ 	UART_ALL_IRQ_DISABLE(port);
+@@ -520,8 +508,6 @@ arc_uart_init_one(struct platform_device *pdev, int dev_id)
+ 	if (!plat_data)
+ 		return -ENODEV;
+ 
+-	uart->is_emulated = !!plat_data[0];	/* workaround ISS bug */
+-
+ 	if (is_early_platform_device(pdev)) {
+ 		port->uartclk = plat_data[1];
+ 		uart->baud = plat_data[2];
+-- 
+1.8.3.2
 
--Robert
