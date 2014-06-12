@@ -1,59 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756336AbaFLR02 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 13:26:28 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:39982 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753116AbaFLR01 (ORCPT
+	id S1756453AbaFLR1M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 13:27:12 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:52726 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756050AbaFLR1L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 13:26:27 -0400
-Date: Thu, 12 Jun 2014 10:26:20 -0700
-From: josh@joshtriplett.org
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] Documentation: exceptions to what I maintain
-Message-ID: <20140612172620.GA21930@cloud>
-References: <5399DF99.2010701@infradead.org>
+	Thu, 12 Jun 2014 13:27:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5399DF99.2010701@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CALCETrWMBAxz9yn4MMugjZGC_Dsi2p855+e99Qhr0Ab+OaGRXw@mail.gmail.com>
+References: <CAKx2Y1kBy-mrxm+1u88XVL2Z7gYKQe5U-EG2SBTzNCRAs_UVVw@mail.gmail.com>
+ <CALCETrWMBAxz9yn4MMugjZGC_Dsi2p855+e99Qhr0Ab+OaGRXw@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 12 Jun 2014 10:26:50 -0700
+Message-ID: <CALCETrV0zm_9a_jNxaw_=Ai1dozeqgFJYRh5xAmq_Qa7ErT-RQ@mail.gmail.com>
+Subject: Re: Segmentation fault on all golang executables
+To: Kui Zhang <kuizhang@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 12, 2014 at 10:12:57AM -0700, Randy Dunlap wrote:
-> From: Randy Dunlap <rdunlap@infradead.org>
-> 
-> Note that I don't maintain Documentation/ABI/,
-> Documentation/devicetree/, or the language translation files.
-> 
-> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+On Thu, Jun 12, 2014 at 10:20 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Thu, Jun 12, 2014 at 9:59 AM, Kui Zhang <kuizhang@gmail.com> wrote:
+>> Hello,
+>>
+>> This commit seem to cause Segmentation fault on any of my golang executables.
 
-One comment below.
+Can you send me a golang executable that doesn't work.  I just build
+the "hello world" example and it works fine -- my copy seems to be
+getting lucky and reading zeros in the uninitialized memory :-/
 
->  MAINTAINERS |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> --- lnx-315-rc5.orig/MAINTAINERS
-> +++ lnx-315-rc5/MAINTAINERS
-> @@ -2885,7 +2885,7 @@ M:	Randy Dunlap <rdunlap@infradead.org>
->  L:	linux-doc@vger.kernel.org
->  T:	quilt http://www.infradead.org/~rdunlap/Doc/patches/
->  S:	Maintained
-> -F:	Documentation/
-> +F:	Documentation/ (but not: ABI, devicetree, translations)
-
-Could we make this machine-readable, and teach scripts/get_maintainer.pl
-to understand it?  Two possible syntaxes:
-
-F: Documentation/
-F: !Documentation/ABI/
-...
-
-or:
-
-F: Documentation/ (not Documentation/ABI ...)
+--Andy
