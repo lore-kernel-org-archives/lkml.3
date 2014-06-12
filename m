@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756108AbaFLPMs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 11:12:48 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:55787 "EHLO
+	id S1756146AbaFLPMw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 11:12:52 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:56613 "EHLO
 	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752919AbaFLPMp (ORCPT
+	with ESMTP id S1752959AbaFLPMp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 12 Jun 2014 11:12:45 -0400
 From: Alban Bedel <alban.bedel@avionic-design.de>
@@ -18,80 +18,229 @@ Cc: Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
         linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         Alban Bedel <alban.bedel@avionic-design.de>
-Subject: [PATCH 2/2] ARM: tegra: tamonten: add the display to the Medcom Wide
-Date: Thu, 12 Jun 2014 17:11:25 +0200
-Message-Id: <1402585885-28247-2-git-send-email-alban.bedel@avionic-design.de>
+Subject: [PATCH 1/2] ARM: tegra: tamonten: add the base board regulators
+Date: Thu, 12 Jun 2014 17:11:24 +0200
+Message-Id: <1402585885-28247-1-git-send-email-alban.bedel@avionic-design.de>
 X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1402585885-28247-1-git-send-email-alban.bedel@avionic-design.de>
-References: <1402585885-28247-1-git-send-email-alban.bedel@avionic-design.de>
-X-Provags-ID: V02:K0:T4t+vnDvpQNXq27R5+4lOSQXo8Ti4hNgEuvknDWZHJx
- hFlNRJxD68xzX+BxUK5VG1/oH76JK+4NC+7EjLb+ciTC71+Zvc
- 42BHcQ+whmo2BctvHv0I5WvFJeCSxN8mpauAIFHsteu7QNXp1h
- EspoeGmBaHjhJTxlQLhFC3B/wLDHFMbYvQ1iX1SzDCPfPWz7/a
- 5hTDmqB3wHxdtuOUJ7+gXjZXkZ7+lSpuSeGA9r7J+khntlBDUF
- l0TcFwLHhcIrDVWAbBtSCRtOL8Z20HMS9kSa4kRSWDRlI7IgLp
- aM7muDfNQocCt1uIDZscwwZivKf4/Mgnoiw/0uMOh2C0qmQzZk
- 2TXc/32O5tKPnrT1Jl//c/zuhiRzX9DC6JHxVeH5qLpNstydF/
- 8B9+3xhprQBNQpBOFWEFffy8roYylllqa3bGkqKCx3lQ4hgd/x
- xdp1b
+X-Provags-ID: V02:K0:GVBsLNzKgR9O5zeQDpN2vqZBb4DHG3CMho6mmR/sDvv
+ zJ6t6gxQokTCAzQpyzs5qjSyaBAQTuf6ClC+2M8BxVBy2jTikH
+ tb7yfdbyCPTHSzGq1aa0LGggzotQ7xiHLxQaLZAITzX2Hzgtlw
+ rgPPMEyCzDQMo1/Ki+X12SeRuFrCRdjqziyCUkIBOwv5NqA2qr
+ H5iCYp8/sIbn9cBbwyxh20x5iCUPsK9PCXTCV6AnWbvNAPvrJ4
+ X8r0Aqtr5OESdeE+r/V7xiGhE5EC/WSg17xFQBwj5umMopk8Uk
+ RjdvEh8emaQH/M+8kURJsVSqK5opAc6Zzn3aO3BEVgOUGZ7PRt
+ BjKwmg2Mf42ZZagId0DxQXJOf5lF3PmeJkm/B3YdP8GWr97kSn
+ W4MsBxMsPpvHDKUaOLjgPblvAGytl7yjdHAdBcPAX/nBVw208n
+ Imsm1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable the RGB output and add the panel definition to the Medcom Wide
-DTS. Also add a label to the backlight defintion to reference it in
-the panel definition.
+Currently the Tamonten DTS define a fixed regulator for the 5V supply.
+However this regulator is in fact on the base board. Fix this by
+properly defining the regulators found on the base boards.
 
 Signed-off-by: Alban Bedel <alban.bedel@avionic-design.de>
 ---
- arch/arm/boot/dts/tegra20-medcom-wide.dts | 20 +++++++++++++++++++-
- 1 file changed, 19 insertions(+), 1 deletion(-)
+ arch/arm/boot/dts/tegra20-medcom-wide.dts | 46 +++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/tegra20-plutux.dts      | 46 +++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/tegra20-tamonten.dtsi   | 10 +------
+ arch/arm/boot/dts/tegra20-tec.dts         | 46 +++++++++++++++++++++++++++++++
+ 4 files changed, 139 insertions(+), 9 deletions(-)
 
 diff --git a/arch/arm/boot/dts/tegra20-medcom-wide.dts b/arch/arm/boot/dts/tegra20-medcom-wide.dts
-index 0cd05f7..97a9101 100644
+index 6d3a4cb..0cd05f7 100644
 --- a/arch/arm/boot/dts/tegra20-medcom-wide.dts
 +++ b/arch/arm/boot/dts/tegra20-medcom-wide.dts
-@@ -10,6 +10,15 @@
- 		status = "okay";
+@@ -64,4 +64,50 @@
+ 			 <&tegra_car TEGRA20_CLK_CDEV1>;
+ 		clock-names = "pll_a", "pll_a_out0", "mclk";
  	};
- 
-+	host1x@50000000 {
-+		dc@54200000 {
-+			rgb {
-+				status = "okay";
-+				nvidia,panel = <&panel>;
-+			};
++
++	board_regulators {
++		compatible = "simple-bus";
++
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		vcc_24v_reg: regulator@0 {
++			compatible = "regulator-fixed";
++			reg = <0>;
++			regulator-name = "vcc_24v";
++			regulator-min-microvolt = <24000000>;
++			regulator-max-microvolt = <24000000>;
++			regulator-always-on;
++		};
++
++		vdd_5v0_reg: regulator@1 {
++			compatible = "regulator-fixed";
++			reg = <1>;
++			regulator-name = "vdd_5v0";
++			vin-supply = <&vcc_24v_reg>;
++			regulator-min-microvolt = <5000000>;
++			regulator-max-microvolt = <5000000>;
++			regulator-always-on;
++		};
++
++		vdd_3v3_reg: regulator@2 {
++			compatible = "regulator-fixed";
++			reg = <2>;
++			regulator-name = "vdd_3v3";
++			vin-supply = <&vcc_24v_reg>;
++			regulator-min-microvolt = <3300000>;
++			regulator-max-microvolt = <3300000>;
++			regulator-always-on;
++		};
++
++		vdd_1v8_reg: regulator@3 {
++			compatible = "regulator-fixed";
++			reg = <3>;
++			regulator-name = "vdd_1v8";
++			vin-supply = <&vdd_3v3_reg>;
++			regulator-min-microvolt = <1800000>;
++			regulator-max-microvolt = <1800000>;
++			regulator-always-on;
 +		};
 +	};
-+
- 	i2c@7000c000 {
- 		wm8903: wm8903@1a {
- 			compatible = "wlf,wm8903";
-@@ -30,7 +39,7 @@
- 		};
+ };
+diff --git a/arch/arm/boot/dts/tegra20-plutux.dts b/arch/arm/boot/dts/tegra20-plutux.dts
+index 29051a2..a1b0e86 100644
+--- a/arch/arm/boot/dts/tegra20-plutux.dts
++++ b/arch/arm/boot/dts/tegra20-plutux.dts
+@@ -58,4 +58,50 @@
+ 			 <&tegra_car TEGRA20_CLK_CDEV1>;
+ 		clock-names = "pll_a", "pll_a_out0", "mclk";
  	};
- 
--	backlight {
-+	backlight: backlight {
- 		compatible = "pwm-backlight";
- 		pwms = <&pwm 0 5000000>;
- 
-@@ -38,6 +47,15 @@
- 		default-brightness-level = <6>;
- 	};
- 
-+	panel: panel {
-+		compatible = "innolux,n156bge-l21", "simple-panel";
 +
-+		power-supply =  <&vdd_1v8_reg>, <&vdd_3v3_reg>;
-+		enable-gpios = <&gpio TEGRA_GPIO(B, 2) GPIO_ACTIVE_HIGH>;
++	board_regulators {
++		compatible = "simple-bus";
 +
-+		backlight = <&backlight>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		vcc_24v_reg: regulator@0 {
++			compatible = "regulator-fixed";
++			reg = <0>;
++			regulator-name = "vcc_24v";
++			regulator-min-microvolt = <24000000>;
++			regulator-max-microvolt = <24000000>;
++			regulator-always-on;
++		};
++
++		vdd_5v0_reg: regulator@1 {
++			compatible = "regulator-fixed";
++			reg = <1>;
++			regulator-name = "vdd_5v0";
++			vin-supply = <&vcc_24v_reg>;
++			regulator-min-microvolt = <5000000>;
++			regulator-max-microvolt = <5000000>;
++			regulator-always-on;
++		};
++
++		vdd_3v3_reg: regulator@2 {
++			compatible = "regulator-fixed";
++			reg = <2>;
++			regulator-name = "vdd_3v3";
++			vin-supply = <&vcc_24v_reg>;
++			regulator-min-microvolt = <3300000>;
++			regulator-max-microvolt = <3300000>;
++			regulator-always-on;
++		};
++
++		vdd_1v8_reg: regulator@3 {
++			compatible = "regulator-fixed";
++			reg = <3>;
++			regulator-name = "vdd_1v8";
++			vin-supply = <&vdd_3v3_reg>;
++			regulator-min-microvolt = <1800000>;
++			regulator-max-microvolt = <1800000>;
++			regulator-always-on;
++		};
 +	};
+ };
+diff --git a/arch/arm/boot/dts/tegra20-tamonten.dtsi b/arch/arm/boot/dts/tegra20-tamonten.dtsi
+index a1b0d96..9c83185 100644
+--- a/arch/arm/boot/dts/tegra20-tamonten.dtsi
++++ b/arch/arm/boot/dts/tegra20-tamonten.dtsi
+@@ -334,6 +334,7 @@
+ 			#gpio-cells = <2>;
+ 			gpio-controller;
+ 
++			/* vdd_5v0_reg must be provided by the base board */
+ 			sys-supply = <&vdd_5v0_reg>;
+ 			vin-sm0-supply = <&sys_reg>;
+ 			vin-sm1-supply = <&sys_reg>;
+@@ -511,15 +512,6 @@
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+ 
+-		vdd_5v0_reg: regulator@0 {
+-			compatible = "regulator-fixed";
+-			reg = <0>;
+-			regulator-name = "vdd_5v0";
+-			regulator-min-microvolt = <5000000>;
+-			regulator-max-microvolt = <5000000>;
+-			regulator-always-on;
+-		};
+-
+ 		pci_vdd_reg: regulator@1 {
+ 			compatible = "regulator-fixed";
+ 			reg = <1>;
+diff --git a/arch/arm/boot/dts/tegra20-tec.dts b/arch/arm/boot/dts/tegra20-tec.dts
+index 890562c..173201a 100644
+--- a/arch/arm/boot/dts/tegra20-tec.dts
++++ b/arch/arm/boot/dts/tegra20-tec.dts
+@@ -67,4 +67,50 @@
+ 			 <&tegra_car TEGRA20_CLK_CDEV1>;
+ 		clock-names = "pll_a", "pll_a_out0", "mclk";
+ 	};
 +
- 	sound {
- 		compatible = "ad,tegra-audio-wm8903-medcom-wide",
- 			     "nvidia,tegra-audio-wm8903";
++	board_regulators {
++		compatible = "simple-bus";
++
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		vcc_24v_reg: regulator@0 {
++			compatible = "regulator-fixed";
++			reg = <0>;
++			regulator-name = "vcc_24v";
++			regulator-min-microvolt = <24000000>;
++			regulator-max-microvolt = <24000000>;
++			regulator-always-on;
++		};
++
++		vdd_5v0_reg: regulator@1 {
++			compatible = "regulator-fixed";
++			reg = <1>;
++			regulator-name = "vdd_5v0";
++			vin-supply = <&vcc_24v_reg>;
++			regulator-min-microvolt = <5000000>;
++			regulator-max-microvolt = <5000000>;
++			regulator-always-on;
++		};
++
++		vdd_3v3_reg: regulator@2 {
++			compatible = "regulator-fixed";
++			reg = <2>;
++			regulator-name = "vdd_3v3";
++			vin-supply = <&vcc_24v_reg>;
++			regulator-min-microvolt = <3300000>;
++			regulator-max-microvolt = <3300000>;
++			regulator-always-on;
++		};
++
++		vdd_1v8_reg: regulator@3 {
++			compatible = "regulator-fixed";
++			reg = <3>;
++			regulator-name = "vdd_1v8";
++			vin-supply = <&vdd_3v3_reg>;
++			regulator-min-microvolt = <1800000>;
++			regulator-max-microvolt = <1800000>;
++			regulator-always-on;
++		};
++	};
+ };
 -- 
 2.0.0
 
