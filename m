@@ -1,95 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755170AbaFLAgl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 20:36:41 -0400
-Received: from www.linutronix.de ([62.245.132.108]:36230 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752875AbaFLAgj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 20:36:39 -0400
-Date: Thu, 12 Jun 2014 02:36:24 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: John Stultz <john.stultz@linaro.org>
-cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Kentaro Takeda <takedakn@nttdata.co.jp>,
-        linux-security-module@vger.kernel.org
-Subject: Re: [patch 13/13] tomoyo: Use sensible time interface
-In-Reply-To: <CALAqxLVTAsxPkZ052xtMPwkM+yFfPcfrzf71Jok4SYq5VWh-cQ@mail.gmail.com>
-Message-ID: <alpine.DEB.2.10.1406120232050.5170@nanos>
-References: <20140611234024.103571777@linutronix.de> <20140611234607.775273584@linutronix.de> <CALAqxLUtmY3JeHeq_RXz-Sc_jjyJQv=VRUr6bXtAge1+6bEXDA@mail.gmail.com> <alpine.DEB.2.10.1406120216480.5170@nanos>
- <CALAqxLVTAsxPkZ052xtMPwkM+yFfPcfrzf71Jok4SYq5VWh-cQ@mail.gmail.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1754522AbaFLAnB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 20:43:01 -0400
+Received: from ns.horizon.com ([71.41.210.147]:32361 "HELO ns.horizon.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752875AbaFLAnA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 20:43:00 -0400
+Date: 11 Jun 2014 20:42:59 -0400
+Message-ID: <20140612004259.14821.qmail@ns.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux@horizon.com, tytso@mit.edu
+Subject: Re: drivers/char/random.c: more ruminations
+Cc: hpa@linux.intel.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
+        price@mit.edu
+In-Reply-To: <20140611131140.GD23110@thunk.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Jun 2014, John Stultz wrote:
-> On Wed, Jun 11, 2014 at 5:22 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > On Wed, 11 Jun 2014, John Stultz wrote:
-> >
-> >> On Wed, Jun 11, 2014 at 4:59 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> >> > There is no point in calling gettimeofday if only the seconds part of
-> >> > the timespec is used. Use get_seconds() instead. It's not only the
-> >> > proper interface it's also faster.
-> >>
-> >> My only caution here is you only get tick-granular time here. So if
-> >> the second rolled over after the last tick, you'd get the previous
-> >> second when you call get_seconds(). This can cause some surprising
-> >> effects if the get_seconds() return value is mixed with clocksource
-> >> granular gettimeofday() calls.
-> >
-> > If the whole thing only cares about the seconds value, then where is
-> > the problem?
-> >
-> > Even if you call gettimeofday() then you still can observe this
-> >
-> > gettimeofday(ts)
-> >         ts.tv_sec = 99
-> >         ts.tv_nsec = 999999999
-> >
-> > So if you readout the related value ONE nanosecond later, then this
-> > value will have
-> >         ts.tv_sec = 100
-> >         ts.tv_nsec = 0
-> >
-> > So what's the point? The tomoyo code chose to take seconds granular
-> > time stamps for whatever reasons. So it should be able to deal with
-> > that, right?
-> 
-> No, the problem I'm warning about is if they were using gettimeofday()
-> elsewhere in relation to those timestamps, they could see something
-> like:
-> 
-> do_gettimeofday()  { 99, 888....}
-> get_seconds()   { 99 }
-> do_gettimeofday()  { 99, 999....}
-> get_seconds()   { 99 }
-> do_gettimeofday()  { 100, 000....}
-> get_seconds()   { 99 }
-> do_gettimeofday()  { 100, 011....}
-> get_seconds()   { 100 }
-> 
-> This is the same problem people come across occasionally if they call
-> gettimeofday, then create a file and fret that the file's timestamp
-> seems to be before the gettimefoday call, and its all due to comparing
-> timestamps with different granularities.
-> 
-I'm aware of that, but there are only two places in that code which
-deal with time and both are calling do_gettimeofday and both just use
-the tv_sec part of it. And both of them are statistics.
+> It's not something where if the changes required massive changes, that
+> I'd necessarily feel the need to backport them to stable.  It's a
+> certificational weakness, but it's a not disaster.
 
-One part of says clearly:
+Agreed!  It's been there for years, and I'm not too worried.  It takes
+a pretty tight race to cause the problem in the first place.
 
-        * I don't use atomic operations because race condition is not fatal.
+As you note, it only happens with a full pool (already a very secure
+situation), and the magnitude is limited by the size of entropy additions,
+which are normally small.
 
-Thanks,
-
-	tglx
-
-
+I'm just never happy with bugs in security-critical code.  "I don't
+think that bug is exploitable" is almost as ominous a phrase as "Y'all
+watch this!"
