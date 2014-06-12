@@ -1,95 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933007AbaFLJjI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 05:39:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50873 "EHLO mx1.redhat.com"
+	id S933029AbaFLJkb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 05:40:31 -0400
+Received: from mga03.intel.com ([143.182.124.21]:35346 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932740AbaFLJjD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 05:39:03 -0400
-Date: Thu, 12 Jun 2014 12:39:15 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Romain Francoise <romain@orebokech.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, nab@daterainc.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        sfr@canb.auug.org.au, linux-scsi@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PULL] vhost: infrastructure changes for 3.16
-Message-ID: <20140612093915.GD22230@redhat.com>
-References: <20140611134447.GA8208@redhat.com>
- <87mwdiwmbp.fsf@kima.orebokech.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87mwdiwmbp.fsf@kima.orebokech.com>
+	id S932845AbaFLJk3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 05:40:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,464,1400050800"; 
+   d="scan'208";a="444622775"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, Linux API <linux-api@vger.kernel.org>,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>
+In-Reply-To: <CAHO5Pa31WVrtG+2hU1grbLHiEPjkM_eB4JgSStskX8AvDjQRKA@mail.gmail.com>
+References: <1399552888-11024-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1399552888-11024-2-git-send-email-kirill.shutemov@linux.intel.com>
+ <CAHO5Pa31WVrtG+2hU1grbLHiEPjkM_eB4JgSStskX8AvDjQRKA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] mm: mark remap_file_pages() syscall as deprecated
+Content-Transfer-Encoding: 7bit
+Message-Id: <20140612094014.BFEA4E00A2@blue.fi.intel.com>
+Date: Thu, 12 Jun 2014 12:40:14 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 12, 2014 at 10:42:34AM +0200, Romain Francoise wrote:
-> "Michael S. Tsirkin" <mst@redhat.com> writes:
+Michael Kerrisk wrote:
+> Hi Kirill,
 > 
-> > Memory allocation for vhost-net now supports fallback on vmalloc (same
-> > as for vhost-scsi) this makes it possible to create the device on
-> > systems where memory is very fragmented, with slightly lower
-> > performance.
+> On Thu, May 8, 2014 at 2:41 PM, Kirill A. Shutemov
+> <kirill.shutemov@linux.intel.com> wrote:
+> > The remap_file_pages() system call is used to create a nonlinear mapping,
+> > that is, a mapping in which the pages of the file are mapped into a
+> > nonsequential order in memory. The advantage of using remap_file_pages()
+> > over using repeated calls to mmap(2) is that the former approach does not
+> > require the kernel to create additional VMA (Virtual Memory Area) data
+> > structures.
+> >
+> > Supporting of nonlinear mapping requires significant amount of non-trivial
+> > code in kernel virtual memory subsystem including hot paths. Also to get
+> > nonlinear mapping work kernel need a way to distinguish normal page table
+> > entries from entries with file offset (pte_file). Kernel reserves flag in
+> > PTE for this purpose. PTE flags are scarce resource especially on some CPU
+> > architectures. It would be nice to free up the flag for other usage.
+> >
+> > Fortunately, there are not many users of remap_file_pages() in the wild.
+> > It's only known that one enterprise RDBMS implementation uses the syscall
+> > on 32-bit systems to map files bigger than can linearly fit into 32-bit
+> > virtual address space. This use-case is not critical anymore since 64-bit
+> > systems are widely available.
+> >
+> > The plan is to deprecate the syscall and replace it with an emulation.
+> > The emulation will create new VMAs instead of nonlinear mappings. It's
+> > going to work slower for rare users of remap_file_pages() but ABI is
+> > preserved.
+> >
+> > One side effect of emulation (apart from performance) is that user can hit
+> > vm.max_map_count limit more easily due to additional VMAs. See comment for
+> > DEFAULT_MAX_MAP_COUNT for more details on the limit.
 > 
-> Thanks Michael, I'm glad to see that this change made its way into
-> mainline after all! Would you be willing to take the following on top?
+> Best to CC linux-api@
+> (https://www.kernel.org/doc/man-pages/linux-api-ml.html) on patches
+> like this, as well as the man-pages maintainer, so that something goes
+> into the man page. I added the following into the man page:
 > 
+>        Note:  this  system  call  is (since Linux 3.16) deprecated and
+>        will eventually be replaced by a  slower  in-kernel  emulation.
+>        Those  few  applications  that use this system call should con‐
+>        sider migrating to alternatives.
 > 
-> From: Romain Francoise <romain@orebokech.com>
-> Date: Thu, 12 Jun 2014 10:26:40 +0200
-> Subject: [PATCH] vhost-net: don't open-code kvfree
-> 
-> Commit 23cc5a991c ("vhost-net: extend device allocation to vmalloc")
-> added another open-coded version of kvfree (which is available since
-> v3.15-rc5), nuke it.
-> 
-> Signed-off-by: Romain Francoise <romain@orebokech.com>
-> ---
+> Okay?
 
-Absolutely, I'll queue this up, thanks!
+Yep. Looks okay to me.
 
->  drivers/vhost/net.c | 12 ++----------
->  1 file changed, 2 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-> index 971a760..8dae2f7 100644
-> --- a/drivers/vhost/net.c
-> +++ b/drivers/vhost/net.c
-> @@ -700,14 +700,6 @@ static void handle_rx_net(struct vhost_work *work)
->  	handle_rx(net);
->  }
->  
-> -static void vhost_net_free(void *addr)
-> -{
-> -	if (is_vmalloc_addr(addr))
-> -		vfree(addr);
-> -	else
-> -		kfree(addr);
-> -}
-> -
->  static int vhost_net_open(struct inode *inode, struct file *f)
->  {
->  	struct vhost_net *n;
-> @@ -723,7 +715,7 @@ static int vhost_net_open(struct inode *inode, struct file *f)
->  	}
->  	vqs = kmalloc(VHOST_NET_VQ_MAX * sizeof(*vqs), GFP_KERNEL);
->  	if (!vqs) {
-> -		vhost_net_free(n);
-> +		kvfree(n);
->  		return -ENOMEM;
->  	}
->  
-> @@ -840,7 +832,7 @@ static int vhost_net_release(struct inode *inode, struct file *f)
->  	 * since jobs can re-queue themselves. */
->  	vhost_net_flush(n);
->  	kfree(n->dev.vqs);
-> -	vhost_net_free(n);
-> +	kvfree(n);
->  	return 0;
->  }
->  
-> -- 
-> 2.0.0
+-- 
+ Kirill A. Shutemov
