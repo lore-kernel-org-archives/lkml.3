@@ -1,79 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755332AbaFLGmr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 02:42:47 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:40863 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754632AbaFLGmp (ORCPT
+	id S1754586AbaFLGq4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 02:46:56 -0400
+Received: from fgwmail.fujitsu.co.jp ([164.71.1.133]:32994 "EHLO
+	fgwmail.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751476AbaFLGqy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 02:42:45 -0400
-X-Original-SENDERIP: 10.177.220.169
-X-Original-MAILFROM: minchan@kernel.org
-Date: Thu, 12 Jun 2014 15:42:55 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>, kvm@vger.kernel.org,
-        linux-mm@kvack.org, Gleb Natapov <gleb@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexander Graf <agraf@suse.de>, kvm-ppc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paolo Bonzini <pbonzini@redhat.com>, linuxppc-dev@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 05/10] DMA, CMA: support arbitrary bitmap granularity
-Message-ID: <20140612064255.GA12663@bbox>
-References: <1402543307-29800-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1402543307-29800-6-git-send-email-iamjoonsoo.kim@lge.com>
- <20140612060610.GH12415@bbox>
- <20140612064355.GC19918@js1304-P5Q-DELUXE>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140612064355.GC19918@js1304-P5Q-DELUXE>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 12 Jun 2014 02:46:54 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219
+Date: Thu, 12 Jun 2014 15:46:37 +0900 (JST)
+Message-Id: <20140612.154637.361874821.d.hatayama@jp.fujitsu.com>
+To: peterz@infradead.org
+Cc: acme@kernel.org, mingo@redhat.com, paulus@samba.org, hpa@zytor.com,
+        tglx@linutronix.de, x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf/x86/intel: ignore CondChgd bit to avoid false NMI
+ handling
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+In-Reply-To: <20140611085448.GI3213@twins.programming.kicks-ass.net>
+References: <20140611073028.9847.65622.stgit@localhost6.localdomain6>
+	<20140611085448.GI3213@twins.programming.kicks-ass.net>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5C6l162003699
 
-On Thu, Jun 12, 2014 at 03:43:55PM +0900, Joonsoo Kim wrote:
-> On Thu, Jun 12, 2014 at 03:06:10PM +0900, Minchan Kim wrote:
-> > On Thu, Jun 12, 2014 at 12:21:42PM +0900, Joonsoo Kim wrote:
-> > > ppc kvm's cma region management requires arbitrary bitmap granularity,
-> > > since they want to reserve very large memory and manage this region
-> > > with bitmap that one bit for several pages to reduce management overheads.
-> > > So support arbitrary bitmap granularity for following generalization.
-> > > 
-> > > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> > > 
-> > > diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
-> > > index bc4c171..9bc9340 100644
-> > > --- a/drivers/base/dma-contiguous.c
-> > > +++ b/drivers/base/dma-contiguous.c
-> > > @@ -38,6 +38,7 @@ struct cma {
-> > >  	unsigned long	base_pfn;
-> > >  	unsigned long	count;
-> > >  	unsigned long	*bitmap;
-> > > +	int order_per_bit; /* Order of pages represented by one bit */
-> > 
-> > Hmm, I'm not sure it's good as *general* interface even though it covers
-> > existing usecases.
-> > 
-> > It forces a cma area should be handled by same size unit. Right?
-> > It's really important point for this patchset's motivation so I will stop
-> > review and wait other opinions.
+From: Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] perf/x86/intel: ignore CondChgd bit to avoid false NMI handling
+Date: Wed, 11 Jun 2014 10:54:48 +0200
+
+> On Wed, Jun 11, 2014 at 04:30:28PM +0900, HATAYAMA Daisuke wrote:
+>> Currently, a NMI handler for NMI watchdog may falsely handle any NMI
+>> signaled for different purpose if CondChgd bit in
+>> MSR_CORE_PERF_GLOBAL_STATUS MSR is set.
+>> 
+>> This commit deals with the issue simply by ignoring CondChgd bit.
+>> 
+>> Here is explanation in detail.
+>> 
+>> On x86 NMI watchdog uses performance monitoring feature to
+>> periodically signal NMI each time performance counter gets overflowed.
+>> 
+>> intel_pmu_handle_irq() is called as a NMI_LOCAL handler from a NMI
+>> handler of NMI watchdog, perf_event_nmi_handler(). It identifies owner
+>> of a given NMI by looking at overflow status bits in
+>> MSR_CORE_PERF_GLOBAL_STATUS MSR. If some of the bits are set, then it
+>> handles the given NMI as its own NMI.
+>> 
+>> The problem is that intel_pmu_handle_irq() doesn't distinguish
+>> CondChgd bit from other bits. Unlike the other status bits, CondChgd
+>> bit doesn't represent overflow status for performance counters. Thus,
+>> CondChgd bit cannot be thought of as a mark indicating a given NMI is
+>> NMI watchdog's.
 > 
-> If you pass 0 to order_per_bit, you can manage cma area in every
-> size(page unit) you want. If you pass certain number to order_per_bit,
-> you can allocate and release cma area in multiple of such page order.
+> So what was the problem? It ate another NMI?
 > 
-> I think that this is more general implementation than previous versions.
 
-Fair enough.
+Yes.
 
--- 
-Kind regards,
-Minchan Kim
+The handler for NMI watchdog is called in NMI_LOCAL. This is done in
+earlier timing than NMI_UNKNOWN, and if some of the handlers in
+NMI_LOCAL handles at least one NMI, then handlers in NMI_UNKNOWN are
+not called. Like this:
+
+        handled = nmi_handle(NMI_LOCAL, regs, b2b);
+        __this_cpu_add(nmi_stats.normal, handled);
+        if (handled) {
+                /*
+                 * There are cases when a NMI handler handles multiple
+                 * events in the current NMI.  One of these events may
+                 * be queued for in the next NMI.  Because the event is
+                 * already handled, the next NMI will result in an unknown
+                 * NMI.  Instead lets flag this for a potential NMI to
+                 * swallow.
+                 */
+                if (handled > 1)
+                        __this_cpu_write(swallow_nmi, true);
+                return;
+        }
+
+For example, we use unknown NMI to make system panic by enabling
+kernel.unkown_nmi_panic. Without this fix, unknown NMI is robbed by
+NMI handler for NMI watchdog.
+
+>> I noticed this behavior on systems with Ivy Bridge processors: Intel
+>> Xeon CPU E5-2630 v2 and Intel Xeon CPU E7-8890 v2. On both systems,
+>> CondChgd bit in MSR_CORE_PERF_GLOBAL_STATUS MSR has already been set
+>> in the beginning at boot. (then the CondChgd bit is cleared by next
+>> wrmsr to MSR_CORE_PERF_GLOBAL_CTRL MSR and appears to remain 0.)
+>> 
+>> On the other hand, on older processors such as Nehalem, CondChgd bit
+>> is not set in the beginning at boot.
+>> 
+>> I'm not sure about exact behavior of CondChgd bit, in particular when
+>> this bit is set. Although I read Intel System Programmer's Manual to
+>> figure out but I have yet completed that. At least, I think ignoring
+>> CondChgd bit should be enough for NMI watchdog perspective.
+> 
+> So yes, the SDM lists the bit as existing but never once mentions it
+> outside of that, and its been doing that at least back to 2008.
+> 
+> Ooh, I found it:
+> 
+>   "The IA32_PERF_GLOBAL_STATUS MSR also provides a ¡sticky bit¢ to
+> indicate changes to the state of performance monitoring hardware (see
+> Figure 18-29)."
+> 
+> Which is of course completely useless, not to mention inconsistent with
+> the later CondChgd name.
+> 
+> HPA, can you explain wtf that bit does and why hatayama-san's ivb feels
+> like having that set on boot? 
+
+--
+Thanks.
+HATAYAMA, Daisuke
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
