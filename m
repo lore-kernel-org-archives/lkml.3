@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932802AbaFLIa5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 04:30:57 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:2193 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752154AbaFLIaz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 04:30:55 -0400
-X-IronPort-AV: E=Sophos;i="5.00,694,1396972800"; 
-   d="scan'208";a="31804586"
-Message-ID: <53996544.2050401@cn.fujitsu.com>
-Date: Thu, 12 Jun 2014 16:31:00 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131030 Thunderbird/17.0.10
+	id S932836AbaFLIbn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 04:31:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41429 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932740AbaFLIbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 04:31:40 -0400
+Date: Thu, 12 Jun 2014 10:29:08 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] HID: rmi: Protect PM-only functions by #ifdef
+ CONFIG_PM
+In-Reply-To: <1402513398-17546-1-git-send-email-geert@linux-m68k.org>
+Message-ID: <alpine.LNX.2.00.1406121029000.1321@pobox.suse.cz>
+References: <1402513398-17546-1-git-send-email-geert@linux-m68k.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Alexander Graf <agraf@suse.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <kvm@vger.kernel.org>, <kvm-ppc@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCH v2 08/10] mm, cma: clean-up cma allocation error path
-References: <1402543307-29800-1-git-send-email-iamjoonsoo.kim@lge.com> <1402543307-29800-9-git-send-email-iamjoonsoo.kim@lge.com>
-In-Reply-To: <1402543307-29800-9-git-send-email-iamjoonsoo.kim@lge.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.225.89]
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2014 11:21 AM, Joonsoo Kim wrote:
-> We can remove one call sites for clear_cma_bitmap() if we first
-> call it before checking error number.
-> 
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+On Wed, 11 Jun 2014, Geert Uytterhoeven wrote:
 
-Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-
+> If CONFIG_PM=n:
 > 
-> diff --git a/mm/cma.c b/mm/cma.c
-> index 1e1b017..01a0713 100644
-> --- a/mm/cma.c
-> +++ b/mm/cma.c
-> @@ -282,11 +282,12 @@ struct page *cma_alloc(struct cma *cma, int count, unsigned int align)
->  		if (ret == 0) {
->  			page = pfn_to_page(pfn);
->  			break;
-> -		} else if (ret != -EBUSY) {
-> -			clear_cma_bitmap(cma, pfn, count);
-> -			break;
->  		}
-> +
->  		clear_cma_bitmap(cma, pfn, count);
-> +		if (ret != -EBUSY)
-> +			break;
-> +
->  		pr_debug("%s(): memory range at %p is busy, retrying\n",
->  			 __func__, pfn_to_page(pfn));
->  		/* try again with a bit different memory target */
+> drivers/hid/hid-rmi.c:432: warning: ‘rmi_post_reset’ defined but not used
+> drivers/hid/hid-rmi.c:437: warning: ‘rmi_post_resume’ defined but not used
 > 
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> ---
+>  drivers/hid/hid-rmi.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/drivers/hid/hid-rmi.c b/drivers/hid/hid-rmi.c
+> index 2451c7e5febd..578bbe65902b 100644
+> --- a/drivers/hid/hid-rmi.c
+> +++ b/drivers/hid/hid-rmi.c
+> @@ -428,6 +428,7 @@ static int rmi_raw_event(struct hid_device *hdev,
+>  	return 0;
+>  }
+>  
+> +#ifdef CONFIG_PM
+>  static int rmi_post_reset(struct hid_device *hdev)
+>  {
+>  	return rmi_set_mode(hdev, RMI_MODE_ATTN_REPORTS);
+> @@ -437,6 +438,7 @@ static int rmi_post_resume(struct hid_device *hdev)
+>  {
+>  	return rmi_set_mode(hdev, RMI_MODE_ATTN_REPORTS);
+>  }
+> +#endif /* CONFIG_PM */
+>  
+>  #define RMI4_MAX_PAGE 0xff
+>  #define RMI4_PAGE_SIZE 0x0100
 
+Applied, thanks for spotting it.
 
 -- 
-Thanks.
-Zhang Yanfei
+Jiri Kosina
+SUSE Labs
