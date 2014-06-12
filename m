@@ -1,125 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752414AbaFLTsO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 15:48:14 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:56756 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751909AbaFLTsL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 15:48:11 -0400
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Randy Dunlap <rdunlap@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>, linux-doc@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: [PATCH 2/2] x86, kaslr: boot-time selectable with hibernation
-Date: Thu, 12 Jun 2014 12:46:59 -0700
-Message-Id: <1402602419-27934-3-git-send-email-keescook@chromium.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1402602419-27934-1-git-send-email-keescook@chromium.org>
-References: <1402602419-27934-1-git-send-email-keescook@chromium.org>
-X-HELO: www.outflux.net
+	id S1752507AbaFLTsW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 15:48:22 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60633 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752439AbaFLTsU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 15:48:20 -0400
+Message-ID: <539A0400.2080102@infradead.org>
+Date: Thu, 12 Jun 2014 12:48:16 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Zachary <zacharyw09264@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: Patch Very Minor to loopback.c
+References: <CAECMkcPM+TVv1f1xBwpd85JGNteVWzU7wx9gccfcohu9r2116w@mail.gmail.com>
+In-Reply-To: <CAECMkcPM+TVv1f1xBwpd85JGNteVWzU7wx9gccfcohu9r2116w@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes kASLR from being compile-time selectable (blocked by
-CONFIG_HIBERNATION), to being boot-time selectable (with hibernation
-available by default) via the "kaslr" kernel command line.
+On 06/12/14 12:43, Zachary wrote:
+> Very minor patch to loopback.c that I noticed while comparing the
+> dummy.c code to loopback.c code (dummy.c was based on loopback.c).  I
+> did not see a maintainer in MAINTAINERS in my cursory glance, so I
+> apologize if this is to the wrong place.  I am testing this patch
+> right now on my laptop and it appears to be working without issues.
+> It also compiled without warnings.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- Documentation/kernel-parameters.txt |   11 +++++++----
- arch/x86/Kconfig                    |    1 -
- arch/x86/boot/compressed/aslr.c     |    9 ++++++++-
- kernel/power/hibernate.c            |    7 +++++++
- 4 files changed, 22 insertions(+), 6 deletions(-)
+Networking patches should be sent to <netdev@vger.kernel.org>.
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index b9f67781c577..ea0430de1e52 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1464,6 +1464,13 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 	js=		[HW,JOY] Analog joystick
- 			See Documentation/input/joystick.txt.
- 
-+	kaslr/nokaslr	[X86]
-+			Enable/disable kernel and module base offset ASLR
-+			(Address Space Layout Randomization) if built into
-+			the kernel. When CONFIG_HIBERNATION is selected,
-+			kASLR is disabled by default. When kASLR is enabled,
-+			hibernation will be disabled.
-+
- 	keepinitrd	[HW,ARM]
- 
- 	kernelcore=nn[KMG]	[KNL,X86,IA-64,PPC] This parameter
-@@ -2100,10 +2107,6 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 	noapic		[SMP,APIC] Tells the kernel to not make use of any
- 			IOAPICs that may be present in the system.
- 
--	nokaslr		[X86]
--			Disable kernel and module base offset ASLR (Address
--			Space Layout Randomization) if built into the kernel.
--
- 	noautogroup	Disable scheduler automatic task group creation.
- 
- 	nobats		[PPC] Do not use BATs for mapping kernel lowmem
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index b660088c220d..7fdb639f1b63 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1671,7 +1671,6 @@ config RELOCATABLE
- config RANDOMIZE_BASE
- 	bool "Randomize the address of the kernel image"
- 	depends on RELOCATABLE
--	depends on !HIBERNATION
- 	default n
- 	---help---
- 	   Randomizes the physical and virtual address at which the
-diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
-index 4dbf967da50d..fc6091abedb7 100644
---- a/arch/x86/boot/compressed/aslr.c
-+++ b/arch/x86/boot/compressed/aslr.c
-@@ -289,10 +289,17 @@ unsigned char *choose_kernel_location(unsigned char *input,
- 	unsigned long choice = (unsigned long)output;
- 	unsigned long random;
- 
-+#ifdef CONFIG_HIBERNATION
-+	if (!cmdline_find_option_bool("kaslr")) {
-+		debug_putstr("KASLR disabled by default...\n");
-+		goto out;
-+	}
-+#else
- 	if (cmdline_find_option_bool("nokaslr")) {
--		debug_putstr("KASLR disabled...\n");
-+		debug_putstr("KASLR disabled by cmdline...\n");
- 		goto out;
- 	}
-+#endif
- 
- 	/* Record the various known unsafe memory ranges. */
- 	mem_avoid_init((unsigned long)input, input_size,
-diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-index 32672da81114..4aba1621b59c 100644
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -67,6 +67,13 @@ bool hibernation_available(void)
- 	return (hibernation_mode > HIBERNATION_DISABLED);
- }
- 
-+static int __init parse_kaslr(char *p)
-+{
-+	hibernation_mode = HIBERNATION_DISABLED;
-+	return 0;
-+}
-+early_param("kaslr", parse_kaslr);
-+
- /**
-  * hibernation_set_ops - Set the global hibernate operations.
-  * @ops: Hibernation operations to use in subsequent hibernation transitions.
+Try cc-ing the NETWORKING maintainer.
+
+Thanks.
+
+> diff --git a/drivers/net/loopback.c b/drivers/net/loopback.c
+> index bb96409..f9f88d7 100644
+> --- a/drivers/net/loopback.c
+> +++ b/drivers/net/loopback.c
+> @@ -22,6 +22,7 @@
+>   *                                      interface.
+>   *             Alexey Kuznetsov:       Potential hang under some extreme
+>   *                                     cases removed.
+> + *             Zachary Winnerman:  Extremely minor patch in loopback_xmit
+>   *
+>   *             This program is free software; you can redistribute it and/or
+>   *             modify it under the terms of the GNU General Public License
+> @@ -72,7 +73,6 @@ static netdev_tx_t loopback_xmit(struct sk_buff *skb,
+>                                  struct net_device *dev)
+>  {
+>         struct pcpu_lstats *lb_stats;
+> -       int len;
+> 
+>         skb_orphan(skb);
+> 
+> @@ -86,10 +86,9 @@ static netdev_tx_t loopback_xmit(struct sk_buff *skb,
+>         /* it's OK to use per_cpu_ptr() because BHs are off */
+>         lb_stats = this_cpu_ptr(dev->lstats);
+> 
+> -       len = skb->len;
+>         if (likely(netif_rx(skb) == NET_RX_SUCCESS)) {
+>                 u64_stats_update_begin(&lb_stats->syncp);
+> -               lb_stats->bytes += len;
+> +               lb_stats->bytes += skb->len;
+>                 lb_stats->packets++;
+>                 u64_stats_update_end(&lb_stats->syncp);
+>         }
+> --
+
+
 -- 
-1.7.9.5
-
+~Randy
