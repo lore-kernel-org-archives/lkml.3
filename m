@@ -1,65 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756104AbaFLPIu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 11:08:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47558 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752898AbaFLPIt (ORCPT
+	id S1756145AbaFLPJq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 11:09:46 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:55881 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756064AbaFLPJp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 11:08:49 -0400
-Date: Thu, 12 Jun 2014 15:08:43 +0000
-From: Serge Hallyn <serge.hallyn@ubuntu.com>
-To: LXC development mailing-list <lxc-devel@lists.linuxcontainers.org>
-Cc: containers@lists.osdl.org, linux-kernel@vger.kernel.org
-Subject: Re: [lxc-devel] [RFC] Per-user namespace process accounting
-Message-ID: <20140612150842.GC4228@ubuntumail>
-References: <5386D58D.2080809@1h.com>
- <5399BB42.60304@elastichosts.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5399BB42.60304@elastichosts.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 12 Jun 2014 11:09:45 -0400
+From: Alban Bedel <alban.bedel@avionic-design.de>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org,
+        Alban Bedel <alban.bedel@avionic-design.de>
+Subject: [PATCH] drm/panel: add support for Innolux N156BGE-L21 panel
+Date: Thu, 12 Jun 2014 17:09:05 +0200
+Message-Id: <1402585745-28127-1-git-send-email-alban.bedel@avionic-design.de>
+X-Mailer: git-send-email 2.0.0
+X-Provags-ID: V02:K0:VLKowwiMjNNy2guIrD7MrpR0wlugl356BslqDnXWZeH
+ DIa+n/4HS7QfHGXqfKPEaK3gzr4KGcJlugT1xpwomt8bMqgQqe
+ utdPTeMnDRszDXvZUdDh8sWI4qsd9SX4U1epDAECExlwYg4WUc
+ GSQJQ8b7tEmRiHElA9RJ9C2SQc2BTb1rjQxp0clsnte6WdFpLU
+ OTFRFUfk0E3MVxmtWKl9XEh46L6E+6POFwnlkgLmpZdGlr/Oxp
+ idq6e9m5U8AKPqZuwoEWPrtDdeZWQFUxrG7b96dXBviXjiR5OZ
+ PkBSivS/FTdL8xtSAiTws5YDb4O5VJr5bsUbIwMPDYKLSG/KHz
+ L1o03CKYr5EmtExn/ozHN45lyAsCBardaQuKiQ5hyWiOq9pK5e
+ KA1lJ1yVfxUDfXYgPhvB+RhIgjfvDSpQ0gWKCSXo31ltpEtKRZ
+ lGUh+
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Alin Dobre (alin.dobre@elastichosts.com):
-> On 29/05/14 07:37, Marian Marinov wrote:
-> > Hello,
-> > 
-> > I have the following proposition.
-> > 
-> > Number of currently running processes is accounted at the root user namespace. The problem I'm facing is that multiple
-> > containers in different user namespaces share the process counters.
+This panel is used by the Medcom Wide and supported by the
+simple-panel driver.
 
-Most ppl here probably are aware of this, but the previous, never-completed
-user namespace implementation provided this and only this.  We (mostly Eric
-and I) spent years looking for clean ways to make that implementation, which
-had some advantages (including this one), complete.  We did have a few POCs
-which worked but were unsatisfying.  The two things which were never convincing
-were (a) conversion of all uid checks to be namespace-safe, and (b) storing
-namespace identifiers on disk.  (As I say we did have solutions to these, but
-not satisfying ones).  These are the two things which the new implementation
-address *beautifully*.
+Signed-off-by: Alban Bedel <alban.bedel@avionic-design.de>
+---
+ drivers/gpu/drm/panel/panel-simple.c | 25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
 
-> > So if containerX runs 100 with UID 99, containerY should have NPROC limit of above 100 in order to execute any
-> > processes with ist own UID 99.
-> > 
-> > I know that some of you will tell me that I should not provision all of my containers with the same UID/GID maps, but
-> > this brings another problem.
-> 
-> If this matters, we also suffer from the same problem here. So we
-> support any implementation that would address it.
+diff --git a/drivers/gpu/drm/panel/panel-simple.c b/drivers/gpu/drm/panel/panel-simple.c
+index 309f29e..6a361bb 100644
+--- a/drivers/gpu/drm/panel/panel-simple.c
++++ b/drivers/gpu/drm/panel/panel-simple.c
+@@ -372,6 +372,28 @@ static const struct panel_desc samsung_ltn101nt05 = {
+ 	},
+ };
+ 
++static const struct drm_display_mode innolux_n156bge_l21_mode = {
++	.clock = 69300,
++	.hdisplay = 1366,
++	.hsync_start = 1366,
++	.hsync_end = 1366,
++	.htotal = 1366 + 100,
++	.vdisplay = 768,
++	.vsync_start = 768,
++	.vsync_end = 768,
++	.vtotal = 768 + 20,
++	.vrefresh = 60,
++};
++
++static const struct panel_desc innolux_n156bge_l21 = {
++	.modes = &innolux_n156bge_l21_mode,
++	.num_modes = 1,
++	.size = {
++		.width = 1366,
++		.height = 768,
++	},
++};
++
+ static const struct of_device_id platform_of_match[] = {
+ 	{
+ 		.compatible = "auo,b101aw03",
+@@ -389,6 +411,9 @@ static const struct of_device_id platform_of_match[] = {
+ 		.compatible = "samsung,ltn101nt05",
+ 		.data = &samsung_ltn101nt05,
+ 	}, {
++		.compatible = "innolux,n156bge-l21",
++		.data = &innolux_n156bge_l21,
++	}, {
+ 		.compatible = "simple-panel",
+ 	}, {
+ 		/* sentinel */
+-- 
+2.0.0
 
-ISTM the only reasonable answer here (at least for now) is to make it more
-convenient to isolate uid ranges, by providing a way to shift uids at mount
-time as has been discussed a bit.
-
-If we go down the route of talking about uid 99 in ns 1 vs uid 99 in ns 2,
-then people will also expect isolation at file access time, and we're back
-to all the disadvantages of the first userns implementation.
-
-(If someone proves me wrong by suggesting a clean solution, then awesome)
-
--serge
