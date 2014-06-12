@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752048AbaFLS66 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 14:58:58 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:60845 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790AbaFLS65 (ORCPT
+	id S1752014AbaFLTBK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 15:01:10 -0400
+Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:32761 "EHLO
+	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750952AbaFLTBJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 14:58:57 -0400
-Message-ID: <5399F86B.9080806@windriver.com>
-Date: Thu, 12 Jun 2014 13:58:51 -0500
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Fabian Frederick <fabf@skynet.be>, <linux-kernel@vger.kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/1] kernel/debug/debug_core.c: Logging clean-up
-References: <1402598918-5729-1-git-send-email-fabf@skynet.be>
-In-Reply-To: <1402598918-5729-1-git-send-email-fabf@skynet.be>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Thu, 12 Jun 2014 15:01:09 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AjkIAMn3mVNbsHy//2dsb2JhbABagw2qdQUBAQEBAQEFAZkegQsXdYRgI4EaN4hGAbg7mhQXhVyIG2QdhCsEj2iKSoswiCKDPjuBMA
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] kernel/time/tick-sched.c: add __init to tick_nohz_init_all
+Date: Thu, 12 Jun 2014 21:00:56 +0200
+Message-Id: <1402599656-6366-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2014 01:48 PM, Fabian Frederick wrote:
-> -Convert printk( to pr_foo()
-> -Add pr_fmt
-> -Coalesce formats
->
-> Cc: Jason Wessel <jason.wessel@windriver.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+tick_nohz_init_all is only called by __init tick_nohz_init
 
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ kernel/time/tick-sched.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks.
-
-I looked through all the bits to make sure there were no cases were we
-relied on a printk out to the external debug client and everything is
-all good.  This even prefixes the KGDB: in one place it was missed as
-well as implicitly fixing all the kgdb: -> KGDB: inconsistencies.
-
-The core functionality of kgdb is not changed of course.
-
-I'll put this into the merge queue.
-
-Reviewed-by: Jason Wessel <jason.wessel@windriver.com>
-
-Cheers,
-Jason.
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 6558b7a..51fe9e7 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -323,7 +323,7 @@ static int tick_nohz_cpu_down_callback(struct notifier_block *nfb,
+  */
+ static char __initdata nohz_full_buf[NR_CPUS + 1];
+ 
+-static int tick_nohz_init_all(void)
++static int __init tick_nohz_init_all(void)
+ {
+ 	int err = -1;
+ 
+-- 
+1.9.1
 
