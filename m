@@ -1,62 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933003AbaFLJoM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 05:44:12 -0400
-Received: from smtp6-g21.free.fr ([212.27.42.6]:39500 "EHLO smtp6-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932740AbaFLJoJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 05:44:09 -0400
-Message-ID: <53997666.7000003@free.fr>
-Date: Thu, 12 Jun 2014 11:44:06 +0200
-From: Guillaume Gardet <guillaume.gardet@free.fr>
-Reply-To: guillaume.gardet@free.fr
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S933082AbaFLJo0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 05:44:26 -0400
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:43947 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932740AbaFLJoW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 05:44:22 -0400
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>,
-        Sachin Kamat <sachin.kamat@samsung.com>
-CC: linux-kernel@vger.kernel.org,
-        openSUSE Kernel ML <opensuse-kernel@opensuse.org>,
-        Girish K S <ks.giri@samsung.com>, Yuvaraj C D <yuvaraj.cd@samsung.com>,
-        Jean Delvare <jdelvare@suse.de>, Sachin Kamat <spk.linux@gmail.com>
-Subject: Re: [PATCH] phy: Fix typo in drivers/phy/phy-exynos5250-sata.c module
- which fixes the build
-References: <53996247.5020203@free.fr> <CAK5sBcH-6xeKomVay4PFWzLV8M-Sx=jankcE-7mj7K00=Gwe4w@mail.gmail.com> <53996852.1050708@free.fr> <53996CF9.5070100@ti.com>
-In-Reply-To: <53996CF9.5070100@ti.com>
-X-Enigmail-Version: 1.6
-OpenPGP: url=http://guillaume.gardet.free.fr/GPG/ClefGPGGuillaumeGardet.asc
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <20140612094014.BFEA4E00A2@blue.fi.intel.com>
+References: <1399552888-11024-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1399552888-11024-2-git-send-email-kirill.shutemov@linux.intel.com>
+ <CAHO5Pa31WVrtG+2hU1grbLHiEPjkM_eB4JgSStskX8AvDjQRKA@mail.gmail.com> <20140612094014.BFEA4E00A2@blue.fi.intel.com>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Thu, 12 Jun 2014 11:44:01 +0200
+Message-ID: <CAKgNAkhnWwDxr8n7p0m60koRK+a_fhp8yuOssK5_-QEWMJ3qYg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] mm: mark remap_file_pages() syscall as deprecated
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, Linux API <linux-api@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Kirill,
 
-Le 12/06/2014 11:03, Kishon Vijay Abraham I a écrit :
+On Thu, Jun 12, 2014 at 11:40 AM, Kirill A. Shutemov
+<kirill.shutemov@linux.intel.com> wrote:
+> Michael Kerrisk wrote:
+>> Hi Kirill,
+>>
+>> On Thu, May 8, 2014 at 2:41 PM, Kirill A. Shutemov
+>> <kirill.shutemov@linux.intel.com> wrote:
+>> > The remap_file_pages() system call is used to create a nonlinear mapping,
+>> > that is, a mapping in which the pages of the file are mapped into a
+>> > nonsequential order in memory. The advantage of using remap_file_pages()
+>> > over using repeated calls to mmap(2) is that the former approach does not
+>> > require the kernel to create additional VMA (Virtual Memory Area) data
+>> > structures.
+>> >
+>> > Supporting of nonlinear mapping requires significant amount of non-trivial
+>> > code in kernel virtual memory subsystem including hot paths. Also to get
+>> > nonlinear mapping work kernel need a way to distinguish normal page table
+>> > entries from entries with file offset (pte_file). Kernel reserves flag in
+>> > PTE for this purpose. PTE flags are scarce resource especially on some CPU
+>> > architectures. It would be nice to free up the flag for other usage.
+>> >
+>> > Fortunately, there are not many users of remap_file_pages() in the wild.
+>> > It's only known that one enterprise RDBMS implementation uses the syscall
+>> > on 32-bit systems to map files bigger than can linearly fit into 32-bit
+>> > virtual address space. This use-case is not critical anymore since 64-bit
+>> > systems are widely available.
+>> >
+>> > The plan is to deprecate the syscall and replace it with an emulation.
+>> > The emulation will create new VMAs instead of nonlinear mappings. It's
+>> > going to work slower for rare users of remap_file_pages() but ABI is
+>> > preserved.
+>> >
+>> > One side effect of emulation (apart from performance) is that user can hit
+>> > vm.max_map_count limit more easily due to additional VMAs. See comment for
+>> > DEFAULT_MAX_MAP_COUNT for more details on the limit.
+>>
+>> Best to CC linux-api@
+>> (https://www.kernel.org/doc/man-pages/linux-api-ml.html) on patches
+>> like this, as well as the man-pages maintainer, so that something goes
+>> into the man page. I added the following into the man page:
+>>
+>>        Note:  this  system  call  is (since Linux 3.16) deprecated and
+>>        will eventually be replaced by a  slower  in-kernel  emulation.
+>>        Those  few  applications  that use this system call should con‐
+>>        sider migrating to alternatives.
+>>
+>> Okay?
 >
-> On Thursday 12 June 2014 02:14 PM, Guillaume Gardet wrote:
->> Le 12/06/2014 10:36, Sachin Kamat a écrit :
->>> Hi Guillaume,
->>>
->>>
->>> On Thu, Jun 12, 2014 at 1:48 PM, Guillaume Gardet
->>> <guillaume.gardet@free.fr> wrote:
->>>> Hi,
->>>>
->>>> please find in attachment a patch which fixes a typo in drivers/phy/phy-exynos5250-sata.c module license.
->>>> It fixes the following build error:
->>>>     FATAL: modpost: GPL-incompatible module phy-exynos5250-sata.ko uses GPL-only symbol 'platform_driver_unregister'
->>>>
->>>> Please keep me in CC since I am not subscribed to the linux-kernel@vger.kernel.org ML.
->>>>
->>>> Signed-off-by: Guillaume GARDET <guillaume.gardet@opensuse.org>
->>> A similar patch has already been submitted by Arnd. Please see below:
->>> https://lkml.org/lkml/2014/3/15/40
->> Was not aware of this one. Will it be merged? I can see that it was sent 3 months ago and got no answer apparently.
-> It's in mainline kernel already
-> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/drivers/phy/phy-exynos5250-sata.c?id=fe04e4297e6eab014a2cf152319b9f361df07faf
+> Yep. Looks okay to me.
 
-Ok. It is in mainline but not in 3.15.
+Thanks for checking.
 
+Cheers,
 
-Guillaume
+Michael
 
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
