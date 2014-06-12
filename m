@@ -1,65 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756483AbaFLQYw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 12:24:52 -0400
-Received: from mga01.intel.com ([192.55.52.88]:47003 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756465AbaFLQYv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 12:24:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,466,1400050800"; 
-   d="scan'208";a="546926345"
-Date: Thu, 12 Jun 2014 10:24:31 -0600 (MDT)
-From: Keith Busch <keith.busch@intel.com>
-X-X-Sender: vmware@localhost.localdom
-To: =?ISO-8859-15?Q?Matias_Bj=F8rling?= <m@bjorling.me>
-cc: Keith Busch <keith.busch@intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>, Jens Axboe <axboe@fb.com>,
-        "sbradshaw@micron.com" <sbradshaw@micron.com>,
-        "tom.leiming@gmail.com" <tom.leiming@gmail.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-nvme@lists.infradead.org" <linux-nvme@lists.infradead.org>
-Subject: Re: [PATCH v7] NVMe: conversion to blk-mq
-In-Reply-To: <5399BA00.7000705@bjorling.me>
-Message-ID: <alpine.LRH.2.03.1406121015130.4699@AMR>
-References: <1402392038-5268-2-git-send-email-m@bjorling.me> <alpine.LRH.2.03.1406100945250.4699@AMR> <A52B97CC-6D77-468B-9A9B-A5888AE63580@fb.com> <alpine.LRH.2.03.1406101140490.4699@AMR> <5397636F.9050209@fb.com> <alpine.LRH.2.03.1406101458470.4699@AMR>
- <5397753B.2020009@fb.com> <alpine.LRH.2.03.1406101515430.4699@AMR> <20140610213333.GA10055@linux.intel.com> <539889DC.7090704@fb.com> <20140611170917.GA12025@linux.intel.com> <CAOu_J6kocZZ1mRQeSidyqJ_Ew0F_POS30v2kgUZX2wDOOnuExg@mail.gmail.com>
- <alpine.LRH.2.03.1406111641180.4699@AMR> <5399BA00.7000705@bjorling.me>
-User-Agent: Alpine 2.03 (LRH 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-841927011-1402590279=:4699"
+	id S1756526AbaFLQZZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 12:25:25 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:37847 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756346AbaFLQYA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 12:24:00 -0400
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/4] tracing: Add ftrace_graph_notrace boot parameter
+Date: Fri, 13 Jun 2014 01:23:50 +0900
+Message-Id: <1402590233-22321-2-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1402590233-22321-1-git-send-email-namhyung@kernel.org>
+References: <1402590233-22321-1-git-send-email-namhyung@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+The ftrace_graph_notrace option is for specifying notrace filter for
+function graph tracer at boot time.  It can be altered after boot
+using set_graph_notrace file on the debugfs.
 
---8323328-841927011-1402590279=:4699
-Content-Type: TEXT/PLAIN; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ Documentation/kernel-parameters.txt |    6 ++++++
+ kernel/trace/ftrace.c               |   24 ++++++++++++++++++++----
+ 2 files changed, 26 insertions(+), 4 deletions(-)
 
-On Thu, 12 Jun 2014, Matias Bjørling wrote:
-> On 06/12/2014 12:51 AM, Keith Busch wrote:
->> So far so good: it passed the test that was previously failing. I'll
->> let the remaining xfstests run and see what happens.
->
-> Great.
->
-> The flushes was a fluke. I haven't been able to reproduce.
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 43842177b771..40cf0caf92a9 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1062,6 +1062,12 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			that can be changed at run time by the
+ 			set_graph_function file in the debugfs tracing directory.
+ 
++	ftrace_graph_notrace=[function-list]
++			[FTRACE] Do not trace from the functions specified in
++			function-list.  This list is a comma separated list of
++			functions that can be changed at run time by the
++			set_graph_notrace file in the debugfs tracing directory.
++
+ 	gamecon.map[2|3]=
+ 			[HW,JOY] Multisystem joystick and NES/SNES/PSX pad
+ 			support via parallel port (up to 5 devices per port)
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 071908f58e7a..f08edd7125c6 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -3628,6 +3628,7 @@ __setup("ftrace_filter=", set_ftrace_filter);
+ 
+ #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+ static char ftrace_graph_buf[FTRACE_FILTER_SIZE] __initdata;
++static char ftrace_graph_notrace_buf[FTRACE_FILTER_SIZE] __initdata;
+ static int ftrace_set_func(unsigned long *array, int *idx, int size, char *buffer);
+ 
+ static int __init set_graph_function(char *str)
+@@ -3637,16 +3638,29 @@ static int __init set_graph_function(char *str)
+ }
+ __setup("ftrace_graph_filter=", set_graph_function);
+ 
+-static void __init set_ftrace_early_graph(char *buf)
++static int __init set_graph_notrace_function(char *str)
++{
++	strlcpy(ftrace_graph_notrace_buf, str, FTRACE_FILTER_SIZE);
++	return 1;
++}
++__setup("ftrace_graph_notrace=", set_graph_notrace_function);
++
++static void __init set_ftrace_early_graph(char *buf, int enable)
+ {
+ 	int ret;
+ 	char *func;
++	unsigned long *table = ftrace_graph_funcs;
++	int *count = &ftrace_graph_count;
++
++	if (!enable) {
++		table = ftrace_graph_notrace_funcs;
++		count = &ftrace_graph_notrace_count;
++	}
+ 
+ 	while (buf) {
+ 		func = strsep(&buf, ",");
+ 		/* we allow only one expression at a time */
+-		ret = ftrace_set_func(ftrace_graph_funcs, &ftrace_graph_count,
+-				      FTRACE_GRAPH_MAX_FUNCS, func);
++		ret = ftrace_set_func(table, count, FTRACE_GRAPH_MAX_FUNCS, func);
+ 		if (ret)
+ 			printk(KERN_DEBUG "ftrace: function %s not "
+ 					  "traceable\n", func);
+@@ -3675,7 +3689,9 @@ static void __init set_ftrace_early_filters(void)
+ 		ftrace_set_early_filter(&global_ops, ftrace_notrace_buf, 0);
+ #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+ 	if (ftrace_graph_buf[0])
+-		set_ftrace_early_graph(ftrace_graph_buf);
++		set_ftrace_early_graph(ftrace_graph_buf, 1);
++	if (ftrace_graph_notrace_buf[0])
++		set_ftrace_early_graph(ftrace_graph_notrace_buf, 0);
+ #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
+ }
+ 
+-- 
+1.7.9.2
 
-Cool, most of the tests are passing, except there is some really weird
-stuff with the timeout handling. You've got two different places with the
-same two prints, so I was a little confused where they were coming from.
-
-I've got some more things to try to debug this, but this is thwat I have
-so far:
-
-It looks like the abort_complete callback is broken. First, the dev_warn
-there makes no sense because you're pointing to the admin queue's abort
-request, not the IO queue's request you're aborting. Then you call
-cancel_cmd_info on the same command you're completing but it looks like
-you're expecting to be doing this on the IO request you meant to abort,
-but that could cause double completions.
---8323328-841927011-1402590279=:4699--
