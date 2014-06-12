@@ -1,157 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933108AbaFLLiV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 07:38:21 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:60166 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755268AbaFLLiR convert rfc822-to-8bit (ORCPT
+	id S933146AbaFLLjf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 07:39:35 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:43732 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933018AbaFLLjc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 07:38:17 -0400
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Minchan Kim <minchan@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Alexander Graf <agraf@suse.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH v2 09/10] mm, cma: move output param to the end of param list
-In-Reply-To: <1402543307-29800-10-git-send-email-iamjoonsoo.kim@lge.com>
-Organization: http://mina86.com/
-References: <1402543307-29800-1-git-send-email-iamjoonsoo.kim@lge.com> <1402543307-29800-10-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Notmuch/0.17+15~gb65ca8e (http://notmuchmail.org) Emacs/24.4.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-X-Hashcash: 1:20:140612:linuxppc-dev@lists.ozlabs.org::zENM3UGuVZmTWysu:0000000000000000000000000000000007Od
-X-Hashcash: 1:20:140612:agraf@suse.de::pNTNc09kfaWsnAO1:00000J5e
-X-Hashcash: 1:20:140612:pbonzini@redhat.com::wkKl9BM8hQ4CtDMo:0000000000000000000000000000000000000000000U9n
-X-Hashcash: 1:20:140612:gregkh@linuxfoundation.org::SazU3KTuMFBKtIl6:000000000000000000000000000000000000PTP
-X-Hashcash: 1:20:140612:aneesh.kumar@linux.vnet.ibm.com::/3luuIzCCz+IKFah:0000000000000000000000000000001Zu/
-X-Hashcash: 1:20:140612:akpm@linux-foundation.org::gsv7iwkAtCAF5Lvv:0000000000000000000000000000000000002SHa
-X-Hashcash: 1:20:140612:paulus@samba.org::gH5X7N0MVAumZrIh:02TZ6
-X-Hashcash: 1:20:140612:iamjoonsoo.kim@lge.com::W7YCESTNC2059Lli:0000000000000000000000000000000000000002VmW
-X-Hashcash: 1:20:140612:linux@arm.linux.org.uk::iJkTGscpnQnH5uaw:0000000000000000000000000000000000000003672
-X-Hashcash: 1:20:140612:linux-kernel@vger.kernel.org::GlquC4MESNMKBiD3:0000000000000000000000000000000003Z2Q
-X-Hashcash: 1:20:140612:kvm@vger.kernel.org::WnIBiwRI6h8cV31g:0000000000000000000000000000000000000000003SzA
-X-Hashcash: 1:20:140612:gleb@kernel.org::R1O4H9dUGVvdTbsP:004CBB
-X-Hashcash: 1:20:140612:benh@kernel.crashing.org::2Yyl4EgBJNQW50Tf:000000000000000000000000000000000000057rd
-X-Hashcash: 1:20:140612:minchan@kernel.org::gQv+LaRBSsVXs5hD:00000000000000000000000000000000000000000004ggb
-X-Hashcash: 1:20:140612:iamjoonsoo.kim@lge.com::21B5qFF5F5ftba3G:0000000000000000000000000000000000000004r2b
-X-Hashcash: 1:20:140612:kvm-ppc@vger.kernel.org::FOybtOCCyGFE+NAo:000000000000000000000000000000000000005k8o
-X-Hashcash: 1:20:140612:linux-mm@kvack.org::iZb2Y5J/1k3qMLH6:00000000000000000000000000000000000000000008hQG
-X-Hashcash: 1:20:140612:m.szyprowski@samsung.com::I2yquB4yOBh+NAJg:0000000000000000000000000000000000000BhOz
-X-Hashcash: 1:20:140612:linux-arm-kernel@lists.infradead.org::Tes9RPHAE2ZjInyF:0000000000000000000000000A+4P
-Date: Thu, 12 Jun 2014 13:38:11 +0200
-Message-ID: <xa1twqcmicik.fsf@mina86.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 12 Jun 2014 07:39:32 -0400
+X-Nat-Received: from [202.181.97.72]:28163 [ident-empty]
+	by ksav105.sakura.ne.jp with TPROXY id 1402573165.31707
+To: viro@ZenIV.linux.org.uk
+Cc: paulmck@linux.vnet.ibm.com, torvalds@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [pre 3.16-rc1] Oops at spin_trylock(&inode->i_lock)
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <201406102104.FAG04640.MVJFSQOHtOFOFL@I-love.SAKURA.ne.jp>
+	<20140610143425.GL4581@linux.vnet.ibm.com>
+	<201406112035.ADB51545.QFVMLJOtFOHSOF@I-love.SAKURA.ne.jp>
+	<20140611160133.GX18016@ZenIV.linux.org.uk>
+In-Reply-To: <20140611160133.GX18016@ZenIV.linux.org.uk>
+Message-Id: <201406122039.DIG40672.tSHOQFOVMFFLOJ@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Thu, 12 Jun 2014 20:39:23 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-KLMS-AntiVirus: Kaspersky Security 8.0 for Linux Mail Server, version 8.0.1.705 status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 12 2014, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
-> Conventionally, we put output param to the end of param list.
-> cma_declare_contiguous() doesn't look like that, so change it.
+Al Viro wrote:
+> Try to check if this helps:
 
-Perhaps the function should be changed to return an error-pointer?
+Yes, that helps. Thank you.
 
-> Additionally, move down cma_areas reference code to the position
-> where it is really needed.
->
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+I used below version and the oops no longer occur.
 
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
+---------- patch start ----------
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -532,10 +532,15 @@ static inline struct dentry *lock_parent(struct dentry *dentry)
+ 	struct dentry *parent = dentry->d_parent;
+ 	if (IS_ROOT(dentry))
+ 		return NULL;
++	if (WARN_ON_ONCE((int)dentry->d_lockref.count < 0)) {
++		pr_warn("dentry->d_lockref.count=%d dentry->d_sb->s_magic=%lx\n",
++			dentry->d_lockref.count, dentry->d_sb->s_magic);
++		return NULL;
++	}
+ 	if (likely(spin_trylock(&parent->d_lock)))
+ 		return parent;
+-	spin_unlock(&dentry->d_lock);
+ 	rcu_read_lock();
++	spin_unlock(&dentry->d_lock);
+ again:
+ 	parent = ACCESS_ONCE(dentry->d_parent);
+ 	spin_lock(&parent->d_lock);
+---------- patch end ----------
 
->
-> diff --git a/arch/powerpc/kvm/book3s_hv_builtin.c b/arch/powerpc/kvm/book3s_hv_builtin.c
-> index 28ec226..97613ea 100644
-> --- a/arch/powerpc/kvm/book3s_hv_builtin.c
-> +++ b/arch/powerpc/kvm/book3s_hv_builtin.c
-> @@ -184,7 +184,7 @@ void __init kvm_cma_reserve(void)
->  
->  		align_size = max(kvm_rma_pages << PAGE_SHIFT, align_size);
->  		cma_declare_contiguous(selected_size, 0, 0, align_size,
-> -			KVM_CMA_CHUNK_ORDER - PAGE_SHIFT, &kvm_cma, false);
-> +			KVM_CMA_CHUNK_ORDER - PAGE_SHIFT, false, &kvm_cma);
->  	}
->  }
->  
-> diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
-> index f177f73..bfd4553 100644
-> --- a/drivers/base/dma-contiguous.c
-> +++ b/drivers/base/dma-contiguous.c
-> @@ -149,7 +149,7 @@ int __init dma_contiguous_reserve_area(phys_addr_t size, phys_addr_t base,
->  {
->  	int ret;
->  
-> -	ret = cma_declare_contiguous(size, base, limit, 0, 0, res_cma, fixed);
-> +	ret = cma_declare_contiguous(size, base, limit, 0, 0, fixed, res_cma);
->  	if (ret)
->  		return ret;
->  
-> diff --git a/include/linux/cma.h b/include/linux/cma.h
-> index e38efe9..e53eead 100644
-> --- a/include/linux/cma.h
-> +++ b/include/linux/cma.h
-> @@ -6,7 +6,7 @@ struct cma;
->  extern int __init cma_declare_contiguous(phys_addr_t size,
->  				phys_addr_t base, phys_addr_t limit,
->  				phys_addr_t alignment, int order_per_bit,
-> -				struct cma **res_cma, bool fixed);
-> +				bool fixed, struct cma **res_cma);
->  extern struct page *cma_alloc(struct cma *cma, int count, unsigned int align);
->  extern bool cma_release(struct cma *cma, struct page *pages, int count);
->  #endif
-> diff --git a/mm/cma.c b/mm/cma.c
-> index 01a0713..22a5b23 100644
-> --- a/mm/cma.c
-> +++ b/mm/cma.c
-> @@ -142,8 +142,8 @@ core_initcall(cma_init_reserved_areas);
->   * @limit: End address of the reserved memory (optional, 0 for any).
->   * @alignment: Alignment for the contiguous memory area, should be power of 2
->   * @order_per_bit: Order of pages represented by one bit on bitmap.
-> - * @res_cma: Pointer to store the created cma region.
->   * @fixed: hint about where to place the reserved area
-> + * @res_cma: Pointer to store the created cma region.
->   *
->   * This function reserves memory from early allocator. It should be
->   * called by arch specific code once the early allocator (memblock or bootmem)
-> @@ -156,9 +156,9 @@ core_initcall(cma_init_reserved_areas);
->  int __init cma_declare_contiguous(phys_addr_t size,
->  				phys_addr_t base, phys_addr_t limit,
->  				phys_addr_t alignment, int order_per_bit,
-> -				struct cma **res_cma, bool fixed)
-> +				bool fixed, struct cma **res_cma)
->  {
-> -	struct cma *cma = &cma_areas[cma_area_count];
-> +	struct cma *cma;
->  	int ret = 0;
->  
->  	pr_debug("%s(size %lx, base %08lx, limit %08lx alignment %08lx)\n",
-> @@ -214,6 +214,7 @@ int __init cma_declare_contiguous(phys_addr_t size,
->  	 * Each reserved area must be initialised later, when more kernel
->  	 * subsystems (like slab allocator) are available.
->  	 */
-> +	cma = &cma_areas[cma_area_count];
->  	cma->base_pfn = PFN_DOWN(base);
->  	cma->count = size >> PAGE_SHIFT;
->  	cma->order_per_bit = order_per_bit;
-> -- 
-> 1.7.9.5
->
+ef53 is ext4, 9fa0 is proc, 62656572 is sysfs.
+I don't know why only sysfs triggered the oops.
 
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
+---------- console log on boot ----------
+[    6.987663] EXT4-fs (sda1): mounted filesystem with ordered data mode. Opts: (null)
+[    7.071152] dracut: Mounted root filesystem /dev/sda1
+[    7.275840] random: nonblocking pool is initialized
+[    7.414446] load_policy (374) used greatest stack depth: 10832 bytes left
+[    7.417446] dracut: /sbin/load_policy: Can't load policy: No such device
+[    7.630160] dracut: Switching root
+[    8.333437] ------------[ cut here ]------------
+[    8.333737] WARNING: CPU: 1 PID: 394 at fs/dcache.c:535 shrink_dentry_list+0x388/0x400()
+[    8.334546] Modules linked in: ext4(E) jbd2(E) mbcache(E) crc16(E) sd_mod(E) crc_t10dif(E) sr_mod(E) cdrom(E) mptspi(E) mptscsih(E) mptbase(E) scsi_transport_spi(E) pata_acpi(E) ata_generic(E) ata_piix(E)
+[    8.336012] CPU: 1 PID: 394 Comm: mount Tainted: G            E 3.15.0-08974-g3c81bdd-dirty #390
+[    8.337616] Hardware name: VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform, BIOS 6.00 07/31/2013
+[    8.339667]  0000000000000217 ffff88004b20bd18 ffffffff8163844d ffffffff81a23cef
+[    8.340469]  0000000000000000 ffff88004b20bd58 ffffffff81054d9c ffff880048ca6fb0
+[    8.340908]  ffff880078c06eb0 ffff880048ca6eb0 ffff880048ca6fb0 ffff88004b20bdd8
+[    8.341841] Call Trace:
+[    8.342440]  [<ffffffff8163844d>] dump_stack+0x51/0x6c
+[    8.343495]  [<ffffffff81054d9c>] warn_slowpath_common+0x8c/0xc0
+[    8.344556]  [<ffffffff81054dea>] warn_slowpath_null+0x1a/0x20
+[    8.344764]  [<ffffffff811e71b8>] shrink_dentry_list+0x388/0x400
+[    8.345536]  [<ffffffff811e7369>] shrink_dcache_sb+0xd9/0x120
+[    8.346501]  [<ffffffff811f14fd>] ? do_remount+0x9d/0x130
+[    8.347564]  [<ffffffff811cf6e2>] do_remount_sb+0x52/0x1a0
+[    8.348506]  [<ffffffff811f14fd>] ? do_remount+0x9d/0x130
+[    8.349520]  [<ffffffff811f1585>] do_remount+0x125/0x130
+[    8.350552]  [<ffffffff811f4962>] do_mount+0x1b2/0x210
+[    8.351496]  [<ffffffff811810fb>] ? strndup_user+0x5b/0x80
+[    8.352501]  [<ffffffff811f4a50>] SyS_mount+0x90/0xe0
+[    8.353500]  [<ffffffff816483a2>] system_call_fastpath+0x16/0x1b
+[    8.354533] ---[ end trace eddfc2138fdcf65f ]---
+[    8.355486] dentry->d_lockref.count=-128 dentry->d_sb->s_magic=9fa0
+(...snipped...)
+[    8.431502] dentry->d_lockref.count=-128 dentry->d_sb->s_magic=9fa0
+		Welcome to CentOS 
+---------- console log on boot ----------
+
+---------- console log on shutdown ----------
+init: Re-executing /sbin/init
+
+[   76.646596] dentry->d_lockref.count=-128 dentry->d_sb->s_magic=ef53
+(...snipped...)
+[   76.701837] dentry->d_lockref.count=-128 dentry->d_sb->s_magic=ef53
+[   76.718264] EXT4-fs (sda1): re-mounted. Opts: (null)
+[   76.962112] dentry->d_lockref.count=-128 dentry->d_sb->s_magic=9fa0
+(...snipped...)
+[   77.100116] dentry->d_lockref.count=-128 dentry->d_sb->s_magic=9fa0
+[   77.110684] dentry->d_lockref.count=-128 dentry->d_sb->s_magic=62656572
+(...snipped...)
+[   77.424319] dentry->d_lockref.count=-128 dentry->d_sb->s_magic=62656572
+Please stand by while rebooting the system...
+[   77.556052] reboot: Restarting system
+[   77.556942] reboot: machine restart
+---------- console log on shutdown ----------
