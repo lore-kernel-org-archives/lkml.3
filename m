@@ -1,33 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755273AbaFLBvl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 21:51:41 -0400
-Received: from ns.horizon.com ([71.41.210.147]:16646 "HELO ns.horizon.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754411AbaFLBvk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 21:51:40 -0400
-Date: 11 Jun 2014 21:51:39 -0400
-Message-ID: <20140612015139.21573.qmail@ns.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: hpa@linux.intel.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        linux@horizon.com, mingo@kernel.org, price@mit.edu, tytso@mit.edu
-Subject: Re: drivers/char/random.c: More futzing about
-In-Reply-To: <5398F7F9.9000106@zytor.com>
+	id S1755402AbaFLB7v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 21:59:51 -0400
+Received: from exprod5og124.obsmtp.com ([64.18.0.212]:46486 "HELO
+	exprod5og124.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755197AbaFLB7t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 21:59:49 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140605.004555.658378024391856482.davem@davemloft.net>
+References: <1401737954-26152-1-git-send-email-isubramanian@apm.com>
+	<1401737954-26152-5-git-send-email-isubramanian@apm.com>
+	<20140605.004555.658378024391856482.davem@davemloft.net>
+Date: Wed, 11 Jun 2014 18:59:47 -0700
+Message-ID: <CAKh23F=F3YOc830v45FavdToOvHEXO7tw6duRvn7-32GUb6cjw@mail.gmail.com>
+Subject: Re: [PATCH v5 4/4] drivers: net: Add APM X-Gene SoC ethernet driver support.
+From: Iyappan Subramanian <isubramanian@apm.com>
+To: David Miller <davem@davemloft.net>
+Cc: netdev <netdev@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "jcm@redhat.com" <jcm@redhat.com>, patches <patches@apm.com>,
+        Ravi Patel <rapatel@apm.com>, Keyur Chudgar <kchudgar@apm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Sadly I can't find the tree, but I'm 94% sure it was Skein-256
-> (specifically the SHA3-256 candidate parameter set.)
+On Thu, Jun 5, 2014 at 12:45 AM, David Miller <davem@davemloft.net> wrote:
+> From: Iyappan Subramanian <isubramanian@apm.com>
+> Date: Mon,  2 Jun 2014 12:39:14 -0700
+>
+>> +     netdev_err(ndev, "LERR: %d ring_num: %d ", status, ring->num);
+>> +     switch (status) {
+>> +     case HBF_READ_DATA:
+>> +             netdev_err(ndev, "HBF read data error\n");
+>> +             break;
+>
+> This is not really appropriate.
+>
+> We have statistics like the ones you are incrementing in this
+> function as the mechanism people can use to learn what events
+> happened on an interface, and how many times they happened.
+>
+> Therefore, emitting a log message for each one of those events too is
+> not necessary.
+>
+> We don't emit a netdev_err() for every packet that the IPv4 stack
+> drops due to a bad checksum, for example.
+>
+> Please get rid of this.
 
-It would be nice to have two hash functions, optimized separately for 32-
-and 64-bit processors.  As the Skein report says, the algorithm can
-be adapted to 32 bits easily enough.
+Sure.  I will remove the error message prints and clean up the function.
 
-I also did some work a while ago to adapt the Skein parameter search
-code to develop a Skein-192 (6x32 bits) that would fit into registers
-on x86-32.  (It got stalled when I e-mailed Niels Ferguson about it
-and never heard back; it fell off the to-do list while I was waiting.)
-
-The intended target was IPv6 address hashing for sequence number
-randomization, but it could be used for pool hashing, too.
+>
