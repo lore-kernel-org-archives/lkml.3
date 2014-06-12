@@ -1,212 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933817AbaFLNt7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 09:49:59 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59438 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756012AbaFLNrB (ORCPT
+	id S933834AbaFLNu1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 09:50:27 -0400
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:53010 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932707AbaFLNuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 09:47:01 -0400
-From: Christoph Hellwig <hch@lst.de>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Bart Van Assche <bvanassche@fusionio.com>,
-        Robert Elliot <Elliott@hp.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 05/14] scsi: push host_lock down into scsi_{host,target}_queue_ready
-Date: Thu, 12 Jun 2014 15:48:57 +0200
-Message-Id: <1402580946-11470-6-git-send-email-hch@lst.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1402580946-11470-1-git-send-email-hch@lst.de>
-References: <1402580946-11470-1-git-send-email-hch@lst.de>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 12 Jun 2014 09:50:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAAVeFu+KZ9AqB5ji5-AA+qzEFDWd7y0=J1eSEPqQ-OyhmXufig@mail.gmail.com>
+References: <1400483458-9648-1-git-send-email-acourbot@nvidia.com>
+ <1400483458-9648-5-git-send-email-acourbot@nvidia.com> <20140519090202.GC7138@ulmo>
+ <1400491331.8467.8.camel@weser.hi.pengutronix.de> <CAAVeFu+KZ9AqB5ji5-AA+qzEFDWd7y0=J1eSEPqQ-OyhmXufig@mail.gmail.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Thu, 12 Jun 2014 22:50:01 +0900
+Message-ID: <CAAVeFuJYe5wVH_gTok80hT=4GbwhYq4C9c7S5No_V11qjs3brQ@mail.gmail.com>
+Subject: Re: [PATCH 4/4] drm/nouveau: introduce CPU cache flushing macro
+To: Lucas Stach <l.stach@pengutronix.de>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prepare for not taking a host-wide lock in the dispatch path by pushing
-the lock down into the places that actually need it.  Note that this
-patch is just a preparation step, as it will actually increase lock
-roundtrips and thus decrease performance on its own.
+On Mon, Jun 9, 2014 at 7:41 PM, Alexandre Courbot <gnurou@gmail.com> wrote:
+> On Mon, May 19, 2014 at 6:22 PM, Lucas Stach <l.stach@pengutronix.de> wrote:
+>> Am Montag, den 19.05.2014, 11:02 +0200 schrieb Thierry Reding:
+>>> On Mon, May 19, 2014 at 04:10:58PM +0900, Alexandre Courbot wrote:
+>>> > Some architectures (e.g. ARM) need the CPU buffers to be explicitely
+>>> > flushed for a memory write to take effect. Not doing so results in
+>>> > synchronization issues, especially after writing to BOs.
+>>>
+>>> It seems to me that the above is generally true for all architectures,
+>>> not just ARM.
+>>>
+>> No, on PCI coherent arches, like x86 and some PowerPCs, the GPU will
+>> snoop the CPU caches and therefore an explicit cache flush is not
+>> required.
+>>
+>>> Also: s/explicitely/explicitly/
+>>>
+>>> > This patch introduces a macro that flushes the caches on ARM and
+>>> > translates to a no-op on other architectures, and uses it when
+>>> > writing to in-memory BOs. It will also be useful for implementations of
+>>> > instmem that access shared memory directly instead of going through
+>>> > PRAMIN.
+>>>
+>>> Presumably instmem can access shared memory on all architectures, so
+>>> this doesn't seem like a property of the architecture but rather of the
+>>> memory pool backing the instmem.
+>>>
+>>> In that case I wonder if this shouldn't be moved into an operation that
+>>> is implemented by the backing memory pool and be a noop where the cache
+>>> doesn't need explicit flushing.
+>>>
+>>> > diff --git a/drivers/gpu/drm/nouveau/core/os.h b/drivers/gpu/drm/nouveau/core/os.h
+>>> > index d0ced94ca54c..274b4460bb03 100644
+>>> > --- a/drivers/gpu/drm/nouveau/core/os.h
+>>> > +++ b/drivers/gpu/drm/nouveau/core/os.h
+>>> > @@ -38,4 +38,21 @@
+>>> >  #endif /* def __BIG_ENDIAN else */
+>>> >  #endif /* !ioread32_native */
+>>> >
+>>> > +#if defined(__arm__)
+>>> > +
+>>> > +#define nv_cpu_cache_flush_area(va, size)  \
+>>> > +do {                                               \
+>>> > +   phys_addr_t pa = virt_to_phys(va);      \
+>>> > +   __cpuc_flush_dcache_area(va, size);     \
+>>> > +   outer_flush_range(pa, pa + size);       \
+>>> > +} while (0)
+>>>
+>>> Couldn't this be a static inline function?
+>>>
+>>> > diff --git a/drivers/gpu/drm/nouveau/nouveau_bo.c b/drivers/gpu/drm/nouveau/nouveau_bo.c
+>>> [...]
+>>> > index 0886f47e5244..b9c9729c5733 100644
+>>> > --- a/drivers/gpu/drm/nouveau/nouveau_bo.c
+>>> > +++ b/drivers/gpu/drm/nouveau/nouveau_bo.c
+>>> > @@ -437,8 +437,10 @@ nouveau_bo_wr16(struct nouveau_bo *nvbo, unsigned index, u16 val)
+>>> >     mem = &mem[index];
+>>> >     if (is_iomem)
+>>> >             iowrite16_native(val, (void __force __iomem *)mem);
+>>> > -   else
+>>> > +   else {
+>>> >             *mem = val;
+>>> > +           nv_cpu_cache_flush_area(mem, 2);
+>>> > +   }
+>>> >  }
+>>> >
+>>> >  u32
+>>> > @@ -461,8 +463,10 @@ nouveau_bo_wr32(struct nouveau_bo *nvbo, unsigned index, u32 val)
+>>> >     mem = &mem[index];
+>>> >     if (is_iomem)
+>>> >             iowrite32_native(val, (void __force __iomem *)mem);
+>>> > -   else
+>>> > +   else {
+>>> >             *mem = val;
+>>> > +           nv_cpu_cache_flush_area(mem, 4);
+>>> > +   }
+>>>
+>>> This looks rather like a sledgehammer to me. Effectively this turns nvbo
+>>> into an uncached buffer. With additional overhead of constantly flushing
+>>> caches. Wouldn't it make more sense to locate the places where these are
+>>> called and flush the cache after all the writes have completed?
+>>>
+>> I don't think the explicit flushing for those things makes sense. I
+>> think it is a lot more effective to just map the BOs write-combined on
+>> PCI non-coherent arches. This way any writes will be buffered. Reads
+>> will be slow, but I don't think nouveau is reading back a lot from those
+>> buffers.
+>> Using the write-combining buffer doesn't need any additional
+>> synchronization as it will get flushed on pushbuf kickoff anyways.
+>
+> I tried to go that way, and something interesting happened.
+>
+> What I did: remove this patch and instead set the following caching
+> parameters for the TTM_PL_TT case in nouveau_bo_init_mem_type():
+>
+>     man->available_caching = TTM_PL_FLAG_UNCACHED | TTM_PL_FLAG_WC;
+>     man->default_caching = TTM_PL_FLAG_WC;
+>
+> What happened: no runtime errors as what happened when caching is
+> enabled. However, many of the vertex and texture buffers seem to be
+> partially corrupted. In glmark2 the 3d models had many vertices (but
+> not all) at the wrong position. Note that not all the scenes ended up
+> being corrupted - in particular, when two consecutive scenes used the
+> same model, the second instance would be uncorrupted.
+>
+> Forcing the caching to TTM_PL_FLAG_UNCACHED led to the same result.
+> What is interesting is that while data like vertices and textures got
+> corrupted, pushbuffers and shader programs seem to be just fine, as I
+> could not see any runtime error.
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
----
- drivers/scsi/scsi_lib.c |   75 ++++++++++++++++++++++++-----------------------
- 1 file changed, 39 insertions(+), 36 deletions(-)
+An interesting fact: if I change ttm_bo_kmap_ttm() such as kernel
+mappings of BOs are always performed write-combined, and leave the
+TTM_PL_TT default caching to TTM_PL_FLAG_CACHED so user-space mappings
+remain cached, the corruptions just vanish. It seems to be the fact of
+setting user-space mappings to anything non-cached that leads to this
+puzzling behavior. Certainly some subtlety of ARM mappings are getting
+over my head here.
 
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index f0ec249..3d90340 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -1300,18 +1300,18 @@ static inline int scsi_dev_queue_ready(struct request_queue *q,
- /*
-  * scsi_target_queue_ready: checks if there we can send commands to target
-  * @sdev: scsi device on starget to check.
-- *
-- * Called with the host lock held.
-  */
- static inline int scsi_target_queue_ready(struct Scsi_Host *shost,
- 					   struct scsi_device *sdev)
- {
- 	struct scsi_target *starget = scsi_target(sdev);
-+	int ret = 0;
- 
-+	spin_lock_irq(shost->host_lock);
- 	if (starget->single_lun) {
- 		if (starget->starget_sdev_user &&
- 		    starget->starget_sdev_user != sdev)
--			return 0;
-+			goto out;
- 		starget->starget_sdev_user = sdev;
- 	}
- 
-@@ -1319,57 +1319,66 @@ static inline int scsi_target_queue_ready(struct Scsi_Host *shost,
- 		/*
- 		 * unblock after target_blocked iterates to zero
- 		 */
--		if (--starget->target_blocked == 0) {
--			SCSI_LOG_MLQUEUE(3, starget_printk(KERN_INFO, starget,
--					 "unblocking target at zero depth\n"));
--		} else
--			return 0;
-+		if (--starget->target_blocked != 0)
-+			goto out;
-+
-+		SCSI_LOG_MLQUEUE(3, starget_printk(KERN_INFO, starget,
-+				 "unblocking target at zero depth\n"));
- 	}
- 
- 	if (scsi_target_is_busy(starget)) {
- 		list_move_tail(&sdev->starved_entry, &shost->starved_list);
--		return 0;
-+		goto out;
- 	}
- 
--	return 1;
-+	scsi_target(sdev)->target_busy++;
-+	ret = 1;
-+out:
-+	spin_unlock_irq(shost->host_lock);
-+	return ret;
- }
- 
- /*
-  * scsi_host_queue_ready: if we can send requests to shost, return 1 else
-  * return 0. We must end up running the queue again whenever 0 is
-  * returned, else IO can hang.
-- *
-- * Called with host_lock held.
-  */
- static inline int scsi_host_queue_ready(struct request_queue *q,
- 				   struct Scsi_Host *shost,
- 				   struct scsi_device *sdev)
- {
-+	int ret = 0;
-+
-+	spin_lock_irq(shost->host_lock);
-+
- 	if (scsi_host_in_recovery(shost))
--		return 0;
-+		goto out;
- 	if (shost->host_busy == 0 && shost->host_blocked) {
- 		/*
- 		 * unblock after host_blocked iterates to zero
- 		 */
--		if (--shost->host_blocked == 0) {
--			SCSI_LOG_MLQUEUE(3,
--				printk("scsi%d unblocking host at zero depth\n",
--					shost->host_no));
--		} else {
--			return 0;
--		}
-+		if (--shost->host_blocked != 0)
-+			goto out;
-+
-+		SCSI_LOG_MLQUEUE(3,
-+			printk("scsi%d unblocking host at zero depth\n",
-+				shost->host_no));
- 	}
- 	if (scsi_host_is_busy(shost)) {
- 		if (list_empty(&sdev->starved_entry))
- 			list_add_tail(&sdev->starved_entry, &shost->starved_list);
--		return 0;
-+		goto out;
- 	}
- 
- 	/* We're OK to process the command, so we can't be starved */
- 	if (!list_empty(&sdev->starved_entry))
- 		list_del_init(&sdev->starved_entry);
- 
--	return 1;
-+	shost->host_busy++;
-+	ret = 1;
-+out:
-+	spin_unlock_irq(shost->host_lock);
-+	return ret;
- }
- 
- /*
-@@ -1550,7 +1559,7 @@ static void scsi_request_fn(struct request_queue *q)
- 			blk_start_request(req);
- 		sdev->device_busy++;
- 
--		spin_unlock(q->queue_lock);
-+		spin_unlock_irq(q->queue_lock);
- 		cmd = req->special;
- 		if (unlikely(cmd == NULL)) {
- 			printk(KERN_CRIT "impossible request in %s.\n"
-@@ -1560,7 +1569,6 @@ static void scsi_request_fn(struct request_queue *q)
- 			blk_dump_rq_flags(req, "foo");
- 			BUG();
- 		}
--		spin_lock(shost->host_lock);
- 
- 		/*
- 		 * We hit this when the driver is using a host wide
-@@ -1571,9 +1579,11 @@ static void scsi_request_fn(struct request_queue *q)
- 		 * a run when a tag is freed.
- 		 */
- 		if (blk_queue_tagged(q) && !blk_rq_tagged(req)) {
-+			spin_lock_irq(shost->host_lock);
- 			if (list_empty(&sdev->starved_entry))
- 				list_add_tail(&sdev->starved_entry,
- 					      &shost->starved_list);
-+			spin_unlock_irq(shost->host_lock);
- 			goto not_ready;
- 		}
- 
-@@ -1581,16 +1591,7 @@ static void scsi_request_fn(struct request_queue *q)
- 			goto not_ready;
- 
- 		if (!scsi_host_queue_ready(q, shost, sdev))
--			goto not_ready;
--
--		scsi_target(sdev)->target_busy++;
--		shost->host_busy++;
--
--		/*
--		 * XXX(hch): This is rather suboptimal, scsi_dispatch_cmd will
--		 *		take the lock again.
--		 */
--		spin_unlock_irq(shost->host_lock);
-+			goto host_not_ready;
- 
- 		/*
- 		 * Finally, initialize any error handling parameters, and set up
-@@ -1613,9 +1614,11 @@ static void scsi_request_fn(struct request_queue *q)
- 
- 	return;
- 
-- not_ready:
-+ host_not_ready:
-+	spin_lock_irq(shost->host_lock);
-+	scsi_target(sdev)->target_busy--;
- 	spin_unlock_irq(shost->host_lock);
--
-+ not_ready:
- 	/*
- 	 * lock q, handle tag, requeue req, and decrement device_busy. We
- 	 * must return with queue_lock held.
--- 
-1.7.10.4
+If we need to implement different policies for kernel and user-space
+mappings, this might complicate things a bit, especially since support
+needs to be in TTM and not only Nouveau. I will submit a RFC tomorrow
+if I don't hear better ideas by then.
 
+Alex.
