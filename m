@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933050AbaFLJll (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 05:41:41 -0400
-Received: from mail-pa0-f67.google.com ([209.85.220.67]:52974 "EHLO
-	mail-pa0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932845AbaFLJlj (ORCPT
+	id S933065AbaFLJlw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 05:41:52 -0400
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:46573 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932845AbaFLJls (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 05:41:39 -0400
-From: Jimmy P <jimmyp11f155@gmail.com>
-To: Jonathan Cameron <jic23@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Jimmy P <jimmyp11f155@gmail.com>, linux-iio@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: iio: fix coding style
-Date: Thu, 12 Jun 2014 17:42:43 +0800
-Message-Id: <1402566163-9860-1-git-send-email-jimmyp11f155@gmail.com>
+	Thu, 12 Jun 2014 05:41:48 -0400
+From: Jisheng Zhang <jszhang@marvell.com>
+To: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <linux@arm.linux.org.uk>, <sebastian.hesselbarth@gmail.com>,
+        <alexandre.belloni@free-electrons.com>,
+        <antoine.tenart@free-electrons.com>
+CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, Jisheng Zhang <jszhang@marvell.com>
+Subject: [PATCH] ARM: dts: berlin2q.dtsi: set L2CC tag and data latency as 2 cycles
+Date: Thu, 12 Jun 2014 17:38:40 +0800
+Message-ID: <1402565920-5636-1-git-send-email-jszhang@marvell.com>
 X-Mailer: git-send-email 2.0.0
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-06-12_04:2014-06-11,2014-06-12,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1406120120
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes coding style errors reported by checkpatch.pl for
-lines that was over 80 chars long. The macro value shoud be put in () as
-well.
+For all BG2Q SoCs, 2 cycles is the best/correct value
 
-Signed-off-by: Jimmy P <jimmyp11f155@gmail.com>
+Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
 ---
- drivers/staging/iio/frequency/ad5930.c | 11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ arch/arm/boot/dts/berlin2q.dtsi | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/staging/iio/frequency/ad5930.c b/drivers/staging/iio/frequency/ad5930.c
-index a4aeee6..95a3550 100644
---- a/drivers/staging/iio/frequency/ad5930.c
-+++ b/drivers/staging/iio/frequency/ad5930.c
-@@ -21,7 +21,7 @@
+diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
+index 635a16a..3f95dc5 100644
+--- a/arch/arm/boot/dts/berlin2q.dtsi
++++ b/arch/arm/boot/dts/berlin2q.dtsi
+@@ -90,6 +90,8 @@
+ 			compatible = "arm,pl310-cache";
+ 			reg = <0xac0000 0x1000>;
+ 			cache-level = <2>;
++			arm,data-latency = <2 2 2>;
++			arm,tag-latency = <2 2 2>;
+ 		};
  
- #define DRV_NAME "ad5930"
- 
--#define value_mask (u16)0xf000
-+#define value_mask ((u16)0xf000)
- #define addr_shift 12
- 
- /* Register format: 4 bits addr + 12 bits value */
-@@ -52,12 +52,15 @@ static ssize_t ad5930_set_parameter(struct device *dev,
- 
- 	config->control = (config->control & ~value_mask);
- 	config->incnum = (config->control & ~value_mask) | (1 << addr_shift);
--	config->frqdelt[0] = (config->control & ~value_mask) | (2 << addr_shift);
-+	config->frqdelt[0] = (config->control & ~value_mask) |
-+				(2 << addr_shift);
- 	config->frqdelt[1] = (config->control & ~value_mask) | 3 << addr_shift;
- 	config->incitvl = (config->control & ~value_mask) | 4 << addr_shift;
- 	config->buritvl = (config->control & ~value_mask) | 8 << addr_shift;
--	config->strtfrq[0] = (config->control & ~value_mask) | 0xc << addr_shift;
--	config->strtfrq[1] = (config->control & ~value_mask) | 0xd << addr_shift;
-+	config->strtfrq[0] = (config->control & ~value_mask) |
-+				0xc << addr_shift;
-+	config->strtfrq[1] = (config->control & ~value_mask) |
-+				0xd << addr_shift;
- 
- 	xfer.len = len;
- 	xfer.tx_buf = config;
+ 		scu: snoop-control-unit@ad0000 {
 -- 
 2.0.0
 
