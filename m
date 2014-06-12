@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933789AbaFLMEb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 08:04:31 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60642 "EHLO
+	id S964824AbaFLMEg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 08:04:36 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60646 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933105AbaFLME2 (ORCPT
+	with ESMTP id S933754AbaFLMEb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 08:04:28 -0400
-Date: Thu, 12 Jun 2014 05:04:08 -0700
-From: tip-bot for Masami Hiramatsu <tipbot@zytor.com>
-Message-ID: <tip-36d789a4d75f3826faa6e75b018942b63ffed1a0@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        acme@kernel.org, namhyung@kernel.org, jolsa@redhat.com,
-        masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        acme@kernel.org, namhyung@kernel.org, jolsa@redhat.com,
-        masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de
-In-Reply-To: <20140606071345.6788.23744.stgit@kbuild-fedora.novalocal>
-References: <20140606071345.6788.23744.stgit@kbuild-fedora.novalocal>
+	Thu, 12 Jun 2014 08:04:31 -0400
+Date: Thu, 12 Jun 2014 05:03:43 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-7e0sfobbzgeydzi9gsz8ss3m@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@kernel.org, fweisbec@gmail.com,
+        adrian.hunter@intel.com, dsahern@gmail.com, tglx@linutronix.de,
+        dzickus@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@kernel.org, fweisbec@gmail.com,
+        dsahern@gmail.com, adrian.hunter@intel.com, tglx@linutronix.de,
+        dzickus@redhat.com
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf probe:
-  Improve error message for unknown member of data structure
-Git-Commit-ID: 36d789a4d75f3826faa6e75b018942b63ffed1a0
+Subject: [tip:perf/core] perf tools:
+  Emit more precise message for missing glibc static library
+Git-Commit-ID: f9ca2d8918979e8ef806a8b6b4635a79b4f40d1a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,74 +36,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  36d789a4d75f3826faa6e75b018942b63ffed1a0
-Gitweb:     http://git.kernel.org/tip/36d789a4d75f3826faa6e75b018942b63ffed1a0
-Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-AuthorDate: Fri, 6 Jun 2014 07:13:45 +0000
+Commit-ID:  f9ca2d8918979e8ef806a8b6b4635a79b4f40d1a
+Gitweb:     http://git.kernel.org/tip/f9ca2d8918979e8ef806a8b6b4635a79b4f40d1a
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Thu, 5 Jun 2014 12:46:04 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 9 Jun 2014 12:15:07 -0300
+CommitDate: Mon, 9 Jun 2014 12:14:08 -0300
 
-perf probe: Improve error message for unknown member of data structure
+perf tools: Emit more precise message for missing glibc static library
 
-Improve the error message if we can not find given member in the given
-structure. Currently perf probe shows a wrong error message as below.
+When the user does:
 
-  -----
-  # perf probe getname_flags:65 "result->BOGUS"
-  result(type:filename) has no member BOGUS.
-  Failed to find 'result' in this function.
-    Error: Failed to add events. (-22)
-  -----
+  make -C tools/perf LDFLAGS=-static
 
-The first message is correct, but the second one is not, since we didn't
-fail to find a variable but fails to find the member of given variable.
+asking for a static build, and the glibc-static (or equivalent) is not
+found, the message wasn't clear, stating that one of glibc-devel or
+glibc-static wasn't installed, clarify it checking if -static is
+present in LDFLAGS.
 
-  -----
-  # perf probe getname_flags:65 "result->BOGUS"
-  result(type:filename) has no member BOGUS.
-    Error: Failed to add events. (-22)
-  -----
-
-With this patch, the error message shows only the first one.  And if we
-really failed to find given variable, it tells us so.
-
-  -----
-  # perf probe getname_flags:65 "BOGUS"
-  Failed to find 'BOGUS' in this function.
-    Error: Failed to add events. (-2)
-  -----
-
-Reported-by: Arnaldo Carvalho de Melo <acme@kernel.org>
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20140606071345.6788.23744.stgit@kbuild-fedora.novalocal
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-7e0sfobbzgeydzi9gsz8ss3m@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/probe-finder.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ tools/perf/config/Makefile | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index 9d8eb26..ce8faf4 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -573,14 +573,13 @@ static int find_variable(Dwarf_Die *sc_die, struct probe_finder *pf)
- 	if (!die_find_variable_at(sc_die, pf->pvar->var, pf->addr, &vr_die)) {
- 		/* Search again in global variables */
- 		if (!die_find_variable_at(&pf->cu_die, pf->pvar->var, 0, &vr_die))
-+			pr_warning("Failed to find '%s' in this function.\n",
-+				   pf->pvar->var);
- 			ret = -ENOENT;
- 	}
- 	if (ret >= 0)
- 		ret = convert_variable(&vr_die, pf);
- 
--	if (ret < 0)
--		pr_warning("Failed to find '%s' in this function.\n",
--			   pf->pvar->var);
- 	return ret;
- }
- 
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 4f100b5..f30ac5e 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -299,7 +299,11 @@ else
+       NO_LIBUNWIND := 1
+       NO_LIBDW_DWARF_UNWIND := 1
+     else
+-      msg := $(error No gnu/libc-version.h found, please install glibc-dev[el]/glibc-static);
++      ifneq ($(filter s% -static%,$(LDFLAGS),),)
++        msg := $(error No static glibc found, please install glibc-static);
++      else
++        msg := $(error No gnu/libc-version.h found, please install glibc-dev[el]);
++      endif
+     endif
+   else
+     ifndef NO_LIBDW_DWARF_UNWIND
