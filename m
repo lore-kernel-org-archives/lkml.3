@@ -1,85 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752242AbaFLTNd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 15:13:33 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:44200 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751010AbaFLTNb (ORCPT
+	id S1752331AbaFLTNp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 15:13:45 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:35207 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752279AbaFLTNm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 15:13:31 -0400
-From: Kumar Gala <galak@codeaurora.org>
-To: Tejun Heo <tj@kernel.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>
-Cc: Kumar Gala <galak@codeaurora.org>, linux-ide@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 3/3] ata: qcom: Add device tree bindings information
-Date: Thu, 12 Jun 2014 14:13:24 -0500
-Message-Id: <1402600404-19214-3-git-send-email-galak@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1402600404-19214-1-git-send-email-galak@codeaurora.org>
-References: <1402600404-19214-1-git-send-email-galak@codeaurora.org>
+	Thu, 12 Jun 2014 15:13:42 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFwOvYO2pSvd835R=iU3=8i5jYu07FbifU-nOVj5pecBmA@mail.gmail.com>
+References: <alpine.DEB.2.00.1406120157510.2473@skynet.skynet.ie>
+	<CA+55aFwOvYO2pSvd835R=iU3=8i5jYu07FbifU-nOVj5pecBmA@mail.gmail.com>
+Date: Thu, 12 Jun 2014 12:13:41 -0700
+X-Google-Sender-Auth: v42Puwo_DtnxuotYClF04pm-hZc
+Message-ID: <CA+55aFwiFAFLHBV_=vHm-3-g5pog01A0mhMpo4yCDnaKMdhFnA@mail.gmail.com>
+Subject: Re: [git pull] drm merge tree
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Airlie <airlied@linux.ie>, Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device tree binding for Qualcomm AHCI SATA controller and specifically
-the sata controller on the IPQ806x family of SoCs.
+On Thu, Jun 12, 2014 at 12:06 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> I just had the machine reboot on me when booting this and starting X,
+> leaving nothing in the logs.
 
-Signed-off-by: Kumar Gala <galak@codeaurora.org>
----
- .../devicetree/bindings/ata/qcom-sata.txt          | 40 ++++++++++++++++++++++
- 1 file changed, 40 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/ata/qcom-sata.txt
+Ok, I can't recreate it, and as such I can't be sure that it was even
+the drm merge that causes it (although the timing was suspicious). So
+in it stays, since it's not making my life impossible.
 
-diff --git a/Documentation/devicetree/bindings/ata/qcom-sata.txt b/Documentation/devicetree/bindings/ata/qcom-sata.txt
-new file mode 100644
-index 0000000..5e74e41
---- /dev/null
-+++ b/Documentation/devicetree/bindings/ata/qcom-sata.txt
-@@ -0,0 +1,40 @@
-+* Qualcomm AHCI SATA Controller
-+
-+SATA nodes are defined to describe on-chip Serial ATA controllers.
-+Each SATA controller should have its own node.
-+
-+Required properties:
-+- compatible		: compatible list, contains "qcom,msm-ahci"
-+- interrupts		: <interrupt mapping for SATA IRQ>
-+- reg			: <registers mapping>
-+- phys			: Must contain exactly one entry as specified
-+			  in phy-bindings.txt
-+- phy-names		: Must be "sata-phy"
-+
-+Required properties for "qcom,ipq806x-ahci" compatible:
-+- clocks		: Must contain an entry for each entry in clock-names.
-+- clock-names		: Shall be:
-+				"slave_iface" - Fabric port AHB clock for SATA
-+				"iface" - AHB clock
-+				"core" - core clock
-+				"rxoob" - RX out-of-band clock
-+				"pmalive" - Power Module Alive clock
-+
-+Example:
-+	sata@29000000 {
-+		compatible = "qcom,ipq806x-ahci", "qcom,msm-ahci";
-+		reg = <0x29000000 0x180>;
-+
-+		interrupts = <0 209 0x0>;
-+
-+		clocks = <&gcc SFAB_SATA_S_H_CLK>,
-+			 <&gcc SATA_H_CLK>,
-+			 <&gcc SATA_A_CLK>,
-+			 <&gcc SATA_RXOOB_CLK>,
-+			 <&gcc SATA_PMALIVE_CLK>;
-+		clock-names = "slave_iface", "iface", "core",
-+				"rxoob", "pmalive";
-+
-+		phys = <&sata_phy>;
-+		phy-names = "sata-phy";
-+	};
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+But please keep an eye out for any i915 issues..
 
+           Linus
