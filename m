@@ -1,144 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933286AbaFLOgG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 10:36:06 -0400
-Received: from sema.semaphore.gr ([78.46.194.137]:34552 "EHLO
-	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752874AbaFLOgD (ORCPT
+	id S1756016AbaFLOi0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 10:38:26 -0400
+Received: from blu004-omc1s25.hotmail.com ([65.55.116.36]:54762 "EHLO
+	BLU004-OMC1S25.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752898AbaFLOiZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 10:36:03 -0400
-Message-ID: <5399BACF.6060201@semaphore.gr>
-Date: Thu, 12 Jun 2014 17:35:59 +0300
-From: Stratos Karafotis <stratosk@semaphore.gr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 12 Jun 2014 10:38:25 -0400
+X-Greylist: delayed 306 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 Jun 2014 10:38:25 EDT
+X-TMN: [0omWdM6/vVAC1oMzNmu+9CvNAhl8U2gd]
+X-Originating-Email: [nickkrause@sympatico.ca]
+Message-ID: <BLU436-SMTP2404B87A72E455C1BDE2B43A52A0@phx.gbl>
+Subject: Re: PATCH[[vme/bridges/vme_ca91cx42.c:1382: Bad if test Bug
+ =?UTF-8?Q?Fix=5D=E2=80=8F=E2=80=8F?=
+From: nick <nickkrause@sympatico.ca>
+To: martyn.welch@ge.com
+CC: manohar.vanga@gmail.com, gregkh@linuxfoundation.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Date: Thu, 12 Jun 2014 10:33:09 -0400
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
 MIME-Version: 1.0
-To: Doug Smythies <dsmythies@telus.net>, rjw@rjwysocki.net,
-        viresh.kumar@linaro.org, dirk.j.brandewie@intel.com
-CC: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cpufreq: intel_pstate: Fix rounding of core_pct
-References: <1402490012-19969-1-git-send-email-stratosk@semaphore.gr> <009b01cf857a$d5032090$7f0961b0$@net> <539862DB.9060905@semaphore.gr> <00a001cf8586$24eb5c70$6ec21550$@net> <5398BA0B.7070903@semaphore.gr> <00b301cf85ba$40fe4290$c2fac7b0$@net>
-In-Reply-To: <00b301cf85ba$40fe4290$c2fac7b0$@net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 12 Jun 2014 14:33:17.0093 (UTC) FILETIME=[3FF82550:01CF864B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2014 12:15 πμ, Doug Smythies wrote:
-> 
-> 
-> -----Original Message-----
-> From: Stratos Karafotis [mailto:stratosk@semaphore.gr] 
-> Sent: June-11-2014 13:20
-> To: Doug Smythies
-> Cc: linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org; rjw@rjwysocki.net; viresh.kumar@linaro.org; dirk.j.brandewie@intel.com
-> Subject: Re: [PATCH] cpufreq: intel_pstate: Fix rounding of core_pct
-> 
-> On 2014.06.11 13:20 Stratos Karafotis wrote:
->> On 11/06/2014 06:02 μμ, Doug Smythies wrote:
->>>
->>> On 2104.06.11 07:08 Stratos Karafotis wrote:
->>>> On 11/06/2014 04:41 μμ, Doug Smythies wrote:
->>>>
->>>> No.
->>>
->>>> The intent was only ever to round properly the pseudo floating point result of the divide.
->>>> It was much more important (ugh, well 4 times more) when FRACBITS was still 6, which also got changed to 8 in a recent patch.
->>>>
->>>
->>> Are you sure?
->>>
->>> Yes.
->>>
->>>> This rounding was very recently added.
->>>> As far as I can understand, I don't see the meaning of this rounding, as is.
->>>> Even if FRAC_BITS was 6, I think it would have almost no improvement in
->>>> calculations.
->>>
->>> Note: I had not seen this e-mail when I wrote a few minutes ago:
->>>
->>> You may be correct.
->>> If Dirk agrees, I will re-analyse the entire driver for rounding effects soon.
->>> When FRACBITS was 6 there were subtle cases where the driver would get stuck, and not make a final pstate change, with the default PID gains.
->>> Other things have changed, and the analysis needs to be re-done.
->>>
-> 
->> Could you please elaborate a little bit more what we need these 2 lines below?
->>
->>        if ((rem << 1) >= int_tofp(sample->mperf))
->>                core_pct += 1;
->>
->> Because nothing is mentioned for them in commit's changelog.
->> Do we need to round core_pct or not?
->> Because if we try to round it, I think this patch should work.
-> 
-> As mentioned originally, they are there just to round the pseudo floating number, not the integer portion only.
-> Let us bring back the very numbers you originally gave and work through it.
-> 
-> aperf = 5024
-> mperf = 10619
-> 
-> core_pct = 47.31142292%
-> or 47 and 79.724267 256ths
-> or to the closest kept fractional part 47 and 80 256ths
-> or 12112 as a pseudo float.
-> The maximum error with this rounding will be 1 part in 512 and symmetric instead of the 1 part in 256 always in one direction without.
-> 
-> Now if FRACBITS was still 6:
-> core_pct = 47.31142292%
-> or 47 and 19.931 64ths
-> or to the closest kept fractional part 47 and 20 64ths
-> or 3028 as a pseudo float.
-> The maximum error with this rounding will be 1 part in 128 and symmetric instead of the 1 part in 64 (1.6% !!!) always in one direction without.
-> 
-> Hope this helps.
-> 
-
-Yes, it helps. Thanks a lot!
-
-But please note that the maximum error without this rounding will be 1.6% _only_
-in fractional part. In the real number it will be much smaller:
-
-47.19 instead of 47.20
-
-And using FRAC_BITS 8:
-
-47.79 instead of 47.80
-
-This is a 0.0002% difference. I can't see how this is can affect the calculations
-even with FRAC_BITS 6.
-
-Another thing is that this algorithm generally is used to round to the
-nearest integer. I'm not sure if it's valid to apply it for the rounding of
-the fractional part of fixed point number.
-
-Please see below the algorithm (with numbers of the specific example presented
-as real):
-
-aperf = 5024
-mperf = 10619
-
-aperf * 100 / mperf = 47.31142292
-
-core_pct = 47
-rem = 3307
-
-if (3307 * 2) >= 10619
-	core_pct = core_pct + 0.004
-
-The original algorithm adds 1 to the quotient to round the integer part of the
-division. In the specific example we add 0.004 to round the fractional part.
-
-Fortunately, as you mentioned, this does not change the final calculation
-considering that we do _not_ want an integer rounding.
-
-IMHO, If we need integer rounding we also need this patch, otherwise
-we can safely remove this rounding.
-
-
-Thanks,
-Stratos
-
+Here is the fixed patch. Having issues with using Thunderbird
+so just used Evolution for now.
+Nick 
+--- drivers/vme/bridges/vme_ca91cx42.h.orig	2014-06-11 22:50:29.339671939 -0400
++++ drivers/vme/bridges/vme_ca91cx42.h	2014-06-11 23:15:36.027685173 -0400
+Fixes bug issues with wrong bus width in if statments in vme_ca91cx42.c
+Signed-off-by: Nicholas Krause <nickkrause@sympatico.ca>
+@@ -526,7 +526,7 @@ static const int CA91CX42_LINT_LM[] = {
+ #define CA91CX42_VSI_CTL_SUPER_SUPR	(1<<21)
+ 
+ #define CA91CX42_VSI_CTL_VAS_M		(7<<16)
+-#define CA91CX42_VSI_CTL_VAS_A16	0
++#define CA91CX42_VSI_CTL_VAS_A16	(3<<16)
+ #define CA91CX42_VSI_CTL_VAS_A24	(1<<16)
+ #define CA91CX42_VSI_CTL_VAS_A32	(1<<17)
+ #define CA91CX42_VSI_CTL_VAS_USER1	(3<<17)
+@@ -549,7 +549,7 @@ static const int CA91CX42_LINT_LM[] = {
+ #define CA91CX42_LM_CTL_SUPR		(1<<21)
+ #define CA91CX42_LM_CTL_NPRIV		(1<<20)
+ #define CA91CX42_LM_CTL_AS_M		(5<<16)
+-#define CA91CX42_LM_CTL_AS_A16		0
++#define CA91CX42_LM_CTL_AS_A16		(3<<16)
+ #define CA91CX42_LM_CTL_AS_A24		(1<<16)
+ #define CA91CX42_LM_CTL_AS_A32		(1<<17)
 
 
 
