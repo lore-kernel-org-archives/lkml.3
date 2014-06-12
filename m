@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752821AbaFLWM5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 18:12:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6630 "EHLO mx1.redhat.com"
+	id S1752849AbaFLWND (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 18:13:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49794 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751022AbaFLWMy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 18:12:54 -0400
-Subject: [PATCH 2/3] iommu/intel: Make use of IOMMU sysfs support
+	id S1751056AbaFLWM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 18:12:59 -0400
+Subject: [PATCH 3/3] iommu/amd: Add sysfs support
 From: Alex Williamson <alex.williamson@redhat.com>
 To: iommu@lists.linux-foundation.org
 Cc: joro@8bytes.org, dwmw2@infradead.org, linux-kernel@vger.kernel.org
-Date: Thu, 12 Jun 2014 16:12:31 -0600
-Message-ID: <20140612221230.2754.42930.stgit@bling.home>
+Date: Thu, 12 Jun 2014 16:12:37 -0600
+Message-ID: <20140612221236.2754.76120.stgit@bling.home>
 In-Reply-To: <20140612215954.2754.30263.stgit@bling.home>
 References: <20140612215954.2754.30263.stgit@bling.home>
 User-Agent: StGit/0.17-dirty
@@ -22,266 +22,164 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Register our DRHD IOMMUs, cross link devices, and provide a base set
-of attributes for the IOMMU.  Note that IRQ remapping support parses
-the DMAR table very early in boot, well before the iommu_class can
-reasonably be setup, so our registration is split between
-intel_iommu_init(), which occurs later, and alloc_iommu(), which
-typically occurs much earlier, but may happen at any time later
-with IOMMU hot-add support.
+AMD-Vi support for IOMMU sysfs.  This allows us to associate devices
+with a specific IOMMU device and examine the capabilities and features
+of that IOMMU.  The AMD IOMMU is hosted on and actual PCI device, so
+we make that device the parent for the IOMMU class device.  This
+initial implementaiton exposes only the capability header and extended
+features register for the IOMMU.
 
-On a typical desktop system, this provides the following (pruned):
-
-$ find /sys | grep dmar
-/sys/devices/virtual/iommu/dmar0
-/sys/devices/virtual/iommu/dmar0/devices
-/sys/devices/virtual/iommu/dmar0/devices/0000:00:02.0
-/sys/devices/virtual/iommu/dmar0/intel-iommu
-/sys/devices/virtual/iommu/dmar0/intel-iommu/cap
-/sys/devices/virtual/iommu/dmar0/intel-iommu/ecap
-/sys/devices/virtual/iommu/dmar0/intel-iommu/address
-/sys/devices/virtual/iommu/dmar0/intel-iommu/version
-/sys/devices/virtual/iommu/dmar1
-/sys/devices/virtual/iommu/dmar1/devices
-/sys/devices/virtual/iommu/dmar1/devices/0000:00:00.0
-/sys/devices/virtual/iommu/dmar1/devices/0000:00:01.0
-/sys/devices/virtual/iommu/dmar1/devices/0000:00:16.0
-/sys/devices/virtual/iommu/dmar1/devices/0000:00:1a.0
-/sys/devices/virtual/iommu/dmar1/devices/0000:00:1b.0
-/sys/devices/virtual/iommu/dmar1/devices/0000:00:1c.0
+# find /sys | grep ivhd
+/sys/devices/pci0000:00/0000:00:00.2/iommu/ivhd0
+/sys/devices/pci0000:00/0000:00:00.2/iommu/ivhd0/devices
+/sys/devices/pci0000:00/0000:00:00.2/iommu/ivhd0/devices/0000:00:00.0
+/sys/devices/pci0000:00/0000:00:00.2/iommu/ivhd0/devices/0000:00:02.0
+/sys/devices/pci0000:00/0000:00:00.2/iommu/ivhd0/devices/0000:00:04.0
+/sys/devices/pci0000:00/0000:00:00.2/iommu/ivhd0/devices/0000:00:09.0
+/sys/devices/pci0000:00/0000:00:00.2/iommu/ivhd0/devices/0000:00:11.0
+/sys/devices/pci0000:00/0000:00:00.2/iommu/ivhd0/devices/0000:00:12.0
+/sys/devices/pci0000:00/0000:00:00.2/iommu/ivhd0/devices/0000:00:12.2
+/sys/devices/pci0000:00/0000:00:00.2/iommu/ivhd0/devices/0000:00:13.0
 ...
-/sys/devices/virtual/iommu/dmar1/intel-iommu
-/sys/devices/virtual/iommu/dmar1/intel-iommu/cap
-/sys/devices/virtual/iommu/dmar1/intel-iommu/ecap
-/sys/devices/virtual/iommu/dmar1/intel-iommu/address
-/sys/devices/virtual/iommu/dmar1/intel-iommu/version
-/sys/class/iommu/dmar0
-/sys/class/iommu/dmar1
-
-(devices also link back to the dmar units)
-
-This makes address, version, capabilities, and extended capabilities
-available, just like printed on boot.  I've tried not to duplicate
-data that can be found in the DMAR table, with the exception of the
-address, which provides an easy way to associate the sysfs device with
-a DRHD entry in the DMAR.  It's tempting to add scopes and RMRR data
-here, but the full DMAR table is already exposed under /sys/firmware/
-and therefore already provides a way for userspace to learn such
-details.
+/sys/devices/pci0000:00/0000:00:00.2/iommu/ivhd0/power
+/sys/devices/pci0000:00/0000:00:00.2/iommu/ivhd0/power/control
+...
+/sys/devices/pci0000:00/0000:00:00.2/iommu/ivhd0/device
+/sys/devices/pci0000:00/0000:00:00.2/iommu/ivhd0/subsystem
+/sys/devices/pci0000:00/0000:00:00.2/iommu/ivhd0/amd-iommu
+/sys/devices/pci0000:00/0000:00:00.2/iommu/ivhd0/amd-iommu/cap
+/sys/devices/pci0000:00/0000:00:00.2/iommu/ivhd0/amd-iommu/features
+/sys/devices/pci0000:00/0000:00:00.2/iommu/ivhd0/uevent
+/sys/class/iommu/ivhd0
 
 Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
- .../ABI/testing/sysfs-class-iommu-intel-iommu      |   32 ++++++++
- drivers/iommu/dmar.c                               |    9 ++
- drivers/iommu/intel-iommu.c                        |   77 ++++++++++++++++++++
- include/linux/intel-iommu.h                        |    3 +
- 4 files changed, 120 insertions(+), 1 deletion(-)
- create mode 100644 Documentation/ABI/testing/sysfs-class-iommu-intel-iommu
+ .../ABI/testing/sysfs-class-iommu-amd-iommu        |   14 +++++++
+ drivers/iommu/amd_iommu.c                          |    6 +++
+ drivers/iommu/amd_iommu_init.c                     |   38 ++++++++++++++++++++
+ drivers/iommu/amd_iommu_types.h                    |    3 ++
+ 4 files changed, 61 insertions(+)
+ create mode 100644 Documentation/ABI/testing/sysfs-class-iommu-amd-iommu
 
-diff --git a/Documentation/ABI/testing/sysfs-class-iommu-intel-iommu b/Documentation/ABI/testing/sysfs-class-iommu-intel-iommu
+diff --git a/Documentation/ABI/testing/sysfs-class-iommu-amd-iommu b/Documentation/ABI/testing/sysfs-class-iommu-amd-iommu
 new file mode 100644
-index 0000000..258cc246
+index 0000000..d6ba8e8
 --- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-class-iommu-intel-iommu
-@@ -0,0 +1,32 @@
-+What:		/sys/class/iommu/<iommu>/intel-iommu/address
++++ b/Documentation/ABI/testing/sysfs-class-iommu-amd-iommu
+@@ -0,0 +1,14 @@
++What:		/sys/class/iommu/<iommu>/amd-iommu/cap
 +Date:		June 2014
 +KernelVersion:	3.17
 +Contact:	Alex Williamson <alex.williamson@redhat.com>
 +Description:
-+		Physical address of the VT-d DRHD for this IOMMU.
-+		Format: %llx.  This allows association of a sysfs
-+		intel-iommu with a DMAR DRHD table entry.
++		IOMMU capability header as documented in the AMD IOMMU
++		specification.  Format: %x
 +
-+What:		/sys/class/iommu/<iommu>/intel-iommu/cap
++What:		/sys/class/iommu/<iommu>/amd-iommu/features
 +Date:		June 2014
 +KernelVersion:	3.17
 +Contact:	Alex Williamson <alex.williamson@redhat.com>
 +Description:
-+		The cached hardware capability register value
-+		of this DRHD unit.  Format: %llx.
-+
-+What:		/sys/class/iommu/<iommu>/intel-iommu/ecap
-+Date:		June 2014
-+KernelVersion:	3.17
-+Contact:	Alex Williamson <alex.williamson@redhat.com>
-+Description:
-+		The cached hardware extended capability register
-+		value of this DRHD unit.  Format: %llx.
-+
-+What:		/sys/class/iommu/<iommu>/intel-iommu/version
-+Date:		June 2014
-+KernelVersion:	3.17
-+Contact:	Alex Williamson <alex.williamson@redhat.com>
-+Description:
-+		The architecture version as reported from the
-+		VT-d VER_REG.  Format: %d:%d, major:minor
-diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
-index 39f8b71..b240f6a 100644
---- a/drivers/iommu/dmar.c
-+++ b/drivers/iommu/dmar.c
-@@ -38,6 +38,7 @@
- #include <linux/tboot.h>
- #include <linux/dmi.h>
- #include <linux/slab.h>
-+#include <linux/iommu.h>
- #include <asm/irq_remapping.h>
- #include <asm/iommu_table.h>
++		Extended features of the IOMMU.  Format: %llx
+diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+index ca85615..83a43b2 100644
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -379,6 +379,9 @@ static int iommu_init_device(struct device *dev)
  
-@@ -980,6 +981,12 @@ static int alloc_iommu(struct dmar_drhd_unit *drhd)
- 	raw_spin_lock_init(&iommu->register_lock);
+ 	dev->archdata.iommu = dev_data;
  
- 	drhd->iommu = iommu;
-+
-+	if (intel_iommu_enabled)
-+		iommu->iommu_dev = iommu_device_create(NULL, iommu,
-+						       intel_iommu_groups,
-+						       iommu->name);
++	iommu_device_link(amd_iommu_rlookup_table[dev_data->devid]->iommu_dev,
++			  dev);
 +
  	return 0;
- 
-  err_unmap:
-@@ -991,6 +998,8 @@ static int alloc_iommu(struct dmar_drhd_unit *drhd)
- 
- static void free_iommu(struct intel_iommu *iommu)
- {
-+	iommu_device_destroy(iommu->iommu_dev);
-+
- 	if (iommu->irq) {
- 		free_irq(iommu->irq, iommu);
- 		irq_set_handler_data(iommu->irq, NULL);
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 41db805..3205142 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -3930,6 +3930,63 @@ static struct notifier_block intel_iommu_memory_nb = {
- 	.priority = 0
- };
- 
-+
-+static ssize_t intel_iommu_show_version(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	struct intel_iommu *iommu = dev_get_drvdata(dev);
-+	u32 ver = readl(iommu->reg + DMAR_VER_REG);
-+	return sprintf(buf, "%d:%d\n",
-+		       DMAR_VER_MAJOR(ver), DMAR_VER_MINOR(ver));
-+}
-+static DEVICE_ATTR(version, S_IRUGO, intel_iommu_show_version, NULL);
-+
-+static ssize_t intel_iommu_show_address(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	struct intel_iommu *iommu = dev_get_drvdata(dev);
-+	return sprintf(buf, "%llx\n", iommu->reg_phys);
-+}
-+static DEVICE_ATTR(address, S_IRUGO, intel_iommu_show_address, NULL);
-+
-+static ssize_t intel_iommu_show_cap(struct device *dev,
-+				    struct device_attribute *attr,
-+				    char *buf)
-+{
-+	struct intel_iommu *iommu = dev_get_drvdata(dev);
-+	return sprintf(buf, "%llx\n", iommu->cap);
-+}
-+static DEVICE_ATTR(cap, S_IRUGO, intel_iommu_show_cap, NULL);
-+
-+static ssize_t intel_iommu_show_ecap(struct device *dev,
-+				    struct device_attribute *attr,
-+				    char *buf)
-+{
-+	struct intel_iommu *iommu = dev_get_drvdata(dev);
-+	return sprintf(buf, "%llx\n", iommu->ecap);
-+}
-+static DEVICE_ATTR(ecap, S_IRUGO, intel_iommu_show_ecap, NULL);
-+
-+static struct attribute *intel_iommu_attrs[] = {
-+	&dev_attr_version.attr,
-+	&dev_attr_address.attr,
-+	&dev_attr_cap.attr,
-+	&dev_attr_ecap.attr,
-+	NULL,
-+};
-+
-+static struct attribute_group intel_iommu_group = {
-+	.name = "intel-iommu",
-+	.attrs = intel_iommu_attrs,
-+};
-+
-+const struct attribute_group *intel_iommu_groups[] = {
-+	&intel_iommu_group,
-+	NULL,
-+};
-+
- int __init intel_iommu_init(void)
- {
- 	int ret = -ENODEV;
-@@ -4001,6 +4058,11 @@ int __init intel_iommu_init(void)
- 
- 	init_iommu_pm_ops();
- 
-+	for_each_active_iommu(iommu, drhd)
-+		iommu->iommu_dev = iommu_device_create(NULL, iommu,
-+						       intel_iommu_groups,
-+						       iommu->name);
-+
- 	bus_set_iommu(&pci_bus_type, &intel_iommu_ops);
- 	bus_register_notifier(&pci_bus_type, &device_nb);
- 	if (si_domain && !hw_pass_through)
-@@ -4359,12 +4421,16 @@ static int intel_iommu_domain_has_cap(struct iommu_domain *domain,
- 
- static int intel_iommu_add_device(struct device *dev)
- {
-+	struct intel_iommu *iommu;
- 	struct iommu_group *group;
- 	u8 bus, devfn;
- 
--	if (!device_to_iommu(dev, &bus, &devfn))
-+	iommu = device_to_iommu(dev, &bus, &devfn);
-+	if (!iommu)
- 		return -ENODEV;
- 
-+	iommu_device_link(iommu->iommu_dev, dev);
-+
- 	group = iommu_group_get_for_dev(dev);
- 
- 	if (IS_ERR(group))
-@@ -4376,7 +4442,16 @@ static int intel_iommu_add_device(struct device *dev)
- 
- static void intel_iommu_remove_device(struct device *dev)
- {
-+	struct intel_iommu *iommu;
-+	u8 bus, devfn;
-+
-+	iommu = device_to_iommu(dev, &bus, &devfn);
-+	if (!iommu)
-+		return;
-+
- 	iommu_group_remove_device(dev);
-+
-+	iommu_device_unlink(iommu->iommu_dev, dev);
  }
  
- static struct iommu_ops intel_iommu_ops = {
-diff --git a/include/linux/intel-iommu.h b/include/linux/intel-iommu.h
-index 0a2da51..a65208a 100644
---- a/include/linux/intel-iommu.h
-+++ b/include/linux/intel-iommu.h
-@@ -336,6 +336,7 @@ struct intel_iommu {
- #ifdef CONFIG_IRQ_REMAP
- 	struct ir_table *ir_table;	/* Interrupt remapping info */
- #endif
-+	struct device	*iommu_dev; /* IOMMU-sysfs device */
- 	int		node;
- };
+@@ -403,6 +406,9 @@ static void iommu_uninit_device(struct device *dev)
+ 	if (!dev_data)
+ 		return;
  
-@@ -365,4 +366,6 @@ extern int qi_submit_sync(struct qi_desc *desc, struct intel_iommu *iommu);
- 
- extern int dmar_ir_support(void);
- 
-+extern const struct attribute_group *intel_iommu_groups[];
++	iommu_device_unlink(amd_iommu_rlookup_table[dev_data->devid]->iommu_dev,
++			    dev);
 +
- #endif
+ 	iommu_group_remove_device(dev);
+ 
+ 	/* Unlink from alias, it may change if another device is re-plugged */
+diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
+index 0e08545..3783e0b 100644
+--- a/drivers/iommu/amd_iommu_init.c
++++ b/drivers/iommu/amd_iommu_init.c
+@@ -26,6 +26,7 @@
+ #include <linux/msi.h>
+ #include <linux/amd-iommu.h>
+ #include <linux/export.h>
++#include <linux/iommu.h>
+ #include <asm/pci-direct.h>
+ #include <asm/iommu.h>
+ #include <asm/gart.h>
+@@ -1197,6 +1198,39 @@ static void init_iommu_perf_ctr(struct amd_iommu *iommu)
+ 	iommu->max_counters = (u8) ((val >> 7) & 0xf);
+ }
+ 
++static ssize_t amd_iommu_show_cap(struct device *dev,
++				  struct device_attribute *attr,
++				  char *buf)
++{
++	struct amd_iommu *iommu = dev_get_drvdata(dev);
++	return sprintf(buf, "%x\n", iommu->cap);
++}
++static DEVICE_ATTR(cap, S_IRUGO, amd_iommu_show_cap, NULL);
++
++static ssize_t amd_iommu_show_features(struct device *dev,
++				       struct device_attribute *attr,
++				       char *buf)
++{
++	struct amd_iommu *iommu = dev_get_drvdata(dev);
++	return sprintf(buf, "%llx\n", iommu->features);
++}
++static DEVICE_ATTR(features, S_IRUGO, amd_iommu_show_features, NULL);
++
++static struct attribute *amd_iommu_attrs[] = {
++	&dev_attr_cap.attr,
++	&dev_attr_features.attr,
++	NULL,
++};
++
++static struct attribute_group amd_iommu_group = {
++	.name = "amd-iommu",
++	.attrs = amd_iommu_attrs,
++};
++
++static const struct attribute_group *amd_iommu_groups[] = {
++	&amd_iommu_group,
++	NULL,
++};
+ 
+ static int iommu_init_pci(struct amd_iommu *iommu)
+ {
+@@ -1297,6 +1331,10 @@ static int iommu_init_pci(struct amd_iommu *iommu)
+ 
+ 	amd_iommu_erratum_746_workaround(iommu);
+ 
++	iommu->iommu_dev = iommu_device_create(&iommu->dev->dev, iommu,
++					       amd_iommu_groups, "ivhd%d",
++					       iommu->index);
++
+ 	return pci_enable_device(iommu->dev);
+ }
+ 
+diff --git a/drivers/iommu/amd_iommu_types.h b/drivers/iommu/amd_iommu_types.h
+index 7277a20..557a20e 100644
+--- a/drivers/iommu/amd_iommu_types.h
++++ b/drivers/iommu/amd_iommu_types.h
+@@ -577,6 +577,9 @@ struct amd_iommu {
+ 	/* default dma_ops domain for that IOMMU */
+ 	struct dma_ops_domain *default_dom;
+ 
++	/* IOMMU sysfs device */
++	struct device *iommu_dev;
++
+ 	/*
+ 	 * We can't rely on the BIOS to restore all values on reinit, so we
+ 	 * need to stash them
 
