@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752689AbaFLWKI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 18:10:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49522 "EHLO mx1.redhat.com"
+	id S1752658AbaFLWKD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 18:10:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35937 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752499AbaFLWKE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 18:10:04 -0400
+	id S1752499AbaFLWJ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 18:09:59 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
@@ -15,21 +15,51 @@ Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
         Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 17/17] perf tools: Allow out of order messages in forced flush
-Date: Fri, 13 Jun 2014 00:08:33 +0200
-Message-Id: <1402610913-19059-18-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 16/17] perf tools: Limit the ordered events queue by default to 100MB
+Date: Fri, 13 Jun 2014 00:08:32 +0200
+Message-Id: <1402610913-19059-17-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1402610913-19059-1-git-send-email-jolsa@kernel.org>
 References: <1402610913-19059-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In forced flush (OEQ_FLUSH__HALF) we break the rules of the
-flush timestamp via PERF_RECORD_FINISHED_ROUND event, so
-we could get out of order event.
+It's still configurable by report.queue-size config option,
+but looks like 100MB limit is more sane than no limit at all.
 
-Do not force error in this case and also changing the
-output warning to use WARN_ONCE.
+There's some speedup for report on huge data files:
+
+With the limit of 100 MB, I've got around 15% speedup on reporting
+of ~10GB perf.data file.
+
+  current code:
+   621,685,704,665      cycles                    ( +-  0.52% )
+   873,397,467,969      instructions              ( +-  0.00% )
+
+     286.133268732 seconds time elapsed           ( +-  1.13% )
+
+  with patches:
+   603,933,987,185      cycles                    ( +-  0.45% )
+   869,139,445,070      instructions              ( +-  0.00% )
+
+     245.337510637 seconds time elapsed           ( +-  0.49% )
+
+The speed up seems to be mainly in less cycles spent in servicing
+page faults.
+
+  current code:
+     4.44%     0.01%  perf.old  [kernel.kallsyms]   [k] page_fault
+
+  with patches:
+     1.45%     0.00%      perf  [kernel.kallsyms]   [k] page_fault
+
+  current code (faults event):
+         6,643,807      faults                    ( +-  0.36% )
+
+  with patches (faults event):
+         2,214,756      faults                    ( +-  3.03% )
+
+Also there's lower memory consuption.
 
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -42,85 +72,23 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/util/ordered-events.c | 4 ++++
- tools/perf/util/ordered-events.h | 2 ++
- tools/perf/util/session.c        | 8 ++++++--
- 3 files changed, 12 insertions(+), 2 deletions(-)
+ tools/perf/util/ordered-events.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/tools/perf/util/ordered-events.c b/tools/perf/util/ordered-events.c
-index c47475e..f92c2d0 100644
+index 80f1daa..c47475e 100644
 --- a/tools/perf/util/ordered-events.c
 +++ b/tools/perf/util/ordered-events.c
-@@ -212,12 +212,14 @@ int ordered_events_flush(struct perf_session *s, struct perf_tool *tool,
- 	}
+@@ -251,7 +251,8 @@ void ordered_events_queue_init(struct ordered_events_queue *q)
+ 	INIT_LIST_HEAD(&q->events);
+ 	INIT_LIST_HEAD(&q->cache);
+ 	INIT_LIST_HEAD(&q->to_free);
+-	q->max_alloc_size = (u64) -1;
++	/* 100MB limitation by default */
++	q->max_alloc_size = 100 * 1024 * 1024;
+ 	q->cur_alloc_size = 0;
+ }
  
- 	case OEQ_FLUSH__ROUND:
-+	case OEQ_FLUSH__NONE:
- 	default:
- 		break;
- 	};
- 
- 	if (unlikely(debug_sample_queue)) {
- 		static const char * const str[] = {
-+			"NONE",
- 			"FINAL",
- 			"ROUND",
- 			"HALF ",
-@@ -234,6 +236,8 @@ int ordered_events_flush(struct perf_session *s, struct perf_tool *tool,
- 	if (!err) {
- 		if (how == OEQ_FLUSH__ROUND)
- 			q->next_flush = q->max_timestamp;
-+
-+		q->last_flush_type = how;
- 	}
- 
- 	if (unlikely(debug_sample_queue)) {
-diff --git a/tools/perf/util/ordered-events.h b/tools/perf/util/ordered-events.h
-index 8a717de..7e92688 100644
---- a/tools/perf/util/ordered-events.h
-+++ b/tools/perf/util/ordered-events.h
-@@ -14,6 +14,7 @@ struct ordered_event {
- };
- 
- enum oeq_flush {
-+	OEQ_FLUSH__NONE,
- 	OEQ_FLUSH__FINAL,
- 	OEQ_FLUSH__ROUND,
- 	OEQ_FLUSH__HALF,
-@@ -32,6 +33,7 @@ struct ordered_events_queue {
- 	struct ordered_event	*last;
- 	int			buffer_idx;
- 	unsigned int		nr_events;
-+	enum oeq_flush		last_flush_type;
- };
- 
- struct ordered_event *ordered_events_get(struct ordered_events_queue *q,
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 26bedac..a954702 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -15,6 +15,7 @@
- #include "cpumap.h"
- #include "perf_regs.h"
- #include "vdso.h"
-+#include "asm/bug.h"
- 
- static int perf_session__open(struct perf_session *session)
- {
-@@ -502,8 +503,11 @@ int perf_session_queue_event(struct perf_session *s, union perf_event *event,
- 		return -ETIME;
- 
- 	if (timestamp < s->ordered_events.last_flush) {
--		printf("Warning: Timestamp below last timeslice flush\n");
--		return -EINVAL;
-+		WARN_ONCE(1, "Timestamp below last timeslice flush\n");
-+
-+		/* We could get out of order messages after forced flush. */
-+		if (q->last_flush_type != OEQ_FLUSH__HALF)
-+			return -EINVAL;
- 	}
- 
- 	new = ordered_events_get(q, timestamp);
 -- 
 1.8.3.1
 
