@@ -1,67 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756085AbaFLONA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 10:13:00 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:42523 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756009AbaFLOM5 (ORCPT
+	id S933193AbaFLONe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 10:13:34 -0400
+Received: from 216-12-86-13.cv.mvl.ntelos.net ([216.12.86.13]:57702 "EHLO
+	brightrain.aerifal.cx" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752823AbaFLONb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 10:12:57 -0400
-Date: Thu, 12 Jun 2014 10:12:56 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Peter Chen <peter.chen@freescale.com>
-cc: Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: Disable bus's drivers_autoprobe before rootfs has mounted
-In-Reply-To: <20140612063104.GB18009@shlinux1.ap.freescale.net>
-Message-ID: <Pine.LNX.4.44L0.1406121003370.1138-100000@iolanthe.rowland.org>
+	Thu, 12 Jun 2014 10:13:31 -0400
+Date: Thu, 12 Jun 2014 10:13:27 -0400
+From: Rich Felker <dalias@libc.org>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        lkml <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>
+Subject: Re: recvmmsg/sendmmsg result types inconsistent, integer overflows?
+Message-ID: <20140612141327.GY179@brightrain.aerifal.cx>
+References: <20140611041243.GA1475@brightrain.aerifal.cx>
+ <1402464261.5195.21.camel@marge.simpson.net>
+ <1402465808.3645.454.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20140611151511.GU179@brightrain.aerifal.cx>
+ <CAKgNAkh7ihJyZ4gOXAeb3x-Su7ayshLdi9m6ML4n840n3bx=0Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKgNAkh7ihJyZ4gOXAeb3x-Su7ayshLdi9m6ML4n840n3bx=0Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Jun 2014, Peter Chen wrote:
-
-> > Peter, correct me if this is wrong.  It sounds like you want to have a 
-> > way for the user to control which gadget driver gets bound to which UDC 
-> > driver when everything is compiled into the kernel, nothing is built 
-> > as a separate module.  Is that the basic idea?
+On Thu, Jun 12, 2014 at 08:04:54AM +0200, Michael Kerrisk (man-pages) wrote:
+> Rich,
 > 
-> Yes, I know it can be done by gadget-configfs, but how about the user
-> chooses other gadgets, eg: g_webcam, g_audio?
+> On Wed, Jun 11, 2014 at 5:15 PM, Rich Felker <dalias@libc.org> wrote:
+> > On Tue, Jun 10, 2014 at 10:50:08PM -0700, Eric Dumazet wrote:
+> >> On Wed, 2014-06-11 at 07:24 +0200, Mike Galbraith wrote:
+> >> > (CCs network wizard hangout)
+> >> >
+> >> > On Wed, 2014-06-11 at 00:12 -0400, Rich Felker wrote:
+> >> > > While looking to add support for the recvmmsg and sendmmsg syscalls in
+> >> > > musl libc, I ran into some disturbing findings on the kernel side. In
+> >> > > the struct mmsghdr, the field where the result for each message is
+> >> > > stored has type int, which is inconsistent with the return type
+> >> > > ssize_t of recvmsg/sendmsg. So I tried to track down what happens when
+> >> > > the result is or would be larger than 2GB, and quickly found an
+> >> > > explanation for why the type in the structure was defined wrong:
+> >> > > internally, the kernel uses int as the return type for revcmsg and
+> >> > > sendmsg. Oops.
+> >> > >
+> >> > > A bit more RTFS'ing brought me to tcp_sendmsg in net/ipv4/tcp.c (I
+> >> > > figured let's look at a stream-based protocol, since datagrams can
+> >> > > likely never be that big for any existing protocol), and as far as I
+> >> > > can tell, it's haphazardly mixing int and size_t with no checks for
+> >> > > overflows. I looked for anywhere the kernel might try to verify before
+> >> > > starting that the sum of the lengths of all the iovec components
+> >> > > doesn't overflow INT_MAX or even SIZE_MAX, but didn't find any such
+> >> > > checks.
+> >> > >
+> >> > > Is there some magic that makes this all safe, or is this a big mess of
+> >> > > possibly-security-relevant bugs?
+> >> > >
+> >> > > Rich
+> >> > > --
+> >> > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> >> > > the body of a message to majordomo@vger.kernel.org
+> >> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >> > > Please read the FAQ at  http://www.tux.org/lkml/
+> >> >
+> >>
+> >>
+> >> See commit 8acfe468b0384e834a303f08ebc4953d72fb690a
+> >> ("net: Limit socket I/O iovec total length to INT_MAX.")
+> >>
+> >> (or grep for verify_iovec() )
+> >
+> > Thanks; that addresses my concern about safety. There's still the ugly
+> > API inconsistency which it seems too late to fix. Michael, perhaps
+> > this should at least be documented in the man pages for sendmmsg and
+> > recvmmsg since it's certain to be confusing to anyone familiar with
+> > the sendmsg and recvmsg API, but not with kernel internals, who's
+> > trying to use these functions...
 > 
-> I forget to introduce the background of this topic, I have this issue
-> when I implement gadget bus patch set.
-> (http://www.spinics.net/lists/linux-usb/msg107797.html)
-> The current behaviour for other gadgets is auto-binding, so I want
-> to keep auto-binding at my gadget bus implementation, but manual-binding
-> is also a feature we need to support for other gadgets, so I
-> want auto-binding is the default binding way, and the user can switch
-> the two binding ways, eg, module parameters or sys entry.
-> 
-> But if both udc driver and gadget driver are built in, the user can't
-> let manual-binding work during the boot since the device-model will
-> do probe, and do auto-binding.
-> 
-> My v1 patch set [3/4] do a tricky way to work around it, I would like to
-> know if it can be supported by device model framework?
+> Care to send me a patch?
 
-I think we can keep everything a lot simpler.  Let's agree that the old
-non-composite gadget drivers (like g_ether, g_mass_storage, and so on)
-should only be used one at a time.  That is, there should never be more
-than one of them compiled into the kernel or loaded as a module, and 
-they shouldn't be used if there is more than one unbound UDC.
+I'm not at all familiar with man format, but I could write some
+suggested text if that would be ok.
 
-If a user wants to work with more than one UDC or more than one gadget
-driver then he should use function drivers with the configfs interface
-(or functionfs or gadgetfs or whatever).
+Unrelated (at least not directly) to man pages, one concern I have is
+that, if these interfaces move towards standardization, the
+inconsistent return type is going to be a point of contention that
+could result in an incompatible version of the interfaces being
+adopted in the standard. From that standpoint, it might make sense to
+do something like documenting them returning socklen_t rather than
+int (IIRC these are always the same on Linux). It's not quite logical,
+but at least a bit more logical from a non-Linux-centric perspective
+than using int.
 
-Does that seem reasonable?  It doesn't solve your problem so much as
-declare it an unsupported case, but I don't think there is any
-reasonable way to solve the problem without using something like
-configfs.
-
-Alan Stern
-
+Rich
