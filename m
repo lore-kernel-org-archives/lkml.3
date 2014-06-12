@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751960AbaFLVsv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 17:48:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64524 "EHLO mx1.redhat.com"
+	id S1751867AbaFLVss (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 17:48:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30398 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751655AbaFLVst (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 17:48:49 -0400
+	id S1751631AbaFLVsp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 17:48:45 -0400
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: linux-mm@kvack.org
 Cc: Dave Hansen <dave.hansen@intel.com>,
@@ -13,312 +13,127 @@ Cc: Dave Hansen <dave.hansen@intel.com>,
         Hugh Dickins <hughd@google.com>,
         "Kirill A. Shutemov" <kirill@shutemov.name>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH -mm v2 11/11] mincore: apply page table walker on do_mincore()
-Date: Thu, 12 Jun 2014 17:48:11 -0400
-Message-Id: <1402609691-13950-12-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH -mm v2 10/11] fs/proc/task_mmu.c: clean up gather_*_stats()
+Date: Thu, 12 Jun 2014 17:48:10 -0400
+Message-Id: <1402609691-13950-11-git-send-email-n-horiguchi@ah.jp.nec.com>
 In-Reply-To: <1402609691-13950-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 References: <1402609691-13950-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes do_mincore() use walk_page_vma(), which reduces many lines
-of code by using common page table walk code.
+Most code of gather_(pte|pmd|hugetlb)_stats() are duplicate, so let's clean
+them up with a single function.
 
-ChangeLog v2:
-- change type of args of callbacks to void *
-- move definition of mincore_walk to the start of the function to fix compiler
-  warning
+vm_normal_page() doesn't calculate pgoff correctly for hugetlbfs, so this
+patch also fixes it.
 
 Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 ---
- mm/huge_memory.c |  20 ------
- mm/mincore.c     | 195 +++++++++++++++++++------------------------------------
- 2 files changed, 67 insertions(+), 148 deletions(-)
+ fs/proc/task_mmu.c | 58 ++++++------------------------------------------------
+ mm/memory.c        |  5 ++---
+ 2 files changed, 8 insertions(+), 55 deletions(-)
 
-diff --git mmotm-2014-05-21-16-57.orig/mm/huge_memory.c mmotm-2014-05-21-16-57/mm/huge_memory.c
-index 6fd0668d4e1d..2671a9621d0e 100644
---- mmotm-2014-05-21-16-57.orig/mm/huge_memory.c
-+++ mmotm-2014-05-21-16-57/mm/huge_memory.c
-@@ -1379,26 +1379,6 @@ int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
- 	return ret;
+diff --git mmotm-2014-05-21-16-57.orig/fs/proc/task_mmu.c mmotm-2014-05-21-16-57/fs/proc/task_mmu.c
+index 1f2eab58ae14..27ad736c6b30 100644
+--- mmotm-2014-05-21-16-57.orig/fs/proc/task_mmu.c
++++ mmotm-2014-05-21-16-57/fs/proc/task_mmu.c
+@@ -1243,63 +1243,17 @@ static struct page *can_gather_numa_stats(pte_t pte, struct vm_area_struct *vma,
+ 	return page;
  }
  
--int mincore_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
--		unsigned long addr, unsigned long end,
--		unsigned char *vec)
--{
--	spinlock_t *ptl;
--	int ret = 0;
+-static int gather_pte_stats(void *entry, unsigned long addr,
++static int gather_stats_entry(void *entry, unsigned long addr,
+ 		unsigned long end, struct mm_walk *walk)
+ {
+ 	pte_t *pte = entry;
+ 	struct numa_maps *md = walk->private;
 -
--	if (__pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
--		/*
--		 * All logical pages in the range are present
--		 * if backed by a huge page.
--		 */
--		spin_unlock(ptl);
--		memset(vec, 1, (end - addr) >> PAGE_SHIFT);
--		ret = 1;
--	}
--
--	return ret;
+ 	struct page *page = can_gather_numa_stats(*pte, walk->vma, addr);
+-	if (!page)
+-		return 0;
+-	gather_stats(page, md, pte_dirty(*pte), 1);
+-	return 0;
 -}
 -
- int move_huge_pmd(struct vm_area_struct *vma, struct vm_area_struct *new_vma,
- 		  unsigned long old_addr,
- 		  unsigned long new_addr, unsigned long old_end,
-diff --git mmotm-2014-05-21-16-57.orig/mm/mincore.c mmotm-2014-05-21-16-57/mm/mincore.c
-index 725c80961048..d53b07548ce1 100644
---- mmotm-2014-05-21-16-57.orig/mm/mincore.c
-+++ mmotm-2014-05-21-16-57/mm/mincore.c
-@@ -19,38 +19,28 @@
- #include <asm/uaccess.h>
- #include <asm/pgtable.h>
- 
--static void mincore_hugetlb_page_range(struct vm_area_struct *vma,
--				unsigned long addr, unsigned long end,
--				unsigned char *vec)
-+static int mincore_hugetlb(void *entry, unsigned long addr,
-+			unsigned long end, struct mm_walk *walk)
- {
-+	int err = 0;
- #ifdef CONFIG_HUGETLB_PAGE
--	struct hstate *h;
-+	pte_t *pte = entry;
-+	unsigned char present;
-+	unsigned char *vec = walk->private;
- 
--	h = hstate_vma(vma);
--	while (1) {
--		unsigned char present;
--		pte_t *ptep;
--		/*
--		 * Huge pages are always in RAM for now, but
--		 * theoretically it needs to be checked.
--		 */
--		ptep = huge_pte_offset(current->mm,
--				       addr & huge_page_mask(h));
--		present = ptep && !huge_pte_none(huge_ptep_get(ptep));
--		while (1) {
--			*vec = present;
--			vec++;
--			addr += PAGE_SIZE;
--			if (addr == end)
--				return;
--			/* check hugepage border */
--			if (!(addr & ~huge_page_mask(h)))
--				break;
--		}
--	}
-+	/*
-+	 * Hugepages under user process are always in RAM and never
-+	 * swapped out, but theoretically it needs to be checked.
-+	 */
-+	present = pte && !huge_pte_none(huge_ptep_get(pte));
-+	for (; addr != end; vec++, addr += PAGE_SIZE)
-+		*vec = present;
-+	cond_resched();
-+	walk->private += (end - addr) >> PAGE_SHIFT;
- #else
- 	BUG();
- #endif
-+	return err;
- }
- 
- /*
-@@ -94,10 +84,11 @@ static unsigned char mincore_page(struct address_space *mapping, pgoff_t pgoff)
- 	return present;
- }
- 
--static void mincore_unmapped_range(struct vm_area_struct *vma,
--				unsigned long addr, unsigned long end,
--				unsigned char *vec)
-+static int mincore_hole(unsigned long addr, unsigned long end,
-+				struct mm_walk *walk)
- {
-+	struct vm_area_struct *vma = walk->vma;
-+	unsigned char *vec = walk->private;
- 	unsigned long nr = (end - addr) >> PAGE_SHIFT;
- 	int i;
- 
-@@ -111,110 +102,50 @@ static void mincore_unmapped_range(struct vm_area_struct *vma,
- 		for (i = 0; i < nr; i++)
- 			vec[i] = 0;
- 	}
-+	walk->private += nr;
-+	return 0;
- }
- 
--static void mincore_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
--			unsigned long addr, unsigned long end,
--			unsigned char *vec)
-+static int mincore_pte(void *entry, unsigned long addr, unsigned long end,
-+			struct mm_walk *walk)
- {
--	unsigned long next;
--	spinlock_t *ptl;
--	pte_t *ptep;
+-static int gather_pmd_stats(void *entry, unsigned long addr,
+-		unsigned long end, struct mm_walk *walk)
+-{
+-	struct numa_maps *md = walk->private;
+-	struct vm_area_struct *vma = walk->vma;
+-	pte_t huge_pte = *(pte_t *)entry;
+-	struct page *page;
 -
--	ptep = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
--	do {
--		pte_t pte = *ptep;
--		pgoff_t pgoff;
+-	page = can_gather_numa_stats(huge_pte, vma, addr);
+ 	if (page)
+-		gather_stats(page, md, pte_dirty(huge_pte),
+-			     HPAGE_PMD_SIZE/PAGE_SIZE);
++		gather_stats(page, md, pte_dirty(*pte),
++			     walk->size >> PAGE_SHIFT);
+ 	return 0;
+ }
+-#ifdef CONFIG_HUGETLB_PAGE
+-static int gather_hugetlb_stats(void *entry, unsigned long addr,
+-				unsigned long end, struct mm_walk *walk)
+-{
+-	pte_t *pte = entry;
+-	struct numa_maps *md;
+-	struct page *page;
 -
--		next = addr + PAGE_SIZE;
--		if (pte_none(pte))
--			mincore_unmapped_range(vma, addr, next, vec);
--		else if (pte_present(pte))
-+	pte_t *pte = entry;
-+	struct vm_area_struct *vma = walk->vma;
-+	unsigned char *vec = walk->private;
-+	pgoff_t pgoff;
-+
-+	if (pte_present(*pte))
-+		*vec = 1;
-+	else if (pte_file(*pte)) {
-+		pgoff = pte_to_pgoff(*pte);
-+		*vec = mincore_page(vma->vm_file->f_mapping, pgoff);
-+	} else { /* pte is a swap entry */
-+		swp_entry_t entry = pte_to_swp_entry(*pte);
-+
-+		if (is_migration_entry(entry)) {
-+			/* migration entries are always uptodate */
- 			*vec = 1;
--		else if (pte_file(pte)) {
--			pgoff = pte_to_pgoff(pte);
--			*vec = mincore_page(vma->vm_file->f_mapping, pgoff);
--		} else { /* pte is a swap entry */
--			swp_entry_t entry = pte_to_swp_entry(pte);
+-	if (pte_none(*pte))
+-		return 0;
 -
--			if (is_migration_entry(entry)) {
--				/* migration entries are always uptodate */
--				*vec = 1;
--			} else {
-+		} else {
- #ifdef CONFIG_SWAP
--				pgoff = entry.val;
--				*vec = mincore_page(swap_address_space(entry),
--					pgoff);
-+			pgoff = entry.val;
-+			*vec = mincore_page(swap_address_space(entry),
-+					    pgoff);
- #else
--				WARN_ON(1);
--				*vec = 1;
-+			WARN_ON(1);
-+			*vec = 1;
- #endif
--			}
--		}
--		vec++;
--	} while (ptep++, addr = next, addr != end);
--	pte_unmap_unlock(ptep - 1, ptl);
+-	if (!pte_present(*pte))
+-		return 0;
+-
+-	page = pte_page(*pte);
+-	if (!page)
+-		return 0;
+-
+-	md = walk->private;
+-	gather_stats(page, md, pte_dirty(*pte), 1);
+-	return 0;
 -}
 -
--static void mincore_pmd_range(struct vm_area_struct *vma, pud_t *pud,
--			unsigned long addr, unsigned long end,
--			unsigned char *vec)
+-#else
+-static int gather_hugetlb_stats(void *entry, unsigned long addr,
+-				unsigned long end, struct mm_walk *walk)
 -{
--	unsigned long next;
--	pmd_t *pmd;
--
--	pmd = pmd_offset(pud, addr);
--	do {
--		next = pmd_addr_end(addr, end);
--		if (pmd_trans_huge(*pmd)) {
--			if (mincore_huge_pmd(vma, pmd, addr, next, vec)) {
--				vec += (next - addr) >> PAGE_SHIFT;
--				continue;
--			}
--			/* fall through */
- 		}
--		if (pmd_none_or_trans_huge_or_clear_bad(pmd))
--			mincore_unmapped_range(vma, addr, next, vec);
--		else
--			mincore_pte_range(vma, pmd, addr, next, vec);
--		vec += (next - addr) >> PAGE_SHIFT;
--	} while (pmd++, addr = next, addr != end);
+-	return 0;
 -}
--
--static void mincore_pud_range(struct vm_area_struct *vma, pgd_t *pgd,
--			unsigned long addr, unsigned long end,
--			unsigned char *vec)
--{
--	unsigned long next;
--	pud_t *pud;
--
--	pud = pud_offset(pgd, addr);
--	do {
--		next = pud_addr_end(addr, end);
--		if (pud_none_or_clear_bad(pud))
--			mincore_unmapped_range(vma, addr, next, vec);
--		else
--			mincore_pmd_range(vma, pud, addr, next, vec);
--		vec += (next - addr) >> PAGE_SHIFT;
--	} while (pud++, addr = next, addr != end);
-+	}
-+	walk->private++;
-+	return 0;
- }
- 
--static void mincore_page_range(struct vm_area_struct *vma,
--			unsigned long addr, unsigned long end,
--			unsigned char *vec)
-+static int mincore_pmd(void *entry, unsigned long addr, unsigned long end,
-+			struct mm_walk *walk)
- {
--	unsigned long next;
--	pgd_t *pgd;
--
--	pgd = pgd_offset(vma->vm_mm, addr);
--	do {
--		next = pgd_addr_end(addr, end);
--		if (pgd_none_or_clear_bad(pgd))
--			mincore_unmapped_range(vma, addr, next, vec);
--		else
--			mincore_pud_range(vma, pgd, addr, next, vec);
--		vec += (next - addr) >> PAGE_SHIFT;
--	} while (pgd++, addr = next, addr != end);
-+	memset(walk->private, 1, (end - addr) >> PAGE_SHIFT);
-+	walk->private += (end - addr) >> PAGE_SHIFT;
-+	return 0;
- }
+-#endif
  
  /*
-@@ -226,19 +157,27 @@ static long do_mincore(unsigned long addr, unsigned long pages, unsigned char *v
- {
- 	struct vm_area_struct *vma;
- 	unsigned long end;
-+	int err;
-+	struct mm_walk mincore_walk = {
-+		.pmd_entry = mincore_pmd,
-+		.pte_entry = mincore_pte,
-+		.pte_hole = mincore_hole,
-+		.hugetlb_entry = mincore_hugetlb,
-+		.private = vec,
-+	};
+  * Display pages allocated per node and memory policy via /proc.
+@@ -1324,9 +1278,9 @@ static int show_numa_map(struct seq_file *m, void *v, int is_pid)
+ 	/* Ensure we start with an empty set of numa_maps statistics. */
+ 	memset(md, 0, sizeof(*md));
  
- 	vma = find_vma(current->mm, addr);
- 	if (!vma || addr < vma->vm_start)
- 		return -ENOMEM;
--
-+	mincore_walk.mm = vma->vm_mm;
-+	mincore_walk.vma = vma;
- 	end = min(vma->vm_end, addr + (pages << PAGE_SHIFT));
- 
--	if (is_vm_hugetlb_page(vma))
--		mincore_hugetlb_page_range(vma, addr, end, vec);
-+	err = walk_page_vma(vma, &mincore_walk);
-+	if (err < 0)
-+		return err;
- 	else
--		mincore_page_range(vma, addr, end, vec);
--
--	return (end - addr) >> PAGE_SHIFT;
-+		return (end - addr) >> PAGE_SHIFT;
- }
- 
- /*
+-	walk.hugetlb_entry = gather_hugetlb_stats;
+-	walk.pmd_entry = gather_pmd_stats;
+-	walk.pte_entry = gather_pte_stats;
++	walk.hugetlb_entry = gather_stats_entry;
++	walk.pmd_entry = gather_stats_entry;
++	walk.pte_entry = gather_stats_entry;
+ 	walk.private = md;
+ 	walk.mm = mm;
+ 	walk.vma = vma;
+diff --git mmotm-2014-05-21-16-57.orig/mm/memory.c mmotm-2014-05-21-16-57/mm/memory.c
+index fd16b767dd68..7389dd04370f 100644
+--- mmotm-2014-05-21-16-57.orig/mm/memory.c
++++ mmotm-2014-05-21-16-57/mm/memory.c
+@@ -768,9 +768,8 @@ struct page *vm_normal_page(struct vm_area_struct *vma, unsigned long addr,
+ 				return NULL;
+ 			goto out;
+ 		} else {
+-			unsigned long off;
+-			off = (addr - vma->vm_start) >> PAGE_SHIFT;
+-			if (pfn == vma->vm_pgoff + off)
++			unsigned long off = linear_page_index(vma, addr);
++			if (pfn == off)
+ 				return NULL;
+ 			if (!is_cow_mapping(vma->vm_flags))
+ 				return NULL;
 -- 
 1.9.3
 
