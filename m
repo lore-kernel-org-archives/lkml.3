@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933112AbaFLKDA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 06:03:00 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:46957 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932885AbaFLKC6 (ORCPT
+	id S933118AbaFLKDz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 06:03:55 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:51292 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932878AbaFLKDy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 06:02:58 -0400
-From: pramod.gurav.etc@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: Pramod Gurav <pramod.gurav@smartplayin.com>, trivial@kernel.org,
-        John Stultz <john.stultz@linaro.org>,
-        Marcus Gelderie <redmnic@gmail.com>,
-        Pramod Gurav <pramod.gurav.etc@gmail.com>
-Subject: [PATCH] alarmtimer: Export symbols of alarmtimer_get_rtcdev
-Date: Thu, 12 Jun 2014 15:36:02 +0530
-Message-Id: <1402567562-10634-1-git-send-email-pramod.gurav.etc@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 12 Jun 2014 06:03:54 -0400
+Date: Thu, 12 Jun 2014 14:03:46 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: <akpm@linux-foundation.org>, <cl@linux.com>, <rientjes@google.com>,
+        <penberg@kernel.org>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
+Subject: Re: [PATCH -mm v2 5/8] slub: make slab_free non-preemptable
+Message-ID: <20140612100344.GB19221@esperanza>
+References: <cover.1402060096.git.vdavydov@parallels.com>
+ <7cd6784a36ed997cc6631615d98e11e02e811b1b.1402060096.git.vdavydov@parallels.com>
+ <20140612065842.GE19918@js1304-P5Q-DELUXE>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140612065842.GE19918@js1304-P5Q-DELUXE>
+X-Originating-IP: [81.5.110.170]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
+Hi,
 
-Export symbol of alarmtimer_get_rtcdev so that it is used by
-any driver when built as module like,
-drivers/staging/android/alarm-dev.c
-This Export was missing in Marcus's below patch:
+On Thu, Jun 12, 2014 at 03:58:42PM +0900, Joonsoo Kim wrote:
+> On Fri, Jun 06, 2014 at 05:22:42PM +0400, Vladimir Davydov wrote:
+> > @@ -2673,18 +2673,11 @@ static __always_inline void slab_free(struct kmem_cache *s,
+> >  
+> >  	slab_free_hook(s, x);
+> >  
+> > -redo:
+> > -	/*
+> > -	 * Determine the currently cpus per cpu slab.
+> > -	 * The cpu may change afterward. However that does not matter since
+> > -	 * data is retrieved via this pointer. If we are on the same cpu
+> > -	 * during the cmpxchg then the free will succedd.
+> > -	 */
+> >  	preempt_disable();
+> 
+> Could you add some code comment why this preempt_disable/enable() is
+> needed? We don't have any clue that kmemcg depends on these things
+> on code, so someone cannot understand why it is here.
+> 
+> If possible, please add similar code comment on slab_alloc in mm/slab.c.
 
-https://lkml.org/lkml/2013/6/1/144
+Sure.
 
-CC: trivial@kernel.org
-CC: John Stultz <john.stultz@linaro.org>
-CC: Marcus Gelderie <redmnic@gmail.com>
-Signed-off-by: Pramod Gurav <pramod.gurav.etc@gmail.com>
----
- kernel/time/alarmtimer.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/kernel/time/alarmtimer.c b/kernel/time/alarmtimer.c
-index 88c9c65..a53ba0b 100644
---- a/kernel/time/alarmtimer.c
-+++ b/kernel/time/alarmtimer.c
-@@ -71,7 +71,7 @@ struct rtc_device *alarmtimer_get_rtcdev(void)
- 
- 	return ret;
- }
--
-+EXPORT_SYMBOL_GPL(alarmtimer_get_rtcdev);
- 
- static int alarmtimer_rtc_add_device(struct device *dev,
- 				struct class_interface *class_intf)
--- 
-1.7.9.5
-
+Thanks.
