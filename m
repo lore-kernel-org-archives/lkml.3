@@ -1,85 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756114AbaFLPHE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 11:07:04 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:37297 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752915AbaFLPHB (ORCPT
+	id S1756135AbaFLPHc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 11:07:32 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:59174 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752919AbaFLPH0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 11:07:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140611.153225.671693159592497903.davem@davemloft.net>
-References: <1402417153-2551-4-git-send-email-milos.vyletel@gmail.com>
-	<20140610101334.565bc484@nehalam.linuxnetplumber.net>
-	<CAAFXRd1Stuyj2t8Oinr6SQysGbMJKPpY5qe=mO_m0xKR1eSjOQ@mail.gmail.com>
-	<20140611.153225.671693159592497903.davem@davemloft.net>
-Date: Thu, 12 Jun 2014 11:07:00 -0400
-Message-ID: <CAAFXRd3A32vfZUZv8yz=Fj83Eg7uiUMa3pmbQCh9zXauq2rdWg@mail.gmail.com>
-Subject: Re: [patch net-next 3/5] ipv6: consider net.ipv6.conf.all sysctls
- when making decisions
-From: Milos Vyletel <milos.vyletel@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: stephen@networkplumber.org, amwang@redhat.com, netdev@vger.kernel.org,
-        oliver@neukum.org, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, pshelar@nicira.com,
-        nicolas.dichtel@6wind.com, mike.rapoport@ravellosystems.com,
-        dborkman@redhat.com, ogerlitz@mellanox.com, therbert@google.com,
-        hannes@stressinduktion.org, florent.fourcot@enst-bretagne.fr,
-        edumazet@google.com, Paul.Durrant@citrix.com,
-        linux-usb@vger.kernel.org,
-        "open list:X86 ARCHITECTURE..." <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 12 Jun 2014 11:07:26 -0400
+Message-ID: <1402585641.5318.14.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [PATCH 1/1] ima: remove unnecessary i_mutex locking
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Dmitry Kasatkin <d.kasatkin@samsung.com>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmitry.kasatkin@gmail.com
+Date: Thu, 12 Jun 2014 11:07:21 -0400
+In-Reply-To: <cc7deec4d9dbd22166b34fa0dad28aed82120e4c.1402509097.git.d.kasatkin@samsung.com>
+References: <cc7deec4d9dbd22166b34fa0dad28aed82120e4c.1402509097.git.d.kasatkin@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14061215-3532-0000-0000-0000026EF274
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David,
+On Wed, 2014-06-11 at 20:51 +0300, Dmitry Kasatkin wrote: 
+> I think i_mutex locking is absolutely unnecessary here.
+> It is uselessly taken here even when IMA policy is empty and
+> IMA is effectively disabled.
+> 
+> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
 
-my words may have been poorly chosen. Last thing I want is to break things...
+Thanks!  Please re-post with an appropriate patch description.
 
-What I meant to say is that this changes the behavior of conf.all.*
-sysctls from no-op to be part of decision along with interface
-specific ones. Default settings still work the same way unless
-conf.all.* was manually modified by user (for example setting
-conf.all.accept_ra_defrtr=0 did not stop kernel from setting default
-router before but it would with this change).
+Mimi 
+> ---
+>  security/integrity/ima/ima_main.c | 4 ----
+>  1 file changed, 4 deletions(-)
+> 
+> diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+> index 09baa33..cf1c369 100644
+> --- a/security/integrity/ima/ima_main.c
+> +++ b/security/integrity/ima/ima_main.c
+> @@ -88,8 +88,6 @@ static void ima_rdwr_violation_check(struct file *file)
+>  	if (!S_ISREG(inode->i_mode) || !ima_initialized)
+>  		return;
+> 
+> -	mutex_lock(&inode->i_mutex);	/* file metadata: permissions, xattr */
+> -
+>  	if (mode & FMODE_WRITE) {
+>  		if (atomic_read(&inode->i_readcount) && IS_IMA(inode)) {
+>  			struct integrity_iint_cache *iint;
+> @@ -104,8 +102,6 @@ static void ima_rdwr_violation_check(struct file *file)
+>  			send_writers = true;
+>  	}
+> 
+> -	mutex_unlock(&inode->i_mutex);
+> -
+>  	if (!send_tomtou && !send_writers)
+>  		return;
+> 
 
-If this is not desired functionality I'm fine with it not being
-applied. However if that's the case I suggest removing conf.all.*
-altogether since it's no-op and pretty confusing for users (myself
-included).
 
-Milos
-
-On Wed, Jun 11, 2014 at 6:32 PM, David Miller <davem@davemloft.net> wrote:
-> From: Milos Vyletel <milos.vyletel@gmail.com>
-> Date: Tue, 10 Jun 2014 13:49:35 -0400
->
->> On Tue, Jun 10, 2014 at 1:13 PM, Stephen Hemminger
->> <stephen@networkplumber.org> wrote:
->>> On Tue, 10 Jun 2014 12:19:11 -0400
->>> Milos Vyletel <milos.vyletel@gmail.com> wrote:
->>>
->>>> As it is right now net.ipv6.conf.all.* are mostly ignored and instead
->>>> we're only making decisions based on interface specific settings. These
->>>> settings are coppied from net.ipv6.conf.default and changing either all
->>>> or default settings have no effect.
->>>
->>> Although this is the right idea conceptually, it risks creating unhappy
->>> users because it changes the semantics of the API. This will probably break
->>> somebody's configuration.
->>
->> You're right but in this case I feel we are moving in the right
->> direction. While the
->> behavior will change in some cases this change is only adding well known ipv4
->> behavior for ipv6 sysctls. In fact documentation briefly mentioned that
->> net.ipv6.conf.all.* should change all the interface-specific settings
->> but that was
->> not the case until now.
->
-> You can't just break things on people, no matter how much you think the
-> current behavior is "poorly designed", "inconsistent with other areas of
-> the networking", etc.  None of those things matter if you have to break
-> things on people to "fix" it.
->
-> I'm not applying this series, sorry.
