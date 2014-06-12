@@ -1,106 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756082AbaFLPsR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 11:48:17 -0400
-Received: from mail-by2lp0242.outbound.protection.outlook.com ([207.46.163.242]:6213
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752950AbaFLPsP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 11:48:15 -0400
-Date: Thu, 12 Jun 2014 08:44:38 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Jongsung Kim <neidhard.kim@lge.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Hayun Hwang <hwang.hayun@lge.com>,
-        Youngkyu Choi <youngkyu7.choi@lge.com>
-Subject: Re: [PATCH] net/cadence/macb: clear interrupts simply and correctly
-References: <1402563054-8546-1-git-send-email-neidhard.kim@lge.com>
+	id S1756102AbaFLPvZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 11:51:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20123 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752967AbaFLPvX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 11:51:23 -0400
+Subject: [RESEND PATCH] vgaarb: We can own non-decoded resources
+From: Alex Williamson <alex.williamson@redhat.com>
+To: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Ville =?utf-8?b?U3lyasOkbMOk?= <ville.syrjala@linux.intel.com>,
+        Dave Airlie <airlied@redhat.com>
+Date: Thu, 12 Jun 2014 09:51:18 -0600
+Message-ID: <20140612155051.5829.4921.stgit@bling.home>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1402563054-8546-1-git-send-email-neidhard.kim@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <9f5be687-d127-49a4-90ea-c1033505452d@BN1BFFO11FD019.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438001)(24454002)(199002)(189002)(377424004)(51704005)(19580395003)(87936001)(83506001)(80022001)(85182001)(4396001)(74502001)(74662001)(33646001)(74316001)(20776003)(23676002)(46102001)(83322001)(79102001)(50466002)(47776003)(64706001)(85202002)(53416003)(6806004)(81542001)(44976005)(76482001)(19580405001)(50986999)(92726001)(85852003)(1496007)(86362001)(99396002)(83072002)(31696002)(54356999)(76176999)(81342001)(70736001)(77982001)(102836001)(104016001);DIR:OUT;SFP:;SCL:1;SRVR:BN1BFFO11HUB035;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:3;LANG:en;
-X-OriginatorOrg: xilinx.onmicrosoft.com
-X-Microsoft-Antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
-X-Forefront-PRVS: 02408926C4
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jongsung,
+The VGA arbiter does not allow devices to "own" resources that it
+doesn't "decode".  However, it does allow devices to "lock" resources
+that it doesn't decode.  This gets us into trouble because locking
+the resource goes through the same bridge routing updates regardless
+of whether we decode the resource.  This means that when a non-decoded
+resource is released, the bridge is left with VGA routing enabled and
+locking a different device won't clear it.
 
-On Thu, 2014-06-12 at 05:50PM +0900, Jongsung Kim wrote:
-> The "Rx used bit read" interrupt is enabled but not cleared for some
-> systems with the ISR (Interrupt Status Register) configured as clear-
-> on-write.
-Does this interrupt need to be enabled? There is nothing checking
-that bit and handling this IRQ in the handler, AFAICT. And you solve
-this by simply clearing the bit. So, I wonder whether not enabling this
-IRQ in the first place would solve things too.
+This happens in the following scenario:
 
-> This interrupt may be asserted when the CPU does not handle
-> Rx-complete interrupts for a long time. (e.g., if the CPU is stopped
-> by debugger) Once asserted, it'll not be cleared, and the CPU will
-> loop infinitly in the interrupt handler.
-> 
-> This patch forces to use a dedicated function for reading the ISR,
-> and the function clears it if clear-on-write. So the ISR is always
-> cleared after read, regardless of clear-on-write configuration.
-> 
-> Reported-by: Hayun Hwang <hwang.hayun@lge.com>
-> Signed-off-by: Youngkyu Choi <youngkyu7.choi@lge.com>
-> Signed-off-by: Jongsung Kim <neidhard.kim@lge.com>
-> Tested-by: Hayun Hwang <hwang.hayun@lge.com>
-> ---
->  drivers/net/ethernet/cadence/macb.c |   37 ++++++++++++++--------------------
->  1 files changed, 15 insertions(+), 22 deletions(-)
-> 
-> diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
-> index e9daa07..21cc022 100644
-> --- a/drivers/net/ethernet/cadence/macb.c
-> +++ b/drivers/net/ethernet/cadence/macb.c
-> @@ -98,6 +98,16 @@ static void *macb_rx_buffer(struct macb *bp, unsigned int index)
->  	return bp->rx_buffers + bp->rx_buffer_size * macb_rx_ring_wrap(index);
->  }
->  
-> +static u32 macb_read_isr(struct macb *bp)
-> +{
-> +	u32 status = macb_readl(bp, ISR);
-> +
-> +	if (bp->caps & MACB_CAPS_ISR_CLEAR_ON_WRITE)
-> +		macb_writel(bp, ISR, status);
-> +
-> +	return status;
-> +}
-> +
->  void macb_set_hwaddr(struct macb *bp)
->  {
->  	u32 bottom;
-> @@ -552,9 +562,6 @@ static void macb_tx_interrupt(struct macb *bp)
->  	status = macb_readl(bp, TSR);
->  	macb_writel(bp, TSR, status);
->  
-> -	if (bp->caps & MACB_CAPS_ISR_CLEAR_ON_WRITE)
-> -		macb_writel(bp, ISR, MACB_BIT(TCOMP));
-> -
->  	netdev_vdbg(bp->dev, "macb_tx_interrupt status = 0x%03lx\n",
->  		(unsigned long)status);
->  
-> @@ -883,13 +890,10 @@ static int macb_poll(struct napi_struct *napi, int budget)
->  
->  		/* Packets received while interrupts were disabled */
->  		status = macb_readl(bp, RSR);
-This is now clearing all IRQ flags which is probably not what we want
-here. This is handling RX only. We still want the non-RX interrupts to go to
-the actual interrupt service routing.
+VGA device 01:00.0 (VGA1) is owned by the radeon driver, which
+registers a set_vga_decode function which releases legacy VGA decodes.
 
-	Sören
+VGA device 02:00.0 (VGA2) is any VGA device.
+
+VGA1 user locks VGA resources triggering first_use callback of
+set_vga_decoded, clearing "decode" and "owns" of legacy resources
+on VGA1.
+
+VGA1 user unlocks VGA resources.
+
+VGA2 user locks VGA resources, which skips VGA1 as conflicting as it
+does not "own" legacy resources, although VGA routing is still enabled
+for the VGA1 bridge.  VGA routing is enabled on VGA2 bridge.
+
+VGA2 may or may not receive VGA transactions depending on the bus
+priority of VGA1 vs VGA2 bridge.
+
+To resolve this, we need to allow devices to "own" resources that they
+do not "decode".  This way we can track bus ownership of VGA.  When a
+device decodes VGA, it only means that we must update the command bits
+in cases where the conflicting device is on the same bus.
+
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Cc: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Dave Airlie <airlied@redhat.com>
+---
+
+Adding dri-devel
+
+ drivers/gpu/vga/vgaarb.c |   40 ++++++++++++++++++++++------------------
+ 1 file changed, 22 insertions(+), 18 deletions(-)
+
+diff --git a/drivers/gpu/vga/vgaarb.c b/drivers/gpu/vga/vgaarb.c
+index af02597..d2077f0 100644
+--- a/drivers/gpu/vga/vgaarb.c
++++ b/drivers/gpu/vga/vgaarb.c
+@@ -237,12 +237,10 @@ static struct vga_device *__vga_tryget(struct vga_device *vgadev,
+ 		if (conflict->locks & lwants)
+ 			return conflict;
+ 
+-		/* Ok, now check if he owns the resource we want. We don't need
+-		 * to check "decodes" since it should be impossible to own
+-		 * own legacy resources you don't decode unless I have a bug
+-		 * in this code...
++		/* Ok, now check if it owns the resource we want.  We can
++		 * lock resources that are not decoded, therefore a device
++		 * can own resources it doesn't decode.
+ 		 */
+-		WARN_ON(conflict->owns & ~conflict->decodes);
+ 		match = lwants & conflict->owns;
+ 		if (!match)
+ 			continue;
+@@ -254,13 +252,19 @@ static struct vga_device *__vga_tryget(struct vga_device *vgadev,
+ 		flags = 0;
+ 		pci_bits = 0;
+ 
++		/* If we can't control legacy resources via the bridge, we
++		 * also need to disable normal decoding.
++		 */
+ 		if (!conflict->bridge_has_one_vga) {
+-			vga_irq_set_state(conflict, false);
+-			flags |= PCI_VGA_STATE_CHANGE_DECODES;
+-			if (match & (VGA_RSRC_LEGACY_MEM|VGA_RSRC_NORMAL_MEM))
++			if ((match & conflict->decodes) & VGA_RSRC_LEGACY_MEM)
+ 				pci_bits |= PCI_COMMAND_MEMORY;
+-			if (match & (VGA_RSRC_LEGACY_IO|VGA_RSRC_NORMAL_IO))
++			if ((match & conflict->decodes) & VGA_RSRC_LEGACY_IO)
+ 				pci_bits |= PCI_COMMAND_IO;
++
++			if (pci_bits) {
++				vga_irq_set_state(conflict, false);
++				flags |= PCI_VGA_STATE_CHANGE_DECODES;
++			}
+ 		}
+ 
+ 		if (change_bridge)
+@@ -268,18 +272,19 @@ static struct vga_device *__vga_tryget(struct vga_device *vgadev,
+ 
+ 		pci_set_vga_state(conflict->pdev, false, pci_bits, flags);
+ 		conflict->owns &= ~match;
+-		/* If he also owned non-legacy, that is no longer the case */
+-		if (match & VGA_RSRC_LEGACY_MEM)
++
++		/* If we disabled normal decoding, reflect it in owns */
++		if (pci_bits & PCI_COMMAND_MEMORY)
+ 			conflict->owns &= ~VGA_RSRC_NORMAL_MEM;
+-		if (match & VGA_RSRC_LEGACY_IO)
++		if (pci_bits & PCI_COMMAND_IO)
+ 			conflict->owns &= ~VGA_RSRC_NORMAL_IO;
+ 	}
+ 
+ enable_them:
+ 	/* ok dude, we got it, everybody conflicting has been disabled, let's
+-	 * enable us. Make sure we don't mark a bit in "owns" that we don't
+-	 * also have in "decodes". We can lock resources we don't decode but
+-	 * not own them.
++	 * enable us.  Mark any bits in "owns" regardless of whether we
++	 * decoded them.  We can lock resources we don't decode, therefore
++	 * we must track them via "owns".
+ 	 */
+ 	flags = 0;
+ 	pci_bits = 0;
+@@ -291,7 +296,7 @@ enable_them:
+ 		if (wants & (VGA_RSRC_LEGACY_IO|VGA_RSRC_NORMAL_IO))
+ 			pci_bits |= PCI_COMMAND_IO;
+ 	}
+-	if (!!(wants & VGA_RSRC_LEGACY_MASK))
++	if (wants & VGA_RSRC_LEGACY_MASK)
+ 		flags |= PCI_VGA_STATE_CHANGE_BRIDGE;
+ 
+ 	pci_set_vga_state(vgadev->pdev, true, pci_bits, flags);
+@@ -299,7 +304,7 @@ enable_them:
+ 	if (!vgadev->bridge_has_one_vga) {
+ 		vga_irq_set_state(vgadev, true);
+ 	}
+-	vgadev->owns |= (wants & vgadev->decodes);
++	vgadev->owns |= wants;
+ lock_them:
+ 	vgadev->locks |= (rsrc & VGA_RSRC_LEGACY_MASK);
+ 	if (rsrc & VGA_RSRC_LEGACY_IO)
+@@ -649,7 +654,6 @@ static inline void vga_update_device_decodes(struct vga_device *vgadev,
+ 	old_decodes = vgadev->decodes;
+ 	decodes_removed = ~new_decodes & old_decodes;
+ 	decodes_unlocked = vgadev->locks & decodes_removed;
+-	vgadev->owns &= ~decodes_removed;
+ 	vgadev->decodes = new_decodes;
+ 
+ 	pr_info("vgaarb: device changed decodes: PCI:%s,olddecodes=%s,decodes=%s:owns=%s\n",
+
