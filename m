@@ -1,119 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755901AbaFLLe4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 07:34:56 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:55727 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755851AbaFLLez (ORCPT
+	id S933108AbaFLLiV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 07:38:21 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:60166 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755268AbaFLLiR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 07:34:55 -0400
-Date: Thu, 12 Jun 2014 12:34:45 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Mark Brown <broonie@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: Kconfig fails: big select-based circular dependency
-Message-ID: <20140612113445.GF23430@n2100.arm.linux.org.uk>
-References: <20140607090944.GL23430@n2100.arm.linux.org.uk> <20140612094745.GD23430@n2100.arm.linux.org.uk> <6077426.uLBS643pC0@wuerfel>
+	Thu, 12 Jun 2014 07:38:17 -0400
+From: Michal Nazarewicz <mina86@mina86.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Minchan Kim <minchan@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Alexander Graf <agraf@suse.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCH v2 09/10] mm, cma: move output param to the end of param list
+In-Reply-To: <1402543307-29800-10-git-send-email-iamjoonsoo.kim@lge.com>
+Organization: http://mina86.com/
+References: <1402543307-29800-1-git-send-email-iamjoonsoo.kim@lge.com> <1402543307-29800-10-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Notmuch/0.17+15~gb65ca8e (http://notmuchmail.org) Emacs/24.4.50.1 (x86_64-unknown-linux-gnu)
+X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
+X-PGP: 50751FF4
+X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
+X-Hashcash: 1:20:140612:linuxppc-dev@lists.ozlabs.org::zENM3UGuVZmTWysu:0000000000000000000000000000000007Od
+X-Hashcash: 1:20:140612:agraf@suse.de::pNTNc09kfaWsnAO1:00000J5e
+X-Hashcash: 1:20:140612:pbonzini@redhat.com::wkKl9BM8hQ4CtDMo:0000000000000000000000000000000000000000000U9n
+X-Hashcash: 1:20:140612:gregkh@linuxfoundation.org::SazU3KTuMFBKtIl6:000000000000000000000000000000000000PTP
+X-Hashcash: 1:20:140612:aneesh.kumar@linux.vnet.ibm.com::/3luuIzCCz+IKFah:0000000000000000000000000000001Zu/
+X-Hashcash: 1:20:140612:akpm@linux-foundation.org::gsv7iwkAtCAF5Lvv:0000000000000000000000000000000000002SHa
+X-Hashcash: 1:20:140612:paulus@samba.org::gH5X7N0MVAumZrIh:02TZ6
+X-Hashcash: 1:20:140612:iamjoonsoo.kim@lge.com::W7YCESTNC2059Lli:0000000000000000000000000000000000000002VmW
+X-Hashcash: 1:20:140612:linux@arm.linux.org.uk::iJkTGscpnQnH5uaw:0000000000000000000000000000000000000003672
+X-Hashcash: 1:20:140612:linux-kernel@vger.kernel.org::GlquC4MESNMKBiD3:0000000000000000000000000000000003Z2Q
+X-Hashcash: 1:20:140612:kvm@vger.kernel.org::WnIBiwRI6h8cV31g:0000000000000000000000000000000000000000003SzA
+X-Hashcash: 1:20:140612:gleb@kernel.org::R1O4H9dUGVvdTbsP:004CBB
+X-Hashcash: 1:20:140612:benh@kernel.crashing.org::2Yyl4EgBJNQW50Tf:000000000000000000000000000000000000057rd
+X-Hashcash: 1:20:140612:minchan@kernel.org::gQv+LaRBSsVXs5hD:00000000000000000000000000000000000000000004ggb
+X-Hashcash: 1:20:140612:iamjoonsoo.kim@lge.com::21B5qFF5F5ftba3G:0000000000000000000000000000000000000004r2b
+X-Hashcash: 1:20:140612:kvm-ppc@vger.kernel.org::FOybtOCCyGFE+NAo:000000000000000000000000000000000000005k8o
+X-Hashcash: 1:20:140612:linux-mm@kvack.org::iZb2Y5J/1k3qMLH6:00000000000000000000000000000000000000000008hQG
+X-Hashcash: 1:20:140612:m.szyprowski@samsung.com::I2yquB4yOBh+NAJg:0000000000000000000000000000000000000BhOz
+X-Hashcash: 1:20:140612:linux-arm-kernel@lists.infradead.org::Tes9RPHAE2ZjInyF:0000000000000000000000000A+4P
+Date: Thu, 12 Jun 2014 13:38:11 +0200
+Message-ID: <xa1twqcmicik.fsf@mina86.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6077426.uLBS643pC0@wuerfel>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 12, 2014 at 12:31:19PM +0200, Arnd Bergmann wrote:
-> On Thursday 12 June 2014 10:47:45 Russell King - ARM Linux wrote:
-> > If no one responds, I'll assume that no one is interested, and I'll
-> > just create a pile of patches removing a bunch of these idiotic select
-> > statements at random to break this loop.
-> 
-> I missed the original mail, and I don't remember seeing this particular
-> dependency chain.
-> 
-> > On Sat, Jun 07, 2014 at 10:09:44AM +0100, Russell King - ARM Linux wrote:
-> > > This is getting silly:
-> > > 
-> > > scripts/kconfig/conf --silentoldconfig Kconfig
-> > > drivers/dma/Kconfig:5:error: recursive dependency detected!
-> > > drivers/dma/Kconfig:5:  symbol DMADEVICES is selected by SAMSUNG_DMADEV
-> 
-> The 'select DMADEVICES' from plat-samsung/Kconfig is certainly wrong,
-> we shouldn't do that, but I'd do some extended build regression tests
-> to ensure that it doesn't cause other problems.
-> 
-> I'll have a look.
+On Thu, Jun 12 2014, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+> Conventionally, we put output param to the end of param list.
+> cma_declare_contiguous() doesn't look like that, so change it.
 
-Yes, SAMSUNG_DMADEV looks like it's a shim layer between DMA engine and
-the old Samsung platform private DMA API.  I suspect SAMSUNG_DMADEV should
-be selected by the drivers which make use of this shim iff DMADEVICES is
-enabled.
+Perhaps the function should be changed to return an error-pointer?
 
-> > > arch/arm/plat-samsung/Kconfig:412:      symbol SAMSUNG_DMADEV is selected by S3C64XX_PL080
+> Additionally, move down cma_areas reference code to the position
+> where it is really needed.
+>
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-I think killing the select statement against S3C64XX_PL080 of this shim is
-also a correct move - I suspect that's just there to make Kconfig life
-easier (which is not really a valid reason for adding a select statement
-to a major subsystem.)
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
 
-> > > arch/arm/mach-s3c64xx/Kconfig:20:       symbol S3C64XX_PL080 is selected by SPI_S3C64XX
-
-As I said in my reply to Paul, this select should also be killed.  At
-the very least, it should be turned into "depends on S3C64XX_PL080 if
-ARCH_S3C64XX".
-
-Since the comments in the driver say that the driver depends on having a
-DMA engine, I'd suggest also adding a dependency on DMADEVICES as well,
-to encode that explicit requirement in the Kconfig language:
-
-config SPI_S3C64XX
-	tristate "Samsung S3C64XX series type SPI"
-	depends on PLAT_SAMSUNG && DMADEVICES
-	depends on S3C64XX_PL080 if ARCH_S3C64XX
-
-The driver will cleanly fail if it can't get the DMA channels that it
-requires to operate, so we don't need to do anything more than this here.
-
-> > > drivers/spi/Kconfig:429:        symbol SPI_S3C64XX depends on SPI
-> > > drivers/spi/Kconfig:8:  symbol SPI is selected by DRM_PANEL_LD9040
-> 
-> 'select SPI' is also really bad. This seems trivial to replace with
-> 'depends on SPI'. This is the only driver that uses select here.
-
-Definitely.
-
-> > > drivers/gpu/drm/panel/Kconfig:19:       symbol DRM_PANEL_LD9040 depends on DRM_PANEL
-> > > drivers/gpu/drm/panel/Kconfig:1:        symbol DRM_PANEL is selected by DRM_IMX_LDB
-> > > drivers/staging/imx-drm/Kconfig:35:     symbol DRM_IMX_LDB depends on MFD_SYSCON
-> > > drivers/mfd/Kconfig:722:        symbol MFD_SYSCON is selected by POWER_RESET_KEYSTONE
-> 
-> We have 10 drivers doing 'select MFD_SYSCON' and 9 drivers doing
-> 'depends on MFD_SYSCON'. Either one would work if we did those
-> consistently, here the problem is really mixing the two.
-
-Indeed - we need clear policies on this stuff, because as we get different
-platforms doing different things (as is the case in this scenario), we are
-only going to see an increase in this problem.
-
-Also, I don't think we should do just one change to break this loop - this
-is a sign of a much bigger disease.  We are heading towards the situation
-where adding just one 'select' or 'depends on' statement between two symbols,
-thereby adding just one more dependency to an already tightly linked graph
-can cause a circular dependency.
-
-We need to stop this behaviour ASAP, and kill off as many of these
-ill-considered or wrong dependencies as possible, otherwise we're risking
-Kconfig becoming unmaintainable.
-
-Whenever we see a new 'select' statment appearing in a patch for something
-which is not a utility symbol, we need to ask what the justification is
-for it being there, and evaluate whether it's reasonable (ideally, this
-should be detailed in the commit log.)
-
-(I define a utility symbol as one whose primary purpose is to be selected.)
+>
+> diff --git a/arch/powerpc/kvm/book3s_hv_builtin.c b/arch/powerpc/kvm/book3s_hv_builtin.c
+> index 28ec226..97613ea 100644
+> --- a/arch/powerpc/kvm/book3s_hv_builtin.c
+> +++ b/arch/powerpc/kvm/book3s_hv_builtin.c
+> @@ -184,7 +184,7 @@ void __init kvm_cma_reserve(void)
+>  
+>  		align_size = max(kvm_rma_pages << PAGE_SHIFT, align_size);
+>  		cma_declare_contiguous(selected_size, 0, 0, align_size,
+> -			KVM_CMA_CHUNK_ORDER - PAGE_SHIFT, &kvm_cma, false);
+> +			KVM_CMA_CHUNK_ORDER - PAGE_SHIFT, false, &kvm_cma);
+>  	}
+>  }
+>  
+> diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
+> index f177f73..bfd4553 100644
+> --- a/drivers/base/dma-contiguous.c
+> +++ b/drivers/base/dma-contiguous.c
+> @@ -149,7 +149,7 @@ int __init dma_contiguous_reserve_area(phys_addr_t size, phys_addr_t base,
+>  {
+>  	int ret;
+>  
+> -	ret = cma_declare_contiguous(size, base, limit, 0, 0, res_cma, fixed);
+> +	ret = cma_declare_contiguous(size, base, limit, 0, 0, fixed, res_cma);
+>  	if (ret)
+>  		return ret;
+>  
+> diff --git a/include/linux/cma.h b/include/linux/cma.h
+> index e38efe9..e53eead 100644
+> --- a/include/linux/cma.h
+> +++ b/include/linux/cma.h
+> @@ -6,7 +6,7 @@ struct cma;
+>  extern int __init cma_declare_contiguous(phys_addr_t size,
+>  				phys_addr_t base, phys_addr_t limit,
+>  				phys_addr_t alignment, int order_per_bit,
+> -				struct cma **res_cma, bool fixed);
+> +				bool fixed, struct cma **res_cma);
+>  extern struct page *cma_alloc(struct cma *cma, int count, unsigned int align);
+>  extern bool cma_release(struct cma *cma, struct page *pages, int count);
+>  #endif
+> diff --git a/mm/cma.c b/mm/cma.c
+> index 01a0713..22a5b23 100644
+> --- a/mm/cma.c
+> +++ b/mm/cma.c
+> @@ -142,8 +142,8 @@ core_initcall(cma_init_reserved_areas);
+>   * @limit: End address of the reserved memory (optional, 0 for any).
+>   * @alignment: Alignment for the contiguous memory area, should be power of 2
+>   * @order_per_bit: Order of pages represented by one bit on bitmap.
+> - * @res_cma: Pointer to store the created cma region.
+>   * @fixed: hint about where to place the reserved area
+> + * @res_cma: Pointer to store the created cma region.
+>   *
+>   * This function reserves memory from early allocator. It should be
+>   * called by arch specific code once the early allocator (memblock or bootmem)
+> @@ -156,9 +156,9 @@ core_initcall(cma_init_reserved_areas);
+>  int __init cma_declare_contiguous(phys_addr_t size,
+>  				phys_addr_t base, phys_addr_t limit,
+>  				phys_addr_t alignment, int order_per_bit,
+> -				struct cma **res_cma, bool fixed)
+> +				bool fixed, struct cma **res_cma)
+>  {
+> -	struct cma *cma = &cma_areas[cma_area_count];
+> +	struct cma *cma;
+>  	int ret = 0;
+>  
+>  	pr_debug("%s(size %lx, base %08lx, limit %08lx alignment %08lx)\n",
+> @@ -214,6 +214,7 @@ int __init cma_declare_contiguous(phys_addr_t size,
+>  	 * Each reserved area must be initialised later, when more kernel
+>  	 * subsystems (like slab allocator) are available.
+>  	 */
+> +	cma = &cma_areas[cma_area_count];
+>  	cma->base_pfn = PFN_DOWN(base);
+>  	cma->count = size >> PAGE_SHIFT;
+>  	cma->order_per_bit = order_per_bit;
+> -- 
+> 1.7.9.5
+>
 
 -- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
