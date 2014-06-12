@@ -1,62 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752136AbaFLUBy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 16:01:54 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37035 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751634AbaFLUBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 16:01:53 -0400
-Message-ID: <539A071B.2080101@zytor.com>
-Date: Thu, 12 Jun 2014 13:01:31 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752119AbaFLUGJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 16:06:09 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:38230 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751597AbaFLUGH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 16:06:07 -0400
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>, Kui Zhang <kuizhang@gmail.com>
-CC: x86@kernel.org,
+In-Reply-To: <1402594402-30374-1-git-send-email-bjorn.andersson@sonymobile.com>
+References: <1402594402-30374-1-git-send-email-bjorn.andersson@sonymobile.com>
+Date: Thu, 12 Jun 2014 13:06:06 -0700
+Message-ID: <CAJAp7OgSKBqu1Xi0WFWCj=yqp+1PJcBtb9d5WCB8Lgo_EuspJg@mail.gmail.com>
+Subject: Re: [PATCH v2 0/3] Qualcomm Resource Power Manager driver
+From: Bjorn Andersson <bjorn@kryo.se>
+To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stefani Seibold <stefani@seibold.net>
-Subject: Re: [PATCH 2/3] doc,vdso: Make vDSO examples more portable
-References: <cover.1402598632.git.luto@amacapital.net> <87f62cc3db04047f9edbf7bacac059396d7112f1.1402598632.git.luto@amacapital.net>
-In-Reply-To: <87f62cc3db04047f9edbf7bacac059396d7112f1.1402598632.git.luto@amacapital.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2014 11:47 AM, Andy Lutomirski wrote:
->  
-> +#include <asm/bitsperlong.h>
-> +
+On Thu, Jun 12, 2014 at 10:33 AM, Bjorn Andersson
+<bjorn.andersson@sonymobile.com> wrote:
+> Changes since v1:
+>   - Moved rpm driver to drivers/soc
+[...]
+>  include/linux/mfd/qcom_rpm.h                       |  12 +
 
-This isn't portable in any way.  This is probably not the right way to
-do this.
+Missed the last one in the move...
 
-The portable way to do this would be something like:
+s/mfd/soc/
 
-#include <limits.h>
+Will wait a little before sending out v3, to allow time for other comments.
 
-#if ULONG_MAX > 0xffffffffUL
-# define ELF_BITS 64
-#else
-# define ELF_BITS 32
-#endif
-
-There is also the option of looking for either __LP64__ or __ILP32__
-which isn't 100% portable but works with all newer versions of gcc:
-
-#ifndef ELF_BITS
-# ifdef __LP64__
-#  define ELF_BITS 64
-# elif defined(__ILP32__)
-#  define ELF_BITS 32
-# else
-#  error "Unknown size, please define ELF_BITS"
-# endif
-#endif
-
-... or something like that.
-
-	-hpa
-
+// Bjorn
