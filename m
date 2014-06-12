@@ -1,118 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752729AbaFLUR6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 16:17:58 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:42156 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752591AbaFLURm (ORCPT
+	id S1752231AbaFLUU2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 16:20:28 -0400
+Received: from mail-vc0-f202.google.com ([209.85.220.202]:43985 "EHLO
+	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751495AbaFLUU1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 16:17:42 -0400
-From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-X-Google-Original-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-To: zohar@linux.vnet.ibm.com, dhowells@redhat.com, jwboyer@redhat.com,
-        keyrings@linux-nfs.org, linux-security-module@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Dmitry Kasatkin <d.kasatkin@samsung.com>
-Subject: [PATCH v1a 2/2] KEYS: validate certificate trust only with builtin keys
-Date: Thu, 12 Jun 2014 23:17:11 +0300
-Message-Id: <4cf4c2546fd7c279338da9751286a034b1863cfd.1402604096.git.d.kasatkin@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <cover.1402604096.git.d.kasatkin@samsung.com>
-References: <cover.1402604096.git.d.kasatkin@samsung.com>
-In-Reply-To: <cover.1402604096.git.d.kasatkin@samsung.com>
-References: <cover.1402604096.git.d.kasatkin@samsung.com>
+	Thu, 12 Jun 2014 16:20:27 -0400
+From: David Riley <davidriley@chromium.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Doug Anderson <dianders@chromium.org>, linux-kernel@vger.kernel.org,
+        David Riley <davidriley@chromium.org>
+Subject: [PATCH v3 1/2] kernel: time: Add udelay_test module to validate udelay
+Date: Thu, 12 Jun 2014 13:13:11 -0700
+Message-Id: <1402603992-12466-2-git-send-email-davidriley@chromium.org>
+X-Mailer: git-send-email 2.0.0.526.g5318336
+In-Reply-To: <1402603992-12466-1-git-send-email-davidriley@chromium.org>
+References: <1402603992-12466-1-git-send-email-davidriley@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of allowing public keys, with certificates signed by any
-key on the system trusted keyring, to be added to a trusted keyring,
-this patch further restricts the certificates to those signed only by
-builtin keys on the system keyring.
+Create a module that allows udelay() to be executed to ensure that
+it is delaying at least as long as requested (with a little bit of
+error allowed).
 
-This patch defines a new option 'builtin' for the kernel parameter
-'keys_ownerid' to allow trust validation using builtin keys.
+There are some configurations which don't have reliably udelay
+due to using a loop delay with cpufreq changes which should use
+a counter time based delay instead.  This test aims to identify
+those configurations where timing is unreliable.
 
-Idea belongs to Mimi Zohar.
-
-Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+Signed-off-by: David Riley <davidriley@chromium.org>
 ---
- Documentation/kernel-parameters.txt      | 2 +-
- crypto/asymmetric_keys/x509_public_key.c | 9 +++++++--
- include/linux/key.h                      | 1 +
- kernel/system_keyring.c                  | 1 +
- 4 files changed, 10 insertions(+), 3 deletions(-)
+ kernel/time/Kconfig       |   7 ++
+ kernel/time/Makefile      |   1 +
+ kernel/time/udelay_test.c | 170 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 178 insertions(+)
+ create mode 100644 kernel/time/udelay_test.c
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 7a810d3..336dabe 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1437,7 +1437,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 	keys_ownerid=[KEYS] This parameter identifies a specific key(s) on
- 			the system trusted keyring to be used for certificate
- 			trust validation.
--			format: id:<keyid>
-+			format: { id:<keyid> | builtin }
+diff --git a/kernel/time/Kconfig b/kernel/time/Kconfig
+index f448513..c6af048 100644
+--- a/kernel/time/Kconfig
++++ b/kernel/time/Kconfig
+@@ -202,3 +202,10 @@ config HIGH_RES_TIMERS
  
- 	kgdbdbgp=	[KGDB,HW] kgdb over EHCI usb debug port.
- 			Format: <Controller#>[,poll interval]
-diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
-index d46b790..c3805a8 100644
---- a/crypto/asymmetric_keys/x509_public_key.c
-+++ b/crypto/asymmetric_keys/x509_public_key.c
-@@ -24,6 +24,7 @@
- #include "public_key.h"
- #include "x509_parser.h"
- 
-+static bool builtin_keys;
- static char *owner_keyid;
- static int __init default_owner_keyid_set(char *str)
- {
-@@ -32,6 +33,8 @@ static int __init default_owner_keyid_set(char *str)
- 
- 	if (strncmp(str, "id:", 3) == 0)
- 		owner_keyid = str;	/* owner local key 'id:xxxxxx' */
-+	else if (strcmp(str, "builtin") == 0)
-+		builtin_keys = true;
- 
- 	return 1;
- }
-@@ -197,8 +200,10 @@ static int x509_validate_trust(struct x509_certificate *cert,
- 					  cert->authority,
- 					  strlen(cert->authority));
- 	if (!IS_ERR(key))  {
--		pk = key->payload.data;
--		ret = x509_check_signature(pk, cert);
-+		if (!builtin_keys || test_bit(KEY_FLAG_BUILTIN, &key->flags)) {
-+			pk = key->payload.data;
-+			ret = x509_check_signature(pk, cert);
-+		}
- 		key_put(key);
- 	}
- 	return ret;
-diff --git a/include/linux/key.h b/include/linux/key.h
-index cd0abb8..67c8e7e 100644
---- a/include/linux/key.h
-+++ b/include/linux/key.h
-@@ -170,6 +170,7 @@ struct key {
- #define KEY_FLAG_INVALIDATED	7	/* set if key has been invalidated */
- #define KEY_FLAG_TRUSTED	8	/* set if key is trusted */
- #define KEY_FLAG_TRUSTED_ONLY	9	/* set if keyring only accepts links to trusted keys */
-+#define KEY_FLAG_BUILTIN	10	/* set if key is builtin */
- 
- 	/* the key type and key description string
- 	 * - the desc is used to match a key against search criteria
-diff --git a/kernel/system_keyring.c b/kernel/system_keyring.c
-index 52ebc70..875f64e 100644
---- a/kernel/system_keyring.c
-+++ b/kernel/system_keyring.c
-@@ -89,6 +89,7 @@ static __init int load_system_certificate_list(void)
- 			pr_err("Problem loading in-kernel X.509 certificate (%ld)\n",
- 			       PTR_ERR(key));
- 		} else {
-+			set_bit(KEY_FLAG_BUILTIN, &key_ref_to_ptr(key)->flags);
- 			pr_notice("Loaded X.509 cert '%s'\n",
- 				  key_ref_to_ptr(key)->description);
- 			key_ref_put(key);
+ endmenu
+ endif
++
++config UDELAY_TEST
++	tristate "udelay test driver"
++	default n
++	help
++	  This builds the "udelay_test" module that helps to make sure
++	  that udelay() is working properly.
+diff --git a/kernel/time/Makefile b/kernel/time/Makefile
+index 57a413f..dca9175 100644
+--- a/kernel/time/Makefile
++++ b/kernel/time/Makefile
+@@ -12,3 +12,4 @@ obj-$(CONFIG_TICK_ONESHOT)			+= tick-oneshot.o
+ obj-$(CONFIG_TICK_ONESHOT)			+= tick-sched.o
+ obj-$(CONFIG_TIMER_STATS)			+= timer_stats.o
+ obj-$(CONFIG_DEBUG_FS)				+= timekeeping_debug.o
++obj-$(CONFIG_UDELAY_TEST)			+= udelay_test.o
+diff --git a/kernel/time/udelay_test.c b/kernel/time/udelay_test.c
+new file mode 100644
+index 0000000..b89115f
+--- /dev/null
++++ b/kernel/time/udelay_test.c
+@@ -0,0 +1,170 @@
++/*
++ * udelay() test kernel module
++ *
++ * Test is executed by writing and reading to /sys/kernel/debug/udelay_test
++ * Tests are configured by writing: USECS ITERATIONS
++ * Tests are executed by reading from the same file.
++ * Specifying usecs of 0 or negative values will run multiples tests.
++ *
++ * Copyright (C) 2014 Google, Inc.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/debugfs.h>
++#include <linux/delay.h>
++#include <linux/ktime.h>
++#include <linux/module.h>
++#include <linux/uaccess.h>
++
++#define DEFAULT_ITERATIONS 100
++
++#define DEBUGFS_FILENAME "udelay_test"
++
++static DEFINE_MUTEX(udelay_test_lock);
++static struct dentry *udelay_test_debugfs_file;
++static int udelay_test_usecs;
++static int udelay_test_iterations = DEFAULT_ITERATIONS;
++
++static int udelay_test_single(struct seq_file *s, int usecs, int iters)
++{
++	int min = 0, max = 0, fail_count = 0;
++	long long sum = 0;
++	long long avg;
++	int i;
++	/* Allow udelay to be up to 0.5% fast */
++	int allowed_error_ns = usecs * 5;
++
++	if (iters <= 0)
++		return 0;
++
++	for (i = 0; i < iters; ++i) {
++		struct timespec ts1, ts2;
++		int time_passed;
++
++		ktime_get_ts(&ts1);
++		udelay(usecs);
++		ktime_get_ts(&ts2);
++		time_passed = timespec_to_ns(&ts2) - timespec_to_ns(&ts1);
++
++		if (i == 0 || time_passed < min)
++			min = time_passed;
++		if (i == 0 || time_passed > max)
++			max = time_passed;
++		if ((time_passed + allowed_error_ns) / 1000 < usecs)
++			++fail_count;
++		sum += time_passed;
++	}
++
++	avg = sum;
++	do_div(avg, iters);
++	seq_printf(s, "%d usecs x %d: exp=%d allowed=%d min=%d avg=%lld max=%d",
++			usecs, iters, usecs * 1000,
++			(usecs * 1000) - allowed_error_ns, min, avg, max);
++	if (fail_count)
++		seq_printf(s, " FAIL=%d", fail_count);
++	seq_puts(s, "\n");
++
++	return 0;
++}
++
++static int udelay_test_show(struct seq_file *s, void *v)
++{
++	int usecs;
++	int iters;
++	int ret = 0;
++
++	mutex_lock(&udelay_test_lock);
++	usecs = udelay_test_usecs;
++	iters = udelay_test_iterations;
++	mutex_unlock(&udelay_test_lock);
++
++	if (usecs > 0) {
++		return udelay_test_single(s, usecs, iters);
++	} else if (usecs == 0) {
++		struct timespec ts;
++
++		ktime_get_ts(&ts);
++		seq_printf(s, "udelay() test (lpj=%ld kt=%ld.%09ld)\n",
++				loops_per_jiffy, ts.tv_sec, ts.tv_nsec);
++		seq_puts(s, "usage:\n");
++		seq_puts(s, "echo USECS [ITERS] > " DEBUGFS_FILENAME "\n");
++		seq_puts(s, "cat " DEBUGFS_FILENAME "\n");
++	}
++
++	return ret;
++}
++
++static int udelay_test_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, udelay_test_show, inode->i_private);
++}
++
++static ssize_t udelay_test_write(struct file *file, const char __user *buf,
++		size_t count, loff_t *pos)
++{
++	char lbuf[32];
++	int ret;
++	int usecs;
++	int iters;
++
++	if (count >= sizeof(lbuf))
++		return -EINVAL;
++
++	if (copy_from_user(lbuf, buf, count))
++		return -EFAULT;
++	lbuf[count] = '\0';
++
++	ret = sscanf(lbuf, "%d %d", &usecs, &iters);
++	if (ret < 1)
++		return -EINVAL;
++	else if (ret < 2)
++		iters = DEFAULT_ITERATIONS;
++
++	mutex_lock(&udelay_test_lock);
++	udelay_test_usecs = usecs;
++	udelay_test_iterations = iters;
++	mutex_unlock(&udelay_test_lock);
++
++	return count;
++}
++
++static const struct file_operations udelay_test_debugfs_ops = {
++	.owner = THIS_MODULE,
++	.open = udelay_test_open,
++	.read = seq_read,
++	.write = udelay_test_write,
++	.llseek = seq_lseek,
++	.release = single_release,
++};
++
++static int __init udelay_test_init(void)
++{
++	mutex_lock(&udelay_test_lock);
++	udelay_test_debugfs_file = debugfs_create_file(DEBUGFS_FILENAME,
++			S_IRUSR, NULL, NULL, &udelay_test_debugfs_ops);
++	mutex_unlock(&udelay_test_lock);
++
++	return 0;
++}
++
++module_init(udelay_test_init);
++
++static void __exit udelay_test_exit(void)
++{
++	mutex_lock(&udelay_test_lock);
++	debugfs_remove(udelay_test_debugfs_file);
++	mutex_unlock(&udelay_test_lock);
++}
++
++module_exit(udelay_test_exit);
++
++MODULE_AUTHOR("David Riley <davidriley@chromium.org>");
++MODULE_LICENSE("GPL");
 -- 
-1.9.1
+2.0.0.526.g5318336
 
