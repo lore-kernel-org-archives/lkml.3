@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608AbaFLXar (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 19:30:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37054 "EHLO
+	id S1752816AbaFLXbG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 19:31:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37064 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751330AbaFLXR1 (ORCPT
+	with ESMTP id S1751312AbaFLXR1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 12 Jun 2014 19:17:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Brian Healy <healybrian@gmail.com>, Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.15 08/12] [media] rtl28xxu: add 1b80:d395 Peak DVB-T USB
-Date: Thu, 12 Jun 2014 16:21:10 -0700
-Message-Id: <20140612232045.205205827@linuxfoundation.org>
+        Tomas Winkler <tomas.winkler@intel.com>,
+        Alexander Usyskin <alexander.usyskin@intel.com>
+Subject: [PATCH 3.15 07/12] mei: me: read H_CSR after asserting reset
+Date: Thu, 12 Jun 2014 16:21:09 -0700
+Message-Id: <20140612232045.176406701@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140612232044.886466924@linuxfoundation.org>
 References: <20140612232044.886466924@linuxfoundation.org>
@@ -29,33 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brian Healy <healybrian@gmail.com>
+From: Tomas Winkler <tomas.winkler@intel.com>
 
-commit 9ca24ae4083665bda38da45f4b5dc9bbaf936bc0 upstream.
+commit c40765d919d25d2d44d99c4ce39e48808f137e1e upstream.
 
-Add USB ID for Peak DVB-T USB.
+According the spec the host should read H_CSR again
+after asserting reset H_RST to ensure that reset was
+read by the firmware
 
-[crope@iki.fi: fix Brian email address and indentation]
-Signed-off-by: Brian Healy <healybrian@gmail.com>
-Signed-off-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-
 ---
- drivers/media/usb/dvb-usb-v2/rtl28xxu.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/misc/mei/hw-me.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
---- a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
-+++ b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
-@@ -1537,6 +1537,8 @@ static const struct usb_device_id rtl28x
- 		&rtl2832u_props, "Crypto ReDi PC 50 A", NULL) },
- 	{ DVB_USB_DEVICE(USB_VID_KYE, 0x707f,
- 		&rtl2832u_props, "Genius TVGo DVB-T03", NULL) },
-+	{ DVB_USB_DEVICE(USB_VID_KWORLD_2, 0xd395,
-+		&rtl2832u_props, "Peak DVB-T USB", NULL) },
+--- a/drivers/misc/mei/hw-me.c
++++ b/drivers/misc/mei/hw-me.c
+@@ -189,6 +189,18 @@ static int mei_me_hw_reset(struct mei_de
+ 	dev->recvd_hw_ready = false;
+ 	mei_me_reg_write(hw, H_CSR, hcsr);
  
- 	/* RTL2832P devices: */
- 	{ DVB_USB_DEVICE(USB_VID_HANFTEK, 0x0131,
++	/*
++	 * Host reads the H_CSR once to ensure that the
++	 * posted write to H_CSR completes.
++	 */
++	hcsr = mei_hcsr_read(hw);
++
++	if ((hcsr & H_RST) == 0)
++		dev_warn(&dev->pdev->dev, "H_RST is not set = 0x%08X", hcsr);
++
++	if ((hcsr & H_RDY) == H_RDY)
++		dev_warn(&dev->pdev->dev, "H_RDY is not cleared 0x%08X", hcsr);
++
+ 	if (intr_enable == false)
+ 		mei_me_hw_reset_release(dev);
+ 
 
 
