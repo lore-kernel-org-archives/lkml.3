@@ -1,82 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756144AbaFLQQy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 12:16:54 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50852 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753027AbaFLQQw (ORCPT
+	id S1756175AbaFLQRi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 12:17:38 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:37269 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753027AbaFLQRh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 12:16:52 -0400
-From: Punit Agrawal <punit.agrawal@arm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "linux-pm\@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Javi Merino <Javi.Merino@arm.com>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <edubezval@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [RFC PATCH 3/3] thermal: trace: Trace when temperature is above a trip point
-References: <1402486305-4017-1-git-send-email-punit.agrawal@arm.com>
-	<1402486305-4017-4-git-send-email-punit.agrawal@arm.com>
-	<20140611084908.509a6950@gandalf.local.home> <9hhk38nedu1.fsf@arm.com>
-	<20140611102006.27cc145e@gandalf.local.home> <9hhfvjbebux.fsf@arm.com>
-	<20140611110824.7aa2adc2@gandalf.local.home>
-Date: Thu, 12 Jun 2014 17:16:34 +0100
-In-Reply-To: <20140611110824.7aa2adc2@gandalf.local.home> (Steven Rostedt's
-	message of "Wed, 11 Jun 2014 11:08:24 -0400")
-Message-ID: <9hh61k66r31.fsf@arm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Thu, 12 Jun 2014 12:17:37 -0400
+Date: Thu, 12 Jun 2014 12:17:33 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Greg Thelen <gthelen@google.com>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Michel Lespinasse <walken@google.com>,
+        Roman Gushchin <klamm@yandex-team.ru>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH 2/2] memcg: Allow guarantee reclaim
+Message-ID: <20140612161733.GC23606@htj.dyndns.org>
+References: <20140611075729.GA4520@dhcp22.suse.cz>
+ <1402473624-13827-1-git-send-email-mhocko@suse.cz>
+ <1402473624-13827-2-git-send-email-mhocko@suse.cz>
+ <20140611153631.GH2878@cmpxchg.org>
+ <20140612132207.GA32720@dhcp22.suse.cz>
+ <20140612135600.GI2878@cmpxchg.org>
+ <20140612142237.GB32720@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140612142237.GB32720@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven Rostedt <rostedt@goodmis.org> writes:
+Hello, Michal.
 
-[...]
+On Thu, Jun 12, 2014 at 04:22:37PM +0200, Michal Hocko wrote:
+> The primary question would be, whether this is is the best transition
+> strategy. I do not know how many users apart from developers are really
+> using unified hierarchy. I would be worried that we merge a feature which
+> will not be used for a long time.
 
->> 
->> # pwd /sys/kernel/debug/tracing/events/thermal/thermal_zone_trip
->> # cat format
->> name: thermal_zone_trip
->> ID: 463
->> format:
->>         field:unsigned short common_type;       offset:0;       size:2; signed:0;
->>         field:unsigned char common_flags;       offset:2;       size:1; signed:0;
->>         field:unsigned char common_preempt_count;       offset:3;       size:1; signed:0;
->>         field:int common_pid;   offset:4;       size:4; signed:1;
->> 
->>         field:__data_loc char[] thermal_zone;   offset:8;       size:4; signed:0;
->>         field:int id;   offset:12;      size:4; signed:1;
->>         field:int trip; offset:16;      size:4; signed:1;
->>         field:enum thermal_trip_type trip_type; offset:20;      size:4; signed:0;
->> 
->> print fmt: "thermal_zone=%s id=%d trip=%d trip_type=%s",
->> __get_str(thermal_zone), REC->id, REC->trip,
->> __print_symbolic(REC->trip_type, { THERMAL_TRIP_ACTIVE, "active" },
->> { THERMAL_TRIP_PASSIVE, "passive" }, { THERMAL_TRIP_HOT, "hot" }, {
->> THERMAL_TRIP_CRITICAL, "critical" })
->> 
->
-> For it to work with trace-cmd (and perf) you'll need to add a plugin to
-> define what those enums are. This is the file that trace-cmd uses to
-> foramat. But it has no idea how to convert something like
-> THERMAL_TRIP_PASSIVE into a number.
->
+I'm planning to drop __DEVEL__ mask from the unified hierarchy in a
+cycle, at most two.  The biggest hold up at the moment is
+straightening out the interfaces and interaction between memcg and
+blkcg because I think it'd be silly to have to go through another
+round of interface versioning effort right after transitioning to
+unified hierarchy.  I'm not too confident whether it'd be possible to
+get blkcg completely in shape by that time, but, if that takes too
+long, I'll just leave blkcg behind temporarily.  So, at least from
+kernel side, it's not gonna be too long.
 
-Hmm, right. I was working under the assumption that the enum values will
-be converted to their numeric representation when compiled.
+There sure is a question of how fast userland will move to the new
+interface.  Some are already playing with unified hierarchy and
+planning to migrate as soon as possible but there sure will be others
+who will take more time.  Can't tell for sure, but the thing is that
+migration to min/low/high/max scheme is a signficant migration effort
+too, so I'm not sure how much we'd gain by doing that separately.
+It'd be an extra transition step for userland (optional but still),
+more combinations of configration to handle for memcg, and it's not
+like unified hierarchy is that difficult to transition to.
 
-I think it's better to convert the enum to int in the trace event - the
-changes are localised and the tool will work as well.
+> Moreover, if somebody wants to transition from soft limit then it would
+> be really hard because switching to unified hierarchy might be a no-go.
 
-Rui, Eduardo what do you think?
+Why would that be a no-go?  Its usage is mostly similar with
+tranditional hierarchies and can be used with other hierarchies, so
+while it'd take some adaptation, in most cases gradual transition
+shouldn't be a big problem.
 
-Punit
+> I think that it is clear that we should deprecate soft_limit ASAP. I
+> also think it wont't hurt to have min, low, high in both old and unified
+> API and strongly warn if somebody tries to use soft_limit along with any
+> of the new APIs in the first step. Later we can even forbid any
+> combination by a hard failure.
 
-> -- Steve
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+I don't quite understand how you plan to deprecate it.  Sure you can
+fail with -EINVAL or whatnot when the wrong combination is used but I
+don't think there's any chance of removing the knob.  There's a reason
+why we're introducing a new version of the whole cgroup interface
+which can co-exist with the existing one after all.  If you wanna
+version memcg interface separately, maybe that'd work but it sounds
+like a lot of extra hassle for not much gain.
+
+Thanks.
+
+-- 
+tejun
