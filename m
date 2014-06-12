@@ -1,107 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751305AbaFLXR0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 19:17:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37035 "EHLO
+	id S1751478AbaFLXR3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 19:17:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37047 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750803AbaFLXRY (ORCPT
+	with ESMTP id S1751244AbaFLXR0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 19:17:24 -0400
+	Thu, 12 Jun 2014 19:17:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: [PATCH 3.15 00/12] 3.15.1-stable review
-Date: Thu, 12 Jun 2014 16:21:02 -0700
-Message-Id: <20140612232044.886466924@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>,
+        Alexander Usyskin <alexander.usyskin@intel.com>
+Subject: [PATCH 3.15 05/12] mei: me: fix hw ready reset flow
+Date: Thu, 12 Jun 2014 16:21:07 -0700
+Message-Id: <20140612232045.107411426@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
+In-Reply-To: <20140612232044.886466924@linuxfoundation.org>
+References: <20140612232044.886466924@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.15.1 release.
-There are 12 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.15-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Sat Jun 14 23:20:28 UTC 2014.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.15.1-rc1.gz
-and the diffstat can be found below.
+From: Tomas Winkler <tomas.winkler@intel.com>
 
-thanks,
+commit b04ada92ffaabb868497a1fce8e4f6bf74e5488f upstream.
 
-greg k-h
+We cleared H_RST for H_CSR on spurious interrupt generated when ME_RDY
+while cleared and not while  ME_RDY is set. The spurious interrupt
+is not delivered on all platforms in this case the
+driver may fail to initialize.
 
--------------
-Pseudo-Shortlog of commits:
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.15.1-rc1
+---
+ drivers/misc/mei/hw-me.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-Andreas Schrägle <ajs124.ajs124@gmail.com>
-    ahci: add PCI ID for Marvell 88SE91A0 SATA Controller
-
-Jérôme Carretero <cJ-ko@zougloub.eu>
-    ahci: Add Device ID for HighPoint RocketRaid 642L
-
-Alessandro Miceli <angelofsky1980@gmail.com>
-    rtl28xxu: add [1b80:d3af] Sveon STV27
-
-Alessandro Miceli <angelofsky1980@gmail.com>
-    rtl28xxu: add [1b80:d39d] Sveon STV20
-
-Brian Healy <healybrian@gmail.com>
-    rtl28xxu: add 1b80:d395 Peak DVB-T USB
-
-Tomas Winkler <tomas.winkler@intel.com>
-    mei: me: read H_CSR after asserting reset
-
-Tomas Winkler <tomas.winkler@intel.com>
-    mei: me: drop harmful wait optimization
-
-Tomas Winkler <tomas.winkler@intel.com>
-    mei: me: fix hw ready reset flow
-
-Alexei Starovoitov <ast@plumgrid.com>
-    PCI/MSI: Fix memory leak in free_msi_irqs()
-
-Andy Lutomirski <luto@amacapital.net>
-    auditsc: audit_krule mask accesses need bounds checking
-
-Al Viro <viro@zeniv.linux.org.uk>
-    lock_parent: don't step on stale ->d_parent of all-but-freed one
-
-Andy Lutomirski <luto@amacapital.net>
-    fs,userns: Change inode_capable to capable_wrt_inode_uidgid
-
-
--------------
-
-Diffstat:
-
- Makefile                                |  4 ++--
- drivers/ata/ahci.c                      |  4 ++++
- drivers/media/dvb-core/dvb-usb-ids.h    |  2 ++
- drivers/media/usb/dvb-usb-v2/rtl28xxu.c |  6 ++++++
- drivers/misc/mei/hw-me.c                | 25 +++++++++++++++++++------
- drivers/pci/msi.c                       |  2 +-
- fs/attr.c                               |  8 ++++----
- fs/dcache.c                             |  4 +++-
- fs/inode.c                              | 10 +++++++---
- fs/namei.c                              | 11 ++++++-----
- fs/xfs/xfs_ioctl.c                      |  2 +-
- include/linux/capability.h              |  2 +-
- kernel/auditsc.c                        | 27 ++++++++++++++++++---------
- kernel/capability.c                     | 20 ++++++++------------
- 14 files changed, 82 insertions(+), 45 deletions(-)
+--- a/drivers/misc/mei/hw-me.c
++++ b/drivers/misc/mei/hw-me.c
+@@ -164,6 +164,9 @@ static void mei_me_hw_reset_release(stru
+ 	hcsr |= H_IG;
+ 	hcsr &= ~H_RST;
+ 	mei_hcsr_set(hw, hcsr);
++
++	/* complete this write before we set host ready on another CPU */
++	mmiowb();
+ }
+ /**
+  * mei_me_hw_reset - resets fw via mei csr register.
+@@ -201,6 +204,7 @@ static int mei_me_hw_reset(struct mei_de
+ static void mei_me_host_set_ready(struct mei_device *dev)
+ {
+ 	struct mei_me_hw *hw = to_me_hw(dev);
++	hw->host_hw_state = mei_hcsr_read(hw);
+ 	hw->host_hw_state |= H_IE | H_IG | H_RDY;
+ 	mei_hcsr_set(hw, hw->host_hw_state);
+ }
+@@ -491,14 +495,13 @@ irqreturn_t mei_me_irq_thread_handler(in
+ 	/*  check if we need to start the dev */
+ 	if (!mei_host_is_ready(dev)) {
+ 		if (mei_hw_is_ready(dev)) {
++			mei_me_hw_reset_release(dev);
+ 			dev_dbg(&dev->pdev->dev, "we need to start the dev.\n");
+ 
+ 			dev->recvd_hw_ready = true;
+ 			wake_up_interruptible(&dev->wait_hw_ready);
+ 		} else {
+-
+-			dev_dbg(&dev->pdev->dev, "Reset Completed.\n");
+-			mei_me_hw_reset_release(dev);
++			dev_dbg(&dev->pdev->dev, "Spurious Interrupt\n");
+ 		}
+ 		goto end;
+ 	}
 
 
