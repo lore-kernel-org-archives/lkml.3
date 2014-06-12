@@ -1,157 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756220AbaFLPmq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 11:42:46 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:49646 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753008AbaFLPmp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 11:42:45 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>,
-        Rob Clark <robdclark@gmail.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org
-Subject: [PATCH v3] ARM: add get_user() support for 8 byte types
-Date: Thu, 12 Jun 2014 16:42:35 +0100
-Message-Id: <1402587755-29245-1-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
+	id S1756082AbaFLPsR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 11:48:17 -0400
+Received: from mail-by2lp0242.outbound.protection.outlook.com ([207.46.163.242]:6213
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752950AbaFLPsP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 11:48:15 -0400
+Date: Thu, 12 Jun 2014 08:44:38 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Jongsung Kim <neidhard.kim@lge.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Hayun Hwang <hwang.hayun@lge.com>,
+        Youngkyu Choi <youngkyu7.choi@lge.com>
+Subject: Re: [PATCH] net/cadence/macb: clear interrupts simply and correctly
+References: <1402563054-8546-1-git-send-email-neidhard.kim@lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1402563054-8546-1-git-send-email-neidhard.kim@lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <9f5be687-d127-49a4-90ea-c1033505452d@BN1BFFO11FD019.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438001)(24454002)(199002)(189002)(377424004)(51704005)(19580395003)(87936001)(83506001)(80022001)(85182001)(4396001)(74502001)(74662001)(33646001)(74316001)(20776003)(23676002)(46102001)(83322001)(79102001)(50466002)(47776003)(64706001)(85202002)(53416003)(6806004)(81542001)(44976005)(76482001)(19580405001)(50986999)(92726001)(85852003)(1496007)(86362001)(99396002)(83072002)(31696002)(54356999)(76176999)(81342001)(70736001)(77982001)(102836001)(104016001);DIR:OUT;SFP:;SCL:1;SRVR:BN1BFFO11HUB035;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:3;LANG:en;
+X-OriginatorOrg: xilinx.onmicrosoft.com
+X-Microsoft-Antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
+X-Forefront-PRVS: 02408926C4
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=soren.brinkmann@xilinx.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A new atomic modeset/pageflip ioctl being developed in DRM requires
-get_user() to work for 64bit types (in addition to just put_user()).
+Hi Jongsung,
 
-v1: original
-v2: pass correct size to check_uaccess, and better handling of narrowing
-    double word read with __get_user_xb() (Russell King's suggestion)
-v3: fix a couple of checkpatch issues
+On Thu, 2014-06-12 at 05:50PM +0900, Jongsung Kim wrote:
+> The "Rx used bit read" interrupt is enabled but not cleared for some
+> systems with the ISR (Interrupt Status Register) configured as clear-
+> on-write.
+Does this interrupt need to be enabled? There is nothing checking
+that bit and handling this IRQ in the handler, AFAICT. And you solve
+this by simply clearing the bit. So, I wonder whether not enabling this
+IRQ in the first place would solve things too.
 
-Signed-off-by: Rob Clark <robdclark@gmail.com>
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
----
+> This interrupt may be asserted when the CPU does not handle
+> Rx-complete interrupts for a long time. (e.g., if the CPU is stopped
+> by debugger) Once asserted, it'll not be cleared, and the CPU will
+> loop infinitly in the interrupt handler.
+> 
+> This patch forces to use a dedicated function for reading the ISR,
+> and the function clears it if clear-on-write. So the ISR is always
+> cleared after read, regardless of clear-on-write configuration.
+> 
+> Reported-by: Hayun Hwang <hwang.hayun@lge.com>
+> Signed-off-by: Youngkyu Choi <youngkyu7.choi@lge.com>
+> Signed-off-by: Jongsung Kim <neidhard.kim@lge.com>
+> Tested-by: Hayun Hwang <hwang.hayun@lge.com>
+> ---
+>  drivers/net/ethernet/cadence/macb.c |   37 ++++++++++++++--------------------
+>  1 files changed, 15 insertions(+), 22 deletions(-)
+> 
+> diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
+> index e9daa07..21cc022 100644
+> --- a/drivers/net/ethernet/cadence/macb.c
+> +++ b/drivers/net/ethernet/cadence/macb.c
+> @@ -98,6 +98,16 @@ static void *macb_rx_buffer(struct macb *bp, unsigned int index)
+>  	return bp->rx_buffers + bp->rx_buffer_size * macb_rx_ring_wrap(index);
+>  }
+>  
+> +static u32 macb_read_isr(struct macb *bp)
+> +{
+> +	u32 status = macb_readl(bp, ISR);
+> +
+> +	if (bp->caps & MACB_CAPS_ISR_CLEAR_ON_WRITE)
+> +		macb_writel(bp, ISR, status);
+> +
+> +	return status;
+> +}
+> +
+>  void macb_set_hwaddr(struct macb *bp)
+>  {
+>  	u32 bottom;
+> @@ -552,9 +562,6 @@ static void macb_tx_interrupt(struct macb *bp)
+>  	status = macb_readl(bp, TSR);
+>  	macb_writel(bp, TSR, status);
+>  
+> -	if (bp->caps & MACB_CAPS_ISR_CLEAR_ON_WRITE)
+> -		macb_writel(bp, ISR, MACB_BIT(TCOMP));
+> -
+>  	netdev_vdbg(bp->dev, "macb_tx_interrupt status = 0x%03lx\n",
+>  		(unsigned long)status);
+>  
+> @@ -883,13 +890,10 @@ static int macb_poll(struct napi_struct *napi, int budget)
+>  
+>  		/* Packets received while interrupts were disabled */
+>  		status = macb_readl(bp, RSR);
+This is now clearing all IRQ flags which is probably not what we want
+here. This is handling RX only. We still want the non-RX interrupts to go to
+the actual interrupt service routing.
 
-Notes:
-    I'd like to wake this patch up again. It was rejected back in 2012 on
-    the grounds that other architectures (notably x86-32) didn't implement
-    this so adding for ARM risked portability problems in drivers. However
-    shortly after the discussion (in fact I believe that as a *result* of
-    that discussion) support for 64-bit get_user() was added for x86-32.
-    
-    A quick review of different architectures uaccess.h shows that ARM is
-    in the minority (even after excluding 64-bit architectures) in not
-    implementing this feature.
-    
-    The reasons to wake it up are the same as before. Recent contributions,
-    including to DRM[1] and binder[2] would prefer to use the 64-bit values
-    in their interfaces without gotchas like having to use copy_from_user().
-    
-    [1] http://thread.gmane.org/gmane.comp.video.dri.devel/102135/focus=102149
-    [2] http://thread.gmane.org/gmane.linux.kernel/1653448/focus=1653449
-
- arch/arm/include/asm/uaccess.h | 18 +++++++++++++++++-
- arch/arm/lib/getuser.S         | 17 ++++++++++++++++-
- 2 files changed, 33 insertions(+), 2 deletions(-)
-
-diff --git a/arch/arm/include/asm/uaccess.h b/arch/arm/include/asm/uaccess.h
-index 75d9579..5f7db3fb 100644
---- a/arch/arm/include/asm/uaccess.h
-+++ b/arch/arm/include/asm/uaccess.h
-@@ -107,6 +107,7 @@ static inline void set_fs(mm_segment_t fs)
- extern int __get_user_1(void *);
- extern int __get_user_2(void *);
- extern int __get_user_4(void *);
-+extern int __get_user_8(void *);
- 
- #define __GUP_CLOBBER_1	"lr", "cc"
- #ifdef CONFIG_CPU_USE_DOMAINS
-@@ -115,6 +116,7 @@ extern int __get_user_4(void *);
- #define __GUP_CLOBBER_2 "lr", "cc"
- #endif
- #define __GUP_CLOBBER_4	"lr", "cc"
-+#define __GUP_CLOBBER_8	"lr", "cc"
- 
- #define __get_user_x(__r2,__p,__e,__l,__s)				\
- 	   __asm__ __volatile__ (					\
-@@ -125,11 +127,19 @@ extern int __get_user_4(void *);
- 		: "0" (__p), "r" (__l)					\
- 		: __GUP_CLOBBER_##__s)
- 
-+/* narrowing a double-word get into a single 32bit word register: */
-+#ifdef BIG_ENDIAN
-+#define __get_user_xb(__r2, __p, __e, __l, __s)				\
-+	__get_user_x(__r2, (uintptr_t)__p + 4, __e, __l, __s)
-+#else
-+#define __get_user_xb __get_user_x
-+#endif
-+
- #define __get_user_check(x,p)							\
- 	({								\
- 		unsigned long __limit = current_thread_info()->addr_limit - 1; \
- 		register const typeof(*(p)) __user *__p asm("r0") = (p);\
--		register unsigned long __r2 asm("r2");			\
-+		register typeof(x) __r2 asm("r2");			\
- 		register unsigned long __l asm("r1") = __limit;		\
- 		register int __e asm("r0");				\
- 		switch (sizeof(*(__p))) {				\
-@@ -142,6 +152,12 @@ extern int __get_user_4(void *);
- 		case 4:							\
- 			__get_user_x(__r2, __p, __e, __l, 4);		\
- 			break;						\
-+		case 8:							\
-+			if (sizeof((x)) < 8)				\
-+				__get_user_xb(__r2, __p, __e, __l, 4);	\
-+			else						\
-+				__get_user_x(__r2, __p, __e, __l, 8);	\
-+			break;						\
- 		default: __e = __get_user_bad(); break;			\
- 		}							\
- 		x = (typeof(*(p))) __r2;				\
-diff --git a/arch/arm/lib/getuser.S b/arch/arm/lib/getuser.S
-index 9b06bb4..ed98707 100644
---- a/arch/arm/lib/getuser.S
-+++ b/arch/arm/lib/getuser.S
-@@ -18,7 +18,7 @@
-  * Inputs:	r0 contains the address
-  *		r1 contains the address limit, which must be preserved
-  * Outputs:	r0 is the error code
-- *		r2 contains the zero-extended value
-+ *		r2, r3 contains the zero-extended value
-  *		lr corrupted
-  *
-  * No other registers must be altered.  (see <asm/uaccess.h>
-@@ -66,6 +66,19 @@ ENTRY(__get_user_4)
- 	mov	pc, lr
- ENDPROC(__get_user_4)
- 
-+ENTRY(__get_user_8)
-+	check_uaccess r0, 8, r1, r2, __get_user_bad
-+#ifdef CONFIG_THUMB2_KERNEL
-+5: TUSER(ldr)	r2, [r0]
-+6: TUSER(ldr)	r3, [r0, #4]
-+#else
-+5: TUSER(ldr)	r2, [r0], #4
-+6: TUSER(ldr)	r3, [r0]
-+#endif
-+	mov	r0, #0
-+	mov	pc, lr
-+ENDPROC(__get_user_8)
-+
- __get_user_bad:
- 	mov	r2, #0
- 	mov	r0, #-EFAULT
-@@ -77,4 +90,6 @@ ENDPROC(__get_user_bad)
- 	.long	2b, __get_user_bad
- 	.long	3b, __get_user_bad
- 	.long	4b, __get_user_bad
-+	.long	5b, __get_user_bad
-+	.long	6b, __get_user_bad
- .popsection
--- 
-1.9.3
-
+	Sören
