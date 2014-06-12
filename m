@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932969AbaFLInR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 04:43:17 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:65029 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932680AbaFLInM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 04:43:12 -0400
+	id S932861AbaFLIoI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 04:44:08 -0400
+Received: from smtp3-g21.free.fr ([212.27.42.3]:4888 "EHLO smtp3-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932501AbaFLIoG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 04:44:06 -0400
+Message-ID: <53996852.1050708@free.fr>
+Date: Thu, 12 Jun 2014 10:44:02 +0200
+From: Guillaume Gardet <guillaume.gardet@free.fr>
+Reply-To: guillaume.gardet@free.fr
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <1401995603-25997-1-git-send-email-andrew.ruder@elecsyscorp.com>
-References: <1401995603-25997-1-git-send-email-andrew.ruder@elecsyscorp.com>
-Date: Thu, 12 Jun 2014 10:43:11 +0200
-Message-ID: <CACRpkdZ3xfOXrMZK-Z7TteOsdnVP8uOY4+DLe7pv_9ydBCRRWQ@mail.gmail.com>
-Subject: Re: [PATCH] gpio-pxa: gpio0 and gpio1 support on dt
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Andrew Ruder <andrew.ruder@elecsyscorp.com>,
-        =?UTF-8?B?TWFyZWsgVmHFoXV0?= <marek.vasut@gmail.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>
+To: Sachin Kamat <sachin.kamat@samsung.com>
+CC: linux-kernel@vger.kernel.org,
+        openSUSE Kernel ML <opensuse-kernel@opensuse.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Girish K S <ks.giri@samsung.com>, Yuvaraj C D <yuvaraj.cd@samsung.com>,
+        Jean Delvare <jdelvare@suse.de>, Sachin Kamat <spk.linux@gmail.com>
+Subject: Re: [PATCH] phy: Fix typo in drivers/phy/phy-exynos5250-sata.c module
+ which fixes the build
+References: <53996247.5020203@free.fr> <CAK5sBcH-6xeKomVay4PFWzLV8M-Sx=jankcE-7mj7K00=Gwe4w@mail.gmail.com>
+In-Reply-To: <CAK5sBcH-6xeKomVay4PFWzLV8M-Sx=jankcE-7mj7K00=Gwe4w@mail.gmail.com>
+X-Enigmail-Version: 1.6
+OpenPGP: url=http://guillaume.gardet.free.fr/GPG/ClefGPGGuillaumeGardet.asc
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 5, 2014 at 9:13 PM, Andrew Ruder
-<andrew.ruder@elecsyscorp.com> wrote:
 
-> pxa_gpio_probe() has some issues supporting the gpio0 and gpio1
-> interrupts under device-tree - it never actually sets up the chain
-> handler to get interrupts on edge detect for GPIO0 and GPIO1.
+Le 12/06/2014 10:36, Sachin Kamat a écrit :
+> Hi Guillaume,
 >
-> Signed-off-by: Andrew Ruder <andrew.ruder@elecsyscorp.com>
+>
+> On Thu, Jun 12, 2014 at 1:48 PM, Guillaume Gardet
+> <guillaume.gardet@free.fr> wrote:
+>> Hi,
+>>
+>> please find in attachment a patch which fixes a typo in drivers/phy/phy-exynos5250-sata.c module license.
+>> It fixes the following build error:
+>>     FATAL: modpost: GPL-incompatible module phy-exynos5250-sata.ko uses GPL-only symbol 'platform_driver_unregister'
+>>
+>> Please keep me in CC since I am not subscribed to the linux-kernel@vger.kernel.org ML.
+>>
+>> Signed-off-by: Guillaume GARDET <guillaume.gardet@opensuse.org>
+> A similar patch has already been submitted by Arnd. Please see below:
+> https://lkml.org/lkml/2014/3/15/40
 
-Makes perfect sense. Can I have an ACK from some PXA
-maintainer on this?
+Was not aware of this one. Will it be merged? I can see that it was sent 3 months ago and got no answer apparently.
 
-The PXA GPIO driver with it's messy irqchip registration looks
-like a good candidate for switching to the gpiolib irqchip helpers
-and rid some code. Just saying.
+>
+> In general, sending an attachment is not the right way to submit a patch.
+> Please refer Documentation/SubmittingPatches in the kernel source for the
+> correct procedure.
 
-Yours,
-Linus Walleij
+Sorry, I forgot to send it inline.
+
+
+Guillaume
+
