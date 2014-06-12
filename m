@@ -1,79 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755432AbaFLDGO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 23:06:14 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:27690 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754452AbaFLDGN (ORCPT
+	id S1755582AbaFLDHR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 23:07:17 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:34459 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754628AbaFLDHQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 23:06:13 -0400
-Message-ID: <539918F4.80109@oracle.com>
-Date: Wed, 11 Jun 2014 23:05:24 -0400
+	Wed, 11 Jun 2014 23:07:16 -0400
+Message-ID: <53991958.4070106@oracle.com>
+Date: Wed, 11 Jun 2014 23:07:04 -0400
 From: Sasha Levin <sasha.levin@oracle.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: John Stultz <john.stultz@linaro.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Dave Jones <davej@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: timekeeping: exiting task with held timekeeping locks
-References: <5398E07C.6030107@oracle.com> <CALAqxLWa-ZrL48ZooecxqHRg91mPc4ju-5k5b3cQqqHdJp+ptA@mail.gmail.com>
-In-Reply-To: <CALAqxLWa-ZrL48ZooecxqHRg91mPc4ju-5k5b3cQqqHdJp+ptA@mail.gmail.com>
+To: Jan Kara <jack@suse.cz>
+CC: Peter Hurley <peter@hurleysoftware.com>, pmladek@suse.cz,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jet Chen <jet.chen@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: console: lockup on boot
+References: <5388838B.8070802@oracle.com> <53888E76.5040101@hurleysoftware.com> <20140530140757.GC2419@quack.suse.cz> <53921116.5050804@oracle.com> <53972B5C.5020605@hurleysoftware.com> <53986DFB.9030006@oracle.com> <20140611203436.GD9511@quack.suse.cz> <20140611213111.GE9511@quack.suse.cz>
+In-Reply-To: <20140611213111.GE9511@quack.suse.cz>
 X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2014 07:30 PM, John Stultz wrote:
-> On Wed, Jun 11, 2014 at 4:04 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
->> > Hi all,
->> >
->> > While fuzzing with trinity inside a KVM tools guest running the latest -next
->> > kernel I've stumbled on the following spew:
->> >
->> > [ 3460.136058] =====================================
->> > [ 3460.138017] [ BUG: trinity-c70/27193 still has locks held! ]
->> > [ 3460.141491] 3.15.0-next-20140611-sasha-00022-g9466d2f-dirty #638 Not tainted
->> > [ 3460.143219] -------------------------------------
->> > [ 3460.167979] 2 locks held by trinity-c70/27193:
->> > [ 3460.169172] #0: (tick_broadcast_lock){-.-.-.}, at: tick_handle_periodic_broadcast (kernel/time/tick-broadcast.c:301)
->> > [ 3460.468004] #1: (timekeeper_lock){-.-.-.}, at: update_wall_time (kernel/time/timekeeping.c:1371)
->> > [ 3460.920025]
->> > [ 3460.920025] stack backtrace:
->> > [ 3460.928146] CPU: 0 PID: 27193 Comm: trinity-c70 Not tainted 3.15.0-next-20140611-sasha-00022-g9466d2f-dirty #638
->> > [ 3460.928648] can: request_module (can-proto-3) failed.
->> > [ 3460.943111]  ffff8800576ef4c8 ffff8800576efc88 ffffffffa551093c 0000000000000001
->> > [ 3460.962511]  ffff880056f9b000 ffff8800576efca8 ffffffffa21c6a43 ffff880056f9bbe8
->> > [ 3461.007184]  ffff880056f9bbe8 ffff8800576efd48
->> > [ 3461.017661] can: request_module (can-proto-0) failed.
->> > [ 3461.045536]  ffffffffa21636ea ffff8800576efcc8
->> > [ 3461.170992] Call Trace:
->> > [ 3461.174122] dump_stack (lib/dump_stack.c:52)
->> > [ 3461.558864] debug_check_no_locks_held (kernel/locking/lockdep.c:4107 kernel/locking/lockdep.c:4113)
->> > [ 3461.577066] do_exit (kernel/exit.c:796)
->> > [ 3461.592523] ? debug_smp_processor_id (lib/smp_processor_id.c:57)
->> > [ 3461.629067] ? _raw_spin_unlock_irq (./arch/x86/include/asm/paravirt.h:819 include/linux/spinlock_api_smp.h:168 kernel/locking/spinlock.c:199)
->> > [ 3461.671525] do_group_exit (kernel/exit.c:884)
->> > [ 3461.717091] get_signal_to_deliver (kernel/signal.c:2347)
->> > [ 3461.724142] ? vtime_account_user (kernel/sched/cputime.c:687)
->> > [ 3461.800505] do_signal (arch/x86/kernel/signal.c:698)
->> > [ 3461.808792] ? vtime_account_user (kernel/sched/cputime.c:687)
->> > [ 3461.812780] ? preempt_count_sub (kernel/sched/core.c:2602)
->> > [ 3461.824601] ? context_tracking_user_exit (./arch/x86/include/asm/paravirt.h:809 (discriminator 2) kernel/context_tracking.c:182 (discriminator 2))
->> > [ 3461.827619] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
->> > [ 3461.831486] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2557 kernel/locking/lockdep.c:2599)
->> > [ 3461.841516] do_notify_resume (arch/x86/kernel/signal.c:751)
->> > [ 3461.847056] retint_signal (arch/x86/kernel/entry_64.S:921)
-> 
-> Huh.. Got me.. I don't see how the task can get out of
-> update_wall_time() w/o releasing the timekeeper_lock. Same with the
-> tick_broadcast_lock.  Does this happen all the time or was this a
-> one-off?
+On 06/11/2014 05:31 PM, Jan Kara wrote:
+> On Wed 11-06-14 22:34:36, Jan Kara wrote:
+>> > On Wed 11-06-14 10:55:55, Sasha Levin wrote:
+>>> > > On 06/10/2014 11:59 AM, Peter Hurley wrote:
+>>>> > > > On 06/06/2014 03:05 PM, Sasha Levin wrote:
+>>>>> > > >> On 05/30/2014 10:07 AM, Jan Kara wrote:
+>>>>>> > > >>> On Fri 30-05-14 09:58:14, Peter Hurley wrote:
+>>>>>>>> > > >>>>> On 05/30/2014 09:11 AM, Sasha Levin wrote:
+>>>>>>>>>> > > >>>>>>> Hi all,
+>>>>>>>>>> > > >>>>>>>
+>>>>>>>>>> > > >>>>>>> I sometime see lockups when booting my KVM guest with the latest -next kernel,
+>>>>>>>>>> > > >>>>>>> it basically hangs right when it should start 'init', and after a while I get
+>>>>>>>>>> > > >>>>>>> the following spew:
+>>>>>>>>>> > > >>>>>>>
+>>>>>>>>>> > > >>>>>>> [   30.790833] BUG: spinlock lockup suspected on CPU#1, swapper/1/0
+>>>>>>>> > > >>>>>
+>>>>>>>> > > >>>>> Maybe related to this report: https://lkml.org/lkml/2014/5/30/26
+>>>>>>>> > > >>>>> from Jet Chen which was bisected to
+>>>>>>>> > > >>>>>
+>>>>>>>> > > >>>>> commit bafe980f5afc7ccc693fd8c81c8aa5a02fbb5ae0
+>>>>>>>> > > >>>>> Author:     Jan Kara <jack@suse.cz>
+>>>>>>>> > > >>>>> AuthorDate: Thu May 22 10:43:35 2014 +1000
+>>>>>>>> > > >>>>> Commit:     Stephen Rothwell <sfr@canb.auug.org.au>
+>>>>>>>> > > >>>>> CommitDate: Thu May 22 10:43:35 2014 +1000
+>>>>>>>> > > >>>>>
+>>>>>>>> > > >>>>>      printk: enable interrupts before calling console_trylock_for_printk()
+>>>>>>>> > > >>>>>          We need interrupts disabled when calling console_trylock_for_printk() only
+>>>>>>>> > > >>>>>      so that cpu id we pass to can_use_console() remains valid (for other
+>>>>>>>> > > >>>>>      things console_sem provides all the exclusion we need and deadlocks on
+>>>>>>>> > > >>>>>      console_sem due to interrupts are impossible because we use
+>>>>>>>> > > >>>>>      down_trylock()).  However if we are rescheduled, we are guaranteed to run
+>>>>>>>> > > >>>>>      on an online cpu so we can easily just get the cpu id in
+>>>>>>>> > > >>>>>      can_use_console().
+>>>>>>>> > > >>>>>          We can lose a bit of performance when we enable interrupts in
+>>>>>>>> > > >>>>>      vprintk_emit() and then disable them again in console_unlock() but OTOH it
+>>>>>>>> > > >>>>>      can somewhat reduce interrupt latency caused by console_unlock()
+>>>>>>>> > > >>>>>      especially since later in the patch series we will want to spin on
+>>>>>>>> > > >>>>>      console_sem in console_trylock_for_printk().
+>>>>>>>> > > >>>>>          Signed-off-by: Jan Kara <jack@suse.cz>
+>>>>>>>> > > >>>>>      Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+>>>>>>>> > > >>>>>
+>>>>>>>> > > >>>>> ?
+>>>>>> > > >>>    Yeah, very likely. I think I see the problem, I'll send the fix shortly.
+>>>>> > > >>
+>>>>> > > >> Hi Jan,
+>>>>> > > >>
+>>>>> > > >> It seems that the issue I'm seeing is different from the "[prink]  BUG: spinlock
+>>>>> > > >> lockup suspected on CPU#0, swapper/1".
+>>>>> > > >>
+>>>>> > > >> Is there anything else I could try here? The issue is very common during testing.
+>>>> > > > 
+>>>> > > > Sasha,
+>>>> > > > 
+>>>> > > > Is this bisectable? Maybe that's the best way forward here.
+>>> > > 
+>>> > > I've ran a bisection again and ended up at the same commit as Jet Chen
+>>> > > (the commit unfortunately already made it to Linus's tree).
+>>> > > 
+>>> > > Note that I did try Jan's proposed fix and that didn't solve the issue
+>>> > > for me, I believe we're seeing different issues caused by the same
+>>> > > commit.
+>> >   Sorry it has been busy time lately and I didn't have as much time to look
+>> > into this as would be needed.
+>   Oops, pressed send too early... So I have two debug patches for you. Can
+> you try whether the problem reproduces with the first one or with both of
+> them applied?
 
-One-off, only seen once.
+The first patch fixed it (I assumed that there's no need to try the second).
 
 
 Thanks,
