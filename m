@@ -1,119 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756542AbaFLQZo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 12:25:44 -0400
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:54376 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753051AbaFLQXt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 12:23:49 -0400
-From: Tejun Heo <tj@kernel.org>
-To: cl@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 12/12] percpu: invoke __verify_pcpu_ptr() from the generic part of accessors and operations
-Date: Thu, 12 Jun 2014 12:23:29 -0400
-Message-Id: <1402590209-31610-13-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1402590209-31610-1-git-send-email-tj@kernel.org>
-References: <1402590209-31610-1-git-send-email-tj@kernel.org>
+	id S1756577AbaFLQZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 12:25:58 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:39806 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753051AbaFLQZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 12:25:55 -0400
+From: Borislav Petkov <bp@alien8.de>
+To: linux-edac <linux-edac@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>
+Subject: [RFC PATCH -v2 0/3] RAS: Correctable Errors Collector thing
+Date: Thu, 12 Jun 2014 18:22:27 +0200
+Message-Id: <1402590150-9798-1-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__verify_pcpu_ptr() is used to verify that a specified parameter is
-actually an percpu pointer by percpu accessor and operation
-implementations.  Currently, where it's called isn't clearly defined
-and we just ensure that it's invoked at least once for all accessors
-and operations.
+From: Borislav Petkov <bp@suse.de>
 
-As __verify_pcpu_ptr() now includes a data dependency barrier,
-invoking it more times than necessary may incur unnecessary overhead.
-Alos, the lack of clarity on when it should be called isn't nice and
-given that this is a completely generic issue, there's no reason to
-make archs worry about it.
+Hi all,
 
-This patch updates __verify_pcpu_ptr() invocations such that it's
-always invoked from the final generic wrapper once per access or
-operation.  As this is already the case for {raw|this}_cpu_*()
-definitions through __pcpu_size_*(), only the {raw|per|this}_cpu_ptr()
-accessors need to be updated.
+so here's v2 with the feedback from last time addressed (... hopefully).
+This is ontop of Gong's extlog stuff which is currently a moving target
+but I've based this stuff on it as we're starting slowly to relocate
+generic RAS stuff into drivers/ras/.
 
-This change makes it unnecessary for archs to worry about
-__verify_pcpu_ptr().  x86's arch_raw_cpu_ptr() is updated accordingly.
+A couple of points I was thinking about which we should talk about:
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Christoph Lameter <cl@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
----
- arch/x86/include/asm/percpu.h |  1 -
- include/linux/percpu-defs.h   | 26 +++++++++++++++++++++-----
- 2 files changed, 21 insertions(+), 6 deletions(-)
+* This version automatically removes the oldest element from the array
+when it gets full. With 512 PFNs max size, I think we should be ok.
 
-diff --git a/arch/x86/include/asm/percpu.h b/arch/x86/include/asm/percpu.h
-index 9bc23f1..fd47218 100644
---- a/arch/x86/include/asm/percpu.h
-+++ b/arch/x86/include/asm/percpu.h
-@@ -55,7 +55,6 @@
- #define arch_raw_cpu_ptr(ptr)				\
- ({							\
- 	unsigned long tcp_ptr__;			\
--	__verify_pcpu_ptr(ptr);				\
- 	asm volatile("add " __percpu_arg(1) ", %0"	\
- 		     : "=r" (tcp_ptr__)			\
- 		     : "m" (this_cpu_off), "0" (ptr));	\
-diff --git a/include/linux/percpu-defs.h b/include/linux/percpu-defs.h
-index 31ef245..511bd49 100644
---- a/include/linux/percpu-defs.h
-+++ b/include/linux/percpu-defs.h
-@@ -193,6 +193,12 @@
- #ifndef __ASSEMBLY__
- 
- /*
-+ * __verify_pcpu_ptr() must be invoked once before a percpu area is
-+ * accessed by all accessors and operations.  This is performed in the
-+ * generic part of percpu and arch overrides don't need to worry about it;
-+ * however, if an arch wants to implement an arch-specific percpu accessor
-+ * or operation, it may use __verify_pcpu_ptr() to verify the parameters.
-+ *
-  * This macro serves two purposes.  It verifies @ptr is a percpu pointer
-  * without evaluating @ptr and provides the data dependency barrier paired
-  * with smp_wmb() at the end of the allocation path so that the memory
-@@ -221,16 +227,26 @@ do {									\
-  * pointer value.  The weird cast keeps both GCC and sparse happy.
-  */
- #define SHIFT_PERCPU_PTR(__p, __offset)					\
-+	RELOC_HIDE((typeof(*(__p)) __kernel __force *)(__p), (__offset))
-+
-+#define per_cpu_ptr(ptr, cpu)						\
- ({									\
--	__verify_pcpu_ptr(__p);						\
--	RELOC_HIDE((typeof(*(__p)) __kernel __force *)(__p), (__offset)); \
-+	__verify_pcpu_ptr(ptr);						\
-+	SHIFT_PERCPU_PTR((ptr), per_cpu_offset((cpu)));			\
- })
- 
--#define per_cpu_ptr(ptr, cpu)	SHIFT_PERCPU_PTR(ptr, per_cpu_offset(cpu))
--#define raw_cpu_ptr(ptr)	arch_raw_cpu_ptr(ptr)
-+#define raw_cpu_ptr(ptr)						\
-+({									\
-+	__verify_pcpu_ptr(ptr);						\
-+	arch_raw_cpu_ptr(ptr);						\
-+})
- 
- #ifdef CONFIG_DEBUG_PREEMPT
--#define this_cpu_ptr(ptr) SHIFT_PERCPU_PTR(ptr, my_cpu_offset)
-+#define this_cpu_ptr(ptr)						\
-+({									\
-+	__verify_pcpu_ptr(ptr);						\
-+	SHIFT_PERCPU_PTR(ptr, my_cpu_offset);				\
-+})
- #else
- #define this_cpu_ptr(ptr) raw_cpu_ptr(ptr)
- #endif
+* If CEC (let's call this thing that) can perform all RAS actions
+needed/required, we should not forward correctable errors to userspace
+because it simply doesn't need to. Unless there is something more we
+want to do in userspace... we could make it configurable, dunno.
+This version simply collects the errors and does the soft offlining,
+thus issuing to dmesg something like this:
+
+[  520.872376] RAS: Soft-offlining pfn: 0xdead
+[  520.874384] soft offline: 0xdead page already poisoned
+
+I'm not sure what we want to do with this info - we need to think about
+it more but we're flexible there so... :-)
+
+My main reasoning behind not forwarding each single correctable error
+is that we don't want to upset the user unnecessarily and cause those
+expensive support calls.
+
+* Concerning policy and at which error count we should soft-offline a
+page and whether we should make it configurable or not and what the
+interface would be: we still don't know and we probably need to talk
+about it too. Right now, using 10 bits for that count feels right. The
+count gets decayed anyway.
+
+But, do we need to run it on lotsa live systems and hear feedback?
+Definitely.
+
+* As to why we're putting this in the kernel and enabling it by default:
+a userspace daemon is much more fragile than doing this in the kernel.
+And regardless of distro, everyone gets this.
+
+Constructive feedback is, as always, appreciated.
+
+Thanks.
+
+Borislav Petkov (3):
+  MCE, CE: Corrected errors collecting thing
+  MCE, CE: Wire in the CE collector
+  MCE, CE: Add debugging glue
+
+ arch/x86/kernel/cpu/mcheck/mce.c |  87 ++++++++++-
+ drivers/ras/Kconfig              |  11 ++
+ drivers/ras/Makefile             |   3 +-
+ drivers/ras/ce.c                 | 309 +++++++++++++++++++++++++++++++++++++++
+ include/linux/ras.h              |   2 +
+ 5 files changed, 403 insertions(+), 9 deletions(-)
+ create mode 100644 drivers/ras/ce.c
+
 -- 
-1.9.3
+2.0.0
 
