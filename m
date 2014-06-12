@@ -1,91 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755420AbaFLA7b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 20:59:31 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:57011 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755337AbaFLA72 (ORCPT
+	id S1755468AbaFLA7e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 20:59:34 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:33686 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755337AbaFLA7c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 20:59:28 -0400
-Date: Thu, 12 Jun 2014 09:59:24 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Cc: Rob Herring <robh@kernel.org>, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        ALSA Development Mailing List <alsa-devel@alsa-project.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        Magnus <magnus.damm@gmail.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>
-Subject: Re: [PATCH] of: Add vendor 2nd prefix for Asahi Kasei Corp
-Message-ID: <20140612005922.GE11549@verge.net.au>
-References: <CAMuHMdWTVBjFzA9L9Eqpq_2Xi9_NHkOCLrb_UjK611SBfwnc=Q@mail.gmail.com>
- <87ioo7c0g5.wl%kuninori.morimoto.gx@renesas.com>
- <539815E6.2050304@codethink.co.uk>
- <20140611165410.GK5099@sirena.org.uk>
- <CAMuHMdUT0hEBGbN+W-Oz5zJ0N8S2VDMndqtDO=EtWF3jG2MEew@mail.gmail.com>
- <20140611170233.GL5099@sirena.org.uk>
- <5398A53D.3020706@wwwdotorg.org>
- <20140611190444.GN5099@sirena.org.uk>
- <5398AB07.4040304@wwwdotorg.org>
- <87sinbdk44.wl%kuninori.morimoto.gx@renesas.com>
+	Wed, 11 Jun 2014 20:59:32 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Stanislav Fomichev <stfomichev@yandex-team.ru>
+Cc: acme@kernel.org, artagnon@gmail.com, jolsa@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] perf timechart: implement IO mode
+References: <1402412694-5996-1-git-send-email-stfomichev@yandex-team.ru>
+	<1402412694-5996-2-git-send-email-stfomichev@yandex-team.ru>
+Date: Thu, 12 Jun 2014 09:59:29 +0900
+In-Reply-To: <1402412694-5996-2-git-send-email-stfomichev@yandex-team.ru>
+	(Stanislav Fomichev's message of "Tue, 10 Jun 2014 19:04:52 +0400")
+Message-ID: <87ppif9c3y.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87sinbdk44.wl%kuninori.morimoto.gx@renesas.com>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 11, 2014 at 05:53:02PM -0700, Kuninori Morimoto wrote:
-> From: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-> 
-> Current vendor-prefixes.txt already has
-> "ak" prefix for Asahi Kasei Corp by
-> ae8c4209af2cec065fef15d200a42a04130799f7
-> (of: Add vendor prefix for Asahi Kasei Corp.)
-> 
-> It went through the appropriate review process,
-> and is already in use.
-> But, almost all Asahi Kasei chip driver is
-> using "asahi-kasei" prefix today.
-> 
-> Due to ABIness, this patch adds
-> "asahi-kasei" to vendor-prefixes.txt.
-> checkpatch.pl will report WARNING without this patch.
-> (DT compatible string vendor "asahi-kasei" appears un-documented)
-> 
-> OTOH, Asahi Kasei is usually referred as "AKM",
-> but this patch doesn't care about it.
-> Because no DT is using it today.
-> 
-> Cc: Stephen Warren <swarren@wwwdotorg.org>
-> Cc: Mark Brown <broonie@kernel.org>
-> Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-> Signed-off-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Hi Stanislav,
 
-Acked-by: Simon Horman <horms+renesas@verge.net.au>
+On Tue, 10 Jun 2014 19:04:52 +0400, Stanislav Fomichev wrote:
+> In IO mode timechart shows any disk/network activity.
 
-> ---
->  .../devicetree/bindings/vendor-prefixes.txt        |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-> index abc3080..7e4bb83 100644
-> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-> @@ -17,6 +17,7 @@ amstaos	AMS-Taos Inc.
->  apm	Applied Micro Circuits Corporation (APM)
->  arm	ARM Ltd.
->  armadeus	ARMadeus Systems SARL
-> +asahi-kasei	Asahi Kasei Corp.
->  atmel	Atmel Corporation
->  auo	AU Optronics Corporation
->  avago	Avago Technologies
-> -- 
-> 1.7.9.5
-> 
+[SNIP]
+> +Record system-wide IO events:
+> +
+> +  $ perf timechart record -I
+
+I got a segfault here:
+
+  Core was generated by `perf timechart record -I'.
+  Program terminated with signal 11, Segmentation fault.
+  #0  parse_options_step (ctx=ctx@entry=0x7fff6dcd8ef0, 
+      options=options@entry=0x587de0, usagestr=usagestr@entry=0x588900)
+      at util/parse-options.c:353
+  353			if (*arg != '-' || !arg[1]) {
+  Missing separate debuginfos, use: debuginfo-install glibc-2.17-9.fc20.x86_64 nss-softokn-freebl-3.15-1.fc20.x86_64 numactl-libs-2.0.7-6.fc17.x86_64
+  (gdb) bt
+  #0  parse_options_step (ctx=ctx@entry=0x7fff6dcd8ef0, options=options@entry=
+      0x587de0, usagestr=usagestr@entry=0x588900) at util/parse-options.c:353
+  #1  0x0000000000465cf4 in parse_options_subcommand (argc=argc@entry=197, 
+      argv=argv@entry=0x13fd6d0, options=options@entry=0x587de0, 
+      subcommands=subcommands@entry=0x0, usagestr=usagestr@entry=0x588900, 
+      flags=flags@entry=2) at util/parse-options.c:462
+  #2  0x0000000000465f54 in parse_options (argc=argc@entry=197, argv=argv@entry=
+      0x13fd6d0, options=options@entry=0x587de0, usagestr=usagestr@entry=
+      0x588900, flags=flags@entry=2) at util/parse-options.c:492
+  #3  0x0000000000429ef8 in cmd_record (argc=argc@entry=197, argv=argv@entry=
+      0x13fd6d0, prefix=prefix@entry=0x0) at builtin-record.c:894
+  #4  0x0000000000434c59 in timechart__io_record (argv=0x7fff6dcdc270, argc=0)
+      at builtin-timechart.c:1756
+  #5  cmd_timechart (argc=0, argv=0x7fff6dcdc270, prefix=<optimized out>)
+      at builtin-timechart.c:1957
+  #6  0x000000000041b603 in run_builtin (p=p@entry=0x7fa230, argc=argc@entry=3, 
+      argv=argv@entry=0x7fff6dcdc270) at perf.c:319
+  #7  0x000000000041ae82 in handle_internal_command (argv=0x7fff6dcdc270, argc=3)
+      at perf.c:376
+  #8  run_argv (argv=0x7fff6dcdc060, argcp=0x7fff6dcdc06c) at perf.c:420
+  #9  main (argc=3, argv=0x7fff6dcdc270) at perf.c:534
+
+
+It was because, as I said, my system doesn't have pread64 syscall.. you
+missed to decrease rec_argc when skipping invalid events. :)
+
+
+> +
+> +  then generate timechart:
+> +
+> +  $ perf timechart
+
+After fixing the problem, I could run timechart and generate an
+output.svg file.  But it doesn't show any IO activity.. process info was
+there in grey boxes (rect.process3) but no color boxes.  I also tried
+recording with ping and dd, but the result was same.  I suspect it's
+because of some mis-calculation of position or size of the boxes.
+
+Thanks,
+Namhyung
