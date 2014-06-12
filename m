@@ -1,101 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932950AbaFLJnz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 05:43:55 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:48633 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S932798AbaFLJnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 05:43:49 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Jim Baxter'" <jim_baxter@mentor.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-CC: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?utf-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: RE: [PATCH v1 3/3] usb: gadget: NCM: Stop RX TCP Bursts getting
- dropped.
-Thread-Topic: [PATCH v1 3/3] usb: gadget: NCM: Stop RX TCP Bursts getting
- dropped.
-Thread-Index: AQHPhiH1x7PDwcbVCkCd2IQNd3EwhZttON2w
-Date: Thu, 12 Jun 2014 09:42:54 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1725B9CA@AcuExch.aculab.com>
-References: <Jim Baxter <jim_baxter@mentor.com>
-	 <1401383543-10181-1-git-send-email-jim_baxter@mentor.com>
-	 <1401383543-10181-4-git-send-email-jim_baxter@mentor.com>
- <1401390263.3645.51.camel@edumazet-glaptop2.roam.corp.google.com>
- <53886ABC.8030303@mentor.com> <53997503.7040109@mentor.com>
-In-Reply-To: <53997503.7040109@mentor.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="utf-8"
+	id S933003AbaFLJoM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 05:44:12 -0400
+Received: from smtp6-g21.free.fr ([212.27.42.6]:39500 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932740AbaFLJoJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 05:44:09 -0400
+Message-ID: <53997666.7000003@free.fr>
+Date: Thu, 12 Jun 2014 11:44:06 +0200
+From: Guillaume Gardet <guillaume.gardet@free.fr>
+Reply-To: guillaume.gardet@free.fr
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
+To: Kishon Vijay Abraham I <kishon@ti.com>,
+        Sachin Kamat <sachin.kamat@samsung.com>
+CC: linux-kernel@vger.kernel.org,
+        openSUSE Kernel ML <opensuse-kernel@opensuse.org>,
+        Girish K S <ks.giri@samsung.com>, Yuvaraj C D <yuvaraj.cd@samsung.com>,
+        Jean Delvare <jdelvare@suse.de>, Sachin Kamat <spk.linux@gmail.com>
+Subject: Re: [PATCH] phy: Fix typo in drivers/phy/phy-exynos5250-sata.c module
+ which fixes the build
+References: <53996247.5020203@free.fr> <CAK5sBcH-6xeKomVay4PFWzLV8M-Sx=jankcE-7mj7K00=Gwe4w@mail.gmail.com> <53996852.1050708@free.fr> <53996CF9.5070100@ti.com>
+In-Reply-To: <53996CF9.5070100@ti.com>
+X-Enigmail-Version: 1.6
+OpenPGP: url=http://guillaume.gardet.free.fr/GPG/ClefGPGGuillaumeGardet.asc
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5C9i24q004673
 
-From: Jim Baxter
-> On 30/05/14 12:25, Jim Baxter wrote:
-> > On 29/05/14 20:04, Eric Dumazet wrote:
-> >> On Thu, 2014-05-29 at 18:12 +0100, Jim Baxter wrote:
-> >>
-> >> Note the patch is OK, but changelog a bit misleading ;)
-> >>
-> >> Kernel was not running out of memory, because truesize was correct.
-> >>
-> >> The problem here is that a frame was consuming more kernel memory than
-> >> really needed, so chances of hitting socket sk_rcvbuf limit was high.
-> >>
-> >> BTW :
-> >> #define NTB_OUT_SIZE              16384
-> >>
-> >> alloc_skb(size) ->
-> >> 	kmalloc(16384 + sizeof(struct skb_shared_info)) ->
-> >> 		roundup() => 32768
-> >>
-> >> So truesize of the skb was infact ~32KB, which is really insane indeed.
-> >> After your patch, its back to ~2KB
-> >>
-> >> Acked-by: Eric Dumazet <edumazet@google.com>
-> >>
-> >>
-> >>
-> >
-> > Thank you, I will clarify the description.
-> >
-> > Jim
-> >
-> 
-> Hi Eric,
-> 
-> Is this commit log more correct?
-> 
-> 
-> This fixes a problem with dropped packets over 16k CDC-NCM
-> when the connection is being heavily used.
-> 
-> The issue was that the extracted frames cloned from the
-> received frame were consuming more memory than necessary
-> due to the truesize being ~32KB instead of ~2KB, this
-> meant there was a high chance of reaching the sk_rcvbuf
-> limit.
 
-s/due to/resulting in/
+Le 12/06/2014 11:03, Kishon Vijay Abraham I a Ã©crit :
+>
+> On Thursday 12 June 2014 02:14 PM, Guillaume Gardet wrote:
+>> Le 12/06/2014 10:36, Sachin Kamat a Ã©crit :
+>>> Hi Guillaume,
+>>>
+>>>
+>>> On Thu, Jun 12, 2014 at 1:48 PM, Guillaume Gardet
+>>> <guillaume.gardet@free.fr> wrote:
+>>>> Hi,
+>>>>
+>>>> please find in attachment a patch which fixes a typo in drivers/phy/phy-exynos5250-sata.c module license.
+>>>> It fixes the following build error:
+>>>>     FATAL: modpost: GPL-incompatible module phy-exynos5250-sata.ko uses GPL-only symbol 'platform_driver_unregister'
+>>>>
+>>>> Please keep me in CC since I am not subscribed to the linux-kernel@vger.kernel.org ML.
+>>>>
+>>>> Signed-off-by: Guillaume GARDET <guillaume.gardet@opensuse.org>
+>>> A similar patch has already been submitted by Arnd. Please see below:
+>>> https://lkml.org/lkml/2014/3/15/40
+>> Was not aware of this one. Will it be merged? I can see that it was sent 3 months ago and got no answer apparently.
+> It's in mainline kernel already
+> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/drivers/phy/phy-exynos5250-sata.c?id=fe04e4297e6eab014a2cf152319b9f361df07faf
 
-	David
+Ok. It is in mainline but not in 3.15.
 
-> 
-> Acked-by: Eric Dumazet <edumazet@google.com>
-> Signed-off-by: Jim Baxter <jim_baxter@mentor.com>
-> 
-> Thank you,
-> Jim
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Guillaume
+
