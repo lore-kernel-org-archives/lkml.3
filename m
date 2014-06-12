@@ -1,68 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933037AbaFLK7Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 06:59:16 -0400
-Received: from www.linutronix.de ([62.245.132.108]:39500 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751788AbaFLK7K (ORCPT
+	id S933070AbaFLLKF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 07:10:05 -0400
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:49860 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932998AbaFLLJ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 06:59:10 -0400
-Date: Thu, 12 Jun 2014 12:58:37 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Grant Likely <grant.likely@linaro.org>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        x86@kernel.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+	Thu, 12 Jun 2014 07:09:59 -0400
+X-Sasl-enc: WFOEXJQHlS8RCl3PBRmTi2Kc44/RbwGaswIOC/Cl8PrI 1402571397
+Message-ID: <1402571393.2642.18.camel@perseus.fritz.box>
+Subject: Re: [PATCH 2/2] fs: proc/stat: use usual seq_file ops rather than
+ single_open
+From: Ian Kent <raven@themaw.net>
+To: David Rientjes <rientjes@google.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [Patch V4 12/42] x86, ioapic: kill static variable nr_irqs_gsi
-In-Reply-To: <53969834.3040404@linux.intel.com>
-Message-ID: <alpine.DEB.2.10.1406121256090.5170@nanos>
-References: <1402302011-23642-1-git-send-email-jiang.liu@linux.intel.com> <1402302011-23642-13-git-send-email-jiang.liu@linux.intel.com> <alpine.DEB.2.10.1406100121090.3830@nanos> <53969834.3040404@linux.intel.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+        Christoph Hellwig <hch@infradead.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Righi <andrea@betterlinux.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org,
+        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
+        Thorsten Diehl <thorsten.diehl@de.ibm.com>,
+        "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Date: Thu, 12 Jun 2014 19:09:53 +0800
+In-Reply-To: <alpine.DEB.2.02.1406112350010.23724@chino.kir.corp.google.com>
+References: <20140521122521.GB7471@osiris>
+	 <20140521143229.GA32011@infradead.org> <20140528085841.GA4219@osiris>
+	 <20140528090153.GC4219@osiris>
+	 <20140528153704.b2a3f46dc39ebf8f681d528a@linux-foundation.org>
+	 <1402301519.2775.47.camel@perseus.fritz.box> <20140611124301.GC4296@osiris>
+	 <alpine.DEB.2.02.1406111524330.27885@chino.kir.corp.google.com>
+	 <1402554262.2642.16.camel@perseus.fritz.box>
+	 <alpine.DEB.2.02.1406112350010.23724@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Jun 2014, Jiang Liu wrote:
+On Wed, 2014-06-11 at 23:52 -0700, David Rientjes wrote:
+> On Thu, 12 Jun 2014, Ian Kent wrote:
+> 
+> > > > diff --git a/fs/seq_file.c b/fs/seq_file.c
+> > > > index 1d641bb108d2..fca78a04c0d1 100644
+> > > > --- a/fs/seq_file.c
+> > > > +++ b/fs/seq_file.c
+> > > > @@ -8,8 +8,10 @@
+> > > >  #include <linux/fs.h>
+> > > >  #include <linux/export.h>
+> > > >  #include <linux/seq_file.h>
+> > > > +#include <linux/vmalloc.h>
+> > > >  #include <linux/slab.h>
+> > > >  #include <linux/cred.h>
+> > > > +#include <linux/mm.h>
+> > > >  
+> > > >  #include <asm/uaccess.h>
+> > > >  #include <asm/page.h>
+> > > > @@ -82,6 +84,31 @@ int seq_open(struct file *file, const struct seq_operations *op)
+> > > >  }
+> > > >  EXPORT_SYMBOL(seq_open);
+> > > >  
+> > > > +static void seq_alloc(struct seq_file *m)
+> > > > +{
+> > > > +	m->size = PAGE_SIZE;
+> > > > +	m->buf = kmalloc(m->size, GFP_KERNEL | __GFP_NOWARN);
+> > > > +	if (!m->buf)
+> > > > +		m->buf = vmalloc(m->size);
+> > > > +}
+> > > > +
+> > > 
+> > > If m->size is unconditionally PAGE_SIZE, then how is vmalloc() going to 
+> > > allocate this if kmalloc() fails?
+> > 
+> > This is just the initial allocation.
+> > If it runs out of room the allocation size doubles.
+> > 
+> > I think 2*PAGE_SIZE is probably better here since that's closer to what
+> > the original heuristic allocation requested and is likely to avoid
+> > reallocations in most cases.
+> > 
+> > The issue of kmalloc() failing for larger allocations on low speced
+> > hardware with fragmented memory might succeed when vmalloc() is used
+> > since it doesn't require contiguous memory chunks. But I guess the added
+> > pressure on the page table might still be a problem, nevertheless it's
+> > probably worth trying before bailing out. 
+> > 
+> 
+> I'm not quarreling about using vmalloc() for allocations that are 
+> high-order, I'm referring to the rather obvious fact that m->size is set 
+> to PAGE_SIZE unconditionally above and thus vmalloc() isn't going to help 
+> in the slightest.
 
-> Hi Thomas,
-> 	This piece of code is inherited from current IOAPIC driver
-> and I think it's a workaround for some weird platforms.
-> 	For normal platforms with both 8259A and IOAPIC controllers,
-> legacy ISA IRQs should be connected to both 8259A and IOAPIC pins
-> (ignore timer and cascade IRQs for simplicity). According to comments
->  in current kernel, there are some platforms on which:
-> 1) some ISA IRQs are only connected to 8259A controllers.
-> 2) the corresponding IOAPIC pins are connected to some non-ISA IRQs.
-> 	For such platforms, IRQ0-15 are used for ISA IRQs and another
-> 16 IRQs just above gsi_top are reserved for IOAPIC pins 0-15 which
-> are connected to non-ISA IRQs.
-> 	I have no real experience with such a platform, but just
-> guessing possible cases according to kernel comments and "Multiple
-> Processor Specification". Please look at these two pictures for quick
-> reference.
-> http://www.manualslib.com/manual/77733/Intel-Multiprocessor.html?page=31#manual
-> http://www.manualslib.com/manual/77733/Intel-Multiprocessor.html?page=63#manual
+LOL, yeah, if kmalloc() can't allocate a single page then we're in much
+bigger trouble!
 
-Duh. I completely forgot about the 82489 mess.
+Ian
 
-We probably want a comment somewhere why we have this gsi + legacy
-thing.
 
-Thanks,
-
-	tglx
