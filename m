@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697AbaFLX3e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 19:29:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37116 "EHLO
+	id S1752894AbaFLX3v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 19:29:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37100 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750817AbaFLXSH (ORCPT
+	with ESMTP id S1751677AbaFLXSG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 19:18:07 -0400
+	Thu, 12 Jun 2014 19:18:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Vcelak <jv@fcelda.cz>, Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.14 13/19] [media] rtl28xxu: add USB ID for Genius TVGo DVB-T03
-Date: Thu, 12 Jun 2014 16:21:50 -0700
-Message-Id: <20140612232139.134514001@linuxfoundation.org>
+        Theodore Tso <tytso@mit.edu>, Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 01/19] fs,userns: Change inode_capable to capable_wrt_inode_uidgid
+Date: Thu, 12 Jun 2014 16:21:38 -0700
+Message-Id: <20140612232138.700203234@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140612232138.561318739@linuxfoundation.org>
 References: <20140612232138.561318739@linuxfoundation.org>
@@ -29,33 +32,196 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Vcelak <jv@fcelda.cz>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit ac298ccdde4fe9b0a966e548a232ff4e8a6b8a31 upstream.
+commit 23adbe12ef7d3d4195e80800ab36b37bee28cd03 upstream.
 
-0458:707f KYE Systems Corp. (Mouse Systems) TVGo DVB-T03 [RTL2832]
+The kernel has no concept of capabilities with respect to inodes; inodes
+exist independently of namespaces.  For example, inode_capable(inode,
+CAP_LINUX_IMMUTABLE) would be nonsense.
 
-The USB dongle uses RTL2832U demodulator and FC0012 tuner.
+This patch changes inode_capable to check for uid and gid mappings and
+renames it to capable_wrt_inode_uidgid, which should make it more
+obvious what it does.
 
-Signed-off-by: Jan Vcelak <jv@fcelda.cz>
-Signed-off-by: Antti Palosaari <crope@iki.fi>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Fixes CVE-2014-4014.
+
+Cc: Theodore Ts'o <tytso@mit.edu>
+Cc: Serge Hallyn <serge.hallyn@ubuntu.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Dave Chinner <david@fromorbit.com>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/usb/dvb-usb-v2/rtl28xxu.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/attr.c                  |    8 ++++----
+ fs/inode.c                 |   10 +++++++---
+ fs/namei.c                 |   11 ++++++-----
+ fs/xfs/xfs_ioctl.c         |    2 +-
+ include/linux/capability.h |    2 +-
+ kernel/capability.c        |   20 ++++++++------------
+ 6 files changed, 27 insertions(+), 26 deletions(-)
 
---- a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
-+++ b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
-@@ -1431,6 +1431,8 @@ static const struct usb_device_id rtl28x
- 		&rtl2832u_props, "Leadtek WinFast DTV Dongle mini", NULL) },
- 	{ DVB_USB_DEVICE(USB_VID_GTEK, USB_PID_CPYTO_REDI_PC50A,
- 		&rtl2832u_props, "Crypto ReDi PC 50 A", NULL) },
-+	{ DVB_USB_DEVICE(USB_VID_KYE, 0x707f,
-+		&rtl2832u_props, "Genius TVGo DVB-T03", NULL) },
+--- a/fs/attr.c
++++ b/fs/attr.c
+@@ -50,14 +50,14 @@ int inode_change_ok(const struct inode *
+ 	if ((ia_valid & ATTR_UID) &&
+ 	    (!uid_eq(current_fsuid(), inode->i_uid) ||
+ 	     !uid_eq(attr->ia_uid, inode->i_uid)) &&
+-	    !inode_capable(inode, CAP_CHOWN))
++	    !capable_wrt_inode_uidgid(inode, CAP_CHOWN))
+ 		return -EPERM;
  
- 	{ DVB_USB_DEVICE(USB_VID_HANFTEK, 0x0131,
- 		&rtl2832u_props, "Astrometa DVB-T2", NULL) },
+ 	/* Make sure caller can chgrp. */
+ 	if ((ia_valid & ATTR_GID) &&
+ 	    (!uid_eq(current_fsuid(), inode->i_uid) ||
+ 	    (!in_group_p(attr->ia_gid) && !gid_eq(attr->ia_gid, inode->i_gid))) &&
+-	    !inode_capable(inode, CAP_CHOWN))
++	    !capable_wrt_inode_uidgid(inode, CAP_CHOWN))
+ 		return -EPERM;
+ 
+ 	/* Make sure a caller can chmod. */
+@@ -67,7 +67,7 @@ int inode_change_ok(const struct inode *
+ 		/* Also check the setgid bit! */
+ 		if (!in_group_p((ia_valid & ATTR_GID) ? attr->ia_gid :
+ 				inode->i_gid) &&
+-		    !inode_capable(inode, CAP_FSETID))
++		    !capable_wrt_inode_uidgid(inode, CAP_FSETID))
+ 			attr->ia_mode &= ~S_ISGID;
+ 	}
+ 
+@@ -160,7 +160,7 @@ void setattr_copy(struct inode *inode, c
+ 		umode_t mode = attr->ia_mode;
+ 
+ 		if (!in_group_p(inode->i_gid) &&
+-		    !inode_capable(inode, CAP_FSETID))
++		    !capable_wrt_inode_uidgid(inode, CAP_FSETID))
+ 			mode &= ~S_ISGID;
+ 		inode->i_mode = mode;
+ 	}
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -1840,14 +1840,18 @@ EXPORT_SYMBOL(inode_init_owner);
+  * inode_owner_or_capable - check current task permissions to inode
+  * @inode: inode being checked
+  *
+- * Return true if current either has CAP_FOWNER to the inode, or
+- * owns the file.
++ * Return true if current either has CAP_FOWNER in a namespace with the
++ * inode owner uid mapped, or owns the file.
+  */
+ bool inode_owner_or_capable(const struct inode *inode)
+ {
++	struct user_namespace *ns;
++
+ 	if (uid_eq(current_fsuid(), inode->i_uid))
+ 		return true;
+-	if (inode_capable(inode, CAP_FOWNER))
++
++	ns = current_user_ns();
++	if (ns_capable(ns, CAP_FOWNER) && kuid_has_mapping(ns, inode->i_uid))
+ 		return true;
+ 	return false;
+ }
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -332,10 +332,11 @@ int generic_permission(struct inode *ino
+ 
+ 	if (S_ISDIR(inode->i_mode)) {
+ 		/* DACs are overridable for directories */
+-		if (inode_capable(inode, CAP_DAC_OVERRIDE))
++		if (capable_wrt_inode_uidgid(inode, CAP_DAC_OVERRIDE))
+ 			return 0;
+ 		if (!(mask & MAY_WRITE))
+-			if (inode_capable(inode, CAP_DAC_READ_SEARCH))
++			if (capable_wrt_inode_uidgid(inode,
++						     CAP_DAC_READ_SEARCH))
+ 				return 0;
+ 		return -EACCES;
+ 	}
+@@ -345,7 +346,7 @@ int generic_permission(struct inode *ino
+ 	 * at least one exec bit set.
+ 	 */
+ 	if (!(mask & MAY_EXEC) || (inode->i_mode & S_IXUGO))
+-		if (inode_capable(inode, CAP_DAC_OVERRIDE))
++		if (capable_wrt_inode_uidgid(inode, CAP_DAC_OVERRIDE))
+ 			return 0;
+ 
+ 	/*
+@@ -353,7 +354,7 @@ int generic_permission(struct inode *ino
+ 	 */
+ 	mask &= MAY_READ | MAY_WRITE | MAY_EXEC;
+ 	if (mask == MAY_READ)
+-		if (inode_capable(inode, CAP_DAC_READ_SEARCH))
++		if (capable_wrt_inode_uidgid(inode, CAP_DAC_READ_SEARCH))
+ 			return 0;
+ 
+ 	return -EACCES;
+@@ -2370,7 +2371,7 @@ static inline int check_sticky(struct in
+ 		return 0;
+ 	if (uid_eq(dir->i_uid, fsuid))
+ 		return 0;
+-	return !inode_capable(inode, CAP_FOWNER);
++	return !capable_wrt_inode_uidgid(inode, CAP_FOWNER);
+ }
+ 
+ /*
+--- a/fs/xfs/xfs_ioctl.c
++++ b/fs/xfs/xfs_ioctl.c
+@@ -1241,7 +1241,7 @@ xfs_ioctl_setattr(
+ 		 * cleared upon successful return from chown()
+ 		 */
+ 		if ((ip->i_d.di_mode & (S_ISUID|S_ISGID)) &&
+-		    !inode_capable(VFS_I(ip), CAP_FSETID))
++		    !capable_wrt_inode_uidgid(VFS_I(ip), CAP_FSETID))
+ 			ip->i_d.di_mode &= ~(S_ISUID|S_ISGID);
+ 
+ 		/*
+--- a/include/linux/capability.h
++++ b/include/linux/capability.h
+@@ -210,7 +210,7 @@ extern bool has_ns_capability_noaudit(st
+ 				      struct user_namespace *ns, int cap);
+ extern bool capable(int cap);
+ extern bool ns_capable(struct user_namespace *ns, int cap);
+-extern bool inode_capable(const struct inode *inode, int cap);
++extern bool capable_wrt_inode_uidgid(const struct inode *inode, int cap);
+ extern bool file_ns_capable(const struct file *file, struct user_namespace *ns, int cap);
+ 
+ /* audit system wants to get cap info from files as well */
+--- a/kernel/capability.c
++++ b/kernel/capability.c
+@@ -433,23 +433,19 @@ bool capable(int cap)
+ EXPORT_SYMBOL(capable);
+ 
+ /**
+- * inode_capable - Check superior capability over inode
++ * capable_wrt_inode_uidgid - Check nsown_capable and uid and gid mapped
+  * @inode: The inode in question
+  * @cap: The capability in question
+  *
+- * Return true if the current task has the given superior capability
+- * targeted at it's own user namespace and that the given inode is owned
+- * by the current user namespace or a child namespace.
+- *
+- * Currently we check to see if an inode is owned by the current
+- * user namespace by seeing if the inode's owner maps into the
+- * current user namespace.
+- *
++ * Return true if the current task has the given capability targeted at
++ * its own user namespace and that the given inode's uid and gid are
++ * mapped into the current user namespace.
+  */
+-bool inode_capable(const struct inode *inode, int cap)
++bool capable_wrt_inode_uidgid(const struct inode *inode, int cap)
+ {
+ 	struct user_namespace *ns = current_user_ns();
+ 
+-	return ns_capable(ns, cap) && kuid_has_mapping(ns, inode->i_uid);
++	return ns_capable(ns, cap) && kuid_has_mapping(ns, inode->i_uid) &&
++		kgid_has_mapping(ns, inode->i_gid);
+ }
+-EXPORT_SYMBOL(inode_capable);
++EXPORT_SYMBOL(capable_wrt_inode_uidgid);
 
 
