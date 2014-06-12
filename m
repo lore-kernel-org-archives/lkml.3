@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750982AbaFLRiT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 13:38:19 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:53092 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716AbaFLRiQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 13:38:16 -0400
-Date: Thu, 12 Jun 2014 10:38:14 -0700 (PDT)
-Message-Id: <20140612.103814.1635322528200849616.davem@davemloft.net>
-To: xufeng.zhang@windriver.com
-Cc: vyasevich@gmail.com, nhorman@tuxdriver.com, linux-sctp@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] sctp: Fix sk_ack_backlog wrap-around problem
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1402541616-15117-1-git-send-email-xufeng.zhang@windriver.com>
-References: <1402541616-15117-1-git-send-email-xufeng.zhang@windriver.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 12 Jun 2014 10:38:15 -0700 (PDT)
+	id S1751145AbaFLRkn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 13:40:43 -0400
+Received: from mail-by2lp0236.outbound.protection.outlook.com ([207.46.163.236]:55143
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751076AbaFLRkl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 13:40:41 -0400
+X-WSS-ID: 0N72H3L-08-N29-02
+X-M-MSG: 
+From: <suravee.suthikulpanit@amd.com>
+To: <tj@kernel.org>, <b.zolnierkie@samsung.com>
+CC: <hdegoede@redhat.com>, <lho@apm.com>, <tphan@apm.com>, <stripathi@apm.com>,
+        <linux-ide@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+Subject: [PATCH 0/2] ahci: Add support for 64-bit DMA mask driver
+Date: Thu, 12 Jun 2014 12:40:22 -0500
+Message-ID: <1402594824-4151-1-git-send-email-suravee.suthikulpanit@amd.com>
+X-Mailer: git-send-email 1.9.0
+MIME-Version: 1.0
+Content-Type: text/plain
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428001)(189002)(199002)(101416001)(74502001)(74662001)(80022001)(33646001)(46102001)(68736004)(4396001)(89996001)(19580395003)(83322001)(64706001)(77156001)(19580405001)(104166001)(97736001)(93916002)(50466002)(102836001)(86362001)(99396002)(62966002)(50986999)(92726001)(86152002)(88136002)(84676001)(81542001)(81342001)(50226001)(87936001)(76482001)(87286001)(36756003)(85852003)(83072002)(20776003)(48376002)(44976005)(79102001)(77982001)(53416003)(47776003);DIR:OUT;SFP:;SCL:1;SRVR:CY1PR0201MB0825;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
+X-Forefront-PRVS: 02408926C4
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xufeng Zhang <xufeng.zhang@windriver.com>
-Date: Thu, 12 Jun 2014 10:53:36 +0800
+From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
 
-> Consider the scenario:
-> For a TCP-style socket, while processing the COOKIE_ECHO chunk in
-> sctp_sf_do_5_1D_ce(), after it has passed a series of sanity check,
-> a new association would be created in sctp_unpack_cookie(), but afterwards,
-> some processing maybe failed, and sctp_association_free() will be called to
-> free the previously allocated association, in sctp_association_free(),
-> sk_ack_backlog value is decremented for this socket, since the initial
-> value for sk_ack_backlog is 0, after the decrement, it will be 65535,
-> a wrap-around problem happens, and if we want to establish new associations
-> afterward in the same socket, ABORT would be triggered since sctp deem the
-> accept queue as full.
-> Fix this issue by only decrementing sk_ack_backlog for associations in
-> the endpoint's list.
-> 
-> Fix-suggested-by: Neil Horman <nhorman@tuxdriver.com>
-> Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
-> ---
-> Change for v2:
->   Drop the redundant test for temp suggested by Vlad Yasevich.
+V2:
+	- Changes based on review comments from Hans and Bartlomiej.
+	- Remove the logic in ahci_xgene as suggested by Bartlomiej.
 
-Applied and queued up for -stable, thanks.
+Suravee Suthikulpanit (2):
+  ata: Check and set 64-bit DMA mask for platform AHCI driver
+  ahci/xgene: Remove logic to set 64-bit DMA mask
+
+ drivers/ata/ahci_xgene.c       | 10 ----------
+ drivers/ata/libahci_platform.c | 13 +++++++++++++
+ 2 files changed, 13 insertions(+), 10 deletions(-)
+
+-- 
+1.9.0
+
