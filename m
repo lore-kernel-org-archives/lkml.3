@@ -1,104 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755932AbaFLMSR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 08:18:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52571 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755812AbaFLMSQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 08:18:16 -0400
-Message-ID: <53999A84.7010105@suse.cz>
-Date: Thu, 12 Jun 2014 14:18:12 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1755966AbaFLMSg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 08:18:36 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38431 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755812AbaFLMSf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 08:18:35 -0400
+Date: Thu, 12 Jun 2014 13:18:06 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Arnd Bergmann <arnd@arndb.de>
+Message-ID: <20140612121806.GY5099@sirena.org.uk>
+References: <20140607090944.GL23430@n2100.arm.linux.org.uk>
+ <20140612094745.GD23430@n2100.arm.linux.org.uk>
+ <6077426.uLBS643pC0@wuerfel>
+ <20140612113445.GF23430@n2100.arm.linux.org.uk>
+ <CAMuHMdV0F_FhtJwrzJLbxTbQPKs1XzR=Yb0wjMw2TBuXNPObpA@mail.gmail.com>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [RFC PATCH 6/6] mm, compaction: don't migrate in blocks that
- cannot be fully compacted in async direct compaction
-References: <alpine.DEB.2.02.1405211954410.13243@chino.kir.corp.google.com> <1401898310-14525-1-git-send-email-vbabka@suse.cz> <1401898310-14525-6-git-send-email-vbabka@suse.cz> <alpine.DEB.2.02.1406041705140.22536@chino.kir.corp.google.com> <53908F10.4020603@suse.cz> <alpine.DEB.2.02.1406051431030.18119@chino.kir.corp.google.com> <53916EE7.9000806@suse.cz> <alpine.DEB.2.02.1406090156340.24247@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1406090156340.24247@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lxgQg5DpJZV+j+ev"
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdV0F_FhtJwrzJLbxTbQPKs1XzR=Yb0wjMw2TBuXNPObpA@mail.gmail.com>
+X-Cookie: Ditat Deus.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: Kconfig fails: big select-based circular dependency
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/2014 11:06 AM, David Rientjes wrote:
-> On Fri, 6 Jun 2014, Vlastimil Babka wrote:
->
->>> Agreed.  I was thinking higher than 1GB would be possible once we have
->>> your series that does the pageblock skip for thp, I think the expense
->>> would be constant because we won't needlessly be migrating pages unless it
->>> has a good chance at succeeding.
->>
->> Looks like a counter of iterations actually done in scanners, maintained in
->> compact_control, would work better than any memory size based limit? It could
->> better reflect the actual work done and thus latency. Maybe increase the counter
->> also for migrations, with a higher cost than for a scanner iteration.
->>
->
-> I'm not sure we can expose that to be configurable by userspace in any
-> meaningful way.  We'll want to be able to tune this depending on the size
-> of the machine if we are to truly remove the need_resched() heuristic and
-> give it a sane default.  I was thinking it would be similar to
-> khugepaged's pages_to_scan value that it uses on each wakeup.
 
-Perhaps userspace can see the value in memory size unit, which would be 
-translated to pages_to_scan assuming the worst case, i.e. scanning each 
-page? Which would be used to limit the iterations, so if we end up 
-skipping blocks of pages instead of single pages for whatever reasons, 
-we can effectively scan a bigger memory size with the same effort?
+--lxgQg5DpJZV+j+ev
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->>> This does beg the question about parallel direct compactors, though, that
->>> will be contending on the same coarse zone->lru_lock locks and immediately
->>> aborting and falling back to PAGE_SIZE pages for thp faults that will be
->>> more likely if your patch to grab the high-order page and return it to the
->>> page allocator is merged.
->>
->> Hm can you explain how the page capturing makes this worse? I don't see it.
->>
->
-> I was expecting that your patch to capture the high-order page made a
-> difference because the zone watermark check doesn't imply the high-order
-> page will be allocatable after we return to the page allocator to allocate
-> it.  In that case, we terminated compaction prematurely.
+On Thu, Jun 12, 2014 at 01:57:03PM +0200, Geert Uytterhoeven wrote:
 
-In fact compact_finished() uses both a watermark check and then a 
-free_list check. Only if both pass, it exits. But page allocation then 
-does another watermark check which may fail (due to its raciness and 
-drift) even though the page is still available on the free_list.
+> Should we have a better separation between select and depends, i.e.
+> should kconf plainly reject both being used on the same symbol?
 
-> If that's true,
-> then it seems like no parallel thp allocator will be able to allocate
-> memory that another direct compactor has freed without entering compaction
-> itself on a fragmented machine, and thus an increase in zone->lru_lock
-> contention if there's migratable memory.
+> Is it ever valid to have a symbol that's both selected and used with depends on?
 
-I think it's only fair if someone who did the compaction work can 
-allocate the page. Another compaction then has to do its own work, so in 
-the end it's 2 units of work for 2 allocations (assuming success). 
-Without the fairness, it might be 2 units of work by single allocator, 
-for 2 successful allocations of two allocators. Or, as you seem to 
-imply, 1 unit of work for 1 successful allocation, because the one doing 
-the work will terminate prematurely and end up without allocation.
-If we really rely on this premature termination as a contention 
-prevention, then it seems quite unfair and fragile to me.
+Architecture feature Kconfig symbols typically have the pattern that the
+architecture selects ARCH_HAS_FOO and then code that needs the feature
+depends on ARCH_HAS_FOO.
 
-> Having 32 cpus fault thp memory and all entering compaction and contending
-> (and aborting because of contention, currently) on zone->lru_lock is a
-> really bad situation.
+--lxgQg5DpJZV+j+ev
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-I'm not sure if the premature termination could prevent this reliably. I 
-rather doubt that. The lock contention checks should work just fine in 
-this case. And also I don't think it's that bad if they abort due to 
-contention, if it happens quickly. It means that in such situation, it's 
-simply a better performance tradeoff to give up on THP and fallback to 
-4k allocation. Also you say "currently" but we are not going to change 
-that for lock contention, are we?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
+iQIcBAEBAgAGBQJTmZp7AAoJELSic+t+oim9/TAP+gIb+B3CaD44cjGw16dx76io
+66Kcr41dbeUno94O1bXF1zozsw4zI+/v7RcBYb6QPgl6DITrT5Ts2b9+Dr0Ixlxd
+VE7gOKWL1cdaIrJEHtIVO3ApbMi0YOcbl3dbJITs4Cs5yI/68EYRYofvuCYpnhx8
+X5T+uIijJsw5sTvad8+C0F3vk/nhcaDNOVSj0UKkBUJdhANwBkC5yVRRVQGWC+s+
+RxbbTSwOmXIacsJh3k2rpTS6DclDsoCwTZDfxyywcsFKwd6gPY+clEN/66ABlg6L
+ENQbuSNgFlMS1KBmFZ/m1zYTI6yn4Wfw/Q63+TVKXr8MlJqRJGAm0n+OotEpv2J0
+eQXGN+Y4NBiDXnuWk8y4n4ns9Z32BUwlROh3pq1/HhZxAt2+sm5wsSeuLSGJisue
+L5jJJlrrItSONyvlpBMyC5ug0o9bVPVNmil4rZFIeX8od5QYobeUtLt9+p4ae7Cg
+S1OQK4q/c9fng5fOPW1HkRaNAR4gdv/hEojuwQnoTzUzs1HbMfbW2qGcfW5mBgzv
+3Y0Ygz/qUWXdh15dqlccdpi7vTw1qHlMk4YLekrYrf764L3E4pmi2QxPT4Mc6Y0y
+mDkvmeTs0MmurjJzWUbyjdjAfkXjGNpxlc3BopGLc4B3Y/8hgIOAz5oK6yB/W9Bx
+7MMlmcR/Ros1dO/QULSn
+=IO55
+-----END PGP SIGNATURE-----
+
+--lxgQg5DpJZV+j+ev--
