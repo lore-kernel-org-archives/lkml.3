@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751976AbaFLXSO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 19:18:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37106 "EHLO
+	id S1751650AbaFLX0W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 19:26:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37161 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751780AbaFLXSJ (ORCPT
+	with ESMTP id S1751957AbaFLXSN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 19:18:09 -0400
+	Thu, 12 Jun 2014 19:18:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Lutomirski <luto@amacapital.net>, Eric Paris <eparis@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 07/19] auditsc: audit_krule mask accesses need bounds checking
-Date: Thu, 12 Jun 2014 16:21:44 -0700
-Message-Id: <20140612232138.949220539@linuxfoundation.org>
+        Alessandro Miceli <angelofsky1980@gmail.com>,
+        Antti Palosaari <crope@iki.fi>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.14 16/19] [media] rtl28xxu: add [1b80:d39d] Sveon STV20
+Date: Thu, 12 Jun 2014 16:21:53 -0700
+Message-Id: <20140612232139.227119783@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140612232138.561318739@linuxfoundation.org>
 References: <20140612232138.561318739@linuxfoundation.org>
@@ -29,85 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Alessandro Miceli <angelofsky1980@gmail.com>
 
-commit a3c54931199565930d6d84f4c3456f6440aefd41 upstream.
+commit f27f5b0ee4967babfb8b03511f5e76b79d781014 upstream.
 
-Fixes an easy DoS and possible information disclosure.
+Added Sveon STV20 device based on Realtek RTL2832U and FC0012 tuner
 
-This does nothing about the broken state of x32 auditing.
-
-eparis: If the admin has enabled auditd and has specifically loaded
-audit rules.  This bug has been around since before git.  Wow...
-
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Signed-off-by: Eric Paris <eparis@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Alessandro Miceli <angelofsky1980@gmail.com>
+Signed-off-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/auditsc.c |   27 ++++++++++++++++++---------
- 1 file changed, 18 insertions(+), 9 deletions(-)
+ drivers/media/dvb-core/dvb-usb-ids.h    |    1 +
+ drivers/media/usb/dvb-usb-v2/rtl28xxu.c |    2 ++
+ 2 files changed, 3 insertions(+)
 
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -720,6 +720,22 @@ static enum audit_state audit_filter_tas
- 	return AUDIT_BUILD_CONTEXT;
- }
+--- a/drivers/media/dvb-core/dvb-usb-ids.h
++++ b/drivers/media/dvb-core/dvb-usb-ids.h
+@@ -361,6 +361,7 @@
+ #define USB_PID_FRIIO_WHITE				0x0001
+ #define USB_PID_TVWAY_PLUS				0x0002
+ #define USB_PID_SVEON_STV20				0xe39d
++#define USB_PID_SVEON_STV20_RTL2832U			0xd39d
+ #define USB_PID_SVEON_STV22				0xe401
+ #define USB_PID_SVEON_STV22_IT9137			0xe411
+ #define USB_PID_AZUREWAVE_AZ6027			0x3275
+--- a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
++++ b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
+@@ -1437,6 +1437,8 @@ static const struct usb_device_id rtl28x
+ 		&rtl2832u_props, "Genius TVGo DVB-T03", NULL) },
+ 	{ DVB_USB_DEVICE(USB_VID_KWORLD_2, 0xd395,
+ 		&rtl2832u_props, "Peak DVB-T USB", NULL) },
++	{ DVB_USB_DEVICE(USB_VID_KWORLD_2, USB_PID_SVEON_STV20_RTL2832U,
++		&rtl2832u_props, "Sveon STV20", NULL) },
  
-+static int audit_in_mask(const struct audit_krule *rule, unsigned long val)
-+{
-+	int word, bit;
-+
-+	if (val > 0xffffffff)
-+		return false;
-+
-+	word = AUDIT_WORD(val);
-+	if (word >= AUDIT_BITMASK_SIZE)
-+		return false;
-+
-+	bit = AUDIT_BIT(val);
-+
-+	return rule->mask[word] & bit;
-+}
-+
- /* At syscall entry and exit time, this filter is called if the
-  * audit_state is not low enough that auditing cannot take place, but is
-  * also not high enough that we already know we have to write an audit
-@@ -737,11 +753,8 @@ static enum audit_state audit_filter_sys
- 
- 	rcu_read_lock();
- 	if (!list_empty(list)) {
--		int word = AUDIT_WORD(ctx->major);
--		int bit  = AUDIT_BIT(ctx->major);
--
- 		list_for_each_entry_rcu(e, list, list) {
--			if ((e->rule.mask[word] & bit) == bit &&
-+			if (audit_in_mask(&e->rule, ctx->major) &&
- 			    audit_filter_rules(tsk, &e->rule, ctx, NULL,
- 					       &state, false)) {
- 				rcu_read_unlock();
-@@ -761,20 +774,16 @@ static enum audit_state audit_filter_sys
- static int audit_filter_inode_name(struct task_struct *tsk,
- 				   struct audit_names *n,
- 				   struct audit_context *ctx) {
--	int word, bit;
- 	int h = audit_hash_ino((u32)n->ino);
- 	struct list_head *list = &audit_inode_hash[h];
- 	struct audit_entry *e;
- 	enum audit_state state;
- 
--	word = AUDIT_WORD(ctx->major);
--	bit  = AUDIT_BIT(ctx->major);
--
- 	if (list_empty(list))
- 		return 0;
- 
- 	list_for_each_entry_rcu(e, list, list) {
--		if ((e->rule.mask[word] & bit) == bit &&
-+		if (audit_in_mask(&e->rule, ctx->major) &&
- 		    audit_filter_rules(tsk, &e->rule, ctx, n, &state, false)) {
- 			ctx->current_state = state;
- 			return 1;
+ 	/* RTL2832P devices: */
+ 	{ DVB_USB_DEVICE(USB_VID_HANFTEK, 0x0131,
 
 
