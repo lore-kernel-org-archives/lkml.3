@@ -1,98 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396AbaFLBcz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 21:32:55 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:40694 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754411AbaFLBcy (ORCPT
+	id S1755284AbaFLBhz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 21:37:55 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:56481 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754411AbaFLBhy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 21:32:54 -0400
-Message-ID: <539904B2.6010805@windriver.com>
-Date: Thu, 12 Jun 2014 09:38:58 +0800
-From: Xufeng Zhang <xufeng.zhang@windriver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5 ThunderBrowse/3.82
+	Wed, 11 Jun 2014 21:37:54 -0400
 MIME-Version: 1.0
-To: Vlad Yasevich <vyasevich@gmail.com>
-CC: <nhorman@tuxdriver.com>, <davem@davemloft.net>,
-        <linux-sctp@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sctp: Fix sk_ack_backlog wrap-around problem
-References: <1402454244-8427-1-git-send-email-xufeng.zhang@windriver.com> <539851DF.3070808@gmail.com> <53988A03.4090801@gmail.com>
-In-Reply-To: <53988A03.4090801@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140611212540.GA16940@cloud>
+References: <1402519183-12752-1-git-send-email-bobby.prani@gmail.com>
+ <1402519183-12752-5-git-send-email-bobby.prani@gmail.com> <20140611212540.GA16940@cloud>
+From: Pranith Kumar <bobby.prani@gmail.com>
+Date: Wed, 11 Jun 2014 21:37:22 -0400
+Message-ID: <CAJhHMCC5dAvKZFmWnaDqS6zG+WeH-YT7qCTPypDEuEuYOGy_sw@mail.gmail.com>
+Subject: Re: [RFC PATCH 4/5] kernel/rcu/tree.c:3435 fix a sparse warning
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2014 12:55 AM, Vlad Yasevich wrote:
-> On 06/11/2014 08:55 AM, Vlad Yasevich wrote:
->    
->> On 06/10/2014 10:37 PM, Xufeng Zhang wrote:
->>      
->>> Consider the scenario:
->>> For a TCP-style socket, while processing the COOKIE_ECHO chunk in
->>> sctp_sf_do_5_1D_ce(), after it has passed a series of sanity check,
->>> a new association would be created in sctp_unpack_cookie(), but afterwards,
->>> some processing maybe failed, and sctp_association_free() will be called to
->>> free the previously allocated association, in sctp_association_free(),
->>> sk_ack_backlog value is decremented for this socket, since the initial
->>> value for sk_ack_backlog is 0, after the decrement, it will be 65535,
->>> a wrap-around problem happens, and if we want to establish new associations
->>> afterward in the same socket, ABORT would be triggered since sctp deem the
->>> accept queue as full.
->>> Fix this issue by only decrementing sk_ack_backlog for associations in
->>> the endpoint's list.
->>>
->>> Fix-suggested-by: Neil Horman<nhorman@tuxdriver.com>
->>> Signed-off-by: Xufeng Zhang<xufeng.zhang@windriver.com>
->>> ---
->>>   net/sctp/associola.c |    2 +-
->>>   1 files changed, 1 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/net/sctp/associola.c b/net/sctp/associola.c
->>> index 39579c3..60564f2 100644
->>> --- a/net/sctp/associola.c
->>> +++ b/net/sctp/associola.c
->>> @@ -330,7 +330,7 @@ void sctp_association_free(struct sctp_association *asoc)
->>>   	/* Only real associations count against the endpoint, so
->>>   	 * don't bother for if this is a temporary association.
->>>   	 */
->>> -	if (!asoc->temp) {
->>> +	if (!asoc->temp&&  !list_empty(&asoc->asocs)) {
->>>   		list_del(&asoc->asocs);
->>>
->>>   		/* Decrement the backlog value for a TCP-style listening
->>>
->>>        
->> I am not crazy about this patch.   It's been suggested before that may
->> be duplicate cookie processing should really be creating a temporary
->> association since that's is how that association is being used.
->>      
-> I had another look at the description for triggering this issue and
-> realized that I was thinking about something else when looking at
-> this solution.
+On Wed, Jun 11, 2014 at 5:25 PM,  <josh@joshtriplett.org> wrote:
+> On Wed, Jun 11, 2014 at 04:39:42PM -0400, Pranith Kumar wrote:
+>> kernel/rcu/tree.c:3435:21: warning: incorrect type in argument 1 (different modifiers)
+>> kernel/rcu/tree.c:3435:21:    expected int ( *threadfn )( ... )
+>> kernel/rcu/tree.c:3435:21:    got int ( static [toplevel] [noreturn] *<noident> )( ... )
+>>
+>> by removing __noreturn attribute and adding unreachable() as suggested on the
+>> mailing list: http://www.kernelhub.org/?p=2&msg=436683
+>>
+>> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 >
-> There is however no need to test both the list and temp value.
-> We can simply always test the that list is not empty before doing
-> list_del().
->    
-
-Thanks a lot for the comment!
-I'll send V2 later.
-
-
-Thanks,
-Xufeng
-
-
-> -vlad
+> No, we should not do this.  And the mailing list post you point to seems
+> to explicitly recommend using noreturn rather than unreachable.
 >
->    
->>   It
->> might be nice at that approach.  It actually benefits us as the
->> association destruction would happen immediately instead of being delayed.
->>      
+> If sparse doesn't understand this, that's a bug in sparse, not in the
+> kernel.  Sparse needs to understand that it's OK to drop noreturn from a
+> function pointer type, just not OK to add it.
 >
->    
+> Rationale: If you call a noreturn function through a non-noreturn
+> function pointer, you might end up with unnecessary cleanup code, but
+> the call will work.  If you call a non-noreturn function through a
+> noreturn function pointer, the caller will not expect a return, and may
+> crash; *that* should require a cast.
+>
 
+Yes, I understand the rationale. I think this should be fixed in
+sparse. Please drop this patch.
+
+Thanks!
+-- 
+Pranith
