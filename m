@@ -1,92 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752704AbaFLWL1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 18:11:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42071 "EHLO mx1.redhat.com"
+	id S1752805AbaFLWMr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 18:12:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39681 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752377AbaFLWJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 18:09:39 -0400
-From: Jiri Olsa <jolsa@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 11/17] perf tools: Add ordered_events_queue_init function
-Date: Fri, 13 Jun 2014 00:08:27 +0200
-Message-Id: <1402610913-19059-12-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1402610913-19059-1-git-send-email-jolsa@kernel.org>
-References: <1402610913-19059-1-git-send-email-jolsa@kernel.org>
+	id S1751172AbaFLWMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 18:12:45 -0400
+Subject: [PATCH 0/3] iommu: Expose IOMMU information in sysfs
+From: Alex Williamson <alex.williamson@redhat.com>
+To: iommu@lists.linux-foundation.org
+Cc: joro@8bytes.org, dwmw2@infradead.org, linux-kernel@vger.kernel.org
+Date: Thu, 12 Jun 2014 16:12:18 -0600
+Message-ID: <20140612215954.2754.30263.stgit@bling.home>
+User-Agent: StGit/0.17-dirty
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding ordered_events_queue_init function for struct
-ordered_events_queue initialization.
+Users want to know the features of their hardware and we need a better
+way to get it than parsing it out of dmesg.  This series creates an
+IOMMU class and allows drivers to create and destroy a device within
+that class.  Drivers may also link and unlink devices to expose the
+association of a device to a specific hardware unit and create
+attribute groups to expose further information about the specific
+IOMMU.
 
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+An example use case for this would be to determine whether the IOMMU
+for a device supports super-pages, which can have performance
+implications for a device assignment scenario.  A user with multiple
+IOMMU units may also want to factor load per IOMMU into their hardware
+layout.  This helps to expose those connections.
+
+I posted an RFC for this last month, but there were no comments.  This
+version officialy includes AMD-Vi support and removes the kobject used
+for creating the "devices" subdirectory, instead using an empty
+attribute group.  I've tried not to duplicate any information
+available elsewhere for the user, for example in the DMAR or IVRS
+tables.  This means that while I think it might be interesting to
+expose things like RMRR, the user already has access to those by
+parsing the appropriate firmware table.  I welcome any additional
+IOMMU driver implementaitons.  Thanks,
+
+Alex
+
 ---
- tools/perf/util/ordered-events.c | 9 +++++++++
- tools/perf/util/ordered-events.h | 1 +
- tools/perf/util/session.c        | 6 +-----
- 3 files changed, 11 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/util/ordered-events.c b/tools/perf/util/ordered-events.c
-index 2d943eb..0ca34ee 100644
---- a/tools/perf/util/ordered-events.c
-+++ b/tools/perf/util/ordered-events.c
-@@ -191,3 +191,12 @@ int ordered_events_flush(struct perf_session *s, struct perf_tool *tool,
- 
- 	return err;
- }
-+
-+void ordered_events_queue_init(struct ordered_events_queue *q)
-+{
-+	INIT_LIST_HEAD(&q->events);
-+	INIT_LIST_HEAD(&q->cache);
-+	INIT_LIST_HEAD(&q->to_free);
-+	q->max_alloc_size = (u64) -1;
-+	q->cur_alloc_size = 0;
-+}
-diff --git a/tools/perf/util/ordered-events.h b/tools/perf/util/ordered-events.h
-index c0dc00e..0633b09 100644
---- a/tools/perf/util/ordered-events.h
-+++ b/tools/perf/util/ordered-events.h
-@@ -40,4 +40,5 @@ void ordered_event_put(struct ordered_events_queue *q,
- 		       struct ordered_event *iter);
- int ordered_events_flush(struct perf_session *s, struct perf_tool *tool,
- 			 enum oeq_flush how);
-+void ordered_events_queue_init(struct ordered_events_queue *q);
- #endif /* __ORDERED_EVENTS_H */
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 0548d72..09d1052 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -76,11 +76,7 @@ struct perf_session *perf_session__new(struct perf_data_file *file,
- 		goto out;
- 
- 	session->repipe = repipe;
--	INIT_LIST_HEAD(&session->ordered_events.events);
--	INIT_LIST_HEAD(&session->ordered_events.cache);
--	INIT_LIST_HEAD(&session->ordered_events.to_free);
--	session->ordered_events.max_alloc_size = (u64) -1;
--	session->ordered_events.cur_alloc_size = 0;
-+	ordered_events_queue_init(&session->ordered_events);
- 	machines__init(&session->machines);
- 
- 	if (file) {
--- 
-1.8.3.1
+Alex Williamson (3):
+      iommu: Add sysfs support for IOMMUs
+      iommu/intel: Make use of IOMMU sysfs support
+      iommu/amd: Add sysfs support
 
+
+ Documentation/ABI/testing/sysfs-class-iommu        |   17 +++
+ .../ABI/testing/sysfs-class-iommu-amd-iommu        |   14 ++
+ .../ABI/testing/sysfs-class-iommu-intel-iommu      |   32 +++++
+ drivers/iommu/Makefile                             |    1 
+ drivers/iommu/amd_iommu.c                          |    6 +
+ drivers/iommu/amd_iommu_init.c                     |   38 ++++++
+ drivers/iommu/amd_iommu_types.h                    |    3 
+ drivers/iommu/dmar.c                               |    9 +
+ drivers/iommu/intel-iommu.c                        |   77 +++++++++++-
+ drivers/iommu/iommu-sysfs.c                        |  133 ++++++++++++++++++++
+ include/linux/intel-iommu.h                        |    3 
+ include/linux/iommu.h                              |   26 ++++
+ 12 files changed, 358 insertions(+), 1 deletion(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-class-iommu
+ create mode 100644 Documentation/ABI/testing/sysfs-class-iommu-amd-iommu
+ create mode 100644 Documentation/ABI/testing/sysfs-class-iommu-intel-iommu
+ create mode 100644 drivers/iommu/iommu-sysfs.c
