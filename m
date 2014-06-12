@@ -1,59 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933103AbaFLJo3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 05:44:29 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:34927 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933072AbaFLJo0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 05:44:26 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <linux-kernel@vger.kernel.org>, <kishon@ti.com>, <lee.jones@linaro.org>,
-        <sergei.shtylyov@cogentembedded.com>
-CC: <gregkh@linuxfoundation.org>
-Subject: [RFC PATCH] phy: core: Fix of_phy_provider_lookup to return PHY provider for sub node
-Date: Thu, 12 Jun 2014 15:14:02 +0530
-Message-ID: <1402566242-30220-1-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S933121AbaFLJoi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 05:44:38 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:55432 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932972AbaFLJog (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 05:44:36 -0400
+Date: Thu, 12 Jun 2014 10:44:23 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jisheng Zhang <jszhang@marvell.com>
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        sebastian.hesselbarth@gmail.com, alexandre.belloni@free-electrons.com,
+        antoine.tenart@free-electrons.com, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: dts: berlin2q.dtsi: set L2CC tag and data latency
+	as 2 cycles
+Message-ID: <20140612094423.GC23430@n2100.arm.linux.org.uk>
+References: <1402565920-5636-1-git-send-email-jszhang@marvell.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402565920-5636-1-git-send-email-jszhang@marvell.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed of_phy_provider_lookup to return 'phy_provider' if _of_phy_get
-passes the node pointer of the sub-node of phy provider node. This is
-needed when phy provider implements multiple PHYs and each PHY is
-modelled as the sub-node of PHY provider device node.
+On Thu, Jun 12, 2014 at 05:38:40PM +0800, Jisheng Zhang wrote:
+> For all BG2Q SoCs, 2 cycles is the best/correct value
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- drivers/phy/phy-core.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+It would be a good idea to set all these parameters if you need to set
+them at all - in other words, setting arm,dirty-latency as well, as
+that's all part of the timing specification.
 
-diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
-index c64a2f3..a4a1f783 100644
---- a/drivers/phy/phy-core.c
-+++ b/drivers/phy/phy-core.c
-@@ -86,10 +86,18 @@ static struct phy *phy_lookup(struct device *device, const char *port)
- static struct phy_provider *of_phy_provider_lookup(struct device_node *node)
- {
- 	struct phy_provider *phy_provider;
-+	struct device_node *child;
- 
- 	list_for_each_entry(phy_provider, &phy_provider_list, list) {
--		if (phy_provider->dev->of_node == node)
-+		if (phy_provider->dev->of_node != node) {
-+			for_each_child_of_node(phy_provider->dev->of_node,
-+				child) {
-+				if (child == node)
-+					return phy_provider;
-+			}
-+		} else {
- 			return phy_provider;
-+		}
- 	}
- 
- 	return ERR_PTR(-EPROBE_DEFER);
 -- 
-1.7.9.5
-
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
