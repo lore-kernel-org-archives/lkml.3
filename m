@@ -1,86 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933774AbaFLNt0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 09:49:26 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:31620 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933203AbaFLNtW (ORCPT
+	id S1756017AbaFLNrC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 09:47:02 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59417 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752830AbaFLNq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 09:49:22 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18Lobc3+NWDrfJuwuko8vY5Nx6zznumhDk=
-X-DKIM: OpenDKIM Filter v2.0.1 titan EB21758DE3A
-Date: Thu, 12 Jun 2014 09:49:09 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sricharan R <r.sricharan@ti.com>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tony@atomide.com, santosh.shilimkar@ti.com, nm@ti.com, rnayak@ti.com,
-        linux@arm.linux.org.uk, tglx@linutronix.de
-Subject: Re: [PATCH V2 15/19] irqchip: crossbar: Add kerneldoc for
- crossbar_domain_unmap callback
-Message-ID: <20140612134909.GA8664@titan.lakedaemon.net>
-References: <1402574007-13987-1-git-send-email-r.sricharan@ti.com>
- <1402574007-13987-16-git-send-email-r.sricharan@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402574007-13987-16-git-send-email-r.sricharan@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 12 Jun 2014 09:46:57 -0400
+From: Christoph Hellwig <hch@lst.de>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Bart Van Assche <bvanassche@fusionio.com>,
+        Robert Elliot <Elliott@hp.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: scsi-mq
+Date: Thu, 12 Jun 2014 15:48:52 +0200
+Message-Id: <1402580946-11470-1-git-send-email-hch@lst.de>
+X-Mailer: git-send-email 1.7.10.4
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 12, 2014 at 05:23:23PM +0530, Sricharan R wrote:
-> The crossbar_domain_map/unmap callbacks need not be called same number
-> of times for a particular irq. But still use counting is not needed
-> here, because unmap(irq) gets called when irq_desc(irq) is disposed.
-> After this the irq is anyways unusable and have to mapped again.
+With all the required blk-mq work, and the previous set of scsi midlayer
+updates in Linus' tree this is the time for the first format scsi-mq
+submission.
 
-There's no need to duplicate the code comment in the commit log ;-)
+At this point the code is ready for merging and use by developers and early
+adopters.  The core blk-mq code isn't that suitable for slow devices
+yet, mostly due to the lack of an I/O scheduler, but Jens is working on it.
+Similarly there is no dm-multipath support for drivers using blk-mq yet,
+but I'm working on it.  It should also be noted that the code doesn't
+actually support multiple hardware queues or fine grained tuning of the
+blk-mq parameters yet.  All these could be added fairly easily as soon
+as low-level drivers want to make use of them.
 
-> 
-> Adding the above kerneldoc for unmap callback clarity.
-> 
-> Signed-off-by: Sricharan R <r.sricharan@ti.com>
-> ---
->  drivers/irqchip/irq-crossbar.c |   10 ++++++++++
->  1 file changed, 10 insertions(+)
-> 
-> diff --git a/drivers/irqchip/irq-crossbar.c b/drivers/irqchip/irq-crossbar.c
-> index 5f3e75a..2a73a66 100644
-> --- a/drivers/irqchip/irq-crossbar.c
-> +++ b/drivers/irqchip/irq-crossbar.c
-> @@ -101,6 +101,16 @@ static int crossbar_domain_map(struct irq_domain *d, unsigned int irq,
->  	return 0;
->  }
->  
-> +/**
-> + * crossbar_domain_unmap - unmap a crossbar<->irq connection
-> + * @d: domain of irq to unmap
-> + * @irq: virq number
-> + *
-> + * The map/unmap callbacks need not be called same number of times for
+The amount of chances to the existing code are fairly small, and mostly
+speedups or cleanups that also apply to the old path as well.  Because
+of this I also haven't bothered to put it under a config option, just
+like the blk-mq core.
 
-s/same/the same/
+The usage of blk-mq dramatically decreases CPU usage under all workloads going
+down from 100% CPU usage that the old setup can hit easily to usually less
+than 20% for maxing out storage subsystems with 512byte reads and writes,
+and it allows to easily archive millions of IOPS.  Bart and Robert have
+helped with some very detailed measurements that they might be able to send
+in reply to this, although these usually involve significantly reworked low
+level drivers to avoid other bottle necks.
 
-> + * a particular irq. But still use counting is not needed here, because
-> + * unmap(irq) gets called when irq_desc(irq) is disposed. After this the
-> + * irq is anyways unusuable and have to be mapped again.
+One major objection to previous iterations of this code was the simple
+replacement of the host_lock with atomic counters for the host and busy
+counters.  The host_lock avoidance on it's own already improves performance,
+and with the patch to avoid maintaining the per-target busy counter unless
+needed we now replace a lock round trip on the host_lock with just a single
+atomic increment in the submission path, and a single atomic decrement in
+completion path, which should provide benefits even for the oddest RISC
+architecture.  Longer term I'd still love to get rid of these entirely
+and use the counters in blk-mq, but due to the difference in how they
+are maintained this doesn't seem feasible as long as we still need to
+support the legacy request code path.
 
-Please re-word this.  If I were new to the driver (I am ;-) ) I would
-have no idea what this means (and I don't :( )
+In addition to the patches in this thread there also is a git available at:
 
-thx,
+	git://git.infradead.org/users/hch/scsi.git scsi-mq
 
-Jason.
+This work was sponsored by the ION division of Fusion IO.
 
-> + */
->  static void crossbar_domain_unmap(struct irq_domain *d, unsigned int irq)
->  {
->  	irq_hw_number_t hw = irq_get_irq_data(irq)->hwirq;
-> -- 
-> 1.7.9.5
-> 
