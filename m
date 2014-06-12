@@ -1,46 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752581AbaFLTzh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 15:55:37 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:49793 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752098AbaFLTze (ORCPT
+	id S1751967AbaFLUAU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 16:00:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35229 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751437AbaFLUAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 15:55:34 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>, linux-doc@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH 0/2] make kASLR vs hibernation boot-time selectable
-Date: Thu, 12 Jun 2014 22:13 +0200
-Message-ID: <1567399.Tu2Noof0fr@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <539A0422.9010000@zytor.com>
-References: <1402602419-27934-1-git-send-email-keescook@chromium.org> <539A0422.9010000@zytor.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Thu, 12 Jun 2014 16:00:19 -0400
+Date: Thu, 12 Jun 2014 13:00:17 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Chen Yucong <slaoub@gmail.com>
+Cc: mgorman@suse.de, hannes@cmpxchg.org, mhocko@suse.cz, riel@redhat.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm/vmscan.c: wrap five parameters into arg_container in
+ shrink_page_list()
+Message-Id: <20140612130017.865034e4e606d53499508226@linux-foundation.org>
+In-Reply-To: <1402565795-706-1-git-send-email-slaoub@gmail.com>
+References: <1402565795-706-1-git-send-email-slaoub@gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, June 12, 2014 12:48:50 PM H. Peter Anvin wrote:
-> On 06/12/2014 12:46 PM, Kees Cook wrote:
-> > Distros want to be able to offer CONFIG_RANDOMIZE_BASE as well as
-> > CONFIG_HIBERNATION in a single kernel. Instead of making kASLR depend on
-> > !HIBERNATION at compile time, allow kaslr to be selectable at boot time
-> > (via "kaslr" kernel command line), which will disable hibernation in the
-> > kernel. In this way the end user can choose which feature they want more
-> > with hibernation continuing to stay enabled by default (no surprises).
+On Thu, 12 Jun 2014 17:36:35 +0800 Chen Yucong <slaoub@gmail.com> wrote:
+
+> shrink_page_list() has too many arguments that have already reached ten.
+> Some of those arguments and temporary variables introduces extra 80 bytes
+> on the stack.
 > 
-> Any way we can make them work together instead?
+> This patch wraps five parameters into arg_container and removes some temporary
+> variables, thus making shrink_page_list() to consume fewer stack space.
+> 
+> Before mm/vmscan.c is modified:
+>    text	   data	    bss	    dec	    hex	filename
+> 6876698	 957224	 966656	8800578	 864942	vmlinux-3.15
+> 
+> After mm/vmscan.c is changed:
+>    text	   data	    bss	    dec	    hex	filename
+> 6876506	 957224	 966656	8800386	 864882	vmlinux-3.15
 
-Yeah, and that too.
+Code size reduction is a good sign.
 
-Rafael
+>  1 file changed, 29 insertions(+), 35 deletions(-)
+
+We can look at the frame pointer alterations.  Requires
+CONFIG_FRAME_POINTER.  There's also scripts/checkstack.pl.
+
+Without:
+
+shrink_page_list:
+	pushq	%rbp	#
+	movq	%rsp, %rbp	#,
+	pushq	%r15	#
+	pushq	%r14	#
+	pushq	%r13	#
+	pushq	%r12	#
+	pushq	%rbx	#
+	subq	$184, %rsp	#,
+
+With:
+
+shrink_page_list:
+	pushq	%rbp	#
+	movq	%rsp, %rbp	#,
+	pushq	%r15	#
+	pushq	%r14	#
+	pushq	%r13	#
+	pushq	%r12	#
+	pushq	%rbx	#
+	subq	$136, %rsp	#,
+
+So we've saved approx 184-136=48 bytes of stack in shrink_page_list(). 
+shrink_inactive_list() stack space is unchanged.
+
+Please do this sort of analysis yourself and include it in the changelogs.
+
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -790,6 +790,14 @@ static void page_check_dirty_writeback(struct page *page,
+>  		mapping->a_ops->is_dirty_writeback(page, dirty, writeback);
+>  }
+>  
+> +struct arg_container {
+> +	unsigned long nr_dirty;
+> +	unsigned long nr_unqueued_dirty;
+> +	unsigned long nr_congested;
+> +	unsigned long nr_writeback;
+> +	unsigned long nr_immediate;
+> +};
+
+This name is dreadful.  Let's give it a nice, meaningful name and
+document it appropriately.  So it all looks like a part of the vmscan
+code and not some hack which was bolted onto the side to save a bit of
+stack.
+
+Something like
+
+/*
+ * Callers pass a prezeroed shrink_result into the shrink functions to gather
+ * statistics about how many pages of particular states were processed
+ */
+struct shrink_result {
+	...
+
+
+>  /*
+>   * shrink_page_list() returns the number of reclaimed pages
+>   */
+>
+> ...
+>
+> @@ -1148,7 +1142,8 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
+>  		.priority = DEF_PRIORITY,
+>  		.may_unmap = 1,
+>  	};
+> -	unsigned long ret, dummy1, dummy2, dummy3, dummy4, dummy5;
+> +	unsigned long ret;
+> +	struct arg_container dummy;
+
+If we're not going to use this then we can make it static and save more
+stack.  That will have some runtime cost as different CPUs fight over
+ownership of cachelines but I doubt if it will be significant.
+
+If we leave it on the stack then this code will send kmemcheck berzerk
+with all the used-uninitialized errors.  Presumably that it already the
+case.  Perhaps `dummy' should be initialized if kmemcheck is in
+operation, dunno.
+
+
+>  	struct page *page, *next;
+>  	LIST_HEAD(clean_pages);
+>  
+>
+> ...
+>
+> @@ -1469,11 +1463,13 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+>  	unsigned long nr_scanned;
+>  	unsigned long nr_reclaimed = 0;
+>  	unsigned long nr_taken;
+> -	unsigned long nr_dirty = 0;
+> -	unsigned long nr_congested = 0;
+> -	unsigned long nr_unqueued_dirty = 0;
+> -	unsigned long nr_writeback = 0;
+> -	unsigned long nr_immediate = 0;
+> +	struct arg_container ac = {
+> +		.nr_dirty = 0,
+> +		.nr_congested = 0,
+> +		.nr_unqueued_dirty = 0,
+> +		.nr_writeback = 0,
+> +		.nr_immediate = 0,
+> +	};
+
+This:
+
+	struct arg_container ac = { };
+
+>  	isolate_mode_t isolate_mode = 0;
+>  	int file = is_file_lru(lru);
+>  	struct zone *zone = lruvec_zone(lruvec);
+>
+> ...
+>
 
