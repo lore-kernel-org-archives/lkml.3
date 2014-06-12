@@ -1,64 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756275AbaFLRaN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 13:30:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31662 "EHLO mx1.redhat.com"
+	id S933458AbaFLRcs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 13:32:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29961 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753061AbaFLRaL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 13:30:11 -0400
-Date: Thu, 12 Jun 2014 19:28:44 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>
-Subject: Re: safety of *mutex_unlock() (Was: [BUG] signal: sighand
-	unprotected when accessed by /proc)
-Message-ID: <20140612172844.GA15795@redhat.com>
-References: <alpine.DEB.2.10.1406101959420.5170@nanos> <20140610141306.04a4bcf3@gandalf.local.home> <alpine.DEB.2.10.1406102203430.5170@nanos> <alpine.DEB.2.10.1406102210580.5170@nanos> <20140611155251.GA4581@linux.vnet.ibm.com> <20140611170705.GA26816@redhat.com> <20140611171734.GA27457@redhat.com> <20140611172958.GF4581@linux.vnet.ibm.com> <20140611175934.GA28912@redhat.com> <20140611195613.GM4581@linux.vnet.ibm.com>
+	id S1753089AbaFLRcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 13:32:47 -0400
+Date: Thu, 12 Jun 2014 13:32:36 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Dmitry Kasatkin <d.kasatkin@samsung.com>
+Cc: zohar@linux.vnet.ibm.com, dhowells@redhat.com, jwboyer@redhat.com,
+        keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dmitry.kasatkin@gmail.com,
+        mjg59@srcf.ucam.org
+Subject: Re: [PATCH 3/4] KEYS: validate key trust only with selected owner key
+Message-ID: <20140612173236.GK9578@redhat.com>
+References: <cover.1402387862.git.d.kasatkin@samsung.com>
+ <ef22f2630a2545bd7c3bf2c9e730a842835cf6c4.1402387862.git.d.kasatkin@samsung.com>
+ <20140612160346.GG9578@redhat.com>
+ <5399E22D.9070205@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140611195613.GM4581@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <5399E22D.9070205@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11, Paul E. McKenney wrote:
->
-> On Wed, Jun 11, 2014 at 07:59:34PM +0200, Oleg Nesterov wrote:
-> > On 06/11, Paul E. McKenney wrote:
-> > >
-> > > I was thinking of ->boost_completion as the way to solve it easily, but
-> > > what did you have in mind?
+On Thu, Jun 12, 2014 at 08:23:57PM +0300, Dmitry Kasatkin wrote:
+> On 12/06/14 19:03, Vivek Goyal wrote:
+> > On Tue, Jun 10, 2014 at 11:48:17AM +0300, Dmitry Kasatkin wrote:
+> >> This patch provides kernel parameter to specify owner's key id which
+> >> must be used for trust validate of keys. Keys signed with other keys
+> >> are not trusted.
+> >>
+> >> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+> > Hi,
 > >
-> > I meant, rcu_boost() could probably just do "mtx->owner = t", we know that
-> > it was unlocked by us and nobody else can use it until we set
-> > t->rcu_boost_mutex.
->
-> My concern with this is that rcu_read_unlock_special() could hypothetically
-> get preempted (either by kernel or hypervisor), so that it might be a long
-> time until it makes its reference.  But maybe that reference would be
-> harmless in this case.
+> > I am continuing to work on verifying kernel signature for kexec/kdump. I 
+> > am planning to take david howell's patches for pkcs7 signature
+> > verification and verify bzImage signature.
+> >
+> > Part of that process will boil down to verifying a certificate in
+> > pkcs7 x509 cert chain using a key in system_trusted_keyring.
+> >
+> > I think the OS vendor key which signs the kernel signing key propagates to
+> > system_trusted_keyring. (shim has that and I am not sure how shim makes
+> > it propogate all they way to system_trusted_keyring).
+> >
+> > So I was planning to use same functionality where I look for any key
+> > which can verify the signing cert of kernel. As OS vendor key will be
+> > in system_trusted_keyring, it should work.
+> >
+> > Now with this change where you will trust only one selected owner key.
+> > That means you will not even trust the OS vendor key which signs kernel
+> > signing key. I think this will stop working with  keys_ownerid=<....>
+> >
+> > As I am doing that work in parallel and I saw these patches, I thought
+> > I will bring it up.
+> 
+> Hi Vivek,
+> 
+> All keys stays in the keyring. Usage of owner_keyid is limited to
+> validate the trust of the loaded keys.
 
-Confused... Not sure I understand what did you mean, and certainly I do not
-understand how this connects to the proxy-locking method.
+Hi Dmitry,
 
-Could you explain?
+If owner_keyid scope is just limited to loading extra keys, then it
+should be fine as I don't want to load extra keys. I just want to
+verify already signed image whose key is supposed to be in
+system_trusted_keyring.
 
-> > And if we move it into rcu_node, then we can probably kill ->rcu_boost_mutex,
-> > rcu_read_unlock_special() could check rnp->boost_mutex->owner == current.
->
-> If this was anywhere near a hot code path, I would be sorely tempted.
+> 
+> 
+> Do you really see OS verndor key (Fedora) on the system keyring?
+> shim is UEFI binary and can add it to the MOK database..
 
-Ah, but I didn't mean perfomance. I think it is always good to try to remove
-something from task_struct, it is huge. I do not mean sizeof() in the first
-place, the very fact that I can hardly understand the purpose of a half of its
-members makes me sad ;)
+I have been told that mechanism to propagate they key in shim which is
+used to verify kernel signature is in place and that key should show
+up in system_trusted_keyring. I have never verified it though. I will
+check it out.
 
-Oleg.
-
+Thanks
+Vivek
