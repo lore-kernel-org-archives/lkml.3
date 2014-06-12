@@ -1,195 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752474AbaFLVvi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 17:51:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15687 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751075AbaFLVsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 17:48:36 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: linux-mm@kvack.org
-Cc: Dave Hansen <dave.hansen@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+	id S1750920AbaFLV4T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 17:56:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36216 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750773AbaFLV4S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 17:56:18 -0400
+Date: Thu, 12 Jun 2014 14:56:17 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-mm@kvack.org, Dave Hansen <dave.hansen@intel.com>,
         Hugh Dickins <hughd@google.com>,
         "Kirill A. Shutemov" <kirill@shutemov.name>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH -mm v2 02/11] madvise: cleanup swapin_walk_pmd_entry()
-Date: Thu, 12 Jun 2014 17:48:02 -0400
-Message-Id: <1402609691-13950-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: Re: [PATCH -mm v2 00/11] pagewalk: standardize current users, move
+ pmd locking, apply to mincore
+Message-Id: <20140612145617.5debf04bd1a2978be4a1fb88@linux-foundation.org>
 In-Reply-To: <1402609691-13950-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 References: <1402609691-13950-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the recent update on page table walker, we can use common code for
-the walking more. Unlike many other users, this swapin_walk expects to
-handle swap entries. As a result we should be careful about ptl locking.
-Swapin operation, read_swap_cache_async(), could cause page reclaim, so
-we can't keep holding ptl throughout this pte loop.
-In order to properly handle ptl in pte_entry(), this patch adds two new
-members on struct mm_walk.
+On Thu, 12 Jun 2014 17:48:00 -0400 Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
 
-This cleanup is necessary to get to the final form of page table walker,
-where we should do all caller's specific work on leaf entries (IOW, all
-pmd_entry() should be used for trans_pmd.)
+> This is ver.2 of page table walker patchset.
+> 
+> I move forward on this cleanup work, and added some improvement from the
+> previous version. Major changes are:
+>  - removed walk->skip which becomes removable due to refactoring existing
+>    users
+>  - commonalized the argments of entry handlers (pte|pmd|hugetlb)_entry()
+>    which allows us to use the same function as multiple handlers.
+> 
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Hugh Dickins <hughd@google.com>
----
- include/linux/mm.h |  4 ++++
- mm/madvise.c       | 54 +++++++++++++++++++++++-------------------------------
- mm/pagewalk.c      | 11 +++++------
- 3 files changed, 32 insertions(+), 37 deletions(-)
+Are you sure you didn't miss anything?
 
-diff --git mmotm-2014-05-21-16-57.orig/include/linux/mm.h mmotm-2014-05-21-16-57/include/linux/mm.h
-index b4aa6579f2b1..aa832161a1ff 100644
---- mmotm-2014-05-21-16-57.orig/include/linux/mm.h
-+++ mmotm-2014-05-21-16-57/include/linux/mm.h
-@@ -1108,6 +1108,8 @@ void unmap_vmas(struct mmu_gather *tlb, struct vm_area_struct *start_vma,
-  * @vma:       vma currently walked
-  * @skip:      internal control flag which is set when we skip the lower
-  *             level entries.
-+ * @pmd:       current pmd entry
-+ * @ptl:       page table lock associated with current entry
-  * @private:   private data for callbacks' use
-  *
-  * (see the comment on walk_page_range() for more details)
-@@ -1126,6 +1128,8 @@ struct mm_walk {
- 	struct mm_struct *mm;
- 	struct vm_area_struct *vma;
- 	int skip;
-+	pmd_t *pmd;
-+	spinlock_t *ptl;
- 	void *private;
- };
- 
-diff --git mmotm-2014-05-21-16-57.orig/mm/madvise.c mmotm-2014-05-21-16-57/mm/madvise.c
-index a402f8fdc68e..06b390a6fbbd 100644
---- mmotm-2014-05-21-16-57.orig/mm/madvise.c
-+++ mmotm-2014-05-21-16-57/mm/madvise.c
-@@ -135,38 +135,31 @@ static long madvise_behavior(struct vm_area_struct *vma,
- }
- 
- #ifdef CONFIG_SWAP
--static int swapin_walk_pmd_entry(pmd_t *pmd, unsigned long start,
-+/*
-+ * Assuming that page table walker holds page table lock.
-+ */
-+static int swapin_walk_pte_entry(pte_t *pte, unsigned long start,
- 	unsigned long end, struct mm_walk *walk)
- {
--	pte_t *orig_pte;
--	struct vm_area_struct *vma = walk->private;
--	unsigned long index;
--
--	if (pmd_none_or_trans_huge_or_clear_bad(pmd))
--		return 0;
--
--	for (index = start; index != end; index += PAGE_SIZE) {
--		pte_t pte;
--		swp_entry_t entry;
--		struct page *page;
--		spinlock_t *ptl;
--
--		orig_pte = pte_offset_map_lock(vma->vm_mm, pmd, start, &ptl);
--		pte = *(orig_pte + ((index - start) / PAGE_SIZE));
--		pte_unmap_unlock(orig_pte, ptl);
--
--		if (pte_present(pte) || pte_none(pte) || pte_file(pte))
--			continue;
--		entry = pte_to_swp_entry(pte);
--		if (unlikely(non_swap_entry(entry)))
--			continue;
--
--		page = read_swap_cache_async(entry, GFP_HIGHUSER_MOVABLE,
--								vma, index);
--		if (page)
--			page_cache_release(page);
--	}
-+	pte_t ptent;
-+	pte_t *orig_pte = pte - ((start & (PMD_SIZE - 1)) >> PAGE_SHIFT);
-+	swp_entry_t entry;
-+	struct page *page;
- 
-+	ptent = *pte;
-+	pte_unmap_unlock(orig_pte, walk->ptl);
-+	if (pte_present(ptent) || pte_none(ptent) || pte_file(ptent))
-+		goto lock;
-+	entry = pte_to_swp_entry(ptent);
-+	if (unlikely(non_swap_entry(entry)))
-+		goto lock;
-+	page = read_swap_cache_async(entry, GFP_HIGHUSER_MOVABLE,
-+				     walk->vma, start);
-+	if (page)
-+		page_cache_release(page);
-+lock:
-+	pte_offset_map(walk->pmd, start & PMD_MASK);
-+	spin_lock(walk->ptl);
- 	return 0;
- }
- 
-@@ -175,8 +168,7 @@ static void force_swapin_readahead(struct vm_area_struct *vma,
- {
- 	struct mm_walk walk = {
- 		.mm = vma->vm_mm,
--		.pmd_entry = swapin_walk_pmd_entry,
--		.private = vma,
-+		.pte_entry = swapin_walk_pte_entry,
- 	};
- 
- 	walk_page_range(start, end, &walk);
-diff --git mmotm-2014-05-21-16-57.orig/mm/pagewalk.c mmotm-2014-05-21-16-57/mm/pagewalk.c
-index e734f63276c2..24311d6f5c20 100644
---- mmotm-2014-05-21-16-57.orig/mm/pagewalk.c
-+++ mmotm-2014-05-21-16-57/mm/pagewalk.c
-@@ -27,10 +27,10 @@ static int walk_pte_range(pmd_t *pmd, unsigned long addr,
- 	struct mm_struct *mm = walk->mm;
- 	pte_t *pte;
- 	pte_t *orig_pte;
--	spinlock_t *ptl;
- 	int err = 0;
- 
--	orig_pte = pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
-+	walk->pmd = pmd;
-+	orig_pte = pte = pte_offset_map_lock(mm, pmd, addr, &walk->ptl);
- 	do {
- 		if (pte_none(*pte)) {
- 			if (walk->pte_hole)
-@@ -48,7 +48,7 @@ static int walk_pte_range(pmd_t *pmd, unsigned long addr,
- 		if (err)
- 		       break;
- 	} while (pte++, addr += PAGE_SIZE, addr < end);
--	pte_unmap_unlock(orig_pte, ptl);
-+	pte_unmap_unlock(orig_pte, walk->ptl);
- 	cond_resched();
- 	return addr == end ? 0 : err;
- }
-@@ -172,7 +172,6 @@ static int walk_hugetlb_range(unsigned long addr, unsigned long end,
- 	unsigned long hmask = huge_page_mask(h);
- 	pte_t *pte;
- 	int err = 0;
--	spinlock_t *ptl;
- 
- 	do {
- 		next = hugetlb_entry_end(h, addr, end);
-@@ -186,14 +185,14 @@ static int walk_hugetlb_range(unsigned long addr, unsigned long end,
- 				break;
- 			continue;
- 		}
--		ptl = huge_pte_lock(h, mm, pte);
-+		walk->ptl = huge_pte_lock(h, mm, pte);
- 		/*
- 		 * Callers should have their own way to handle swap entries
- 		 * in walk->hugetlb_entry().
- 		 */
- 		if (walk->hugetlb_entry)
- 			err = walk->hugetlb_entry(pte, addr, next, walk);
--		spin_unlock(ptl);
-+		spin_unlock(walk->ptl);
- 		if (err)
- 			break;
- 	} while (addr = next, addr != end);
--- 
-1.9.3
+mm-hugetlbfs-fix-rmapping-for-anonymous-hugepages-with-page_pgoff.patch
+mm-hugetlbfs-fix-rmapping-for-anonymous-hugepages-with-page_pgoff-v2.patch
+mm-hugetlbfs-fix-rmapping-for-anonymous-hugepages-with-page_pgoff-v3.patch
+mm-hugetlbfs-fix-rmapping-for-anonymous-hugepages-with-page_pgoff-v3-fix.patch
+pagewalk-update-page-table-walker-core.patch
+pagewalk-update-page-table-walker-core-fix-end-address-calculation-in-walk_page_range.patch
+pagewalk-update-page-table-walker-core-fix-end-address-calculation-in-walk_page_range-fix.patch
+pagewalk-update-page-table-walker-core-fix.patch
+pagewalk-add-walk_page_vma.patch
+smaps-redefine-callback-functions-for-page-table-walker.patch
+clear_refs-redefine-callback-functions-for-page-table-walker.patch
+pagemap-redefine-callback-functions-for-page-table-walker.patch
+pagemap-redefine-callback-functions-for-page-table-walker-fix.patch
+numa_maps-redefine-callback-functions-for-page-table-walker.patch
+memcg-redefine-callback-functions-for-page-table-walker.patch
+arch-powerpc-mm-subpage-protc-use-walk_page_vma-instead-of-walk_page_range.patch
+pagewalk-remove-argument-hmask-from-hugetlb_entry.patch
+pagewalk-remove-argument-hmask-from-hugetlb_entry-fix.patch
+pagewalk-remove-argument-hmask-from-hugetlb_entry-fix-fix.patch
+mempolicy-apply-page-table-walker-on-queue_pages_range.patch
+mm-pagewalkc-move-pte-null-check.patch
+mm-prom-pid-clear_refs-avoid-split_huge_page.patch
+#
+mm-pagewalk-remove-pgd_entry-and-pud_entry.patch
+mm-pagewalk-replace-mm_walk-skip-with-more-general-mm_walk-control.patch
+madvise-cleanup-swapin_walk_pmd_entry.patch
+memcg-separate-mem_cgroup_move_charge_pte_range.patch
+memcg-separate-mem_cgroup_move_charge_pte_range-checkpatch-fixes.patch
+arch-powerpc-mm-subpage-protc-cleanup-subpage_walk_pmd_entry.patch
+mm-pagewalk-move-pmd_trans_huge_lock-from-callbacks-to-common-code.patch
+mm-pagewalk-move-pmd_trans_huge_lock-from-callbacks-to-common-code-checkpatch-fixes.patch
+mincore-apply-page-table-walker-on-do_mincore.patch
+
+
+mm-hugetlbfs-fix-rmapping-for-anonymous-hugepages-with-page_pgoff.patch
+apepars to have disappeared, I didn't check the rest.
 
