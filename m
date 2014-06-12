@@ -1,219 +1,294 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933276AbaFLOBN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 10:01:13 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:39830 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755884AbaFLOBM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 10:01:12 -0400
-Date: Thu, 12 Jun 2014 16:01:05 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/irq changes for v3.16
-Message-ID: <20140612140105.GA9060@gmail.com>
+	id S933417AbaFLOCN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 10:02:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54470 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933319AbaFLOCJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 10:02:09 -0400
+Message-ID: <5399B2DC.2040004@suse.cz>
+Date: Thu, 12 Jun 2014 16:02:04 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Minchan Kim <minchan@kernel.org>
+CC: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>, Mel Gorman <mgorman@suse.de>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 02/10] mm, compaction: report compaction as contended
+ only due to lock contention
+References: <1402305982-6928-1-git-send-email-vbabka@suse.cz> <1402305982-6928-2-git-send-email-vbabka@suse.cz> <20140611011019.GC15630@bbox> <53984A06.6020607@suse.cz> <20140611234944.GA12415@bbox>
+In-Reply-To: <20140611234944.GA12415@bbox>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On 06/12/2014 01:49 AM, Minchan Kim wrote:
+> On Wed, Jun 11, 2014 at 02:22:30PM +0200, Vlastimil Babka wrote:
+>> On 06/11/2014 03:10 AM, Minchan Kim wrote:
+>>> On Mon, Jun 09, 2014 at 11:26:14AM +0200, Vlastimil Babka wrote:
+>>>> Async compaction aborts when it detects zone lock contention or need_resched()
+>>>> is true. David Rientjes has reported that in practice, most direct async
+>>>> compactions for THP allocation abort due to need_resched(). This means that a
+>>>> second direct compaction is never attempted, which might be OK for a page
+>>>> fault, but hugepaged is intended to attempt a sync compaction in such case and
+>>>> in these cases it won't.
+>>>>
+>>>> This patch replaces "bool contended" in compact_control with an enum that
+>>>> distinguieshes between aborting due to need_resched() and aborting due to lock
+>>>> contention. This allows propagating the abort through all compaction functions
+>>>> as before, but declaring the direct compaction as contended only when lock
+>>>> contantion has been detected.
+>>>>
+>>>> As a result, hugepaged will proceed with second sync compaction as intended,
+>>>> when the preceding async compaction aborted due to need_resched().
+>>>
+>>> You said "second direct compaction is never attempted, which might be OK
+>>> for a page fault" and said "hugepagd is intented to attempt a sync compaction"
+>>> so I feel you want to handle khugepaged so special unlike other direct compact
+>>> (ex, page fault).
+>>
+>> Well khugepaged is my primary concern, but I imagine there are other
+>> direct compaction users besides THP page fault and khugepaged.
+>>
+>>> By this patch, direct compaction take care only lock contention, not rescheduling
+>>> so that pop questions.
+>>>
+>>> Is it okay not to consider need_resched in direct compaction really?
+>>
+>> It still considers need_resched() to back of from async compaction.
+>> It's only about signaling contended_compaction back to
+>> __alloc_pages_slowpath(). There's this code executed after the
+>> first, async compaction fails:
+>>
+>> /*
+>>   * It can become very expensive to allocate transparent hugepages at
+>>   * fault, so use asynchronous memory compaction for THP unless it is
+>>   * khugepaged trying to collapse.
+>>   */
+>> if (!(gfp_mask & __GFP_NO_KSWAPD) || (current->flags & PF_KTHREAD))
+>>          migration_mode = MIGRATE_SYNC_LIGHT;
+>>
+>> /*
+>>   * If compaction is deferred for high-order allocations, it is because
+>>   * sync compaction recently failed. In this is the case and the caller
+>>   * requested a movable allocation that does not heavily disrupt the
+>>   * system then fail the allocation instead of entering direct reclaim.
+>>   */
+>> if ((deferred_compaction || contended_compaction) &&
+>>                                          (gfp_mask & __GFP_NO_KSWAPD))
+>>          goto nopage;
+>>
+>> Both THP page fault and khugepaged use __GFP_NO_KSWAPD. The first
+>> if() decides whether the second attempt will be sync (for
+>> khugepaged) or async (page fault). The second if() decides that if
+>> compaction was contended, then there won't be any second attempt
+>> (and reclaim) at all. Counting need_resched() as contended in this
+>> case is bad for khugepaged. Even for page fault it means no direct
+>
+> I agree khugepaged shouldn't count on need_resched, even lock contention
+> because it was a result from admin's decision.
+> If it hurts system performance, he should adjust knobs for khugepaged.
+>
+>> reclaim and a second async compaction. David says need_resched()
+>> occurs so often then it is a poor heuristic to decide this.
+>
+> But page fault is a bit different. Inherently, high-order allocation
+> (ie, above PAGE_ALLOC_COSTLY_ORDER) is fragile so all of the caller
+> shoud keep in mind that and prepare second plan(ex, 4K allocation)
+> so direct reclaim/compaction should take care of latency rather than
+> success ratio.
 
-Please pull the latest x86-irq-for-linus git tree from:
+Yes it's a rather delicate balance. But the plan is now to try balance 
+this differently than using need_resched.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-irq-for-linus
+> If need_resched in second attempt(ie, synchronous compaction) is almost
+> true, it means the process consumed his timeslice so it shouldn't be
+> greedy and gives a CPU resource to others.
 
-   # HEAD: fb24da805729ee4a83efa34015948f7d64da4b28 x86/irq: Fix fixup_irqs() error handling
+Synchronous compaction uses cond_resched() so that's fine I think?
 
-Two changes: a cpu-hotplug/irq race fix, plus a HyperV related fix.
+> I don't mean we should abort but the process could sleep and retry.
+> The point is that we should give latency pain to the process request
+> high-order alocation, not another random process.
 
- Thanks,
+So basically you are saying that there should be cond_resched() also for 
+async compaction when need_resched() is true? Now need_resched() is a 
+trigger to back off rather quickly all the way back to 
+__alloc_pages_direct_compact() which does contain a cond_resched(). So 
+there should be a yield before retry. Or are you worried that the back 
+off is not quick enough and it shoudl cond_resched() immediately?
 
-	Ingo
+> IMHO, if we want to increase high-order alloc ratio in page fault,
+> kswapd should be more aggressive than now via feedback loop from
+> fail rate from direct compaction.
 
------------------->
-K. Y. Srinivasan (1):
-      x86, irq, pic: Probe for legacy PIC and set legacy_pic appropriately
+Recently I think we have been rather decreasing high-order alloc ratio 
+in page fault :) But (at least for the THP) page fault allocation 
+attempts contain __GFP_NO_KSWAPD, so there's no feedback loop. I guess 
+changing that would be rather disruptive.
 
-Prarit Bhargava (1):
-      x86/irq: Fix fixup_irqs() error handling
+>>
+>>> We have taken care of it in direct reclaim path so why direct compaction is
+>>> so special?
+>>
+>> I admit I'm not that familiar with reclaim but I didn't quickly find
+>> any need_resched() there? There's plenty of cond_resched() but that
+>> doesn't mean it will abort? Could you explain for me?
+>
+> I meant cond_resched.
+>
+>>
+>>> Why does khugepaged give up easily if lock contention/need_resched happens?
+>>> khugepaged is important for success ratio as I read your description so IMO,
+>>> khugepaged should do synchronously without considering early bail out by
+>>> lock/rescheduling.
+>>
+>> Well a stupid answer is that's how __alloc_pages_slowpath() works :)
+>> I don't think it's bad to try using first a more lightweight
+>> approach before trying the heavyweight one. As long as the
+>> heavyweight one is not skipped for khugepaged.
+>
+> I'm not saying current two-stage trying is bad. My stand is that we should
+> take care of need_resched and shouldn't become a greedy but khugepaged would
+> be okay.
+>
+>>
+>>> If it causes problems, user should increase scan_sleep_millisecs/alloc_sleep_millisecs,
+>>> which is exactly the knob for that cases.
+>>>
+>>> So, my point is how about making khugepaged doing always dumb synchronous
+>>> compaction thorough PG_KHUGEPAGED or GFP_SYNC_TRANSHUGE?
+>>>
+>>>>
+>>>> Reported-by: David Rientjes <rientjes@google.com>
+>>>> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+>>>> Cc: Minchan Kim <minchan@kernel.org>
+>>>> Cc: Mel Gorman <mgorman@suse.de>
+>>>> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>>>> Cc: Michal Nazarewicz <mina86@mina86.com>
+>>>> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+>>>> Cc: Christoph Lameter <cl@linux.com>
+>>>> Cc: Rik van Riel <riel@redhat.com>
+>>>> ---
+>>>>   mm/compaction.c | 20 ++++++++++++++------
+>>>>   mm/internal.h   | 15 +++++++++++----
+>>>>   2 files changed, 25 insertions(+), 10 deletions(-)
+>>>>
+>>>> diff --git a/mm/compaction.c b/mm/compaction.c
+>>>> index b73b182..d37f4a8 100644
+>>>> --- a/mm/compaction.c
+>>>> +++ b/mm/compaction.c
+>>>> @@ -185,9 +185,14 @@ static void update_pageblock_skip(struct compact_control *cc,
+>>>>   }
+>>>>   #endif /* CONFIG_COMPACTION */
+>>>>
+>>>> -static inline bool should_release_lock(spinlock_t *lock)
+>>>> +enum compact_contended should_release_lock(spinlock_t *lock)
+>>>>   {
+>>>> -	return need_resched() || spin_is_contended(lock);
+>>>> +	if (need_resched())
+>>>> +		return COMPACT_CONTENDED_SCHED;
+>>>> +	else if (spin_is_contended(lock))
+>>>> +		return COMPACT_CONTENDED_LOCK;
+>>>> +	else
+>>>> +		return COMPACT_CONTENDED_NONE;
+>>>>   }
+>>>>
+>>>>   /*
+>>>> @@ -202,7 +207,9 @@ static inline bool should_release_lock(spinlock_t *lock)
+>>>>   static bool compact_checklock_irqsave(spinlock_t *lock, unsigned long *flags,
+>>>>   				      bool locked, struct compact_control *cc)
+>>>>   {
+>>>> -	if (should_release_lock(lock)) {
+>>>> +	enum compact_contended contended = should_release_lock(lock);
+>>>> +
+>>>> +	if (contended) {
+>>>>   		if (locked) {
+>>>>   			spin_unlock_irqrestore(lock, *flags);
+>>>>   			locked = false;
+>>>> @@ -210,7 +217,7 @@ static bool compact_checklock_irqsave(spinlock_t *lock, unsigned long *flags,
+>>>>
+>>>>   		/* async aborts if taking too long or contended */
+>>>>   		if (cc->mode == MIGRATE_ASYNC) {
+>>>> -			cc->contended = true;
+>>>> +			cc->contended = contended;
+>>>>   			return false;
+>>>>   		}
+>>>>
+>>>> @@ -236,7 +243,7 @@ static inline bool compact_should_abort(struct compact_control *cc)
+>>>>   	/* async compaction aborts if contended */
+>>>>   	if (need_resched()) {
+>>>>   		if (cc->mode == MIGRATE_ASYNC) {
+>>>> -			cc->contended = true;
+>>>> +			cc->contended = COMPACT_CONTENDED_SCHED;
+>>>>   			return true;
+>>>>   		}
+>>>>
+>>>> @@ -1095,7 +1102,8 @@ static unsigned long compact_zone_order(struct zone *zone, int order,
+>>>>   	VM_BUG_ON(!list_empty(&cc.freepages));
+>>>>   	VM_BUG_ON(!list_empty(&cc.migratepages));
+>>>>
+>>>> -	*contended = cc.contended;
+>>>> +	/* We only signal lock contention back to the allocator */
+>>>> +	*contended = cc.contended == COMPACT_CONTENDED_LOCK;
+>>>>   	return ret;
+>>>>   }
+>>>>
+>>>> diff --git a/mm/internal.h b/mm/internal.h
+>>>> index 7f22a11f..4659e8e 100644
+>>>> --- a/mm/internal.h
+>>>> +++ b/mm/internal.h
+>>>> @@ -117,6 +117,13 @@ extern int user_min_free_kbytes;
+>>>>
+>>>>   #if defined CONFIG_COMPACTION || defined CONFIG_CMA
+>>>>
+>>>> +/* Used to signal whether compaction detected need_sched() or lock contention */
+>>>> +enum compact_contended {
+>>>> +	COMPACT_CONTENDED_NONE = 0, /* no contention detected */
+>>>> +	COMPACT_CONTENDED_SCHED,    /* need_sched() was true */
+>>>> +	COMPACT_CONTENDED_LOCK,     /* zone lock or lru_lock was contended */
+>>>> +};
+>>>> +
+>>>>   /*
+>>>>    * in mm/compaction.c
+>>>>    */
+>>>> @@ -144,10 +151,10 @@ struct compact_control {
+>>>>   	int order;			/* order a direct compactor needs */
+>>>>   	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
+>>>>   	struct zone *zone;
+>>>> -	bool contended;			/* True if a lock was contended, or
+>>>> -					 * need_resched() true during async
+>>>> -					 * compaction
+>>>> -					 */
+>>>> +	enum compact_contended contended; /* Signal need_sched() or lock
+>>>> +					   * contention detected during
+>>>> +					   * compaction
+>>>> +					   */
+>>>>   };
+>>>>
+>>>>   unsigned long
+>>>> --
+>>>> 1.8.4.5
+>>>>
+>>>> --
+>>>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>>>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>>>> see: http://www.linux-mm.org/ .
+>>>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>>>
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
 
-
- arch/x86/kernel/apic/io_apic.c | 28 ++++++++++++++++++----------
- arch/x86/kernel/cpu/mshyperv.c |  9 ---------
- arch/x86/kernel/i8259.c        | 20 +++++++++++++++++++-
- arch/x86/kernel/irq.c          | 13 +++++++++----
- 4 files changed, 46 insertions(+), 24 deletions(-)
-
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 6ad4658..b4b21db 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -2312,7 +2312,7 @@ int __ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 	int err;
- 
- 	if (!config_enabled(CONFIG_SMP))
--		return -1;
-+		return -EPERM;
- 
- 	if (!cpumask_intersects(mask, cpu_online_mask))
- 		return -EINVAL;
-@@ -2343,7 +2343,7 @@ int native_ioapic_set_affinity(struct irq_data *data,
- 	int ret;
- 
- 	if (!config_enabled(CONFIG_SMP))
--		return -1;
-+		return -EPERM;
- 
- 	raw_spin_lock_irqsave(&ioapic_lock, flags);
- 	ret = __ioapic_set_affinity(data, mask, &dest);
-@@ -3075,9 +3075,11 @@ msi_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
- 	struct irq_cfg *cfg = data->chip_data;
- 	struct msi_msg msg;
- 	unsigned int dest;
-+	int ret;
- 
--	if (__ioapic_set_affinity(data, mask, &dest))
--		return -1;
-+	ret = __ioapic_set_affinity(data, mask, &dest);
-+	if (ret)
-+		return ret;
- 
- 	__get_cached_msi_msg(data->msi_desc, &msg);
- 
-@@ -3177,9 +3179,11 @@ dmar_msi_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 	struct irq_cfg *cfg = data->chip_data;
- 	unsigned int dest, irq = data->irq;
- 	struct msi_msg msg;
-+	int ret;
- 
--	if (__ioapic_set_affinity(data, mask, &dest))
--		return -1;
-+	ret = __ioapic_set_affinity(data, mask, &dest);
-+	if (ret)
-+		return ret;
- 
- 	dmar_msi_read(irq, &msg);
- 
-@@ -3226,9 +3230,11 @@ static int hpet_msi_set_affinity(struct irq_data *data,
- 	struct irq_cfg *cfg = data->chip_data;
- 	struct msi_msg msg;
- 	unsigned int dest;
-+	int ret;
- 
--	if (__ioapic_set_affinity(data, mask, &dest))
--		return -1;
-+	ret = __ioapic_set_affinity(data, mask, &dest);
-+	if (ret)
-+		return ret;
- 
- 	hpet_msi_read(data->handler_data, &msg);
- 
-@@ -3295,9 +3301,11 @@ ht_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
- {
- 	struct irq_cfg *cfg = data->chip_data;
- 	unsigned int dest;
-+	int ret;
- 
--	if (__ioapic_set_affinity(data, mask, &dest))
--		return -1;
-+	ret = __ioapic_set_affinity(data, mask, &dest);
-+	if (ret)
-+		return ret;
- 
- 	target_ht_irq(data->irq, dest, cfg->vector);
- 	return IRQ_SET_MASK_OK_NOCOPY;
-diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
-index 76f98fe..a450373 100644
---- a/arch/x86/kernel/cpu/mshyperv.c
-+++ b/arch/x86/kernel/cpu/mshyperv.c
-@@ -132,15 +132,6 @@ static void __init ms_hyperv_init_platform(void)
- 		lapic_timer_frequency = hv_lapic_frequency;
- 		printk(KERN_INFO "HyperV: LAPIC Timer Frequency: %#x\n",
- 				lapic_timer_frequency);
--
--		/*
--		 * On Hyper-V, when we are booting off an EFI firmware stack,
--		 * we do not have many legacy devices including PIC, PIT etc.
--		 */
--		if (efi_enabled(EFI_BOOT)) {
--			printk(KERN_INFO "HyperV: Using null_legacy_pic\n");
--			legacy_pic = &null_legacy_pic;
--		}
- 	}
- #endif
- 
-diff --git a/arch/x86/kernel/i8259.c b/arch/x86/kernel/i8259.c
-index 2e977b5..8af8171 100644
---- a/arch/x86/kernel/i8259.c
-+++ b/arch/x86/kernel/i8259.c
-@@ -299,13 +299,31 @@ static void unmask_8259A(void)
- static void init_8259A(int auto_eoi)
- {
- 	unsigned long flags;
-+	unsigned char probe_val = ~(1 << PIC_CASCADE_IR);
-+	unsigned char new_val;
- 
- 	i8259A_auto_eoi = auto_eoi;
- 
- 	raw_spin_lock_irqsave(&i8259A_lock, flags);
- 
--	outb(0xff, PIC_MASTER_IMR);	/* mask all of 8259A-1 */
-+	/*
-+	 * Check to see if we have a PIC.
-+	 * Mask all except the cascade and read
-+	 * back the value we just wrote. If we don't
-+	 * have a PIC, we will read 0xff as opposed to the
-+	 * value we wrote.
-+	 */
- 	outb(0xff, PIC_SLAVE_IMR);	/* mask all of 8259A-2 */
-+	outb(probe_val, PIC_MASTER_IMR);
-+	new_val = inb(PIC_MASTER_IMR);
-+	if (new_val != probe_val) {
-+		printk(KERN_INFO "Using NULL legacy PIC\n");
-+		legacy_pic = &null_legacy_pic;
-+		raw_spin_unlock_irqrestore(&i8259A_lock, flags);
-+		return;
-+	}
-+
-+	outb(0xff, PIC_MASTER_IMR);	/* mask all of 8259A-1 */
- 
- 	/*
- 	 * outb_pic - this has to work on a wide range of PC hardware.
-diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
-index 283a76a..49bbb57 100644
---- a/arch/x86/kernel/irq.c
-+++ b/arch/x86/kernel/irq.c
-@@ -357,6 +357,7 @@ void fixup_irqs(void)
- 	struct irq_desc *desc;
- 	struct irq_data *data;
- 	struct irq_chip *chip;
-+	int ret;
- 
- 	for_each_irq_desc(irq, desc) {
- 		int break_affinity = 0;
-@@ -395,10 +396,14 @@ void fixup_irqs(void)
- 		if (!irqd_can_move_in_process_context(data) && chip->irq_mask)
- 			chip->irq_mask(data);
- 
--		if (chip->irq_set_affinity)
--			chip->irq_set_affinity(data, affinity, true);
--		else if (!(warned++))
--			set_affinity = 0;
-+		if (chip->irq_set_affinity) {
-+			ret = chip->irq_set_affinity(data, affinity, true);
-+			if (ret == -ENOSPC)
-+				pr_crit("IRQ %d set affinity failed because there are no available vectors.  The device assigned to this IRQ is unstable.\n", irq);
-+		} else {
-+			if (!(warned++))
-+				set_affinity = 0;
-+		}
- 
- 		/*
- 		 * We unmask if the irq was not marked masked by the
