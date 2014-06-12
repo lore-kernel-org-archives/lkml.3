@@ -1,103 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933882AbaFLNv3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 09:51:29 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59424 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755968AbaFLNq6 (ORCPT
+	id S933581AbaFLNwt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 09:52:49 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:34800 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933136AbaFLNwq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 09:46:58 -0400
-From: Christoph Hellwig <hch@lst.de>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Bart Van Assche <bvanassche@fusionio.com>,
-        Robert Elliot <Elliott@hp.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 02/14] scsi: split __scsi_queue_insert
-Date: Thu, 12 Jun 2014 15:48:54 +0200
-Message-Id: <1402580946-11470-3-git-send-email-hch@lst.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1402580946-11470-1-git-send-email-hch@lst.de>
-References: <1402580946-11470-1-git-send-email-hch@lst.de>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 12 Jun 2014 09:52:46 -0400
+Message-ID: <5399B021.1060802@ti.com>
+Date: Thu, 12 Jun 2014 19:20:25 +0530
+From: Sricharan R <r.sricharan@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Jason Cooper <jason@lakedaemon.net>
+CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <tony@atomide.com>, <santosh.shilimkar@ti.com>, <nm@ti.com>,
+        <rnayak@ti.com>, <linux@arm.linux.org.uk>, <tglx@linutronix.de>
+Subject: Re: [PATCH V2 15/19] irqchip: crossbar: Add kerneldoc for crossbar_domain_unmap
+ callback
+References: <1402574007-13987-1-git-send-email-r.sricharan@ti.com> <1402574007-13987-16-git-send-email-r.sricharan@ti.com> <20140612134909.GA8664@titan.lakedaemon.net>
+In-Reply-To: <20140612134909.GA8664@titan.lakedaemon.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Factor out a helper to set the _blocked values, which we'll reuse for the
-blk-mq code path.
+Hi Jason,
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
----
- drivers/scsi/scsi_lib.c |   44 ++++++++++++++++++++++++++------------------
- 1 file changed, 26 insertions(+), 18 deletions(-)
+On Thursday 12 June 2014 07:19 PM, Jason Cooper wrote:
+> On Thu, Jun 12, 2014 at 05:23:23PM +0530, Sricharan R wrote:
+>> The crossbar_domain_map/unmap callbacks need not be called same number
+>> of times for a particular irq. But still use counting is not needed
+>> here, because unmap(irq) gets called when irq_desc(irq) is disposed.
+>> After this the irq is anyways unusable and have to mapped again.
+> 
+> There's no need to duplicate the code comment in the commit log ;-)
+Ok, will change this.
+> 
+>>
+>> Adding the above kerneldoc for unmap callback clarity.
+>>
+>> Signed-off-by: Sricharan R <r.sricharan@ti.com>
+>> ---
+>>  drivers/irqchip/irq-crossbar.c |   10 ++++++++++
+>>  1 file changed, 10 insertions(+)
+>>
+>> diff --git a/drivers/irqchip/irq-crossbar.c b/drivers/irqchip/irq-crossbar.c
+>> index 5f3e75a..2a73a66 100644
+>> --- a/drivers/irqchip/irq-crossbar.c
+>> +++ b/drivers/irqchip/irq-crossbar.c
+>> @@ -101,6 +101,16 @@ static int crossbar_domain_map(struct irq_domain *d, unsigned int irq,
+>>  	return 0;
+>>  }
+>>  
+>> +/**
+>> + * crossbar_domain_unmap - unmap a crossbar<->irq connection
+>> + * @d: domain of irq to unmap
+>> + * @irq: virq number
+>> + *
+>> + * The map/unmap callbacks need not be called same number of times for
+> 
+> s/same/the same/
+ok.
+> 
+>> + * a particular irq. But still use counting is not needed here, because
+>> + * unmap(irq) gets called when irq_desc(irq) is disposed. After this the
+>> + * irq is anyways unusuable and have to be mapped again.
+> 
+> Please re-word this.  If I were new to the driver (I am ;-) ) I would
+> have no idea what this means (and I don't :( )
+> 
+hmm, will reword it better then..
 
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index f7e3163..7662168 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -75,28 +75,12 @@ struct kmem_cache *scsi_sdb_cache;
-  */
- #define SCSI_QUEUE_DELAY	3
- 
--/**
-- * __scsi_queue_insert - private queue insertion
-- * @cmd: The SCSI command being requeued
-- * @reason:  The reason for the requeue
-- * @unbusy: Whether the queue should be unbusied
-- *
-- * This is a private queue insertion.  The public interface
-- * scsi_queue_insert() always assumes the queue should be unbusied
-- * because it's always called before the completion.  This function is
-- * for a requeue after completion, which should only occur in this
-- * file.
-- */
--static void __scsi_queue_insert(struct scsi_cmnd *cmd, int reason, int unbusy)
-+static void
-+scsi_set_blocked(struct scsi_cmnd *cmd, int reason)
- {
- 	struct Scsi_Host *host = cmd->device->host;
- 	struct scsi_device *device = cmd->device;
- 	struct scsi_target *starget = scsi_target(device);
--	struct request_queue *q = device->request_queue;
--	unsigned long flags;
--
--	SCSI_LOG_MLQUEUE(1,
--		 printk("Inserting command %p into mlqueue\n", cmd));
- 
- 	/*
- 	 * Set the appropriate busy bit for the device/host.
-@@ -123,6 +107,30 @@ static void __scsi_queue_insert(struct scsi_cmnd *cmd, int reason, int unbusy)
- 		starget->target_blocked = starget->max_target_blocked;
- 		break;
- 	}
-+}
-+
-+/**
-+ * __scsi_queue_insert - private queue insertion
-+ * @cmd: The SCSI command being requeued
-+ * @reason:  The reason for the requeue
-+ * @unbusy: Whether the queue should be unbusied
-+ *
-+ * This is a private queue insertion.  The public interface
-+ * scsi_queue_insert() always assumes the queue should be unbusied
-+ * because it's always called before the completion.  This function is
-+ * for a requeue after completion, which should only occur in this
-+ * file.
-+ */
-+static void __scsi_queue_insert(struct scsi_cmnd *cmd, int reason, int unbusy)
-+{
-+	struct scsi_device *device = cmd->device;
-+	struct request_queue *q = device->request_queue;
-+	unsigned long flags;
-+
-+	SCSI_LOG_MLQUEUE(1,
-+		 printk("Inserting command %p into mlqueue\n", cmd));
-+
-+	scsi_set_blocked(cmd, reason);
- 
- 	/*
- 	 * Decrement the counters, since these commands are no longer
--- 
-1.7.10.4
-
+Regards,
+ Sricharan
