@@ -1,84 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933595AbaFLPed (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 11:34:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60519 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756180AbaFLPbZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 11:31:25 -0400
-From: Jiri Olsa <jolsa@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jean Pihet <jean.pihet@linaro.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 06/14] perf tools: Add global count of opened dso objects
-Date: Thu, 12 Jun 2014 17:30:37 +0200
-Message-Id: <1402587045-5461-7-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1402587045-5461-1-git-send-email-jolsa@kernel.org>
-References: <1402587045-5461-1-git-send-email-jolsa@kernel.org>
+	id S1756400AbaFLPeh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 11:34:37 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:45511 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756057AbaFLPec (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 11:34:32 -0400
+Date: Thu, 12 Jun 2014 08:34:26 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Christoph Lameter <cl@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] percpu: add data dependency barrier in percpu
+ accessors and operations
+Message-ID: <20140612153426.GV4581@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140612135630.GA23606@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140612135630.GA23606@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14061215-8236-0000-0000-0000030E73C9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding global count of opened dso objects so we could
-properly limit the number of opened dso data file
-descriptors.
+On Thu, Jun 12, 2014 at 09:56:30AM -0400, Tejun Heo wrote:
+> >From 2ff90ab638d50d6191ba3a3564b53fccb78bd4cd Mon Sep 17 00:00:00 2001
+> From: Tejun Heo <tj@kernel.org>
+> Date: Wed, 11 Jun 2014 20:47:02 -0400
+> 
+> percpu areas are zeroed on allocation and, by its nature, accessed
+> from multiple cpus.  Consider the following scenario.
+> 
+>  p = NULL;
+> 
+> 	CPU-1				CPU-2
+>  p = alloc_percpu()		if (p)
+> 					WARN_ON(this_cpu_read(*p));
+> 
+> As all percpu areas are zeroed on allocation, CPU-2 should never
+> trigger the WARN; however, there's no barrier between zeroing of the
+> percpu regions and the assignment of @p or between testing of @p and
+> dereferencing it and CPU-2 may see garbage value from before the
+> clearing and trigger the warning.
+> 
+> Note that this may happen even on archs which don't require data
+> dependency barriers.  While CPU-2 woudln't reorder percpu area access
+> above the testing of @p, nothing prevents CPU-1 from scheduling
+> zeroing after the assignment of @p.
+> 
+> This patch fixes the issue by adding a smp_wmb() before a newly
+> allocated percpu pointer is returned and a smp_read_barrier_depends()
+> in __verify_pcpu_ptr() which is guaranteed to be invoked at least once
+> before every percpu access.  It currently may be invoked multiple
+> times per operation which isn't optimal.  Future patches will update
+> the definitions so that the macro is invoked only once per access.
+> 
+> It can be argued that smp_read_barrier_depends() is the responsibility
+> of the caller; however, discerning local and remote accesses gets very
+> confusing with percpu areas (initialized remotely but local to this
+> cpu and vice-versa) and data dependency barrier is free on all archs
+> except for alpha, so I think it's better to include it as part of
+> percpu accessors and operations.
 
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1401892622-30848-6-git-send-email-jolsa@kernel.org
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
----
- tools/perf/util/dso.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+OK, I will bite...  Did you find a bug of this form?  (I do see a
+couple of possible bugs on a quick look, so maybe...)
 
-diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index 5d7c7bc..76e5c13 100644
---- a/tools/perf/util/dso.c
-+++ b/tools/perf/util/dso.c
-@@ -1,3 +1,4 @@
-+#include <asm/bug.h>
- #include "symbol.h"
- #include "dso.h"
- #include "machine.h"
-@@ -137,18 +138,23 @@ int dso__read_binary_type_filename(const struct dso *dso,
- }
- 
- /*
-- * Global list of open DSOs.
-+ * Global list of open DSOs and the counter.
-  */
- static LIST_HEAD(dso__data_open);
-+static long dso__data_open_cnt;
- 
- static void dso__list_add(struct dso *dso)
- {
- 	list_add_tail(&dso->data.open_entry, &dso__data_open);
-+	dso__data_open_cnt++;
- }
- 
- static void dso__list_del(struct dso *dso)
- {
- 	list_del(&dso->data.open_entry);
-+	WARN_ONCE(dso__data_open_cnt <= 0,
-+		  "DSO data fd counter out of bounds.");
-+	dso__data_open_cnt--;
- }
- 
- static int __open_dso(struct dso *dso, struct machine *machine)
--- 
-1.8.3.1
+I would argue that the code above should instead say something like:
+
+	smp_store_release(p, alloc_percpu());
+
+I was worried about use of per_cpu() by the reading CPU, but of course
+in that case, things are initialized at compiler time.
+
+> I wonder whether we also need a smp_wmb() for other __GFP_ZERO
+> allocations.  There isn't one and requiring the users to perform
+> smp_wmb() to ensure the propagation of zeroing seems too subtle.
+
+I would say "no" even if we do decide that alloc_percpu() needs
+an smp_wmb().  The reason is that you really do have to store the
+pointer at some point, and you should use smp_store_release() for
+this task, at least if you are storing to something accessible to
+other CPUs.
+
+						Thanx, Paul
+
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Christoph Lameter <cl@linux-foundation.org>
+> Cc: David Howells <dhowells@redhat.com>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> ---
+>  include/linux/percpu-defs.h | 15 ++++++++++++---
+>  mm/percpu.c                 |  9 +++++++++
+>  2 files changed, 21 insertions(+), 3 deletions(-)
+> 
+> diff --git a/include/linux/percpu-defs.h b/include/linux/percpu-defs.h
+> index a5fc7d0..b91bb37 100644
+> --- a/include/linux/percpu-defs.h
+> +++ b/include/linux/percpu-defs.h
+> @@ -1,6 +1,8 @@
+>  #ifndef _LINUX_PERCPU_DEFS_H
+>  #define _LINUX_PERCPU_DEFS_H
+> 
+> +#include <asm/barrier.h>
+> +
+>  /*
+>   * Base implementations of per-CPU variable declarations and definitions, where
+>   * the section in which the variable is to be placed is provided by the
+> @@ -19,9 +21,15 @@
+>  	__attribute__((section(".discard"), unused))
+> 
+>  /*
+> - * Macro which verifies @ptr is a percpu pointer without evaluating
+> - * @ptr.  This is to be used in percpu accessors to verify that the
+> - * input parameter is a percpu pointer.
+> + * This macro serves two purposes.  It verifies @ptr is a percpu pointer
+> + * without evaluating @ptr and provides the data dependency barrier paired
+> + * with smp_wmb() at the end of the allocation path so that the memory
+> + * clearing in the allocation path is visible to all percpu accsses.
+> + *
+> + * The existence of the data dependency barrier is guaranteed and percpu
+> + * users can take advantage of it - e.g. percpu area updates followed by
+> + * smp_wmb() and then a percpu pointer assignment are guaranteed to be
+> + * visible to accessors which access through the assigned percpu pointer.
+>   *
+>   * + 0 is required in order to convert the pointer type from a
+>   * potential array type to a pointer to a single item of the array.
+> @@ -29,6 +37,7 @@
+>  #define __verify_pcpu_ptr(ptr)	do {					\
+>  	const void __percpu *__vpp_verify = (typeof((ptr) + 0))NULL;	\
+>  	(void)__vpp_verify;						\
+> +	smp_read_barrier_depends();					\
+>  } while (0)
+> 
+>  /*
+> diff --git a/mm/percpu.c b/mm/percpu.c
+> index 2ddf9a9..bd3cab8 100644
+> --- a/mm/percpu.c
+> +++ b/mm/percpu.c
+> @@ -816,6 +816,15 @@ area_found:
+>  	/* return address relative to base address */
+>  	ptr = __addr_to_pcpu_ptr(chunk->base_addr + off);
+>  	kmemleak_alloc_percpu(ptr, size);
+> +
+> +	/*
+> +	 * The following wmb is paired with the data dependency barrier in
+> +	 * the percpu accessors and guarantees that the zeroing of the
+> +	 * percpu areas in pcpu_populate_chunk() is visible to all percpu
+> +	 * accesses through the returned percpu pointer.  The accessors get
+> +	 * their data dependency barrier from __verify_pcpu_ptr().
+> +	 */
+> +	smp_wmb();
+>  	return ptr;
+> 
+>  fail_unlock:
+> -- 
+> 1.9.3
+> 
 
