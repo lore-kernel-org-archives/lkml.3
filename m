@@ -1,252 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933740AbaFLNtK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 09:49:10 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59454 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933203AbaFLNrH (ORCPT
+	id S933774AbaFLNt0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 09:49:26 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:31620 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933203AbaFLNtW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 09:47:07 -0400
-From: Christoph Hellwig <hch@lst.de>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Bart Van Assche <bvanassche@fusionio.com>,
-        Robert Elliot <Elliott@hp.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 08/14] scsi: convert device_busy to atomic_t
-Date: Thu, 12 Jun 2014 15:49:00 +0200
-Message-Id: <1402580946-11470-9-git-send-email-hch@lst.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1402580946-11470-1-git-send-email-hch@lst.de>
-References: <1402580946-11470-1-git-send-email-hch@lst.de>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 12 Jun 2014 09:49:22 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18Lobc3+NWDrfJuwuko8vY5Nx6zznumhDk=
+X-DKIM: OpenDKIM Filter v2.0.1 titan EB21758DE3A
+Date: Thu, 12 Jun 2014 09:49:09 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sricharan R <r.sricharan@ti.com>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tony@atomide.com, santosh.shilimkar@ti.com, nm@ti.com, rnayak@ti.com,
+        linux@arm.linux.org.uk, tglx@linutronix.de
+Subject: Re: [PATCH V2 15/19] irqchip: crossbar: Add kerneldoc for
+ crossbar_domain_unmap callback
+Message-ID: <20140612134909.GA8664@titan.lakedaemon.net>
+References: <1402574007-13987-1-git-send-email-r.sricharan@ti.com>
+ <1402574007-13987-16-git-send-email-r.sricharan@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402574007-13987-16-git-send-email-r.sricharan@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avoid taking the queue_lock to check the per-device queue limit.  Instead
-we do an atomic_inc_return early on to grab our slot in the queue,
-and if nessecary decrement it after finishing all checks.
+On Thu, Jun 12, 2014 at 05:23:23PM +0530, Sricharan R wrote:
+> The crossbar_domain_map/unmap callbacks need not be called same number
+> of times for a particular irq. But still use counting is not needed
+> here, because unmap(irq) gets called when irq_desc(irq) is disposed.
+> After this the irq is anyways unusable and have to mapped again.
 
-Unlike the host and target busy counters this doesn't allow us to avoid the
-queue_lock in the request_fn due to the way the interface works, but it'll
-allow us to prepare for using the blk-mq code, which doesn't use the
-queue_lock at all, and it at least avoids a queue_lock rountrip in
-scsi_device_unbusy, which is still important given how busy the queue_lock
-is.
+There's no need to duplicate the code comment in the commit log ;-)
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
----
- drivers/message/fusion/mptsas.c |    2 +-
- drivers/scsi/scsi_lib.c         |   50 ++++++++++++++++++++++-----------------
- drivers/scsi/scsi_sysfs.c       |   10 +++++++-
- drivers/scsi/sg.c               |    2 +-
- include/scsi/scsi_device.h      |    4 +---
- 5 files changed, 40 insertions(+), 28 deletions(-)
+> 
+> Adding the above kerneldoc for unmap callback clarity.
+> 
+> Signed-off-by: Sricharan R <r.sricharan@ti.com>
+> ---
+>  drivers/irqchip/irq-crossbar.c |   10 ++++++++++
+>  1 file changed, 10 insertions(+)
+> 
+> diff --git a/drivers/irqchip/irq-crossbar.c b/drivers/irqchip/irq-crossbar.c
+> index 5f3e75a..2a73a66 100644
+> --- a/drivers/irqchip/irq-crossbar.c
+> +++ b/drivers/irqchip/irq-crossbar.c
+> @@ -101,6 +101,16 @@ static int crossbar_domain_map(struct irq_domain *d, unsigned int irq,
+>  	return 0;
+>  }
+>  
+> +/**
+> + * crossbar_domain_unmap - unmap a crossbar<->irq connection
+> + * @d: domain of irq to unmap
+> + * @irq: virq number
+> + *
+> + * The map/unmap callbacks need not be called same number of times for
 
-diff --git a/drivers/message/fusion/mptsas.c b/drivers/message/fusion/mptsas.c
-index 711fcb5..d636dbe 100644
---- a/drivers/message/fusion/mptsas.c
-+++ b/drivers/message/fusion/mptsas.c
-@@ -3763,7 +3763,7 @@ mptsas_send_link_status_event(struct fw_event_work *fw_event)
- 						printk(MYIOC_s_DEBUG_FMT
- 						"SDEV OUTSTANDING CMDS"
- 						"%d\n", ioc->name,
--						sdev->device_busy));
-+						atomic_read(&sdev->device_busy)));
- 				}
- 
- 			}
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index 3f51bb8..c36c313 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -302,9 +302,7 @@ void scsi_device_unbusy(struct scsi_device *sdev)
- 		spin_unlock_irqrestore(shost->host_lock, flags);
- 	}
- 
--	spin_lock_irqsave(sdev->request_queue->queue_lock, flags);
--	sdev->device_busy--;
--	spin_unlock_irqrestore(sdev->request_queue->queue_lock, flags);
-+	atomic_dec(&sdev->device_busy);
- }
- 
- /*
-@@ -355,9 +353,10 @@ static void scsi_single_lun_run(struct scsi_device *current_sdev)
- 
- static inline int scsi_device_is_busy(struct scsi_device *sdev)
- {
--	if (sdev->device_busy >= sdev->queue_depth || sdev->device_blocked)
-+	if (atomic_read(&sdev->device_busy) >= sdev->queue_depth)
-+		return 1;
-+	if (sdev->device_blocked)
- 		return 1;
--
- 	return 0;
- }
- 
-@@ -1224,7 +1223,7 @@ scsi_prep_return(struct request_queue *q, struct request *req, int ret)
- 		 * queue must be restarted, so we schedule a callback to happen
- 		 * shortly.
- 		 */
--		if (sdev->device_busy == 0)
-+		if (atomic_read(&sdev->device_busy) == 0)
- 			blk_delay_queue(q, SCSI_QUEUE_DELAY);
- 		break;
- 	default:
-@@ -1281,26 +1280,32 @@ static void scsi_unprep_fn(struct request_queue *q, struct request *req)
- static inline int scsi_dev_queue_ready(struct request_queue *q,
- 				  struct scsi_device *sdev)
- {
--	if (sdev->device_busy == 0 && sdev->device_blocked) {
-+	unsigned int busy;
-+
-+	busy = atomic_inc_return(&sdev->device_busy) - 1;
-+	if (busy == 0 && sdev->device_blocked) {
- 		/*
- 		 * unblock after device_blocked iterates to zero
- 		 */
--		if (--sdev->device_blocked == 0) {
--			SCSI_LOG_MLQUEUE(3,
--				   sdev_printk(KERN_INFO, sdev,
--				   "unblocking device at zero depth\n"));
--		} else {
-+		if (--sdev->device_blocked != 0) {
- 			blk_delay_queue(q, SCSI_QUEUE_DELAY);
--			return 0;
-+			goto out_dec;
- 		}
-+		SCSI_LOG_MLQUEUE(3, sdev_printk(KERN_INFO, sdev,
-+				   "unblocking device at zero depth\n"));
- 	}
--	if (scsi_device_is_busy(sdev))
--		return 0;
-+
-+	if (busy >= sdev->queue_depth)
-+		goto out_dec;
-+	if (sdev->device_blocked)
-+		goto out_dec;
- 
- 	return 1;
-+out_dec:
-+	atomic_dec(&sdev->device_busy);
-+	return 0;
- }
- 
--
- /*
-  * scsi_target_queue_ready: checks if there we can send commands to target
-  * @sdev: scsi device on starget to check.
-@@ -1470,7 +1475,7 @@ static void scsi_kill_request(struct request *req, struct request_queue *q)
- 	 * bump busy counts.  To bump the counters, we need to dance
- 	 * with the locks as normal issue path does.
- 	 */
--	sdev->device_busy++;
-+	atomic_inc(&sdev->device_busy);
- 	atomic_inc(&shost->host_busy);
- 	atomic_inc(&starget->target_busy);
- 
-@@ -1566,7 +1571,7 @@ static void scsi_request_fn(struct request_queue *q)
- 		 * accept it.
- 		 */
- 		req = blk_peek_request(q);
--		if (!req || !scsi_dev_queue_ready(q, sdev))
-+		if (!req)
- 			break;
- 
- 		if (unlikely(!scsi_device_online(sdev))) {
-@@ -1576,13 +1581,14 @@ static void scsi_request_fn(struct request_queue *q)
- 			continue;
- 		}
- 
-+		if (!scsi_dev_queue_ready(q, sdev))
-+			break;
- 
- 		/*
- 		 * Remove the request from the request list.
- 		 */
- 		if (!(blk_queue_tagged(q) && !blk_queue_start_tag(q, req)))
- 			blk_start_request(req);
--		sdev->device_busy++;
- 
- 		spin_unlock_irq(q->queue_lock);
- 		cmd = req->special;
-@@ -1652,9 +1658,9 @@ static void scsi_request_fn(struct request_queue *q)
- 	 */
- 	spin_lock_irq(q->queue_lock);
- 	blk_requeue_request(q, req);
--	sdev->device_busy--;
-+	atomic_dec(&sdev->device_busy);
- out_delay:
--	if (sdev->device_busy == 0 && !scsi_device_blocked(sdev))
-+	if (atomic_read(&sdev->device_busy) && !scsi_device_blocked(sdev))
- 		blk_delay_queue(q, SCSI_QUEUE_DELAY);
- }
- 
-@@ -2394,7 +2400,7 @@ scsi_device_quiesce(struct scsi_device *sdev)
- 		return err;
- 
- 	scsi_run_queue(sdev->request_queue);
--	while (sdev->device_busy) {
-+	while (atomic_read(&sdev->device_busy)) {
- 		msleep_interruptible(200);
- 		scsi_run_queue(sdev->request_queue);
- 	}
-diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
-index f489934..edc0bd4 100644
---- a/drivers/scsi/scsi_sysfs.c
-+++ b/drivers/scsi/scsi_sysfs.c
-@@ -585,13 +585,21 @@ static int scsi_sdev_check_buf_bit(const char *buf)
-  * Create the actual show/store functions and data structures.
-  */
- sdev_rd_attr (device_blocked, "%d\n");
--sdev_rd_attr (device_busy, "%d\n");
- sdev_rd_attr (type, "%d\n");
- sdev_rd_attr (scsi_level, "%d\n");
- sdev_rd_attr (vendor, "%.8s\n");
- sdev_rd_attr (model, "%.16s\n");
- sdev_rd_attr (rev, "%.4s\n");
- 
-+static ssize_t
-+sdev_show_device_busy(struct device *dev, struct device_attribute *attr,
-+		char *buf)
-+{
-+	struct scsi_device *sdev = to_scsi_device(dev);
-+	return snprintf(buf, 20, "%d\n", atomic_read(&sdev->device_busy));
-+}
-+static DEVICE_ATTR(device_busy, S_IRUGO, sdev_show_device_busy, NULL);
-+
- /*
-  * TODO: can we make these symlinks to the block layer ones?
-  */
-diff --git a/drivers/scsi/sg.c b/drivers/scsi/sg.c
-index 53268aa..e75f71e 100644
---- a/drivers/scsi/sg.c
-+++ b/drivers/scsi/sg.c
-@@ -2488,7 +2488,7 @@ static int sg_proc_seq_show_dev(struct seq_file *s, void *v)
- 			      scsidp->id, scsidp->lun, (int) scsidp->type,
- 			      1,
- 			      (int) scsidp->queue_depth,
--			      (int) scsidp->device_busy,
-+			      (int) atomic_read(&scsidp->device_busy),
- 			      (int) scsi_device_online(scsidp));
- 	else
- 		seq_printf(s, "-1\t-1\t-1\t-1\t-1\t-1\t-1\t-1\t-1\n");
-diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
-index 560847b..73f9683 100644
---- a/include/scsi/scsi_device.h
-+++ b/include/scsi/scsi_device.h
-@@ -81,9 +81,7 @@ struct scsi_device {
- 	struct list_head    siblings;   /* list of all devices on this host */
- 	struct list_head    same_target_siblings; /* just the devices sharing same target id */
- 
--	/* this is now protected by the request_queue->queue_lock */
--	unsigned int device_busy;	/* commands actually active on
--					 * low-level. protected by queue_lock. */
-+	atomic_t device_busy;		/* commands actually active on LLDD */
- 	spinlock_t list_lock;
- 	struct list_head cmd_list;	/* queue of in use SCSI Command structures */
- 	struct list_head starved_entry;
--- 
-1.7.10.4
+s/same/the same/
 
+> + * a particular irq. But still use counting is not needed here, because
+> + * unmap(irq) gets called when irq_desc(irq) is disposed. After this the
+> + * irq is anyways unusuable and have to be mapped again.
+
+Please re-word this.  If I were new to the driver (I am ;-) ) I would
+have no idea what this means (and I don't :( )
+
+thx,
+
+Jason.
+
+> + */
+>  static void crossbar_domain_unmap(struct irq_domain *d, unsigned int irq)
+>  {
+>  	irq_hw_number_t hw = irq_get_irq_data(irq)->hwirq;
+> -- 
+> 1.7.9.5
+> 
