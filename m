@@ -1,77 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933671AbaFLL4f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 07:56:35 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:32784 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933586AbaFLL41 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 07:56:27 -0400
-From: Sricharan R <r.sricharan@ti.com>
-To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: <tony@atomide.com>, <santosh.shilimkar@ti.com>, <nm@ti.com>,
-        <rnayak@ti.com>, <linux@arm.linux.org.uk>, <r.sricharan@ti.com>,
-        <tglx@linutronix.de>, <jason@lakedaemon.net>
-Subject: [PATCH V2 07/19] irqchip: crossbar: fix sparse warnings
-Date: Thu, 12 Jun 2014 17:23:15 +0530
-Message-ID: <1402574007-13987-8-git-send-email-r.sricharan@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1402574007-13987-1-git-send-email-r.sricharan@ti.com>
-References: <1402574007-13987-1-git-send-email-r.sricharan@ti.com>
+	id S933705AbaFLL4l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 07:56:41 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:57027 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933586AbaFLL4h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 07:56:37 -0400
+Date: Thu, 12 Jun 2014 13:56:30 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramkumar Ramachandra <artagnon@gmail.com>,
+        Stanislav Fomichev <stfomichev@yandex-team.ru>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL 0/7] perf/core improvements
+Message-ID: <20140612115630.GB26661@gmail.com>
+References: <1402411564-3303-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402411564-3303-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nishanth Menon <nm@ti.com>
 
-There is absolutely no need for crossbar driver to expose functions and
-variables into global namespace. So make them all static
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-Fixes sparse warnings:
-drivers/irqchip/irq-crossbar.c:129:29: warning: symbol 'routable_irq_domain_ops' was not declared. Should it be static?
-drivers/irqchip/irq-crossbar.c:252:5: warning: symbol 'dra_irqs_unused' was not declared. Should it be static?
-drivers/irqchip/irq-crossbar.c:253:22: warning: symbol 'cb_dra_data' was not declared. Should it be static?
-drivers/irqchip/irq-crossbar.c:261:12: warning: symbol 'irqcrossbar_init' was not declared. Should it be static?
+> From: Arnaldo Carvalho de Melo <acme@kernel.org>
+> 
+> Hi Ingo,
+> 
+> 	Getting back at pushing some stuff, should not conflict with Jiri's
+> perf/core and was branched from tip/perf/core.
 
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
- drivers/irqchip/irq-crossbar.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+Welcome back! :-)
 
-diff --git a/drivers/irqchip/irq-crossbar.c b/drivers/irqchip/irq-crossbar.c
-index c5415ae..5da9d36 100644
---- a/drivers/irqchip/irq-crossbar.c
-+++ b/drivers/irqchip/irq-crossbar.c
-@@ -16,6 +16,7 @@
- #include <linux/of_device.h>
- #include <linux/slab.h>
- #include <linux/irqchip/arm-gic.h>
-+#include <linux/irqchip/irq-crossbar.h>
- 
- #define IRQ_FREE	-1
- #define IRQ_RESERVED	-2
-@@ -126,7 +127,7 @@ found:
- 	return 0;
- }
- 
--const struct irq_domain_ops routable_irq_domain_ops = {
-+static const struct irq_domain_ops routable_irq_domain_ops = {
- 	.map = crossbar_domain_map,
- 	.unmap = crossbar_domain_unmap,
- 	.xlate = crossbar_domain_xlate
-@@ -249,8 +250,8 @@ err1:
- }
- 
- /* irq number 10 cannot be used because of hw bug */
--int dra_irqs_unused[] = { 10 };
--struct crossbar_data cb_dra_data = { dra_irqs_unused,
-+static int dra_irqs_unused[] = { 10 };
-+static struct crossbar_data cb_dra_data = { dra_irqs_unused,
- 				     ARRAY_SIZE(dra_irqs_unused), 0 };
- 
- static const struct of_device_id crossbar_match[] __initconst = {
--- 
-1.7.9.5
+> 	Please let me know if you find any issue,
+> 
+> - Arnaldo
+> 
+> The following changes since commit 82b897782d10fcc4930c9d4a15b175348fdd2871:
+> 
+>   perf: Differentiate exec() and non-exec() comm events (2014-06-06 07:56:22 +0200)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git tags/perf-core-for-mingo
+> 
+> for you to fetch changes up to f48e00cead1f7574147e6bd0d203c8331714d35b:
+> 
+>   perf timechart: Reflow documentation (2014-06-10 10:03:18 -0300)
+> 
+> ----------------------------------------------------------------
+> perf/core improvements:
+> 
+> User visible:
+> 
+> . Improve 'perf probe' error messages, moving some diagnostic messages to
+>   only appear in --verbose mode and fixing up some error reporting related
+>   to variables and struct members. (Masami Hiramatsu)
+> 
+> . Reflow 'perf timechart' man page. (Stanislav Fomichev)
+> 
+> Developer stuff:
+> 
+> . Be more precise when reporting missing libraries in a static tool build.
+>   (Arnaldo Carvalho de Melo)
+> 
+> . Show error messages from the multiple make invoked from 'make build-test'.
+>   (Arnaldo Carvalho de Melo)
+> 
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> ----------------------------------------------------------------
+> Arnaldo Carvalho de Melo (2):
+>       perf tools: Emit more precise message for missing glibc static library
+>       perf tests: Show the inner make output when an error happens
+> 
+> Masami Hiramatsu (4):
+>       perf probe: Improve error message for unknown member of data structure
+>       perf probe: Show error code and description in verbose mode
+>       perf probe: Improve an error message of perf probe --vars mode
+>       perf probe: Improve error messages in --line option
+> 
+> Stanislav Fomichev (1):
+>       perf timechart: Reflow documentation
+> 
+>  tools/perf/Documentation/perf-timechart.txt | 41 ++++++++++++++---------------
+>  tools/perf/builtin-probe.c                  | 23 +++++++++-------
+>  tools/perf/config/Makefile                  |  6 ++++-
+>  tools/perf/tests/make                       |  7 ++---
+>  tools/perf/util/probe-event.c               | 13 ++++++---
+>  tools/perf/util/probe-finder.c              | 11 +++++---
+>  6 files changed, 57 insertions(+), 44 deletions(-)
 
+Pulled, thanks a lot Arnaldo!
+
+	Ingo
