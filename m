@@ -1,41 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755223AbaFLGEw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 02:04:52 -0400
-Received: from ja.ssi.bg ([178.16.129.10]:33194 "EHLO ja.home.ssi.bg"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751325AbaFLGEv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 02:04:51 -0400
-Date: Thu, 12 Jun 2014 09:02:53 +0300 (EEST)
-From: Julian Anastasov <ja@ssi.bg>
-X-X-Sender: ja@ja.home.ssi.bg
-To: Simon Horman <horms@verge.net.au>
-cc: Jet Chen <jet.chen@intel.com>, Wensong Zhang <wensong@linux-vs.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [net/ipvs] BUG: unable to handle kernel NULL pointer dereference
- at 00000004
-In-Reply-To: <20140612034633.GH22273@verge.net.au>
-Message-ID: <alpine.LFD.2.11.1406120900350.1769@ja.home.ssi.bg>
-References: <5397DE0E.2070501@intel.com> <alpine.LFD.2.11.1406110828460.2070@ja.home.ssi.bg> <5398148B.603@intel.com> <20140612034633.GH22273@verge.net.au>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	id S932144AbaFLGFR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 02:05:17 -0400
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:36025 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752252AbaFLGFP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 02:05:15 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <20140611151511.GU179@brightrain.aerifal.cx>
+References: <20140611041243.GA1475@brightrain.aerifal.cx> <1402464261.5195.21.camel@marge.simpson.net>
+ <1402465808.3645.454.camel@edumazet-glaptop2.roam.corp.google.com> <20140611151511.GU179@brightrain.aerifal.cx>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Thu, 12 Jun 2014 08:04:54 +0200
+Message-ID: <CAKgNAkh7ihJyZ4gOXAeb3x-Su7ayshLdi9m6ML4n840n3bx=0Q@mail.gmail.com>
+Subject: Re: recvmmsg/sendmmsg result types inconsistent, integer overflows?
+To: Rich Felker <dalias@libc.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        lkml <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Rich,
 
-	Hello,
+On Wed, Jun 11, 2014 at 5:15 PM, Rich Felker <dalias@libc.org> wrote:
+> On Tue, Jun 10, 2014 at 10:50:08PM -0700, Eric Dumazet wrote:
+>> On Wed, 2014-06-11 at 07:24 +0200, Mike Galbraith wrote:
+>> > (CCs network wizard hangout)
+>> >
+>> > On Wed, 2014-06-11 at 00:12 -0400, Rich Felker wrote:
+>> > > While looking to add support for the recvmmsg and sendmmsg syscalls in
+>> > > musl libc, I ran into some disturbing findings on the kernel side. In
+>> > > the struct mmsghdr, the field where the result for each message is
+>> > > stored has type int, which is inconsistent with the return type
+>> > > ssize_t of recvmsg/sendmsg. So I tried to track down what happens when
+>> > > the result is or would be larger than 2GB, and quickly found an
+>> > > explanation for why the type in the structure was defined wrong:
+>> > > internally, the kernel uses int as the return type for revcmsg and
+>> > > sendmsg. Oops.
+>> > >
+>> > > A bit more RTFS'ing brought me to tcp_sendmsg in net/ipv4/tcp.c (I
+>> > > figured let's look at a stream-based protocol, since datagrams can
+>> > > likely never be that big for any existing protocol), and as far as I
+>> > > can tell, it's haphazardly mixing int and size_t with no checks for
+>> > > overflows. I looked for anywhere the kernel might try to verify before
+>> > > starting that the sum of the lengths of all the iovec components
+>> > > doesn't overflow INT_MAX or even SIZE_MAX, but didn't find any such
+>> > > checks.
+>> > >
+>> > > Is there some magic that makes this all safe, or is this a big mess of
+>> > > possibly-security-relevant bugs?
+>> > >
+>> > > Rich
+>> > > --
+>> > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> > > the body of a message to majordomo@vger.kernel.org
+>> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> > > Please read the FAQ at  http://www.tux.org/lkml/
+>> >
+>>
+>>
+>> See commit 8acfe468b0384e834a303f08ebc4953d72fb690a
+>> ("net: Limit socket I/O iovec total length to INT_MAX.")
+>>
+>> (or grep for verify_iovec() )
+>
+> Thanks; that addresses my concern about safety. There's still the ugly
+> API inconsistency which it seems too late to fix. Michael, perhaps
+> this should at least be documented in the man pages for sendmmsg and
+> recvmmsg since it's certain to be confusing to anyone familiar with
+> the sendmsg and recvmsg API, but not with kernel internals, who's
+> trying to use these functions...
 
-On Thu, 12 Jun 2014, Simon Horman wrote:
+Care to send me a patch?
 
-> Thanks, Julian, should I take this one?
-> I'm assuming this problem has been present for quite a number of releases.
+Thanks,
 
-	I'll post new version with extended comments.
+Michael
 
-Regards
 
---
-Julian Anastasov <ja@ssi.bg>
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
