@@ -1,20 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752231AbaFLXSm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 19:18:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37215 "EHLO
+	id S1752732AbaFLXXg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 19:23:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37234 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752164AbaFLXSj (ORCPT
+	with ESMTP id S1752202AbaFLXSl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 19:18:39 -0400
+	Thu, 12 Jun 2014 19:18:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sagi Grimberg <sagig@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.10 06/18] Target/iscsi,iser: Avoid accepting transport connections during stop stage
-Date: Thu, 12 Jun 2014 16:22:10 -0700
-Message-Id: <20140612232213.284173999@linuxfoundation.org>
+        Vlastimil Babka <vbabka@suse.cz>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Dongjun Shin <d.j.shin@samsung.com>,
+        Sunghwan Yun <sunghwan.yun@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 13/18] mm/compaction: make isolate_freepages start at pageblock boundary
+Date: Thu, 12 Jun 2014 16:22:17 -0700
+Message-Id: <20140612232213.530448958@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140612232212.960235342@linuxfoundation.org>
 References: <20140612232212.960235342@linuxfoundation.org>
@@ -29,78 +39,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sagi Grimberg <sagig@mellanox.com>
+From: Vlastimil Babka <vbabka@suse.cz>
 
-commit 14f4b54fe38f3a8f8392a50b951c8aa43b63687a upstream.
+commit 49e068f0b73dd042c186ffa9b420a9943e90389a upstream.
 
-When the target is in stop stage, iSER transport initiates RDMA disconnects.
-The iSER initiator may wish to establish a new connection over the
-still existing network portal. In this case iSER transport should not
-accept and resume new RDMA connections. In order to learn that, iscsi_np
-is added with enabled flag so the iSER transport can check when deciding
-weather to accept and resume a new connection request.
+The compaction freepage scanner implementation in isolate_freepages()
+starts by taking the current cc->free_pfn value as the first pfn.  In a
+for loop, it scans from this first pfn to the end of the pageblock, and
+then subtracts pageblock_nr_pages from the first pfn to obtain the first
+pfn for the next for loop iteration.
 
-The iscsi_np is enabled after successful transport setup, and disabled
-before iscsi_np login threads are cleaned up.
+This means that when cc->free_pfn starts at offset X rather than being
+aligned on pageblock boundary, the scanner will start at offset X in all
+scanned pageblock, ignoring potentially many free pages.  Currently this
+can happen when
 
-(Fix up context changes for v3.10.y - nab)
+ a) zone's end pfn is not pageblock aligned, or
 
-Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+ b) through zone->compact_cached_free_pfn with CONFIG_HOLES_IN_ZONE
+    enabled and a hole spanning the beginning of a pageblock
+
+This patch fixes the problem by aligning the initial pfn in
+isolate_freepages() to pageblock boundary.  This also permits replacing
+the end-of-pageblock alignment within the for loop with a simple
+pageblock_nr_pages increment.
+
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+Reported-by: Heesub Shin <heesub.shin@samsung.com>
+Acked-by: Minchan Kim <minchan@kernel.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Acked-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Christoph Lameter <cl@linux.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Cc: Dongjun Shin <d.j.shin@samsung.com>
+Cc: Sunghwan Yun <sunghwan.yun@samsung.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/infiniband/ulp/isert/ib_isert.c   |    8 ++++++++
- drivers/target/iscsi/iscsi_target_core.h  |    1 +
- drivers/target/iscsi/iscsi_target_login.c |    1 +
- drivers/target/iscsi/iscsi_target_tpg.c   |    1 +
- 4 files changed, 11 insertions(+)
 
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -382,6 +382,14 @@ isert_connect_request(struct rdma_cm_id
- 	struct ib_device *ib_dev = cma_id->device;
- 	int ret = 0;
+---
+ mm/compaction.c |   22 ++++++++++++----------
+ 1 file changed, 12 insertions(+), 10 deletions(-)
+
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -657,16 +657,20 @@ static void isolate_freepages(struct zon
+ 				struct compact_control *cc)
+ {
+ 	struct page *page;
+-	unsigned long high_pfn, low_pfn, pfn, z_end_pfn, end_pfn;
++	unsigned long high_pfn, low_pfn, pfn, z_end_pfn;
+ 	int nr_freepages = cc->nr_freepages;
+ 	struct list_head *freelist = &cc->freepages;
  
-+	spin_lock_bh(&np->np_thread_lock);
-+	if (!np->enabled) {
-+		spin_unlock_bh(&np->np_thread_lock);
-+		pr_debug("iscsi_np is not enabled, reject connect request\n");
-+		return rdma_reject(cma_id, NULL, 0);
-+	}
-+	spin_unlock_bh(&np->np_thread_lock);
-+
- 	pr_debug("Entering isert_connect_request cma_id: %p, context: %p\n",
- 		 cma_id, cma_id->context);
+ 	/*
+ 	 * Initialise the free scanner. The starting point is where we last
+-	 * scanned from (or the end of the zone if starting). The low point
+-	 * is the end of the pageblock the migration scanner is using.
++	 * successfully isolated from, zone-cached value, or the end of the
++	 * zone when isolating for the first time. We need this aligned to
++	 * the pageblock boundary, because we do pfn -= pageblock_nr_pages
++	 * in the for loop.
++	 * The low boundary is the end of the pageblock the migration scanner
++	 * is using.
+ 	 */
+-	pfn = cc->free_pfn;
++	pfn = cc->free_pfn & ~(pageblock_nr_pages-1);
+ 	low_pfn = ALIGN(cc->migrate_pfn + 1, pageblock_nr_pages);
  
---- a/drivers/target/iscsi/iscsi_target_core.h
-+++ b/drivers/target/iscsi/iscsi_target_core.h
-@@ -760,6 +760,7 @@ struct iscsi_np {
- 	int			np_ip_proto;
- 	int			np_sock_type;
- 	enum np_thread_state_table np_thread_state;
-+	bool                    enabled;
- 	enum iscsi_timer_flags_table np_login_timer_flags;
- 	u32			np_exports;
- 	enum np_flags_table	np_flags;
---- a/drivers/target/iscsi/iscsi_target_login.c
-+++ b/drivers/target/iscsi/iscsi_target_login.c
-@@ -984,6 +984,7 @@ int iscsi_target_setup_login_socket(
- 	}
+ 	/*
+@@ -686,6 +690,7 @@ static void isolate_freepages(struct zon
+ 	for (; pfn >= low_pfn && cc->nr_migratepages > nr_freepages;
+ 					pfn -= pageblock_nr_pages) {
+ 		unsigned long isolated;
++		unsigned long end_pfn;
  
- 	np->np_transport = t;
-+	np->enabled = true;
- 	return 0;
- }
+ 		if (!pfn_valid(pfn))
+ 			continue;
+@@ -713,13 +718,10 @@ static void isolate_freepages(struct zon
+ 		isolated = 0;
  
---- a/drivers/target/iscsi/iscsi_target_tpg.c
-+++ b/drivers/target/iscsi/iscsi_target_tpg.c
-@@ -182,6 +182,7 @@ static void iscsit_clear_tpg_np_login_th
- 		return;
- 	}
- 
-+	tpg_np->tpg_np->enabled = false;
- 	iscsit_reset_np_thread(tpg_np->tpg_np, tpg_np, tpg);
- }
- 
+ 		/*
+-		 * As pfn may not start aligned, pfn+pageblock_nr_page
+-		 * may cross a MAX_ORDER_NR_PAGES boundary and miss
+-		 * a pfn_valid check. Ensure isolate_freepages_block()
+-		 * only scans within a pageblock
++		 * Take care when isolating in last pageblock of a zone which
++		 * ends in the middle of a pageblock.
+ 		 */
+-		end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
+-		end_pfn = min(end_pfn, z_end_pfn);
++		end_pfn = min(pfn + pageblock_nr_pages, z_end_pfn);
+ 		isolated = isolate_freepages_block(cc, pfn, end_pfn,
+ 						   freelist, false);
+ 		nr_freepages += isolated;
 
 
