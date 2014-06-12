@@ -1,156 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933445AbaFLNVo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 09:21:44 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:42689 "EHLO comal.ext.ti.com"
+	id S933056AbaFLNWP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 09:22:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53604 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751325AbaFLNVm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 09:21:42 -0400
-Message-ID: <5399A8D5.6070105@ti.com>
-Date: Thu, 12 Jun 2014 18:49:17 +0530
-From: Sricharan R <r.sricharan@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	id S932770AbaFLNWK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 09:22:10 -0400
+Date: Thu, 12 Jun 2014 15:22:07 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Michel Lespinasse <walken@google.com>, Tejun Heo <tj@kernel.org>,
+        Roman Gushchin <klamm@yandex-team.ru>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] memcg: Allow guarantee reclaim
+Message-ID: <20140612132207.GA32720@dhcp22.suse.cz>
+References: <20140611075729.GA4520@dhcp22.suse.cz>
+ <1402473624-13827-1-git-send-email-mhocko@suse.cz>
+ <1402473624-13827-2-git-send-email-mhocko@suse.cz>
+ <20140611153631.GH2878@cmpxchg.org>
 MIME-Version: 1.0
-To: Jason Cooper <jason@lakedaemon.net>
-CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <tony@atomide.com>, <santosh.shilimkar@ti.com>, <nm@ti.com>,
-        <rnayak@ti.com>, <linux@arm.linux.org.uk>, <tglx@linutronix.de>
-Subject: Re: [PATCH V2 03/19] irqchip: crossbar: Skip some irqs from getting
- mapped to crossbar
-References: <1402574007-13987-1-git-send-email-r.sricharan@ti.com> <1402574007-13987-4-git-send-email-r.sricharan@ti.com> <20140612125134.GS8664@titan.lakedaemon.net>
-In-Reply-To: <20140612125134.GS8664@titan.lakedaemon.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140611153631.GH2878@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jason,
+On Wed 11-06-14 11:36:31, Johannes Weiner wrote:
+[...]
+> This code is truly dreadful.
+> 
+> Don't call it guarantee when it doesn't guarantee anything.  I thought
+> we agreed that min, low, high, max, is reasonable nomenclature, please
+> use it consistently.
 
-On Thursday 12 June 2014 06:21 PM, Jason Cooper wrote:
-> On Thu, Jun 12, 2014 at 05:23:11PM +0530, Sricharan R wrote:
->> From: Nishanth Menon <nm@ti.com>
->>
->> When, in the system due to varied reasons, interrupts might be unusable
->> due to hardware behavior, but register maps do exist, then those interrupts
->> should be skipped while mapping irq to crossbars.
->>
->> Signed-off-by: Nishanth Menon <nm@ti.com>
->> Signed-off-by: Sricharan R <r.sricharan@ti.com>
->> Signed-off-by: Tony Lindgren <tony@atomide.com>
-> 
-> Tony, have you applied these somewhere already?
-> 
->> ---
->>  drivers/irqchip/irq-crossbar.c |   47 ++++++++++++++++++++++++++++++++++++----
->>  1 file changed, 43 insertions(+), 4 deletions(-)
->>
->> diff --git a/drivers/irqchip/irq-crossbar.c b/drivers/irqchip/irq-crossbar.c
->> index 51d4b87..847f6e3 100644
->> --- a/drivers/irqchip/irq-crossbar.c
->> +++ b/drivers/irqchip/irq-crossbar.c
->> @@ -13,11 +13,13 @@
->>  #include <linux/io.h>
->>  #include <linux/of_address.h>
->>  #include <linux/of_irq.h>
->> +#include <linux/of_device.h>
->>  #include <linux/slab.h>
->>  #include <linux/irqchip/arm-gic.h>
->>  
->>  #define IRQ_FREE	-1
->>  #define IRQ_RESERVED	-2
->> +#define IRQ_SKIP	-3
->>  #define GIC_IRQ_START	32
->>  
->>  /*
->> @@ -34,6 +36,16 @@ struct crossbar_device {
->>  	void (*write) (int, int);
->>  };
->>  
->> +/**
->> + * struct crossbar_data: Platform specific data
->> + * @irqs_unused: array of irqs that cannot be used because of hw erratas
->> + * @size: size of the irqs_unused array
->> + */
->> +struct crossbar_data {
->> +	const uint *irqs_unused;
->> +	const uint size;
->> +};
->> +
->>  static struct crossbar_device *cb;
->>  
->>  static inline void crossbar_writel(int irq_no, int cb_no)
->> @@ -119,10 +131,12 @@ const struct irq_domain_ops routable_irq_domain_ops = {
->>  	.xlate = crossbar_domain_xlate
->>  };
->>  
->> -static int __init crossbar_of_init(struct device_node *node)
->> +static int __init crossbar_of_init(struct device_node *node,
->> +				   const struct crossbar_data *data)
->>  {
->>  	int i, size, max, reserved = 0, entry;
->>  	const __be32 *irqsr;
->> +	const int *irqsk = NULL;
->>  
->>  	cb = kzalloc(sizeof(*cb), GFP_KERNEL);
->>  
->> @@ -194,6 +208,22 @@ static int __init crossbar_of_init(struct device_node *node)
->>  		reserved += size;
->>  	}
->>  
->> +	/* Skip the ones marked as unused */
->> +	if (data) {
->> +		irqsk = data->irqs_unused;
->> +		size = data->size;
->> +
->> +		for (i = 0; i < size; i++) {
->> +			entry = irqsk[i];
->> +
->> +			if (entry > max) {
->> +				pr_err("Invalid skip entry\n");
->> +				goto err3;
->> +			}
->> +			cb->irq_map[entry] = IRQ_SKIP;
->> +		}
->> +	}
->> +
->>  	register_routable_domain_ops(&routable_irq_domain_ops);
->>  	return 0;
->>  
->> @@ -208,18 +238,27 @@ err1:
->>  	return -ENOMEM;
->>  }
->>  
->> +/* irq number 10 cannot be used because of hw bug */
->> +int dra_irqs_unused[] = { 10 };
->> +struct crossbar_data cb_dra_data = { dra_irqs_unused,
->> +				     ARRAY_SIZE(dra_irqs_unused) };
->> +
->>  static const struct of_device_id crossbar_match[] __initconst = {
->> -	{ .compatible = "ti,irq-crossbar" },
->> +	{ .compatible = "ti,irq-crossbar", .data = &cb_dra_data },
->>  	{}
->>  };
-> 
-> This is a bug in all implementations of this IP?  Or, a specific
-> SoC's implementation?  Would this be better expressed in the dts via a
-> property?  Can we expect future implementations to be fixed?
-> 
-> thx,
-> 
-> Jason.
- Infact this and PATCH#10 should be merged. I will change that.
-
- So in Socs's (2 so far) that do have a crossbar, some irqs are mapped
- through a crossbar and some are directly wired to the irqchip.
- These 'unused irqs' are those which are directly wired but they still
- have a crossbar register. Their routing cannot be changed. So this
- is not really expected usage of the crossbar hw ip. We initially thought
- having a dts property separately for this, but took this path to avoid
- loading the dts with additional bindings which may not be generic.
-
-Regards,
- Sricharan 
+I can certainly change the internal naming. I will use your wmark naming
+suggestion.
  
- 
+> With my proposed cleanups and scalability fixes in the other mail, the
+> vmscan.c changes to support the min watermark would be something like
+> the following.
+
+The semantic is, however, much different as pointed out in the other email.
+The following on top of you cleanup will lead to the same deadlock
+described in 1st patch (mm, memcg: allow OOM if no memcg is eligible
+during direct reclaim).
+
+Anyway, the situation now is pretty chaotic. I plan to gather all the
+patchse posted so far and repost for the future discussion. I just need
+to finish some internal tasks and will post it soon.
+
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 687076b7a1a6..cee19b6d04dc 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2259,7 +2259,7 @@ static void shrink_zone(struct zone *zone, struct scan_control *sc)
+>  				 */
+>  				if (priority < DEF_PRIORITY - 2)
+>  					break;
+> -
+> +			case MEMCG_WMARK_MIN:
+>  				/* XXX: skip the whole subtree */
+>  				memcg = mem_cgroup_iter(root, memcg, &reclaim);
+>  				continue;
+> 
+
+-- 
+Michal Hocko
+SUSE Labs
