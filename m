@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934084AbaFLMDS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 08:03:18 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60577 "EHLO
+	id S1755977AbaFLMDc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 08:03:32 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60583 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932998AbaFLMDP (ORCPT
+	with ESMTP id S1755953AbaFLMD2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 08:03:15 -0400
-Date: Thu, 12 Jun 2014 05:03:03 -0700
+	Thu, 12 Jun 2014 08:03:28 -0400
+Date: Thu, 12 Jun 2014 05:03:16 -0700
 From: tip-bot for Don Zickus <tipbot@zytor.com>
-Message-ID: <tip-7365be55eee37ddb4f487263b4ba5bc8beb9638f@git.kernel.org>
+Message-ID: <tip-2b1b71003ea809e619bd73e74dfc2a73069de66f@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         jolsa@kernel.org, tglx@linutronix.de, dzickus@redhat.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         jolsa@kernel.org, tglx@linutronix.de, dzickus@redhat.com
-In-Reply-To: <1401208087-181977-6-git-send-email-dzickus@redhat.com>
-References: <1401208087-181977-6-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1401480605-97442-1-git-send-email-dzickus@redhat.com>
+References: <1401480605-97442-1-git-send-email-dzickus@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Add cpumode to struct hist_entry
-Git-Commit-ID: 7365be55eee37ddb4f487263b4ba5bc8beb9638f
+Subject: [tip:perf/core] perf tools:
+  Add support to dynamically get cacheline size
+Git-Commit-ID: 2b1b71003ea809e619bd73e74dfc2a73069de66f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,52 +32,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7365be55eee37ddb4f487263b4ba5bc8beb9638f
-Gitweb:     http://git.kernel.org/tip/7365be55eee37ddb4f487263b4ba5bc8beb9638f
+Commit-ID:  2b1b71003ea809e619bd73e74dfc2a73069de66f
+Gitweb:     http://git.kernel.org/tip/2b1b71003ea809e619bd73e74dfc2a73069de66f
 Author:     Don Zickus <dzickus@redhat.com>
-AuthorDate: Tue, 27 May 2014 12:28:05 -0400
+AuthorDate: Fri, 30 May 2014 16:10:05 -0400
 Committer:  Jiri Olsa <jolsa@kernel.org>
 CommitDate: Mon, 9 Jun 2014 13:34:48 +0200
 
-perf tools: Add cpumode to struct hist_entry
+perf tools: Add support to dynamically get cacheline size
 
-The next patch needs to sort on cpumode, so add it to hist_entry to be tracked.
+Different arches may have different cacheline sizes.  Look it up and set
+a global variable for reference.
 
 Signed-off-by: Don Zickus <dzickus@redhat.com>
-Link: http://lkml.kernel.org/r/1401208087-181977-6-git-send-email-dzickus@redhat.com
+Link: http://lkml.kernel.org/r/1401480605-97442-1-git-send-email-dzickus@redhat.com
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/util/hist.c | 7 ++++---
- tools/perf/util/sort.h | 1 +
- 2 files changed, 5 insertions(+), 3 deletions(-)
+ tools/perf/perf.c      | 1 +
+ tools/perf/util/util.c | 1 +
+ tools/perf/util/util.h | 1 +
+ 3 files changed, 3 insertions(+)
 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 5a0a4b2..d5f47a4 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -439,9 +439,10 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
- 			.map	= al->map,
- 			.sym	= al->sym,
- 		},
--		.cpu	= al->cpu,
--		.ip	= al->addr,
--		.level	= al->level,
-+		.cpu	 = al->cpu,
-+		.cpumode = al->cpumode,
-+		.ip	 = al->addr,
-+		.level	 = al->level,
- 		.stat = {
- 			.nr_events = 1,
- 			.period	= period,
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 5bf0098..6de22f8 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -89,6 +89,7 @@ struct hist_entry {
- 	u64			ip;
- 	u64			transaction;
- 	s32			cpu;
-+	u8			cpumode;
+diff --git a/tools/perf/perf.c b/tools/perf/perf.c
+index 78f7b92..95c58fc 100644
+--- a/tools/perf/perf.c
++++ b/tools/perf/perf.c
+@@ -458,6 +458,7 @@ int main(int argc, const char **argv)
  
- 	struct hist_entry_diff	diff;
+ 	/* The page_size is placed in util object. */
+ 	page_size = sysconf(_SC_PAGE_SIZE);
++	cacheline_size = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
+ 
+ 	cmd = perf_extract_argv0_path(argv[0]);
+ 	if (!cmd)
+diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
+index 7fff6be..95aefa7 100644
+--- a/tools/perf/util/util.c
++++ b/tools/perf/util/util.c
+@@ -17,6 +17,7 @@
+  * XXX We need to find a better place for these things...
+  */
+ unsigned int page_size;
++int cacheline_size;
+ 
+ bool test_attr__enabled;
+ 
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index b03da44..6686436 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -304,6 +304,7 @@ char *rtrim(char *s);
+ void dump_stack(void);
+ 
+ extern unsigned int page_size;
++extern int cacheline_size;
+ 
+ void get_term_dimensions(struct winsize *ws);
  
