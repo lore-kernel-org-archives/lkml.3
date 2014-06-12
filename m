@@ -1,92 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933467AbaFLOOE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 10:14:04 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:43261 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752823AbaFLON7 (ORCPT
+	id S933501AbaFLOSG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 10:18:06 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:55951 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752900AbaFLOSC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 10:13:59 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-2d-5399b5a4821f
-Message-id: <5399B594.2040205@samsung.com>
-Date: Thu, 12 Jun 2014 16:13:40 +0200
-From: Tomasz Figa <t.figa@samsung.com>
-Organization: Samsung R&D Institute Poland
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.5.0
-MIME-version: 1.0
-To: Daniel Drake <drake@endlessm.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, Laura Abbott <lauraa@codeaurora.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Robin Holt <holt@sgi.com>, Russell King <linux@arm.linux.org.uk>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/5] Handle non-secure L2C initialization on Exynos4
-References: <CAD8Lp46MbKZrCAMp+9T9LbWTB4uHRDdivhtjoQbkTyBbK48EgQ@mail.gmail.com>
-In-reply-to: <CAD8Lp46MbKZrCAMp+9T9LbWTB4uHRDdivhtjoQbkTyBbK48EgQ@mail.gmail.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrDLMWRmVeSWpSXmKPExsVy+t/xy7pLts4MNjj0Q9bi0fzHzBb90zpY
-	LXoXXGWz2N45g91iyp/lTBabHl9jtbi8aw6bxewl/SwWty/zWrzuW8NssWrXH0aL/Ve8HHg8
-	Wpp72Dy+fZ3E4nG5r5fJY9H3LI+ds+6ye9y5tofNY/OSeo++LasYPe5ef8nkcfzGdiaPz5vk
-	ArijuGxSUnMyy1KL9O0SuDJmL7vFWvCdt6LzxyfWBsbZ3F2MnBwSAiYSh3/PY4WwxSQu3FvP
-	1sXIxSEksJRRYs65mWwgCSGBz4wS/4/pgNi8AloSD69vZQexWQRUJeb/+gdWwyagJvG54RGY
-	zQ9Us6bpOksXIweHqECExOMLQhCtghI/Jt9jAbFFgFp/LW9mBdnFLDCdWWLazVvMIAlhAQ+J
-	r9+PsELsDZB4/vcm2ExOgWCJLxOmg9nMAjoS+1unQdnyEpvXvGWewCg4C8mOWUjKZiEpW8DI
-	vIpRNLU0uaA4KT3XUK84Mbe4NC9dLzk/dxMjJMa+7GBcfMzqEKMAB6MSD6/G6xnBQqyJZcWV
-	uYcYJTiYlUR4tTfPDBbiTUmsrEotyo8vKs1JLT7EyMTBKdXAuKb8/yEr26nfT95nFymIXble
-	dz0Lu6fv2/D02btWCzIb39T+/TaHK2Xq+0mVBeLv+rjq1r7/8yjpBN8CO85HX5c+mC1fs/xG
-	veLpu0G/D3rLeYnYPV98Q6rUdX19zdsTUVf3/Ah7qemtlb9/iczn/F86jNsMPm0x95myfrOZ
-	m9W9pRbJRqHmn5VYijMSDbWYi4oTAbjKkiyPAgAA
+	Thu, 12 Jun 2014 10:18:02 -0400
+Date: Thu, 12 Jun 2014 15:17:51 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Tomasz Figa <tomasz.figa@gmail.com>, Mark Brown <broonie@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: Kconfig fails: big select-based circular dependency
+Message-ID: <20140612141751.GH23430@n2100.arm.linux.org.uk>
+References: <20140607090944.GL23430@n2100.arm.linux.org.uk> <10376496.xoRI3F9EzH@wuerfel> <20140612130330.GG23430@n2100.arm.linux.org.uk> <6046244.oz0lY2JOaZ@wuerfel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6046244.oz0lY2JOaZ@wuerfel>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+On Thu, Jun 12, 2014 at 03:37:18PM +0200, Arnd Bergmann wrote:
+> I didn't say we should not fix it, I just meant we don't need to spend
+> too much time on a perfect solution for code that is going away and that
+> is already not used anywhere.
+> 
+> I've just replied to an older thread "Re: [PATCH 1/2] [RFC] ASoC: samsung:
+> move s3c24xx over to dmaengine" with a patch that would let us kill off
+> the code right away, or at least disable it in Kconfig.
+> 
+> For some reason, I can't reproduce the failure you see in your build system,
+> I tried torvalds/master and next/master today and I have also done
+> allmodconfig and randconfig builds in the past few days on slightly
+> older versions.
 
-On 12.06.2014 15:38, Daniel Drake wrote:
-> Hi Tomasz,
-> 
-> Thanks for working on this!
-> 
-> I have just tried this, against Linus master
-> 64b2d1fbbfda07765dae3f601862796a61b2c451.
-> Added patch "ARM: dts: Initial ODROID U2 support" and booted on
-> ODROID-U2. I believe this board has the security enabled.
-> 
-> Unfortunately, it hangs during early boot. With earlyprintk the last
-> messages seen are:
-> 
-> L2C: platform modifies aux control register: 0x02070000 -> 0x3e470001
-> L2C: platform provided aux values permit register corruption.
-> L2C: DT/platform modifies aux control register: 0x02070000 -> 0x3e470001
-> L2C-310 enabling early BRESP for Cortex-A9
-> L2C-310: enabling full line of zeros but not enabled in Cortex-A9
-> L2C-310 ID prefetch enabled, offset 1 lines
-> L2C-310 dynamic clock gating enabled, standby mode enabled
-> L2C-310 cache controller enabled, 16 ways, 1024 kB
-> L2C-310: CACHE_ID 0x4100c4c8, AUX_CTRL 0x7e470001
-> 
+That's because you don't have this commit:
 
-Thanks for testing. We have some ODROIDs U2 and U3 here too so I'll try
-to reproduce and investigate the issue.
+Author: Philipp Zabel <p.zabel@pengutronix.de>
+Date:   Thu Mar 6 14:54:39 2014 +0100
 
-> I then tried to go back to the earlier patch "ARM: EXYNOS: Add secure
-> firmware support for l2x0 init" (attached, needed a rebase) but that
-> one also now hangs at:
-> 
-> L2C: platform modifies aux control register: 0x02070000 -> 0x3e470001
-> 
-> It did work on 3.14 though. Looking at the changelogs, many changes
-> have been made to l2x0 recently. Can you confirm that you have tested
-> your patches against a kernel with all of Russell King's recent
-> changes?
+    imx-drm: imx-ldb: add drm_panel support
+    
+    This patch allows to optionally attach the lvds-channel to a panel
+    supported by a drm_panel driver instead of supplying the modes via
+    device tree.
 
-I'm usually working on latest linux-next, so I'm pretty sure all the
-mentioned patches were already in my tree. The base for this series was
-next-20140610 tag of linux-next tree.
+    Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+    [Fixed build error due to missing select on DRM_PANEL --rmk]
+    Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 
-Best regards,
-Tomasz
+diff --git a/drivers/staging/imx-drm/Kconfig b/drivers/staging/imx-drm/Kconfig
+index c6e8ba7b3e4e..92fb52cbd3a2 100644
+--- a/drivers/staging/imx-drm/Kconfig
++++ b/drivers/staging/imx-drm/Kconfig
+@@ -35,6 +35,7 @@ config DRM_IMX_TVE
+ config DRM_IMX_LDB
+        tristate "Support for LVDS displays"
+        depends on DRM_IMX && MFD_SYSCON
++       select DRM_PANEL
+        help
+          Choose this to enable the internal LVDS Display Bridge (LDB)
+          found on i.MX53 and i.MX6 processors.
+
+which introduces the final nail in the loop - and as imx-ldb really
+does require DRM_PANEL support, and DRM_PANEL is not a user selectable
+symbol, the above addition is an entirely reasonable thing to do.
+
+The above commit /was/ going to go in during this merge window (along with
+three others) had I not been soo hacked off with the crap change handling
+and the general dysfunctional ARM community that we seem to have in the
+kernel community now, and ended up walking totally away from kernel
+maintanence for much of the last cycle... we're only /just/ starting to
+find out all the problems that my MMC patch series caused... and there's
+/still/ outstanding issues with the L2C patch series which /still/ have
+not been resolved - both of which are now part of mainline so people will
+now be forced to deal with these issues.  That's not the right way, but
+it seems to be the /only/ way to get things done in todays dysfunctional
+environment.
+
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
