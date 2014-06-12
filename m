@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751423AbaFLWIy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 18:08:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1444 "EHLO mx1.redhat.com"
+	id S1751505AbaFLWJC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 18:09:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59538 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751330AbaFLWIw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 18:08:52 -0400
+	id S1751330AbaFLWI7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 18:08:59 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
@@ -15,20 +15,17 @@ Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
         Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 01/17] perf tools: Always force PERF_RECORD_FINISHED_ROUND event
-Date: Fri, 13 Jun 2014 00:08:17 +0200
-Message-Id: <1402610913-19059-2-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 02/17] perf tools: Fix accounting of ordered samples queue
+Date: Fri, 13 Jun 2014 00:08:18 +0200
+Message-Id: <1402610913-19059-3-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1402610913-19059-1-git-send-email-jolsa@kernel.org>
 References: <1402610913-19059-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PERF_RECORD_FINISHED_ROUND governs queue flushing in
-reporting, so it needs to be stored for any kind of event.
-
-Forcing the PERF_RECORD_FINISHED_ROUND event to be stored any
-time we finish the round and wrote at least one event.
+Properly account flushed samples within the ordered
+samples queue.
 
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -41,34 +38,30 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/builtin-record.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ tools/perf/util/session.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 378b85b..4869050 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -238,6 +238,7 @@ static struct perf_event_header finished_round_event = {
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 64a186e..aec3dcd 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -511,6 +511,7 @@ static int flush_sample_queue(struct perf_session *s,
+ 		os->last_flush = iter->timestamp;
+ 		list_del(&iter->list);
+ 		list_add(&iter->list, &os->sample_cache);
++		os->nr_samples--;
  
- static int record__mmap_read_all(struct record *rec)
- {
-+	u64 bytes_written = rec->bytes_written;
- 	int i;
- 	int rc = 0;
- 
-@@ -250,7 +251,11 @@ static int record__mmap_read_all(struct record *rec)
- 		}
+ 		if (show_progress)
+ 			ui_progress__update(&prog, 1);
+@@ -523,8 +524,6 @@ static int flush_sample_queue(struct perf_session *s,
+ 			list_entry(head->prev, struct sample_queue, list);
  	}
  
--	if (perf_header__has_feat(&rec->session->header, HEADER_TRACING_DATA))
-+	/*
-+	 * Mark the round finished in case we wrote
-+	 * at least one event.
-+	 */
-+	if (bytes_written != rec->bytes_written)
- 		rc = record__write(rec, &finished_round_event, sizeof(finished_round_event));
+-	os->nr_samples = 0;
+-
+ 	return 0;
+ }
  
- out:
 -- 
 1.8.3.1
 
