@@ -1,172 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756400AbaFLPeh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 11:34:37 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:45511 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756057AbaFLPec (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 11:34:32 -0400
-Date: Thu, 12 Jun 2014 08:34:26 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Christoph Lameter <cl@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] percpu: add data dependency barrier in percpu
- accessors and operations
-Message-ID: <20140612153426.GV4581@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140612135630.GA23606@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140612135630.GA23606@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061215-8236-0000-0000-0000030E73C9
+	id S1756426AbaFLPfX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 11:35:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26768 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756136AbaFLPbO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 11:31:14 -0400
+From: Jiri Olsa <jolsa@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jean Pihet <jean.pihet@linaro.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH 02/14] perf tools: Cache register accesses for unwind processing
+Date: Thu, 12 Jun 2014 17:30:33 +0200
+Message-Id: <1402587045-5461-3-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1402587045-5461-1-git-send-email-jolsa@kernel.org>
+References: <1402587045-5461-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 12, 2014 at 09:56:30AM -0400, Tejun Heo wrote:
-> >From 2ff90ab638d50d6191ba3a3564b53fccb78bd4cd Mon Sep 17 00:00:00 2001
-> From: Tejun Heo <tj@kernel.org>
-> Date: Wed, 11 Jun 2014 20:47:02 -0400
-> 
-> percpu areas are zeroed on allocation and, by its nature, accessed
-> from multiple cpus.  Consider the following scenario.
-> 
->  p = NULL;
-> 
-> 	CPU-1				CPU-2
->  p = alloc_percpu()		if (p)
-> 					WARN_ON(this_cpu_read(*p));
-> 
-> As all percpu areas are zeroed on allocation, CPU-2 should never
-> trigger the WARN; however, there's no barrier between zeroing of the
-> percpu regions and the assignment of @p or between testing of @p and
-> dereferencing it and CPU-2 may see garbage value from before the
-> clearing and trigger the warning.
-> 
-> Note that this may happen even on archs which don't require data
-> dependency barriers.  While CPU-2 woudln't reorder percpu area access
-> above the testing of @p, nothing prevents CPU-1 from scheduling
-> zeroing after the assignment of @p.
-> 
-> This patch fixes the issue by adding a smp_wmb() before a newly
-> allocated percpu pointer is returned and a smp_read_barrier_depends()
-> in __verify_pcpu_ptr() which is guaranteed to be invoked at least once
-> before every percpu access.  It currently may be invoked multiple
-> times per operation which isn't optimal.  Future patches will update
-> the definitions so that the macro is invoked only once per access.
-> 
-> It can be argued that smp_read_barrier_depends() is the responsibility
-> of the caller; however, discerning local and remote accesses gets very
-> confusing with percpu areas (initialized remotely but local to this
-> cpu and vice-versa) and data dependency barrier is free on all archs
-> except for alpha, so I think it's better to include it as part of
-> percpu accessors and operations.
+Caching registers value into an array. Got about 4% speed up
+of perf_reg_value function for report command processing
+dwarf unwind stacks.
 
-OK, I will bite...  Did you find a bug of this form?  (I do see a
-couple of possible bugs on a quick look, so maybe...)
+Output from report over 1.5 GB data with DWARF unwind stacks:
+(TODO fix perf diff)
 
-I would argue that the code above should instead say something like:
+  current code:
+   5.84%     perf  perf                       [.] perf_reg_value
+  change:
+   1.94%     perf  perf                       [.] perf_reg_value
 
-	smp_store_release(p, alloc_percpu());
+And little bit of overall speed up:
+(perf stat -r 5 -e '{cycles,instructions}:u' ...)
 
-I was worried about use of per_cpu() by the reading CPU, but of course
-in that case, things are initialized at compiler time.
+  current code:
+   310,298,611,754      cycles                     ( +-  0.33% )
+   439,669,689,341      instructions               ( +-  0.03% )
 
-> I wonder whether we also need a smp_wmb() for other __GFP_ZERO
-> allocations.  There isn't one and requiring the users to perform
-> smp_wmb() to ensure the propagation of zeroing seems too subtle.
+     188.656753166 seconds time elapsed            ( +-  0.82% )
 
-I would say "no" even if we do decide that alloc_percpu() needs
-an smp_wmb().  The reason is that you really do have to store the
-pointer at some point, and you should use smp_store_release() for
-this task, at least if you are storing to something accessible to
-other CPUs.
+  change:
+   291,315,329,878      cycles                     ( +-  0.22% )
+   391,763,485,304      instructions               ( +-  0.03%  )
 
-						Thanx, Paul
+     180.742249687 seconds time elapsed            ( +-  0.64% )
 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Christoph Lameter <cl@linux-foundation.org>
-> Cc: David Howells <dhowells@redhat.com>
-> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> ---
->  include/linux/percpu-defs.h | 15 ++++++++++++---
->  mm/percpu.c                 |  9 +++++++++
->  2 files changed, 21 insertions(+), 3 deletions(-)
-> 
-> diff --git a/include/linux/percpu-defs.h b/include/linux/percpu-defs.h
-> index a5fc7d0..b91bb37 100644
-> --- a/include/linux/percpu-defs.h
-> +++ b/include/linux/percpu-defs.h
-> @@ -1,6 +1,8 @@
->  #ifndef _LINUX_PERCPU_DEFS_H
->  #define _LINUX_PERCPU_DEFS_H
-> 
-> +#include <asm/barrier.h>
-> +
->  /*
->   * Base implementations of per-CPU variable declarations and definitions, where
->   * the section in which the variable is to be placed is provided by the
-> @@ -19,9 +21,15 @@
->  	__attribute__((section(".discard"), unused))
-> 
->  /*
-> - * Macro which verifies @ptr is a percpu pointer without evaluating
-> - * @ptr.  This is to be used in percpu accessors to verify that the
-> - * input parameter is a percpu pointer.
-> + * This macro serves two purposes.  It verifies @ptr is a percpu pointer
-> + * without evaluating @ptr and provides the data dependency barrier paired
-> + * with smp_wmb() at the end of the allocation path so that the memory
-> + * clearing in the allocation path is visible to all percpu accsses.
-> + *
-> + * The existence of the data dependency barrier is guaranteed and percpu
-> + * users can take advantage of it - e.g. percpu area updates followed by
-> + * smp_wmb() and then a percpu pointer assignment are guaranteed to be
-> + * visible to accessors which access through the assigned percpu pointer.
->   *
->   * + 0 is required in order to convert the pointer type from a
->   * potential array type to a pointer to a single item of the array.
-> @@ -29,6 +37,7 @@
->  #define __verify_pcpu_ptr(ptr)	do {					\
->  	const void __percpu *__vpp_verify = (typeof((ptr) + 0))NULL;	\
->  	(void)__vpp_verify;						\
-> +	smp_read_barrier_depends();					\
->  } while (0)
-> 
->  /*
-> diff --git a/mm/percpu.c b/mm/percpu.c
-> index 2ddf9a9..bd3cab8 100644
-> --- a/mm/percpu.c
-> +++ b/mm/percpu.c
-> @@ -816,6 +816,15 @@ area_found:
->  	/* return address relative to base address */
->  	ptr = __addr_to_pcpu_ptr(chunk->base_addr + off);
->  	kmemleak_alloc_percpu(ptr, size);
-> +
-> +	/*
-> +	 * The following wmb is paired with the data dependency barrier in
-> +	 * the percpu accessors and guarantees that the zeroing of the
-> +	 * percpu areas in pcpu_populate_chunk() is visible to all percpu
-> +	 * accesses through the returned percpu pointer.  The accessors get
-> +	 * their data dependency barrier from __verify_pcpu_ptr().
-> +	 */
-> +	smp_wmb();
->  	return ptr;
-> 
->  fail_unlock:
-> -- 
-> 1.9.3
-> 
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jean Pihet <jean.pihet@linaro.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1401892622-30848-2-git-send-email-jolsa@kernel.org
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+---
+ tools/perf/util/event.h     |  5 +++++
+ tools/perf/util/perf_regs.c | 10 +++++++++-
+ tools/perf/util/perf_regs.h |  4 +++-
+ 3 files changed, 17 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index 9ba2eb3..e5dd40a 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -7,6 +7,7 @@
+ #include "../perf.h"
+ #include "map.h"
+ #include "build-id.h"
++#include "perf_regs.h"
+ 
+ struct mmap_event {
+ 	struct perf_event_header header;
+@@ -89,6 +90,10 @@ struct regs_dump {
+ 	u64 abi;
+ 	u64 mask;
+ 	u64 *regs;
++
++	/* Cached values/mask filled by first register access. */
++	u64 cache_regs[PERF_REGS_MAX];
++	u64 cache_mask;
+ };
+ 
+ struct stack_dump {
+diff --git a/tools/perf/util/perf_regs.c b/tools/perf/util/perf_regs.c
+index a3539ef..43168fb 100644
+--- a/tools/perf/util/perf_regs.c
++++ b/tools/perf/util/perf_regs.c
+@@ -1,11 +1,15 @@
+ #include <errno.h>
+ #include "perf_regs.h"
++#include "event.h"
+ 
+ int perf_reg_value(u64 *valp, struct regs_dump *regs, int id)
+ {
+ 	int i, idx = 0;
+ 	u64 mask = regs->mask;
+ 
++	if (regs->cache_mask & (1 << id))
++		goto out;
++
+ 	if (!(mask & (1 << id)))
+ 		return -EINVAL;
+ 
+@@ -14,6 +18,10 @@ int perf_reg_value(u64 *valp, struct regs_dump *regs, int id)
+ 			idx++;
+ 	}
+ 
+-	*valp = regs->regs[idx];
++	regs->cache_mask |= (1 << id);
++	regs->cache_regs[id] = regs->regs[idx];
++
++out:
++	*valp = regs->cache_regs[id];
+ 	return 0;
+ }
+diff --git a/tools/perf/util/perf_regs.h b/tools/perf/util/perf_regs.h
+index 79c78f7..980dbf7 100644
+--- a/tools/perf/util/perf_regs.h
++++ b/tools/perf/util/perf_regs.h
+@@ -2,7 +2,8 @@
+ #define __PERF_REGS_H
+ 
+ #include <linux/types.h>
+-#include "event.h"
++
++struct regs_dump;
+ 
+ #ifdef HAVE_PERF_REGS_SUPPORT
+ #include <perf_regs.h>
+@@ -11,6 +12,7 @@ int perf_reg_value(u64 *valp, struct regs_dump *regs, int id);
+ 
+ #else
+ #define PERF_REGS_MASK	0
++#define PERF_REGS_MAX	0
+ 
+ static inline const char *perf_reg_name(int id __maybe_unused)
+ {
+-- 
+1.8.3.1
 
