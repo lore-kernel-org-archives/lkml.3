@@ -1,77 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755974AbaFLNT5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 09:19:57 -0400
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:59977 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755792AbaFLNTv (ORCPT
+	id S933452AbaFLNUl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 09:20:41 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:28004 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755792AbaFLNUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 09:19:51 -0400
+	Thu, 12 Jun 2014 09:20:38 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/MhQ9YSVG/kM+cyBP8+hrtoaKOr3D050U=
+X-DKIM: OpenDKIM Filter v2.0.1 titan CC0EB58DDAA
+Date: Thu, 12 Jun 2014 09:20:23 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sricharan R <r.sricharan@ti.com>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tony@atomide.com, santosh.shilimkar@ti.com, nm@ti.com, rnayak@ti.com,
+        linux@arm.linux.org.uk, tglx@linutronix.de
+Subject: Re: [PATCH V2 11/19] irqchip: crossbar: fix memory leak incase of
+ invalid entry
+Message-ID: <20140612132023.GX8664@titan.lakedaemon.net>
+References: <1402574007-13987-1-git-send-email-r.sricharan@ti.com>
+ <1402574007-13987-12-git-send-email-r.sricharan@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <20140612124918.GC4857@pd.tnic>
-References: <1402561602-28807-1-git-send-email-jean.pihet@linaro.org>
-	<20140612123432.GA2608@kernel.org>
-	<20140612124918.GC4857@pd.tnic>
-Date: Thu, 12 Jun 2014 15:19:50 +0200
-Message-ID: <CAFrcx1kfUkFF9ROy2C0gcFe88aOHfv2qJBfO+uv+Z7ZW5HxQCw@mail.gmail.com>
-Subject: Re: [PATCH] tools:perf: move tools/perf/util to tools/lib/perf_util
-From: Jean Pihet <jean.pihet@linaro.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Robert Richter <rric@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402574007-13987-12-git-send-email-r.sricharan@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 June 2014 14:49, Borislav Petkov <bp@alien8.de> wrote:
-> On Thu, Jun 12, 2014 at 09:34:32AM -0300, Arnaldo Carvalho de Melo wrote:
->> Em Thu, Jun 12, 2014 at 10:26:42AM +0200, Jean Pihet escreveu:
->> > This is a first move of the perf code into a set of libraries, which
->> > allow the implementation of other external tools.
->> >
->> > The first users of the perf libraries would be:
->> > - perf itself,
->> > - the RAS daemon.
->> >
->> > The commit includes:
->> > - the move of the code from util to lib/perf_util,
->> > - creation of Makefile in perf_util,
->> > - update of Makefile.perf to build a library for perf_util,
->> > - fix of the include paths, eg. "../perf.h" to <perf.h>, "util/hist.h" to
->> >   <hist.h>
->>
->> Can't you just go moving what you actually use? Or do you really plan to
->> use all that?
->
-> You asked me that same question when I was doing that. :-)
-The idea is to move the re-usable code in libraries, so that other
-tools than perf can use it as well.
+On Thu, Jun 12, 2014 at 05:23:19PM +0530, Sricharan R wrote:
+> From: Nishanth Menon <nm@ti.com>
+> 
+> When the provided unused skip list entry is greater than max irqs
+> possible, we go to err3, but we fail to free register_offsets,
+> should have returned to err4 instead which ensures that allocated
 
->
-> And I told Jean repeatedly that this needs to be splitted slowly, in
-> smaller libraries like we've been discussing it numerous times.
-Hrrr. I see it as a first move, later the rest of the code can be
-moved the same way.
-Now it seems that moving all from util/ at once is too much. How do
-you see it happening?
+s/returned/jumped/
 
-Note: moving some code in the perf source is hairy enough (cf. the
-simplicity of the Makefiles ;-) and so I do not want to re-do it all
-over again too many times.
+> register_offsets are freed as well.
+> 
+> Signed-off-by: Nishanth Menon <nm@ti.com>
+> ---
+>  drivers/irqchip/irq-crossbar.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/irqchip/irq-crossbar.c b/drivers/irqchip/irq-crossbar.c
+> index 42a2e62..fea3e5d 100644
+> --- a/drivers/irqchip/irq-crossbar.c
+> +++ b/drivers/irqchip/irq-crossbar.c
+> @@ -225,7 +225,7 @@ static int __init crossbar_of_init(struct device_node *node,
+>  
+>  			if (entry > max) {
+>  				pr_err("Invalid skip entry\n");
+> -				goto err3;
+> +				goto err4;
 
-Thx for looking!
-Jean
+This would be a good opportunity to reduce the possibility of future
+errors.  Please consider renaming err{1,2,3,4} to something more
+recognizable while you are here.
 
->
-> :-\
->
-> --
-> Regards/Gruss,
->     Boris.
->
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
+thx,
+
+Jason.
+
+>  			}
+>  			cb->irq_map[entry] = IRQ_SKIP;
+>  		}
+> -- 
+> 1.7.9.5
+> 
