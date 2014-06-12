@@ -1,55 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755895AbaFLMQM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 08:16:12 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:39044 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752742AbaFLMQJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 08:16:09 -0400
+	id S1755932AbaFLMSR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 08:18:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52571 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755812AbaFLMSQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 08:18:16 -0400
+Message-ID: <53999A84.7010105@suse.cz>
+Date: Thu, 12 Jun 2014 14:18:12 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <CAPDyKFocVLryEyP-mBrHU8ZNJaX22uaA__s8iGYcmH9t9RiZQw@mail.gmail.com>
-References: <CALAqxLWAXU0hS8si-CmkOObBOHGv_skMVfPnUsdmLcZzkdUsWA@mail.gmail.com>
- <CAPDyKFocVLryEyP-mBrHU8ZNJaX22uaA__s8iGYcmH9t9RiZQw@mail.gmail.com>
-From: Peter Maydell <peter.maydell@linaro.org>
-Date: Thu, 12 Jun 2014 13:15:46 +0100
-Message-ID: <CAFEAcA-qJtr+n3c5QMp0KxgxrvKzjms2hu-HjscrETgZO9vpMg@mail.gmail.com>
-Subject: Re: [Regression] 3.15 mmc related ext4 corruption with qemu-system-arm
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: John Stultz <john.stultz@linaro.org>, Chris Ball <chris@printf.net>,
-        Johan Rudholm <jrudholm@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "Theodore Ts'o" <tytso@mit.edu>, lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: David Rientjes <rientjes@google.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [RFC PATCH 6/6] mm, compaction: don't migrate in blocks that
+ cannot be fully compacted in async direct compaction
+References: <alpine.DEB.2.02.1405211954410.13243@chino.kir.corp.google.com> <1401898310-14525-1-git-send-email-vbabka@suse.cz> <1401898310-14525-6-git-send-email-vbabka@suse.cz> <alpine.DEB.2.02.1406041705140.22536@chino.kir.corp.google.com> <53908F10.4020603@suse.cz> <alpine.DEB.2.02.1406051431030.18119@chino.kir.corp.google.com> <53916EE7.9000806@suse.cz> <alpine.DEB.2.02.1406090156340.24247@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1406090156340.24247@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 June 2014 13:09, Ulf Hansson <ulf.hansson@linaro.org> wrote:
-> A simple fix; for the arm_variant, go back to use the old behaviour.
+On 06/09/2014 11:06 AM, David Rientjes wrote:
+> On Fri, 6 Jun 2014, Vlastimil Babka wrote:
 >
-> A quite simple fix; Invent a new primecell-periphid and a new
-> corresponding variant and use the old behaviour for this variant. The
-> new primecell-periphid then needs to be provided through DT for the
-> QEMU dtb.
+>>> Agreed.  I was thinking higher than 1GB would be possible once we have
+>>> your series that does the pageblock skip for thp, I think the expense
+>>> would be constant because we won't needlessly be migrating pages unless it
+>>> has a good chance at succeeding.
+>>
+>> Looks like a counter of iterations actually done in scanners, maintained in
+>> compact_control, would work better than any memory size based limit? It could
+>> better reflect the actual work done and thus latency. Maybe increase the counter
+>> also for migrations, with a higher cost than for a scanner iteration.
+>>
 >
-> Is there any of the above solution you see as the preferred one?
+> I'm not sure we can expose that to be configurable by userspace in any
+> meaningful way.  We'll want to be able to tune this depending on the size
+> of the machine if we are to truly remove the need_resched() heuristic and
+> give it a sane default.  I was thinking it would be similar to
+> khugepaged's pages_to_scan value that it uses on each wakeup.
 
-Those both sound like workarounds, not fixes, to me. Somebody
-needs to identify whether the bug here is in:
- * the kernel (unlikely, but possibly the kernel has a race
-   condition that only gets triggered by QEMU's "operations
-   that take time in h/w happen instantaneously in emulation"
-   behaviour)
- * the QEMU model of the PL181
- * the QEMU model of the SD card
-and then fix whichever of these is not conforming to the
-specs/docs/etc.
+Perhaps userspace can see the value in memory size unit, which would be 
+translated to pages_to_scan assuming the worst case, i.e. scanning each 
+page? Which would be used to limit the iterations, so if we end up 
+skipping blocks of pages instead of single pages for whatever reasons, 
+we can effectively scan a bigger memory size with the same effort?
 
-Also, there's no such thing as a "QEMU dtb", at least for
-most of our board models. QEMU models the actual hardware
-(sometimes buggily or incompletely) and so should use the
-exact same dtb you would use with the hardware.
+>>> This does beg the question about parallel direct compactors, though, that
+>>> will be contending on the same coarse zone->lru_lock locks and immediately
+>>> aborting and falling back to PAGE_SIZE pages for thp faults that will be
+>>> more likely if your patch to grab the high-order page and return it to the
+>>> page allocator is merged.
+>>
+>> Hm can you explain how the page capturing makes this worse? I don't see it.
+>>
+>
+> I was expecting that your patch to capture the high-order page made a
+> difference because the zone watermark check doesn't imply the high-order
+> page will be allocatable after we return to the page allocator to allocate
+> it.  In that case, we terminated compaction prematurely.
 
-thanks
--- PMM
+In fact compact_finished() uses both a watermark check and then a 
+free_list check. Only if both pass, it exits. But page allocation then 
+does another watermark check which may fail (due to its raciness and 
+drift) even though the page is still available on the free_list.
+
+> If that's true,
+> then it seems like no parallel thp allocator will be able to allocate
+> memory that another direct compactor has freed without entering compaction
+> itself on a fragmented machine, and thus an increase in zone->lru_lock
+> contention if there's migratable memory.
+
+I think it's only fair if someone who did the compaction work can 
+allocate the page. Another compaction then has to do its own work, so in 
+the end it's 2 units of work for 2 allocations (assuming success). 
+Without the fairness, it might be 2 units of work by single allocator, 
+for 2 successful allocations of two allocators. Or, as you seem to 
+imply, 1 unit of work for 1 successful allocation, because the one doing 
+the work will terminate prematurely and end up without allocation.
+If we really rely on this premature termination as a contention 
+prevention, then it seems quite unfair and fragile to me.
+
+> Having 32 cpus fault thp memory and all entering compaction and contending
+> (and aborting because of contention, currently) on zone->lru_lock is a
+> really bad situation.
+
+I'm not sure if the premature termination could prevent this reliably. I 
+rather doubt that. The lock contention checks should work just fine in 
+this case. And also I don't think it's that bad if they abort due to 
+contention, if it happens quickly. It means that in such situation, it's 
+simply a better performance tradeoff to give up on THP and fallback to 
+4k allocation. Also you say "currently" but we are not going to change 
+that for lock contention, are we?
+
