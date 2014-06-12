@@ -1,61 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756347AbaFLPdO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 11:33:14 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:38633 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756161AbaFLPdJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 11:33:09 -0400
-Message-ID: <5399C830.8070607@wwwdotorg.org>
-Date: Thu, 12 Jun 2014 09:33:04 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Rob Herring <robh@kernel.org>, linux-kernel@vger.kernel.org
-CC: Mark Brown <broonie@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        ALSA Development Mailing List <alsa-devel@alsa-project.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        Magnus <magnus.damm@gmail.com>, Simon <horms@verge.net.au>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>
-Subject: Re: [PATCH] of: Add vendor 2nd prefix for Asahi Kasei Corp
-References: <CAMuHMdWTVBjFzA9L9Eqpq_2Xi9_NHkOCLrb_UjK611SBfwnc=Q@mail.gmail.com>	<87ioo7c0g5.wl%kuninori.morimoto.gx@renesas.com>	<539815E6.2050304@codethink.co.uk>	<20140611165410.GK5099@sirena.org.uk>	<CAMuHMdUT0hEBGbN+W-Oz5zJ0N8S2VDMndqtDO=EtWF3jG2MEew@mail.gmail.com>	<20140611170233.GL5099@sirena.org.uk>	<5398A53D.3020706@wwwdotorg.org>	<20140611190444.GN5099@sirena.org.uk>	<5398AB07.4040304@wwwdotorg.org> <87sinbdk44.wl%kuninori.morimoto.gx@renesas.com>
-In-Reply-To: <87sinbdk44.wl%kuninori.morimoto.gx@renesas.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S933595AbaFLPed (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 11:34:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60519 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756180AbaFLPbZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 11:31:25 -0400
+From: Jiri Olsa <jolsa@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jean Pihet <jean.pihet@linaro.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH 06/14] perf tools: Add global count of opened dso objects
+Date: Thu, 12 Jun 2014 17:30:37 +0200
+Message-Id: <1402587045-5461-7-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1402587045-5461-1-git-send-email-jolsa@kernel.org>
+References: <1402587045-5461-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2014 06:53 PM, Kuninori Morimoto wrote:
-> From: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-> 
-> Current vendor-prefixes.txt already has
-> "ak" prefix for Asahi Kasei Corp by
-> ae8c4209af2cec065fef15d200a42a04130799f7
-> (of: Add vendor prefix for Asahi Kasei Corp.)
-> 
-> It went through the appropriate review process,
-> and is already in use.
-> But, almost all Asahi Kasei chip driver is
-> using "asahi-kasei" prefix today.
+Adding global count of opened dso objects so we could
+properly limit the number of opened dso data file
+descriptors.
 
-I'm fine with this patch, but just wanted to comment on this part of the
-commit description:
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jean Pihet <jean.pihet@linaro.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1401892622-30848-6-git-send-email-jolsa@kernel.org
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+---
+ tools/perf/util/dso.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-What is in the drivers isn't relevant; that's not what drives the ABI.
-The issue is that some *DTs* use ak and some use asahi-kasei, so both
-those need to be supported.
-
-That said, we should document which one of the two prefixes is
-preferred, and use this for any new AK binding.
-
-It would also be nice to ensure the preferred prefix is in all drivers'
-of_match_tables, and remove the deprecated prefix from all drivers'
-of_match_tables *except* where there's already a DT file that references
-the deprecated vendor prefix.
+diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+index 5d7c7bc..76e5c13 100644
+--- a/tools/perf/util/dso.c
++++ b/tools/perf/util/dso.c
+@@ -1,3 +1,4 @@
++#include <asm/bug.h>
+ #include "symbol.h"
+ #include "dso.h"
+ #include "machine.h"
+@@ -137,18 +138,23 @@ int dso__read_binary_type_filename(const struct dso *dso,
+ }
+ 
+ /*
+- * Global list of open DSOs.
++ * Global list of open DSOs and the counter.
+  */
+ static LIST_HEAD(dso__data_open);
++static long dso__data_open_cnt;
+ 
+ static void dso__list_add(struct dso *dso)
+ {
+ 	list_add_tail(&dso->data.open_entry, &dso__data_open);
++	dso__data_open_cnt++;
+ }
+ 
+ static void dso__list_del(struct dso *dso)
+ {
+ 	list_del(&dso->data.open_entry);
++	WARN_ONCE(dso__data_open_cnt <= 0,
++		  "DSO data fd counter out of bounds.");
++	dso__data_open_cnt--;
+ }
+ 
+ static int __open_dso(struct dso *dso, struct machine *machine)
+-- 
+1.8.3.1
 
