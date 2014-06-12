@@ -1,70 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751758AbaFLVsq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 17:48:46 -0400
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:36156 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751583AbaFLVsn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1751597AbaFLVsn (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 12 Jun 2014 17:48:43 -0400
-Date: Thu, 12 Jun 2014 14:48:41 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Vlastimil Babka <vbabka@suse.cz>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+Received: from mx1.redhat.com ([209.132.183.28]:1300 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751082AbaFLVsl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 17:48:41 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: linux-mm@kvack.org
+Cc: Dave Hansen <dave.hansen@intel.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [RFC PATCH 4/6] mm, compaction: skip buddy pages by their order
- in the migrate scanner
-In-Reply-To: <53999563.9060105@suse.cz>
-Message-ID: <alpine.DEB.2.02.1406121446070.12437@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1405211954410.13243@chino.kir.corp.google.com> <1401898310-14525-1-git-send-email-vbabka@suse.cz> <1401898310-14525-4-git-send-email-vbabka@suse.cz> <alpine.DEB.2.02.1406041656400.22536@chino.kir.corp.google.com> <5390374E.5080708@suse.cz>
- <alpine.DEB.2.02.1406051428360.18119@chino.kir.corp.google.com> <53916BB0.3070001@suse.cz> <alpine.DEB.2.02.1406090207300.24247@chino.kir.corp.google.com> <53959C11.2000305@suse.cz> <alpine.DEB.2.02.1406091512540.5271@chino.kir.corp.google.com>
- <5396B31B.6080706@suse.cz> <alpine.DEB.2.02.1406101646540.32203@chino.kir.corp.google.com> <5398492E.3070406@suse.cz> <alpine.DEB.2.02.1406111720370.11536@chino.kir.corp.google.com> <53999563.9060105@suse.cz>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+        Hugh Dickins <hughd@google.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH -mm v2 08/11] pagewalk: update comment on walk_page_range()
+Date: Thu, 12 Jun 2014 17:48:08 -0400
+Message-Id: <1402609691-13950-9-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1402609691-13950-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1402609691-13950-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Jun 2014, Vlastimil Babka wrote:
+Rewriting common code of page table walker has been done, so this patch
+updates the comment on walk_page_range() for the future development.
 
-> > Ok, and I won't continue to push the point.
-> 
-> I'd rather know I'm correct and not just persistent enough :) If you confirm
-> that your compiler behaves differently, then maybe making page_order_unsafe a
-> #define instead of inline function would prevent this issue?
-> 
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+---
+ mm/pagewalk.c | 55 +++++++++++++++++++++++++++----------------------------
+ 1 file changed, 27 insertions(+), 28 deletions(-)
 
-The reason I was hesitatnt is because there's no way I can prove under all 
-possible circumstances in which page_order_unsafe() could be used that gcc 
-won't make the decision to reaccess.  I personally didn't think that doing
+diff --git mmotm-2014-05-21-16-57.orig/mm/pagewalk.c mmotm-2014-05-21-16-57/mm/pagewalk.c
+index b46c8882c643..626a80d4d9dd 100644
+--- mmotm-2014-05-21-16-57.orig/mm/pagewalk.c
++++ mmotm-2014-05-21-16-57/mm/pagewalk.c
+@@ -253,39 +253,38 @@ static int __walk_page_range(unsigned long start, unsigned long end,
+  * walk_page_range - walk page table with caller specific callbacks
+  *
+  * Recursively walk the page table tree of the process represented by
+- * @walk->mm within the virtual address range [@start, @end). In walking,
+- * we can call caller-specific callback functions against each entry.
++ * @walk->mm within the virtual address range [@start, @end). During walking,
++ * we can call caller-specific callback functions against each leaf entry.
+  *
+  * Before starting to walk page table, some callers want to check whether
+- * they really want to walk over the vma (for example by checking vm_flags.)
+- * walk_page_test() and @walk->test_walk() do that check.
++ * they really want to walk over the current vma, typically by checking
++ * its vm_flags. walk_page_test() and @walk->test_walk() are used for this
++ * purpose.
+  *
+- * If any callback returns a non-zero value, the page table walk is aborted
+- * immediately and the return value is propagated back to the caller.
+- * Note that the meaning of the positive returned value can be defined
+- * by the caller for its own purpose.
++ * Currently we have three types of possible leaf enties, pte (for normal
++ * pages,) pmd (for thps,) and hugetlb. We handle these three with pte_entry(),
++ * pmd_entry(), and hugetlb_entry(), respectively.
++ * If you don't set any function to some of these callbacks, the associated
++ * entries/pages are ignored.
++ * The return values of these three callbacks are commonly defined like below:
++ *  - 0  : succeeded to handle the current entry, and if you don't reach the
++ *         end address yet, continue to walk.
++ *  - >0 : succeeded to handle the current entry, and return to the caller
++ *         with caller specific value.
++ *  - <0 : failed to handle the current entry, and return to the caller
++ *         with error code.
++ * We can set the same function to different callbacks, where @walk->size
++ * should be helpful to know the type of entry in callbacks.
+  *
+- * If the caller defines multiple callbacks in different levels, the
+- * callbacks are called in depth-first manner. It could happen that
+- * multiple callbacks are called on a address. For example if some caller
+- * defines test_walk(), pmd_entry(), and pte_entry(), then callbacks are
+- * called in the order of test_walk(), pmd_entry(), and pte_entry().
+- * If you don't want to go down to lower level at some point and move to
+- * the next entry in the same level, you set @walk->skip to 1.
+- * For example if you succeed to handle some pmd entry as trans_huge entry,
+- * you need not call walk_pte_range() any more, so set it to avoid that.
+- * We can't determine whether to go down to lower level with the return
+- * value of the callback, because the whole range of return values (0, >0,
+- * and <0) are used up for other meanings.
++ * struct mm_walk keeps current values of some common data like vma and pmd,
++ * which are useful for the access from callbacks. If you want to pass some
++ * caller-specific data to callbacks, @walk->private should be helpful.
+  *
+- * Each callback can access to the vma over which it is doing page table
+- * walk right now via @walk->vma. @walk->vma is set to NULL in walking
+- * outside a vma. If you want to access to some caller-specific data from
+- * callbacks, @walk->private should be helpful.
+- *
+- * The callers should hold @walk->mm->mmap_sem. Note that the lower level
+- * iterators can take page table lock in lowest level iteration and/or
+- * in split_huge_page_pmd().
++ * Locking:
++ *   Callers of walk_page_range() and walk_page_vma() should hold
++ *   @walk->mm->mmap_sem, because these function traverse vma list and/or
++ *   access to vma's data. And page table lock is held during running
++ *   pmd_entry(), pte_entry(), and hugetlb_entry().
+  */
+ int walk_page_range(unsigned long start, unsigned long end,
+ 		    struct mm_walk *walk)
+-- 
+1.9.3
 
-	if (PageBuddy(page)) {
-		/*
-		 * Racy check since we know PageBuddy() is true and we do
-		 * some sanity checking on this scan to ensure it is an
-		 * appropriate order.
-		 */
-		unsigned long order = ACCESS_ONCE(page_private(page));
-		...
-	}
-
-was too much of a problem and actually put the ACCESS_ONCE() in the 
-context in which it matters rather than hiding behind an inline function.
-
-> > I think the lockless
-> > suitable_migration_target() call that looks at page_order() is fine in the
-> > free scanner since we use it as a racy check, but it might benefit from
-> > either a comment describing the behavior or a sanity check for
-> > page_order(page) <= MAX_ORDER as you've done before.
-> 
-> OK, I'll add that.
-> 
-
-Thanks!
