@@ -1,47 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756039AbaFLOpJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 10:45:09 -0400
-Received: from plane.gmane.org ([80.91.229.3]:37977 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752898AbaFLOpG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 10:45:06 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Alin Dobre <alin.dobre@elastichosts.com>
-Subject: Re: [RFC] Per-user namespace process accounting
-Date: Thu, 12 Jun 2014 15:37:54 +0100
-Message-ID: <5399BB42.60304@elastichosts.com>
-References: <5386D58D.2080809@1h.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: 79.135.116.105
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-In-Reply-To: <5386D58D.2080809@1h.com>
-Cc: containers@lists.osdl.org, lxc-devel@lists.linuxcontainers.org
+	id S1756066AbaFLOpP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 10:45:15 -0400
+Received: from w-smtp-out-7.wedos.net ([46.28.106.5]:36352 "EHLO
+	we2-f167.wedos.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752898AbaFLOpK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 10:45:10 -0400
+X-Greylist: delayed 725 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 Jun 2014 10:45:09 EDT
+Date: Thu, 12 Jun 2014 16:32:56 +0200
+From: Josef Gajdusek <atx@atx.name>
+To: rjw@rjwysocki.net
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] acpi/battery: fix wrong value of capacity_now reported by
+ few battery types when fully charged
+Message-ID: <20140612143256.GA14085@dashie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/05/14 07:37, Marian Marinov wrote:
-> Hello,
-> 
-> I have the following proposition.
-> 
-> Number of currently running processes is accounted at the root user namespace. The problem I'm facing is that multiple
-> containers in different user namespaces share the process counters.
-> 
-> So if containerX runs 100 with UID 99, containerY should have NPROC limit of above 100 in order to execute any
-> processes with ist own UID 99.
-> 
-> I know that some of you will tell me that I should not provision all of my containers with the same UID/GID maps, but
-> this brings another problem.
+It seems that some batteries (noticed on DELL JYPJ136) assume 
+capacity_now = design_capacity when fully charged. This causes 
+reported capacity to suddenly jump to >full_charge_capacity (and that 
+means capacity reported to userspace is >100% and incorrect) 
+values after 99%. This patch attempts to detect this bug and trims 
+capacity_now properly.
 
-If this matters, we also suffer from the same problem here. So we
-support any implementation that would address it.
-
-Cheers,
-Alin.
+---
+diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
+index e48fc98..3338dd5 100644
+--- a/drivers/acpi/battery.c
++++ b/drivers/acpi/battery.c
+@@ -532,6 +532,14 @@ static int acpi_battery_get_state(struct acpi_battery *battery)
+ 			" invalid.\n");
+ 	}
+ 
++	/* When fully charged, some batteries wrongly report
++	 * capacity_now = design_capacity instead of = full_charge_capacity
++	 */
++	if (battery->capacity_now == battery->design_capacity &&
++	    battery->full_charge_capacity != ACPI_BATTERY_VALUE_UNKNOWN)
++		battery->capacity_now = battery->full_charge_capacity;
++
++
+ 	if (test_bit(ACPI_BATTERY_QUIRK_PERCENTAGE_CAPACITY, &battery->flags)
+ 	    && battery->capacity_now >= 0 && battery->capacity_now <= 100)
+ 		battery->capacity_now = (battery->capacity_now *
 
