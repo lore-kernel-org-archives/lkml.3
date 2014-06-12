@@ -1,453 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752408AbaFLUen (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 16:34:43 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:43066 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751811AbaFLUel (ORCPT
+	id S1752633AbaFLUf1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 16:35:27 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:44151 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751964AbaFLUfZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 16:34:41 -0400
-From: Janne Kanniainen <janne.kanniainen@gmail.com>
-To: jkosina@suse.cz
-Cc: johan@kernel.org, cooloney@gmail.com, linux-kernel@vger.kernel.org,
-        linux-leds@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-input@vger.kernel.org,
-        Janne Kanniainen <janne.kanniainen@gmail.com>
-Subject: [PATCH v5] leds: USB: HID: Add support for MSI GT683R led panels
-Date: Thu, 12 Jun 2014 23:34:12 +0300
-Message-Id: <1402605252-9620-1-git-send-email-janne.kanniainen@gmail.com>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <20140612090636.GK10256@localhost>
-References: <20140612090636.GK10256@localhost>
+	Thu, 12 Jun 2014 16:35:25 -0400
+Date: Thu, 12 Jun 2014 13:35:18 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>
+Subject: Re: safety of *mutex_unlock() (Was: [BUG] signal: sighand
+	unprotected when accessed by /proc)
+Message-ID: <20140612203518.GZ4581@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140610141306.04a4bcf3@gandalf.local.home>
+ <alpine.DEB.2.10.1406102203430.5170@nanos>
+ <alpine.DEB.2.10.1406102210580.5170@nanos>
+ <20140611155251.GA4581@linux.vnet.ibm.com>
+ <20140611170705.GA26816@redhat.com>
+ <20140611171734.GA27457@redhat.com>
+ <20140611172958.GF4581@linux.vnet.ibm.com>
+ <20140611175934.GA28912@redhat.com>
+ <20140611195613.GM4581@linux.vnet.ibm.com>
+ <20140612172844.GA15795@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140612172844.GA15795@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14061220-7164-0000-0000-00000268F9BF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver adds support for USB controlled led panels that exists in
-MSI GT683R laptop
+On Thu, Jun 12, 2014 at 07:28:44PM +0200, Oleg Nesterov wrote:
+> On 06/11, Paul E. McKenney wrote:
+> >
+> > On Wed, Jun 11, 2014 at 07:59:34PM +0200, Oleg Nesterov wrote:
+> > > On 06/11, Paul E. McKenney wrote:
+> > > >
+> > > > I was thinking of ->boost_completion as the way to solve it easily, but
+> > > > what did you have in mind?
+> > >
+> > > I meant, rcu_boost() could probably just do "mtx->owner = t", we know that
+> > > it was unlocked by us and nobody else can use it until we set
+> > > t->rcu_boost_mutex.
+> >
+> > My concern with this is that rcu_read_unlock_special() could hypothetically
+> > get preempted (either by kernel or hypervisor), so that it might be a long
+> > time until it makes its reference.  But maybe that reference would be
+> > harmless in this case.
+> 
+> Confused... Not sure I understand what did you mean, and certainly I do not
+> understand how this connects to the proxy-locking method.
+> 
+> Could you explain?
 
-Signed-off-by: Janne Kanniainen <janne.kanniainen@gmail.com>
----
-Changes in v2:
-	- sorted headers to alphabetic order
-	- using devm_kzalloc
-	- using BIT(n)
-	- using usb_control_msg instead of usb_submit_urb
-	- removing unneeded code
+Here is the hypothetical sequence of events, which cannot happen unless
+the CPU releasing the lock accesses the structure after releasing
+the lock:
 
-Changes in v3:
-	- implemented as HID device
-	- some cleanups and bug fixes
+	CPU 0				CPU 1 (booster)
 
-Changes in v4:
-	- more cleanups
-	- support for selecting leds
-	- suppport for selecting status
+	releases boost_mutex
 
-Changes in v5:
-	- mode attribute documented under Documentation/ABI
-	- made array for led_classdev
-	- led devices uses now recommended naming scheme
+					acquires boost_mutex
+					releases boost_mutex
+					post-release boost_mutex access?
+					Loops to next task to boost
+					proxy-locks boost_mutex
 
- .../ABI/testing/sysfs-class-hid-driver-gt683r      |  10 +
- drivers/hid/Kconfig                                |  11 +
- drivers/hid/Makefile                               |   1 +
- drivers/hid/hid-core.c                             |   1 +
- drivers/hid/hid-gt683r.c                           | 294 +++++++++++++++++++++
- drivers/hid/hid-ids.h                              |   2 +-
- drivers/hid/usbhid/hid-quirks.c                    |   2 +-
- 7 files changed, 319 insertions(+), 2 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-class-hid-driver-gt683r
- create mode 100644 drivers/hid/hid-gt683r.c
+	post-release boost_mutex access:
+		confused due to proxy-lock
+		operation?
 
-diff --git a/Documentation/ABI/testing/sysfs-class-hid-driver-gt683r b/Documentation/ABI/testing/sysfs-class-hid-driver-gt683r
-new file mode 100644
-index 0000000..c4d604e
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-class-hid-driver-gt683r
-@@ -0,0 +1,10 @@
-+What:		/sys/class/hidraw/<hidraw>/device/state
-+Date:		Jun 2014
-+KernelVersion:	3.15
-+Contact:	Janne Kanniainen <janne.kanniainen@gmail.com>
-+Description:
-+		Set the mode of LEDs
-+
-+		0 - normal
-+		1 - audio
-+		2 - breathing
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index 7af9d0b..d93e0ae 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -261,6 +261,17 @@ config HOLTEK_FF
- 	  Say Y here if you have a Holtek On Line Grip based game controller
- 	  and want to have force feedback support for it.
+Now maybe this ends up being safe, but it sure feels like an accident
+waiting to happen.  Some bright developer comes up with a super-fast
+handoff, and blam, RCU priority boosting takes it in the shorts.  ;-)
+In contrast, using the completion prevents this.
+
+> > > And if we move it into rcu_node, then we can probably kill ->rcu_boost_mutex,
+> > > rcu_read_unlock_special() could check rnp->boost_mutex->owner == current.
+> >
+> > If this was anywhere near a hot code path, I would be sorely tempted.
+> 
+> Ah, but I didn't mean perfomance. I think it is always good to try to remove
+> something from task_struct, it is huge. I do not mean sizeof() in the first
+> place, the very fact that I can hardly understand the purpose of a half of its
+> members makes me sad ;)
+
+Now -that- just might make a huge amount of sense!  Let's see...
+
+o	We hold the rcu_node structure's ->lock when checking the owner
+	(looks like rt_mutex_owner() is the right API).
+
+o	We hold the rcu_node structure's ->lock when doing
+	rt_mutex_init_proxy_locked().
+
+o	We -don't- hold ->lock when releasing the rt_mutex, but that
+	should be OK: The owner is releasing it, and it is going to
+	not-owned, so no other task can possibly see ownership moving
+	to/from them.
+
+o	The rcu_node structure grows a bit, but not enough to worry
+	about, and on most systems, the decrease in task_struct size
+	will more than outweigh the increase in rcu_node size.
+
+Looks quite promising, how about the following?  (Hey, it builds, so it
+must be correct, right?)
+
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+rcu: Simplify priority boosting by putting rt_mutex in rcu_node
+
+RCU priority boosting currently checks for boosting via a pointer in
+task_struct.  However, this is not needed: As Oleg noted, if the
+rt_mutex is placed in the rcu_node instead of on the booster's stack,
+the boostee can simply check it see if it owns the lock.  This commit
+makes this change, shrinking task_struct by one pointer and the kernel
+by three lines.
+
+Suggested-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+ b/include/linux/sched.h    |    3 ---
+ b/kernel/rcu/tree.h        |    3 +++
+ b/kernel/rcu/tree_plugin.h |   19 ++++++++-----------
+ 3 files changed, 11 insertions(+), 14 deletions(-)
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 25f54c79f757..6b90114764ff 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1222,9 +1222,6 @@ struct task_struct {
+ #ifdef CONFIG_TREE_PREEMPT_RCU
+ 	struct rcu_node *rcu_blocked_node;
+ #endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
+-#ifdef CONFIG_RCU_BOOST
+-	struct rt_mutex *rcu_boost_mutex;
+-#endif /* #ifdef CONFIG_RCU_BOOST */
  
-+config HID_GT683R
-+       tristate "MSI GT68xR LED support"
-+       depends on LEDS_CLASS && USB_HID
-+       ---help---
-+       Say Y here if you want to enable support for the MSI GT68xR LEDS
-+
-+       This driver support following states normal, breathing and audio.
-+       You can also select which leds you want to enable.
-+       Currently the following devices are know to be supported:
-+       - MSI GT683R
-+
- config HID_HUION
- 	tristate "Huion tablets"
- 	depends on USB_HID
-diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
-index fc712dd..7129311 100644
---- a/drivers/hid/Makefile
-+++ b/drivers/hid/Makefile
-@@ -48,6 +48,7 @@ obj-$(CONFIG_HID_EMS_FF)	+= hid-emsff.o
- obj-$(CONFIG_HID_ELECOM)	+= hid-elecom.o
- obj-$(CONFIG_HID_ELO)		+= hid-elo.o
- obj-$(CONFIG_HID_EZKEY)		+= hid-ezkey.o
-+obj-$(CONFIG_HID_GT683R)	+= hid-gt683r.o
- obj-$(CONFIG_HID_GYRATION)	+= hid-gyration.o
- obj-$(CONFIG_HID_HOLTEK)	+= hid-holtek-kbd.o
- obj-$(CONFIG_HID_HOLTEK)	+= hid-holtek-mouse.o
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index da52279..ec88fdb 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1827,6 +1827,7 @@ static const struct hid_device_id hid_have_special_driver[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_WIRELESS_OPTICAL_DESKTOP_3_0) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_OFFICE_KB) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_MONTEREY, USB_DEVICE_ID_GENIUS_KB29E) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_MSI, USB_DEVICE_ID_MSI_GT683R_LED_PANEL) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_1) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_2) },
-diff --git a/drivers/hid/hid-gt683r.c b/drivers/hid/hid-gt683r.c
-new file mode 100644
-index 0000000..6dffb76
---- /dev/null
-+++ b/drivers/hid/hid-gt683r.c
-@@ -0,0 +1,294 @@
-+/*
-+ * MSI GT683R led driver
-+ *
-+ * Copyright (c) 2014 Janne Kanniainen <janne.kanniainen@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation; either version 2 of
-+ * the License, or (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/hid.h>
-+#include <linux/kernel.h>
-+#include <linux/leds.h>
-+#include <linux/module.h>
-+
-+#include "hid-ids.h"
-+
-+#define GT683R_LED_BACK				BIT(0)
-+#define GT683R_LED_SIDE				BIT(1)
-+#define GT683R_LED_FRONT			BIT(2)
-+
-+#define GT683R_BUFFER_SIZE			8
-+
-+/*
-+ * GT683R_LED_OFF: all LEDs are off
-+ * GT683R_LED_AUDIO: the status of LEDs depends
-+ * on sound level
-+ * GT683R_LED_BREATHING: LEDs brightness varies
-+ * at human breathing rate
-+ * GT683R_LED_NORMAL: LEDs are on
-+ */
-+enum gt683r_led_mode {
-+	GT683R_LED_OFF = 0,
-+	GT683R_LED_AUDIO = 2,
-+	GT683R_LED_BREATHING = 3,
-+	GT683R_LED_NORMAL = 5
-+};
-+
-+enum gt683r_panels {
-+	back,
-+	side,
-+	front,
-+};
-+
-+const char *gt683r_panel_names[] = {
-+	"gt683r::back",
-+	"gt683r::side",
-+	"gt683r::front",
-+};
-+
-+struct gt683r_led {
-+	struct hid_device *hdev;
-+	struct led_classdev *led_devs[3];
-+	struct mutex lock;
-+	struct work_struct work;
-+	enum led_brightness brightnesses[3];
-+	enum gt683r_led_mode mode;
-+};
-+
-+static const struct hid_device_id gt683r_led_id[] = {
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_MSI, USB_DEVICE_ID_MSI_GT683R_LED_PANEL) },
-+	{ }
-+};
-+
-+static void gt683r_brightness_set(struct led_classdev *led_cdev,
-+				enum led_brightness brightness)
-+{
-+	int i;
-+	struct device *dev = led_cdev->dev->parent;
-+	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-+	struct gt683r_led *led = hid_get_drvdata(hdev);
-+
-+	for (i = 0; i < 3; i++) {
-+		if (led->led_devs[i] != led_cdev)
-+			continue;
-+
-+		led->brightnesses[i] = brightness;
-+		schedule_work(&led->work);
-+		break;
-+	}
-+}
-+
-+static ssize_t gt683r_show_mode(struct device *dev,
-+				struct device_attribute *attr,
-+				char *buf)
-+{
-+	struct hid_device *hdev =
-+		container_of(dev, struct hid_device, dev);
-+	struct gt683r_led *led = hid_get_drvdata(hdev);
-+
-+	if (led->mode == GT683R_LED_NORMAL)
-+		return scnprintf(buf, PAGE_SIZE, "0\n");
-+	else if (led->mode == GT683R_LED_AUDIO)
-+		return scnprintf(buf, PAGE_SIZE, "1\n");
-+	else
-+		return scnprintf(buf, PAGE_SIZE, "2\n");
-+
-+}
-+
-+static ssize_t gt683r_store_mode(struct device *dev,
-+				struct device_attribute *attr,
-+				const char *buf, size_t count)
-+{
-+	struct hid_device *hdev =
-+		container_of(dev, struct hid_device, dev);
-+	struct gt683r_led *led = hid_get_drvdata(hdev);
-+
-+	mutex_lock(&led->lock);
-+
-+	if (!strncmp("0", buf, strlen("0"))) {
-+		led->mode = GT683R_LED_NORMAL;
-+	} else if (!strncmp("1", buf, strlen("1"))) {
-+		led->mode = GT683R_LED_AUDIO;
-+	} else if (!strncmp("2", buf, strlen("2"))) {
-+		led->mode = GT683R_LED_BREATHING;
-+	} else {
-+		count = -EINVAL;
-+		goto fail;
-+	}
-+
-+	schedule_work(&led->work);
-+fail:
-+	mutex_unlock(&led->lock);
-+
-+	return count;
-+}
-+
-+static int gt683r_led_snd_msg(struct gt683r_led *led, u8 *msg)
-+{
-+	int ret;
-+
-+	ret = hid_hw_raw_request(led->hdev, msg[0], msg, GT683R_BUFFER_SIZE,
-+				HID_FEATURE_REPORT, HID_REQ_SET_REPORT);
-+	if (ret != GT683R_BUFFER_SIZE) {
-+		hid_err(led->hdev,
-+			"failed to send set report request: %i\n", ret);
-+		if (ret < 0)
-+			return ret;
-+		return -EIO;
-+	}
-+
-+	return 0;
-+}
-+
-+static void gt683r_led_set(struct gt683r_led *led, u8 leds, u8 mode)
-+{
-+	u8 *buffer;
-+
-+	buffer = kzalloc(GT683R_BUFFER_SIZE, GFP_KERNEL);
-+	if (!buffer)
-+		return;
-+
-+	buffer[0] = 0x01;
-+	buffer[1] = 0x02;
-+	buffer[2] = 0x30;
-+	buffer[3] = leds;
-+	if (gt683r_led_snd_msg(led, buffer))
-+		goto fail;
-+
-+	buffer[2] = 0x20;
-+	buffer[3] = mode;
-+	buffer[4] = 0x01;
-+	gt683r_led_snd_msg(led, buffer);
-+
-+fail:
-+	kfree(buffer);
-+}
-+
-+static void gt683r_led_work(struct work_struct *work)
-+{
-+	struct gt683r_led *led =
-+			container_of(work, struct gt683r_led, work);
-+	u8 leds = 0;
-+
-+	mutex_lock(&led->lock);
-+
-+	if (led->brightnesses[back])
-+		leds |= GT683R_LED_BACK;
-+
-+	if (led->brightnesses[side])
-+		leds |= GT683R_LED_SIDE;
-+
-+	if (led->brightnesses[front])
-+		leds |= GT683R_LED_FRONT;
-+
-+	if (leds)
-+		gt683r_led_set(led, leds, led->mode);
-+	else
-+		gt683r_led_set(led, leds, GT683R_LED_OFF);
-+
-+	mutex_unlock(&led->lock);
-+}
-+
-+static DEVICE_ATTR(mode, 0644, gt683r_show_mode, gt683r_store_mode);
-+
-+static int gt683r_led_probe(struct hid_device *hdev,
-+			const struct hid_device_id *id)
-+{
-+	int ret, i;
-+	struct gt683r_led *led;
-+
-+	led = devm_kzalloc(&hdev->dev, sizeof(struct gt683r_led), GFP_KERNEL);
-+	if (!led)
-+		return -ENOMEM;
-+
-+	led->mode = GT683R_LED_NORMAL;
-+	led->hdev = hdev;
-+	hid_set_drvdata(hdev, led);
-+
-+	ret = hid_parse(hdev);
-+	if (ret) {
-+		hid_err(hdev, "hid parsing failed\n");
-+		goto fail;
-+	}
-+
-+	ret = hid_hw_start(hdev, HID_CONNECT_HIDRAW);
-+	if (ret) {
-+		hid_err(hdev, "hw start failed\n");
-+		goto fail;
-+	}
-+
-+	for (i = 0; i < 3; i++) {
-+		led->led_devs[i] = kzalloc(sizeof(struct led_classdev) +
-+					strlen(gt683r_panel_names[i]) + 1,
-+					GFP_KERNEL);
-+		if (!led->led_devs[i])
-+			goto fail2;
-+		led->led_devs[i]->name = gt683r_panel_names[i];
-+		led->led_devs[i]->max_brightness = 1;
-+		led->led_devs[i]->brightness_set = gt683r_brightness_set;
-+		ret = led_classdev_register(&hdev->dev, led->led_devs[i]);
-+		if (ret) {
-+			hid_err(hdev, "could not register led device\n");
-+			goto fail2;
-+		}
-+	}
-+
-+	ret = device_create_file(&led->hdev->dev,
-+				&dev_attr_mode);
-+	if (ret) {
-+		hid_err(hdev, "could not make mode attribute file\n");
-+		goto fail2;
-+	}
-+
-+	mutex_init(&led->lock);
-+	INIT_WORK(&led->work, gt683r_led_work);
-+
-+	return 0;
-+
-+fail2:
-+	while (i-- > 0) {
-+		led_classdev_unregister(led->led_devs[i]);
-+		kfree(led->led_devs[i]);
-+	}
-+	hid_hw_stop(hdev);
-+fail:
-+	return ret;
-+}
-+
-+static void gt683r_led_remove(struct hid_device *hdev)
-+{
-+	int i;
-+	struct gt683r_led *led = hid_get_drvdata(hdev);
-+
-+	for (i = 0; i < 3; i++) {
-+		led_classdev_unregister(led->led_devs[i]);
-+		kfree(led->led_devs[i]);
-+	}
-+	cancel_work_sync(&led->work);
-+	device_remove_file(&hdev->dev,
-+			&dev_attr_mode);
-+	hid_hw_stop(hdev);
-+}
-+
-+static struct hid_driver gt683r_led_driver = {
-+	.probe = gt683r_led_probe,
-+	.remove = gt683r_led_remove,
-+	.name = "gt683r_led",
-+	.id_table = gt683r_led_id,
-+};
-+
-+module_hid_driver(gt683r_led_driver);
-+
-+MODULE_AUTHOR("Janne Kanniainen");
-+MODULE_DESCRIPTION("MSI GT683R led driver");
-+MODULE_LICENSE("GPL");
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 34bb220..3692d37 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -641,7 +641,7 @@
- #define USB_DEVICE_ID_GENIUS_KB29E	0x3004
+ #if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
+ 	struct sched_info sched_info;
+diff --git a/kernel/rcu/tree.h b/kernel/rcu/tree.h
+index 31194ee9dfa6..db3f096ed80b 100644
+--- a/kernel/rcu/tree.h
++++ b/kernel/rcu/tree.h
+@@ -177,6 +177,9 @@ struct rcu_node {
+ 				/*  to carry out the boosting is fully */
+ 				/*  released with no future boostee accesses */
+ 				/*  before that rt_mutex is re-initialized. */
++	struct rt_mutex boost_mtx;
++				/* Used only for the priority-boosting */
++				/*  side effect, not as a lock. */
+ 	unsigned long boost_time;
+ 				/* When to start boosting (jiffies). */
+ 	struct task_struct *boost_kthread_task;
+diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+index 99743e9ea8ed..7628095f1c47 100644
+--- a/kernel/rcu/tree_plugin.h
++++ b/kernel/rcu/tree_plugin.h
+@@ -398,11 +398,9 @@ void rcu_read_unlock_special(struct task_struct *t)
+ #ifdef CONFIG_RCU_BOOST
+ 		if (&t->rcu_node_entry == rnp->boost_tasks)
+ 			rnp->boost_tasks = np;
+-		/* Snapshot/clear ->rcu_boost_mutex with rcu_node lock held. */
+-		if (t->rcu_boost_mutex) {
+-			rbmp = t->rcu_boost_mutex;
+-			t->rcu_boost_mutex = NULL;
+-		}
++		/* Snapshot/clear ->boost_mutex with rcu_node lock held. */
++		if (rt_mutex_owner(&rnp->boost_mtx) == t)
++			rbmp = &rnp->boost_mtx;
+ #endif /* #ifdef CONFIG_RCU_BOOST */
  
- #define USB_VENDOR_ID_MSI		0x1770
--#define USB_DEVICE_ID_MSI_GX680R_LED_PANEL	0xff00
-+#define USB_DEVICE_ID_MSI_GT683R_LED_PANEL 0xff00
+ 		/*
+@@ -1151,7 +1149,6 @@ static void rcu_wake_cond(struct task_struct *t, int status)
+ static int rcu_boost(struct rcu_node *rnp)
+ {
+ 	unsigned long flags;
+-	struct rt_mutex mtx;
+ 	struct task_struct *t;
+ 	struct list_head *tb;
  
- #define USB_VENDOR_ID_NATIONAL_SEMICONDUCTOR 0x0400
- #define USB_DEVICE_ID_N_S_HARMONY	0xc359
-diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
-index 8e4ddb3..c640e1d 100644
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -73,7 +73,7 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_FORMOSA, USB_DEVICE_ID_FORMOSA_IR_RECEIVER, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_FREESCALE, USB_DEVICE_ID_FREESCALE_MX28, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_MGE, USB_DEVICE_ID_MGE_UPS, HID_QUIRK_NOGET },
--	{ USB_VENDOR_ID_MSI, USB_DEVICE_ID_MSI_GX680R_LED_PANEL, HID_QUIRK_NO_INIT_REPORTS },
-+	{ USB_VENDOR_ID_MSI, USB_DEVICE_ID_MSI_GT683R_LED_PANEL, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_NEXIO, USB_DEVICE_ID_NEXIO_MULTITOUCH_PTI0750, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_NOVATEK, USB_DEVICE_ID_NOVATEK_MOUSE, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN, HID_QUIRK_NO_INIT_REPORTS },
--- 
-1.9.2
+@@ -1202,14 +1199,14 @@ static int rcu_boost(struct rcu_node *rnp)
+ 	 * section.
+ 	 */
+ 	t = container_of(tb, struct task_struct, rcu_node_entry);
+-	rt_mutex_init_proxy_locked(&mtx, t);
+-	t->rcu_boost_mutex = &mtx;
++	rt_mutex_init_proxy_locked(&rnp->boost_mtx, t);
+ 	init_completion(&rnp->boost_completion);
+ 	raw_spin_unlock_irqrestore(&rnp->lock, flags);
+-	rt_mutex_lock(&mtx);  /* Side effect: boosts task t's priority. */
+-	rt_mutex_unlock(&mtx);  /* Keep lockdep happy. */
++	/* Lock only for side effect: boosts task t's priority. */
++	rt_mutex_lock(&rnp->boost_mtx);
++	rt_mutex_unlock(&rnp->boost_mtx);  /* Then keep lockdep happy. */
+ 
+-	/* Wait until boostee is done accessing mtx before reinitializing. */
++	/* Wait for boostee to be done w/boost_mtx before reinitializing. */
+ 	wait_for_completion(&rnp->boost_completion);
+ 
+ 	return ACCESS_ONCE(rnp->exp_tasks) != NULL ||
 
