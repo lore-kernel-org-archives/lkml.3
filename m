@@ -1,111 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752122AbaFLTeb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 15:34:31 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:36657 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751495AbaFLTeI (ORCPT
+	id S1752286AbaFLTeq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 15:34:46 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:45715 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752150AbaFLTeo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 15:34:08 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 2/2] timer: Kick dynticks targets on mod_timer*() calls
-Date: Thu, 12 Jun 2014 21:34:01 +0200
-Message-Id: <1402601641-28462-3-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1402601641-28462-1-git-send-email-fweisbec@gmail.com>
-References: <1402601641-28462-1-git-send-email-fweisbec@gmail.com>
+	Thu, 12 Jun 2014 15:34:44 -0400
+From: Andy Gross <agross@codeaurora.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-spi@vger.kernel.org, Sagar Dharia <sdharia@codeaurora.org>,
+        Daniel Sneddon <dsneddon@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Andy Gross <agross@codeaurora.org>
+Subject: [Patch v2 1/3] spi: qup: Remove chip select function
+Date: Thu, 12 Jun 2014 14:34:10 -0500
+Message-Id: <1402601652-24641-2-git-send-email-agross@codeaurora.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1402601652-24641-1-git-send-email-agross@codeaurora.org>
+References: <1402601652-24641-1-git-send-email-agross@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Viresh Kumar <viresh.kumar@linaro.org>
+This patch removes the chip select function.  Chip select should instead be
+supported using GPIOs, defining the DT entry "cs-gpios", and letting the SPI
+core assert/deassert the chip select as it sees fit.
 
-When a timer is enqueued or modified on a dynticks target, that CPU
-must re-evaluate the next tick to service that timer.
-
-The tick re-evaluation is performed by an IPI kick on the target.
-Now while we correctly call wake_up_nohz_cpu() from add_timer_on(), the
-mod_timer*() API family doesn't support so well dynticks targets.
-
-The reason for this is likely that __mod_timer() isn't supposed to
-select an idle target for a timer, unless that target is the current
-CPU, in which case a dynticks idle kick isn't actually needed.
-
-But there is a small race window lurking behind that assumption: the
-elected target has all the time to turn dynticks idle between the call
-to get_nohz_timer_target() and the locking of its base. Hence a risk
-that we enqueue a timer on a dynticks idle destination without kicking
-it. As a result, the timer might be serviced too late in the future.
-
-Also a target elected by __mod_timer() can be in full dynticks mode
-and thus require to be kicked as well. And unlike idle dynticks, this
-concern both local and remote targets.
-
-To fix this whole issue, lets centralize the dynticks kick to
-internal_add_timer() so that it is well handled for all sort of timer
-enqueue. Even timer migration is concerned so that a full dynticks target
-is correctly kicked as needed when timers are migrating to it.
-
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Andy Gross <agross@codeaurora.org>
 ---
- kernel/timer.c | 32 ++++++++++++++++----------------
- 1 file changed, 16 insertions(+), 16 deletions(-)
+ .../devicetree/bindings/spi/qcom,spi-qup.txt       |    6 ++++
+ drivers/spi/spi-qup.c                              |   33 ++++----------------
+ 2 files changed, 12 insertions(+), 27 deletions(-)
 
-diff --git a/kernel/timer.c b/kernel/timer.c
-index 9e5f4f2..aca5dfe 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -410,6 +410,22 @@ static void internal_add_timer(struct tvec_base *base, struct timer_list *timer)
- 			base->next_timer = timer->expires;
- 	}
- 	base->all_timers++;
+diff --git a/Documentation/devicetree/bindings/spi/qcom,spi-qup.txt b/Documentation/devicetree/bindings/spi/qcom,spi-qup.txt
+index b82a268..bee6ff2 100644
+--- a/Documentation/devicetree/bindings/spi/qcom,spi-qup.txt
++++ b/Documentation/devicetree/bindings/spi/qcom,spi-qup.txt
+@@ -23,6 +23,12 @@ Optional properties:
+ - spi-max-frequency: Specifies maximum SPI clock frequency,
+                      Units - Hz. Definition as per
+                      Documentation/devicetree/bindings/spi/spi-bus.txt
++- num-cs:	total number of chipselects
++- cs-gpios:	should specify GPIOs used for chipselects.
++		The gpios will be referred to as reg = <index> in the SPI child
++		nodes.  If unspecified, a single SPI device without a chip
++		select can be used.
 +
-+	/*
-+	 * Check whether the other CPU is in dynticks mode and needs
-+	 * to be triggered to reevaluate the timer wheel.
-+	 * We are protected against the other CPU fiddling
-+	 * with the timer by holding the timer base lock. This also
-+	 * makes sure that a CPU on the way to stop its tick can not
-+	 * evaluate the timer wheel.
-+	 *
-+	 * Spare the IPI for deferrable timers on idle targets though.
-+	 * The next busy ticks will take care of it. Except full dynticks
-+	 * require special care against races with idle_cpu(), lets deal
-+	 * with that later.
-+	 */
-+	if (!tbase_get_deferrable(base) || tick_nohz_full_cpu(base->cpu))
-+		wake_up_nohz_cpu(base->cpu);
+ 
+ SPI slave nodes must be children of the SPI master node and can contain
+ properties described in Documentation/devicetree/bindings/spi/spi-bus.txt
+diff --git a/drivers/spi/spi-qup.c b/drivers/spi/spi-qup.c
+index fc1de86..3938c62 100644
+--- a/drivers/spi/spi-qup.c
++++ b/drivers/spi/spi-qup.c
+@@ -424,31 +424,6 @@ static int spi_qup_io_config(struct spi_device *spi, struct spi_transfer *xfer)
+ 	return 0;
  }
  
- #ifdef CONFIG_TIMER_STATS
-@@ -949,22 +965,6 @@ void add_timer_on(struct timer_list *timer, int cpu)
- 	timer_set_base(timer, base);
- 	debug_activate(timer, timer->expires);
- 	internal_add_timer(base, timer);
--	/*
--	 * Check whether the other CPU is in dynticks mode and needs
--	 * to be triggered to reevaluate the timer wheel.
--	 * We are protected against the other CPU fiddling
--	 * with the timer by holding the timer base lock. This also
--	 * makes sure that a CPU on the way to stop its tick can not
--	 * evaluate the timer wheel.
--	 *
--	 * Spare the IPI for deferrable timers on idle targets though.
--	 * The next busy ticks will take care of it. Except full dynticks
--	 * require special care against races with idle_cpu(), lets deal
--	 * with that later.
--	 */
--	if (!tbase_get_deferrable(timer->base) || tick_nohz_full_cpu(cpu))
--		wake_up_nohz_cpu(cpu);
+-static void spi_qup_set_cs(struct spi_device *spi, bool enable)
+-{
+-	struct spi_qup *controller = spi_master_get_devdata(spi->master);
 -
- 	spin_unlock_irqrestore(&base->lock, flags);
- }
- EXPORT_SYMBOL_GPL(add_timer_on);
+-	u32 iocontol, mask;
+-
+-	iocontol = readl_relaxed(controller->base + SPI_IO_CONTROL);
+-
+-	/* Disable auto CS toggle and use manual */
+-	iocontol &= ~SPI_IO_C_MX_CS_MODE;
+-	iocontol |= SPI_IO_C_FORCE_CS;
+-
+-	iocontol &= ~SPI_IO_C_CS_SELECT_MASK;
+-	iocontol |= SPI_IO_C_CS_SELECT(spi->chip_select);
+-
+-	mask = SPI_IO_C_CS_N_POLARITY_0 << spi->chip_select;
+-
+-	if (enable)
+-		iocontol |= mask;
+-	else
+-		iocontol &= ~mask;
+-
+-	writel_relaxed(iocontol, controller->base + SPI_IO_CONTROL);
+-}
+-
+ static int spi_qup_transfer_one(struct spi_master *master,
+ 			      struct spi_device *spi,
+ 			      struct spi_transfer *xfer)
+@@ -571,12 +546,16 @@ static int spi_qup_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 	}
+ 
++	/* use num-cs unless not present or out of range */
++	if (of_property_read_u16(dev->of_node, "num-cs",
++			&master->num_chipselect) ||
++			(master->num_chipselect > SPI_NUM_CHIPSELECTS))
++		master->num_chipselect = SPI_NUM_CHIPSELECTS;
++
+ 	master->bus_num = pdev->id;
+ 	master->mode_bits = SPI_CPOL | SPI_CPHA | SPI_CS_HIGH | SPI_LOOP;
+-	master->num_chipselect = SPI_NUM_CHIPSELECTS;
+ 	master->bits_per_word_mask = SPI_BPW_RANGE_MASK(4, 32);
+ 	master->max_speed_hz = max_freq;
+-	master->set_cs = spi_qup_set_cs;
+ 	master->transfer_one = spi_qup_transfer_one;
+ 	master->dev.of_node = pdev->dev.of_node;
+ 	master->auto_runtime_pm = true;
 -- 
-1.8.3.1
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
