@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933044AbaFLJrv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 05:47:51 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:55440 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933001AbaFLJrs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 05:47:48 -0400
-Date: Thu, 12 Jun 2014 10:47:45 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: Kconfig fails: big select-based circular dependency
-Message-ID: <20140612094745.GD23430@n2100.arm.linux.org.uk>
-References: <20140607090944.GL23430@n2100.arm.linux.org.uk>
+	id S933009AbaFLJtK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 05:49:10 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:35127 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932784AbaFLJtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 05:49:08 -0400
+Message-ID: <5399777A.8020900@ti.com>
+Date: Thu, 12 Jun 2014 15:18:42 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140607090944.GL23430@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: <guillaume.gardet@free.fr>, Sachin Kamat <sachin.kamat@samsung.com>
+CC: <linux-kernel@vger.kernel.org>,
+        openSUSE Kernel ML <opensuse-kernel@opensuse.org>,
+        Girish K S <ks.giri@samsung.com>, Yuvaraj C D <yuvaraj.cd@samsung.com>,
+        Jean Delvare <jdelvare@suse.de>, Sachin Kamat <spk.linux@gmail.com>
+Subject: Re: [PATCH] phy: Fix typo in drivers/phy/phy-exynos5250-sata.c module
+ which fixes the build
+References: <53996247.5020203@free.fr> <CAK5sBcH-6xeKomVay4PFWzLV8M-Sx=jankcE-7mj7K00=Gwe4w@mail.gmail.com> <53996852.1050708@free.fr> <53996CF9.5070100@ti.com> <53997666.7000003@free.fr>
+In-Reply-To: <53997666.7000003@free.fr>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping.
 
-This causes randconfig and all*config to fail without building
-anything.
 
-If no one responds, I'll assume that no one is interested, and I'll
-just create a pile of patches removing a bunch of these idiotic select
-statements at random to break this loop.
+On Thursday 12 June 2014 03:14 PM, Guillaume Gardet wrote:
+> 
+> Le 12/06/2014 11:03, Kishon Vijay Abraham I a écrit :
+>>
+>> On Thursday 12 June 2014 02:14 PM, Guillaume Gardet wrote:
+>>> Le 12/06/2014 10:36, Sachin Kamat a écrit :
+>>>> Hi Guillaume,
+>>>>
+>>>>
+>>>> On Thu, Jun 12, 2014 at 1:48 PM, Guillaume Gardet
+>>>> <guillaume.gardet@free.fr> wrote:
+>>>>> Hi,
+>>>>>
+>>>>> please find in attachment a patch which fixes a typo in drivers/phy/phy-exynos5250-sata.c module license.
+>>>>> It fixes the following build error:
+>>>>>     FATAL: modpost: GPL-incompatible module phy-exynos5250-sata.ko uses GPL-only symbol 'platform_driver_unregister'
+>>>>>
+>>>>> Please keep me in CC since I am not subscribed to the linux-kernel@vger.kernel.org ML.
+>>>>>
+>>>>> Signed-off-by: Guillaume GARDET <guillaume.gardet@opensuse.org>
+>>>> A similar patch has already been submitted by Arnd. Please see below:
+>>>> https://lkml.org/lkml/2014/3/15/40
+>>> Was not aware of this one. Will it be merged? I can see that it was sent 3 months ago and got no answer apparently.
+>> It's in mainline kernel already
+>> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/drivers/phy/phy-exynos5250-sata.c?id=fe04e4297e6eab014a2cf152319b9f361df07faf
+> 
+> Ok. It is in mainline but not in 3.15.
 
-On Sat, Jun 07, 2014 at 10:09:44AM +0100, Russell King - ARM Linux wrote:
-> This is getting silly:
-> 
-> scripts/kconfig/conf --silentoldconfig Kconfig
-> drivers/dma/Kconfig:5:error: recursive dependency detected!
-> drivers/dma/Kconfig:5:  symbol DMADEVICES is selected by SAMSUNG_DMADEV
-> arch/arm/plat-samsung/Kconfig:412:      symbol SAMSUNG_DMADEV is selected by S3C64XX_PL080
-> arch/arm/mach-s3c64xx/Kconfig:20:       symbol S3C64XX_PL080 is selected by SPI_S3C64XX
-> drivers/spi/Kconfig:429:        symbol SPI_S3C64XX depends on SPI
-> drivers/spi/Kconfig:8:  symbol SPI is selected by DRM_PANEL_LD9040
-> drivers/gpu/drm/panel/Kconfig:19:       symbol DRM_PANEL_LD9040 depends on DRM_PANEL
-> drivers/gpu/drm/panel/Kconfig:1:        symbol DRM_PANEL is selected by DRM_IMX_LDB
-> drivers/staging/imx-drm/Kconfig:35:     symbol DRM_IMX_LDB depends on MFD_SYSCON
-> drivers/mfd/Kconfig:722:        symbol MFD_SYSCON is selected by POWER_RESET_KEYSTONE
-> drivers/power/reset/Kconfig:76: symbol POWER_RESET_KEYSTONE depends on POWER_SUPPLY
-> drivers/power/Kconfig:1:        symbol POWER_SUPPLY is selected by HID_SONY
-> drivers/hid/Kconfig:622:        symbol HID_SONY depends on NEW_LEDS
-> drivers/leds/Kconfig:8: symbol NEW_LEDS is selected by BACKLIGHT_ADP8860
-> drivers/video/backlight/Kconfig:327:    symbol BACKLIGHT_ADP8860 depends on BACKLIGHT_CLASS_DEVICE
-> drivers/video/backlight/Kconfig:156:    symbol BACKLIGHT_CLASS_DEVICE is selected by FB_MX3
-> drivers/video/fbdev/Kconfig:2333:       symbol FB_MX3 depends on MX3_IPU
-> drivers/dma/Kconfig:121:        symbol MX3_IPU depends on DMADEVICES
-> 
-> This is a good illustration why the select disease is truely bad...
-> 
-> -- 
-> FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-> improving, and getting towards what was expected from it.
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+hmm, yes. It went in this merge window.
 
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+-Kishon
+
+> 
+> 
+> Guillaume
+> 
