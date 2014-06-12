@@ -1,246 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756146AbaFLPMw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 11:12:52 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:56613 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752959AbaFLPMp (ORCPT
+	id S1756160AbaFLPNO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 11:13:14 -0400
+Received: from fbr03.mfg.siteprotect.com ([64.26.60.138]:39912 "EHLO
+	fbr03.mfg.siteprotect.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755983AbaFLPNL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 11:12:45 -0400
-From: Alban Bedel <alban.bedel@avionic-design.de>
-To: Rob Herring <robh+dt@kernel.org>
-Cc: Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Alban Bedel <alban.bedel@avionic-design.de>
-Subject: [PATCH 1/2] ARM: tegra: tamonten: add the base board regulators
-Date: Thu, 12 Jun 2014 17:11:24 +0200
-Message-Id: <1402585885-28247-1-git-send-email-alban.bedel@avionic-design.de>
-X-Mailer: git-send-email 2.0.0
-X-Provags-ID: V02:K0:GVBsLNzKgR9O5zeQDpN2vqZBb4DHG3CMho6mmR/sDvv
- zJ6t6gxQokTCAzQpyzs5qjSyaBAQTuf6ClC+2M8BxVBy2jTikH
- tb7yfdbyCPTHSzGq1aa0LGggzotQ7xiHLxQaLZAITzX2Hzgtlw
- rgPPMEyCzDQMo1/Ki+X12SeRuFrCRdjqziyCUkIBOwv5NqA2qr
- H5iCYp8/sIbn9cBbwyxh20x5iCUPsK9PCXTCV6AnWbvNAPvrJ4
- X8r0Aqtr5OESdeE+r/V7xiGhE5EC/WSg17xFQBwj5umMopk8Uk
- RjdvEh8emaQH/M+8kURJsVSqK5opAc6Zzn3aO3BEVgOUGZ7PRt
- BjKwmg2Mf42ZZagId0DxQXJOf5lF3PmeJkm/B3YdP8GWr97kSn
- W4MsBxMsPpvHDKUaOLjgPblvAGytl7yjdHAdBcPAX/nBVw208n
- Imsm1
+	Thu, 12 Jun 2014 11:13:11 -0400
+X-Greylist: delayed 484 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 Jun 2014 11:13:10 EDT
+Date: Thu, 12 Jun 2014 11:05:12 -0400 (EDT)
+From: Vince Weaver <vince@deater.net>
+X-X-Sender: vince@pianoman.cluster.toy
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+cc: Peter Zijlstra <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        Dietmar Eggemann <Dietmar.Eggemann@arm.com>
+Subject: Re: [RFC PATCH 06/16] arm: topology: Define TC2 sched energy and
+ provide it to scheduler
+In-Reply-To: <20140606142958.GX29593@e103034-lin>
+Message-ID: <alpine.DEB.2.10.1406121101110.23499@pianoman.cluster.toy>
+References: <1400869003-27769-1-git-send-email-morten.rasmussen@arm.com> <1400869003-27769-7-git-send-email-morten.rasmussen@arm.com> <20140603114428.GY11096@twins.programming.kicks-ass.net> <20140604154227.GR29593@e103034-lin> <20140604161618.GQ30445@twins.programming.kicks-ass.net>
+ <20140606131510.GV29593@e103034-lin> <20140606134303.GQ13930@laptop.programming.kicks-ass.net> <20140606142958.GX29593@e103034-lin>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-CTCH-Spam: Unknown
+X-CTCH-RefID: str=0001.0A02020A.5399C1A1.025F,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the Tamonten DTS define a fixed regulator for the 5V supply.
-However this regulator is in fact on the base board. Fix this by
-properly defining the regulators found on the base boards.
+On Fri, 6 Jun 2014, Morten Rasmussen wrote:
 
-Signed-off-by: Alban Bedel <alban.bedel@avionic-design.de>
----
- arch/arm/boot/dts/tegra20-medcom-wide.dts | 46 +++++++++++++++++++++++++++++++
- arch/arm/boot/dts/tegra20-plutux.dts      | 46 +++++++++++++++++++++++++++++++
- arch/arm/boot/dts/tegra20-tamonten.dtsi   | 10 +------
- arch/arm/boot/dts/tegra20-tec.dts         | 46 +++++++++++++++++++++++++++++++
- 4 files changed, 139 insertions(+), 9 deletions(-)
+> On Fri, Jun 06, 2014 at 02:43:03PM +0100, Peter Zijlstra wrote:
+> > On Fri, Jun 06, 2014 at 02:15:10PM +0100, Morten Rasmussen wrote:
+> > > > > ARM TC2 has on-chip energy counters for counting energy consumed by the
+> > > > > A7 and A15 clusters. They are fairly accurate. 
+> > > > 
+> > > > Recent Intel chips have that too; they come packaged as:
+> > > > 
+> > > >   perf stat -a -e "power/energy-cores/" -- cmd
+> > > > 
+> > > > (through the perf_event_intel_rapl.c driver), It would be ideal if the
+> > > > ARM equivalent was available through a similar interface.
+> > > > 
+> > > > http://lwn.net/Articles/573602/
+> > > 
+> > > Nice. On ARM it is not mandatory to have energy counters and what they
+> > > actually measure if they are implemented is implementation dependent.
+> > > However, each vendor does extensive evaluation and characterization of
+> > > their implementation already, so I don't think would be a problem for
+> > > them to provide the numbers.
+> > 
+> > How is the ARM energy thing exposed? Through the regular PMU but with
+> > vendor specific events, or through a separate interface, entirely vendor
+> > specific?
+> 
+> There is an upstream hwmon driver for TC2 already with an easy to use
+> sysfs interface for all the energy counters. So it is somewhat vendor
+> specific at the moment unfortunately.
 
-diff --git a/arch/arm/boot/dts/tegra20-medcom-wide.dts b/arch/arm/boot/dts/tegra20-medcom-wide.dts
-index 6d3a4cb..0cd05f7 100644
---- a/arch/arm/boot/dts/tegra20-medcom-wide.dts
-+++ b/arch/arm/boot/dts/tegra20-medcom-wide.dts
-@@ -64,4 +64,50 @@
- 			 <&tegra_car TEGRA20_CLK_CDEV1>;
- 		clock-names = "pll_a", "pll_a_out0", "mclk";
- 	};
-+
-+	board_regulators {
-+		compatible = "simple-bus";
-+
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		vcc_24v_reg: regulator@0 {
-+			compatible = "regulator-fixed";
-+			reg = <0>;
-+			regulator-name = "vcc_24v";
-+			regulator-min-microvolt = <24000000>;
-+			regulator-max-microvolt = <24000000>;
-+			regulator-always-on;
-+		};
-+
-+		vdd_5v0_reg: regulator@1 {
-+			compatible = "regulator-fixed";
-+			reg = <1>;
-+			regulator-name = "vdd_5v0";
-+			vin-supply = <&vcc_24v_reg>;
-+			regulator-min-microvolt = <5000000>;
-+			regulator-max-microvolt = <5000000>;
-+			regulator-always-on;
-+		};
-+
-+		vdd_3v3_reg: regulator@2 {
-+			compatible = "regulator-fixed";
-+			reg = <2>;
-+			regulator-name = "vdd_3v3";
-+			vin-supply = <&vcc_24v_reg>;
-+			regulator-min-microvolt = <3300000>;
-+			regulator-max-microvolt = <3300000>;
-+			regulator-always-on;
-+		};
-+
-+		vdd_1v8_reg: regulator@3 {
-+			compatible = "regulator-fixed";
-+			reg = <3>;
-+			regulator-name = "vdd_1v8";
-+			vin-supply = <&vdd_3v3_reg>;
-+			regulator-min-microvolt = <1800000>;
-+			regulator-max-microvolt = <1800000>;
-+			regulator-always-on;
-+		};
-+	};
- };
-diff --git a/arch/arm/boot/dts/tegra20-plutux.dts b/arch/arm/boot/dts/tegra20-plutux.dts
-index 29051a2..a1b0e86 100644
---- a/arch/arm/boot/dts/tegra20-plutux.dts
-+++ b/arch/arm/boot/dts/tegra20-plutux.dts
-@@ -58,4 +58,50 @@
- 			 <&tegra_car TEGRA20_CLK_CDEV1>;
- 		clock-names = "pll_a", "pll_a_out0", "mclk";
- 	};
-+
-+	board_regulators {
-+		compatible = "simple-bus";
-+
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		vcc_24v_reg: regulator@0 {
-+			compatible = "regulator-fixed";
-+			reg = <0>;
-+			regulator-name = "vcc_24v";
-+			regulator-min-microvolt = <24000000>;
-+			regulator-max-microvolt = <24000000>;
-+			regulator-always-on;
-+		};
-+
-+		vdd_5v0_reg: regulator@1 {
-+			compatible = "regulator-fixed";
-+			reg = <1>;
-+			regulator-name = "vdd_5v0";
-+			vin-supply = <&vcc_24v_reg>;
-+			regulator-min-microvolt = <5000000>;
-+			regulator-max-microvolt = <5000000>;
-+			regulator-always-on;
-+		};
-+
-+		vdd_3v3_reg: regulator@2 {
-+			compatible = "regulator-fixed";
-+			reg = <2>;
-+			regulator-name = "vdd_3v3";
-+			vin-supply = <&vcc_24v_reg>;
-+			regulator-min-microvolt = <3300000>;
-+			regulator-max-microvolt = <3300000>;
-+			regulator-always-on;
-+		};
-+
-+		vdd_1v8_reg: regulator@3 {
-+			compatible = "regulator-fixed";
-+			reg = <3>;
-+			regulator-name = "vdd_1v8";
-+			vin-supply = <&vdd_3v3_reg>;
-+			regulator-min-microvolt = <1800000>;
-+			regulator-max-microvolt = <1800000>;
-+			regulator-always-on;
-+		};
-+	};
- };
-diff --git a/arch/arm/boot/dts/tegra20-tamonten.dtsi b/arch/arm/boot/dts/tegra20-tamonten.dtsi
-index a1b0d96..9c83185 100644
---- a/arch/arm/boot/dts/tegra20-tamonten.dtsi
-+++ b/arch/arm/boot/dts/tegra20-tamonten.dtsi
-@@ -334,6 +334,7 @@
- 			#gpio-cells = <2>;
- 			gpio-controller;
- 
-+			/* vdd_5v0_reg must be provided by the base board */
- 			sys-supply = <&vdd_5v0_reg>;
- 			vin-sm0-supply = <&sys_reg>;
- 			vin-sm1-supply = <&sys_reg>;
-@@ -511,15 +512,6 @@
- 		#address-cells = <1>;
- 		#size-cells = <0>;
- 
--		vdd_5v0_reg: regulator@0 {
--			compatible = "regulator-fixed";
--			reg = <0>;
--			regulator-name = "vdd_5v0";
--			regulator-min-microvolt = <5000000>;
--			regulator-max-microvolt = <5000000>;
--			regulator-always-on;
--		};
--
- 		pci_vdd_reg: regulator@1 {
- 			compatible = "regulator-fixed";
- 			reg = <1>;
-diff --git a/arch/arm/boot/dts/tegra20-tec.dts b/arch/arm/boot/dts/tegra20-tec.dts
-index 890562c..173201a 100644
---- a/arch/arm/boot/dts/tegra20-tec.dts
-+++ b/arch/arm/boot/dts/tegra20-tec.dts
-@@ -67,4 +67,50 @@
- 			 <&tegra_car TEGRA20_CLK_CDEV1>;
- 		clock-names = "pll_a", "pll_a_out0", "mclk";
- 	};
-+
-+	board_regulators {
-+		compatible = "simple-bus";
-+
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		vcc_24v_reg: regulator@0 {
-+			compatible = "regulator-fixed";
-+			reg = <0>;
-+			regulator-name = "vcc_24v";
-+			regulator-min-microvolt = <24000000>;
-+			regulator-max-microvolt = <24000000>;
-+			regulator-always-on;
-+		};
-+
-+		vdd_5v0_reg: regulator@1 {
-+			compatible = "regulator-fixed";
-+			reg = <1>;
-+			regulator-name = "vdd_5v0";
-+			vin-supply = <&vcc_24v_reg>;
-+			regulator-min-microvolt = <5000000>;
-+			regulator-max-microvolt = <5000000>;
-+			regulator-always-on;
-+		};
-+
-+		vdd_3v3_reg: regulator@2 {
-+			compatible = "regulator-fixed";
-+			reg = <2>;
-+			regulator-name = "vdd_3v3";
-+			vin-supply = <&vcc_24v_reg>;
-+			regulator-min-microvolt = <3300000>;
-+			regulator-max-microvolt = <3300000>;
-+			regulator-always-on;
-+		};
-+
-+		vdd_1v8_reg: regulator@3 {
-+			compatible = "regulator-fixed";
-+			reg = <3>;
-+			regulator-name = "vdd_1v8";
-+			vin-supply = <&vdd_3v3_reg>;
-+			regulator-min-microvolt = <1800000>;
-+			regulator-max-microvolt = <1800000>;
-+			regulator-always-on;
-+		};
-+	};
- };
--- 
-2.0.0
+What is the plan about future interfaces for energy info?
 
+Intel RAPL of course has a perf_event interface.
+
+However AMD's (somewhat unfortunately acronymed) Application Power 
+Management exports similar information via hwmon and the fam15h_power
+driver.
+
+And it sounds like ARM systems also put things in hwmon.
+
+User tools like PAPI can sort of abstract this (for example it supports 
+getting RAPL data from perf_event while it also has a driver for getting 
+info from hwmon).  But users stuck with perf end up having to use multiple 
+tools to get energy and performance info simultaneously on non-intel 
+hardware.
+
+Vince
