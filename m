@@ -1,132 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752271AbaFLFfL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 01:35:11 -0400
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:34529 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751391AbaFLFfJ (ORCPT
+	id S1752689AbaFLFhh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 01:37:37 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:39887 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751028AbaFLFhf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 01:35:09 -0400
+	Thu, 12 Jun 2014 01:37:35 -0400
+X-Original-SENDERIP: 10.177.220.169
+X-Original-MAILFROM: minchan@kernel.org
+Date: Thu, 12 Jun 2014 14:37:43 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>, kvm@vger.kernel.org,
+        linux-mm@kvack.org, Gleb Natapov <gleb@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alexander Graf <agraf@suse.de>, kvm-ppc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paolo Bonzini <pbonzini@redhat.com>, linuxppc-dev@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 03/10] DMA, CMA: separate core cma management codes
+ from DMA APIs
+Message-ID: <20140612053743.GF12415@bbox>
+References: <1402543307-29800-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1402543307-29800-4-git-send-email-iamjoonsoo.kim@lge.com>
 MIME-Version: 1.0
-Date: Wed, 11 Jun 2014 22:35:08 -0700
-Message-ID: <CALAqxLWAXU0hS8si-CmkOObBOHGv_skMVfPnUsdmLcZzkdUsWA@mail.gmail.com>
-Subject: [Regression] 3.15 mmc related ext4 corruption with qemu-system-arm
-From: John Stultz <john.stultz@linaro.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>, Chris Ball <chris@printf.net>,
-        Peter Maydell <peter.maydell@linaro.org>
-Cc: Johan Rudholm <jrudholm@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "Theodore Ts'o" <tytso@mit.edu>, lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402543307-29800-4-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've been seeing some ext4 corruption with recent kernels under qemu-system-arm.
+On Thu, Jun 12, 2014 at 12:21:40PM +0900, Joonsoo Kim wrote:
+> To prepare future generalization work on cma area management code,
+> we need to separate core cma management codes from DMA APIs.
+> We will extend these core functions to cover requirements of
+> ppc kvm's cma area management functionality in following patches.
+> This separation helps us not to touch DMA APIs while extending
+> core functions.
+> 
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> 
+> diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
+> index fb0cdce..8a44c82 100644
+> --- a/drivers/base/dma-contiguous.c
+> +++ b/drivers/base/dma-contiguous.c
+> @@ -231,9 +231,9 @@ core_initcall(cma_init_reserved_areas);
+>   * If @fixed is true, reserve contiguous area at exactly @base.  If false,
+>   * reserve in range from @base to @limit.
+>   */
+> -int __init dma_contiguous_reserve_area(phys_addr_t size, phys_addr_t base,
+> -				       phys_addr_t limit, struct cma **res_cma,
+> -				       bool fixed)
+> +static int __init __dma_contiguous_reserve_area(phys_addr_t size,
+> +				phys_addr_t base, phys_addr_t limit,
+> +				struct cma **res_cma, bool fixed)
+>  {
+>  	struct cma *cma = &cma_areas[cma_area_count];
+>  	phys_addr_t alignment;
+> @@ -288,16 +288,30 @@ int __init dma_contiguous_reserve_area(phys_addr_t size, phys_addr_t base,
+>  
+>  	pr_info("%s(): reserved %ld MiB at %08lx\n",
+>  		__func__, (unsigned long)size / SZ_1M, (unsigned long)base);
+> -
+> -	/* Architecture specific contiguous memory fixup. */
+> -	dma_contiguous_early_fixup(base, size);
+>  	return 0;
+> +
+>  err:
+>  	pr_err("%s(): failed to reserve %ld MiB\n",
+>  		__func__, (unsigned long)size / SZ_1M);
+>  	return ret;
+>  }
+>  
+> +int __init dma_contiguous_reserve_area(phys_addr_t size, phys_addr_t base,
+> +				       phys_addr_t limit, struct cma **res_cma,
+> +				       bool fixed)
+> +{
+> +	int ret;
+> +
+> +	ret = __dma_contiguous_reserve_area(size, base, limit, res_cma, fixed);
+> +	if (ret)
+> +		return ret;
+> +
+> +	/* Architecture specific contiguous memory fixup. */
+> +	dma_contiguous_early_fixup(base, size);
 
-This issue seems to crop up after shutting down uncleanly (terminating
-qemu), shortly after booting about 50% of the time.
+In old, base and size are aligned with alignment and passed into arch fixup
+but your patch is changing it.
+I didn't look at what kinds of side effect it makes but just want to confirm.
 
-ext4/mmc related dmesg details are:
-[    3.206809] mmci-pl18x mb:mmci: mmc0: PL181 manf 41 rev0 at
-0x10005000 irq 41,42 (pio)
-[    3.268316] mmc0: new SDHC card at address 4567
-[    3.281963] mmcblk0: mmc0:4567 QEMU! 2.00 GiB
-[    3.315699]  mmcblk0: p1 p2 p3 p4 < p5 p6 >
-...
-[   11.806169] EXT4-fs (mmcblk0p5): Ignoring removed nomblk_io_submit option
-[   11.904714] EXT4-fs (mmcblk0p5): recovery complete
-[   11.905854] EXT4-fs (mmcblk0p5): mounted filesystem with ordered
-data mode. Opts: nomblk_io_submit,errors=panic
-...
-[   91.558824] EXT4-fs error (device mmcblk0p5):
-ext4_mb_generate_buddy:756: group 1, 2252 clusters in bitmap, 2284 in
-gd; block bitmap corrupt.
-[   91.560641] Aborting journal on device mmcblk0p5-8.
-[   91.562589] Kernel panic - not syncing: EXT4-fs (device mmcblk0p5):
-panic forced after error
-[   91.562589]
-[   91.563486] CPU: 0 PID: 1 Comm: init Not tainted 3.15.0-rc1 #560
-[   91.564616] [<c00116e5>] (unwind_backtrace) from [<c000f3b1>]
-(show_stack+0x11/0x14)
-[   91.565154] [<c000f3b1>] (show_stack) from [<c04262b1>]
-(dump_stack+0x59/0x7c)
-[   91.565666] [<c04262b1>] (dump_stack) from [<c0423297>] (panic+0x67/0x178)
-[   91.566147] [<c0423297>] (panic) from [<c0134bb1>]
-(ext4_handle_error+0x69/0x74)
-[   91.566659] [<c0134bb1>] (ext4_handle_error) from [<c0135437>]
-(__ext4_grp_locked_error+0x6b/0x160)
-[   91.567223] [<c0135437>] (__ext4_grp_locked_error) from
-[<c0143079>] (ext4_mb_generate_buddy+0x1b1/0x29c)
-[   91.567860] [<c0143079>] (ext4_mb_generate_buddy) from [<c01447e5>]
-(ext4_mb_init_cache+0x219/0x4e0)
-[   91.568473] [<c01447e5>] (ext4_mb_init_cache) from [<c0144b67>]
-(ext4_mb_init_group+0xbb/0x138)
-[   91.569021] [<c0144b67>] (ext4_mb_init_group) from [<c0144cd7>]
-(ext4_mb_good_group+0xf3/0xfc)
-[   91.569659] [<c0144cd7>] (ext4_mb_good_group) from [<c0145c8f>]
-(ext4_mb_regular_allocator+0x153/0x2c4)
-[   91.570250] [<c0145c8f>] (ext4_mb_regular_allocator) from
-[<c0148095>] (ext4_mb_new_blocks+0x2fd/0x4e4)
-[   91.570868] [<c0148095>] (ext4_mb_new_blocks) from [<c013f931>]
-(ext4_ext_map_blocks+0x965/0x10bc)
-[   91.571444] [<c013f931>] (ext4_ext_map_blocks) from [<c0122c8b>]
-(ext4_map_blocks+0xfb/0x36c)
-[   91.571992] [<c0122c8b>] (ext4_map_blocks) from [<c01263b1>]
-(mpage_map_and_submit_extent+0x99/0x5f0)
-[   91.572614] [<c01263b1>] (mpage_map_and_submit_extent) from
-[<c0126bc1>] (ext4_writepages+0x2b9/0x4e8)
-[   91.573201] [<c0126bc1>] (ext4_writepages) from [<c0094ae9>]
-(do_writepages+0x19/0x28)
-[   91.573709] [<c0094ae9>] (do_writepages) from [<c008c811>]
-(__filemap_fdatawrite_range+0x3d/0x44)
-[   91.574265] [<c008c811>] (__filemap_fdatawrite_range) from
-[<c008c883>] (filemap_flush+0x23/0x28)
-[   91.574854] [<c008c883>] (filemap_flush) from [<c012bf75>]
-(ext4_rename+0x2f9/0x3e4)
-[   91.575360] [<c012bf75>] (ext4_rename) from [<c00c3363>]
-(vfs_rename+0x183/0x45c)
-[   91.575911] [<c00c3363>] (vfs_rename) from [<c00c3867>]
-(SyS_renameat2+0x22b/0x26c)
-[   91.576460] [<c00c3867>] (SyS_renameat2) from [<c00c38df>]
-(SyS_rename+0x1f/0x24)
-[   91.576961] [<c00c38df>] (SyS_rename) from [<c000cd01>]
-(ret_fast_syscall+0x1/0x5c)
+> +
+> +	return 0;
+> +}
+> +
+>  static void clear_cma_bitmap(struct cma *cma, unsigned long pfn, int count)
+>  {
+>  	mutex_lock(&cma->lock);
+> @@ -316,20 +330,16 @@ static void clear_cma_bitmap(struct cma *cma, unsigned long pfn, int count)
+>   * global one. Requires architecture specific dev_get_cma_area() helper
+>   * function.
+>   */
+> -struct page *dma_alloc_from_contiguous(struct device *dev, int count,
+> +static struct page *__dma_alloc_from_contiguous(struct cma *cma, int count,
+>  				       unsigned int align)
+>  {
+>  	unsigned long mask, pfn, pageno, start = 0;
+> -	struct cma *cma = dev_get_cma_area(dev);
+>  	struct page *page = NULL;
+>  	int ret;
+>  
+>  	if (!cma || !cma->count)
+>  		return NULL;
+>  
+> -	if (align > CONFIG_CMA_ALIGNMENT)
+> -		align = CONFIG_CMA_ALIGNMENT;
+> -
+>  	pr_debug("%s(cma %p, count %d, align %d)\n", __func__, (void *)cma,
+>  		 count, align);
+>  
+> @@ -377,6 +387,17 @@ struct page *dma_alloc_from_contiguous(struct device *dev, int count,
+>  	return page;
+>  }
+>  
 
+Please move the description in __dma_alloc_from_contiguous to here exported API.
 
-Bisecting this points to: e7f3d22289e4307b3071cc18b1d8ecc6598c0be4
-(mmc: mmci: Handle CMD irq before DATA irq). Which I guess shouldn't
-be surprising, as I saw problems with that patch earlier in the
-3.15-rc cycle:
-    https://lkml.org/lkml/2014/4/14/824
+> +struct page *dma_alloc_from_contiguous(struct device *dev, int count,
+> +				       unsigned int align)
+> +{
+> +	struct cma *cma = dev_get_cma_area(dev);
+> +
+> +	if (align > CONFIG_CMA_ALIGNMENT)
+> +		align = CONFIG_CMA_ALIGNMENT;
+> +
+> +	return __dma_alloc_from_contiguous(cma, count, align);
+> +}
+> +
+>  /**
+>   * dma_release_from_contiguous() - release allocated pages
+>   * @dev:   Pointer to device for which the pages were allocated.
+> @@ -387,10 +408,9 @@ struct page *dma_alloc_from_contiguous(struct device *dev, int count,
+>   * It returns false when provided pages do not belong to contiguous area and
+>   * true otherwise.
+>   */
+> -bool dma_release_from_contiguous(struct device *dev, struct page *pages,
+> +static bool __dma_release_from_contiguous(struct cma *cma, struct page *pages,
+>  				 int count)
+>  {
+> -	struct cma *cma = dev_get_cma_area(dev);
+>  	unsigned long pfn;
+>  
+>  	if (!cma || !pages)
+> @@ -410,3 +430,11 @@ bool dma_release_from_contiguous(struct device *dev, struct page *pages,
+>  
+>  	return true;
+>  }
+> +
 
-However that discussion petered out (possibly my fault for not
-following up) as to if it was an issue with the patch or a issue with
-qemu.  Then the original issue disappeared for me, which I figured was
-due to a fix upstream, but now I'm guessing coincided with me updating
-my system and getting qemu v2.0 (where as previously I was on 1.5).
+Ditto.
 
-$ qemu-system-arm -version
-QEMU emulator version 2.0.0 (Debian 2.0.0+dfsg-2ubuntu1.1), Copyright
-(c) 2003-2008 Fabrice Bellard
+> +bool dma_release_from_contiguous(struct device *dev, struct page *pages,
+> +				 int count)
+> +{
+> +	struct cma *cma = dev_get_cma_area(dev);
+> +
+> +	return __dma_release_from_contiguous(cma, pages, count);
+> +}
+> -- 
+> 1.7.9.5
 
-While the previous behavior was annoying and kept my emulated
-environments from booting, this while a bit more rare and subtle eats
-the disks, which is much more painful for my testing.
-
-Unfortunately reverting the change (manually, as it doesn't revert
-cleanly anymore) doesn't seem to completely avoid the issue, so the
-bisection may have gone slightly astray (though it is interesting it
-landed on the same commit I earlier had trouble with). So I'll
-back-track and double check some of the last few "good" results to
-validate I didn't just luck into 3 good boots accidentally. I'll also
-review my revert in case I missed something subtle in doing it
-manually.
-
-Anyway, if there is any thoughts on how to better chase this down and
-debug it, I'd appreciate it! I can also provide reproduction
-instructions with a pre-built Linaro android disk image and hand built
-kernel if anyone wants to debug this themselves.
-
-thanks
--john
+-- 
+Kind regards,
+Minchan Kim
