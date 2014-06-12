@@ -1,108 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756526AbaFLQZZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 12:25:25 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:37847 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756346AbaFLQYA (ORCPT
+	id S1756542AbaFLQZo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 12:25:44 -0400
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:54376 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753051AbaFLQXt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 12:24:00 -0400
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/4] tracing: Add ftrace_graph_notrace boot parameter
-Date: Fri, 13 Jun 2014 01:23:50 +0900
-Message-Id: <1402590233-22321-2-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1402590233-22321-1-git-send-email-namhyung@kernel.org>
-References: <1402590233-22321-1-git-send-email-namhyung@kernel.org>
+	Thu, 12 Jun 2014 12:23:49 -0400
+From: Tejun Heo <tj@kernel.org>
+To: cl@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH 12/12] percpu: invoke __verify_pcpu_ptr() from the generic part of accessors and operations
+Date: Thu, 12 Jun 2014 12:23:29 -0400
+Message-Id: <1402590209-31610-13-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1402590209-31610-1-git-send-email-tj@kernel.org>
+References: <1402590209-31610-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ftrace_graph_notrace option is for specifying notrace filter for
-function graph tracer at boot time.  It can be altered after boot
-using set_graph_notrace file on the debugfs.
+__verify_pcpu_ptr() is used to verify that a specified parameter is
+actually an percpu pointer by percpu accessor and operation
+implementations.  Currently, where it's called isn't clearly defined
+and we just ensure that it's invoked at least once for all accessors
+and operations.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+As __verify_pcpu_ptr() now includes a data dependency barrier,
+invoking it more times than necessary may incur unnecessary overhead.
+Alos, the lack of clarity on when it should be called isn't nice and
+given that this is a completely generic issue, there's no reason to
+make archs worry about it.
+
+This patch updates __verify_pcpu_ptr() invocations such that it's
+always invoked from the final generic wrapper once per access or
+operation.  As this is already the case for {raw|this}_cpu_*()
+definitions through __pcpu_size_*(), only the {raw|per|this}_cpu_ptr()
+accessors need to be updated.
+
+This change makes it unnecessary for archs to worry about
+__verify_pcpu_ptr().  x86's arch_raw_cpu_ptr() is updated accordingly.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Christoph Lameter <cl@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
 ---
- Documentation/kernel-parameters.txt |    6 ++++++
- kernel/trace/ftrace.c               |   24 ++++++++++++++++++++----
- 2 files changed, 26 insertions(+), 4 deletions(-)
+ arch/x86/include/asm/percpu.h |  1 -
+ include/linux/percpu-defs.h   | 26 +++++++++++++++++++++-----
+ 2 files changed, 21 insertions(+), 6 deletions(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 43842177b771..40cf0caf92a9 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1062,6 +1062,12 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			that can be changed at run time by the
- 			set_graph_function file in the debugfs tracing directory.
+diff --git a/arch/x86/include/asm/percpu.h b/arch/x86/include/asm/percpu.h
+index 9bc23f1..fd47218 100644
+--- a/arch/x86/include/asm/percpu.h
++++ b/arch/x86/include/asm/percpu.h
+@@ -55,7 +55,6 @@
+ #define arch_raw_cpu_ptr(ptr)				\
+ ({							\
+ 	unsigned long tcp_ptr__;			\
+-	__verify_pcpu_ptr(ptr);				\
+ 	asm volatile("add " __percpu_arg(1) ", %0"	\
+ 		     : "=r" (tcp_ptr__)			\
+ 		     : "m" (this_cpu_off), "0" (ptr));	\
+diff --git a/include/linux/percpu-defs.h b/include/linux/percpu-defs.h
+index 31ef245..511bd49 100644
+--- a/include/linux/percpu-defs.h
++++ b/include/linux/percpu-defs.h
+@@ -193,6 +193,12 @@
+ #ifndef __ASSEMBLY__
  
-+	ftrace_graph_notrace=[function-list]
-+			[FTRACE] Do not trace from the functions specified in
-+			function-list.  This list is a comma separated list of
-+			functions that can be changed at run time by the
-+			set_graph_notrace file in the debugfs tracing directory.
+ /*
++ * __verify_pcpu_ptr() must be invoked once before a percpu area is
++ * accessed by all accessors and operations.  This is performed in the
++ * generic part of percpu and arch overrides don't need to worry about it;
++ * however, if an arch wants to implement an arch-specific percpu accessor
++ * or operation, it may use __verify_pcpu_ptr() to verify the parameters.
++ *
+  * This macro serves two purposes.  It verifies @ptr is a percpu pointer
+  * without evaluating @ptr and provides the data dependency barrier paired
+  * with smp_wmb() at the end of the allocation path so that the memory
+@@ -221,16 +227,26 @@ do {									\
+  * pointer value.  The weird cast keeps both GCC and sparse happy.
+  */
+ #define SHIFT_PERCPU_PTR(__p, __offset)					\
++	RELOC_HIDE((typeof(*(__p)) __kernel __force *)(__p), (__offset))
 +
- 	gamecon.map[2|3]=
- 			[HW,JOY] Multisystem joystick and NES/SNES/PSX pad
- 			support via parallel port (up to 5 devices per port)
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 071908f58e7a..f08edd7125c6 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -3628,6 +3628,7 @@ __setup("ftrace_filter=", set_ftrace_filter);
++#define per_cpu_ptr(ptr, cpu)						\
+ ({									\
+-	__verify_pcpu_ptr(__p);						\
+-	RELOC_HIDE((typeof(*(__p)) __kernel __force *)(__p), (__offset)); \
++	__verify_pcpu_ptr(ptr);						\
++	SHIFT_PERCPU_PTR((ptr), per_cpu_offset((cpu)));			\
+ })
  
- #ifdef CONFIG_FUNCTION_GRAPH_TRACER
- static char ftrace_graph_buf[FTRACE_FILTER_SIZE] __initdata;
-+static char ftrace_graph_notrace_buf[FTRACE_FILTER_SIZE] __initdata;
- static int ftrace_set_func(unsigned long *array, int *idx, int size, char *buffer);
+-#define per_cpu_ptr(ptr, cpu)	SHIFT_PERCPU_PTR(ptr, per_cpu_offset(cpu))
+-#define raw_cpu_ptr(ptr)	arch_raw_cpu_ptr(ptr)
++#define raw_cpu_ptr(ptr)						\
++({									\
++	__verify_pcpu_ptr(ptr);						\
++	arch_raw_cpu_ptr(ptr);						\
++})
  
- static int __init set_graph_function(char *str)
-@@ -3637,16 +3638,29 @@ static int __init set_graph_function(char *str)
- }
- __setup("ftrace_graph_filter=", set_graph_function);
- 
--static void __init set_ftrace_early_graph(char *buf)
-+static int __init set_graph_notrace_function(char *str)
-+{
-+	strlcpy(ftrace_graph_notrace_buf, str, FTRACE_FILTER_SIZE);
-+	return 1;
-+}
-+__setup("ftrace_graph_notrace=", set_graph_notrace_function);
-+
-+static void __init set_ftrace_early_graph(char *buf, int enable)
- {
- 	int ret;
- 	char *func;
-+	unsigned long *table = ftrace_graph_funcs;
-+	int *count = &ftrace_graph_count;
-+
-+	if (!enable) {
-+		table = ftrace_graph_notrace_funcs;
-+		count = &ftrace_graph_notrace_count;
-+	}
- 
- 	while (buf) {
- 		func = strsep(&buf, ",");
- 		/* we allow only one expression at a time */
--		ret = ftrace_set_func(ftrace_graph_funcs, &ftrace_graph_count,
--				      FTRACE_GRAPH_MAX_FUNCS, func);
-+		ret = ftrace_set_func(table, count, FTRACE_GRAPH_MAX_FUNCS, func);
- 		if (ret)
- 			printk(KERN_DEBUG "ftrace: function %s not "
- 					  "traceable\n", func);
-@@ -3675,7 +3689,9 @@ static void __init set_ftrace_early_filters(void)
- 		ftrace_set_early_filter(&global_ops, ftrace_notrace_buf, 0);
- #ifdef CONFIG_FUNCTION_GRAPH_TRACER
- 	if (ftrace_graph_buf[0])
--		set_ftrace_early_graph(ftrace_graph_buf);
-+		set_ftrace_early_graph(ftrace_graph_buf, 1);
-+	if (ftrace_graph_notrace_buf[0])
-+		set_ftrace_early_graph(ftrace_graph_notrace_buf, 0);
- #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
- }
- 
+ #ifdef CONFIG_DEBUG_PREEMPT
+-#define this_cpu_ptr(ptr) SHIFT_PERCPU_PTR(ptr, my_cpu_offset)
++#define this_cpu_ptr(ptr)						\
++({									\
++	__verify_pcpu_ptr(ptr);						\
++	SHIFT_PERCPU_PTR(ptr, my_cpu_offset);				\
++})
+ #else
+ #define this_cpu_ptr(ptr) raw_cpu_ptr(ptr)
+ #endif
 -- 
-1.7.9.2
+1.9.3
 
