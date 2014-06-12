@@ -1,62 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933215AbaFLKg0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 06:36:26 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:47168 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932974AbaFLKgW (ORCPT
+	id S933230AbaFLKis (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 06:38:48 -0400
+Received: from smtprelay.synopsys.com ([198.182.44.111]:44107 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932907AbaFLKiq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 06:36:22 -0400
-From: Wahib Faizi <wahibfaizi@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Valentina Manea <valentina.manea.m@gmail.com>,
-        linux-usb@vger.kernel.org, devel@driverdev.osuosl.org
-Cc: linux-kernel@vger.kernel.org, Wahib Faizi <wahibfaizi@gmail.com>
-Subject: [PATCH] drivers/staging/usbip/userspace/libsrc/usbip_host_driver.c: fix coding style
-Date: Thu, 12 Jun 2014 14:35:38 +0400
-Message-Id: <1402569338-5709-2-git-send-email-wahibfaizi@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1402569338-5709-1-git-send-email-wahibfaizi@gmail.com>
-References: <Eudyptula Challenge (Task 10)>
- <1402569338-5709-1-git-send-email-wahibfaizi@gmail.com>
+	Thu, 12 Jun 2014 06:38:46 -0400
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Paul Bolle <pebolle@tiscali.nl>
+CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-serial@vger.kernel.org>, <Francois.Bedard@synopsys.com>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Subject: [PATCH 7/9] serial/arc: inline the probe helper
+Date: Thu, 12 Jun 2014 16:01:37 +0530
+Message-ID: <1402569099-9900-8-git-send-email-vgupta@synopsys.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1402569099-9900-1-git-send-email-vgupta@synopsys.com>
+References: <1402569099-9900-1-git-send-email-vgupta@synopsys.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.12.196.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix coding style issues detected by checkpatch.pl:
-1. do not use assignment in if condition
-2. line over 80 characters
-
-Signed-off-by: Wahib Faizi <wahibfaizi@gmail.com>
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 ---
- .../usbip/userspace/libsrc/usbip_host_driver.c     |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/tty/serial/arc_uart.c | 90 +++++++++++++++++++------------------------
+ 1 file changed, 40 insertions(+), 50 deletions(-)
 
-diff --git a/drivers/staging/usbip/userspace/libsrc/usbip_host_driver.c b/drivers/staging/usbip/userspace/libsrc/usbip_host_driver.c
-index 92caef7..bef08d5 100644
---- a/drivers/staging/usbip/userspace/libsrc/usbip_host_driver.c
-+++ b/drivers/staging/usbip/userspace/libsrc/usbip_host_driver.c
-@@ -47,7 +47,8 @@ static int32_t read_attr_usbip_status(struct usbip_usb_device *udev)
- 	snprintf(status_attr_path, SYSFS_PATH_MAX, "%s/usbip_status",
- 		 udev->path);
+diff --git a/drivers/tty/serial/arc_uart.c b/drivers/tty/serial/arc_uart.c
+index dc3d5db37dc4..435de4f2af3b 100644
+--- a/drivers/tty/serial/arc_uart.c
++++ b/drivers/tty/serial/arc_uart.c
+@@ -496,50 +496,6 @@ static struct uart_ops arc_serial_pops = {
+ #endif
+ };
  
--	if ((fd = open(status_attr_path, O_RDONLY)) < 0) {
-+	fd = open(status_attr_path, O_RDONLY);
-+	if (fd < 0) {
- 		err("error opening attribute %s", status_attr_path);
- 		return -1;
- 	}
-@@ -87,8 +88,8 @@ struct usbip_exported_device *usbip_exported_device_new(const char *sdevpath)
- 		goto err;
+-static int
+-arc_uart_init_one(struct platform_device *pdev, int dev_id)
+-{
+-	struct device_node *np = pdev->dev.of_node;
+-	struct arc_uart_port *uart = &arc_uart_ports[dev_id];
+-	struct uart_port *port = &uart->port;
+-	u32 val;
+-
+-	if (of_property_read_u32(np, "clock-frequency", &val)) {
+-		dev_err(&pdev->dev, "clock-frequency property NOTset\n");
+-		return -EINVAL;
+-	}
+-	port->uartclk = val;
+-
+-	if (of_property_read_u32(np, "current-speed", &val)) {
+-		dev_err(&pdev->dev, "current-speed property NOT set\n");
+-		return -EINVAL;
+-	}
+-	uart->baud = val;
+-
+-	port->membase = of_iomap(np, 0);
+-	if (!port->membase)
+-		/* No point of dev_err since UART itself is hosed here */
+-		return -ENXIO;
+-
+-	port->irq = irq_of_parse_and_map(np, 0);
+-
+-	port->dev = &pdev->dev;
+-	port->iotype = UPIO_MEM;
+-	port->flags = UPF_BOOT_AUTOCONF;
+-	port->line = dev_id;
+-	port->ops = &arc_serial_pops;
+-
+-	port->fifosize = ARC_UART_TX_FIFO_SIZE;
+-
+-	/*
+-	 * uart_insert_char( ) uses it in decideding whether to ignore a
+-	 * char or not. Explicitly setting it here, removes the subtelty
+-	 */
+-	port->ignore_status_mask = 0;
+-
+-	return 0;
+-}
+-
+ #ifdef CONFIG_SERIAL_ARC_CONSOLE
  
- 	/* reallocate buffer to include usb interface data */
--	size = sizeof(struct usbip_exported_device) + edev->udev.bNumInterfaces *
--		sizeof(struct usbip_usb_interface);
-+	size = sizeof(struct usbip_exported_device) +
-+		edev->udev.bNumInterfaces * sizeof(struct usbip_usb_interface);
+ static int arc_serial_console_setup(struct console *co, char *options)
+@@ -628,8 +584,11 @@ EARLYCON_DECLARE(arc_uart, arc_early_console_setup);
  
- 	edev_old = edev;
- 	edev = realloc(edev, size);
+ static int arc_serial_probe(struct platform_device *pdev)
+ {
+-	int rc, dev_id;
+ 	struct device_node *np = pdev->dev.of_node;
++	struct arc_uart_port *uart;
++	struct uart_port *port;
++	int dev_id;
++	u32 val;
+ 
+ 	/* no device tree device */
+ 	if (!np)
+@@ -639,12 +598,43 @@ static int arc_serial_probe(struct platform_device *pdev)
+ 	if (dev_id < 0)
+ 		dev_id = 0;
+ 
+-	rc = arc_uart_init_one(pdev, dev_id);
+-	if (rc)
+-		return rc;
++	uart = &arc_uart_ports[dev_id];
++	port = &uart->port;
++
++	if (of_property_read_u32(np, "clock-frequency", &val)) {
++		dev_err(&pdev->dev, "clock-frequency property NOTset\n");
++		return -EINVAL;
++	}
++	port->uartclk = val;
++
++	if (of_property_read_u32(np, "current-speed", &val)) {
++		dev_err(&pdev->dev, "current-speed property NOT set\n");
++		return -EINVAL;
++	}
++	uart->baud = val;
++
++	port->membase = of_iomap(np, 0);
++	if (!port->membase)
++		/* No point of dev_err since UART itself is hosed here */
++		return -ENXIO;
++
++	port->irq = irq_of_parse_and_map(np, 0);
++
++	port->dev = &pdev->dev;
++	port->iotype = UPIO_MEM;
++	port->flags = UPF_BOOT_AUTOCONF;
++	port->line = dev_id;
++	port->ops = &arc_serial_pops;
++
++	port->fifosize = ARC_UART_TX_FIFO_SIZE;
++
++	/*
++	 * uart_insert_char( ) uses it in decideding whether to ignore a
++	 * char or not. Explicitly setting it here, removes the subtelty
++	 */
++	port->ignore_status_mask = 0;
+ 
+-	rc = uart_add_one_port(&arc_uart_driver, &arc_uart_ports[dev_id].port);
+-	return rc;
++	return uart_add_one_port(&arc_uart_driver, &arc_uart_ports[dev_id].port);
+ }
+ 
+ static int arc_serial_remove(struct platform_device *pdev)
 -- 
-1.7.9.5
+1.8.3.2
 
