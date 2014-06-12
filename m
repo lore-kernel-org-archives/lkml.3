@@ -1,46 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751177AbaFLE1e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 00:27:34 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:42401 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750787AbaFLE1c (ORCPT
+	id S1751289AbaFLEln (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 00:41:43 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:60434 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750895AbaFLEll (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 00:27:32 -0400
+	Thu, 12 Jun 2014 00:41:41 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>
+Cc: Minchan Kim <minchan@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Alexander Graf <agraf@suse.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCH v2 01/10] DMA, CMA: clean-up log message
+In-Reply-To: <1402543307-29800-2-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1402543307-29800-1-git-send-email-iamjoonsoo.kim@lge.com> <1402543307-29800-2-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Notmuch/0.18~rc0+2~gbc64cdc (http://notmuchmail.org) Emacs/24.3.91.1 (x86_64-unknown-linux-gnu)
+Date: Thu, 12 Jun 2014 10:11:19 +0530
+Message-ID: <87y4x2pwnk.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFxBwteZeUHG+Z-cdLU_YCO4f8TDuYvGmXc0-v9M1H11+g@mail.gmail.com>
-References: <86ha3so84o.fsf@void.printf.net>
-	<CA+55aFxBwteZeUHG+Z-cdLU_YCO4f8TDuYvGmXc0-v9M1H11+g@mail.gmail.com>
-Date: Wed, 11 Jun 2014 21:27:31 -0700
-X-Google-Sender-Auth: GHbW9LVGMa_MnZ-L0cFqzjoHUIA
-Message-ID: <CA+55aFyEbFLFWLKP5kHw85qTRNoviFk8LhivxXJgAMROdvJtsg@mail.gmail.com>
-Subject: Re: [GIT PULL] MMC updates for 3.16-rc1
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Chris Ball <chris@printf.net>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mmc@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14061204-2000-0000-0000-0000007ED7E3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 10, 2014 at 2:50 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
+Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
+
+> We don't need explicit 'CMA:' prefix, since we already define prefix
+> 'cma:' in pr_fmt. So remove it.
 >
-> Also, that new drivers/mmc/host/usdhi6rol0.c driver is one f*cking
-> noisy compile, and knisr certainly has never been tested in a 64-bit
-> environment. Please either fix it, or make it depend on BROKEN.
+> And, some logs print function name and others doesn't. This looks
+> bad to me, so I unify log format to print function name consistently.
+>
+> Lastly, I add one more debug log on cma_activate_area().
+>
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>
+> diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
+> index 83969f8..bd0bb81 100644
+> --- a/drivers/base/dma-contiguous.c
+> +++ b/drivers/base/dma-contiguous.c
+> @@ -144,7 +144,7 @@ void __init dma_contiguous_reserve(phys_addr_t limit)
+>  	}
+>
+>  	if (selected_size && !dma_contiguous_default_area) {
+> -		pr_debug("%s: reserving %ld MiB for global area\n", __func__,
+> +		pr_debug("%s(): reserving %ld MiB for global area\n", __func__,
+>  			 (unsigned long)selected_size / SZ_1M);
 
-Guys? Seriously, if that driver isn't fixed, I'm going to mark it
-broken myself. It pretty much generates as many lines of warnings as
-the rest of my "allmodconfig" build combined.
+Do we need to do function(), or just function:. I have seen the later
+usage in other parts of the kernel.
 
-It's extremely annoying, and the crazy warnings are likely to hide
-potential real problems elsewhere, so right now that driver has
-negative value. I do a lot of allmodconfig builds during the merge
-window, and I am not going to look at that warning much longer.
+>
+>  		dma_contiguous_reserve_area(selected_size, selected_base,
+> @@ -163,8 +163,9 @@ static int __init cma_activate_area(struct cma *cma)
+>  	unsigned i = cma->count >> pageblock_order;
+>  	struct zone *zone;
+>
+> -	cma->bitmap = kzalloc(bitmap_size, GFP_KERNEL);
+> +	pr_debug("%s()\n", __func__);
 
-Fix it promptly, or it gets disabled.
+why ?
 
-            Linus
+>
+> +	cma->bitmap = kzalloc(bitmap_size, GFP_KERNEL);
+>  	if (!cma->bitmap)
+>  		return -ENOMEM;
+>
+> @@ -234,7 +235,8 @@ int __init dma_contiguous_reserve_area(phys_addr_t size, phys_addr_t base,
+>
+>  	/* Sanity checks */
+>  	if (cma_area_count == ARRAY_SIZE(cma_areas)) {
+> -		pr_err("Not enough slots for CMA reserved regions!\n");
+> +		pr_err("%s(): Not enough slots for CMA reserved regions!\n",
+> +			__func__);
+>  		return -ENOSPC;
+>  	}
+>
+> @@ -274,14 +276,15 @@ int __init dma_contiguous_reserve_area(phys_addr_t size, phys_addr_t base,
+>  	*res_cma = cma;
+>  	cma_area_count++;
+>
+> -	pr_info("CMA: reserved %ld MiB at %08lx\n", (unsigned long)size / SZ_1M,
+> -		(unsigned long)base);
+> +	pr_info("%s(): reserved %ld MiB at %08lx\n",
+> +		__func__, (unsigned long)size / SZ_1M, (unsigned long)base);
+>
+>  	/* Architecture specific contiguous memory fixup. */
+>  	dma_contiguous_early_fixup(base, size);
+>  	return 0;
+>  err:
+> -	pr_err("CMA: failed to reserve %ld MiB\n", (unsigned long)size / SZ_1M);
+> +	pr_err("%s(): failed to reserve %ld MiB\n",
+> +		__func__, (unsigned long)size / SZ_1M);
+>  	return ret;
+>  }
+>
+> -- 
+> 1.7.9.5
+
