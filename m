@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751896AbaFLWJP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 18:09:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4087 "EHLO mx1.redhat.com"
+	id S1752001AbaFLWJU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 18:09:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6467 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751810AbaFLWJM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 18:09:12 -0400
+	id S1751908AbaFLWJR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 18:09:17 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
@@ -15,18 +15,17 @@ Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
         Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 05/17] perf tools: Add ordered_events_(get|put) interface
-Date: Fri, 13 Jun 2014 00:08:21 +0200
-Message-Id: <1402610913-19059-6-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 06/17] perf tools: Factor ordered_events_flush to be more generic
+Date: Fri, 13 Jun 2014 00:08:22 +0200
+Message-Id: <1402610913-19059-7-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1402610913-19059-1-git-send-email-jolsa@kernel.org>
 References: <1402610913-19059-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding new ordered events interface to get|put event buffer:
-  ordered_events_get - allocate event buffer from the cache
-  ordered_events_put - return event buffer to the cache
+Centralizing the next_flush calculation under the
+ordered_events_flush function.
 
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -39,220 +38,102 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/util/session.c | 172 ++++++++++++++++++++++++++--------------------
- 1 file changed, 99 insertions(+), 73 deletions(-)
+ tools/perf/util/session.c | 47 ++++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 36 insertions(+), 11 deletions(-)
 
 diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index fc4da58..966132d 100644
+index 966132d..76df5c9 100644
 --- a/tools/perf/util/session.c
 +++ b/tools/perf/util/session.c
-@@ -466,6 +466,99 @@ static void perf_session_free_sample_buffers(struct perf_session *session)
- 	}
- }
+@@ -453,6 +453,11 @@ struct ordered_event {
+ 	struct list_head	list;
+ };
  
-+/* The queue is ordered by time */
-+static void queue_event(struct ordered_events_queue *q, struct ordered_event *new)
-+{
-+	struct ordered_event *last = q->last;
-+	u64 timestamp = new->timestamp;
-+	struct list_head *p;
++enum oeq_flush {
++	OEQ_FLUSH__FINAL,
++	OEQ_FLUSH__ROUND,
++};
 +
-+	++q->nr_events;
-+	q->last = new;
-+
-+	if (!last) {
-+		list_add(&new->list, &q->events);
-+		q->max_timestamp = timestamp;
-+		return;
-+	}
-+
-+	/*
-+	 * last event might point to some random place in the list as it's
-+	 * the last queued event. We expect that the new event is clqe to
-+	 * this.
-+	 */
-+	if (last->timestamp <= timestamp) {
-+		while (last->timestamp <= timestamp) {
-+			p = last->list.next;
-+			if (p == &q->events) {
-+				list_add_tail(&new->list, &q->events);
-+				q->max_timestamp = timestamp;
-+				return;
-+			}
-+			last = list_entry(p, struct ordered_event, list);
-+		}
-+		list_add_tail(&new->list, &last->list);
-+	} else {
-+		while (last->timestamp > timestamp) {
-+			p = last->list.prev;
-+			if (p == &q->events) {
-+				list_add(&new->list, &q->events);
-+				return;
-+			}
-+			last = list_entry(p, struct ordered_event, list);
-+		}
-+		list_add(&new->list, &last->list);
-+	}
-+}
-+
-+#define MAX_SAMPLE_BUFFER	(64 * 1024 / sizeof(struct ordered_event))
-+static struct ordered_event *alloc_event(struct ordered_events_queue *q)
-+{
-+	struct list_head *cache = &q->cache;
-+	struct ordered_event *new;
-+
-+	if (!list_empty(cache)) {
-+		new = list_entry(cache->next, struct ordered_event, list);
-+		list_del(&new->list);
-+	} else if (q->buffer) {
-+		new = q->buffer + q->buffer_idx;
-+		if (++q->buffer_idx == MAX_SAMPLE_BUFFER)
-+			q->buffer = NULL;
-+	} else {
-+		q->buffer = malloc(MAX_SAMPLE_BUFFER * sizeof(*new));
-+		if (!q->buffer)
-+			return NULL;
-+		list_add(&q->buffer->list, &q->to_free);
-+		q->buffer_idx = 2;
-+		new = q->buffer + 1;
-+	}
-+
-+	return new;
-+}
-+
-+static struct ordered_event*
-+ordered_events_get(struct ordered_events_queue *q, u64 timestamp)
-+{
-+	struct ordered_event *new;
-+
-+	new = alloc_event(q);
-+	if (new) {
-+		new->timestamp = timestamp;
-+		queue_event(q, new);
-+	}
-+
-+	return new;
-+}
-+
-+static void
-+ordered_event_put(struct ordered_events_queue *q, struct ordered_event *iter)
-+{
-+	list_del(&iter->list);
-+	list_add(&iter->list, &q->cache);
-+	q->nr_events--;
-+}
-+
-+
- static int perf_session_deliver_event(struct perf_session *session,
- 				      union perf_event *event,
- 				      struct perf_sample *sample,
-@@ -508,10 +601,8 @@ static int ordered_events_flush(struct perf_session *s,
- 				return ret;
- 		}
+ static void perf_session_free_sample_buffers(struct perf_session *session)
+ {
+ 	struct ordered_events_queue *q = &session->ordered_events;
+@@ -565,8 +570,8 @@ static int perf_session_deliver_event(struct perf_session *session,
+ 				      struct perf_tool *tool,
+ 				      u64 file_offset);
  
-+		ordered_event_put(q, iter);
- 		q->last_flush = iter->timestamp;
--		list_del(&iter->list);
--		list_add(&iter->list, &q->cache);
--		q->nr_events--;
- 
- 		if (show_progress)
- 			ui_progress__update(&prog, 1);
-@@ -575,59 +666,10 @@ static int process_finished_round(struct perf_tool *tool,
- 	return ret;
- }
- 
--/* The queue is ordered by time */
--static void __queue_event(struct ordered_event *new, struct perf_session *s)
--{
--	struct ordered_events_queue *q = &s->ordered_events;
--	struct ordered_event *last = q->last;
--	u64 timestamp = new->timestamp;
--	struct list_head *p;
--
--	++q->nr_events;
--	q->last = new;
--
--	if (!last) {
--		list_add(&new->list, &q->events);
--		q->max_timestamp = timestamp;
--		return;
--	}
--
--	/*
--	 * last event might point to some random place in the list as it's
--	 * the last queued event. We expect that the new event is clqe to
--	 * this.
--	 */
--	if (last->timestamp <= timestamp) {
--		while (last->timestamp <= timestamp) {
--			p = last->list.next;
--			if (p == &q->events) {
--				list_add_tail(&new->list, &q->events);
--				q->max_timestamp = timestamp;
--				return;
--			}
--			last = list_entry(p, struct ordered_event, list);
--		}
--		list_add_tail(&new->list, &last->list);
--	} else {
--		while (last->timestamp > timestamp) {
--			p = last->list.prev;
--			if (p == &q->events) {
--				list_add(&new->list, &q->events);
--				return;
--			}
--			last = list_entry(p, struct ordered_event, list);
--		}
--		list_add(&new->list, &last->list);
--	}
--}
--
--#define MAX_SAMPLE_BUFFER	(64 * 1024 / sizeof(struct ordered_event))
--
- int perf_session_queue_event(struct perf_session *s, union perf_event *event,
- 				    struct perf_sample *sample, u64 file_offset)
+-static int ordered_events_flush(struct perf_session *s,
+-		       struct perf_tool *tool)
++static int __ordered_events_flush(struct perf_session *s,
++				  struct perf_tool *tool)
  {
  	struct ordered_events_queue *q = &s->ordered_events;
--	struct list_head *cache = &q->cache;
- 	u64 timestamp = sample->time;
- 	struct ordered_event *new;
- 
-@@ -639,29 +681,13 @@ int perf_session_queue_event(struct perf_session *s, union perf_event *event,
- 		return -EINVAL;
- 	}
- 
--	if (!list_empty(cache)) {
--		new = list_entry(cache->next, struct ordered_event, list);
--		list_del(&new->list);
--	} else if (q->buffer) {
--		new = q->buffer + q->buffer_idx;
--		if (++q->buffer_idx == MAX_SAMPLE_BUFFER)
--			q->buffer = NULL;
--	} else {
--		q->buffer = malloc(MAX_SAMPLE_BUFFER * sizeof(*new));
--		if (!q->buffer)
--			return -ENOMEM;
--		list_add(&q->buffer->list, &q->to_free);
--		q->buffer_idx = 2;
--		new = q->buffer + 1;
-+	new = ordered_events_get(q, timestamp);
-+	if (new) {
-+		new->file_offset = file_offset;
-+		new->event = event;
- 	}
- 
--	new->timestamp = timestamp;
--	new->file_offset = file_offset;
--	new->event = event;
--
--	__queue_event(new, s);
--
--	return 0;
-+	return new ? 0 : -ENOMEM;
+ 	struct list_head *head = &q->events;
+@@ -616,6 +621,32 @@ static int ordered_events_flush(struct perf_session *s,
+ 	return 0;
  }
  
- static void callchain__printf(struct perf_sample *sample)
++static int ordered_events_flush(struct perf_session *s, struct perf_tool *tool,
++				enum oeq_flush how)
++{
++	struct ordered_events_queue *q = &s->ordered_events;
++	int err;
++
++	switch (how) {
++	case OEQ_FLUSH__FINAL:
++		q->next_flush = ULLONG_MAX;
++		break;
++
++	case OEQ_FLUSH__ROUND:
++	default:
++		break;
++	};
++
++	err = __ordered_events_flush(s, tool);
++
++	if (!err) {
++		if (how == OEQ_FLUSH__ROUND)
++			q->next_flush = q->max_timestamp;
++	}
++
++	return err;
++}
++
+ /*
+  * When perf record finishes a pass on every buffers, it records this pseudo
+  * event.
+@@ -659,11 +690,7 @@ static int process_finished_round(struct perf_tool *tool,
+ 				  union perf_event *event __maybe_unused,
+ 				  struct perf_session *session)
+ {
+-	int ret = ordered_events_flush(session, tool);
+-	if (!ret)
+-		session->ordered_events.next_flush = session->ordered_events.max_timestamp;
+-
+-	return ret;
++	return ordered_events_flush(session, tool, OEQ_FLUSH__ROUND);
+ }
+ 
+ int perf_session_queue_event(struct perf_session *s, union perf_event *event,
+@@ -1245,8 +1272,7 @@ more:
+ 		goto more;
+ done:
+ 	/* do the final flush for ordered samples */
+-	session->ordered_events.next_flush = ULLONG_MAX;
+-	err = ordered_events_flush(session, tool);
++	err = ordered_events_flush(session, tool, OEQ_FLUSH__FINAL);
+ out_err:
+ 	free(buf);
+ 	perf_session__warn_about_errors(session, tool);
+@@ -1381,8 +1407,7 @@ more:
+ 
+ out:
+ 	/* do the final flush for ordered samples */
+-	session->ordered_events.next_flush = ULLONG_MAX;
+-	err = ordered_events_flush(session, tool);
++	err = ordered_events_flush(session, tool, OEQ_FLUSH__FINAL);
+ out_err:
+ 	ui_progress__finish();
+ 	perf_session__warn_about_errors(session, tool);
 -- 
 1.8.3.1
 
