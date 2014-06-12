@@ -1,48 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751278AbaFLRsV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 13:48:21 -0400
-Received: from 200.180.216.87.static.jazztel.es ([87.216.180.200]:45622 "HELO
-	mail.sysvalve.es" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750902AbaFLRsU (ORCPT
+	id S1751519AbaFLRt0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 13:49:26 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60242 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751090AbaFLRtZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 13:48:20 -0400
-X-Greylist: delayed 442 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 Jun 2014 13:48:20 EDT
-From: =?UTF-8?q?L=2E=20Alberto=20Gim=C3=A9nez?= <agimenez@sysvalve.es>
-To: devel@driverdev.osuosl.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH] staging: rtl8172u: Make ieee80211_crypto_init static
-Date: Thu, 12 Jun 2014 19:40:49 +0200
-Message-Id: <1402594851-16941-1-git-send-email-agimenez@sysvalve.es>
-X-Mailer: git-send-email 2.0.0.rc0
+	Thu, 12 Jun 2014 13:49:25 -0400
+Message-ID: <5399E820.5080801@infradead.org>
+Date: Thu, 12 Jun 2014 10:49:20 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Joe Perches <joe@perches.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Josh Triplett <josh@joshtriplett.org>
+Subject: Re: [PATCH 2/2] Documentation: exceptions to what I maintain
+References: <5399DF99.2010701@infradead.org> <1402594501.12385.10.camel@joe-AO725>
+In-Reply-To: <1402594501.12385.10.camel@joe-AO725>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix sparse warning.
+On 06/12/14 10:35, Joe Perches wrote:
+> On Thu, 2014-06-12 at 10:12 -0700, Randy Dunlap wrote:
+>> From: Randy Dunlap <rdunlap@infradead.org>
+>>
+>> Note that I don't maintain Documentation/ABI/,
+>> Documentation/devicetree/, or the language translation files.
+>>
+>> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+> 
+> Hey Randy.
+> 
+> Perhaps it's better to use exclusion "X:" values
+> so get_maintainer doesn't still include you.
+> 
+>> @@ -2885,7 +2885,7 @@ M:	Randy Dunlap <rdunlap@infradead.org>
+>>  L:	linux-doc@vger.kernel.org
+>>  T:	quilt http://www.infradead.org/~rdunlap/Doc/patches/
+>>  S:	Maintained
+>> -F:	Documentation/
+>> +F:	Documentation/ (but not: ABI, devicetree, translations)
+> 
+> Maybe:
+> 
+> X:	Documentation/ABI/
+> X:	Documentation/devicetree/
+> X:	Documentation/[a-z][a-z]_[A-Z][A-Z]/
+> 
+> The last line matches:
+> 
+> Documentation/ja_JP/
+> Documentation/ko_KR/
+> Documentation/zh_CN/
+> 
+> and it's easy to add any other directory you don't
+> want to cc'd on.
 
-Signed-off-by: L. Alberto Giménez <agimenez@sysvalve.es>
----
- drivers/staging/rtl8192u/ieee80211/ieee80211_crypt.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Thanks, I'll modify it to that syntax.
+That should satisfy Josh's comment also.
 
-diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211_crypt.c b/drivers/staging/rtl8192u/ieee80211/ieee80211_crypt.c
-index 5533221..3be690d 100644
---- a/drivers/staging/rtl8192u/ieee80211/ieee80211_crypt.c
-+++ b/drivers/staging/rtl8192u/ieee80211/ieee80211_crypt.c
-@@ -200,7 +200,7 @@ static struct ieee80211_crypto_ops ieee80211_crypt_null = {
- 	.owner			= THIS_MODULE,
- };
- 
--int __init ieee80211_crypto_init(void)
-+static int __init ieee80211_crypto_init(void)
- {
- 	int ret = -ENOMEM;
- 
+
 -- 
-2.0.0.rc0
-
+~Randy
