@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752894AbaFLX3v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 19:29:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37100 "EHLO
+	id S1752865AbaFLX3u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 19:29:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37106 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751677AbaFLXSG (ORCPT
+	with ESMTP id S1751686AbaFLXSG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 12 Jun 2014 19:18:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Theodore Tso <tytso@mit.edu>, Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 01/19] fs,userns: Change inode_capable to capable_wrt_inode_uidgid
-Date: Thu, 12 Jun 2014 16:21:38 -0700
-Message-Id: <20140612232138.700203234@linuxfoundation.org>
+        Markos Chandras <markos.chandras@imgtec.com>,
+        Paul Burton <paul.burton@imgtec.com>,
+        James Hogan <james.hogan@imgtec.com>, linux-mips@linux-mips.org,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [PATCH 3.14 03/19] MIPS: asm: thread_info: Add _TIF_SECCOMP flag
+Date: Thu, 12 Jun 2014 16:21:40 -0700
+Message-Id: <20140612232138.817092091@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140612232138.561318739@linuxfoundation.org>
 References: <20140612232138.561318739@linuxfoundation.org>
@@ -32,196 +32,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Markos Chandras <markos.chandras@imgtec.com>
 
-commit 23adbe12ef7d3d4195e80800ab36b37bee28cd03 upstream.
+commit 137f7df8cead00688524c82360930845396b8a21 upstream.
 
-The kernel has no concept of capabilities with respect to inodes; inodes
-exist independently of namespaces.  For example, inode_capable(inode,
-CAP_LINUX_IMMUTABLE) would be nonsense.
+Add _TIF_SECCOMP flag to _TIF_WORK_SYSCALL_ENTRY to indicate
+that the system call needs to be checked against a seccomp filter.
 
-This patch changes inode_capable to check for uid and gid mappings and
-renames it to capable_wrt_inode_uidgid, which should make it more
-obvious what it does.
-
-Fixes CVE-2014-4014.
-
-Cc: Theodore Ts'o <tytso@mit.edu>
-Cc: Serge Hallyn <serge.hallyn@ubuntu.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Dave Chinner <david@fromorbit.com>
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+Reviewed-by: Paul Burton <paul.burton@imgtec.com>
+Reviewed-by: James Hogan <james.hogan@imgtec.com>
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/6405/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/attr.c                  |    8 ++++----
- fs/inode.c                 |   10 +++++++---
- fs/namei.c                 |   11 ++++++-----
- fs/xfs/xfs_ioctl.c         |    2 +-
- include/linux/capability.h |    2 +-
- kernel/capability.c        |   20 ++++++++------------
- 6 files changed, 27 insertions(+), 26 deletions(-)
+ arch/mips/include/asm/thread_info.h |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/attr.c
-+++ b/fs/attr.c
-@@ -50,14 +50,14 @@ int inode_change_ok(const struct inode *
- 	if ((ia_valid & ATTR_UID) &&
- 	    (!uid_eq(current_fsuid(), inode->i_uid) ||
- 	     !uid_eq(attr->ia_uid, inode->i_uid)) &&
--	    !inode_capable(inode, CAP_CHOWN))
-+	    !capable_wrt_inode_uidgid(inode, CAP_CHOWN))
- 		return -EPERM;
+--- a/arch/mips/include/asm/thread_info.h
++++ b/arch/mips/include/asm/thread_info.h
+@@ -136,7 +136,8 @@ static inline struct thread_info *curren
+ #define _TIF_SYSCALL_TRACEPOINT	(1<<TIF_SYSCALL_TRACEPOINT)
  
- 	/* Make sure caller can chgrp. */
- 	if ((ia_valid & ATTR_GID) &&
- 	    (!uid_eq(current_fsuid(), inode->i_uid) ||
- 	    (!in_group_p(attr->ia_gid) && !gid_eq(attr->ia_gid, inode->i_gid))) &&
--	    !inode_capable(inode, CAP_CHOWN))
-+	    !capable_wrt_inode_uidgid(inode, CAP_CHOWN))
- 		return -EPERM;
+ #define _TIF_WORK_SYSCALL_ENTRY	(_TIF_NOHZ | _TIF_SYSCALL_TRACE |	\
+-				 _TIF_SYSCALL_AUDIT | _TIF_SYSCALL_TRACEPOINT)
++				 _TIF_SYSCALL_AUDIT | \
++				 _TIF_SYSCALL_TRACEPOINT | _TIF_SECCOMP)
  
- 	/* Make sure a caller can chmod. */
-@@ -67,7 +67,7 @@ int inode_change_ok(const struct inode *
- 		/* Also check the setgid bit! */
- 		if (!in_group_p((ia_valid & ATTR_GID) ? attr->ia_gid :
- 				inode->i_gid) &&
--		    !inode_capable(inode, CAP_FSETID))
-+		    !capable_wrt_inode_uidgid(inode, CAP_FSETID))
- 			attr->ia_mode &= ~S_ISGID;
- 	}
- 
-@@ -160,7 +160,7 @@ void setattr_copy(struct inode *inode, c
- 		umode_t mode = attr->ia_mode;
- 
- 		if (!in_group_p(inode->i_gid) &&
--		    !inode_capable(inode, CAP_FSETID))
-+		    !capable_wrt_inode_uidgid(inode, CAP_FSETID))
- 			mode &= ~S_ISGID;
- 		inode->i_mode = mode;
- 	}
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -1840,14 +1840,18 @@ EXPORT_SYMBOL(inode_init_owner);
-  * inode_owner_or_capable - check current task permissions to inode
-  * @inode: inode being checked
-  *
-- * Return true if current either has CAP_FOWNER to the inode, or
-- * owns the file.
-+ * Return true if current either has CAP_FOWNER in a namespace with the
-+ * inode owner uid mapped, or owns the file.
-  */
- bool inode_owner_or_capable(const struct inode *inode)
- {
-+	struct user_namespace *ns;
-+
- 	if (uid_eq(current_fsuid(), inode->i_uid))
- 		return true;
--	if (inode_capable(inode, CAP_FOWNER))
-+
-+	ns = current_user_ns();
-+	if (ns_capable(ns, CAP_FOWNER) && kuid_has_mapping(ns, inode->i_uid))
- 		return true;
- 	return false;
- }
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -332,10 +332,11 @@ int generic_permission(struct inode *ino
- 
- 	if (S_ISDIR(inode->i_mode)) {
- 		/* DACs are overridable for directories */
--		if (inode_capable(inode, CAP_DAC_OVERRIDE))
-+		if (capable_wrt_inode_uidgid(inode, CAP_DAC_OVERRIDE))
- 			return 0;
- 		if (!(mask & MAY_WRITE))
--			if (inode_capable(inode, CAP_DAC_READ_SEARCH))
-+			if (capable_wrt_inode_uidgid(inode,
-+						     CAP_DAC_READ_SEARCH))
- 				return 0;
- 		return -EACCES;
- 	}
-@@ -345,7 +346,7 @@ int generic_permission(struct inode *ino
- 	 * at least one exec bit set.
- 	 */
- 	if (!(mask & MAY_EXEC) || (inode->i_mode & S_IXUGO))
--		if (inode_capable(inode, CAP_DAC_OVERRIDE))
-+		if (capable_wrt_inode_uidgid(inode, CAP_DAC_OVERRIDE))
- 			return 0;
- 
- 	/*
-@@ -353,7 +354,7 @@ int generic_permission(struct inode *ino
- 	 */
- 	mask &= MAY_READ | MAY_WRITE | MAY_EXEC;
- 	if (mask == MAY_READ)
--		if (inode_capable(inode, CAP_DAC_READ_SEARCH))
-+		if (capable_wrt_inode_uidgid(inode, CAP_DAC_READ_SEARCH))
- 			return 0;
- 
- 	return -EACCES;
-@@ -2370,7 +2371,7 @@ static inline int check_sticky(struct in
- 		return 0;
- 	if (uid_eq(dir->i_uid, fsuid))
- 		return 0;
--	return !inode_capable(inode, CAP_FOWNER);
-+	return !capable_wrt_inode_uidgid(inode, CAP_FOWNER);
- }
- 
- /*
---- a/fs/xfs/xfs_ioctl.c
-+++ b/fs/xfs/xfs_ioctl.c
-@@ -1241,7 +1241,7 @@ xfs_ioctl_setattr(
- 		 * cleared upon successful return from chown()
- 		 */
- 		if ((ip->i_d.di_mode & (S_ISUID|S_ISGID)) &&
--		    !inode_capable(VFS_I(ip), CAP_FSETID))
-+		    !capable_wrt_inode_uidgid(VFS_I(ip), CAP_FSETID))
- 			ip->i_d.di_mode &= ~(S_ISUID|S_ISGID);
- 
- 		/*
---- a/include/linux/capability.h
-+++ b/include/linux/capability.h
-@@ -210,7 +210,7 @@ extern bool has_ns_capability_noaudit(st
- 				      struct user_namespace *ns, int cap);
- extern bool capable(int cap);
- extern bool ns_capable(struct user_namespace *ns, int cap);
--extern bool inode_capable(const struct inode *inode, int cap);
-+extern bool capable_wrt_inode_uidgid(const struct inode *inode, int cap);
- extern bool file_ns_capable(const struct file *file, struct user_namespace *ns, int cap);
- 
- /* audit system wants to get cap info from files as well */
---- a/kernel/capability.c
-+++ b/kernel/capability.c
-@@ -433,23 +433,19 @@ bool capable(int cap)
- EXPORT_SYMBOL(capable);
- 
- /**
-- * inode_capable - Check superior capability over inode
-+ * capable_wrt_inode_uidgid - Check nsown_capable and uid and gid mapped
-  * @inode: The inode in question
-  * @cap: The capability in question
-  *
-- * Return true if the current task has the given superior capability
-- * targeted at it's own user namespace and that the given inode is owned
-- * by the current user namespace or a child namespace.
-- *
-- * Currently we check to see if an inode is owned by the current
-- * user namespace by seeing if the inode's owner maps into the
-- * current user namespace.
-- *
-+ * Return true if the current task has the given capability targeted at
-+ * its own user namespace and that the given inode's uid and gid are
-+ * mapped into the current user namespace.
-  */
--bool inode_capable(const struct inode *inode, int cap)
-+bool capable_wrt_inode_uidgid(const struct inode *inode, int cap)
- {
- 	struct user_namespace *ns = current_user_ns();
- 
--	return ns_capable(ns, cap) && kuid_has_mapping(ns, inode->i_uid);
-+	return ns_capable(ns, cap) && kuid_has_mapping(ns, inode->i_uid) &&
-+		kgid_has_mapping(ns, inode->i_gid);
- }
--EXPORT_SYMBOL(inode_capable);
-+EXPORT_SYMBOL(capable_wrt_inode_uidgid);
+ /* work to do in syscall_trace_leave() */
+ #define _TIF_WORK_SYSCALL_EXIT	(_TIF_NOHZ | _TIF_SYSCALL_TRACE |	\
 
 
