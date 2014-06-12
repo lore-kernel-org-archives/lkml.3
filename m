@@ -1,117 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933410AbaFLRAA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 13:00:00 -0400
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:52378 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753116AbaFLQ76 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 12:59:58 -0400
+	id S1756295AbaFLRBA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 13:01:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31874 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753116AbaFLRA7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 13:00:59 -0400
+Date: Thu, 12 Jun 2014 13:00:44 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>, dhowells@redhat.com,
+        jwboyer@redhat.com, keyrings@linux-nfs.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmitry.kasatkin@gmail.com, mjg59@srcf.ucam.org
+Subject: Re: [PATCH 3/4] KEYS: validate key trust only with selected owner key
+Message-ID: <20140612170044.GI9578@redhat.com>
+References: <cover.1402387862.git.d.kasatkin@samsung.com>
+ <ef22f2630a2545bd7c3bf2c9e730a842835cf6c4.1402387862.git.d.kasatkin@samsung.com>
+ <20140612160346.GG9578@redhat.com>
+ <1402592126.5318.32.camel@dhcp-9-2-203-236.watson.ibm.com>
 MIME-Version: 1.0
-Date: Thu, 12 Jun 2014 09:59:57 -0700
-Message-ID: <CAKx2Y1kBy-mrxm+1u88XVL2Z7gYKQe5U-EG2SBTzNCRAs_UVVw@mail.gmail.com>
-Subject: Segmentation fault on all golang executables
-From: Kui Zhang <kuizhang@gmail.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        luto@amacapital.net
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402592126.5318.32.camel@dhcp-9-2-203-236.watson.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Jun 12, 2014 at 12:55:26PM -0400, Mimi Zohar wrote:
+> On Thu, 2014-06-12 at 12:03 -0400, Vivek Goyal wrote: 
+> > On Tue, Jun 10, 2014 at 11:48:17AM +0300, Dmitry Kasatkin wrote:
+> > > This patch provides kernel parameter to specify owner's key id which
+> > > must be used for trust validate of keys. Keys signed with other keys
+> > > are not trusted.
+> > > 
+> > > Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+> > 
+> > Hi,
+> > 
+> > I am continuing to work on verifying kernel signature for kexec/kdump. I 
+> > am planning to take david howell's patches for pkcs7 signature
+> > verification and verify bzImage signature.
+> > 
+> > Part of that process will boil down to verifying a certificate in
+> > pkcs7 x509 cert chain using a key in system_trusted_keyring.
+> > 
+> > I think the OS vendor key which signs the kernel signing key propagates to
+> > system_trusted_keyring. (shim has that and I am not sure how shim makes
+> > it propogate all they way to system_trusted_keyring).
+> 
+> The shim patches are here
+> http://pkgs.fedoraproject.org/cgit/kernel.git/tree/modsign-uefi.patch
+> 
+> > So I was planning to use same functionality where I look for any key
+> > which can verify the signing cert of kernel. As OS vendor key will be
+> > in system_trusted_keyring, it should work.
+> > 
+> > Now with this change where you will trust only one selected owner key.
+> > That means you will not even trust the OS vendor key which signs kernel
+> > signing key. I think this will stop working with  keys_ownerid=<....>
+> > 
+> > As I am doing that work in parallel and I saw these patches, I thought
+> > I will bring it up.
+> 
+> Right, the current discussion is whether we need an owner trusted
+> keyring or if just one key was enough.  Thanks for chiming in.
+> 
+> The other option would be to sign the bzImage file creating a
+> 'security.ima' extended attribute and verifying it.  Have you created a
+> security kexec hook?
 
-This commit seem to cause Segmentation fault on any of my golang executables.
+No, I have not created another hook. As bzImage is already signed it is
+much simpler to verify same signature instead of carrying another set
+of detached signatures and key management etc.
 
-commit 6f121e548f83674ab4920a4e60afb58d4f61b829
-Author: Andy Lutomirski <luto@amacapital.net>
-Date:   Mon May 5 12:19:34 2014 -0700
-
-x86, vdso: Reimplement vdso.so preparation in build-time C
-
-golang-go                             2:1.2.1-2ubuntu1
-     amd64
-golang-go-linux-amd64                 2:1.2.1-2ubuntu1
-     amd64
-
-
-/tmp]> go
-Segmentation fault
-
-go_seg]> cat a.go
-package main
-
-func main(){
-        println("test")
-
-}
-
-################
-
-(gdb) run
-Starting program: go_seg/a
-
-Program received signal SIGSEGV, Segmentation fault.
-vdso_parse_symbols (vdso_info=<error reading variable: Attempt to
-dereference a generic pointer.>,
-    version=<error reading variable: Attempt to dereference a generic pointer.>)
-    at /usr/lib/go/src/pkg/runtime/vdso_linux_amd64.c:279
-279                     if(ELF64_ST_TYPE(sym->st_info) != STT_FUNC)
-(gdb) bt
-#0  vdso_parse_symbols (vdso_info=<error reading variable: Attempt to
-dereference a generic pointer.>,
-    version=<error reading variable: Attempt to dereference a generic pointer.>)
-    at /usr/lib/go/src/pkg/runtime/vdso_linux_amd64.c:279
-#1  0x0000000000417228 in runtime.linux_setup_vdso (
-    argc=<error reading variable: Attempt to dereference a generic pointer.>,
-    argv=<error reading variable: Attempt to dereference a generic pointer.>)
-    at /usr/lib/go/src/pkg/runtime/vdso_linux_amd64.c:326
-#2  0x000000000041358c in runtime.args (c=<error reading variable:
-Attempt to dereference a generic pointer.>,
-    v=<error reading variable: Attempt to dereference a generic
-pointer.>) at /usr/lib/go/src/pkg/runtime/runtime.c:86
-#3  0x000000000041a01b in _rt0_go () at
-/usr/lib/go/src/pkg/runtime/asm_amd64.s:85
-#4  0x0000000000000001 in ?? ()
-#5  0x00007fffffffe7b8 in ?? ()
-#6  0x0000000000000001 in ?? ()
-#7  0x00007fffffffe7b8 in ?? ()
-#8  0x0000000000000000 in ?? ()
-
-###########################################
-
-Starting program: /usr/bin/go
-[Thread debugging using libthread_db enabled]
-Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
-
-Program received signal SIGSEGV, Segmentation fault.
-vdso_parse_symbols (vdso_info=<error reading variable: Attempt to
-dereference a generic pointer.>,
-    version=<error reading variable: Attempt to dereference a generic pointer.>)
-    at /usr/lib/go/src/pkg/runtime/vdso_linux_amd64.c:279
-279                     if(ELF64_ST_TYPE(sym->st_info) != STT_FUNC)
-(gdb) bt
-#0  vdso_parse_symbols (vdso_info=<error reading variable: Attempt to
-dereference a generic pointer.>,
-    version=<error reading variable: Attempt to dereference a generic pointer.>)
-    at /usr/lib/go/src/pkg/runtime/vdso_linux_amd64.c:279
-#1  0x0000000000470288 in runtime.linux_setup_vdso (
-    argc=<error reading variable: Attempt to dereference a generic pointer.>,
-    argv=<error reading variable: Attempt to dereference a generic pointer.>)
-    at /usr/lib/go/src/pkg/runtime/vdso_linux_amd64.c:326
-#2  0x000000000046bf6c in runtime.args (c=<error reading variable:
-Attempt to dereference a generic pointer.>,
-    v=<error reading variable: Attempt to dereference a generic
-pointer.>) at /usr/lib/go/src/pkg/runtime/runtime.c:86
-#3  0x000000000047558b in _rt0_go () at
-/usr/lib/go/src/pkg/runtime/asm_amd64.s:85
-#4  0x0000000000000001 in ?? ()
-#5  0x00007fffffffe7d8 in ?? ()
-#6  0x0000000000000001 in ?? ()
-#7  0x00007fffffffe7d8 in ?? ()
-#8  0x0000000000000000 in ?? ()
-
-
-
-thanks
-Kui.Z
+Thanks
+Vivek
