@@ -1,202 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932884AbaFLIVU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 04:21:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41206 "EHLO mx2.suse.de"
+	id S932681AbaFLI0w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 04:26:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41339 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754632AbaFLIVR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 04:21:17 -0400
-Message-ID: <539962EC.20901@suse.cz>
-Date: Thu, 12 Jun 2014 10:21:00 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1754405AbaFLI0u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 04:26:50 -0400
+Date: Thu, 12 Jun 2014 10:26:45 +0200
+From: Jan Kara <jack@suse.cz>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Jan Kara <jack@suse.cz>, Peter Hurley <peter@hurleysoftware.com>,
+        pmladek@suse.cz, Andrew Morton <akpm@linux-foundation.org>,
+        Jet Chen <jet.chen@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: console: lockup on boot
+Message-ID: <20140612082645.GF9511@quack.suse.cz>
+References: <5388838B.8070802@oracle.com>
+ <53888E76.5040101@hurleysoftware.com>
+ <20140530140757.GC2419@quack.suse.cz>
+ <53921116.5050804@oracle.com>
+ <53972B5C.5020605@hurleysoftware.com>
+ <53986DFB.9030006@oracle.com>
+ <20140611203436.GD9511@quack.suse.cz>
+ <20140611213111.GE9511@quack.suse.cz>
+ <53991958.4070106@oracle.com>
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>, Mel Gorman <mgorman@suse.de>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [RFC PATCH 09/10] mm, compaction: try to capture the just-created
- high-order freepage
-References: <1402305982-6928-1-git-send-email-vbabka@suse.cz> <1402305982-6928-9-git-send-email-vbabka@suse.cz> <53986E31.7090500@suse.cz> <20140612022011.GB12415@bbox>
-In-Reply-To: <20140612022011.GB12415@bbox>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53991958.4070106@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2014 04:20 AM, Minchan Kim wrote:
-> On Wed, Jun 11, 2014 at 04:56:49PM +0200, Vlastimil Babka wrote:
->> On 06/09/2014 11:26 AM, Vlastimil Babka wrote:
->>> Compaction uses watermark checking to determine if it succeeded in creating
->>> a high-order free page. My testing has shown that this is quite racy and it
->>> can happen that watermark checking in compaction succeeds, and moments later
->>> the watermark checking in page allocation fails, even though the number of
->>> free pages has increased meanwhile.
->>>
->>> It should be more reliable if direct compaction captured the high-order free
->>> page as soon as it detects it, and pass it back to allocation. This would
->>> also reduce the window for somebody else to allocate the free page.
->>>
->>> This has been already implemented by 1fb3f8ca0e92 ("mm: compaction: capture a
->>> suitable high-order page immediately when it is made available"), but later
->>> reverted by 8fb74b9f ("mm: compaction: partially revert capture of suitable
->>> high-order page") due to flaws.
->>>
->>> This patch differs from the previous attempt in two aspects:
->>>
->>> 1) The previous patch scanned free lists to capture the page. In this patch,
->>>      only the cc->order aligned block that the migration scanner just finished
->>>      is considered, but only if pages were actually isolated for migration in
->>>      that block. Tracking cc->order aligned blocks also has benefits for the
->>>      following patch that skips blocks where non-migratable pages were found.
->>>
->
-> Generally I like this.
+On Wed 11-06-14 23:07:04, Sasha Levin wrote:
+> On 06/11/2014 05:31 PM, Jan Kara wrote:
+> > On Wed 11-06-14 22:34:36, Jan Kara wrote:
+> >> > On Wed 11-06-14 10:55:55, Sasha Levin wrote:
+> >>> > > On 06/10/2014 11:59 AM, Peter Hurley wrote:
+> >>>> > > > On 06/06/2014 03:05 PM, Sasha Levin wrote:
+> >>>>> > > >> On 05/30/2014 10:07 AM, Jan Kara wrote:
+> >>>>>> > > >>> On Fri 30-05-14 09:58:14, Peter Hurley wrote:
+> >>>>>>>> > > >>>>> On 05/30/2014 09:11 AM, Sasha Levin wrote:
+> >>>>>>>>>> > > >>>>>>> Hi all,
+> >>>>>>>>>> > > >>>>>>>
+> >>>>>>>>>> > > >>>>>>> I sometime see lockups when booting my KVM guest with the latest -next kernel,
+> >>>>>>>>>> > > >>>>>>> it basically hangs right when it should start 'init', and after a while I get
+> >>>>>>>>>> > > >>>>>>> the following spew:
+> >>>>>>>>>> > > >>>>>>>
+> >>>>>>>>>> > > >>>>>>> [   30.790833] BUG: spinlock lockup suspected on CPU#1, swapper/1/0
+> >>>>>>>> > > >>>>>
+> >>>>>>>> > > >>>>> Maybe related to this report: https://lkml.org/lkml/2014/5/30/26
+> >>>>>>>> > > >>>>> from Jet Chen which was bisected to
+> >>>>>>>> > > >>>>>
+> >>>>>>>> > > >>>>> commit bafe980f5afc7ccc693fd8c81c8aa5a02fbb5ae0
+> >>>>>>>> > > >>>>> Author:     Jan Kara <jack@suse.cz>
+> >>>>>>>> > > >>>>> AuthorDate: Thu May 22 10:43:35 2014 +1000
+> >>>>>>>> > > >>>>> Commit:     Stephen Rothwell <sfr@canb.auug.org.au>
+> >>>>>>>> > > >>>>> CommitDate: Thu May 22 10:43:35 2014 +1000
+> >>>>>>>> > > >>>>>
+> >>>>>>>> > > >>>>>      printk: enable interrupts before calling console_trylock_for_printk()
+> >>>>>>>> > > >>>>>          We need interrupts disabled when calling console_trylock_for_printk() only
+> >>>>>>>> > > >>>>>      so that cpu id we pass to can_use_console() remains valid (for other
+> >>>>>>>> > > >>>>>      things console_sem provides all the exclusion we need and deadlocks on
+> >>>>>>>> > > >>>>>      console_sem due to interrupts are impossible because we use
+> >>>>>>>> > > >>>>>      down_trylock()).  However if we are rescheduled, we are guaranteed to run
+> >>>>>>>> > > >>>>>      on an online cpu so we can easily just get the cpu id in
+> >>>>>>>> > > >>>>>      can_use_console().
+> >>>>>>>> > > >>>>>          We can lose a bit of performance when we enable interrupts in
+> >>>>>>>> > > >>>>>      vprintk_emit() and then disable them again in console_unlock() but OTOH it
+> >>>>>>>> > > >>>>>      can somewhat reduce interrupt latency caused by console_unlock()
+> >>>>>>>> > > >>>>>      especially since later in the patch series we will want to spin on
+> >>>>>>>> > > >>>>>      console_sem in console_trylock_for_printk().
+> >>>>>>>> > > >>>>>          Signed-off-by: Jan Kara <jack@suse.cz>
+> >>>>>>>> > > >>>>>      Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> >>>>>>>> > > >>>>>
+> >>>>>>>> > > >>>>> ?
+> >>>>>> > > >>>    Yeah, very likely. I think I see the problem, I'll send the fix shortly.
+> >>>>> > > >>
+> >>>>> > > >> Hi Jan,
+> >>>>> > > >>
+> >>>>> > > >> It seems that the issue I'm seeing is different from the "[prink]  BUG: spinlock
+> >>>>> > > >> lockup suspected on CPU#0, swapper/1".
+> >>>>> > > >>
+> >>>>> > > >> Is there anything else I could try here? The issue is very common during testing.
+> >>>> > > > 
+> >>>> > > > Sasha,
+> >>>> > > > 
+> >>>> > > > Is this bisectable? Maybe that's the best way forward here.
+> >>> > > 
+> >>> > > I've ran a bisection again and ended up at the same commit as Jet Chen
+> >>> > > (the commit unfortunately already made it to Linus's tree).
+> >>> > > 
+> >>> > > Note that I did try Jan's proposed fix and that didn't solve the issue
+> >>> > > for me, I believe we're seeing different issues caused by the same
+> >>> > > commit.
+> >> >   Sorry it has been busy time lately and I didn't have as much time to look
+> >> > into this as would be needed.
+> >   Oops, pressed send too early... So I have two debug patches for you. Can
+> > you try whether the problem reproduces with the first one or with both of
+> > them applied?
+> 
+> The first patch fixed it (I assumed that there's no need to try the second).
+  Good. So that shows that it is the increased lockdep coverage which is
+causing problems - with my patch, lockdep is able to identify some problem
+because console drivers are now called with lockdep enabled. But because
+the problem was found in some difficult context, lockdep just hung the
+machine when trying to report it... Sadly the stacktraces you posted don't
+tell us what lockdep found.
 
-Thanks.
+Adding Peter Zijlstra to CC. Peter, any idea how lockdep could report
+problems when holding logbuf_lock? One possibility would be to extend
+logbuf_cpu recursion logic to every holder of logbuf_lock. That will at
+least avoid the spinlock recursion killing the machine but we won't be able
+to see what lockdep found...
 
->>> 2) In this patch, the isolated free page is allocated through extending
->>>      get_page_from_freelist() and buffered_rmqueue(). This ensures that it gets
->>>      all operations such as prep_new_page() and page->pfmemalloc setting that
->>>      was missing in the previous attempt, zone statistics are updated etc.
->>>
->
-> But this part is problem.
-> Capturing is not common but you are adding more overhead in hotpath for rare cases
-> where even they are ok to fail so it's not a good deal.
-> In such case, We have no choice but to do things you mentioned (ex,statistics,
-> prep_new_page, pfmemalloc) manually in __alloc_pages_direct_compact.
-
-OK, I will try.
-
->>> Evaluation is pending.
->>
->> Uh, so if anyone wants to test it, here's a fixed version, as initial evaluation
->> showed it does not actually capture anything (which should not affect patch 10/10
->> though) and debugging this took a while.
->>
->> - for pageblock_order (i.e. THP), capture was never attempted, as the for cycle
->>    in isolate_migratepages_range() has ended right before the
->>    low_pfn == next_capture_pfn check
->> - lru_add_drain() has to be done before pcplists drain. This made a big difference
->>    (~50 successful captures -> ~1300 successful captures)
->>    Note that __alloc_pages_direct_compact() is missing lru_add_drain() as well, and
->>    all the existing watermark-based compaction termination decisions (which happen
->>    before the drain in __alloc_pages_direct_compact()) don't do any draining at all.
->>
->> -----8<-----
->> From: Vlastimil Babka <vbabka@suse.cz>
->> Date: Wed, 28 May 2014 17:05:18 +0200
->> Subject: [PATCH fixed 09/10] mm, compaction: try to capture the just-created
->>   high-order freepage
->>
->> Compaction uses watermark checking to determine if it succeeded in creating
->> a high-order free page. My testing has shown that this is quite racy and it
->> can happen that watermark checking in compaction succeeds, and moments later
->> the watermark checking in page allocation fails, even though the number of
->> free pages has increased meanwhile.
->>
->> It should be more reliable if direct compaction captured the high-order free
->> page as soon as it detects it, and pass it back to allocation. This would
->> also reduce the window for somebody else to allocate the free page.
->>
->> This has been already implemented by 1fb3f8ca0e92 ("mm: compaction: capture a
->> suitable high-order page immediately when it is made available"), but later
->> reverted by 8fb74b9f ("mm: compaction: partially revert capture of suitable
->> high-order page") due to flaws.
->>
->> This patch differs from the previous attempt in two aspects:
->>
->> 1) The previous patch scanned free lists to capture the page. In this patch,
->>     only the cc->order aligned block that the migration scanner just finished
->>     is considered, but only if pages were actually isolated for migration in
->>     that block. Tracking cc->order aligned blocks also has benefits for the
->>     following patch that skips blocks where non-migratable pages were found.
->>
->> 2) In this patch, the isolated free page is allocated through extending
->>     get_page_from_freelist() and buffered_rmqueue(). This ensures that it gets
->>     all operations such as prep_new_page() and page->pfmemalloc setting that
->>     was missing in the previous attempt, zone statistics are updated etc.
->>
->> Evaluation is pending.
->>
->> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
->> Cc: Minchan Kim <minchan@kernel.org>
->> Cc: Mel Gorman <mgorman@suse.de>
->> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->> Cc: Michal Nazarewicz <mina86@mina86.com>
->> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
->> Cc: Christoph Lameter <cl@linux.com>
->> Cc: Rik van Riel <riel@redhat.com>
->> Cc: David Rientjes <rientjes@google.com>
->> ---
->>   include/linux/compaction.h |   5 ++-
->>   mm/compaction.c            | 103 +++++++++++++++++++++++++++++++++++++++++++--
->>   mm/internal.h              |   2 +
->>   mm/page_alloc.c            |  69 ++++++++++++++++++++++++------
->>   4 files changed, 161 insertions(+), 18 deletions(-)
->>
->> diff --git a/include/linux/compaction.h b/include/linux/compaction.h
->> index 01e3132..69579f5 100644
->> --- a/include/linux/compaction.h
->> +++ b/include/linux/compaction.h
->> @@ -10,6 +10,8 @@
->>   #define COMPACT_PARTIAL		2
->>   /* The full zone was compacted */
->>   #define COMPACT_COMPLETE	3
->> +/* Captured a high-order free page in direct compaction */
->> +#define COMPACT_CAPTURED	4
->>
->>   #ifdef CONFIG_COMPACTION
->>   extern int sysctl_compact_memory;
->> @@ -22,7 +24,8 @@ extern int sysctl_extfrag_handler(struct ctl_table *table, int write,
->>   extern int fragmentation_index(struct zone *zone, unsigned int order);
->>   extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
->>   			int order, gfp_t gfp_mask, nodemask_t *mask,
->> -			enum migrate_mode mode, bool *contended);
->> +			enum migrate_mode mode, bool *contended,
->> +			struct page **captured_page);
->>   extern void compact_pgdat(pg_data_t *pgdat, int order);
->>   extern void reset_isolation_suitable(pg_data_t *pgdat);
->>   extern unsigned long compaction_suitable(struct zone *zone, int order);
->> diff --git a/mm/compaction.c b/mm/compaction.c
->> index d1e30ba..2988758 100644
->> --- a/mm/compaction.c
->> +++ b/mm/compaction.c
->> @@ -541,6 +541,16 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->>   	const isolate_mode_t mode = (cc->mode == MIGRATE_ASYNC ?
->>   					ISOLATE_ASYNC_MIGRATE : 0) |
->>   				    (unevictable ? ISOLATE_UNEVICTABLE : 0);
->> +	unsigned long capture_pfn = 0;   /* current candidate for capturing */
->> +	unsigned long next_capture_pfn = 0; /* next candidate for capturing */
->> +
->> +	if (cc->order > PAGE_ALLOC_COSTLY_ORDER
->> +		&& gfpflags_to_migratetype(cc->gfp_mask) == MIGRATE_MOVABLE
->> +			&& cc->order <= pageblock_order) {
->
-> You sent with RFC mark so I will not review detailed thing but just design stuff.
->
-> Why does capture work for limited high-order range?
-
-I thought the overhead of maintaining the pfn's and trying the capture 
-would be a bad tradeoff for low-order compactions which I suppose have a 
-good chance of succeeding even without capture. But I admit I don't have 
-data to support this yet.
-
-> Direct compaction is really costly operation for the process and he did it
-> at the cost of his resource(ie, timeslice) so anyone try to do direct compaction
-> deserves to have a precious result regardless of order.
-> Another question: Why couldn't the capture work for only MIGRATE_CMA?
-
-CMA allocations don't go through standard direct compaction. They also 
-use memory isolation to prevent parallel activity from stealing the 
-pages freed by compaction. And importantly they set cc->order = -1, as 
-the goal is not to compact a single high-order page, but arbitrary long 
-range.
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
