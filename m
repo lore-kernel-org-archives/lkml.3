@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753847AbaFLVU6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 17:20:58 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:33455 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752396AbaFLVUR (ORCPT
+	id S1752998AbaFLVXO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 17:23:14 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:52704 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751890AbaFLVXL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 17:20:17 -0400
-From: Jason Low <jason.low2@hp.com>
-To: mingo@kernel.org, peterz@infradead.org
-Cc: linux-kernel@vger.kernel.org, davidlohr@hp.com, Waiman.Long@hp.com,
-        scott.norton@hp.com, aswin@hp.com, jason.low2@hp.com
-Subject: [PATCH v3 1/3] mutex: Correct documentation on mutex optimistic spinning
-Date: Thu, 12 Jun 2014 14:20:12 -0700
-Message-Id: <1402608014-11473-2-git-send-email-jason.low2@hp.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1402608014-11473-1-git-send-email-jason.low2@hp.com>
-References: <1402608014-11473-1-git-send-email-jason.low2@hp.com>
+	Thu, 12 Jun 2014 17:23:11 -0400
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
+Subject: Re: [PATCH 2/3] ata: Add Qualcomm ARM SoC AHCI SATA host controller driver
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <539A047B.3010306@codeaurora.org>
+Date: Thu, 12 Jun 2014 16:23:06 -0500
+Cc: Tejun Heo <tj@kernel.org>, linux-ide@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <8C69AEA0-877D-4198-BAD4-393695FBC94E@codeaurora.org>
+References: <1402600404-19214-1-git-send-email-galak@codeaurora.org> <1402600404-19214-2-git-send-email-galak@codeaurora.org> <539A047B.3010306@codeaurora.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+X-Mailer: Apple Mail (2.1878.2)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mutex optimistic spinning documentation states that we spin for
-acquisition when we find that there are no pending waiters. However,
-in actuality, whether or not there are waiters for the mutex doesn't
-determine if we will spin for it.
 
-This patch removes that statement and also adds a comment which
-mentions that we spin for the mutex while we don't need to reschedule.
+On Jun 12, 2014, at 2:50 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
 
-Acked-by: Davidlohr Bueso <davidlohr@hp.com>
-Signed-off-by: Jason Low <jason.low2@hp.com>
----
- kernel/locking/mutex.c |   10 ++++------
- 1 files changed, 4 insertions(+), 6 deletions(-)
+> On 06/12/14 12:13, Kumar Gala wrote:
+>> +static int qcom_ahci_probe(struct platform_device *pdev)
+>> +{
+>> +	struct ahci_host_priv *hpriv;
+>> +	struct clk *rxoob_clk;
+>> +	int rc;
+>> +
+>> +	hpriv = ahci_platform_get_resources(pdev);
+>> +	if (IS_ERR(hpriv))
+>> +		return PTR_ERR(hpriv);
+>> +
+>> +	/* Try and set the rxoob clk to 100Mhz */
+>> +	rxoob_clk = of_clk_get_by_name(pdev->dev.of_node, "rxoob");
+> 
+> Any reason we can't use devm_clk_get() here?
 
-diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
-index bc73d33..dd26bf6 100644
---- a/kernel/locking/mutex.c
-+++ b/kernel/locking/mutex.c
-@@ -388,12 +388,10 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
- 	/*
- 	 * Optimistic spinning.
- 	 *
--	 * We try to spin for acquisition when we find that there are no
--	 * pending waiters and the lock owner is currently running on a
--	 * (different) CPU.
--	 *
--	 * The rationale is that if the lock owner is running, it is likely to
--	 * release the lock soon.
-+	 * We try to spin for acquisition when we find that the lock owner
-+	 * is currently running on a (different) CPU and while we don't
-+	 * need to reschedule. The rationale is that if the lock owner is
-+	 * running, it is likely to release the lock soon.
- 	 *
- 	 * Since this needs the lock owner, and this mutex implementation
- 	 * doesn't track the owner atomically in the lock field, we need to
+Was trying to avoid the ref cnt of devm_clk_get() as the clk’s are actually handled in ahci_platform_get_resources/ahci_platform_enable_resources
+
+- k
+
 -- 
-1.7.1
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
