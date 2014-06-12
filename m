@@ -1,213 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752116AbaFLXSf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 19:18:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37188 "EHLO
+	id S1752156AbaFLXSg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 19:18:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37181 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750863AbaFLXSc (ORCPT
+	with ESMTP id S1750822AbaFLXSb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 19:18:32 -0400
+	Thu, 12 Jun 2014 19:18:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Theodore Tso <tytso@mit.edu>, Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 01/18] fs,userns: Change inode_capable to capable_wrt_inode_uidgid
-Date: Thu, 12 Jun 2014 16:22:05 -0700
-Message-Id: <20140612232213.071311632@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: [PATCH 3.10 00/18] 3.10.44-stable review
+Date: Thu, 12 Jun 2014 16:22:04 -0700
+Message-Id: <20140612232212.960235342@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140612232212.960235342@linuxfoundation.org>
-References: <20140612232212.960235342@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+This is the start of the stable review cycle for the 3.10.44 release.
+There are 18 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-------------------
+Responses should be made by Sat Jun 14 23:22:02 UTC 2014.
+Anything received after that time might be too late.
 
-From: Andy Lutomirski <luto@amacapital.net>
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.44-rc1.gz
+and the diffstat can be found below.
 
-commit 23adbe12ef7d3d4195e80800ab36b37bee28cd03 upstream.
+thanks,
 
-The kernel has no concept of capabilities with respect to inodes; inodes
-exist independently of namespaces.  For example, inode_capable(inode,
-CAP_LINUX_IMMUTABLE) would be nonsense.
+greg k-h
 
-This patch changes inode_capable to check for uid and gid mappings and
-renames it to capable_wrt_inode_uidgid, which should make it more
-obvious what it does.
+-------------
+Pseudo-Shortlog of commits:
 
-Fixes CVE-2014-4014.
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.10.44-rc1
 
-Cc: Theodore Ts'o <tytso@mit.edu>
-Cc: Serge Hallyn <serge.hallyn@ubuntu.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Dave Chinner <david@fromorbit.com>
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Andreas Schrägle <ajs124.ajs124@gmail.com>
+    ahci: add PCI ID for Marvell 88SE91A0 SATA Controller
 
----
- fs/attr.c                  |    8 ++++----
- fs/inode.c                 |   10 +++++++---
- fs/namei.c                 |   11 ++++++-----
- include/linux/capability.h |    2 +-
- kernel/capability.c        |   18 +++++++-----------
- 5 files changed, 25 insertions(+), 24 deletions(-)
+Jérôme Carretero <cJ-ko@zougloub.eu>
+    ahci: Add Device ID for HighPoint RocketRaid 642L
 
---- a/fs/attr.c
-+++ b/fs/attr.c
-@@ -50,14 +50,14 @@ int inode_change_ok(const struct inode *
- 	if ((ia_valid & ATTR_UID) &&
- 	    (!uid_eq(current_fsuid(), inode->i_uid) ||
- 	     !uid_eq(attr->ia_uid, inode->i_uid)) &&
--	    !inode_capable(inode, CAP_CHOWN))
-+	    !capable_wrt_inode_uidgid(inode, CAP_CHOWN))
- 		return -EPERM;
- 
- 	/* Make sure caller can chgrp. */
- 	if ((ia_valid & ATTR_GID) &&
- 	    (!uid_eq(current_fsuid(), inode->i_uid) ||
- 	    (!in_group_p(attr->ia_gid) && !gid_eq(attr->ia_gid, inode->i_gid))) &&
--	    !inode_capable(inode, CAP_CHOWN))
-+	    !capable_wrt_inode_uidgid(inode, CAP_CHOWN))
- 		return -EPERM;
- 
- 	/* Make sure a caller can chmod. */
-@@ -67,7 +67,7 @@ int inode_change_ok(const struct inode *
- 		/* Also check the setgid bit! */
- 		if (!in_group_p((ia_valid & ATTR_GID) ? attr->ia_gid :
- 				inode->i_gid) &&
--		    !inode_capable(inode, CAP_FSETID))
-+		    !capable_wrt_inode_uidgid(inode, CAP_FSETID))
- 			attr->ia_mode &= ~S_ISGID;
- 	}
- 
-@@ -160,7 +160,7 @@ void setattr_copy(struct inode *inode, c
- 		umode_t mode = attr->ia_mode;
- 
- 		if (!in_group_p(inode->i_gid) &&
--		    !inode_capable(inode, CAP_FSETID))
-+		    !capable_wrt_inode_uidgid(inode, CAP_FSETID))
- 			mode &= ~S_ISGID;
- 		inode->i_mode = mode;
- 	}
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -1837,14 +1837,18 @@ EXPORT_SYMBOL(inode_init_owner);
-  * inode_owner_or_capable - check current task permissions to inode
-  * @inode: inode being checked
-  *
-- * Return true if current either has CAP_FOWNER to the inode, or
-- * owns the file.
-+ * Return true if current either has CAP_FOWNER in a namespace with the
-+ * inode owner uid mapped, or owns the file.
-  */
- bool inode_owner_or_capable(const struct inode *inode)
- {
-+	struct user_namespace *ns;
-+
- 	if (uid_eq(current_fsuid(), inode->i_uid))
- 		return true;
--	if (inode_capable(inode, CAP_FOWNER))
-+
-+	ns = current_user_ns();
-+	if (ns_capable(ns, CAP_FOWNER) && kuid_has_mapping(ns, inode->i_uid))
- 		return true;
- 	return false;
- }
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -321,10 +321,11 @@ int generic_permission(struct inode *ino
- 
- 	if (S_ISDIR(inode->i_mode)) {
- 		/* DACs are overridable for directories */
--		if (inode_capable(inode, CAP_DAC_OVERRIDE))
-+		if (capable_wrt_inode_uidgid(inode, CAP_DAC_OVERRIDE))
- 			return 0;
- 		if (!(mask & MAY_WRITE))
--			if (inode_capable(inode, CAP_DAC_READ_SEARCH))
-+			if (capable_wrt_inode_uidgid(inode,
-+						     CAP_DAC_READ_SEARCH))
- 				return 0;
- 		return -EACCES;
- 	}
-@@ -334,7 +335,7 @@ int generic_permission(struct inode *ino
- 	 * at least one exec bit set.
- 	 */
- 	if (!(mask & MAY_EXEC) || (inode->i_mode & S_IXUGO))
--		if (inode_capable(inode, CAP_DAC_OVERRIDE))
-+		if (capable_wrt_inode_uidgid(inode, CAP_DAC_OVERRIDE))
- 			return 0;
- 
- 	/*
-@@ -342,7 +343,7 @@ int generic_permission(struct inode *ino
- 	 */
- 	mask &= MAY_READ | MAY_WRITE | MAY_EXEC;
- 	if (mask == MAY_READ)
--		if (inode_capable(inode, CAP_DAC_READ_SEARCH))
-+		if (capable_wrt_inode_uidgid(inode, CAP_DAC_READ_SEARCH))
- 			return 0;
- 
- 	return -EACCES;
-@@ -2199,7 +2200,7 @@ static inline int check_sticky(struct in
- 		return 0;
- 	if (uid_eq(dir->i_uid, fsuid))
- 		return 0;
--	return !inode_capable(inode, CAP_FOWNER);
-+	return !capable_wrt_inode_uidgid(inode, CAP_FOWNER);
- }
- 
- /*
---- a/include/linux/capability.h
-+++ b/include/linux/capability.h
-@@ -211,7 +211,7 @@ extern bool has_ns_capability_noaudit(st
- extern bool capable(int cap);
- extern bool ns_capable(struct user_namespace *ns, int cap);
- extern bool nsown_capable(int cap);
--extern bool inode_capable(const struct inode *inode, int cap);
-+extern bool capable_wrt_inode_uidgid(const struct inode *inode, int cap);
- extern bool file_ns_capable(const struct file *file, struct user_namespace *ns, int cap);
- 
- /* audit system wants to get cap info from files as well */
---- a/kernel/capability.c
-+++ b/kernel/capability.c
-@@ -445,22 +445,18 @@ bool nsown_capable(int cap)
- }
- 
- /**
-- * inode_capable - Check superior capability over inode
-+ * capable_wrt_inode_uidgid - Check nsown_capable and uid and gid mapped
-  * @inode: The inode in question
-  * @cap: The capability in question
-  *
-- * Return true if the current task has the given superior capability
-- * targeted at it's own user namespace and that the given inode is owned
-- * by the current user namespace or a child namespace.
-- *
-- * Currently we check to see if an inode is owned by the current
-- * user namespace by seeing if the inode's owner maps into the
-- * current user namespace.
-- *
-+ * Return true if the current task has the given capability targeted at
-+ * its own user namespace and that the given inode's uid and gid are
-+ * mapped into the current user namespace.
-  */
--bool inode_capable(const struct inode *inode, int cap)
-+bool capable_wrt_inode_uidgid(const struct inode *inode, int cap)
- {
- 	struct user_namespace *ns = current_user_ns();
- 
--	return ns_capable(ns, cap) && kuid_has_mapping(ns, inode->i_uid);
-+	return ns_capable(ns, cap) && kuid_has_mapping(ns, inode->i_uid) &&
-+		kgid_has_mapping(ns, inode->i_gid);
- }
+Tomas Winkler <tomas.winkler@intel.com>
+    mei: me: drop harmful wait optimization
+
+Ben Collins <ben.c@servergy.com>
+    SCSI: megaraid: Use resource_size_t for PCI resources, not long
+
+Andy Lutomirski <luto@amacapital.net>
+    auditsc: audit_krule mask accesses need bounds checking
+
+Vlastimil Babka <vbabka@suse.cz>
+    mm/compaction: make isolate_freepages start at pageblock boundary
+
+Vlastimil Babka <vbabka@suse.cz>
+    mm: compaction: detect when scanners meet in isolate_freepages
+
+Vlastimil Babka <vbabka@suse.cz>
+    mm: compaction: reset cached scanner pfn's before reading them
+
+Nicholas Bellinger <nab@linux-iscsi.org>
+    target: Fix alua_access_state attribute OOPs for un-configured devices
+
+Nicholas Bellinger <nab@linux-iscsi.org>
+    target: Allow READ_CAPACITY opcode in ALUA Standby access state
+
+Roland Dreier <roland@purestorage.com>
+    iscsi-target: Fix wrong buffer / buffer overrun in iscsi_change_param_value()
+
+Nicholas Bellinger <nab@linux-iscsi.org>
+    iser-target: Fix multi network portal shutdown regression
+
+Sagi Grimberg <sagig@mellanox.com>
+    Target/iscsi,iser: Avoid accepting transport connections during stop stage
+
+Florian Westphal <fw@strlen.de>
+    netfilter: ipv4: defrag: set local_df flag on defragmented skb
+
+Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+    ARM: mvebu: fix NOR bus-width in Armada XP OpenBlocks AX3 Device Tree
+
+Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+    ARM: mvebu: fix NOR bus-width in Armada XP GP Device Tree
+
+Chris Mason <clm@fb.com>
+    mlx4_en: don't use napi_synchronize inside mlx4_en_netpoll
+
+Andy Lutomirski <luto@amacapital.net>
+    fs,userns: Change inode_capable to capable_wrt_inode_uidgid
+
+
+-------------
+
+Diffstat:
+
+ Makefile                                         |  4 +-
+ arch/arm/boot/dts/armada-xp-gp.dts               |  2 +-
+ arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts |  2 +-
+ drivers/ata/ahci.c                               |  4 ++
+ drivers/infiniband/ulp/isert/ib_isert.c          |  8 ++++
+ drivers/misc/mei/hw-me.c                         |  4 +-
+ drivers/net/ethernet/mellanox/mlx4/en_cq.c       |  1 -
+ drivers/net/ethernet/mellanox/mlx4/en_netdev.c   |  6 +--
+ drivers/net/ethernet/mellanox/mlx4/mlx4_en.h     |  1 -
+ drivers/scsi/megaraid/megaraid_sas.h             |  1 -
+ drivers/scsi/megaraid/megaraid_sas_base.c        |  5 ++-
+ drivers/target/iscsi/iscsi_target.c              |  1 +
+ drivers/target/iscsi/iscsi_target_core.h         |  1 +
+ drivers/target/iscsi/iscsi_target_login.c        | 51 +++++++++++----------
+ drivers/target/iscsi/iscsi_target_tpg.c          |  9 ++--
+ drivers/target/target_core_alua.c                |  9 ++++
+ drivers/target/target_core_configfs.c            |  5 +++
+ fs/attr.c                                        |  8 ++--
+ fs/inode.c                                       | 10 +++--
+ fs/namei.c                                       | 11 ++---
+ include/linux/capability.h                       |  2 +-
+ kernel/auditsc.c                                 | 27 +++++++----
+ kernel/capability.c                              | 18 +++-----
+ mm/compaction.c                                  | 57 +++++++++++++++---------
+ net/ipv4/netfilter/nf_defrag_ipv4.c              |  5 ++-
+ 25 files changed, 152 insertions(+), 100 deletions(-)
 
 
