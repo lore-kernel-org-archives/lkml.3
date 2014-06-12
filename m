@@ -1,57 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932947AbaFLIhh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 04:37:37 -0400
-Received: from mga09.intel.com ([134.134.136.24]:27214 "EHLO mga09.intel.com"
+	id S932803AbaFLIjQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 04:39:16 -0400
+Received: from s3.sipsolutions.net ([5.9.151.49]:34115 "EHLO sipsolutions.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932757AbaFLIhd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 04:37:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,463,1400050800"; 
-   d="scan'208";a="527320062"
-Subject: [PATCH] ALSA: compress: Cancel the optimization of compiler and
- fix the size of struct for all platform.
-From: "Wang, Xiaoming" <xiaoming.wang@intel.com>
-To: tiwai@suse.de, vinod.koul@intel.com, jeeja.kp@intel.com,
-        dhowells@redhat.com, arnd@arndb.de, tglx@linutronix.de,
-        mtk.manpages@gmail.com, paulmck@linux.vnet.ibm.com, davej@redhat.com,
-        linux-kernel@vger.kernel.org
-Cc: dongxing.zhang@intel.com, xiaoming.wang@intel.com
+	id S1754405AbaFLIjO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 04:39:14 -0400
+Message-ID: <1402562338.8095.4.camel@jlt4.sipsolutions.net>
+Subject: Re: [patch V2] wireless: mwifiex: Use the proper interfaces
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Bing Zhao <bzhao@marvell.com>, LKML <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
+Date: Thu, 12 Jun 2014 10:38:58 +0200
+In-Reply-To: <alpine.DEB.2.10.1406121029530.5170@nanos> (sfid-20140612_103227_131521_9EAF500A)
+References: <20140611234024.103571777@linutronix.de>
+	 <20140611234607.607201623@linutronix.de>
+	 <477F20668A386D41ADCC57781B1F70430FE1F8B507@SC-VEXCH1.marvell.com>
+	 <alpine.DEB.2.10.1406121029530.5170@nanos>
+	 (sfid-20140612_103227_131521_9EAF500A)
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 12 Jun 2014 18:47:07 -0400
-Message-ID: <1402613227.8326.13.camel@wxm-ubuntu>
+X-Mailer: Evolution 3.12.2-1 
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cancel the optimization of compiler for struct snd_compr_avail
-which size will be 0x1c in 32bit kernel while 0x20 in 64bit
-kernel under the optimizer. That will make compaction between
-32bit and 64bit. So add packed to fix the size of struct
-snd_compr_avail to 0x1c for all platform.
+On Thu, 2014-06-12 at 10:31 +0200, Thomas Gleixner wrote:
 
-Signed-off-by: Zhang Dongxing <dongxing.zhang@intel.com>
-Signed-off-by: xiaoming wang <xiaoming.wang@intel.com>
----
- include/uapi/sound/compress_offload.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> +	u32 queue_delay = ktime_to_ms(net_timedelta(skb->tstamp));
 
-diff --git a/include/uapi/sound/compress_offload.h b/include/uapi/sound/compress_offload.h
-index 5759810..21eed48 100644
---- a/include/uapi/sound/compress_offload.h
-+++ b/include/uapi/sound/compress_offload.h
-@@ -80,7 +80,7 @@ struct snd_compr_tstamp {
- struct snd_compr_avail {
- 	__u64 avail;
- 	struct snd_compr_tstamp tstamp;
--};
-+} __attribute__((packed));
- 
- enum snd_compr_direction {
- 	SND_COMPRESS_PLAYBACK = 0,
--- 
-1.7.1
+FWIW, I think the same as patch 12 applies here. net_timedelta() doesn't
+really seem to be a good way to calculate time deltas.
+
+And yes - I've seen situations where this matters, e.g. when running
+ntpdate after system startup.
+
+johannes
+
 
