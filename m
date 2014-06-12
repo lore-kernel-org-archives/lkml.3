@@ -1,102 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932781AbaFLI2U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 04:28:20 -0400
-Received: from mail-bl2lp0204.outbound.protection.outlook.com ([207.46.163.204]:37312
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932470AbaFLI2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 04:28:17 -0400
-Date: Thu, 12 Jun 2014 15:02:12 +0800
-From: Peter Chen <peter.chen@freescale.com>
-To: Felipe Balbi <balbi@ti.com>
-CC: Greg KH <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Matt Porter <matt.porter@linaro.org>
-Subject: Re: Disable bus's drivers_autoprobe before rootfs has mounted
-Message-ID: <20140612070211.GC18009@shlinux1.ap.freescale.net>
-References: <20140611021439.GA25082@shlinux1.ap.freescale.net>
- <20140611041000.GB15184@kroah.com> <20140611043507.GA30126@saruman.home>
- <20140611032956.GC25082@shlinux1.ap.freescale.net>
- <20140611193627.GA19366@saruman.home>
+	id S1755310AbaFLI2c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 04:28:32 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:37878 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932470AbaFLI23 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 04:28:29 -0400
+X-IronPort-AV: E=Sophos;i="5.00,694,1396972800"; 
+   d="scan'208";a="31804443"
+Message-ID: <539964B3.70708@cn.fujitsu.com>
+Date: Thu, 12 Jun 2014 16:28:35 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131030 Thunderbird/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140611193627.GA19366@saruman.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(24454002)(51704005)(189002)(199002)(74502001)(74662001)(20776003)(47776003)(81542001)(23726002)(6806004)(15202345003)(31966008)(33656002)(84676001)(97756001)(104016001)(64706001)(97736001)(102836001)(26826002)(81342001)(4396001)(83322001)(19580395003)(44976005)(83506001)(79102001)(15975445006)(99396002)(86362001)(46102001)(93886003)(68736004)(76482001)(50986999)(92726001)(92566001)(76176999)(54356999)(77096999)(87936001)(21056001)(83072002)(80022001)(46406003)(77982001)(50466002)(85852003);DIR:OUT;SFP:;SCL:1;SRVR:CY1PR0301MB0634;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
-X-Forefront-PRVS: 02408926C4
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Peter.Chen@freescale.com; 
-X-OriginatorOrg: freescale.com
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Alexander Graf <agraf@suse.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <kvm@vger.kernel.org>, <kvm-ppc@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [PATCH v2 05/10] DMA, CMA: support arbitrary bitmap granularity
+References: <1402543307-29800-1-git-send-email-iamjoonsoo.kim@lge.com> <1402543307-29800-6-git-send-email-iamjoonsoo.kim@lge.com>
+In-Reply-To: <1402543307-29800-6-git-send-email-iamjoonsoo.kim@lge.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.225.89]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 11, 2014 at 02:36:27PM -0500, Felipe Balbi wrote:
-> On Wed, Jun 11, 2014 at 11:29:57AM +0800, Peter Chen wrote:
-> > On Tue, Jun 10, 2014 at 11:35:07PM -0500, Felipe Balbi wrote:
-> > > Hi,
-> > > 
-> > > On Tue, Jun 10, 2014 at 09:10:00PM -0700, Greg KH wrote:
-> > > > > Let's take USB peripheral as an example, there is a device for
-> > > > > udc, and a device driver for usb gadget driver, at default, we want
-> > > > > the device to be bound to driver automatically, this is what
-> > > > > we have done now. But if there are more than one udcs and gadget
-> > > > > drivers (eg one B port for mass storage, another B port for usb ethernet),
-> > > > > the user may want to have specific binding (eg, udc-0 -> mass storage,
-> > > > > udc-1 -> usb ethernet), so the binding will be established
-> > > > > after rootfs has mounted. (This feature is implementing)
-> > > > 
-> > > > Then there better be a way to describe this on the kernel command line
-> > > > (i.e. module paramaters), right?  Which is a total mess, why not just
-> > > > not bind anything in this case and let the user pick what they want?
-> > > 
-> > > you can also blacklist all gadget drivers and manually probe them or -
-> > > get this - you can refrain from using gadget drivers and use libusbg to
-> > > build the gadget drivers out of raw usb functions, then bind them to the
-> > > UDC of your liking.
-> > > 
-> > 
-> > I am just worried if we change the behaviour of using gadget driver,
-> > can it be accepted by user? If you think it can be accepted if we can
-> > have some docs, we can implement manually binding for gadget driver
-> > from now on.
+On 06/12/2014 11:21 AM, Joonsoo Kim wrote:
+> ppc kvm's cma region management requires arbitrary bitmap granularity,
+> since they want to reserve very large memory and manage this region
+> with bitmap that one bit for several pages to reduce management overheads.
+> So support arbitrary bitmap granularity for following generalization.
 > 
-> user shouldn't have to deal with direct module insertion/removal (unless
-> he's a developer and actually *wants* to do that). Docs are already in
-> tree. The entire configfs interface has been documented, it's based on
-> those documents that Matt started writing libusbg.
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+
+Acked-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+
 > 
-> -- 
-> balbi
+> diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
+> index bc4c171..9bc9340 100644
+> --- a/drivers/base/dma-contiguous.c
+> +++ b/drivers/base/dma-contiguous.c
+> @@ -38,6 +38,7 @@ struct cma {
+>  	unsigned long	base_pfn;
+>  	unsigned long	count;
+>  	unsigned long	*bitmap;
+> +	int order_per_bit; /* Order of pages represented by one bit */
+>  	struct mutex	lock;
+>  };
+>  
+> @@ -157,9 +158,38 @@ void __init dma_contiguous_reserve(phys_addr_t limit)
+>  
+>  static DEFINE_MUTEX(cma_mutex);
+>  
+> +static unsigned long cma_bitmap_aligned_mask(struct cma *cma, int align_order)
+> +{
+> +	return (1 << (align_order >> cma->order_per_bit)) - 1;
+> +}
+> +
+> +static unsigned long cma_bitmap_maxno(struct cma *cma)
+> +{
+> +	return cma->count >> cma->order_per_bit;
+> +}
+> +
+> +static unsigned long cma_bitmap_pages_to_bits(struct cma *cma,
+> +						unsigned long pages)
+> +{
+> +	return ALIGN(pages, 1 << cma->order_per_bit) >> cma->order_per_bit;
+> +}
+> +
+> +static void clear_cma_bitmap(struct cma *cma, unsigned long pfn, int count)
+> +{
+> +	unsigned long bitmapno, nr_bits;
+> +
+> +	bitmapno = (pfn - cma->base_pfn) >> cma->order_per_bit;
+> +	nr_bits = cma_bitmap_pages_to_bits(cma, count);
+> +
+> +	mutex_lock(&cma->lock);
+> +	bitmap_clear(cma->bitmap, bitmapno, nr_bits);
+> +	mutex_unlock(&cma->lock);
+> +}
+> +
+>  static int __init cma_activate_area(struct cma *cma)
+>  {
+> -	int bitmap_size = BITS_TO_LONGS(cma->count) * sizeof(long);
+> +	int bitmap_maxno = cma_bitmap_maxno(cma);
+> +	int bitmap_size = BITS_TO_LONGS(bitmap_maxno) * sizeof(long);
+>  	unsigned long base_pfn = cma->base_pfn, pfn = base_pfn;
+>  	unsigned i = cma->count >> pageblock_order;
+>  	struct zone *zone;
+> @@ -221,6 +251,7 @@ core_initcall(cma_init_reserved_areas);
+>   * @base: Base address of the reserved area optional, use 0 for any
+>   * @limit: End address of the reserved memory (optional, 0 for any).
+>   * @alignment: Alignment for the contiguous memory area, should be power of 2
+> + * @order_per_bit: Order of pages represented by one bit on bitmap.
+>   * @res_cma: Pointer to store the created cma region.
+>   * @fixed: hint about where to place the reserved area
+>   *
+> @@ -235,7 +266,7 @@ core_initcall(cma_init_reserved_areas);
+>   */
+>  static int __init __dma_contiguous_reserve_area(phys_addr_t size,
+>  				phys_addr_t base, phys_addr_t limit,
+> -				phys_addr_t alignment,
+> +				phys_addr_t alignment, int order_per_bit,
+>  				struct cma **res_cma, bool fixed)
+>  {
+>  	struct cma *cma = &cma_areas[cma_area_count];
+> @@ -269,6 +300,8 @@ static int __init __dma_contiguous_reserve_area(phys_addr_t size,
+>  	base = ALIGN(base, alignment);
+>  	size = ALIGN(size, alignment);
+>  	limit &= ~(alignment - 1);
+> +	/* size should be aligned with order_per_bit */
+> +	BUG_ON(!IS_ALIGNED(size >> PAGE_SHIFT, 1 << order_per_bit));
+>  
+>  	/* Reserve memory */
+>  	if (base && fixed) {
+> @@ -294,6 +327,7 @@ static int __init __dma_contiguous_reserve_area(phys_addr_t size,
+>  	 */
+>  	cma->base_pfn = PFN_DOWN(base);
+>  	cma->count = size >> PAGE_SHIFT;
+> +	cma->order_per_bit = order_per_bit;
+>  	*res_cma = cma;
+>  	cma_area_count++;
+>  
+> @@ -313,7 +347,7 @@ int __init dma_contiguous_reserve_area(phys_addr_t size, phys_addr_t base,
+>  {
+>  	int ret;
+>  
+> -	ret = __dma_contiguous_reserve_area(size, base, limit, 0,
+> +	ret = __dma_contiguous_reserve_area(size, base, limit, 0, 0,
+>  						res_cma, fixed);
+>  	if (ret)
+>  		return ret;
+> @@ -324,13 +358,6 @@ int __init dma_contiguous_reserve_area(phys_addr_t size, phys_addr_t base,
+>  	return 0;
+>  }
+>  
+> -static void clear_cma_bitmap(struct cma *cma, unsigned long pfn, int count)
+> -{
+> -	mutex_lock(&cma->lock);
+> -	bitmap_clear(cma->bitmap, pfn - cma->base_pfn, count);
+> -	mutex_unlock(&cma->lock);
+> -}
+> -
+>  /**
+>   * dma_alloc_from_contiguous() - allocate pages from contiguous area
+>   * @dev:   Pointer to device for which the allocation is performed.
+> @@ -345,7 +372,8 @@ static void clear_cma_bitmap(struct cma *cma, unsigned long pfn, int count)
+>  static struct page *__dma_alloc_from_contiguous(struct cma *cma, int count,
+>  				       unsigned int align)
+>  {
+> -	unsigned long mask, pfn, pageno, start = 0;
+> +	unsigned long mask, pfn, start = 0;
+> +	unsigned long bitmap_maxno, bitmapno, nr_bits;
+>  	struct page *page = NULL;
+>  	int ret;
+>  
+> @@ -358,18 +386,19 @@ static struct page *__dma_alloc_from_contiguous(struct cma *cma, int count,
+>  	if (!count)
+>  		return NULL;
+>  
+> -	mask = (1 << align) - 1;
+> -
+> +	mask = cma_bitmap_aligned_mask(cma, align);
+> +	bitmap_maxno = cma_bitmap_maxno(cma);
+> +	nr_bits = cma_bitmap_pages_to_bits(cma, count);
+>  
+>  	for (;;) {
+>  		mutex_lock(&cma->lock);
+> -		pageno = bitmap_find_next_zero_area(cma->bitmap, cma->count,
+> -						    start, count, mask);
+> -		if (pageno >= cma->count) {
+> +		bitmapno = bitmap_find_next_zero_area(cma->bitmap,
+> +					bitmap_maxno, start, nr_bits, mask);
+> +		if (bitmapno >= bitmap_maxno) {
+>  			mutex_unlock(&cma->lock);
+>  			break;
+>  		}
+> -		bitmap_set(cma->bitmap, pageno, count);
+> +		bitmap_set(cma->bitmap, bitmapno, nr_bits);
+>  		/*
+>  		 * It's safe to drop the lock here. We've marked this region for
+>  		 * our exclusive use. If the migration fails we will take the
+> @@ -377,7 +406,7 @@ static struct page *__dma_alloc_from_contiguous(struct cma *cma, int count,
+>  		 */
+>  		mutex_unlock(&cma->lock);
+>  
+> -		pfn = cma->base_pfn + pageno;
+> +		pfn = cma->base_pfn + (bitmapno << cma->order_per_bit);
+>  		mutex_lock(&cma_mutex);
+>  		ret = alloc_contig_range(pfn, pfn + count, MIGRATE_CMA);
+>  		mutex_unlock(&cma_mutex);
+> @@ -392,7 +421,7 @@ static struct page *__dma_alloc_from_contiguous(struct cma *cma, int count,
+>  		pr_debug("%s(): memory range at %p is busy, retrying\n",
+>  			 __func__, pfn_to_page(pfn));
+>  		/* try again with a bit different memory target */
+> -		start = pageno + mask + 1;
+> +		start = bitmapno + mask + 1;
+>  	}
+>  
+>  	pr_debug("%s(): returned %p\n", __func__, page);
+> 
 
-Yes, gadget-configfs is a good direction.
-
-I would like to know your plan for other gadget drivers (g_mass_storage,
-g_webcam, etc)
-
-All functions will be supported by configfs in future, and current
-driver will be deleted?
-- If yes, how to cover the user who still use the old file system?
-- If no, which binding way for udc and gadget driver will be used?
-Current binding way for non-configfs gadgets is auto-binding, if we
-don't want break user's current system, we need to keep auto-binding
-as the default binding way. With more, we can support manual
-binding with udc core.
-
-I am implementing gadget bus[1], it may not be benefit for gadget-configfs,
-but is benefit for other gadgets, eg, support loading gadget driver
-before udc driver, manual-binding between udc and gadget drivers, etc.
-So, I would like to know if you agree to keep auto-binding for
-current non-configfs gadget driver as default way (in that way, we can keep
-current system with no change), and manual-binding can be used
-by user with module parameters and /sys entry.
-
-[1] http://www.spinics.net/lists/linux-usb/msg109015.html
 
 -- 
-
-Best Regards,
-Peter Chen
+Thanks.
+Zhang Yanfei
