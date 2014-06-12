@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933917AbaFLL5z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 07:57:55 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:32848 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933831AbaFLL5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 07:57:07 -0400
+	id S933825AbaFLL5F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 07:57:05 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:58248 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933101AbaFLL4v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 07:56:51 -0400
 From: Sricharan R <r.sricharan@ti.com>
 To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <tony@atomide.com>, <santosh.shilimkar@ti.com>, <nm@ti.com>,
         <rnayak@ti.com>, <linux@arm.linux.org.uk>, <r.sricharan@ti.com>,
         <tglx@linutronix.de>, <jason@lakedaemon.net>
-Subject: [PATCH V2 17/19] irqchip: crossbar: introduce centralized check for crossbar write
-Date: Thu, 12 Jun 2014 17:23:25 +0530
-Message-ID: <1402574007-13987-18-git-send-email-r.sricharan@ti.com>
+Subject: [PATCH V2 13/19] irqchip: crossbar: change the goto naming
+Date: Thu, 12 Jun 2014 17:23:21 +0530
+Message-ID: <1402574007-13987-14-git-send-email-r.sricharan@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1402574007-13987-1-git-send-email-r.sricharan@ti.com>
 References: <1402574007-13987-1-git-send-email-r.sricharan@ti.com>
@@ -26,50 +27,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nishanth Menon <nm@ti.com>
 
-This is a basic check to ensure that crossbar register needs to be
-written. This ensures that we have a common check which is used in
-both map and unmap logic.
+Using err1,2,3,4 etc makes it hard to ensure a new exit path in the
+middle will not result in spurious changes, so rename the error paths
+as per the function it does.
 
 Signed-off-by: Nishanth Menon <nm@ti.com>
 ---
- drivers/irqchip/irq-crossbar.c |   14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
+ drivers/irqchip/irq-crossbar.c |   22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/irqchip/irq-crossbar.c b/drivers/irqchip/irq-crossbar.c
-index cf69c4d..745ad0a 100644
+index 524e6e9..cf0d79f 100644
 --- a/drivers/irqchip/irq-crossbar.c
 +++ b/drivers/irqchip/irq-crossbar.c
-@@ -96,10 +96,20 @@ static inline int allocate_free_irq(int cb_no)
- 	return -ENODEV;
- }
+@@ -152,17 +152,17 @@ static int __init crossbar_of_init(struct device_node *node,
  
-+static inline bool needs_crossbar_write(irq_hw_number_t hw)
-+{
-+	if (hw > GIC_IRQ_START)
-+		return true;
-+
-+	return false;
-+}
-+
- static int crossbar_domain_map(struct irq_domain *d, unsigned int irq,
- 			       irq_hw_number_t hw)
- {
--	cb->write(hw - GIC_IRQ_START, cb->irq_map[hw - GIC_IRQ_START]);
-+	if (needs_crossbar_write(hw))
-+		cb->write(hw - GIC_IRQ_START, cb->irq_map[hw - GIC_IRQ_START]);
-+
+ 	cb->crossbar_base = of_iomap(node, 0);
+ 	if (!cb->crossbar_base)
+-		goto err1;
++		goto err_cb;
+ 
+ 	of_property_read_u32(node, "ti,max-irqs", &max);
+ 	if (!max) {
+ 		pr_err("missing 'ti,max-irqs' property\n");
+ 		ret = -EINVAL;
+-		goto err2;
++		goto err_base;
+ 	}
+ 	cb->irq_map = kcalloc(max, sizeof(int), GFP_KERNEL);
+ 	if (!cb->irq_map)
+-		goto err2;
++		goto err_base;
+ 
+ 	cb->int_max = max;
+ 
+@@ -181,7 +181,7 @@ static int __init crossbar_of_init(struct device_node *node,
+ 			if (entry > max) {
+ 				pr_err("Invalid reserved entry\n");
+ 				ret = -EINVAL;
+-				goto err3;
++				goto err_irq_map;
+ 			}
+ 			cb->irq_map[entry] = IRQ_RESERVED;
+ 		}
+@@ -189,7 +189,7 @@ static int __init crossbar_of_init(struct device_node *node,
+ 
+ 	cb->register_offsets = kcalloc(max, sizeof(int), GFP_KERNEL);
+ 	if (!cb->register_offsets)
+-		goto err3;
++		goto err_irq_map;
+ 
+ 	of_property_read_u32(node, "ti,reg-size", &size);
+ 
+@@ -206,7 +206,7 @@ static int __init crossbar_of_init(struct device_node *node,
+ 	default:
+ 		pr_err("Invalid reg-size property\n");
+ 		ret = -EINVAL;
+-		goto err4;
++		goto err_reg_offset;
+ 		break;
+ 	}
+ 
+@@ -234,7 +234,7 @@ static int __init crossbar_of_init(struct device_node *node,
+ 			if (entry > max) {
+ 				pr_err("Invalid skip entry\n");
+ 				ret = -EINVAL;
+-				goto err4;
++				goto err_reg_offset;
+ 			}
+ 			cb->irq_map[entry] = IRQ_SKIP;
+ 		}
+@@ -251,13 +251,13 @@ static int __init crossbar_of_init(struct device_node *node,
+ 	register_routable_domain_ops(&routable_irq_domain_ops);
  	return 0;
+ 
+-err4:
++err_reg_offset:
+ 	kfree(cb->register_offsets);
+-err3:
++err_irq_map:
+ 	kfree(cb->irq_map);
+-err2:
++err_base:
+ 	iounmap(cb->crossbar_base);
+-err1:
++err_cb:
+ 	kfree(cb);
+ 	return ret;
  }
- 
-@@ -117,7 +127,7 @@ static void crossbar_domain_unmap(struct irq_domain *d, unsigned int irq)
- {
- 	irq_hw_number_t hw = irq_get_irq_data(irq)->hwirq;
- 
--	if (hw > GIC_IRQ_START)
-+	if (needs_crossbar_write(hw))
- 		cb->irq_map[hw - GIC_IRQ_START] = IRQ_FREE;
- }
- 
 -- 
 1.7.9.5
 
