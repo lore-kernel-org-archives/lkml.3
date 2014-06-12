@@ -1,224 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932222AbaFLGGE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 02:06:04 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50787 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751283AbaFLGGB (ORCPT
+	id S1755369AbaFLGG1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 02:06:27 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:35446 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754458AbaFLGG0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 02:06:01 -0400
-X-Original-SENDERIP: 10.177.220.169
-X-Original-MAILFROM: minchan@kernel.org
-Date: Thu, 12 Jun 2014 15:06:10 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>, kvm@vger.kernel.org,
-        linux-mm@kvack.org, Gleb Natapov <gleb@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexander Graf <agraf@suse.de>, kvm-ppc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paolo Bonzini <pbonzini@redhat.com>, linuxppc-dev@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 05/10] DMA, CMA: support arbitrary bitmap granularity
-Message-ID: <20140612060610.GH12415@bbox>
-References: <1402543307-29800-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1402543307-29800-6-git-send-email-iamjoonsoo.kim@lge.com>
+	Thu, 12 Jun 2014 02:06:26 -0400
+Message-ID: <5399435A.3010401@hitachi.com>
+Date: Thu, 12 Jun 2014 15:06:18 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402543307-29800-6-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Josh Poimboeuf <jpoimboe@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH ftrace/core  2/2] ftrace, kprobes: Support IPMODIFY flag
+ to find IP modify conflict
+References: <20140610105001.8732.93502.stgit@kbuild-fedora.novalocal> <20140610105014.8732.43086.stgit@kbuild-fedora.novalocal> <1402408435.1676.13.camel@leonhard> <5397B0A1.7060401@hitachi.com> <87tx7rao6p.fsf@sejong.aot.lge.com> <53991E85.70109@hitachi.com> <8761k6adrl.fsf@sejong.aot.lge.com>
+In-Reply-To: <8761k6adrl.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 12, 2014 at 12:21:42PM +0900, Joonsoo Kim wrote:
-> ppc kvm's cma region management requires arbitrary bitmap granularity,
-> since they want to reserve very large memory and manage this region
-> with bitmap that one bit for several pages to reduce management overheads.
-> So support arbitrary bitmap granularity for following generalization.
+(2014/06/12 14:38), Namhyung Kim wrote:
+> Hi Masami,
 > 
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> On Thu, 12 Jun 2014 12:29:09 +0900, Masami Hiramatsu wrote:
+>> (2014/06/11 16:41), Namhyung Kim wrote:
+>>> Hi Masami,
+>>>
+>>> On Wed, 11 Jun 2014 10:28:01 +0900, Masami Hiramatsu wrote:
+>>>> (2014/06/10 22:53), Namhyung Kim wrote:
+>>>>> Hi Masami,
+>>>>>
+>>>>> 2014-06-10 (화), 10:50 +0000, Masami Hiramatsu:
+>>>>>> Introduce FTRACE_OPS_FL_IPMODIFY to avoid conflict among
+>>>>>> +	/* Update rec->flags */
+>>>>>> +	do_for_each_ftrace_rec(pg, rec) {
+>>>>>> +		/* We need to update only differences of filter_hash */
+>>>>>> +		in_old = !old_hash || ftrace_lookup_ip(old_hash, rec->ip);
+>>>>>> +		in_new = !new_hash || ftrace_lookup_ip(new_hash, rec->ip);
+>>>>>
+>>>>> Why not use ftrace_hash_empty() here instead of checking NULL? 
+>>>>
+>>>> Ah, a trick is here. Since an empty filter_hash must hit all, we can not
+>>>> enable/disable filter_hash if we use ftrace_hash_empty() here.
+>>>>
+>>>> To enabling the new_hash, old_hash must be EMPTY_HASH which means in_old
+>>>> always be false. To disabling, new_hash is EMPTY_HASH too.
+>>>> Please see ftrace_hash_ipmodify_enable/disable/update().
+>>>
+>>> I'm confused. 8-p  I guess what you want to do is checking records in
+>>> either of the filter_hash, right?  If so, what about this?
+>>>
+>>> 	in_old = !ftrace_hash_empty(old_hash) && ftrace_lookup_ip(old_hash, rec->ip);
+>>> 	in_new = !ftrace_hash_empty(new_hash) && ftrace_lookup_ip(new_hash, rec->ip);
+>>
+>> NO, ftrace_lookup_ip() returns NULL if the hash is empty, so adding
+>> !ftrace_hash_empty() is meaningless :)
 > 
-> diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
-> index bc4c171..9bc9340 100644
-> --- a/drivers/base/dma-contiguous.c
-> +++ b/drivers/base/dma-contiguous.c
-> @@ -38,6 +38,7 @@ struct cma {
->  	unsigned long	base_pfn;
->  	unsigned long	count;
->  	unsigned long	*bitmap;
-> +	int order_per_bit; /* Order of pages represented by one bit */
+> Ah, you're right!
+> 
+>>
+>> Actually, here I intended to have 3 meanings for the new/old_hash arguments,
+>> - If it is NULL, it hits all
+>> - If it is EMPTY_HASH, it hits nothing
+>> - If it has some entries, it hits those entries.
+>>
+>> And in ftrace.c(__ftrace_hash_rec_update), AFAICS, ops->filter_hash has only
+>> 2 meanings,
+>> - If it is EMPTY_HASH or NULL, it hits all
+>> - If it has some entries, it hits those entries.
+>>
+>> So I had to do above change...
+> 
+> Then I propose to use a different value/symbol instead of EMPTY_HASH in
+> order to prevent future confusion and add some comments there.
 
-Hmm, I'm not sure it's good as *general* interface even though it covers
-existing usecases.
+I doubt I need another symbol since the EMPTY_HASH means normally empty
+and no hit(filter_hash case is a special one). I'd like to add a comment on it.
 
-It forces a cma area should be handled by same size unit. Right?
-It's really important point for this patchset's motivation so I will stop
-review and wait other opinions.
 
->  	struct mutex	lock;
->  };
->  
-> @@ -157,9 +158,38 @@ void __init dma_contiguous_reserve(phys_addr_t limit)
->  
->  static DEFINE_MUTEX(cma_mutex);
->  
-> +static unsigned long cma_bitmap_aligned_mask(struct cma *cma, int align_order)
-> +{
-> +	return (1 << (align_order >> cma->order_per_bit)) - 1;
-> +}
-> +
-> +static unsigned long cma_bitmap_maxno(struct cma *cma)
-> +{
-> +	return cma->count >> cma->order_per_bit;
-> +}
-> +
-> +static unsigned long cma_bitmap_pages_to_bits(struct cma *cma,
-> +						unsigned long pages)
-> +{
-> +	return ALIGN(pages, 1 << cma->order_per_bit) >> cma->order_per_bit;
-> +}
-> +
-> +static void clear_cma_bitmap(struct cma *cma, unsigned long pfn, int count)
-> +{
-> +	unsigned long bitmapno, nr_bits;
-> +
-> +	bitmapno = (pfn - cma->base_pfn) >> cma->order_per_bit;
-> +	nr_bits = cma_bitmap_pages_to_bits(cma, count);
-> +
-> +	mutex_lock(&cma->lock);
-> +	bitmap_clear(cma->bitmap, bitmapno, nr_bits);
-> +	mutex_unlock(&cma->lock);
-> +}
-> +
->  static int __init cma_activate_area(struct cma *cma)
->  {
-> -	int bitmap_size = BITS_TO_LONGS(cma->count) * sizeof(long);
-> +	int bitmap_maxno = cma_bitmap_maxno(cma);
-> +	int bitmap_size = BITS_TO_LONGS(bitmap_maxno) * sizeof(long);
->  	unsigned long base_pfn = cma->base_pfn, pfn = base_pfn;
->  	unsigned i = cma->count >> pageblock_order;
->  	struct zone *zone;
-> @@ -221,6 +251,7 @@ core_initcall(cma_init_reserved_areas);
->   * @base: Base address of the reserved area optional, use 0 for any
->   * @limit: End address of the reserved memory (optional, 0 for any).
->   * @alignment: Alignment for the contiguous memory area, should be power of 2
-> + * @order_per_bit: Order of pages represented by one bit on bitmap.
->   * @res_cma: Pointer to store the created cma region.
->   * @fixed: hint about where to place the reserved area
->   *
-> @@ -235,7 +266,7 @@ core_initcall(cma_init_reserved_areas);
->   */
->  static int __init __dma_contiguous_reserve_area(phys_addr_t size,
->  				phys_addr_t base, phys_addr_t limit,
-> -				phys_addr_t alignment,
-> +				phys_addr_t alignment, int order_per_bit,
->  				struct cma **res_cma, bool fixed)
->  {
->  	struct cma *cma = &cma_areas[cma_area_count];
-> @@ -269,6 +300,8 @@ static int __init __dma_contiguous_reserve_area(phys_addr_t size,
->  	base = ALIGN(base, alignment);
->  	size = ALIGN(size, alignment);
->  	limit &= ~(alignment - 1);
-> +	/* size should be aligned with order_per_bit */
-> +	BUG_ON(!IS_ALIGNED(size >> PAGE_SHIFT, 1 << order_per_bit));
->  
->  	/* Reserve memory */
->  	if (base && fixed) {
-> @@ -294,6 +327,7 @@ static int __init __dma_contiguous_reserve_area(phys_addr_t size,
->  	 */
->  	cma->base_pfn = PFN_DOWN(base);
->  	cma->count = size >> PAGE_SHIFT;
-> +	cma->order_per_bit = order_per_bit;
->  	*res_cma = cma;
->  	cma_area_count++;
->  
-> @@ -313,7 +347,7 @@ int __init dma_contiguous_reserve_area(phys_addr_t size, phys_addr_t base,
->  {
->  	int ret;
->  
-> -	ret = __dma_contiguous_reserve_area(size, base, limit, 0,
-> +	ret = __dma_contiguous_reserve_area(size, base, limit, 0, 0,
->  						res_cma, fixed);
->  	if (ret)
->  		return ret;
-> @@ -324,13 +358,6 @@ int __init dma_contiguous_reserve_area(phys_addr_t size, phys_addr_t base,
->  	return 0;
->  }
->  
-> -static void clear_cma_bitmap(struct cma *cma, unsigned long pfn, int count)
-> -{
-> -	mutex_lock(&cma->lock);
-> -	bitmap_clear(cma->bitmap, pfn - cma->base_pfn, count);
-> -	mutex_unlock(&cma->lock);
-> -}
-> -
->  /**
->   * dma_alloc_from_contiguous() - allocate pages from contiguous area
->   * @dev:   Pointer to device for which the allocation is performed.
-> @@ -345,7 +372,8 @@ static void clear_cma_bitmap(struct cma *cma, unsigned long pfn, int count)
->  static struct page *__dma_alloc_from_contiguous(struct cma *cma, int count,
->  				       unsigned int align)
->  {
-> -	unsigned long mask, pfn, pageno, start = 0;
-> +	unsigned long mask, pfn, start = 0;
-> +	unsigned long bitmap_maxno, bitmapno, nr_bits;
->  	struct page *page = NULL;
->  	int ret;
->  
-> @@ -358,18 +386,19 @@ static struct page *__dma_alloc_from_contiguous(struct cma *cma, int count,
->  	if (!count)
->  		return NULL;
->  
-> -	mask = (1 << align) - 1;
-> -
-> +	mask = cma_bitmap_aligned_mask(cma, align);
-> +	bitmap_maxno = cma_bitmap_maxno(cma);
-> +	nr_bits = cma_bitmap_pages_to_bits(cma, count);
->  
->  	for (;;) {
->  		mutex_lock(&cma->lock);
-> -		pageno = bitmap_find_next_zero_area(cma->bitmap, cma->count,
-> -						    start, count, mask);
-> -		if (pageno >= cma->count) {
-> +		bitmapno = bitmap_find_next_zero_area(cma->bitmap,
-> +					bitmap_maxno, start, nr_bits, mask);
-> +		if (bitmapno >= bitmap_maxno) {
->  			mutex_unlock(&cma->lock);
->  			break;
->  		}
-> -		bitmap_set(cma->bitmap, pageno, count);
-> +		bitmap_set(cma->bitmap, bitmapno, nr_bits);
->  		/*
->  		 * It's safe to drop the lock here. We've marked this region for
->  		 * our exclusive use. If the migration fails we will take the
-> @@ -377,7 +406,7 @@ static struct page *__dma_alloc_from_contiguous(struct cma *cma, int count,
->  		 */
->  		mutex_unlock(&cma->lock);
->  
-> -		pfn = cma->base_pfn + pageno;
-> +		pfn = cma->base_pfn + (bitmapno << cma->order_per_bit);
->  		mutex_lock(&cma_mutex);
->  		ret = alloc_contig_range(pfn, pfn + count, MIGRATE_CMA);
->  		mutex_unlock(&cma_mutex);
-> @@ -392,7 +421,7 @@ static struct page *__dma_alloc_from_contiguous(struct cma *cma, int count,
->  		pr_debug("%s(): memory range at %p is busy, retrying\n",
->  			 __func__, pfn_to_page(pfn));
->  		/* try again with a bit different memory target */
-> -		start = pageno + mask + 1;
-> +		start = bitmapno + mask + 1;
->  	}
->  
->  	pr_debug("%s(): returned %p\n", __func__, page);
-> -- 
-> 1.7.9.5
+> [SNIP]
+>>>>>> +static int ftrace_hash_ipmodify_enable(struct ftrace_ops *ops)
+>>>>>> +{
+>>>>>> +	struct ftrace_hash *hash = ops->filter_hash;
+>>>>>> +
+>>>>>> +	if (ftrace_hash_empty(hash))
+>>>>>> +		hash = NULL;
+>>>>>> +
+>>>>>> +	return __ftrace_hash_update_ipmodify(ops, EMPTY_HASH, hash);
+>>>>>> +}
+>>>>>
+>>>>> Please see above comment.  You can pass an empty hash as is, or pass
+>>>>> NULL as second arg.  The same goes to below...
+>>>>
+>>>> As I said above, that is by design :). EMPTY_HASH means it hits nothing,
+>>>> NULL means it hits all.
+>>>
+>>> But doesn't it make unrelated records also get the flag updated?  I'm
+>>> curious when new_hash can be empty on _enable() case..
+>>
+>> NO, _enable() is called right before ftrace_hash_rec_enable(ops,1) which
+>> always enables filter_hash (since the 2nd arg is 1). If the filter_hash
+>> is empty, ftrace_hash_rec_enable() enables ftrace_ops on all ftrace_recs.
+> 
+> But AFAICS both of kprobes and kpatch call ftrace_set_filter_ip() before
+> calling register_ftrace_function().  That means there's no case when
+> ops->filter_hash can be empty, right?
+
+No, unless it is registered, FTRACE_OPS_FL_ENABLED flag is not set on the
+ftrace_ops. In that case, recs are not updated. :)
+
+Thank you,
+
+
 
 -- 
-Kind regards,
-Minchan Kim
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
