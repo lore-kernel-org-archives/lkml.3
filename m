@@ -1,113 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756107AbaFLPEn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 11:04:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41554 "EHLO mx1.redhat.com"
+	id S1756092AbaFLPEk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 11:04:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62665 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756071AbaFLPEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756073AbaFLPEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 12 Jun 2014 11:04:34 -0400
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexander Gordeev <agordeev@redhat.com>, Ming Lei <tom.leiming@gmail.com>,
         Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH 3/3] blk-mq: bitmap tag: clean-up bt_get() function
-Date: Thu, 12 Jun 2014 17:05:38 +0200
-Message-Id: <350943ba66ede195df4a34ac7a499be305951c97.1402582256.git.agordeev@redhat.com>
+Subject: [PATCH 2/3] blk-mq: bitmap tag: fix race on blk_mq_bitmap_tags::wake_cnt
+Date: Thu, 12 Jun 2014 17:05:37 +0200
+Message-Id: <6ff04ade7e2ae10b19e3f5ce8f9966e83e0bdcec.1402582256.git.agordeev@redhat.com>
 In-Reply-To: <cover.1402582256.git.agordeev@redhat.com>
 References: <cover.1402582256.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The tag waiting loop in bt_get() function is a mystery for me:
+This piece of code in bt_clear_tag() function is racy:
 
-	do {
-		bool was_empty;
+	bs = bt_wake_ptr(bt);
+	if (bs && atomic_dec_and_test(&bs->wait_cnt)) {
+		atomic_set(&bs->wait_cnt, bt->wake_cnt);
+ 		wake_up(&bs->wait);
+	}
 
-1.		was_empty = list_empty(&wait.task_list);
-		prepare_to_wait(&bs->wait, &wait, TASK_UNINTERRUPTIBLE);
+Since nothing prevents bt_wake_ptr() from returning the very
+same 'bs' address on multiple CPUs, the following scenario is
+possible:
 
-		tag = __bt_get(hctx, bt, last_tag);
-		if (tag != -1)
-			break;
+    CPU1                                CPU2
+    ----                                ----
 
-2.		if (was_empty)
-3.			atomic_set(&bs->wait_cnt, bt->wake_cnt);
+0.  bs = bt_wake_ptr(bt);               bs = bt_wake_ptr(bt);
+1.  atomic_dec_and_test(&bs->wait_cnt)
+2.                                      atomic_dec_and_test(&bs->wait_cnt)
+3.  atomic_set(&bs->wait_cnt, bt->wake_cnt);
 
-		io_schedule();
-	} while (1);
-
-[1] list_empty(&wait.task_list) check is not protected;
-[2] was_empty check is always true which results in *every* thread
-    entering the loop resets bt_wait_state::wait_cnt counter rather
-    than every bt->wake_cnt'th thread;
-[3] 'bt_wait_state::wait_cnt' counter update seems redundant anyway,
-    since it is also gets reset in bt_clear_tag() function;
+If the decrement in [1] yields zero then for some amount of time
+the decrement in [2] results in a negative/overflow value, which
+is not expected. The follow-up assignment in [3] overwrites the
+invalid value with the batch value (and likely prevents the issue
+from being severe) which is still incorrect and should be a lesser.
 
 Cc: Ming Lei <tom.leiming@gmail.com>
 Cc: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 ---
- block/blk-mq-tag.c |   27 +++++++--------------------
- 1 files changed, 7 insertions(+), 20 deletions(-)
+ block/blk-mq-tag.c |   14 ++++++++++++--
+ 1 files changed, 12 insertions(+), 2 deletions(-)
 
 diff --git a/block/blk-mq-tag.c b/block/blk-mq-tag.c
-index 5579fae..dc1f684 100644
+index efe9419..5579fae 100644
 --- a/block/blk-mq-tag.c
 +++ b/block/blk-mq-tag.c
-@@ -224,7 +224,6 @@ static int bt_get(struct blk_mq_bitmap_tags *bt, struct blk_mq_hw_ctx *hctx,
- 		  unsigned int *last_tag, gfp_t gfp)
+@@ -320,6 +320,7 @@ static void bt_clear_tag(struct blk_mq_bitmap_tags *bt, unsigned int tag)
  {
+ 	const int index = TAG_TO_INDEX(bt, tag);
  	struct bt_wait_state *bs;
--	DEFINE_WAIT(wait);
- 	int tag;
++	int wait_cnt;
  
- 	tag = __bt_get(hctx, bt, last_tag);
-@@ -235,23 +234,9 @@ static int bt_get(struct blk_mq_bitmap_tags *bt, struct blk_mq_hw_ctx *hctx,
- 		return -1;
+ 	/*
+ 	 * The unlock memory barrier need to order access to req in free
+@@ -328,10 +329,19 @@ static void bt_clear_tag(struct blk_mq_bitmap_tags *bt, unsigned int tag)
+ 	clear_bit_unlock(TAG_TO_BIT(bt, tag), &bt->map[index].word);
  
- 	bs = bt_wait_ptr(bt, hctx);
--	do {
--		bool was_empty;
--
--		was_empty = list_empty(&wait.task_list);
--		prepare_to_wait(&bs->wait, &wait, TASK_UNINTERRUPTIBLE);
--
--		tag = __bt_get(hctx, bt, last_tag);
--		if (tag != -1)
--			break;
-+	___wait_event(bs->wait, (tag = __bt_get(hctx, bt, last_tag)) != -1,
-+		      TASK_UNINTERRUPTIBLE, 0, 0, io_schedule());
- 
--		if (was_empty)
--			atomic_set(&bs->wait_cnt, bt->wake_cnt);
--
--		io_schedule();
--	} while (1);
--
--	finish_wait(&bs->wait, &wait);
- 	return tag;
- }
- 
-@@ -477,13 +462,15 @@ static int bt_alloc(struct blk_mq_bitmap_tags *bt, unsigned int depth,
- 		return -ENOMEM;
- 	}
- 
--	for (i = 0; i < BT_WAIT_QUEUES; i++)
--		init_waitqueue_head(&bt->bs[i].wait);
--
- 	bt->wake_cnt = BT_WAIT_BATCH;
- 	if (bt->wake_cnt > depth / 4)
- 		bt->wake_cnt = max(1U, depth / 4);
- 
-+	for (i = 0; i < BT_WAIT_QUEUES; i++) {
-+		init_waitqueue_head(&bt->bs[i].wait);
-+		atomic_set(&bt->bs[i].wait_cnt, bt->wake_cnt);
-+	}
+ 	bs = bt_wake_ptr(bt);
+-	if (bs && atomic_dec_and_test(&bs->wait_cnt)) {
+-		atomic_set(&bs->wait_cnt, bt->wake_cnt);
++	if (!bs)
++		return;
 +
- 	bt->depth = depth;
- 	return 0;
++	wait_cnt = atomic_dec_return(&bs->wait_cnt);
++	if (wait_cnt == 0) {
++wake:
++		atomic_add(bt->wake_cnt, &bs->wait_cnt);
+ 		bt_index_atomic_inc(&bt->wake_index);
+ 		wake_up(&bs->wait);
++	} else if (wait_cnt < 0) {
++		wait_cnt = atomic_inc_return(&bs->wait_cnt);
++		if (!wait_cnt)
++			goto wake;
+ 	}
  }
+ 
 -- 
 1.7.7.6
 
