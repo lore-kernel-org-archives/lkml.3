@@ -1,56 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756016AbaFLOi0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 10:38:26 -0400
-Received: from blu004-omc1s25.hotmail.com ([65.55.116.36]:54762 "EHLO
-	BLU004-OMC1S25.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752898AbaFLOiZ (ORCPT
+	id S1756051AbaFLOjg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 10:39:36 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:20379 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752898AbaFLOjf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 10:38:25 -0400
-X-Greylist: delayed 306 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 Jun 2014 10:38:25 EDT
-X-TMN: [0omWdM6/vVAC1oMzNmu+9CvNAhl8U2gd]
-X-Originating-Email: [nickkrause@sympatico.ca]
-Message-ID: <BLU436-SMTP2404B87A72E455C1BDE2B43A52A0@phx.gbl>
-Subject: Re: PATCH[[vme/bridges/vme_ca91cx42.c:1382: Bad if test Bug
- =?UTF-8?Q?Fix=5D=E2=80=8F=E2=80=8F?=
-From: nick <nickkrause@sympatico.ca>
-To: martyn.welch@ge.com
-CC: manohar.vanga@gmail.com, gregkh@linuxfoundation.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Thu, 12 Jun 2014 10:33:09 -0400
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
+	Thu, 12 Jun 2014 10:39:35 -0400
+Date: Thu, 12 Jun 2014 15:39:16 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Denis Kirjanov <kda@linux-powerpc.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Subject: Re: kmemleak: Unable to handle kernel paging request
+Message-ID: <20140612143916.GB8970@arm.com>
+References: <CAOJe8K3fy3XFxDdVc3y1hiMAqUCPmkUhECU7j5TT=E=gxwBqHg@mail.gmail.com>
+ <20140611173851.GA5556@MacBook-Pro.local>
+ <CAOJe8K1TgTDX5=LdE9r6c0ami7TRa7zr0hL_uu6YpiWrsePAgQ@mail.gmail.com>
+ <B01EB0A1-992B-49F4-93AE-71E4BA707795@arm.com>
+ <CAOJe8K3LDhhPWbtdaWt23mY+2vnw5p05+eyk2D8fovOxC10cgA@mail.gmail.com>
+ <CAOJe8K2WaJUP9_buwgKw89fxGe56mGP1Mn8rDUO9W48KZzmybA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 12 Jun 2014 14:33:17.0093 (UTC) FILETIME=[3FF82550:01CF864B]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAOJe8K2WaJUP9_buwgKw89fxGe56mGP1Mn8rDUO9W48KZzmybA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here is the fixed patch. Having issues with using Thunderbird
-so just used Evolution for now.
-Nick 
---- drivers/vme/bridges/vme_ca91cx42.h.orig	2014-06-11 22:50:29.339671939 -0400
-+++ drivers/vme/bridges/vme_ca91cx42.h	2014-06-11 23:15:36.027685173 -0400
-Fixes bug issues with wrong bus width in if statments in vme_ca91cx42.c
-Signed-off-by: Nicholas Krause <nickkrause@sympatico.ca>
-@@ -526,7 +526,7 @@ static const int CA91CX42_LINT_LM[] = {
- #define CA91CX42_VSI_CTL_SUPER_SUPR	(1<<21)
- 
- #define CA91CX42_VSI_CTL_VAS_M		(7<<16)
--#define CA91CX42_VSI_CTL_VAS_A16	0
-+#define CA91CX42_VSI_CTL_VAS_A16	(3<<16)
- #define CA91CX42_VSI_CTL_VAS_A24	(1<<16)
- #define CA91CX42_VSI_CTL_VAS_A32	(1<<17)
- #define CA91CX42_VSI_CTL_VAS_USER1	(3<<17)
-@@ -549,7 +549,7 @@ static const int CA91CX42_LINT_LM[] = {
- #define CA91CX42_LM_CTL_SUPR		(1<<21)
- #define CA91CX42_LM_CTL_NPRIV		(1<<20)
- #define CA91CX42_LM_CTL_AS_M		(5<<16)
--#define CA91CX42_LM_CTL_AS_A16		0
-+#define CA91CX42_LM_CTL_AS_A16		(3<<16)
- #define CA91CX42_LM_CTL_AS_A24		(1<<16)
- #define CA91CX42_LM_CTL_AS_A32		(1<<17)
+On Thu, Jun 12, 2014 at 01:00:57PM +0100, Denis Kirjanov wrote:
+> On 6/12/14, Denis Kirjanov <kda@linux-powerpc.org> wrote:
+> > On 6/12/14, Catalin Marinas <catalin.marinas@arm.com> wrote:
+> >> On 11 Jun 2014, at 21:04, Denis Kirjanov <kda@linux-powerpc.org> wrote:
+> >>> On 6/11/14, Catalin Marinas <catalin.marinas@arm.com> wrote:
+> >>>> On Wed, Jun 11, 2014 at 04:13:07PM +0400, Denis Kirjanov wrote:
+> >>>>> I got a trace while running 3.15.0-08556-gdfb9454:
+> >>>>>
+> >>>>> [  104.534026] Unable to handle kernel paging request for data at
+> >>>>> address 0xc00000007f000000
+> >>>>
+> >>>> Were there any kmemleak messages prior to this, like "kmemleak
+> >>>> disabled"? There could be a race when kmemleak is disabled because of
+> >>>> some fatal (for kmemleak) error while the scanning is taking place
+> >>>> (which needs some more thinking to fix properly).
+> >>>
+> >>> No. I checked for the similar problem and didn't find anything relevant.
+> >>> I'll try to bisect it.
+> >>
+> >> Does this happen soon after boot? I guess it’s the first scan
+> >> (scheduled at around 1min after boot). Something seems to be telling
+> >> kmemleak that there is a valid memory block at 0xc00000007f000000.
+> >
+> > Yeah, it happens after a while with a booted system so that's the
+> > first kmemleak scan.
+> >
+> 
+> I've bisected to this commit: d4c54919ed86302094c0ca7d48a8cbd4ee753e92
+> "mm: add !pte_present() check on existing hugetlb_entry callbacks".
+> Reverting the commit fixes the issue
 
+I can't figure how this causes the problem but I have more questions. Is
+0xc00000007f000000 address always the same in all crashes? If yes, you
+could comment out start_scan_thread() in kmemleak_late_init() to avoid
+the scanning thread starting. Once booted, you can run:
 
+  echo dump=0xc00000007f000000 > /sys/kernel/debug/kmemleak
 
+and check the dmesg for what kmemleak knows about that address, when it
+was allocated and whether it should be mapped or not.
+
+-- 
+Catalin
