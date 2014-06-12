@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752401AbaFLX0l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 19:26:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37156 "EHLO
+	id S1751926AbaFLXSM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 19:18:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37112 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751933AbaFLXSN (ORCPT
+	with ESMTP id S1751662AbaFLXSJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 19:18:13 -0400
+	Thu, 12 Jun 2014 19:18:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Brian Healy <healybrian@gmail.com>, Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.14 15/19] [media] rtl28xxu: add 1b80:d395 Peak DVB-T USB
-Date: Thu, 12 Jun 2014 16:21:52 -0700
-Message-Id: <20140612232139.191670789@linuxfoundation.org>
+        Chris Boot <crb@tiger-computing.co.uk>,
+        Philip Gaw <pgaw@darktech.org.uk>, Hannes Reinecke <hare@suse.de>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.14 06/19] target: Allow READ_CAPACITY opcode in ALUA Standby access state
+Date: Thu, 12 Jun 2014 16:21:43 -0700
+Message-Id: <20140612232138.914729073@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140612232138.561318739@linuxfoundation.org>
 References: <20140612232138.561318739@linuxfoundation.org>
@@ -29,33 +30,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brian Healy <healybrian@gmail.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 9ca24ae4083665bda38da45f4b5dc9bbaf936bc0 upstream.
+commit e7810c2d2c37fa8e58dda74b00790dab60fe6fba upstream.
 
-Add USB ID for Peak DVB-T USB.
+This patch allows READ_CAPACITY + SAI_READ_CAPACITY_16 opcode
+processing to occur while the associated ALUA group is in Standby
+access state.
 
-[crope@iki.fi: fix Brian email address and indentation]
-Signed-off-by: Brian Healy <healybrian@gmail.com>
-Signed-off-by: Antti Palosaari <crope@iki.fi>
+This is required to avoid host side LUN probe failures during the
+initial scan if an ALUA group has already implicitly changed into
+Standby access state.
+
+This addresses a bug reported by Chris + Philip using dm-multipath
++ ESX hosts configured with ALUA multipath.
+
+(Drop v3.15 specific set_ascq usage - nab)
+
+Reported-by: Chris Boot <crb@tiger-computing.co.uk>
+Reported-by: Philip Gaw <pgaw@darktech.org.uk>
+Cc: Chris Boot <crb@tiger-computing.co.uk>
+Cc: Philip Gaw <pgaw@darktech.org.uk>
+Cc: Hannes Reinecke <hare@suse.de>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-
 ---
- drivers/media/usb/dvb-usb-v2/rtl28xxu.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/target/target_core_alua.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
-+++ b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
-@@ -1435,6 +1435,8 @@ static const struct usb_device_id rtl28x
- 		&rtl2832u_props, "Crypto ReDi PC 50 A", NULL) },
- 	{ DVB_USB_DEVICE(USB_VID_KYE, 0x707f,
- 		&rtl2832u_props, "Genius TVGo DVB-T03", NULL) },
-+	{ DVB_USB_DEVICE(USB_VID_KWORLD_2, 0xd395,
-+		&rtl2832u_props, "Peak DVB-T USB", NULL) },
- 
- 	/* RTL2832P devices: */
- 	{ DVB_USB_DEVICE(USB_VID_HANFTEK, 0x0131,
+--- a/drivers/target/target_core_alua.c
++++ b/drivers/target/target_core_alua.c
+@@ -564,7 +564,16 @@ static inline int core_alua_state_standb
+ 	case REPORT_LUNS:
+ 	case RECEIVE_DIAGNOSTIC:
+ 	case SEND_DIAGNOSTIC:
++	case READ_CAPACITY:
+ 		return 0;
++	case SERVICE_ACTION_IN:
++		switch (cdb[1] & 0x1f) {
++		case SAI_READ_CAPACITY_16:
++			return 0;
++		default:
++			*alua_ascq = ASCQ_04H_ALUA_TG_PT_STANDBY;
++			return 1;
++		}
+ 	case MAINTENANCE_IN:
+ 		switch (cdb[1] & 0x1f) {
+ 		case MI_REPORT_TARGET_PGS:
 
 
