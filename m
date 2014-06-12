@@ -1,116 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751727AbaFLSxg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 14:53:36 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:52467 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751034AbaFLSxe (ORCPT
+	id S1751496AbaFLS5m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 14:57:42 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:51913 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751080AbaFLS5l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 14:53:34 -0400
+	Thu, 12 Jun 2014 14:57:41 -0400
+From: j.glisse@gmail.com
+To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Cc: =?UTF-8?q?J=C3=A9r=C3=B4me=20Glisse?= <jglisse@redhat.com>
+Subject: [PATCH 1/5] mm: differentiate unmap for vmscan from other unmap.
+Date: Thu, 12 Jun 2014 14:57:30 -0400
+Message-Id: <1402599454-3526-1-git-send-email-j.glisse@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1402598029-3331-1-git-send-email-j.glisse@gmail.com>
+References: <1402598029-3331-1-git-send-email-j.glisse@gmail.com>
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <20140612141327.GY179@brightrain.aerifal.cx>
-References: <20140611041243.GA1475@brightrain.aerifal.cx> <1402464261.5195.21.camel@marge.simpson.net>
- <1402465808.3645.454.camel@edumazet-glaptop2.roam.corp.google.com>
- <20140611151511.GU179@brightrain.aerifal.cx> <CAKgNAkh7ihJyZ4gOXAeb3x-Su7ayshLdi9m6ML4n840n3bx=0Q@mail.gmail.com>
- <20140612141327.GY179@brightrain.aerifal.cx>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Thu, 12 Jun 2014 20:53:13 +0200
-Message-ID: <CAKgNAkhYvR1cSFVyghPYLm8ggS0-USD2chq4xNuOTqG+v19SzQ@mail.gmail.com>
-Subject: Re: recvmmsg/sendmmsg result types inconsistent, integer overflows?
-To: Rich Felker <dalias@libc.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Rich,
+From: Jérôme Glisse <jglisse@redhat.com>
 
-On Thu, Jun 12, 2014 at 4:13 PM, Rich Felker <dalias@libc.org> wrote:
-> On Thu, Jun 12, 2014 at 08:04:54AM +0200, Michael Kerrisk (man-pages) wrote:
->> Rich,
->>
->> On Wed, Jun 11, 2014 at 5:15 PM, Rich Felker <dalias@libc.org> wrote:
->> > On Tue, Jun 10, 2014 at 10:50:08PM -0700, Eric Dumazet wrote:
->> >> On Wed, 2014-06-11 at 07:24 +0200, Mike Galbraith wrote:
->> >> > (CCs network wizard hangout)
->> >> >
->> >> > On Wed, 2014-06-11 at 00:12 -0400, Rich Felker wrote:
->> >> > > While looking to add support for the recvmmsg and sendmmsg syscalls in
->> >> > > musl libc, I ran into some disturbing findings on the kernel side. In
->> >> > > the struct mmsghdr, the field where the result for each message is
->> >> > > stored has type int, which is inconsistent with the return type
->> >> > > ssize_t of recvmsg/sendmsg. So I tried to track down what happens when
->> >> > > the result is or would be larger than 2GB, and quickly found an
->> >> > > explanation for why the type in the structure was defined wrong:
->> >> > > internally, the kernel uses int as the return type for revcmsg and
->> >> > > sendmsg. Oops.
->> >> > >
->> >> > > A bit more RTFS'ing brought me to tcp_sendmsg in net/ipv4/tcp.c (I
->> >> > > figured let's look at a stream-based protocol, since datagrams can
->> >> > > likely never be that big for any existing protocol), and as far as I
->> >> > > can tell, it's haphazardly mixing int and size_t with no checks for
->> >> > > overflows. I looked for anywhere the kernel might try to verify before
->> >> > > starting that the sum of the lengths of all the iovec components
->> >> > > doesn't overflow INT_MAX or even SIZE_MAX, but didn't find any such
->> >> > > checks.
->> >> > >
->> >> > > Is there some magic that makes this all safe, or is this a big mess of
->> >> > > possibly-security-relevant bugs?
->> >> > >
->> >> > > Rich
->> >> > > --
->> >> > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> >> > > the body of a message to majordomo@vger.kernel.org
->> >> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> >> > > Please read the FAQ at  http://www.tux.org/lkml/
->> >> >
->> >>
->> >>
->> >> See commit 8acfe468b0384e834a303f08ebc4953d72fb690a
->> >> ("net: Limit socket I/O iovec total length to INT_MAX.")
->> >>
->> >> (or grep for verify_iovec() )
->> >
->> > Thanks; that addresses my concern about safety. There's still the ugly
->> > API inconsistency which it seems too late to fix. Michael, perhaps
->> > this should at least be documented in the man pages for sendmmsg and
->> > recvmmsg since it's certain to be confusing to anyone familiar with
->> > the sendmsg and recvmsg API, but not with kernel internals, who's
->> > trying to use these functions...
->>
->> Care to send me a patch?
->
-> I'm not at all familiar with man format, but I could write some
-> suggested text if that would be ok.
+New code will need to be able to differentiate between a regular unmap and
+an unmap trigger by vmscan in which case we want to be as quick as possible.
 
-I would take raw text. Or, better a patch where you just make crummy
-mistakes with groff. I'll fix them. ;-)
+Signed-off-by: Jérôme Glisse <jglisse@redhat.com>
+---
+ include/linux/rmap.h | 15 ++++++++-------
+ mm/memory-failure.c  |  2 +-
+ mm/vmscan.c          |  4 ++--
+ 3 files changed, 11 insertions(+), 10 deletions(-)
 
-> Unrelated (at least not directly) to man pages, one concern I have is
-> that, if these interfaces move towards standardization, the
-> inconsistent return type is going to be a point of contention that
-> could result in an incompatible version of the interfaces being
-> adopted in the standard. From that standpoint, it might make sense to
-> do something like documenting them returning socklen_t rather than
-> int (IIRC these are always the same on Linux). It's not quite logical,
-> but at least a bit more logical from a non-Linux-centric perspective
-> than using int.
-
-I'm not sure what I think about that yet. I'd probably have a better
-idea when I get the above text.
-
-Cheers,
-
-Michael
-
-PS No reply from you on the "Very bad advice in man 2 dup2" thread
-despite a ping or two. What's up?
-
+diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+index be57450..eddbc07 100644
+--- a/include/linux/rmap.h
++++ b/include/linux/rmap.h
+@@ -72,13 +72,14 @@ struct anon_vma_chain {
+ };
+ 
+ enum ttu_flags {
+-	TTU_UNMAP = 1,			/* unmap mode */
+-	TTU_MIGRATION = 2,		/* migration mode */
+-	TTU_MUNLOCK = 4,		/* munlock mode */
+-
+-	TTU_IGNORE_MLOCK = (1 << 8),	/* ignore mlock */
+-	TTU_IGNORE_ACCESS = (1 << 9),	/* don't age */
+-	TTU_IGNORE_HWPOISON = (1 << 10),/* corrupted page is recoverable */
++	TTU_VMSCAN = 1,			/* unmap for vmscan */
++	TTU_POISON = 2,			/* unmap for poison */
++	TTU_MIGRATION = 4,		/* migration mode */
++	TTU_MUNLOCK = 8,		/* munlock mode */
++
++	TTU_IGNORE_MLOCK = (1 << 9),	/* ignore mlock */
++	TTU_IGNORE_ACCESS = (1 << 10),	/* don't age */
++	TTU_IGNORE_HWPOISON = (1 << 11),/* corrupted page is recoverable */
+ };
+ 
+ #ifdef CONFIG_MMU
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 6f57250..11811fb 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -887,7 +887,7 @@ static int page_action(struct page_state *ps, struct page *p,
+ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
+ 				  int trapno, int flags, struct page **hpagep)
+ {
+-	enum ttu_flags ttu = TTU_UNMAP | TTU_IGNORE_MLOCK | TTU_IGNORE_ACCESS;
++	enum ttu_flags ttu = TTU_POISON | TTU_IGNORE_MLOCK | TTU_IGNORE_ACCESS;
+ 	struct address_space *mapping;
+ 	LIST_HEAD(tokill);
+ 	int ret;
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index d47f8aa..3b3137b 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1161,7 +1161,7 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
+ 	}
+ 
+ 	ret = shrink_page_list(&clean_pages, zone, &sc,
+-			TTU_UNMAP|TTU_IGNORE_ACCESS,
++			TTU_VMSCAN|TTU_IGNORE_ACCESS,
+ 			&dummy1, &dummy2, &dummy3, &dummy4, &dummy5, true);
+ 	list_splice(&clean_pages, page_list);
+ 	mod_zone_page_state(zone, NR_ISOLATED_FILE, -ret);
+@@ -1514,7 +1514,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+ 	if (nr_taken == 0)
+ 		return 0;
+ 
+-	nr_reclaimed = shrink_page_list(&page_list, zone, sc, TTU_UNMAP,
++	nr_reclaimed = shrink_page_list(&page_list, zone, sc, TTU_VMSCAN,
+ 				&nr_dirty, &nr_unqueued_dirty, &nr_congested,
+ 				&nr_writeback, &nr_immediate,
+ 				false);
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+1.9.0
+
