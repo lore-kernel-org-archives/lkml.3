@@ -1,58 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932649AbaFLHwn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 03:52:43 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:42889 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932384AbaFLHwl (ORCPT
+	id S932724AbaFLHzY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 03:55:24 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:59723 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932529AbaFLHzW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 03:52:41 -0400
-X-Original-SENDERIP: 10.177.220.145
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Thu, 12 Jun 2014 16:56:38 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Alexander Graf <agraf@suse.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v2 10/10] mm, cma: use spinlock instead of mutex
-Message-ID: <20140612075638.GD20199@js1304-P5Q-DELUXE>
-References: <1402543307-29800-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1402543307-29800-11-git-send-email-iamjoonsoo.kim@lge.com>
- <20140612074029.GB12663@bbox>
+	Thu, 12 Jun 2014 03:55:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140612074029.GB12663@bbox>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <538EB81B.3090807@gmx.de>
+References: <1401452797-29521-1-git-send-email-lee.jones@linaro.org>
+	<1401452797-29521-2-git-send-email-lee.jones@linaro.org>
+	<20140530123656.GC2742@katana>
+	<20140530133405.GB29731@lee--X1>
+	<20140530174800.GA4917@katana>
+	<20140530192516.GA4319@lee--X1>
+	<20140531134805.GA3287@katana>
+	<CACRpkdZvyfA0aaJe3YuevXfA2pTZLRPZ3mQpitL6qD7=qE0Xyg@mail.gmail.com>
+	<538C8A59.2070907@gmx.de>
+	<CACRpkdbo9_xo6j7JBcjiuk6eYkqyaeMYLFsH3VczxotOmVRh1Q@mail.gmail.com>
+	<538EB81B.3090807@gmx.de>
+Date: Thu, 12 Jun 2014 09:55:21 +0200
+Message-ID: <CACRpkda3bL=y3Dmkf59LT97Liep=XEzgE3P-YngLeD_w1qcAzQ@mail.gmail.com>
+Subject: Re: [PATCH] i2c: Make I2C ID tables non-mandatory for DT'ed and/or
+ ACPI'ed devices
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Michael Lawnick <ml.lawnick@gmx.de>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Grant Likely <grant.likely@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 12, 2014 at 04:40:29PM +0900, Minchan Kim wrote:
-> On Thu, Jun 12, 2014 at 12:21:47PM +0900, Joonsoo Kim wrote:
-> > Currently, we should take the mutex for manipulating bitmap.
-> > This job may be really simple and short so we don't need to sleep
-> > if contended. So I change it to spinlock.
-> 
-> I'm not sure it would be good always.
-> Maybe you remember we discussed about similar stuff about bitmap
-> searching in vmap friend internally, which was really painful
-> when it was fragmented. So, at least we need number if you really want
-> and I hope the number from ARM machine most popular platform for CMA
-> at the moment.
+On Wed, Jun 4, 2014 at 8:09 AM, Michael Lawnick <ml.lawnick@gmx.de> wrote:
+> Am 03.06.2014 13:18, schrieb Linus Walleij:
+>> On Mon, Jun 2, 2014 at 4:29 PM, Michael Lawnick <ml.lawnick@gmx.de> wrote:
+>>>
+>>> Am 02.06.2014 14:16, schrieb Linus Walleij:
+>>
+>>
+>>>> Is this really so useful on embedded systems?
+>>>>
+>>>> I was under the impression that this method was something used
+>>>> on say PC desktops with temperature monitors and EEPROMs
+>>>> on some I2C link on the PCB, usage entirely optional and fun
+>>>> for userspace hacks.
+>>>>
+>>> We use it for dynamic instantiating whole subsystems with multiplexers,
+>>> sensors, controllers in an embedded system. The device list is taken from
+>>> an
+>>> I2C eeprom which gets read on hotplug.
+>>
+>>
+>> Does this mean that you have stored the names (strings) that are used
+>> by the Linux kernel for identifying the devices into your EEPROM?
+>>
+>> That means that you have made the kernel-internal device driver names
+>> an ABI which is unfortunate :-/
+>>
+>> This is one of the reasons to why we insist on device tree: OS neutral
+>> hardware description.
+>
+> The eeprom contains a device tree that is dynamically merged.
 
-Good Point!! Agreed. I will drop this one in next spin and re-submit
-in separate patchset after some testing.
+That is a kind of way of saying "yes we made the kernel-internal
+driver named an ABI" I guess?
 
-Thanks.
+Yours,
+Linus Walleij
