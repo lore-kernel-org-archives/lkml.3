@@ -1,363 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751622AbaFLSoA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 14:44:00 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:42996 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751010AbaFLSn6 (ORCPT
+	id S1751833AbaFLSpZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 14:45:25 -0400
+Received: from smtprelay0192.hostedemail.com ([216.40.44.192]:43638 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751034AbaFLSpY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 14:43:58 -0400
-From: Matthias Brugger <matthias.bgg@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, linux@arm.linux.org.uk,
-        daniel.lezcano@linaro.org, tglx@linutronix.de, grant.likely@linaro.org,
-        matthias.bgg@gmail.com, thierry.reding@gmail.com,
-        florian.vaussard@epfl.ch, jic23@kernel.org, jason@lakedaemon.net,
-        andrew@lunn.ch, silvio.fricke@gmail.com, heiko.stuebner@bq.com,
-        olof@lixom.net, sebastian.hesselbarth@gmail.com, sboyd@codeaurora.org,
-        gregory.clement@free-electrons.com, arnd@arndb.de,
-        robherring2@gmail.com, marc.zyngier@arm.com,
-        maxime.ripard@free-electrons.com, soren.brinkmann@xilinx.com,
-        shawn.guo@freescale.com, anders.berg@lsi.com, linus.walleij@linaro.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v8.1] clocksource: Add support for the Mediatek SoCs
-Date: Thu, 12 Jun 2014 20:43:32 +0200
-Message-Id: <1402598612-5931-1-git-send-email-matthias.bgg@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.10.1406112012460.5170@nanos>
-References: <alpine.DEB.2.10.1406112012460.5170@nanos>
+	Thu, 12 Jun 2014 14:45:24 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::,RULES_HIT:2:41:355:379:541:560:599:800:960:966:968:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1535:1593:1594:1605:1730:1747:1777:1792:2196:2199:2393:2559:2562:2689:2693:2736:2828:2892:2895:2912:3138:3139:3140:3141:3142:3865:3866:3867:3868:3870:3871:3872:3873:3874:4050:4119:4250:4321:4385:4605:5007:6119:6691:7514:7576:7652:7875:7903:7974:8603:8660:10004:10848:11026:11232:11473:11596:11658:11914:12043:12291:12296:12438:12517:12519:12555:12679:12740:13019:13146:13148:13230:13255:13869:13894,0,RBL:none,CacheIP:none,Bayesian
+X-HE-Tag: van77_68dd47a00ad41
+X-Filterd-Recvd-Size: 8845
+Message-ID: <1402598718.12385.16.camel@joe-AO725>
+Subject: Re: [RFC] printk: allow increasing the ring buffer depending on the
+ number of CPUs
+From: Joe Perches <joe@perches.com>
+To: Davidlohr Bueso <davidlohr@hp.com>, Chris Metcalf <cmetcalf@tilera.com>
+Cc: Petr =?ISO-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        linux-kernel@vger.kernel.org, "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arun KS <arunks.linux@gmail.com>, Kees Cook <keescook@chromium.org>
+Date: Thu, 12 Jun 2014 11:45:18 -0700
+In-Reply-To: <1402596066.2627.1.camel@buesod1.americas.hpqcorp.net>
+References: <1402448685-30634-1-git-send-email-mcgrof@do-not-panic.com>
+	 <20140611093447.GL7772@pathway.suse.cz>
+	 <1402596066.2627.1.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a clock source and clock event for the timer found
-on the Mediatek SoCs.
+(adding Chris Metcalf for arch/tile,
+ I think this change might impact that arch)
 
-The Mediatek General Purpose Timer block provides five 32 bit timers and
-one 64 bit timer.
+On Thu, 2014-06-12 at 11:01 -0700, Davidlohr Bueso wrote:
+> On Wed, 2014-06-11 at 11:34 +0200, Petr Mládek wrote:
+> > On Tue 2014-06-10 18:04:45, Luis R. Rodriguez wrote:
+> > > From: "Luis R. Rodriguez" <mcgrof@suse.com>
+> > > 
+> > > The default size of the ring buffer is too small for machines
+> > > with a large amount of CPUs under heavy load. What ends up
+> > > happening when debugging is the ring buffer overlaps and chews
+> > > up old messages making debugging impossible unless the size is
+> > > passed as a kernel parameter. An idle system upon boot up will
+> > > on average spew out only about one or two extra lines but where
+> > > this really matters is on heavy load and that will vary widely
+> > > depending on the system and environment.
+> > 
+> > Thanks for looking at this. It is a pity to lose stracktrace when a huge
+> > machine Oopses just because the default ring buffer is too small.
+> 
+> Agreed, I would very much welcome something like this.
+> 
+> > > There are mechanisms to help increase the kernel ring buffer
+> > > for tracing through debugfs, and those interfaces even allow growing
+> > > the kernel ring buffer per CPU. We also have a static value which
+> > > can be passed upon boot. Relying on debugfs however is not ideal
+> > > for production, and relying on the value passed upon bootup is
+> > > can only used *after* an issue has creeped up. Instead of being
+> > > reactive this adds a proactive measure which lets you scale the
+> > > amount of contributions you'd expect to the kernel ring buffer
+> > > under load by each CPU in the worst case scenerio.
+> > > 
+> > > We use num_possible_cpus() to avoid complexities which could be
+> > > introduced by dynamically changing the ring buffer size at run
+> > > time, num_possible_cpus() lets us use the upper limit on possible
+> > > number of CPUs therefore avoiding having to deal with hotplugging
+> > > CPUs on and off. This option is diabled by default, and if used
+> > > the kernel ring buffer size then can be computed as follows:
+> > > 
+> > > size = __LOG_BUF_LEN + (num_possible_cpus() - 1 ) *  __LOG_CPU_BUF_LEN
+> > > 
+> > > Cc: Michal Hocko <mhocko@suse.cz>
+> > > Cc: Petr Mladek <pmladek@suse.cz>
+> > > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > > Cc: Joe Perches <joe@perches.com>
+> > > Cc: Arun KS <arunks.linux@gmail.com>
+> > > Cc: Kees Cook <keescook@chromium.org>
+> > > Cc: linux-kernel@vger.kernel.org
+> > > Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+> > > ---
+> > >  init/Kconfig           | 28 ++++++++++++++++++++++++++++
+> > >  kernel/printk/printk.c |  6 ++++--
+> > >  2 files changed, 32 insertions(+), 2 deletions(-)
+> > > 
+> > > diff --git a/init/Kconfig b/init/Kconfig
+> > > index 9d3585b..1814436 100644
+> > > --- a/init/Kconfig
+> > > +++ b/init/Kconfig
+> > > @@ -806,6 +806,34 @@ config LOG_BUF_SHIFT
+> > >  		     13 =>  8 KB
+> > >  		     12 =>  4 KB
+> > >  
+> > > +config LOG_CPU_BUF_SHIFT
+> > > +	int "CPU kernel log buffer size contribution (13 => 8 KB, 17 => 128KB)"
+> > > +	range 0 21
+> > > +	default 0
+> > > +	help
+> > > +	  The kernel ring buffer will get additional data logged onto it
+> > > +	  when multiple CPUs are supported. Typically the contributions is a
+> > > +	  few lines when idle however under under load this can vary and in the
+> > > +	  worst case it can mean loosing logging information. You can use this
 
-Two 32 bit timers are used by this driver:
-TIMER1: clock events supporting periodic and oneshot events
-TIMER2: clock source configured as a free running counter
+trivia: s/loosing/losing/
 
-The General Purpose Timer block can be run with two clocks. A 13 MHz system
-clock and the RTC clock running at 32 KHz. This implementation uses the system
-clock with no clock source divider.
+> > > +	  to set the maximum expected mount of amount of logging contribution
+> > > +	  under load by each CPU in the worst case scenerio. Select a size as
+> > > +	  a power of 2. For example if LOG_BUF_SHIFT is 18 and if your
+> > > +	  LOG_CPU_BUF_SHIFT is 12 your kernel ring buffer size will be as
+> > > +	  follows having 16 CPUs as possible.
+> > > +
+> > > +	     ((1 << 18) + ((16 - 1) * (1 << 12))) / 1024 = 316 KB
+> > 
+> > It might be better to use the CPU_NUM-specific value as a minimum of
+> > the needed space. Linux distributions might want to distribute kernel
+> > with non-zero value and still use the static "__log_buf" on reasonable
+> > small systems.
+> 
+> It should also depend on SMP and !BASE_SMALL.
+> I was wondering about disabling this by default as it would defeat the
+> purpose of being a proactive feature. Similarly, I worry about distros
+> choosing a correct default value on their own.
+> 
+> > > +	  Where as typically you'd only end up with 256 KB. This is disabled
+> > > +	  by default with a value of 0.
+> > 
+> > I would add:
+> > 
+> > 	This value is ignored when "log_buf_len" commandline parameter
+> > 	is used. It forces the exact size of the ring buffer.
+> 
+> ... and update Documentation/kernel-parameters.txt to be more
+> descriptive about this new functionality.
+> 
+> > > +	  Examples:
+> > > +		     17 => 128 KB
+> > > +		     16 => 64 KB
+> > > +	             15 => 32 KB
+> > > +	             14 => 16 KB
+> > > +		     13 =>  8 KB
+> > > +		     12 =>  4 KB
+> > 
+> > I think that we should make it more cleat that it is per-CPU here,
+> > for example:
+> > 
+> > 		17 => 128 KB for each CPU
+> > 		16 =>  64 KB for each CPU
+> > 		15 =>  32 KB for each CPU
+> > 		14 =>  16 KB for each CPU
+> > 		13 =>   8 KB for each CPU
+> > 		12 =>   4 KB for each CPU
+> > 
+> 
+> Agreed.
+> 
+> > >  #
+> > >  # Architectures with an unreliable sched_clock() should select this:
+> > >  #
+> > > diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+> > > index 7228258..2023424 100644
+> > > --- a/kernel/printk/printk.c
+> > > +++ b/kernel/printk/printk.c
+> > > @@ -246,6 +246,7 @@ static u32 clear_idx;
+> > >  #define LOG_ALIGN __alignof__(struct printk_log)
+> > >  #endif
+> > >  #define __LOG_BUF_LEN (1 << CONFIG_LOG_BUF_SHIFT)
+> > > +#define __LOG_CPU_BUF_LEN (1 << CONFIG_LOG_CPU_BUF_SHIFT)
+> > >  static char __log_buf[__LOG_BUF_LEN] __aligned(LOG_ALIGN);
+> > >  static char *log_buf = __log_buf;
+> > >  static u32 log_buf_len = __LOG_BUF_LEN;
+> > > @@ -752,9 +753,10 @@ void __init setup_log_buf(int early)
+> > >  	unsigned long flags;
+> > >  	char *new_log_buf;
+> > >  	int free;
+> > > +	int cpu_extra = (num_possible_cpus() - 1) * __LOG_CPU_BUF_LEN;
+> 
+> If depending on SMP, you can remove the - 1 here.
+> 
+> > > -	if (!new_log_buf_len)
+> > > -		return;
+> > > +	if (!new_log_buf_len && cpu_extra > 1)
+> > > +		new_log_buf_len = __LOG_BUF_LEN + cpu_extra;
+> > 
+> > We still should return when both new_log_buf_len and cpu_extra are
+> > zero and call here:
+> > 
+> > 	if (!new_log_buf_len)
+> > 		return;
+> 
+> Yep.
+> 
+> > Also I would feel more comfortable if we somehow limit the maximum
+> > size of cpu_extra. I wonder if there might be a crazy setup with a lot
+> > of possible CPUs and possible memory but with some minimal amount of
+> > CPUs and memory at the boot time.
+> 
+> Maybe. But considering that systems with a lot of CPUs *do* have a lot
+> of memory, I wouldn't worry much about this, just like we don't worry
+> about it now. Considering a _large_ 1024 core system and using the max
+> value 21 for CONFIG_LOG_BUF_SHIFT, we would only allocate just over 2Gb
+> of extra space -- trivial for such a system. And if it does break
+> something, then heck, go fix you box and/or just reduce the percpu
+> value. I guess that's a good reason to keep the default to 0 and let
+> users play with it as they wish without compromising uninterested
+> parties. afaict only x86 would be exposed to systems not booting if we
+> fail to allocate.
+> 
+> Thanks,
+> Davidlohr
 
-The interrupts are shared between the different timers and have to be read back
-from a register. We just enable one interrupt for the clock event. The clock
-event timer is used by all cores.
 
-Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
----
-Changes for v8.1:
-- Don't start the timer in set_mode for the ONESHOT case, as it will be started in
-set_next_event.
-
- drivers/clocksource/Kconfig     |    5 +
- drivers/clocksource/Makefile    |    1 +
- drivers/clocksource/mtk_timer.c |  261 +++++++++++++++++++++++++++++++++++++++
- 3 files changed, 267 insertions(+)
- create mode 100644 drivers/clocksource/mtk_timer.c
-
-diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
-index 065131c..1e2fdf0 100644
---- a/drivers/clocksource/Kconfig
-+++ b/drivers/clocksource/Kconfig
-@@ -149,6 +149,11 @@ config VF_PIT_TIMER
- config SYS_SUPPORTS_SH_CMT
-         bool
- 
-+config MTK_TIMER
-+	select CLKSRC_OF
-+	select CLKSRC_MMIO
-+	bool
-+
- config SYS_SUPPORTS_SH_MTU2
-         bool
- 
-diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
-index 800b130..da1ac09 100644
---- a/drivers/clocksource/Makefile
-+++ b/drivers/clocksource/Makefile
-@@ -34,6 +34,7 @@ obj-$(CONFIG_CLKSRC_SAMSUNG_PWM)	+= samsung_pwm_timer.o
- obj-$(CONFIG_FSL_FTM_TIMER)	+= fsl_ftm_timer.o
- obj-$(CONFIG_VF_PIT_TIMER)	+= vf_pit_timer.o
- obj-$(CONFIG_CLKSRC_QCOM)	+= qcom-timer.o
-+obj-$(CONFIG_MTK_TIMER)		+= mtk_timer.o
- 
- obj-$(CONFIG_ARM_ARCH_TIMER)		+= arm_arch_timer.o
- obj-$(CONFIG_ARM_GLOBAL_TIMER)		+= arm_global_timer.o
-diff --git a/drivers/clocksource/mtk_timer.c b/drivers/clocksource/mtk_timer.c
-new file mode 100644
-index 0000000..5de3bf5
---- /dev/null
-+++ b/drivers/clocksource/mtk_timer.c
-@@ -0,0 +1,261 @@
-+/*
-+ * Mediatek SoCs General-Purpose Timer handling.
-+ *
-+ * Copyright (C) 2014 Matthias Brugger
-+ *
-+ * Matthias Brugger <matthias.bgg@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/clockchips.h>
-+#include <linux/interrupt.h>
-+#include <linux/irq.h>
-+#include <linux/irqreturn.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_irq.h>
-+#include <linux/slab.h>
-+
-+#define GPT_IRQ_EN_REG		0x00
-+#define GPT_IRQ_ENABLE(val)	BIT((val) - 1)
-+#define GPT_IRQ_ACK_REG		0x08
-+#define GPT_IRQ_ACK(val)	BIT((val) - 1)
-+
-+#define TIMER_CTRL_REG(val)	(0x10 * (val))
-+#define TIMER_CTRL_OP(val)	(((val) & 0x3) << 4)
-+#define TIMER_CTRL_OP_ONESHOT	(0)
-+#define TIMER_CTRL_OP_REPEAT	(1)
-+#define TIMER_CTRL_OP_FREERUN	(3)
-+#define TIMER_CTRL_CLEAR	(2)
-+#define TIMER_CTRL_ENABLE	(1)
-+#define TIMER_CTRL_DISABLE	(0)
-+
-+#define TIMER_CLK_REG(val)	(0x04 + (0x10 * (val)))
-+#define TIMER_CLK_SRC(val)	(((val) & 0x1) << 4)
-+#define TIMER_CLK_SRC_SYS13M	(0)
-+#define TIMER_CLK_SRC_RTC32K	(1)
-+#define TIMER_CLK_DIV1		(0x0)
-+#define TIMER_CLK_DIV2		(0x1)
-+
-+#define TIMER_CNT_REG(val)	(0x08 + (0x10 * (val)))
-+#define TIMER_CMP_REG(val)	(0x0C + (0x10 * (val)))
-+
-+#define GPT_CLK_EVT	1
-+#define GPT_CLK_SRC	2
-+
-+struct mtk_clock_event_device {
-+	void __iomem *gpt_base;
-+	u32 ticks_per_jiffy;
-+	struct clock_event_device dev;
-+};
-+
-+static inline struct mtk_clock_event_device *to_mtk_clk(
-+				struct clock_event_device *c)
-+{
-+	return container_of(c, struct mtk_clock_event_device, dev);
-+}
-+
-+static void mtk_clkevt_time_stop(struct mtk_clock_event_device *evt, u8 timer)
-+{
-+	u32 val;
-+
-+	val = readl(evt->gpt_base + TIMER_CTRL_REG(timer));
-+	writel(val & ~TIMER_CTRL_ENABLE, evt->gpt_base +
-+			TIMER_CTRL_REG(timer));
-+}
-+
-+static void mtk_clkevt_time_setup(struct mtk_clock_event_device *evt,
-+				unsigned long delay, u8 timer)
-+{
-+	writel(delay, evt->gpt_base + TIMER_CMP_REG(timer));
-+}
-+
-+static void mtk_clkevt_time_start(struct mtk_clock_event_device *evt,
-+		bool periodic, u8 timer)
-+{
-+	u32 val;
-+
-+	/* Acknowledge interrupt */
-+	writel(GPT_IRQ_ACK(timer), evt->gpt_base + GPT_IRQ_ACK_REG);
-+
-+	val = readl(evt->gpt_base + TIMER_CTRL_REG(timer));
-+
-+	/* Clear 2 bit timer operation mode field */
-+	val &= ~TIMER_CTRL_OP(0x3);
-+
-+	if (periodic)
-+		val |= TIMER_CTRL_OP(TIMER_CTRL_OP_REPEAT);
-+	else
-+		val |= TIMER_CTRL_OP(TIMER_CTRL_OP_ONESHOT);
-+
-+	writel(val | TIMER_CTRL_ENABLE | TIMER_CTRL_CLEAR,
-+	       evt->gpt_base + TIMER_CTRL_REG(timer));
-+}
-+
-+static void mtk_clkevt_mode(enum clock_event_mode mode,
-+				struct clock_event_device *clk)
-+{
-+	struct mtk_clock_event_device *evt = to_mtk_clk(clk);
-+
-+	mtk_clkevt_time_stop(evt, GPT_CLK_EVT);
-+
-+	switch (mode) {
-+	case CLOCK_EVT_MODE_PERIODIC:
-+		mtk_clkevt_time_setup(evt, evt->ticks_per_jiffy, GPT_CLK_EVT);
-+		mtk_clkevt_time_start(evt, true, GPT_CLK_EVT);
-+		break;
-+	case CLOCK_EVT_MODE_ONESHOT:
-+		/* Timer is enabled in set_next_event */
-+		break;
-+	case CLOCK_EVT_MODE_UNUSED:
-+	case CLOCK_EVT_MODE_SHUTDOWN:
-+	default:
-+		/* No more interrupts will occur as source is disabled */
-+		break;
-+	}
-+}
-+
-+static int mtk_clkevt_next_event(unsigned long event,
-+				   struct clock_event_device *clk)
-+{
-+	struct mtk_clock_event_device *evt = to_mtk_clk(clk);
-+
-+	mtk_clkevt_time_stop(evt, GPT_CLK_EVT);
-+	mtk_clkevt_time_setup(evt, event, GPT_CLK_EVT);
-+	mtk_clkevt_time_start(evt, false, GPT_CLK_EVT);
-+
-+	return 0;
-+}
-+
-+static irqreturn_t mtk_timer_interrupt(int irq, void *dev_id)
-+{
-+	struct mtk_clock_event_device *evt = dev_id;
-+
-+	/* Acknowledge timer0 irq */
-+	writel(GPT_IRQ_ACK(GPT_CLK_EVT), evt->gpt_base + GPT_IRQ_ACK_REG);
-+	evt->dev.event_handler(&evt->dev);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static void mtk_timer_global_reset(struct mtk_clock_event_device *evt)
-+{
-+	/* Disable all interrupts */
-+	writel(0x0, evt->gpt_base + GPT_IRQ_EN_REG);
-+	/* Acknowledge all interrupts */
-+	writel(0x3f, evt->gpt_base + GPT_IRQ_ACK_REG);
-+}
-+
-+static void
-+mtk_timer_setup(struct mtk_clock_event_device *evt, u8 timer, u8 option)
-+{
-+	writel(TIMER_CTRL_CLEAR | TIMER_CTRL_DISABLE,
-+		evt->gpt_base + TIMER_CTRL_REG(timer));
-+
-+	writel(TIMER_CLK_SRC(TIMER_CLK_SRC_SYS13M) | TIMER_CLK_DIV1,
-+			evt->gpt_base + TIMER_CLK_REG(timer));
-+
-+	writel(0x0, evt->gpt_base + TIMER_CMP_REG(timer));
-+
-+	writel(TIMER_CTRL_OP(option) | TIMER_CTRL_ENABLE,
-+			evt->gpt_base + TIMER_CTRL_REG(timer));
-+}
-+
-+static void mtk_timer_enable_irq(struct mtk_clock_event_device *evt, u8 timer)
-+{
-+	u32 val;
-+
-+	val = readl(evt->gpt_base + GPT_IRQ_EN_REG);
-+	writel(val | GPT_IRQ_ENABLE(timer),
-+			evt->gpt_base + GPT_IRQ_EN_REG);
-+}
-+
-+static void __init mtk_timer_init(struct device_node *node)
-+{
-+	struct mtk_clock_event_device *evt;
-+	struct resource res;
-+	unsigned long rate = 0;
-+	struct clk *clk;
-+
-+	evt = kzalloc(sizeof(*evt), GFP_KERNEL);
-+	if (!evt) {
-+		pr_warn("Can't allocate mtk clock event driver struct");
-+		return;
-+	}
-+
-+	evt->dev.name = "mtk_tick";
-+	evt->dev.rating = 300;
-+	evt->dev.features = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT;
-+	evt->dev.set_mode = mtk_clkevt_mode;
-+	evt->dev.set_next_event = mtk_clkevt_next_event;
-+	evt->dev.cpumask = cpu_possible_mask;
-+
-+	evt->gpt_base = of_io_request_and_map(node, 0, "mtk-timer");
-+	if (!evt->gpt_base) {
-+		pr_warn("Can't get resource\n");
-+		return;
-+	}
-+
-+	evt->dev.irq = irq_of_parse_and_map(node, 0);
-+	if (evt->dev.irq <= 0) {
-+		pr_warn("Can't parse IRQ");
-+		goto err_mem;
-+	}
-+
-+	clk = of_clk_get(node, 0);
-+	if (IS_ERR(clk)) {
-+		pr_warn("Can't get timer clock");
-+		goto err_irq;
-+	}
-+
-+	if (clk_prepare_enable(clk)) {
-+		pr_warn("Can't prepare clock");
-+		goto err_clk_put;
-+	}
-+	rate = clk_get_rate(clk);
-+
-+	if (request_irq(evt->dev.irq, mtk_timer_interrupt,
-+			IRQF_TIMER | IRQF_IRQPOLL, "mtk_timer", evt)) {
-+		pr_warn("failed to setup irq %d\n", evt->dev.irq);
-+		goto err_clk_disable;
-+	}
-+
-+	evt->ticks_per_jiffy = DIV_ROUND_UP(rate, HZ);
-+
-+	mtk_timer_global_reset(evt);
-+
-+	/* Configure clock source */
-+	mtk_timer_setup(evt, GPT_CLK_SRC, TIMER_CTRL_OP_FREERUN);
-+	clocksource_mmio_init(evt->gpt_base + TIMER_CNT_REG(GPT_CLK_SRC),
-+			node->name, rate, 300, 32, clocksource_mmio_readl_up);
-+
-+	/* Configure clock event */
-+	mtk_timer_setup(evt, GPT_CLK_EVT, TIMER_CTRL_OP_REPEAT);
-+	mtk_timer_enable_irq(evt, GPT_CLK_EVT);
-+
-+	clockevents_config_and_register(&evt->dev, rate, 0x3,
-+					0xffffffff);
-+	return;
-+
-+err_clk_disable:
-+	clk_disable_unprepare(clk);
-+err_clk_put:
-+	clk_put(clk);
-+err_irq:
-+	irq_dispose_mapping(evt->dev.irq);
-+err_mem:
-+	iounmap(evt->gpt_base);
-+	of_address_to_resource(node, 0, &res);
-+	release_mem_region(res.start, resource_size(&res));
-+}
-+CLOCKSOURCE_OF_DECLARE(mtk_mt6577, "mediatek,mt6577-timer", mtk_timer_init);
--- 
-1.7.9.5
 
