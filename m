@@ -1,136 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752546AbaFLTPX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 15:15:23 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:54057 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751314AbaFLTPO (ORCPT
+	id S1752556AbaFLTPv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 15:15:51 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:52343 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751688AbaFLTPt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 15:15:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140612190509.GM9578@redhat.com>
-References: <cover.1402387862.git.d.kasatkin@samsung.com>
-	<ef22f2630a2545bd7c3bf2c9e730a842835cf6c4.1402387862.git.d.kasatkin@samsung.com>
-	<20140612160346.GG9578@redhat.com>
-	<5399E22D.9070205@samsung.com>
-	<20140612173236.GK9578@redhat.com>
-	<CACE9dm9UHixujYR==_ybKZr2gvEFm+gmRMaD-V2aeNQ7J6jQ8w@mail.gmail.com>
-	<20140612190154.GL9578@redhat.com>
-	<20140612190509.GM9578@redhat.com>
-Date: Thu, 12 Jun 2014 22:15:11 +0300
-Message-ID: <CACE9dm9CgJWQVWSi4Zgty5s6hdzOwwjX_nEeG9v5JK=wrLN-ng@mail.gmail.com>
-Subject: Re: [PATCH 3/4] KEYS: validate key trust only with selected owner key
-From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Josh Boyer <jwboyer@redhat.com>,
-        keyrings <keyrings@linux-nfs.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 12 Jun 2014 15:15:49 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Scott J Norton <scott.norton@hp.com>, Waiman Long <Waiman.Long@hp.com>
+Subject: [PATCH] mm: Move __vma_address() to internal.h to be inlined in huge_memory.c
+Date: Thu, 12 Jun 2014 15:15:40 -0400
+Message-Id: <1402600540-52031-1-git-send-email-Waiman.Long@hp.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 June 2014 22:05, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Thu, Jun 12, 2014 at 03:01:54PM -0400, Vivek Goyal wrote:
->> On Thu, Jun 12, 2014 at 09:36:46PM +0300, Dmitry Kasatkin wrote:
->> > On 12 June 2014 20:32, Vivek Goyal <vgoyal@redhat.com> wrote:
->> > > On Thu, Jun 12, 2014 at 08:23:57PM +0300, Dmitry Kasatkin wrote:
->> > >> On 12/06/14 19:03, Vivek Goyal wrote:
->> > >> > On Tue, Jun 10, 2014 at 11:48:17AM +0300, Dmitry Kasatkin wrote:
->> > >> >> This patch provides kernel parameter to specify owner's key id which
->> > >> >> must be used for trust validate of keys. Keys signed with other keys
->> > >> >> are not trusted.
->> > >> >>
->> > >> >> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
->> > >> > Hi,
->> > >> >
->> > >> > I am continuing to work on verifying kernel signature for kexec/kdump. I
->> > >> > am planning to take david howell's patches for pkcs7 signature
->> > >> > verification and verify bzImage signature.
->> > >> >
->> > >> > Part of that process will boil down to verifying a certificate in
->> > >> > pkcs7 x509 cert chain using a key in system_trusted_keyring.
->> > >> >
->> > >> > I think the OS vendor key which signs the kernel signing key propagates to
->> > >> > system_trusted_keyring. (shim has that and I am not sure how shim makes
->> > >> > it propogate all they way to system_trusted_keyring).
->> > >> >
->> > >> > So I was planning to use same functionality where I look for any key
->> > >> > which can verify the signing cert of kernel. As OS vendor key will be
->> > >> > in system_trusted_keyring, it should work.
->> > >> >
->> > >> > Now with this change where you will trust only one selected owner key.
->> > >> > That means you will not even trust the OS vendor key which signs kernel
->> > >> > signing key. I think this will stop working with  keys_ownerid=<....>
->> > >> >
->> > >> > As I am doing that work in parallel and I saw these patches, I thought
->> > >> > I will bring it up.
->> > >>
->> > >> Hi Vivek,
->> > >>
->> > >> All keys stays in the keyring. Usage of owner_keyid is limited to
->> > >> validate the trust of the loaded keys.
->> > >
->> > > Hi Dmitry,
->> > >
->> > > If owner_keyid scope is just limited to loading extra keys, then it
->> > > should be fine as I don't want to load extra keys. I just want to
->> > > verify already signed image whose key is supposed to be in
->> > > system_trusted_keyring.
->> > >
->> > >>
->> > >>
->> > >> Do you really see OS verndor key (Fedora) on the system keyring?
->> > >> shim is UEFI binary and can add it to the MOK database..
->> > >
->> > > I have been told that mechanism to propagate they key in shim which is
->> > > used to verify kernel signature is in place and that key should show
->> > > up in system_trusted_keyring. I have never verified it though. I will
->> > > check it out.
->> > >
->> > > Thanks
->> > > Vivek
->> >
->> >
->> > Hi Vivek,
->> >
->> > The easiest way to get OS Vendor ker/certificate is just embed it into
->> > the kernel along with
->> > ephemeral (or not) module signing key... They all appears on .system keyring...
->>
->> I think it will be tricky as in current setup, signing happens on a different
->> server and build server does not have access to keys.
->
-> Apart from this, all the builds might not signed. And at build time it is
-> might not known if a particular build will be signed with final keys or not.
-> One might decide to sign kernel based on testing results post build. So
-> embedding the kernel signing key in the kernel during build is little
-> tricky from process point of view.
->
-> Thanks
-> Vivek
+The vma_address() function which is used to compute the virtual address
+within a VMA is used only by 2 files in the mm subsystem - rmap.c and
+huge_memory.c. This function is defined in rmap.c and is inlined by
+its callers there, but it is also declared as an external function.
 
+However, the __split_huge_page() function which calls vma_address()
+in huge_memory.c is calling it as a real function call. This is not
+as efficient as an inlined function. This patch moves the underlying
+inlined __vma_address() function to internal.h to be shared by both
+the rmap.c and huge_memory.c file.
 
-Please note, kernel signing key is not embedded to the kernel..
-It is certificate/public key.
+Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+---
+ mm/huge_memory.c |    4 ++--
+ mm/internal.h    |   19 +++++++++++++++----
+ mm/rmap.c        |   14 --------------
+ 3 files changed, 17 insertions(+), 20 deletions(-)
 
-bootloader has embedded OS vendor certificate.
-It is "well known" and public.
-
-Distro might have multiple kernels installed and all of them must boot.
-Kernel updates will come signed with the same key...
-So all kernels probably signed with the same distro private key or
-multiple public keys need to be embedded into the bootloader.
-
-So kernel signing key is not ephemeral but managed and stored
-somewhere secretly.
-
-There is no problem to distribute public key...
-
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index b4b1feb..75a54ce 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1816,7 +1816,7 @@ static void __split_huge_page(struct page *page,
+ 	mapcount = 0;
+ 	anon_vma_interval_tree_foreach(avc, &anon_vma->rb_root, pgoff, pgoff) {
+ 		struct vm_area_struct *vma = avc->vma;
+-		unsigned long addr = vma_address(page, vma);
++		unsigned long addr = __vma_address(page, vma);
+ 		BUG_ON(is_vma_temporary_stack(vma));
+ 		mapcount += __split_huge_page_splitting(page, vma, addr);
+ 	}
+@@ -1840,7 +1840,7 @@ static void __split_huge_page(struct page *page,
+ 	mapcount2 = 0;
+ 	anon_vma_interval_tree_foreach(avc, &anon_vma->rb_root, pgoff, pgoff) {
+ 		struct vm_area_struct *vma = avc->vma;
+-		unsigned long addr = vma_address(page, vma);
++		unsigned long addr = __vma_address(page, vma);
+ 		BUG_ON(is_vma_temporary_stack(vma));
+ 		mapcount2 += __split_huge_page_map(page, vma, addr);
+ 	}
+diff --git a/mm/internal.h b/mm/internal.h
+index 07b6736..3c9dbc2 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -13,6 +13,7 @@
+ 
+ #include <linux/fs.h>
+ #include <linux/mm.h>
++#include <linux/hugetlb.h>
+ 
+ void free_pgtables(struct mmu_gather *tlb, struct vm_area_struct *start_vma,
+ 		unsigned long floor, unsigned long ceiling);
+@@ -238,12 +239,22 @@ static inline void mlock_migrate_page(struct page *newpage, struct page *page)
+ 	}
+ }
+ 
++/*
++ * __vma_address - at what user virtual address is page expected in @vma?
++ */
++static inline unsigned long
++__vma_address(struct page *page, struct vm_area_struct *vma)
++{
++	pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
++
++	if (unlikely(is_vm_hugetlb_page(vma)))
++		pgoff = page->index << huge_page_order(page_hstate(page));
++
++	return vma->vm_start + ((pgoff - vma->vm_pgoff) << PAGE_SHIFT);
++}
++
+ extern pmd_t maybe_pmd_mkwrite(pmd_t pmd, struct vm_area_struct *vma);
+ 
+-#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+-extern unsigned long vma_address(struct page *page,
+-				 struct vm_area_struct *vma);
+-#endif
+ #else /* !CONFIG_MMU */
+ static inline int mlocked_vma_newpage(struct vm_area_struct *v, struct page *p)
+ {
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 83bfafa..5ab9a74 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -509,21 +509,7 @@ void page_unlock_anon_vma_read(struct anon_vma *anon_vma)
+ 	anon_vma_unlock_read(anon_vma);
+ }
+ 
+-/*
+- * At what user virtual address is page expected in @vma?
+- */
+ static inline unsigned long
+-__vma_address(struct page *page, struct vm_area_struct *vma)
+-{
+-	pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
+-
+-	if (unlikely(is_vm_hugetlb_page(vma)))
+-		pgoff = page->index << huge_page_order(page_hstate(page));
+-
+-	return vma->vm_start + ((pgoff - vma->vm_pgoff) << PAGE_SHIFT);
+-}
+-
+-inline unsigned long
+ vma_address(struct page *page, struct vm_area_struct *vma)
+ {
+ 	unsigned long address = __vma_address(page, vma);
 -- 
-Thanks,
-Dmitry
+1.7.1
+
