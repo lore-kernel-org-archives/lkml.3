@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752895AbaFLXb2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 19:31:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37061 "EHLO
+	id S1752905AbaFLXbr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 19:31:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37043 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750803AbaFLXR1 (ORCPT
+	with ESMTP id S1751219AbaFLXR0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 19:17:27 -0400
+	Thu, 12 Jun 2014 19:17:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>,
-        Alexander Usyskin <alexander.usyskin@intel.com>
-Subject: [PATCH 3.15 06/12] mei: me: drop harmful wait optimization
-Date: Thu, 12 Jun 2014 16:21:08 -0700
-Message-Id: <20140612232045.139956588@linuxfoundation.org>
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Neil Horman <nhorman@tuxdriver.com>
+Subject: [PATCH 3.15 04/12] PCI/MSI: Fix memory leak in free_msi_irqs()
+Date: Thu, 12 Jun 2014 16:21:06 -0700
+Message-Id: <20140612232045.075678429@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140612232044.886466924@linuxfoundation.org>
 References: <20140612232044.886466924@linuxfoundation.org>
@@ -29,41 +30,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomas Winkler <tomas.winkler@intel.com>
+From: Alexei Starovoitov <ast@plumgrid.com>
 
-commit 07cd7be3d92eeeae1f92a017f2cfe4fdd9256526 upstream.
+commit b701c0b1fe819a2083fc6ec5332e0e4492b9516d upstream.
 
-It my take time till ME_RDY will be cleared after the reset,
-so we cannot check the bit before we got the interrupt
+free_msi_irqs() is leaking memory, since list_for_each_entry(entry,
+&dev->msi_list, list) {...} is never executed, because dev->msi_list is
+made empty by the loop just above this one.
 
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
+Fix it by relying on zero termination of attribute array like
+populate_msi_sysfs() does.
+
+Fixes: 1c51b50c2995 ("PCI/MSI: Export MSI mode using attributes, not kobjects")
+Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/misc/mei/hw-me.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/pci/msi.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/misc/mei/hw-me.c
-+++ b/drivers/misc/mei/hw-me.c
-@@ -186,6 +186,7 @@ static int mei_me_hw_reset(struct mei_de
- 	else
- 		hcsr &= ~H_IE;
- 
-+	dev->recvd_hw_ready = false;
- 	mei_me_reg_write(hw, H_CSR, hcsr);
- 
- 	if (intr_enable == false)
-@@ -237,10 +238,7 @@ static bool mei_me_hw_is_ready(struct me
- static int mei_me_hw_ready_wait(struct mei_device *dev)
- {
- 	int err;
--	if (mei_me_hw_is_ready(dev))
--		return 0;
- 
--	dev->recvd_hw_ready = false;
- 	mutex_unlock(&dev->device_lock);
- 	err = wait_event_interruptible_timeout(dev->wait_hw_ready,
- 			dev->recvd_hw_ready,
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -414,7 +414,7 @@ static void free_msi_irqs(struct pci_dev
+ 	if (dev->msi_irq_groups) {
+ 		sysfs_remove_groups(&dev->dev.kobj, dev->msi_irq_groups);
+ 		msi_attrs = dev->msi_irq_groups[0]->attrs;
+-		list_for_each_entry(entry, &dev->msi_list, list) {
++		while (msi_attrs[count]) {
+ 			dev_attr = container_of(msi_attrs[count],
+ 						struct device_attribute, attr);
+ 			kfree(dev_attr->attr.name);
 
 
