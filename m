@@ -1,27 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934045AbaFLMBR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 08:01:17 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60485 "EHLO
+	id S1755911AbaFLMCC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 08:02:02 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60534 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933731AbaFLMBH (ORCPT
+	with ESMTP id S1752728AbaFLMB5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 08:01:07 -0400
-Date: Thu, 12 Jun 2014 05:00:31 -0700
-From: "tip-bot for Steven Rostedt (Red Hat)" <tipbot@zytor.com>
-Message-ID: <tip-a7c3196c79051f9e1a498f5be8fe6870bde5e55d@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        jolsa@kernel.org, rostedt@goodmis.org, tglx@linutronix.de,
-        namhyung@kernel.org
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        jolsa@kernel.org, rostedt@goodmis.org, tglx@linutronix.de,
-        namhyung@kernel.org
-In-Reply-To: <20140603032223.678098063@goodmis.org>
-References: <20140603032223.678098063@goodmis.org>
+	Thu, 12 Jun 2014 08:01:57 -0400
+Date: Thu, 12 Jun 2014 05:01:28 -0700
+From: tip-bot for Jiri Olsa <tipbot@zytor.com>
+Message-ID: <tip-a261e4a09a073451057e9dbe17783255ea94598d@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, paulus@samba.org, eranian@google.com,
+        hpa@zytor.com, mingo@kernel.org, jolsa@kernel.org,
+        a.p.zijlstra@chello.nl, acme@kernel.org, namhyung@kernel.org,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        paulus@samba.org, linux-kernel@vger.kernel.org, jolsa@kernel.org,
+        a.p.zijlstra@chello.nl, acme@kernel.org, namhyung@kernel.org,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com
+In-Reply-To: <20140605204117.GA1771@krava.redhat.com>
+References: <20140605204117.GA1771@krava.redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tools lib traceevent:
-  Add flag to not load event plugins
-Git-Commit-ID: a7c3196c79051f9e1a498f5be8fe6870bde5e55d
+Subject: [tip:perf/core] perf tools:
+  Fix pipe check regression in attr event callback
+Git-Commit-ID: a261e4a09a073451057e9dbe17783255ea94598d
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,63 +38,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a7c3196c79051f9e1a498f5be8fe6870bde5e55d
-Gitweb:     http://git.kernel.org/tip/a7c3196c79051f9e1a498f5be8fe6870bde5e55d
-Author:     Steven Rostedt (Red Hat) <rostedt@goodmis.org>
-AuthorDate: Mon, 2 Jun 2014 23:20:13 -0400
+Commit-ID:  a261e4a09a073451057e9dbe17783255ea94598d
+Gitweb:     http://git.kernel.org/tip/a261e4a09a073451057e9dbe17783255ea94598d
+Author:     Jiri Olsa <jolsa@kernel.org>
+AuthorDate: Thu, 5 Jun 2014 18:51:44 +0200
 Committer:  Jiri Olsa <jolsa@kernel.org>
-CommitDate: Sat, 7 Jun 2014 23:33:36 +0200
+CommitDate: Mon, 9 Jun 2014 12:20:34 +0200
 
-tools lib traceevent: Add flag to not load event plugins
+perf tools: Fix pipe check regression in attr event callback
 
-Add a flag to pevent that will let the callers be able to set it and
-keep the system, and perhaps even normal plugins from being loaded.
+The file factoring in builtin-inject.c object introduced regression
+in attr event callback. The commit is:
+  3406912 perf inject: Handle output file via perf_data_file object
 
-This is useful when plugins might hide certain information and seeing
-the raw events shows what may be going on.
+Following hunk reversed the logic:
+  -       if (!inject->pipe_output)
+  +       if (&inject->output.is_pipe)
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/r/20140603032223.678098063@goodmis.org
+putting it back, following example now works:
+  $ perf record -o - kill | perf inject -b | perf report -i -
+
+Plus removing extra '&' (kudos to Arnaldo)
+
+Reported-by: Stephane Eranian <eranian@google.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/20140605204117.GA1771@krava.redhat.com
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/lib/traceevent/event-parse.h  | 2 ++
- tools/lib/traceevent/event-plugin.c | 7 ++++++-
- 2 files changed, 8 insertions(+), 1 deletion(-)
+ tools/perf/builtin-inject.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-index feab942..a68ec3d 100644
---- a/tools/lib/traceevent/event-parse.h
-+++ b/tools/lib/traceevent/event-parse.h
-@@ -354,6 +354,8 @@ enum pevent_func_arg_type {
+diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
+index 6a3af00..16c7c11 100644
+--- a/tools/perf/builtin-inject.c
++++ b/tools/perf/builtin-inject.c
+@@ -72,7 +72,7 @@ static int perf_event__repipe_attr(struct perf_tool *tool,
+ 	if (ret)
+ 		return ret;
  
- enum pevent_flag {
- 	PEVENT_NSEC_OUTPUT		= 1,	/* output in NSECS */
-+	PEVENT_DISABLE_SYS_PLUGINS	= 1 << 1,
-+	PEVENT_DISABLE_PLUGINS		= 1 << 2,
- };
+-	if (&inject->output.is_pipe)
++	if (!inject->output.is_pipe)
+ 		return 0;
  
- #define PEVENT_ERRORS 							      \
-diff --git a/tools/lib/traceevent/event-plugin.c b/tools/lib/traceevent/event-plugin.c
-index 0c8bf67..317466b 100644
---- a/tools/lib/traceevent/event-plugin.c
-+++ b/tools/lib/traceevent/event-plugin.c
-@@ -148,12 +148,17 @@ load_plugins(struct pevent *pevent, const char *suffix,
- 	char *path;
- 	char *envdir;
- 
-+	if (pevent->flags & PEVENT_DISABLE_PLUGINS)
-+		return;
-+
- 	/*
- 	 * If a system plugin directory was defined,
- 	 * check that first.
- 	 */
- #ifdef PLUGIN_DIR
--	load_plugins_dir(pevent, suffix, PLUGIN_DIR, load_plugin, data);
-+	if (!(pevent->flags & PEVENT_DISABLE_SYS_PLUGINS))
-+		load_plugins_dir(pevent, suffix, PLUGIN_DIR,
-+				 load_plugin, data);
- #endif
- 
- 	/*
+ 	return perf_event__repipe_synth(tool, event);
