@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752865AbaFLX3u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 19:29:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37106 "EHLO
+	id S1752608AbaFLXar (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 19:30:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37054 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751686AbaFLXSG (ORCPT
+	with ESMTP id S1751330AbaFLXR1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 19:18:06 -0400
+	Thu, 12 Jun 2014 19:17:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Markos Chandras <markos.chandras@imgtec.com>,
-        Paul Burton <paul.burton@imgtec.com>,
-        James Hogan <james.hogan@imgtec.com>, linux-mips@linux-mips.org,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [PATCH 3.14 03/19] MIPS: asm: thread_info: Add _TIF_SECCOMP flag
-Date: Thu, 12 Jun 2014 16:21:40 -0700
-Message-Id: <20140612232138.817092091@linuxfoundation.org>
+        Brian Healy <healybrian@gmail.com>, Antti Palosaari <crope@iki.fi>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.15 08/12] [media] rtl28xxu: add 1b80:d395 Peak DVB-T USB
+Date: Thu, 12 Jun 2014 16:21:10 -0700
+Message-Id: <20140612232045.205205827@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140612232138.561318739@linuxfoundation.org>
-References: <20140612232138.561318739@linuxfoundation.org>
+In-Reply-To: <20140612232044.886466924@linuxfoundation.org>
+References: <20140612232044.886466924@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -28,41 +25,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.15-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Markos Chandras <markos.chandras@imgtec.com>
+From: Brian Healy <healybrian@gmail.com>
 
-commit 137f7df8cead00688524c82360930845396b8a21 upstream.
+commit 9ca24ae4083665bda38da45f4b5dc9bbaf936bc0 upstream.
 
-Add _TIF_SECCOMP flag to _TIF_WORK_SYSCALL_ENTRY to indicate
-that the system call needs to be checked against a seccomp filter.
+Add USB ID for Peak DVB-T USB.
 
-Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
-Reviewed-by: Paul Burton <paul.burton@imgtec.com>
-Reviewed-by: James Hogan <james.hogan@imgtec.com>
-Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/6405/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-Cc: Ben Hutchings <ben@decadent.org.uk>
+[crope@iki.fi: fix Brian email address and indentation]
+Signed-off-by: Brian Healy <healybrian@gmail.com>
+Signed-off-by: Antti Palosaari <crope@iki.fi>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- arch/mips/include/asm/thread_info.h |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
---- a/arch/mips/include/asm/thread_info.h
-+++ b/arch/mips/include/asm/thread_info.h
-@@ -136,7 +136,8 @@ static inline struct thread_info *curren
- #define _TIF_SYSCALL_TRACEPOINT	(1<<TIF_SYSCALL_TRACEPOINT)
+---
+ drivers/media/usb/dvb-usb-v2/rtl28xxu.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
++++ b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
+@@ -1537,6 +1537,8 @@ static const struct usb_device_id rtl28x
+ 		&rtl2832u_props, "Crypto ReDi PC 50 A", NULL) },
+ 	{ DVB_USB_DEVICE(USB_VID_KYE, 0x707f,
+ 		&rtl2832u_props, "Genius TVGo DVB-T03", NULL) },
++	{ DVB_USB_DEVICE(USB_VID_KWORLD_2, 0xd395,
++		&rtl2832u_props, "Peak DVB-T USB", NULL) },
  
- #define _TIF_WORK_SYSCALL_ENTRY	(_TIF_NOHZ | _TIF_SYSCALL_TRACE |	\
--				 _TIF_SYSCALL_AUDIT | _TIF_SYSCALL_TRACEPOINT)
-+				 _TIF_SYSCALL_AUDIT | \
-+				 _TIF_SYSCALL_TRACEPOINT | _TIF_SECCOMP)
- 
- /* work to do in syscall_trace_leave() */
- #define _TIF_WORK_SYSCALL_EXIT	(_TIF_NOHZ | _TIF_SYSCALL_TRACE |	\
+ 	/* RTL2832P devices: */
+ 	{ DVB_USB_DEVICE(USB_VID_HANFTEK, 0x0131,
 
 
