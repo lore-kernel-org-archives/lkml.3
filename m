@@ -1,227 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752950AbaFLXc0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 19:32:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37043 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750814AbaFLXRZ (ORCPT
+	id S1751886AbaFLXdr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 19:33:47 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:51544 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750795AbaFLXdp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 19:17:25 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Theodore Tso <tytso@mit.edu>, Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.15 01/12] fs,userns: Change inode_capable to capable_wrt_inode_uidgid
-Date: Thu, 12 Jun 2014 16:21:03 -0700
-Message-Id: <20140612232044.978500967@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140612232044.886466924@linuxfoundation.org>
-References: <20140612232044.886466924@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Thu, 12 Jun 2014 19:33:45 -0400
+Date: Fri, 13 Jun 2014 09:33:37 +1000
+From: Gavin Shan <gwshan@linux.vnet.ibm.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: linux-pci@vger.kernel.org, bhelgaas@google.com, ben@decadent.org.uk,
+        gwshan@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pci: Fix unaligned access testing AF transaction pending
+Message-ID: <20140612233336.GA4404@shangw>
+Reply-To: Gavin Shan <gwshan@linux.vnet.ibm.com>
+References: <20140612152732.4162.23298.stgit@bling.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140612152732.4162.23298.stgit@bling.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14061223-5140-0000-0000-0000054D5C79
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.15-stable review patch.  If anyone has any objections, please let me know.
+On Thu, Jun 12, 2014 at 09:28:07AM -0600, Alex Williamson wrote:
+>pci_wait_for_pending() uses word access, so we shouldn't be passing
+>an offset that is only byte aligned.  Use the control register offset
+>instead, shifting the mask to match.
+>
+>Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+>Reported-by: Ben Hutchings <ben@decadent.org.uk>
+>Cc: stable@vger.kernel.org
 
-------------------
+Acked-by: Gavin Shan <gwshan@linux.vnet.ibm.com>
 
-From: Andy Lutomirski <luto@amacapital.net>
+>---
+> drivers/pci/pci.c |    9 +++++++--
+> 1 file changed, 7 insertions(+), 2 deletions(-)
+>
+>diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+>index 759475e..81012ec 100644
+>--- a/drivers/pci/pci.c
+>+++ b/drivers/pci/pci.c
+>@@ -3109,8 +3109,13 @@ static int pci_af_flr(struct pci_dev *dev, int probe)
+> 	if (probe)
+> 		return 0;
+>
+>-	/* Wait for Transaction Pending bit clean */
+>-	if (pci_wait_for_pending(dev, pos + PCI_AF_STATUS, PCI_AF_STATUS_TP))
+>+	/*
+>+	 * Wait for Transaction Pending bit to clear.  A word-aligned test
+>+	 * is used, so we use the conrol offset rather than status and shift
+>+	 * the test bit to match.
+>+	 */
+>+	if (pci_wait_for_pending(dev, pos + PCI_AF_CTRL,
+>+				 PCI_AF_STATUS_TP << 8))
+> 		goto clear;
+>
+> 	dev_err(&dev->dev, "transaction is not cleared; "
+>
 
-commit 23adbe12ef7d3d4195e80800ab36b37bee28cd03 upstream.
-
-The kernel has no concept of capabilities with respect to inodes; inodes
-exist independently of namespaces.  For example, inode_capable(inode,
-CAP_LINUX_IMMUTABLE) would be nonsense.
-
-This patch changes inode_capable to check for uid and gid mappings and
-renames it to capable_wrt_inode_uidgid, which should make it more
-obvious what it does.
-
-Fixes CVE-2014-4014.
-
-Cc: Theodore Ts'o <tytso@mit.edu>
-Cc: Serge Hallyn <serge.hallyn@ubuntu.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Dave Chinner <david@fromorbit.com>
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/attr.c                  |    8 ++++----
- fs/inode.c                 |   10 +++++++---
- fs/namei.c                 |   11 ++++++-----
- fs/xfs/xfs_ioctl.c         |    2 +-
- include/linux/capability.h |    2 +-
- kernel/capability.c        |   20 ++++++++------------
- 6 files changed, 27 insertions(+), 26 deletions(-)
-
---- a/fs/attr.c
-+++ b/fs/attr.c
-@@ -50,14 +50,14 @@ int inode_change_ok(const struct inode *
- 	if ((ia_valid & ATTR_UID) &&
- 	    (!uid_eq(current_fsuid(), inode->i_uid) ||
- 	     !uid_eq(attr->ia_uid, inode->i_uid)) &&
--	    !inode_capable(inode, CAP_CHOWN))
-+	    !capable_wrt_inode_uidgid(inode, CAP_CHOWN))
- 		return -EPERM;
- 
- 	/* Make sure caller can chgrp. */
- 	if ((ia_valid & ATTR_GID) &&
- 	    (!uid_eq(current_fsuid(), inode->i_uid) ||
- 	    (!in_group_p(attr->ia_gid) && !gid_eq(attr->ia_gid, inode->i_gid))) &&
--	    !inode_capable(inode, CAP_CHOWN))
-+	    !capable_wrt_inode_uidgid(inode, CAP_CHOWN))
- 		return -EPERM;
- 
- 	/* Make sure a caller can chmod. */
-@@ -67,7 +67,7 @@ int inode_change_ok(const struct inode *
- 		/* Also check the setgid bit! */
- 		if (!in_group_p((ia_valid & ATTR_GID) ? attr->ia_gid :
- 				inode->i_gid) &&
--		    !inode_capable(inode, CAP_FSETID))
-+		    !capable_wrt_inode_uidgid(inode, CAP_FSETID))
- 			attr->ia_mode &= ~S_ISGID;
- 	}
- 
-@@ -160,7 +160,7 @@ void setattr_copy(struct inode *inode, c
- 		umode_t mode = attr->ia_mode;
- 
- 		if (!in_group_p(inode->i_gid) &&
--		    !inode_capable(inode, CAP_FSETID))
-+		    !capable_wrt_inode_uidgid(inode, CAP_FSETID))
- 			mode &= ~S_ISGID;
- 		inode->i_mode = mode;
- 	}
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -1839,14 +1839,18 @@ EXPORT_SYMBOL(inode_init_owner);
-  * inode_owner_or_capable - check current task permissions to inode
-  * @inode: inode being checked
-  *
-- * Return true if current either has CAP_FOWNER to the inode, or
-- * owns the file.
-+ * Return true if current either has CAP_FOWNER in a namespace with the
-+ * inode owner uid mapped, or owns the file.
-  */
- bool inode_owner_or_capable(const struct inode *inode)
- {
-+	struct user_namespace *ns;
-+
- 	if (uid_eq(current_fsuid(), inode->i_uid))
- 		return true;
--	if (inode_capable(inode, CAP_FOWNER))
-+
-+	ns = current_user_ns();
-+	if (ns_capable(ns, CAP_FOWNER) && kuid_has_mapping(ns, inode->i_uid))
- 		return true;
- 	return false;
- }
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -332,10 +332,11 @@ int generic_permission(struct inode *ino
- 
- 	if (S_ISDIR(inode->i_mode)) {
- 		/* DACs are overridable for directories */
--		if (inode_capable(inode, CAP_DAC_OVERRIDE))
-+		if (capable_wrt_inode_uidgid(inode, CAP_DAC_OVERRIDE))
- 			return 0;
- 		if (!(mask & MAY_WRITE))
--			if (inode_capable(inode, CAP_DAC_READ_SEARCH))
-+			if (capable_wrt_inode_uidgid(inode,
-+						     CAP_DAC_READ_SEARCH))
- 				return 0;
- 		return -EACCES;
- 	}
-@@ -345,7 +346,7 @@ int generic_permission(struct inode *ino
- 	 * at least one exec bit set.
- 	 */
- 	if (!(mask & MAY_EXEC) || (inode->i_mode & S_IXUGO))
--		if (inode_capable(inode, CAP_DAC_OVERRIDE))
-+		if (capable_wrt_inode_uidgid(inode, CAP_DAC_OVERRIDE))
- 			return 0;
- 
- 	/*
-@@ -353,7 +354,7 @@ int generic_permission(struct inode *ino
- 	 */
- 	mask &= MAY_READ | MAY_WRITE | MAY_EXEC;
- 	if (mask == MAY_READ)
--		if (inode_capable(inode, CAP_DAC_READ_SEARCH))
-+		if (capable_wrt_inode_uidgid(inode, CAP_DAC_READ_SEARCH))
- 			return 0;
- 
- 	return -EACCES;
-@@ -2379,7 +2380,7 @@ static inline int check_sticky(struct in
- 		return 0;
- 	if (uid_eq(dir->i_uid, fsuid))
- 		return 0;
--	return !inode_capable(inode, CAP_FOWNER);
-+	return !capable_wrt_inode_uidgid(inode, CAP_FOWNER);
- }
- 
- /*
---- a/fs/xfs/xfs_ioctl.c
-+++ b/fs/xfs/xfs_ioctl.c
-@@ -1215,7 +1215,7 @@ xfs_ioctl_setattr(
- 		 * cleared upon successful return from chown()
- 		 */
- 		if ((ip->i_d.di_mode & (S_ISUID|S_ISGID)) &&
--		    !inode_capable(VFS_I(ip), CAP_FSETID))
-+		    !capable_wrt_inode_uidgid(VFS_I(ip), CAP_FSETID))
- 			ip->i_d.di_mode &= ~(S_ISUID|S_ISGID);
- 
- 		/*
---- a/include/linux/capability.h
-+++ b/include/linux/capability.h
-@@ -210,7 +210,7 @@ extern bool has_ns_capability_noaudit(st
- 				      struct user_namespace *ns, int cap);
- extern bool capable(int cap);
- extern bool ns_capable(struct user_namespace *ns, int cap);
--extern bool inode_capable(const struct inode *inode, int cap);
-+extern bool capable_wrt_inode_uidgid(const struct inode *inode, int cap);
- extern bool file_ns_capable(const struct file *file, struct user_namespace *ns, int cap);
- 
- /* audit system wants to get cap info from files as well */
---- a/kernel/capability.c
-+++ b/kernel/capability.c
-@@ -424,23 +424,19 @@ bool capable(int cap)
- EXPORT_SYMBOL(capable);
- 
- /**
-- * inode_capable - Check superior capability over inode
-+ * capable_wrt_inode_uidgid - Check nsown_capable and uid and gid mapped
-  * @inode: The inode in question
-  * @cap: The capability in question
-  *
-- * Return true if the current task has the given superior capability
-- * targeted at it's own user namespace and that the given inode is owned
-- * by the current user namespace or a child namespace.
-- *
-- * Currently we check to see if an inode is owned by the current
-- * user namespace by seeing if the inode's owner maps into the
-- * current user namespace.
-- *
-+ * Return true if the current task has the given capability targeted at
-+ * its own user namespace and that the given inode's uid and gid are
-+ * mapped into the current user namespace.
-  */
--bool inode_capable(const struct inode *inode, int cap)
-+bool capable_wrt_inode_uidgid(const struct inode *inode, int cap)
- {
- 	struct user_namespace *ns = current_user_ns();
- 
--	return ns_capable(ns, cap) && kuid_has_mapping(ns, inode->i_uid);
-+	return ns_capable(ns, cap) && kuid_has_mapping(ns, inode->i_uid) &&
-+		kgid_has_mapping(ns, inode->i_gid);
- }
--EXPORT_SYMBOL(inode_capable);
-+EXPORT_SYMBOL(capable_wrt_inode_uidgid);
-
+Thanks,
+Gavin
 
