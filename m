@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751522AbaFLXRh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 19:17:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37087 "EHLO
+	id S1751401AbaFLXR2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 19:17:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37047 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751119AbaFLXRe (ORCPT
+	with ESMTP id S1750981AbaFLXRZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 19:17:34 -0400
+	Thu, 12 Jun 2014 19:17:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alessandro Miceli <angelofsky1980@gmail.com>,
-        Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.15 10/12] [media] rtl28xxu: add [1b80:d3af] Sveon STV27
-Date: Thu, 12 Jun 2014 16:21:12 -0700
-Message-Id: <20140612232045.263265322@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.15 02/12] lock_parent: dont step on stale ->d_parent of all-but-freed one
+Date: Thu, 12 Jun 2014 16:21:04 -0700
+Message-Id: <20140612232045.011362521@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140612232044.886466924@linuxfoundation.org>
 References: <20140612232044.886466924@linuxfoundation.org>
@@ -30,40 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alessandro Miceli <angelofsky1980@gmail.com>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit 74a86272f05c3dae40f2d7b17ff09a0608cf3304 upstream.
+commit c2338f2dc7c1e9f6202f370c64ffd7f44f3d4b51 upstream.
 
-Added support for Sveon STV27 device (rtl2832u + FC0013 tuner)
+Dentry that had been through (or into) __dentry_kill() might be seen
+by shrink_dentry_list(); that's normal, it'll be taken off the shrink
+list and freed if __dentry_kill() has already finished.  The problem
+is, its ->d_parent might be pointing to already freed dentry, so
+lock_parent() needs to be careful.
 
-Signed-off-by: Alessandro Miceli <angelofsky1980@gmail.com>
-Signed-off-by: Antti Palosaari <crope@iki.fi>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+We need to check that dentry hasn't already gone into __dentry_kill()
+*and* grab rcu_read_lock() before dropping ->d_lock - the latter makes
+sure that whatever we see in ->d_parent after dropping ->d_lock it
+won't be freed until we drop rcu_read_lock().
+
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/dvb-core/dvb-usb-ids.h    |    1 +
- drivers/media/usb/dvb-usb-v2/rtl28xxu.c |    2 ++
- 2 files changed, 3 insertions(+)
+ fs/dcache.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/media/dvb-core/dvb-usb-ids.h
-+++ b/drivers/media/dvb-core/dvb-usb-ids.h
-@@ -376,4 +376,5 @@
- #define USB_PID_CTVDIGDUAL_V2				0xe410
- #define USB_PID_PCTV_2002E                              0x025c
- #define USB_PID_PCTV_2002E_SE                           0x025d
-+#define USB_PID_SVEON_STV27                             0xd3af
- #endif
---- a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
-+++ b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
-@@ -1541,6 +1541,8 @@ static const struct usb_device_id rtl28x
- 		&rtl2832u_props, "Peak DVB-T USB", NULL) },
- 	{ DVB_USB_DEVICE(USB_VID_KWORLD_2, USB_PID_SVEON_STV20_RTL2832U,
- 		&rtl2832u_props, "Sveon STV20", NULL) },
-+	{ DVB_USB_DEVICE(USB_VID_KWORLD_2, USB_PID_SVEON_STV27,
-+		&rtl2832u_props, "Sveon STV27", NULL) },
- 
- 	/* RTL2832P devices: */
- 	{ DVB_USB_DEVICE(USB_VID_HANFTEK, 0x0131,
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -532,10 +532,12 @@ static inline struct dentry *lock_parent
+ 	struct dentry *parent = dentry->d_parent;
+ 	if (IS_ROOT(dentry))
+ 		return NULL;
++	if (unlikely((int)dentry->d_lockref.count < 0))
++		return NULL;
+ 	if (likely(spin_trylock(&parent->d_lock)))
+ 		return parent;
+-	spin_unlock(&dentry->d_lock);
+ 	rcu_read_lock();
++	spin_unlock(&dentry->d_lock);
+ again:
+ 	parent = ACCESS_ONCE(dentry->d_parent);
+ 	spin_lock(&parent->d_lock);
 
 
