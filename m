@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756608AbaFLQ0T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 12:26:19 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:39816 "EHLO mail.skyhub.de"
+	id S1756559AbaFLQZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 12:25:57 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:39809 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756043AbaFLQZ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 12:25:58 -0400
+	id S1756043AbaFLQZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 12:25:55 -0400
 From: Borislav Petkov <bp@alien8.de>
 To: linux-edac <linux-edac@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>
-Subject: [RFC PATCH -v2 1/3] MCE, CE: Corrected errors collecting thing
-Date: Thu, 12 Jun 2014 18:22:28 +0200
-Message-Id: <1402590150-9798-2-git-send-email-bp@alien8.de>
+Subject: [RFC PATCH -v2 3/3] MCE, CE: Add debugging glue
+Date: Thu, 12 Jun 2014 18:22:30 +0200
+Message-Id: <1402590150-9798-4-git-send-email-bp@alien8.de>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1402590150-9798-1-git-send-email-bp@alien8.de>
 References: <1402590150-9798-1-git-send-email-bp@alien8.de>
@@ -21,343 +21,119 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <bp@suse.de>
 
-A simple data structure for collecting correctable errors.
+For testing purposes only.
 
 Signed-off-by: Borislav Petkov <bp@suse.de>
 ---
- drivers/ras/Kconfig  |  11 ++
- drivers/ras/Makefile |   3 +-
- drivers/ras/ce.c     | 283 +++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/ras.h  |   2 +
- 4 files changed, 298 insertions(+), 1 deletion(-)
- create mode 100644 drivers/ras/ce.c
+ arch/x86/kernel/cpu/mcheck/mce.c | 23 ++++++++++++++++++++++-
+ drivers/ras/ce.c                 | 28 +++++++++++++++++++++++++++-
+ 2 files changed, 49 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/ras/Kconfig b/drivers/ras/Kconfig
-index f9da613052c2..c6977b943506 100644
---- a/drivers/ras/Kconfig
-+++ b/drivers/ras/Kconfig
-@@ -1,2 +1,13 @@
- config RAS
- 	bool
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index f908b4cd7448..fa92c46c0220 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -2579,9 +2579,26 @@ static int fake_panic_set(void *data, u64 val)
+ DEFINE_SIMPLE_ATTRIBUTE(fake_panic_fops, fake_panic_get,
+ 			fake_panic_set, "%llu\n");
+ 
++static u64 cec_pfn;
 +
-+config RAS_CE
-+	bool "Correctable Errors Collector"
-+	default y if X86_MCE
-+	select MEMORY_FAILURE
-+	---help---
-+	  This is a small cache which collects correctable memory errors per 4K page
-+	  PFN and counts their repeated occurrance. Once the counter for a PFN overflows,
-+	  we try to soft-offline that page as we take it to mean that it has reached a
-+	  relatively high error count and would probably be best if we don't use it
-+	  anymore.
-diff --git a/drivers/ras/Makefile b/drivers/ras/Makefile
-index d7f73341ced3..7e7f3f9aa948 100644
---- a/drivers/ras/Makefile
-+++ b/drivers/ras/Makefile
-@@ -1 +1,2 @@
--obj-$(CONFIG_RAS) += ras.o debugfs.o
-+obj-$(CONFIG_RAS)	+= ras.o debugfs.o
-+obj-$(CONFIG_RAS_CE)	+= ce.o
-diff --git a/drivers/ras/ce.c b/drivers/ras/ce.c
-new file mode 100644
-index 000000000000..6b66a587c3ae
---- /dev/null
-+++ b/drivers/ras/ce.c
-@@ -0,0 +1,283 @@
-+#include <linux/mm.h>
-+#include <linux/gfp.h>
-+#include <linux/kernel.h>
-+
-+#include <asm/bug.h>
-+
-+/*
-+ * RAS Correctable Errors Collector
-+ *
-+ * This is a simple gadget which collects correctable errors and counts their
-+ * occurrence per physical page address.
-+ *
-+ * We've opted for possibly the simplest data structure to collect those - an
-+ * array of the size of a memory page. It stores 512 u64's with the following
-+ * structure:
-+ *
-+ * [63 ... PFN ... 12 | 11 ... generation ... 10 | 9 ... count ... 0]
-+ *
-+ * The generation in the two highest order bits is two bits which are set to 11b
-+ * on every insertion. During the course of this entry's existence, it
-+ * gets decremented during spring cleaning to 10b, then 01b and then 00b.
-+ *
-+ * This way we're employing the numeric ordering to make sure that newly
-+ * inserted/touched elements have higher 12-bit counts (which we've
-+ * manufactured) and thus iterating over the array initially won't kick out
-+ * those last inserted elements.
-+ *
-+ * Spring cleaning is what we do when we reach a certain number CLEAN_ELEMS of
-+ * elements entered into the page; during which, we're decaying all elements.
-+ * If, after decay, an element gets inserted again, its generation is set to 11b
-+ * to make sure it has higher numerical count than other, older elements and
-+ * thus emulate an an LRU-like behavior when deleting elements to free up space
-+ * in the page.
-+ *
-+ * When an element reaches it's max count of COUNT_MASK, we try to poison it by
-+ * assuming that errors triggered COUNT_MASK times in a single page are
-+ * excessive and that page shouldn't be used anymore.
-+ *
-+ * To the question why we've chosen a page and moving elements around with
-+ * memmove, it is because it is a very simple structure to handle and max data
-+ * movement is 4K which on highly optimized modern CPUs is almost unnoticeable.
-+ * We wanted to avoid the pointer traversal of more complex structures like a
-+ * linked list or some sort of a balancing search tree.
-+ *
-+ * Deleting an element takes O(n) but since it is only a single page, it should
-+ * be fast enough and it shouldn't happen all too often depending on error
-+ * patterns.
-+ */
-+
-+#undef pr_fmt
-+#define pr_fmt(fmt) "RAS: " fmt
-+
-+/*
-+ * We use DECAY_BITS bits of PAGE_SHIFT bits for counting decay, i.e., how long
-+ * elements have stayed in the array without accessed again.
-+ */
-+#define DECAY_BITS		2
-+#define DECAY_MASK		((1ULL << DECAY_BITS) - 1)
-+#define MAX_ELEMS		(PAGE_SIZE / sizeof(u64))
-+
-+/*
-+ * Threshold amount of inserted elements after which we start spring
-+ * cleaning.
-+ */
-+#define CLEAN_ELEMS		(MAX_ELEMS >> DECAY_BITS)
-+
-+/* Bits which count the number of errors happened in this 4K page. */
-+#define COUNT_BITS		(PAGE_SHIFT - DECAY_BITS)
-+#define COUNT_MASK		((1ULL << COUNT_BITS) - 1)
-+#define FULL_COUNT_MASK		(PAGE_SIZE - 1)
-+
-+/*
-+ * u64: [ 63 ... 12 | DECAY_BITS | COUNT_BITS ]
-+ */
-+
-+#define PFN(e)			((e) >> PAGE_SHIFT)
-+#define DECAY(e)		(((e) >> COUNT_BITS) & DECAY_MASK)
-+#define COUNT(e)		((unsigned int)(e) & COUNT_MASK)
-+#define FULL_COUNT(e)		((e) & (PAGE_SIZE - 1))
-+
-+static struct ce_array {
-+	u64 *array;		/* container page */
-+	unsigned n;		/* number of elements in the array */
-+
-+	unsigned decay_count;	/*
-+				 * number of elements inserted since the last
-+				 * spring cleaning.
-+				 */
-+} ce_arr;
-+/* ^^^^^
-+ * |
-+ * | This variable is passed in internally from the API functions.
-+ */
-+
-+static DEFINE_MUTEX(ce_mutex);
-+
-+/*
-+ * Decrement decay value. We're using DECAY_BITS bits to denote decay of an
-+ * element in the array. On insertion and any access, it gets maxed
-+ */
-+static void do_spring_cleaning(struct ce_array *ca)
++static int cec_pfn_get(void *data, u64 *val)
 +{
++	*val = cec_pfn;
++	return 0;
++}
++
++static int cec_pfn_set(void *data, u64 val)
++{
++	cec_pfn = val;
++
++	return ce_add_elem(val);
++}
++
++DEFINE_SIMPLE_ATTRIBUTE(cec_pfn_ops, cec_pfn_get, cec_pfn_set, "0x%llx\n");
++
+ static int __init mcheck_debugfs_init(void)
+ {
+-	struct dentry *dmce, *ffake_panic;
++	struct dentry *dmce, *ffake_panic, *cec_pfn;
+ 
+ 	dmce = mce_get_debugfs_dir();
+ 	if (!dmce)
+@@ -2591,6 +2608,10 @@ static int __init mcheck_debugfs_init(void)
+ 	if (!ffake_panic)
+ 		return -ENOMEM;
+ 
++	cec_pfn = debugfs_create_file("cec_pfn", 0400, dmce, NULL, &cec_pfn_ops);
++	if (!cec_pfn)
++		return -ENOMEM;
++
+ 	return 0;
+ }
+ #else
+diff --git a/drivers/ras/ce.c b/drivers/ras/ce.c
+index 6b66a587c3ae..4603c0003391 100644
+--- a/drivers/ras/ce.c
++++ b/drivers/ras/ce.c
+@@ -94,6 +94,25 @@ static struct ce_array {
+ 
+ static DEFINE_MUTEX(ce_mutex);
+ 
++static void dump_array(struct ce_array *ca)
++{
++	u64 prev = 0;
 +	int i;
 +
++	pr_info("{ n: %d\n", ca->n);
 +	for (i = 0; i < ca->n; i++) {
-+		u8 decay = DECAY(ca->array[i]);
++		u64 this = PFN(ca->array[i]);
 +
-+		if (!decay)
-+			continue;
++		pr_info(" %03d: [%016llu|%03llx]\n", i, this, FULL_COUNT(ca->array[i]));
 +
-+		decay--;
++		WARN_ON(prev > this);
 +
-+		ca->array[i] &= ~(DECAY_MASK << COUNT_BITS);
-+		ca->array[i] |= (decay << COUNT_BITS);
-+	}
-+	ca->decay_count = 0;
-+}
-+
-+/*
-+ * @to: index of the smallest element which is >= then @pfn.
-+ *
-+ * Return the index of the pfn if found, otherwise negative value.
-+ */
-+static int __find_elem(struct ce_array *ca, u64 pfn, unsigned *to)
-+{
-+	u64 this_pfn;
-+	int min = 0, max = ca->n;
-+
-+	while (min < max) {
-+		int tmp = (max + min) >> 1;
-+
-+		this_pfn = PFN(ca->array[tmp]);
-+
-+		if (this_pfn < pfn)
-+			min = tmp + 1;
-+		else if (this_pfn > pfn)
-+			max = tmp;
-+		else {
-+			min = tmp;
-+			break;
-+		}
++		prev = this;
 +	}
 +
-+	if (to)
-+		*to = min;
-+
-+	this_pfn = PFN(ca->array[min]);
-+
-+	if (this_pfn == pfn)
-+		return min;
-+
-+	return -ENOKEY;
++	pr_info("}\n");
 +}
 +
-+static int find_elem(struct ce_array *ca, u64 pfn, unsigned *to)
-+{
-+	WARN_ON(!to);
-+
-+	if (!ca->n) {
-+		*to = 0;
-+		return -ENOKEY;
-+	}
-+	return __find_elem(ca, pfn, to);
-+}
-+
-+static void __del_elem(struct ce_array *ca, int idx)
-+{
-+	/*
-+	 * Save us a function call when deleting the last element.
-+	 */
-+	if (ca->n - (idx + 1))
-+		memmove((void *)&ca->array[idx],
-+			(void *)&ca->array[idx + 1],
-+			(ca->n - (idx + 1)) * sizeof(u64));
-+
-+	ca->n--;
-+}
-+
-+static u64 del_lru_elem_unlocked(struct ce_array *ca)
-+{
-+	unsigned int min = FULL_COUNT_MASK;
-+	int i, min_idx = 0;
-+
-+	for (i = 0; i < ca->n; i++) {
-+		unsigned int this = FULL_COUNT(ca->array[i]);
-+		if (min > this) {
-+			min = this;
-+			min_idx = i;
-+		}
-+	}
-+
-+	__del_elem(ca, min_idx);
-+
-+	return PFN(ca->array[min_idx]);
-+}
-+
-+/*
-+ * We return the 0th pfn in the error case under the assumption that it cannot
-+ * be poisoned and excessive CEs in there are a serious deal anyway.
-+ */
-+static u64 __maybe_unused del_lru_elem(void)
-+{
-+	struct ce_array *ca = &ce_arr;
+ /*
+  * Decrement decay value. We're using DECAY_BITS bits to denote decay of an
+  * element in the array. On insertion and any access, it gets maxed
+@@ -180,6 +199,7 @@ static u64 del_lru_elem_unlocked(struct ce_array *ca)
+ {
+ 	unsigned int min = FULL_COUNT_MASK;
+ 	int i, min_idx = 0;
 +	u64 pfn;
-+
-+	if (!ca->n)
-+		return 0;
-+
-+	mutex_lock(&ce_mutex);
-+	pfn = del_lru_elem_unlocked(ca);
-+	mutex_unlock(&ce_mutex);
-+
-+	return pfn;
-+}
-+
-+int ce_add_elem(u64 pfn)
-+{
-+	struct ce_array *ca = &ce_arr;
-+	unsigned to;
-+	int count, ret = 0;
-+
-+	mutex_lock(&ce_mutex);
-+
-+	if (ca->n == MAX_ELEMS)
-+		WARN_ON(!del_lru_elem_unlocked(ca));
-+
-+	ret = find_elem(ca, pfn, &to);
-+	if (ret < 0) {
-+		/*
-+		 * Shift range [to-end] to make room for one more element.
-+		 */
-+		memmove((void *)&ca->array[to + 1],
-+			(void *)&ca->array[to],
-+			(ca->n - to) * sizeof(u64));
-+
-+		ca->array[to] = (pfn << PAGE_SHIFT) |
-+				(DECAY_MASK << COUNT_BITS) | 1;
-+
-+		ca->decay_count++;
-+		ca->n++;
-+
-+		if (ca->decay_count >= CLEAN_ELEMS)
-+			do_spring_cleaning(ca);
-+
-+		ret = 0;
-+
-+		goto unlock;
-+	}
-+
-+	count = COUNT(ca->array[to]);
-+
-+	if (count < COUNT_MASK) {
-+		ca->array[to] |= (DECAY_MASK << COUNT_BITS);
-+		ca->array[to]++;
-+	} else {
-+		u64 pfn = ca->array[to] >> PAGE_SHIFT;
-+
-+		/*
-+		 * We have reached max count for this page, soft-offline it.
-+		 */
-+		pr_err("Soft-offlining pfn: 0x%llx\n", pfn);
-+		memory_failure_queue(pfn, 0, MF_SOFT_OFFLINE);
-+		__del_elem(ca, to);
-+
-+		ret = 0;
-+	}
-+
-+unlock:
-+	mutex_unlock(&ce_mutex);
-+
-+	return ret;
-+}
-+
-+void __init ce_init(void)
-+{
-+	ce_arr.array = (void *)get_zeroed_page(GFP_KERNEL);
-+	if (!ce_arr.array) {
-+		pr_err("Error allocating CE array page!\n");
-+		return;
-+	}
-+
-+	pr_info("Correctable Errors collector initialized.\n");
-+}
-diff --git a/include/linux/ras.h b/include/linux/ras.h
-index 2aceeafd6fe5..24e82fb0fe99 100644
---- a/include/linux/ras.h
-+++ b/include/linux/ras.h
-@@ -11,4 +11,6 @@ static inline void ras_debugfs_init(void) { return; }
- static inline int ras_add_daemon_trace(void) { return 0; }
- #endif
  
-+void __init ce_init(void);
-+int ce_add_elem(u64 pfn);
- #endif
+ 	for (i = 0; i < ca->n; i++) {
+ 		unsigned int this = FULL_COUNT(ca->array[i]);
+@@ -189,9 +209,14 @@ static u64 del_lru_elem_unlocked(struct ce_array *ca)
+ 		}
+ 	}
+ 
++	pfn = PFN(ca->array[min_idx]);
++
++	pr_err("%s: Deleting ca[%d]: %016llu|%03x\n",
++		__func__, min_idx, pfn, min);
++
+ 	__del_elem(ca, min_idx);
+ 
+-	return PFN(ca->array[min_idx]);
++	return pfn;
+ }
+ 
+ /*
+@@ -266,6 +291,7 @@ int ce_add_elem(u64 pfn)
+ 	}
+ 
+ unlock:
++	dump_array(ca);
+ 	mutex_unlock(&ce_mutex);
+ 
+ 	return ret;
 -- 
 2.0.0
 
