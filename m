@@ -1,87 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932489AbaFLGyq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 02:54:46 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:63151 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755666AbaFLGyp (ORCPT
+	id S1755769AbaFLGzy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 02:55:54 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:44464 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755738AbaFLGzw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 02:54:45 -0400
-X-Original-SENDERIP: 10.177.220.145
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Thu, 12 Jun 2014 15:58:42 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: akpm@linux-foundation.org, cl@linux.com, rientjes@google.com,
-        penberg@kernel.org, hannes@cmpxchg.org, mhocko@suse.cz,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH -mm v2 5/8] slub: make slab_free non-preemptable
-Message-ID: <20140612065842.GE19918@js1304-P5Q-DELUXE>
-References: <cover.1402060096.git.vdavydov@parallels.com>
- <7cd6784a36ed997cc6631615d98e11e02e811b1b.1402060096.git.vdavydov@parallels.com>
+	Thu, 12 Jun 2014 02:55:52 -0400
+Date: Wed, 11 Jun 2014 23:55:49 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Lan Tianyu <tianyu.lan@intel.com>
+cc: rjw@rjwysocki.net, lenb@kernel.org, naszar@ya.ru,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] ACPI/Battery: Retry to get Battery information if failed
+ during probing
+In-Reply-To: <1402552946-14704-1-git-send-email-tianyu.lan@intel.com>
+Message-ID: <alpine.DEB.2.02.1406112354070.23724@chino.kir.corp.google.com>
+References: <1402552946-14704-1-git-send-email-tianyu.lan@intel.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <7cd6784a36ed997cc6631615d98e11e02e811b1b.1402060096.git.vdavydov@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 06, 2014 at 05:22:42PM +0400, Vladimir Davydov wrote:
-> Since per memcg cache destruction is scheduled when the last slab is
-> freed, to avoid use-after-free in kmem_cache_free we should either
-> rearrange code in kmem_cache_free so that it won't dereference the cache
-> ptr after freeing the object, or wait for all kmem_cache_free's to
-> complete before proceeding to cache destruction.
+On Thu, 12 Jun 2014, Lan Tianyu wrote:
+
+> Some machines'(E,G Lenovo Z480) ECs are not stable during boot up
+> and causes battery driver fails to be probed due to failure of getting
+> battery information from EC sometimes. After several retries, the
+> operation will work. This patch is to retry to get battery information 5
+> times if the first try fails.
 > 
-> The former approach isn't a good option from the future development
-> point of view, because every modifications to kmem_cache_free must be
-> done with great care then. Hence we should provide a method to wait for
-> all currently executing kmem_cache_free's to finish.
-> 
-> This patch makes SLUB's implementation of kmem_cache_free
-> non-preemptable. As a result, synchronize_sched() will work as a barrier
-> against kmem_cache_free's in flight, so that issuing it before cache
-> destruction will protect us against the use-after-free.
-> 
-> This won't affect performance of kmem_cache_free, because we already
-> disable preemption there, and this patch only moves preempt_enable to
-> the end of the function. Neither should it affect the system latency,
-> because kmem_cache_free is extremely short, even in its slow path.
-> 
-> SLAB's version of kmem_cache_free already proceeds with irqs disabled,
-> so nothing to be done there.
-> 
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+> Reported-and-tested-by: naszar <naszar@ya.ru>
+> Reference: https://bugzilla.kernel.org/show_bug.cgi?id=75581
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
 > ---
->  mm/slub.c |   10 ++--------
->  1 file changed, 2 insertions(+), 8 deletions(-)
+>  drivers/acpi/battery.c | 12 +++++++++++-
+>  1 file changed, 11 insertions(+), 1 deletion(-)
 > 
-> diff --git a/mm/slub.c b/mm/slub.c
-> index 35741592be8c..e46d6abe8a68 100644
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -2673,18 +2673,11 @@ static __always_inline void slab_free(struct kmem_cache *s,
+> diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
+> index e48fc98..485009d 100644
+> --- a/drivers/acpi/battery.c
+> +++ b/drivers/acpi/battery.c
+> @@ -34,6 +34,7 @@
+>  #include <linux/dmi.h>
+>  #include <linux/slab.h>
+>  #include <linux/suspend.h>
+> +#include <linux/delay.h>
+>  #include <asm/unaligned.h>
 >  
->  	slab_free_hook(s, x);
+>  #ifdef CONFIG_ACPI_PROCFS_POWER
+> @@ -1119,7 +1120,7 @@ static struct dmi_system_id bat_dmi_table[] = {
 >  
-> -redo:
-> -	/*
-> -	 * Determine the currently cpus per cpu slab.
-> -	 * The cpu may change afterward. However that does not matter since
-> -	 * data is retrieved via this pointer. If we are on the same cpu
-> -	 * during the cmpxchg then the free will succedd.
-> -	 */
->  	preempt_disable();
+>  static int acpi_battery_add(struct acpi_device *device)
+>  {
+> -	int result = 0;
+> +	int result = 0, retry = 5;
+>  	struct acpi_battery *battery = NULL;
+>  
+>  	if (!device)
+> @@ -1135,7 +1136,16 @@ static int acpi_battery_add(struct acpi_device *device)
+>  	mutex_init(&battery->sysfs_lock);
+>  	if (acpi_has_method(battery->device->handle, "_BIX"))
+>  		set_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags);
+> +
+> +retry_get_info:
+>  	result = acpi_battery_update(battery, false);
+> +
+> +	if (result && retry) {
+> +		msleep(20);
 
-Hello,
+We're really going to wait up to 20 * 5 = 100ms for acpi_battery_update() 
+to succeed?  How are these the numbers that are determined to be optimal 
+for probing?
 
-Could you add some code comment why this preempt_disable/enable() is
-needed? We don't have any clue that kmemcg depends on these things
-on code, so someone cannot understand why it is here.
+> +		retry--;
+> +		goto retry_get_info;
+> +	}
 
-If possible, please add similar code comment on slab_alloc in mm/slab.c.
+This most certainly could be rewritten as a for-loop and remove the ugly 
+goto.
 
-Thanks.
-
+> +
+>  	if (result)
+>  		goto fail;
+>  #ifdef CONFIG_ACPI_PROCFS_POWER
