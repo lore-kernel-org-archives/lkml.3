@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753667AbaFLVBX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 17:01:23 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:38067 "EHLO smtp.outflux.net"
+	id S1753742AbaFLVB0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 17:01:26 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:56874 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752935AbaFLVBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 17:01:20 -0400
+	id S1753623AbaFLVBX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 17:01:23 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
 Cc: Kees Cook <keescook@chromium.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
@@ -15,9 +15,9 @@ Cc: Kees Cook <keescook@chromium.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Pavel Machek <pavel@ucw.cz>,
         Wei Yongjun <yongjun_wei@trendmicro.com.cn>, linux-doc@vger.kernel.org,
         linux-pm@vger.kernel.org
-Subject: [PATCH v2 1/2] hibernate: create "nohibernate" boot parameter
-Date: Thu, 12 Jun 2014 14:00:32 -0700
-Message-Id: <1402606833-9825-2-git-send-email-keescook@chromium.org>
+Subject: [PATCH v2 2/2] x86, kaslr: boot-time selectable with hibernation
+Date: Thu, 12 Jun 2014 14:00:33 -0700
+Message-Id: <1402606833-9825-3-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1402606833-9825-1-git-send-email-keescook@chromium.org>
 References: <1402606833-9825-1-git-send-email-keescook@chromium.org>
@@ -26,189 +26,103 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To support using kernel features that are not compatible with hibernation,
-this creates the "nohibernate" kernel boot parameter to disable both
-hibernation and resume. This allows hibernation support to be a boot-time
-choice instead of only a compile-time choice.
+Changes kASLR from being compile-time selectable (blocked by
+CONFIG_HIBERNATION), to being boot-time selectable (with hibernation
+available by default) via the "kaslr" kernel command line.
 
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- Documentation/kernel-parameters.txt |    3 +++
- include/linux/suspend.h             |    2 ++
- kernel/power/hibernate.c            |   31 ++++++++++++++++++++++++++++++-
- kernel/power/main.c                 |    6 ++----
- kernel/power/user.c                 |    3 +++
- 5 files changed, 40 insertions(+), 5 deletions(-)
+ Documentation/kernel-parameters.txt |   11 +++++++----
+ arch/x86/Kconfig                    |    1 -
+ arch/x86/boot/compressed/aslr.c     |    9 ++++++++-
+ kernel/power/hibernate.c            |    6 ++++++
+ 4 files changed, 21 insertions(+), 6 deletions(-)
 
 diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 6eaa9cdb7094..f8f0466b8b1d 100644
+index f8f0466b8b1d..884904975d0b 100644
 --- a/Documentation/kernel-parameters.txt
 +++ b/Documentation/kernel-parameters.txt
-@@ -2184,6 +2184,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			in certain environments such as networked servers or
- 			real-time systems.
+@@ -1474,6 +1474,13 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 	js=		[HW,JOY] Analog joystick
+ 			See Documentation/input/joystick.txt.
  
-+	nohibernate	[HIBERNATION] Disable hibernation and resume.
++	kaslr/nokaslr	[X86]
++			Enable/disable kernel and module base offset ASLR
++			(Address Space Layout Randomization) if built into
++			the kernel. When CONFIG_HIBERNATION is selected,
++			kASLR is disabled by default. When kASLR is enabled,
++			hibernation will be disabled.
 +
- 	nohz=		[KNL] Boottime enable/disable dynamic ticks
- 			Valid arguments: on, off
- 			Default: on
-@@ -2980,6 +2982,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 		noresume	Don't check if there's a hibernation image
- 				present during boot.
- 		nocompress	Don't compress/decompress hibernation images.
-+		no		Disable hibernation and resume.
+ 	keepinitrd	[HW,ARM]
  
- 	retain_initrd	[RAM] Keep initrd memory after extraction
+ 	kernelcore=nn[KMG]	[KNL,X86,IA-64,PPC] This parameter
+@@ -2110,10 +2117,6 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 	noapic		[SMP,APIC] Tells the kernel to not make use of any
+ 			IOAPICs that may be present in the system.
  
-diff --git a/include/linux/suspend.h b/include/linux/suspend.h
-index f76994b9396c..519064e0c943 100644
---- a/include/linux/suspend.h
-+++ b/include/linux/suspend.h
-@@ -327,6 +327,7 @@ extern unsigned long get_safe_page(gfp_t gfp_mask);
- extern void hibernation_set_ops(const struct platform_hibernation_ops *ops);
- extern int hibernate(void);
- extern bool system_entering_hibernation(void);
-+extern bool hibernation_available(void);
- asmlinkage int swsusp_save(void);
- extern struct pbe *restore_pblist;
- #else /* CONFIG_HIBERNATION */
-@@ -339,6 +340,7 @@ static inline void swsusp_unset_page_free(struct page *p) {}
- static inline void hibernation_set_ops(const struct platform_hibernation_ops *ops) {}
- static inline int hibernate(void) { return -ENOSYS; }
- static inline bool system_entering_hibernation(void) { return false; }
-+static inline bool hibernation_available(void) { return false; }
- #endif /* CONFIG_HIBERNATION */
+-	nokaslr		[X86]
+-			Disable kernel and module base offset ASLR (Address
+-			Space Layout Randomization) if built into the kernel.
+-
+ 	noautogroup	Disable scheduler automatic task group creation.
  
- /* Hibernation and suspend events */
+ 	nobats		[PPC] Do not use BATs for mapping kernel lowmem
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index b660088c220d..7fdb639f1b63 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1671,7 +1671,6 @@ config RELOCATABLE
+ config RANDOMIZE_BASE
+ 	bool "Randomize the address of the kernel image"
+ 	depends on RELOCATABLE
+-	depends on !HIBERNATION
+ 	default n
+ 	---help---
+ 	   Randomizes the physical and virtual address at which the
+diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
+index 4dbf967da50d..fc6091abedb7 100644
+--- a/arch/x86/boot/compressed/aslr.c
++++ b/arch/x86/boot/compressed/aslr.c
+@@ -289,10 +289,17 @@ unsigned char *choose_kernel_location(unsigned char *input,
+ 	unsigned long choice = (unsigned long)output;
+ 	unsigned long random;
+ 
++#ifdef CONFIG_HIBERNATION
++	if (!cmdline_find_option_bool("kaslr")) {
++		debug_putstr("KASLR disabled by default...\n");
++		goto out;
++	}
++#else
+ 	if (cmdline_find_option_bool("nokaslr")) {
+-		debug_putstr("KASLR disabled...\n");
++		debug_putstr("KASLR disabled by cmdline...\n");
+ 		goto out;
+ 	}
++#endif
+ 
+ 	/* Record the various known unsafe memory ranges. */
+ 	mem_avoid_init((unsigned long)input, input_size,
 diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-index df88d55dc436..fd3e785dbc37 100644
+index fd3e785dbc37..c1e0daa032b3 100644
 --- a/kernel/power/hibernate.c
 +++ b/kernel/power/hibernate.c
-@@ -34,6 +34,7 @@
- 
- static int nocompress;
- static int noresume;
-+static int nohibernate;
- static int resume_wait;
- static unsigned int resume_delay;
- static char resume_file[256] = CONFIG_PM_STD_PARTITION;
-@@ -61,6 +62,11 @@ bool freezer_test_done;
- 
- static const struct platform_hibernation_ops *hibernation_ops;
- 
-+bool hibernation_available(void)
-+{
-+	return (nohibernate == 0);
-+}
-+
- /**
-  * hibernation_set_ops - Set the global hibernate operations.
-  * @ops: Hibernation operations to use in subsequent hibernation transitions.
-@@ -639,6 +645,11 @@ int hibernate(void)
- {
- 	int error;
- 
-+	if (!hibernation_available()) {
-+		pr_debug("PM: Hibernation not available.\n");
-+		return -EINVAL;
-+	}
-+
- 	lock_system_sleep();
- 	/* The snapshot device should not be opened while we're running */
- 	if (!atomic_add_unless(&snapshot_device_available, -1, 0)) {
-@@ -731,7 +742,7 @@ static int software_resume(void)
- 	/*
- 	 * If the user said "noresume".. bail out early.
- 	 */
--	if (noresume)
-+	if (noresume || !hibernation_available())
- 		return 0;
- 
- 	/*
-@@ -897,6 +908,9 @@ static ssize_t disk_show(struct kobject *kobj, struct kobj_attribute *attr,
- 	int i;
- 	char *start = buf;
- 
-+	if (!hibernation_available())
-+		return sprintf(buf, "[disabled]\n");
-+
- 	for (i = HIBERNATION_FIRST; i <= HIBERNATION_MAX; i++) {
- 		if (!hibernation_modes[i])
- 			continue;
-@@ -931,6 +945,9 @@ static ssize_t disk_store(struct kobject *kobj, struct kobj_attribute *attr,
- 	char *p;
- 	int mode = HIBERNATION_INVALID;
- 
-+	if (!hibernation_available())
-+		return -EINVAL;
-+
- 	p = memchr(buf, '\n', n);
- 	len = p ? p - buf : n;
- 
-@@ -1098,6 +1115,10 @@ static int __init hibernate_setup(char *str)
- 		noresume = 1;
- 	else if (!strncmp(str, "nocompress", 10))
- 		nocompress = 1;
-+	else if (!strncmp(str, "no", 2)) {
-+		noresume = 1;
-+		nohibernate = 1;
-+	}
+@@ -1150,6 +1150,11 @@ static int __init nohibernate_setup(char *str)
  	return 1;
  }
  
-@@ -1122,9 +1143,17 @@ static int __init resumedelay_setup(char *str)
- 	return 1;
- }
- 
-+static int __init nohibernate_setup(char *str)
++static int __init kaslr_nohibernate_setup(char *str)
 +{
-+	noresume = 1;
-+	nohibernate = 1;
-+	return 1;
++	return nohibernate_setup(str);
 +}
 +
  __setup("noresume", noresume_setup);
  __setup("resume_offset=", resume_offset_setup);
  __setup("resume=", resume_setup);
- __setup("hibernate=", hibernate_setup);
+@@ -1157,3 +1162,4 @@ __setup("hibernate=", hibernate_setup);
  __setup("resumewait", resumewait_setup);
  __setup("resumedelay=", resumedelay_setup);
-+__setup("nohibernate", nohibernate_setup);
-diff --git a/kernel/power/main.c b/kernel/power/main.c
-index 573410d6647e..8e90f330f139 100644
---- a/kernel/power/main.c
-+++ b/kernel/power/main.c
-@@ -300,13 +300,11 @@ static ssize_t state_show(struct kobject *kobj, struct kobj_attribute *attr,
- 			s += sprintf(s,"%s ", pm_states[i].label);
- 
- #endif
--#ifdef CONFIG_HIBERNATION
--	s += sprintf(s, "%s\n", "disk");
--#else
-+	if (hibernation_available())
-+		s += sprintf(s, "disk ");
- 	if (s != buf)
- 		/* convert the last space to a newline */
- 		*(s-1) = '\n';
--#endif
- 	return (s - buf);
- }
- 
-diff --git a/kernel/power/user.c b/kernel/power/user.c
-index 98d357584cd6..000b94419182 100644
---- a/kernel/power/user.c
-+++ b/kernel/power/user.c
-@@ -49,6 +49,9 @@ static int snapshot_open(struct inode *inode, struct file *filp)
- 	struct snapshot_data *data;
- 	int error;
- 
-+	if (!hibernation_available())
-+		return -EINVAL;
-+
- 	lock_system_sleep();
- 
- 	if (!atomic_add_unless(&snapshot_device_available, -1, 0)) {
+ __setup("nohibernate", nohibernate_setup);
++__setup("kaslr", kaslr_nohibernate_setup);
 -- 
 1.7.9.5
 
