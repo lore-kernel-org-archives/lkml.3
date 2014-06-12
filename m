@@ -1,29 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964921AbaFLMFM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 08:05:12 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60687 "EHLO
+	id S933613AbaFLMG1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 08:06:27 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60496 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964870AbaFLMFE (ORCPT
+	with ESMTP id S934027AbaFLMBP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 08:05:04 -0400
-Date: Thu, 12 Jun 2014 05:04:46 -0700
-From: tip-bot for Masami Hiramatsu <tipbot@zytor.com>
-Message-ID: <tip-5ee05b8801892ecc5df44e03429008dfa89aa361@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, jolsa@kernel.org,
-        a.p.zijlstra@chello.nl, namhyung@kernel.org,
-        masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, jolsa@kernel.org,
-        a.p.zijlstra@chello.nl, namhyung@kernel.org,
-        masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de
-In-Reply-To: <20140606071406.6788.47850.stgit@kbuild-fedora.novalocal>
-References: <20140606071406.6788.47850.stgit@kbuild-fedora.novalocal>
+	Thu, 12 Jun 2014 08:01:15 -0400
+Date: Thu, 12 Jun 2014 05:00:58 -0700
+From: "tip-bot for Steven Rostedt (Red Hat)" <tipbot@zytor.com>
+Message-ID: <tip-49440828ad7b809e9d31f6108875e3b1e974690c@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        jolsa@kernel.org, rostedt@goodmis.org, tglx@linutronix.de,
+        namhyung@kernel.org
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        jolsa@kernel.org, rostedt@goodmis.org, tglx@linutronix.de,
+        namhyung@kernel.org
+In-Reply-To: <20140603032224.056940410@goodmis.org>
+References: <20140603032224.056940410@goodmis.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf probe:
-  Improve error messages in --line option
-Git-Commit-ID: 5ee05b8801892ecc5df44e03429008dfa89aa361
+Subject: [tip:perf/core] tools lib traceevent:
+  Add options to function plugin
+Git-Commit-ID: 49440828ad7b809e9d31f6108875e3b1e974690c
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,74 +34,140 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5ee05b8801892ecc5df44e03429008dfa89aa361
-Gitweb:     http://git.kernel.org/tip/5ee05b8801892ecc5df44e03429008dfa89aa361
-Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-AuthorDate: Fri, 6 Jun 2014 07:14:06 +0000
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 10 Jun 2014 10:02:06 -0300
+Commit-ID:  49440828ad7b809e9d31f6108875e3b1e974690c
+Gitweb:     http://git.kernel.org/tip/49440828ad7b809e9d31f6108875e3b1e974690c
+Author:     Steven Rostedt (Red Hat) <rostedt@goodmis.org>
+AuthorDate: Mon, 2 Jun 2014 23:20:15 -0400
+Committer:  Jiri Olsa <jolsa@kernel.org>
+CommitDate: Sat, 7 Jun 2014 23:33:37 +0200
 
-perf probe: Improve error messages in --line option
+tools lib traceevent: Add options to function plugin
 
-Improve error messages of 'perf probe --line' mode.
+Add the options "parent" and "indent" to the function plugin.
 
-Currently 'perf probe' shows the "Debuginfo analysis failed" message with
-an error code when the given symbol is not found:
+When parent is set, the output looks like this:
 
-  -----
-  # perf probe -L page_cgroup_init_flatmem
-  Debuginfo analysis failed. (-2)
-    Error: Failed to show lines.
-  -----
+function:             fsnotify_modify <-- vfs_write
+function:             zone_statistics <-- get_page_from_freelist
+function:                __inc_zone_state <-- zone_statistics
+function:                inotify_inode_queue_event <-- fsnotify_modify
+function:                fsnotify_parent <-- fsnotify_modify
+function:                __inc_zone_state <-- zone_statistics
+function:                   __fsnotify_parent <-- fsnotify_parent
+function:                   inotify_dentry_parent_queue_event <-- fsnotify_parent
+function:             add_to_page_cache_lru <-- do_read_cache_page
 
-But -2 (-ENOENT) means that the given source line or function was not
-found. With this patch, 'perf probe' shows the correct error message:
+When it's not set, it looks like:
 
-  -----
-  # perf probe -L page_cgroup_init_flatmem
-  Specified source line is not found.
-    Error: Failed to show lines.
-  -----
+function:             fsnotify_modify
+function:             zone_statistics
+function:                __inc_zone_state
+function:                inotify_inode_queue_event
+function:                fsnotify_parent
+function:                __inc_zone_state
+function:                   __fsnotify_parent
+function:                   inotify_dentry_parent_queue_event
+function:             add_to_page_cache_lru
 
-There is also another debug error code is shown in the same function
-after get_real_path(). This removes that too.
+When the otpion "indent" is not set, it looks like this:
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20140606071406.6788.47850.stgit@kbuild-fedora.novalocal
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+function:             fsnotify_modify <-- vfs_write
+function:             zone_statistics <-- get_page_from_freelist
+function:             __inc_zone_state <-- zone_statistics
+function:             inotify_inode_queue_event <-- fsnotify_modify
+function:             fsnotify_parent <-- fsnotify_modify
+function:             __inc_zone_state <-- zone_statistics
+function:             __fsnotify_parent <-- fsnotify_parent
+function:             inotify_dentry_parent_queue_event <-- fsnotify_parent
+function:             add_to_page_cache_lru <-- do_read_cache_page
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Link: http://lkml.kernel.org/r/20140603032224.056940410@goodmis.org
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/util/probe-event.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ tools/lib/traceevent/plugin_function.c | 43 +++++++++++++++++++++++++++++-----
+ 1 file changed, 37 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 44c7141..9a0a183 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -628,11 +628,11 @@ static int __show_line_range(struct line_range *lr, const char *module)
+diff --git a/tools/lib/traceevent/plugin_function.c b/tools/lib/traceevent/plugin_function.c
+index 80ba4ff..a00ec19 100644
+--- a/tools/lib/traceevent/plugin_function.c
++++ b/tools/lib/traceevent/plugin_function.c
+@@ -33,6 +33,29 @@ static int cpus = -1;
  
- 	ret = debuginfo__find_line_range(dinfo, lr);
- 	debuginfo__delete(dinfo);
--	if (ret == 0) {
-+	if (ret == 0 || ret == -ENOENT) {
- 		pr_warning("Specified source line is not found.\n");
- 		return -ENOENT;
- 	} else if (ret < 0) {
--		pr_warning("Debuginfo analysis failed. (%d)\n", ret);
-+		pr_warning("Debuginfo analysis failed.\n");
- 		return ret;
+ #define STK_BLK 10
+ 
++struct pevent_plugin_option plugin_options[] =
++{
++	{
++		.name = "parent",
++		.plugin_alias = "ftrace",
++		.description =
++		"Print parent of functions for function events",
++	},
++	{
++		.name = "indent",
++		.plugin_alias = "ftrace",
++		.description =
++		"Try to show function call indents, based on parents",
++		.set = 1,
++	},
++	{
++		.name = NULL,
++	}
++};
++
++static struct pevent_plugin_option *ftrace_parent = &plugin_options[0];
++static struct pevent_plugin_option *ftrace_indent = &plugin_options[1];
++
+ static void add_child(struct func_stack *stack, const char *child, int pos)
+ {
+ 	int i;
+@@ -119,7 +142,8 @@ static int function_handler(struct trace_seq *s, struct pevent_record *record,
+ 
+ 	parent = pevent_find_function(pevent, pfunction);
+ 
+-	index = add_and_get_index(parent, func, record->cpu);
++	if (parent && ftrace_indent->set)
++		index = add_and_get_index(parent, func, record->cpu);
+ 
+ 	trace_seq_printf(s, "%*s", index*3, "");
+ 
+@@ -128,11 +152,13 @@ static int function_handler(struct trace_seq *s, struct pevent_record *record,
+ 	else
+ 		trace_seq_printf(s, "0x%llx", function);
+ 
+-	trace_seq_printf(s, " <-- ");
+-	if (parent)
+-		trace_seq_printf(s, "%s", parent);
+-	else
+-		trace_seq_printf(s, "0x%llx", pfunction);
++	if (ftrace_parent->set) {
++		trace_seq_printf(s, " <-- ");
++		if (parent)
++			trace_seq_printf(s, "%s", parent);
++		else
++			trace_seq_printf(s, "0x%llx", pfunction);
++	}
+ 
+ 	return 0;
+ }
+@@ -141,6 +167,9 @@ int PEVENT_PLUGIN_LOADER(struct pevent *pevent)
+ {
+ 	pevent_register_event_handler(pevent, -1, "ftrace", "function",
+ 				      function_handler, NULL);
++
++	traceevent_plugin_add_options("ftrace", plugin_options);
++
+ 	return 0;
+ }
+ 
+@@ -157,6 +186,8 @@ void PEVENT_PLUGIN_UNLOADER(struct pevent *pevent)
+ 		free(fstack[i].stack);
  	}
  
-@@ -641,7 +641,7 @@ static int __show_line_range(struct line_range *lr, const char *module)
- 	ret = get_real_path(tmp, lr->comp_dir, &lr->path);
- 	free(tmp);	/* Free old path */
- 	if (ret < 0) {
--		pr_warning("Failed to find source file. (%d)\n", ret);
-+		pr_warning("Failed to find source file path.\n");
- 		return ret;
- 	}
- 
++	traceevent_plugin_remove_options(plugin_options);
++
+ 	free(fstack);
+ 	fstack = NULL;
+ 	cpus = -1;
