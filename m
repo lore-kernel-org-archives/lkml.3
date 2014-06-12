@@ -1,116 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753506AbaFLUz5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 16:55:57 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:42859 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752080AbaFLUz4 (ORCPT
+	id S1753405AbaFLU6D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 16:58:03 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:40259 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751311AbaFLU6B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 16:55:56 -0400
+	Thu, 12 Jun 2014 16:58:01 -0400
 MIME-Version: 1.0
-In-Reply-To: <1402587045-5461-1-git-send-email-jolsa@kernel.org>
-References: <1402587045-5461-1-git-send-email-jolsa@kernel.org>
-Date: Thu, 12 Jun 2014 22:55:55 +0200
-Message-ID: <CAFrcx1me4uOBX89nfjfzLpA13=2wVpyyjOEvM61k6QAhQwUZEQ@mail.gmail.com>
-Subject: Re: [GIT PULL 00/14] perf/core improvements and fixes
-From: Jean Pihet <jean.pihet@linaro.org>
-To: Jiri Olsa <jolsa@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
+In-Reply-To: <539A0DC2.1010203@zytor.com>
+References: <1402602419-27934-1-git-send-email-keescook@chromium.org>
+	<539A0422.9010000@zytor.com>
+	<CAGXu5jLvAr=f2MRP4Ni86-jbM7h3Mx3RQo=7coveE8ZEt12N=Q@mail.gmail.com>
+	<539A0DC2.1010203@zytor.com>
+Date: Thu, 12 Jun 2014 13:58:00 -0700
+X-Google-Sender-Auth: fT7a0aMU527cZVF9FB-AcZECcIk
+Message-ID: <CAGXu5jKanRjK66P9dFYctXfQxT+da_9z8vqy8s+WqgW1cw17-Q@mail.gmail.com>
+Subject: Re: [PATCH 0/2] make kASLR vs hibernation boot-time selectable
+From: Kees Cook <keescook@chromium.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Randy Dunlap <rdunlap@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        linux-pm@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+On Thu, Jun 12, 2014 at 1:29 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 06/12/2014 01:27 PM, Kees Cook wrote:
+>>>
+>>> Any way we can make them work together instead?
+>>
+>> I'm sure there is, but I don't know the solution. :)
+>>
+>> At the very least this gets us one step closer (we can build them together).
+>>
+>
+> But it is really invasive.
 
+Well, I don't agree there. I actually would like to be able to turn
+off hibernation support on distro kernels regardless of kASLR, so I
+think this is really killing two birds with one stone.
 
-On 12 June 2014 17:30, Jiri Olsa <jolsa@kernel.org> wrote:
-> hi Ingo,
-> please consider pulling
->
-> thanks,
-> jirka
->
-> The following changes since commit 7184062b94b4bfac08715fb786fd2df399c5d6ee:
->
->   Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/core (2014-06-12 13:54:42 +0200)
->
-> are available in the git repository at:
->
->
->   git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git tags/perf-core-for-mingo
->
-> for you to fetch changes up to 45dc1bb5c1d47f9519e2101f6b073bb4bb1d1f99:
->
->   perf tests: Add test for closing dso objects on EMFILE error (2014-06-12 16:53:23 +0200)
->
-> ----------------------------------------------------------------
-> perf/core improvements and fixes:
->
-> . Honor user freq/interval properly in record command (Namhyung Kim)
->
-> . Speedup DWARF unwind (Jiri Olsa)
-Here are the results of the performance assessment on ARMv7, FWIW:
+> I have to admit to being somewhat fuzzy on what the core problem with
+> hibernation and kASLR is... in both cases there is a set of pages that
+> need to be installed, some of which will overlap the loader kernel.
+> What am I missing?
 
-The results for unwind_speedup (v4) on ARMv7 are:
-- libunwind: between -17% in execution time for light load (i.e. using
-not-so-deep backtraces from the stress app.) and -25% for deep
-backtrace (the stress_bt app.),
-- libdw: no significant improvement (0-3% improvement).
+I don't know how resume works, but I have assumed that the newly
+loaded kernel stays in memory and pulls in the vmalloc, kmalloc,
+modules, and userspace memory maps from disk. Since these things can
+easily contain references to kernel text, if the newly loaded kernel
+has moved with regard to the hibernated image, everything breaks.
+IIUC, this is similar why you can't rebuild your kernel and resume
+from a different version.
 
-The results for unwind_speedup (v3) on ARMv7 are:
-- libunwind: between -29% in execution time for light load (i.e. using
-not-so-deep backtraces from the stress app.) and -49% for deep
-backtrace (the stress_bt app.),
-- libdw: no significant improvement (0-2% improvement).
+Potential solutions might be to do some kind of kexec-ish second
+kernel load that puts it in the "right" place, based on what's stored
+in the on-disk image. It sounds extremely non-trivial, and isn't
+something I will have time to work on in the foreseeable future.
 
-Note: v3 is faster than v4 by 13-25%, with and without the speed-up
-patches. The real cause has been investigated, yet.
+Making them both build together, however, that I can do. :)
 
-Cf. https://wiki.linaro.org/LEG/Engineering/TOOLS/perf-callstack-unwinding#Speed_improvement
-for the details.
+-Kees
 
-Regards,
-Jean
-
->
-> Signed-off-by: Jiri Olsa <jolsa@kernel.org>
->
-> ----------------------------------------------------------------
-> Jiri Olsa (13):
->       perf tools: Cache register accesses for unwind processing
->       perf tools: Separate dso data related variables
->       perf tools: Add data_fd into dso object
->       perf tools: Add global list of opened dso objects
->       perf tools: Add global count of opened dso objects
->       perf tools: Cache dso data file descriptor
->       perf tools: Add file size check and factor dso__data_read_offset
->       perf tools: Allow to close dso fd in case of open failure
->       perf tools: Add dso__data_* interface descriptons
->       perf tests: Spawn child for each test
->       perf tests: Allow reuse of test_file function
->       perf tests: Add test for caching dso file descriptors
->       perf tests: Add test for closing dso objects on EMFILE error
->
-> Namhyung Kim (1):
->       perf record: Fix to honor user freq/interval properly
->
->  tools/perf/tests/builtin-test.c    |  42 +++++-
->  tools/perf/tests/dso-data.c        | 214 +++++++++++++++++++++++++++-
->  tools/perf/tests/tests.h           |   2 +
->  tools/perf/util/dso.c              | 279 +++++++++++++++++++++++++++++++++----
->  tools/perf/util/dso.h              |  50 ++++++-
->  tools/perf/util/event.h            |   5 +
->  tools/perf/util/evsel.c            |   4 +-
->  tools/perf/util/perf_regs.c        |  10 +-
->  tools/perf/util/perf_regs.h        |   4 +-
->  tools/perf/util/unwind-libunwind.c |   2 -
->  10 files changed, 574 insertions(+), 38 deletions(-)
+-- 
+Kees Cook
+Chrome OS Security
