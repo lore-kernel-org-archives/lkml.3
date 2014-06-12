@@ -1,120 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933825AbaFLL5F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 07:57:05 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:58248 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933101AbaFLL4v (ORCPT
+	id S933931AbaFLL6Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 07:58:16 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:62352 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933813AbaFLL5F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 07:56:51 -0400
-From: Sricharan R <r.sricharan@ti.com>
-To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: <tony@atomide.com>, <santosh.shilimkar@ti.com>, <nm@ti.com>,
-        <rnayak@ti.com>, <linux@arm.linux.org.uk>, <r.sricharan@ti.com>,
-        <tglx@linutronix.de>, <jason@lakedaemon.net>
-Subject: [PATCH V2 13/19] irqchip: crossbar: change the goto naming
-Date: Thu, 12 Jun 2014 17:23:21 +0530
-Message-ID: <1402574007-13987-14-git-send-email-r.sricharan@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1402574007-13987-1-git-send-email-r.sricharan@ti.com>
-References: <1402574007-13987-1-git-send-email-r.sricharan@ti.com>
+	Thu, 12 Jun 2014 07:57:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20140612113445.GF23430@n2100.arm.linux.org.uk>
+References: <20140607090944.GL23430@n2100.arm.linux.org.uk>
+	<20140612094745.GD23430@n2100.arm.linux.org.uk>
+	<6077426.uLBS643pC0@wuerfel>
+	<20140612113445.GF23430@n2100.arm.linux.org.uk>
+Date: Thu, 12 Jun 2014 13:57:03 +0200
+X-Google-Sender-Auth: oqj7UR4rHv21DUqAJ21gOUPNI_k
+Message-ID: <CAMuHMdV0F_FhtJwrzJLbxTbQPKs1XzR=Yb0wjMw2TBuXNPObpA@mail.gmail.com>
+Subject: Re: Kconfig fails: big select-based circular dependency
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>, Tomasz Figa <tomasz.figa@gmail.com>,
+        Mark Brown <broonie@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nishanth Menon <nm@ti.com>
+On Thu, Jun 12, 2014 at 1:34 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+>> > > drivers/gpu/drm/panel/Kconfig:19:       symbol DRM_PANEL_LD9040 depends on DRM_PANEL
+>> > > drivers/gpu/drm/panel/Kconfig:1:        symbol DRM_PANEL is selected by DRM_IMX_LDB
+>> > > drivers/staging/imx-drm/Kconfig:35:     symbol DRM_IMX_LDB depends on MFD_SYSCON
+>> > > drivers/mfd/Kconfig:722:        symbol MFD_SYSCON is selected by POWER_RESET_KEYSTONE
+>>
+>> We have 10 drivers doing 'select MFD_SYSCON' and 9 drivers doing
+>> 'depends on MFD_SYSCON'. Either one would work if we did those
+>> consistently, here the problem is really mixing the two.
+>
+> Indeed - we need clear policies on this stuff, because as we get different
+> platforms doing different things (as is the case in this scenario), we are
+> only going to see an increase in this problem.
+>
+> Also, I don't think we should do just one change to break this loop - this
+> is a sign of a much bigger disease.  We are heading towards the situation
+> where adding just one 'select' or 'depends on' statement between two symbols,
+> thereby adding just one more dependency to an already tightly linked graph
+> can cause a circular dependency.
+>
+> We need to stop this behaviour ASAP, and kill off as many of these
+> ill-considered or wrong dependencies as possible, otherwise we're risking
+> Kconfig becoming unmaintainable.
+>
+> Whenever we see a new 'select' statment appearing in a patch for something
+> which is not a utility symbol, we need to ask what the justification is
+> for it being there, and evaluate whether it's reasonable (ideally, this
+> should be detailed in the commit log.)
+>
+> (I define a utility symbol as one whose primary purpose is to be selected.)
 
-Using err1,2,3,4 etc makes it hard to ensure a new exit path in the
-middle will not result in spurious changes, so rename the error paths
-as per the function it does.
+"primary purpose".
 
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
- drivers/irqchip/irq-crossbar.c |   22 +++++++++++-----------
- 1 file changed, 11 insertions(+), 11 deletions(-)
+Should we have a better separation between select and depends, i.e.
+should kconf plainly reject both being used on the same symbol?
 
-diff --git a/drivers/irqchip/irq-crossbar.c b/drivers/irqchip/irq-crossbar.c
-index 524e6e9..cf0d79f 100644
---- a/drivers/irqchip/irq-crossbar.c
-+++ b/drivers/irqchip/irq-crossbar.c
-@@ -152,17 +152,17 @@ static int __init crossbar_of_init(struct device_node *node,
- 
- 	cb->crossbar_base = of_iomap(node, 0);
- 	if (!cb->crossbar_base)
--		goto err1;
-+		goto err_cb;
- 
- 	of_property_read_u32(node, "ti,max-irqs", &max);
- 	if (!max) {
- 		pr_err("missing 'ti,max-irqs' property\n");
- 		ret = -EINVAL;
--		goto err2;
-+		goto err_base;
- 	}
- 	cb->irq_map = kcalloc(max, sizeof(int), GFP_KERNEL);
- 	if (!cb->irq_map)
--		goto err2;
-+		goto err_base;
- 
- 	cb->int_max = max;
- 
-@@ -181,7 +181,7 @@ static int __init crossbar_of_init(struct device_node *node,
- 			if (entry > max) {
- 				pr_err("Invalid reserved entry\n");
- 				ret = -EINVAL;
--				goto err3;
-+				goto err_irq_map;
- 			}
- 			cb->irq_map[entry] = IRQ_RESERVED;
- 		}
-@@ -189,7 +189,7 @@ static int __init crossbar_of_init(struct device_node *node,
- 
- 	cb->register_offsets = kcalloc(max, sizeof(int), GFP_KERNEL);
- 	if (!cb->register_offsets)
--		goto err3;
-+		goto err_irq_map;
- 
- 	of_property_read_u32(node, "ti,reg-size", &size);
- 
-@@ -206,7 +206,7 @@ static int __init crossbar_of_init(struct device_node *node,
- 	default:
- 		pr_err("Invalid reg-size property\n");
- 		ret = -EINVAL;
--		goto err4;
-+		goto err_reg_offset;
- 		break;
- 	}
- 
-@@ -234,7 +234,7 @@ static int __init crossbar_of_init(struct device_node *node,
- 			if (entry > max) {
- 				pr_err("Invalid skip entry\n");
- 				ret = -EINVAL;
--				goto err4;
-+				goto err_reg_offset;
- 			}
- 			cb->irq_map[entry] = IRQ_SKIP;
- 		}
-@@ -251,13 +251,13 @@ static int __init crossbar_of_init(struct device_node *node,
- 	register_routable_domain_ops(&routable_irq_domain_ops);
- 	return 0;
- 
--err4:
-+err_reg_offset:
- 	kfree(cb->register_offsets);
--err3:
-+err_irq_map:
- 	kfree(cb->irq_map);
--err2:
-+err_base:
- 	iounmap(cb->crossbar_base);
--err1:
-+err_cb:
- 	kfree(cb);
- 	return ret;
- }
--- 
-1.7.9.5
+Is it ever valid to have a symbol that's both selected and used with depends on?
 
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
