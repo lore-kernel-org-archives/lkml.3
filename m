@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849AbaFLWND (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 18:13:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49794 "EHLO mx1.redhat.com"
+	id S1752773AbaFLWMq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 18:12:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27228 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751056AbaFLWM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 18:12:59 -0400
-Subject: [PATCH 3/3] iommu/amd: Add sysfs support
+	id S1751270AbaFLWMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 18:12:45 -0400
+Subject: [PATCH 1/3] iommu: Add sysfs support for IOMMUs
 From: Alex Williamson <alex.williamson@redhat.com>
 To: iommu@lists.linux-foundation.org
 Cc: joro@8bytes.org, dwmw2@infradead.org, linux-kernel@vger.kernel.org
-Date: Thu, 12 Jun 2014 16:12:37 -0600
-Message-ID: <20140612221236.2754.76120.stgit@bling.home>
+Date: Thu, 12 Jun 2014 16:12:24 -0600
+Message-ID: <20140612221224.2754.25519.stgit@bling.home>
 In-Reply-To: <20140612215954.2754.30263.stgit@bling.home>
 References: <20140612215954.2754.30263.stgit@bling.home>
 User-Agent: StGit/0.17-dirty
@@ -22,164 +22,249 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-AMD-Vi support for IOMMU sysfs.  This allows us to associate devices
-with a specific IOMMU device and examine the capabilities and features
-of that IOMMU.  The AMD IOMMU is hosted on and actual PCI device, so
-we make that device the parent for the IOMMU class device.  This
-initial implementaiton exposes only the capability header and extended
-features register for the IOMMU.
+IOMMUs currently have no common representation to userspace, most
+seem to have no representation at all aside from a few printks
+on bootup.  There are however features of IOMMUs that are useful
+to know about.  For instance the IOMMU might support superpages,
+making use of processor large/huge pages more important in a device
+assignment scenario.  It's also useful to create cross links between
+devices and IOMMU hardware units, so that users might be able to
+load balance their devices to avoid thrashing a single hardware unit.
 
-# find /sys | grep ivhd
-/sys/devices/pci0000:00/0000:00:00.2/iommu/ivhd0
-/sys/devices/pci0000:00/0000:00:00.2/iommu/ivhd0/devices
-/sys/devices/pci0000:00/0000:00:00.2/iommu/ivhd0/devices/0000:00:00.0
-/sys/devices/pci0000:00/0000:00:00.2/iommu/ivhd0/devices/0000:00:02.0
-/sys/devices/pci0000:00/0000:00:00.2/iommu/ivhd0/devices/0000:00:04.0
-/sys/devices/pci0000:00/0000:00:00.2/iommu/ivhd0/devices/0000:00:09.0
-/sys/devices/pci0000:00/0000:00:00.2/iommu/ivhd0/devices/0000:00:11.0
-/sys/devices/pci0000:00/0000:00:00.2/iommu/ivhd0/devices/0000:00:12.0
-/sys/devices/pci0000:00/0000:00:00.2/iommu/ivhd0/devices/0000:00:12.2
-/sys/devices/pci0000:00/0000:00:00.2/iommu/ivhd0/devices/0000:00:13.0
-...
-/sys/devices/pci0000:00/0000:00:00.2/iommu/ivhd0/power
-/sys/devices/pci0000:00/0000:00:00.2/iommu/ivhd0/power/control
-...
-/sys/devices/pci0000:00/0000:00:00.2/iommu/ivhd0/device
-/sys/devices/pci0000:00/0000:00:00.2/iommu/ivhd0/subsystem
-/sys/devices/pci0000:00/0000:00:00.2/iommu/ivhd0/amd-iommu
-/sys/devices/pci0000:00/0000:00:00.2/iommu/ivhd0/amd-iommu/cap
-/sys/devices/pci0000:00/0000:00:00.2/iommu/ivhd0/amd-iommu/features
-/sys/devices/pci0000:00/0000:00:00.2/iommu/ivhd0/uevent
-/sys/class/iommu/ivhd0
+This patch adds a device create and destroy interface as well as
+device linking, making it very lightweight for an IOMMU driver to add
+basic support.  IOMMU drivers can provide additional attributes
+automatically by using an attribute_group.
+
+The attributes exposed are expected to be relatively device specific,
+the means to retrieve them certainly are, so there are currently no
+common attributes for the new class created here.
 
 Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
- .../ABI/testing/sysfs-class-iommu-amd-iommu        |   14 +++++++
- drivers/iommu/amd_iommu.c                          |    6 +++
- drivers/iommu/amd_iommu_init.c                     |   38 ++++++++++++++++++++
- drivers/iommu/amd_iommu_types.h                    |    3 ++
- 4 files changed, 61 insertions(+)
- create mode 100644 Documentation/ABI/testing/sysfs-class-iommu-amd-iommu
+ Documentation/ABI/testing/sysfs-class-iommu |   17 +++
+ drivers/iommu/Makefile                      |    1 
+ drivers/iommu/iommu-sysfs.c                 |  133 +++++++++++++++++++++++++++
+ include/linux/iommu.h                       |   26 +++++
+ 4 files changed, 177 insertions(+)
+ create mode 100644 Documentation/ABI/testing/sysfs-class-iommu
+ create mode 100644 drivers/iommu/iommu-sysfs.c
 
-diff --git a/Documentation/ABI/testing/sysfs-class-iommu-amd-iommu b/Documentation/ABI/testing/sysfs-class-iommu-amd-iommu
+diff --git a/Documentation/ABI/testing/sysfs-class-iommu b/Documentation/ABI/testing/sysfs-class-iommu
 new file mode 100644
-index 0000000..d6ba8e8
+index 0000000..6d0a1b4
 --- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-class-iommu-amd-iommu
-@@ -0,0 +1,14 @@
-+What:		/sys/class/iommu/<iommu>/amd-iommu/cap
++++ b/Documentation/ABI/testing/sysfs-class-iommu
+@@ -0,0 +1,17 @@
++What:		/sys/class/iommu/<iommu>/devices/
 +Date:		June 2014
 +KernelVersion:	3.17
 +Contact:	Alex Williamson <alex.williamson@redhat.com>
 +Description:
-+		IOMMU capability header as documented in the AMD IOMMU
-+		specification.  Format: %x
++		IOMMU drivers are able to link devices managed by a
++		given IOMMU here to allow association of IOMMU to
++		device.
 +
-+What:		/sys/class/iommu/<iommu>/amd-iommu/features
++What:		/sys/devices/.../iommu
 +Date:		June 2014
 +KernelVersion:	3.17
 +Contact:	Alex Williamson <alex.williamson@redhat.com>
 +Description:
-+		Extended features of the IOMMU.  Format: %llx
-diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index ca85615..83a43b2 100644
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -379,6 +379,9 @@ static int iommu_init_device(struct device *dev)
- 
- 	dev->archdata.iommu = dev_data;
- 
-+	iommu_device_link(amd_iommu_rlookup_table[dev_data->devid]->iommu_dev,
-+			  dev);
++		IOMMU drivers are able to link the IOMMU for a
++		given device here to allow association of device to
++		IOMMU.
+diff --git a/drivers/iommu/Makefile b/drivers/iommu/Makefile
+index 5d58bf1..437c231 100644
+--- a/drivers/iommu/Makefile
++++ b/drivers/iommu/Makefile
+@@ -1,5 +1,6 @@
+ obj-$(CONFIG_IOMMU_API) += iommu.o
+ obj-$(CONFIG_IOMMU_API) += iommu-traces.o
++obj-$(CONFIG_IOMMU_API) += iommu-sysfs.o
+ obj-$(CONFIG_OF_IOMMU)	+= of_iommu.o
+ obj-$(CONFIG_MSM_IOMMU) += msm_iommu.o msm_iommu_dev.o
+ obj-$(CONFIG_AMD_IOMMU) += amd_iommu.o amd_iommu_init.o
+diff --git a/drivers/iommu/iommu-sysfs.c b/drivers/iommu/iommu-sysfs.c
+new file mode 100644
+index 0000000..d693923
+--- /dev/null
++++ b/drivers/iommu/iommu-sysfs.c
+@@ -0,0 +1,133 @@
++/*
++ * IOMMU sysfs class support
++ *
++ * Copyright (C) 2014 Red Hat, Inc.  All rights reserved.
++ *     Author: Alex Williamson <alex.williamson@redhat.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
 +
- 	return 0;
- }
- 
-@@ -403,6 +406,9 @@ static void iommu_uninit_device(struct device *dev)
- 	if (!dev_data)
- 		return;
- 
-+	iommu_device_unlink(amd_iommu_rlookup_table[dev_data->devid]->iommu_dev,
-+			    dev);
-+
- 	iommu_group_remove_device(dev);
- 
- 	/* Unlink from alias, it may change if another device is re-plugged */
-diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
-index 0e08545..3783e0b 100644
---- a/drivers/iommu/amd_iommu_init.c
-+++ b/drivers/iommu/amd_iommu_init.c
-@@ -26,6 +26,7 @@
- #include <linux/msi.h>
- #include <linux/amd-iommu.h>
- #include <linux/export.h>
++#include <linux/device.h>
 +#include <linux/iommu.h>
- #include <asm/pci-direct.h>
- #include <asm/iommu.h>
- #include <asm/gart.h>
-@@ -1197,6 +1198,39 @@ static void init_iommu_perf_ctr(struct amd_iommu *iommu)
- 	iommu->max_counters = (u8) ((val >> 7) & 0xf);
- }
- 
-+static ssize_t amd_iommu_show_cap(struct device *dev,
-+				  struct device_attribute *attr,
-+				  char *buf)
-+{
-+	struct amd_iommu *iommu = dev_get_drvdata(dev);
-+	return sprintf(buf, "%x\n", iommu->cap);
-+}
-+static DEVICE_ATTR(cap, S_IRUGO, amd_iommu_show_cap, NULL);
++#include <linux/module.h>
 +
-+static ssize_t amd_iommu_show_features(struct device *dev,
-+				       struct device_attribute *attr,
-+				       char *buf)
-+{
-+	struct amd_iommu *iommu = dev_get_drvdata(dev);
-+	return sprintf(buf, "%llx\n", iommu->features);
-+}
-+static DEVICE_ATTR(features, S_IRUGO, amd_iommu_show_features, NULL);
-+
-+static struct attribute *amd_iommu_attrs[] = {
-+	&dev_attr_cap.attr,
-+	&dev_attr_features.attr,
++/*
++ * We provide a common class "devices" group which initially has no attributes.
++ * As devices are added to the IOMMU, we'll add links to the group.
++ */
++static struct attribute *devices_attr[] = {
 +	NULL,
 +};
 +
-+static struct attribute_group amd_iommu_group = {
-+	.name = "amd-iommu",
-+	.attrs = amd_iommu_attrs,
++static const struct attribute_group iommu_devices_attr_group = {
++	.name = "devices",
++	.attrs = devices_attr,
 +};
 +
-+static const struct attribute_group *amd_iommu_groups[] = {
-+	&amd_iommu_group,
++static const struct attribute_group *iommu_dev_groups[] = {
++	&iommu_devices_attr_group,
 +	NULL,
 +};
- 
- static int iommu_init_pci(struct amd_iommu *iommu)
- {
-@@ -1297,6 +1331,10 @@ static int iommu_init_pci(struct amd_iommu *iommu)
- 
- 	amd_iommu_erratum_746_workaround(iommu);
- 
-+	iommu->iommu_dev = iommu_device_create(&iommu->dev->dev, iommu,
-+					       amd_iommu_groups, "ivhd%d",
-+					       iommu->index);
 +
- 	return pci_enable_device(iommu->dev);
++static void iommu_release_device(struct device *dev)
++{
++	kfree(dev);
++}
++
++static struct class iommu_class = {
++	.name = "iommu",
++	.dev_release = iommu_release_device,
++	.dev_groups = iommu_dev_groups,
++};
++
++static int __init iommu_dev_init(void)
++{
++	return class_register(&iommu_class);
++}
++postcore_initcall(iommu_dev_init);
++
++/*
++ * Create an IOMMU device and return a pointer to it.  IOMMU specific
++ * attributes can be provided as an attribute group, allowing a unique
++ * namespace per IOMMU type.
++ */
++struct device *iommu_device_create(struct device *parent, void *drvdata,
++				   const struct attribute_group **groups,
++				   const char *fmt, ...)
++{
++	struct device *dev;
++	va_list vargs;
++	int ret;
++
++	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
++	if (!dev)
++		return ERR_PTR(-ENOMEM);
++
++	device_initialize(dev);
++
++	dev->class = &iommu_class;
++	dev->parent = parent;
++	dev->groups = groups;
++	dev_set_drvdata(dev, drvdata);
++
++	va_start(vargs, fmt);
++	ret = kobject_set_name_vargs(&dev->kobj, fmt, vargs);
++	va_end(vargs);
++	if (ret)
++		goto error;
++
++	ret = device_add(dev);
++	if (ret)
++		goto error;
++
++	return dev;
++
++error:
++	put_device(dev);
++	return ERR_PTR(ret);
++}
++
++void iommu_device_destroy(struct device *dev)
++{
++	if (!dev || IS_ERR(dev))
++		return;
++
++	device_unregister(dev);
++}
++
++/*
++ * IOMMU drivers can indicate a device is managed by a given IOMMU using
++ * this interface.  A link to the device will be created in the "devices"
++ * directory of the IOMMU device in sysfs and an "iommu" link will be
++ * created under the linked device, pointing back at the IOMMU device.
++ */
++int iommu_device_link(struct device *dev, struct device *link)
++{
++	int ret;
++
++	if (!dev || IS_ERR(dev))
++		return -ENODEV;
++
++	ret = sysfs_add_link_to_group(&dev->kobj, "devices",
++				      &link->kobj, dev_name(link));
++	if (ret)
++		return ret;
++
++	ret = sysfs_create_link_nowarn(&link->kobj, &dev->kobj, "iommu");
++	if (ret)
++		sysfs_remove_link_from_group(&dev->kobj, "devices",
++					     dev_name(link));
++
++	return ret;
++}
++
++void iommu_device_unlink(struct device *dev, struct device *link)
++{
++	if (!dev || IS_ERR(dev))
++		return;
++
++	sysfs_remove_link(&link->kobj, "iommu");
++	sysfs_remove_link_from_group(&dev->kobj, "devices", dev_name(link));
++}
+diff --git a/include/linux/iommu.h b/include/linux/iommu.h
+index a2e5843..7fd16e3 100644
+--- a/include/linux/iommu.h
++++ b/include/linux/iommu.h
+@@ -187,6 +187,12 @@ extern int iommu_domain_get_attr(struct iommu_domain *domain, enum iommu_attr,
+ 				 void *data);
+ extern int iommu_domain_set_attr(struct iommu_domain *domain, enum iommu_attr,
+ 				 void *data);
++struct device *iommu_device_create(struct device *parent, void *drvdata,
++				   const struct attribute_group **groups,
++				   const char *fmt, ...);
++void iommu_device_destroy(struct device *dev);
++int iommu_device_link(struct device *dev, struct device *link);
++void iommu_device_unlink(struct device *dev, struct device *link);
+ 
+ /* Window handling function prototypes */
+ extern int iommu_domain_window_enable(struct iommu_domain *domain, u32 wnd_nr,
+@@ -397,6 +403,26 @@ static inline int iommu_domain_set_attr(struct iommu_domain *domain,
+ 	return -EINVAL;
  }
  
-diff --git a/drivers/iommu/amd_iommu_types.h b/drivers/iommu/amd_iommu_types.h
-index 7277a20..557a20e 100644
---- a/drivers/iommu/amd_iommu_types.h
-+++ b/drivers/iommu/amd_iommu_types.h
-@@ -577,6 +577,9 @@ struct amd_iommu {
- 	/* default dma_ops domain for that IOMMU */
- 	struct dma_ops_domain *default_dom;
- 
-+	/* IOMMU sysfs device */
-+	struct device *iommu_dev;
++struct device *iommu_device_create(struct device *parent, void *drvdata,
++				   const struct attribute_group **groups,
++				   const char *fmt, ...)
++{
++	return ERR_PTR(-ENODEV);
++}
 +
- 	/*
- 	 * We can't rely on the BIOS to restore all values on reinit, so we
- 	 * need to stash them
++void iommu_device_destroy(struct device *dev)
++{
++}
++
++int iommu_device_link(struct device *dev, struct device *link)
++{
++	return -EINVAL;
++}
++
++void iommu_device_unlink(struct device *dev, struct device *link)
++{
++}
++
+ #endif /* CONFIG_IOMMU_API */
+ 
+ #endif /* __LINUX_IOMMU_H */
 
