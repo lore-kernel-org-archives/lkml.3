@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752406AbaFLXTS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 19:19:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37310 "EHLO
+	id S1752636AbaFLXVk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 19:21:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37288 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751075AbaFLXTO (ORCPT
+	with ESMTP id S1750911AbaFLXTN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 19:19:14 -0400
+	Thu, 12 Jun 2014 19:19:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Minchan Kim <minchan@kernel.org>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH 3.4 5/8] Staging: zram: Fix memory leak by refcount mismatch
-Date: Thu, 12 Jun 2014 16:22:52 -0700
-Message-Id: <20140612232238.863387039@linuxfoundation.org>
+        Chris Mason <clm@fb.com>, Amir Vadai <amirv@mellanox.com>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>,
+        Masoud Sharbiani <msharbiani@twitter.com>
+Subject: [PATCH 3.4 1/8] mlx4_en: dont use napi_synchronize inside mlx4_en_netpoll
+Date: Thu, 12 Jun 2014 16:22:48 -0700
+Message-Id: <20140612232238.514216131@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140612232238.396722659@linuxfoundation.org>
 References: <20140612232238.396722659@linuxfoundation.org>
@@ -32,70 +30,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rashika Kheria <rashika.kheria@gmail.com>
+From: Chris Mason <clm@fb.com>
 
-commit 1b672224d128ec2570eb37572ff803cfe452b4f7 upstream.
+commit c98235cb8584a72e95786e17d695a8e5fafcd766 upstream.
 
-As suggested by Minchan Kim and Jerome Marchand "The code in reset_store
-get the block device (bdget_disk()) but it does not put it (bdput()) when
-it's done using it. The usage count is therefore incremented but never
-decremented."
+The mlx4 driver is triggering schedules while atomic inside
+mlx4_en_netpoll:
 
-This patch also puts bdput() for all error cases.
+	spin_lock_irqsave(&cq->lock, flags);
+	napi_synchronize(&cq->napi);
+		^^^^^ msleep here
+	mlx4_en_process_rx_cq(dev, cq, 0);
+	spin_unlock_irqrestore(&cq->lock, flags);
 
-Acked-by: Minchan Kim <minchan@kernel.org>
-Acked-by: Jerome Marchand <jmarchan@redhat.com>
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-[bwh: Backported to 3.2: adjust filename, context]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-[wyj: Backported to 3.4: adjust context]
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+This was part of a patch by Alexander Guller from Mellanox in 2011,
+but it still isn't upstream.
+
+Signed-off-by: Chris Mason <clm@fb.com>
+Acked-By: Amir Vadai <amirv@mellanox.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Masoud Sharbiani <msharbiani@twitter.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/staging/zram/zram_sysfs.c |   19 ++++++++++++++-----
- 1 file changed, 14 insertions(+), 5 deletions(-)
 
---- a/drivers/staging/zram/zram_sysfs.c
-+++ b/drivers/staging/zram/zram_sysfs.c
-@@ -99,18 +99,23 @@ static ssize_t reset_store(struct device
- 		return -ENOMEM;
+---
+ drivers/net/ethernet/mellanox/mlx4/en_cq.c     |    1 -
+ drivers/net/ethernet/mellanox/mlx4/en_netdev.c |    6 +-----
+ drivers/net/ethernet/mellanox/mlx4/mlx4_en.h   |    1 -
+ 3 files changed, 1 insertion(+), 7 deletions(-)
+
+--- a/drivers/net/ethernet/mellanox/mlx4/en_cq.c
++++ b/drivers/net/ethernet/mellanox/mlx4/en_cq.c
+@@ -55,7 +55,6 @@ int mlx4_en_create_cq(struct mlx4_en_pri
  
- 	/* Do not reset an active device! */
--	if (bdev->bd_holders)
--		return -EBUSY;
-+	if (bdev->bd_holders) {
-+		ret = -EBUSY;
-+		goto out;
-+	}
+ 	cq->ring = ring;
+ 	cq->is_tx = mode;
+-	spin_lock_init(&cq->lock);
  
- 	ret = kstrtou16(buf, 10, &do_reset);
- 	if (ret)
--		return ret;
-+		goto out;
+ 	err = mlx4_alloc_hwq_res(mdev->dev, &cq->wqres,
+ 				cq->buf_size, 2 * PAGE_SIZE);
+--- a/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
++++ b/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
+@@ -370,15 +370,11 @@ static void mlx4_en_netpoll(struct net_d
+ {
+ 	struct mlx4_en_priv *priv = netdev_priv(dev);
+ 	struct mlx4_en_cq *cq;
+-	unsigned long flags;
+ 	int i;
  
--	if (!do_reset)
--		return -EINVAL;
-+	if (!do_reset) {
-+		ret = -EINVAL;
-+		goto out;
-+	}
- 
- 	/* Make sure all pending I/O is finished */
- 	fsync_bdev(bdev);
-+	bdput(bdev);
- 
- 	down_write(&zram->init_lock);
- 	if (zram->init_done)
-@@ -118,6 +123,10 @@ static ssize_t reset_store(struct device
- 	up_write(&zram->init_lock);
- 
- 	return len;
-+
-+out:
-+	bdput(bdev);
-+	return ret;
+ 	for (i = 0; i < priv->rx_ring_num; i++) {
+ 		cq = &priv->rx_cq[i];
+-		spin_lock_irqsave(&cq->lock, flags);
+-		napi_synchronize(&cq->napi);
+-		mlx4_en_process_rx_cq(dev, cq, 0);
+-		spin_unlock_irqrestore(&cq->lock, flags);
++		napi_schedule(&cq->napi);
+ 	}
  }
- 
- static ssize_t num_reads_show(struct device *dev,
+ #endif
+--- a/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h
++++ b/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h
+@@ -301,7 +301,6 @@ struct mlx4_en_cq {
+ 	struct mlx4_cq          mcq;
+ 	struct mlx4_hwq_resources wqres;
+ 	int                     ring;
+-	spinlock_t              lock;
+ 	struct net_device      *dev;
+ 	struct napi_struct	napi;
+ 	/* Per-core Tx cq processing support */
 
 
