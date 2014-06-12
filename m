@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830AbaFLXZC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 19:25:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37200 "EHLO
+	id S1752074AbaFLXSe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 19:18:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37193 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750822AbaFLXSi (ORCPT
+	with ESMTP id S1751008AbaFLXSc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 19:18:38 -0400
+	Thu, 12 Jun 2014 19:18:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH 3.10 03/18] ARM: mvebu: fix NOR bus-width in Armada XP GP Device Tree
-Date: Thu, 12 Jun 2014 16:22:07 -0700
-Message-Id: <20140612232213.190451340@linuxfoundation.org>
+        Chris Mason <clm@fb.com>, Amir Vadai <amirv@mellanox.com>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>,
+        Masoud Sharbiani <msharbiani@twitter.com>
+Subject: [PATCH 3.10 02/18] mlx4_en: dont use napi_synchronize inside mlx4_en_netpoll
+Date: Thu, 12 Jun 2014 16:22:06 -0700
+Message-Id: <20140612232213.160395941@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140612232212.960235342@linuxfoundation.org>
 References: <20140612232212.960235342@linuxfoundation.org>
@@ -31,50 +30,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: Chris Mason <clm@fb.com>
 
-commit 1a88f809ccb5db1509a7514b187c00b3a995fc82 upstream.
+commit c98235cb8584a72e95786e17d695a8e5fafcd766 upstream.
 
-The mvebu-devbus driver had a serious bug, which lead to a 8 bits bus
-width declared in the Device Tree being considered as a 16 bits bus
-width when configuring the hardware.
+The mlx4 driver is triggering schedules while atomic inside
+mlx4_en_netpoll:
 
-This bug in mvebu-devbus driver was compensated by a symetric mistake
-in the Armada XP GP Device Tree: a 8 bits bus width was declared, even
-though the hardware actually has a 16 bits bus width connection with
-the NOR flash.
+	spin_lock_irqsave(&cq->lock, flags);
+	napi_synchronize(&cq->napi);
+		^^^^^ msleep here
+	mlx4_en_process_rx_cq(dev, cq, 0);
+	spin_unlock_irqrestore(&cq->lock, flags);
 
-Now that we have fixed the mvebu-devbus driver to behave according to
-its Device Tree binding, this commit fixes the problematic Device Tree
-files as well.
+This was part of a patch by Alexander Guller from Mellanox in 2011,
+but it still isn't upstream.
 
-This bug was introduced in commit
-da8d1b38356853c37116f9afa29f15648d7fb159 ('ARM: mvebu: Add support for
-NOR flash device on Armada XP-GP board') which was merged in v3.10.
-
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Link: https://lkml.kernel.org/r/1397489361-5833-3-git-send-email-thomas.petazzoni@free-electrons.com
-Fixes: da8d1b383568 ('ARM: mvebu: Add support for NOR flash device on Armada XP-GP board')
-Cc: stable@vger.kernel.org # v3.10+
-Acked-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Chris Mason <clm@fb.com>
+Acked-By: Amir Vadai <amirv@mellanox.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Masoud Sharbiani <msharbiani@twitter.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/armada-xp-gp.dts |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/mellanox/mlx4/en_cq.c     |    1 -
+ drivers/net/ethernet/mellanox/mlx4/en_netdev.c |    6 +-----
+ drivers/net/ethernet/mellanox/mlx4/mlx4_en.h   |    1 -
+ 3 files changed, 1 insertion(+), 7 deletions(-)
 
---- a/arch/arm/boot/dts/armada-xp-gp.dts
-+++ b/arch/arm/boot/dts/armada-xp-gp.dts
-@@ -124,7 +124,7 @@
- 				/* Device Bus parameters are required */
+--- a/drivers/net/ethernet/mellanox/mlx4/en_cq.c
++++ b/drivers/net/ethernet/mellanox/mlx4/en_cq.c
+@@ -55,7 +55,6 @@ int mlx4_en_create_cq(struct mlx4_en_pri
  
- 				/* Read parameters */
--				devbus,bus-width    = <8>;
-+				devbus,bus-width    = <16>;
- 				devbus,turn-off-ps  = <60000>;
- 				devbus,badr-skew-ps = <0>;
- 				devbus,acc-first-ps = <124000>;
+ 	cq->ring = ring;
+ 	cq->is_tx = mode;
+-	spin_lock_init(&cq->lock);
+ 
+ 	err = mlx4_alloc_hwq_res(mdev->dev, &cq->wqres,
+ 				cq->buf_size, 2 * PAGE_SIZE);
+--- a/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
++++ b/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
+@@ -1190,15 +1190,11 @@ static void mlx4_en_netpoll(struct net_d
+ {
+ 	struct mlx4_en_priv *priv = netdev_priv(dev);
+ 	struct mlx4_en_cq *cq;
+-	unsigned long flags;
+ 	int i;
+ 
+ 	for (i = 0; i < priv->rx_ring_num; i++) {
+ 		cq = &priv->rx_cq[i];
+-		spin_lock_irqsave(&cq->lock, flags);
+-		napi_synchronize(&cq->napi);
+-		mlx4_en_process_rx_cq(dev, cq, 0);
+-		spin_unlock_irqrestore(&cq->lock, flags);
++		napi_schedule(&cq->napi);
+ 	}
+ }
+ #endif
+--- a/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h
++++ b/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h
+@@ -299,7 +299,6 @@ struct mlx4_en_cq {
+ 	struct mlx4_cq          mcq;
+ 	struct mlx4_hwq_resources wqres;
+ 	int                     ring;
+-	spinlock_t              lock;
+ 	struct net_device      *dev;
+ 	struct napi_struct	napi;
+ 	int size;
 
 
