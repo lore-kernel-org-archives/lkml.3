@@ -1,139 +1,387 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756559AbaFLQZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 12:25:57 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:39809 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756043AbaFLQZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 12:25:55 -0400
-From: Borislav Petkov <bp@alien8.de>
-To: linux-edac <linux-edac@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>
-Subject: [RFC PATCH -v2 3/3] MCE, CE: Add debugging glue
-Date: Thu, 12 Jun 2014 18:22:30 +0200
-Message-Id: <1402590150-9798-4-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1402590150-9798-1-git-send-email-bp@alien8.de>
-References: <1402590150-9798-1-git-send-email-bp@alien8.de>
+	id S1756314AbaFLQXt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 12:23:49 -0400
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:35160 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756285AbaFLQXq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 12:23:46 -0400
+From: Tejun Heo <tj@kernel.org>
+To: cl@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 09/12] percpu: reorder macros in percpu header files
+Date: Thu, 12 Jun 2014 12:23:26 -0400
+Message-Id: <1402590209-31610-10-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1402590209-31610-1-git-send-email-tj@kernel.org>
+References: <1402590209-31610-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
+* In include/asm-generic/percpu.h, collect {raw|_this}_cpu_generic*()
+  macros into one place.  They were dispersed through
+  {raw|this}_cpu_*_N() definitions and the visiual inconsistency was
+  making following the code unnecessarily difficult.
 
-For testing purposes only.
+* In include/linux/percpu-defs.h, move __verify_pcpu_ptr() later in
+  the file so that it's right above accessor definitions where it's
+  actually used.
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
+This is pure reorganization.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Christoph Lameter <cl@linux-foundation.org>
 ---
- arch/x86/kernel/cpu/mcheck/mce.c | 23 ++++++++++++++++++++++-
- drivers/ras/ce.c                 | 28 +++++++++++++++++++++++++++-
- 2 files changed, 49 insertions(+), 2 deletions(-)
+ include/asm-generic/percpu.h | 198 +++++++++++++++++++++----------------------
+ include/linux/percpu-defs.h  |  40 ++++-----
+ 2 files changed, 119 insertions(+), 119 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index f908b4cd7448..fa92c46c0220 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -2579,9 +2579,26 @@ static int fake_panic_set(void *data, u64 val)
- DEFINE_SIMPLE_ATTRIBUTE(fake_panic_fops, fake_panic_get,
- 			fake_panic_set, "%llu\n");
+diff --git a/include/asm-generic/percpu.h b/include/asm-generic/percpu.h
+index 932ce60..2300d98 100644
+--- a/include/asm-generic/percpu.h
++++ b/include/asm-generic/percpu.h
+@@ -65,6 +65,105 @@ extern void setup_per_cpu_areas(void);
+ #define PER_CPU_DEF_ATTRIBUTES
+ #endif
  
-+static u64 cec_pfn;
++#define raw_cpu_generic_to_op(pcp, val, op)				\
++do {									\
++	*raw_cpu_ptr(&(pcp)) op val;					\
++} while (0)
 +
-+static int cec_pfn_get(void *data, u64 *val)
-+{
-+	*val = cec_pfn;
-+	return 0;
-+}
++#define raw_cpu_generic_add_return(pcp, val)				\
++({									\
++	raw_cpu_add(pcp, val);						\
++	raw_cpu_read(pcp);						\
++})
 +
-+static int cec_pfn_set(void *data, u64 val)
-+{
-+	cec_pfn = val;
++#define raw_cpu_generic_xchg(pcp, nval)					\
++({	typeof(pcp) ret__;						\
++	ret__ = raw_cpu_read(pcp);					\
++	raw_cpu_write(pcp, nval);					\
++	ret__;								\
++})
 +
-+	return ce_add_elem(val);
-+}
++#define raw_cpu_generic_cmpxchg(pcp, oval, nval)			\
++({									\
++	typeof(pcp) ret__;						\
++	ret__ = raw_cpu_read(pcp);					\
++	if (ret__ == (oval))						\
++		raw_cpu_write(pcp, nval);				\
++	ret__;								\
++})
 +
-+DEFINE_SIMPLE_ATTRIBUTE(cec_pfn_ops, cec_pfn_get, cec_pfn_set, "0x%llx\n");
++#define raw_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
++({									\
++	int __ret = 0;							\
++	if (raw_cpu_read(pcp1) == (oval1) &&				\
++			 raw_cpu_read(pcp2)  == (oval2)) {		\
++		raw_cpu_write(pcp1, (nval1));				\
++		raw_cpu_write(pcp2, (nval2));				\
++		__ret = 1;						\
++	}								\
++	(__ret);							\
++})
 +
- static int __init mcheck_debugfs_init(void)
- {
--	struct dentry *dmce, *ffake_panic;
-+	struct dentry *dmce, *ffake_panic, *cec_pfn;
++#define _this_cpu_generic_read(pcp)					\
++({	typeof(pcp) ret__;						\
++	preempt_disable();						\
++	ret__ = *this_cpu_ptr(&(pcp));					\
++	preempt_enable();						\
++	ret__;								\
++})
++
++#define _this_cpu_generic_to_op(pcp, val, op)				\
++do {									\
++	unsigned long flags;						\
++	raw_local_irq_save(flags);					\
++	*raw_cpu_ptr(&(pcp)) op val;					\
++	raw_local_irq_restore(flags);					\
++} while (0)
++
++#define _this_cpu_generic_add_return(pcp, val)				\
++({									\
++	typeof(pcp) ret__;						\
++	unsigned long flags;						\
++	raw_local_irq_save(flags);					\
++	raw_cpu_add(pcp, val);					\
++	ret__ = raw_cpu_read(pcp);					\
++	raw_local_irq_restore(flags);					\
++	ret__;								\
++})
++
++#define _this_cpu_generic_xchg(pcp, nval)				\
++({	typeof(pcp) ret__;						\
++	unsigned long flags;						\
++	raw_local_irq_save(flags);					\
++	ret__ = raw_cpu_read(pcp);					\
++	raw_cpu_write(pcp, nval);					\
++	raw_local_irq_restore(flags);					\
++	ret__;								\
++})
++
++#define _this_cpu_generic_cmpxchg(pcp, oval, nval)			\
++({									\
++	typeof(pcp) ret__;						\
++	unsigned long flags;						\
++	raw_local_irq_save(flags);					\
++	ret__ = raw_cpu_read(pcp);					\
++	if (ret__ == (oval))						\
++		raw_cpu_write(pcp, nval);				\
++	raw_local_irq_restore(flags);					\
++	ret__;								\
++})
++
++#define _this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
++({									\
++	int ret__;							\
++	unsigned long flags;						\
++	raw_local_irq_save(flags);					\
++	ret__ = raw_cpu_generic_cmpxchg_double(pcp1, pcp2,		\
++			oval1, oval2, nval1, nval2);			\
++	raw_local_irq_restore(flags);					\
++	ret__;								\
++})
++
+ # ifndef raw_cpu_read_1
+ #  define raw_cpu_read_1(pcp)	(*raw_cpu_ptr(&(pcp)))
+ # endif
+@@ -78,11 +177,6 @@ extern void setup_per_cpu_areas(void);
+ #  define raw_cpu_read_8(pcp)	(*raw_cpu_ptr(&(pcp)))
+ # endif
  
- 	dmce = mce_get_debugfs_dir();
- 	if (!dmce)
-@@ -2591,6 +2608,10 @@ static int __init mcheck_debugfs_init(void)
- 	if (!ffake_panic)
- 		return -ENOMEM;
+-#define raw_cpu_generic_to_op(pcp, val, op)				\
+-do {									\
+-	*raw_cpu_ptr(&(pcp)) op val;					\
+-} while (0)
+-
+ # ifndef raw_cpu_write_1
+ #  define raw_cpu_write_1(pcp, val)	raw_cpu_generic_to_op((pcp), (val), =)
+ # endif
+@@ -135,12 +229,6 @@ do {									\
+ #  define raw_cpu_or_8(pcp, val)	raw_cpu_generic_to_op((pcp), (val), |=)
+ # endif
  
-+	cec_pfn = debugfs_create_file("cec_pfn", 0400, dmce, NULL, &cec_pfn_ops);
-+	if (!cec_pfn)
-+		return -ENOMEM;
-+
- 	return 0;
- }
- #else
-diff --git a/drivers/ras/ce.c b/drivers/ras/ce.c
-index 6b66a587c3ae..4603c0003391 100644
---- a/drivers/ras/ce.c
-+++ b/drivers/ras/ce.c
-@@ -94,6 +94,25 @@ static struct ce_array {
+-#define raw_cpu_generic_add_return(pcp, val)				\
+-({									\
+-	raw_cpu_add(pcp, val);						\
+-	raw_cpu_read(pcp);						\
+-})
+-
+ # ifndef raw_cpu_add_return_1
+ #  define raw_cpu_add_return_1(pcp, val)	raw_cpu_generic_add_return(pcp, val)
+ # endif
+@@ -154,13 +242,6 @@ do {									\
+ #  define raw_cpu_add_return_8(pcp, val)	raw_cpu_generic_add_return(pcp, val)
+ # endif
  
- static DEFINE_MUTEX(ce_mutex);
+-#define raw_cpu_generic_xchg(pcp, nval)					\
+-({	typeof(pcp) ret__;						\
+-	ret__ = raw_cpu_read(pcp);					\
+-	raw_cpu_write(pcp, nval);					\
+-	ret__;								\
+-})
+-
+ # ifndef raw_cpu_xchg_1
+ #  define raw_cpu_xchg_1(pcp, nval)	raw_cpu_generic_xchg(pcp, nval)
+ # endif
+@@ -174,15 +255,6 @@ do {									\
+ #  define raw_cpu_xchg_8(pcp, nval)	raw_cpu_generic_xchg(pcp, nval)
+ # endif
  
-+static void dump_array(struct ce_array *ca)
-+{
-+	u64 prev = 0;
-+	int i;
-+
-+	pr_info("{ n: %d\n", ca->n);
-+	for (i = 0; i < ca->n; i++) {
-+		u64 this = PFN(ca->array[i]);
-+
-+		pr_info(" %03d: [%016llu|%03llx]\n", i, this, FULL_COUNT(ca->array[i]));
-+
-+		WARN_ON(prev > this);
-+
-+		prev = this;
-+	}
-+
-+	pr_info("}\n");
-+}
-+
+-#define raw_cpu_generic_cmpxchg(pcp, oval, nval)			\
+-({									\
+-	typeof(pcp) ret__;						\
+-	ret__ = raw_cpu_read(pcp);					\
+-	if (ret__ == (oval))						\
+-		raw_cpu_write(pcp, nval);				\
+-	ret__;								\
+-})
+-
+ # ifndef raw_cpu_cmpxchg_1
+ #  define raw_cpu_cmpxchg_1(pcp, oval, nval)	raw_cpu_generic_cmpxchg(pcp, oval, nval)
+ # endif
+@@ -196,18 +268,6 @@ do {									\
+ #  define raw_cpu_cmpxchg_8(pcp, oval, nval)	raw_cpu_generic_cmpxchg(pcp, oval, nval)
+ # endif
+ 
+-#define raw_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
+-({									\
+-	int __ret = 0;							\
+-	if (raw_cpu_read(pcp1) == (oval1) &&				\
+-			 raw_cpu_read(pcp2)  == (oval2)) {		\
+-		raw_cpu_write(pcp1, (nval1));				\
+-		raw_cpu_write(pcp2, (nval2));				\
+-		__ret = 1;						\
+-	}								\
+-	(__ret);							\
+-})
+-
+ # ifndef raw_cpu_cmpxchg_double_1
+ #  define raw_cpu_cmpxchg_double_1(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
+ 	raw_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
+@@ -225,14 +285,6 @@ do {									\
+ 	raw_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
+ # endif
+ 
+-#define _this_cpu_generic_read(pcp)					\
+-({	typeof(pcp) ret__;						\
+-	preempt_disable();						\
+-	ret__ = *this_cpu_ptr(&(pcp));					\
+-	preempt_enable();						\
+-	ret__;								\
+-})
+-
+ # ifndef this_cpu_read_1
+ #  define this_cpu_read_1(pcp)	_this_cpu_generic_read(pcp)
+ # endif
+@@ -246,14 +298,6 @@ do {									\
+ #  define this_cpu_read_8(pcp)	_this_cpu_generic_read(pcp)
+ # endif
+ 
+-#define _this_cpu_generic_to_op(pcp, val, op)				\
+-do {									\
+-	unsigned long flags;						\
+-	raw_local_irq_save(flags);					\
+-	*raw_cpu_ptr(&(pcp)) op val;					\
+-	raw_local_irq_restore(flags);					\
+-} while (0)
+-
+ # ifndef this_cpu_write_1
+ #  define this_cpu_write_1(pcp, val)	_this_cpu_generic_to_op((pcp), (val), =)
+ # endif
+@@ -306,17 +350,6 @@ do {									\
+ #  define this_cpu_or_8(pcp, val)	_this_cpu_generic_to_op((pcp), (val), |=)
+ # endif
+ 
+-#define _this_cpu_generic_add_return(pcp, val)				\
+-({									\
+-	typeof(pcp) ret__;						\
+-	unsigned long flags;						\
+-	raw_local_irq_save(flags);					\
+-	raw_cpu_add(pcp, val);					\
+-	ret__ = raw_cpu_read(pcp);					\
+-	raw_local_irq_restore(flags);					\
+-	ret__;								\
+-})
+-
+ # ifndef this_cpu_add_return_1
+ #  define this_cpu_add_return_1(pcp, val)	_this_cpu_generic_add_return(pcp, val)
+ # endif
+@@ -330,16 +363,6 @@ do {									\
+ #  define this_cpu_add_return_8(pcp, val)	_this_cpu_generic_add_return(pcp, val)
+ # endif
+ 
+-#define _this_cpu_generic_xchg(pcp, nval)				\
+-({	typeof(pcp) ret__;						\
+-	unsigned long flags;						\
+-	raw_local_irq_save(flags);					\
+-	ret__ = raw_cpu_read(pcp);					\
+-	raw_cpu_write(pcp, nval);					\
+-	raw_local_irq_restore(flags);					\
+-	ret__;								\
+-})
+-
+ # ifndef this_cpu_xchg_1
+ #  define this_cpu_xchg_1(pcp, nval)	_this_cpu_generic_xchg(pcp, nval)
+ # endif
+@@ -353,18 +376,6 @@ do {									\
+ #  define this_cpu_xchg_8(pcp, nval)	_this_cpu_generic_xchg(pcp, nval)
+ # endif
+ 
+-#define _this_cpu_generic_cmpxchg(pcp, oval, nval)			\
+-({									\
+-	typeof(pcp) ret__;						\
+-	unsigned long flags;						\
+-	raw_local_irq_save(flags);					\
+-	ret__ = raw_cpu_read(pcp);					\
+-	if (ret__ == (oval))						\
+-		raw_cpu_write(pcp, nval);				\
+-	raw_local_irq_restore(flags);					\
+-	ret__;								\
+-})
+-
+ # ifndef this_cpu_cmpxchg_1
+ #  define this_cpu_cmpxchg_1(pcp, oval, nval)	_this_cpu_generic_cmpxchg(pcp, oval, nval)
+ # endif
+@@ -378,17 +389,6 @@ do {									\
+ #  define this_cpu_cmpxchg_8(pcp, oval, nval)	_this_cpu_generic_cmpxchg(pcp, oval, nval)
+ # endif
+ 
+-#define _this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
+-({									\
+-	int ret__;							\
+-	unsigned long flags;						\
+-	raw_local_irq_save(flags);					\
+-	ret__ = raw_cpu_generic_cmpxchg_double(pcp1, pcp2,		\
+-			oval1, oval2, nval1, nval2);			\
+-	raw_local_irq_restore(flags);					\
+-	ret__;								\
+-})
+-
+ # ifndef this_cpu_cmpxchg_double_1
+ #  define this_cpu_cmpxchg_double_1(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
+ 	_this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
+diff --git a/include/linux/percpu-defs.h b/include/linux/percpu-defs.h
+index 8e66e76..2dcacc5 100644
+--- a/include/linux/percpu-defs.h
++++ b/include/linux/percpu-defs.h
+@@ -55,26 +55,6 @@
+ 	__attribute__((section(".discard"), unused))
+ 
  /*
-  * Decrement decay value. We're using DECAY_BITS bits to denote decay of an
-  * element in the array. On insertion and any access, it gets maxed
-@@ -180,6 +199,7 @@ static u64 del_lru_elem_unlocked(struct ce_array *ca)
- {
- 	unsigned int min = FULL_COUNT_MASK;
- 	int i, min_idx = 0;
-+	u64 pfn;
+- * This macro serves two purposes.  It verifies @ptr is a percpu pointer
+- * without evaluating @ptr and provides the data dependency barrier paired
+- * with smp_wmb() at the end of the allocation path so that the memory
+- * clearing in the allocation path is visible to all percpu accsses.
+- *
+- * The existence of the data dependency barrier is guaranteed and percpu
+- * users can take advantage of it - e.g. percpu area updates followed by
+- * smp_wmb() and then a percpu pointer assignment are guaranteed to be
+- * visible to accessors which access through the assigned percpu pointer.
+- *
+- * + 0 is required in order to convert the pointer type from a
+- * potential array type to a pointer to a single item of the array.
+- */
+-#define __verify_pcpu_ptr(ptr)	do {					\
+-	const void __percpu *__vpp_verify = (typeof((ptr) + 0))NULL;	\
+-	(void)__vpp_verify;						\
+-	smp_read_barrier_depends();					\
+-} while (0)
+-
+-/*
+  * s390 and alpha modules require percpu variables to be defined as
+  * weak to force the compiler to generate GOT based external
+  * references for them.  This is necessary because percpu sections
+@@ -212,6 +192,26 @@
+  */
+ #ifndef __ASSEMBLY__
  
- 	for (i = 0; i < ca->n; i++) {
- 		unsigned int this = FULL_COUNT(ca->array[i]);
-@@ -189,9 +209,14 @@ static u64 del_lru_elem_unlocked(struct ce_array *ca)
- 		}
- 	}
- 
-+	pfn = PFN(ca->array[min_idx]);
++/*
++ * This macro serves two purposes.  It verifies @ptr is a percpu pointer
++ * without evaluating @ptr and provides the data dependency barrier paired
++ * with smp_wmb() at the end of the allocation path so that the memory
++ * clearing in the allocation path is visible to all percpu accsses.
++ *
++ * The existence of the data dependency barrier is guaranteed and percpu
++ * users can take advantage of it - e.g. percpu area updates followed by
++ * smp_wmb() and then a percpu pointer assignment are guaranteed to be
++ * visible to accessors which access through the assigned percpu pointer.
++ *
++ * + 0 is required in order to convert the pointer type from a
++ * potential array type to a pointer to a single item of the array.
++ */
++#define __verify_pcpu_ptr(ptr)	do {					\
++	const void __percpu *__vpp_verify = (typeof((ptr) + 0))NULL;	\
++	(void)__vpp_verify;						\
++	smp_read_barrier_depends();					\
++} while (0)
 +
-+	pr_err("%s: Deleting ca[%d]: %016llu|%03x\n",
-+		__func__, min_idx, pfn, min);
-+
- 	__del_elem(ca, min_idx);
- 
--	return PFN(ca->array[min_idx]);
-+	return pfn;
- }
+ #ifdef CONFIG_SMP
  
  /*
-@@ -266,6 +291,7 @@ int ce_add_elem(u64 pfn)
- 	}
- 
- unlock:
-+	dump_array(ca);
- 	mutex_unlock(&ce_mutex);
- 
- 	return ret;
 -- 
-2.0.0
+1.9.3
 
