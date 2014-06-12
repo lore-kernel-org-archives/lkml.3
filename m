@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753798AbaFLVUb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 17:20:31 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:26472 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753357AbaFLVUT (ORCPT
+	id S1753847AbaFLVU6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 17:20:58 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:33455 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752396AbaFLVUR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 17:20:19 -0400
+	Thu, 12 Jun 2014 17:20:17 -0400
 From: Jason Low <jason.low2@hp.com>
 To: mingo@kernel.org, peterz@infradead.org
 Cc: linux-kernel@vger.kernel.org, davidlohr@hp.com, Waiman.Long@hp.com,
         scott.norton@hp.com, aswin@hp.com, jason.low2@hp.com
-Subject: [PATCH v3 3/3] mutex: Optimize mutex trylock slowpath
-Date: Thu, 12 Jun 2014 14:20:14 -0700
-Message-Id: <1402608014-11473-4-git-send-email-jason.low2@hp.com>
+Subject: [PATCH v3 1/3] mutex: Correct documentation on mutex optimistic spinning
+Date: Thu, 12 Jun 2014 14:20:12 -0700
+Message-Id: <1402608014-11473-2-git-send-email-jason.low2@hp.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1402608014-11473-1-git-send-email-jason.low2@hp.com>
 References: <1402608014-11473-1-git-send-email-jason.low2@hp.com>
@@ -21,40 +21,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mutex_trylock() function calls into __mutex_trylock_fastpath() when
-trying to obtain the mutex. On 32 bit x86, in the !__HAVE_ARCH_CMPXCHG
-case, __mutex_trylock_fastpath() calls directly into __mutex_trylock_slowpath()
-regardless of whether or not the mutex is locked.
-  
-In __mutex_trylock_slowpath(), we then acquire the wait_lock spinlock, xchg()
-lock->count with -1, then set lock->count back to 0 if there are no waiters,
-and return true if the prev lock count was 1.
+The mutex optimistic spinning documentation states that we spin for
+acquisition when we find that there are no pending waiters. However,
+in actuality, whether or not there are waiters for the mutex doesn't
+determine if we will spin for it.
 
-However, if the mutex is already locked, then there isn't much point
-in attempting all of the above expensive operations. In this patch, we only
-attempt the above trylock operations if the mutex is unlocked.
+This patch removes that statement and also adds a comment which
+mentions that we spin for the mutex while we don't need to reschedule.
 
-Reviewed-by: Davidlohr Bueso <davidlohr@hp.com>
+Acked-by: Davidlohr Bueso <davidlohr@hp.com>
 Signed-off-by: Jason Low <jason.low2@hp.com>
 ---
- kernel/locking/mutex.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ kernel/locking/mutex.c |   10 ++++------
+ 1 files changed, 4 insertions(+), 6 deletions(-)
 
 diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
-index e4d997b..11b103d 100644
+index bc73d33..dd26bf6 100644
 --- a/kernel/locking/mutex.c
 +++ b/kernel/locking/mutex.c
-@@ -820,6 +820,10 @@ static inline int __mutex_trylock_slowpath(atomic_t *lock_count)
- 	unsigned long flags;
- 	int prev;
- 
-+	/* No need to trylock if the mutex is locked. */
-+	if (mutex_is_locked(lock))
-+		return 0;
-+
- 	spin_lock_mutex(&lock->wait_lock, flags);
- 
- 	prev = atomic_xchg(&lock->count, -1);
+@@ -388,12 +388,10 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+ 	/*
+ 	 * Optimistic spinning.
+ 	 *
+-	 * We try to spin for acquisition when we find that there are no
+-	 * pending waiters and the lock owner is currently running on a
+-	 * (different) CPU.
+-	 *
+-	 * The rationale is that if the lock owner is running, it is likely to
+-	 * release the lock soon.
++	 * We try to spin for acquisition when we find that the lock owner
++	 * is currently running on a (different) CPU and while we don't
++	 * need to reschedule. The rationale is that if the lock owner is
++	 * running, it is likely to release the lock soon.
+ 	 *
+ 	 * Since this needs the lock owner, and this mutex implementation
+ 	 * doesn't track the owner atomically in the lock field, we need to
 -- 
 1.7.1
 
