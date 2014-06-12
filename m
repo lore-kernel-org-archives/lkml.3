@@ -1,108 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752557AbaFLUNw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 16:13:52 -0400
-Received: from mail-pb0-f74.google.com ([209.85.160.74]:59633 "EHLO
-	mail-pb0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752474AbaFLUNv (ORCPT
+	id S1752253AbaFLUQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 16:16:58 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:48952 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751634AbaFLUQ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 16:13:51 -0400
-From: David Riley <davidriley@chromium.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Doug Anderson <dianders@chromium.org>, linux-kernel@vger.kernel.org,
-        David Riley <davidriley@chromium.org>
-Subject: [PATCH v3 2/2] tools: add script to test udelay
-Date: Thu, 12 Jun 2014 13:13:12 -0700
-Message-Id: <1402603992-12466-3-git-send-email-davidriley@chromium.org>
-X-Mailer: git-send-email 2.0.0.526.g5318336
-In-Reply-To: <1402603992-12466-1-git-send-email-davidriley@chromium.org>
-References: <1402603992-12466-1-git-send-email-davidriley@chromium.org>
+	Thu, 12 Jun 2014 16:16:56 -0400
+Message-ID: <539A0AB6.90200@codeaurora.org>
+Date: Thu, 12 Jun 2014 13:16:54 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Kumar Gala <galak@codeaurora.org>
+CC: Kishon Vijay Abraham I <kishon@ti.com>, linux-ide@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH 1/2] phy: qcom: Add driver for QCOM IPQ806x SATA PHY
+References: <1402600724-20651-1-git-send-email-galak@codeaurora.org>
+In-Reply-To: <1402600724-20651-1-git-send-email-galak@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This script makes use of the udelay_test module to exercise udelay()
-and ensure that it is delaying long enough (as compared to ktime).
+On 06/12/14 12:18, Kumar Gala wrote:
+> +
+> +struct qcom_ipq806x_sata_phy {
+> +	struct device *dev;
 
-Signed-off-by: David Riley <davidriley@chromium.org>
----
- tools/time/udelay_test.sh | 66 +++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 66 insertions(+)
- create mode 100755 tools/time/udelay_test.sh
+Is this used?
 
-diff --git a/tools/time/udelay_test.sh b/tools/time/udelay_test.sh
-new file mode 100755
-index 0000000..12d46b9
---- /dev/null
-+++ b/tools/time/udelay_test.sh
-@@ -0,0 +1,66 @@
-+#!/bin/bash
-+
-+# udelay() test script
-+#
-+# Test is executed by writing and reading to /sys/kernel/debug/udelay_test
-+# and exercises a variety of delays to ensure that udelay() is delaying
-+# at least as long as requested (as compared to ktime).
-+#
-+# Copyright (C) 2014 Google, Inc.
-+#
-+# This software is licensed under the terms of the GNU General Public
-+# License version 2, as published by the Free Software Foundation, and
-+# may be copied, distributed, and modified under those terms.
-+#
-+# This program is distributed in the hope that it will be useful,
-+# but WITHOUT ANY WARRANTY; without even the implied warranty of
-+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+# GNU General Public License for more details.
-+
-+MODULE_NAME=udelay_test
-+UDELAY_PATH=/sys/kernel/debug/udelay_test
-+
-+setup()
-+{
-+	/sbin/modprobe -q $MODULE_NAME
-+	tmp_file=`mktemp`
-+}
-+
-+test_one()
-+{
-+	delay=$1
-+	echo $delay > $UDELAY_PATH
-+	tee -a $tmp_file < $UDELAY_PATH
-+}
-+
-+cleanup()
-+{
-+	if [ -f $tmp_file ]; then
-+		rm $tmp_file
-+	fi
-+	/sbin/modprobe -q -r $MODULE_NAME
-+}
-+
-+trap cleanup EXIT
-+setup
-+
-+# Delay for a variety of times.
-+# 1..200, 200..500 (by 10), 500..2000 (by 100)
-+for (( delay = 1; delay < 200; delay += 1 )); do
-+	test_one $delay
-+done
-+for (( delay = 200; delay < 500; delay += 10 )); do
-+	test_one $delay
-+done
-+for (( delay = 500; delay <= 2000; delay += 100 )); do
-+	test_one $delay
-+done
-+
-+# Search for failures
-+count=`grep -c FAIL $tmp_file`
-+if [ $? -eq "0" ]; then
-+	echo "ERROR: $count delays failed to delay long enough"
-+	retcode=1
-+fi
-+
-+exit $retcode
+> +	void __iomem *mmio;
+> +	struct clk *cfg_clk;
+[...]
+> +
+> +static int qcom_ipq806x_sata_phy_init(struct phy *generic_phy)
+> +{
+> +	struct qcom_ipq806x_sata_phy *phy = phy_get_drvdata(generic_phy);
+> +	u32 reg = 0;
+
+unnecessary initialization
+
+> +
+> +static int qcom_ipq806x_sata_phy_exit(struct phy *generic_phy)
+> +{
+> +	struct qcom_ipq806x_sata_phy *phy = phy_get_drvdata(generic_phy);
+> +	u32 reg = 0;
+
+unnecessary initialization
+
+>
+> +static int qcom_ipq806x_sata_phy_probe(struct platform_device *pdev)
+> +{
+> +	struct qcom_ipq806x_sata_phy *phy;
+> +	struct device *dev = &pdev->dev;
+> +	struct resource *res;
+> +	struct phy_provider *phy_provider;
+> +	struct phy *generic_phy;
+> +	int ret;
+> +
+> +	phy = devm_kzalloc(dev, sizeof(*phy), GFP_KERNEL);
+> +	if (!phy) {
+> +		dev_err(dev, "%s: failed to allocate phy\n", __func__);
+> +		return -ENOMEM;
+> +	}
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	phy->mmio = devm_ioremap_resource(dev, res);
+> +	if (IS_ERR(phy->mmio)) {
+> +		dev_err(dev, "%s: phy mmio get resource failed\n", __func__);
+
+Unnecessary error message.
+
+> +		return PTR_ERR(phy->mmio);
+> +	}
+> +
+> +	phy_provider = devm_of_phy_provider_register(dev, of_phy_simple_xlate);
+> +	if (IS_ERR(phy_provider)) {
+> +		dev_err(dev, "%s: failed to register phy\n", __func__);
+> +		return PTR_ERR(phy_provider);
+> +	}
+> +
+> +	generic_phy = devm_phy_create(dev, &qcom_ipq806x_sata_phy_ops, NULL);
+> +	if (IS_ERR(generic_phy)) {
+> +		dev_err(dev, "%s: failed to create phy\n", __func__);
+> +		return PTR_ERR(generic_phy);
+> +	}
+> +
+> +	phy->cfg_clk = devm_clk_get(dev, "cfg");
+> +	if (IS_ERR(phy->cfg_clk)) {
+> +		dev_err(dev, "Failed to get sata cfg clock\n");
+> +		return PTR_ERR(phy->cfg_clk);
+> +	}
+> +
+> +	ret = clk_prepare_enable(phy->cfg_clk);
+> +	if (ret)
+> +		return ret;
+
+Shouldn't there be a remove that disables this clock?
+
 -- 
-2.0.0.526.g5318336
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
