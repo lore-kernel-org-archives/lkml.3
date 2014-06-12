@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754685AbaFLUih (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 16:38:37 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:51118 "EHLO
+	id S1754107AbaFLUjD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 16:39:03 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:51722 "EHLO
 	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753643AbaFLUif (ORCPT
+	with ESMTP id S1753730AbaFLUi5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 16:38:35 -0400
+	Thu, 12 Jun 2014 16:38:57 -0400
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <akpm@linux-foundation.org>
 CC: <cl@linux.com>, <iamjoonsoo.kim@lge.com>, <rientjes@google.com>,
         <penberg@kernel.org>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
         <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: [PATCH -mm v3 1/8] memcg: cleanup memcg_cache_params refcnt usage
-Date: Fri, 13 Jun 2014 00:38:15 +0400
-Message-ID: <178605c7465356f9cf00ee0f2cb52e554085abc0.1402602126.git.vdavydov@parallels.com>
+Subject: [PATCH -mm v3 7/8] slub: make dead memcg caches discard free slabs immediately
+Date: Fri, 13 Jun 2014 00:38:21 +0400
+Message-ID: <d4608a7a00080a51740d747703af5462f1255176.1402602126.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1402602126.git.vdavydov@parallels.com>
 References: <cover.1402602126.git.vdavydov@parallels.com>
@@ -25,74 +25,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, we count the number of pages allocated to a per memcg cache
-in memcg_cache_params->nr_pages. We only use this counter to find out if
-the cache is empty and can be destroyed. So let's rename it to refcnt
-and make it count not pages, but slabs so that we can use atomic_inc/dec
-instead of atomic_add/sub in memcg_charge/uncharge_slab.
+Since a dead memcg cache is destroyed only after the last slab allocated
+to it is freed, we must disable caching of empty slabs for such caches,
+otherwise they will be hanging around forever.
 
-Also, as the number of slabs theoretically can be greater than INT_MAX,
-let's use atomic_long for the counter.
+This patch makes SLUB discard dead memcg caches' slabs as soon as they
+become empty. To achieve that, it disables per cpu partial lists for
+dead caches (see put_cpu_partial) and forbids keeping empty slabs on per
+node partial lists by setting cache's min_partial to 0 on
+kmem_cache_shrink, which is always called on memcg offline (see
+memcg_unregister_all_caches).
 
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Acked-by: Christoph Lameter <cl@linux.com>
+Thanks-to: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 ---
- include/linux/slab.h |    4 ++--
- mm/memcontrol.c      |    6 +++---
- 2 files changed, 5 insertions(+), 5 deletions(-)
+ mm/slub.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-diff --git a/include/linux/slab.h b/include/linux/slab.h
-index 1d9abb7d22a0..1985bd9bec7d 100644
---- a/include/linux/slab.h
-+++ b/include/linux/slab.h
-@@ -526,7 +526,7 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
-  * @memcg: pointer to the memcg this cache belongs to
-  * @list: list_head for the list of all caches in this memcg
-  * @root_cache: pointer to the global, root cache, this cache was derived from
-- * @nr_pages: number of pages that belongs to this cache.
-+ * @refcnt: reference counter
-  */
- struct memcg_cache_params {
- 	bool is_root_cache;
-@@ -539,7 +539,7 @@ struct memcg_cache_params {
- 			struct mem_cgroup *memcg;
- 			struct list_head list;
- 			struct kmem_cache *root_cache;
--			atomic_t nr_pages;
-+			atomic_long_t refcnt;
- 		};
- 	};
- };
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 15bda8133ff9..98a24e5ea4b5 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -3279,7 +3279,7 @@ static void memcg_unregister_all_caches(struct mem_cgroup *memcg)
- 	list_for_each_entry_safe(params, tmp, &memcg->memcg_slab_caches, list) {
- 		cachep = memcg_params_to_cache(params);
- 		kmem_cache_shrink(cachep);
--		if (atomic_read(&cachep->memcg_params->nr_pages) == 0)
-+		if (atomic_long_read(&cachep->memcg_params->refcnt) == 0)
- 			memcg_unregister_cache(cachep);
- 	}
- 	mutex_unlock(&memcg_slab_mutex);
-@@ -3353,14 +3353,14 @@ int __memcg_charge_slab(struct kmem_cache *cachep, gfp_t gfp, int order)
- 	res = memcg_charge_kmem(cachep->memcg_params->memcg, gfp,
- 				PAGE_SIZE << order);
- 	if (!res)
--		atomic_add(1 << order, &cachep->memcg_params->nr_pages);
-+		atomic_long_inc(&cachep->memcg_params->refcnt);
- 	return res;
+diff --git a/mm/slub.c b/mm/slub.c
+index 52565a9426ef..0d2d1978e62c 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -2064,6 +2064,14 @@ static void put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
+ 
+ 	} while (this_cpu_cmpxchg(s->cpu_slab->partial, oldpage, page)
+ 								!= oldpage);
++
++	if (memcg_cache_dead(s)) {
++		unsigned long flags;
++
++		local_irq_save(flags);
++		unfreeze_partials(s, this_cpu_ptr(s->cpu_slab));
++		local_irq_restore(flags);
++	}
+ #endif
  }
  
- void __memcg_uncharge_slab(struct kmem_cache *cachep, int order)
- {
- 	memcg_uncharge_kmem(cachep->memcg_params->memcg, PAGE_SIZE << order);
--	atomic_sub(1 << order, &cachep->memcg_params->nr_pages);
-+	atomic_long_dec(&cachep->memcg_params->refcnt);
- }
+@@ -3409,6 +3417,9 @@ int __kmem_cache_shrink(struct kmem_cache *s)
+ 		kmalloc(sizeof(struct list_head) * objects, GFP_KERNEL);
+ 	unsigned long flags;
  
- /*
++	if (memcg_cache_dead(s))
++		s->min_partial = 0;
++
+ 	if (!slabs_by_inuse) {
+ 		/*
+ 		 * Do not fail shrinking empty slabs if allocation of the
 -- 
 1.7.10.4
 
