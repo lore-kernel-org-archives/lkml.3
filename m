@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754332AbaFLFZm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 01:25:42 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:55579 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751427AbaFLFZj (ORCPT
+	id S1754628AbaFLF0F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 01:26:05 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:48704 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754528AbaFLF0C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 01:25:39 -0400
-Date: Thu, 12 Jun 2014 07:25:36 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Chris Ball <chris@printf.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mmc@vger.kernel.org
-Subject: Re: [GIT PULL] MMC updates for 3.16-rc1
-In-Reply-To: <CA+55aFyEbFLFWLKP5kHw85qTRNoviFk8LhivxXJgAMROdvJtsg@mail.gmail.com>
-Message-ID: <Pine.LNX.4.64.1406120724100.5160@axis700.grange>
-References: <86ha3so84o.fsf@void.printf.net>
- <CA+55aFxBwteZeUHG+Z-cdLU_YCO4f8TDuYvGmXc0-v9M1H11+g@mail.gmail.com>
- <CA+55aFyEbFLFWLKP5kHw85qTRNoviFk8LhivxXJgAMROdvJtsg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:R68iI6pgnx6hAdgV8iyjGTL9MOxREG9dXXfwegTRMUh
- q8paCZcp5DBMkZFZ1gU9hxHkqf45x/JH5eaNhqYEWu8F2mD8qS
- 52L8lJMr4NbpAnH5Gk7WAwIgnIshjYupocr2bB+f7Z8omnPYuO
- eB3+8QktqpJELJZiel4Asf6zvg7axYRSkF7wba6gMVbLbH3Y/R
- 2Sagoy9mwD5ckakiCVG4rqueloY1Dma5xCrPwP3kh6ikLTV1xh
- IwpQ/zua6BQee7Aay0qALD/JiMTz5c5CqioU2mUlDNQSJnHz7X
- FE3LJ+9zx3jKiOdFJncw4xXSPYb0c3imP2yMS4jX6Zivr86K8/
- gqgvS+r0k6mYtZsM9m3mXgEe3jOn2dvOiNm3xqsX+HKsCheVHs
- UzQk0StbMe+Wg==
+	Thu, 12 Jun 2014 01:26:02 -0400
+X-AuditID: cbfee61a-b7fef6d00000200b-4d-539939e7aba2
+From: Chao Yu <chao2.yu@samsung.com>
+To: Jaegeuk Kim <jaegeuk@kernel.org>
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [f2fs-dev][PATCH 2/3] f2fs: avoid unneeded SetPageUptodate in
+ f2fs_write_end
+Date: Thu, 12 Jun 2014 13:25:01 +0800
+Message-id: <000101cf85fe$cc3b27d0$64b17770$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac+F/Y2M3vdpcY2hR3yqK5MGlXO1QQ==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsVy+t9jAd3nljODDTparSyerJ/FbHFpkbvF
+	nr0nWSwu75rD5sDisWlVJ5vH7gWfmTw+b5ILYI7isklJzcksSy3St0vgynj5qb7gLEtF2+S0
+	Bsa7zF2MnBwSAiYSLzp/MkHYYhIX7q1n62Lk4hASWMQosXj+DSjnB6PEke2L2UGq2ARUJJZ3
+	/AfrEAGyDy26DBZnFsiUuNc0A2yqsEC4xKz5SxlBbBYBVYmdH4+ygdi8ApYSexa0MUHYghI/
+	Jt9jgejVkli/8zgThC0vsXnNW6jrFCR2nH3NCLFLT+LJjD+sEDXiEhuP3GKZwCgwC8moWUhG
+	zUIyahaSlgWMLKsYRVMLkguKk9JzDfWKE3OLS/PS9ZLzczcxgsP4mdQOxpUNFocYBTgYlXh4
+	I+pnBAuxJpYVV+YeYpTgYFYS4XU8DxTiTUmsrEotyo8vKs1JLT7EKM3BoiTOe6DVOlBIID2x
+	JDU7NbUgtQgmy8TBKdXA6Jl4eP50B8auCnZVjX/7OI4u7vD+ZyxR+iBAJ1Xr+N+uP3dueC1z
+	vzajsHU9o6X2n8mZPCdj0zoXdPOqPOsLtDDjm1rT8dFp6gfZ/ZqtF5Y3KMpySMjvKeM5JL5P
+	gmOPh87VoqI7kib7c7Pr7Lx81Yx3OG/7PjPhfbQDW/7BFUZ/me6+EvusxFKckWioxVxUnAgA
+	WLkWvV8CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+We have already set page update in ->write_begin, so we should remove redundant
+SetPageUptodate in ->write_end.
 
-On Wed, 11 Jun 2014, Linus Torvalds wrote:
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+---
+ fs/f2fs/data.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-> On Tue, Jun 10, 2014 at 2:50 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> >
-> > Also, that new drivers/mmc/host/usdhi6rol0.c driver is one f*cking
-> > noisy compile, and knisr certainly has never been tested in a 64-bit
-> > environment. Please either fix it, or make it depend on BROKEN.
-> 
-> Guys? Seriously, if that driver isn't fixed, I'm going to mark it
-> broken myself. It pretty much generates as many lines of warnings as
-> the rest of my "allmodconfig" build combined.
-> 
-> It's extremely annoying, and the crazy warnings are likely to hide
-> potential real problems elsewhere, so right now that driver has
-> negative value. I do a lot of allmodconfig builds during the merge
-> window, and I am not going to look at that warning much longer.
-> 
-> Fix it promptly, or it gets disabled.
+diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+index c1fb6dd..fd133cf 100644
+--- a/fs/f2fs/data.c
++++ b/fs/f2fs/data.c
+@@ -1003,7 +1003,6 @@ static int f2fs_write_end(struct file *file,
+ 
+ 	trace_f2fs_write_end(inode, pos, len, copied);
+ 
+-	SetPageUptodate(page);
+ 	set_page_dirty(page);
+ 
+ 	if (pos + copied > i_size_read(inode)) {
+-- 
+1.7.9.5
 
-I sent a patch a few hours ago: 
-https://patchwork.kernel.org/patch/4338531/ Since it's only changing print 
-format strings, it should be a trivial one to review, so, just waiting for 
-Chris to pick it up and push it to you. Sorry about the trouble.
 
-Thanks
-Guennadi
