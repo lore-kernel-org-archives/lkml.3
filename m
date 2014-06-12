@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754732AbaFLUiv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 16:38:51 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:51472 "EHLO
+	id S1754715AbaFLUir (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 16:38:47 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:51285 "EHLO
 	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753697AbaFLUis (ORCPT
+	with ESMTP id S1752089AbaFLUik (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 16:38:48 -0400
+	Thu, 12 Jun 2014 16:38:40 -0400
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <akpm@linux-foundation.org>
 CC: <cl@linux.com>, <iamjoonsoo.kim@lge.com>, <rientjes@google.com>,
         <penberg@kernel.org>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
         <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: [PATCH -mm v3 5/8] slub: make slab_free non-preemptable
-Date: Fri, 13 Jun 2014 00:38:19 +0400
-Message-ID: <0c66165d4f46fa80cd31df147e7bbcaa5fea784c.1402602126.git.vdavydov@parallels.com>
+Subject: [PATCH -mm v3 3/8] memcg: mark caches that belong to offline memcgs as dead
+Date: Fri, 13 Jun 2014 00:38:17 +0400
+Message-ID: <8f3b741b0d62204c34c6935fe6b00f73c3e1fc49.1402602126.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1402602126.git.vdavydov@parallels.com>
 References: <cover.1402602126.git.vdavydov@parallels.com>
@@ -25,90 +25,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since per memcg cache destruction is scheduled when the last slab is
-freed, to avoid use-after-free in kmem_cache_free we should either
-rearrange code in kmem_cache_free so that it won't dereference the cache
-ptr after freeing the object, or wait for all kmem_cache_free's to
-complete before proceeding to cache destruction.
-
-The former approach isn't a good option from the future development
-point of view, because every modifications to kmem_cache_free must be
-done with great care then. Hence we should provide a method to wait for
-all currently executing kmem_cache_free's to finish.
-
-This patch makes SLUB's implementation of kmem_cache_free
-non-preemptable. As a result, synchronize_sched() will work as a barrier
-against kmem_cache_free's in flight, so that issuing it before cache
-destruction will protect us against the use-after-free.
-
-This won't affect performance of kmem_cache_free, because we already
-disable preemption there, and this patch only moves preempt_enable to
-the end of the function. Neither should it affect the system latency,
-because kmem_cache_free is extremely short, even in its slow path.
-
-SLAB's version of kmem_cache_free already proceeds with irqs disabled,
-so we only add a comment explaining why it's necessary for kmemcg there.
+This will be used by the next patches.
 
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Acked-by: Christoph Lameter <cl@linux.com>
 ---
- mm/slab.c |    6 ++++++
- mm/slub.c |   12 ++++++------
- 2 files changed, 12 insertions(+), 6 deletions(-)
+ include/linux/slab.h |    2 ++
+ mm/memcontrol.c      |    3 +++
+ mm/slab.h            |   25 +++++++++++++++++++++++++
+ 3 files changed, 30 insertions(+)
 
-diff --git a/mm/slab.c b/mm/slab.c
-index 9ca3b87edabc..b3af82419251 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -3450,6 +3450,12 @@ static inline void __cache_free(struct kmem_cache *cachep, void *objp,
- {
- 	struct array_cache *ac = cpu_cache_get(cachep);
- 
-+	/*
-+	 * Since we free objects with irqs and therefore preemption disabled,
-+	 * we can use synchronize_sched() to wait for all currently executing
-+	 * kfree's to finish. This is necessary to avoid use-after-free on
-+	 * per memcg cache destruction.
-+	 */
- 	check_irq_off();
- 	kmemleak_free_recursive(objp, cachep->flags);
- 	objp = cache_free_debugcheck(cachep, objp, caller);
-diff --git a/mm/slub.c b/mm/slub.c
-index 35741592be8c..52565a9426ef 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2673,18 +2673,17 @@ static __always_inline void slab_free(struct kmem_cache *s,
- 
- 	slab_free_hook(s, x);
- 
--redo:
- 	/*
--	 * Determine the currently cpus per cpu slab.
--	 * The cpu may change afterward. However that does not matter since
--	 * data is retrieved via this pointer. If we are on the same cpu
--	 * during the cmpxchg then the free will succedd.
-+	 * We could make this function fully preemptable, but then we wouldn't
-+	 * have a method to wait for all currently executing kfree's to finish,
-+	 * which is necessary to avoid use-after-free on per memcg cache
-+	 * destruction.
- 	 */
- 	preempt_disable();
-+redo:
- 	c = this_cpu_ptr(s->cpu_slab);
- 
- 	tid = c->tid;
--	preempt_enable();
- 
- 	if (likely(page == c->page)) {
- 		set_freepointer(s, object, c->freelist);
-@@ -2701,6 +2700,7 @@ redo:
- 	} else
- 		__slab_free(s, page, x, addr);
- 
-+	preempt_enable();
+diff --git a/include/linux/slab.h b/include/linux/slab.h
+index d9716fdc8211..d99d5212b815 100644
+--- a/include/linux/slab.h
++++ b/include/linux/slab.h
+@@ -527,6 +527,7 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
+  * @list: list_head for the list of all caches in this memcg
+  * @root_cache: pointer to the global, root cache, this cache was derived from
+  * @refcnt: reference counter
++ * @dead: set to true when owner memcg is turned offline
+  * @unregister_work: worker to destroy the cache
+  */
+ struct memcg_cache_params {
+@@ -541,6 +542,7 @@ struct memcg_cache_params {
+ 			struct list_head list;
+ 			struct kmem_cache *root_cache;
+ 			atomic_long_t refcnt;
++			bool dead;
+ 			struct work_struct unregister_work;
+ 		};
+ 	};
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 886b5b414958..8f08044d26a7 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3294,7 +3294,10 @@ static void memcg_unregister_all_caches(struct mem_cgroup *memcg)
+ 	mutex_lock(&memcg_slab_mutex);
+ 	list_for_each_entry_safe(params, tmp, &memcg->memcg_slab_caches, list) {
+ 		cachep = memcg_params_to_cache(params);
++
++		memcg_cache_mark_dead(cachep);
+ 		kmem_cache_shrink(cachep);
++
+ 		if (atomic_long_dec_and_test(&cachep->memcg_params->refcnt))
+ 			memcg_unregister_cache(cachep);
+ 	}
+diff --git a/mm/slab.h b/mm/slab.h
+index 961a3fb1f5a2..2af5a0bc00a4 100644
+--- a/mm/slab.h
++++ b/mm/slab.h
+@@ -121,6 +121,26 @@ static inline bool is_root_cache(struct kmem_cache *s)
+ 	return !s->memcg_params || s->memcg_params->is_root_cache;
  }
  
- void kmem_cache_free(struct kmem_cache *s, void *x)
++static inline bool memcg_cache_dead(struct kmem_cache *s)
++{
++	if (is_root_cache(s))
++		return false;
++
++	/*
++	 * Since this function can be called without holding any locks, it
++	 * needs a barrier here to guarantee the read won't be reordered.
++	 */
++	smp_rmb();
++	return s->memcg_params->dead;
++}
++
++static inline void memcg_cache_mark_dead(struct kmem_cache *s)
++{
++	BUG_ON(is_root_cache(s));
++	s->memcg_params->dead = true;
++	smp_wmb();		/* matches rmb in memcg_cache_dead() */
++}
++
+ static inline bool slab_equal_or_root(struct kmem_cache *s,
+ 					struct kmem_cache *p)
+ {
+@@ -203,6 +223,11 @@ static inline bool is_root_cache(struct kmem_cache *s)
+ 	return true;
+ }
+ 
++static inline bool memcg_cache_dead(struct kmem_cache *s)
++{
++	return false;
++}
++
+ static inline bool slab_equal_or_root(struct kmem_cache *s,
+ 				      struct kmem_cache *p)
+ {
 -- 
 1.7.10.4
 
