@@ -1,89 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732AbaFLU3G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 16:29:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47379 "EHLO mx1.redhat.com"
+	id S1752565AbaFLUal (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 16:30:41 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37251 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752268AbaFLU3D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 16:29:03 -0400
-Message-ID: <1402604942.3707.17.camel@ul30vt.home>
-Subject: Re: [PATCH] vfio/pci: Add extra test for extended capabilities
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Bandan Das <bsd@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Date: Thu, 12 Jun 2014 14:29:02 -0600
-In-Reply-To: <jpgwqclx4yw.fsf@nelium.bos.redhat.com>
-References: <20140612164349.9739.53824.stgit@bling.home>
-	 <jpgwqclx4yw.fsf@nelium.bos.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+	id S1751904AbaFLUaj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 16:30:39 -0400
+Message-ID: <539A0DC2.1010203@zytor.com>
+Date: Thu, 12 Jun 2014 13:29:54 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Kees Cook <keescook@chromium.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Randy Dunlap <rdunlap@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH 0/2] make kASLR vs hibernation boot-time selectable
+References: <1402602419-27934-1-git-send-email-keescook@chromium.org>	<539A0422.9010000@zytor.com> <CAGXu5jLvAr=f2MRP4Ni86-jbM7h3Mx3RQo=7coveE8ZEt12N=Q@mail.gmail.com>
+In-Reply-To: <CAGXu5jLvAr=f2MRP4Ni86-jbM7h3Mx3RQo=7coveE8ZEt12N=Q@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-06-12 at 16:12 -0400, Bandan Das wrote:
-> Alex Williamson <alex.williamson@redhat.com> writes:
+On 06/12/2014 01:27 PM, Kees Cook wrote:
+>>
+>> Any way we can make them work together instead?
 > 
-> > If the PCI core set cfg_size isn't large enough for extended
-> > capabilities, then they're not there.  Extended config space may be
-> > inaccessible due to a PCI bridge, in which case cfg_size may be cut
-> > short.
+> I'm sure there is, but I don't know the solution. :)
 > 
-> Just curious, is this part of the spec or just a convention ? I mean
-> could there be devices with quirks ?
+> At the very least this gets us one step closer (we can build them together).
+> 
 
-The PCIe bridge spec indicates that PCIe-to-PCI bridges should handle
-extended config accesses as an unsupported request.  But as in 78916b00,
-we've seen that's not always the case.  This just makes us trust
-PCI-core before the capabilities we find on the device.  The current
-quirk in the referenced commit is for a relatively uncommon topology,
-but never rule out that we couldn't have a device quirked to avoid
-touching extended config space too.  Thanks,
+But it is really invasive.
 
-Alex 
+I have to admit to being somewhat fuzzy on what the core problem with
+hibernation and kASLR is... in both cases there is a set of pages that
+need to be installed, some of which will overlap the loader kernel.
+What am I missing?
 
-> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > ---
-> >  drivers/vfio/pci/vfio_pci_config.c |   13 +++++++++----
-> >  1 file changed, 9 insertions(+), 4 deletions(-)
-> >
-> > diff --git a/drivers/vfio/pci/vfio_pci_config.c b/drivers/vfio/pci/vfio_pci_config.c
-> > index 83cd157..4a62a37 100644
-> > --- a/drivers/vfio/pci/vfio_pci_config.c
-> > +++ b/drivers/vfio/pci/vfio_pci_config.c
-> > @@ -1027,8 +1027,11 @@ static int vfio_cap_len(struct vfio_pci_device *vdev, u8 cap, u8 pos)
-> >  
-> >  		if (PCI_X_CMD_VERSION(word)) {
-> >  			/* Test for extended capabilities */
-> > -			pci_read_config_dword(pdev, PCI_CFG_SPACE_SIZE, &dword);
-> > -			vdev->extended_caps = (dword != 0);
-> > +			if (pdev->cfg_size > PCI_CFG_SPACE_SIZE) {
-> > +				pci_read_config_dword(pdev, PCI_CFG_SPACE_SIZE,
-> > +						      &dword);
-> > +				vdev->extended_caps = (dword != 0);
-> > +			}
-> >  			return PCI_CAP_PCIX_SIZEOF_V2;
-> >  		} else
-> >  			return PCI_CAP_PCIX_SIZEOF_V0;
-> > @@ -1041,8 +1044,10 @@ static int vfio_cap_len(struct vfio_pci_device *vdev, u8 cap, u8 pos)
-> >  		return byte;
-> >  	case PCI_CAP_ID_EXP:
-> >  		/* Test for extended capabilities */
-> > -		pci_read_config_dword(pdev, PCI_CFG_SPACE_SIZE, &dword);
-> > -		vdev->extended_caps = (dword != 0);
-> > +		if (pdev->cfg_size > PCI_CFG_SPACE_SIZE) {
-> > +			pci_read_config_dword(pdev, PCI_CFG_SPACE_SIZE, &dword);
-> > +			vdev->extended_caps = (dword != 0);
-> > +		}
-> >  
-> >  		/* length based on version */
-> >  		if ((pcie_caps_reg(pdev) & PCI_EXP_FLAGS_VERS) == 1)
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe kvm" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+	-hpa
 
 
