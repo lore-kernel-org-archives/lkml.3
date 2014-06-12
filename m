@@ -1,184 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751771AbaFLWTM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 18:19:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35728 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750716AbaFLWTK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 18:19:10 -0400
-Date: Fri, 13 Jun 2014 00:19:06 +0200
-From: Jan Kara <jack@suse.cz>
-To: Hannes Landeholm <hannes@jumpstarter.io>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: deadlock in fsnotify, inotify broken in 3.14.1?
-Message-ID: <20140612221906.GA13667@quack.suse.cz>
-References: <CABt9es9BZoy24cdULeutpi4wU_99iAbtu53nzYLnrzQ2JYCWYA@mail.gmail.com>
+	id S1750911AbaFLW1y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 18:27:54 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:46333 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750735AbaFLW1x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 18:27:53 -0400
+Date: Thu, 12 Jun 2014 15:27:48 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>
+Subject: Re: safety of *mutex_unlock() (Was: [BUG] signal: sighand
+ unprotected when accessed by /proc)
+Message-ID: <20140612222748.GF4581@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <alpine.DEB.2.10.1406102210580.5170@nanos>
+ <20140611155251.GA4581@linux.vnet.ibm.com>
+ <20140611170705.GA26816@redhat.com>
+ <20140611171734.GA27457@redhat.com>
+ <20140611172958.GF4581@linux.vnet.ibm.com>
+ <20140611175934.GA28912@redhat.com>
+ <20140611195613.GM4581@linux.vnet.ibm.com>
+ <20140612172844.GA15795@redhat.com>
+ <20140612203518.GZ4581@linux.vnet.ibm.com>
+ <alpine.DEB.2.10.1406122337060.5170@nanos>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CABt9es9BZoy24cdULeutpi4wU_99iAbtu53nzYLnrzQ2JYCWYA@mail.gmail.com>
+In-Reply-To: <alpine.DEB.2.10.1406122337060.5170@nanos>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14061222-6688-0000-0000-00000288520F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 16-05-14 11:40:05, Hannes Landeholm wrote:
-> We are heavily relying on inotify to buffer data that is transferred
-> between one and more processes. Recently we've been seeing production
-> servers being deadlocked under light to moderate load with the same
-> problem signature. It's happened 3 times now in about 24 hours on
-> different servers. Example extract from system log:
+On Thu, Jun 12, 2014 at 11:40:07PM +0200, Thomas Gleixner wrote:
+> On Thu, 12 Jun 2014, Paul E. McKenney wrote:
+> > On Thu, Jun 12, 2014 at 07:28:44PM +0200, Oleg Nesterov wrote:
+> > > On 06/11, Paul E. McKenney wrote:
+> > > >
+> > > > On Wed, Jun 11, 2014 at 07:59:34PM +0200, Oleg Nesterov wrote:
+> > > > > On 06/11, Paul E. McKenney wrote:
+> > > > > >
+> > > > > > I was thinking of ->boost_completion as the way to solve it easily, but
+> > > > > > what did you have in mind?
+> > > > >
+> > > > > I meant, rcu_boost() could probably just do "mtx->owner = t", we know that
+> > > > > it was unlocked by us and nobody else can use it until we set
+> > > > > t->rcu_boost_mutex.
+> > > >
+> > > > My concern with this is that rcu_read_unlock_special() could hypothetically
+> > > > get preempted (either by kernel or hypervisor), so that it might be a long
+> > > > time until it makes its reference.  But maybe that reference would be
+> > > > harmless in this case.
+> > > 
+> > > Confused... Not sure I understand what did you mean, and certainly I do not
+> > > understand how this connects to the proxy-locking method.
+> > > 
+> > > Could you explain?
+> > 
+> > Here is the hypothetical sequence of events, which cannot happen unless
+> > the CPU releasing the lock accesses the structure after releasing
+> > the lock:
+> > 
+> > 	CPU 0				CPU 1 (booster)
+> > 
+> > 	releases boost_mutex
+> > 
+> > 					acquires boost_mutex
+> > 					releases boost_mutex
+> > 					post-release boost_mutex access?
+> > 					Loops to next task to boost
+> > 					proxy-locks boost_mutex
+> > 
+> > 	post-release boost_mutex access:
+> > 		confused due to proxy-lock
+> > 		operation?
+> > 
+> > Now maybe this ends up being safe, but it sure feels like an accident
+> > waiting to happen.  Some bright developer comes up with a super-fast
+> > handoff, and blam, RCU priority boosting takes it in the shorts.  ;-)
+> > In contrast, using the completion prevents this.
+> > 
+> > > > > And if we move it into rcu_node, then we can probably kill ->rcu_boost_mutex,
+> > > > > rcu_read_unlock_special() could check rnp->boost_mutex->owner == current.
+> > > >
+> > > > If this was anywhere near a hot code path, I would be sorely tempted.
+> > > 
+> > > Ah, but I didn't mean perfomance. I think it is always good to try to remove
+> > > something from task_struct, it is huge. I do not mean sizeof() in the first
+> > > place, the very fact that I can hardly understand the purpose of a half of its
+> > > members makes me sad ;)
+> > 
+> > Now -that- just might make a huge amount of sense!  Let's see...
+> > 
+> > o	We hold the rcu_node structure's ->lock when checking the owner
+> > 	(looks like rt_mutex_owner() is the right API).
+> > 
+> > o	We hold the rcu_node structure's ->lock when doing
+> > 	rt_mutex_init_proxy_locked().
+> > 
+> > o	We -don't- hold ->lock when releasing the rt_mutex, but that
+> > 	should be OK: The owner is releasing it, and it is going to
+> > 	not-owned, so no other task can possibly see ownership moving
+> > 	to/from them.
+> > 
+> > o	The rcu_node structure grows a bit, but not enough to worry
+> > 	about, and on most systems, the decrease in task_struct size
+> > 	will more than outweigh the increase in rcu_node size.
+> > 
+> > Looks quite promising, how about the following?  (Hey, it builds, so it
+> > must be correct, right?)
 > 
-  Hum, interesting. We are hanging when trying to acquire mark_mutex but
-the traces you've posted don't show any process which is holding it. Can
-you still recreate the problem? If yes, can you do:
-  echo w >/proc/sysrq-trigger
-and post output from dmesg? Thanks!
+> True. Why should we have users if we would test the crap we produce?
 
-								Honza
+Well, it seems to be passing initial tests as well.  Must be my tests
+need more work.
 
-> kernel: INFO: task fsnotify_mark:42 blocked for more than 120 seconds.
-> kernel:       Not tainted 3.14.1-1-js #1
-> kernel: "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables
-> this message.
-> kernel: fsnotify_mark   D 0000000000000000     0    42      2 0x00000000
-> kernel:  ffff88039d81fcc0 0000000000000246 ffff88039ee7c4b0 ffff88039d81ffd8
-> kernel:  00000000000142c0 00000000000142c0 ffff88039ee7c4b0 ffff88039d81fc80
-> kernel:  ffff88039ee2f800 ffff88039ee41600 ffff88039d81fd00 ffffffff810a4664
-> kernel: Call Trace:
-> kernel:  [<ffffffff810a4664>] ? load_balance+0x174/0x890
-> kernel:  [<ffffffff8109477a>] ? update_rq_clock.part.78+0x1a/0x100
-> kernel:  [<ffffffff814db4d9>] schedule+0x29/0x70
-> kernel:  [<ffffffff814da649>] schedule_timeout+0x1e9/0x270
-> kernel:  [<ffffffff810728ab>] ? lock_timer_base.isra.35+0x2b/0x50
-> kernel:  [<ffffffff81072067>] ? internal_add_timer+0x17/0x40
-> kernel:  [<ffffffff814de216>] ? _raw_spin_unlock_irqrestore+0x16/0x30
-> kernel:  [<ffffffff81072d15>] ? mod_timer+0x115/0x260
-> kernel:  [<ffffffff814dbe93>] wait_for_common+0xd3/0x180
-> kernel:  [<ffffffff81098420>] ? wake_up_process+0x40/0x40
-> kernel:  [<ffffffff814dbf5d>] wait_for_completion+0x1d/0x20
-> kernel:  [<ffffffff810c672d>] __synchronize_srcu+0xdd/0x110
-> kernel:  [<ffffffff810c6260>] ? call_srcu+0x70/0x70
-> kernel:  [<ffffffff814de216>] ? _raw_spin_unlock_irqrestore+0x16/0x30
-> kernel:  [<ffffffff810c677d>] synchronize_srcu+0x1d/0x20
-> kernel:  [<ffffffff811e7e27>] fsnotify_mark_destroy+0x87/0x150
-> kernel:  [<ffffffff810aa930>] ? __wake_up_sync+0x20/0x20
-> kernel:  [<ffffffff811e7da0>] ? fsnotify_put_mark+0x40/0x40
-> kernel:  [<ffffffff81087762>] kthread+0xd2/0xf0
-> kernel:  [<ffffffff81087690>] ? kthread_create_on_node+0x180/0x180
-> kernel:  [<ffffffff814e663c>] ret_from_fork+0x7c/0xb0
-> kernel:  [<ffffffff81087690>] ? kthread_create_on_node+0x180/0x180
+> Just FYI, I have a patch pending which makes the release safe.
 > 
-> kernel: INFO: task jhost:411 blocked for more than 120 seconds.
-> kernel:       Not tainted 3.14.1-1-js #1
-> kernel: "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables
-> this message.
-> kernel: jhost           D 0000000000000000     0   411    399 0x00000000
-> kernel:  ffff8803985b1e90 0000000000000282 ffff8800ff93b110 ffff8803985b1fd8
-> kernel:  00000000000142c0 00000000000142c0 ffff8800ff93b110 ffffffff81283ae0
-> kernel:  ffff8802bf663300 ffff8802bf663300 ffff8803985b1e00 ffffffff8108a245
-> kernel: Call Trace:
-> kernel:  [<ffffffff81283ae0>] ? timerqueue_add+0x60/0xb0
-> kernel:  [<ffffffff8108a245>] ? enqueue_hrtimer+0x25/0xb0
-> kernel:  [<ffffffff814de216>] ? _raw_spin_unlock_irqrestore+0x16/0x30
-> kernel:  [<ffffffff8108ac34>] ? __hrtimer_start_range_ns+0x1e4/0x3d0
-> kernel:  [<ffffffff814db4d9>] schedule+0x29/0x70
-> kernel:  [<ffffffff814db8e6>] schedule_preempt_disabled+0x16/0x20
-> kernel:  [<ffffffff814dcf24>] __mutex_lock_slowpath+0x124/0x1f0
-> kernel:  [<ffffffff814dd007>] mutex_lock+0x17/0x27
-> kernel:  [<ffffffff811c2d71>] __fdget_pos+0x41/0x50
-> kernel:  [<ffffffff811a789f>] SyS_writev+0x1f/0xe0
-> kernel:  [<ffffffff814e66e9>] system_call_fastpath+0x16/0x1b
-> 
-> kernel: INFO: task jhost:412 blocked for more than 120 seconds.
-> kernel:       Not tainted 3.14.1-1-js #1
-> kernel: "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables
-> this message.
-> kernel: jhost           D 0000000000000000     0   412    399 0x00000000
-> kernel:  ffff8803985b3c00 0000000000000282 ffff88039d114e80 ffff8803985b3fd8
-> kernel:  00000000000142c0 00000000000142c0 ffff88039d114e80 ffffffff814de216
-> kernel:  ffff8803985b3b70 ffffffff810aa4d4 ffffffff81b07770 ffffffff810c9996
-> kernel: Call Trace:
-> kernel:  [<ffffffff814de216>] ? _raw_spin_unlock_irqrestore+0x16/0x30
-> kernel:  [<ffffffff810aa4d4>] ? __wake_up+0x44/0x50
-> kernel:  [<ffffffff810c9996>] ? __call_rcu.constprop.61+0x116/0x270
-> kernel:  [<ffffffff811ec270>] ? ep_send_events_proc+0x1c0/0x1c0
-> kernel:  [<ffffffff814e7f4e>] ? xen_hypervisor_callback+0x1e/0x30
-> kernel:  [<ffffffff814def9a>] ? error_exit+0x2a/0x60
-> kernel:  [<ffffffff814dea3f>] ? retint_restore_args+0x5/0x6
-> kernel:  [<ffffffff811e948f>] ? inotify_handle_event+0x6f/0x180
-> kernel:  [<ffffffff810ca8e2>] ? rcu_read_unlock_special+0x182/0x200
-> kernel:  [<ffffffff814db4d9>] schedule+0x29/0x70
-> kernel:  [<ffffffff814db8e6>] schedule_preempt_disabled+0x16/0x20
-> kernel:  [<ffffffff814dcf24>] __mutex_lock_slowpath+0x124/0x1f0
-> kernel:  [<ffffffff814dd007>] mutex_lock+0x17/0x27
-> kernel:  [<ffffffff811e7ff2>] fsnotify_destroy_mark_locked+0x102/0x180
-> kernel:  [<ffffffff811e809b>] fsnotify_destroy_mark+0x2b/0x40
-> kernel:  [<ffffffff811e954c>] inotify_handle_event+0x12c/0x180
-> kernel:  [<ffffffff811e6c71>] send_to_group+0xd1/0x1b0
-> kernel:  [<ffffffff811e6ffc>] fsnotify+0x2ac/0x2f0
-> kernel:  [<ffffffff811a7669>] do_readv_writev+0x199/0x220
-> kernel:  [<ffffffff81136a50>] ? __generic_file_aio_write+0x3b0/0x3b0
-> kernel:  [<ffffffff811a60b0>] ? do_sync_read+0x90/0x90
-> kernel:  [<ffffffff811f36d7>] ? locks_insert_lock+0x87/0x90
-> kernel:  [<ffffffff811f5583>] ? flock_lock_file_wait+0x2d3/0x310
-> kernel:  [<ffffffff811c239e>] ? __fget+0x6e/0xb0
-> kernel:  [<ffffffff811a7770>] vfs_writev+0x30/0x60
-> kernel:  [<ffffffff811a78ca>] SyS_writev+0x4a/0xe0
-> kernel:  [<ffffffff814e66e9>] system_call_fastpath+0x16/0x1b
-> 
-> kernel: INFO: task jhost:413 blocked for more than 120 seconds.
-> kernel:       Not tainted 3.14.1-1-js #1
-> kernel: "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables
-> this message.
-> kernel: jhost           D ffff88039ebeb480     0   413    399 0x00000000
-> kernel:  ffff88039d11de90 0000000000000282 ffff88039d112740 ffff88039d11dfd8
-> kernel:  00000000000142c0 00000000000142c0 ffff88039d112740 00007ff9567ecd88
-> kernel:  ffff88039d11df50 0000000000000070 00007ff9567ecd88 ffff88039d11de70
-> kernel: Call Trace:
-> kernel:  [<ffffffff813d10c0>] ? sock_aio_read.part.27+0xc0/0xd0
-> kernel:  [<ffffffff814db4d9>] schedule+0x29/0x70
-> kernel:  [<ffffffff814db8e6>] schedule_preempt_disabled+0x16/0x20
-> kernel:  [<ffffffff814dcf24>] __mutex_lock_slowpath+0x124/0x1f0
-> kernel:  [<ffffffff814dd007>] mutex_lock+0x17/0x27
-> kernel:  [<ffffffff811c2d71>] __fdget_pos+0x41/0x50
-> kernel:  [<ffffffff811a789f>] SyS_writev+0x1f/0xe0
-> kernel:  [<ffffffff814e66e9>] system_call_fastpath+0x16/0x1b
-> 
-> kernel: INFO: task jhost:414 blocked for more than 120 seconds.
-> kernel:       Not tainted 3.14.1-1-js #1
-> kernel: "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables
-> this message.
-> kernel: jhost           D 0000000000000000     0   414    399 0x00000000
-> kernel:  ffff88039d11fe90 0000000000000282 ffff88039d1175c0 ffff88039d11ffd8
-> kernel:  00000000000142c0 00000000000142c0 ffff88039d1175c0 00000000007ec4b8
-> kernel:  0000000000000000 ffff88039d11fe30 ffffffff810d74c1 ffff88039d11fe70
-> kernel: Call Trace:
-> kernel:  [<ffffffff810d74c1>] ? futex_wake+0x71/0x140
-> kernel:  [<ffffffff813d10c0>] ? sock_aio_read.part.27+0xc0/0xd0
-> kernel:  [<ffffffff810d9139>] ? do_futex+0x109/0xac0
-> kernel:  [<ffffffff814db4d9>] schedule+0x29/0x70
-> kernel:  [<ffffffff814db8e6>] schedule_preempt_disabled+0x16/0x20
-> kernel:  [<ffffffff814dcf24>] __mutex_lock_slowpath+0x124/0x1f0
-> kernel:  [<ffffffff814dd007>] mutex_lock+0x17/0x27
-> kernel:  [<ffffffff811c2d71>] __fdget_pos+0x41/0x50
-> kernel:  [<ffffffff811a789f>] SyS_writev+0x1f/0xe0
-> kernel:  [<ffffffff814e66e9>] system_call_fastpath+0x16/0x1b
-> 
-> All messages above happened at the exact same point in time so it's
-> unknown if they are sequentially ordered in some way.
-> 
-> uname: Linux localhost 3.14.1-1-js #1 SMP PREEMPT Tue Apr 15 17:59:05
-> CEST 2014 x86_64 GNU/Linux
-> 
-> config: http://pastebin.com/Z0T6eKmy
-> 
-> We are using a "stock" Arch kernel without any custom patches.
-> 
-> Any ideas? Is it an inotify issue or possibly a xen issue?
-> 
-> Thank you for your time,
-> Hannes
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+>       http://marc.info/?l=linux-kernel&m=140251240630730&w=2
+
+Very good, belt -and- suspenders!  Might even work that way.  ;-)
+
+I could argue for a cpu_relax() in the "while (!rt_mutex_has_waiters(lock))"
+loop for the case in which the CPU enqueuing itself is preempted, possibly
+by a hypervisor, but either way:
+
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+							Thanx, Paul
+
