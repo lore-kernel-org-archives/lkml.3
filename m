@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756135AbaFLPHc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 11:07:32 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:59174 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752919AbaFLPH0 (ORCPT
+	id S1756104AbaFLPIu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 11:08:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47558 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752898AbaFLPIt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 11:07:26 -0400
-Message-ID: <1402585641.5318.14.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [PATCH 1/1] ima: remove unnecessary i_mutex locking
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Dmitry Kasatkin <d.kasatkin@samsung.com>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmitry.kasatkin@gmail.com
-Date: Thu, 12 Jun 2014 11:07:21 -0400
-In-Reply-To: <cc7deec4d9dbd22166b34fa0dad28aed82120e4c.1402509097.git.d.kasatkin@samsung.com>
-References: <cc7deec4d9dbd22166b34fa0dad28aed82120e4c.1402509097.git.d.kasatkin@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061215-3532-0000-0000-0000026EF274
+	Thu, 12 Jun 2014 11:08:49 -0400
+Date: Thu, 12 Jun 2014 15:08:43 +0000
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
+To: LXC development mailing-list <lxc-devel@lists.linuxcontainers.org>
+Cc: containers@lists.osdl.org, linux-kernel@vger.kernel.org
+Subject: Re: [lxc-devel] [RFC] Per-user namespace process accounting
+Message-ID: <20140612150842.GC4228@ubuntumail>
+References: <5386D58D.2080809@1h.com>
+ <5399BB42.60304@elastichosts.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5399BB42.60304@elastichosts.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-06-11 at 20:51 +0300, Dmitry Kasatkin wrote: 
-> I think i_mutex locking is absolutely unnecessary here.
-> It is uselessly taken here even when IMA policy is empty and
-> IMA is effectively disabled.
-> 
-> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+Quoting Alin Dobre (alin.dobre@elastichosts.com):
+> On 29/05/14 07:37, Marian Marinov wrote:
+> > Hello,
+> > 
+> > I have the following proposition.
+> > 
+> > Number of currently running processes is accounted at the root user namespace. The problem I'm facing is that multiple
+> > containers in different user namespaces share the process counters.
 
-Thanks!  Please re-post with an appropriate patch description.
+Most ppl here probably are aware of this, but the previous, never-completed
+user namespace implementation provided this and only this.  We (mostly Eric
+and I) spent years looking for clean ways to make that implementation, which
+had some advantages (including this one), complete.  We did have a few POCs
+which worked but were unsatisfying.  The two things which were never convincing
+were (a) conversion of all uid checks to be namespace-safe, and (b) storing
+namespace identifiers on disk.  (As I say we did have solutions to these, but
+not satisfying ones).  These are the two things which the new implementation
+address *beautifully*.
 
-Mimi 
-> ---
->  security/integrity/ima/ima_main.c | 4 ----
->  1 file changed, 4 deletions(-)
+> > So if containerX runs 100 with UID 99, containerY should have NPROC limit of above 100 in order to execute any
+> > processes with ist own UID 99.
+> > 
+> > I know that some of you will tell me that I should not provision all of my containers with the same UID/GID maps, but
+> > this brings another problem.
 > 
-> diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-> index 09baa33..cf1c369 100644
-> --- a/security/integrity/ima/ima_main.c
-> +++ b/security/integrity/ima/ima_main.c
-> @@ -88,8 +88,6 @@ static void ima_rdwr_violation_check(struct file *file)
->  	if (!S_ISREG(inode->i_mode) || !ima_initialized)
->  		return;
-> 
-> -	mutex_lock(&inode->i_mutex);	/* file metadata: permissions, xattr */
-> -
->  	if (mode & FMODE_WRITE) {
->  		if (atomic_read(&inode->i_readcount) && IS_IMA(inode)) {
->  			struct integrity_iint_cache *iint;
-> @@ -104,8 +102,6 @@ static void ima_rdwr_violation_check(struct file *file)
->  			send_writers = true;
->  	}
-> 
-> -	mutex_unlock(&inode->i_mutex);
-> -
->  	if (!send_tomtou && !send_writers)
->  		return;
-> 
+> If this matters, we also suffer from the same problem here. So we
+> support any implementation that would address it.
 
+ISTM the only reasonable answer here (at least for now) is to make it more
+convenient to isolate uid ranges, by providing a way to shift uids at mount
+time as has been discussed a bit.
 
+If we go down the route of talking about uid 99 in ns 1 vs uid 99 in ns 2,
+then people will also expect isolation at file access time, and we're back
+to all the disadvantages of the first userns implementation.
+
+(If someone proves me wrong by suggesting a clean solution, then awesome)
+
+-serge
