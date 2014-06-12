@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752251AbaFLXXM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 19:23:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37227 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752208AbaFLXSm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752231AbaFLXSm (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 12 Jun 2014 19:18:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37215 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752164AbaFLXSj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 19:18:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Lutomirski <luto@amacapital.net>, Eric Paris <eparis@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 14/18] auditsc: audit_krule mask accesses need bounds checking
-Date: Thu, 12 Jun 2014 16:22:18 -0700
-Message-Id: <20140612232213.578979617@linuxfoundation.org>
+        Sagi Grimberg <sagig@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.10 06/18] Target/iscsi,iser: Avoid accepting transport connections during stop stage
+Date: Thu, 12 Jun 2014 16:22:10 -0700
+Message-Id: <20140612232213.284173999@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140612232212.960235342@linuxfoundation.org>
 References: <20140612232212.960235342@linuxfoundation.org>
@@ -29,85 +29,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Sagi Grimberg <sagig@mellanox.com>
 
-commit a3c54931199565930d6d84f4c3456f6440aefd41 upstream.
+commit 14f4b54fe38f3a8f8392a50b951c8aa43b63687a upstream.
 
-Fixes an easy DoS and possible information disclosure.
+When the target is in stop stage, iSER transport initiates RDMA disconnects.
+The iSER initiator may wish to establish a new connection over the
+still existing network portal. In this case iSER transport should not
+accept and resume new RDMA connections. In order to learn that, iscsi_np
+is added with enabled flag so the iSER transport can check when deciding
+weather to accept and resume a new connection request.
 
-This does nothing about the broken state of x32 auditing.
+The iscsi_np is enabled after successful transport setup, and disabled
+before iscsi_np login threads are cleaned up.
 
-eparis: If the admin has enabled auditd and has specifically loaded
-audit rules.  This bug has been around since before git.  Wow...
+(Fix up context changes for v3.10.y - nab)
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Signed-off-by: Eric Paris <eparis@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- kernel/auditsc.c |   27 ++++++++++++++++++---------
- 1 file changed, 18 insertions(+), 9 deletions(-)
+ drivers/infiniband/ulp/isert/ib_isert.c   |    8 ++++++++
+ drivers/target/iscsi/iscsi_target_core.h  |    1 +
+ drivers/target/iscsi/iscsi_target_login.c |    1 +
+ drivers/target/iscsi/iscsi_target_tpg.c   |    1 +
+ 4 files changed, 11 insertions(+)
 
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -733,6 +733,22 @@ static enum audit_state audit_filter_tas
- 	return AUDIT_BUILD_CONTEXT;
+--- a/drivers/infiniband/ulp/isert/ib_isert.c
++++ b/drivers/infiniband/ulp/isert/ib_isert.c
+@@ -382,6 +382,14 @@ isert_connect_request(struct rdma_cm_id
+ 	struct ib_device *ib_dev = cma_id->device;
+ 	int ret = 0;
+ 
++	spin_lock_bh(&np->np_thread_lock);
++	if (!np->enabled) {
++		spin_unlock_bh(&np->np_thread_lock);
++		pr_debug("iscsi_np is not enabled, reject connect request\n");
++		return rdma_reject(cma_id, NULL, 0);
++	}
++	spin_unlock_bh(&np->np_thread_lock);
++
+ 	pr_debug("Entering isert_connect_request cma_id: %p, context: %p\n",
+ 		 cma_id, cma_id->context);
+ 
+--- a/drivers/target/iscsi/iscsi_target_core.h
++++ b/drivers/target/iscsi/iscsi_target_core.h
+@@ -760,6 +760,7 @@ struct iscsi_np {
+ 	int			np_ip_proto;
+ 	int			np_sock_type;
+ 	enum np_thread_state_table np_thread_state;
++	bool                    enabled;
+ 	enum iscsi_timer_flags_table np_login_timer_flags;
+ 	u32			np_exports;
+ 	enum np_flags_table	np_flags;
+--- a/drivers/target/iscsi/iscsi_target_login.c
++++ b/drivers/target/iscsi/iscsi_target_login.c
+@@ -984,6 +984,7 @@ int iscsi_target_setup_login_socket(
+ 	}
+ 
+ 	np->np_transport = t;
++	np->enabled = true;
+ 	return 0;
  }
  
-+static int audit_in_mask(const struct audit_krule *rule, unsigned long val)
-+{
-+	int word, bit;
-+
-+	if (val > 0xffffffff)
-+		return false;
-+
-+	word = AUDIT_WORD(val);
-+	if (word >= AUDIT_BITMASK_SIZE)
-+		return false;
-+
-+	bit = AUDIT_BIT(val);
-+
-+	return rule->mask[word] & bit;
-+}
-+
- /* At syscall entry and exit time, this filter is called if the
-  * audit_state is not low enough that auditing cannot take place, but is
-  * also not high enough that we already know we have to write an audit
-@@ -750,11 +766,8 @@ static enum audit_state audit_filter_sys
+--- a/drivers/target/iscsi/iscsi_target_tpg.c
++++ b/drivers/target/iscsi/iscsi_target_tpg.c
+@@ -182,6 +182,7 @@ static void iscsit_clear_tpg_np_login_th
+ 		return;
+ 	}
  
- 	rcu_read_lock();
- 	if (!list_empty(list)) {
--		int word = AUDIT_WORD(ctx->major);
--		int bit  = AUDIT_BIT(ctx->major);
--
- 		list_for_each_entry_rcu(e, list, list) {
--			if ((e->rule.mask[word] & bit) == bit &&
-+			if (audit_in_mask(&e->rule, ctx->major) &&
- 			    audit_filter_rules(tsk, &e->rule, ctx, NULL,
- 					       &state, false)) {
- 				rcu_read_unlock();
-@@ -774,20 +787,16 @@ static enum audit_state audit_filter_sys
- static int audit_filter_inode_name(struct task_struct *tsk,
- 				   struct audit_names *n,
- 				   struct audit_context *ctx) {
--	int word, bit;
- 	int h = audit_hash_ino((u32)n->ino);
- 	struct list_head *list = &audit_inode_hash[h];
- 	struct audit_entry *e;
- 	enum audit_state state;
++	tpg_np->tpg_np->enabled = false;
+ 	iscsit_reset_np_thread(tpg_np->tpg_np, tpg_np, tpg);
+ }
  
--	word = AUDIT_WORD(ctx->major);
--	bit  = AUDIT_BIT(ctx->major);
--
- 	if (list_empty(list))
- 		return 0;
- 
- 	list_for_each_entry_rcu(e, list, list) {
--		if ((e->rule.mask[word] & bit) == bit &&
-+		if (audit_in_mask(&e->rule, ctx->major) &&
- 		    audit_filter_rules(tsk, &e->rule, ctx, n, &state, false)) {
- 			ctx->current_state = state;
- 			return 1;
 
 
