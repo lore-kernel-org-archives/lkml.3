@@ -1,116 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754567AbaFLGjJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 02:39:09 -0400
-Received: from mga02.intel.com ([134.134.136.20]:19039 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751476AbaFLGjI convert rfc822-to-8bit (ORCPT
+	id S932290AbaFLGkA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 02:40:00 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:50494 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754586AbaFLGj6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 02:39:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,462,1400050800"; 
-   d="scan'208";a="556163373"
-From: "Wang, Xiaoming" <xiaoming.wang@intel.com>
-To: "Koul, Vinod" <vinod.koul@intel.com>, Takashi Iwai <tiwai@suse.de>
-CC: "Kp, Jeeja" <jeeja.kp@intel.com>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mtk.manpages@gmail.com" <mtk.manpages@gmail.com>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "davej@redhat.com" <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Zhang, Dongxing" <dongxing.zhang@intel.com>
-Subject: RE: [PATCH] ALSA: compress: Fix the mismatch size of struc between
- share lib(32bit) and kernel(64bit)
-Thread-Topic: [PATCH] ALSA: compress: Fix the mismatch size of struc between
- share lib(32bit) and kernel(64bit)
-Thread-Index: AQHPg61TuZUznRPgu0+aM92ZHyEd3Ztn2liAgACJJQCABJ9yUA==
-Date: Thu, 12 Jun 2014 06:39:03 +0000
-Message-ID: <FA47D36D6EC9FE4CB463299737C09B9901C34AA2@shsmsx102.ccr.corp.intel.com>
-References: <1402346792.30956.17.camel@wxm-ubuntu>
- <s5hwqcqwnne.wl%tiwai@suse.de> <20140609153544.GA25075@intel.com>
-In-Reply-To: <20140609153544.GA25075@intel.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 12 Jun 2014 02:39:58 -0400
+X-Original-SENDERIP: 10.177.220.145
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Thu, 12 Jun 2014 15:43:55 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>, kvm@vger.kernel.org,
+        linux-mm@kvack.org, Gleb Natapov <gleb@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alexander Graf <agraf@suse.de>, kvm-ppc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paolo Bonzini <pbonzini@redhat.com>, linuxppc-dev@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 05/10] DMA, CMA: support arbitrary bitmap granularity
+Message-ID: <20140612064355.GC19918@js1304-P5Q-DELUXE>
+References: <1402543307-29800-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1402543307-29800-6-git-send-email-iamjoonsoo.kim@lge.com>
+ <20140612060610.GH12415@bbox>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140612060610.GH12415@bbox>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Takashi
+On Thu, Jun 12, 2014 at 03:06:10PM +0900, Minchan Kim wrote:
+> On Thu, Jun 12, 2014 at 12:21:42PM +0900, Joonsoo Kim wrote:
+> > ppc kvm's cma region management requires arbitrary bitmap granularity,
+> > since they want to reserve very large memory and manage this region
+> > with bitmap that one bit for several pages to reduce management overheads.
+> > So support arbitrary bitmap granularity for following generalization.
+> > 
+> > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> > 
+> > diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
+> > index bc4c171..9bc9340 100644
+> > --- a/drivers/base/dma-contiguous.c
+> > +++ b/drivers/base/dma-contiguous.c
+> > @@ -38,6 +38,7 @@ struct cma {
+> >  	unsigned long	base_pfn;
+> >  	unsigned long	count;
+> >  	unsigned long	*bitmap;
+> > +	int order_per_bit; /* Order of pages represented by one bit */
+> 
+> Hmm, I'm not sure it's good as *general* interface even though it covers
+> existing usecases.
+> 
+> It forces a cma area should be handled by same size unit. Right?
+> It's really important point for this patchset's motivation so I will stop
+> review and wait other opinions.
 
-> -----Original Message-----
-> From: Koul, Vinod
-> Sent: Monday, June 09, 2014 11:36 PM
-> To: Takashi Iwai
-> Cc: Wang, Xiaoming; Kp, Jeeja; dhowells@redhat.com; arnd@arndb.de;
-> tglx@linutronix.de; mtk.manpages@gmail.com;
-> paulmck@linux.vnet.ibm.com; davej@redhat.com;
-> linux-kernel@vger.kernel.org; Zhang, Dongxing
-> Subject: Re: [PATCH] ALSA: compress: Fix the mismatch size of struc between
-> share lib(32bit) and kernel(64bit)
-> 
-> On Mon, Jun 09, 2014 at 09:24:53AM +0200, Takashi Iwai wrote:
-> > At Mon, 09 Jun 2014 16:46:32 -0400,
-> > Wang, Xiaoming wrote:
-> > >
-> > >
-> > > The size of struct snd_compr_avail is 0x1c in 32bit kernel, while it
-> > > is 0x20 in 64bit kernel 0x4 bytes added because of alignment. It is
-> > > OK when 32bit kernel met 32bit user space.
-> > > There exist stack corruption if 64bit kernel met 32bit user space,
-> > > because the size of struct snd_compr_avail is 0x1c in 32bit user
-> > > space which is smaller than it will get from kernel. The extra 4
-> > > bytes can corrupt the stack, and introduce unpredictable error.
-> > >
-> > > Signed-off-by: Zhang Dongxing <dongxing.zhang@intel.com>
-> > > Signed-off-by: xiaoming wang <xiaoming.wang@intel.com>
-> >
-> > This would break the existing 32bit systems, so I don't think we can
-> > take this approach.
-> >
-> > Either break the 64bit systems (which aren't deployed yet much, so
-> > far) by adding packed attribute, or implement 32/64 bit conversion in
-> > compat_ioctl fop.
-> I think former should be safe for now. Anyway we have only 1 driver using
-> this in mainline so fallout shouldn't be widespread!
-Can you accept we add __attribute__((packed, aligned(4))) for struct snd_compr_avail
-Which include the struct snd_compr_tstamp and fix the sizeof struct snd_compr_avail
-to 0x1c both in 32bit and 64 bit kernel?
-> 
-> --
-> ~Vinod
-> >
-> >
-> > thanks,
-> >
-> > Takashi
-> >
-> > > ---
-> > >  include/uapi/sound/compress_offload.h |    1 +
-> > >  1 files changed, 1 insertions(+), 0 deletions(-)
-> > >
-> > > diff --git a/include/uapi/sound/compress_offload.h
-> > > b/include/uapi/sound/compress_offload.h
-> > > index 5759810..766b416 100644
-> > > --- a/include/uapi/sound/compress_offload.h
-> > > +++ b/include/uapi/sound/compress_offload.h
-> > > @@ -70,6 +70,7 @@ struct snd_compr_tstamp {
-> > >  	__u32 pcm_frames;
-> > >  	__u32 pcm_io_frames;
-> > >  	__u32 sampling_rate;
-> > > +	__u32 reserved[1];
-> > >  };
-> > >
-> > >  /**
-> > > --
-> > > 1.7.1
-> > >
-> 
-> --
+If you pass 0 to order_per_bit, you can manage cma area in every
+size(page unit) you want. If you pass certain number to order_per_bit,
+you can allocate and release cma area in multiple of such page order.
+
+I think that this is more general implementation than previous versions.
+
+Thanks.
