@@ -1,201 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752574AbaFLXTw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 19:19:52 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:58851 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750908AbaFLXTv (ORCPT
+	id S1752478AbaFLXTW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 19:19:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37310 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751175AbaFLXTP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 19:19:51 -0400
-Date: Thu, 12 Jun 2014 16:19:44 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>
-Subject: Re: safety of *mutex_unlock() (Was: [BUG] signal: sighand
- unprotected when accessed by /proc)
-Message-ID: <20140612231944.GA30683@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140611155251.GA4581@linux.vnet.ibm.com>
- <20140611170705.GA26816@redhat.com>
- <20140611171734.GA27457@redhat.com>
- <20140611172958.GF4581@linux.vnet.ibm.com>
- <20140611175934.GA28912@redhat.com>
- <20140611195613.GM4581@linux.vnet.ibm.com>
- <20140612172844.GA15795@redhat.com>
- <20140612203518.GZ4581@linux.vnet.ibm.com>
- <alpine.DEB.2.10.1406122337060.5170@nanos>
- <20140612222748.GF4581@linux.vnet.ibm.com>
+	Thu, 12 Jun 2014 19:19:15 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Ben Collins <ben.c@servergy.com>, Sumit Saxena <sumit.saxena@lsi.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [PATCH 3.4 7/8] SCSI: megaraid: Use resource_size_t for PCI resources, not long
+Date: Thu, 12 Jun 2014 16:22:54 -0700
+Message-Id: <20140612232238.935311621@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.0.254.g50f84e3
+In-Reply-To: <20140612232238.396722659@linuxfoundation.org>
+References: <20140612232238.396722659@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140612222748.GF4581@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061223-6688-0000-0000-00000288816A
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 12, 2014 at 03:27:48PM -0700, Paul E. McKenney wrote:
-> On Thu, Jun 12, 2014 at 11:40:07PM +0200, Thomas Gleixner wrote:
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-[ . . . ]
+------------------
 
-> > True. Why should we have users if we would test the crap we produce?
-> 
-> Well, it seems to be passing initial tests as well.  Must be my tests
-> need more work.
+From: Ben Collins <ben.c@servergy.com>
 
-Or, as in this case, must be that I should have my test machine using
-the right git-tree branch and correct kernel config.  :-/  Updated patch
-below, FWIW.
+commit 11f8a7b31f2140b0dc164bb484281235ffbe51d3 upstream.
 
-							Thanx, Paul
+The assumption that sizeof(long) >= sizeof(resource_size_t) can lead to
+truncation of the PCI resource address, meaning this driver didn't work
+on 32-bit systems with 64-bit PCI adressing ranges.
 
-------------------------------------------------------------------------
+Signed-off-by: Ben Collins <ben.c@servergy.com>
+Acked-by: Sumit Saxena <sumit.saxena@lsi.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-rcu: Simplify priority boosting by putting rt_mutex in rcu_node
+---
+ drivers/scsi/megaraid/megaraid_sas.h      |    1 -
+ drivers/scsi/megaraid/megaraid_sas_base.c |    5 +++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-RCU priority boosting currently checks for boosting via a pointer in
-task_struct.  However, this is not needed: As Oleg noted, if the
-rt_mutex is placed in the rcu_node instead of on the booster's stack,
-the boostee can simply check it see if it owns the lock.  This commit
-makes this change, shrinking task_struct by one pointer and the kernel
-by twelve lines.
-
-Suggested-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
- b/include/linux/init_task.h |    9 +--------
- b/include/linux/sched.h     |    6 ------
- b/kernel/rcu/tree.h         |    3 +++
- b/kernel/rcu/tree_plugin.h  |   20 +++++++++-----------
- 4 files changed, 13 insertions(+), 25 deletions(-)
-
-diff --git a/include/linux/init_task.h b/include/linux/init_task.h
-index 6df7f9fe0d01..2bb4c4f3531a 100644
---- a/include/linux/init_task.h
-+++ b/include/linux/init_task.h
-@@ -102,12 +102,6 @@ extern struct group_info init_groups;
- #define INIT_IDS
- #endif
+--- a/drivers/scsi/megaraid/megaraid_sas.h
++++ b/drivers/scsi/megaraid/megaraid_sas.h
+@@ -1294,7 +1294,6 @@ struct megasas_instance {
+ 	u32 *reply_queue;
+ 	dma_addr_t reply_queue_h;
  
--#ifdef CONFIG_RCU_BOOST
--#define INIT_TASK_RCU_BOOST()						\
--	.rcu_boost_mutex = NULL,
--#else
--#define INIT_TASK_RCU_BOOST()
--#endif
- #ifdef CONFIG_TREE_PREEMPT_RCU
- #define INIT_TASK_RCU_TREE_PREEMPT()					\
- 	.rcu_blocked_node = NULL,
-@@ -119,8 +113,7 @@ extern struct group_info init_groups;
- 	.rcu_read_lock_nesting = 0,					\
- 	.rcu_read_unlock_special = 0,					\
- 	.rcu_node_entry = LIST_HEAD_INIT(tsk.rcu_node_entry),		\
--	INIT_TASK_RCU_TREE_PREEMPT()					\
--	INIT_TASK_RCU_BOOST()
-+	INIT_TASK_RCU_TREE_PREEMPT()
- #else
- #define INIT_TASK_RCU_PREEMPT(tsk)
- #endif
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 25f54c79f757..1ffb275976da 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1222,9 +1222,6 @@ struct task_struct {
- #ifdef CONFIG_TREE_PREEMPT_RCU
- 	struct rcu_node *rcu_blocked_node;
- #endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
--#ifdef CONFIG_RCU_BOOST
--	struct rt_mutex *rcu_boost_mutex;
--#endif /* #ifdef CONFIG_RCU_BOOST */
+-	unsigned long base_addr;
+ 	struct megasas_register_set __iomem *reg_set;
  
- #if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
- 	struct sched_info sched_info;
-@@ -1961,9 +1958,6 @@ static inline void rcu_copy_process(struct task_struct *p)
- #ifdef CONFIG_TREE_PREEMPT_RCU
- 	p->rcu_blocked_node = NULL;
- #endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
--#ifdef CONFIG_RCU_BOOST
--	p->rcu_boost_mutex = NULL;
--#endif /* #ifdef CONFIG_RCU_BOOST */
- 	INIT_LIST_HEAD(&p->rcu_node_entry);
- }
+ 	struct megasas_pd_list          pd_list[MEGASAS_MAX_PD];
+--- a/drivers/scsi/megaraid/megaraid_sas_base.c
++++ b/drivers/scsi/megaraid/megaraid_sas_base.c
+@@ -3445,6 +3445,7 @@ static int megasas_init_fw(struct megasa
+ 	u32 max_sectors_1;
+ 	u32 max_sectors_2;
+ 	u32 tmp_sectors, msix_enable;
++	resource_size_t base_addr;
+ 	struct megasas_register_set __iomem *reg_set;
+ 	struct megasas_ctrl_info *ctrl_info;
+ 	unsigned long bar_list;
+@@ -3453,14 +3454,14 @@ static int megasas_init_fw(struct megasa
+ 	/* Find first memory bar */
+ 	bar_list = pci_select_bars(instance->pdev, IORESOURCE_MEM);
+ 	instance->bar = find_first_bit(&bar_list, sizeof(unsigned long));
+-	instance->base_addr = pci_resource_start(instance->pdev, instance->bar);
+ 	if (pci_request_selected_regions(instance->pdev, instance->bar,
+ 					 "megasas: LSI")) {
+ 		printk(KERN_DEBUG "megasas: IO memory region busy!\n");
+ 		return -EBUSY;
+ 	}
  
-diff --git a/kernel/rcu/tree.h b/kernel/rcu/tree.h
-index 31194ee9dfa6..db3f096ed80b 100644
---- a/kernel/rcu/tree.h
-+++ b/kernel/rcu/tree.h
-@@ -177,6 +177,9 @@ struct rcu_node {
- 				/*  to carry out the boosting is fully */
- 				/*  released with no future boostee accesses */
- 				/*  before that rt_mutex is re-initialized. */
-+	struct rt_mutex boost_mtx;
-+				/* Used only for the priority-boosting */
-+				/*  side effect, not as a lock. */
- 	unsigned long boost_time;
- 				/* When to start boosting (jiffies). */
- 	struct task_struct *boost_kthread_task;
-diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-index 99743e9ea8ed..c93c525b71fe 100644
---- a/kernel/rcu/tree_plugin.h
-+++ b/kernel/rcu/tree_plugin.h
-@@ -29,6 +29,7 @@
- #include <linux/oom.h>
- #include <linux/smpboot.h>
- #include "../time/tick-internal.h"
-+#include "../locking/rtmutex_common.h"
+-	instance->reg_set = ioremap_nocache(instance->base_addr, 8192);
++	base_addr = pci_resource_start(instance->pdev, instance->bar);
++	instance->reg_set = ioremap_nocache(base_addr, 8192);
  
- #define RCU_KTHREAD_PRIO 1
- 
-@@ -398,11 +399,9 @@ void rcu_read_unlock_special(struct task_struct *t)
- #ifdef CONFIG_RCU_BOOST
- 		if (&t->rcu_node_entry == rnp->boost_tasks)
- 			rnp->boost_tasks = np;
--		/* Snapshot/clear ->rcu_boost_mutex with rcu_node lock held. */
--		if (t->rcu_boost_mutex) {
--			rbmp = t->rcu_boost_mutex;
--			t->rcu_boost_mutex = NULL;
--		}
-+		/* Snapshot/clear ->boost_mutex with rcu_node lock held. */
-+		if (rt_mutex_owner(&rnp->boost_mtx) == t)
-+			rbmp = &rnp->boost_mtx;
- #endif /* #ifdef CONFIG_RCU_BOOST */
- 
- 		/*
-@@ -1151,7 +1150,6 @@ static void rcu_wake_cond(struct task_struct *t, int status)
- static int rcu_boost(struct rcu_node *rnp)
- {
- 	unsigned long flags;
--	struct rt_mutex mtx;
- 	struct task_struct *t;
- 	struct list_head *tb;
- 
-@@ -1202,14 +1200,14 @@ static int rcu_boost(struct rcu_node *rnp)
- 	 * section.
- 	 */
- 	t = container_of(tb, struct task_struct, rcu_node_entry);
--	rt_mutex_init_proxy_locked(&mtx, t);
--	t->rcu_boost_mutex = &mtx;
-+	rt_mutex_init_proxy_locked(&rnp->boost_mtx, t);
- 	init_completion(&rnp->boost_completion);
- 	raw_spin_unlock_irqrestore(&rnp->lock, flags);
--	rt_mutex_lock(&mtx);  /* Side effect: boosts task t's priority. */
--	rt_mutex_unlock(&mtx);  /* Keep lockdep happy. */
-+	/* Lock only for side effect: boosts task t's priority. */
-+	rt_mutex_lock(&rnp->boost_mtx);
-+	rt_mutex_unlock(&rnp->boost_mtx);  /* Then keep lockdep happy. */
- 
--	/* Wait until boostee is done accessing mtx before reinitializing. */
-+	/* Wait for boostee to be done w/boost_mtx before reinitializing. */
- 	wait_for_completion(&rnp->boost_completion);
- 
- 	return ACCESS_ONCE(rnp->exp_tasks) != NULL ||
+ 	if (!instance->reg_set) {
+ 		printk(KERN_DEBUG "megasas: Failed to map IO mem\n");
+
 
