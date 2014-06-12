@@ -1,52 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752166AbaFLTLw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 15:11:52 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36402 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751010AbaFLTLu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 15:11:50 -0400
-Message-ID: <5399FB68.2000507@zytor.com>
-Date: Thu, 12 Jun 2014 12:11:36 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Kui Zhang <kuizhang@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Segmentation fault on all golang executables
-References: <CAKx2Y1kBy-mrxm+1u88XVL2Z7gYKQe5U-EG2SBTzNCRAs_UVVw@mail.gmail.com> <CALCETrWMBAxz9yn4MMugjZGC_Dsi2p855+e99Qhr0Ab+OaGRXw@mail.gmail.com> <CALCETrWTx5j9mx-CeXJDUAXh8KqVhGqBK+gpOPgJS1hOgH5tmg@mail.gmail.com> <5399F445.6060200@linux.intel.com> <CALCETrV96Ry5f_RDvXfZ98ay9qLZw0-8H5LZ8NrPiS92WDWTmA@mail.gmail.com> <5399F616.2040809@linux.intel.com> <CALCETrWyC5B0EgdbxKr_VYN+bARGy55E_p2ppk-gW5sLc5jHWg@mail.gmail.com>
-In-Reply-To: <CALCETrWyC5B0EgdbxKr_VYN+bARGy55E_p2ppk-gW5sLc5jHWg@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1752242AbaFLTNd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 15:13:33 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:44200 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751010AbaFLTNb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 15:13:31 -0400
+From: Kumar Gala <galak@codeaurora.org>
+To: Tejun Heo <tj@kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>
+Cc: Kumar Gala <galak@codeaurora.org>, linux-ide@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 3/3] ata: qcom: Add device tree bindings information
+Date: Thu, 12 Jun 2014 14:13:24 -0500
+Message-Id: <1402600404-19214-3-git-send-email-galak@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1402600404-19214-1-git-send-email-galak@codeaurora.org>
+References: <1402600404-19214-1-git-send-email-galak@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2014 11:51 AM, Andy Lutomirski wrote:
-> On Thu, Jun 12, 2014 at 11:48 AM, H. Peter Anvin <hpa@linux.intel.com> wrote:
->> On 06/12/2014 11:42 AM, Andy Lutomirski wrote:
->>>
->>> Note that my hack will build a buggy vdso on big-endian hosts.  Is
->>> there a way to convert host -> BE yet?
->>>
->>
->> Yes, use <tools/be_byteshift.h>.
-> 
-> What should I rebase on for that?  And wasn't there some header that
-> was supposed to choose the right include file given the host runtime?
-> 
-> Also, I meant host -> LE, of course, but that should be trivial.
-> 
+Add device tree binding for Qualcomm AHCI SATA controller and specifically
+the sata controller on the IPQ806x family of SoCs.
 
-No need to rebase.  My patchset proposes replacing
-<tools/be_byteshift.h> and <tools/le_byteshift.h> by a unified
-<tools/unaligned.h> but that is not important for this purpose.
+Signed-off-by: Kumar Gala <galak@codeaurora.org>
+---
+ .../devicetree/bindings/ata/qcom-sata.txt          | 40 ++++++++++++++++++++++
+ 1 file changed, 40 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/ata/qcom-sata.txt
 
-host -> LE uses <tools/le_byteshift.h> which is already in use by
-vdso2c.  Use put_unaligned_leXX().
-
-	-hpa
-
+diff --git a/Documentation/devicetree/bindings/ata/qcom-sata.txt b/Documentation/devicetree/bindings/ata/qcom-sata.txt
+new file mode 100644
+index 0000000..5e74e41
+--- /dev/null
++++ b/Documentation/devicetree/bindings/ata/qcom-sata.txt
+@@ -0,0 +1,40 @@
++* Qualcomm AHCI SATA Controller
++
++SATA nodes are defined to describe on-chip Serial ATA controllers.
++Each SATA controller should have its own node.
++
++Required properties:
++- compatible		: compatible list, contains "qcom,msm-ahci"
++- interrupts		: <interrupt mapping for SATA IRQ>
++- reg			: <registers mapping>
++- phys			: Must contain exactly one entry as specified
++			  in phy-bindings.txt
++- phy-names		: Must be "sata-phy"
++
++Required properties for "qcom,ipq806x-ahci" compatible:
++- clocks		: Must contain an entry for each entry in clock-names.
++- clock-names		: Shall be:
++				"slave_iface" - Fabric port AHB clock for SATA
++				"iface" - AHB clock
++				"core" - core clock
++				"rxoob" - RX out-of-band clock
++				"pmalive" - Power Module Alive clock
++
++Example:
++	sata@29000000 {
++		compatible = "qcom,ipq806x-ahci", "qcom,msm-ahci";
++		reg = <0x29000000 0x180>;
++
++		interrupts = <0 209 0x0>;
++
++		clocks = <&gcc SFAB_SATA_S_H_CLK>,
++			 <&gcc SATA_H_CLK>,
++			 <&gcc SATA_A_CLK>,
++			 <&gcc SATA_RXOOB_CLK>,
++			 <&gcc SATA_PMALIVE_CLK>;
++		clock-names = "slave_iface", "iface", "core",
++				"rxoob", "pmalive";
++
++		phys = <&sata_phy>;
++		phy-names = "sata-phy";
++	};
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
