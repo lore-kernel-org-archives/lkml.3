@@ -1,206 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751866AbaFLT2F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 15:28:05 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:61745 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751034AbaFLT2C (ORCPT
+	id S1751995AbaFLTa2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 15:30:28 -0400
+Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:48202 "EHLO
+	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751119AbaFLTa1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 15:28:02 -0400
-Date: Thu, 12 Jun 2014 13:27:59 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: [GIT PULL] PCI changes for v3.16 (part 2)
-Message-ID: <20140612192759.GA25090@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 12 Jun 2014 15:30:27 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AjoIABP/mVNbsHy//2dsb2JhbABagw2qdQUBAQEBAQEFAZkegQsXdYQxLyOBGjeIRgG4QpoUF4VciH+ESASPaIpKizCIIoM+Ow
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>
+Subject: [PATCH V2] kernel/debug/debug_core.c: Logging clean-up
+Date: Thu, 12 Jun 2014 21:30:11 +0200
+Message-Id: <1402601411-9956-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+-Convert printk( to pr_foo()
+-Add pr_fmt
+-Coalesce formats
 
-Here are some more things I'd like to see in v3.16-rc1:
+Cc: Jason Wessel <jason.wessel@windriver.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Joe Perches <joe@perches.com>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
 
-  - DMA alias iterator, part of some work to fix IOMMU issues
-  - MVEBU, Tegra, DesignWare changes that I forgot to include before
-  - Some whitespace code cleanup
+V2:
+   Remove unnecessary periods and add missing newlines (suggested by Joe Perches).
 
-Thanks!
+ kernel/debug/debug_core.c | 43 +++++++++++++++++++++----------------------
+ 1 file changed, 21 insertions(+), 22 deletions(-)
 
+diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
+index 1adf62b..a23bcba 100644
+--- a/kernel/debug/debug_core.c
++++ b/kernel/debug/debug_core.c
+@@ -27,6 +27,9 @@
+  * version 2. This program is licensed "as is" without any warranty of any
+  * kind, whether express or implied.
+  */
++
++#define pr_fmt(fmt) "KGDB: " fmt
++
+ #include <linux/pid_namespace.h>
+ #include <linux/clocksource.h>
+ #include <linux/serial_core.h>
+@@ -196,8 +199,8 @@ int __weak kgdb_validate_break_address(unsigned long addr)
+ 		return err;
+ 	err = kgdb_arch_remove_breakpoint(&tmp);
+ 	if (err)
+-		printk(KERN_ERR "KGDB: Critical breakpoint error, kernel "
+-		   "memory destroyed at: %lx", addr);
++		pr_err("Critical breakpoint error, kernel memory destroyed at: %lx\n",
++		       addr);
+ 	return err;
+ }
+ 
+@@ -256,8 +259,8 @@ int dbg_activate_sw_breakpoints(void)
+ 		error = kgdb_arch_set_breakpoint(&kgdb_break[i]);
+ 		if (error) {
+ 			ret = error;
+-			printk(KERN_INFO "KGDB: BP install failed: %lx",
+-			       kgdb_break[i].bpt_addr);
++			pr_info("BP install failed: %lx\n",
++				kgdb_break[i].bpt_addr);
+ 			continue;
+ 		}
+ 
+@@ -319,8 +322,8 @@ int dbg_deactivate_sw_breakpoints(void)
+ 			continue;
+ 		error = kgdb_arch_remove_breakpoint(&kgdb_break[i]);
+ 		if (error) {
+-			printk(KERN_INFO "KGDB: BP remove failed: %lx\n",
+-			       kgdb_break[i].bpt_addr);
++			pr_info("BP remove failed: %lx\n",
++				kgdb_break[i].bpt_addr);
+ 			ret = error;
+ 		}
+ 
+@@ -367,7 +370,7 @@ int dbg_remove_all_break(void)
+ 			goto setundefined;
+ 		error = kgdb_arch_remove_breakpoint(&kgdb_break[i]);
+ 		if (error)
+-			printk(KERN_ERR "KGDB: breakpoint remove failed: %lx\n",
++			pr_err("breakpoint remove failed: %lx\n",
+ 			       kgdb_break[i].bpt_addr);
+ setundefined:
+ 		kgdb_break[i].state = BP_UNDEFINED;
+@@ -400,9 +403,9 @@ static int kgdb_io_ready(int print_wait)
+ 	if (print_wait) {
+ #ifdef CONFIG_KGDB_KDB
+ 		if (!dbg_kdb_mode)
+-			printk(KERN_CRIT "KGDB: waiting... or $3#33 for KDB\n");
++			pr_crit("waiting... or $3#33 for KDB\n");
+ #else
+-		printk(KERN_CRIT "KGDB: Waiting for remote debugger\n");
++		pr_crit("Waiting for remote debugger\n");
+ #endif
+ 	}
+ 	return 1;
+@@ -430,8 +433,7 @@ static int kgdb_reenter_check(struct kgdb_state *ks)
+ 		exception_level = 0;
+ 		kgdb_skipexception(ks->ex_vector, ks->linux_regs);
+ 		dbg_activate_sw_breakpoints();
+-		printk(KERN_CRIT "KGDB: re-enter error: breakpoint removed %lx\n",
+-			addr);
++		pr_crit("re-enter error: breakpoint removed %lx\n", addr);
+ 		WARN_ON_ONCE(1);
+ 
+ 		return 1;
+@@ -444,7 +446,7 @@ static int kgdb_reenter_check(struct kgdb_state *ks)
+ 		panic("Recursive entry to debugger");
+ 	}
+ 
+-	printk(KERN_CRIT "KGDB: re-enter exception: ALL breakpoints killed\n");
++	pr_crit("re-enter exception: ALL breakpoints killed\n");
+ #ifdef CONFIG_KGDB_KDB
+ 	/* Allow kdb to debug itself one level */
+ 	return 0;
+@@ -795,15 +797,15 @@ static struct console kgdbcons = {
+ static void sysrq_handle_dbg(int key)
+ {
+ 	if (!dbg_io_ops) {
+-		printk(KERN_CRIT "ERROR: No KGDB I/O module available\n");
++		pr_crit("ERROR: No KGDB I/O module available\n");
+ 		return;
+ 	}
+ 	if (!kgdb_connected) {
+ #ifdef CONFIG_KGDB_KDB
+ 		if (!dbg_kdb_mode)
+-			printk(KERN_CRIT "KGDB or $3#33 for KDB\n");
++			pr_crit("KGDB or $3#33 for KDB\n");
+ #else
+-		printk(KERN_CRIT "Entering KGDB\n");
++		pr_crit("Entering KGDB\n");
+ #endif
+ 	}
+ 
+@@ -945,7 +947,7 @@ static void kgdb_initial_breakpoint(void)
+ {
+ 	kgdb_break_asap = 0;
+ 
+-	printk(KERN_CRIT "kgdb: Waiting for connection from remote gdb...\n");
++	pr_crit("Waiting for connection from remote gdb...\n");
+ 	kgdb_breakpoint();
+ }
+ 
+@@ -964,8 +966,7 @@ int kgdb_register_io_module(struct kgdb_io *new_dbg_io_ops)
+ 	if (dbg_io_ops) {
+ 		spin_unlock(&kgdb_registration_lock);
+ 
+-		printk(KERN_ERR "kgdb: Another I/O driver is already "
+-				"registered with KGDB.\n");
++		pr_err("Another I/O driver is already registered with KGDB\n");
+ 		return -EBUSY;
+ 	}
+ 
+@@ -981,8 +982,7 @@ int kgdb_register_io_module(struct kgdb_io *new_dbg_io_ops)
+ 
+ 	spin_unlock(&kgdb_registration_lock);
+ 
+-	printk(KERN_INFO "kgdb: Registered I/O driver %s.\n",
+-	       new_dbg_io_ops->name);
++	pr_info("Registered I/O driver %s\n", new_dbg_io_ops->name);
+ 
+ 	/* Arm KGDB now. */
+ 	kgdb_register_callbacks();
+@@ -1017,8 +1017,7 @@ void kgdb_unregister_io_module(struct kgdb_io *old_dbg_io_ops)
+ 
+ 	spin_unlock(&kgdb_registration_lock);
+ 
+-	printk(KERN_INFO
+-		"kgdb: Unregistered I/O driver %s, debugger disabled.\n",
++	pr_info("Unregistered I/O driver %s, debugger disabled\n",
+ 		old_dbg_io_ops->name);
+ }
+ EXPORT_SYMBOL_GPL(kgdb_unregister_io_module);
+-- 
+1.9.1
 
-The following changes since commit 617b4157a5c82ab3e9509aa388bfd3d47e0e623a:
-
-  Merge branches 'pci/host-exynos', 'pci/host-imx6', 'pci/resource' and 'pci/misc' into next (2014-05-30 11:41:17 -0600)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git tags/pci-v3.16-changes-2
-
-for you to fetch changes up to 38a6148248e199a4a960bbaa6b8eb14f138b73e1:
-
-  Merge branches 'pci/msi', 'pci/iommu' and 'pci/cleanup' into next (2014-06-11 14:38:25 -0600)
-
-----------------------------------------------------------------
-PCI changes for the v3.16 merge window (part 2):
-
-  IOMMU
-    - Add DMA alias iterator (Alex Williamson)
-    - Add DMA alias quirks for ASMedia, ITE, Tundra bridges (Alex Williamson)
-    - Add DMA alias quirks for Marvell, Ricoh devices (Alex Williamson)
-    - Add DMA alias quirk for HighPoint devices (Jérôme Carretero)
-
-  MSI
-    - Fix leak in free_msi_irqs() (Alexei Starovoitov)
-
-  Marvell MVEBU
-    - Remove unnecessary use of 'conf_lock' spinlock (Andrew Murray)
-    - Avoid setting an undefined window size (Jason Gunthorpe)
-    - Allow several windows with the same target/attribute (Thomas Petazzoni)
-    - Split PCIe BARs into multiple MBus windows when needed (Thomas Petazzoni)
-    - Fix off-by-one in the computed size of the mbus windows (Willy Tarreau)
-
-  NVIDIA Tegra
-    - Use new OF interrupt mapping when possible (Lucas Stach)
-
-  Synopsys DesignWare
-    - Remove unnecessary use of 'conf_lock' spinlock (Andrew Murray)
-    - Use new OF interrupt mapping when possible (Lucas Stach)
-    - Split Exynos and i.MX bindings (Lucas Stach)
-    - Fix comment for setting number of lanes (Mohit Kumar)
-    - Fix iATU programming for cfg1, io and mem viewport (Mohit Kumar)
-
-  Miscellaneous
-    - EXPORT_SYMBOL cleanup (Ryan Desfosses)
-    - Whitespace cleanup (Ryan Desfosses)
-    - Merge multi-line quoted strings (Ryan Desfosses)
-
-----------------------------------------------------------------
-Alex Williamson (8):
-      PCI: Add DMA alias iterator
-      PCI: Convert pci_dev_flags definitions to bit shifts
-      PCI: Add support for DMA alias quirks
-      PCI: Add function 0 DMA alias quirk for Ricoh devices
-      PCI: Add function 1 DMA alias quirk for Marvell devices
-      PCI: Add support for PCIe-to-PCI bridge DMA alias quirks
-      PCI: Add bridge DMA alias quirk for ASMedia and Tundra bridges
-      PCI: Add bridge DMA alias quirk for ITE bridge
-
-Alexei Starovoitov (1):
-      PCI/MSI: Fix memory leak in free_msi_irqs()
-
-Andrew Murray (2):
-      PCI: designware: Remove unnecessary use of 'conf_lock' spinlock
-      PCI: mvebu: Remove unnecessary use of 'conf_lock' spinlock
-
-Bjorn Helgaas (4):
-      Merge tag 'tags/mvebu-mbus_pci-fixes-3.15' into pci/host-mvebu
-      Merge branch 'pci/iommu' into next
-      Merge branches 'pci/host-designware', 'pci/host-imx6', 'pci/host-mvebu' and 'pci/host-tegra' into next
-      Merge branches 'pci/msi', 'pci/iommu' and 'pci/cleanup' into next
-
-Fabio Estevam (1):
-      PCI: mvebu: Use '%pa' for printing 'phys_addr_t' type
-
-Jason Gunthorpe (1):
-      bus: mvebu-mbus: Avoid setting an undefined window size
-
-Jérôme Carretero (1):
-      PCI: Add function 1 DMA alias quirk for HighPoint RocketRaid 642L
-
-Lucas Stach (3):
-      PCI: tegra: Use new OF interrupt mapping when possible
-      PCI: designware: Use new OF interrupt mapping when possible
-      PCI: designware: Split Exynos and i.MX bindings
-
-Mohit Kumar (2):
-      PCI: designware: Fix comment for setting number of lanes
-      PCI: designware: Fix iATU programming for cfg1, io and mem viewport
-
-Ryan Desfosses (3):
-      PCI: Move EXPORT_SYMBOL so it immediately follows function/variable
-      PCI: Whitespace cleanup
-      PCI: Merge multi-line quoted strings
-
-Thomas Petazzoni (2):
-      bus: mvebu-mbus: allow several windows with the same target/attribute
-      PCI: mvebu: split PCIe BARs into multiple MBus windows when needed
-
-Willy Tarreau (1):
-      PCI: mvebu: fix off-by-one in the computed size of the mbus windows
-
- .../devicetree/bindings/pci/designware-pcie.txt    |  74 +----
- .../devicetree/bindings/pci/fsl,imx6q-pcie.txt     |  38 +++
- .../bindings/pci/samsung,exynos5440-pcie.txt       |  65 +++++
- drivers/bus/mvebu-mbus.c                           |  22 +-
- drivers/pci/access.c                               |   5 +-
- drivers/pci/bus.c                                  |   6 +-
- drivers/pci/host/pci-exynos.c                      |   1 -
- drivers/pci/host/pci-imx6.c                        |   1 -
- drivers/pci/host/pci-mvebu.c                       | 119 +++++---
- drivers/pci/host/pci-tegra.c                       |   7 +-
- drivers/pci/host/pcie-designware.c                 |  26 +-
- drivers/pci/host/pcie-designware.h                 |   1 -
- drivers/pci/host/pcie-rcar.c                       |  10 +-
- drivers/pci/hotplug/acpiphp_core.c                 |   6 +-
- drivers/pci/hotplug/acpiphp_glue.c                 |   6 +-
- drivers/pci/hotplug/cpci_hotplug.h                 |  18 +-
- drivers/pci/hotplug/cpci_hotplug_core.c            |  31 ++-
- drivers/pci/hotplug/cpci_hotplug_pci.c             |  18 +-
- drivers/pci/hotplug/cpcihp_generic.c               |   8 +-
- drivers/pci/hotplug/cpcihp_zt5550.c                |   2 +-
- drivers/pci/hotplug/cpqphp.h                       |   4 +-
- drivers/pci/hotplug/cpqphp_core.c                  |  12 +-
- drivers/pci/hotplug/cpqphp_ctrl.c                  |  26 +-
- drivers/pci/hotplug/cpqphp_nvram.c                 |  32 +--
- drivers/pci/hotplug/cpqphp_pci.c                   |  26 +-
- drivers/pci/hotplug/cpqphp_sysfs.c                 |   2 +-
- drivers/pci/hotplug/ibmphp_core.c                  |  44 ++-
- drivers/pci/hotplug/ibmphp_ebda.c                  |  10 +-
- drivers/pci/hotplug/ibmphp_hpc.c                   |   6 +-
- drivers/pci/hotplug/ibmphp_pci.c                   |  36 +--
- drivers/pci/hotplug/ibmphp_res.c                   |  15 +-
- drivers/pci/hotplug/pci_hotplug_core.c             | 106 ++++----
- drivers/pci/hotplug/pciehp_acpi.c                  |   4 +-
- drivers/pci/hotplug/pciehp_core.c                  |   7 +-
- drivers/pci/hotplug/pciehp_ctrl.c                  |  16 +-
- drivers/pci/hotplug/pciehp_hpc.c                   |  52 ++--
- drivers/pci/hotplug/pciehp_pci.c                   |   5 +-
- drivers/pci/hotplug/pcihp_skeleton.c               |  38 +--
- drivers/pci/hotplug/rpaphp_core.c                  |  13 +-
- drivers/pci/hotplug/sgi_hotplug.c                  |  35 +--
- drivers/pci/hotplug/shpchp.h                       |   4 +-
- drivers/pci/hotplug/shpchp_core.c                  |   3 +-
- drivers/pci/hotplug/shpchp_ctrl.c                  |  36 ++-
- drivers/pci/hotplug/shpchp_hpc.c                   |  29 +-
- drivers/pci/hotplug/shpchp_pci.c                   |   6 +-
- drivers/pci/hotplug/shpchp_sysfs.c                 |   2 +-
- drivers/pci/htirq.c                                |   7 +-
- drivers/pci/msi.c                                  |   5 +-
- drivers/pci/pci-driver.c                           |  69 +++--
- drivers/pci/pci-label.c                            |  65 ++---
- drivers/pci/pci-stub.c                             |   2 +-
- drivers/pci/pci-sysfs.c                            | 299 ++++++++++-----------
- drivers/pci/pci.c                                  | 201 ++++++--------
- drivers/pci/pcie/aer/aer_inject.c                  |   9 +-
- drivers/pci/pcie/aer/aerdrv_core.c                 |   3 +-
- drivers/pci/pcie/aer/aerdrv_errprint.c             |  10 +-
- drivers/pci/pcie/pme.c                             |   3 +-
- drivers/pci/pcie/portdrv_pci.c                     |   6 +-
- drivers/pci/probe.c                                |  60 ++---
- drivers/pci/proc.c                                 |  16 +-
- drivers/pci/quirks.c                               | 232 ++++++++++------
- drivers/pci/rom.c                                  |  13 +-
- drivers/pci/search.c                               | 118 ++++++--
- drivers/pci/setup-bus.c                            |  51 ++--
- drivers/pci/setup-irq.c                            |  13 +-
- drivers/pci/setup-res.c                            |  13 +-
- drivers/pci/syscall.c                              |   2 +-
- include/linux/pci.h                                |  17 +-
- 68 files changed, 1177 insertions(+), 1070 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/pci/fsl,imx6q-pcie.txt
- create mode 100644 Documentation/devicetree/bindings/pci/samsung,exynos5440-pcie.txt
