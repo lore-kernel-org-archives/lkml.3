@@ -1,87 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933501AbaFLOSG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 10:18:06 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:55951 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752900AbaFLOSC (ORCPT
+	id S1756020AbaFLOSo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 10:18:44 -0400
+Received: from smtprelay0141.hostedemail.com ([216.40.44.141]:45585 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752874AbaFLOSj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 10:18:02 -0400
-Date: Thu, 12 Jun 2014 15:17:51 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>, Mark Brown <broonie@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: Kconfig fails: big select-based circular dependency
-Message-ID: <20140612141751.GH23430@n2100.arm.linux.org.uk>
-References: <20140607090944.GL23430@n2100.arm.linux.org.uk> <10376496.xoRI3F9EzH@wuerfel> <20140612130330.GG23430@n2100.arm.linux.org.uk> <6046244.oz0lY2JOaZ@wuerfel>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6046244.oz0lY2JOaZ@wuerfel>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Thu, 12 Jun 2014 10:18:39 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2525:2551:2553:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3870:3872:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:5007:7652:7904:9025:10004:10400:10848:11232:11658:11914:12043:12050:1229
+X-HE-Tag: trip37_67d8dded62226
+X-Filterd-Recvd-Size: 2466
+Message-ID: <1402582711.9947.17.camel@joe-AO725>
+Subject: Re: [PATCH V2 08/19] irqchip: crossbar: fix checkpatch warning
+From: Joe Perches <joe@perches.com>
+To: Sricharan R <r.sricharan@ti.com>
+Cc: Jason Cooper <jason@lakedaemon.net>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tony@atomide.com,
+        santosh.shilimkar@ti.com, nm@ti.com, rnayak@ti.com,
+        linux@arm.linux.org.uk, tglx@linutronix.de
+Date: Thu, 12 Jun 2014 07:18:31 -0700
+In-Reply-To: <5399AC9C.4080602@ti.com>
+References: <1402574007-13987-1-git-send-email-r.sricharan@ti.com>
+	 <1402574007-13987-9-git-send-email-r.sricharan@ti.com>
+	 <20140612131042.GU8664@titan.lakedaemon.net> <5399AC9C.4080602@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 12, 2014 at 03:37:18PM +0200, Arnd Bergmann wrote:
-> I didn't say we should not fix it, I just meant we don't need to spend
-> too much time on a perfect solution for code that is going away and that
-> is already not used anywhere.
-> 
-> I've just replied to an older thread "Re: [PATCH 1/2] [RFC] ASoC: samsung:
-> move s3c24xx over to dmaengine" with a patch that would let us kill off
-> the code right away, or at least disable it in Kconfig.
-> 
-> For some reason, I can't reproduce the failure you see in your build system,
-> I tried torvalds/master and next/master today and I have also done
-> allmodconfig and randconfig builds in the past few days on slightly
-> older versions.
+On Thu, 2014-06-12 at 19:05 +0530, Sricharan R wrote:
+> On Thursday 12 June 2014 06:40 PM, Jason Cooper wrote:
+> > On Thu, Jun 12, 2014 at 05:23:16PM +0530, Sricharan R wrote:
+> >> diff --git a/drivers/irqchip/irq-crossbar.c b/drivers/irqchip/irq-crossbar.c
+[]
+> >> @@ -34,7 +34,8 @@ struct crossbar_device {
+> >>  	uint *irq_map;
+> >>  	void __iomem *crossbar_base;
+> >>  	int *register_offsets;
+> >> -	void (*write) (int, int);
+> >> +
+> >> +	void (*write)(int, int);
+> > 
+> > The empty line here looks bogus to me.
 
-That's because you don't have this commit:
+Good eye.  It's unnecessary.
 
-Author: Philipp Zabel <p.zabel@pengutronix.de>
-Date:   Thu Mar 6 14:54:39 2014 +0100
+>   Did you re-run checkpatch after
+> > fixing the unnecessary space to see if it still complained about having
+> > a 'blank line after declarations'?
+> > 
+>  Yes, it still complains even after fixing unnecessary space.
 
-    imx-drm: imx-ldb: add drm_panel support
-    
-    This patch allows to optionally attach the lvds-channel to a panel
-    supported by a drm_panel driver instead of supplying the modes via
-    device tree.
+It's a checkpatch defect.
 
-    Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-    [Fixed build error due to missing select on DRM_PANEL --rmk]
-    Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+It's been fixed by:
+https://lkml.org/lkml/2014/6/6/426
 
-diff --git a/drivers/staging/imx-drm/Kconfig b/drivers/staging/imx-drm/Kconfig
-index c6e8ba7b3e4e..92fb52cbd3a2 100644
---- a/drivers/staging/imx-drm/Kconfig
-+++ b/drivers/staging/imx-drm/Kconfig
-@@ -35,6 +35,7 @@ config DRM_IMX_TVE
- config DRM_IMX_LDB
-        tristate "Support for LVDS displays"
-        depends on DRM_IMX && MFD_SYSCON
-+       select DRM_PANEL
-        help
-          Choose this to enable the internal LVDS Display Bridge (LDB)
-          found on i.MX53 and i.MX6 processors.
+> > I'm generally opposed to these sorts of checkpatch patches, especially
+> > when they are just warnings.  It's great for a new driver in the staging
+> > tree, but it makes backporting future bugfixes that much harder when
+> > drivers have been live in mainline.
 
-which introduces the final nail in the loop - and as imx-ldb really
-does require DRM_PANEL support, and DRM_PANEL is not a user selectable
-symbol, the above addition is an entirely reasonable thing to do.
+Blind adherence to checkpatch isn't always a great idea.
 
-The above commit /was/ going to go in during this merge window (along with
-three others) had I not been soo hacked off with the crap change handling
-and the general dysfunctional ARM community that we seem to have in the
-kernel community now, and ended up walking totally away from kernel
-maintanence for much of the last cycle... we're only /just/ starting to
-find out all the problems that my MMC patch series caused... and there's
-/still/ outstanding issues with the L2C patch series which /still/ have
-not been resolved - both of which are now part of mainline so people will
-now be forced to deal with these issues.  That's not the right way, but
-it seems to be the /only/ way to get things done in todays dysfunctional
-environment.
+But bugfix backports haven't been much of an issue in
+other subsystems with fairly active whitespace/style
+changes.
 
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+
