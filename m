@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004AbaFLTid (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 15:38:33 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:47828 "EHLO
+	id S1752315AbaFLTk2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 15:40:28 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:45563 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751314AbaFLTib (ORCPT
+	with ESMTP id S1751284AbaFLTk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 15:38:31 -0400
-Message-ID: <539A01B4.3050503@wwwdotorg.org>
-Date: Thu, 12 Jun 2014 13:38:28 -0600
+	Thu, 12 Jun 2014 15:40:26 -0400
+Message-ID: <539A0227.1000909@wwwdotorg.org>
+Date: Thu, 12 Jun 2014 13:40:23 -0600
 From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-CC: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Thierry Reding <thierry.reding@gmail.com>,
+To: Marcel Ziswiler <marcel@ziswiler.com>, thierry.reding@gmail.com
+CC: arm@kernel.org, linux@arm.linux.org.uk, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH 0/3] Use Tegra's microsecond counter for udelay()
-References: <1402588713-18766-1-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1402588713-18766-1-git-send-email-pdeschrijver@nvidia.com>
+        linux-tegra@vger.kernel.org, stefan@agner.ch
+Subject: Re: [PATCH v2 1/3] arm: multi_v7: enable igb, stmpe, lm95245, pwm
+ leds
+References: <1741a33cd88cd5525f3c50c0e0cacc0853a3512a.1402350905.git.marcel@ziswiler.com>
+In-Reply-To: <1741a33cd88cd5525f3c50c0e0cacc0853a3512a.1402350905.git.marcel@ziswiler.com>
 X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -30,34 +27,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2014 09:58 AM, Peter De Schrijver wrote:
-> This patchset introduces support for Tegra's microsecond counter as the
-> udelay() timer. This is useful on Tegra SoCs which do not have an arch timer
-> such as Tegra20 and Tegra30. Using the microsecond counter instead of a delay
-> based loop avoids potential problems during cpu frequency changes.
+On 06/09/2014 04:49 PM, Marcel Ziswiler wrote:
+> The NVIDIA Tegra 3 based Apalis T30 module contains an Intel i210 resp.
+> i211 gigabit Ethernet controller, an STMPE811 ADC/touch controller, PWM
+> LEDs generically accessible from user space and an LM95245 temperature
+> sensor chip. The later three can also be found on the Colibri T30
+> module.
 > 
-> The set consists of 3 patches:
-> 
-> Patch 1 introduces a new call which is used by the ARM architecture delay
-> timer code to prevent changing the delay timer after calibration is finished
-> and thus can be in use.
-> 
-> Patch 2 adds logic to choose the delay timer with the highest resolution. This
-> allows the same registration code to be used on all Tegra SoCs and yet use the
-> higher resolution arch timer when available (eg on Tegra114 or Tegra124).
-> 
-> Patch 3 adds the actual delay timer code.
-> 
-> Patch set has been verified on ventana (Tegra20), beaver (Tegra30),
-> dalmore (Tegra114) and jetson TK1 (Tegra124).
+> While at it move the NEON entry down to its proper place to have it all
+> nicely ordered again.
 
-Russell, Paul, do patches 1 and 2 look good to you? If so, if you can
-ack them, I'd be happy to queue this series in the Tegra git tree. If
-that doesn't work for you, please let me know who will apply these
-patches. Thanks.
+Acked-by: Stephen Warren <swarren@nvidia.com>
 
-> Changes since v1:
-> * Address review comments
-
-That's not a very useful description of the changes, and there's no "V2"
-in the subject...
+I assume this will be applied directly to the arm-soc tree.
