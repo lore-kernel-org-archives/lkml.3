@@ -1,360 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751930AbaFLSsW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 14:48:22 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:53818 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751662AbaFLSr6 (ORCPT
+	id S1751988AbaFLSsq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 14:48:46 -0400
+Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:26097 "EHLO
+	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751496AbaFLSsp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 14:47:58 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: <hpa@zytor.com>, Kui Zhang <kuizhang@gmail.com>
-Cc: x86@kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Stefani Seibold <stefani@seibold.net>
-Subject: [PATCH 2/3] doc,vdso: Make vDSO examples more portable
-Date: Thu, 12 Jun 2014 11:47:43 -0700
-Message-Id: <87f62cc3db04047f9edbf7bacac059396d7112f1.1402598632.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <cover.1402598632.git.luto@amacapital.net>
-References: <cover.1402598632.git.luto@amacapital.net>
-In-Reply-To: <cover.1402598632.git.luto@amacapital.net>
-References: <cover.1402598632.git.luto@amacapital.net>
+	Thu, 12 Jun 2014 14:48:45 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AjoIAC71mVNbsHy//2dsb2JhbABagw2qdQUBAQEBAQEFAZkegQsXdYQxLyOBGjeIRgG4OJoVF4VciH+ESASPaIpKizCIIoM+Ow
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] kernel/debug/debug_core.c: Logging clean-up
+Date: Thu, 12 Jun 2014 20:48:38 +0200
+Message-Id: <1402598918-5729-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a new vdso_test.c that's written entirely in C.  It also
-makes all of the vDSO examples work on 32-bit x86.
+-Convert printk( to pr_foo()
+-Add pr_fmt
+-Coalesce formats
 
-Cc: Stefani Seibold <stefani@seibold.net>
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Cc: Jason Wessel <jason.wessel@windriver.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- Documentation/vDSO/parse_vdso.c               | 59 +++++++++++++++------------
- Documentation/vDSO/vdso_standalone_test_x86.c | 45 +++++++++++++-------
- Documentation/vDSO/vdso_test.c                | 50 +++++++++++++++++++++++
- 3 files changed, 113 insertions(+), 41 deletions(-)
- create mode 100644 Documentation/vDSO/vdso_test.c
+ kernel/debug/debug_core.c | 43 +++++++++++++++++++++----------------------
+ 1 file changed, 21 insertions(+), 22 deletions(-)
 
-diff --git a/Documentation/vDSO/parse_vdso.c b/Documentation/vDSO/parse_vdso.c
-index 8587020..ca23f06 100644
---- a/Documentation/vDSO/parse_vdso.c
-+++ b/Documentation/vDSO/parse_vdso.c
-@@ -1,6 +1,6 @@
- /*
-  * parse_vdso.c: Linux reference vDSO parser
-- * Written by Andrew Lutomirski, 2011.
-+ * Written by Andrew Lutomirski, 2011-2014.
-  *
-  * This code is meant to be linked in to various programs that run on Linux.
-  * As such, it is available with as few restrictions as possible.  This file
-@@ -11,7 +11,7 @@
-  * it starts a program.  It works equally well in statically and dynamically
-  * linked binaries.
-  *
-- * This code is tested on x86_64.  In principle it should work on any 64-bit
-+ * This code is tested on x86.  In principle it should work on any
-  * architecture that has a vDSO.
+diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
+index 1adf62b..b21ff5f 100644
+--- a/kernel/debug/debug_core.c
++++ b/kernel/debug/debug_core.c
+@@ -27,6 +27,9 @@
+  * version 2. This program is licensed "as is" without any warranty of any
+  * kind, whether express or implied.
   */
- 
-@@ -20,6 +20,8 @@
- #include <string.h>
- #include <elf.h>
- 
-+#include <asm/bitsperlong.h>
 +
- /*
-  * To use this vDSO parser, first call one of the vdso_init_* functions.
-  * If you've already parsed auxv, then pass the value of AT_SYSINFO_EHDR
-@@ -45,11 +47,14 @@ extern void *vdso_sym(const char *version, const char *name);
- 
- 
- /* And here's the code. */
--
--#ifndef __x86_64__
--# error Not yet ported to non-x86_64 architectures
-+#ifndef __BITS_PER_LONG
-+#error We need __BITS_PER_LONG
- #endif
- 
-+#define ELF_BITS2(bits, x) Elf##bits##_##x
-+#define ELF_BITS(bits, x) ELF_BITS2(bits, x)
-+#define ELF(x) ELF_BITS(__BITS_PER_LONG, x)
++#define pr_fmt(fmt) "KGDB: " fmt
 +
- static struct vdso_info
- {
- 	bool valid;
-@@ -59,14 +64,14 @@ static struct vdso_info
- 	uintptr_t load_offset;  /* load_addr - recorded vaddr */
+ #include <linux/pid_namespace.h>
+ #include <linux/clocksource.h>
+ #include <linux/serial_core.h>
+@@ -196,8 +199,8 @@ int __weak kgdb_validate_break_address(unsigned long addr)
+ 		return err;
+ 	err = kgdb_arch_remove_breakpoint(&tmp);
+ 	if (err)
+-		printk(KERN_ERR "KGDB: Critical breakpoint error, kernel "
+-		   "memory destroyed at: %lx", addr);
++		pr_err("Critical breakpoint error, kernel memory destroyed at: %lx",
++		       addr);
+ 	return err;
+ }
  
- 	/* Symbol table */
--	Elf64_Sym *symtab;
-+	ELF(Sym) *symtab;
- 	const char *symstrings;
--	Elf64_Word *bucket, *chain;
--	Elf64_Word nbucket, nchain;
-+	ELF(Word) *bucket, *chain;
-+	ELF(Word) nbucket, nchain;
- 
- 	/* Version table */
--	Elf64_Versym *versym;
--	Elf64_Verdef *verdef;
-+	ELF(Versym) *versym;
-+	ELF(Verdef) *verdef;
- } vdso_info;
- 
- /* Straight from the ELF specification. */
-@@ -92,9 +97,9 @@ void vdso_init_from_sysinfo_ehdr(uintptr_t base)
- 
- 	vdso_info.load_addr = base;
- 
--	Elf64_Ehdr *hdr = (Elf64_Ehdr*)base;
--	Elf64_Phdr *pt = (Elf64_Phdr*)(vdso_info.load_addr + hdr->e_phoff);
--	Elf64_Dyn *dyn = 0;
-+	ELF(Ehdr) *hdr = (ELF(Ehdr)*)base;
-+	ELF(Phdr) *pt = (ELF(Phdr)*)(vdso_info.load_addr + hdr->e_phoff);
-+	ELF(Dyn) *dyn = 0;
- 
- 	/*
- 	 * We need two things from the segment table: the load offset
-@@ -108,7 +113,7 @@ void vdso_init_from_sysinfo_ehdr(uintptr_t base)
- 				+ (uintptr_t)pt[i].p_offset
- 				- (uintptr_t)pt[i].p_vaddr;
- 		} else if (pt[i].p_type == PT_DYNAMIC) {
--			dyn = (Elf64_Dyn*)(base + pt[i].p_offset);
-+			dyn = (ELF(Dyn)*)(base + pt[i].p_offset);
+@@ -256,8 +259,8 @@ int dbg_activate_sw_breakpoints(void)
+ 		error = kgdb_arch_set_breakpoint(&kgdb_break[i]);
+ 		if (error) {
+ 			ret = error;
+-			printk(KERN_INFO "KGDB: BP install failed: %lx",
+-			       kgdb_break[i].bpt_addr);
++			pr_info("BP install failed: %lx",
++				kgdb_break[i].bpt_addr);
+ 			continue;
  		}
+ 
+@@ -319,8 +322,8 @@ int dbg_deactivate_sw_breakpoints(void)
+ 			continue;
+ 		error = kgdb_arch_remove_breakpoint(&kgdb_break[i]);
+ 		if (error) {
+-			printk(KERN_INFO "KGDB: BP remove failed: %lx\n",
+-			       kgdb_break[i].bpt_addr);
++			pr_info("BP remove failed: %lx\n",
++				kgdb_break[i].bpt_addr);
+ 			ret = error;
+ 		}
+ 
+@@ -367,7 +370,7 @@ int dbg_remove_all_break(void)
+ 			goto setundefined;
+ 		error = kgdb_arch_remove_breakpoint(&kgdb_break[i]);
+ 		if (error)
+-			printk(KERN_ERR "KGDB: breakpoint remove failed: %lx\n",
++			pr_err("breakpoint remove failed: %lx\n",
+ 			       kgdb_break[i].bpt_addr);
+ setundefined:
+ 		kgdb_break[i].state = BP_UNDEFINED;
+@@ -400,9 +403,9 @@ static int kgdb_io_ready(int print_wait)
+ 	if (print_wait) {
+ #ifdef CONFIG_KGDB_KDB
+ 		if (!dbg_kdb_mode)
+-			printk(KERN_CRIT "KGDB: waiting... or $3#33 for KDB\n");
++			pr_crit("waiting... or $3#33 for KDB\n");
+ #else
+-		printk(KERN_CRIT "KGDB: Waiting for remote debugger\n");
++		pr_crit("Waiting for remote debugger\n");
+ #endif
+ 	}
+ 	return 1;
+@@ -430,8 +433,7 @@ static int kgdb_reenter_check(struct kgdb_state *ks)
+ 		exception_level = 0;
+ 		kgdb_skipexception(ks->ex_vector, ks->linux_regs);
+ 		dbg_activate_sw_breakpoints();
+-		printk(KERN_CRIT "KGDB: re-enter error: breakpoint removed %lx\n",
+-			addr);
++		pr_crit("re-enter error: breakpoint removed %lx\n", addr);
+ 		WARN_ON_ONCE(1);
+ 
+ 		return 1;
+@@ -444,7 +446,7 @@ static int kgdb_reenter_check(struct kgdb_state *ks)
+ 		panic("Recursive entry to debugger");
  	}
  
-@@ -118,7 +123,7 @@ void vdso_init_from_sysinfo_ehdr(uintptr_t base)
- 	/*
- 	 * Fish out the useful bits of the dynamic table.
- 	 */
--	Elf64_Word *hash = 0;
-+	ELF(Word) *hash = 0;
- 	vdso_info.symstrings = 0;
- 	vdso_info.symtab = 0;
- 	vdso_info.versym = 0;
-@@ -131,22 +136,22 @@ void vdso_init_from_sysinfo_ehdr(uintptr_t base)
- 				 + vdso_info.load_offset);
- 			break;
- 		case DT_SYMTAB:
--			vdso_info.symtab = (Elf64_Sym *)
-+			vdso_info.symtab = (ELF(Sym) *)
- 				((uintptr_t)dyn[i].d_un.d_ptr
- 				 + vdso_info.load_offset);
- 			break;
- 		case DT_HASH:
--			hash = (Elf64_Word *)
-+			hash = (ELF(Word) *)
- 				((uintptr_t)dyn[i].d_un.d_ptr
- 				 + vdso_info.load_offset);
- 			break;
- 		case DT_VERSYM:
--			vdso_info.versym = (Elf64_Versym *)
-+			vdso_info.versym = (ELF(Versym) *)
- 				((uintptr_t)dyn[i].d_un.d_ptr
- 				 + vdso_info.load_offset);
- 			break;
- 		case DT_VERDEF:
--			vdso_info.verdef = (Elf64_Verdef *)
-+			vdso_info.verdef = (ELF(Verdef) *)
- 				((uintptr_t)dyn[i].d_un.d_ptr
- 				 + vdso_info.load_offset);
- 			break;
-@@ -168,8 +173,8 @@ void vdso_init_from_sysinfo_ehdr(uintptr_t base)
- 	vdso_info.valid = true;
- }
- 
--static bool vdso_match_version(Elf64_Versym ver,
--			       const char *name, Elf64_Word hash)
-+static bool vdso_match_version(ELF(Versym) ver,
-+			       const char *name, ELF(Word) hash)
- {
- 	/*
- 	 * This is a helper function to check if the version indexed by
-@@ -188,7 +193,7 @@ static bool vdso_match_version(Elf64_Versym ver,
- 
- 	/* First step: find the version definition */
- 	ver &= 0x7fff;  /* Apparently bit 15 means "hidden" */
--	Elf64_Verdef *def = vdso_info.verdef;
-+	ELF(Verdef) *def = vdso_info.verdef;
- 	while(true) {
- 		if ((def->vd_flags & VER_FLG_BASE) == 0
- 		    && (def->vd_ndx & 0x7fff) == ver)
-@@ -197,11 +202,11 @@ static bool vdso_match_version(Elf64_Versym ver,
- 		if (def->vd_next == 0)
- 			return false;  /* No definition. */
- 
--		def = (Elf64_Verdef *)((char *)def + def->vd_next);
-+		def = (ELF(Verdef) *)((char *)def + def->vd_next);
- 	}
- 
- 	/* Now figure out whether it matches. */
--	Elf64_Verdaux *aux = (Elf64_Verdaux*)((char *)def + def->vd_aux);
-+	ELF(Verdaux) *aux = (ELF(Verdaux)*)((char *)def + def->vd_aux);
- 	return def->vd_hash == hash
- 		&& !strcmp(name, vdso_info.symstrings + aux->vda_name);
- }
-@@ -213,10 +218,10 @@ void *vdso_sym(const char *version, const char *name)
- 		return 0;
- 
- 	ver_hash = elf_hash(version);
--	Elf64_Word chain = vdso_info.bucket[elf_hash(name) % vdso_info.nbucket];
-+	ELF(Word) chain = vdso_info.bucket[elf_hash(name) % vdso_info.nbucket];
- 
- 	for (; chain != STN_UNDEF; chain = vdso_info.chain[chain]) {
--		Elf64_Sym *sym = &vdso_info.symtab[chain];
-+		ELF(Sym) *sym = &vdso_info.symtab[chain];
- 
- 		/* Check for a defined global or weak function w/ right name. */
- 		if (ELF64_ST_TYPE(sym->st_info) != STT_FUNC)
-@@ -243,7 +248,7 @@ void *vdso_sym(const char *version, const char *name)
- 
- void vdso_init_from_auxv(void *auxv)
- {
--	Elf64_auxv_t *elf_auxv = auxv;
-+	ELF(auxv_t) *elf_auxv = auxv;
- 	for (int i = 0; elf_auxv[i].a_type != AT_NULL; i++)
- 	{
- 		if (elf_auxv[i].a_type == AT_SYSINFO_EHDR) {
-diff --git a/Documentation/vDSO/vdso_standalone_test_x86.c b/Documentation/vDSO/vdso_standalone_test_x86.c
-index 1523f5d..d462402 100644
---- a/Documentation/vDSO/vdso_standalone_test_x86.c
-+++ b/Documentation/vDSO/vdso_standalone_test_x86.c
-@@ -1,13 +1,14 @@
- /*
-- * vdso_test.c: Sample code to test parse_vdso.c on x86_64
-- * Copyright (c) 2011 Andy Lutomirski
-+ * vdso_test.c: Sample code to test parse_vdso.c on x86
-+ * Copyright (c) 2011-2014 Andy Lutomirski
-  * Subject to the GNU General Public License, version 2
-  *
-  * You can amuse yourself by compiling with:
-  * gcc -std=gnu99 -nostdlib
-- *     -Os -fno-asynchronous-unwind-tables -flto
-+ *     -Os -fno-asynchronous-unwind-tables -flto -lgcc_s
-  *      vdso_standalone_test_x86.c parse_vdso.c
-- * to generate a small binary with no dependencies at all.
-+ * to generate a small binary.  On x86_64, you can omit -lgcc_s
-+ * if you want the binary to be completely standalone.
-  */
- 
- #include <sys/syscall.h>
-@@ -35,21 +36,31 @@ int strcmp(const char *a, const char *b)
+-	printk(KERN_CRIT "KGDB: re-enter exception: ALL breakpoints killed\n");
++	pr_crit("re-enter exception: ALL breakpoints killed\n");
+ #ifdef CONFIG_KGDB_KDB
+ 	/* Allow kdb to debug itself one level */
  	return 0;
- }
- 
--/* ...and two syscalls.  This is x86_64-specific. */
--static inline long linux_write(int fd, const void *data, size_t len)
-+/* ...and two syscalls.  This is x86-specific. */
-+static inline long x86_syscall3(long nr, long a0, long a1, long a2)
+@@ -795,15 +797,15 @@ static struct console kgdbcons = {
+ static void sysrq_handle_dbg(int key)
  {
--
- 	long ret;
--	asm volatile ("syscall" : "=a" (ret) : "a" (__NR_write),
--		      "D" (fd), "S" (data), "d" (len) :
-+#ifdef __x86_64__
-+	asm volatile ("syscall" : "=a" (ret) : "a" (nr),
-+		      "D" (a0), "S" (a1), "d" (a2) :
- 		      "cc", "memory", "rcx",
- 		      "r8", "r9", "r10", "r11" );
-+#else
-+	asm volatile ("int $0x80" : "=a" (ret) : "a" (nr),
-+		      "b" (a0), "c" (a1), "d" (a2) :
-+		      "cc", "memory" );
-+#endif
- 	return ret;
- }
+ 	if (!dbg_io_ops) {
+-		printk(KERN_CRIT "ERROR: No KGDB I/O module available\n");
++		pr_crit("ERROR: No KGDB I/O module available\n");
+ 		return;
+ 	}
+ 	if (!kgdb_connected) {
+ #ifdef CONFIG_KGDB_KDB
+ 		if (!dbg_kdb_mode)
+-			printk(KERN_CRIT "KGDB or $3#33 for KDB\n");
++			pr_crit("KGDB or $3#33 for KDB\n");
+ #else
+-		printk(KERN_CRIT "Entering KGDB\n");
++		pr_crit("Entering KGDB\n");
+ #endif
+ 	}
  
-+static inline long linux_write(int fd, const void *data, size_t len)
-+{
-+	return x86_syscall3(__NR_write, fd, (long)data, (long)len);
-+}
-+
- static inline void linux_exit(int code)
+@@ -945,7 +947,7 @@ static void kgdb_initial_breakpoint(void)
  {
--	asm volatile ("syscall" : : "a" (__NR_exit), "D" (code));
-+	x86_syscall3(__NR_exit, code, 0, 0);
+ 	kgdb_break_asap = 0;
+ 
+-	printk(KERN_CRIT "kgdb: Waiting for connection from remote gdb...\n");
++	pr_crit("Waiting for connection from remote gdb...\n");
+ 	kgdb_breakpoint();
  }
  
- void to_base10(char *lastdig, uint64_t n)
-@@ -104,8 +115,14 @@ __attribute__((externally_visible)) void c_main(void **stack)
- asm (
- 	".text\n"
- 	".global _start\n"
--        ".type _start,@function\n"
--        "_start:\n\t"
--        "mov %rsp,%rdi\n\t"
--        "jmp c_main"
-+	".type _start,@function\n"
-+	"_start:\n\t"
-+#ifdef __x86_64__
-+	"mov %rsp,%rdi\n\t"
-+	"jmp c_main"
-+#else
-+	"push %esp\n\t"
-+	"call c_main\n\t"
-+	"int $3"
-+#endif
- 	);
-diff --git a/Documentation/vDSO/vdso_test.c b/Documentation/vDSO/vdso_test.c
-new file mode 100644
-index 0000000..75b1da2
---- /dev/null
-+++ b/Documentation/vDSO/vdso_test.c
-@@ -0,0 +1,50 @@
-+/*
-+ * vdso_test.c: Sample code to test parse_vdso.c
-+ * Copyright (c) 2014 Andy Lutomirski
-+ * Subject to the GNU General Public License, version 2
-+ *
-+ * Compile with:
-+ * gcc -std=gnu99 vdso_test.c parse_vdso.c
-+ *
-+ * Tested on x86, 32-bit and 64-bit.  It may work on other architectures, too.
-+ */
-+
-+#include <stdint.h>
-+#include <elf.h>
-+#include <stdio.h>
-+#include <sys/auxv.h>
-+#include <sys/time.h>
-+
-+extern void *vdso_sym(const char *version, const char *name);
-+extern void vdso_init_from_sysinfo_ehdr(uintptr_t base);
-+extern void vdso_init_from_auxv(void *auxv);
-+
-+int main(int argc, char **argv)
-+{
-+	unsigned long sysinfo_ehdr = getauxval(AT_SYSINFO_EHDR);
-+	if (!sysinfo_ehdr) {
-+		printf("AT_SYSINFO_EHDR is not present!\n");
-+		return 0;
-+	}
-+
-+	vdso_init_from_sysinfo_ehdr(getauxval(AT_SYSINFO_EHDR));
-+
-+	/* Find gettimeofday. */
-+	typedef long (*gtod_t)(struct timeval *tv, struct timezone *tz);
-+	gtod_t gtod = (gtod_t)vdso_sym("LINUX_2.6", "__vdso_gettimeofday");
-+
-+	if (!gtod)
-+		printf("Could not find __vdso_gettimeofday\n");
-+
-+	struct timeval tv;
-+	long ret = gtod(&tv, 0);
-+
-+	if (ret == 0) {
-+		printf("The time is %lld.%06lld\n",
-+		       (long long)tv.tv_sec, (long long)tv.tv_usec);
-+	} else {
-+		printf("__vdso_gettimeofday failed\n");
-+	}
-+
-+	return 0;
-+}
+@@ -964,8 +966,7 @@ int kgdb_register_io_module(struct kgdb_io *new_dbg_io_ops)
+ 	if (dbg_io_ops) {
+ 		spin_unlock(&kgdb_registration_lock);
+ 
+-		printk(KERN_ERR "kgdb: Another I/O driver is already "
+-				"registered with KGDB.\n");
++		pr_err("Another I/O driver is already registered with KGDB.\n");
+ 		return -EBUSY;
+ 	}
+ 
+@@ -981,8 +982,7 @@ int kgdb_register_io_module(struct kgdb_io *new_dbg_io_ops)
+ 
+ 	spin_unlock(&kgdb_registration_lock);
+ 
+-	printk(KERN_INFO "kgdb: Registered I/O driver %s.\n",
+-	       new_dbg_io_ops->name);
++	pr_info("Registered I/O driver %s.\n", new_dbg_io_ops->name);
+ 
+ 	/* Arm KGDB now. */
+ 	kgdb_register_callbacks();
+@@ -1017,8 +1017,7 @@ void kgdb_unregister_io_module(struct kgdb_io *old_dbg_io_ops)
+ 
+ 	spin_unlock(&kgdb_registration_lock);
+ 
+-	printk(KERN_INFO
+-		"kgdb: Unregistered I/O driver %s, debugger disabled.\n",
++	pr_info("Unregistered I/O driver %s, debugger disabled.\n",
+ 		old_dbg_io_ops->name);
+ }
+ EXPORT_SYMBOL_GPL(kgdb_unregister_io_module);
 -- 
-1.9.3
+1.9.1
 
