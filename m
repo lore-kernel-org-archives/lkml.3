@@ -1,227 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933432AbaFLMzB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 08:55:01 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:57265 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933229AbaFLMyJ (ORCPT
+	id S1755833AbaFLM4A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 08:56:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46684 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752847AbaFLMz5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 08:54:09 -0400
-From: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-To: Thierry Reding <thierry.reding@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-pwm@vger.kernel.org,
-        =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>,
-        Shawn Guo <shawn.guo@linaro.org>, Sascha Hauer <kernel@pengutronix.de>,
-        Arnd Bergmann <arnd@arndb.de>, Tony Prisk <linux@prisktech.co.nz>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCHv4 2/4] pwm: make the PWM_POLARITY flag in DTB optional
-Date: Thu, 12 Jun 2014 14:52:46 +0200
-Message-Id: <1402577568-10037-3-git-send-email-LW@KARO-electronics.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1402577568-10037-2-git-send-email-LW@KARO-electronics.de>
-References: <1402577568-10037-1-git-send-email-LW@KARO-electronics.de>
- <1402577568-10037-2-git-send-email-LW@KARO-electronics.de>
+	Thu, 12 Jun 2014 08:55:57 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Willy Tarreau <w@1wt.eu>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Michal Tesar <mtesar@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>, tyler.hicks@canonical.com
+Subject: Re: [ 059/143] sysctl net: Keep tcp_syn_retries inside the boundary
+References: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
+	<20140512003203.088027167@1wt.eu> <20140611184644.GA5442@hercules>
+	<20140611194657.GU28551@1wt.eu>
+Date: Thu, 12 Jun 2014 13:55:53 +0100
+In-Reply-To: <20140611194657.GU28551@1wt.eu> (Willy Tarreau's message of "Wed,
+	11 Jun 2014 21:46:57 +0200")
+Message-ID: <87sinanv6u.fsf@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change the pwm chip driver registration, so that a chip driver that
-supports polarity inversion can still be used with DTBs that don't
-provide the 'PWM_POLARITY' flag.
+(Adding Tyler to the thread, as I should have done in the first place)
 
-This is done to provide polarity inversion support for the pwm-imx
-driver without having to modify all existing DTS files.
+Willy Tarreau <w@1wt.eu> writes:
 
-Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
----
- drivers/pwm/core.c            |   18 ++++++------------
- drivers/pwm/pwm-atmel-tcb.c   |    1 -
- drivers/pwm/pwm-atmel.c       |    4 +---
- drivers/pwm/pwm-pxa.c         |    5 ++---
- drivers/pwm/pwm-renesas-tpu.c |    1 -
- drivers/pwm/pwm-samsung.c     |    1 -
- drivers/pwm/pwm-tiecap.c      |    1 -
- drivers/pwm/pwm-tiehrpwm.c    |    1 -
- drivers/pwm/pwm-vt8500.c      |    1 -
- include/linux/pwm.h           |    1 -
- 10 files changed, 9 insertions(+), 25 deletions(-)
+> Hi Luis,
+>
+> On Wed, Jun 11, 2014 at 07:46:44PM +0100, Luis Henriques wrote:
+>> Hi Willy,
+>> 
+>> On Mon, May 12, 2014 at 02:32:59AM +0200, Willy Tarreau wrote:
+>> > 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
+>> > 
+>> 
+>> During Ubuntu Lucid kernel regression testing, after the merge of
+>> 2.6.32.62, we found problems with the following patches
+>> 
+>> [ 059/143] sysctl net: Keep tcp_syn_retries inside the boundary
+>>            (Upstream commit 651e92716aaae60fc41b9652f54cb6803896e0da)
+>> 
+>> [ 065/143] net: check net.core.somaxconn sysctl values
+>>            (Upstream commit 5f671d6b4ec3e6d66c2a868738af2cdea09e7509)
+>> 
+>> The following two stack traces were found in kernel logs:
+>
+> Aie :-/
+>
+>> [    0.199908] sysctl table check failed: /net/core/somaxconn .3.1.18 Missing strategy
+>> [    0.201100] Pid: 1, comm: swapper Not tainted 2.6.32-02063262-generic #201405200837
+>> [    0.202173] Call Trace:
+> (...)
+>> and here's a bug link:
+>> 
+>> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1326473
+>
+> I think that Tyler's suggest is the right approach.
+>
+>> For the Ubuntu Lucid kernel, we ended up reverting the offending
+>> commits.  Since I was able to reproduce this problem with a vanilla
+>> 2.6.32.62, you may want to take a similar action for the next 2.6.32
+>> release.
+>
+> The initial bug is hard to debug on live systems. I've been hit myself
+> and it took me a lot of time to find the root cause. The problem is that
+> the backlog is stored on an unsigned short while the sysctl is stored
+> on an int, and the value is naturally truncated, so when you use an
+> somaxconn of N*65536 + just a few, you end up with just a few and drop
+> a lot of SYNs even under moderate loads. Worse, the only people who
+> touch these values are those who run under high loads and who are the
+> most likely to face the issue.
+>
+> Thus if there's a quick way to check that Tyler's fix reliably addresses
+> the issue, I think we should take it instead. Of course I understand that
+> in the mean time the revert is better for you!
+>
+> Regards,
+> Willy
+>
 
-diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
-index 7af0043..ab0fc5a 100644
---- a/drivers/pwm/core.c
-+++ b/drivers/pwm/core.c
-@@ -136,7 +136,7 @@ of_pwm_xlate_with_flags(struct pwm_chip *pc, const struct of_phandle_args *args)
- {
- 	struct pwm_device *pwm;
- 
--	if (pc->of_pwm_n_cells < 3)
-+	if (args->args_count != 3)
- 		return ERR_PTR(-EINVAL);
- 
- 	if (args->args[0] >= pc->npwm)
-@@ -162,12 +162,15 @@ of_pwm_simple_xlate(struct pwm_chip *pc, const struct of_phandle_args *args)
- {
- 	struct pwm_device *pwm;
- 
--	if (pc->of_pwm_n_cells < 2)
-+	if (args->args_count < 2)
- 		return ERR_PTR(-EINVAL);
- 
- 	if (args->args[0] >= pc->npwm)
- 		return ERR_PTR(-EINVAL);
- 
-+	if (args->args_count > 2)
-+		return of_pwm_xlate_with_flags(pc, args);
-+
- 	pwm = pwm_request_from_chip(pc, args->args[0], NULL);
- 	if (IS_ERR(pwm))
- 		return pwm;
-@@ -182,10 +185,8 @@ static void of_pwmchip_add(struct pwm_chip *chip)
- 	if (!chip->dev || !chip->dev->of_node)
- 		return;
- 
--	if (!chip->of_xlate) {
-+	if (!chip->of_xlate)
- 		chip->of_xlate = of_pwm_simple_xlate;
--		chip->of_pwm_n_cells = 2;
--	}
- 
- 	of_node_get(chip->dev->of_node);
- }
-@@ -536,13 +537,6 @@ struct pwm_device *of_pwm_get(struct device_node *np, const char *con_id)
- 		goto put;
- 	}
- 
--	if (args.args_count != pc->of_pwm_n_cells) {
--		pr_debug("%s: wrong #pwm-cells for %s\n", np->full_name,
--			 args.np->full_name);
--		pwm = ERR_PTR(-EINVAL);
--		goto put;
--	}
--
- 	pwm = pc->of_xlate(pc, &args);
- 	if (IS_ERR(pwm))
- 		goto put;
-diff --git a/drivers/pwm/pwm-atmel-tcb.c b/drivers/pwm/pwm-atmel-tcb.c
-index f3dcd02..55fabf8 100644
---- a/drivers/pwm/pwm-atmel-tcb.c
-+++ b/drivers/pwm/pwm-atmel-tcb.c
-@@ -395,7 +395,6 @@ static int atmel_tcb_pwm_probe(struct platform_device *pdev)
- 	tcbpwm->chip.dev = &pdev->dev;
- 	tcbpwm->chip.ops = &atmel_tcb_pwm_ops;
- 	tcbpwm->chip.of_xlate = of_pwm_xlate_with_flags;
--	tcbpwm->chip.of_pwm_n_cells = 3;
- 	tcbpwm->chip.base = -1;
- 	tcbpwm->chip.npwm = NPWM;
- 	tcbpwm->tc = tc;
-diff --git a/drivers/pwm/pwm-atmel.c b/drivers/pwm/pwm-atmel.c
-index 6e700a5..ae7c946 100644
---- a/drivers/pwm/pwm-atmel.c
-+++ b/drivers/pwm/pwm-atmel.c
-@@ -350,10 +350,8 @@ static int atmel_pwm_probe(struct platform_device *pdev)
- 	atmel_pwm->chip.dev = &pdev->dev;
- 	atmel_pwm->chip.ops = &atmel_pwm_ops;
- 
--	if (pdev->dev.of_node) {
-+	if (pdev->dev.of_node)
- 		atmel_pwm->chip.of_xlate = of_pwm_xlate_with_flags;
--		atmel_pwm->chip.of_pwm_n_cells = 3;
--	}
- 
- 	atmel_pwm->chip.base = -1;
- 	atmel_pwm->chip.npwm = 4;
-diff --git a/drivers/pwm/pwm-pxa.c b/drivers/pwm/pwm-pxa.c
-index 0b312ec..5656052 100644
---- a/drivers/pwm/pwm-pxa.c
-+++ b/drivers/pwm/pwm-pxa.c
-@@ -191,10 +191,9 @@ static int pwm_probe(struct platform_device *pdev)
- 	pwm->chip.base = -1;
- 	pwm->chip.npwm = (id->driver_data & HAS_SECONDARY_PWM) ? 2 : 1;
- 
--	if (IS_ENABLED(CONFIG_OF)) {
-+	if (IS_ENABLED(CONFIG_OF))
- 		pwm->chip.of_xlate = pxa_pwm_of_xlate;
--		pwm->chip.of_pwm_n_cells = 1;
--	}
-+
- 
- 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	pwm->mmio_base = devm_ioremap_resource(&pdev->dev, r);
-diff --git a/drivers/pwm/pwm-renesas-tpu.c b/drivers/pwm/pwm-renesas-tpu.c
-index 3b71b42..5271da3 100644
---- a/drivers/pwm/pwm-renesas-tpu.c
-+++ b/drivers/pwm/pwm-renesas-tpu.c
-@@ -419,7 +419,6 @@ static int tpu_probe(struct platform_device *pdev)
- 	tpu->chip.dev = &pdev->dev;
- 	tpu->chip.ops = &tpu_pwm_ops;
- 	tpu->chip.of_xlate = of_pwm_xlate_with_flags;
--	tpu->chip.of_pwm_n_cells = 3;
- 	tpu->chip.base = -1;
- 	tpu->chip.npwm = TPU_CHANNEL_MAX;
- 
-diff --git a/drivers/pwm/pwm-samsung.c b/drivers/pwm/pwm-samsung.c
-index ba6b650..317d7d1 100644
---- a/drivers/pwm/pwm-samsung.c
-+++ b/drivers/pwm/pwm-samsung.c
-@@ -484,7 +484,6 @@ static int pwm_samsung_probe(struct platform_device *pdev)
- 			return ret;
- 
- 		chip->chip.of_xlate = of_pwm_xlate_with_flags;
--		chip->chip.of_pwm_n_cells = 3;
- 	} else {
- 		if (!pdev->dev.platform_data) {
- 			dev_err(&pdev->dev, "no platform data specified\n");
-diff --git a/drivers/pwm/pwm-tiecap.c b/drivers/pwm/pwm-tiecap.c
-index 74efbe7..a8e8282 100644
---- a/drivers/pwm/pwm-tiecap.c
-+++ b/drivers/pwm/pwm-tiecap.c
-@@ -227,7 +227,6 @@ static int ecap_pwm_probe(struct platform_device *pdev)
- 	pc->chip.dev = &pdev->dev;
- 	pc->chip.ops = &ecap_pwm_ops;
- 	pc->chip.of_xlate = of_pwm_xlate_with_flags;
--	pc->chip.of_pwm_n_cells = 3;
- 	pc->chip.base = -1;
- 	pc->chip.npwm = 1;
- 
-diff --git a/drivers/pwm/pwm-tiehrpwm.c b/drivers/pwm/pwm-tiehrpwm.c
-index cb75133..12a8ae4 100644
---- a/drivers/pwm/pwm-tiehrpwm.c
-+++ b/drivers/pwm/pwm-tiehrpwm.c
-@@ -458,7 +458,6 @@ static int ehrpwm_pwm_probe(struct platform_device *pdev)
- 	pc->chip.dev = &pdev->dev;
- 	pc->chip.ops = &ehrpwm_pwm_ops;
- 	pc->chip.of_xlate = of_pwm_xlate_with_flags;
--	pc->chip.of_pwm_n_cells = 3;
- 	pc->chip.base = -1;
- 	pc->chip.npwm = NUM_PWM_CHANNEL;
- 
-diff --git a/drivers/pwm/pwm-vt8500.c b/drivers/pwm/pwm-vt8500.c
-index 652e6b5..e04a3c0 100644
---- a/drivers/pwm/pwm-vt8500.c
-+++ b/drivers/pwm/pwm-vt8500.c
-@@ -217,7 +217,6 @@ static int vt8500_pwm_probe(struct platform_device *pdev)
- 	chip->chip.dev = &pdev->dev;
- 	chip->chip.ops = &vt8500_pwm_ops;
- 	chip->chip.of_xlate = of_pwm_xlate_with_flags;
--	chip->chip.of_pwm_n_cells = 3;
- 	chip->chip.base = -1;
- 	chip->chip.npwm = VT8500_NR_PWMS;
- 
-diff --git a/include/linux/pwm.h b/include/linux/pwm.h
-index e90628c..4cf1569 100644
---- a/include/linux/pwm.h
-+++ b/include/linux/pwm.h
-@@ -174,7 +174,6 @@ struct pwm_chip {
- 
- 	struct pwm_device *	(*of_xlate)(struct pwm_chip *pc,
- 					    const struct of_phandle_args *args);
--	unsigned int		of_pwm_n_cells;
- 	bool			can_sleep;
- };
- 
+I was finally able to spend some more time with this and tried (a
+modified) Tyler's patch on top of 2.6.32.62, and it seems to work.
+Although I haven't done any extended testing, I don't see the two
+stack traces and the /proc/sys/net/ipv4/ directory seems to be
+correctly populated.
+
+I'm attaching the patch I've used, based on Tyler's.
+
+Cheers,
 -- 
-1.7.10.4
+Luís
 
+diff --git a/net/core/sysctl_net_core.c b/net/core/sysctl_net_core.c
+index e2eaf29..e6bf72c 100644
+--- a/net/core/sysctl_net_core.c
++++ b/net/core/sysctl_net_core.c
+@@ -121,7 +121,8 @@ static struct ctl_table netns_core_table[] = {
+ 		.mode		= 0644,
+ 		.extra1		= &zero,
+ 		.extra2		= &ushort_max,
+-		.proc_handler	= proc_dointvec_minmax
++		.proc_handler	= proc_dointvec_minmax,
++		.strategy	= &sysctl_intvec
+ 	},
+ 	{ .ctl_name = 0 }
+ };
+diff --git a/net/ipv4/sysctl_net_ipv4.c b/net/ipv4/sysctl_net_ipv4.c
+index 910fa54..d957371 100644
+--- a/net/ipv4/sysctl_net_ipv4.c
++++ b/net/ipv4/sysctl_net_ipv4.c
+@@ -241,7 +241,8 @@ static struct ctl_table ipv4_table[] = {
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec_minmax,
+ 		.extra1		= &tcp_syn_retries_min,
+-		.extra2		= &tcp_syn_retries_max
++		.extra2		= &tcp_syn_retries_max,
++		.strategy	= &sysctl_intvec
+ 	},
+ 	{
+ 		.ctl_name	= NET_IPV4_NONLOCAL_BIND,
