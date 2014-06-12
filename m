@@ -1,81 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933152AbaFLKXD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 06:23:03 -0400
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:57195 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932894AbaFLKXA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 06:23:00 -0400
-Message-ID: <1402568578.10273.16.camel@x220>
-Subject: Re: Kconfig fails: big select-based circular dependency
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: "Yann E. MORIN" <yann.morin.1998@free.fr>, linux-kbuild@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Thu, 12 Jun 2014 12:22:58 +0200
-In-Reply-To: <20140612094745.GD23430@n2100.arm.linux.org.uk>
-References: <20140607090944.GL23430@n2100.arm.linux.org.uk>
-	 <20140612094745.GD23430@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 12 Jun 2014 10:22:58.0041 (UTC) FILETIME=[47EAAE90:01CF8628]
-X-RcptDomain: vger.kernel.org
+	id S933208AbaFLKXa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 06:23:30 -0400
+Received: from mail.kernel.org ([198.145.19.201]:40908 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932894AbaFLKX2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 06:23:28 -0400
+Date: Thu, 12 Jun 2014 12:23:19 +0200
+From: Robert Richter <rric@kernel.org>
+To: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Cc: rjw@rjwysocki.net, lenb@kernel.org, tony.luck@intel.com, bp@alien8.de,
+        m.chehab@samsung.com, bp@suse.de, linux-edac@vger.kernel.org,
+        x86@kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org
+Subject: Re: [PATCH v2 1/5] apei, mce: Factor out APEI architecture specific
+ MCE calls.
+Message-ID: <20140612102319.GA22583@rric.localhost>
+References: <1401262770-25343-1-git-send-email-tomasz.nowicki@linaro.org>
+ <1401262770-25343-2-git-send-email-tomasz.nowicki@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401262770-25343-2-git-send-email-tomasz.nowicki@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Cc-ing Yann and linux-kbuild.]
+On 28.05.14 09:39:26, Tomasz Nowicki wrote:
+> This commit abstracts MCE calls and provides weak corresponding default
+> implementation for those architectures which do not need arch specific
+> actions. Each platform willing to do additional architectural actions
+> should provides desired function definition. It allows us to avoid wrap
+> code into #ifdef in generic code and prevent new platform from introducing
+> dummy stub function too.
+> 
+> Initially, there are two APEI arch-specific calls:
+> - apei_arch_enable_cmcff()
+> - apei_arch_report_mem_error()
+> Both interact with MCE driver for X86 architecture.
+> 
+> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+> ---
+>  arch/x86/kernel/acpi/Makefile |    1 +
+>  arch/x86/kernel/acpi/apei.c   |   56 +++++++++++++++++++++++++++++++++++++++++
+>  drivers/acpi/apei/apei-base.c |   13 ++++++++++
+>  drivers/acpi/apei/ghes.c      |    6 ++---
+>  drivers/acpi/apei/hest.c      |   26 +------------------
+>  include/acpi/apei.h           |    3 +++
+>  6 files changed, 76 insertions(+), 29 deletions(-)
+>  create mode 100644 arch/x86/kernel/acpi/apei.c
 
-On Thu, 2014-06-12 at 10:47 +0100, Russell King - ARM Linux wrote:
-> If no one responds, I'll assume that no one is interested, and I'll
-> just create a pile of patches removing a bunch of these idiotic select
-> statements at random to break this loop.
+>  static int __init hest_parse_cmc(struct acpi_hest_header *hest_hdr, void *data)
+>  {
+> -#ifdef CONFIG_X86_MCE
+> -	int i;
+> -	struct acpi_hest_ia_corrected *cmc;
+> -	struct acpi_hest_ia_error_bank *mc_bank;
+> -
+> -	if (hest_hdr->type != ACPI_HEST_TYPE_IA32_CORRECTED_CHECK)
+> -		return 0;
+> -
+> -	cmc = (struct acpi_hest_ia_corrected *)hest_hdr;
+> -	if (!cmc->enabled)
+> +	if (!apei_arch_enable_cmcff(hest_hdr, data))
+>  		return 0;
 
-I looked into a much, much easier "recursive dependency" warning
-recently. That triggered me to post
-http://article.gmane.org/gmane.linux.kernel/1678946 . In summary: select
-statements are treated as "reverse dependencies", but that is actually
-rather odd.
+This could be a tail call:
 
-See, for example, DMADEVICES in this warning: the kconfig code treats it
-as if it's depending on SAMSUNG_DMADEV. But I would be very surprised if
-that was what was intended when that select statement was added. Please
-note that I have not yet really looked into the mess you reported. But
-for now I'll state that a recursive dependency warning involving select
-statements is probably bogus. Perhaps Yann e.a. can prove me wrong.
+	return apei_arch_enable_cmcff(...);
 
-I might have an ugly hack to the kconfig code disabling the "recursive
-dependency" stuff stashed away somewhere. Not sure, as it's been two
-months...
+Otherwise the patch looks good to me.
 
+-Robert
 
-Paul Bolle
-
-> On Sat, Jun 07, 2014 at 10:09:44AM +0100, Russell King - ARM Linux wrote:
-> > This is getting silly:
-> > 
-> > scripts/kconfig/conf --silentoldconfig Kconfig
-> > drivers/dma/Kconfig:5:error: recursive dependency detected!
-> > drivers/dma/Kconfig:5:  symbol DMADEVICES is selected by SAMSUNG_DMADEV
-> > arch/arm/plat-samsung/Kconfig:412:      symbol SAMSUNG_DMADEV is selected by S3C64XX_PL080
-> > arch/arm/mach-s3c64xx/Kconfig:20:       symbol S3C64XX_PL080 is selected by SPI_S3C64XX
-> > drivers/spi/Kconfig:429:        symbol SPI_S3C64XX depends on SPI
-> > drivers/spi/Kconfig:8:  symbol SPI is selected by DRM_PANEL_LD9040
-> > drivers/gpu/drm/panel/Kconfig:19:       symbol DRM_PANEL_LD9040 depends on DRM_PANEL
-> > drivers/gpu/drm/panel/Kconfig:1:        symbol DRM_PANEL is selected by DRM_IMX_LDB
-> > drivers/staging/imx-drm/Kconfig:35:     symbol DRM_IMX_LDB depends on MFD_SYSCON
-> > drivers/mfd/Kconfig:722:        symbol MFD_SYSCON is selected by POWER_RESET_KEYSTONE
-> > drivers/power/reset/Kconfig:76: symbol POWER_RESET_KEYSTONE depends on POWER_SUPPLY
-> > drivers/power/Kconfig:1:        symbol POWER_SUPPLY is selected by HID_SONY
-> > drivers/hid/Kconfig:622:        symbol HID_SONY depends on NEW_LEDS
-> > drivers/leds/Kconfig:8: symbol NEW_LEDS is selected by BACKLIGHT_ADP8860
-> > drivers/video/backlight/Kconfig:327:    symbol BACKLIGHT_ADP8860 depends on BACKLIGHT_CLASS_DEVICE
-> > drivers/video/backlight/Kconfig:156:    symbol BACKLIGHT_CLASS_DEVICE is selected by FB_MX3
-> > drivers/video/fbdev/Kconfig:2333:       symbol FB_MX3 depends on MX3_IPU
-> > drivers/dma/Kconfig:121:        symbol MX3_IPU depends on DMADEVICES
-> > 
-> > This is a good illustration why the select disease is truely bad...
-
+>  
+> -	/*
+> -	 * We expect HEST to provide a list of MC banks that report errors
+> -	 * in firmware first mode. Otherwise, return non-zero value to
+> -	 * indicate that we are done parsing HEST.
+> -	 */
+> -	if (!(cmc->flags & ACPI_HEST_FIRMWARE_FIRST) || !cmc->num_hardware_banks)
+> -		return 1;
+> -
+> -	pr_info(HEST_PFX "Enabling Firmware First mode for corrected errors.\n");
+> -
+> -	mc_bank = (struct acpi_hest_ia_error_bank *)(cmc + 1);
+> -	for (i = 0; i < cmc->num_hardware_banks; i++, mc_bank++)
+> -		mce_disable_bank(mc_bank->bank_number);
+> -#endif
+>  	return 1;
+>  }
