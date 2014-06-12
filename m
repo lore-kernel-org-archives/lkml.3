@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932933AbaFLIgv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 04:36:51 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:57873 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932399AbaFLIgt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 04:36:49 -0400
-Message-ID: <5399667C.20203@st.com>
-Date: Thu, 12 Jun 2014 10:36:12 +0200
-From: Gabriel Fernandez <gabriel.fernandez@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Input: st-keyscan - Protect PM-only functions by #ifdef
- CONFIG_PM_SLEEP
-References: <1402513493-17613-1-git-send-email-geert@linux-m68k.org>
-In-Reply-To: <1402513493-17613-1-git-send-email-geert@linux-m68k.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.201.19.41]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-06-12_03:2014-06-11,2014-06-12,1970-01-01 signatures=0
+	id S932947AbaFLIhh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 04:37:37 -0400
+Received: from mga09.intel.com ([134.134.136.24]:27214 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932757AbaFLIhd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 04:37:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,463,1400050800"; 
+   d="scan'208";a="527320062"
+Subject: [PATCH] ALSA: compress: Cancel the optimization of compiler and
+ fix the size of struct for all platform.
+From: "Wang, Xiaoming" <xiaoming.wang@intel.com>
+To: tiwai@suse.de, vinod.koul@intel.com, jeeja.kp@intel.com,
+        dhowells@redhat.com, arnd@arndb.de, tglx@linutronix.de,
+        mtk.manpages@gmail.com, paulmck@linux.vnet.ibm.com, davej@redhat.com,
+        linux-kernel@vger.kernel.org
+Cc: dongxing.zhang@intel.com, xiaoming.wang@intel.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 12 Jun 2014 18:47:07 -0400
+Message-ID: <1402613227.8326.13.camel@wxm-ubuntu>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Geert
+Cancel the optimization of compiler for struct snd_compr_avail
+which size will be 0x1c in 32bit kernel while 0x20 in 64bit
+kernel under the optimizer. That will make compaction between
+32bit and 64bit. So add packed to fix the size of struct
+snd_compr_avail to 0x1c for all platform.
 
-Acked-by : Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Signed-off-by: Zhang Dongxing <dongxing.zhang@intel.com>
+Signed-off-by: xiaoming wang <xiaoming.wang@intel.com>
+---
+ include/uapi/sound/compress_offload.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Best Regards
-
-
-On 06/11/2014 09:04 PM, Geert Uytterhoeven wrote:
-> If CONFIG_PM_SLEEP=n:
->
-> drivers/input/keyboard/st-keyscan.c:219: warning: ‘keyscan_suspend’ defined but not used
-> drivers/input/keyboard/st-keyscan.c:236: warning: ‘keyscan_resume’ defined but not used
->
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> ---
->   drivers/input/keyboard/st-keyscan.c | 2 ++
->   1 file changed, 2 insertions(+)
->
-> diff --git a/drivers/input/keyboard/st-keyscan.c b/drivers/input/keyboard/st-keyscan.c
-> index 758b48731415..668e3cf4b491 100644
-> --- a/drivers/input/keyboard/st-keyscan.c
-> +++ b/drivers/input/keyboard/st-keyscan.c
-> @@ -215,6 +215,7 @@ static int keyscan_probe(struct platform_device *pdev)
->   	return 0;
->   }
->   
-> +#ifdef CONFIG_PM_SLEEP
->   static int keyscan_suspend(struct device *dev)
->   {
->   	struct platform_device *pdev = to_platform_device(dev);
-> @@ -249,6 +250,7 @@ static int keyscan_resume(struct device *dev)
->   	mutex_unlock(&input->mutex);
->   	return retval;
->   }
-> +#endif /* CONFIG_PM_SLEEP */
->   
->   static SIMPLE_DEV_PM_OPS(keyscan_dev_pm_ops, keyscan_suspend, keyscan_resume);
->   
+diff --git a/include/uapi/sound/compress_offload.h b/include/uapi/sound/compress_offload.h
+index 5759810..21eed48 100644
+--- a/include/uapi/sound/compress_offload.h
++++ b/include/uapi/sound/compress_offload.h
+@@ -80,7 +80,7 @@ struct snd_compr_tstamp {
+ struct snd_compr_avail {
+ 	__u64 avail;
+ 	struct snd_compr_tstamp tstamp;
+-};
++} __attribute__((packed));
+ 
+ enum snd_compr_direction {
+ 	SND_COMPRESS_PLAYBACK = 0,
+-- 
+1.7.1
 
