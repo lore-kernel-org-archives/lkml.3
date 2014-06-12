@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752368AbaFLXSq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 19:18:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37206 "EHLO
+	id S1752305AbaFLXSp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 19:18:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37219 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751473AbaFLXSi (ORCPT
+	with ESMTP id S1752166AbaFLXSj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 19:18:38 -0400
+	Thu, 12 Jun 2014 19:18:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH 3.10 04/18] ARM: mvebu: fix NOR bus-width in Armada XP OpenBlocks AX3 Device Tree
-Date: Thu, 12 Jun 2014 16:22:08 -0700
-Message-Id: <20140612232213.220119417@linuxfoundation.org>
+        Sagi Grimberg <sagig@dev.mellanox.co.il>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.10 07/18] iser-target: Fix multi network portal shutdown regression
+Date: Thu, 12 Jun 2014 16:22:11 -0700
+Message-Id: <20140612232213.314917939@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140612232212.960235342@linuxfoundation.org>
 References: <20140612232212.960235342@linuxfoundation.org>
@@ -31,51 +29,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 6e20bae8a39c40d4e03698e4160bad2d2629062b upstream.
+commit 2363d196686e44c0158929e7cf96c8589a24a81b upstream.
 
-The mvebu-devbus driver had a serious bug, which lead to a 8 bits bus
-width declared in the Device Tree being considered as a 16 bits bus
-width when configuring the hardware.
+This patch fixes a iser-target specific regression introduced in
+v3.15-rc6 with:
 
-This bug in mvebu-devbus driver was compensated by a symetric mistake
-in the Armada XP OpenBlocks AX3 Device Tree: a 8 bits bus width was
-declared, even though the hardware actually has a 16 bits bus width
-connection with the NOR flash.
+commit 14f4b54fe38f3a8f8392a50b951c8aa43b63687a
+Author: Sagi Grimberg <sagig@mellanox.com>
+Date:   Tue Apr 29 13:13:47 2014 +0300
 
-Now that we have fixed the mvebu-devbus driver to behave according to
-its Device Tree binding, this commit fixes the problematic Device Tree
-files as well.
+    Target/iscsi,iser: Avoid accepting transport connections during stop stage
 
-This bug was introduced in commit
-a7d4f81821f7eec3175f8e23dd6949c71ab2da43 ('ARM: mvebu: Add support for
-NOR flash device on Openblocks AX3 board') which was merged in v3.10.
+where the change to set iscsi_np->enabled = false within
+iscsit_clear_tpg_np_login_thread() meant that a iscsi_np with
+two iscsi_tpg_np exports would have it's parent iscsi_np set
+to a disabled state, even if other iscsi_tpg_np exports still
+existed.
 
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Link: https://lkml.kernel.org/r/1397489361-5833-5-git-send-email-thomas.petazzoni@free-electrons.com
-Fixes: a7d4f81821f7 ('ARM: mvebu: Add support for NOR flash device on Openblocks AX3 board')
-Cc: stable@vger.kernel.org # v3.10+
-Acked-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+This patch changes iscsit_clear_tpg_np_login_thread() to only
+set iscsi_np->enabled = false when shutdown = true, and also
+changes iscsit_del_np() to set iscsi_np->enabled = true when
+iscsi_np->np_exports is non zero.
+
+(Fix up context changes for v3.10.y - nab)
+
+Cc: Sagi Grimberg <sagig@dev.mellanox.co.il>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-
 ---
- arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/target/iscsi/iscsi_target.c     |    1 +
+ drivers/target/iscsi/iscsi_target_tpg.c |   10 ++++++----
+ 2 files changed, 7 insertions(+), 4 deletions(-)
 
---- a/arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts
-+++ b/arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts
-@@ -152,7 +152,7 @@
- 				/* Device Bus parameters are required */
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -460,6 +460,7 @@ int iscsit_del_np(struct iscsi_np *np)
+ 	spin_lock_bh(&np->np_thread_lock);
+ 	np->np_exports--;
+ 	if (np->np_exports) {
++		np->enabled = true;
+ 		spin_unlock_bh(&np->np_thread_lock);
+ 		return 0;
+ 	}
+--- a/drivers/target/iscsi/iscsi_target_tpg.c
++++ b/drivers/target/iscsi/iscsi_target_tpg.c
+@@ -175,14 +175,16 @@ void iscsit_put_tpg(struct iscsi_portal_
  
- 				/* Read parameters */
--				devbus,bus-width    = <8>;
-+				devbus,bus-width    = <16>;
- 				devbus,turn-off-ps  = <60000>;
- 				devbus,badr-skew-ps = <0>;
- 				devbus,acc-first-ps = <124000>;
+ static void iscsit_clear_tpg_np_login_thread(
+ 	struct iscsi_tpg_np *tpg_np,
+-	struct iscsi_portal_group *tpg)
++	struct iscsi_portal_group *tpg,
++	bool shutdown)
+ {
+ 	if (!tpg_np->tpg_np) {
+ 		pr_err("struct iscsi_tpg_np->tpg_np is NULL!\n");
+ 		return;
+ 	}
+ 
+-	tpg_np->tpg_np->enabled = false;
++	if (shutdown)
++		tpg_np->tpg_np->enabled = false;
+ 	iscsit_reset_np_thread(tpg_np->tpg_np, tpg_np, tpg);
+ }
+ 
+@@ -198,7 +200,7 @@ void iscsit_clear_tpg_np_login_threads(
+ 			continue;
+ 		}
+ 		spin_unlock(&tpg->tpg_np_lock);
+-		iscsit_clear_tpg_np_login_thread(tpg_np, tpg);
++		iscsit_clear_tpg_np_login_thread(tpg_np, tpg, false);
+ 		spin_lock(&tpg->tpg_np_lock);
+ 	}
+ 	spin_unlock(&tpg->tpg_np_lock);
+@@ -521,7 +523,7 @@ static int iscsit_tpg_release_np(
+ 	struct iscsi_portal_group *tpg,
+ 	struct iscsi_np *np)
+ {
+-	iscsit_clear_tpg_np_login_thread(tpg_np, tpg);
++	iscsit_clear_tpg_np_login_thread(tpg_np, tpg, true);
+ 
+ 	pr_debug("CORE[%s] - Removed Network Portal: %s:%hu,%hu on %s\n",
+ 		tpg->tpg_tiqn->tiqn, np->np_ip, np->np_port, tpg->tpgt,
 
 
