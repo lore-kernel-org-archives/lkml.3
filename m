@@ -1,95 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933135AbaFLLeg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 07:34:36 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:38570 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755753AbaFLLec convert rfc822-to-8bit (ORCPT
+	id S1755901AbaFLLe4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 07:34:56 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:55727 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755851AbaFLLez (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 07:34:32 -0400
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Minchan Kim <minchan@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Alexander Graf <agraf@suse.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH v2 08/10] mm, cma: clean-up cma allocation error path
-In-Reply-To: <1402543307-29800-9-git-send-email-iamjoonsoo.kim@lge.com>
-Organization: http://mina86.com/
-References: <1402543307-29800-1-git-send-email-iamjoonsoo.kim@lge.com> <1402543307-29800-9-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Notmuch/0.17+15~gb65ca8e (http://notmuchmail.org) Emacs/24.4.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-X-Hashcash: 1:20:140612:kvm-ppc@vger.kernel.org::4HjonQ+qYoMejd70:0000000000000000000000000000000000000006L/
-X-Hashcash: 1:20:140612:kvm@vger.kernel.org::SM3O3w8BUSGRQkg2:0000000000000000000000000000000000000000000CwL
-X-Hashcash: 1:20:140612:linux-kernel@vger.kernel.org::K5EnRUaJuGgSr1jS:0000000000000000000000000000000000RDh
-X-Hashcash: 1:20:140612:iamjoonsoo.kim@lge.com::qeBcI0erflsKQpzu:0000000000000000000000000000000000000000iLt
-X-Hashcash: 1:20:140612:linux@arm.linux.org.uk::Q/DB85n4xVTWzJtn:0000000000000000000000000000000000000000uBL
-X-Hashcash: 1:20:140612:linux-mm@kvack.org::2OmkgaQ8l3kyurgT:0000000000000000000000000000000000000000000185K
-X-Hashcash: 1:20:140612:m.szyprowski@samsung.com::xWeDThF/8bfodDcP:00000000000000000000000000000000000001FHz
-X-Hashcash: 1:20:140612:aneesh.kumar@linux.vnet.ibm.com::Go8fjXe/DAztFs+b:0000000000000000000000000000001HBz
-X-Hashcash: 1:20:140612:agraf@suse.de::bv9yRO/H7p/C2zAp:00001M5G
-X-Hashcash: 1:20:140612:benh@kernel.crashing.org::FYHTD9M0O3IXYHCC:00000000000000000000000000000000000001N8G
-X-Hashcash: 1:20:140612:gregkh@linuxfoundation.org::3/WRmNYhlznjeASk:000000000000000000000000000000000001v5j
-X-Hashcash: 1:20:140612:akpm@linux-foundation.org::iTa8+FHZILjFZwzx:0000000000000000000000000000000000003SfZ
-X-Hashcash: 1:20:140612:minchan@kernel.org::qjjJXDfZ+nUR5eUH:000000000000000000000000000000000000000000038v2
-X-Hashcash: 1:20:140612:pbonzini@redhat.com::OhuF5fQ0/tkjgodp:0000000000000000000000000000000000000000003a/+
-X-Hashcash: 1:20:140612:linuxppc-dev@lists.ozlabs.org::kowEHUTSuFzbbNn3:000000000000000000000000000000006el7
-X-Hashcash: 1:20:140612:linux-arm-kernel@lists.infradead.org::LbxmIWbMwzzPOoan:00000000000000000000000006yIF
-X-Hashcash: 1:20:140612:gleb@kernel.org::TQT0QmHbyK2CRGvI:0079bF
-X-Hashcash: 1:20:140612:paulus@samba.org::OQIG2UKEwuTKJCk/:07wYR
-X-Hashcash: 1:20:140612:iamjoonsoo.kim@lge.com::CWLrn6gHBd2AyxkK:0000000000000000000000000000000000000008mCD
-Date: Thu, 12 Jun 2014 13:34:27 +0200
-Message-ID: <xa1tzjhiicos.fsf@mina86.com>
+	Thu, 12 Jun 2014 07:34:55 -0400
+Date: Thu, 12 Jun 2014 12:34:45 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>, Tomasz Figa <tomasz.figa@gmail.com>,
+        Mark Brown <broonie@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: Kconfig fails: big select-based circular dependency
+Message-ID: <20140612113445.GF23430@n2100.arm.linux.org.uk>
+References: <20140607090944.GL23430@n2100.arm.linux.org.uk> <20140612094745.GD23430@n2100.arm.linux.org.uk> <6077426.uLBS643pC0@wuerfel>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6077426.uLBS643pC0@wuerfel>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 12 2014, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
-> We can remove one call sites for clear_cma_bitmap() if we first
-> call it before checking error number.
->
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+On Thu, Jun 12, 2014 at 12:31:19PM +0200, Arnd Bergmann wrote:
+> On Thursday 12 June 2014 10:47:45 Russell King - ARM Linux wrote:
+> > If no one responds, I'll assume that no one is interested, and I'll
+> > just create a pile of patches removing a bunch of these idiotic select
+> > statements at random to break this loop.
+> 
+> I missed the original mail, and I don't remember seeing this particular
+> dependency chain.
+> 
+> > On Sat, Jun 07, 2014 at 10:09:44AM +0100, Russell King - ARM Linux wrote:
+> > > This is getting silly:
+> > > 
+> > > scripts/kconfig/conf --silentoldconfig Kconfig
+> > > drivers/dma/Kconfig:5:error: recursive dependency detected!
+> > > drivers/dma/Kconfig:5:  symbol DMADEVICES is selected by SAMSUNG_DMADEV
+> 
+> The 'select DMADEVICES' from plat-samsung/Kconfig is certainly wrong,
+> we shouldn't do that, but I'd do some extended build regression tests
+> to ensure that it doesn't cause other problems.
+> 
+> I'll have a look.
 
-Reviewed-by: Michal Nazarewicz <mina86@mina86.com>
+Yes, SAMSUNG_DMADEV looks like it's a shim layer between DMA engine and
+the old Samsung platform private DMA API.  I suspect SAMSUNG_DMADEV should
+be selected by the drivers which make use of this shim iff DMADEVICES is
+enabled.
 
-> diff --git a/mm/cma.c b/mm/cma.c
-> index 1e1b017..01a0713 100644
-> --- a/mm/cma.c
-> +++ b/mm/cma.c
-> @@ -282,11 +282,12 @@ struct page *cma_alloc(struct cma *cma, int count, unsigned int align)
->  		if (ret == 0) {
->  			page = pfn_to_page(pfn);
->  			break;
-> -		} else if (ret != -EBUSY) {
-> -			clear_cma_bitmap(cma, pfn, count);
-> -			break;
->  		}
-> +
->  		clear_cma_bitmap(cma, pfn, count);
-> +		if (ret != -EBUSY)
-> +			break;
-> +
->  		pr_debug("%s(): memory range at %p is busy, retrying\n",
->  			 __func__, pfn_to_page(pfn));
->  		/* try again with a bit different memory target */
+> > > arch/arm/plat-samsung/Kconfig:412:      symbol SAMSUNG_DMADEV is selected by S3C64XX_PL080
+
+I think killing the select statement against S3C64XX_PL080 of this shim is
+also a correct move - I suspect that's just there to make Kconfig life
+easier (which is not really a valid reason for adding a select statement
+to a major subsystem.)
+
+> > > arch/arm/mach-s3c64xx/Kconfig:20:       symbol S3C64XX_PL080 is selected by SPI_S3C64XX
+
+As I said in my reply to Paul, this select should also be killed.  At
+the very least, it should be turned into "depends on S3C64XX_PL080 if
+ARCH_S3C64XX".
+
+Since the comments in the driver say that the driver depends on having a
+DMA engine, I'd suggest also adding a dependency on DMADEVICES as well,
+to encode that explicit requirement in the Kconfig language:
+
+config SPI_S3C64XX
+	tristate "Samsung S3C64XX series type SPI"
+	depends on PLAT_SAMSUNG && DMADEVICES
+	depends on S3C64XX_PL080 if ARCH_S3C64XX
+
+The driver will cleanly fail if it can't get the DMA channels that it
+requires to operate, so we don't need to do anything more than this here.
+
+> > > drivers/spi/Kconfig:429:        symbol SPI_S3C64XX depends on SPI
+> > > drivers/spi/Kconfig:8:  symbol SPI is selected by DRM_PANEL_LD9040
+> 
+> 'select SPI' is also really bad. This seems trivial to replace with
+> 'depends on SPI'. This is the only driver that uses select here.
+
+Definitely.
+
+> > > drivers/gpu/drm/panel/Kconfig:19:       symbol DRM_PANEL_LD9040 depends on DRM_PANEL
+> > > drivers/gpu/drm/panel/Kconfig:1:        symbol DRM_PANEL is selected by DRM_IMX_LDB
+> > > drivers/staging/imx-drm/Kconfig:35:     symbol DRM_IMX_LDB depends on MFD_SYSCON
+> > > drivers/mfd/Kconfig:722:        symbol MFD_SYSCON is selected by POWER_RESET_KEYSTONE
+> 
+> We have 10 drivers doing 'select MFD_SYSCON' and 9 drivers doing
+> 'depends on MFD_SYSCON'. Either one would work if we did those
+> consistently, here the problem is really mixing the two.
+
+Indeed - we need clear policies on this stuff, because as we get different
+platforms doing different things (as is the case in this scenario), we are
+only going to see an increase in this problem.
+
+Also, I don't think we should do just one change to break this loop - this
+is a sign of a much bigger disease.  We are heading towards the situation
+where adding just one 'select' or 'depends on' statement between two symbols,
+thereby adding just one more dependency to an already tightly linked graph
+can cause a circular dependency.
+
+We need to stop this behaviour ASAP, and kill off as many of these
+ill-considered or wrong dependencies as possible, otherwise we're risking
+Kconfig becoming unmaintainable.
+
+Whenever we see a new 'select' statment appearing in a patch for something
+which is not a utility symbol, we need to ask what the justification is
+for it being there, and evaluate whether it's reasonable (ideally, this
+should be detailed in the commit log.)
+
+(I define a utility symbol as one whose primary purpose is to be selected.)
 
 -- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
