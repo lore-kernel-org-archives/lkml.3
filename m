@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964952AbaFLRer (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 13:34:47 -0400
-Received: from mail.fem.tu-ilmenau.de ([141.24.220.54]:54176 "EHLO
-	mail.fem.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964871AbaFLRen (ORCPT
+	id S933793AbaFLRfL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 13:35:11 -0400
+Received: from smtprelay0116.hostedemail.com ([216.40.44.116]:45665 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933092AbaFLRfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 13:34:43 -0400
-Subject: [PATCH v2 0/2] rt2800usb: Fix support for USB 057c:8501
-To: Ivo van Doorn <IvDoorn@gmail.com>,
-        Helmut Schaa <helmut.schaa@googlemail.com>
-From: Michael Braun <michael-dev@fami-braun.de>
-Cc: netdev@vger.kernel.org, users@rt2x00.serialmonkey.com,
-        linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 12 Jun 2014 19:33:31 +0200
-Message-ID: <20140612173057.15935.14194.stgit@charlie.fem.tu-ilmenau.de>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Thu, 12 Jun 2014 13:35:07 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:800:901:960:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2525:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3872:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:5007:7576:7652:9025:9072:9388:10004:10049:10400:10848:11232:11257:11658:11914:12043:12296:12517:12519:12679:12740:13019:13069:13161:13200:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: debt02_494ad2fa2df3b
+X-Filterd-Recvd-Size: 1767
+Message-ID: <1402594501.12385.10.camel@joe-AO725>
+Subject: Re: [PATCH 2/2] Documentation: exceptions to what I maintain
+From: Joe Perches <joe@perches.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 12 Jun 2014 10:35:01 -0700
+In-Reply-To: <5399DF99.2010701@infradead.org>
+References: <5399DF99.2010701@infradead.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The usb wifi device AVM Fritz Stick N v2b (USB 057c:8501) is listed as supported by rt2800usb, but loading the driver fails for me (kernel 3.15-rc7 and older).
+On Thu, 2014-06-12 at 10:12 -0700, Randy Dunlap wrote:
+> From: Randy Dunlap <rdunlap@infradead.org>
+> 
+> Note that I don't maintain Documentation/ABI/,
+> Documentation/devicetree/, or the language translation files.
+> 
+> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
 
- ieee80211 phy0: rt2x00_set_rt: Info - RT chipset 5592, rev 0222 detected
- ieee80211 phy0: rt2x00usb_vendor_request: Error - Vendor Request 0x09 failed for offset 0x0000 with error -32
- ieee80211 phy0: rt2x00lib_probe_dev: Error - Failed to allocate device
- rt2800usb: probe of 1-1.3:1.0 failed with error -32
- usbcore: registered new interface driver rt2800usb
+Hey Randy.
 
->From searching the web, it looks like other users using the same device are hit by this error too, and some users of similar devices using the same driver experience similar errors.
+Perhaps it's better to use exclusion "X:" values
+so get_maintainer doesn't still include you.
 
-I've tested these patches using a USB 057c:8501 wifi device in client mode (scanning + connect to WPA protected BSS + network access). With the patches applied, the device works fine. Without, it fails.
-I've also tested that USB 148f:5370 (which is another usb wifi device using the same driver), which worked also without these patches applied, still works after applying these patches.
+> @@ -2885,7 +2885,7 @@ M:	Randy Dunlap <rdunlap@infradead.org>
+>  L:	linux-doc@vger.kernel.org
+>  T:	quilt http://www.infradead.org/~rdunlap/Doc/patches/
+>  S:	Maintained
+> -F:	Documentation/
+> +F:	Documentation/ (but not: ABI, devicetree, translations)
 
-Regards,
- M. Braun
+Maybe:
 
-v2: fix endianness and coding style. Using rt2x00usb_register_read does not work for me.
+X:	Documentation/ABI/
+X:	Documentation/devicetree/
+X:	Documentation/[a-z][a-z]_[A-Z][A-Z]/
 
----
+The last line matches:
 
-Michael Braun (2):
-      rt2800usb:fix efuse detection
-      rt2800usb:fix hang during firmware load
+Documentation/ja_JP/
+Documentation/ko_KR/
+Documentation/zh_CN/
+
+and it's easy to add any other directory you don't
+want to cc'd on.
 
 
- drivers/net/wireless/rt2x00/rt2800usb.c |   39 +++++++++++++++++++++++++++++--
- drivers/net/wireless/rt2x00/rt2x00usb.h |    1 +
- 2 files changed, 37 insertions(+), 3 deletions(-)
 
