@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756673AbaFLQ2g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 12:28:36 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:34200 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756195AbaFLQXk (ORCPT
+	id S1756688AbaFLQ2x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 12:28:53 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:55387 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756198AbaFLQXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 12:23:40 -0400
+	Thu, 12 Jun 2014 12:23:36 -0400
 From: Tejun Heo <tj@kernel.org>
 To: cl@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 05/12] percpu: reorganize include/linux/percpu-defs.h
-Date: Thu, 12 Jun 2014 12:23:22 -0400
-Message-Id: <1402590209-31610-6-git-send-email-tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH 02/12] percpu: introduce arch_raw_cpu_ptr()
+Date: Thu, 12 Jun 2014 12:23:19 -0400
+Message-Id: <1402590209-31610-3-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1402590209-31610-1-git-send-email-tj@kernel.org>
 References: <1402590209-31610-1-git-send-email-tj@kernel.org>
@@ -20,94 +22,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reorganize for better readability.
+Currently, archs can override raw_cpu_ptr() directly; however, we
+wanna build a layer of indirection in the generic part of percpu so
+that we can implement generic features there without affecting archs.
 
-* Accessor definitions are collected into one place and SMP and UP now
-  define them in the same order.
+Introduce arch_raw_cpu_ptr() which is used to define raw_cpu_ptr() by
+generic percpu code.  The two are identical for now.  x86 is currently
+the only arch which overrides raw_cpu_ptr() and is converted to
+define arch_raw_cpu_ptr() instead.
 
-* Definitions are layered when possible - e.g. per_cpu() is now
-  defined in terms of this_cpu_ptr().
-
-* Rather pointless comment dropped.
-
-* per_cpu(), __raw_get_cpu_var() and __get_cpu_var() are defined in a
-  way which can be shared between SMP and UP and moved out of
-  CONFIG_SMP blocks.
-
-This patch doesn't introduce any functional difference.
+This doesn't introduce any functional difference.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Christoph Lameter <cl@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
 ---
- include/linux/percpu-defs.h | 32 +++++++++-----------------------
- 1 file changed, 9 insertions(+), 23 deletions(-)
+ arch/x86/include/asm/percpu.h |  2 +-
+ include/asm-generic/percpu.h  | 11 +++++++++--
+ 2 files changed, 10 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/percpu-defs.h b/include/linux/percpu-defs.h
-index f25bb94..bd86f46 100644
---- a/include/linux/percpu-defs.h
-+++ b/include/linux/percpu-defs.h
-@@ -224,15 +224,8 @@
- 	RELOC_HIDE((typeof(*(__p)) __kernel __force *)(__p), (__offset)); \
- })
+diff --git a/arch/x86/include/asm/percpu.h b/arch/x86/include/asm/percpu.h
+index 851bcdc..9bc23f1 100644
+--- a/arch/x86/include/asm/percpu.h
++++ b/arch/x86/include/asm/percpu.h
+@@ -52,7 +52,7 @@
+  * Compared to the generic __my_cpu_offset version, the following
+  * saves one instruction and avoids clobbering a temp register.
+  */
+-#define raw_cpu_ptr(ptr)				\
++#define arch_raw_cpu_ptr(ptr)				\
+ ({							\
+ 	unsigned long tcp_ptr__;			\
+ 	__verify_pcpu_ptr(ptr);				\
+diff --git a/include/asm-generic/percpu.h b/include/asm-generic/percpu.h
+index 63d2b68..a247d80 100644
+--- a/include/asm-generic/percpu.h
++++ b/include/asm-generic/percpu.h
+@@ -53,9 +53,16 @@ extern unsigned long __per_cpu_offset[NR_CPUS];
+ #define per_cpu(var, cpu) \
+ 	(*SHIFT_PERCPU_PTR(&(var), per_cpu_offset(cpu)))
  
--/*
-- * A percpu variable may point to a discarded regions. The following are
-- * established ways to produce a usable pointer from the percpu variable
-- * offset.
-- */
--#define per_cpu(var, cpu) \
--	(*SHIFT_PERCPU_PTR(&(var), per_cpu_offset(cpu)))
--
--#define raw_cpu_ptr(ptr) arch_raw_cpu_ptr(ptr)
-+#define per_cpu_ptr(ptr, cpu)	SHIFT_PERCPU_PTR((ptr), per_cpu_offset((cpu)))
-+#define raw_cpu_ptr(ptr)	arch_raw_cpu_ptr(ptr)
- 
+-#ifndef raw_cpu_ptr
+-#define raw_cpu_ptr(ptr) SHIFT_PERCPU_PTR(ptr, __my_cpu_offset)
++/*
++ * Arch may define arch_raw_cpu_ptr() to provide more efficient address
++ * translations for raw_cpu_ptr().
++ */
++#ifndef arch_raw_cpu_ptr
++#define arch_raw_cpu_ptr(ptr) SHIFT_PERCPU_PTR(ptr, __my_cpu_offset)
+ #endif
++
++#define raw_cpu_ptr(ptr) arch_raw_cpu_ptr(ptr)
++
  #ifdef CONFIG_DEBUG_PREEMPT
  #define this_cpu_ptr(ptr) SHIFT_PERCPU_PTR(ptr, my_cpu_offset)
-@@ -240,9 +233,6 @@
- #define this_cpu_ptr(ptr) raw_cpu_ptr(ptr)
- #endif
- 
--#define __get_cpu_var(var) (*this_cpu_ptr(&(var)))
--#define __raw_get_cpu_var(var) (*raw_cpu_ptr(&(var)))
--
- #else	/* CONFIG_SMP */
- 
- #define VERIFY_PERCPU_PTR(__p) ({			\
-@@ -250,14 +240,16 @@
- 	(typeof(*(__p)) __kernel __force *)(__p);	\
- })
- 
--#define per_cpu(var, cpu)	(*((void)(cpu), VERIFY_PERCPU_PTR(&(var))))
--#define __get_cpu_var(var)	(*VERIFY_PERCPU_PTR(&(var)))
--#define __raw_get_cpu_var(var)	(*VERIFY_PERCPU_PTR(&(var)))
--#define this_cpu_ptr(ptr)	per_cpu_ptr(ptr, 0)
--#define raw_cpu_ptr(ptr)	this_cpu_ptr(ptr)
-+#define per_cpu_ptr(ptr, cpu)	({ (void)(cpu); VERIFY_PERCPU_PTR((ptr)); })
-+#define raw_cpu_ptr(ptr)	per_cpu_ptr(ptr, 0)
-+#define this_cpu_ptr(ptr)	raw_cpu_ptr(ptr)
- 
- #endif	/* CONFIG_SMP */
- 
-+#define per_cpu(var, cpu)	(*per_cpu_ptr(&(var), cpu))
-+#define __raw_get_cpu_var(var)	(*raw_cpu_ptr(&(var)))
-+#define __get_cpu_var(var)	(*this_cpu_ptr(&(var)))
-+
- /* keep until we have removed all uses of __this_cpu_ptr */
- #define __this_cpu_ptr(ptr)	raw_cpu_ptr(ptr)
- 
-@@ -287,11 +279,5 @@
- 	preempt_enable();				\
- } while (0)
- 
--#ifdef CONFIG_SMP
--#define per_cpu_ptr(ptr, cpu)	SHIFT_PERCPU_PTR((ptr), per_cpu_offset((cpu)))
--#else
--#define per_cpu_ptr(ptr, cpu)	({ (void)(cpu); VERIFY_PERCPU_PTR((ptr)); })
--#endif
--
- #endif /* __ASSEMBLY__ */
- #endif /* _LINUX_PERCPU_DEFS_H */
+ #else
 -- 
 1.9.3
 
