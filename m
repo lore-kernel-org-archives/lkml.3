@@ -1,59 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753129AbaFLUzi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 16:55:38 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35904 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752715AbaFLUzh (ORCPT
+	id S1753506AbaFLUz5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 16:55:57 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:42859 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752080AbaFLUz4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 16:55:37 -0400
-Date: Wed, 11 Jun 2014 11:59:26 +0100
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>, sameo@linux.intel.com,
-        lee.jones@linaro.org, lgirdwood@gmail.com, perex@perex.cz,
-        tiwai@suse.de, alsa-devel@alsa-project.org,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] regulator: arizona-ldo1: Do not control clocking
-	from regulator
-Message-ID: <20140611105926.GB12074@opensource.wolfsonmicro.com>
-References: <20140609150013.GA5229@opensource.wolfsonmicro.com> <20140609150435.GE5229@opensource.wolfsonmicro.com> <20140609184314.GB5099@sirena.org.uk>
+	Thu, 12 Jun 2014 16:55:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140609184314.GB5099@sirena.org.uk>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <1402587045-5461-1-git-send-email-jolsa@kernel.org>
+References: <1402587045-5461-1-git-send-email-jolsa@kernel.org>
+Date: Thu, 12 Jun 2014 22:55:55 +0200
+Message-ID: <CAFrcx1me4uOBX89nfjfzLpA13=2wVpyyjOEvM61k6QAhQwUZEQ@mail.gmail.com>
+Subject: Re: [GIT PULL 00/14] perf/core improvements and fixes
+From: Jean Pihet <jean.pihet@linaro.org>
+To: Jiri Olsa <jolsa@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 09, 2014 at 07:43:14PM +0100, Mark Brown wrote:
-> On Mon, Jun 09, 2014 at 04:04:35PM +0100, Richard Fitzgerald wrote:
-> > Using the driver for the internal regulator to also control
-> > the clock frequency of blocks inside the codec is an
-> > unexpected side-effect for a regulator, and also means that
-> > the core clocks won't be changed as expected if an external
-> > regulator is used to power the codec.
-> 
-> IIRC this was deliberately coded in this fashion on advice from the
-> hardware engineers - there was more going on with that register than
-> there might at first appear and some actual sync with the LDO.  I
-> believe there was some different process to follow (possibly just
-> setting this mode all the time) when using an external regulator, though
-> it's also possible the hardware guys were just unsure at the time.
+Hi Jiri,
 
-I have had a good chat with the hardware engineers here and they
-are pretty adamant that the only constraint here is that we
-should never enable SUBSYS without 1.8V being supplied to the
-core.
 
-They also believe that the external case should be handled the
-same as the internal one, although admittedly I haven't tested
-that personally.
+On 12 June 2014 17:30, Jiri Olsa <jolsa@kernel.org> wrote:
+> hi Ingo,
+> please consider pulling
+>
+> thanks,
+> jirka
+>
+> The following changes since commit 7184062b94b4bfac08715fb786fd2df399c5d6ee:
+>
+>   Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/core (2014-06-12 13:54:42 +0200)
+>
+> are available in the git repository at:
+>
+>
+>   git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git tags/perf-core-for-mingo
+>
+> for you to fetch changes up to 45dc1bb5c1d47f9519e2101f6b073bb4bb1d1f99:
+>
+>   perf tests: Add test for closing dso objects on EMFILE error (2014-06-12 16:53:23 +0200)
+>
+> ----------------------------------------------------------------
+> perf/core improvements and fixes:
+>
+> . Honor user freq/interval properly in record command (Namhyung Kim)
+>
+> . Speedup DWARF unwind (Jiri Olsa)
+Here are the results of the performance assessment on ARMv7, FWIW:
 
-This series needs a slight rebase and fixing up for my comment on
-one of the patches, but otherwise I think should be good in my
-opinion.
+The results for unwind_speedup (v4) on ARMv7 are:
+- libunwind: between -17% in execution time for light load (i.e. using
+not-so-deep backtraces from the stress app.) and -25% for deep
+backtrace (the stress_bt app.),
+- libdw: no significant improvement (0-3% improvement).
 
-Thanks,
-Charles
+The results for unwind_speedup (v3) on ARMv7 are:
+- libunwind: between -29% in execution time for light load (i.e. using
+not-so-deep backtraces from the stress app.) and -49% for deep
+backtrace (the stress_bt app.),
+- libdw: no significant improvement (0-2% improvement).
+
+Note: v3 is faster than v4 by 13-25%, with and without the speed-up
+patches. The real cause has been investigated, yet.
+
+Cf. https://wiki.linaro.org/LEG/Engineering/TOOLS/perf-callstack-unwinding#Speed_improvement
+for the details.
+
+Regards,
+Jean
+
+>
+> Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+>
+> ----------------------------------------------------------------
+> Jiri Olsa (13):
+>       perf tools: Cache register accesses for unwind processing
+>       perf tools: Separate dso data related variables
+>       perf tools: Add data_fd into dso object
+>       perf tools: Add global list of opened dso objects
+>       perf tools: Add global count of opened dso objects
+>       perf tools: Cache dso data file descriptor
+>       perf tools: Add file size check and factor dso__data_read_offset
+>       perf tools: Allow to close dso fd in case of open failure
+>       perf tools: Add dso__data_* interface descriptons
+>       perf tests: Spawn child for each test
+>       perf tests: Allow reuse of test_file function
+>       perf tests: Add test for caching dso file descriptors
+>       perf tests: Add test for closing dso objects on EMFILE error
+>
+> Namhyung Kim (1):
+>       perf record: Fix to honor user freq/interval properly
+>
+>  tools/perf/tests/builtin-test.c    |  42 +++++-
+>  tools/perf/tests/dso-data.c        | 214 +++++++++++++++++++++++++++-
+>  tools/perf/tests/tests.h           |   2 +
+>  tools/perf/util/dso.c              | 279 +++++++++++++++++++++++++++++++++----
+>  tools/perf/util/dso.h              |  50 ++++++-
+>  tools/perf/util/event.h            |   5 +
+>  tools/perf/util/evsel.c            |   4 +-
+>  tools/perf/util/perf_regs.c        |  10 +-
+>  tools/perf/util/perf_regs.h        |   4 +-
+>  tools/perf/util/unwind-libunwind.c |   2 -
+>  10 files changed, 574 insertions(+), 38 deletions(-)
