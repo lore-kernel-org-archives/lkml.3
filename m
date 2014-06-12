@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932464AbaFLGkD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 02:40:03 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:42792 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932111AbaFLGkA (ORCPT
+	id S932522AbaFLGln (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 02:41:43 -0400
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:42183 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752334AbaFLGll (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 02:40:00 -0400
+	Thu, 12 Jun 2014 02:41:41 -0400
 MIME-Version: 1.0
-In-Reply-To: <53922FB8.6070408@linux.vnet.ibm.com>
-References: <20140527105511.24309.74320.stgit@srivatsabhat.in.ibm.com>
- <20140528133143.GK14863@redhat.com> <538E2FF8.8060707@linux.vnet.ibm.com>
- <1401833365.3247.36.camel@pasglop> <5391B413.100@linux.vnet.ibm.com> <53922FB8.6070408@linux.vnet.ibm.com>
-From: Joel Stanley <joel@jms.id.au>
-Date: Thu, 12 Jun 2014 16:39:39 +1000
-X-Google-Sender-Auth: TVxXKsCP_oavwJAULKKCOsDm5xo
-Message-ID: <CACPK8Xea+7rPHSCp51fVkX=GTmEwbV0T=JHDZ-XYt6RU96uyyg@mail.gmail.com>
-Subject: Re: [PATCH] powerpc, kexec: Fix "Processor X is stuck" issue during
- kexec from ST mode
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>, ego@linux.vnet.ibm.com,
-        matt@ozlabs.org, Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        suzuki@in.ibm.com, ebiederm@xmission.com,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        Vivek Goyal <vgoyal@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <Pine.LNX.4.64.1406120724100.5160@axis700.grange>
+References: <86ha3so84o.fsf@void.printf.net>
+	<CA+55aFxBwteZeUHG+Z-cdLU_YCO4f8TDuYvGmXc0-v9M1H11+g@mail.gmail.com>
+	<CA+55aFyEbFLFWLKP5kHw85qTRNoviFk8LhivxXJgAMROdvJtsg@mail.gmail.com>
+	<Pine.LNX.4.64.1406120724100.5160@axis700.grange>
+Date: Thu, 12 Jun 2014 08:41:40 +0200
+Message-ID: <CAPDyKFrWdPGnNrFnY-zt9_MoFVH-S1vgOCNyrb-4sqxBEeaN-A@mail.gmail.com>
+Subject: Re: [GIT PULL] MMC updates for 3.16-rc1
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Chris Ball <chris@printf.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Srivatsa,
+On 12 June 2014 07:25, Guennadi Liakhovetski <g.liakhovetski@gmx.de> wrote:
+> Hi Linus,
+>
+> On Wed, 11 Jun 2014, Linus Torvalds wrote:
+>
+>> On Tue, Jun 10, 2014 at 2:50 PM, Linus Torvalds
+>> <torvalds@linux-foundation.org> wrote:
+>> >
+>> > Also, that new drivers/mmc/host/usdhi6rol0.c driver is one f*cking
+>> > noisy compile, and knisr certainly has never been tested in a 64-bit
+>> > environment. Please either fix it, or make it depend on BROKEN.
+>>
+>> Guys? Seriously, if that driver isn't fixed, I'm going to mark it
+>> broken myself. It pretty much generates as many lines of warnings as
+>> the rest of my "allmodconfig" build combined.
+>>
+>> It's extremely annoying, and the crazy warnings are likely to hide
+>> potential real problems elsewhere, so right now that driver has
+>> negative value. I do a lot of allmodconfig builds during the merge
+>> window, and I am not going to look at that warning much longer.
+>>
+>> Fix it promptly, or it gets disabled.
+>
+> I sent a patch a few hours ago:
+> https://patchwork.kernel.org/patch/4338531/ Since it's only changing print
+> format strings, it should be a trivial one to review, so, just waiting for
+> Chris to pick it up and push it to you. Sorry about the trouble.
 
-On Sat, Jun 7, 2014 at 7:16 AM, Srivatsa S. Bhat
-<srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> And with the following hunk added (which I had forgotten earlier), it worked just
-> fine on powernv :-)
+I pick it up, and likely together with few other fixes and send a PR
+to Linus in a few hours.
 
-How are the patches coming along?
+Kind regards
+Ulf Hansson
 
-I just hung a machine here while attempting to kexec. It appears to
-have onlined all of the secondary threads, and then hung here:
 
-kexec: Waking offline cpu 1.
-kvm: enabling virtualization on CPU1
-kexec: Waking offline cpu 2.
-kvm: enabling virtualization on CPU2
-kexec: Waking offline cpu 3.
-kvm: enabling virtualization on CPU3
-kexec: Waking offline cpu 5.
-kvm: enabling virtualization on CPU5
-[...]
-kvm: enabling virtualization on CPU63
-kexec: waiting for cpu 1 (physical 1) to enter OPAL
-kexec: waiting for cpu 2 (physical 2) to enter OPAL
-kexec: waiting for cpu 3 (physical 3) to enter OPAL
-
-I'm running benh's next branch as of thismorning, and SMT was off.
-
-Could you please post your latest patches a series? I will test them here.
-
-Cheers,
-
-Joel
+>
+> Thanks
+> Guennadi
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
