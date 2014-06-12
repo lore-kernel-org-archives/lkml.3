@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755245AbaFLBOJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 21:14:09 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:57670 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754332AbaFLBOH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 21:14:07 -0400
+	id S1755255AbaFLBS5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 21:18:57 -0400
+Received: from mga09.intel.com ([134.134.136.24]:7783 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754597AbaFLBS4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 21:18:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,461,1400050800"; 
+   d="scan'208";a="527143781"
+Message-ID: <5398FFDA.5050601@linux.intel.com>
+Date: Thu, 12 Jun 2014 09:18:18 +0800
+From: baolu <baolu.lu@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <874mzrszlk.fsf@x220.int.ebiederm.org>
-References: <CAJE_dJyfq5zWcs2y52siXRruCCA1Dk_=Ds=rZ8BrBZLa7FCbuQ@mail.gmail.com>
-	<20140611133919.GZ4581@linux.vnet.ibm.com>
-	<CAJE_dJwfaUkop=XZxD-BfDPwKDjnfF1bvmD6XWaqVA4Xt2E6bQ@mail.gmail.com>
-	<539879B8.4010204@canonical.com>
-	<20140611161857.GC4581@linux.vnet.ibm.com>
-	<53989F7B.6000004@canonical.com>
-	<874mzr41kf.fsf@x220.int.ebiederm.org>
-	<20140611225228.GO4581@linux.vnet.ibm.com>
-	<87ioo7vy5s.fsf@x220.int.ebiederm.org>
-	<20140611234902.GQ4581@linux.vnet.ibm.com>
-	<87bntzt24g.fsf@x220.int.ebiederm.org>
-	<CAJE_dJzzj2uf+YEXhAngJDKev=Lc4O6fyKfHoO2PbzD90VuuVw@mail.gmail.com>
-	<874mzrszlk.fsf@x220.int.ebiederm.org>
-Date: Wed, 11 Jun 2014 22:14:07 -0300
-Message-ID: <CAJE_dJzShXxjsywRo_kwa0ez6Seu7+dModbz2Lvha5iuJw7FTw@mail.gmail.com>
-Subject: Re: Possible netns creation and execution performance/scalability
- regression since v3.8 due to rcu callbacks being offloaded to multiple cpus
-From: Rafael Tinoco <rafael.tinoco@canonical.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Dave Chiluk <chiluk@canonical.com>, linux-kernel@vger.kernel.org,
-        davem@davemloft.net, Christopher Arges <chris.j.arges@canonical.com>,
-        Jay Vosburgh <jay.vosburgh@canonical.com>
-Content-Type: text/plain; charset=UTF-8
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Mathias Nyman <mathias.nyman@intel.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] xhci: clear root port wake on bits if controller
+ isn't wake-up capable
+References: <1402439120-78151-1-git-send-email-baolu.lu@linux.intel.com> <20140611152604.GA27630@kroah.com>
+In-Reply-To: <20140611152604.GA27630@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok, some misconfiguration here probably, never mind. I'll finish the
-tests tomorrow, compare with existent ones and let you know asap. Tks.
 
-On Wed, Jun 11, 2014 at 10:09 PM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> Rafael Tinoco <rafael.tinoco@canonical.com> writes:
->
->> I'm getting a kernel panic with your patch:
+On 06/11/2014 11:26 PM, Greg Kroah-Hartman wrote:
+> On Wed, Jun 11, 2014 at 06:25:20AM +0800, Lu Baolu wrote:
+>> When the xHCI PCI host is suspended, if do_wakeup is false in xhci_pci_suspend,
+>> xhci_bus_suspend needs to clear all root port wake on bits. Otherwise some Intel
+>> platform may get a spurious wakeup, even if PCI PME# is disabled.
 >>
->> -- panic
->> -- mount_block_root
->> -- mount_root
->> -- prepare_namespace
->> -- kernel_init_freeable
+>> http://marc.info/?l=linux-usb&m=138194006009255&w=2
 >>
->> It is giving me an unknown block device for the same config file i
->> used on other builds. Since my test is running on a kvm guest under a
->> ramdisk, i'm still checking if there are any differences between this
->> build and other ones but I think there aren't.
->>
->> Any chances that "prepare_namespace" might be breaking mount_root ?
+>> Signed-off-by: Lu Baolu <baolu.lu@linux.intel.com>
+>> ---
+>>   drivers/usb/host/xhci-hub.c | 5 ++++-
+>>   1 file changed, 4 insertions(+), 1 deletion(-)
+> Should this also be a stable kernel patch?  If so, how far back?
+Yes.
+
+This patch should be back-ported to kernels as old as 2.6.37, that
+contains the commit 9777e3ce907d4cb5a513902a87ecd03b52499569
+"USB: xHCI: bus power management implementation".
+
+Thanks,
+-baolu
 >
-> My patch boots for me....
+> thanks,
 >
-> Eric
+> greg k-h
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+>
 
-
-
--- 
--- 
-Rafael David Tinoco
-Software Sustaining Engineer @ Canonical
-Canonical Technical Services Engineering Team
-# Email: rafael.tinoco@canonical.com (GPG: 87683FC0)
-# Phone: +55.11.9.6777.2727 (Americas/Sao_Paulo)
-# LP: ~inaddy | IRC: tinoco | Skype: rafael.tinoco
