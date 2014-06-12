@@ -1,92 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932930AbaFLI6P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 04:58:15 -0400
-Received: from www.linutronix.de ([62.245.132.108]:38464 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932673AbaFLI6M (ORCPT
+	id S932940AbaFLI76 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 04:59:58 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:43003 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932680AbaFLI74 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 04:58:12 -0400
-Date: Thu, 12 Jun 2014 10:57:57 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Johannes Berg <johannes@sipsolutions.net>
-cc: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org,
-        Stephen Hemminger <shemminger@linux-foundation.org>,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: net_timedelta() affected by settimeofday() (was: [patch 12/13]
- net: mac80211: Remove silly timespec dance)
-In-Reply-To: <1402562399.8095.5.camel@jlt4.sipsolutions.net>
-Message-ID: <alpine.DEB.2.10.1406121047280.5170@nanos>
-References: <20140611234024.103571777@linutronix.de>  <20140611234607.683770899@linutronix.de>  <1402555774.4224.1.camel@jlt4.sipsolutions.net>  <alpine.DEB.2.10.1406121017500.5170@nanos>  <1402562114.8095.3.camel@jlt4.sipsolutions.net> 
- (sfid-20140612_103558_525847_209A5C98) <1402562399.8095.5.camel@jlt4.sipsolutions.net>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Thu, 12 Jun 2014 04:59:56 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <1402424839-25514-1-git-send-email-sboyd@codeaurora.org>
+References: <1402424839-25514-1-git-send-email-sboyd@codeaurora.org>
+Date: Thu, 12 Jun 2014 10:59:55 +0200
+Message-ID: <CAPDyKFrK9daz4BvfmggLiGRfndxi24+Kqb=qVT2VFaf9XtTg0A@mail.gmail.com>
+Subject: Re: [PATCH] mmc: sdhci-msm: Fix fallout from sdhci refactoring
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Chris Ball <chris@printf.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Kevin Hilman <khilman@linaro.org>, Georgi Djakov <gdjakov@mm-sol.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Jun 2014, Johannes Berg wrote:
+On 10 June 2014 20:27, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> The sdhci core was refactored recently and some of those
+> refactorings required changes in every sdhci platform driver.
+> Those updates happened around the same time as when the msm
+> driver was merged so the refactorings missed the msm driver.
+> Hook in the basic library functions so that we can boot apq8074
+> dragonboards again instead of crashing when we try to jump to
+> NULL function pointers.
+>
+> Reported-by: Kevin Hilman <khilman@linaro.org>
+> Cc: Georgi Djakov <gdjakov@mm-sol.com>
+> Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 
-> On Thu, 2014-06-12 at 10:35 +0200, Johannes Berg wrote:
-> > +netdev, Stephen
-> 
-> Well, stupid me. Fixing that netdev address.
-> 
-> > On Thu, 2014-06-12 at 10:19 +0200, Thomas Gleixner wrote:
-> > > On Thu, 12 Jun 2014, Johannes Berg wrote:
-> > > 
-> > > > On Wed, 2014-06-11 at 23:59 +0000, Thomas Gleixner wrote:
-> > > > 
-> > > > > +	msrmnt = ktime_to_ms(net_timedelta(skb_arv));
-> > > > 
-> > > > This is probably more of a question about net_timedelta(), but is
-> > > > ktime_get_real() really appropriate for duration measurements? Isn't
-> > > > that non-monotonic?
-> > > 
-> > > Well, it's monotonic, but might be affected by settimeofday().
-> > 
-> > Right, but isn't that odd? Suddenly your delay measurement here might be
-> > minutes, hours, or years if you settimeofday() between timestamping and
-> > calculating the delta. That seems very strange to me, why would that be
-> > the right behaviour in any way?
+Thanks!
 
-Indeed. clock monotonic is the appropriate one for measurements.
- 
-> > Now, it seems that there are only two current users of net_timedelta()
-> > (in DCCP) so perhaps it's not too late to change some of this?
-> > 
-> > Maybe in general the skb timestamp should be based on a different clock
-> > and only adjusted to real time when used in userspace?
+Applied for fixes.
 
-You have the same problem then, just at a different place:
+Kind regards
+Uffe
 
-    ts = ktime_get();
-
-			settimeofday()
-			   offset_mono_to_real = new value;
-
-    userts = mono_to_real(ts);
-
-But maybe that's not a real issue, as ktime_get_real() can race with
-settimeofday() or NTP as well.
-
-   ts = ktime_get_real();
-				settimeofday();
-   userts = ts;
-
-So the user might see a weird timestamp for a packet, which cannot be
-correlated with the user space gettimeofday().
-
-Thanks,
-
-	tglx
-
-
-
+> ---
+>
+> Patch based on next-20140610
+>
+>  drivers/mmc/host/sdhci-msm.c | 4 ++++
+>  1 file changed, 4 insertions(+)
+>
+> diff --git a/drivers/mmc/host/sdhci-msm.c b/drivers/mmc/host/sdhci-msm.c
+> index acb0e9eb55f1..40573a58486a 100644
+> --- a/drivers/mmc/host/sdhci-msm.c
+> +++ b/drivers/mmc/host/sdhci-msm.c
+> @@ -468,6 +468,10 @@ MODULE_DEVICE_TABLE(of, sdhci_msm_dt_match);
+>
+>  static struct sdhci_ops sdhci_msm_ops = {
+>         .platform_execute_tuning = sdhci_msm_execute_tuning,
+> +       .reset = sdhci_reset,
+> +       .set_clock = sdhci_set_clock,
+> +       .set_bus_width = sdhci_set_bus_width,
+> +       .set_uhs_signaling = sdhci_set_uhs_signaling,
+>  };
+>
+>  static int sdhci_msm_probe(struct platform_device *pdev)
+> --
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> hosted by The Linux Foundation
+>
