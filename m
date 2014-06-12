@@ -1,39 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756059AbaFLOK5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 10:10:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60090 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755884AbaFLOK4 (ORCPT
+	id S1756079AbaFLOML (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 10:12:11 -0400
+Received: from www.linutronix.de ([62.245.132.108]:41694 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755819AbaFLOMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 10:10:56 -0400
-Date: Thu, 12 Jun 2014 07:10:50 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Wahib Faizi <wahibfaizi@gmail.com>
-Cc: Valentina Manea <valentina.manea.m@gmail.com>, linux-usb@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]
- drivers/staging/usbip/userspace/libsrc/usbip_host_driver.c: fix coding style
-Message-ID: <20140612141050.GA7203@kroah.com>
-References: <1402569338-5709-1-git-send-email-wahibfaizi@gmail.com>
- <1402569338-5709-2-git-send-email-wahibfaizi@gmail.com>
+	Thu, 12 Jun 2014 10:12:08 -0400
+Date: Thu, 12 Jun 2014 16:12:03 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+cc: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [patch 08/13] firewire: Use ktime_get_ts()
+In-Reply-To: <20140612143549.4c00c1ed@kant>
+Message-ID: <alpine.DEB.2.10.1406121611471.5170@nanos>
+References: <20140611234024.103571777@linutronix.de> <20140611234607.351283464@linutronix.de> <20140612143549.4c00c1ed@kant>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402569338-5709-2-git-send-email-wahibfaizi@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 12, 2014 at 02:35:38PM +0400, Wahib Faizi wrote:
-> Fix coding style issues detected by checkpatch.pl:
-> 1. do not use assignment in if condition
-> 2. line over 80 characters
+On Thu, 12 Jun 2014, Stefan Richter wrote:
 
-You are doing two different things here, so please break it up into two
-different patches.  Can you please do this and resend?
+> On Jun 11 Thomas Gleixner wrote:
+> > do_posix_clock_monotonic_gettime() is a leftover from the initial
+> > posix timer implementation which maps to ktime_get_ts()
+> > 
+> > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> > Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
+> 
+> Acked-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+> 
+> (Though I am noticing increasing entropy WRT whitespace.)
 
-thanks,
-
-greg k-h
+Fixed it up.
