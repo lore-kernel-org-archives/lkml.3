@@ -1,80 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750920AbaFLV4T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 17:56:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36216 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750773AbaFLV4S (ORCPT
+	id S1750948AbaFLWCP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 18:02:15 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:35899 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750773AbaFLWCO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 17:56:18 -0400
-Date: Thu, 12 Jun 2014 14:56:17 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-mm@kvack.org, Dave Hansen <dave.hansen@intel.com>,
-        Hugh Dickins <hughd@google.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -mm v2 00/11] pagewalk: standardize current users, move
- pmd locking, apply to mincore
-Message-Id: <20140612145617.5debf04bd1a2978be4a1fb88@linux-foundation.org>
-In-Reply-To: <1402609691-13950-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1402609691-13950-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 12 Jun 2014 18:02:14 -0400
+Date: Fri, 13 Jun 2014 03:32:07 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] ALSA: au1x00: Use resource_size
+Message-ID: <20140612220206.GA10257@himangi-Dell>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Jun 2014 17:48:00 -0400 Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
+Use the function resource_size, which reduces the chance of introducing
+off-by-one errors in calculating the resource size.
 
-> This is ver.2 of page table walker patchset.
-> 
-> I move forward on this cleanup work, and added some improvement from the
-> previous version. Major changes are:
->  - removed walk->skip which becomes removable due to refactoring existing
->    users
->  - commonalized the argments of entry handlers (pte|pmd|hugetlb)_entry()
->    which allows us to use the same function as multiple handlers.
-> 
+The semantic patch that makes this change is as follows:
 
-Are you sure you didn't miss anything?
+// <smpl>
+@@
+struct resource *res;
+@@
 
-mm-hugetlbfs-fix-rmapping-for-anonymous-hugepages-with-page_pgoff.patch
-mm-hugetlbfs-fix-rmapping-for-anonymous-hugepages-with-page_pgoff-v2.patch
-mm-hugetlbfs-fix-rmapping-for-anonymous-hugepages-with-page_pgoff-v3.patch
-mm-hugetlbfs-fix-rmapping-for-anonymous-hugepages-with-page_pgoff-v3-fix.patch
-pagewalk-update-page-table-walker-core.patch
-pagewalk-update-page-table-walker-core-fix-end-address-calculation-in-walk_page_range.patch
-pagewalk-update-page-table-walker-core-fix-end-address-calculation-in-walk_page_range-fix.patch
-pagewalk-update-page-table-walker-core-fix.patch
-pagewalk-add-walk_page_vma.patch
-smaps-redefine-callback-functions-for-page-table-walker.patch
-clear_refs-redefine-callback-functions-for-page-table-walker.patch
-pagemap-redefine-callback-functions-for-page-table-walker.patch
-pagemap-redefine-callback-functions-for-page-table-walker-fix.patch
-numa_maps-redefine-callback-functions-for-page-table-walker.patch
-memcg-redefine-callback-functions-for-page-table-walker.patch
-arch-powerpc-mm-subpage-protc-use-walk_page_vma-instead-of-walk_page_range.patch
-pagewalk-remove-argument-hmask-from-hugetlb_entry.patch
-pagewalk-remove-argument-hmask-from-hugetlb_entry-fix.patch
-pagewalk-remove-argument-hmask-from-hugetlb_entry-fix-fix.patch
-mempolicy-apply-page-table-walker-on-queue_pages_range.patch
-mm-pagewalkc-move-pte-null-check.patch
-mm-prom-pid-clear_refs-avoid-split_huge_page.patch
-#
-mm-pagewalk-remove-pgd_entry-and-pud_entry.patch
-mm-pagewalk-replace-mm_walk-skip-with-more-general-mm_walk-control.patch
-madvise-cleanup-swapin_walk_pmd_entry.patch
-memcg-separate-mem_cgroup_move_charge_pte_range.patch
-memcg-separate-mem_cgroup_move_charge_pte_range-checkpatch-fixes.patch
-arch-powerpc-mm-subpage-protc-cleanup-subpage_walk_pmd_entry.patch
-mm-pagewalk-move-pmd_trans_huge_lock-from-callbacks-to-common-code.patch
-mm-pagewalk-move-pmd_trans_huge_lock-from-callbacks-to-common-code-checkpatch-fixes.patch
-mincore-apply-page-table-walker-on-do_mincore.patch
+- (res->end - res->start) + 1
++ resource_size(res)
+// </smpl>
 
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+---
+Not compile tested.
+ sound/mips/au1x00.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-mm-hugetlbfs-fix-rmapping-for-anonymous-hugepages-with-page_pgoff.patch
-apepars to have disappeared, I didn't check the rest.
+diff --git a/sound/mips/au1x00.c b/sound/mips/au1x00.c
+index d10ef76..86583c7 100644
+--- a/sound/mips/au1x00.c
++++ b/sound/mips/au1x00.c
+@@ -649,7 +649,7 @@ static int au1000_ac97_probe(struct platform_device *pdev)
+ 
+ 	err = -EBUSY;
+ 	au1000->ac97_res_port = request_mem_region(r->start,
+-					r->end - r->start + 1, pdev->name);
++					resource_size(r), pdev->name);
+ 	if (!au1000->ac97_res_port) {
+ 		snd_printk(KERN_ERR "ALSA AC97: can't grab AC97 port\n");
+ 		goto out;
+-- 
+1.9.1
 
