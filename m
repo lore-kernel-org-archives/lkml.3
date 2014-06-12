@@ -1,116 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932669AbaFLNhu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 09:37:50 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:43414 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752712AbaFLNhq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 09:37:46 -0400
-Message-ID: <5399AC9C.4080602@ti.com>
-Date: Thu, 12 Jun 2014 19:05:24 +0530
-From: Sricharan R <r.sricharan@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	id S1755995AbaFLNiE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 09:38:04 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:62419 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755926AbaFLNht (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 09:37:49 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Tomasz Figa <tomasz.figa@gmail.com>, Mark Brown <broonie@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: Kconfig fails: big select-based circular dependency
+Date: Thu, 12 Jun 2014 15:37:18 +0200
+Message-ID: <6046244.oz0lY2JOaZ@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140612130330.GG23430@n2100.arm.linux.org.uk>
+References: <20140607090944.GL23430@n2100.arm.linux.org.uk> <10376496.xoRI3F9EzH@wuerfel> <20140612130330.GG23430@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Jason Cooper <jason@lakedaemon.net>
-CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <tony@atomide.com>, <santosh.shilimkar@ti.com>, <nm@ti.com>,
-        <rnayak@ti.com>, <linux@arm.linux.org.uk>, <tglx@linutronix.de>
-Subject: Re: [PATCH V2 08/19] irqchip: crossbar: fix checkpatch warning
-References: <1402574007-13987-1-git-send-email-r.sricharan@ti.com> <1402574007-13987-9-git-send-email-r.sricharan@ti.com> <20140612131042.GU8664@titan.lakedaemon.net>
-In-Reply-To: <20140612131042.GU8664@titan.lakedaemon.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:aq/oQIIEWtU8cRXvXRIGy7SkYZUhgeaoE5b6ksn7a+L
+ 9EC9RXu1kuOyM90PVpGjKY3I9XmBiCohOACdXh83gu4I3bXJ2Z
+ TUF13vhpxVx7o0bOeAMopvIJA59noqI4dLHlrl81g7nEXy9blV
+ JMDY0qHcirxsgOHnsNIV9Gpgky5CLa3ZPyaKzG3xu4XEIFKOSt
+ 51pUEY1sN6ptrpac7eClXoF6+OlULxWWcL1fa/tgdcme4Ky5XY
+ g24Ar95Ok5JHzkCtyBvFzUVg8Pag8q302k0xsUC21m56WYi02i
+ +41OzEPCJpHJc9lLRTDKwLZNJy33XCO/ajIHzabmpVgV0FXIol
+ eSTXcLk1GgcpNtTo1lSg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jason,
+On Thursday 12 June 2014 14:03:30 Russell King - ARM Linux wrote:
+> On Thu, Jun 12, 2014 at 02:19:45PM +0200, Arnd Bergmann wrote:
+> > On Thursday 12 June 2014 12:34:45 Russell King - ARM Linux wrote:
+> > > On Thu, Jun 12, 2014 at 12:31:19PM +0200, Arnd Bergmann wrote:
+> > > > On Thursday 12 June 2014 10:47:45 Russell King - ARM Linux wrote:
+> > > > > If no one responds, I'll assume that no one is interested, and I'll
+> > > > > just create a pile of patches removing a bunch of these idiotic select
+> > > > > statements at random to break this loop.
+> > > > 
+> > > > I missed the original mail, and I don't remember seeing this particular
+> > > > dependency chain.
+> > > > 
+> > > > > On Sat, Jun 07, 2014 at 10:09:44AM +0100, Russell King - ARM Linux wrote:
+> > > > > > This is getting silly:
+> > > > > > 
+> > > > > > scripts/kconfig/conf --silentoldconfig Kconfig
+> > > > > > drivers/dma/Kconfig:5:error: recursive dependency detected!
+> > > > > > drivers/dma/Kconfig:5:  symbol DMADEVICES is selected by SAMSUNG_DMADEV
+> > > > 
+> > > > The 'select DMADEVICES' from plat-samsung/Kconfig is certainly wrong,
+> > > > we shouldn't do that, but I'd do some extended build regression tests
+> > > > to ensure that it doesn't cause other problems.
+> > > > 
+> > > > I'll have a look.
+> > > 
+> > > Yes, SAMSUNG_DMADEV looks like it's a shim layer between DMA engine and
+> > > the old Samsung platform private DMA API.  I suspect SAMSUNG_DMADEV should
+> > > be selected by the drivers which make use of this shim iff DMADEVICES is
+> > > enabled.
+> > 
+> > FWIW, SAMSUNG_DMADEV should get removed in 3.17. At the moment
+> > there is only one user (sound/soc/samsung/ac97.c), and that is
+> > broken because it calls a NULL function pointer returned from
+> > samsung_dma_get_ops().
+> 
+> Well, we can't wait for 3.17 to fix this, because attempting to build
+> an allyesconfig/allmodconfig/randconfig today fails.  Just look at the
+> failures of those four configurations on my autobuilder over the last
+> few days.
 
-On Thursday 12 June 2014 06:40 PM, Jason Cooper wrote:
-> On Thu, Jun 12, 2014 at 05:23:16PM +0530, Sricharan R wrote:
->> From: Nishanth Menon <nm@ti.com>
->>
->> remove un-necessary space in function pointer.
->>
->> Fixes checkpatch warning:
->> WARNING: Unnecessary space before function pointer arguments
->>  #37: FILE: drivers/irqchip/irq-crossbar.c:37:
->>  +	void (*write) (int, int);
->>
->> WARNING: Missing a blank line after declarations
->> +	int *register_offsets;
->> +	void (*write)(int, int);
->>
->> WARNING: Prefer kcalloc over kzalloc with multiply
->> +	cb->irq_map = kzalloc(max * sizeof(int), GFP_KERNEL);
->>
->> WARNING: Prefer kcalloc over kzalloc with multiply
->> +	cb->register_offsets = kzalloc(max * sizeof(int), GFP_KERNEL);
->>
->> Signed-off-by: Nishanth Menon <nm@ti.com>
->> ---
->>  drivers/irqchip/irq-crossbar.c |    7 ++++---
->>  1 file changed, 4 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/irqchip/irq-crossbar.c b/drivers/irqchip/irq-crossbar.c
->> index 5da9d36..58790d4 100644
->> --- a/drivers/irqchip/irq-crossbar.c
->> +++ b/drivers/irqchip/irq-crossbar.c
->> @@ -34,7 +34,8 @@ struct crossbar_device {
->>  	uint *irq_map;
->>  	void __iomem *crossbar_base;
->>  	int *register_offsets;
->> -	void (*write) (int, int);
->> +
->> +	void (*write)(int, int);
-> 
-> The empty line here looks bogus to me.  Did you re-run checkpatch after
-> fixing the unnecessary space to see if it still complained about having
-> a 'blank line after declarations'?
-> 
- Yes, it still complains even after fixing unnecessary space.
+I didn't say we should not fix it, I just meant we don't need to spend
+too much time on a perfect solution for code that is going away and that
+is already not used anywhere.
 
-WARNING: Missing a blank line after declarations
-#37: FILE: ./drivers/irqchip/irq-crossbar.c:37:
-+	int *register_offsets;
-+	void (*write)(int, int);
+I've just replied to an older thread "Re: [PATCH 1/2] [RFC] ASoC: samsung:
+move s3c24xx over to dmaengine" with a patch that would let us kill off
+the code right away, or at least disable it in Kconfig.
 
->>  };
->>  
->>  /**
->> @@ -150,7 +151,7 @@ static int __init crossbar_of_init(struct device_node *node,
->>  		goto err1;
->>  
->>  	of_property_read_u32(node, "ti,max-irqs", &max);
->> -	cb->irq_map = kzalloc(max * sizeof(int), GFP_KERNEL);
->> +	cb->irq_map = kcalloc(max, sizeof(int), GFP_KERNEL);
->>  	if (!cb->irq_map)
->>  		goto err2;
->>  
->> @@ -176,7 +177,7 @@ static int __init crossbar_of_init(struct device_node *node,
->>  		}
->>  	}
->>  
->> -	cb->register_offsets = kzalloc(max * sizeof(int), GFP_KERNEL);
->> +	cb->register_offsets = kcalloc(max, sizeof(int), GFP_KERNEL);
->>  	if (!cb->register_offsets)
->>  		goto err3;
-> 
-> I'm generally opposed to these sorts of checkpatch patches, especially
-> when they are just warnings.  It's great for a new driver in the staging
-> tree, but it makes backporting future bugfixes that much harder when
-> drivers have been live in mainline.
-> 
-> If, in the future, you're changing code in this area, go ahead and
-> convert to kcalloc(), but I wouldn't do a separate patch for this kind
-> of thing.
-> 
-> Honestly, I would just drop this patch and not worry about it.
-> 
-  Ok, but i just hope that there may not be real needs to make changes
-  for this driver in future. So if that's the case then it might be 
-  better to fix it once for now.
+For some reason, I can't reproduce the failure you see in your build system,
+I tried torvalds/master and next/master today and I have also done
+allmodconfig and randconfig builds in the past few days on slightly
+older versions.
 
-Regards,
- Sricharan
+> In some cases, kconf generates a configuration, spitting out these
+> warnings, but then when you try and build that configuration, it then
+> goes on to complain that some symbols need user input.  In other words,
+> the first resulting configuration file from the make allyesconfig/
+> allmodconfig/randconfig is invalid because the dependencies have not
+> reached stability.
+
+I think it just gives up when it sees a recursive dependency, so instead
+you start out with whatever the oldconfig was, rather than actually
+building the 'allmodconfig' you asked for.
+
+	Arnd
