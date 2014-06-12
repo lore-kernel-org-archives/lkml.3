@@ -1,86 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933458AbaFLRcs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 13:32:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29961 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753089AbaFLRcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 13:32:47 -0400
-Date: Thu, 12 Jun 2014 13:32:36 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Dmitry Kasatkin <d.kasatkin@samsung.com>
-Cc: zohar@linux.vnet.ibm.com, dhowells@redhat.com, jwboyer@redhat.com,
-        keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dmitry.kasatkin@gmail.com,
-        mjg59@srcf.ucam.org
-Subject: Re: [PATCH 3/4] KEYS: validate key trust only with selected owner key
-Message-ID: <20140612173236.GK9578@redhat.com>
-References: <cover.1402387862.git.d.kasatkin@samsung.com>
- <ef22f2630a2545bd7c3bf2c9e730a842835cf6c4.1402387862.git.d.kasatkin@samsung.com>
- <20140612160346.GG9578@redhat.com>
- <5399E22D.9070205@samsung.com>
+	id S933662AbaFLRda (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 13:33:30 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:13106 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933295AbaFLRd2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 13:33:28 -0400
+From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
+CC: Josh Cartwright <joshc@codeaurora.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>
+Subject: [PATCH v2 0/3] Qualcomm Resource Power Manager driver
+Date: Thu, 12 Jun 2014 10:33:19 -0700
+Message-ID: <1402594402-30374-1-git-send-email-bjorn.andersson@sonymobile.com>
+X-Mailer: git-send-email 1.8.2.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5399E22D.9070205@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 12, 2014 at 08:23:57PM +0300, Dmitry Kasatkin wrote:
-> On 12/06/14 19:03, Vivek Goyal wrote:
-> > On Tue, Jun 10, 2014 at 11:48:17AM +0300, Dmitry Kasatkin wrote:
-> >> This patch provides kernel parameter to specify owner's key id which
-> >> must be used for trust validate of keys. Keys signed with other keys
-> >> are not trusted.
-> >>
-> >> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-> > Hi,
-> >
-> > I am continuing to work on verifying kernel signature for kexec/kdump. I 
-> > am planning to take david howell's patches for pkcs7 signature
-> > verification and verify bzImage signature.
-> >
-> > Part of that process will boil down to verifying a certificate in
-> > pkcs7 x509 cert chain using a key in system_trusted_keyring.
-> >
-> > I think the OS vendor key which signs the kernel signing key propagates to
-> > system_trusted_keyring. (shim has that and I am not sure how shim makes
-> > it propogate all they way to system_trusted_keyring).
-> >
-> > So I was planning to use same functionality where I look for any key
-> > which can verify the signing cert of kernel. As OS vendor key will be
-> > in system_trusted_keyring, it should work.
-> >
-> > Now with this change where you will trust only one selected owner key.
-> > That means you will not even trust the OS vendor key which signs kernel
-> > signing key. I think this will stop working with  keys_ownerid=<....>
-> >
-> > As I am doing that work in parallel and I saw these patches, I thought
-> > I will bring it up.
-> 
-> Hi Vivek,
-> 
-> All keys stays in the keyring. Usage of owner_keyid is limited to
-> validate the trust of the loaded keys.
+This series adds a regulator driver for the Resource Power Manager found in
+Qualcomm 8660, 8960 and 8064 based devices.
 
-Hi Dmitry,
+The RPM driver exposes resources to its child devices, that can be accessed to
+implement drivers for the regulators, clocks and bus frequency control that's
+owned by the RPM in these devices.
 
-If owner_keyid scope is just limited to loading extra keys, then it
-should be fine as I don't want to load extra keys. I just want to
-verify already signed image whose key is supposed to be in
-system_trusted_keyring.
+Changes since v1:
+  - Moved rpm driver to drivers/soc
+  - Extracted resource table structs from rpm struct, as per Srinivas request
+  - Dropped mode setting support for the regulators for now. Unsure if we need
+    it and it requires some rework from the codeaurora solution.
+  - Using set_voltage_sel instead of rolling my own "snapping", as per Marks
+    request
+  - Split regulator ops in mV, uV and swtich versions as per Marks request.
+  - Added devicetree property to enable pull down.
 
-> 
-> 
-> Do you really see OS verndor key (Fedora) on the system keyring?
-> shim is UEFI binary and can add it to the MOK database..
+Bjorn Andersson (3):
+  soc: devicetree: bindings: Add Qualcomm RPM DT binding
+  soc: qcom-rpm: Driver for the Qualcomm RPM
+  regulator: qcom-rpm: Regulator driver for the Qualcomm RPM
 
-I have been told that mechanism to propagate they key in shim which is
-used to verify kernel signature is in place and that key should show
-up in system_trusted_keyring. I have never verified it though. I will
-check it out.
+ .../devicetree/bindings/soc/qcom/qcom,rpm.txt      | 261 +++++++
+ drivers/regulator/Kconfig                          |  12 +
+ drivers/regulator/Makefile                         |   1 +
+ drivers/regulator/qcom_rpm-regulator.c             | 787 +++++++++++++++++++++
+ drivers/soc/qcom/Kconfig                           |  14 +
+ drivers/soc/qcom/Makefile                          |   1 +
+ drivers/soc/qcom/qcom_rpm.c                        | 574 +++++++++++++++
+ include/dt-bindings/soc/qcom,rpm.h                 | 142 ++++
+ include/linux/mfd/qcom_rpm.h                       |  12 +
+ 9 files changed, 1804 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/soc/qcom/qcom,rpm.txt
+ create mode 100644 drivers/regulator/qcom_rpm-regulator.c
+ create mode 100644 drivers/soc/qcom/qcom_rpm.c
+ create mode 100644 include/dt-bindings/soc/qcom,rpm.h
+ create mode 100644 include/linux/mfd/qcom_rpm.h
 
-Thanks
-Vivek
+-- 
+1.8.2.2
+
