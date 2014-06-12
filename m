@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753633AbaFLVRH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 17:17:07 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:45811 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752401AbaFLVRF (ORCPT
+	id S1753708AbaFLVSC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 17:18:02 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:56780 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752404AbaFLVSA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 17:17:05 -0400
-Date: Thu, 12 Jun 2014 14:17:02 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Lan Tianyu <tianyu.lan@intel.com>
-cc: rjw@rjwysocki.net, lenb@kernel.org, naszar@ya.ru,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] ACPI/Battery: Retry to get Battery information if failed
- during probing
-In-Reply-To: <53996152.2000407@intel.com>
-Message-ID: <alpine.DEB.2.02.1406121415150.8305@chino.kir.corp.google.com>
-References: <1402552946-14704-1-git-send-email-tianyu.lan@intel.com> <alpine.DEB.2.02.1406112354070.23724@chino.kir.corp.google.com> <53995488.20308@intel.com> <alpine.DEB.2.02.1406120025050.23724@chino.kir.corp.google.com> <53996152.2000407@intel.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 12 Jun 2014 17:18:00 -0400
+Message-ID: <539A1904.2000601@wwwdotorg.org>
+Date: Thu, 12 Jun 2014 15:17:56 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Alban Bedel <alban.bedel@avionic-design.de>,
+        Rob Herring <robh+dt@kernel.org>
+CC: Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thierry Reding <thierry.reding@gmail.com>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] ARM: tegra: tamonten: add the base board regulators
+References: <1402585885-28247-1-git-send-email-alban.bedel@avionic-design.de>
+In-Reply-To: <1402585885-28247-1-git-send-email-alban.bedel@avionic-design.de>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Jun 2014, Lan Tianyu wrote:
+On 06/12/2014 09:11 AM, Alban Bedel wrote:
+> Currently the Tamonten DTS define a fixed regulator for the 5V supply.
+> However this regulator is in fact on the base board. Fix this by
+> properly defining the regulators found on the base boards.
 
-> The retry time is set by randomly and not accurate because don't know
-> when EC will work normally. Set the retry time to 5 just in order to
-> make sure battery driver probing sucessfully every time,
-> 
+> diff --git a/arch/arm/boot/dts/tegra20-medcom-wide.dts b/arch/arm/boot/dts/tegra20-medcom-wide.dts
 
-Ok, I was hoping to avoid the excessive wait if it will never actually 
-succeed but I assume there's some evidence that it can succeed after 40ms, 
-60ms, etc.  Please consider the following instead:
+> +	board_regulators {
 
-	for (i = 0; i < 5; i++) {
-		/* Comment on why we need a delay in between retries */
-		if (i)
-			msleep(20);
-		result = acpi_battery_update(battery, false);
-		if (!result)
-			break;
-	}
+The name "board_regulators" encodes both type ("regulators") and
+identify ("board": the regulators on the board). DT node names are
+suposed to contain type but not identity information.
+
+The way this is done in other Tegra DTs is to have a regulators node in
+both the board and module DT files, and use different ranges of reg
+values for the board and module; e.g. 0..99 for module and 100.. for the
+board or similar.
+
+Other than that, this patch looks fine.
