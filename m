@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756027AbaFLO4U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 10:56:20 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:58070 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752898AbaFLO4S (ORCPT
+	id S1756055AbaFLO6e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 10:58:34 -0400
+Received: from w-smtp-out-7.wedos.net ([46.28.106.5]:55646 "EHLO
+	we2-f167.wedos.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752898AbaFLO6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 10:56:18 -0400
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] tracing: Get rid of obsolete global_start_up variable
-Date: Thu, 12 Jun 2014 23:56:12 +0900
-Message-Id: <1402584972-17824-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.9.2
+	Thu, 12 Jun 2014 10:58:31 -0400
+Date: Thu, 12 Jun 2014 16:58:13 +0200
+From: Josef Gajdusek <atx@atx.name>
+To: rjw@rjwysocki.net
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] acpi/battery: fix wrong value of capacity_now reported by
+ few battery types when fully charged (resend)
+Message-ID: <20140612145813.GB14085@dashie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It seems like it's a leftover from commit 4104d326b670 ("ftrace:
-Remove global function list and call function directly").  As it
-isn't updated at all, checking its value is meaningless.
+It seems that some batteries (noticed on DELL JYPJ136) assume 
+capacity_now = design_capacity when fully charged. This causes 
+reported capacity to suddenly jump to >full_charge_capacity (and that 
+means capacity reported to userspace is >100% and incorrect) 
+values after 99%. This patch attempts to detect this bug and trims 
+capacity_now properly.
 
-Let's get rid of it.
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Josef Gajdusek <atx@atx.name>
 ---
- kernel/trace/ftrace.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+Oops, I forgot to sign the previous one.
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index cc07b7fc4372..071908f58e7a 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -2053,7 +2053,6 @@ static void ftrace_run_update_code(int command)
+diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
+index e48fc98..3338dd5 100644
+--- a/drivers/acpi/battery.c
++++ b/drivers/acpi/battery.c
+@@ -532,6 +532,14 @@ static int acpi_battery_get_state(struct acpi_battery *battery)
+ 			" invalid.\n");
+ 	}
  
- static ftrace_func_t saved_ftrace_func;
- static int ftrace_start_up;
--static int global_start_up;
- 
- static void control_ops_free(struct ftrace_ops *ops)
- {
-@@ -2117,8 +2116,7 @@ static int ftrace_shutdown(struct ftrace_ops *ops, int command)
- 
- 	ftrace_hash_rec_disable(ops, 1);
- 
--	if (!global_start_up)
--		ops->flags &= ~FTRACE_OPS_FL_ENABLED;
-+	ops->flags &= ~FTRACE_OPS_FL_ENABLED;
- 
- 	command |= FTRACE_UPDATE_CALLS;
- 
--- 
-1.7.9.2
++	/* When fully charged, some batteries wrongly report
++	 * capacity_now = design_capacity instead of = full_charge_capacity
++	 */
++	if (battery->capacity_now == battery->design_capacity &&
++	    battery->full_charge_capacity != ACPI_BATTERY_VALUE_UNKNOWN)
++		battery->capacity_now = battery->full_charge_capacity;
++
++
+ 	if (test_bit(ACPI_BATTERY_QUIRK_PERCENTAGE_CAPACITY, &battery->flags)
+ 	    && battery->capacity_now >= 0 && battery->capacity_now <= 100)
+ 		battery->capacity_now = (battery->capacity_now *
 
