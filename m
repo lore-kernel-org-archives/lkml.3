@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756159AbaFLPbQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 11:31:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43367 "EHLO mx1.redhat.com"
+	id S1756178AbaFLPbV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 11:31:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27242 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756140AbaFLPbO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 11:31:14 -0400
+	id S1756140AbaFLPbS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 11:31:18 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
@@ -16,18 +16,20 @@ Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
         Jean Pihet <jean.pihet@linaro.org>, Namhyung Kim <namhyung@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 03/14] perf tools: Separate dso data related variables
-Date: Thu, 12 Jun 2014 17:30:34 +0200
-Message-Id: <1402587045-5461-4-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 04/14] perf tools: Add data_fd into dso object
+Date: Thu, 12 Jun 2014 17:30:35 +0200
+Message-Id: <1402587045-5461-5-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1402587045-5461-1-git-send-email-jolsa@kernel.org>
 References: <1402587045-5461-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add separated structure/namespace for data related
-variables. We are going to add mode of them, so this
-way they will be clearly separated.
+Adding data_fd into dso object so we could handle caching
+of opened dso file data descriptors coming int next patches.
+
+Adding dso__data_close interface to keep the data_fd updated
+when the descriptor is closed.
 
 Acked-by: Namhyung Kim <namhyung@kernel.org>
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
@@ -39,78 +41,126 @@ Cc: Jean Pihet <jean.pihet@linaro.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1401892622-30848-3-git-send-email-jolsa@kernel.org
+Link: http://lkml.kernel.org/r/1401892622-30848-4-git-send-email-jolsa@kernel.org
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/util/dso.c | 8 ++++----
- tools/perf/util/dso.h | 7 ++++++-
- 2 files changed, 10 insertions(+), 5 deletions(-)
+ tools/perf/util/dso.c              | 23 +++++++++++++++++++----
+ tools/perf/util/dso.h              |  3 +++
+ tools/perf/util/unwind-libunwind.c |  4 ++--
+ 3 files changed, 24 insertions(+), 6 deletions(-)
 
 diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index 64453d6..1c3cdaf 100644
+index 1c3cdaf..5acb4b8 100644
 --- a/tools/perf/util/dso.c
 +++ b/tools/perf/util/dso.c
-@@ -292,7 +292,7 @@ dso_cache__read(struct dso *dso, struct machine *machine,
+@@ -159,6 +159,14 @@ static int open_dso(struct dso *dso, struct machine *machine)
+ 	return fd;
+ }
  
- 		cache->offset = cache_offset;
- 		cache->size   = ret;
--		dso_cache__insert(&dso->cache, cache);
-+		dso_cache__insert(&dso->data.cache, cache);
- 
- 		ret = dso_cache__memcpy(cache, offset, data, size);
- 
-@@ -310,7 +310,7 @@ static ssize_t dso_cache_read(struct dso *dso, struct machine *machine,
++void dso__data_close(struct dso *dso)
++{
++	if (dso->data.fd >= 0) {
++		close(dso->data.fd);
++		dso->data.fd = -1;
++	}
++}
++
+ int dso__data_fd(struct dso *dso, struct machine *machine)
  {
- 	struct dso_cache *cache;
+ 	enum dso_binary_type binary_type_data[] = {
+@@ -168,8 +176,13 @@ int dso__data_fd(struct dso *dso, struct machine *machine)
+ 	};
+ 	int i = 0;
  
--	cache = dso_cache__find(&dso->cache, offset);
-+	cache = dso_cache__find(&dso->data.cache, offset);
- 	if (cache)
- 		return dso_cache__memcpy(cache, offset, data, size);
- 	else
-@@ -473,7 +473,7 @@ struct dso *dso__new(const char *name)
- 		dso__set_short_name(dso, dso->name, false);
+-	if (dso->binary_type != DSO_BINARY_TYPE__NOT_FOUND)
+-		return open_dso(dso, machine);
++	if (dso->data.fd >= 0)
++		return dso->data.fd;
++
++	if (dso->binary_type != DSO_BINARY_TYPE__NOT_FOUND) {
++		dso->data.fd = open_dso(dso, machine);
++		return dso->data.fd;
++	}
+ 
+ 	do {
+ 		int fd;
+@@ -178,7 +191,7 @@ int dso__data_fd(struct dso *dso, struct machine *machine)
+ 
+ 		fd = open_dso(dso, machine);
+ 		if (fd >= 0)
+-			return fd;
++			return dso->data.fd = fd;
+ 
+ 	} while (dso->binary_type != DSO_BINARY_TYPE__NOT_FOUND);
+ 
+@@ -301,7 +314,7 @@ dso_cache__read(struct dso *dso, struct machine *machine,
+ 	if (ret <= 0)
+ 		free(cache);
+ 
+-	close(fd);
++	dso__data_close(dso);
+ 	return ret;
+ }
+ 
+@@ -474,6 +487,7 @@ struct dso *dso__new(const char *name)
  		for (i = 0; i < MAP__NR_TYPES; ++i)
  			dso->symbols[i] = dso->symbol_names[i] = RB_ROOT;
--		dso->cache = RB_ROOT;
-+		dso->data.cache = RB_ROOT;
+ 		dso->data.cache = RB_ROOT;
++		dso->data.fd = -1;
  		dso->symtab_type = DSO_BINARY_TYPE__NOT_FOUND;
  		dso->binary_type = DSO_BINARY_TYPE__NOT_FOUND;
  		dso->loaded = 0;
-@@ -506,7 +506,7 @@ void dso__delete(struct dso *dso)
+@@ -506,6 +520,7 @@ void dso__delete(struct dso *dso)
  		dso->long_name_allocated = false;
  	}
  
--	dso_cache__free(&dso->cache);
-+	dso_cache__free(&dso->data.cache);
++	dso__data_close(dso);
+ 	dso_cache__free(&dso->data.cache);
  	dso__free_a2l(dso);
  	zfree(&dso->symsrc_filename);
- 	free(dso);
 diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-index 38efe95..7637fdd 100644
+index 7637fdd..e48dcf5 100644
 --- a/tools/perf/util/dso.h
 +++ b/tools/perf/util/dso.h
-@@ -76,7 +76,6 @@ struct dso {
- 	struct list_head node;
- 	struct rb_root	 symbols[MAP__NR_TYPES];
- 	struct rb_root	 symbol_names[MAP__NR_TYPES];
--	struct rb_root	 cache;
- 	void		 *a2l;
- 	char		 *symsrc_filename;
- 	unsigned int	 a2l_fails;
-@@ -99,6 +98,12 @@ struct dso {
- 	const char	 *long_name;
- 	u16		 long_name_len;
- 	u16		 short_name_len;
-+
-+	/* dso data file */
-+	struct {
-+		struct rb_root	 cache;
-+	} data;
-+
- 	char		 name[0];
- };
+@@ -102,6 +102,7 @@ struct dso {
+ 	/* dso data file */
+ 	struct {
+ 		struct rb_root	 cache;
++		int		 fd;
+ 	} data;
  
+ 	char		 name[0];
+@@ -147,6 +148,8 @@ int dso__read_binary_type_filename(const struct dso *dso, enum dso_binary_type t
+ 				   char *root_dir, char *filename, size_t size);
+ 
+ int dso__data_fd(struct dso *dso, struct machine *machine);
++void dso__data_close(struct dso *dso);
++
+ ssize_t dso__data_read_offset(struct dso *dso, struct machine *machine,
+ 			      u64 offset, u8 *data, ssize_t size);
+ ssize_t dso__data_read_addr(struct dso *dso, struct map *map,
+diff --git a/tools/perf/util/unwind-libunwind.c b/tools/perf/util/unwind-libunwind.c
+index bd5768d..4f8dd9e 100644
+--- a/tools/perf/util/unwind-libunwind.c
++++ b/tools/perf/util/unwind-libunwind.c
+@@ -250,7 +250,7 @@ static int read_unwind_spec_eh_frame(struct dso *dso, struct machine *machine,
+ 
+ 	/* Check the .eh_frame section for unwinding info */
+ 	offset = elf_section_offset(fd, ".eh_frame_hdr");
+-	close(fd);
++	dso__data_close(dso);
+ 
+ 	if (offset)
+ 		ret = unwind_spec_ehframe(dso, machine, offset,
+@@ -271,7 +271,7 @@ static int read_unwind_spec_debug_frame(struct dso *dso,
+ 
+ 	/* Check the .debug_frame section for unwinding info */
+ 	*offset = elf_section_offset(fd, ".debug_frame");
+-	close(fd);
++	dso__data_close(dso);
+ 
+ 	if (*offset)
+ 		return 0;
 -- 
 1.8.3.1
 
