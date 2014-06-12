@@ -1,30 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732AbaFLXXg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 19:23:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37234 "EHLO
+	id S1752544AbaFLXXy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 19:23:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37227 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752202AbaFLXSl (ORCPT
+	with ESMTP id S1752197AbaFLXSl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 12 Jun 2014 19:18:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vlastimil Babka <vbabka@suse.cz>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Dongjun Shin <d.j.shin@samsung.com>,
-        Sunghwan Yun <sunghwan.yun@samsung.com>,
+        Vlastimil Babka <vbabka@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 13/18] mm/compaction: make isolate_freepages start at pageblock boundary
-Date: Thu, 12 Jun 2014 16:22:17 -0700
-Message-Id: <20140612232213.530448958@linuxfoundation.org>
+Subject: [PATCH 3.10 12/18] mm: compaction: detect when scanners meet in isolate_freepages
+Date: Thu, 12 Jun 2014 16:22:16 -0700
+Message-Id: <20140612232213.468071267@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140612232212.960235342@linuxfoundation.org>
 References: <20140612232212.960235342@linuxfoundation.org>
@@ -41,100 +33,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Vlastimil Babka <vbabka@suse.cz>
 
-commit 49e068f0b73dd042c186ffa9b420a9943e90389a upstream.
+commit 7ed695e069c3cbea5e1fd08f84a04536da91f584 upstream.
 
-The compaction freepage scanner implementation in isolate_freepages()
-starts by taking the current cc->free_pfn value as the first pfn.  In a
-for loop, it scans from this first pfn to the end of the pageblock, and
-then subtracts pageblock_nr_pages from the first pfn to obtain the first
-pfn for the next for loop iteration.
+Compaction of a zone is finished when the migrate scanner (which begins
+at the zone's lowest pfn) meets the free page scanner (which begins at
+the zone's highest pfn).  This is detected in compact_zone() and in the
+case of direct compaction, the compact_blockskip_flush flag is set so
+that kswapd later resets the cached scanner pfn's, and a new compaction
+may again start at the zone's borders.
 
-This means that when cc->free_pfn starts at offset X rather than being
-aligned on pageblock boundary, the scanner will start at offset X in all
-scanned pageblock, ignoring potentially many free pages.  Currently this
-can happen when
+The meeting of the scanners can happen during either scanner's activity.
+However, it may currently fail to be detected when it occurs in the free
+page scanner, due to two problems.  First, isolate_freepages() keeps
+free_pfn at the highest block where it isolated pages from, for the
+purposes of not missing the pages that are returned back to allocator
+when migration fails.  Second, failing to isolate enough free pages due
+to scanners meeting results in -ENOMEM being returned by
+migrate_pages(), which makes compact_zone() bail out immediately without
+calling compact_finished() that would detect scanners meeting.
 
- a) zone's end pfn is not pageblock aligned, or
+This failure to detect scanners meeting might result in repeated
+attempts at compaction of a zone that keep starting from the cached
+pfn's close to the meeting point, and quickly failing through the
+-ENOMEM path, without the cached pfns being reset, over and over.  This
+has been observed (through additional tracepoints) in the third phase of
+the mmtests stress-highalloc benchmark, where the allocator runs on an
+otherwise idle system.  The problem was observed in the DMA32 zone,
+which was used as a fallback to the preferred Normal zone, but on the
+4GB system it was actually the largest zone.  The problem is even
+amplified for such fallback zone - the deferred compaction logic, which
+could (after being fixed by a previous patch) reset the cached scanner
+pfn's, is only applied to the preferred zone and not for the fallbacks.
 
- b) through zone->compact_cached_free_pfn with CONFIG_HOLES_IN_ZONE
-    enabled and a hole spanning the beginning of a pageblock
+The problem in the third phase of the benchmark was further amplified by
+commit 81c0a2bb515f ("mm: page_alloc: fair zone allocator policy") which
+resulted in a non-deterministic regression of the allocation success
+rate from ~85% to ~65%.  This occurs in about half of benchmark runs,
+making bisection problematic.  It is unlikely that the commit itself is
+buggy, but it should put more pressure on the DMA32 zone during phases 1
+and 2, which may leave it more fragmented in phase 3 and expose the bugs
+that this patch fixes.
 
-This patch fixes the problem by aligning the initial pfn in
-isolate_freepages() to pageblock boundary.  This also permits replacing
-the end-of-pageblock alignment within the for loop with a simple
-pageblock_nr_pages increment.
+The fix is to make scanners meeting in isolate_freepage() stay that way,
+and to check in compact_zone() for scanners meeting when migrate_pages()
+returns -ENOMEM.  The result is that compact_finished() also detects
+scanners meeting and sets the compact_blockskip_flush flag to make
+kswapd reset the scanner pfn's.
+
+The results in stress-highalloc benchmark show that the "regression" by
+commit 81c0a2bb515f in phase 3 no longer occurs, and phase 1 and 2
+allocation success rates are also significantly improved.
 
 Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Reported-by: Heesub Shin <heesub.shin@samsung.com>
-Acked-by: Minchan Kim <minchan@kernel.org>
 Cc: Mel Gorman <mgorman@suse.de>
-Acked-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Christoph Lameter <cl@linux.com>
-Acked-by: Rik van Riel <riel@redhat.com>
-Cc: Dongjun Shin <d.j.shin@samsung.com>
-Cc: Sunghwan Yun <sunghwan.yun@samsung.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/compaction.c |   22 ++++++++++++----------
- 1 file changed, 12 insertions(+), 10 deletions(-)
+ mm/compaction.c |   19 +++++++++++++++----
+ 1 file changed, 15 insertions(+), 4 deletions(-)
 
 --- a/mm/compaction.c
 +++ b/mm/compaction.c
-@@ -657,16 +657,20 @@ static void isolate_freepages(struct zon
- 				struct compact_control *cc)
- {
- 	struct page *page;
--	unsigned long high_pfn, low_pfn, pfn, z_end_pfn, end_pfn;
-+	unsigned long high_pfn, low_pfn, pfn, z_end_pfn;
- 	int nr_freepages = cc->nr_freepages;
- 	struct list_head *freelist = &cc->freepages;
- 
- 	/*
- 	 * Initialise the free scanner. The starting point is where we last
--	 * scanned from (or the end of the zone if starting). The low point
--	 * is the end of the pageblock the migration scanner is using.
-+	 * successfully isolated from, zone-cached value, or the end of the
-+	 * zone when isolating for the first time. We need this aligned to
-+	 * the pageblock boundary, because we do pfn -= pageblock_nr_pages
-+	 * in the for loop.
-+	 * The low boundary is the end of the pageblock the migration scanner
-+	 * is using.
+@@ -667,7 +667,7 @@ static void isolate_freepages(struct zon
+ 	 * is the end of the pageblock the migration scanner is using.
  	 */
--	pfn = cc->free_pfn;
-+	pfn = cc->free_pfn & ~(pageblock_nr_pages-1);
- 	low_pfn = ALIGN(cc->migrate_pfn + 1, pageblock_nr_pages);
+ 	pfn = cc->free_pfn;
+-	low_pfn = cc->migrate_pfn + pageblock_nr_pages;
++	low_pfn = ALIGN(cc->migrate_pfn + 1, pageblock_nr_pages);
  
  	/*
-@@ -686,6 +690,7 @@ static void isolate_freepages(struct zon
- 	for (; pfn >= low_pfn && cc->nr_migratepages > nr_freepages;
+ 	 * Take care that if the migration scanner is at the end of the zone
+@@ -683,7 +683,7 @@ static void isolate_freepages(struct zon
+ 	 * pages on cc->migratepages. We stop searching if the migrate
+ 	 * and free page scanners meet or enough free pages are isolated.
+ 	 */
+-	for (; pfn > low_pfn && cc->nr_migratepages > nr_freepages;
++	for (; pfn >= low_pfn && cc->nr_migratepages > nr_freepages;
  					pfn -= pageblock_nr_pages) {
  		unsigned long isolated;
-+		unsigned long end_pfn;
  
- 		if (!pfn_valid(pfn))
- 			continue;
-@@ -713,13 +718,10 @@ static void isolate_freepages(struct zon
- 		isolated = 0;
+@@ -738,7 +738,14 @@ static void isolate_freepages(struct zon
+ 	/* split_free_page does not map the pages */
+ 	map_pages(freelist);
  
- 		/*
--		 * As pfn may not start aligned, pfn+pageblock_nr_page
--		 * may cross a MAX_ORDER_NR_PAGES boundary and miss
--		 * a pfn_valid check. Ensure isolate_freepages_block()
--		 * only scans within a pageblock
-+		 * Take care when isolating in last pageblock of a zone which
-+		 * ends in the middle of a pageblock.
- 		 */
--		end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
--		end_pfn = min(end_pfn, z_end_pfn);
-+		end_pfn = min(pfn + pageblock_nr_pages, z_end_pfn);
- 		isolated = isolate_freepages_block(cc, pfn, end_pfn,
- 						   freelist, false);
- 		nr_freepages += isolated;
+-	cc->free_pfn = high_pfn;
++	/*
++	 * If we crossed the migrate scanner, we want to keep it that way
++	 * so that compact_finished() may detect this
++	 */
++	if (pfn < low_pfn)
++		cc->free_pfn = max(pfn, zone->zone_start_pfn);
++	else
++		cc->free_pfn = high_pfn;
+ 	cc->nr_freepages = nr_freepages;
+ }
+ 
+@@ -1003,7 +1010,11 @@ static int compact_zone(struct zone *zon
+ 		if (err) {
+ 			putback_movable_pages(&cc->migratepages);
+ 			cc->nr_migratepages = 0;
+-			if (err == -ENOMEM) {
++			/*
++			 * migrate_pages() may return -ENOMEM when scanners meet
++			 * and we want compact_finished() to detect it
++			 */
++			if (err == -ENOMEM && cc->free_pfn > cc->migrate_pfn) {
+ 				ret = COMPACT_PARTIAL;
+ 				goto out;
+ 			}
 
 
