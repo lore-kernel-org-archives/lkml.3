@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755377AbaFLCqx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 22:46:53 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:64239 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752522AbaFLCqw (ORCPT
+	id S1755637AbaFLCrb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 22:47:31 -0400
+Received: from mail.windriver.com ([147.11.1.11]:37111 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755430AbaFLCra (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 22:46:52 -0400
-X-IronPort-AV: E=Sophos;i="5.00,692,1396972800"; 
-   d="scan'208";a="31790508"
-Message-ID: <539915B7.1090606@cn.fujitsu.com>
-Date: Thu, 12 Jun 2014 10:51:35 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	Wed, 11 Jun 2014 22:47:30 -0400
+From: Xufeng Zhang <xufeng.zhang@windriver.com>
+To: <vyasevich@gmail.com>, <nhorman@tuxdriver.com>, <davem@davemloft.net>
+CC: <linux-sctp@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] sctp: Fix sk_ack_backlog wrap-around problem
+Date: Thu, 12 Jun 2014 10:53:36 +0800
+Message-ID: <1402541616-15117-1-git-send-email-xufeng.zhang@windriver.com>
+X-Mailer: git-send-email 1.7.0.2
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Lai Jiangshan <laijs@cn.fujitsu.com>, David Airlie <airlied@linux.ie>,
-        Ben Skeggs <bskeggs@redhat.com>, Ilia Mirkin <imirkin@alum.mit.edu>,
-        <linux-kernel@vger.kernel.org>, <dri-devel@lists.freedesktop.org>
-Subject: Re: [RFC PATCH] nouveau: rename aux.c to auxiliary.c for reviewing
- it on Windows
-References: <1402473247-30468-1-git-send-email-laijs@cn.fujitsu.com>
-In-Reply-To: <1402473247-30468-1-git-send-email-laijs@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.103]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2014 04:24 PM, Borislav Petkov wrote:
-> On Wed, Jun 11, 2014 at 03:53:55PM +0800, Lai Jiangshan wrote:
->> When I tried to review the linux kernel on Windows in my laptop
->> and incidentally found that it failed to open the aux.c.
->>
->> And Microsoft tells me:
->> (http://msdn.microsoft.com/en-us/library/aa365247.aspx)
->>
->>> Do not use the following reserved names for the name of a file:
->>> CON, PRN, AUX, NUL, <snip...>, and LPT9. Also avoid these names
->>> followed immediately by an extension; for example, NUL.txt
->>> is not recommended.
->>
->> The name "aux" is listed above. And it sometimes makes sense to
->> review linux on windows, so we rename the aux.c to auxiliary.c.
-> 
-> I think you missed April 1st by more than 2 months.
-> 
+Consider the scenario:
+For a TCP-style socket, while processing the COOKIE_ECHO chunk in
+sctp_sf_do_5_1D_ce(), after it has passed a series of sanity check,
+a new association would be created in sctp_unpack_cookie(), but afterwards,
+some processing maybe failed, and sctp_association_free() will be called to
+free the previously allocated association, in sctp_association_free(),
+sk_ack_backlog value is decremented for this socket, since the initial
+value for sk_ack_backlog is 0, after the decrement, it will be 65535,
+a wrap-around problem happens, and if we want to establish new associations
+afterward in the same socket, ABORT would be triggered since sctp deem the
+accept queue as full.
+Fix this issue by only decrementing sk_ack_backlog for associations in
+the endpoint's list.
 
-EVERY DAY IS APRIL FIRST if you fool others' convenience.
+Fix-suggested-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
+---
+Change for v2:
+  Drop the redundant test for temp suggested by Vlad Yasevich.
+
+ net/sctp/associola.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/net/sctp/associola.c b/net/sctp/associola.c
+index 39579c3..0b99998 100644
+--- a/net/sctp/associola.c
++++ b/net/sctp/associola.c
+@@ -330,7 +330,7 @@ void sctp_association_free(struct sctp_association *asoc)
+ 	/* Only real associations count against the endpoint, so
+ 	 * don't bother for if this is a temporary association.
+ 	 */
+-	if (!asoc->temp) {
++	if (!list_empty(&asoc->asocs)) {
+ 		list_del(&asoc->asocs);
+ 
+ 		/* Decrement the backlog value for a TCP-style listening
+-- 
+1.7.0.2
 
