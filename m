@@ -1,79 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756295AbaFLRBA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 13:01:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31874 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753116AbaFLRA7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 13:00:59 -0400
-Date: Thu, 12 Jun 2014 13:00:44 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>, dhowells@redhat.com,
-        jwboyer@redhat.com, keyrings@linux-nfs.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmitry.kasatkin@gmail.com, mjg59@srcf.ucam.org
-Subject: Re: [PATCH 3/4] KEYS: validate key trust only with selected owner key
-Message-ID: <20140612170044.GI9578@redhat.com>
-References: <cover.1402387862.git.d.kasatkin@samsung.com>
- <ef22f2630a2545bd7c3bf2c9e730a842835cf6c4.1402387862.git.d.kasatkin@samsung.com>
- <20140612160346.GG9578@redhat.com>
- <1402592126.5318.32.camel@dhcp-9-2-203-236.watson.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402592126.5318.32.camel@dhcp-9-2-203-236.watson.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756322AbaFLRBH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 13:01:07 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:45495 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756201AbaFLRBD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 13:01:03 -0400
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: devicetree@vger.kernel.org, mporter@linaro.org, patches@linaro.org,
+        bjorn@kryo.se, ashwin.chaugule@linaro.org, gregkh@linuxfoundation.org,
+        s-anna@ti.com, loic.pallardy@st.com, lftan.linux@gmail.com,
+        slapdau@yahoo.com.au, courtney.cavin@sonymobile.com,
+        pawel.moll@arm.com, robh+dt@kernel.org, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, arnd@arndb.de, joshc@codeaurora.org,
+        linus.walleij@linaro.org, galak@codeaurora.org, ks.giri@samsung.com,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCHv7 1/5] mailbox: rename pl320-ipc specific mailbox.h
+Date: Thu, 12 Jun 2014 22:30:34 +0530
+Message-Id: <1402592434-7197-1-git-send-email-jaswinder.singh@linaro.org>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1402592317-7043-1-git-send-email-jaswinder.singh@linaro.org>
+References: <1402592317-7043-1-git-send-email-jaswinder.singh@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 12, 2014 at 12:55:26PM -0400, Mimi Zohar wrote:
-> On Thu, 2014-06-12 at 12:03 -0400, Vivek Goyal wrote: 
-> > On Tue, Jun 10, 2014 at 11:48:17AM +0300, Dmitry Kasatkin wrote:
-> > > This patch provides kernel parameter to specify owner's key id which
-> > > must be used for trust validate of keys. Keys signed with other keys
-> > > are not trusted.
-> > > 
-> > > Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-> > 
-> > Hi,
-> > 
-> > I am continuing to work on verifying kernel signature for kexec/kdump. I 
-> > am planning to take david howell's patches for pkcs7 signature
-> > verification and verify bzImage signature.
-> > 
-> > Part of that process will boil down to verifying a certificate in
-> > pkcs7 x509 cert chain using a key in system_trusted_keyring.
-> > 
-> > I think the OS vendor key which signs the kernel signing key propagates to
-> > system_trusted_keyring. (shim has that and I am not sure how shim makes
-> > it propogate all they way to system_trusted_keyring).
-> 
-> The shim patches are here
-> http://pkgs.fedoraproject.org/cgit/kernel.git/tree/modsign-uefi.patch
-> 
-> > So I was planning to use same functionality where I look for any key
-> > which can verify the signing cert of kernel. As OS vendor key will be
-> > in system_trusted_keyring, it should work.
-> > 
-> > Now with this change where you will trust only one selected owner key.
-> > That means you will not even trust the OS vendor key which signs kernel
-> > signing key. I think this will stop working with  keys_ownerid=<....>
-> > 
-> > As I am doing that work in parallel and I saw these patches, I thought
-> > I will bring it up.
-> 
-> Right, the current discussion is whether we need an owner trusted
-> keyring or if just one key was enough.  Thanks for chiming in.
-> 
-> The other option would be to sign the bzImage file creating a
-> 'security.ima' extended attribute and verifying it.  Have you created a
-> security kexec hook?
+From: Suman Anna <s-anna@ti.com>
 
-No, I have not created another hook. As bzImage is already signed it is
-much simpler to verify same signature instead of carrying another set
-of detached signatures and key management etc.
+The patch 30058677 "ARM / highbank: add support for pl320 IPC"
+added a pl320 IPC specific header file as a generic mailbox.h.
+This file has been renamed appropriately to allow the
+introduction of the generic mailbox API framework.
 
-Thanks
-Vivek
+Acked-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
+Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Suman Anna <s-anna@ti.com>
+---
+ arch/arm/mach-highbank/highbank.c        | 2 +-
+ drivers/cpufreq/highbank-cpufreq.c       | 2 +-
+ drivers/mailbox/pl320-ipc.c              | 2 +-
+ include/linux/{mailbox.h => pl320-ipc.h} | 0
+ 4 files changed, 3 insertions(+), 3 deletions(-)
+ rename include/linux/{mailbox.h => pl320-ipc.h} (100%)
+
+diff --git a/arch/arm/mach-highbank/highbank.c b/arch/arm/mach-highbank/highbank.c
+index 8c35ae4..07a0957 100644
+--- a/arch/arm/mach-highbank/highbank.c
++++ b/arch/arm/mach-highbank/highbank.c
+@@ -20,7 +20,7 @@
+ #include <linux/input.h>
+ #include <linux/io.h>
+ #include <linux/irqchip.h>
+-#include <linux/mailbox.h>
++#include <linux/pl320-ipc.h>
+ #include <linux/of.h>
+ #include <linux/of_irq.h>
+ #include <linux/of_platform.h>
+diff --git a/drivers/cpufreq/highbank-cpufreq.c b/drivers/cpufreq/highbank-cpufreq.c
+index bf8902a..b464f29 100644
+--- a/drivers/cpufreq/highbank-cpufreq.c
++++ b/drivers/cpufreq/highbank-cpufreq.c
+@@ -19,7 +19,7 @@
+ #include <linux/cpu.h>
+ #include <linux/err.h>
+ #include <linux/of.h>
+-#include <linux/mailbox.h>
++#include <linux/pl320-ipc.h>
+ #include <linux/platform_device.h>
+ 
+ #define HB_CPUFREQ_CHANGE_NOTE	0x80000001
+diff --git a/drivers/mailbox/pl320-ipc.c b/drivers/mailbox/pl320-ipc.c
+index d873cba..f3755e0 100644
+--- a/drivers/mailbox/pl320-ipc.c
++++ b/drivers/mailbox/pl320-ipc.c
+@@ -26,7 +26,7 @@
+ #include <linux/device.h>
+ #include <linux/amba/bus.h>
+ 
+-#include <linux/mailbox.h>
++#include <linux/pl320-ipc.h>
+ 
+ #define IPCMxSOURCE(m)		((m) * 0x40)
+ #define IPCMxDSET(m)		(((m) * 0x40) + 0x004)
+diff --git a/include/linux/mailbox.h b/include/linux/pl320-ipc.h
+similarity index 100%
+rename from include/linux/mailbox.h
+rename to include/linux/pl320-ipc.h
+-- 
+1.8.1.2
+
