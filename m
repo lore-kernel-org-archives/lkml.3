@@ -1,73 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932539AbaFLG4i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 02:56:38 -0400
-Received: from cmta4.telus.net ([209.171.16.77]:51180 "EHLO cmta4.telus.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755819AbaFLG4g convert rfc822-to-8bit (ORCPT
+	id S932552AbaFLG5u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 02:57:50 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:39930 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932111AbaFLG5t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 02:56:36 -0400
-X-Authority-Analysis: v=2.0 cv=CvthhAED c=1 sm=2
- a=zJWegnE7BH9C0Gl4FFgQyA==:17 a=1chCufcSjPwA:10 a=LGgl8L9ij00A:10
- a=IkcTkHD0fZMA:10 a=aatUQebYAAAA:8 a=Pyq9K9CWowscuQLKlpiwfMBGOR0=:19
- a=WLAwwSq_P-FBsTFcTRUA:9 a=QEXdDO2ut3YA:10 a=rBKJJ2Jc0C4A:10
- a=zJWegnE7BH9C0Gl4FFgQyA==:117
-X-Telus-Outbound-IP: 173.180.45.4
-From: "Doug Smythies" <dsmythies@telus.net>
-To: "'Rafael J. Wysocki'" <rafael@kernel.org>
-Cc: "'Stratos Karafotis'" <stratosk@semaphore.gr>, <linux-pm@vger.kernel.org>,
-        "'Linux Kernel Mailing List'" <linux-kernel@vger.kernel.org>,
-        "'Rafael J. Wysocki'" <rjw@rjwysocki.net>, <viresh.kumar@linaro.org>,
-        <dirk.j.brandewie@intel.com>
-References: <1402490012-19969-1-git-send-email-stratosk@semaphore.gr><009b01cf857a$d5032090$7f0961b0$@net><539862DB.9060905@semaphore.gr><00a001cf8586$24eb5c70$6ec21550$@net><CAJZ5v0hEFp8sQH3iB6SUeVVEmdYA6ZK1kvc9NM+7sbS-LTW6nQ@mail.gmail.com><00b401cf85bd$b4851f10$1d8f5d30$@net> <CAJZ5v0jPPkWCZBCTKazNJsK8m4aNB-1C6GKtUOmOUt+v_CV+WQ@mail.gmail.com>
-In-Reply-To: <CAJZ5v0jPPkWCZBCTKazNJsK8m4aNB-1C6GKtUOmOUt+v_CV+WQ@mail.gmail.com>
-Subject: RE: [PATCH] cpufreq: intel_pstate: Fix rounding of core_pct
-Date: Wed, 11 Jun 2014 23:56:33 -0700
-Message-ID: <00c401cf860b$73a81030$5af83090$@net>
+	Thu, 12 Jun 2014 02:57:49 -0400
+Message-ID: <53994F67.9030106@hitachi.com>
+Date: Thu, 12 Jun 2014 15:57:43 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Ac+FvmyjVvlbT1c6TlqJOhwcARGkBgASWMBw
-Content-Language: en-ca
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Josh Poimboeuf <jpoimboe@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: Re: [PATCH ftrace/core  2/2] ftrace, kprobes: Support IPMODIFY
+ flag to find IP modify conflict
+References: <20140610105001.8732.93502.stgit@kbuild-fedora.novalocal> <20140610105014.8732.43086.stgit@kbuild-fedora.novalocal> <1402408435.1676.13.camel@leonhard> <5397B0A1.7060401@hitachi.com> <87tx7rao6p.fsf@sejong.aot.lge.com> <53991E85.70109@hitachi.com> <871tuuad02.fsf@sejong.aot.lge.com>
+In-Reply-To: <871tuuad02.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 2014.06.11 14:45 Rafael J. Wysocki wrote:
-> On Wed, Jun 11, 2014 at 11:40 PM, Doug Smythies <dsmythies@telus.net> wrote:
->
->> Myself, I consider the issue of excessive deferred timer times to be a much higher priority (see my on-list e-mail from Monday). Correct me if I am wrong.
->> Even without the "excessive" part, and for a 250 Hz kernel, the current kick in point can be hit routinely, unduly biasing the CPU frequency downwards.
->> A random example (250 Hz kernel): 23% load at 25 Hertz load / sleep frequency for 300 total seconds.
+(2014/06/12 14:54), Namhyung Kim wrote:
+> On Thu, 12 Jun 2014 12:29:09 +0900, Masami Hiramatsu wrote:
+>> NO, ftrace_lookup_ip() returns NULL if the hash is empty, so adding
+>> !ftrace_hash_empty() is meaningless :)
 >>
->> Duration histrogram:
+>> Actually, here I intended to have 3 meanings for the new/old_hash arguments,
+>> - If it is NULL, it hits all
+>> - If it is EMPTY_HASH, it hits nothing
+>> - If it has some entries, it hits those entries.
 >>
->> Occurrences duration (seconds)
->>      16 0.044
->>      39 0.024
->>      45 0.028
->>      46 0.016
->>      48 0.032
->>      61 0.036
->>     166 0.012
->>     198 0.020
->>    7166 0.040
->>
->> Where you can see that the majority of the time the duration is such that the code will force the CPU frequency downwards.
->> It runs at minimum pstate instead of maximum pstate where it should be.
+>> And in ftrace.c(__ftrace_hash_rec_update), AFAICS, ops->filter_hash has only
+>> 2 meanings,
+>> - If it is EMPTY_HASH or NULL, it hits all
+>> - If it has some entries, it hits those entries.
+> 
+> Then I found an unrelated issue during review.
+> 
+> It seems that checking NULL other_hash for the 'all' case in
+> __ftrace_hash_rec_update() is not sufficient.  It should check
+> EMPTY_HASH case too, but then it ends up removing the check at all since
+> it can be covered in ftrace_lookup_ip().
 
-> I see.
-> What would you suggest to do to address this problem, then?
+I guessed that was just for speeding up by skipping ftrace_lookup_ip().
+(but I'm not sure how much it improves...)
 
-The above specific example can be solved by increasing the kick in factor from "sample_rate * 3" to something more.
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-As mentioned in my e-mail of Monday, I do not know how to proceed further with investigating the excessive deferral issue.
+However, I'd like to ask Steven his Ack.
 
-There are some ideas (I think originally from Dirk) that wouldn't involve "[PATCH 3/4] intel_pstate: add sample time scaling" at all, but so far they have had issues also. There is something I would like to try, but it will take at least a few days.
+Thank you,
 
-... Doug
+> 
+> Thanks,
+> Namhyung
+> 
+> 
+> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+> index 13885590a184..8bd7aa69a479 100644
+> --- a/kernel/trace/ftrace.c
+> +++ b/kernel/trace/ftrace.c
+> @@ -1545,7 +1545,7 @@ static void __ftrace_hash_rec_update(struct ftrace_ops *ops,
+>  			 * Only the filter_hash affects all records.
+>  			 * Update if the record is not in the notrace hash.
+>  			 */
+> -			if (!other_hash || !ftrace_lookup_ip(other_hash, rec->ip))
+> +			if (!ftrace_lookup_ip(other_hash, rec->ip))
+>  				match = 1;
+>  		} else {
+>  			in_hash = !!ftrace_lookup_ip(hash, rec->ip);
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
 
