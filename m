@@ -1,106 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751936AbaFLTCL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 15:02:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9385 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750981AbaFLTCI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 15:02:08 -0400
-Date: Thu, 12 Jun 2014 15:01:54 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Josh Boyer <jwboyer@redhat.com>,
-        keyrings <keyrings@linux-nfs.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: [PATCH 3/4] KEYS: validate key trust only with selected owner key
-Message-ID: <20140612190154.GL9578@redhat.com>
-References: <cover.1402387862.git.d.kasatkin@samsung.com>
- <ef22f2630a2545bd7c3bf2c9e730a842835cf6c4.1402387862.git.d.kasatkin@samsung.com>
- <20140612160346.GG9578@redhat.com>
- <5399E22D.9070205@samsung.com>
- <20140612173236.GK9578@redhat.com>
- <CACE9dm9UHixujYR==_ybKZr2gvEFm+gmRMaD-V2aeNQ7J6jQ8w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACE9dm9UHixujYR==_ybKZr2gvEFm+gmRMaD-V2aeNQ7J6jQ8w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752192AbaFLTEI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 15:04:08 -0400
+Received: from smtprelay0129.hostedemail.com ([216.40.44.129]:37040 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751181AbaFLTEF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 15:04:05 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3867:3868:3871:4321:4605:5007:7652:10004:10400:10848:11026:11658:11914:12043:12296:12438:12517:12519:12740:13019:13972:14093:14097,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: shake99_7ac3ffd8deb50
+X-Filterd-Recvd-Size: 2916
+Message-ID: <1402599841.12385.20.camel@joe-AO725>
+Subject: Re: [PATCH 1/1] kernel/debug/debug_core.c: Logging clean-up
+From: Joe Perches <joe@perches.com>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel@vger.kernel.org, Jason Wessel <jason.wessel@windriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Thu, 12 Jun 2014 12:04:01 -0700
+In-Reply-To: <1402598918-5729-1-git-send-email-fabf@skynet.be>
+References: <1402598918-5729-1-git-send-email-fabf@skynet.be>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 12, 2014 at 09:36:46PM +0300, Dmitry Kasatkin wrote:
-> On 12 June 2014 20:32, Vivek Goyal <vgoyal@redhat.com> wrote:
-> > On Thu, Jun 12, 2014 at 08:23:57PM +0300, Dmitry Kasatkin wrote:
-> >> On 12/06/14 19:03, Vivek Goyal wrote:
-> >> > On Tue, Jun 10, 2014 at 11:48:17AM +0300, Dmitry Kasatkin wrote:
-> >> >> This patch provides kernel parameter to specify owner's key id which
-> >> >> must be used for trust validate of keys. Keys signed with other keys
-> >> >> are not trusted.
-> >> >>
-> >> >> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-> >> > Hi,
-> >> >
-> >> > I am continuing to work on verifying kernel signature for kexec/kdump. I
-> >> > am planning to take david howell's patches for pkcs7 signature
-> >> > verification and verify bzImage signature.
-> >> >
-> >> > Part of that process will boil down to verifying a certificate in
-> >> > pkcs7 x509 cert chain using a key in system_trusted_keyring.
-> >> >
-> >> > I think the OS vendor key which signs the kernel signing key propagates to
-> >> > system_trusted_keyring. (shim has that and I am not sure how shim makes
-> >> > it propogate all they way to system_trusted_keyring).
-> >> >
-> >> > So I was planning to use same functionality where I look for any key
-> >> > which can verify the signing cert of kernel. As OS vendor key will be
-> >> > in system_trusted_keyring, it should work.
-> >> >
-> >> > Now with this change where you will trust only one selected owner key.
-> >> > That means you will not even trust the OS vendor key which signs kernel
-> >> > signing key. I think this will stop working with  keys_ownerid=<....>
-> >> >
-> >> > As I am doing that work in parallel and I saw these patches, I thought
-> >> > I will bring it up.
-> >>
-> >> Hi Vivek,
-> >>
-> >> All keys stays in the keyring. Usage of owner_keyid is limited to
-> >> validate the trust of the loaded keys.
-> >
-> > Hi Dmitry,
-> >
-> > If owner_keyid scope is just limited to loading extra keys, then it
-> > should be fine as I don't want to load extra keys. I just want to
-> > verify already signed image whose key is supposed to be in
-> > system_trusted_keyring.
-> >
-> >>
-> >>
-> >> Do you really see OS verndor key (Fedora) on the system keyring?
-> >> shim is UEFI binary and can add it to the MOK database..
-> >
-> > I have been told that mechanism to propagate they key in shim which is
-> > used to verify kernel signature is in place and that key should show
-> > up in system_trusted_keyring. I have never verified it though. I will
-> > check it out.
-> >
-> > Thanks
-> > Vivek
-> 
-> 
-> Hi Vivek,
-> 
-> The easiest way to get OS Vendor ker/certificate is just embed it into
-> the kernel along with
-> ephemeral (or not) module signing key... They all appears on .system keyring...
+On Thu, 2014-06-12 at 20:48 +0200, Fabian Frederick wrote:
+> -Convert printk( to pr_foo()
+> -Add pr_fmt
+> -Coalesce formats
 
-I think it will be tricky as in current setup, signing happens on a different
-server and build server does not have access to keys.
+Might as well add missing newlines
+and maybe remove unnecessary periods.
 
-Thanks
-Vivek
+> diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
+[]
+> @@ -196,8 +199,8 @@ int __weak kgdb_validate_break_address(unsigned long addr)
+>  		return err;
+>  	err = kgdb_arch_remove_breakpoint(&tmp);
+>  	if (err)
+> -		printk(KERN_ERR "KGDB: Critical breakpoint error, kernel "
+> -		   "memory destroyed at: %lx", addr);
+> +		pr_err("Critical breakpoint error, kernel memory destroyed at: %lx",
+> +		       addr);
+
+Add '\n' newline
+
+[]
+
+> @@ -256,8 +259,8 @@ int dbg_activate_sw_breakpoints(void)
+>  		error = kgdb_arch_set_breakpoint(&kgdb_break[i]);
+>  		if (error) {
+>  			ret = error;
+> -			printk(KERN_INFO "KGDB: BP install failed: %lx",
+> -			       kgdb_break[i].bpt_addr);
+> +			pr_info("BP install failed: %lx",
+> +				kgdb_break[i].bpt_addr);
+
+here too
+
+
+
+> @@ -964,8 +966,7 @@ int kgdb_register_io_module(struct kgdb_io *new_dbg_io_ops)
+>  	if (dbg_io_ops) {
+>  		spin_unlock(&kgdb_registration_lock);
+>  
+> -		printk(KERN_ERR "kgdb: Another I/O driver is already "
+> -				"registered with KGDB.\n");
+> +		pr_err("Another I/O driver is already registered with KGDB.\n");
+
+Maybe remove period
+
+		pr_err("Another I/O driver is already registered with KGDB\n");
+
+> @@ -981,8 +982,7 @@ int kgdb_register_io_module(struct kgdb_io *new_dbg_io_ops)
+>  
+>  	spin_unlock(&kgdb_registration_lock);
+>  
+> -	printk(KERN_INFO "kgdb: Registered I/O driver %s.\n",
+> -	       new_dbg_io_ops->name);
+> +	pr_info("Registered I/O driver %s.\n", new_dbg_io_ops->name);
+
+here too
+
+> @@ -1017,8 +1017,7 @@ void kgdb_unregister_io_module(struct kgdb_io *old_dbg_io_ops)
+>  
+>  	spin_unlock(&kgdb_registration_lock);
+>  
+> -	printk(KERN_INFO
+> -		"kgdb: Unregistered I/O driver %s, debugger disabled.\n",
+> +	pr_info("Unregistered I/O driver %s, debugger disabled.\n",
+>  		old_dbg_io_ops->name);
+
+and here
+
+
