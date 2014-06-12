@@ -1,138 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755204AbaFLA4N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 20:56:13 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:11518 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752521AbaFLA4M (ORCPT
+	id S1754618AbaFLA61 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 20:58:27 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54761 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752317AbaFLA60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 20:56:12 -0400
-Message-ID: <5398FAA1.5000300@huawei.com>
-Date: Thu, 12 Jun 2014 08:56:01 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Wed, 11 Jun 2014 20:58:26 -0400
+Date: Wed, 11 Jun 2014 17:58:02 -0700
+From: tip-bot for Jiri Kosina <tipbot@zytor.com>
+Message-ID: <tip-eff50c347fcc8feeb8c1723c23c89aba67c60263@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        jkosina@suse.cz, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, jkosina@suse.cz, hpa@linux.intel.com
+In-Reply-To: <alpine.LNX.2.00.1406102248490.1321@pobox.suse.cz>
+References: <alpine.LNX.2.00.1406102248490.1321@pobox.suse.cz>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm] x86/smep:
+  Be more informative when signalling an SMEP fault
+Git-Commit-ID: eff50c347fcc8feeb8c1723c23c89aba67c60263
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Jon Mason <jon.mason@intel.com>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: NTB driver support in haswell platform?
-References: <53981B6A.40807@huawei.com> <20140611171854.GA3698@jonmason-lab>
-In-Reply-To: <20140611171854.GA3698@jonmason-lab>
-Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jon, Thanks for your detailed explanation. Now I have a clearer understanding of it.
+Commit-ID:  eff50c347fcc8feeb8c1723c23c89aba67c60263
+Gitweb:     http://git.kernel.org/tip/eff50c347fcc8feeb8c1723c23c89aba67c60263
+Author:     Jiri Kosina <jkosina@suse.cz>
+AuthorDate: Tue, 10 Jun 2014 22:49:31 +0200
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Wed, 11 Jun 2014 17:55:30 -0700
 
-Thanks! :)
-Yijing.
+x86/smep: Be more informative when signalling an SMEP fault
 
-On 2014/6/12 1:18, Jon Mason wrote:
-> On Wed, Jun 11, 2014 at 05:03:38PM +0800, Yijing Wang wrote:
->> Hi Jon,
->>    I have a Intel Haswell platform in hand, and our team want to use NTB in this platform.
->> I checked the current intel NTB driver in Linux kernel, I found the Haswell NTB pci device id
->> is not contained in ntb_pci_tbl[]. I want to know whether current kernel ntb driver can support
->> the ntb device in Haswell platform ?
-> 
-> Yes, it does support Haswell and the Device IDs are in there.
-> PCI_DEVICE_ID_INTEL_NTB_B2B_HSX, PCI_DEVICE_ID_INTEL_NTB_PS_HSX, and
-> PCI_DEVICE_ID_INTEL_NTB_SS_HSX are the relevant dev ids for Haswell.
-> 
->> Haswell NTB device id:
->>
->> From Haswell EDS 7.4.2
->>
->> did
->> Bus: 0 Device: 3 Function: 0 Offset: 2
->> Bit Attr Default Description
->> 15:0 RO-V 2F08h Device_Identification_Number — Device ID values vary from function to function.
->> Bits 15:8 are equal to 0x2F. The following list is a breakdown of the function groups.
->>   0x2F00 - 0x2F1F : PCI Express and DMI2
->>   0x2F20 - 0x2F3F : Integrated I/O Features
->>   0x2F40 - 0x2F5F : Performance Monitors
->>   0x2F80 - 0x2F9F : Intel QPI
->>   0x2FA0 - 0x2FBF : Home Agent/Memory Controller
->>   0x2FC0 - 0x2FDF : Power Management
->>   0x2FE0 - 0x2FFF : Cbo/Ring
->> Default value may vary based on bus, device, and function of this CSR location.
->>
->>
->> Current ntb_pci_tbl[] in Linux:
->>
->> #define PCI_DEVICE_ID_INTEL_NTB_B2B_JSF		0x3725
->> #define PCI_DEVICE_ID_INTEL_NTB_PS_JSF		0x3726
->> #define PCI_DEVICE_ID_INTEL_NTB_SS_JSF		0x3727
->> #define PCI_DEVICE_ID_INTEL_NTB_B2B_SNB		0x3C0D
->> #define PCI_DEVICE_ID_INTEL_NTB_PS_SNB		0x3C0E
->> #define PCI_DEVICE_ID_INTEL_NTB_SS_SNB		0x3C0F
->> #define PCI_DEVICE_ID_INTEL_NTB_B2B_IVT		0x0E0D
->> #define PCI_DEVICE_ID_INTEL_NTB_PS_IVT		0x0E0E
->> #define PCI_DEVICE_ID_INTEL_NTB_SS_IVT		0x0E0F
->> #define PCI_DEVICE_ID_INTEL_NTB_B2B_HSX		0x2F0D
->> #define PCI_DEVICE_ID_INTEL_NTB_PS_HSX		0x2F0E
->> #define PCI_DEVICE_ID_INTEL_NTB_SS_HSX		0x2F0F
->> #define PCI_DEVICE_ID_INTEL_NTB_B2B_BWD		0x0C4E
->>
->> So we should modify the default device id to 0x2F0D, 0x2F0E or 0x2F0F ?
-> 
-> The device IDs are present above: PCI_DEVICE_ID_INTEL_NTB_B2B_HSX,
-> PCI_DEVICE_ID_INTEL_NTB_PS_HSX, and PCI_DEVICE_ID_INTEL_NTB_SS_HSX.
-> 
->> What's the difference between them?
-> 
-> The last 3 letters are the name of the CPU where NTB is found.  HSX is
-> Haswell Xeon.  The 2-3 letters before that are the configuration type
-> of the NTB device.  B2B is for "Back-to-back" configurations, aka
-> "NTB-NTB". 
-> 
-> B2B
-> [CPU]---[NTB]===[NTB]---[CPU]
-> 
-> PS/SS is for NTB-RP configurations.  PS is "Primary Side" and SS is
-> "Secondary Side".
-> 
-> [CPU]---[SS|PS]---[CPU]
-> 
-> I have an NTB wiki on my github account
-> (https://github.com/jonmason/ntb/wiki) describing the configuration,
-> etc.  Also on the wiki is a link to a doc (not written by me, and
-> contains references to a driver that was not made public) that has
-> some graphics that might be useful.  Specifically, pages 10 and 17.
-> To save time, the URL is
-> http://download.intel.com/design/intarch/papers/323328.pdf
-> 
-> Let me know if you have any questions or issues, and I'll be happy to
-> walk you through it.
-> 
-> Thanks,
-> Jon
-> 
->>
->> Thanks!
->> Yijing.
->>
->>
->>
->>
->> -- 
->> Thanks!
->> Yijing
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> .
-> 
+If pagefault triggers due to SMEP triggering, it can't be really easily
+distinguished from any other oops-causing pagefault, which might lead to quite
+some confusion when trying to understand the reason for the oops.
 
+Print an explanatory message in case the fault happened during instruction
+fetch for _PAGE_USER page which is present and executable on SMEP-enabled CPUs.
 
--- 
-Thanks!
-Yijing
+This is consistent with what we are doing for NX already; in addition to
+immediately seeing from the oops what might be happening, it can even easily
+give a good indication to sysadmins who are carefully monitoring their kernel
+logs that someone might be trying to pwn them.
 
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Link: http://lkml.kernel.org/r/alpine.LNX.2.00.1406102248490.1321@pobox.suse.cz
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/mm/fault.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 858b47b..9de4cdb 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -575,6 +575,8 @@ static int is_f00f_bug(struct pt_regs *regs, unsigned long address)
+ 
+ static const char nx_warning[] = KERN_CRIT
+ "kernel tried to execute NX-protected page - exploit attempt? (uid: %d)\n";
++static const char smep_warning[] = KERN_CRIT
++"unable to execute userspace code (SMEP?) (uid: %d)\n";
+ 
+ static void
+ show_fault_oops(struct pt_regs *regs, unsigned long error_code,
+@@ -595,6 +597,10 @@ show_fault_oops(struct pt_regs *regs, unsigned long error_code,
+ 
+ 		if (pte && pte_present(*pte) && !pte_exec(*pte))
+ 			printk(nx_warning, from_kuid(&init_user_ns, current_uid()));
++		if (pte && pte_present(*pte) && pte_exec(*pte) &&
++				(pgd_flags(*pgd) & _PAGE_USER) &&
++				(read_cr4() & X86_CR4_SMEP))
++			printk(smep_warning, from_kuid(&init_user_ns, current_uid()));
+ 	}
+ 
+ 	printk(KERN_ALERT "BUG: unable to handle kernel ");
