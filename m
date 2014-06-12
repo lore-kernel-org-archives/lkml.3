@@ -1,85 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933982AbaFLMA5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 08:00:57 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:39463 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933610AbaFLL4a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 07:56:30 -0400
-From: Sricharan R <r.sricharan@ti.com>
-To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: <tony@atomide.com>, <santosh.shilimkar@ti.com>, <nm@ti.com>,
-        <rnayak@ti.com>, <linux@arm.linux.org.uk>, <r.sricharan@ti.com>,
-        <tglx@linutronix.de>, <jason@lakedaemon.net>
-Subject: [PATCH V2 08/19] irqchip: crossbar: fix checkpatch warning
-Date: Thu, 12 Jun 2014 17:23:16 +0530
-Message-ID: <1402574007-13987-9-git-send-email-r.sricharan@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1402574007-13987-1-git-send-email-r.sricharan@ti.com>
-References: <1402574007-13987-1-git-send-email-r.sricharan@ti.com>
+	id S934000AbaFLMBB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 08:01:01 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:62503 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933123AbaFLMA6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 08:00:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+X-Originating-IP: [5.35.52.78]
+In-Reply-To: <CAOJe8K3LDhhPWbtdaWt23mY+2vnw5p05+eyk2D8fovOxC10cgA@mail.gmail.com>
+References: <CAOJe8K3fy3XFxDdVc3y1hiMAqUCPmkUhECU7j5TT=E=gxwBqHg@mail.gmail.com>
+	<20140611173851.GA5556@MacBook-Pro.local>
+	<CAOJe8K1TgTDX5=LdE9r6c0ami7TRa7zr0hL_uu6YpiWrsePAgQ@mail.gmail.com>
+	<B01EB0A1-992B-49F4-93AE-71E4BA707795@arm.com>
+	<CAOJe8K3LDhhPWbtdaWt23mY+2vnw5p05+eyk2D8fovOxC10cgA@mail.gmail.com>
+Date: Thu, 12 Jun 2014 16:00:57 +0400
+Message-ID: <CAOJe8K2WaJUP9_buwgKw89fxGe56mGP1Mn8rDUO9W48KZzmybA@mail.gmail.com>
+Subject: Re: kmemleak: Unable to handle kernel paging request
+From: Denis Kirjanov <kda@linux-powerpc.org>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nishanth Menon <nm@ti.com>
+On 6/12/14, Denis Kirjanov <kda@linux-powerpc.org> wrote:
+> On 6/12/14, Catalin Marinas <catalin.marinas@arm.com> wrote:
+>> On 11 Jun 2014, at 21:04, Denis Kirjanov <kda@linux-powerpc.org> wrote:
+>>> On 6/11/14, Catalin Marinas <catalin.marinas@arm.com> wrote:
+>>>> On Wed, Jun 11, 2014 at 04:13:07PM +0400, Denis Kirjanov wrote:
+>>>>> I got a trace while running 3.15.0-08556-gdfb9454:
+>>>>>
+>>>>> [  104.534026] Unable to handle kernel paging request for data at
+>>>>> address 0xc00000007f000000
+>>>>
+>>>> Were there any kmemleak messages prior to this, like "kmemleak
+>>>> disabled"? There could be a race when kmemleak is disabled because of
+>>>> some fatal (for kmemleak) error while the scanning is taking place
+>>>> (which needs some more thinking to fix properly).
+>>>
+>>> No. I checked for the similar problem and didn't find anything relevant.
+>>> I'll try to bisect it.
+>>
+>> Does this happen soon after boot? I guess it’s the first scan
+>> (scheduled at around 1min after boot). Something seems to be telling
+>> kmemleak that there is a valid memory block at 0xc00000007f000000.
+>
+> Yeah, it happens after a while with a booted system so that's the
+> first kmemleak scan.
+>
+>> Catalin
+>
 
-remove un-necessary space in function pointer.
-
-Fixes checkpatch warning:
-WARNING: Unnecessary space before function pointer arguments
- #37: FILE: drivers/irqchip/irq-crossbar.c:37:
- +	void (*write) (int, int);
-
-WARNING: Missing a blank line after declarations
-+	int *register_offsets;
-+	void (*write)(int, int);
-
-WARNING: Prefer kcalloc over kzalloc with multiply
-+	cb->irq_map = kzalloc(max * sizeof(int), GFP_KERNEL);
-
-WARNING: Prefer kcalloc over kzalloc with multiply
-+	cb->register_offsets = kzalloc(max * sizeof(int), GFP_KERNEL);
-
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
- drivers/irqchip/irq-crossbar.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/irqchip/irq-crossbar.c b/drivers/irqchip/irq-crossbar.c
-index 5da9d36..58790d4 100644
---- a/drivers/irqchip/irq-crossbar.c
-+++ b/drivers/irqchip/irq-crossbar.c
-@@ -34,7 +34,8 @@ struct crossbar_device {
- 	uint *irq_map;
- 	void __iomem *crossbar_base;
- 	int *register_offsets;
--	void (*write) (int, int);
-+
-+	void (*write)(int, int);
- };
- 
- /**
-@@ -150,7 +151,7 @@ static int __init crossbar_of_init(struct device_node *node,
- 		goto err1;
- 
- 	of_property_read_u32(node, "ti,max-irqs", &max);
--	cb->irq_map = kzalloc(max * sizeof(int), GFP_KERNEL);
-+	cb->irq_map = kcalloc(max, sizeof(int), GFP_KERNEL);
- 	if (!cb->irq_map)
- 		goto err2;
- 
-@@ -176,7 +177,7 @@ static int __init crossbar_of_init(struct device_node *node,
- 		}
- 	}
- 
--	cb->register_offsets = kzalloc(max * sizeof(int), GFP_KERNEL);
-+	cb->register_offsets = kcalloc(max, sizeof(int), GFP_KERNEL);
- 	if (!cb->register_offsets)
- 		goto err3;
- 
--- 
-1.7.9.5
-
+I've bisected to this commit: d4c54919ed86302094c0ca7d48a8cbd4ee753e92
+"mm: add !pte_present() check on existing hugetlb_entry callbacks".
+Reverting the commit fixes the issue
