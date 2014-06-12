@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752565AbaFLUal (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 16:30:41 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37251 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751904AbaFLUaj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 16:30:39 -0400
-Message-ID: <539A0DC2.1010203@zytor.com>
-Date: Thu, 12 Jun 2014 13:29:54 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Randy Dunlap <rdunlap@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH 0/2] make kASLR vs hibernation boot-time selectable
-References: <1402602419-27934-1-git-send-email-keescook@chromium.org>	<539A0422.9010000@zytor.com> <CAGXu5jLvAr=f2MRP4Ni86-jbM7h3Mx3RQo=7coveE8ZEt12N=Q@mail.gmail.com>
-In-Reply-To: <CAGXu5jLvAr=f2MRP4Ni86-jbM7h3Mx3RQo=7coveE8ZEt12N=Q@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1752754AbaFLUbc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 16:31:32 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:60809 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751890AbaFLUbb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 16:31:31 -0400
+From: Marc Fite <marc@fite.cat>
+To: gregkh@linuxfoundation.org, a.terekhov@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Cc: Marc Fite <marc@fite.cat>
+Subject: [PATCH] staging: lustre: removed spaces at the start of a line
+Date: Thu, 12 Jun 2014 22:31:15 +0200
+Message-Id: <1402605075-25860-1-git-send-email-marc@fite.cat>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2014 01:27 PM, Kees Cook wrote:
->>
->> Any way we can make them work together instead?
-> 
-> I'm sure there is, but I don't know the solution. :)
-> 
-> At the very least this gets us one step closer (we can build them together).
-> 
+Hello,
 
-But it is really invasive.
+This is a patch in order to remove 2 lines with spaces at the start of the line.
 
-I have to admit to being somewhat fuzzy on what the core problem with
-hibernation and kASLR is... in both cases there is a set of pages that
-need to be installed, some of which will overlap the loader kernel.
-What am I missing?
+Best Regards.
 
-	-hpa
+Signed-off-by: Marc Fite <marc@fite.cat>
+---
+ drivers/staging/lustre/lustre/obdecho/lproc_echo.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/staging/lustre/lustre/obdecho/lproc_echo.c b/drivers/staging/lustre/lustre/obdecho/lproc_echo.c
+index 8fe9245..c972eb4 100644
+--- a/drivers/staging/lustre/lustre/obdecho/lproc_echo.c
++++ b/drivers/staging/lustre/lustre/obdecho/lproc_echo.c
+@@ -51,7 +51,7 @@ static struct lprocfs_vars lprocfs_echo_module_vars[] = {
+ 
+ void lprocfs_echo_init_vars(struct lprocfs_static_vars *lvars)
+ {
+-    lvars->module_vars  = lprocfs_echo_module_vars;
+-    lvars->obd_vars     = lprocfs_echo_obd_vars;
++	lvars->module_vars  = lprocfs_echo_module_vars;
++	lvars->obd_vars     = lprocfs_echo_obd_vars;
+ }
+ #endif /* LPROCFS */
+-- 
+2.0.0
 
