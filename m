@@ -1,48 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608AbaFLXVN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 19:21:13 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:65373 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752580AbaFLXVL (ORCPT
+	id S1752653AbaFLXWR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 19:22:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37270 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752243AbaFLXSn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 19:21:11 -0400
-From: Robin Schroer <sulamiification@gmail.com>
-To: w.d.hubbs@gmail.com
-Cc: gregkh@linuxfoundation.org, speakup@braille.uwo.ca,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Robin Schroer <sulamiification@gmail.com>
-Subject: [PATCH] drivers/staging/speakup/main: fixed jiffie comparison
-Date: Fri, 13 Jun 2014 01:21:05 +0200
-Message-Id: <1402615265-22524-1-git-send-email-sulamiification@gmail.com>
-X-Mailer: git-send-email 1.9.3
+	Thu, 12 Jun 2014 19:18:43 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Chris Boot <crb@tiger-computing.co.uk>,
+        Philip Gaw <pgaw@darktech.org.uk>, Hannes Reinecke <hare@suse.de>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.10 09/18] target: Allow READ_CAPACITY opcode in ALUA Standby access state
+Date: Thu, 12 Jun 2014 16:22:13 -0700
+Message-Id: <20140612232213.375339661@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.0.254.g50f84e3
+In-Reply-To: <20140612232212.960235342@linuxfoundation.org>
+References: <20140612232212.960235342@linuxfoundation.org>
+User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-speakup_key() used manual comparison of jiffies to determine the time
-since the last keypress, replaced it with time_after()
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Resend with kernel mailing list cc'ed (duh...)
+------------------
 
-Signed-off-by: Robin Schroer <sulamiification@gmail.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
+
+commit e7810c2d2c37fa8e58dda74b00790dab60fe6fba upstream.
+
+This patch allows READ_CAPACITY + SAI_READ_CAPACITY_16 opcode
+processing to occur while the associated ALUA group is in Standby
+access state.
+
+This is required to avoid host side LUN probe failures during the
+initial scan if an ALUA group has already implicitly changed into
+Standby access state.
+
+This addresses a bug reported by Chris + Philip using dm-multipath
++ ESX hosts configured with ALUA multipath.
+
+(Drop v3.15 specific set_ascq usage - nab)
+
+Reported-by: Chris Boot <crb@tiger-computing.co.uk>
+Reported-by: Philip Gaw <pgaw@darktech.org.uk>
+Cc: Chris Boot <crb@tiger-computing.co.uk>
+Cc: Philip Gaw <pgaw@darktech.org.uk>
+Cc: Hannes Reinecke <hare@suse.de>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/staging/speakup/main.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/target/target_core_alua.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/drivers/staging/speakup/main.c b/drivers/staging/speakup/main.c
-index 7de79d5..0cd3cdb 100644
---- a/drivers/staging/speakup/main.c
-+++ b/drivers/staging/speakup/main.c
-@@ -2067,7 +2067,7 @@ speakup_key(struct vc_data *vc, int shift_state, int keycode, u_short keysym,
- 			if (up_flag)
- 				goto out;
- 			if (last_keycode == keycode &&
--			    last_spk_jiffy + MAX_DELAY > jiffies) {
-+			    time_after(last_spk_jiffy + MAX_DELAY, jiffies)) {
- 				spk_close_press = 1;
- 				offset = spk_shift_table[shift_info + 32];
- 				/* double press? */
--- 
-1.9.3
+--- a/drivers/target/target_core_alua.c
++++ b/drivers/target/target_core_alua.c
+@@ -409,7 +409,16 @@ static inline int core_alua_state_standb
+ 	case REPORT_LUNS:
+ 	case RECEIVE_DIAGNOSTIC:
+ 	case SEND_DIAGNOSTIC:
++	case READ_CAPACITY:
+ 		return 0;
++	case SERVICE_ACTION_IN:
++		switch (cdb[1] & 0x1f) {
++		case SAI_READ_CAPACITY_16:
++			return 0;
++		default:
++			*alua_ascq = ASCQ_04H_ALUA_TG_PT_STANDBY;
++			return 1;
++		}
+ 	case MAINTENANCE_IN:
+ 		switch (cdb[1] & 0x1f) {
+ 		case MI_REPORT_TARGET_PGS:
+
 
