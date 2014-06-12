@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752825AbaFLXYf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 19:24:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37224 "EHLO
+	id S1752806AbaFLXYe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 19:24:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37227 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752169AbaFLXSk (ORCPT
+	with ESMTP id S1752179AbaFLXSk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 12 Jun 2014 19:18:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Santosh Kulkarni <santosh.kulkarni@calsoftinc.com>,
-        Roland Dreier <roland@purestorage.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.10 08/18] iscsi-target: Fix wrong buffer / buffer overrun in iscsi_change_param_value()
-Date: Thu, 12 Jun 2014 16:22:12 -0700
-Message-Id: <20140612232213.343409621@linuxfoundation.org>
+        Tomas Winkler <tomas.winkler@intel.com>,
+        Alexander Usyskin <alexander.usyskin@intel.com>
+Subject: [PATCH 3.10 16/18] mei: me: drop harmful wait optimization
+Date: Thu, 12 Jun 2014 16:22:20 -0700
+Message-Id: <20140612232213.646704936@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140612232212.960235342@linuxfoundation.org>
 References: <20140612232212.960235342@linuxfoundation.org>
@@ -30,131 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: Tomas Winkler <tomas.winkler@intel.com>
 
-commit 79d59d08082dd0a0a18f8ceb78c99f9f321d72aa upstream.
+commit 07cd7be3d92eeeae1f92a017f2cfe4fdd9256526 upstream.
 
-In non-leading connection login, iscsi_login_non_zero_tsih_s1() calls
-iscsi_change_param_value() with the buffer it uses to hold the login
-PDU, not a temporary buffer.  This leads to the login header getting
-corrupted and login failing for non-leading connections in MC/S.
+It my take time till ME_RDY will be cleared after the reset,
+so we cannot check the bit before we got the interrupt
 
-Fix this by adding a wrapper iscsi_change_param_sprintf() that handles
-the temporary buffer itself to avoid confusion.  Also handle sending a
-reject in case of failure in the wrapper, which lets the calling code
-get quite a bit smaller and easier to read.
-
-Finally, bump the size of the temporary buffer from 32 to 64 bytes to be
-safe, since "MaxRecvDataSegmentLength=" by itself is 25 bytes; with a
-trailing NUL, a value >= 1M will lead to a buffer overrun.  (This isn't
-the default but we don't need to run right at the ragged edge here)
-
-(Fix up context changes for v3.10.y - nab)
-
-Reported-by: Santosh Kulkarni <santosh.kulkarni@calsoftinc.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/target/iscsi/iscsi_target_login.c |   50 ++++++++++++++++--------------
- 1 file changed, 27 insertions(+), 23 deletions(-)
 
---- a/drivers/target/iscsi/iscsi_target_login.c
-+++ b/drivers/target/iscsi/iscsi_target_login.c
-@@ -250,6 +250,28 @@ static void iscsi_login_set_conn_values(
- 	mutex_unlock(&auth_id_lock);
- }
+---
+ drivers/misc/mei/hw-me.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+--- a/drivers/misc/mei/hw-me.c
++++ b/drivers/misc/mei/hw-me.c
+@@ -183,6 +183,7 @@ static void mei_me_hw_reset(struct mei_d
+ 	else
+ 		hcsr &= ~H_IE;
  
-+static __printf(2, 3) int iscsi_change_param_sprintf(
-+	struct iscsi_conn *conn,
-+	const char *fmt, ...)
-+{
-+	va_list args;
-+	unsigned char buf[64];
-+
-+	memset(buf, 0, sizeof buf);
-+
-+	va_start(args, fmt);
-+	vsnprintf(buf, sizeof buf, fmt, args);
-+	va_end(args);
-+
-+	if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
-+		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
-+				ISCSI_LOGIN_STATUS_NO_RESOURCES);
-+		return -1;
-+	}
-+
-+	return 0;
-+}
-+
- /*
-  *	This is the leading connection of a new session,
-  *	or session reinstatement.
-@@ -339,7 +361,6 @@ static int iscsi_login_zero_tsih_s2(
++	dev->recvd_hw_ready = false;
+ 	mei_me_reg_write(hw, H_CSR, hcsr);
+ 
+ 	if (dev->dev_state == MEI_DEV_POWER_DOWN)
+@@ -233,10 +234,7 @@ static bool mei_me_hw_is_ready(struct me
+ static int mei_me_hw_ready_wait(struct mei_device *dev)
  {
- 	struct iscsi_node_attrib *na;
- 	struct iscsi_session *sess = conn->sess;
--	unsigned char buf[32];
- 	bool iser = false;
+ 	int err;
+-	if (mei_me_hw_is_ready(dev))
+-		return 0;
  
- 	sess->tpg = conn->tpg;
-@@ -380,26 +401,16 @@ static int iscsi_login_zero_tsih_s2(
- 	 *
- 	 * In our case, we have already located the struct iscsi_tiqn at this point.
- 	 */
--	memset(buf, 0, 32);
--	sprintf(buf, "TargetPortalGroupTag=%hu", ISCSI_TPG_S(sess)->tpgt);
--	if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
--		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
--				ISCSI_LOGIN_STATUS_NO_RESOURCES);
-+	if (iscsi_change_param_sprintf(conn, "TargetPortalGroupTag=%hu", sess->tpg->tpgt))
- 		return -1;
--	}
- 
- 	/*
- 	 * Workaround for Initiators that have broken connection recovery logic.
- 	 *
- 	 * "We would really like to get rid of this." Linux-iSCSI.org team
- 	 */
--	memset(buf, 0, 32);
--	sprintf(buf, "ErrorRecoveryLevel=%d", na->default_erl);
--	if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
--		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
--				ISCSI_LOGIN_STATUS_NO_RESOURCES);
-+	if (iscsi_change_param_sprintf(conn, "ErrorRecoveryLevel=%d", na->default_erl))
- 		return -1;
--	}
- 
- 	if (iscsi_login_disable_FIM_keys(conn->param_list, conn) < 0)
- 		return -1;
-@@ -411,12 +422,9 @@ static int iscsi_login_zero_tsih_s2(
- 		unsigned long mrdsl, off;
- 		int rc;
- 
--		sprintf(buf, "RDMAExtensions=Yes");
--		if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
--			iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
--				ISCSI_LOGIN_STATUS_NO_RESOURCES);
-+		if (iscsi_change_param_sprintf(conn, "RDMAExtensions=Yes"))
- 			return -1;
--		}
-+
- 		/*
- 		 * Make MaxRecvDataSegmentLength PAGE_SIZE aligned for
- 		 * Immediate Data + Unsolicitied Data-OUT if necessary..
-@@ -446,12 +454,8 @@ static int iscsi_login_zero_tsih_s2(
- 		pr_warn("Aligning ISER MaxRecvDataSegmentLength: %lu down"
- 			" to PAGE_SIZE\n", mrdsl);
- 
--		sprintf(buf, "MaxRecvDataSegmentLength=%lu\n", mrdsl);
--		if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
--			iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
--				ISCSI_LOGIN_STATUS_NO_RESOURCES);
-+		if (iscsi_change_param_sprintf(conn, "MaxRecvDataSegmentLength=%lu\n", mrdsl))
- 			return -1;
--		}
- 	}
- 
- 	return 0;
+-	dev->recvd_hw_ready = false;
+ 	mutex_unlock(&dev->device_lock);
+ 	err = wait_event_interruptible_timeout(dev->wait_hw_ready,
+ 			dev->recvd_hw_ready,
 
 
