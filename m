@@ -1,68 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933793AbaFLRfL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 13:35:11 -0400
-Received: from smtprelay0116.hostedemail.com ([216.40.44.116]:45665 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933092AbaFLRfH (ORCPT
+	id S964923AbaFLRep (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 13:34:45 -0400
+Received: from mail.fem.tu-ilmenau.de ([141.24.220.54]:44471 "EHLO
+	mail.fem.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964868AbaFLRen (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 13:35:07 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:800:901:960:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2525:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3872:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:5007:7576:7652:9025:9072:9388:10004:10049:10400:10848:11232:11257:11658:11914:12043:12296:12517:12519:12679:12740:13019:13069:13161:13200:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: debt02_494ad2fa2df3b
-X-Filterd-Recvd-Size: 1767
-Message-ID: <1402594501.12385.10.camel@joe-AO725>
-Subject: Re: [PATCH 2/2] Documentation: exceptions to what I maintain
-From: Joe Perches <joe@perches.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 12 Jun 2014 10:35:01 -0700
-In-Reply-To: <5399DF99.2010701@infradead.org>
-References: <5399DF99.2010701@infradead.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
+	Thu, 12 Jun 2014 13:34:43 -0400
+Subject: [PATCH v2 1/2] rt2800usb:fix efuse detection
+To: Ivo van Doorn <IvDoorn@gmail.com>,
+        Helmut Schaa <helmut.schaa@googlemail.com>
+From: Michael Braun <michael-dev@fami-braun.de>
+Cc: netdev@vger.kernel.org, users@rt2x00.serialmonkey.com,
+        linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 12 Jun 2014 19:33:36 +0200
+Message-ID: <20140612173336.15935.17359.stgit@charlie.fem.tu-ilmenau.de>
+In-Reply-To: <20140612173057.15935.14194.stgit@charlie.fem.tu-ilmenau.de>
+References: <20140612173057.15935.14194.stgit@charlie.fem.tu-ilmenau.de>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-06-12 at 10:12 -0700, Randy Dunlap wrote:
-> From: Randy Dunlap <rdunlap@infradead.org>
-> 
-> Note that I don't maintain Documentation/ABI/,
-> Documentation/devicetree/, or the language translation files.
-> 
-> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+The device 057c:8501 (AVM Fritz! WLAN v2 rev. B) currently does not
+load. One thing observed is that the vendors driver detects EFUSE mode
+for this device, but rt2800usb does not. This is due to rt2800usb
+lacking a check for the firmware mode present in the vendors driver,
+that this patch adopts for rt2800usb.
 
-Hey Randy.
+With this patch applied, the 'RF chipset' detection does no longer fail.
 
-Perhaps it's better to use exclusion "X:" values
-so get_maintainer doesn't still include you.
+Signed-off-by: Michael Braun <michael-dev@fami-braun.de>
+---
+ drivers/net/wireless/rt2x00/rt2800usb.c |   30 +++++++++++++++++++++++++++++-
+ drivers/net/wireless/rt2x00/rt2x00usb.h |    1 +
+ 2 files changed, 30 insertions(+), 1 deletion(-)
 
-> @@ -2885,7 +2885,7 @@ M:	Randy Dunlap <rdunlap@infradead.org>
->  L:	linux-doc@vger.kernel.org
->  T:	quilt http://www.infradead.org/~rdunlap/Doc/patches/
->  S:	Maintained
-> -F:	Documentation/
-> +F:	Documentation/ (but not: ABI, devicetree, translations)
-
-Maybe:
-
-X:	Documentation/ABI/
-X:	Documentation/devicetree/
-X:	Documentation/[a-z][a-z]_[A-Z][A-Z]/
-
-The last line matches:
-
-Documentation/ja_JP/
-Documentation/ko_KR/
-Documentation/zh_CN/
-
-and it's easy to add any other directory you don't
-want to cc'd on.
-
-
+diff --git a/drivers/net/wireless/rt2x00/rt2800usb.c b/drivers/net/wireless/rt2x00/rt2800usb.c
+index a49c3d7..11583ca 100644
+--- a/drivers/net/wireless/rt2x00/rt2800usb.c
++++ b/drivers/net/wireless/rt2x00/rt2800usb.c
+@@ -229,6 +229,27 @@ static enum hrtimer_restart rt2800usb_tx_sta_fifo_timeout(struct hrtimer *timer)
+ /*
+  * Firmware functions
+  */
++static int rt2800usb_autorun_detect(struct rt2x00_dev *rt2x00dev)
++{
++	__le32 reg;
++	u32 fw_mode;
++
++	/* cannot use rt2x00usb_register_read here as it uses different
++	 * mode (MULTI_READ vs. DEVICE_MODE) and does not pass the
++	 * magic value USB_MODE_AUTORUN (0x11) to the device, thus the
++	 * returned value would be invalid.
++	 */
++	rt2x00usb_vendor_request(rt2x00dev, USB_DEVICE_MODE,
++				 USB_VENDOR_REQUEST_IN, 0, USB_MODE_AUTORUN,
++				 &reg, sizeof(reg), REGISTER_TIMEOUT_FIRMWARE);
++	fw_mode = le32_to_cpu(reg);
++
++	if ((fw_mode & 0x00000003) == 2)
++		return 1;
++
++	return 0;
++}
++
+ static char *rt2800usb_get_firmware_name(struct rt2x00_dev *rt2x00dev)
+ {
+ 	return FIRMWARE_RT2870;
+@@ -735,11 +756,18 @@ static void rt2800usb_fill_rxdone(struct queue_entry *entry,
+ /*
+  * Device probe functions.
+  */
++static int rt2800usb_efuse_detect(struct rt2x00_dev *rt2x00dev)
++{
++	if (rt2800usb_autorun_detect(rt2x00dev))
++		return 1;
++	return rt2800_efuse_detect(rt2x00dev);
++}
++
+ static int rt2800usb_read_eeprom(struct rt2x00_dev *rt2x00dev)
+ {
+ 	int retval;
+ 
+-	if (rt2800_efuse_detect(rt2x00dev))
++	if (rt2800usb_efuse_detect(rt2x00dev))
+ 		retval = rt2800_read_eeprom_efuse(rt2x00dev);
+ 	else
+ 		retval = rt2x00usb_eeprom_read(rt2x00dev, rt2x00dev->eeprom,
+diff --git a/drivers/net/wireless/rt2x00/rt2x00usb.h b/drivers/net/wireless/rt2x00/rt2x00usb.h
+index e7bcf62..831b65f 100644
+--- a/drivers/net/wireless/rt2x00/rt2x00usb.h
++++ b/drivers/net/wireless/rt2x00/rt2x00usb.h
+@@ -93,6 +93,7 @@ enum rt2x00usb_mode_offset {
+ 	USB_MODE_SLEEP = 7,	/* RT73USB */
+ 	USB_MODE_FIRMWARE = 8,	/* RT73USB */
+ 	USB_MODE_WAKEUP = 9,	/* RT73USB */
++	USB_MODE_AUTORUN = 17, /* RT2800USB */
+ };
+ 
+ /**
 
