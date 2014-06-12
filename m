@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752700AbaFLXWy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 19:22:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37234 "EHLO
+	id S1752251AbaFLXXM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 19:23:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37227 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752234AbaFLXSm (ORCPT
+	with ESMTP id S1752208AbaFLXSm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 12 Jun 2014 19:18:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Collins <ben.c@servergy.com>, Sumit Saxena <sumit.saxena@lsi.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [PATCH 3.10 15/18] SCSI: megaraid: Use resource_size_t for PCI resources, not long
-Date: Thu, 12 Jun 2014 16:22:19 -0700
-Message-Id: <20140612232213.609756669@linuxfoundation.org>
+        Andy Lutomirski <luto@amacapital.net>, Eric Paris <eparis@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 14/18] auditsc: audit_krule mask accesses need bounds checking
+Date: Thu, 12 Jun 2014 16:22:18 -0700
+Message-Id: <20140612232213.578979617@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140612232212.960235342@linuxfoundation.org>
 References: <20140612232212.960235342@linuxfoundation.org>
@@ -29,60 +29,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Collins <ben.c@servergy.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit 11f8a7b31f2140b0dc164bb484281235ffbe51d3 upstream.
+commit a3c54931199565930d6d84f4c3456f6440aefd41 upstream.
 
-The assumption that sizeof(long) >= sizeof(resource_size_t) can lead to
-truncation of the PCI resource address, meaning this driver didn't work
-on 32-bit systems with 64-bit PCI adressing ranges.
+Fixes an easy DoS and possible information disclosure.
 
-Signed-off-by: Ben Collins <ben.c@servergy.com>
-Acked-by: Sumit Saxena <sumit.saxena@lsi.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+This does nothing about the broken state of x32 auditing.
+
+eparis: If the admin has enabled auditd and has specifically loaded
+audit rules.  This bug has been around since before git.  Wow...
+
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/megaraid/megaraid_sas.h      |    1 -
- drivers/scsi/megaraid/megaraid_sas_base.c |    5 +++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ kernel/auditsc.c |   27 ++++++++++++++++++---------
+ 1 file changed, 18 insertions(+), 9 deletions(-)
 
---- a/drivers/scsi/megaraid/megaraid_sas.h
-+++ b/drivers/scsi/megaraid/megaraid_sas.h
-@@ -1295,7 +1295,6 @@ struct megasas_instance {
- 	u32 *reply_queue;
- 	dma_addr_t reply_queue_h;
+--- a/kernel/auditsc.c
++++ b/kernel/auditsc.c
+@@ -733,6 +733,22 @@ static enum audit_state audit_filter_tas
+ 	return AUDIT_BUILD_CONTEXT;
+ }
  
--	unsigned long base_addr;
- 	struct megasas_register_set __iomem *reg_set;
++static int audit_in_mask(const struct audit_krule *rule, unsigned long val)
++{
++	int word, bit;
++
++	if (val > 0xffffffff)
++		return false;
++
++	word = AUDIT_WORD(val);
++	if (word >= AUDIT_BITMASK_SIZE)
++		return false;
++
++	bit = AUDIT_BIT(val);
++
++	return rule->mask[word] & bit;
++}
++
+ /* At syscall entry and exit time, this filter is called if the
+  * audit_state is not low enough that auditing cannot take place, but is
+  * also not high enough that we already know we have to write an audit
+@@ -750,11 +766,8 @@ static enum audit_state audit_filter_sys
  
- 	struct megasas_pd_list          pd_list[MEGASAS_MAX_PD];
---- a/drivers/scsi/megaraid/megaraid_sas_base.c
-+++ b/drivers/scsi/megaraid/megaraid_sas_base.c
-@@ -3461,6 +3461,7 @@ static int megasas_init_fw(struct megasa
- 	u32 max_sectors_1;
- 	u32 max_sectors_2;
- 	u32 tmp_sectors, msix_enable;
-+	resource_size_t base_addr;
- 	struct megasas_register_set __iomem *reg_set;
- 	struct megasas_ctrl_info *ctrl_info;
- 	unsigned long bar_list;
-@@ -3469,14 +3470,14 @@ static int megasas_init_fw(struct megasa
- 	/* Find first memory bar */
- 	bar_list = pci_select_bars(instance->pdev, IORESOURCE_MEM);
- 	instance->bar = find_first_bit(&bar_list, sizeof(unsigned long));
--	instance->base_addr = pci_resource_start(instance->pdev, instance->bar);
- 	if (pci_request_selected_regions(instance->pdev, instance->bar,
- 					 "megasas: LSI")) {
- 		printk(KERN_DEBUG "megasas: IO memory region busy!\n");
- 		return -EBUSY;
- 	}
+ 	rcu_read_lock();
+ 	if (!list_empty(list)) {
+-		int word = AUDIT_WORD(ctx->major);
+-		int bit  = AUDIT_BIT(ctx->major);
+-
+ 		list_for_each_entry_rcu(e, list, list) {
+-			if ((e->rule.mask[word] & bit) == bit &&
++			if (audit_in_mask(&e->rule, ctx->major) &&
+ 			    audit_filter_rules(tsk, &e->rule, ctx, NULL,
+ 					       &state, false)) {
+ 				rcu_read_unlock();
+@@ -774,20 +787,16 @@ static enum audit_state audit_filter_sys
+ static int audit_filter_inode_name(struct task_struct *tsk,
+ 				   struct audit_names *n,
+ 				   struct audit_context *ctx) {
+-	int word, bit;
+ 	int h = audit_hash_ino((u32)n->ino);
+ 	struct list_head *list = &audit_inode_hash[h];
+ 	struct audit_entry *e;
+ 	enum audit_state state;
  
--	instance->reg_set = ioremap_nocache(instance->base_addr, 8192);
-+	base_addr = pci_resource_start(instance->pdev, instance->bar);
-+	instance->reg_set = ioremap_nocache(base_addr, 8192);
+-	word = AUDIT_WORD(ctx->major);
+-	bit  = AUDIT_BIT(ctx->major);
+-
+ 	if (list_empty(list))
+ 		return 0;
  
- 	if (!instance->reg_set) {
- 		printk(KERN_DEBUG "megasas: Failed to map IO mem\n");
+ 	list_for_each_entry_rcu(e, list, list) {
+-		if ((e->rule.mask[word] & bit) == bit &&
++		if (audit_in_mask(&e->rule, ctx->major) &&
+ 		    audit_filter_rules(tsk, &e->rule, ctx, n, &state, false)) {
+ 			ctx->current_state = state;
+ 			return 1;
 
 
