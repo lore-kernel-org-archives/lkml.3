@@ -1,85 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933516AbaFLOEp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 10:04:45 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:60368 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752674AbaFLOEn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 10:04:43 -0400
-Date: Thu, 12 Jun 2014 16:01:20 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Jean Pihet <jean.pihet@linaro.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Robert Richter <rric@kernel.org>
-Subject: Re: [PATCH] tools:perf: move tools/perf/util to tools/lib/perf_util
-Message-ID: <20140612140119.GD4857@pd.tnic>
-References: <1402561602-28807-1-git-send-email-jean.pihet@linaro.org>
- <20140612123432.GA2608@kernel.org>
- <20140612124918.GC4857@pd.tnic>
- <CAFrcx1kfUkFF9ROy2C0gcFe88aOHfv2qJBfO+uv+Z7ZW5HxQCw@mail.gmail.com>
+	id S1755982AbaFLOF0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 10:05:26 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:16818 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752823AbaFLOFX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 10:05:23 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18wV5W9ZUno6PMwJOHGhMOxyP9Ue+Clu6c=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 58FB958DEA6
+Date: Thu, 12 Jun 2014 10:05:08 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Sricharan R <r.sricharan@ti.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, santosh.shilimkar@ti.com, nm@ti.com,
+        rnayak@ti.com, linux@arm.linux.org.uk, tglx@linutronix.de
+Subject: Re: [PATCH V2 03/19] irqchip: crossbar: Skip some irqs from
+ getting mapped to crossbar
+Message-ID: <20140612140508.GC8664@titan.lakedaemon.net>
+References: <1402574007-13987-1-git-send-email-r.sricharan@ti.com>
+ <1402574007-13987-4-git-send-email-r.sricharan@ti.com>
+ <20140612125134.GS8664@titan.lakedaemon.net>
+ <20140612135715.GE17845@atomide.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAFrcx1kfUkFF9ROy2C0gcFe88aOHfv2qJBfO+uv+Z7ZW5HxQCw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140612135715.GE17845@atomide.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 12, 2014 at 03:19:50PM +0200, Jean Pihet wrote:
-> The idea is to move the re-usable code in libraries, so that other
-> tools than perf can use it as well.
-
-Of course it is - didn't I say that too?
-
-> > And I told Jean repeatedly that this needs to be splitted slowly, in
-> > smaller libraries like we've been discussing it numerous times.
-> Hrrr. I see it as a first move, later the rest of the code can be
-> moved the same way.
-> Now it seems that moving all from util/ at once is too much. How do
-> you see it happening?
+On Thu, Jun 12, 2014 at 06:57:15AM -0700, Tony Lindgren wrote:
+> * Jason Cooper <jason@lakedaemon.net> [140612 05:52]:
+> > On Thu, Jun 12, 2014 at 05:23:11PM +0530, Sricharan R wrote:
+> > > From: Nishanth Menon <nm@ti.com>
+> > > 
+> > > When, in the system due to varied reasons, interrupts might be unusable
+> > > due to hardware behavior, but register maps do exist, then those interrupts
+> > > should be skipped while mapping irq to crossbars.
+> > > 
+> > > Signed-off-by: Nishanth Menon <nm@ti.com>
+> > > Signed-off-by: Sricharan R <r.sricharan@ti.com>
+> > > Signed-off-by: Tony Lindgren <tony@atomide.com>
+> > 
+> > Tony, have you applied these somewhere already?
 > 
-> Note: moving some code in the perf source is hairy enough (cf. the
-> simplicity of the Makefiles ;-) and so I do not want to re-do it all
-> over again too many times.
+> I think some of these I had applied into a branch ready for
+> merging but then it was discovered that further changes
+> were needed and the branch was dropped.
 
-You're encountering the *exact* *same* issues I was fighting with. And I
-was trying to save you that work because I did that conversion a couple
-of times already! And hell yeah it is a *lot* of work! And a lot of
-*wasted* work at that. Except maybe the fact that it gives you a rough
-idea of what needs to be done.
+Ok.
 
-So, for example, looka here:
+> Sricharan, please remove my Signed-off-by from this series.
+> If I end up applying it for merging my scripts will add it
+> automatically.
 
-http://lkml.kernel.org/r/20140612112534.GA24194@gmail.com
+Do you have other changes outside of irqchip depending on this series?
+If so, I can set up a topic branch for you guys to base off of.
+Otherwise, I'll just apply them to irqchip/core when they're ready.
 
-Borislav Petkov (4):
-      perf tools: Move u64_swap union
-      tools: Unify export.h
-      tools: Consolidate types.h
-      perf/events/core: Drop unused variable after cleanup
+Also, Sricharan, when you respin this, please clearly identify (in the
+comment section) those patches that need to be flagged for stable.  It
+would be helpful if they were the first patches in the series as well.
 
-4 patches dealing with more or less one thing. No more. Once they're
-accepted, you do another so many. And rinse and repeat.
+thx,
 
-And I've forwarded you the mails of how we want to split them with
-Ingo's and acme's thoughts.
-
-In any case, this is the only way I know of currently, which seems to
-work right now with the amount of patches going into perf tool and with
-the bandwidth of reviewers.
-
-Additionally, if you'd like, we could sync among each other on who does
-what. Maybe Robert would like to help too.
-
-HTH.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Jason.
