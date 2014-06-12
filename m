@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751650AbaFLX0W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 19:26:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37161 "EHLO
+	id S1752401AbaFLX0l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 19:26:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37156 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751957AbaFLXSN (ORCPT
+	with ESMTP id S1751933AbaFLXSN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 12 Jun 2014 19:18:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alessandro Miceli <angelofsky1980@gmail.com>,
-        Antti Palosaari <crope@iki.fi>,
+        Brian Healy <healybrian@gmail.com>, Antti Palosaari <crope@iki.fi>,
         Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.14 16/19] [media] rtl28xxu: add [1b80:d39d] Sveon STV20
-Date: Thu, 12 Jun 2014 16:21:53 -0700
-Message-Id: <20140612232139.227119783@linuxfoundation.org>
+Subject: [PATCH 3.14 15/19] [media] rtl28xxu: add 1b80:d395 Peak DVB-T USB
+Date: Thu, 12 Jun 2014 16:21:52 -0700
+Message-Id: <20140612232139.191670789@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140612232138.561318739@linuxfoundation.org>
 References: <20140612232138.561318739@linuxfoundation.org>
@@ -30,40 +29,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alessandro Miceli <angelofsky1980@gmail.com>
+From: Brian Healy <healybrian@gmail.com>
 
-commit f27f5b0ee4967babfb8b03511f5e76b79d781014 upstream.
+commit 9ca24ae4083665bda38da45f4b5dc9bbaf936bc0 upstream.
 
-Added Sveon STV20 device based on Realtek RTL2832U and FC0012 tuner
+Add USB ID for Peak DVB-T USB.
 
-Signed-off-by: Alessandro Miceli <angelofsky1980@gmail.com>
+[crope@iki.fi: fix Brian email address and indentation]
+Signed-off-by: Brian Healy <healybrian@gmail.com>
 Signed-off-by: Antti Palosaari <crope@iki.fi>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- drivers/media/dvb-core/dvb-usb-ids.h    |    1 +
- drivers/media/usb/dvb-usb-v2/rtl28xxu.c |    2 ++
- 2 files changed, 3 insertions(+)
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
---- a/drivers/media/dvb-core/dvb-usb-ids.h
-+++ b/drivers/media/dvb-core/dvb-usb-ids.h
-@@ -361,6 +361,7 @@
- #define USB_PID_FRIIO_WHITE				0x0001
- #define USB_PID_TVWAY_PLUS				0x0002
- #define USB_PID_SVEON_STV20				0xe39d
-+#define USB_PID_SVEON_STV20_RTL2832U			0xd39d
- #define USB_PID_SVEON_STV22				0xe401
- #define USB_PID_SVEON_STV22_IT9137			0xe411
- #define USB_PID_AZUREWAVE_AZ6027			0x3275
+---
+ drivers/media/usb/dvb-usb-v2/rtl28xxu.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
 --- a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
 +++ b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
-@@ -1437,6 +1437,8 @@ static const struct usb_device_id rtl28x
+@@ -1435,6 +1435,8 @@ static const struct usb_device_id rtl28x
+ 		&rtl2832u_props, "Crypto ReDi PC 50 A", NULL) },
+ 	{ DVB_USB_DEVICE(USB_VID_KYE, 0x707f,
  		&rtl2832u_props, "Genius TVGo DVB-T03", NULL) },
- 	{ DVB_USB_DEVICE(USB_VID_KWORLD_2, 0xd395,
- 		&rtl2832u_props, "Peak DVB-T USB", NULL) },
-+	{ DVB_USB_DEVICE(USB_VID_KWORLD_2, USB_PID_SVEON_STV20_RTL2832U,
-+		&rtl2832u_props, "Sveon STV20", NULL) },
++	{ DVB_USB_DEVICE(USB_VID_KWORLD_2, 0xd395,
++		&rtl2832u_props, "Peak DVB-T USB", NULL) },
  
  	/* RTL2832P devices: */
  	{ DVB_USB_DEVICE(USB_VID_HANFTEK, 0x0131,
