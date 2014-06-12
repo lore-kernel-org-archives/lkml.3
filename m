@@ -1,49 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751255AbaFLRpZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 13:45:25 -0400
-Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:1086 "EHLO
-	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751074AbaFLRpY (ORCPT
+	id S1751460AbaFLRr0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 13:47:26 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:48821 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750870AbaFLRrY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 13:45:24 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjoIAAjmmVNbsHy//2dsb2JhbABagw2qdQUBAQEBAQEFAZkegQoXdYQxLyOBGjeIRgG4M5oRF4VciBsNVx2EKwSPaIpKk1KDPjuBMAEf
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] block/partitions/aix.c: replace count*size kzalloc by kcalloc
-Date: Thu, 12 Jun 2014 19:45:17 +0200
-Message-Id: <1402595117-3219-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.1
+	Thu, 12 Jun 2014 13:47:24 -0400
+Message-ID: <5399E7AD.8030901@cogentembedded.com>
+Date: Thu, 12 Jun 2014 21:47:25 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: suravee.suthikulpanit@amd.com, tj@kernel.org, b.zolnierkie@samsung.com
+CC: hdegoede@redhat.com, lho@apm.com, tphan@apm.com, stripathi@apm.com,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] ahci: Check and set 64-bit DMA mask for platform
+ AHCI driver
+References: <1402594824-4151-1-git-send-email-suravee.suthikulpanit@amd.com> <1402594824-4151-2-git-send-email-suravee.suthikulpanit@amd.com>
+In-Reply-To: <1402594824-4151-2-git-send-email-suravee.suthikulpanit@amd.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kcalloc manages count*sizeof overflow.
+Hello.
 
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- block/partitions/aix.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On 06/12/2014 09:40 PM, suravee.suthikulpanit@amd.com wrote:
 
-diff --git a/block/partitions/aix.c b/block/partitions/aix.c
-index 43be471..0a6ed54 100644
---- a/block/partitions/aix.c
-+++ b/block/partitions/aix.c
-@@ -215,7 +215,7 @@ int aix_partition(struct parsed_partitions *state)
- 		numlvs = be16_to_cpu(p->numlvs);
- 		put_dev_sector(sect);
- 	}
--	lvip = kzalloc(sizeof(struct lv_info) * state->limit, GFP_KERNEL);
-+	lvip = kcalloc(state->limit, sizeof(struct lv_info), GFP_KERNEL);
- 	if (!lvip)
- 		return 0;
- 	if (numlvs && (d = read_part_sector(state, vgda_sector + 1, &sect))) {
--- 
-1.9.1
+> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+
+> The current platform AHCI driver does not set the dma_mask correctly
+> for 64-bit DMA capable AHCI controller. This patch checks the AHCI
+> capability bit and set the dma_mask and coherent_dma_mask accordingly.
+
+> Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+> Reviewed-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Reviewed-by: Hans de Goede <hdegoede@redhat.com>
+> ---
+>   drivers/ata/libahci_platform.c | 13 +++++++++++++
+>   1 file changed, 13 insertions(+)
+
+> diff --git a/drivers/ata/libahci_platform.c b/drivers/ata/libahci_platform.c
+> index 3a5b4ed..a958a2b 100644
+> --- a/drivers/ata/libahci_platform.c
+> +++ b/drivers/ata/libahci_platform.c
+> @@ -364,6 +364,19 @@ int ahci_platform_init_host(struct platform_device *pdev,
+>   			ap->ops = &ata_dummy_port_ops;
+>   	}
+>
+> +	if (hpriv->cap & HOST_CAP_64) {
+> +		rc = dma_coerce_mask_and_coherent(dev, DMA_BIT_MASK(64));
+> +		if (rc) {
+> +			rc = dma_coerce_mask_and_coherent(dev,
+> +							  DMA_BIT_MASK(32));
+> +			if (rc) {
+> +				dev_err(dev, "Failed to enable 64-bit DMA.\n");
+
+    Not 32-bit?
+
+> +				return rc;
+> +			}
+> +			dev_warn(dev, "Enable 32-bit DMA instead of 64-bit.\n");
+> +		}
+> +	}
+> +
+
+WBR, Sergei
 
