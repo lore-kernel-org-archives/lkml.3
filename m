@@ -1,54 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755455AbaFLB2y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 21:28:54 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:41488 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754411AbaFLB2x (ORCPT
+	id S1755396AbaFLBcz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 21:32:55 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:40694 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754411AbaFLBcy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 21:28:53 -0400
+	Wed, 11 Jun 2014 21:32:54 -0400
+Message-ID: <539904B2.6010805@windriver.com>
+Date: Thu, 12 Jun 2014 09:38:58 +0800
+From: Xufeng Zhang <xufeng.zhang@windriver.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5 ThunderBrowse/3.82
 MIME-Version: 1.0
-In-Reply-To: <1396022885-6102-1-git-send-email-grant.likely@linaro.org>
-References: <1396022885-6102-1-git-send-email-grant.likely@linaro.org>
-From: Rob Herring <robherring2@gmail.com>
-Date: Wed, 11 Jun 2014 20:28:31 -0500
-Message-ID: <CAL_JsqJmYH3_tSMtdwQd9QfeB39i5UOxBwBzyP=QjvzK1XSnmQ@mail.gmail.com>
-Subject: Re: [RFC 0/5] of: Automatic console registration cleanups
-To: Grant Likely <grant.likely@linaro.org>
-Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Content-Type: text/plain; charset=UTF-8
+To: Vlad Yasevich <vyasevich@gmail.com>
+CC: <nhorman@tuxdriver.com>, <davem@davemloft.net>,
+        <linux-sctp@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sctp: Fix sk_ack_backlog wrap-around problem
+References: <1402454244-8427-1-git-send-email-xufeng.zhang@windriver.com> <539851DF.3070808@gmail.com> <53988A03.4090801@gmail.com>
+In-Reply-To: <53988A03.4090801@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 28, 2014 at 11:08 AM, Grant Likely <grant.likely@linaro.org> wrote:
-> Hi all,
+On 06/12/2014 12:55 AM, Vlad Yasevich wrote:
+> On 06/11/2014 08:55 AM, Vlad Yasevich wrote:
+>    
+>> On 06/10/2014 10:37 PM, Xufeng Zhang wrote:
+>>      
+>>> Consider the scenario:
+>>> For a TCP-style socket, while processing the COOKIE_ECHO chunk in
+>>> sctp_sf_do_5_1D_ce(), after it has passed a series of sanity check,
+>>> a new association would be created in sctp_unpack_cookie(), but afterwards,
+>>> some processing maybe failed, and sctp_association_free() will be called to
+>>> free the previously allocated association, in sctp_association_free(),
+>>> sk_ack_backlog value is decremented for this socket, since the initial
+>>> value for sk_ack_backlog is 0, after the decrement, it will be 65535,
+>>> a wrap-around problem happens, and if we want to establish new associations
+>>> afterward in the same socket, ABORT would be triggered since sctp deem the
+>>> accept queue as full.
+>>> Fix this issue by only decrementing sk_ack_backlog for associations in
+>>> the endpoint's list.
+>>>
+>>> Fix-suggested-by: Neil Horman<nhorman@tuxdriver.com>
+>>> Signed-off-by: Xufeng Zhang<xufeng.zhang@windriver.com>
+>>> ---
+>>>   net/sctp/associola.c |    2 +-
+>>>   1 files changed, 1 insertions(+), 1 deletions(-)
+>>>
+>>> diff --git a/net/sctp/associola.c b/net/sctp/associola.c
+>>> index 39579c3..60564f2 100644
+>>> --- a/net/sctp/associola.c
+>>> +++ b/net/sctp/associola.c
+>>> @@ -330,7 +330,7 @@ void sctp_association_free(struct sctp_association *asoc)
+>>>   	/* Only real associations count against the endpoint, so
+>>>   	 * don't bother for if this is a temporary association.
+>>>   	 */
+>>> -	if (!asoc->temp) {
+>>> +	if (!asoc->temp&&  !list_empty(&asoc->asocs)) {
+>>>   		list_del(&asoc->asocs);
+>>>
+>>>   		/* Decrement the backlog value for a TCP-style listening
+>>>
+>>>        
+>> I am not crazy about this patch.   It's been suggested before that may
+>> be duplicate cookie processing should really be creating a temporary
+>> association since that's is how that association is being used.
+>>      
+> I had another look at the description for triggering this issue and
+> realized that I was thinking about something else when looking at
+> this solution.
 >
-> This is a series that I've been playing with over the last few days to
-> clean up the selection of default console devices when using the device
-> tree. The device tree defines a way of specifying the console by using a
-> "stdout-path" property in the /chosen node, but very few drivers
-> actually attempt to use that data, and so for most platforms there needs
-> to be a "console=" line in the command line if a serial port is intended
-> to be used as the console.
->
-> With this series, if there is a /chosen/stdout-path property, and if
-> that property points to a serial port node, then when the serial driver
-> registers the port, the core uart_add_one_port() function will notice
-> and if no console= argument was provided then add it as a preferred
-> console.
->
-> I've not tested this very extensively yet, but I want to get some
-> feedback before I go further.
->
-> The one downside with this approach is that it doesn't do anything for
-> early console setup. That still needs to be added on a per-driver basis,
-> but at least it shouldn't conflict with this approach.
+> There is however no need to test both the list and temp value.
+> We can simply always test the that list is not empty before doing
+> list_del().
+>    
 
-Hey, what happened with this series?
+Thanks a lot for the comment!
+I'll send V2 later.
 
-Rob
+
+Thanks,
+Xufeng
+
+
+> -vlad
+>
+>    
+>>   It
+>> might be nice at that approach.  It actually benefits us as the
+>> association destruction would happen immediately instead of being delayed.
+>>      
+>
+>    
+
