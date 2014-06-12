@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752074AbaFLXSe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 19:18:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37193 "EHLO
+	id S1751976AbaFLXSO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 19:18:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37106 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751008AbaFLXSc (ORCPT
+	with ESMTP id S1751780AbaFLXSJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 19:18:32 -0400
+	Thu, 12 Jun 2014 19:18:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Mason <clm@fb.com>, Amir Vadai <amirv@mellanox.com>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>,
-        Masoud Sharbiani <msharbiani@twitter.com>
-Subject: [PATCH 3.10 02/18] mlx4_en: dont use napi_synchronize inside mlx4_en_netpoll
-Date: Thu, 12 Jun 2014 16:22:06 -0700
-Message-Id: <20140612232213.160395941@linuxfoundation.org>
+        Andy Lutomirski <luto@amacapital.net>, Eric Paris <eparis@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 07/19] auditsc: audit_krule mask accesses need bounds checking
+Date: Thu, 12 Jun 2014 16:21:44 -0700
+Message-Id: <20140612232138.949220539@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140612232212.960235342@linuxfoundation.org>
-References: <20140612232212.960235342@linuxfoundation.org>
+In-Reply-To: <20140612232138.561318739@linuxfoundation.org>
+References: <20140612232138.561318739@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,77 +25,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Chris Mason <clm@fb.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit c98235cb8584a72e95786e17d695a8e5fafcd766 upstream.
+commit a3c54931199565930d6d84f4c3456f6440aefd41 upstream.
 
-The mlx4 driver is triggering schedules while atomic inside
-mlx4_en_netpoll:
+Fixes an easy DoS and possible information disclosure.
 
-	spin_lock_irqsave(&cq->lock, flags);
-	napi_synchronize(&cq->napi);
-		^^^^^ msleep here
-	mlx4_en_process_rx_cq(dev, cq, 0);
-	spin_unlock_irqrestore(&cq->lock, flags);
+This does nothing about the broken state of x32 auditing.
 
-This was part of a patch by Alexander Guller from Mellanox in 2011,
-but it still isn't upstream.
+eparis: If the admin has enabled auditd and has specifically loaded
+audit rules.  This bug has been around since before git.  Wow...
 
-Signed-off-by: Chris Mason <clm@fb.com>
-Acked-By: Amir Vadai <amirv@mellanox.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Masoud Sharbiani <msharbiani@twitter.com>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/mellanox/mlx4/en_cq.c     |    1 -
- drivers/net/ethernet/mellanox/mlx4/en_netdev.c |    6 +-----
- drivers/net/ethernet/mellanox/mlx4/mlx4_en.h   |    1 -
- 3 files changed, 1 insertion(+), 7 deletions(-)
+ kernel/auditsc.c |   27 ++++++++++++++++++---------
+ 1 file changed, 18 insertions(+), 9 deletions(-)
 
---- a/drivers/net/ethernet/mellanox/mlx4/en_cq.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/en_cq.c
-@@ -55,7 +55,6 @@ int mlx4_en_create_cq(struct mlx4_en_pri
- 
- 	cq->ring = ring;
- 	cq->is_tx = mode;
--	spin_lock_init(&cq->lock);
- 
- 	err = mlx4_alloc_hwq_res(mdev->dev, &cq->wqres,
- 				cq->buf_size, 2 * PAGE_SIZE);
---- a/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
-@@ -1190,15 +1190,11 @@ static void mlx4_en_netpoll(struct net_d
- {
- 	struct mlx4_en_priv *priv = netdev_priv(dev);
- 	struct mlx4_en_cq *cq;
--	unsigned long flags;
- 	int i;
- 
- 	for (i = 0; i < priv->rx_ring_num; i++) {
- 		cq = &priv->rx_cq[i];
--		spin_lock_irqsave(&cq->lock, flags);
--		napi_synchronize(&cq->napi);
--		mlx4_en_process_rx_cq(dev, cq, 0);
--		spin_unlock_irqrestore(&cq->lock, flags);
-+		napi_schedule(&cq->napi);
- 	}
+--- a/kernel/auditsc.c
++++ b/kernel/auditsc.c
+@@ -720,6 +720,22 @@ static enum audit_state audit_filter_tas
+ 	return AUDIT_BUILD_CONTEXT;
  }
- #endif
---- a/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h
-+++ b/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h
-@@ -299,7 +299,6 @@ struct mlx4_en_cq {
- 	struct mlx4_cq          mcq;
- 	struct mlx4_hwq_resources wqres;
- 	int                     ring;
--	spinlock_t              lock;
- 	struct net_device      *dev;
- 	struct napi_struct	napi;
- 	int size;
+ 
++static int audit_in_mask(const struct audit_krule *rule, unsigned long val)
++{
++	int word, bit;
++
++	if (val > 0xffffffff)
++		return false;
++
++	word = AUDIT_WORD(val);
++	if (word >= AUDIT_BITMASK_SIZE)
++		return false;
++
++	bit = AUDIT_BIT(val);
++
++	return rule->mask[word] & bit;
++}
++
+ /* At syscall entry and exit time, this filter is called if the
+  * audit_state is not low enough that auditing cannot take place, but is
+  * also not high enough that we already know we have to write an audit
+@@ -737,11 +753,8 @@ static enum audit_state audit_filter_sys
+ 
+ 	rcu_read_lock();
+ 	if (!list_empty(list)) {
+-		int word = AUDIT_WORD(ctx->major);
+-		int bit  = AUDIT_BIT(ctx->major);
+-
+ 		list_for_each_entry_rcu(e, list, list) {
+-			if ((e->rule.mask[word] & bit) == bit &&
++			if (audit_in_mask(&e->rule, ctx->major) &&
+ 			    audit_filter_rules(tsk, &e->rule, ctx, NULL,
+ 					       &state, false)) {
+ 				rcu_read_unlock();
+@@ -761,20 +774,16 @@ static enum audit_state audit_filter_sys
+ static int audit_filter_inode_name(struct task_struct *tsk,
+ 				   struct audit_names *n,
+ 				   struct audit_context *ctx) {
+-	int word, bit;
+ 	int h = audit_hash_ino((u32)n->ino);
+ 	struct list_head *list = &audit_inode_hash[h];
+ 	struct audit_entry *e;
+ 	enum audit_state state;
+ 
+-	word = AUDIT_WORD(ctx->major);
+-	bit  = AUDIT_BIT(ctx->major);
+-
+ 	if (list_empty(list))
+ 		return 0;
+ 
+ 	list_for_each_entry_rcu(e, list, list) {
+-		if ((e->rule.mask[word] & bit) == bit &&
++		if (audit_in_mask(&e->rule, ctx->major) &&
+ 		    audit_filter_rules(tsk, &e->rule, ctx, n, &state, false)) {
+ 			ctx->current_state = state;
+ 			return 1;
 
 
