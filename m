@@ -1,93 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756170AbaFLQXe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 12:23:34 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:50587 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753035AbaFLQXc (ORCPT
+	id S1756218AbaFLQXg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 12:23:36 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:42281 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756131AbaFLQXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 12:23:32 -0400
+	Thu, 12 Jun 2014 12:23:34 -0400
 From: Tejun Heo <tj@kernel.org>
 To: cl@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCHSET percpu/for-3.17] percpu: clean up percpu accessor and operation definitions
-Date: Thu, 12 Jun 2014 12:23:17 -0400
-Message-Id: <1402590209-31610-1-git-send-email-tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 01/12] percpu: disallow archs from overriding SHIFT_PERCPU_PTR()
+Date: Thu, 12 Jun 2014 12:23:18 -0400
+Message-Id: <1402590209-31610-2-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1402590209-31610-1-git-send-email-tj@kernel.org>
+References: <1402590209-31610-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+It has been about half a decade since all archs started using the
+dynamic percpu allocator and thus the same SHIFT_PERCPU_PTR()
+implementation.  There's no benefit in overriding SHIFT_PERCPU_PTR()
+anymore.
 
-Percpu accessor and operation definitions are very difficult to
-follow.  Things are scattered around different header files without
-specific reasons.  Definitions of different types are mixed and the
-ordering sometimes is conventional.  Different definitions use
-different styles and sometimes lack visual consistency for no good
-reason.
+Remove #ifndef around it to clarify that this is identical regardless
+of the arch.
 
-The issues go deeper than skin-deep.  There's no clear distinction
-between arch-specific and generic part of implementation making it
-impossible for the generic layer to impose common feature or
-restriction on top of arch-specific overrides.  The arch override
-mechanism is broken in itself too. __this_cpu_*() operations are
-defined in terms of raw_cpu_*_N() sub-ops and can't be overridden, so
-if an arch overrides a raw_cpu_*() operation as whole, __this_cpu_*()
-will continue using the generic implementation even though
-semantically it's raw_cpu_*() + preemption sanity check.
+This patch doesn't cause any functional difference.
 
-This patchset contains the following 12 patches to clean up the whole
-thing.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ include/asm-generic/percpu.h | 9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
- 0001-percpu-disallow-archs-from-overriding-SHIFT_PERCPU_P.patch
- 0002-percpu-introduce-arch_raw_cpu_ptr.patch
- 0003-percpu-include-asm-generic-percpu.h-should-contain-o.patch
- 0004-percpu-move-accessors-from-include-linux-percpu.h-to.patch
- 0005-percpu-reorganize-include-linux-percpu-defs.h.patch
- 0006-percpu-only-allow-sized-arch-overrides-for-raw-this-.patch
- 0007-percpu-move-generic-raw-this-_cpu_-_N-definitions-to.patch
- 0008-percpu-move-raw-this-_cpu_-definitions-to-include-li.patch
- 0009-percpu-reorder-macros-in-percpu-header-files.patch
- 0010-percpu-use-raw_cpu_-to-define-__this_cpu_.patch
- 0011-percpu-preffity-percpu-header-files.patch
- 0012-percpu-invoke-__verify_pcpu_ptr-from-the-generic-par.patch
+diff --git a/include/asm-generic/percpu.h b/include/asm-generic/percpu.h
+index 0703aa7..63d2b68 100644
+--- a/include/asm-generic/percpu.h
++++ b/include/asm-generic/percpu.h
+@@ -36,17 +36,14 @@ extern unsigned long __per_cpu_offset[NR_CPUS];
+ #endif
+ 
+ /*
+- * Add a offset to a pointer but keep the pointer as is.
+- *
+- * Only S390 provides its own means of moving the pointer.
++ * Add an offset to a pointer but keep the pointer as-is.  Use RELOC_HIDE()
++ * to prevent the compiler from making incorrect assumptions about the
++ * pointer value.  The weird cast keeps both GCC and sparse happy.
+  */
+-#ifndef SHIFT_PERCPU_PTR
+-/* Weird cast keeps both GCC and sparse happy. */
+ #define SHIFT_PERCPU_PTR(__p, __offset)	({				\
+ 	__verify_pcpu_ptr((__p));					\
+ 	RELOC_HIDE((typeof(*(__p)) __kernel __force *)(__p), (__offset)); \
+ })
+-#endif
+ 
+ /*
+  * A percpu variable may point to a discarded regions. The following are
+-- 
+1.9.3
 
-0001-0005 tidy up arch overrides, shuffle definitions around so that
-each percpu header file serves specific purposes.
-
-0006 disallows whole operation overrides for raw/this_cpu_*().  No
-arch is using it and it makes it impossible to distinguish
-arch-specific and generic parts of percpu operation definitions.
-
-0007-0009 continues the reorganization.
-
-0010 makes __this_cpu_*() ops use raw_cpu_*() opst instead of reaching
-into raw_cpu_*_N() sub-ops.
-
-0011 performs a bunch of cosmetic changes to make it less of an
-eyesore.
-
-0012 moves __verify_pcpu_ptr() invocations so that they're contained
-in the generic layer and it's called only once per operation.  A
-recent change added a data dependency barrier to __verify_pcpu_ptr()
-so this makes a minute but actual difference for archs w/ non-noop
-data dependency barrier FWIW.
-
-This patchset is on top of
-
-  linus master c31c24b8251f ("Merge branch 'next' of git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux")
-+ [1] [PATCH RFC] percpu: add data dependency barrier in percpu accessors and operations
-
-diffstat follows.  Thanks.
-
- arch/x86/include/asm/percpu.h |    3 
- include/asm-generic/percpu.h  |  410 +++++++++++++++++++++----
- include/linux/percpu-defs.h   |  397 +++++++++++++++++++++++-
- include/linux/percpu.h        |  673 ------------------------------------------
- 4 files changed, 729 insertions(+), 754 deletions(-)
-
---
-tejun
-
-[1] http://lkml.kernel.org/g/20140612135630.GA23606@htj.dyndns.org
