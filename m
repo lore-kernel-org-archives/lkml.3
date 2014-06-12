@@ -1,54 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752348AbaFLSvW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 14:51:22 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:49379 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751817AbaFLSvV (ORCPT
+	id S1751727AbaFLSxg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 14:53:36 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:52467 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751034AbaFLSxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 14:51:21 -0400
+	Thu, 12 Jun 2014 14:53:34 -0400
 MIME-Version: 1.0
-In-Reply-To: <5399F616.2040809@linux.intel.com>
-References: <CAKx2Y1kBy-mrxm+1u88XVL2Z7gYKQe5U-EG2SBTzNCRAs_UVVw@mail.gmail.com>
- <CALCETrWMBAxz9yn4MMugjZGC_Dsi2p855+e99Qhr0Ab+OaGRXw@mail.gmail.com>
- <CALCETrWTx5j9mx-CeXJDUAXh8KqVhGqBK+gpOPgJS1hOgH5tmg@mail.gmail.com>
- <5399F445.6060200@linux.intel.com> <CALCETrV96Ry5f_RDvXfZ98ay9qLZw0-8H5LZ8NrPiS92WDWTmA@mail.gmail.com>
- <5399F616.2040809@linux.intel.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 12 Jun 2014 11:51:00 -0700
-Message-ID: <CALCETrWyC5B0EgdbxKr_VYN+bARGy55E_p2ppk-gW5sLc5jHWg@mail.gmail.com>
-Subject: Re: Segmentation fault on all golang executables
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Kui Zhang <kuizhang@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <20140612141327.GY179@brightrain.aerifal.cx>
+References: <20140611041243.GA1475@brightrain.aerifal.cx> <1402464261.5195.21.camel@marge.simpson.net>
+ <1402465808.3645.454.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20140611151511.GU179@brightrain.aerifal.cx> <CAKgNAkh7ihJyZ4gOXAeb3x-Su7ayshLdi9m6ML4n840n3bx=0Q@mail.gmail.com>
+ <20140612141327.GY179@brightrain.aerifal.cx>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Thu, 12 Jun 2014 20:53:13 +0200
+Message-ID: <CAKgNAkhYvR1cSFVyghPYLm8ggS0-USD2chq4xNuOTqG+v19SzQ@mail.gmail.com>
+Subject: Re: recvmmsg/sendmmsg result types inconsistent, integer overflows?
+To: Rich Felker <dalias@libc.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        lkml <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 12, 2014 at 11:48 AM, H. Peter Anvin <hpa@linux.intel.com> wrote:
-> On 06/12/2014 11:42 AM, Andy Lutomirski wrote:
+Hello Rich,
+
+On Thu, Jun 12, 2014 at 4:13 PM, Rich Felker <dalias@libc.org> wrote:
+> On Thu, Jun 12, 2014 at 08:04:54AM +0200, Michael Kerrisk (man-pages) wrote:
+>> Rich,
 >>
->> Note that my hack will build a buggy vdso on big-endian hosts.  Is
->> there a way to convert host -> BE yet?
+>> On Wed, Jun 11, 2014 at 5:15 PM, Rich Felker <dalias@libc.org> wrote:
+>> > On Tue, Jun 10, 2014 at 10:50:08PM -0700, Eric Dumazet wrote:
+>> >> On Wed, 2014-06-11 at 07:24 +0200, Mike Galbraith wrote:
+>> >> > (CCs network wizard hangout)
+>> >> >
+>> >> > On Wed, 2014-06-11 at 00:12 -0400, Rich Felker wrote:
+>> >> > > While looking to add support for the recvmmsg and sendmmsg syscalls in
+>> >> > > musl libc, I ran into some disturbing findings on the kernel side. In
+>> >> > > the struct mmsghdr, the field where the result for each message is
+>> >> > > stored has type int, which is inconsistent with the return type
+>> >> > > ssize_t of recvmsg/sendmsg. So I tried to track down what happens when
+>> >> > > the result is or would be larger than 2GB, and quickly found an
+>> >> > > explanation for why the type in the structure was defined wrong:
+>> >> > > internally, the kernel uses int as the return type for revcmsg and
+>> >> > > sendmsg. Oops.
+>> >> > >
+>> >> > > A bit more RTFS'ing brought me to tcp_sendmsg in net/ipv4/tcp.c (I
+>> >> > > figured let's look at a stream-based protocol, since datagrams can
+>> >> > > likely never be that big for any existing protocol), and as far as I
+>> >> > > can tell, it's haphazardly mixing int and size_t with no checks for
+>> >> > > overflows. I looked for anywhere the kernel might try to verify before
+>> >> > > starting that the sum of the lengths of all the iovec components
+>> >> > > doesn't overflow INT_MAX or even SIZE_MAX, but didn't find any such
+>> >> > > checks.
+>> >> > >
+>> >> > > Is there some magic that makes this all safe, or is this a big mess of
+>> >> > > possibly-security-relevant bugs?
+>> >> > >
+>> >> > > Rich
+>> >> > > --
+>> >> > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> >> > > the body of a message to majordomo@vger.kernel.org
+>> >> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> >> > > Please read the FAQ at  http://www.tux.org/lkml/
+>> >> >
+>> >>
+>> >>
+>> >> See commit 8acfe468b0384e834a303f08ebc4953d72fb690a
+>> >> ("net: Limit socket I/O iovec total length to INT_MAX.")
+>> >>
+>> >> (or grep for verify_iovec() )
+>> >
+>> > Thanks; that addresses my concern about safety. There's still the ugly
+>> > API inconsistency which it seems too late to fix. Michael, perhaps
+>> > this should at least be documented in the man pages for sendmmsg and
+>> > recvmmsg since it's certain to be confusing to anyone familiar with
+>> > the sendmsg and recvmsg API, but not with kernel internals, who's
+>> > trying to use these functions...
 >>
+>> Care to send me a patch?
 >
-> Yes, use <tools/be_byteshift.h>.
+> I'm not at all familiar with man format, but I could write some
+> suggested text if that would be ok.
 
-What should I rebase on for that?  And wasn't there some header that
-was supposed to choose the right include file given the host runtime?
+I would take raw text. Or, better a patch where you just make crummy
+mistakes with groff. I'll fix them. ;-)
 
-Also, I meant host -> LE, of course, but that should be trivial.
+> Unrelated (at least not directly) to man pages, one concern I have is
+> that, if these interfaces move towards standardization, the
+> inconsistent return type is going to be a point of contention that
+> could result in an incompatible version of the interfaces being
+> adopted in the standard. From that standpoint, it might make sense to
+> do something like documenting them returning socklen_t rather than
+> int (IIRC these are always the same on Linux). It's not quite logical,
+> but at least a bit more logical from a non-Linux-centric perspective
+> than using int.
 
---Andy
+I'm not sure what I think about that yet. I'd probably have a better
+idea when I get the above text.
 
->
->         -hpa
->
->
+Cheers,
 
+Michael
 
+PS No reply from you on the "Very bad advice in man 2 dup2" thread
+despite a ping or two. What's up?
 
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
