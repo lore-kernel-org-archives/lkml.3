@@ -1,93 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751960AbaFLXTI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 19:19:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37283 "EHLO
+	id S1752516AbaFLXTY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 19:19:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37315 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751171AbaFLXTF (ORCPT
+	with ESMTP id S1751172AbaFLXTP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 19:19:05 -0400
+	Thu, 12 Jun 2014 19:19:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: [PATCH 3.4 0/8] 3.4.94-stable review
-Date: Thu, 12 Jun 2014 16:22:47 -0700
-Message-Id: <20140612232238.396722659@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Andy Lutomirski <luto@amacapital.net>, Eric Paris <eparis@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.4 6/8] auditsc: audit_krule mask accesses need bounds checking
+Date: Thu, 12 Jun 2014 16:22:53 -0700
+Message-Id: <20140612232238.903131645@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
+In-Reply-To: <20140612232238.396722659@linuxfoundation.org>
+References: <20140612232238.396722659@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.4.94 release.
-There are 8 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Sat Jun 14 23:22:28 UTC 2014.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.94-rc1.gz
-and the diffstat can be found below.
+From: Andy Lutomirski <luto@amacapital.net>
 
-thanks,
+commit a3c54931199565930d6d84f4c3456f6440aefd41 upstream.
 
-greg k-h
+Fixes an easy DoS and possible information disclosure.
 
--------------
-Pseudo-Shortlog of commits:
+This does nothing about the broken state of x32 auditing.
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.4.94-rc1
+eparis: If the admin has enabled auditd and has specifically loaded
+audit rules.  This bug has been around since before git.  Wow...
 
-Jérôme Carretero <cJ-ko@zougloub.eu>
-    ahci: Add Device ID for HighPoint RocketRaid 642L
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Ben Collins <ben.c@servergy.com>
-    SCSI: megaraid: Use resource_size_t for PCI resources, not long
+---
+ kernel/auditsc.c |   27 ++++++++++++++++++---------
+ 1 file changed, 18 insertions(+), 9 deletions(-)
 
-Andy Lutomirski <luto@amacapital.net>
-    auditsc: audit_krule mask accesses need bounds checking
-
-Rashika Kheria <rashika.kheria@gmail.com>
-    Staging: zram: Fix memory leak by refcount mismatch
-
-Jiang Liu <liuj97@gmail.com>
-    zram: protect sysfs handler from invalid memory access
-
-Guenter Roeck <linux@roeck-us.net>
-    powerpc: Fix 64 bit builds with binutils 2.24
-
-Florian Westphal <fw@strlen.de>
-    netfilter: ipv4: defrag: set local_df flag on defragmented skb
-
-Chris Mason <clm@fb.com>
-    mlx4_en: don't use napi_synchronize inside mlx4_en_netpoll
-
-
--------------
-
-Diffstat:
-
- Makefile                                       |  4 ++--
- arch/powerpc/Makefile                          |  4 +++-
- arch/powerpc/include/asm/ppc_asm.h             |  7 ++++++-
- drivers/ata/ahci.c                             |  2 ++
- drivers/net/ethernet/mellanox/mlx4/en_cq.c     |  1 -
- drivers/net/ethernet/mellanox/mlx4/en_netdev.c |  6 +-----
- drivers/net/ethernet/mellanox/mlx4/mlx4_en.h   |  1 -
- drivers/scsi/megaraid/megaraid_sas.h           |  1 -
- drivers/scsi/megaraid/megaraid_sas_base.c      |  5 +++--
- drivers/staging/zram/zram_sysfs.c              | 21 +++++++++++++++-----
- kernel/auditsc.c                               | 27 +++++++++++++++++---------
- net/ipv4/netfilter/nf_defrag_ipv4.c            |  5 +++--
- 12 files changed, 54 insertions(+), 30 deletions(-)
+--- a/kernel/auditsc.c
++++ b/kernel/auditsc.c
+@@ -868,6 +868,22 @@ static enum audit_state audit_filter_tas
+ 	return AUDIT_BUILD_CONTEXT;
+ }
+ 
++static int audit_in_mask(const struct audit_krule *rule, unsigned long val)
++{
++	int word, bit;
++
++	if (val > 0xffffffff)
++		return false;
++
++	word = AUDIT_WORD(val);
++	if (word >= AUDIT_BITMASK_SIZE)
++		return false;
++
++	bit = AUDIT_BIT(val);
++
++	return rule->mask[word] & bit;
++}
++
+ /* At syscall entry and exit time, this filter is called if the
+  * audit_state is not low enough that auditing cannot take place, but is
+  * also not high enough that we already know we have to write an audit
+@@ -885,11 +901,8 @@ static enum audit_state audit_filter_sys
+ 
+ 	rcu_read_lock();
+ 	if (!list_empty(list)) {
+-		int word = AUDIT_WORD(ctx->major);
+-		int bit  = AUDIT_BIT(ctx->major);
+-
+ 		list_for_each_entry_rcu(e, list, list) {
+-			if ((e->rule.mask[word] & bit) == bit &&
++			if (audit_in_mask(&e->rule, ctx->major) &&
+ 			    audit_filter_rules(tsk, &e->rule, ctx, NULL,
+ 					       &state, false)) {
+ 				rcu_read_unlock();
+@@ -909,20 +922,16 @@ static enum audit_state audit_filter_sys
+ static int audit_filter_inode_name(struct task_struct *tsk,
+ 				   struct audit_names *n,
+ 				   struct audit_context *ctx) {
+-	int word, bit;
+ 	int h = audit_hash_ino((u32)n->ino);
+ 	struct list_head *list = &audit_inode_hash[h];
+ 	struct audit_entry *e;
+ 	enum audit_state state;
+ 
+-	word = AUDIT_WORD(ctx->major);
+-	bit  = AUDIT_BIT(ctx->major);
+-
+ 	if (list_empty(list))
+ 		return 0;
+ 
+ 	list_for_each_entry_rcu(e, list, list) {
+-		if ((e->rule.mask[word] & bit) == bit &&
++		if (audit_in_mask(&e->rule, ctx->major) &&
+ 		    audit_filter_rules(tsk, &e->rule, ctx, n, &state, false)) {
+ 			ctx->current_state = state;
+ 			return 1;
 
 
