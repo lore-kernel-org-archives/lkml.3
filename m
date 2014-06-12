@@ -1,91 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756092AbaFLPEk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 11:04:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62665 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756073AbaFLPEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 11:04:34 -0400
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>, Ming Lei <tom.leiming@gmail.com>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH 2/3] blk-mq: bitmap tag: fix race on blk_mq_bitmap_tags::wake_cnt
-Date: Thu, 12 Jun 2014 17:05:37 +0200
-Message-Id: <6ff04ade7e2ae10b19e3f5ce8f9966e83e0bdcec.1402582256.git.agordeev@redhat.com>
-In-Reply-To: <cover.1402582256.git.agordeev@redhat.com>
-References: <cover.1402582256.git.agordeev@redhat.com>
+	id S1756114AbaFLPHE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 11:07:04 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:37297 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752915AbaFLPHB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 11:07:01 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140611.153225.671693159592497903.davem@davemloft.net>
+References: <1402417153-2551-4-git-send-email-milos.vyletel@gmail.com>
+	<20140610101334.565bc484@nehalam.linuxnetplumber.net>
+	<CAAFXRd1Stuyj2t8Oinr6SQysGbMJKPpY5qe=mO_m0xKR1eSjOQ@mail.gmail.com>
+	<20140611.153225.671693159592497903.davem@davemloft.net>
+Date: Thu, 12 Jun 2014 11:07:00 -0400
+Message-ID: <CAAFXRd3A32vfZUZv8yz=Fj83Eg7uiUMa3pmbQCh9zXauq2rdWg@mail.gmail.com>
+Subject: Re: [patch net-next 3/5] ipv6: consider net.ipv6.conf.all sysctls
+ when making decisions
+From: Milos Vyletel <milos.vyletel@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: stephen@networkplumber.org, amwang@redhat.com, netdev@vger.kernel.org,
+        oliver@neukum.org, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, pshelar@nicira.com,
+        nicolas.dichtel@6wind.com, mike.rapoport@ravellosystems.com,
+        dborkman@redhat.com, ogerlitz@mellanox.com, therbert@google.com,
+        hannes@stressinduktion.org, florent.fourcot@enst-bretagne.fr,
+        edumazet@google.com, Paul.Durrant@citrix.com,
+        linux-usb@vger.kernel.org,
+        "open list:X86 ARCHITECTURE..." <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This piece of code in bt_clear_tag() function is racy:
+David,
 
-	bs = bt_wake_ptr(bt);
-	if (bs && atomic_dec_and_test(&bs->wait_cnt)) {
-		atomic_set(&bs->wait_cnt, bt->wake_cnt);
- 		wake_up(&bs->wait);
-	}
+my words may have been poorly chosen. Last thing I want is to break things...
 
-Since nothing prevents bt_wake_ptr() from returning the very
-same 'bs' address on multiple CPUs, the following scenario is
-possible:
+What I meant to say is that this changes the behavior of conf.all.*
+sysctls from no-op to be part of decision along with interface
+specific ones. Default settings still work the same way unless
+conf.all.* was manually modified by user (for example setting
+conf.all.accept_ra_defrtr=0 did not stop kernel from setting default
+router before but it would with this change).
 
-    CPU1                                CPU2
-    ----                                ----
+If this is not desired functionality I'm fine with it not being
+applied. However if that's the case I suggest removing conf.all.*
+altogether since it's no-op and pretty confusing for users (myself
+included).
 
-0.  bs = bt_wake_ptr(bt);               bs = bt_wake_ptr(bt);
-1.  atomic_dec_and_test(&bs->wait_cnt)
-2.                                      atomic_dec_and_test(&bs->wait_cnt)
-3.  atomic_set(&bs->wait_cnt, bt->wake_cnt);
+Milos
 
-If the decrement in [1] yields zero then for some amount of time
-the decrement in [2] results in a negative/overflow value, which
-is not expected. The follow-up assignment in [3] overwrites the
-invalid value with the batch value (and likely prevents the issue
-from being severe) which is still incorrect and should be a lesser.
-
-Cc: Ming Lei <tom.leiming@gmail.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- block/blk-mq-tag.c |   14 ++++++++++++--
- 1 files changed, 12 insertions(+), 2 deletions(-)
-
-diff --git a/block/blk-mq-tag.c b/block/blk-mq-tag.c
-index efe9419..5579fae 100644
---- a/block/blk-mq-tag.c
-+++ b/block/blk-mq-tag.c
-@@ -320,6 +320,7 @@ static void bt_clear_tag(struct blk_mq_bitmap_tags *bt, unsigned int tag)
- {
- 	const int index = TAG_TO_INDEX(bt, tag);
- 	struct bt_wait_state *bs;
-+	int wait_cnt;
- 
- 	/*
- 	 * The unlock memory barrier need to order access to req in free
-@@ -328,10 +329,19 @@ static void bt_clear_tag(struct blk_mq_bitmap_tags *bt, unsigned int tag)
- 	clear_bit_unlock(TAG_TO_BIT(bt, tag), &bt->map[index].word);
- 
- 	bs = bt_wake_ptr(bt);
--	if (bs && atomic_dec_and_test(&bs->wait_cnt)) {
--		atomic_set(&bs->wait_cnt, bt->wake_cnt);
-+	if (!bs)
-+		return;
-+
-+	wait_cnt = atomic_dec_return(&bs->wait_cnt);
-+	if (wait_cnt == 0) {
-+wake:
-+		atomic_add(bt->wake_cnt, &bs->wait_cnt);
- 		bt_index_atomic_inc(&bt->wake_index);
- 		wake_up(&bs->wait);
-+	} else if (wait_cnt < 0) {
-+		wait_cnt = atomic_inc_return(&bs->wait_cnt);
-+		if (!wait_cnt)
-+			goto wake;
- 	}
- }
- 
--- 
-1.7.7.6
-
+On Wed, Jun 11, 2014 at 6:32 PM, David Miller <davem@davemloft.net> wrote:
+> From: Milos Vyletel <milos.vyletel@gmail.com>
+> Date: Tue, 10 Jun 2014 13:49:35 -0400
+>
+>> On Tue, Jun 10, 2014 at 1:13 PM, Stephen Hemminger
+>> <stephen@networkplumber.org> wrote:
+>>> On Tue, 10 Jun 2014 12:19:11 -0400
+>>> Milos Vyletel <milos.vyletel@gmail.com> wrote:
+>>>
+>>>> As it is right now net.ipv6.conf.all.* are mostly ignored and instead
+>>>> we're only making decisions based on interface specific settings. These
+>>>> settings are coppied from net.ipv6.conf.default and changing either all
+>>>> or default settings have no effect.
+>>>
+>>> Although this is the right idea conceptually, it risks creating unhappy
+>>> users because it changes the semantics of the API. This will probably break
+>>> somebody's configuration.
+>>
+>> You're right but in this case I feel we are moving in the right
+>> direction. While the
+>> behavior will change in some cases this change is only adding well known ipv4
+>> behavior for ipv6 sysctls. In fact documentation briefly mentioned that
+>> net.ipv6.conf.all.* should change all the interface-specific settings
+>> but that was
+>> not the case until now.
+>
+> You can't just break things on people, no matter how much you think the
+> current behavior is "poorly designed", "inconsistent with other areas of
+> the networking", etc.  None of those things matter if you have to break
+> things on people to "fix" it.
+>
+> I'm not applying this series, sorry.
