@@ -1,352 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932782AbaFLISn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 04:18:43 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:58497 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932727AbaFLISi (ORCPT
+	id S932820AbaFLITB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 04:19:01 -0400
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:59340 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932785AbaFLIS5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 04:18:38 -0400
-Message-ID: <539961FF.3080903@linux.vnet.ibm.com>
-Date: Thu, 12 Jun 2014 13:47:03 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 12 Jun 2014 04:18:57 -0400
+Date: Thu, 12 Jun 2014 10:18:46 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: David Rientjes <rientjes@google.com>, Ian Kent <raven@themaw.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Righi <andrea@betterlinux.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org,
+        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
+        Thorsten Diehl <thorsten.diehl@de.ibm.com>,
+        "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH 2/2] fs: proc/stat: use usual seq_file ops rather than
+ single_open
+Message-ID: <20140612081846.GB4296@osiris>
+References: <20140521143229.GA32011@infradead.org>
+ <20140528085841.GA4219@osiris>
+ <20140528090153.GC4219@osiris>
+ <20140528153704.b2a3f46dc39ebf8f681d528a@linux-foundation.org>
+ <1402301519.2775.47.camel@perseus.fritz.box>
+ <20140611124301.GC4296@osiris>
+ <alpine.DEB.2.02.1406111524330.27885@chino.kir.corp.google.com>
+ <1402554262.2642.16.camel@perseus.fritz.box>
+ <alpine.DEB.2.02.1406112350010.23724@chino.kir.corp.google.com>
+ <20140612072741.GA4296@osiris>
 MIME-Version: 1.0
-To: Joel Stanley <joel@jms.id.au>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>, ego@linux.vnet.ibm.com,
-        matt@ozlabs.org, Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        suzuki@in.ibm.com, ebiederm@xmission.com,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH] powerpc, kexec: Fix "Processor X is stuck" issue during
- kexec from ST mode
-References: <20140527105511.24309.74320.stgit@srivatsabhat.in.ibm.com> <20140528133143.GK14863@redhat.com> <538E2FF8.8060707@linux.vnet.ibm.com> <1401833365.3247.36.camel@pasglop> <5391B413.100@linux.vnet.ibm.com> <53922FB8.6070408@linux.vnet.ibm.com> <CACPK8Xea+7rPHSCp51fVkX=GTmEwbV0T=JHDZ-XYt6RU96uyyg@mail.gmail.com>
-In-Reply-To: <CACPK8Xea+7rPHSCp51fVkX=GTmEwbV0T=JHDZ-XYt6RU96uyyg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140612072741.GA4296@osiris>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061208-2000-0000-0000-000000804BF2
+x-cbid: 14061208-0542-0000-0000-00000973039A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joel,
-
-On 06/12/2014 12:09 PM, Joel Stanley wrote:
-> Hi Srivatsa,
+On Thu, Jun 12, 2014 at 09:27:41AM +0200, Heiko Carstens wrote:
+> On Wed, Jun 11, 2014 at 11:52:31PM -0700, David Rientjes wrote:
+> > On Thu, 12 Jun 2014, Ian Kent wrote:
+> > > > > +static void seq_alloc(struct seq_file *m)
+> > > > > +{
+> > > > > +	m->size = PAGE_SIZE;
+> > > > > +	m->buf = kmalloc(m->size, GFP_KERNEL | __GFP_NOWARN);
+> > > > > +	if (!m->buf)
+> > > > > +		m->buf = vmalloc(m->size);
+> > > > > +}
+> > > > > +
+> > > > 
+> > > > If m->size is unconditionally PAGE_SIZE, then how is vmalloc() going to 
+> > > > allocate this if kmalloc() fails?
+> > > 
+> > > This is just the initial allocation.
+> > > If it runs out of room the allocation size doubles.
+> > > 
+> > > I think 2*PAGE_SIZE is probably better here since that's closer to what
+> > > the original heuristic allocation requested and is likely to avoid
+> > > reallocations in most cases.
+> > > 
+> > > The issue of kmalloc() failing for larger allocations on low speced
+> > > hardware with fragmented memory might succeed when vmalloc() is used
+> > > since it doesn't require contiguous memory chunks. But I guess the added
+> > > pressure on the page table might still be a problem, nevertheless it's
+> > > probably worth trying before bailing out. 
+> > 
+> > I'm not quarreling about using vmalloc() for allocations that are 
+> > high-order, I'm referring to the rather obvious fact that m->size is set 
+> > to PAGE_SIZE unconditionally above and thus vmalloc() isn't going to help 
+> > in the slightest.
 > 
-> On Sat, Jun 7, 2014 at 7:16 AM, Srivatsa S. Bhat
-> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
->> And with the following hunk added (which I had forgotten earlier), it worked just
->> fine on powernv :-)
-> 
-> How are the patches coming along?
-> 
+> Yes, that doesn't make any sense. I wrote the patch together in a hurry and
+> didn't think much about it.
+> So below is the what I think most simple conversion to a vmalloc fallback
+> approach for seq files. However the question remains if this seems to be an
+> acceptable approach at all...
 
-I'm still waiting to test this patch series on a PowerVM box, and unfortunately
-there are some machine issues to debug first :-( So that's why this is taking
-time... :-(
+And so that the vmalloc fallback has any effect to the /proc/stat allocation
+it also needs to be converted to use single_open_size() instead:
 
-> I just hung a machine here while attempting to kexec. It appears to
-> have onlined all of the secondary threads, and then hung here:
-> 
-> kexec: Waking offline cpu 1.
-> kvm: enabling virtualization on CPU1
-> kexec: Waking offline cpu 2.
-> kvm: enabling virtualization on CPU2
-> kexec: Waking offline cpu 3.
-> kvm: enabling virtualization on CPU3
-> kexec: Waking offline cpu 5.
-> kvm: enabling virtualization on CPU5
-> [...]
-> kvm: enabling virtualization on CPU63
-> kexec: waiting for cpu 1 (physical 1) to enter OPAL
-> kexec: waiting for cpu 2 (physical 2) to enter OPAL
-> kexec: waiting for cpu 3 (physical 3) to enter OPAL
-> 
-> I'm running benh's next branch as of thismorning, and SMT was off.
-> 
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+Date: Thu, 12 Jun 2014 10:04:39 +0200
+Subject: [PATCH] proc/stat: convert to single_open_size()
 
-Oh! This looks like a different hang than the one I tried to fix. My patch
-("powerpc, kexec: Fix "Processor X is stuck" issue during kexec from ST mode")
-which is already in benh's next branch was aimed at fixing the "CPU is stuck"
-issue which was observed during the second kernel boot. If the first kernel
-itself is hanging in the down-path, then it looks like a different problem
-altogether.
+Use seq_file's single_open_size() to preallocate a buffer that is large
+enough to hold the whole output, instead of open coding it.
+Also calculate the requested size using the number of online cpus instead
+of possible cpus, since the size of the output only depends on the number
+of online cpus.
 
-> Could you please post your latest patches a series? I will test them here.
-> 
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+---
+ fs/proc/stat.c | 22 ++--------------------
+ 1 file changed, 2 insertions(+), 20 deletions(-)
 
-The 4 patches that I proposed in this thread are aimed at making the above
-solution more elegant, by not having to actually online the secondary threads
-while doing kexec. I don't think it will solve the hang that you are seeing.
-In any case, I'll provide the consolidated patch below if you want to give it
-a try.
-
-By the way, I have a few questions regarding the hang you observed: is it
-always reproducible with SMT=off? And if SMT was 8 (i.e, all CPUs in the system
-were online) and then you did a kexec, do you still see the hang?
-
-Regards,
-Srivatsa S. Bhat
-
----------------------------------------------------------------------------
-
-diff --git a/arch/powerpc/include/asm/kexec.h b/arch/powerpc/include/asm/kexec.h
-index 16d7e33..2a31b52 100644
---- a/arch/powerpc/include/asm/kexec.h
-+++ b/arch/powerpc/include/asm/kexec.h
-@@ -68,6 +68,7 @@ static inline void crash_setup_regs(struct pt_regs *newregs,
- 		ppc_save_regs(newregs);
+diff --git a/fs/proc/stat.c b/fs/proc/stat.c
+index 9d231e9e5f0e..bf2d03f8fd3e 100644
+--- a/fs/proc/stat.c
++++ b/fs/proc/stat.c
+@@ -184,29 +184,11 @@ static int show_stat(struct seq_file *p, void *v)
+ 
+ static int stat_open(struct inode *inode, struct file *file)
+ {
+-	size_t size = 1024 + 128 * num_possible_cpus();
+-	char *buf;
+-	struct seq_file *m;
+-	int res;
++	size_t size = 1024 + 128 * num_online_cpus();
+ 
+ 	/* minimum size to display an interrupt count : 2 bytes */
+ 	size += 2 * nr_irqs;
+-
+-	/* don't ask for more than the kmalloc() max size */
+-	if (size > KMALLOC_MAX_SIZE)
+-		size = KMALLOC_MAX_SIZE;
+-	buf = kmalloc(size, GFP_KERNEL);
+-	if (!buf)
+-		return -ENOMEM;
+-
+-	res = single_open(file, show_stat, NULL);
+-	if (!res) {
+-		m = file->private_data;
+-		m->buf = buf;
+-		m->size = ksize(buf);
+-	} else
+-		kfree(buf);
+-	return res;
++	return single_open_size(file, show_stat, NULL, size);
  }
  
-+extern bool kexec_cpu_wake(void);
- extern void kexec_smp_wait(void);	/* get and clear naca physid, wait for
- 					  master to copy new code to 0 */
- extern int crashing_cpu;
-diff --git a/arch/powerpc/include/asm/machdep.h b/arch/powerpc/include/asm/machdep.h
-index f92b0b5..39f721d 100644
---- a/arch/powerpc/include/asm/machdep.h
-+++ b/arch/powerpc/include/asm/machdep.h
-@@ -255,6 +255,16 @@ struct machdep_calls {
- 	void (*machine_shutdown)(void);
- 
- #ifdef CONFIG_KEXEC
-+#if (defined CONFIG_PPC64) && (defined CONFIG_PPC_BOOK3S)
-+
-+	/*
-+	 * The pseries and powernv book3s platforms have a special requirement
-+	 * that soft-offline CPUs have to be woken up before kexec, to avoid
-+	 * CPUs getting stuck. This callback prepares the system for the
-+	 * impending wakeup of the offline CPUs.
-+	 */
-+	void (*kexec_wake_prepare)(void);
-+#endif
- 	void (*kexec_cpu_down)(int crash_shutdown, int secondary);
- 
- 	/* Called to do what every setup is needed on image and the
-diff --git a/arch/powerpc/kernel/machine_kexec_64.c b/arch/powerpc/kernel/machine_kexec_64.c
-index 879b3aa..84e91293 100644
---- a/arch/powerpc/kernel/machine_kexec_64.c
-+++ b/arch/powerpc/kernel/machine_kexec_64.c
-@@ -182,6 +182,14 @@ static void kexec_smp_down(void *arg)
- 	/* NOTREACHED */
- }
- 
-+bool kexec_cpu_wake(void)
-+{
-+	kexec_smp_down(NULL);
-+
-+	/* NOTREACHED */
-+	return true;
-+}
-+
- static void kexec_prepare_cpus_wait(int wait_state)
- {
- 	int my_cpu, i, notified=-1;
-@@ -202,7 +210,7 @@ static void kexec_prepare_cpus_wait(int wait_state)
- 	 * these possible-but-not-online-but-should-be CPUs and chaperone them
- 	 * into kexec_smp_wait().
- 	 */
--	for_each_online_cpu(i) {
-+	for_each_present_cpu(i) {
- 		if (i == my_cpu)
- 			continue;
- 
-@@ -228,16 +236,22 @@ static void kexec_prepare_cpus_wait(int wait_state)
-  * threads as offline -- and again, these CPUs will be stuck.
-  *
-  * So, we online all CPUs that should be running, including secondary threads.
-+ *
-+ * TODO: Update this comment
-  */
- static void wake_offline_cpus(void)
- {
- 	int cpu = 0;
- 
-+	if (ppc_md.kexec_wake_prepare)
-+		ppc_md.kexec_wake_prepare();
-+
- 	for_each_present_cpu(cpu) {
- 		if (!cpu_online(cpu)) {
- 			printk(KERN_INFO "kexec: Waking offline cpu %d.\n",
- 			       cpu);
--			WARN_ON(cpu_up(cpu));
-+			/* This should work even though the cpu is offline */
-+			smp_send_reschedule(cpu);
- 		}
- 	}
- }
-diff --git a/arch/powerpc/platforms/powernv/powernv.h b/arch/powerpc/platforms/powernv/powernv.h
-index 75501bf..910081c 100644
---- a/arch/powerpc/platforms/powernv/powernv.h
-+++ b/arch/powerpc/platforms/powernv/powernv.h
-@@ -27,4 +27,8 @@ extern void pnv_lpc_init(void);
- 
- bool cpu_core_split_required(void);
- 
-+#ifdef CONFIG_KEXEC
-+extern void pnv_kexec_wake_prepare(void);
-+#endif
-+
- #endif /* _POWERNV_H */
-diff --git a/arch/powerpc/platforms/powernv/setup.c b/arch/powerpc/platforms/powernv/setup.c
-index 8c16a5f..8dbccb7 100644
---- a/arch/powerpc/platforms/powernv/setup.c
-+++ b/arch/powerpc/platforms/powernv/setup.c
-@@ -331,6 +331,7 @@ define_machine(powernv) {
- 	.calibrate_decr		= generic_calibrate_decr,
- 	.dma_set_mask		= pnv_dma_set_mask,
- #ifdef CONFIG_KEXEC
-+	.kexec_wake_prepare	= pnv_kexec_wake_prepare,
- 	.kexec_cpu_down		= pnv_kexec_cpu_down,
- #endif
- #ifdef CONFIG_MEMORY_HOTPLUG_SPARSE
-diff --git a/arch/powerpc/platforms/powernv/smp.c b/arch/powerpc/platforms/powernv/smp.c
-index 0062a43..0b017b0 100644
---- a/arch/powerpc/platforms/powernv/smp.c
-+++ b/arch/powerpc/platforms/powernv/smp.c
-@@ -32,6 +32,7 @@
- #include <asm/opal.h>
- #include <asm/runlatch.h>
- #include <asm/code-patching.h>
-+#include <asm/kexec.h>
- 
- #include "powernv.h"
- 
-@@ -140,6 +141,15 @@ static int pnv_smp_cpu_disable(void)
- 	return 0;
- }
- 
-+#ifdef CONFIG_KEXEC
-+static bool kexec_wake_offline_cpus;
-+
-+void pnv_kexec_wake_prepare(void)
-+{
-+	kexec_wake_offline_cpus = true;
-+}
-+#endif
-+
- static void pnv_smp_cpu_kill_self(void)
- {
- 	unsigned int cpu;
-@@ -170,6 +180,11 @@ static void pnv_smp_cpu_kill_self(void)
- 		if (cpu_core_split_required())
- 			continue;
- 
-+#ifdef CONFIG_KEXEC
-+		if (kexec_wake_offline_cpus)
-+			kexec_cpu_wake(); /* This function won't return! */
-+#endif
-+
- 		if (!generic_check_cpu_restart(cpu))
- 			DBG("CPU%d Unexpected exit while offline !\n", cpu);
- 	}
-diff --git a/arch/powerpc/platforms/pseries/hotplug-cpu.c b/arch/powerpc/platforms/pseries/hotplug-cpu.c
-index 20d6297..d026028 100644
---- a/arch/powerpc/platforms/pseries/hotplug-cpu.c
-+++ b/arch/powerpc/platforms/pseries/hotplug-cpu.c
-@@ -31,6 +31,7 @@
- #include <asm/vdso_datapage.h>
- #include <asm/xics.h>
- #include <asm/plpar_wrappers.h>
-+#include <asm/kexec.h>
- 
- #include "offline_states.h"
- 
-@@ -143,6 +144,13 @@ static void pseries_mach_cpu_die(void)
- 			get_lppaca()->donate_dedicated_cpu = 0;
- 		get_lppaca()->idle = 0;
- 
-+#if CONFIG_KEXEC
-+		if (get_preferred_offline_state(cpu) == CPU_STATE_KEXEC_WAKE) {
-+			/* This function won't return! */
-+			kexec_cpu_wake();
-+		}
-+#endif
-+
- 		if (get_preferred_offline_state(cpu) == CPU_STATE_ONLINE) {
- 			unregister_slb_shadow(hwcpu);
- 
-diff --git a/arch/powerpc/platforms/pseries/kexec.c b/arch/powerpc/platforms/pseries/kexec.c
-index 13fa95b3..fc135e6 100644
---- a/arch/powerpc/platforms/pseries/kexec.c
-+++ b/arch/powerpc/platforms/pseries/kexec.c
-@@ -20,6 +20,17 @@
- #include <asm/plpar_wrappers.h>
- 
- #include "pseries.h"
-+#include "offline_states.h"
-+
-+void pseries_kexec_wake_prepare(void)
-+{
-+	unsigned int cpu;
-+
-+	for_each_present_cpu(cpu) {
-+		if (!cpu_online(cpu))
-+			set_preferred_offline_state(cpu, CPU_STATE_KEXEC_WAKE);
-+	}
-+}
- 
- static void pseries_kexec_cpu_down(int crash_shutdown, int secondary)
- {
-diff --git a/arch/powerpc/platforms/pseries/offline_states.h b/arch/powerpc/platforms/pseries/offline_states.h
-index 08672d9..32fe5e8 100644
---- a/arch/powerpc/platforms/pseries/offline_states.h
-+++ b/arch/powerpc/platforms/pseries/offline_states.h
-@@ -5,6 +5,9 @@
- enum cpu_state_vals {
- 	CPU_STATE_OFFLINE,
- 	CPU_STATE_INACTIVE,
-+#ifdef CONFIG_KEXEC
-+	CPU_STATE_KEXEC_WAKE,
-+#endif
- 	CPU_STATE_ONLINE,
- 	CPU_MAX_OFFLINE_STATES
- };
-diff --git a/arch/powerpc/platforms/pseries/pseries.h b/arch/powerpc/platforms/pseries/pseries.h
-index 361add6..35ecb99 100644
---- a/arch/powerpc/platforms/pseries/pseries.h
-+++ b/arch/powerpc/platforms/pseries/pseries.h
-@@ -38,6 +38,8 @@ static inline void smp_init_pseries_xics(void) { };
- #endif
- 
- #ifdef CONFIG_KEXEC
-+extern void pseries_kexec_wake_prepare(void);
-+
- extern void setup_kexec_cpu_down_xics(void);
- extern void setup_kexec_cpu_down_mpic(void);
- #else
-diff --git a/arch/powerpc/platforms/pseries/setup.c b/arch/powerpc/platforms/pseries/setup.c
-index adc21a0..c1a0722 100644
---- a/arch/powerpc/platforms/pseries/setup.c
-+++ b/arch/powerpc/platforms/pseries/setup.c
-@@ -808,6 +808,7 @@ define_machine(pseries) {
- 	.system_reset_exception = pSeries_system_reset_exception,
- 	.machine_check_exception = pSeries_machine_check_exception,
- #ifdef CONFIG_KEXEC
-+	.kexec_wake_prepare	= pseries_kexec_wake_prepare,
- 	.machine_kexec          = pSeries_machine_kexec,
- #endif
- #ifdef CONFIG_MEMORY_HOTPLUG_SPARSE
-diff --git a/kernel/kexec.c b/kernel/kexec.c
-index 28c5706..55a6350 100644
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@ -1684,13 +1684,6 @@ int kernel_kexec(void)
- 		kernel_restart_prepare(NULL);
- 		migrate_to_reboot_cpu();
- 
--		/*
--		 * migrate_to_reboot_cpu() disables CPU hotplug assuming that
--		 * no further code needs to use CPU hotplug (which is true in
--		 * the reboot case). However, the kexec path depends on using
--		 * CPU hotplug again; so re-enable it here.
--		 */
--		cpu_hotplug_enable();
- 		printk(KERN_EMERG "Starting new kernel\n");
- 		machine_shutdown();
- 	}
+ static const struct file_operations proc_stat_operations = {
+-- 
+1.8.5.5
 
