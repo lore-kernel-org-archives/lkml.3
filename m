@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752628AbaFLX2g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 19:28:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37116 "EHLO
+	id S1752695AbaFLX2x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 19:28:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37106 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751804AbaFLXSJ (ORCPT
+	with ESMTP id S1751715AbaFLXSI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 19:18:09 -0400
+	Thu, 12 Jun 2014 19:18:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Neil Horman <nhorman@tuxdriver.com>
-Subject: [PATCH 3.14 08/19] PCI/MSI: Fix memory leak in free_msi_irqs()
-Date: Thu, 12 Jun 2014 16:21:45 -0700
-Message-Id: <20140612232138.981689636@linuxfoundation.org>
+        Sagi Grimberg <sagig@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.14 04/19] Target/iscsi,iser: Avoid accepting transport connections during stop stage
+Date: Thu, 12 Jun 2014 16:21:41 -0700
+Message-Id: <20140612232138.846818026@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140612232138.561318739@linuxfoundation.org>
 References: <20140612232138.561318739@linuxfoundation.org>
@@ -30,38 +29,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexei Starovoitov <ast@plumgrid.com>
+From: Sagi Grimberg <sagig@mellanox.com>
 
-commit b701c0b1fe819a2083fc6ec5332e0e4492b9516d upstream.
+commit 14f4b54fe38f3a8f8392a50b951c8aa43b63687a upstream.
 
-free_msi_irqs() is leaking memory, since list_for_each_entry(entry,
-&dev->msi_list, list) {...} is never executed, because dev->msi_list is
-made empty by the loop just above this one.
+When the target is in stop stage, iSER transport initiates RDMA disconnects.
+The iSER initiator may wish to establish a new connection over the
+still existing network portal. In this case iSER transport should not
+accept and resume new RDMA connections. In order to learn that, iscsi_np
+is added with enabled flag so the iSER transport can check when deciding
+weather to accept and resume a new connection request.
 
-Fix it by relying on zero termination of attribute array like
-populate_msi_sysfs() does.
+The iscsi_np is enabled after successful transport setup, and disabled
+before iscsi_np login threads are cleaned up.
 
-Fixes: 1c51b50c2995 ("PCI/MSI: Export MSI mode using attributes, not kobjects")
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/msi.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/infiniband/ulp/isert/ib_isert.c   |    8 ++++++++
+ drivers/target/iscsi/iscsi_target_core.h  |    1 +
+ drivers/target/iscsi/iscsi_target_login.c |    1 +
+ drivers/target/iscsi/iscsi_target_tpg.c   |    1 +
+ 4 files changed, 11 insertions(+)
 
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -414,7 +414,7 @@ static void free_msi_irqs(struct pci_dev
- 	if (dev->msi_irq_groups) {
- 		sysfs_remove_groups(&dev->dev.kobj, dev->msi_irq_groups);
- 		msi_attrs = dev->msi_irq_groups[0]->attrs;
--		list_for_each_entry(entry, &dev->msi_list, list) {
-+		while (msi_attrs[count]) {
- 			dev_attr = container_of(msi_attrs[count],
- 						struct device_attribute, attr);
- 			kfree(dev_attr->attr.name);
+--- a/drivers/infiniband/ulp/isert/ib_isert.c
++++ b/drivers/infiniband/ulp/isert/ib_isert.c
+@@ -489,6 +489,14 @@ isert_connect_request(struct rdma_cm_id
+ 	struct ib_device *ib_dev = cma_id->device;
+ 	int ret = 0;
+ 
++	spin_lock_bh(&np->np_thread_lock);
++	if (!np->enabled) {
++		spin_unlock_bh(&np->np_thread_lock);
++		pr_debug("iscsi_np is not enabled, reject connect request\n");
++		return rdma_reject(cma_id, NULL, 0);
++	}
++	spin_unlock_bh(&np->np_thread_lock);
++
+ 	pr_debug("Entering isert_connect_request cma_id: %p, context: %p\n",
+ 		 cma_id, cma_id->context);
+ 
+--- a/drivers/target/iscsi/iscsi_target_core.h
++++ b/drivers/target/iscsi/iscsi_target_core.h
+@@ -773,6 +773,7 @@ struct iscsi_np {
+ 	int			np_ip_proto;
+ 	int			np_sock_type;
+ 	enum np_thread_state_table np_thread_state;
++	bool                    enabled;
+ 	enum iscsi_timer_flags_table np_login_timer_flags;
+ 	u32			np_exports;
+ 	enum np_flags_table	np_flags;
+--- a/drivers/target/iscsi/iscsi_target_login.c
++++ b/drivers/target/iscsi/iscsi_target_login.c
+@@ -981,6 +981,7 @@ int iscsi_target_setup_login_socket(
+ 	}
+ 
+ 	np->np_transport = t;
++	np->enabled = true;
+ 	return 0;
+ }
+ 
+--- a/drivers/target/iscsi/iscsi_target_tpg.c
++++ b/drivers/target/iscsi/iscsi_target_tpg.c
+@@ -184,6 +184,7 @@ static void iscsit_clear_tpg_np_login_th
+ 		return;
+ 	}
+ 
++	tpg_np->tpg_np->enabled = false;
+ 	iscsit_reset_np_thread(tpg_np->tpg_np, tpg_np, tpg, shutdown);
+ }
+ 
 
 
