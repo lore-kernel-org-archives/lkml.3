@@ -1,496 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751653AbaFLWJF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 18:09:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22826 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751330AbaFLWJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 18:09:03 -0400
-From: Jiri Olsa <jolsa@kernel.org>
+	id S1751507AbaFLWQV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 18:16:21 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:39674 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750773AbaFLWQU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 18:16:20 -0400
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 03/17] perf tools: Rename ordered_samples to ordered_events
-Date: Fri, 13 Jun 2014 00:08:19 +0200
-Message-Id: <1402610913-19059-4-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1402610913-19059-1-git-send-email-jolsa@kernel.org>
-References: <1402610913-19059-1-git-send-email-jolsa@kernel.org>
+Cc: "Luis R. Rodriguez" <mcgrof@suse.com>, Michal Hocko <mhocko@suse.cz>,
+        Petr Mladek <pmladek@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>, Arun KS <arunks.linux@gmail.com>,
+        Kees Cook <keescook@chromium.org>, Davidlohr Bueso <davidlohr@hp.com>,
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: [RFC v2] printk: allow increasing the ring buffer depending on the number of CPUs
+Date: Thu, 12 Jun 2014 15:16:09 -0700
+Message-Id: <1402611369-4811-1-git-send-email-mcgrof@do-not-panic.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The time ordering is generic for all kinds of events, so
-using generic name 'ordered_events' for related struct.
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
 
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+The default size of the ring buffer is too small for machines
+with a large amount of CPUs under heavy load. What ends up
+happening when debugging is the ring buffer overlaps and chews
+up old messages making debugging impossible unless the size is
+passed as a kernel parameter. An idle system upon boot up will
+on average spew out only about one or two extra lines but where
+this really matters is on heavy load and that will vary widely
+depending on the system and environment.
+
+There are mechanisms to help increase the kernel ring buffer
+for tracing through debugfs, and those interfaces even allow growing
+the kernel ring buffer per CPU. We also have a static value which
+can be passed upon boot. Relying on debugfs however is not ideal
+for production, and relying on the value passed upon bootup is
+can only used *after* an issue has creeped up. Instead of being
+reactive this adds a proactive measure which lets you scale the
+amount of contributions you'd expect to the kernel ring buffer
+under load by each CPU in the worst case scenerio.
+
+We use num_possible_cpus() to avoid complexities which could be
+introduced by dynamically changing the ring buffer size at run
+time, num_possible_cpus() lets us use the upper limit on possible
+number of CPUs therefore avoiding having to deal with hotplugging
+CPUs on and off. This introduces the kernel configuration option
+LOG_CPU_MIN_BUF_SHIFT which is used to specify the maximum amount
+of contributions to the kernel ring buffer in the worst case before
+the kernel ring buffer flips over, the size is specified as a power
+of 2. The total amount of contributions made by each CPU must be
+greater than half of the default kernel ring buffer size
+(1 << LOG_BUF_SHIFT bytes) in order to trigger an increase upon
+bootup. For example if LOG_BUF_SHIFT is 18 (256 KB) you'd require at
+least 128 KB contributions by other CPUs in order to trigger an
+increase. With a LOG_CPU_BUF_SHIFT of 12 (4 KB) you'd require at
+least anything over > 64 possible CPUs to trigger an increase. If
+you had 128 possible CPUs your kernel buffer size would be:
+
+   ((1 << 18) + ((128 - 1) * (1 << 12))) / 1024 = 764 KB
+
+This value is ignored when "log_buf_len" kernel parameter is used
+as it forces the exact size of the ring buffer to an expected value.
+
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Petr Mladek <pmladek@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Joe Perches <joe@perches.com>
+Cc: Arun KS <arunks.linux@gmail.com>
+Cc: Kees Cook <keescook@chromium.org>
+Cc: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
 ---
- tools/perf/builtin-annotate.c  |  2 +-
- tools/perf/builtin-diff.c      |  2 +-
- tools/perf/builtin-inject.c    |  2 +-
- tools/perf/builtin-kmem.c      |  2 +-
- tools/perf/builtin-kvm.c       |  6 ++--
- tools/perf/builtin-lock.c      |  2 +-
- tools/perf/builtin-mem.c       |  2 +-
- tools/perf/builtin-report.c    |  2 +-
- tools/perf/builtin-sched.c     |  2 +-
- tools/perf/builtin-script.c    |  2 +-
- tools/perf/builtin-timechart.c |  2 +-
- tools/perf/builtin-trace.c     |  2 +-
- tools/perf/util/session.c      | 64 +++++++++++++++++++++---------------------
- tools/perf/util/session.h      | 24 ++++++++--------
- tools/perf/util/tool.h         |  2 +-
- 15 files changed, 59 insertions(+), 59 deletions(-)
+ Documentation/kernel-parameters.txt | 16 +++++++++++++++-
+ init/Kconfig                        | 38 +++++++++++++++++++++++++++++++++++++
+ kernel/printk/printk.c              | 12 ++++++++++++
+ 3 files changed, 65 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index 1ec429f..952b5ec 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -297,7 +297,7 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __maybe_unused)
- 			.comm	= perf_event__process_comm,
- 			.exit	= perf_event__process_exit,
- 			.fork	= perf_event__process_fork,
--			.ordered_samples = true,
-+			.ordered_events = true,
- 			.ordering_requires_timestamps = true,
- 		},
- 	};
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 9a5a035..c10cc44 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -360,7 +360,7 @@ static struct perf_tool tool = {
- 	.exit	= perf_event__process_exit,
- 	.fork	= perf_event__process_fork,
- 	.lost	= perf_event__process_lost,
--	.ordered_samples = true,
-+	.ordered_events = true,
- 	.ordering_requires_timestamps = true,
- };
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 30a8ad0d..98ec002 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1647,7 +1647,21 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
  
-diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index 16c7c11..94173dd 100644
---- a/tools/perf/builtin-inject.c
-+++ b/tools/perf/builtin-inject.c
-@@ -366,7 +366,7 @@ static int __cmd_inject(struct perf_inject *inject)
- 	} else if (inject->sched_stat) {
- 		struct perf_evsel *evsel;
+ 	log_buf_len=n[KMG]	Sets the size of the printk ring buffer,
+ 			in bytes.  n must be a power of two.  The default
+-			size is set in the kernel config file.
++			size is set in the kernel config file. If you want
++			a more proactive solution on *large* production systems
++			consider using CONFIG_LOG_CPU_MIN_BUF_SHIFT which
++			can be used to increase the kernel ring buffer
++			under the assumption that each CPU will contribute
++			a CONFIG_LOG_CPU_MIN_BUF_SHIFT << 1 bytes to the kernel
++			ring buffer in the worst case scenario. The kernel
++			ring buffer will be increased upon bootup if and only
++			if the amount of extra logging expected to be
++			contributed by all CPUs will be greater than half of
++			CONFIG_LOG_BUF_SHIFT << 1 bytes. With defaults of
++			LOG_BUF_SHIFT of 18 and LOG_CPU_MIN_BUF_SHIFT at 12
++			a system would require more than 64 possible CPUs to
++			trigger an increase over the default kernel ring buffer
++			at bootup.
  
--		inject->tool.ordered_samples = true;
-+		inject->tool.ordered_events = true;
+ 	logo.nologo	[FB] Disables display of the built-in Linux logo.
+ 			This may be used to provide more screen space for
+diff --git a/init/Kconfig b/init/Kconfig
+index 9d3585b..2e425d7 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -806,6 +806,44 @@ config LOG_BUF_SHIFT
+ 		     13 =>  8 KB
+ 		     12 =>  4 KB
  
- 		evlist__for_each(session->evlist, evsel) {
- 			const char *name = perf_evsel__name(evsel);
-diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
-index bef3376..b572111 100644
---- a/tools/perf/builtin-kmem.c
-+++ b/tools/perf/builtin-kmem.c
-@@ -256,7 +256,7 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
- static struct perf_tool perf_kmem = {
- 	.sample		 = process_sample_event,
- 	.comm		 = perf_event__process_comm,
--	.ordered_samples = true,
-+	.ordered_events	 = true,
- };
++config LOG_CPU_MIN_BUF_SHIFT
++	int "CPU kernel log buffer size contribution (13 => 8 KB, 17 => 128KB)"
++	range 0 21
++	default 12
++	depends on SMP
++	depends on !BASE_SMALL
++	help
++	  The kernel ring buffer will get additional data logged onto it
++	  when multiple CPUs are supported. Typically the contributions are
++	  only a few lines when idle however under under load this can vary
++	  and in the worst case it can mean losing logging information. You
++	  can use this to set the maximum expected mount of amount of logging
++	  contribution under load by each CPU in the worst case scenerio, as
++	  a power of 2. The total amount of contributions made by each CPU
++	  must be greater than half of the default kernel ring buffer size
++	  (1 << LOG_BUF_SHIFT bytes) in order to trigger an increase upon
++	  bootup. For example if LOG_BUF_SHIFT is 18 (256 KB) you're require
++	  at least 128 KB contributions by other CPUs in order to trigger
++	  an increase. With a LOG_CPU_BUF_SHIFT of 12 (4 KB) you'd require
++	  at least anything over > 64 possible CPUs to trigger an increase.
++	  If you had 128 possible CPUs your kernel buffer size would be:
++
++	     ((1 << 18) + ((128 - 1) * (1 << 12))) / 1024 = 764 KB
++
++	  This value is ignored when "log_buf_len" kernel parameter is used
++	  as it forces the exact size of the ring buffer to an expected value.
++	  The number of possible CPUs is used for this computation ignoring
++	  hotplugging making the compuation optimal for the the worst case
++	  scenerio while allowing a simple algorithm to be used from bootup.
++
++	  Examples shift values and their meaning:
++		     17 => 128 KB for each CPU
++		     16 =>  64 KB for each CPU
++	             15 =>  32 KB for each CPU
++	             14 =>  16 KB for each CPU
++		     13 =>   8 KB for each CPU
++		     12 =>   4 KB for each CPU
++
+ #
+ # Architectures with an unreliable sched_clock() should select this:
+ #
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index 7228258..3f3356b 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -246,6 +246,7 @@ static u32 clear_idx;
+ #define LOG_ALIGN __alignof__(struct printk_log)
+ #endif
+ #define __LOG_BUF_LEN (1 << CONFIG_LOG_BUF_SHIFT)
++#define __LOG_CPU_MIN_BUF_LEN (1 << CONFIG_LOG_CPU_MIN_BUF_SHIFT)
+ static char __log_buf[__LOG_BUF_LEN] __aligned(LOG_ALIGN);
+ static char *log_buf = __log_buf;
+ static u32 log_buf_len = __LOG_BUF_LEN;
+@@ -752,6 +753,17 @@ void __init setup_log_buf(int early)
+ 	unsigned long flags;
+ 	char *new_log_buf;
+ 	int free;
++	int cpu_extra = (num_possible_cpus() - 1) *  __LOG_CPU_MIN_BUF_LEN;
++
++	/*
++	 * If you set log_buf_len=n kernel parameter LOG_CPU_MIN_BUF_SHIFT will
++	 * be ignored. LOG_CPU_MIN_BUF_SHIFT is a proactive measure for large
++	 * systems. With a LOG_BUF_SHIFT of 18 and LOG_CPU_MIN_BUF_SHIFT 12 at
++	 * we'd require more than 64 CPUs to trigger an increase from the
++	 * default.
++	 */
++	if (!new_log_buf_len && (cpu_extra > __LOG_BUF_LEN / 2))
++		new_log_buf_len = __LOG_BUF_LEN + cpu_extra;
  
- static double fragmentation(unsigned long n_req, unsigned long n_alloc)
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index 0f1e5a2..b2f0ddb 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -955,7 +955,7 @@ static int perf_kvm__mmap_read(struct perf_kvm_stat *kvm)
- 
- 	/* flush queue after each round in which we processed events */
- 	if (ntotal) {
--		kvm->session->ordered_samples.next_flush = flush_time;
-+		kvm->session->ordered_events.next_flush = flush_time;
- 		err = kvm->tool.finished_round(&kvm->tool, NULL, kvm->session);
- 		if (err) {
- 			if (kvm->lost_events)
-@@ -1228,7 +1228,7 @@ static int read_events(struct perf_kvm_stat *kvm)
- 	struct perf_tool eops = {
- 		.sample			= process_sample_event,
- 		.comm			= perf_event__process_comm,
--		.ordered_samples	= true,
-+		.ordered_events		= true,
- 	};
- 	struct perf_data_file file = {
- 		.path = kvm->file_name,
-@@ -1480,7 +1480,7 @@ static int kvm_events_live(struct perf_kvm_stat *kvm,
- 	kvm->tool.exit   = perf_event__process_exit;
- 	kvm->tool.fork   = perf_event__process_fork;
- 	kvm->tool.lost   = process_lost_event;
--	kvm->tool.ordered_samples = true;
-+	kvm->tool.ordered_events = true;
- 	perf_tool__fill_defaults(&kvm->tool);
- 
- 	/* set defaults */
-diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
-index 6148afc..c8122d3 100644
---- a/tools/perf/builtin-lock.c
-+++ b/tools/perf/builtin-lock.c
-@@ -852,7 +852,7 @@ static int __cmd_report(bool display_info)
- 	struct perf_tool eops = {
- 		.sample		 = process_sample_event,
- 		.comm		 = perf_event__process_comm,
--		.ordered_samples = true,
-+		.ordered_events	 = true,
- 	};
- 	struct perf_data_file file = {
- 		.path = input_name,
-diff --git a/tools/perf/builtin-mem.c b/tools/perf/builtin-mem.c
-index 4a1a6c9..80e57c8 100644
---- a/tools/perf/builtin-mem.c
-+++ b/tools/perf/builtin-mem.c
-@@ -194,7 +194,7 @@ int cmd_mem(int argc, const char **argv, const char *prefix __maybe_unused)
- 			.lost		= perf_event__process_lost,
- 			.fork		= perf_event__process_fork,
- 			.build_id	= perf_event__process_build_id,
--			.ordered_samples = true,
-+			.ordered_events	= true,
- 		},
- 		.input_name		 = "perf.data",
- 	};
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 21d830b..c72cc5a 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -578,7 +578,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 			.attr		 = perf_event__process_attr,
- 			.tracing_data	 = perf_event__process_tracing_data,
- 			.build_id	 = perf_event__process_build_id,
--			.ordered_samples = true,
-+			.ordered_events	 = true,
- 			.ordering_requires_timestamps = true,
- 		},
- 		.max_stack		 = PERF_MAX_STACK_DEPTH,
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index c38d06c..5cb39a3 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -1660,7 +1660,7 @@ int cmd_sched(int argc, const char **argv, const char *prefix __maybe_unused)
- 			.comm		 = perf_event__process_comm,
- 			.lost		 = perf_event__process_lost,
- 			.fork		 = perf_sched__process_fork_event,
--			.ordered_samples = true,
-+			.ordered_events = true,
- 		},
- 		.cmp_pid	      = LIST_HEAD_INIT(sched.cmp_pid),
- 		.sort_list	      = LIST_HEAD_INIT(sched.sort_list),
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 9e9c91f..ba4162e 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -1510,7 +1510,7 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
- 			.attr		 = process_attr,
- 			.tracing_data	 = perf_event__process_tracing_data,
- 			.build_id	 = perf_event__process_build_id,
--			.ordered_samples = true,
-+			.ordered_events	 = true,
- 			.ordering_requires_timestamps = true,
- 		},
- 	};
-diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-index 74db256..257d9d6 100644
---- a/tools/perf/builtin-timechart.c
-+++ b/tools/perf/builtin-timechart.c
-@@ -1279,7 +1279,7 @@ int cmd_timechart(int argc, const char **argv,
- 			.fork		 = process_fork_event,
- 			.exit		 = process_exit_event,
- 			.sample		 = process_sample_event,
--			.ordered_samples = true,
-+			.ordered_events	 = true,
- 		},
- 		.proc_num = 15,
- 	};
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index f954c26..c1d338e 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -2068,7 +2068,7 @@ static int trace__replay(struct trace *trace)
- 	trace->tool.tracing_data = perf_event__process_tracing_data;
- 	trace->tool.build_id	  = perf_event__process_build_id;
- 
--	trace->tool.ordered_samples = true;
-+	trace->tool.ordered_events = true;
- 	trace->tool.ordering_requires_timestamps = true;
- 
- 	/* add tid to output */
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index aec3dcd..315d522 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -76,9 +76,9 @@ struct perf_session *perf_session__new(struct perf_data_file *file,
- 		goto out;
- 
- 	session->repipe = repipe;
--	INIT_LIST_HEAD(&session->ordered_samples.samples);
--	INIT_LIST_HEAD(&session->ordered_samples.sample_cache);
--	INIT_LIST_HEAD(&session->ordered_samples.to_free);
-+	INIT_LIST_HEAD(&session->ordered_events.samples);
-+	INIT_LIST_HEAD(&session->ordered_events.sample_cache);
-+	INIT_LIST_HEAD(&session->ordered_events.to_free);
- 	machines__init(&session->machines);
- 
- 	if (file) {
-@@ -105,9 +105,9 @@ struct perf_session *perf_session__new(struct perf_data_file *file,
- 	}
- 
- 	if (tool && tool->ordering_requires_timestamps &&
--	    tool->ordered_samples && !perf_evlist__sample_id_all(session->evlist)) {
-+	    tool->ordered_events && !perf_evlist__sample_id_all(session->evlist)) {
- 		dump_printf("WARNING: No sample_id_all support, falling back to unordered processing\n");
--		tool->ordered_samples = false;
-+		tool->ordered_events = false;
- 	}
- 
- 	return session;
-@@ -240,7 +240,7 @@ void perf_tool__fill_defaults(struct perf_tool *tool)
- 	if (tool->build_id == NULL)
- 		tool->build_id = process_finished_round_stub;
- 	if (tool->finished_round == NULL) {
--		if (tool->ordered_samples)
-+		if (tool->ordered_events)
- 			tool->finished_round = process_finished_round;
- 		else
- 			tool->finished_round = process_finished_round_stub;
-@@ -446,7 +446,7 @@ static perf_event__swap_op perf_event__swap_ops[] = {
- 	[PERF_RECORD_HEADER_MAX]	  = NULL,
- };
- 
--struct sample_queue {
-+struct ordered_event {
- 	u64			timestamp;
- 	u64			file_offset;
- 	union perf_event	*event;
-@@ -455,12 +455,12 @@ struct sample_queue {
- 
- static void perf_session_free_sample_buffers(struct perf_session *session)
- {
--	struct ordered_samples *os = &session->ordered_samples;
-+	struct ordered_events_queue *os = &session->ordered_events;
- 
- 	while (!list_empty(&os->to_free)) {
--		struct sample_queue *sq;
-+		struct ordered_event *sq;
- 
--		sq = list_entry(os->to_free.next, struct sample_queue, list);
-+		sq = list_entry(os->to_free.next, struct ordered_event, list);
- 		list_del(&sq->list);
- 		free(sq);
- 	}
-@@ -472,12 +472,12 @@ static int perf_session_deliver_event(struct perf_session *session,
- 				      struct perf_tool *tool,
- 				      u64 file_offset);
- 
--static int flush_sample_queue(struct perf_session *s,
-+static int ordered_events_flush(struct perf_session *s,
- 		       struct perf_tool *tool)
- {
--	struct ordered_samples *os = &s->ordered_samples;
-+	struct ordered_events_queue *os = &s->ordered_events;
- 	struct list_head *head = &os->samples;
--	struct sample_queue *tmp, *iter;
-+	struct ordered_event *tmp, *iter;
- 	struct perf_sample sample;
- 	u64 limit = os->next_flush;
- 	u64 last_ts = os->last_sample ? os->last_sample->timestamp : 0ULL;
-@@ -485,7 +485,7 @@ static int flush_sample_queue(struct perf_session *s,
- 	struct ui_progress prog;
- 	int ret;
- 
--	if (!tool->ordered_samples || !limit)
-+	if (!tool->ordered_events || !limit)
- 		return 0;
- 
- 	if (show_progress)
-@@ -521,7 +521,7 @@ static int flush_sample_queue(struct perf_session *s,
- 		os->last_sample = NULL;
- 	} else if (last_ts <= limit) {
- 		os->last_sample =
--			list_entry(head->prev, struct sample_queue, list);
-+			list_entry(head->prev, struct ordered_event, list);
- 	}
- 
- 	return 0;
-@@ -570,18 +570,18 @@ static int process_finished_round(struct perf_tool *tool,
- 				  union perf_event *event __maybe_unused,
- 				  struct perf_session *session)
- {
--	int ret = flush_sample_queue(session, tool);
-+	int ret = ordered_events_flush(session, tool);
- 	if (!ret)
--		session->ordered_samples.next_flush = session->ordered_samples.max_timestamp;
-+		session->ordered_events.next_flush = session->ordered_events.max_timestamp;
- 
- 	return ret;
- }
- 
- /* The queue is ordered by time */
--static void __queue_event(struct sample_queue *new, struct perf_session *s)
-+static void __queue_event(struct ordered_event *new, struct perf_session *s)
- {
--	struct ordered_samples *os = &s->ordered_samples;
--	struct sample_queue *sample = os->last_sample;
-+	struct ordered_events_queue *os = &s->ordered_events;
-+	struct ordered_event *sample = os->last_sample;
- 	u64 timestamp = new->timestamp;
- 	struct list_head *p;
- 
-@@ -607,7 +607,7 @@ static void __queue_event(struct sample_queue *new, struct perf_session *s)
- 				os->max_timestamp = timestamp;
- 				return;
- 			}
--			sample = list_entry(p, struct sample_queue, list);
-+			sample = list_entry(p, struct ordered_event, list);
- 		}
- 		list_add_tail(&new->list, &sample->list);
- 	} else {
-@@ -617,32 +617,32 @@ static void __queue_event(struct sample_queue *new, struct perf_session *s)
- 				list_add(&new->list, &os->samples);
- 				return;
- 			}
--			sample = list_entry(p, struct sample_queue, list);
-+			sample = list_entry(p, struct ordered_event, list);
- 		}
- 		list_add(&new->list, &sample->list);
- 	}
- }
- 
--#define MAX_SAMPLE_BUFFER	(64 * 1024 / sizeof(struct sample_queue))
-+#define MAX_SAMPLE_BUFFER	(64 * 1024 / sizeof(struct ordered_event))
- 
- int perf_session_queue_event(struct perf_session *s, union perf_event *event,
- 				    struct perf_sample *sample, u64 file_offset)
- {
--	struct ordered_samples *os = &s->ordered_samples;
-+	struct ordered_events_queue *os = &s->ordered_events;
- 	struct list_head *sc = &os->sample_cache;
- 	u64 timestamp = sample->time;
--	struct sample_queue *new;
-+	struct ordered_event *new;
- 
- 	if (!timestamp || timestamp == ~0ULL)
- 		return -ETIME;
- 
--	if (timestamp < s->ordered_samples.last_flush) {
-+	if (timestamp < s->ordered_events.last_flush) {
- 		printf("Warning: Timestamp below last timeslice flush\n");
- 		return -EINVAL;
- 	}
- 
- 	if (!list_empty(sc)) {
--		new = list_entry(sc->next, struct sample_queue, list);
-+		new = list_entry(sc->next, struct ordered_event, list);
- 		list_del(&new->list);
- 	} else if (os->sample_buffer) {
- 		new = os->sample_buffer + os->sample_buffer_idx;
-@@ -1062,7 +1062,7 @@ static int perf_session__process_event(struct perf_session *session,
- 	if (ret)
- 		return ret;
- 
--	if (tool->ordered_samples) {
-+	if (tool->ordered_events) {
- 		ret = perf_session_queue_event(session, event, &sample,
- 					       file_offset);
- 		if (ret != -ETIME)
-@@ -1221,8 +1221,8 @@ more:
- 		goto more;
- done:
- 	/* do the final flush for ordered samples */
--	session->ordered_samples.next_flush = ULLONG_MAX;
--	err = flush_sample_queue(session, tool);
-+	session->ordered_events.next_flush = ULLONG_MAX;
-+	err = ordered_events_flush(session, tool);
- out_err:
- 	free(buf);
- 	perf_session__warn_about_errors(session, tool);
-@@ -1357,8 +1357,8 @@ more:
- 
- out:
- 	/* do the final flush for ordered samples */
--	session->ordered_samples.next_flush = ULLONG_MAX;
--	err = flush_sample_queue(session, tool);
-+	session->ordered_events.next_flush = ULLONG_MAX;
-+	err = ordered_events_flush(session, tool);
- out_err:
- 	ui_progress__finish();
- 	perf_session__warn_about_errors(session, tool);
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index 3140f8a..91902ea 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -12,32 +12,32 @@
- #include <linux/rbtree.h>
- #include <linux/perf_event.h>
- 
--struct sample_queue;
-+struct ordered_event;
- struct ip_callchain;
- struct thread;
- 
--struct ordered_samples {
-+struct ordered_events_queue {
- 	u64			last_flush;
- 	u64			next_flush;
- 	u64			max_timestamp;
- 	struct list_head	samples;
- 	struct list_head	sample_cache;
- 	struct list_head	to_free;
--	struct sample_queue	*sample_buffer;
--	struct sample_queue	*last_sample;
-+	struct ordered_event	*sample_buffer;
-+	struct ordered_event	*last_sample;
- 	int			sample_buffer_idx;
- 	unsigned int		nr_samples;
- };
- 
- struct perf_session {
--	struct perf_header	header;
--	struct machines		machines;
--	struct perf_evlist	*evlist;
--	struct trace_event	tevent;
--	struct events_stats	stats;
--	bool			repipe;
--	struct ordered_samples	ordered_samples;
--	struct perf_data_file	*file;
-+	struct perf_header		header;
-+	struct machines			machines;
-+	struct perf_evlist		*evlist;
-+	struct trace_event		tevent;
-+	struct events_stats		stats;
-+	bool				repipe;
-+	struct ordered_events_queue	ordered_events;
-+	struct perf_data_file		*file;
- };
- 
- #define PRINT_IP_OPT_IP		(1<<0)
-diff --git a/tools/perf/util/tool.h b/tools/perf/util/tool.h
-index 4385816..f116369 100644
---- a/tools/perf/util/tool.h
-+++ b/tools/perf/util/tool.h
-@@ -40,7 +40,7 @@ struct perf_tool {
- 	event_op2	tracing_data;
- 	event_op2	finished_round,
- 			build_id;
--	bool		ordered_samples;
-+	bool		ordered_events;
- 	bool		ordering_requires_timestamps;
- };
- 
+ 	if (!new_log_buf_len)
+ 		return;
 -- 
-1.8.3.1
+2.0.0.rc3.18.g00a5b79
 
