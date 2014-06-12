@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933148AbaFLKE0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 06:04:26 -0400
-Received: from vsp-authed02.binero.net ([195.74.38.226]:42528 "EHLO
-	vsp-authed-04-02.binero.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933128AbaFLKEY (ORCPT
+	id S933000AbaFLKHm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 06:07:42 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:60321 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932894AbaFLKHl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 06:04:24 -0400
-Message-ID: <53997AF6.1040003@gaisler.com>
-Date: Thu, 12 Jun 2014 12:03:34 +0200
-From: Andreas Larsson <andreas@gaisler.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 12 Jun 2014 06:07:41 -0400
 MIME-Version: 1.0
-To: nyushchenko@dev.rtsoft.ru, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, devicetree@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, lugovskoy@dev.rtsoft.ru,
-        sparclinux@vger.kernel.org, davem@davemloft.net
-Subject: Re: [PATCH 00/21] add and use devm_irq_of_parse_and_map()
-References: <1401880402-30091-1-git-send-email-nyushchenko@dev.rtsoft.ru>
-In-Reply-To: <1401880402-30091-1-git-send-email-nyushchenko@dev.rtsoft.ru>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Date: Thu, 12 Jun 2014 11:07:40 +0100
+Message-ID: <CADjbhK4G0Jp+x-gZ7DmKx2Uz2i+zD53NzvmnwUuZjK3YERSAqA@mail.gmail.com>
+Subject: [mac80211] send ethernet packet
+From: Bruno Correia <bcorreia.c@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-06-04 13:13, nyushchenko@dev.rtsoft.ru wrote:
-> Currently many device tree aware drivers use irq_of_parse_and_map() to get
-> IRQ number and then devm_request_irq() to set up IRQ handler.
->
-> This causes a problem for exit path and for error paths: undo action for
-> irq_of_parse_and_map() is irq_dispose_mapping() that must not be called
-> while IRQ handler is defined, but devres moves free_irq() out of driver
-> so driver does not have safe place to call irq_dispose_mapping().
->
-> So many drivers do not call irq_dispose_mapping() at all, others call it
-> while IRQ handler is defined (which is incorrect and causes error messages
-> in logs), even others refuse to use devres for managing IRQ handlers.
->
-> This patchset adds devres version of irq_of_parse_and_map(), and updates
-> in-tree users of both devres and irq_of_parse_and_map() to use
-> devm_irq_of_parse_and_map() instead.
+Hi all,
 
+I am trying to send a custom ethernet packet through a kernel module
+(mac80211) and I am facing some problems to understand what I really
+need to do.
 
-SPARC does not use OF_IRQ and has a different implementation of 
-irq_of_parse_and_map than the one in drivers/of/irq.c. All code 
-converted from irq_of_parse_and_map to devm_irq_of_parse_and_map in this 
-patch set will be unlinkable for SPARC. This includes SPI in general and 
-many drivers that are used for SPARC (of which several are currently 
-only used on SPARC platforms).
+Until now, I realize that I need to create an "sk_buff" and send it
+via "dev_queue_xmit" function. Am I right?
+
+My problem is how to properly create and fill all the needed fields of
+"sk_buff" with my data (I only need to pass a number).
+
+In order to give you some context, I am working on a research in IEEE
+802.11 and I am developing a mechanism to send the packets in an
+energy efficient way. Therefore, I need to employ a specific algorithm
+before adding the "Traffic Indication Map" (TIM) into the "Beacon"
+frame and, depending on the results of this algorithm, I need to send
+an extra message to the station. This is why I cannot simply use a raw
+socket in the user space, for example.
+
+Any idea how to achieve my goal? Or any point to a "guide" that help
+me to understand what I really need to do?
+
+The kernel version in use is the "3.2.0-4-686-pae".
 
 Best regards,
-Andreas Larsson
+Coiso22
+
+ps.: I wish to be personally CC'ed the answers/comments posted to the
+list in response to my post.
