@@ -1,165 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756102AbaFLPvZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 11:51:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20123 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752967AbaFLPvX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 11:51:23 -0400
-Subject: [RESEND PATCH] vgaarb: We can own non-decoded resources
-From: Alex Williamson <alex.williamson@redhat.com>
-To: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Ville =?utf-8?b?U3lyasOkbMOk?= <ville.syrjala@linux.intel.com>,
-        Dave Airlie <airlied@redhat.com>
-Date: Thu, 12 Jun 2014 09:51:18 -0600
-Message-ID: <20140612155051.5829.4921.stgit@bling.home>
-User-Agent: StGit/0.17-dirty
+	id S1756130AbaFLPwc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 11:52:32 -0400
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:59382 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755983AbaFLPwb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 11:52:31 -0400
+Date: Thu, 12 Jun 2014 11:52:27 -0400
+From: Tejun Heo <tj@kernel.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] percpu: add data dependency barrier in percpu
+ accessors and operations
+Message-ID: <20140612155227.GB23606@htj.dyndns.org>
+References: <20140612135630.GA23606@htj.dyndns.org>
+ <20140612153426.GV4581@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140612153426.GV4581@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The VGA arbiter does not allow devices to "own" resources that it
-doesn't "decode".  However, it does allow devices to "lock" resources
-that it doesn't decode.  This gets us into trouble because locking
-the resource goes through the same bridge routing updates regardless
-of whether we decode the resource.  This means that when a non-decoded
-resource is released, the bridge is left with VGA routing enabled and
-locking a different device won't clear it.
+Hello, Paul.
 
-This happens in the following scenario:
+On Thu, Jun 12, 2014 at 08:34:26AM -0700, Paul E. McKenney wrote:
+> > It can be argued that smp_read_barrier_depends() is the responsibility
+> > of the caller; however, discerning local and remote accesses gets very
+> > confusing with percpu areas (initialized remotely but local to this
+> > cpu and vice-versa) and data dependency barrier is free on all archs
+> > except for alpha, so I think it's better to include it as part of
+> > percpu accessors and operations.
+> 
+> OK, I will bite...  Did you find a bug of this form?  (I do see a
+> couple of possible bugs on a quick look, so maybe...)
 
-VGA device 01:00.0 (VGA1) is owned by the radeon driver, which
-registers a set_vga_decode function which releases legacy VGA decodes.
+I don't have an actual bug report or repro case, which isn't too
+surprising given that this can't happen on x86, but I know of places
+where percpu pointer is used opportunistically (if allocated) which
+would be affected by this.
 
-VGA device 02:00.0 (VGA2) is any VGA device.
+> I would argue that the code above should instead say something like:
+> 
+> 	smp_store_release(p, alloc_percpu());
 
-VGA1 user locks VGA resources triggering first_use callback of
-set_vga_decoded, clearing "decode" and "owns" of legacy resources
-on VGA1.
+Well, we can always say that it's the caller's responsibility to put
+in enough barriers, but it becomes weird for percpu areas because the
+ownership of the allocated areas isn't really clear.  Whether each
+allocated cpu-specific area's queued writes belong to the allocating
+cpu or the cpu that the area is associated with is an implementation
+detail which may theoretically change and as such I think it'd be best
+for the problem to be dealt with in percpu allocator and accessors
+proper.  I think this is way too subtle to ask the users to handle
+correctly.
 
-VGA1 user unlocks VGA resources.
+> I was worried about use of per_cpu() by the reading CPU, but of course
+> in that case, things are initialized at compiler time.
 
-VGA2 user locks VGA resources, which skips VGA1 as conflicting as it
-does not "own" legacy resources, although VGA routing is still enabled
-for the VGA1 bridge.  VGA routing is enabled on VGA2 bridge.
+Not really.  The template is initialized on kernel load.  The actual
+percpu areas have to be allocated dynamically; however, this happens
+while the machine is still running UP, so this should be okay.
 
-VGA2 may or may not receive VGA transactions depending on the bus
-priority of VGA1 vs VGA2 bridge.
+> > I wonder whether we also need a smp_wmb() for other __GFP_ZERO
+> > allocations.  There isn't one and requiring the users to perform
+> > smp_wmb() to ensure the propagation of zeroing seems too subtle.
+> 
+> I would say "no" even if we do decide that alloc_percpu() needs
+> an smp_wmb().  The reason is that you really do have to store the
+> pointer at some point, and you should use smp_store_release() for
+> this task, at least if you are storing to something accessible to
+> other CPUs.
 
-To resolve this, we need to allow devices to "own" resources that they
-do not "decode".  This way we can track bus ownership of VGA.  When a
-device decodes VGA, it only means that we must update the command bits
-in cases where the conflicting device is on the same bus.
+For normal allocations, I don't have a strong opinion.  I'd prefer to
+think of memory coming out of the allocator to have memory ordering
+already taken care of but it is a lot less murky than with percpu
+areas.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Cc: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Dave Airlie <airlied@redhat.com>
----
+Thanks.
 
-Adding dri-devel
-
- drivers/gpu/vga/vgaarb.c |   40 ++++++++++++++++++++++------------------
- 1 file changed, 22 insertions(+), 18 deletions(-)
-
-diff --git a/drivers/gpu/vga/vgaarb.c b/drivers/gpu/vga/vgaarb.c
-index af02597..d2077f0 100644
---- a/drivers/gpu/vga/vgaarb.c
-+++ b/drivers/gpu/vga/vgaarb.c
-@@ -237,12 +237,10 @@ static struct vga_device *__vga_tryget(struct vga_device *vgadev,
- 		if (conflict->locks & lwants)
- 			return conflict;
- 
--		/* Ok, now check if he owns the resource we want. We don't need
--		 * to check "decodes" since it should be impossible to own
--		 * own legacy resources you don't decode unless I have a bug
--		 * in this code...
-+		/* Ok, now check if it owns the resource we want.  We can
-+		 * lock resources that are not decoded, therefore a device
-+		 * can own resources it doesn't decode.
- 		 */
--		WARN_ON(conflict->owns & ~conflict->decodes);
- 		match = lwants & conflict->owns;
- 		if (!match)
- 			continue;
-@@ -254,13 +252,19 @@ static struct vga_device *__vga_tryget(struct vga_device *vgadev,
- 		flags = 0;
- 		pci_bits = 0;
- 
-+		/* If we can't control legacy resources via the bridge, we
-+		 * also need to disable normal decoding.
-+		 */
- 		if (!conflict->bridge_has_one_vga) {
--			vga_irq_set_state(conflict, false);
--			flags |= PCI_VGA_STATE_CHANGE_DECODES;
--			if (match & (VGA_RSRC_LEGACY_MEM|VGA_RSRC_NORMAL_MEM))
-+			if ((match & conflict->decodes) & VGA_RSRC_LEGACY_MEM)
- 				pci_bits |= PCI_COMMAND_MEMORY;
--			if (match & (VGA_RSRC_LEGACY_IO|VGA_RSRC_NORMAL_IO))
-+			if ((match & conflict->decodes) & VGA_RSRC_LEGACY_IO)
- 				pci_bits |= PCI_COMMAND_IO;
-+
-+			if (pci_bits) {
-+				vga_irq_set_state(conflict, false);
-+				flags |= PCI_VGA_STATE_CHANGE_DECODES;
-+			}
- 		}
- 
- 		if (change_bridge)
-@@ -268,18 +272,19 @@ static struct vga_device *__vga_tryget(struct vga_device *vgadev,
- 
- 		pci_set_vga_state(conflict->pdev, false, pci_bits, flags);
- 		conflict->owns &= ~match;
--		/* If he also owned non-legacy, that is no longer the case */
--		if (match & VGA_RSRC_LEGACY_MEM)
-+
-+		/* If we disabled normal decoding, reflect it in owns */
-+		if (pci_bits & PCI_COMMAND_MEMORY)
- 			conflict->owns &= ~VGA_RSRC_NORMAL_MEM;
--		if (match & VGA_RSRC_LEGACY_IO)
-+		if (pci_bits & PCI_COMMAND_IO)
- 			conflict->owns &= ~VGA_RSRC_NORMAL_IO;
- 	}
- 
- enable_them:
- 	/* ok dude, we got it, everybody conflicting has been disabled, let's
--	 * enable us. Make sure we don't mark a bit in "owns" that we don't
--	 * also have in "decodes". We can lock resources we don't decode but
--	 * not own them.
-+	 * enable us.  Mark any bits in "owns" regardless of whether we
-+	 * decoded them.  We can lock resources we don't decode, therefore
-+	 * we must track them via "owns".
- 	 */
- 	flags = 0;
- 	pci_bits = 0;
-@@ -291,7 +296,7 @@ enable_them:
- 		if (wants & (VGA_RSRC_LEGACY_IO|VGA_RSRC_NORMAL_IO))
- 			pci_bits |= PCI_COMMAND_IO;
- 	}
--	if (!!(wants & VGA_RSRC_LEGACY_MASK))
-+	if (wants & VGA_RSRC_LEGACY_MASK)
- 		flags |= PCI_VGA_STATE_CHANGE_BRIDGE;
- 
- 	pci_set_vga_state(vgadev->pdev, true, pci_bits, flags);
-@@ -299,7 +304,7 @@ enable_them:
- 	if (!vgadev->bridge_has_one_vga) {
- 		vga_irq_set_state(vgadev, true);
- 	}
--	vgadev->owns |= (wants & vgadev->decodes);
-+	vgadev->owns |= wants;
- lock_them:
- 	vgadev->locks |= (rsrc & VGA_RSRC_LEGACY_MASK);
- 	if (rsrc & VGA_RSRC_LEGACY_IO)
-@@ -649,7 +654,6 @@ static inline void vga_update_device_decodes(struct vga_device *vgadev,
- 	old_decodes = vgadev->decodes;
- 	decodes_removed = ~new_decodes & old_decodes;
- 	decodes_unlocked = vgadev->locks & decodes_removed;
--	vgadev->owns &= ~decodes_removed;
- 	vgadev->decodes = new_decodes;
- 
- 	pr_info("vgaarb: device changed decodes: PCI:%s,olddecodes=%s,decodes=%s:owns=%s\n",
-
+-- 
+tejun
