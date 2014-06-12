@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752516AbaFLXTY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 19:19:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37315 "EHLO
+	id S1752549AbaFLXTZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 19:19:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37298 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751172AbaFLXTP (ORCPT
+	with ESMTP id S1750961AbaFLXTN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 19:19:15 -0400
+	Thu, 12 Jun 2014 19:19:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Lutomirski <luto@amacapital.net>, Eric Paris <eparis@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.4 6/8] auditsc: audit_krule mask accesses need bounds checking
-Date: Thu, 12 Jun 2014 16:22:53 -0700
-Message-Id: <20140612232238.903131645@linuxfoundation.org>
+        Maxime Bizon <mbizon@freebox.fr>, Florian Westphal <fw@strlen.de>,
+        Pablo Neira Ayuso <pablo@netfilter.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.4 2/8] netfilter: ipv4: defrag: set local_df flag on defragmented skb
+Date: Thu, 12 Jun 2014 16:22:49 -0700
+Message-Id: <20140612232238.585729937@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140612232238.396722659@linuxfoundation.org>
 References: <20140612232238.396722659@linuxfoundation.org>
@@ -29,85 +29,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Florian Westphal <fw@strlen.de>
 
-commit a3c54931199565930d6d84f4c3456f6440aefd41 upstream.
+commit 895162b1101b3ea5db08ca6822ae9672717efec0 upstream.
 
-Fixes an easy DoS and possible information disclosure.
+else we may fail to forward skb even if original fragments do fit
+outgoing link mtu:
 
-This does nothing about the broken state of x32 auditing.
+1. remote sends 2k packets in two 1000 byte frags, DF set
+2. we want to forward but only see '2k > mtu and DF set'
+3. we then send icmp error saying that outgoing link is 1500
 
-eparis: If the admin has enabled auditd and has specifically loaded
-audit rules.  This bug has been around since before git.  Wow...
+But original sender never sent a packet that would not fit
+the outgoing link.
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Signed-off-by: Eric Paris <eparis@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Setting local_df makes outgoing path test size vs.
+IPCB(skb)->frag_max_size, so we will still send the correct
+error in case the largest original size did not fit
+outgoing link mtu.
+
+Reported-by: Maxime Bizon <mbizon@freebox.fr>
+Suggested-by: Maxime Bizon <mbizon@freebox.fr>
+Fixes: 5f2d04f1f9 (ipv4: fix path MTU discovery with connection tracking)
+Signed-off-by: Florian Westphal <fw@strlen.de>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: Jiri Slaby <jslaby@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/auditsc.c |   27 ++++++++++++++++++---------
- 1 file changed, 18 insertions(+), 9 deletions(-)
+ net/ipv4/netfilter/nf_defrag_ipv4.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -868,6 +868,22 @@ static enum audit_state audit_filter_tas
- 	return AUDIT_BUILD_CONTEXT;
+--- a/net/ipv4/netfilter/nf_defrag_ipv4.c
++++ b/net/ipv4/netfilter/nf_defrag_ipv4.c
+@@ -22,7 +22,6 @@
+ #endif
+ #include <net/netfilter/nf_conntrack_zones.h>
+ 
+-/* Returns new sk_buff, or NULL */
+ static int nf_ct_ipv4_gather_frags(struct sk_buff *skb, u_int32_t user)
+ {
+ 	int err;
+@@ -33,8 +32,10 @@ static int nf_ct_ipv4_gather_frags(struc
+ 	err = ip_defrag(skb, user);
+ 	local_bh_enable();
+ 
+-	if (!err)
++	if (!err) {
+ 		ip_send_check(ip_hdr(skb));
++		skb->local_df = 1;
++	}
+ 
+ 	return err;
  }
- 
-+static int audit_in_mask(const struct audit_krule *rule, unsigned long val)
-+{
-+	int word, bit;
-+
-+	if (val > 0xffffffff)
-+		return false;
-+
-+	word = AUDIT_WORD(val);
-+	if (word >= AUDIT_BITMASK_SIZE)
-+		return false;
-+
-+	bit = AUDIT_BIT(val);
-+
-+	return rule->mask[word] & bit;
-+}
-+
- /* At syscall entry and exit time, this filter is called if the
-  * audit_state is not low enough that auditing cannot take place, but is
-  * also not high enough that we already know we have to write an audit
-@@ -885,11 +901,8 @@ static enum audit_state audit_filter_sys
- 
- 	rcu_read_lock();
- 	if (!list_empty(list)) {
--		int word = AUDIT_WORD(ctx->major);
--		int bit  = AUDIT_BIT(ctx->major);
--
- 		list_for_each_entry_rcu(e, list, list) {
--			if ((e->rule.mask[word] & bit) == bit &&
-+			if (audit_in_mask(&e->rule, ctx->major) &&
- 			    audit_filter_rules(tsk, &e->rule, ctx, NULL,
- 					       &state, false)) {
- 				rcu_read_unlock();
-@@ -909,20 +922,16 @@ static enum audit_state audit_filter_sys
- static int audit_filter_inode_name(struct task_struct *tsk,
- 				   struct audit_names *n,
- 				   struct audit_context *ctx) {
--	int word, bit;
- 	int h = audit_hash_ino((u32)n->ino);
- 	struct list_head *list = &audit_inode_hash[h];
- 	struct audit_entry *e;
- 	enum audit_state state;
- 
--	word = AUDIT_WORD(ctx->major);
--	bit  = AUDIT_BIT(ctx->major);
--
- 	if (list_empty(list))
- 		return 0;
- 
- 	list_for_each_entry_rcu(e, list, list) {
--		if ((e->rule.mask[word] & bit) == bit &&
-+		if (audit_in_mask(&e->rule, ctx->major) &&
- 		    audit_filter_rules(tsk, &e->rule, ctx, n, &state, false)) {
- 			ctx->current_state = state;
- 			return 1;
 
 
