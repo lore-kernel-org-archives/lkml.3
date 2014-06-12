@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751997AbaFLSFX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 14:05:23 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:53409 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751210AbaFLSFU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 14:05:20 -0400
-Date: Thu, 12 Jun 2014 11:05:19 -0700 (PDT)
-Message-Id: <20140612.110519.583755215428272991.davem@davemloft.net>
-To: varkabhadram@gmail.com
-Cc: netdev@vger.kernel.org, alex.bluesman.smirnov@gmail.com,
-        dbaryshkov@gmail.com, linux-zigbee-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, varkab@cdac.in
-Subject: Re: [PATCH net-next] mrf24j40: separate h/w init and add checkings
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140612.110324.932062947770396872.davem@davemloft.net>
-References: <1402564248-20606-1-git-send-email-varkab@cdac.in>
-	<20140612.110324.932062947770396872.davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-7
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 12 Jun 2014 11:05:20 -0700 (PDT)
+	id S1752040AbaFLSGV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 14:06:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34980 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751758AbaFLSGU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 14:06:20 -0400
+Date: Thu, 12 Jun 2014 20:05:01 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Anshuman Khandual <khandual@linux.vnet.ibm.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: Pedro Alves <palves@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org, hpa@zytor.com, suresh.b.siddha@intel.com
+Subject: Re: [PATCH v2] ptrace: Clarify PTRACE_GETREGSET/PTRACE_SETREGSET,
+	documentation in uapi header
+Message-ID: <20140612180501.GB15795@redhat.com>
+References: <1398682853-7541-1-git-send-email-khandual@linux.vnet.ibm.com> <53625681.8010905@redhat.com> <53670F35.6010502@linux.vnet.ibm.com> <53725FF6.6060004@redhat.com> <537316DB.4060701@linux.vnet.ibm.com> <53734B7D.4010504@redhat.com> <53996A20.3030300@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53996A20.3030300@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5CI5a9S008144
 
-From: David Miller <davem@davemloft.net>
-Date: Thu, 12 Jun 2014 11:03:24 -0700 (PDT)
+On 06/12, Anshuman Khandual wrote:
+>
+> > --- a/include/uapi/linux/ptrace.h
+> > +++ b/include/uapi/linux/ptrace.h
+> > @@ -39,12 +39,17 @@
+> >   * payload are exactly the same layout.
+> >   *
+> >   * This interface usage is as follows:
+> > - *	struct iovec iov = { buf, len};
+> > + *	struct iovec iov = { buf, len };
+> >   *
+> >   *	ret = ptrace(PTRACE_GETREGSET/PTRACE_SETREGSET, pid, NT_XXX_TYPE, &iov);
+> >   *
+> > - * On the successful completion, iov.len will be updated by the kernel,
+> > - * specifying how much the kernel has written/read to/from the user's iov.buf.
+> > + * On entry, iov describes the buffer's address and length.  The buffer's length
+> > + * must be a multiple of the size of a single register in the register set.  The
+> > + * kernel never reads or writes more than iov.len, and caps the buffer length to
+> > + * the register set's size.  In other words, the kernel reads or writes
+> > + * min(iov.len, regset size).
 
-> From: Varka Bhadram <varkabhadram@gmail.com>
-> Date: Thu, 12 Jun 2014 14:40:48 +0530
-> 
->> separate the mrf24j40 hardware initialisation from probe()
->> and adds the sanity checkings.
->> 
->> These checkings are required if somebody hasn't a right spi configuration 
->> the probe function should fail. So we have to return from there.
->> 
->> Signed-off-by: Varka Bhadram <varkab@cdac.in>
-> 
-> Applied, thanks.
+I think this should be self-obvious ;) otherwise why do we need to pass
+the length of the buffer?
 
-Reverted, did you even compile test this change?
+But of course I won't argue with the additional documentation, perhaps you
+can re-send this patch to akpm? Usually ptrace changes are routed via -mm
+tree.
 
-drivers/net/ieee802154/mrf24j40.c: In function ¡mrf24j40_probe¢:
-drivers/net/ieee802154/mrf24j40.c:741:10: error: ¡err_hw_init¢ undeclared (first use in this function)
-drivers/net/ieee802154/mrf24j40.c:741:10: note: each undeclared identifier is reported only once for each function it appears in
-drivers/net/ieee802154/mrf24j40.c:759:1: warning: label ¡err_hw_init¢ defined but not used [-Wunused-label]
-drivers/net/ieee802154/mrf24j40.c:702:5: warning: unused variable ¡val¢ [-Wunused-variable]
-make[1]: *** [drivers/net/ieee802154/mrf24j40.o] Error 1
-make: *** [drivers/net/ieee802154/mrf24j40.o] Error 2
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+But if we update the kernel header, then probably it would be more important
+to update the man-page. To me the description of GETREGSET looks good, but
+probably it could also mention that buflen should be multiple of regsize (as
+you did above). Add Michael.
+
+Oleg.
+
