@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933505AbaFLN5X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 09:57:23 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:57540 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755855AbaFLN5U (ORCPT
+	id S933580AbaFLN52 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 09:57:28 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:36503 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933511AbaFLN5X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 09:57:20 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX192VdrMx5ACyPK1gkkoxep/
-Date: Thu, 12 Jun 2014 06:57:15 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Sricharan R <r.sricharan@ti.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, santosh.shilimkar@ti.com, nm@ti.com,
-        rnayak@ti.com, linux@arm.linux.org.uk, tglx@linutronix.de
-Subject: Re: [PATCH V2 03/19] irqchip: crossbar: Skip some irqs from getting
- mapped to crossbar
-Message-ID: <20140612135715.GE17845@atomide.com>
-References: <1402574007-13987-1-git-send-email-r.sricharan@ti.com>
- <1402574007-13987-4-git-send-email-r.sricharan@ti.com>
- <20140612125134.GS8664@titan.lakedaemon.net>
+	Thu, 12 Jun 2014 09:57:23 -0400
+Date: Thu, 12 Jun 2014 16:57:00 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: navin patidar <navin.patidar@gmail.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Larry Finger <Larry.Finger@lwfinger.net>
+Subject: Re: [PATCH 06/22] staging: rtl8188eu: Instead of intf_hdl pass
+ adapter in read & write functions
+Message-ID: <20140612135700.GX5015@mwanda>
+References: <1402507301-3722-1-git-send-email-navin.patidar@gmail.com>
+ <1402507301-3722-6-git-send-email-navin.patidar@gmail.com>
+ <20140612074321.GT5500@mwanda>
+ <CAPV97ydjB5_HT6Htvju-ng0PGYVBmiDWxY9A=vYq35vrubsWeQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140612125134.GS8664@titan.lakedaemon.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAPV97ydjB5_HT6Htvju-ng0PGYVBmiDWxY9A=vYq35vrubsWeQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Jason Cooper <jason@lakedaemon.net> [140612 05:52]:
-> On Thu, Jun 12, 2014 at 05:23:11PM +0530, Sricharan R wrote:
-> > From: Nishanth Menon <nm@ti.com>
-> > 
-> > When, in the system due to varied reasons, interrupts might be unusable
-> > due to hardware behavior, but register maps do exist, then those interrupts
-> > should be skipped while mapping irq to crossbars.
-> > 
-> > Signed-off-by: Nishanth Menon <nm@ti.com>
-> > Signed-off-by: Sricharan R <r.sricharan@ti.com>
-> > Signed-off-by: Tony Lindgren <tony@atomide.com>
+On Thu, Jun 12, 2014 at 03:52:33PM +0530, navin patidar wrote:
+> On Thu, Jun 12, 2014 at 1:13 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> > On Wed, Jun 11, 2014 at 10:51:25PM +0530, navin patidar wrote:
+> >> diff --git a/drivers/staging/rtl8188eu/core/rtw_io.c b/drivers/staging/rtl8188eu/core/rtw_io.c
+> >> index a0a31e6..85306bf 100644
+> >> --- a/drivers/staging/rtl8188eu/core/rtw_io.c
+> >> +++ b/drivers/staging/rtl8188eu/core/rtw_io.c
+> >> @@ -57,10 +57,10 @@ u8 _rtw_read8(struct adapter *adapter, u32 addr)
+> >>       u8 r_val;
+> >>       struct io_priv *pio_priv = &adapter->iopriv;
+> >>       struct  intf_hdl *pintfhdl = &(pio_priv->intf);
+> >> -     u8 (*_read8)(struct intf_hdl *pintfhdl, u32 addr);
+> >> +     u8 (*_read8)(struct adapter *pintfhdl, u32 addr);
+> >                                      ^^^^^^^^
+> > Could you send a follow on patch to change pintfhdl to adapter in all
+> > the declarations?
+> >
 > 
-> Tony, have you applied these somewhere already?
+> dan, these declarations are removed by other patches of this patch set.
+> 
+> do i still need to send v2 of this patch?
 
-I think some of these I had applied into a branch ready for
-merging but then it was discovered that further changes
-were needed and the branch was dropped.
+No.  That's fine, thanks.
 
-Sricharan, please remove my Signed-off-by from this series.
-If I end up applying it for merging my scripts will add it
-automatically.
+regards,
+dan carpenter
 
-Regards,
-
-Tony
