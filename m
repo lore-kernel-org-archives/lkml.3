@@ -1,109 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755905AbaFLNAW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 09:00:22 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46703 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752749AbaFLNAU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 09:00:20 -0400
-From: Stefan Bader <stefan.bader@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: fs/stat: Reduce memory requirements for stat_open
-Date: Thu, 12 Jun 2014 15:00:17 +0200
-Message-Id: <1402578017-16637-1-git-send-email-stefan.bader@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S933145AbaFLNC4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 09:02:56 -0400
+Received: from 1wt.eu ([62.212.114.60]:41912 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932717AbaFLNCw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 09:02:52 -0400
+Date: Thu, 12 Jun 2014 15:02:42 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Luis Henriques <luis.henriques@canonical.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Michal Tesar <mtesar@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>, tyler.hicks@canonical.com
+Subject: Re: [ 059/143] sysctl net: Keep tcp_syn_retries inside the boundary
+Message-ID: <20140612130242.GD4315@1wt.eu>
+References: <f07e5fe6d87f172fc73580b9c86ba9a2@local> <20140512003203.088027167@1wt.eu> <20140611184644.GA5442@hercules> <20140611194657.GU28551@1wt.eu> <87sinanv6u.fsf@canonical.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87sinanv6u.fsf@canonical.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When reading from /proc/stat we allocate a large buffer to maximise
-the chances of the results being from a single run and thus internally
-consistent.  This currently is sized at 128 * num_possible_cpus() which,
-in the face of kernels sized to handle large configurations (256 cpus
-plus), results in the buffer being an order-4 allocation or more.
-When system memory becomes fragmented these cannot be guarenteed, leading
-to read failures due to allocation failures.
+Hi Luis,
 
-There seem to be two issues in play here.  Firstly the allocation is
-going to be vastly over sized in the common case, as we only consume the
-buffer based on the num_online_cpus().  Secondly, regardless of size we
-should not be requiring allocations greater than PAGE_ALLOC_COSTLY_ORDER
-as allocations above this order are significantly more likely to fail.
+On Thu, Jun 12, 2014 at 01:55:53PM +0100, Luis Henriques wrote:
+> (Adding Tyler to the thread, as I should have done in the first place)
+> 
+> Willy Tarreau <w@1wt.eu> writes:
+> 
+> > Hi Luis,
+> >
+> > On Wed, Jun 11, 2014 at 07:46:44PM +0100, Luis Henriques wrote:
+> >> Hi Willy,
+> >> 
+> >> On Mon, May 12, 2014 at 02:32:59AM +0200, Willy Tarreau wrote:
+> >> > 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
+> >> > 
+> >> 
+> >> During Ubuntu Lucid kernel regression testing, after the merge of
+> >> 2.6.32.62, we found problems with the following patches
+> >> 
+> >> [ 059/143] sysctl net: Keep tcp_syn_retries inside the boundary
+> >>            (Upstream commit 651e92716aaae60fc41b9652f54cb6803896e0da)
+> >> 
+> >> [ 065/143] net: check net.core.somaxconn sysctl values
+> >>            (Upstream commit 5f671d6b4ec3e6d66c2a868738af2cdea09e7509)
+> >> 
+> >> The following two stack traces were found in kernel logs:
+> >
+> > Aie :-/
+> >
+> >> [    0.199908] sysctl table check failed: /net/core/somaxconn .3.1.18 Missing strategy
+> >> [    0.201100] Pid: 1, comm: swapper Not tainted 2.6.32-02063262-generic #201405200837
+> >> [    0.202173] Call Trace:
+> > (...)
+> >> and here's a bug link:
+> >> 
+> >> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1326473
+> >
+> > I think that Tyler's suggest is the right approach.
+> >
+> >> For the Ubuntu Lucid kernel, we ended up reverting the offending
+> >> commits.  Since I was able to reproduce this problem with a vanilla
+> >> 2.6.32.62, you may want to take a similar action for the next 2.6.32
+> >> release.
+> >
+> > The initial bug is hard to debug on live systems. I've been hit myself
+> > and it took me a lot of time to find the root cause. The problem is that
+> > the backlog is stored on an unsigned short while the sysctl is stored
+> > on an int, and the value is naturally truncated, so when you use an
+> > somaxconn of N*65536 + just a few, you end up with just a few and drop
+> > a lot of SYNs even under moderate loads. Worse, the only people who
+> > touch these values are those who run under high loads and who are the
+> > most likely to face the issue.
+> >
+> > Thus if there's a quick way to check that Tyler's fix reliably addresses
+> > the issue, I think we should take it instead. Of course I understand that
+> > in the mean time the revert is better for you!
+> >
+> > Regards,
+> > Willy
+> >
+> 
+> I was finally able to spend some more time with this and tried (a
+> modified) Tyler's patch on top of 2.6.32.62, and it seems to work.
+> Although I haven't done any extended testing, I don't see the two
+> stack traces and the /proc/sys/net/ipv4/ directory seems to be
+> correctly populated.
 
-The following patch addesses both of these issues.  Does that make sense
-generally? It seemed to stop top complaining wildly for the reporter
-at least.
+OK so that's confirmed now. I remember we had to do the same for
+another patch during the 32.y cycle last year, so I'm not surprized.
 
--Stefan
+> I'm attaching the patch I've used, based on Tyler's.
 
----
+Great, thank you guys. I'll queue it up for .63. I just have to check
+if there is anything else pending for a release.
 
->From a329ad61fbd26990b294f3b35a31ec80ffab35bb Mon Sep 17 00:00:00 2001
-From: Stefan Bader <stefan.bader@canonical.com>
-Date: Wed, 14 May 2014 12:58:37 +0200
-Subject: [PATCH] fs/stat: Reduce memory requirements for stat_open
-
-When reading /proc/stat the stat_open function currently sizes its
-internal buffer at:
-
-  1024 + 128 * num_possible_cpus() + 2 * num_irqs
-
-This is to maximise the chances of the results as returned to userspace
-be a single internally consistent result.  With CONFIG_NR_CPUS sized
-for larger configs this buffer balloons rapidly, at 256 cpus we end
-up at least 33kB which translates into an order-4 allocation (64kB).
-This triggered random errors in top when reading /proc/stat due to
-memory allocation failures.
-
-In reality the buffer is only consumed in proportion to the
-num_online_cpus(), so in the common case it makes much more sense to
-allocate the buffer size based on that.  Secondly, regardless of size we
-should not be requiring allocations greater than PAGE_ALLOC_COSTLY_ORDER
-as allocations above this order are significantly more likely to fail.
-
-As the code already bounds the buffer size based on the maximum kmem_alloc
-allocation size, we are already relying on the seq_file buffering when
-this is exceeded.  This will also protect us from overflowing should cpus
-come online mid read.
-
-We do not attempt to fix potential inconsistancies that this existing
-use of this buffering introduces.
-
-BugLink: http://bugs.launchpad.net/bugs/1319244
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
-
----
- fs/proc/stat.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/fs/proc/stat.c b/fs/proc/stat.c
-index 9d231e9..9498cf7 100644
---- a/fs/proc/stat.c
-+++ b/fs/proc/stat.c
-@@ -184,7 +184,7 @@ static int show_stat(struct seq_file *p, void *v)
- 
- static int stat_open(struct inode *inode, struct file *file)
- {
--	size_t size = 1024 + 128 * num_possible_cpus();
-+	size_t size = 1024 + 128 * num_online_cpus();
- 	char *buf;
- 	struct seq_file *m;
- 	int res;
-@@ -193,8 +193,8 @@ static int stat_open(struct inode *inode, struct file *file)
- 	size += 2 * nr_irqs;
- 
- 	/* don't ask for more than the kmalloc() max size */
--	if (size > KMALLOC_MAX_SIZE)
--		size = KMALLOC_MAX_SIZE;
-+	if (size > (PAGE_SIZE << PAGE_ALLOC_COSTLY_ORDER))
-+		size = PAGE_SIZE << PAGE_ALLOC_COSTLY_ORDER;
- 	buf = kmalloc(size, GFP_KERNEL);
- 	if (!buf)
- 		return -ENOMEM;
--- 
-1.7.9.5
+Cheers,
+Willy
 
