@@ -1,80 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756261AbaFLQzf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 12:55:35 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:52552 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753164AbaFLQzd (ORCPT
+	id S933317AbaFLQ4l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 12:56:41 -0400
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:65070 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753089AbaFLQ4j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 12:55:33 -0400
-Message-ID: <1402592126.5318.32.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [PATCH 3/4] KEYS: validate key trust only with selected owner
- key
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>, dhowells@redhat.com,
-        jwboyer@redhat.com, keyrings@linux-nfs.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmitry.kasatkin@gmail.com, mjg59@srcf.ucam.org
-Date: Thu, 12 Jun 2014 12:55:26 -0400
-In-Reply-To: <20140612160346.GG9578@redhat.com>
-References: <cover.1402387862.git.d.kasatkin@samsung.com>
-	 <ef22f2630a2545bd7c3bf2c9e730a842835cf6c4.1402387862.git.d.kasatkin@samsung.com>
-	 <20140612160346.GG9578@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	Thu, 12 Jun 2014 12:56:39 -0400
+Message-ID: <5399DBC2.6070004@redhat.com>
+Date: Thu, 12 Jun 2014 18:56:34 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org
+CC: netdev@vger.kernel.org, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Subject: Re: [PATCH] vhost-scsi: don't open-code kvfree
+References: <1402588896-25446-1-git-send-email-mst@redhat.com>
+In-Reply-To: <1402588896-25446-1-git-send-email-mst@redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061216-1542-0000-0000-00000286443A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-06-12 at 12:03 -0400, Vivek Goyal wrote: 
-> On Tue, Jun 10, 2014 at 11:48:17AM +0300, Dmitry Kasatkin wrote:
-> > This patch provides kernel parameter to specify owner's key id which
-> > must be used for trust validate of keys. Keys signed with other keys
-> > are not trusted.
-> > 
-> > Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-> 
-> Hi,
-> 
-> I am continuing to work on verifying kernel signature for kexec/kdump. I 
-> am planning to take david howell's patches for pkcs7 signature
-> verification and verify bzImage signature.
-> 
-> Part of that process will boil down to verifying a certificate in
-> pkcs7 x509 cert chain using a key in system_trusted_keyring.
-> 
-> I think the OS vendor key which signs the kernel signing key propagates to
-> system_trusted_keyring. (shim has that and I am not sure how shim makes
-> it propogate all they way to system_trusted_keyring).
+Il 12/06/2014 18:02, Michael S. Tsirkin ha scritto:
+> Now that we have kvfree, use it in vhost-scsi instead of
+> the open-coded version.
+>
+> Cc: Nicholas Bellinger <nab@linux-iscsi.org>
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>
+> I have this queued for -rc2.
+> Nicholas could you review ack pls?
+>
+>  drivers/vhost/scsi.c | 12 ++----------
+>  1 file changed, 2 insertions(+), 10 deletions(-)
+>
+> diff --git a/drivers/vhost/scsi.c b/drivers/vhost/scsi.c
+> index 83b834b..b08863e 100644
+> --- a/drivers/vhost/scsi.c
+> +++ b/drivers/vhost/scsi.c
+> @@ -1396,14 +1396,6 @@ static int vhost_scsi_set_features(struct vhost_scsi *vs, u64 features)
+>  	return 0;
+>  }
+>
+> -static void vhost_scsi_free(struct vhost_scsi *vs)
+> -{
+> -	if (is_vmalloc_addr(vs))
+> -		vfree(vs);
+> -	else
+> -		kfree(vs);
+> -}
+> -
+>  static int vhost_scsi_open(struct inode *inode, struct file *f)
+>  {
+>  	struct vhost_scsi *vs;
+> @@ -1443,7 +1435,7 @@ static int vhost_scsi_open(struct inode *inode, struct file *f)
+>  	return 0;
+>
+>  err_vqs:
+> -	vhost_scsi_free(vs);
+> +	kvfree(vs);
+>  err_vs:
+>  	return r;
+>  }
+> @@ -1462,7 +1454,7 @@ static int vhost_scsi_release(struct inode *inode, struct file *f)
+>  	/* Jobs can re-queue themselves in evt kick handler. Do extra flush. */
+>  	vhost_scsi_flush(vs);
+>  	kfree(vs->dev.vqs);
+> -	vhost_scsi_free(vs);
+> +	kvfree(vs);
+>  	return 0;
+>  }
+>
+>
 
-The shim patches are here
-http://pkgs.fedoraproject.org/cgit/kernel.git/tree/modsign-uefi.patch
+You didn't CC Nicholas. :)  Anyway,
 
-> So I was planning to use same functionality where I look for any key
-> which can verify the signing cert of kernel. As OS vendor key will be
-> in system_trusted_keyring, it should work.
-> 
-> Now with this change where you will trust only one selected owner key.
-> That means you will not even trust the OS vendor key which signs kernel
-> signing key. I think this will stop working with  keys_ownerid=<....>
-> 
-> As I am doing that work in parallel and I saw these patches, I thought
-> I will bring it up.
+Reviewed-by: Paolo Bonzini <pbonzini@redhat.com>
 
-Right, the current discussion is whether we need an owner trusted
-keyring or if just one key was enough.  Thanks for chiming in.
-
-The other option would be to sign the bzImage file creating a
-'security.ima' extended attribute and verifying it.  Have you created a
-security kexec hook?
-
-thanks,
-
-Mimi
-
+Paolo
