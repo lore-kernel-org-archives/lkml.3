@@ -1,99 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756126AbaFLQsK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 12:48:10 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:35945 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753017AbaFLQsH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 12:48:07 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-e1-5399d9c30e43
-Message-id: <5399D9B4.5030901@samsung.com>
-Date: Thu, 12 Jun 2014 18:47:48 +0200
-From: Tomasz Figa <t.figa@samsung.com>
-Organization: Samsung R&D Institute Poland
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.5.0
-MIME-version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Daniel Drake <drake@endlessm.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, Laura Abbott <lauraa@codeaurora.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Robin Holt <holt@sgi.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/5] Handle non-secure L2C initialization on Exynos4
-References: <CAD8Lp46MbKZrCAMp+9T9LbWTB4uHRDdivhtjoQbkTyBbK48EgQ@mail.gmail.com>
- <20140612162014.GA3705@n2100.arm.linux.org.uk>
-In-reply-to: <20140612162014.GA3705@n2100.arm.linux.org.uk>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHLMWRmVeSWpSXmKPExsVy+t/xy7qHb84MNriwwcDi0fzHzBb90zpY
-	LXoXXGWz2N45g91iyp/lTBabHl9jtbi8aw6bxewl/SwWty/zWrzuW8NssWrXH0aL/Ve8HHg8
-	Wpp72Dy+fZ3E4nG5r5fJY9H3LI+ds+6ye9y5tofNY/OSeo++LasYPe5ef8nkcfzGdiaPz5vk
-	ArijuGxSUnMyy1KL9O0SuDL+dxxkK/jJXzFn8T/mBsabPF2MnBwSAiYSTyaeZoGwxSQu3FvP
-	1sXIxSEksJRRounhBRYI5zOjxMOuFmaQKl4BLYmWNSsYQWwWAVWJhUvmsIPYbAJqEp8bHrGB
-	2PxANWuargM1c3CICkRIPL4gBNEqKPFj8j2wZSICURIfZn4Gm88s8I5J4svkXrCEsICHxNfv
-	R1ghFjczSuxc/RZsMaeAtcTbXb/AbGYBHYn9rdPYIGx5ic1r3jJPYBSchWTJLCRls5CULWBk
-	XsUomlqaXFCclJ5rqFecmFtcmpeul5yfu4kREmdfdjAuPmZ1iFGAg1GJh1fj9YxgIdbEsuLK
-	3EOMEhzMSiK8j87ODBbiTUmsrEotyo8vKs1JLT7EyMTBKdXAGLzqUI/6tznxJ9rXPz17/4/F
-	5hdNslzL2zZ+OpfF+qo7Vf6s/7vkdcdMPY2PvwlIW/zCJF1o8Yf/cxer3JGzdLy7/6i3w41G
-	VqYi/pL7J/5+njr14tpJ63bI9Z3ofr45qEth+2WD1yzXn/qst9m55TFbRphPy+XySY3ei02c
-	fgfHWoXfWaVbc0aJpTgj0VCLuag4EQBTg17lkQIAAA==
+	id S1756186AbaFLQvY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 12:51:24 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:35002 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753117AbaFLQvX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 12:51:23 -0400
+Date: Thu, 12 Jun 2014 12:51:05 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Michel Lespinasse <walken@google.com>, Tejun Heo <tj@kernel.org>,
+        Roman Gushchin <klamm@yandex-team.ru>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] memcg: Allow guarantee reclaim
+Message-ID: <20140612165105.GK2878@cmpxchg.org>
+References: <20140611075729.GA4520@dhcp22.suse.cz>
+ <1402473624-13827-1-git-send-email-mhocko@suse.cz>
+ <1402473624-13827-2-git-send-email-mhocko@suse.cz>
+ <20140611153631.GH2878@cmpxchg.org>
+ <20140612132207.GA32720@dhcp22.suse.cz>
+ <20140612135600.GI2878@cmpxchg.org>
+ <20140612142237.GB32720@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140612142237.GB32720@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
-
-On 12.06.2014 18:20, Russell King - ARM Linux wrote:
-> On Thu, Jun 12, 2014 at 02:38:49PM +0100, Daniel Drake wrote:
->> From 2e67231f10ed0b05c2bacfdd05774fe21315d6da Mon Sep 17 00:00:00 2001
->> From: Gu1 <gu1@aeroxteam.fr>
->> Date: Mon, 21 Jan 2013 04:13:56 +0100
->> Subject: [PATCH] ARM: EXYNOS: Add secure firmware support for l2x0 init
->>
->> Conflicts:
->> 	arch/arm/mm/cache-l2x0.c
+On Thu, Jun 12, 2014 at 04:22:37PM +0200, Michal Hocko wrote:
+> On Thu 12-06-14 09:56:00, Johannes Weiner wrote:
+> > On Thu, Jun 12, 2014 at 03:22:07PM +0200, Michal Hocko wrote:
+> [...]
+> > > Anyway, the situation now is pretty chaotic. I plan to gather all the
+> > > patchse posted so far and repost for the future discussion. I just need
+> > > to finish some internal tasks and will post it soon.
+> > 
+> > That would be great, thanks, it's really hard to follow this stuff
+> > halfway in and halfway outside of -mm.
+> > 
+> > Now that we roughly figured out what knobs and semantics we want, it
+> > would be great to figure out the merging logistics.
+> > 
+> > I would prefer if we could introduce max, high, low, min in unified
+> > hierarchy, and *only* in there, so that we never have to worry about
+> > it coexisting and interacting with the existing hard and soft limit.
 > 
-> For this patch... it's a big NAK because it's taking us right back down
-> the route of a totally fucked up cache-l2x0.c driver.
+> The primary question would be, whether this is is the best transition
+> strategy. I do not know how many users apart from developers are really
+> using unified hierarchy. I would be worried that we merge a feature which
+> will not be used for a long time.
 
-This is just an old, internal patch that was not going to be upstreamed.
-I just posted another series yesterday[1], hopefully doing it the right
-way. Looking forward for review comments.
+Unified hierarchy is the next version of the cgroup interface, and
+once the development tag drops I consider the old memcg interface
+deprecated.  It makes very little sense to me to put up additional
+incentives at this point to continue the use of the old interface,
+when we already struggle with manpower to maintain even one of them.
 
-[1] http://thread.gmane.org/gmane.linux.kernel/1722989
+> Moreover, if somebody wants to transition from soft limit then it would
+> be really hard because switching to unified hierarchy might be a no-go.
+>
+> I think that it is clear that we should deprecate soft_limit ASAP. I
+> also think it wont't hurt to have min, low, high in both old and unified
+> API and strongly warn if somebody tries to use soft_limit along with any
+> of the new APIs in the first step. Later we can even forbid any
+> combination by a hard failure.
 
+Why would somebody NOT be able to convert to unified hierarchy
+eventually?
+
+How big is the intersection of cases that can't convert to unified
+hierarchy AND are using the soft limit AND want to use the new low
+limit?
+
+Merging a different concept with its own naming scheme into an already
+confusing interface, spamming the dmesg if someone gets it wrong,
+potentially introducing more breakage with the hard failure, putting
+up incentives to stick with a deprecated and confusing interface...
+This is a lot of horrible stuff in an attempt to accomodate very few
+usecases - if any - when we are *already versioning the interface* and
+have the opportunity for a clean transition.
+
+The transition to min, low, high, max is effort in itself.  Conflating
+the two models sounds more detrimental than anything else, with a very
+dubious upside at that.
+
+> > It would also be beneficial to introduce them all close to each other,
+> > develop them together, possibly submit them in the same patch series,
+> > so that we know the requirements and how the code should look like in
+> > the big picture and can offer a fully consistent and documented usage
+> > model in the unified hierarchy.
 > 
-> Why can't you people write stuff properly?  There's already another set
-> of patches on this mailing list which want to pass the virtual base
-> address of the l2x0 controller to l2c_write_sec() so that various
-> registers can be read back, because the platform's secure API can
-> only update several registers at the same time.
+> Min and Low should definitely go together. High sounds like an
+> orthogonal problem (pro-active reclaim vs reclaim protection) so I think
+> it can go its own way and pace. We still have to discuss its semantic
+> and I feel it would be a bit disturbing to have everything in one
+> bundle.
+>
+> I do understand your point about the global picture, though. Do you
+> think that there is a risk that formulating semantic for High limit
+> might change the way how Min and Low would be defined?
 
-Probably the series you mention is [1]? :)
+I think one of the biggest hinderances in making forward progress on
+individual limits is that we only had a laundry list of occasionally
+conflicting requirements but never a consistent big picture to design
+around and match full usecases to.  It's much easier and less error
+prone to develop the concept as a whole, alongside full real-life
+configurations.
 
-> 
-> This is the same pattern that is revealed in this patch.  So, what
-> this means is that the l2c_write_sec API is wrong.  We need to come
-> up with a *replacement* API which allows the platforms to do this
-> kind of setup in a *clean* way, and stop creating rotten hacks like
-> this which just makes long term maintanence a nightmare.
-> 
-> So... please start doing stuff properly.  If you don't, you're going
-> to be getting more flames from me, especially if you start doing this
-> kind of hackery on code that I've been cleaning up to get rid of such
-> crap.
-> 
-
-Yes, I fully agree. Fortunately that was not supposed to hit upstream.
-
-You've done a lot of great work to refactor this driver (thanks!), which
-made it possible to support Exynos secure firmware in a sane way and
-this is how it should be done.
-
-Best regards,
-Tomasz
+They are symmetrical pieces whose semantics very much depend on each
+other, so I wouldn't like too much lag between those.
