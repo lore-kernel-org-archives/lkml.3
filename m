@@ -1,77 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932940AbaFLI76 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 04:59:58 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:43003 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932680AbaFLI74 (ORCPT
+	id S932953AbaFLJAn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 05:00:43 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:61090 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932657AbaFLJAl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 04:59:56 -0400
+	Thu, 12 Jun 2014 05:00:41 -0400
 MIME-Version: 1.0
-In-Reply-To: <1402424839-25514-1-git-send-email-sboyd@codeaurora.org>
-References: <1402424839-25514-1-git-send-email-sboyd@codeaurora.org>
-Date: Thu, 12 Jun 2014 10:59:55 +0200
-Message-ID: <CAPDyKFrK9daz4BvfmggLiGRfndxi24+Kqb=qVT2VFaf9XtTg0A@mail.gmail.com>
-Subject: Re: [PATCH] mmc: sdhci-msm: Fix fallout from sdhci refactoring
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Chris Ball <chris@printf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Kevin Hilman <khilman@linaro.org>, Georgi Djakov <gdjakov@mm-sol.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <1398925607-7482-10-git-send-email-computersforpeace@gmail.com>
+References: <1398925607-7482-1-git-send-email-computersforpeace@gmail.com>
+	<1398925607-7482-10-git-send-email-computersforpeace@gmail.com>
+Date: Thu, 12 Jun 2014 17:00:40 +0800
+Message-ID: <CAMk6uBkfWTyz=yECehzVtAs=sewkQR7tS=HZQ9Qts0LEXugSRw@mail.gmail.com>
+Subject: Re: [PATCH v2 09/12] blackfin: defconfigs: add MTD_SPI_NOR (new
+ dependency for M25P80)
+From: Steven Miao <realmz6@gmail.com>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Huang Shijie <b32955@freescale.com>, Marek Vasut <marex@denx.de>,
+        linux-mtd@lists.infradead.org,
+        bfin <adi-buildroot-devel@lists.sourceforge.net>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 June 2014 20:27, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> The sdhci core was refactored recently and some of those
-> refactorings required changes in every sdhci platform driver.
-> Those updates happened around the same time as when the msm
-> driver was merged so the refactorings missed the msm driver.
-> Hook in the basic library functions so that we can boot apq8074
-> dragonboards again instead of crashing when we try to jump to
-> NULL function pointers.
+Applied to 3.16. Thanks.
+
+On Thu, May 1, 2014 at 2:26 PM, Brian Norris
+<computersforpeace@gmail.com> wrote:
+> These defconfigs contain the CONFIG_M25P80 symbol, which is now
+> dependent on the MTD_SPI_NOR symbol. Add CONFIG_MTD_SPI_NOR to satisfy
+> the new dependency.
 >
-> Reported-by: Kevin Hilman <khilman@linaro.org>
-> Cc: Georgi Djakov <gdjakov@mm-sol.com>
-> Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-
-Thanks!
-
-Applied for fixes.
-
-Kind regards
-Uffe
-
+> At the same time, drop the now-nonexistent CONFIG_MTD_CHAR symbol.
+>
+> Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+> Cc: Steven Miao <realmz6@gmail.com>
+> Cc: adi-buildroot-devel@lists.sourceforge.net
+> Cc: linux-kernel@vger.kernel.org
 > ---
+>  arch/blackfin/configs/BF526-EZBRD_defconfig    | 2 +-
+>  arch/blackfin/configs/BF527-EZKIT-V2_defconfig | 2 +-
+>  arch/blackfin/configs/BF527-EZKIT_defconfig    | 2 +-
+>  arch/blackfin/configs/BF548-EZKIT_defconfig    | 2 +-
+>  arch/blackfin/configs/BF609-EZKIT_defconfig    | 2 +-
+>  arch/blackfin/configs/BlackStamp_defconfig     | 3 +--
+>  arch/blackfin/configs/H8606_defconfig          | 3 +--
+>  7 files changed, 7 insertions(+), 9 deletions(-)
 >
-> Patch based on next-20140610
->
->  drivers/mmc/host/sdhci-msm.c | 4 ++++
->  1 file changed, 4 insertions(+)
->
-> diff --git a/drivers/mmc/host/sdhci-msm.c b/drivers/mmc/host/sdhci-msm.c
-> index acb0e9eb55f1..40573a58486a 100644
-> --- a/drivers/mmc/host/sdhci-msm.c
-> +++ b/drivers/mmc/host/sdhci-msm.c
-> @@ -468,6 +468,10 @@ MODULE_DEVICE_TABLE(of, sdhci_msm_dt_match);
->
->  static struct sdhci_ops sdhci_msm_ops = {
->         .platform_execute_tuning = sdhci_msm_execute_tuning,
-> +       .reset = sdhci_reset,
-> +       .set_clock = sdhci_set_clock,
-> +       .set_bus_width = sdhci_set_bus_width,
-> +       .set_uhs_signaling = sdhci_set_uhs_signaling,
->  };
->
->  static int sdhci_msm_probe(struct platform_device *pdev)
+> diff --git a/arch/blackfin/configs/BF526-EZBRD_defconfig b/arch/blackfin/configs/BF526-EZBRD_defconfig
+> index 2f2c6acf210c..530ba7a6d7b0 100644
+> --- a/arch/blackfin/configs/BF526-EZBRD_defconfig
+> +++ b/arch/blackfin/configs/BF526-EZBRD_defconfig
+> @@ -53,7 +53,6 @@ CONFIG_IP_PNP=y
+>  CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
+>  # CONFIG_FW_LOADER is not set
+>  CONFIG_MTD=y
+> -CONFIG_MTD_CHAR=y
+>  CONFIG_MTD_BLOCK=y
+>  CONFIG_MTD_CFI=y
+>  CONFIG_MTD_CFI_INTELEXT=y
+> @@ -63,6 +62,7 @@ CONFIG_MTD_COMPLEX_MAPPINGS=y
+>  CONFIG_MTD_PHYSMAP=y
+>  CONFIG_MTD_M25P80=y
+>  CONFIG_MTD_NAND=m
+> +CONFIG_MTD_SPI_NOR=y
+>  CONFIG_BLK_DEV_RAM=y
+>  CONFIG_SCSI=y
+>  # CONFIG_SCSI_PROC_FS is not set
+> diff --git a/arch/blackfin/configs/BF527-EZKIT-V2_defconfig b/arch/blackfin/configs/BF527-EZKIT-V2_defconfig
+> index 91535c38e7f2..a21c79275eae 100644
+> --- a/arch/blackfin/configs/BF527-EZKIT-V2_defconfig
+> +++ b/arch/blackfin/configs/BF527-EZKIT-V2_defconfig
+> @@ -58,7 +58,6 @@ CONFIG_BFIN_SIR0=y
+>  CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
+>  # CONFIG_FW_LOADER is not set
+>  CONFIG_MTD=y
+> -CONFIG_MTD_CHAR=m
+>  CONFIG_MTD_BLOCK=y
+>  CONFIG_MTD_JEDECPROBE=m
+>  CONFIG_MTD_RAM=y
+> @@ -66,6 +65,7 @@ CONFIG_MTD_ROM=m
+>  CONFIG_MTD_COMPLEX_MAPPINGS=y
+>  CONFIG_MTD_M25P80=y
+>  CONFIG_MTD_NAND=m
+> +CONFIG_MTD_SPI_NOR=y
+>  CONFIG_BLK_DEV_RAM=y
+>  CONFIG_SCSI=y
+>  # CONFIG_SCSI_PROC_FS is not set
+> diff --git a/arch/blackfin/configs/BF527-EZKIT_defconfig b/arch/blackfin/configs/BF527-EZKIT_defconfig
+> index af2738c7441b..5070a860d8c4 100644
+> --- a/arch/blackfin/configs/BF527-EZKIT_defconfig
+> +++ b/arch/blackfin/configs/BF527-EZKIT_defconfig
+> @@ -57,7 +57,6 @@ CONFIG_BFIN_SIR0=y
+>  CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
+>  # CONFIG_FW_LOADER is not set
+>  CONFIG_MTD=y
+> -CONFIG_MTD_CHAR=m
+>  CONFIG_MTD_BLOCK=y
+>  CONFIG_MTD_JEDECPROBE=m
+>  CONFIG_MTD_RAM=y
+> @@ -65,6 +64,7 @@ CONFIG_MTD_ROM=m
+>  CONFIG_MTD_COMPLEX_MAPPINGS=y
+>  CONFIG_MTD_M25P80=y
+>  CONFIG_MTD_NAND=m
+> +CONFIG_MTD_SPI_NOR=y
+>  CONFIG_BLK_DEV_RAM=y
+>  CONFIG_SCSI=y
+>  # CONFIG_SCSI_PROC_FS is not set
+> diff --git a/arch/blackfin/configs/BF548-EZKIT_defconfig b/arch/blackfin/configs/BF548-EZKIT_defconfig
+> index e716fdfd2cf2..efb293057287 100644
+> --- a/arch/blackfin/configs/BF548-EZKIT_defconfig
+> +++ b/arch/blackfin/configs/BF548-EZKIT_defconfig
+> @@ -64,7 +64,6 @@ CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
+>  CONFIG_FW_LOADER=m
+>  CONFIG_MTD=y
+>  CONFIG_MTD_CMDLINE_PARTS=y
+> -CONFIG_MTD_CHAR=y
+>  CONFIG_MTD_BLOCK=y
+>  CONFIG_MTD_CFI=y
+>  CONFIG_MTD_CFI_INTELEXT=y
+> @@ -75,6 +74,7 @@ CONFIG_MTD_M25P80=y
+>  CONFIG_MTD_NAND=y
+>  CONFIG_MTD_NAND_BF5XX=y
+>  # CONFIG_MTD_NAND_BF5XX_HWECC is not set
+> +CONFIG_MTD_SPI_NOR=y
+>  CONFIG_BLK_DEV_RAM=y
+>  # CONFIG_SCSI_PROC_FS is not set
+>  CONFIG_BLK_DEV_SD=y
+> diff --git a/arch/blackfin/configs/BF609-EZKIT_defconfig b/arch/blackfin/configs/BF609-EZKIT_defconfig
+> index 4ca39ab6b2bf..a7e9bfd84183 100644
+> --- a/arch/blackfin/configs/BF609-EZKIT_defconfig
+> +++ b/arch/blackfin/configs/BF609-EZKIT_defconfig
+> @@ -57,7 +57,6 @@ CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
+>  CONFIG_FW_LOADER=m
+>  CONFIG_MTD=y
+>  CONFIG_MTD_CMDLINE_PARTS=y
+> -CONFIG_MTD_CHAR=y
+>  CONFIG_MTD_BLOCK=y
+>  CONFIG_MTD_CFI=y
+>  CONFIG_MTD_CFI_INTELEXT=y
+> @@ -65,6 +64,7 @@ CONFIG_MTD_CFI_STAA=y
+>  CONFIG_MTD_COMPLEX_MAPPINGS=y
+>  CONFIG_MTD_PHYSMAP=y
+>  CONFIG_MTD_M25P80=y
+> +CONFIG_MTD_SPI_NOR=y
+>  CONFIG_MTD_UBI=m
+>  CONFIG_SCSI=y
+>  CONFIG_BLK_DEV_SD=y
+> diff --git a/arch/blackfin/configs/BlackStamp_defconfig b/arch/blackfin/configs/BlackStamp_defconfig
+> index 3853c473b443..f4a9200e1ab1 100644
+> --- a/arch/blackfin/configs/BlackStamp_defconfig
+> +++ b/arch/blackfin/configs/BlackStamp_defconfig
+> @@ -45,7 +45,6 @@ CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
+>  # CONFIG_FW_LOADER is not set
+>  CONFIG_MTD=y
+>  CONFIG_MTD_CMDLINE_PARTS=y
+> -CONFIG_MTD_CHAR=m
+>  CONFIG_MTD_BLOCK=y
+>  CONFIG_MTD_CFI=m
+>  CONFIG_MTD_CFI_AMDSTD=m
+> @@ -53,7 +52,7 @@ CONFIG_MTD_RAM=y
+>  CONFIG_MTD_ROM=m
+>  CONFIG_MTD_COMPLEX_MAPPINGS=y
+>  CONFIG_MTD_M25P80=y
+> -# CONFIG_M25PXX_USE_FAST_READ is not set
+> +CONFIG_MTD_SPI_NOR=y
+>  CONFIG_BLK_DEV_LOOP=y
+>  CONFIG_BLK_DEV_NBD=y
+>  CONFIG_BLK_DEV_RAM=y
+> diff --git a/arch/blackfin/configs/H8606_defconfig b/arch/blackfin/configs/H8606_defconfig
+> index f754e490bbfd..0ff97d8d047a 100644
+> --- a/arch/blackfin/configs/H8606_defconfig
+> +++ b/arch/blackfin/configs/H8606_defconfig
+> @@ -36,13 +36,12 @@ CONFIG_IRTTY_SIR=m
+>  # CONFIG_WIRELESS is not set
+>  # CONFIG_FW_LOADER is not set
+>  CONFIG_MTD=y
+> -CONFIG_MTD_CHAR=y
+>  CONFIG_MTD_BLOCK=y
+>  CONFIG_MTD_RAM=y
+>  CONFIG_MTD_ROM=y
+>  CONFIG_MTD_COMPLEX_MAPPINGS=y
+>  CONFIG_MTD_M25P80=y
+> -# CONFIG_M25PXX_USE_FAST_READ is not set
+> +CONFIG_MTD_SPI_NOR=y
+>  CONFIG_BLK_DEV_RAM=y
+>  CONFIG_MISC_DEVICES=y
+>  CONFIG_EEPROM_AT25=y
 > --
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
+> 1.8.3.2
 >
