@@ -1,142 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755430AbaFLCve (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 22:51:34 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:53333 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754452AbaFLCvd (ORCPT
+	id S1755432AbaFLDGO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 23:06:14 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:27690 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754452AbaFLDGN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 22:51:33 -0400
-Message-ID: <539915B3.9050904@codeaurora.org>
-Date: Wed, 11 Jun 2014 19:51:31 -0700
-From: Laura Abbott <lauraa@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 11 Jun 2014 23:06:13 -0400
+Message-ID: <539918F4.80109@oracle.com>
+Date: Wed, 11 Jun 2014 23:05:24 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Russell King <rmk+kernel@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: Re: BUG: Bad page state in process swapper pfn:00000
-References: <CAMuHMdXm_fT251+ih2cJS+hRkrPuVQi3sMFgYe+k18xe-Wd21w@mail.gmail.com>	<539892BD.8020403@codeaurora.org> <CAMuHMdWZutiNpGScEhCzgM70jJ+MZ1ErmKtNfMHVLDB+d5Lyzw@mail.gmail.com>
-In-Reply-To: <CAMuHMdWZutiNpGScEhCzgM70jJ+MZ1ErmKtNfMHVLDB+d5Lyzw@mail.gmail.com>
+To: John Stultz <john.stultz@linaro.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Dave Jones <davej@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: timekeeping: exiting task with held timekeeping locks
+References: <5398E07C.6030107@oracle.com> <CALAqxLWa-ZrL48ZooecxqHRg91mPc4ju-5k5b3cQqqHdJp+ptA@mail.gmail.com>
+In-Reply-To: <CALAqxLWa-ZrL48ZooecxqHRg91mPc4ju-5k5b3cQqqHdJp+ptA@mail.gmail.com>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/11/2014 12:19 PM, Geert Uytterhoeven wrote:
-> Hi Laura,
+On 06/11/2014 07:30 PM, John Stultz wrote:
+> On Wed, Jun 11, 2014 at 4:04 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
+>> > Hi all,
+>> >
+>> > While fuzzing with trinity inside a KVM tools guest running the latest -next
+>> > kernel I've stumbled on the following spew:
+>> >
+>> > [ 3460.136058] =====================================
+>> > [ 3460.138017] [ BUG: trinity-c70/27193 still has locks held! ]
+>> > [ 3460.141491] 3.15.0-next-20140611-sasha-00022-g9466d2f-dirty #638 Not tainted
+>> > [ 3460.143219] -------------------------------------
+>> > [ 3460.167979] 2 locks held by trinity-c70/27193:
+>> > [ 3460.169172] #0: (tick_broadcast_lock){-.-.-.}, at: tick_handle_periodic_broadcast (kernel/time/tick-broadcast.c:301)
+>> > [ 3460.468004] #1: (timekeeper_lock){-.-.-.}, at: update_wall_time (kernel/time/timekeeping.c:1371)
+>> > [ 3460.920025]
+>> > [ 3460.920025] stack backtrace:
+>> > [ 3460.928146] CPU: 0 PID: 27193 Comm: trinity-c70 Not tainted 3.15.0-next-20140611-sasha-00022-g9466d2f-dirty #638
+>> > [ 3460.928648] can: request_module (can-proto-3) failed.
+>> > [ 3460.943111]  ffff8800576ef4c8 ffff8800576efc88 ffffffffa551093c 0000000000000001
+>> > [ 3460.962511]  ffff880056f9b000 ffff8800576efca8 ffffffffa21c6a43 ffff880056f9bbe8
+>> > [ 3461.007184]  ffff880056f9bbe8 ffff8800576efd48
+>> > [ 3461.017661] can: request_module (can-proto-0) failed.
+>> > [ 3461.045536]  ffffffffa21636ea ffff8800576efcc8
+>> > [ 3461.170992] Call Trace:
+>> > [ 3461.174122] dump_stack (lib/dump_stack.c:52)
+>> > [ 3461.558864] debug_check_no_locks_held (kernel/locking/lockdep.c:4107 kernel/locking/lockdep.c:4113)
+>> > [ 3461.577066] do_exit (kernel/exit.c:796)
+>> > [ 3461.592523] ? debug_smp_processor_id (lib/smp_processor_id.c:57)
+>> > [ 3461.629067] ? _raw_spin_unlock_irq (./arch/x86/include/asm/paravirt.h:819 include/linux/spinlock_api_smp.h:168 kernel/locking/spinlock.c:199)
+>> > [ 3461.671525] do_group_exit (kernel/exit.c:884)
+>> > [ 3461.717091] get_signal_to_deliver (kernel/signal.c:2347)
+>> > [ 3461.724142] ? vtime_account_user (kernel/sched/cputime.c:687)
+>> > [ 3461.800505] do_signal (arch/x86/kernel/signal.c:698)
+>> > [ 3461.808792] ? vtime_account_user (kernel/sched/cputime.c:687)
+>> > [ 3461.812780] ? preempt_count_sub (kernel/sched/core.c:2602)
+>> > [ 3461.824601] ? context_tracking_user_exit (./arch/x86/include/asm/paravirt.h:809 (discriminator 2) kernel/context_tracking.c:182 (discriminator 2))
+>> > [ 3461.827619] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+>> > [ 3461.831486] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2557 kernel/locking/lockdep.c:2599)
+>> > [ 3461.841516] do_notify_resume (arch/x86/kernel/signal.c:751)
+>> > [ 3461.847056] retint_signal (arch/x86/kernel/entry_64.S:921)
 > 
-> On Wed, Jun 11, 2014 at 7:32 PM, Laura Abbott <lauraa@codeaurora.org> wrote:
->> On 6/11/2014 4:40 AM, Geert Uytterhoeven wrote:
->>> With current mainline, I get an early crash on r8a7791/koelsch:
->>>
->>> BUG: Bad page state in process swapper  pfn:00000
->>> page:ee20b000 count:0 mapcount:0 mapping:66756200 index:0x65726566
->>> page flags: 0x74656b63(locked|error|lru|active|owner_priv_1|arch_1|private|writeback|head|swapcache
->>> |reclaim|mlocked)
->>> page dumped because: PAGE_FLAGS_CHECK_AT_FREE flag(s) set
->>> bad because of flags:
->>> page flags: 0x212861(locked|lru|active|private|writeback|swapcache|mlocked)
->>>
->>> I bisected it to
->>>
->>> commit 1c2f87c22566cd057bc8cde10c37ae9da1a1bb76
->>> Author: Laura Abbott <lauraa@codeaurora.org>
->>> Date:   Sun Apr 13 22:54:58 2014 +0100
->>>
->>>     ARM: 8025/1: Get rid of meminfo
-> 
->>> -Truncating RAM at 40000000-bfffffff to -6f7fffff (vmalloc region overlap).
->>> +Truncating RAM at 0x00000000-0xc0000000 to -0x6f800000
->>
->> I'm guessing this is the issue right there.
->>
->>         memory@40000000 {
->>                 device_type = "memory";
->>                 reg = <0 0x40000000 0 0x40000000>;
->>         };
->>
->>         memory@200000000 {
->>                 device_type = "memory";
->>                 reg = <2 0x00000000 0 0x40000000>;
->>         };
->>
->> Those are the memory nodes from r8a7791-koelsch.dts. It looks like the memory
->> outside 32-bit address range is not being dropped. It was suggested to drop
->> early_init_dt_add_memory_arch which called arm_add_memory and just use the
->> generic of code directly but the problem is arm_add_memory does additional
->> bounds checking. It looks like early_init_dt_add_memory_arch in
->> drivers/of/fdt.c checks for overflow on u64 types but not for overflow
->> on phys_addr_t (32 bits) which is what memblock_add actually uses.
->>
->> For a quick test, can you try bringing back early_init_dt_add_memory_arch
->> and see if that fixes the problem:
->>
->> diff --git a/arch/arm/kernel/devtree.c b/arch/arm/kernel/devtree.c
->> index e94a157..ea9ce92 100644
->> --- a/arch/arm/kernel/devtree.c
->> +++ b/arch/arm/kernel/devtree.c
->> @@ -27,6 +27,10 @@
->>  #include <asm/mach/arch.h>
->>  #include <asm/mach-types.h>
->>
->> +void __init early_init_dt_add_memory_arch(u64 base, u64 size)
->> +{
->> +       arm_add_memory(base, size);
->> +}
->>
->>  #ifdef CONFIG_SMP
->>  extern struct of_cpu_method __cpu_method_of_table[];
-> 
-> Thanks, my board boots again after applying this quick hack.
-> 
+> Huh.. Got me.. I don't see how the task can get out of
+> update_wall_time() w/o releasing the timekeeper_lock. Same with the
+> tick_broadcast_lock.  Does this happen all the time or was this a
+> one-off?
 
-Great! Russell are you okay with taking the above as a fix or would you prefer
-I fixup drivers/of/fdt.c right now? 
+One-off, only seen once.
 
 
 Thanks,
-Laura
-
-----8<----
->From 14bda557a108ad197e7c5f040f50ca024b45cc17 Mon Sep 17 00:00:00 2001
-From: Laura Abbott <lauraa@codeaurora.org>
-Date: Wed, 11 Jun 2014 19:39:29 -0700
-Subject: [PATCH] arm: Bring back early_init_dt_add_memory_arch
-
-Commit 1c2f87c (ARM: 8025/1: Get rid of meminfo) removed
-early_init_dt_add_memory_arch in favor of using the common method.
-The common method does not currently check for memory outside of
-32-bit bounds which may lead to memory being incorrectly added to
-the system. Bring back early_init_dt_add_memory_arch for now until
-the generic function can be fixed up.
-
-Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
----
- arch/arm/kernel/devtree.c | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/arch/arm/kernel/devtree.c b/arch/arm/kernel/devtree.c
-index e94a157..ea9ce92 100644
---- a/arch/arm/kernel/devtree.c
-+++ b/arch/arm/kernel/devtree.c
-@@ -27,6 +27,10 @@
- #include <asm/mach/arch.h>
- #include <asm/mach-types.h>
- 
-+void __init early_init_dt_add_memory_arch(u64 base, u64 size)
-+{
-+	arm_add_memory(base, size);
-+}
- 
- #ifdef CONFIG_SMP
- extern struct of_cpu_method __cpu_method_of_table[];
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Sasha
