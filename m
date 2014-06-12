@@ -1,146 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756106AbaFLQQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 12:16:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58108 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753027AbaFLQQ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 12:16:26 -0400
-Date: Thu, 12 Jun 2014 18:16:22 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: ben@decadent.org.uk, fathi.boudra@linaro.org, gamerh2o@gmail.com,
-        koct9i@gmail.com, nasa4836@gmail.com, peter.senna@gmail.com,
-        sboyd@codeaurora.org, wt@penguintechs.org, yamada.m@jp.panasonic.com,
-        ydroneaud@opteya.com, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] kbuild misc changes for v3.16-rc1
-Message-ID: <20140612161622.GA20405@pobox.suse.cz>
+	id S1756144AbaFLQQy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 12:16:54 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50852 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753027AbaFLQQw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 12:16:52 -0400
+From: Punit Agrawal <punit.agrawal@arm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "linux-pm\@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Javi Merino <Javi.Merino@arm.com>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <edubezval@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [RFC PATCH 3/3] thermal: trace: Trace when temperature is above a trip point
+References: <1402486305-4017-1-git-send-email-punit.agrawal@arm.com>
+	<1402486305-4017-4-git-send-email-punit.agrawal@arm.com>
+	<20140611084908.509a6950@gandalf.local.home> <9hhk38nedu1.fsf@arm.com>
+	<20140611102006.27cc145e@gandalf.local.home> <9hhfvjbebux.fsf@arm.com>
+	<20140611110824.7aa2adc2@gandalf.local.home>
+Date: Thu, 12 Jun 2014 17:16:34 +0100
+In-Reply-To: <20140611110824.7aa2adc2@gandalf.local.home> (Steven Rostedt's
+	message of "Wed, 11 Jun 2014 11:08:24 -0400")
+Message-ID: <9hh61k66r31.fsf@arm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Steven Rostedt <rostedt@goodmis.org> writes:
 
-this is the non-critical part of kbuild for v3.16-rc1:
-- make deb-pkg can do s390x and arm64
-- New patterns in scripts/tags.sh
-- scripts/tags.sh skips userspace tools' sources (which sometimes have
-  copies of kernel structures) and symlinks
-- Improvements to the objdiff tool
-- Two new coccinelle patches
-- Other minor fixes
+[...]
 
-Michal
+>> 
+>> # pwd /sys/kernel/debug/tracing/events/thermal/thermal_zone_trip
+>> # cat format
+>> name: thermal_zone_trip
+>> ID: 463
+>> format:
+>>         field:unsigned short common_type;       offset:0;       size:2; signed:0;
+>>         field:unsigned char common_flags;       offset:2;       size:1; signed:0;
+>>         field:unsigned char common_preempt_count;       offset:3;       size:1; signed:0;
+>>         field:int common_pid;   offset:4;       size:4; signed:1;
+>> 
+>>         field:__data_loc char[] thermal_zone;   offset:8;       size:4; signed:0;
+>>         field:int id;   offset:12;      size:4; signed:1;
+>>         field:int trip; offset:16;      size:4; signed:1;
+>>         field:enum thermal_trip_type trip_type; offset:20;      size:4; signed:0;
+>> 
+>> print fmt: "thermal_zone=%s id=%d trip=%d trip_type=%s",
+>> __get_str(thermal_zone), REC->id, REC->trip,
+>> __print_symbolic(REC->trip_type, { THERMAL_TRIP_ACTIVE, "active" },
+>> { THERMAL_TRIP_PASSIVE, "passive" }, { THERMAL_TRIP_HOT, "hot" }, {
+>> THERMAL_TRIP_CRITICAL, "critical" })
+>> 
+>
+> For it to work with trace-cmd (and perf) you'll need to add a plugin to
+> define what those enums are. This is the file that trace-cmd uses to
+> foramat. But it has no idea how to convert something like
+> THERMAL_TRIP_PASSIVE into a number.
+>
 
+Hmm, right. I was working under the assumption that the enum values will
+be converted to their numeric representation when compiled.
 
-The following changes since commit c9eaa447e77efe77b7fa4c953bd62de8297fd6c5:
+I think it's better to convert the enum to int in the trace event - the
+changes are localised and the tool will work as well.
 
-  Linux 3.15-rc1 (2014-04-13 14:18:35 -0700)
+Rui, Eduardo what do you think?
 
-are available in the git repository at:
+Punit
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git misc
-
-for you to fetch changes up to 7fa0e6db3cedc9b70d68a4170f1352e2b1aa0f90:
-
-  scripts: objdiff: support directories for the augument of record command (2014-06-10 14:59:33 +0200)
-
-----------------------------------------------------------------
-Ben Hutchings (1):
-      deb-pkg: Add automatic support for s390x architecture
-
-Fathi Boudra (2):
-      builddeb: use $OBJCOPY variable instead of objcopy
-      builddeb: add arm64 in the supported architectures
-
-Jianyu Zhan (2):
-      scripts/tags.sh: add pattern for DEFINE_HASHTABLE
-      scripts/tags.sh: add regular expression replacement pattern for memcg
-
-Konstantin Khlebnikov (1):
-      scripts/tags.sh: ignore code of user space tools
-
-Masahiro Yamada (9):
-      kbuild: trivial - remove trailing empty lines
-      kbuild: trivial - use tabs for code indent where possible
-      scripts: objdiff: get the path to .tmp_objdiff more simply
-      scripts: objdiff: direct error messages to stderr
-      scripts: objdiff: remove unnecessary code
-      scripts: objdiff: improve path flexibility for record command
-      scripts: objdiff: change the extension of disassembly from .o to .dis
-      scripts: objdiff: fix a comment
-      scripts: objdiff: support directories for the augument of record command
-
-Peter Senna Tschudin (1):
-      coccicheck: Add unneeded return variable test
-
-Stephen Boyd (1):
-      coccinelle: Check for missing NULL terminators in of_device_id tables
-
-Warren Turkal (1):
-      kbuild: Fix a typo in documentation
-
-Yann Droneaud (1):
-      scripts/tags.sh: ignore symlink'ed source files
-
-Zhao, Gang (1):
-      .gitignore: ignore Module.symvers in all directories
-
- .gitignore                              |  4 +-
- Documentation/kbuild/modules.txt        |  2 +-
- scripts/Makefile.asm-generic            |  1 -
- scripts/Makefile.host                   |  1 -
- scripts/basic/fixdep.c                  |  8 ++--
- scripts/checkstack.pl                   |  1 -
- scripts/coccinelle/misc/of_table.cocci  | 62 +++++++++++++++++++++++++++
- scripts/coccinelle/misc/returnvar.cocci | 66 +++++++++++++++++++++++++++++
- scripts/config                          |  1 -
- scripts/docproc.c                       | 56 ++++++++++++-------------
- scripts/dtc/.gitignore                  |  1 -
- scripts/dtc/fstree.c                    |  1 -
- scripts/dtc/libfdt/fdt_empty_tree.c     |  1 -
- scripts/dtc/treesource.c                |  1 -
- scripts/headers.sh                      |  2 -
- scripts/kallsyms.c                      |  2 +-
- scripts/kconfig/Makefile                |  1 -
- scripts/kconfig/check.sh                |  1 -
- scripts/kconfig/conf.c                  |  2 +-
- scripts/kconfig/gconf.c                 |  2 +-
- scripts/kconfig/lxdialog/checklist.c    |  4 +-
- scripts/kconfig/lxdialog/inputbox.c     |  2 +-
- scripts/kconfig/lxdialog/menubox.c      |  4 +-
- scripts/kconfig/lxdialog/util.c         |  2 +-
- scripts/kconfig/mconf.c                 |  3 +-
- scripts/kconfig/menu.c                  |  6 +--
- scripts/kconfig/nconf.c                 |  1 -
- scripts/kconfig/util.c                  |  2 -
- scripts/kconfig/zconf.l                 |  4 +-
- scripts/kconfig/zconf.lex.c_shipped     |  4 +-
- scripts/kconfig/zconf.tab.c_shipped     |  2 +-
- scripts/kconfig/zconf.y                 |  2 +-
- scripts/markup_oops.pl                  |  1 -
- scripts/mksysmap                        |  1 -
- scripts/mod/.gitignore                  |  1 -
- scripts/mod/file2alias.c                | 42 +++++++++----------
- scripts/mod/mk_elfconfig.c              |  1 -
- scripts/mod/modpost.c                   | 30 ++++++-------
- scripts/mod/sumversion.c                |  4 +-
- scripts/objdiff                         | 74 ++++++++++++++++++++-------------
- scripts/package/Makefile                |  1 -
- scripts/package/builddeb                | 10 +++--
- scripts/package/buildtar                |  1 -
- scripts/pnmtologo.c                     |  1 -
- scripts/recordmcount.c                  |  2 -
- scripts/rt-tester/check-all.sh          |  1 -
- scripts/rt-tester/rt-tester.py          |  2 -
- scripts/selinux/install_policy.sh       |  1 -
- scripts/show_delta                      |  1 -
- scripts/tags.sh                         | 29 +++++++++----
- 50 files changed, 293 insertions(+), 162 deletions(-)
- create mode 100644 scripts/coccinelle/misc/of_table.cocci
- create mode 100644 scripts/coccinelle/misc/returnvar.cocci
+> -- Steve
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
