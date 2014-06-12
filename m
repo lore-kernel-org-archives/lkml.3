@@ -1,99 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751113AbaFLSRH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 14:17:07 -0400
-Received: from mailrelay003.isp.belgacom.be ([195.238.6.53]:26413 "EHLO
-	mailrelay003.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750716AbaFLSRG (ORCPT
+	id S1751183AbaFLSZy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 14:25:54 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:29438 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750716AbaFLSZx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 14:17:06 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjoIAG7tmVNbsHy//2dsb2JhbABagw2qdQUBAQEBAQEFAZkegQsXdYQxLyOBGjeIRgG4PpouhVyIKFcdhCsEj2iKSpNSgz47gTE
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] block/partitions/msdos.c: code clean-up
-Date: Thu, 12 Jun 2014 20:16:57 +0200
-Message-Id: <1402597017-4586-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.1
+	Thu, 12 Jun 2014 14:25:53 -0400
+Message-ID: <1402597547.2627.4.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH v2 4/4] mutex: Optimize mutex trylock slowpath
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Jason Low <jason.low2@hp.com>
+Cc: mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        tim.c.chen@linux.intel.com, paulmck@linux.vnet.ibm.com,
+        rostedt@goodmis.org, Waiman.Long@hp.com, scott.norton@hp.com,
+        aswin@hp.com
+Date: Thu, 12 Jun 2014 11:25:47 -0700
+In-Reply-To: <1402511843-4721-5-git-send-email-jason.low2@hp.com>
+References: <1402511843-4721-1-git-send-email-jason.low2@hp.com>
+	 <1402511843-4721-5-git-send-email-jason.low2@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-checkpatch fixing:
-WARNING: Missing a blank line after declarations
-WARNING: space prohibited between function name and open parenthesis '('
-ERROR: spaces required around that '<' (ctx:VxV)
+On Wed, 2014-06-11 at 11:37 -0700, Jason Low wrote:
+> The mutex_trylock() function calls into __mutex_trylock_fastpath() when
+> trying to obtain the mutex. On 32 bit x86, in the !__HAVE_ARCH_CMPXCHG
+> case, __mutex_trylock_fastpath() calls directly into __mutex_trylock_slowpath()
+> regardless of whether or not the mutex is locked.
+> 
+> In __mutex_trylock_slowpath(), we then acquire the wait_lock spinlock, xchg()
+> lock->count with -1, then set lock->count back to 0 if there are no waiters,
+> and return true if the prev lock count was 1.
+> 
+> However, if the mutex is already locked, then there isn't much point
+> in attempting all of the above expensive operations. In this patch, we only
+> attempt the above trylock operations if the mutex is unlocked.
+> 
+> Signed-off-by: Jason Low <jason.low2@hp.com>
 
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- block/partitions/msdos.c | 13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+This is significantly cleaner than the v1 patch.
 
-diff --git a/block/partitions/msdos.c b/block/partitions/msdos.c
-index 9123f25..93e7c1b 100644
---- a/block/partitions/msdos.c
-+++ b/block/partitions/msdos.c
-@@ -159,8 +159,9 @@ static void parse_extended(struct parsed_partitions *state,
- 		/*
- 		 * First process the data partition(s)
- 		 */
--		for (i=0; i<4; i++, p++) {
-+		for (i = 0; i < 4; i++, p++) {
- 			sector_t offs, size, next;
-+
- 			if (!nr_sects(p) || is_extended_partition(p))
- 				continue;
- 
-@@ -194,7 +195,7 @@ static void parse_extended(struct parsed_partitions *state,
- 		 * It should be a link to the next logical partition.
- 		 */
- 		p -= 4;
--		for (i=0; i<4; i++, p++)
-+		for (i = 0; i < 4; i++, p++)
- 			if (nr_sects(p) && is_extended_partition(p))
- 				break;
- 		if (i == 4)
-@@ -243,8 +244,8 @@ static void parse_solaris_x86(struct parsed_partitions *state,
- 		return;
- 	}
- 	/* Ensure we can handle previous case of VTOC with 8 entries gracefully */
--	max_nparts = le16_to_cpu (v->v_nparts) > 8 ? SOLARIS_X86_NUMSLICE : 8;
--	for (i=0; i<max_nparts && state->next<state->limit; i++) {
-+	max_nparts = le16_to_cpu(v->v_nparts) > 8 ? SOLARIS_X86_NUMSLICE : 8;
-+	for (i = 0; i < max_nparts && state->next < state->limit; i++) {
- 		struct solaris_x86_slice *s = &v->v_slice[i];
- 		char tmp[3 + 10 + 1 + 1];
- 
-@@ -409,7 +410,7 @@ static void parse_minix(struct parsed_partitions *state,
- 	/* The first sector of a Minix partition can have either
- 	 * a secondary MBR describing its subpartitions, or
- 	 * the normal boot sector. */
--	if (msdos_magic_present (data + 510) &&
-+	if (msdos_magic_present(data + 510) &&
- 	    SYS_IND(p) == MINIX_PARTITION) { /* subpartition table present */
- 		char tmp[1 + BDEVNAME_SIZE + 10 + 9 + 1];
- 
-@@ -527,6 +528,7 @@ int msdos_partition(struct parsed_partitions *state)
- 	for (slot = 1 ; slot <= 4 ; slot++, p++) {
- 		sector_t start = start_sect(p)*sector_size;
- 		sector_t size = nr_sects(p)*sector_size;
-+
- 		if (!size)
- 			continue;
- 		if (is_extended_partition(p)) {
-@@ -537,6 +539,7 @@ int msdos_partition(struct parsed_partitions *state)
- 			 * sector, although it may not be enough/proper.
- 			 */
- 			sector_t n = 2;
-+
- 			n = min(size, max(sector_size, n));
- 			put_partition(state, slot, start, n);
- 
--- 
-1.9.1
+Reviewed-by: Davidlohr Bueso <davidlohr@hp.com>
 
