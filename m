@@ -1,52 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932460AbaFLD3b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jun 2014 23:29:31 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:47182 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755404AbaFLD33 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jun 2014 23:29:29 -0400
-X-IronPort-AV: E=Sophos;i="5.00,693,1396972800"; 
-   d="scan'208";a="31792490"
-Message-ID: <53991FB4.2060001@cn.fujitsu.com>
-Date: Thu, 12 Jun 2014 11:34:12 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1755583AbaFLDhT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jun 2014 23:37:19 -0400
+Received: from ozlabs.org ([103.22.144.67]:54789 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752751AbaFLDhR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jun 2014 23:37:17 -0400
+Date: Thu, 12 Jun 2014 13:37:02 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@lst.de>
+Subject: linux-next: manual merge of the virtio tree with Linus' tree
+Message-ID: <20140612133702.58473968@canb.auug.org.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [patch V4 02/10] rtmutex: Simplify rtmutex_slowtrylock()
-References: <20140611182944.108526809@linutronix.de> <20140611183853.029651737@linutronix.de>
-In-Reply-To: <20140611183853.029651737@linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.103]
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/VdeWwv33SraHT5b2Nmpwe8A"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2014 02:44 AM, Thomas Gleixner wrote:
-> Oleg noticed that rtmutex_slowtrylock() has a pointless check for
-> rt_mutex_owner(lock) != current.
-> 
-> To avoid calling try_to_take_rtmutex() we really want to check whether
-> the lock has an owner at all or whether the trylock failed because the
-> owner is NULL, but the RT_MUTEX_HAS_WAITERS bit is set. This covers
-> the lock is owned by caller situation as well.
-> 
-> We can actually do this check lockless. trylock is taking a chance
-> whether we take lock->wait_lock to do the check or not.
-> 
-> Add comments to the function while at it.
-> 
-> Reported-by: Oleg Nesterov <oleg@redhat.com>
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> ---
+--Sig_/VdeWwv33SraHT5b2Nmpwe8A
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Hi Rusty,
 
-Thanks,
-Lai
+Today's linux-next merge of the virtio tree got a conflict in
+drivers/scsi/virtio_scsi.c between commit b54197c43db8 ("virtio_scsi:
+use cmd_size") from Linus' tree and commit c77fba9ab058 ("virtio_scsi:
+don't call virtqueue_add_sgs(... GFP_NOIO) holding spinlock") from the
+virtio tree.
+
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/scsi/virtio_scsi.c
+index d4727b339474,e2a68aece3da..000000000000
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@@ -484,10 -529,13 +483,9 @@@ static int virtscsi_queuecommand(struc
+  	memcpy(cmd->req.cmd.cdb, sc->cmnd, sc->cmd_len);
+ =20
+  	if (virtscsi_kick_cmd(req_vq, cmd,
+- 			      sizeof cmd->req.cmd, sizeof cmd->resp.cmd,
+- 			      GFP_ATOMIC) !=3D 0)
+ -			      sizeof cmd->req.cmd, sizeof cmd->resp.cmd) =3D=3D 0)
+ -		ret =3D 0;
+ -	else
+ -		mempool_free(cmd, virtscsi_cmd_pool);
+ -
+ -out:
+ -	return ret;
+++			      sizeof cmd->req.cmd, sizeof cmd->resp.cmd) !=3D 0)
+ +		return SCSI_MLQUEUE_HOST_BUSY;
+ +	return 0;
+  }
+ =20
+  static int virtscsi_queuecommand_single(struct Scsi_Host *sh,
+
+--Sig_/VdeWwv33SraHT5b2Nmpwe8A
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJTmSBlAAoJEMDTa8Ir7ZwVK+AP/RQTgdjYD/OwuMekjpQFS+Zl
+K9B8E/6qxWdbnTf8nHFf9aYGrlMAKUjGH4ml+f/Ew4i3CCip7U9djL828ld6dL0J
+bAUo6RW1AWormdkLTdtVln1qXpp1pxGNKezMkWyG0YTW3PFPVy+nFkXihruNQA5u
+U5t/129smpfoFExHC5wi1gfodPIXC9jS/Th18MzmHYoR8Zpv1lS9kYkzT/neZ54R
+g7zMODAEh4vpMBpYr2eyxYHf00S+FUP0bgmAd58s0crBxPF2gmav5cV6TcJ4Wm/+
+/7n7PsF7FiNTyH0pgY+Qobfh1n40/Tsvhs+6B/NCPVuo1GHJODLXZRPTGWeyU9JK
+546pdPzxmznGm1sXjL/H0L8/5qI0aG8XHCPGCK7VmZUkVVQ9hkqInKd732jFhX+4
+7w9YVm/PGwnsFCXNaXkTJTDmJ1xLpCvxmTSIqSZ7jd487RRlG3gks48LS3VQ78nF
+zJK1SieDq3XQft4mOxIhYbRaKBNk3D1n/xOw4U/YNspzoK8CVQwutOGzYCNp0KV/
+hhvTXMjRA7kOv5gatnDIcvWtIBx+bacool7m7BDzZTe16YwLNLpHiMGJcfMEfFx7
+TyYb3TyxlcwiTDYsh7l3i+fazhXwym/WQ6LDjiovfoiIe5gIiElbnklgV7eZ9BYL
+CJiSsgGd4fdSDWpa33DJ
+=Od6E
+-----END PGP SIGNATURE-----
+
+--Sig_/VdeWwv33SraHT5b2Nmpwe8A--
