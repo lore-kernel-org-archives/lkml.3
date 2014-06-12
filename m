@@ -1,97 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752687AbaFLFYq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 01:24:46 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:38162 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751089AbaFLFYo (ORCPT
+	id S1753901AbaFLFZg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 01:25:36 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:34409 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751427AbaFLFZe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 01:24:44 -0400
-X-AuditID: cbfee61b-b7fbb6d000001be3-23-5399399a5d07
-From: Chao Yu <chao2.yu@samsung.com>
-To: Jaegeuk Kim <jaegeuk@kernel.org>
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [f2fs-dev][PATCH 1/3] f2fs: check lower bound nid value in
- check_nid_range
-Date: Thu, 12 Jun 2014 13:23:41 +0800
-Message-id: <000001cf85fe$9e63ed10$db2bc730$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac+F/YnOIjLCwnUhQqGQS6pFCQ1B0g==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLLMWRmVeSWpSXmKPExsVy+t9jAd3ZljODDVY3slo8WT+L2eLSIneL
-	PXtPslhc3jWHzYHFY9OqTjaP3Qs+M3l83iQXwBzFZZOSmpNZllqkb5fAlXH0UD9zwV3eihe3
-	1rA1MM7h7mLk5JAQMJH4MGU+C4QtJnHh3nq2LkYuDiGBRYwSCyauYAVJCAn8YJR4dNwQxGYT
-	UJFY3vGfCcQWAbIPLbrMDmIzC2RK3GuawQxiCwuESlz5eAqshkVAVeLU+dOMIDavgKXEopaN
-	bBC2oMSPyfdYIHq1JNbvPM4EYctLbF7zlhniIAWJHWdfM0Ls0pO4taEVape4xMYjt1gmMArM
-	QjJqFpJRs5CMmoWkZQEjyypG0dSC5ILipPRcI73ixNzi0rx0veT83E2M4EB+Jr2DcVWDxSFG
-	AQ5GJR5ehtoZwUKsiWXFlbmHGCU4mJVEeB3PA4V4UxIrq1KL8uOLSnNSiw8xSnOwKInzHmy1
-	DhQSSE8sSc1OTS1ILYLJMnFwSjUwivHdaHx/O23TnshwrtM+mqr7Xa4E36n6OTn2w00Di+3b
-	dxgpuxVPrznzIUB5t657fnic8GuunaFO64vSnfeceMnXNWnrzKVJrPP1Vl52S5zeUmXJc0PI
-	y/75lo9SGxPOrDRUczt7iC/5tZVHg1bzlp53s0RmLLnvHVhS3JEpHXdL/u+cZTfmK7EUZyQa
-	ajEXFScCAEJ013tgAgAA
+	Thu, 12 Jun 2014 01:25:34 -0400
+X-Original-SENDERIP: 10.177.220.169
+X-Original-MAILFROM: minchan@kernel.org
+Date: Thu, 12 Jun 2014 14:25:43 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>, kvm@vger.kernel.org,
+        linux-mm@kvack.org, Gleb Natapov <gleb@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alexander Graf <agraf@suse.de>, kvm-ppc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paolo Bonzini <pbonzini@redhat.com>, linuxppc-dev@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 02/10] DMA, CMA: fix possible memory leak
+Message-ID: <20140612052543.GE12415@bbox>
+References: <1402543307-29800-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1402543307-29800-3-git-send-email-iamjoonsoo.kim@lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402543307-29800-3-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add lower bound verification for nid in check_nid_range, so nids
-reserved like 0, node, meta passed by caller could be checked there.
+On Thu, Jun 12, 2014 at 12:21:39PM +0900, Joonsoo Kim wrote:
+> We should free memory for bitmap when we find zone mis-match,
+> otherwise this memory will leak.
 
-And then check_nid_range could be used in f2fs_nfs_get_inode for simplifying
-code.
+Then, -stable stuff?
 
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
----
- fs/f2fs/f2fs.h  |    3 ++-
- fs/f2fs/inode.c |    1 +
- fs/f2fs/super.c |    4 +---
- 3 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> Additionally, I copy code comment from ppc kvm's cma code to notify
+> why we need to check zone mis-match.
+> 
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> 
+> diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
+> index bd0bb81..fb0cdce 100644
+> --- a/drivers/base/dma-contiguous.c
+> +++ b/drivers/base/dma-contiguous.c
+> @@ -177,14 +177,24 @@ static int __init cma_activate_area(struct cma *cma)
+>  		base_pfn = pfn;
+>  		for (j = pageblock_nr_pages; j; --j, pfn++) {
+>  			WARN_ON_ONCE(!pfn_valid(pfn));
+> +			/*
+> +			 * alloc_contig_range requires the pfn range
+> +			 * specified to be in the same zone. Make this
+> +			 * simple by forcing the entire CMA resv range
+> +			 * to be in the same zone.
+> +			 */
+>  			if (page_zone(pfn_to_page(pfn)) != zone)
+> -				return -EINVAL;
+> +				goto err;
 
-diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index 7ef7acd..58df97e 100644
---- a/fs/f2fs/f2fs.h
-+++ b/fs/f2fs/f2fs.h
-@@ -641,7 +641,8 @@ static inline void f2fs_unlock_all(struct f2fs_sb_info *sbi)
-  */
- static inline int check_nid_range(struct f2fs_sb_info *sbi, nid_t nid)
- {
--	WARN_ON((nid >= NM_I(sbi)->max_nid));
-+	if (unlikely(nid < F2FS_ROOT_INO(sbi)))
-+		return -EINVAL;
- 	if (unlikely(nid >= NM_I(sbi)->max_nid))
- 		return -EINVAL;
- 	return 0;
-diff --git a/fs/f2fs/inode.c b/fs/f2fs/inode.c
-index adc622c..2cf6962 100644
---- a/fs/f2fs/inode.c
-+++ b/fs/f2fs/inode.c
-@@ -78,6 +78,7 @@ static int do_read_inode(struct inode *inode)
- 	if (check_nid_range(sbi, inode->i_ino)) {
- 		f2fs_msg(inode->i_sb, KERN_ERR, "bad inode number: %lu",
- 			 (unsigned long) inode->i_ino);
-+		WARN_ON(1);
- 		return -EINVAL;
- 	}
- 
-diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-index b2b1863..8f96d93 100644
---- a/fs/f2fs/super.c
-+++ b/fs/f2fs/super.c
-@@ -689,9 +689,7 @@ static struct inode *f2fs_nfs_get_inode(struct super_block *sb,
- 	struct f2fs_sb_info *sbi = F2FS_SB(sb);
- 	struct inode *inode;
- 
--	if (unlikely(ino < F2FS_ROOT_INO(sbi)))
--		return ERR_PTR(-ESTALE);
--	if (unlikely(ino >= NM_I(sbi)->max_nid))
-+	if (check_nid_range(sbi, ino))
- 		return ERR_PTR(-ESTALE);
- 
- 	/*
+At a first glance, I thought it would be better to handle such error
+before activating.
+So when I see the registration code(ie, dma_contiguous_revere_area),
+I realized it is impossible because we didn't set up zone yet. :(
+
+If so, when we detect to fail here, it would be better to report more
+meaningful error message like what was successful zone and what is
+new zone and failed pfn number?
+
+>  		}
+>  		init_cma_reserved_pageblock(pfn_to_page(base_pfn));
+>  	} while (--i);
+>  
+>  	mutex_init(&cma->lock);
+>  	return 0;
+> +
+> +err:
+> +	kfree(cma->bitmap);
+> +	return -EINVAL;
+>  }
+>  
+>  static struct cma cma_areas[MAX_CMA_AREAS];
+> -- 
+> 1.7.9.5
+
 -- 
-1.7.9.5
-
-
+Kind regards,
+Minchan Kim
