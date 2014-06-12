@@ -1,42 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752315AbaFLTk2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 15:40:28 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:45563 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751284AbaFLTk0 (ORCPT
+	id S1752476AbaFLTlJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 15:41:09 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:58594 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751634AbaFLTlH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 15:40:26 -0400
-Message-ID: <539A0227.1000909@wwwdotorg.org>
-Date: Thu, 12 Jun 2014 13:40:23 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Marcel Ziswiler <marcel@ziswiler.com>, thierry.reding@gmail.com
-CC: arm@kernel.org, linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, stefan@agner.ch
-Subject: Re: [PATCH v2 1/3] arm: multi_v7: enable igb, stmpe, lm95245, pwm
- leds
-References: <1741a33cd88cd5525f3c50c0e0cacc0853a3512a.1402350905.git.marcel@ziswiler.com>
-In-Reply-To: <1741a33cd88cd5525f3c50c0e0cacc0853a3512a.1402350905.git.marcel@ziswiler.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 12 Jun 2014 15:41:07 -0400
+From: Wahib Faizi <wahibfaizi@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Valentina Manea <valentina.manea.m@gmail.com>,
+        linux-usb@vger.kernel.org, devel@driverdev.osuosl.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH v3 0/2] Fix subject line 
+Date: Thu, 12 Jun 2014 23:40:17 +0400
+Message-Id: <1402602019-12819-1-git-send-email-wahibfaizi@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1402569338-5709-1-git-send-email-wahibfaizi@gmail.com>
+References: <1402569338-5709-1-git-send-email-wahibfaizi@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/2014 04:49 PM, Marcel Ziswiler wrote:
-> The NVIDIA Tegra 3 based Apalis T30 module contains an Intel i210 resp.
-> i211 gigabit Ethernet controller, an STMPE811 ADC/touch controller, PWM
-> LEDs generically accessible from user space and an LM95245 temperature
-> sensor chip. The later three can also be found on the Colibri T30
-> module.
-> 
-> While at it move the NEON entry down to its proper place to have it all
-> nicely ordered again.
 
-Acked-by: Stephen Warren <swarren@nvidia.com>
+Fix coding style issues detected by checkpatch.pl in usbip_host_driver.c.
 
-I assume this will be applied directly to the arm-soc tree.
+v3: Shorten subject line, as suggested by 
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Joe Perches <joe@perches.com>
+
+v2: Split patch into logical chunks, as suggested by 
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
