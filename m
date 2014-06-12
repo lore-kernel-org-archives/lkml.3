@@ -1,76 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933452AbaFLNUl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 09:20:41 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:28004 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755792AbaFLNUi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 09:20:38 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/MhQ9YSVG/kM+cyBP8+hrtoaKOr3D050U=
-X-DKIM: OpenDKIM Filter v2.0.1 titan CC0EB58DDAA
-Date: Thu, 12 Jun 2014 09:20:23 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sricharan R <r.sricharan@ti.com>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tony@atomide.com, santosh.shilimkar@ti.com, nm@ti.com, rnayak@ti.com,
-        linux@arm.linux.org.uk, tglx@linutronix.de
-Subject: Re: [PATCH V2 11/19] irqchip: crossbar: fix memory leak incase of
- invalid entry
-Message-ID: <20140612132023.GX8664@titan.lakedaemon.net>
-References: <1402574007-13987-1-git-send-email-r.sricharan@ti.com>
- <1402574007-13987-12-git-send-email-r.sricharan@ti.com>
+	id S933445AbaFLNVo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 09:21:44 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:42689 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751325AbaFLNVm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 09:21:42 -0400
+Message-ID: <5399A8D5.6070105@ti.com>
+Date: Thu, 12 Jun 2014 18:49:17 +0530
+From: Sricharan R <r.sricharan@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402574007-13987-12-git-send-email-r.sricharan@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jason Cooper <jason@lakedaemon.net>
+CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <tony@atomide.com>, <santosh.shilimkar@ti.com>, <nm@ti.com>,
+        <rnayak@ti.com>, <linux@arm.linux.org.uk>, <tglx@linutronix.de>
+Subject: Re: [PATCH V2 03/19] irqchip: crossbar: Skip some irqs from getting
+ mapped to crossbar
+References: <1402574007-13987-1-git-send-email-r.sricharan@ti.com> <1402574007-13987-4-git-send-email-r.sricharan@ti.com> <20140612125134.GS8664@titan.lakedaemon.net>
+In-Reply-To: <20140612125134.GS8664@titan.lakedaemon.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 12, 2014 at 05:23:19PM +0530, Sricharan R wrote:
-> From: Nishanth Menon <nm@ti.com>
+Hi Jason,
+
+On Thursday 12 June 2014 06:21 PM, Jason Cooper wrote:
+> On Thu, Jun 12, 2014 at 05:23:11PM +0530, Sricharan R wrote:
+>> From: Nishanth Menon <nm@ti.com>
+>>
+>> When, in the system due to varied reasons, interrupts might be unusable
+>> due to hardware behavior, but register maps do exist, then those interrupts
+>> should be skipped while mapping irq to crossbars.
+>>
+>> Signed-off-by: Nishanth Menon <nm@ti.com>
+>> Signed-off-by: Sricharan R <r.sricharan@ti.com>
+>> Signed-off-by: Tony Lindgren <tony@atomide.com>
 > 
-> When the provided unused skip list entry is greater than max irqs
-> possible, we go to err3, but we fail to free register_offsets,
-> should have returned to err4 instead which ensures that allocated
-
-s/returned/jumped/
-
-> register_offsets are freed as well.
+> Tony, have you applied these somewhere already?
 > 
-> Signed-off-by: Nishanth Menon <nm@ti.com>
-> ---
->  drivers/irqchip/irq-crossbar.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>> ---
+>>  drivers/irqchip/irq-crossbar.c |   47 ++++++++++++++++++++++++++++++++++++----
+>>  1 file changed, 43 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/drivers/irqchip/irq-crossbar.c b/drivers/irqchip/irq-crossbar.c
+>> index 51d4b87..847f6e3 100644
+>> --- a/drivers/irqchip/irq-crossbar.c
+>> +++ b/drivers/irqchip/irq-crossbar.c
+>> @@ -13,11 +13,13 @@
+>>  #include <linux/io.h>
+>>  #include <linux/of_address.h>
+>>  #include <linux/of_irq.h>
+>> +#include <linux/of_device.h>
+>>  #include <linux/slab.h>
+>>  #include <linux/irqchip/arm-gic.h>
+>>  
+>>  #define IRQ_FREE	-1
+>>  #define IRQ_RESERVED	-2
+>> +#define IRQ_SKIP	-3
+>>  #define GIC_IRQ_START	32
+>>  
+>>  /*
+>> @@ -34,6 +36,16 @@ struct crossbar_device {
+>>  	void (*write) (int, int);
+>>  };
+>>  
+>> +/**
+>> + * struct crossbar_data: Platform specific data
+>> + * @irqs_unused: array of irqs that cannot be used because of hw erratas
+>> + * @size: size of the irqs_unused array
+>> + */
+>> +struct crossbar_data {
+>> +	const uint *irqs_unused;
+>> +	const uint size;
+>> +};
+>> +
+>>  static struct crossbar_device *cb;
+>>  
+>>  static inline void crossbar_writel(int irq_no, int cb_no)
+>> @@ -119,10 +131,12 @@ const struct irq_domain_ops routable_irq_domain_ops = {
+>>  	.xlate = crossbar_domain_xlate
+>>  };
+>>  
+>> -static int __init crossbar_of_init(struct device_node *node)
+>> +static int __init crossbar_of_init(struct device_node *node,
+>> +				   const struct crossbar_data *data)
+>>  {
+>>  	int i, size, max, reserved = 0, entry;
+>>  	const __be32 *irqsr;
+>> +	const int *irqsk = NULL;
+>>  
+>>  	cb = kzalloc(sizeof(*cb), GFP_KERNEL);
+>>  
+>> @@ -194,6 +208,22 @@ static int __init crossbar_of_init(struct device_node *node)
+>>  		reserved += size;
+>>  	}
+>>  
+>> +	/* Skip the ones marked as unused */
+>> +	if (data) {
+>> +		irqsk = data->irqs_unused;
+>> +		size = data->size;
+>> +
+>> +		for (i = 0; i < size; i++) {
+>> +			entry = irqsk[i];
+>> +
+>> +			if (entry > max) {
+>> +				pr_err("Invalid skip entry\n");
+>> +				goto err3;
+>> +			}
+>> +			cb->irq_map[entry] = IRQ_SKIP;
+>> +		}
+>> +	}
+>> +
+>>  	register_routable_domain_ops(&routable_irq_domain_ops);
+>>  	return 0;
+>>  
+>> @@ -208,18 +238,27 @@ err1:
+>>  	return -ENOMEM;
+>>  }
+>>  
+>> +/* irq number 10 cannot be used because of hw bug */
+>> +int dra_irqs_unused[] = { 10 };
+>> +struct crossbar_data cb_dra_data = { dra_irqs_unused,
+>> +				     ARRAY_SIZE(dra_irqs_unused) };
+>> +
+>>  static const struct of_device_id crossbar_match[] __initconst = {
+>> -	{ .compatible = "ti,irq-crossbar" },
+>> +	{ .compatible = "ti,irq-crossbar", .data = &cb_dra_data },
+>>  	{}
+>>  };
 > 
-> diff --git a/drivers/irqchip/irq-crossbar.c b/drivers/irqchip/irq-crossbar.c
-> index 42a2e62..fea3e5d 100644
-> --- a/drivers/irqchip/irq-crossbar.c
-> +++ b/drivers/irqchip/irq-crossbar.c
-> @@ -225,7 +225,7 @@ static int __init crossbar_of_init(struct device_node *node,
->  
->  			if (entry > max) {
->  				pr_err("Invalid skip entry\n");
-> -				goto err3;
-> +				goto err4;
-
-This would be a good opportunity to reduce the possibility of future
-errors.  Please consider renaming err{1,2,3,4} to something more
-recognizable while you are here.
-
-thx,
-
-Jason.
-
->  			}
->  			cb->irq_map[entry] = IRQ_SKIP;
->  		}
-> -- 
-> 1.7.9.5
+> This is a bug in all implementations of this IP?  Or, a specific
+> SoC's implementation?  Would this be better expressed in the dts via a
+> property?  Can we expect future implementations to be fixed?
 > 
+> thx,
+> 
+> Jason.
+ Infact this and PATCH#10 should be merged. I will change that.
+
+ So in Socs's (2 so far) that do have a crossbar, some irqs are mapped
+ through a crossbar and some are directly wired to the irqchip.
+ These 'unused irqs' are those which are directly wired but they still
+ have a crossbar register. Their routing cannot be changed. So this
+ is not really expected usage of the crossbar hw ip. We initially thought
+ having a dts property separately for this, but took this path to avoid
+ loading the dts with additional bindings which may not be generic.
+
+Regards,
+ Sricharan 
+ 
+ 
