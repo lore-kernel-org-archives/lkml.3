@@ -1,236 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933099AbaFLMpz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 08:45:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39023 "EHLO mx1.redhat.com"
+	id S933236AbaFLMqs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 08:46:48 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:41306 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752749AbaFLMpw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 08:45:52 -0400
-Message-ID: <5399A0F3.8040106@redhat.com>
-Date: Thu, 12 Jun 2014 08:45:39 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1754433AbaFLMqr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 08:46:47 -0400
+Message-ID: <5399A12F.7010301@ti.com>
+Date: Thu, 12 Jun 2014 15:46:39 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Chen Yucong <slaoub@gmail.com>, akpm@linux-foundation.org
-CC: mgorman@suse.de, hannes@cmpxchg.org, mhocko@suse.cz, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm/vmscan.c: wrap five parameters into arg_container
- in shrink_page_list()
-References: <1402565795-706-1-git-send-email-slaoub@gmail.com>
-In-Reply-To: <1402565795-706-1-git-send-email-slaoub@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>
+CC: <kishon@ti.com>, <george.cherian@ti.com>, <balbi@ti.com>,
+        <balajitk@ti.com>, <hdegoede@redhat.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        Benoit Cousson <bcousson@baylibre.com>
+Subject: Re: [PATCH v4 1/4] ARM: OMAP5: hwmod: Add ocp2scp3 and sata hwmods
+References: <1398274237-24510-1-git-send-email-rogerq@ti.com> <1398274487-24688-1-git-send-email-rogerq@ti.com>
+In-Reply-To: <1398274487-24688-1-git-send-email-rogerq@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2014 05:36 AM, Chen Yucong wrote:
-> shrink_page_list() has too many arguments that have already reached ten.
-> Some of those arguments and temporary variables introduces extra 80 bytes
-> on the stack.
-> 
-> This patch wraps five parameters into arg_container and removes some temporary
-> variables, thus making shrink_page_list() to consume fewer stack space.
+Tony,
 
-Won't the container with those arguments now live on the stack,
-using up the same space that the variables used to take?
+Looks like we've missed this for 3.16.
 
-> Before mm/vmscan.c is modified:
->    text	   data	    bss	    dec	    hex	filename
-> 6876698	 957224	 966656	8800578	 864942	vmlinux-3.15
+cheers,
+-roger
+
+On 04/23/2014 08:34 PM, Roger Quadros wrote:
+> From: Keshava Munegowda <keshava_mgowda@ti.com>
 > 
-> After mm/vmscan.c is changed:
->    text	   data	    bss	    dec	    hex	filename
-> 6876506	 957224	 966656	8800386	 864882	vmlinux-3.15
+> Create hwmods for ocp2scp3 and sata modules.
 > 
-> Signed-off-by: Chen Yucong <slaoub@gmail.com>
+> [Roger Q] Clean up.
+> 
+> CC: Benoit Cousson <bcousson@baylibre.com>
+> Acked-by: Paul Walmsley <paul@pwsan.com>
+> Signed-off-by: Balaji T K <balajitk@ti.com>
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
 > ---
->  mm/vmscan.c |   64 +++++++++++++++++++++++++++--------------------------------
->  1 file changed, 29 insertions(+), 35 deletions(-)
+>  arch/arm/mach-omap2/omap_hwmod_54xx_data.c | 73 ++++++++++++++++++++++++++++++
+>  1 file changed, 73 insertions(+)
 > 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index a8ffe4e..538cdcf 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -790,6 +790,14 @@ static void page_check_dirty_writeback(struct page *page,
->  		mapping->a_ops->is_dirty_writeback(page, dirty, writeback);
->  }
+> diff --git a/arch/arm/mach-omap2/omap_hwmod_54xx_data.c b/arch/arm/mach-omap2/omap_hwmod_54xx_data.c
+> index 8923172..e169f90 100644
+> --- a/arch/arm/mach-omap2/omap_hwmod_54xx_data.c
+> +++ b/arch/arm/mach-omap2/omap_hwmod_54xx_data.c
+> @@ -1791,6 +1791,77 @@ static struct omap_hwmod omap54xx_wd_timer2_hwmod = {
+>  	},
+>  };
 >  
-> +struct arg_container {
-> +	unsigned long nr_dirty;
-> +	unsigned long nr_unqueued_dirty;
-> +	unsigned long nr_congested;
-> +	unsigned long nr_writeback;
-> +	unsigned long nr_immediate;
+> +/*
+> + * 'ocp2scp' class
+> + * bridge to transform ocp interface protocol to scp (serial control port)
+> + * protocol
+> + */
+> +/* ocp2scp3 */
+> +static struct omap_hwmod omap54xx_ocp2scp3_hwmod;
+> +/* l4_cfg -> ocp2scp3 */
+> +static struct omap_hwmod_ocp_if omap54xx_l4_cfg__ocp2scp3 = {
+> +	.master		= &omap54xx_l4_cfg_hwmod,
+> +	.slave		= &omap54xx_ocp2scp3_hwmod,
+> +	.clk		= "l4_root_clk_div",
+> +	.user		= OCP_USER_MPU | OCP_USER_SDMA,
 > +};
 > +
+> +static struct omap_hwmod omap54xx_ocp2scp3_hwmod = {
+> +	.name		= "ocp2scp3",
+> +	.class		= &omap54xx_ocp2scp_hwmod_class,
+> +	.clkdm_name	= "l3init_clkdm",
+> +	.prcm = {
+> +		.omap4 = {
+> +			.clkctrl_offs = OMAP54XX_CM_L3INIT_OCP2SCP3_CLKCTRL_OFFSET,
+> +			.context_offs = OMAP54XX_RM_L3INIT_OCP2SCP3_CONTEXT_OFFSET,
+> +			.modulemode   = MODULEMODE_HWCTRL,
+> +		},
+> +	},
+> +};
+> +
+> +/*
+> + * 'sata' class
+> + * sata:  serial ata interface  gen2 compliant   ( 1 rx/ 1 tx)
+> + */
+> +
+> +static struct omap_hwmod_class_sysconfig omap54xx_sata_sysc = {
+> +	.sysc_offs	= 0x0000,
+> +	.sysc_flags	= (SYSC_HAS_MIDLEMODE | SYSC_HAS_SIDLEMODE),
+> +	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
+> +			   SIDLE_SMART_WKUP | MSTANDBY_FORCE | MSTANDBY_NO |
+> +			   MSTANDBY_SMART | MSTANDBY_SMART_WKUP),
+> +	.sysc_fields	= &omap_hwmod_sysc_type2,
+> +};
+> +
+> +static struct omap_hwmod_class omap54xx_sata_hwmod_class = {
+> +	.name	= "sata",
+> +	.sysc	= &omap54xx_sata_sysc,
+> +};
+> +
+> +/* sata */
+> +static struct omap_hwmod omap54xx_sata_hwmod = {
+> +	.name		= "sata",
+> +	.class		= &omap54xx_sata_hwmod_class,
+> +	.clkdm_name	= "l3init_clkdm",
+> +	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
+> +	.main_clk	= "func_48m_fclk",
+> +	.mpu_rt_idx	= 1,
+> +	.prcm = {
+> +		.omap4 = {
+> +			.clkctrl_offs = OMAP54XX_CM_L3INIT_SATA_CLKCTRL_OFFSET,
+> +			.context_offs = OMAP54XX_RM_L3INIT_SATA_CONTEXT_OFFSET,
+> +			.modulemode   = MODULEMODE_SWCTRL,
+> +		},
+> +	},
+> +};
+> +
+> +/* l4_cfg -> sata */
+> +static struct omap_hwmod_ocp_if omap54xx_l4_cfg__sata = {
+> +	.master		= &omap54xx_l4_cfg_hwmod,
+> +	.slave		= &omap54xx_sata_hwmod,
+> +	.clk		= "l3_iclk_div",
+> +	.user		= OCP_USER_MPU | OCP_USER_SDMA,
+> +};
+>  
 >  /*
->   * shrink_page_list() returns the number of reclaimed pages
->   */
-> @@ -797,22 +805,13 @@ static unsigned long shrink_page_list(struct list_head *page_list,
->  				      struct zone *zone,
->  				      struct scan_control *sc,
->  				      enum ttu_flags ttu_flags,
-> -				      unsigned long *ret_nr_dirty,
-> -				      unsigned long *ret_nr_unqueued_dirty,
-> -				      unsigned long *ret_nr_congested,
-> -				      unsigned long *ret_nr_writeback,
-> -				      unsigned long *ret_nr_immediate,
-> +				      struct arg_container *ac,
->  				      bool force_reclaim)
->  {
->  	LIST_HEAD(ret_pages);
->  	LIST_HEAD(free_pages);
->  	int pgactivate = 0;
-> -	unsigned long nr_unqueued_dirty = 0;
-> -	unsigned long nr_dirty = 0;
-> -	unsigned long nr_congested = 0;
->  	unsigned long nr_reclaimed = 0;
-> -	unsigned long nr_writeback = 0;
-> -	unsigned long nr_immediate = 0;
+>   * Interfaces
+> @@ -2482,6 +2553,8 @@ static struct omap_hwmod_ocp_if *omap54xx_hwmod_ocp_ifs[] __initdata = {
+>  	&omap54xx_l4_cfg__usb_tll_hs,
+>  	&omap54xx_l4_cfg__usb_otg_ss,
+>  	&omap54xx_l4_wkup__wd_timer2,
+> +	&omap54xx_l4_cfg__ocp2scp3,
+> +	&omap54xx_l4_cfg__sata,
+>  	NULL,
+>  };
 >  
->  	cond_resched();
->  
-> @@ -858,10 +857,10 @@ static unsigned long shrink_page_list(struct list_head *page_list,
->  		 */
->  		page_check_dirty_writeback(page, &dirty, &writeback);
->  		if (dirty || writeback)
-> -			nr_dirty++;
-> +			ac->nr_dirty++;
->  
->  		if (dirty && !writeback)
-> -			nr_unqueued_dirty++;
-> +			ac->nr_unqueued_dirty++;
->  
->  		/*
->  		 * Treat this page as congested if the underlying BDI is or if
-> @@ -872,7 +871,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
->  		mapping = page_mapping(page);
->  		if ((mapping && bdi_write_congested(mapping->backing_dev_info)) ||
->  		    (writeback && PageReclaim(page)))
-> -			nr_congested++;
-> +			ac->nr_congested++;
->  
->  		/*
->  		 * If a page at the tail of the LRU is under writeback, there
-> @@ -916,7 +915,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
->  			if (current_is_kswapd() &&
->  			    PageReclaim(page) &&
->  			    zone_is_reclaim_writeback(zone)) {
-> -				nr_immediate++;
-> +				ac->nr_immediate++;
->  				goto keep_locked;
->  
->  			/* Case 2 above */
-> @@ -934,7 +933,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
->  				 * and it's also appropriate in global reclaim.
->  				 */
->  				SetPageReclaim(page);
-> -				nr_writeback++;
-> +				ac->nr_writeback++;
->  
->  				goto keep_locked;
->  
-> @@ -1132,11 +1131,6 @@ keep:
->  	list_splice(&ret_pages, page_list);
->  	count_vm_events(PGACTIVATE, pgactivate);
->  	mem_cgroup_uncharge_end();
-> -	*ret_nr_dirty += nr_dirty;
-> -	*ret_nr_congested += nr_congested;
-> -	*ret_nr_unqueued_dirty += nr_unqueued_dirty;
-> -	*ret_nr_writeback += nr_writeback;
-> -	*ret_nr_immediate += nr_immediate;
->  	return nr_reclaimed;
->  }
->  
-> @@ -1148,7 +1142,8 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
->  		.priority = DEF_PRIORITY,
->  		.may_unmap = 1,
->  	};
-> -	unsigned long ret, dummy1, dummy2, dummy3, dummy4, dummy5;
-> +	unsigned long ret;
-> +	struct arg_container dummy;
->  	struct page *page, *next;
->  	LIST_HEAD(clean_pages);
->  
-> @@ -1161,8 +1156,7 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
->  	}
->  
->  	ret = shrink_page_list(&clean_pages, zone, &sc,
-> -			TTU_UNMAP|TTU_IGNORE_ACCESS,
-> -			&dummy1, &dummy2, &dummy3, &dummy4, &dummy5, true);
-> +			TTU_UNMAP|TTU_IGNORE_ACCESS, &dummy, true);
->  	list_splice(&clean_pages, page_list);
->  	mod_zone_page_state(zone, NR_ISOLATED_FILE, -ret);
->  	return ret;
-> @@ -1469,11 +1463,13 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
->  	unsigned long nr_scanned;
->  	unsigned long nr_reclaimed = 0;
->  	unsigned long nr_taken;
-> -	unsigned long nr_dirty = 0;
-> -	unsigned long nr_congested = 0;
-> -	unsigned long nr_unqueued_dirty = 0;
-> -	unsigned long nr_writeback = 0;
-> -	unsigned long nr_immediate = 0;
-> +	struct arg_container ac = {
-> +		.nr_dirty = 0,
-> +		.nr_congested = 0,
-> +		.nr_unqueued_dirty = 0,
-> +		.nr_writeback = 0,
-> +		.nr_immediate = 0,
-> +	};
->  	isolate_mode_t isolate_mode = 0;
->  	int file = is_file_lru(lru);
->  	struct zone *zone = lruvec_zone(lruvec);
-> @@ -1515,9 +1511,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
->  		return 0;
->  
->  	nr_reclaimed = shrink_page_list(&page_list, zone, sc, TTU_UNMAP,
-> -				&nr_dirty, &nr_unqueued_dirty, &nr_congested,
-> -				&nr_writeback, &nr_immediate,
-> -				false);
-> +					&ac, false);
->  
->  	spin_lock_irq(&zone->lru_lock);
->  
-> @@ -1554,7 +1548,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
->  	 * of pages under pages flagged for immediate reclaim and stall if any
->  	 * are encountered in the nr_immediate check below.
->  	 */
-> -	if (nr_writeback && nr_writeback == nr_taken)
-> +	if (ac.nr_writeback && ac.nr_writeback == nr_taken)
->  		zone_set_flag(zone, ZONE_WRITEBACK);
->  
->  	/*
-> @@ -1566,7 +1560,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
->  		 * Tag a zone as congested if all the dirty pages scanned were
->  		 * backed by a congested BDI and wait_iff_congested will stall.
->  		 */
-> -		if (nr_dirty && nr_dirty == nr_congested)
-> +		if (ac.nr_dirty && ac.nr_dirty == ac.nr_congested)
->  			zone_set_flag(zone, ZONE_CONGESTED);
->  
->  		/*
-> @@ -1576,7 +1570,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
->  		 * pages from reclaim context. It will forcibly stall in the
->  		 * next check.
->  		 */
-> -		if (nr_unqueued_dirty == nr_taken)
-> +		if (ac.nr_unqueued_dirty == nr_taken)
->  			zone_set_flag(zone, ZONE_TAIL_LRU_DIRTY);
->  
->  		/*
-> @@ -1585,7 +1579,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
->  		 * implies that pages are cycling through the LRU faster than
->  		 * they are written so also forcibly stall.
->  		 */
-> -		if ((nr_unqueued_dirty == nr_taken || nr_immediate) &&
-> +		if ((ac.nr_unqueued_dirty == nr_taken || ac.nr_immediate) &&
->  		    current_may_throttle())
->  			congestion_wait(BLK_RW_ASYNC, HZ/10);
->  	}
 > 
 
-
--- 
-All rights reversed
