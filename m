@@ -1,123 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754704AbaFLUip (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 16:38:45 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:43278 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752179AbaFLUil (ORCPT
+	id S1754821AbaFLUmm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 16:42:42 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:51238 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753641AbaFLUij (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 16:38:41 -0400
-Message-ID: <539A0FC8.8090504@oracle.com>
-Date: Thu, 12 Jun 2014 16:38:32 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Thu, 12 Jun 2014 16:38:39 -0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: <akpm@linux-foundation.org>
+CC: <cl@linux.com>, <iamjoonsoo.kim@lge.com>, <rientjes@google.com>,
+        <penberg@kernel.org>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
+Subject: [PATCH -mm v3 2/8] memcg: destroy kmem caches when last slab is freed
+Date: Fri, 13 Jun 2014 00:38:16 +0400
+Message-ID: <6884cccbbf6382c91a9ce2d26f922b2102af441f.1402602126.git.vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <cover.1402602126.git.vdavydov@parallels.com>
+References: <cover.1402602126.git.vdavydov@parallels.com>
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: mm: shm: hang in shmem_fallocate
-References: <52AE7B10.2080201@oracle.com> <52F6898A.50101@oracle.com> <alpine.LSU.2.11.1402081841160.26825@eggly.anvils> <52F82E62.2010709@oracle.com>
-In-Reply-To: <52F82E62.2010709@oracle.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain
+X-Originating-IP: [81.5.110.170]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/09/2014 08:41 PM, Sasha Levin wrote:
-> On 02/08/2014 10:25 PM, Hugh Dickins wrote:
->> Would trinity be likely to have a thread or process repeatedly faulting
->> in pages from the hole while it is being punched?
-> 
-> I can see how trinity would do that, but just to be certain - Cc davej.
-> 
-> On 02/08/2014 10:25 PM, Hugh Dickins wrote:
->> Does this happen with other holepunch filesystems?  If it does not,
->> I'd suppose it's because the tmpfs fault-in-newly-created-page path
->> is lighter than a consistent disk-based filesystem's has to be.
->> But we don't want to make the tmpfs path heavier to match them.
-> 
-> No, this is strictly limited to tmpfs, and AFAIK trinity tests hole
-> punching in other filesystems and I make sure to get a bunch of those
-> mounted before starting testing.
+When the memcg_cache_params->refcnt goes to 0, schedule the worker that
+will unregister the cache. To prevent this from happening when the owner
+memcg is alive, keep the refcnt incremented during memcg lifetime.
 
-Just pinging this one again. I still see hangs in -next where the hang
-location looks same as before:
+Note, this doesn't guarantee that the cache that belongs to a dead memcg
+will go away as soon as the last object is freed, because SL[AU]B
+implementation can cache empty slabs for performance reasons. Hence the
+cache may be hanging around indefinitely after memcg offline. This is to
+be resolved by the next patches.
 
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Acked-by: Christoph Lameter <cl@linux.com>
+---
+ include/linux/slab.h |    2 ++
+ mm/memcontrol.c      |   22 ++++++++++++++++++++--
+ 2 files changed, 22 insertions(+), 2 deletions(-)
 
-[ 3602.443529] CPU: 6 PID: 1153 Comm: trinity-c35 Not tainted 3.15.0-next-20140612-sasha-00022-g5e4db85-dirty #645
-[ 3602.443529] task: ffff8801b45eb000 ti: ffff8801a0b90000 task.ti: ffff8801a0b90000
-[ 3602.443529] RIP: vtime_account_system (include/linux/seqlock.h:229 include/linux/seqlock.h:234 include/linux/seqlock.h:301 kernel/sched/cputime.c:664)
-[ 3602.443529] RSP: 0018:ffff8801b4e03ef8  EFLAGS: 00000046
-[ 3602.443529] RAX: ffffffffb31a83b8 RBX: ffff8801b45eb000 RCX: 0000000000000001
-[ 3602.443529] RDX: ffffffffb31a80bb RSI: ffffffffb7915a75 RDI: 0000000000000082
-[ 3602.443529] RBP: ffff8801b4e03f28 R08: 0000000000000001 R09: 0000000000000000
-[ 3602.443529] R10: 0000000000000000 R11: 0000000000000000 R12: ffff8801b45eb968
-[ 3602.443529] R13: ffff8801b45eb938 R14: 0000000000000282 R15: ffff8801b45ebda0
-[ 3602.443529] FS:  00007f93ac8ec700(0000) GS:ffff8801b4e00000(0000) knlGS:0000000000000000
-[ 3602.443529] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[ 3602.443529] CR2: 00007f93a8854c9f CR3: 000000018a189000 CR4: 00000000000006a0
-[ 3602.443529] Stack:
-[ 3602.443529]  ffff8801b45eb000 00000000001d7800 ffffffffb32bd749 ffff8801b45eb000
-[ 3602.443529]  00000000001d7800 ffffffffb32bd749 ffff8801b4e03f48 ffffffffb31a83b8
-[ 3602.443529]  ffff8801b4e03f48 ffff8801b45eb000 ffff8801b4e03f68 ffffffffb31666a0
-[ 3602.443529] Call Trace:
-[ 3602.443529]  <IRQ>
-[ 3602.443529] vtime_common_account_irq_enter (kernel/sched/cputime.c:430)
-[ 3602.443529] irq_enter (include/linux/vtime.h:63 include/linux/vtime.h:115 kernel/softirq.c:334)
-[ 3602.443529] scheduler_ipi (kernel/sched/core.c:1589 include/linux/jump_label.h:115 include/linux/context_tracking_state.h:27 include/linux/tick.h:168 include/linux/tick.h:199 kernel/sched/core.c:1590)
-[ 3602.443529] smp_reschedule_interrupt (arch/x86/kernel/smp.c:266)
-[ 3602.443529] reschedule_interrupt (arch/x86/kernel/entry_64.S:1046)
-[ 3602.443529]  <EOI>
-[ 3602.443529] _raw_spin_unlock (include/linux/spinlock_api_smp.h:151 kernel/locking/spinlock.c:183)
-[ 3602.443529] zap_pte_range (mm/memory.c:1218)
-[ 3602.443529] unmap_single_vma (mm/memory.c:1256 mm/memory.c:1277 mm/memory.c:1302 mm/memory.c:1348)
-[ 3602.443529] zap_page_range_single (include/linux/mmu_notifier.h:234 mm/memory.c:1429)
-[ 3602.443529] unmap_mapping_range (mm/memory.c:2316 mm/memory.c:2392)
-[ 3602.443529] truncate_inode_page (mm/truncate.c:136 mm/truncate.c:180)
-[ 3602.443529] shmem_undo_range (mm/shmem.c:429)
-[ 3602.443529] shmem_truncate_range (mm/shmem.c:527)
-[ 3602.443529] shmem_fallocate (mm/shmem.c:1740)
-[ 3602.443529] do_fallocate (include/linux/fs.h:1281 fs/open.c:299)
-[ 3602.443529] SyS_madvise (mm/madvise.c:335 mm/madvise.c:384 mm/madvise.c:534 mm/madvise.c:465)
-[ 3602.443529] tracesys (arch/x86/kernel/entry_64.S:542)
-[ 3602.443529] Code: 09 00 00 48 89 5d e8 48 89 fb 4c 89 e7 4c 89 6d f8 e8 25 69 3b 03 83 83 30 09 00 00 01 48 8b 45 08 4c 8d ab 38 09 00 00 45 31 c9 <41> b8 01 00 00 00 31 c9 31 d2 31 f6 4c 89 ef 48 89 04 24 e8 e8
-All code
-========
-   0:   09 00                   or     %eax,(%rax)
-   2:   00 48 89                add    %cl,-0x77(%rax)
-   5:   5d                      pop    %rbp
-   6:   e8 48 89 fb 4c          callq  0x4cfb8953
-   b:   89 e7                   mov    %esp,%edi
-   d:   4c 89 6d f8             mov    %r13,-0x8(%rbp)
-  11:   e8 25 69 3b 03          callq  0x33b693b
-  16:   83 83 30 09 00 00 01    addl   $0x1,0x930(%rbx)
-  1d:   48 8b 45 08             mov    0x8(%rbp),%rax
-  21:   4c 8d ab 38 09 00 00    lea    0x938(%rbx),%r13
-  28:   45 31 c9                xor    %r9d,%r9d
-  2b:*  41 b8 01 00 00 00       mov    $0x1,%r8d                <-- trapping instruction
-  31:   31 c9                   xor    %ecx,%ecx
-  33:   31 d2                   xor    %edx,%edx
-  35:   31 f6                   xor    %esi,%esi
-  37:   4c 89 ef                mov    %r13,%rdi
-  3a:   48 89 04 24             mov    %rax,(%rsp)
-  3e:   e8                      .byte 0xe8
-  3f:   e8                      .byte 0xe8
-        ...
+diff --git a/include/linux/slab.h b/include/linux/slab.h
+index 1985bd9bec7d..d9716fdc8211 100644
+--- a/include/linux/slab.h
++++ b/include/linux/slab.h
+@@ -527,6 +527,7 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
+  * @list: list_head for the list of all caches in this memcg
+  * @root_cache: pointer to the global, root cache, this cache was derived from
+  * @refcnt: reference counter
++ * @unregister_work: worker to destroy the cache
+  */
+ struct memcg_cache_params {
+ 	bool is_root_cache;
+@@ -540,6 +541,7 @@ struct memcg_cache_params {
+ 			struct list_head list;
+ 			struct kmem_cache *root_cache;
+ 			atomic_long_t refcnt;
++			struct work_struct unregister_work;
+ 		};
+ 	};
+ };
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 98a24e5ea4b5..886b5b414958 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3114,6 +3114,8 @@ int memcg_update_cache_size(struct kmem_cache *s, int num_groups)
+ 	return 0;
+ }
+ 
++static void memcg_unregister_cache_func(struct work_struct *work);
++
+ int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
+ 			     struct kmem_cache *root_cache)
+ {
+@@ -3135,6 +3137,9 @@ int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
+ 	if (memcg) {
+ 		s->memcg_params->memcg = memcg;
+ 		s->memcg_params->root_cache = root_cache;
++		atomic_long_set(&s->memcg_params->refcnt, 1);
++		INIT_WORK(&s->memcg_params->unregister_work,
++			  memcg_unregister_cache_func);
+ 		css_get(&memcg->css);
+ 	} else
+ 		s->memcg_params->is_root_cache = true;
+@@ -3216,6 +3221,17 @@ static void memcg_unregister_cache(struct kmem_cache *cachep)
+ 	kmem_cache_destroy(cachep);
+ }
+ 
++static void memcg_unregister_cache_func(struct work_struct *work)
++{
++	struct memcg_cache_params *params =
++		container_of(work, struct memcg_cache_params, unregister_work);
++	struct kmem_cache *cachep = memcg_params_to_cache(params);
++
++	mutex_lock(&memcg_slab_mutex);
++	memcg_unregister_cache(cachep);
++	mutex_unlock(&memcg_slab_mutex);
++}
++
+ /*
+  * During the creation a new cache, we need to disable our accounting mechanism
+  * altogether. This is true even if we are not creating, but rather just
+@@ -3279,7 +3295,7 @@ static void memcg_unregister_all_caches(struct mem_cgroup *memcg)
+ 	list_for_each_entry_safe(params, tmp, &memcg->memcg_slab_caches, list) {
+ 		cachep = memcg_params_to_cache(params);
+ 		kmem_cache_shrink(cachep);
+-		if (atomic_long_read(&cachep->memcg_params->refcnt) == 0)
++		if (atomic_long_dec_and_test(&cachep->memcg_params->refcnt))
+ 			memcg_unregister_cache(cachep);
+ 	}
+ 	mutex_unlock(&memcg_slab_mutex);
+@@ -3360,7 +3376,9 @@ int __memcg_charge_slab(struct kmem_cache *cachep, gfp_t gfp, int order)
+ void __memcg_uncharge_slab(struct kmem_cache *cachep, int order)
+ {
+ 	memcg_uncharge_kmem(cachep->memcg_params->memcg, PAGE_SIZE << order);
+-	atomic_long_dec(&cachep->memcg_params->refcnt);
++
++	if (unlikely(atomic_long_dec_and_test(&cachep->memcg_params->refcnt)))
++		schedule_work(&cachep->memcg_params->unregister_work);
+ }
+ 
+ /*
+-- 
+1.7.10.4
 
-Code starting with the faulting instruction
-===========================================
-   0:   41 b8 01 00 00 00       mov    $0x1,%r8d
-   6:   31 c9                   xor    %ecx,%ecx
-   8:   31 d2                   xor    %edx,%edx
-   a:   31 f6                   xor    %esi,%esi
-   c:   4c 89 ef                mov    %r13,%rdi
-   f:   48 89 04 24             mov    %rax,(%rsp)
-  13:   e8                      .byte 0xe8
-  14:   e8                      .byte 0xe8
-
-
-Thanks,
-Sasha
