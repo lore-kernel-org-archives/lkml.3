@@ -1,42 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751602AbaFLR7U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 13:59:20 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:43255 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751330AbaFLR7S (ORCPT
+	id S1751706AbaFLSAp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 14:00:45 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:53358 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993AbaFLSAn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 13:59:18 -0400
-Message-ID: <1402595943.18202.0.camel@haakon3.risingtidesystems.com>
-Subject: Re: [PATCH] vhost-scsi: don't open-code kvfree
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-Date: Thu, 12 Jun 2014 10:59:03 -0700
-In-Reply-To: <1402588896-25446-1-git-send-email-mst@redhat.com>
-References: <1402588896-25446-1-git-send-email-mst@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+	Thu, 12 Jun 2014 14:00:43 -0400
+Date: Thu, 12 Jun 2014 11:00:42 -0700 (PDT)
+Message-Id: <20140612.110042.301380151424639820.davem@davemloft.net>
+To: linus.luessing@web.de
+Cc: netdev@vger.kernel.org, bridge@lists.linux-foundation.org,
+        stephen@networkplumber.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2 net-next] bridge: fix bugs introduced by last
+ multicast patchset
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1402530084-15061-1-git-send-email-linus.luessing@web.de>
+References: <1402530084-15061-1-git-send-email-linus.luessing@web.de>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 12 Jun 2014 11:00:43 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-06-12 at 19:02 +0300, Michael S. Tsirkin wrote:
-> Now that we have kvfree, use it in vhost-scsi instead of
-> the open-coded version.
-> 
-> Cc: Nicholas Bellinger <nab@linux-iscsi.org>
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
-> 
-> I have this queued for -rc2.
-> Nicholas could you review ack pls?
+From: Linus Lüssing <linus.luessing@web.de>
+Date: Thu, 12 Jun 2014 01:41:22 +0200
 
+> Once my last patchset got applied, I got slapped by an automatic smatch
+> and build bot. Here are two patches fixing the according issues, a potential
+> null pointer dereference and a compile error when compiling without IPv6.
 
-Reviewed-by + Acked-by: Nicholas Bellinger <nab@linux-iscsi.org>
-
-Thanks MST!
-
+Series applied, thanks.
