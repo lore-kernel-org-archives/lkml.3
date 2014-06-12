@@ -1,82 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755989AbaFLM41 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 08:56:27 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:17491 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755888AbaFLM4Z (ORCPT
+	id S933486AbaFLM4f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 08:56:35 -0400
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:57101 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755888AbaFLM4c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 08:56:25 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/UWMtGxl7Fyx216KMVyybTL3JPIt/mRUA=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 2383D58DD19
-Date: Thu, 12 Jun 2014 08:56:15 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sricharan R <r.sricharan@ti.com>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tony@atomide.com, santosh.shilimkar@ti.com, nm@ti.com, rnayak@ti.com,
-        linux@arm.linux.org.uk, tglx@linutronix.de
-Subject: Re: [PATCH V2 05/19] irqchip: crossbar: Change allocation logic by
- reversing search for free irqs
-Message-ID: <20140612125615.GT8664@titan.lakedaemon.net>
-References: <1402574007-13987-1-git-send-email-r.sricharan@ti.com>
- <1402574007-13987-6-git-send-email-r.sricharan@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402574007-13987-6-git-send-email-r.sricharan@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 12 Jun 2014 08:56:32 -0400
+Message-ID: <1402577790.10273.30.camel@x220>
+Subject: Re: Kconfig fails: big select-based circular dependency
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Mark Brown <broonie@kernel.org>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Arnd Bergmann <arnd@arndb.de>
+Date: Thu, 12 Jun 2014 14:56:30 +0200
+In-Reply-To: <20140612121806.GY5099@sirena.org.uk>
+References: <20140607090944.GL23430@n2100.arm.linux.org.uk>
+	 <20140612094745.GD23430@n2100.arm.linux.org.uk>
+	 <6077426.uLBS643pC0@wuerfel>
+	 <20140612113445.GF23430@n2100.arm.linux.org.uk>
+	 <CAMuHMdV0F_FhtJwrzJLbxTbQPKs1XzR=Yb0wjMw2TBuXNPObpA@mail.gmail.com>
+	 <20140612121806.GY5099@sirena.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 12 Jun 2014 12:56:31.0291 (UTC) FILETIME=[BB7110B0:01CF863D]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 12, 2014 at 05:23:13PM +0530, Sricharan R wrote:
-> From: Nishanth Menon <nm@ti.com>
-> 
-> Reverse the search algorithm to ensure that address mapping and IRQ
-> allocation logics are proper. This can open up new bugs which are
-> easily fixable rather than wait till allocation logic approaches
-> the limit to find new bugs.
+On Thu, 2014-06-12 at 13:18 +0100, Mark Brown wrote:
+> Architecture feature Kconfig symbols typically have the pattern that the
+> architecture selects ARCH_HAS_FOO and then code that needs the feature
+> depends on ARCH_HAS_FOO.
 
-Could you expand on this logic some more?  What class of bugs are you
-hoping to discover more easily?
+A similar usage can be seen with Kconfig symbols with a HAVE_BAR name.
 
-thx,
 
-Jason.
+Paul Bolle
 
-> Signed-off-by: Nishanth Menon <nm@ti.com>
-> Signed-off-by: Sricharan R <r.sricharan@ti.com>
-> Signed-off-by: Tony Lindgren <tony@atomide.com>
-> ---
->  drivers/irqchip/irq-crossbar.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/irqchip/irq-crossbar.c b/drivers/irqchip/irq-crossbar.c
-> index 287d3ce..de021638 100644
-> --- a/drivers/irqchip/irq-crossbar.c
-> +++ b/drivers/irqchip/irq-crossbar.c
-> @@ -68,7 +68,7 @@ static inline int get_prev_map_irq(int cb_no)
->  {
->  	int i;
->  
-> -	for (i = 0; i < cb->int_max; i++)
-> +	for (i = cb->int_max - 1; i >= 0; i--)
->  		if (cb->irq_map[i] == cb_no)
->  			return i;
->  
-> @@ -79,7 +79,7 @@ static inline int allocate_free_irq(int cb_no)
->  {
->  	int i;
->  
-> -	for (i = 0; i < cb->int_max; i++) {
-> +	for (i = cb->int_max - 1; i >= 0; i--) {
->  		if (cb->irq_map[i] == IRQ_FREE) {
->  			cb->irq_map[i] = cb_no;
->  			return i;
-> -- 
-> 1.7.9.5
-> 
