@@ -1,58 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751135AbaFLWC7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 18:02:59 -0400
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:32824 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750735AbaFLWC6 (ORCPT
+	id S1751171AbaFLWEp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 18:04:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36312 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750716AbaFLWEo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 18:02:58 -0400
-X-Sasl-enc: flPc3c/DRvuZN8xpWULseR3MEEFsqg39eamwt/0OBeZR 1402610569
-Date: Thu, 12 Jun 2014 15:06:41 -0700
-From: Greg KH <greg@kroah.com>
-To: Andreas Noever <andreas.noever@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Matthew Garrett <matthew.garrett@nebula.com>
-Subject: Re: [PATCH 0/2] thunderbolt: Fix issues with more complex endpoints.
-Message-ID: <20140612220641.GC8176@kroah.com>
-References: <1402607507-14858-1-git-send-email-andreas.noever@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402607507-14858-1-git-send-email-andreas.noever@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 12 Jun 2014 18:04:44 -0400
+Date: Thu, 12 Jun 2014 15:04:43 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-mm@kvack.org, Dave Hansen <dave.hansen@intel.com>,
+        Hugh Dickins <hughd@google.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 7/7] mincore: apply page table walker on do_mincore()
+Message-Id: <20140612150443.72809d03688bdce9a84164a6@linux-foundation.org>
+In-Reply-To: <1402095520-10109-8-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1402095520-10109-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	<1402095520-10109-8-git-send-email-n-horiguchi@ah.jp.nec.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 12, 2014 at 11:11:45PM +0200, Andreas Noever wrote:
-> Hi,
-> 
-> I have got my hand on a slightly more complex Thunderbolt device (a Startech
-> docking station). This series fixes the following issues that I have observed
-> with this device:
-> 
->  - Some ports on this device are disabled. Accessing them results in an error.
->  - This device uses both Thunderbolt links which are represented as two ports on
->    the switch. We have to ensure that we only scan one of these ports.
-> 
-> Part 1 of the series reads the switch configuration (disabled ports and which
-> port pairs are "dual link ports") from eeprom. Part 2 uses this information to
-> avoid scanning these ports.
-> 
-> Andreas Noever (2):
->   thunderbolt: Read port configuration from eeprom.
->   thunderbolt: Fix nontrivial endpoint devices.
-> 
->  drivers/thunderbolt/ctl.c    |   2 +-
->  drivers/thunderbolt/eeprom.c | 266 ++++++++++++++++++++++++++++++++++++++++++-
->  drivers/thunderbolt/switch.c |  44 ++++---
->  drivers/thunderbolt/tb.c     |   5 +
->  drivers/thunderbolt/tb.h     |   7 +-
->  5 files changed, 300 insertions(+), 24 deletions(-)
-> 
-> -- 
+On Fri,  6 Jun 2014 18:58:40 -0400 Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
 
-Thanks, I'll queue these up on top of your other patches once 3.16-rc1
-is out.
+> @@ -233,12 +163,20 @@ static long do_mincore(unsigned long addr, unsigned long pages, unsigned char *v
+>  
+>  	end = min(vma->vm_end, addr + (pages << PAGE_SHIFT));
+>  
+> -	if (is_vm_hugetlb_page(vma))
+> -		mincore_hugetlb_page_range(vma, addr, end, vec);
+> +	struct mm_walk mincore_walk = {
+> +		.pmd_entry = mincore_pmd,
+> +		.pte_entry = mincore_pte,
+> +		.pte_hole = mincore_hole,
+> +		.hugetlb_entry = mincore_hugetlb,
+> +		.mm = vma->vm_mm,
+> +		.vma = vma,
+> +		.private = vec,
+> +	};
+> +	err = walk_page_vma(vma, &mincore_walk);
+> +	if (err < 0)
+> +		return err;
+>  	else
+> -		mincore_page_range(vma, addr, end, vec);
+> -
+> -	return (end - addr) >> PAGE_SHIFT;
+> +		return (end - addr) >> PAGE_SHIFT;
+>  }
+>  
+>  /*
 
-greg k-h
+Please review carefully.
+
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: mincore-apply-page-table-walker-on-do_mincore-fix
+
+mm/mincore.c: In function 'do_mincore':
+mm/mincore.c:166: warning: ISO C90 forbids mixed declarations and code
+
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ mm/mincore.c |   28 +++++++++++++++-------------
+ 1 file changed, 15 insertions(+), 13 deletions(-)
+
+diff -puN mm/huge_memory.c~mincore-apply-page-table-walker-on-do_mincore-fix mm/huge_memory.c
+diff -puN mm/mincore.c~mincore-apply-page-table-walker-on-do_mincore-fix mm/mincore.c
+--- a/mm/mincore.c~mincore-apply-page-table-walker-on-do_mincore-fix
++++ a/mm/mincore.c
+@@ -151,32 +151,34 @@ static int mincore_pmd(pmd_t *pmd, unsig
+  * all the arguments, we hold the mmap semaphore: we should
+  * just return the amount of info we're asked for.
+  */
+-static long do_mincore(unsigned long addr, unsigned long pages, unsigned char *vec)
++static long do_mincore(unsigned long addr, unsigned long pages,
++		       unsigned char *vec)
+ {
+ 	struct vm_area_struct *vma;
+-	unsigned long end;
+ 	int err;
+-
+-	vma = find_vma(current->mm, addr);
+-	if (!vma || addr < vma->vm_start)
+-		return -ENOMEM;
+-
+-	end = min(vma->vm_end, addr + (pages << PAGE_SHIFT));
+-
+ 	struct mm_walk mincore_walk = {
+ 		.pmd_entry = mincore_pmd,
+ 		.pte_entry = mincore_pte,
+ 		.pte_hole = mincore_hole,
+ 		.hugetlb_entry = mincore_hugetlb,
+-		.mm = vma->vm_mm,
+-		.vma = vma,
+ 		.private = vec,
+ 	};
++
++	vma = find_vma(current->mm, addr);
++	if (!vma || addr < vma->vm_start)
++		return -ENOMEM;
++	mincore_walk.vma = vma;
++	mincore_walk.mm = vma->vm_mm;
++
+ 	err = walk_page_vma(vma, &mincore_walk);
+-	if (err < 0)
++	if (err < 0) {
+ 		return err;
+-	else
++	} else {
++		unsigned long end;
++
++		end = min(vma->vm_end, addr + (pages << PAGE_SHIFT));
+ 		return (end - addr) >> PAGE_SHIFT;
++	}
+ }
+ 
+ /*
+_
+
