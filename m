@@ -1,167 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751075AbaFLERm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 00:17:42 -0400
-Received: from ozlabs.org ([103.22.144.67]:35853 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750787AbaFLERk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 00:17:40 -0400
-Date: Thu, 12 Jun 2014 14:17:32 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: manual merge of the target-updates tree with the virtio
- tree
-Message-ID: <20140612141732.22e5fc6d@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/ZMOOzCAbMFCi5zQVCnj_Gmd"; protocol="application/pgp-signature"
+	id S1751305AbaFLEVV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 00:21:21 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:24476 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750869AbaFLEVT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 00:21:19 -0400
+X-AuditID: cbfee68d-b7fd46d000005f36-85-53992ab6c755
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Alan Stern'" <stern@rowland.harvard.edu>,
+        "'Vivek Gautam'" <gautam.vivek@samsung.com>
+Cc: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <1402064411-18244-1-git-send-email-gautam.vivek@samsung.com>
+ <Pine.LNX.4.44L0.1406111131200.890-100000@iolanthe.rowland.org>
+In-reply-to: <Pine.LNX.4.44L0.1406111131200.890-100000@iolanthe.rowland.org>
+Subject: Re: [PATCH v2 1/2] usb: ehci-exynos: Make provision for vdd regulators
+Date: Thu, 12 Jun 2014 13:21:09 +0900
+Message-id: <003801cf85f5$bc7ca200$3575e600$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac+Fi1uNlb0vFAPsQ2uUC9QWQ846dgAab7xA
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLIsWRmVeSWpSXmKPExsVy+t8zfd1tWjODDQ5/ZrVou3KQ3aJ58Xo2
+	i8sLL7Fa9C64ymax6fE1VovLu+awWcw4v4/JYtGyVmaLCb8vsDlweuyfu4bdY/OSeo/Zd38w
+	evRtWcXo8XmTXABrFJdNSmpOZllqkb5dAlfGl6erGAsO8lYcOPmWuYHxDFcXIyeHhICJxN8b
+	u9ghbDGJC/fWs3UxcnEICSxjlFi8+CQjTFHjojtQiUWMEtN/fWOFcH4zSjT9esgEUsUmoCbx
+	5cthsFEiApESu1dfZgIpYhZ4yCgx4+FdFoiOLkaJ+0s2MYNUcQr4SGx5+5IVxBYW8Jc4M7GR
+	DcRmEVCVuNX8G2wqr4CtRMO1f4wQtqDEj8n3WEBsZgEtifU7jzNB2PISm9e8BZrJAXSrusSj
+	v7oQRxhJLOtezQpRIiKx78U7RpAbJAT+sku8XreNEWKXgMS3yYdYIHplJTYdYIZ4WVLi4Iob
+	LBMYJWYh2TwLyeZZSDbPQrJiASPLKkbR1ILkguKk9CJDveLE3OLSvHS95PzcTYyQqO7dwXj7
+	gPUhxmSg9ROZpUST84FJIa8k3tDYzMjC1MTU2Mjc0ow0YSVx3qSHSUFCAumJJanZqakFqUXx
+	RaU5qcWHGJk4OKUaGK9x3E6/3MG+TuCF7IveTP3XP71v/ORSFvspHD+N++zr9w4X/nfI/is0
+	yMjWPr3xcskRlbr6lPXqD878ZOrunrZMOab+psiTj8qB32y0nq/M1uAVCDwnGjtp/TV+LT7L
+	A8EbHpowmoU8eLtYJ8D2x9HJPRYJHzdEvrxTKXhX8cYMw16WaKY0RyWW4oxEQy3mouJEAKlj
+	/oYAAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJKsWRmVeSWpSXmKPExsVy+t9jAd1tWjODDX4EWrRdOchu0bx4PZvF
+	5YWXWC16F1xls9j0+BqrxeVdc9gsZpzfx2SxaFkrs8WE3xfYHDg99s9dw+6xeUm9x+y7Pxg9
+	+rasYvT4vEkugDWqgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX0NLCXEkhLzE31VbJ
+	xSdA1y0zB+geJYWyxJxSoFBAYnGxkr4dpgmhIW66FjCNEbq+IUFwPUYGaCBhHWPGl6erGAsO
+	8lYcOPmWuYHxDFcXIyeHhICJROOiO2wQtpjEhXvrgWwuDiGBRYwS0399Y4VwfjNKNP16yARS
+	xSagJvHly2F2EFtEIFJi9+rLTCBFzAIPGSVmPLzLAtHRxShxf8kmZpAqTgEfiS1vX7KC2MIC
+	/hJnJjaC7WMRUJW41fwbbCqvgK1Ew7V/jBC2oMSPyfdYQGxmAS2J9TuPM0HY8hKb17wFmskB
+	dKu6xKO/uhBHGEks617NClEiIrHvxTvGCYxCs5BMmoVk0iwkk2YhaVnAyLKKUTS1ILmgOCk9
+	10ivODG3uDQvXS85P3cTIzhhPJPewbiqweIQowAHoxIPL0PtjGAh1sSy4srcQ4wSHMxKIryO
+	54FCvCmJlVWpRfnxRaU5qcWHGJOBHp3ILCWanA9MZnkl8YbGJmZGlkZmFkYm5uakCSuJ8x5s
+	tQ4UEkhPLEnNTk0tSC2C2cLEwSnVwCi1QPnbYvsfnekF7/T+zouYc2H3CsbNIr0O3Tsan97u
+	uZ277byXR/mMCebRk+2PbGRwvHLGbnKE/2+517PvWj9av6MxzEnTMPXcl7uOes9VNvUzx3ep
+	ruI9zyludfUTq+pTLf8zbOzr33rqJn3KLFNf4/k+aNp3scfLlv3Yeny/RcG33VM/ysopsRRn
+	JBpqMRcVJwIA+ZwlaFwDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/ZMOOzCAbMFCi5zQVCnj_Gmd
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Thursday, June 12, 2014 12:39 AM, Alan Stern wrote:
+> On Fri, 6 Jun 2014, Vivek Gautam wrote:
+> 
+> > Facilitate getting required 3.3V and 1.0V VDD supply for
+> > EHCI controller on Exynos.
+> >
+> > With patches for regulators' nodes merged in 3.15:
+> > c8c253f ARM: dts: Add regulator entries to smdk5420
+> > 275dcd2 ARM: dts: add max77686 pmic node for smdk5250,
+> >
+> > certain perripherals will now need to ensure that,
+> > they request VDD regulators in their drivers, and enable
+> > them so as to make them working.
+> 
+> "Certain peripherals"?  Don't you mean "certain controllers"?
+> 
+> Does this mean some controllers don't need to use the VDD regulators?
+> 
+> > @@ -193,7 +196,31 @@ static int exynos_ehci_probe(struct platform_device *pdev)
+> >
+> >  	err = exynos_ehci_get_phy(&pdev->dev, exynos_ehci);
+> >  	if (err)
+> > -		goto fail_clk;
+> > +		goto fail_regulator1;
+> > +
+> > +	exynos_ehci->vdd33 = devm_regulator_get(&pdev->dev, "vdd33");
+> > +	if (!IS_ERR(exynos_ehci->vdd33)) {
+> > +		err = regulator_enable(exynos_ehci->vdd33);
+> > +		if (err) {
+> > +			dev_err(&pdev->dev,
+> > +				"Failed to enable 3.3V Vdd supply\n");
+> > +			goto fail_regulator1;
+> > +		}
+> > +	} else {
+> > +		dev_warn(&pdev->dev, "Regulator 3.3V Vdd supply not found\n");
+> > +	}
+> 
+> What if this is one of the controllers that don't need to use a VDD
+> regulator?  Do you really want to print out a warning in that case?
+> Should you call devm_regulator_get_optional() instead?
 
-Hi Nicholas,
+I agree with Alan's suggestion. This warning message is not
+proper, when USB controllers that don't need a VDD regulator
+are used. The devm_regulator_get_optional() looks better.
 
-Today's linux-next merge of the target-updates tree got a conflict in
-drivers/scsi/virtio_scsi.c between commit c77fba9ab058 ("virtio_scsi:
-don't call virtqueue_add_sgs(... GFP_NOIO) holding spinlock") from the
-virtio tree and commit e6dc783a38ec ("virtio-scsi: Enable DIF/DIX modes
-in SCSI host LLD") from the target-updates tree.
+Best regards,
+Jingoo Han
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/scsi/virtio_scsi.c
-index 99fdb9403944,1c326b63ca55..000000000000
---- a/drivers/scsi/virtio_scsi.c
-+++ b/drivers/scsi/virtio_scsi.c
-@@@ -396,10 -438,11 +398,10 @@@ static void virtscsi_event_done(struct=20
-   */
-  static int virtscsi_add_cmd(struct virtqueue *vq,
-  			    struct virtio_scsi_cmd *cmd,
- -			    size_t req_size, size_t resp_size, gfp_t gfp)
- +			    size_t req_size, size_t resp_size)
-  {
-  	struct scsi_cmnd *sc =3D cmd->sc;
-- 	struct scatterlist *sgs[4], req, resp;
-+ 	struct scatterlist *sgs[6], req, resp;
-  	struct sg_table *out, *in;
-  	unsigned out_num =3D 0, in_num =3D 0;
- =20
-@@@ -425,10 -472,14 +431,14 @@@
-  	sgs[out_num + in_num++] =3D &resp;
- =20
-  	/* Data-in buffer */
-- 	if (in)
-+ 	if (in) {
-+ 		/* Place READ protection SGLs before Data IN payload */
-+ 		if (scsi_prot_sg_count(sc))
-+ 			sgs[out_num + in_num++] =3D scsi_prot_sglist(sc);
-  		sgs[out_num + in_num++] =3D in->sgl;
-+ 	}
- =20
- -	return virtqueue_add_sgs(vq, sgs, out_num, in_num, cmd, gfp);
- +	return virtqueue_add_sgs(vq, sgs, out_num, in_num, cmd, GFP_ATOMIC);
-  }
- =20
-  static int virtscsi_kick_cmd(struct virtio_scsi_vq *vq,
-@@@ -455,9 -538,10 +497,10 @@@ static int virtscsi_queuecommand(struc
-  				 struct virtio_scsi_vq *req_vq,
-  				 struct scsi_cmnd *sc)
-  {
- -	struct virtio_scsi_cmd *cmd;
- -	int ret, req_size;
- -
-  	struct Scsi_Host *shost =3D virtio_scsi_host(vscsi->vdev);
- +	struct virtio_scsi_cmd *cmd =3D scsi_cmd_priv(sc);
-++	int req_size;
- +
-  	BUG_ON(scsi_sg_count(sc) > shost->sg_tablesize);
- =20
-  	/* TODO: check feature bit and fail if unsupported?  */
-@@@ -466,26 -550,34 +509,24 @@@
-  	dev_dbg(&sc->device->sdev_gendev,
-  		"cmd %p CDB: %#02x\n", sc, sc->cmnd[0]);
- =20
- -	ret =3D SCSI_MLQUEUE_HOST_BUSY;
- -	cmd =3D mempool_alloc(virtscsi_cmd_pool, GFP_ATOMIC);
- -	if (!cmd)
- -		goto out;
- -
-  	memset(cmd, 0, sizeof(*cmd));
-  	cmd->sc =3D sc;
-- 	cmd->req.cmd =3D (struct virtio_scsi_cmd_req){
-- 		.lun[0] =3D 1,
-- 		.lun[1] =3D sc->device->id,
-- 		.lun[2] =3D (sc->device->lun >> 8) | 0x40,
-- 		.lun[3] =3D sc->device->lun & 0xff,
-- 		.tag =3D (unsigned long)sc,
-- 		.task_attr =3D VIRTIO_SCSI_S_SIMPLE,
-- 		.prio =3D 0,
-- 		.crn =3D 0,
-- 	};
- =20
-  	BUG_ON(sc->cmd_len > VIRTIO_SCSI_CDB_SIZE);
-- 	memcpy(cmd->req.cmd.cdb, sc->cmnd, sc->cmd_len);
- =20
-- 	if (virtscsi_kick_cmd(req_vq, cmd,
-- 			      sizeof cmd->req.cmd, sizeof cmd->resp.cmd) !=3D 0)
-+ 	if (virtio_has_feature(vscsi->vdev, VIRTIO_SCSI_F_T10_PI)) {
-+ 		virtio_scsi_init_hdr_pi(&cmd->req.cmd_pi, sc);
-+ 		memcpy(cmd->req.cmd_pi.cdb, sc->cmnd, sc->cmd_len);
-+ 		req_size =3D sizeof(cmd->req.cmd_pi);
-+ 	} else {
-+ 		virtio_scsi_init_hdr(&cmd->req.cmd, sc);
-+ 		memcpy(cmd->req.cmd.cdb, sc->cmnd, sc->cmd_len);
-+ 		req_size =3D sizeof(cmd->req.cmd);
-+ 	}
-+=20
- -	if (virtscsi_kick_cmd(req_vq, cmd, req_size, sizeof(cmd->resp.cmd),
- -			      GFP_ATOMIC) =3D=3D 0)
- -		ret =3D 0;
- -	else
- -		mempool_free(cmd, virtscsi_cmd_pool);
- -
- -out:
- -	return ret;
-++	if (virtscsi_kick_cmd(req_vq, cmd, req_size, sizeof cmd->resp.cmd) !=3D =
-0)
- +		return SCSI_MLQUEUE_HOST_BUSY;
- +	return 0;
-  }
- =20
-  static int virtscsi_queuecommand_single(struct Scsi_Host *sh,
-
---Sig_/ZMOOzCAbMFCi5zQVCnj_Gmd
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJTmSniAAoJEMDTa8Ir7ZwVppQQAIhNSxcDzr7tatuCcfXU6a2J
-DCOAQnNw+tTbRcikYYgIH1bePRrqQRrfg+xOT0476v6cwW4OrLhJVPXqu0Qf18IA
-8O0j+yPPRGtCdYsKDfUhOWnzZgzmI7FgE6Kq8dZcD2c9+lekcL0H+DVyJ0XLPAtE
-IHYEh3tzl0Bdmjoj8ZW30bogBLP5QJpVv4y9NasTANrDUWg4uA3q+LdXCsbBKytW
-Qk/BixAA5Rw7iC7AB6iGZaqriL7Djlj+1LWjbETcF10yk5tof6jxxnR5dKAVkqeD
-YzKWnUusG6j9RqusAOpkLBPjvm6/hMkCg71uxTSgo/or4hRH8KitRhnewSrGAtYP
-ifu6LnuKi9Iplv2gse8tkRHR6kH3zLwZnTJUFX1MqTKdDOgvLl0TALIjocT9eUqL
-speJUL2j3GfBCPygMjw1IISRGJmxhq1PgKUChWtNmN0kdvvVHJejugJ9M4Xdp8tq
-p8nhWh5SuKYEun+L7O/nZTSi+2McwBm77MAmp2U6kL8FTRDY4SdmcKkw3aUidoZt
-hbOsovWpTPGRC08hQC1mQI/eXkI08z817VhPFXO2C4a0AORPYMkhGtElzJjck+tx
-zFiZAnEWr+KsTOezjewH23At7xQG59MGfFJEkOkKEmLlzTttFuWSOUr5HJTPwS4V
-FIlaCRstS34uPovXkQZt
-=ecZt
------END PGP SIGNATURE-----
-
---Sig_/ZMOOzCAbMFCi5zQVCnj_Gmd--
