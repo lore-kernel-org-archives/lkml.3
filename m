@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933640AbaFLRCs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 13:02:48 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:52005 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933275AbaFLRCq (ORCPT
+	id S933682AbaFLRD0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 13:03:26 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:34439 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756022AbaFLRDY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 13:02:46 -0400
+	Thu, 12 Jun 2014 13:03:24 -0400
 From: Jassi Brar <jaswinder.singh@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: devicetree@vger.kernel.org, mporter@linaro.org, patches@linaro.org,
@@ -17,9 +17,9 @@ Cc: devicetree@vger.kernel.org, mporter@linaro.org, patches@linaro.org,
         ijc+devicetree@hellion.org.uk, arnd@arndb.de, joshc@codeaurora.org,
         linus.walleij@linaro.org, galak@codeaurora.org, ks.giri@samsung.com,
         Jassi Brar <jaswinder.singh@linaro.org>
-Subject: [PATCHv7 4/5] mailbox: Fix deleteing poll timer
-Date: Thu, 12 Jun 2014 22:32:22 +0530
-Message-Id: <1402592542-7318-1-git-send-email-jaswinder.singh@linaro.org>
+Subject: [PATCHv7 5/5] MAINTAINERS: Add maintainer entry for Mailbox API
+Date: Thu, 12 Jun 2014 22:32:54 +0530
+Message-Id: <1402592574-7355-1-git-send-email-jaswinder.singh@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1402592317-7043-1-git-send-email-jaswinder.singh@linaro.org>
 References: <1402592317-7043-1-git-send-email-jaswinder.singh@linaro.org>
@@ -27,30 +27,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: LeyFoon Tan <lftan.linux@gmail.com>
+Add myself as the maintainer of mailbox api
 
-Try to delete the timer only if it was init/used.
-
-Signed-off-by: LeyFoon Tan <lftan.linux@gmail.com>
 Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
 ---
- drivers/mailbox/mailbox.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ MAINTAINERS | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/drivers/mailbox/mailbox.c b/drivers/mailbox/mailbox.c
-index 336fa10..ae4abd9 100644
---- a/drivers/mailbox/mailbox.c
-+++ b/drivers/mailbox/mailbox.c
-@@ -480,7 +480,8 @@ void mbox_controller_unregister(struct mbox_controller *mbox)
- 	for (i = 0; i < mbox->num_chans; i++)
- 		mbox_free_channel(&mbox->chans[i]);
+diff --git a/MAINTAINERS b/MAINTAINERS
+index b4a66b9..7f6651b 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -5633,6 +5633,14 @@ S:	Maintained
+ F:	drivers/net/macvlan.c
+ F:	include/linux/if_macvlan.h
  
--	del_timer_sync(&mbox->poll);
-+	if (mbox->txdone_poll)
-+		del_timer_sync(&mbox->poll);
- 
- 	mutex_unlock(&con_mutex);
- }
++MAILBOX API
++M:	Jassi Brar <jassisinghbrar@gmail.com>
++L:	linux-kernel@vger.kernel.org
++S:	Maintained
++F:	drivers/mailbox/
++F:	include/linux/mailbox_client.h
++F:	include/linux/mailbox_controller.h
++
+ MAN-PAGES: MANUAL PAGES FOR LINUX -- Sections 2, 3, 4, 5, and 7
+ M:	Michael Kerrisk <mtk.manpages@gmail.com>
+ W:	http://www.kernel.org/doc/man-pages
 -- 
 1.8.1.2
 
