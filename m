@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751478AbaFLXR3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 19:17:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37047 "EHLO
+	id S1751522AbaFLXRh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 19:17:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37087 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751244AbaFLXR0 (ORCPT
+	with ESMTP id S1751119AbaFLXRe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 19:17:26 -0400
+	Thu, 12 Jun 2014 19:17:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>,
-        Alexander Usyskin <alexander.usyskin@intel.com>
-Subject: [PATCH 3.15 05/12] mei: me: fix hw ready reset flow
-Date: Thu, 12 Jun 2014 16:21:07 -0700
-Message-Id: <20140612232045.107411426@linuxfoundation.org>
+        Alessandro Miceli <angelofsky1980@gmail.com>,
+        Antti Palosaari <crope@iki.fi>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.15 10/12] [media] rtl28xxu: add [1b80:d3af] Sveon STV27
+Date: Thu, 12 Jun 2014 16:21:12 -0700
+Message-Id: <20140612232045.263265322@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140612232044.886466924@linuxfoundation.org>
 References: <20140612232044.886466924@linuxfoundation.org>
@@ -29,59 +30,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomas Winkler <tomas.winkler@intel.com>
+From: Alessandro Miceli <angelofsky1980@gmail.com>
 
-commit b04ada92ffaabb868497a1fce8e4f6bf74e5488f upstream.
+commit 74a86272f05c3dae40f2d7b17ff09a0608cf3304 upstream.
 
-We cleared H_RST for H_CSR on spurious interrupt generated when ME_RDY
-while cleared and not while  ME_RDY is set. The spurious interrupt
-is not delivered on all platforms in this case the
-driver may fail to initialize.
+Added support for Sveon STV27 device (rtl2832u + FC0013 tuner)
 
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
+Signed-off-by: Alessandro Miceli <angelofsky1980@gmail.com>
+Signed-off-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/misc/mei/hw-me.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/media/dvb-core/dvb-usb-ids.h    |    1 +
+ drivers/media/usb/dvb-usb-v2/rtl28xxu.c |    2 ++
+ 2 files changed, 3 insertions(+)
 
---- a/drivers/misc/mei/hw-me.c
-+++ b/drivers/misc/mei/hw-me.c
-@@ -164,6 +164,9 @@ static void mei_me_hw_reset_release(stru
- 	hcsr |= H_IG;
- 	hcsr &= ~H_RST;
- 	mei_hcsr_set(hw, hcsr);
-+
-+	/* complete this write before we set host ready on another CPU */
-+	mmiowb();
- }
- /**
-  * mei_me_hw_reset - resets fw via mei csr register.
-@@ -201,6 +204,7 @@ static int mei_me_hw_reset(struct mei_de
- static void mei_me_host_set_ready(struct mei_device *dev)
- {
- 	struct mei_me_hw *hw = to_me_hw(dev);
-+	hw->host_hw_state = mei_hcsr_read(hw);
- 	hw->host_hw_state |= H_IE | H_IG | H_RDY;
- 	mei_hcsr_set(hw, hw->host_hw_state);
- }
-@@ -491,14 +495,13 @@ irqreturn_t mei_me_irq_thread_handler(in
- 	/*  check if we need to start the dev */
- 	if (!mei_host_is_ready(dev)) {
- 		if (mei_hw_is_ready(dev)) {
-+			mei_me_hw_reset_release(dev);
- 			dev_dbg(&dev->pdev->dev, "we need to start the dev.\n");
+--- a/drivers/media/dvb-core/dvb-usb-ids.h
++++ b/drivers/media/dvb-core/dvb-usb-ids.h
+@@ -376,4 +376,5 @@
+ #define USB_PID_CTVDIGDUAL_V2				0xe410
+ #define USB_PID_PCTV_2002E                              0x025c
+ #define USB_PID_PCTV_2002E_SE                           0x025d
++#define USB_PID_SVEON_STV27                             0xd3af
+ #endif
+--- a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
++++ b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
+@@ -1541,6 +1541,8 @@ static const struct usb_device_id rtl28x
+ 		&rtl2832u_props, "Peak DVB-T USB", NULL) },
+ 	{ DVB_USB_DEVICE(USB_VID_KWORLD_2, USB_PID_SVEON_STV20_RTL2832U,
+ 		&rtl2832u_props, "Sveon STV20", NULL) },
++	{ DVB_USB_DEVICE(USB_VID_KWORLD_2, USB_PID_SVEON_STV27,
++		&rtl2832u_props, "Sveon STV27", NULL) },
  
- 			dev->recvd_hw_ready = true;
- 			wake_up_interruptible(&dev->wait_hw_ready);
- 		} else {
--
--			dev_dbg(&dev->pdev->dev, "Reset Completed.\n");
--			mei_me_hw_reset_release(dev);
-+			dev_dbg(&dev->pdev->dev, "Spurious Interrupt\n");
- 		}
- 		goto end;
- 	}
+ 	/* RTL2832P devices: */
+ 	{ DVB_USB_DEVICE(USB_VID_HANFTEK, 0x0131,
 
 
