@@ -1,75 +1,400 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753434AbaFLVJW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 17:09:22 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:39758 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752502AbaFLVJV (ORCPT
+	id S1753222AbaFLVMJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 17:12:09 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:49363 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751058AbaFLVMG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 17:09:21 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140611053612.GN5015@mwanda>
-References: <1401917989-3427-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<20140610065735.GF5500@mwanda>
-	<CAFo99gY9ROmVS56PeeAPxw6GgBnjLai3az0ABnE=1xcryDCRuA@mail.gmail.com>
-	<20140611053612.GN5015@mwanda>
-Date: Thu, 12 Jun 2014 23:09:20 +0200
-Message-ID: <CAFo99gbu5GxKSyDEfo+wpzHkjQdxqDhXF9irtCUcCNjFG2GUBQ@mail.gmail.com>
-Subject: Re: [PATCH] staging: usbip: stub_main.c: Cleaning up missing
- null-terminate after strncpy call
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, navin patidar <navinp@cdac.in>,
-        Valentina Manea <valentina.manea.m@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 12 Jun 2014 17:12:06 -0400
+From: Andreas Noever <andreas.noever@gmail.com>
+To: linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>
+Cc: Matthew Garrett <matthew.garrett@nebula.com>,
+        Andreas Noever <andreas.noever@gmail.com>
+Subject: [PATCH 1/2] thunderbolt: Read port configuration from eeprom.
+Date: Thu, 12 Jun 2014 23:11:46 +0200
+Message-Id: <1402607507-14858-2-git-send-email-andreas.noever@gmail.com>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1402607507-14858-1-git-send-email-andreas.noever@gmail.com>
+References: <1402607507-14858-1-git-send-email-andreas.noever@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-06-11 7:45 GMT+02:00 Dan Carpenter <dan.carpenter@oracle.com>:
-> On Tue, Jun 10, 2014 at 10:48:35PM +0200, Rickard Strandqvist wrote:
->> Hi
->>
->> True!
->> Sorry  :-(
->>
->> But then one would either operate strcpy outright.
->>
->> Or use strlcpy then the code would be:
->>
->>     /* strlcpy() handles not include \0 */
->>     len = strlcpy(busid, buf + 4, BUSID_SIZE);
->>
->>     /* busid needs to include \0 termination */
->>     if (!(len < BUSID_SIZE))
->
-> I don't like this condition.  Just say (len >= BUSID_SIZE).  The
-> comments here are obvious and could be left out.
->
->>         return -EINVAL;
->
-> I don't have strong feelings about a cleanup patch.  But I think that
-> cppcheck is not being very sofisticated here with the NUL termination
-> warning so we should not go out of our way to try to silence the
-> warning.
->
-> regards,
-> dan carpenter
->
+All Thunderbolt switches (except the root switch) contain a drom which
+contains information about the device. Right now we only read the UID.
 
+Add code to read and parse this drom. For now we are only interested in
+which ports are disabled and which ports are "dual link ports" (a
+physical thunderbolt port/socket contains two such ports).
 
-Hi Dan
+Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
+---
+ drivers/thunderbolt/eeprom.c | 266 ++++++++++++++++++++++++++++++++++++++++++-
+ drivers/thunderbolt/switch.c |   4 +-
+ drivers/thunderbolt/tb.h     |   7 +-
+ 3 files changed, 270 insertions(+), 7 deletions(-)
 
-I agree that you should not do patches just to silence a static control program.
+diff --git a/drivers/thunderbolt/eeprom.c b/drivers/thunderbolt/eeprom.c
+index f28e402..0d5a80b 100644
+--- a/drivers/thunderbolt/eeprom.c
++++ b/drivers/thunderbolt/eeprom.c
+@@ -4,6 +4,7 @@
+  * Copyright (c) 2014 Andreas Noever <andreas.noever@gmail.com>
+  */
+ 
++#include <linux/crc32.h>
+ #include "tb.h"
+ 
+ /**
+@@ -152,9 +153,86 @@ static int tb_eeprom_read_n(struct tb_switch *sw, u16 offset, u8 *val,
+ 	return tb_eeprom_active(sw, false);
+ }
+ 
+-int tb_eeprom_read_uid(struct tb_switch *sw, u64 *uid)
++static u8 tb_crc8(u8 *data, int len)
++{
++	int i, j;
++	u8 val = 0xff;
++	for (i = 0; i < len; i++) {
++		val ^= data[i];
++		for (j = 0; j < 8; j++)
++			val = (val << 1) ^ ((val & 0x80) ? 7 : 0);
++	}
++	return val;
++}
++
++static u32 tb_crc32(void *data, size_t len)
++{
++	return ~__crc32c_le(~0, data, len);
++}
++
++#define TB_DROM_DATA_START 13
++struct tb_drom_header {
++	/* BYTE 0 */
++	u8 uid_crc8; /* checksum for uid */
++	/* BYTES 1-8 */
++	u64 uid;
++	/* BYTES 9-12 */
++	u32 data_crc32; /* checksum for data_len bytes starting at byte 13 */
++	/* BYTE 13 */
++	u8 device_rom_revision; /* should be <= 1 */
++	u16 data_len:10;
++	u8 __unknown1:6;
++	/* BYTES 16-21 */
++	u16 vendor_id;
++	u16 model_id;
++	u8 model_rev;
++	u8 eeprom_rev;
++} __packed;
++
++enum tb_drom_entry_type {
++	TB_DROM_ENTRY_GENERIC,
++	TB_DROM_ENTRY_PORT,
++};
++
++struct tb_drom_entry_header {
++	u8 len;
++	u8 index:6;
++	bool port_disabled:1; /* only valid if type is TB_DROM_ENTRY_PORT */
++	enum tb_drom_entry_type type:1;
++} __packed;
++
++struct tb_drom_entry_port {
++	/* BYTES 0-1 */
++	struct tb_drom_entry_header header;
++	/* BYTE 2 */
++	u8 dual_link_port_rid:4;
++	u8 link_nr:1;
++	u8 unknown1:2;
++	bool has_dual_link_port:1;
++
++	/* BYTE 3 */
++	u8 dual_link_port_nr:6;
++	u8 unknown2:2;
++
++	/* BYTES 4 - 5 TODO decode */
++	u8 micro2:4;
++	u8 micro1:4;
++	u8 micro3;
++
++	/* BYTES 5-6, TODO: verify (find hardware that has these set) */
++	u8 peer_port_rid:4;
++	u8 unknown3:3;
++	bool has_peer_port:1;
++	u8 peer_port_nr:6;
++	u8 unknown4:2;
++} __packed;
++
++
++/**
++ * tb_eeprom_get_drom_offset - get drom offset within eeprom
++ */
++int tb_eeprom_get_drom_offset(struct tb_switch *sw, u16 *offset)
+ {
+-	u8 data[9];
+ 	struct tb_cap_plug_events cap;
+ 	int res;
+ 	if (!sw->cap_plug_events) {
+@@ -165,6 +243,7 @@ int tb_eeprom_read_uid(struct tb_switch *sw, u64 *uid)
+ 			     sizeof(cap) / 4);
+ 	if (res)
+ 		return res;
++
+ 	if (!cap.eeprom_ctl.present || cap.eeprom_ctl.not_present) {
+ 		tb_sw_warn(sw, "no NVM\n");
+ 		return -ENOSYS;
+@@ -175,15 +254,194 @@ int tb_eeprom_read_uid(struct tb_switch *sw, u64 *uid)
+ 				cap.drom_offset);
+ 		return -ENXIO;
+ 	}
++	*offset = cap.drom_offset;
++	return 0;
++}
++
++/**
++ * tb_drom_read_uid_only - read uid directly from drom
++ *
++ * Does not use the cached copy in sw->drom. Used during resume to check switch
++ * identity.
++ */
++int tb_drom_read_uid_only(struct tb_switch *sw, u64 *uid)
++{
++	u8 data[9];
++	u16 drom_offset;
++	u8 crc;
++	int res = tb_eeprom_get_drom_offset(sw, &drom_offset);
++	if (res)
++		return res;
+ 
+ 	/* read uid */
+-	res = tb_eeprom_read_n(sw, cap.drom_offset, data, 9);
++	res = tb_eeprom_read_n(sw, drom_offset, data, 9);
+ 	if (res)
+ 		return res;
+-	/* TODO: check checksum in data[0] */
++
++	crc = tb_crc8(data + 1, 8);
++	if (crc != data[0]) {
++		tb_sw_warn(sw, "uid crc8 missmatch (expected: %#x, got: %#x)\n",
++				data[0], crc);
++		return -EIO;
++	}
++
+ 	*uid = *(u64 *)(data+1);
+ 	return 0;
+ }
+ 
++static void tb_drom_parse_port_entry(struct tb_port *port,
++		struct tb_drom_entry_port *entry)
++{
++	port->link_nr = entry->link_nr;
++	if (entry->has_dual_link_port)
++		port->dual_link_port =
++				&port->sw->ports[entry->dual_link_port_nr];
++}
++
++static int tb_drom_parse_entry(struct tb_switch *sw,
++		struct tb_drom_entry_header *header)
++{
++	struct tb_port *port;
++	int res;
++	enum tb_port_type type;
+ 
++	if (header->type != TB_DROM_ENTRY_PORT)
++		return 0;
+ 
++	port = &sw->ports[header->index];
++	port->disabled = header->port_disabled;
++	if (port->disabled)
++		return 0;
++
++	res = tb_port_read(port, &type, TB_CFG_PORT, 2, 1);
++	if (res)
++		return res;
++	type &= 0xffffff;
++
++	if (type == TB_TYPE_PORT) {
++		struct tb_drom_entry_port *entry = (void *) header;
++		if (header->len != sizeof(*entry)) {
++			tb_sw_warn(sw,
++				"port entry has size %#x (expected %#lx)\n",
++				header->len, sizeof(struct tb_drom_entry_port));
++			return -EIO;
++		}
++		tb_drom_parse_port_entry(port, entry);
++	}
++	return 0;
++}
++
++/**
++ * tb_drom_parse_entries - parse the linked list of drom entries
++ *
++ * Drom must have been copied to sw->drom.
++ */
++static int tb_drom_parse_entries(struct tb_switch *sw)
++{
++	struct tb_drom_header *header = (void *) sw->drom;
++	u16 pos = sizeof(*header);
++	u16 drom_size = header->data_len + TB_DROM_DATA_START;
++
++	while (pos < drom_size) {
++		struct tb_drom_entry_header *entry = (void *) (sw->drom + pos);
++		if (pos + 1 == drom_size || pos + entry->len > drom_size
++				|| !entry->len) {
++			tb_sw_warn(sw, "drom buffer overrun, aborting\n");
++			return -EIO;
++		}
++
++		tb_drom_parse_entry(sw, entry);
++
++		pos += entry->len;
++	}
++	return 0;
++}
++
++/**
++ * tb_drom_read - copy drom to sw->drom and parse it
++ */
++int tb_drom_read(struct tb_switch *sw)
++{
++	u16 drom_offset;
++	u16 size;
++	u32 crc;
++	struct tb_drom_header *header;
++	int res;
++	if (sw->drom)
++		return 0;
++
++	if (tb_route(sw) == 0) {
++		/*
++		 * The root switch contains only a dummy drom (header only,
++		 * no entries). Hardcode the configuration here.
++		 */
++		tb_drom_read_uid_only(sw, &sw->uid);
++
++		sw->ports[1].link_nr = 0;
++		sw->ports[2].link_nr = 1;
++		sw->ports[1].dual_link_port = &sw->ports[2];
++		sw->ports[2].dual_link_port = &sw->ports[1];
++
++		sw->ports[3].link_nr = 0;
++		sw->ports[4].link_nr = 1;
++		sw->ports[3].dual_link_port = &sw->ports[4];
++		sw->ports[4].dual_link_port = &sw->ports[3];
++		return 0;
++	}
++
++	res = tb_eeprom_get_drom_offset(sw, &drom_offset);
++	if (res)
++		return res;
++
++	res = tb_eeprom_read_n(sw, drom_offset + 14, (u8 *) &size, 2);
++	if (res)
++		return res;
++	size &= 0x3ff;
++	size += TB_DROM_DATA_START;
++	tb_sw_info(sw, "reading drom (length: %#x)\n", size);
++	if (size < sizeof(*header)) {
++		tb_sw_warn(sw, "drom too small, aborting\n");
++		return -EIO;
++	}
++
++	sw->drom = kzalloc(size, GFP_KERNEL);
++	if (!sw->drom)
++		return -ENOMEM;
++	res = tb_eeprom_read_n(sw, drom_offset, sw->drom, size);
++	if (res)
++		goto err;
++
++	header = (void *) sw->drom;
++
++	if (header->data_len + TB_DROM_DATA_START != size) {
++		tb_sw_warn(sw, "drom size mismatch, aborting\n");
++		goto err;
++	}
++
++	crc = tb_crc8((u8 *) &header->uid, 8);
++	if (crc != header->uid_crc8) {
++		tb_sw_warn(sw,
++			"drom uid crc8 mismatch (expected: %#x, got: %#x), aborting\n",
++			header->uid_crc8, crc);
++		goto err;
++	}
++	sw->uid = header->uid;
++
++	crc = tb_crc32(sw->drom + TB_DROM_DATA_START, header->data_len);
++	if (crc != header->data_crc32) {
++		tb_sw_warn(sw,
++			"drom data crc32 mismatch (expected: %#x, got: %#x), aborting\n",
++			header->data_crc32, crc);
++		goto err;
++	}
++
++	if (header->device_rom_revision > 1)
++		tb_sw_warn(sw, "drom device_rom_revision %#x unknown\n",
++			header->device_rom_revision);
++
++	return tb_drom_parse_entries(sw);
++err:
++	kfree(sw->drom);
++	return -EIO;
++
++}
+diff --git a/drivers/thunderbolt/switch.c b/drivers/thunderbolt/switch.c
+index c2a24b6..9dfb8e1 100644
+--- a/drivers/thunderbolt/switch.c
++++ b/drivers/thunderbolt/switch.c
+@@ -400,7 +400,7 @@ struct tb_switch *tb_switch_alloc(struct tb *tb, u64 route)
+ 	}
+ 	sw->cap_plug_events = cap;
+ 
+-	if (tb_eeprom_read_uid(sw, &sw->uid))
++	if (tb_drom_read_uid_only(sw, &sw->uid))
+ 		tb_sw_warn(sw, "could not read uid from eeprom\n");
+ 	else
+ 		tb_sw_info(sw, "uid: %#llx\n", sw->uid);
+@@ -442,7 +442,7 @@ int tb_switch_resume(struct tb_switch *sw)
+ 	u64 uid;
+ 	tb_sw_info(sw, "resuming switch\n");
+ 
+-	err = tb_eeprom_read_uid(sw, &uid);
++	err = tb_drom_read_uid_only(sw, &uid);
+ 	if (err) {
+ 		tb_sw_warn(sw, "uid read failed\n");
+ 		return err;
+diff --git a/drivers/thunderbolt/tb.h b/drivers/thunderbolt/tb.h
+index 63e89d0..18ade5e 100644
+--- a/drivers/thunderbolt/tb.h
++++ b/drivers/thunderbolt/tb.h
+@@ -22,6 +22,7 @@ struct tb_switch {
+ 	u64 uid;
+ 	int cap_plug_events; /* offset, zero if not found */
+ 	bool is_unplugged; /* unplugged, will go away */
++	u8 *drom;
+ };
+ 
+ /**
+@@ -33,6 +34,9 @@ struct tb_port {
+ 	struct tb_port *remote; /* remote port, NULL if not connected */
+ 	int cap_phy; /* offset, zero if not found */
+ 	u8 port; /* port number on switch */
++	bool disabled; /* disabled by eeprom */
++	struct tb_port *dual_link_port;
++	u8 link_nr:1;
+ };
+ 
+ /**
+@@ -237,7 +241,8 @@ int tb_path_activate(struct tb_path *path);
+ void tb_path_deactivate(struct tb_path *path);
+ bool tb_path_is_invalid(struct tb_path *path);
+ 
+-int tb_eeprom_read_uid(struct tb_switch *sw, u64 *uid);
++int tb_drom_read(struct tb_switch *sw);
++int tb_drom_read_uid_only(struct tb_switch *sw, u64 *uid);
+ 
+ 
+ static inline int tb_route_length(u64 route)
+-- 
+2.0.0
 
-Concerning (len >= BUSID_SIZE) I agree! But I usually try to change as
-little as possible in the patches I do. But perhaps I should not think
-that way.
-
-
-
-Kind regards
-Rickard Strandqvist
