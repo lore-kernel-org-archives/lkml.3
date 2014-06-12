@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752806AbaFLXYe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 19:24:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37227 "EHLO
+	id S1752830AbaFLXZC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 19:25:02 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37200 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752179AbaFLXSk (ORCPT
+	with ESMTP id S1750822AbaFLXSi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 19:18:40 -0400
+	Thu, 12 Jun 2014 19:18:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>,
-        Alexander Usyskin <alexander.usyskin@intel.com>
-Subject: [PATCH 3.10 16/18] mei: me: drop harmful wait optimization
-Date: Thu, 12 Jun 2014 16:22:20 -0700
-Message-Id: <20140612232213.646704936@linuxfoundation.org>
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH 3.10 03/18] ARM: mvebu: fix NOR bus-width in Armada XP GP Device Tree
+Date: Thu, 12 Jun 2014 16:22:07 -0700
+Message-Id: <20140612232213.190451340@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140612232212.960235342@linuxfoundation.org>
 References: <20140612232212.960235342@linuxfoundation.org>
@@ -29,41 +31,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomas Winkler <tomas.winkler@intel.com>
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-commit 07cd7be3d92eeeae1f92a017f2cfe4fdd9256526 upstream.
+commit 1a88f809ccb5db1509a7514b187c00b3a995fc82 upstream.
 
-It my take time till ME_RDY will be cleared after the reset,
-so we cannot check the bit before we got the interrupt
+The mvebu-devbus driver had a serious bug, which lead to a 8 bits bus
+width declared in the Device Tree being considered as a 16 bits bus
+width when configuring the hardware.
 
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
+This bug in mvebu-devbus driver was compensated by a symetric mistake
+in the Armada XP GP Device Tree: a 8 bits bus width was declared, even
+though the hardware actually has a 16 bits bus width connection with
+the NOR flash.
+
+Now that we have fixed the mvebu-devbus driver to behave according to
+its Device Tree binding, this commit fixes the problematic Device Tree
+files as well.
+
+This bug was introduced in commit
+da8d1b38356853c37116f9afa29f15648d7fb159 ('ARM: mvebu: Add support for
+NOR flash device on Armada XP-GP board') which was merged in v3.10.
+
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Link: https://lkml.kernel.org/r/1397489361-5833-3-git-send-email-thomas.petazzoni@free-electrons.com
+Fixes: da8d1b383568 ('ARM: mvebu: Add support for NOR flash device on Armada XP-GP board')
+Cc: stable@vger.kernel.org # v3.10+
+Acked-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/misc/mei/hw-me.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ arch/arm/boot/dts/armada-xp-gp.dts |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/misc/mei/hw-me.c
-+++ b/drivers/misc/mei/hw-me.c
-@@ -183,6 +183,7 @@ static void mei_me_hw_reset(struct mei_d
- 	else
- 		hcsr &= ~H_IE;
+--- a/arch/arm/boot/dts/armada-xp-gp.dts
++++ b/arch/arm/boot/dts/armada-xp-gp.dts
+@@ -124,7 +124,7 @@
+ 				/* Device Bus parameters are required */
  
-+	dev->recvd_hw_ready = false;
- 	mei_me_reg_write(hw, H_CSR, hcsr);
- 
- 	if (dev->dev_state == MEI_DEV_POWER_DOWN)
-@@ -233,10 +234,7 @@ static bool mei_me_hw_is_ready(struct me
- static int mei_me_hw_ready_wait(struct mei_device *dev)
- {
- 	int err;
--	if (mei_me_hw_is_ready(dev))
--		return 0;
- 
--	dev->recvd_hw_ready = false;
- 	mutex_unlock(&dev->device_lock);
- 	err = wait_event_interruptible_timeout(dev->wait_hw_ready,
- 			dev->recvd_hw_ready,
+ 				/* Read parameters */
+-				devbus,bus-width    = <8>;
++				devbus,bus-width    = <16>;
+ 				devbus,turn-off-ps  = <60000>;
+ 				devbus,badr-skew-ps = <0>;
+ 				devbus,acc-first-ps = <124000>;
 
 
