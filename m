@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751985AbaFMF0g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 01:26:36 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:41018 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750963AbaFMF0f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 01:26:35 -0400
-Date: Fri, 13 Jun 2014 08:26:30 +0300
-From: Dan Aloni <dan@kernelim.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: mm/sched/net: BUG when running simple code
-Message-ID: <20140613052630.GA23945@gmail.com>
-References: <539A6850.4090408@oracle.com>
- <20140613032754.GA20729@gmail.com>
- <539A77A1.60700@oracle.com>
- <20140613045555.GB20729@gmail.com>
+	id S1751736AbaFMF2z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 01:28:55 -0400
+Received: from ozlabs.org ([103.22.144.67]:38434 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750828AbaFMF2x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 01:28:53 -0400
+Date: Fri, 13 Jun 2014 15:28:46 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Subject: Re: linux-next: build failure after merge of the akpm-current tree
+Message-ID: <20140613152846.3c9bd9b1@canb.auug.org.au>
+In-Reply-To: <20140613150550.7b2e2c4c@canb.auug.org.au>
+References: <20140613150550.7b2e2c4c@canb.auug.org.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140613045555.GB20729@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/NkonlRImtHtsobQhaAuANvu"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 07:55:55AM +0300, Dan Aloni wrote:
-> > that theory went away. (also confirmed by not finding a netlink module.)
-> > 
-> > What about the kernel .text overflowing into the modules space? The loader
-> > checks for that, but can something like that happen after everything is
-> > up and running? I'll look into that tomorrow.
-> 
-> The kernel .text needs to be more than 512MB for the overlap to happen. 
-> 
->     ffffffff80000000 - ffffffffa0000000 (=512 MB)  kernel text mapping, from phys 0
-> 
-> Also, it is bizarre that symbol resolution resolved ffffffffa0f12560 to 
-> a symbol that is in module space where af_netlink.o is surely not because of 
-> "obj-y := af_netlink.o" in the Makefile. 
-> 
-> What does your /proc/kallsyms show when sorted with regards to the symbols
-> in question?
-> 
-> Also curious are the addresses you have on the stack:
-> 
-> > [  516.309720] Stack:
-> > [  516.309720]  ffff8803fc85ff18 ffff8803fc85ff18 ffff8803fc85fef8 8900200549908020
-> > [  516.309720]  ffff8803fc85ff18 ffffffff9ff66470 ffff8803fc85ff18 0000000000000037
-> > [  516.309720]  ffff8803fc85ff78 ffffffff9ff69d26 0000000000000037 0000000000000004
->[..]
+--Sig_/NkonlRImtHtsobQhaAuANvu
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Oh, just figured about the new kASLR feature that got enabled
-recently, it explains the addresses, but there was supposed to be a
-line for it in the Oops, so I'm puzzled.
+On Fri, 13 Jun 2014 15:05:50 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>
+> The reference to HPAGE_PMD_SIZE (which contains a BUILD_BUG() when
+> CONFIG_TRANSPARENT_HUGEPAGE is not defined) used to be protected by a
+> call to pmd_trans_huge_lock() (a static inline function that was
+> contact 0 when CONFIG_TRANSPARENT_HUGEPAGE is not defined) so gcc did
+  ^^^^^^^
+constant
 
--- 
-Dan Aloni
+> not see the reference and the BUG_ON.  That protection has been
+> removed ...
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/NkonlRImtHtsobQhaAuANvu
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIbBAEBCAAGBQJTmowTAAoJEMDTa8Ir7ZwVNnAP9i5uNY5HsBloZYKbMRXqe5ez
+Vi+um2oNC9tCJ32wand4TBpJDKxP6nGPQXy9zSLEsXBPFLUeOlrbkDF15GhZZoF5
+/sDus7GQyntHcnKmIDtrdpqNu9pco3JqossX0lUT7+Ci4U2NCopmjV14hCiI+zA+
+GYQhogx84z/fW7M9kcWfpUFr6P6OTOdk68GZS6zJZYIDCywVT9RrFx5yexy/TRIL
+8KUao3cIt5nW4iy08u7f/DoFfaniZS9PxcJM5vsF3WUQs2FcO136SWxgRtlv7kRH
+NWEO+zA07Y9lSxKlcpm1Rh1KNlYG6MbIHp0l5qtpCIjjxFfrDB8qSOVD1RC2KuA8
+RDwxNL/cKn2MyzuVVlL/hZuwGdZsUEAwfgpPOiJtblJcwIjmzLnbHr7gFznPNIW8
+hWMbia/jOjqN6W8RHs7OZtH0+e4WWiSTx2+emyr22M8BS48/6lXRVRjfz7aZ+XoI
+/fxc3ZFoJIY/SabQ6eK1wOcez9OuiihWW71OwV+jz2nrTiAkiQ/4zvIBZrA1jz8E
+9jMMSLrBt0RlpMIGa3In6uqWv8EiIJQV8uEKFiDUSIr5ol54kjLvooeYAk6vGEQO
+vjQeixucAyUH1uINfUCcZxUBwaQJBuBJKeKO6U2GI1sMlofrmDPf9EoUpHFhralI
+1OqHN180fzNsrcyGBtc=
+=wuU6
+-----END PGP SIGNATURE-----
+
+--Sig_/NkonlRImtHtsobQhaAuANvu--
