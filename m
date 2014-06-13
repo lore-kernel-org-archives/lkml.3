@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753930AbaFMR23 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 13:28:29 -0400
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:35499 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753854AbaFMR21 (ORCPT
+	id S1753803AbaFMRaJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 13:30:09 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:54264 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753246AbaFMRaH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 13:28:27 -0400
+	Fri, 13 Jun 2014 13:30:07 -0400
 MIME-Version: 1.0
-In-Reply-To: <539B33E1.7040500@zytor.com>
-References: <CA+5PVA5rP4cF14-ckD4K4MgBNtfHB+xPg3whEL26JkxegE7qpg@mail.gmail.com>
- <b10299edd8ba98d17e07dafcd895b8ecf4d99eff.1402586707.git.luto@amacapital.net>
- <CA+5PVA49T_hygP2O_ykqCpg6GFiJDds37LgroKvAfLSm0mkBKA@mail.gmail.com> <539B33E1.7040500@zytor.com>
+In-Reply-To: <539AC82B.4070505@suse.cz>
+References: <CALCETrWSX1nVqyfe0Ee2rUvpHosTRyW8GSJfr52UCpT566-eWA@mail.gmail.com>
+ <1402652395-28779-1-git-send-email-mmarek@suse.cz> <539AC82B.4070505@suse.cz>
 From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 13 Jun 2014 10:28:06 -0700
-Message-ID: <CALCETrV8vH=Mra_wuO_yNEi0WW+Cj2iudJFYghK9Uc0AS1PzMQ@mail.gmail.com>
-Subject: Re: [PATCH v3] x86,vdso: Fix vdso_install
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>, Michal Marek <mmarek@suse.cz>,
+Date: Fri, 13 Jun 2014 10:29:46 -0700
+Message-ID: <CALCETrVbq3kQtq0jOsE0fBAkrSB=UxbB2P9F9iVd1896wO+f-g@mail.gmail.com>
+Subject: Re: [PATCH] kbuild: Do not run modules_install and install in paralel
+To: Michal Marek <mmarek@suse.cz>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
         "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        Sam Ravnborg <sam@ravnborg.org>
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 10:24 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 06/12/2014 10:01 AM, Josh Boyer wrote:
->> On Thu, Jun 12, 2014 at 11:28 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->>> The filenames are different now.  Inspired by a patch from
->>> Sam Ravnborg.
->>>
->>> Acked-by: Sam Ravnborg <sam@ravnborg.org>
->>> Reported-by: Josh Boyer <jwboyer@fedoraproject.org>
->>> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+On Fri, Jun 13, 2014 at 2:45 AM, Michal Marek <mmarek@suse.cz> wrote:
+> Dne 13.6.2014 11:39, Michal Marek napsal(a):
+>> Based on a x86-only patch by Andy Lutomirski <luto@amacapital.net>
 >>
->> Things look great with this version.  Thanks much!
+>> With modular kernels, 'make install' is going to need the installed
+>> modules at some point to generate the initramfs.
 >>
->> Tested-by: Josh Boyer <jwboyer@fedoraproject.org>
+>> Signed-off-by: Michal Marek <mmarek@suse.cz>
+>> ---
+>>  Makefile | 6 ++++++
+>>  1 file changed, 6 insertions(+)
 >>
+>> diff --git a/Makefile b/Makefile
+>> index 7680d7c..7e5e483 100644
+>> --- a/Makefile
+>> +++ b/Makefile
+>> @@ -503,6 +503,12 @@ ifeq ($(KBUILD_EXTMOD),)
+>>                  endif
+>>          endif
+>>  endif
+>> +# install and module_install need also be processed one by one
+>> +ifneq ($(filter install,$(MAKECMDGOALS)),)
+>> +        ifneq ($(filter modules_install,$(MAKECMDGOALS)),)
+>> +             mixed-targets := 1
+>> +        endif
+>> +endif
 >
-> Are we okay with the 64-bit vdso now being installed as vdso64.so?
+> Note that this version does not enforce the ordering, it just avoids the
+> interleaved execution. It can be added if desired.
 
-Unless someone actually complains, I think so.  Ideally, I think we'd
-have a symlink from the build id, but that's a separate issue.
+Hmm.  This will fix 'make modules_install install' but will not fix
+'make install modules_install'.  I don't know how many people would
+type the latter.
 
-AFAIK, the only thing that actually references these files is Fedora's
-gdb, which is finding them from Fedora's build-id symlinks, which
-should work fine regardless of what the thing is called.
-
-How's this for a patch description:
-
-make vdso_install has been broken since this commit:
-
-commit 6f121e548f83674ab4920a4e60afb58d4f61b829
-Author: Andy Lutomirski <luto@amacapital.net>
-Date:   Mon May 5 12:19:34 2014 -0700
-
-    x86, vdso: Reimplement vdso.so preparation in build-time C
-
-because the names of the files to be installed changed.   This fixes
-vdso_install to install the right files.
+--Andy
