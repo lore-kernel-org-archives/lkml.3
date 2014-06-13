@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752086AbaFMN3h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 09:29:37 -0400
-Received: from mail.kernel.org ([198.145.19.201]:35338 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751007AbaFMN3f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 09:29:35 -0400
-Date: Fri, 13 Jun 2014 15:29:24 +0200
-From: Robert Richter <rric@kernel.org>
-To: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-Cc: rjw@rjwysocki.net, lenb@kernel.org, tony.luck@intel.com, bp@alien8.de,
-        m.chehab@samsung.com, bp@suse.de, linux-edac@vger.kernel.org,
-        x86@kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org
-Subject: Re: [PATCH v3 4/5] apei, ghes, nmi: Factor out NMI arch-specific
- calls.
-Message-ID: <20140613132924.GA27560@rric.localhost>
-References: <1402657380-18539-1-git-send-email-tomasz.nowicki@linaro.org>
- <1402657380-18539-5-git-send-email-tomasz.nowicki@linaro.org>
+	id S1752246AbaFMN3w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 09:29:52 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:29639 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752096AbaFMN3u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 09:29:50 -0400
+Message-ID: <539AFCBF.1040505@oracle.com>
+Date: Fri, 13 Jun 2014 09:29:35 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402657380-18539-5-git-send-email-tomasz.nowicki@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Christoph Lameter <cl@gentwo.org>, Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: mm/fs: gpf when shrinking slab
+References: <539AF460.4000400@oracle.com> <539AF4A6.9060707@oracle.com> <20140613130026.GF18016@ZenIV.linux.org.uk>
+In-Reply-To: <20140613130026.GF18016@ZenIV.linux.org.uk>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13.06.14 13:02:59, Tomasz Nowicki wrote:
-> Similar to MCE related patch, all NMI architectural calls are abstracted.
-> Also, we are providing corresponding X86 functions' content.
-
-We don't need to abstract nmi calls for archs that don't support
-nmis. Just disable the code with #ifdefs depending on
-ARCH_HAS_ACPI_APEI_NMI. Most changes in this patch, esp. all __weak
-functions are obsolete then.
-
-The remainings of this patch could probably merged with earlier
-patches.
-
--Robert
-
+On 06/13/2014 09:00 AM, Al Viro wrote:
+> On Fri, Jun 13, 2014 at 08:55:02AM -0400, Sasha Levin wrote:
+>> Hand too fast on the trigger... sorry.
+>>
+>> It happened while fuzzing inside a KVM tools guest on the latest -next kernel. Seems
+>> to be pretty difficult to reproduce.
 > 
-> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-> ---
->  arch/x86/kernel/acpi/apei.c   |   25 +++++++++++++++++++++++++
->  drivers/acpi/apei/apei-base.c |   19 +++++++++++++++++++
->  drivers/acpi/apei/ghes.c      |   14 ++++++--------
->  include/acpi/apei.h           |    7 +++++++
->  4 files changed, 57 insertions(+), 8 deletions(-)
+> Does that kernel contain c2338f?
+> 
+
+Nope, it didn't.
+
+
+Thanks,
+Sasha
