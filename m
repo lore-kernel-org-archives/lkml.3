@@ -1,104 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751680AbaFMFKo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 01:10:44 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:35201 "EHLO zene.cmpxchg.org"
+	id S1751681AbaFMFQM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 01:16:12 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43545 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750998AbaFMFKn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 01:10:43 -0400
-Date: Fri, 13 Jun 2014 01:10:33 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Chen Yucong <slaoub@gmail.com>
-Cc: akpm@linux-foundation.org, mgorman@suse.de, mhocko@suse.cz,
-        riel@redhat.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] mm/vmscan.c: wrap five parameters into shrink_result
- for reducing the stack consumption
-Message-ID: <20140613051033.GM2878@cmpxchg.org>
-References: <1402634191-3442-1-git-send-email-slaoub@gmail.com>
+	id S1750886AbaFMFQL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 01:16:11 -0400
+Message-ID: <539A890A.5090206@zytor.com>
+Date: Thu, 12 Jun 2014 22:15:54 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402634191-3442-1-git-send-email-slaoub@gmail.com>
+To: Andy Lutomirski <luto@amacapital.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Russ Cox <rsc@golang.org>,
+        Ian Taylor <iant@golang.org>
+Subject: Re: vdso feature requests from the Go people
+References: <CALCETrVNiSUHok1xCfy9CMe=kDYsPy3i_NXm0_gcO1ckb9wdeQ@mail.gmail.com>
+In-Reply-To: <CALCETrVNiSUHok1xCfy9CMe=kDYsPy3i_NXm0_gcO1ckb9wdeQ@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 12:36:31PM +0800, Chen Yucong wrote:
-> shrink_page_list() has too many arguments that have already reached ten.
-> Some of those arguments and temporary variables introduces extra 80 bytes
-> on the stack. This patch wraps five parameters into shrink_result and removes
-> some temporary variables, thus making the relative functions to consume fewer
-> stack space.
+On 06/12/2014 09:36 PM, Andy Lutomirski wrote:
 > 
-> Before mm/vmscan.c is changed:
->    text    data     bss     dec     hex filename
-> 6876698  957224  966656 8800578  864942 vmlinux-3.15
+> If we were to implement both, maybe we'd actually want to provide
+> something like:
 > 
-> After mm/vmscan.c is changed:
->    text    data     bss     dec     hex filename
-> 6876506  957224  966656 8800386  864882 vmlinux-3.15
+> struct vdso_entry {
+>   unsigned long vdso_entry_struct_size;  /* so we can add fields later on */
+>   void *func;
+>   unsigned int max_stack;  /* zero if not known */
+> };
 > 
-> 
-> scripts/checkstack.pl can be used for checking the change of the target function stack.
-> 
-> Before mm/vmscan.c is changed:
-> 
-> 0xffffffff810af103 shrink_inactive_list []:		152
-> 0xffffffff810af43d shrink_inactive_list []:		152
-> -------------------------------------------------------------
-> 0xffffffff810aede8 reclaim_clean_pages_from_list []:	184
-> 0xffffffff810aeef8 reclaim_clean_pages_from_list []:	184
-> -------------------------------------------------------------
-> 0xffffffff810ae582 shrink_page_list []:			232
-> 0xffffffff810aedb5 shrink_page_list []:			232
-> 
-> After mm/vmscan.c is changed::
-> 
-> 0xffffffff810af078 shrink_inactive_list []:		120
-> 0xffffffff810af36d shrink_inactive_list []:		120
-> -------------------------------------------------------------
-> 0xffffffff810aed6c reclaim_clean_pages_from_list []:	152
-> 0xffffffff810aee68 reclaim_clean_pages_from_list []:	152
-> --------------------------------------------------------------------------------------
-> 0xffffffff810ae586 shrink_page_list []:			184   ---> sub    $0xb8,%rsp
-> 0xffffffff810aed36 shrink_page_list []:			184   ---> add    $0xb8,%rsp
-> 
-> Via the above figures, we can find that the difference value of the stack is 32 for
-> shrink_inactive_list and reclaim_clean_pages_from_list, and this value is 48(232-184)
-> for shrink_page_list. From the hierarchy of functions called, the total difference
-> value is 80(32+48) for this change.
 
-We just increased the stack size by 8k.  I'm not saying that we
-shouldn't work on our stack footprint, but is this really worth it?
-It doesn't make that code easier to follow exactly.
+How different is this really from the .dynsym table -- other than that
+you have to find the latter via the dynamic segment?
 
-> Changes since v1: https://lkml.org/lkml/2014/6/12/159
->      * Rename arg_container to shrink_result
->      * Change the the way of initializing shrink_result object.
-> 
-> Signed-off-by: Chen Yucong <slaoub@gmail.com>
-> ---
->  mm/vmscan.c |   62 ++++++++++++++++++++++++++---------------------------------
->  1 file changed, 27 insertions(+), 35 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index a8ffe4e..3f28e39 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -791,28 +791,31 @@ static void page_check_dirty_writeback(struct page *page,
->  }
->  
->  /*
-> + * Callers pass a prezeroed shrink_result into the shrink functions to gather
-> + * statistics about how many pages of particular states were processed
-> + */
-> +struct shrink_result {
-> +	unsigned long nr_dirty;
-> +	unsigned long nr_unqueued_dirty;
-> +	unsigned long nr_congested;
-> +	unsigned long nr_writeback;
-> +	unsigned long nr_immediate;
-> +};
+The hash part is just to speed up lookup...
 
-This exclusively contains statistics on the writeback states of the
-scanned pages.  struct writeback_stats?
+	-hpa
+
+
