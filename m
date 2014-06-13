@@ -1,246 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753393AbaFMQ1m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 12:27:42 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:45052 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750901AbaFMQ1l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 12:27:41 -0400
-Date: Fri, 13 Jun 2014 12:27:39 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [patch V4 03/10] rtmutex: Simplify and document
- try_to_take_rtmutex()
-Message-ID: <20140613122739.2eb7ba1f@gandalf.local.home>
-In-Reply-To: <20140611183853.118544688@linutronix.de>
-References: <20140611182944.108526809@linutronix.de>
-	<20140611183853.118544688@linutronix.de>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753452AbaFMQ2P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 12:28:15 -0400
+Received: from mga09.intel.com ([134.134.136.24]:34395 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752952AbaFMQ2O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 12:28:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,472,1400050800"; 
+   d="scan'208";a="557082779"
+Subject: Re: [PATCH] sched: Fast idling of CPU when system is partially
+ loaded
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Jason Low <jason.low2@hp.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Davidlohr Bueson <davidlohr@hp.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <1402639311.9617.84.camel@j-VirtualBox>
+References: <1402608359.2970.548.camel@schen9-DESK>
+	 <1402639311.9617.84.camel@j-VirtualBox>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 13 Jun 2014 09:28:02 -0700
+Message-ID: <1402676882.2970.564.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Jun 2014 18:44:05 -0000
-Thomas Gleixner <tglx@linutronix.de> wrote:
-
-> The current implementation of try_to_take_rtmutex() is correct, but
-> requires more than a single brain twist to understand the clever
-> encoded conditionals.
+On Thu, 2014-06-12 at 23:01 -0700, Jason Low wrote:
+> On Thu, 2014-06-12 at 14:25 -0700, Tim Chen wrote:
 > 
-> Untangle it and document the cases proper.
+> > Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+> > ---
+> >  kernel/sched/core.c  | 12 ++++++++----
+> >  kernel/sched/fair.c  | 23 +++++++++++++++++++++--
+> >  kernel/sched/sched.h | 10 ++++++++--
+> >  3 files changed, 37 insertions(+), 8 deletions(-)
+> > 
+> > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> > index c6b9879..4f57221 100644
+> > --- a/kernel/sched/core.c
+> > +++ b/kernel/sched/core.c
+> > @@ -2630,7 +2630,7 @@ static inline struct task_struct *
+> >  pick_next_task(struct rq *rq, struct task_struct *prev)
+> >  {
+> >  	const struct sched_class *class = &fair_sched_class;
+> > -	struct task_struct *p;
+> > +	struct task_struct *p = NULL;
+> >  
+> >  	/*
+> >  	 * Optimization: we know that if all tasks are in
+> > @@ -2638,9 +2638,13 @@ pick_next_task(struct rq *rq, struct task_struct *prev)
+> >  	 */
+> >  	if (likely(prev->sched_class == class &&
+> >  		   rq->nr_running == rq->cfs.h_nr_running)) {
+> > -		p = fair_sched_class.pick_next_task(rq, prev);
+> > -		if (unlikely(p == RETRY_TASK))
+> > -			goto again;
+> > +
+> > +		/* If no cpu has more than 1 task, skip */
+> > +		if (rq->nr_running > 0 || rq->rd->overload) {
 > 
-> Looks less efficient at the first glance, but actually reduces the
-> binary code size on x8664 by 80 bytes.
+> Hi Tim,
 > 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> ---
->  kernel/locking/rtmutex.c |  131 +++++++++++++++++++++++++++++++----------------
->  1 file changed, 87 insertions(+), 44 deletions(-)
+> If it is skipping if no cpu has more than 1 task, should the
+> above have the additional check for (rq->nr_running > 1) instead
+> of (rq->nr_running > 0)?
+
+If you have a job on your local cpu, you do want to have the scheduler
+pick the task to run.
+
+> > @@ -5881,6 +5882,8 @@ static inline void update_sg_lb_stats(struct lb_env *env,
+> >  
+> >  		sgs->group_load += load;
+> >  		sgs->sum_nr_running += rq->nr_running;
+> > +		if (overload && rq->nr_running > 1)
+> > +			*overload = true;
+> >  #ifdef CONFIG_NUMA_BALANCING
+> >  		sgs->nr_numa_running += rq->nr_numa_running;
+> >  		sgs->nr_preferred_running += rq->nr_preferred_running;
+> > @@ -5991,6 +5994,7 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
+> >  	struct sched_group *sg = env->sd->groups;
+> >  	struct sg_lb_stats tmp_sgs;
+> >  	int load_idx, prefer_sibling = 0;
+> > +	bool overload = false;
+> >  
+> >  	if (child && child->flags & SD_PREFER_SIBLING)
+> >  		prefer_sibling = 1;
+> > @@ -6011,7 +6015,13 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
+> >  				update_group_power(env->sd, env->dst_cpu);
+> >  		}
+> >  
+> > -		update_sg_lb_stats(env, sg, load_idx, local_group, sgs);
+> > +		if (env->sd->parent)
+> > +			update_sg_lb_stats(env, sg, load_idx, local_group, sgs,
+> > +						NULL);
+> > +		else
+> > +			/* gather overload info if we are at root domain */
+> > +			update_sg_lb_stats(env, sg, load_idx, local_group, sgs,
+> > +						&overload);
 > 
-> Index: tip/kernel/locking/rtmutex.c
-> ===================================================================
-> --- tip.orig/kernel/locking/rtmutex.c
-> +++ tip/kernel/locking/rtmutex.c
-> @@ -535,74 +535,117 @@ static int rt_mutex_adjust_prio_chain(st
->   *
->   * @lock:   the lock to be acquired.
->   * @task:   the task which wants to acquire the lock
-> - * @waiter: the waiter that is queued to the lock's wait list. (could be NULL)
-> + * @waiter: the waiter that is queued to the lock's wait list. (can be
-> + *	    NULL, if called due to trylock attempts from
-> + *	    rt_mutex_slowlock() or rt_mutex_slowtrylock().
-
-In other words, waiter is non null iff @task is already queued on the
-lock (task_blocked_on_lock() was called).
-
-
->   */
->  static int try_to_take_rt_mutex(struct rt_mutex *lock, struct task_struct *task,
-> -		struct rt_mutex_waiter *waiter)
-> +				struct rt_mutex_waiter *waiter)
->  {
-> +	unsigned long flags;
-> +
->  	/*
-> -	 * We have to be careful here if the atomic speedups are
-> -	 * enabled, such that, when
-> -	 *  - no other waiter is on the lock
-> -	 *  - the lock has been released since we did the cmpxchg
-> -	 * the lock can be released or taken while we are doing the
-> -	 * checks and marking the lock with RT_MUTEX_HAS_WAITERS.
-> +	 * Before testing whether we can acquire @lock, we set the
-> +	 * RT_MUTEX_HAS_WAITERS bit in @lock->owner. This forces all
-> +	 * other tasks which try to modify @lock into the slow path
-> +	 * and they serialize on @lock->wait_lock.
-> +	 *
-> +	 * The RT_MUTEX_HAS_WAITERS bit can have a transitional state
-> +	 * as explained at the top of this file if and only if:
->  	 *
-> -	 * The atomic acquire/release aware variant of
-> -	 * mark_rt_mutex_waiters uses a cmpxchg loop. After setting
-> -	 * the WAITERS bit, the atomic release / acquire can not
-> -	 * happen anymore and lock->wait_lock protects us from the
-> -	 * non-atomic case.
-> +	 * - There is a lock owner. The caller must fixup the
-> +	 *   transient state if it does a trylock or leaves the lock
-> +	 *   function due to a signal or timeout.
->  	 *
-> -	 * Note, that this might set lock->owner =
-> -	 * RT_MUTEX_HAS_WAITERS in the case the lock is not contended
-> -	 * any more. This is fixed up when we take the ownership.
-> -	 * This is the transitional state explained at the top of this file.
-> +	 * - @task acquires the lock and there are no other
-> +	 *   waiters. This is undone in rt_mutex_set_owner(@task) at
-> +	 *   the end of this function.
->  	 */
->  	mark_rt_mutex_waiters(lock);
->  
-> +	/*
-> +	 * If @lock has an owner, give up.
-> +	 */
->  	if (rt_mutex_owner(lock))
->  		return 0;
->  
->  	/*
-> -	 * It will get the lock because of one of these conditions:
-> -	 * 1) there is no waiter
-> -	 * 2) higher priority than waiters
-> -	 * 3) it is top waiter
-> -	 */
-> -	if (rt_mutex_has_waiters(lock)) {
-> -		if (task->prio >= rt_mutex_top_waiter(lock)->prio) {
-> -			if (!waiter || waiter != rt_mutex_top_waiter(lock))
-> -				return 0;
-> -		}
-> -	}
-> +	 * If @waiter != NULL, @task has already enqueued the waiter
-> +	 * into @lock waiter list. If @waiter == NULL then this is a
-
-Ah, you state my comment here :-)
-
-> +	 * trylock attempt.
-> +	 */
-> +	if (waiter) {
-> +		/*
-> +		 * If waiter is not the highest priority waiter of
-> +		 * @lock, give up.
-> +		 */
-> +		if (waiter != rt_mutex_top_waiter(lock))
-> +			return 0;
->  
-> -	if (waiter || rt_mutex_has_waiters(lock)) {
-> -		unsigned long flags;
-> -		struct rt_mutex_waiter *top;
-> -
-> -		raw_spin_lock_irqsave(&task->pi_lock, flags);
-> -
-> -		/* remove the queued waiter. */
-> -		if (waiter) {
-> -			rt_mutex_dequeue(lock, waiter);
-> -			task->pi_blocked_on = NULL;
-> -		}
-> +		/*
-> +		 * We can acquire the lock. Remove the waiter from the
-> +		 * lock waiters list.
-> +		 */
-> +		rt_mutex_dequeue(lock, waiter);
->  
-> +	} else {
->  		/*
-> -		 * We have to enqueue the top waiter(if it exists) into
-> -		 * task->pi_waiters list.
-> +		 * If the lock has waiters already we check whether @task is
-> +		 * eligible to take over the lock.
-> +		 *
-> +		 * If there are no other waiters, @task can acquire the lock.
-
-
-> +		 * @task->pi_blocked_on is NULL
-
-This is rather out of the blue. What does it mean? Why did you state
-this? Maybe you meant to continue to say:
-
- ... is NULL, so it does not need to be dequeued.
-
-
->  		 */
->  		if (rt_mutex_has_waiters(lock)) {
-> -			top = rt_mutex_top_waiter(lock);
-> -			rt_mutex_enqueue_pi(task, top);
-> +			/*
-> +			 * If @task->prio is greater than or equal to
-> +			 * the top waiter priority (kernel view),
-> +			 * @task lost.
-> +			 */
-> +			if (task->prio >= rt_mutex_top_waiter(lock)->prio)
-
-Didn't we have a function for this test? Oh wait, that's for the -rt
-patch ;-)
-
-> +				return 0;
-> +
-> +			/*
-> +			 * The current top waiter stays enqueued. We
-> +			 * don't have to change anything in the lock
-> +			 * waiters order.
-> +			 */
-> +		} else {
-> +			/*
-> +			 * No waiters. Take the lock without the
-> +			 * pi_lock dance.@task->pi_blocked_on is NULL
-
-s/\.\@/. @/
-
-> +			 * and we have no waiters to enqueue in @task
-> +			 * pi waiters list.
-> +			 */
-> +			goto takeit;
->  		}
-> -		raw_spin_unlock_irqrestore(&task->pi_lock, flags);
->  	}
->  
-> +	/*
-> +	 * Clear @task->pi_blocked_on. Requires protection by
-> +	 * @task->pi_lock. Redundant operation for the @waiter == NULL
-> +	 * case, but conditionals are more expensive than a redundant
-> +	 * store.
-> +	 */
-> +	raw_spin_lock_irqsave(&task->pi_lock, flags);
-> +	task->pi_blocked_on = NULL;
-> +	/*
-> +	 * Finish the lock acquisition. @task is the new owner. If
-> +	 * other waiters exist we have to insert the highest priority
-> +	 * waiter into @task->pi_waiters list.
-> +	 */
-> +	if (rt_mutex_has_waiters(lock))
-> +		rt_mutex_enqueue_pi(task, rt_mutex_top_waiter(lock));
-> +	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
-> +
-> +takeit:
->  	/* We got the lock. */
->  	debug_rt_mutex_lock(lock);
->  
-> +	/*
-> +	 * This either preserves the RT_MUTEX_HAS_WAITERS bit if there
-> +	 * are still waiters or clears it.
-> +	 */
->  	rt_mutex_set_owner(lock, task);
->  
->  	rt_mutex_deadlock_account_lock(lock, task);
+> Would it make the code cleaner if we always call:
+> 
+> +	update_sg_lb_stats(env, sg, load_idx, local_group, sgs,
+> 				   &overload);
+> 
+> and in update_sg_lb_stats():
+> 
+> +	bool is_root_domain = (env->sd->parent == NULL)
+> 
+> 
+> +		/* gather overload info if we are at root domain */
+> +		if (is_root_domain && rq->nr_running > 1)
+> +			*overload = true;
 > 
 
-Much more readable and honestly, it looks more efficient than the
-original maze. Good job!
+I want to have the caller to update_sg_lb_stats make the decision
+on whether there's a need to calculate the indicator, and not
+make the decision in update_sg_lb_stats.
 
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+This allows the flexibility later on if we want such indicator
+in a lower sched domain hierarchy.
 
--- Steve
+> >  		if (local_group)
+> >  			goto next_group;
+> > @@ -6045,6 +6055,15 @@ next_group:
+> >  
+> >  	if (env->sd->flags & SD_NUMA)
+> >  		env->fbq_type = fbq_classify_group(&sds->busiest_stat);
+> > +
+> > +	if (!env->sd->parent) {
+> > +		/* update overload indicator if we are at root domain */
+> > +		int i = cpumask_first(sched_domain_span(env->sd));
+> > +		struct rq *rq = cpu_rq(i);
+> 
+> Perhaps we could just use:
+> 
+> struct rq *rq = env->dst_rq;
+> 
+
+Yes, your suggested change is more concise.  I'll update the code with
+this change.
+
+Tim
 
