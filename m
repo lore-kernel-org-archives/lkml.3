@@ -1,58 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753048AbaFMIjE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 04:39:04 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:44749 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852AbaFMIjA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 04:39:00 -0400
-Date: Fri, 13 Jun 2014 11:38:47 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: DaeSeok Youn <daeseok.youn@gmail.com>
-Cc: devel <devel@driverdev.osuosl.org>, Lidza Louina <lidza.louina@gmail.com>,
-        driverdev-devel@linuxdriverproject.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 5/9] staging: dgap: introduce dgap_tty_unregister()
-Message-ID: <20140613083846.GY5500@mwanda>
-References: <20140613074147.GA31615@devel.8.8.4.4>
- <20140613080017.GC5015@mwanda>
- <CAHb8M2D=QCm0Aeci2NsEs71K5Ev-oKGOm7XqTU0=e6qm3Fcf7A@mail.gmail.com>
+	id S1753163AbaFMIke (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 04:40:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57068 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753117AbaFMIkb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 04:40:31 -0400
+Message-ID: <539AB8F1.2040608@redhat.com>
+Date: Fri, 13 Jun 2014 10:40:17 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHb8M2D=QCm0Aeci2NsEs71K5Ev-oKGOm7XqTU0=e6qm3Fcf7A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+To: suravee.suthikulpanit@amd.com, tj@kernel.org, b.zolnierkie@samsung.com
+CC: lho@apm.com, tphan@apm.com, stripathi@apm.com, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] ahci: Check and set 64-bit DMA mask for platform
+ AHCI driver
+References: <1402594824-4151-1-git-send-email-suravee.suthikulpanit@amd.com> <1402594824-4151-2-git-send-email-suravee.suthikulpanit@amd.com>
+In-Reply-To: <1402594824-4151-2-git-send-email-suravee.suthikulpanit@amd.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 05:16:27PM +0900, DaeSeok Youn wrote:
-> Hi, Dan
-> 
-> 
-> 
-> 2014-06-13 17:00 GMT+09:00 Dan Carpenter <dan.carpenter@oracle.com>:
-> > On Fri, Jun 13, 2014 at 04:41:47PM +0900, Daeseok Youn wrote:
-> >> dgap_tty_unregister() will unregister serial_driver
-> >> and print_driver, and also free related variables.
-> >>
-> >
-> > Introducing a static function without a caller will cause a GCC warning
-> > about unused functions.
-> >
-> > Fold 5,7 and 8 together into one patch.  This is still "one thing per
-> > patch" because they can't be done separately.
-> OK. I will do. And then this series of patches will resend, right?
+Hi,
 
-I'm afraid so.  New GCC warnings are against the rules even if you fix
-it in a later patch.
+On 06/12/2014 07:40 PM, suravee.suthikulpanit@amd.com wrote:
+> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+> 
+> The current platform AHCI driver does not set the dma_mask correctly
+> for 64-bit DMA capable AHCI controller. This patch checks the AHCI
+> capability bit and set the dma_mask and coherent_dma_mask accordingly.
+> 
+> Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+> Reviewed-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Reviewed-by: Hans de Goede <hdegoede@redhat.com>
 
-Since you're redoing it, can I suggest that patch 8 should just move
-the code to dgap_init_one() and change the dgap_firmware_load()
-prototype and then another patch should add the error handling.
+I did not review this patch, just because you CC-ed me does not mean
+I've reviewed it. Please don't add my Reviewed-by unless you've gotten
+a mail from me saying something along these lines:
 
-regards,
-dan carpenter
+This patch is:
+Reviewed-by: Hans de Goede <hdegoede@redhat.com>
+
+More in general please do not add any tags, other then Cc or your own
+Signed-off-by, unless you've actually received those tags in an email
+from people.
+
+Regards,
+
+Hans
+
+p.s.
+
+About the patch itself, I'll try to test this on sunxi devices to
+make sure that it does not break anything this weekend.
+
+
+
+> ---
+>  drivers/ata/libahci_platform.c | 13 +++++++++++++
+>  1 file changed, 13 insertions(+)
+> 
+> diff --git a/drivers/ata/libahci_platform.c b/drivers/ata/libahci_platform.c
+> index 3a5b4ed..a958a2b 100644
+> --- a/drivers/ata/libahci_platform.c
+> +++ b/drivers/ata/libahci_platform.c
+> @@ -364,6 +364,19 @@ int ahci_platform_init_host(struct platform_device *pdev,
+>  			ap->ops = &ata_dummy_port_ops;
+>  	}
+>  
+> +	if (hpriv->cap & HOST_CAP_64) {
+> +		rc = dma_coerce_mask_and_coherent(dev, DMA_BIT_MASK(64));
+> +		if (rc) {
+> +			rc = dma_coerce_mask_and_coherent(dev,
+> +							  DMA_BIT_MASK(32));
+> +			if (rc) {
+> +				dev_err(dev, "Failed to enable 64-bit DMA.\n");
+> +				return rc;
+> +			}
+> +			dev_warn(dev, "Enable 32-bit DMA instead of 64-bit.\n");
+> +		}
+> +	}
+> +
+>  	rc = ahci_reset_controller(host);
+>  	if (rc)
+>  		return rc;
+> 
