@@ -1,67 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753230AbaFMVnI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 17:43:08 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:39548 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752590AbaFMVnG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 17:43:06 -0400
-Date: Fri, 13 Jun 2014 14:43:03 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Azael Avalos <coproscefalo@gmail.com>
-cc: Nick <xerofoify@gmail.com>, Matthew Garrett <matthew.garrett@nebula.com>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] platform/x86/toshiba-apci.c possible bad if test?
-In-Reply-To: <CAGdLNWEaVeWL4=fWY0hLUgq4ii_mHK9a_f8qP6N2cCOEEhtddQ@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1406131442310.31981@chino.kir.corp.google.com>
-References: <1402628655-2904-1-git-send-email-nickkrause@sympatico.ca> <CAGdLNWEaVeWL4=fWY0hLUgq4ii_mHK9a_f8qP6N2cCOEEhtddQ@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754083AbaFMVoz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 17:44:55 -0400
+Received: from gate.crashing.org ([63.228.1.57]:58734 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751986AbaFMVoy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 17:44:54 -0400
+Message-ID: <1402695853.20360.17.camel@pasglop>
+Subject: Re: kmemleak: Unable to handle kernel paging request
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Denis Kirjanov <kda@linux-powerpc.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        linuxppc-dev@lists.ozlabs.org, Paul Mackerras <paulus@samba.org>
+Date: Sat, 14 Jun 2014 07:44:13 +1000
+In-Reply-To: <20140613085640.GA21018@arm.com>
+References: <CAOJe8K3fy3XFxDdVc3y1hiMAqUCPmkUhECU7j5TT=E=gxwBqHg@mail.gmail.com>
+	 <20140611173851.GA5556@MacBook-Pro.local>
+	 <CAOJe8K1TgTDX5=LdE9r6c0ami7TRa7zr0hL_uu6YpiWrsePAgQ@mail.gmail.com>
+	 <B01EB0A1-992B-49F4-93AE-71E4BA707795@arm.com>
+	 <CAOJe8K3LDhhPWbtdaWt23mY+2vnw5p05+eyk2D8fovOxC10cgA@mail.gmail.com>
+	 <CAOJe8K2WaJUP9_buwgKw89fxGe56mGP1Mn8rDUO9W48KZzmybA@mail.gmail.com>
+	 <20140612143916.GB8970@arm.com>
+	 <CAOJe8K3zN+fFWumKaGx3Tmv5JRZu10_FZ6R3Tjjc+nc-KVB0hg@mail.gmail.com>
+	 <20140613085640.GA21018@arm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Jun 2014, Azael Avalos wrote:
+On Fri, 2014-06-13 at 09:56 +0100, Catalin Marinas wrote:
 
-> Intel test builder caught some warnings, one at the
-> KBD backlight mode store while validating for
-> correct parameters, and another one that might lead
-> to not creating the sysfs group
+> OK, so that's the DART table allocated via alloc_dart_table(). Is
+> dart_tablebase removed from the kernel linear mapping after allocation?
+
+Yes.
+
+> If that's the case, we need to tell kmemleak to ignore this block (see
+> patch below, untested). But I still can't explain how commit
+> d4c54919ed863020 causes this issue.
 > 
-> Signed-off-by: Azael Avalos <coproscefalo@gmail.com>
+> (also cc'ing the powerpc list and maintainers)
+
+We remove the DART from the linear mapping because it has to be mapped
+non-cachable and having it in the linear mapping would cause cache
+paradoxes. We also can't just change the caching attributes in the
+linear mapping because we use 16M pages for it and 970 CPUs don't
+support cache-inhibited 16M pages :-( And due to the MMU segmentation
+model, we also can't mix & match page sizes in that area.
+
+So we just unmap it, and ioremap it elsewhere.
+
+Cheers,
+Ben.
+
+> ---------------8<--------------------------
+> 
+> >From 09a7f1c97166c7bdca7ca4e8a4ff2774f3706ea3 Mon Sep 17 00:00:00 2001
+> From: Catalin Marinas <catalin.marinas@arm.com>
+> Date: Fri, 13 Jun 2014 09:44:21 +0100
+> Subject: [PATCH] powerpc/kmemleak: Do not scan the DART table
+> 
+> The DART table allocation is registered to kmemleak via the
+> memblock_alloc_base() call. However, the DART table is later unmapped
+> and dart_tablebase VA no longer accessible. This patch tells kmemleak
+> not to scan this block and avoid an unhandled paging request.
+> 
+> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Paul Mackerras <paulus@samba.org>
 > ---
->  drivers/platform/x86/toshiba_acpi.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+>  arch/powerpc/sysdev/dart_iommu.c | 5 +++++
+>  1 file changed, 5 insertions(+)
 > 
-> diff --git a/drivers/platform/x86/toshiba_acpi.c
-> b/drivers/platform/x86/toshiba_acpi.c
-> index fbbe46d..f397594 100644
-> --- a/drivers/platform/x86/toshiba_acpi.c
-> +++ b/drivers/platform/x86/toshiba_acpi.c
-> @@ -1218,7 +1218,7 @@ static ssize_t toshiba_kbd_bl_mode_store(struct
-> device *dev,
->         int mode = -1;
->         int time = -1;
-> 
-> -       if (sscanf(buf, "%i", &mode) != 1 && (mode != 2 || mode != 1))
-> +       if (sscanf(buf, "%i", &mode) != 1 || mode > 2 || mode < 1)
->                 return -EINVAL;
-> 
->         /* Set the Keyboard Backlight Mode where:
-> @@ -1741,7 +1741,7 @@ static int toshiba_acpi_add(struct acpi_device *acpi_dev)
-> 
->         ret = sysfs_create_group(&dev->acpi_dev->dev.kobj,
->                                  &toshiba_attr_group);
-> -       if (ret) {
-> +       if (ret != 0) {
->                 dev->sysfs_created = 0;
->                 goto error;
->         }
+> diff --git a/arch/powerpc/sysdev/dart_iommu.c b/arch/powerpc/sysdev/dart_iommu.c
+> index 62c47bb76517..9e5353ff6d1b 100644
+> --- a/arch/powerpc/sysdev/dart_iommu.c
+> +++ b/arch/powerpc/sysdev/dart_iommu.c
+> @@ -476,6 +476,11 @@ void __init alloc_dart_table(void)
+>  	 */
+>  	dart_tablebase = (unsigned long)
+>  		__va(memblock_alloc_base(1UL<<24, 1UL<<24, 0x80000000L));
+> +	/*
+> +	 * The DART space is later unmapped from the kernel linear mapping and
+> +	 * accessing dart_tablebase during kmemleak scanning will fault.
+> +	 */
+> +	kmemleak_no_scan((void *)dart_tablebase);
+>  
+>  	printk(KERN_INFO "DART table allocated at: %lx\n", dart_tablebase);
+>  }
 
-It may not have been picked up because you've combined unrelated (and 
-unnecessary) changes such as your change to toshiba_acpi_add().
+
