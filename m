@@ -1,83 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752592AbaFMCMs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 22:12:48 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:47094 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751746AbaFMCL7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 22:11:59 -0400
-Message-Id: <20140613021157.080097734@goodmis.org>
-User-Agent: quilt/0.63-1
-Date: Thu, 12 Jun 2014 22:10:04 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Jan Kiszka <jan.kiszka@siemens.com>
-Subject: [PATCH 2/4] tools lib traceevent: Factor out print_exit_reason in kvm plugin
-References: <20140613021002.444608350@goodmis.org>
+	id S1751283AbaFMCZv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 22:25:51 -0400
+Received: from mga09.intel.com ([134.134.136.24]:41752 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750862AbaFMCZs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 22:25:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,468,1400050800"; 
+   d="scan'208";a="527732909"
+Message-ID: <539A60FC.1050301@intel.com>
+Date: Fri, 13 Jun 2014 10:25:00 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
+To: David Rientjes <rientjes@google.com>
+CC: rjw@rjwysocki.net, lenb@kernel.org, naszar@ya.ru,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] ACPI/Battery: Retry to get Battery information if failed
+ during probing
+References: <1402552946-14704-1-git-send-email-tianyu.lan@intel.com> <alpine.DEB.2.02.1406112354070.23724@chino.kir.corp.google.com> <53995488.20308@intel.com> <alpine.DEB.2.02.1406120025050.23724@chino.kir.corp.google.com> <53996152.2000407@intel.com> <alpine.DEB.2.02.1406121415150.8305@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1406121415150.8305@chino.kir.corp.google.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0002-tools-lib-traceevent-Factor-out-print_exit_reason-in.patch
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Kiszka <jan.kiszka@siemens.com>
+On 2014年06月13日 05:17, David Rientjes wrote:
+> On Thu, 12 Jun 2014, Lan Tianyu wrote:
+> 
+>> The retry time is set by randomly and not accurate because don't know
+>> when EC will work normally. Set the retry time to 5 just in order to
+>> make sure battery driver probing sucessfully every time,
+>>
+> 
+> Ok, I was hoping to avoid the excessive wait if it will never actually 
+> succeed
 
-We will reuse it for nested vmexit tracepoints.
+Ok. The battery driver has used async init and so this will not affect
+the speed of boot up.
 
-Link: http://lkml.kernel.org/r/619c418c8af87f03027b8c8013b0443996605700.1388855989.git.jan.kiszka@web.de
+> but I assume there's some evidence that it can succeed after 40ms, 
+> 60ms, etc.  Please consider the following instead:
+> 
+> 	for (i = 0; i < 5; i++) {
+> 		/* Comment on why we need a delay in between retries */
+> 		if (i)
+> 			msleep(20);
+> 		result = acpi_battery_update(battery, false);
+> 		if (!result)
+> 			break;
+> 	}
+> 
 
-Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- tools/lib/traceevent/plugin_kvm.c | 17 +++++++++++++----
- 1 file changed, 13 insertions(+), 4 deletions(-)
+How about this?
 
-diff --git a/tools/lib/traceevent/plugin_kvm.c b/tools/lib/traceevent/plugin_kvm.c
-index 3e6122067d67..2d7d1d7df0a8 100644
---- a/tools/lib/traceevent/plugin_kvm.c
-+++ b/tools/lib/traceevent/plugin_kvm.c
-@@ -244,15 +244,14 @@ static const char *find_exit_reason(unsigned isa, int val)
- 	return strings[i].str;
- }
- 
--static int kvm_exit_handler(struct trace_seq *s, struct pevent_record *record,
--			    struct event_format *event, void *context)
-+static int print_exit_reason(struct trace_seq *s, struct pevent_record *record,
-+			     struct event_format *event, const char *field)
- {
- 	unsigned long long isa;
- 	unsigned long long val;
--	unsigned long long info1 = 0, info2 = 0;
- 	const char *reason;
- 
--	if (pevent_get_field_val(s, event, "exit_reason", record, &val, 1) < 0)
-+	if (pevent_get_field_val(s, event, field, record, &val, 1) < 0)
- 		return -1;
- 
- 	if (pevent_get_field_val(s, event, "isa", record, &isa, 0) < 0)
-@@ -263,6 +262,16 @@ static int kvm_exit_handler(struct trace_seq *s, struct pevent_record *record,
- 		trace_seq_printf(s, "reason %s", reason);
- 	else
- 		trace_seq_printf(s, "reason UNKNOWN (%llu)", val);
-+	return 0;
-+}
+-       result = acpi_battery_update(battery, false);
+-       if (result)
 +
-+static int kvm_exit_handler(struct trace_seq *s, struct pevent_record *record,
-+			    struct event_format *event, void *context)
-+{
-+	unsigned long long info1 = 0, info2 = 0;
++       /*
++        * Some machines'(E,G Lenovo Z480) ECs are not stable
++        * during boot up and this causes battery driver fails to be
++        * probed due to failure of getting battery information
++        * from EC sometimes. After several retries, the operation
++        * may work. So add retry code here and 20ms sleep between
++        * every retries.
++        */
++       while (acpi_battery_update(battery, false) && retry--)
++               msleep(20);
++       if (!retry) {
++               result = -ENODEV;
+                goto fail;
++       }
 +
-+	if (print_exit_reason(s, record, event, "exit_reason") < 0)
-+		return -1;
- 
- 	pevent_print_num_field(s, " rip 0x%lx", event, "guest_rip", record, 1);
- 
+
+
+
+
 -- 
-2.0.0.rc2
-
-
+Best regards
+Tianyu Lan
