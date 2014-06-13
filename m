@@ -1,109 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751835AbaFME4D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 00:56:03 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:33002 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751315AbaFME4A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 00:56:00 -0400
-Date: Fri, 13 Jun 2014 07:55:55 +0300
-From: Dan Aloni <dan@kernelim.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: mm/sched/net: BUG when running simple code
-Message-ID: <20140613045555.GB20729@gmail.com>
-References: <539A6850.4090408@oracle.com>
- <20140613032754.GA20729@gmail.com>
- <539A77A1.60700@oracle.com>
+	id S1751647AbaFMFDr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 01:03:47 -0400
+Received: from ja.ssi.bg ([178.16.129.10]:33016 "EHLO ja.home.ssi.bg"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751167AbaFMFDp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 01:03:45 -0400
+Date: Fri, 13 Jun 2014 08:02:48 +0300 (EEST)
+From: Julian Anastasov <ja@ssi.bg>
+X-X-Sender: ja@ja.home.ssi.bg
+To: Jet Chen <jet.chen@intel.com>
+cc: Wensong Zhang <wensong@linux-vs.org>, Simon Horman <horms@verge.net.au>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [net/ipvs] BUG: unable to handle kernel NULL pointer dereference
+ at 00000004
+In-Reply-To: <5398148B.603@intel.com>
+Message-ID: <alpine.LFD.2.11.1406130801090.1518@ja.home.ssi.bg>
+References: <5397DE0E.2070501@intel.com> <alpine.LFD.2.11.1406110828460.2070@ja.home.ssi.bg> <5398148B.603@intel.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <539A77A1.60700@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 12:01:37AM -0400, Sasha Levin wrote:
-> On 06/12/2014 11:27 PM, Dan Aloni wrote:
-> > On Thu, Jun 12, 2014 at 10:56:16PM -0400, Sasha Levin wrote:
-> >> > Hi all,
-> >> > 
-> >> > Okay, I'm really lost. I got the following when fuzzing, and can't really explain what's
-> >> > going on. It seems that we get a "unable to handle kernel paging request" when running
-> >> > rather simple code, and I can't figure out how it would cause it.
-> > [..]
-> >> > Which agrees with the trace I got:
-> >> > 
-> >> > [  516.309720] BUG: unable to handle kernel paging request at ffffffffa0f12560
-> >> > [  516.309720] IP: netlink_getsockopt (net/netlink/af_netlink.c:2271)
-> > [..]
-> >> > [  516.309720] RIP netlink_getsockopt (net/netlink/af_netlink.c:2271)
-> >> > [  516.309720]  RSP <ffff8803fc85fed8>
-> >> > [  516.309720] CR2: ffffffffa0f12560
-> >> > 
-> >> > They only theory I had so far is that netlink is a module, and has gone away while the code
-> >> > was executing, but netlink isn't a module on my kernel.
-> > The RIP - 0xffffffffa0f12560 is in the range (from Documentation/x86/x86_64/mm.txt):
+
+	Hello,
+
+On Wed, 11 Jun 2014, Jet Chen wrote:
+
+> On 06/11/2014 01:59 PM, Julian Anastasov wrote:
 > > 
-> >     ffffffffa0000000 - ffffffffff5fffff (=1525 MB) module mapping space
+> > 	At first look, it is strange but I think the reason
+> > is the missing CONFIG_SYSCTL. ip_vs_control_net_cleanup
+> > fails at ip_vs_stop_estimator(net, &ipvs->tot_stats)
+> > because it is called not depending on CONFIG_SYSCTL but
+> > without CONFIG_SYSCTL ip_vs_start_estimator was never
+> > called.
 > > 
-> > So seems it was in a module.
+> > 	Can you test such patch?
 > 
-> Yup, that's why that theory came up, but when I checked my config:
+> Julian, your patch works. Thanks.
 > 
-> $ cat .config | grep NETLINK
-> CONFIG_COMPAT_NETLINK_MESSAGES=y
-> CONFIG_NETFILTER_NETLINK=y
-> CONFIG_NETFILTER_NETLINK_ACCT=y
-> CONFIG_NETFILTER_NETLINK_QUEUE=y
-> CONFIG_NETFILTER_NETLINK_LOG=y
-> CONFIG_NF_CT_NETLINK=y
-> CONFIG_NF_CT_NETLINK_TIMEOUT=y
-> CONFIG_NF_CT_NETLINK_HELPER=y
-> CONFIG_NETFILTER_NETLINK_QUEUE_CT=y
-> CONFIG_NETLINK_MMAP=y
-> CONFIG_NETLINK_DIAG=y
-> CONFIG_SCSI_NETLINK=y
-> CONFIG_QUOTA_NETLINK_INTERFACE=y
-> 
-> that theory went away. (also confirmed by not finding a netlink module.)
-> 
-> What about the kernel .text overflowing into the modules space? The loader
-> checks for that, but can something like that happen after everything is
-> up and running? I'll look into that tomorrow.
+> Tested-by: Jet Chen <jet.chen@intel.com>
 
-The kernel .text needs to be more than 512MB for the overlap to happen. 
+	Thanks for the confirmation!
 
-    ffffffff80000000 - ffffffffa0000000 (=512 MB)  kernel text mapping, from phys 0
+Regards
 
-Also, it is bizarre that symbol resolution resolved ffffffffa0f12560 to 
-a symbol that is in module space where af_netlink.o is surely not because of 
-"obj-y := af_netlink.o" in the Makefile. 
-
-What does your /proc/kallsyms show when sorted with regards to the symbols
-in question?
-
-Also curious are the addresses you have on the stack:
-
-> [  516.309720] Stack:
-> [  516.309720]  ffff8803fc85ff18 ffff8803fc85ff18 ffff8803fc85fef8 8900200549908020
-> [  516.309720]  ffff8803fc85ff18 ffffffff9ff66470 ffff8803fc85ff18 0000000000000037
-> [  516.309720]  ffff8803fc85ff78 ffffffff9ff69d26 0000000000000037 0000000000000004
-
-0xffffffff9ff69d26 is just a small space before the beginning of the module 
-mapping space, at the end of the kernel text mapping. Unless there are 
-some tricks on those mappings, they should be unused, or perhaps 
-CONFIG_DEBUG_PAGEALLOC is at play here?
-
-And also, the Oops code of 0003 (PF_WRITE and PF_USER) might hint at
-what Dave wrote.
-
--- 
-Dan Aloni
+--
+Julian Anastasov <ja@ssi.bg>
