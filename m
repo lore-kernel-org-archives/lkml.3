@@ -1,325 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751701AbaFMFqI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 01:46:08 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:48410 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751010AbaFMFqG (ORCPT
+	id S1751889AbaFMFry (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 01:47:54 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:16670 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751067AbaFMFrx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 01:46:06 -0400
-Message-ID: <1402638363.22229.23.camel@fury.dvhart.com>
-Subject: Re: [patch 5/5] futex: Simplify futex_lock_pi_atomic() and make it
- more robust
-From: Darren Hart <darren@dvhart.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, Davidlohr Bueso <davidlohr@hp.com>,
-        Kees Cook <kees@outflux.net>, wad@chromium.org
-Date: Thu, 12 Jun 2014 22:46:03 -0700
-In-Reply-To: <20140611204237.361836310@linutronix.de>
-References: <20140611202744.676528190@linutronix.de>
-	 <20140611204237.361836310@linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 13 Jun 2014 01:47:53 -0400
+X-AuditID: cbfee68f-b7fef6d000003970-0e-539a908712f5
+From: Shahina Shaik <shahina.s@samsung.com>
+To: perex@perex.cz, tiwai@suse.de, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, broonie@kernel.org, lgirdwood@gmail.com
+Cc: sharab.shaik@gmail.com, shahina.s@gmail.com
+Subject: [PATCH 1/2] SOUND: TLV320AIC32x4: Fixed Coding style Issues
+Date: Fri, 13 Jun 2014 11:18:47 +0530
+Message-id: <1402638528-5787-1-git-send-email-shahina.s@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsWyRsSkVrd9wqxgg9U3OC2uXDzEZDH14RM2
+	i29XOpgsLu+aw2bRuauf1WLpkz+MFt+OT2C0eLn5DZMDh8eGz01sHjtn3WX32LSqk81j39tl
+	bB6bT1d7fN4kF8AWxWWTkpqTWZZapG+XwJXx+dBKloKr3BV3Ty5hb2D8xNnFyMkhIWAi8ffl
+	SUYIW0ziwr31bF2MXBxCAksZJa6+uswOU7R8fj8ziC0ksIhRYs8ZaYiiXiaJR1/uAXVzcLAJ
+	aEu8n+cEUiMi0M4ocexWMojNLKAvsfDhdTYQW1jARWLnjhNgy1gEVCXePlnPCmLzAsW3N84C
+	GyMhoCAxZ5INyHgJgX52iRkbD7BC1AtIfJt8iAWiRlZi0wFmiNMkJQ6uuMEygVFwASPDKkbR
+	1ILkguKk9CJjveLE3OLSvHS95PzcTYzAID7971n/Dsa7B6wPMSYDjZvILCWanA+MgrySeENj
+	MyMLUxNTYyNzSzPShJXEee8/TAoSEkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwBh1u/2vJK+L
+	Xc2F3IjbX55+OekgGjrFcGbTD6HuL8kXJ314/+RCcFG+sTxLup7r36qNiu5rji/9/XDBt4/p
+	XwzeJbV+6t6Xf7y8/Ly4ZfGZ2UvX8JwOPGujZatnInblt+eE1/H69TH8lmVrO97oiW+ULDDK
+	4jq0OmfRkVY/75y5+7mm+K7hjVNiKc5INNRiLipOBADKMoKDeAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrIIsWRmVeSWpSXmKPExsVy+t9jAd32CbOCDdq1La5cPMRkMfXhEzaL
+	b1c6mCwu75rDZtG5q5/VYumTP4wW345PYLR4ufkNkwOHx4bPTWweO2fdZffYtKqTzWPf22Vs
+	HptPV3t83iQXwBbVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQl5ibaqvk
+	4hOg65aZA3SPkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMDNJCwhjHj86GVLAVX
+	uSvunlzC3sD4ibOLkZNDQsBEYvn8fmYIW0ziwr31bCC2kMAiRok9Z6S7GLmA7F4miUdf7jF2
+	MXJwsAloS7yf5wRSIyLQzihx7FYyiM0soC+x8OF1sF5hAReJnTtOMILYLAKqEm+frGcFsXmB
+	4tsbZ4GNkRBQkJgzyWYCI/cCRoZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMER8kx6B+Oq
+	BotDjAIcjEo8vAHvZwYLsSaWFVfmHmKU4GBWEuG91zArWIg3JbGyKrUoP76oNCe1+BBjMtDy
+	icxSosn5wOjNK4k3NDYxNzU2tTSxMDGzJE1YSZz3YKt1oJBAemJJanZqakFqEcwWJg5OqQbG
+	FXf3tK3mnputqHB6tQ3rrY3SoYIzJ2iu84r83ZDfkL18duqe06/TXQT2vWJd6NCf4XLM9baj
+	ecTvxYU9P5vL46zdWdfWzBWMmhwbsozt9/dL4ca5R8Qep3NVTvn67fI99x2bGW/bdD/+FrDt
+	Ea9Awrb3Z3t/7Gaec9/FeLbWhZClLluVn55+qMRSnJFoqMVcVJwIAEPIFg/UAgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-06-11 at 20:45 +0000, Thomas Gleixner wrote:
-> futex_lock_pi_atomic() is a maze of retry hoops and loops.
-> 
-> Reduce it to simple and understandable states:
+From: Shahina Shaik <sharab.shaik@gmail.com>
 
-Heh... well...
+Fixed a brace coding style issue in the tlv320aic32x4.c
 
-With this patch applied (1-4 will not reproduce without 5), if userspace
-wrongly sets the uval to 0, the pi_state can end up being NULL for a
-subsequent requeue_pi operation:
-
-[   10.426159] requeue: 00000000006022e0 to 00000000006022e4
-[   10.427737]   this:ffff88013a637da8
-[   10.428749]   waking:ffff88013a637da8
-fut2 = 0
-[   10.429994]   comparing requeue_pi_key
-[   10.431034]   prepare waiter to take the rt_mutex
-[   10.432344]   pi_state:          (null)
-[   10.433414] BUG: unable to handle kernel NULL pointer dereference at
-0000000000000038
-
-This occurs in the requeue loop, in the requeue_pi block at:
-
-	atomic_inc(&pi_state->refcount);
-
-
-> 
-> First step is to lookup existing waiters (state) in the kernel.
-> 
-> If there is an existing waiter, validate it and attach to it.
-> 
-> If there is no existing waiter, check the user space value
-> 
-> If the TID encoded in the user space value is 0, take over the futex
-> preserving the owner died bit.
-
-This is the scenario resulting in the panic. See below.
-
-> 
-> If the TID encoded in the user space value is != 0, lookup the owner
-> task, validate it and attach to it.
-> 
-> Reduces text size by 144 bytes on x8664.
-> 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> ---
->  kernel/futex.c |  139 +++++++++++++++++++++------------------------------------
->  1 file changed, 53 insertions(+), 86 deletions(-)
-> 
-> Index: linux/kernel/futex.c
-> ===================================================================
-> --- linux.orig/kernel/futex.c
-> +++ linux/kernel/futex.c
-> @@ -956,6 +956,17 @@ static int lookup_pi_state(u32 uval, str
->         return attach_to_pi_owner(uval, key, ps);
->  }
->  
-> +static int lock_pi_update_atomic(u32 __user *uaddr, u32 uval, u32 newval)
-> +{
-> +       u32 uninitialized_var(curval);
-> +
-> +       if (unlikely(cmpxchg_futex_value_locked(&curval, uaddr, uval, newval)))
-> +               return -EFAULT;
-> +
-> +       /* If user space value changed, let the caller retry */
-> +       return curval != uval ? -EAGAIN : 0;
-> +}
-> +
->  /**
->   * futex_lock_pi_atomic() - Atomic work required to acquire a pi aware futex
->   * @uaddr:             the pi futex user address
-> @@ -979,113 +990,67 @@ static int futex_lock_pi_atomic(u32 __us
->                                 struct futex_pi_state **ps,
->                                 struct task_struct *task, int set_waiters)
->  {
-> -       int lock_taken, ret, force_take = 0;
-> -       u32 uval, newval, curval, vpid = task_pid_vnr(task);
-> -
-> -retry:
-> -       ret = lock_taken = 0;
-> +       u32 uval, newval, vpid = task_pid_vnr(task);
-> +       struct futex_q *match;
-> +       int ret;
->  
->         /*
-> -        * To avoid races, we attempt to take the lock here again
-> -        * (by doing a 0 -> TID atomic cmpxchg), while holding all
-> -        * the locks. It will most likely not succeed.
-> +        * Read the user space value first so we can validate a few
-> +        * things before proceeding further.
->          */
-> -       newval = vpid;
-> -       if (set_waiters)
-> -               newval |= FUTEX_WAITERS;
-> -
-> -       if (unlikely(cmpxchg_futex_value_locked(&curval, uaddr, 0, newval)))
-> +       if (get_futex_value_locked(&uval, uaddr))
->                 return -EFAULT;
->  
->         /*
->          * Detect deadlocks.
->          */
-> -       if ((unlikely((curval & FUTEX_TID_MASK) == vpid)))
-> +       if ((unlikely((uval & FUTEX_TID_MASK) == vpid)))
->                 return -EDEADLK;
->  
->         /*
-> -        * Surprise - we got the lock, but we do not trust user space at all.
-
-We really don't want to drop this comment (at leas not the latter
-half ;-)
-
-> +        * Lookup existing state first. If it exists, try to attach to
-> +        * its pi_state.
->          */
-> -       if (unlikely(!curval)) {
-> -               /*
-> -                * We verify whether there is kernel state for this
-> -                * futex. If not, we can safely assume, that the 0 ->
-> -                * TID transition is correct. If state exists, we do
-> -                * not bother to fixup the user space state as it was
-> -                * corrupted already.
-> -                */
-> -               return futex_top_waiter(hb, key) ? -EINVAL : 1;
-
-On successful acquisition, we used to return 1...
-
-> -       }
-> -
-> -       uval = curval;
-> +       match = futex_top_waiter(hb, key);
-> +       if (match)
-> +               return attach_to_pi_state(uval, match->pi_state, ps);
->  
->         /*
-> -        * Set the FUTEX_WAITERS flag, so the owner will know it has someone
-> -        * to wake at the next unlock.
-> +        * No waiter and user TID is 0. We are here because the
-> +        * waiters or the owner died bit is set or called from
-> +        * requeue_cmp_pi or for whatever reason something took the
-> +        * syscall.
->          */
-> -       newval = curval | FUTEX_WAITERS;
-> -
-> -       /*
-> -        * Should we force take the futex? See below.
-> -        */
-> -       if (unlikely(force_take)) {
-> +       if (!(uval & FUTEX_TID_MASK)) {
->                 /*
-> -                * Keep the OWNER_DIED and the WAITERS bit and set the
-> -                * new TID value.
-> +                * We take over the futex. No other waiters and the user space
-> +                * TID is 0. We preserve the owner died bit.
->                  */
-
-Or userspace is screwing with us and set it to 0 for no good reason at
-all... so there could still be a waiter queued up from
-FUTEX_WAIT_REQUEUE_PI.
-
-> -               newval = (curval & ~FUTEX_TID_MASK) | vpid;
-> -               force_take = 0;
-> -               lock_taken = 1;
-> -       }
-> +               newval = uval & FUTEX_OWNER_DIED;
-> +               newval |= vpid;
->  
-> -       if (unlikely(cmpxchg_futex_value_locked(&curval, uaddr, uval, newval)))
-> -               return -EFAULT;
-> -       if (unlikely(curval != uval))
-> -               goto retry;
-> +               /* The futex requeue_pi code can enforce the waiters bit */
-> +               if (set_waiters)
-> +                       newval |= FUTEX_WAITERS;
-> +
-> +               return lock_pi_update_atomic(uaddr, uval, newval);
-
-And now we return 0, resulting in futex_proxy_trylock_atomic also
-returning 0, but the pi_state is NULL, and as it doesn't return > 0
-(vpid), we don't look it up again after atomic acquisition in
-futex_requeue().
-
-And BANG.
-
-Consider the following:
-
->From 3eec2db2654a6cd8dcac3c60acda0f16a3243e29 Mon Sep 17 00:00:00 2001
-From: Darren Hart <dvhart@linux.intel.com>
-Date: Thu, 12 Jun 2014 22:41:32 -0700
-Subject: [PATCH] futex: Invert the return value of lock_pi_update_atomic
-
-Indicate success to the caller by returning 1 for lock acquired.
-
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+Signed-off-by: Shahina Shaik <sharab.shaik@gmail.com>
 ---
- kernel/futex.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/soc/codecs/tlv320aic32x4.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 391df53..82b96a4 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -1033,7 +1033,7 @@ static int futex_lock_pi_atomic(u32 __user *uaddr,
-struct futex_hash_bucket *hb,
- 		if (set_waiters)
- 			newval |= FUTEX_WAITERS;
- 
--		return lock_pi_update_atomic(uaddr, uval, newval);
-+		return !lock_pi_update_atomic(uaddr, uval, newval);
+diff --git a/sound/soc/codecs/tlv320aic32x4.c b/sound/soc/codecs/tlv320aic32x4.c
+index 1d9b117..1e50f15 100644
+--- a/sound/soc/codecs/tlv320aic32x4.c
++++ b/sound/soc/codecs/tlv320aic32x4.c
+@@ -626,21 +626,18 @@ static int aic32x4_probe(struct snd_soc_codec *codec)
+ 		snd_soc_write(codec, AIC32X4_MICBIAS, AIC32X4_MICBIAS_LDOIN |
+ 						      AIC32X4_MICBIAS_2075V);
  	}
+-	if (aic32x4->power_cfg & AIC32X4_PWR_AVDD_DVDD_WEAK_DISABLE) {
++	if (aic32x4->power_cfg & AIC32X4_PWR_AVDD_DVDD_WEAK_DISABLE)
+ 		snd_soc_write(codec, AIC32X4_PWRCFG, AIC32X4_AVDDWEAKDISABLE);
+-	}
  
- 	/*
+ 	tmp_reg = (aic32x4->power_cfg & AIC32X4_PWR_AIC32X4_LDO_ENABLE) ?
+ 			AIC32X4_LDOCTLEN : 0;
+ 	snd_soc_write(codec, AIC32X4_LDOCTL, tmp_reg);
+ 
+ 	tmp_reg = snd_soc_read(codec, AIC32X4_CMMODE);
+-	if (aic32x4->power_cfg & AIC32X4_PWR_CMMODE_LDOIN_RANGE_18_36) {
++	if (aic32x4->power_cfg & AIC32X4_PWR_CMMODE_LDOIN_RANGE_18_36)
+ 		tmp_reg |= AIC32X4_LDOIN_18_36;
+-	}
+-	if (aic32x4->power_cfg & AIC32X4_PWR_CMMODE_HP_LDOIN_POWERED) {
++	if (aic32x4->power_cfg & AIC32X4_PWR_CMMODE_HP_LDOIN_POWERED)
+ 		tmp_reg |= AIC32X4_LDOIN2HP;
+-	}
+ 	snd_soc_write(codec, AIC32X4_CMMODE, tmp_reg);
+ 
+ 	/* Mic PGA routing */
 -- 
-2.0.0.rc2
-
-
-
-
---
-Darren
-
-> +       }
->  
->         /*
-> -        * We took the lock due to forced take over.
-> +        * First waiter. Set the waiters bit before attaching ourself to
-> +        * the owner. If owner tries to unlock, it will be forced into
-> +        * the kernel and blocked on hb->lock.
->          */
-> -       if (unlikely(lock_taken))
-> -               return 1;
-> -
-> +       newval = uval | FUTEX_WAITERS;
-> +       ret = lock_pi_update_atomic(uaddr, uval, newval);
-> +       if (ret)
-> +               return ret;
->         /*
-> -        * We dont have the lock. Look up the PI state (or create it if
-> -        * we are the first waiter):
-> +        * If the update of the user space value succeeded, we try to
-> +        * attach to the owner. If that fails, no harm done, we only
-> +        * set the FUTEX_WAITERS bit in the user space variable.
->          */
-> -       ret = lookup_pi_state(uval, hb, key, ps);
-> -
-> -       if (unlikely(ret)) {
-> -               switch (ret) {
-> -               case -ESRCH:
-> -                       /*
-> -                        * We failed to find an owner for this
-> -                        * futex. So we have no pi_state to block
-> -                        * on. This can happen in two cases:
-> -                        *
-> -                        * 1) The owner died
-> -                        * 2) A stale FUTEX_WAITERS bit
-> -                        *
-> -                        * Re-read the futex value.
-> -                        */
-> -                       if (get_futex_value_locked(&curval, uaddr))
-> -                               return -EFAULT;
-> -
-> -                       /*
-> -                        * If the owner died or we have a stale
-> -                        * WAITERS bit the owner TID in the user space
-> -                        * futex is 0.
-> -                        */
-> -                       if (!(curval & FUTEX_TID_MASK)) {
-> -                               force_take = 1;
-> -                               goto retry;
-> -                       }
-> -               default:
-> -                       break;
-> -               }
-> -       }
-> -
-> -       return ret;
-> +       return attach_to_pi_owner(uval, key, ps);
->  }
->  
->  /**
-> @@ -2316,8 +2281,10 @@ retry_private:
->                         goto uaddr_faulted;
->                 case -EAGAIN:
->                         /*
-> -                        * Task is exiting and we just wait for the
-> -                        * exit to complete.
-> +                        * Two reasons for this:
-> +                        * - Task is exiting and we just wait for the
-> +                        *   exit to complete.
-> +                        * - The user space value changed.
->                          */
->                         queue_unlock(hb);
->                         put_futex_key(&q.key);
-> 
-
+1.7.9.5
 
