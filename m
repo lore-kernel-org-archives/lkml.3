@@ -1,65 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361AbaFMQS2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 12:18:28 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:60878 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901AbaFMQS1 (ORCPT
+	id S1753344AbaFMQUZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 12:20:25 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:53099 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751533AbaFMQUX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 12:18:27 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <539B244B.7060000@roeck-us.net>
-Date: Fri, 13 Jun 2014 09:18:19 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Fri, 13 Jun 2014 12:20:23 -0400
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
-        shuah.kh@samsung.com, stable@vger.kernel.org
-Subject: Re: [PATCH 3.15 00/12] 3.15.1-stable review
-References: <20140612232044.886466924@linuxfoundation.org> <539B15B2.9080205@roeck-us.net> <20140613160749.GA18210@kroah.com>
-In-Reply-To: <20140613160749.GA18210@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAKgNAkgMA39AfoSoA5Pe1r9N+ZzfYQNvNPvcRN7tOvRb8+v06Q@mail.gmail.com>
+References: <1402655819-14325-1-git-send-email-dh.herrmann@gmail.com>
+	<1402655819-14325-4-git-send-email-dh.herrmann@gmail.com>
+	<CAKgNAkgnnWjrbE+2KAETsmiyrnrMQu0h7-MrYLvkiwj--_nxcQ@mail.gmail.com>
+	<CANq1E4R2K+eq9AxtFewp4YUL2cujg+dg+sN19Anvf-zWuvgyWw@mail.gmail.com>
+	<CAKgNAkgMA39AfoSoA5Pe1r9N+ZzfYQNvNPvcRN7tOvRb8+v06Q@mail.gmail.com>
+Date: Fri, 13 Jun 2014 09:20:22 -0700
+Message-ID: <CALAqxLUDDYhDbU-fa50ZHVe+yOmv0m3aOO3WmGpRrk-cPzsMAg@mail.gmail.com>
+Subject: Re: [PATCH v3 3/7] shm: add memfd_create() syscall
+From: John Stultz <john.stultz@linaro.org>
+To: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: David Herrmann <dh.herrmann@gmail.com>,
+        lkml <linux-kernel@vger.kernel.org>, Ryan Lortie <desrt@desrt.ca>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Daniel Mack <zonque@gmail.com>, Kay Sievers <kay@vrfy.org>,
+        Hugh Dickins <hughd@google.com>,
+        Tony Battersby <tonyb@cybernetics.com>,
+        Andy Lutomirski <luto@amacapital.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/13/2014 09:07 AM, Greg Kroah-Hartman wrote:
-> On Fri, Jun 13, 2014 at 08:16:02AM -0700, Guenter Roeck wrote:
->> On 06/12/2014 04:21 PM, Greg Kroah-Hartman wrote:
->>> This is the start of the stable review cycle for the 3.15.1 release.
->>> There are 12 patches in this series, all will be posted as a response
->>> to this one.  If anyone has any issues with these being applied, please
->>> let me know.
->>>
->>> Responses should be made by Sat Jun 14 23:20:28 UTC 2014.
->>> Anything received after that time might be too late.
->>>
->>
->> Build results:
->> 	total: 143 pass: 135 skipped: 5 fail: 3
->> Failed builds:
->> 	powerpc:allmodconfig (binutils 2.23)
->> 	powerpc:allmodconfig (binutils 2.24)
->> 	unicore32:defconfig
+On Fri, Jun 13, 2014 at 7:20 AM, Michael Kerrisk (man-pages)
+<mtk.manpages@gmail.com> wrote:
 >
-> Are these powerpc build failures to be expected?  I'm guessing that
-> unicore32 just never has built properly, right?
->
+> The general notion these days is that a (comprehensive) manual page
+> _should_ come *with* the system call, rather than after the fact. And
+> there's a lot of value in that. I've found no end of bugs and design
+> errors while writing (comprehensive) man pages after the fact (by
+> which time it's too late to fix the design errors), and also found
+> quite a few of those issues when I've managed to work with folk at the
+> same time as they write the syscall. Bottom line: you really should
+> write formal documentation now, as part of the process of code
+> submission. It improves the chance of finding implementation and
+> design bugs, and may well widen your circle of reviewers.
 
-For powerpc, yes. Ben is working on a patch to fix the problem, which turns out
-to be tricky.
+I very much agree here. One practical issue I've noticed is that
+having separate targets for both the code changes and the manpages can
+be an extra barrier for folks getting changes correctly documented as
+the change is being submitted. Reviewers may say "be sure to send
+updates to the man pages" but its not always easy to remember to
+follow up and make sure the submitter got the changes (which match the
+merged patches) to you as well.
 
-unicore32 - correct, it doesn't build at least since 3.0. The maintainer submitted
-a set of patches to Linus to fix the problem a couple of weeks ago, but for some
-reason Linus doesn't accept it. I guess it will be up to Linus and the unicore
-maintainer to decide the fate of the architecture. I don't want to drop the build;
-this way people are and will be painfully aware that there is an architecture which
-did not build for at least 15 releases.
+I've been thinking it might be nice to have the kernel syscall man
+pages included in the kernel source tree, then have them
+copied/imported over to the man-pages project (similar to how glibc
+imports uapi kernel headers).  They could even be kept in the
+include/uapi directory, and checkpatch could ensure that changes that
+touch include/uapi also have modifications to something in the
+manpages directory. This way folks would be able to include the man
+page change with the code change, making it easier for developers to
+do the right thing, making it easier for reviewers to ensure its
+correct, and making it easier for maintainers to ensure man page
+documentation is properly in sync.
 
-[ Not that score is any better, really, but I have no means to build it. ]
+Or is this something that has been hashed over already? I do admit
+this would disrupt your process a bit.
 
-Guenter
-
+thanks
+-john
