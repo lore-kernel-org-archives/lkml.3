@@ -1,55 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752404AbaFMOLG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 10:11:06 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:62402 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752026AbaFMOLE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 10:11:04 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Marcel Ziswiler <marcel@ziswiler.com>
-Subject: Re: [PATCH v2 1/3] arm: multi_v7: enable igb, stmpe, lm95245, pwm leds
-Date: Fri, 13 Jun 2014 16:10:17 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
-Cc: swarren@wwwdotorg.org, thierry.reding@gmail.com, arm@kernel.org,
-        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, stefan@agner.ch
-References: <1741a33cd88cd5525f3c50c0e0cacc0853a3512a.1402350905.git.marcel@ziswiler.com>
-In-Reply-To: <1741a33cd88cd5525f3c50c0e0cacc0853a3512a.1402350905.git.marcel@ziswiler.com>
+	id S1752036AbaFMORM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 10:17:12 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:35340 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750901AbaFMORL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 10:17:11 -0400
+Date: Fri, 13 Jun 2014 10:17:00 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Chen Yucong <slaoub@gmail.com>
+Cc: akpm@linux-foundation.org, mgorman@suse.de, mhocko@suse.cz,
+        riel@redhat.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [RESEND PATCH v2] mm/vmscan.c: wrap five parameters into
+ writeback_stats for reducing the stack consumption
+Message-ID: <20140613141700.GO2878@cmpxchg.org>
+References: <1402639088-4845-1-git-send-email-slaoub@gmail.com>
+ <1402667259.6072.20.camel@debian>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201406131610.18048.arnd@arndb.de>
-X-Provags-ID: V02:K0:fVBo8vrdcujOURFpFhkI68OLbA+m/D2ET5lki3vCCIB
- ZxMuC04jVi4GwZxYkSg23uXJOMcF7m6gsozdqycTvfaiMeCs54
- 817xIsDvRZ/FluJ1saJ1ECyueBtGbvjXW4zliAlvDQU12CcZht
- 25q9ehplqYYOq9/KJM15W22F/D9wqAWl5eX3jij9sPuFsFVMYP
- 3S/0pk7fMaLVvJn52TeJCooooXdo7i8MtnOAWpckY/EggC8Gra
- QJ9A/RoBDKJDwWmVI9lu56a0PKikrHQMyNRU60hvx+IVQPhMhA
- HX3rBwakQI07dzT0imFHqV/A5r2GbI3T3C4a5FN9ZJV7LWGv9m
- dYqp0zBnxZODJfp8ljec=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402667259.6072.20.camel@debian>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 10 June 2014, Marcel Ziswiler wrote:
-> The NVIDIA Tegra 3 based Apalis T30 module contains an Intel i210 resp.
-> i211 gigabit Ethernet controller, an STMPE811 ADC/touch controller, PWM
-> LEDs generically accessible from user space and an LM95245 temperature
-> sensor chip. The later three can also be found on the Colibri T30
-> module.
+On Fri, Jun 13, 2014 at 09:47:39PM +0800, Chen Yucong wrote:
+> Hi all,
 > 
-> While at it move the NEON entry down to its proper place to have it all
-> nicely ordered again.
-> 
-> Signed-off-by: Marcel Ziswiler <marcel@ziswiler.com>
+> On Fri, 2014-06-13 at 13:58 +0800, Chen Yucong wrote:
+> > shrink_page_list() has too many arguments that have already reached ten.
+> > Some of those arguments and temporary variables introduces extra 80 bytes
+> > on the stack. This patch wraps five parameters into writeback_stats and removes
+> > some temporary variables, thus making the relative functions to consume fewer
+> > stack space.
+> > 
+> I this message, I have renamed shrink_result to writeback_stats
+> according to Johannes Weiner's reply. Think carefully, this change is
+> too hasty. Although it now just contains statistics on the writeback
+> states of the scanned pages, it may also be used for gathering other
+> information at some point in the future. So I think shrink_result is a
+> little bit better!
 
-Stephen, Thierry,
-
-do you want me to queue it up directly, or do you want to put it into
-a tegra fixes branch?
-
-	Arnd
+Then we can always rename it "at some point in the future", the name
+is not set in stone.  At this time, it only contains writeback stats,
+and I think it should be named accordingly.
