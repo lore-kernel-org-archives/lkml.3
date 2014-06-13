@@ -1,98 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754083AbaFMVoz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 17:44:55 -0400
-Received: from gate.crashing.org ([63.228.1.57]:58734 "EHLO gate.crashing.org"
+	id S1754089AbaFMVp7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 17:45:59 -0400
+Received: from smtp205.alice.it ([82.57.200.101]:64750 "EHLO smtp205.alice.it"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751986AbaFMVoy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 17:44:54 -0400
-Message-ID: <1402695853.20360.17.camel@pasglop>
-Subject: Re: kmemleak: Unable to handle kernel paging request
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Denis Kirjanov <kda@linux-powerpc.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        linuxppc-dev@lists.ozlabs.org, Paul Mackerras <paulus@samba.org>
-Date: Sat, 14 Jun 2014 07:44:13 +1000
-In-Reply-To: <20140613085640.GA21018@arm.com>
-References: <CAOJe8K3fy3XFxDdVc3y1hiMAqUCPmkUhECU7j5TT=E=gxwBqHg@mail.gmail.com>
-	 <20140611173851.GA5556@MacBook-Pro.local>
-	 <CAOJe8K1TgTDX5=LdE9r6c0ami7TRa7zr0hL_uu6YpiWrsePAgQ@mail.gmail.com>
-	 <B01EB0A1-992B-49F4-93AE-71E4BA707795@arm.com>
-	 <CAOJe8K3LDhhPWbtdaWt23mY+2vnw5p05+eyk2D8fovOxC10cgA@mail.gmail.com>
-	 <CAOJe8K2WaJUP9_buwgKw89fxGe56mGP1Mn8rDUO9W48KZzmybA@mail.gmail.com>
-	 <20140612143916.GB8970@arm.com>
-	 <CAOJe8K3zN+fFWumKaGx3Tmv5JRZu10_FZ6R3Tjjc+nc-KVB0hg@mail.gmail.com>
-	 <20140613085640.GA21018@arm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2 
+	id S1751986AbaFMVp5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 17:45:57 -0400
+Date: Fri, 13 Jun 2014 23:45:38 +0200
+From: Antonio Ospite <ao2@ao2.it>
+To: Jamie Lentin <jm@lentin.co.uk>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] Add support for Compact (Bluetooth|USB) keyboard
+ with Trackpoint
+Message-Id: <20140613234538.c960b52757f554699f2dbd1f@ao2.it>
+In-Reply-To: <alpine.DEB.2.02.1406112253440.4059@marmot.wormnet.eu>
+References: <1402439094-25464-1-git-send-email-jm@lentin.co.uk>
+	<1402439094-25464-3-git-send-email-jm@lentin.co.uk>
+	<20140611103616.79b40e7b0bbf3447837921fc@ao2.it>
+	<alpine.DEB.2.02.1406112253440.4059@marmot.wormnet.eu>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
+ ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-06-13 at 09:56 +0100, Catalin Marinas wrote:
+On Thu, 12 Jun 2014 09:56:41 +0100 (BST)
+Jamie Lentin <jm@lentin.co.uk> wrote:
 
-> OK, so that's the DART table allocated via alloc_dart_table(). Is
-> dart_tablebase removed from the kernel linear mapping after allocation?
-
-Yes.
-
-> If that's the case, we need to tell kmemleak to ignore this block (see
-> patch below, untested). But I still can't explain how commit
-> d4c54919ed863020 causes this issue.
+> On Wed, 11 Jun 2014, Antonio Ospite wrote:
 > 
-> (also cc'ing the powerpc list and maintainers)
 
-We remove the DART from the linear mapping because it has to be mapped
-non-cachable and having it in the linear mapping would cause cache
-paradoxes. We also can't just change the caching attributes in the
-linear mapping because we use 16M pages for it and 970 CPUs don't
-support cache-inhibited 16M pages :-( And due to the MMU segmentation
-model, we also can't mix & match page sizes in that area.
+[...]
 
-So we just unmap it, and ioremap it elsewhere.
-
-Cheers,
-Ben.
-
-> ---------------8<--------------------------
+> >> +static int tpcompactkbd_input_mapping(struct hid_device *hdev,
+> >
+> > Maybe name these functions like tpkbd_input_mapping_compact()?
+> >
+> > This way the namespace is more consistent, and follows the logic of
+> > patch 1/2 more closely.
+> >
+> > Use this scheme at least for functions which have a _tp() counterpart.
 > 
-> >From 09a7f1c97166c7bdca7ca4e8a4ff2774f3706ea3 Mon Sep 17 00:00:00 2001
-> From: Catalin Marinas <catalin.marinas@arm.com>
-> Date: Fri, 13 Jun 2014 09:44:21 +0100
-> Subject: [PATCH] powerpc/kmemleak: Do not scan the DART table
+> Previously the tpkbd driver had various functions marked "_tp" to indicate 
+> that it's for the "mouse" half of the keyboard as the kernel sees it, 
+> however it does nothing special with the keyboard half. I was intending 
+> (somewhat sloppily) to repurpose this into having versions of each 
+> function for each keyboard, and a common function to switch between them. 
+> Should make it fairly easy to add extra keyboards in the future.
 > 
-> The DART table allocation is registered to kmemleak via the
-> memblock_alloc_base() call. However, the DART table is later unmapped
-> and dart_tablebase VA no longer accessible. This patch tells kmemleak
-> not to scan this block and avoid an unhandled paging request.
+> The problem, as ever, is choosing decent names for them. It should 
+> probably be either:-
 > 
-> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> ---
->  arch/powerpc/sysdev/dart_iommu.c | 5 +++++
->  1 file changed, 5 insertions(+)
+> * tpkbd_input_mapping_usbkbd
+> * tpkbd_input_mapping_compactkbd
+> ...and tpkbd_input_mapping switches between them
 > 
-> diff --git a/arch/powerpc/sysdev/dart_iommu.c b/arch/powerpc/sysdev/dart_iommu.c
-> index 62c47bb76517..9e5353ff6d1b 100644
-> --- a/arch/powerpc/sysdev/dart_iommu.c
-> +++ b/arch/powerpc/sysdev/dart_iommu.c
-> @@ -476,6 +476,11 @@ void __init alloc_dart_table(void)
->  	 */
->  	dart_tablebase = (unsigned long)
->  		__va(memblock_alloc_base(1UL<<24, 1UL<<24, 0x80000000L));
-> +	/*
-> +	 * The DART space is later unmapped from the kernel linear mapping and
-> +	 * accessing dart_tablebase during kmemleak scanning will fault.
-> +	 */
-> +	kmemleak_no_scan((void *)dart_tablebase);
->  
->  	printk(KERN_INFO "DART table allocated at: %lx\n", dart_tablebase);
->  }
+> or rename the driver to hid-lenovo and do:-
+> 
 
+I am OK with a rename. Most files in drivers/hid are per-vendor after
+all. Jiri?
 
+> * lenovo_input_mapping_tpkbd
+> * lenovo_input_mapping_compacttp
+
+I think you meant lenovo_input_mapping_compactkbd ? :)
+
+> ...and lenovo_input_mapping switches between them
+> 
+> The latter seems a bit too invasive, but I'm not sure how obvious with the 
+> former that it'd be that the "Compact USB keyboard" is in-fact a 
+> compactkbd not a usbkbd. The former is probably what I'll go for unless 
+> you have any thoughts.
+> 
+[...]
+
+Ciao,
+   Antonio
+
+-- 
+Antonio Ospite
+http://ao2.it
+
+A: Because it messes up the order in which people normally read text.
+   See http://en.wikipedia.org/wiki/Posting_style
+Q: Why is top-posting such a bad thing?
