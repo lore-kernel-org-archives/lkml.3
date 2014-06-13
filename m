@@ -1,199 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751915AbaFMNiV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 09:38:21 -0400
-Received: from mail-la0-f74.google.com ([209.85.215.74]:59661 "EHLO
-	mail-la0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751896AbaFMNiO (ORCPT
+	id S1752889AbaFMNjz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 09:39:55 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:34015 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752194AbaFMNjx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 09:38:14 -0400
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Krzysztof Opasiak <k.opasiak@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>
-Subject: [PATCHv4 5/6] tools: ffs-test: add compatibility code for old kernels
-Date: Fri, 13 Jun 2014 15:38:08 +0200
-Message-Id: <1402666689-4971-6-git-send-email-mina86@mina86.com>
-X-Mailer: git-send-email 2.0.0.526.g5318336
-In-Reply-To: <1402666689-4971-1-git-send-email-mina86@mina86.com>
-References: <1402666689-4971-1-git-send-email-mina86@mina86.com>
+	Fri, 13 Jun 2014 09:39:53 -0400
+Date: Fri, 13 Jun 2014 09:39:52 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Yang,Wei" <Wei.Yang@windriver.com>
+cc: balbi@ti.com, <mina86@mina86.com>, <andrzej.p@samsung.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] USB:gadget: Fix a warning while loading g_mass_storage
+In-Reply-To: <539A98C3.8080505@windriver.com>
+Message-ID: <Pine.LNX.4.44L0.1406130935500.1059-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If ffs-test is used with a kernel prior to 3.14, which do not
-support the new descriptors format, it will fail when trying to
-write the descriptors.  Add a function that converts the new
-descriptors to the legacy ones and use it to retry writing the
-descriptors using the legacy format.
+On Fri, 13 Jun 2014, Yang,Wei wrote:
 
-Also add “-l” flag to ffs-test which will cause the tool to
-never try the new format and instead immediatelly try the
-legacy one.  This should be useful to test whether parsing
-of the old format still works on given 3.14+ kernel.
+> On 06/09/2014 02:19 PM, Wei.Yang@windriver.com wrote:
+> > From: Yang Wei <Wei.Yang@windriver.com>
+> >
+> > While loading g_mass_storage module, the following warning
+> > is triggered.
+> >
+> > WARNING: at drivers/usb/gadget/composite.c:
+> > usb_composite_setup_continue: Unexpected call
+> > Modules linked in: fat vfat minix nls_cp437 nls_iso8859_1 g_mass_storage
+> > [<800179cc>] (unwind_backtrace+0x0/0x104) from [<80619608>] (dump_stack+0x20/0x24)
+> > [<80619608>] (dump_stack+0x20/0x24) from [<80025100>] (warn_slowpath_common+0x64/0x74)
+> > [<80025100>] (warn_slowpath_common+0x64/0x74) from [<800251cc>] (warn_slowpath_fmt+0x40/0x48)
+> > [<800251cc>] (warn_slowpath_fmt+0x40/0x48) from [<7f047774>] (usb_composite_setup_continue+0xb4/0xbc [g_mass_storage])
+> > [<7f047774>] (usb_composite_setup_continue+0xb4/0xbc [g_mass_storage]) from [<7f047ad4>] (handle_exception+0x358/0x3e4 [g_mass_storage])
+> > [<7f047ad4>] (handle_exception+0x358/0x3e4 [g_mass_storage]) from [<7f048080>] (fsg_main_thread+0x520/0x157c [g_mass_storage])
+> > [<7f048080>] (fsg_main_thread+0x520/0x157c [g_mass_storage]) from [<8004bc90>] (kthread+0x98/0x9c)
+> > [<8004bc90>] (kthread+0x98/0x9c) from [<8000faec>] (kernel_thread_exit+0x0/0x8)
+> >
+> > The root cause is that the existing code fails to take into
+> > account the possibility that common->new_fsg can change while
+> > do_set_interface() is running, because the spinlock isn't held
+> > at this point.
+> >
+> > Signed-off-by: Yang Wei <Wei.Yang@windriver.com>
+> > Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+> > ---
+> >   drivers/usb/gadget/f_mass_storage.c |    6 ++++--
+> >   1 file changed, 4 insertions(+), 2 deletions(-)
+> >
+> > Hi Alan,
+> >
+> > Thanks for your review, there are a few changes in v3:
+> >
+> > 1) Fix a coding style issue.
+> > 2) Refine the commit log
+> >
+> > Regards
+> > Wei
+> 
+> Ping, Alan, What do you think of it?
 
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
----
- tools/usb/ffs-test.c | 110 ++++++++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 105 insertions(+), 5 deletions(-)
+You should not have added my "Signed-off-by:"; I did not give you 
+permission to do that.
 
-diff --git a/tools/usb/ffs-test.c b/tools/usb/ffs-test.c
-index 708d317..88d5e71 100644
---- a/tools/usb/ffs-test.c
-+++ b/tools/usb/ffs-test.c
-@@ -29,6 +29,7 @@
- #include <fcntl.h>
- #include <pthread.h>
- #include <stdarg.h>
-+#include <stdbool.h>
- #include <stdio.h>
- #include <stdlib.h>
- #include <string.h>
-@@ -172,6 +173,89 @@ static const struct {
- 	},
- };
- 
-+static size_t descs_to_legacy(void **legacy, const void *descriptors_v2)
-+{
-+	const unsigned char *descs_end, *descs_start;
-+	__u32 length, fs_count = 0, hs_count = 0, count;
-+
-+	/* Read v2 header */
-+	{
-+		const struct {
-+			const struct usb_functionfs_descs_head_v2 header;
-+			const __le32 counts[];
-+		} __attribute__((packed)) *const in = descriptors_v2;
-+		const __le32 *counts = in->counts;
-+		__u32 flags;
-+
-+		if (le32_to_cpu(in->header.magic) !=
-+		    FUNCTIONFS_DESCRIPTORS_MAGIC_V2)
-+			return 0;
-+		length = le32_to_cpu(in->header.length);
-+		if (length <= sizeof in->header)
-+			return 0;
-+		length -= sizeof in->header;
-+		flags = le32_to_cpu(in->header.flags);
-+		if (flags & ~(FUNCTIONFS_HAS_FS_DESC | FUNCTIONFS_HAS_HS_DESC |
-+			      FUNCTIONFS_HAS_SS_DESC))
-+			return 0;
-+
-+#define GET_NEXT_COUNT_IF_FLAG(ret, flg) do {		\
-+			if (!(flags & (flg)))		\
-+				break;			\
-+			if (length < 4)			\
-+				return 0;		\
-+			ret = le32_to_cpu(*counts);	\
-+			length -= 4;			\
-+			++counts;			\
-+		} while (0)
-+
-+		GET_NEXT_COUNT_IF_FLAG(fs_count, FUNCTIONFS_HAS_FS_DESC);
-+		GET_NEXT_COUNT_IF_FLAG(hs_count, FUNCTIONFS_HAS_HS_DESC);
-+		GET_NEXT_COUNT_IF_FLAG(count, FUNCTIONFS_HAS_SS_DESC);
-+
-+		count = fs_count + hs_count;
-+		if (!count)
-+			return 0;
-+		descs_start = (const void *)counts;
-+
-+#undef GET_NEXT_COUNT_IF_FLAG
-+	}
-+
-+	/*
-+	 * Find the end of FS and HS USB descriptors.  SS descriptors
-+	 * are ignored since legacy format does not support them.
-+	 */
-+	descs_end = descs_start;
-+	do {
-+		if (length < *descs_end)
-+			return 0;
-+		length -= *descs_end;
-+		descs_end += *descs_end;
-+	} while (--count);
-+
-+	/* Allocate legacy descriptors and copy the data. */
-+	{
-+#pragma GCC diagnostic push
-+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-+		struct {
-+			struct usb_functionfs_descs_head header;
-+			__u8 descriptors[];
-+		} __attribute__((packed)) *out;
-+#pragma GCC diagnostic pop
-+
-+		length = sizeof out->header + (descs_end - descs_start);
-+		out = malloc(length);
-+		out->header.magic = cpu_to_le32(FUNCTIONFS_DESCRIPTORS_MAGIC);
-+		out->header.length = cpu_to_le32(length);
-+		out->header.fs_count = cpu_to_le32(fs_count);
-+		out->header.hs_count = cpu_to_le32(hs_count);
-+		memcpy(out->descriptors, descs_start, descs_end - descs_start);
-+		*legacy = out;
-+	}
-+
-+	return length;
-+}
-+
- 
- #define STR_INTERFACE_ "Source/Sink"
- 
-@@ -491,12 +575,29 @@ ep0_consume(struct thread *ignore, const void *buf, size_t nbytes)
- 	return nbytes;
- }
- 
--static void ep0_init(struct thread *t)
-+static void ep0_init(struct thread *t, bool legacy_descriptors)
- {
-+	void *legacy;
- 	ssize_t ret;
-+	size_t len;
-+
-+	if (legacy_descriptors) {
-+		info("%s: writing descriptors\n", t->filename);
-+		goto legacy;
-+	}
- 
--	info("%s: writing descriptors\n", t->filename);
-+	info("%s: writing descriptors (in v2 format)\n", t->filename);
- 	ret = write(t->fd, &descriptors, sizeof descriptors);
-+
-+	if (ret < 0 && errno == EINVAL) {
-+		warn("%s: new format rejected, trying legacy\n", t->filename);
-+legacy:
-+		len = descs_to_legacy(&legacy, &descriptors);
-+		if (len) {
-+			ret = write(t->fd, legacy, len);
-+			free(legacy);
-+		}
-+	}
- 	die_on(ret < 0, "%s: write: descriptors", t->filename);
- 
- 	info("%s: writing strings\n", t->filename);
-@@ -507,14 +608,15 @@ static void ep0_init(struct thread *t)
- 
- /******************** Main **************************************************/
- 
--int main(void)
-+int main(int argc, char **argv)
- {
-+	bool legacy_descriptors;
- 	unsigned i;
- 
--	/* XXX TODO: Argument parsing missing */
-+	legacy_descriptors = argc > 2 && !strcmp(argv[1], "-l");
- 
- 	init_thread(threads);
--	ep0_init(threads);
-+	ep0_init(threads, legacy_descriptors);
- 
- 	for (i = 1; i < sizeof threads / sizeof *threads; ++i)
- 		init_thread(threads + i);
--- 
-2.0.0.526.g5318336
+Michal's comment about common->new_fsg not being protected by the lock 
+is a good one.  It would be better for the patch description to say:
+
+	The value of common->new_fsg that gets tested after
+	do_set_interface() returns needs to be the same as the value
+	used by do_set_interface().
+
+With that change, you may add
+
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+
+Alan Stern
 
