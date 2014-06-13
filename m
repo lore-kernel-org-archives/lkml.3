@@ -1,51 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753289AbaFMQBO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 12:01:14 -0400
-Received: from honeydew.cs.uni-dortmund.de ([129.217.4.43]:47855 "EHLO
-	honeydew.cs.uni-dortmund.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751300AbaFMQBN (ORCPT
+	id S1753328AbaFMQDO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 12:03:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54821 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751520AbaFMQDN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 12:01:13 -0400
-X-Greylist: delayed 482 seconds by postgrey-1.27 at vger.kernel.org; Fri, 13 Jun 2014 12:01:12 EDT
-From: Benedict Boerger <benedict.boerger@cs.tu-dortmund.de>
-To: linux-kernel@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, matlackdavid@gmail.com, liodot@gmail.com,
-        charrer@alacritech.com, peter.p.waskiewicz.jr@intel.com,
-        devel@driverdev.osuosl.org,
-        Benedict Boerger <benedict.boerger@cs.tu-dortmund.de>
-Subject: [PATCH] staging: slicoss: Fix coding style issue 
-Date: Fri, 13 Jun 2014 17:52:33 +0200
-Message-Id: <1402674753-3466-1-git-send-email-benedict.boerger@cs.tu-dortmund.de>
-X-Mailer: git-send-email 1.9.1
+	Fri, 13 Jun 2014 12:03:13 -0400
+MIME-Version: 1.0
+In-Reply-To: <248c69602c96d68aea1ffb4cb75e77ec38b6b75f.1402672110.git.d.kasatkin@samsung.com>
+References: <CACVXFVPn4muw+zD+TPAJh2miB5R326iFT4ZBS-Tdehz0XrsyDQ@mail.gmail.com>
+	<cover.1402672110.git.d.kasatkin@samsung.com>
+	<248c69602c96d68aea1ffb4cb75e77ec38b6b75f.1402672110.git.d.kasatkin@samsung.com>
+Date: Sat, 14 Jun 2014 00:03:10 +0800
+Message-ID: <CACVXFVMQYk=k8fONkoHVHo7wELK7TgWVQpKeCMAZaTyXHZgePQ@mail.gmail.com>
+Subject: Re: [PATCH v2 1/1] firmware: read firmware size using i_size_read()
+From: Ming Lei <ming.lei@canonical.com>
+To: Dmitry Kasatkin <d.kasatkin@samsung.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix a coding style issue found by checkpatch.pl.
-Use ether_addr_copy instead of memcpy.
+On Fri, Jun 13, 2014 at 11:09 PM, Dmitry Kasatkin
+<d.kasatkin@samsung.com> wrote:
+> There is no need to read attr because inode structure contains size
+> of the file. Use i_size_read() instead.
+>
+> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
 
-Done to complete a eudyptula task.
+Acked-by: Ming Lei <ming.lei@canonical.com>
 
-Signed-off-by: Benedict Boerger <benedict.boerger@cs.tu-dortmund.de>
 
----
- drivers/staging/slicoss/slicoss.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/staging/slicoss/slicoss.c b/drivers/staging/slicoss/slicoss.c
-index 48841e7..02807a3 100644
---- a/drivers/staging/slicoss/slicoss.c
-+++ b/drivers/staging/slicoss/slicoss.c
-@@ -1790,7 +1790,7 @@ static int slic_mcast_add_list(struct adapter *adapter, char *address)
- 	if (mcaddr == NULL)
- 		return 1;
- 
--	memcpy(mcaddr->address, address, ETH_ALEN);
-+	ether_addr_copy(mcaddr->address, address);
- 
- 	mcaddr->next = adapter->mcastaddrs;
- 	adapter->mcastaddrs = mcaddr;
--- 
-1.9.1
-
+Thanks,
+--
+Ming Lei
