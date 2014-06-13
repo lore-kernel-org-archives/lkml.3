@@ -1,104 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752636AbaFMH3t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 03:29:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45715 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751151AbaFMH3s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 03:29:48 -0400
-Message-ID: <539AA863.6070806@redhat.com>
-Date: Fri, 13 Jun 2014 09:29:39 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751460AbaFMHck (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 03:32:40 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:49033 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750852AbaFMHcj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 03:32:39 -0400
+Message-ID: <539AA8DF.4060805@huawei.com>
+Date: Fri, 13 Jun 2014 15:31:43 +0800
+From: Zhang Zhen <zhenzhang.zhang@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Aaron Lu <aaron.lu@intel.com>, Kalle Valo <kvalo@adurom.com>
-CC: ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Intel-gfx] video: X sets brightness to zero after resume
-References: <871tuu1epc.fsf@purkki.adurom.net> <539A53B3.6030902@intel.com>
-In-Reply-To: <539A53B3.6030902@intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: David Rientjes <rientjes@google.com>
+CC: <gregkh@linuxfoundation.org>, <laijs@cn.fujitsu.com>,
+        <sjenning@linux.vnet.ibm.com>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, Wang Nan <wangnan0@huawei.com>
+Subject: Re: Proposal to realize hot-add *several sections one time*
+References: <53981D81.5060708@huawei.com> <alpine.DEB.2.02.1406111503050.27885@chino.kir.corp.google.com> <53991353.5040607@huawei.com> <alpine.DEB.2.02.1406120002410.23724@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1406120002410.23724@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.69.77]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 06/13/2014 03:28 AM, Aaron Lu wrote:
-> On 06/12/2014 08:42 PM, Kalle Valo wrote:
->> Hi Aaron,
->>
->> after your commit 0e9f81d3b7c ("ACPI / video: Add systems that should
->> favour native backlight interface") I have had an regression that every
->> time after resume the display brightness has been set to zero and I need
->> to manually set it to non-zero to see something again.
->>
->> Finally I started to investigate this more closely and it seems that X
->> sets it to zero for some reason. I added a WARN_ON() and few printks to
->> brightness_store() in drivers/video/backlight/backlight.c and this is
->> what I see during resume:
->>
->> [   49.228221] ------------[ cut here ]------------
->> [   49.228229] WARNING: CPU: 1 PID: 1133 at
->> drivers/video/backlight/backlight.c:173 brightness_store+0x3c/0x120(
->> )
->> [   49.228230] Modules linked in: ctr ccm uvcvideo videobuf2_core
->> videodev videobuf2_vmalloc videobuf2_memops fu
->> se arc4 iwldvm sha256_generic kvm_intel kvm mac80211 snd_hda_codec_hdmi
->> snd_hda_codec_realtek snd_hda_codec_gene
->> ric iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 snd_hda_intel
->> snd_hda_controller nf_nat_ipv4 nf_nat snd_hda_cod
->> ec nf_conntrack snd_hwdep snd_pcm_oss iwlwifi snd_mixer_oss snd_pcm
->> ip_tables x_tables thinkpad_acpi snd_seq_dum
->> my snd_seq_oss snd_seq_midi snd_rawmidi snd_seq_midi_event snd_seq
->> cfg80211 snd_timer snd_seq_device snd bnep rfcomm bluetooth psmouse
->> soundcore nvram ehci_pci ehci_hcd rfkill wmi binfmt_misc ext4 jbd2
->> mbcache sd_mod fbcon tileblit font bitblit softcursor i915
->> drm_kms_helper drm cfbcopyarea i2c_algo_bit intel_gtt agpgart i2c_core
->> video xhci_hcd cfbimgblt cfbfillrect e1000e sdhci_pci sdhci ptp pps_core
->> mmc_core ahci libahci
->> [   49.228281] CPU: 1 PID: 1133 Comm: Xorg Tainted: G        W
->> 3.15.0-rc7-wl-ath+ #259
->> [   49.228282] Hardware name: LENOVO 2324JB2/2324JB2, BIOS G2ET82WW
->> (2.02 ) 09/11/2012
->> [   49.228283]  0000000000000000 ffffffff817e4000 ffffffff814cbee3
->> 0000000000000000
->> [   49.228285]  ffffffff810493bc ffff88020e2d1c98 ffff880213bc9f10
->> 0000000000000002
->> [   49.228287]  ffff8800c5dfc198 ffff88020d7cbf50 ffffffff81290a1c
->> ffff88020e792800
->> [   49.228288] Call Trace:
->> [   49.228293]  [<ffffffff814cbee3>] ? dump_stack+0x41/0x51
->> [   49.228296]  [<ffffffff810493bc>] ? warn_slowpath_common+0x8c/0xc0
->> [   49.228298]  [<ffffffff81290a1c>] ? brightness_store+0x3c/0x120
->> [   49.228301]  [<ffffffff811d7242>] ? kernfs_fop_write+0x112/0x170
->> [   49.228304]  [<ffffffff8116791b>] ? vfs_write+0xcb/0x1f0
->> [   49.228306]  [<ffffffff81167e20>] ? SyS_write+0x50/0xb0
->> [   49.228308]  [<ffffffff814dd312>] ? system_call_fastpath+0x16/0x1b
->> [   49.228309] ---[ end trace a1f60d12df64bdbe ]---
->> [   49.228310] brightness=0
->> [   49.228310] set brightness to 0
->>
->> And this is PID 1133:
->>
->> root      1133  0.7  0.2 131504 20192 tty7     Ss+  15:16   0:00
->> /usr/bin/X :0 -auth /var/run/lightdm/root/:0 -nolisten tcp vt7
->> -novtswitch -background none
->>
->> If I set video.use_native_backlight=0 in kernel command line the problem
->> goes away. Or if I revert your commit 0e9f81d3b7c the problem also goes
->> away. Any ideas?
+On 2014/6/12 15:07, David Rientjes wrote:
+> On Thu, 12 Jun 2014, Zhang Zhen wrote:
 > 
-> Not really...
-> I've added i915 people maybe they have an idea.
+>>>> % echo start_address_of_new_memory count_of_sections > /sys/devices/system/memory/probe
+>>>>
+>>>> Then, [start_address_of_new_memory, start_address_of_new_memory +
+>>>> count_of_sections * memory_block_size] memory range is hot-added.
+>>>>
+>>>> If this proposal is reasonable, i will send a patch to realize it.
+>>>>
+>>>
+>>> The problem is knowing how much memory is being onlined so that you can 
+>>> definitively determine what count_of_sections should be.  The number of 
+>>> pages per memory section depends on PAGE_SIZE and SECTION_SIZE_BITS which 
+>>> differ depending on the architectures that support this interface.  So if 
+>>> you support count_of_sections, it would return errno even though you have 
+>>> onlined some sections.
+>>>
+>> Hum, sorry.
+>> My expression is not right. The count of sections one time hot-added
+>> depends on sections_per_block.
+>>
+> 
+> Ok, so you know specifically what sections_per_block is for your platform 
+> so you know exactly how many sections need to be added.
+> 
+>> Now we are porting the memory-hotplug to arm.
+>> But we can only hot-add *fixed number of sections one time* on particular architecture.
+>>
+>> Whether we can add an argument on behalf of the count of the blocks to add ?
+>>
+>> % echo start_address_of_new_memory count_of_blocks > /sys/devices/system/memory/probe
+>>
+>> Then, [start_address_of_new_memory, start_address_of_new_memory + count_of_blocks * memory_block_size]
+>> memory range is hot-added.
+>>
+> 
+> As I said, if the above returns errno at some point, it still can result 
+> in some sections being onlined.  To be clear: if
+> "echo 0x10000000 > /sys/devices/system/memory/probe" fails, the section 
+> starting at address 0x10000000 failed to be onlined for the reason 
+> specified by errno.  If we follow your suggestion to specify how many 
+> sections to online, if
+> "echo '0x10000000 16' > /sys/devices/system/memory/probe" fails, eight 
+> sections could have been successfully onlined at address 0x10000000 and 
+> then we encountered a failure (perhaps because the next sections were 
+> already onlined, we get an -EEXIST).  We don't know what we successfully 
+> onlined.
+> 
+> This could be mitigated, but there would have to be a convincing reason 
+> that this is better than using the currently functionally in a loop and 
+> properly handling your error codes.
 
-This is a known issue in xf86-video-intel, which gets exposed due to the
-video.use_native_backlight=1 option. This should be fixed in the latest 2.99.912
-xf86-video-intel release.
+Hi David,
 
-Regards,
+I think you are right.
 
-Hans
+We had better to use the currently functionally in a loop if we need to add
+several blocks.
+In this way, we can get an errno in time if a block failed to be onlined.
+
+Thanks for your comments. I got it.
+
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+> 
+
+
