@@ -1,83 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889AbaFMNjz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 09:39:55 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:34015 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752194AbaFMNjx (ORCPT
+	id S1752544AbaFMNlf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 09:41:35 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:54368 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752061AbaFMNlc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 09:39:53 -0400
-Date: Fri, 13 Jun 2014 09:39:52 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Yang,Wei" <Wei.Yang@windriver.com>
-cc: balbi@ti.com, <mina86@mina86.com>, <andrzej.p@samsung.com>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] USB:gadget: Fix a warning while loading g_mass_storage
-In-Reply-To: <539A98C3.8080505@windriver.com>
-Message-ID: <Pine.LNX.4.44L0.1406130935500.1059-100000@iolanthe.rowland.org>
+	Fri, 13 Jun 2014 09:41:32 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+s5fX32U2IYXWCnyVKNHK8NT14B9Al4KU=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 33F8A58ECB7
+Date: Fri, 13 Jun 2014 09:41:21 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Sricharan R <r.sricharan@ti.com>, Tony Lindgren <tony@atomide.com>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org, nm@ti.com,
+        rnayak@ti.com, linux@arm.linux.org.uk, tglx@linutronix.de
+Subject: Re: [PATCH V2 03/19] irqchip: crossbar: Skip some irqs from
+ getting mapped to crossbar
+Message-ID: <20140613134121.GL8664@titan.lakedaemon.net>
+References: <1402574007-13987-1-git-send-email-r.sricharan@ti.com>
+ <1402574007-13987-4-git-send-email-r.sricharan@ti.com>
+ <20140612125134.GS8664@titan.lakedaemon.net>
+ <20140612135715.GE17845@atomide.com>
+ <20140612140508.GC8664@titan.lakedaemon.net>
+ <539AA08A.7010001@ti.com>
+ <20140613131005.GF8664@titan.lakedaemon.net>
+ <539AFE18.3020706@ti.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <539AFE18.3020706@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Jun 2014, Yang,Wei wrote:
+On Fri, Jun 13, 2014 at 09:35:20AM -0400, Santosh Shilimkar wrote:
+> On Friday 13 June 2014 09:10 AM, Jason Cooper wrote:
+...
+> > Have you tried booting all the different scenarios?  eg:
+> > 
+> >   old dtb, new driver
+> >   new dtb, old driver
+> >   old dtb, old driver
+> >   new dtb, new driver
+> > 
+> Old driver wasn't complete as mentioned and hence the above
+> combinations becomes bit irrelevant.
 
-> On 06/09/2014 02:19 PM, Wei.Yang@windriver.com wrote:
-> > From: Yang Wei <Wei.Yang@windriver.com>
-> >
-> > While loading g_mass_storage module, the following warning
-> > is triggered.
-> >
-> > WARNING: at drivers/usb/gadget/composite.c:
-> > usb_composite_setup_continue: Unexpected call
-> > Modules linked in: fat vfat minix nls_cp437 nls_iso8859_1 g_mass_storage
-> > [<800179cc>] (unwind_backtrace+0x0/0x104) from [<80619608>] (dump_stack+0x20/0x24)
-> > [<80619608>] (dump_stack+0x20/0x24) from [<80025100>] (warn_slowpath_common+0x64/0x74)
-> > [<80025100>] (warn_slowpath_common+0x64/0x74) from [<800251cc>] (warn_slowpath_fmt+0x40/0x48)
-> > [<800251cc>] (warn_slowpath_fmt+0x40/0x48) from [<7f047774>] (usb_composite_setup_continue+0xb4/0xbc [g_mass_storage])
-> > [<7f047774>] (usb_composite_setup_continue+0xb4/0xbc [g_mass_storage]) from [<7f047ad4>] (handle_exception+0x358/0x3e4 [g_mass_storage])
-> > [<7f047ad4>] (handle_exception+0x358/0x3e4 [g_mass_storage]) from [<7f048080>] (fsg_main_thread+0x520/0x157c [g_mass_storage])
-> > [<7f048080>] (fsg_main_thread+0x520/0x157c [g_mass_storage]) from [<8004bc90>] (kthread+0x98/0x9c)
-> > [<8004bc90>] (kthread+0x98/0x9c) from [<8000faec>] (kernel_thread_exit+0x0/0x8)
-> >
-> > The root cause is that the existing code fails to take into
-> > account the possibility that common->new_fsg can change while
-> > do_set_interface() is running, because the spinlock isn't held
-> > at this point.
-> >
-> > Signed-off-by: Yang Wei <Wei.Yang@windriver.com>
-> > Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-> > ---
-> >   drivers/usb/gadget/f_mass_storage.c |    6 ++++--
-> >   1 file changed, 4 insertions(+), 2 deletions(-)
-> >
-> > Hi Alan,
-> >
-> > Thanks for your review, there are a few changes in v3:
-> >
-> > 1) Fix a coding style issue.
-> > 2) Refine the commit log
-> >
-> > Regards
-> > Wei
-> 
-> Ping, Alan, What do you think of it?
+Ahh, great!  In that case, I think we should be good without the
+dependency between the code changes and the dtsi changes.
 
-You should not have added my "Signed-off-by:"; I did not give you 
-permission to do that.
+thx,
 
-Michal's comment about common->new_fsg not being protected by the lock 
-is a good one.  It would be better for the patch description to say:
-
-	The value of common->new_fsg that gets tested after
-	do_set_interface() returns needs to be the same as the value
-	used by do_set_interface().
-
-With that change, you may add
-
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-
-Alan Stern
-
+Jason.
