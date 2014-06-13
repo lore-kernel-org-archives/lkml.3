@@ -1,157 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752812AbaFMK0j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 06:26:39 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:47721 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751468AbaFMK0h convert rfc822-to-8bit (ORCPT
+	id S1752915AbaFMKcU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 06:32:20 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:50337 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752083AbaFMKcS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 06:26:37 -0400
+	Fri, 13 Jun 2014 06:32:18 -0400
+Date: Fri, 13 Jun 2014 12:32:16 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Daniel Phillips <daniel@phunq.net>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, tux3@tux3.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC] Tux3 for review
+Message-ID: <20140613103216.GA4589@amd.pavel.ucw.cz>
+References: <5376B273.7000800@partner.samsung.com>
+ <20140518235555.GC18954@dastard>
+ <537AA802.408@phunq.net>
+ <20140520031802.GF18954@dastard>
 MIME-Version: 1.0
-X-Originating-IP: [5.35.52.78]
-In-Reply-To: <20140613085640.GA21018@arm.com>
-References: <CAOJe8K3fy3XFxDdVc3y1hiMAqUCPmkUhECU7j5TT=E=gxwBqHg@mail.gmail.com>
-	<20140611173851.GA5556@MacBook-Pro.local>
-	<CAOJe8K1TgTDX5=LdE9r6c0ami7TRa7zr0hL_uu6YpiWrsePAgQ@mail.gmail.com>
-	<B01EB0A1-992B-49F4-93AE-71E4BA707795@arm.com>
-	<CAOJe8K3LDhhPWbtdaWt23mY+2vnw5p05+eyk2D8fovOxC10cgA@mail.gmail.com>
-	<CAOJe8K2WaJUP9_buwgKw89fxGe56mGP1Mn8rDUO9W48KZzmybA@mail.gmail.com>
-	<20140612143916.GB8970@arm.com>
-	<CAOJe8K3zN+fFWumKaGx3Tmv5JRZu10_FZ6R3Tjjc+nc-KVB0hg@mail.gmail.com>
-	<20140613085640.GA21018@arm.com>
-Date: Fri, 13 Jun 2014 14:26:36 +0400
-Message-ID: <CAOJe8K1VJ5RFWSB9i4PMdYq5X2vEgv0opGwU39ZRhYdfwj-kPw@mail.gmail.com>
-Subject: Re: kmemleak: Unable to handle kernel paging request
-From: Denis Kirjanov <kda@linux-powerpc.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        linuxppc-dev@lists.ozlabs.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140520031802.GF18954@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/13/14, Catalin Marinas <catalin.marinas@arm.com> wrote:
-> On Fri, Jun 13, 2014 at 08:12:08AM +0100, Denis Kirjanov wrote:
->> On 6/12/14, Catalin Marinas <catalin.marinas@arm.com> wrote:
->> > On Thu, Jun 12, 2014 at 01:00:57PM +0100, Denis Kirjanov wrote:
->> >> On 6/12/14, Denis Kirjanov <kda@linux-powerpc.org> wrote:
->> >> > On 6/12/14, Catalin Marinas <catalin.marinas@arm.com> wrote:
->> >> >> On 11 Jun 2014, at 21:04, Denis Kirjanov <kda@linux-powerpc.org>
->> >> >> wrote:
->> >> >>> On 6/11/14, Catalin Marinas <catalin.marinas@arm.com> wrote:
->> >> >>>> On Wed, Jun 11, 2014 at 04:13:07PM +0400, Denis Kirjanov wrote:
->> >> >>>>> I got a trace while running 3.15.0-08556-gdfb9454:
->> >> >>>>>
->> >> >>>>> [  104.534026] Unable to handle kernel paging request for data
->> >> >>>>> at
->> >> >>>>> address 0xc00000007f000000
->> >> >>>>
->> >> >>>> Were there any kmemleak messages prior to this, like "kmemleak
->> >> >>>> disabled"? There could be a race when kmemleak is disabled
->> >> >>>> because
->> >> >>>> of
->> >> >>>> some fatal (for kmemleak) error while the scanning is taking
->> >> >>>> place
->> >> >>>> (which needs some more thinking to fix properly).
->> >> >>>
->> >> >>> No. I checked for the similar problem and didn't find anything
->> >> >>> relevant.
->> >> >>> I'll try to bisect it.
->> >> >>
->> >> >> Does this happen soon after boot? I guess it’s the first scan
->> >> >> (scheduled at around 1min after boot). Something seems to be
->> >> >> telling
->> >> >> kmemleak that there is a valid memory block at 0xc00000007f000000.
->> >> >
->> >> > Yeah, it happens after a while with a booted system so that's the
->> >> > first kmemleak scan.
->> >>
->> >> I've bisected to this commit: d4c54919ed86302094c0ca7d48a8cbd4ee753e92
->> >> "mm: add !pte_present() check on existing hugetlb_entry callbacks".
->> >> Reverting the commit fixes the issue
->> >
->> > I can't figure how this causes the problem but I have more questions.
->> > Is
->> > 0xc00000007f000000 address always the same in all crashes? If yes, you
->> > could comment out start_scan_thread() in kmemleak_late_init() to avoid
->> > the scanning thread starting. Once booted, you can run:
->> >
->> >   echo dump=0xc00000007f000000 > /sys/kernel/debug/kmemleak
->> >
->> > and check the dmesg for what kmemleak knows about that address, when it
->> > was allocated and whether it should be mapped or not.
->>
->> The address is always the same.
->>
->> [  179.466239] kmemleak: Object 0xc00000007f000000 (size 16777216):
->> [  179.466503] kmemleak:   comm "swapper/0", pid 0, jiffies 4294892300
->> [  179.466508] kmemleak:   min_count = 0
->> [  179.466512] kmemleak:   count = 0
->> [  179.466517] kmemleak:   flags = 0x1
->> [  179.466522] kmemleak:   checksum = 0
->> [  179.466526] kmemleak:   backtrace:
->> [  179.466531]      [<c000000000afc3dc>]
->> .memblock_alloc_range_nid+0x68/0x88
->> [  179.466544]      [<c000000000afc444>] .memblock_alloc_base+0x20/0x58
->> [  179.466553]      [<c000000000ae96cc>] .alloc_dart_table+0x5c/0xb0
->> [  179.466561]      [<c000000000aea300>] .pmac_probe+0x38/0xa0
->> [  179.466569]      [<000000000002166c>] 0x2166c
->> [  179.466579]      [<0000000000ae0e68>] 0xae0e68
->> [  179.466587]      [<0000000000009bc4>] 0x9bc4
->
-> OK, so that's the DART table allocated via alloc_dart_table(). Is
-> dart_tablebase removed from the kernel linear mapping after allocation?
-> If that's the case, we need to tell kmemleak to ignore this block (see
-> patch below, untested). But I still can't explain how commit
-> d4c54919ed863020 causes this issue.
->
-> (also cc'ing the powerpc list and maintainers)
+Hi!
 
-Ok, your path fixes the oops.
+> > As I said, the glaring omission is proper ENOSPC handling, which is
+> > work in progress. I do not view that as an obstacle to merging.
+> >
+> > After all, Btrfs did not have proper ENOSPC handling when it was
+> > merged.
+> 
+> Yup, and that was a big mistake. Hence not having working ENOSPC
+> detection is a major strike against merging a new filesystem now.
 
-Ben, can you shed some light on this issue?
+Hmm, it seems that merging filesystems is getting harder over
+time. Soon, it will be impossible to merge new filesystem.
 
-Thanks!
-> ---------------8<--------------------------
->
-> From 09a7f1c97166c7bdca7ca4e8a4ff2774f3706ea3 Mon Sep 17 00:00:00 2001
-> From: Catalin Marinas <catalin.marinas@arm.com>
-> Date: Fri, 13 Jun 2014 09:44:21 +0100
-> Subject: [PATCH] powerpc/kmemleak: Do not scan the DART table
->
-> The DART table allocation is registered to kmemleak via the
-> memblock_alloc_base() call. However, the DART table is later unmapped
-> and dart_tablebase VA no longer accessible. This patch tells kmemleak
-> not to scan this block and avoid an unhandled paging request.
->
-> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> ---
->  arch/powerpc/sysdev/dart_iommu.c | 5 +++++
->  1 file changed, 5 insertions(+)
->
-> diff --git a/arch/powerpc/sysdev/dart_iommu.c
-> b/arch/powerpc/sysdev/dart_iommu.c
-> index 62c47bb76517..9e5353ff6d1b 100644
-> --- a/arch/powerpc/sysdev/dart_iommu.c
-> +++ b/arch/powerpc/sysdev/dart_iommu.c
-> @@ -476,6 +476,11 @@ void __init alloc_dart_table(void)
->  	 */
->  	dart_tablebase = (unsigned long)
->  		__va(memblock_alloc_base(1UL<<24, 1UL<<24, 0x80000000L));
-> +	/*
-> +	 * The DART space is later unmapped from the kernel linear mapping and
-> +	 * accessing dart_tablebase during kmemleak scanning will fault.
-> +	 */
-> +	kmemleak_no_scan((void *)dart_tablebase);
->
->  	printk(KERN_INFO "DART table allocated at: %lx\n", dart_tablebase);
->  }
->
+> > The design is here:
+> 
+> So come back when you've implemented it properly and proven that you
+> have a sound design and clean implementation.
+
+People submit code early to get feedback... but this is not exactly
+helpful feedback, I'm afraid...
+
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
