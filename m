@@ -1,78 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753088AbaFMLHU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 07:07:20 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:56457 "EHLO bear.ext.ti.com"
+	id S1753196AbaFML0k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 07:26:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51847 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750788AbaFMLHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 07:07:17 -0400
-Message-ID: <539ADAD5.1000904@ti.com>
-Date: Fri, 13 Jun 2014 16:34:53 +0530
-From: Sricharan R <r.sricharan@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Jason Cooper <jason@lakedaemon.net>
-CC: Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <santosh.shilimkar@ti.com>,
-        <nm@ti.com>, <rnayak@ti.com>, <linux@arm.linux.org.uk>,
-        <tglx@linutronix.de>
-Subject: Re: [PATCH V2 03/19] irqchip: crossbar: Skip some irqs from getting
- mapped to crossbar
-References: <1402574007-13987-1-git-send-email-r.sricharan@ti.com> <1402574007-13987-4-git-send-email-r.sricharan@ti.com> <20140612125134.GS8664@titan.lakedaemon.net> <20140612135715.GE17845@atomide.com> <20140612140508.GC8664@titan.lakedaemon.net> <539AA08A.7010001@ti.com>
-In-Reply-To: <539AA08A.7010001@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1751044AbaFML0j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 07:26:39 -0400
+From: Vitaly Kuznetsov <vkuznets@redhat.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>
+Cc: x86@kernel.org, xen-devel@lists.xenproject.org,
+        linux-kernel@vger.kernel.org, Andrew Jones <drjones@redhat.com>
+Subject: [PATCH] xenpv: don't BUG when failing to setup NMI callback
+Date: Fri, 13 Jun 2014 13:26:28 +0200
+Message-Id: <1402658788-24477-1-git-send-email-vkuznets@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 13 June 2014 12:26 PM, Sricharan R wrote:
-> Hi Jason,
-> 
-> On Thursday 12 June 2014 07:35 PM, Jason Cooper wrote:
->> On Thu, Jun 12, 2014 at 06:57:15AM -0700, Tony Lindgren wrote:
->>> * Jason Cooper <jason@lakedaemon.net> [140612 05:52]:
->>>> On Thu, Jun 12, 2014 at 05:23:11PM +0530, Sricharan R wrote:
->>>>> From: Nishanth Menon <nm@ti.com>
->>>>>
->>>>> When, in the system due to varied reasons, interrupts might be unusable
->>>>> due to hardware behavior, but register maps do exist, then those interrupts
->>>>> should be skipped while mapping irq to crossbars.
->>>>>
->>>>> Signed-off-by: Nishanth Menon <nm@ti.com>
->>>>> Signed-off-by: Sricharan R <r.sricharan@ti.com>
->>>>> Signed-off-by: Tony Lindgren <tony@atomide.com>
->>>>
->>>> Tony, have you applied these somewhere already?
->>>
->>> I think some of these I had applied into a branch ready for
->>> merging but then it was discovered that further changes
->>> were needed and the branch was dropped.
->>
->> Ok.
->>
->>> Sricharan, please remove my Signed-off-by from this series.
->>> If I end up applying it for merging my scripts will add it
->>> automatically.
->>
->> Do you have other changes outside of irqchip depending on this series?
->> If so, I can set up a topic branch for you guys to base off of.
->> Otherwise, I'll just apply them to irqchip/core when they're ready.
->>
->  There are dts changes which are dependent upon this series.
-> 
->   http://www.spinics.net/lists/linux-omap/msg108116.html
-> 
->> Also, Sricharan, when you respin this, please clearly identify (in the
->> comment section) those patches that need to be flagged for stable.  It
->> would be helpful if they were the first patches in the series as well.
-> 
-> Ok, i will point this out clearly.
- Infact since the dts node is not present in the older kernel (even now),
- the driver itself is not used. So i feel there is nothing to be flagged
-  for stable as such.
+some old Xen hypervisors (prior to 3.2) forbid DomUs to register
+NMI callbacks. E.g. we have the following code in xen-3.1:
 
-Regards,
- Sricharan
- 
+    if ( (d->domain_id != 0) || (v->vcpu_id != 0) )
+        return -EINVAL;
+
+Commit 6efa20e49b9cb1db1ab66870cc37323474a75a13 introduced kernel
+crash in case PV guest fails to register NMI callback. All x86_64
+PV guests will fail to boot on top of such hypervisors (RHEL5
+example):
+
+(XEN) traps.c:405:d7 Unhandled invalid opcode fault/trap [#6] in domain 7 on VCPU 0 [ec=0000]
+(XEN) domain_crash_sync called from entry.S
+(XEN) Domain 7 (vcpu#0) crashed on cpu#3:
+(XEN) ----[ Xen-3.1.2-389.el5  x86_64  debug=n  Not tainted ]----
+(XEN) CPU:    3
+(XEN) RIP:    e033:[<ffffffff81004d96>]
+(XEN) RFLAGS: 0000000000000282   CONTEXT: guest
+(XEN) rax: ffffffffffffffea   rbx: 0000000000000000   rcx: 0000000000000002
+(XEN) rdx: 0000000000000001   rsi: ffffffff81b0fe28   rdi: 0000000000000000
+(XEN) rbp: ffffffff81b0fe40   rsp: ffffffff81b0fde8   r8:  0000000000000000
+(XEN) r9:  ffffffff81b0fdd0   r10: 0000000000007ff0   r11: 00000000ffffffff
+(XEN) r12: ffffffff81d65900   r13: 0000000000000000   r14: 0000000000000000
+(XEN) r15: 0000000000000000   cr0: 0000000080050033   cr4: 00000000000026b0
+(XEN) cr3: 000000013a263000   cr2: 0000000000000000
+(XEN) ds: 0000   es: 0000   fs: 0000   gs: 0000   ss: e02b   cs: e033
+...
+
+However it is possible to proceed without NMI callback registered.
+Change BUG() with warning in case of -EINVAL.
+
+Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+---
+ arch/x86/xen/setup.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+index 821a11a..5b8b180 100644
+--- a/arch/x86/xen/setup.c
++++ b/arch/x86/xen/setup.c
+@@ -593,8 +593,17 @@ void xen_enable_syscall(void)
+ void xen_enable_nmi(void)
+ {
+ #ifdef CONFIG_X86_64
+-	if (register_callback(CALLBACKTYPE_nmi, (char *)nmi))
++	int ret;
++
++	ret = register_callback(CALLBACKTYPE_nmi, (char *)nmi);
++	if (ret == -EINVAL) {
++		/* Hypervisor probably forbids us to register NMI callback,
++		   that is expected when running on top of Xen-3.1 and older */
++		pr_warn("xen: failed to register NMI callback\n");
++	} else if (ret != 0) {
++		/* Other hypervisor failure */
+ 		BUG();
++	}
+ #endif
+ }
+ void __init xen_pvmmu_arch_setup(void)
+-- 
+1.9.3
+
