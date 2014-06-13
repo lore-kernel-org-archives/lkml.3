@@ -1,88 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752907AbaFMUJO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 16:09:14 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:42534 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751172AbaFMUJL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 16:09:11 -0400
-Date: Fri, 13 Jun 2014 22:09:05 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Christoph Jaeger <christophjaeger@linux.com>
-Cc: daniel.vetter@ffwll.ch, jani.nikula@linux.intel.com, airlied@linux.ie,
-        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drm/i915: Fix memory leak in intel_dsi_init() error path
-Message-ID: <20140613200904.GX5821@phenom.ffwll.local>
-Mail-Followup-To: Christoph Jaeger <christophjaeger@linux.com>,
-	jani.nikula@linux.intel.com, airlied@linux.ie,
-	intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-	linux-kernel@vger.kernel.org
-References: <1402689082-20211-1-git-send-email-christophjaeger@linux.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402689082-20211-1-git-send-email-christophjaeger@linux.com>
-X-Operating-System: Linux phenom 3.15.0-rc3+ 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753031AbaFMURI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 16:17:08 -0400
+Received: from mga02.intel.com ([134.134.136.20]:32344 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751074AbaFMURH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 16:17:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,473,1400050800"; 
+   d="scan'208";a="528258168"
+Subject: Re: [PATCH] sched: Fast idling of CPU when system is partially
+ loaded
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Jason Low <jason.low2@hp.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Davidlohr Bueson <davidlohr@hp.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <1402687127.2431.6.camel@j-VirtualBox>
+References: <1402608359.2970.548.camel@schen9-DESK>
+	 <1402639311.9617.84.camel@j-VirtualBox>
+	 <1402676882.2970.564.camel@schen9-DESK>
+	 <1402687127.2431.6.camel@j-VirtualBox>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 13 Jun 2014 13:17:04 -0700
+Message-ID: <1402690624.2970.567.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 09:51:22PM +0200, Christoph Jaeger wrote:
-> intel_dsi_init() bails out without freeing the memory 'intel_dsi' and
-> 'intel_connector' point to. Simply bail out before allocating memory.
-> 
-> Picked up by Coverity - CID 1222750.
-> 
-> Signed-off-by: Christoph Jaeger <christophjaeger@linux.com>
+On Fri, 2014-06-13 at 12:18 -0700, Jason Low wrote:
 
-Queued for -next, thanks for the patch. I've had to rebase the patch a
-bit to resolve conflicts. Imo also not for -fixes because of this conflict
-potential, so will land in 3.17.
--Daniel
-> ---
->  drivers/gpu/drm/i915/intel_dsi.c | 14 +++++++-------
->  1 file changed, 7 insertions(+), 7 deletions(-)
 > 
-> diff --git a/drivers/gpu/drm/i915/intel_dsi.c b/drivers/gpu/drm/i915/intel_dsi.c
-> index 02f99d7..6965627 100644
-> --- a/drivers/gpu/drm/i915/intel_dsi.c
-> +++ b/drivers/gpu/drm/i915/intel_dsi.c
-> @@ -675,6 +675,13 @@ bool intel_dsi_init(struct drm_device *dev)
->  	if (!dev_priv->vbt.has_mipi)
->  		return false;
+> I see. In that case, if a CPU is going idle, it still needs to call
+> idle_balance() to update rq->idle_stamp and rq->next_balance (even if we
+> skip calling the expensive load_balance).
+> 
+> What do you think about moving the overload check to the top of
+> idle_balance():
+> 
+>         this_rq->idle_stamp = rq_clock(this_rq);
 >  
-> +	if (IS_VALLEYVIEW(dev)) {
-> +		dev_priv->mipi_mmio_base = VLV_MIPI_BASE;
-> +	} else {
-> +		DRM_ERROR("Unsupported Mipi device to reg base");
-> +		return false;
-> +	}
-> +
->  	intel_dsi = kzalloc(sizeof(*intel_dsi), GFP_KERNEL);
->  	if (!intel_dsi)
->  		return false;
-> @@ -689,13 +696,6 @@ bool intel_dsi_init(struct drm_device *dev)
->  	encoder = &intel_encoder->base;
->  	intel_dsi->attached_connector = intel_connector;
->  
-> -	if (IS_VALLEYVIEW(dev)) {
-> -		dev_priv->mipi_mmio_base = VLV_MIPI_BASE;
-> -	} else {
-> -		DRM_ERROR("Unsupported Mipi device to reg base");
-> -		return false;
-> -	}
-> -
->  	connector = &intel_connector->base;
->  
->  	drm_encoder_init(dev, encoder, &intel_dsi_funcs, DRM_MODE_ENCODER_DSI);
-> -- 
-> 1.9.3
+> -       if (this_rq->avg_idle < sysctl_sched_migration_cost) {
+> +       if (this_rq->avg_idle < sysctl_sched_migration_cost ||
+> +           !this_rq->rd->overload) {
+>                 rcu_read_lock();
+>                 sd = rcu_dereference_check_sched_domain(this_rq->sd);
+>                 if (sd)
+> 
 > 
 
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+That's a good point.  I think moving the check as you suggested
+is appropriate.  I'll update the code in my next version.
+
+Tim
+
