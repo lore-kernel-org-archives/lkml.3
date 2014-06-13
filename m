@@ -1,54 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752670AbaFMOiL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 10:38:11 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:51048 "EHLO extserv.mm-sol.com"
+	id S1752581AbaFMOob (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 10:44:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62982 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751795AbaFMOiJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 10:38:09 -0400
-Message-ID: <539B0CCD.9060509@mm-sol.com>
-Date: Fri, 13 Jun 2014 17:38:05 +0300
-From: Stanimir Varbanov <svarbanov@mm-sol.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1751964AbaFMOo3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 10:44:29 -0400
+Date: Fri, 13 Jun 2014 10:44:05 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Johannes Berg <johannes@sipsolutions.net>,
+        David Miller <davem@davemloft.net>,
+        "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        Tom Herbert <therbert@google.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>
+Subject: Re: [GIT] Networking
+Message-ID: <20140613144405.GA7122@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Johannes Berg <johannes@sipsolutions.net>,
+	David Miller <davem@davemloft.net>,
+	"Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
+	"John W. Linville" <linville@tuxdriver.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Network Development <netdev@vger.kernel.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Intel Linux Wireless <ilw@linux.intel.com>,
+	Tom Herbert <therbert@google.com>,
+	linux-wireless <linux-wireless@vger.kernel.org>
+References: <20140612.121445.484288603919840829.davem@davemloft.net>
+ <CA+55aFy=CThoSKAJ6J3Jt-SJDkiGzwg=5tdF7_g+vyTEoPFzMQ@mail.gmail.com>
+ <1402642787.4478.5.camel@jlt4.sipsolutions.net>
+ <CA+55aFw-UTwA0+dmCnqwjSEW244s0CLK4V5vuh2TmLku7A0mDQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Kumar Gala <galak@codeaurora.org>
-CC: Tejun Heo <tj@kernel.org>, linux-ide@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] ata: Add Qualcomm ARM SoC AHCI SATA host controller
- driver
-References: <1402600404-19214-1-git-send-email-galak@codeaurora.org> <1402600404-19214-2-git-send-email-galak@codeaurora.org>
-In-Reply-To: <1402600404-19214-2-git-send-email-galak@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFw-UTwA0+dmCnqwjSEW244s0CLK4V5vuh2TmLku7A0mDQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kumar,
+On Fri, Jun 13, 2014 at 07:28:33AM -0700, Linus Torvalds wrote:
+ > On Thu, Jun 12, 2014 at 11:59 PM, Johannes Berg
+ > <johannes@sipsolutions.net> wrote:
+ > >
+ > > is to be believed, then I'm not sure why you think iwlwifi is involved
+ > > though.
+ > 
+ > Mainly just because I don't see the issue on my desktop, and iwlwifi
+ > is the only network device (apart from looback) on my laptop. And it
+ > does say "hw checksum", so that made me think it's the driver.
+ > 
+ > But:
+ > 
+ > > If it's iwlwifi, then maybe that commit broke something with devices
+ > > that don't support checksumming?
+ > 
+ > that sounds quite possible.
 
-> +
-> +static struct platform_driver qcom_ahci_driver = {
-> +	.probe = qcom_ahci_probe,
-> +	.remove = ata_platform_remove_one,
-> +	.driver = {
-> +		.name = "qcom_ahci_qcom",
-> +		.owner = THIS_MODULE,
-> +		.of_match_table = qcom_ahci_of_match,
-> +	},
-> +};
-> +module_platform_driver(qcom_ahci_driver);
-> +
-> +MODULE_DESCRIPTION("Qualcomm AHCI SATA platform driver");
-> +MODULE_LICENSE("GPL");
+I see it on my router with two r8169 cards too.
+That does seem to support hw csum, though only on jumbo frames maybe?
 
-"GPL v2" ? Or only GPL is intentional?
 
-> +MODULE_ALIAS("ahci:qcom");
-> 
+	Dave
 
-missing MODULE_AUTHOR
-
--- 
-regards,
-Stan
