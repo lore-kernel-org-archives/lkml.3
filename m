@@ -1,63 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752182AbaFMHQQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 03:16:16 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:49358 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751160AbaFMHQO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 03:16:14 -0400
-Message-ID: <539AA51A.9000101@ti.com>
-Date: Fri, 13 Jun 2014 10:15:38 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752198AbaFMHSd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 03:18:33 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:44242 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750784AbaFMHSc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 03:18:32 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19A0P6F4rcyvDcppMXOyA+o
+Date: Fri, 13 Jun 2014 00:18:21 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: dwmw2@infradead.org, computersforpeace@gmail.com,
+        kyungmin.park@samsung.com, pekon@ti.com,
+        ezequiel.garcia@free-electrons.com, javier@dowhile0.org,
+        nsekhar@ti.com, linux-omap@vger.kernel.org,
+        linux-mtd@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 05/36] mtd: nand: omap: Move IRQ handling from GPMC to
+ NAND driver
+Message-ID: <20140613071820.GI17845@atomide.com>
+References: <1402477001-31132-1-git-send-email-rogerq@ti.com>
+ <1402477001-31132-6-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: <dwmw2@infradead.org>, <computersforpeace@gmail.com>,
-        <kyungmin.park@samsung.com>, <pekon@ti.com>,
-        <ezequiel.garcia@free-electrons.com>, <javier@dowhile0.org>,
-        <nsekhar@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-mtd@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 01/36] ARM: OMAP3: hwmod: Fix gpmc memory resource space
-References: <1402477001-31132-1-git-send-email-rogerq@ti.com> <1402477001-31132-2-git-send-email-rogerq@ti.com> <20140613071357.GH17845@atomide.com>
-In-Reply-To: <20140613071357.GH17845@atomide.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402477001-31132-6-git-send-email-rogerq@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/13/2014 10:13 AM, Tony Lindgren wrote:
-> * Roger Quadros <rogerq@ti.com> [140611 01:58]:
+* Roger Quadros <rogerq@ti.com> [140611 01:58]:
+> Since the Interrupt Events are used only by the NAND driver,
+> there is no point in managing the Interrupt registers
+> in the GPMC driver and complicating it with irqchip modeling.
 > 
-> Missing description? Probably not an urgent fix or does
-> this fix something?
-
-Doesn't fix anything. It is just for correctness. I'll add the description.
-
-cheers,
--roger
-
+> Let's manage the interrupt registers directly in the NAND driver
+> and get rid of irqchip model from GPMC driver.
 > 
->> Signed-off-by: Roger Quadros <rogerq@ti.com>
->> ---
->>  arch/arm/mach-omap2/omap_hwmod_3xxx_data.c | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
->> index 71ac7d5..f2848a8 100644
->> --- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
->> +++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
->> @@ -3426,7 +3426,7 @@ static struct omap_hwmod_addr_space omap3xxx_counter_32k_addrs[] = {
->>  static struct omap_hwmod_addr_space omap3xxx_gpmc_addrs[] = {
->>  	{
->>  		.pa_start	= 0x6e000000,
->> -		.pa_end		= 0x6e000fff,
->> +		.pa_end		= 0x6e0002d4,
->>  		.flags		= ADDR_TYPE_RT
->>  	},
->>  	{ }
->> -- 
->> 1.8.3.2
->>
+> Get rid of IRQ commands and unused commands from gpmc_configure() in
+> the GPMC driver.
 
+This seems like a step backward to me. The GPMC interrupt enable
+register can do edge detection on the wait pins, how is that
+limited to NAND?
+
+Further, let's not start mixing GPMC hardware module register
+access with the NAND driver register access. They can be clocked
+separately. And bugs in the NAND driver can cause issues in other
+GPMC using drivers.
+
+Regards,
+
+Tony
