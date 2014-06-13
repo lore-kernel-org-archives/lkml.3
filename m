@@ -1,167 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753854AbaFMU5X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 16:57:23 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:11077 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751339AbaFMU5W (ORCPT
+	id S1753495AbaFMVKp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 17:10:45 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:34418 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751262AbaFMVKo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 16:57:22 -0400
-Message-ID: <539B6577.503@fb.com>
-Date: Fri, 13 Jun 2014 14:56:23 -0600
-From: Jens Axboe <axboe@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Fri, 13 Jun 2014 17:10:44 -0400
+X-Originating-IP: 173.246.103.110
+Date: Fri, 13 Jun 2014 14:10:35 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [PATCH] rcu: Only pin GP kthread when full dynticks is actually
+ used
+Message-ID: <20140613211034.GA10651@jtriplet-mobl1>
+References: <1402618619-32630-1-git-send-email-fweisbec@gmail.com>
+ <20140613012432.GH4581@linux.vnet.ibm.com>
+ <20140613013515.GA9589@linux.vnet.ibm.com>
+ <20140613124714.GC6635@localhost.localdomain>
+ <20140613155233.GM4581@linux.vnet.ibm.com>
+ <20140613160002.GL6635@localhost.localdomain>
+ <20140613161630.GQ4581@linux.vnet.ibm.com>
+ <20140613162130.GP6635@localhost.localdomain>
+ <20140613164441.GA14232@thin>
+ <20140613204822.GT4581@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Keith Busch <keith.busch@intel.com>
-CC: =?ISO-8859-1?Q?Matias_Bj=F8rling?= <m@bjorling.me>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        "sbradshaw@micron.com" <sbradshaw@micron.com>,
-        "tom.leiming@gmail.com" <tom.leiming@gmail.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-nvme@lists.infradead.org" <linux-nvme@lists.infradead.org>
-Subject: Re: [PATCH v7] NVMe: conversion to blk-mq
-References: <1402392038-5268-2-git-send-email-m@bjorling.me> <alpine.LRH.2.03.1406100945250.4699@AMR> <A52B97CC-6D77-468B-9A9B-A5888AE63580@fb.com> <alpine.LRH.2.03.1406101140490.4699@AMR> <5397636F.9050209@fb.com> <alpine.LRH.2.03.1406101458470.4699@AMR> <5397753B.2020009@fb.com> <alpine.LRH.2.03.1406101515430.4699@AMR> <20140610213333.GA10055@linux.intel.com> <539889DC.7090704@fb.com> <20140611170917.GA12025@linux.intel.com> <CAOu_J6kocZZ1mRQeSidyqJ_Ew0F_POS30v2kgUZX2wDOOnuExg@mail.gmail.com> <alpine.LRH.2.03.1406111641180.4699@AMR> <5399BA00.7000705@bjorling.me> <alpine.LRH.2.03.1406121015130.4699@AMR> <alpine.LRH.2.03.1406121757130.4699@AMR> <539B05A1.7080700@fb.com> <alpine.LRH.2.03.1406130838210.4699@AMR> <539B14A9.8010204@fb.com> <alpine.LRH.2.03.1406130914110.4699@AMR> <539B3F75.7040700@fb.com> <alpine.LRH.2.03.1406131307330.4699@AMR> <539B5124.3090302@fb.com>
-In-Reply-To: <539B5124.3090302@fb.com>
-Content-Type: multipart/mixed;
-	boundary="------------070602060307020009060506"
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-06-13_07:2014-06-13,2014-06-13,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=1.03942965345993e-11 kscore.compositescore=0
- circleOfTrustscore=0 compositescore=0.533125042697551
- urlsuspect_oldscore=0.533125042697551 suspectscore=0
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=1996008
- rbsscore=0.533125042697551 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1406130221
-X-FB-Internal: deliver
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140613204822.GT4581@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------------070602060307020009060506
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+On Fri, Jun 13, 2014 at 01:48:22PM -0700, Paul E. McKenney wrote:
+> On Fri, Jun 13, 2014 at 09:44:41AM -0700, Josh Triplett wrote:
+> > On Fri, Jun 13, 2014 at 06:21:32PM +0200, Frederic Weisbecker wrote:
+> > > On Fri, Jun 13, 2014 at 09:16:30AM -0700, Paul E. McKenney wrote:
+> > > > > Is it because we have dynticks CPUs staying too long in the kernel without
+> > > > > taking any quiescent states? Are we perhaps missing some rcu_user_enter() or
+> > > > > things?
+> > > > 
+> > > > Sort of the former, but combined with the fact that in-kernel CPUs still
+> > > > need scheduling-clock interrupts for RCU to make progress.  I could
+> > > > move this to RCU's context-switch hook, but that could be very bad for
+> > > > workloads that do lots of context switching.
+> > > 
+> > > Or I can restart the tick if the CPU stays in the kernel for too long without
+> > > a tick. I think that's what we were doing before but we removed that because
+> > > we never implemented it correctly (we sent scheduler IPI that did nothing...)
+> > 
+> > I wonder if timer slack would make sense here: when you have at least
+> > one RCU callback pending, set a timer with a huge amount of timer slack,
+> > and cancel it if you end up handling the callback via a trip through the
+> > scheduler.
+> 
+> But in this case, we need the tick even if the current CPU has no callbacks
+> because it might be in an RCU read-side critical section.
 
-On 2014-06-13 13:29, Jens Axboe wrote:
-> On 06/13/2014 01:22 PM, Keith Busch wrote:
->> On Fri, 13 Jun 2014, Jens Axboe wrote:
->>> OK, same setup as mine. The affinity hint is really screwing us over, no
->>> question about it. We just need a:
->>>
->>> irq_set_affinity_hint(dev->entry[nvmeq->cq_vector].vector,
->>> hctx->cpumask);
->>>
->>> in the ->init_hctx() methods to fix that up.
->>>
->>> That brings us to roughly the same performance, except for the cases
->>> where the dd is run on the thread sibling of the core handling the
->>> interrupt. And granted, with the 16 queues used, that'll happen on
->>> blk-mq. But since you have 32 threads and just 31 IO queues, the non
->>> blk-mq driver must end up sharing for some cases, too.
->>>
->>> So what do we care most about here? Consistency, or using all queues at
->>> all costs?
->>
->> I think we want to use all h/w queues regardless of mismatched sharing. A
->> 24 thread server shouldn't use more of the hardware than a 32.
->>
->> You're right, the current driver shares the queues on anything with 32
->> or more cpus with this NVMe controller, but we wrote an algorithm that
->> allocates the most and tries to group them with their nearest neighbors.
->>
->> One performance oddity we observe is that servicing the interrupt on the
->> thread sibling of the core that submitted the I/O is the worst performing
->> cpu you can chose; it's actually better to use a different core on the
->> same node. At least that's true as long as you're not utilizing the cpus
->> for other work, so YMMV.
->
-> I played around with the mappings, and stumbled upon some pretty ugly
-> results. The back story is that on this test box, I limit max C state to
-> C1 to avoid having too much of a bad time with power management. Running
-> the dd on a specific core, yields somewhere around 52MB/sec for me.
-> That's with the right CPU affinity for the irq. If I purposely put it
-> somewhere else, I end up at 380-390MB/sec. Or if I leave it on the right
-> CPU but simply do:
->
-> perf record -o /dev/null dd if= ...
->
-> and run the same thing just traced, I get the high performance as well.
->
-> Indeed... So I went to take a look at what is going on. For the slow
-> case, turbostat tells me I'm spending 80% in C1. For the fast case,
-> we're down to 20% in C1.
->
-> I then turn off C1, but low and behold, it's still slow and sucky even
-> if turbostat now verifies that it's spending 0% time in C1.
->
-> Now, this smells like scheduling artifacts. I'm going to turn off all
-> power junk and see what happens. Because at 8x differences between fast
-> and slow, irq mappings don't really matter at all here. In fact it shows
-> results contrary to what you'd like to see.
+Don't we handle that case via the slowpath of rcu_read_unlock, and a
+flag set via IPI?  ("Oh, that CPU has taken too long to note a quiescent
+state; send it an IPI to set the special flag that makes unlock do the
+work.")
 
-OK, so I think I know what is going on here. If we slow down the next 
-issue just a little bit, the device will have cached the next read. 
-Essentially getting some parallellism out of a sync read, since it is 
-sequential. For random 4k reads, it behaves like expected.
-
-For reference, the attached patch brings back the affinity to what we 
-want it to be.
-
-We can always diddle with the utilization of the number of hardware 
-queues later, I don't see that as a huge issue at all.
-
--- 
-Jens Axboe
-
-
---------------070602060307020009060506
-Content-Type: text/x-patch; name="nvme-affinity-hint.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment; filename="nvme-affinity-hint.patch"
-
-diff --git a/drivers/block/nvme-core.c b/drivers/block/nvme-core.c
-index ee48ac5..8dc5d36 100644
---- a/drivers/block/nvme-core.c
-+++ b/drivers/block/nvme-core.c
-@@ -178,6 +178,9 @@ static int nvme_init_hctx(struct blk_mq_hw_ctx *hctx, void *data,
- 		nvmeq->hctx = hctx;
- 	else
- 		WARN_ON(nvmeq->hctx->tags != hctx->tags);
-+
-+	irq_set_affinity_hint(dev->entry[nvmeq->cq_vector].vector,
-+				hctx->cpumask);
- 	hctx->driver_data = nvmeq;
- 	return 0;
- }
-@@ -581,6 +584,7 @@ static int nvme_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
- 	enum dma_data_direction dma_dir;
- 	int psegs = req->nr_phys_segments;
- 	int result = BLK_MQ_RQ_QUEUE_BUSY;
-+
- 	/*
- 	 * Requeued IO has already been prepped
- 	 */
-@@ -1788,6 +1792,7 @@ static struct nvme_ns *nvme_alloc_ns(struct nvme_dev *dev, unsigned nsid,
- 	queue_flag_set_unlocked(QUEUE_FLAG_DEFAULT, ns->queue);
- 	queue_flag_set_unlocked(QUEUE_FLAG_NOMERGES, ns->queue);
- 	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, ns->queue);
-+	queue_flag_set_unlocked(QUEUE_FLAG_VIRT_HOLE, ns->queue);
- 	queue_flag_clear_unlocked(QUEUE_FLAG_IO_STAT, ns->queue);
- 	ns->dev = dev;
- 	ns->queue->queuedata = ns;
-@@ -1801,7 +1806,6 @@ static struct nvme_ns *nvme_alloc_ns(struct nvme_dev *dev, unsigned nsid,
- 	lbaf = id->flbas & 0xf;
- 	ns->lba_shift = id->lbaf[lbaf].ds;
- 	ns->ms = le16_to_cpu(id->lbaf[lbaf].ms);
--	blk_queue_max_segments(ns->queue, 1);
- 	blk_queue_logical_block_size(ns->queue, 1 << ns->lba_shift);
- 	if (dev->max_hw_sectors)
- 		blk_queue_max_hw_sectors(ns->queue, dev->max_hw_sectors);
-
---------------070602060307020009060506--
+- Josh Triplett
