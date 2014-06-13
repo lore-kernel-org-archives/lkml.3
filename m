@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751398AbaFMMqw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 08:46:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44037 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750862AbaFMMqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 08:46:51 -0400
-Date: Fri, 13 Jun 2014 08:46:09 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: WANG Chao <chaowang@redhat.com>, Dave Young <dyoung@redhat.com>,
-        mjg59@srcf.ucam.org, bhe@redhat.com, jkosina@suse.cz, greg@kroah.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com, hpa@zytor.com, akpm@linux-foundation.org
-Subject: Re: [PATCH 07/13] kexec: Implementation of new syscall
- kexec_file_load
-Message-ID: <20140613124609.GC5871@redhat.com>
-References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
- <1401800822-27425-8-git-send-email-vgoyal@redhat.com>
- <20140606065605.GE2785@dhcp-17-89.nay.redhat.com>
- <20140606181859.GK1526@redhat.com>
- <20140609021122.GB1924@darkstar.nay.redhat.com>
- <20140609053538.GA2874@dhcp-17-89.nay.redhat.com>
- <20140609154137.GD22049@redhat.com>
- <20140613075011.GA4751@pd.tnic>
+	id S1751464AbaFMMrU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 08:47:20 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:52086 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750863AbaFMMrT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 08:47:19 -0400
+Date: Fri, 13 Jun 2014 14:47:16 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [PATCH] rcu: Only pin GP kthread when full dynticks is actually
+ used
+Message-ID: <20140613124714.GC6635@localhost.localdomain>
+References: <1402618619-32630-1-git-send-email-fweisbec@gmail.com>
+ <20140613012432.GH4581@linux.vnet.ibm.com>
+ <20140613013515.GA9589@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140613075011.GA4751@pd.tnic>
+In-Reply-To: <20140613013515.GA9589@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 09:50:11AM +0200, Borislav Petkov wrote:
-> On Mon, Jun 09, 2014 at 11:41:37AM -0400, Vivek Goyal wrote:
-> > IIUC, COMMAND_LINE_SIZE gives max limits of running kernel and it does
-> > not tell us anything about command line size supported by kernel being
-> > loaded.
+On Thu, Jun 12, 2014 at 06:35:15PM -0700, Paul E. McKenney wrote:
+> On Thu, Jun 12, 2014 at 06:24:32PM -0700, Paul E. McKenney wrote:
+> > On Fri, Jun 13, 2014 at 02:16:59AM +0200, Frederic Weisbecker wrote:
+> > > CONFIG_NO_HZ_FULL may be enabled widely on distros nowadays but actual
+> > > users should be a tiny minority, if actually any.
+> > > 
+> > > Also there is a risk that affining the GP kthread to a single CPU could
+> > > end up noticeably reducing RCU performances and increasing energy
+> > > consumption.
+> > > 
+> > > So lets affine the GP kthread only when nohz full is actually used
+> > > (ie: when the nohz_full= parameter is filled or CONFIG_NO_HZ_FULL_ALL=y)
 > 
-> Whatever you do, you do need a sane default because even querying the
-> boot protocol is not reliable as the to-be-loaded kernel's boot protocol
-> might be manipulated too, before signing (who knows what people do
-> in the wild).
+> Which reminds me...  Kernel-heavy workloads running NO_HZ_FULL_ALL=y
+> can see long RCU grace periods, as in about two seconds each.  It is
+> not hard for me to detect this situation.
 
-If signature verification is on, that should catch any manipulation to
-to protocol headers.
+Ah yeah sounds quite long.
 
-If not, then we really can't do anything about it. A large memory
-allocation will fail and user will get error. 
+> Is there some way I can
+> call for a given CPU's scheduling-clock interrupt to be turned on?
 
-This is not different than length of kernel or length of initrd. Somebody
-might prepare a very huge file and pass that fd to kernel and kernel will
-try to read the whole thing in. If file is too large, memory allocation
-will fail and user space will get error. We don't try to put an upper
-limit on size of kernel image or initrd.
+Yeah, once the nohz kick patchset (https://lwn.net/Articles/601214/) is merged,
+a simple call to tick_nohz_full_kick_cpu() should do the trick. Although the
+right condition must be there on the IPI side. Maybe with rcu_needs_cpu() or such.
+
+But it would be interesting to identify the sources of these extended grace periods.
+If we only restart the tick, we may ignore some deeper oustanding issue.
+
+Thanks.
 
 > 
-> So having a sane, unconditional fallback COMMAND_LINE_SIZE from the
-> first kernel is a must, methinks.
-
-I disagree here. What if new kernel supports (2 * COMMAND_LINE_SIZE) length
-command line. We don't want to truncate command line to smaller size
-because running kernel does not support that long a command line.
-
-Thanks
-Vivek
-
+> I believe that the nsproxy guys were seeing something like this as well.
+> 
+> 							Thanx, Paul
