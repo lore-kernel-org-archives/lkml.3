@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664AbaFMHVj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 03:21:39 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:49955 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751071AbaFMHVh (ORCPT
+	id S1752218AbaFMHYN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 03:24:13 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:43002 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750852AbaFMHYM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 03:21:37 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18A4pUH52kFk2/XItV8Qmhi
-Date: Fri, 13 Jun 2014 00:21:30 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Roger Quadros <rogerq@ti.com>
-Cc: dwmw2@infradead.org, computersforpeace@gmail.com,
-        kyungmin.park@samsung.com, pekon@ti.com,
-        ezequiel.garcia@free-electrons.com, javier@dowhile0.org,
-        nsekhar@ti.com, linux-omap@vger.kernel.org,
-        linux-mtd@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 10/36] ARM: dts: OMAP2+: Fix NAND device nodes
-Message-ID: <20140613072129.GL17845@atomide.com>
-References: <1402477001-31132-1-git-send-email-rogerq@ti.com>
- <1402477001-31132-11-git-send-email-rogerq@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402477001-31132-11-git-send-email-rogerq@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 13 Jun 2014 03:24:12 -0400
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 3/4] tracing: Improve message of empty set_ftrace_notrace file
+Date: Fri, 13 Jun 2014 16:24:06 +0900
+Message-Id: <1402644246-4649-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <20140612152759.40316084@gandalf.local.home>
+References: <20140612152759.40316084@gandalf.local.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Roger Quadros <rogerq@ti.com> [140611 01:58]:
-> Add compatible id, GPMC register resource and interrupt
-> resource to NAND controller nodes.
-> 
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> ---
->  arch/arm/boot/dts/am335x-evm.dts         |  8 ++++++--
->  arch/arm/boot/dts/am335x-igep0033.dtsi   |  8 ++++++--
->  arch/arm/boot/dts/am43x-epos-evm.dts     |  8 ++++++--
->  arch/arm/boot/dts/omap3-devkit8000.dts   |  9 +++++++--
->  arch/arm/boot/dts/omap3-evm-37xx.dts     | 10 +++++++---
->  arch/arm/boot/dts/omap3-igep0020.dts     | 10 +++++++---
->  arch/arm/boot/dts/omap3-igep0030.dts     |  8 ++++++--
->  arch/arm/boot/dts/omap3-ldp.dts          | 10 +++++++---
->  arch/arm/boot/dts/omap3-lilly-a83x.dtsi  | 10 +++++++---
->  arch/arm/boot/dts/omap3-lilly-dbb056.dts |  7 ++++---
->  arch/arm/boot/dts/omap3430-sdp.dts       |  8 ++++++--
->  11 files changed, 69 insertions(+), 27 deletions(-)
-> 
-> diff --git a/arch/arm/boot/dts/am335x-evm.dts b/arch/arm/boot/dts/am335x-evm.dts
-> index 6028217..fa25f2b 100644
-> --- a/arch/arm/boot/dts/am335x-evm.dts
-> +++ b/arch/arm/boot/dts/am335x-evm.dts
-> @@ -437,9 +437,13 @@
->  	status = "okay";
->  	pinctrl-names = "default";
->  	pinctrl-0 = <&nandflash_pins_s0>;
-> -	ranges = <0 0 0x08000000 0x10000000>;	/* CS0: NAND */
-> +	ranges = <0 0 0x08000000 0x10000000	/* CS0 space, 16MB */
-> +		  255 0 0x50000000 0x36c>;	/* GPMC reg */
+When there's no entry in set_ftrace_notrace, it'll print nothing, but
+it's better to print something like below like set_graph_notrace does:
 
-And here too let's not let the NAND driver tinker with the GPMC
-registers.
+  #### no functions disabled ####
 
-Tony
+Reported-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+also updated the ftrace/nograph-v3 branch..
+
+ kernel/trace/ftrace.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index b375cf2cd786..ff402e092df1 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -2593,8 +2593,10 @@ static void *t_start(struct seq_file *m, loff_t *pos)
+ 	 * off, we can short cut and just print out that all
+ 	 * functions are enabled.
+ 	 */
+-	if (iter->flags & FTRACE_ITER_FILTER &&
+-	    ftrace_hash_empty(ops->filter_hash)) {
++	if ((iter->flags & FTRACE_ITER_FILTER &&
++	     ftrace_hash_empty(ops->filter_hash)) ||
++	    (iter->flags & FTRACE_ITER_NOTRACE &&
++	     ftrace_hash_empty(ops->notrace_hash))) {
+ 		if (*pos > 0)
+ 			return t_hash_start(m, pos);
+ 		iter->flags |= FTRACE_ITER_PRINTALL;
+@@ -2639,7 +2641,10 @@ static int t_show(struct seq_file *m, void *v)
+ 		return t_hash_show(m, iter);
+ 
+ 	if (iter->flags & FTRACE_ITER_PRINTALL) {
+-		seq_printf(m, "#### all functions enabled ####\n");
++		if (iter->flags & FTRACE_ITER_NOTRACE)
++			seq_printf(m, "#### no functions disabled ####\n");
++		else
++			seq_printf(m, "#### all functions enabled ####\n");
+ 		return 0;
+ 	}
+ 
+-- 
+1.7.9.2
+
