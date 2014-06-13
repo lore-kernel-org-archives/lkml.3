@@ -1,71 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753919AbaFMUub (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 16:50:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51373 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751961AbaFMUua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 16:50:30 -0400
-Date: Fri, 13 Jun 2014 16:50:27 -0400
-From: Aristeu Rozanski <aris@redhat.com>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Revert "Input: wacom - testing result shows get_report
- is unnecessary."
-Message-ID: <20140613205027.GN16780@redhat.com>
-References: <1402691538-26392-1-git-send-email-benjamin.tissoires@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402691538-26392-1-git-send-email-benjamin.tissoires@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753960AbaFMUv3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 16:51:29 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:25326 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753883AbaFMUv2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 16:51:28 -0400
+Message-ID: <1402692675.27369.2.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [patch V2 5/5] futex: Simplify futex_lock_pi_atomic() and make
+ it more robust
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Darren Hart <darren@dvhart.com>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Kees Cook <kees@outflux.net>, wad@chromium.org
+Date: Fri, 13 Jun 2014 13:51:15 -0700
+In-Reply-To: <alpine.DEB.2.10.1406131137020.5170@nanos>
+References: <20140611202744.676528190@linutronix.de>
+	  <20140611204237.361836310@linutronix.de>
+	 <1402638363.22229.23.camel@fury.dvhart.com>
+	 <alpine.DEB.2.10.1406131033440.5170@nanos>
+	 <alpine.DEB.2.10.1406131136140.5170@nanos>
+	 <alpine.DEB.2.10.1406131137020.5170@nanos>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 04:32:18PM -0400, Benjamin Tissoires wrote:
-> This reverts commit 1b2faaf7e219fc2905d75afcd4c815e5d39eda80.
+On Fri, 2014-06-13 at 11:44 +0200, Thomas Gleixner wrote:
+> Subject: futex: Simplify futex_lock_pi_atomic() and make it more robust
+> From: Thomas Gleixner <tglx@linutronix.de>
+> Date: Wed, 11 Jun 2014 20:45:41 -0000
 > 
-> The Intuos4 series presents a bug in which it hangs if it receives
-> a set feature command while switching to the enhanced mode.
-> This bug is triggered when plugging an Intuos 4 while having
-> a gnome user session up and running.
+> futex_lock_pi_atomic() is a maze of retry hoops and loops.
 > 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> Reduce it to simple and understandable states:
+> 
+> First step is to lookup existing waiters (state) in the kernel.
+> 
+> If there is an existing waiter, validate it and attach to it.
+> 
+> If there is no existing waiter, check the user space value
+> 
+> If the TID encoded in the user space value is 0, take over the futex
+> preserving the owner died bit.
+> 
+> If the TID encoded in the user space value is != 0, lookup the owner
+> task, validate it and attach to it.
+> 
+> Reduces text size by 128 bytes on x8664.
+> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Darren Hart <darren@dvhart.com>
+> Cc: Davidlohr Bueso <davidlohr@hp.com>
+> Cc: Kees Cook <kees@outflux.net>
+> Cc: wad@chromium.org
+> Link: http://lkml.kernel.org/r/20140611204237.361836310@linutronix.de
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 > ---
 > 
-> Hi Aris,
-> 
-> actually, you bisected the bug, so can I consider that I have your signed-off-by?
+> V2: Fixed the brown paperbag bug of V1
 
-Yes, my apologies, I ended up losing track of this and didn't send
-earlier.
+I confirm this v2 fixes the issue. Passes 5 hr pounding on my 80-core
+system. Unsurprisingly, I didn't see any performance regressions either.
 
-Signed-off-by: Aristeu Rozanski <aris@redhat.com>
-
->  drivers/input/tablet/wacom_sys.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/input/tablet/wacom_sys.c b/drivers/input/tablet/wacom_sys.c
-> index 7087b33..319a3ff 100644
-> --- a/drivers/input/tablet/wacom_sys.c
-> +++ b/drivers/input/tablet/wacom_sys.c
-> @@ -536,6 +536,9 @@ static int wacom_set_device_mode(struct usb_interface *intf, int report_id, int
->  
->  		error = wacom_set_report(intf, WAC_HID_FEATURE_REPORT,
->  		                         report_id, rep_data, length, 1);
-> +		if (error >= 0)
-> +			error = wacom_get_report(intf, WAC_HID_FEATURE_REPORT,
-> +			                         report_id, rep_data, length, 1);
->  	} while ((error < 0 || rep_data[1] != mode) && limit++ < WAC_MSG_RETRIES);
->  
->  	kfree(rep_data);
-> -- 
-> 1.9.0
-> 
-
--- 
-Aristeu
+Thanks,
+Davidlohr
 
