@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752740AbaFMG1H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 02:27:07 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44220 "EHLO
+	id S1752783AbaFMG1U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 02:27:20 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44231 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751537AbaFMG1F (ORCPT
+	with ESMTP id S1751674AbaFMG1Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 02:27:05 -0400
-Date: Thu, 12 Jun 2014 23:26:48 -0700
+	Fri, 13 Jun 2014 02:27:16 -0400
+Date: Thu, 12 Jun 2014 23:26:59 -0700
 From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-0d8a5faaf5a1087c7212a6f0d81920a93396414a@git.kernel.org>
+Message-ID: <tip-822c45db6398a69879b0539f0819de02b813493c@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
         mingo@kernel.org, jolsa@kernel.org, a.p.zijlstra@chello.nl,
         jean.pihet@linaro.org, acme@kernel.org, namhyung@kernel.org,
@@ -20,11 +20,11 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
         jean.pihet@linaro.org, acme@kernel.org, namhyung@kernel.org,
         fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
         cjashfor@linux.vnet.ibm.com
-In-Reply-To: <1401892622-30848-11-git-send-email-jolsa@kernel.org>
-References: <1401892622-30848-11-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1401892622-30848-12-git-send-email-jolsa@kernel.org>
+References: <1401892622-30848-12-git-send-email-jolsa@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tests: Spawn child for each test
-Git-Commit-ID: 0d8a5faaf5a1087c7212a6f0d81920a93396414a
+Subject: [tip:perf/core] perf tests: Allow reuse of test_file function
+Git-Commit-ID: 822c45db6398a69879b0539f0819de02b813493c
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -37,18 +37,20 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0d8a5faaf5a1087c7212a6f0d81920a93396414a
-Gitweb:     http://git.kernel.org/tip/0d8a5faaf5a1087c7212a6f0d81920a93396414a
+Commit-ID:  822c45db6398a69879b0539f0819de02b813493c
+Gitweb:     http://git.kernel.org/tip/822c45db6398a69879b0539f0819de02b813493c
 Author:     Jiri Olsa <jolsa@kernel.org>
-AuthorDate: Sat, 10 May 2014 17:22:30 +0200
+AuthorDate: Sun, 4 May 2014 13:51:46 +0200
 Committer:  Jiri Olsa <jolsa@kernel.org>
 CommitDate: Thu, 12 Jun 2014 16:53:22 +0200
 
-perf tests: Spawn child for each test
+perf tests: Allow reuse of test_file function
 
-In upcoming tests we will setup process limits, which
-might affect other tests. Spawning child for each test
-to prevent this.
+Making the test_file function to be reusable for
+new tests coming in following patches.
+
+Also changing the template name of temp files to
+"/tmp/perf-test-XXXXXX" to easily identify & blame.
 
 Acked-by: Namhyung Kim <namhyung@kernel.org>
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
@@ -60,67 +62,30 @@ Cc: Jean Pihet <jean.pihet@linaro.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Reviewed-by: David Ahern <dsahern@gmail.com>
-Link: http://lkml.kernel.org/r/1401892622-30848-11-git-send-email-jolsa@kernel.org
+Link: http://lkml.kernel.org/r/1401892622-30848-12-git-send-email-jolsa@kernel.org
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/tests/builtin-test.c | 32 +++++++++++++++++++++++++++++++-
- 1 file changed, 31 insertions(+), 1 deletion(-)
+ tools/perf/tests/dso-data.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index 802e3cd..9677a5c 100644
---- a/tools/perf/tests/builtin-test.c
-+++ b/tools/perf/tests/builtin-test.c
-@@ -3,6 +3,8 @@
-  *
-  * Builtin regression testing command: ever growing number of sanity tests
-  */
-+#include <unistd.h>
-+#include <string.h>
- #include "builtin.h"
- #include "intlist.h"
- #include "tests.h"
-@@ -172,6 +174,34 @@ static bool perf_test__matches(int curr, int argc, const char *argv[])
- 	return false;
- }
+diff --git a/tools/perf/tests/dso-data.c b/tools/perf/tests/dso-data.c
+index 3e6cb17..7384381 100644
+--- a/tools/perf/tests/dso-data.c
++++ b/tools/perf/tests/dso-data.c
+@@ -12,11 +12,15 @@
  
-+static int run_test(struct test *test)
-+{
-+	int status, err = -1, child = fork();
-+
-+	if (child < 0) {
-+		pr_err("failed to fork test: %s\n", strerror(errno));
-+		return -1;
-+	}
-+
-+	if (!child) {
-+		pr_debug("test child forked, pid %d\n", getpid());
-+		err = test->func();
-+		exit(err);
-+	}
-+
-+	wait(&status);
-+
-+	if (WIFEXITED(status)) {
-+		err = WEXITSTATUS(status);
-+		pr_debug("test child finished with %d\n", err);
-+	} else if (WIFSIGNALED(status)) {
-+		err = -1;
-+		pr_debug("test child interrupted\n");
-+	}
-+
-+	return err;
-+}
-+
- static int __cmd_test(int argc, const char *argv[], struct intlist *skiplist)
+ static char *test_file(int size)
  {
- 	int i = 0;
-@@ -200,7 +230,7 @@ static int __cmd_test(int argc, const char *argv[], struct intlist *skiplist)
- 		}
+-	static char buf_templ[] = "/tmp/test-XXXXXX";
++#define TEMPL "/tmp/perf-test-XXXXXX"
++	static char buf_templ[sizeof(TEMPL)];
+ 	char *templ = buf_templ;
+ 	int fd, i;
+ 	unsigned char *buf;
  
- 		pr_debug("\n--- start ---\n");
--		err = tests[curr].func();
-+		err = run_test(&tests[curr]);
- 		pr_debug("---- end ----\n%s:", tests[curr].desc);
- 
- 		switch (err) {
++	strcpy(buf_templ, TEMPL);
++#undef TEMPL
++
+ 	fd = mkstemp(templ);
+ 	if (fd < 0) {
+ 		perror("mkstemp failed");
