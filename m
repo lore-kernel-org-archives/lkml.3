@@ -1,64 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753257AbaFMKHS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 06:07:18 -0400
-Received: from mail-bn1blp0189.outbound.protection.outlook.com ([207.46.163.189]:35445
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751468AbaFMKFx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 06:05:53 -0400
-From: Nicolin Chen <nicoleotsuka@gmail.com>
-To: <broonie@kernel.org>, <vinod.koul@intel.com>, <s.hauer@pengutronix.de>
-CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rdunlap@infradead.org>, <lgirdwood@gmail.com>, <perex@perex.cz>,
-        <tiwai@suse.de>, <timur@tabi.org>, <grant.likely@linaro.org>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <alsa-devel@alsa-project.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <dan.j.williams@intel.com>,
-        <dmaengine@vger.kernel.org>, <b38343@freescale.com>,
-        <b02247@freescale.com>, <b42378@freescale.com>
-Subject: [RFC][PATCH 0/2] Add ASRC Peripheral to Peripheral driver
-Date: Fri, 13 Jun 2014 18:07:03 +0800
-Message-ID: <cover.1402653667.git.nicoleotsuka@gmail.com>
-X-Mailer: git-send-email 1.8.4
-X-EOPAttributedMessage: 0
-X-Matching-Connectors: 130471275506943002;(91ab9b29-cfa4-454e-5278-08d120cd25b8);()
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199002)(87572001)(33646001)(62966002)(19580395003)(50466002)(79102001)(80022001)(104016001)(46102001)(97736001)(87286001)(50226001)(86362001)(36756003)(104166001)(61266001)(2201001)(83072002)(21056001)(68736004)(73392001)(93916002)(99396002)(26826002)(4396001)(74662001)(20776003)(81442001)(84676001)(64706001)(81342001)(82202001)(81542001)(77982001)(88136002)(55446002)(6806004)(77096999)(31966008)(50986999)(73972005)(44976005)(92726001)(48376002)(77156001)(92566001)(102836001)(74502001)(87936001)(47776003)(89996001)(85852003);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB400;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+	id S1752164AbaFMKJy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 06:09:54 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:49642 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751458AbaFMKJw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 06:09:52 -0400
+Message-ID: <539ACDE8.7010703@hitachi.com>
+Date: Fri, 13 Jun 2014 19:09:44 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
-X-Forefront-PRVS: 0241D5F98C
-Authentication-Results: spf=softfail (sender IP is 192.88.168.50)
- smtp.mailfrom=nicoleotsuka@gmail.com; 
+To: Josh Poimboeuf <jpoimboe@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Subject: Re: Re: [PATCH ftrace/core  0/2] ftrace, kprobes: Introduce IPMODIFY
+ flag for ftrace_ops to detect conflicts
+References: <20140610105001.8732.93502.stgit@kbuild-fedora.novalocal> <20140611165826.GA5087@treble.redhat.com> <53993E43.9040705@hitachi.com> <20140612124332.GA3863@treble.redhat.com>
+In-Reply-To: <20140612124332.GA3863@treble.redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series of patches have a direct dependency between them. So we might
-need to push them into one branch. And sorry for this :(
+(2014/06/12 21:43), Josh Poimboeuf wrote:
+>>>  I tried removing the FTRACE_OPS_FL_ENABLED clearing line in
+>>> ftrace_startup, but I saw more warnings.  This one happened when
+>>> attempting to kprobe a kpatched function:
+>>
+>> Oops! yes, this should happen...
+> 
+> Instead of a warning here I'd expect to see register_kprobe return an
+> error and a staprun failure.
 
-Patch-1 adds device to device support in SDMA driver along with a secondary
-request in struct imx_dma_data which's requred in the Patch-2 ASRC driver.
+Actually, since kprobes has "disabled" state, not only register_kprobe
+but also enable_kprobe also can be failed. :)
 
-Nicolin Chen (2):
-  dma: imx-sdma: Add device to device support
-  ASoC: fsl_asrc: Add ASRC ASoC CPU DAI and platform drivers
 
- .../devicetree/bindings/sound/fsl,asrc.txt         |   62 ++
- drivers/dma/imx-sdma.c                             |   40 +-
- include/linux/platform_data/dma-imx.h              |    1 +
- sound/soc/fsl/Kconfig                              |    9 +
- sound/soc/fsl/Makefile                             |    2 +
- sound/soc/fsl/fsl_asrc.c                           | 1031 ++++++++++++++++++++
- sound/soc/fsl/fsl_asrc.h                           |  431 ++++++++
- sound/soc/fsl/fsl_asrc_dma.c                       |  385 ++++++++
- 8 files changed, 1956 insertions(+), 5 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/sound/fsl,asrc.txt
- create mode 100644 sound/soc/fsl/fsl_asrc.c
- create mode 100644 sound/soc/fsl/fsl_asrc.h
- create mode 100644 sound/soc/fsl/fsl_asrc_dma.c
+>>>   WARNING: CPU: 3 PID: 4444 at kernel/kprobes.c:953 arm_kprobe+0xa7/0xe0()
+>>>   Failed to init kprobe-ftrace (-16)
+>>>   Modules linked in: stap_b2ea0de23f179d8ded86fcc19fcc533_4444(OE) kpatch_meminfo_string(OE) kpatch(OE) rfcomm fuse ccm ipt_MASQUERADE xt_CHECKSUM tun ip6t_rpfilter ip6t_REJECT xt_conntrack bnep ebtable_nat ebtable_broute bridge stp llc ebtable_filter ebtables ip6table_nat nf_conntrack_ipv6 nf_defrag_ipv6 nf_nat_ipv6 ip6table_mangle ip6table_security ip6table_raw ip6table_filter ip6_tables iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack iptable_mangle iptable_security iptable_raw arc4 iwldvm mac80211 iTCO_wdt iTCO_vendor_support x86_pkg_temp_thermal coretemp kvm_intel kvm snd_hda_codec_hdmi iwlwifi snd_hda_codec_realtek snd_hda_codec_generic snd_hda_intel snd_hda_controller snd_hda_codec snd_hwdep snd_seq uvcvideo btusb cfg80211 bluetooth videobuf2_vmalloc videobuf2_memops
+>>>    videobuf2_core v4l2_common videodev snd_seq_device snd_pcm sdhci_pci media sdhci joydev nfsd i2c_i801 serio_raw pcspkr mmc_core microcode snd_timer e1000e lpc_ich thinkpad_acpi mfd_core shpchp snd wmi tpm_tis soundcore tpm ptp rfkill mei_me auth_rpcgss mei pps_core nfs_acl lockd sunrpc dm_crypt i915 i2c_algo_bit drm_kms_helper drm crct10dif_pclmul crc32_pclmul crc32c_intel ghash_clmulni_intel i2c_core video [last unloaded: kpatch_meminfo_string]
+>>>   CPU: 3 PID: 4444 Comm: stapio Tainted: G     U  W  OE 3.15.0-IPMODIFY+ #1
+>>>   Hardware name: LENOVO 2356BH8/2356BH8, BIOS G7ET63WW (2.05 ) 11/12/2012
+>>>    0000000000000000 000000009cd22363 ffff880427bdfd80 ffffffff816f31ed
+>>>    ffff880427bdfdc8 ffff880427bdfdb8 ffffffff8108914d ffffffffa08258e0
+>>>    ffffffffa08258f0 0000000000000000 0000000000000000 0000000000000000
+>>>   Call Trace:
+>>>    [<ffffffff816f31ed>] dump_stack+0x45/0x56
+>>>    [<ffffffff8108914d>] warn_slowpath_common+0x7d/0xa0
+>>>    [<ffffffff810891cc>] warn_slowpath_fmt+0x5c/0x80
+>>>    [<ffffffff816ff9d7>] arm_kprobe+0xa7/0xe0
+>>>    [<ffffffff817007f7>] register_kprobe+0x557/0x5d0
+>>>    [<ffffffff81254da0>] ? meminfo_proc_open+0x30/0x30
+>>>    [<ffffffffa0820c95>] _stp_ctl_write_cmd+0x8d5/0x930 [stap_b2ea0de23f179d8ded86fcc19fcc533_4444]
+>>>    [<ffffffff811e5daa>] vfs_write+0xba/0x1e0
+>>>    [<ffffffff811e6965>] SyS_write+0x55/0xd0
+>>>    [<ffffffff81703179>] system_call_fastpath+0x16/0x1b
+>>>
+>>>
+>>> And this one happened after unregistering a probe and then attempting to
+>>> register kpatch:
+>>
+>> Did you see this on unpatching? it seems to happen on disabling a hash...
+> 
+> No, I think it was in the patching path, after removing the kprobe.
+> kpatch was calling ftrace_set_filter_ip(), and had not called
+> register_ftrace_function() yet.
+
+OK, anyway, I'll make a test case for checking it.
+Thanks!
+
 
 -- 
-1.8.4
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
