@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752592AbaFMN4Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 09:56:25 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:59543 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751760AbaFMN4X (ORCPT
+	id S1752083AbaFMN7i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 09:59:38 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:22723 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751452AbaFMN7h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 09:56:23 -0400
-Date: Fri, 13 Jun 2014 14:56:15 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Christoph Lameter <cl@gentwo.org>, Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: mm/fs: gpf when shrinking slab
-Message-ID: <20140613135615.GG18016@ZenIV.linux.org.uk>
-References: <539AF460.4000400@oracle.com>
- <539AF4A6.9060707@oracle.com>
- <20140613130026.GF18016@ZenIV.linux.org.uk>
- <539AFCBF.1040505@oracle.com>
+	Fri, 13 Jun 2014 09:59:37 -0400
+Date: Fri, 13 Jun 2014 09:59:34 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
+        Jan Kiszka <jan.kiszka@siemens.com>
+Subject: Re: [PATCH 4/4] tools lib traceevent: Fix and cleanup
+ kvm_nested_vmexit tracepoints
+Message-ID: <20140613095934.7274672b@gandalf.local.home>
+In-Reply-To: <1402653337.2178.6.camel@leonhard>
+References: <20140613021002.444608350@goodmis.org>
+	<20140613021157.484318137@goodmis.org>
+	<1402653337.2178.6.camel@leonhard>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <539AFCBF.1040505@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 09:29:35AM -0400, Sasha Levin wrote:
-> On 06/13/2014 09:00 AM, Al Viro wrote:
-> > On Fri, Jun 13, 2014 at 08:55:02AM -0400, Sasha Levin wrote:
-> >> Hand too fast on the trigger... sorry.
-> >>
-> >> It happened while fuzzing inside a KVM tools guest on the latest -next kernel. Seems
-> >> to be pretty difficult to reproduce.
-> > 
-> > Does that kernel contain c2338f?
-> > 
-> 
-> Nope, it didn't.
+On Fri, 13 Jun 2014 18:55:37 +0900
+Namhyung Kim <namhyung@kernel.org> wrote:
 
-Try to reproduce with it, please...
+
+> >  {
+> > -	pevent_print_num_field(s, " rip %0x016llx", event, "rip", record, 1);
+> > +	pevent_print_num_field(s, "rip %lx ", event, "rip", record, 1);
+> 
+> s/%lx/%llx/
+
+I'll make this as a separate fix to keep the original patch as is.
+
+> 
+> Otherwise this series and previous two cleanup patches look good to me.
+> 
+> Acked-by: Namhyung Kim <namhyung@kernel.org>
+> 
+
+Thanks!
+
+-- Steve
+
