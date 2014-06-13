@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752463AbaFMHky (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 03:40:54 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:33852 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750817AbaFMHkx (ORCPT
+	id S1752644AbaFMHlc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 03:41:32 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:41949 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752573AbaFMHla (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 03:40:53 -0400
-Date: Fri, 13 Jun 2014 16:39:58 +0900
+	Fri, 13 Jun 2014 03:41:30 -0400
+Date: Fri, 13 Jun 2014 16:40:35 +0900
 From: Daeseok Youn <daeseok.youn@gmail.com>
 To: lidza.louina@gmail.com, gregkh@linuxfoundation.org
 Cc: markh@compro.net, dan.carpenter@oracle.com,
         driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 2/9] staging: dgap: get rid of brd->firstminor because it is 0
-Message-ID: <20140613073958.GA31594@devel.8.8.4.4>
+Subject: [PATCH 3/9] staging: dgap: introduce dgap_tty_free() for freeing
+ channels.
+Message-ID: <20140613074035.GA31603@devel.8.8.4.4>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,61 +24,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-firstminor in struct borad_t is always zero, so it
-can be removed.
+It should be called after dgap_tty_register_ports() is failed.
+So channels which are allocated in dgap_tty_init() will be freed.
 
 Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
 ---
- drivers/staging/dgap/dgap.c |    9 ++++-----
- drivers/staging/dgap/dgap.h |    1 -
- 2 files changed, 4 insertions(+), 6 deletions(-)
+ drivers/staging/dgap/dgap.c |   17 ++++++++++++++++-
+ 1 files changed, 16 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
-index c1f2798..352eb1b 100644
+index 352eb1b..eab8fd5 100644
 --- a/drivers/staging/dgap/dgap.c
 +++ b/drivers/staging/dgap/dgap.c
-@@ -684,7 +684,6 @@ static int dgap_found_board(struct pci_dev *pdev, int id, int boardnum)
- 	/* store the info for the board we've found */
- 	brd->magic = DGAP_BOARD_MAGIC;
- 	brd->boardnum = boardnum;
--	brd->firstminor = 0;
- 	brd->vendor = dgap_pci_tbl[id].vendor;
- 	brd->device = dgap_pci_tbl[id].device;
- 	brd->pdev = pdev;
-@@ -4168,8 +4167,8 @@ static int dgap_tty_register_ports(struct board_t *brd)
- 		struct device *classp;
+@@ -123,6 +123,7 @@ static void dgap_tty_send_xchar(struct tty_struct *tty, char ch);
  
- 		classp = tty_port_register_device(&brd->serial_ports[i],
--					brd->serial_driver,
--					brd->firstminor + i, NULL);
-+						  brd->serial_driver,
-+						  i, NULL);
+ static int dgap_tty_register(struct board_t *brd);
+ static int dgap_tty_init(struct board_t *);
++static void dgap_tty_free(struct board_t *);
+ static void dgap_cleanup_tty(struct board_t *);
+ static void dgap_carrier(struct channel_t *ch);
+ static void dgap_input(struct channel_t *ch);
+@@ -960,8 +961,10 @@ static int dgap_firmware_load(struct pci_dev *pdev, int card_type)
+ 		return ret;
  
- 		if (IS_ERR(classp)) {
- 			ret = PTR_ERR(classp);
-@@ -4180,8 +4179,8 @@ static int dgap_tty_register_ports(struct board_t *brd)
- 		ch->ch_tun.un_sysfs = classp;
+ 	ret = dgap_tty_register_ports(brd);
+-	if (ret)
++	if (ret) {
++		dgap_tty_free(brd);
+ 		return ret;
++	}
  
- 		classp = tty_port_register_device(&brd->printer_ports[i],
--					brd->print_driver,
--					brd->firstminor + i, NULL);
-+						  brd->print_driver,
-+						  i, NULL);
+ 	brd->state = BOARD_READY;
+ 	brd->dpastatus = BD_RUNNING;
+@@ -1488,6 +1491,18 @@ free_chan:
+ }
  
- 		if (IS_ERR(classp)) {
- 			ret = PTR_ERR(classp);
-diff --git a/drivers/staging/dgap/dgap.h b/drivers/staging/dgap/dgap.h
-index 03c020e..c00b2e2 100644
---- a/drivers/staging/dgap/dgap.h
-+++ b/drivers/staging/dgap/dgap.h
-@@ -529,7 +529,6 @@ struct macounter {
- struct board_t {
- 	int		magic;		/* Board Magic number.  */
- 	int		boardnum;	/* Board number: 0-3 */
--	int		firstminor;	/* First minor, e.g. 0, 30, 60 */
- 
- 	int		type;		/* Type of board */
- 	char		*name;		/* Product Name */
+ /*
++ * dgap_tty_free()
++ *
++ * Free the channles which are allocated in dgap_tty_init().
++ */
++static void dgap_tty_free(struct board_t *brd)
++{
++	int i;
++
++	for (i = 0; i < brd->nasync; i++)
++		kfree(brd->channels[i]);
++}
++/*
+  * dgap_cleanup_tty()
+  *
+  * Uninitialize the TTY portion of this driver.  Free all memory and
 -- 
 1.7.1
 
