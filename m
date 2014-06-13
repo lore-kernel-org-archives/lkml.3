@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753957AbaFMRtu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 13:49:50 -0400
-Received: from mail.phunq.net ([184.71.0.62]:47818 "EHLO starbase.phunq.net"
+	id S1753688AbaFMR6B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 13:58:01 -0400
+Received: from s3.sipsolutions.net ([5.9.151.49]:39108 "EHLO sipsolutions.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752075AbaFMRtt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 13:49:49 -0400
-From: Daniel Phillips <daniel@phunq.net>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Dave Chinner <david@fromorbit.com>, <linux-kernel@vger.kernel.org>,
-        <linux-fsdevel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC] Tux3 for review
-Date: Fri, 13 Jun 2014 10:49:39 -0700
-User-Agent: Trojita/0.4.1; Qt/4.8.6; X11; Linux; Ubuntu 14.04 LTS
-MIME-Version: 1.0
-Message-ID: <02d3b094-808c-4b17-903d-1280d451704b@phunq.net>
-In-Reply-To: <20140613103216.GA4589@amd.pavel.ucw.cz>
-References: <5376B273.7000800@partner.samsung.com>
- <20140518235555.GC18954@dastard> <537AA802.408@phunq.net>
- <20140520031802.GF18954@dastard> <20140613103216.GA4589@amd.pavel.ucw.cz>
-Organization: tux3.org
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+	id S1753308AbaFMR6A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 13:58:00 -0400
+Message-ID: <1402682264.4478.30.camel@jlt4.sipsolutions.net>
+Subject: Re: [PATCH 27/38] tools lib traceevent: Add mac80211 plugin
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Jiri Olsa <jolsa@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Date: Fri, 13 Jun 2014 19:57:44 +0200
+In-Reply-To: <20140612231331.2f30b312@gandalf.local.home>
+References: <1386187622-2928-1-git-send-email-acme@infradead.org>
+	 <1386187622-2928-28-git-send-email-acme@infradead.org>
+	 <20140612231331.2f30b312@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pavel, On Friday, June 13, 2014 3:32:16 AM PDT, Pavel Machek wrote:
-> Hmm, it seems that merging filesystems is getting harder over
-> time. Soon, it will be impossible to merge new filesystem.
+On Thu, 2014-06-12 at 23:13 -0400, Steven Rostedt wrote:
 
-My thought exactly, but it carries more weight coming from you.
+> While doing my synchronization between trace-cmd and lib traceevent, I
+> noticed that the mac80211 driver is quite different.
+> 
+> Johannes, Jiri states that this plugin no longer works with the latest
+> kernels. Is that true?
 
-It is getting more unpleasant to discuss things on LKML in
-general, which tends to drive the design process away from
-public view, leaving only the dregs of politics and infighting
-for the public record. Perhaps some participants prefer it that
-way, but I am certainly not one of them.
+It's very well possible, looks like we changed mac80211 to chandefs and
+the plugin still has channel type ... that's actually quite a while ago.
+Given that nobody noticed, I'll have to assume that nobody uses the
+mac80211 plugin ;-)
 
-I thought this issue was going to be addressed at last year's
-kernel summit.
+Want to just remove it? I'd probably replace it with a python one anyway
+if I ever need it ... the C code is hard to work with even with all the
+macro magic.
 
-Regards,
+johannes
 
-Daniel
