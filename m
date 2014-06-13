@@ -1,231 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754066AbaFMRax (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 13:30:53 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:40083 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752075AbaFMRau (ORCPT
+	id S1753987AbaFMRc7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 13:32:59 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:62507 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753775AbaFMRc5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 13:30:50 -0400
-From: Ming Lei <ming.lei@canonical.com>
-To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-api@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Stefan Hajnoczi <stefanha@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Ming Lei <ming.lei@canonical.com>
-Subject: [RFC PATCH 2/2] block: virtio-blk: support multi virt queues per virtio-blk device
-Date: Sat, 14 Jun 2014 01:29:22 +0800
-Message-Id: <1402680562-8328-3-git-send-email-ming.lei@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1402680562-8328-1-git-send-email-ming.lei@canonical.com>
-References: <1402680562-8328-1-git-send-email-ming.lei@canonical.com>
+	Fri, 13 Jun 2014 13:32:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140613105135.GA4876@amd.pavel.ucw.cz>
+References: <1402602419-27934-1-git-send-email-keescook@chromium.org>
+	<539A0422.9010000@zytor.com>
+	<CAGXu5jLvAr=f2MRP4Ni86-jbM7h3Mx3RQo=7coveE8ZEt12N=Q@mail.gmail.com>
+	<539A0DC2.1010203@zytor.com>
+	<CAGXu5jKanRjK66P9dFYctXfQxT+da_9z8vqy8s+WqgW1cw17-Q@mail.gmail.com>
+	<20140613105135.GA4876@amd.pavel.ucw.cz>
+Date: Fri, 13 Jun 2014 10:32:56 -0700
+X-Google-Sender-Auth: HusOvnzKxofoqxff37AaygcNxMA
+Message-ID: <CAGXu5jJTSqtOMBNeOGEXfj_1iWGbE7p_YooeHT9wc4WRDjcGyQ@mail.gmail.com>
+Subject: Re: [PATCH 0/2] make kASLR vs hibernation boot-time selectable
+From: Kees Cook <keescook@chromium.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        linux-pm@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Firstly this patch supports more than one virtual queues for virtio-blk
-device.
+On Fri, Jun 13, 2014 at 3:51 AM, Pavel Machek <pavel@ucw.cz> wrote:
+> Hi!
+>
+>
+>> >>> Any way we can make them work together instead?
+>> >>
+>> >> I'm sure there is, but I don't know the solution. :)
+>> >>
+>> >> At the very least this gets us one step closer (we can build them together).
+>> >>
+>> >
+>> > But it is really invasive.
+>>
+>> Well, I don't agree there. I actually would like to be able to turn
+>> off hibernation support on distro kernels regardless of kASLR, so I
+>> think this is really killing two birds with one stone.
+>>
+>> > I have to admit to being somewhat fuzzy on what the core problem with
+>> > hibernation and kASLR is... in both cases there is a set of pages that
+>> > need to be installed, some of which will overlap the loader kernel.
+>> > What am I missing?
+>>
+>> I don't know how resume works, but I have assumed that the newly
+>> loaded kernel stays in memory and pulls in the vmalloc, kmalloc,
+>> modules, and userspace memory maps from disk. Since these things can
+>> easily contain references to kernel text, if the newly loaded kernel
+>> has moved with regard to the hibernated image, everything breaks.
+>> IIUC, this is similar why you can't rebuild your kernel and resume
+>> from a different version.
+>
+> x86-64 can resume from different kernel that did the suspend. kASLR
+> should not be too different from that. (You just include kernel text
+> in the hibernation image. It is small enough to do that.)
 
-Secondly this patch maps the virtual queue to blk-mq's hardware queue.
+Oooh, that's very exciting! How does that work (what happens to the
+kernel that booted first, etc)? I assume physical memory layout can't
+change between hibernation and resume? Or, where should I be reading
+code that does this?
 
-With this approach, both scalability and performance problem can be improved.
+-Kees
 
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
----
- drivers/block/virtio_blk.c |   75 ++++++++++++++++++++++++++++++++------------
- 1 file changed, 55 insertions(+), 20 deletions(-)
-
-diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-index f63d358..e0d077d 100644
---- a/drivers/block/virtio_blk.c
-+++ b/drivers/block/virtio_blk.c
-@@ -16,6 +16,8 @@
- 
- #define PART_BITS 4
- 
-+#define MAX_NUM_VQ 16
-+
- static int major;
- static DEFINE_IDA(vd_index_ida);
- 
-@@ -24,8 +26,8 @@ static struct workqueue_struct *virtblk_wq;
- struct virtio_blk
- {
- 	struct virtio_device *vdev;
--	struct virtqueue *vq;
--	spinlock_t vq_lock;
-+	struct virtqueue *vq[MAX_NUM_VQ];
-+	spinlock_t vq_lock[MAX_NUM_VQ];
- 
- 	/* The disk structure for the kernel. */
- 	struct gendisk *disk;
-@@ -47,6 +49,9 @@ struct virtio_blk
- 
- 	/* Ida index - used to track minor number allocations. */
- 	int index;
-+
-+	/* num of vqs */
-+	int num_vqs;
- };
- 
- struct virtblk_req
-@@ -133,14 +138,15 @@ static void virtblk_done(struct virtqueue *vq)
- {
- 	struct virtio_blk *vblk = vq->vdev->priv;
- 	bool req_done = false;
-+	int qid = vq->index;
- 	struct virtblk_req *vbr;
- 	unsigned long flags;
- 	unsigned int len;
- 
--	spin_lock_irqsave(&vblk->vq_lock, flags);
-+	spin_lock_irqsave(&vblk->vq_lock[qid], flags);
- 	do {
- 		virtqueue_disable_cb(vq);
--		while ((vbr = virtqueue_get_buf(vblk->vq, &len)) != NULL) {
-+		while ((vbr = virtqueue_get_buf(vblk->vq[qid], &len)) != NULL) {
- 			blk_mq_complete_request(vbr->req);
- 			req_done = true;
- 		}
-@@ -151,7 +157,7 @@ static void virtblk_done(struct virtqueue *vq)
- 	/* In case queue is stopped waiting for more buffers. */
- 	if (req_done)
- 		blk_mq_start_stopped_hw_queues(vblk->disk->queue, true);
--	spin_unlock_irqrestore(&vblk->vq_lock, flags);
-+	spin_unlock_irqrestore(&vblk->vq_lock[qid], flags);
- }
- 
- static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
-@@ -160,6 +166,7 @@ static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
- 	struct virtblk_req *vbr = blk_mq_rq_to_pdu(req);
- 	unsigned long flags;
- 	unsigned int num;
-+	int qid = hctx->queue_num;
- 	const bool last = (req->cmd_flags & REQ_END) != 0;
- 	int err;
- 	bool notify = false;
-@@ -202,12 +209,12 @@ static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
- 			vbr->out_hdr.type |= VIRTIO_BLK_T_IN;
- 	}
- 
--	spin_lock_irqsave(&vblk->vq_lock, flags);
--	err = __virtblk_add_req(vblk->vq, vbr, vbr->sg, num);
-+	spin_lock_irqsave(&vblk->vq_lock[qid], flags);
-+	err = __virtblk_add_req(vblk->vq[qid], vbr, vbr->sg, num);
- 	if (err) {
--		virtqueue_kick(vblk->vq);
-+		virtqueue_kick(vblk->vq[qid]);
- 		blk_mq_stop_hw_queue(hctx);
--		spin_unlock_irqrestore(&vblk->vq_lock, flags);
-+		spin_unlock_irqrestore(&vblk->vq_lock[qid], flags);
- 		/* Out of mem doesn't actually happen, since we fall back
- 		 * to direct descriptors */
- 		if (err == -ENOMEM || err == -ENOSPC)
-@@ -215,12 +222,12 @@ static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
- 		return BLK_MQ_RQ_QUEUE_ERROR;
- 	}
- 
--	if (last && virtqueue_kick_prepare(vblk->vq))
-+	if (last && virtqueue_kick_prepare(vblk->vq[qid]))
- 		notify = true;
--	spin_unlock_irqrestore(&vblk->vq_lock, flags);
-+	spin_unlock_irqrestore(&vblk->vq_lock[qid], flags);
- 
- 	if (notify)
--		virtqueue_notify(vblk->vq);
-+		virtqueue_notify(vblk->vq[qid]);
- 	return BLK_MQ_RQ_QUEUE_OK;
- }
- 
-@@ -377,12 +384,40 @@ static void virtblk_config_changed(struct virtio_device *vdev)
- static int init_vq(struct virtio_blk *vblk)
- {
- 	int err = 0;
-+	int i;
-+	vq_callback_t *callbacks[MAX_NUM_VQ];
-+	const char *names[MAX_NUM_VQ];
-+	unsigned short num_vqs;
-+	struct virtio_device *vdev = vblk->vdev;
- 
--	/* We expect one virtqueue, for output. */
--	vblk->vq = virtio_find_single_vq(vblk->vdev, virtblk_done, "requests");
--	if (IS_ERR(vblk->vq))
--		err = PTR_ERR(vblk->vq);
-+	if (virtio_has_feature(vdev, VIRTIO_BLK_F_MQ))
-+		err = virtio_cread_feature(vdev, VIRTIO_BLK_F_MQ,
-+				   struct virtio_blk_config, num_queues,
-+				   &num_vqs);
-+	else
-+		num_vqs = 1;
-+
-+	if (err)
-+		goto out;
- 
-+	if (num_vqs > MAX_NUM_VQ)
-+		num_vqs = MAX_NUM_VQ;
-+
-+	for (i = 0; i < num_vqs; i++) {
-+		callbacks[i] = virtblk_done;
-+		names[i] = "requests";
-+	}
-+
-+	/* Discover virtqueues and write information to configuration.  */
-+	err = vdev->config->find_vqs(vdev, num_vqs, vblk->vq,
-+			callbacks, names);
-+	if (err)
-+		goto out;
-+
-+	for (i = 0; i < num_vqs; i++)
-+		spin_lock_init(&vblk->vq_lock[i]);
-+	vblk->num_vqs = num_vqs;
-+out:
- 	return err;
- }
- 
-@@ -551,7 +586,6 @@ static int virtblk_probe(struct virtio_device *vdev)
- 	err = init_vq(vblk);
- 	if (err)
- 		goto out_free_vblk;
--	spin_lock_init(&vblk->vq_lock);
- 
- 	/* FIXME: How many partitions?  How long is a piece of string? */
- 	vblk->disk = alloc_disk(1 << PART_BITS);
-@@ -562,7 +596,7 @@ static int virtblk_probe(struct virtio_device *vdev)
- 
- 	/* Default queue sizing is to fill the ring. */
- 	if (!virtblk_queue_depth) {
--		virtblk_queue_depth = vblk->vq->num_free;
-+		virtblk_queue_depth = vblk->vq[0]->num_free;
- 		/* ... but without indirect descs, we use 2 descs per req */
- 		if (!virtio_has_feature(vdev, VIRTIO_RING_F_INDIRECT_DESC))
- 			virtblk_queue_depth /= 2;
-@@ -570,7 +604,6 @@ static int virtblk_probe(struct virtio_device *vdev)
- 
- 	memset(&vblk->tag_set, 0, sizeof(vblk->tag_set));
- 	vblk->tag_set.ops = &virtio_mq_ops;
--	vblk->tag_set.nr_hw_queues = 1;
- 	vblk->tag_set.queue_depth = virtblk_queue_depth;
- 	vblk->tag_set.numa_node = NUMA_NO_NODE;
- 	vblk->tag_set.flags = BLK_MQ_F_SHOULD_MERGE;
-@@ -578,6 +611,7 @@ static int virtblk_probe(struct virtio_device *vdev)
- 		sizeof(struct virtblk_req) +
- 		sizeof(struct scatterlist) * sg_elems;
- 	vblk->tag_set.driver_data = vblk;
-+	vblk->tag_set.nr_hw_queues = vblk->num_vqs;
- 
- 	err = blk_mq_alloc_tag_set(&vblk->tag_set);
- 	if (err)
-@@ -777,7 +811,8 @@ static const struct virtio_device_id id_table[] = {
- static unsigned int features[] = {
- 	VIRTIO_BLK_F_SEG_MAX, VIRTIO_BLK_F_SIZE_MAX, VIRTIO_BLK_F_GEOMETRY,
- 	VIRTIO_BLK_F_RO, VIRTIO_BLK_F_BLK_SIZE, VIRTIO_BLK_F_SCSI,
--	VIRTIO_BLK_F_WCE, VIRTIO_BLK_F_TOPOLOGY, VIRTIO_BLK_F_CONFIG_WCE
-+	VIRTIO_BLK_F_WCE, VIRTIO_BLK_F_TOPOLOGY, VIRTIO_BLK_F_CONFIG_WCE,
-+	VIRTIO_BLK_F_MQ,
- };
- 
- static struct virtio_driver virtio_blk = {
 -- 
-1.7.9.5
-
+Kees Cook
+Chrome OS Security
