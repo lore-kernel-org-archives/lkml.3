@@ -1,25 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754038AbaFMRXg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 13:23:36 -0400
-Received: from qmta11.emeryville.ca.mail.comcast.net ([76.96.27.211]:59247
-	"EHLO qmta11.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753536AbaFMRXf (ORCPT
+	id S1754070AbaFMRXs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 13:23:48 -0400
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:41794 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753803AbaFMRXp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 13:23:35 -0400
-Date: Fri, 13 Jun 2014 12:23:33 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: Tejun Heo <tj@kernel.org>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 11/12] percpu: preffity percpu header files
-In-Reply-To: <1402590209-31610-12-git-send-email-tj@kernel.org>
-Message-ID: <alpine.DEB.2.10.1406131222520.1717@gentwo.org>
-References: <1402590209-31610-1-git-send-email-tj@kernel.org> <1402590209-31610-12-git-send-email-tj@kernel.org>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 13 Jun 2014 13:23:45 -0400
+MIME-Version: 1.0
+In-Reply-To: <CANq1E4TQXKD8jaBcOJsL3h3ZPRXq176fz8Z9yevFbS3P0q1FQg@mail.gmail.com>
+References: <1402655819-14325-1-git-send-email-dh.herrmann@gmail.com>
+ <1402655819-14325-8-git-send-email-dh.herrmann@gmail.com> <CALCETrWaUsq_D2Z1PwbbwQQWKrnsWTLOdUR6bqPuedi8ZHgvEQ@mail.gmail.com>
+ <CANq1E4TQXKD8jaBcOJsL3h3ZPRXq176fz8Z9yevFbS3P0q1FQg@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 13 Jun 2014 10:23:23 -0700
+Message-ID: <CALCETrWsRQpuu2u9W5mcDTZKT9KVZn6TJHiMP7VWpR=6Zc_7Rw@mail.gmail.com>
+Subject: Re: [RFC v3 7/7] shm: isolate pinned pages when sealing files
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, Ryan Lortie <desrt@desrt.ca>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Daniel Mack <zonque@gmail.com>, Kay Sievers <kay@vrfy.org>,
+        Hugh Dickins <hughd@google.com>,
+        Tony Battersby <tonyb@cybernetics.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jun 13, 2014 at 8:27 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+> Hi
+>
+> On Fri, Jun 13, 2014 at 5:06 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> On Fri, Jun 13, 2014 at 3:36 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+>>> When setting SEAL_WRITE, we must make sure nobody has a writable reference
+>>> to the pages (via GUP or similar). We currently check references and wait
+>>> some time for them to be dropped. This, however, might fail for several
+>>> reasons, including:
+>>>  - the page is pinned for longer than we wait
+>>>  - while we wait, someone takes an already pinned page for read-access
+>>>
+>>> Therefore, this patch introduces page-isolation. When sealing a file with
+>>> SEAL_WRITE, we copy all pages that have an elevated ref-count. The newpage
+>>> is put in place atomically, the old page is detached and left alone. It
+>>> will get reclaimed once the last external user dropped it.
+>>>
+>>> Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
+>>
+>> Won't this have unexpected effects?
+>>
+>> Thread 1:  start read into mapping backed by fd
+>>
+>> Thread 2:  SEAL_WRITE
+>>
+>> Thread 1: read finishes.  now the page doesn't match the sealed page
+>
+> Just to be clear: you're talking about read() calls that write into
+> the memfd? (like my FUSE example does) Your language might be
+> ambiguous to others as "read into" actually implies a write.
+>
+> No, this does not have unexpected effects. But yes, your conclusion is
+> right. To be clear, this behavior would be part of the API. Any
+> asynchronous write might be cut off by SEAL_WRITE _iff_ you unmap your
+> buffer before the write finishes. But you actually have to extend your
+> example:
+>
+> Thread 1: p = mmap(memfd, SIZE);
+> Thread 1: h = async_read(some_fd, p, SIZE);
+> Thread 1: munmap(p, SIZE);
+> Thread 2: SEAL_WRITE
+> Thread 1: async_wait(h);
+>
+> If you don't do the unmap(), then SEAL_WRITE will fail due to an
+> elevated i_mmap_writable. I think this is fine. In fact, I remember
+> reading that async-IO is not required to resolve user-space addresses
+> at the time of the syscall, but might delay it to the time of the
+> actual write. But you're right, it would be misleading that the AIO
+> operation returns success. This would be part of the memfd-API,
+> though. And if you mess with your address space while running an
+> async-IO operation on it, you're screwed anyway.
 
-Acked-by: Christoph Lameter <cl@linux.com>
+Ok, I missed the part where you had to munmap to trigger the oddity.
+That seems fine to me.
 
+>
+> Btw., your sealing use-case is really odd. No-one guarantees that the
+> SEAL_WRITE happens _after_ you schedule your async-read. In case you
+> have some synchronization there, you just have to move it after
+> waiting for your async-io to finish.
+>
+> Does that clear things up?
+
+I think so.
+
+--Andy
