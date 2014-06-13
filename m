@@ -1,149 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753159AbaFMPRq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 11:17:46 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:38721 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752580AbaFMPRp (ORCPT
+	id S1753213AbaFMPSR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 11:18:17 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:49044 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752403AbaFMPSP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 11:17:45 -0400
+	Fri, 13 Jun 2014 11:18:15 -0400
 MIME-Version: 1.0
-In-Reply-To: <539B1534.5020603@roeck-us.net>
-References: <1402614493-12521-1-git-send-email-linux@roeck-us.net>
- <CAKfTPtAhykeqorg7SSbMYkHQ-bjoHQx4tCrxy+yubPxhSHThww@mail.gmail.com> <539B1534.5020603@roeck-us.net>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Fri, 13 Jun 2014 17:17:23 +0200
-Message-ID: <CAKfTPtBebaEYaeXbh+Tm-7HifHD_d8q=fqfyZmYjGSRRYirKQQ@mail.gmail.com>
-Subject: Re: [PATCH] sched: Fix compiler warnings
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CANq1E4SaWLD=hNEc-CDJbNnrGfXE_PkxZFBhpW4tbK7wor7xPA@mail.gmail.com>
+References: <1402655819-14325-1-git-send-email-dh.herrmann@gmail.com>
+ <CALCETrVoE+JO2rLsBUHAOJdvescEEjxikj8iQ339Nxfopfc7pw@mail.gmail.com> <CANq1E4SaWLD=hNEc-CDJbNnrGfXE_PkxZFBhpW4tbK7wor7xPA@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 13 Jun 2014 08:17:54 -0700
+Message-ID: <CALCETrU8N9EbnJ3=oQ1WQCG9Vunn3nR9Ba=J48wJm0SuH0YB4A@mail.gmail.com>
+Subject: Re: [PATCH v3 0/7] File Sealing & memfd_create()
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, Ryan Lortie <desrt@desrt.ca>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Daniel Mack <zonque@gmail.com>, Kay Sievers <kay@vrfy.org>,
+        Hugh Dickins <hughd@google.com>,
+        Tony Battersby <tonyb@cybernetics.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 June 2014 17:13, Guenter Roeck <linux@roeck-us.net> wrote:
-> On 06/13/2014 01:05 AM, Vincent Guittot wrote:
->>
->> Hi Guenter,
->>
->> There are also such kind of function in ARM and powerpc architecture
->>
->> with the additional changes below, you can add my
->> Acked-by Vincent Guittot <vincent.guittot@linaro.org>
->>
+On Fri, Jun 13, 2014 at 8:15 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+> Hi
 >
-> I'd prefer to fix those instances with separate patches, since they
-> will normally be handled by different maintainers. That simplifies
-> acceptance.
+> On Fri, Jun 13, 2014 at 5:10 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> On Fri, Jun 13, 2014 at 3:36 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+>>> Hi
+>>>
+>>> This is v3 of the File-Sealing and memfd_create() patches. You can find v1 with
+>>> a longer introduction at gmane:
+>>>   http://thread.gmane.org/gmane.comp.video.dri.devel/102241
+>>> An LWN article about memfd+sealing is available, too:
+>>>   https://lwn.net/Articles/593918/
+>>> v2 with some more discussions can be found here:
+>>>   http://thread.gmane.org/gmane.linux.kernel.mm/115713
+>>>
+>>> This series introduces two new APIs:
+>>>   memfd_create(): Think of this syscall as malloc() but it returns a
+>>>                   file-descriptor instead of a pointer. That file-descriptor is
+>>>                   backed by anon-memory and can be memory-mapped for access.
+>>>   sealing: The sealing API can be used to prevent a specific set of operations
+>>>            on a file-descriptor. You 'seal' the file and give thus the
+>>>            guarantee, that it cannot be modified in the specific ways.
+>>>
+>>> A short high-level introduction is also available here:
+>>>   http://dvdhrm.wordpress.com/2014/06/10/memfd_create2/
+>>
+>> Potentially silly question: is it guaranteed that mmapping and reading
+>> a SEAL_SHRINKed fd within size bounds will not SIGBUS?  If so, should
+>> this be documented?  (The particular issue here would be reading
+>> holes.  It should work by using the zero page, but, if so, we should
+>> probably make it a real documented guarantee.)
+>
+> No, this is not guaranteed. See the previous discussion in v2 on Patch
+> 2/4 between Hugh and me.
+>
+> Summary is: If you want mmap-reads to not fail, use mlock(). There are
+> many situations where a fault might fail (think: OOM) and sealing is
+> not meant to protect against that. Btw., holes are automatically
+> filled with fresh pages by shmem. So a read only fails in OOM
+> situations (or memcg limits, etc.).
+>
 
-Ok.
-separate patches is  fine for me too
+Isn't the point of SEAL_SHRINK to allow servers to mmap and read
+safely without worrying about SIGBUS?
 
-Vincent
+--Andy
 
->
-> Guenter
->
->
->> Vincent
->>
->> diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
->> index 1576d05..7e56b2f 100644
->> --- a/arch/arm/kernel/topology.c
->> +++ b/arch/arm/kernel/topology.c
->> @@ -275,7 +275,7 @@ void store_cpu_topology(unsigned int cpuid)
->>    cpu_topology[cpuid].socket_id, mpidr);
->>   }
->>
->> -static inline const int cpu_corepower_flags(void)
->> +static inline int cpu_corepower_flags(void)
->>   {
->>    return SD_SHARE_PKG_RESOURCES  | SD_SHARE_POWERDOMAIN;
->>   }
->> diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
->> index 10ffffe..49d5d4e 100644
->> --- a/arch/powerpc/kernel/smp.c
->> +++ b/arch/powerpc/kernel/smp.c
->> @@ -768,7 +768,7 @@ int setup_profiling_timer(unsigned int multiplier)
->>
->>   #ifdef CONFIG_SCHED_SMT
->>   /* cpumask of CPUs with asymetric SMT dependancy */
->> -static const int powerpc_smt_flags(void)
->> +static int powerpc_smt_flags(void)
->>   {
->>    int flags = SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES;
->>
->>
->> On 13 June 2014 01:08, Guenter Roeck <linux@roeck-us.net> wrote:
->>>
->>> Commit 143e1e28cb (sched: Rework sched_domain topology definition)
->>> introduced a number of functions with a return value of 'const int'.
->>> gcc doesn't know what to do with that and, if the kernel is compiled
->>> with W=1, complains with the following warnings whenever sched.h
->>> is included.
->>>
->>> include/linux/sched.h:875:25: warning:
->>>          type qualifiers ignored on function return type
->>> include/linux/sched.h:882:25: warning:
->>>          type qualifiers ignored on function return type
->>> include/linux/sched.h:889:25: warning:
->>>          type qualifiers ignored on function return type
->>> include/linux/sched.h:1002:21: warning:
->>>          type qualifiers ignored on function return type
->>>
->>> Drop 'const' from the function declarations to fix the problem.
->>>
->>> Cc: Vincent Guittot <vincent.guittot@linaro.org>
->>> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
->>> ---
->>>   include/linux/sched.h | 8 ++++----
->>>   1 file changed, 4 insertions(+), 4 deletions(-)
->>>
->>> diff --git a/include/linux/sched.h b/include/linux/sched.h
->>> index ea74596..65046b3 100644
->>> --- a/include/linux/sched.h
->>> +++ b/include/linux/sched.h
->>> @@ -872,21 +872,21 @@ enum cpu_idle_type {
->>>   #define SD_NUMA                        0x4000  /* cross-node balancing
->>> */
->>>
->>>   #ifdef CONFIG_SCHED_SMT
->>> -static inline const int cpu_smt_flags(void)
->>> +static inline int cpu_smt_flags(void)
->>>   {
->>>          return SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES;
->>>   }
->>>   #endif
->>>
->>>   #ifdef CONFIG_SCHED_MC
->>> -static inline const int cpu_core_flags(void)
->>> +static inline int cpu_core_flags(void)
->>>   {
->>>          return SD_SHARE_PKG_RESOURCES;
->>>   }
->>>   #endif
->>>
->>>   #ifdef CONFIG_NUMA
->>> -static inline const int cpu_numa_flags(void)
->>> +static inline int cpu_numa_flags(void)
->>>   {
->>>          return SD_NUMA;
->>>   }
->>> @@ -999,7 +999,7 @@ void free_sched_domains(cpumask_var_t doms[],
->>> unsigned int ndoms);
->>>   bool cpus_share_cache(int this_cpu, int that_cpu);
->>>
->>>   typedef const struct cpumask *(*sched_domain_mask_f)(int cpu);
->>> -typedef const int (*sched_domain_flags_f)(void);
->>> +typedef int (*sched_domain_flags_f)(void);
->>>
->>>   #define SDTL_OVERLAP   0x01
->>>
->>> --
->>> 1.9.1
->>>
->>
->>
->
+> Thanks
+> David
+
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
