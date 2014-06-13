@@ -1,98 +1,621 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753324AbaFMQQi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 12:16:38 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:48164 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752756AbaFMQQg (ORCPT
+	id S1753468AbaFMQQr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 12:16:47 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:36651 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752756AbaFMQQn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 12:16:36 -0400
-Date: Fri, 13 Jun 2014 09:16:30 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [PATCH] rcu: Only pin GP kthread when full dynticks is actually
- used
-Message-ID: <20140613161630.GQ4581@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1402618619-32630-1-git-send-email-fweisbec@gmail.com>
- <20140613012432.GH4581@linux.vnet.ibm.com>
- <20140613013515.GA9589@linux.vnet.ibm.com>
- <20140613124714.GC6635@localhost.localdomain>
- <20140613155233.GM4581@linux.vnet.ibm.com>
- <20140613160002.GL6635@localhost.localdomain>
+	Fri, 13 Jun 2014 12:16:43 -0400
+From: Felipe Balbi <balbi@ti.com>
+To: Tony Lindgren <tony@atomide.com>
+CC: Benoit Cousson <bcousson@baylibre.org>, Paul Walmsley <paul@pwsan.com>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>, Josh Elliot <jelliott@ti.com>,
+        Darren Etheridge <detheridge@ti.com>
+Subject: [PATCH 2/2] arm: dts: add support for AM437x StarterKit
+Date: Fri, 13 Jun 2014 11:15:47 -0500
+Message-ID: <1402676147-3711-3-git-send-email-balbi@ti.com>
+X-Mailer: git-send-email 2.0.0.rc1
+In-Reply-To: <1402676147-3711-1-git-send-email-balbi@ti.com>
+References: <1402676147-3711-1-git-send-email-balbi@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140613160002.GL6635@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061316-3532-0000-0000-000002758BDB
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 06:00:04PM +0200, Frederic Weisbecker wrote:
-> On Fri, Jun 13, 2014 at 08:52:33AM -0700, Paul E. McKenney wrote:
-> > On Fri, Jun 13, 2014 at 02:47:16PM +0200, Frederic Weisbecker wrote:
-> > > On Thu, Jun 12, 2014 at 06:35:15PM -0700, Paul E. McKenney wrote:
-> > > > On Thu, Jun 12, 2014 at 06:24:32PM -0700, Paul E. McKenney wrote:
-> > > > > On Fri, Jun 13, 2014 at 02:16:59AM +0200, Frederic Weisbecker wrote:
-> > > > > > CONFIG_NO_HZ_FULL may be enabled widely on distros nowadays but actual
-> > > > > > users should be a tiny minority, if actually any.
-> > > > > > 
-> > > > > > Also there is a risk that affining the GP kthread to a single CPU could
-> > > > > > end up noticeably reducing RCU performances and increasing energy
-> > > > > > consumption.
-> > > > > > 
-> > > > > > So lets affine the GP kthread only when nohz full is actually used
-> > > > > > (ie: when the nohz_full= parameter is filled or CONFIG_NO_HZ_FULL_ALL=y)
-> > > > 
-> > > > Which reminds me...  Kernel-heavy workloads running NO_HZ_FULL_ALL=y
-> > > > can see long RCU grace periods, as in about two seconds each.  It is
-> > > > not hard for me to detect this situation.
-> > > 
-> > > Ah yeah sounds quite long.
-> > > 
-> > > > Is there some way I can
-> > > > call for a given CPU's scheduling-clock interrupt to be turned on?
-> > > 
-> > > Yeah, once the nohz kick patchset (https://lwn.net/Articles/601214/) is merged,
-> > > a simple call to tick_nohz_full_kick_cpu() should do the trick. Although the
-> > > right condition must be there on the IPI side. Maybe with rcu_needs_cpu() or such.
-> > 
-> > I could record the offending GP, and make rcu_needs_cpu() return true
-> > if the current GP matches the offending one.
-> > 
-> > > But it would be interesting to identify the sources of these extended grace periods.
-> > > If we only restart the tick, we may ignore some deeper oustanding issue.
-> > 
-> > Some of them have been fixable by other means, but they will probably
-> > come back as system sizes grow.  And I really have put preemption points
-> > into kernel code in response to RCU CPU stall warnings, and the current
-> > state of NO_HZ_FULL effectively ignores these preemption points.  :-/
-> 
-> I'm not sure I really understand the issue though. So you have RCU CPU stalls due
-> to very extended grace periods, right?
-> 
-> I'm not sure how preemption points would solve that. Or maybe you're
-> trying to trigger quiescent states reports through these preemption points?
+Add support for TI's AM437x StarterKit Evaluation
+Module.
 
-If we have scheduling-clock interrupts, the preemption points will help
-push RCU through its state machine.  If we don't have scheduling-clock
-interrupts, RCU can't make progress in this case.
+Cc: Josh Elliot <jelliott@ti.com>
+Cc: Darren Etheridge <detheridge@ti.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+---
 
-> Is it because we have dynticks CPUs staying too long in the kernel without
-> taking any quiescent states? Are we perhaps missing some rcu_user_enter() or
-> things?
+Thanks to Josh and Darren for helping out with Audio and Display parts of this
+DTS.
 
-Sort of the former, but combined with the fact that in-kernel CPUs still
-need scheduling-clock interrupts for RCU to make progress.  I could
-move this to RCU's context-switch hook, but that could be very bad for
-workloads that do lots of context switching.
+ .../devicetree/bindings/arm/omap/omap.txt          |   3 +
+ arch/arm/boot/dts/Makefile                         |   1 +
+ arch/arm/boot/dts/am437x-sk-evm.dts                | 539 +++++++++++++++++++++
+ 3 files changed, 543 insertions(+)
+ create mode 100644 arch/arm/boot/dts/am437x-sk-evm.dts
 
-							Thanx, Paul
+diff --git a/Documentation/devicetree/bindings/arm/omap/omap.txt b/Documentation/devicetree/bindings/arm/omap/omap.txt
+index d22b216..0edc903 100644
+--- a/Documentation/devicetree/bindings/arm/omap/omap.txt
++++ b/Documentation/devicetree/bindings/arm/omap/omap.txt
+@@ -129,6 +129,9 @@ Boards:
+ - AM437x GP EVM
+   compatible = "ti,am437x-gp-evm", "ti,am4372", "ti,am43"
+ 
++- AM437x SK EVM: AM437x StarterKit Evaluation Module
++  compatible = "ti,am437x-sk-evm", "ti,am4372", "ti,am43"
++
+ - DRA742 EVM:  Software Development Board for DRA742
+   compatible = "ti,dra7-evm", "ti,dra742", "ti,dra74", "ti,dra7"
+ 
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 0f1e8be..749cdc8 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -306,6 +306,7 @@ dtb-$(CONFIG_ARCH_OMAP4) += omap4-duovero-parlor.dtb \
+ 	omap4-var-dvk-om44.dtb \
+ 	omap4-var-stk-om44.dtb
+ dtb-$(CONFIG_SOC_AM43XX) += am43x-epos-evm.dtb \
++	am437x-sk-evm.dtb \
+ 	am437x-gp-evm.dtb
+ dtb-$(CONFIG_SOC_OMAP5) += omap5-cm-t54.dtb \
+ 	omap5-sbc-t54.dtb \
+diff --git a/arch/arm/boot/dts/am437x-sk-evm.dts b/arch/arm/boot/dts/am437x-sk-evm.dts
+new file mode 100644
+index 0000000..51ffab1
+--- /dev/null
++++ b/arch/arm/boot/dts/am437x-sk-evm.dts
+@@ -0,0 +1,539 @@
++/*
++ * Copyright (C) 2014 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++/* AM437x SK EVM */
++
++/dts-v1/;
++
++#include "am4372.dtsi"
++#include <dt-bindings/pinctrl/am43xx.h>
++#include <dt-bindings/pwm/pwm.h>
++#include <dt-bindings/gpio/gpio.h>
++#include <dt-bindings/input/input.h>
++
++/ {
++	model = "TI AM437x SK EVM";
++	compatible = "ti,am437x-sk-evm","ti,am4372","ti,am43";
++
++	aliases {
++		display0 = &lcd0;
++	};
++
++	vmmcsd_fixed: fixedregulator-sd {
++		compatible = "regulator-fixed";
++		regulator-name = "vmmcsd_fixed";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		enable-active-high;
++	};
++
++	v33_fixed: fixedregulator-v33 {
++		compatible = "regulator-fixed";
++		regulator-name = "v33_fixed";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		enable-active-high;
++	};
++
++	v18_fixed: fixedregulator-v18 {
++		compatible = "regulator-fixed";
++		regulator-name = "v18_fixed";
++		regulator-min-microvolt = <1800000>;
++		regulator-max-microvolt = <1800000>;
++		enable-active-high;
++	};
++
++	backlight {
++		compatible = "pwm-backlight";
++		pwms = <&ecap0 0 50000 PWM_POLARITY_INVERTED>;
++		brightness-levels = <0 51 53 56 62 75 101 152 255>;
++		default-brightness-level = <8>;
++	};
++
++	sound {
++		compatible = "ti,da830-evm-audio";
++		ti,model = "AM437x-SK-EVM";
++		ti,audio-codec = <&tlv320aic3106>;
++		ti,mcasp-controller = <&mcasp1>;
++		ti,codec-clock-rate = <24000000>;
++		ti,audio-routing =
++			"Headphone Jack",       "HPLOUT",
++			"Headphone Jack",       "HPROUT";
++	};
++
++	matrix_keypad: matrix_keypad@0 {
++		compatible = "gpio-matrix-keypad";
++
++		debounce-delay-ms = <5>;
++		col-scan-delay-us = <1500>;
++
++		row-gpios = <&gpio5 5 GPIO_ACTIVE_HIGH		/* Bank5, pin5 */
++				&gpio5 6 GPIO_ACTIVE_HIGH>;	/* Bank5, pin6 */
++
++		col-gpios = <&gpio5 13 GPIO_ACTIVE_HIGH		/* Bank5, pin13 */
++				&gpio5 4 GPIO_ACTIVE_HIGH>;	/* Bank5, pin4 */
++
++		linux,keymap = <
++				MATRIX_KEY(0, 0, KEY_DOWN)
++				MATRIX_KEY(0, 1, KEY_RIGHT)
++				MATRIX_KEY(1, 0, KEY_LEFT)
++				MATRIX_KEY(1, 1, KEY_UP)
++			>;
++	};
++
++	leds {
++		compatible = "gpio-leds";
++
++		led@0 {
++			label = "am437x-sk:red:heartbeat";
++			gpios = <&gpio5 0 GPIO_ACTIVE_HIGH>;	/* Bank 5, pin 0 */
++			linux,default-trigger = "heartbeat";
++			default-state = "off";
++		};
++
++		led@1 {
++			label = "am437x-sk:green:mmc1";
++			gpios = <&gpio5 1 GPIO_ACTIVE_HIGH>;	/* Bank 5, pin 1 */
++			linux,default-trigger = "mmc0";
++			default-state = "off";
++		};
++
++		led@2 {
++			label = "am437x-sk:blue:cpu0";
++			gpios = <&gpio5 2 GPIO_ACTIVE_HIGH>;	/* Bank 5, pin 2 */
++			linux,default-trigger = "cpu0";
++			default-state = "off";
++		};
++
++		led@3 {
++			label = "am437x-sk:blue:usr3";
++			gpios = <&gpio5 3 GPIO_ACTIVE_HIGH>;	/* Bank 5, pin 3 */
++			default-state = "off";
++		};
++	};
++
++	lcd0: display {
++		compatible = "osddisplays,osd057T0559-34ts", "panel-dpi";
++		label = "lcd";
++
++		pinctrl-names = "default";
++		pinctrl-0 = <&lcd_pins>;
++
++		enable-gpios = <&gpio1 7 GPIO_ACTIVE_HIGH>;
++
++		panel-timing {
++			clock-frequency = <9000000>;
++			hactive = <480>;
++			vactive = <272>;
++			hfront-porch = <8>;
++			hback-porch = <43>;
++			hsync-len = <4>;
++			vback-porch = <12>;
++			vfront-porch = <4>;
++			vsync-len = <10>;
++			hsync-active = <0>;
++			vsync-active = <0>;
++			de-active = <1>;
++			pixelclk-active = <1>;
++		};
++
++		port {
++			lcd_in: endpoint {
++				remote-endpoint = <&dpi_out>;
++			};
++		};
++	};
++};
++
++&am43xx_pinmux {
++	i2c0_pins: i2c0_pins {
++		pinctrl-single,pins = <
++			0x188 (PIN_INPUT_PULLUP | SLEWCTRL_FAST | MUX_MODE0)  /* i2c0_sda.i2c0_sda */
++			0x18c (PIN_INPUT_PULLUP | SLEWCTRL_FAST | MUX_MODE0)  /* i2c0_scl.i2c0_scl */
++		>;
++	};
++
++	i2c1_pins: i2c1_pins {
++		pinctrl-single,pins = <
++			0x15c (PIN_INPUT_PULLUP | SLEWCTRL_FAST | MUX_MODE2)  /* spi0_cs0.i2c1_scl */
++			0x158 (PIN_INPUT_PULLUP | SLEWCTRL_FAST | MUX_MODE2)  /* spi0_d1.i2c1_sda  */
++		>;
++	};
++
++	mmc1_pins: pinmux_mmc1_pins {
++		pinctrl-single,pins = <
++			0x160 (PIN_INPUT | MUX_MODE7) /* spi0_cs1.gpio0_6 */
++		>;
++	};
++
++	ecap0_pins: backlight_pins {
++		pinctrl-single,pins = <
++			0x164 MUX_MODE0       /* eCAP0_in_PWM0_out.eCAP0_in_PWM0_out MODE0 */
++		>;
++	};
++
++	edt_ft5306_ts_pins: edt_ft5306_ts_pins {
++		pinctrl-single,pins = <
++			0x74 (PIN_INPUT | MUX_MODE7)	/* gpmc_wpn.gpio0_31 */
++			0x78 (PIN_OUTPUT | MUX_MODE7)	/* gpmc_be1n.gpio1_28 */
++		>;
++	};
++
++	cpsw_default: cpsw_default {
++		pinctrl-single,pins = <
++			/* Slave 1 */
++			0x12c (PIN_OUTPUT_PULLDOWN | MUX_MODE2)	/* mii1_txclk.rmii1_tclk */
++			0x114 (PIN_OUTPUT_PULLDOWN | MUX_MODE2)	/* mii1_txen.rgmii1_tctl */
++			0x128 (PIN_OUTPUT_PULLDOWN | MUX_MODE2)	/* mii1_txd0.rgmii1_td0 */
++			0x124 (PIN_OUTPUT_PULLDOWN | MUX_MODE2)	/* mii1_txd1.rgmii1_td1 */
++			0x120 (PIN_OUTPUT_PULLDOWN | MUX_MODE2)	/* mii1_txd0.rgmii1_td2 */
++			0x11c (PIN_OUTPUT_PULLDOWN | MUX_MODE2)	/* mii1_txd1.rgmii1_td3 */
++			0x130 (PIN_INPUT_PULLDOWN | MUX_MODE2)	/* mii1_rxclk.rmii1_rclk */
++			0x118 (PIN_INPUT_PULLDOWN | MUX_MODE2)	/* mii1_rxdv.rgmii1_rctl */
++			0x140 (PIN_INPUT_PULLDOWN | MUX_MODE2)	/* mii1_rxd0.rgmii1_rd0 */
++			0x13c (PIN_INPUT_PULLDOWN | MUX_MODE2)	/* mii1_rxd1.rgmii1_rd1 */
++			0x138 (PIN_INPUT_PULLDOWN | MUX_MODE2)	/* mii1_rxd0.rgmii1_rd2 */
++			0x134 (PIN_INPUT_PULLDOWN | MUX_MODE2)	/* mii1_rxd1.rgmii1_rd3 */
++
++			/* Slave 2 */
++			0x58 (PIN_OUTPUT_PULLDOWN | MUX_MODE2)	/* gpmc_a6.rgmii2_tclk */
++			0x40 (PIN_OUTPUT_PULLDOWN | MUX_MODE2)	/* gpmc_a0.rgmii2_tctl */
++			0x54 (PIN_OUTPUT_PULLDOWN | MUX_MODE2)	/* gpmc_a5.rgmii2_td0 */
++			0x50 (PIN_OUTPUT_PULLDOWN | MUX_MODE2)	/* gpmc_a4.rgmii2_td1 */
++			0x4c (PIN_OUTPUT_PULLDOWN | MUX_MODE2)	/* gpmc_a3.rgmii2_td2 */
++			0x48 (PIN_OUTPUT_PULLDOWN | MUX_MODE2)	/* gpmc_a2.rgmii2_td3 */
++			0x5c (PIN_INPUT_PULLDOWN | MUX_MODE2)	/* gpmc_a7.rgmii2_rclk */
++			0x44 (PIN_INPUT_PULLDOWN | MUX_MODE2)	/* gpmc_a1.rgmii2_rtcl */
++			0x6c (PIN_INPUT_PULLDOWN | MUX_MODE2)	/* gpmc_a11.rgmii2_rd0 */
++			0x68 (PIN_INPUT_PULLDOWN | MUX_MODE2)	/* gpmc_a10.rgmii2_rd1 */
++			0x64 (PIN_INPUT_PULLDOWN | MUX_MODE2)	/* gpmc_a9.rgmii2_rd2 */
++			0x60 (PIN_INPUT_PULLDOWN | MUX_MODE2)	/* gpmc_a8.rgmii2_rd3 */
++		>;
++	};
++
++	cpsw_sleep: cpsw_sleep {
++		pinctrl-single,pins = <
++			/* Slave 1 reset value */
++			0x12c (PIN_INPUT_PULLDOWN | MUX_MODE7)
++			0x114 (PIN_INPUT_PULLDOWN | MUX_MODE7)
++			0x128 (PIN_INPUT_PULLDOWN | MUX_MODE7)
++			0x124 (PIN_INPUT_PULLDOWN | MUX_MODE7)
++			0x120 (PIN_INPUT_PULLDOWN | MUX_MODE7)
++			0x11c (PIN_INPUT_PULLDOWN | MUX_MODE7)
++			0x130 (PIN_INPUT_PULLDOWN | MUX_MODE7)
++			0x118 (PIN_INPUT_PULLDOWN | MUX_MODE7)
++			0x140 (PIN_INPUT_PULLDOWN | MUX_MODE7)
++			0x13c (PIN_INPUT_PULLDOWN | MUX_MODE7)
++			0x138 (PIN_INPUT_PULLDOWN | MUX_MODE7)
++			0x134 (PIN_INPUT_PULLDOWN | MUX_MODE7)
++
++			/* Slave 2 reset value */
++			0x58 (PIN_INPUT_PULLDOWN | MUX_MODE7)
++			0x40 (PIN_INPUT_PULLDOWN | MUX_MODE7)
++			0x54 (PIN_INPUT_PULLDOWN | MUX_MODE7)
++			0x50 (PIN_INPUT_PULLDOWN | MUX_MODE7)
++			0x4c (PIN_INPUT_PULLDOWN | MUX_MODE7)
++			0x48 (PIN_INPUT_PULLDOWN | MUX_MODE7)
++			0x5c (PIN_INPUT_PULLDOWN | MUX_MODE7)
++			0x44 (PIN_INPUT_PULLDOWN | MUX_MODE7)
++			0x6c (PIN_INPUT_PULLDOWN | MUX_MODE7)
++			0x68 (PIN_INPUT_PULLDOWN | MUX_MODE7)
++			0x64 (PIN_INPUT_PULLDOWN | MUX_MODE7)
++			0x60 (PIN_INPUT_PULLDOWN | MUX_MODE7)
++		>;
++	};
++
++	davinci_mdio_default: davinci_mdio_default {
++		pinctrl-single,pins = <
++			/* MDIO */
++			0x148 (PIN_INPUT_PULLUP | SLEWCTRL_FAST | MUX_MODE0)	/* mdio_data.mdio_data */
++			0x14c (PIN_OUTPUT_PULLUP | MUX_MODE0)			/* mdio_clk.mdio_clk */
++		>;
++	};
++
++	davinci_mdio_sleep: davinci_mdio_sleep {
++		pinctrl-single,pins = <
++			/* MDIO reset value */
++			0x148 (PIN_INPUT_PULLDOWN | MUX_MODE7)
++			0x14c (PIN_INPUT_PULLDOWN | MUX_MODE7)
++		>;
++	};
++
++	dss_pins: dss_pins {
++		pinctrl-single,pins = <
++			0x020 (PIN_OUTPUT_PULLUP | MUX_MODE1)	/* gpmc ad 8 -> DSS DATA 23 */
++			0x024 (PIN_OUTPUT_PULLUP | MUX_MODE1)
++			0x028 (PIN_OUTPUT_PULLUP | MUX_MODE1)
++			0x02c (PIN_OUTPUT_PULLUP | MUX_MODE1)
++			0x030 (PIN_OUTPUT_PULLUP | MUX_MODE1)
++			0x034 (PIN_OUTPUT_PULLUP | MUX_MODE1)
++			0x038 (PIN_OUTPUT_PULLUP | MUX_MODE1)
++			0x03c (PIN_OUTPUT_PULLUP | MUX_MODE1)	/* gpmc ad 15 -> DSS DATA 16 */
++			0x0a0 (PIN_OUTPUT_PULLUP | MUX_MODE0)	/* DSS DATA 0 */
++			0x0a4 (PIN_OUTPUT_PULLUP | MUX_MODE0)
++			0x0a8 (PIN_OUTPUT_PULLUP | MUX_MODE0)
++			0x0ac (PIN_OUTPUT_PULLUP | MUX_MODE0)
++			0x0b0 (PIN_OUTPUT_PULLUP | MUX_MODE0)
++			0x0b4 (PIN_OUTPUT_PULLUP | MUX_MODE0)
++			0x0b8 (PIN_OUTPUT_PULLUP | MUX_MODE0)
++			0x0bc (PIN_OUTPUT_PULLUP | MUX_MODE0)
++			0x0c0 (PIN_OUTPUT_PULLUP | MUX_MODE0)
++			0x0c4 (PIN_OUTPUT_PULLUP | MUX_MODE0)
++			0x0c8 (PIN_OUTPUT_PULLUP | MUX_MODE0)
++			0x0cc (PIN_OUTPUT_PULLUP | MUX_MODE0)
++			0x0d0 (PIN_OUTPUT_PULLUP | MUX_MODE0)
++			0x0d4 (PIN_OUTPUT_PULLUP | MUX_MODE0)
++			0x0d8 (PIN_OUTPUT_PULLUP | MUX_MODE0)
++			0x0dc (PIN_OUTPUT_PULLUP | MUX_MODE0)	/* DSS DATA 15 */
++			0x0e0 (PIN_OUTPUT_PULLUP | MUX_MODE0)	/* DSS VSYNC */
++			0x0e4 (PIN_OUTPUT_PULLUP | MUX_MODE0)	/* DSS HSYNC */
++			0x0e8 (PIN_OUTPUT_PULLUP | MUX_MODE0)	/* DSS PCLK */
++			0x0ec (PIN_OUTPUT_PULLUP | MUX_MODE0)	/* DSS AC BIAS EN */
++
++		>;
++	};
++
++	qspi_pins: qspi_pins {
++		pinctrl-single,pins = <
++			0x7c (PIN_OUTPUT_PULLUP | MUX_MODE3)	/* gpmc_csn0.qspi_csn */
++			0x88 (PIN_OUTPUT | MUX_MODE2)		/* gpmc_csn3.qspi_clk */
++			0x90 (PIN_INPUT_PULLUP | MUX_MODE3)	/* gpmc_advn_ale.qspi_d0 */
++			0x94 (PIN_INPUT_PULLUP | MUX_MODE3)	/* gpmc_oen_ren.qspi_d1 */
++			0x98 (PIN_INPUT_PULLUP | MUX_MODE3)	/* gpmc_wen.qspi_d2 */
++			0x9c (PIN_INPUT_PULLUP | MUX_MODE3)	/* gpmc_be0n_cle.qspi_d3 */
++		>;
++	};
++
++	mcasp1_pins: mcasp1_pins {
++		pinctrl-single,pins = <
++			0x10c (PIN_INPUT_PULLDOWN | MUX_MODE4)	/* mii1_crs.mcasp1_aclkx */
++			0x110 (PIN_INPUT_PULLDOWN | MUX_MODE4)	/* mii1_rxerr.mcasp1_fsx */
++			0x108 (PIN_OUTPUT_PULLDOWN | MUX_MODE4)	/* mii1_col.mcasp1_axr2 */
++			0x144 (PIN_INPUT_PULLDOWN | MUX_MODE4)	/* rmii1_ref_clk.mcasp1_axr3 */
++		>;
++	};
++
++	lcd_pins: lcd_pins {
++		pinctrl-single,pins = <
++			/* GPIO 5_8 to select LCD / HDMI */
++			0x238 (PIN_OUTPUT_PULLUP | MUX_MODE7)
++		>;
++	};
++};
++
++&i2c0 {
++        status = "okay";
++        pinctrl-names = "default";
++        pinctrl-0 = <&i2c0_pins>;
++
++	tps@2d {
++		compatible = "ti,tps65218";
++		reg = <0x2d>;
++	};
++
++	at24@50 {
++		compatible = "at24,24c256";
++		pagesize = <64>;
++		reg = <0x50>;
++	};
++};
++
++&i2c1 {
++        status = "okay";
++        pinctrl-names = "default";
++        pinctrl-0 = <&i2c1_pins>;
++
++	edt-ft5306@38 {
++		status = "okay";
++		compatible = "edt,edt-ft5306", "edt,edt-ft5x06";
++		pinctrl-names = "default";
++		pinctrl-0 = <&edt_ft5306_ts_pins>;
++		reg = <0x38>;
++		interrupt-parent = <&gpio0>;
++		interrupts = <31 0>;
++
++		wake-gpios = <&gpio1 28 GPIO_ACTIVE_HIGH>;
++
++		touchscreen-size-x = <800>;
++		touchscreen-size-y = <600>;
++	};
++
++	tlv320aic3106: tlv320aic3106@1b {
++		compatible = "ti,tlv320aic3106";
++		reg = <0x1b>;
++		status = "okay";
++
++		/* Regulators */
++		AVDD-supply = <&v33_fixed>;
++		IOVDD-supply = <&v33_fixed>;
++		DRVDD-supply = <&v33_fixed>;
++		DVDD-supply = <&v18_fixed>;
++	};
++};
++
++&epwmss0 {
++	status = "okay";
++};
++
++&ecap0 {
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&ecap0_pins>;
++};
++
++&gpio0 {
++	status = "okay";
++};
++
++&gpio1 {
++	status = "okay";
++};
++
++&gpio5 {
++	status = "okay";
++};
++
++&mmc1 {
++	status = "okay";
++	vmmc-supply = <&vmmcsd_fixed>;
++	bus-width = <4>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&mmc1_pins>;
++	cd-gpios = <&gpio0 6 GPIO_ACTIVE_HIGH>;
++};
++
++&usb2_phy1 {
++	status = "okay";
++};
++
++&usb1 {
++	dr_mode = "peripheral";
++	status = "okay";
++};
++
++&usb2_phy2 {
++	status = "okay";
++};
++
++&usb2 {
++	dr_mode = "host";
++	status = "okay";
++};
++
++&qspi {
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&qspi_pins>;
++
++	spi-max-frequency = <48000000>;
++	m25p80@0 {
++		compatible = "mx66l51235l";
++		spi-max-frequency = <48000000>;
++		reg = <0>;
++		spi-cpol;
++		spi-cpha;
++		spi-tx-bus-width = <1>;
++		spi-rx-bus-width = <4>;
++		#address-cells = <1>;
++		#size-cells = <1>;
++
++		/* MTD partition table.
++		 * The ROM checks the first 512KiB
++		 * for a valid file to boot(XIP).
++		 */
++		partition@0 {
++			label = "QSPI.U_BOOT";
++			reg = <0x00000000 0x000080000>;
++		};
++		partition@1 {
++			label = "QSPI.U_BOOT.backup";
++			reg = <0x00080000 0x00080000>;
++		};
++		partition@2 {
++			label = "QSPI.U-BOOT-SPL_OS";
++			reg = <0x00100000 0x00010000>;
++		};
++		partition@3 {
++			label = "QSPI.U_BOOT_ENV";
++			reg = <0x00110000 0x00010000>;
++		};
++		partition@4 {
++			label = "QSPI.U-BOOT-ENV.backup";
++			reg = <0x00120000 0x00010000>;
++		};
++		partition@5 {
++			label = "QSPI.KERNEL";
++			reg = <0x00130000 0x0800000>;
++		};
++		partition@6 {
++			label = "QSPI.FILESYSTEM";
++			reg = <0x00930000 0x36D0000>;
++		};
++	};
++};
++
++&mac {
++	pinctrl-names = "default", "sleep";
++	pinctrl-0 = <&cpsw_default>;
++	pinctrl-1 = <&cpsw_sleep>;
++	dual_emac = <1>;
++	status = "okay";
++};
++
++&davinci_mdio {
++	pinctrl-names = "default", "sleep";
++	pinctrl-0 = <&davinci_mdio_default>;
++	pinctrl-1 = <&davinci_mdio_sleep>;
++	status = "okay";
++};
++
++&cpsw_emac0 {
++	phy_id = <&davinci_mdio>, <4>;
++	phy-mode = "rgmii";
++	dual_emac_res_vlan = <1>;
++};
++
++&cpsw_emac1 {
++	phy_id = <&davinci_mdio>, <5>;
++	phy-mode = "rgmii";
++	dual_emac_res_vlan = <2>;
++};
++
++&elm {
++	status = "okay";
++};
++
++&mcasp1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&mcasp1_pins>;
++
++	status = "okay";
++
++	op-mode = <0>;
++	tdm-slots = <2>;
++	serial-dir = <
++		0 0 1 2
++	>;
++
++	tx-num-evt = <1>;
++	rx-num-evt = <1>;
++};
++
++&dss {
++	status = "okay";
++
++	pinctrl-names = "default";
++	pinctrl-0 = <&dss_pins>;
++
++	port {
++		dpi_out: endpoint@0 {
++			remote-endpoint = <&lcd_in>;
++			data-lines = <24>;
++		};
++	};
++};
+-- 
+2.0.0.rc1
 
