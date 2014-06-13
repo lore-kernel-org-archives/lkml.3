@@ -1,125 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752574AbaFMPz4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 11:55:56 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:45554 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751283AbaFMPzz (ORCPT
+	id S1753108AbaFMP6M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 11:58:12 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:62800 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751138AbaFMP6L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 11:55:55 -0400
-Date: Fri, 13 Jun 2014 08:55:48 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [PATCH] rcu: Only pin GP kthread when full dynticks is actually
- used
-Message-ID: <20140613155548.GN4581@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1402618619-32630-1-git-send-email-fweisbec@gmail.com>
- <20140613012432.GH4581@linux.vnet.ibm.com>
- <20140613020554.GA9974@linux.vnet.ibm.com>
- <20140613125543.GD6635@localhost.localdomain>
+	Fri, 13 Jun 2014 11:58:11 -0400
+Date: Fri, 13 Jun 2014 11:58:09 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [patch V4 02/10] rtmutex: Simplify rtmutex_slowtrylock()
+Message-ID: <20140613115809.2b032402@gandalf.local.home>
+In-Reply-To: <20140611183853.029651737@linutronix.de>
+References: <20140611182944.108526809@linutronix.de>
+	<20140611183853.029651737@linutronix.de>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140613125543.GD6635@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061315-0928-0000-0000-000002AEAF87
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 02:55:45PM +0200, Frederic Weisbecker wrote:
-> On Thu, Jun 12, 2014 at 07:05:54PM -0700, Paul E. McKenney wrote:
-> > On Thu, Jun 12, 2014 at 06:24:32PM -0700, Paul E. McKenney wrote:
-> > > On Fri, Jun 13, 2014 at 02:16:59AM +0200, Frederic Weisbecker wrote:
-> > > > CONFIG_NO_HZ_FULL may be enabled widely on distros nowadays but actual
-> > > > users should be a tiny minority, if actually any.
-> > > > 
-> > > > Also there is a risk that affining the GP kthread to a single CPU could
-> > > > end up noticeably reducing RCU performances and increasing energy
-> > > > consumption.
-> > > > 
-> > > > So lets affine the GP kthread only when nohz full is actually used
-> > > > (ie: when the nohz_full= parameter is filled or CONFIG_NO_HZ_FULL_ALL=y)
-> > > > 
-> > > > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > > > Cc: Josh Triplett <josh@joshtriplett.org>
-> > > > Cc: Steven Rostedt <rostedt@goodmis.org>
-> > > > Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> > > > ---
-> > > >  kernel/rcu/tree_plugin.h | 10 +++++++---
-> > > >  1 file changed, 7 insertions(+), 3 deletions(-)
-> > > > 
-> > > > diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-> > > > index cbc2c45..726f52c 100644
-> > > > --- a/kernel/rcu/tree_plugin.h
-> > > > +++ b/kernel/rcu/tree_plugin.h
-> > > > @@ -2843,12 +2843,16 @@ static bool rcu_nohz_full_cpu(struct rcu_state *rsp)
-> > > >   */
-> > > >  static void rcu_bind_gp_kthread(void)
-> > > >  {
-> > > > -#ifdef CONFIG_NO_HZ_FULL
-> > > > -	int cpu = ACCESS_ONCE(tick_do_timer_cpu);
-> > > > +	int cpu;
-> > > > +
-> > > > +	if (!tick_nohz_full_enabled())
-> > > > +		return;
-> > > > +
-> > > > +	cpu = ACCESS_ONCE(tick_do_timer_cpu);
-> > > > 
-> > > >  	if (cpu < 0 || cpu >= nr_cpu_ids)
-> > > >  		return;
-> > > > +
-> > > >  	if (raw_smp_processor_id() != cpu)
-> > > >  		set_cpus_allowed_ptr(current, cpumask_of(cpu));
-> > > > -#endif /* #ifdef CONFIG_NO_HZ_FULL */
-> > > >  }
-> > > 
-> > > Hello, Frederic,
-> > > 
-> > > I have the following queued.  Shall I port yours on top of mine, or is
-> > > there an issue with mine?
-> > 
-> > OK, I suppose I should show you what it looks like ported on top of mine.
-> 
-> No need to keep my patch as long as yours goes in. It fixes all the issue.
-> 
-> > 
-> > I didn't understand the removal of "#ifdef CONFIG_NO_HZ_FULL", so I
-> > left that.
-> 
-> Yeah that's because the:
-> 
->       if (!tick_nohz_full_enabled())
->            return;
-> 
-> returns unconditionally if CONFIG_NO_HZ_FULL=n. So the whole function
-> becomes dead code that should be detected and removed by gcc. So same
-> result as with the ifdef.
+On Wed, 11 Jun 2014 18:44:04 -0000
+Thomas Gleixner <tglx@linutronix.de> wrote:
 
-Well, that part of your patch is worthwhile, then!  And I do therefore
-need to restructure to invoke tick_nohz_full_enabled() at the very
-beginning of the function.
-
-> > I also didn't understand how dumping the GP kthreads onto
-> > a single CPU could affect energy efficiency all that much, so I omitted
-> > that from the commit log.  If I am missing something, please enlighten me.
+> Oleg noticed that rtmutex_slowtrylock() has a pointless check for
+> rt_mutex_owner(lock) != current.
 > 
-> Because if the kthread is pinned to CPU 0 and a grace period is in progress,
-> the kthread is going to disturb the CPU 0 regardless of its possibly deep sleep
-> state. OTOH if the kthread is widely affine, it can be scheduled to idle CPUs
-> that are less cold and thus wake them from less deep power state.
+> To avoid calling try_to_take_rtmutex() we really want to check whether
+> the lock has an owner at all or whether the trylock failed because the
+> owner is NULL, but the RT_MUTEX_HAS_WAITERS bit is set. This covers
+> the lock is owned by caller situation as well.
 > 
-> Well that all assuming that the scheduler takes care of these deep idle state.
-> But I believe it does iirc...
+> We can actually do this check lockless. trylock is taking a chance
+> whether we take lock->wait_lock to do the check or not.
+> 
+> Add comments to the function while at it.
+> 
+> Reported-by: Oleg Nesterov <oleg@redhat.com>
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> ---
+>  kernel/locking/rtmutex.c |   32 +++++++++++++++++++++-----------
+>  1 file changed, 21 insertions(+), 11 deletions(-)
+> 
+> Index: tip/kernel/locking/rtmutex.c
+> ===================================================================
+> --- tip.orig/kernel/locking/rtmutex.c
+> +++ tip/kernel/locking/rtmutex.c
+> @@ -963,22 +963,32 @@ rt_mutex_slowlock(struct rt_mutex *lock,
+>  /*
+>   * Slow path try-lock function:
+>   */
+> -static inline int
+> -rt_mutex_slowtrylock(struct rt_mutex *lock)
+> +static inline int rt_mutex_slowtrylock(struct rt_mutex *lock)
+>  {
+> -	int ret = 0;
+> +	int ret;
+>  
+> +	/*
+> +	 * trylock is taking a chance. So we dont have to take
+> +	 * @lock->wait_lock to figure out whether @lock has a real or
 
-My guess is that enough stuff gets dumped on CPU 0 to make this a non-issue,
-but point taken nonetheless.
+"whether @lock has a real"
 
-							Thanx, Paul
+ real what?
+
+> +	 * if @lock owner is NULL and the RT_MUTEX_HAS_WAITERS bit is
+> +	 * set.
+
+I don't understand the above. As rt_mutex_owner() will ignore the
+RT_MUTEX_HAS_WAITERS bit.
+
+
+I think a simple comment is good enough:
+
+	/*
+	 * If the lock already has an owner we fail to get the lock.
+	 * This can be done without taking the @lock->wait_lock as
+	 * it is only being read, and this is a trylock anyway.
+> +	 */
+> +	if (rt_mutex_owner(lock))
+> +		return 0;
+> +
+> +	/*
+> +	 * The mutex has currently no owner. Lock the wait lock and
+> +	 * try to acquire the lock.
+> +	 */
+>  	raw_spin_lock(&lock->wait_lock);
+>  
+> -	if (likely(rt_mutex_owner(lock) != current)) {
+> +	ret = try_to_take_rt_mutex(lock, current, NULL);
+>  
+> -		ret = try_to_take_rt_mutex(lock, current, NULL);
+> -		/*
+> -		 * try_to_take_rt_mutex() sets the lock waiters
+> -		 * bit unconditionally. Clean this up.
+> -		 */
+> -		fixup_rt_mutex_waiters(lock);
+> -	}
+> +	/*
+> +	 * try_to_take_rt_mutex() sets the lock waiters bit
+> +	 * unconditionally. Clean this up.
+> +	 */
+> +	fixup_rt_mutex_waiters(lock);
+
+Rest looks good.
+
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+
+-- Steve
+
+>  
+>  	raw_spin_unlock(&lock->wait_lock);
+>  
+> 
 
