@@ -1,99 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754022AbaFMWuM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 18:50:12 -0400
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:44505 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753797AbaFMWuI (ORCPT
+	id S1753736AbaFMXAA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 19:00:00 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:38784 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751538AbaFMW76 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 18:50:08 -0400
+	Fri, 13 Jun 2014 18:59:58 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140613220421.GD5099@sirena.org.uk>
-References: <1402464739-19044-1-git-send-email-tushar.b@samsung.com>
-	<1402464739-19044-4-git-send-email-tushar.b@samsung.com>
-	<CAD=FV=XqqP7+xDOAKCixivzgaO0xvJX7L+CCN+unAEuf-6aUbQ@mail.gmail.com>
-	<20140613170511.GA20112@sirena.org.uk>
-	<CAD=FV=VvkvH1TPiKttm9VXbBRnBo7kmTVK8bZZvexK=bAvaO4Q@mail.gmail.com>
-	<CAD=FV=XCk9E-7VPV=LQrdLU5fKsFHviQf79MBmC8va3gsg=Ydw@mail.gmail.com>
-	<20140613220421.GD5099@sirena.org.uk>
-Date: Fri, 13 Jun 2014 15:50:07 -0700
-Message-ID: <CAD=FV=U06JioDvvSqHyC5BZp_sKppk4i=s7DERCXG7rGHBe=xQ@mail.gmail.com>
-Subject: Re: [PATCH 3/3] ARM: dts: Enable audio support for Peach-pi board
-From: Doug Anderson <dianders@google.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Tushar Behera <tushar.b@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Kevin Hilman <khilman@linaro.org>, Tushar Behera <trblinux@gmail.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
+In-Reply-To: <1737131.VlQuirUC3S@vostro.rjw.lan>
+References: <1402602419-27934-1-git-send-email-keescook@chromium.org>
+	<9502843.K96nxmtL8f@vostro.rjw.lan>
+	<CAGXu5jLB8e2ZP6a2Q+_9R6qvHXwUoRr6eRVifdOVe0QmrfaTVw@mail.gmail.com>
+	<1737131.VlQuirUC3S@vostro.rjw.lan>
+Date: Fri, 13 Jun 2014 15:59:57 -0700
+X-Google-Sender-Auth: ubXS4oylsZXber3Ok_ci_fCSWdI
+Message-ID: <CAGXu5j+BTYup-9cbwSJsKNW4R1e2QY4wVubfpC3s2LVkE4Amow@mail.gmail.com>
+Subject: Re: [PATCH 0/2] make kASLR vs hibernation boot-time selectable
+From: Kees Cook <keescook@chromium.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Pavel Machek <pavel@ucw.cz>, "H. Peter Anvin" <hpa@zytor.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>, Len Brown <len.brown@intel.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        linux-pm@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark,
-
-On Fri, Jun 13, 2014 at 3:04 PM, Mark Brown <broonie@kernel.org> wrote:
-> On Fri, Jun 13, 2014 at 02:58:26PM -0700, Doug Anderson wrote:
+On Fri, Jun 13, 2014 at 3:54 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> On Friday, June 13, 2014 03:07:19 PM Kees Cook wrote:
+>> On Fri, Jun 13, 2014 at 3:14 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+>> > On Friday, June 13, 2014 10:32:56 AM Kees Cook wrote:
+>> >> On Fri, Jun 13, 2014 at 3:51 AM, Pavel Machek <pavel@ucw.cz> wrote:
+>> >> > Hi!
+>> >> >
+>> >> >
+>> >> >> >>> Any way we can make them work together instead?
+>> >> >> >>
+>> >> >> >> I'm sure there is, but I don't know the solution. :)
+>> >> >> >>
+>> >> >> >> At the very least this gets us one step closer (we can build them together).
+>> >> >> >>
+>> >> >> >
+>> >> >> > But it is really invasive.
+>> >> >>
+>> >> >> Well, I don't agree there. I actually would like to be able to turn
+>> >> >> off hibernation support on distro kernels regardless of kASLR, so I
+>> >> >> think this is really killing two birds with one stone.
+>> >> >>
+>> >> >> > I have to admit to being somewhat fuzzy on what the core problem with
+>> >> >> > hibernation and kASLR is... in both cases there is a set of pages that
+>> >> >> > need to be installed, some of which will overlap the loader kernel.
+>> >> >> > What am I missing?
+>> >> >>
+>> >> >> I don't know how resume works, but I have assumed that the newly
+>> >> >> loaded kernel stays in memory and pulls in the vmalloc, kmalloc,
+>> >> >> modules, and userspace memory maps from disk. Since these things can
+>> >> >> easily contain references to kernel text, if the newly loaded kernel
+>> >> >> has moved with regard to the hibernated image, everything breaks.
+>> >> >> IIUC, this is similar why you can't rebuild your kernel and resume
+>> >> >> from a different version.
+>> >> >
+>> >> > x86-64 can resume from different kernel that did the suspend. kASLR
+>> >> > should not be too different from that. (You just include kernel text
+>> >> > in the hibernation image. It is small enough to do that.)
+>> >>
+>> >> Oooh, that's very exciting! How does that work (what happens to the
+>> >> kernel that booted first, etc)? I assume physical memory layout can't
+>> >> change between hibernation and resume? Or, where should I be reading
+>> >> code that does this?
+>> >
+>> > I guess it would help if you were a bit less sarcastic, but perhaps that's
+>> > just me.
+>>
+>> Oh, er, I think that got misunderstood. I'm very rarely sarcastic in
+>> online communication. I wasn't being sarcastic here at all. I _do_
+>> find it exciting that one can resume with a different kernel! That's
+>> been a limitation that plagued me for years. I had no idea that
+>> restriction got lifted. I really did mean I was excited. Sorry if that
+>> was misunderstood!
 >
->> Anyway, suffice to say that the i2c core needs to be extended to
->> handle the idea that a single device has more than one "compatible"
->> string.  I'll leave it to an eager reader of this thread to implement
->> this since we can also fix our own problem by just listing "max98091"
->> in "sound/soc/codecs/max98090.c" like has always been done in the
->> past.
+> Sorry about my misunderstanding. :-)
 >
-> Why do you need to register multiple compatible strings (I guess for
-> fallback purposes?).
+>> > Anyway, the core hibernation code actually works with page frames rather
+>> > than with virtual addresses.  Essentially, it creates a bitmap where each
+>> > page frame is represented by a single bit and the bits representing free
+>> > page frames are unset.  It then allocates as many new pages as there are
+>> > set bits in the bitmap and copies the entire contents of the page frames
+>> > represented by those bits to new pages it's just allocated. That covers
+>> > the entire kernel with its data and all process memory and is saved to
+>> > disk storage along with the PFNs of the page frames whose contents have
+>> > been copied.
+>> >
+>> > During resume it simply restores the contents of the saved page frames
+>> > into those same page frames if they are available at that time.  For the
+>> > page frames that aren't free then it allocates memory to store their
+>> > contents temporarily and creates a list of PFNs where that contents should
+>> > be moved eventually.  Then, it quiesces all activity of the system and
+>> > jumps to arch-specific code that copies data from the temporary memory to
+>> > the target page frames (that generally overwrites the boot kernel, so there's
+>> > no way back from it).  Finally, it jumps to a specific address where the
+>> > hibernated kernel trampoline code should be present.
+>> >
+>> > I think what fails with kASLR is that last step, because everything else
+>> > should be entirely agnostic to the way the virtual addresses are laid out.
+>> > I'm not sure how to fix that at the moment, but it should be fixable at
+>> > least on x86_64.
+>>
+>> Very cool. How does the kernel doing the resume identify the
+>> trampoline location in the hibernated kernel? If it can handle a
+>> different kernel in the hibernation image, I assume there's been some
+>> specific identification in the image instead of using what
+>> kernel-doing-the-resume thinks the trampoline is (based on its own
+>> offsets).
+>
+> There is a simple mechanism to pass the address to jump to in the image
+> header.  Unfortunately, that *is* a virtual address if I remember correctly.
+>
+> I'll have a closer look at that shortly (it's been quite some time since
+> I wrote that code).
 
-I'm no expert, but I think that's part of device tree isn't it?
+Thanks; I'm trying to get a test environment instrumented too so I can
+look at this. (At the very least, it sounds like we'll still need my
+patch series for other architectures.)
 
-In the case of max98090 and max98091, they are incredibly similar
-pieces of hardware (I think the max98091 simply has more microphones).
-If you've got a driver for a max98090 it will work just fine for a
-max98091 but you just won't get the extra microphones.
+-Kees
 
-In cases like this then device tree theory says that you should list
-both compatible strings: max98091 and max98090, right?  If your OS has
-a driver for max98091 it will use it.  ...if it doesn't but it has a
-max98090 driver it will try that one.
-
-As far as I understand we _shouldn't_ lie and just say that we have a
-max98090 when we really have a max98091.  The device tree is supposed
-to describe the hardware and isn't support to care that the OS has a
-driver for max98090 but not max98091.
-
-Ironically in our case we have a driver that supports both the 98090
-and the 98091 via autodetect.  However, it doesn't know about the
-98091 compatible string so if you list yourself as compatible with
-98091 then it won't find the driver.
-
-> A quick fix that is about as good is to take the
-> first compatible only.
-
-That's how the code works today, actually.  ...but as per above the
-current 98090 driver doesn't know about the 98091 compatible string,
-so:
-
-compatible = "maxim,max98091", "maxim,max98090";
-
-...won't find the right driver.
-
---
-
-The quick fix is to add max98091 to the max98090 driver and is what
-I'd suggest in this case.  ...but I still think that the above logic
-is valid and eventually the i2c core should be fixed.  Please correct
-me if I'm wrong.
-
--Doug
+-- 
+Kees Cook
+Chrome OS Security
