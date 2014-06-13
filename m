@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753607AbaFMQhb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 12:37:31 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:64915 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753186AbaFMQh3 (ORCPT
+	id S1753665AbaFMQhu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 12:37:50 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:45334 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753225AbaFMQht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 12:37:29 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX189B4seZhmYM5arIL5UW0vgV5h4uPEPOZ0=
-X-DKIM: OpenDKIM Filter v2.0.1 titan D248F58EFB8
-Date: Fri, 13 Jun 2014 12:37:14 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Joe Perches <joe@perches.com>
-Cc: Sricharan R <r.sricharan@ti.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tony@atomide.com,
-        santosh.shilimkar@ti.com, nm@ti.com, rnayak@ti.com,
-        linux@arm.linux.org.uk, tglx@linutronix.de
-Subject: Re: [PATCH V2 00/19] irqchip: crossbar: driver fixes
-Message-ID: <20140613163714.GR8664@titan.lakedaemon.net>
-References: <1402574007-13987-1-git-send-email-r.sricharan@ti.com>
- <20140613150122.GP8664@titan.lakedaemon.net>
- <1402676074.12385.40.camel@joe-AO725>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402676074.12385.40.camel@joe-AO725>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 13 Jun 2014 12:37:49 -0400
+From: Florian Fainelli <f.fainelli@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: tglx@linutronix.de, jason@lakedaemon.net, computersforpeace@gmail.com,
+        Florian Fainelli <f.fainelli@gmail.com>
+Subject: [PATCH] genirq: warn on inconstent flags and flow handler
+Date: Fri, 13 Jun 2014 09:36:43 -0700
+Message-Id: <1402677403-3542-1-git-send-email-f.fainelli@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 09:14:34AM -0700, Joe Perches wrote:
-> On Fri, 2014-06-13 at 11:01 -0400, Jason Cooper wrote:
-> > Please format the subject lines like so:
-> > 
-> >   irqchip: crossbar: Set cb pointer ...
-> >                      ^
-> >                      |
-> >                      \-- note the capitalization
-> 
-> I suggest you don't make this a rule and focus
-> on more important stuff instead.
+It is currently possible for a generic irq chip driver to set IRQ_LEVEL
+and have its irq flow handler be handle_edge_irq. Setting IRQ_LEVEL in
+such a case does not make sense, and will actually prevent e.g: the
+software resend logic from kicking, and potential other problems too.
 
-It's not my rule.  ;-)
+Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
+---
+Thomas,
 
-> Nobody is going to write tools that parse the
-> changelogs by "git log --format=%s" for case
-> sensitivity.
-> 
-> As is, it's about half/half.
-> 
-> $ git log --format=%s --no-merges drivers/irqchip/ | \
->   grep "^irqchip:" | cut -f3- -d":"
+This is the change I mentioned to you on the #mipslinux IRC channel,
+let me know if you feel like this should be somewhere else, AFAICT
+this should not slow things down.
 
-Yeah, we haven't been perfect in the past, and a lot of stuff was merged
-without going though tglx's tree.  That's why I was asked to help out.
+Thanks!
 
-Either I'm fixing up the subject line as I apply the patch, or, I kindly
-ask the submitter to fix it up during a re-spin.
+ kernel/irq/chip.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-thx,
+diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+index a2b28a2fd7b1..939ae1283ec9 100644
+--- a/kernel/irq/chip.c
++++ b/kernel/irq/chip.c
+@@ -749,8 +749,13 @@ void irq_modify_status(unsigned int irq, unsigned long clr, unsigned long set)
+ 		irqd_set(&desc->irq_data, IRQD_PER_CPU);
+ 	if (irq_settings_can_move_pcntxt(desc))
+ 		irqd_set(&desc->irq_data, IRQD_MOVE_PCNTXT);
+-	if (irq_settings_is_level(desc))
++	if (irq_settings_is_level(desc)) {
++		/* Setting IRQD_LEVEL does not make sense on non-level
++		 * sensitive interrupts
++		 */
++		WARN_ON(desc->handle_irq != handle_level_irq);
+ 		irqd_set(&desc->irq_data, IRQD_LEVEL);
++	}
+ 
+ 	irqd_set(&desc->irq_data, irq_settings_get_trigger_mask(desc));
+ 
+-- 
+1.9.1
 
-Jason.
