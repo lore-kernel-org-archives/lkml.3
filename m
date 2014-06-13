@@ -1,61 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752806AbaFMJrD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 05:47:03 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:46363 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751876AbaFMJrB (ORCPT
+	id S1752235AbaFMJxO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 05:53:14 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:19220 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751300AbaFMJxM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 05:47:01 -0400
-Date: Fri, 13 Jun 2014 12:46:51 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Joe Perches <joe@perches.com>
-Cc: Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
-Subject: Re: [patch] checkpatch: warn on missing spaces in broken up quoted
- strings
-Message-ID: <20140613094651.GF5015@mwanda>
-References: <20140613065346.GA28134@mwanda>
- <1402651822.12385.31.camel@joe-AO725>
+	Fri, 13 Jun 2014 05:53:12 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 13 Jun 2014 02:47:50 -0700
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Ben Skeggs <bskeggs@redhat.com>, Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>
+CC: <nouveau@lists.freedesktop.org>, <dri-devel@lists.freedesktop.org>,
+        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <gnurou@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH v2 0/3] drm/nouveau: support for probing platform devices
+Date: Fri, 13 Jun 2014 18:52:43 +0900
+Message-ID: <1402653166-8441-1-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 2.0.0
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402651822.12385.31.camel@joe-AO725>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 02:30:22AM -0700, Joe Perches wrote:
+This series adds support for probing platform devices on Nouveau, as well as
+the DT bindings for GK20A. It doesn't enable the GPU yet on Tegra boards since
+a few extra things need to be supported before that.
 
-> > +# check for missing a space in a string concatination
-> > +        if ($prevrawline =~ /[^\\][a-zA-Z]"$/ && $rawline =~ /^\+[\t ]+"[a-zA-Z]/) {
-> > +            WARN('MISSING_SPACE',
-> > +                 "break quoted strings at a space character\n" . $hereprev);
-> > +        }
-> 
-> Probably want digits too so maybe \w instead of "[a-zA-Z]/
-> 
+Thanks to the input received for v1, this version is more self-contained and
+shares less stuff between nouveau_drm and nouveau_platform. The major change
+is that nouveau_platform is now a module of its own. The main reason for this
+is that it allows us to register/unregister the driver from the module init
+functions instead of parasiting the ones of nouveau_drm. It also makes it
+simpler to build Nouveau without platform support at all.
 
-Changing it to that adds the following 6 new warnings:
+Changes since v1:
+* Moved the platform device driver to its own module. This allows it to be more
+  self-contained and saves us the need to export too many functions from
+  nouveau_drm and nouveau_platform.
+* Register the DRM device without using the platform helpers, which is made
+  possible by drm_dev_set_unique(). This allows us to catch and register the
+  DRM device during platform probe.
+* Fixed the clock names in the DT bindings.
+* Removed the patches enabling GK20A on Venice2 and Jetson TK1 as support
+  is not complete yet.
 
-./drivers/staging/media/lirc/lirc_zilog.c:806 			    "1) -- please upgrade to a newer driver",
-	- bug.
+Alexandre Courbot (2):
+  drm/nouveau: support for probing platform devices
+  ARM: tegra: of: add GK20A device tree binding
 
-./drivers/staging/rtl8192e/rtl8192e/r8192E_dev.c:529 					 "24G_A[%d] = 0x%x\n", i,
-./drivers/staging/rtl8192e/rtl8192e/r8192E_dev.c:537 					 "24G_C[%d] = 0x%x\n", i,
-	- the "24G_A" is the last 5 characters of a variable name so
-	  this is sloppy code.
+Thierry Reding (1):
+  ARM: tegra: add GK20A GPU to Tegra124 DT
 
-./drivers/scsi/pm8001/pm8001_ctl.c:297 			       "0x%08x 0x%08x\n",
-./drivers/scsi/pm8001/pm8001_ctl.c:432 			       "0x%08x 0x%08x\n",
-./drivers/scsi/qla2xxx/qla_nx2.c:1457 	    "0x%X 0x%X 0x%X 0x%X 0x%X 0x%X\n"
-	- hex false positives
+ .../devicetree/bindings/gpu/nvidia,gk20a.txt       |  43 +++++
+ arch/arm/boot/dts/tegra124.dtsi                    |  15 ++
+ drivers/gpu/drm/nouveau/Kconfig                    |   8 +
+ drivers/gpu/drm/nouveau/Makefile                   |   3 +
+ drivers/gpu/drm/nouveau/nouveau_drm.c              |  56 +++++--
+ drivers/gpu/drm/nouveau/nouveau_drm.h              |   3 +
+ drivers/gpu/drm/nouveau/nouveau_platform.c         | 182 +++++++++++++++++++++
+ 7 files changed, 299 insertions(+), 11 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/gpu/nvidia,gk20a.txt
+ create mode 100644 drivers/gpu/drm/nouveau/nouveau_platform.c
 
-I thought about doing that when I wrote my original patch but I was
-worried about more hex false positives.  If there are only those 3 then
-it's probably not a big deal.  What do you think?
-
-regards,
-dan carpenter
+-- 
+2.0.0
 
