@@ -1,118 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753680AbaFMRBU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 13:01:20 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:40104 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753490AbaFMRBS convert rfc822-to-8bit (ORCPT
+	id S1753798AbaFMRB3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 13:01:29 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:36073 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753766AbaFMRB0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 13:01:18 -0400
-From: "Javi Merino" <javi.merino@arm.com>
-Date: Fri, 13 Jun 2014 18:01:15 +0100
-To: Eduardo Valentin <edubezval@gmail.com>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Punit Agrawal <Punit.Agrawal@arm.com>, Zhang Rui <rui.zhang@intel.com>
-Subject: Re: [RFC PATCH v3 5/7] thermal: add a basic cpu power actor
-Message-ID: <20140613170115.GC3504@e104805>
-References: <1401790715-5630-1-git-send-email-javi.merino@arm.com>
- <1401790715-5630-6-git-send-email-javi.merino@arm.com>
- <20140611120537.GA7230@developer>
- <20140612142650.GB2763@e104805>
-MIME-Version: 1.0
-In-Reply-To: <20140612142650.GB2763@e104805>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 13 Jun 2014 17:01:09.0912 (UTC) FILETIME=[12FEA180:01CF8729]
-X-MC-Unique: 114061318011608201
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	Fri, 13 Jun 2014 13:01:26 -0400
+From: Daniel Kiper <daniel.kiper@oracle.com>
+To: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        xen-devel@lists.xenproject.org
+Cc: andrew.cooper3@citrix.com, boris.ostrovsky@oracle.com,
+        david.vrabel@citrix.com, eshelton@pobox.com, hpa@zytor.com,
+        ian.campbell@citrix.com, jbeulich@suse.com, jeremy@goop.org,
+        konrad.wilk@oracle.com, matt.fleming@intel.com, mingo@redhat.com,
+        mjg59@srcf.ucam.org, stefano.stabellini@eu.citrix.com,
+        tglx@linutronix.de
+Subject: [PATCH v5 3/7] xen: Define EFI related stuff
+Date: Fri, 13 Jun 2014 19:00:19 +0200
+Message-Id: <1402678823-24589-4-git-send-email-daniel.kiper@oracle.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1402678823-24589-1-git-send-email-daniel.kiper@oracle.com>
+References: <1402678823-24589-1-git-send-email-daniel.kiper@oracle.com>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 12, 2014 at 03:26:50PM +0100, Javi Merino wrote:
-> On Wed, Jun 11, 2014 at 01:05:37PM +0100, Eduardo Valentin wrote:
-> > On Tue, Jun 03, 2014 at 11:18:33AM +0100, Javi Merino wrote:
-> > > Introduce a power actor for cpus.  It has a basic power model to get
-> > > the current power utilization and uses cpufreq cooling devices to set
-> > > the desired power.  It uses the current frequency (as reported by
-> > > cpufreq) as well as load and OPPs for the power calculations.  The
-> > > cpus must have registered their OPPs in the OPP library.
-> > >
-> > > Cc: Zhang Rui <rui.zhang@intel.com>
-> > > Cc: Eduardo Valentin <edubezval@gmail.com>
-> > > Signed-off-by: Punit Agrawal <punit.agrawal@arm.com>
-> > > Signed-off-by: Javi Merino <javi.merino@arm.com>
-> > > ---
-> > >  Documentation/thermal/power_actor.txt     | 126 +++++++
-> > >  drivers/thermal/Kconfig                   |   5 +
-> > >  drivers/thermal/power_actor/Kconfig       |   9 +
-> > >  drivers/thermal/power_actor/Makefile      |   2 +
-> > >  drivers/thermal/power_actor/cpu_actor.c   | 601 ++++++++++++++++++++++++++++++
-> > >  drivers/thermal/power_actor/power_actor.h |  41 ++
-> > >  6 files changed, 784 insertions(+)
-> > >  create mode 100644 drivers/thermal/power_actor/Kconfig
-> > >  create mode 100644 drivers/thermal/power_actor/cpu_actor.c
-> > >
-[...]
-> > > diff --git a/drivers/thermal/power_actor/Kconfig b/drivers/thermal/power_actor/Kconfig
-> > > new file mode 100644
-> > > index 000000000000..fa542ca99cdb
-> > > --- /dev/null
-> > > +++ b/drivers/thermal/power_actor/Kconfig
-> > > @@ -0,0 +1,9 @@
-> > > +#
-> > > +# Thermal power actor configuration
-> > > +#
-> > > +
-> > > +config THERMAL_POWER_ACTOR_CPU
-> > > +     bool
-> > > +     prompt "Simple power model for a CPU"
-> > > +     help
-> > > +       A simple CPU power model
-> >
-> > A better help is always welcome.
-> 
-> I guess I can repeat some of the text in the Documentation here.
+Define constants and structures which are needed to properly
+execute EFI related hypercall in Xen dom0.
 
-I've been thinking about it and I'd rather remove the prompt
-altogether.  There's no point in asking the user about this, drivers
-that use this API can select THERMAL_POWER_ACTOR_CPU themselves.  So
-I'll remove the help text.
+This patch is based on Jan Beulich and Tang Liang work.
 
-[...]
-> > > diff --git a/drivers/thermal/power_actor/power_actor.h b/drivers/thermal/power_actor/power_actor.h
-> > > index 28098f43630b..230317c284b2 100644
-> > > --- a/drivers/thermal/power_actor/power_actor.h
-> > > +++ b/drivers/thermal/power_actor/power_actor.h
-> > > @@ -17,11 +17,16 @@
-> > >  #ifndef __POWER_ACTOR_H__
-> > >  #define __POWER_ACTOR_H__
-> > >
-> > > +#include <linux/cpumask.h>
-> > > +#include <linux/device.h>
-> > > +#include <linux/err.h>
-> > >  #include <linux/list.h>
-> > > +#include <linux/thermal.h>
-> > >
-> > >  #define MAX_NUM_ACTORS 8
-> > >
-> > >  enum power_actor_types {
-> > > +     POWER_ACTOR_CPU,
-> >
-> > Using struct device is more scalable no? What if we want to provide a
-> > power actor for a specific bus, or device, or coprocessor? Are we going
-> > to maintain this enum for every single new user?
-> 
-> The counterargument would be, does every single device need to carry
-> this?  Anyway, I'll see if we can add the power actor to the "struct
-> device".
+v5 - suggestions/fixes:
+   - improve commit message
+     (suggested by David Vrabel).
 
-I've decided to remove the only user of the power_actor_types enum and
-remove this field as well.  It's simplifies things which is always
-good.
+v4 - suggestions/fixes:
+   - change some types from generic to Xen specific ones
+     (suggested by Stefano Stabellini),
+   - do some formating changes
+     (suggested by Jan Beulich).
 
-Cheers,
-Javi
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Signed-off-by: Tang Liang <liang.tang@oracle.com>
+Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
+---
+ include/xen/interface/platform.h |  123 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 123 insertions(+)
+
+diff --git a/include/xen/interface/platform.h b/include/xen/interface/platform.h
+index f1331e3..55deeb7 100644
+--- a/include/xen/interface/platform.h
++++ b/include/xen/interface/platform.h
+@@ -108,11 +108,113 @@ struct xenpf_platform_quirk {
+ };
+ DEFINE_GUEST_HANDLE_STRUCT(xenpf_platform_quirk_t);
+ 
++#define XENPF_efi_runtime_call    49
++#define XEN_EFI_get_time                      1
++#define XEN_EFI_set_time                      2
++#define XEN_EFI_get_wakeup_time               3
++#define XEN_EFI_set_wakeup_time               4
++#define XEN_EFI_get_next_high_monotonic_count 5
++#define XEN_EFI_get_variable                  6
++#define XEN_EFI_set_variable                  7
++#define XEN_EFI_get_next_variable_name        8
++#define XEN_EFI_query_variable_info           9
++#define XEN_EFI_query_capsule_capabilities   10
++#define XEN_EFI_update_capsule               11
++
++struct xenpf_efi_runtime_call {
++	uint32_t function;
++	/*
++	 * This field is generally used for per sub-function flags (defined
++	 * below), except for the XEN_EFI_get_next_high_monotonic_count case,
++	 * where it holds the single returned value.
++	 */
++	uint32_t misc;
++	xen_ulong_t status;
++	union {
++#define XEN_EFI_GET_TIME_SET_CLEARS_NS 0x00000001
++	struct {
++		struct xenpf_efi_time {
++			uint16_t year;
++			uint8_t month;
++			uint8_t day;
++			uint8_t hour;
++			uint8_t min;
++			uint8_t sec;
++			uint32_t ns;
++			int16_t tz;
++			uint8_t daylight;
++		} time;
++		uint32_t resolution;
++		uint32_t accuracy;
++	} get_time;
++
++	struct xenpf_efi_time set_time;
++
++#define XEN_EFI_GET_WAKEUP_TIME_ENABLED 0x00000001
++#define XEN_EFI_GET_WAKEUP_TIME_PENDING 0x00000002
++	struct xenpf_efi_time get_wakeup_time;
++
++#define XEN_EFI_SET_WAKEUP_TIME_ENABLE      0x00000001
++#define XEN_EFI_SET_WAKEUP_TIME_ENABLE_ONLY 0x00000002
++	struct xenpf_efi_time set_wakeup_time;
++
++#define XEN_EFI_VARIABLE_NON_VOLATILE       0x00000001
++#define XEN_EFI_VARIABLE_BOOTSERVICE_ACCESS 0x00000002
++#define XEN_EFI_VARIABLE_RUNTIME_ACCESS     0x00000004
++	struct {
++		GUEST_HANDLE(void) name;  /* UCS-2/UTF-16 string */
++		xen_ulong_t size;
++		GUEST_HANDLE(void) data;
++		struct xenpf_efi_guid {
++			uint32_t data1;
++			uint16_t data2;
++			uint16_t data3;
++			uint8_t data4[8];
++			} vendor_guid;
++		} get_variable, set_variable;
++
++	struct {
++		xen_ulong_t size;
++		GUEST_HANDLE(void) name;  /* UCS-2/UTF-16 string */
++		struct xenpf_efi_guid vendor_guid;
++		} get_next_variable_name;
++
++	struct {
++		uint32_t attr;
++		uint64_t max_store_size;
++		uint64_t remain_store_size;
++		uint64_t max_size;
++		} query_variable_info;
++
++	struct {
++		GUEST_HANDLE(void) capsule_header_array;
++		xen_ulong_t capsule_count;
++		uint64_t max_capsule_size;
++		uint32_t reset_type;
++		} query_capsule_capabilities;
++
++	struct {
++		GUEST_HANDLE(void) capsule_header_array;
++		xen_ulong_t capsule_count;
++		uint64_t sg_list; /* machine address */
++		} update_capsule;
++	} u;
++};
++DEFINE_GUEST_HANDLE_STRUCT(xenpf_efi_runtime_call);
++
++#define  XEN_FW_EFI_VERSION        0
++#define  XEN_FW_EFI_CONFIG_TABLE   1
++#define  XEN_FW_EFI_VENDOR         2
++#define  XEN_FW_EFI_MEM_INFO       3
++#define  XEN_FW_EFI_RT_VERSION     4
++
+ #define XENPF_firmware_info       50
+ #define XEN_FW_DISK_INFO          1 /* from int 13 AH=08/41/48 */
+ #define XEN_FW_DISK_MBR_SIGNATURE 2 /* from MBR offset 0x1b8 */
+ #define XEN_FW_VBEDDC_INFO        3 /* from int 10 AX=4f15 */
++#define XEN_FW_EFI_INFO           4 /* from EFI */
+ #define XEN_FW_KBD_SHIFT_FLAGS    5 /* Int16, Fn02: Get keyboard shift flags. */
++
+ struct xenpf_firmware_info {
+ 	/* IN variables. */
+ 	uint32_t type;
+@@ -144,6 +246,26 @@ struct xenpf_firmware_info {
+ 			GUEST_HANDLE(uchar) edid;
+ 		} vbeddc_info; /* XEN_FW_VBEDDC_INFO */
+ 
++		union xenpf_efi_info {
++			uint32_t version;
++			struct {
++				uint64_t addr;   /* EFI_CONFIGURATION_TABLE */
++				uint32_t nent;
++			} cfg;
++			struct {
++				uint32_t revision;
++				uint32_t bufsz;  /* input, in bytes */
++				GUEST_HANDLE(void) name;
++				/* UCS-2/UTF-16 string */
++				} vendor;
++			struct {
++				uint64_t addr;
++				uint64_t size;
++				uint64_t attr;
++				uint32_t type;
++				} mem;
++		} efi_info; /* XEN_FW_EFI_INFO */
++
+ 		uint8_t kbd_shift_flags; /* XEN_FW_KBD_SHIFT_FLAGS */
+ 	} u;
+ };
+@@ -362,6 +484,7 @@ struct xen_platform_op {
+ 		struct xenpf_read_memtype      read_memtype;
+ 		struct xenpf_microcode_update  microcode;
+ 		struct xenpf_platform_quirk    platform_quirk;
++		struct xenpf_efi_runtime_call  efi_runtime_call;
+ 		struct xenpf_firmware_info     firmware_info;
+ 		struct xenpf_enter_acpi_sleep  enter_acpi_sleep;
+ 		struct xenpf_change_freq       change_freq;
+-- 
+1.7.10.4
 
