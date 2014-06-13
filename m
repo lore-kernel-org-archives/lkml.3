@@ -1,37 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752788AbaFMIVp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 04:21:45 -0400
-Received: from avas101.indosat.net.id ([219.83.54.101]:40539 "EHLO
-	avas101.indosat.net.id" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852AbaFMIVn (ORCPT
+	id S1753082AbaFMIWF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 04:22:05 -0400
+Received: from mail-qa0-f73.google.com ([209.85.216.73]:42232 "EHLO
+	mail-qa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750852AbaFMIV6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 04:21:43 -0400
-X-Greylist: delayed 642 seconds by postgrey-1.27 at vger.kernel.org; Fri, 13 Jun 2014 04:21:43 EDT
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AloIAK6xmlPKmzKe/2dsb2JhbABbgnYBFh+DeIIwp2ZAlUEmXxZ1g3YBBAQBFQ4KCHESAg0EFQIxAQ4BS4UvAQEFJoFmAVEBARGjLIUxgWsHAYd/gXuFA5IBAwGGNheBKox+RYIqDzIPA4E6BIo5mAmKYWeDSA
-X-IPAS-Result: AloIAK6xmlPKmzKe/2dsb2JhbABbgnYBFh+DeIIwp2ZAlUEmXxZ1g3YBBAQBFQ4KCHESAg0EFQIxAQ4BS4UvAQEFJoFmAVEBARGjLIUxgWsHAYd/gXuFA5IBAwGGNheBKox+RYIqDzIPA4E6BIo5mAmKYWeDSA
-X-IronPort-AV: E=Sophos;i="5.01,470,1400000400"; 
-   d="scan'208";a="146114998"
-Message-ID: <12958131.2396061402644576883.JavaMail.defaultUser@defaultHost>
-Date: Fri, 13 Jun 2014 14:29:36 +0700 (WIT)
-From: Qatar Embassy <qataremj@indosat.net.id>
-Reply-To: www.euro-millions.com@hotmail.com
-Subject: =?UTF-8?Q?News_for_=E2=82=ACEUROMILLIONS?=
+	Fri, 13 Jun 2014 04:21:58 -0400
+Date: Fri, 13 Jun 2014 01:21:57 -0700 (PDT)
+From: Tom Herbert <therbert@google.com>
+To: geert@linux-m68k.org
+cc: davem@davemloft.net, linux-next@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: [-next] Regression: ssh log in slowdown
+Message-ID: <alpine.DEB.2.02.1406130111280.1551@tomh.mtv.corp.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain;charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>
+> I assume this is the series "[PATCH 0/4] Checksum fixes"
+> (marc.info/?l=linux-netdev&m=140261417832399&w=2)?
+>
+Yes.
 
+> As I'm not subscribed to netdev, I cannot reply to that thread.
+>
+> "[PATCH 1/4] net: Fix save software checksum complete" fixes the issue
+> for me.
+> However, "[PATCH 2/4] udp: call __skb_checksum_complete when doing full
+> checksum" reintroduces the exact same bad behavior :-(
+>
+This implies the problem is happening in UDP path. AFAICT skb->csum is 
+correct, and I don't seem to be able to reproduce the issue on my setup. 
+It is possible that an skb copy is happening in which case we don't copy
+csum_valid so that checksum_unnecessary would fail in this case.
 
+Can you try with the patch below. Thanks!
 
---
-  Good day..
-
-Is this account still in use? 
---
-
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index bf92824..9cd5344 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -689,6 +689,9 @@ static void __copy_skb_header(struct sk_buff *new, const struct sk_buff *old)
+ 	new->ooo_okay		= old->ooo_okay;
+ 	new->no_fcs		= old->no_fcs;
+ 	new->encapsulation	= old->encapsulation;
++	new->encap_hdr_csum	= old->encap_hdr_csum;
++	new->csum_valid		= old->csum_valid;
++	new->csum_complete_sw	= old->csum_complete_sw;
+ #ifdef CONFIG_XFRM
+ 	new->sp			= secpath_get(old->sp);
+ #endif
