@@ -1,54 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752748AbaFMPVJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 11:21:09 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:44617 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751181AbaFMPVH (ORCPT
+	id S1753064AbaFMPV0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 11:21:26 -0400
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:37177 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752818AbaFMPVY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 11:21:07 -0400
-Message-ID: <1402672861.2224.11.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [GIT PULL] target updates for v3.16-rc1
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Christoph Hellwig <hch@lst.de>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Quinn Tran <quinn.tran@qlogic.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Date: Fri, 13 Jun 2014 08:21:01 -0700
-In-Reply-To: <20140613133901.GC7371@lst.de>
-References: <1402607116.18202.46.camel@haakon3.risingtidesystems.com>
-	 <20140613133901.GC7371@lst.de>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.12.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 13 Jun 2014 11:21:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <1402628655-2904-1-git-send-email-nickkrause@sympatico.ca>
+References: <1402628655-2904-1-git-send-email-nickkrause@sympatico.ca>
+Date: Fri, 13 Jun 2014 09:21:23 -0600
+Message-ID: <CAGdLNWEaVeWL4=fWY0hLUgq4ii_mHK9a_f8qP6N2cCOEEhtddQ@mail.gmail.com>
+Subject: Re: [PATCH] platform/x86/toshiba-apci.c possible bad if test?
+From: Azael Avalos <coproscefalo@gmail.com>
+To: Nick <xerofoify@gmail.com>
+Cc: Matthew Garrett <matthew.garrett@nebula.com>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-06-13 at 15:39 +0200, Christoph Hellwig wrote:
-> On Thu, Jun 12, 2014 at 02:05:16PM -0700, Nicholas A. Bellinger wrote:
-> > The first is with virtio-scsi between what has been merged in scsi.git
-> > for "virtio_scsi: use cmd_size", and the "virtio-scsi: Enable DIF/DIX
-> > modes in SCSI host LLD" below.  (Adding Paolo + hch CC')
-> 
-> Just curious, why did we decide to take the virtio-scsi patches
-> through the target tree?  Seems like taking them through the scsi
-> tree would have been a lot simpler.
+Hi,
 
-We've been ineffectively trying to split them between target and
-initiator, since it's effectively both.  Now that we seem to have a
-workable process, why don't we just take everything (target scsi-queue
-and vhost) through the SCSI tree, that way we don't get into these
-problems in future.
+I've sent this patch a few weeks ago, but somehow it didn't managed to
+get through :-(
 
-James
+If it's still possible, please pick it up Matthew.
 
 
+Cheers.
+Azael
+
+
+8<------------------------------------------------------------------------------------------------------------------------->8
+Intel test builder caught some warnings, one at the
+KBD backlight mode store while validating for
+correct parameters, and another one that might lead
+to not creating the sysfs group
+
+Signed-off-by: Azael Avalos <coproscefalo@gmail.com>
+---
+ drivers/platform/x86/toshiba_acpi.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/platform/x86/toshiba_acpi.c
+b/drivers/platform/x86/toshiba_acpi.c
+index fbbe46d..f397594 100644
+--- a/drivers/platform/x86/toshiba_acpi.c
++++ b/drivers/platform/x86/toshiba_acpi.c
+@@ -1218,7 +1218,7 @@ static ssize_t toshiba_kbd_bl_mode_store(struct
+device *dev,
+        int mode = -1;
+        int time = -1;
+
+-       if (sscanf(buf, "%i", &mode) != 1 && (mode != 2 || mode != 1))
++       if (sscanf(buf, "%i", &mode) != 1 || mode > 2 || mode < 1)
+                return -EINVAL;
+
+        /* Set the Keyboard Backlight Mode where:
+@@ -1741,7 +1741,7 @@ static int toshiba_acpi_add(struct acpi_device *acpi_dev)
+
+        ret = sysfs_create_group(&dev->acpi_dev->dev.kobj,
+                                 &toshiba_attr_group);
+-       if (ret) {
++       if (ret != 0) {
+                dev->sysfs_created = 0;
+                goto error;
+        }
+
+
+--
+1.9.1
+
+2014-06-12 21:04 GMT-06:00 Nick <xerofoify@gmail.com>:
+> diff --git a/drivers/platform/x86/toshiba_acpi.c b/drivers/platform/x86/toshiba_acpi.c
+> index 76441dc..dfd2243 100644
+> --- a/drivers/platform/x86/toshiba_acpi.c
+> +++ b/drivers/platform/x86/toshiba_acpi.c
+> @@ -1238,7 +1238,7 @@ static ssize_t toshiba_kbd_bl_mode_store(struct device *dev,
+>         int mode = -1;
+>         int time = -1;
+>
+> -       if (sscanf(buf, "%i", &mode) != 1 && (mode != 2 || mode != 1))
+> +       if (sscanf(buf, "%i", &mode) != 1  || (mode != 2 || mode != 1))
+>                 return -EINVAL;
+>
+>         /* Set the Keyboard Backlight Mode where:
+> --
+> 1.9.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe platform-driver-x86" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+
+-- 
+-- El mundo apesta y vosotros apestais tambien --
