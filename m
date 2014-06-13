@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754227AbaFMXDs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 19:03:48 -0400
-Received: from mga02.intel.com ([134.134.136.20]:20709 "EHLO mga02.intel.com"
+	id S1754251AbaFMXEI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 19:04:08 -0400
+Received: from mga11.intel.com ([192.55.52.93]:21418 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751401AbaFMXDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 19:03:46 -0400
+	id S1753645AbaFMXDk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 19:03:40 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,474,1400050800"; 
-   d="scan'208";a="528355253"
+   d="scan'208";a="555349928"
 From: Andi Kleen <andi@firstfloor.org>
 To: jolsa@redhat.com
 Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@infradead.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 2/9] perf, tools: Add support for text descriptions of events and alias add
-Date: Fri, 13 Jun 2014 16:02:53 -0700
-Message-Id: <1402700580-26939-3-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 8/9] perf, tools, test: Add test case for alias and JSON parsing v2
+Date: Fri, 13 Jun 2014 16:02:59 -0700
+Message-Id: <1402700580-26939-9-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1402700580-26939-1-git-send-email-andi@firstfloor.org>
 References: <1402700580-26939-1-git-send-email-andi@firstfloor.org>
@@ -25,225 +25,165 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Change pmu.c to allow descriptions of events and add interfaces
-to add aliases at runtime from another file. To be used by jevents in the
-next patch.
+Add a simple test case to perf test that runs perf download and parses
+all the available events, including json events.
 
+This needs adding an all event iterator to pmu.c
+
+v2: Rename identifiers
 Acked-by: Namhyung Kim <namhyung@kernel.org>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- tools/perf/util/pmu.c | 127 ++++++++++++++++++++++++++++++++++++++------------
- 1 file changed, 98 insertions(+), 29 deletions(-)
+ tools/perf/Makefile.perf        |  1 +
+ tools/perf/tests/aliases.c      | 58 +++++++++++++++++++++++++++++++++++++++++
+ tools/perf/tests/builtin-test.c |  4 +++
+ tools/perf/tests/tests.h        |  1 +
+ tools/perf/util/pmu.c           | 18 +++++++++++++
+ tools/perf/util/pmu.h           |  2 ++
+ 6 files changed, 84 insertions(+)
+ create mode 100644 tools/perf/tests/aliases.c
 
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index 7a811eb..baec090 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -14,6 +14,7 @@
- 
- struct perf_pmu_alias {
- 	char *name;
-+	char *desc;
- 	struct list_head terms;
- 	struct list_head list;
- 	char unit[UNIT_MAX_LEN+1];
-@@ -171,17 +172,12 @@ error:
- 	return -1;
- }
- 
--static int perf_pmu__new_alias(struct list_head *list, char *dir, char *name, FILE *file)
-+static int __perf_pmu__new_alias(struct list_head *list, char *name,
-+				 char *dir, char *desc, char *val)
- {
- 	struct perf_pmu_alias *alias;
--	char buf[256];
- 	int ret;
- 
--	ret = fread(buf, 1, sizeof(buf), file);
--	if (ret == 0)
--		return -EINVAL;
--	buf[ret] = 0;
--
- 	alias = malloc(sizeof(*alias));
- 	if (!alias)
- 		return -ENOMEM;
-@@ -190,24 +186,45 @@ static int perf_pmu__new_alias(struct list_head *list, char *dir, char *name, FI
- 	alias->scale = 1.0;
- 	alias->unit[0] = '\0';
- 
--	ret = parse_events_terms(&alias->terms, buf);
-+	ret = parse_events_terms(&alias->terms, val);
- 	if (ret) {
-+		pr_err("Cannot parse alias %s: %d\n", val, ret);
- 		free(alias);
- 		return ret;
- 	}
- 
- 	alias->name = strdup(name);
--	/*
--	 * load unit name and scale if available
--	 */
--	perf_pmu__parse_unit(alias, dir, name);
--	perf_pmu__parse_scale(alias, dir, name);
- 
-+	if (dir) {
-+		/*
-+		 * load unit name and scale if available
-+		 */
-+		perf_pmu__parse_unit(alias, dir, name);
-+		perf_pmu__parse_scale(alias, dir, name);
-+	}
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 0600425..6adb37f 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -419,6 +419,7 @@ endif
+ LIB_OBJS += $(OUTPUT)tests/code-reading.o
+ LIB_OBJS += $(OUTPUT)tests/sample-parsing.o
+ LIB_OBJS += $(OUTPUT)tests/parse-no-sample-id-all.o
++LIB_OBJS += $(OUTPUT)tests/aliases.o
+ ifndef NO_DWARF_UNWIND
+ ifeq ($(ARCH),$(filter $(ARCH),x86 arm))
+ LIB_OBJS += $(OUTPUT)tests/dwarf-unwind.o
+diff --git a/tools/perf/tests/aliases.c b/tools/perf/tests/aliases.c
+new file mode 100644
+index 0000000..68396e7
+--- /dev/null
++++ b/tools/perf/tests/aliases.c
+@@ -0,0 +1,58 @@
++/* Check if we can set up all aliases and can read JSON files */
++#include <stdlib.h>
++#include "tests.h"
++#include "pmu.h"
++#include "evlist.h"
++#include "parse-events.h"
 +
-+	alias->desc = desc ? strdup(desc) : NULL;
- 	list_add_tail(&alias->list, list);
- 
- 	return 0;
- }
- 
-+static int perf_pmu__new_alias(struct list_head *list,
-+			       char *dir,
-+			       char *name,
-+			       FILE *file)
++static struct perf_evlist *evlist;
++
++static int num_events;
++static int failed;
++
++static int test__event(const char *name)
 +{
-+	char buf[256];
 +	int ret;
 +
-+	ret = fread(buf, 1, sizeof(buf), file);
-+	if (ret == 0)
-+		return -EINVAL;
-+	buf[ret] = 0;
++	/* Not supported for now */
++	if (!strncmp(name, "energy-", 7))
++		return 0;
 +
-+	return __perf_pmu__new_alias(list, name, dir, NULL, buf);
++	ret = parse_events(evlist, name);
++
++	if (ret) {
++		/*
++		 * We only print on failure because common perf setups
++		 * have events that cannot be parsed.
++		 */
++		fprintf(stderr, "invalid or unsupported event: '%s'\n", name);
++		ret = 0;
++		failed++;
++	} else
++		num_events++;
++	return ret;
 +}
 +
- /*
-  * Process all the sysfs attributes located under the directory
-  * specified in 'dir' parameter.
-@@ -720,11 +737,51 @@ static char *format_alias_or(char *buf, int len, struct perf_pmu *pmu,
- 	return buf;
- }
- 
--static int cmp_string(const void *a, const void *b)
-+struct pair {
-+	char *name;
-+	char *desc;
-+};
-+
-+static int cmp_pair(const void *a, const void *b)
++int test__aliases(void)
 +{
-+	const struct pair *as = a;
-+	const struct pair *bs = b;
++	int err;
 +
-+	/* Put downloaded event list last */
-+	if (!!as->desc != !!bs->desc)
-+		return !!as->desc - !!bs->desc;
-+	return strcmp(as->name, bs->name);
-+}
-+
-+static void wordwrap(char *s, int start, int max, int corr)
- {
--	const char * const *as = a;
--	const char * const *bs = b;
--	return strcmp(*as, *bs);
-+	int column = start;
-+	int n;
-+
-+	while (*s) {
-+		int wlen = strcspn(s, " \t");
-+
-+		if (column + wlen >= max && column > start) {
-+			printf("\n%*s", start, "");
-+			column = start + corr;
-+		}
-+		n = printf("%s%.*s", column > start ? " " : "", wlen, s);
-+		if (n <= 0)
-+			break;
-+		s += wlen;
-+		column += n;
-+		while (isspace(*s))
-+			s++;
++	/* Download JSON files */
++	/* XXX assumes perf is installed */
++	/* For now user must manually download */
++	if (0 && system("perf download > /dev/null") < 0) {
++		/* Don't error out for this for now */
++		fprintf(stderr, "perf download failed\n");
 +	}
-+}
 +
-+static int get_columns(void)
-+{
-+	/*
-+	 * Should ask the terminal with TIOCGWINSZ here, but we
-+	 * need the original fd before the pager.
-+	 */
-+	return 79;
- }
++	evlist = perf_evlist__new();
++	if (evlist == NULL)
++		return -ENOMEM;
++
++	err = pmu_iterate_events(test__event);
++	fprintf(stderr, " Parsed %d events :", num_events);
++	if (failed > 0)
++		pr_debug(" %d events failed", failed);
++	perf_evlist__delete(evlist);
++	return err;
++}
+diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
+index 6f8b01b..bb37ac2 100644
+--- a/tools/perf/tests/builtin-test.c
++++ b/tools/perf/tests/builtin-test.c
+@@ -154,6 +154,10 @@ static struct test {
+ 		.func = test__hists_cumulate,
+ 	},
+ 	{
++		.desc = "Test parsing JSON aliases",
++		.func = test__aliases,
++	},
++	{
+ 		.func = NULL,
+ 	},
+ };
+diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
+index ed64790..ab92ad9 100644
+--- a/tools/perf/tests/tests.h
++++ b/tools/perf/tests/tests.h
+@@ -48,6 +48,7 @@ int test__mmap_thread_lookup(void);
+ int test__thread_mg_share(void);
+ int test__hists_output(void);
+ int test__hists_cumulate(void);
++int test__aliases(void);
  
- void print_pmu_events(const char *event_glob, bool name_only)
-@@ -734,21 +791,24 @@ void print_pmu_events(const char *event_glob, bool name_only)
- 	char buf[1024];
- 	int printed = 0;
- 	int len, j;
--	char **aliases;
-+	struct pair *aliases;
-+	int numdesc = 0;
-+	int columns = get_columns();
- 
- 	pmu = NULL;
- 	len = 0;
- 	while ((pmu = perf_pmu__scan(pmu)) != NULL)
- 		list_for_each_entry(alias, &pmu->aliases, list)
- 			len++;
--	aliases = malloc(sizeof(char *) * len);
-+	aliases = malloc(sizeof(struct pair) * len);
- 	if (!aliases)
- 		return;
- 	pmu = NULL;
- 	j = 0;
- 	while ((pmu = perf_pmu__scan(pmu)) != NULL)
- 		list_for_each_entry(alias, &pmu->aliases, list) {
--			char *name = format_alias(buf, sizeof(buf), pmu, alias);
-+			char *name = alias->desc ? alias->name :
-+				format_alias(buf, sizeof(buf), pmu, alias);
- 			bool is_cpu = !strcmp(pmu->name, "cpu");
- 
- 			if (event_glob != NULL &&
-@@ -756,22 +816,31 @@ void print_pmu_events(const char *event_glob, bool name_only)
- 			      (!is_cpu && strglobmatch(alias->name,
- 						       event_glob))))
- 				continue;
--			aliases[j] = name;
--			if (is_cpu && !name_only)
--				aliases[j] = format_alias_or(buf, sizeof(buf),
--							      pmu, alias);
--			aliases[j] = strdup(aliases[j]);
-+			aliases[j].name = name;
-+			if (is_cpu && !name_only && !alias->desc)
-+				aliases[j].name = format_alias_or(buf,
-+								  sizeof(buf),
-+								  pmu, alias);
-+			aliases[j].name = strdup(aliases[j].name);
-+			aliases[j].desc = alias->desc;
- 			j++;
- 		}
- 	len = j;
--	qsort(aliases, len, sizeof(char *), cmp_string);
-+	qsort(aliases, len, sizeof(struct pair), cmp_pair);
- 	for (j = 0; j < len; j++) {
- 		if (name_only) {
--			printf("%s ", aliases[j]);
-+			printf("%s ", aliases[j].name);
- 			continue;
- 		}
--		printf("  %-50s [Kernel PMU event]\n", aliases[j]);
--		zfree(&aliases[j]);
-+		if (aliases[j].desc) {
-+			if (numdesc++ == 0 && printed)
-+				printf("\n");
-+			printf("  %-50s [", aliases[j].name);
-+			wordwrap(aliases[j].desc, 53, columns, 1);
-+			printf("]\n");
-+		} else
-+			printf("  %-50s [Kernel PMU event]\n", aliases[j].name);
-+		zfree(&aliases[j].name);
- 		printed++;
+ #if defined(__x86_64__) || defined(__i386__) || defined(__arm__)
+ #ifdef HAVE_DWARF_UNWIND_SUPPORT
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 8714f9a..b87f520 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -869,3 +869,21 @@ bool pmu_have_event(const char *pname, const char *name)
  	}
- 	if (printed)
+ 	return false;
+ }
++
++int pmu_iterate_events(int (*func)(const char *name))
++{
++	int ret = 0;
++	struct perf_pmu *pmu;
++	struct perf_pmu_alias *alias;
++
++	perf_pmu__find("cpu"); /* Load PMUs */
++	pmu = NULL;
++	while ((pmu = perf_pmu__scan(pmu)) != NULL) {
++		list_for_each_entry(alias, &pmu->aliases, list) {
++			ret = func(alias->name);
++			if (ret != 0)
++				break;
++		}
++	}
++	return ret;
++}
+diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
+index 583d21e..a8ed283 100644
+--- a/tools/perf/util/pmu.h
++++ b/tools/perf/util/pmu.h
+@@ -47,5 +47,7 @@ bool pmu_have_event(const char *pname, const char *name);
+ 
+ int perf_pmu__test(void);
+ 
++int pmu_iterate_events(int (*func)(const char *name));
++
+ extern const char *json_file;
+ #endif /* __PMU_H */
 -- 
 1.9.3
 
