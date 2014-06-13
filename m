@@ -1,62 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752124AbaFMOCJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 10:02:09 -0400
-Received: from mail.kernel.org ([198.145.19.201]:37502 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751082AbaFMOCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 10:02:06 -0400
-Date: Fri, 13 Jun 2014 16:01:55 +0200
-From: Robert Richter <rric@kernel.org>
-To: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-Cc: rjw@rjwysocki.net, lenb@kernel.org, tony.luck@intel.com, bp@alien8.de,
-        m.chehab@samsung.com, bp@suse.de, linux-edac@vger.kernel.org,
-        x86@kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org
-Subject: Re: [PATCH v3 2/5] acpi, apei, ghes: Introduce
- ARCH_HAS_ACPI_APEI_NMI to make NMI error notification a GHES feature.
-Message-ID: <20140613140155.GE27560@rric.localhost>
-References: <1402657380-18539-1-git-send-email-tomasz.nowicki@linaro.org>
- <1402657380-18539-3-git-send-email-tomasz.nowicki@linaro.org>
+	id S1752291AbaFMODP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 10:03:15 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:57602 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751400AbaFMODO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 10:03:14 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Pawel Moll <pawel.moll@arm.com>
+Subject: Re: [patch v2] mfd: vexpress: fix error handling vexpress_syscfg_regmap_init()
+Date: Fri, 13 Jun 2014 16:02:46 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, Olof Johansson <olof@lixom.net>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
+References: <20140611101740.GA13148@mwanda> <1402482800.3523.20.camel@hornet>
+In-Reply-To: <1402482800.3523.20.camel@hornet>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402657380-18539-3-git-send-email-tomasz.nowicki@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201406131602.46893.arnd@arndb.de>
+X-Provags-ID: V02:K0:RspqcI2y5JRt/BbHT0ppRoBjZyHuWHlsVbtgt0sOS8D
+ Xe+Og6ziXasj6FznkIlFmh1VjcNgh61lUXBHQtOrh3RnvcFkHJ
+ IAzmsJpZuW4NCnZh4xufIfTY5CqqkyEqBfNT84+5jAiOzOGYiT
+ 71g3Ie840D54AwBCoFw2+IMS9t75W6MPOTNZaxeO2nAQ2zDaX8
+ vj4UgFoPtC4e49pFHfyqJ3m2DibPEJJYCpRmwZ1y8QsB2bbS6C
+ VnAj46dd3KsJ9hKgKx2Qvwd18OUME/QxgzQNrf4U9p8kfotKL3
+ hobm3mv2Q5B+DvvyEwYklu9JS8C/q1dkHcIkQhG1tOvtf/zeq7
+ nc8hb+sK4CWIS0Ec5Iek=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13.06.14 13:02:57, Tomasz Nowicki wrote:
-> Currently APEI depends on x86 architecture. It is because of NMI hardware
-> error notification of GHES which is currently supported by x86 only.
-> However, many other APEI features can be still used perfectly by other
-> architectures.
+On Wednesday 11 June 2014, Pawel Moll wrote:
+> On Wed, 2014-06-11 at 11:17 +0100, Dan Carpenter wrote:
+> > This function should be returning an ERR_PTR() on failure instead of
+> > NULL.  Also there is a use after free bug if regmap_init() fails because
+> > we free "func" and then dereference doing the return.
+> > 
+> > Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> > 
+> > diff --git a/drivers/misc/vexpress-syscfg.c b/drivers/misc/vexpress-syscfg.c
+> > index 73068e5..3250fc1 100644
+> > --- a/drivers/misc/vexpress-syscfg.c
+> > +++ b/drivers/misc/vexpress-syscfg.c
+> > @@ -199,7 +199,7 @@ static struct regmap *vexpress_syscfg_regmap_init(struct device *dev,
+> >       func = kzalloc(sizeof(*func) + sizeof(*func->template) * num,
+> >                       GFP_KERNEL);
+> >       if (!func)
+> > -             return NULL;
+> > +             return ERR_PTR(-ENOMEM);
+> >  
+> >       func->syscfg = syscfg;
+> >       func->num_templates = num;
+> > @@ -231,10 +231,14 @@ static struct regmap *vexpress_syscfg_regmap_init(struct device *dev,
+> >       func->regmap = regmap_init(dev, NULL, func,
+> >                       &vexpress_syscfg_regmap_config);
+> >  
+> > -     if (IS_ERR(func->regmap))
+> > +     if (IS_ERR(func->regmap)) {
+> > +             void *err = func->regmap;
+> > +
+> >               kfree(func);
+> > -     else
+> > -             list_add(&func->list, &syscfg->funcs);
+> > +             return err;
+> > +     }
+> > +
+> > +     list_add(&func->list, &syscfg->funcs);
+> >  
+> >       return func->regmap;
+> >  }
 > 
-> This commit adds ARCH_HAS_ACPI_APEI_NMI which will be used in next patches
-> for NMI related code isolation in ghes.c file. Only NMI error notification
-> feature depends on x86 so let it be hard selected for x86 arch.
+> Uh, right. Dereferencing a freed structure. My bad. Thanks for spotting
+> this!
 > 
-> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-> ---
->  arch/x86/Kconfig          |    1 +
->  drivers/acpi/apei/Kconfig |    8 +++++++-
->  2 files changed, 8 insertions(+), 1 deletion(-)
+> Acked-by: Pawel Moll <pawel.moll@arm.com>
+> 
+> (nit: the subject should be "misc: vexpress:" rather then "mfd:")
+> 
+> Arnd, Olof, can you pick this one as an early fix or do you want me to
+> queue it for rc1-based fixes branch?
 
-Apart from merging the patch with later ones this change looks fine to
-me
+I've applied it to the fixes branch now. Thanks!
 
-> +config ARCH_HAS_ACPI_APEI_NMI
-> +	bool
-> +	help
-> +	  Firmware first mode can use NMI notification mechanism to report errors
-> +	  to operating system. This feature is currently supported by X86
-> +	  architecture only.
-> +
-
-Maybe the help description could be removed, it is not used anywhere
-in a dialog. At least the reference to x86 should be removed (if the
-option is used for another arch the text will be wrong and need to be
-changed again).
-
--Robert
+	Arnd
