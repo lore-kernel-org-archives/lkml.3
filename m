@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752535AbaFMNcf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 09:32:35 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:16893 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751496AbaFMNcd (ORCPT
+	id S1751906AbaFMNey (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 09:34:54 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:57626 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751007AbaFMNex (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 09:32:33 -0400
-X-IronPort-AV: E=Sophos;i="5.01,471,1400025600"; 
-   d="scan'208";a="143137048"
-Message-ID: <539AFD6D.40204@citrix.com>
-Date: Fri, 13 Jun 2014 14:32:29 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Fri, 13 Jun 2014 09:34:53 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH v2] ARM: Remove ARCH_HAS_CPUFREQ config option
+Date: Fri, 13 Jun 2014 15:34:44 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
+Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Sachin Kamat <spk.linux@gmail.com>
+References: <1401819863-20296-1-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1401819863-20296-1-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
-To: Vitaly Kuznetsov <vkuznets@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>
-CC: <x86@kernel.org>, <xen-devel@lists.xenproject.org>,
-        <linux-kernel@vger.kernel.org>, Andrew Jones <drjones@redhat.com>
-Subject: Re: [PATCH] xenpv: don't BUG when failing to setup NMI callback
-References: <1402658788-24477-1-git-send-email-vkuznets@redhat.com>
-In-Reply-To: <1402658788-24477-1-git-send-email-vkuznets@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA2
+Message-Id: <201406131534.44741.arnd@arndb.de>
+X-Provags-ID: V02:K0:omz+wsdsdVCSKYTlabfAC/Qiyoi0SgxUqm3y5G0O3oa
+ sXTzG4UP5Uy0+vPJ+98tcNw/O5PcpcBTLeHG3QBMKla+GkFlpT
+ xfygYuiBNymEy8++GKXOA8bdhu4ouIUSUQi2vsUdzSV37MDGYS
+ BxYRpAW0TuAjMsFUe4SGmkPgRALdLW09EVUGjnhHcPHdL5qZwn
+ RQkkpdGTP8bZdCfeeKzhafr60Ji98FDWFEeBrWPe1nPwk61uxT
+ joLbHkCNH/ZFyG/GUCH6df81lr0minx0WDgdOXW0y2fpnFJNWy
+ fAfR1yk+9Didk4Pp7ORKEwOww+YT9gWa+XyYg8a/NkDXQz6Kq2
+ Q3N2/f+wr3oMXBQ0gzSg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/06/14 12:26, Vitaly Kuznetsov wrote:
+On Tuesday 03 June 2014, Stephen Boyd wrote:
+> This config exists entirely to hide the cpufreq menu from the
+> kernel configuration unless a platform has selected it. Nothing
+> is actually built if this config is 'Y' and it just leads to more
+> patches that add a select under a platform Kconfig so that some
+> other CPUfreq option can be chosen. Let's remove the option so
+> that we can always enable CPUfreq drivers on ARM platforms.
 > 
-> --- a/arch/x86/xen/setup.c
-> +++ b/arch/x86/xen/setup.c
-> @@ -593,8 +593,17 @@ void xen_enable_syscall(void)
->  void xen_enable_nmi(void)
->  {
->  #ifdef CONFIG_X86_64
-> -	if (register_callback(CALLBACKTYPE_nmi, (char *)nmi))
-> +	int ret;
-> +
-> +	ret = register_callback(CALLBACKTYPE_nmi, (char *)nmi);
-> +	if (ret == -EINVAL) {
-> +		/* Hypervisor probably forbids us to register NMI callback,
-> +		   that is expected when running on top of Xen-3.1 and older */
-> +		pr_warn("xen: failed to register NMI callback\n");
-> +	} else if (ret != 0) {
-> +		/* Other hypervisor failure */
->  		BUG();
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 
-I don't think we ever want to BUG() if this hypercall fails.  Just print
-a warning.
+Applied to fixes branch, thanks!
 
-David
+	Arnd
