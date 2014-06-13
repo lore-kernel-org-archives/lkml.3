@@ -1,182 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378AbaFMKqH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 06:46:07 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:33741 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753305AbaFMKpb (ORCPT
+	id S1753388AbaFMKq1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 06:46:27 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:21143 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752121AbaFMKqX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 06:45:31 -0400
-From: David Herrmann <dh.herrmann@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>, Ryan Lortie <desrt@desrt.ca>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
-        Greg Kroah-Hartman <greg@kroah.com>, john.stultz@linaro.org,
-        Lennart Poettering <lennart@poettering.net>,
-        Daniel Mack <zonque@gmail.com>, Kay Sievers <kay@vrfy.org>,
-        Hugh Dickins <hughd@google.com>,
-        Tony Battersby <tonyb@cybernetics.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        David Herrmann <dh.herrmann@gmail.com>
-Subject: [RFC v3 6/7] shm: wait for pins to be released when sealing
-Date: Fri, 13 Jun 2014 12:36:58 +0200
-Message-Id: <1402655819-14325-7-git-send-email-dh.herrmann@gmail.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1402655819-14325-1-git-send-email-dh.herrmann@gmail.com>
-References: <1402655819-14325-1-git-send-email-dh.herrmann@gmail.com>
+	Fri, 13 Jun 2014 06:46:23 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/Dn71fGXWlywYJkoOl5JMS
+Date: Fri, 13 Jun 2014 03:46:10 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: "Gupta, Pekon" <pekon@ti.com>, "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "computersforpeace@gmail.com" <computersforpeace@gmail.com>,
+        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
+        "ezequiel.garcia@free-electrons.com" 
+	<ezequiel.garcia@free-electrons.com>,
+        "javier@dowhile0.org" <javier@dowhile0.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 05/36] mtd: nand: omap: Move IRQ handling from GPMC to
+ NAND driver
+Message-ID: <20140613104610.GS17845@atomide.com>
+References: <1402477001-31132-1-git-send-email-rogerq@ti.com>
+ <1402477001-31132-6-git-send-email-rogerq@ti.com>
+ <20140613071820.GI17845@atomide.com>
+ <539AAA8C.2070709@ti.com>
+ <20140613075856.GQ17845@atomide.com>
+ <20980858CB6D3A4BAE95CA194937D5E73EAF51DB@DBDE04.ent.ti.com>
+ <539AB4E4.6050408@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <539AB4E4.6050408@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We currently fail setting SEAL_WRITE in case there're pending page
-references. This patch extends the pin-tests to wait up to 150ms for all
-references to be dropped. This is still not perfect in that it doesn't
-account for harmless read-only pins, but it's much better than a hard
-failure.
+* Roger Quadros <rogerq@ti.com> [140613 01:24]:
+> On 06/13/2014 11:13 AM, Gupta, Pekon wrote:
+> >> From: Tony Lindgren [mailto:tony@atomide.com]
+> >>> * Roger Quadros <rogerq@ti.com> [140613 00:40]:
+> >>>> On 06/13/2014 10:18 AM, Tony Lindgren wrote:
+> >>>>> * Roger Quadros <rogerq@ti.com> [140611 01:58]:
+> >>>
+> >>> OK. But wait pin edge detection was not yet being used and I couldn't
+> >>> think of how it would ever be used. Any ideas?
+> >>
+> >> Maybe to wake-up the system on bus activity or something?
+> >>
+> > Sorry, I wasn't able to review this series.
+> > But just as pointer, GPMC driver was used for interfacing many
+> > non-memory devices like Ethernet (smc91x) and in past GPMC has been
+> > proved to work with camera devices too, but that's wasn't mainlined.
+> > So keeping IRQ and few other things in GPMC driver is helpful.
+> > 
+> 
+> On further study it seems that the wait pin edge detection is only used in the NAND controller use case.
+> see section 10.1.5.14.2.2 Ready Pin Monitored by Hardware Interrupt
 
-Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
----
- mm/shmem.c | 97 ++++++++++++++++++++++++++++++++++++++++++++++++++++----------
- 1 file changed, 82 insertions(+), 15 deletions(-)
+It seems they can be used for anything slow like NOR and NAND.
+ 
+> For memory devices, no software wait pin intervention is necessary and doesn't even make sense.
 
-diff --git a/mm/shmem.c b/mm/shmem.c
-index e7c5fe1..ddc3998 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -1735,25 +1735,19 @@ static loff_t shmem_file_llseek(struct file *file, loff_t offset, int whence)
- }
+Still seems that it's use can be generic though, not limited
+to NAND.
  
- /*
-- * Setting SEAL_WRITE requires us to verify there's no pending writer. However,
-- * via get_user_pages(), drivers might have some pending I/O without any active
-- * user-space mappings (eg., direct-IO, AIO). Therefore, we look at all pages
-- * and see whether it has an elevated ref-count. If so, we abort.
-- * The caller must guarantee that no new user will acquire writable references
-- * to those pages to avoid races.
-+ * We need a tag: a new tag would expand every radix_tree_node by 8 bytes,
-+ * so reuse a tag which we firmly believe is never set or cleared on shmem.
-  */
--static int shmem_test_for_pins(struct address_space *mapping)
-+#define SHMEM_TAG_PINNED        PAGECACHE_TAG_TOWRITE
-+#define LAST_SCAN               4       /* about 150ms max */
-+
-+static void shmem_tag_pins(struct address_space *mapping)
- {
- 	struct radix_tree_iter iter;
- 	void **slot;
- 	pgoff_t start;
- 	struct page *page;
--	int error;
--
--	/* flush additional refs in lru_add early */
--	lru_add_drain_all();
- 
--	error = 0;
- 	start = 0;
- 	rcu_read_lock();
- 
-@@ -1764,8 +1758,10 @@ restart:
- 			if (radix_tree_deref_retry(page))
- 				goto restart;
- 		} else if (page_count(page) - page_mapcount(page) > 1) {
--			error = -EBUSY;
--			break;
-+			spin_lock_irq(&mapping->tree_lock);
-+			radix_tree_tag_set(&mapping->page_tree, iter.index,
-+					   SHMEM_TAG_PINNED);
-+			spin_unlock_irq(&mapping->tree_lock);
- 		}
- 
- 		if (need_resched()) {
-@@ -1775,6 +1771,77 @@ restart:
- 		}
- 	}
- 	rcu_read_unlock();
-+}
-+
-+/*
-+ * Setting SEAL_WRITE requires us to verify there's no pending writer. However,
-+ * via get_user_pages(), drivers might have some pending I/O without any active
-+ * user-space mappings (eg., direct-IO, AIO). Therefore, we look at all pages
-+ * and see whether it has an elevated ref-count. If so, we tag them and wait for
-+ * them to be dropped.
-+ * The caller must guarantee that no new user will acquire writable references
-+ * to those pages to avoid races.
-+ */
-+static int shmem_wait_for_pins(struct address_space *mapping)
-+{
-+	struct radix_tree_iter iter;
-+	void **slot;
-+	pgoff_t start;
-+	struct page *page;
-+	int error, scan;
-+
-+	shmem_tag_pins(mapping);
-+
-+	error = 0;
-+	for (scan = 0; scan <= LAST_SCAN; scan++) {
-+		if (!radix_tree_tagged(&mapping->page_tree, SHMEM_TAG_PINNED))
-+			break;
-+
-+		if (!scan)
-+			lru_add_drain_all();
-+		else if (schedule_timeout_killable((HZ << scan) / 200))
-+			scan = LAST_SCAN;
-+
-+		start = 0;
-+		rcu_read_lock();
-+restart:
-+		radix_tree_for_each_tagged(slot, &mapping->page_tree, &iter,
-+					   start, SHMEM_TAG_PINNED) {
-+
-+			page = radix_tree_deref_slot(slot);
-+			if (radix_tree_exception(page)) {
-+				if (radix_tree_deref_retry(page))
-+					goto restart;
-+
-+				page = NULL;
-+			}
-+
-+			if (page &&
-+			    page_count(page) - page_mapcount(page) != 1) {
-+				if (scan < LAST_SCAN)
-+					goto continue_resched;
-+
-+				/*
-+				 * On the last scan, we clean up all those tags
-+				 * we inserted; but make a note that we still
-+				 * found pages pinned.
-+				 */
-+				error = -EBUSY;
-+			}
-+
-+			spin_lock_irq(&mapping->tree_lock);
-+			radix_tree_tag_clear(&mapping->page_tree,
-+					     iter.index, SHMEM_TAG_PINNED);
-+			spin_unlock_irq(&mapping->tree_lock);
-+continue_resched:
-+			if (need_resched()) {
-+				cond_resched_rcu();
-+				start = iter.index + 1;
-+				goto restart;
-+			}
-+		}
-+		rcu_read_unlock();
-+	}
- 
- 	return error;
- }
-@@ -1840,7 +1907,7 @@ int shmem_add_seals(struct file *file, unsigned int seals)
- 		if (error)
- 			goto unlock;
- 
--		error = shmem_test_for_pins(file->f_mapping);
-+		error = shmem_wait_for_pins(file->f_mapping);
- 		if (error) {
- 			mapping_allow_writable(file->f_mapping);
- 			goto unlock;
--- 
-2.0.0
+> So I don't agree on managing the IRQSTATUS and IRQENABLE register in the GPMC driver. It is adding unnecessary complexity. I don't mind having a wrapper around it though like the other nand registers.
 
+But all the consumer driver should need to do is request_irq()
+on it? That's pretty much the most common interface we have
+for drivers :)
+ 
+> To be frank, I think it is cleaner if the NAND driver directly accesses the NAND registers.
+> I don't see why we should make things complicated just because the hardware designers didn't create a clear register split between GPMC and NAND.
+
+Because they are in separate hardware modules :)
+
+Who knows why it was set up this way. Maybe the plan was to have
+the common features in GPMC that then can be used by various MTD
+devices.
+ 
+> Only the GPMC_CONFIG register needs to remain with the GPMC driver.
+
+And managing clocks and runtime PM in general. In any case, let's
+not let drivers tinker with the GPMC registers directly though.
+Some kind of abstraction via existing frameworks or with regmap
+is needed.
+
+Regards,
+
+Tony
