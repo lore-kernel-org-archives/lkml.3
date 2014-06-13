@@ -1,55 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752611AbaFMGt0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 02:49:26 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:51118 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752570AbaFMGtX (ORCPT
+	id S1752644AbaFMGtu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 02:49:50 -0400
+Received: from cmta17.telus.net ([209.171.16.90]:48892 "EHLO cmta17.telus.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752216AbaFMGts convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 02:49:23 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <539A8F8F.2030806@roeck-us.net>
-Date: Thu, 12 Jun 2014 22:43:43 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Fri, 13 Jun 2014 02:49:48 -0400
+X-Authority-Analysis: v=2.0 cv=ea3jic4H c=1 sm=2
+ a=zJWegnE7BH9C0Gl4FFgQyA==:17 a=1chCufcSjPwA:10 a=LGgl8L9ij00A:10
+ a=IkcTkHD0fZMA:10 a=aatUQebYAAAA:8 a=Pyq9K9CWowscuQLKlpiwfMBGOR0=:19
+ a=Q52if3Q66l_G8q08UwgA:9 a=QEXdDO2ut3YA:10 a=TecESibA1e82vEmV:21
+ a=KhgvUg1_JTysUfIG:21 a=zJWegnE7BH9C0Gl4FFgQyA==:117
+X-Telus-Outbound-IP: 173.180.45.4
+From: "Doug Smythies" <dsmythies@telus.net>
+To: "'Rafael J. Wysocki'" <rjw@rjwysocki.net>,
+        "'Stratos Karafotis'" <stratosk@semaphore.gr>
+Cc: <viresh.kumar@linaro.org>, <dirk.j.brandewie@intel.com>,
+        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+References: <1402490012-19969-1-git-send-email-stratosk@semaphore.gr> <00b301cf85ba$40fe4290$c2fac7b0$@net> <5399BACF.6060201@semaphore.gr> <1815178.vjJU51ubGD@vostro.rjw.lan>
+In-Reply-To: <1815178.vjJU51ubGD@vostro.rjw.lan>
+Subject: RE: [PATCH] cpufreq: intel_pstate: Fix rounding of core_pct
+Date: Thu, 12 Jun 2014 23:49:46 -0700
+Message-ID: <001e01cf86d3$ab314cb0$0193e610$@net>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 3.4 0/8] 3.4.94-stable review
-References: <20140612232238.396722659@linuxfoundation.org>
-In-Reply-To: <20140612232238.396722659@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: Ac+Gduj6Fj5xCsJtS4W/fC/9QRoCHQAWTcYg
+Content-Language: en-ca
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2014 04:22 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.4.94 release.
-> There are 8 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Sat Jun 14 23:22:28 UTC 2014.
-> Anything received after that time might be too late.
->
+On 2014.06.12 13:03 Rafael J. Wysocki wrote:
+> On Thursday, June 12, 2014 05:35:59 PM Stratos Karafotis wrote:
+>> On 12/06/2014 12:15 πμ, Doug Smythies wrote:
+>>> 
+>>> 
+>>> On 2014.06.11 13:20 Stratos Karafotis wrote:
+>>>> On 11/06/2014 06:02 μμ, Doug Smythies wrote:
+>>>>>
+>>>>> On 2104.06.11 07:08 Stratos Karafotis wrote:
+>>>>>> On 11/06/2014 04:41 μμ, Doug Smythies wrote:
+>>>>>>
+>>>>>> No.
+> >>>
+>>>>>> The intent was only ever to round properly the pseudo floating point result of the divide.
+>>>>>> It was much more important (ugh, well 4 times more) when FRACBITS was still 6, which also got changed to 8 in a recent patch.
+>>>>>>
+>>>>>
+>>>>> Are you sure?
+>>>>>
+>>>>> Yes.
+>>>>>
+>>>>>> This rounding was very recently added.
+>>>>>> As far as I can understand, I don't see the meaning of this rounding, as is.
+>>>>>> Even if FRAC_BITS was 6, I think it would have almost no improvement in
+>>>>>> calculations.
+>>>>>
+>>>>> Note: I had not seen this e-mail when I wrote a few minutes ago:
+>>>>>
+>>>>> You may be correct.
+>>>>> If Dirk agrees, I will re-analyse the entire driver for rounding effects soon.
+>>>>> When FRACBITS was 6 there were subtle cases where the driver would get stuck, and not make a final pstate change, with the default PID gains.
+>>>>> Other things have changed, and the analysis needs to be re-done.
+>>>>>
+>>> 
+>>>> Could you please elaborate a little bit more what we need these 2 lines below?
+>>>>
+>>>>        if ((rem << 1) >= int_tofp(sample->mperf))
+>>>>                core_pct += 1;
+>>>>
+>>>> Because nothing is mentioned for them in commit's changelog.
+>>>> Do we need to round core_pct or not?
+>>>> Because if we try to round it, I think this patch should work.
+>>> 
+>>> As mentioned originally, they are there just to round the pseudo floating number, not the integer portion only.
+>>> Let us bring back the very numbers you originally gave and work through it.
+>>> 
+>>> aperf = 5024
+>>> mperf = 10619
+>>> 
+>>> core_pct = 47.31142292%
+>>> or 47 and 79.724267 256ths
+>>> or to the closest kept fractional part 47 and 80 256ths
+>>> or 12112 as a pseudo float.
+>>> The maximum error with this rounding will be 1 part in 512 and symmetric instead of the 1 part in 256 always in one direction without.
+>>> 
+>>> Now if FRACBITS was still 6:
+>>> core_pct = 47.31142292%
+>>> or 47 and 19.931 64ths
+>>> or to the closest kept fractional part 47 and 20 64ths
+>>> or 3028 as a pseudo float.
+>>> The maximum error with this rounding will be 1 part in 128 and symmetric instead of the 1 part in 64 (1.6% !!!) always in one direction without.
+>>> 
+>>> Hope this helps.
+>>> 
+>>
+>> Yes, it helps. Thanks a lot!
+>> 
+>> But please note that the maximum error without this rounding will be 1.6% _only_
+>> in fractional part. In the real number it will be much smaller:
 
-Build results:
-	total: 136 pass: 111 skipped: 20 fail: 5
-Failed builds:
-	alpha:allmodconfig
-	arm:spear6xx_defconfig
-	sparc64:allmodconfig
-	unicore32:defconfig
-	xtensa:allmodconfig
+Fair comment. Thanks.
 
-Qemu tests all passed.
+>>
+>> 47.19 instead of 47.20
+>> 
+>> And using FRAC_BITS 8:
+>> 
+>> 47.79 instead of 47.80
+>> 
 
-Results are as expected.
-Details are available at http://server.roeck-us.net:8010/builders.
+I really wouldn't write it that way, as I find it misleading. It is really 47 and 19 256ths...
+Anyway, I think we all understand.
 
-Guenter
+>> This is a 0.0002% difference. I can't see how this is can affect the calculations
+>> even with FRAC_BITS 6.
+
+O.K. The solution is overkill and div_u64 could have been used instead of div_u64_rem.
+On my list, it is the lowest of priorities.
+
+>> 
+>> Another thing is that this algorithm generally is used to round to the
+>> nearest integer. I'm not sure if it's valid to apply it for the rounding of
+>> the fractional part of fixed point number.
+
+I'm not sure how to reply, a pseudo floating point number is just an integer.
+
+> Depending on the original reason, it may or may not be.
+
+The original reason for that overall code patch was to address the possible overflow of the math, which (as far I know and have tested) it does.
+I think we have gone down a bit of rat hole here in terms of the detail.
+
+... Doug
+
 
