@@ -1,47 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975AbaFMR7Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 13:59:16 -0400
-Received: from s3.sipsolutions.net ([5.9.151.49]:39127 "EHLO sipsolutions.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753776AbaFMR7O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 13:59:14 -0400
-Message-ID: <1402682332.4478.31.camel@jlt4.sipsolutions.net>
-Subject: Re: net_timedelta() affected by settimeofday() (was: [patch 12/13]
- net: mac80211: Remove silly timespec dance)
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org,
-        Stephen Hemminger <shemminger@linux-foundation.org>,
-        netdev <netdev@vger.kernel.org>
-Date: Fri, 13 Jun 2014 19:58:52 +0200
-In-Reply-To: <alpine.DEB.2.10.1406121605470.5170@nanos>
-References: <20140611234024.103571777@linutronix.de>
-	   <20140611234607.683770899@linutronix.de>
-	   <1402555774.4224.1.camel@jlt4.sipsolutions.net>
-	   <alpine.DEB.2.10.1406121017500.5170@nanos>
-	   <1402562114.8095.3.camel@jlt4.sipsolutions.net>
-	   (sfid-20140612_103558_525847_209A5C98) <1402562399.8095.5.camel@jlt4.sipsolutions.net>
-	  <alpine.DEB.2.10.1406121047280.5170@nanos>
-	 <1402564914.8095.9.camel@jlt4.sipsolutions.net>
-	 <alpine.DEB.2.10.1406121605470.5170@nanos>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751496AbaFMSEF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 14:04:05 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:57374 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751044AbaFMSED (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 14:04:03 -0400
+Date: Fri, 13 Jun 2014 23:33:56 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH v2] net/nxp/lpc_eth: use devm_ functions
+Message-ID: <20140613180356.GA8582@himangi-Dell>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-06-12 at 16:09 +0200, Thomas Gleixner wrote:
+The various devm_ functions allocate memory that is released when a
+driver detaches. This patch uses dmam_alloc_coherent, devm_ioremap
+devm_clk_get etc. for data that is allocated in the probe function of
+platform device and is only freed in the remove function. The
+corresponding free functions are removed and many labels are done
+away with.
 
-> Fair enough. Still the timespec is silly. Here is an updated version.
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+---
+v2: undo use of devm_request_irq
+Not compile tested
+To send to: netdev@vger.kernel.org,linux-kernel@vger.kernel.org
+ drivers/net/ethernet/nxp/lpc_eth.c | 31 ++++++++-----------------------
+ 1 file changed, 8 insertions(+), 23 deletions(-)
 
-Makes sense, thanks. I've applied this (mac80211-next)
-
-johannes
-
+diff --git a/drivers/net/ethernet/nxp/lpc_eth.c b/drivers/net/ethernet/nxp/lpc_eth.c
+index 422d9b5..35bdbad9 100644
+--- a/drivers/net/ethernet/nxp/lpc_eth.c
++++ b/drivers/net/ethernet/nxp/lpc_eth.c
+@@ -1350,7 +1350,7 @@ static int lpc_eth_drv_probe(struct platform_device *pdev)
+ 	ndev->irq = irq;
+ 
+ 	/* Get clock for the device */
+-	pldat->clk = clk_get(&pdev->dev, NULL);
++	pldat->clk = devm_clk_get(&pdev->dev, NULL);
+ 	if (IS_ERR(pldat->clk)) {
+ 		dev_err(&pdev->dev, "error getting clock.\n");
+ 		ret = PTR_ERR(pldat->clk);
+@@ -1361,7 +1361,8 @@ static int lpc_eth_drv_probe(struct platform_device *pdev)
+ 	__lpc_eth_clock_enable(pldat, true);
+ 
+ 	/* Map IO space */
+-	pldat->net_base = ioremap(res->start, res->end - res->start + 1);
++	pldat->net_base = devm_ioremap(&pdev->dev, res->start,
++				       resource_size(res));
+ 	if (!pldat->net_base) {
+ 		dev_err(&pdev->dev, "failed to map registers\n");
+ 		ret = -ENOMEM;
+@@ -1371,7 +1372,7 @@ static int lpc_eth_drv_probe(struct platform_device *pdev)
+ 			  ndev->name, ndev);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "error requesting interrupt.\n");
+-		goto err_out_iounmap;
++		goto err_out_disable_clocks;
+ 	}
+ 
+ 	/* Fill in the fields of the device structure with ethernet values. */
+@@ -1407,9 +1408,9 @@ static int lpc_eth_drv_probe(struct platform_device *pdev)
+ 		/* Allocate a chunk of memory for the DMA ethernet buffers
+ 		   and descriptors */
+ 		pldat->dma_buff_base_v =
+-			dma_alloc_coherent(&pldat->pdev->dev,
+-					   pldat->dma_buff_size, &dma_handle,
+-					   GFP_KERNEL);
++			dmam_alloc_coherent(&pldat->pdev->dev,
++					    pldat->dma_buff_size, &dma_handle,
++					    GFP_KERNEL);
+ 		if (pldat->dma_buff_base_v == NULL) {
+ 			ret = -ENOMEM;
+ 			goto err_out_free_irq;
+@@ -1465,7 +1466,7 @@ static int lpc_eth_drv_probe(struct platform_device *pdev)
+ 	ret = register_netdev(ndev);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "Cannot register net device, aborting.\n");
+-		goto err_out_dma_unmap;
++		goto err_out_free_irq;
+ 	}
+ 	platform_set_drvdata(pdev, ndev);
+ 
+@@ -1485,19 +1486,10 @@ static int lpc_eth_drv_probe(struct platform_device *pdev)
+ 
+ err_out_unregister_netdev:
+ 	unregister_netdev(ndev);
+-err_out_dma_unmap:
+-	if (!use_iram_for_net(&pldat->pdev->dev) ||
+-	    pldat->dma_buff_size > lpc32xx_return_iram_size())
+-		dma_free_coherent(&pldat->pdev->dev, pldat->dma_buff_size,
+-				  pldat->dma_buff_base_v,
+-				  pldat->dma_buff_base_p);
+ err_out_free_irq:
+ 	free_irq(ndev->irq, ndev);
+-err_out_iounmap:
+-	iounmap(pldat->net_base);
+ err_out_disable_clocks:
+ 	clk_disable(pldat->clk);
+-	clk_put(pldat->clk);
+ err_out_free_dev:
+ 	free_netdev(ndev);
+ err_exit:
+@@ -1512,17 +1504,10 @@ static int lpc_eth_drv_remove(struct platform_device *pdev)
+ 
+ 	unregister_netdev(ndev);
+ 
+-	if (!use_iram_for_net(&pldat->pdev->dev) ||
+-	    pldat->dma_buff_size > lpc32xx_return_iram_size())
+-		dma_free_coherent(&pldat->pdev->dev, pldat->dma_buff_size,
+-				  pldat->dma_buff_base_v,
+-				  pldat->dma_buff_base_p);
+ 	free_irq(ndev->irq, ndev);
+-	iounmap(pldat->net_base);
+ 	mdiobus_unregister(pldat->mii_bus);
+ 	mdiobus_free(pldat->mii_bus);
+ 	clk_disable(pldat->clk);
+-	clk_put(pldat->clk);
+ 	free_netdev(ndev);
+ 
+ 	return 0;
+-- 
+1.9.1
 
