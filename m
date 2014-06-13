@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753493AbaFMQJr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 12:09:47 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:37996 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753443AbaFMQJj (ORCPT
+	id S1753497AbaFMQKf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 12:10:35 -0400
+Received: from www.linutronix.de ([62.245.132.108]:49386 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753249AbaFMQKc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 12:09:39 -0400
-Date: Fri, 13 Jun 2014 18:09:35 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Josh Triplett <josh@joshtriplett.org>,
+	Fri, 13 Jun 2014 12:10:32 -0400
+Date: Fri, 13 Jun 2014 18:10:24 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Oleg Nesterov <oleg@redhat.com>
+cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [PATCH] rcu: Only pin GP kthread when full dynticks is actually
- used
-Message-ID: <20140613160933.GN6635@localhost.localdomain>
-References: <1402618619-32630-1-git-send-email-fweisbec@gmail.com>
- <20140613012432.GH4581@linux.vnet.ibm.com>
- <20140613124207.GB6635@localhost.localdomain>
- <20140613155812.GO4581@linux.vnet.ibm.com>
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>
+Subject: Re: safety of *mutex_unlock() (Was: [BUG] signal: sighand unprotected
+ when accessed by /proc)
+In-Reply-To: <20140613145531.GA31794@redhat.com>
+Message-ID: <alpine.DEB.2.10.1406131809570.5170@nanos>
+References: <alpine.DEB.2.10.1406102210580.5170@nanos> <20140611155251.GA4581@linux.vnet.ibm.com> <20140611170705.GA26816@redhat.com> <20140611171734.GA27457@redhat.com> <20140611172958.GF4581@linux.vnet.ibm.com> <20140611175934.GA28912@redhat.com>
+ <20140611195613.GM4581@linux.vnet.ibm.com> <20140612172844.GA15795@redhat.com> <20140612203518.GZ4581@linux.vnet.ibm.com> <alpine.DEB.2.10.1406122337060.5170@nanos> <20140613145531.GA31794@redhat.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140613155812.GO4581@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 08:58:12AM -0700, Paul E. McKenney wrote:
-> > Maybe what we should do instead is to have something like this on RCU kthread init:
-> > 
-> >           cpumask_var_t gp_kthread_mask;
-> > 
-> >           if (alloc_cpumask_var(gp_kthread_mask, GFP_KERNEL))
-> >               return -EFAULT;
-> > 
-> >           cpumask_andnot(gp_kthread_mask, cpu_possible_mask, tick_nohz_full_mask);
-> > 
-> > 	  set_cpus_allowed_ptr(current, gp_kthread_mask);
-> > 
-> > 	  free_cpumask_var(gp_kthread_mask);
+On Fri, 13 Jun 2014, Oleg Nesterov wrote:
+
+> On 06/12, Thomas Gleixner wrote:
+> >
+> > Just FYI, I have a patch pending which makes the release safe.
+> >
+> >       http://marc.info/?l=linux-kernel&m=140251240630730&w=2
 > 
-> I was guessing that RCU's kthreads would not be the only ones that wanted
-> similar binding.  But if you feel strongly about this, we could at least
-> start by placing it local to RCU as above.
+> Aha, great. I didn't see this version, and just in case I think it is fine.
+> 
+> Perhaps you can look at http://marc.info/?t=140207370200003 ?
 
-Hmm, I don't feel well creating mirrored cpumasks (nor solely negation cpumasks in general).
-Also exposing that nohz gut is probably not a good idea either, except for RCU due to
-the sysidle stuff.
+Looks good. Should I queue it with the other rtmutex stuff?
 
-Now you're right that we can expect that this non-nohz affinity stuff is going to be reused.
+Thanks,
 
-Could it be housekeeping_affine(struct task_struct *tsk) maybe?
+	tglx
