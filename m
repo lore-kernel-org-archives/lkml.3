@@ -1,126 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096AbaFMXDN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 19:03:13 -0400
-Received: from mga03.intel.com ([143.182.124.21]:7505 "EHLO mga03.intel.com"
+	id S1754194AbaFMXDT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 19:03:19 -0400
+Received: from mga11.intel.com ([192.55.52.93]:21366 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753196AbaFMXDL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 19:03:11 -0400
+	id S1754103AbaFMXDP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 19:03:15 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,474,1400050800"; 
-   d="scan'208";a="445389411"
+   d="scan'208";a="547817746"
 From: Andi Kleen <andi@firstfloor.org>
 To: jolsa@redhat.com
-Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@infradead.org
-Subject: perf: Add support for full Intel event lists v6
-Date: Fri, 13 Jun 2014 16:02:51 -0700
-Message-Id: <1402700580-26939-1-git-send-email-andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@infradead.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 4/9] perf, tools: Automatically look for event file name for cpu v3
+Date: Fri, 13 Jun 2014 16:02:55 -0700
+Message-Id: <1402700580-26939-5-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1402700580-26939-1-git-send-email-andi@firstfloor.org>
+References: <1402700580-26939-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[v2: Review feedback addressed and some minor improvements]
-[v3: More review feedback addressed and handle test failures better.
-Ported to latest tip/core.]
-[v4: Addressed Namhyung's feedback]
-[v5: Rebase to latest tree. Minor description update.]
-[v6: Rebase. Add acked by from Namhyung and address feedback. Some minor
-fixes. Should be good to go now I hope. The period patch was dropped,
-as that is already handled. I added an extra patch for a --quiet argument
-for perf list]
+From: Andi Kleen <ak@linux.intel.com>
 
-perf has high level events which are useful in many cases. However
-there are some tuning situations where low level events in the CPU
-are needed. Traditionally this required specifying the event in 
-raw form (very awkward) or using non standard frontends
-like ocperf or patching in libpfm.
+When no JSON event file is specified automatically look
+for a suitable file in ~/.cache/pmu-events. A "perf download" can
+automatically add files there for the current CPUs.
 
-Intel CPUs can have very large event files (Haswell has ~336 core events,
-much more if you add uncore or all the offcore combinations), which is too
-large to describe through the kernel interface. It would require tying up
-significant amounts of unswappable memory for this.
+This does not include the actual event files with perf,
+but they can be automatically downloaded instead
+(implemented in the next patch)
 
-oprofile always had separate event list files that were maintained by 
-the CPU vendors. The oprofile events were shipped with the tool.
-The Intel events get updated regularly, for example to add references
-to the specification updates or add new events.
+This has the advantage that the events can be always uptodate,
+because they are freshly downloaded. In oprofile we always
+had problems with out of date or incomplete events files.
 
-Unfortunately oprofile usually did not keep up with these updates,
-so the events in oprofile were often out of date. In addition
-it ties up quite a bit of disk space, mostly for CPUs you don't have.
+The event file format is per architecture, but can be
+extended for other architectures.
 
-This patch kit implements another mechanism that avoids these problems.
-Intel releases the event lists for CPUs in a standardized JSON format
-on a download server.
+v2: Supports XDG_CACHE_HOME and defaults to ~/.cache/pmu-events
+v3: Minor updates and handle EVENTMAP.
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ tools/perf/arch/x86/Makefile      |  1 +
+ tools/perf/arch/x86/util/cpustr.c | 34 ++++++++++++++++++++++++++++++++
+ tools/perf/util/jevents.c         | 41 +++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/jevents.h         |  1 +
+ tools/perf/util/pmu.c             |  2 +-
+ 5 files changed, 78 insertions(+), 1 deletion(-)
+ create mode 100644 tools/perf/arch/x86/util/cpustr.c
 
-I implemented an automatic downloader to get the event file for the
-current CPU.  The events are stored in ~/.cache/pmu-events.
-Then perf adds a parser that converts the JSON format into perf event
-aliases, which then can be used directly as any other perf event.
+diff --git a/tools/perf/arch/x86/Makefile b/tools/perf/arch/x86/Makefile
+index 1641542..0efeb14 100644
+--- a/tools/perf/arch/x86/Makefile
++++ b/tools/perf/arch/x86/Makefile
+@@ -14,4 +14,5 @@ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/tests/dwarf-unwind.o
+ endif
+ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/header.o
+ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/tsc.o
++LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/cpustr.o
+ LIB_H += arch/$(ARCH)/util/tsc.h
+diff --git a/tools/perf/arch/x86/util/cpustr.c b/tools/perf/arch/x86/util/cpustr.c
+new file mode 100644
+index 0000000..e1cd76c
+--- /dev/null
++++ b/tools/perf/arch/x86/util/cpustr.c
+@@ -0,0 +1,34 @@
++#include <stdio.h>
++#include <stdlib.h>
++#include "../../util/jevents.h"
++
++char *get_cpu_str(void)
++{
++	char *line = NULL;
++	size_t llen = 0;
++	int found = 0, n;
++	char vendor[30];
++	int model, fam;
++	char *res = NULL;
++	FILE *f = fopen("/proc/cpuinfo", "r");
++
++	if (!f)
++		return NULL;
++	while (getline(&line, &llen, f) > 0) {
++		if (sscanf(line, "vendor_id : %30s", vendor) == 1)
++			found++;
++		else if (sscanf(line, "model : %d", &model) == 1)
++			found++;
++		else if (sscanf(line, "cpu family : %d", &fam) == 1)
++			found++;
++		if (found == 3) {
++			n = asprintf(&res, "%s-%d-%X-core", vendor, fam, model);
++			if (n < 0)
++				res = NULL;
++			break;
++		}
++	}
++	free(line);
++	fclose(f);
++	return res;
++}
+diff --git a/tools/perf/util/jevents.c b/tools/perf/util/jevents.c
+index 943a1fc..1fae0b7 100644
+--- a/tools/perf/util/jevents.c
++++ b/tools/perf/util/jevents.c
+@@ -33,10 +33,49 @@
+ #include <errno.h>
+ #include <string.h>
+ #include <ctype.h>
++#include "cache.h"
+ #include "jsmn.h"
+ #include "json.h"
+ #include "jevents.h"
+ 
++__attribute__((weak)) char *get_cpu_str(void)
++{
++	return NULL;
++}
++
++static const char *json_default_name(void)
++{
++	char *cache;
++	char *idstr = get_cpu_str();
++	char *res = NULL;
++	char *home = NULL;
++	char *emap;
++
++	emap = getenv("EVENTMAP");
++	if (emap) {
++		if (access(emap, R_OK) == 0)
++			return emap;
++		if (asprintf(&idstr, "%s-core", emap) < 0)
++			return NULL;
++	}
++
++	cache = getenv("XDG_CACHE_HOME");
++	if (!cache) {
++		home = getenv("HOME");
++		if (!home || asprintf(&cache, "%s/.cache", home) < 0)
++			goto out;
++	}
++	if (cache && idstr)
++		res = mkpath("%s/pmu-events/%s.json",
++			     cache,
++			     idstr);
++	if (home)
++		free(cache);
++out:
++	free(idstr);
++	return res;
++}
++
+ static void addfield(char *map, char **dst, const char *sep,
+ 		     const char *a, jsmntok_t *bt)
+ {
+@@ -174,6 +213,8 @@ int json_events(const char *fn,
+ 	int i, j, len;
+ 	char *map;
+ 
++	if (!fn)
++		fn = json_default_name();
+ 	tokens = parse_json(fn, &map, &size, &len);
+ 	if (!tokens)
+ 		return -EIO;
+diff --git a/tools/perf/util/jevents.h b/tools/perf/util/jevents.h
+index 4c2b879..6a377a8 100644
+--- a/tools/perf/util/jevents.h
++++ b/tools/perf/util/jevents.h
+@@ -1,3 +1,4 @@
+ int json_events(const char *fn,
+ 		int (*func)(void *data, char *name, char *event, char *desc),
+ 		void *data);
++char *get_cpu_str(void);
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 9f154af..fa21319 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -433,7 +433,7 @@ static struct perf_pmu *pmu_lookup(const char *name)
+ 	if (pmu_aliases(name, &aliases))
+ 		return NULL;
+ 
+-	if (!strcmp(name, "cpu") && json_file)
++	if (!strcmp(name, "cpu"))
+ 		json_events(json_file, add_alias, &aliases);
+ 
+ 	if (pmu_type(name, &type))
+-- 
+1.9.3
 
-The parsing is done using a simple existing JSON library.
-
-The events are still abstracted for perf, but the abstraction mechanism is
-through the downloaded file instead of through the kernel.
-
-The JSON format and perf parser has some minor Intelisms, but they
-are simple and small and optional. It's easy to extend, so it would be
-possible to use it for other CPUs too, add different pmu attributes, and
-add new download sites to the downloader tool.
-
-Currently only core events are supported, uncore may come at a later
-point. No kernel changes, all code in perf user tools only.
-
-Some of the parser files are partially shared with separate event parser
-library and are thus 2-clause BSD licensed.
-
-Patches also available from
-git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-misc perf/json
-
-Example output:
-
-% perf download 
-Downloading models file
-Downloading readme.txt
-2014-03-05 10:39:33 URL:https://download.01.org/perfmon/readme.txt [10320/10320] -> "readme.txt" [1]
-2014-03-05 10:39:34 URL:https://download.01.org/perfmon/mapfile.csv [1207/1207] -> "mapfile.csv" [1]
-Downloading events file
-% perf list
-...
-  br_inst_exec.all_branches                          [Speculative and retired
-                                                      branches]
-  br_inst_exec.all_conditional                       [Speculative and retired
-                                                      macro-conditional
-                                                      branches]
-  br_inst_exec.all_direct_jmp                        [Speculative and retired
-                                                      macro-unconditional
-                                                      branches excluding
-                                                      calls and indirects]
-... 333 more new events ...
-
-% perf stat -e br_inst_exec.all_direct_jmp true
-
- Performance counter stats for 'true':
-
-             6,817      cpu/br_inst_exec.all_direct_jmp/                                   
-
-       0.003503212 seconds time elapsed
-
-One nice feature is that a pointer to the specification update is now
-included in the description, which will hopefully clear up many problems:
-
-% perf list
-...
-  mem_load_uops_l3_hit_retired.xsnp_hit              [Retired load uops which
-                                                      data sources were L3
-                                                      and cross-core snoop
-                                                      hits in on-pkg core
-                                                      cache. Supports address
-                                                      when precise. Spec
-                                                      update: HSM26, HSM30
-                                                      (Precise event)]
-...
-
-
--Andi
