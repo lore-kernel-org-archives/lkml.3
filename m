@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753665AbaFMQhu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 12:37:50 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:45334 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753225AbaFMQht (ORCPT
+	id S1753712AbaFMQil (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 12:38:41 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:43277 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752749AbaFMQik (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 12:37:49 -0400
-From: Florian Fainelli <f.fainelli@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, jason@lakedaemon.net, computersforpeace@gmail.com,
-        Florian Fainelli <f.fainelli@gmail.com>
-Subject: [PATCH] genirq: warn on inconstent flags and flow handler
-Date: Fri, 13 Jun 2014 09:36:43 -0700
-Message-Id: <1402677403-3542-1-git-send-email-f.fainelli@gmail.com>
+	Fri, 13 Jun 2014 12:38:40 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH] powerpc: Fix build warning
+Date: Fri, 13 Jun 2014 09:38:19 -0700
+Message-Id: <1402677499-28289-1-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is currently possible for a generic irq chip driver to set IRQ_LEVEL
-and have its irq flow handler be handle_edge_irq. Setting IRQ_LEVEL in
-such a case does not make sense, and will actually prevent e.g: the
-software resend logic from kicking, and potential other problems too.
+If compiled with W=1, the following warning is seen in powerpc builds.
 
-Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
+arch/powerpc/kernel/smp.c:750:18: warning:
+	type qualifiers ignored on function return type
+static const int powerpc_smt_flags(void)
+                 ^
+
+This is caused by a function returning 'const int', which doesn't
+make sense to gcc. Drop 'const' to fix the problem.
+
+Reported-by: Vincent Guittot <vincent.guittot@linaro.org>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
-Thomas,
+ arch/powerpc/kernel/smp.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-This is the change I mentioned to you on the #mipslinux IRC channel,
-let me know if you feel like this should be somewhere else, AFAICT
-this should not slow things down.
-
-Thanks!
-
- kernel/irq/chip.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
-
-diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-index a2b28a2fd7b1..939ae1283ec9 100644
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -749,8 +749,13 @@ void irq_modify_status(unsigned int irq, unsigned long clr, unsigned long set)
- 		irqd_set(&desc->irq_data, IRQD_PER_CPU);
- 	if (irq_settings_can_move_pcntxt(desc))
- 		irqd_set(&desc->irq_data, IRQD_MOVE_PCNTXT);
--	if (irq_settings_is_level(desc))
-+	if (irq_settings_is_level(desc)) {
-+		/* Setting IRQD_LEVEL does not make sense on non-level
-+		 * sensitive interrupts
-+		 */
-+		WARN_ON(desc->handle_irq != handle_level_irq);
- 		irqd_set(&desc->irq_data, IRQD_LEVEL);
-+	}
+diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
+index 10ffffe..49d5d4e 100644
+--- a/arch/powerpc/kernel/smp.c
++++ b/arch/powerpc/kernel/smp.c
+@@ -768,7 +768,7 @@ int setup_profiling_timer(unsigned int multiplier)
  
- 	irqd_set(&desc->irq_data, irq_settings_get_trigger_mask(desc));
+ #ifdef CONFIG_SCHED_SMT
+ /* cpumask of CPUs with asymetric SMT dependancy */
+-static const int powerpc_smt_flags(void)
++static int powerpc_smt_flags(void)
+ {
+ 	int flags = SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES;
  
 -- 
 1.9.1
