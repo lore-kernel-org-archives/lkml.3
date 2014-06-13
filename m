@@ -1,195 +1,406 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752133AbaFMC2h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 22:28:37 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42316 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750948AbaFMC2g (ORCPT
+	id S1751391AbaFMCkS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 22:40:18 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:36114 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750862AbaFMCkQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 22:28:36 -0400
-Date: Thu, 12 Jun 2014 19:28:24 -0700
-From: tip-bot for Andy Lutomirski <tipbot@zytor.com>
-Message-ID: <tip-e0bf7b86dace87eccdabdd66d2769ccad19cb81c@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, luto@amacapital.net, hpa@zytor.com,
-        mingo@kernel.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, luto@amacapital.net,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de
-In-Reply-To: <d10618176c4bd39b457a5e85c497295c90cab1bc.1402620737.git.luto@amacapital.net>
-References: <d10618176c4bd39b457a5e85c497295c90cab1bc.1402620737.git.luto@amacapital.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/vdso] x86/vdso: Hack to keep 64-bit Go programs working
-Git-Commit-ID: e0bf7b86dace87eccdabdd66d2769ccad19cb81c
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 12 Jun 2014 22:40:16 -0400
+Date: Fri, 13 Jun 2014 11:40:05 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>, Mel Gorman <mgorman@suse.de>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 02/10] mm, compaction: report compaction as contended
+ only due to lock contention
+Message-ID: <20140613024005.GA8704@gmail.com>
+References: <1402305982-6928-1-git-send-email-vbabka@suse.cz>
+ <1402305982-6928-2-git-send-email-vbabka@suse.cz>
+ <20140611011019.GC15630@bbox>
+ <53984A06.6020607@suse.cz>
+ <20140611234944.GA12415@bbox>
+ <5399B2DC.2040004@suse.cz>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <5399B2DC.2040004@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e0bf7b86dace87eccdabdd66d2769ccad19cb81c
-Gitweb:     http://git.kernel.org/tip/e0bf7b86dace87eccdabdd66d2769ccad19cb81c
-Author:     Andy Lutomirski <luto@amacapital.net>
-AuthorDate: Thu, 12 Jun 2014 17:53:12 -0700
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Thu, 12 Jun 2014 19:02:30 -0700
+On Thu, Jun 12, 2014 at 04:02:04PM +0200, Vlastimil Babka wrote:
+> On 06/12/2014 01:49 AM, Minchan Kim wrote:
+> >On Wed, Jun 11, 2014 at 02:22:30PM +0200, Vlastimil Babka wrote:
+> >>On 06/11/2014 03:10 AM, Minchan Kim wrote:
+> >>>On Mon, Jun 09, 2014 at 11:26:14AM +0200, Vlastimil Babka wrote:
+> >>>>Async compaction aborts when it detects zone lock contention or need_resched()
+> >>>>is true. David Rientjes has reported that in practice, most direct async
+> >>>>compactions for THP allocation abort due to need_resched(). This means that a
+> >>>>second direct compaction is never attempted, which might be OK for a page
+> >>>>fault, but hugepaged is intended to attempt a sync compaction in such case and
+> >>>>in these cases it won't.
+> >>>>
+> >>>>This patch replaces "bool contended" in compact_control with an enum that
+> >>>>distinguieshes between aborting due to need_resched() and aborting due to lock
+> >>>>contention. This allows propagating the abort through all compaction functions
+> >>>>as before, but declaring the direct compaction as contended only when lock
+> >>>>contantion has been detected.
+> >>>>
+> >>>>As a result, hugepaged will proceed with second sync compaction as intended,
+> >>>>when the preceding async compaction aborted due to need_resched().
+> >>>
+> >>>You said "second direct compaction is never attempted, which might be OK
+> >>>for a page fault" and said "hugepagd is intented to attempt a sync compaction"
+> >>>so I feel you want to handle khugepaged so special unlike other direct compact
+> >>>(ex, page fault).
+> >>
+> >>Well khugepaged is my primary concern, but I imagine there are other
+> >>direct compaction users besides THP page fault and khugepaged.
+> >>
+> >>>By this patch, direct compaction take care only lock contention, not rescheduling
+> >>>so that pop questions.
+> >>>
+> >>>Is it okay not to consider need_resched in direct compaction really?
+> >>
+> >>It still considers need_resched() to back of from async compaction.
+> >>It's only about signaling contended_compaction back to
+> >>__alloc_pages_slowpath(). There's this code executed after the
+> >>first, async compaction fails:
+> >>
+> >>/*
+> >>  * It can become very expensive to allocate transparent hugepages at
+> >>  * fault, so use asynchronous memory compaction for THP unless it is
+> >>  * khugepaged trying to collapse.
+> >>  */
+> >>if (!(gfp_mask & __GFP_NO_KSWAPD) || (current->flags & PF_KTHREAD))
+> >>         migration_mode = MIGRATE_SYNC_LIGHT;
+> >>
+> >>/*
+> >>  * If compaction is deferred for high-order allocations, it is because
+> >>  * sync compaction recently failed. In this is the case and the caller
+> >>  * requested a movable allocation that does not heavily disrupt the
+> >>  * system then fail the allocation instead of entering direct reclaim.
+> >>  */
+> >>if ((deferred_compaction || contended_compaction) &&
+> >>                                         (gfp_mask & __GFP_NO_KSWAPD))
+> >>         goto nopage;
+> >>
+> >>Both THP page fault and khugepaged use __GFP_NO_KSWAPD. The first
+> >>if() decides whether the second attempt will be sync (for
+> >>khugepaged) or async (page fault). The second if() decides that if
+> >>compaction was contended, then there won't be any second attempt
+> >>(and reclaim) at all. Counting need_resched() as contended in this
+> >>case is bad for khugepaged. Even for page fault it means no direct
+> >
+> >I agree khugepaged shouldn't count on need_resched, even lock contention
+> >because it was a result from admin's decision.
+> >If it hurts system performance, he should adjust knobs for khugepaged.
+> >
+> >>reclaim and a second async compaction. David says need_resched()
+> >>occurs so often then it is a poor heuristic to decide this.
+> >
+> >But page fault is a bit different. Inherently, high-order allocation
+> >(ie, above PAGE_ALLOC_COSTLY_ORDER) is fragile so all of the caller
+> >shoud keep in mind that and prepare second plan(ex, 4K allocation)
+> >so direct reclaim/compaction should take care of latency rather than
+> >success ratio.
+> 
+> Yes it's a rather delicate balance. But the plan is now to try
+> balance this differently than using need_resched.
+> 
+> >If need_resched in second attempt(ie, synchronous compaction) is almost
+> >true, it means the process consumed his timeslice so it shouldn't be
+> >greedy and gives a CPU resource to others.
+> 
+> Synchronous compaction uses cond_resched() so that's fine I think?
 
-x86/vdso: Hack to keep 64-bit Go programs working
+Sorry for being not clear. I post for the clarification before taking
+a rest in holiday. :)
 
-The Go runtime has a buggy vDSO parser that currently segfaults.
-This writes an empty SHT_DYNSYM entry that causes Go's runtime to
-malfunction by thinking that the vDSO is empty rather than
-malfunctioning by running off the end and segfaulting.
+When THP page fault occurs and found rescheduling while doing async
+direct compaction, it goes "nopage" and fall-backed to 4K page.
+It's good to me.
 
-This affects x86-64 only as far as we know, so we do not need this for
-the i386 and x32 vdsos.
+Another topic: I couldn't find any cond_resched. Anyway, it could be
+another patch.
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Link: http://lkml.kernel.org/r/d10618176c4bd39b457a5e85c497295c90cab1bc.1402620737.git.luto@amacapital.net
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+>From a4b7c288d8de670adbc45c85991ed3bef31e4e16 Mon Sep 17 00:00:00 2001
+From: Minchan Kim <minchan@kernel.org>
+Date: Fri, 13 Jun 2014 10:59:26 +0900
+Subject: [PATCH] mm: call cond_resched right before failing compaction
+
+David reported in many case of direct compaction for THP page fault
+is failed since the async compaction was abort by need_resched.
+It's okay because THP could be fallback to 4K page but the problem
+is if need_resched is true, we should give a chance to next process
+to schedul in for the latency so that we are not greedy any more.
+
+Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- arch/x86/vdso/Makefile            | 18 ++++++++++--------
- arch/x86/vdso/vdso-fakesections.c | 32 ++++++++++++++++++++++++++++++++
- arch/x86/vdso/vdso2c.h            | 23 ++++++++++++++++++-----
- 3 files changed, 60 insertions(+), 13 deletions(-)
+ mm/page_alloc.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/vdso/Makefile b/arch/x86/vdso/Makefile
-index 9769df0..ba6fc27 100644
---- a/arch/x86/vdso/Makefile
-+++ b/arch/x86/vdso/Makefile
-@@ -15,12 +15,8 @@ vdso-install-$(VDSO32-y)	+= $(vdso32-images)
- 
- 
- # files to link into the vdso
--vobjs-y := vdso-note.o vclock_gettime.o vgetcpu.o
--
--vobjs-$(VDSOX32-y) += $(vobjx32s-compat)
--
--# Filter out x32 objects.
--vobj64s := $(filter-out $(vobjx32s-compat),$(vobjs-y))
-+vobjs-y := vdso-note.o vclock_gettime.o vgetcpu.o vdso-fakesections.o
-+vobjs-nox32 := vdso-fakesections.o
- 
- # files to link into kernel
- obj-y				+= vma.o
-@@ -34,7 +30,7 @@ vdso_img-$(VDSO32-y)		+= 32-sysenter
- 
- obj-$(VDSO32-y)			+= vdso32-setup.o
- 
--vobjs := $(foreach F,$(vobj64s),$(obj)/$F)
-+vobjs := $(foreach F,$(vobjs-y),$(obj)/$F)
- 
- $(obj)/vdso.o: $(obj)/vdso.so
- 
-@@ -104,7 +100,13 @@ VDSO_LDFLAGS_vdsox32.lds = -Wl,-m,elf32_x86_64 \
- 			   -Wl,-z,max-page-size=4096 \
- 			   -Wl,-z,common-page-size=4096
- 
--vobjx32s-y := $(vobj64s:.o=-x32.o)
-+# 64-bit objects to re-brand as x32
-+vobjs64-for-x32 := $(filter-out $(vobjs-nox32),$(vobjs-y))
-+
-+# x32-rebranded versions
-+vobjx32s-y := $(vobjs64-for-x32:.o=-x32.o)
-+
-+# same thing, but in the output directory
- vobjx32s := $(foreach F,$(vobjx32s-y),$(obj)/$F)
- 
- # Convert 64bit object file to x32 for x32 vDSO.
-diff --git a/arch/x86/vdso/vdso-fakesections.c b/arch/x86/vdso/vdso-fakesections.c
-new file mode 100644
-index 0000000..cb8a8d7
---- /dev/null
-+++ b/arch/x86/vdso/vdso-fakesections.c
-@@ -0,0 +1,32 @@
-+/*
-+ * Copyright 2014 Andy Lutomirski
-+ * Subject to the GNU Public License, v.2
-+ *
-+ * Hack to keep broken Go programs working.
-+ *
-+ * The Go runtime had a couple of bugs: it would read the section table to try
-+ * to figure out how many dynamic symbols there were (it shouldn't have looked
-+ * at the section table at all) and, if there were no SHT_SYNDYM section table
-+ * entry, it would use an uninitialized value for the number of symbols.  As a
-+ * workaround, we supply a minimal section table.  vdso2c will adjust the
-+ * in-memory image so that "vdso_fake_sections" becomes the section table.
-+ *
-+ * The bug was introduced by:
-+ * https://code.google.com/p/go/source/detail?r=56ea40aac72b (2012-08-31)
-+ * and is being addressed in the Go runtime in this issue:
-+ * https://code.google.com/p/go/issues/detail?id=8197
-+ */
-+
-+#ifndef __x86_64__
-+#error This hack is specific to the 64-bit vDSO
-+#endif
-+
-+#include <linux/elf.h>
-+
-+extern const __visible struct elf64_shdr vdso_fake_sections[];
-+const __visible struct elf64_shdr vdso_fake_sections[] = {
-+	{
-+		.sh_type = SHT_DYNSYM,
-+		.sh_entsize = sizeof(Elf64_Sym),
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 4f59fa2..1ac5133 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2617,8 +2617,16 @@ rebalance:
+ 	 * system then fail the allocation instead of entering direct reclaim.
+ 	 */
+ 	if ((deferred_compaction || contended_compaction) &&
+-						(gfp_mask & __GFP_NO_KSWAPD))
++						(gfp_mask & __GFP_NO_KSWAPD)) {
++		/*
++		 * When THP page fault occurs in large memory system,
++		 * contended_compaction is likely to be true by need_resched
++		 * checking so let's schedule right before returning NULL page.
++		 * That makes I'm not greedy!
++		 */
++		cond_resched();
+ 		goto nopage;
 +	}
-+};
-diff --git a/arch/x86/vdso/vdso2c.h b/arch/x86/vdso/vdso2c.h
-index d9f6f61..c6eefaf 100644
---- a/arch/x86/vdso/vdso2c.h
-+++ b/arch/x86/vdso/vdso2c.h
-@@ -18,6 +18,8 @@ static void GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
- 	const char *secstrings;
- 	uint64_t syms[NSYMS] = {};
  
-+	uint64_t fake_sections_value = 0, fake_sections_size = 0;
+ 	/* Try direct reclaim and then allocating */
+ 	page = __alloc_pages_direct_reclaim(gfp_mask, order,
+-- 
+2.0.0
+
+With your change(ie, direct compaction is only aware of lock contetion,
+not need_resched), when THP page fault occurs and it found rescheduling
+while doing async direct compaction, it goes *direct reclaim path*,
+not "nopage" and async direct compaction again and then finally nopage.
+I think you are changing the behavior heavily to increase latency,
+which is not what direct reclaim path want even though I have no data.
+
+So, what I want is following as.
+It is based on previoius inline patch.
+
+---
+ mm/page_alloc.c | 13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 1ac5133..8a4480e5 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2624,8 +2624,17 @@ rebalance:
+ 		 * checking so let's schedule right before returning NULL page.
+ 		 * That makes I'm not greedy!
+ 		 */
+-		cond_resched();
+-		goto nopage;
++		int ret = cond_resched();
 +
- 	Elf_Phdr *pt = (Elf_Phdr *)(addr + GET_LE(&hdr->e_phoff));
- 
- 	/* Walk the segment table. */
-@@ -84,6 +86,7 @@ static void GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
- 			GET_LE(&symtab_hdr->sh_entsize) * i;
- 		const char *name = addr + GET_LE(&strtab_hdr->sh_offset) +
- 			GET_LE(&sym->st_name);
++		/* When THP page fault, we want to bail out for the latency */
++		if (!(current->flags & PF_KTHREAD) || !ret)
++			goto nopage;
 +
- 		for (k = 0; k < NSYMS; k++) {
- 			if (!strcmp(name, required_syms[k])) {
- 				if (syms[k]) {
-@@ -93,6 +96,13 @@ static void GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
- 				syms[k] = GET_LE(&sym->st_value);
- 			}
- 		}
-+
-+		if (!strcmp(name, "vdso_fake_sections")) {
-+			if (fake_sections_value)
-+				fail("duplicate vdso_fake_sections\n");
-+			fake_sections_value = GET_LE(&sym->st_value);
-+			fake_sections_size = GET_LE(&sym->st_size);
-+		}
++		/*
++		 * I'm khugepaged and took a rest so want to try compaction
++		 * with synchronous rather than giving up easily.
++		 */
++		WARN_ON(migration_mode == MIGRATE_ASYNC);
  	}
  
- 	/* Validate mapping addresses. */
-@@ -112,11 +122,14 @@ static void GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
- 	if (syms[sym_end_mapping] % 4096)
- 		fail("end_mapping must be a multiple of 4096\n");
- 
--	/* Remove sections. */
--	hdr->e_shoff = 0;
--	hdr->e_shentsize = 0;
--	hdr->e_shnum = 0;
--	hdr->e_shstrndx = SHN_UNDEF; /* SHN_UNDEF == 0 */
-+	/* Remove sections or use fakes */
-+	if (fake_sections_size % sizeof(Elf_Shdr))
-+		fail("vdso_fake_sections size is not a multiple of %ld\n",
-+		     (long)sizeof(Elf_Shdr));
-+	PUT_LE(&hdr->e_shoff, fake_sections_value);
-+	PUT_LE(&hdr->e_shentsize, fake_sections_value ? sizeof(Elf_Shdr) : 0);
-+	PUT_LE(&hdr->e_shnum, fake_sections_size / sizeof(Elf_Shdr));
-+	PUT_LE(&hdr->e_shstrndx, SHN_UNDEF);
- 
- 	if (!name) {
- 		fwrite(addr, load_size, 1, outfile);
+ 	/* Try direct reclaim and then allocating */
+-- 
+2.0.0
+
+I'm off from now on. :)
+
+> 
+> >I don't mean we should abort but the process could sleep and retry.
+> >The point is that we should give latency pain to the process request
+> >high-order alocation, not another random process.
+> 
+> So basically you are saying that there should be cond_resched() also
+> for async compaction when need_resched() is true? Now need_resched()
+> is a trigger to back off rather quickly all the way back to
+> __alloc_pages_direct_compact() which does contain a cond_resched().
+> So there should be a yield before retry. Or are you worried that the
+> back off is not quick enough and it shoudl cond_resched()
+> immediately?
+> 
+> >IMHO, if we want to increase high-order alloc ratio in page fault,
+> >kswapd should be more aggressive than now via feedback loop from
+> >fail rate from direct compaction.
+> 
+> Recently I think we have been rather decreasing high-order alloc
+> ratio in page fault :) But (at least for the THP) page fault
+> allocation attempts contain __GFP_NO_KSWAPD, so there's no feedback
+> loop. I guess changing that would be rather disruptive.
+> 
+> >>
+> >>>We have taken care of it in direct reclaim path so why direct compaction is
+> >>>so special?
+> >>
+> >>I admit I'm not that familiar with reclaim but I didn't quickly find
+> >>any need_resched() there? There's plenty of cond_resched() but that
+> >>doesn't mean it will abort? Could you explain for me?
+> >
+> >I meant cond_resched.
+> >
+> >>
+> >>>Why does khugepaged give up easily if lock contention/need_resched happens?
+> >>>khugepaged is important for success ratio as I read your description so IMO,
+> >>>khugepaged should do synchronously without considering early bail out by
+> >>>lock/rescheduling.
+> >>
+> >>Well a stupid answer is that's how __alloc_pages_slowpath() works :)
+> >>I don't think it's bad to try using first a more lightweight
+> >>approach before trying the heavyweight one. As long as the
+> >>heavyweight one is not skipped for khugepaged.
+> >
+> >I'm not saying current two-stage trying is bad. My stand is that we should
+> >take care of need_resched and shouldn't become a greedy but khugepaged would
+> >be okay.
+> >
+> >>
+> >>>If it causes problems, user should increase scan_sleep_millisecs/alloc_sleep_millisecs,
+> >>>which is exactly the knob for that cases.
+> >>>
+> >>>So, my point is how about making khugepaged doing always dumb synchronous
+> >>>compaction thorough PG_KHUGEPAGED or GFP_SYNC_TRANSHUGE?
+> >>>
+> >>>>
+> >>>>Reported-by: David Rientjes <rientjes@google.com>
+> >>>>Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+> >>>>Cc: Minchan Kim <minchan@kernel.org>
+> >>>>Cc: Mel Gorman <mgorman@suse.de>
+> >>>>Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> >>>>Cc: Michal Nazarewicz <mina86@mina86.com>
+> >>>>Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> >>>>Cc: Christoph Lameter <cl@linux.com>
+> >>>>Cc: Rik van Riel <riel@redhat.com>
+> >>>>---
+> >>>>  mm/compaction.c | 20 ++++++++++++++------
+> >>>>  mm/internal.h   | 15 +++++++++++----
+> >>>>  2 files changed, 25 insertions(+), 10 deletions(-)
+> >>>>
+> >>>>diff --git a/mm/compaction.c b/mm/compaction.c
+> >>>>index b73b182..d37f4a8 100644
+> >>>>--- a/mm/compaction.c
+> >>>>+++ b/mm/compaction.c
+> >>>>@@ -185,9 +185,14 @@ static void update_pageblock_skip(struct compact_control *cc,
+> >>>>  }
+> >>>>  #endif /* CONFIG_COMPACTION */
+> >>>>
+> >>>>-static inline bool should_release_lock(spinlock_t *lock)
+> >>>>+enum compact_contended should_release_lock(spinlock_t *lock)
+> >>>>  {
+> >>>>-	return need_resched() || spin_is_contended(lock);
+> >>>>+	if (need_resched())
+> >>>>+		return COMPACT_CONTENDED_SCHED;
+> >>>>+	else if (spin_is_contended(lock))
+> >>>>+		return COMPACT_CONTENDED_LOCK;
+> >>>>+	else
+> >>>>+		return COMPACT_CONTENDED_NONE;
+> >>>>  }
+> >>>>
+> >>>>  /*
+> >>>>@@ -202,7 +207,9 @@ static inline bool should_release_lock(spinlock_t *lock)
+> >>>>  static bool compact_checklock_irqsave(spinlock_t *lock, unsigned long *flags,
+> >>>>  				      bool locked, struct compact_control *cc)
+> >>>>  {
+> >>>>-	if (should_release_lock(lock)) {
+> >>>>+	enum compact_contended contended = should_release_lock(lock);
+> >>>>+
+> >>>>+	if (contended) {
+> >>>>  		if (locked) {
+> >>>>  			spin_unlock_irqrestore(lock, *flags);
+> >>>>  			locked = false;
+> >>>>@@ -210,7 +217,7 @@ static bool compact_checklock_irqsave(spinlock_t *lock, unsigned long *flags,
+> >>>>
+> >>>>  		/* async aborts if taking too long or contended */
+> >>>>  		if (cc->mode == MIGRATE_ASYNC) {
+> >>>>-			cc->contended = true;
+> >>>>+			cc->contended = contended;
+> >>>>  			return false;
+> >>>>  		}
+> >>>>
+> >>>>@@ -236,7 +243,7 @@ static inline bool compact_should_abort(struct compact_control *cc)
+> >>>>  	/* async compaction aborts if contended */
+> >>>>  	if (need_resched()) {
+> >>>>  		if (cc->mode == MIGRATE_ASYNC) {
+> >>>>-			cc->contended = true;
+> >>>>+			cc->contended = COMPACT_CONTENDED_SCHED;
+> >>>>  			return true;
+> >>>>  		}
+> >>>>
+> >>>>@@ -1095,7 +1102,8 @@ static unsigned long compact_zone_order(struct zone *zone, int order,
+> >>>>  	VM_BUG_ON(!list_empty(&cc.freepages));
+> >>>>  	VM_BUG_ON(!list_empty(&cc.migratepages));
+> >>>>
+> >>>>-	*contended = cc.contended;
+> >>>>+	/* We only signal lock contention back to the allocator */
+> >>>>+	*contended = cc.contended == COMPACT_CONTENDED_LOCK;
+> >>>>  	return ret;
+> >>>>  }
+> >>>>
+> >>>>diff --git a/mm/internal.h b/mm/internal.h
+> >>>>index 7f22a11f..4659e8e 100644
+> >>>>--- a/mm/internal.h
+> >>>>+++ b/mm/internal.h
+> >>>>@@ -117,6 +117,13 @@ extern int user_min_free_kbytes;
+> >>>>
+> >>>>  #if defined CONFIG_COMPACTION || defined CONFIG_CMA
+> >>>>
+> >>>>+/* Used to signal whether compaction detected need_sched() or lock contention */
+> >>>>+enum compact_contended {
+> >>>>+	COMPACT_CONTENDED_NONE = 0, /* no contention detected */
+> >>>>+	COMPACT_CONTENDED_SCHED,    /* need_sched() was true */
+> >>>>+	COMPACT_CONTENDED_LOCK,     /* zone lock or lru_lock was contended */
+> >>>>+};
+> >>>>+
+> >>>>  /*
+> >>>>   * in mm/compaction.c
+> >>>>   */
+> >>>>@@ -144,10 +151,10 @@ struct compact_control {
+> >>>>  	int order;			/* order a direct compactor needs */
+> >>>>  	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
+> >>>>  	struct zone *zone;
+> >>>>-	bool contended;			/* True if a lock was contended, or
+> >>>>-					 * need_resched() true during async
+> >>>>-					 * compaction
+> >>>>-					 */
+> >>>>+	enum compact_contended contended; /* Signal need_sched() or lock
+> >>>>+					   * contention detected during
+> >>>>+					   * compaction
+> >>>>+					   */
+> >>>>  };
+> >>>>
+> >>>>  unsigned long
+> >>>>--
+> >>>>1.8.4.5
+> >>>>
+> >>>>--
+> >>>>To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> >>>>the body to majordomo@kvack.org.  For more info on Linux MM,
+> >>>>see: http://www.linux-mm.org/ .
+> >>>>Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> >>>
+> >>
+> >>--
+> >>To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> >>the body to majordomo@kvack.org.  For more info on Linux MM,
+> >>see: http://www.linux-mm.org/ .
+> >>Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> >
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
