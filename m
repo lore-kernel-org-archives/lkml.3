@@ -1,73 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752839AbaFMTwa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 15:52:30 -0400
-Received: from smtprelay0012.hostedemail.com ([216.40.44.12]:44975 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751172AbaFMTw3 (ORCPT
+	id S1753209AbaFMT42 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 15:56:28 -0400
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:46003 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751811AbaFMT40 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 15:52:29 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1714:1730:1747:1777:1792:2110:2393:2553:2559:2562:2736:2828:3138:3139:3140:3141:3142:3350:3622:3743:3865:3866:3867:3868:3870:3871:3872:3873:3874:4321:4605:5007:7652:7903:10004:10400:10848:11232:11233:11658:11914:12043:12517:12519:12663:12679:12740:13069:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: crack59_1579ba92ffe40
-X-Filterd-Recvd-Size: 2308
-Message-ID: <1402689145.4462.13.camel@joe-AO725>
-Subject: Re: [patch] checkpatch: warn on missing spaces in broken up quoted
- strings
-From: Joe Perches <joe@perches.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
-Date: Fri, 13 Jun 2014 12:52:25 -0700
-In-Reply-To: <20140613094651.GF5015@mwanda>
-References: <20140613065346.GA28134@mwanda>
-	 <1402651822.12385.31.camel@joe-AO725> <20140613094651.GF5015@mwanda>
+	Fri, 13 Jun 2014 15:56:26 -0400
+Message-ID: <539B57EF.5080207@fb.com>
+Date: Fri, 13 Jun 2014 15:58:39 -0400
+From: Chris Mason <clm@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Btrfs #2 for 3.16
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-06-13_07:2014-06-13,2014-06-13,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=1.46549439250521e-13 kscore.compositescore=0
+ circleOfTrustscore=29.4129509548051 compositescore=0.998049563855454
+ urlsuspect_oldscore=0.998049563855454 suspectscore=2
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=64355
+ rbsscore=0.998049563855454 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1406130213
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-06-13 at 12:46 +0300, Dan Carpenter wrote:
-> On Fri, Jun 13, 2014 at 02:30:22AM -0700, Joe Perches wrote:
-> 
-> > > +# check for missing a space in a string concatination
-> > > +        if ($prevrawline =~ /[^\\][a-zA-Z]"$/ && $rawline =~ /^\+[\t ]+"[a-zA-Z]/) {
-> > > +            WARN('MISSING_SPACE',
-> > > +                 "break quoted strings at a space character\n" . $hereprev);
-> > > +        }
-> > 
-> > Probably want digits too so maybe \w instead of "[a-zA-Z]/
 
-Couple nits:
+Hi Linus,
 
-The indentation isn't right here.
+Please pull my for-linus branch:
 
-And this check is probably better placed immediately
-after the "SPLIT_STRING" test.
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
 
-[]
+This has a few fixes since our last pull and a new ioctl for doing btree
+searches from userland.  It's very similar to the existing ioctl, but
+lets us return larger items back down to the app.
 
-> ./drivers/scsi/pm8001/pm8001_ctl.c:297 			       "0x%08x 0x%08x\n",
-> ./drivers/scsi/pm8001/pm8001_ctl.c:432 			       "0x%08x 0x%08x\n",
-> ./drivers/scsi/qla2xxx/qla_nx2.c:1457 	    "0x%X 0x%X 0x%X 0x%X 0x%X 0x%X\n"
-> 	- hex false positives
+Gerhard Heift (7) commits (+183/-38):
+    btrfs: tree_search, copy_to_sk: return EOVERFLOW for too small buffer (+26/-2)
+    btrfs: tree_search, copy_to_sk: return needed size on EOVERFLOW (+15/-9)
+    btrfs: tree_search, search_ioctl: direct copy to userspace (+33/-15)
+    btrfs: tree_search, search_ioctl: accept varying buffer (+11/-7)
+    btrfs: tree_search: eliminate redundant nr_items check (+7/-5)
+    btrfs: new function read_extent_buffer_to_user (+40/-0)
+    btrfs: new ioctl TREE_SEARCH_V2 (+51/-0)
 
-These look more like defects to me.
+Eric Sandeen (3) commits (+11/-7):
+    btrfs: free ulist in qgroup_shared_accounting() error path (+3/-1)
+    btrfs: fix use of uninit "ret" in end_extent_writepage() (+1/-1)
+    btrfs: fix error handling in create_pending_snapshot (+7/-5)
 
-> I thought about doing that when I wrote my original patch but I was
-> worried about more hex false positives.  If there are only those 3 then
-> it's probably not a big deal.  What do you think?
+Wang Shilong (1) commits (+7/-2):
+    Btrfs: fix unfinished readahead thread for raid5/6 degraded mounting
 
-I know it works on files, but I'm not sure it works on patches.
+Filipe Manana (1) commits (+2/-0):
+    Btrfs: fix qgroups sanity test crash or hang
 
-What happens when checking a single line replacement patch?
+Sasha Levin (1) commits (+1/-1):
+    btrfs: prevent RCU warning when dereferencing radix tree slot
 
-Likely the \\[a-zA-Z] check should include
-all the tests that the multiple line string exceptions use.
+Total: (13) commits
 
-(?:\\(?:[ntr]|[0-7]{1,3}|x[0-9a-fA-F]{1,2})|;\s*|\{\s*)"\s*$
-
-cheers, Joe
-
+ fs/btrfs/extent_io.c          |  39 ++++++++++-
+ fs/btrfs/extent_io.h          |   3 +
+ fs/btrfs/ioctl.c              | 147 ++++++++++++++++++++++++++++++++++--------
+ fs/btrfs/qgroup.c             |   4 +-
+ fs/btrfs/reada.c              |   9 ++-
+ fs/btrfs/tests/btrfs-tests.c  |   2 +-
+ fs/btrfs/tests/qgroup-tests.c |   2 +
+ fs/btrfs/transaction.c        |  12 ++--
+ include/uapi/linux/btrfs.h    |  10 +++
+ 9 files changed, 192 insertions(+), 36 deletions(-)
