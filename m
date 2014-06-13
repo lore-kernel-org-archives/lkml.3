@@ -1,86 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753209AbaFMT42 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 15:56:28 -0400
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:46003 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751811AbaFMT40 (ORCPT
+	id S1753287AbaFMT5k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 15:57:40 -0400
+Received: from smtprelay05.ispgateway.de ([80.67.31.100]:58691 "EHLO
+	smtprelay05.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751836AbaFMT5j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 15:56:26 -0400
-Message-ID: <539B57EF.5080207@fb.com>
-Date: Fri, 13 Jun 2014 15:58:39 -0400
-From: Chris Mason <clm@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Btrfs #2 for 3.16
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-06-13_07:2014-06-13,2014-06-13,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=1.46549439250521e-13 kscore.compositescore=0
- circleOfTrustscore=29.4129509548051 compositescore=0.998049563855454
- urlsuspect_oldscore=0.998049563855454 suspectscore=2
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=64355
- rbsscore=0.998049563855454 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1406130213
-X-FB-Internal: deliver
+	Fri, 13 Jun 2014 15:57:39 -0400
+X-Greylist: delayed 451 seconds by postgrey-1.27 at vger.kernel.org; Fri, 13 Jun 2014 15:57:39 EDT
+From: Christoph Jaeger <christophjaeger@linux.com>
+To: daniel.vetter@ffwll.ch, jani.nikula@linux.intel.com, airlied@linux.ie
+Cc: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org,
+        Christoph Jaeger <christophjaeger@linux.com>
+Subject: [PATCH] drm/i915: Fix memory leak in intel_dsi_init() error path
+Date: Fri, 13 Jun 2014 21:51:22 +0200
+Message-Id: <1402689082-20211-1-git-send-email-christophjaeger@linux.com>
+X-Mailer: git-send-email 1.9.3
+X-Df-Sender: MTg4NDM4Mw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+intel_dsi_init() bails out without freeing the memory 'intel_dsi' and
+'intel_connector' point to. Simply bail out before allocating memory.
 
-Hi Linus,
+Picked up by Coverity - CID 1222750.
 
-Please pull my for-linus branch:
+Signed-off-by: Christoph Jaeger <christophjaeger@linux.com>
+---
+ drivers/gpu/drm/i915/intel_dsi.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
+diff --git a/drivers/gpu/drm/i915/intel_dsi.c b/drivers/gpu/drm/i915/intel_dsi.c
+index 02f99d7..6965627 100644
+--- a/drivers/gpu/drm/i915/intel_dsi.c
++++ b/drivers/gpu/drm/i915/intel_dsi.c
+@@ -675,6 +675,13 @@ bool intel_dsi_init(struct drm_device *dev)
+ 	if (!dev_priv->vbt.has_mipi)
+ 		return false;
+ 
++	if (IS_VALLEYVIEW(dev)) {
++		dev_priv->mipi_mmio_base = VLV_MIPI_BASE;
++	} else {
++		DRM_ERROR("Unsupported Mipi device to reg base");
++		return false;
++	}
++
+ 	intel_dsi = kzalloc(sizeof(*intel_dsi), GFP_KERNEL);
+ 	if (!intel_dsi)
+ 		return false;
+@@ -689,13 +696,6 @@ bool intel_dsi_init(struct drm_device *dev)
+ 	encoder = &intel_encoder->base;
+ 	intel_dsi->attached_connector = intel_connector;
+ 
+-	if (IS_VALLEYVIEW(dev)) {
+-		dev_priv->mipi_mmio_base = VLV_MIPI_BASE;
+-	} else {
+-		DRM_ERROR("Unsupported Mipi device to reg base");
+-		return false;
+-	}
+-
+ 	connector = &intel_connector->base;
+ 
+ 	drm_encoder_init(dev, encoder, &intel_dsi_funcs, DRM_MODE_ENCODER_DSI);
+-- 
+1.9.3
 
-This has a few fixes since our last pull and a new ioctl for doing btree
-searches from userland.  It's very similar to the existing ioctl, but
-lets us return larger items back down to the app.
-
-Gerhard Heift (7) commits (+183/-38):
-    btrfs: tree_search, copy_to_sk: return EOVERFLOW for too small buffer (+26/-2)
-    btrfs: tree_search, copy_to_sk: return needed size on EOVERFLOW (+15/-9)
-    btrfs: tree_search, search_ioctl: direct copy to userspace (+33/-15)
-    btrfs: tree_search, search_ioctl: accept varying buffer (+11/-7)
-    btrfs: tree_search: eliminate redundant nr_items check (+7/-5)
-    btrfs: new function read_extent_buffer_to_user (+40/-0)
-    btrfs: new ioctl TREE_SEARCH_V2 (+51/-0)
-
-Eric Sandeen (3) commits (+11/-7):
-    btrfs: free ulist in qgroup_shared_accounting() error path (+3/-1)
-    btrfs: fix use of uninit "ret" in end_extent_writepage() (+1/-1)
-    btrfs: fix error handling in create_pending_snapshot (+7/-5)
-
-Wang Shilong (1) commits (+7/-2):
-    Btrfs: fix unfinished readahead thread for raid5/6 degraded mounting
-
-Filipe Manana (1) commits (+2/-0):
-    Btrfs: fix qgroups sanity test crash or hang
-
-Sasha Levin (1) commits (+1/-1):
-    btrfs: prevent RCU warning when dereferencing radix tree slot
-
-Total: (13) commits
-
- fs/btrfs/extent_io.c          |  39 ++++++++++-
- fs/btrfs/extent_io.h          |   3 +
- fs/btrfs/ioctl.c              | 147 ++++++++++++++++++++++++++++++++++--------
- fs/btrfs/qgroup.c             |   4 +-
- fs/btrfs/reada.c              |   9 ++-
- fs/btrfs/tests/btrfs-tests.c  |   2 +-
- fs/btrfs/tests/qgroup-tests.c |   2 +
- fs/btrfs/transaction.c        |  12 ++--
- include/uapi/linux/btrfs.h    |  10 +++
- 9 files changed, 192 insertions(+), 36 deletions(-)
