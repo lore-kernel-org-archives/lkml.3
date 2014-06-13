@@ -1,213 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753465AbaFMKrf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 06:47:35 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:36174 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753034AbaFMKpR (ORCPT
+	id S1753038AbaFMKvl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 06:51:41 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:50832 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751980AbaFMKvi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 06:45:17 -0400
-From: David Herrmann <dh.herrmann@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>, Ryan Lortie <desrt@desrt.ca>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
-        Greg Kroah-Hartman <greg@kroah.com>, john.stultz@linaro.org,
-        Lennart Poettering <lennart@poettering.net>,
-        Daniel Mack <zonque@gmail.com>, Kay Sievers <kay@vrfy.org>,
-        Hugh Dickins <hughd@google.com>,
-        Tony Battersby <tonyb@cybernetics.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        David Herrmann <dh.herrmann@gmail.com>
-Subject: [PATCH v3 1/7] mm: allow drivers to prevent new writable mappings
-Date: Fri, 13 Jun 2014 12:36:53 +0200
-Message-Id: <1402655819-14325-2-git-send-email-dh.herrmann@gmail.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1402655819-14325-1-git-send-email-dh.herrmann@gmail.com>
-References: <1402655819-14325-1-git-send-email-dh.herrmann@gmail.com>
+	Fri, 13 Jun 2014 06:51:38 -0400
+Date: Fri, 13 Jun 2014 12:51:35 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Kees Cook <keescook@chromium.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH 0/2] make kASLR vs hibernation boot-time selectable
+Message-ID: <20140613105135.GA4876@amd.pavel.ucw.cz>
+References: <1402602419-27934-1-git-send-email-keescook@chromium.org>
+ <539A0422.9010000@zytor.com>
+ <CAGXu5jLvAr=f2MRP4Ni86-jbM7h3Mx3RQo=7coveE8ZEt12N=Q@mail.gmail.com>
+ <539A0DC2.1010203@zytor.com>
+ <CAGXu5jKanRjK66P9dFYctXfQxT+da_9z8vqy8s+WqgW1cw17-Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGXu5jKanRjK66P9dFYctXfQxT+da_9z8vqy8s+WqgW1cw17-Q@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The i_mmap_writable field counts existing writable mappings of an
-address_space. To allow drivers to prevent new writable mappings, make
-this counter signed and prevent new writable mappings if it is negative.
-This is modelled after i_writecount and DENYWRITE.
+Hi!
 
-This will be required by the shmem-sealing infrastructure to prevent any
-new writable mappings after the WRITE seal has been set. In case there
-exists a writable mapping, this operation will fail with EBUSY.
 
-Note that we rely on the fact that iff you already own a writable mapping,
-you can increase the counter without using the helpers. This is the same
-that we do for i_writecount.
+> >>> Any way we can make them work together instead?
+> >>
+> >> I'm sure there is, but I don't know the solution. :)
+> >>
+> >> At the very least this gets us one step closer (we can build them together).
+> >>
+> >
+> > But it is really invasive.
+> 
+> Well, I don't agree there. I actually would like to be able to turn
+> off hibernation support on distro kernels regardless of kASLR, so I
+> think this is really killing two birds with one stone.
+> 
+> > I have to admit to being somewhat fuzzy on what the core problem with
+> > hibernation and kASLR is... in both cases there is a set of pages that
+> > need to be installed, some of which will overlap the loader kernel.
+> > What am I missing?
+> 
+> I don't know how resume works, but I have assumed that the newly
+> loaded kernel stays in memory and pulls in the vmalloc, kmalloc,
+> modules, and userspace memory maps from disk. Since these things can
+> easily contain references to kernel text, if the newly loaded kernel
+> has moved with regard to the hibernated image, everything breaks.
+> IIUC, this is similar why you can't rebuild your kernel and resume
+> from a different version.
 
-Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
----
- fs/inode.c         |  1 +
- include/linux/fs.h | 29 +++++++++++++++++++++++++++--
- kernel/fork.c      |  2 +-
- mm/mmap.c          | 24 ++++++++++++++++++------
- mm/swap_state.c    |  1 +
- 5 files changed, 48 insertions(+), 9 deletions(-)
+x86-64 can resume from different kernel that did the suspend. kASLR
+should not be too different from that. (You just include kernel text
+in the hibernation image. It is small enough to do that.)
 
-diff --git a/fs/inode.c b/fs/inode.c
-index 6eecb7f..9945b11 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -165,6 +165,7 @@ int inode_init_always(struct super_block *sb, struct inode *inode)
- 	mapping->a_ops = &empty_aops;
- 	mapping->host = inode;
- 	mapping->flags = 0;
-+	atomic_set(&mapping->i_mmap_writable, 0);
- 	mapping_set_gfp_mask(mapping, GFP_HIGHUSER_MOVABLE);
- 	mapping->private_data = NULL;
- 	mapping->backing_dev_info = &default_backing_dev_info;
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 338e6f7..71d17c9 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -387,7 +387,7 @@ struct address_space {
- 	struct inode		*host;		/* owner: inode, block_device */
- 	struct radix_tree_root	page_tree;	/* radix tree of all pages */
- 	spinlock_t		tree_lock;	/* and lock protecting it */
--	unsigned int		i_mmap_writable;/* count VM_SHARED mappings */
-+	atomic_t		i_mmap_writable;/* count VM_SHARED mappings */
- 	struct rb_root		i_mmap;		/* tree of private and shared mappings */
- 	struct list_head	i_mmap_nonlinear;/*list VM_NONLINEAR mappings */
- 	struct mutex		i_mmap_mutex;	/* protect tree, count, list */
-@@ -470,10 +470,35 @@ static inline int mapping_mapped(struct address_space *mapping)
-  * Note that i_mmap_writable counts all VM_SHARED vmas: do_mmap_pgoff
-  * marks vma as VM_SHARED if it is shared, and the file was opened for
-  * writing i.e. vma may be mprotected writable even if now readonly.
-+ *
-+ * If i_mmap_writable is negative, no new writable mappings are allowed. You
-+ * can only deny writable mappings, if none exists right now.
-  */
- static inline int mapping_writably_mapped(struct address_space *mapping)
- {
--	return mapping->i_mmap_writable != 0;
-+	return atomic_read(&mapping->i_mmap_writable) > 0;
-+}
-+
-+static inline int mapping_map_writable(struct address_space *mapping)
-+{
-+	return atomic_inc_unless_negative(&mapping->i_mmap_writable) ?
-+		0 : -EPERM;
-+}
-+
-+static inline void mapping_unmap_writable(struct address_space *mapping)
-+{
-+	return atomic_dec(&mapping->i_mmap_writable);
-+}
-+
-+static inline int mapping_deny_writable(struct address_space *mapping)
-+{
-+	return atomic_dec_unless_positive(&mapping->i_mmap_writable) ?
-+		0 : -EBUSY;
-+}
-+
-+static inline void mapping_allow_writable(struct address_space *mapping)
-+{
-+	atomic_inc(&mapping->i_mmap_writable);
- }
- 
- /*
-diff --git a/kernel/fork.c b/kernel/fork.c
-index d2799d1..f1f127e 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -421,7 +421,7 @@ static int dup_mmap(struct mm_struct *mm, struct mm_struct *oldmm)
- 				atomic_dec(&inode->i_writecount);
- 			mutex_lock(&mapping->i_mmap_mutex);
- 			if (tmp->vm_flags & VM_SHARED)
--				mapping->i_mmap_writable++;
-+				atomic_inc(&mapping->i_mmap_writable);
- 			flush_dcache_mmap_lock(mapping);
- 			/* insert tmp into the share list, just after mpnt */
- 			if (unlikely(tmp->vm_flags & VM_NONLINEAR))
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 129b847..19b6562 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -216,7 +216,7 @@ static void __remove_shared_vm_struct(struct vm_area_struct *vma,
- 	if (vma->vm_flags & VM_DENYWRITE)
- 		atomic_inc(&file_inode(file)->i_writecount);
- 	if (vma->vm_flags & VM_SHARED)
--		mapping->i_mmap_writable--;
-+		mapping_unmap_writable(mapping);
- 
- 	flush_dcache_mmap_lock(mapping);
- 	if (unlikely(vma->vm_flags & VM_NONLINEAR))
-@@ -617,7 +617,7 @@ static void __vma_link_file(struct vm_area_struct *vma)
- 		if (vma->vm_flags & VM_DENYWRITE)
- 			atomic_dec(&file_inode(file)->i_writecount);
- 		if (vma->vm_flags & VM_SHARED)
--			mapping->i_mmap_writable++;
-+			atomic_inc(&mapping->i_mmap_writable);
- 
- 		flush_dcache_mmap_lock(mapping);
- 		if (unlikely(vma->vm_flags & VM_NONLINEAR))
-@@ -1572,6 +1572,11 @@ munmap_back:
- 			if (error)
- 				goto free_vma;
- 		}
-+		if (vm_flags & VM_SHARED) {
-+			error = mapping_map_writable(file->f_mapping);
-+			if (error)
-+				goto allow_write_and_free_vma;
-+		}
- 		vma->vm_file = get_file(file);
- 		error = file->f_op->mmap(file, vma);
- 		if (error)
-@@ -1611,8 +1616,12 @@ munmap_back:
- 
- 	vma_link(mm, vma, prev, rb_link, rb_parent);
- 	/* Once vma denies write, undo our temporary denial count */
--	if (vm_flags & VM_DENYWRITE)
--		allow_write_access(file);
-+	if (file) {
-+		if (vm_flags & VM_SHARED)
-+			mapping_unmap_writable(file->f_mapping);
-+		if (vm_flags & VM_DENYWRITE)
-+			allow_write_access(file);
-+	}
- 	file = vma->vm_file;
- out:
- 	perf_event_mmap(vma);
-@@ -1641,14 +1650,17 @@ out:
- 	return addr;
- 
- unmap_and_free_vma:
--	if (vm_flags & VM_DENYWRITE)
--		allow_write_access(file);
- 	vma->vm_file = NULL;
- 	fput(file);
- 
- 	/* Undo any partial mapping done by a device driver. */
- 	unmap_region(mm, vma, prev, vma->vm_start, vma->vm_end);
- 	charged = 0;
-+	if (vm_flags & VM_SHARED)
-+		mapping_unmap_writable(file->f_mapping);
-+allow_write_and_free_vma:
-+	if (vm_flags & VM_DENYWRITE)
-+		allow_write_access(file);
- free_vma:
- 	kmem_cache_free(vm_area_cachep, vma);
- unacct_error:
-diff --git a/mm/swap_state.c b/mm/swap_state.c
-index 2972eee..31321fa 100644
---- a/mm/swap_state.c
-+++ b/mm/swap_state.c
-@@ -39,6 +39,7 @@ static struct backing_dev_info swap_backing_dev_info = {
- struct address_space swapper_spaces[MAX_SWAPFILES] = {
- 	[0 ... MAX_SWAPFILES - 1] = {
- 		.page_tree	= RADIX_TREE_INIT(GFP_ATOMIC|__GFP_NOWARN),
-+		.i_mmap_writable = ATOMIC_INIT(0),
- 		.a_ops		= &swap_aops,
- 		.backing_dev_info = &swap_backing_dev_info,
- 	}
+									Pavel
 -- 
-2.0.0
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
