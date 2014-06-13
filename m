@@ -1,139 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753155AbaFMSq0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 14:46:26 -0400
-Received: from mail-pa0-f74.google.com ([209.85.220.74]:58392 "EHLO
-	mail-pa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751183AbaFMSqZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 14:46:25 -0400
-From: Simon Que <sque@chromium.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
-        Sonny Rao <sonnyrao@chromium.org>, linux-kernel@vger.kernel.org,
-        Simon Que <sque@chromium.org>
-Subject: [PATCH] perf: Get kernel start address by symbol name
-Date: Fri, 13 Jun 2014 11:45:21 -0700
-Message-Id: <1402685121-32267-1-git-send-email-sque@chromium.org>
-X-Mailer: git-send-email 2.0.0.526.g5318336
+	id S1752595AbaFMSzJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 14:55:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28689 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751172AbaFMSzH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 14:55:07 -0400
+From: Mark Salter <msalter@redhat.com>
+To: Alessandro Zummo <a.zummo@towertech.it>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>
+Cc: linux-ia64@vger.kernel.org, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org, Mark Salter <msalter@redhat.com>
+Subject: [PATCH] rtc: ia64: allow other architectures to use EFI RTC
+Date: Fri, 13 Jun 2014 14:50:30 -0400
+Message-Id: <1402685430-32591-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function machine__get_kernel_start_addr() was taking the first symbol
-of kallsyms as the start address. This is incorrect in certain cases
-where the first symbol is something at 0, while the actual kernel
-functions begin at a later point (e.g. 0x80200000).
+Currently, the rtc-efi driver is restricted to ia64 only.
+Newer architectures with EFI support may want to also use
+that driver. This patch moves the platform device setup
+from ia64 into drivers/rtc and allow any architecture with
+CONFIG_EFI=y to use the rtc-efi driver.
 
-This patch fixes machine__get_kernel_start_addr() to search for the
-symbol "_text" or "_stext", which marks the beginning of kernel mapping.
-This was already being done in machine__create_kernel_maps(). Thus, this
-patch is just a refactor, to move that code into
-machine__get_kernel_start_addr().
-
-Change-Id: I0c38c36f5e8b0f4fb92a6f57211fa45aabe545a6
-Signed-off-by: Simon Que <sque@chromium.org>
+Signed-off-by: Mark Salter <msalter@redhat.com>
 ---
- tools/perf/util/machine.c | 54 +++++++++++++++++++----------------------------
- 1 file changed, 22 insertions(+), 32 deletions(-)
+ arch/ia64/kernel/time.c        | 15 ---------------
+ drivers/rtc/Kconfig            |  2 +-
+ drivers/rtc/Makefile           |  4 ++++
+ drivers/rtc/rtc-efi-platform.c | 30 ++++++++++++++++++++++++++++++
+ 4 files changed, 35 insertions(+), 16 deletions(-)
+ create mode 100644 drivers/rtc/rtc-efi-platform.c
 
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 620a198..acda3d2 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -484,18 +484,6 @@ struct process_args {
- 	u64 start;
+diff --git a/arch/ia64/kernel/time.c b/arch/ia64/kernel/time.c
+index 71c52bc..a149c67 100644
+--- a/arch/ia64/kernel/time.c
++++ b/arch/ia64/kernel/time.c
+@@ -384,21 +384,6 @@ static struct irqaction timer_irqaction = {
+ 	.name =		"timer"
  };
  
--static int symbol__in_kernel(void *arg, const char *name,
--			     char type __maybe_unused, u64 start)
+-static struct platform_device rtc_efi_dev = {
+-	.name = "rtc-efi",
+-	.id = -1,
+-};
+-
+-static int __init rtc_init(void)
 -{
--	struct process_args *args = arg;
+-	if (platform_device_register(&rtc_efi_dev) < 0)
+-		printk(KERN_ERR "unable to register rtc device...\n");
 -
--	if (strchr(name, '['))
--		return 0;
--
--	args->start = start;
--	return 1;
+-	/* not necessarily an error */
+-	return 0;
 -}
+-module_init(rtc_init);
 -
- static void machine__get_kallsyms_filename(struct machine *machine, char *buf,
- 					   size_t bufsz)
+ void read_persistent_clock(struct timespec *ts)
  {
-@@ -505,27 +493,41 @@ static void machine__get_kallsyms_filename(struct machine *machine, char *buf,
- 		scnprintf(buf, bufsz, "%s/proc/kallsyms", machine->root_dir);
- }
+ 	efi_gettimeofday(ts);
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index 0754f5c..4478a59 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -789,7 +789,7 @@ config RTC_DRV_DA9063
  
--/* Figure out the start address of kernel map from /proc/kallsyms */
--static u64 machine__get_kernel_start_addr(struct machine *machine)
-+const char *ref_reloc_sym_names[] = {"_text", "_stext", NULL};
+ config RTC_DRV_EFI
+ 	tristate "EFI RTC"
+-	depends on IA64
++	depends on EFI
+ 	help
+ 	  If you say yes here you will get support for the EFI
+ 	  Real Time Clock.
+diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+index 70347d0..f1dfc36 100644
+--- a/drivers/rtc/Makefile
++++ b/drivers/rtc/Makefile
+@@ -10,6 +10,10 @@ obj-$(CONFIG_RTC_SYSTOHC)	+= systohc.o
+ obj-$(CONFIG_RTC_CLASS)		+= rtc-core.o
+ rtc-core-y			:= class.o interface.o
+ 
++ifdef CONFIG_RTC_DRV_EFI
++rtc-core-y			+= rtc-efi-platform.o
++endif
 +
-+/* Figure out the start address of kernel map from /proc/kallsyms.
-+ * Returns the name of the start symbol in *symbol_name. Pass in NULL as
-+ * symbol_name if it's not that important.
+ rtc-core-$(CONFIG_RTC_INTF_DEV)	+= rtc-dev.o
+ rtc-core-$(CONFIG_RTC_INTF_PROC) += rtc-proc.o
+ rtc-core-$(CONFIG_RTC_INTF_SYSFS) += rtc-sysfs.o
+diff --git a/drivers/rtc/rtc-efi-platform.c b/drivers/rtc/rtc-efi-platform.c
+new file mode 100644
+index 0000000..1a7f890
+--- /dev/null
++++ b/drivers/rtc/rtc-efi-platform.c
+@@ -0,0 +1,30 @@
++/*
++ * Moved from arch/ia64/kernel/time.c
++ *
++ * Copyright (C) 1998-2003 Hewlett-Packard Co
++ *	Stephane Eranian <eranian@hpl.hp.com>
++ *	David Mosberger <davidm@hpl.hp.com>
++ * Copyright (C) 1999 Don Dugger <don.dugger@intel.com>
++ * Copyright (C) 1999-2000 VA Linux Systems
++ * Copyright (C) 1999-2000 Walt Drummond <drummond@valinux.com>
 + */
-+static u64 machine__get_kernel_start_addr(struct machine *machine,
-+					  const char** symbol_name)
- {
- 	char filename[PATH_MAX];
--	struct process_args args;
-+	int i;
-+	const char* name;
-+	u64 addr;
- 
- 	machine__get_kallsyms_filename(machine, filename, PATH_MAX);
- 
- 	if (symbol__restricted_filename(filename, "/proc/kallsyms"))
- 		return 0;
- 
--	if (kallsyms__parse(filename, &args, symbol__in_kernel) <= 0)
--		return 0;
-+	for (i = 0; (name = ref_reloc_sym_names[i]) != NULL; i++) {
-+		addr = kallsyms__get_function_start(filename, name);
-+		if (addr)
-+			break;
-+	}
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/efi.h>
++#include <linux/platform_device.h>
 +
-+	if (symbol_name)
-+		*symbol_name = name;
- 
--	return args.start;
-+	return addr;
- }
- 
- int __machine__create_kernel_maps(struct machine *machine, struct dso *kernel)
- {
- 	enum map_type type;
--	u64 start = machine__get_kernel_start_addr(machine);
-+	u64 start = machine__get_kernel_start_addr(machine, NULL);
- 
- 	for (type = 0; type < MAP__NR_TYPES; ++type) {
- 		struct kmap *kmap;
-@@ -832,23 +834,11 @@ static int machine__create_modules(struct machine *machine)
- 	return 0;
- }
- 
--const char *ref_reloc_sym_names[] = {"_text", "_stext", NULL};
--
- int machine__create_kernel_maps(struct machine *machine)
- {
- 	struct dso *kernel = machine__get_kernel(machine);
--	char filename[PATH_MAX];
- 	const char *name;
--	u64 addr = 0;
--	int i;
--
--	machine__get_kallsyms_filename(machine, filename, PATH_MAX);
--
--	for (i = 0; (name = ref_reloc_sym_names[i]) != NULL; i++) {
--		addr = kallsyms__get_function_start(filename, name);
--		if (addr)
--			break;
--	}
-+	u64 addr = machine__get_kernel_start_addr(machine, &name);
- 	if (!addr)
- 		return -1;
- 
++static struct platform_device rtc_efi_dev = {
++	.name = "rtc-efi",
++	.id = -1,
++};
++
++static int __init rtc_init(void)
++{
++	if (platform_device_register(&rtc_efi_dev) < 0)
++		pr_err("unable to register rtc device...\n");
++
++	/* not necessarily an error */
++	return 0;
++}
++module_init(rtc_init);
 -- 
-1.8.3.2
+1.9.0
 
