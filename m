@@ -1,55 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752822AbaFMH0z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 03:26:55 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:59788 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751196AbaFMH0y (ORCPT
+	id S1752846AbaFMH1Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 03:27:24 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:46069 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750817AbaFMH1W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 03:26:54 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+hB7scoXdVpwDKnfuXl+hx
-Date: Fri, 13 Jun 2014 00:26:46 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Roger Quadros <rogerq@ti.com>
-Cc: dwmw2@infradead.org, computersforpeace@gmail.com,
-        kyungmin.park@samsung.com, pekon@ti.com,
-        ezequiel.garcia@free-electrons.com, javier@dowhile0.org,
-        nsekhar@ti.com, linux-omap@vger.kernel.org,
-        linux-mtd@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 15/36] ARM: OMAP2+: gpmc: Allow drivers to query GPMC_CLK
- period
-Message-ID: <20140613072645.GN17845@atomide.com>
-References: <1402477001-31132-1-git-send-email-rogerq@ti.com>
- <1402477001-31132-16-git-send-email-rogerq@ti.com>
+	Fri, 13 Jun 2014 03:27:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402477001-31132-16-git-send-email-rogerq@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CA+mtBx9BSe2M7-ALT9AL1J0qPXzJP2LcFG5dCJ3DASnh6-p9gA@mail.gmail.com>
+References: <CAMuHMdU6rrpx6xFw71HKexDJUZtfFtL+um6dxZ=EaycgVO312A@mail.gmail.com>
+	<CA+mtBx9BSe2M7-ALT9AL1J0qPXzJP2LcFG5dCJ3DASnh6-p9gA@mail.gmail.com>
+Date: Fri, 13 Jun 2014 09:27:20 +0200
+X-Google-Sender-Auth: rnOT_vxqDw9zIu4XrOGlnL6hpW8
+Message-ID: <CAMuHMdUQ-jX+khDtVpOm6XocVG+F3ThH2qM+1BgAtRWzgAsqfQ@mail.gmail.com>
+Subject: Re: [-next] Regression: ssh log in slowdown
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Tom Herbert <therbert@google.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Linux-Next <linux-next@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Roger Quadros <rogerq@ti.com> [140611 01:59]:
-> GPMC_CLK is the external clock output pin that is used for syncronous
-> accesses.
-> 
-> Device drivers need to know the fastest possible GPMC_CLK period in order
-> to calculate the most optimal device timings. Add the function
-> omap_gpmc_get_clk_period() to allow drivers to get the nearset possible
-> (equal to or greater than) GPMC_CLK period given the minimum
-> clock period supported by the attached device.
-> 
-> This is especially needed by the onenand driver as it calculates
-> device timings on the fly for various onenand speed grades.
+Hi Tom,
 
-Here too this should probably still be done by the gpmc to driver
-glue layer, not by the actual driver that shoud be Linux generic.
+cc lkml, as this is now in mainline
 
-Regards,
+On Fri, Jun 13, 2014 at 2:59 AM, Tom Herbert <therbert@google.com> wrote:
+>>     net: Save software checksum complete
+>>
+>>     In skb_checksum complete, if we need to compute the checksum for the
+>>     packet (via skb_checksum) save the result as CHECKSUM_COMPLETE.
+>>     Subsequent checksum verification can use this.
+>>
+>>     Also, added csum_complete_sw flag to distinguish between software and
+>>     hardware generated checksum complete, we should always be able to trust
+>>     the software computation.
+>>
+>>     Signed-off-by: Tom Herbert <therbert@google.com>
+>>     Signed-off-by: David S. Miller <davem@davemloft.net>
+>>
+>> Reverting this commit fixes the issue.
+>>
+>> Anyone with a clue?
+>>
+> Hi Geert,
+>
+> I'm very sorry that I seemed to have missed your initial bug report,
+> thanks for bisecting the problem. I have posted a fix for this, please
+> verify it if you can
 
-Tony
+Thanks for your patches!
+
+I assume this is the series "[PATCH 0/4] Checksum fixes"
+(marc.info/?l=linux-netdev&m=140261417832399&w=2)?
+
+As I'm not subscribed to netdev, I cannot reply to that thread.
+
+"[PATCH 1/4] net: Fix save software checksum complete" fixes the issue
+for me.
+However, "[PATCH 2/4] udp: call __skb_checksum_complete when doing full
+checksum" reintroduces the exact same bad behavior :-(
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
