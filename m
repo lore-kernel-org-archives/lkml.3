@@ -1,73 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753038AbaFMKvl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 06:51:41 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:50832 "EHLO
+	id S1753111AbaFMK4O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 06:56:14 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:50956 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751980AbaFMKvi (ORCPT
+	with ESMTP id S1751383AbaFMK4N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 06:51:38 -0400
-Date: Fri, 13 Jun 2014 12:51:35 +0200
+	Fri, 13 Jun 2014 06:56:13 -0400
+Date: Fri, 13 Jun 2014 12:56:10 +0200
 From: Pavel Machek <pavel@ucw.cz>
 To: Kees Cook <keescook@chromium.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
+Cc: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, Randy Dunlap <rdunlap@infradead.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        x86@kernel.org, Len Brown <len.brown@intel.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>, linux-doc@vger.kernel.org,
         linux-pm@vger.kernel.org
-Subject: Re: [PATCH 0/2] make kASLR vs hibernation boot-time selectable
-Message-ID: <20140613105135.GA4876@amd.pavel.ucw.cz>
-References: <1402602419-27934-1-git-send-email-keescook@chromium.org>
- <539A0422.9010000@zytor.com>
- <CAGXu5jLvAr=f2MRP4Ni86-jbM7h3Mx3RQo=7coveE8ZEt12N=Q@mail.gmail.com>
- <539A0DC2.1010203@zytor.com>
- <CAGXu5jKanRjK66P9dFYctXfQxT+da_9z8vqy8s+WqgW1cw17-Q@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] hibernate: create "nohibernate" boot parameter
+Message-ID: <20140613105610.GC4876@amd.pavel.ucw.cz>
+References: <1402606833-9825-1-git-send-email-keescook@chromium.org>
+ <1402606833-9825-2-git-send-email-keescook@chromium.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAGXu5jKanRjK66P9dFYctXfQxT+da_9z8vqy8s+WqgW1cw17-Q@mail.gmail.com>
+In-Reply-To: <1402606833-9825-2-git-send-email-keescook@chromium.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-
-> >>> Any way we can make them work together instead?
-> >>
-> >> I'm sure there is, but I don't know the solution. :)
-> >>
-> >> At the very least this gets us one step closer (we can build them together).
-> >>
-> >
-> > But it is really invasive.
+On Thu 2014-06-12 14:00:32, Kees Cook wrote:
+> To support using kernel features that are not compatible with hibernation,
+> this creates the "nohibernate" kernel boot parameter to disable both
+> hibernation and resume. This allows hibernation support to be a boot-time
+> choice instead of only a compile-time choice.
 > 
-> Well, I don't agree there. I actually would like to be able to turn
-> off hibernation support on distro kernels regardless of kASLR, so I
-> think this is really killing two birds with one stone.
-> 
-> > I have to admit to being somewhat fuzzy on what the core problem with
-> > hibernation and kASLR is... in both cases there is a set of pages that
-> > need to be installed, some of which will overlap the loader kernel.
-> > What am I missing?
-> 
-> I don't know how resume works, but I have assumed that the newly
-> loaded kernel stays in memory and pulls in the vmalloc, kmalloc,
-> modules, and userspace memory maps from disk. Since these things can
-> easily contain references to kernel text, if the newly loaded kernel
-> has moved with regard to the hibernated image, everything breaks.
-> IIUC, this is similar why you can't rebuild your kernel and resume
-> from a different version.
+> Signed-off-by: Kees Cook <keescook@chromium.org>
 
-x86-64 can resume from different kernel that did the suspend. kASLR
-should not be too different from that. (You just include kernel text
-in the hibernation image. It is small enough to do that.)
 
+> @@ -639,6 +645,11 @@ int hibernate(void)
+>  {
+>  	int error;
+>  
+> +	if (!hibernation_available()) {
+> +		pr_debug("PM: Hibernation not available.\n");
+> +		return -EINVAL;
+> +	}
+> +
+>  	lock_system_sleep();
+>  	/* The snapshot device should not be opened while we're running */
+>  	if (!atomic_add_unless(&snapshot_device_available, -1, 0)) {
+> @@ -931,6 +945,9 @@ static ssize_t disk_store(struct kobject *kobj, struct kobj_attribute *attr,
+>  	char *p;
+>  	int mode = HIBERNATION_INVALID;
+>  
+> +	if (!hibernation_available())
+> +		return -EINVAL;
+> +
+>  	p = memchr(buf, '\n', n);
+>  	len = p ? p - buf : n;
+>  
+> diff --git a/kernel/power/user.c b/kernel/power/user.c
+> index 98d357584cd6..000b94419182 100644
+> --- a/kernel/power/user.c
+> +++ b/kernel/power/user.c
+> @@ -49,6 +49,9 @@ static int snapshot_open(struct inode *inode, struct file *filp)
+>  	struct snapshot_data *data;
+>  	int error;
+>  
+> +	if (!hibernation_available())
+> +		return -EINVAL;
+> +
+>  	lock_system_sleep();
+>  
+>  	if (!atomic_add_unless(&snapshot_device_available, -1, 0)) {
+
+Is EINVAL right error code for "root disabled that option"?
+
+Otherwise it looks ok, you can add my ack with that fixed.
 									Pavel
 -- 
 (english) http://www.livejournal.com/~pavelmachek
