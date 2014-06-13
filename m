@@ -1,256 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751412AbaFMEiK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 00:38:10 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:49222 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750707AbaFMEiI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 00:38:08 -0400
-From: Chen Yucong <slaoub@gmail.com>
-To: akpm@linux-foundation.org
-Cc: mgorman@suse.de, hannes@cmpxchg.org, mhocko@suse.cz, riel@redhat.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Chen Yucong <slaoub@gmail.com>
-Subject: [PATCH v2] mm/vmscan.c: wrap five parameters into shrink_result for reducing the stack consumption
-Date: Fri, 13 Jun 2014 12:36:31 +0800
-Message-Id: <1402634191-3442-1-git-send-email-slaoub@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1751542AbaFMEl2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 00:41:28 -0400
+Received: from smtp.infotech.no ([82.134.31.41]:51486 "EHLO smtp.infotech.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750951AbaFMEl1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 00:41:27 -0400
+Message-ID: <539A80F1.40205@interlog.com>
+Date: Fri, 13 Jun 2014 00:41:21 -0400
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: SCSI development list <linux-scsi@vger.kernel.org>
+CC: =?ISO-8859-1?Q?Dan_Hor=E1k?= <dhorak@redhat.com>,
+        Ritesh Raj Sarraf <rrs@researchut.com>,
+        "Robin H. Johnson" <robbat2@gentoo.org>,
+        Martin Pitt <mpitt@debian.org>, Hannes Reinecke <hare@suse.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [Announce] sg3_utils-1.39 available
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-shrink_page_list() has too many arguments that have already reached ten.
-Some of those arguments and temporary variables introduces extra 80 bytes
-on the stack. This patch wraps five parameters into shrink_result and removes
-some temporary variables, thus making the relative functions to consume fewer
-stack space.
+sg3_utils is a package of command line utilities for sending
+SCSI and some ATA commands to devices. This package targets
+the Linux 3, 2.6 and 2.4 kernel series. It also has ports to
+FreeBSD, Tru64, Solaris, and Windows (cygwin and MinGW).
 
-Before mm/vmscan.c is changed:
-   text    data     bss     dec     hex filename
-6876698  957224  966656 8800578  864942 vmlinux-3.15
+There is usually around 6 months between versions of this
+package but this time there is only 2.5 months due to the
+volume of changes and additions, see the ChangeLog below.
+This version tracks various changes made by www.t10.org
+since April 2014.
 
-After mm/vmscan.c is changed:
-   text    data     bss     dec     hex filename
-6876506  957224  966656 8800386  864882 vmlinux-3.15
+For an overview of sg3_utils and downloads see this page:
+     http://sg.danny.cz/sg/sg3_utils.html
+The sg_ses utility (for enclosure devices) is discussed at:
+     http://sg.danny.cz/sg/sg_ses.html
+A full changelog can be found at:
+     http://sg.danny.cz/sg/p/sg3_utils.ChangeLog
+
+A release announcement will be sent to freecode.com .
 
 
-scripts/checkstack.pl can be used for checking the change of the target function stack.
+Changelog for sg3_utils-1.39 [20140612] [svn: r588]
+   - sg_rep_zones: new utility for ZBC REPORT ZONES
+   - sg_reset_wp: new utility, ZBC RESET WRITE POINTER
+   - sg_ses: add --eiioe=auto|force option
+     - fix AES dpage element indexing problems
+     - add --readonly option
+   - sg_write_buffer: add --bpw=CS option to call
+     write buffer multiple times for big blobs
+   - sg_format: add --ip_def option to fully provision
+   - sg_opcodes: add --mask option
+   - sg_logs: add --in=FN option for log select params
+     - add --filter=PARC (parameter code)
+     - add --no_inq for suppress initial INQUIRY call
+     - add --readonly option
+   - sg_persist: add --readonly option, environment
+     variable SG_PERSIST_IN_RDONLY sets ro on prin cmds
+   - sg_inq: sync version descriptors dated 20105176
+     - suppress dev-id VPD messages so they only appear
+       when --verbose is given
+     - add new SCSI_IDENT_*_ATA pair to --export output
+   - sg_luns: add decoding for conglomerate LUNS
+     - add --lu_cong option to simulate the LU_CONG bit
+   - sg_vpd: add --vendor=VP option, re-order vendor
+     specific pages, split lto into lto5 and lto6
+     - add Supported block lengths and protection types
+       page (sbc4r01)
+     - add Block device characteristics extension
+       page (sbc4r02)
+   - sg_copy_results, sg_get_lba_status, sg_luns,
+     sg_read_buffer, sg_readcap, sg_referrals, sg_rtpg,
+     sg_sat_set_features, sg_sat_identify:
+     add --readonly option
+   - sginfo: strip trailing spaces from INQUIRY text
+   - sg_rbuf: add --echo option (to use echo buffer)
+   - sg_lib: add sanitize command service action names
+     - add 'sense' categories for reservation conflict,
+       data protect and protection information violations
+     - add sg_get_category_sense_str() to API
+     - change struct sg_simple_inquiry_resp::rmb to byte_1
+     - add initial zbc service actions
+     - dStrHex(Err): fix output truncation error
+     - linux, sg: support SCSI_PT_FLAGS_QUEUE_AT_TAIL and
+       SCSI_PT_FLAGS_QUEUE_AT_HEAD (block layer queueing)
+   - sg_lib_data: sync asc/ascq codes with T10 20140516
+     - sync operation code with T10 20140515
+     - add id string for SPC-5
+   - scripts/59-scsi-sg3_utils.rules: removed
+     - functionality split into two scripts:
+       55-scsi-sg3_id.rules + 58-scsi-sg3_symlink.rules
+   - examples/sg_persist_tst.sh: add --exclusive option
+   - win32: sg_scan, sg_ses and sg_log fixes
+   - examples/sgq_dd: re-add old utility as example
 
-Before mm/vmscan.c is changed:
+Changelog for sg3_utils-1.38 [20140401] [svn: r563]
+....
 
-0xffffffff810af103 shrink_inactive_list []:		152
-0xffffffff810af43d shrink_inactive_list []:		152
--------------------------------------------------------------
-0xffffffff810aede8 reclaim_clean_pages_from_list []:	184
-0xffffffff810aeef8 reclaim_clean_pages_from_list []:	184
--------------------------------------------------------------
-0xffffffff810ae582 shrink_page_list []:			232
-0xffffffff810aedb5 shrink_page_list []:			232
-
-After mm/vmscan.c is changed::
-
-0xffffffff810af078 shrink_inactive_list []:		120
-0xffffffff810af36d shrink_inactive_list []:		120
--------------------------------------------------------------
-0xffffffff810aed6c reclaim_clean_pages_from_list []:	152
-0xffffffff810aee68 reclaim_clean_pages_from_list []:	152
---------------------------------------------------------------------------------------
-0xffffffff810ae586 shrink_page_list []:			184   ---> sub    $0xb8,%rsp
-0xffffffff810aed36 shrink_page_list []:			184   ---> add    $0xb8,%rsp
-
-Via the above figures, we can find that the difference value of the stack is 32 for
-shrink_inactive_list and reclaim_clean_pages_from_list, and this value is 48(232-184)
-for shrink_page_list. From the hierarchy of functions called, the total difference
-value is 80(32+48) for this change.
-
-Changes since v1: https://lkml.org/lkml/2014/6/12/159
-     * Rename arg_container to shrink_result
-     * Change the the way of initializing shrink_result object.
-
-Signed-off-by: Chen Yucong <slaoub@gmail.com>
----
- mm/vmscan.c |   62 ++++++++++++++++++++++++++---------------------------------
- 1 file changed, 27 insertions(+), 35 deletions(-)
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index a8ffe4e..3f28e39 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -791,28 +791,31 @@ static void page_check_dirty_writeback(struct page *page,
- }
- 
- /*
-+ * Callers pass a prezeroed shrink_result into the shrink functions to gather
-+ * statistics about how many pages of particular states were processed
-+ */
-+struct shrink_result {
-+	unsigned long nr_dirty;
-+	unsigned long nr_unqueued_dirty;
-+	unsigned long nr_congested;
-+	unsigned long nr_writeback;
-+	unsigned long nr_immediate;
-+};
-+
-+/*
-  * shrink_page_list() returns the number of reclaimed pages
-  */
- static unsigned long shrink_page_list(struct list_head *page_list,
- 				      struct zone *zone,
- 				      struct scan_control *sc,
- 				      enum ttu_flags ttu_flags,
--				      unsigned long *ret_nr_dirty,
--				      unsigned long *ret_nr_unqueued_dirty,
--				      unsigned long *ret_nr_congested,
--				      unsigned long *ret_nr_writeback,
--				      unsigned long *ret_nr_immediate,
-+				      struct shrink_result *sr,
- 				      bool force_reclaim)
- {
- 	LIST_HEAD(ret_pages);
- 	LIST_HEAD(free_pages);
- 	int pgactivate = 0;
--	unsigned long nr_unqueued_dirty = 0;
--	unsigned long nr_dirty = 0;
--	unsigned long nr_congested = 0;
- 	unsigned long nr_reclaimed = 0;
--	unsigned long nr_writeback = 0;
--	unsigned long nr_immediate = 0;
- 
- 	cond_resched();
- 
-@@ -858,10 +861,10 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 		 */
- 		page_check_dirty_writeback(page, &dirty, &writeback);
- 		if (dirty || writeback)
--			nr_dirty++;
-+			sr->nr_dirty++;
- 
- 		if (dirty && !writeback)
--			nr_unqueued_dirty++;
-+			sr->nr_unqueued_dirty++;
- 
- 		/*
- 		 * Treat this page as congested if the underlying BDI is or if
-@@ -872,7 +875,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 		mapping = page_mapping(page);
- 		if ((mapping && bdi_write_congested(mapping->backing_dev_info)) ||
- 		    (writeback && PageReclaim(page)))
--			nr_congested++;
-+			sr->nr_congested++;
- 
- 		/*
- 		 * If a page at the tail of the LRU is under writeback, there
-@@ -916,7 +919,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 			if (current_is_kswapd() &&
- 			    PageReclaim(page) &&
- 			    zone_is_reclaim_writeback(zone)) {
--				nr_immediate++;
-+				sr->nr_immediate++;
- 				goto keep_locked;
- 
- 			/* Case 2 above */
-@@ -934,7 +937,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 				 * and it's also appropriate in global reclaim.
- 				 */
- 				SetPageReclaim(page);
--				nr_writeback++;
-+				sr->nr_writeback++;
- 
- 				goto keep_locked;
- 
-@@ -1132,11 +1135,6 @@ keep:
- 	list_splice(&ret_pages, page_list);
- 	count_vm_events(PGACTIVATE, pgactivate);
- 	mem_cgroup_uncharge_end();
--	*ret_nr_dirty += nr_dirty;
--	*ret_nr_congested += nr_congested;
--	*ret_nr_unqueued_dirty += nr_unqueued_dirty;
--	*ret_nr_writeback += nr_writeback;
--	*ret_nr_immediate += nr_immediate;
- 	return nr_reclaimed;
- }
- 
-@@ -1148,7 +1146,8 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
- 		.priority = DEF_PRIORITY,
- 		.may_unmap = 1,
- 	};
--	unsigned long ret, dummy1, dummy2, dummy3, dummy4, dummy5;
-+	unsigned long ret;
-+	struct shrink_result dummy = { };
- 	struct page *page, *next;
- 	LIST_HEAD(clean_pages);
- 
-@@ -1161,8 +1160,7 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
- 	}
- 
- 	ret = shrink_page_list(&clean_pages, zone, &sc,
--			TTU_UNMAP|TTU_IGNORE_ACCESS,
--			&dummy1, &dummy2, &dummy3, &dummy4, &dummy5, true);
-+			TTU_UNMAP|TTU_IGNORE_ACCESS, &dummy, true);
- 	list_splice(&clean_pages, page_list);
- 	mod_zone_page_state(zone, NR_ISOLATED_FILE, -ret);
- 	return ret;
-@@ -1469,11 +1467,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
- 	unsigned long nr_scanned;
- 	unsigned long nr_reclaimed = 0;
- 	unsigned long nr_taken;
--	unsigned long nr_dirty = 0;
--	unsigned long nr_congested = 0;
--	unsigned long nr_unqueued_dirty = 0;
--	unsigned long nr_writeback = 0;
--	unsigned long nr_immediate = 0;
-+	struct shrink_result sr = { };
- 	isolate_mode_t isolate_mode = 0;
- 	int file = is_file_lru(lru);
- 	struct zone *zone = lruvec_zone(lruvec);
-@@ -1515,9 +1509,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
- 		return 0;
- 
- 	nr_reclaimed = shrink_page_list(&page_list, zone, sc, TTU_UNMAP,
--				&nr_dirty, &nr_unqueued_dirty, &nr_congested,
--				&nr_writeback, &nr_immediate,
--				false);
-+					&sr, false);
- 
- 	spin_lock_irq(&zone->lru_lock);
- 
-@@ -1554,7 +1546,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
- 	 * of pages under pages flagged for immediate reclaim and stall if any
- 	 * are encountered in the nr_immediate check below.
- 	 */
--	if (nr_writeback && nr_writeback == nr_taken)
-+	if (sr.nr_writeback && sr.nr_writeback == nr_taken)
- 		zone_set_flag(zone, ZONE_WRITEBACK);
- 
- 	/*
-@@ -1566,7 +1558,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
- 		 * Tag a zone as congested if all the dirty pages scanned were
- 		 * backed by a congested BDI and wait_iff_congested will stall.
- 		 */
--		if (nr_dirty && nr_dirty == nr_congested)
-+		if (sr.nr_dirty && sr.nr_dirty == sr.nr_congested)
- 			zone_set_flag(zone, ZONE_CONGESTED);
- 
- 		/*
-@@ -1576,7 +1568,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
- 		 * pages from reclaim context. It will forcibly stall in the
- 		 * next check.
- 		 */
--		if (nr_unqueued_dirty == nr_taken)
-+		if (sr.nr_unqueued_dirty == nr_taken)
- 			zone_set_flag(zone, ZONE_TAIL_LRU_DIRTY);
- 
- 		/*
-@@ -1585,7 +1577,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
- 		 * implies that pages are cycling through the LRU faster than
- 		 * they are written so also forcibly stall.
- 		 */
--		if ((nr_unqueued_dirty == nr_taken || nr_immediate) &&
-+		if ((sr.nr_unqueued_dirty == nr_taken || sr.nr_immediate) &&
- 		    current_may_throttle())
- 			congestion_wait(BLK_RW_ASYNC, HZ/10);
- 	}
--- 
-1.7.10.4
-
+Doug Gilbert
