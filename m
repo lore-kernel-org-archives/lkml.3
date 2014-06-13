@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753257AbaFMPKx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 11:10:53 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:39711 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753213AbaFMPKf (ORCPT
+	id S1753276AbaFMPLW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 11:11:22 -0400
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:36080 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752522AbaFMPLS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 11:10:35 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-cb-539b14679075
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-To: ming.lei@canonical.com
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        dmitry.kasatkin@gmail.com, Dmitry Kasatkin <d.kasatkin@samsung.com>
-Subject: [PATCH v2 0/1] read firmware size using i_size_read()
-Date: Fri, 13 Jun 2014 18:09:53 +0300
-Message-id: <cover.1402672110.git.d.kasatkin@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <CACVXFVPn4muw+zD+TPAJh2miB5R326iFT4ZBS-Tdehz0XrsyDQ@mail.gmail.com>
-References: <CACVXFVPn4muw+zD+TPAJh2miB5R326iFT4ZBS-Tdehz0XrsyDQ@mail.gmail.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFJMWRmVeSWpSXmKPExsVy+t/xa7rpIrODDQ63mFnc+ruX2eLL0jqL
-	5sXr2Swu75rDZrHr4Xd2B1aPWQ29bB47Z91l99g/dw27R9+WVYwenzfJBbBGcdmkpOZklqUW
-	6dslcGXcfbOepeA5U8WnbSdZGxjnMHUxcnBICJhIdH6t7mLkBDLFJC7cW8/WxcjFISSwlFHi
-	6c71zBBOJ5PEvCvf2ECq2AT0JDY0/2AHsUUEpCR693Qyg9jMAs2MEjev+IDYwgJ2Etf3HGAC
-	sVkEVCVubtnPAmLzClhKzPh9lB1im5zEyWOTWUFsToFgiZZHi8HmCwkESGyds4ltAiPvAkaG
-	VYyiqaXJBcVJ6bmGesWJucWleel6yfm5mxgh4fNlB+PiY1aHGAU4GJV4eD9UzwoWYk0sK67M
-	PcQowcGsJMJ7rwEoxJuSWFmVWpQfX1Sak1p8iJGJg1OqgTH48ePn66U/BcjvWei/sp3lNuO6
-	WB/7eZJRkgUKUjt67Byypn/cw+P5p+O208Nr9vvnTRBKnuo3XfYn02FHn65nQu29m3ukrb+q
-	Hn+zQdaLg+FHo5mfqsXdnOSJDcdl56yMfXh1Z8HJHNUDgs9kct6UvnLPrOK4n3NsTVqrdllS
-	495t+e0rMpVYijMSDbWYi4oTAfbzyjr9AQAA
+	Fri, 13 Jun 2014 11:11:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <1402655819-14325-1-git-send-email-dh.herrmann@gmail.com>
+References: <1402655819-14325-1-git-send-email-dh.herrmann@gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 13 Jun 2014 08:10:57 -0700
+Message-ID: <CALCETrVoE+JO2rLsBUHAOJdvescEEjxikj8iQ339Nxfopfc7pw@mail.gmail.com>
+Subject: Re: [PATCH v3 0/7] File Sealing & memfd_create()
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, Ryan Lortie <desrt@desrt.ca>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Daniel Mack <zonque@gmail.com>, Kay Sievers <kay@vrfy.org>,
+        Hugh Dickins <hughd@google.com>,
+        Tony Battersby <tonyb@cybernetics.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Jun 13, 2014 at 3:36 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+> Hi
+>
+> This is v3 of the File-Sealing and memfd_create() patches. You can find v1 with
+> a longer introduction at gmane:
+>   http://thread.gmane.org/gmane.comp.video.dri.devel/102241
+> An LWN article about memfd+sealing is available, too:
+>   https://lwn.net/Articles/593918/
+> v2 with some more discussions can be found here:
+>   http://thread.gmane.org/gmane.linux.kernel.mm/115713
+>
+> This series introduces two new APIs:
+>   memfd_create(): Think of this syscall as malloc() but it returns a
+>                   file-descriptor instead of a pointer. That file-descriptor is
+>                   backed by anon-memory and can be memory-mapped for access.
+>   sealing: The sealing API can be used to prevent a specific set of operations
+>            on a file-descriptor. You 'seal' the file and give thus the
+>            guarantee, that it cannot be modified in the specific ways.
+>
+> A short high-level introduction is also available here:
+>   http://dvdhrm.wordpress.com/2014/06/10/memfd_create2/
 
-You are right about file type.
-inode structure also contains information about file type..
-There is no need to use vfs_getattr().
+Potentially silly question: is it guaranteed that mmapping and reading
+a SEAL_SHRINKed fd within size bounds will not SIGBUS?  If so, should
+this be documented?  (The particular issue here would be reading
+holes.  It should work by using the zero page, but, if so, we should
+probably make it a real documented guarantee.)
 
-Thanks,
-Dmitry
-
-Dmitry Kasatkin (1):
-  firmware: read firmware size using i_size_read()
-
- drivers/base/firmware_class.c | 17 +++--------------
- 1 file changed, 3 insertions(+), 14 deletions(-)
-
--- 
-1.9.1
-
+--Andy
