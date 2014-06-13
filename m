@@ -1,79 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752868AbaFMG2k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 02:28:40 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:25481 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752509AbaFMGZ6 (ORCPT
+	id S1752382AbaFMGZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 02:25:27 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44094 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752315AbaFMGZY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 02:25:58 -0400
-X-AuditID: cbfee690-b7fb56d000003439-c4-539a9974c3e4
-From: Shahina Shaik <shahina.s@samsung.com>
-To: lgirdwood@gmail.com, broonie@kernel.org, perex@perex.cz, tiwai@suse.de,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Cc: Shahina Shaik <sharab.shaik@gmail.com>
-Subject: [PATCH 4/4] Sound: tlv320aic31xx: Fixed Coding Style Issues
-Date: Fri, 13 Jun 2014 11:56:54 +0530
-Message-id: <1402640814-7037-1-git-send-email-shahina.s@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrALMWRmVeSWpSXmKPExsWyRsSkWrdk5qxgg86jphZXLh5ispj68Amb
-	xbcrHUwWl3fNYbPo3NXPavHt+ARGi5eb3zA5sHts+NzE5rFz1l12j02rOtk89r1dxuax+XS1
-	x+dNcgFsUVw2Kak5mWWpRfp2CVwZ057cZym4ylGxc/ExxgbGmexdjJwcEgImEjv23GaEsMUk
-	Ltxbz9bFyMUhJLCUUWL3idtwRbd/7GCCSExnlOh6epgRwullkji04hhzFyMHB5uAtsT7eU4g
-	DSIC7YwSDx+CTWUW0JL4f30NE4gtLOAisa/hMCuIzSKgKrHx6FmwGl6g+P6Fb5lAxkgIKEjM
-	mWQDsbebXeLP0lqIcgGJb5MPsUCUyEpsOsAMUSIpcXDFDZYJjIILGBlWMYqmFiQXFCelF5no
-	FSfmFpfmpesl5+duYgSG7ul/zybsYLx3wPoQYzLQuInMUqLJ+cDQzyuJNzQ2M7IwNTE1NjK3
-	NCNNWEmcV+1RUpCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGxnS/1aLfVl55nCGweqH3Xh3r
-	uyoPtrZ/99MUEN/Qf0pyvreMVISBm8O6F7OW6nc5sm9IfGHS9v18JPcJ+YDuPfOElp06ILjz
-	ypu8eSslTr6+rOLOM8NhQ9Ly8k9qN5d/rBD+e/FG+l6vfCUV/t+uos5dK61qLryJPbNnzqUn
-	77UOd+9ImfuadboSS3FGoqEWc1FxIgAlpWAXcwIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHIsWRmVeSWpSXmKPExsVy+t9jQd2SmbOCDVqua1lcuXiIyWLqwyds
-	Ft+udDBZXN41h82ic1c/q8W34xMYLV5ufsPkwO6x4XMTm8fOWXfZPTat6mTz2Pd2GZvH5tPV
-	Hp83yQWwRTUw2mSkJqakFimk5iXnp2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6
-	ZeYA3aKkUJaYUwoUCkgsLlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxhzJj25D5LwVWOip2L
-	jzE2MM5k72Lk5JAQMJG4/WMHE4QtJnHh3nq2LkYuDiGB6YwSXU8PM0I4vUwSh1YcY+5i5OBg
-	E9CWeD/PCaRBRKCdUeLhQ0YQm1lAS+L/9TVgg4QFXCT2NRxmBbFZBFQlNh49C1bDCxTfv/At
-	E8gYCQEFiTmTbCYwci9gZFjFKJpakFxQnJSea6RXnJhbXJqXrpecn7uJERwbz6R3MK5qsDjE
-	KMDBqMTDG/B+ZrAQa2JZcWXuIUYJDmYlEd57DbOChXhTEiurUovy44tKc1KLDzEmAy2fyCwl
-	mpwPjNu8knhDYxNzU2NTSxMLEzNL0oSVxHkPtloHCgmkJ5akZqemFqQWwWxh4uCUamAUWi/Y
-	lXLA7nVFxOIPs9X8r97eHZA864ZtzcSitz8XOllHX6l1O3Bcryz8tEiKSZJMfdWz3qUPvu8+
-	xVuZPUevTv3d3/713Hc3To3boz2jsn3H+rI7N2Yf/fus8L9RfueHDO3jEz9MlZkfu+l3ntX1
-	YDO7b9Xz8oMunxC89FSISWKn6ULOo/yHlViKMxINtZiLihMB8XlUQ9ECAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Fri, 13 Jun 2014 02:25:24 -0400
+Date: Thu, 12 Jun 2014 23:25:03 -0700
+From: tip-bot for Jiri Olsa <tipbot@zytor.com>
+Message-ID: <tip-ca40e2af1f75eddf7eb2b93fde6391ea185d8fc8@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
+        mingo@kernel.org, jolsa@kernel.org, a.p.zijlstra@chello.nl,
+        jean.pihet@linaro.org, acme@kernel.org, namhyung@kernel.org,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, jolsa@kernel.org, a.p.zijlstra@chello.nl,
+        jean.pihet@linaro.org, acme@kernel.org, namhyung@kernel.org,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com
+In-Reply-To: <1401892622-30848-3-git-send-email-jolsa@kernel.org>
+References: <1401892622-30848-3-git-send-email-jolsa@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools: Separate dso data related variables
+Git-Commit-ID: ca40e2af1f75eddf7eb2b93fde6391ea185d8fc8
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shahina Shaik <sharab.shaik@gmail.com>
+Commit-ID:  ca40e2af1f75eddf7eb2b93fde6391ea185d8fc8
+Gitweb:     http://git.kernel.org/tip/ca40e2af1f75eddf7eb2b93fde6391ea185d8fc8
+Author:     Jiri Olsa <jolsa@kernel.org>
+AuthorDate: Wed, 7 May 2014 18:30:45 +0200
+Committer:  Jiri Olsa <jolsa@kernel.org>
+CommitDate: Thu, 12 Jun 2014 16:53:19 +0200
 
-Fixed coding style issues of "Missing Blank line after declaration"
-Signed-off-by: Shahina Shaik <sharab.shaik@gmail.com>
+perf tools: Separate dso data related variables
+
+Add separated structure/namespace for data related
+variables. We are going to add mode of them, so this
+way they will be clearly separated.
+
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jean Pihet <jean.pihet@linaro.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1401892622-30848-3-git-send-email-jolsa@kernel.org
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- sound/soc/codecs/tlv320aic31xx.c |    2 ++
- 1 file changed, 2 insertions(+)
+ tools/perf/util/dso.c | 8 ++++----
+ tools/perf/util/dso.h | 7 ++++++-
+ 2 files changed, 10 insertions(+), 5 deletions(-)
 
-diff --git a/sound/soc/codecs/tlv320aic31xx.c b/sound/soc/codecs/tlv320aic31xx.c
-index 2341910..a9c4a8b 100644
---- a/sound/soc/codecs/tlv320aic31xx.c
-+++ b/sound/soc/codecs/tlv320aic31xx.c
-@@ -329,6 +329,7 @@ static int aic31xx_wait_bits(struct aic31xx_priv *aic31xx, unsigned int reg,
- 	unsigned int bits;
- 	int counter = count;
- 	int ret = regmap_read(aic31xx->regmap, reg, &bits);
-+
- 	while ((bits & mask) != wbits && counter && !ret) {
- 		usleep_range(sleep, sleep * 2);
- 		ret = regmap_read(aic31xx->regmap, reg, &bits);
-@@ -435,6 +436,7 @@ static int mic_bias_event(struct snd_soc_dapm_widget *w,
+diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+index 64453d6..1c3cdaf 100644
+--- a/tools/perf/util/dso.c
++++ b/tools/perf/util/dso.c
+@@ -292,7 +292,7 @@ dso_cache__read(struct dso *dso, struct machine *machine,
+ 
+ 		cache->offset = cache_offset;
+ 		cache->size   = ret;
+-		dso_cache__insert(&dso->cache, cache);
++		dso_cache__insert(&dso->data.cache, cache);
+ 
+ 		ret = dso_cache__memcpy(cache, offset, data, size);
+ 
+@@ -310,7 +310,7 @@ static ssize_t dso_cache_read(struct dso *dso, struct machine *machine,
  {
- 	struct snd_soc_codec *codec = w->codec;
- 	struct aic31xx_priv *aic31xx = snd_soc_codec_get_drvdata(codec);
+ 	struct dso_cache *cache;
+ 
+-	cache = dso_cache__find(&dso->cache, offset);
++	cache = dso_cache__find(&dso->data.cache, offset);
+ 	if (cache)
+ 		return dso_cache__memcpy(cache, offset, data, size);
+ 	else
+@@ -473,7 +473,7 @@ struct dso *dso__new(const char *name)
+ 		dso__set_short_name(dso, dso->name, false);
+ 		for (i = 0; i < MAP__NR_TYPES; ++i)
+ 			dso->symbols[i] = dso->symbol_names[i] = RB_ROOT;
+-		dso->cache = RB_ROOT;
++		dso->data.cache = RB_ROOT;
+ 		dso->symtab_type = DSO_BINARY_TYPE__NOT_FOUND;
+ 		dso->binary_type = DSO_BINARY_TYPE__NOT_FOUND;
+ 		dso->loaded = 0;
+@@ -506,7 +506,7 @@ void dso__delete(struct dso *dso)
+ 		dso->long_name_allocated = false;
+ 	}
+ 
+-	dso_cache__free(&dso->cache);
++	dso_cache__free(&dso->data.cache);
+ 	dso__free_a2l(dso);
+ 	zfree(&dso->symsrc_filename);
+ 	free(dso);
+diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
+index 38efe95..7637fdd 100644
+--- a/tools/perf/util/dso.h
++++ b/tools/perf/util/dso.h
+@@ -76,7 +76,6 @@ struct dso {
+ 	struct list_head node;
+ 	struct rb_root	 symbols[MAP__NR_TYPES];
+ 	struct rb_root	 symbol_names[MAP__NR_TYPES];
+-	struct rb_root	 cache;
+ 	void		 *a2l;
+ 	char		 *symsrc_filename;
+ 	unsigned int	 a2l_fails;
+@@ -99,6 +98,12 @@ struct dso {
+ 	const char	 *long_name;
+ 	u16		 long_name_len;
+ 	u16		 short_name_len;
 +
- 	switch (event) {
- 	case SND_SOC_DAPM_POST_PMU:
- 		/* change mic bias voltage to user defined */
--- 
-1.7.9.5
-
++	/* dso data file */
++	struct {
++		struct rb_root	 cache;
++	} data;
++
+ 	char		 name[0];
+ };
+ 
