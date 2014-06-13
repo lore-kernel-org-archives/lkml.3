@@ -1,46 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913AbaFMUlZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 16:41:25 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:56601 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753839AbaFMUlX (ORCPT
+	id S1753988AbaFMUls (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 16:41:48 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40454 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751961AbaFMUlq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 16:41:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <1402457121-8410-7-git-send-email-keescook@chromium.org>
-References: <1402457121-8410-1-git-send-email-keescook@chromium.org> <1402457121-8410-7-git-send-email-keescook@chromium.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 13 Jun 2014 13:41:02 -0700
-Message-ID: <CALCETrVYVB0pMj61T9ZCAhgL6WYHAdDjiDe81O0e4tTQLtjDiQ@mail.gmail.com>
-Subject: Re: [PATCH v6 6/9] seccomp: add "seccomp" syscall
-To: Kees Cook <keescook@chromium.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Will Drewry <wad@chromium.org>, Julien Tinnes <jln@chromium.org>,
-        David Drysdale <drysdale@google.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        John Johansen <john.johansen@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>, X86 ML <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 13 Jun 2014 16:41:46 -0400
+From: Mark Brown <broonie@kernel.org>
+To: Jassi Brar <jaswinder.singh@linaro.org>
+Cc: linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@linaro.org>
+Date: Fri, 13 Jun 2014 21:41:34 +0100
+Message-Id: <1402692095-23126-1-git-send-email-broonie@kernel.org>
+X-Mailer: git-send-email 2.0.0
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [PATCH 1/2] mailbox: Prototype mbox_client_peek_data()
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 10, 2014 at 8:25 PM, Kees Cook <keescook@chromium.org> wrote:
-> This adds the new "seccomp" syscall with both an "operation" and "flags"
-> parameter for future expansion. The third argument is a pointer value,
-> used with the SECCOMP_SET_MODE_FILTER operation. Currently, flags must
-> be 0. This is functionally equivalent to prctl(PR_SET_SECCOMP, ...).
+From: Mark Brown <broonie@linaro.org>
 
-Question for the linux-abi people:
+This is an interface intended for client drivers and exported but it is
+not prototyped in the headers so can't be used. Add a prototype.
 
-What's the preferred way to do this these days?  This syscall is a
-general purpose "adjust the seccomp state" thing.  The alternative
-would be a specific new syscall to add a filter with a flags argument.
+Signed-off-by: Mark Brown <broonie@linaro.org>
+---
+ include/linux/mailbox_client.h | 1 +
+ 1 file changed, 1 insertion(+)
 
---Andy
+diff --git a/include/linux/mailbox_client.h b/include/linux/mailbox_client.h
+index 53eb0784261b..cbfcf8478ca9 100644
+--- a/include/linux/mailbox_client.h
++++ b/include/linux/mailbox_client.h
+@@ -40,6 +40,7 @@ struct mbox_client {
+ struct mbox_chan *mbox_request_channel(const struct mbox_client *cl);
+ int mbox_send_message(struct mbox_chan *chan, void *mssg);
+ void mbox_client_txdone(struct mbox_chan *chan, int r);
++bool mbox_client_peek_data(struct mbox_chan *chan);
+ void mbox_free_channel(struct mbox_chan *chan);
+ 
+ #endif /* __MAILBOX_CLIENT_H */
+-- 
+2.0.0
+
