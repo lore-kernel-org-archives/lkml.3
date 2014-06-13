@@ -1,42 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753243AbaFMKoi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 06:44:38 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:50726 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752348AbaFMKoh (ORCPT
+	id S1753273AbaFMKpS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 06:45:18 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:45315 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751980AbaFMKpO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 06:44:37 -0400
-Date: Fri, 13 Jun 2014 12:44:35 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: kernel list <linux-kernel@vger.kernel.org>
-Cc: johannes.berg@intel.com, emmanuel.grumbach@intel.com, ilw@linux.intel.com,
-        linux-wireless@vger.kernel.org
-Subject: iwlwifi: very poor performance on 3.16-rc0
-Message-ID: <20140613104435.GA4689@amd.pavel.ucw.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 13 Jun 2014 06:45:14 -0400
+From: David Herrmann <dh.herrmann@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Michael Kerrisk <mtk.manpages@gmail.com>, Ryan Lortie <desrt@desrt.ca>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
+        Greg Kroah-Hartman <greg@kroah.com>, john.stultz@linaro.org,
+        Lennart Poettering <lennart@poettering.net>,
+        Daniel Mack <zonque@gmail.com>, Kay Sievers <kay@vrfy.org>,
+        Hugh Dickins <hughd@google.com>,
+        Tony Battersby <tonyb@cybernetics.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        David Herrmann <dh.herrmann@gmail.com>
+Subject: [PATCH v3 0/7] File Sealing & memfd_create()
+Date: Fri, 13 Jun 2014 12:36:52 +0200
+Message-Id: <1402655819-14325-1-git-send-email-dh.herrmann@gmail.com>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Hi
 
-On 6d87c225f5d82d29243dc124f1ffcbb0e14ec358 I get basically unusable
-network.
+This is v3 of the File-Sealing and memfd_create() patches. You can find v1 with
+a longer introduction at gmane:
+  http://thread.gmane.org/gmane.comp.video.dri.devel/102241
+An LWN article about memfd+sealing is available, too:
+  https://lwn.net/Articles/593918/
+v2 with some more discussions can be found here:
+  http://thread.gmane.org/gmane.linux.kernel.mm/115713
 
-Network manager connects to wireless network, and ping sometimes
-returns a packet. One in 10 tabs load, dns usually does not work.
+This series introduces two new APIs:
+  memfd_create(): Think of this syscall as malloc() but it returns a
+                  file-descriptor instead of a pointer. That file-descriptor is
+                  backed by anon-memory and can be memory-mapped for access.
+  sealing: The sealing API can be used to prevent a specific set of operations
+           on a file-descriptor. You 'seal' the file and give thus the
+           guarantee, that it cannot be modified in the specific ways.
 
-Thinkpad x60, 
+A short high-level introduction is also available here:
+  http://dvdhrm.wordpress.com/2014/06/10/memfd_create2/
 
-03:00.0 Network controller: Intel Corporation PRO/Wireless 3945ABG
-[Golan] Network Connection (rev 02)
 
-Any ideas?
-									Pavel
+Changed in v3:
+ - fcntl() now returns EINVAL if the FD does not support sealing. We used to
+   return EBADF like pipe_fcntl() does, but that is really weird and I don't
+   like repeating that.
+ - seals are now saved as "unsigned int" instead of "u32".
+ - i_mmap_writable is now an atomic so we can deny writable mappings just like
+   i_writecount does.
+ - SHMEM_ALLOW_SEALING is dropped. We initialize all objects with F_SEAL_SEAL
+   and only unset it for memfds that shall support sealing.
+ - memfd_create() no longer has a size argument. It was redundant, use
+   ftruncate() or fallocate().
+ - memfd_create() flags are "unsigned int" now, instead of "u64".
+ - NAME_MAX off-by-one fix
+ - several cosmetic changes
+ - Added AIO/Direct-IO page-pinning protection
+
+The last point is the most important change in this version: We now bail out if
+any page-refcount is elevated while setting SEAL_WRITE. This prevents parallel
+GUP users from writing to sealed files _after_ they were sealed. There is also a
+new FUSE-based test-case to trigger such situations.
+
+The last 2 patches try to improve the page-pinning handling. I included both in
+this series, but obviously only one of them is needed (or we could stack them):
+ - 6/7: This waits for up to 150ms for pages to be unpinned
+ - 7/7: This isolates pinned pages and replaces them with a fresh copy
+
+Hugh, patch 6 is basically your code. In case that gets merged, can I put your
+Signed-off-by on it?
+
+I hope I didn't miss anything. Further comments welcome!
+
+Thanks
+David
+
+David Herrmann (7):
+  mm: allow drivers to prevent new writable mappings
+  shm: add sealing API
+  shm: add memfd_create() syscall
+  selftests: add memfd_create() + sealing tests
+  selftests: add memfd/sealing page-pinning tests
+  shm: wait for pins to be released when sealing
+  shm: isolate pinned pages when sealing files
+
+ arch/x86/syscalls/syscall_32.tbl               |   1 +
+ arch/x86/syscalls/syscall_64.tbl               |   1 +
+ fs/fcntl.c                                     |   5 +
+ fs/inode.c                                     |   1 +
+ include/linux/fs.h                             |  29 +-
+ include/linux/shmem_fs.h                       |  17 +
+ include/linux/syscalls.h                       |   1 +
+ include/uapi/linux/fcntl.h                     |  15 +
+ include/uapi/linux/memfd.h                     |   8 +
+ kernel/fork.c                                  |   2 +-
+ kernel/sys_ni.c                                |   1 +
+ mm/mmap.c                                      |  24 +-
+ mm/shmem.c                                     | 320 ++++++++-
+ mm/swap_state.c                                |   1 +
+ tools/testing/selftests/Makefile               |   1 +
+ tools/testing/selftests/memfd/.gitignore       |   4 +
+ tools/testing/selftests/memfd/Makefile         |  40 ++
+ tools/testing/selftests/memfd/fuse_mnt.c       | 110 +++
+ tools/testing/selftests/memfd/fuse_test.c      | 311 +++++++++
+ tools/testing/selftests/memfd/memfd_test.c     | 913 +++++++++++++++++++++++++
+ tools/testing/selftests/memfd/run_fuse_test.sh |  14 +
+ 21 files changed, 1807 insertions(+), 12 deletions(-)
+ create mode 100644 include/uapi/linux/memfd.h
+ create mode 100644 tools/testing/selftests/memfd/.gitignore
+ create mode 100644 tools/testing/selftests/memfd/Makefile
+ create mode 100755 tools/testing/selftests/memfd/fuse_mnt.c
+ create mode 100644 tools/testing/selftests/memfd/fuse_test.c
+ create mode 100644 tools/testing/selftests/memfd/memfd_test.c
+ create mode 100755 tools/testing/selftests/memfd/run_fuse_test.sh
+
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+2.0.0
+
