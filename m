@@ -1,61 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753443AbaFMQsb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 12:48:31 -0400
-Received: from smtprelay0164.hostedemail.com ([216.40.44.164]:46619 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751138AbaFMQs3 (ORCPT
+	id S1753582AbaFMQtI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 12:49:08 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:33532 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753028AbaFMQtH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 12:48:29 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:1801:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3868:3871:3872:3873:4321:4605:5007:7522:7652:7875:7903:8957:9545:10004:10400:10848:11232:11658:11914:12043:12517:12519:12740:13069:13161:13200:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache
-X-HE-Tag: vest96_f5888f779b2e
-X-Filterd-Recvd-Size: 1893
-Message-ID: <1402678104.3509.1.camel@joe-AO725>
-Subject: Re: [PATCH V2 00/19] irqchip: crossbar: driver fixes
-From: Joe Perches <joe@perches.com>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Sricharan R <r.sricharan@ti.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tony@atomide.com,
-        santosh.shilimkar@ti.com, nm@ti.com, rnayak@ti.com,
-        linux@arm.linux.org.uk, tglx@linutronix.de
-Date: Fri, 13 Jun 2014 09:48:24 -0700
-In-Reply-To: <20140613163714.GR8664@titan.lakedaemon.net>
-References: <1402574007-13987-1-git-send-email-r.sricharan@ti.com>
-	 <20140613150122.GP8664@titan.lakedaemon.net>
-	 <1402676074.12385.40.camel@joe-AO725>
-	 <20140613163714.GR8664@titan.lakedaemon.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
+	Fri, 13 Jun 2014 12:49:07 -0400
+Message-ID: <539B2B7F.8010900@gmail.com>
+Date: Fri, 13 Jun 2014 09:49:03 -0700
+From: Frank Rowand <frowand.list@gmail.com>
+Reply-To: frowand.list@gmail.com
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Rob Herring <robherring2@gmail.com>
+CC: Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] OF: fix of_find_node_by_path() assumption that of_allnodes
+ is root
+References: <539A91E2.7000606@gmail.com> <CAL_JsqJ+f0CjwGnqTzXjMOAvbDOf0O3BZgcQwrzaWBy9Gwiw8A@mail.gmail.com>
+In-Reply-To: <CAL_JsqJ+f0CjwGnqTzXjMOAvbDOf0O3BZgcQwrzaWBy9Gwiw8A@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-06-13 at 12:37 -0400, Jason Cooper wrote:
-> On Fri, Jun 13, 2014 at 09:14:34AM -0700, Joe Perches wrote:
-> > On Fri, 2014-06-13 at 11:01 -0400, Jason Cooper wrote:
-> > > Please format the subject lines like so:
-> > > 
-> > >   irqchip: crossbar: Set cb pointer ...
-> > >                      ^
-> > >                      |
-> > >                      \-- note the capitalization
-> > 
-> > I suggest you don't make this a rule and focus
-> > on more important stuff instead.
+On 6/13/2014 6:52 AM, Rob Herring wrote:
+> On Fri, Jun 13, 2014 at 12:53 AM, Frank Rowand <frowand.list@gmail.com> wrote:
+>> From: Frank Rowand <frank.rowand@sonymobile.com>
+>>
+>> Pantelis Antoniou reports that of_find_node_by_path() is borked because
+>> of_allnodes is not guaranteed to contain the root of the tree after using
+>> any of the dynamic update functions because some other nodes ends up as
+>> of_allnodes.
+>>
+>> Fixes: c22e650e66b8 of: Make of_find_node_by_path() handle /aliases
 > 
-> It's not my rule.  ;-)
+> Is it not possible to do a fix in of_find_node_by_path instead? I just
 
-Who's rule is it then?
+Yes, the code for that is in https://lkml.org/lkml/2014/5/20/758
 
-Documentation/SubmittingPatches simply says:
+Or as Grant said in his reply, just use the fix in of_attach_node() for
+now since he is going to replace the custom list.
 
-The canonical patch subject line is:
-
-    Subject: [PATCH 001/123] subsystem: summary phrase
-
-It doesn't say anything about capitalization.
+> wonder if this could have any other unintended side-effects on
+> of_attach_node's behavior.
+> 
+> Rob
+> 
+>>
+>> Signed-off-by: Frank Rowand <frank.rowand@sonymobile.com>
+>> ---
+>>
+>>
+>> Pantelis,
+>>
+>> Can you test whether the problem you reported in irc?
+>>
+>> This patch has not been tested, not even compile tested.
+>>
+>>
+>>  drivers/of/base.c |    8       6 +     2 -     0 !
+>>  1 file changed, 6 insertions(+), 2 deletions(-)
+>>
+>> Index: b/drivers/of/base.c
+>> ===================================================================
+>> --- a/drivers/of/base.c
+>> +++ b/drivers/of/base.c
+>> @@ -1948,6 +1948,9 @@ int of_reconfig_notify(unsigned long act
+>>
+>>  /**
+>>   * of_attach_node - Plug a device node into the tree and global list.
+>> + *
+>> + * Put the device node after of_allnodes in the global list so that
+>> + * of_allnodes remains the root.
+>>   */
+>>  int of_attach_node(struct device_node *np)
+>>  {
+>> @@ -1958,11 +1961,12 @@ int of_attach_node(struct device_node *n
+>>         if (rc)
+>>                 return rc;
+>>
+>> +       BUG_ON(!of_allnodes);
+>>         raw_spin_lock_irqsave(&devtree_lock, flags);
+>>         np->sibling = np->parent->child;
+>> -       np->allnext = of_allnodes;
+>> +       np->allnext = of_allnodes->allnext;
+>>         np->parent->child = np;
+>> -       of_allnodes = np;
+>> +       of_allnodes->allnext = np;
+>>         of_node_clear_flag(np, OF_DETACHED);
+>>         raw_spin_unlock_irqrestore(&devtree_lock, flags);
+>>
+> .
+> 
 
