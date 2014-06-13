@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752097AbaFMBIM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 21:08:12 -0400
-Received: from ozlabs.org ([103.22.144.67]:42013 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751006AbaFMBIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 21:08:11 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Mark Brown <broonie@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ben Dooks <ben@simtec.co.uk>, Brian W Hart <hartb@linux.vnet.ibm.com>,
-        Bruno =?utf-8?Q?Pr=C3=A9mont?= <bonbons@linux-vserver.org>,
-        Christian Engelmayer <cengelma@gmx.at>,
-        Christopher Brannon <chris@the-brannons.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Jiri Kosina <jkosina@suse.cz>, Lindar Liu <lindar_liu@usish.com>,
-        Robert Jarzmik <robert.jarzmik@free.fr>,
-        Samuel Thibault <samuel.thibault@ens-lyon.org>,
-        Simon Wood <simon@mungewell.org>, Vincent Sanders <vince@simtec.co.uk>
-Subject: Re: [PULL] modules-next
-In-Reply-To: <20140612112715.GX5099@sirena.org.uk>
-References: <877g4oau2s.fsf@rustcorp.com.au> <20140611105503.GG5099@sirena.org.uk> <87y4x2q5qr.fsf@rustcorp.com.au> <20140612112715.GX5099@sirena.org.uk>
-User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Fri, 13 Jun 2014 10:33:20 +0930
-Message-ID: <87a99hpqnb.fsf@rustcorp.com.au>
+	id S1752569AbaFMBJZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 21:09:25 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:57024 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751177AbaFMBJY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 21:09:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <539A0BB4.1060204@zytor.com>
+References: <cover.1402598632.git.luto@amacapital.net> <ad9f313026949247ed2067631b4e5c27c1935064.1402598632.git.luto@amacapital.net>
+ <539A0BB4.1060204@zytor.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 12 Jun 2014 18:09:03 -0700
+Message-ID: <CALCETrW=mtGOwYLaFv5UmeWo2seCEX9GjM7KryW-rQ0GiN7rBA@mail.gmail.com>
+Subject: Re: [PATCH 3/3] x86,vdso: Hack to keep 64-bit Go programs working
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Kui Zhang <kuizhang@gmail.com>, X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark Brown <broonie@kernel.org> writes:
-> On Thu, Jun 12, 2014 at 10:55:00AM +0930, Rusty Russell wrote:
->> Mark Brown <broonie@kernel.org> writes:
+On Thu, Jun 12, 2014 at 1:21 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 06/12/2014 11:47 AM, Andy Lutomirski wrote:
+>>
+>> This is currently broken for big-endian build hosts.  The hack
+>> should also be disabled for x32, but I'm not sure what the right way
+>> to do that is.
+>>
 >
->> > if you need to respin - please do send patches to maintainers.
+> Well, if it isn't exported into the x32 vdso it isn't an issue, right?
+
+It was, and it broke the build.  v3 fixes it, at the cost of yet more
+makefile churn.
+
 >
->> If the address in drivers/regulator/virtual.c is incorrect, please
->> update it:
+>         -hpa
 >
->>  Subject: [PATCH 5/9] drivers/regulator/virtual: avoid world-writable sysfs files.
->>  To: linux-kernel@vger.kernel.org
->>  Cc: Rusty Russell <rusty@rustcorp.com.au>, Mark Brown <broonie@opensource.wolfsonmicro.com>
->>  Date: Tue, 22 Apr 2014 13:03:28 +0930
 
-> The main people to hit are subsystem maintainers - driver authors have
-> often vanished or don't really respond to upstream e-mail, though of
-> course they should also be included.
 
-Fair enough.  There's a limited amount of effort I go to in a sweep like
-this, unless I'm really worried about a particular patch.  lkml (used to
-have?) a limit on how many people you could CC so I tend to trim.
 
-So, did you queue a patch to fix your email address in
-drivers/regulator/virtual.c?
-
-Thanks.
-Rusty.
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
