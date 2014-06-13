@@ -1,68 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753936AbaFMXBw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 19:01:52 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:55266 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751262AbaFMXBu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 19:01:50 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3][update] PM / sleep: Introduce command line argument for sleep state enumeration
-Date: Sat, 14 Jun 2014 01:19:18 +0200
-Message-ID: <2242480.eT2OxdNqLH@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <34237308.7Kff3QYgup@vostro.rjw.lan>
-References: <1817539.9KW2IGGbDV@vostro.rjw.lan> <3836835.YaZPGXsEQ2@vostro.rjw.lan> <34237308.7Kff3QYgup@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1754096AbaFMXDN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 19:03:13 -0400
+Received: from mga03.intel.com ([143.182.124.21]:7505 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753196AbaFMXDL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 19:03:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,474,1400050800"; 
+   d="scan'208";a="445389411"
+From: Andi Kleen <andi@firstfloor.org>
+To: jolsa@redhat.com
+Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@infradead.org
+Subject: perf: Add support for full Intel event lists v6
+Date: Fri, 13 Jun 2014 16:02:51 -0700
+Message-Id: <1402700580-26939-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, June 14, 2014 12:23:15 AM Rafael J. Wysocki wrote:
-> On Saturday, June 14, 2014 12:16:26 AM Rafael J. Wysocki wrote:
-> > On Friday, June 13, 2014 11:46:12 PM Pavel Machek wrote:
-> 
-> [...]
-> 
-> > > > So I'm really not sure what's the problem?  Do you think it's wrong to be
-> > > > helpful to users or something?
-> > > 
-> > > It is not wrong to be helpful, but messed up interface is too big a
-> > > price.
-> > 
-> > Why?  I will have to maintain it after all, right?
-> 
-> And by the way, the very fact that this workaround is even useful in some cases
-> indicates that the interface that we've invented originally is not particularly
-> useful to user space.  The reason why is because user space is supposed to
-> enumerate the sleep states and then present the ones that are present in a
-> consistent way to the user.  It basically has to do "Is 'mem' present"?  Use it
-> if so, but if not is 'standby' present?  Use it if so etc." every time or
-> squirrel that information somewhere which isn't particularly straightforward.
+[v2: Review feedback addressed and some minor improvements]
+[v3: More review feedback addressed and handle test failures better.
+Ported to latest tip/core.]
+[v4: Addressed Namhyung's feedback]
+[v5: Rebase to latest tree. Minor description update.]
+[v6: Rebase. Add acked by from Namhyung and address feedback. Some minor
+fixes. Should be good to go now I hope. The period patch was dropped,
+as that is already handled. I added an extra patch for a --quiet argument
+for perf list]
 
-Moreover, the "mem" and "standby" states are not really well defined on anything
-different from ACPI, so "mem" is used by everybody having just one platform-supported
-state.  That's why user space doesn't bother to check the other ones in many
-cases and it is not really their problem.  It is the problem of our existing
-interface that wasn't designed correctly.
+perf has high level events which are useful in many cases. However
+there are some tuning situations where low level events in the CPU
+are needed. Traditionally this required specifying the event in 
+raw form (very awkward) or using non standard frontends
+like ocperf or patching in libpfm.
 
-My first reaction to this issue was pretty much the same as yours, but when I started
-to think more about it, I've realized that we messed up things to start with and now
-we're just having to deal with the consequences.  So yes, we can put our heads in
-the ground and say "that's not our problem, it has to be addressed in user space",
-but quite frankly I'm not seeing how we can persuade user space developers address
-it given that the vast majority of systems use "mem" only anyway and that they don't
-really understand where the problem is.
+Intel CPUs can have very large event files (Haswell has ~336 core events,
+much more if you add uncore or all the offcore combinations), which is too
+large to describe through the kernel interface. It would require tying up
+significant amounts of unswappable memory for this.
 
-For this reason I'm considering changing the defaul behavior going forward (so
-that "mem" is always present and means "the deepest sleep state available other
-than hibernation"), but I don't want to do that in one go.
+oprofile always had separate event list files that were maintained by 
+the CPU vendors. The oprofile events were shipped with the tool.
+The Intel events get updated regularly, for example to add references
+to the specification updates or add new events.
 
-Rafael
+Unfortunately oprofile usually did not keep up with these updates,
+so the events in oprofile were often out of date. In addition
+it ties up quite a bit of disk space, mostly for CPUs you don't have.
 
+This patch kit implements another mechanism that avoids these problems.
+Intel releases the event lists for CPUs in a standardized JSON format
+on a download server.
+
+I implemented an automatic downloader to get the event file for the
+current CPU.  The events are stored in ~/.cache/pmu-events.
+Then perf adds a parser that converts the JSON format into perf event
+aliases, which then can be used directly as any other perf event.
+
+The parsing is done using a simple existing JSON library.
+
+The events are still abstracted for perf, but the abstraction mechanism is
+through the downloaded file instead of through the kernel.
+
+The JSON format and perf parser has some minor Intelisms, but they
+are simple and small and optional. It's easy to extend, so it would be
+possible to use it for other CPUs too, add different pmu attributes, and
+add new download sites to the downloader tool.
+
+Currently only core events are supported, uncore may come at a later
+point. No kernel changes, all code in perf user tools only.
+
+Some of the parser files are partially shared with separate event parser
+library and are thus 2-clause BSD licensed.
+
+Patches also available from
+git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-misc perf/json
+
+Example output:
+
+% perf download 
+Downloading models file
+Downloading readme.txt
+2014-03-05 10:39:33 URL:https://download.01.org/perfmon/readme.txt [10320/10320] -> "readme.txt" [1]
+2014-03-05 10:39:34 URL:https://download.01.org/perfmon/mapfile.csv [1207/1207] -> "mapfile.csv" [1]
+Downloading events file
+% perf list
+...
+  br_inst_exec.all_branches                          [Speculative and retired
+                                                      branches]
+  br_inst_exec.all_conditional                       [Speculative and retired
+                                                      macro-conditional
+                                                      branches]
+  br_inst_exec.all_direct_jmp                        [Speculative and retired
+                                                      macro-unconditional
+                                                      branches excluding
+                                                      calls and indirects]
+... 333 more new events ...
+
+% perf stat -e br_inst_exec.all_direct_jmp true
+
+ Performance counter stats for 'true':
+
+             6,817      cpu/br_inst_exec.all_direct_jmp/                                   
+
+       0.003503212 seconds time elapsed
+
+One nice feature is that a pointer to the specification update is now
+included in the description, which will hopefully clear up many problems:
+
+% perf list
+...
+  mem_load_uops_l3_hit_retired.xsnp_hit              [Retired load uops which
+                                                      data sources were L3
+                                                      and cross-core snoop
+                                                      hits in on-pkg core
+                                                      cache. Supports address
+                                                      when precise. Spec
+                                                      update: HSM26, HSM30
+                                                      (Precise event)]
+...
+
+
+-Andi
