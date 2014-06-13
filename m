@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751492AbaFMFVq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 01:21:46 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:35209 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750867AbaFMFVo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 01:21:44 -0400
-Date: Fri, 13 Jun 2014 01:21:38 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Konstantin Khlebnikov <koct9i@gmail.com>
-Cc: Chen Yucong <slaoub@gmail.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, mhocko@suse.cz,
-        Rik van Riel <riel@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] mm/vmscan.c: wrap five parameters into shrink_result
- for reducing the stack consumption
-Message-ID: <20140613052138.GN2878@cmpxchg.org>
+	id S1751188AbaFMFXy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 01:23:54 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:44675 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828AbaFMFXx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 01:23:53 -0400
+Message-ID: <1402636875.1232.13.camel@debian>
+Subject: Re: [PATCH v2] mm/vmscan.c: wrap five parameters into
+ shrink_result for reducing the stack consumption
+From: Chen Yucong <slaoub@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: mgorman@suse.de, hannes@cmpxchg.org, mhocko@suse.cz, riel@redhat.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20140612214016.1beda952.akpm@linux-foundation.org>
 References: <1402634191-3442-1-git-send-email-slaoub@gmail.com>
- <CALYGNiMENJ014dELVS8Ej+RP=WVkt8rF0=bxs5yDXO4+hr6B_Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALYGNiMENJ014dELVS8Ej+RP=WVkt8rF0=bxs5yDXO4+hr6B_Q@mail.gmail.com>
+	 <20140612214016.1beda952.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 13 Jun 2014 13:21:15 +0800
+Mime-Version: 1.0
+X-Mailer: Evolution 3.4.4-3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 08:52:22AM +0400, Konstantin Khlebnikov wrote:
-> On Fri, Jun 13, 2014 at 8:36 AM, Chen Yucong <slaoub@gmail.com> wrote:
-> > shrink_page_list() has too many arguments that have already reached ten.
-> > Some of those arguments and temporary variables introduces extra 80 bytes
-> > on the stack. This patch wraps five parameters into shrink_result and removes
-> > some temporary variables, thus making the relative functions to consume fewer
-> > stack space.
+On Thu, 2014-06-12 at 21:40 -0700, Andrew Morton wrote:
+> On Fri, 13 Jun 2014 12:36:31 +0800 Chen Yucong <slaoub@gmail.com> wrote:
 > 
-> I think it's better to put them into struct scan_control.
-> Reset them before calling shrinker or take a snapshot to get delta.
+> > @@ -1148,7 +1146,8 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
+> >  		.priority = DEF_PRIORITY,
+> >  		.may_unmap = 1,
+> >  	};
+> > -	unsigned long ret, dummy1, dummy2, dummy3, dummy4, dummy5;
+> > +	unsigned long ret;
+> > +	struct shrink_result dummy = { };
+> 
+> You didn't like the idea of making this static?
+Sorry! It's my negligence.
+If we make dummy static, it can help us save more stack.
 
-scan_control applies to the whole reclaim invocation*, it would be
-confusing as hell to have things in there that only apply to certain
-sublevels.  Please don't do that.
+without change:  
+0xffffffff810aede8 reclaim_clean_pages_from_list []:	184
+0xffffffff810aeef8 reclaim_clean_pages_from_list []:	184
 
-If you on the other hand take snapshots and accumulate them over the
-whole run, it might actually make sense to move sc->nr_scanned and
-sc->nr_reclaimed into shrink_results instead.  But I'm not sure it's
-worth the extra snapshotting code, given that we don't actually need
-the accumulated numbers at the outer levels right now.
+with change: struct shrink_result dummy = {};
+0xffffffff810aed6c reclaim_clean_pages_from_list []:	152
+0xffffffff810aee68 reclaim_clean_pages_from_list []:	152
 
-* sc->swappiness being the recent exception, I'll send a fix for that.
+with change: static struct shrink_result dummy ={};
+0xffffffff810aed69 reclaim_clean_pages_from_list []:	120
+0xffffffff810aee4d reclaim_clean_pages_from_list []:	120
+
+thx!
+cyc
+
