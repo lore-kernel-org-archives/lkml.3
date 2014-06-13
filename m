@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753213AbaFMKGn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 06:06:43 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:41640 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753151AbaFMKGk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 06:06:40 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Geert Uytterhoeven'" <geert@linux-m68k.org>
-CC: Tom Herbert <therbert@google.com>, "David S. Miller" <davem@davemloft.net>,
-        Linux-Next <linux-next@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: RE: [-next] Regression: ssh log in slowdown
-Thread-Topic: [-next] Regression: ssh log in slowdown
-Thread-Index: AQHPhuOEjg6tqmc0skKORvvtsE7uQJtuurFwgAABkQCAABGuYA==
-Date: Fri, 13 Jun 2014 10:05:42 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1725C2C3@AcuExch.aculab.com>
-References: <alpine.DEB.2.02.1406130111280.1551@tomh.mtv.corp.google.com>
-	<CAMuHMdW4kYeqEby3iABzdbjyAkPKq=x4dyopokFbHWT0Q4fjcw@mail.gmail.com>
-	<063D6719AE5E284EB5DD2968C1650D6D1725C134@AcuExch.aculab.com>
- <CAMuHMdXOY8NF78gnpqHdNueDKDs5kTZ+xqV+dVXCYCu8MkSFng@mail.gmail.com>
-In-Reply-To: <CAMuHMdXOY8NF78gnpqHdNueDKDs5kTZ+xqV+dVXCYCu8MkSFng@mail.gmail.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="utf-8"
+	id S1753257AbaFMKHS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 06:07:18 -0400
+Received: from mail-bn1blp0189.outbound.protection.outlook.com ([207.46.163.189]:35445
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751468AbaFMKFx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 06:05:53 -0400
+From: Nicolin Chen <nicoleotsuka@gmail.com>
+To: <broonie@kernel.org>, <vinod.koul@intel.com>, <s.hauer@pengutronix.de>
+CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <rdunlap@infradead.org>, <lgirdwood@gmail.com>, <perex@perex.cz>,
+        <tiwai@suse.de>, <timur@tabi.org>, <grant.likely@linaro.org>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <alsa-devel@alsa-project.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <dan.j.williams@intel.com>,
+        <dmaengine@vger.kernel.org>, <b38343@freescale.com>,
+        <b02247@freescale.com>, <b42378@freescale.com>
+Subject: [RFC][PATCH 0/2] Add ASRC Peripheral to Peripheral driver
+Date: Fri, 13 Jun 2014 18:07:03 +0800
+Message-ID: <cover.1402653667.git.nicoleotsuka@gmail.com>
+X-Mailer: git-send-email 1.8.4
+X-EOPAttributedMessage: 0
+X-Matching-Connectors: 130471275506943002;(91ab9b29-cfa4-454e-5278-08d120cd25b8);()
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199002)(87572001)(33646001)(62966002)(19580395003)(50466002)(79102001)(80022001)(104016001)(46102001)(97736001)(87286001)(50226001)(86362001)(36756003)(104166001)(61266001)(2201001)(83072002)(21056001)(68736004)(73392001)(93916002)(99396002)(26826002)(4396001)(74662001)(20776003)(81442001)(84676001)(64706001)(81342001)(82202001)(81542001)(77982001)(88136002)(55446002)(6806004)(77096999)(31966008)(50986999)(73972005)(44976005)(92726001)(48376002)(77156001)(92566001)(102836001)(74502001)(87936001)(47776003)(89996001)(85852003);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB400;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 MIME-Version: 1.0
+Content-Type: text/plain
+X-Microsoft-Antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
+X-Forefront-PRVS: 0241D5F98C
+Authentication-Results: spf=softfail (sender IP is 192.88.168.50)
+ smtp.mailfrom=nicoleotsuka@gmail.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5DA6oQZ013295
 
-From: Geert Uytterhoeven
-> Hi David,
-> 
-> On Fri, Jun 13, 2014 at 10:49 AM, David Laight <David.Laight@aculab.com> wrote:
-> > From: Of Geert Uytterhoeven
-> > ...
-> >> Note that I'm also using NFS root, which doesn't seem to be affected.
-> >> I can happily run "ls -R /" on the serial console during the 10 s delay in ssh.
-> >
-> > Are you sure that the delay during ssh login isn't just
-> > a reverse DNS timeout?
-> 
-> Indeed, the ssh server sends a reverse DNS request twice, with 5s in between:
-... 
-> Interestingly, I don't see the forward DNS request after that, which
-> does happen in the good case.
+This series of patches have a direct dependency between them. So we might
+need to push them into one branch. And sorry for this :(
 
-The forwards request is probably just copying some strange code from 'rshd'
-that tried to verify the reverse lookup by doing a forwards lookup on the
-result.
-That in itself used to cause us grief.
-The RDNS would (correctly) generate host.bar.baz.co.uk, since the 'domain'
-in etc/resolv.conf was bar.baz.co.uk the forwards lookup first tried
-host.bar.baz.co.uk.bar.baz.co.uk then host.bar.baz.co.uk.baz.co.uk
-one of which always timed out :-(
-(When the 'search' command was added we could avoid the request that
-timed out.)
+Patch-1 adds device to device support in SDMA driver along with a secondary
+request in struct imx_dma_data which's requred in the Patch-2 ASRC driver.
 
-	David
+Nicolin Chen (2):
+  dma: imx-sdma: Add device to device support
+  ASoC: fsl_asrc: Add ASRC ASoC CPU DAI and platform drivers
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+ .../devicetree/bindings/sound/fsl,asrc.txt         |   62 ++
+ drivers/dma/imx-sdma.c                             |   40 +-
+ include/linux/platform_data/dma-imx.h              |    1 +
+ sound/soc/fsl/Kconfig                              |    9 +
+ sound/soc/fsl/Makefile                             |    2 +
+ sound/soc/fsl/fsl_asrc.c                           | 1031 ++++++++++++++++++++
+ sound/soc/fsl/fsl_asrc.h                           |  431 ++++++++
+ sound/soc/fsl/fsl_asrc_dma.c                       |  385 ++++++++
+ 8 files changed, 1956 insertions(+), 5 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/sound/fsl,asrc.txt
+ create mode 100644 sound/soc/fsl/fsl_asrc.c
+ create mode 100644 sound/soc/fsl/fsl_asrc.h
+ create mode 100644 sound/soc/fsl/fsl_asrc_dma.c
+
+-- 
+1.8.4
+
