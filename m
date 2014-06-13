@@ -1,64 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753276AbaFMPLW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 11:11:22 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:36080 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752522AbaFMPLS (ORCPT
+	id S1752840AbaFMPMd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 11:12:33 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:45427 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751167AbaFMPMc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 11:11:18 -0400
+	Fri, 13 Jun 2014 11:12:32 -0400
+Message-ID: <539B14A9.8010204@fb.com>
+Date: Fri, 13 Jun 2014 09:11:37 -0600
+From: Jens Axboe <axboe@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <1402655819-14325-1-git-send-email-dh.herrmann@gmail.com>
-References: <1402655819-14325-1-git-send-email-dh.herrmann@gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 13 Jun 2014 08:10:57 -0700
-Message-ID: <CALCETrVoE+JO2rLsBUHAOJdvescEEjxikj8iQ339Nxfopfc7pw@mail.gmail.com>
-Subject: Re: [PATCH v3 0/7] File Sealing & memfd_create()
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, Ryan Lortie <desrt@desrt.ca>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Lennart Poettering <lennart@poettering.net>,
-        Daniel Mack <zonque@gmail.com>, Kay Sievers <kay@vrfy.org>,
-        Hugh Dickins <hughd@google.com>,
-        Tony Battersby <tonyb@cybernetics.com>
-Content-Type: text/plain; charset=UTF-8
+To: Keith Busch <keith.busch@intel.com>
+CC: =?ISO-8859-1?Q?Matias_Bj=F8rling?= <m@bjorling.me>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        "sbradshaw@micron.com" <sbradshaw@micron.com>,
+        "tom.leiming@gmail.com" <tom.leiming@gmail.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-nvme@lists.infradead.org" <linux-nvme@lists.infradead.org>
+Subject: Re: [PATCH v7] NVMe: conversion to blk-mq
+References: <1402392038-5268-2-git-send-email-m@bjorling.me> <alpine.LRH.2.03.1406100945250.4699@AMR> <A52B97CC-6D77-468B-9A9B-A5888AE63580@fb.com> <alpine.LRH.2.03.1406101140490.4699@AMR> <5397636F.9050209@fb.com> <alpine.LRH.2.03.1406101458470.4699@AMR> <5397753B.2020009@fb.com> <alpine.LRH.2.03.1406101515430.4699@AMR> <20140610213333.GA10055@linux.intel.com> <539889DC.7090704@fb.com> <20140611170917.GA12025@linux.intel.com> <CAOu_J6kocZZ1mRQeSidyqJ_Ew0F_POS30v2kgUZX2wDOOnuExg@mail.gmail.com> <alpine.LRH.2.03.1406111641180.4699@AMR> <5399BA00.7000705@bjorling.me> <alpine.LRH.2.03.1406121015130.4699@AMR> <alpine.LRH.2.03.1406121757130.4699@AMR> <539B05A1.7080700@fb.com> <alpine.LRH.2.03.1406130838210.4699@AMR>
+In-Reply-To: <alpine.LRH.2.03.1406130838210.4699@AMR>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-06-13_06:2014-06-13,2014-06-13,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=2.08111305965986e-12 kscore.compositescore=0
+ circleOfTrustscore=0 compositescore=0.324642340081358
+ urlsuspect_oldscore=0.324642340081358 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=2524143
+ rbsscore=0.324642340081358 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1406130170
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 3:36 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
-> Hi
->
-> This is v3 of the File-Sealing and memfd_create() patches. You can find v1 with
-> a longer introduction at gmane:
->   http://thread.gmane.org/gmane.comp.video.dri.devel/102241
-> An LWN article about memfd+sealing is available, too:
->   https://lwn.net/Articles/593918/
-> v2 with some more discussions can be found here:
->   http://thread.gmane.org/gmane.linux.kernel.mm/115713
->
-> This series introduces two new APIs:
->   memfd_create(): Think of this syscall as malloc() but it returns a
->                   file-descriptor instead of a pointer. That file-descriptor is
->                   backed by anon-memory and can be memory-mapped for access.
->   sealing: The sealing API can be used to prevent a specific set of operations
->            on a file-descriptor. You 'seal' the file and give thus the
->            guarantee, that it cannot be modified in the specific ways.
->
-> A short high-level introduction is also available here:
->   http://dvdhrm.wordpress.com/2014/06/10/memfd_create2/
+On 06/13/2014 09:05 AM, Keith Busch wrote:
+> On Fri, 13 Jun 2014, Jens Axboe wrote:
+>> On 06/12/2014 06:06 PM, Keith Busch wrote:
+>>> When cancelling IOs, we have to check if the hwctx has a valid tags
+>>> for some reason. I have 32 cores in my system and as many queues, but
+>>
+>> It's because unused queues are torn down, to save memory.
+>>
+>>> blk-mq is only using half of those queues and freed the "tags" for the
+>>> rest after they'd been initialized without telling the driver. Why is
+>>> blk-mq not making utilizing all my queues?
+>>
+>> You have 31 + 1 queues, so only 31 mappable queues. blk-mq symmetrically
+>> distributes these, so you should have a core + thread sibling on 16
+>> queues. And yes, that leaves 15 idle hardware queues for this specific
+>> case. I like the symmetry, it makes it more predictable if things are
+>> spread out evenly.
+> 
+> You'll see performance differences on some workloads that depend on which
+> cores your process runs and which one services an interrupt. We can play
+> games with with cores and see what happens on my 32 cpu system. I usually
+> run 'irqbalance --hint=exact' for best performance, but that doesn't do
+> anything with blk-mq since the affinity hint is gone.
 
-Potentially silly question: is it guaranteed that mmapping and reading
-a SEAL_SHRINKed fd within size bounds will not SIGBUS?  If so, should
-this be documented?  (The particular issue here would be reading
-holes.  It should work by using the zero page, but, if so, we should
-probably make it a real documented guarantee.)
+Huh wtf, that hint is not supposed to be gone. I'm guessing it went away
+with the removal of the manual queue assignments.
 
---Andy
+> I ran the following script several times on each version of the
+> driver. This will pin a sequential read test to cores 0, 8, and 16. The
+> device is local to NUMA node on cores 0-7 and 16-23; the second test
+> runs on the remote node and the third on the thread sibling of 0. Results
+> were averaged, but very consistent anyway. The system was otherwise idle.
+> 
+>  # for i in $(seq 0 8 16); do
+>   > let "cpu=1<<$i"
+>   > cpu=`echo $cpu | awk '{printf "%#x\n", $1}'`
+>   > taskset ${cpu} dd if=/dev/nvme0n1 of=/dev/null bs=4k count=1000000
+> iflag=direct
+>   > done
+> 
+> Here are the performance drops observed with blk-mq with the existing
+> driver as baseline:
+> 
+>  CPU : Drop
+>  ....:.....
+>    0 : -6%
+>    8 : -36%
+>   16 : -12%
+
+We need the hints back for sure, I'll run some of the same tests and
+verify to be sure. Out of curiousity, what is the topology like on your
+box? Are 0/1 siblings, and 0..7 one node?
+
