@@ -1,61 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753884AbaFMUtK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 16:49:10 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:57029 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753852AbaFMUtI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 16:49:08 -0400
-Date: Fri, 13 Jun 2014 13:49:03 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [PATCH] rcu: Only pin GP kthread when full dynticks is actually
- used
-Message-ID: <20140613204903.GU4581@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1402618619-32630-1-git-send-email-fweisbec@gmail.com>
- <20140613012432.GH4581@linux.vnet.ibm.com>
- <20140613013515.GA9589@linux.vnet.ibm.com>
- <20140613124714.GC6635@localhost.localdomain>
- <20140613155233.GM4581@linux.vnet.ibm.com>
- <20140613160002.GL6635@localhost.localdomain>
- <20140613161630.GQ4581@linux.vnet.ibm.com>
- <20140613162130.GP6635@localhost.localdomain>
+	id S1753919AbaFMUub (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 16:50:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51373 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751961AbaFMUua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 16:50:30 -0400
+Date: Fri, 13 Jun 2014 16:50:27 -0400
+From: Aristeu Rozanski <aris@redhat.com>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Revert "Input: wacom - testing result shows get_report
+ is unnecessary."
+Message-ID: <20140613205027.GN16780@redhat.com>
+References: <1402691538-26392-1-git-send-email-benjamin.tissoires@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140613162130.GP6635@localhost.localdomain>
+In-Reply-To: <1402691538-26392-1-git-send-email-benjamin.tissoires@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061320-8236-0000-0000-000003179CF2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 06:21:32PM +0200, Frederic Weisbecker wrote:
-> On Fri, Jun 13, 2014 at 09:16:30AM -0700, Paul E. McKenney wrote:
-> > > Is it because we have dynticks CPUs staying too long in the kernel without
-> > > taking any quiescent states? Are we perhaps missing some rcu_user_enter() or
-> > > things?
-> > 
-> > Sort of the former, but combined with the fact that in-kernel CPUs still
-> > need scheduling-clock interrupts for RCU to make progress.  I could
-> > move this to RCU's context-switch hook, but that could be very bad for
-> > workloads that do lots of context switching.
+On Fri, Jun 13, 2014 at 04:32:18PM -0400, Benjamin Tissoires wrote:
+> This reverts commit 1b2faaf7e219fc2905d75afcd4c815e5d39eda80.
 > 
-> Or I can restart the tick if the CPU stays in the kernel for too long without
-> a tick. I think that's what we were doing before but we removed that because
-> we never implemented it correctly (we sent scheduler IPI that did nothing...)
+> The Intuos4 series presents a bug in which it hangs if it receives
+> a set feature command while switching to the enhanced mode.
+> This bug is triggered when plugging an Intuos 4 while having
+> a gnome user session up and running.
+> 
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> ---
+> 
+> Hi Aris,
+> 
+> actually, you bisected the bug, so can I consider that I have your signed-off-by?
 
-That would work for me!
+Yes, my apologies, I ended up losing track of this and didn't send
+earlier.
 
-Just out of curiosity, what would you use to determine that the CPU
-had been in the kernel too long?
+Signed-off-by: Aristeu Rozanski <aris@redhat.com>
 
-							Thanx, Paul
+>  drivers/input/tablet/wacom_sys.c | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/drivers/input/tablet/wacom_sys.c b/drivers/input/tablet/wacom_sys.c
+> index 7087b33..319a3ff 100644
+> --- a/drivers/input/tablet/wacom_sys.c
+> +++ b/drivers/input/tablet/wacom_sys.c
+> @@ -536,6 +536,9 @@ static int wacom_set_device_mode(struct usb_interface *intf, int report_id, int
+>  
+>  		error = wacom_set_report(intf, WAC_HID_FEATURE_REPORT,
+>  		                         report_id, rep_data, length, 1);
+> +		if (error >= 0)
+> +			error = wacom_get_report(intf, WAC_HID_FEATURE_REPORT,
+> +			                         report_id, rep_data, length, 1);
+>  	} while ((error < 0 || rep_data[1] != mode) && limit++ < WAC_MSG_RETRIES);
+>  
+>  	kfree(rep_data);
+> -- 
+> 1.9.0
+> 
+
+-- 
+Aristeu
 
