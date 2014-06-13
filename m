@@ -1,84 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751283AbaFMCZv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 22:25:51 -0400
-Received: from mga09.intel.com ([134.134.136.24]:41752 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750862AbaFMCZs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 22:25:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,468,1400050800"; 
-   d="scan'208";a="527732909"
-Message-ID: <539A60FC.1050301@intel.com>
-Date: Fri, 13 Jun 2014 10:25:00 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1751583AbaFMC2E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 22:28:04 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42294 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751140AbaFMC2B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 22:28:01 -0400
+Date: Thu, 12 Jun 2014 19:27:39 -0700
+From: tip-bot for Andy Lutomirski <tipbot@zytor.com>
+Message-ID: <tip-6e8f21584a30ba6ce73cfef34f316d5bf3fadaab@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, luto@amacapital.net, hpa@zytor.com,
+        mingo@kernel.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, luto@amacapital.net,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de
+In-Reply-To: <3efc170e0e166e15f0150c9fdb37d52488b9c0a4.1402620737.git.luto@amacapital.net>
+References: <3efc170e0e166e15f0150c9fdb37d52488b9c0a4.1402620737.git.luto@amacapital.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/vdso] x86/vdso/doc:
+  Rename vdso_test.c to vdso_standalone_test_x86.c
+Git-Commit-ID: 6e8f21584a30ba6ce73cfef34f316d5bf3fadaab
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: rjw@rjwysocki.net, lenb@kernel.org, naszar@ya.ru,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] ACPI/Battery: Retry to get Battery information if failed
- during probing
-References: <1402552946-14704-1-git-send-email-tianyu.lan@intel.com> <alpine.DEB.2.02.1406112354070.23724@chino.kir.corp.google.com> <53995488.20308@intel.com> <alpine.DEB.2.02.1406120025050.23724@chino.kir.corp.google.com> <53996152.2000407@intel.com> <alpine.DEB.2.02.1406121415150.8305@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1406121415150.8305@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014年06月13日 05:17, David Rientjes wrote:
-> On Thu, 12 Jun 2014, Lan Tianyu wrote:
-> 
->> The retry time is set by randomly and not accurate because don't know
->> when EC will work normally. Set the retry time to 5 just in order to
->> make sure battery driver probing sucessfully every time,
->>
-> 
-> Ok, I was hoping to avoid the excessive wait if it will never actually 
-> succeed
+Commit-ID:  6e8f21584a30ba6ce73cfef34f316d5bf3fadaab
+Gitweb:     http://git.kernel.org/tip/6e8f21584a30ba6ce73cfef34f316d5bf3fadaab
+Author:     Andy Lutomirski <luto@amacapital.net>
+AuthorDate: Thu, 12 Jun 2014 17:53:09 -0700
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Thu, 12 Jun 2014 19:01:16 -0700
 
-Ok. The battery driver has used async init and so this will not affect
-the speed of boot up.
+x86/vdso/doc: Rename vdso_test.c to vdso_standalone_test_x86.c
 
-> but I assume there's some evidence that it can succeed after 40ms, 
-> 60ms, etc.  Please consider the following instead:
-> 
-> 	for (i = 0; i < 5; i++) {
-> 		/* Comment on why we need a delay in between retries */
-> 		if (i)
-> 			msleep(20);
-> 		result = acpi_battery_update(battery, false);
-> 		if (!result)
-> 			break;
-> 	}
-> 
+This thing is hopelessly x86_64-specific: it's an example of how to
+access the vDSO without any runtime support at all.
 
-How about this?
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Link: http://lkml.kernel.org/r/3efc170e0e166e15f0150c9fdb37d52488b9c0a4.1402620737.git.luto@amacapital.net
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ Documentation/vDSO/{vdso_test.c => vdso_standalone_test_x86.c} | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
--       result = acpi_battery_update(battery, false);
--       if (result)
-+
-+       /*
-+        * Some machines'(E,G Lenovo Z480) ECs are not stable
-+        * during boot up and this causes battery driver fails to be
-+        * probed due to failure of getting battery information
-+        * from EC sometimes. After several retries, the operation
-+        * may work. So add retry code here and 20ms sleep between
-+        * every retries.
-+        */
-+       while (acpi_battery_update(battery, false) && retry--)
-+               msleep(20);
-+       if (!retry) {
-+               result = -ENODEV;
-                goto fail;
-+       }
-+
-
-
-
-
--- 
-Best regards
-Tianyu Lan
+diff --git a/Documentation/vDSO/vdso_test.c b/Documentation/vDSO/vdso_standalone_test_x86.c
+similarity index 98%
+rename from Documentation/vDSO/vdso_test.c
+rename to Documentation/vDSO/vdso_standalone_test_x86.c
+index fff6334..1523f5d 100644
+--- a/Documentation/vDSO/vdso_test.c
++++ b/Documentation/vDSO/vdso_standalone_test_x86.c
+@@ -6,7 +6,7 @@
+  * You can amuse yourself by compiling with:
+  * gcc -std=gnu99 -nostdlib
+  *     -Os -fno-asynchronous-unwind-tables -flto
+- *      vdso_test.c parse_vdso.c -o vdso_test
++ *      vdso_standalone_test_x86.c parse_vdso.c
+  * to generate a small binary with no dependencies at all.
+  */
+ 
