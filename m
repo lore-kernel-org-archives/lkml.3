@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753603AbaFMQl0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 12:41:26 -0400
-Received: from verein.lst.de ([213.95.11.211]:48132 "EHLO newverein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753339AbaFMQlY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 12:41:24 -0400
-Date: Fri, 13 Jun 2014 18:41:18 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Christoph Hellwig <hch@lst.de>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
+	id S1753371AbaFMQou (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 12:44:50 -0400
+Received: from relay5-d.mail.gandi.net ([217.70.183.197]:34866 "EHLO
+	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751138AbaFMQot (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 12:44:49 -0400
+X-Originating-IP: 50.43.32.211
+Date: Fri, 13 Jun 2014 09:44:41 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         LKML <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Quinn Tran <quinn.tran@qlogic.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [GIT PULL] target updates for v3.16-rc1
-Message-ID: <20140613164118.GA17282@lst.de>
-References: <1402607116.18202.46.camel@haakon3.risingtidesystems.com> <20140613133901.GC7371@lst.de> <1402672861.2224.11.camel@dabdike.int.hansenpartnership.com>
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [PATCH] rcu: Only pin GP kthread when full dynticks is actually
+ used
+Message-ID: <20140613164441.GA14232@thin>
+References: <1402618619-32630-1-git-send-email-fweisbec@gmail.com>
+ <20140613012432.GH4581@linux.vnet.ibm.com>
+ <20140613013515.GA9589@linux.vnet.ibm.com>
+ <20140613124714.GC6635@localhost.localdomain>
+ <20140613155233.GM4581@linux.vnet.ibm.com>
+ <20140613160002.GL6635@localhost.localdomain>
+ <20140613161630.GQ4581@linux.vnet.ibm.com>
+ <20140613162130.GP6635@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1402672861.2224.11.camel@dabdike.int.hansenpartnership.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20140613162130.GP6635@localhost.localdomain>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 08:21:01AM -0700, James Bottomley wrote:
-> We've been ineffectively trying to split them between target and
-> initiator, since it's effectively both.  Now that we seem to have a
-> workable process, why don't we just take everything (target scsi-queue
-> and vhost) through the SCSI tree, that way we don't get into these
-> problems in future.
+On Fri, Jun 13, 2014 at 06:21:32PM +0200, Frederic Weisbecker wrote:
+> On Fri, Jun 13, 2014 at 09:16:30AM -0700, Paul E. McKenney wrote:
+> > > Is it because we have dynticks CPUs staying too long in the kernel without
+> > > taking any quiescent states? Are we perhaps missing some rcu_user_enter() or
+> > > things?
+> > 
+> > Sort of the former, but combined with the fact that in-kernel CPUs still
+> > need scheduling-clock interrupts for RCU to make progress.  I could
+> > move this to RCU's context-switch hook, but that could be very bad for
+> > workloads that do lots of context switching.
+> 
+> Or I can restart the tick if the CPU stays in the kernel for too long without
+> a tick. I think that's what we were doing before but we removed that because
+> we never implemented it correctly (we sent scheduler IPI that did nothing...)
 
-virtio-scsi has nothing to do with the target.  I also think sending
-target updates through the scsi tree doesn't seem very useful, as there's
-is no shared code to start with.
+I wonder if timer slack would make sense here: when you have at least
+one RCU callback pending, set a timer with a huge amount of timer slack,
+and cancel it if you end up handling the callback via a trip through the
+scheduler.
 
+- Josh Triplett
