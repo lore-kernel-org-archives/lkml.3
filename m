@@ -1,243 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752096AbaFMTSs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 15:18:48 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:39291 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751074AbaFMTSr (ORCPT
+	id S1752517AbaFMTSy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 15:18:54 -0400
+Received: from g2t2352.austin.hp.com ([15.217.128.51]:38671 "EHLO
+	g2t2352.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074AbaFMTSw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 15:18:47 -0400
-Message-ID: <539B4E92.60908@gmail.com>
-Date: Fri, 13 Jun 2014 22:18:42 +0300
-From: Marian Posteuca <posteuca@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Ftrace irqsoff tracer generates strange output
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Fri, 13 Jun 2014 15:18:52 -0400
+Message-ID: <1402687127.2431.6.camel@j-VirtualBox>
+Subject: Re: [PATCH] sched: Fast idling of CPU when system is partially
+ loaded
+From: Jason Low <jason.low2@hp.com>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Davidlohr Bueson <davidlohr@hp.com>, linux-kernel@vger.kernel.org
+Date: Fri, 13 Jun 2014 12:18:47 -0700
+In-Reply-To: <1402676882.2970.564.camel@schen9-DESK>
+References: <1402608359.2970.548.camel@schen9-DESK>
+	 <1402639311.9617.84.camel@j-VirtualBox>
+	 <1402676882.2970.564.camel@schen9-DESK>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I was analyzing the interrupt latency in my system( Freescale ARM MX6Q 
-with linux kernel version 3.0.35), I am using the irqsoff tracer, and 
-this is the output I'm getting for the biggest irq off latency:
+On Fri, 2014-06-13 at 09:28 -0700, Tim Chen wrote:
+> On Thu, 2014-06-12 at 23:01 -0700, Jason Low wrote:
+> > On Thu, 2014-06-12 at 14:25 -0700, Tim Chen wrote:
+> > 
+> > > Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+> > > ---
+> > >  kernel/sched/core.c  | 12 ++++++++----
+> > >  kernel/sched/fair.c  | 23 +++++++++++++++++++++--
+> > >  kernel/sched/sched.h | 10 ++++++++--
+> > >  3 files changed, 37 insertions(+), 8 deletions(-)
+> > > 
+> > > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> > > index c6b9879..4f57221 100644
+> > > --- a/kernel/sched/core.c
+> > > +++ b/kernel/sched/core.c
+> > > @@ -2630,7 +2630,7 @@ static inline struct task_struct *
+> > >  pick_next_task(struct rq *rq, struct task_struct *prev)
+> > >  {
+> > >  	const struct sched_class *class = &fair_sched_class;
+> > > -	struct task_struct *p;
+> > > +	struct task_struct *p = NULL;
+> > >  
+> > >  	/*
+> > >  	 * Optimization: we know that if all tasks are in
+> > > @@ -2638,9 +2638,13 @@ pick_next_task(struct rq *rq, struct task_struct *prev)
+> > >  	 */
+> > >  	if (likely(prev->sched_class == class &&
+> > >  		   rq->nr_running == rq->cfs.h_nr_running)) {
+> > > -		p = fair_sched_class.pick_next_task(rq, prev);
+> > > -		if (unlikely(p == RETRY_TASK))
+> > > -			goto again;
+> > > +
+> > > +		/* If no cpu has more than 1 task, skip */
+> > > +		if (rq->nr_running > 0 || rq->rd->overload) {
+> > 
+> > Hi Tim,
+> > 
+> > If it is skipping if no cpu has more than 1 task, should the
+> > above have the additional check for (rq->nr_running > 1) instead
+> > of (rq->nr_running > 0)?
+> 
+> If you have a job on your local cpu, you do want to have the scheduler
+> pick the task to run.
 
-     # tracer: irqsoff
-     #
-     # irqsoff latency trace v1.1.5
-     # --------------------------------------------------------------------
-     # latency: 2770 us, #89/89, CPU#0 | (M:preempt VP:0, KP:0, SP:0 
-HP:0 #P:4)
-     #    -----------------
-     #    | task: swapper-0 (uid:0 nice:0 policy:0 rt_prio:0)
-     #    -----------------
-     #  => started at: tick_oneshot_mode_active
-     #  => ended at:   default_idle
-     #
-     #
-     #                  _------=> CPU#
-     #                 / _-----=> irqs-off
-     #                | / _----=> need-resched
-     #                || / _---=> hardirq/softirq
-     #                ||| / _--=> preempt-depth
-     #                |||| /     delay
-     #  cmd     pid   ||||| time  |   caller
-     #     \   /      |||||  \    |   /
-       <idle>-0       0d..1    1us : tick_oneshot_mode_active
-       <idle>-0       0d..1    2us : clockevents_notify <-arch_idle
-       <idle>-0       0d..1    3us : _raw_spin_lock_irqsave 
-<-clockevents_notify
-       <idle>-0       0d..1    5us : __raw_spin_lock_irqsave 
-<-_raw_spin_lock_irqsave
-       <idle>-0       0d..1    6us : add_preempt_count 
-<-__raw_spin_lock_irqsave
-       <idle>-0       0d..2    7us : clockevents_do_notify 
-<-clockevents_notify
-       <idle>-0       0d..2    8us : raw_notifier_call_chain 
-<-clockevents_do_notify
-       <idle>-0       0d..2   10us : __raw_notifier_call_chain 
-<-raw_notifier_call_chain
-       <idle>-0       0d..2   11us : notifier_call_chain 
-<-__raw_notifier_call_chain
-       <idle>-0       0d..2   12us : tick_notify <-notifier_call_chain
-       <idle>-0       0d..2   13us : tick_broadcast_oneshot_control 
-<-tick_notify
-       <idle>-0       0d..2   15us : _raw_spin_lock_irqsave 
-<-tick_broadcast_oneshot_control
-       <idle>-0       0d..2   16us : __raw_spin_lock_irqsave 
-<-_raw_spin_lock_irqsave
-       <idle>-0       0d..2   17us+: add_preempt_count 
-<-__raw_spin_lock_irqsave
-       <idle>-0       0d..3   19us : clockevents_set_mode 
-<-tick_broadcast_oneshot_control
-       <idle>-0       0d..3   20us : twd_set_mode <-clockevents_set_mode
-       <idle>-0       0d..3   21us : irq_modify_status <-gic_disable_ppi
-       <idle>-0       0d..3   22us : __irq_get_desc_lock <-irq_modify_status
-       <idle>-0       0d..3   24us : irq_to_desc <-__irq_get_desc_lock
-       <idle>-0       0d..3   25us : _raw_spin_lock_irqsave 
-<-__irq_get_desc_lock
-       <idle>-0       0d..3   26us : __raw_spin_lock_irqsave 
-<-_raw_spin_lock_irqsave
-       <idle>-0       0d..3   27us : add_preempt_count 
-<-__raw_spin_lock_irqsave
-       <idle>-0       0d..4   29us : __irq_put_desc_unlock 
-<-irq_modify_status
-       <idle>-0       0d..4   30us : _raw_spin_unlock_irqrestore 
-<-__irq_put_desc_unlock
-       <idle>-0       0d..4   31us : sub_preempt_count 
-<-_raw_spin_unlock_irqrestore
-       <idle>-0       0d..3   32us : irq_get_irq_data <-gic_disable_ppi
-       <idle>-0       0d..3   34us : irq_to_desc <-irq_get_irq_data
-       <idle>-0       0d..3   35us : gic_mask_irq <-gic_disable_ppi
-       <idle>-0       0d..3   36us : _raw_spin_lock <-gic_mask_irq
-       <idle>-0       0d..3   37us : __raw_spin_lock <-_raw_spin_lock
-       <idle>-0       0d..3   39us : add_preempt_count <-__raw_spin_lock
-       <idle>-0       0d..4   40us : _raw_spin_unlock <-gic_mask_irq
-       <idle>-0       0d..4   41us+: sub_preempt_count <-_raw_spin_unlock
-       <idle>-0       0d..3   43us : _raw_spin_unlock_irqrestore 
-<-tick_broadcast_oneshot_control
-       <idle>-0       0d..3   44us : sub_preempt_count 
-<-_raw_spin_unlock_irqrestore
-       <idle>-0       0d..2   45us+: _raw_spin_unlock_irqrestore 
-<-clockevents_notify
-       <idle>-0       0d..2   47us : sub_preempt_count 
-<-_raw_spin_unlock_irqrestore
-       <idle>-0       0d..1   48us+: mxc_cpu_lp_set <-arch_idle
-       <idle>-0       0d..1   50us+: gpc_mask_single_irq <-mxc_cpu_lp_set
-       <idle>-0       0d..1   51us+: gpc_mask_single_irq <-mxc_cpu_lp_set
-       <idle>-0       0d..1   53us+: arch_idle_multi_core <-arch_idle
-       <idle>-0       0d..1   55us!: ca9_do_idle <-arch_idle_multi_core
-       <idle>-0       0d..1 2709us : clockevents_notify <-arch_idle
-       <idle>-0       0d..1 2710us : _raw_spin_lock_irqsave 
-<-clockevents_notify
-       <idle>-0       0d..1 2711us : __raw_spin_lock_irqsave 
-<-_raw_spin_lock_irqsave
-       <idle>-0       0d..1 2712us+: add_preempt_count 
-<-__raw_spin_lock_irqsave
-       <idle>-0       0d..2 2714us : clockevents_do_notify 
-<-clockevents_notify
-       <idle>-0       0d..2 2715us : raw_notifier_call_chain 
-<-clockevents_do_notify
-       <idle>-0       0d..2 2716us : __raw_notifier_call_chain 
-<-raw_notifier_call_chain
-       <idle>-0       0d..2 2717us : notifier_call_chain 
-<-__raw_notifier_call_chain
-       <idle>-0       0d..2 2718us : tick_notify <-notifier_call_chain
-       <idle>-0       0d..2 2720us : tick_broadcast_oneshot_control 
-<-tick_notify
-       <idle>-0       0d..2 2721us : _raw_spin_lock_irqsave 
-<-tick_broadcast_oneshot_control
-       <idle>-0       0d..2 2722us : __raw_spin_lock_irqsave 
-<-_raw_spin_lock_irqsave
-       <idle>-0       0d..2 2723us : add_preempt_count 
-<-__raw_spin_lock_irqsave
-       <idle>-0       0d..3 2725us : clockevents_set_mode 
-<-tick_broadcast_oneshot_control
-       <idle>-0       0d..3 2726us : twd_set_mode <-clockevents_set_mode
-       <idle>-0       0d..3 2727us : irq_modify_status <-gic_enable_ppi
-       <idle>-0       0d..3 2729us : __irq_get_desc_lock <-irq_modify_status
-       <idle>-0       0d..3 2730us : irq_to_desc <-__irq_get_desc_lock
-       <idle>-0       0d..3 2731us : _raw_spin_lock_irqsave 
-<-__irq_get_desc_lock
-       <idle>-0       0d..3 2732us : __raw_spin_lock_irqsave 
-<-_raw_spin_lock_irqsave
-       <idle>-0       0d..3 2733us+: add_preempt_count 
-<-__raw_spin_lock_irqsave
-       <idle>-0       0d..4 2738us+: __irq_put_desc_unlock 
-<-irq_modify_status
-       <idle>-0       0d..4 2739us : _raw_spin_unlock_irqrestore 
-<-__irq_put_desc_unlock
-       <idle>-0       0d..4 2741us : sub_preempt_count 
-<-_raw_spin_unlock_irqrestore
-       <idle>-0       0d..3 2742us : irq_get_irq_data <-gic_enable_ppi
-       <idle>-0       0d..3 2743us : irq_to_desc <-irq_get_irq_data
-       <idle>-0       0d..3 2745us : gic_unmask_irq <-gic_enable_ppi
-       <idle>-0       0d..3 2746us : _raw_spin_lock <-gic_unmask_irq
-       <idle>-0       0d..3 2747us : __raw_spin_lock <-_raw_spin_lock
-       <idle>-0       0d..3 2748us+: add_preempt_count <-__raw_spin_lock
-       <idle>-0       0d..4 2750us : _raw_spin_unlock <-gic_unmask_irq
-       <idle>-0       0d..4 2751us+: sub_preempt_count <-_raw_spin_unlock
-       <idle>-0       0d..3 2753us : ktime_get 
-<-tick_broadcast_oneshot_control
-       <idle>-0       0d..3 2754us+: clocksource_mmio_readl_up <-ktime_get
-       <idle>-0       0d..3 2756us : tick_program_event 
-<-tick_broadcast_oneshot_control
-       <idle>-0       0d..3 2757us : tick_dev_program_event 
-<-tick_program_event
-       <idle>-0       0d..3 2758us : ktime_get <-tick_dev_program_event
-       <idle>-0       0d..3 2759us+: clocksource_mmio_readl_up <-ktime_get
-       <idle>-0       0d..3 2761us : clockevents_program_event 
-<-tick_dev_program_event
-       <idle>-0       0d..3 2762us : twd_set_next_event 
-<-clockevents_program_event
-       <idle>-0       0d..3 2764us : _raw_spin_unlock_irqrestore 
-<-tick_broadcast_oneshot_control
-       <idle>-0       0d..3 2765us+: sub_preempt_count 
-<-_raw_spin_unlock_irqrestore
-       <idle>-0       0d..2 2767us : _raw_spin_unlock_irqrestore 
-<-clockevents_notify
-       <idle>-0       0d..2 2768us : sub_preempt_count 
-<-_raw_spin_unlock_irqrestore
-       <idle>-0       0d..1 2769us+: default_idle
-       <idle>-0       0d..1 2772us+: trace_hardirqs_on <-default_idle
-       <idle>-0       0d..1 2773us : <stack trace>
-      => trace_hardirqs_on
-      => default_idle
-      => cpu_idle
-      => rest_init
-      => start_kernel
-      =>
+I see. In that case, if a CPU is going idle, it still needs to call
+idle_balance() to update rq->idle_stamp and rq->next_balance (even if we
+skip calling the expensive load_balance).
 
-So according to ftrace I have a pretty big latency, I don't know how to 
-interpret this correctly, the cpu is idling with interrupts disabled?
+What do you think about moving the overload check to the top of
+idle_balance():
 
-So I thought surely this cannot be true, so I looked more closely at 
-function tick_oneshot_mode_active:
+        this_rq->idle_stamp = rq_clock(this_rq);
+ 
+-       if (this_rq->avg_idle < sysctl_sched_migration_cost) {
++       if (this_rq->avg_idle < sysctl_sched_migration_cost ||
++           !this_rq->rd->overload) {
+                rcu_read_lock();
+                sd = rcu_dereference_check_sched_domain(this_rq->sd);
+                if (sd)
 
-     int tick_oneshot_mode_active(void)
-     {
-         unsigned long flags;
-         int ret;
 
-         local_irq_save(flags);
-         ret = __this_cpu_read(tick_cpu_device.mode) == 
-TICKDEV_MODE_ONESHOT;
-         local_irq_restore(flags);
-
-         return ret;
-     }
-So in the macro local_irq_save, the interrupts are disabled and the 
-function trace_hardirqs_off() is called which registers that the 
-interrupts were disabled:
-
-     #define local_irq_save(flags)                \
-         do {                        \
-             raw_local_irq_save(flags);        \
-             trace_hardirqs_off();            \
-         } while (0)
-
-After checking the device mode the interrupts are enabled, now here I 
-don't understand what is happening:
-
-     #define local_irq_restore(flags)            \
-         do {                        \
-             if (raw_irqs_disabled_flags(flags)) {    \
-                 raw_local_irq_restore(flags);    \
-                 trace_hardirqs_off();        \
-             } else {                \
-                 trace_hardirqs_on();        \
-                 raw_local_irq_restore(flags);    \
-             }                    \
-         } while (0)
-
-In my case the code goes over the first branch:
-
-     if (raw_irqs_disabled_flags(flags)) {    \
-                     raw_local_irq_restore(flags);    \
-                     trace_hardirqs_off();        \
-
-It looks as if even though the interrupts are enabled back, function 
-trace_hardirqs_on() is not called but trace_hardirqs_off(). Why is this 
-happening, do I really have this big latency?
