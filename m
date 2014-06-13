@@ -1,92 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753551AbaFMQ3b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 12:29:31 -0400
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:59768 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753037AbaFMQ31 (ORCPT
+	id S1753618AbaFMQaK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 12:30:10 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:15675 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753355AbaFMQaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 12:29:27 -0400
+	Fri, 13 Jun 2014 12:30:08 -0400
+Date: Fri, 13 Jun 2014 12:30:05 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [patch V4 04/10] rtmutex: No need to keep task ref for lock
+ owner check
+Message-ID: <20140613123005.5c309e98@gandalf.local.home>
+In-Reply-To: <20140611183853.208557255@linutronix.de>
+References: <20140611182944.108526809@linutronix.de>
+	<20140611183853.208557255@linutronix.de>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <CAGXu5jL86C1yvWynBrp20CxT9COorc5++nT6OhwYCwqc7UJyHg@mail.gmail.com>
-References: <cover.1402517933.git.luto@amacapital.net>
-	<9e11cd988a0f120606e37b5e275019754e2774da.1402517933.git.luto@amacapital.net>
-	<CAADnVQKt5FnShkZeQewbfnU1kHM-gLs3hCZMf5xcgFzyRDLX7A@mail.gmail.com>
-	<CALCETrXoqqKC=T5Wvj+CDYQFte1s_=npDvQ2UYW0j=AanEgR1g@mail.gmail.com>
-	<5398D59A.3030900@zytor.com>
-	<CALCETrVMxkHcPXsEGtEc0Pr=Z80CzC0zWaQ9OdVdxi1CGuB4kQ@mail.gmail.com>
-	<5398D7B4.5000303@zytor.com>
-	<CALCETrWaQZc124=6r4h+fTAY4H4LzWGFw=MB7KY5TBtB0jx9hA@mail.gmail.com>
-	<CAGXu5jL86C1yvWynBrp20CxT9COorc5++nT6OhwYCwqc7UJyHg@mail.gmail.com>
-Date: Fri, 13 Jun 2014 11:29:26 -0500
-Message-ID: <CABqD9hbgPCSgXNCOreSV3b+yBsO9fLYtYr-ShtfOoH=uZEYa3w@mail.gmail.com>
-Subject: Re: [RFC 5/5] x86,seccomp: Add a seccomp fastpath
-From: Will Drewry <wad@chromium.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: Andy Lutomirski <luto@amacapital.net>, "H. Peter Anvin" <hpa@zytor.com>,
-        Alexei Starovoitov <alexei.starovoitov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, X86 ML <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 11, 2014 at 5:32 PM, Kees Cook <keescook@chromium.org> wrote:
-> On Wed, Jun 11, 2014 at 3:28 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> On Wed, Jun 11, 2014 at 3:27 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->>> On 06/11/2014 03:22 PM, Andy Lutomirski wrote:
->>>> On Wed, Jun 11, 2014 at 3:18 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->>>>> On 06/11/2014 02:56 PM, Andy Lutomirski wrote:
->>>>>>
->>>>>> 13ns is with the simplest nonempty filter.  I hope that empty filters
->>>>>> don't work.
->>>>>>
->>>>>
->>>>> Why wouldn't they?
->>>>
->>>> Is it permissible to fall off the end of a BPF program?  I'm getting
->>>> EINVAL trying to install an actual empty filter.  The filter I tested
->>>> with was:
->>>>
->>>
->>> What I meant was that there has to be a well-defined behavior for the
->>> program falling off the end anyway, and that that should be preserved.
->>>
->>> I guess it is possible to require that all code paths must provably
->>> reach a termination point.
->>>
->>
->> Dunno.  I haven't ever touched any of the actual BPF code.  This whole
->> patchset only changes the code that invokes the BPF evaluator.
->
-> Yes, this is how BPF works: runs to the end or exit early. With
-> seccomp BPF specifically, the return value defaults to kill the
-> process. If a filter was missing (NULL), or empty, or didn't
-> explicitly return with a new value, the default (kill) should be
-> taken.
+On Wed, 11 Jun 2014 18:44:05 -0000
+Thomas Gleixner <tglx@linutronix.de> wrote:
 
-Yup - this is just a property of BPF (and a nice one :)
+> There is no point to keep the task ref across the check for lock
+> owner. Drop the ref before that, so the protection context is clear.
 
-On seccomp_attach_filter this check fires:
-  if (fprog->len == 0 || fprog->len > BPF_MAXINSNS)
-    return -EINVAL;
+You mean you deobfuscated the code ;-)
 
-As well as in sk_chk_filter:
-  if (flen == 0 || flen > BPF_MAXINSNS)
-    return -EINVAL;
+(No, patch #3 could have been called "deobfuscate the code")
 
-And:
-  /* last instruction must be a RET code */
-  switch (filter[flen - 1].code) {
-    case BPF_S_RET_K:
-    case BPF_S_RET_A:
-      return check_load_and_stores(filter, flen);
-  }
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
 
-cheers!
-will
+-- Steve
+
+> 
+> Found while documenting the chain walk.
+> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> ---
+>  kernel/locking/rtmutex.c |    5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> Index: tip/kernel/locking/rtmutex.c
+> ===================================================================
+> --- tip.orig/kernel/locking/rtmutex.c
+> +++ tip/kernel/locking/rtmutex.c
+> @@ -463,6 +463,8 @@ static int rt_mutex_adjust_prio_chain(st
+>  
+>  	/* Release the task */
+>  	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+> +	put_task_struct(task);
+> +
+>  	if (!rt_mutex_owner(lock)) {
+>  		/*
+>  		 * If the requeue above changed the top waiter, then we need
+> @@ -472,9 +474,8 @@ static int rt_mutex_adjust_prio_chain(st
+>  		if (top_waiter != rt_mutex_top_waiter(lock))
+>  			wake_up_process(rt_mutex_top_waiter(lock)->task);
+>  		raw_spin_unlock(&lock->wait_lock);
+> -		goto out_put_task;
+> +		return 0;
+>  	}
+> -	put_task_struct(task);
+>  
+>  	/* Grab the next task */
+>  	task = rt_mutex_owner(lock);
+> 
+
