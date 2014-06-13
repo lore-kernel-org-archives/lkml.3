@@ -1,139 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753254AbaFMPOG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 11:14:06 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:60416 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752637AbaFMPOF (ORCPT
+	id S1753309AbaFMPOY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 11:14:24 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:17534 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752974AbaFMPOV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 11:14:05 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <539B1534.5020603@roeck-us.net>
-Date: Fri, 13 Jun 2014 08:13:56 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Fri, 13 Jun 2014 11:14:21 -0400
+Message-ID: <539B152A.5030801@oracle.com>
+Date: Fri, 13 Jun 2014 11:13:46 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH] sched: Fix compiler warnings
-References: <1402614493-12521-1-git-send-email-linux@roeck-us.net> <CAKfTPtAhykeqorg7SSbMYkHQ-bjoHQx4tCrxy+yubPxhSHThww@mail.gmail.com>
-In-Reply-To: <CAKfTPtAhykeqorg7SSbMYkHQ-bjoHQx4tCrxy+yubPxhSHThww@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Dave Jones <davej@redhat.com>, Dan Aloni <dan@kernelim.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: mm/sched/net: BUG when running simple code
+References: <539A6850.4090408@oracle.com> <20140613032754.GA20729@gmail.com> <539A77A1.60700@oracle.com> <20140613041331.GA31688@redhat.com>
+In-Reply-To: <20140613041331.GA31688@redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/13/2014 01:05 AM, Vincent Guittot wrote:
-> Hi Guenter,
->
-> There are also such kind of function in ARM and powerpc architecture
->
-> with the additional changes below, you can add my
-> Acked-by Vincent Guittot <vincent.guittot@linaro.org>
->
+On 06/13/2014 12:13 AM, Dave Jones wrote:
+> On Fri, Jun 13, 2014 at 12:01:37AM -0400, Sasha Levin wrote:
+>  > On 06/12/2014 11:27 PM, Dan Aloni wrote:
+>  > > On Thu, Jun 12, 2014 at 10:56:16PM -0400, Sasha Levin wrote:
+>  > >> > Hi all,
+>  > >> > 
+>  > >> > Okay, I'm really lost. I got the following when fuzzing, and can't really explain what's
+>  > >> > going on. It seems that we get a "unable to handle kernel paging request" when running
+>  > >> > rather simple code, and I can't figure out how it would cause it.
+>  > > [..]
+>  > >> > Which agrees with the trace I got:
+>  > >> > 
+>  > >> > [  516.309720] BUG: unable to handle kernel paging request at ffffffffa0f12560
+>  > >> > [  516.309720] IP: netlink_getsockopt (net/netlink/af_netlink.c:2271)
+>  > > [..]
+>  > >> > [  516.309720] RIP netlink_getsockopt (net/netlink/af_netlink.c:2271)
+>  > >> > [  516.309720]  RSP <ffff8803fc85fed8>
+>  > >> > [  516.309720] CR2: ffffffffa0f12560
+>  > >> > 
+>  > >> > They only theory I had so far is that netlink is a module, and has gone away while the code
+>  > >> > was executing, but netlink isn't a module on my kernel.
+>  > > The RIP - 0xffffffffa0f12560 is in the range (from Documentation/x86/x86_64/mm.txt):
+>  > > 
+>  > >     ffffffffa0000000 - ffffffffff5fffff (=1525 MB) module mapping space
+>  > > 
+>  > > So seems it was in a module.
+>  > 
+>  > Yup, that's why that theory came up, but when I checked my config:
+>  > ... 
+>  > that theory went away. (also confirmed by not finding a netlink module.)
+>  > 
+>  > What about the kernel .text overflowing into the modules space? The loader
+>  > checks for that, but can something like that happen after everything is
+>  > up and running? I'll look into that tomorrow.
+> 
+> another theory: Trinity can sometimes generate plausible looking module
+> addresses and pass those in structs etc.
+> 
+> I wonder if there's somewhere in that path that isn't checking that the address
+> in the optval it got is actually a userspace address before it tries to write to it.
 
-I'd prefer to fix those instances with separate patches, since they
-will normally be handled by different maintainers. That simplifies
-acceptance.
+This is, the access happened way before touching optval. The only thing that happened
+before is reading optlen from userspace, but that happened using get_user() which should
+mean that it was safe.
 
-Guenter
+According to that trace, we died when *executing* a piece of code, not when accessing
+some other memory. None of the instructions around the instruction we failed on don't
+touch memory at all for that matter.
 
-> Vincent
->
-> diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
-> index 1576d05..7e56b2f 100644
-> --- a/arch/arm/kernel/topology.c
-> +++ b/arch/arm/kernel/topology.c
-> @@ -275,7 +275,7 @@ void store_cpu_topology(unsigned int cpuid)
->    cpu_topology[cpuid].socket_id, mpidr);
->   }
->
-> -static inline const int cpu_corepower_flags(void)
-> +static inline int cpu_corepower_flags(void)
->   {
->    return SD_SHARE_PKG_RESOURCES  | SD_SHARE_POWERDOMAIN;
->   }
-> diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
-> index 10ffffe..49d5d4e 100644
-> --- a/arch/powerpc/kernel/smp.c
-> +++ b/arch/powerpc/kernel/smp.c
-> @@ -768,7 +768,7 @@ int setup_profiling_timer(unsigned int multiplier)
->
->   #ifdef CONFIG_SCHED_SMT
->   /* cpumask of CPUs with asymetric SMT dependancy */
-> -static const int powerpc_smt_flags(void)
-> +static int powerpc_smt_flags(void)
->   {
->    int flags = SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES;
->
->
-> On 13 June 2014 01:08, Guenter Roeck <linux@roeck-us.net> wrote:
->> Commit 143e1e28cb (sched: Rework sched_domain topology definition)
->> introduced a number of functions with a return value of 'const int'.
->> gcc doesn't know what to do with that and, if the kernel is compiled
->> with W=1, complains with the following warnings whenever sched.h
->> is included.
->>
->> include/linux/sched.h:875:25: warning:
->>          type qualifiers ignored on function return type
->> include/linux/sched.h:882:25: warning:
->>          type qualifiers ignored on function return type
->> include/linux/sched.h:889:25: warning:
->>          type qualifiers ignored on function return type
->> include/linux/sched.h:1002:21: warning:
->>          type qualifiers ignored on function return type
->>
->> Drop 'const' from the function declarations to fix the problem.
->>
->> Cc: Vincent Guittot <vincent.guittot@linaro.org>
->> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
->> ---
->>   include/linux/sched.h | 8 ++++----
->>   1 file changed, 4 insertions(+), 4 deletions(-)
->>
->> diff --git a/include/linux/sched.h b/include/linux/sched.h
->> index ea74596..65046b3 100644
->> --- a/include/linux/sched.h
->> +++ b/include/linux/sched.h
->> @@ -872,21 +872,21 @@ enum cpu_idle_type {
->>   #define SD_NUMA                        0x4000  /* cross-node balancing */
->>
->>   #ifdef CONFIG_SCHED_SMT
->> -static inline const int cpu_smt_flags(void)
->> +static inline int cpu_smt_flags(void)
->>   {
->>          return SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES;
->>   }
->>   #endif
->>
->>   #ifdef CONFIG_SCHED_MC
->> -static inline const int cpu_core_flags(void)
->> +static inline int cpu_core_flags(void)
->>   {
->>          return SD_SHARE_PKG_RESOURCES;
->>   }
->>   #endif
->>
->>   #ifdef CONFIG_NUMA
->> -static inline const int cpu_numa_flags(void)
->> +static inline int cpu_numa_flags(void)
->>   {
->>          return SD_NUMA;
->>   }
->> @@ -999,7 +999,7 @@ void free_sched_domains(cpumask_var_t doms[], unsigned int ndoms);
->>   bool cpus_share_cache(int this_cpu, int that_cpu);
->>
->>   typedef const struct cpumask *(*sched_domain_mask_f)(int cpu);
->> -typedef const int (*sched_domain_flags_f)(void);
->> +typedef int (*sched_domain_flags_f)(void);
->>
->>   #define SDTL_OVERLAP   0x01
->>
->> --
->> 1.9.1
->>
->
->
+
+Thanks,
+Sasha
 
