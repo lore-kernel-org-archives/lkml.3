@@ -1,73 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753349AbaFMQDS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 12:03:18 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49731 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751520AbaFMQDQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 12:03:16 -0400
-Message-ID: <539B20B6.2070705@zytor.com>
-Date: Fri, 13 Jun 2014 09:03:02 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1753369AbaFMQDa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 12:03:30 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:55009 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751520AbaFMQD2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 12:03:28 -0400
+Date: Fri, 13 Jun 2014 18:03:20 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [PATCH] rcu: Only pin GP kthread when full dynticks is actually
+ used
+Message-ID: <20140613160318.GM6635@localhost.localdomain>
+References: <1402618619-32630-1-git-send-email-fweisbec@gmail.com>
+ <20140613012432.GH4581@linux.vnet.ibm.com>
+ <20140613020554.GA9974@linux.vnet.ibm.com>
+ <20140613125543.GD6635@localhost.localdomain>
+ <20140613155548.GN4581@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Russ Cox <rsc@golang.org>,
-        Ian Taylor <iant@golang.org>
-Subject: Re: vdso feature requests from the Go people
-References: <CALCETrVNiSUHok1xCfy9CMe=kDYsPy3i_NXm0_gcO1ckb9wdeQ@mail.gmail.com> <539A8EA8.9080901@zytor.com> <CALCETrVya47r1j6YUHT4_=gb6Pb5qB4sGE5sfwmxievcjdTTUw@mail.gmail.com>
-In-Reply-To: <CALCETrVya47r1j6YUHT4_=gb6Pb5qB4sGE5sfwmxievcjdTTUw@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140613155548.GN4581@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/13/2014 08:34 AM, Andy Lutomirski wrote:
+On Fri, Jun 13, 2014 at 08:55:48AM -0700, Paul E. McKenney wrote:
+> On Fri, Jun 13, 2014 at 02:55:45PM +0200, Frederic Weisbecker wrote:
+> > On Thu, Jun 12, 2014 at 07:05:54PM -0700, Paul E. McKenney wrote:
+> > > On Thu, Jun 12, 2014 at 06:24:32PM -0700, Paul E. McKenney wrote:
+> > > > On Fri, Jun 13, 2014 at 02:16:59AM +0200, Frederic Weisbecker wrote:
+> > > > > CONFIG_NO_HZ_FULL may be enabled widely on distros nowadays but actual
+> > > > > users should be a tiny minority, if actually any.
+> > > > > 
+> > > > > Also there is a risk that affining the GP kthread to a single CPU could
+> > > > > end up noticeably reducing RCU performances and increasing energy
+> > > > > consumption.
+> > > > > 
+> > > > > So lets affine the GP kthread only when nohz full is actually used
+> > > > > (ie: when the nohz_full= parameter is filled or CONFIG_NO_HZ_FULL_ALL=y)
+> > > > > 
+> > > > > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> > > > > Cc: Josh Triplett <josh@joshtriplett.org>
+> > > > > Cc: Steven Rostedt <rostedt@goodmis.org>
+> > > > > Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> > > > > ---
+> > > > >  kernel/rcu/tree_plugin.h | 10 +++++++---
+> > > > >  1 file changed, 7 insertions(+), 3 deletions(-)
+> > > > > 
+> > > > > diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+> > > > > index cbc2c45..726f52c 100644
+> > > > > --- a/kernel/rcu/tree_plugin.h
+> > > > > +++ b/kernel/rcu/tree_plugin.h
+> > > > > @@ -2843,12 +2843,16 @@ static bool rcu_nohz_full_cpu(struct rcu_state *rsp)
+> > > > >   */
+> > > > >  static void rcu_bind_gp_kthread(void)
+> > > > >  {
+> > > > > -#ifdef CONFIG_NO_HZ_FULL
+> > > > > -	int cpu = ACCESS_ONCE(tick_do_timer_cpu);
+> > > > > +	int cpu;
+> > > > > +
+> > > > > +	if (!tick_nohz_full_enabled())
+> > > > > +		return;
+> > > > > +
+> > > > > +	cpu = ACCESS_ONCE(tick_do_timer_cpu);
+> > > > > 
+> > > > >  	if (cpu < 0 || cpu >= nr_cpu_ids)
+> > > > >  		return;
+> > > > > +
+> > > > >  	if (raw_smp_processor_id() != cpu)
+> > > > >  		set_cpus_allowed_ptr(current, cpumask_of(cpu));
+> > > > > -#endif /* #ifdef CONFIG_NO_HZ_FULL */
+> > > > >  }
+> > > > 
+> > > > Hello, Frederic,
+> > > > 
+> > > > I have the following queued.  Shall I port yours on top of mine, or is
+> > > > there an issue with mine?
+> > > 
+> > > OK, I suppose I should show you what it looks like ported on top of mine.
+> > 
+> > No need to keep my patch as long as yours goes in. It fixes all the issue.
+> > 
+> > > 
+> > > I didn't understand the removal of "#ifdef CONFIG_NO_HZ_FULL", so I
+> > > left that.
+> > 
+> > Yeah that's because the:
+> > 
+> >       if (!tick_nohz_full_enabled())
+> >            return;
+> > 
+> > returns unconditionally if CONFIG_NO_HZ_FULL=n. So the whole function
+> > becomes dead code that should be detected and removed by gcc. So same
+> > result as with the ifdef.
 > 
-> I'm only aware of two implementations that work like that: glibc and
-> musl.  AFAIK neither one even tries to use the vdso when statically
-> linked.  IIRC, Bionic doesn't support the vdso at all, and Go has the
-> present issue.
+> Well, that part of your patch is worthwhile, then!  And I do therefore
+> need to restructure to invoke tick_nohz_full_enabled() at the very
+> beginning of the function.
+
+Well if no CPU is full dynticks, the sole effect of this is that the kthread
+will be re-affined globally... So no big issue.
+
+Although that can make you spare a call to set_cpus_allowed_ptr(), which can
+be worthwile after all :)
+
 > 
-
-I would expect uClibc to behave similarly.  Bionic does, indeed, not
-support the vdso, but that is not for the lack of a linker but is really
-a shortcoming in Bionic.
-
-> And ELF parsing is a giant mess.  Currently the vdso doesn't use
-> DT_GNU_HASH (easy to fix) but no one can safely rely on DT_GNU_HASH
-> being there, and DT_GNU_HASH isn't actually easier to parse.
-
-Right... and the vdso is small enough that the performance doesn't
-matter.  However, we probably *ought* to publish DT_GNU_HASH data.
-
->>> 2. Go uses a segmented stack, and the vdso is quite unfriendly for
->>> segmented stack.  If we can get compiler support, is there a
->>> reasonable way that we could advertise the maximum stack usage of each
->>> vdso entry point?
->>
->> I suspect an easier way to do that would just be to define a maximum
->> stack usage for *any* vdso entry point, and then enable the gcc stack
->> depth warning (perhaps even with Werror)... we can do this now.
+> > > I also didn't understand how dumping the GP kthreads onto
+> > > a single CPU could affect energy efficiency all that much, so I omitted
+> > > that from the commit log.  If I am missing something, please enlighten me.
+> > 
+> > Because if the kthread is pinned to CPU 0 and a grace period is in progress,
+> > the kthread is going to disturb the CPU 0 regardless of its possibly deep sleep
+> > state. OTOH if the kthread is widely affine, it can be scheduled to idle CPUs
+> > that are less cold and thus wake them from less deep power state.
+> > 
+> > Well that all assuming that the scheduler takes care of these deep idle state.
+> > But I believe it does iirc...
 > 
-> I can imagine this causing lots of pain when gcc 4.11 comes out with
-> some issue that blows up the stack usage.  Or when akpm compiles on
-> Fedora Core 6 using some ancient toolchain that spills every local
-> variable three or four times and assigns every possible inline
-> function its own non-overlapping stack range.
-> 
-> My copy of gcc supports -fstack-usage, which seems like an easyish way
-> to obtain the information.  I'm not entirely sure whether
-> -fstack-usage refers to the whole call tree or just to the specific
-> function.
+> My guess is that enough stuff gets dumped on CPU 0 to make this a non-issue,
+> but point taken nonetheless.
 
-There are issues either way.  However, most vdso code doesn't use much
-stack at all, and it seems reasonable to put a (conservative) cap on it
-as a matter of policy.
-
-	-hpa
-
-
+Ok.
