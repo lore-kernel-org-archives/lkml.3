@@ -1,87 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752516AbaFMNgF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 09:36:05 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:58240 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752342AbaFMNgD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 09:36:03 -0400
-Message-ID: <539AFE18.3020706@ti.com>
-Date: Fri, 13 Jun 2014 09:35:20 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752601AbaFMNgN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 09:36:13 -0400
+Received: from mail.kernel.org ([198.145.19.201]:36094 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752529AbaFMNgJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 09:36:09 -0400
+Date: Fri, 13 Jun 2014 15:35:59 +0200
+From: Robert Richter <rric@kernel.org>
+To: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Cc: rjw@rjwysocki.net, lenb@kernel.org, tony.luck@intel.com, bp@alien8.de,
+        m.chehab@samsung.com, bp@suse.de, linux-edac@vger.kernel.org,
+        x86@kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org
+Subject: Re: [PATCH v3 5/5] acpi, apei, ghes: Factor out ioremap virtual
+ memory for IRQ and NMI context.
+Message-ID: <20140613133559.GB27560@rric.localhost>
+References: <1402657380-18539-1-git-send-email-tomasz.nowicki@linaro.org>
+ <1402657380-18539-6-git-send-email-tomasz.nowicki@linaro.org>
 MIME-Version: 1.0
-To: Jason Cooper <jason@lakedaemon.net>, Sricharan R <r.sricharan@ti.com>
-CC: Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <nm@ti.com>, <rnayak@ti.com>,
-        <linux@arm.linux.org.uk>, <tglx@linutronix.de>
-Subject: Re: [PATCH V2 03/19] irqchip: crossbar: Skip some irqs from getting
- mapped to crossbar
-References: <1402574007-13987-1-git-send-email-r.sricharan@ti.com> <1402574007-13987-4-git-send-email-r.sricharan@ti.com> <20140612125134.GS8664@titan.lakedaemon.net> <20140612135715.GE17845@atomide.com> <20140612140508.GC8664@titan.lakedaemon.net> <539AA08A.7010001@ti.com> <20140613131005.GF8664@titan.lakedaemon.net>
-In-Reply-To: <20140613131005.GF8664@titan.lakedaemon.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402657380-18539-6-git-send-email-tomasz.nowicki@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 13 June 2014 09:10 AM, Jason Cooper wrote:
-> On Fri, Jun 13, 2014 at 12:26:10PM +0530, Sricharan R wrote:
->> On Thursday 12 June 2014 07:35 PM, Jason Cooper wrote:
-> ...
->>> Do you have other changes outside of irqchip depending on this series?
->>> If so, I can set up a topic branch for you guys to base off of.
->>> Otherwise, I'll just apply them to irqchip/core when they're ready.
->>>
->>  There are dts changes which are dependent upon this series.
->>
->>   http://www.spinics.net/lists/linux-omap/msg108116.html
-> 
-> In general, dts changes shouldn't depend on code changes or vice-versa.
-> If they do, that's an indicator that we're breaking compatibility with
-> older dtbs.
->
-Thats true. The case with cross-bar though is the feature wasn't
-completly supported so far before this series. Perhaps the the initial
-bindings should have been marked unstable. 
- 
-> Looking at the dra7.dtsi changes, we're redefining the interrupt
-> property, which can't be good. :(
->
-> Perhaps a better solution would be to add a property, say 'ti,cross-irq'
-> that is the exact same format as 'interrupts', but is used by the
-> crossbar driver?
->
-We have gone over those earlier and it was agreed to re-use interrupt
-properties and for special cases, define a cross-bar property to describe
-it.
- 
-> I'm not convinced of this yet, I suspect we may not actually have a
-> dependency between the dtsi changes and the code changes.  We would have
-> the ugly "if you have the crossbar node, 'interrupts' means X, if not it
-> means Y" in the binding docs.  But the absence of the node prevents the
-> crossbar driver from re-interpreting the interrupts property.
-> 
-In ideal cross-bar hardware you don't need the assumption "if you have the
-crossbar node, 'interrupts' means X, if not it means Y"
+On 13.06.14 13:03:00, Tomasz Nowicki wrote:
+> diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
+> index 21aeac5..93a4d0b 100644
+> --- a/drivers/acpi/apei/ghes.c
+> +++ b/drivers/acpi/apei/ghes.c
+> @@ -113,12 +113,11 @@ static DEFINE_RAW_SPINLOCK(ghes_nmi_lock);
+>   */
+>  
+>  /*
+> - * Two virtual pages are used, one for NMI context, the other for
+> - * IRQ/PROCESS context
+> + * Two virtual pages are used, one for IRQ/PROCESS context, the other for
+> + * NMI context (optionally).
+>   */
+> -#define GHES_IOREMAP_PAGES		2
+> -#define GHES_IOREMAP_NMI_PAGE(base)	(base)
+> -#define GHES_IOREMAP_IRQ_PAGE(base)	((base) + PAGE_SIZE)
+> +#define GHES_IOREMAP_IRQ_PAGE(base)	(base)
+> +#define GHES_IOREMAP_NMI_PAGE(base)	((base) + PAGE_SIZE)
+>  
+>  /* virtual memory area for atomic ioremap */
+>  static struct vm_struct *ghes_ioremap_area;
+> @@ -155,7 +154,8 @@ static struct ghes_notify_setup	ghes_notify_tab[];
+>  
+>  static int ghes_ioremap_init(void)
+>  {
+> -	ghes_ioremap_area = __get_vm_area(PAGE_SIZE * GHES_IOREMAP_PAGES,
+> +	ghes_ioremap_area = __get_vm_area(
+> +		PAGE_SIZE * (IS_ENABLED(ARCH_HAS_ACPI_APEI_NMI) ? 2 : 1),
 
-It is purely because the cross-bar irq router hardware has few nasty
-bugs which needs those special handling. And thats the reason, the
-property was added.
+Use this instead above:
 
-> Have you tried booting all the different scenarios?  eg:
-> 
->   old dtb, new driver
->   new dtb, old driver
->   old dtb, old driver
->   new dtb, new driver
-> 
-Old driver wasn't complete as mentioned and hence the above
-combinations becomes bit irrelevant.
+#ifdef ARCH_HAS_ACPI_APEI_NMI
+#define GHES_IOREMAP_PAGES           2
+#else
+#define GHES_IOREMAP_PAGES           1
+#endif
 
-Regards,
-Santosh
+Otherwise this patch looks fine to me.
 
-
+-Robert
