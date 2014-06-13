@@ -1,115 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753516AbaFMQKp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 12:10:45 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:50440 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753249AbaFMQKl (ORCPT
+	id S1753534AbaFMQLb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 12:11:31 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:34211 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751138AbaFMQL3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 12:10:41 -0400
-Date: Fri, 13 Jun 2014 09:10:35 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [PATCH] rcu: Only pin GP kthread when full dynticks is actually
- used
-Message-ID: <20140613161035.GA6931@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1402618619-32630-1-git-send-email-fweisbec@gmail.com>
- <20140613012432.GH4581@linux.vnet.ibm.com>
- <20140613020554.GA9974@linux.vnet.ibm.com>
- <20140613125543.GD6635@localhost.localdomain>
- <20140613155548.GN4581@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140613155548.GN4581@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061316-1542-0000-0000-0000028D1BFC
+	Fri, 13 Jun 2014 12:11:29 -0400
+Content-Type: text/plain; charset=US-ASCII
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
+Subject: Re: [PATCH 2/3] ata: Add Qualcomm ARM SoC AHCI SATA host controller driver
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <539B0CCD.9060509@mm-sol.com>
+Date: Fri, 13 Jun 2014 11:11:23 -0500
+Cc: Tejun Heo <tj@kernel.org>, linux-ide@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 7BIT
+Message-Id: <CB5F4E2D-7FD3-4597-AE5F-97AB47247B25@codeaurora.org>
+References: <1402600404-19214-1-git-send-email-galak@codeaurora.org> <1402600404-19214-2-git-send-email-galak@codeaurora.org> <539B0CCD.9060509@mm-sol.com>
+To: Stanimir Varbanov <svarbanov@mm-sol.com>
+X-Mailer: Apple Mail (2.1878.2)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 08:55:48AM -0700, Paul E. McKenney wrote:
-> On Fri, Jun 13, 2014 at 02:55:45PM +0200, Frederic Weisbecker wrote:
-> > On Thu, Jun 12, 2014 at 07:05:54PM -0700, Paul E. McKenney wrote:
-> > > On Thu, Jun 12, 2014 at 06:24:32PM -0700, Paul E. McKenney wrote:
-> > > > On Fri, Jun 13, 2014 at 02:16:59AM +0200, Frederic Weisbecker wrote:
-> > > > > CONFIG_NO_HZ_FULL may be enabled widely on distros nowadays but actual
-> > > > > users should be a tiny minority, if actually any.
-> > > > > 
-> > > > > Also there is a risk that affining the GP kthread to a single CPU could
-> > > > > end up noticeably reducing RCU performances and increasing energy
-> > > > > consumption.
-> > > > > 
-> > > > > So lets affine the GP kthread only when nohz full is actually used
-> > > > > (ie: when the nohz_full= parameter is filled or CONFIG_NO_HZ_FULL_ALL=y)
-> > > > > 
-> > > > > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > > > > Cc: Josh Triplett <josh@joshtriplett.org>
-> > > > > Cc: Steven Rostedt <rostedt@goodmis.org>
-> > > > > Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> > > > > ---
-> > > > >  kernel/rcu/tree_plugin.h | 10 +++++++---
-> > > > >  1 file changed, 7 insertions(+), 3 deletions(-)
-> > > > > 
-> > > > > diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-> > > > > index cbc2c45..726f52c 100644
-> > > > > --- a/kernel/rcu/tree_plugin.h
-> > > > > +++ b/kernel/rcu/tree_plugin.h
-> > > > > @@ -2843,12 +2843,16 @@ static bool rcu_nohz_full_cpu(struct rcu_state *rsp)
-> > > > >   */
-> > > > >  static void rcu_bind_gp_kthread(void)
-> > > > >  {
-> > > > > -#ifdef CONFIG_NO_HZ_FULL
-> > > > > -	int cpu = ACCESS_ONCE(tick_do_timer_cpu);
-> > > > > +	int cpu;
-> > > > > +
-> > > > > +	if (!tick_nohz_full_enabled())
-> > > > > +		return;
-> > > > > +
-> > > > > +	cpu = ACCESS_ONCE(tick_do_timer_cpu);
-> > > > > 
-> > > > >  	if (cpu < 0 || cpu >= nr_cpu_ids)
-> > > > >  		return;
-> > > > > +
-> > > > >  	if (raw_smp_processor_id() != cpu)
-> > > > >  		set_cpus_allowed_ptr(current, cpumask_of(cpu));
-> > > > > -#endif /* #ifdef CONFIG_NO_HZ_FULL */
-> > > > >  }
-> > > > 
-> > > > Hello, Frederic,
-> > > > 
-> > > > I have the following queued.  Shall I port yours on top of mine, or is
-> > > > there an issue with mine?
-> > > 
-> > > OK, I suppose I should show you what it looks like ported on top of mine.
-> > 
-> > No need to keep my patch as long as yours goes in. It fixes all the issue.
-> > 
-> > > 
-> > > I didn't understand the removal of "#ifdef CONFIG_NO_HZ_FULL", so I
-> > > left that.
-> > 
-> > Yeah that's because the:
-> > 
-> >       if (!tick_nohz_full_enabled())
-> >            return;
-> > 
-> > returns unconditionally if CONFIG_NO_HZ_FULL=n. So the whole function
-> > becomes dead code that should be detected and removed by gcc. So same
-> > result as with the ifdef.
+
+On Jun 13, 2014, at 9:38 AM, Stanimir Varbanov <svarbanov@mm-sol.com> wrote:
+
+> Hi Kumar,
 > 
-> Well, that part of your patch is worthwhile, then!  And I do therefore
-> need to restructure to invoke tick_nohz_full_enabled() at the very
-> beginning of the function.
+>> +
+>> +static struct platform_driver qcom_ahci_driver = {
+>> +	.probe = qcom_ahci_probe,
+>> +	.remove = ata_platform_remove_one,
+>> +	.driver = {
+>> +		.name = "qcom_ahci_qcom",
+>> +		.owner = THIS_MODULE,
+>> +		.of_match_table = qcom_ahci_of_match,
+>> +	},
+>> +};
+>> +module_platform_driver(qcom_ahci_driver);
+>> +
+>> +MODULE_DESCRIPTION("Qualcomm AHCI SATA platform driver");
+>> +MODULE_LICENSE("GPL");
+> 
+> "GPL v2" ? Or only GPL is intentional?
 
-Except then I get build errors for CONFIG_NO_HZ_FULL=n because of the
-masks.  So as you in fact suggested, back to the original commit...
+should be v2, will fix
 
-							Thanx, Paul
+> 
+>> +MODULE_ALIAS("ahci:qcom");
+>> 
+> 
+> missing MODULE_AUTHOR
+> 
+> -- 
+> regards,
+> Stan
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+- k
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
