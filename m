@@ -1,67 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753587AbaFMQXb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 12:23:31 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:50807 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752026AbaFMQX3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 12:23:29 -0400
-Date: Fri, 13 Jun 2014 09:23:23 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [PATCH] rcu: Only pin GP kthread when full dynticks is actually
- used
-Message-ID: <20140613162323.GS4581@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1402618619-32630-1-git-send-email-fweisbec@gmail.com>
- <20140613012432.GH4581@linux.vnet.ibm.com>
- <20140613124207.GB6635@localhost.localdomain>
- <20140613155812.GO4581@linux.vnet.ibm.com>
- <20140613160933.GN6635@localhost.localdomain>
+	id S1753623AbaFMQX7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 12:23:59 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:39823 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753526AbaFMQX5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 12:23:57 -0400
+Date: Fri, 13 Jun 2014 11:23:13 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Felipe Balbi <balbi@ti.com>
+CC: Tony Lindgren <tony@atomide.com>, Benoit Cousson <bcousson@baylibre.com>,
+        Paul Walmsley <paul@pwsan.com>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2] Add support for am437x StarterKit
+Message-ID: <20140613162313.GG8319@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1402676147-3711-1-git-send-email-balbi@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="IuJpT0rwbUevm2bB"
 Content-Disposition: inline
-In-Reply-To: <20140613160933.GN6635@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061316-3532-0000-0000-0000027596BC
+In-Reply-To: <1402676147-3711-1-git-send-email-balbi@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 06:09:35PM +0200, Frederic Weisbecker wrote:
-> On Fri, Jun 13, 2014 at 08:58:12AM -0700, Paul E. McKenney wrote:
-> > > Maybe what we should do instead is to have something like this on RCU kthread init:
-> > > 
-> > >           cpumask_var_t gp_kthread_mask;
-> > > 
-> > >           if (alloc_cpumask_var(gp_kthread_mask, GFP_KERNEL))
-> > >               return -EFAULT;
-> > > 
-> > >           cpumask_andnot(gp_kthread_mask, cpu_possible_mask, tick_nohz_full_mask);
-> > > 
-> > > 	  set_cpus_allowed_ptr(current, gp_kthread_mask);
-> > > 
-> > > 	  free_cpumask_var(gp_kthread_mask);
-> > 
-> > I was guessing that RCU's kthreads would not be the only ones that wanted
-> > similar binding.  But if you feel strongly about this, we could at least
-> > start by placing it local to RCU as above.
-> 
-> Hmm, I don't feel well creating mirrored cpumasks (nor solely negation cpumasks in general).
-> Also exposing that nohz gut is probably not a good idea either, except for RCU due to
-> the sysidle stuff.
-> 
-> Now you're right that we can expect that this non-nohz affinity stuff is going to be reused.
-> 
-> Could it be housekeeping_affine(struct task_struct *tsk) maybe?
+--IuJpT0rwbUevm2bB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Now that you mention it, that does sound better.  I will do that.
+Fixing Benoit's address
 
-							Thanx, Paul
+On Fri, Jun 13, 2014 at 11:15:45AM -0500, Felipe Balbi wrote:
+> Hi,
+>=20
+> The following two patches (one of which is a resend from a patch which ha=
+s been
+> pending since May 19th!) enable AM437x StarterKit to boot in mainline.
+>=20
+> Patches have been tested on top of 27a4e439fe5cd92b70137ae237c7aa6888c07b=
+5a
+> (next-20140610). With these we even have X with I3 running on this board,=
+ with
+> audio, touchscreen, networking, blinky leds and others.
+>=20
+> Felipe Balbi (1):
+>   arm: dts: add support for AM437x StarterKit
+>=20
+> Sathya Prakash M R (1):
+>   ARM: AM43xx: hwmod: add DSS hwmod data
+>=20
+>  .../devicetree/bindings/arm/omap/omap.txt          |   3 +
+>  arch/arm/boot/dts/Makefile                         |   1 +
+>  arch/arm/boot/dts/am437x-sk-evm.dts                | 539 +++++++++++++++=
+++++++
+>  arch/arm/mach-omap2/omap_hwmod_43xx_data.c         |  98 ++++
+>  arch/arm/mach-omap2/prcm43xx.h                     |   1 +
+>  5 files changed, 642 insertions(+)
+>  create mode 100644 arch/arm/boot/dts/am437x-sk-evm.dts
+>=20
+> --=20
+> 2.0.0.rc1
+>=20
 
+--=20
+balbi
+
+--IuJpT0rwbUevm2bB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTmyVxAAoJEIaOsuA1yqRE4+cP/RBgWHtT9Q5V2Cs4GZ535HY3
+efQooIoOsDpK/Y7YtmGPfeDksZDcs530AwJdRH9J2BfECmC2n75rYOIS3HH78nDq
+/4blCkJJo2AkJY7/4yEWlx0oOxHE6gPk7KK9Oc0kXvtfAQ5WVgvk0GOLlFkLD6Lu
+c3MMRl15Rw8uLoO1DOGVGgEHSYiXLA/HH1qjWGNbg807fAG7HWrCgFeaG/IUWpZ/
+aoeS+w9aaqQ3Li+us5ykEGh+js+ocUpSORJMQ02+YTSXyAn88H6s+WtJXiF4FW67
+u42IfarmVUx/Dq4GfH+AFJ1RFbGowI8bTnMRT/7XMlCZJTQHQchqsKIyd+NxUT0Y
+TNctwtwpn5/OzQj3iKnw/6DHfCjBrcOrGiJ+2php1uRurdeRs0pDWM+XIL7xF1xI
+W1xPPHRkr884SeSryIJ9LnmkzCNFYUGG65sQnptOTr52C898L19JUQ3L2qL9cxHJ
+JY+ro6T92FL6O6WaxBVSGwlX6uBFAdo1Ss0399MVPPeD10HkzHvHx8DaEznGSM6a
+arX73ykV8V5bOPHPgzkFvf6kVbYT+jwyCLP3rgkFFkToTwS1vgFsziBoh2GnnzJ4
+29XTMR2T35MJGs4bZdcQAeMGSTRHdoMOzNpEC8mHbPSWuvKQvmdBEJUjDKQ9xHE0
+B/v1ZyACAN6C49YfYQ+A
+=CvOM
+-----END PGP SIGNATURE-----
+
+--IuJpT0rwbUevm2bB--
