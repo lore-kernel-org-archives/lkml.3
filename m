@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752815AbaFMG1c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 02:27:32 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44251 "EHLO
+	id S1752839AbaFMG1m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 02:27:42 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44260 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751674AbaFMG13 (ORCPT
+	with ESMTP id S1751674AbaFMG1k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 02:27:29 -0400
-Date: Thu, 12 Jun 2014 23:27:11 -0700
+	Fri, 13 Jun 2014 02:27:40 -0400
+Date: Thu, 12 Jun 2014 23:27:22 -0700
 From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-4ebbcb84b19b8472fb5b9c8be89b3d0ea17c902e@git.kernel.org>
+Message-ID: <tip-45dc1bb5c1d47f9519e2101f6b073bb4bb1d1f99@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
         mingo@kernel.org, jolsa@kernel.org, a.p.zijlstra@chello.nl,
         jean.pihet@linaro.org, acme@kernel.org, namhyung@kernel.org,
@@ -20,12 +20,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
         jean.pihet@linaro.org, acme@kernel.org, namhyung@kernel.org,
         fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
         cjashfor@linux.vnet.ibm.com
-In-Reply-To: <1401892622-30848-13-git-send-email-jolsa@kernel.org>
-References: <1401892622-30848-13-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1401892622-30848-14-git-send-email-jolsa@kernel.org>
+References: <1401892622-30848-14-git-send-email-jolsa@kernel.org>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:perf/core] perf tests:
-  Add test for caching dso file descriptors
-Git-Commit-ID: 4ebbcb84b19b8472fb5b9c8be89b3d0ea17c902e
+  Add test for closing dso objects on EMFILE error
+Git-Commit-ID: 45dc1bb5c1d47f9519e2101f6b073bb4bb1d1f99
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -38,17 +38,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4ebbcb84b19b8472fb5b9c8be89b3d0ea17c902e
-Gitweb:     http://git.kernel.org/tip/4ebbcb84b19b8472fb5b9c8be89b3d0ea17c902e
+Commit-ID:  45dc1bb5c1d47f9519e2101f6b073bb4bb1d1f99
+Gitweb:     http://git.kernel.org/tip/45dc1bb5c1d47f9519e2101f6b073bb4bb1d1f99
 Author:     Jiri Olsa <jolsa@kernel.org>
-AuthorDate: Mon, 12 May 2014 14:43:53 +0200
+AuthorDate: Mon, 12 May 2014 14:50:03 +0200
 Committer:  Jiri Olsa <jolsa@kernel.org>
-CommitDate: Thu, 12 Jun 2014 16:53:22 +0200
+CommitDate: Thu, 12 Jun 2014 16:53:23 +0200
 
-perf tests: Add test for caching dso file descriptors
+perf tests: Add test for closing dso objects on EMFILE error
 
-Adding test that setup test_dso_data__fd_limit and test
-dso data file descriptors are cached appropriately.
+Testing that perf properly closes opened dso objects
+and tries to reopen in case we run out of allowed file
+descriptors for dso data.
 
 Acked-by: Namhyung Kim <namhyung@kernel.org>
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
@@ -60,179 +61,104 @@ Cc: Jean Pihet <jean.pihet@linaro.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1401892622-30848-13-git-send-email-jolsa@kernel.org
+Reviewed by: David Ahern <dsahern@gmail.com>
+Link: http://lkml.kernel.org/r/1401892622-30848-14-git-send-email-jolsa@kernel.org
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/tests/builtin-test.c |   6 +-
- tools/perf/tests/dso-data.c     | 135 +++++++++++++++++++++++++++++++++++++++-
- tools/perf/tests/tests.h        |   1 +
- 3 files changed, 138 insertions(+), 4 deletions(-)
+ tools/perf/tests/builtin-test.c |  4 +++
+ tools/perf/tests/dso-data.c     | 73 +++++++++++++++++++++++++++++++++++++++++
+ tools/perf/tests/tests.h        |  1 +
+ 3 files changed, 78 insertions(+)
 
 diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index 9677a5c..b8a6358 100644
+index b8a6358..6f8b01b 100644
 --- a/tools/perf/tests/builtin-test.c
 +++ b/tools/perf/tests/builtin-test.c
-@@ -52,10 +52,14 @@ static struct test {
- 		.func = test__pmu,
+@@ -60,6 +60,10 @@ static struct test {
+ 		.func = test__dso_data_cache,
  	},
  	{
--		.desc = "Test dso data interface",
-+		.desc = "Test dso data read",
- 		.func = test__dso_data,
- 	},
- 	{
-+		.desc = "Test dso data cache",
-+		.func = test__dso_data_cache,
++		.desc = "Test dso data reopen",
++		.func = test__dso_data_reopen,
 +	},
 +	{
  		.desc = "roundtrip evsel->name check",
  		.func = test__perf_evsel__roundtrip_name_test,
  	},
 diff --git a/tools/perf/tests/dso-data.c b/tools/perf/tests/dso-data.c
-index 7384381..2d30014 100644
+index 2d30014..630808c 100644
 --- a/tools/perf/tests/dso-data.c
 +++ b/tools/perf/tests/dso-data.c
-@@ -1,11 +1,12 @@
--#include "util.h"
--
- #include <stdlib.h>
- #include <linux/types.h>
- #include <sys/stat.h>
- #include <fcntl.h>
- #include <string.h>
--
-+#include <sys/time.h>
-+#include <sys/resource.h>
-+#include <api/fs/fs.h>
-+#include "util.h"
- #include "machine.h"
- #include "symbol.h"
- #include "tests.h"
-@@ -154,3 +155,131 @@ int test__dso_data(void)
- 	unlink(file);
+@@ -283,3 +283,76 @@ int test__dso_data_cache(void)
+ 	TEST_ASSERT_VAL("failed leadking files", nr == nr_end);
  	return 0;
  }
 +
-+static long open_files_cnt(void)
-+{
-+	char path[PATH_MAX];
-+	struct dirent *dent;
-+	DIR *dir;
-+	long nr = 0;
-+
-+	scnprintf(path, PATH_MAX, "%s/self/fd", procfs__mountpoint());
-+	pr_debug("fd path: %s\n", path);
-+
-+	dir = opendir(path);
-+	TEST_ASSERT_VAL("failed to open fd directory", dir);
-+
-+	while ((dent = readdir(dir)) != NULL) {
-+		if (!strcmp(dent->d_name, ".") ||
-+		    !strcmp(dent->d_name, ".."))
-+			continue;
-+
-+		nr++;
-+	}
-+
-+	closedir(dir);
-+	return nr - 1;
-+}
-+
-+static struct dso **dsos;
-+
-+static int dsos__create(int cnt, int size)
-+{
-+	int i;
-+
-+	dsos = malloc(sizeof(dsos) * cnt);
-+	TEST_ASSERT_VAL("failed to alloc dsos array", dsos);
-+
-+	for (i = 0; i < cnt; i++) {
-+		char *file;
-+
-+		file = test_file(size);
-+		TEST_ASSERT_VAL("failed to get dso file", file);
-+
-+		dsos[i] = dso__new(file);
-+		TEST_ASSERT_VAL("failed to get dso", dsos[i]);
-+	}
-+
-+	return 0;
-+}
-+
-+static void dsos__delete(int cnt)
-+{
-+	int i;
-+
-+	for (i = 0; i < cnt; i++) {
-+		struct dso *dso = dsos[i];
-+
-+		unlink(dso->name);
-+		dso__delete(dso);
-+	}
-+
-+	free(dsos);
-+}
-+
-+static int set_fd_limit(int n)
-+{
-+	struct rlimit rlim;
-+
-+	if (getrlimit(RLIMIT_NOFILE, &rlim))
-+		return -1;
-+
-+	pr_debug("file limit %ld, new %d\n", (long) rlim.rlim_cur, n);
-+
-+	rlim.rlim_cur = n;
-+	return setrlimit(RLIMIT_NOFILE, &rlim);
-+}
-+
-+int test__dso_data_cache(void)
++int test__dso_data_reopen(void)
 +{
 +	struct machine machine;
 +	long nr_end, nr = open_files_cnt();
-+	int dso_cnt, limit, i, fd;
++	int fd, fd_extra;
++
++#define dso_0 (dsos[0])
++#define dso_1 (dsos[1])
++#define dso_2 (dsos[2])
 +
 +	memset(&machine, 0, sizeof(machine));
 +
-+	/* set as system limit */
-+	limit = nr * 4;
-+	TEST_ASSERT_VAL("failed to set file limit", !set_fd_limit(limit));
++	/*
++	 * Test scenario:
++	 * - create 3 dso objects
++	 * - set process file descriptor limit to current
++	 *   files count + 3
++	 * - test that the first dso gets closed when we
++	 *   reach the files count limit
++	 */
 +
-+	/* and this is now our dso open FDs limit + 1 extra */
-+	dso_cnt = limit / 2 + 1;
-+	TEST_ASSERT_VAL("failed to create dsos\n",
-+		!dsos__create(dso_cnt, TEST_FILE_SIZE));
++	/* Make sure we are able to open 3 fds anyway */
++	TEST_ASSERT_VAL("failed to set file limit",
++			!set_fd_limit((nr + 3)));
 +
-+	for (i = 0; i < (dso_cnt - 1); i++) {
-+		struct dso *dso = dsos[i];
++	TEST_ASSERT_VAL("failed to create dsos\n", !dsos__create(3, TEST_FILE_SIZE));
 +
-+		/*
-+		 * Open dsos via dso__data_fd or dso__data_read_offset.
-+		 * Both opens the data file and keep it open.
-+		 */
-+		if (i % 2) {
-+			fd = dso__data_fd(dso, &machine);
-+			TEST_ASSERT_VAL("failed to get fd", fd > 0);
-+		} else {
-+			#define BUFSIZE 10
-+			u8 buf[BUFSIZE];
-+			ssize_t n;
-+
-+			n = dso__data_read_offset(dso, &machine, 0, buf, BUFSIZE);
-+			TEST_ASSERT_VAL("failed to read dso", n == BUFSIZE);
-+		}
-+	}
-+
-+	/* open +1 dso over the allowed limit */
-+	fd = dso__data_fd(dsos[i], &machine);
++	/* open dso_0 */
++	fd = dso__data_fd(dso_0, &machine);
 +	TEST_ASSERT_VAL("failed to get fd", fd > 0);
 +
-+	/* should force the first one to be closed */
-+	TEST_ASSERT_VAL("failed to close dsos[0]", dsos[0]->data.fd == -1);
++	/* open dso_1 */
++	fd = dso__data_fd(dso_1, &machine);
++	TEST_ASSERT_VAL("failed to get fd", fd > 0);
++
++	/*
++	 * open extra file descriptor and we just
++	 * reached the files count limit
++	 */
++	fd_extra = open("/dev/null", O_RDONLY);
++	TEST_ASSERT_VAL("failed to open extra fd", fd_extra > 0);
++
++	/* open dso_2 */
++	fd = dso__data_fd(dso_2, &machine);
++	TEST_ASSERT_VAL("failed to get fd", fd > 0);
++
++	/*
++	 * dso_0 should get closed, because we reached
++	 * the file descriptor limit
++	 */
++	TEST_ASSERT_VAL("failed to close dso_0", dso_0->data.fd == -1);
++
++	/* open dso_0 */
++	fd = dso__data_fd(dso_0, &machine);
++	TEST_ASSERT_VAL("failed to get fd", fd > 0);
++
++	/*
++	 * dso_1 should get closed, because we reached
++	 * the file descriptor limit
++	 */
++	TEST_ASSERT_VAL("failed to close dso_1", dso_1->data.fd == -1);
 +
 +	/* cleanup everything */
-+	dsos__delete(dso_cnt);
++	close(fd_extra);
++	dsos__delete(3);
 +
 +	/* Make sure we did not leak any file descriptor. */
 +	nr_end = open_files_cnt();
@@ -241,14 +167,14 @@ index 7384381..2d30014 100644
 +	return 0;
 +}
 diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index 022bb68..ccc4deb 100644
+index ccc4deb..ed64790 100644
 --- a/tools/perf/tests/tests.h
 +++ b/tools/perf/tests/tests.h
-@@ -28,6 +28,7 @@ int test__syscall_open_tp_fields(void);
- int test__pmu(void);
+@@ -29,6 +29,7 @@ int test__pmu(void);
  int test__attr(void);
  int test__dso_data(void);
-+int test__dso_data_cache(void);
+ int test__dso_data_cache(void);
++int test__dso_data_reopen(void);
  int test__parse_events(void);
  int test__hists_link(void);
  int test__python_use(void);
