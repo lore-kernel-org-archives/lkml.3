@@ -1,216 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753453AbaFMUbp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 16:31:45 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:52696 "EHLO smtp.outflux.net"
+	id S1753907AbaFMUcX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 16:32:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61012 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751401AbaFMUbm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 16:31:42 -0400
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Pavel Machek <pavel@ucw.cz>,
-        Josh Boyer <jwboyer@fedoraproject.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Randy Dunlap <rdunlap@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>, linux-doc@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: [PATCH v3 1/2] hibernate: create "nohibernate" boot parameter
-Date: Fri, 13 Jun 2014 13:30:35 -0700
-Message-Id: <1402691436-20138-2-git-send-email-keescook@chromium.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1402691436-20138-1-git-send-email-keescook@chromium.org>
-References: <1402691436-20138-1-git-send-email-keescook@chromium.org>
-X-HELO: www.outflux.net
+	id S1753883AbaFMUcV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 16:32:21 -0400
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Aristeu Rozanski <aris@redhat.com>, Ping Cheng <pinglinux@gmail.com>,
+        Jason Gerecke <killertofu@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Revert "Input: wacom - testing result shows get_report is unnecessary."
+Date: Fri, 13 Jun 2014 16:32:18 -0400
+Message-Id: <1402691538-26392-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To support using kernel features that are not compatible with hibernation,
-this creates the "nohibernate" kernel boot parameter to disable both
-hibernation and resume. This allows hibernation support to be a boot-time
-choice instead of only a compile-time choice.
+This reverts commit 1b2faaf7e219fc2905d75afcd4c815e5d39eda80.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Acked-by: Pavel Machek <pavel@ucw.cz>
+The Intuos4 series presents a bug in which it hangs if it receives
+a set feature command while switching to the enhanced mode.
+This bug is triggered when plugging an Intuos 4 while having
+a gnome user session up and running.
+
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 ---
- Documentation/kernel-parameters.txt |    3 +++
- include/linux/suspend.h             |    2 ++
- kernel/power/hibernate.c            |   31 ++++++++++++++++++++++++++++++-
- kernel/power/main.c                 |    6 ++----
- kernel/power/user.c                 |    3 +++
- 5 files changed, 40 insertions(+), 5 deletions(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 6eaa9cdb7094..f8f0466b8b1d 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -2184,6 +2184,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			in certain environments such as networked servers or
- 			real-time systems.
+Hi Aris,
+
+actually, you bisected the bug, so can I consider that I have your signed-off-by?
+
+Cheers,
+Benjamin
+
+ drivers/input/tablet/wacom_sys.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/input/tablet/wacom_sys.c b/drivers/input/tablet/wacom_sys.c
+index 7087b33..319a3ff 100644
+--- a/drivers/input/tablet/wacom_sys.c
++++ b/drivers/input/tablet/wacom_sys.c
+@@ -536,6 +536,9 @@ static int wacom_set_device_mode(struct usb_interface *intf, int report_id, int
  
-+	nohibernate	[HIBERNATION] Disable hibernation and resume.
-+
- 	nohz=		[KNL] Boottime enable/disable dynamic ticks
- 			Valid arguments: on, off
- 			Default: on
-@@ -2980,6 +2982,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 		noresume	Don't check if there's a hibernation image
- 				present during boot.
- 		nocompress	Don't compress/decompress hibernation images.
-+		no		Disable hibernation and resume.
+ 		error = wacom_set_report(intf, WAC_HID_FEATURE_REPORT,
+ 		                         report_id, rep_data, length, 1);
++		if (error >= 0)
++			error = wacom_get_report(intf, WAC_HID_FEATURE_REPORT,
++			                         report_id, rep_data, length, 1);
+ 	} while ((error < 0 || rep_data[1] != mode) && limit++ < WAC_MSG_RETRIES);
  
- 	retain_initrd	[RAM] Keep initrd memory after extraction
- 
-diff --git a/include/linux/suspend.h b/include/linux/suspend.h
-index f76994b9396c..519064e0c943 100644
---- a/include/linux/suspend.h
-+++ b/include/linux/suspend.h
-@@ -327,6 +327,7 @@ extern unsigned long get_safe_page(gfp_t gfp_mask);
- extern void hibernation_set_ops(const struct platform_hibernation_ops *ops);
- extern int hibernate(void);
- extern bool system_entering_hibernation(void);
-+extern bool hibernation_available(void);
- asmlinkage int swsusp_save(void);
- extern struct pbe *restore_pblist;
- #else /* CONFIG_HIBERNATION */
-@@ -339,6 +340,7 @@ static inline void swsusp_unset_page_free(struct page *p) {}
- static inline void hibernation_set_ops(const struct platform_hibernation_ops *ops) {}
- static inline int hibernate(void) { return -ENOSYS; }
- static inline bool system_entering_hibernation(void) { return false; }
-+static inline bool hibernation_available(void) { return false; }
- #endif /* CONFIG_HIBERNATION */
- 
- /* Hibernation and suspend events */
-diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-index 49e0a20fd010..258f492f0347 100644
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -35,6 +35,7 @@
- 
- static int nocompress;
- static int noresume;
-+static int nohibernate;
- static int resume_wait;
- static unsigned int resume_delay;
- static char resume_file[256] = CONFIG_PM_STD_PARTITION;
-@@ -62,6 +63,11 @@ bool freezer_test_done;
- 
- static const struct platform_hibernation_ops *hibernation_ops;
- 
-+bool hibernation_available(void)
-+{
-+	return (nohibernate == 0);
-+}
-+
- /**
-  * hibernation_set_ops - Set the global hibernate operations.
-  * @ops: Hibernation operations to use in subsequent hibernation transitions.
-@@ -642,6 +648,11 @@ int hibernate(void)
- {
- 	int error;
- 
-+	if (!hibernation_available()) {
-+		pr_debug("PM: Hibernation not available.\n");
-+		return -EPERM;
-+	}
-+
- 	lock_system_sleep();
- 	/* The snapshot device should not be opened while we're running */
- 	if (!atomic_add_unless(&snapshot_device_available, -1, 0)) {
-@@ -734,7 +745,7 @@ static int software_resume(void)
- 	/*
- 	 * If the user said "noresume".. bail out early.
- 	 */
--	if (noresume)
-+	if (noresume || !hibernation_available())
- 		return 0;
- 
- 	/*
-@@ -900,6 +911,9 @@ static ssize_t disk_show(struct kobject *kobj, struct kobj_attribute *attr,
- 	int i;
- 	char *start = buf;
- 
-+	if (!hibernation_available())
-+		return sprintf(buf, "[disabled]\n");
-+
- 	for (i = HIBERNATION_FIRST; i <= HIBERNATION_MAX; i++) {
- 		if (!hibernation_modes[i])
- 			continue;
-@@ -934,6 +948,9 @@ static ssize_t disk_store(struct kobject *kobj, struct kobj_attribute *attr,
- 	char *p;
- 	int mode = HIBERNATION_INVALID;
- 
-+	if (!hibernation_available())
-+		return -EPERM;
-+
- 	p = memchr(buf, '\n', n);
- 	len = p ? p - buf : n;
- 
-@@ -1101,6 +1118,10 @@ static int __init hibernate_setup(char *str)
- 		noresume = 1;
- 	else if (!strncmp(str, "nocompress", 10))
- 		nocompress = 1;
-+	else if (!strncmp(str, "no", 2)) {
-+		noresume = 1;
-+		nohibernate = 1;
-+	}
- 	return 1;
- }
- 
-@@ -1125,9 +1146,17 @@ static int __init resumedelay_setup(char *str)
- 	return 1;
- }
- 
-+static int __init nohibernate_setup(char *str)
-+{
-+	noresume = 1;
-+	nohibernate = 1;
-+	return 1;
-+}
-+
- __setup("noresume", noresume_setup);
- __setup("resume_offset=", resume_offset_setup);
- __setup("resume=", resume_setup);
- __setup("hibernate=", hibernate_setup);
- __setup("resumewait", resumewait_setup);
- __setup("resumedelay=", resumedelay_setup);
-+__setup("nohibernate", nohibernate_setup);
-diff --git a/kernel/power/main.c b/kernel/power/main.c
-index 573410d6647e..8e90f330f139 100644
---- a/kernel/power/main.c
-+++ b/kernel/power/main.c
-@@ -300,13 +300,11 @@ static ssize_t state_show(struct kobject *kobj, struct kobj_attribute *attr,
- 			s += sprintf(s,"%s ", pm_states[i].label);
- 
- #endif
--#ifdef CONFIG_HIBERNATION
--	s += sprintf(s, "%s\n", "disk");
--#else
-+	if (hibernation_available())
-+		s += sprintf(s, "disk ");
- 	if (s != buf)
- 		/* convert the last space to a newline */
- 		*(s-1) = '\n';
--#endif
- 	return (s - buf);
- }
- 
-diff --git a/kernel/power/user.c b/kernel/power/user.c
-index 98d357584cd6..526e8911460a 100644
---- a/kernel/power/user.c
-+++ b/kernel/power/user.c
-@@ -49,6 +49,9 @@ static int snapshot_open(struct inode *inode, struct file *filp)
- 	struct snapshot_data *data;
- 	int error;
- 
-+	if (!hibernation_available())
-+		return -EPERM;
-+
- 	lock_system_sleep();
- 
- 	if (!atomic_add_unless(&snapshot_device_available, -1, 0)) {
+ 	kfree(rep_data);
 -- 
-1.7.9.5
+1.9.0
 
